@@ -25,94 +25,76 @@
 #define TF_TYPE_IMPL_H
 
 #include "pxr/base/tf/mallocTag.h"
-#include "pxr/base/tf/singleton.h"
 
-#include <boost/mpl/front.hpp>
-#include <boost/mpl/pop_front.hpp>
-#include <boost/mpl/vector.hpp>
-#include <boost/mpl/remove.hpp>
-#include <boost/mpl/empty.hpp>
+#include <initializer_list>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// Recursive template for declaring the types in TypeVector as
-// TfTypes and pushing them onto the result vector.
-template <typename TypeVector,
-          bool empty = boost::mpl::empty<TypeVector>::value >
-struct Tf_DeclareTypes
+template <class DERIVED, class BASE>
+inline void*
+Tf_CastToParent(void* addr, bool derivedToBase);
+
+// Declare and register casts for all the C++ bases in the given TypeVector.
+template <typename TypeVector>
+struct Tf_AddBases;
+
+template <typename... Bases>
+struct Tf_AddBases<TfType::Bases<Bases...>>
 {
-    static void
-    Apply( std::vector<TfType> *results )
+    // Declare types in Bases as TfTypes and accumulate them into a runtime
+    // vector.
+    static std::vector<TfType>
+    Declare()
     {
-        typedef typename boost::mpl::front<TypeVector>::type ThisBase;
-        typedef typename boost::mpl::pop_front<TypeVector>::type Rest;
-
-        const std::string typeName =
-            TfType::GetCanonicalTypeName( typeid(ThisBase) );
-
-        results->push_back( TfType::Declare(typeName) );
-
-        Tf_DeclareTypes<Rest>::Apply(results);
+        return std::vector<TfType> {
+            TfType::Declare(
+                TfType::GetCanonicalTypeName( typeid(Bases) ))...
+        };
     }
-};
-template <typename TypeVector >
-struct Tf_DeclareTypes<TypeVector, true /* empty vector */>
-{
-    static void
-    Apply( std::vector<TfType> * )
-    {
-        // Base case; nothing left to do.
-    }
-};
 
-// Recursive template for taking each of the types in TypeVector
-// and adding them as BaseCppTypes for the given TypeDefiner.
-template <typename DERIVED, typename TypeVector,
-          bool empty = boost::mpl::empty<TypeVector>::value >
-struct Tf_AddBases
-{
+    // Register casts to and from Derived and each base type in Bases.
+    template <typename Derived>
     static void
-    Apply( TfType::_TypeDefiner<DERIVED> & definer )
+    RegisterCasts(TfType const* type)
     {
-        typedef typename boost::mpl::front<TypeVector>::type ThisBase;
-        typedef typename boost::mpl::pop_front<TypeVector>::type Rest;
+        struct Cast
+        {
+            const std::type_info *typeInfo;
+            TfType::_CastFunction func;
+        };
 
-        // Apply a single entry of Bases
-        definer.template _AddBaseCppType<ThisBase>();
-        // Recurse
-        Tf_AddBases<DERIVED, Rest>::Apply(definer);
-    }
-};
-template <typename DERIVED, typename TypeVector >
-struct Tf_AddBases<DERIVED, TypeVector, true /* empty vector */>
-{
-    static void
-    Apply( TfType::_TypeDefiner<DERIVED> & )
-    {
-        // Base case; nothing left to do.
+        const std::initializer_list<Cast> baseCasts = {
+            { &typeid(Bases), &Tf_CastToParent<Derived, Bases> }...
+        };
+
+        for (const Cast &cast : baseCasts) {
+            type->_AddCppCastFunc(*cast.typeInfo, cast.func);
+        }
     }
 };
 
-template <typename T, typename B>
+template <typename T, typename BaseTypes>
 TfType const&
 TfType::Define()
 {
     TfAutoMallocTag2 tag2("Tf", "TfType::Define");
-    
-    // Convert B to an MPL typelist by filtering out our sentinel.
-    typedef typename boost::mpl::remove< B, Unspecified >::type BaseTypes;
 
-    // Declare each of the types.
-    std::vector<TfType> baseTfTypes;
-    Tf_DeclareTypes< BaseTypes >::Apply( &baseTfTypes );
+    // Declare each of the base types.
+    std::vector<TfType> baseTfTypes = Tf_AddBases<BaseTypes>::Declare();
 
     // Declare our type T.
-    const std::string typeName = TfType::GetCanonicalTypeName( typeid(T) );
+    const std::type_info &typeInfo = typeid(T);
+    const std::string typeName = TfType::GetCanonicalTypeName(typeInfo);
     TfType const& newType = TfType::Declare(typeName, baseTfTypes);
 
-    // Declare base C++ types.
-    _TypeDefiner<T> def(newType);
-    def.template _AddBaseCppTypes<BaseTypes>();
+    // Record traits information about T.
+    const bool isPodType = std::is_pod<T>::value;
+    const bool isEnumType = std::is_enum<T>::value;
+    const size_t sizeofType = TfSizeofType<T>::value;
+
+    newType._DefineCppType(typeInfo, sizeofType, isPodType, isEnumType);
+    Tf_AddBases<BaseTypes>::template RegisterCasts<T>(&newType);
+
     return newType;
 }
 
@@ -126,7 +108,7 @@ TfType::Define()
 // Helper function to implement up/down casts between TfType types.
 // This was taken from the previous TfType implementation.
 template <class DERIVED, class BASE>
-static void*
+inline void*
 Tf_CastToParent(void* addr, bool derivedToBase)
 {
     if (derivedToBase) {
@@ -140,28 +122,6 @@ Tf_CastToParent(void* addr, bool derivedToBase)
         DERIVED* derived = static_cast<DERIVED*>(base);
         return derived;
     }
-}
-
-// Add all the C++ bases in the given TypeVector.
-template < typename DERIVED >
-template < typename TypeVector >
-TfType::_TypeDefiner<DERIVED> &
-TfType::_TypeDefiner<DERIVED>::_AddBaseCppTypes()
-{
-    // icc needs to have the optional 3rd argument specified explicitly
-    // e.g., add a 3rd template param, boost::mpl::empty<TypeVector>::value
-    Tf_AddBases< DERIVED, TypeVector >::Apply(*this);
-    return *this;
-}
-
-// Add a single C++ base type.
-template < typename DERIVED >
-template <typename BASE>
-TfType::_TypeDefiner<DERIVED> &
-TfType::_TypeDefiner<DERIVED>::_AddBaseCppType()
-{
-    _type->_AddCppCastFunc( typeid(BASE), Tf_CastToParent<DERIVED, BASE> );
-    return *this;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

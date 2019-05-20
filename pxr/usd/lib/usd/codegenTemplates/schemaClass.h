@@ -77,17 +77,35 @@ class SdfAssetPath;
 class {{ cls.cppClassName }} : public {{ cls.parentCppClassName }}
 {
 public:
-    /// Compile-time constant indicating whether or not this class corresponds
-    /// to a concrete instantiable prim type in scene description.  If this is
-    /// true, GetStaticPrimDefinition() will return a valid prim definition with
-    /// a non-empty typeName.
-    static const bool IsConcrete = {{ "true" if cls.isConcrete else "false" }};
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaType
+    static const UsdSchemaType schemaType = {{cls.schemaType }};
 
-    /// Compile-time constant indicating whether or not this class inherits from
-    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
-    /// UsdPrim.
-    static const bool IsTyped = {{ "true" if cls.isTyped else "false" }};
+{% if cls.isMultipleApply %}
+    /// Construct a {{ cls.cppClassName }} on UsdPrim \p prim with
+    /// name \p name . Equivalent to
+    /// {{ cls.cppClassName }}::Get(
+    ///    prim.GetStage(),
+    ///    prim.GetPath().AppendProperty(
+    ///        "{{ cls.propertyNamespacePrefix }}:name"));
+    ///
+    /// for a \em valid \p prim, but will not immediately throw an error for
+    /// an invalid \p prim
+    explicit {{ cls.cppClassName }}(
+        const UsdPrim& prim=UsdPrim(), const TfToken &name=TfToken())
+        : {{ cls.parentCppClassName }}(prim, /*instanceName*/ name)
+    { }
 
+    /// Construct a {{ cls.cppClassName }} on the prim held by \p schemaObj with
+    /// name \p name.  Should be preferred over
+    /// {{ cls.cppClassName }}(schemaObj.GetPrim(), name), as it preserves
+    /// SchemaBase state.
+    explicit {{ cls.cppClassName }}(
+        const UsdSchemaBase& schemaObj, const TfToken &name)
+        : {{ cls.parentCppClassName }}(schemaObj, /*instanceName*/ name)
+    { }
+{% else %}
     /// Construct a {{ cls.cppClassName }} on UsdPrim \p prim .
     /// Equivalent to {{ cls.cppClassName }}::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
@@ -104,36 +122,82 @@ public:
         : {{ cls.parentCppClassName }}(schemaObj)
     {
     }
+{% endif %}
 
     /// Destructor.
     {% if useExportAPI -%}
     {{ Upper(libraryName) }}_API
     {% endif -%}
-    virtual ~{{ cls.cppClassName }}();
+    virtual ~{{ cls.cppClassName }}() {%- if cls.isAPISchemaBase %} = 0{% endif %};
 
+{% if cls.isMultipleApply %}
+    /// Return a vector of names of all pre-declared attributes for this schema
+    /// class and all its ancestor classes for a given instance name.  Does not
+    /// include attributes that may be authored by custom/extended methods of
+    /// the schemas involved. The names returned will have the proper namespace
+    /// prefix.
+{% else %}
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
+{% endif %}
     {% if useExportAPI -%}
     {{ Upper(libraryName) }}_API
     {% endif -%}
     static const TfTokenVector &
+{% if cls.isMultipleApply %}
+    GetSchemaAttributeNames(
+        bool includeInherited=true, const TfToken instanceName=TfToken());
+{% else %}
     GetSchemaAttributeNames(bool includeInherited=true);
+{% endif %}
+{% if cls.isMultipleApply %}
+
+    /// Returns the name of this multiple-apply schema instance
+    TfToken GetName() const {
+        return _GetInstanceName();
+    }
+{% endif %}
+{% if not cls.isAPISchemaBase %}
 
     /// Return a {{ cls.cppClassName }} holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
+{% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
+    /// return an invalid schema object.  \p path must be of the format
+    /// <path>.{{ cls.propertyNamespacePrefix }}:name .
+    ///
+    /// This is shorthand for the following:
+    ///
+    /// \code
+    /// TfToken name = SdfPath::StripNamespace(path.GetToken());
+    /// {{ cls.cppClassName }}(
+    ///     stage->GetPrimAtPath(path.GetPrimPath()), name);
+    /// \endcode
+{% else %}
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
     /// {{ cls.cppClassName }}(stage->GetPrimAtPath(path));
     /// \endcode
+{% endif %}
     ///
     {% if useExportAPI -%}
     {{ Upper(libraryName) }}_API
     {% endif -%}
     static {{ cls.cppClassName }}
     Get(const UsdStagePtr &stage, const SdfPath &path);
+{% if cls.isMultipleApply %}
+
+    /// Return a {{ cls.cppClassName }} with name \p name holding the
+    /// prim \p prim. Shorthand for {{ cls.cppClassName }}(prim, name);
+    {% if useExportAPI -%}
+    {{ Upper(libraryName) }}_API
+    {% endif -%}
+    static {{ cls.cppClassName }}
+    Get(const UsdPrim &prim, const TfToken &name);
+{% endif %}
+{% endif %}
 
 {% if cls.isConcrete %}
     /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
@@ -164,47 +228,88 @@ public:
     static {{ cls.cppClassName }}
     Define(const UsdStagePtr &stage, const SdfPath &path);
 {% endif %}
+{% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
+    /// Checks if the given name \p baseName is the base name of a property
+    /// of {{ cls.usdPrimTypeName }}.
+    {% if useExportAPI -%}
+    {{ Upper(libraryName) }}_API
+    {% endif -%}
+    static bool
+    IsSchemaPropertyBaseName(const TfToken &baseName);
+
+    /// Checks if the given path \p path is of an API schema of type
+    /// {{ cls.usdPrimTypeName }}. If so, it stores the instance name of
+    /// the schema in \p name and returns true. Otherwise, it returns false.
+    {% if useExportAPI -%}
+    {{ Upper(libraryName) }}_API
+    {% endif -%}
+    static bool
+    Is{{ cls.usdPrimTypeName }}Path(const SdfPath &path, TfToken *name);
+{% endif %}
 {% if cls.isPrivateApply %}
 private:
 {% endif %}
-{% if cls.isApi and not cls.isMultipleApply %}
+{% if cls.isAppliedAPISchema and not cls.isMultipleApply %}
 
-    /// Mark this schema class as applied to the prim at \p path in the 
-    /// current EditTarget. This information is stored in the apiSchemas
-    /// metadata on prims.  
-    ///
+    /// Applies this <b>single-apply</b> API schema to the given \p prim.
+    /// This information is stored by adding "{{ cls.primName }}" to the 
+    /// token-valued, listOp metadata \em apiSchemas on the prim.
+    /// 
+    /// \return A valid {{ cls.cppClassName }} object is returned upon success. 
+    /// An invalid (or empty) {{ cls.cppClassName }} object is returned upon 
+    /// failure. See \ref UsdAPISchemaBase::_ApplyAPISchema() for conditions 
+    /// resulting in failure. 
+    /// 
     /// \sa UsdPrim::GetAppliedSchemas()
+    /// \sa UsdPrim::HasAPI()
     ///
     {% if useExportAPI and not cls.isPrivateApply -%}
     {{ Upper(libraryName) }}_API
     {% endif -%}
     static {{ cls.cppClassName }} 
 {% if cls.isPrivateApply %}
-    _Apply(const UsdStagePtr &stage, const SdfPath &path);
+    _Apply(const UsdPrim &prim);
 {% else %}
-    Apply(const UsdStagePtr &stage, const SdfPath &path);
+    Apply(const UsdPrim &prim);
 {% endif %}
 {% endif %}
-{% if cls.isApi and cls.isMultipleApply %}
+{% if cls.isAppliedAPISchema and cls.isMultipleApply %}
 
-    /// Mark this schema class as applied to the prim at \p path in the 
-    /// current EditTarget along with the supplied \p name. This information 
-    /// is stored in the apiSchemas metadata on prims.  
-    /// Given a schema, FooAPI, and a name bar, the token stored
-    /// in the apiSchemas metadata would be 'FooAPI:bar'
-    ///
+    /// Applies this <b>multiple-apply</b> API schema to the given \p prim 
+    /// along with the given instance name, \p name. 
+    /// 
+    /// This information is stored by adding "{{ cls.primName }}:<i>name</i>" 
+    /// to the token-valued, listOp metadata \em apiSchemas on the prim.
+    /// For example, if \p name is 'instance1', the token 
+    /// '{{ cls.primName }}:instance1' is added to 'apiSchemas'.
+    /// 
+    /// \return A valid {{ cls.cppClassName }} object is returned upon success. 
+    /// An invalid (or empty) {{ cls.cppClassName }} object is returned upon 
+    /// failure. See \ref UsdAPISchemaBase::_MultipleApplyAPISchema() for 
+    /// conditions resulting in failure. 
+    /// 
     /// \sa UsdPrim::GetAppliedSchemas()
+    /// \sa UsdPrim::HasAPI()
     ///
     {% if useExportAPI and not cls.isPrivateApply -%}
     {{ Upper(libraryName) }}_API
     {% endif -%}
     static {{ cls.cppClassName }} 
 {% if cls.isPrivateApply %}
-    _Apply(const UsdStagePtr &stage, const SdfPath &path, const TfToken &name);
+    _Apply(const UsdPrim &prim, const TfToken &name);
 {% else %}
-    Apply(const UsdStagePtr &stage, const SdfPath &path, const TfToken &name);
+    Apply(const UsdPrim &prim, const TfToken &name);
 {% endif %}
 {% endif %}
+
+protected:
+    /// Returns the type of schema this class belongs to.
+    ///
+    /// \sa UsdSchemaType
+    {% if useExportAPI -%}
+    {{ Upper(libraryName) }}_API
+    {% endif -%}
+    UsdSchemaType _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -220,10 +325,12 @@ private:
     {% if useExportAPI -%}
     {{ Upper(libraryName) }}_API
     {% endif -%}
-    virtual const TfType &_GetTfType() const;
+    const TfType &_GetTfType() const override;
 
 {% for attrName in cls.attrOrder %}
 {% set attr = cls.attrs[attrName]%}
+{# Only emit Create/Get API and doxygen if apiName is not empty string. #}
+{% if attr.apiName != '' %}
 public:
     // --------------------------------------------------------------------- //
     // {{ Upper(attr.apiName) }} 
@@ -248,9 +355,12 @@ public:
     {% endif -%}
     UsdAttribute Create{{ Proper(attr.apiName) }}Attr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
+{% endif %}
 {% endfor %}
 {% for relName in cls.relOrder %}
 {% set rel = cls.rels[relName]%}
+{# Only emit Create/Get API and doxygen if apiName is not empty string. #}
+{% if rel.apiName != '' %}
 public:
     // --------------------------------------------------------------------- //
     // {{ Upper(rel.apiName) }} 
@@ -271,6 +381,7 @@ public:
     {{ Upper(libraryName) }}_API
     {% endif -%}
     UsdRelationship Create{{ Proper(rel.apiName) }}Rel() const;
+{% endif %}
 
 {% endfor %}
 public:

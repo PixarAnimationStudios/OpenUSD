@@ -39,20 +39,17 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-// --------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
 
 HdxRenderTask::HdxRenderTask(HdSceneDelegate* delegate, SdfPath const& id)
-    : HdSceneTask(delegate, id)
+    : HdxProgressiveTask(id)
     , _passes()
+    , _setupTask()
 {
 }
 
-void
-HdxRenderTask::ResetImage()
+HdxRenderTask::~HdxRenderTask()
 {
-    TF_FOR_ALL(pass, _passes) {
-        (*pass)->ResetImage();
-    }
 }
 
 bool
@@ -66,52 +63,95 @@ HdxRenderTask::IsConverged() const
     return true;
 }
 
-void
-HdxRenderTask::_SetHdStRenderPassState(HdTaskContext *ctx,
-                                       HdStRenderPassState *renderPassState)
-{
-    // Can't use GetTaskContextData because the lightingShader
-    // is optional.
-    VtValue lightingShader = (*ctx)[HdxTokens->lightingShader];
 
-    // it's possible to not set lighting shader to HdRenderPassState.
-    // Hd_DefaultLightingShader will be used in that case.
-    if (lightingShader.IsHolding<HdStLightingShaderSharedPtr>()) {
-        renderPassState->SetLightingShader(
-            lightingShader.Get<HdStLightingShaderSharedPtr>());
+void
+HdxRenderTask::Sync(HdSceneDelegate* delegate,
+                    HdTaskContext*   ctx,
+                    HdDirtyBits*     dirtyBits)
+{
+    HD_TRACE_FUNCTION();
+
+    HdDirtyBits bits = *dirtyBits;
+
+    if (bits & HdChangeTracker::DirtyCollection) {
+
+        HdRprimCollectionVector collections;
+        VtValue val = delegate->Get(GetId(), HdTokens->collection);
+
+        if (val.IsHolding<HdRprimCollection>()) {
+            collections.push_back(val.UncheckedGet<HdRprimCollection>());
+        } else if (val.IsHolding<HdRprimCollectionVector>()) {
+            collections = val.UncheckedGet<HdRprimCollectionVector>();
+        } else {
+            TF_CODING_ERROR("The task collection is the wrong type");
+            return;
+        }
+
+        if (_passes.size() == collections.size()) {
+            // reuse same render passes.
+            for (size_t i = 0; i < _passes.size(); ++i) {
+                _passes[i]->SetRprimCollection(collections[i]);
+            }
+        } else {
+            // reconstruct render passes.
+            _passes.clear();
+            HdRenderIndex &index = delegate->GetRenderIndex();
+            TF_FOR_ALL(it, collections) {
+                _passes.push_back(HdRenderPassSharedPtr(
+                    index.GetRenderDelegate()->CreateRenderPass(&index, *it)));
+            }
+            bits |= HdChangeTracker::DirtyParams;
+        }
     }
 
-    // Selection Setup
-    // Note that selectionTask comes after renderTask, so that
-    // it can access rprimIDs populated in RenderTask::_Sync.
-    VtValue vo = (*ctx)[HdxTokens->selectionOffsets];
-    VtValue vu = (*ctx)[HdxTokens->selectionUniforms];
+    if (bits & HdChangeTracker::DirtyParams) {
+        HdxRenderTaskParams params;
 
-    HdStRenderPassShaderSharedPtr renderPassShader
-        = renderPassState->GetRenderPassShader();
+        // if HdxRenderTaskParams is set on this task, create an
+        // HdxRenderSetupTask to unpack them internally.
+        //
+        // As params is optional, the base class helpper can't be used.
+        VtValue valueVt = delegate->Get(GetId(), HdTokens->params);
+        if (valueVt.IsHolding<HdxRenderTaskParams>()) {
+            params = valueVt.UncheckedGet<HdxRenderTaskParams>();
 
-    if (!vo.IsEmpty() && !vu.IsEmpty()) {
-        HdBufferArrayRangeSharedPtr obar
-            = vo.Get<HdBufferArrayRangeSharedPtr>();
-        HdBufferArrayRangeSharedPtr ubar
-            = vu.Get<HdBufferArrayRangeSharedPtr>();
+            if (!_setupTask) {
+                // note that _setupTask should have the same id, since it will
+                // use that id to look up params in the scene delegate.
+                // this setup task isn't indexed, so there's no concern
+                // about name conflicts.
+                _setupTask.reset(
+                    new HdxRenderSetupTask(delegate, GetId()));
+            }
 
-        renderPassShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::SSBO,
-                             HdxTokens->selectionOffsets, obar,
-                             /*interleave*/false));
-        renderPassShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::UBO, 
-                             HdxTokens->selectionUniforms, ubar,
-                             /*interleave*/true));
-    } else {
-        renderPassShader->RemoveBufferBinding(HdxTokens->selectionOffsets);
-        renderPassShader->RemoveBufferBinding(HdxTokens->selectionUniforms);
+            _setupTask->SyncParams(delegate, params);
+
+        } else {
+            // If params are not set, expect the renderpass state to be passed
+            // in the task context.
+        }
+    }
+
+    // sync render passes
+    TF_FOR_ALL (it, _passes){
+        HdRenderPassSharedPtr const &pass = (*it);
+        pass->Sync();
+    }
+
+    *dirtyBits = HdChangeTracker::Clean;
+}
+
+void
+HdxRenderTask::Prepare(HdTaskContext* ctx,
+                       HdRenderIndex* renderIndex)
+{
+    if (_setupTask) {
+        _setupTask->Prepare(ctx, renderIndex);
     }
 }
 
 void
-HdxRenderTask::_Execute(HdTaskContext* ctx)
+HdxRenderTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -120,11 +160,15 @@ HdxRenderTask::_Execute(HdTaskContext* ctx)
     TfTokenVector renderTags;
 
     if (_setupTask) {
-        // if _setupTask exists (for backward compatibility), use it
+        // If HdxRenderTaskParams is set on this task, we will have created an
+        // internal HdxRenderSetupTask in _Sync, to sync and unpack the params,
+        // and we should use the resulting resources.
         renderPassState = _setupTask->GetRenderPassState();
         renderTags = _setupTask->GetRenderTags();
     } else {
-        // otherwise, extract from TaskContext
+        // Otherwise, we expect an application-created HdxRenderSetupTask to
+        // have run and put the renderpass resources in the task context.
+        // See HdxRenderSetupTask::_Execute.
         _GetTaskContextData(ctx, HdxTokens->renderPassState, &renderPassState);
         _GetTaskContextData(ctx, HdxTokens->renderTags, &renderTags);
     }
@@ -152,77 +196,57 @@ HdxRenderTask::_Execute(HdTaskContext* ctx)
 }
 
 void
-HdxRenderTask::_Sync(HdTaskContext* ctx)
+HdxRenderTask::_SetHdStRenderPassState(HdTaskContext *ctx,
+                                       HdStRenderPassState *renderPassState)
 {
-    HD_TRACE_FUNCTION();
+    // Can't use GetTaskContextData because the lightingShader
+    // is optional.
+    VtValue lightingShader = (*ctx)[HdxTokens->lightingShader];
 
-    HdDirtyBits bits = _GetTaskDirtyBits();
-
-    if (bits & HdChangeTracker::DirtyCollection) {
-
-        HdRprimCollectionVector collections;
-        VtValue val = GetDelegate()->Get(GetId(), HdTokens->collection);
-
-        if (val.IsHolding<HdRprimCollection>()) {
-            collections.push_back(val.UncheckedGet<HdRprimCollection>());
-        } else if (val.IsHolding<HdRprimCollectionVector>()) {
-            collections = val.UncheckedGet<HdRprimCollectionVector>();
-        } else {
-            TF_CODING_ERROR("The collection from scene delegate is of mismatched type");
-            return;
-        }
-
-        if (_passes.size() == collections.size()) {
-            // reuse same render passes.
-            for (size_t i = 0; i < _passes.size(); ++i) {
-                _passes[i]->SetRprimCollection(collections[i]);
-            }
-        } else {
-            // reconstruct render passes.
-            _passes.clear();
-            HdRenderIndex &index = GetDelegate()->GetRenderIndex();
-            TF_FOR_ALL(it, collections) {
-                _passes.push_back(
-                    HdRenderPassSharedPtr(
-                        index.GetRenderDelegate()->CreateRenderPass(&index, *it)));
-            }
-            bits |= HdChangeTracker::DirtyParams;
-        }
+    // it's possible to not set lighting shader to HdRenderPassState.
+    // Hd_DefaultLightingShader will be used in that case.
+    if (lightingShader.IsHolding<HdStLightingShaderSharedPtr>()) {
+        renderPassState->SetLightingShader(
+            lightingShader.Get<HdStLightingShaderSharedPtr>());
     }
 
-    // XXX: for compatibility.
-    if (bits & HdChangeTracker::DirtyParams) {
-        HdxRenderTaskParams params;
+    // Selection Setup
+    // Note that selectionTask comes after renderTask, so that
+    // it can access rprimIDs populated in RenderTask::_Sync.
+    VtValue vo = (*ctx)[HdxTokens->selectionOffsets];
+    VtValue vu = (*ctx)[HdxTokens->selectionUniforms];
+    VtValue vc = (*ctx)[HdxTokens->selectionPointColors];
 
-        // if HdxRenderTaskParams is set, it's using old API
-        VtValue valueVt = GetDelegate()->Get(GetId(), HdTokens->params);
-        if (valueVt.IsHolding<HdxRenderTaskParams>()) {
-            params = valueVt.UncheckedGet<HdxRenderTaskParams>();
+    HdStRenderPassShaderSharedPtr renderPassShader
+        = renderPassState->GetRenderPassShader();
 
-            // this is in compatibility path. delegate to _setupTask
-            if (!_setupTask) {
-                // note that _setupTask should have same Id, since sceneDelegate
-                // thinks this HdxRenderTask is asking the parameters.
-                _setupTask.reset(new HdxRenderSetupTask(GetDelegate(), GetId()));
-            }
+    if (!vo.IsEmpty() && !vu.IsEmpty() && !vc.IsEmpty()) {
+        HdBufferArrayRangeSharedPtr obar
+            = vo.Get<HdBufferArrayRangeSharedPtr>();
+        HdBufferArrayRangeSharedPtr ubar
+            = vu.Get<HdBufferArrayRangeSharedPtr>();
+        HdBufferArrayRangeSharedPtr cbar
+            = vc.Get<HdBufferArrayRangeSharedPtr>();
 
-            _setupTask->SyncParams(params);
-
-        } else {
-            // RenderPassState is managed externally (new API).
-        }
-    }
-
-    if (_setupTask) {
-        _setupTask->SyncCamera();
-    }
-
-    // sync render passes
-    TF_FOR_ALL (it, _passes){
-        HdRenderPassSharedPtr const &pass = (*it);
-        pass->Sync();
+        renderPassShader->AddBufferBinding(
+            HdBindingRequest(HdBinding::SSBO,
+                             HdxTokens->selectionOffsets, obar,
+                             /*interleave*/false));
+        renderPassShader->AddBufferBinding(
+            HdBindingRequest(HdBinding::UBO,
+                             HdxTokens->selectionUniforms, ubar,
+                             /*interleave*/true));
+        renderPassShader->AddBufferBinding(
+            HdBindingRequest(HdBinding::SSBO,
+                             HdxTokens->selectionPointColors, cbar,
+                             /*interleave*/false));
+    } else {
+        renderPassShader->RemoveBufferBinding(HdxTokens->selectionOffsets);
+        renderPassShader->RemoveBufferBinding(HdxTokens->selectionUniforms);
+        renderPassShader->RemoveBufferBinding(HdxTokens->selectionPointColors);
     }
 }
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

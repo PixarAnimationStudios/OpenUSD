@@ -134,7 +134,7 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// considered as permanent mutations to be recorded upon export.  A very 
 /// common use of session layers is to make variant selections, to pick a
 /// specific LOD or shading variation, for example.  The session layer is
-/// also freqenuently used to perform interactive vising/invsning of geometry 
+/// also frequently used to perform interactive vising/invsning of geometry
 /// and assets in the scene.   A session layer, if present, contributes to a 
 /// UsdStage's identity, for purposes of stage-caching, etc.
 ///
@@ -146,80 +146,7 @@ public:
     /// \name Lifetime Management
     /// @{
     // --------------------------------------------------------------------- //
-
-    /// Create a new stage with root layer \p identifier, destroying
-    /// potentially existing files with that identifer; it is considered an
-    /// error if an existing, open layer is present with this identifier.
-    ///
-    /// \sa SdfLayer::CreateNew()
-    ///
-    /// Invoking an overload that does not take a \p sessionLayer argument will
-    /// create a stage with an anonymous in-memory session layer.  To create a
-    /// stage without a session layer, pass TfNullPtr (or None in python) as the
-    /// \p sessionLayer argument.
-    ///
-    /// Note that the \p pathResolverContext passed here will apply to all path
-    /// resolutions for this stage, regardless of what other context may be
-    /// bound at resolve time. If no context is passed in here, Usd will create
-    /// one by calling \sa ArResolver::CreateDefaultContextForAsset with the
-    /// root layer's repository path if the layer has one, otherwise its real 
-    /// path.
-    USD_API
-    static UsdStageRefPtr
-    CreateNew(const std::string& identifier);
-    /// \overload
-    USD_API
-    static UsdStageRefPtr
-    CreateNew(const std::string& identifier,
-              const SdfLayerHandle& sessionLayer);
-    /// \overload
-    USD_API
-    static UsdStageRefPtr
-    CreateNew(const std::string& identifier,
-              const SdfLayerHandle& sessionLayer,
-              const ArResolverContext& pathResolverContext);
-    /// \overload
-    USD_API
-    static UsdStageRefPtr
-    CreateNew(const std::string& identifier,
-              const ArResolverContext& pathResolverContext);
-
-    /// Creates a new stage only in memory, analogous to creating an
-    /// anonymous SdfLayer.
-    ///
-    /// Note that the \p pathResolverContext passed here will apply to all path
-    /// resolutions for this stage, regardless of what other context may be
-    /// bound at resolve time. If no context is passed in here, Usd will create
-    /// one by calling \sa ArResolver::CreateDefaultContext.
-    ///
-    /// Invoking an overload that does not take a \p sessionLayer argument will
-    /// create a stage with an anonymous in-memory session layer.  To create a
-    /// stage without a session layer, pass TfNullPtr (or None in python) as the
-    /// \p sessionLayer argument.
-    USD_API
-    static UsdStageRefPtr
-    CreateInMemory();
-    /// \overload
-    USD_API
-    static UsdStageRefPtr
-    CreateInMemory(const std::string& identifier);
-    /// \overload
-    USD_API
-    static UsdStageRefPtr
-    CreateInMemory(const std::string& identifier,
-                   const ArResolverContext& pathResolverContext);
-    /// \overload
-    USD_API
-    static UsdStageRefPtr
-    CreateInMemory(const std::string& identifier,
-                   const SdfLayerHandle &sessionLayer);
-    /// \overload
-    USD_API
-    static UsdStageRefPtr
-    CreateInMemory(const std::string& identifier,
-                   const SdfLayerHandle &sessionLayer,
-                   const ArResolverContext& pathResolverContext);
-
+    
     /// \enum InitialLoadSet
     ///
     /// Specifies the initial set of prims to load when opening a UsdStage.
@@ -229,6 +156,94 @@ public:
         LoadAll, ///< Load all loadable prims
         LoadNone ///< Load no loadable prims
     };
+
+    /// Create a new stage with root layer \p identifier, destroying
+    /// potentially existing files with that identifier; it is considered an
+    /// error if an existing, open layer is present with this identifier.
+    ///
+    /// \sa SdfLayer::CreateNew()
+    ///
+    /// Invoking an overload that does not take a \p sessionLayer argument will
+    /// create a stage with an anonymous in-memory session layer.  To create a
+    /// stage without a session layer, pass TfNullPtr (or None in python) as the
+    /// \p sessionLayer argument.
+    //
+    /// The initial set of prims to load on the stage can be specified
+    /// using the \p load parameter. \sa UsdStage::InitialLoadSet.
+    ///
+    /// Note that the \p pathResolverContext passed here will apply to all path
+    /// resolutions for this stage, regardless of what other context may be
+    /// bound at resolve time. If no context is passed in here, Usd will create
+    /// one by calling \sa ArResolver::CreateDefaultContextForAsset with the
+    /// root layer's repository path if the layer has one, otherwise its real 
+    /// path.
+    USD_API
+    static UsdStageRefPtr
+    CreateNew(const std::string& identifier, 
+              InitialLoadSet load = LoadAll);
+    /// \overload
+    USD_API
+    static UsdStageRefPtr
+    CreateNew(const std::string& identifier,
+              const SdfLayerHandle& sessionLayer,
+              InitialLoadSet load = LoadAll);
+    /// \overload
+    USD_API
+    static UsdStageRefPtr
+    CreateNew(const std::string& identifier,
+              const SdfLayerHandle& sessionLayer,
+              const ArResolverContext& pathResolverContext,
+              InitialLoadSet load = LoadAll);
+    /// \overload
+    USD_API
+    static UsdStageRefPtr
+    CreateNew(const std::string& identifier,
+              const ArResolverContext& pathResolverContext,
+              InitialLoadSet load = LoadAll);
+
+    /// Creates a new stage only in memory, analogous to creating an
+    /// anonymous SdfLayer.
+    ///
+    /// Note that the \p pathResolverContext passed here will apply to all path
+    /// resolutions for this stage, regardless of what other context may be
+    /// bound at resolve time. If no context is passed in here, Usd will create
+    /// one by calling \sa ArResolver::CreateDefaultContext.
+    ///
+    /// The initial set of prims to load on the stage can be specified
+    /// using the \p load parameter. \sa UsdStage::InitialLoadSet.
+    ///
+    /// Invoking an overload that does not take a \p sessionLayer argument will
+    /// create a stage with an anonymous in-memory session layer.  To create a
+    /// stage without a session layer, pass TfNullPtr (or None in python) as the
+    /// \p sessionLayer argument.
+    USD_API
+    static UsdStageRefPtr
+    CreateInMemory(InitialLoadSet load = LoadAll);
+    /// \overload
+    USD_API
+    static UsdStageRefPtr
+    CreateInMemory(const std::string& identifier,
+                   InitialLoadSet load = LoadAll);
+    /// \overload
+    USD_API
+    static UsdStageRefPtr
+    CreateInMemory(const std::string& identifier,
+                   const ArResolverContext& pathResolverContext,
+                   InitialLoadSet load = LoadAll);
+    /// \overload
+    USD_API
+    static UsdStageRefPtr
+    CreateInMemory(const std::string& identifier,
+                   const SdfLayerHandle &sessionLayer,
+                   InitialLoadSet load = LoadAll);
+    /// \overload
+    USD_API
+    static UsdStageRefPtr
+    CreateInMemory(const std::string& identifier,
+                   const SdfLayerHandle &sessionLayer,
+                   const ArResolverContext& pathResolverContext,
+                   InitialLoadSet load = LoadAll);
+
 
     /// Attempt to find a matching existing stage in a cache if
     /// UsdStageCacheContext objects exist on the stack. Failing that, create a
@@ -393,6 +408,16 @@ public:
     /// Note that reloading anonymous layers clears their content, so
     /// invoking Reload() on a stage constructed via CreateInMemory()
     /// will clear its root layer.
+    ///
+    /// \note This method is considered a mutation, which has potentially
+    /// global effect!  Unlike the various Load() methods whose actions
+    /// affect only **this stage**, Reload() may cause layers to change their
+    /// contents, and because layers are global resources shared by
+    /// potentially many Stages, calling Reload() on one stage may result in
+    /// a mutation to any number of stages.  In general, unless you are
+    /// highly confident your stage is the only consumer of its layers, you
+    /// should only call Reload() when you are assured no other threads may
+    /// be reading from any Stages.
     USD_API
     void Reload();
 
@@ -612,17 +637,20 @@ public:
     void SetPopulationMask(UsdStagePopulationMask const &mask);
 
     /// Expand this stage's population mask to include the targets of all
-    /// relationships that pass \p pred, recursively.  If \p pred is null,
-    /// include all relationship targets.
+    /// relationships that pass \p relPred and connections to all attributes
+    /// that pass \p attrPred recursively.  If \p relPred is null, include all
+    /// relationship targets; if \p attrPred is null, include all connections.
     ///
     /// This function can be used, for example, to expand a population mask for
     /// a given prim to include bound materials, if those bound materials are
-    /// expressed as relationships.
+    /// expressed as relationships or attribute connections.
     ///
-    /// See also UsdPrim::FindAllRelationshipTargetPaths().
+    /// See also UsdPrim::FindAllRelationshipTargetPaths() and
+    /// UsdPrim::FindAllAttributeConnectionPaths().
     USD_API
     void ExpandPopulationMask(
-        std::function<bool (UsdRelationship const &)> const &pred = nullptr);
+        std::function<bool (UsdRelationship const &)> const &relPred = nullptr,
+        std::function<bool (UsdAttribute const &)> const &attrPred = nullptr);
     
     /// @}
 
@@ -699,6 +727,32 @@ public:
     /// multi-threading model.
     USD_API
     UsdPrim GetPrimAtPath(const SdfPath &path) const;
+
+    /// Return the UsdObject at \p path, or an invalid UsdObject if none exists.
+    ///
+    /// If \p path indicates a prim beneath an instance, returns an instance
+    /// proxy prim if a prim exists at the corresponding path in that instance's 
+    /// master. If \p path indicates a property beneath a child of an instance, 
+    /// returns a property whose parent prim is an instance proxy prim.
+    ///
+    /// Example:
+    ///
+    /// \code
+    ///if (UsdObject obj = stage->GetObjectAtPath(path)) {
+    ///    if (UsdPrim prim = obj.As<UsdPrim>()) {
+    ///        // Do things with prim
+    ///    }
+    ///    else if (UsdProperty prop = obj.As<UsdProperty>()) {
+    ///        // Do things with property. We can also cast to
+    ///        // UsdRelationship or UsdAttribute using this same pattern.
+    ///    }
+    ///}
+    ///else {
+    ///    // No object at specified path
+    ///}
+    /// \endcode
+    USD_API
+    UsdObject GetObjectAtPath(const SdfPath &path) const;
 
 private:
     // Return the primData object at \p path.
@@ -778,7 +832,7 @@ public:
     /// If a prim at \p path is already defined on this stage and \p typeName is
     /// empty or equal to the existing prim's typeName, return that prim.
     /// Otherwise author an \a SdfPrimSpec with \a specifier ==
-    /// \a SdfSpecifierDef and \p typeName for the the prim at \p path at the
+    /// \a SdfSpecifierDef and \p typeName for the prim at \p path at the
     /// current EditTarget.  Author \a SdfPrimSpec s with \p specifier ==
     /// \a SdfSpecifierDef and empty typeName at the current EditTarget for any
     /// nonexistent, or existing but not \a Defined ancestors.
@@ -914,7 +968,7 @@ public:
 
     /// Return a UsdEditTarget for editing the given local \a layer.
     /// If the given layer appears more than once in the layer stack,
-    /// the time offset to the first occurence will be used.
+    /// the time offset to the first occurrence will be used.
     USD_API
     UsdEditTarget GetEditTargetForLocalLayer(const SdfLayerHandle &layer);
 
@@ -1026,7 +1080,7 @@ public:
     /// scene.
     ///
     /// Specifically, this function removes **most** composition metadata and
-    /// authors the resolved values for each object directly into the flattend
+    /// authors the resolved values for each object directly into the flattened
     /// layer.
     ///
     /// All VariantSets are removed and only the currently selected variants
@@ -1034,12 +1088,12 @@ public:
     ///
     /// Class prims will still exist, however all inherits arcs will have
     /// been removed and the inherited data will be copied onto each child
-    /// object. Composition arcs authored on the class itself will be flattend
+    /// object. Composition arcs authored on the class itself will be flattened
     /// into the class.
     ///
     /// Flatten preserves 
     /// \ref Usd_Page_ScenegraphInstancing "scenegraph instancing" by creating 
-    /// indepedent roots for each master currently composed on this stage, and 
+    /// independent roots for each master currently composed on this stage, and
     /// adding a single internal reference arc on each instance prim to its 
     /// corresponding master.
     ///
@@ -1068,7 +1122,7 @@ public:
     /// resolution is session layer, followed by root layer, else fallback to
     /// the SdfSchema.
     ///
-    /// \return true if we succesfully retrieved a value of the requested type;
+    /// \return true if we successfully retrieved a value of the requested type;
     /// false if \p key is not allowed as layer metadata or no value was found.
     /// Generates a coding error if we retrieved a stored value of a type other
     /// than the requested type
@@ -1133,7 +1187,7 @@ public:
     /// accessing them element-wise using this method can be much less
     /// expensive than fetching the entire dictionary with GetMetadata(key).
     ///
-    /// \return true if we succesfully retrieved a value of the requested type;
+    /// \return true if we successfully retrieved a value of the requested type;
     /// false if \p key is not allowed as layer metadata or no value was found.
     /// Generates a coding error if we retrieved a stored value of a type other
     /// than the requested type
@@ -1324,7 +1378,7 @@ public:
     /// is set as token-valued metadata 'colorSpace' on the attribute. For 
     /// color or texture attributes that don't have an authored 'colorSpace'
     /// value, the fallback color-space is gleaned from the color configuration 
-    /// orcale. This is usually the config's <b>scene_linear</b> role 
+    /// oracle. This is usually the config's <b>scene_linear</b> role
     /// color-space.
     /// 
     /// Here's the pseudo-code for determining an attribute's color-space.
@@ -1342,7 +1396,7 @@ public:
     /// }
     /// \endcode
     ///
-    /// \sa \ref Usd_AttributeColorSpaceAPI
+    /// \sa \ref Usd_AttributeColorSpaceAPI "UsdAttribute ColorSpace API"
     /// 
     /// 
     /// @{
@@ -1352,28 +1406,28 @@ public:
     /// per-attribute color-spaces in the composed USD stage. This is specified
     /// as asset path which can be resolved to the color spec file.
     /// 
-    /// \ref Usd_ColorConfigurationAPI
+    /// \ref Usd_ColorConfigurationAPI "Color Configuration API"
     USD_API
     void SetColorConfiguration(const SdfAssetPath &colorConfig) const;
 
     /// Returns the default color configuration used to interpret the per-
     /// attribute color-spaces in the composed USD stage.
     /// 
-    /// \ref Usd_ColorConfigurationAPI
+    /// \ref Usd_ColorConfigurationAPI "Color Configuration API"
     USD_API
     SdfAssetPath GetColorConfiguration() const;
 
     /// Sets the name of the color management system used to interpret the 
     /// color configuration file pointed at by the colorConfiguration metadata.
     /// 
-    /// \ref Usd_ColorConfigurationAPI
+    /// \ref Usd_ColorConfigurationAPI "Color Configuration API"
     USD_API
     void SetColorManagementSystem(const TfToken &cms) const;
 
     /// Sets the name of the color management system to be used for loading 
     /// and interpreting the color configuration file.
     /// 
-    /// \ref Usd_ColorConfigurationAPI
+    /// \ref Usd_ColorConfigurationAPI "Color Configuration API"
     USD_API
     TfToken GetColorManagementSystem() const;
 
@@ -1385,8 +1439,9 @@ public:
     /// The python wrapping of this method returns a tuple containing 
     /// (colorConfiguration, colorManagementSystem).
     /// 
-    /// \ref Usd_ColorConfigurationAPI
-    /// \sa SetColorConfigFallbacks.
+    /// 
+    /// \sa SetColorConfigFallbacks,
+    /// \ref Usd_ColorConfigurationAPI "Color Configuration API"
     USD_API
     static void GetColorConfigFallbacks(SdfAssetPath *colorConfiguration,
                                         TfToken *colorManagementSystem);
@@ -1402,8 +1457,8 @@ public:
     /// at least one value must be non-empty. Additionally, these can't be
     /// reset to empty values.
     ///
-    /// \ref Usd_ColorConfigurationAPI
     /// \sa GetColorConfigFallbacks()
+    /// \ref Usd_ColorConfigurationAPI "Color Configuration API"
     USD_API
     static void
     SetColorConfigFallbacks(const SdfAssetPath &colorConfiguration, 
@@ -1680,16 +1735,16 @@ private:
     // either the builtin definition's spec type, if the indicated property is
     // builtin, otherwise it's the strongest authored spec's type if one exists,
     // otherwise it's SdfSpecTypeUnknown.
-    SdfSpecType _GetDefiningSpecType(const UsdPrim &prim,
+    SdfSpecType _GetDefiningSpecType(Usd_PrimDataConstPtr primData,
                                      const TfToken &propName) const;
 
     // Helper to apply Pcp changes and recompose the scenegraph accordingly,
-    // ignoring deactivatedPaths and given an optional initial set of paths to
-    // recompose.
-    void _Recompose(const PcpChanges &changes,
-                    SdfPathSet *initialPathsToRecompose);
-    void _RecomposePrims(const PcpChanges &changes,
-                         SdfPathSet *pathsToRecompose);
+    // given an optional initial set of paths to recompose.
+    void _Recompose(const PcpChanges &changes);
+    template <class T>
+    void _Recompose(const PcpChanges &changes, T *pathsToRecompose);
+    template <class T>
+    void _RecomposePrims(const PcpChanges &changes, T *pathsToRecompose);
 
     // Helper for _Recompose to find the subtrees that need to be
     // fully recomposed and to recompose the name children of the
@@ -1765,10 +1820,12 @@ private:
     // Helper functions for resolving asset paths during value resolution.
     void _MakeResolvedAssetPaths(UsdTimeCode time, const UsdAttribute &attr,
                                  SdfAssetPath *assetPaths,
-                                 size_t numAssetPaths) const;
+                                 size_t numAssetPaths,
+                                 bool anchorAssetPathsOnly = false) const;
 
     void _MakeResolvedAssetPaths(UsdTimeCode time, const UsdAttribute &attr,
-                                 VtValue *value) const;
+                                 VtValue *value,
+                                 bool anchorAssetPathsOnly = false) const;
 
     // --------------------------------------------------------------------- //
     // Metadata Resolution
@@ -1860,7 +1917,8 @@ private:
 
     void _GetAllMetadata(const UsdObject &obj,
                          bool useFallbacks,
-                         UsdMetadataValueMap* result) const;
+                         UsdMetadataValueMap* result,
+                         bool anchorAssetPathsOnly = false) const;
 
     template <class Composer>
     bool
@@ -2029,6 +2087,7 @@ private:
     
     bool _isClosingStage;
 
+    friend class UsdAPISchemaBase;
     friend class UsdAttribute;
     friend class UsdAttributeQuery;
     friend class UsdEditTarget;
@@ -2036,14 +2095,16 @@ private:
     friend class UsdObject;
     friend class UsdPrim;
     friend class UsdProperty;
-    friend class UsdReferences;
     friend class UsdRelationship;
     friend class UsdSpecializes;
     friend class UsdVariantSet;
     friend class UsdVariantSets;
+    friend class Usd_FlattenAccess;
     friend class Usd_PcpCacheAccess;
     friend class Usd_PrimData;
     friend class Usd_StageOpenRequest;
+    template <class RefsOrPayloadsEditorType, class RefsOrPayloadsProxyType> 
+        friend class Usd_RefOrPayloadListEditImpl;
 };
 
 template<typename T>

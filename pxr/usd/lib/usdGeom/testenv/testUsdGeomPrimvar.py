@@ -25,28 +25,29 @@
 import sys, os, unittest
 from pxr import Gf, Usd, UsdGeom, Sdf, Tf, Vt
 
-class TestUsdGeomPrimvarAPI(unittest.TestCase):
-    def test_PrimvarAPI(self):
+class TestUsdGeomPrimvarsAPI(unittest.TestCase):
+    def test_PrimvarsAPI(self):
         IsPrimvar = UsdGeom.Primvar.IsPrimvar
 
         # We'll put all our Primvar on a single mesh gprim
         stage = Usd.Stage.CreateInMemory('myTest.usda')
         gp = UsdGeom.Mesh.Define(stage, '/myMesh')
+        gp_pv = UsdGeom.PrimvarsAPI(gp)
 
         nPasses = 3
 
         # Add three Primvars
-        u1 = gp.CreatePrimvar('u_1', Sdf.ValueTypeNames.FloatArray)
+        u1 = gp_pv.CreatePrimvar('u_1', Sdf.ValueTypeNames.FloatArray)
         self.assertFalse( u1.NameContainsNamespaces() )
         # Make sure it's OK to manually specify the classifier namespace
-        v1 = gp.CreatePrimvar('primvars:v_1', Sdf.ValueTypeNames.FloatArray)
+        v1 = gp_pv.CreatePrimvar('primvars:v_1', Sdf.ValueTypeNames.FloatArray)
         self.assertFalse( v1.NameContainsNamespaces() )
-        _3dpmats = gp.CreatePrimvar('projMats', Sdf.ValueTypeNames.Matrix4dArray,
+        _3dpmats = gp_pv.CreatePrimvar('projMats', Sdf.ValueTypeNames.Matrix4dArray,
                                     "constant", nPasses)
         
         # ensure we can create a primvar that contains namespaces!
         primvarName = 'skel:jointWeights'
-        jointWeights = gp.CreatePrimvar(primvarName, Sdf.ValueTypeNames.FloatArray)
+        jointWeights = gp_pv.CreatePrimvar(primvarName, Sdf.ValueTypeNames.FloatArray)
         self.assertTrue( IsPrimvar(jointWeights) )
         self.assertTrue( jointWeights.NameContainsNamespaces() )
         self.assertEqual(primvarName, jointWeights.GetPrimvarName())
@@ -54,13 +55,13 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
         # Ensure we cannot create a primvar named indices or any namespace
         # ending in indices
         with self.assertRaises(Tf.ErrorException):
-            gp.CreatePrimvar("indices", Sdf.ValueTypeNames.IntArray)
+            gp_pv.CreatePrimvar("indices", Sdf.ValueTypeNames.IntArray)
         with self.assertRaises(Tf.ErrorException):
-            gp.CreatePrimvar("multi:aggregate:indices", Sdf.ValueTypeNames.IntArray)
+            gp_pv.CreatePrimvar("multi:aggregate:indices", Sdf.ValueTypeNames.IntArray)
 
-        self.assertEqual(len( gp.GetAuthoredPrimvars() ), 4)
+        self.assertEqual(len( gp_pv.GetAuthoredPrimvars() ), 4)
         # displayColor and displayOpacity are builtins, not authored
-        self.assertEqual(len( gp.GetPrimvars() ), 6)
+        self.assertEqual(len( gp_pv.GetPrimvars() ), 6)
         
         # Now add some random properties, plus a "manually" created, namespaced
         # primvar, and reverify
@@ -70,7 +71,7 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
         p.CreateAttribute("primvars:some:overly:namespaced:Color",
                           Sdf.ValueTypeNames.Color3f)
 
-        datas = gp.GetAuthoredPrimvars()
+        datas = gp_pv.GetAuthoredPrimvars()
 
         self.assertEqual(len(datas), 5)
         self.assertTrue( IsPrimvar(datas[0]) )
@@ -94,12 +95,12 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
         self.assertTrue( UsdGeom.Primvar(p.GetAttribute(v1.GetName())) )
         
         # Same classification test through GprimSchema API
-        self.assertTrue( gp.HasPrimvar('u_1') )
-        self.assertTrue( gp.HasPrimvar('v_1') )
-        self.assertTrue( gp.HasPrimvar('projMats') )
-        self.assertTrue( gp.HasPrimvar('skel:jointWeights') )
-        self.assertFalse( gp.HasPrimvar('myColor') )
-        self.assertFalse( gp.HasPrimvar('myBinding') )
+        self.assertTrue( gp_pv.HasPrimvar('u_1') )
+        self.assertTrue( gp_pv.HasPrimvar('v_1') )
+        self.assertTrue( gp_pv.HasPrimvar('projMats') )
+        self.assertTrue( gp_pv.HasPrimvar('skel:jointWeights') )
+        self.assertFalse( gp_pv.HasPrimvar('myColor') )
+        self.assertFalse( gp_pv.HasPrimvar('myBinding') )
 
         # Test that the gpv's returned by GetPrimvars are REALLY valid,
         # and that the UsdAttribute metadata wrappers work
@@ -141,6 +142,7 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
         self.assertEqual( u1.Get(), None )
 
         self.assertFalse(u1.IsIndexed())
+        self.assertFalse(u1.GetIndicesAttr())
         self.assertEqual(u1.ComputeFlattened(), None)
 
         uVal = Vt.FloatArray([1.1,2.1,3.1])
@@ -152,6 +154,7 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
         indices = Vt.IntArray([0, 1, 2, 2, 1, 0])
         self.assertTrue(u1.SetIndices(indices))
         self.assertTrue(u1.IsIndexed())
+        self.assertTrue(u1.GetIndicesAttr())
 
         self.assertEqual(u1.GetIndices(), indices)
         for a, b in zip(u1.ComputeFlattened(),
@@ -159,6 +162,14 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
             self.assertTrue(Gf.IsClose(a, b, 1e-5))
         self.assertNotEqual(u1.ComputeFlattened(), u1.Get())
 
+        indicesWithInvalid = Vt.IntArray([0, 3, 2, 2, -1, 0])
+        self.assertTrue(u1.SetIndices(indicesWithInvalid))
+        self.assertTrue(u1.ComputeFlattened() is None)
+
+        indicesWithInvalid = Vt.IntArray([4, 5, 6, 7, -1, 8])
+        self.assertTrue(u1.SetIndices(indicesWithInvalid))
+        self.assertTrue(u1.ComputeFlattened() is None)
+        
         self.assertEqual(u1.GetUnauthoredValuesIndex(), -1)
         self.assertTrue(u1.SetUnauthoredValuesIndex(2))
         self.assertEqual(u1.GetUnauthoredValuesIndex(), 2)
@@ -225,7 +236,7 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
         # Finally, ensure the values returned by GetDeclarationInfo
         # (on new Primvar objects, to test the GprimSchema API)
         # is identical to the individual queries, and matches what we set above
-        nu1 = gp.GetPrimvar("u_1")
+        nu1 = gp_pv.GetPrimvar("u_1")
         (name, typeName, interpolation, elementSize) = nu1.GetDeclarationInfo()
         self.assertEqual(name,          u1.GetBaseName())
         self.assertEqual(typeName,      u1.GetTypeName())
@@ -237,7 +248,7 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
         self.assertEqual(interpolation, UsdGeom.Tokens.vertex)
         self.assertEqual(elementSize,   1)
         
-        nv1 = gp.GetPrimvar("v_1")
+        nv1 = gp_pv.GetPrimvar("v_1")
         (name, typeName, interpolation, elementSize) = nv1.GetDeclarationInfo()
         self.assertEqual(name,          v1.GetBaseName())
         self.assertEqual(typeName,      v1.GetTypeName())
@@ -249,7 +260,7 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
         self.assertEqual(interpolation, UsdGeom.Tokens.faceVarying)
         self.assertEqual(elementSize,   1)
 
-        nmats = gp.GetPrimvar('projMats')
+        nmats = gp_pv.GetPrimvar('projMats')
         (name, typeName, interpolation, elementSize) = nmats.GetDeclarationInfo()
         self.assertEqual(name,          _3dpmats.GetBaseName())
         self.assertEqual(typeName,      _3dpmats.GetTypeName())
@@ -274,12 +285,12 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
 
 
         # Id primvar
-        notId = gp.CreatePrimvar('notId', Sdf.ValueTypeNames.FloatArray)
+        notId = gp_pv.CreatePrimvar('notId', Sdf.ValueTypeNames.FloatArray)
         self.assertFalse(notId.IsIdTarget())
         with self.assertRaises(Tf.ErrorException):
             notId.SetIdTarget(gp.GetPath())
 
-        handleid = gp.CreatePrimvar('handleid', Sdf.ValueTypeNames.String)
+        handleid = gp_pv.CreatePrimvar('handleid', Sdf.ValueTypeNames.String)
 
         # make sure we can still just set a string
         v = "handleid_value"
@@ -287,7 +298,7 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
         self.assertEqual(handleid.Get(), v)
         self.assertEqual(handleid.ComputeFlattened(), v)
 
-        numPrimvars = len(gp.GetPrimvars())
+        numPrimvars = len(gp_pv.GetPrimvars())
         
         # This check below ensures that the "indices" attributes belonging to 
         # indexed primvars aren't considered to be primvars themselves.
@@ -296,7 +307,7 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
         self.assertTrue(handleid.SetIdTarget(gp.GetPath()))
         # make sure we didn't increase the number of primvars (also that
         # GetPrimvars doesn't break when we have relationships)
-        self.assertEqual(len(gp.GetPrimvars()), numPrimvars)
+        self.assertEqual(len(gp_pv.GetPrimvars()), numPrimvars)
         self.assertEqual(handleid.Get(), gp.GetPath())
 
         stringPath = '/my/string/path'
@@ -307,7 +318,7 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
         self.assertTrue(handleid.SetIdTarget(p))
         self.assertEqual(handleid.Get(), p)
 
-        handleid_array = gp.CreatePrimvar('handleid_array', Sdf.ValueTypeNames.StringArray)
+        handleid_array = gp_pv.CreatePrimvar('handleid_array', Sdf.ValueTypeNames.StringArray)
         self.assertTrue(handleid_array.SetIdTarget(gp.GetPath()))
 
     def test_Bug124579(self):
@@ -334,12 +345,166 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
         # We'll put all our Primvar on a single mesh gprim
         stage = Usd.Stage.CreateInMemory('indexPrimvars.usda')
         gp = UsdGeom.Mesh.Define(stage, '/myMesh')
-        foo = gp.CreatePrimvar('foo', Sdf.ValueTypeNames.FloatArray)
+        gp_pv = UsdGeom.PrimvarsAPI(gp)
+        foo = gp_pv.CreatePrimvar('foo', Sdf.ValueTypeNames.FloatArray)
         indices = Vt.IntArray([0, 1, 2, 2, 1, 0])
         self.assertTrue(foo.SetIndices(indices))
         self.assertTrue(foo.IsIndexed())
+        self.assertTrue(foo.GetIndicesAttr())
         foo.BlockIndices()
         self.assertFalse(foo.IsIndexed())
+        # The indices value is blocked, but the attribute continues to exist.
+        self.assertTrue(foo.GetIndicesAttr())
+
+    def test_PrimvarInheritance(self):
+        stage = Usd.Stage.CreateInMemory('primvarInheritance.usda')
+        s0 = UsdGeom.Xform.Define(stage, '/s0')
+        s1 = UsdGeom.Xform.Define(stage, '/s0/s1')
+        s2 = UsdGeom.Xform.Define(stage, '/s0/s1/s2')
+        s3 = UsdGeom.Xform.Define(stage, '/s0/s1/s2/s3')
+        s4 = UsdGeom.Mesh.Define(stage,  '/s0/s1/s2/s3/s4')
+
+        s0p = UsdGeom.PrimvarsAPI(s0)
+        s1p = UsdGeom.PrimvarsAPI(s1)
+        s2p = UsdGeom.PrimvarsAPI(s2)
+        s3p = UsdGeom.PrimvarsAPI(s3)
+        s4p = UsdGeom.PrimvarsAPI(s4)
+
+        u1 = s1p.CreatePrimvar('u1', Sdf.ValueTypeNames.Float)
+        u1.SetInterpolation(UsdGeom.Tokens.constant)
+        u1.Set(1)
+
+        u2 = s2p.CreatePrimvar('u2', Sdf.ValueTypeNames.Float)
+        u2.SetInterpolation(UsdGeom.Tokens.constant)
+        u2.Set(2)
+
+        u3 = s3p.CreatePrimvar('u3', Sdf.ValueTypeNames.Float)
+        u3.SetInterpolation(UsdGeom.Tokens.constant)
+        u3.Set(3)
+
+        # u4 overrides u3 on prim s4.
+        u4 = s4p.CreatePrimvar('u3', Sdf.ValueTypeNames.Float)
+        u4.SetInterpolation(UsdGeom.Tokens.constant)
+
+        # Before setting a value on u4, let's test the various
+        # enumeration methods, since Mesh has 2 builtin primvars
+        self.assertEqual(len(s4p.GetPrimvars()), 3)
+        self.assertEqual(len(s4p.GetAuthoredPrimvars()), 1)
+        self.assertEqual(len(s4p.GetPrimvarsWithValues()), 0)
+        self.assertEqual(len(s4p.GetPrimvarsWithAuthoredValues()), 0)
+        # now set value, and retest
+        u4.Set(4)
+        self.assertEqual(len(s4p.GetPrimvars()), 3)
+        self.assertEqual(len(s4p.GetAuthoredPrimvars()), 1)
+        self.assertEqual(len(s4p.GetPrimvarsWithValues()), 1)
+        self.assertEqual(len(s4p.GetPrimvarsWithAuthoredValues()), 1)
+
+        # Test FindInheritablePrimvars().
+        self.assertEqual(len(s0p.FindInheritablePrimvars()), 0)
+        self.assertEqual(len(s1p.FindInheritablePrimvars()), 1)
+        self.assertEqual(len(s2p.FindInheritablePrimvars()), 2)
+        self.assertEqual(len(s3p.FindInheritablePrimvars()), 3)
+        self.assertEqual(len(s4p.FindInheritablePrimvars()), 3)
+
+        # Test FindIncrementallyInheritablePrimvars().
+        s2_pvars = s2p.FindInheritablePrimvars()
+        s3_pvars = s3p.FindIncrementallyInheritablePrimvars(s2_pvars)
+        self.assertNotEqual(s2_pvars, s3_pvars)
+        self.assertEqual(len(s3_pvars), 3)
+        # Overriding should still force a new set to be created
+        s4_pvars = s4p.FindIncrementallyInheritablePrimvars(s3_pvars)
+        self.assertNotEqual(s3_pvars, s4_pvars)
+        self.assertEqual(len(s4_pvars), 3)
+        # s5p's result should be empty because it neither adds nor blocks/removes
+        # inherited primvars, indicating we should just use the passed-in set
+        s5 = stage.DefinePrim('/s0/s1/s2/s3/s4/s5')
+        s5p = UsdGeom.PrimvarsAPI(s5)
+        s5_pvars = s5p.FindIncrementallyInheritablePrimvars(s4_pvars)
+        self.assertEqual(s5_pvars, [])
+
+        # Next ensure we can use incrementally computed inheritance to 
+        # compute the full set of primvars
+        s5_full = s5p.FindPrimvarsWithInheritance()
+        self.assertEqual(len(s5_full), 3)
+        s5_incr = s5p.FindPrimvarsWithInheritance(s4_pvars)
+        self.assertEqual(set(s5_full), set(s5_incr))
+       
+
+
+        # Test HasPossiblyInheritedPrimvar().
+        # s0
+        self.assertFalse(s0p.HasPossiblyInheritedPrimvar('u1'))
+        # s1
+        self.assertTrue(s1p.HasPossiblyInheritedPrimvar('u1'))
+        # s2
+        self.assertTrue(s2p.HasPossiblyInheritedPrimvar('u1'))
+        self.assertTrue(s2p.HasPossiblyInheritedPrimvar('u2'))
+        # s3
+        self.assertTrue(s3p.HasPossiblyInheritedPrimvar('u1'))
+        self.assertTrue(s3p.HasPossiblyInheritedPrimvar('u2'))
+        self.assertTrue(s3p.HasPossiblyInheritedPrimvar('u3'))
+        # s4
+        self.assertTrue(s4p.HasPossiblyInheritedPrimvar('u1'))
+        self.assertTrue(s4p.HasPossiblyInheritedPrimvar('u2'))
+        self.assertTrue(s4p.HasPossiblyInheritedPrimvar('u3'))
+
+        # Test FindPrimvarWithInheritance().
+        # Confirm that an inherited primvar is bound to the source prim, which
+        # may be an ancestor.
+        self.assertFalse(s0p.FindPrimvarWithInheritance('u1'))
+        self.assertEqual(s1p.FindPrimvarWithInheritance('u1').GetAttr().GetPrim(),
+                s1.GetPrim())
+        self.assertEqual(s2p.FindPrimvarWithInheritance('u1').GetAttr().GetPrim(),
+                s1.GetPrim())
+        self.assertEqual(s3p.FindPrimvarWithInheritance('u1').GetAttr().GetPrim(),
+                s1.GetPrim())
+        self.assertEqual(s4p.FindPrimvarWithInheritance('u1').GetAttr().GetPrim(),
+                s1.GetPrim())
+        self.assertEqual(s4p.FindPrimvarWithInheritance('u2').GetAttr().GetPrim(),
+                s2.GetPrim())
+        # Confirm that local overrides work
+        self.assertEqual(s4p.FindPrimvarWithInheritance('u3').GetAttr().GetPrim(),
+                s4.GetPrim())
+        # Confirm the override taking pre-computed inheited primvars works
+        u2_straight = s4p.FindPrimvarWithInheritance('u2')
+        u2_incr = s4p.FindPrimvarWithInheritance('u2', s3p.FindInheritablePrimvars())
+        self.assertEqual(u2_straight, u2_incr)
+        
+        # Confirm that only constant-interpolation primvars inherit.
+        self.assertEqual(len(s2p.FindInheritablePrimvars()), 2)
+        self.assertTrue(s2p.FindPrimvarWithInheritance('u1'))
+        self.assertTrue(s2p.HasPossiblyInheritedPrimvar('u1'))
+        u1.SetInterpolation(UsdGeom.Tokens.varying)
+        self.assertEqual(len(s2p.FindInheritablePrimvars()), 1)
+        self.assertFalse(s2p.FindPrimvarWithInheritance('u1'))
+        self.assertFalse(s2p.HasPossiblyInheritedPrimvar('u1'))
+
+        # Confirm that a non-constant primvar blocks inheritance
+        # of ancestral constant primvars of the same name.
+        self.assertEqual(len(s4p.FindInheritablePrimvars()), 2)
+        self.assertTrue(s4p.FindPrimvarWithInheritance('u2'))
+        self.assertTrue(s4p.HasPossiblyInheritedPrimvar('u2'))
+        u2_on_s3 = s3p.CreatePrimvar('u2', Sdf.ValueTypeNames.Float)
+        u2_on_s3.SetInterpolation(UsdGeom.Tokens.varying)
+        u2_on_s3.Set(2.3)
+        self.assertEqual(len(s4p.FindInheritablePrimvars()), 1)
+        self.assertFalse(s4p.FindPrimvarWithInheritance('u2'))
+        self.assertFalse(s4p.HasPossiblyInheritedPrimvar('u2'))
+
+        # confirm that if a primvar has no authored value, then it behaves
+        # as if not present on the prim, regardless of its interpolation
+        u2_on_s3.GetAttr().Block()
+        self.assertEqual(len(s4p.FindInheritablePrimvars()), 2)
+        self.assertTrue(s4p.FindPrimvarWithInheritance('u2'))
+        self.assertTrue(s4p.HasPossiblyInheritedPrimvar('u2'))
+
+        # Finally, ensure that builtins like displayColor inherit properly
+        dcp = s1p.CreatePrimvar(UsdGeom.Tokens.primvarsDisplayColor,
+                                Sdf.ValueTypeNames.Color3fArray)
+        dcp.Set([(0.5, 0.5, 0.5)])
+        self.assertEqual(s4p.FindPrimvarWithInheritance(UsdGeom.Tokens.primvarsDisplayColor).GetAttr().GetPrim(),
+                s1.GetPrim())
+
 
 if __name__ == "__main__":
     unittest.main()

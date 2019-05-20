@@ -76,7 +76,7 @@ void wrapUsdSchemaExamplesParamsAPI()
 {
     typedef UsdSchemaExamplesParamsAPI This;
 
-    class_<This, bases<UsdSchemaBase> >
+    class_<This, bases<UsdAPISchemaBase> >
         cls("ParamsAPI");
 
     cls
@@ -87,13 +87,8 @@ void wrapUsdSchemaExamplesParamsAPI()
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
 
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
+        .def("Apply", &This::Apply, (arg("prim")))
+        .staticmethod("Apply")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,

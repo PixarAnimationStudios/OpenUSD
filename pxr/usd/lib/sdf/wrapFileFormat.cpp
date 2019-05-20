@@ -29,6 +29,7 @@
 #include "pxr/base/tf/pyCall.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyStaticTokens.h"
+#include "pxr/base/tf/pyResultConversions.h"
 
 #include <boost/python/class.hpp>
 #include <boost/python/scope.hpp>
@@ -124,10 +125,16 @@ void wrapFileFormat()
 
         .def("IsSupportedExtension", &This::IsSupportedExtension)
 
+        .def("IsPackage", &This::IsPackage)
+
         .def("CanRead", &This::CanRead)
 
         .def("GetFileExtension", &This::GetFileExtension)
         .staticmethod("GetFileExtension")
+
+        .def("FindAllFileFormatExtensions", &This::FindAllFileFormatExtensions,
+             return_value_policy<TfPySequenceToList>())
+        .staticmethod("FindAllFileFormatExtensions")
 
         .def("FindById", &This::FindById)
         .staticmethod("FindById")

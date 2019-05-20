@@ -95,6 +95,12 @@ SdfValueTypeName::GetType() const
     return _impl->type->type;
 }
 
+const std::string& 
+SdfValueTypeName::GetCPPTypeName() const
+{
+    return _impl->type->cppTypeName;
+}
+
 const TfToken&
 SdfValueTypeName::GetRole() const
 {
@@ -177,7 +183,7 @@ SdfValueTypeName::GetHash() const
 }
 
 bool
-SdfValueTypeName::operator!() const
+SdfValueTypeName::_IsEmpty() const
 {
     return _impl == Sdf_ValueTypePrivate::GetEmptyTypeName();
 }

@@ -41,6 +41,7 @@
 #include <iterator>
 #include <map>
 #include <set>
+#include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -373,6 +374,45 @@ TfFindBoundary(ForwardIterator first, ForwardIterator last,
     }
     return first;
 }
+
+/// Function object for retrieving the N'th element of a std::pair
+/// or std::tuple. This is similar to std::get<N>, but wrapped up in a
+/// function object suitable for use with STL algorithms.
+///
+/// Example:
+/// \code
+///    const std::vector<std::pair<int, std::string>> pairs = { ... }
+///    std::vector<int> intsOnly(pairs.size());
+///    std::transform(pairs.begin(), pairs.end(), intsOnly.begin(), TfGet<0>());
+/// \endcode
+///
+/// \ingroup group_tf_Stl
+template <size_t N>
+class TfGet
+{
+public:
+    template <class PairOrTuple>
+    using return_type = typename std::tuple_element<N, PairOrTuple>::type;
+
+    template <class PairOrTuple>
+    constexpr return_type<PairOrTuple>& operator()(PairOrTuple& p) const 
+    {
+        return std::get<N>(p);
+    }
+
+    template <class PairOrTuple>
+    constexpr const return_type<PairOrTuple>& operator()(
+        const PairOrTuple& p) const 
+    {
+        return std::get<N>(p);
+    }
+
+    template <class PairOrTuple>
+    constexpr return_type<PairOrTuple>&& operator()(PairOrTuple&& p) const 
+    {
+        return std::get<N>(std::move(p));
+    }
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -93,36 +93,39 @@ UsdUtilsCopyLayerMetadata(const SdfLayerHandle &source,
     return true; 
 }
 
-using _PathHashSet =  TfHashSet<SdfPath, SdfPath::Hash>;
-
 // Helper method for determining the set of paths to exclude below the common
 // ancestor, in order to include just includedRootPaths (and their ancestors).
 static
 SdfPathVector
 _GetPathsToExcludeBelowCommonAncestor(
-    const _PathHashSet &includedRootPaths,
-    const UsdPrim &commonAncestor)
+    const UsdUtilsPathHashSet &includedRootPaths,
+    const UsdPrim &commonAncestor,
+    const UsdUtilsPathHashSet &pathsToIgnore)
 {
     SdfPathSet pathsToExclude;
 
     // Travere beneath the common prefix to find all the paths that don't 
     // belong to the collection. 
-    UsdPrimRange commonAncestorRange(commonAncestor, 
-                                     UsdTraverseInstanceProxies());
+    UsdPrimRange commonAncestorRange(
+        commonAncestor, UsdTraverseInstanceProxies(UsdPrimAllPrimsPredicate));
     for (auto primIt = commonAncestorRange.begin(); 
          primIt != commonAncestorRange.end() ; 
          ++primIt) 
     {
         SdfPath primPath = primIt->GetPath();
 
+        if (pathsToIgnore.count(primPath)) {
+            continue;
+        }
+
         if (includedRootPaths.count(primPath) > 0) {
             // If we find a path that's included in the collection, we must 
             // remove all the ancestor paths of the path from pathsToExclude.
             SdfPath parentPath = primPath;
-            do {
+            while (parentPath != commonAncestor.GetPath()) {
                 parentPath = parentPath.GetParentPath();
                 pathsToExclude.erase(parentPath);
-            } while (parentPath != commonAncestor.GetPath());
+            }
             primIt.PruneChildren();
         } else {
             pathsToExclude.insert(primPath);
@@ -140,12 +143,13 @@ _GetPathsToExcludeBelowCommonAncestor(
 static 
 bool
 _ComputePathsToIncludeAndExclude(
-    const _PathHashSet &includedRootPaths, 
+    const UsdUtilsPathHashSet &includedRootPaths, 
     const UsdPrim &commonAncestor,
     const double minInclusionRatio,
     const unsigned int maxNumExcludesBelowInclude,
     SdfPathVector *pathsToInclude,
-    SdfPathVector *pathsToExclude)
+    SdfPathVector *pathsToExclude,
+    const UsdUtilsPathHashSet &pathsToIgnore)
 {
     // XXX: performance
     // Note: the following code could be implemented as a single PreAndPostOrder 
@@ -159,7 +163,7 @@ _ComputePathsToIncludeAndExclude(
     // to include all of the subtree rooted at commonPrefix.
     SdfPathVector pathsToExcludeBelowCommonAncestor = 
             _GetPathsToExcludeBelowCommonAncestor(
-                includedRootPaths, commonAncestor);
+                includedRootPaths, commonAncestor, pathsToIgnore);
 
     SdfPath commonAncestorParentPath = commonAncestor.GetPath().GetParentPath();
 
@@ -191,13 +195,17 @@ _ComputePathsToIncludeAndExclude(
 
     // We have all the information needed to compute the optimal set of 
     // included paths and excluded paths.
-    UsdPrimRange commonAncestorRange(commonAncestor, 
-                                     UsdTraverseInstanceProxies());
+    UsdPrimRange commonAncestorRange(
+        commonAncestor, UsdTraverseInstanceProxies(UsdPrimAllPrimsPredicate));
     for (auto primIt = commonAncestorRange.begin(); 
          primIt != commonAncestorRange.end() ; 
          ++primIt) 
     {
         const UsdPrim &p = *primIt;
+
+        if (pathsToIgnore.count(p.GetPath())) {
+            continue;
+        }
 
         const auto inclMapIt = numIncludedPathsMap.find(p.GetPath());
         size_t inclPathCount = (inclMapIt != numIncludedPathsMap.end()) ? 
@@ -240,7 +248,8 @@ UsdUtilsComputeCollectionIncludesAndExcludes(
     SdfPathVector *pathsToExclude,
     double minInclusionRatio /* 0.75 */,
     const unsigned int maxNumExcludesBelowInclude /* 5u */,
-    const unsigned int minIncludeExcludeCollectionSize /* 3u */)
+    const unsigned int minIncludeExcludeCollectionSize /* 3u */,
+    const UsdUtilsPathHashSet &pathsToIgnore /*=UsdUtilsPathHashSet()*/)
 {
     // Clear out the lists of paths that we're about to populate.
     pathsToInclude->clear();
@@ -306,7 +315,7 @@ UsdUtilsComputeCollectionIncludesAndExcludes(
     // Construct and use a hash_set containing includedRootPaths
     // as we could (and in many cases will) be doing a lot of 
     // lookups in this set.
-    _PathHashSet includedRootPathsHashSet;
+    UsdUtilsPathHashSet includedRootPathsHashSet;
     for (const auto &p: includedRootPaths) {
         includedRootPathsHashSet.insert(p);
     }
@@ -314,7 +323,7 @@ UsdUtilsComputeCollectionIncludesAndExcludes(
     return _ComputePathsToIncludeAndExclude(
             includedRootPathsHashSet, commonAncestor,
             minInclusionRatio, maxNumExcludesBelowInclude,
-            pathsToInclude, pathsToExclude);
+            pathsToInclude, pathsToExclude, pathsToIgnore);
 }
 
 UsdCollectionAPI

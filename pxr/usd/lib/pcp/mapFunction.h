@@ -28,7 +28,9 @@
 #include "pxr/usd/pcp/api.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/layerOffset.h"
-#include "pxr/base/tf/flyweight.h"
+
+#include <atomic>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -74,8 +76,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// than translating and rotating points, the map function shifts the
 /// values in namespace (and time).
 ///
-/// Map functions are flyweighted, so they can be passed around
-/// by value relatively cheaply.
 ///
 class PcpMapFunction
 {
@@ -86,10 +86,7 @@ public:
     typedef std::vector<PathPair> PathPairVector;
 
     /// Construct a null function.
-    PCP_API
-    PcpMapFunction();
-    PCP_API
-    ~PcpMapFunction();
+    PcpMapFunction() = default;
 
     /// Constructs a map function with the given arguments.
     /// Returns a null map function on error (see IsNull()).
@@ -110,15 +107,10 @@ public:
     PCP_API
     static const PathMap &IdentityPathMap();
     
-    /// Copy-construct the map.
-    PCP_API
-    PcpMapFunction(const PcpMapFunction &map);
-    PCP_API
-    PcpMapFunction& operator=(const PcpMapFunction &map);
-
     /// Swap the contents of this map function with \p map.
     PCP_API
     void Swap(PcpMapFunction &map);
+    void swap(PcpMapFunction &map) { Swap(map); }
 
     /// Equality.
     PCP_API
@@ -137,6 +129,10 @@ public:
     /// For identity, MapSourceToTarget() always returns the path unchanged.
     PCP_API
     bool IsIdentity() const;
+
+    /// Return true if the map function maps the absolute root path to the
+    /// absolute root path, false otherwise.
+    bool HasRootIdentity() const { return _data.hasRootIdentity; }
 
     /// Map a path in the source namespace to the target.
     /// If the path is not in the domain, returns an empty path.
@@ -165,7 +161,7 @@ public:
     PathMap GetSourceToTargetMap() const;
 
     /// The time offset of the mapping.
-    const SdfLayerOffset &GetTimeOffset() const { return _GetData()._offset; }
+    const SdfLayerOffset &GetTimeOffset() const { return _offset; }
 
     /// Returns a string representation of this mapping for debugging
     /// purposes.
@@ -173,52 +169,126 @@ public:
     std::string GetString() const;
 
     /// Return a size_t hash for this map function.
-    size_t Hash() const {
-        return _data.Hash();
-    }
+    PCP_API
+    size_t Hash() const;
 
 private:
 
-    // Structure containing data for a single mapping, suitable for
-    // use with TfFlyweight.
-    struct _Data 
-    {
-        _Data() : _pairs(NULL), _numPairs(0)
-        { }
+    PCP_API
+    PcpMapFunction(PathPair const *sourceToTargetBegin,
+                   PathPair const *sourceToTargetEnd,
+                   SdfLayerOffset offset,
+                   bool hasRootIdentity);
 
-        _Data(const PathPairVector &sourceToTarget,
-              const SdfLayerOffset &offset);
+private:
+    friend PcpMapFunction *Pcp_MakeIdentity();
+    
+    static const int _MaxLocalPairs = 2;
+    struct _Data final {
+        _Data() {};
 
-        _Data(const _Data &d);
+        _Data(PathPair const *begin, PathPair const *end, bool hasRootIdentity)
+            : numPairs(end-begin)
+            , hasRootIdentity(hasRootIdentity) {
+            if (numPairs == 0)
+                return;
+            if (numPairs <= _MaxLocalPairs) {
+                std::uninitialized_copy(begin, end, localPairs);
+            }
+            else {
+                new (&remotePairs) std::shared_ptr<PathPair>(
+                    new PathPair[numPairs], std::default_delete<PathPair[]>());
+                std::copy(begin, end, remotePairs.get());
+            }
+        }
+        
+        _Data(_Data const &other)
+            : numPairs(other.numPairs)
+            , hasRootIdentity(other.hasRootIdentity) {
+            if (numPairs <= _MaxLocalPairs) {
+                std::uninitialized_copy(
+                    other.localPairs,
+                    other.localPairs + other.numPairs, localPairs);
+            }
+            else {
+                new (&remotePairs) std::shared_ptr<PathPair>(other.remotePairs);
+            }
+        }
+        _Data(_Data &&other)
+            : numPairs(other.numPairs)
+            , hasRootIdentity(other.hasRootIdentity) {
+            if (numPairs <= _MaxLocalPairs) {
+                PathPair *dst = localPairs;
+                PathPair *src = other.localPairs;
+                PathPair *srcEnd = other.localPairs + other.numPairs;
+                for (; src != srcEnd; ++src, ++dst) {
+                    ::new (static_cast<void*>(std::addressof(*dst)))
+                        PathPair(std::move(*src));
+                }
+            }
+            else {
+                new (&remotePairs)
+                    std::shared_ptr<PathPair>(std::move(other.remotePairs));
+            }
+        }
+        _Data &operator=(_Data const &other) {
+            if (this != &other) {
+                this->~_Data();
+                new (this) _Data(other);
+            }
+            return *this;
+        }
+        _Data &operator=(_Data &&other) {
+            if (this != &other) {
+                this->~_Data();
+                new (this) _Data(std::move(other));
+            }
+            return *this;
+        }
+        ~_Data() {
+            if (numPairs <= _MaxLocalPairs) {
+                for (PathPair *p = localPairs; numPairs--; ++p) {
+                    p->~PathPair();
+                }
+            }
+            else {
+                remotePairs.~shared_ptr<PathPair>();
+            }
+        }
 
-        ~_Data();
+        bool IsNull() const {
+            return numPairs == 0 && !hasRootIdentity;
+        }
 
-        bool operator==(const _Data &rhs) const;
-        _Data& operator=(const _Data &rhs);
+        PathPair const *begin() const {
+            return numPairs <= _MaxLocalPairs ? localPairs : remotePairs.get();
+        }
 
-        struct Hash {
-            size_t operator()(const _Data &data) const;
+        PathPair const *end() const {
+            return begin() + numPairs;
+        }
+
+        bool operator==(_Data const &other) const {
+            return numPairs == other.numPairs &&
+                hasRootIdentity == other.hasRootIdentity &&
+                std::equal(begin(), end(), other.begin());
+        }
+
+        bool operator!=(_Data const &other) const {
+            return !(*this == other);
+        }
+
+        union {
+            PathPair localPairs[_MaxLocalPairs > 0 ? _MaxLocalPairs : 1];
+            std::shared_ptr<PathPair> remotePairs;
         };
-
-        typedef unsigned short PairCount;
-
-        SdfLayerOffset _offset;
-        PathPair *_pairs;
-        PairCount _numPairs;
+        typedef int PairCount;
+        PairCount numPairs = 0;
+        bool hasRootIdentity = false;
     };
 
-    const _Data& _GetData() const { return _data; }
-
-    PcpMapFunction(const PathPairVector &sourceToTarget, 
-                   SdfLayerOffset offset = SdfLayerOffset());
-
-    // Private constructor for creating a PcpMapFunction that composes
-    // fn with inner.
-    typedef TfFlyweight<_Data, _Data::Hash> _DataFlyweight;
-    PcpMapFunction(const _DataFlyweight &fn);
-
-private:
-    _DataFlyweight _data;
+    _Data _data;
+    SdfLayerOffset _offset;
 };
 
 // Specialize hash_value for PcpMapFunction.

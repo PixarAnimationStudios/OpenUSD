@@ -74,6 +74,11 @@ UsdContrivedTestHairman::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdContrivedTestHairman::_GetSchemaType() const {
+    return UsdContrivedTestHairman::schemaType;
+}
+
 /* static */
 const TfType &
 UsdContrivedTestHairman::_GetStaticTfType()
@@ -163,6 +168,7 @@ UsdContrivedTestHairman::GetSchemaAttributeNames(bool includeInherited)
     static TfTokenVector localNames = {
         UsdContrivedTokens->temp,
         UsdContrivedTokens->riStatementsAttributesUserGofur_GeomOnHairdensity,
+        UsdContrivedTokens->attrWithoutGeneratedAccessorAPI,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

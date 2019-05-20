@@ -51,7 +51,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class Hd_TestDriver final {
 public:
     Hd_TestDriver();
-    Hd_TestDriver(TfToken const &reprName);
+    Hd_TestDriver(HdReprSelector const &reprToken);
     ~Hd_TestDriver();
 
     /// Draw
@@ -80,17 +80,17 @@ public:
     HdUnitTestDelegate& GetDelegate() { return *_sceneDelegate; }
 
     /// Switch repr
-    void SetRepr(TfToken const &reprName);
+    void SetRepr(HdReprSelector const &reprSelector);
 
 private:
 
-    void _Init(TfToken const &reprName);
+    void _Init(HdReprSelector const &reprSelector);
 
     HdEngine _engine;
     Hd_UnitTestNullRenderDelegate _renderDelegate;
     HdRenderIndex       *_renderIndex;
     HdUnitTestDelegate *_sceneDelegate;
-    TfToken _reprName;
+    HdReprSelector _reprSelector;
     HdRenderPassSharedPtr _geomPass;
     HdRenderPassSharedPtr _geomAndGuidePass;
     HdRenderPassStateSharedPtr _renderPassState;

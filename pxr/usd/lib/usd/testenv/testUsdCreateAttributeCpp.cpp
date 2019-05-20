@@ -39,6 +39,8 @@
 #include <Python.h>
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
+#include <iostream>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void
@@ -216,7 +218,7 @@ TestValueMutation(std::string const & layerTag)
     TF_VERIFY(attr.Clear());
     // Has 
     TF_VERIFY(!attr.HasValue());
-    TF_VERIFY(!attr.HasAuthoredValueOpinion());
+    TF_VERIFY(!attr.HasAuthoredValue());
     TF_VERIFY(!attr.HasMetadata(SdfFieldKeys->Default));
     TF_VERIFY(!attr.HasMetadata(SdfFieldKeys->TimeSamples));
     VerifyTimeSampleRange(attr, 0);
@@ -235,7 +237,7 @@ TestValueMutation(std::string const & layerTag)
     TF_VERIFY(attr.Set("foo bar"));
     // Has
     TF_VERIFY(attr.HasValue());
-    TF_VERIFY(attr.HasAuthoredValueOpinion());
+    TF_VERIFY(attr.HasAuthoredValue());
     TF_VERIFY(attr.HasMetadata(SdfFieldKeys->Default));
     TF_VERIFY(!attr.HasMetadata(SdfFieldKeys->TimeSamples));
     VerifyTimeSampleRange(attr, 0);
@@ -252,7 +254,7 @@ TestValueMutation(std::string const & layerTag)
     TF_VERIFY(attr.Get(&value));
     // Has
     TF_VERIFY(attr.HasValue());
-    TF_VERIFY(attr.HasAuthoredValueOpinion());
+    TF_VERIFY(attr.HasAuthoredValue());
     TF_VERIFY(attr.HasMetadata(SdfFieldKeys->Default));
     TF_VERIFY(!attr.HasMetadata(SdfFieldKeys->TimeSamples));
     VerifyTimeSampleRange(attr, 0);
@@ -266,7 +268,7 @@ TestValueMutation(std::string const & layerTag)
     TF_VERIFY(!attr.Get(&value));
     // Has
     TF_VERIFY(!attr.HasValue());
-    TF_VERIFY(!attr.HasAuthoredValueOpinion());
+    TF_VERIFY(!attr.HasAuthoredValue());
     TF_VERIFY(!attr.HasMetadata(SdfFieldKeys->Default));
     TF_VERIFY(!attr.HasMetadata(SdfFieldKeys->TimeSamples));
     VerifyTimeSampleRange(attr, 0);
@@ -279,7 +281,7 @@ TestValueMutation(std::string const & layerTag)
     TF_VERIFY(attr.Set("time=1", 1.0));
     // Has
     TF_VERIFY(attr.HasValue());
-    TF_VERIFY(attr.HasAuthoredValueOpinion());
+    TF_VERIFY(attr.HasAuthoredValue());
     TF_VERIFY(!attr.HasMetadata(SdfFieldKeys->Default));
     TF_VERIFY(attr.HasMetadata(SdfFieldKeys->TimeSamples));
     VerifyTimeSampleRange(attr, 1, 1.0, 1.0);
@@ -295,7 +297,7 @@ TestValueMutation(std::string const & layerTag)
     TF_VERIFY(attr.Get(&value, 1.0));
     // Has
     TF_VERIFY(attr.HasValue());
-    TF_VERIFY(attr.HasAuthoredValueOpinion());
+    TF_VERIFY(attr.HasAuthoredValue());
     TF_VERIFY(!attr.HasMetadata(SdfFieldKeys->Default));
     TF_VERIFY(attr.HasMetadata(SdfFieldKeys->TimeSamples));
     VerifyTimeSampleRange(attr, 1, 1, 1);
@@ -309,7 +311,7 @@ TestValueMutation(std::string const & layerTag)
 
     // Has
     TF_VERIFY(!attr.HasValue());
-    TF_VERIFY(!attr.HasAuthoredValueOpinion());
+    TF_VERIFY(!attr.HasAuthoredValue());
     TF_VERIFY(!attr.HasMetadata(SdfFieldKeys->Default));
     TF_VERIFY(!attr.HasMetadata(SdfFieldKeys->TimeSamples));
     VerifyTimeSampleRange(attr, 0);
@@ -323,7 +325,7 @@ TestValueMutation(std::string const & layerTag)
     TF_VERIFY(attr.Set("time=2", 2.0));
     // Has
     TF_VERIFY(attr.HasValue());
-    TF_VERIFY(attr.HasAuthoredValueOpinion());
+    TF_VERIFY(attr.HasAuthoredValue());
     TF_VERIFY(!attr.HasMetadata(SdfFieldKeys->Default));
     TF_VERIFY(attr.HasMetadata(SdfFieldKeys->TimeSamples));
     VerifyTimeSampleRange(attr, 2, 1, 2);
@@ -352,7 +354,7 @@ TestValueMutation(std::string const & layerTag)
     TF_VERIFY(value == "time=2");
     // Has
     TF_VERIFY(attr.HasValue());
-    TF_VERIFY(attr.HasAuthoredValueOpinion());
+    TF_VERIFY(attr.HasAuthoredValue());
     TF_VERIFY(!attr.HasMetadata(SdfFieldKeys->Default));
     TF_VERIFY(attr.HasMetadata(SdfFieldKeys->TimeSamples));
     VerifyTimeSampleRange(attr, 1, 2, 2);
@@ -365,7 +367,7 @@ TestValueMutation(std::string const & layerTag)
     TF_VERIFY(!attr.Get(&value, 2.0));
     // Has
     TF_VERIFY(!attr.HasValue());
-    TF_VERIFY(!attr.HasAuthoredValueOpinion());
+    TF_VERIFY(!attr.HasAuthoredValue());
     TF_VERIFY(!attr.HasMetadata(SdfFieldKeys->Default));
     TF_VERIFY(!attr.HasMetadata(SdfFieldKeys->TimeSamples));
     VerifyTimeSampleRange(attr, 0);
@@ -395,7 +397,7 @@ TestValueMutation(std::string const & layerTag)
 
     // Has
     TF_VERIFY(attr.HasValue());
-    TF_VERIFY(attr.HasAuthoredValueOpinion());
+    TF_VERIFY(attr.HasAuthoredValue());
     TF_VERIFY(attr.HasMetadata(SdfFieldKeys->Default));
     TF_VERIFY(attr.HasMetadata(SdfFieldKeys->TimeSamples));
     VerifyTimeSampleRange(attr, 2, 1, 2);
@@ -410,7 +412,7 @@ TestValueMutation(std::string const & layerTag)
     TF_VERIFY(value == "time=default");
     // Has
     TF_VERIFY(attr.HasValue());
-    TF_VERIFY(attr.HasAuthoredValueOpinion());
+    TF_VERIFY(attr.HasAuthoredValue());
     TF_VERIFY(attr.HasMetadata(SdfFieldKeys->Default));
     TF_VERIFY(attr.HasMetadata(SdfFieldKeys->TimeSamples));
     VerifyTimeSampleRange(attr, 1, 2, 2);
@@ -423,7 +425,7 @@ TestValueMutation(std::string const & layerTag)
     TF_VERIFY(attr.ClearAtTime(2.0));
     // Has
     TF_VERIFY(attr.HasValue());
-    TF_VERIFY(attr.HasAuthoredValueOpinion());
+    TF_VERIFY(attr.HasAuthoredValue());
     TF_VERIFY(attr.HasMetadata(SdfFieldKeys->Default));
     TF_VERIFY(!attr.HasMetadata(SdfFieldKeys->TimeSamples));
     VerifyTimeSampleRange(attr, 0);
@@ -440,7 +442,7 @@ TestValueMutation(std::string const & layerTag)
     TF_VERIFY(!attr.Get(&value, 2.0));
     // Has
     TF_VERIFY(!attr.HasValue());
-    TF_VERIFY(!attr.HasAuthoredValueOpinion());
+    TF_VERIFY(!attr.HasAuthoredValue());
     TF_VERIFY(!attr.HasMetadata(SdfFieldKeys->Default));
     TF_VERIFY(!attr.HasMetadata(SdfFieldKeys->TimeSamples));
     VerifyTimeSampleRange(attr, 0);
@@ -466,7 +468,7 @@ TestValueMutation(std::string const & layerTag)
     TF_VERIFY(value == "time=2");
     // Has
     TF_VERIFY(attr.HasValue());
-    TF_VERIFY(attr.HasAuthoredValueOpinion());
+    TF_VERIFY(attr.HasAuthoredValue());
     TF_VERIFY(attr.HasMetadata(SdfFieldKeys->Default));
     TF_VERIFY(attr.HasMetadata(SdfFieldKeys->TimeSamples));
     VerifyTimeSampleRange(attr, 2, 1, 2);
@@ -478,7 +480,7 @@ TestValueMutation(std::string const & layerTag)
     TF_VERIFY(!attr.Get(&value));
     // Has
     TF_VERIFY(!attr.HasValue());
-    TF_VERIFY(!attr.HasAuthoredValueOpinion());
+    TF_VERIFY(!attr.HasAuthoredValue());
     TF_VERIFY(!attr.HasMetadata(SdfFieldKeys->Default));
     TF_VERIFY(!attr.HasMetadata(SdfFieldKeys->TimeSamples));
     VerifyTimeSampleRange(attr, 0);

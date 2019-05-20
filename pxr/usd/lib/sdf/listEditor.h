@@ -34,11 +34,11 @@
 #include "pxr/usd/sdf/spec.h"
 
 // XXX: Including this here may not be great, as this header leaks out
-//      of Sdf and causes downstream code to pick up the tracelite
+//      of Sdf and causes downstream code to pick up the trace
 //      versions of TRACE_FUNCTION and TRACE_SCOPE instead of the
 //      versions in Common/Trace. Functionally, they should be equivalent,
 //      but could there be unwanted overhead involved?
-// #include "pxr/base/tracelite/trace.h"
+// #include "pxr/base/trace/trace.h"
 
 #include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
@@ -236,7 +236,7 @@ protected:
                                const value_vector_type& oldValues,
                                const value_vector_type& newValues) const
     {
-        // See XXX comment for pxr/base/tracelite above.
+        // See XXX comment for pxr/base/trace above.
         // TRACE_FUNCTION();
 
         // Disallow duplicate items from being stored in the new list

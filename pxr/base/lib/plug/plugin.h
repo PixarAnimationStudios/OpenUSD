@@ -79,7 +79,7 @@ public:
     /// Returns the dictionary containing meta-data for the plugin.
     PLUG_API JsObject GetMetadata();
 
-    /// Returns the metdata sub-dictionary for a particular type.
+    /// Returns the metadata sub-dictionary for a particular type.
     PLUG_API JsObject GetMetadataForType(const TfType &type);
 
     /// Returns the dictionary containing the dependencies for the plugin.
@@ -105,7 +105,7 @@ public:
         return _resourcePath;
     }
 
-    /// Build a plugin resource path by returing a given absolute path or
+    /// Build a plugin resource path by returning a given absolute path or
     /// combining the plugin's resource path with a given relative path.
     PLUG_API std::string MakeResourcePath(const std::string& path) const;
 

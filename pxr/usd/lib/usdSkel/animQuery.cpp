@@ -30,6 +30,8 @@
 #include "pxr/usd/usd/attribute.h"
 
 #include "pxr/base/gf/interval.h"
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/matrix4f.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -42,23 +44,48 @@ UsdSkelAnimQuery::GetPrim() const
 }
 
 
+template <typename Matrix4>
 bool
-UsdSkelAnimQuery::ComputeTransform(GfMatrix4d* xform,
-                                       UsdTimeCode time) const
+UsdSkelAnimQuery::ComputeJointLocalTransforms(VtArray<Matrix4>* xforms,
+                                              UsdTimeCode time) const
 {
     if(TF_VERIFY(IsValid(), "invalid anim query.")) {
-        return _impl->ComputeTransform(xform, time);
+        return _impl->ComputeJointLocalTransforms(xforms, time);
+    }
+    return false;
+}
+
+
+template USDSKEL_API bool
+UsdSkelAnimQuery::ComputeJointLocalTransforms(
+    VtArray<GfMatrix4d>*, UsdTimeCode) const;
+
+template USDSKEL_API bool
+UsdSkelAnimQuery::ComputeJointLocalTransforms(
+    VtArray<GfMatrix4f>*, UsdTimeCode) const;
+
+
+bool
+UsdSkelAnimQuery::ComputeJointLocalTransformComponents(
+    VtVec3fArray* translations,
+    VtQuatfArray* rotations,
+    VtVec3hArray* scales,
+    UsdTimeCode time) const
+{
+    if(TF_VERIFY(IsValid(), "invalid anim query.")) {
+        return _impl->ComputeJointLocalTransformComponents(
+            translations, rotations, scales, time);
     }
     return false;
 }
 
 
 bool
-UsdSkelAnimQuery::ComputeJointLocalTransforms(VtMatrix4dArray* xforms,
-                                              UsdTimeCode time) const
+UsdSkelAnimQuery::ComputeBlendShapeWeights(VtFloatArray* weights,
+                                           UsdTimeCode time) const
 {
     if(TF_VERIFY(IsValid(), "invalid anim query.")) {
-        return _impl->ComputeJointLocalTransforms(xforms, time);
+        return _impl->ComputeBlendShapeWeights(weights, time);
     }
     return false;
 }
@@ -111,6 +138,47 @@ UsdSkelAnimQuery::GetJointOrder() const
         return _impl->GetJointOrder();
     }
     return VtTokenArray();
+}
+
+
+VtTokenArray
+UsdSkelAnimQuery::GetBlendShapeOrder() const
+{
+    if(TF_VERIFY(IsValid(), "invalid anim query.")) {
+        return _impl->GetBlendShapeOrder();
+    }
+    return VtTokenArray();
+}
+
+
+bool
+UsdSkelAnimQuery::GetBlendShapeWeightTimeSamples(
+    std::vector<double>* times) const
+{
+    return GetBlendShapeWeightTimeSamplesInInterval(
+        GfInterval::GetFullInterval(), times);
+}
+
+
+bool
+UsdSkelAnimQuery::GetBlendShapeWeightTimeSamplesInInterval(
+    const GfInterval& interval,
+    std::vector<double>* times) const
+{
+    if(TF_VERIFY(IsValid(), "invalid anim query.")) {
+        return _impl->GetBlendShapeWeightTimeSamples(interval, times);
+    }
+    return false;
+}
+
+
+bool
+UsdSkelAnimQuery::BlendShapeWeightsMightBeTimeVarying() const
+{
+    if(TF_VERIFY(IsValid(), "invalid anim query.")) {
+        return _impl->BlendShapeWeightsMightBeTimeVarying();
+    }
+    return false;
 }
 
 

@@ -398,7 +398,7 @@ _ResolveLegacyClipInfo(
     bool nontemplateMetadataSeen = false;
     bool templateMetadataSeen    = false;
 
-    boost::optional<std::string> templateAssetPath;
+    std::string templateAssetPath;
 
     // find our anchor(clipAssetPaths/clipTemplateAssetPath) if it exists.
     for (Usd_Resolver res(&primIndex); res.IsValid(); res.NextNode()) {
@@ -422,14 +422,12 @@ _ResolveLegacyClipInfo(
                 break;
             }
 
-            std::string clipTemplateAssetPath;
             if (layer->HasField(primPath, UsdTokens->clipTemplateAssetPath,
-                                &clipTemplateAssetPath)) {
+                                &templateAssetPath)) {
                 templateMetadataSeen = true;
                 clipInfo->sourceLayerStack = layerStack;
                 clipInfo->sourcePrimPath = primPath;
                 clipInfo->indexOfLayerWhereAssetPathsFound = i;
-                templateAssetPath = clipTemplateAssetPath;
                 break;
             }
 
@@ -549,7 +547,7 @@ _ResolveLegacyClipInfo(
                     // for the templateActiveOffset here. This is because offset
                     // is only available in the new, dictionary style clips, 
                     // and was not backported to the legacy clips.
-                    _DeriveClipInfo(*templateAssetPath, *templateStride,
+                    _DeriveClipInfo(templateAssetPath, *templateStride,
                                     _DefaultClipOffsetValue,
                                     *templateStartTime, *templateEndTime,
                                     &clipInfo->clipTimes, &clipInfo->clipActive,
@@ -1296,6 +1294,10 @@ Usd_Clip::ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
 
     std::set<ExternalTime> timeSamples;
 
+    // A clip is active in the time range [startTime, endTime).
+    const GfInterval clipTimeInterval(
+        startTime, endTime, /* minClosed = */ true, /* maxClosed = */ false);
+
     // We need to convert the internal time samples to the external
     // domain using the clip's time mapping. This is tricky because the
     // mapping is many-to-one: multiple external times may map to the
@@ -1307,6 +1309,13 @@ Usd_Clip::ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
         for (size_t i = 0; i < times.size() - 1; ++i) {
             const TimeMapping& m1 = times[i];
             const TimeMapping& m2 = times[i+1];
+
+            // Ignore time mappings whose external time domain does not 
+            // intersect the times at which this clip is active.
+            const GfInterval mappingInterval(m1.externalTime, m2.externalTime);
+            if (!mappingInterval.Intersects(clipTimeInterval)) {
+                continue;
+            }
 
             if (m1.internalTime <= t && t <= m2.internalTime) {
                 if (m1.internalTime == m2.internalTime) {
@@ -1490,11 +1499,11 @@ Usd_Clip::_Interpolate(
     template bool Usd_Clip::_Interpolate(                       \
         const SdfLayerRefPtr&, const _TranslatedSpecId&,        \
         InternalTime, Usd_InterpolatorBase*,                    \
-        SDF_VALUE_TRAITS_TYPE(elem)::Type*) const;              \
+        SDF_VALUE_CPP_TYPE(elem)*) const;                       \
     template bool Usd_Clip::_Interpolate(                       \
         const SdfLayerRefPtr&, const _TranslatedSpecId&,        \
         InternalTime, Usd_InterpolatorBase*,                    \
-        SDF_VALUE_TRAITS_TYPE(elem)::ShapedType*) const;        \
+        SDF_VALUE_CPP_ARRAY_TYPE(elem)*) const;                 \
 
 BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_INTERPOLATE, ~, SDF_VALUE_TYPES)
 #undef _INSTANTIATE_INTERPOLATE

@@ -27,10 +27,11 @@
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/hash.h"
 
-#include "pxr/base/arch/demangle.h"
-#include "pxr/base/tf/stopwatch.h"
-
 #include "pxr/base/tf/hashmap.h"
+
+#include <tuple>
+#include <utility>
+#include <vector>
 
 using std::map;
 using std::pair;
@@ -65,11 +66,156 @@ static void testSetDifferences()
     TF_AXIOM(result2 == expected2);
 }
 
+static void testGetPair()
+{
+    {
+        pair<int, std::string> testPair(1, "A");
+
+        using return_type_0 = decltype(TfGet<0>()(testPair));
+        static_assert(
+            std::is_same<return_type_0, int&>::value,
+            "return type should be int&");
+
+        using return_type_1 = decltype(TfGet<1>()(testPair));
+        static_assert(
+            std::is_same<return_type_1, std::string&>::value,
+            "return type should be string&");
+
+        TF_AXIOM(TfGet<0>()(testPair) == 1);
+        TF_AXIOM(TfGet<1>()(testPair) == "A");
+    }
+
+    {
+        const pair<int, std::string> testPair(2, "B");
+
+        using return_type_0 = decltype(TfGet<0>()(testPair));
+        static_assert(
+            std::is_same<return_type_0, const int&>::value,
+            "return type should be const int&");
+
+        using return_type_1 = decltype(TfGet<1>()(testPair));
+        static_assert(
+            std::is_same<return_type_1, const std::string&>::value,
+            "return type should be const string&");
+
+        TF_AXIOM(TfGet<0>()(testPair) == 2);
+        TF_AXIOM(TfGet<1>()(testPair) == "B");
+    }
+
+    {
+        auto make_test_pair = []() -> pair<int, std::string> {
+            return std::make_pair(3, "C");
+        };
+
+        using return_type_0 = decltype(TfGet<0>()(make_test_pair()));
+        static_assert(
+            std::is_same<return_type_0, int&&>::value,
+            "return type should be int&&");
+
+        using return_type_1 = decltype(TfGet<1>()(make_test_pair()));
+        static_assert(
+            std::is_same<return_type_1, std::string&&>::value,
+            "return type should be string&&");
+
+
+        TF_AXIOM(TfGet<0>()(make_test_pair()) == 3);
+        TF_AXIOM(TfGet<1>()(make_test_pair()) == "C");
+    }
+
+    {
+        const std::vector<pair<int, std::string>> pairs = {
+            std::make_pair(1, "A"), 
+            std::make_pair(2, "B"), 
+            std::make_pair(3, "C"), 
+            std::make_pair(4, "D")
+        };
+
+        std::vector<int> intsOnly(pairs.size());
+        std::transform(pairs.begin(), pairs.end(), intsOnly.begin(),
+                       TfGet<0>());
+
+        TF_AXIOM((intsOnly == std::vector<int>{ 1, 2, 3, 4 }));
+    }
+}
+
+static void testGetTuple()
+{
+    {
+        std::tuple<int, std::string> testTuple(1, "A");
+
+        using return_type_0 = decltype(TfGet<0>()(testTuple));
+        static_assert(
+            std::is_same<return_type_0, int&>::value,
+            "return type should be int&");
+
+        using return_type_1 = decltype(TfGet<1>()(testTuple));
+        static_assert(
+            std::is_same<return_type_1, std::string&>::value,
+            "return type should be string&");
+
+        TF_AXIOM(TfGet<0>()(testTuple) == 1);
+        TF_AXIOM(TfGet<1>()(testTuple) == "A");
+    }
+
+    {
+        const std::tuple<int, std::string> testTuple(2, "B");
+
+        using return_type_0 = decltype(TfGet<0>()(testTuple));
+        static_assert(
+            std::is_same<return_type_0, const int&>::value,
+            "return type should be const int&");
+
+        using return_type_1 = decltype(TfGet<1>()(testTuple));
+        static_assert(
+            std::is_same<return_type_1, const std::string&>::value,
+            "return type should be const string&");
+
+        TF_AXIOM(TfGet<0>()(testTuple) == 2);
+        TF_AXIOM(TfGet<1>()(testTuple) == "B");
+    }
+
+    {
+        auto make_test_tuple = []() -> std::tuple<int, std::string> {
+            return std::make_tuple(3, "C");
+        };
+
+        using return_type_0 = decltype(TfGet<0>()(make_test_tuple()));
+        static_assert(
+            std::is_same<return_type_0, int&&>::value,
+            "return type should be int&&");
+
+        using return_type_1 = decltype(TfGet<1>()(make_test_tuple()));
+        static_assert(
+            std::is_same<return_type_1, std::string&&>::value,
+            "return type should be string&&");
+
+
+        TF_AXIOM(TfGet<0>()(make_test_tuple()) == 3);
+        TF_AXIOM(TfGet<1>()(make_test_tuple()) == "C");
+    }
+
+    {
+        const std::vector<std::tuple<int, std::string>> tuples = {
+            std::make_tuple(1, std::string("A")),
+            std::make_tuple(2, std::string("B")), 
+            std::make_tuple(3, std::string("C")), 
+            std::make_tuple(4, std::string("D"))
+        };
+
+        std::vector<int> intsOnly(tuples.size());
+        std::transform(tuples.begin(), tuples.end(), intsOnly.begin(),
+                       TfGet<0>());
+
+        TF_AXIOM((intsOnly == std::vector<int>{ 1, 2, 3, 4 }));
+    }
+}
 
 static bool
 Test_TfStl()
 {
     testSetDifferences();
+    testGetPair();
+    testGetTuple();
     
     TfHashMap<string, int, TfHash> hm;
     map<string, int> m;

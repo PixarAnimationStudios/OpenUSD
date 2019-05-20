@@ -43,20 +43,12 @@ InterpolateVarying(size_t numVerts, VtIntArray const & vertexCounts, TfToken wra
 {
     VtArray<T> outputValues(numVerts);
 
-    int vStep;
     size_t srcIndex = 0;
     size_t dstIndex = 0;
 
     if (wrap == HdTokens->periodic) {
         // XXX : Add support for periodic curves
-        TF_WARN("Varying data is only supported for non-periodic curves.");     
-    }
-
-    if(basis == HdTokens->bezier) {
-        vStep = 3;
-    } 
-    else {
-        vStep = 1;
+        TF_WARN("Varying data is only supported for non-periodic curves.");
     }
 
     TF_FOR_ALL(itVertexCount, vertexCounts) {
@@ -67,62 +59,72 @@ InterpolateVarying(size_t numVerts, VtIntArray const & vertexCounts, TfToken wra
             continue;
         }
 
-        if(vStep == 1) {
+        if(basis == HdTokens->catmullRom || basis == HdTokens->bSpline) {
             // For splines with a vstep of 1, we are doing linear interpolation 
             // between segments, so all we do here is duplicate the first and 
             // last outputValues. Since these are never acutally used during 
             // drawing, it would also work just to set the to 0.
             outputValues[dstIndex] = authoredValues[srcIndex];
-            ++ dstIndex;
-            for(int i = 1;i < nVerts - 1 ; ++i) {
+            ++dstIndex;
+            for (int i = 1; i < nVerts - 2; ++i){
                 outputValues[dstIndex] = authoredValues[srcIndex];
-                ++ dstIndex; ++ srcIndex;
+                ++dstIndex; ++srcIndex;
             }
-            outputValues[dstIndex] = authoredValues[srcIndex - 1];
-            ++ dstIndex;
+            outputValues[dstIndex] = authoredValues[srcIndex];
+            ++dstIndex;
+            outputValues[dstIndex] = authoredValues[srcIndex];
+            ++dstIndex; ++srcIndex;
         }
-        else {
-            // For splines with a larger vstep, control points that do not have 
-            // an authored width get their value as a linear interpolation 
-            // between the two nearest control points with outputValues.
-
-            // First control points always has a value
+        else if (basis == HdTokens->bezier){
+            // For bezier splines, we map the linear values to cubic values
+            // the begin value gets mapped to the first two vertices and
+            // the end value gets mapped to the last two vertices in a segment.
+            // shaders can choose to access value[1] and value[2] when linearly
+            // interpolating a value, which happens to match up with the
+            // indexing to use for catmullRom and bSpline basis.
+            int vStep = 3;
+            outputValues[dstIndex] = authoredValues[srcIndex];
+            ++dstIndex; // don't increment the srcIndex
             outputValues[dstIndex] = authoredValues[srcIndex];
             ++dstIndex; ++ srcIndex;
 
             // vstep - 1 control points will have an interpolated value
-            for(int i = 1;i < nVerts; i += vStep) {
-                T diff = authoredValues[srcIndex] - authoredValues[srcIndex - 1];
-                diff /= vStep;
-                for(int v = 1;v < vStep; ++v) {
-                    outputValues[dstIndex] = authoredValues[srcIndex -1] + diff * v;
-                    ++ dstIndex;
-                }
+            for(int i = 2; i < nVerts - 2; i += vStep) {
                 outputValues[dstIndex] = authoredValues[srcIndex];
-                ++ dstIndex;
-                ++ srcIndex;
+                ++ dstIndex; // don't increment the srcIndex
+                outputValues[dstIndex] = authoredValues[srcIndex];
+                ++ dstIndex; // don't increment the srcIndex
+                outputValues[dstIndex] = authoredValues[srcIndex];
+                ++ dstIndex; ++ srcIndex; 
             }
+            outputValues[dstIndex] = authoredValues[srcIndex];
+            ++dstIndex; // don't increment the srcIndex
+            outputValues[dstIndex] = authoredValues[srcIndex];
+            ++dstIndex; ++ srcIndex;
+        }
+        else {
+            TF_WARN("Unsupported basis: '%s'", basis.GetText());
         }
     }
-
+    TF_VERIFY(srcIndex == authoredValues.size());
     TF_VERIFY(dstIndex == numVerts);
+    
     return outputValues;
 }
 
 HdSt_BasisCurvesIndexBuilderComputation::HdSt_BasisCurvesIndexBuilderComputation(
-    HdBasisCurvesTopology *topology,
-    bool supportSmoothCurves)
-    : _topology(topology)
-    , _supportSmoothCurves(supportSmoothCurves)
+    HdBasisCurvesTopology *topology, bool forceLines)
+    : _topology(topology),
+      _forceLines(forceLines)
 {
 }
 
 void
-HdSt_BasisCurvesIndexBuilderComputation::AddBufferSpecs(
+HdSt_BasisCurvesIndexBuilderComputation::GetBufferSpecs(
     HdBufferSpecVector *specs) const
 {
     // index buffer
-    if(_supportSmoothCurves) {
+    if(!_forceLines && _topology->GetCurveType() == HdTokens->cubic) {
         specs->emplace_back(HdTokens->indices,
                             HdTupleType{HdTypeInt32Vec4, 1});
     }
@@ -195,28 +197,36 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildLinesIndexArray()
 HdSt_BasisCurvesIndexBuilderComputation::IndexAndPrimIndex
 HdSt_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray()
 {
+    const TfToken basis = _topology->GetCurveBasis();
+    const bool skipFirstAndLastSegs = (basis == HdTokens->catmullRom);
+
     std::vector<GfVec2i> indices;
+    // primIndices stores the curve index that generated each line segment.
     std::vector<int> primIndices;
-    VtArray<int> vertexCounts = _topology->GetCurveVertexCounts();
+    const VtArray<int> vertexCounts = _topology->GetCurveVertexCounts();
     bool wrap = _topology->GetCurveWrap() == HdTokens->periodic;
-    int vertexIndex = 0;
-    int curveIndex = 0;
+    int vertexIndex = 0; // Index of next vertex to emit
+    int curveIndex = 0;  // Index of next curve to emit
+    // For each curve
     TF_FOR_ALL(itCounts, vertexCounts) {
         int v0 = vertexIndex;
         int v1;
         // Store first vert index incase we are wrapping
-        int firstVert = v0;
+        const int firstVert = v0;
         ++ vertexIndex;
         for(int i = 1;i < *itCounts; ++i) {
             v1 = vertexIndex;
             ++ vertexIndex;
-            indices.push_back(GfVec2i(v0, v1));
+            if (!skipFirstAndLastSegs || (i > 1 && i < (*itCounts)-1)) {
+                indices.push_back(GfVec2i(v0, v1));
+                // Map this line segment back to the curve it came from
+                primIndices.push_back(curveIndex);
+            }
             v0 = v1;
-            primIndices.push_back(curveIndex);        
         }
         if(wrap) {
             indices.push_back(GfVec2i(v0, firstVert));
-            primIndices.push_back(curveIndex);            
+            primIndices.push_back(curveIndex);
         }
         ++curveIndex;
     }
@@ -258,7 +268,7 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray()
 }
 
 HdSt_BasisCurvesIndexBuilderComputation::IndexAndPrimIndex
-HdSt_BasisCurvesIndexBuilderComputation::_BuildSmoothCurveIndexArray()
+HdSt_BasisCurvesIndexBuilderComputation::_BuildCubicIndexArray()
 {
 
     /* 
@@ -301,7 +311,7 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildSmoothCurveIndexArray()
     std::vector<GfVec4i> indices;
     std::vector<int> primIndices;
 
-    VtArray<int> vertexCounts = _topology->GetCurveVertexCounts();
+    const VtArray<int> vertexCounts = _topology->GetCurveVertexCounts();
     bool wrap = _topology->GetCurveWrap() == HdTokens->periodic;
     int vStep;
     TfToken basis = _topology->GetCurveBasis();
@@ -341,7 +351,7 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildSmoothCurveIndexArray()
                     : vertexIndex + std::min(offset + v, (count -1));
             }
             indices.push_back(seg);
-            primIndices.push_back(curveIndex);            
+            primIndices.push_back(curveIndex);
         }
         vertexIndex += count;
         curveIndex++;
@@ -394,8 +404,8 @@ HdSt_BasisCurvesIndexBuilderComputation::Resolve()
 
     IndexAndPrimIndex result;
 
-    if(_supportSmoothCurves) {
-        result = _BuildSmoothCurveIndexArray();
+    if(!_forceLines && _topology->GetCurveType() == HdTokens->cubic) {
+        result = _BuildCubicIndexArray();
     } else {
         if (_topology->GetCurveWrap() == HdTokens->segmented) {
             result = _BuildLinesIndexArray();
@@ -432,10 +442,10 @@ HdSt_BasisCurvesIndexBuilderComputation::HasChainedBuffer() const
     return true;
 }
 
-HdBufferSourceSharedPtr
-HdSt_BasisCurvesIndexBuilderComputation::GetChainedBuffer() const
+HdBufferSourceVector
+HdSt_BasisCurvesIndexBuilderComputation::GetChainedBuffers() const
 {
-    return _primitiveParam;
+    return { _primitiveParam };
 }
 
 // -------------------------------------------------------------------------- //
@@ -451,7 +461,7 @@ HdSt_BasisCurvesWidthsInterpolaterComputation::HdSt_BasisCurvesWidthsInterpolate
 }
 
 void
-HdSt_BasisCurvesWidthsInterpolaterComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_BasisCurvesWidthsInterpolaterComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     specs->emplace_back(HdTokens->widths, HdTupleType{HdTypeFloat, 1});
 }
@@ -519,7 +529,7 @@ HdSt_BasisCurvesNormalsInterpolaterComputation::HdSt_BasisCurvesNormalsInterpola
 }
 
 void
-HdSt_BasisCurvesNormalsInterpolaterComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_BasisCurvesNormalsInterpolaterComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     specs->emplace_back(HdTokens->normals, HdTupleType{HdTypeFloatVec3, 1});
 }

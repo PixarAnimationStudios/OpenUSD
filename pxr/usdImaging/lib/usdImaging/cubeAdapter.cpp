@@ -24,6 +24,7 @@
 #include "pxr/usdImaging/usdImaging/cubeAdapter.h"
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
+#include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/mesh.h"
@@ -71,7 +72,7 @@ UsdImagingCubeAdapter::TrackVariability(UsdPrim const& prim,
                                         SdfPath const& cachePath,
                                         HdDirtyBits* timeVaryingBits,
                                         UsdImagingInstancerContext const* 
-                                            instancerContext)
+                                            instancerContext) const
 {
     BaseAdapter::TrackVariability(
         prim, cachePath, timeVaryingBits, instancerContext);
@@ -96,7 +97,7 @@ UsdImagingCubeAdapter::UpdateForTime(UsdPrim const& prim,
                                      UsdTimeCode time,
                                      HdDirtyBits requestedBits,
                                      UsdImagingInstancerContext const* 
-                                         instancerContext)
+                                         instancerContext) const
 {
     BaseAdapter::UpdateForTime(
         prim, cachePath, time, requestedBits, instancerContext);
@@ -112,16 +113,21 @@ UsdImagingCubeAdapter::UpdateForTime(UsdPrim const& prim,
     if (requestedBits & HdChangeTracker::DirtyTopology) {
         valueCache->GetTopology(cachePath) = GetMeshTopology();
     }
-    if (requestedBits & HdChangeTracker::DirtyPoints) {
-        valueCache->GetPoints(cachePath)= GetMeshPoints(prim, time);
-
-        // Expose points as a primvar.
-        UsdImagingValueCache::PrimvarInfo primvar;
-        primvar.name = HdTokens->points;
-        primvar.interpolation = UsdGeomTokens->vertex;
-        PrimvarInfoVector& primvars = valueCache->GetPrimvars(cachePath);
-        _MergePrimvar(primvar, &primvars);
+    if (_IsRefined(cachePath)) {
+        if (requestedBits & HdChangeTracker::DirtySubdivTags) {
+            valueCache->GetSubdivTags(cachePath);
+        }
     }
+}
+
+/*virtual*/
+VtValue
+UsdImagingCubeAdapter::GetPoints(UsdPrim const& prim,
+                                 SdfPath const& cachePath,
+                                 UsdTimeCode time) const
+{
+    TF_UNUSED(cachePath);
+    return GetMeshPoints(prim, time);   
 }
 
 // -------------------------------------------------------------------------- //

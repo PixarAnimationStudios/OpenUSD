@@ -139,7 +139,8 @@ PCP_DEFINE_GET_API(const PcpLayerStackRefPtr&, GetLayerStack, layerStack);
 bool
 PcpNodeRef::HasSpecs() const
 {
-    TF_VERIFY(_nodeIdx < _graph->_nodeHasSpecs.size());
+    // XXX: This VERIFY is too expensive here.
+    //TF_VERIFY(_nodeIdx < _graph->_nodeHasSpecs.size());
     return _graph->_nodeHasSpecs[_nodeIdx];
 }
 
@@ -173,7 +174,8 @@ bool
 PcpNodeRef::IsInert() const
 {
     const PcpPrimIndex_Graph::_Node& node = _graph->_GetNode(_nodeIdx);
-    return node.smallInts.inert || node.smallInts.culled;
+    bool inert = node.smallInts.inert, culled = node.smallInts.culled;
+    return inert || culled;
 }
 
 bool 

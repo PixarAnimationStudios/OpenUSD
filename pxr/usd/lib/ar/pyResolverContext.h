@@ -24,8 +24,9 @@
 #ifndef AR_PY_RESOLVER_CONTEXT_H
 #define AR_PY_RESOLVER_CONTEXT_H
 
-// Private helper functions for converting ArResolverContext
-// objects to and from Python.
+/// \file ar/pyResolverContext.h
+/// Macros for creating Python bindings for objects used with 
+/// ArResolverContext.
 
 #include <Python.h>
 #include <boost/python/extract.hpp>
@@ -41,6 +42,19 @@
 #include <boost/function.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+/// Register the specified type as a context object that may be
+/// converted from a Python into a ArResolverContext object
+/// in C++ and vice versa. This typically would be called in the
+/// source file where the Python wrapping for the context object
+/// is defined.
+template <class Context>
+void 
+ArWrapResolverContextForPython();
+
+#ifndef doxygen
+// Private helper functions for converting ArResolverContext
+// objects to and from Python.
 
 template <class Context>
 bool
@@ -105,6 +119,8 @@ ArWrapResolverContextForPython()
         Ar_ConvertResolverContextFromPython<Context>,
         Ar_ConvertResolverContextToPython<Context>);
 };
+
+#endif //doxygen
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

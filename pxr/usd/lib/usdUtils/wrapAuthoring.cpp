@@ -77,14 +77,23 @@ _WrapUsdUtilsComputeCollectionIncludesAndExcludes(
     const UsdStageWeakPtr &usdStage,
     double minInclusionRatio,
     const unsigned int maxNumExcludesBelowInclude,
-    const unsigned int minIncludeExcludeCollectionSize)
+    const unsigned int minIncludeExcludeCollectionSize,
+    const SdfPathVector &pathsToIgnore)
 {
+    // The pathsToIgnore parameter is an SdfPathVector instead of an SdfPathSet
+    // because we have to convert it into a hash set anyways. This lets us
+    // accept both Python sets and lists, but without creating a temporary
+    // std::set.
+    UsdUtilsPathHashSet pathsToIgnoreSet;
+    pathsToIgnoreSet.insert(pathsToIgnore.begin(), pathsToIgnore.end());
+
     SdfPathVector pathsToInclude;
     SdfPathVector pathsToExclude;
 
     UsdUtilsComputeCollectionIncludesAndExcludes(includedRootPaths, 
         usdStage, &pathsToInclude, &pathsToExclude, minInclusionRatio, 
-        maxNumExcludesBelowInclude, minIncludeExcludeCollectionSize);
+        maxNumExcludesBelowInclude, minIncludeExcludeCollectionSize,
+        pathsToIgnoreSet);
 
     return boost::python::make_tuple(pathsToInclude, pathsToExclude);
 }
@@ -100,7 +109,8 @@ void wrapAuthoring()
         (arg("includedRootPaths"), arg("usdStage"), 
          arg("minInclusionRatio")=0.75, 
          arg("maxNumExcludesBelowInclude")=5u,
-         arg("minIncludeExcludeCollectionSize")=3u));
+         arg("minIncludeExcludeCollectionSize")=3u,
+         arg("pathsToIgnore")=SdfPathVector()));
 
     def("AuthorCollection", UsdUtilsAuthorCollection, 
         (arg("collectionName"), arg("usdPrim"), arg("pathsToInclude"), 

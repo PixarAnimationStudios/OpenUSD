@@ -8,7 +8,7 @@ pxr_library(usdGeom
         plug
         vt
         sdf
-        tracelite
+        trace
         usd
         work
         ${Boost_PYTHON_LIBRARY}
@@ -21,7 +21,6 @@ pxr_library(usdGeom
         tokens
         bboxCache
         constraintTarget
-        primvar
         xformCache
         basisCurves
         boundable
@@ -32,8 +31,6 @@ pxr_library(usdGeom
         cube
         curves
         cylinder
-        collectionAPI
-        faceSetAPI
         imageable
         gprim
         mesh
@@ -45,6 +42,8 @@ pxr_library(usdGeom
         pointBased
         pointInstancer
         points
+        primvar
+        primvarsAPI
         scope
         sphere
         subset
@@ -67,12 +66,10 @@ pxr_library(usdGeom
         wrapCamera.cpp
         wrapConstraintTarget.cpp
         wrapCapsule.cpp
-        wrapCollectionAPI.cpp
         wrapCone.cpp
         wrapCube.cpp
         wrapCurves.cpp
         wrapCylinder.cpp
-        wrapFaceSetAPI.cpp
         wrapGprim.cpp
         wrapImageable.cpp
         wrapMesh.cpp
@@ -85,6 +82,7 @@ pxr_library(usdGeom
         wrapPointInstancer.cpp
         wrapPoints.cpp
         wrapPrimvar.cpp
+        wrapPrimvarsAPI.cpp
         wrapScope.cpp
         wrapSphere.cpp
         wrapSubset.cpp
@@ -108,11 +106,13 @@ pxr_test_scripts(
     testenv/testUsdGeomBasisCurves.py
     testenv/testUsdGeomBBoxCache.py
     testenv/testUsdGeomCamera.py
-    testenv/testUsdGeomCollectionAPI.py
+    testenv/testUsdGeomComputeAtTime.py
     testenv/testUsdGeomConstraintTarget.py
     testenv/testUsdGeomConsts.py
-    testenv/test_UsdGeomCurves.py
-    testenv/testUsdGeomFaceSetAPI.py
+    testenv/testUsdGeomCurves.py
+    testenv/testUsdGeomExtentTransform.py
+    testenv/testUsdGeomMesh.py
+    testenv/testUsdGeomMetrics.py
     testenv/testUsdGeomMotionAPI.py
     testenv/testUsdGeomNoPlugLoad.py
     testenv/testUsdGeomPointInstancer.py
@@ -168,18 +168,8 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/testUsdGeomCollectionAPI
-    DEST testUsdGeomCollectionAPI
-)
-
-pxr_install_test_dir(
     SRC testenv/testUsdGeomConsts
     DEST testUsdGeomConsts
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdGeomFaceSetAPI
-    DEST testUsdGeomFaceSetAPI
 )
 
 pxr_install_test_dir(
@@ -194,6 +184,16 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdGeomBBoxCache
     DEST testUsdGeomBBoxCache
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdGeomExtentTransform
+    DEST testUsdGeomExtentTransform
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdGeomComputeAtTime
+    DEST testUsdGeomComputeAtTime
 )
 
 pxr_register_test(testUsdGeomBasisCurves
@@ -217,12 +217,6 @@ pxr_register_test(testUsdGeomCamera
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_register_test(testUsdGeomCollectionAPI
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomCollectionAPI"
-    EXPECTED_RETURN_CODE 0
-)
-
 pxr_register_test(testUsdGeomConstraintTarget
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomConstraintTarget"
@@ -242,13 +236,13 @@ pxr_register_test(testUsdGeomCreateAttribute
 
 pxr_register_test(testUsdGeomCurves
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/test_UsdGeomCurves"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomCurves"
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_register_test(testUsdGeomFaceSetAPI
+pxr_register_test(testUsdGeomMesh
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomFaceSetAPI"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomMesh"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -316,5 +310,17 @@ pxr_register_test(testUsdGeomXformCache
 pxr_register_test(testUsdGeomXformCommonAPI
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomXformCommonAPI"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomExtentTransform
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomExtentTransform"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomComputeAtTime
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomComputeAtTime"
     EXPECTED_RETURN_CODE 0
 )

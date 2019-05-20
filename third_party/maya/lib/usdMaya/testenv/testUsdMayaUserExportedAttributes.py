@@ -188,13 +188,13 @@ class testUsdMayaUserExportedAttributes(unittest.TestCase):
 
         # Validate UsdRi attributes.
         expectedRiAttrs = {
-            'ri:attributes:user:myIntRiAttr':
+            'primvars:ri:attributes:user:myIntRiAttr':
                 {'value': 42,
                  'typeName': Sdf.ValueTypeNames.Int},
-            'ri:attributes:user:myNamespace:myAttr':
+            'primvars:ri:attributes:user:myNamespace:myAttr':
                 {'value': 'UsdRi string',
                  'typeName': Sdf.ValueTypeNames.String},
-            'ri:attributes:user:myStringArrayRiAttr':
+            'primvars:ri:attributes:user:myStringArrayRiAttr':
                 {'value': Vt.StringArray(['the', 'quick', 'brown', 'fox']),
                  'typeName': Sdf.ValueTypeNames.StringArray},
         }
@@ -251,7 +251,8 @@ class testUsdMayaUserExportedAttributes(unittest.TestCase):
         gprim = UsdGeom.Gprim(prim)
         self.assertTrue(gprim)
 
-        primvars = gprim.GetPrimvars()
+        primvars = [primvar for primvar in gprim.GetPrimvars()
+            if 'ri:attributes' not in primvar.GetNamespace()]
         self.assertEqual(len(primvars), 9)
 
         primvarNames = {primvar.GetPrimvarName() for primvar in primvars}
@@ -394,16 +395,15 @@ class testUsdMayaUserExportedAttributes(unittest.TestCase):
         self.assertTrue(gprim)
 
         # Do a quick check to see whether we have the right number of attributes
-        # by counting the primvars and UsdRi attributes.
+        # by counting the primvars (which include the Ri attributes,
+        # encoded in USD as primvars).
         # Getting all primvars will also include the built-in displayColor,
         # displayOpacity, and st, so we add 3 to the length of the
         # exportedAttrsDict for that check.
         primvars = gprim.GetPrimvars()
-        self.assertEqual(len(primvars), len(exportedAttrsDict) + 3)
-
+        self.assertEqual(len(primvars), len(exportedAttrsDict)*2 + 3)
         riStatements = UsdRi.StatementsAPI(usdPrim)
         self.assertTrue(riStatements)
-
         riAttrs = riStatements.GetRiAttributes()
         self.assertEqual(len(riAttrs), len(exportedAttrsDict))
 
@@ -434,7 +434,7 @@ class testUsdMayaUserExportedAttributes(unittest.TestCase):
             self.assertEqual(primvar.GetTypeName(), exportedAttrsDict[attrPrefix]['typeName'])
 
             # Test UsdRi attributes.
-            riAttr = usdPrim.GetAttribute('ri:attributes:user:%sUsdRiAttr' % attrPrefix)
+            riAttr = usdPrim.GetAttribute('primvars:ri:attributes:user:%sUsdRiAttr' % attrPrefix)
             self.assertTrue(riAttr)
             self.assertTrue(UsdRi.StatementsAPI.IsRiAttribute(riAttr))
             self._assertAlmostEqualWithFallback(riAttr.Get(), value)

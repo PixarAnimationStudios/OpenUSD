@@ -31,6 +31,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class SdfPath;
 
 // To start we always validate.
 #define USD_CHECK_ALL_PRIM_ACCESSES
@@ -57,9 +58,6 @@ typedef boost::intrusive_ptr<const Usd_PrimData> Usd_PrimDataConstIPtr;
 // UsdObject detect prim expiry, and provides access to cached prim data.
 class Usd_PrimDataHandle
 {
-    // safe-bool idiom.
-    typedef const Usd_PrimDataConstIPtr
-        Usd_PrimDataHandle::*_UnspecifiedBoolType;
 public:
     // smart ptr element_type typedef.
     typedef Usd_PrimDataConstIPtr::element_type element_type;
@@ -102,16 +100,16 @@ public:
         return p;
     }
 
-    // Safe-bool operator.  Return true if this handle points to a valid prim
-    // instance that is not marked dead, false otherwise.
-    operator _UnspecifiedBoolType() const {
+    // Explicit bool conversion operator. Returns \c true if this handle points 
+    // to a valid prim instance that is not marked dead, \c false otherwise.
+    explicit operator bool() const {
         element_type *p = _p.get();
-        return p && !Usd_IsDead(p) ? &Usd_PrimDataHandle::_p : NULL;
+        return p && !Usd_IsDead(p);
     }
 
     // Return a text description of this prim data, used primarily for
     // diagnostic purposes.
-    std::string GetDescription() const;
+    std::string GetDescription(SdfPath const &proxyPrimPath) const;
 
 private:
     // Equality comparison.

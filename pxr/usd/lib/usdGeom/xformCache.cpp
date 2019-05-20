@@ -25,7 +25,7 @@
 #include "pxr/usd/usdGeom/xformCache.h"
 #include "pxr/usd/usdGeom/xform.h"
 
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include "pxr/base/tf/diagnostic.h"
 
@@ -35,13 +35,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 UsdGeomXformCache::UsdGeomXformCache(const UsdTimeCode time)
     : _time(time)
-    , _worldPath(SdfPath::AbsoluteRootPath())
 {
 }
 
 UsdGeomXformCache::UsdGeomXformCache()
     : _time(UsdTimeCode::Default())
-    , _worldPath(SdfPath::AbsoluteRootPath())
 {
 }
 
@@ -49,13 +47,6 @@ GfMatrix4d
 UsdGeomXformCache::GetLocalToWorldTransform(const UsdPrim& prim)
 {
     TRACE_FUNCTION();
-    if (!prim.GetPath().HasPrefix(_worldPath)) {
-        TF_CODING_ERROR("Attempt to get transform for: %s "
-                        "which is not within the specified world: %s",
-                        prim.GetPath().GetString().c_str(),
-                        _worldPath.GetString().c_str());
-        return GfMatrix4d(1);
-    }
     return *_GetCtm(prim);
 }
 
@@ -63,15 +54,6 @@ GfMatrix4d
 UsdGeomXformCache::GetParentToWorldTransform(const UsdPrim& prim)
 {
     TRACE_FUNCTION();
-    if (!prim.GetPath().HasPrefix(_worldPath)) {
-        TF_CODING_ERROR("Attempt to get transform for: %s "
-                        "which is not within the specified world: %s",
-                        prim.GetPath().GetString().c_str(),
-                        _worldPath.GetString().c_str());
-        return GfMatrix4d(1);
-    }
-    if (prim.GetPath() == _worldPath)
-        return GfMatrix4d(1);
     return *_GetCtm(prim.GetParent());
 }
 
@@ -117,23 +99,27 @@ UsdGeomXformCache::IsAttributeIncludedInLocalTransform(const UsdPrim &prim,
 UsdGeomXformCache::_Entry *
 UsdGeomXformCache::_GetCacheEntryForPrim(const UsdPrim &prim)
 {
-    if (_Entry* entry = TfMapLookupPtr(_ctmCache, prim))
-        return entry;
-    
-    UsdGeomXformable::XformQuery query;
-    GfMatrix4d xform(1);
-    if (UsdGeomXformable xf = UsdGeomXformable(prim)) {
-        query = UsdGeomXformable::XformQuery(xf);
+    auto iresult = _ctmCache.insert({ prim, _Entry() });
+    _Entry *result = &iresult.first->second;
+    if (iresult.second) {
+        if (UsdGeomXformable xf = UsdGeomXformable(prim)) {
+            result->query = UsdGeomXformable::XformQuery(xf);
+        }
+        result->ctm.SetIdentity();
+        result->ctmIsValid = false;
     }
-    
-    return &(_ctmCache.insert(std::make_pair(prim, _Entry(query, xform, false)))
-                .first->second);
+    return result;
 }
 
 GfMatrix4d 
 UsdGeomXformCache::GetLocalTransformation(const UsdPrim &prim, 
                                           bool *resetsXformStack)
 {
+    if(!resetsXformStack) {
+        TF_CODING_ERROR("'resetsXformStack' pointer is null.");
+        return GfMatrix4d(1);
+    }
+
     _Entry *entry = _GetCacheEntryForPrim(prim);
     GfMatrix4d xform(1.); 
     if (TF_VERIFY(entry)) {
@@ -146,6 +132,27 @@ UsdGeomXformCache::GetLocalTransformation(const UsdPrim &prim,
     return xform;
 }
 
+GfMatrix4d
+UsdGeomXformCache::ComputeRelativeTransform(const UsdPrim &prim,
+                                            const UsdPrim &ancestor,
+                                            bool *resetXformStack)
+{
+    GfMatrix4d xform(1.);
+
+    if(!resetXformStack) {
+        TF_CODING_ERROR("'resetXformStack' pointer is null.");
+        return xform;
+    }
+
+    for(UsdPrim p = prim; p && p != ancestor; p = p.GetParent()) {
+        xform *= GetLocalTransformation(p, resetXformStack);
+        if(*resetXformStack) {
+            break;
+        }
+    }
+    return xform;
+}
+
 GfMatrix4d const*
 UsdGeomXformCache::_GetCtm(const UsdPrim& prim)
 {
@@ -154,7 +161,7 @@ UsdGeomXformCache::_GetCtm(const UsdPrim& prim)
 
     // Base case: check for the pseudo root, which is always implicitly
     // identity.
-    if (!prim || prim.GetPath() == _worldPath)
+    if (!prim)
         return &IDENTITY;
 
     // Check for a cached matrix.
@@ -197,27 +204,10 @@ UsdGeomXformCache::Clear() {
 }
 
 void
-UsdGeomXformCache::SetWorldPath(const SdfPath& rootPath)
-{
-    if (!rootPath.IsAbsolutePath()) {
-        TF_CODING_ERROR("Invalid root path: %s", rootPath.GetString().c_str());
-        return;
-    }
-
-    if (rootPath == _worldPath) 
-        return;
-
-    // XXX: May want to only invalidate CTMs like SetTime.
-    Clear(); 
-    _worldPath = rootPath;
-}
-
-void
 UsdGeomXformCache::Swap(UsdGeomXformCache& other)
 {
     _ctmCache.swap(other._ctmCache);
     std::swap(_time, other._time);
-    std::swap(_worldPath, other._worldPath);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

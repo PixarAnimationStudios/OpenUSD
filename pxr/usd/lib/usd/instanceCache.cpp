@@ -28,7 +28,7 @@
 #include "pxr/usd/pcp/primIndex.h"
 
 #include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include <utility>
 
@@ -71,17 +71,32 @@ Usd_InstanceCache::RegisterInstancePrimIndex(const PcpPrimIndex& index)
     const bool masterAlreadyExists = 
         (keyToMasterIt != _instanceKeyToMasterMap.end());
 
-    tbb::spin_mutex::scoped_lock lock(_mutex);
+    {
+        tbb::spin_mutex::scoped_lock lock(_mutex);
 
-    _PrimIndexPaths& pendingIndexes = _pendingAddedPrimIndexes[key];
-    pendingIndexes.push_back(index.GetPath());
+        _PrimIndexPaths& pendingIndexes = _pendingAddedPrimIndexes[key];
+        pendingIndexes.push_back(index.GetPath());
 
-    // A new master must be created for this instance if one doesn't
-    // already exist and this instance is the first one registered for
-    // this key.
-    const bool needsNewMaster = 
-        (!masterAlreadyExists && pendingIndexes.size() == 1);
-    return needsNewMaster;
+        // A new master must be created for this instance if one doesn't
+        // already exist and this instance is the first one registered for
+        // this key.
+        const bool needsNewMaster = 
+            (!masterAlreadyExists && pendingIndexes.size() == 1);
+        if (needsNewMaster) {
+            return true;
+        }
+    }
+
+    if (masterAlreadyExists) {
+        _MasterToSourcePrimIndexMap::const_iterator masterToSourceIndexIt = 
+            _masterToSourcePrimIndexMap.find(keyToMasterIt->second);
+        const bool existingMasterUsesIndexAsSource = 
+            (masterToSourceIndexIt != _masterToSourcePrimIndexMap.end() &&
+             masterToSourceIndexIt->second == index.GetPath());
+        return existingMasterUsesIndexAsSource;
+    }
+
+    return false;
 }
 
 void
@@ -256,6 +271,10 @@ Usd_InstanceCache::_CreateOrUpdateMasterForInstances(
     // Assign the newly-registered prim indexes to their master.
     const SdfPath& masterPath = result.first->second;
     for (const SdfPath& primIndexPath: *primIndexPaths) {
+        TF_DEBUG(USD_INSTANCING).Msg(
+            "Instancing: Added instance prim index <%s> for master "
+            "<%s>\n", primIndexPath.GetText(), masterPath.GetText());
+
         _primIndexToMasterMap[primIndexPath] = masterPath;
     }
 
@@ -319,6 +338,10 @@ Usd_InstanceCache::_RemoveInstances(
         _PrimIndexPaths::iterator it = std::find(
             primIndexesForMaster.begin(), primIndexesForMaster.end(), path);
         if (it != primIndexesForMaster.end()) {
+            TF_DEBUG(USD_INSTANCING).Msg(
+                "Instancing: Removed instance prim index <%s> for master "
+                "<%s>\n", path.GetText(), masterPath.GetText());
+
             primIndexesForMaster.erase(it);
             _primIndexToMasterMap.erase(path);
         }

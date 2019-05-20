@@ -41,6 +41,11 @@ HdRenderPassState::HdRenderPassState()
     , _cullMatrix(1)
     , _overrideColor(0.0f, 0.0f, 0.0f, 0.0f)
     , _wireframeColor(0.0f, 0.0f, 0.0f, 0.0f)
+    , _maskColor(1.0f, 0.0f, 0.0f, 1.0f)
+    , _indicatorColor(0.0f, 1.0f, 0.0f, 1.0f)
+    , _pointColor(0.0f, 0.0f, 0.0f, 1.0f)
+    , _pointSize(3.0)
+    , _pointSelectedSize(3.0)
     , _lightingEnabled(true)
     , _alphaThreshold(0.5f)
     , _tessLevel(32.0)
@@ -50,7 +55,24 @@ HdRenderPassState::HdRenderPassState()
     , _depthBiasConstantFactor(0.0f)
     , _depthBiasSlopeFactor(1.0f)
     , _depthFunc(HdCmpFuncLEqual)
+    , _depthMaskEnabled(true)
     , _cullStyle(HdCullStyleNothing)
+    , _stencilFunc(HdCmpFuncAlways)
+    , _stencilRef(0)
+    , _stencilMask(~0)
+    , _stencilFailOp(HdStencilOpKeep)
+    , _stencilZFailOp(HdStencilOpKeep)
+    , _stencilZPassOp(HdStencilOpKeep)
+    , _stencilEnabled(false)
+    , _lineWidth(1.0f)
+    , _blendColorOp(HdBlendOpAdd)
+    , _blendColorSrcFactor(HdBlendFactorOne)
+    , _blendColorDstFactor(HdBlendFactorZero)
+    , _blendAlphaOp(HdBlendOpAdd)
+    , _blendAlphaSrcFactor(HdBlendFactorOne)
+    , _blendAlphaDstFactor(HdBlendFactorZero)
+    , _blendConstantColor(0.0f, 0.0f, 0.0f, 0.0f)
+    , _blendEnabled(false)
     , _alphaToCoverageUseDefault(true)
     , _alphaToCoverageEnabled(true)
     , _colorMaskUseDefault(true)
@@ -65,7 +87,7 @@ HdRenderPassState::~HdRenderPassState()
 
 /* virtual */
 void
-HdRenderPassState::Sync(HdResourceRegistrySharedPtr const &resourceRegistry)
+HdRenderPassState::Prepare(HdResourceRegistrySharedPtr const &resourceRegistry)
 {
 }
 
@@ -105,6 +127,36 @@ void
 HdRenderPassState::SetWireframeColor(GfVec4f const &color)
 {
     _wireframeColor = color;
+}
+
+void
+HdRenderPassState::SetMaskColor(GfVec4f const &color)
+{
+    _maskColor = color;
+}
+
+void
+HdRenderPassState::SetIndicatorColor(GfVec4f const &color)
+{
+    _indicatorColor = color;
+}
+
+void
+HdRenderPassState::SetPointColor(GfVec4f const &color)
+{
+    _pointColor = color;
+}
+
+void
+HdRenderPassState::SetPointSize(float size)
+{
+    _pointSize = size;
+}
+
+void
+HdRenderPassState::SetPointSelectedSize(float size)
+{
+    _pointSelectedSize = size;
 }
 
 void
@@ -150,6 +202,19 @@ HdRenderPassState::GetClipPlanes() const
 }
 
 void
+HdRenderPassState::SetAovBindings(
+        HdRenderPassAovBindingVector const& aovBindings)
+{
+    _aovBindings= aovBindings;
+}
+
+HdRenderPassAovBindingVector const&
+HdRenderPassState::GetAovBindings() const
+{
+    return _aovBindings;
+}
+
+void
 HdRenderPassState::SetDepthBiasUseDefault(bool useDefault)
 {
     _depthBiasUseDefault = useDefault;
@@ -172,6 +237,71 @@ void
 HdRenderPassState::SetDepthFunc(HdCompareFunction depthFunc)
 {
     _depthFunc = depthFunc;
+}
+
+void
+HdRenderPassState::SetEnableDepthMask(bool state)
+{
+    _depthMaskEnabled = state;
+}
+
+bool
+HdRenderPassState::GetEnableDepthMask()
+{
+    return _depthMaskEnabled;
+}
+
+void
+HdRenderPassState::SetStencil(HdCompareFunction func,
+        int ref, int mask,
+        HdStencilOp fail, HdStencilOp zfail, HdStencilOp zpass)
+{
+    _stencilFunc = func;
+    _stencilRef = ref;
+    _stencilMask = mask;
+    _stencilFailOp = fail;
+    _stencilZFailOp = zfail;
+    _stencilZPassOp = zpass;
+}
+
+void
+HdRenderPassState::SetStencilEnabled(bool enabled)
+{
+    _stencilEnabled = enabled;
+}
+
+void
+HdRenderPassState::SetLineWidth(float width)
+{
+    _lineWidth = width;
+}
+
+void
+HdRenderPassState::SetBlend(HdBlendOp colorOp,
+                            HdBlendFactor colorSrcFactor,
+                            HdBlendFactor colorDstFactor,
+                            HdBlendOp alphaOp,
+                            HdBlendFactor alphaSrcFactor,
+                            HdBlendFactor alphaDstFactor)
+{
+    _blendColorOp = colorOp;
+    _blendColorSrcFactor = colorSrcFactor;
+    _blendColorDstFactor = colorDstFactor;
+    _blendAlphaOp = alphaOp;
+    _blendAlphaSrcFactor = alphaSrcFactor;
+    _blendAlphaDstFactor = alphaDstFactor;
+}
+
+void
+HdRenderPassState::SetBlendConstantColor(GfVec4f const & color)
+{
+    _blendConstantColor = color;
+}
+
+void
+HdRenderPassState::SetBlendEnabled(bool enabled)
+{
+    _blendEnabled = enabled;
 }
 
 void

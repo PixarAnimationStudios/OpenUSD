@@ -47,6 +47,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+struct TfTokenFastArbitraryLessThan;
+
 /// \class TfToken
 /// \ingroup group_tf_String
 ///
@@ -167,15 +169,6 @@ public:
         size_t operator()(TfToken const& token) const { return token.Hash(); }
     };
 
-    /// Functor to be used with std::set when lexicographical ordering
-    // isn't crucial and you just want uniqueness and fast lookup
-    // without the overhead of an TfHashSet.
-    struct LTTokenFunctor {
-        bool operator()(TfToken const& s1, TfToken const& s2) const {
-            return s1._rep.Get() < s2._rep.Get();
-        }
-    };
-
     /// \typedef TfHashSet<TfToken, TfToken::HashFunctor> HashSet;
     ///
     /// Predefined type for TfHashSet of tokens, since it's so awkward to
@@ -183,17 +176,18 @@ public:
     ///
     typedef TfHashSet<TfToken, TfToken::HashFunctor> HashSet;
     
-    /// \typedef std::set<TfToken, TfToken::LTTokenFunctor> Set;
+    /// \typedef std::set<TfToken, TfTokenFastArbitraryLessThan> Set;
     ///
     /// Predefined type for set of tokens, for when faster lookup is
     /// desired, without paying the memory or initialization cost of a
     /// TfHashSet.
     ///
-    typedef std::set<TfToken, TfToken::LTTokenFunctor> Set;
+    typedef std::set<TfToken, TfTokenFastArbitraryLessThan> Set;
     
     /// Return the size of the string that this token represents.
     size_t size() const {
-        return _rep ? _rep->_str.size() : 0;
+        _Rep const *rep = _rep.Get();
+        return rep ? rep->_str.size() : 0;
     }
 
     /// Return the text that this token represents.
@@ -202,7 +196,8 @@ public:
     /// object has been destroyed.
     ///
     char const* GetText() const {
-        return _rep ? _rep->_str.c_str() : "";
+        _Rep const *rep = _rep.Get();
+        return rep ? rep->_str.c_str() : "";
     }
 
     /// Synonym for GetText().
@@ -212,7 +207,8 @@ public:
 
     /// Return the string that this token represents.
     std::string const& GetString() const {
-        return _rep ? _rep->_str : _GetEmptyString();
+        _Rep const *rep = _rep.Get();
+        return rep ? rep->_str : _GetEmptyString();
     }
 
     /// Swap this token with another.
@@ -224,7 +220,8 @@ public:
     bool operator==(TfToken const& o) const {
         // Equal if pointers & bits are equal, or if just pointers are.  Done
         // this way to avoid the bitwise operations for common cases.
-        return _rep == o._rep || _rep.Get() == o._rep.Get();
+        return _rep.GetLiteral() == o._rep.GetLiteral() ||
+            _rep.Get() == o._rep.Get();
     }
 
     /// Equality operator
@@ -299,7 +296,10 @@ public:
     operator std::string const& () const { return GetString(); }
     
     /// Returns \c true iff this token contains the empty string \c ""
-    bool IsEmpty() const { return !_rep; }
+    bool IsEmpty() const { return _rep.GetLiteral() == 0; }
+
+    /// Returns \c true iff this is an immortal token.
+    bool IsImmortal() const { return !_rep->_isCounted; }
 
     /// Stream insertion.
     friend TF_API std::ostream &operator <<(std::ostream &stream, TfToken const&);
@@ -324,8 +324,9 @@ private:
         if (_rep.BitsAs<bool>()) {
             // We believe this rep is refCounted.
             if (_rep->_isCounted) {
-                if (_rep->_refCount == 1)
+                if (_rep->_refCount.load(std::memory_order_relaxed) == 1) {
                     _PossiblyDestroyRep();
+                }
                 else {
                     /*
                      * This is deliberately racy.  It's possible the statement
@@ -340,7 +341,7 @@ private:
                      * using it.  So it's not even necessarily a true leak --
                      * it's just a potential leak.
                      */
-                    --_rep->_refCount;
+                    _rep->_refCount.fetch_sub(1, std::memory_order_relaxed);
                 }
             } else {
                 // Our belief is wrong, update our cache of countedness.
@@ -376,12 +377,14 @@ private:
             return *this;
         }
 
-        bool IncrementIfCounted() const {
+        inline bool IncrementIfCounted() const {
             const bool isCounted = _isCounted;
-            if (isCounted)
-                ++_refCount;
+            if (isCounted) {
+                _refCount.fetch_add(1, std::memory_order_relaxed);
+            }
             return isCounted;
         }
+
         std::string _str;
         char const *_cstr;
         mutable std::atomic_int _refCount;

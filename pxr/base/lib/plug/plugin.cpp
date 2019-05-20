@@ -43,7 +43,7 @@
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pyInterpreter.h"
@@ -209,14 +209,17 @@ PlugPlugin::_Load()
     TfAutoMallocTag2 tag("PlugPlugin::_Load", 
                          TfStringPrintf("Load %s", _name.c_str()));
     
-    TRACE_FUNCTION();
-    TF_DESCRIBE_SCOPE("Loading plugin '%s'", TfGetBaseName(_name).c_str());
+    const std::string pluginBaseName = TfGetBaseName(_name);
+
+    TRACE_FUNCTION_DYNAMIC(pluginBaseName);
+    TF_DESCRIBE_SCOPE("Loading plugin '%s'", pluginBaseName.c_str());
     TF_DEBUG(PLUG_LOAD).Msg("Loading plugin '%s'.\n", _name.c_str());
 
     bool isLoaded = true;
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
     if (IsPythonModule()) {
+        TRACE_FUNCTION_SCOPE("python import");
         string cmd = TfStringPrintf("import %s\n", _name.c_str());
         if (TfPyRunSimpleString(cmd) != 0) {
             TF_CODING_ERROR("Load of %s for %s failed",
@@ -227,13 +230,19 @@ PlugPlugin::_Load()
     if (false) {
 #endif // PXR_PYTHON_SUPPORT_ENABLED
     } else if (!IsResource()) {
-        // XXX -- This is a hack to handle a static/non-monolithic library
-        // build.  In this case some "plugins" will be static libraries
-        // directly linked into the executable and can't be dynamically
-        // loaded.  Just skip these since they're already loaded.
-        if (!TfStringEndsWith(_path, ARCH_STATIC_LIBRARY_SUFFIX)) {
+        // This plugin's library path may be empty if the plugin isn't
+        // separately loadable, e.g. it's part of a monolithic USD build
+        // or it's a static library.
+        if (_path.empty()) {
+            TF_DEBUG(PLUG_LOAD).Msg("No path to library for '%s'.\n", 
+                                    _name.c_str());
+        }
+        else {
             string dsoError;
-            _handle = TfDlopen(_path.c_str(), ARCH_LIBRARY_NOW, &dsoError);
+            {
+                TRACE_FUNCTION_SCOPE("dlopen");
+                _handle = TfDlopen(_path.c_str(), ARCH_LIBRARY_NOW, &dsoError);
+            }
             if (!_handle ) {
                 TF_CODING_ERROR("Load of '%s' for '%s' failed: %s",
                                 _path.c_str(), _name.c_str(), dsoError.c_str());

@@ -1,15 +1,20 @@
 /*!
-\page usdHydra_page_front UsdHydra : USD Hydra Schemas
+\page usdHydra_page_front UsdHydra : USD Hydra Shading Schemas
 \if ( PIXAR_MFB_BUILD )
-\mainpage UsdHydra : USD Hydra Schemas
+\mainpage UsdHydra : USD Hydra Shading Schemas
 \publicLib
 \endif
 
 \section usdHydra_overview Overview
 
-UsdHydra provides schemas and behaviors for creating and connecting shading
-networks based on UsdShade.
+\note This library is now deprecated and will be deleted soon.
 
-\note These schemas are still a work in progress.
+UsdHydra used to provide schemas and behaviors for creating and connecting 
+shading networks based on UsdShade.
+
+The schemas in this library have been deleted. Currently, it provides only the 
+list of tokens used in the schemas, to assist in the gradual transition to the 
+new-style of hydra shaders authored using the shader registry.
+
 
 */

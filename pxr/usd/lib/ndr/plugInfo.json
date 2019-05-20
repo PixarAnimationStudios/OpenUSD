@@ -1,0 +1,21 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "NdrDiscoveryPlugin": {},
+                    "_NdrFilesystemDiscoveryPlugin" : {
+                        "bases": ["NdrDiscoveryPlugin"],
+                        "displayName": "Filesystem Discovery"
+                    },
+                    "NdrParserPlugin": {}
+                }
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@", 
+            "Name": "ndr", 
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@", 
+            "Root": "@PLUG_INFO_ROOT@", 
+            "Type": "library"
+        }
+    ]
+}

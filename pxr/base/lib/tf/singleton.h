@@ -124,7 +124,7 @@ public:
     /// Return a reference to an object of type \c T, creating it if
     /// necessary.
     ///
-    /// When \c GetInstance() is called for the first time, it creates an an
+    /// When \c GetInstance() is called for the first time, it creates an
     /// object of type \c T, and returns a reference to it.  The type in
     /// question must have a default constructor (i.e. a constructor taking no
     /// arguments).
@@ -135,7 +135,12 @@ public:
     /// (for example, letting only one thread at a time call a member
     /// function) are the responsibility of the class author.
     inline static T& GetInstance() {
+        ARCH_PRAGMA_PUSH
+        // Suppress warnings from clang. TfSingletons are explicitly
+        // instantiated, so the warning around this usage is a false positive.
+        ARCH_PRAGMA_UNDEFINED_VAR_TEMPLATE
         return ARCH_LIKELY(_instance) ? *_instance : _CreateInstance();
+        ARCH_PRAGMA_POP
     }
 
     /// Return whether or not the single object of type \c T is currently in

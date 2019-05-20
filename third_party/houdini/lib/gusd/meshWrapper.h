@@ -47,7 +47,6 @@ public:
             UsdTimeCode t,
             GusdPurposeSet purposes );
 
-//    GusdMeshWrapper( UsdGeomMesh usdMesh, const UsdTimeCode &t );    
     GusdMeshWrapper( const GusdMeshWrapper &in );
 
     virtual ~GusdMeshWrapper();
@@ -64,8 +63,6 @@ public:
            const GusdContext& ctxt,
            const GT_PrimitiveHandle& sourcePrim ) override;
 
-    virtual bool getUniqueID(int64& id) const override;
-    
     virtual const char* className() const override;
 
     virtual void enlargeBounds(UT_BoundingBox boxes[], int nsegments) const override;

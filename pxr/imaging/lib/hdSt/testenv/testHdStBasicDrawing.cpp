@@ -41,7 +41,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 class My_TestGLDrawing : public HdSt_UnitTestGLDrawing {
 public:
     My_TestGLDrawing() {
-        _reprName = HdTokens->hull;
+        _reprName = HdReprTokens->hull;
         _refineLevel = 0;
         _cullStyle = HdCullStyleNothing;
         _testLighting = false;

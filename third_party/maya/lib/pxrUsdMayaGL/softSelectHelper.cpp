@@ -135,11 +135,15 @@ UsdMayaGLSoftSelectHelper::GetFalloffColor(
 {
     float weight = 0.f;
     if (GetWeight(dagPath, &weight)) {
-        *falloffColor = _wireColor;
+        if (falloffColor != nullptr) {
+            *falloffColor = _wireColor;
+        }
+
         return true;
     }
+
     return false;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
 
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -176,6 +176,8 @@ enum HdType
     HdTypeFloatVec3,
     /// Corresponds to GL_FLOAT_VEC4
     HdTypeFloatVec4,
+    /// Corresponds to GL_FLOAT_MAT3
+    HdTypeFloatMat3,
     /// Corresponds to GL_FLOAT_MAT4
     HdTypeFloatMat4,
 
@@ -187,8 +189,15 @@ enum HdType
     HdTypeDoubleVec3,
     /// Corresponds to GL_DOUBLE_VEC4
     HdTypeDoubleVec4,
+    /// Corresponds to GL_DOUBLE_MAT3
+    HdTypeDoubleMat3,
     /// Corresponds to GL_DOUBLE_MAT4
     HdTypeDoubleMat4,
+
+    HdTypeHalfFloat,
+    HdTypeHalfFloatVec2,
+    HdTypeHalfFloatVec3,
+    HdTypeHalfFloatVec4,
 
     /// Packed, reverse-order encoding of a 4-component vector into Int32.
     /// Corresponds to GL_INT_2_10_10_10_REV.
@@ -245,6 +254,68 @@ size_t HdDataSizeOfType(HdType);
 HD_API
 size_t HdDataSizeOfTupleType(HdTupleType);
 
+/// \enum HdFormat
+///
+/// HdFormat describes the memory format of image buffers used in Hd.
+/// It's similar to HdType but with more specific associated semantics.
+///
+/// The list of supported formats is modelled after Vulkan and DXGI, though
+/// Hydra only supports a subset.  Endian-ness is explicitly not captured;
+/// color data is assumed to always be RGBA.
+///
+/// For reference, see:
+///   https://www.khronos.org/registry/vulkan/specs/1.1/html/vkspec.html#VkFormat
+enum HdFormat
+{
+    HdFormatInvalid=-1,
+
+    // UNorm8 - a 1-byte value representing a float between 0 and 1.
+    // float value = (unorm / 255.0f);
+    HdFormatUNorm8=0,
+    HdFormatUNorm8Vec2,
+    HdFormatUNorm8Vec3,
+    HdFormatUNorm8Vec4,
+
+    // SNorm8 - a 1-byte value representing a float between -1 and 1.
+    // float value = max(snorm / 127.0f, -1.0f);
+    HdFormatSNorm8,
+    HdFormatSNorm8Vec2,
+    HdFormatSNorm8Vec3,
+    HdFormatSNorm8Vec4,
+
+    // Float16 - a 2-byte IEEE half-precision float.
+    HdFormatFloat16,
+    HdFormatFloat16Vec2,
+    HdFormatFloat16Vec3,
+    HdFormatFloat16Vec4,
+
+    // Float32 - a 4-byte IEEE float.
+    HdFormatFloat32,
+    HdFormatFloat32Vec2,
+    HdFormatFloat32Vec3,
+    HdFormatFloat32Vec4,
+
+    // Int32 - a 4-byte signed integer
+    HdFormatInt32,
+    HdFormatInt32Vec2,
+    HdFormatInt32Vec3,
+    HdFormatInt32Vec4,
+
+    HdFormatCount
+};
+
+/// Return the single-channel version of a given format.
+HD_API
+HdFormat HdGetComponentFormat(HdFormat f);
+
+/// Return the count of components in the given format.
+HD_API
+size_t HdGetComponentCount(HdFormat f);
+
+/// Return the size of a single element of the given format.
+/// For block formats, this will return 0.
+HD_API
+size_t HdDataSizeOfFormat(HdFormat f);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

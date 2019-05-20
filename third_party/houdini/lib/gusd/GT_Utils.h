@@ -34,6 +34,7 @@
 #include <UT/UT_Variadic.h>
 
 #include <pxr/pxr.h>
+#include <pxr/base/gf/half.h>
 #include <pxr/usd/usd/common.h>
 #include <pxr/usd/usd/timeCode.h>
 
@@ -163,6 +164,10 @@ public:
 
 
 template <>
+struct GusdGT_Utils::StorageByType<bool>
+{ static const GT_Storage value = GT_STORE_UINT8; };
+
+template <>
 struct GusdGT_Utils::StorageByType<uint8>
 { static const GT_Storage value = GT_STORE_UINT8; };
 
@@ -176,6 +181,10 @@ struct GusdGT_Utils::StorageByType<int64>
 
 template <>
 struct GusdGT_Utils::StorageByType<fpreal16>
+{ static const GT_Storage value = GT_STORE_REAL16; };
+
+template <>
+struct GusdGT_Utils::StorageByType<GfHalf>
 { static const GT_Storage value = GT_STORE_REAL16; };
 
 template <>

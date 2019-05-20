@@ -50,6 +50,12 @@ public:
     static void Define();
 
     ///
+    /// Returns the id of plugin to use as the default
+    ///
+    HDX_API
+    TfToken GetDefaultPluginId();
+
+    ///
     /// Returns the renderer plugin for the given id or null
     /// if not found.  The reference count on the returned
     /// delegate is incremented.

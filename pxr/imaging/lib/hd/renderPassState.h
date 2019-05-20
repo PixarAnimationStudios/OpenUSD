@@ -26,12 +26,18 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 
+#include "pxr/usd/sdf/path.h"
+
+#include "pxr/base/tf/token.h"
+#include "pxr/base/vt/value.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec4d.h"
+#include "pxr/base/gf/vec4f.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -57,9 +63,10 @@ public:
     /// Schedule to update renderPassState parameters.
     /// e.g. camera matrix, override color, id blend factor.
 
-    // Sync, called once per frame after RenderPassState is filled in.
+    /// Prepare, called once per frame after the sync phase, but prior to
+    /// the commit phase.
     HD_API
-    virtual void Sync(HdResourceRegistrySharedPtr const &resourceRegistry);
+    virtual void Prepare(HdResourceRegistrySharedPtr const &resourceRegistry);
 
     // Bind, called once per frame before drawing.
     HD_API
@@ -87,6 +94,12 @@ public:
     HD_API
     ClipPlanesVector const & GetClipPlanes() const;
 
+    // Set the attachments for this renderpass to render into.
+    HD_API
+    void SetAovBindings(HdRenderPassAovBindingVector const &aovBindings);
+    HD_API
+    HdRenderPassAovBindingVector const& GetAovBindings() const;
+
     /// Set an override color for rendering where the R, G and B components
     /// are the color and the alpha component is the blend value
     HD_API
@@ -98,6 +111,30 @@ public:
     HD_API
     void SetWireframeColor(GfVec4f const &color);
     const GfVec4f& GetWireframeColor() const { return _wireframeColor; }
+
+    HD_API
+    void SetMaskColor(GfVec4f const &color);
+    const GfVec4f& GetMaskColor() const { return _maskColor; }
+
+    HD_API
+    void SetIndicatorColor(GfVec4f const &color);
+    const GfVec4f& GetIndicatorColor() const { return _indicatorColor; }
+
+    /// Set a point color for rendering where the R, G and B components
+    /// are the color and the alpha component is the blend value
+    HD_API
+    void SetPointColor(GfVec4f const &color);
+    const GfVec4f& GetPointColor() const { return _pointColor; }
+
+    /// Set the point size for unselected points.
+    HD_API
+    void SetPointSize(float size);
+    float GetPointSize() const { return _pointSize; }
+
+    /// Set the point size for selected points.
+    HD_API
+    void SetPointSelectedSize(float size);
+    float GetPointSelectedSize() const { return _pointSelectedSize; }
 
     /// XXX: Hacky way of disabling lighting
     HD_API
@@ -145,6 +182,47 @@ public:
     HdCompareFunction GetDepthFunc() const { return _depthFunc; }
 
     HD_API
+    void SetEnableDepthMask(bool state);
+
+    HD_API
+    bool GetEnableDepthMask();
+
+    HD_API
+    void SetStencil(HdCompareFunction func, int ref, int mask,
+                    HdStencilOp fail, HdStencilOp zfail, HdStencilOp zpass);
+    HdCompareFunction GetStencilFunc() const { return _stencilFunc; }
+    int GetStencilRef() const { return _stencilRef; }
+    int GetStencilMask() const { return _stencilMask; }
+    HdStencilOp GetStencilFailOp() const { return _stencilFailOp; }
+    HdStencilOp GetStencilDepthFailOp() const { return _stencilZFailOp; }
+    HdStencilOp GetStencilDepthPassOp() const { return _stencilZPassOp; }
+    HD_API
+    void SetStencilEnabled(bool enabled);
+    
+    HD_API
+    void SetLineWidth(float width);
+    float GetLineWidth() const { return _lineWidth; }
+    
+    HD_API
+    void SetBlend(HdBlendOp colorOp,
+                  HdBlendFactor colorSrcFactor,
+                  HdBlendFactor colorDstFactor,
+                  HdBlendOp alphaOp,
+                  HdBlendFactor alphaSrcFactor,
+                  HdBlendFactor alphaDstFactor);
+    HdBlendOp GetBlendColorOp() { return _blendColorOp; }
+    HdBlendFactor GetBlendColorSrcFactor() { return _blendColorSrcFactor; }
+    HdBlendFactor GetBlendColorDstFactor() { return _blendColorDstFactor; }
+    HdBlendOp GetBlendAlphaOp() { return _blendAlphaOp; }
+    HdBlendFactor GetBlendAlphaSrcFactor() { return _blendAlphaSrcFactor; }
+    HdBlendFactor GetBlendAlphaDstFactor() { return _blendAlphaDstFactor; }
+    HD_API
+    void SetBlendConstantColor(GfVec4f const & color);
+    const GfVec4f& GetBlendConstantColor() const { return _blendConstantColor; }
+    HD_API
+    void SetBlendEnabled(bool enabled);
+
+    HD_API
     void SetAlphaToCoverageUseDefault(bool useDefault);
     bool GetAlphaToCoverageUseDefault() const { return _alphaToCoverageUseDefault; }
 
@@ -179,6 +257,15 @@ protected:
 
     GfVec4f _overrideColor;
     GfVec4f _wireframeColor;
+
+    // XXX: This is used for post-shading/lighting overriding via vertex
+    // weights. Ideally, we move this to application state.
+    GfVec4f _maskColor;
+    GfVec4f _indicatorColor;
+
+    GfVec4f _pointColor;
+    float _pointSize;
+    float _pointSelectedSize;
     bool _lightingEnabled;
     float _alphaThreshold;
     float _tessLevel;
@@ -194,7 +281,30 @@ protected:
     float _depthBiasConstantFactor;
     float _depthBiasSlopeFactor;
     HdCompareFunction _depthFunc;
+    bool _depthMaskEnabled;
     HdCullStyle _cullStyle;
+
+    // Stencil RenderPassState
+    HdCompareFunction _stencilFunc;
+    int _stencilRef;
+    int _stencilMask;
+    HdStencilOp _stencilFailOp;
+    HdStencilOp _stencilZFailOp;
+    HdStencilOp _stencilZPassOp;
+    bool _stencilEnabled;
+    
+    // Line width
+    float _lineWidth;
+    
+    // Blending
+    HdBlendOp _blendColorOp;
+    HdBlendFactor _blendColorSrcFactor;
+    HdBlendFactor _blendColorDstFactor;
+    HdBlendOp _blendAlphaOp;
+    HdBlendFactor _blendAlphaSrcFactor;
+    HdBlendFactor _blendAlphaDstFactor;
+    GfVec4f _blendConstantColor;
+    bool _blendEnabled;
 
     // alpha to coverage
     bool _alphaToCoverageUseDefault;
@@ -204,8 +314,9 @@ protected:
     ColorMask _colorMask;
 
     ClipPlanesVector _clipPlanes;
-};
 
+    HdRenderPassAovBindingVector _aovBindings;
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

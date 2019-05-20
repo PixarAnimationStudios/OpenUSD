@@ -190,6 +190,18 @@ public:
     GF_API
     float* Get(float m[2][2]) const;
 
+    /// Returns raw access to components of matrix as an array of
+    /// \c float values.  Components are in row-major order.
+    float* data() {
+        return _mtx.GetData();
+    }
+
+    /// Returns const raw access to components of matrix as an array of
+    /// \c float values.  Components are in row-major order.
+    const float* data() const {
+        return _mtx.GetData();
+    }
+
     /// Returns vector components as an array of \c float values.
     float* GetArray()  {
         return _mtx.GetData();
@@ -343,6 +355,13 @@ private:
     // Friend declarations
     friend class GfMatrix2d;
 };
+
+
+/// Tests for equality within a given tolerance, returning \c true if the
+/// difference between each component of the matrix is less than or equal
+/// to \p tolerance, or false otherwise.
+GF_API 
+bool GfIsClose(GfMatrix2f const &m1, GfMatrix2f const &m2, double tolerance);
 
 /// Output a GfMatrix2f
 /// \ingroup group_gf_DebuggingOutput

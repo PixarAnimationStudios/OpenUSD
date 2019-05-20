@@ -24,13 +24,15 @@
 #ifndef USDIMAGING_MATERIALADAPTER_H
 #define USDIMAGING_MATERIALADAPTER_H
 
+/// \file usdImaging/materialAdapter.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+struct HdMaterialNetworkMap;
 
-class HdMaterialNetwork;
 
 /// \class UsdImagingMaterialAdapter
 /// \brief Provides information that can be used to generate a material.
@@ -53,9 +55,6 @@ public:
     USDIMAGING_API
     virtual bool IsSupported(UsdImagingIndexProxy const* index) const;
 
-    USDIMAGING_API
-    virtual bool IsPopulatedIndirectly();
-
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
     // ---------------------------------------------------------------------- //
@@ -66,7 +65,7 @@ public:
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
-                                      instancerContext = NULL);
+                                      instancerContext = NULL) const;
 
 
     /// Thread Safe.
@@ -76,7 +75,7 @@ public:
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext = NULL);
+                                   instancerContext = NULL) const;
 
     // ---------------------------------------------------------------------- //
     /// \name Change Processing 
@@ -95,14 +94,20 @@ public:
                            HdDirtyBits dirty,
                            UsdImagingIndexProxy* index);
 
+    USDIMAGING_API
+    virtual void MarkMaterialDirty(UsdPrim const& prim,
+                                   SdfPath const& cachePath,
+                                   UsdImagingIndexProxy* index);
+
+
 protected:
     USDIMAGING_API
     virtual void _RemovePrim(SdfPath const& cachePath,
                              UsdImagingIndexProxy* index) final;
 
 private:
-    void _GetMaterialNetwork(UsdPrim const &prim, 
-                             HdMaterialNetwork *materialNetwork);
+    void _GetMaterialNetworkMap(UsdPrim const &prim, 
+                                HdMaterialNetworkMap *materialNetworkMap) const;
 };
 
 

@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/api.h"
 #include "pxr/base/arch/hints.h"
+#include "pxr/base/tf/staticTokens.h"
 
 #include <boost/functional/hash.hpp>
 
@@ -34,7 +35,15 @@
 #include <iosfwd>
 #include <cmath>
 
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+
+#define USD_TIME_CODE_TOKENS \
+    (DEFAULT) \
+    (EARLIEST)
+
+TF_DECLARE_PUBLIC_TOKENS(UsdTimeCodeTokens, USD_API, USD_TIME_CODE_TOKENS);
 
 
 /// \class UsdTimeCode
@@ -115,6 +124,12 @@ public:
             maxValue * maxCompression * 2.0;
     }
 
+    /// Return true if this time represents the lowest/earliest possible
+    /// timeCode, false otherwise.
+    bool IsEarliestTime() const {
+        return IsNumeric() && (_value == std::numeric_limits<double>::lowest());
+    }
+
     /// Return true if this time represents the 'default' sentinel value, false
     /// otherwise.  This is equivalent to !IsNumeric().
     bool IsDefault() const {
@@ -185,9 +200,12 @@ private:
     double _value;
 };
 
-// Stream insertion.
+// Stream I/O operators.
 USD_API
 std::ostream& operator<<(std::ostream& os, const UsdTimeCode& time);
+
+USD_API
+std::istream& operator>>(std::istream& is, UsdTimeCode& time);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

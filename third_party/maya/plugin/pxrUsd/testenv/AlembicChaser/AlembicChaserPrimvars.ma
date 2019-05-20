@@ -78,8 +78,9 @@ createNode transform -n "CubeTypedAttrs" -p "Geom";
 	rename -uid "964758C0-0000-259C-57E5-BAB80000025A";
 	addAttr -ci true -sn "myConstantIntPrimvar" -ln "myConstantIntPrimvar" -at "long";
 	addAttr -ci true -sn "myUniformDoublePrimvar" -ln "myUniformDoublePrimvar" -at "double";
+	addAttr -ci true -sn "myPrimvarWithoutAbcGeomScope" -ln "myPrimvarWithoutAbcGeomScope" -at "double";
 	addAttr -ci true -sn "myFaceVaryingIntPrimvar" -ln "myFaceVaryingIntPrimvar" -at "long";
-	addAttr -ci true -sn "myIntArrayAttr" -ln "myIntArrayAttr" -dt "Int32Array";
+	addAttr -ci true -sn "yourIntArrayAttr" -ln "yourIntArrayAttr" -dt "Int32Array";
 	addAttr -ci true -sn "myFloatArrayPrimvar" -ln "myFloatArrayPrimvar" -dt "floatArray";
 	addAttr -ci true -sn "myConstantIntPrimvar_AbcGeomScope" -ln "myConstantIntPrimvar_AbcGeomScope" 
 		-dt "string";
@@ -94,8 +95,9 @@ createNode transform -n "CubeTypedAttrs" -p "Geom";
 	setAttr ".sp" -type "double3" 0 0 2.5 ;
 	setAttr -k on ".myConstantIntPrimvar" 123;
 	setAttr -k on ".myUniformDoublePrimvar" 3.14;
+	setAttr -k on ".myPrimvarWithoutAbcGeomScope" 360.0;
 	setAttr -k on ".myFaceVaryingIntPrimvar" 999;
-	setAttr ".myIntArrayAttr" -type "Int32Array" 10 99 98 97 96 95
+	setAttr ".yourIntArrayAttr" -type "Int32Array" 10 99 98 97 96 95
 		 94 93 92 91 90 ;
 	setAttr ".myFloatArrayPrimvar" -type "floatArray" 8 1.1000000238418579 2.2000000476837158 3.2999999523162842 4.4000000953674316
 		 5.5 6.5999999046325684 7.6999998092651367 8.8000001907348633 ;

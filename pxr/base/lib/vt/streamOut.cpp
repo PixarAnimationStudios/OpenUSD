@@ -26,6 +26,7 @@
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/streamOut.h"
+#include "pxr/base/vt/types.h"
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pyObjWrapper.h"
@@ -33,6 +34,7 @@
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
 #include <iostream>
+#include <numeric>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -84,26 +86,32 @@ VtStreamOut(double const &val, std::ostream &stream)
 namespace {
 
 void
-_StreamArray(
+_StreamArrayRecursive(
+    std::ostream& out,
     VtStreamOutIterator* i,
-    size_t size,
-    const Vt_Reserved* reserved,
-    std::ostream& out)
+    const Vt_ShapeData &shape,
+    size_t lastDimSize,
+    size_t *index,
+    size_t dimension)
 {
     out << '[';
-    for (size_t j = 0; j != size; ++j) {
-        if (j) {
-            out << ", ";
+    if (dimension == shape.GetRank() - 1) {
+        for (size_t j = 0; j < lastDimSize; ++j) {
+            if (j) { out << ", "; }
+            i->Next(out);
         }
-        i->Next(out);
+    }
+    else {
+        for (size_t j = 0; j < shape.otherDims[dimension]; ++j) {
+            if (j) { out << ", "; }
+            _StreamArrayRecursive(
+                out, i, shape, lastDimSize, index, dimension + 1);
+        }
     }
     out << ']';
 }
 
 }
-
-void (*_vtStreamArray)(VtStreamOutIterator*, size_t,
-                       const Vt_Reserved*, std::ostream&) = _StreamArray;
 
 VtStreamOutIterator::~VtStreamOutIterator() { }
 
@@ -111,10 +119,27 @@ void
 VtStreamOutArray(
     VtStreamOutIterator* i,
     size_t size,
-    const Vt_Reserved* reserved,
+    const Vt_ShapeData* shapeData,
     std::ostream& out)
 {
-    _vtStreamArray(i, size, reserved, out);
+    // Compute last dim size, and if size is not evenly divisible, output as
+    // rank-1.
+    size_t divisor = std::accumulate(
+        shapeData->otherDims, shapeData->otherDims + shapeData->GetRank()-1,
+        1, [](size_t x, size_t y) { return x * y; });
+
+    size_t lastDimSize = divisor ? shapeData->totalSize / divisor : 0;
+    size_t remainder = divisor ? shapeData->totalSize % divisor : 0;
+
+    // If there's a remainder, make a rank-1 shapeData.
+    Vt_ShapeData rank1;
+    if (remainder) {
+        rank1.totalSize = shapeData->totalSize;
+        shapeData = &rank1;
+    }
+    
+    size_t index = 0;
+    _StreamArrayRecursive(out, i, *shapeData, lastDimSize, &index, 0);
 }
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED

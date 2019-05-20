@@ -22,12 +22,12 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/immediateDrawBatch.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
-#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
@@ -43,6 +43,8 @@
 
 #include <boost/functional/hash.hpp>
 
+#include <tbb/enumerable_thread_specific.h>
+
 #include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -51,7 +53,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdStCommandBuffer::HdStCommandBuffer()
     : _visibleSize(0)
     , _visChangeCount(0)
-    , _shaderBindingsVersion(0)
+    , _batchVersion(0)
 {
     /*NOTHING*/
 }
@@ -64,7 +66,7 @@ static
 HdSt_DrawBatchSharedPtr
 _NewDrawBatch(HdStDrawItemInstance * drawItemInstance)
 {
-    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
+    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
 
     if (caps.multiDrawIndirectEnabled) {
         return HdSt_DrawBatchSharedPtr(
@@ -82,8 +84,8 @@ HdStCommandBuffer::PrepareDraw(
 {
     HD_TRACE_FUNCTION();
 
-    TF_FOR_ALL(batchIt, _drawBatches) {
-        (*batchIt)->PrepareDraw(renderPassState, resourceRegistry);
+    for (auto const& batch : _drawBatches) {
+        batch->PrepareDraw(renderPassState, resourceRegistry);
     }
 }
 
@@ -105,8 +107,8 @@ HdStCommandBuffer::ExecuteDraw(
     //
     // draw batches
     //
-    TF_FOR_ALL(batchIt, _drawBatches) {
-        (*batchIt)->ExecuteDraw(renderPassState, resourceRegistry);
+    for (auto const& batch : _drawBatches) {
+        batch->ExecuteDraw(renderPassState, resourceRegistry);
     }
     HD_PERF_COUNTER_SET(HdPerfTokens->drawBatches, _drawBatches.size());
 
@@ -118,30 +120,30 @@ HdStCommandBuffer::ExecuteDraw(
 
 void
 HdStCommandBuffer::SwapDrawItems(std::vector<HdStDrawItem const*>* items,
-                               unsigned currentShaderBindingsVersion)
+                               unsigned currentBatchVersion)
 {
     _drawItems.swap(*items);
     _RebuildDrawBatches();
-    _shaderBindingsVersion = currentShaderBindingsVersion;
+    _batchVersion = currentBatchVersion;
 }
 
 void
-HdStCommandBuffer::RebuildDrawBatchesIfNeeded(unsigned currentShaderBindingsVersion)
+HdStCommandBuffer::RebuildDrawBatchesIfNeeded(unsigned currentBatchVersion)
 {
     HD_TRACE_FUNCTION();
 
     bool deepValidation
-        = (currentShaderBindingsVersion != _shaderBindingsVersion);
+        = (currentBatchVersion != _batchVersion);
 
     for (auto const& batch : _drawBatches) {
         if (!batch->Validate(deepValidation) && !batch->Rebuild()) {
             TRACE_SCOPE("Invalid Batches");
             _RebuildDrawBatches();
-            _shaderBindingsVersion = currentShaderBindingsVersion;
+            _batchVersion = currentBatchVersion;
             return;
         }
     }
-    _shaderBindingsVersion = currentShaderBindingsVersion;
+    _batchVersion = currentBatchVersion;
 }
 
 void
@@ -157,7 +159,7 @@ HdStCommandBuffer::_RebuildDrawBatches()
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->rebuildBatches);
 
-    bool bindlessTexture = HdStRenderContextCaps::GetInstance()
+    bool bindlessTexture = GlfContextCaps::GetInstance()
                                                .bindlessTextureEnabled;
 
     // XXX: Temporary sorting by shader.
@@ -296,10 +298,18 @@ HdStCommandBuffer::FrustumCull(GfMatrix4d const &viewProjMatrix)
     }
 
     _visibleSize = 0;
-    TF_FOR_ALL(dIt, _drawItemInstances) {
-        if (dIt->IsVisible()) {
+    for (auto const& instance : _drawItemInstances) {
+        if (instance.IsVisible()) {
             ++_visibleSize;
         }
+    }
+}
+
+void
+HdStCommandBuffer::SetEnableTinyPrimCulling(bool tinyPrimCulling)
+{
+    for(auto const& batch : _drawBatches) {
+        batch->SetEnableTinyPrimCulling(tinyPrimCulling);
     }
 }
 

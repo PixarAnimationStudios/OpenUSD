@@ -49,6 +49,9 @@
 #include "pxr/pxr.h"
 #include "pxr/base/gf/ilmbase_half.h"
 
+#include <istream>
+#include <ostream>
+
 using namespace std;
 
 PXR_NAMESPACE_OPEN_SCOPE

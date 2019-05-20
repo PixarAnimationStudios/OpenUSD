@@ -31,30 +31,14 @@
 #include "pxr/base/tf/preprocessorUtils.h"
 
 #include <boost/type_traits/has_trivial_assign.hpp>
-#include <boost/type_traits/is_base_of.hpp>
-#include <boost/mpl/bool.hpp>
+
+#include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// Integral constant base trait type.  TrueType and FalseType are built from
-/// this template.
-template <typename T, T val>
-struct VtIntegralConstant {
-    typedef VtIntegralConstant<T, val> Type;
-    typedef T ValueType;
-    static const ValueType value = val;
-};
-
-
-/// Trait templates may inherit from VtFalseType.
-typedef VtIntegralConstant<bool, false> VtFalseType;
-
-/// Trait templates may inherit from VtTrueType.
-typedef VtIntegralConstant<bool, true> VtTrueType;
-
 /// Array concept. By default, types are not arrays.
 template <typename T>
-struct VtIsArray : public VtFalseType {};
+struct VtIsArray : public std::false_type {};
 
 // We attempt to use local storage if a given type will fit and if it has a
 // cheap copy operation.  By default we only treat types with trivial
@@ -67,7 +51,7 @@ struct VtValueTypeHasCheapCopy : boost::has_trivial_assign<T> {};
 
 #define VT_TYPE_IS_CHEAP_TO_COPY(T)                                            \
     template <> struct VtValueTypeHasCheapCopy<TF_PP_EAT_PARENS(T)>            \
-    : boost::mpl::true_ {}
+    : std::true_type {}
 
 // Clients that implement value proxies for VtValue can either derive
 // VtValueProxyBase or specialize the VtIsValueProxy template so that VtValue
@@ -76,12 +60,12 @@ struct VtValueProxyBase {};
 
 // Metafunction used by VtValue to determine whether a given type T is a proxy.
 template <class T>
-struct VtIsValueProxy : boost::is_base_of<VtValueProxyBase, T> {};
+struct VtIsValueProxy : std::is_base_of<VtValueProxyBase, T> {};
 
 // Clients may use this macro to indicate their type is a VtValue proxy type.
 #define VT_TYPE_IS_VALUE_PROXY(T)                               \
     template <> struct VtIsValueProxy<TF_PP_EAT_PARENS(T)>      \
-    : boost::mpl::true_ {}
+    : std::true_type {}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

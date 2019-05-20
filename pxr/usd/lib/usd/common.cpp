@@ -30,11 +30,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-TF_DEFINE_ENV_SETTING(
-    USD_RETIRE_LUMOS, true,
-    "Set to true when tools should no longer use lumos/2x.");
-
 TF_DEFINE_ENV_SETTING(
     USD_SHADING_MODEL, "usdRi",
     "Set to usdRi when models can interchange UsdShade prims.");
@@ -49,11 +44,6 @@ TF_DEFINE_ENV_SETTING(
     "Set true if USD should take the inverse of SdfLayerOffset values when "
     "applying them.  True matches historical behavior; false is the "
     "intended future setting.");
-
-bool UsdIsRetireLumosEnabled()
-{
-    return TfGetEnvSetting(USD_RETIRE_LUMOS);
-}
 
 bool UsdAuthorOldStyleAdd()
 {

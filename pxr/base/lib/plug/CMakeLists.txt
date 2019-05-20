@@ -6,7 +6,7 @@ pxr_library(plug
         arch
         tf
         js
-        tracelite
+        trace
         work
         ${Boost_PYTHON_LIBRARY}
         ${TBB_tbb_LIBRARY}

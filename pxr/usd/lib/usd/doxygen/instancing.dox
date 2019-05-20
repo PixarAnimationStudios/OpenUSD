@@ -318,16 +318,20 @@ An instance proxy prim behaves the same as the corresponding prim in the
 master.  However, an instance proxy retains context about the instance being 
 traversed so they appear to be a prim beneath an instance: its path is a 
 descendant of the instance being traversed instead of a descendant of a master 
-prim.
+prim.  Consumers should generally be able to use instance proxies anywhere 
+a UsdPrim is used.  The primary exception is that editing scene description
+via instance proxies and their properties is not allowed.
 
 Calling UsdStage::GetPrimAtPath with a path to a descendant of an instance
 prim will return an instance proxy if a corresponding prim exists in that
 instance's master.  By default, the various prim traversal facilities like 
 UsdPrim::GetChildren and UsdPrimRange do not return instance proxies.  
-#UsdTraverseInstanceProxies can be used to enable this functionality.  This
-function can be combined with other \ref Usd_PrimFlags predicates;  for example,
-combining it with #UsdPrimDefaultPredicate would yield the same filtering 
-behavior as UsdPrim::GetChildren, but with instance proxies enabled.
+#UsdTraverseInstanceProxies can be used to enable this functionality.  By
+default, this uses the same #UsdPrimDefaultPredicate used by other traversal
+functions,  but it can be combined with other \ref Usd_PrimFlags predicates; 
+for example, combining it with #UsdPrimAllPrimsPredicate would yield the same 
+filtering behavior as UsdPrim::GetAllChildren, but with instance proxies 
+enabled.
 
 \code{.py}
 >>> stage = Usd.Stage.Open('ParkingLot.usd')
@@ -340,9 +344,9 @@ True
 >>> car_1.GetChildren()
 []
 
-# Use Usd.TraverseInstanceProxies with Usd.PrimDefaultPredicate to enable
-# instance proxies with the same filtering that UsdPrim.GetChildren would do.
->>> car_1.GetFilteredChildren(Usd.TraverseInstanceProxies(Usd.PrimDefaultPredicate))
+# Use Usd.TraverseInstanceProxies to enable instance proxies with the same 
+# filtering that UsdPrim.GetChildren would do.
+>>> car_1.GetFilteredChildren(Usd.TraverseInstanceProxies())
 [Usd.Prim(</ParkingLot/Car_1/Body>), Usd.Prim(</ParkingLot/Car_1/Door>)]
 
 # Calling Usd.Stage.GetPrimAtPath with the path of a prim beneath an
@@ -353,10 +357,25 @@ Usd.Prim(</ParkingLot/Car_1/Body>)
 >>> car_1_body.IsInstanceProxy()
 True
 
+# Unlike prims in masters, you can walk up an instance proxy's parent prims
+# to find its owning instance.
+>>> car_1_body.GetParent()
+Usd.Prim(</ParkingLot/Car_1>)
+
 # From an instance proxy, you can retrieve the corresponding prim in the
 # instance's master.
 >>> car_1_body.GetPrimInMaster()
 Usd.Prim(</__Master_1/Body>)
+
+# Instance proxies can be used for read-only operations anywhere a Usd.Prim
+# is used.
+>>> img = UsdGeom.Imageable(car_1_body)
+>>> img.ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+Gf.Matrix4d(...)
+
+>>> xfCache = UsdGeom.XformCache()
+>>> xfCache.GetLocalToWorldTransform(car_1_body)
+Gf.Matrix4d(...)
 
 \endcode
 

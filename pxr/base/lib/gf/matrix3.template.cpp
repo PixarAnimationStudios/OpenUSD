@@ -28,11 +28,17 @@
 {% extends "matrix.template.cpp" %}
 
 {% block customIncludes %}
+#include "pxr/base/gf/quat{{ SCL[0] }}.h"
 #include "pxr/base/gf/rotation.h"
 {% endblock customIncludes %}
 
 {% block customConstructors %}
 {{ MAT }}::{{ MAT }}(const GfRotation &rot)
+{
+    SetRotate(rot);
+}
+
+{{ MAT }}::{{ MAT }}(const GfQuat{{ SCL[0] }} &rot)
 {
     SetRotate(rot);
 }
@@ -160,14 +166,23 @@ bool
 }
 
 {{ MAT }} &
+{{ MAT }}::SetRotate(const GfQuat{{ SCL[0] }} &rot)
+{
+    _SetRotateFromQuat(rot.GetReal(), rot.GetImaginary());
+    return *this;
+}
+
+{{ MAT }} &
 {{ MAT }}::SetRotate(const GfRotation &rot)
 {
     GfQuaternion quat = rot.GetQuaternion();
+    _SetRotateFromQuat(quat.GetReal(), GfVec3{{ SCL[0] }}(quat.GetImaginary()));
+    return *this;
+}
 
-    double  r = quat.GetReal();
-    GfVec3d i = quat.GetImaginary();
-
-
+void
+{{MAT}}::_SetRotateFromQuat({{ SCL }} r, const GfVec3{{ SCL[0] }}& i)
+{
     _mtx[0][0] = 1.0 - 2.0 * (i[1] * i[1] + i[2] * i[2]);
     _mtx[0][1] =       2.0 * (i[0] * i[1] + i[2] *    r);
     _mtx[0][2] =       2.0 * (i[2] * i[0] - i[1] *    r);
@@ -179,9 +194,8 @@ bool
     _mtx[2][0] =       2.0 * (i[2] * i[0] + i[1] *    r);
     _mtx[2][1] =       2.0 * (i[1] * i[2] - i[0] *    r);
     _mtx[2][2] = 1.0 - 2.0 * (i[1] * i[1] + i[0] * i[0]);
-
-    return *this;
 }
+                            
 
 {{ MAT }} &
 {{ MAT }}::SetScale(const GfVec3{{ SCL[0] }} &s)

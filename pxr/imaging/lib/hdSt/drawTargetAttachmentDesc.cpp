@@ -28,7 +28,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdStDrawTargetAttachmentDesc::HdStDrawTargetAttachmentDesc()
  : _name()
- , _format(HdFormatUnknown)
+ , _format(HdFormatInvalid)
  , _clearColor()
  , _wrapS(HdWrapRepeat)
  , _wrapT(HdWrapRepeat)

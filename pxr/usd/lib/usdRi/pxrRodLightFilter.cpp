@@ -74,6 +74,11 @@ UsdRiPxrRodLightFilter::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdRiPxrRodLightFilter::_GetSchemaType() const {
+    return UsdRiPxrRodLightFilter::schemaType;
+}
+
 /* static */
 const TfType &
 UsdRiPxrRodLightFilter::_GetStaticTfType()

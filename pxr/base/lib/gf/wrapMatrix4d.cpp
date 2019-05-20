@@ -36,6 +36,7 @@
 #include "pxr/base/gf/pyBufferUtils.h"
 
 #include "pxr/base/gf/matrix3d.h"
+#include "pxr/base/gf/quatd.h"
 #include "pxr/base/gf/rotation.h"
 
 #include "pxr/base/tf/pyUtils.h"
@@ -43,6 +44,7 @@
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
 #include <boost/python/class.hpp>
+#include <boost/python/def.hpp>
 #include <boost/python/detail/api_placeholder.hpp>
 #include <boost/python/errors.hpp>
 #include <boost/python/extract.hpp>
@@ -290,6 +292,9 @@ void wrapMatrix4d()
     typedef GfMatrix4d This;
 
     static const tuple _dimension = make_tuple(4, 4);
+
+    def("IsClose", (bool (*)(const GfMatrix4d &m1, const GfMatrix4d &m2, double))
+        GfIsClose);
     
     class_<This> cls( "Matrix4d", no_init);
     cls
@@ -405,6 +410,13 @@ void wrapMatrix4d()
 
         .def("SetTranslate", &This::SetTranslate, return_self<>())
         .def("SetTranslateOnly", &This::SetTranslateOnly, return_self<>())
+
+        .def("SetRotate",
+	     (This & (This::*)( const GfQuatd & )) &This::SetRotate,
+	     return_self<>())
+        .def("SetRotateOnly",
+	     (This & (This::*)( const GfQuatd & )) &This::SetRotateOnly,
+	     return_self<>())
 
         .def("SetRotate",
 	     (This & (This::*)( const GfRotation & )) &This::SetRotate,

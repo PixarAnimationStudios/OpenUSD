@@ -38,7 +38,7 @@ else()
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdedit write_protected.usda"
         EXPECTED_RETURN_CODE 1 
         ENV
-            EDITOR="${HEADBIN}"
+          USD_EDITOR="${HEADBIN}"
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
     )
@@ -54,7 +54,7 @@ else()
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdedit -n write_protected.usda"
         EXPECTED_RETURN_CODE 0
         ENV
-            EDITOR="${HEADBIN}"
+          USD_EDITOR="${HEADBIN}"
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
     )
@@ -70,7 +70,7 @@ else()
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdedit -f write_protected.usda"
         EXPECTED_RETURN_CODE 0
         ENV
-            EDITOR="${HEADBIN}"
+          USD_EDITOR="${HEADBIN}"
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
     )
@@ -88,7 +88,7 @@ else()
         EXPECTED_RETURN_CODE 0
         DIFF_COMPARE ascii_output.txt
         ENV
-            EDITOR="sed -i 's/hello/goodbye/g'"
+          USD_EDITOR="sed -i 's/hello/goodbye/g'"
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
     )
@@ -106,8 +106,39 @@ else()
         EXPECTED_RETURN_CODE 0
         DIFF_COMPARE crate_output.txt
         ENV
-            EDITOR="sed -i 's/hello/goodbye/g'"
+          USD_EDITOR="sed -i 's/hello/goodbye/g'"
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
     )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdEditPackageFile    
+        DEST testUsdEditPackageFile1
+    )
+
+    pxr_register_test(testUsdEditPackageFile1
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdedit test.usdz"
+        EXPECTED_RETURN_CODE 0
+        ENV
+          USD_EDITOR="sed -i 's/Sphere/Sphere2/g'"
+        PRE_PATH
+            ${CMAKE_INSTALL_PREFIX}/bin
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdEditPackageFile    
+        DEST testUsdEditPackageFile2
+    )
+
+    pxr_register_test(testUsdEditPackageFile2
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdedit test.usdz[test.usda]"
+        EXPECTED_RETURN_CODE 0
+        ENV
+          USD_EDITOR="sed -i 's/Sphere/Sphere2/g'"
+        PRE_PATH
+            ${CMAKE_INSTALL_PREFIX}/bin
+    )
+
 endif()

@@ -23,14 +23,17 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-import os
-import unittest
-
-from maya import cmds
-from maya.api import OpenMaya as OM
-from maya import standalone
+from pxr import UsdMaya
 
 from pxr import Gf
+from pxr import Tf
+
+from maya import cmds
+from maya import standalone
+from maya.api import OpenMaya as OM
+
+import os
+import unittest
 
 
 class testUsdImportUVSets(unittest.TestCase):
@@ -76,7 +79,11 @@ class testUsdImportUVSets(unittest.TestCase):
         standalone.initialize('usd')
         cmds.loadPlugin('pxrUsd')
 
-        usdFile = os.path.abspath('UsdImportUVSetsTest.usda')
+        usdFile = ""
+        if UsdMaya.ReadUtil.ReadFloat2AsUV(): 
+            usdFile = os.path.abspath('UsdImportUVSetsTest_Float.usda')
+        else:
+            usdFile = os.path.abspath('UsdImportUVSetsTest.usda')
         cmds.usdImport(file=usdFile, shadingMode='none')
 
     def _GetMayaMesh(self, meshName):
@@ -130,7 +137,8 @@ class testUsdImportUVSets(unittest.TestCase):
             23: Gf.Vec2f(0.125, 0.25)
         }
 
-        self._AssertUVSet(mayaCubeMesh, 'map1', expectedValues)
+        self._AssertUVSet(mayaCubeMesh, 'map1', expectedValues,
+            expectedNumValues=14)
 
     def testImportOneMissingFaceUVSet(self):
         """
@@ -162,7 +170,8 @@ class testUsdImportUVSets(unittest.TestCase):
             23: Gf.Vec2f(0.125, 0.25)
         }
 
-        self._AssertUVSet(mayaCubeMesh, 'map1', expectedValues)
+        self._AssertUVSet(mayaCubeMesh, 'map1', expectedValues,
+            expectedNumValues=14)
 
     def testImportOneAssignedFaceUVSet(self):
         """
@@ -178,7 +187,8 @@ class testUsdImportUVSets(unittest.TestCase):
             11: Gf.Vec2f(0.375, 0.75)
         }
 
-        self._AssertUVSet(mayaCubeMesh, 'map1', expectedValues)
+        self._AssertUVSet(mayaCubeMesh, 'map1', expectedValues,
+            expectedNumValues=4)
 
     def testImportCompressibleUVSets(self):
         """
@@ -265,7 +275,8 @@ class testUsdImportUVSets(unittest.TestCase):
             expectedValues[i] = Gf.Vec2f(1.0, 1.0)
         for i in xrange(3, 24, 4):
             expectedValues[i] = Gf.Vec2f(0.0, 1.0)
-        self._AssertUVSet(mayaCubeMesh, uvSetName, expectedValues)
+        self._AssertUVSet(mayaCubeMesh, uvSetName, expectedValues,
+            expectedNumValues=4)
 
         # The faces alternate between ranges 0.0-0.5 and 0.5-1.0.
         uvSetName = 'PairedFacesSet'
@@ -286,7 +297,8 @@ class testUsdImportUVSets(unittest.TestCase):
             expectedValues[i] = Gf.Vec2f(1.0, 1.0)
         for i in xrange(7, 24, 8):
             expectedValues[i] = Gf.Vec2f(0.5, 1.0)
-        self._AssertUVSet(mayaCubeMesh, uvSetName, expectedValues)
+        self._AssertUVSet(mayaCubeMesh, uvSetName, expectedValues,
+            expectedNumValues=7)
     
     def testImportUVSetForMeshWithCreases(self):
         """
@@ -296,7 +308,11 @@ class testUsdImportUVSets(unittest.TestCase):
 
         # We need to load this mesh from a separate USD file because importing
         # it caused a crash (that this test verifies should no longer happen).
-        usdFile = os.path.abspath('UsdImportUVSetsTestWithCreases.usda')
+        usdFile = ""
+        if UsdMaya.ReadUtil.ReadFloat2AsUV():
+            usdFile = os.path.abspath('UsdImportUVSetsTestWithCreases_Float.usda')
+        else:
+            usdFile = os.path.abspath('UsdImportUVSetsTestWithCreases.usda')
 
         # We also need to load it using the Maya file import command because
         # going through the usdImport command works fine but using the file
@@ -333,7 +349,8 @@ class testUsdImportUVSets(unittest.TestCase):
             23: Gf.Vec2f(0.125, 0.25)
         }
 
-        self._AssertUVSet(mayaCubeMesh, 'map1', expectedValues)
+        self._AssertUVSet(mayaCubeMesh, 'map1', expectedValues,
+            expectedNumValues=14)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

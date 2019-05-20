@@ -33,11 +33,11 @@
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/api.h"
 
-#include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/preprocessor/cat.hpp>
 #include <boost/preprocessor/stringize.hpp>
 
+#include <functional>
 #include <typeinfo>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -53,7 +53,7 @@ class TfRegistryManager : boost::noncopyable {
 public:
     // The type of a registration function.  The arguments are not used.
     typedef void (*RegistrationFunctionType)(void*, void*);
-    typedef boost::function<void ()> UnloadFunctionType;
+    typedef std::function<void ()> UnloadFunctionType;
 
     /// Return the singleton \c TfRegistryManager instance.
     TF_API static TfRegistryManager& GetInstance();
@@ -88,7 +88,7 @@ public:
     /// unloaded.
     ///
     /// Calling \c AddFunctionForUnload() requests that the given function be
-    /// run if the code from which the funtion is called is unloaded.
+    /// run if the code from which the function is called is unloaded.
     /// However, this is detectable only if this call is made from within the
     /// call chain of some \c TF_REGISTRY_FUNCTION() function.  In this case,
     /// \c AddFunctionForUnload() returns true.  Otherwise, false is returned

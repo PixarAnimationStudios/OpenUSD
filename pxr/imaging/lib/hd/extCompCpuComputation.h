@@ -97,7 +97,7 @@ public:
     virtual bool Resolve() override;
 
     HD_API
-    virtual int GetNumElements() const override;
+    virtual size_t GetNumElements() const override;
 
 
     /// Converts a output name token into an index.
@@ -118,7 +118,7 @@ private:
     SdfPath                               _id;
     Hd_ExtCompInputSourceSharedPtrVector  _inputs;
     TfTokenVector                         _outputs;
-    int                                   _numElements;
+    size_t                                _numElements;
     HdSceneDelegate                      *_sceneDelegate;
 
     VtValueVector                         _outputValues;

@@ -23,9 +23,13 @@
 //
 #include "pxr/usd/usdSkel/animMapper.h"
 
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/tf/type.h"
 
 #include <algorithm>
+#include <unordered_map>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -55,11 +59,25 @@ UsdSkelAnimMapper::UsdSkelAnimMapper()
 {}
 
 
+UsdSkelAnimMapper::UsdSkelAnimMapper(size_t size)
+    : _targetSize(size), _offset(0), _flags(_IdentityMap)
+{}
+
+
 UsdSkelAnimMapper::UsdSkelAnimMapper(const VtTokenArray& sourceOrder,
                                      const VtTokenArray& targetOrder)
-    : _targetSize(targetOrder.size()), _offset(0)
+    : UsdSkelAnimMapper(sourceOrder.cdata(), sourceOrder.size(),
+                        targetOrder.cdata(), targetOrder.size())
+{}
+
+
+UsdSkelAnimMapper::UsdSkelAnimMapper(const TfToken* sourceOrder,
+                                     size_t sourceOrderSize,
+                                     const TfToken* targetOrder,
+                                     size_t targetOrderSize)
+    : _targetSize(targetOrderSize), _offset(0)
 {
-    if(sourceOrder.size() == 0 || targetOrder.size() == 0) {
+    if(sourceOrderSize == 0 || targetOrderSize == 0) {
         _flags = _NullMap;
         return;
     } 
@@ -70,23 +88,18 @@ UsdSkelAnimMapper::UsdSkelAnimMapper(const VtTokenArray& sourceOrder,
         // This includes identity maps.
 
         // Find where the first source element begins on the target.
-        auto it = std::find(targetOrder.begin(), targetOrder.end(),
-                            sourceOrder[0]);
-        if(it != targetOrder.end()) {
-            size_t pos = std::distance(targetOrder.begin(), it);
-            size_t compareCount = std::min(sourceOrder.size(),
-                                           targetOrder.size()-pos);
-            if(std::equal(sourceOrder.data(),
-                          sourceOrder.data()+compareCount, it)) {
+        const auto it = std::find(targetOrder, targetOrder + targetOrderSize,
+                                  sourceOrder[0]);
+        const size_t pos = it - targetOrder;
+        if((pos + sourceOrderSize) <= targetOrderSize) {
+            if(std::equal(sourceOrder, sourceOrder+sourceOrderSize, it)) {
                 _offset = pos;
 
-                _flags = _OrderedMap;
+                _flags = _OrderedMap | _AllSourceValuesMapToTarget;
 
-                if(pos == 0 && compareCount == targetOrder.size()) {
+                if(pos == 0 && sourceOrderSize == targetOrderSize) {
                     _flags |= _SourceOverridesAllTargetValues;
                 }
-                _flags |= compareCount == sourceOrder.size() ?
-                    _AllSourceValuesMapToTarget : _SomeSourceValuesMapToTarget;
                 return;
             }
         }
@@ -96,16 +109,16 @@ UsdSkelAnimMapper::UsdSkelAnimMapper(const VtTokenArray& sourceOrder,
     // Settle for an unordered, indexed mapping.
 
     // Need a map of path->targetIndex.
-    std::map<TfToken,int> targetMap;
-    for(size_t i = 0; i < targetOrder.size(); ++i) {
+    std::unordered_map<TfToken,int,TfToken::HashFunctor> targetMap;
+    for(size_t i = 0; i < targetOrderSize; ++i) {
         targetMap[targetOrder[i]] = static_cast<int>(i);
     }
 
-    _indexMap.resize(sourceOrder.size());
+    _indexMap.resize(sourceOrderSize);
     int* indexMap = _indexMap.data();
     size_t mappedCount = 0;
-    std::vector<bool> targetMapped(targetOrder.size());
-    for(size_t i = 0; i < sourceOrder.size(); ++i) {
+    std::vector<bool> targetMapped(targetOrderSize);
+    for(size_t i = 0; i < sourceOrderSize; ++i) {
         auto it = targetMap.find(sourceOrder[i]);
         if(it != targetMap.end()) {
             indexMap[i] = it->second;
@@ -115,7 +128,7 @@ UsdSkelAnimMapper::UsdSkelAnimMapper(const VtTokenArray& sourceOrder,
             indexMap[i] = -1;
         }
     }
-    _flags = mappedCount == sourceOrder.size() ? 
+    _flags = mappedCount == sourceOrderSize ? 
         _AllSourceValuesMapToTarget : _SomeSourceValuesMapToTarget;
 
     if(std::all_of(targetMapped.begin(), targetMapped.end(),
@@ -145,100 +158,11 @@ UsdSkelAnimMapper::IsNull() const
 }
 
 
-namespace {
-
-
-template <typename T>
-void _ResizeArray(VtArray<T>* array, size_t size, const T* defaultValue)
-{
-    if(defaultValue) {
-        size_t prevSize = array->size();
-        array->resize(size);
-        T* data = array->data();
-        for(size_t i = prevSize; i < size; ++i) {
-            data[i] = *defaultValue;
-        }
-    } else {
-        array->resize(size);
-    }
-}
-
-
-} // namespace
-
-
-template <typename T>
 bool
-UsdSkelAnimMapper::_Remap(const VtArray<T>& source,
-                          VtArray<T>* target,
-                          int elementSize,
-                          const T* defaultValue) const
+UsdSkelAnimMapper::_IsOrdered() const
 {
-    if(!target) {
-        TF_CODING_ERROR("'target' pointer is invalid.");
-        return false;
-    }
-    if(elementSize <= 0) {
-        TF_WARN("Invalid elementSize [%d]: "
-                "size must be greater than zero.", elementSize);
-        return false;
-    }
-
-    const size_t targetArraySize = _targetSize*elementSize;
-
-    if(IsIdentity() && source.size() == targetArraySize) {
-        // Can make a copy of the array (will share a reference to the source)
-        *target = source;
-        return true;
-    }
-
-    // Resize the target array to the expected size.
-    _ResizeArray(target, targetArraySize, defaultValue);
-
-    if(IsNull()) {
-        return true;
-    } else if(_flags&_OrderedMap) {
-
-        _ResizeArray(target, _targetSize*elementSize, defaultValue);
-
-        size_t copyCount =
-            std::min(source.size(), targetArraySize - _offset*elementSize);
-        std::copy(source.cdata(), source.cdata()+copyCount,
-                  target->data() + _offset*elementSize);
-    } else {
-
-        const T* sourceData = source.cdata();
-        T* targetData = target->data();
-        size_t copyCount = std::min(source.size()/elementSize,
-                                    _indexMap.size());
-
-        const int* indexMap = _indexMap.data();
-
-        for(size_t i = 0; i < copyCount; ++i) {
-            int targetIdx = indexMap[i];
-            if(targetIdx >= 0 && targetIdx < target->size()) {
-                TF_DEV_AXIOM(i*elementSize < source.size());
-                TF_DEV_AXIOM((i+1)*elementSize <= source.size());
-                TF_DEV_AXIOM((targetIdx+1)*elementSize <= target->size());
-                std::copy(sourceData + i*elementSize,
-                          sourceData + (i+1)*elementSize,
-                          targetData + targetIdx*elementSize);
-            }
-        }
-    }
-    return true;
+    return _flags&_OrderedMap;
 }
-
-
-// Explicitly instantiate templated Remap methods for all array-value sdf types.
-#define _INSTANTIATE_REMAP(r, unused, elem)                     \
-    template bool UsdSkelAnimMapper::Remap(                     \
-        const SDF_VALUE_TRAITS_TYPE(elem)::ShapedType&,         \
-        SDF_VALUE_TRAITS_TYPE(elem)::ShapedType*,               \
-        int, const SDF_VALUE_TRAITS_TYPE(elem)::Type*) const;
-
-BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_REMAP, ~, SDF_VALUE_TYPES);
-#undef _INSTANTIATE_REMAP
 
 
 template <typename T>
@@ -250,14 +174,14 @@ UsdSkelAnimMapper::_UntypedRemap(const VtValue& source,
 {
     TF_DEV_AXIOM(source.IsHolding<VtArray<T> >());
 
-    if(!target) {
+    if (!target) {
         TF_CODING_ERROR("'target' pointer is null.");
         return false;
     }
 
-    if(target->IsEmpty()) {
+    if (target->IsEmpty()) {
         *target = VtArray<T>();
-    } else if(!target->IsHolding<VtArray<T> >()) {
+    } else if (!target->IsHolding<VtArray<T> >()) {
         TF_CODING_ERROR("Type of 'target' [%s] did not match the type of "
                         "'source' [%s].", target->GetTypeName().c_str(),
                         source.GetTypeName().c_str());
@@ -265,8 +189,8 @@ UsdSkelAnimMapper::_UntypedRemap(const VtValue& source,
     }
 
     const T* defaultValueT = nullptr;
-    if(!defaultValue.IsEmpty()) {
-        if(defaultValue.IsHolding<T>()) {
+    if (!defaultValue.IsEmpty()) {
+        if (defaultValue.IsHolding<T>()) {
             defaultValueT = &defaultValue.UncheckedGet<T>();
         } else {
             TF_CODING_ERROR("Unexpected type [%s] for defaultValue: expecting "
@@ -278,7 +202,7 @@ UsdSkelAnimMapper::_UntypedRemap(const VtValue& source,
 
     const auto& sourceArray = source.UncheckedGet<VtArray<T> >();
     auto targetArray = target->UncheckedGet<VtArray<T> >();
-    if(_Remap(sourceArray, &targetArray, elementSize, defaultValueT)) {
+    if (Remap(sourceArray, &targetArray, elementSize, defaultValueT)) {
         *target = targetArray;
         return true;
     }
@@ -293,8 +217,8 @@ UsdSkelAnimMapper::Remap(const VtValue& source,
                          const VtValue& defaultValue) const
 {
 #define _UNTYPED_REMAP(r, unused, elem)                                 \
-    if(source.IsHolding<SDF_VALUE_TRAITS_TYPE(elem)::ShapedType>()) {   \
-        return _UntypedRemap<SDF_VALUE_TRAITS_TYPE(elem)::Type>(        \
+    if(source.IsHolding<SDF_VALUE_CPP_ARRAY_TYPE(elem)>()) {            \
+        return _UntypedRemap<SDF_VALUE_CPP_TYPE(elem)>(                 \
             source, target, elementSize, defaultValue);                 \
     }
 
@@ -305,14 +229,24 @@ BOOST_PP_SEQ_FOR_EACH(_UNTYPED_REMAP, ~, SDF_VALUE_TYPES);
 }
 
 
+template <typename Matrix4>
 bool
-UsdSkelAnimMapper::RemapTransforms(const VtMatrix4dArray& source,
-                                   VtMatrix4dArray* target,
+UsdSkelAnimMapper::RemapTransforms(const VtArray<Matrix4>& source,
+                                   VtArray<Matrix4>* target,
                                    int elementSize) const
 {
-    static const GfMatrix4d identity(1);
+    static const Matrix4 identity(1);
     return Remap(source, target, elementSize, &identity);
 }
+
+
+template USDSKEL_API bool
+UsdSkelAnimMapper::RemapTransforms(const VtMatrix4dArray&,
+                                   VtMatrix4dArray*, int) const;
+
+template USDSKEL_API bool
+UsdSkelAnimMapper::RemapTransforms(const VtMatrix4fArray&,
+                                   VtMatrix4fArray*, int) const;
 
 
 bool

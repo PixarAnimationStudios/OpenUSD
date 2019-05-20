@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 /**
- * \file houdinipkg/GUSD/plugin.cpp
+ * \file houdinipkg/gusd/plugin.cpp
  * \brief main plugin file
  */
 
@@ -31,15 +31,17 @@
 #include "GT_PackedUSD.h"
 #include "GT_Utils.h"
 #include "GU_PackedUSD.h"
-#include "gusd/GT_PointInstancer.h"
+#include "GT_PointInstancer.h"
 #include "curvesWrapper.h"
 #include "NURBSCurvesWrapper.h"
 
 #include "meshWrapper.h"
 #include "packedUsdWrapper.h"
 #include "pointsWrapper.h"
+#include "scopeWrapper.h"
 #include "xformWrapper.h"
 #include "instancerWrapper.h"
+#include "USD_CustomTraverse.h"
 #include "USD_Traverse.h"
 
 #include "pxr/usd/usdGeom/curves.h"
@@ -100,11 +102,16 @@ GusdInit()
     GusdPrimWrapper::registerPrimDefinitionFuncForRead(
             TfToken("NurbsCurves"), &GusdNURBSCurvesWrapper::defineForRead);
     GusdPrimWrapper::registerPrimDefinitionFuncForRead(
+            TfToken("Scope"), &GusdScopeWrapper::defineForRead);
+    GusdPrimWrapper::registerPrimDefinitionFuncForRead(
             TfToken("Xform"), &GusdXformWrapper::defineForRead);
+    GusdPrimWrapper::registerPrimDefinitionFuncForRead(
+            TfToken("SkelRoot"), &GusdXformWrapper::defineForRead);
     GusdPrimWrapper::registerPrimDefinitionFuncForRead(
             TfToken("PointInstancer"), &GusdInstancerWrapper::defineForRead);
 
     GusdUSD_TraverseTable::GetInstance().SetDefault("std:components");
+    GusdUSD_CustomTraverse::Initialize();
     libInitialized = true;
 }
 
@@ -128,6 +135,10 @@ GusdNewGeometryIO()
     geoextension = UTgetGeoExtensions();
     if (!geoextension->findExtension("usd"))
        geoextension->addExtension("usd");
+    if (!geoextension->findExtension("usda"))
+       geoextension->addExtension("usda");
+    if (!geoextension->findExtension("usdc"))
+       geoextension->addExtension("usdc");
    geomIOInitialized = true;
 }
 

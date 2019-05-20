@@ -436,5 +436,32 @@ class TestUsdAttributeConnections(unittest.TestCase):
             expectedListOp.appendedItems = ["/Test.C", "/Test.D"]
             self.assertEqual(attrSpec.GetInfo("connectionPaths"), expectedListOp)
 
+    def test_ConnectionsWithInconsistentSpecs(self):
+        for fmt in allFormats:
+            stage = Usd.Stage.CreateInMemory(
+                'TestConnectionsWithInconsistentSpecs.'+fmt)
+            stage.GetRootLayer().ImportFromString('''#usda 1.0
+                def "A"
+                {
+                    double a = 1.0
+                    double attr = 1.0
+                    prepend double attr.connect = </A.a>
+                }
+
+                def "B" (
+                    references = </A>
+                )
+                {
+                    string b = "foo"
+                    uniform string attr = "foo"
+                    prepend uniform string attr.connect = </B.b>
+                }
+            ''')
+
+            attr = stage.GetPrimAtPath("/B").GetAttribute("attr")
+            self.assertEqual(attr.GetConnections(), 
+                             [Sdf.Path("/B.b"), Sdf.Path("/B.a")])
+            
+
 if __name__ == '__main__':
     unittest.main()

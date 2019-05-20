@@ -322,10 +322,21 @@ class TestSdfPath(unittest.TestCase):
         
         # Test replacing target paths.
         p = Sdf.Path('/A/B.a[/C/D.a[/A/F.a]].a')
-        assert (p.ReplacePrefix('/A', '/_', fixTargetPaths=False)
-                == Sdf.Path('/_/B.a[/C/D.a[/A/F.a]].a'))
-        assert (p.ReplacePrefix('/A', '/_', fixTargetPaths=True)
-                == Sdf.Path('/_/B.a[/C/D.a[/_/F.a]].a'))
+        self.assertEqual(p.ReplacePrefix('/A', '/_', fixTargetPaths=False),
+                         Sdf.Path('/_/B.a[/C/D.a[/A/F.a]].a'))
+        self.assertEqual(p.ReplacePrefix('/A', '/_', fixTargetPaths=True),
+                         Sdf.Path('/_/B.a[/C/D.a[/_/F.a]].a'))
+
+        # ReplacePrefix with an empty old or new prefix returns an empty path.
+        self.assertEqual(Sdf.Path("/A/B").ReplacePrefix(Sdf.Path.emptyPath, "/C"),
+                         Sdf.Path.emptyPath)
+        self.assertEqual(Sdf.Path("/A/B").ReplacePrefix("/A", Sdf.Path.emptyPath),
+                         Sdf.Path.emptyPath)
+
+        self.assertEqual(Sdf.Path.emptyPath.ReplacePrefix(Sdf.Path.emptyPath, "/C"),
+                         Sdf.Path.emptyPath)
+        self.assertEqual(Sdf.Path.emptyPath.ReplacePrefix("/A", Sdf.Path.emptyPath),
+                         Sdf.Path.emptyPath)
         
         # ========================================================================
         # Test RemoveCommonSuffix

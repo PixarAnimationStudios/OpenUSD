@@ -29,7 +29,7 @@
 
 #include "pxr/usd/sdf/layer.h"
 
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/pathUtils.h"
@@ -88,70 +88,53 @@ UsdAbcAlembicFileFormat::CanRead(const string& filePath) const
 
 bool
 UsdAbcAlembicFileFormat::Read(
-    const SdfLayerBasePtr& layerBase,
+    SdfLayer* layer,
     const string& resolvedPath,
     bool metadataOnly) const
 {
     TRACE_FUNCTION();
 
-    SdfLayerHandle layer = TfDynamic_cast<SdfLayerHandle>(layerBase);
-    if (!TF_VERIFY(layer)) {
-        return false;
-    }
-
-    SdfAbstractDataRefPtr data = InitData(layerBase->GetFileFormatArguments());
+    SdfAbstractDataRefPtr data = InitData(layer->GetFileFormatArguments());
     UsdAbc_AlembicDataRefPtr abcData = TfStatic_cast<UsdAbc_AlembicDataRefPtr>(data);
     if (!abcData->Open(resolvedPath)) {
         return false;
     }
 
-    // Just swap out the data - unlike text layers fully populated into memory,
-    // we have no way of tracking change state for undo and inverses.
-
-    // XXX:
-    // Do we need to pre- and/or post-process the existing AlembicData object?
-    _SwapLayerData(layer, data);
-
+    _SetLayerData(layer, data);
     return true;
 }
 
 bool
 UsdAbcAlembicFileFormat::WriteToFile(
-    const SdfLayerBase* layerBase,
+    const SdfLayer& layer,
     const std::string& filePath,
     const std::string& comment,
     const FileFormatArguments& args) const
 {
-    const SdfLayer* layer = dynamic_cast<const SdfLayer*>(layerBase);
-    if (!TF_VERIFY(layer)) {
-        return false;
-    }
-
     // Write.
-    SdfAbstractDataConstPtr data = 
-        _GetLayerData(SdfCreateNonConstHandle(layer));
+    SdfAbstractDataConstPtr data = _GetLayerData(layer);
     return TF_VERIFY(data) && UsdAbc_AlembicData::Write(data, filePath, comment);
 }
 
 bool 
 UsdAbcAlembicFileFormat::ReadFromString(
-    const SdfLayerBasePtr& layerBase,
+    SdfLayer* layer,
     const std::string& str) const
 {
     // XXX: For now, defer to the usda file format for this. May need to
     //      revisit this as the alembic reader gets fully fleshed out.
-    return _usda->ReadFromString(layerBase, str);
+    return _usda->ReadFromString(layer, str);
 }
 
 bool 
 UsdAbcAlembicFileFormat::WriteToString(
-    const SdfLayerBase* layerBase,
+    const SdfLayer& layer,
     std::string* str,
     const std::string& comment) const
 {
     // XXX: For now, defer to the usda file format for this. May need to
     //      revisit this as the alembic reader gets fully fleshed out.
-    return _usda->WriteToString(layerBase, str, comment);
+    return _usda->WriteToString(layer, str, comment);
 }
 
 bool
@@ -169,7 +152,7 @@ UsdAbcAlembicFileFormat::WriteToStream(
 
 bool 
 UsdAbcAlembicFileFormat::_IsStreamingLayer(
-    const SdfLayerBase& layer) const
+    const SdfLayer& layer) const
 {
     return true;
 }

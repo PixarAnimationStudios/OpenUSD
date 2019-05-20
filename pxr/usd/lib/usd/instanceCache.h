@@ -156,8 +156,9 @@ public:
     /// It is safe to call this function concurrently from multiple 
     /// threads.
     ///
-    /// Returns true if the given instance prim index requires a new
-    /// master prim, false otherwise.
+    /// Returns true if the given instance prim index requires a new 
+    /// master prim or is the source for an existing master prim, false
+    /// otherwise.
     bool RegisterInstancePrimIndex(const PcpPrimIndex& index);
 
     /// Unregisters all instance prim indexes at or under \p primIndexPath.

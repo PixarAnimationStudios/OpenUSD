@@ -942,6 +942,20 @@
                     "applies_to_prims_and_properties": {
                         "appliesTo": ["prims", "properties"],
                         "type": "int"
+                    },
+                    "extrainfo1": {
+                        "type": "matrix2d[]",
+                        "config" : true
+                    }, 
+                    "extrainfo2": {
+                        "type": "matrix2d[]",
+                        "config" : false,
+                        "authors" : ["johndoe", "marysue"]
+                    }, 
+                    "extrainfo3": {
+                        "appliesTo": "relationships",
+                        "type": "int",
+                        "version" : 1
                     }
                 }
             }

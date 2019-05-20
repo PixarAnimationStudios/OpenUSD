@@ -1,0 +1,14 @@
+//
+// TestNodeSameName
+//
+// A simple node with the same name as an ARGS node. Helps ensure the registry
+// can properly fetch nodes w/ the same name but different type.
+//
+
+shader TestNodeSameName
+(
+    float inputA = .0
+)
+{
+    // Nothing here!
+}

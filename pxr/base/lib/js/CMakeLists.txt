@@ -40,6 +40,20 @@ pxr_build_test(testJsUtils
     CPPFILES
         testenv/testJsUtils.cpp
 ) 
+pxr_build_test(testJsWriter
+    LIBRARIES
+        tf
+        js
+    CPPFILES
+        testenv/testJsWriter.cpp
+)
+pxr_build_test(testJsDouble
+    LIBRARIES
+        tf
+        js
+    CPPFILES
+        testenv/testJsDouble.cpp
+)  
 pxr_install_test_dir(
     SRC testenv/testJsIO
     DEST testJsIO
@@ -51,6 +65,10 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testJsConverter
     DEST testJsConverter
+)
+pxr_install_test_dir(
+    SRC testenv/testJsWriter
+    DEST testJsWriter
 )
 
 pxr_register_test(testJsIO_PlugInfo
@@ -101,3 +119,24 @@ pxr_register_test(testJsUtils
     COMMAND 
         "${CMAKE_INSTALL_PREFIX}/tests/testJsUtils"
 )
+pxr_register_test(testJsWriter
+    COMMAND 
+        "${CMAKE_INSTALL_PREFIX}/tests/testJsWriter test.json compact"
+    TESTENV
+        testJsWriter
+    DIFF_COMPARE 
+        test.json
+)
+pxr_register_test(testJsWriter_Pretty
+    COMMAND 
+        "${CMAKE_INSTALL_PREFIX}/tests/testJsWriter test-pretty.json pretty"
+    TESTENV
+        testJsWriter
+    DIFF_COMPARE 
+        test-pretty.json
+)
+pxr_register_test(testJsDouble
+    COMMAND 
+        "${CMAKE_INSTALL_PREFIX}/tests/testJsDouble"
+)
+

@@ -23,7 +23,7 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/abstractData.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include <iostream>
 #include <vector>
@@ -305,6 +305,13 @@ SdfAbstractData::VisitSpecs(SdfAbstractDataSpecVisitor* visitor) const
         _VisitSpecs(visitor);
         visitor->Done(*this);
     }
+}
+
+std::type_info const &
+SdfAbstractData::GetTypeid(
+    const SdfAbstractDataSpecId &id, const TfToken &fieldName) const
+{
+    return Get(id, fieldName).GetTypeid();
 }
 
 bool

@@ -25,6 +25,9 @@
 #include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/stringUtils.h"
+
+#include <cctype>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -38,27 +41,33 @@ struct _FormatDesc {
 static const _FormatDesc FORMAT_DESC[] =
 {
     // format,  type,          internal format
-    {GL_RED,  GL_UNSIGNED_BYTE, GL_RED},     // HdFormatR8UNorm,
-    {GL_RED,  GL_BYTE,          GL_R8},      // HdFormatR8SNorm.
+    {GL_RED,  GL_UNSIGNED_BYTE, GL_R8},      // HdFormatUNorm8,
+    {GL_RG,   GL_UNSIGNED_BYTE, GL_RG8},     // HdFormatUNorm8Vec2,
+    {GL_RGB,  GL_UNSIGNED_BYTE, GL_RGB8},    // HdFormatUNorm8Vec3,
+    {GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8},   // HdFormatUNorm8Vec4,
 
-    {GL_RG,   GL_UNSIGNED_BYTE, GL_RG8},     // HdFormatR8G8UNorm,
-    {GL_RG,   GL_BYTE,          GL_RG8},     // HdFormatR8G8SNorm,
+    {GL_RED,  GL_BYTE,          GL_R8_SNORM},      // HdFormatSNorm8,
+    {GL_RG,   GL_BYTE,          GL_RG8_SNORM},     // HdFormatSNorm8Vec2,
+    {GL_RGB,  GL_BYTE,          GL_RGB8_SNORM},    // HdFormatSNorm8Vec3,
+    {GL_RGBA, GL_BYTE,          GL_RGBA8_SNORM},   // HdFormatSNorm8Vec4,
 
-    {GL_RGB,  GL_UNSIGNED_BYTE, GL_RGB8},    // HdFormatR8G8B8UNorm,
-    {GL_RGB,  GL_BYTE,          GL_RGB8},    // HdFormatR8G8B8SNorm,
+    {GL_RED,  GL_HALF_FLOAT,    GL_R16F},    // HdFormatFloat16,
+    {GL_RG,   GL_HALF_FLOAT,    GL_RG16F},   // HdFormatFloat16Vec2,
+    {GL_RGB,  GL_HALF_FLOAT,    GL_RGB16F},  // HdFormatFloat16Vec3,
+    {GL_RGBA, GL_HALF_FLOAT,    GL_RGBA16F}, // HdFormatFloat16Vec4,
 
-    {GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8},   // HdFormatR8G8B8A8UNorm,
-    {GL_RGBA, GL_BYTE,          GL_RGBA8},   // HdFormatR8G8B8A8SNorm,
+    {GL_RED,  GL_FLOAT,         GL_R32F},    // HdFormatFloat32,
+    {GL_RG,   GL_FLOAT,         GL_RG32F},   // HdFormatFloat32Vec2,
+    {GL_RGB,  GL_FLOAT,         GL_RGB32F},  // HdFormatFloat32Vec3,
+    {GL_RGBA, GL_FLOAT,         GL_RGBA32F}, // HdFormatFloat32Vec4,
 
-    {GL_RED,  GL_FLOAT,         GL_R32F},    // HdFormatR32Float,
-
-    {GL_RG,   GL_FLOAT,         GL_RG32F},   // HdFormatR32G32Float,
-
-    {GL_RGB,  GL_FLOAT,         GL_RGB32F},  // HdFormatR32G32B32Float,
-
-    {GL_RGBA,  GL_FLOAT,        GL_RGBA32F}, // HdFormatR32G32B32A32Float,
+    {GL_RED,  GL_INT,           GL_R32I},    // HdFormatInt32,
+    {GL_RG,   GL_INT,           GL_RG32I},   // HdFormatInt32Vec2,
+    {GL_RGB,  GL_INT,           GL_RGB32I},  // HdFormatInt32Vec3,
+    {GL_RGBA, GL_INT,           GL_RGBA32I}, // HdFormatInt32Vec4,
 };
-static_assert(TfArraySize(FORMAT_DESC) ==  HdFormatCount, "FORMAT_DESC to HdFormat enum mismatch");
+static_assert(TfArraySize(FORMAT_DESC) ==
+        HdFormatCount, "FORMAT_DESC to HdFormat enum mismatch");
 
 size_t
 HdStGLConversions::GetComponentSize(int glDataType)
@@ -125,9 +134,103 @@ HdStGLConversions::GetGlDepthFunc(HdCompareFunction func)
         GL_GEQUAL,   // HdCmpFuncGEqual
         GL_ALWAYS,   // HdCmpFuncAlways
     };
-    static_assert((sizeof(HD_2_GL_DEPTH_FUNC) / sizeof(HD_2_GL_DEPTH_FUNC[0])) == HdCmpFuncLast, "Mismatch enum sizes in convert function");
+    static_assert(
+        (sizeof(HD_2_GL_DEPTH_FUNC) / sizeof(HD_2_GL_DEPTH_FUNC[0])) ==
+                HdCmpFuncLast, "Mismatch enum sizes in convert function");
 
     return HD_2_GL_DEPTH_FUNC[func];
+}
+
+GLenum
+HdStGLConversions::GetGlStencilFunc(HdCompareFunction func)
+{
+    static GLenum HD_2_GL_STENCIL_FUNC[] =
+    {
+        GL_NEVER,    // HdCmpFuncNever
+        GL_LESS,     // HdCmpFuncLess
+        GL_EQUAL,    // HdCmpFuncEqual
+        GL_LEQUAL,   // HdCmpFuncLEqual
+        GL_GREATER,  // HdCmpFuncGreater
+        GL_NOTEQUAL, // HdCmpFuncNotEqual
+        GL_GEQUAL,   // HdCmpFuncGEqual
+        GL_ALWAYS,   // HdCmpFuncAlways
+    };
+    static_assert(
+        (sizeof(HD_2_GL_STENCIL_FUNC) / sizeof(HD_2_GL_STENCIL_FUNC[0])) ==
+                HdCmpFuncLast, "Mismatch enum sizes in convert function");
+
+    return HD_2_GL_STENCIL_FUNC[func];
+}
+
+GLenum
+HdStGLConversions::GetGlStencilOp(HdStencilOp op)
+{
+    static GLenum HD_2_GL_STENCIL_OP[] =
+    {
+        GL_KEEP,      // HdStencilOpKeep
+        GL_ZERO,      // HdStencilOpZero
+        GL_REPLACE,   // HdStencilOpReplace
+        GL_INCR,      // HdStencilOpIncrement
+        GL_INCR_WRAP, // HdStencilOpIncrementWrap
+        GL_DECR,      // HdStencilOpDecrement
+        GL_DECR_WRAP, // HdStencilOpDecrementWrap
+        GL_INVERT,    // HdStencilOpInvert
+    };
+    static_assert(
+        (sizeof(HD_2_GL_STENCIL_OP) / sizeof(HD_2_GL_STENCIL_OP[0])) ==
+                HdStencilOpLast, "Mismatch enum sizes in convert function");
+
+    return HD_2_GL_STENCIL_OP[op];
+}
+
+GLenum
+HdStGLConversions::GetGlBlendOp(HdBlendOp op)
+{
+    static GLenum HD_2_GL_BLEND_OP[] =
+    {
+        GL_FUNC_ADD,              // HdBlendOpAdd
+        GL_FUNC_SUBTRACT,         // HdBlendOpSubtract
+        GL_FUNC_REVERSE_SUBTRACT, // HdBlendOpReverseSubtract
+        GL_MIN,                   // HdBlendOpMin
+        GL_MAX,                   // HdBlendOpMax
+    };
+    static_assert(
+        (sizeof(HD_2_GL_BLEND_OP) / sizeof(HD_2_GL_BLEND_OP[0])) ==
+                HdBlendOpLast, "Mismatch enum sizes in convert function");
+
+    return HD_2_GL_BLEND_OP[op];
+}
+
+GLenum
+HdStGLConversions::GetGlBlendFactor(HdBlendFactor factor)
+{
+    static GLenum HD_2_GL_BLEND_FACTOR[] =
+    {
+        GL_ZERO,                        // HdBlendFactorZero,
+        GL_ONE,                         // HdBlendFactorOne,
+        GL_SRC_COLOR,                   // HdBlendFactorSrcColor,
+        GL_ONE_MINUS_SRC_COLOR,         // HdBlendFactorOneMinusSrcColor,
+        GL_DST_COLOR,                   // HdBlendFactorDstColor,
+        GL_ONE_MINUS_DST_COLOR,         // HdBlendFactorOneMinusDstColor,
+        GL_SRC_ALPHA,                   // HdBlendFactorSrcAlpha,
+        GL_ONE_MINUS_SRC_ALPHA,         // HdBlendFactorOneMinusSrcAlpha,
+        GL_DST_ALPHA,                   // HdBlendFactorDstAlpha,
+        GL_ONE_MINUS_DST_ALPHA,         // HdBlendFactorOneMinusDstAlpha,
+        GL_CONSTANT_COLOR,              // HdBlendFactorConstantColor,
+        GL_ONE_MINUS_CONSTANT_COLOR,    // HdBlendFactorOneMinusConstantColor,
+        GL_CONSTANT_ALPHA,              // HdBlendFactorConstantAlpha,
+        GL_ONE_MINUS_CONSTANT_ALPHA,    // HdBlendFactorOneMinusConstantAlpha,
+        GL_SRC_ALPHA_SATURATE,          // HdBlendFactorSrcAlphaSaturate,
+        GL_SRC1_COLOR,                  // HdBlendFactorSrc1Color,
+        GL_ONE_MINUS_SRC1_COLOR,        // HdBlendFactorOneMinusSrc1Color,
+        GL_SRC1_ALPHA,                  // HdBlendFactorSrc1Alpha,
+        GL_ONE_MINUS_SRC1_COLOR,        // HdBlendFactorOneMinusSrc1Alpha,
+    };
+    static_assert(
+        (sizeof(HD_2_GL_BLEND_FACTOR) / sizeof(HD_2_GL_BLEND_FACTOR[0])) ==
+                HdBlendFactorLast, "Mismatch enum sizes in convert function");
+
+    return HD_2_GL_BLEND_FACTOR[factor];
 }
 
 GLenum 
@@ -165,15 +268,19 @@ HdStGLConversions::GetWrap(HdWrap wrap)
         case HdWrapClamp : return GL_CLAMP_TO_EDGE;
         case HdWrapRepeat : return GL_REPEAT;
         case HdWrapBlack : return GL_CLAMP_TO_BORDER;
-        case HdWrapUseMetaDict : return GL_REPEAT;
+        case HdWrapMirror : return GL_MIRRORED_REPEAT;
+        case HdWrapUseMetadata : return GL_CLAMP_TO_BORDER;
+        case HdWrapLegacy : return GL_REPEAT;
     }
 
     TF_CODING_ERROR("Unexpected HdWrap type %d", wrap);
-    return GL_REPEAT;
+    return GL_CLAMP_TO_BORDER;
 }
 
 void
-HdStGLConversions::GetGlFormat(HdFormat inFormat, GLenum *outFormat, GLenum *outType, GLenum *outInternalFormat)
+HdStGLConversions::GetGlFormat(
+        HdFormat inFormat,
+        GLenum *outFormat, GLenum *outType, GLenum *outInternalFormat)
 {
     if ((inFormat < 0) || (inFormat >= HdFormatCount))
     {
@@ -209,12 +316,14 @@ HdStGLConversions::GetGLAttribType(HdType type)
     case HdTypeFloatVec2:
     case HdTypeFloatVec3:
     case HdTypeFloatVec4:
+    case HdTypeFloatMat3:
     case HdTypeFloatMat4:
         return GL_FLOAT;
     case HdTypeDouble:
     case HdTypeDoubleVec2:
     case HdTypeDoubleVec3:
     case HdTypeDoubleVec4:
+    case HdTypeDoubleMat3:
     case HdTypeDoubleMat4:
         return GL_DOUBLE;
     case HdTypeInt32_2_10_10_10_REV:
@@ -233,12 +342,14 @@ TF_DEFINE_PRIVATE_TOKENS(
     (vec2)
     (vec3)
     (vec4)
+    (mat3)
     (mat4)
 
     ((_double, "double"))
     (dvec2)
     (dvec3)
     (dvec4)
+    (dmat3)
     (dmat4)
 
     ((_int, "int"))
@@ -250,6 +361,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (uvec2)
     (uvec3)
     (uvec4)
+
+    (packed_2_10_10_10)
 );
 
 TfToken
@@ -259,6 +372,11 @@ HdStGLConversions::GetGLSLTypename(HdType type)
     case HdTypeInvalid:
     default:
         return TfToken();
+
+    // Packed types (require special handling in codegen)...
+    case HdTypeInt32_2_10_10_10_REV:
+        return _glTypeNames->packed_2_10_10_10;
+
     case HdTypeBool:
         return _glTypeNames->_bool;
 
@@ -286,10 +404,10 @@ HdStGLConversions::GetGLSLTypename(HdType type)
         return _glTypeNames->vec2;
     case HdTypeFloatVec3:
         return _glTypeNames->vec3;
-    case HdTypeInt32_2_10_10_10_REV:
-        // Special case: treat as a vec4.
     case HdTypeFloatVec4:
         return _glTypeNames->vec4;
+    case HdTypeFloatMat3:
+        return _glTypeNames->mat3;
     case HdTypeFloatMat4:
         return _glTypeNames->mat4;
 
@@ -301,9 +419,91 @@ HdStGLConversions::GetGLSLTypename(HdType type)
         return _glTypeNames->dvec3;
     case HdTypeDoubleVec4:
         return _glTypeNames->dvec4;
+    case HdTypeDoubleMat3:
+        return _glTypeNames->dmat3;
     case HdTypeDoubleMat4:
         return _glTypeNames->dmat4;
     };
+}
+
+// This isn't an exhaustive checker. It doesn't check for built-in/internal
+// variable names in GLSL, reserved keywords and such.
+static bool
+_IsIdentiferGLSLCompatible(std::string const& in)
+{
+    char const *p = in.c_str();
+
+    // Leading non-alpha characters are not allowed.
+    if (*p && !isalpha(*p)) {
+        return false;
+    }
+    // Characters must be in [_a-zA-Z0-9]
+    while (*p) {
+        if (isalnum(*p)) {
+            p++;
+        } else {
+            // _ is allowed, but __ isn't
+            if (*p == '_' && *(p-1) != '_') {
+                // checking the last character is safe here, because of the
+                // earlier check for leading non-alpha characters.
+                p++;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+TfToken
+HdStGLConversions::GetGLSLIdentifier(TfToken const& identifier)
+{
+    std::string const& in = identifier.GetString();
+    // Avoid allocating a string and constructing a token for the general case,
+    // wherein identifers conform to the naming rules.
+    if (_IsIdentiferGLSLCompatible(in)) {
+        return identifier;
+    }
+
+    // Name-mangling rules:
+    // https://www.khronos.org/registry/OpenGL/specs/gl/GLSLangSpec.4.60.pdf
+    // We choose to specifically disallow:
+    // 1) Leading non-alpha characters: GLSL allows leading underscores, but we
+    //    choose to reserve them for internal use.
+    // 2) Consecutive underscores: To avoid unintended GLSL behaviors.
+    std::string result;
+    result.reserve(in.size());
+    char const *p = in.c_str();
+
+    // Skip leading non-alpha characters.
+    while (*p && !isalpha(*p)) {
+        ++p;
+    }
+    for (; *p; ++p) {
+        bool isValidChar = isalnum(*p) || (*p == '_');
+        if (!isValidChar) {
+            // Replace characters not in [_a-zA-Z0-9] with _, unless the last
+            // character  added was also _.
+            // Calling back() is safe here because the first character is either
+            // alpha-numeric or null, as guaranteed by the while loop above.
+            if (result.back() != '_') {
+                result.push_back('_');
+            }
+        } else if (*p == '_' && result.back() == '_') {
+            // no-op to skip consecutive _
+        } else {
+            result.push_back(*p);
+        }
+    }
+
+    if (result.empty()) {
+        TF_CODING_ERROR("Invalid identifier '%s' could not be name-mangled",
+                        identifier.GetText());
+        return identifier;
+    }
+
+    return TfToken(result);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

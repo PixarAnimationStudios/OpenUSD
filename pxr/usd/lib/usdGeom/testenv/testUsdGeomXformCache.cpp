@@ -29,6 +29,8 @@
 #include "pxr/usd/usdGeom/xformCache.h"
 #include "pxr/usd/usdGeom/scope.h"
 
+#include <iostream>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 // --------------------------------------------------------------------- //
@@ -252,48 +254,44 @@ void VerifyTransforms(UsdStageRefPtr const& stage,
               bar.GetPath().GetText());
 
     // --------------------------------------------------------------------- //
-    // Test Nested Root
+    // Test ComputeRelativeTransform
     // --------------------------------------------------------------------- //
 
-    TF_VERIFY(xfCache.GetWorldPath() == SdfPath::AbsoluteRootPath());
+    bool resetXformStack = false;
 
-    xfCache.SetWorldPath(fooPath);
-    TF_VERIFY(xfCache.GetWorldPath() == fooPath);
-
-    // Should return xform * xform
-    ctm = xfCache.GetLocalToWorldTransform(fooBarBaz);
-    TF_VERIFY(ctm == (xform * xform),
-              "LocalToWorldTransform value for %s is incorrect.",
-              fooBarBaz.GetPath().GetText());
-
-    // Should return xform
-    ctm = xfCache.GetParentToWorldTransform(fooBarBaz);
+    // /RootPrim relative to / : Should return xform.
+    ctm = xfCache.ComputeRelativeTransform(root, stage->GetPseudoRoot(),
+                                           &resetXformStack);
     TF_VERIFY(ctm == xform,
-              "ParentToWorldTransform value for %s is incorrect.",
-              fooBarBaz.GetPath().GetText());
+              "ComputeRelativeTransform value for (%s,%s) is incorrect.",
+              root.GetPath().GetText(),
+              stage->GetPseudoRoot().GetPath().GetText());
 
-    TfErrorMark outsideWorldPathLocalErrorMark;
-    ctm = xfCache.GetLocalToWorldTransform(bar);
-    TF_VERIFY(!outsideWorldPathLocalErrorMark.IsClean());
-    TF_VERIFY(ctm == GfMatrix4d(1),
-              "LocalToWorldTransform error value for %s is incorrect.",
-              bar.GetPath().GetText());
+    // /RootPrim/Scope/Foo relative to /RootPrim. Should return xform.
+    ctm = xfCache.ComputeRelativeTransform(foo, root, &resetXformStack);
+    TF_VERIFY(ctm == (xform),
+              "ComputeRelativeTransform value for (%s,%s) is incorrect.",
+              foo.GetPath().GetText(), root.GetPath().GetText());
 
-    TfErrorMark outsideWorldPathParentErrorMark;
-    ctm = xfCache.GetParentToWorldTransform(bar);
-    TF_VERIFY(!outsideWorldPathParentErrorMark.IsClean());
-    TF_VERIFY(ctm == GfMatrix4d(1),
-              "ParentToWorldTransform error value for %s is incorrect.",
-              bar.GetPath().GetText());
+    // /RootPrim/Scope/Foo/Bar relative to /RootPrim.
+    // fooBar resets the xform stack, so should return xform.
+    ctm = xfCache.ComputeRelativeTransform(fooBar, root, &resetXformStack);
+    TF_VERIFY(ctm == (xform), 
+              "ComputeRelativeTransform value for (%s,%s) is incorrect.",
+              fooBar.GetPath().GetText(), root.GetPath().GetText());
 
-    TfErrorMark badWorldPathErrorMark;
-    std::cerr << "==== Expected error output ====\n";
-    xfCache.SetWorldPath(SdfPath("../Scope"));
-    TF_VERIFY(!badWorldPathErrorMark.IsClean());
-    std::cerr << "==== End expected errors ====\n";
-    TF_VERIFY(xfCache.GetWorldPath() == fooPath);
+    // /RootPrim/Scope/Foo/Bar/Baz relative to /RootPrim/Foo/Bar.
+    // fooBar resets the xform stack, so should return xform*xform.
+    ctm = xfCache.ComputeRelativeTransform(fooBarBaz, root, &resetXformStack);
+    TF_VERIFY(ctm == (xform * xform),
+              "ComputeRelativeTransform value for (%s,%s) is incorrect.",
+              fooBarBaz.GetPath().GetText(), root.GetPath().GetText());
 
-    xfCache.SetWorldPath(SdfPath::AbsoluteRootPath());
+    // /RootPrim/Scope/Bar relative to /RootPrim. Should return xform.
+    ctm = xfCache.ComputeRelativeTransform(bar, root, &resetXformStack);
+    TF_VERIFY(ctm == (xform),
+              "ComputeRelativeTransform value for (%s,%s) is incorrect.",
+              bar.GetPath().GetText(), root.GetPath().GetText());
 }
 
 void XformCacheTest(UsdStageRefPtr const& stage)

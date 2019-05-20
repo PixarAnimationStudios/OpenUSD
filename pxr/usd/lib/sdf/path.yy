@@ -34,8 +34,6 @@
 #include <utility>
 #include <vector>
 
-using boost::get;
-
 using std::pair;
 using std::string;
 using std::vector;

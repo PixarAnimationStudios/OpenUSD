@@ -34,6 +34,7 @@ operator==(const HdxShaderInputs& lhs, const HdxShaderInputs& rhs)
 {
     return  lhs.parameters == rhs.parameters && 
             lhs.textures == rhs.textures     && 
+            lhs.textureFallbackValues == rhs.textureFallbackValues && 
             lhs.attributes == rhs.attributes;
 }
 
@@ -46,49 +47,13 @@ operator!=(const HdxShaderInputs& lhs, const HdxShaderInputs& rhs)
 std::ostream&
 operator<<(std::ostream& out, const HdxShaderInputs& pv)
 {
-    out <<  pv.parameters << " " << pv.textures << " ";
+    out << pv.parameters << " "
+        << pv.textures << " "
+        << pv.textureFallbackValues << " ";
 
     TF_FOR_ALL(it, pv.attributes) {
         out << *it;
     }
-    return out;
-}
-
-// HdxTextureParameters implementation
-bool
-operator==(const HdxTextureParameters& lhs, const HdxTextureParameters& rhs)
-{
-    return  lhs.wrapS == rhs.wrapS                  && 
-            lhs.wrapT == rhs.wrapT                  && 
-            lhs.minFilter == rhs.minFilter          && 
-            lhs.magFilter == rhs.magFilter          && 
-            lhs.cropTop == rhs.cropTop              && 
-            lhs.cropBottom == rhs.cropBottom        && 
-            lhs.cropLeft == rhs.cropLeft            && 
-            lhs.cropRight == rhs.cropRight          && 
-            lhs.textureMemory == rhs.textureMemory  && 
-            lhs.isPtex == rhs.isPtex;
-}
-
-bool
-operator!=(const HdxTextureParameters& lhs, const HdxTextureParameters& rhs)
-{
-    return !(lhs == rhs);
-}
-
-std::ostream&
-operator<<(std::ostream& out, const HdxTextureParameters& pv)
-{
-    out << pv.wrapS << " " 
-        << pv.wrapT << " "
-        << pv.minFilter << " "
-        << pv.magFilter << " "
-        << pv.cropTop << " "
-        << pv.cropBottom << " "
-        << pv.cropLeft << " "
-        << pv.cropRight << " "
-        << pv.textureMemory << " "
-        << pv.isPtex;
     return out;
 }
 

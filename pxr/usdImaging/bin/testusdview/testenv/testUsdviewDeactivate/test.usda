@@ -1,0 +1,58 @@
+#usda 1.0
+
+def Xform "Implicits" (
+    add variantSets = "shapeVariant"
+)
+{
+    variantSet "shapeVariant" = {
+        "Sphere" {
+            def Sphere "Ball"
+            {
+            }
+        }
+    }
+}
+
+def Xform "spheres" {
+
+    def Sphere "a" {
+        double3 xformOp:translate = (2, 2, 2)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "b" {
+        double3 xformOp:translate = (3, 4, 3)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+}
+
+def Sphere "c" {
+    double3 xformOp:translate = (4, 6, 4)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def "A" {
+    def "B" {
+        def "C" {
+            def "D" {
+
+            }
+        }
+    }
+}
+
+def "C2" (references = </A/B/C>) {
+    
+}
+
+class "_class_X" {
+    def "Y" {
+    }
+}
+
+def "X" (
+    inherits = [ </_class_X> ]
+    instanceable = true
+) {
+}

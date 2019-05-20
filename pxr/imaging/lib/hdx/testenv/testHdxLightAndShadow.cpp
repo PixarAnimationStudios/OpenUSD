@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/glContext.h"
@@ -56,6 +57,7 @@ int main(int argc, char *argv[])
     GlfGlewInit();
     // wrap into GlfGLContext so that GlfDrawTarget works
     GlfGLContextSharedPtr ctx = GlfGLContext::GetCurrentGLContext();
+    GlfContextCaps::InitInstance();
 
     // prep draw target
     GlfDrawTargetRefPtr drawTarget = GlfDrawTarget::New(GfVec2i(512, 512));
@@ -120,7 +122,8 @@ int main(int argc, char *argv[])
     // set renderTask
     delegate->SetTaskParam(
         renderTask, HdTokens->collection,
-        VtValue(HdRprimCollection(HdTokens->geometry, HdTokens->refined)));
+        VtValue(HdRprimCollection(HdTokens->geometry, 
+                HdReprSelector(HdReprTokens->refined))));
 
     // set render setup param
     VtValue vParam = delegate->GetTaskParam(renderSetupTask, HdTokens->params);
@@ -167,7 +170,7 @@ int main(int argc, char *argv[])
     // --------------------------------------------------------------------
     // move light
     light2.SetPosition(GfVec4f(-0.3,-0.2,1,0));
-    delegate->SetLight(SdfPath("/light2"), HdStLightTokens->params,
+    delegate->SetLight(SdfPath("/light2"), HdLightTokens->params,
                       VtValue(light2));
 
     // --------------------------------------------------------------------

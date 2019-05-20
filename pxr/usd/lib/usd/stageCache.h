@@ -51,7 +51,7 @@ class UsdStageCacheRequest;
 ///
 /// A strongly concurrency safe collection of UsdStageRefPtr s, enabling
 /// sharing across multiple clients and threads.  See UsdStageCacheContext for
-/// typcial use cases finding UsdStage s in a cache and publishing UsdStage s to
+/// typical use cases finding UsdStage s in a cache and publishing UsdStage s to
 /// a cache.
 ///
 /// UsdStageCache is strongly thread safe: all operations other than
@@ -89,7 +89,7 @@ public:
     /// \class Id
     ///
     /// A lightweight identifier that may be used to identify a
-    /// particular cached stage within a UsdStageCache.  An identifer may be
+    /// particular cached stage within a UsdStageCache.  An identifier may be
     /// converted to and from long int and string, to facilitate use within
     /// restricted contexts.
     ///

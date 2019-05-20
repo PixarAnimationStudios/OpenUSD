@@ -1,0 +1,218 @@
+/*!
+\page trace_page_detail Trace Details
+
+The trace library consists of two main components:
+
+\li TraceCollector is a singleton thread-safe recorder of events.
+\li TraceReporter is a class which processes events to create meaningful views of the data.
+
+The TraceCollector class can be used as a recorder for custom events in an application without using TRACE_ macros.
+\section trace_detail_contents Contents
+
+\li \ref trace_store_data
+\li \ref trace_data
+\li \ref trace_custom_example
+
+\section trace_store_data Recording Events with TraceCollector
+Most of the time TRACE macros are sufficient for instrumentation, however if something more specific is required, the TraceCollector class can be used directly without using TRACE_ macros. The macros simply invoke API on the TraceCollector.
+
+\li TRACE_FUNCTION(), TRACE_FUNCTION_SCOPE(), and TRACE_SCOPE() corresponds to calls to TraceCollector::Scope
+\li TRACE_COUNTER_DELTA() corresponds to a call to TraceCollector::RecordCounterDelta
+\li TRACE_COUNTER_VALUE() corresponds to a call to TraceCollector::RecordCounterValue
+
+
+Each TraceEvent contains a \ref TraceCategoryId.  These ids allow for the events to be filtered. Events recorded by TRACE_ macros have their \ref TraceCategoryId set to \ref TraceCategory::Default.
+
+Trace categories consist of two parts, a \ref TraceCategoryId, and a function to determine whether or not events for the category should be recorded.
+
+TraceCategory::CreateTraceCategoryId can create a \ref TraceCategoryId from hashing a string literal. This is not guaranteed to be unique.
+
+All of the methods in the TraceCollector class which record events take an optional Category template parameter. The Category template parameter determines if the event will be recorded and the \ref TraceCategoryId that will be stored in the event.
+<p>A valid Category template parameter must have have the following:
+\li A thread-safe static method named \b GetId which returns a TraceCategoryId.
+\li A thread-safe static method named \b IsEnabled which returns a bool.
+</p>
+
+If the Category template parameter is not specified, TraceCollector uses TraceCollector::DefaultCategory.
+
+Example of recording an event with a custom category.
+\code
+// Define a custom category.
+struct CustomPerfCounterCategory
+{
+    // TraceCollector function calls using this category will store events with this TraceCategoryId.
+    static constexpr TraceCategoryId GetId() {
+        return TraceCategory::CreateTraceCategoryId("CustomPerfCounter");
+    }
+
+    // TraceCollector function calls using this category will store events only if this function returns true.
+    static bool IsEnabled();
+};
+
+int main(int argc, char *argv[])
+{
+    // Register a name with the id.
+    TraceCategory::GetInstance().RegisterCategory(PerfCategory::GetId(), "CustomPerfCounter");
+
+    // Record a counter delta event with the CustomPerfCounterCategory.
+    TraceCollector::GetInstance().RecordCounterDelta<CustomPerfCounterCategory>("A Counter", 1);
+}
+\endcode
+
+\section trace_data Accessing Trace Data
+Access to recorded TraceEvent objects is available through the TraceCollection class and TraceCollectionAvailable notice.
+When the TraceCollector produces data through the TraceCollector::CreateCollection() method, it will send a TraceCollectionAvailable notice.  To access individual events in a TraceCollection instance, the TraceCollection::Visitor interface can be used.
+The TraceReporterBase class encapsulates logic for handling TraceCollectionAvailable notices.
+
+Example of using TraceReporterBase class and TraceCollection::Visitor interface.
+\code
+class CustomTraceEventProcessor : 
+    public TraceReporterBase, TraceCollection::Visitor {
+public:
+    CustomTraceEventProcessor();
+
+    // TraceCollection::Visitor interface
+    virtual bool AcceptsCategory(TraceCategoryId id) override
+    virtual void OnEvent(
+        const TraceThreadId&, const TfToken& k, const TraceEvent& e) override;
+    virtual void OnBeginCollection() override;
+    virtual void OnEndCollection() override;
+    virtual void OnBeginThread(const TraceThreadId&) override;
+    virtual void OnEndThread(const TraceThreadId&) override;
+
+    void Update() {
+        //Call base class update to get the latest data from TraceCollector.
+        _Update();
+    }
+
+protected:
+    // This will be called by the TraceReporterBase::_Update() for each
+    // TraceCollection received.
+    void _ProcessCollection(const CollectionPtr& collection) override {
+        // Iterate over the TraceCollection using the TraceCollection::Visitor
+        // interface.
+        collection->Iterate(*this);
+    }
+};
+\endcode
+
+\section trace_custom_example Example of Custom Category and Reporter
+
+\code{.cpp}
+#include "pxr/base/trace/collector.h"
+#include "pxr/base/trace/reporterBase.h"
+
+#include <atomic>
+#include <map>
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+// Custom Trace category.
+struct CustomPerfCounterCategory
+{
+    // TraceCollector function calls using this category will store events with this TraceCategoryId.
+    static constexpr TraceCategoryId GetId() {
+        return TraceCategory::CreateTraceCategoryId("CustomPerfCounter");
+    }
+    // TraceCollector function calls using this category will store events only if this function return true.
+    static bool IsEnabled() {
+        return _isEnabled.load(std::memory_order_acquire);
+    }
+
+    static void Enable() {
+        _isEnabled.store(true, std::memory_order_release);
+    }
+
+    static void Disable() {
+        _isEnabled.store(false, std::memory_order_release);
+    }
+private:
+    static std::atomic<bool> _isEnabled;
+};
+
+// Helper macros
+#define CUSTOM_PERF_COUNTER(name, value) \
+    _CUSTOM_PERF_COUNTER_INSTANCE(__LINE__, name, value)
+
+#define _CUSTOM_PERF_COUNTER_INSTANCE(inst, name, value) \
+    static constexpr TraceStaticKeyData customCounterKey ## inst (name); \
+    TraceCollector::GetInstance().RecordCounterDelta<CustomPerfCounterCategory>(customCounterKey ## inst, value);
+
+// Custom Trace reporter.
+class CustomTraceEventProcessor : 
+    public TraceReporterBase, TraceCollection::Visitor {
+public:
+    CustomTraceEventProcessor(TraceReporterDataSourceBaseRefPtr dataSource)
+        : TraceReporterBase(dataSource)
+        {}
+
+    void Update() {
+        //Call base class update to get the latest data from TraceCollector.
+        _Update();
+    }
+
+    // TraceCollection::Visitor interface
+
+    // Only visit events marked with the custom category.
+    virtual bool AcceptsCategory(TraceCategoryId id) override {
+        return id == CustomPerfCounterCategory::GetId();
+    }
+
+    // Accumulate counter deltas.
+    virtual void OnEvent(
+        const TraceThreadId&, const TfToken& k, const TraceEvent& e) override {
+        if (e.GetType() == TraceEvent::EventType::CounterDelta) {
+            _counters[k] += e.GetCounterValue();
+        }
+    }
+
+    virtual void OnBeginCollection() override {}
+    virtual void OnEndCollection() override {}
+    virtual void OnBeginThread(const TraceThreadId&) override {}
+    virtual void OnEndThread(const TraceThreadId&) override {}
+
+protected:
+    // This will be called by the TraceReporterBase::_Update() for each
+    // TraceCollection received.
+    void _ProcessCollection(const CollectionPtr& collection) override {
+        // Iterate over the TraceCollection using the TraceCollection::Visitor
+        // interface.
+        collection->Iterate(*this);
+    }
+
+    std::map<TfToken, double> _counters;
+};
+
+// Instrumented code
+void Foo() 
+{
+    CUSTOM_PERF_COUNTER("Foo Counter",1);
+}
+
+std::atomic<bool> CustomPerfCounterCategory::_isEnabled(false);
+int main(int argc, char *argv[])
+{
+    // Register a name with the id.
+    TraceCategory::GetInstance().RegisterCategory(
+        CustomPerfCounterCategory::GetId(), "CustomPerfCounter");
+
+    // Make sure an instance of the processor is available to receive notices.
+    CustomTraceEventProcessor eventProcessor(
+        TraceReporterDataSourceCollector::New());
+
+    // Enable the recording of events for the category.
+    CustomPerfCounterCategory::Enable();
+
+    // Call instrumented code.
+    Foo();
+
+    // Disable the recording of events for the category.
+    CustomPerfCounterCategory::Disable();
+
+    // Process the recorded events.
+    eventProcessor.Update();
+}
+\endcode
+
+
+*/

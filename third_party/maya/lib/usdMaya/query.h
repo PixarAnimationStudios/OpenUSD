@@ -21,11 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USD_MAYA_QUERY_H
-#define USD_MAYA_QUERY_H
+#ifndef PXRUSDMAYA_QUERY_H
+#define PXRUSDMAYA_QUERY_H
+
+/// \file usdMaya/query.h
+
+#include "usdMaya/api.h"
 
 #include "pxr/pxr.h"
-#include "usdMaya/api.h"
+
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/prim.h"
 
@@ -35,7 +39,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-struct PxrUsdMayaQuery
+struct UsdMayaQuery
 {
     /*! \brief converts a dagPath of a usdStageShapeNode into a usdprim
      */
@@ -48,4 +52,4 @@ struct PxrUsdMayaQuery
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USD_MAYA_QUERY_H
+#endif

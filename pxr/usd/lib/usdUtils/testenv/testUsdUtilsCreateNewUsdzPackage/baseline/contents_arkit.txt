@@ -1,0 +1,7 @@
+root.usdc
+meta_c.usd
+meta_b.usd
+meta_a.usd
+attr_c.usd
+attr_b.usd
+attr_a.usd

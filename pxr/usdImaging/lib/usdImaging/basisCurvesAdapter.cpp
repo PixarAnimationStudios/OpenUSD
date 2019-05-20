@@ -24,12 +24,14 @@
 #include "pxr/usdImaging/usdImaging/basisCurvesAdapter.h"
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
+#include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/basisCurves.h"
 #include "pxr/imaging/hd/perfLog.h"
 
 #include "pxr/usd/usdGeom/basisCurves.h"
+#include "pxr/usd/usdGeom/primvarsAPI.h"
 #include "pxr/usd/usdGeom/xformCache.h"
 
 #include "pxr/base/tf/type.h"
@@ -68,8 +70,8 @@ void
 UsdImagingBasisCurvesAdapter::TrackVariability(UsdPrim const& prim,
                                                SdfPath const& cachePath,
                                                HdDirtyBits* timeVaryingBits,
-                                               UsdImagingInstancerContext const* 
-                                                   instancerContext)
+                                               UsdImagingInstancerContext const*
+                                                   instancerContext) const
 {
     BaseAdapter::TrackVariability(
         prim, cachePath, timeVaryingBits, instancerContext);
@@ -78,7 +80,7 @@ UsdImagingBasisCurvesAdapter::TrackVariability(UsdPrim const& prim,
     _IsVarying(prim,
                UsdGeomTokens->points,
                HdChangeTracker::DirtyPoints,
-               UsdImagingTokens->usdVaryingPrimVar,
+               UsdImagingTokens->usdVaryingPrimvar,
                timeVaryingBits,
                /*isInherited*/false);
 
@@ -92,17 +94,49 @@ UsdImagingBasisCurvesAdapter::TrackVariability(UsdPrim const& prim,
                        timeVaryingBits,
                        /*isInherited*/false);
 
-    _IsVarying(prim, UsdGeomTokens->widths,
-                       HdChangeTracker::DirtyWidths,
-                       UsdImagingTokens->usdVaryingWidths,
-                       timeVaryingBits,
-                       /*isInherited*/false);
+    // Check for time-varying primvars:widths, and if that attribute
+    // doesn't exist also check for time-varying widths.
+    bool widthsExists = false;
+    _IsVarying(prim,
+               UsdImagingTokens->primvarsWidths,
+               HdChangeTracker::DirtyWidths,
+               UsdImagingTokens->usdVaryingWidths,
+               timeVaryingBits,
+               /*isInherited*/false,
+               &widthsExists);
+    if (!widthsExists) {
+        _IsVarying(prim, UsdGeomTokens->widths,
+                HdChangeTracker::DirtyWidths,
+                UsdImagingTokens->usdVaryingWidths,
+                timeVaryingBits,
+                /*isInherited*/false);
+    }
 
-    _IsVarying(prim, UsdGeomTokens->normals,
-                       HdChangeTracker::DirtyNormals,
-                       UsdImagingTokens->usdVaryingNormals,
-                       timeVaryingBits,
-                       /*isInherited*/false);
+    // Check for time-varying primvars:normals, and if that attribute
+    // doesn't exist also check for time-varying normals.
+    bool normalsExists = false;
+    _IsVarying(prim,
+               UsdImagingTokens->primvarsNormals,
+               HdChangeTracker::DirtyNormals,
+               UsdImagingTokens->usdVaryingNormals,
+               timeVaryingBits,
+               /*isInherited*/false,
+               &normalsExists);
+    if (!normalsExists) {
+        _IsVarying(prim, UsdGeomTokens->normals,
+                HdChangeTracker::DirtyNormals,
+                UsdImagingTokens->usdVaryingNormals,
+                timeVaryingBits,
+                /*isInherited*/false);
+    }
+}
+
+bool
+UsdImagingBasisCurvesAdapter::_IsBuiltinPrimvar(TfToken const& primvarName) const
+{
+    return (primvarName == HdTokens->normals ||
+            primvarName == HdTokens->widths) ||
+        UsdImagingGprimAdapter::_IsBuiltinPrimvar(primvarName);
 }
 
 void 
@@ -111,51 +145,58 @@ UsdImagingBasisCurvesAdapter::UpdateForTime(UsdPrim const& prim,
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext)
+                                   instancerContext) const
 {
     BaseAdapter::UpdateForTime(
         prim, cachePath, time, requestedBits, instancerContext);
     UsdImagingValueCache* valueCache = _GetValueCache();
 
-    PrimvarInfoVector& primvars = valueCache->GetPrimvars(cachePath);
+    HdPrimvarDescriptorVector& primvars = valueCache->GetPrimvars(cachePath);
     if (requestedBits & HdChangeTracker::DirtyTopology) {
         VtValue& topology = valueCache->GetTopology(cachePath);
         _GetBasisCurvesTopology(prim, &topology, time);
     }
 
-    if (requestedBits & HdChangeTracker::DirtyPoints) {
-        VtValue& points = valueCache->GetPoints(cachePath);
-        _GetPoints(prim, &points, time);
-        UsdImagingValueCache::PrimvarInfo primvar;
-        primvar.name = HdTokens->points;
-        primvar.interpolation = UsdGeomTokens->vertex;
-        _MergePrimvar(primvar, &primvars);
-    }
-
     if (requestedBits & HdChangeTracker::DirtyWidths) {
-        UsdImagingValueCache::PrimvarInfo primvar;
-        UsdGeomBasisCurves curves(prim);
-        VtFloatArray widths;
-        primvar.name = UsdGeomTokens->widths;
-        if (curves.GetWidthsAttr().Get(&widths, time)) {
-            primvar.interpolation = UsdGeomTokens->vertex;
+        // First check for "primvars:widths"
+        UsdGeomPrimvarsAPI primvarsApi(prim);
+        UsdGeomPrimvar pv = primvarsApi.GetPrimvar(
+            UsdImagingTokens->primvarsWidths);
+        if (pv) {
+            _ComputeAndMergePrimvar(prim, cachePath, pv, time, valueCache);
         } else {
-            widths = VtFloatArray(1);
-            widths[0] = 1.0f;
-            primvar.interpolation = UsdGeomTokens->constant;
+            UsdGeomBasisCurves curves(prim);
+            HdInterpolation interpolation;
+            VtFloatArray widths;
+            if (curves.GetWidthsAttr().Get(&widths, time)) {
+                interpolation = _UsdToHdInterpolation(
+                    curves.GetWidthsInterpolation());
+            } else {
+                widths = VtFloatArray(1);
+                widths[0] = 1.0f;
+                interpolation = HdInterpolationConstant;
+            }
+            _MergePrimvar(&primvars, UsdGeomTokens->widths, interpolation);
+            valueCache->GetWidths(cachePath) = VtValue(widths);
         }
-        _MergePrimvar(primvar, &primvars);
-        valueCache->GetWidths(cachePath) = VtValue(widths);
     }
     if (requestedBits & HdChangeTracker::DirtyNormals) {
-        UsdImagingValueCache::PrimvarInfo primvar;
-        UsdGeomBasisCurves curves(prim);
-        VtVec3fArray normals;
-        primvar.name = UsdGeomTokens->normals;
-        if (curves.GetNormalsAttr().Get(&normals, time)) {
-            primvar.interpolation = UsdGeomTokens->vertex;
-            _MergePrimvar(primvar, &primvars);
-            valueCache->GetNormals(cachePath) = VtValue(normals);
+        // First check for "primvars:normals"
+        UsdGeomPrimvarsAPI primvarsApi(prim);
+        UsdGeomPrimvar pv = primvarsApi.GetPrimvar(
+            UsdImagingTokens->primvarsNormals);
+        if (pv) {
+            _ComputeAndMergePrimvar(prim, cachePath, pv, time, valueCache);
+        } else {
+            UsdGeomBasisCurves curves(prim);
+            VtVec3fArray normals;
+            if (curves.GetNormalsAttr().Get(&normals, time)) {
+                _MergePrimvar(&primvars,
+                        UsdGeomTokens->normals,
+                        _UsdToHdInterpolation(curves.GetNormalsInterpolation()),
+                        HdPrimvarRoleTokens->normal);
+                valueCache->GetNormals(cachePath) = VtValue(normals);
+            }
         }
     }
 }
@@ -166,7 +207,7 @@ UsdImagingBasisCurvesAdapter::UpdateForTime(UsdPrim const& prim,
 void
 UsdImagingBasisCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim, 
                                          VtValue* topo,
-                                         UsdTimeCode time)
+                                         UsdTimeCode time) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -195,8 +236,10 @@ UsdImagingBasisCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim,
     }
     else {
         topoCurveBasis = HdTokens->bezier;
-        TF_WARN("Unknown curve basis '%s', using '%s'", 
+        if (!curveBasis.IsEmpty()) {
+            TF_WARN("Unknown curve basis '%s', using '%s'", 
                 curveBasis.GetText(), topoCurveBasis.GetText());
+        }
     }
 
     if(curveType == UsdGeomTokens->linear) {
@@ -207,8 +250,10 @@ UsdImagingBasisCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim,
     }
     else {
         topoCurveType = HdTokens->cubic;
-        TF_WARN("Unknown curve type '%s', using '%s'", 
+        if (!curveType.IsEmpty()) {
+            TF_WARN("Unknown curve type '%s', using '%s'", 
                 curveType.GetText(), topoCurveType.GetText());
+        }
     }
 
     if(curveWrap == UsdGeomTokens->periodic) {
@@ -219,8 +264,10 @@ UsdImagingBasisCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim,
     }
     else {
         topoCurveWrap = HdTokens->nonperiodic;
-        TF_WARN("Unknown curve wrap '%s', using '%s'", 
+        if (!curveWrap.IsEmpty()) {
+            TF_WARN("Unknown curve wrap '%s', using '%s'", 
                 curveWrap.GetText(), topoCurveWrap.GetText());
+        }
     }
 
     HdBasisCurvesTopology topology(
@@ -228,19 +275,6 @@ UsdImagingBasisCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim,
         _Get<VtIntArray>(prim, UsdGeomTokens->curveVertexCounts, time),
         VtIntArray());
     *topo = VtValue(topology);
-}
-
-void
-UsdImagingBasisCurvesAdapter::_GetPoints(UsdPrim const& prim, 
-                                   VtValue* value, 
-                                   UsdTimeCode time)
-{
-    HD_TRACE_FUNCTION();
-    if (!prim.GetAttribute(UsdGeomTokens->points).Get(value, time)) {
-        TF_WARN("Points could not be read from prim: <%s>",
-                prim.GetPath().GetText());
-        *value = VtVec3fArray();
-    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

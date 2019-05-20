@@ -304,9 +304,19 @@ private:
         }
 
         const double parametricTime = (time - lower) / (upper - lower);
-        for (size_t i = 0, j = _result->size(); i != j; ++i) {
-            (*_result)[i] = Usd_Lerp(
-                parametricTime, (*_result)[i], upperValue[i]);
+        if (parametricTime == 0.0) {
+            // do nothing.
+        }
+        else if (parametricTime == 1.0) {
+            // just swap the upper value in.
+            _result->swap(upperValue);
+        }
+        else {
+            // must actually calculate interpolated values.
+            T *rptr = _result->data();
+            for (size_t i = 0, j = _result->size(); i != j; ++i) {
+                rptr[i] = Usd_Lerp(parametricTime, rptr[i], upperValue[i]);
+            }
         }
 
         return true;

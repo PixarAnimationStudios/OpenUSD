@@ -31,7 +31,6 @@
 #include "pxr/usd/sdf/data.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/identity.h"
-#include "pxr/usd/sdf/layerBase.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/namespaceEdit.h"
 #include "pxr/usd/sdf/path.h"
@@ -43,8 +42,8 @@
 #include "pxr/base/vt/value.h"
 
 #include <boost/optional.hpp>
-#include <boost/scoped_ptr.hpp>
 
+#include <memory>
 #include <mutex>
 #include <set>
 #include <string>
@@ -90,20 +89,37 @@ struct Sdf_AssetInfo;
 /// \todo
 /// \li Should have validate... methods for rootPrims
 ///
-class SdfLayer : public SdfLayerBase
+class SdfLayer 
+    : public TfRefBase
+    , public TfWeakBase
 {
-    typedef SdfLayerBase Parent;
-    typedef SdfLayer This;
 public:
-    /// Destructor.
+    /// Destructor
     SDF_API
     virtual ~SdfLayer(); 
+
+    /// Noncopyable
+    SdfLayer(const SdfLayer&) = delete;
+    SdfLayer& operator=(const SdfLayer&) = delete;
 
     ///
     /// \name Primary API
     /// @{
 
-    using SdfLayerBase::FileFormatArguments;
+    /// Returns the schema this layer adheres to. This schema provides details
+    /// about the scene description that may be authored in this layer.
+    SDF_API virtual const SdfSchemaBase& GetSchema() const;
+
+    /// Returns the file format used by this layer.
+    SDF_API SdfFileFormatConstPtr GetFileFormat() const;
+
+    /// Type for specifying additional file format-specific arguments to
+    /// layer API.
+    typedef std::map<std::string, std::string> FileFormatArguments;
+
+    /// Returns the file format-specific arguments used during the construction
+    /// of this layer.
+    SDF_API const FileFormatArguments& GetFileFormatArguments() const;
 
     /// Creates a new empty layer with the given identifier.
     ///
@@ -202,10 +218,6 @@ public:
         bool metadataOnly = false,
         const std::string& tag = std::string());
 
-    /// Returns the scene description schema for this layer.
-    SDF_API
-    virtual const SdfSchemaBase& GetSchema() const;
-
     /// Returns the data from the absolute root path of this layer.
     SDF_API
     SdfDataRefPtr GetMetadata() const;
@@ -236,6 +248,11 @@ public:
     static SdfLayerRefPtr CreateAnonymous(
         const std::string& tag = std::string());
 
+    /// Create an anonymous layer with a specific \p format.
+    SDF_API
+    static SdfLayerRefPtr CreateAnonymous(
+        const std::string &tag, const SdfFileFormatConstPtr &format);
+
     /// Returns true if this layer is an anonymous layer.
     SDF_API
     bool IsAnonymous() const;
@@ -261,9 +278,10 @@ public:
 
     /// Returns \c true if successful, \c false if an error occurred.
     /// Returns \c false if the layer has no remembered file name or the 
-    /// layer type cannot be saved.
+    /// layer type cannot be saved. The layer will not be overwritten if the 
+    /// file exists and the layer is not dirty unless \p force is true.
     SDF_API
-    bool Save() const;
+    bool Save(bool force = false) const;
 
     /// Exports this layer to a file.
     /// Returns \c true if successful, \c false if an error occurred.
@@ -358,7 +376,7 @@ public:
     /// old asset path as reference.
     /// 
     /// If new asset path is supplied, the update works as "rename", updating
-    /// any occurence of the old reference to the new reference.
+    /// any occurrence of the old reference to the new reference.
     SDF_API
     bool UpdateExternalReference(
         const std::string &oldAssetPath,
@@ -525,6 +543,13 @@ public:
         return hasValue && (!outValue.isValueBlock);
     }
 
+    /// Return the type of the value for \p name on spec \p id.  If no such
+    /// field exists, return typeid(void).
+    std::type_info const &GetFieldTypeid(
+        const SdfAbstractDataSpecId &id, const TfToken &name) const {
+        return _data->GetTypeid(id, name);
+    }
+
     /// Return whether a value exists for the given \a id and \a fieldName and
     /// \a keyPath.  The \p keyPath is a ':'-separated path addressing an
     /// element in sub-dictionaries.  Optionally returns the value if it exists.
@@ -662,6 +687,13 @@ public:
                   const TfToken& fieldName, T* value) const;
     SDF_API
     bool HasField(const SdfPath& path, const TfToken& fieldName) const;
+
+    std::type_info const &GetFieldTypeid(
+        const SdfPath &path, const TfToken &fieldName) const {
+        SdfAbstractDataSpecId specId(&path);
+        return GetFieldTypeid(specId, fieldName);
+    }
+
     template <class T>
     bool HasFieldDictKey(const SdfPath& path, const TfToken& fieldName,
                          const TfToken &keyPath, T* value) const;
@@ -989,7 +1021,7 @@ public:
     /// Adds a new root prim at the given index.
     /// If the index is -1, the prim is inserted at the end.
     /// The layer will take ownership of the prim, via a TfRefPtr.
-    /// Returns true if succesful, false if failed (for example,
+    /// Returns true if successful, false if failed (for example,
     /// due to a duplicate name).
     SDF_API
     bool InsertRootPrim(const SdfPrimSpecHandle &prim, int index = -1);
@@ -1210,7 +1242,7 @@ public:
 
     /// Returns true if the caller is allowed to modify the layer and 
     /// false otherwise.  A layer may have to perform some action to acquire 
-    /// permission to be editted.
+    /// permission to be edited.
     SDF_API
     bool PermissionToEdit() const;
 
@@ -1430,7 +1462,7 @@ private:
     //
     // Callers *must* be holding an SdfLayerRefPtr to this layer to
     // ensure that it is not deleted out from under them, in
-    // case initialiation fails.  (This method cannot acquire the
+    // case initialization fails.  (This method cannot acquire the
     // reference itself internally without being susceptible to a race.)
     bool _WaitForInitializationAndCheckIfSuccessful();
 
@@ -1472,7 +1504,8 @@ private:
     static bool _ComputeInfoToFindOrOpenLayer(
         const std::string& identifier,
         const SdfLayer::FileFormatArguments& args,
-        _FindOrOpenLayerInfo* info);
+        _FindOrOpenLayerInfo* info,
+        bool computeAssetInfo = false);
 
     // Open a layer, adding an entry to the registry and releasing
     // the registry lock.
@@ -1481,16 +1514,13 @@ private:
     static SdfLayerRefPtr _OpenLayerAndUnlockRegistry(
         Lock &lock,
         const _FindOrOpenLayerInfo& info,
-        bool metadataOnly,
-        std::string const &resolvedPath,
-        const ArAssetInfo &assetInfo,
-        bool isAnonymous);
+        bool metadataOnly);
 
     // Helper function to try to find the layer with \p identifier and
     // pre-resolved path \p resolvedPath in the registry.  Caller must hold
     // registry \p lock for reading.  If \p retryAsWriter is false, lock is
     // released upon return.  Otherwise the lock is released upon return if a
-    // layer is found succesfully.  If no layer is found then the lock is
+    // layer is found successfully.  If no layer is found then the lock is
     // upgraded to a writer lock upon return.  Note that this upgrade may not be
     // atomic, but this function ensures that if upon return there does not
     // exist a matching layer in the registry.
@@ -1513,7 +1543,13 @@ private:
     /// Return true if the entire subtree rooted at \a path does not affect the 
     /// scene. For this purpose, property specs that have only required fields 
     /// are considered inert.
-    bool _IsInertSubtree(const SdfPath &path);
+    ///
+    /// If this function returns true and \p inertSpecs is given, it will be 
+    /// populated with the paths to all inert prim and property specs at and
+    /// beneath \p path. These paths will be sorted so that child paths
+    /// appear before their parent path.
+    bool _IsInertSubtree(const SdfPath &path,
+                         std::vector<SdfPath>* inertSpecs = nullptr);
 
     /// Cause \p spec to be removed if it does not affect the scene. This 
     /// removes any empty descendants before checking if \p spec itself is 
@@ -1522,7 +1558,7 @@ private:
     /// PropertySpec::HasOnlyRequiredFields). This also removes inert ancestors.
     void _RemoveIfInert(const SdfSpec& spec);
 
-    /// Peforms a depth first search of the namespace hierarchy, beginning at
+    /// Performs a depth first search of the namespace hierarchy, beginning at
     /// \p prim, removing prims that do not affect the scene. The return value 
     /// indicates whether the prim passed in is now inert as a result of this 
     /// call, and can itself be removed.
@@ -1674,6 +1710,10 @@ private:
     void _TraverseChildren(const SdfPath &path, const TraversalFunction &func);
 
 private:
+    // File format and arguments for this layer.
+    SdfFileFormatConstPtr _fileFormat;
+    FileFormatArguments _fileFormatArgs;
+
     // Registry of Sdf Identities
     mutable Sdf_IdentityRegistry _idRegistry;
 
@@ -1688,7 +1728,7 @@ private:
     // of initialization its contents, at which point we can truly publish
     // the layer. We add the layer to the registry before initialization
     // completes so that other threads can discover and block on the
-    // same layer while it is being initalized.
+    // same layer while it is being initialized.
     std::mutex _initializationMutex;
 
     // This is an optional<bool> that is only set once initialization
@@ -1700,7 +1740,7 @@ private:
     mutable bool _lastDirtyState;
 
     // Asset information for this layer.
-    boost::scoped_ptr<Sdf_AssetInfo> _assetInfo;
+    std::unique_ptr<Sdf_AssetInfo> _assetInfo;
 
     // Modification timestamp of the backing file asset when last read.
     mutable VtValue _assetModificationTime;

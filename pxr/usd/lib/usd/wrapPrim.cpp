@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usd/payloads.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/references.h"
 #include "pxr/usd/usd/inherits.h"
@@ -51,18 +52,6 @@ using std::vector;
 using namespace boost::python;
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-bool 
-Usd_PrimIsA(const UsdPrim& prim, const TfType& schemaType)
-{
-    return prim._IsA(schemaType, /*validateSchema=*/true);
-}
-
-bool 
-Usd_PrimHasAPI(const UsdPrim& prim, const TfType& schemaType)
-{
-    return prim._HasAPI(schemaType, /*validateSchema=*/true);
-}
 
 const PcpPrimIndex &
 Usd_PrimGetSourcePrimIndex(const UsdPrim& prim)
@@ -113,6 +102,44 @@ __repr__(const UsdPrim &self)
     }
 }
 
+static TfTokenVector _WrapGetPropertyNames(
+    const UsdPrim &prim, 
+    boost::python::object predicate)
+{
+    const auto &pred = predicate ? 
+        boost::python::extract<UsdPrim::PropertyPredicateFunc>(predicate) :
+        UsdPrim::PropertyPredicateFunc();
+    return prim.GetPropertyNames(pred);
+}
+
+static TfTokenVector _WrapGetAuthoredPropertyNames(
+    const UsdPrim &prim, 
+    boost::python::object predicate)
+{
+    const auto &pred = predicate ? 
+        boost::python::extract<UsdPrim::PropertyPredicateFunc>(predicate) :
+        UsdPrim::PropertyPredicateFunc();
+    return prim.GetAuthoredPropertyNames(pred);
+}
+
+static std::vector<UsdProperty>
+_WrapGetProperties(const UsdPrim &prim, boost::python::object predicate)
+{
+    const auto &pred = predicate ? 
+        boost::python::extract<UsdPrim::PropertyPredicateFunc>(predicate) :
+        UsdPrim::PropertyPredicateFunc();
+    return prim.GetProperties(pred);
+}
+
+static std::vector<UsdProperty>
+_WrapGetAuthoredProperties(const UsdPrim &prim, boost::python::object predicate)
+{
+    const auto &pred = predicate ? 
+        boost::python::extract<UsdPrim::PropertyPredicateFunc>(predicate) :
+        UsdPrim::PropertyPredicateFunc();
+    return prim.GetAuthoredProperties(pred);
+}
+
 } // anonymous namespace 
 
 void wrapUsdPrim()
@@ -122,6 +149,10 @@ void wrapUsdPrim()
 
     // Predicate signature for FindAllAttributeConnectionPaths().
     TfPyFunctionFromPython<bool (UsdAttribute const &)>();
+
+    // Predicate signature for Get{Authored}PropertyNames and 
+    // Get{Authored}Properties.
+    TfPyFunctionFromPython<bool (TfToken const &)>();
 
     class_<UsdPrim, bases<UsdObject> >("Prim")
         .def(Usd_ObjectSubclass())
@@ -151,14 +182,19 @@ void wrapUsdPrim()
         .def("IsDefined", &UsdPrim::IsDefined)
         .def("HasDefiningSpecifier", &UsdPrim::HasDefiningSpecifier)
 
-        .def("GetPropertyNames", &UsdPrim::GetPropertyNames,
+        .def("GetPropertyNames", &_WrapGetPropertyNames,
+             (arg("predicate")=boost::python::object()),
              return_value_policy<TfPySequenceToList>())
-        .def("GetAuthoredPropertyNames", &UsdPrim::GetAuthoredPropertyNames,
+        .def("GetAuthoredPropertyNames", &_WrapGetAuthoredPropertyNames,
+             (arg("predicate")=boost::python::object()),
              return_value_policy<TfPySequenceToList>())
         
-        .def("GetProperties", &UsdPrim::GetProperties,
+        .def("GetProperties", &_WrapGetProperties,
+             arg("predicate")=boost::python::object(),
              return_value_policy<TfPySequenceToList>())
-        .def("GetAuthoredProperties", &UsdPrim::GetAuthoredProperties,
+
+        .def("GetAuthoredProperties", &_WrapGetAuthoredProperties,
+             arg("predicate")=boost::python::object(),
              return_value_policy<TfPySequenceToList>())
 
         .def("GetPropertiesInNamespace",
@@ -193,8 +229,13 @@ void wrapUsdPrim()
 
         .def("SetPropertyOrder", &UsdPrim::SetPropertyOrder, arg("order"))
 
-        .def("IsA", &Usd_PrimIsA, arg("schemaType"))
-        .def("HasAPI", &Usd_PrimHasAPI, arg("schemaType"))
+        .def("IsA",
+            (bool (UsdPrim::*)(const TfType&) const)&UsdPrim::IsA, 
+            arg("schemaType"))
+        .def("HasAPI", 
+            (bool (UsdPrim::*)(const TfType&, const TfToken&) const)
+            &UsdPrim::HasAPI,
+            (arg("schemaType"), arg("instanceName")=TfToken()))
 
         .def("GetChild", &UsdPrim::GetChild, arg("name"))
 
@@ -284,6 +325,9 @@ void wrapUsdPrim()
              &UsdPrim::SetPayload, (arg("layer"), arg("primPath")))
         .def("ClearPayload", &UsdPrim::ClearPayload)
 
+        .def("GetPayloads", &UsdPrim::GetPayloads)
+        .def("HasAuthoredPayloads", &UsdPrim::HasAuthoredPayloads)
+
         .def("Load", &UsdPrim::Load, (arg("policy")=UsdLoadWithDescendants))
         .def("Unload", &UsdPrim::Unload)
 
@@ -317,6 +361,9 @@ void wrapUsdPrim()
         .def("_GetSourcePrimIndex", &Usd_PrimGetSourcePrimIndex,
              return_value_policy<return_by_value>())
         ;
+    
+    to_python_converter<std::vector<UsdPrim>, 
+                        TfPySequenceToPython<std::vector<UsdPrim>>>();
 
     TfPyRegisterStlSequencesFromPython<UsdPrim>();
 }

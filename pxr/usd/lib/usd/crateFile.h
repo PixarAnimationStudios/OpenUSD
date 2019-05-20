@@ -32,15 +32,19 @@
 
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/work/arenaDispatcher.h"
+#include "pxr/usd/ar/asset.h"
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
 
 #include <boost/container/flat_map.hpp>
 #include <boost/functional/hash.hpp>
+#include <boost/intrusive_ptr.hpp>
 
+#include <tbb/concurrent_unordered_set.h>
 #include <tbb/spin_rw_mutex.h>
 
 #include <cstdint>
@@ -63,6 +67,8 @@ using std::string;
 using std::unordered_map;
 using std::tuple;
 using std::vector;
+
+using ArAssetSharedPtr = std::shared_ptr<ArAsset>;
 
 // Trait indicating trivially copyable types, a hack since gcc doesn't yet
 // implement is_trivially_copyable correctly.
@@ -272,10 +278,163 @@ public:
     struct Version;
 
 private:
-    struct _Fcloser {
-        void operator()(FILE *f) const;
+    // A move-only helper struct to represent a range of data in a FILE*, with
+    // optional "ownership" of that FILE* (i.e. responsibility to fclose upon
+    // destruction).
+    struct _FileRange {
+        _FileRange() = default;
+        _FileRange(FILE *file, int64_t startOffset,
+                   int64_t length, bool hasOwnership)
+            : file(file)
+            , startOffset(startOffset)
+            , length(file && length == -1 ?
+                     ArchGetFileLength(file) - startOffset : length)
+            , hasOwnership(hasOwnership) {}
+        ~_FileRange();
+        _FileRange(_FileRange &&other)
+            : file(other.file)
+            , startOffset(other.startOffset)
+            , length(other.length)
+            , hasOwnership(other.hasOwnership) {
+            other.file = nullptr;
+        }
+        _FileRange &operator=(_FileRange &&other) {
+            if (this != &other) {
+                file = other.file;
+                startOffset = other.startOffset;
+                length = other.length;
+                hasOwnership = other.hasOwnership;
+                other.file = nullptr;
+            }
+            return *this;
+        }
+
+        explicit operator bool() const {
+            return file;
+        }
+
+        int64_t GetLength() const { return length; }
+        
+        FILE *file = nullptr;
+        int64_t startOffset = 0;
+        int64_t length = 0;
+        bool hasOwnership = false;
     };
-    typedef std::unique_ptr<FILE, _Fcloser> _UniqueFILE;
+
+    // This structure pulls together the underlying ArchMutableFileMapping
+    // representing the memory-mapped file plus all the information we need to
+    // support "zero-copy" arrays where we create VtArray instances that point
+    // directly into mapped memory.  It gets complicated because the
+    // external-facing SdfLayer semantics are strict value semantics.  In
+    // particular, we need to support the case where a client gets a VtArray out
+    // of a .usdc file, then destroys the layer object, and even mutates the
+    // file on disk, and the fetched array has to behave correctly.
+    struct _FileMapping {
+
+        // This is a foreign data source for VtArray that refers into a
+        // memory-mapped region, and shares in the lifetime of the mapping.
+        struct ZeroCopySource : public Vt_ArrayForeignDataSource {
+            explicit ZeroCopySource(
+                CrateFile::_FileMapping *m, void *addr, size_t numBytes);
+
+            // XXX --------------------------------
+            // Hack for tbb bug -- types in tbb::concurrent_unordered_set
+            // must be copy constructible until version 2017 update 1.  Remove
+            // this once we're on or past that version of tbb.
+            ZeroCopySource(ZeroCopySource const &other)
+                : Vt_ArrayForeignDataSource(other._detachedFn, other._refCount)
+                , _mapping(other._mapping)
+                , _addr(other._addr)
+                , _numBytes(other._numBytes)
+                {}
+            // XXX --------------------------------
+            
+            bool operator==(ZeroCopySource const &other) const;
+            bool operator!=(ZeroCopySource const &other) const {
+                return !(*this == other);
+            }
+            friend size_t tbb_hasher(ZeroCopySource const &z) {
+                size_t seed = reinterpret_cast<uintptr_t>(z._addr);
+                boost::hash_combine(seed, z._numBytes);
+                return seed;
+            }
+
+            // Return true if the refcount is nonzero.
+            bool IsInUse() const { return _refCount; }
+
+            // Increment count and return true if it went from 0 to 1.
+            bool NewRef() {
+                return _refCount.fetch_add(1, std::memory_order_relaxed) == 0;
+            }
+
+            // Return the address this source refers to.
+            void *GetAddr() const { return _addr; }
+            
+            // Return the number of bytes this source refers to.
+            size_t GetNumBytes() const { return _numBytes; }
+            
+        private:
+            // Callback for VtArray foreign data source.
+            static void _Detached(Vt_ArrayForeignDataSource *selfBase);
+
+            _FileMapping *_mapping;
+            void *_addr;
+            size_t _numBytes;
+        };
+        friend struct ZeroCopySource;
+        
+        _FileMapping() : _refCount(0) {};
+
+        explicit _FileMapping(ArchMutableFileMapping mapping, int64_t offset=0,
+                              int64_t length=-1)
+            : _refCount(0)
+            , _mapping(std::move(mapping))
+            , _start(_mapping.get() + offset)
+            , _length(length == -1 ?
+                      ArchGetFileMappingLength(_mapping) : length) {}
+        
+        // Add an an externally referenced page range.
+        ZeroCopySource *
+        AddRangeReference(void *addr, size_t numBytes);
+
+        // "Silent-store" to touch outstanding page ranges to detach them in the
+        // copy-on-write sense from their file backing and make them
+        // swap-backed.  No new page ranges can be added once this is invoked.
+        void DetachReferencedRanges();
+
+        // Return the start address of the mapped file content.  Note that due
+        // to having usdc files embedded into other files (like usdz files) the
+        // map start address is NOT guaranteed to be page-aligned.
+        char *GetMapStart() const { return _start; }
+
+        // Return the length of the relevant content range in the mapping.
+        size_t GetLength() const { return _length; }
+
+    private:
+        friend class CrateFile;
+
+        // This class is managed by a combination of boost::intrusive_ptr and
+        // manual reference counting -- see explicit calls to
+        // intrusive_ptr_add_ref/release in the .cpp file.
+        friend inline void
+        intrusive_ptr_add_ref(_FileMapping const *m) {
+            m->_refCount.fetch_add(1, std::memory_order_relaxed);
+        }
+        friend inline void
+        intrusive_ptr_release(_FileMapping const *m) {
+            if (m->_refCount.fetch_sub(1, std::memory_order_release) == 1) {
+                std::atomic_thread_fence(std::memory_order_acquire);
+                delete m;
+            }
+        }
+
+        mutable std::atomic<size_t> _refCount { 0 };
+        ArchMutableFileMapping _mapping;
+        char *_start;
+        int64_t _length;
+        tbb::concurrent_unordered_set<ZeroCopySource> _outstandingRanges;
+    };
+    using _FileMappingIPtr = boost::intrusive_ptr<_FileMapping>;
 
     ////////////////////////////////////////////////////////////////////////
 
@@ -405,14 +564,14 @@ public:
 
     ~CrateFile();
 
-    static bool CanRead(string const &fileName);
+    static bool CanRead(string const &assetPath);
     static TfToken const &GetSoftwareVersionToken();
     TfToken GetFileVersionToken() const;
 
     static std::unique_ptr<CrateFile> CreateNew();
 
     // Return nullptr on failure.
-    static std::unique_ptr<CrateFile> Open(string const &fileName);
+    static std::unique_ptr<CrateFile> Open(string const &assetPath);
 
     // Helper for saving to a file.
     struct Packer {
@@ -447,9 +606,13 @@ public:
         CrateFile *_crate;
     };
 
+    // Return true if this CrateFile object wasn't populated from a file, or if
+    // the given \p fileName is the file this object was populated from.
+    bool CanPackTo(string const &fileName) const;
+
     Packer StartPacking(string const &fileName);
 
-    string const &GetFileName() const { return _fileName; }
+    string const &GetAssetPath() const { return _assetPath; }
 
     inline Field const &
     GetField(FieldIndex i) const { return _fields[i.value]; }
@@ -523,18 +686,27 @@ public:
         return ret;
     }
 
+    std::type_info const &GetTypeid(ValueRep rep) const;
+
 private:
     explicit CrateFile(bool useMmap);
-    CrateFile(string const &fileName, ArchConstFileMapping mapStart);
-    CrateFile(string const &fileName, _UniqueFILE inputFile);
+    CrateFile(string const &assetPath, string const &fileName,
+              _FileMappingIPtr mapStart, ArAssetSharedPtr const &asset);
+    CrateFile(string const &assetPath, string const &fileName,
+              _FileRange &&inputFile, ArAssetSharedPtr const &asset);
+    CrateFile(string const &assetPath, ArAssetSharedPtr const &asset);
 
     CrateFile(CrateFile const &) = delete;
     CrateFile &operator=(CrateFile const &) = delete;
 
     void _InitMMap();
     void _InitPread();
+    void _InitAsset();
 
-    static ArchConstFileMapping _MmapFile(char const *fileName, FILE *file);
+    static _FileMappingIPtr
+    _MmapFile(char const *fileName, FILE *file);
+    static _FileMappingIPtr
+    _MmapAsset(char const *fileName, ArAssetSharedPtr const &asset);
 
     class _Writer;
     class _BufferedOutput;
@@ -548,7 +720,7 @@ private:
     void _WriteSection(
         _Writer &w, _SectionName name, _TableOfContents &toc, Fn writeFn) const;
 
-    void _AddDeferredTimeSampledSpecs();
+    void _AddDeferredSpecs();
 
     bool _Write();
 
@@ -663,23 +835,28 @@ private:
     // An index into the path list, plus a range of fields.
     vector<Spec> _specs;
 
-    // Deferred specs with timeSamples that we write separately at the end,
-    // time-by-time so that time-sampled data is collocated by time.
-    struct _DeferredTimeSampledSpec {
-        _DeferredTimeSampledSpec() = default;
-        _DeferredTimeSampledSpec(PathIndex p, SdfSpecType t,
-                                 vector<FieldIndex> &&of,
-                                 vector<pair<TfToken, TimeSamples>> &&ts)
+    // Deferred specs we write separately at the end. This is for specs that
+    // have fields that we may not know how to write until we've looked at other
+    // specs (e.g. SdfPayload version upgrades) or spces with time samples that
+    // we write time-by-time so that time-sampled data is collocated by time.
+    struct _DeferredSpec {
+        _DeferredSpec() = default;
+        _DeferredSpec(PathIndex p, SdfSpecType t,
+                      vector<FieldIndex> &&of,
+                      vector<FieldValuePair> &&dof,
+                      vector<pair<TfToken, TimeSamples>> &&ts)
             : path(p)
             , specType(t)
             , ordinaryFields(std::move(of))
+            , deferredOrdinaryFields(std::move(dof))
             , timeSampleFields(std::move(ts)) {}
         PathIndex path;
         SdfSpecType specType;
         vector<FieldIndex> ordinaryFields;
+        vector<FieldValuePair> deferredOrdinaryFields;
         vector<pair<TfToken, TimeSamples>> timeSampleFields;
     };
-    vector<_DeferredTimeSampledSpec> _deferredTimeSampledSpecs;
+    vector<_DeferredSpec> _deferredSpecs;
 
     // All unique fields.
     vector<Field> _fields;
@@ -717,30 +894,44 @@ private:
     std::function<void (ValueRep, VtValue *)>
     _unpackValueFunctionsMmap[static_cast<int>(TypeEnum::NumTypes)];
 
-    _ValueHandlerBase *_valueHandlers[static_cast<int>(TypeEnum::NumTypes)];
+    std::function<void (ValueRep, VtValue *)>
+    _unpackValueFunctionsAsset[static_cast<int>(TypeEnum::NumTypes)];
 
-    TfType _typeEnumToTfType[static_cast<int>(TypeEnum::NumTypes)];
-    TfType _typeEnumToTfTypeForArray[static_cast<int>(TypeEnum::NumTypes)];
+    _ValueHandlerBase *_valueHandlers[static_cast<int>(TypeEnum::NumTypes)];
 
     ////////////////////////////////////////////////////////////////////////
 
     // Temporary -- only valid during Save().
     std::unique_ptr<_PackingContext> _packCtx;
 
-    _TableOfContents _toc; // only valid if we read a file.
-    _BootStrap _boot; // only valid if we read a file.
+    _TableOfContents _toc; // only valid if we have read an asset.
+    _BootStrap _boot; // only valid if we have read an asset.
 
-    // We'll only have one of these, depending on whether we're doing mmap() or
-    // pread().
-    ArchConstFileMapping _mapStart; // NULL if this wasn't populated from file.
-    _UniqueFILE _inputFile; // NULL if this wasn't populated from file.
+    
+    // If we're reading data from an mmap'd file, then _mmapSrc will be non-null
+    // and _preadSrc & _assetSrc will be null.  Otherwise if we're reading data
+    // by pread()ing from a file obtained from an ArAsset, then _assetSrc is
+    // non-null and _preadSrc observes (but does not own/fclose) the result of
+    // _assetSrc->GetFileUnsafe().  If a Save operation is completed (via
+    // StartPacking) in this state, then _preadSrc will become an owning FILE*,
+    // and _assetSrc will be nullptr.  Otherwise if _assetSrc is non-null and
+    // both _mmapSrc and _preadSrc are null, we read data from the _assetSrc via
+    // ArAsset::Read().  If all three are null then this structure was not
+    // populated from an asset.
+    _FileMappingIPtr _mmapSrc;
+    _FileRange _preadSrc;
+    ArAssetSharedPtr _assetSrc;
 
-    std::string _fileName; // Empty if this file data is in-memory only.
+    std::string _assetPath; // Empty if this file data is in-memory only.
+    std::string _fileReadFrom; // The file this object was populate from, if it
+                               // was populated from a file.
 
     std::unique_ptr<char []> _debugPageMap; // Debug page access map, see
                                             // USDC_DUMP_PAGE_MAPS.
 
-    const bool _useMmap; // If true, use mmap for reads, otherwise use pread.
+    const bool _useMmap; // If true, try to use mmap for reads, otherwise try to
+                         // use pread, otherwise fall back to generalized
+                         // ArAsset::Read()s.
 };
 
 template <>

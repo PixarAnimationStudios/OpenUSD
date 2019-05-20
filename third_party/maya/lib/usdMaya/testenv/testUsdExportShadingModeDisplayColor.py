@@ -23,8 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-import os
-import unittest
+from pxr import UsdMaya
 
 from pxr import Gf
 from pxr import Usd
@@ -34,10 +33,13 @@ from pxr import UsdShade
 from maya import cmds
 from maya import standalone
 
+import os
+import unittest
+
 
 class testUsdExportShadingModeDisplayColor(unittest.TestCase):
 
-    RED_COLOR = Gf.Vec3f(1.0, 0.0, 0.0)
+    RED_COLOR = 0.8 * Gf.Vec3f(1.0, 0.0, 0.0)
 
     @classmethod
     def setUpClass(cls):
@@ -50,7 +52,7 @@ class testUsdExportShadingModeDisplayColor(unittest.TestCase):
         usdFilePath = os.path.abspath('RedCube.usda')
         cmds.loadPlugin('pxrUsd')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFilePath,
-            shadingMode='displayColor')
+            shadingMode='displayColor', materialsScopeName='Materials')
 
         cls._stage = Usd.Stage.Open(usdFilePath)
 
@@ -78,20 +80,24 @@ class testUsdExportShadingModeDisplayColor(unittest.TestCase):
 
         meshDisplayColors = cubeMesh.GetDisplayColorPrimvar().Get()
         self.assertEqual(len(meshDisplayColors), 1)
-        self.assertTrue(Gf.IsClose(meshDisplayColors[0], self.RED_COLOR, 1e-6))
+        self.assertTrue(Gf.IsClose(meshDisplayColors[0], 
+            UsdMaya.ConvertMayaToLinear(self.RED_COLOR), 
+            1e-6))
 
         # Validate the Material prim bound to the Mesh prim.
         material = UsdShade.Material.GetBoundMaterial(cubePrim)
         self.assertTrue(material)
         materialPath = material.GetPath().pathString
-        self.assertEqual(materialPath, '/RedCube/Looks/RedLambertSG')
+        self.assertEqual(materialPath, '/RedCube/Materials/RedLambertSG')
 
         materialInputs = material.GetInputs()
         self.assertEqual(len(materialInputs), 3)
 
         materialInput = material.GetInput('displayColor')
         matDisplayColor = materialInput.Get()
-        self.assertTrue(Gf.IsClose(matDisplayColor, self.RED_COLOR, 1e-6))
+        self.assertTrue(Gf.IsClose(matDisplayColor,
+            UsdMaya.ConvertMayaToLinear(self.RED_COLOR), 
+            1e-6))
 
         # Just verify that displayOpacity and transparency exist.
         materialInput = material.GetInput('displayOpacity')
@@ -100,13 +106,16 @@ class testUsdExportShadingModeDisplayColor(unittest.TestCase):
         materialInput = material.GetInput('transparency')
         self.assertTrue(materialInput)
 
-        # Validate the Shader prim created for the lambert material on the
-        # Maya mesh.
-        shaderPrimPath = material.GetPath().AppendChild('RedLambertSG_lambert')
-        shaderPrim = self._stage.GetPrimAtPath(shaderPrimPath)
-        self.assertTrue(shaderPrim)
-        shader = UsdShade.Shader(shaderPrim)
+        # Validate the surface shader that is connected to the material.
+        materialOutputs = material.GetOutputs()
+        self.assertEqual(len(materialOutputs), 4)
+        print self._stage.ExportToString()
+        materialOutput = material.GetOutput('ri:surface')
+        (connectableAPI, outputName, outputType) = materialOutput.GetConnectedSource()
+        self.assertEqual(outputName, 'out')
+        shader = UsdShade.Shader(connectableAPI)
         self.assertTrue(shader)
+        self.assertEqual(shader.GetPrim().GetName(), 'RedLambertSG_lambert')
 
         shaderId = shader.GetIdAttr().Get()
         self.assertEqual(shaderId, 'PxrDiffuse')

@@ -1,6 +1,12 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE garch)
 
+if (NOT ${PXR_ENABLE_GL_SUPPORT})
+    message(STATUS
+        "Skipping ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
+    return()
+endif()
+
 if(APPLE)
     set(GARCH_GLPLATFORMCONTEXT       glPlatformContextDarwin)
     set(GARCH_GLPLATFORMDEBUGWINDOW   glPlatformDebugWindowDarwin)
@@ -20,7 +26,6 @@ pxr_library(garch
     LIBRARIES
         arch
         tf
-        ${Boost_SYSTEM_LIBRARY}
         ${OPENGL_gl_LIBRARY}
         ${APPKIT_LIBRARY}
 

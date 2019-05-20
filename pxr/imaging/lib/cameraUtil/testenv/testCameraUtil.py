@@ -145,22 +145,29 @@ class TestCameraUtil(unittest.TestCase):
         for projection in Gf.Camera.Projection.allValues:
             for policy in CameraUtil.ConformWindowPolicy.allValues:
                 for targetAspect in [0.5, 1.0, 2.0]:
+                    for xMirror in [-1, 1]:
+                        for yMirror in [-1, 1]:
+                            mirrorMatrix = Gf.Matrix4d(
+                                xMirror, 0, 0, 0,
+                                0, yMirror, 0, 0,
+                                0, 0, 1, 0,
+                                0, 0, 0, 1)
 
-                    cam = Gf.Camera(
-                        projection               = projection,
-                        horizontalAperture       = 100.0,
-                        verticalAperture         = 75.0,
-                        horizontalApertureOffset = 11.0,
-                        verticalApertureOffset   = 12.0)
+                            cam = Gf.Camera(
+                                projection               = projection,
+                                horizontalAperture       = 100.0,
+                                verticalAperture         = 75.0,
+                                horizontalApertureOffset = 11.0,
+                                verticalApertureOffset   = 12.0)
 
-                    originalMatrix = cam.frustum.ComputeProjectionMatrix()
+                            originalMatrix = cam.frustum.ComputeProjectionMatrix()
 
-                    CameraUtil.ConformWindow(cam, policy, targetAspect)
+                            CameraUtil.ConformWindow(cam, policy, targetAspect)
 
-                    self._IsClose(
-                        cam.frustum.ComputeProjectionMatrix(),
-                        CameraUtil.ConformedWindow(
-                            originalMatrix, policy, targetAspect))
+                            self._IsClose(
+                                cam.frustum.ComputeProjectionMatrix() * mirrorMatrix,
+                                CameraUtil.ConformedWindow(
+                                    originalMatrix * mirrorMatrix, policy, targetAspect))
 
             
     def test_ConformWindow(self):

@@ -8,6 +8,15 @@
       </attr>
     </attr>
   </attr>
+  <attr name="info" type="GroupAttr">
+    <attr name="usd" type="GroupAttr">
+      <attr name="apiSchemas" tupleSize="1" type="StringAttr">
+        <sample size="1" time="0">
+          <str value="CollectionAPI:descendant"/>
+        </sample>
+      </attr>
+    </attr>
+  </attr>
   <attr name="type" tupleSize="1" type="StringAttr">
     <sample size="1" time="0">
       <str value="group"/>

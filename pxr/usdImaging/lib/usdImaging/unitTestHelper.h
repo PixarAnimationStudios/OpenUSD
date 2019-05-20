@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_UNIT_TEST_HELPER
 #define USDIMAGING_UNIT_TEST_HELPER
 
+/// \file usdImaging/unitTestHelper.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 
@@ -32,8 +34,10 @@
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/rprim.h"
-
-#include "pxr/imaging/hdSt/renderDelegate.h"
+#include "pxr/imaging/hd/rprimCollection.h"
+#include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/unitTestNullRenderDelegate.h"
+#include "pxr/imaging/hd/unitTestNullRenderPass.h"
 
 #include <string>
 #include <boost/shared_ptr.hpp>
@@ -43,81 +47,193 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 typedef boost::shared_ptr<HdRenderPass> HdRenderPassSharedPtr;
 
+/// A simple test task that just causes sync processing
+class UsdImaging_TestTask final : public HdTask
+{
+public:
+    UsdImaging_TestTask(HdRenderPassSharedPtr const &renderPass)
+        : HdTask(SdfPath::EmptyPath())
+        , _renderPass(renderPass)
+    {
+    }
+
+    virtual void Sync(HdSceneDelegate* delegate,
+                      HdTaskContext* ctx,
+                      HdDirtyBits* dirtyBits) override {
+        _renderPass->Sync();
+
+        *dirtyBits = HdChangeTracker::Clean;
+    }
+
+    virtual void Prepare(HdTaskContext* ctx,
+                         HdRenderIndex* renderIndex) override {
+    }
+
+    virtual void Execute(HdTaskContext* ctx) override {
+    }
+
+private:
+    HdRenderPassSharedPtr _renderPass;
+};
+
 /// \class UsdImaging_TestDriver
 ///
 /// A unit test driver that exercises the core engine.
 ///
-/// \note This test driver does NOT assume OpenGL is available; in the even
-/// that is is not available, all OpenGL calls become no-ops, but all other work
-/// is performed as usual.
+/// \note This test driver uses a Null render delegate, so
+/// no images are produced.  It just tests interaction between Hydra and
+/// UsdImaging during Hydra's Sync phase. of Hydra
 ///
 class UsdImaging_TestDriver final {
 public:
-    UsdImaging_TestDriver(std::string const& usdFilePath);
+    UsdImaging_TestDriver(std::string const& usdFilePath)
+        : _engine()
+        , _renderDelegate()
+        , _renderIndex(nullptr)
+        , _delegate(nullptr)
+        , _geometryPass()
+        , _stage()
+    {
+        HdRprimCollection collection = HdRprimCollection(
+                HdTokens->geometry,
+                HdReprSelector(HdReprTokens->hull));
+
+        TfTokenVector renderTags;
+        renderTags.push_back(HdTokens->geometry);
+        collection.SetRenderTags(renderTags);
+
+        _Init(UsdStage::Open(usdFilePath),
+              collection,
+              SdfPath::AbsoluteRootPath());
+    }
+
     UsdImaging_TestDriver(std::string const& usdFilePath,
-                          TfToken const &collectioName,
+                          TfToken const &collectionName,
                           TfToken const &reprName,
-                          TfTokenVector const &renderTags);
-    UsdImaging_TestDriver(UsdStageRefPtr const& usdStage);
+                          TfTokenVector const &renderTags)
+        : _engine()
+        , _renderDelegate()
+        , _renderIndex(nullptr)
+        , _delegate(nullptr)
+        , _geometryPass()
+        , _stage()
+    {
+        HdRprimCollection collection = HdRprimCollection(
+                collectionName,
+                HdReprSelector(reprName));
+
+        collection.SetRenderTags(renderTags);
+
+        _Init(UsdStage::Open(usdFilePath),
+              collection,
+              SdfPath::AbsoluteRootPath());
+    }
+
+    UsdImaging_TestDriver(UsdStageRefPtr const& usdStage)
+        : _engine()
+        , _renderDelegate()
+        , _renderIndex(nullptr)
+        , _delegate(nullptr)
+        , _geometryPass()
+        , _stage()
+    {
+        HdRprimCollection collection = HdRprimCollection(
+                HdTokens->geometry,
+                HdReprSelector(HdReprTokens->hull));
+
+        TfTokenVector renderTags;
+        renderTags.push_back(HdTokens->geometry);
+        collection.SetRenderTags(renderTags);
+
+        _Init(usdStage, collection, SdfPath::AbsoluteRootPath());
+    }
+
     UsdImaging_TestDriver(UsdStageRefPtr const& usdStage,
-                          TfToken const &collectioName,
+                          TfToken const &collectionName,
                           TfToken const &reprName,
-                          TfTokenVector const &renderTags);
+                          TfTokenVector const &renderTags)
+        : _engine()
+        , _renderDelegate()
+        , _renderIndex(nullptr)
+        , _delegate(nullptr)
+        , _geometryPass()
+        , _stage()
+    {
+        HdRprimCollection collection = HdRprimCollection(
+                collectionName,
+                HdReprSelector(reprName));
 
-    ~UsdImaging_TestDriver();
+        collection.SetRenderTags(renderTags);
 
-    void Draw();
-    void SetTime(double time);
+        _Init(usdStage, collection, SdfPath::AbsoluteRootPath());
+    }
+
+    UsdImaging_TestDriver(UsdStageRefPtr const& usdStage,
+                          HdRprimCollection const &collection,
+                          SdfPath const &delegateId)
+        : _engine()
+        , _renderDelegate()
+        , _renderIndex(nullptr)
+        , _delegate(nullptr)
+        , _geometryPass()
+        , _stage()
+    {
+        _Init(usdStage, collection, delegateId);
+    }
+
+    ~UsdImaging_TestDriver()
+    {
+        delete _delegate;
+        delete _renderIndex;
+    }
+
+    void Draw() {
+        HdTaskSharedPtrVector tasks = {
+            boost::make_shared<UsdImaging_TestTask>(_geometryPass)
+        };
+        _engine.Execute(_delegate->GetRenderIndex(), tasks);
+    }
+    void SetTime(double time) {
+        _delegate->SetTime(time);
+    }
 
     /// Marks an rprim in the RenderIndex as dirty with the given dirty flags.
-    void MarkRprimDirty(SdfPath path, HdDirtyBits flag);
-
-    /// Set camera to renderpass
-    void SetCamera(GfMatrix4d const &modelViewMatrix,
-                   GfMatrix4d const &projectionMatrix,
-                   GfVec4d const &viewport);
-
-    /// Set fallback refine level
-    void SetRefineLevelFallback(int level);
-
-    /// Returns the renderpass
-    HdRenderPassSharedPtr const& GetRenderPass();
+    void MarkRprimDirty(SdfPath path, HdDirtyBits flag) {
+        _delegate->GetRenderIndex().GetChangeTracker()
+            .MarkRprimDirty(path, flag);
+    }
 
     /// Returns the underlying delegate for this driver.
-    UsdImagingDelegate& GetDelegate();
+    UsdImagingDelegate& GetDelegate() {
+        return *_delegate;
+    }
 
     /// Returns the populated UsdStage for this driver.
-    UsdStageRefPtr const& GetStage();
+    UsdStageRefPtr const& GetStage() {
+        return _stage;
+    }
 
 private:
     HdEngine _engine;
-    HdStRenderDelegate   _renderDelegate;
+    Hd_UnitTestNullRenderDelegate _renderDelegate;
     HdRenderIndex       *_renderIndex;
     UsdImagingDelegate  *_delegate;
     HdRenderPassSharedPtr _geometryPass;
-    HdRenderPassStateSharedPtr _renderPassState;
     UsdStageRefPtr _stage;
 
     void _Init(UsdStageRefPtr const& usdStage,
-               TfToken const &collectionName,
-               TfToken const &reprName,
-               TfTokenVector const &renderTags);
-};
+               HdRprimCollection const &collection,
+               SdfPath const &delegateId) {
+        _renderIndex = HdRenderIndex::New(&_renderDelegate);
+        TF_VERIFY(_renderIndex != nullptr);
+        _delegate = new UsdImagingDelegate(_renderIndex, delegateId);
 
-/// A simple drawing task that just executes a render pass.
-class UsdImaging_DrawTask final : public HdTask
-{
-public:
-    UsdImaging_DrawTask(HdRenderPassSharedPtr const &renderPass,
-                        HdRenderPassStateSharedPtr const &renderPassState);
+        _stage = usdStage;
+        _delegate->Populate(_stage->GetPseudoRoot());
 
-protected:
-    virtual void _Sync(HdTaskContext* ctx) override;
-    virtual void _Execute(HdTaskContext* ctx) override;
-
-private:
-    HdRenderPassSharedPtr _renderPass;
-    HdRenderPassStateSharedPtr _renderPassState;
+        _geometryPass = HdRenderPassSharedPtr(
+                       new Hd_UnitTestNullRenderPass(_renderIndex, collection));
+    }
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

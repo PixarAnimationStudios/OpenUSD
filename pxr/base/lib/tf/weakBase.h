@@ -37,7 +37,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// The _Remnant structure is simply a persisent memory of an object's
+// The _Remnant structure is simply a persistent memory of an object's
 // address. When the object dies, the pointer is set to NULL.  A _Remnant
 // object is destroyed when both the original whose address it was
 // initialized with, and there are no weak pointers left pointing to that

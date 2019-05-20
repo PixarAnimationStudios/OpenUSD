@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2016-2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -30,8 +30,9 @@
 #include "pxr/usd/usdGeom/xformOp.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/usd/schemaRegistry.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/ostreamMethods.h"
 #include <Alembic/Abc/OArchive.h>
 #include <Alembic/Abc/OObject.h>
@@ -61,6 +62,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (transform)
     ((xformOpTransform, "xformOp:transform"))
 );
+
+TF_DEFINE_ENV_SETTING(USD_ABC_READ_FLOAT2_AS_UV, true,
+        "Turn to false to disable reading float2 arrays as uv sets");
 
 namespace {
 
@@ -667,8 +671,19 @@ public:
     /// Returns the writer schema.
     const _WriterSchema& GetSchema() const { return *_schema; }
 
-    /// Returns the Usd data.
-    void SetData(const SdfAbstractDataConstPtr& data) { _data = data; }
+    /// Set the Usd data that we will translate.  Also resets _timeScale to
+    /// data's timeCodesPerSecond
+    void SetData(const SdfAbstractDataConstPtr& data) { 
+        _data = data; 
+        VtValue tcps;
+        SdfPath path = SdfPath::AbsoluteRootPath();
+        if (data->Has(SdfAbstractDataSpecId(&path),
+                      SdfFieldKeys->TimeCodesPerSecond, &tcps)){
+            if (tcps.IsHolding<double>()){
+                _timeScale = tcps.UncheckedGet<double>();
+            }
+        }
+    }
 
     /// Returns the Usd data.
     const SdfAbstractData& GetData() const { return *boost::get_pointer(_data);}
@@ -897,9 +912,21 @@ public:
     /// to include the sample times from the returned object.
     UsdSamples ExtractSamples(const TfToken& name)
     {
-        UsdSamples result = _ExtractSamples(name);
-        result.AddTimes(&_sampleTimes);
-        return result;
+        return _ExtractSamples(name, {});
+    }
+    
+    /// Returns the samples for a Usd property.  If the property doesn't
+    /// exist or has already been extracted then this returns an empty
+    /// samples object.  The property is extracted from the context so
+    /// it cannot be extracted again.  The sample times union is updated
+    /// to include the sample times from the returned object.  This
+    /// verifies that the property is holding a value of either the given type
+    //  or the alternative type;
+    /// if not it returns an empty samples object.
+    UsdSamples ExtractSamples(const TfToken& name, const SdfValueTypeName& type,
+                              const SdfValueTypeName& alternativeType)
+    {
+        return _ExtractSamples(name, {type, alternativeType});
     }
 
     /// Returns the samples for a Usd property.  If the property doesn't
@@ -911,31 +938,54 @@ public:
     /// if not it returns an empty samples object.
     UsdSamples ExtractSamples(const TfToken& name, const SdfValueTypeName& type)
     {
-        UsdSamples result = _ExtractSamples(name);
-        if (!result.IsEmpty() && type != result.GetTypeName()) {
-            TF_WARN("Expected property '%s' to have type '%s', got '%s'",
-                    GetPath().AppendProperty(name).GetText(),
-                    type.GetAsToken().GetText(),
-                    result.GetTypeName().GetAsToken().GetText());
-            return UsdSamples(GetPath(), name);
+        return _ExtractSamples(name, {type});
+    }
+
+    /// Removes samples for a Usd property.  The property cannot be extracted
+    /// after removal.
+    void RemoveSamples(const TfToken& name)
+    {
+        auto i = std::find(_unextracted.begin(), _unextracted.end(), name);
+        if (i != _unextracted.end()) {
+            _unextracted.erase(i);
         }
-        result.AddTimes(&_sampleTimes);
-        return result;
     }
 
     /// Returns the names of properties that have not been extracted yet
     /// in Usd property order.
     TfTokenVector GetUnextractedNames() const;
 
+    /// Return the _WriterContext associated with this prim.
+    _WriterContext& GetWriterContext() const;
+
 private:
     UsdSamples _ExtractSamples(const TfToken& name);
+    
+    UsdSamples _ExtractSamples(const TfToken& name, 
+            const std::vector<SdfValueTypeName> &types)
+    {
+        UsdSamples result = _ExtractSamples(name);
+        if (!result.IsEmpty() && !types.empty()) {
+            SdfValueTypeName resultTypeName = result.GetTypeName();
+            if (find(types.begin(), types.end(), resultTypeName) ==
+                types.end())
+            {
+                TF_WARN("Property '%s' did not have expected type (got '%s')",
+                        GetPath().AppendProperty(name).GetText(),
+                        resultTypeName.GetAsToken().GetText());
+                return UsdSamples(GetPath(), name);
+            }
+        }
+        result.AddTimes(&_sampleTimes);
+        return result;
+    }
 
 private:
     typedef std::vector<SdfValueTypeName> SdfValueTypeNameVector;
 
     _WriterContext& _context;
     Parent _parent;
-    const SdfAbstractDataSpecId& _id;
+    SdfAbstractDataSpecId _id;
     std::string _suffix;
     UsdAbc_TimeSamples _sampleTimes;
     TfTokenVector _unextracted;
@@ -1088,6 +1138,12 @@ TfTokenVector
 _PrimWriterContext::GetUnextractedNames() const
 {
     return _unextracted;
+}
+
+_WriterContext&
+_PrimWriterContext::GetWriterContext() const
+{
+    return _context;
 }
 
 // ----------------------------------------------------------------------------
@@ -1340,7 +1396,7 @@ _CheckSample(
                 message.c_str());
         return false;
     }
-    return sample;
+    return static_cast<bool>(sample);
 }
 
 // An object we can use for mapping in _MakeIndexed.  It holds a pointer to
@@ -1896,7 +1952,6 @@ _CopyPointIds(const VtValue& src)
     return _SampleForAlembic(std::vector<uint64_t>(value.begin(), value.end()));
 }
 
-
 // ----------------------------------------------------------------------------
 
 //
@@ -2230,7 +2285,7 @@ _WriteNamespacedPropertyGroup(
     // Strip the namespace name from each name before copying.
     if (anyProperties) {
         OCompoundProperty parent = getParentProperty();
-        if (! parent.valid()) {
+        if (!parent.valid()) {
             // We can't get the parent property.  Just put the properties
             // at the top level.
             parent = context->GetParent().GetProperties();
@@ -2240,8 +2295,13 @@ _WriteNamespacedPropertyGroup(
         _CompoundPropertyTable subgroups(parent);
 
         // Convert each property.
+        // We have to remap primvars:st:indices to primvars:uv:indices.
         for (const auto& name : context->GetUnextractedNames()) {
-            TfTokenVector names = SdfPath::TokenizeIdentifierAsTokens(name);
+            TfTokenVector names = 
+                name == UsdAbcPropertyNames->stIndices ?
+                    SdfPath::TokenizeIdentifierAsTokens(
+                        UsdAbcPropertyNames->uvIndices) :
+                    SdfPath::TokenizeIdentifierAsTokens(name);
             if (names.size() >= 2 && names[0] == namespaceName) {
                 // Remove the namespace prefix.
                 names.erase(names.begin());
@@ -2256,9 +2316,9 @@ _WriteNamespacedPropertyGroup(
                 // Write it.
                 _WriteOutOfSchemaProperty(context, group, name, alembicName);
             }
-            }
         }
     }
+}
 
 static
 void
@@ -2435,7 +2495,7 @@ _WriteRoot(_PrimWriterContext* context)
     _SetDoubleMetadata(&metadata, *context, SdfFieldKeys->StartTimeCode);
     _SetDoubleMetadata(&metadata, *context, SdfFieldKeys->EndTimeCode);
 
-    // Always author a value for timeCodesPerSecond and frameCodesPerSecond 
+    // Always author a value for timeCodesPerSecond and framesPerSecond 
     // to preserve proper round-tripping from USD->alembic->USD.
     // 
     // First, set them to the corresponding fallback values, then overwrite them 
@@ -2773,9 +2833,31 @@ _WritePolyMesh(_PrimWriterContext* context)
     UsdSamples normals =
         context->ExtractSamples(UsdGeomTokens->normals,
                                 SdfValueTypeNames->Normal3fArray);
-    UsdSamples uv =
-        context->ExtractSamples(UsdAbcPropertyNames->uv,
-                                SdfValueTypeNames->Float2Array);
+    
+    // Default to look for primvars:st with type TexCoord2fArray or Float2Array
+    UsdSamples uv = (TfGetEnvSetting(USD_ABC_READ_FLOAT2_AS_UV))?
+                        (context->ExtractSamples(UsdAbcPropertyNames->st,
+                                    SdfValueTypeNames->TexCoord2fArray,
+                                    SdfValueTypeNames->Float2Array)) :
+                        (context->ExtractSamples(UsdAbcPropertyNames->st,
+                                    SdfValueTypeNames->TexCoord2fArray));
+   
+    // At this point if matching uv set has not been found, 
+    // look for primvars:uv with type TexCoord2fArray or Float2Array
+    if (uv.IsEmpty()) {
+        uv = (TfGetEnvSetting(USD_ABC_READ_FLOAT2_AS_UV))?
+                 (context->ExtractSamples(UsdAbcPropertyNames->uv,
+                                     SdfValueTypeNames->TexCoord2fArray,
+                                     SdfValueTypeNames->Float2Array)) :
+                 (context->ExtractSamples(UsdAbcPropertyNames->uv,
+                                     SdfValueTypeNames->TexCoord2fArray));
+        
+        context->RemoveSamples(UsdAbcPropertyNames->stIndices);
+    } else {
+        // We found a primvars:st, so remove samples with name "primvars:uv"
+        context->RemoveSamples(UsdAbcPropertyNames->uv);
+        context->RemoveSamples(UsdAbcPropertyNames->uvIndices);
+    }
 
     // Adjust faceVertexIndices for winding order.
     _ReverseWindingOrder(context, &faceVertexIndices, faceVertexCounts);
@@ -2818,6 +2900,78 @@ _WritePolyMesh(_PrimWriterContext* context)
 
     // Alembic doesn't need this since it knows it's a PolyMesh.
     context->ExtractSamples(UsdGeomTokens->subdivisionScheme);
+
+    // Set the time sampling.
+    object->getSchema().setTimeSampling(
+        context->AddTimeSampling(context->GetSampleTimesUnion()));
+}
+
+static
+void
+_WriteFaceSet(_PrimWriterContext* context)
+{
+    typedef OFaceSet Type;
+
+    const _WriterSchema& schema = context->GetSchema();
+
+    // Create the object and make it the parent.
+    shared_ptr<Type> object(new Type(context->GetParent(),
+                                     context->GetAlembicPrimName(),
+                                     _GetPrimMetadata(*context)));
+    context->SetParent(object);
+
+    // Collect the properties we need.
+    context->SetSampleTimesUnion(UsdAbc_TimeSamples());
+
+    UsdSamples indices =
+        context->ExtractSamples(UsdGeomTokens->indices,
+                                SdfValueTypeNames->IntArray);
+
+    // The familyType is contained in the parent prim, so we 
+    // contruct a new _PrimWriterContext to access it.
+    SdfPath parentPath = context->GetPath().GetParentPath();
+    SdfAbstractDataSpecId parentSpecId(&parentPath);
+    _PrimWriterContext parentPrimContext(context->GetWriterContext(),
+                                         context->GetParent(),
+                                         parentSpecId);
+
+    UsdSamples familyType = parentPrimContext.ExtractSamples(
+        UsdAbcPropertyNames->defaultFamilyTypeAttributeName,
+        SdfValueTypeNames->Token);
+
+    // Copy all the samples.
+    typedef Type::schema_type::Sample SampleT;
+    SampleT sample;
+
+    for (double time : context->GetSampleTimesUnion()) {
+        // Build the sample.
+        sample.reset();
+        _SampleForAlembic alembicFaces =
+        _Copy(schema,
+              time, indices,
+              &sample, &SampleT::setFaces);
+
+        // Write the sample.
+        object->getSchema().set(sample);
+    }
+
+    // It's possible that our default family name "materialBind", is not 
+    // set on the prim. In that case, use kFaceSetNonExclusive.
+    FaceSetExclusivity faceSetExclusivity = kFaceSetNonExclusive;
+    if (!familyType.IsEmpty())
+    {
+        double time = UsdTimeCode::EarliestTime().GetValue();
+        const TfToken& value = familyType.Get(time).UncheckedGet<TfToken>();
+        if (!value.IsEmpty() && 
+            (value == UsdGeomTokens->partition || 
+             value == UsdGeomTokens->nonOverlapping)) {
+            faceSetExclusivity = kFaceSetExclusive;
+        }
+    }
+
+    // Face set exclusivity is not a property of the sample. Instead, it's set 
+    // on the object schema and not time sampled.
+    object->getSchema().setFaceExclusivity(faceSetExclusivity);
 
     // Set the time sampling.
     object->getSchema().setTimeSampling(
@@ -2892,9 +3046,31 @@ _WriteSubD(_PrimWriterContext* context)
     UsdSamples creaseSharpnesses =
         context->ExtractSamples(UsdGeomTokens->creaseSharpnesses,
                                 SdfValueTypeNames->FloatArray);
-    UsdSamples uv =
-        context->ExtractSamples(UsdAbcPropertyNames->uv,
-                                SdfValueTypeNames->Float2Array);
+    
+    // Default to look for primvars:st with type TexCoord2fArray or Float2Array
+    UsdSamples uv = (TfGetEnvSetting(USD_ABC_READ_FLOAT2_AS_UV))?
+                        (context->ExtractSamples(UsdAbcPropertyNames->st,
+                                    SdfValueTypeNames->TexCoord2fArray,
+                                    SdfValueTypeNames->Float2Array)) :
+                        (context->ExtractSamples(UsdAbcPropertyNames->st,
+                                    SdfValueTypeNames->TexCoord2fArray));
+   
+    // At this point if matching uv set has not been found, 
+    // look for primvars:uv with type TexCoord2fArray or Float2Array
+    if (uv.IsEmpty()) {
+        uv = (TfGetEnvSetting(USD_ABC_READ_FLOAT2_AS_UV))?
+                 (context->ExtractSamples(UsdAbcPropertyNames->uv,
+                                     SdfValueTypeNames->TexCoord2fArray,
+                                     SdfValueTypeNames->Float2Array)) :
+                 (context->ExtractSamples(UsdAbcPropertyNames->uv,
+                                     SdfValueTypeNames->TexCoord2fArray));
+        
+        context->RemoveSamples(UsdAbcPropertyNames->stIndices);
+    } else {
+        // We found a primvars:st, so remove samples with name "primvars:uv"
+        context->RemoveSamples(UsdAbcPropertyNames->uv);
+        context->RemoveSamples(UsdAbcPropertyNames->uvIndices);
+    }
 
     // Adjust faceVertexIndices for winding order.
     _ReverseWindingOrder(context, &faceVertexIndices, faceVertexCounts);
@@ -3386,6 +3562,9 @@ _WriterSchemaBuilder::_WriterSchemaBuilder()
         .AppendWriter(_WriteArbGeomParams)
         .AppendWriter(_WriteUserProperties)
         .AppendWriter(_WriteOther)
+        ;
+    schema.AddType(UsdAbcPrimTypeNames->GeomSubset)
+        .AppendWriter(_WriteFaceSet)
         ;
 
     // This handles the root.

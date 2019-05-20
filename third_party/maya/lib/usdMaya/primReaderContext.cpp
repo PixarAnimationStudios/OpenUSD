@@ -21,13 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/primReaderContext.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-PxrUsdMayaPrimReaderContext::PxrUsdMayaPrimReaderContext(
+UsdMayaPrimReaderContext::UsdMayaPrimReaderContext(
         ObjectRegistry* pathNodeMap)
     :
         _prune(false),
@@ -36,7 +35,7 @@ PxrUsdMayaPrimReaderContext::PxrUsdMayaPrimReaderContext(
 }
 
 MObject
-PxrUsdMayaPrimReaderContext::GetMayaNode(
+UsdMayaPrimReaderContext::GetMayaNode(
         const SdfPath& path,
         bool findAncestors) const
 {
@@ -60,7 +59,7 @@ PxrUsdMayaPrimReaderContext::GetMayaNode(
 }
 
 void
-PxrUsdMayaPrimReaderContext::RegisterNewMayaNode(
+UsdMayaPrimReaderContext::RegisterNewMayaNode(
         const std::string &path, 
         const MObject &mayaNode) const
 {
@@ -70,13 +69,18 @@ PxrUsdMayaPrimReaderContext::RegisterNewMayaNode(
 }
 
 bool
-PxrUsdMayaPrimReaderContext::GetPruneChildren() const
+UsdMayaPrimReaderContext::GetPruneChildren() const
 {
     return _prune;
 }
 
+/// Sets whether traversal should automatically continue into this prim's
+/// children. This only has an effect if set during the
+/// UsdMayaPrimReader::Read() step, and not in the
+/// UsdMayaPrimReader::PostReadSubtree() step, since in the latter, the
+/// children have already been processed.
 void
-PxrUsdMayaPrimReaderContext::SetPruneChildren(
+UsdMayaPrimReaderContext::SetPruneChildren(
         bool prune)
 {
     _prune = prune;

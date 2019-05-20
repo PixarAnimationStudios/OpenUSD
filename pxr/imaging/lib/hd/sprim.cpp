@@ -38,5 +38,10 @@ HdSprim::~HdSprim()
 {
 }
 
+void
+HdSprim::Finalize(HdRenderParam *renderParam)
+{
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -36,7 +36,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 class PcpPrimIndex;
 
 /// \class Usd_Resolver
@@ -100,6 +99,34 @@ public:
     USD_API
     const PcpPrimIndex* GetPrimIndex() const;
 
+    /// \struct Position
+    /// Represents a position in the prim index for value resolution.
+    /// For performance, this object stores pointers and iterators to avoid
+    /// unnecessary copies and ref-count bumps.
+    struct Position
+    {
+        Position() { }
+
+        PcpNodeRef GetNode() const { return *_curNode; }
+        const SdfLayerRefPtr& GetLayer() const { return *_curLayer; }
+        const SdfPath& GetLocalPath() const { return _curNode->GetPath(); }
+
+    private:
+        friend class Usd_Resolver;
+
+        Position(const PcpNodeIterator& curNode, 
+                 const SdfLayerRefPtrVector::const_iterator& curLayer)
+            : _curNode(curNode), _curLayer(curLayer) { }
+
+        PcpNodeIterator _curNode;
+        SdfLayerRefPtrVector::const_iterator _curLayer;
+    };
+
+    /// Returns a Position object representing the current node and layer in
+    /// the prim index.
+    USD_API
+    Position GetPosition() const;
+
 private:
     void _Init();
     void _SkipEmptyNodes();
@@ -112,7 +139,6 @@ private:
     SdfLayerRefPtrVector::const_iterator _curLayer;
     SdfLayerRefPtrVector::const_iterator _lastLayer;
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

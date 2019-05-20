@@ -55,7 +55,7 @@
 #include <algorithm>
 #include <atomic>
 #include <fstream>
-#include <iostream>
+#include <ostream>
 #include <iterator>
 #include <limits>
 #include <cstdlib>
@@ -114,7 +114,7 @@ ForkFunc Arch_nonLockingFork =
 #endif
 #endif
 
-/*** Stack Logging Global Varaibles ***/
+/*** Stack Logging Global Variables ***/
 
 // Stores the application's launch time
 static time_t _appLaunchTime;
@@ -124,7 +124,7 @@ static time_t _appLaunchTime;
 // to set this value.
 static bool _shouldLogStackToDb = false;
 
-// This string holds the path the the script used to log sessions
+// This string holds the path the script used to log sessions
 // to a database.
 static const char * _logStackToDbCmd = nullptr;
 
@@ -447,7 +447,7 @@ _MakeArgv(
 
 #if !defined(ARCH_OS_WINDOWS)
 /* We use a 'non-locking' fork so that we won't get hung up if we've
- * had malloc corrupton when we crash.  The crash recovery behavior
+ * had malloc corruption when we crash.  The crash recovery behavior
  * can be tested with ArchTestCrash(), which should crash with this
  * malloc corruption.
  */
@@ -645,8 +645,8 @@ ArchGetAppLaunchTime()
  */
 void
 ArchSetFatalStackLogging( bool flag )
-{   
-    _shouldLogStackToDb = flag; 
+{
+    _shouldLogStackToDb = flag;   
 }
 
 /*
@@ -809,8 +809,8 @@ _InvokeSessionLogger(const char* progname, const char *stackTrace)
     asitoa(pidBuffer, getpid());
     asitoa(timeBuffer, _GetAppElapsedTime());
     const char* const substitutions[4][2] = {
-        "$pid", pidBuffer, "$time", timeBuffer,
-        "$prog", progname, "$stack", stackTrace
+        {"$pid", pidBuffer}, {"$time", timeBuffer},
+        {"$prog", progname}, {"$stack", stackTrace}
     };
 
     // Build the argument list.
@@ -841,7 +841,7 @@ _FinishLoggingFatalStackTrace(const char *progname, const char *stackTrace,
         if (FILE* stackFd = ArchOpenFile(stackTrace, "a")) {
             if (FILE* sessionLogFd = ArchOpenFile(sessionLog, "r")) {
                 fputs("\n\n********** Session Log **********\n\n", stackFd);
-                // Cat the sesion log
+                // Cat the session log
                 char line[4096];
                 while (fgets(line, 4096, sessionLogFd)) {
                     fputs(line, stackFd);
@@ -863,7 +863,10 @@ _FinishLoggingFatalStackTrace(const char *progname, const char *stackTrace,
 void
 ArchLogSessionInfo(const char *crashStackTrace)
 {
-    _InvokeSessionLogger(ArchGetProgramNameForErrors(), crashStackTrace);
+    if (_shouldLogStackToDb)
+    {
+        _InvokeSessionLogger(ArchGetProgramNameForErrors(), crashStackTrace);
+    }
 }
 
 void
@@ -1127,7 +1130,7 @@ ArchPrintStackTrace(std::ostream& out, const std::string& reason)
 
 /*
  * ArchPrintStackTrace
- *  print out a stack trace to the given iostream.
+ *  print out a stack trace to the given ostream.
  * 
  * This function should probably not be called from a signal handler as 
  * it calls printf and other unsafe functions.
@@ -1289,7 +1292,7 @@ Arch_GetStackTrace(const vector<uintptr_t> &frames);
 
 /*
  * ArchPrintStackFrames
- *  print out stack frames to the given iostream.
+ *  print out stack frames to the given ostream.
  */
 void
 ArchPrintStackFrames(ostream& oss, const vector<uintptr_t> &frames)

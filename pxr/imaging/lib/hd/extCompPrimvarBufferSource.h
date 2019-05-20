@@ -29,7 +29,6 @@
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/types.h"
 #include "pxr/base/tf/token.h"
-#include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -38,49 +37,53 @@ class HdExtCompCpuComputation;
 typedef boost::shared_ptr<HdExtCompCpuComputation>
                                                HdExtCompCpuComputationSharedPtr;
 
-/// Hd Buffer Source that binds a PrimVar to a Ext Computation output.
+/// Hd Buffer Source that binds a primvar to a Ext Computation output.
 /// This buffer source is compatible with being bound to a Bar.
 class HdExtCompPrimvarBufferSource final : public HdBufferSource {
 public:
 
-    /// Constructs a new primVar buffer source called primvarName and
+    /// Constructs a new primvar buffer source called primvarName and
     /// binds it to the output called sourceOutputName from the
     /// computation identified by source.
     ///
-    /// Default value provides type information for the primVar and may
+    /// Default value provides type information for the primvar and may
     /// be used in the event of an error.
     HD_API
     HdExtCompPrimvarBufferSource(const TfToken &primvarName,
                                  const HdExtCompCpuComputationSharedPtr &source,
                                  const TfToken &sourceOutputName,
-                                 const VtValue &defaultValue);
+                                 const HdTupleType &valueType);
 
     HD_API
     virtual ~HdExtCompPrimvarBufferSource() = default;
 
-    /// Returns the name of the primVar.
+    /// Returns the name of the primvar.
     HD_API
     virtual TfToken const &GetName() const override;
 
     /// Adds this Primvar's buffer description to the buffer spec vector.
     HD_API
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
 
-    /// Extracts the primVar from the source computation.
+    /// Computes and returns a hash value for the underlying data.
+    HD_API
+    virtual size_t ComputeHash() const override { return 0; }
+
+    /// Extracts the primvar from the source computation.
     HD_API
     virtual bool Resolve() override;
 
-    /// Returns a raw pointer to the primVar data.
+    /// Returns a raw pointer to the primvar data.
     HD_API
     virtual void const *GetData() const override;
 
-    /// Returns the tuple data format of the primVar data.
+    /// Returns the tuple data format of the primvar data.
     HD_API
     virtual HdTupleType GetTupleType() const override;
 
     /// Returns a count of the number of elements.
     HD_API
-    virtual int GetNumElements() const override;
+    virtual size_t GetNumElements() const override;
 
 protected:
     /// Returns true if the binding to the source computation was successful.

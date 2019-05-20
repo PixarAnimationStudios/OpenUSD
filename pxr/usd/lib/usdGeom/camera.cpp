@@ -74,6 +74,11 @@ UsdGeomCamera::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdGeomCamera::_GetSchemaType() const {
+    return UsdGeomCamera::schemaType;
+}
+
 /* static */
 const TfType &
 UsdGeomCamera::_GetStaticTfType()

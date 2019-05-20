@@ -73,7 +73,10 @@ unsigned char * GlfUVTextureStorageData::GetRawBuffer(int mipLevel) const
     return _rawBuffer;
 }
 
-bool GlfUVTextureStorageData::Read(int degradeLevel, bool generateMipmap) {
+bool GlfUVTextureStorageData::Read(int degradeLevel,
+                                   bool generateMipmap,
+                                   GlfImage::ImageOriginLocation originLocation)
+{
     _targetMemory = _size;
     std::vector<float> storageArray;
     if (_storageData.IsHolding<float>()) {
@@ -86,6 +89,14 @@ bool GlfUVTextureStorageData::Read(int degradeLevel, bool generateMipmap) {
         storageArray[0] = _storageData.Get<double>();
         _glInternalFormat = GL_RED;
         _glFormat = GL_RED; 
+    } else if (_storageData.IsHolding<GfVec3f>()) {
+        GfVec3f storageVec3f = _storageData.Get<GfVec3f>();
+        storageArray.resize(3); 
+        storageArray[0] = storageVec3f[0]; 
+        storageArray[1] = storageVec3f[1];
+        storageArray[2] = storageVec3f[2]; 
+        _glInternalFormat = GL_RGB;
+        _glFormat = GL_RGB; 
     } else if (_storageData.IsHolding<GfVec3d>()) {
         GfVec3d storageVec3d = _storageData.Get<GfVec3d>();
         storageArray.resize(3); 
@@ -94,6 +105,15 @@ bool GlfUVTextureStorageData::Read(int degradeLevel, bool generateMipmap) {
         storageArray[2] = storageVec3d[2]; 
         _glInternalFormat = GL_RGB;
         _glFormat = GL_RGB; 
+    } else if (_storageData.IsHolding<GfVec4f>()) {
+        GfVec4f storageVec4f = _storageData.Get<GfVec4f>();
+        storageArray.resize(4); 
+        storageArray[0] = storageVec4f[0]; 
+        storageArray[1] = storageVec4f[1];
+        storageArray[2] = storageVec4f[2]; 
+        storageArray[3] = storageVec4f[3];
+        _glInternalFormat = GL_RGBA;
+        _glFormat = GL_RGBA; 
     } else if (_storageData.IsHolding<GfVec4d>()) {
         GfVec4d storageVec4d = _storageData.Get<GfVec4d>();
         storageArray.resize(4); 

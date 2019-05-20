@@ -281,7 +281,7 @@ public:
     /// and abstract prims).
     static UsdPrimRange
     AllPrims(const UsdPrim &start) {
-        return UsdPrimRange(start, Usd_PrimFlagsPredicate::Tautology());
+        return UsdPrimRange(start, UsdPrimAllPrimsPredicate);
     }
 
     /// Construct a PrimRange that traverses the subtree rooted at \p start in
@@ -295,7 +295,7 @@ public:
     /// UsdPrimRange::iterator::IsPostVisit().
     static UsdPrimRange
     AllPrimsPreAndPostVisit(const UsdPrim &start) {
-        return PreAndPostVisit(start, Usd_PrimFlagsPredicate::Tautology());
+        return PreAndPostVisit(start, UsdPrimAllPrimsPredicate);
     }
 
     /// Create a PrimRange that traverses all the prims on \p stage, and

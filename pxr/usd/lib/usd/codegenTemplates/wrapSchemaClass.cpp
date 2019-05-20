@@ -51,14 +51,26 @@ namespace {
 WRAP_CUSTOM;
 
 {% for attrName in cls.attrOrder -%}
-{% set attr = cls.attrs[attrName] %}        
+{% set attr = cls.attrs[attrName] %}
+{# Only emit Create/Get API if apiName is not empty string. #}
+{% if attr.apiName != '' %}
+        
 static UsdAttribute
 _Create{{ Proper(attr.apiName) }}Attr({{ cls.cppClassName }} &self,
                                       object defaultVal, bool writeSparsely) {
     return self.Create{{ Proper(attr.apiName) }}Attr(
         UsdPythonToSdfType(defaultVal, {{ attr.usdType }}), writeSparsely);
 }
+{% endif %}
 {% endfor %}
+{% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
+
+static bool _WrapIs{{ cls.usdPrimTypeName }}Path(const SdfPath &path) {
+    TfToken collectionName;
+    return {{ cls.cppClassName }}::Is{{ cls.usdPrimTypeName }}Path(
+        path, &collectionName);
+}
+{% endif %}
 {% if useExportAPI %}
 
 } // anonymous namespace
@@ -68,43 +80,64 @@ void wrap{{ cls.cppClassName }}()
 {
     typedef {{ cls.cppClassName }} This;
 
+{% if cls.isAPISchemaBase %}
+    class_< This , bases<{{ cls.parentCppClassName }}>, boost::noncopyable> cls ("APISchemaBase", "", no_init);
+{% else %}
     class_<This, bases<{{ cls.parentCppClassName }}> >
         cls("{{ cls.className }}");
+{% endif %}
 
     cls
+{% if not cls.isAPISchemaBase %}
+{% if cls.isMultipleApply %}
+        .def(init<UsdPrim, TfToken>())
+        .def(init<UsdSchemaBase const&, TfToken>())
+{% else %}
         .def(init<UsdPrim>(arg("prim")))
         .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+{% endif %}
+{% endif %}
         .def(TfTypePythonClass())
 
+{% if not cls.isAPISchemaBase %}
+{% if cls.isMultipleApply %}
+        .def("Get",
+            ({{ cls.cppClassName }}(*)(const UsdStagePtr &stage, 
+                                       const SdfPath &path))
+               &This::Get,
+            (arg("stage"), arg("path")))
+        .def("Get",
+            ({{ cls.cppClassName }}(*)(const UsdPrim &prim,
+                                       const TfToken &name))
+               &This::Get,
+            (arg("prim"), arg("name")))
+{% else %}
         .def("Get", &This::Get, (arg("stage"), arg("path")))
+{% endif %}
         .staticmethod("Get")
+{% endif %}
 {% if cls.isConcrete %}
 
         .def("Define", &This::Define, (arg("stage"), arg("path")))
         .staticmethod("Define")
 {% endif %}
-{% if cls.isApi and not cls.isMultipleApply and not cls.isPrivateApply %}
+{% if cls.isAppliedAPISchema and not cls.isMultipleApply and not cls.isPrivateApply %}
 
-        .def("Apply", &This::Apply, (arg("stage"), arg("path")))
+        .def("Apply", &This::Apply, (arg("prim")))
         .staticmethod("Apply")
 {% endif %}
-{% if cls.isApi and cls.isMultipleApply and not cls.isPrivateApply %}
+{% if cls.isAppliedAPISchema and cls.isMultipleApply and not cls.isPrivateApply %}
 
-        .def("Apply", &This::Apply, (arg("stage"), arg("path"), arg("name")))
+        .def("Apply", &This::Apply, (arg("prim"), arg("name")))
         .staticmethod("Apply")
 {% endif %}
-
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
              arg("includeInherited")=true,
+{% if cls.isMultipleApply %}
+             arg("instanceName")=TfToken(),
+{% endif %}
              return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
@@ -115,22 +148,34 @@ void wrap{{ cls.cppClassName }}()
         .def(!self)
 
 {% for attrName in cls.attrOrder -%}
-{% set attr = cls.attrs[attrName] %}        
+{% set attr = cls.attrs[attrName] %}
+{# Only emit Create/Get API if apiName is not empty string. #}
+{% if attr.apiName != '' %}
+        
         .def("Get{{ Proper(attr.apiName) }}Attr",
              &This::Get{{ Proper(attr.apiName) }}Attr)
         .def("Create{{ Proper(attr.apiName) }}Attr",
              &_Create{{ Proper(attr.apiName) }}Attr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
+{% endif %}
 {% endfor %}
 
 {% for relName in cls.relOrder -%}
-{% set rel = cls.rels[relName] %}        
+{# Only emit Create/Get API and doxygen if apiName is not empty string. #}
+{% set rel = cls.rels[relName] %}
+{% if rel.apiName != '' %}
+        
         .def("Get{{ Proper(rel.apiName) }}Rel",
              &This::Get{{ Proper(rel.apiName) }}Rel)
         .def("Create{{ Proper(rel.apiName) }}Rel",
              &This::Create{{ Proper(rel.apiName) }}Rel)
+{% endif %}
 {% endfor %}
+{% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
+        .def("Is{{ cls.usdPrimTypeName }}Path", _WrapIs{{ cls.usdPrimTypeName }}Path)
+            .staticmethod("Is{{ cls.usdPrimTypeName }}Path")
+{% endif %}
     ;
 
     _CustomWrapCode(cls);

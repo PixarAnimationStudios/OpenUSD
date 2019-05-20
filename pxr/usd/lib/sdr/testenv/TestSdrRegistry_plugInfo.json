@@ -1,0 +1,24 @@
+{
+  "Plugins": [
+    {
+      "Type": "library",
+      "Name": "TestSdrRegistry",
+      "Root": "@TEST_PLUG_INFO_ROOT@",
+      "LibraryPath": "@TEST_PLUG_INFO_LIBRARY_PATH@",
+      "ResourcePath": "@TEST_PLUG_INFO_RESOURCE_PATH@",
+      "Info": {
+        "Types": {
+          "_NdrTestDiscoveryPlugin": {
+            "bases": ["NdrDiscoveryPlugin"]
+          },
+          "_NdrArgsTestParserPlugin": {
+            "bases": ["NdrParserPlugin"]
+          },
+          "_NdrOslTestParserPlugin": {
+            "bases": ["NdrParserPlugin"]
+          }
+        }
+      }
+    }
+  ]
+}

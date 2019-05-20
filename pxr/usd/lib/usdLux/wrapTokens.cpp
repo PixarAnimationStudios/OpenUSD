@@ -67,6 +67,9 @@ void wrapUsdLuxTokens()
     _AddToken(cls, "angle", UsdLuxTokens->angle);
     _AddToken(cls, "angular", UsdLuxTokens->angular);
     _AddToken(cls, "automatic", UsdLuxTokens->automatic);
+    _AddToken(cls, "collectionFilterLinkIncludeRoot", UsdLuxTokens->collectionFilterLinkIncludeRoot);
+    _AddToken(cls, "collectionLightLinkIncludeRoot", UsdLuxTokens->collectionLightLinkIncludeRoot);
+    _AddToken(cls, "collectionShadowLinkIncludeRoot", UsdLuxTokens->collectionShadowLinkIncludeRoot);
     _AddToken(cls, "color", UsdLuxTokens->color);
     _AddToken(cls, "colorTemperature", UsdLuxTokens->colorTemperature);
     _AddToken(cls, "consumeAndContinue", UsdLuxTokens->consumeAndContinue);
@@ -75,12 +78,15 @@ void wrapUsdLuxTokens()
     _AddToken(cls, "diffuse", UsdLuxTokens->diffuse);
     _AddToken(cls, "enableColorTemperature", UsdLuxTokens->enableColorTemperature);
     _AddToken(cls, "exposure", UsdLuxTokens->exposure);
+    _AddToken(cls, "filterLink", UsdLuxTokens->filterLink);
     _AddToken(cls, "filters", UsdLuxTokens->filters);
     _AddToken(cls, "geometry", UsdLuxTokens->geometry);
     _AddToken(cls, "height", UsdLuxTokens->height);
     _AddToken(cls, "ignore", UsdLuxTokens->ignore);
     _AddToken(cls, "intensity", UsdLuxTokens->intensity);
     _AddToken(cls, "latlong", UsdLuxTokens->latlong);
+    _AddToken(cls, "length", UsdLuxTokens->length);
+    _AddToken(cls, "lightLink", UsdLuxTokens->lightLink);
     _AddToken(cls, "lightList", UsdLuxTokens->lightList);
     _AddToken(cls, "lightListCacheBehavior", UsdLuxTokens->lightListCacheBehavior);
     _AddToken(cls, "mirroredBall", UsdLuxTokens->mirroredBall);
@@ -94,6 +100,7 @@ void wrapUsdLuxTokens()
     _AddToken(cls, "shadowFalloff", UsdLuxTokens->shadowFalloff);
     _AddToken(cls, "shadowFalloffGamma", UsdLuxTokens->shadowFalloffGamma);
     _AddToken(cls, "shadowInclude", UsdLuxTokens->shadowInclude);
+    _AddToken(cls, "shadowLink", UsdLuxTokens->shadowLink);
     _AddToken(cls, "shapingConeAngle", UsdLuxTokens->shapingConeAngle);
     _AddToken(cls, "shapingConeSoftness", UsdLuxTokens->shapingConeSoftness);
     _AddToken(cls, "shapingFocus", UsdLuxTokens->shapingFocus);
@@ -103,5 +110,7 @@ void wrapUsdLuxTokens()
     _AddToken(cls, "specular", UsdLuxTokens->specular);
     _AddToken(cls, "textureFile", UsdLuxTokens->textureFile);
     _AddToken(cls, "textureFormat", UsdLuxTokens->textureFormat);
+    _AddToken(cls, "treatAsLine", UsdLuxTokens->treatAsLine);
+    _AddToken(cls, "treatAsPoint", UsdLuxTokens->treatAsPoint);
     _AddToken(cls, "width", UsdLuxTokens->width);
 }

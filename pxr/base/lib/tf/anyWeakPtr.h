@@ -40,7 +40,6 @@
 #include <boost/python/object.hpp>
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
-#include <boost/type_traits/is_polymorphic.hpp>
 #include <boost/operators.hpp>
 
 #include <cstddef>
@@ -105,7 +104,7 @@ public:
     /// which has expired.
     TF_API bool IsInvalid() const;
 
-    /// Return the unique identifier of the WeakPtr this AnyWeakPtr conrtains
+    /// Return the unique identifier of the WeakPtr this AnyWeakPtr contains
     TF_API void const *GetUniqueIdentifier() const;
 
     /// Return the TfWeakBase object of the WeakPtr we are holding
@@ -291,7 +290,7 @@ template <class Ptr>
 bool
 TfAnyWeakPtr::_PointerHolder<Ptr>::_IsPolymorphic() const
 {
-    return boost::is_polymorphic<typename Ptr::DataType>::value;
+    return std::is_polymorphic<typename Ptr::DataType>::value;
 }
 
 template <class Ptr>

@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
+#include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/glf/baseTextureData.h"
 
 #include <boost/shared_ptr.hpp>
@@ -124,8 +125,10 @@ public:
     virtual unsigned char * GetRawBuffer(int mipLevel = 0) const;
 
     GLF_API
-    virtual bool Read(int degradeLevel, bool generateMipmap);
-
+    virtual bool Read(int degradeLevel, bool generateMipmap,
+                      GlfImage::ImageOriginLocation originLocation =
+                                         GlfImage::OriginUpperLeft);
+    
     GLF_API
     virtual int GetNumMipLevels() const;
 

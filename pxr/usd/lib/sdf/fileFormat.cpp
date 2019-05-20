@@ -26,13 +26,13 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/fileFormat.h"
-#include "pxr/usd/sdf/layerBase.h"
+#include "pxr/usd/sdf/assetPathResolver.h"
 #include "pxr/usd/sdf/data.h"
-#include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/fileFormatRegistry.h"
+#include "pxr/usd/sdf/layer.h"
 
 #include "pxr/usd/ar/resolver.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -112,7 +112,7 @@ SdfFileFormat::InitData(const FileFormatArguments& args) const
     return TfCreateRefPtr(metadata);
 }
 
-SdfLayerBaseRefPtr
+SdfLayerRefPtr
 SdfFileFormat::NewLayer(const SdfFileFormatConstPtr &fileFormat,
                         const std::string &identifier,
                         const std::string &realPath,
@@ -131,7 +131,7 @@ SdfFileFormat::ShouldSkipAnonymousReload() const
 }
 
 bool 
-SdfFileFormat::IsStreamingLayer(const SdfLayerBase& layer) const
+SdfFileFormat::IsStreamingLayer(const SdfLayer& layer) const
 {
     if (layer.GetFileFormat()->GetFormatId() != GetFormatId()) {
         TF_CODING_ERROR(
@@ -201,9 +201,22 @@ SdfFileFormat::IsSupportedExtension(
         false : std::count(_extensions.begin(), _extensions.end(), ext);
 }
 
+bool 
+SdfFileFormat::IsPackage() const
+{
+    return false;
+}
+
+std::string 
+SdfFileFormat::GetPackageRootLayerPath(
+    const std::string& resolvedPath) const
+{
+    return std::string();
+}
+
 bool
 SdfFileFormat::WriteToFile(
-    const SdfLayerBase*,
+    const SdfLayer&,
     const std::string&,
     const std::string&,
     const FileFormatArguments&) const
@@ -213,7 +226,7 @@ SdfFileFormat::WriteToFile(
 
 bool 
 SdfFileFormat::ReadFromString(
-    const SdfLayerBasePtr& layerBase,
+    SdfLayer* layer,
     const std::string& str) const
 {
     return false;
@@ -230,13 +243,14 @@ SdfFileFormat::WriteToStream(
 
 bool 
 SdfFileFormat::WriteToString(
-    const SdfLayerBase* layerBase,
+    const SdfLayer& layer,
     std::string* str,
     const std::string& comment) const
 {
     return false;
 }
 
+/* static */
 std::string
 SdfFileFormat::GetFileExtension(
     const std::string& s)
@@ -245,18 +259,25 @@ SdfFileFormat::GetFileExtension(
         return s;
     }
 
-    // XXX: if it is a dot file (e.g. .menva) we append a temp
+    // XXX: if it is a dot file (e.g. .sdf) we append a temp
     // name to retain behavior of specifier stripping.
     // this is in place for backwards compatibility
     std::string strippedExtension = (s[0] == '.' ? 
         "temp_file_name" + s : s);
 
-    std::string extension 
-        = ArGetResolver().GetExtension(strippedExtension);
+    std::string extension = Sdf_GetExtension(strippedExtension);
        
     return extension.empty() ? s : extension;
 }
 
+/* static */
+std::set<std::string>
+SdfFileFormat::FindAllFileFormatExtensions()
+{
+    return _FileFormatRegistry->FindAllFileFormatExtensions();
+}
+
+/* static */
 SdfFileFormatConstPtr
 SdfFileFormat::FindById(
     const TfToken& formatId)
@@ -264,6 +285,7 @@ SdfFileFormat::FindById(
     return _FileFormatRegistry->FindById(formatId);
 }
 
+/* static */
 SdfFileFormatConstPtr
 SdfFileFormat::FindByExtension(
     const std::string& extension,
@@ -284,47 +306,10 @@ SdfFileFormat::_LayersAreFileBased() const
     return true;
 }
 
-// Helper to issue an error in case the method template NewLayer fails.
-void
-SdfFileFormat::_IssueNewLayerFailError(SdfLayerBaseRefPtr const &l,
-                                       std::type_info const &type,
-                                       std::string const &identifier,
-                                       std::string const &realPath) const
-{
-    TF_CODING_ERROR("NewLayer: expected %s to create a %s, got %s%s instead "
-                    "(identifier: %s, realPath: %s)\n",
-                    ArchGetDemangled(typeid(*this)).c_str(),
-                    ArchGetDemangled(type).c_str(),
-                    l ? "a " : "",
-                    l ? ArchGetDemangled(TfTypeid(l)).c_str() : "NULL",
-                    identifier.c_str(),
-                    realPath.c_str());
-}
-
-void
-SdfFileFormat::_SwapLayerData(
-    const SdfLayerHandle& layer,
-    SdfAbstractDataRefPtr& data)
-{
-    layer->_SwapData(data);
-}
-
 void
 SdfFileFormat::_SetLayerData(
-    const SdfLayerHandle& layer,
-    const SdfAbstractDataPtr& data)
-{
-    layer->_SetData(data);
-}
-
-SdfAbstractDataConstPtr
-SdfFileFormat::_GetLayerData(const SdfLayerHandle& layer)
-{
-    return layer->_GetData();
-}
-
-bool
-SdfFileFormat::_LayerIsLoadingAsNew(const SdfLayerHandle& layer)
+    SdfLayer* layer,
+    SdfAbstractDataRefPtr& data)
 {
     // If layer initialization has not completed, then this
     // is being loaded as a new layer; otherwise we are loading
@@ -333,11 +318,23 @@ SdfFileFormat::_LayerIsLoadingAsNew(const SdfLayerHandle& layer)
     // Note that this is an optional::bool and we are checking if it has
     // been set, not what its held value is.
     //
-    return !layer->_initializationWasSuccessful;
+    const bool layerIsLoadingAsNew = !layer->_initializationWasSuccessful;
+    if (layerIsLoadingAsNew) {
+        layer->_SwapData(data);
+    }
+    else {
+        layer->_SetData(data);
+    }
+}
+
+SdfAbstractDataConstPtr
+SdfFileFormat::_GetLayerData(const SdfLayer& layer)
+{
+    return layer._GetData();
 }
 
 /* virtual */
-SdfLayerBase*
+SdfLayer*
 SdfFileFormat::_InstantiateNewLayer(
     const SdfFileFormatConstPtr &fileFormat,
     const std::string &identifier,

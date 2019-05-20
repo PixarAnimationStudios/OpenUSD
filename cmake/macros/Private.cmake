@@ -46,18 +46,16 @@ function(_copy_headers LIBRARY_NAME)
         foreach (f ${_args_FILES})
             set(infile "${CMAKE_CURRENT_SOURCE_DIR}/${f}")
             set(outfile "${header_dest_dir}/${f}")
-            list(APPEND files_copied ${outfile})
+            get_filename_component(dir_to_create "${outfile}" PATH)
             add_custom_command(
                 OUTPUT ${outfile}
-                COMMAND
-                    "${PYTHON_EXECUTABLE}"
-                    "${PROJECT_SOURCE_DIR}/cmake/macros/copyHeaderForBuild.py"
-                    "${infile}"
-                    "${outfile}"
+                COMMAND ${CMAKE_COMMAND} -E make_directory "${dir_to_create}"
+                COMMAND ${CMAKE_COMMAND} -Dinfile="${infile}" -Doutfile="${outfile}" -P "${PROJECT_SOURCE_DIR}/cmake/macros/copyHeaderForBuild.cmake"
                 MAIN_DEPENDENCY "${infile}"
                 COMMENT "Copying ${f} ..."
                 VERBATIM
-        )
+            )
+            list(APPEND files_copied ${outfile})
         endforeach()
     endif()
 
@@ -106,7 +104,7 @@ endfunction() # _plugInfo_subst
 function(_pxrDoxyConfig_subst)
     configure_file(${CMAKE_SOURCE_DIR}/pxr/usd/lib/usd/Doxyfile.in
                    ${CMAKE_BINARY_DIR}/Doxyfile
-    )  
+    )
 endfunction()
 
 # Install compiled python files alongside the python object,
@@ -128,7 +126,7 @@ function(_install_python LIBRARY_NAME)
     set(files_copied "")
     foreach(file ${ip_FILES})
         set(filesToInstall "")
-        set(installDest 
+        set(installDest
             "${libPythonPrefix}/pxr/${LIBRARY_INSTALLNAME}")
 
         # Only attempt to compile .py files. Files like plugInfo.json may also
@@ -165,7 +163,7 @@ function(_install_python LIBRARY_NAME)
             message(FATAL_ERROR "Cannot have non-Python file ${file} in PYTHON_FILES.")
         endif()
 
-        # Note that we always install under lib/python/pxr, even if we are in 
+        # Note that we always install under lib/python/pxr, even if we are in
         # the third_party project. This means the import will always look like
         # 'from pxr import X'. We need to do this per-loop iteration because
         # the installDest may be different due to the presence of subdirs.
@@ -192,7 +190,7 @@ endfunction() #_install_python
 
 function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
     # Resource files install into a structure that looks like:
-    # share/
+    # lib/
     #     usd/
     #         ${NAME}/
     #             resources/
@@ -205,7 +203,7 @@ function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
     _get_resources_dir(${pluginInstallPrefix} ${NAME} resourcesPath)
 
     foreach(resourceFile ${ARGN})
-        # A resource file may be specified like <src file>:<dst file> to 
+        # A resource file may be specified like <src file>:<dst file> to
         # indicate that it should be installed to a different location in
         # the resources area. Check if this is the case.
         string(REPLACE ":" ";" resourceFile "${resourceFile}")
@@ -220,17 +218,17 @@ function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
                "Failed to parse resource path ${resourceFile}")
         endif()
 
+        get_filename_component(dirPath ${resourceDestFile} PATH)
+        get_filename_component(destFileName ${resourceDestFile} NAME)
+
         # plugInfo.json go through an initial template substitution step files
         # install it from the binary (gen) directory specified by the full
         # path. Otherwise, use the original relative path which is relative to
         # the source directory.
-        if (${resourceFile} STREQUAL "plugInfo.json")
+        if (${destFileName} STREQUAL "plugInfo.json")
             _plugInfo_subst(${NAME} "${pluginToLibraryPath}" ${resourceFile})
             set(resourceFile "${CMAKE_CURRENT_BINARY_DIR}/${resourceFile}")
         endif()
-
-        get_filename_component(dirPath ${resourceDestFile} PATH)
-        get_filename_component(destFileName ${resourceDestFile} NAME)
 
         install(
             FILES ${resourceFile}
@@ -320,22 +318,15 @@ function(_get_install_dir path out)
 endfunction() # get_install_dir
 
 function(_get_resources_dir_name output)
-    set(${output} 
-        resources 
+    set(${output}
+        resources
         PARENT_SCOPE)
 endfunction() # _get_resources_dir_name
 
-function(_get_plugin_root pluginsPrefix pluginName output)
-    set(${output} 
-        ${pluginsPrefix}/${pluginName}
-        PARENT_SCOPE)
-endfunction() # _get_plugin_root
-
 function(_get_resources_dir pluginsPrefix pluginName output)
     _get_resources_dir_name(resourcesDir)
-    _get_plugin_root(${pluginsPrefix} ${pluginName} pluginRoot)
-    set(${output} 
-        ${pluginRoot}/${resourcesDir} 
+    set(${output}
+        ${pluginsPrefix}/${pluginName}/${resourcesDir}
         PARENT_SCOPE)
 endfunction() # _get_resources_dir
 
@@ -650,7 +641,7 @@ function(_pxr_install_rpath rpathRef NAME)
     endforeach()
 
     set_target_properties(${NAME}
-        PROPERTIES 
+        PROPERTIES
             INSTALL_RPATH_USE_LINK_PATH TRUE
             INSTALL_RPATH "${final}"
     )
@@ -920,7 +911,7 @@ function(_pxr_python_module NAME)
     # Install .ui files.
     if (args_PYSIDE_UI_FILES)
         _install_pyside_ui_files(${LIBRARY_NAME} ${args_PYSIDE_UI_FILES})
-    endif()        
+    endif()
 
     # If no C++ files then we're done.
     if (NOT args_CPPFILES)
@@ -942,7 +933,7 @@ function(_pxr_python_module NAME)
 
     # Convert the name of the library into the python module name
     # , e.g. _tf.so -> Tf. This is later used to determine the eventual
-    # install location as well as for inclusion into the __init__.py's 
+    # install location as well as for inclusion into the __init__.py's
     # __all__ list.
     _get_python_module_name(${LIBRARY_NAME} pyModuleName)
 
@@ -952,7 +943,7 @@ function(_pxr_python_module NAME)
     )
 
     # Always install under the 'pxr' module, rather than base on the
-    # project name. This makes importing consistent, e.g. 
+    # project name. This makes importing consistent, e.g.
     # 'from pxr import X'. Additionally, python libraries always install
     # into the default lib install, not into the third_party subdirectory
     # or similar.
@@ -1022,11 +1013,8 @@ function(_pxr_python_module NAME)
             ${SUBDIR_INC_DIR}
     )
 
-    # Include system headers before our own.  We define several headers
-    # that conflict; for example, half.h in EXR versus gf
     if (args_INCLUDE_DIRS)
         target_include_directories(${LIBRARY_NAME}
-            BEFORE
             PUBLIC
                 ${args_INCLUDE_DIRS}
         )
@@ -1037,7 +1025,7 @@ function(_pxr_python_module NAME)
         LIBRARY DESTINATION ${libInstallPrefix}
         RUNTIME DESTINATION ${libInstallPrefix}
     )
-    
+
     if(NOT "${PXR_PREFIX}" STREQUAL "")
         if(args_PRECOMPILED_HEADERS)
             _pxr_enable_precompiled_header(${LIBRARY_NAME}
@@ -1162,7 +1150,7 @@ function(_pxr_library NAME)
             set(libInstallPrefix "${pluginInstallPrefix}")
         endif()
     else()
-        _get_install_dir("share/usd/plugins" pluginInstallPrefix)
+        _get_install_dir("lib/usd" pluginInstallPrefix)
     endif()
     if(args_SUBDIR)
         set(libInstallPrefix "${libInstallPrefix}/${args_SUBDIR}")
@@ -1198,38 +1186,17 @@ function(_pxr_library NAME)
     # where we can find external resources for the library) to the
     # library's location.  This can be embedded into resource files.
     #
-    # If we're building a monolithic shared library or one was supplied
-    # to us then we need to use that if we're building a library that
-    # will be/is in the monolithic library.
+    # If we're building a monolithic library or individual static libraries,
+    # these libraries are not separately loadable at runtime. In these cases,
+    # we don't need to specify the library's location, so we leave
+    # pluginToLibraryPath empty.
     if(";${PXR_CORE_LIBS};" MATCHES ";${NAME};")
-        if (PXR_MONOLITHIC_IMPORT)
-            if(TARGET usd_ms)
-                # The monolithic shared library was supplied.
-                get_property(location TARGET usd_ms PROPERTY IMPORTED_LOCATION)
-                if (IS_ABSOLUTE "${location}")
-                    set(pluginToLibraryPath ${location})
-                else()
-                    set(libraryFilename "${location}")
-                endif()
-            endif()
-        elseif(TARGET usd_ms)
-            # We're building usd_ms ourself.
-            get_property(prefix TARGET usd_ms PROPERTY PREFIX)
-            if(NOT prefix)
-                set(prefix ${CMAKE_SHARED_LIBRARY_PREFIX})
-            endif()
-            get_property(suffix TARGET usd_ms PROPERTY SUFFIX)
-            if(NOT suffix)
-                set(suffix ${CMAKE_SHARED_LIBRARY_SUFFIX})
-            endif()
-            set(libraryFilename "${prefix}usd_ms${suffix}")
+        if (NOT _building_monolithic AND NOT args_TYPE STREQUAL "STATIC")
+            file(RELATIVE_PATH
+                pluginToLibraryPath
+                ${CMAKE_INSTALL_PREFIX}/${pluginInstallPrefix}/${NAME}
+                ${CMAKE_INSTALL_PREFIX}/${libInstallPrefix}/${libraryFilename})
         endif()
-    endif()
-    if(NOT pluginToLibraryPath)
-        file(RELATIVE_PATH
-            pluginToLibraryPath
-            ${CMAKE_INSTALL_PREFIX}/${pluginInstallPrefix}/${NAME}
-            ${CMAKE_INSTALL_PREFIX}/${libInstallPrefix}/${libraryFilename})
     endif()
 
     #
@@ -1264,7 +1231,7 @@ function(_pxr_library NAME)
             MFB_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_PACKAGE_MODULE=${pythonModuleName}
-            PXR_BUILD_LOCATION=../share/usd/plugins
+            PXR_BUILD_LOCATION=usd
             PXR_PLUGIN_BUILD_LOCATION=../plugin/usd
             ${pxrInstallLocation}
             ${pythonModulesEnabled}
@@ -1312,7 +1279,7 @@ function(_pxr_library NAME)
             )
         endif()
     else()
-        if(BUILD_SHARED_LIBS AND NOT PXR_BUILD_MONOLITHIC)
+        if(BUILD_SHARED_LIBS)
             install(
                 TARGETS ${NAME}
                 EXPORT pxrTargets
@@ -1321,21 +1288,32 @@ function(_pxr_library NAME)
                 RUNTIME DESTINATION ${libInstallPrefix}
                 PUBLIC_HEADER DESTINATION ${headerInstallPrefix}
             )
-
-            export(TARGETS ${NAME}
-                APPEND
-                FILE "${PROJECT_BINARY_DIR}/pxrTargets.cmake"
-            )
+            if(WIN32)
+                install(
+                    FILES $<TARGET_PDB_FILE:${NAME}>
+                    EXPORT pxrTargets
+                    DESTINATION ${libInstallPrefix}
+                    OPTIONAL
+                )
+            endif()
         else()
             install(
                 TARGETS ${NAME}
+                EXPORT pxrTargets
                 LIBRARY DESTINATION ${libInstallPrefix}
                 ARCHIVE DESTINATION ${libInstallPrefix}
                 RUNTIME DESTINATION ${libInstallPrefix}
                 PUBLIC_HEADER DESTINATION ${headerInstallPrefix}
             )
         endif()
+
+        export(TARGETS ${NAME}
+            APPEND
+            FILE "${PROJECT_BINARY_DIR}/pxrTargets.cmake"
+        )
+
     endif()
+
     _install_resource_files(
         ${NAME}
         "${pluginInstallPrefix}"

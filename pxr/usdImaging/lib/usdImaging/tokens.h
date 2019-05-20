@@ -35,17 +35,28 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((infoSource, "info:source")) \
     (faceIndexPrimvar)      \
     (faceOffsetPrimvar)     \
+    ((primvarsNormals, "primvars:normals")) \
+    ((primvarsWidths,  "primvars:widths")) \
     (ptexFaceIndex)         \
     (ptexFaceOffset)        \
     (usdPopulatedPrimCount) \
     (usdVaryingExtent)      \
-    (usdVaryingPrimVar)     \
+    (usdVaryingPrimvar)     \
     (usdVaryingTopology)    \
     (usdVaryingVisibility)  \
     (usdVaryingWidths)      \
     (usdVaryingNormals)     \
     (usdVaryingXform)       \
-    (uvPrimvar)
+    (usdVaryingTexture)     \
+    (bxdf)                  \
+    (displacement)          \
+    (uvPrimvar)             \
+    (UsdPreviewSurface)     \
+    (UsdUVTexture)          \
+    (UsdPrimvarReader_float)\
+    (UsdPrimvarReader_float2)\
+    (UsdPrimvarReader_float3)\
+    (UsdPrimvarReader_float4)
 
 TF_DECLARE_PUBLIC_TOKENS(UsdImagingTokens, USDIMAGING_API, USDIMAGING_TOKENS);
 

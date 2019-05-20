@@ -1,3 +1,4 @@
+
 //
 // Copyright 2016 Pixar
 //
@@ -31,7 +32,6 @@
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferResource.h"
 #include "pxr/imaging/hd/meshUtil.h"
-#include "pxr/imaging/hd/patchIndex.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -165,6 +165,11 @@ private:
 };
 
 class HdSt_Osd3IndexComputation : public HdSt_OsdIndexComputation {
+    struct PtexFaceInfo {
+        int coarseFaceId;
+        GfVec4i coarseEdgeIds;
+    };
+
 public:
     HdSt_Osd3IndexComputation(HdSt_Osd3Subdivision *subdivision,
                             HdSt_MeshTopology *topology,
@@ -177,8 +182,8 @@ private:
         OpenSubdiv::Far::PatchTable const *patchTable);
     void _PopulateBSplinePrimitiveBuffer(
         OpenSubdiv::Far::PatchTable const *patchTable);
-    void _CreatePtexIndexToCoarseFaceIndexMapping(
-        std::vector<int> *result);
+    void _CreatePtexFaceToCoarseFaceInfoMapping(
+        std::vector<PtexFaceInfo> *result);
 
     HdSt_Osd3Subdivision *_subdivision;
 };
@@ -267,24 +272,24 @@ HdSt_Osd3Subdivision::RefineCPU(HdBufferSourceSharedPtr const &source,
     OpenSubdiv::Osd::CpuVertexBuffer *osdVertexBuffer =
         static_cast<OpenSubdiv::Osd::CpuVertexBuffer*>(vertexBuffer);
 
-    int numElements = source->GetNumElements();
+    size_t numElements = source->GetNumElements();
 
     // Stride is measured here in components, not bytes.
-    int stride = HdGetComponentCount(source->GetTupleType().type);
+    size_t stride = HdGetComponentCount(source->GetTupleType().type);
 
     // NOTE: in osd, GetNumElements() returns how many fields in a vertex
     //          (i.e.  3 for XYZ, and 4 for RGBA)
     //       in hydra, GetNumElements() returns how many vertices
     //       (or faces, etc) in a buffer. We basically follow the hydra
     //       convention in this file.
-    TF_VERIFY(stride == osdVertexBuffer->GetNumElements(),
-              "%i vs %i", stride, osdVertexBuffer->GetNumElements());
+    TF_VERIFY(stride == (size_t)osdVertexBuffer->GetNumElements(),
+              "%zu vs %i", stride, osdVertexBuffer->GetNumElements());
 
     // if the mesh has more vertices than that in use in topology (faceIndices),
     // we need to trim the buffer so that they won't overrun the coarse
     // vertex buffer which we allocated using the stencil table.
     // see HdSt_Osd3Subdivision::GetNumVertices()
-    if (numElements > stencilTable->GetNumControlVertices()) {
+    if (numElements > (size_t)stencilTable->GetNumControlVertices()) {
         numElements = stencilTable->GetNumControlVertices();
     }
 
@@ -298,7 +303,8 @@ HdSt_Osd3Subdivision::RefineCPU(HdBufferSourceSharedPtr const &source,
 
     // apply opensubdiv with CPU evaluator.
     OpenSubdiv::Osd::BufferDescriptor srcDesc(0, stride, stride);
-    OpenSubdiv::Osd::BufferDescriptor dstDesc(numElements*stride, stride, stride);
+    OpenSubdiv::Osd::BufferDescriptor dstDesc(numElements*stride, 
+        stride, stride);
 
     OpenSubdiv::Osd::CpuEvaluator::EvalStencils(
         osdVertexBuffer, srcDesc,
@@ -325,7 +331,7 @@ HdSt_Osd3Subdivision::RefineGPU(HdBufferArrayRangeSharedPtr const &range,
 
     // vertex buffer is not interleaved, but aggregated.
     // we need an offset to locate the current range.
-    int stride = vertexBuffer.GetNumElements();
+    size_t stride = vertexBuffer.GetNumElements();
     int numCoarseVertices = _vertexStencils->GetNumControlVertices();
 
     OpenSubdiv::Osd::BufferDescriptor srcDesc(
@@ -614,8 +620,8 @@ HdSt_Osd3IndexComputation::Resolve()
 }
 
 void
-HdSt_Osd3IndexComputation::_CreatePtexIndexToCoarseFaceIndexMapping(
-    std::vector<int> *result)
+HdSt_Osd3IndexComputation::_CreatePtexFaceToCoarseFaceInfoMapping(
+    std::vector<HdSt_Osd3IndexComputation::PtexFaceInfo> *result)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -624,27 +630,63 @@ HdSt_Osd3IndexComputation::_CreatePtexIndexToCoarseFaceIndexMapping(
 
     int const * numVertsPtr = _topology->GetFaceVertexCounts().cdata();
     int numAuthoredFaces    = _topology->GetFaceVertexCounts().size();
+    int const * vertsPtr    = _topology->GetFaceVertexIndices().cdata();
+    int numVertIndices      = _topology->GetFaceVertexIndices().size();
     result->clear();
     result->reserve(numAuthoredFaces); // first guess at possible size
+
+    // enumerate edges of the coarse topology to help compute the ptexFace's
+    // coarse edge id's
+    HdMeshUtil::EdgeMap authoredEdgeMap =
+        HdMeshUtil::ComputeAuthoredEdgeMap(_topology);
 
     int regFaceSize = 4;
     if (HdSt_Subdivision::RefinesToTriangles( _topology->GetScheme() )) {
         regFaceSize = 3;
     }
 
-    for (int faceId = 0; faceId < numAuthoredFaces; ++faceId) {
+    // XXX: see comment below regarding flip
+    // bool flip = (_topology->GetOrientation() != HdTokens->rightHanded);
+    
+    for (int faceId = 0, v = 0; faceId < numAuthoredFaces; ++faceId) {
         int nv = numVertsPtr[faceId];
-        if (nv < 3) continue; // skip degenerate faces
 
         // hole faces shouldn't affect ptex id, i.e., ptex face id's are
         // assigned for hole faces.
         // note: this is inconsistent with quadrangulation 
         // (HdMeshUtil::ComputeQuadIndices), but consistent with OpenSubdiv 3.x
         // (see ptexIndices.cpp)
-        
+
+        if (v+nv > numVertIndices) break;
+
         if (nv == regFaceSize) {
             // regular face => 1:1 mapping to a ptex face
-            result->push_back(faceId);
+            PtexFaceInfo info;
+            info.coarseFaceId = faceId;
+
+            GfVec4i coarseEdgeIds(-1,-1,-1,-1);
+
+            // all edges of the regular face must exist in the authored edge map
+            for(int e = 0; e < nv; ++e) {
+                // XXX: don't we need to flip a face's vertex indices, like
+                // we do in HdMeshUtil::Compute{Triangle,Quad}Indices?
+                GfVec2i edge(vertsPtr[v + e], vertsPtr[v + (e+1)%nv]);
+                auto it = authoredEdgeMap.find(edge);
+                TF_VERIFY(it != authoredEdgeMap.end());
+                coarseEdgeIds[e] = it->second;
+            }
+
+            info.coarseEdgeIds = coarseEdgeIds;
+            result->push_back(info);
+        } else if (nv <= 2) {
+            // Handling degenerated faces
+            int numPtexFaces = (regFaceSize == 4)? nv : nv - 2;
+            for (int f = 0; f < numPtexFaces; ++f) {
+                PtexFaceInfo info;
+                info.coarseFaceId = faceId;
+                info.coarseEdgeIds = GfVec4i(-1,-1,-1,-1);
+                result->push_back(info);
+            }
         } else {
             // if we expect quad faces, non-quad n-gons are quadrangulated into
             // n-quads
@@ -653,9 +695,37 @@ HdSt_Osd3IndexComputation::_CreatePtexIndexToCoarseFaceIndexMapping(
             // using loop (see pxOsd/refinerFactory.cpp)
             int numPtexFaces = (regFaceSize == 4)? nv : nv - 2;
             for (int f = 0; f < numPtexFaces; ++f) {
-                result->push_back(faceId);
+                PtexFaceInfo info;
+                info.coarseFaceId = faceId;
+
+                GfVec4i coarseEdgeIds(-1,-1,-1,-1);
+
+                if (regFaceSize == 4) { // quadrangulation
+                    // only the first (index 0) and last (index 3) edges of the
+                    // quad are from the authored edges; the other 2 are the 
+                    // result of quadrangulation.
+                    GfVec2i e0 = GfVec2i(vertsPtr[v + f], 
+                                         vertsPtr[v + (f+1)%nv]);
+                    GfVec2i e3 = GfVec2i(vertsPtr[v + (f+nv-1)%nv],
+                                         vertsPtr[v + f]);
+                    auto it = authoredEdgeMap.find(e0);
+                    TF_VERIFY(it != authoredEdgeMap.end());
+                    coarseEdgeIds[0] = it->second;
+
+                    it = authoredEdgeMap.find(e3);
+                    TF_VERIFY(it != authoredEdgeMap.end());
+                    coarseEdgeIds[3] = it->second;
+
+                } else { // triangular ptex
+                    // XXX: Add support
+                }
+
+                info.coarseEdgeIds = coarseEdgeIds;
+                result->push_back(info);
             }
-        }
+        } // irregular face
+
+        v += nv;
     }
 
     result->shrink_to_fit();
@@ -671,33 +741,43 @@ HdSt_Osd3IndexComputation::_PopulateUniformPrimitiveBuffer(
     // primitiveParam from patchtable contains a map of
     // gl_PrimitiveID to PtexIndex. It should be reinterpreted
     // to face index if necessary.
-    std::vector<int> ptexIndexToFaceIndexMapping;
-    _CreatePtexIndexToCoarseFaceIndexMapping(&ptexIndexToFaceIndexMapping);
+    std::vector<PtexFaceInfo> ptexIndexToCoarseFaceInfoMapping;
+    _CreatePtexFaceToCoarseFaceInfoMapping(&ptexIndexToCoarseFaceInfoMapping);
 
     // store faceIndex, ptexIndex and edgeFlag(=0)
     size_t numPatches = patchTable
         ? patchTable->GetPatchParamTable().size()
         : 0;
     VtVec3iArray primitiveParam(numPatches);
+    VtVec4iArray edgeIndices(numPatches);
 
     // ivec3
     for (size_t i = 0; i < numPatches; ++i) {
         OpenSubdiv::Far::PatchParam const &patchParam =
             patchTable->GetPatchParamTable()[i];
-
+        
         int ptexIndex = patchParam.GetFaceId();
-        int faceIndex = ptexIndexToFaceIndexMapping[ptexIndex];
+        PtexFaceInfo const& info = ptexIndexToCoarseFaceInfoMapping[ptexIndex];
+        int faceIndex = info.coarseFaceId;
+
         unsigned int field0 = patchParam.field0;
         unsigned int field1 = patchParam.field1;
         primitiveParam[i][0] =
             HdMeshUtil::EncodeCoarseFaceParam(faceIndex, 0);
         primitiveParam[i][1] = *((int*)&field0);
         primitiveParam[i][2] = *((int*)&field1);
+
+        edgeIndices[i] = info.coarseEdgeIds;
     }
 
     _primitiveBuffer.reset(new HdVtBufferSource(
                                HdTokens->primitiveParam,
                                VtValue(primitiveParam)));
+
+    _edgeIndicesBuffer.reset(new HdVtBufferSource(
+                           HdTokens->edgeIndices,
+                           VtValue(edgeIndices)));
+
 }
 
 void
@@ -707,14 +787,15 @@ HdSt_Osd3IndexComputation::_PopulateBSplinePrimitiveBuffer(
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    std::vector<int> ptexIndexToFaceIndexMapping;
-    _CreatePtexIndexToCoarseFaceIndexMapping(&ptexIndexToFaceIndexMapping);
+    std::vector<PtexFaceInfo> ptexIndexToCoarseFaceInfoMapping;
+    _CreatePtexFaceToCoarseFaceInfoMapping(&ptexIndexToCoarseFaceInfoMapping);
 
     // BSPLINES
     size_t numPatches = patchTable
         ? patchTable->GetPatchParamTable().size()
         : 0;
     VtVec4iArray primitiveParam(numPatches);
+    VtVec4iArray edgeIndices(numPatches);
 
     // ivec4
     for (size_t i = 0; i < numPatches; ++i) {
@@ -730,7 +811,8 @@ HdSt_Osd3IndexComputation::_PopulateBSplinePrimitiveBuffer(
         }
 
         int ptexIndex = patchParam.GetFaceId();
-        int faceIndex = ptexIndexToFaceIndexMapping[ptexIndex];
+        PtexFaceInfo const& info = ptexIndexToCoarseFaceInfoMapping[ptexIndex];
+        int faceIndex = info.coarseFaceId;
         unsigned int field0 = patchParam.field0;
         unsigned int field1 = patchParam.field1;
         primitiveParam[i][0] =
@@ -740,10 +822,16 @@ HdSt_Osd3IndexComputation::_PopulateBSplinePrimitiveBuffer(
 
         int sharpnessAsInt = static_cast<int>(sharpness);
         primitiveParam[i][3] = sharpnessAsInt;
+
+        edgeIndices[i] = info.coarseEdgeIds;
     }
     _primitiveBuffer.reset(new HdVtBufferSource(
                                HdTokens->primitiveParam,
                                VtValue(primitiveParam)));
+
+    _edgeIndicesBuffer.reset(new HdVtBufferSource(
+                           HdTokens->edgeIndices,
+                           VtValue(edgeIndices)));
 }
 
 // ---------------------------------------------------------------------------

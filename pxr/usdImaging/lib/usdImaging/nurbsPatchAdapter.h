@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_NURBS_PATCH_ADAPTER_H
 #define USDIMAGING_NURBS_PATCH_ADAPTER_H
 
+/// \file usdImaging/nurbsPatchAdapter.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
@@ -64,7 +66,7 @@ public:
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
-                                      instancerContext = NULL);
+                                      instancerContext = NULL) const;
     /// Thread Safe.
     USDIMAGING_API
     virtual void UpdateForTime(UsdPrim const& prim,
@@ -72,7 +74,14 @@ public:
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext = NULL);
+                                   instancerContext = NULL) const;
+
+    // Override the implemetation in GprimAdapter since we don't fetch the
+    // points attribute for implicit primitives.
+    USDIMAGING_API
+    virtual VtValue GetPoints(UsdPrim const& prim,
+                              SdfPath const& cachePath,
+                              UsdTimeCode time) const override;
 
     USDIMAGING_API
     static VtValue GetMeshPoints(UsdPrim const& prim, 

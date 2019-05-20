@@ -31,6 +31,7 @@
 
 
 #include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/inherits.h"
 
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/envSetting.h"
@@ -44,7 +45,6 @@
 #include "pxr/usd/usdGeom/curves.h"
 #include "pxr/usd/usdGeom/scope.h"
 #include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdGeom/collectionAPI.h"
 
 #include "pxr/usd/usdShade/material.h"
 
@@ -61,9 +61,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_ENV_SETTING(USD_KATANA_IMPORT_OLD_STYLE_COLLECTIONS, true, 
-        "Whether old-style collections encoded using UsdGeomCollectionAPI "
-        "must be imported by katana.");
+TF_DEFINE_ENV_SETTING(USD_KATANA_ALLOW_CUSTOM_MATERIAL_SCOPES, false,
+        "Set to true to enable custom names for the parent scope "
+        "of materials. Otherwise only scopes named Looks are allowed.");
 
 FnLogSetup("PxrUsdKatanaReadPrim");
 
@@ -145,12 +145,15 @@ _GetMaterialAssignAttr(
             // path mapping
             std::string location =
                 PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(targetPath, data);
+
+            static const bool allowCustomScopes = 
+                TfGetEnvSetting(USD_KATANA_ALLOW_CUSTOM_MATERIAL_SCOPES);
                 
             // XXX Materials containing only display terminals are causing issues
             //     with katana material manipulation workflows.
             //     For now: exclude any material assign which doesn't include
             //     /Looks/ in the path
-            if (location.find(UsdKatanaTokens->katanaLooksScopePathSubstring)
+            if (!allowCustomScopes && location.find(UsdKatanaTokens->katanaLooksScopePathSubstring)
                     == std::string::npos)
             {
                 return FnKat::Attribute();
@@ -175,8 +178,8 @@ _GatherRibAttributes(
     bool hasAttrs = false;
 
     // USD SHADING STYLE ATTRIBUTES
-    UsdRiStatementsAPI riStatements(prim);
-    if (riStatements) {
+    if (prim) {
+        UsdRiStatementsAPI riStatements(prim);
         const std::vector<UsdProperty> props = 
             riStatements.GetRiAttributes();
         std::string attrName;
@@ -191,35 +194,29 @@ _GatherRibAttributes(
             attrName = nameSpace +
                 riStatements.GetRiAttributeName(prop).GetString();
 
+            // XXX asShaderParam really means:
+            // "For arrays, as a single attr vs a type/value pair group"
+            // The type/value pair group is meaningful for attrs who don't
+            // have a formal type definition -- like a "user" RiAttribute.
+            //
+            // However, other array values (such as two-element shadingrate)
+            // are not expecting the type/value pair form and will not
+            // generate rib correctly. As such, we'll handle the "user"
+            // attribute as a special case.
+            const bool asShaderParam = (nameSpace != "user.");
+
             VtValue vtValue;
             UsdAttribute usdAttr = prim.GetAttribute(prop.GetName());
             if (usdAttr) {
                 if (!usdAttr.Get(&vtValue, currentTime)) 
                     continue;
-
-                // XXX asShaderParam really means:
-                // "For arrays, as a single attr vs a type/value pair group"
-                // The type/value pair group is meaningful for attrs who don't
-                // have a formal type definition -- like a "user" RiAttribute.
-                // 
-                // However, other array values (such as two-element shadingrate)
-                // are not expecting the type/value pair form and will not
-                // generate rib correctly. As such, we'll handle the "user"
-                // attribute as a special case.
-                bool asShaderParam = true;
-                
-                if (nameSpace == "user.")
-                {
-                    asShaderParam = false;
-                }
-
                 attrsBuilder.set(attrName, PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue,
                     asShaderParam) );
             }
             else {
                 UsdRelationship usdRel = prim.GetRelationship(prop.GetName());
                 attrsBuilder.set(attrName, PxrUsdKatanaUtils::ConvertRelTargetsToKatAttr(usdRel,
-                    /* asShaderParam */ false) );
+                    asShaderParam) );
             }
             hasAttrs = true;
         }
@@ -277,7 +274,7 @@ PxrUsdKatanaReadPrimPrmanStatements(
     }
 
     // XXX:
-    // Should we have subclasses (e.g., PxrUsdKatanaUtils::HairmanContext), add to or modify
+    // Should we have subclasses add to or modify
     // this builder instead of setting attributes.NAMESPACE.ATTRNAME for each
     // new attr?  Are there performance implications?
     FnKat::GroupAttribute attributesGroup = attrsBuilder.build();
@@ -448,7 +445,7 @@ _BuildCollections(
             incExcStr << "((";
             for (const SdfPath &p : includes) {
                 TfToken collectionName;
-                if (UsdCollectionAPI::IsCollectionPath(p, &collectionName)) {
+                if (UsdCollectionAPI::IsCollectionAPIPath(p, &collectionName)) {
                     SdfPath collPrimPath= p.GetPrimPath();
                     std::string katCollStr = _GetKatanaCollectionPath(collPrimPath, 
                         collectionName, prim, collection.GetName(), data);
@@ -516,55 +513,7 @@ _BuildCollections(
         }
     }
 
-
-    // Import old-style collections
-    if (!TfGetEnvSetting(USD_KATANA_IMPORT_OLD_STYLE_COLLECTIONS))
-        return collections.size() > 0;
-
-    std::vector<UsdGeomCollectionAPI> oldCollections = 
-        UsdGeomCollectionAPI::GetCollections(prim);
-    for (const auto &collection : oldCollections) {
-        TfToken name = collection.GetCollectionName();
-        // Skip if this is a property belonging to the new-style collection
-        // schema.
-        TfTokenVector nameTokens = SdfPath::TokenizeIdentifierAsTokens(name);
-        TfToken baseName = *nameTokens.rbegin();
-        if (nameTokens.size() > 2 &&
-            UsdCollectionAPI::IsSchemaPropertyBaseName(baseName)) {
-            continue; 
-        }
-
-        SdfPathVector targets;
-        FnKat::StringBuilder collectionBuilder;
-        // XXX: This code probably needs some work to be made
-        // instancing-aware.
-        collection.GetTargets(&targets);
-        for (size_t iTarget = 0; iTarget < targets.size(); ++iTarget)
-        {
-            std::string targetPath = targets[iTarget].GetString();
-            
-            if (targetPath.size() >= prefixLength)
-            {
-                std::string relativePath = targetPath.substr(prefixLength);
-                // follow katana convention for collections
-                // the "self" location relative path is "/". 
-                // Absolute paths start with "/root/"
-                // relative paths start without the "/" though.
-                if (relativePath == "")
-                    relativePath = "/";
-                collectionBuilder.push_back(relativePath);
-            }
-        }
-
-        // if empty, no point creating collection
-        FnKat::StringAttribute collectionAttr = collectionBuilder.build();
-        if (collectionAttr.getNearestSample(0).size() > 0) {
-            collectionsBuilder.set(name.GetString() + ".baked",
-                collectionAttr);
-        }
-    }
-
-    return (collections.size() + oldCollections.size()) > 0;
+    return collections.size() > 0;
 }
 
 
@@ -642,7 +591,7 @@ _AddExtraAttributesOrNamespaces(
                 }
                 
                 FnKat::Attribute attr = 
-                    PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue, true);
+                    PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue);
                 
                 if (!attr.isValid())
                 {
@@ -660,8 +609,7 @@ _AddExtraAttributesOrNamespaces(
                 UsdRelationship & usdRelationship = (*I);
                 
                 FnKat::StringAttribute attr = 
-                    PxrUsdKatanaUtils::ConvertRelTargetsToKatAttr(
-                        usdRelationship, true);
+                    PxrUsdKatanaUtils::ConvertRelTargetsToKatAttr(usdRelationship);
                 if (!attr.isValid())
                 {
                     continue;
@@ -733,7 +681,7 @@ _AddCustomProperties(
         }
         
         FnKat::Attribute attr =
-            PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue, true);
+            PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue);
 
         if (!attr.isValid())
         {
@@ -775,11 +723,9 @@ PxrUsdKatanaGeomGetPrimvarGroup(
         // to translate namespaced names...
         UsdAttribute blindAttr = kbd.GetKbdAttribute("geometry.arbitrary." + 
                                         primvar->GetPrimvarName().GetString());
-        if (blindAttr) {
-            VtValue vtValue;
-            if (!blindAttr.Get(&vtValue) && blindAttr.HasAuthoredValueOpinion()) {
-                continue;
-            }
+
+        if (blindAttr.GetResolveInfo().ValueIsBlocked()) {
+            continue;
         }
         
         TfToken          name, interpolation;
@@ -827,10 +773,17 @@ PxrUsdKatanaGeomGetPrimvarGroup(
         FnKat::GroupBuilder attrBuilder;
         attrBuilder.set("scope", scopeAttr);
         attrBuilder.set("inputType", inputTypeAttr);
+        
+        if (!typeName.GetRole().GetString().empty()) {
+            attrBuilder.set("usd.role", 
+                        FnKat::StringAttribute(typeName.GetRole().GetString()));
+        }
+
         if (elementSizeAttr.isValid()) {
             attrBuilder.set("elementSize", elementSizeAttr);
         }
         attrBuilder.set("value", valueAttr);
+
         // Note that 'varying' vs 'vertex' require special handling, as in
         // Katana they are both expressed as 'point' scope above. To get
         // 'vertex' interpolation we must set an additional
@@ -972,6 +925,31 @@ PxrUsdKatanaReadPrim(
     }
 
     _AddExtraAttributesOrNamespaces(prim, data, attrs);
+
+    // 
+    // Store the applied apiSchemas metadata as a list of typeName strings
+    //
+    TfTokenVector appliedSchemaTokens = prim.GetAppliedSchemas();
+    if (!appliedSchemaTokens.empty()){
+        std::vector<std::string> appliedSchemas(appliedSchemaTokens.size());
+        std::transform(appliedSchemaTokens.begin(), appliedSchemaTokens.end(), 
+                       appliedSchemas.begin(), [](const TfToken& token){ 
+            return token.GetString();
+        });
+        attrs.set("info.usd.apiSchemas", FnKat::StringAttribute(appliedSchemas));
+    }
+
+    // 
+    // Store the composed inherits metadata as a group attribute
+    //
+    SdfPathVector inheritPaths = prim.GetInherits().GetAllDirectInherits();
+    if (!inheritPaths.empty()){
+        FnKat::GroupBuilder inheritPathsBuilder;
+        for (const auto& path : inheritPaths){
+            inheritPathsBuilder.set(path.GetName(), FnKat::IntAttribute(1));
+        }
+        attrs.set("info.usd.inheritPaths", inheritPathsBuilder.build());
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

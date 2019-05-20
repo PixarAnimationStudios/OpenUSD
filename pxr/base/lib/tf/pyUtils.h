@@ -42,6 +42,7 @@
 
 #include <boost/python/dict.hpp>
 #include <boost/python/extract.hpp>
+#include <boost/python/handle.hpp>
 #include <boost/python/object.hpp>
 #include <boost/python/type_id.hpp>
 
@@ -167,7 +168,8 @@ TfPyEvaluate(
 /// Return a positive index in the range [0,size).  If \a throwError is true,
 /// this will throw an index error if the resulting index is out of range.
 TF_API 
-int TfPyNormalizeIndex(int index, unsigned int size, bool throwError = false);
+int64_t
+TfPyNormalizeIndex(int64_t index, uint64_t size, bool throwError = false);
 
 /// Return the name of the class of \a obj.
 TF_API std::string TfPyGetClassName(boost::python::object const &obj);
@@ -241,6 +243,26 @@ boost::python::list TfPyCopySequenceToList(Seq const &seq) {
          i != seq.end(); ++i)
         l.append(*i);
     return l; 
+}
+
+/// Create a python set from an iterable sequence.
+///
+/// If Seq::value_type is not hashable, TypeError is raised via throwing
+/// boost::python::error_already_set.
+template <class Seq>
+boost::python::object TfPyCopySequenceToSet(Seq const &seq) {
+    TfPyLock lock;
+    boost::python::handle<> set{boost::python::allow_null(PySet_New(nullptr))};
+    if (!set) {
+        boost::python::throw_error_already_set();
+    }
+    for (auto const& item : seq) {
+        boost::python::object obj(item);
+        if (PySet_Add(set.get(), obj.ptr()) == -1) {
+            boost::python::throw_error_already_set();
+        }
+    }
+    return boost::python::object(set);
 }
 
 template<class Seq>

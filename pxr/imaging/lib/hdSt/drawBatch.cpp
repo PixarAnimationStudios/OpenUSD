@@ -41,7 +41,7 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
-#include "pxr/imaging/glf/glslfx.h"
+#include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/base/tf/getenv.h"
 
@@ -72,6 +72,11 @@ HdSt_DrawBatch::~HdSt_DrawBatch()
 
 void
 HdSt_DrawBatch::DrawItemInstanceChanged(HdStDrawItemInstance const* /*instance*/)
+{
+}
+
+void
+HdSt_DrawBatch::SetEnableTinyPrimCulling(bool tinyPrimCulling)
 {
 }
 
@@ -128,22 +133,26 @@ HdSt_DrawBatch::_IsAggregated(HdStDrawItem const *drawItem0,
     }
 
     if (drawItem0->GetGeometricShader() == drawItem1->GetGeometricShader()
-        && drawItem0->GetInstancePrimVarNumLevels() ==
-            drawItem1->GetInstancePrimVarNumLevels()
+        && drawItem0->GetInstancePrimvarNumLevels() ==
+            drawItem1->GetInstancePrimvarNumLevels()
         && isAggregated(drawItem0->GetTopologyRange(),
                          drawItem1->GetTopologyRange())
-        && isAggregated(drawItem0->GetVertexPrimVarRange(),
-                         drawItem1->GetVertexPrimVarRange())
-        && isAggregated(drawItem0->GetElementPrimVarRange(),
-                         drawItem1->GetElementPrimVarRange())
-        && isAggregated(drawItem0->GetConstantPrimVarRange(),
-                         drawItem1->GetConstantPrimVarRange())
+        && isAggregated(drawItem0->GetTopologyVisibilityRange(),
+                         drawItem1->GetTopologyVisibilityRange())
+        && isAggregated(drawItem0->GetVertexPrimvarRange(),
+                         drawItem1->GetVertexPrimvarRange())
+        && isAggregated(drawItem0->GetElementPrimvarRange(),
+                         drawItem1->GetElementPrimvarRange())
+        && isAggregated(drawItem0->GetFaceVaryingPrimvarRange(),
+                         drawItem1->GetFaceVaryingPrimvarRange())
+        && isAggregated(drawItem0->GetConstantPrimvarRange(),
+                         drawItem1->GetConstantPrimvarRange())
         && isAggregated(drawItem0->GetInstanceIndexRange(),
                          drawItem1->GetInstanceIndexRange())) {
-        int numLevels = drawItem0->GetInstancePrimVarNumLevels();
+        int numLevels = drawItem0->GetInstancePrimvarNumLevels();
         for (int i = 0; i < numLevels; ++i) {
-            if (!isAggregated(drawItem0->GetInstancePrimVarRange(i),
-                                 drawItem1->GetInstancePrimVarRange(i))) {
+            if (!isAggregated(drawItem0->GetInstancePrimvarRange(i),
+                                 drawItem1->GetInstancePrimvarRange(i))) {
                 return false;
             }
         }
@@ -239,11 +248,11 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
             // code is broken and needs to be fixed.  When we open up more
             // shaders for customization, we will need to check them as well.
             
-            typedef boost::shared_ptr<class GlfGLSLFX> GlfGLSLFXSharedPtr;
+            typedef boost::shared_ptr<class HioGlslfx> HioGlslfxSharedPtr;
 
-            GlfGLSLFXSharedPtr glslSurfaceFallback = 
-                GlfGLSLFXSharedPtr(
-                        new GlfGLSLFX(HdStPackageFallbackSurfaceShader()));
+            HioGlslfxSharedPtr glslSurfaceFallback = 
+                HioGlslfxSharedPtr(
+                        new HioGlslfx(HdStPackageFallbackSurfaceShader()));
 
             HdStShaderCodeSharedPtr fallbackSurface =
                 HdStShaderCodeSharedPtr(
@@ -273,7 +282,7 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    // glew has to be intialized
+    // glew has to be initialized
     if (!glLinkProgram) {
         return false;
     }

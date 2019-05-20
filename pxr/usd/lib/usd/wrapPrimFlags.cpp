@@ -148,6 +148,7 @@ void wrapUsdPrimFlags()
         = Usd_Term(UsdPrimHasDefiningSpecifier);
 
     scope().attr("PrimDefaultPredicate") = UsdPrimDefaultPredicate;
+    scope().attr("PrimAllPrimsPredicate") = UsdPrimAllPrimsPredicate;
 
     def("TraverseInstanceProxies", 
         (Usd_PrimFlagsPredicate(*)())&UsdTraverseInstanceProxies);

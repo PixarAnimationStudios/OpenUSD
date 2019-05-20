@@ -69,3 +69,14 @@ def "MultipleSpecializes" (
 )
 {
 }
+
+def "NonExistentSpecializes" (
+    """
+    This example demonstrates the behavior when there are specializes arcs
+    targeting prims with no opinions. In particular, this is not considered
+    a composition error.
+    """
+    references = @./ref.sdf@</NonExistentSpecializes>
+)
+{
+}

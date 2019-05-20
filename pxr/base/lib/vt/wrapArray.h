@@ -43,6 +43,7 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/iterator.h"
+#include "pxr/base/tf/span.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
@@ -54,6 +55,7 @@
 #include <boost/python/def.hpp>
 #include <boost/python/detail/api_placeholder.hpp>
 #include <boost/python/extract.hpp>
+#include <boost/python/implicit.hpp>
 #include <boost/python/iterator.hpp>
 #include <boost/python/make_constructor.hpp>
 #include <boost/python/object.hpp>
@@ -64,6 +66,7 @@
 #include <boost/python/overloads.hpp>
 
 #include <algorithm>
+#include <numeric>
 #include <ostream>
 #include <string>
 #include <memory>
@@ -293,7 +296,7 @@ BOOST_PP_SEQ_FOR_EACH(MAKE_STREAM_FUNC, ~, _OPTIMIZED_STREAM_INTEGRAL_TYPES)
 #undef _OPTIMIZED_STREAM_INTEGRAL_TYPES
 
 // Explicitly convert half to float here instead of relying on implicit
-// convesion to float to work around the fact that libc++ only provides 
+// conversion to float to work around the fact that libc++ only provides
 // implementations of std::isfinite for types where std::is_arithmetic 
 // is true.
 template <typename T>
@@ -318,23 +321,33 @@ BOOST_PP_SEQ_FOR_EACH(
     MAKE_STREAM_FUNC, ~, VT_FLOATING_POINT_BUILTIN_VALUE_TYPES)
 #undef MAKE_STREAM_FUNC
 
+static unsigned int
+Vt_ComputeEffectiveRankAndLastDimSize(
+    Vt_ShapeData const *sd, size_t *lastDimSize)
+{
+    unsigned int rank = sd->GetRank();
+    if (rank == 1)
+        return rank;
+
+    size_t divisor = std::accumulate(
+        sd->otherDims, sd->otherDims + rank-1,
+        1, [](size_t x, size_t y) { return x * y; });
+
+    size_t remainder = divisor ? sd->totalSize % divisor : 0;
+    *lastDimSize = divisor ? sd->totalSize / divisor : 0;
+    
+    if (remainder)
+        rank = 1;
+
+    return rank;
+}
+
 template <typename T>
-string __repr__(VtArray<T> const &self, const std::vector<int>* shape)
+string __repr__(VtArray<T> const &self)
 {
     if (self.empty())
         return TF_PY_REPR_PREFIX +
             TfStringPrintf("%s()", GetVtArrayName<VtArray<T> >().c_str());
-
-    string shapeStr;
-    if (shape) {
-        shapeStr = "(";
-        for (size_t i = 0; i < shape->size(); ++i)
-            shapeStr += TfStringPrintf(i ? ", %d" : "%d", (*shape)[i]);
-        shapeStr += shape->size() == 1 ? ",), " : "), ";
-    }
-    else {
-        shapeStr = TfStringPrintf("%zd, ", self.size());
-    }
 
     std::ostringstream stream;
     stream.precision(17);
@@ -344,23 +357,35 @@ string __repr__(VtArray<T> const &self, const std::vector<int>* shape)
         streamValue(stream, self[i]);
     }
     stream << (self.size() == 1 ? ",)" : ")");
-    
-    return TF_PY_REPR_PREFIX +
-        TfStringPrintf("%s(%s%s)",
+
+    const std::string repr = TF_PY_REPR_PREFIX +
+        TfStringPrintf("%s(%zd, %s)",
                        GetVtArrayName<VtArray<T> >().c_str(),
-                       shapeStr.c_str(), stream.str().c_str());
-}
+                       self.size(), stream.str().c_str());
 
-template <typename T>
-string __repr1__(VtArray<T> const &self)
-{
-    return __repr__(self, NULL);
-}
+    // XXX: This is to deal with legacy shaped arrays and should be removed
+    // once all shaped arrays have been eliminated.
+    // There is no nice way to make an eval()able __repr__ for shaped arrays
+    // that preserves the shape information, so put it in <> to make it
+    // clearly not eval()able. That has the advantage that, if somebody passes
+    // the repr into eval(), it'll raise a SyntaxError that clearly points to
+    // the beginning of the __repr__.
+    Vt_ShapeData const *shapeData = self._GetShapeData();
+    size_t lastDimSize = 0;
+    unsigned int rank =
+        Vt_ComputeEffectiveRankAndLastDimSize(shapeData, &lastDimSize);
+    if (rank > 1) {
+        std::string shapeStr = "(";
+        for (size_t i = 0; i != rank-1; ++i) {
+            shapeStr += TfStringPrintf(
+                i ? ", %d" : "%d", shapeData->otherDims[i]);
+        }
+        shapeStr += TfStringPrintf(", %zu)", lastDimSize);
+        return TfStringPrintf("<%s with shape %s>",
+                              repr.c_str(), shapeStr.c_str());
+    }
 
-template <typename T>
-string __repr2__(VtArray<T> const &self, const std::vector<int>& shape)
-{
-    return __repr__(self, &shape);
+    return repr;
 }
 
 template <typename T>
@@ -450,8 +475,7 @@ void VtWrapArray()
         .def("__len__", &This::size)
         .def("__iter__", iterator<This>())
 
-        .def("__repr__", __repr1__<Type>)
-        .def("__repr2__", __repr2__<Type>)
+        .def("__repr__", __repr__<Type>)
 
 //        .def(str(self))
         .def("__str__", _VtStr<T>)
@@ -502,6 +526,10 @@ void VtWrapArray()
 
     VTOPERATOR_WRAPDECLARE_BOOL(Equal)
     VTOPERATOR_WRAPDECLARE_BOOL(NotEqual)
+
+    // Wrap implicit conversions from VtArray to TfSpan.
+    implicitly_convertible<This, TfSpan<Type> >();
+    implicitly_convertible<This, TfSpan<const Type> >();
 }
 
 // wrapping for functions that work for base types that support comparisons

@@ -22,10 +22,100 @@
 # language governing permissions and limitations under the Apache License.
 #
 from qt import QtCore, QtGui, QtWidgets
-import os, time, sys, platform
-from pxr import Tf, Sdf, Kind, Usd, UsdGeom, UsdShade
+import os, time, sys, platform, math
+from pxr import Ar, Tf, Sdf, Kind, Usd, UsdGeom, UsdShade
 from customAttributes import CustomAttribute
 from constantGroup import ConstantGroup
+
+DEBUG_CLIPPING = "USDVIEWQ_DEBUG_CLIPPING"
+
+class Complexities(ConstantGroup):
+    """The available complexity settings for Usdview."""
+
+    class _Complexity(object):
+        """Class which represents a level of mesh refinement complexity. Each level
+        has a string identifier, a display name, and a float complexity value.
+        """
+
+        def __init__(self, compId, name, value):
+            self._id = compId
+            self._name = name
+            self._value = value
+
+        @property
+        def id(self):
+            return self._id
+
+        @property
+        def name(self):
+            return self._name
+
+        @property
+        def value(self):
+            return self._value
+
+    LOW       = _Complexity("low",      "Low",       1.0)
+    MEDIUM    = _Complexity("medium",   "Medium",    1.1)
+    HIGH      = _Complexity("high",     "High",      1.2)
+    VERY_HIGH = _Complexity("veryhigh", "Very High", 1.3)
+
+    _ordered = (LOW, MEDIUM, HIGH, VERY_HIGH)
+
+    @classmethod
+    def ordered(cls):
+        """Get an tuple of all complexity levels in order."""
+        return Complexities._ordered
+
+    @classmethod
+    def fromId(cls, compId):
+        """Get a complexity from its identifier."""
+        matches = [comp for comp in Complexities if comp.id == compId]
+        if len(matches) == 0:
+            raise ValueError("No complexity with id '{}'".format(compId))
+        return matches[0]
+
+    @classmethod
+    def fromName(cls, name):
+        """Get a complexity from its display name."""
+        matches = [comp for comp in Complexities if comp.name == name]
+        if len(matches) == 0:
+            raise ValueError("No complexity with name '{}'".format(name))
+        return matches[0]
+
+    @classmethod
+    def next(cls, comp):
+        """Get the next highest level of complexity. If already at the highest
+        level, return it.
+        """
+        if comp not in Complexities:
+            raise ValueError("Invalid complexity: {}".format(comp))
+        nextIndex = min(
+            len(Complexities._ordered) - 1,
+            Complexities._ordered.index(comp) + 1)
+        return Complexities._ordered[nextIndex]
+
+    @classmethod
+    def prev(cls, comp):
+        """Get the next lowest level of complexity. If already at the lowest
+        level, return it.
+        """
+        if comp not in Complexities:
+            raise ValueError("Invalid complexity: {}".format(comp))
+        prevIndex = max(0, Complexities._ordered.index(comp) - 1)
+        return Complexities._ordered[prevIndex]
+
+class ClearColors(ConstantGroup):
+    """Names of available background colors."""
+    BLACK = "Black"
+    DARK_GREY = "Grey (Dark)"
+    LIGHT_GREY = "Grey (Light)"
+    WHITE = "White"
+
+class HighlightColors(ConstantGroup):
+    """Names of available highlight colors for selected objects."""
+    WHITE = "White"
+    YELLOW = "Yellow"
+    CYAN = "Cyan"
 
 class UIBaseColors(ConstantGroup):
     RED = QtGui.QBrush(QtGui.QColor(230, 132, 131))
@@ -49,19 +139,30 @@ class UIFonts(ConstantGroup):
     # Font constants.  We use font in the prim browser to distinguish
     # "resolved" prim specifier
     # XXX - the use of weight here may need to be revised depending on font family
+    BASE_POINT_SIZE = 10
+    
     ITALIC = QtGui.QFont()
-    ITALIC.setWeight(35)
+    ITALIC.setWeight(QtGui.QFont.Light)
     ITALIC.setItalic(True)
-    OVER_PRIM = ITALIC
-
-    BOLD = QtGui.QFont()
-    BOLD.setWeight(90)
-    DEFINED_PRIM = BOLD
-    DEFINED_PRIM.setWeight(75)
 
     NORMAL = QtGui.QFont()
-    NORMAL.setWeight(35)
+    NORMAL.setWeight(QtGui.QFont.Normal)
+
+    BOLD = QtGui.QFont()
+    BOLD.setWeight(QtGui.QFont.Bold)
+
+    BOLD_ITALIC = QtGui.QFont()
+    BOLD_ITALIC .setWeight(QtGui.QFont.Bold)
+    BOLD_ITALIC.setItalic(True)
+
+    OVER_PRIM = ITALIC
+    DEFINED_PRIM = BOLD
     ABSTRACT_PRIM = NORMAL
+
+    INHERITED = QtGui.QFont()
+    INHERITED.setPointSize(BASE_POINT_SIZE * 0.8)
+    INHERITED.setWeight(QtGui.QFont.Normal)
+    INHERITED.setItalic(True)
 
 class PropertyViewIndex(ConstantGroup):
     TYPE, NAME, VALUE = range(3)
@@ -118,6 +219,13 @@ class ShadedRenderModes(ConstantGroup):
     GEOM_FLAT = RenderModes.GEOM_FLAT
     GEOM_SMOOTH = RenderModes.GEOM_SMOOTH
 
+class ColorCorrectionModes(ConstantGroup):
+    # Color correction used when render is presented to screen
+    # These strings should match HdxColorCorrectionTokens
+    DISABLED = "disabled"
+    SRGB = "sRGB"
+    OPENCOLORIO = "openColorIO"
+
 class PickModes(ConstantGroup):
     # Pick modes
     PRIMS = "Prims"
@@ -146,7 +254,8 @@ def _PropTreeWidgetGetRole(tw):
 
 def PropTreeWidgetTypeIsRel(tw):
     role = _PropTreeWidgetGetRole(tw)
-    return role in (PropertyViewDataRoles.RELATIONSHIP, PropertyViewDataRoles.RELATIONSHIP_WITH_TARGETS)
+    return role in (PropertyViewDataRoles.RELATIONSHIP,
+                    PropertyViewDataRoles.RELATIONSHIP_WITH_TARGETS)
 
 def _UpdateLabelText(text, substring, mode):
     return text.replace(substring, '<'+mode+'>'+substring+'</'+mode+'>')
@@ -206,21 +315,32 @@ def GetShortString(prop, frame):
 
     return result[:500]
 
+# Return a string that reports size in metric units (units of 1000, not 1024).
+def ReportMetricSize(sizeInBytes):
+    if sizeInBytes == 0:
+       return "0 B"
+    sizeSuffixes = ("B", "KB", "MB", "GB", "TB", "PB", "EB")
+    i = int(math.floor(math.log(sizeInBytes, 1000)))
+    if i >= len(sizeSuffixes):
+        i = len(sizeSuffixes) - 1
+    p = math.pow(1000, i)
+    s = round(sizeInBytes / p, 2)
+    return "%s %s" % (s, sizeSuffixes[i])
+
 # Return attribute status at a certian frame (is it using the default, or the
 # fallback? Is it authored at this frame? etc.
-def GetAttributeStatus(attribute, frame):
-
+def _GetAttributeStatus(attribute, frame):
     return attribute.GetResolveInfo(frame).GetSource()
 
 # Return a Font corresponding to certain attribute properties.
 # Currently this only applies italicization on interpolated time samples.
-def GetAttributeTextFont(attribute, frame):
-    # Early-out for CustomAttributes and Relationships
-    if not isinstance(attribute, Usd.Attribute):
+def GetPropertyTextFont(prop, frame):
+    if not isinstance(prop, Usd.Attribute):
+        # Early-out for non-attribute properties.
         return None
 
     frameVal = frame.GetValue()
-    bracketing = attribute.GetBracketingTimeSamples(frameVal)
+    bracketing = prop.GetBracketingTimeSamples(frameVal)
 
     # Note that some attributes return an empty tuple, some None, from
     # GetBracketingTimeSamples(), but all will be fed into this function.
@@ -230,10 +350,10 @@ def GetAttributeTextFont(attribute, frame):
     return None
 
 # Helper function that takes attribute status and returns the display color
-def GetAttributeColor(attribute, frame, hasValue=None, hasAuthoredValue=None,
+def GetPropertyColor(prop, frame, hasValue=None, hasAuthoredValue=None,
                       valueIsDefault=None):
-    # Early-out for CustomAttributes and Relationships
-    if not isinstance(attribute, Usd.Attribute):
+    if not isinstance(prop, Usd.Attribute):
+        # Early-out for non-attribute properties.
         return UIBaseColors.RED.color()
 
     statusToColor = {Usd.ResolveInfoSourceFallback   : UIPropertyValueSourceColors.FALLBACK,
@@ -242,7 +362,7 @@ def GetAttributeColor(attribute, frame, hasValue=None, hasAuthoredValue=None,
                      Usd.ResolveInfoSourceTimeSamples: UIPropertyValueSourceColors.TIME_SAMPLE,
                      Usd.ResolveInfoSourceNone       : UIPropertyValueSourceColors.NONE}
 
-    valueSource = GetAttributeStatus(attribute, frame)
+    valueSource = _GetAttributeStatus(prop, frame)
 
     return statusToColor[valueSource].color()
 
@@ -391,25 +511,6 @@ def GetEnclosingModelPrim(prim):
 
     return prim
 
-# This should be codified in UsdShadeMaterial API
-def GetClosestBoundMaterial(prim):
-    """If 'prim' or any of its ancestors are bound to a Material, return the
-    *closest in namespace* bound Material prim, as well as the prim on which the
-    binding was found.  If none of 'prim's ancestors has a binding, return
-    (None, None)"""
-    if not prim:
-        return (None, None)
-    # XXX We should not need to guard against pseudoRoot.  Remove when
-    # bug/122473 is addressed
-    psr = prim.GetStage().GetPseudoRoot()
-    while prim and prim != psr:
-        material = UsdShade.Material.GetBoundMaterial(prim)
-        if material:
-            return (material.GetPrim(), prim)
-        prim = prim.GetParent()
-
-    return (None, None)
-
 def GetPrimLoadability(prim):
     """Return a tuple of (isLoadable, isLoaded) for 'prim', according to
     the following rules:
@@ -422,7 +523,7 @@ def GetPrimLoadability(prim):
     A prim 'isLoaded' only if there are no unloaded prims beneath it, i.e.
     it is stating whether the prim is "fully loaded".  This
     is a debatable definition, but seems useful for usdview's purposes."""
-    if not (prim.IsActive() and (prim.IsGroup() or prim.HasPayload())):
+    if not (prim.IsActive() and (prim.IsGroup() or prim.HasAuthoredPayloads())):
         return (False, True)
     # XXX Note that we are potentially traversing the entire stage here.
     # If this becomes a performance issue, we can cast this query into C++,
@@ -465,19 +566,15 @@ def GetFileOwner(path):
 def GetAssetCreationTime(primStack, assetIdentifier):
     """Finds the weakest layer in which assetInfo.identifier is set to
     'assetIdentifier', and considers that an "asset-defining layer".  We then
-    effectively consult the asset resolver plugin to tell us the creation
-    time for the asset, based on the layer.realPath and the
-    identifier. 'effectively' because Ar does not yet have such a query, so
-    we leverage usdview's plugin mechanism, consulting a function
-    GetAssetCreationTime(filePath, layerIdentifier) if it exists, falling
-    back to stat'ing the filePath if the plugin does not exist.
+    retrieve the creation time for the asset by stat'ing the layer's
+    real path.
 
     Returns a triple of strings: (fileDisplayName, creationTime, owner)"""
     definingLayer = None
     for spec in reversed(primStack):
         if spec.HasInfo('assetInfo'):
             identifier = spec.GetInfo('assetInfo')['identifier']
-            if identifier  == assetIdentifier:
+            if identifier.path == assetIdentifier.path:
                 definingLayer = spec.layer
                 break
     if definingLayer:
@@ -487,10 +584,26 @@ def GetAssetCreationTime(primStack, assetIdentifier):
         print "Warning: Could not find expected asset-defining layer for %s" %\
             assetIdentifier
 
-    stat_info = os.stat(definingFile)
-    return (definingFile.split('/')[-1],
-            time.ctime(stat_info.st_ctime),
-            GetFileOwner(definingFile))
+    if Ar.IsPackageRelativePath(definingFile):
+        definingFile = Ar.SplitPackageRelativePathOuter(definingFile)[0]
+
+    if not definingFile:
+        displayName = (definingLayer.GetDisplayName()
+                       if definingLayer and definingLayer.anonymous else
+                       "<in-memory layer>")
+        creationTime = "<unknown>"
+        owner = "<unknown>"
+    else:
+        displayName = definingFile.split('/')[-1]
+
+        try:
+            creationTime = time.ctime(os.stat(definingFile).st_ctime)
+        except:
+            creationTime = "<unknown>"
+
+        owner = GetFileOwner(definingFile)
+
+    return (displayName, creationTime, owner)
 
 
 def DumpMallocTags(stage, contextStr):

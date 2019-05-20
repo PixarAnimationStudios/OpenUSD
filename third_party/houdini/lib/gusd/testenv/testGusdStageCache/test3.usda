@@ -1,0 +1,23 @@
+#usda 1.0
+
+def "C" (
+    kind = "assembly"
+)
+{
+    def Scope "Child" (
+        kind = "component"
+    )
+    {
+    }
+}
+
+def "D" (
+    kind = "assembly"
+)
+{
+    def Scope "Child" (
+        kind = "component"
+    )
+    {
+    }
+}

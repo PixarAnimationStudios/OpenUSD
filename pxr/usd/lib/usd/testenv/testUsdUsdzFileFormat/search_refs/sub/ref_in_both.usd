@@ -1,0 +1,6 @@
+#usda 1.0
+
+def "Ref_3"
+{
+    string ref_in_both = "wrong_attr_in_both"
+}

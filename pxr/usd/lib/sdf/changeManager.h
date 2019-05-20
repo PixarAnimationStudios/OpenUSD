@@ -33,7 +33,6 @@
 #include "pxr/base/tf/singleton.h"
 
 #include <boost/noncopyable.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <tbb/enumerable_thread_specific.h>
 #include <string>
 #include <vector>

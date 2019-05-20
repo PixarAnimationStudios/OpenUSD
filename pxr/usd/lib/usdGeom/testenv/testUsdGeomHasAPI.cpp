@@ -29,6 +29,8 @@
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/modelAPI.h"
 
+#include <iostream>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void
@@ -40,20 +42,26 @@ TestHasAPI()
     
     // Valid cases
     assert(!prim.HasAPI<UsdGeomMotionAPI>());
-    UsdGeomMotionAPI::Apply(stage, path);
+    UsdGeomMotionAPI::Apply(prim);
     assert(prim.HasAPI<UsdGeomMotionAPI>());
 
-    // Ensure both UsdModelAPI and UsdGeomModelAPI get picked up
-    // as we check for derived schema classes
     assert(!prim.HasAPI<UsdGeomModelAPI>());
-    assert(!prim.HasAPI<UsdModelAPI>());
-    UsdGeomModelAPI::Apply(stage, path);
+    UsdGeomModelAPI::Apply(prim);
     assert(prim.HasAPI<UsdGeomModelAPI>());
-    assert(prim.HasAPI<UsdModelAPI>());
+
+    std::cerr << "--- BEGIN EXPECTED ERROR --" << std::endl;
+    TfErrorMark mark;
+    // Passing in a non-empty instance name with a single-apply API schema like
+    // UsdGeomMotionAPI results in a coding error
+    assert(!prim.HasAPI<UsdGeomMotionAPI>(/*instanceName*/ TfToken("instance")));
+    TF_VERIFY(!mark.IsClean());
+    std::cerr << "--- END EXPECTED ERROR --" << std::endl;
 
     // The following cases won't compile, uncomment them to confirm
-    // assert(prim.HasAPI<UsdGeomImageable>()); // cant be typed
-    // assert(prim.HasAPI<UsdGeomXform>());     // cant be concrete
+    // assert(prim.HasAPI<UsdGeomImageable>()); // can't be typed
+    // assert(prim.HasAPI<UsdGeomXform>());     // can't be concrete
+    // assert(!prim.HasAPI<UsdGeomModelAPI>()); // can't be non-applied API schema
+
 }
  
 int main()

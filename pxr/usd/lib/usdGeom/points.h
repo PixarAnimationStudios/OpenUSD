@@ -58,20 +58,18 @@ class SdfAssetPath;
 /// effects comprised of thousands or millions of small particles.  Points
 /// generally receive a single shading sample each, which should take 
 /// \em normals into account, if present.
+/// 
+/// While not technically UsdGeomPrimvars, the widths and normals also
+/// have interpolation metadata.  It's common for authored widths and normals
+/// to have constant or varying interpolation.
 ///
 class UsdGeomPoints : public UsdGeomPointBased
 {
 public:
-    /// Compile-time constant indicating whether or not this class corresponds
-    /// to a concrete instantiable prim type in scene description.  If this is
-    /// true, GetStaticPrimDefinition() will return a valid prim definition with
-    /// a non-empty typeName.
-    static const bool IsConcrete = true;
-
-    /// Compile-time constant indicating whether or not this class inherits from
-    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
-    /// UsdPrim.
-    static const bool IsTyped = true;
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaType
+    static const UsdSchemaType schemaType = UsdSchemaType::ConcreteTyped;
 
     /// Construct a UsdGeomPoints on UsdPrim \p prim .
     /// Equivalent to UsdGeomPoints::Get(prim.GetStage(), prim.GetPath())
@@ -140,6 +138,13 @@ public:
     static UsdGeomPoints
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
+protected:
+    /// Returns the type of schema this class belongs to.
+    ///
+    /// \sa UsdSchemaType
+    USDGEOM_API
+    UsdSchemaType _GetSchemaType() const override;
+
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
@@ -150,14 +155,18 @@ private:
 
     // override SchemaBase virtuals.
     USDGEOM_API
-    virtual const TfType &_GetTfType() const;
+    const TfType &_GetTfType() const override;
 
 public:
     // --------------------------------------------------------------------- //
     // WIDTHS 
     // --------------------------------------------------------------------- //
     /// Widths are defined as the \em diameter of the points, in 
-    /// object space
+    /// object space.  'widths' is not a generic Primvar, but
+    /// the number of elements in this attribute will be determined by
+    /// its 'interpolation'.  See \ref SetWidthsInterpolation() .  If
+    /// 'widths' and 'primvars:widths' are both specified, the latter
+    /// has precedence.
     ///
     /// \n  C++ Type: VtArray<float>
     /// \n  Usd Type: SdfValueTypeNames->FloatArray
@@ -185,7 +194,7 @@ public:
     /// binary state on Id'd points without adding a separate 
     /// primvar.
     ///
-    /// \n  C++ Type: VtArray<long>
+    /// \n  C++ Type: VtArray<int64_t>
     /// \n  Usd Type: SdfValueTypeNames->Int64Array
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
@@ -212,6 +221,30 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
+    /// Get the \ref Usd_InterpolationVals "interpolation" for the \em widths
+    /// attribute.
+    ///
+    /// Although 'widths' is not classified as a generic UsdGeomPrimvar (and
+    /// will not be included in the results of UsdGeomImageable::GetPrimvars() )
+    /// it does require an interpolation specification.  The fallback
+    /// interpolation, if left unspecified, is UsdGeomTokens->vertex , 
+    /// which means a width value is specified for each point.
+    USDGEOM_API
+    TfToken GetWidthsInterpolation() const;
+
+    /// Set the \ref Usd_InterpolationVals "interpolation" for the \em widths
+    /// attribute.
+    ///
+    /// \return true upon success, false if \p interpolation is not a legal
+    /// value as defined by UsdPrimvar::IsValidInterpolation(), or if there 
+    /// was a problem setting the value.  No attempt is made to validate
+    /// that the widths attr's value contains the right number of elements
+    /// to match its interpolation to its prim's topology.
+    ///
+    /// \sa GetWidthsInterpolation()
+    USDGEOM_API
+    bool SetWidthsInterpolation(TfToken const &interpolation);
+
     /// Compute the extent for the point cloud defined by points and widths.
     ///
     /// \return true upon success, false if widths and points are different 
@@ -226,6 +259,13 @@ public:
     USDGEOM_API
     static bool ComputeExtent(const VtVec3fArray& points,
         const VtFloatArray& widths, VtVec3fArray* extent);
+
+    /// \overload
+    /// Computes the extent as if the matrix \p transform was first applied.
+    USDGEOM_API
+    static bool ComputeExtent(const VtVec3fArray& points,
+        const VtFloatArray& widths, const GfMatrix4d& transform,
+        VtVec3fArray* extent);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

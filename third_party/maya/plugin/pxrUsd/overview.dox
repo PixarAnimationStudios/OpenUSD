@@ -1,0 +1,20 @@
+/*!
+\page usd_maya_plugin_pxrUsd_page_front PxrUsd : Main USD plugin for Maya
+\if ( PIXAR_MFB_BUILD )
+\mainpage PxrUsd : Main USD plugin for Maya
+\publicLib
+\endif
+
+## Overview
+
+This is the main plugin that registers USD functionality in Maya, including
+import and export commands, as well as USD nodes such as the reference assembly
+and proxy shape.
+
+The core reusable logic is implemented in the
+\ref usd_maya_lib_usdMaya_page_front "UsdMaya library". Translation
+functionality for built-in Maya types is automatically loaded from the
+\ref usd_maya_plugin_pxrUsdTranslators_page_front "pxrUsdTranslators plugin"
+when needed.
+
+*/

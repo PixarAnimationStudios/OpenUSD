@@ -44,10 +44,24 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdDrawItem
 ///
-/// A draw item represents a single component of the collective
-/// visual representation of an HdRprim.  For example, a mesh rprim might
-/// use one draw item for its subdivided surface and another for
-/// its hull lines.
+/// A draw item is a light-weight representation of an HdRprim's resources and 
+/// material to be used for rendering. The visual representation (HdRepr) of an
+/// HdRprim might require multiple draw items.
+/// 
+/// HdDrawItem(s) are created by the HdRprim (HdMesh, HdBasisCurve, ..) for each
+/// HdRepr. The relevant compositional hierarchy is:
+/// 
+///  HdRprim
+///  |
+///  +--HdRepr(s)
+///       |
+///       +--HdDrawItem(s)
+///
+///  HdDrawItem(s) are consumed by HdRenderPass for its HdRprimCollection via
+///  HdRenderIndex::GetDrawItems.
+///
+/// \note
+/// Rendering backends may choose to specialize this class.
 ///
 class HdDrawItem {
 public:
@@ -74,20 +88,21 @@ public:
         return _sharedData->bounds.GetMatrix();
     }
 
-    /// Returns a BufferRange of constant-PrimVar.
+    /// Returns a BufferRange of constant-Primvar.
     HD_API
-    HdBufferArrayRangeSharedPtr const &GetConstantPrimVarRange() const {
+    HdBufferArrayRangeSharedPtr const &GetConstantPrimvarRange() const {
         return _sharedData->barContainer.Get(
-            _drawingCoord.GetConstantPrimVarIndex());
+            _drawingCoord.GetConstantPrimvarIndex());
     }
 
     /// Returns the number of nested levels of instance primvars.
     HD_API
-    int GetInstancePrimVarNumLevels() const {
-        return _drawingCoord.GetInstancePrimVarNumLevels();
+    int GetInstancePrimvarNumLevels() const {
+        TF_VERIFY(_sharedData->instancerLevels != -1);
+        return _sharedData->instancerLevels;
     }
 
-    /// Returns a BufferRange of instance-PrimVars at \p level
+    /// Returns a BufferRange of instance-Primvars at \p level
     /// the level is assigned to nested instancers in a bottom-up manner.
     ///
     /// example: (numLevels = 2)
@@ -99,9 +114,9 @@ public:
     ///             +-- mesh_prototype
     ///
     HD_API
-    HdBufferArrayRangeSharedPtr const &GetInstancePrimVarRange(int level) const {
+    HdBufferArrayRangeSharedPtr const &GetInstancePrimvarRange(int level) const {
         return _sharedData->barContainer.Get(
-            _drawingCoord.GetInstancePrimVarIndex(level));
+            _drawingCoord.GetInstancePrimvarIndex(level));
     }
 
     /// Returns a BufferRange of instance-index indirection.
@@ -111,11 +126,11 @@ public:
             _drawingCoord.GetInstanceIndexIndex());
     }
 
-    /// Returns a BufferRange of element-PrimVars.
+    /// Returns a BufferRange of element-Primvars.
     HD_API
-    HdBufferArrayRangeSharedPtr const &GetElementPrimVarRange() const {
+    HdBufferArrayRangeSharedPtr const &GetElementPrimvarRange() const {
         return _sharedData->barContainer.Get(
-            _drawingCoord.GetElementPrimVarIndex());
+            _drawingCoord.GetElementPrimvarIndex());
     }
 
     /// Returns a BufferArrayRange of topology.
@@ -125,18 +140,24 @@ public:
             _drawingCoord.GetTopologyIndex());
     }
 
-    /// Returns a BufferArrayRange of vertex-primVars.
     HD_API
-    HdBufferArrayRangeSharedPtr const &GetVertexPrimVarRange() const {
+    HdBufferArrayRangeSharedPtr const &GetTopologyVisibilityRange() const {
         return _sharedData->barContainer.Get(
-            _drawingCoord.GetVertexPrimVarIndex());
+            _drawingCoord.GetTopologyVisibilityIndex());
+    }
+
+    /// Returns a BufferArrayRange of vertex-primvars.
+    HD_API
+    HdBufferArrayRangeSharedPtr const &GetVertexPrimvarRange() const {
+        return _sharedData->barContainer.Get(
+            _drawingCoord.GetVertexPrimvarIndex());
     }
 
     /// Returns a BufferArrayRange of face-varying primvars.
     HD_API
-    HdBufferArrayRangeSharedPtr const &GetFaceVaryingPrimVarRange() const {
+    HdBufferArrayRangeSharedPtr const &GetFaceVaryingPrimvarRange() const {
         return _sharedData->barContainer.Get(
-            _drawingCoord.GetFaceVaryingPrimVarIndex());
+            _drawingCoord.GetFaceVaryingPrimvarIndex());
     }
 
     HD_API
@@ -150,7 +171,10 @@ public:
 
     /// Returns true if the drawItem has instancer.
     HD_API
-    bool HasInstancer() const { return _sharedData->hasInstancer; }
+    bool HasInstancer() const {
+        TF_VERIFY(_sharedData->instancerLevels != -1);
+        return (_sharedData->instancerLevels > 0);
+    }
 
     /// Returns the hash of the versions of underlying buffers. When the
     /// hash changes, it means the drawing coord might have been reassigned,
@@ -170,6 +194,14 @@ public:
     HD_API
     friend std::ostream &operator <<(std::ostream &out, 
                                      const HdDrawItem& self);
+
+protected:
+
+    /// Returns the shared data
+    HD_API
+    HdRprimSharedData const *_GetSharedData() const {
+        return _sharedData;
+    }
 
 private:
     // configuration of how to bundle the drawing coordinate for this draw item

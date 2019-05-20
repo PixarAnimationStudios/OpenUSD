@@ -44,7 +44,7 @@ within it at the given path.'''
 # Test utilities
 def _PathElemsToPrefixes(absolute, elements):
     if absolute:
-        string = "/";
+        string = "/"
     else:
         string = ""
     

@@ -231,6 +231,35 @@ struct _ListOpWriter<SdfReference>
     }
 };
 
+template <>
+struct _ListOpWriter<SdfPayload>
+{
+    static constexpr bool ItemPerLine = true;
+    static bool SingleItemRequiresBrackets(const SdfPayload& payload)
+    {
+        return false;
+    }
+    static void Write(ostream& out, size_t indent, const SdfPayload& payload)
+    {
+        Sdf_FileIOUtility::Write(out, indent, "");
+
+        if (!payload.GetAssetPath().empty()) {
+            Sdf_FileIOUtility::WriteAssetPath(out, 0, payload.GetAssetPath());
+            if (!payload.GetPrimPath().IsEmpty())
+                Sdf_FileIOUtility::WriteSdfPath(out, 0, payload.GetPrimPath());
+        }
+        else {
+            // If this is an internal payload, we always have to write
+            // out a path, even if it's empty since that encodes a payload
+            // to the default prim.
+            Sdf_FileIOUtility::WriteSdfPath(out, 0, payload.GetPrimPath());
+        }
+
+        Sdf_FileIOUtility::WriteLayerOffset(
+            out, indent+1, false /*multiLineMetaData*/, payload.GetLayerOffset());
+    }
+};
+
 template <class ListOpList>
 void
 _WriteListOpList(
@@ -383,26 +412,9 @@ Sdf_FileIOUtility::WriteDefaultValue(
 
 void
 Sdf_FileIOUtility::WriteSdfPath(ostream &out, 
-            size_t indent, const SdfPath &path, const string &markerName) {
-
-    if (ARCH_LIKELY(markerName.empty())) {
-        Write(out, indent, "<%s>", path.GetString().c_str());
-    } else {
-        // Unexpected! That used to mean, an explicitly authored current marker.
-        if (markerName == "None") {
-            TF_RUNTIME_ERROR(
-                "Encountered 'None' marker, this should not happen.");
-            WriteSdfPath(out, indent, path, "current");
-        } else if (markerName == "authored") {
-            TF_RUNTIME_ERROR("Authored markers can't be authored in menva as "
-                             "by object modelling.");
-            WriteSdfPath(out, indent, path);
-        } else {
-            const char *fmt = SdfPath::IsBuiltInMarker(markerName)
-                ? "<%s> @ %s" : "<%s> @ <%s>";
-            Write(out, indent, fmt, path.GetText(), markerName.c_str());
-        }
-    }
+            size_t indent, const SdfPath &path) 
+{
+    Write(out, indent, "<%s>", path.GetString().c_str());
 }
 
 template <class StrType>
@@ -441,16 +453,26 @@ Sdf_FileIOUtility::WriteNameVector(ostream &out,
 
 bool
 Sdf_FileIOUtility::WriteTimeSamples(ostream &out, size_t indent,
-                                    const SdfTimeSampleMap & samples)
+                                    const SdfPropertySpec &prop)
 {
-    TF_FOR_ALL(i, samples) {
-        Write(out, indent+1, "%s: ", TfStringify(i->first).c_str());
-        if (i->second.IsHolding<SdfPath>()) {
-            WriteSdfPath(out, 0, i->second.Get<SdfPath>() );
-        } else {
-            Puts(out, 0, StringFromVtValue( i->second ));
+    VtValue timeSamplesVal = prop.GetField(SdfFieldKeys->TimeSamples);
+    if (timeSamplesVal.IsHolding<SdfTimeSampleMap>()) {
+        SdfTimeSampleMap samples =
+            timeSamplesVal.UncheckedGet<SdfTimeSampleMap>();
+        TF_FOR_ALL(i, samples) {
+            Write(out, indent+1, "%s: ", TfStringify(i->first).c_str());
+            if (i->second.IsHolding<SdfPath>()) {
+                WriteSdfPath(out, 0, i->second.Get<SdfPath>() );
+            } else {
+                Puts(out, 0, StringFromVtValue( i->second ));
+            }
+            out << ",\n";
         }
-        out << ",\n";
+    }
+    else if (timeSamplesVal.IsHolding<SdfHumanReadableValue>()) {
+        Write(out, indent+1, "%s\n",
+              TfStringify(timeSamplesVal.
+                          UncheckedGet<SdfHumanReadableValue>()).c_str());
     }
     return true;
 }
@@ -594,6 +616,9 @@ Sdf_FileIOUtility::WriteListOp(std::ostream &out,
 template void
 Sdf_FileIOUtility::WriteListOp(std::ostream &, size_t, const TfToken&, 
                                const SdfPathListOp&);
+template void
+Sdf_FileIOUtility::WriteListOp(std::ostream &, size_t, const TfToken&, 
+                               const SdfPayloadListOp&);
 template void
 Sdf_FileIOUtility::WriteListOp(std::ostream &, size_t, const TfToken&, 
                                const SdfReferenceListOp&);

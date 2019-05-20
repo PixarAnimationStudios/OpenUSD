@@ -44,16 +44,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdVtBufferSource
 ///
-/// A transient buffer of data that has not yet been committed to the GPU.
-///
-/// This class is primarily used in the interaction between HdRprim and the
-/// HdSceneDelegate. The buffer source holds raw data that is either 
-/// topological or a shader input (PrimVar data), so it gets attached to either
-/// an HdTopologySubset or an HdPrimVarLayout. The buffer source will be 
-/// inserted into these objects at the offset specified or appended to the end.
-/// 
-/// The public interface provided is intended to be convenient for OpenGL API
-/// calls.
+/// An implementation of HdBufferSource where the source data value is a
+/// VtValue.
 ///
 class HdVtBufferSource : public HdBufferSource {
 public:
@@ -62,7 +54,7 @@ public:
     /// \param arraySize indicates how many values are provided per element.
     HD_API
     HdVtBufferSource(TfToken const &name, VtValue const& value,
-                     size_t arraySize=1);
+                     int arraySize=1);
 
     /// Constructs a new buffer from a matrix.
     /// The data is convert to the default type (see GetDefaultMatrixType()).
@@ -81,7 +73,7 @@ public:
     /// \param arraySize indicates how many values are provided per element.
     HD_API
     HdVtBufferSource(TfToken const &name, VtArray<GfMatrix4d> const &matrices,
-                     size_t arraySize=1);
+                     int arraySize=1);
 
     /// Returns the default matrix type.
     /// The default is HdTypeFloatMat4, but if HD_ENABLE_DOUBLEMATRIX is true,
@@ -92,6 +84,13 @@ public:
     /// Destructor deletes the internal storage.
     HD_API
     ~HdVtBufferSource();
+
+    /// Truncate the buffer to the given number of elements.
+    /// If the VtValue contains too much data, this is a way to only forward
+    /// part of the data to the hydra buffer system. numElements must be less
+    /// than or equal to the current result of GetNumElements().
+    HD_API
+    void Truncate(size_t numElements);
 
     /// Return the name of this buffer source.
     virtual TfToken const &GetName() const override {
@@ -111,10 +110,10 @@ public:
     /// Returns the number of elements (e.g. VtVec3dArray().GetLength()) from
     /// the source array.
     HD_API
-    virtual int GetNumElements() const override;
+    virtual size_t GetNumElements() const override;
 
     /// Add the buffer spec for this buffer source into given bufferspec vector.
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override {
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override {
         specs->push_back(HdBufferSpec(_name, _tupleType));
     }
 
@@ -133,7 +132,7 @@ protected:
 
 private:
     // Constructor helper.
-    void _SetValue(const VtValue &v, size_t arraySize);
+    void _SetValue(const VtValue &v, int arraySize);
 
     TfToken _name;
 

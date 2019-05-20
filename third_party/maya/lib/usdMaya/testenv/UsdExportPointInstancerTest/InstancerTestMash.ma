@@ -6,6 +6,9 @@ requires maya "2018";
 requires -nodeType "MASH_Waiter" -nodeType "MASH_Offset" -nodeType "MASH_Random"
 		 -nodeType "MASH_Id" -nodeType "MASH_Distribute" "MASH" "450";
 requires -nodeType "pxrUsdReferenceAssembly" -dataType "pxrUsdStageData" "pxrUsd" "1.0";
+requires -nodeType "MASH_BulletSolver" -nodeType "MASH_Waiter" -nodeType "MASH_Offset"
+		 -nodeType "MASH_Random" -nodeType "MASH_Id" -nodeType "MASH_Distribute" -nodeType "MASH_Dynamics"
+		 "MASH" "450";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
 fileInfo "product" "Maya 2018";
@@ -1375,6 +1378,32 @@ createNode instancer -n "instancerBad1" -p "InstancerTest";
 	rename -uid "C39B0900-0000-02EC-5A4D-446B0000028D";
 createNode instancer -n "instancerBad2" -p "InstancerTest";
 	rename -uid "75A3C900-0000-7B5E-5A4D-4FA10000028E";
+createNode instancer -n "MASH2_Instancer" -p "InstancerTest";
+	rename -uid "08F20900-0000-7D12-5B05-E6B00000029A";
+	addAttr -s false -ci true -h true -sn "instancerMessage" -ln "instancerMessage" 
+		-at "message";
+	addAttr -s false -ci true -h true -sn "dynamicsMessage" -ln "dynamicsMessage" -at "message";
+createNode transform -n "MASH2_Prototype" -p "MASH2_Instancer";
+	rename -uid "08F20900-0000-7D12-5B05-E6A500000297";
+	setAttr ".v" no;
+createNode mesh -n "MASH2_PrototypeShape" -p "MASH2_Prototype";
+	rename -uid "08F20900-0000-7D12-5B05-E6A500000296";
+	setAttr -k off ".v";
+	setAttr ".vir" yes;
+	setAttr ".vif" yes;
+	setAttr ".uvst[0].uvsn" -type "string" "map1";
+	setAttr ".cuvs" -type "string" "map1";
+	setAttr ".dcc" -type "string" "Ambient+Diffuse";
+	setAttr ".ds" no;
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
+createNode transform -n "MASH2_BulletSolver";
+	rename -uid "08F20900-0000-7D12-5B05-E6C60000029D";
+createNode MASH_BulletSolver -n "MASH2_BulletSolverShape" -p "MASH2_BulletSolver";
+	rename -uid "08F20900-0000-7D12-5B05-E6C60000029C";
+	addAttr -s false -ci true -h true -sn "instancerMessage" -ln "instancerMessage" 
+		-at "message";
+	setAttr -k off ".v";
 createNode lightLinker -s -n "lightLinker1";
 	rename -uid "468F9900-0000-525D-5A1C-9E9C000002A8";
 	setAttr -s 3 ".lnk";
@@ -1518,6 +1547,37 @@ createNode MASH_Id -n "MASH1_ID";
 	rename -uid "468F9900-0000-525D-5A1C-94510000028C";
 	setAttr ".fArray" -type "vectorArray" 0 ;
 	setAttr ".nuob" 3;
+createNode MASH_Offset -n "MASH1_Offset";
+	rename -uid "468F9900-0000-525D-5A1C-9EA9000002CE";
+	setAttr ".savedData" -type "newParticles" ;
+	setAttr ".fArray" -type "vectorArray" 0 ;
+	setAttr ".oft" 6;
+	setAttr ".positionOffset" -type "float3" 0.050000001 0.050000001 0.1 ;
+	setAttr ".rotationOffset" -type "double3" 1 2 3.0000000000000004 ;
+	setAttr ".scaleOffset" -type "float3" 0.0099999998 0.0049999999 0.0020000001 ;
+createNode polySphere -n "polySphere3";
+	rename -uid "08F20900-0000-7D12-5B05-E6A500000295";
+createNode MASH_Waiter -n "MASH2";
+	rename -uid "08F20900-0000-7D12-5B05-E6B000000298";
+	addAttr -s false -ci true -h true -sn "instancerMessage" -ln "instancerMessage" 
+		-at "message";
+	addAttr -s false -ci true -h true -sn "dynamicsMessage" -ln "dynamicsMessage" -at "message";
+	setAttr ".filename" -type "string" "0";
+createNode MASH_Distribute -n "MASH2_Distribute";
+	rename -uid "08F20900-0000-7D12-5B05-E6B000000299";
+	setAttr ".savedData" -type "newParticles" ;
+	setAttr ".mapDirection" 4;
+	setAttr ".fArray" -type "vectorArray" 0 ;
+	setAttr ".inPPP" -type "vectorArray" 0 ;
+	setAttr -s 3 ".scaleRamp[0:2]"  0 0 1 0 0 1 1 1 1;
+	setAttr -s 3 ".rotationRamp[0:2]"  0 0 1 0 0 1 1 1 1;
+	setAttr -s 3 ".bRmp[0:2]"  0 0 1 0 0 1 1 1 1;
+	setAttr ".bRmpX[0]"  0 1 1;
+	setAttr ".bRmpY[0]"  0 1 1;
+	setAttr ".bRmpZ[0]"  0 1 1;
+createNode MASH_Dynamics -n "MASH2_Dynamics";
+	rename -uid "08F20900-0000-7D12-5B05-E6C60000029B";
+	addAttr -s false -ci true -h true -sn "waiterMessage" -ln "waiterMessage" -at "message";
 createNode nodeGraphEditorInfo -n "MayaNodeEditorSavedTabsInfo";
 	rename -uid "468F9900-0000-525D-5A1C-95450000028D";
 	setAttr ".tgi[0].tn" -type "string" "Untitled_1";
@@ -1584,14 +1644,6 @@ createNode nodeGraphEditorInfo -n "MayaNodeEditorSavedTabsInfo";
 	setAttr ".tgi[0].ni[19].x" 860.27691650390625;
 	setAttr ".tgi[0].ni[19].y" -374.36669921875;
 	setAttr ".tgi[0].ni[19].nvs" 1923;
-createNode MASH_Offset -n "MASH1_Offset";
-	rename -uid "468F9900-0000-525D-5A1C-9EA9000002CE";
-	setAttr ".savedData" -type "newParticles" ;
-	setAttr ".fArray" -type "vectorArray" 0 ;
-	setAttr ".oft" 6;
-	setAttr ".positionOffset" -type "float3" 0.050000001 0.050000001 0.1 ;
-	setAttr ".rotationOffset" -type "double3" 1 2 3.0000000000000004 ;
-	setAttr ".scaleOffset" -type "float3" 0.0099999998 0.0049999999 0.0020000001 ;
 select -ne :time1;
 	setAttr ".ihi" 0;
 	setAttr ".o" 0;
@@ -1612,7 +1664,7 @@ select -ne :postProcessList1;
 	setAttr -s 2 ".p";
 select -ne :defaultRenderingList1;
 select -ne :initialShadingGroup;
-	setAttr -s 4 ".dsm";
+	setAttr -s 5 ".dsm";
 	setAttr ".ro" yes;
 select -ne :initialParticleSE;
 	setAttr ".ro" yes;
@@ -1666,6 +1718,77 @@ connectAttr "referencePrototype.m" "instancer1.inh[3]";
 connectAttr "polySphere2.out" "|InstancerTest|instancer1|prototypeUnderInstancer|prototypeUnderInstancerShape.i"
 		;
 connectAttr "pCube1.m" "instancerBad2.inh[0]";
+connectAttr "MASH2_BulletSolverShape.outputPoints[0]" "MASH2_Instancer.inp";
+connectAttr "MASH2.instancerMessage" "MASH2_Instancer.instancerMessage";
+connectAttr "MASH2_Prototype.m" "MASH2_Instancer.inh[0]";
+connectAttr "MASH2_BulletSolverShape.instancerMessage" "MASH2_Instancer.dynamicsMessage"
+		;
+connectAttr "polySphere3.out" "MASH2_PrototypeShape.i";
+connectAttr ":time1.o" "MASH2_BulletSolverShape.time";
+connectAttr "MASH2_Dynamics.enable" "MASH2_BulletSolverShape.inputNetworks[0].mashEnable"
+		;
+connectAttr "MASH2_Dynamics.bounce" "MASH2_BulletSolverShape.inputNetworks[0].mashBounce"
+		;
+connectAttr "MASH2_Dynamics.friction" "MASH2_BulletSolverShape.inputNetworks[0].mashFriction"
+		;
+connectAttr "MASH2_Dynamics.damping" "MASH2_BulletSolverShape.inputNetworks[0].mashDamping"
+		;
+connectAttr "MASH2_Dynamics.rollingFriction" "MASH2_BulletSolverShape.inputNetworks[0].mashRollingFriction"
+		;
+connectAttr "MASH2_Dynamics.rollingDamping" "MASH2_BulletSolverShape.inputNetworks[0].mashRollingDamping"
+		;
+connectAttr "MASH2_Dynamics.mass" "MASH2_BulletSolverShape.inputNetworks[0].mashMass"
+		;
+connectAttr "MASH2_Dynamics.positionStrength" "MASH2_BulletSolverShape.inputNetworks[0].mashPositionStrength"
+		;
+connectAttr "MASH2_Dynamics.rotationalStrength" "MASH2_BulletSolverShape.inputNetworks[0].mashRotationalStrength"
+		;
+connectAttr "MASH2_Dynamics.collisionObjectScale" "MASH2_BulletSolverShape.inputNetworks[0].mashCollisionObjectScale"
+		;
+connectAttr "MASH2_Dynamics.collisionShapeLength" "MASH2_BulletSolverShape.inputNetworks[0].mashCollisionShapeLength"
+		;
+connectAttr "MASH2_Dynamics.collisionShapeAxis" "MASH2_BulletSolverShape.inputNetworks[0].mashCollisionShapeAxis"
+		;
+connectAttr "MASH2_Dynamics.maxVelocity" "MASH2_BulletSolverShape.inputNetworks[0].mashMaxVelocity"
+		;
+connectAttr "MASH2_Dynamics.maxAngularVelocity" "MASH2_BulletSolverShape.inputNetworks[0].mashAngularVelocity"
+		;
+connectAttr "MASH2_Dynamics.collisionShape" "MASH2_BulletSolverShape.inputNetworks[0].mashCollisionShape"
+		;
+connectAttr "MASH2_Dynamics.initiallySleeping" "MASH2_BulletSolverShape.inputNetworks[0].mashInitiallySleeping"
+		;
+connectAttr "MASH2_Dynamics.initialVelocity" "MASH2_BulletSolverShape.inputNetworks[0].mashInitialVelocity"
+		;
+connectAttr "MASH2_Dynamics.initialRotationalVelocity" "MASH2_BulletSolverShape.inputNetworks[0].mashInitialRotationalVelocity"
+		;
+connectAttr "MASH2_Dynamics.emitFromCollisions" "MASH2_BulletSolverShape.inputNetworks[0].mashEmitFromCollisions"
+		;
+connectAttr "MASH2_Dynamics.collisionDistanceThreshold" "MASH2_BulletSolverShape.inputNetworks[0].mashCollisionDistanceThreshold"
+		;
+connectAttr "MASH2_Dynamics.ignoreInvisible" "MASH2_BulletSolverShape.inputNetworks[0].mashIgnoreInvisible"
+		;
+connectAttr "MASH2_Dynamics.autoFit" "MASH2_BulletSolverShape.inputNetworks[0].mashAutoFit"
+		;
+connectAttr "MASH2_Dynamics.linearVelocityThreshold" "MASH2_BulletSolverShape.inputNetworks[0].mashLinearVelocityThreshold"
+		;
+connectAttr "MASH2_Dynamics.angularVelocityThreshold" "MASH2_BulletSolverShape.inputNetworks[0].mashAngularVelocityThreshold"
+		;
+connectAttr "MASH2_Dynamics.collisionJitter" "MASH2_BulletSolverShape.inputNetworks[0].mashCollisionJitter"
+		;
+connectAttr "MASH2_Dynamics.contactMaskLayers" "MASH2_BulletSolverShape.inputNetworks[0].mashContactMaskLayers"
+		;
+connectAttr "MASH2_Dynamics.collisionMaskLayers" "MASH2_BulletSolverShape.inputNetworks[0].mashCollisionMaskLayers"
+		;
+connectAttr "MASH2_Dynamics.collisionGroupLayers" "MASH2_BulletSolverShape.inputNetworks[0].mashCollisionGroupLayers"
+		;
+connectAttr "MASH2_Dynamics.hierarchyMode" "MASH2_BulletSolverShape.inputNetworks[0].mashHierarchyMode"
+		;
+connectAttr "MASH2_Dynamics.initialStateJSON" "MASH2_BulletSolverShape.inputNetworks[0].mashInitialStateJSON"
+		;
+connectAttr "MASH2_Dynamics.useDensity" "MASH2_BulletSolverShape.inputNetworks[0].mashUseDensity"
+		;
+connectAttr "MASH2.outputPoints" "MASH2_BulletSolverShape.inputNetworks[0].inputPoints"
+		;
 relationship "link" ":lightLinker1" ":initialShadingGroup.message" ":defaultLightSet.message";
 relationship "link" ":lightLinker1" ":initialParticleSE.message" ":defaultLightSet.message";
 relationship "link" ":lightLinker1" "nParticlePointsSE.message" ":defaultLightSet.message";
@@ -1691,6 +1814,13 @@ connectAttr "MASH1_Distribute.waiterMessage" "MASH1.waiterMessage";
 connectAttr "MASH1_Distribute.outputPoints" "MASH1_Random.inputPoints";
 connectAttr ":time1.o" "MASH1_ID.ti";
 connectAttr "MASH1_Random.outputPoints" "MASH1_ID.inputPoints";
+connectAttr ":time1.o" "MASH1_Offset.ti";
+connectAttr "MASH1_ID.outputPoints" "MASH1_Offset.inputPoints";
+connectAttr "MASH2_Dynamics.outputPoints" "MASH2.inputPoints";
+connectAttr "MASH2_Distribute.waiterMessage" "MASH2.waiterMessage";
+connectAttr "MASH2_Dynamics.waiterMessage" "MASH2.dynamicsMessage";
+connectAttr ":time1.o" "MASH2_Dynamics.time";
+connectAttr "MASH2_Distribute.outputPoints" "MASH2_Dynamics.inputPoints";
 connectAttr "pCube1.msg" "MayaNodeEditorSavedTabsInfo.tgi[0].ni[0].dn";
 connectAttr "referencePrototype_rotateZ.msg" "MayaNodeEditorSavedTabsInfo.tgi[0].ni[1].dn"
 		;
@@ -1737,4 +1867,5 @@ connectAttr "|InstancerTest|instancer1|prototypeUnderInstancer|prototypeUnderIns
 		 -na;
 connectAttr "|InstancerTest|MASH1_Instancer|prototypeUnderInstancer|prototypeUnderInstancerShape.iog" ":initialShadingGroup.dsm"
 		 -na;
+connectAttr "MASH2_PrototypeShape.iog" ":initialShadingGroup.dsm" -na;
 // End of InstancerTestMash.ma

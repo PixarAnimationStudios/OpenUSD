@@ -69,13 +69,6 @@ _CreateVolumeAttr(UsdRiMaterialAPI &self,
     return self.CreateVolumeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
-        
-static UsdAttribute
-_CreateBxdfAttr(UsdRiMaterialAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateBxdfAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
-}
 
 } // anonymous namespace
 
@@ -83,7 +76,7 @@ void wrapUsdRiMaterialAPI()
 {
     typedef UsdRiMaterialAPI This;
 
-    class_<This, bases<UsdSchemaBase> >
+    class_<This, bases<UsdAPISchemaBase> >
         cls("MaterialAPI");
 
     cls
@@ -94,16 +87,8 @@ void wrapUsdRiMaterialAPI()
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
 
-        .def("Apply", &This::Apply, (arg("stage"), arg("path")))
+        .def("Apply", &This::Apply, (arg("prim")))
         .staticmethod("Apply")
-
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
@@ -136,13 +121,6 @@ void wrapUsdRiMaterialAPI()
              &This::GetVolumeAttr)
         .def("CreateVolumeAttr",
              &_CreateVolumeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetBxdfAttr",
-             &This::GetBxdfAttr)
-        .def("CreateBxdfAttr",
-             &_CreateBxdfAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
@@ -181,17 +159,14 @@ WRAP_CUSTOM {
         .def("GetDisplacement", &This::GetDisplacement, 
              (arg("ignoreBaseMaterial")=false))
         .def("GetVolume", &This::GetVolume, (arg("ignoreBaseMaterial")=false))
-        .def("GetBxdf", &This::GetBxdf, (arg("ignoreBaseMaterial")=false))
  
         .def("GetSurfaceOutput", &This::GetSurfaceOutput)
         .def("GetDisplacementOutput", &This::GetDisplacementOutput)
         .def("GetVolumeOutput", &This::GetVolumeOutput)
-        .def("GetBxdfOutput", &This::GetBxdfOutput)
  
         .def("SetSurfaceSource", &This::SetSurfaceSource)
         .def("SetDisplacementSource", &This::SetDisplacementSource)
         .def("SetVolumeSource", &This::SetVolumeSource)
-        .def("SetBxdfSource", &This::SetBxdfSource)
  
         .def("SetInterfaceInputConsumer", &This::SetInterfaceInputConsumer)
         .def("ComputeInterfaceInputConsumersMap", 

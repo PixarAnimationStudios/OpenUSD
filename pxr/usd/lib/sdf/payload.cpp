@@ -41,29 +41,28 @@ TF_REGISTRY_FUNCTION(TfType)
 
 SdfPayload::SdfPayload(
     const std::string &assetPath,
-    const SdfPath &primPath) :
+    const SdfPath &primPath,
+    const SdfLayerOffset &layerOffset) :
     _assetPath(assetPath),
-    _primPath(primPath)
+    _primPath(primPath),
+    _layerOffset(layerOffset)
 {
-}
-
-SdfPayload::operator bool() const
-{
-    return !_assetPath.empty();
 }
 
 bool
 SdfPayload::operator==(const SdfPayload &rhs) const
 {
-    return _assetPath   == rhs._assetPath &&
-           _primPath    == rhs._primPath;
+    return _assetPath   == rhs._assetPath   &&
+           _primPath    == rhs._primPath    &&
+           _layerOffset == rhs._layerOffset;
 }
 
 bool
 SdfPayload::operator<(const SdfPayload &rhs) const
 {
-    return _assetPath   <  rhs._assetPath ||
-        (_assetPath == rhs._assetPath && _primPath < rhs._primPath);
+    return (_assetPath < rhs._assetPath || (_assetPath == rhs._assetPath && 
+           (_primPath < rhs._primPath || (_primPath == rhs._primPath && 
+           (_layerOffset <rhs._layerOffset)))));
 }
 
 std::ostream & operator<<( std::ostream &out,
@@ -71,7 +70,8 @@ std::ostream & operator<<( std::ostream &out,
 {
     return out << "SdfPayload("
         << payload.GetAssetPath() << ", "
-        << payload.GetPrimPath() << ")";
+        << payload.GetPrimPath() << ", "
+        << payload.GetLayerOffset() << ")";
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

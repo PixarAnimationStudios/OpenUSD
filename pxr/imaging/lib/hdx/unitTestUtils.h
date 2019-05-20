@@ -30,7 +30,9 @@
 #include "pxr/base/gf/frustum.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec2i.h"
+
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/hdx/intersector.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 
 #include <memory>
@@ -44,19 +46,26 @@ class HdRprimCollection;
 namespace HdxUnitTestUtils
 {
     struct PickParams {
+        PickParams() :
+             highlightMode(HdSelection::HighlightModeSelect)
+           , pickTarget(HdxIntersector::PickPrimsAndInstances)
+           , doUnpickablesOcclude(false) {}
+
     public:
         GfVec2i pickRadius;
 
         // window/viewport
-        float screenWidth;
-        float screenHeight;
+        int screenWidth;
+        int screenHeight;
         GfFrustum viewFrustum;
         GfMatrix4d viewMatrix;
 
         // hd/hdx
         HdEngine* engine;
         const HdRprimCollection* pickablesCol;
-        HdxSelectionHighlightMode highlightMode;
+        HdSelection::HighlightMode highlightMode;
+        HdxIntersector::PickTarget pickTarget;
+        bool doUnpickablesOcclude;
     };
 
     class Picker {
@@ -65,12 +74,34 @@ namespace HdxUnitTestUtils
         ~Picker();
 
         void InitIntersector(HdRenderIndex* renderIndex);
-        void SetPickParams(PickParams const& pParams);
-        void SetHighlightMode(HdxSelectionHighlightMode mode);
+        
+        void SetPickParams(PickParams const& pParams) {
+            _pParams = pParams;
+        }
+        void SetWidthHeight(int w, int h) {
+            _pParams.screenWidth  = w;
+            _pParams.screenHeight = h;
+        }
+        void SetViewFrustum(GfFrustum const& frustum) {
+            _pParams.viewFrustum = frustum;
+        }
+        void SetViewMatrix(GfMatrix4d const& matrix) {
+            _pParams.viewMatrix = matrix;
+        }
+        void SetHighlightMode(HdSelection::HighlightMode mode) {
+            _pParams.highlightMode = mode;
+        }
+        void SetPickTarget(HdxIntersector::PickTarget mode) {
+            _pParams.pickTarget = mode;
+        }
+         void SetDoUnpickablesOcclude(bool enabled) {
+            _pParams.doUnpickablesOcclude = enabled;
+        }
+
         void Pick(GfVec2i const& startPos,
                   GfVec2i const& endPos);
         HdxSelectionTrackerSharedPtr GetSelectionTracker() const;
-        HdxSelectionSharedPtr GetSelection() const;
+        HdSelectionSharedPtr GetSelection() const;
 
     private:
         std::unique_ptr<HdxIntersector> _intersector;

@@ -22,10 +22,11 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/contextCaps.h"
+
 #include "pxr/imaging/hdSt/copyComputation.h"
 #include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
 #include "pxr/imaging/hdSt/bufferResourceGL.h"
-#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/types.h"
@@ -86,7 +87,7 @@ HdStCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range_,
          return;
     }
 
-    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
+    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
 
     // Unfortunately at the time the copy computation is added, we don't
     // know if the source buffer has 0 length.  So we can get here with
@@ -131,7 +132,7 @@ HdStCopyComputationGPU::GetNumOutputElements() const
 }
 
 void
-HdStCopyComputationGPU::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdStCopyComputationGPU::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     HdStBufferArrayRangeGLSharedPtr srcRange =
         boost::static_pointer_cast<HdStBufferArrayRangeGL> (_src);

@@ -30,13 +30,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 PXRUSDMAYA_DEFINE_WRITER(pxrUsdReferenceAssembly, args, context)
 {
-    return PxrUsdMayaTranslatorModelAssembly::Create(args, context);
+    return UsdMayaTranslatorModelAssembly::Create(args, context);
 }
 
 
 PXRUSDMAYA_DEFINE_WRITER(pxrUsdProxyShape, args, context)
 {
-    return PxrUsdMayaTranslatorModelAssembly::Create(args, context);
+    return UsdMayaTranslatorModelAssembly::Create(args, context);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

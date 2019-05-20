@@ -141,7 +141,7 @@ public:
     HdStBufferResourceGLSharedPtr GetResource() const;
 
     /// Returns the named GPU resource. This method returns the first found
-    /// resource. In HDST_SAFE_MODE it checkes all underlying GL buffers
+    /// resource. In HDST_SAFE_MODE it checks all underlying GL buffers
     /// in _resourceMap and raises a coding error if there are more than
     /// one GL buffers exist.
     HDST_API

@@ -21,18 +21,18 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/editUtil.h"
-#include "usdMaya/referenceAssembly.h"
 
-#include <maya/MGlobal.h>
-#include <maya/MItEdits.h>
-#include <maya/MEdit.h>
+#include "usdMaya/referenceAssembly.h"
 
 #include "pxr/base/tf/stringUtils.h"
 
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
+
+#include <maya/MEdit.h>
+#include <maya/MGlobal.h>
+#include <maya/MItEdits.h>
 
 #include <unordered_map>
 
@@ -44,23 +44,23 @@ using std::string;
 using std::pair;
 using std::vector;
 
-static const unordered_map< string, pair<PxrUsdMayaEditUtil::EditOp, PxrUsdMayaEditUtil::EditSet>>
+static const unordered_map< string, pair<UsdMayaEditUtil::EditOp, UsdMayaEditUtil::EditSet>>
     _attrToOpMap {
-        {"translate",  {PxrUsdMayaEditUtil::OP_TRANSLATE,   PxrUsdMayaEditUtil::SET_ALL }},
-        {"translateX", {PxrUsdMayaEditUtil::OP_TRANSLATE,   PxrUsdMayaEditUtil::SET_X   }},
-        {"translateY", {PxrUsdMayaEditUtil::OP_TRANSLATE,   PxrUsdMayaEditUtil::SET_Y   }},
-        {"translateZ", {PxrUsdMayaEditUtil::OP_TRANSLATE,   PxrUsdMayaEditUtil::SET_Z   }},
-        {"rotate",     {PxrUsdMayaEditUtil::OP_ROTATE,      PxrUsdMayaEditUtil::SET_ALL }},
-        {"rotateX",    {PxrUsdMayaEditUtil::OP_ROTATE,      PxrUsdMayaEditUtil::SET_X   }},
-        {"rotateY",    {PxrUsdMayaEditUtil::OP_ROTATE,      PxrUsdMayaEditUtil::SET_Y   }},
-        {"rotateZ",    {PxrUsdMayaEditUtil::OP_ROTATE,      PxrUsdMayaEditUtil::SET_Z   }},
-        {"scale",      {PxrUsdMayaEditUtil::OP_SCALE,       PxrUsdMayaEditUtil::SET_ALL }},
-        {"scaleX",     {PxrUsdMayaEditUtil::OP_SCALE,       PxrUsdMayaEditUtil::SET_X   }},
-        {"scaleY",     {PxrUsdMayaEditUtil::OP_SCALE,       PxrUsdMayaEditUtil::SET_Y   }},
-        {"scaleZ",     {PxrUsdMayaEditUtil::OP_SCALE,       PxrUsdMayaEditUtil::SET_Z   }}};
+        {"translate",  {UsdMayaEditUtil::OP_TRANSLATE,   UsdMayaEditUtil::SET_ALL }},
+        {"translateX", {UsdMayaEditUtil::OP_TRANSLATE,   UsdMayaEditUtil::SET_X   }},
+        {"translateY", {UsdMayaEditUtil::OP_TRANSLATE,   UsdMayaEditUtil::SET_Y   }},
+        {"translateZ", {UsdMayaEditUtil::OP_TRANSLATE,   UsdMayaEditUtil::SET_Z   }},
+        {"rotate",     {UsdMayaEditUtil::OP_ROTATE,      UsdMayaEditUtil::SET_ALL }},
+        {"rotateX",    {UsdMayaEditUtil::OP_ROTATE,      UsdMayaEditUtil::SET_X   }},
+        {"rotateY",    {UsdMayaEditUtil::OP_ROTATE,      UsdMayaEditUtil::SET_Y   }},
+        {"rotateZ",    {UsdMayaEditUtil::OP_ROTATE,      UsdMayaEditUtil::SET_Z   }},
+        {"scale",      {UsdMayaEditUtil::OP_SCALE,       UsdMayaEditUtil::SET_ALL }},
+        {"scaleX",     {UsdMayaEditUtil::OP_SCALE,       UsdMayaEditUtil::SET_X   }},
+        {"scaleY",     {UsdMayaEditUtil::OP_SCALE,       UsdMayaEditUtil::SET_Y   }},
+        {"scaleZ",     {UsdMayaEditUtil::OP_SCALE,       UsdMayaEditUtil::SET_Z   }}};
 
 bool
-PxrUsdMayaEditUtil::GetEditFromString(
+UsdMayaEditUtil::GetEditFromString(
     const MFnAssembly &assemblyFn,
     const string &editString,
     SdfPath *outEditPath,
@@ -117,8 +117,14 @@ PxrUsdMayaEditUtil::GetEditFromString(
     string pathStr = TfStringReplace(attrSplit[0], "|", "/");
     if( !SdfPath::IsValidPathString(pathStr) )
         return false;
-        
-    *outEditPath = SdfPath(pathStr);
+
+    // Our output path must be a relative path.
+    SdfPath path(pathStr);
+    if (path.IsAbsolutePath()) {
+        return false;
+    }
+
+    *outEditPath = path;
 
     // Figure out what operation we're doing from the attribute name.
     //
@@ -146,7 +152,7 @@ PxrUsdMayaEditUtil::GetEditFromString(
 
 
 void
-PxrUsdMayaEditUtil::GetEditsForAssembly(
+UsdMayaEditUtil::GetEditsForAssembly(
     const MObject &assemblyObj,
     PathEditMap *refEdits,
     vector<string> *invalidEdits )
@@ -183,7 +189,7 @@ PxrUsdMayaEditUtil::GetEditsForAssembly(
 }
 
 void
-PxrUsdMayaEditUtil::ApplyEditsToProxy(
+UsdMayaEditUtil::ApplyEditsToProxy(
     const PathEditMap &refEdits,
     const UsdStagePtr &stage,
     const UsdPrim &proxyRootPrim,
@@ -269,7 +275,7 @@ PxrUsdMayaEditUtil::ApplyEditsToProxy(
 }
 
 void
-PxrUsdMayaEditUtil::_ApplyEditToAvar(
+UsdMayaEditUtil::_ApplyEditToAvar(
     EditOp op,
     EditSet set,
     double value,
@@ -306,7 +312,7 @@ PxrUsdMayaEditUtil::_ApplyEditToAvar(
 
 
 void
-PxrUsdMayaEditUtil::_ApplyEditToAvars(
+UsdMayaEditUtil::_ApplyEditToAvars(
     const RefEdit &refEdit,
     AvarValueMap *valueMap )
 {
@@ -315,8 +321,8 @@ PxrUsdMayaEditUtil::_ApplyEditToAvars(
         const GfVec3d &toSet = refEdit.value.Get<GfVec3d>();
         
         _ApplyEditToAvar( refEdit.op, SET_X, toSet[0], valueMap );
-        _ApplyEditToAvar( refEdit.op, SET_Y, toSet[0], valueMap );
-        _ApplyEditToAvar( refEdit.op, SET_Z, toSet[0], valueMap );
+        _ApplyEditToAvar( refEdit.op, SET_Y, toSet[1], valueMap );
+        _ApplyEditToAvar( refEdit.op, SET_Z, toSet[2], valueMap );
     }
     else
     {
@@ -328,7 +334,7 @@ PxrUsdMayaEditUtil::_ApplyEditToAvars(
 
 
 void
-PxrUsdMayaEditUtil::GetAvarEdits(
+UsdMayaEditUtil::GetAvarEdits(
     const PathEditMap &refEdits,
     PathAvarMap *avarMap )
 {

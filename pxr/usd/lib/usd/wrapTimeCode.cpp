@@ -24,7 +24,9 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/timeCode.h"
 
+#include "pxr/base/tf/pyStaticTokens.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/stringUtils.h"
 
 #include <boost/python/class.hpp>
 #include <boost/python/implicit.hpp>
@@ -51,8 +53,12 @@ static string __repr__(const UsdTimeCode &self)
 {
     string tail = ".Default()";
     if (self.IsNumeric()) {
-        tail = self.GetValue() == 0.0 ? string("()") :
-            TfStringPrintf("(%s)", TfPyRepr(self.GetValue()).c_str());
+        if (self.IsEarliestTime()) {
+            tail = ".EarliestTime()";
+        } else {
+            tail = self.GetValue() == 0.0 ? string("()") :
+                TfStringPrintf("(%s)", TfPyRepr(self.GetValue()).c_str());
+        }
     }
     return TF_PY_REPR_PREFIX + "TimeCode" + tail;
 }
@@ -61,7 +67,7 @@ static string __repr__(const UsdTimeCode &self)
 
 void wrapUsdTimeCode()
 {
-    class_<UsdTimeCode>("TimeCode")
+    scope s = class_<UsdTimeCode>("TimeCode")
         .def(init<double>())
         .def(init<UsdTimeCode>())
 
@@ -75,6 +81,7 @@ void wrapUsdTimeCode()
              (arg("maxValue")=1e6, arg("maxCompression")=10.0))
         .staticmethod("SafeStep")
 
+        .def("IsEarliestTime", &UsdTimeCode::IsEarliestTime)
         .def("IsDefault", &UsdTimeCode::IsDefault)
         .def("IsNumeric", &UsdTimeCode::IsNumeric)
         .def("GetValue", &UsdTimeCode::GetValue)
@@ -91,6 +98,8 @@ void wrapUsdTimeCode()
 //        .def(str(self))
         .def("__str__", _Str)
         ;
+
+    TF_PY_WRAP_PUBLIC_TOKENS("Tokens", UsdTimeCodeTokens, USD_TIME_CODE_TOKENS);
 
     implicitly_convertible<double, UsdTimeCode>();
 }

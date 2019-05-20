@@ -28,10 +28,14 @@
 #include "pxr/imaging/hdEmbree/instancer.h"
 #include "pxr/imaging/hdEmbree/renderParam.h"
 #include "pxr/imaging/hdEmbree/renderPass.h"
+#include "pxr/imaging/hd/extComputationUtils.h"
 #include "pxr/imaging/hd/meshUtil.h"
+#include "pxr/imaging/hd/smoothNormals.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
+
+#include <algorithm> // sort
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -53,7 +57,7 @@ void
 HdEmbreeMesh::Finalize(HdRenderParam *renderParam)
 {
     RTCScene scene = static_cast<HdEmbreeRenderParam*>(renderParam)
-        ->GetEmbreeScene();
+        ->AcquireSceneForEdit();
     // Delete any instances of this mesh in the top-level embree scene.
     for (size_t i = 0; i < _rtcInstanceIds.size(); ++i) {
         // Delete the instance context first...
@@ -82,11 +86,11 @@ HdEmbreeMesh::Finalize(HdRenderParam *renderParam)
 }
 
 HdDirtyBits
-HdEmbreeMesh::_GetInitialDirtyBits() const
+HdEmbreeMesh::GetInitialDirtyBitsMask() const
 {
     // The initial dirty bits control what data is available on the first
     // run through _PopulateRtMesh(), so it should list every data item
-    // that _PopluateRtMesh requests.
+    // that _PopulateRtMesh requests.
     int mask = HdChangeTracker::Clean
         | HdChangeTracker::InitRepr
         | HdChangeTracker::DirtyPoints
@@ -95,10 +99,11 @@ HdEmbreeMesh::_GetInitialDirtyBits() const
         | HdChangeTracker::DirtyVisibility
         | HdChangeTracker::DirtyCullStyle
         | HdChangeTracker::DirtyDoubleSided
-        | HdChangeTracker::DirtyRefineLevel
+        | HdChangeTracker::DirtyDisplayStyle
         | HdChangeTracker::DirtySubdivTags
-        | HdChangeTracker::DirtyPrimVar
+        | HdChangeTracker::DirtyPrimvar
         | HdChangeTracker::DirtyNormals
+        | HdChangeTracker::DirtyInstanceIndex
         ;
 
     return (HdDirtyBits)mask;
@@ -111,60 +116,42 @@ HdEmbreeMesh::_PropagateDirtyBits(HdDirtyBits bits) const
 }
 
 void
-HdEmbreeMesh::_InitRepr(TfToken const &reprName,
+HdEmbreeMesh::_InitRepr(TfToken const &reprToken,
                         HdDirtyBits *dirtyBits)
 {
-    TF_UNUSED(reprName);
     TF_UNUSED(dirtyBits);
 
-    // No-op
-}
-
-
-HdReprSharedPtr const &
-HdEmbreeMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
-                       TfToken const &reprName,
-                       HdDirtyBits *dirtyBits)
-{
-    TF_UNUSED(sceneDelegate);
-    TF_UNUSED(reprName);
-    TF_UNUSED(dirtyBits);
-
-    // Embree doesn't use the HdRepr structure, so return an empty value.
-    static HdReprSharedPtr empty;
-    return empty;
+    // Create an empty repr.
+    _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
+                                            _ReprComparator(reprToken));
+    if (it == _reprs.end()) {
+        _reprs.emplace_back(reprToken, HdReprSharedPtr());
+    }
 }
 
 void
-HdEmbreeMesh::Sync(HdSceneDelegate* sceneDelegate,
-                   HdRenderParam*   renderParam,
-                   HdDirtyBits*     dirtyBits,
-                   TfToken const&   reprName,
-                   bool             forcedRepr)
+HdEmbreeMesh::Sync(HdSceneDelegate *sceneDelegate,
+                   HdRenderParam   *renderParam,
+                   HdDirtyBits     *dirtyBits,
+                   TfToken const   &reprToken)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    // The repr token is used to look up an HdMeshReprDesc struct, which
-    // has drawing settings for this prim to use. Repr opinions can come
-    // from the render pass's rprim collection or the scene delegate;
-    // _GetReprName resolves these multiple opinions.
-    TfToken calculatedReprName = _GetReprName(sceneDelegate, reprName,
-        forcedRepr, dirtyBits);
-
-    // XXX: Meshes can have multiple reprs; this is done, for example, when
-    // the drawstyle specifies different rasterizing modes between front faces
-    // and back faces. With raytracing, this concept makes less sense, but
+    // XXX: A mesh repr can have multiple repr decs; this is done, for example, 
+    // when the drawstyle specifies different rasterizing modes between front
+    // faces and back faces.
+    // With raytracing, this concept makes less sense, but
     // combining semantics of two HdMeshReprDesc is tricky in the general case.
     // For now, HdEmbreeMesh only respects the first desc; this should be fixed.
-    _MeshReprConfig::DescArray descs = _GetReprDesc(calculatedReprName);
+    _MeshReprConfig::DescArray descs = _GetReprDesc(reprToken);
     const HdMeshReprDesc &desc = descs[0];
 
     // Pull top-level embree state out of the render param.
-    RTCScene scene = static_cast<HdEmbreeRenderParam*>(renderParam)
-		->GetEmbreeScene();
-    RTCDevice device = static_cast<HdEmbreeRenderParam*>(renderParam)
-        ->GetEmbreeDevice();
+    HdEmbreeRenderParam *embreeRenderParam =
+        static_cast<HdEmbreeRenderParam*>(renderParam);
+    RTCScene scene = embreeRenderParam->AcquireSceneForEdit();
+    RTCDevice device = embreeRenderParam->GetEmbreeDevice();
 
     // Create embree geometry objects.
     _PopulateRtMesh(sceneDelegate, scene, device, dirtyBits, desc);
@@ -215,7 +202,7 @@ HdEmbreeMesh::_EmbreeCullFaces(void *userData, RTCRay &ray)
 void
 HdEmbreeMesh::_CreateEmbreeSubdivMesh(RTCScene scene)
 {
-    PxOsdSubdivTags &subdivTags = _topology.GetSubdivTags();
+    const PxOsdSubdivTags &subdivTags = _topology.GetSubdivTags();
 
     // The embree edge crease buffer expects ungrouped edges: a pair
     // of indices marking an edge and one weight per crease.
@@ -361,61 +348,77 @@ HdEmbreeMesh::_UpdatePrimvarSources(HdSceneDelegate* sceneDelegate,
     //
     // While iterating primvars, we skip "points" (vertex positions) because
     // the points primvar is processed by _PopulateRtMesh. We only call
-    // GetPrimVar on primvars that have been marked dirty.
+    // GetPrimvar on primvars that have been marked dirty.
     //
     // Currently, hydra doesn't have a good way of communicating changes in
     // the set of primvars, so we only ever add and update to the primvar set.
 
-    TfTokenVector names = GetPrimVarVertexNames(sceneDelegate);
-    TF_FOR_ALL(nameIt, names) {
-        if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, *nameIt) &&
-            *nameIt != HdTokens->points) {
-            _primvarSourceMap[*nameIt] = {
-                GetPrimVar(sceneDelegate, *nameIt),
-                HdInterpolationVertex
-            };
+    HdPrimvarDescriptorVector primvars;
+    for (size_t i=0; i < HdInterpolationCount; ++i) {
+        HdInterpolation interp = static_cast<HdInterpolation>(i);
+        primvars = GetPrimvarDescriptors(sceneDelegate, interp);
+        for (HdPrimvarDescriptor const& pv: primvars) {
+            if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, pv.name) &&
+                pv.name != HdTokens->points) {
+                _primvarSourceMap[pv.name] = {
+                    GetPrimvar(sceneDelegate, pv.name),
+                    interp
+                };
+            }
         }
     }
-    names = GetPrimVarVaryingNames(sceneDelegate);
-    TF_FOR_ALL(nameIt, names) {
-        if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, *nameIt) &&
-            *nameIt != HdTokens->points) {
-            _primvarSourceMap[*nameIt] = {
-                GetPrimVar(sceneDelegate, *nameIt),
-                HdInterpolationVarying
-            };
+}
+
+TfTokenVector
+HdEmbreeMesh::_UpdateComputedPrimvarSources(HdSceneDelegate* sceneDelegate,
+                                            HdDirtyBits dirtyBits)
+{
+    HD_TRACE_FUNCTION();
+    
+    SdfPath const& id = GetId();
+
+    // Get all the dirty computed primvars
+    HdExtComputationPrimvarDescriptorVector dirtyCompPrimvars;
+    for (size_t i=0; i < HdInterpolationCount; ++i) {
+        HdExtComputationPrimvarDescriptorVector compPrimvars;
+        HdInterpolation interp = static_cast<HdInterpolation>(i);
+        compPrimvars = sceneDelegate->GetExtComputationPrimvarDescriptors
+                                    (GetId(),interp);
+
+        for (auto const& pv: compPrimvars) {
+            if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, pv.name)) {
+                dirtyCompPrimvars.emplace_back(pv);
+            }
         }
     }
-    names = GetPrimVarFacevaryingNames(sceneDelegate);
-    TF_FOR_ALL(nameIt, names) {
-        if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, *nameIt) &&
-            *nameIt != HdTokens->points) {
-            _primvarSourceMap[*nameIt] = {
-                GetPrimVar(sceneDelegate, *nameIt),
-                HdInterpolationFaceVarying
-            };
+
+    if (dirtyCompPrimvars.empty()) {
+        return TfTokenVector();
+    }
+    
+    HdExtComputationUtils::ValueStore valueStore
+        = HdExtComputationUtils::GetComputedPrimvarValues(
+            dirtyCompPrimvars, sceneDelegate);
+
+    TfTokenVector compPrimvarNames;
+    // Update local primvar map and track the ones that were computed
+    for (auto const& compPrimvar : dirtyCompPrimvars) {
+        auto const it = valueStore.find(compPrimvar.name);
+        if (!TF_VERIFY(it != valueStore.end())) {
+            continue;
+        }
+        
+        compPrimvarNames.emplace_back(compPrimvar.name);
+        if (compPrimvar.name == HdTokens->points) {
+            _points = it->second.Get<VtVec3fArray>();
+            _normalsValid = false;
+        } else {
+            _primvarSourceMap[compPrimvar.name] = {it->second,
+                                                compPrimvar.interpolation};
         }
     }
-    names = GetPrimVarUniformNames(sceneDelegate);
-    TF_FOR_ALL(nameIt, names) {
-        if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, *nameIt) &&
-            *nameIt != HdTokens->points) {
-            _primvarSourceMap[*nameIt] = {
-                GetPrimVar(sceneDelegate, *nameIt),
-                HdInterpolationUniform
-            };
-        }
-    }
-    names = GetPrimVarConstantNames(sceneDelegate);
-    TF_FOR_ALL(nameIt, names) {
-        if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, *nameIt) &&
-            *nameIt != HdTokens->points) {
-            _primvarSourceMap[*nameIt] = {
-                GetPrimVar(sceneDelegate, *nameIt),
-                HdInterpolationConstant
-            };
-        }
-    }
+
+    return compPrimvarNames;
 }
 
 void
@@ -503,8 +506,14 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
 
     ////////////////////////////////////////////////////////////////////////
     // 1. Pull scene data.
+    TfTokenVector computedPrimvars =
+        _UpdateComputedPrimvarSources(sceneDelegate, *dirtyBits);
 
-    if (HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, HdTokens->points)) {
+    bool pointsIsComputed =
+        std::find(computedPrimvars.begin(), computedPrimvars.end(),
+                  HdTokens->points) != computedPrimvars.end();
+    if (!pointsIsComputed &&
+        HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->points)) {
         VtValue value = sceneDelegate->Get(id, HdTokens->points);
         _points = value.Get<VtVec3fArray>();
         _normalsValid = false;
@@ -520,12 +529,14 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
         _topology.SetSubdivTags(subdivTags);
         _adjacencyValid = false;
     }
-    if (HdChangeTracker::IsSubdivTagsDirty(*dirtyBits, id)) {
+    if (HdChangeTracker::IsSubdivTagsDirty(*dirtyBits, id) &&
+        _topology.GetRefineLevel() > 0) {
         _topology.SetSubdivTags(sceneDelegate->GetSubdivTags(id));
     }
-    if (HdChangeTracker::IsRefineLevelDirty(*dirtyBits, id)) {
+    if (HdChangeTracker::IsDisplayStyleDirty(*dirtyBits, id)) {
+        HdDisplayStyle const displayStyle = sceneDelegate->GetDisplayStyle(id);
         _topology = HdMeshTopology(_topology,
-            sceneDelegate->GetRefineLevel(id));
+            displayStyle.refineLevel);
     }
 
     if (HdChangeTracker::IsTransformDirty(*dirtyBits, id)) {
@@ -542,9 +553,9 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
     if (HdChangeTracker::IsDoubleSidedDirty(*dirtyBits, id)) {
         _doubleSided = IsDoubleSided(sceneDelegate);
     }
-    if (HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, HdTokens->normals) ||
-        HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, HdTokens->widths) ||
-        HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, HdTokens->primVar)) {
+    if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals) ||
+        HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->widths) ||
+        HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->primvar)) {
         _UpdatePrimvarSources(sceneDelegate, *dirtyBits);
     }
 
@@ -558,12 +569,15 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
     bool doRefine = (desc.geomStyle == HdMeshGeomStyleSurf);
 
     // If the subdivision scheme is "none", force us to not refine.
-    doRefine = doRefine && _topology.GetScheme() != PxOsdOpenSubdivTokens->none;
+    doRefine = doRefine && (_topology.GetScheme() != PxOsdOpenSubdivTokens->none);
+
+    // If the refine level is 0, triangulate instead of subdividing.
+    doRefine = doRefine && (_topology.GetRefineLevel() > 0);
 
     // The repr defines whether we should compute smooth normals for this mesh:
     // per-vertex normals taken as an average of adjacent faces, and
     // interpolated smoothly across faces.
-    _smoothNormals = desc.smoothNormals;
+    _smoothNormals = !desc.flatShadingEnabled;
 
     // If the subdivision scheme is "none" or "bilinear", force us not to use
     // smooth normals.
@@ -626,6 +640,8 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
         rtcSetUserData(_rtcMeshScene, _rtcMeshId,
             new HdEmbreePrototypeContext);
         _GetPrototypeContext()->rprim = this;
+        _GetPrototypeContext()->primitiveParams = (_refined ?
+            _trianglePrimitiveParams : VtIntArray());
 
         // Add _EmbreeCullFaces as a filter function for backface culling.
         rtcSetIntersectionFilterFunction(_rtcMeshScene, _rtcMeshId,
@@ -640,7 +656,7 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
 
     // If the refine level changed or the mesh was recreated, we need to pass
     // the refine level into the embree subdiv object.
-    if (newMesh || HdChangeTracker::IsRefineLevelDirty(*dirtyBits, id)) {
+    if (newMesh || HdChangeTracker::IsDisplayStyleDirty(*dirtyBits, id)) {
         if (doRefine) {
             // Pass the target number of uniform refinements to Embree.
             // Embree refinement is specified as the number of quads to generate
@@ -665,6 +681,7 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
         if (doRefine) {
             TfToken const vertexRule =
                 _topology.GetSubdivTags().GetVertexInterpolationRule();
+
             if (vertexRule == PxOsdOpenSubdivTokens->none) {
                 rtcSetBoundaryMode(_rtcMeshScene, _rtcMeshId,
                     RTC_BOUNDARY_NONE);
@@ -675,8 +692,10 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
                 rtcSetBoundaryMode(_rtcMeshScene, _rtcMeshId,
                     RTC_BOUNDARY_EDGE_AND_CORNER);
             } else {
-                TF_WARN("Unknown vertex interpolation rule: %s",
-                    vertexRule.GetText());
+                if (!vertexRule.IsEmpty()) {
+                    TF_WARN("Unknown vertex interpolation rule: %s",
+                            vertexRule.GetText());
+                }
             }
         }
     }
@@ -692,8 +711,8 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
         _normalsValid = false;
     }
     if (_smoothNormals && !_normalsValid) {
-        _computedNormals = _adjacency.ComputeSmoothNormals(_points.size(),
-            _points.cdata());
+        _computedNormals = Hd_SmoothNormals::ComputeSmoothNormals(
+            &_adjacency, _points.size(), _points.cdata());
         _normalsValid = true;
 
         // Create a sampler for the "normals" primvar. If there are authored
@@ -721,7 +740,7 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
     // Populate primvars if they've changed or we recreated the mesh.
     TF_FOR_ALL(it, _primvarSourceMap) {
         if (newMesh ||
-            HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, it->first)) {
+            HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, it->first)) {
             _CreatePrimvarSampler(it->first, it->second.data,
                     it->second.interpolation, _refined);
         }
@@ -729,7 +748,7 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
 
     // Populate points in the RTC mesh.
     if (newMesh || 
-        HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, HdTokens->points)) {
+        HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->points)) {
         rtcSetBuffer(_rtcMeshScene, _rtcMeshId, RTC_VERTEX_BUFFER,
             _points.cdata(), 0, sizeof(GfVec3f));
     }
@@ -743,7 +762,7 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
 
     // Mark embree objects dirty and rebuild the bvh.
     if (newMesh ||
-        HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, HdTokens->points)) {
+        HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->points)) {
         rtcUpdate(_rtcMeshScene, _rtcMeshId);
     }
     rtcCommit(_rtcMeshScene);
@@ -796,6 +815,7 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
                 RTC_MATRIX_COLUMN_MAJOR_ALIGNED16, matf.GetArray());
             // Update the transform in the instance context.
             _GetInstanceContext(scene, i)->objectToWorldMatrix = matf;
+            _GetInstanceContext(scene, i)->instanceId = i;
             // Mark the instance as updated in the BVH.
             rtcUpdate(scene, _rtcInstanceIds[i]);
         }
@@ -820,10 +840,11 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
                 RTC_MATRIX_COLUMN_MAJOR_ALIGNED16, _transform.GetArray());
             // Update the transform in the render context.
             _GetInstanceContext(scene, 0)->objectToWorldMatrix = _transform;
+            _GetInstanceContext(scene, 0)->instanceId = 0;
         }
         if (newInstance || newMesh ||
             HdChangeTracker::IsTransformDirty(*dirtyBits, id) ||
-            HdChangeTracker::IsPrimVarDirty(*dirtyBits, id,
+            HdChangeTracker::IsPrimvarDirty(*dirtyBits, id,
                                             HdTokens->points)) {
             // Mark the instance as updated in the top-level BVH.
             rtcUpdate(scene, _rtcInstanceIds[0]);

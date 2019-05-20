@@ -158,13 +158,21 @@ _GetEditTargetForLocalLayer(const UsdStagePtr &self,
 }
 
 static void
-_ExpandPopulationMask(UsdStage &self, boost::python::object pypred)
+_ExpandPopulationMask(UsdStage &self,
+                      boost::python::object pyRelPred,
+                      boost::python::object pyAttrPred)
 {
-    using Predicate = std::function<bool (UsdRelationship const &)>;
-    Predicate pred;
-    if (pypred != boost::python::object())
-        pred = boost::python::extract<Predicate>(pypred);
-    return self.ExpandPopulationMask(pred);
+    using RelPredicate = std::function<bool (UsdRelationship const &)>;
+    using AttrPredicate = std::function<bool (UsdAttribute const &)>;
+    RelPredicate relPred;
+    AttrPredicate attrPred;
+    if (pyRelPred != boost::python::object()) {
+        relPred = boost::python::extract<RelPredicate>(pyRelPred);
+    }
+    if (pyAttrPred != boost::python::object()) {
+        attrPred = boost::python::extract<AttrPredicate>(pyAttrPred);
+    }
+    return self.ExpandPopulationMask(relPred, attrPred);
 }
 
 static object 
@@ -197,56 +205,80 @@ void wrapUsdStage()
         .def(TfPyRefAndWeakPtr())
         .def("__repr__", __repr__)
 
-        .def("CreateNew", (UsdStageRefPtr (*)(const string &))
-             &UsdStage::CreateNew,
-             (arg("identifier")),
-             return_value_policy<TfPyRefPtrFactory<> >())
         .def("CreateNew", (UsdStageRefPtr (*)(const string &,
-                                              const SdfLayerHandle &))
+                                              UsdStage::InitialLoadSet))
              &UsdStage::CreateNew,
-             (arg("identifier"), arg("sessionLayer")),
-             return_value_policy<TfPyRefPtrFactory<> >())
-        .def("CreateNew", (UsdStageRefPtr (*)(const string &,
-                                              const ArResolverContext &))
-             &UsdStage::CreateNew,
-             (arg("identifier"), arg("pathResolverContext")),
+             (arg("identifier"),
+              arg("load")=UsdStage::LoadAll),
              return_value_policy<TfPyRefPtrFactory<> >())
         .def("CreateNew", (UsdStageRefPtr (*)(const string &,
                                               const SdfLayerHandle &,
-                                              const ArResolverContext &))
+                                              UsdStage::InitialLoadSet))
              &UsdStage::CreateNew,
-             (arg("identifier"), arg("sessionLayer"),
-              arg("pathResolverContext")),
+             (arg("identifier"), 
+              arg("sessionLayer"),
+              arg("load")=UsdStage::LoadAll),
+             return_value_policy<TfPyRefPtrFactory<> >())
+        .def("CreateNew", (UsdStageRefPtr (*)(const string &,
+                                              const ArResolverContext &,
+                                              UsdStage::InitialLoadSet))
+             &UsdStage::CreateNew,
+             (arg("identifier"), 
+              arg("pathResolverContext"),
+              arg("load")=UsdStage::LoadAll),
+             return_value_policy<TfPyRefPtrFactory<> >())
+        .def("CreateNew", (UsdStageRefPtr (*)(const string &,
+                                              const SdfLayerHandle &,
+                                              const ArResolverContext &,
+                                              UsdStage::InitialLoadSet))
+             &UsdStage::CreateNew,
+             (arg("identifier"), 
+              arg("sessionLayer"),
+              arg("pathResolverContext"),
+              arg("load")=UsdStage::LoadAll),
              return_value_policy<TfPyRefPtrFactory<> >())
         .staticmethod("CreateNew")
 
-        .def("CreateInMemory", (UsdStageRefPtr (*)())
+        .def("CreateInMemory", (UsdStageRefPtr (*)(
+                                    UsdStage::InitialLoadSet))
              &UsdStage::CreateInMemory,
-             return_value_policy<TfPyRefPtrFactory<> >())
-        .def("CreateInMemory", (UsdStageRefPtr (*)(const string &))
-             &UsdStage::CreateInMemory,
-             (arg("identifier")),
+             (arg("load")=UsdStage::LoadAll),
              return_value_policy<TfPyRefPtrFactory<> >())
         .def("CreateInMemory", (UsdStageRefPtr (*)(
                                     const string &,
-                                    const ArResolverContext &))
+                                    UsdStage::InitialLoadSet))
              &UsdStage::CreateInMemory,
-             (arg("identifier"), arg("pathResolverContext")),
+             (arg("identifier"),
+              arg("load")=UsdStage::LoadAll),
              return_value_policy<TfPyRefPtrFactory<> >())
         .def("CreateInMemory", (UsdStageRefPtr (*)(
                                     const string &,
-                                    const SdfLayerHandle &))
+                                    const ArResolverContext &,
+                                    UsdStage::InitialLoadSet))
              &UsdStage::CreateInMemory,
-             (arg("identifier"), arg("sessionLayer")),
+             (arg("identifier"), 
+              arg("pathResolverContext"),
+              arg("load")=UsdStage::LoadAll),
              return_value_policy<TfPyRefPtrFactory<> >())
         .def("CreateInMemory", (UsdStageRefPtr (*)(
                                     const string &,
                                     const SdfLayerHandle &,
-                                    const ArResolverContext &))
+                                    UsdStage::InitialLoadSet))
+             &UsdStage::CreateInMemory,
+             (arg("identifier"), 
+              arg("sessionLayer"),
+              arg("load")=UsdStage::LoadAll),
+             return_value_policy<TfPyRefPtrFactory<> >())
+        .def("CreateInMemory", (UsdStageRefPtr (*)(
+                                    const string &,
+                                    const SdfLayerHandle &,
+                                    const ArResolverContext &,
+                                    UsdStage::InitialLoadSet))
              &UsdStage::CreateInMemory,
              (arg("identifier"),
               arg("sessionLayer"),
-              arg("pathResolverContext")),
+              arg("pathResolverContext"),
+              arg("load")=UsdStage::LoadAll),
              return_value_policy<TfPyRefPtrFactory<> >())
         .staticmethod("CreateInMemory")
 
@@ -392,7 +424,8 @@ void wrapUsdStage()
         .def("GetPopulationMask", &UsdStage::GetPopulationMask)
         .def("SetPopulationMask", &UsdStage::SetPopulationMask, arg("mask"))
         .def("ExpandPopulationMask", &_ExpandPopulationMask,
-             arg("predicate")=object())
+             (arg("relationshipPredicate")=object(),
+              arg("attributePredicate")=object()))
 
         .def("GetPseudoRoot", &UsdStage::GetPseudoRoot)
 
@@ -402,6 +435,7 @@ void wrapUsdStage()
         .def("HasDefaultPrim", &UsdStage::HasDefaultPrim)
 
         .def("GetPrimAtPath", &UsdStage::GetPrimAtPath, arg("path"))
+        .def("GetObjectAtPath", &UsdStage::GetObjectAtPath, arg("path"))
         .def("Traverse", (UsdPrimRange (UsdStage::*)())
              &UsdStage::Traverse)
         .def("Traverse",

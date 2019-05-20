@@ -91,9 +91,9 @@ public:
     /// GlfTexture overrides
     GLF_API
     virtual BindingVector GetBindings(TfToken const & identifier,
-                                      GLuint samplerName) const;
+                                      GLuint samplerName);
     GLF_API
-    virtual VtDictionary GetTextureInfo() const;
+    virtual VtDictionary GetTextureInfo(bool forceLoad);
 
     GLF_API
     virtual bool IsMinFilterSupported(GLenum filter);
@@ -107,10 +107,12 @@ public:
     static int GetPageMargin() { return _pageMargin; }
 
     // return GL texture for layout texture buffer
-    GLuint GetLayoutTextureName() const { return _layout; }
+    GLF_API
+    GLuint GetLayoutTextureName();
 
     // return GL texture for texels data texture
-    GLuint GetTexelsTextureName() const { return _texels; }
+    GLF_API
+    GLuint GetTexelsTextureName();
 
 protected:
     GLF_API
@@ -120,10 +122,12 @@ protected:
     void _FreePtexTextureObject();
 
     GLF_API
-    virtual void _OnSetMemoryRequested(size_t targetMemory);
+    virtual void _OnMemoryRequestedDirty();
 
 private:
-    bool _ReadImage(size_t targetMemory);
+    bool _ReadImage();
+
+    bool _loaded;
 
     GLuint _layout;   // per-face lookup table
     GLuint _texels;   // texel data

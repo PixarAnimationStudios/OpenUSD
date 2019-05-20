@@ -366,7 +366,7 @@ public:
     const PcpPropertyIndex &
     ComputePropertyIndex(const SdfPath &propPath, PcpErrorVector *allErrors);
 
-    /// Returns a pointer to the cached computed propery index for the given
+    /// Returns a pointer to the cached computed property index for the given
     /// path, or NULL if it has not been computed.
     PCP_API
     const PcpPropertyIndex *

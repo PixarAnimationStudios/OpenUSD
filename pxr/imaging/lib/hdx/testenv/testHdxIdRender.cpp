@@ -31,6 +31,7 @@
 
 #include "pxr/imaging/hdSt/renderDelegate.h"
 
+#include "pxr/imaging/hdx/intersector.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/unitTestGLDrawing.h"
@@ -53,7 +54,7 @@ public:
     My_TestGLDrawing() {
         SetCameraRotate(0, 0);
         SetCameraTranslate(GfVec3f(0));
-        _reprName = HdTokens->hull;
+        _reprName = HdReprTokens->hull;
         _refineLevel = 0;
     }
 
@@ -124,7 +125,7 @@ My_TestGLDrawing::InitTest()
     _delegate->SetTaskParam(renderSetupTask, HdTokens->params, VtValue(param));
     _delegate->SetTaskParam(renderTask, HdTokens->collection,
                            VtValue(HdRprimCollection(HdTokens->geometry,
-                                   _reprName)));
+                                   HdReprSelector(_reprName))));
 
     // prepare scene
     // To ensure that the non-aggregated element index returned via picking, 
@@ -146,18 +147,18 @@ My_TestGLDrawing::InitTest()
                        /*guide=*/false, /*instancerId=*/SdfPath(),
                        /*scheme=*/PxOsdOpenSubdivTokens->catmark,
                        /*color=*/faceColor,
-                       /*colorInterpolation=*/Hdx_UnitTestDelegate::UNIFORM);
+                       /*colorInterpolation=*/HdInterpolationUniform);
     _delegate->AddCube(SdfPath("/cube1"), _GetTranslate(-5, 0, 5),
                        /*guide=*/false, /*instancerId=*/SdfPath(),
                        /*scheme=*/PxOsdOpenSubdivTokens->catmark,
                        /*color=*/faceColor,
-                       /*colorInterpolation=*/Hdx_UnitTestDelegate::UNIFORM);
+                       /*colorInterpolation=*/HdInterpolationUniform);
     _delegate->AddCube(SdfPath("/cube2"), _GetTranslate(-5, 0,-5));
     _delegate->AddCube(SdfPath("/cube3"), _GetTranslate( 5, 0,-5),
                         /*guide=*/false, /*instancerId=*/SdfPath(),
                        /*scheme=*/PxOsdOpenSubdivTokens->catmark,
                        /*color=*/vertColor,
-                       /*colorInterpolation=*/Hdx_UnitTestDelegate::VERTEX);
+                       /*colorInterpolation=*/HdInterpolationVertex);
 
     {
         _delegate->AddInstancer(SdfPath("/instancerTop"));
@@ -258,7 +259,7 @@ My_TestGLDrawing::OffscreenTest()
     SdfPath primId;
     int instanceIndex = -1;
     int elementIndex = -1;
-    bool refined = (_reprName == HdTokens->refined);
+    bool refined = (_reprName == HdReprTokens->refined);
 
     primId = PickScene(175, 90, &instanceIndex, &elementIndex);
     TF_VERIFY(primId == SdfPath("/cube1") &&
@@ -430,13 +431,13 @@ My_TestGLDrawing::PickScene(int pickX, int pickY,
         int idIndex = zMinIndex*4;
 
         result = _delegate->GetRenderIndex().GetRprimPathFromPrimId(
-                HdxRenderSetupTask::DecodeIDRenderColor(&primId[idIndex]));
+                HdxIntersector::DecodeIDRenderColor(&primId[idIndex]));
         if (outInstanceIndex) {
-            *outInstanceIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+            *outInstanceIndex = HdxIntersector::DecodeIDRenderColor(
                     &instanceId[idIndex]);
         }
         if (outElementIndex) {
-            *outElementIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+            *outElementIndex = HdxIntersector::DecodeIDRenderColor(
                     &elementId[idIndex]);
         }
     }

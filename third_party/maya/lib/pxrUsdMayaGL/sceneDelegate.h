@@ -24,7 +24,7 @@
 #ifndef PXRUSDMAYAGL_SCENE_DELEGATE_H
 #define PXRUSDMAYAGL_SCENE_DELEGATE_H
 
-/// \file sceneDelegate.h
+/// \file pxrUsdMayaGL/sceneDelegate.h
 
 #include "pxr/pxr.h"
 
@@ -63,7 +63,7 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
 
         // HdSceneDelegate interface
         PXRUSDMAYAGL_API
-        virtual VtValue Get(const SdfPath& id, const TfToken& key) override;
+        VtValue Get(const SdfPath& id, const TfToken& key) override;
 
         PXRUSDMAYAGL_API
         void SetCameraState(
@@ -86,7 +86,7 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
         HdTaskSharedPtrVector GetSetupTasks();
 
         PXRUSDMAYAGL_API
-        HdTaskSharedPtr GetRenderTask(
+        HdTaskSharedPtrVector GetRenderTasks(
                 const size_t hash,
                 const PxrMayaHdRenderParams& renderParams,
                 const HdRprimCollectionVector& rprimCollections);
@@ -117,8 +117,12 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
         SdfPathVector _lightIds;
         GlfSimpleLightingContextRefPtr _lightingContext;
 
+        SdfPath _shadowTaskId;
+
         typedef std::unordered_map<size_t, SdfPath> _RenderTaskIdMap;
+        _RenderTaskIdMap _renderSetupTaskIdMap;
         _RenderTaskIdMap _renderTaskIdMap;
+        _RenderTaskIdMap _selectionTaskIdMap;
 
         typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _ValueCache;
         typedef TfHashMap<SdfPath, _ValueCache, SdfPath::Hash> _ValueCacheMap;
@@ -131,4 +135,4 @@ typedef std::shared_ptr<PxrMayaHdSceneDelegate> PxrMayaHdSceneDelegateSharedPtr;
 PXR_NAMESPACE_CLOSE_SCOPE
 
 
-#endif // PXRUSDMAYAGL_SCENE_DELEGATE_H
+#endif

@@ -7,10 +7,11 @@ pxr_library(hd
     LIBRARIES
         plug
         tf
-        tracelite
+        trace
         vt
         work
         sdf
+        cameraUtil
         hf
         pxOsd
         ${TBB_tbb_LIBRARY}
@@ -19,6 +20,7 @@ pxr_library(hd
         ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
+        aov
         basisCurves
         basisCurvesTopology
         binding
@@ -29,6 +31,7 @@ pxr_library(hd
         bufferResource
         bufferSource
         bufferSpec
+        camera
         changeTracker
         compExtCompInputSource
         computation
@@ -37,27 +40,34 @@ pxr_library(hd
         drawingCoord
         drawItem
         engine
+        enums
         extCompCpuComputation
         extCompInputSource
         extCompPrimvarBufferSource
         extComputation
         extComputationContext
+        extComputationUtils
+        field
+        flatNormals
+        geomSubset
         instancer
         instanceRegistry
+        light
         material
         materialParam
         mesh
         meshTopology
         meshUtil
-        patchIndex
         perfLog
         points
         primGather
         primTypeIndex
+        renderBuffer
         renderDelegate
         renderIndex
         renderPass
         renderPassState
+        renderThread
         repr
         resource
         resourceRegistry
@@ -66,6 +76,7 @@ pxr_library(hd
         rprimSharedData
         sceneDelegate
         sceneExtCompInputSource
+        selection
         smoothNormals
         sortedIds                   
         sprim
@@ -73,6 +84,7 @@ pxr_library(hd
         task
         texture
         textureResource
+        timeSampleArray
         tokens
         topology
         types
@@ -81,11 +93,11 @@ pxr_library(hd
         unitTestNullRenderDelegate
         unitTestNullRenderPass
         vertexAdjacency
+	volume
         vtBufferSource
 
     PUBLIC_HEADERS
         api.h
-        enums.h
         version.h
 
     PRIVATE_CLASSES

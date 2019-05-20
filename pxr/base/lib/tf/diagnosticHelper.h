@@ -26,17 +26,20 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/api.h"
-#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/attributes.h"
 
+// XXX: This include is a hack to avoid build errors due to
+// incompatible macro definitions in pyport.h on macOS.
+#include <locale>
+
 #include <boost/any.hpp>
-#include <cstdarg>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 typedef boost::any TfDiagnosticInfo;
 class TfCallContext;
+enum TfDiagnosticType : int;
 class TfEnum;
 class TfError;
 
@@ -49,7 +52,19 @@ Tf_PostErrorHelper(
 TF_API bool
 Tf_PostErrorHelper(
     const TfCallContext &context,
+    TfDiagnosticType code,
+    const std::string &msg);
+
+TF_API bool
+Tf_PostErrorHelper(
+    const TfCallContext &context,
     const TfEnum &code,
+    const char *fmt, ...) ARCH_PRINTF_FUNCTION(3, 4);
+
+TF_API bool
+Tf_PostErrorHelper(
+    const TfCallContext &context,
+    TfDiagnosticType code,
     const char *fmt, ...) ARCH_PRINTF_FUNCTION(3, 4);
 
 TF_API bool
@@ -111,7 +126,19 @@ Tf_PostWarningHelper(
 TF_API void
 Tf_PostWarningHelper(
     const TfCallContext &context,
+    TfDiagnosticType code,
+    const std::string &msg);
+
+TF_API void
+Tf_PostWarningHelper(
+    const TfCallContext &context,
     const TfEnum &code,
+    const char *fmt, ...) ARCH_PRINTF_FUNCTION(3, 4);
+
+TF_API void
+Tf_PostWarningHelper(
+    const TfCallContext &context,
+    TfDiagnosticType code,
     const char *fmt, ...) ARCH_PRINTF_FUNCTION(3, 4);
 
 TF_API void

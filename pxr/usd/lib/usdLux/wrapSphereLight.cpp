@@ -55,6 +55,13 @@ _CreateRadiusAttr(UsdLuxSphereLight &self,
     return self.CreateRadiusAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
+        
+static UsdAttribute
+_CreateTreatAsPointAttr(UsdLuxSphereLight &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateTreatAsPointAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
+}
 
 } // anonymous namespace
 
@@ -76,14 +83,6 @@ void wrapUsdLuxSphereLight()
         .def("Define", &This::Define, (arg("stage"), arg("path")))
         .staticmethod("Define")
 
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
-
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
              arg("includeInherited")=true,
@@ -101,6 +100,13 @@ void wrapUsdLuxSphereLight()
              &This::GetRadiusAttr)
         .def("CreateRadiusAttr",
              &_CreateRadiusAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetTreatAsPointAttr",
+             &This::GetTreatAsPointAttr)
+        .def("CreateTreatAsPointAttr",
+             &_CreateTreatAsPointAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

@@ -155,13 +155,7 @@ PXR_NAMESPACE_OPEN_SCOPE
         return ret;                                                            \
     } 
 
-struct Vt_Reserved;
-
-VT_API bool
-Vt_ArrayStackCheck(size_t size, const Vt_Reserved* reserved);
-VT_API bool
-Vt_ArrayCompareSize(size_t aSize, const Vt_Reserved* aReserved,
-                    size_t bSize, const Vt_Reserved* bReserved);
+struct Vt_ShapeData;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

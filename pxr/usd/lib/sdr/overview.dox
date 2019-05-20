@@ -1,0 +1,16 @@
+Shader Definition Registry (SDR)
+
+The SDR is a shading-specialized version of the NDR, and provides the following
+specialized classes:
+* `SdrRegistry`
+* `SdrShaderNode`
+* `SdrShaderProperty`
+
+For more details on the registry, nodes, or properties, see the base NDR
+classes:
+* `NdrRegistry`
+* `NdrNode`
+* `NdrProperty`
+
+For a high-level view of the system and how all the parts work together, see
+the overview page for NDR.

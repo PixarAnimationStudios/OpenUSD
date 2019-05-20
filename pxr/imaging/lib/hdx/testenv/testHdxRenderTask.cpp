@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/glContext.h"
@@ -52,6 +53,8 @@ int main(int argc, char *argv[])
     glViewport(0, 0, 256, 256);
     // wrap into GlfGLContext so that GlfDrawTarget works
     GlfGLContextSharedPtr ctx = GlfGLContext::GetCurrentGLContext();
+    GlfContextCaps::InitInstance();
+
 
     HdEngine engine;
     HdStRenderDelegate renderDelegate;
@@ -107,8 +110,10 @@ int main(int argc, char *argv[])
 
     // update collection
     HdRprimCollectionVector collections;
-    collections.push_back(HdRprimCollection(HdTokens->geometry, HdTokens->wire));
-    collections.push_back(HdRprimCollection(HdTokens->geometry, HdTokens->wire));
+    collections.push_back(HdRprimCollection(HdTokens->geometry, 
+        HdReprSelector(HdReprTokens->wire)));
+    collections.push_back(HdRprimCollection(HdTokens->geometry, 
+        HdReprSelector(HdReprTokens->wire)));
     delegate->SetTaskParam(renderTask1, HdTokens->collection, VtValue(collections));
 
     // draw #3

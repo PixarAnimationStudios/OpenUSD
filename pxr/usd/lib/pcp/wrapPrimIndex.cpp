@@ -78,7 +78,7 @@ void wrapPrimIndex()
                       make_function(&_GetPrimStack,
                                     return_value_policy<TfPySequenceToList>()))
         .add_property("rootNode", &This::GetRootNode)
-        .add_property("hasPayload", &This::HasPayload)
+        .add_property("hasAnyPayloads", &This::HasAnyPayloads)
         .add_property("localErrors", 
                       make_function(&This::GetLocalErrors,
                                     return_value_policy<TfPySequenceToList>()))

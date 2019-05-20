@@ -52,7 +52,7 @@ constexpr bool _IsHashable(...) { return false; }
 
 // Hash implementations -- We're using an overload resolution ordering trick
 // here (int vs long vs ...) so that we pick hash_value first, if possible,
-// otherwise we do TfHash() if possible, otheriwse we issue a runtime error.
+// otherwise we do TfHash() if possible, otherwise we issue a runtime error.
 template <class T, class = decltype(hash_value(std::declval<T>()))>
 inline size_t
 _HashValueImpl(T const &val, int)

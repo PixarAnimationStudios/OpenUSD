@@ -59,7 +59,6 @@
 #include <typeinfo>
 #include <vector>
 #include <boost/any.hpp>
-#include <boost/noncopyable.hpp>
 #include <boost/none.hpp>
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>

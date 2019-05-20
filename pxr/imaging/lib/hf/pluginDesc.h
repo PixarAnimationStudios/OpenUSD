@@ -38,9 +38,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// about the name of the plugin.
 /// displayName is a human readable name given to the plugin intended
 /// to be used in menus.
-/// priorty is used to provide an ordering of plugins.  The plugin
+/// priority is used to provide an ordering of plugins.  The plugin
 /// with the highest priority is determined to be the default (unless
-/// overriden by the application).  In the event of a tie
+/// overridden by the application).  In the event of a tie
 /// the string version of id is used to sort alphabetically ('a' has priority
 /// over 'b').
 ///

@@ -507,6 +507,7 @@ public:
     void ClearInParallel() {
         Sdf_ClearPathTableInParallel(reinterpret_cast<void **>(_buckets.data()),
                                      _buckets.size(), _DeleteEntryChain);
+        _size = 0;
     }        
 
     /// Swap this table's contents with \a other.

@@ -55,6 +55,11 @@ UsdGeomPointBased::Get(const UsdStagePtr &stage, const SdfPath &path)
 }
 
 
+/* virtual */
+UsdSchemaType UsdGeomPointBased::_GetSchemaType() const {
+    return UsdGeomPointBased::schemaType;
+}
+
 /* static */
 const TfType &
 UsdGeomPointBased::_GetStaticTfType()
@@ -174,6 +179,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usdGeom/boundableComputeExtent.h"
 #include "pxr/base/tf/registryManager.h"
+#include "pxr/base/work/reduce.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -187,7 +193,7 @@ UsdGeomPointBased::GetNormalsInterpolation() const
         return interp;
     }
     
-    return UsdGeomTokens->varying;
+    return UsdGeomTokens->vertex;
 }
 
 bool
@@ -206,29 +212,65 @@ UsdGeomPointBased::SetNormalsInterpolation(TfToken const &interpolation)
     return false;
 }
 
-bool
-UsdGeomPointBased::ComputeExtent(const VtVec3fArray& points, 
-    VtVec3fArray* extent)  
+namespace {
+template <typename Reduction>
+bool 
+_ComputeExtentImpl(const VtVec3fArray& points, VtVec3fArray* extent,
+                   Reduction&& reduction)
 {
-    // Create Sized Extent
     extent->resize(2);
 
     // Calculate bounds
-    GfRange3d bbox;
-    TF_FOR_ALL(pointsItr, points) {
-        bbox.UnionWith(GfVec3f(*pointsItr));
-    }
+    GfRange3d bbox = WorkParallelReduceN(
+        GfRange3d(),
+        points.size(),
+        std::forward<Reduction>(reduction),
+        [](GfRange3d lhs, GfRange3d rhs){
+            return GfRange3d::GetUnion(lhs, rhs);
+        },
+        /*grainSize=*/ 500
+    );
 
     (*extent)[0] = GfVec3f(bbox.GetMin());
     (*extent)[1] = GfVec3f(bbox.GetMax());
-    
+
     return true;
+}
+} // end anonymous namespace
+
+bool
+UsdGeomPointBased::ComputeExtent(const VtVec3fArray& points,
+    VtVec3fArray* extent)
+{
+    return _ComputeExtentImpl(points, extent,
+        [&points](size_t b, size_t e, GfRange3d init){
+            for (size_t i = b; i != e; ++i) {
+                init.UnionWith(points[i]);
+            }
+            return init;
+        }
+    );
+}
+
+bool
+UsdGeomPointBased::ComputeExtent(const VtVec3fArray& points,
+    const GfMatrix4d& transform, VtVec3fArray* extent)
+{
+    return _ComputeExtentImpl(points, extent,
+        [&points, &transform](size_t b, size_t e, GfRange3d init){
+            for (size_t i = b; i != e; ++i) {
+                init.UnionWith(transform.Transform(points[i]));
+            }
+            return init;
+        }
+    );
 }
 
 static bool
 _ComputeExtentForPointBased(
-    const UsdGeomBoundable& boundable, 
-    const UsdTimeCode& time, 
+    const UsdGeomBoundable& boundable,
+    const UsdTimeCode& time,
+    const GfMatrix4d* transform,
     VtVec3fArray* extent) 
 {
     const UsdGeomPointBased pointBased(boundable);
@@ -241,7 +283,11 @@ _ComputeExtentForPointBased(
         return false;
     }
 
-    return UsdGeomPointBased::ComputeExtent(points, extent);
+    if (transform) {
+        return UsdGeomPointBased::ComputeExtent(points, *transform, extent);
+    } else {
+        return UsdGeomPointBased::ComputeExtent(points, extent);
+    }
 }
 
 TF_REGISTRY_FUNCTION(UsdGeomBoundable)

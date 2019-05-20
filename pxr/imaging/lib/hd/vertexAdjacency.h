@@ -30,10 +30,7 @@
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/computation.h"
-#include "pxr/imaging/hd/types.h"
 
-#include "pxr/base/gf/vec3d.h"
-#include "pxr/base/gf/vec3f.h"
 #include "pxr/base/vt/array.h"
 
 #include <boost/shared_ptr.hpp>
@@ -42,7 +39,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
 typedef boost::shared_ptr<class Hd_AdjacencyBuilderComputation> Hd_AdjacencyBuilderComputationSharedPtr;
 typedef boost::weak_ptr<class Hd_AdjacencyBuilderComputation> Hd_AdjacencyBuilderComputationPtr;
 
@@ -52,17 +48,6 @@ class HdMeshTopology;
 ///
 /// Hd_VertexAdjacency encapsulates mesh adjacency information,
 /// which is used for smooth normal computation.
-///
-/// Hd_VertexAdjacency provides 4 buffer computations. They are
-/// adjacency building and compute smooth normals on CPU or GPU.
-/// The dependencies between them will be internally created if necessary
-/// (i.e. adjacency builder always runs before smooth normals).
-///
-/// HdMesh ---> HdMeshTopology
-///        ---> Hd_VertexAdjacency ---> AdjacencyBuilder (for CPU/GPU smooth)
-///                                ---> AdjacencyBuilderForGPU (for GPU smooth)
-///                                ---> SmoothNormals (CPU smooth normals)
-///                                ---> SmoothNormalsGPU (GPU smooth normals)
 ///
 /// The Adjacency table (built by the AdjacencyBuilder computation)
 /// provides the index of the previous and next vertex for each face
@@ -85,7 +70,6 @@ class HdMeshTopology;
 /// Picking one vertex, 0, it is used by 2 faces, so it contains 2 previous/
 /// next pairs: (2, 1) and (3, 2)
 ///
-///
 /// The full adjacency table for this prim would be:
 ///
 ///  0  1 |  2  3 |  4  5 |  6  7 || 8  9  10 11 | 12 13 | 14 15 16 17 | 18 19
@@ -107,53 +91,20 @@ public:
     HD_API
     bool BuildAdjacencyTable(HdMeshTopology const *topology);
 
-    /// Returns an array of the same size and type as the source points
-    /// containing normal vectors computed by averaging the cross products
-    /// of incident face edges.
+    /// Returns a shared adjacency builder computation which will call
+    /// BuildAdjacencyTable.  The shared computation is useful if multiple
+    /// meshes share a topology and adjacency table, and only want to build the
+    /// adjacency table once.
     HD_API
-    VtArray<GfVec3f> ComputeSmoothNormals(int numPoints,
-                                          GfVec3f const * pointsPtr) const;
-    HD_API
-    VtArray<GfVec3d> ComputeSmoothNormals(int numPoints,
-                                          GfVec3d const * pointsPtr) const;
-    HD_API
-    VtArray<HdVec4f_2_10_10_10_REV> ComputeSmoothNormalsPacked(int numPoints,
-                                          GfVec3f const * pointsPtr) const;
-    HD_API
-    VtArray<HdVec4f_2_10_10_10_REV> ComputeSmoothNormalsPacked(int numPoints,
-                                          GfVec3d const * pointsPtr) const;
-
-    /// Returns the adjacency builder computation.
-    /// This computaions generates adjacency table on CPU.
-    HD_API
-    HdBufferSourceSharedPtr GetAdjacencyBuilderComputation(
+    HdBufferSourceSharedPtr GetSharedAdjacencyBuilderComputation(
         HdMeshTopology const *topology);
 
-    /// Returns the adjacency builder computation.
-    /// This computaions generates adjacency table on GPU.
-    HD_API
-    HdBufferSourceSharedPtr GetAdjacencyBuilderForGPUComputation();
-
-    ///
-    /// \name Smooth normals
-    /// @{
-
-    /// Returns the smooth normal computation on CPU.
-    /// This computation generates buffer source of computed normals
-    /// to be transferred later. It requires adjacency table on CPU
-    /// produced by AdjacencyBuilderComputation.
-    HD_API
-    HdBufferSourceSharedPtr GetSmoothNormalsComputation(
-        HdBufferSourceSharedPtr const &points,
-        TfToken const &dstName,
-        bool packed=false);
-
-    /// Sets the adjacency range which locates the adjacency table on GPU.
+    /// Sets the buffer range used for adjacency table storage.
     void SetAdjacencyRange(HdBufferArrayRangeSharedPtr const &range) {
         _adjacencyRange = range;
     }
 
-    /// Returns the adjacency table range.
+    /// Returns the buffer range used for adjacency table storage.
     HdBufferArrayRangeSharedPtr const &GetAdjacencyRange() const {
         return _adjacencyRange;
     }
@@ -164,24 +115,27 @@ public:
     }
 
     /// Returns the adjacency table.
-    std::vector<int> const &GetAdjacencyTable() const {
+    VtIntArray const &GetAdjacencyTable() const {
         return _adjacencyTable;
     }
 
 private:
     int _numPoints;
-    std::vector<int> _adjacencyTable;
+    VtIntArray _adjacencyTable;
 
-    // adjacency buffer range on GPU
+    // adjacency buffer range
     HdBufferArrayRangeSharedPtr _adjacencyRange;
 
-    // weak ptr of cpu adjacency builder used for dependent computations
-    Hd_AdjacencyBuilderComputationPtr _adjacencyBuilder;
+    // weak ptr of adjacency builder used for dependent computations
+    Hd_AdjacencyBuilderComputationPtr _sharedAdjacencyBuilder;
 };
 
 /// \class Hd_AdjacencyBuilderComputation
 ///
-/// Adjacency table computation CPU.
+/// A null buffer source to compute the adjacency table.
+/// Since this is a null buffer source, it won't actually produce buffer
+/// output; but other computations can depend on this to ensure
+/// BuildAdjacencyTable is called.
 ///
 class Hd_AdjacencyBuilderComputation : public HdNullBufferSource {
 public:
@@ -189,44 +143,43 @@ public:
     Hd_AdjacencyBuilderComputation(Hd_VertexAdjacency *adjacency,
                                    HdMeshTopology const *topology);
     HD_API
-    virtual bool Resolve();
+    virtual bool Resolve() override;
 
 protected:
     HD_API
-    virtual bool _CheckValid() const;
+    virtual bool _CheckValid() const override;
 
 private:
     Hd_VertexAdjacency *_adjacency;
     HdMeshTopology const *_topology;
 };
 
-/// \class Hd_AdjacencyBuilderForGPUComputation
+/// \class Hd_AdjacencyBufferSource
 ///
-/// Adjacency table computation on the CPU, for GPU consumption.
+/// A buffer source that puts an already computed adjacency table into
+/// a resource registry buffer. This computation should be dependent on an
+/// Hd_AdjacencyBuilderComputation.
 ///
-class Hd_AdjacencyBuilderForGPUComputation : public HdComputedBufferSource {
+class Hd_AdjacencyBufferSource : public HdComputedBufferSource {
 public:
-    typedef boost::shared_ptr<class Hd_AdjacencyBuilderComputation>
-        Hd_AdjacencyBuilderComputationSharedPtr;
-
     HD_API
-    Hd_AdjacencyBuilderForGPUComputation(
+    Hd_AdjacencyBufferSource(
         Hd_VertexAdjacency const *adjacency,
-        Hd_AdjacencyBuilderComputationSharedPtr const &adjacencyBuilder);
+        HdBufferSourceSharedPtr const &adjacencyBuilder);
 
     // overrides
     HD_API
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
     HD_API
-    virtual bool Resolve();
+    virtual bool Resolve() override;
 
 protected:
     HD_API
-    virtual bool _CheckValid() const;
+    virtual bool _CheckValid() const override;
 
 private:
     Hd_VertexAdjacency const *_adjacency;
-    Hd_AdjacencyBuilderComputationSharedPtr const _adjacencyBuilder;
+    HdBufferSourceSharedPtr const _adjacencyBuilder;
 };
 
 

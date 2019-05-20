@@ -41,13 +41,18 @@ class UsdTimeCode;
 
 /// Function registered with #UsdGeomRegisterComputeExtentFunction for
 /// computing extents for a Boundable prim at the given time and filling
-/// the given VtVec3fArray with the result.  
+/// the given VtVec3fArray with the result.  If an optional transform matrix is
+/// supplied, the extent is computed as if the object was first transformed by
+/// the matrix. If the transform matrix is nullptr, the extent is computed as if
+/// the identity matrix was passed.
 /// 
 /// The Boundable is guaranteed to be convertible to the prim type this 
 /// function was registered with.  The function must be thread-safe.  
 /// It should return true on success, false on failure.
-using UsdGeomComputeExtentFunction = 
-    bool(*)(const UsdGeomBoundable&, const UsdTimeCode&, VtVec3fArray*);
+using UsdGeomComputeExtentFunction = bool(*)(const UsdGeomBoundable&,
+                                             const UsdTimeCode&,
+                                             const GfMatrix4d*,
+                                             VtVec3fArray*);
 
 /// Registers \p fn as the function to use for computing extents for Boundable
 /// prims of type \p PrimType by UsdGeomBoundable::ComputeExtentFromPlugins.

@@ -80,11 +80,6 @@ typedef std::map<class TfToken, VtValue,
                  TfDictionaryLessThan
                  > UsdMetadataValueMap;
 
-/// Returns true if the pipeline is configured to process / generate 
-/// USD only and stop generating tidScenes.
-USD_API
-bool UsdIsRetireLumosEnabled();
-
 /// Returns true if Add() methods in the USD API, when given
 /// UsdListPositionTempDefault, should author "add" operations
 /// in SdfListOp values instead of prepends. Used for backwards
@@ -157,6 +152,29 @@ enum UsdLoadPolicy {
     UsdLoadWithDescendants,
     /// Load a prim by itself with no descendants.
     UsdLoadWithoutDescendants
+};
+
+/// \enum UsdSchemaType
+///
+/// An enum representing which type of schema a given schema class belongs to
+///
+enum class UsdSchemaType {
+    /// Represents abstract or base schema types that are interface-only
+    /// and cannot be instantiated. These are reserved for core base classes
+    /// known to the usdGenSchema system, so this should never be assigned to
+    /// generated schema classes.
+    AbstractBase,
+    /// Represents a non-concrete typed schema
+    AbstractTyped,
+    /// Represents a concrete typed schema
+    ConcreteTyped,
+    /// Non-applied API schema
+    NonAppliedAPI,
+    /// Single Apply API schema
+    SingleApplyAPI,
+    /// Multiple Apply API Schema
+    MultipleApplyAPI
+    
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

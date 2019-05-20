@@ -137,7 +137,6 @@ void wrapUsdRiTokens()
     _AddToken(cls, "noLight", UsdRiTokens->noLight);
     _AddToken(cls, "off", UsdRiTokens->off);
     _AddToken(cls, "onVolumeBoundaries", UsdRiTokens->onVolumeBoundaries);
-    _AddToken(cls, "outputsRiBxdf", UsdRiTokens->outputsRiBxdf);
     _AddToken(cls, "outputsRiDisplacement", UsdRiTokens->outputsRiDisplacement);
     _AddToken(cls, "outputsRiSurface", UsdRiTokens->outputsRiSurface);
     _AddToken(cls, "outputsRiVolume", UsdRiTokens->outputsRiVolume);
@@ -158,7 +157,6 @@ void wrapUsdRiTokens()
     _AddToken(cls, "riDensity", UsdRiTokens->riDensity);
     _AddToken(cls, "riDiffuse", UsdRiTokens->riDiffuse);
     _AddToken(cls, "riExposure", UsdRiTokens->riExposure);
-    _AddToken(cls, "riFocusRegion", UsdRiTokens->riFocusRegion);
     _AddToken(cls, "riIntensity", UsdRiTokens->riIntensity);
     _AddToken(cls, "riIntensityNearDist", UsdRiTokens->riIntensityNearDist);
     _AddToken(cls, "riInvert", UsdRiTokens->riInvert);

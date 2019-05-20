@@ -29,6 +29,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/plug/api.h"
 
+#include <atomic>
 #include <type_traits>
 #include <typeinfo>
 
@@ -50,11 +51,12 @@ public:
 #endif
 
 protected:
+    PLUG_API
     void _LoadAndInstantiate(const std::type_info& type) const;
 
 protected:
     // POD types only!
-    mutable bool _initialized;
+    mutable std::atomic<bool> _initialized;
     mutable void* _ptr;
 };
 
@@ -87,16 +89,24 @@ protected:
 /// }
 /// \endcode
 ///
-/// The interface must be defined correctly.  In particular, it must have no
-/// data members (static or otherwise), no static member functions, no
-/// non-virtual member functions, only pure virtual member functions, no
-/// constructors except an inline protected default that does nothing (or no
-/// constructors at all), and a virtual destructor as the first member that
-/// \e must be defined inline with an empty body.  The last requirement is
-/// so that clients of the interface that include the header get a typeinfo
-/// for the interface.  Note that due to limitations in the GCC C++ ABI an
-/// inline virtual destructor prevents dynamic_cast<> and typeid() from
-/// working correctly;  do not use those on the interface type.
+/// The interface must be defined correctly.  In particular, it must have
+///
+///   \li no data members (static or otherwise),
+///   \li no static member functions,
+///   \li no non-virtual member functions,
+///   \li only pure virtual member functions,
+///   \li no constructors except an inline protected default that does nothing
+///       (or no constructors at all,)
+///   \li a virtual destructor as the first member that \e must be defined
+///       \e inline with an empty body even though inline virtual destructors
+///       are contrary to conventional practice.
+///
+/// The last requirement causes the compiler to emit a copy of the interface
+/// typeinfo into clients of the interface.  This typeinfo is required by
+/// PlugStaticInterface internals to perform the appropriate plugin metadata
+/// search for the interface type.  Note that due to limitations in the GCC
+/// C++ ABI an inline virtual destructor may prevent dynamic_cast<> and typeid()
+/// from working correctly; do not use those on the interface type.
 ///
 /// For example:
 /// 
@@ -195,7 +205,6 @@ public:
 private:
     Interface* _GetPtr() const
     {
-        // XXX: Broken double-checked locking.
         if (!_initialized) {
             _LoadAndInstantiate(typeid(Interface));
         }

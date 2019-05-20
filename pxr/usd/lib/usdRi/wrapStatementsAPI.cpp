@@ -48,13 +48,6 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
-        
-static UsdAttribute
-_CreateFocusRegionAttr(UsdRiStatementsAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateFocusRegionAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
-}
 
 } // anonymous namespace
 
@@ -62,7 +55,7 @@ void wrapUsdRiStatementsAPI()
 {
     typedef UsdRiStatementsAPI This;
 
-    class_<This, bases<UsdSchemaBase> >
+    class_<This, bases<UsdAPISchemaBase> >
         cls("StatementsAPI");
 
     cls
@@ -73,16 +66,8 @@ void wrapUsdRiStatementsAPI()
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
 
-        .def("Apply", &This::Apply, (arg("stage"), arg("path")))
+        .def("Apply", &This::Apply, (arg("prim")))
         .staticmethod("Apply")
-
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
@@ -96,13 +81,6 @@ void wrapUsdRiStatementsAPI()
 
         .def(!self)
 
-        
-        .def("GetFocusRegionAttr",
-             &This::GetFocusRegionAttr)
-        .def("CreateFocusRegionAttr",
-             &_CreateFocusRegionAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
 
     ;
 
@@ -158,7 +136,8 @@ WRAP_CUSTOM {
                  const TfToken &, const std::string &, const std::string &))
              &UsdRiStatementsAPI::CreateRiAttribute,
              (arg("name"), arg("riType"), arg("nameSpace")="user"))
-        .def("CreateRiAttributeAsRel", &UsdRiStatementsAPI::CreateRiAttributeAsRel,
+        .def("GetRiAttribute",
+             &UsdRiStatementsAPI::GetRiAttribute,
              (arg("name"), arg("nameSpace")="user"))
         .def("GetRiAttributes", &UsdRiStatementsAPI::GetRiAttributes,
              (arg("nameSpace")=""),

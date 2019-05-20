@@ -3,13 +3,12 @@
 //Last modified: Tue, Dec 26, 2017 07:44:42 PM
 //Codeset: UTF-8
 requires maya "2018";
-requires -nodeType "RenderMan" -nodeType "PxrDebugShadingContext" -nodeType "PxrSphereLight"
-		 -nodeType "OmnidirectionalStereo" -nodeType "PxrOcclusion" -nodeType "PxrRectLight"
-		 -nodeType "PxrDefault" -nodeType "PxrDomeLight" -nodeType "PxrDistantLight" -nodeType "PxrVisualizer"
-		 -nodeType "PxrPathTracer" -nodeType "PxrDirectLighting" -nodeType "PxrVCM" -nodeType "PxrDiskLight"
-		 -nodeType "PxrCamera" -nodeType "PxrMeshLight" -nodeType "PxrSurface" -nodeType "PxrValidateBxdf"
-		 "RenderMan_for_Maya" "21.6";
-requires "stereoCamera" "10.0";
+requires -nodeType "RenderMan" -nodeType "PxrDebugShadingContext" -nodeType "PxrEnvDayLight"
+		 -nodeType "PxrSphereLight" -nodeType "OmnidirectionalStereo" -nodeType "PxrOcclusion"
+		 -nodeType "PxrAovLight" -nodeType "PxrRectLight" -nodeType "PxrDefault" -nodeType "PxrDomeLight"
+		 -nodeType "PxrDistantLight" -nodeType "PxrVisualizer" -nodeType "PxrPathTracer" -nodeType "PxrDirectLighting"
+		 -nodeType "PxrVCM" -nodeType "PxrDiskLight" -nodeType "PxrCamera" -nodeType "PxrMeshLight"
+		 -nodeType "PxrSurface" -nodeType "PxrValidateBxdf" "RenderMan_for_Maya" "21.6";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
 fileInfo "product" "Maya 2018";
@@ -205,6 +204,42 @@ createNode PxrSphereLight -n "SphereLightShape" -p "SphereLight";
 	setAttr ".specular" 1.6;
 	setAttr ".diffuse" 1.6;
 	setAttr ".areaNormalize" yes;
+createNode transform -n "AovLight" -p "Lights";
+	rename -uid "F6DAB390-254F-7239-C558-8783128E9BF5";
+	setAttr ".t" -type "double3" 7 7 7 ;
+createNode PxrAovLight -n "AovLightShape" -p "AovLight";
+	rename -uid "32B339BC-0449-F67B-E5A4-BFB69BC0B7E7";
+	setAttr -k off ".v";
+	setAttr ".aovName" -type "string" "testAovName";
+	setAttr ".useColor" yes;
+	setAttr ".invert" yes;
+	setAttr ".inPrimaryHit" no;
+	setAttr ".inRefraction" yes;
+	setAttr ".inReflection" yes;
+	setAttr ".onVolumeBoundaries" no;
+	setAttr ".useThroughput" no;
+createNode transform -n "EnvDayLight" -p "Lights";
+	rename -uid "30E7E0C6-C448-FD89-E4A8-099DAA6F772F";
+	setAttr ".t" -type "double3" 8 8 8 ;
+createNode PxrEnvDayLight -n "EnvDayLightShape" -p "EnvDayLight";
+	rename -uid "77BE3D50-5140-8CF3-02CB-A28869E78850";
+	setAttr -k off ".v";
+	setAttr ".intensity" 1.8;
+	setAttr ".exposure" 0.8;
+	setAttr ".sunDirection" -type "float3" 0 0 0.8 ;
+	setAttr ".haziness" 1.8;
+	setAttr ".skyTint" -type "float3" 0.8 0.8 0.8 ;
+	setAttr ".sunTint" -type "float3" 0.8 0.8 0.8 ;
+	setAttr ".sunSize" 0.8;
+	setAttr ".specular" 1.8;
+	setAttr ".diffuse" 1.8;
+	setAttr ".month" 8;
+	setAttr ".day" 8;
+	setAttr ".year" 2018;
+	setAttr ".hour" 8.8;
+	setAttr ".zone" 8;
+	setAttr ".latitude" 80;
+	setAttr ".longitude" -80;
 createNode lightLinker -s -n "lightLinker1";
 	rename -uid "24FF7C2C-6348-F097-F880-43842870BF62";
 	setAttr -s 4 ".lnk";
@@ -1193,6 +1228,11 @@ createNode script -n "sceneConfigurationScriptNode";
 	rename -uid "023A926F-544A-54BF-486A-17A235189DFD";
 	setAttr ".b" -type "string" "playbackOptions -min 1 -max 120 -ast 1 -aet 200 ";
 	setAttr ".st" 6;
+createNode animCurveTL -n "AnimDiskLight_translateY";
+	rename -uid "09543860-0000-27F0-577C-114B00000284";
+	setAttr ".tan" 2;
+	setAttr ".wgt" no;
+	setAttr -s 2 ".ktv[0:1]"  1 1 5 5;
 select -ne :time1;
 	setAttr ".o" 1;
 	setAttr ".unw" 1;
@@ -1221,6 +1261,7 @@ select -ne :defaultResolution;
 select -ne :hardwareRenderGlobals;
 	setAttr ".ctrs" 256;
 	setAttr ".btrs" 512;
+connectAttr "AnimDiskLight_translateY.o" "DiskLight.ty";
 connectAttr "polyPlane1.out" "PlaneShape.i";
 connectAttr "polyCube1.out" "CubeShape.i";
 relationship "link" ":lightLinker1" ":initialShadingGroup.message" ":defaultLightSet.message";

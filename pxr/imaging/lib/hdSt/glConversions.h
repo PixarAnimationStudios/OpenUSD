@@ -44,6 +44,18 @@ public:
     static GLenum GetGlDepthFunc(HdCompareFunction func);
 
     HDST_API
+    static GLenum GetGlStencilFunc(HdCompareFunction func);
+
+    HDST_API
+    static GLenum GetGlStencilOp(HdStencilOp op);
+
+    HDST_API
+    static GLenum GetGlBlendOp(HdBlendOp op);
+
+    HDST_API
+    static GLenum GetGlBlendFactor(HdBlendFactor factor);
+
+    HDST_API
     static GLenum GetMinFilter(HdMinFilter filter);
 
     HDST_API
@@ -61,6 +73,10 @@ public:
     /// Return the name of the given type as represented in GLSL.
     HDST_API
     static TfToken GetGLSLTypename(HdType type);
+
+    /// Return a GLSL-safe, mangled name identifier.
+    HDST_API
+    static TfToken GetGLSLIdentifier(TfToken const& identifier);
 };
 
 

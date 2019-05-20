@@ -578,6 +578,49 @@ Test_TfType()
     TfType found = tConcrete.FindDerivedByName("SomeClassB");
     TF_AXIOM(found == tClassA);
 
+    ////////////////////////////////////////////////////////////////////////
+    // Test that bases are registered with the correct order and that errors
+    // are posted as needed.
+
+    TfType someBaseA = TfType::Declare("SomeBaseA");
+    TfType someBaseB = TfType::Declare("SomeBaseB");
+    TF_AXIOM(someBaseA && someBaseB);
+    
+    {
+        using TypeVector = std::vector<TfType>;    
+
+        // Define SomeDerivedClass with base SomeBaseB: No error expected. 
+        TfErrorMark m;
+        TfType t = TfType::Declare("SomeDerivedClass", { someBaseB });
+        TF_AXIOM(t.GetBaseTypes() == TypeVector({ someBaseB }));
+        TF_AXIOM(m.IsClean());
+
+        // Now redeclare with more bases and an order change: No error expected,
+        // but someBaseA needs to be first base now.
+        t = TfType::Declare("SomeDerivedClass", { someBaseA, someBaseB });
+        TF_AXIOM(t.GetBaseTypes() == TypeVector({ someBaseA, someBaseB }));
+        TF_AXIOM(m.IsClean());
+    
+        // Redefine with flipped order: error expected.
+        TfType::Declare("SomeDerivedClass", { someBaseB, someBaseA });
+        TF_AXIOM(!m.IsClean() && m.begin()->GetCommentary() ==
+            "Specified base type order differs for SomeDerivedClass: had "
+            "(SomeBaseA, SomeBaseB), now (SomeBaseB, SomeBaseA).  If this is "
+            "a type declared in a plugin, check that the plugin metadata is "
+            "correct.");
+        TF_AXIOM(m.Clear());
+
+        // Redefine with one base missing: error expected.
+        TfType::Declare("SomeDerivedClass", { someBaseA });
+        TF_AXIOM(!m.IsClean() && m.begin()->GetCommentary() ==
+            "TfType 'SomeDerivedClass' was previously declared to have "
+            "'SomeBaseB' as a base, but a subsequent declaration does not "
+            "include this as a base.  The newly given bases were: (SomeBaseA).  "
+            "If this is a type declared in a plugin, check that the plugin "
+            "metadata is correct.");
+        TF_AXIOM(m.Clear());
+    }
+
     return true;
 }
 

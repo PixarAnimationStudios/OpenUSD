@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2016-2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -30,7 +30,7 @@
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/base/work/threadLimits.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -85,10 +85,38 @@ TF_DEFINE_ENV_SETTING(
     USD_ABC_NUM_OGAWA_STREAMS, 4,
     "The number of threads available for reading ogawa-backed files via UsdAbc.");
 
+TF_DEFINE_ENV_SETTING(
+    USD_ABC_WRITE_UV_AS_ST_TEXCOORD2FARRAY, false,
+    "Switch to true to enable writing Alembic uv sets as primvars:st with type "
+    "texCoord2fArray to USD");
+
+
+TF_DEFINE_ENV_SETTING(
+    USD_ABC_XFORM_PRIM_COLLAPSE, true,
+    "Collapse Xforms containing a single geometry into a single geom Prim in USD");
+
 namespace {
 
 using namespace ::Alembic::AbcGeom;
 using namespace UsdAbc_AlembicUtil;
+
+static const TfToken&
+_GetUVPropertyName()
+{
+    static const TfToken uvUsdAbcPropertyName = 
+        (TfGetEnvSetting(USD_ABC_WRITE_UV_AS_ST_TEXCOORD2FARRAY)) ?
+        (UsdAbcPropertyNames->st) : (UsdAbcPropertyNames->uv);
+    return uvUsdAbcPropertyName;
+}
+
+static const SdfValueTypeName&
+_GetUVTypeName()
+{
+    static const SdfValueTypeName uvTypeName = 
+        (TfGetEnvSetting(USD_ABC_WRITE_UV_AS_ST_TEXCOORD2FARRAY)) ?
+        (SdfValueTypeNames->TexCoord2fArray) : (SdfValueTypeNames->Float2Array);
+    return uvTypeName;
+}
 
 static size_t
 _GetNumOgawaStreams()
@@ -218,15 +246,16 @@ _PostUnsupportedValueWarning(
 //
 
 struct _AlembicFixName {
-    char operator()(char x) const
-    {
-        return isalnum(x) ? x : '_';
+    std::string operator()(std::string const &x) const {
+        return TfMakeValidIdentifier(x);
     }
 };
 struct _AlembicFixNamespacedName {
-    char operator()(char x) const
-    {
-        return isalnum(x) || x == ':' ? x : '_';
+    std::string operator()(std::string const &x) const {
+        auto elems = TfStringSplit(x, ":");
+        std::transform(elems.begin(), elems.end(), elems.begin(),
+                       TfMakeValidIdentifier);
+        return TfStringJoin(elems, ":");
     }
 };
 
@@ -259,7 +288,7 @@ _CleanName(
 
         // If name is not a valid identifier then substitute characters.
         if (!test(name)) {
-            std::transform(name.begin(), name.end(), name.begin(), fixer);
+            name = fixer(name);
         }
     }
 
@@ -917,6 +946,17 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog)
         usedRootNames.insert(name);
     }
 
+    // Fetch authored timeCodesPerSecond early so that we can use it 
+    // for rescaling timeSamples.
+    if (const PropertyHeader* property =
+            root.getProperties().getPropertyHeader("Usd")) {
+        const MetaData& metadata = property->getMetaData();
+        _pseudoRoot->metadata[SdfFieldKeys->TimeCodesPerSecond] = 24.0;
+       _GetDoubleMetadata(metadata, _pseudoRoot->metadata,
+                           SdfFieldKeys->TimeCodesPerSecond);
+       _timeScale = _pseudoRoot->metadata[SdfFieldKeys->TimeCodesPerSecond].Get<double>();
+    }
+
     // Collect instancing information.
     // Skipping this step makes later code expand instances.
     if (!IsFlagSet(UsdAbc_AlembicContextFlagNames->expandInstances)) {
@@ -963,10 +1003,6 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog)
             *_allTimeSamples.begin();
         _pseudoRoot->metadata[SdfFieldKeys->EndTimeCode]   =
             *_allTimeSamples.rbegin();
-
-        // The time ordinate is in seconds in alembic files.
-        _pseudoRoot->metadata[SdfFieldKeys->TimeCodesPerSecond] = 1.0;
-        _pseudoRoot->metadata[SdfFieldKeys->FramesPerSecond] = 24.0;
     }
 
     // If no upAxis is authored, pretend that it was authored as 'Y'.  This
@@ -985,8 +1021,6 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog)
         _GetDoubleMetadata(metadata, _pseudoRoot->metadata,
                            SdfFieldKeys->EndTimeCode);
 
-        _GetDoubleMetadata(metadata, _pseudoRoot->metadata,
-                           SdfFieldKeys->TimeCodesPerSecond);
         _GetDoubleMetadata(metadata, _pseudoRoot->metadata,
                            SdfFieldKeys->FramesPerSecond);
 
@@ -1090,16 +1124,6 @@ _ReaderContext::ConvertSampleTimes(
 {
     std::vector<double> result;
     result.resize(alembicTimes.size());
-
-    // Check special case from TidScene.  If there's just one time and
-    // it's really big then we assume it's TidSceneObject::FRAME_UNVARYING
-    // or FRAME_INVALID except possibly scaled by frame rate.  In this
-    // case we just use 0.0.
-    if (alembicTimes.size() == 1 && 
-        GfAbs(alembicTimes[0]) > std::numeric_limits<double>::max() / 100.0) {
-        result[0] = 0.0;
-        return TimeSamples(result);
-    }
 
     // Special case.
     if (_timeScale == 1.0 && _timeOffset == 0.0) {
@@ -1880,6 +1904,9 @@ public:
     /// from the schema in Alembic property order.
     std::vector<std::string> GetUnextractedSchemaNames() const;
 
+    /// Returns a _PrimReaderContext corresponding to the parent of this context.
+    _PrimReaderContext GetParentContext() const;
+
 private:
     Property& _AddProperty(const TfToken& name);
     Property& _AddProperty(const TfToken& name,
@@ -2118,9 +2145,14 @@ _PrimReaderContext::AddOutOfSchemaProperty(
         _context.GetSchema().GetConversions().FindConverter(alembicType);
     if (usdTypeName) {
         _PrimReaderContext::Property &prop = 
-            _AddProperty(TfToken(name), usdTypeName, header->getMetaData(), 
-                     sampleTimes, isOutOfSchema);
-
+            (TfGetEnvSetting(USD_ABC_WRITE_UV_AS_ST_TEXCOORD2FARRAY) && 
+             name == UsdAbcPropertyNames->uvIndices)? 
+                (_AddProperty(UsdAbcPropertyNames->stIndices, 
+                             usdTypeName, header->getMetaData(), 
+                             sampleTimes, isOutOfSchema)) :
+                (_AddProperty(TfToken(name), 
+                             usdTypeName, header->getMetaData(), 
+                             sampleTimes, isOutOfSchema)); 
         prop.converter = std::bind(
             _context.GetSchema().GetConversions().GetToUsdConverter(
                 alembicType, prop.typeName),
@@ -2266,6 +2298,16 @@ _PrimReaderContext::_GetPropertyMetadata(
                      UsdAbcCustomMetadata->gprimDataRender);
 }
 
+_PrimReaderContext 
+_PrimReaderContext::GetParentContext() const
+{    
+    _PrimReaderContext parentContext(
+        _context, 
+        _prim.getParent(), 
+        _path.GetParentPath());
+    return parentContext;
+}
+
 //
 // Copy functors
 //
@@ -2339,7 +2381,7 @@ struct _CopySynthetic {
 };
 
 /// Copy a value from a property of a given type to \c UsdValueType.
-template <class T, class UsdValueType = void>
+template <class T, class UsdValueType = void, bool expand = true>
 struct _CopyGeneric {
     typedef T PropertyType;
     // This is defined for ITyped*Property.
@@ -2373,10 +2415,13 @@ struct _CopyGeneric {
 };
 
 /// Copy a ITypedGeomParam.  These are either an ITypedArrayProperty or a
-/// compound property with an ITypedArrayProperty and indices.  Either way
-/// we can call getExpanded() to get the un-indexed values.
-template <class T, class UsdValueType>
-struct _CopyGeneric<ITypedGeomParam<T>, UsdValueType> {
+/// compound property with an ITypedArrayProperty and indices. If the template
+/// parameter `expand` is true (which is the default), then we will call
+/// getExpanced() to get the un-indexed values. Otherwise we will get the
+/// indexed values, but _CopyIndices will need to be used to extract the
+/// indices.
+template <class T, class UsdValueType, bool expand>
+struct _CopyGeneric<ITypedGeomParam<T>, UsdValueType, expand> {
     typedef ITypedGeomParam<T> GeomParamType;
     typedef typename GeomParamType::prop_type PropertyType;
     typedef typename PropertyType::traits_type AlembicTraits;
@@ -2404,9 +2449,54 @@ struct _CopyGeneric<ITypedGeomParam<T>, UsdValueType> {
                     const ISampleSelector& iss) const
     {
         typename GeomParamType::sample_type sample;
-        object.getExpanded(sample, iss);
+        if (expand == false && object.isIndexed()) {
+            object.getIndexed(sample, iss);
+        } else {
+            object.getExpanded(sample, iss);
+        }
         return dst.Set(_CopyGenericValue<AlembicTraits,
                                          UsdValueType>(sample.getVals()));
+    }
+};
+
+/// Copy a ITypedGeomParam's index list as an int array.
+/// If the Alembic property is not indexed, it will do nothing.
+template <class GeomParamType>
+struct _CopyIndices {
+    typedef typename GeomParamType::prop_type PropertyType;
+    typedef typename PropertyType::traits_type AlembicTraits;
+
+    GeomParamType object;
+    _CopyIndices(const AlembicProperty& object_) :
+        object(object_.Cast<GeomParamType>())
+    {
+    }
+
+    bool operator()(_IsValidTag) const
+    {
+        return object.valid();
+    }
+
+    const MetaData& operator()(_MetaDataTag) const
+    {
+        return object.getMetaData();
+    }
+
+    _AlembicTimeSamples operator()(_SampleTimesTag) const
+    {
+        return _GetSampleTimes(object);
+    }
+
+    bool operator()(const UsdAbc_AlembicDataAny& dst,
+                    const ISampleSelector& iss) const
+    {
+        if (object.isIndexed()) {
+            typename GeomParamType::sample_type sample;
+            object.getIndexed(sample, iss);
+            return dst.Set(_CopyGenericValue<Uint32TPTraits,
+                                             int>(sample.getIndices()));
+        }
+        return false;
     }
 };
 
@@ -2767,6 +2857,65 @@ struct _CopyFaceVaryingInterpolateBoundary : _CopyGeneric<IInt32Property> {
     }
 };
 
+
+/// Base class to copy attributes of an alembic faceset to a USD GeomSubset
+struct _CopyFaceSetBase {
+    IFaceSet object;
+
+    _CopyFaceSetBase(const IFaceSet& object_) : object(object_) { }
+
+    bool operator()(_IsValidTag) const
+    {
+        return object.valid();
+    }
+
+    const MetaData& operator()(_MetaDataTag) const
+    {
+        return object.getMetaData();
+    }
+
+    _AlembicTimeSamples operator()(_SampleTimesTag) const
+    {
+        return _GetSampleTimes(object);
+    }
+};
+
+/// Class to copy faceset isPartition into the family type
+struct _CopyFaceSetFamilyType : _CopyFaceSetBase {
+    using _CopyFaceSetBase::operator();
+
+    _CopyFaceSetFamilyType(const IFaceSet& object_) 
+        : _CopyFaceSetBase(object_) {};
+
+    bool operator()(const UsdAbc_AlembicDataAny& dst,
+                    const ISampleSelector& iss) const
+    {
+        // Because the absence of the ".facesExclusive" will trigger an
+        // exception in IFaceSetSchema, we need to manually deal with the
+        // default state (and discard the exception thrown erroneously by
+        // getFaceExclusivity()).
+        //
+        // This is a bug in Alembic that has been fixed in Alembic 1.7.2, but 
+        // the mininum required version for USD is 1.5.2. This workaround must 
+        // remain until the required Alembic version is changed for USD.
+        //
+        // The Alembic issue can be tracked here:
+        // https://github.com/alembic/alembic/issues/129
+        bool isPartition = false;
+        try {
+            isPartition = object.getSchema().getFaceExclusivity() == kFaceSetExclusive;
+        }
+        catch(const Alembic::Util::Exception&) {}
+
+        if (isPartition)
+        {
+            return dst.Set(UsdGeomTokens->nonOverlapping);
+        }
+
+        return dst.Set(UsdGeomTokens->unrestricted);
+    }
+};
+
 static
 TfToken
 _ConvertCurveBasis(BasisType value)
@@ -2884,6 +3033,31 @@ _ReadOther(_PrimReaderContext* context)
     for (const auto& name : context->GetUnextractedNames()) {
         context->AddOutOfSchemaProperty(
             context->GetUsdName(name), context->Extract(name));
+    }
+}
+
+template<class T, class UsdValueType>
+void
+_ReadProperty(_PrimReaderContext* context, const char* name, TfToken propName, SdfValueTypeName typeName)
+{
+    // Read a generic Alembic property and convert it to a USD property.
+    // If the Alembic property is indexed, this will add both the values
+    // property and the indices property, in order to preserve topology.
+    auto prop = context->ExtractSchema(name);
+    if (prop.Cast<T>().isIndexed()) {
+        context->AddProperty(
+            propName,
+            typeName,
+            _CopyGeneric<T, UsdValueType, false>(prop));
+        context->AddProperty(
+            TfToken(SdfPath::JoinIdentifier(propName, UsdGeomTokens->indices)),
+            SdfValueTypeNames->IntArray,
+            _CopyIndices<T>(prop));
+    } else {
+        context->AddProperty(
+            propName,
+            typeName,
+            _CopyGeneric<T, UsdValueType>(prop));
     }
 }
 
@@ -3057,11 +3231,9 @@ _ReadPolyMesh(_PrimReaderContext* context)
         SdfValueTypeNames->IntArray,
         _CopyGeneric<IInt32ArrayProperty, int>(
             context->ExtractSchema(".faceCounts")));
-    context->AddProperty(
-        UsdAbcPropertyNames->uv,
-        SdfValueTypeNames->Float2Array,
-        _CopyGeneric<IV2fGeomParam, GfVec2f>(
-            context->ExtractSchema("uv")));
+
+    // Read texture coordinates
+    _ReadProperty<IV2fGeomParam, GfVec2f>(context, "uv", _GetUVPropertyName(), _GetUVTypeName());
 
     // Custom subdivisionScheme property.  Alembic doesn't have this since
     // the Alembic schema is PolyMesh.  Usd needs "none" as the scheme.
@@ -3154,11 +3326,61 @@ _ReadSubD(_PrimReaderContext* context)
         SdfValueTypeNames->FloatArray,
         _CopyGeneric<IFloatArrayProperty, float>(
             context->ExtractSchema(".creaseSharpnesses")));
+
+    // Read texture coordinates
+    _ReadProperty<IV2fGeomParam, GfVec2f>(context, "uv", _GetUVPropertyName(), _GetUVTypeName());
+}
+
+static
+void
+_ReadFaceSet(_PrimReaderContext* context)
+{
+    typedef IFaceSet Type;
+
+    // Wrap the object.
+    if (!Type::matches(context->GetObject().getHeader())) {
+        // Not of type Type.
+        return;
+    }
+
+    // A FaceSet must be a child of another Alembic object.
+    if (!context->GetObject().getParent()) {
+        // No parent exists.
+        return;
+    }
+
+    Type object(context->GetObject(), kWrapExisting);
+
+    // Add child properties under schema.
+    context->SetSchema(Type::schema_type::info_type::defaultName());
+
+    // Set prim type.
+    context->GetPrim().typeName = UsdAbcPrimTypeNames->GeomSubset;
+
     context->AddProperty(
-        UsdAbcPropertyNames->uv,
-        SdfValueTypeNames->Float2Array,
-        _CopyGeneric<IV2fGeomParam, GfVec2f>(
-            context->ExtractSchema("uv")));
+        UsdGeomTokens->indices,
+        SdfValueTypeNames->IntArray,
+        _CopyGeneric<IInt32ArrayProperty, int>(
+            context->ExtractSchema(".faces")));
+    context->AddUniformProperty(
+        UsdGeomTokens->elementType,
+        SdfValueTypeNames->Token,
+        _CopySynthetic(UsdGeomTokens->face));
+
+    context->AddUniformProperty(
+        UsdGeomTokens->familyName,
+        SdfValueTypeNames->Token,
+        _CopySynthetic(UsdAbcPropertyNames->defaultFamilyName));
+
+    _PrimReaderContext parentPrimContext = context->GetParentContext();
+
+    parentPrimContext.AddUniformProperty(
+        UsdAbcPropertyNames->defaultFamilyTypeAttributeName,
+        SdfValueTypeNames->Token,
+        _CopyFaceSetFamilyType(object));
+
+    // Consume properties implicitly handled above.
+    context->Extract(Type::schema_type::info_type::defaultName());
 }
 
 static
@@ -3221,15 +3443,15 @@ _ReadCurves(_PrimReaderContext* context)
 
     // The rest depend on the type.
     if (sample.getType() != kVariableOrder) {
-        context->AddProperty(
+        context->AddUniformProperty(
             UsdGeomTokens->basis,
             SdfValueTypeNames->Token,
             _CopySynthetic(_ConvertCurveBasis(sample.getBasis())));
-        context->AddProperty(
+        context->AddUniformProperty(
             UsdGeomTokens->type,
             SdfValueTypeNames->Token,
             _CopySynthetic(_ConvertCurveType(sample.getType())));
-        context->AddProperty(
+        context->AddUniformProperty(
             UsdGeomTokens->wrap,
             SdfValueTypeNames->Token,
             _CopySynthetic(_ConvertCurveWrap(sample.getWrap())));
@@ -3450,6 +3672,10 @@ _ReadPrim(
         // huge if statement or deep if nesting, we'll use do/while and
         // break to do it.
         do {
+            if (!TfGetEnvSetting(USD_ABC_XFORM_PRIM_COLLAPSE)) {
+                // Transform collapse is specified as unwanted behavior
+                break;
+            }
             // Parent has to be a transform.
             IObject parent = object.getParent();
             if (!IXform::matches(parent.getHeader())) {
@@ -3695,6 +3921,9 @@ _ReaderSchemaBuilder::_ReaderSchemaBuilder()
         .AppendReader(_ReadArbGeomParams)
         .AppendReader(_ReadUserProperties)
         .AppendReader(_ReadOther)
+        ;
+    schema.AddType(FaceSetSchemaInfo::title())
+        .AppendReader(_ReadFaceSet)
         ;
     schema.AddType(CurvesSchemaInfo::title())
         .AppendReader(_ReadOrientation)

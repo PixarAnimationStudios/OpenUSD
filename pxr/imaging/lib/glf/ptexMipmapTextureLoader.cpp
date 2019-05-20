@@ -226,6 +226,15 @@ GlfPtexMipmapTextureLoader::Block::SetSize(unsigned char ulog2_,
 
 struct GlfPtexMipmapTextureLoader::Page
 {
+    struct SlotLimit
+    {
+        explicit SlotLimit(size_t num, uint16_t w, uint16_t h) :
+            numTexels(num), width(w), height(h) { }
+        
+        const uint32_t numTexels;
+        const uint16_t width, height;
+    };
+
     struct Slot
     {
         Slot(uint16_t u_, uint16_t v_,
@@ -266,7 +275,7 @@ struct GlfPtexMipmapTextureLoader::Page
     //  |                          |       |                          |
     //  |--------------------------|       |--------------------------|
     //
-    bool AddBlock(Block *block) {
+    bool AddBlock(Block *block, const SlotLimit &limit) {
         for (SlotList::iterator it = _slots.begin(); it != _slots.end(); ++it) {
             if (it->Fits(block)) {
                 _blocks.push_back(block);
@@ -276,17 +285,31 @@ struct GlfPtexMipmapTextureLoader::Page
 
                 // add new slot to the right
                 if (it->width > block->width) {
-                    _slots.push_front(Slot(it->u + block->width,
-                                           it->v,
-                                           it->width - block->width,
-                                           block->height));
+                    // first check if the remainder block would even
+                    // be possible to fill before adding it.
+                    uint16_t w = it->width - block->width;
+                    uint16_t h = block->height;
+                    if (uint32_t(w * h) >= limit.numTexels &&
+                        w >= limit.width &&
+                        h >= limit.height) {
+                        _slots.push_front(Slot(it->u + block->width,
+                                               it->v,
+                                               w, h));
+                    }
                 }
                 // add new slot to the bottom
                 if (it->height > block->height) {
-                    _slots.push_back(Slot(it->u,
-                                          it->v + block->height,
-                                          it->width,
-                                          it->height - block->height));
+                    // first check if the remainder block would even
+                    // be possible to fill before adding it.
+                    uint16_t w = it->width;
+                    uint16_t h = (it->height - block->height);
+                    if (uint32_t(w * h) >= limit.numTexels &&
+                        w >= limit.width &&
+                        h >= limit.height) {
+                        _slots.push_back(Slot(it->u,
+                                              it->v + block->height,
+                                              w, h));
+                    }
                 }
                 _slots.erase(it);
                 return true;
@@ -850,29 +873,67 @@ GlfPtexMipmapTextureLoader::optimizePacking(int maxNumPages,
         numTexels += it->GetNumTexels();
     }
 
-    // sort blocks by height-width order
-    blocks.sort(Block::sort);
-
     // try to fit into the target memory size if specified
     if (targetMemory != 0 && _bpp * numTexels > targetMemory) {
         size_t numTargetTexels = targetMemory / _bpp;
-        while (numTexels > numTargetTexels) {
-            Block *block = blocks.front();
 
-            if (block->ulog2 < 2 || block->vlog2 < 2) break;
+        // This is the list of blocks that can possibly be reduced in size to
+        // save memory.
+        BlockPtrList candidateBlocks;
+        for (Block *block : blocks) {
+            if (block->ulog2 < 2 || block->vlog2 < 2) {
+                // these blocks can't be reduced in size, skip.
+            } else {
+                candidateBlocks.push_back(block);
+            }
+        }
+
+        // sort blocks by area order
+        candidateBlocks.sort(Block::sortByArea);
+
+        while (numTexels > numTargetTexels && candidateBlocks.size() > 0) {
+            // round robin the candidate blocks and move them to the closed
+            // list if they can't be reduced further.
+            Block *block = candidateBlocks.front();
+            candidateBlocks.pop_front();
+
+            if (block->ulog2 < 2 || block->vlog2 < 2) {
+                // This block can't be reduced in size, move to closed list.
+                // In this case since we are using borrowed pointers from the
+                // 'blocks' master list we can just make sure it is removed
+                // from the candidate list.
+                continue;
+            } else {
+                // move it to the back of the list so we reduce other candidates
+                // before coming back to this one.
+                candidateBlocks.push_back(block);
+            }
 
             // pick a smaller mipmap
             numTexels -= block->GetNumTexels();
             block->SetSize((unsigned char)(block->ulog2-1),
                            (unsigned char)(block->vlog2-1), _maxLevels != 0);
             numTexels += block->GetNumTexels();
-
-            // move to the last
-            blocks.pop_front();
-            blocks.push_back(block);
         }
     }
 
+    // sort blocks by height-width order, possibly after reducing sizes
+    // to fit in target memory.
+    blocks.sort(Block::sort);
+
+    size_t smallestBlockTexels = blocks.size() > 0 ?
+        blocks.front()->GetNumTexels() : 0;
+    uint16_t smallestBlockWidth = blocks.size() > 0 ?
+        blocks.front()->width : 0;
+    uint16_t smallestBlockHeight = blocks.size() > 0 ?
+        blocks.front()->width : 0;
+    for (BlockPtrList::iterator it = blocks.begin(); it != blocks.end(); ++it) {
+        smallestBlockTexels = std::min(smallestBlockTexels,
+                (size_t)(*it)->GetNumTexels());
+        smallestBlockWidth = std::min(smallestBlockWidth, (*it)->width);
+        smallestBlockHeight = std::min(smallestBlockHeight, (*it)->height);
+    }
+    
     // compute page size ---------------------------------------------
     {
         // page size is set to the largest edge of the largest block :
@@ -892,8 +953,13 @@ GlfPtexMipmapTextureLoader::optimizePacking(int maxNumPages,
         int maxPageSize = 4096;  // XXX:should be configurable.
 
         // use minPageSize if too small
-        if (w < minPageSize) w = w*(minPageSize/w + 1);
-        if (h < minPageSize) h = h*(minPageSize/h + 1);
+        if (w < minPageSize) {
+            w = minPageSize;
+        }
+        
+        if (h < minPageSize) {
+            h = minPageSize;
+        }
 
         // rough estimate of num pages
         int estimatedNumPages = (int)numTexels/w/h;
@@ -913,31 +979,54 @@ GlfPtexMipmapTextureLoader::optimizePacking(int maxNumPages,
     }
 
     // pack blocks into slots ----------------------------------------
-    size_t firstslot = 0;
+    Page::SlotLimit limit(smallestBlockTexels,
+                          smallestBlockWidth,
+                          smallestBlockHeight);
+
+    // Use a list of working pages while we pack. Move them off the working
+    // set when they are filled.
+    std::list<Page *> openPages;
+
     for (BlockPtrList::iterator it = blocks.begin();
          it != blocks.end(); ++it) {
         Block *block = *it;
 
         // traverse existing pages for a suitable slot ---------------
         bool added = false;
-        for (size_t p = firstslot; p < _pages.size(); ++p) {
-            if ((added = _pages[p]->AddBlock(block)) == true) {
+        for (std::list<Page *>::iterator pageIt = openPages.begin();
+             pageIt != openPages.end(); ++pageIt) {
+            Page *page = *pageIt;
+            if ((added = page->AddBlock(block, limit)) == true) {
+                // check if full, then move page to closed list.
+                openPages.erase(pageIt);
+                if (page->IsFull()) {
+                    _pages.push_back(page);
+                } else {
+                    // not full yet but likely much more full than the next page
+                    // in line so move it to the back
+                    openPages.push_back(page);
+                }
                 break;
             }
         }
-        // if none of page was found : start new page
+        // if no page was found : start new page
         if (!added) {
             Page *page = new Page(_pageWidth, _pageHeight);
-            added = page->AddBlock(block);
+            added = page->AddBlock(block, limit);
+            // check if full, then move page to closed list.
+            if (page->IsFull()) {
+                _pages.push_back(page);
+            } else {
+                openPages.push_back(page);
+            }
             // XXX -- Should not use assert().
             assert(added);
-            _pages.push_back(page);
         }
-
-        // adjust the page flag to the first page with open slots
-        if (_pages.size() > (firstslot+1) && 
-            _pages[firstslot+1]->IsFull()) ++firstslot;
     }
+
+    // move the remaining open pages to the closed list as we have no more
+    // blocks to pack.
+    _pages.insert(_pages.end(), openPages.begin(), openPages.end());
 
     // set corner pixel mipmap factors
     for (BlockArray::iterator it = _blocks.begin(); it != _blocks.end(); ++it) {

@@ -149,7 +149,7 @@ class NoticeTester(unittest.TestCase):
         for fmt in allFormats:
             self._ResetCounters()
             s = Usd.Stage.CreateInMemory('ObjectsChangedNoticeForProps.'+fmt)
-            prim = s.DefinePrim("/Foo");
+            prim = s.DefinePrim("/Foo")
 
             def OnAttributeCreation(notice, stage):
                 self.assertEqual(notice.GetStage(), stage)
@@ -185,7 +185,7 @@ class NoticeTester(unittest.TestCase):
         for fmt in allFormats:
             self._ResetCounters()
             s = Usd.Stage.CreateInMemory('ObjectsChangedNoticeForRels.'+fmt)
-            prim = s.DefinePrim("/Foo");
+            prim = s.DefinePrim("/Foo")
 
             def OnRelationshipCreation(notice, stage):
                 self.assertEqual(notice.GetStage(), stage)

@@ -40,12 +40,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+class GlfSimpleLight;
 class HdRenderIndex;
 class HdSceneDelegate;
-class GlfSimpleLight;
+class HdStRenderPassState;
 
 typedef boost::shared_ptr<class HdStRenderPassShader> HdStRenderPassShaderSharedPtr;
+typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 typedef std::vector<HdRenderPassStateSharedPtr> HdRenderPassStateSharedPtrVector;
@@ -53,52 +54,19 @@ typedef std::vector<HdRenderPassSharedPtr> HdRenderPassSharedPtrVector;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleShadowArray);
 
-/// \class HdxShadowTask
-///
-/// A task for generating shadow maps.
-///
-class HdxShadowTask : public HdSceneTask {
-public:
-    HDX_API
-    HdxShadowTask(HdSceneDelegate* delegate, SdfPath const& id);
-
-protected:
-    /// Execute render pass task
-    HDX_API
-    virtual void _Execute(HdTaskContext* ctx);
-
-    /// Sync the render pass resources
-    HDX_API
-    virtual void _Sync(HdTaskContext* ctx);
-
-private:
-    HdRenderPassSharedPtrVector _passes;
-    HdRenderPassStateSharedPtrVector _renderPassStates;
-    int _collectionVersion;
-
-    /// Polygon Offset State
-    bool _depthBiasEnable;
-    float _depthBiasConstantFactor;
-    float _depthBiasSlopeFactor;
-
-    HdCompareFunction _depthFunc;
-};
-
-struct HdxShadowTaskParams : public HdTaskParams {
+struct HdxShadowTaskParams {
     HdxShadowTaskParams()
         : overrideColor(0.0)
         , wireframeColor(0.0)
         , enableLighting(false)
         , enableIdRender(false)
+        , enableSceneMaterials(true)
         , alphaThreshold(0.0)
-        , tessLevel(1.0)
-        , drawingRange(0.0, -1.0)
         , depthBiasEnable(false)
         , depthBiasConstantFactor(0.0f)
         , depthBiasSlopeFactor(1.0f)
         , depthFunc(HdCmpFuncLEqual)
         , cullStyle(HdCullStyleBackUnlessDoubleSided)
-        , complexity(HdComplexityLow)
         , camera()
         , viewport(0.0)
         , lightIncludePaths(1, SdfPath::AbsoluteRootPath())
@@ -110,23 +78,67 @@ struct HdxShadowTaskParams : public HdTaskParams {
     GfVec4f wireframeColor;
     bool enableLighting;
     bool enableIdRender;
+    bool enableSceneMaterials;
     float alphaThreshold;
-    float tessLevel;
-    GfVec2f drawingRange;
     bool  depthBiasEnable;
     float depthBiasConstantFactor;
     float depthBiasSlopeFactor;
     HdCompareFunction depthFunc;
     HdCullStyle cullStyle;
-    HdComplexity complexity;
 
     // RenderPassState index objects
     SdfPath camera;
     GfVec4d viewport;
 
-    // Lights/Shadows specific paramenters
+    // Lights/Shadows specific parameters
     SdfPathVector lightIncludePaths;
     SdfPathVector lightExcludePaths;
+};
+
+/// \class HdxShadowTask
+///
+/// A task for generating shadow maps.
+///
+class HdxShadowTask : public HdTask {
+public:
+    HDX_API
+    HdxShadowTask(HdSceneDelegate* delegate, SdfPath const& id);
+
+    HDX_API
+    virtual ~HdxShadowTask();
+
+    /// Sync the render pass resources
+    HDX_API
+    virtual void Sync(HdSceneDelegate* delegate,
+                      HdTaskContext* ctx,
+                      HdDirtyBits* dirtyBits) override;
+
+    /// Prepare the tasks resources
+    HDX_API
+    virtual void Prepare(HdTaskContext* ctx,
+                         HdRenderIndex* renderIndex) override;
+
+    /// Execute render pass task
+    HDX_API
+    virtual void Execute(HdTaskContext* ctx) override;
+
+private:
+    void _SetHdStRenderPassState(HdxShadowTaskParams const &params,
+        HdStRenderPassState *renderPassState);
+
+    void _UpdateDirtyParams(HdRenderPassStateSharedPtr &renderPassState, 
+        HdxShadowTaskParams const &params);
+
+    static HdStShaderCodeSharedPtr _overrideShader;
+    static void _CreateOverrideShader();
+
+    HdRenderPassSharedPtrVector _passes;
+    HdRenderPassStateSharedPtrVector _renderPassStates;
+    HdxShadowTaskParams _params;
+
+    HdxShadowTask() = delete;
+    HdxShadowTask(const HdxShadowTask &) = delete;
+    HdxShadowTask &operator =(const HdxShadowTask &) = delete;
 };
 
 // VtValue requirements

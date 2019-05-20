@@ -26,7 +26,14 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdSkelTokensType::UsdSkelTokensType() :
+    bindTransforms("bindTransforms", TfToken::Immortal),
+    blendShapes("blendShapes", TfToken::Immortal),
+    blendShapeWeights("blendShapeWeights", TfToken::Immortal),
+    jointNames("jointNames", TfToken::Immortal),
     joints("joints", TfToken::Immortal),
+    normalOffsets("normalOffsets", TfToken::Immortal),
+    offsets("offsets", TfToken::Immortal),
+    pointIndices("pointIndices", TfToken::Immortal),
     primvarsSkelGeomBindTransform("primvars:skel:geomBindTransform", TfToken::Immortal),
     primvarsSkelJointIndices("primvars:skel:jointIndices", TfToken::Immortal),
     primvarsSkelJointWeights("primvars:skel:jointWeights", TfToken::Immortal),
@@ -34,11 +41,21 @@ UsdSkelTokensType::UsdSkelTokensType() :
     rotations("rotations", TfToken::Immortal),
     scales("scales", TfToken::Immortal),
     skelAnimationSource("skel:animationSource", TfToken::Immortal),
+    skelBlendShapes("skel:blendShapes", TfToken::Immortal),
+    skelBlendShapeTargets("skel:blendShapeTargets", TfToken::Immortal),
     skelJoints("skel:joints", TfToken::Immortal),
     skelSkeleton("skel:skeleton", TfToken::Immortal),
     translations("translations", TfToken::Immortal),
+    weight("weight", TfToken::Immortal),
     allTokens({
+        bindTransforms,
+        blendShapes,
+        blendShapeWeights,
+        jointNames,
         joints,
+        normalOffsets,
+        offsets,
+        pointIndices,
         primvarsSkelGeomBindTransform,
         primvarsSkelJointIndices,
         primvarsSkelJointWeights,
@@ -46,9 +63,12 @@ UsdSkelTokensType::UsdSkelTokensType() :
         rotations,
         scales,
         skelAnimationSource,
+        skelBlendShapes,
+        skelBlendShapeTargets,
         skelJoints,
         skelSkeleton,
-        translations
+        translations,
+        weight
     })
 {
 }

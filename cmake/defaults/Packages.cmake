@@ -45,12 +45,8 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
     # --Boost
     find_package(Boost
         COMPONENTS
-            date_time
-            filesystem
             program_options
             python
-            regex
-            system
         REQUIRED
     )
 
@@ -62,11 +58,7 @@ else()
     # --Boost
     find_package(Boost
         COMPONENTS
-            date_time
-            filesystem
             program_options
-            regex
-            system
         REQUIRED
     )
 endif()
@@ -107,11 +99,22 @@ if (PXR_BUILD_IMAGING)
     # --OpenEXR
     find_package(OpenEXR REQUIRED)
     # --OpenImageIO
-    find_package(OpenImageIO REQUIRED)
+    if (PXR_BUILD_OPENIMAGEIO_PLUGIN)
+        find_package(OpenImageIO REQUIRED)
+        add_definitions(-DPXR_OIIO_PLUGIN_ENABLED)
+    endif()
+    # --OpenColorIO
+    if (PXR_BUILD_OPENCOLORIO_PLUGIN)
+        find_package(OpenColorIO REQUIRED)
+        add_definitions(-DPXR_OCIO_PLUGIN_ENABLED)
+    endif()
     # --OpenGL
-    find_package(OpenGL REQUIRED)
-    find_package(GLEW REQUIRED)
+    if (PXR_ENABLE_GL_SUPPORT)
+        find_package(OpenGL REQUIRED)
+        find_package(GLEW REQUIRED)
+    endif()
     # --Opensubdiv
+    set(OPENSUBDIV_USE_GPU ${PXR_ENABLE_GL_SUPPORT})
     find_package(OpenSubdiv 3 REQUIRED)
     # --Ptex
     if (PXR_ENABLE_PTEX_SUPPORT)
@@ -122,16 +125,17 @@ if (PXR_BUILD_IMAGING)
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
         find_package(X11)
     endif()
-    if (PXR_ENABLE_PYTHON_SUPPORT)
-        # --PySide
-        find_package(PySide)
-        # --PyOpenGL
-        find_package(PyOpenGL)
-    endif()
     # --Embree
     if (PXR_BUILD_EMBREE_PLUGIN)
         find_package(Embree REQUIRED)
     endif()
+endif()
+
+if (PXR_BUILD_USDVIEW)
+    # --PySide
+    find_package(PySide REQUIRED)
+    # --PyOpenGL
+    find_package(PyOpenGL REQUIRED)
 endif()
 
 # Third Party Plugin Package Requirements
@@ -163,6 +167,14 @@ if (PXR_BUILD_ALEMBIC_PLUGIN)
             REQUIRED
         )
     endif()
+endif()
+
+if (PXR_BUILD_MATERIALX_PLUGIN)
+    find_package(MaterialX REQUIRED)
+endif()
+
+if(PXR_ENABLE_OSL_SUPPORT)
+    find_package(OSL REQUIRED)
 endif()
 
 # ----------------------------------------------

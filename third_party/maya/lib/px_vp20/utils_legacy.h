@@ -21,16 +21,18 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef __PX_VP20_UTILS_LEGACY_H__
-#define __PX_VP20_UTILS_LEGACY_H__
+#ifndef PXVP20_UTILS_LEGACY_H
+#define PXVP20_UTILS_LEGACY_H
 
-/// \file utils_legacy.h
+/// \file px_vp20/utils_legacy.h
 
 #include "pxr/pxr.h"
 #include "px_vp20/api.h"
+
 #include "pxr/base/gf/matrix4d.h"
 
-#include <maya/M3dView.h>
+#include <maya/MSelectInfo.h>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -39,23 +41,23 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// transition from the Maya legacy viewport to Viewport 2.0.
 class px_LegacyViewportUtils
 {
-public:
-    /// Get the view and projection matrices used for selection from the given
-    /// M3dView \p view.
-    PX_VP20_API
-    static void GetViewSelectionMatrices(M3dView& view,
-                                         GfMatrix4d* viewMatrix,
-                                         GfMatrix4d* projectionMatrix);
+    public:
+        /// Get the view and projection matrices used for selection from the
+        /// given selection context in MSelectInfo \p selectInfo.
+        PX_VP20_API
+        static bool GetSelectionMatrices(
+                MSelectInfo& selectInfo,
+                GfMatrix4d& viewMatrix,
+                GfMatrix4d& projectionMatrix);
 
-private:
-    /// Creating instances of this class is disallowed by making the
-    /// constructor private.
-    px_LegacyViewportUtils();
-    ~px_LegacyViewportUtils();
+    private:
+        px_LegacyViewportUtils() = delete;
+        ~px_LegacyViewportUtils() = delete;
 };
 
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __PX_VP20_UTILS_LEGACY_H__
+
+#endif

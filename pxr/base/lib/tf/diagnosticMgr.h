@@ -28,7 +28,6 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/callContext.h"
-#include "pxr/base/tf/copyOnWritePtr.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/error.h"
@@ -47,8 +46,6 @@
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/spin_rw_mutex.h>
 #include <tbb/atomic.h>
-
-#include <boost/scoped_ptr.hpp>
 
 #include <cstdarg>
 #include <list>
@@ -141,6 +138,7 @@ public:
         /// Abort the program, but avoid the session logging mechanism. This
         /// is intended to be used for fatal error cases where any information
         /// has already been logged.
+        TF_API
         void _UnhandledAbort() const;
     };
 
@@ -177,7 +175,7 @@ public:
     ErrorIterator GetErrorEnd() { return _errorList.local().end(); }
 
     /// Remove error specified by iterator \p i.
-    /// \deprecated Use TfErrorMark insetad.
+    /// \deprecated Use TfErrorMark instead.
     TF_API
     ErrorIterator EraseError(ErrorIterator i);
 
@@ -246,8 +244,8 @@ public:
     void PostFatal(TfCallContext const &context, TfEnum statusCode,
                    std::string const &msg) const;
 
-    /// Return true if an instance of TfErrorMark exists in the curren thread
-    /// of exection, false otherwise.
+    /// Return true if an instance of TfErrorMark exists in the current thread
+    /// of execution, false otherwise.
     bool HasActiveErrorMark() { return _errorMarkCounts.local() > 0; }
 
 #if !defined(doxygen)

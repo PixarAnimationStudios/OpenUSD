@@ -65,6 +65,7 @@ void wrapUsdTokens()
     boost::python::class_<UsdTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
     _AddToken(cls, "apiSchemas", UsdTokens->apiSchemas);
+    _AddToken(cls, "apiSchemaType", UsdTokens->apiSchemaType);
     _AddToken(cls, "clipActive", UsdTokens->clipActive);
     _AddToken(cls, "clipAssetPaths", UsdTokens->clipAssetPaths);
     _AddToken(cls, "clipManifestAssetPath", UsdTokens->clipManifestAssetPath);
@@ -78,8 +79,16 @@ void wrapUsdTokens()
     _AddToken(cls, "clipTimes", UsdTokens->clipTimes);
     _AddToken(cls, "collection", UsdTokens->collection);
     _AddToken(cls, "exclude", UsdTokens->exclude);
+    _AddToken(cls, "excludes", UsdTokens->excludes);
     _AddToken(cls, "expandPrims", UsdTokens->expandPrims);
     _AddToken(cls, "expandPrimsAndProperties", UsdTokens->expandPrimsAndProperties);
     _AddToken(cls, "expansionRule", UsdTokens->expansionRule);
     _AddToken(cls, "explicitOnly", UsdTokens->explicitOnly);
+    _AddToken(cls, "includeRoot", UsdTokens->includeRoot);
+    _AddToken(cls, "includes", UsdTokens->includes);
+    _AddToken(cls, "isPrivateApply", UsdTokens->isPrivateApply);
+    _AddToken(cls, "multipleApply", UsdTokens->multipleApply);
+    _AddToken(cls, "nonApplied", UsdTokens->nonApplied);
+    _AddToken(cls, "propertyNamespacePrefix", UsdTokens->propertyNamespacePrefix);
+    _AddToken(cls, "singleApply", UsdTokens->singleApply);
 }

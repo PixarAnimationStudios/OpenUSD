@@ -29,16 +29,20 @@
 #include "pxr/imaging/hdEmbree/renderParam.h"
 #include "pxr/imaging/hdEmbree/renderPass.h"
 
+#include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
+#include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hdEmbree/mesh.h"
 //XXX: Add other Rprim types later
-#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hd/camera.h"
 //XXX: Add other Sprim types later
 #include "pxr/imaging/hd/bprim.h"
 //XXX: Add bprim types
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PUBLIC_TOKENS(HdEmbreeRenderSettingsTokens, HDEMBREE_RENDER_SETTINGS_TOKENS);
 
 const TfTokenVector HdEmbreeRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
@@ -48,10 +52,12 @@ const TfTokenVector HdEmbreeRenderDelegate::SUPPORTED_RPRIM_TYPES =
 const TfTokenVector HdEmbreeRenderDelegate::SUPPORTED_SPRIM_TYPES =
 {
     HdPrimTypeTokens->camera,
+    HdPrimTypeTokens->extComputation,
 };
 
 const TfTokenVector HdEmbreeRenderDelegate::SUPPORTED_BPRIM_TYPES =
 {
+    HdPrimTypeTokens->renderBuffer,
 };
 
 std::mutex HdEmbreeRenderDelegate::_mutexResourceRegistry;
@@ -88,8 +94,45 @@ HdEmbreeRenderDelegate::HandleRtcError(const RTCError code, const char* msg)
     }
 }
 
-HdEmbreeRenderDelegate::HdEmbreeRenderDelegate()
+static void _RenderCallback(HdEmbreeRenderer *renderer,
+                            HdRenderThread *renderThread)
 {
+    renderer->Clear();
+    renderer->Render(renderThread);
+}
+
+HdEmbreeRenderDelegate::HdEmbreeRenderDelegate()
+    : HdRenderDelegate()
+{
+    _Initialize();
+}
+
+HdEmbreeRenderDelegate::HdEmbreeRenderDelegate(
+    HdRenderSettingsMap const& settingsMap)
+    : HdRenderDelegate(settingsMap)
+{
+    _Initialize();
+}
+
+void
+HdEmbreeRenderDelegate::_Initialize()
+{
+    // Initialize the settings and settings descriptors.
+    _settingDescriptors.resize(4);
+    _settingDescriptors[0] = { "Enable Scene Colors",
+        HdEmbreeRenderSettingsTokens->enableSceneColors,
+        VtValue(HdEmbreeConfig::GetInstance().useFaceColors) };
+    _settingDescriptors[1] = { "Enable Ambient Occlusion",
+        HdEmbreeRenderSettingsTokens->enableAmbientOcclusion,
+        VtValue(HdEmbreeConfig::GetInstance().ambientOcclusionSamples > 0) };
+    _settingDescriptors[2] = { "Ambient Occlusion Samples",
+        HdEmbreeRenderSettingsTokens->ambientOcclusionSamples,
+        VtValue(int(HdEmbreeConfig::GetInstance().ambientOcclusionSamples)) };
+    _settingDescriptors[3] = { "Samples To Convergence",
+        HdRenderSettingsTokens->convergedSamplesPerPixel,
+        VtValue(int(HdEmbreeConfig::GetInstance().samplesToConvergence)) };
+    _PopulateDefaultSettings(_settingDescriptors);
+
     // Initialize the embree library handle (_rtcDevice).
     _rtcDevice = rtcNewDevice(nullptr);
 
@@ -115,9 +158,19 @@ HdEmbreeRenderDelegate::HdEmbreeRenderDelegate()
         RTC_INTERSECT1 | RTC_INTERPOLATE);
 
     // Store top-level embree objects inside a render param that can be
-    // passed to prims during Sync().
-    _renderParam =
-        std::make_shared<HdEmbreeRenderParam>(_rtcDevice, _rtcScene);
+    // passed to prims during Sync(). Also pass a handle to the render thread.
+    _renderParam = std::make_shared<HdEmbreeRenderParam>(
+        _rtcDevice, _rtcScene, &_renderThread, &_sceneVersion);
+
+    // Pass the scene handle to the renderer.
+    _renderer.SetScene(_rtcScene);
+
+    // Set the background render thread's rendering entrypoint to
+    // HdEmbreeRenderer::Render.
+    _renderThread.SetRenderCallback(
+        std::bind(_RenderCallback, &_renderer, &_renderThread));
+    // Start the background render thread.
+    _renderThread.StartThread();
 
     // Initialize one resource registry for all embree plugins
     std::lock_guard<std::mutex> guard(_mutexResourceRegistry);
@@ -130,16 +183,25 @@ HdEmbreeRenderDelegate::HdEmbreeRenderDelegate()
 HdEmbreeRenderDelegate::~HdEmbreeRenderDelegate()
 {
     // Clean the resource registry only when it is the last Embree delegate
-    std::lock_guard<std::mutex> guard(_mutexResourceRegistry);
-
-    if (_counterResourceRegistry.fetch_sub(1) == 1) {
-        _resourceRegistry.reset();
+    {
+        std::lock_guard<std::mutex> guard(_mutexResourceRegistry);
+        if (_counterResourceRegistry.fetch_sub(1) == 1) {
+            _resourceRegistry.reset();
+        }
     }
+
+    _renderThread.StopThread();
 
     // Destroy embree library and scene state.
     _renderParam.reset();
     rtcDeleteScene(_rtcScene);
     rtcDeleteDevice(_rtcDevice);
+}
+
+HdRenderSettingDescriptorList
+HdEmbreeRenderDelegate::GetRenderSettingDescriptors() const
+{
+    return _settingDescriptors;
 }
 
 HdRenderParam*
@@ -151,15 +213,6 @@ HdEmbreeRenderDelegate::GetRenderParam() const
 void
 HdEmbreeRenderDelegate::CommitResources(HdChangeTracker *tracker)
 {
-    // CommitResources() is called after prim sync has finished, but before any
-    // tasks (such as draw tasks) have run. HdEmbree primitives have already
-    // updated embree buffer pointers and dirty state in prim Sync(), but we
-    // still need to rebuild acceleration datastructures here with rtcCommit().
-    //
-    // During task execution, the embree scene is treated as read-only by the
-    // drawing code; the BVH won't be updated until the next time through
-    // HdEngine::Execute().
-    rtcCommit(_rtcScene);
 }
 
 TfTokenVector const&
@@ -186,12 +239,40 @@ HdEmbreeRenderDelegate::GetResourceRegistry() const
     return _resourceRegistry;
 }
 
+HdAovDescriptor
+HdEmbreeRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
+{
+    if (name == HdAovTokens->color) {
+        return HdAovDescriptor(HdFormatUNorm8Vec4, true,
+                               VtValue(GfVec4f(0.0f)));
+    } else if (name == HdAovTokens->normal || name == HdAovTokens->Neye) {
+        return HdAovDescriptor(HdFormatFloat32Vec3, false,
+                               VtValue(GfVec3f(-1.0f)));
+    } else if (name == HdAovTokens->depth) {
+        return HdAovDescriptor(HdFormatFloat32, false, VtValue(1.0f));
+    } else if (name == HdAovTokens->linearDepth) {
+        return HdAovDescriptor(HdFormatFloat32, false, VtValue(0.0f));
+    } else if (name == HdAovTokens->primId ||
+               name == HdAovTokens->instanceId ||
+               name == HdAovTokens->elementId) {
+        return HdAovDescriptor(HdFormatInt32, false, VtValue(0));
+    } else {
+        HdParsedAovToken aovId(name);
+        if (aovId.isPrimvar) {
+            return HdAovDescriptor(HdFormatFloat32Vec3, false,
+                                   VtValue(GfVec3f(0.0f)));
+        }
+    }
+
+    return HdAovDescriptor();
+}
+
 HdRenderPassSharedPtr
 HdEmbreeRenderDelegate::CreateRenderPass(HdRenderIndex *index,
                             HdRprimCollection const& collection)
 {
-    return HdRenderPassSharedPtr(
-        new HdEmbreeRenderPass(index, collection, _rtcScene));
+    return HdRenderPassSharedPtr(new HdEmbreeRenderPass(
+        index, collection, &_renderThread, &_renderer, &_sceneVersion));
 }
 
 HdInstancer *
@@ -233,7 +314,9 @@ HdEmbreeRenderDelegate::CreateSprim(TfToken const& typeId,
                                     SdfPath const& sprimId)
 {
     if (typeId == HdPrimTypeTokens->camera) {
-        return new HdStCamera(sprimId);
+        return new HdCamera(sprimId);
+    } else if (typeId == HdPrimTypeTokens->extComputation) {
+        return new HdExtComputation(sprimId);
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
@@ -247,7 +330,9 @@ HdEmbreeRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
     // For fallback sprims, create objects with an empty scene path.
     // They'll use default values and won't be updated by a scene delegate.
     if (typeId == HdPrimTypeTokens->camera) {
-        return new HdStCamera(SdfPath::EmptyPath());
+        return new HdCamera(SdfPath::EmptyPath());
+    } else if (typeId == HdPrimTypeTokens->extComputation) {
+        return new HdExtComputation(SdfPath::EmptyPath());
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
@@ -265,14 +350,22 @@ HdBprim *
 HdEmbreeRenderDelegate::CreateBprim(TfToken const& typeId,
                                     SdfPath const& bprimId)
 {
-    TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
+    if (typeId == HdPrimTypeTokens->renderBuffer) {
+        return new HdEmbreeRenderBuffer(bprimId);
+    } else {
+        TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
+    }
     return nullptr;
 }
 
 HdBprim *
 HdEmbreeRenderDelegate::CreateFallbackBprim(TfToken const& typeId)
 {
-    TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
+    if (typeId == HdPrimTypeTokens->renderBuffer) {
+        return new HdEmbreeRenderBuffer(SdfPath::EmptyPath());
+    } else {
+        TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
+    }
     return nullptr;
 }
 

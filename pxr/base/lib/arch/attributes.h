@@ -158,11 +158,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #elif defined(ARCH_COMPILER_MSVC)
 
-#   include <SAL.h>
-#   define ARCH_PRINTF_FUNCTION(_fmt, _firstArg) \
-        _Printf_format_string_
-#   define ARCH_SCANF_FUNCTION(_fmt, _firstArg)	\
-        _Printf_format_string_
+#   define ARCH_PRINTF_FUNCTION(_fmt, _firstArg)
+#   define ARCH_SCANF_FUNCTION(_fmt, _firstArg)
 #   define ARCH_NOINLINE // __declspec(noinline)
 #   define ARCH_UNUSED_ARG
 #   define ARCH_USED_FUNCTION
@@ -303,10 +300,10 @@ struct Arch_ConstructorInit {
 // The used attribute is required to prevent these apparently unused functions
 // from being removed by the linker.
 #   define ARCH_CONSTRUCTOR(_name, _priority, ...) \
-        __attribute__((used, constructor((_priority) + 100))) \
+        __attribute__((used, section(".pxrctor"), constructor((_priority) + 100))) \
         static void _name(__VA_ARGS__)
 #   define ARCH_DESTRUCTOR(_name, _priority, ...) \
-        __attribute__((used, destructor((_priority) + 100))) \
+        __attribute__((used, section(".pxrdtor"), destructor((_priority) + 100))) \
         static void _name(__VA_ARGS__)
 
 #else

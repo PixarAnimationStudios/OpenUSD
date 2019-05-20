@@ -49,7 +49,7 @@ Together, these classes insert mesh objects and mesh instances into the
 embree scene, so that drawing code can raycast against them.
 
 In order to support the standard hydra render task, HdxRenderTask, the scene
-delegate also supports a basic camera type, HdStCamera.
+delegate also supports a basic camera type, HdCamera.
 
 ## Commit Resources
 

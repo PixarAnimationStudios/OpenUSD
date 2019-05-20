@@ -32,15 +32,15 @@
 #include "pxr/usd/usdGeom/pointBased.h"
 #include "pxr/usd/usdGeom/xform.h"
 
+#include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usd/primRange.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 
 #include <tbb/enumerable_thread_specific.h>
-#include <tbb/task.h>
 #include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -53,12 +53,13 @@ typedef tbb::enumerable_thread_specific<UsdGeomXformCache> _ThreadXformCache;
 // -------------------------------------------------------------------------- //
 // _BBoxTask
 // -------------------------------------------------------------------------- //
-class UsdGeomBBoxCache::_BBoxTask: public tbb::task {
+class UsdGeomBBoxCache::_BBoxTask {
     UsdPrim _prim;
     GfMatrix4d _inverseComponentCtm;
     UsdGeomBBoxCache* _owner;
     _ThreadXformCache* _xfCaches;
 public:
+    _BBoxTask() : _owner(nullptr), _xfCaches(nullptr) {}
     _BBoxTask(const UsdPrim& prim, const GfMatrix4d &inverseComponentCtm,
               UsdGeomBBoxCache* owner, _ThreadXformCache* xfCaches)
         : _prim(prim)
@@ -67,10 +68,12 @@ public:
         , _xfCaches(xfCaches)
     {
     }
-    task* execute() {
+    explicit operator bool() const {
+        return _owner;
+    }
+    void operator()() {
         // Do not save state here; all state should be accumulated externally.
         _owner->_ResolvePrim(this, _prim, _inverseComponentCtm);
-        return NULL;
     }
     _ThreadXformCache* GetXformCaches() { return _xfCaches; }
 };
@@ -126,14 +129,14 @@ public:
         // that won't be traversed when resolving other bounding boxes.
         _ThreadXformCache xfCache;
 
-        WorkDispatcher dispatcher;
         for (const auto& t : masterTasks) {
             if (t.second.numDependencies == 0) {
-                dispatcher.Run(
+                _owner->_dispatcher.Run(
                     &_MasterBBoxResolver::_ExecuteTaskForMaster,
-                    this, t.first, &masterTasks, &xfCache, &dispatcher);
+                    this, t.first, &masterTasks, &xfCache, &_owner->_dispatcher);
             }
         }
+        _owner->_dispatcher.Wait();
     }
 
 private:
@@ -167,15 +170,11 @@ private:
     void _ExecuteTaskForMaster(const UsdPrim& master,
                                _MasterTaskMap* masterTasks,
                                _ThreadXformCache* xfCaches,
-                               WorkDispatcher* dispatcher)
+                               WorkArenaDispatcher* dispatcher)
     {
-        tbb::task_group_context context;
-        UsdGeomBBoxCache::_BBoxTask& rootTask =
-            *new(tbb::task::allocate_root(context))
-                UsdGeomBBoxCache::_BBoxTask(master, GfMatrix4d(1.0),
-                                            _owner, xfCaches);
-        tbb::task::spawn_root_and_wait(rootTask);
-
+        UsdGeomBBoxCache::_BBoxTask(
+            master, GfMatrix4d(1.0), _owner, xfCaches)();
+        
         // Update all of the master prims that depended on the completed master
         // and dispatch new tasks for those whose dependencies have been
         // resolved.  We're guaranteed that all the entries were populated by
@@ -251,12 +250,38 @@ _GetOrCreateExtentsHintQuery(UsdGeomModelAPI& geomModel, UsdAttributeQuery* q)
 // -------------------------------------------------------------------------- //
 
 UsdGeomBBoxCache::UsdGeomBBoxCache(
-    UsdTimeCode time, TfTokenVector includedPurposes, bool useExtentsHint)
+    UsdTimeCode time, TfTokenVector includedPurposes,
+    bool useExtentsHint, bool ignoreVisibility)
     : _time(time)
     , _includedPurposes(includedPurposes)
     , _ctmCache(time)
     , _useExtentsHint(useExtentsHint)
+    , _ignoreVisibility(ignoreVisibility)
 {
+}
+
+UsdGeomBBoxCache::UsdGeomBBoxCache(UsdGeomBBoxCache const &other)
+    : _time(other._time)
+    , _baseTime(other._baseTime)
+    , _includedPurposes(other._includedPurposes)
+    , _ctmCache(other._ctmCache)
+    , _bboxCache(other._bboxCache)
+    , _useExtentsHint(other._useExtentsHint)
+{
+}
+
+UsdGeomBBoxCache &
+UsdGeomBBoxCache::operator=(UsdGeomBBoxCache const &other)
+{
+    if (this == &other)
+        return *this;
+    _time = other._time;
+    _baseTime = other._baseTime;
+    _includedPurposes = other._includedPurposes;
+    _ctmCache = other._ctmCache;
+    _bboxCache = other._bboxCache;
+    _useExtentsHint = other._useExtentsHint;
+    return *this;
 }
 
 GfBBox3d
@@ -300,7 +325,7 @@ UsdGeomBBoxCache::ComputeRelativeBound(const UsdPrim& prim,
     GfMatrix4d primCtm = _ctmCache.GetLocalToWorldTransform(prim);
     GfMatrix4d ancestorCtm =
         _ctmCache.GetLocalToWorldTransform(relativeToAncestorPrim);
-    GfMatrix4d relativeCtm = ancestorCtm.GetInverse() * primCtm;
+    GfMatrix4d relativeCtm = primCtm * ancestorCtm.GetInverse();
 
     bbox.Transform(relativeCtm);
 
@@ -388,7 +413,7 @@ UsdGeomBBoxCache::ComputeUntransformedBound(
         }
 
         // If this is an ancestor of a path that's skipped, then we must
-        // continue the travesal down to find prims whose bounds can be
+        // continue the traversal down to find prims whose bounds can be
         // included.
         if (ancestorsOfPathsToSkip.find(primPath) !=
                 ancestorsOfPathsToSkip.end()) {
@@ -396,7 +421,7 @@ UsdGeomBBoxCache::ComputeUntransformedBound(
         }
 
         // Check if any of the descendants of the prim have transform overrides.
-        // If yes, we need to continue the travesal down to find prims whose
+        // If yes, we need to continue the traversal down to find prims whose
         // bounds can be included.
         if (ancestorsOfOverrides.find(primPath) != ancestorsOfOverrides.end()) {
             continue;
@@ -653,7 +678,15 @@ bool
 UsdGeomBBoxCache::_ShouldIncludePrim(const UsdPrim& prim)
 {
     TRACE_FUNCTION();
-    // Only imageable prims participate in child bounds accumulation.
+    
+    // If the prim is typeless or has an unknown type, it may have descendants 
+    // that are imageable. Hence, we include it in bbox computations.
+    if (!prim.IsA<UsdTyped>()) {
+        return true;
+    }
+
+    // If the prim is typed it can participate in child bound accumulation only 
+    // if it is imageable.
     if (!prim.IsA<UsdGeomImageable>()) {
         TF_DEBUG(USDGEOM_BBOX).Msg("[BBox Cache] excluded, not IMAGEABLE type. "
                                    "prim: %s, primType: %s\n",
@@ -663,16 +696,18 @@ UsdGeomBBoxCache::_ShouldIncludePrim(const UsdPrim& prim)
         return false;
     }
 
-    UsdGeomImageable img(prim);
-    TfToken vis;
-    if (img.GetVisibilityAttr().Get(&vis, _time)
-        && vis == UsdGeomTokens->invisible) {
-        TF_DEBUG(USDGEOM_BBOX).Msg("[BBox Cache] excluded for VISIBILITY. "
-                                   "prim: %s visibility at time %s: %s\n",
-                                   prim.GetPath().GetText(),
-                                   TfStringify(_time).c_str(),
-                                   vis.GetText());
-        return false;
+    if (!_ignoreVisibility) {
+        UsdGeomImageable img(prim);
+        TfToken vis;
+        if (img.GetVisibilityAttr().Get(&vis, _time)
+            && vis == UsdGeomTokens->invisible) {
+            TF_DEBUG(USDGEOM_BBOX).Msg("[BBox Cache] excluded for VISIBILITY. "
+                                       "prim: %s visibility at time %s: %s\n",
+                                       prim.GetPath().GetText(),
+                                       TfStringify(_time).c_str(),
+                                       vis.GetText());
+            return false;
+        }
     }
 
     return true;
@@ -942,10 +977,8 @@ UsdGeomBBoxCache::_Resolve(
     GfMatrix4d inverseComponentCtm = _ctmCache.GetLocalToWorldTransform(
         modelPrim).GetInverse();
 
-    _BBoxTask& rootTask = *new(tbb::task::allocate_root())
-                               _BBoxTask(prim, inverseComponentCtm,
-                                         this, &xfCaches);
-    tbb::task::spawn_root_and_wait(rootTask);
+    _dispatcher.Run(_BBoxTask(prim, inverseComponentCtm, this, &xfCaches));
+    _dispatcher.Wait();
 
     // We save the result of one of the caches, but it might be interesting to
     // merge them all here at some point.
@@ -1002,6 +1035,30 @@ UsdGeomBBoxCache::_GetBBoxFromExtentsHint(
     }
 
     return true;
+}
+
+bool
+UsdGeomBBoxCache::_ComputeExtent(const UsdGeomBoundable& boundableObj,
+                                 VtVec3fArray* extent) const
+{
+    // Display a message if the debug flag is enabled.
+    TF_DEBUG(USDGEOM_BBOX).Msg(
+        "[BBox Cache] WARNING: No valid extent authored for "
+        "<%s>. Computing a fallback value.",
+        boundableObj.GetPath().GetString().c_str());
+
+    // Create extent
+    bool successGettingExtent =
+        UsdGeomBoundable::ComputeExtentFromPlugins(
+            boundableObj, _time, extent);
+
+    if (!successGettingExtent) {
+        TF_DEBUG(USDGEOM_BBOX).Msg(
+            "[BBox Cache] WARNING: Unable to compute extent for "
+            "<%s>.", boundableObj.GetPath().GetString().c_str());
+    }
+
+    return successGettingExtent;
 }
 
 void
@@ -1077,7 +1134,10 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
         // entry->isVarying (below).
 
         UsdAttributeQuery visQuery;
-        _GetOrCreateVisibilityQuery(prim, &visQuery);
+        if (!_ignoreVisibility) {
+            _GetOrCreateVisibilityQuery(prim, &visQuery);
+        }
+        
         const UsdAttributeQuery& extentQuery =
             _GetOrCreateExtentQuery(prim, &queries[Extent]);
 
@@ -1099,7 +1159,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
     // Attempt to resolve a boundable prim's extent. If no extent is authored,
     // we attempt to create it for usdGeomPointBased and child classes. If
     // it cannot be created or found, the user is notified of an incorrect prim.
-    if (prim.IsA<UsdGeomBoundable>()) {
+    if (UsdGeomBoundable boundableObj = UsdGeomBoundable(prim)) {
         VtVec3fArray extent;
         // Read the extent of the geometry, an axis-aligned bounding box in
         // local space.
@@ -1113,7 +1173,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
             successGettingExtent = extent.size() == 2;
             if (!successGettingExtent) {
                 TF_WARN("[BBox Cache] Extent for <%s> is of size %zu "
-                        "instead of 2.", prim.GetPath().GetString().c_str(),
+                        "instead of 2.", prim.GetPath().GetText(),
                         extent.size());
             }
         }
@@ -1121,7 +1181,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
         // If we failed to get extent, try to create it.
         if (!successGettingExtent) {
 
-            // If the prim is a PointBased, try to calculate the extent
+            // Try to calculate the extent.
             if (UsdGeomPointBased pointBasedObj = UsdGeomPointBased(prim)) {
 
                 // XXX: We check if the points attribute is authored on the
@@ -1137,33 +1197,25 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
                 // For more information, see bugzilla #115735
 
                 bool primHasAuthoredPoints =
-                    pointBasedObj.GetPointsAttr().HasAuthoredValueOpinion();
+                    pointBasedObj.GetPointsAttr().HasAuthoredValue();
 
                 if (primHasAuthoredPoints) {
-                    TF_DEBUG(USDGEOM_BBOX).Msg(
-                        "[BBox Cache] WARNING: No valid extent authored for "
-                        "<%s>. Computing a fallback value.",
-                        prim.GetPath().GetString().c_str());
-
-                    // Create extent
-                    successGettingExtent =
-                        UsdGeomBoundable::ComputeExtentFromPlugins(
-                            pointBasedObj, _time, &extent);
-
-                    if (!successGettingExtent) {
-                        TF_DEBUG(USDGEOM_BBOX).Msg(
-                            "[BBox Cache] WARNING: Unable to compute extent for "
-                            "<%s>.", prim.GetPath().GetString().c_str());
-                    }
+                    successGettingExtent = _ComputeExtent(boundableObj, &extent);
                 }
 
             } else {
-                // Skip non-PointsBased prims without extent. Display a message
-                // if the debug flag is enabled.
-                TF_DEBUG(USDGEOM_BBOX).Msg("[BBox Cache] WARNING: No valid "
-                    "extent authored for <%s>.",
-                    prim.GetPath().GetString().c_str());
 
+                successGettingExtent = _ComputeExtent(boundableObj, &extent);
+            }
+
+            if (successGettingExtent) {
+                // Extent computation reported success, but validate the result.
+                successGettingExtent = extent.size() == 2;
+                if (!successGettingExtent) {
+                    TF_WARN("[BBox Cache] Computed extent for <%s> is of size %zu "
+                            "instead of 2.", prim.GetPath().GetText(),
+                            extent.size());
+                }
             }
         }
 
@@ -1191,9 +1243,8 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
     //  2) Spawn new child tasks and wait for them to complete.
     //  3) Accumulate the results into this cache entry.
     //
-    int refCount = 1;
 
-    // Filter childen and queue children.
+    // Filter children and queue children.
     if (!pruneChildren) {
         // Compute the enclosing model's (or subcomponent's) inverse CTM.
         // This will be used to compute the child bounds in model-space.
@@ -1202,7 +1253,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
                 xfCache.GetLocalToWorldTransform(prim).GetInverse() :
                 inverseComponentCtm;
 
-        std::vector<std::pair<UsdPrim, _BBoxTask*> > included;
+        std::vector<std::pair<UsdPrim, _BBoxTask> > included;
         // See comment in _Resolve about unloaded prims
         UsdPrimSiblingRange children;
 
@@ -1239,7 +1290,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
                 childEntry->isIncluded = _ShouldIncludePrim(childPrim);
 
             // We're now confident that the cached flag is correct.
-            if (!childEntry->isIncluded) {
+            if (!_ignoreVisibility && !childEntry->isIncluded) {
                 // If the child prim is excluded, mark the parent as varying
                 // if the child is imageable and its visibility is varying.
                 // This will ensure that the parent entry gets dirtied when
@@ -1256,16 +1307,13 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
                 // child prims will come from its master prim. The bboxes
                 // for these prims should already have been computed in
                 // _Resolve, so we don't need to schedule an additional task.
-                included.push_back(std::make_pair(*childIt, (_BBoxTask*)0));
+                included.push_back(std::make_pair(*childIt, _BBoxTask()));
             }
             else {
-                included.push_back(std::make_pair(*childIt,
-                    new(task->allocate_child())
-                        _BBoxTask(*childIt,
-                                  inverseEnclosingComponentCtm,
-                                  this,
-                                  task->GetXformCaches())));
-                ++refCount;
+                included.emplace_back(*childIt,
+                                      _BBoxTask(*childIt,
+                                                inverseEnclosingComponentCtm,
+                                                this, task->GetXformCaches()));
             }
         }
 
@@ -1277,13 +1325,13 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
         // All the child bboxTasks will be NULL if the prim is an instance.
         //
         if (!primIsInstance) {
-            task->set_ref_count(refCount);
+            WorkArenaDispatcher wd;
             TF_FOR_ALL(childIt, included) {
                 if (childIt->second) {
-                    task->spawn(*childIt->second);
+                    wd.Run(childIt->second);
                 }
             }
-            task->wait_for_all();
+            wd.Wait();
 
             // We may have switched threads, grab the thread-local xfCache
             // again.

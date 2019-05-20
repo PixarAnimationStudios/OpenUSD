@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdRi/api.h"
-#include "pxr/usd/usd/schemaBase.h"
+#include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
@@ -68,26 +68,20 @@ class SdfAssetPath;
 /// - Catmull-Rom (UsdRiTokens->catmullRom)
 /// 
 ///
-class UsdRiSplineAPI : public UsdSchemaBase
+class UsdRiSplineAPI : public UsdAPISchemaBase
 {
 public:
-    /// Compile-time constant indicating whether or not this class corresponds
-    /// to a concrete instantiable prim type in scene description.  If this is
-    /// true, GetStaticPrimDefinition() will return a valid prim definition with
-    /// a non-empty typeName.
-    static const bool IsConcrete = false;
-
-    /// Compile-time constant indicating whether or not this class inherits from
-    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
-    /// UsdPrim.
-    static const bool IsTyped = false;
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaType
+    static const UsdSchemaType schemaType = UsdSchemaType::SingleApplyAPI;
 
     /// Construct a UsdRiSplineAPI on UsdPrim \p prim .
     /// Equivalent to UsdRiSplineAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdRiSplineAPI(const UsdPrim& prim=UsdPrim())
-        : UsdSchemaBase(prim)
+        : UsdAPISchemaBase(prim)
     {
     }
 
@@ -95,7 +89,7 @@ public:
     /// Should be preferred over UsdRiSplineAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdRiSplineAPI(const UsdSchemaBase& schemaObj)
-        : UsdSchemaBase(schemaObj)
+        : UsdAPISchemaBase(schemaObj)
     {
     }
 
@@ -124,15 +118,28 @@ public:
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
-    /// Mark this schema class as applied to the prim at \p path in the 
-    /// current EditTarget. This information is stored in the apiSchemas
-    /// metadata on prims.  
-    ///
+    /// Applies this <b>single-apply</b> API schema to the given \p prim.
+    /// This information is stored by adding "RiSplineAPI" to the 
+    /// token-valued, listOp metadata \em apiSchemas on the prim.
+    /// 
+    /// \return A valid UsdRiSplineAPI object is returned upon success. 
+    /// An invalid (or empty) UsdRiSplineAPI object is returned upon 
+    /// failure. See \ref UsdAPISchemaBase::_ApplyAPISchema() for conditions 
+    /// resulting in failure. 
+    /// 
     /// \sa UsdPrim::GetAppliedSchemas()
+    /// \sa UsdPrim::HasAPI()
     ///
     USDRI_API
     static UsdRiSplineAPI 
-    Apply(const UsdStagePtr &stage, const SdfPath &path);
+    Apply(const UsdPrim &prim);
+
+protected:
+    /// Returns the type of schema this class belongs to.
+    ///
+    /// \sa UsdSchemaType
+    USDRI_API
+    UsdSchemaType _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -144,7 +151,7 @@ private:
 
     // override SchemaBase virtuals.
     USDRI_API
-    virtual const TfType &_GetTfType() const;
+    const TfType &_GetTfType() const override;
 
 public:
     // ===================================================================== //
@@ -163,7 +170,7 @@ public:
     explicit UsdRiSplineAPI(const UsdPrim& prim, const TfToken &splineName,
                             const SdfValueTypeName &valuesTypeName,
                             bool doesDuplicateBSplineEndpoints)
-        : UsdSchemaBase(prim)
+        : UsdAPISchemaBase(prim)
         , _splineName(splineName)
         , _valuesTypeName(valuesTypeName)
         , _duplicateBSplineEndpoints(doesDuplicateBSplineEndpoints)
@@ -176,7 +183,7 @@ public:
                             const TfToken &splineName,
                             const SdfValueTypeName &valuesTypeName,
                             bool doesDuplicateBSplineEndpoints)
-        : UsdSchemaBase(schemaObj.GetPrim())
+        : UsdAPISchemaBase(schemaObj.GetPrim())
         , _splineName(splineName)
         , _valuesTypeName(valuesTypeName)
         , _duplicateBSplineEndpoints(doesDuplicateBSplineEndpoints)

@@ -42,22 +42,26 @@ HdRprimCollection::HdRprimCollection()
 }
 
 HdRprimCollection::HdRprimCollection(TfToken const& name,
-                                     TfToken const& reprName,
-                                     bool forcedRepr)
+                                     HdReprSelector const& reprSelector,
+                                     bool forcedRepr,
+                                     TfToken const& materialTag)
     : _name(name)
-    , _reprName(reprName)
+    , _reprSelector(reprSelector)
     , _forcedRepr(forcedRepr)
+    , _materialTag(materialTag)
     , _rootPaths(1, SdfPath::AbsoluteRootPath())
 {
 }
 
 HdRprimCollection::HdRprimCollection(TfToken const& name,
-                                     TfToken const& reprName,
+                                     HdReprSelector const& reprSelector,
                                      SdfPath const& rootPath,
-                                     bool forcedRepr)
+                                     bool forcedRepr,
+                                     TfToken const& materialTag)
     : _name(name)
-    , _reprName(reprName)
+    , _reprSelector(reprSelector)
     , _forcedRepr(forcedRepr)
+    , _materialTag(materialTag)
 {
     if (!rootPath.IsAbsolutePath()) {
         TF_CODING_ERROR("Root path must be absolute");
@@ -69,12 +73,13 @@ HdRprimCollection::HdRprimCollection(TfToken const& name,
 
 HdRprimCollection::HdRprimCollection(HdRprimCollection const& col)
 {
-    _name           = col._name;
-    _reprName       = col._reprName;
-    _forcedRepr     = col._forcedRepr;
-    _renderTags     = col._renderTags;
-    _rootPaths      = col._rootPaths;
-    _excludePaths   = col._excludePaths;
+    _name = col._name;
+    _reprSelector = col._reprSelector;
+    _forcedRepr = col._forcedRepr;
+    _renderTags = col._renderTags;
+    _rootPaths = col._rootPaths;
+    _excludePaths = col._excludePaths;
+    _materialTag = col._materialTag;
 }
 
 HdRprimCollection::~HdRprimCollection()
@@ -173,11 +178,23 @@ HdRprimCollection::HasRenderTag(TfToken const & renderTag) const
     return false;
 }
 
+void 
+HdRprimCollection::SetMaterialTag(TfToken const& tag)
+{
+    _materialTag = tag;
+}
+
+TfToken const& 
+HdRprimCollection::GetMaterialTag() const
+{
+    return _materialTag;
+}
+
 size_t
 HdRprimCollection::ComputeHash() const
 {
     size_t h = _name.Hash();
-    boost::hash_combine(h, _reprName.Hash());
+    boost::hash_combine(h, _reprSelector.Hash());
     boost::hash_combine(h, _forcedRepr);
     TF_FOR_ALL(pathIt, _rootPaths) {
         boost::hash_combine(h, SdfPath::Hash()(*pathIt));
@@ -188,17 +205,20 @@ HdRprimCollection::ComputeHash() const
     TF_FOR_ALL(rtIt, _renderTags) {
         boost::hash_combine(h, rtIt->Hash());
     }
+
+    boost::hash_combine(h, _materialTag);
     return h;
 }
 
 bool HdRprimCollection::operator==(HdRprimCollection const & other) const 
 {
     return _name == other._name
-       && _reprName == other._reprName
+       && _reprSelector == other._reprSelector
        && _forcedRepr == other._forcedRepr
        && _rootPaths == other._rootPaths
        && _excludePaths == other._excludePaths
-       && _renderTags == other._renderTags;
+       && _renderTags == other._renderTags
+       && _materialTag == other._materialTag;
 }
 
 bool HdRprimCollection::operator!=(HdRprimCollection const & other) const 

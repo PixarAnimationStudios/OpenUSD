@@ -23,16 +23,20 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-import os
-import unittest
+from pxr import UsdMaya
+
 from pxr import Gf
 from pxr import Sdf
+from pxr import Tf
 from pxr import Usd
 from pxr import UsdGeom
 from pxr import Vt
 
 from maya import cmds
 from maya import standalone
+
+import os
+import unittest
 
 
 class testUsdExportUVSets(unittest.TestCase):
@@ -47,7 +51,10 @@ class testUsdExportUVSets(unittest.TestCase):
         if expectedUnauthoredValuesIndex is None:
             expectedUnauthoredValuesIndex = -1
 
-        self.assertEqual(primvar.GetTypeName(), Sdf.ValueTypeNames.Float2Array)
+        if not UsdMaya.WriteUtil.WriteUVAsFloat2():
+            self.assertEqual(primvar.GetTypeName(), Sdf.ValueTypeNames.TexCoord2fArray)
+        else: 
+            self.assertEqual(primvar.GetTypeName(), Sdf.ValueTypeNames.Float2Array)
 
         for idx in range(len(primvar.Get())):
             self.assertEqual(primvar.Get()[idx], expectedValues[idx])
@@ -66,7 +73,11 @@ class testUsdExportUVSets(unittest.TestCase):
         standalone.initialize('usd')
         cmds.loadPlugin('pxrUsd')
 
-        cmds.file(os.path.abspath('UsdExportUVSetsTest.ma'), open=True,
+        if not UsdMaya.WriteUtil.WriteUVAsFloat2():
+            cmds.file(os.path.abspath('UsdExportUVSetsTest.ma'), open=True,
+                       force=True)
+        else:
+            cmds.file(os.path.abspath('UsdExportUVSetsTest_Float.ma'), open=True,
                        force=True)
 
         # Make some live edits to the box with weird UVs for the
@@ -159,6 +170,7 @@ class testUsdExportUVSets(unittest.TestCase):
         usdCubeMesh = self._GetCubeUsdMesh('OneMissingFaceCube')
 
         expectedValues = [
+            Gf.Vec2f(0.0, 0.0),
             Gf.Vec2f(0.375, 0),
             Gf.Vec2f(0.625, 0),
             Gf.Vec2f(0.625, 0.25),
@@ -172,18 +184,17 @@ class testUsdExportUVSets(unittest.TestCase):
             Gf.Vec2f(0.875, 0),
             Gf.Vec2f(0.875, 0.25),
             Gf.Vec2f(0.125, 0),
-            Gf.Vec2f(0.125, 0.25),
-            Gf.Vec2f(-1e+30, -1e+30)
+            Gf.Vec2f(0.125, 0.25)
         ]
         expectedIndices = [
-            0, 1, 2, 3,
-            3, 2, 4, 5,
-            14, 14, 14, 14,
-            6, 7, 8, 9,
-            1, 10, 11, 2,
-            12, 0, 3, 13
+            1, 2, 3, 4,
+            4, 3, 5, 6,
+            0, 0, 0, 0,
+            7, 8, 9, 10,
+            2, 11, 12, 3,
+            13, 1, 4, 14
         ]
-        expectedUnauthoredValuesIndex = len(expectedValues) - 1
+        expectedUnauthoredValuesIndex = 0
 
         expectedInterpolation = UsdGeom.Tokens.faceVarying
 
@@ -202,21 +213,21 @@ class testUsdExportUVSets(unittest.TestCase):
         usdCubeMesh = self._GetCubeUsdMesh('OneAssignedFaceCube')
 
         expectedValues = [
+            Gf.Vec2f(0.0, 0.0),
             Gf.Vec2f(0.375, 0.5),
             Gf.Vec2f(0.625, 0.5),
             Gf.Vec2f(0.625, 0.75),
-            Gf.Vec2f(0.375, 0.75),
-            Gf.Vec2f(-1e+30, -1e+30)
+            Gf.Vec2f(0.375, 0.75)
         ]
         expectedIndices = [
-            4, 4, 4, 4,
-            4, 4, 4, 4,
-            0, 1, 2, 3,
-            4, 4, 4, 4,
-            4, 4, 4, 4,
-            4, 4, 4, 4
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            1, 2, 3, 4,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0
         ]
-        expectedUnauthoredValuesIndex = len(expectedValues) - 1
+        expectedUnauthoredValuesIndex = 0
 
         expectedInterpolation = UsdGeom.Tokens.faceVarying
 

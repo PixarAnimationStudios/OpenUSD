@@ -55,7 +55,7 @@ void wrapUsdShadeConnectableAPI()
 {
     typedef UsdShadeConnectableAPI This;
 
-    class_<This, bases<UsdSchemaBase> >
+    class_<This, bases<UsdAPISchemaBase> >
         cls("ConnectableAPI");
 
     cls
@@ -65,17 +65,6 @@ void wrapUsdShadeConnectableAPI()
 
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
-
-        .def("Apply", &This::Apply, (arg("stage"), arg("path")))
-        .staticmethod("Apply")
-
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
@@ -249,8 +238,9 @@ WRAP_CUSTOM {
 
     ;
 
-    implicitly_convertible<UsdShadeConnectableAPI, UsdShadeNodeGraph>();
-    implicitly_convertible<UsdShadeConnectableAPI, UsdShadeShader>();
+    implicitly_convertible<UsdShadeNodeGraph, UsdShadeConnectableAPI>();
+    implicitly_convertible<UsdShadeShader, UsdShadeConnectableAPI>();
+
 }
 
 } // anonymous namespace

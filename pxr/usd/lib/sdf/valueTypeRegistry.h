@@ -30,7 +30,7 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
 #include <boost/noncopyable.hpp>
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -76,20 +76,20 @@ public:
     SdfValueTypeName FindOrCreateTypeName(const std::string& name) const;
 
     /// Register a value type and it's corresponding array value type.
-    /// Returns the (scalar) value type.
     void AddType(const std::string& name,
                  const VtValue& defaultValue,
                  const VtValue& defaultArrayValue,
+                 const std::string& cppName, const std::string& cppArrayName,
                  TfEnum defaultUnit, const TfToken& role,
                  const SdfTupleDimensions& dimensions);
 
     /// Register a value type and it's corresponding array value type.
-    /// Returns the (scalar) value type.  In this case the default values are
-    /// empty.  This is useful for types provided by plugins;  you don't need
-    /// to load the plugin just to register the type.  However, there is no
-    /// default value.
+    /// In this case the default values are empty.  This is useful for types 
+    /// provided by plugins;  you don't need to load the plugin just to 
+    /// register the type.  However, there is no default value.
     void AddType(const std::string& name,
                  const TfType& type, const TfType& arrayType,
+                 const std::string& cppName, const std::string& cppArrayName,
                  TfEnum defaultUnit, const TfToken& role,
                  const SdfTupleDimensions& dimensions);
 
@@ -99,7 +99,7 @@ public:
 
 private:
     class _Impl;
-    boost::scoped_ptr<_Impl> _impl;
+    std::unique_ptr<_Impl> _impl;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

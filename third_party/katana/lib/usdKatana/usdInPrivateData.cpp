@@ -136,6 +136,11 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
 
     bool overrideFound;
 
+    const double startTime = usdInArgs->GetStage()->GetStartTimeCode();
+    const double tcps = usdInArgs->GetStage()->GetTimeCodesPerSecond();
+    const double fps = usdInArgs->GetStage()->GetFramesPerSecond();
+    const double timeScaleRatio = tcps / fps;
+
     // Current time.
     //
     overrideFound = false;
@@ -160,6 +165,11 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
         else
         {
             _currentTime = usdInArgs->GetCurrentTime();
+
+            // Apply time scaling.
+            //
+            _currentTime =
+                startTime + ((_currentTime - startTime) * timeScaleRatio);
         }
     }
 
@@ -214,6 +224,11 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
         else
         {
             _shutterClose = usdInArgs->GetShutterClose();
+
+            // Apply time scaling.
+            //
+            _shutterClose =
+                _shutterOpen + ((_shutterClose - _shutterOpen) * timeScaleRatio);
         }
     }
 
@@ -223,6 +238,26 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
     // they can vary per attribute, so store both the overridden and the
     // fallback motion sample times for use inside GetMotionSampleTimes.
     //
+    bool useDefaultMotionSamples = false;
+    if (!prim.IsPseudoRoot())
+    {
+        TfToken useDefaultMotionSamplesToken("katana:useDefaultMotionSamples");
+        UsdAttribute useDefaultMotionSamplesUsdAttr = 
+            prim.GetAttribute(useDefaultMotionSamplesToken);
+        if (useDefaultMotionSamplesUsdAttr)
+        {
+            // If there is no katana op override and there is a usd 
+            // attribute "katana:useDefaultMotionSamples" set to true,
+            // interpret this as "use usdInArgs defaults".
+            //
+            useDefaultMotionSamplesUsdAttr.Get(&useDefaultMotionSamples);
+            if (useDefaultMotionSamples)
+            {
+                _motionSampleTimesOverride = usdInArgs->GetMotionSampleTimes();
+            }
+        }
+    }
+
     for (size_t i = 0; i < pathsToCheck.size(); ++i)
     {
         FnKat::Attribute motionSampleTimesAttr =
@@ -245,12 +280,22 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
                 const auto& sampleTimes = attr.getNearestSample(0.0f);;
                 if (!sampleTimes.empty())
                 {
+                    if (useDefaultMotionSamples)
+                    {
+                        // Clear out default samples before adding overrides
+                        _motionSampleTimesOverride.clear();
+                    }
                     for (float sampleTime : sampleTimes)
                         _motionSampleTimesOverride.push_back(
                             (double)sampleTime);
                     break;
                 }
             }
+        }
+        else if (parentData && !useDefaultMotionSamples)
+        {
+            _motionSampleTimesOverride =
+                    parentData->_motionSampleTimesOverride;
         }
     }
     if (parentData)
@@ -260,6 +305,19 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
     else
     {
         _motionSampleTimesFallback = usdInArgs->GetMotionSampleTimes();
+
+        // Apply time scaling.
+        //
+        if (_motionSampleTimesFallback.size() > 0)
+        {
+            const double firstSample = _motionSampleTimesFallback[0];
+            for (size_t i = 0; i < _motionSampleTimesFallback.size(); ++i)
+            {
+                _motionSampleTimesFallback[i] =
+                    firstSample + ((_motionSampleTimesFallback[i] - firstSample) *
+                                   timeScaleRatio);
+            }
+        }
     }
 }
 
@@ -390,7 +448,7 @@ PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(
 
             // Insert the first sample as long as it is different
             // than what we already have.
-            if (fabs(lower-firstSample) > epsilon)
+            if (!foundSamplesInInterval || fabs(lower-firstSample) > epsilon)
             {
                 result.insert(result.begin(), lower);
             }
@@ -416,7 +474,7 @@ PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(
 
             // Append the last sample as long as it is different
             // than what we already have.
-            if (fabs(upper-lastSample) > epsilon)
+            if (!foundSamplesInInterval || fabs(upper-lastSample) > epsilon)
             {
                 result.push_back(upper);
             }

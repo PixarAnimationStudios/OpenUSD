@@ -24,11 +24,16 @@
 #ifndef USDIMAGING_INHERITEDCACHE_H
 #define USDIMAGING_INHERITEDCACHE_H
 
+/// \file usdImaging/inheritedCache.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/primRange.h"
+#include "pxr/usd/usdShade/tokens.h"
 #include "pxr/usd/sdf/path.h"
+
+#include "pxr/base/work/utils.h"
 
 #include <boost/functional/hash.hpp>
 #include <tbb/concurrent_unordered_map.h>
@@ -49,43 +54,56 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// UsdGeomXformable::XformQuery. This cache is thread safe and lock free. It is
 /// not wait free, however waits are expected to be extremely short (a small
 /// number of cycles).
-template<typename S>
+///
+/// An optional implementation data (ImplData) object may be used for computing 
+/// the values to be cached, if necessary. This object is passed along to the 
+/// MakeQuery() method of the strategy object, making it available for use in 
+/// computations. If MakeQuery() is expected to modify the ImplData object in 
+/// any way, care must be taken to ensure that the modifications are 
+/// thread-safe. The fallback type for ImplData is bool, when it's not used by 
+/// an InheritedCache.
+/// 
+template<typename Strategy, typename ImplData=bool>
 class UsdImaging_InheritedCache
 {
-    friend S;
+    friend Strategy;
     struct _Entry;
     typedef tbb::concurrent_unordered_map<UsdPrim,
                                           _Entry,
                                           boost::hash<UsdPrim> > _CacheMap;
 public:
-    typedef typename S::value_type value_type;
-    typedef typename S::query_type query_type;
+    typedef typename Strategy::value_type value_type;
+    typedef typename Strategy::query_type query_type;
 
     typedef TfHashMap<UsdPrim, value_type, boost::hash<UsdPrim> > 
         ValueOverridesMap;
 
-    /// Construct a new for the specified \p time and \p rootPath, at which
-    /// all traversals will terminate. Note that values authored on the 
-    /// \p rootPath itself are not inherited.
+    /// Construct a new for the specified \p time.
     explicit UsdImaging_InheritedCache(
-        const UsdTimeCode time, 
-        const SdfPath& rootPath,
+        const UsdTimeCode time,
+        ImplData *implData=nullptr,
         const ValueOverridesMap valueOverrides=ValueOverridesMap())
         : _time(time)
-        , _rootPath(rootPath)
+        , _rootPath(SdfPath::AbsoluteRootPath())
         , _cacheVersion(_GetInitialCacheVersion())
         , _valueOverrides(valueOverrides)
+        , _implData(implData)
     {
     }
 
-    /// Construct a new cache for UsdTimeCode::Default() and the absolute root
-    /// path.
+    /// Construct a new cache for UsdTimeCode::Default().
     UsdImaging_InheritedCache()
         : _time(UsdTimeCode::Default())
         , _rootPath(SdfPath::AbsoluteRootPath())
         , _cacheVersion(1)
     {
     }
+
+    ~UsdImaging_InheritedCache()
+    {
+        WorkSwapDestroyAsync(_cache);
+    }
+
 
     /// Compute the inherited value for the given \p prim, including the value
     /// authored on the Prim itself, if present.
@@ -98,7 +116,7 @@ public:
                             "which is not within the specified root: %s",
                             prim.GetPath().GetString().c_str(),
                             _rootPath.GetString().c_str());
-            return S::MakeDefault();
+            return Strategy::MakeDefault();
         }
 
         return *_GetValue(prim);
@@ -139,6 +157,12 @@ public:
 
     /// Set the root ancestor path at which to stop inheritance.
     /// Note that values on the root are not inherited.
+    ///
+    /// In general, you shouldn't use this function; USD inherited attribute
+    /// resolution will traverse to the pseudo-root, and not doing that in the
+    /// cache can introduce subtle bugs. This exists mainly for the benefit of
+    /// the transform cache, since UsdImagingDelegate transform resolution
+    /// semantics are complicated and special-cased.
     void SetRootPath(const SdfPath& rootPath) {
         if (!rootPath.IsAbsolutePath()) {
             TF_CODING_ERROR("Invalid root path: %s", 
@@ -154,7 +178,7 @@ public:
     }
 
     /// Return the root ancestor path at which to stop inheritance.
-    /// Note that values on the root are not inherited.
+    /// See notes on SetRootPath.
     const SdfPath & GetRootPath() const { return _rootPath; }
 
     /// Helper function used to append, update or remove overrides from the 
@@ -261,7 +285,7 @@ private:
     // values. The version is used to determine validity.
     struct _Entry {
         _Entry()
-            : value(S::MakeDefault())
+            : value(Strategy::MakeDefault())
             , version(_GetInitialEntryVersion()) 
         { }
 
@@ -319,13 +343,17 @@ private:
 
     // Value overrides for a set of descendents.
     ValueOverridesMap _valueOverrides;
+
+    // Supplemental cache if used by this inherited cache.
+    ImplData *_implData;
 };
 
-template<typename S>
+template<typename Strategy, typename ImplData>
 void
-UsdImaging_InheritedCache<S>::_SetCacheEntryForPrim(const UsdPrim &prim,
-                                            value_type const& value,
-                                            _Entry* entry) const
+UsdImaging_InheritedCache<Strategy,ImplData>::_SetCacheEntryForPrim(
+    const UsdPrim &prim,
+    value_type const& value,
+    _Entry* entry) const
 {
     // Note: _cacheVersion is not allowed to change during cache access.
     unsigned v = entry->version;
@@ -345,9 +373,10 @@ UsdImaging_InheritedCache<S>::_SetCacheEntryForPrim(const UsdPrim &prim,
     }
 }
 
-template<typename S>
-typename UsdImaging_InheritedCache<S>::_Entry*
-UsdImaging_InheritedCache<S>::_GetCacheEntryForPrim(const UsdPrim &prim) const
+template<typename Strategy, typename ImplData>
+typename UsdImaging_InheritedCache<Strategy, ImplData>::_Entry*
+UsdImaging_InheritedCache<Strategy, ImplData>::_GetCacheEntryForPrim(
+    const UsdPrim &prim) const
 {
     typename _CacheMap::const_iterator it = _cache.find(prim);
     if (it != _cache.end()) {
@@ -355,18 +384,19 @@ UsdImaging_InheritedCache<S>::_GetCacheEntryForPrim(const UsdPrim &prim) const
     }
      
     _Entry e;
-    e.query = S::MakeQuery(prim);
-    e.value = S::MakeDefault();
+    e.query = Strategy::MakeQuery(prim, _implData);
+    e.value = Strategy::MakeDefault();
     e.version = _GetInvalidVersion();
     return &(_cache.insert(
                         typename _CacheMap::value_type(prim, e)).first->second);
 }
 
-template<typename S>
-typename UsdImaging_InheritedCache<S>::value_type const*
-UsdImaging_InheritedCache<S>::_GetValue(const UsdPrim& prim) const
+template<typename Strategy, typename ImplData>
+typename UsdImaging_InheritedCache<Strategy, ImplData>::value_type const*
+UsdImaging_InheritedCache<Strategy, ImplData>::_GetValue(
+    const UsdPrim& prim) const
 {
-    static value_type const default_ = S::MakeDefault();
+    static value_type const default_ = Strategy::MakeDefault();
 
     // Base case.
     if (!prim || prim.IsMaster() || prim.GetPath() == _rootPath)
@@ -391,7 +421,7 @@ UsdImaging_InheritedCache<S>::_GetValue(const UsdPrim& prim) const
         _SetCacheEntryForPrim(prim, it->second, entry);
     } else {
         _SetCacheEntryForPrim(prim,
-                              S::Inherit(this, prim, &entry->query), 
+                              Strategy::Inherit(this, prim, &entry->query), 
                               entry);
     }
     return &entry->value;
@@ -419,7 +449,7 @@ struct UsdImaging_XfStrategy {
     value_type MakeDefault() { return GfMatrix4d(1); }
 
     static
-    query_type MakeQuery(UsdPrim prim) {
+    query_type MakeQuery(UsdPrim prim, bool *) {
         if (UsdGeomXformable xf = UsdGeomXformable(prim))
             return query_type(xf);
         return query_type();
@@ -495,7 +525,7 @@ struct UsdImaging_VisStrategy {
     value_type MakeDefault() { return UsdGeomTokens->inherited; }
 
     static
-    query_type MakeQuery(UsdPrim prim) {
+    query_type MakeQuery(UsdPrim prim, bool *) {
         if (UsdGeomImageable xf = UsdGeomImageable(prim))
             return query_type(xf.GetVisibilityAttr());
         return query_type();
@@ -517,9 +547,55 @@ struct UsdImaging_VisStrategy {
 
     static
     value_type
-    ComputeVisibility(UsdPrim const& prim, SdfPath const& rootPath, UsdTimeCode time)
+    ComputeVisibility(UsdPrim const& prim, UsdTimeCode time)
     {
         return UsdGeomImageable(prim).ComputeVisibility(time);
+    }
+};
+
+// -------------------------------------------------------------------------- //
+// Purpose Cache
+// -------------------------------------------------------------------------- //
+
+struct UsdImaging_PurposeStrategy;
+typedef UsdImaging_InheritedCache<UsdImaging_PurposeStrategy> 
+    UsdImaging_PurposeCache;
+
+struct UsdImaging_PurposeStrategy {
+    typedef TfToken value_type; // purpose, inherited
+    typedef UsdAttributeQuery query_type;
+
+    static
+    value_type MakeDefault() { return UsdGeomTokens->default_; }
+
+    static
+    query_type MakeQuery(UsdPrim prim, bool *) {
+        UsdGeomImageable im = UsdGeomImageable(prim);
+        return im ? query_type(im.GetPurposeAttr()) : query_type();
+    }
+
+    static 
+    value_type
+    Inherit(UsdImaging_PurposeCache const* owner, 
+            UsdPrim prim,
+            query_type const* query)
+    { 
+
+        value_type v = *owner->_GetValue(prim.GetParent());
+
+        if (v != UsdGeomTokens->default_)
+            return v;
+
+        if (*query)
+            query->Get(&v);
+        return v;
+    }
+
+    static
+    value_type
+    ComputePurpose(UsdPrim const& prim)
+    {
+        return UsdGeomImageable(prim).ComputePurpose();
     }
 };
 
@@ -530,32 +606,71 @@ struct UsdImaging_VisStrategy {
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usdShade/material.h"
+#include "pxr/usd/usdShade/materialBindingAPI.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+struct UsdImaging_MaterialBindingImplData {
+    /// Constructor takes the purpose for which material bindings are to be 
+    /// evaluated.
+    UsdImaging_MaterialBindingImplData(const TfToken &materialPurpose):
+        _materialPurpose(materialPurpose)
+    {   }
+
+    /// Destructor invokes ClearCaches(), which does the cache deletion in 
+    /// parallel.
+    ~UsdImaging_MaterialBindingImplData() {
+        ClearCaches();
+    }
+
+    /// Returns the material purpose for which bindings must be computed.
+    const TfToken &GetMaterialPurpose() const { 
+        return _materialPurpose; 
+    }
+
+    /// Returns the BindingsCache object to be used when computing resolved 
+    /// material bindings.
+    UsdShadeMaterialBindingAPI::BindingsCache & GetBindingsCache() 
+    { return _bindingsCache; }
+
+    /// Returns the BindingsCache object to be used when computing resolved 
+    /// material bindings.
+    UsdShadeMaterialBindingAPI::CollectionQueryCache & GetCollectionQueryCache()
+    { return _collQueryCache; }
+
+    /// Clears all of the held caches.
+    void ClearCaches();
+
+private:
+    const TfToken _materialPurpose;
+    UsdShadeMaterialBindingAPI::BindingsCache _bindingsCache;
+    UsdShadeMaterialBindingAPI::CollectionQueryCache _collQueryCache;
+};
 
 struct UsdImaging_MaterialStrategy;
-typedef UsdImaging_InheritedCache<UsdImaging_MaterialStrategy> 
-                                                UsdImaging_MaterialBindingCache;
+typedef UsdImaging_InheritedCache<UsdImaging_MaterialStrategy,
+    UsdImaging_MaterialBindingImplData> 
+        UsdImaging_MaterialBindingCache;
 
 struct UsdImaging_MaterialStrategy {
     typedef SdfPath value_type;         // inherited path to bound shader
     typedef UsdShadeMaterial query_type;
 
+    using ImplData = UsdImaging_MaterialBindingImplData;
+
     static
     value_type MakeDefault() { return SdfPath(); }
 
     static
-    query_type MakeQuery(UsdPrim prim) {
-        return UsdShadeMaterial::GetBoundMaterial(prim);
+    query_type MakeQuery(
+        UsdPrim prim, 
+        ImplData *implData) 
+    {
+        return UsdShadeMaterialBindingAPI(prim).ComputeBoundMaterial(
+                &implData->GetBindingsCache(), 
+                &implData->GetCollectionQueryCache(),
+                implData->GetMaterialPurpose());
     }
-
-    static
-    SdfPath GetBinding(UsdShadeMaterial const& material);
-
-    static
-    UsdPrim GetTargetedShader(UsdPrim const& materialPrim,
-                              UsdRelationship const& materialRel);
  
     static 
     value_type
@@ -563,89 +678,33 @@ struct UsdImaging_MaterialStrategy {
             UsdPrim prim,
             query_type const* query)
     { 
-        TF_DEBUG(USDIMAGING_SHADERS).Msg("Looking for material binding %s\n", 
-                      prim.GetPath().GetText());
+        TF_DEBUG(USDIMAGING_SHADERS).Msg("Looking for \"preview\" material "
+                "binding for %s\n", prim.GetPath().GetText());
         if (*query) {
-            SdfPath binding = GetBinding(*query);
+            SdfPath binding = query->GetPath();
             if (!binding.IsEmpty()) {
                 return binding;
             }
         }
-        return *owner->_GetValue(prim.GetParent());
+        // query already contains the resolved material binding for the prim. 
+        // Hence, we don't need to inherit the binding from the parent here. 
+        // Futhermore, it may be wrong to inherit the binding from the parent,
+        // because in the new scheme, a child of a bound prim can be unbound.
+        return value_type();
     }
 
     static
     value_type
-    ComputeMaterialPath(UsdPrim const& prim) {
-        SdfPath binding;
-
-        for (UsdPrim parent=prim;parent.GetParent();parent=parent.GetParent()) {
-            TF_DEBUG(USDIMAGING_SHADERS).Msg("Looking for material binding %s\n", 
-                      parent.GetPath().GetText());
-            UsdShadeMaterial mat = UsdShadeMaterial::GetBoundMaterial(parent);
-            if (mat) {
-                binding = GetBinding(mat);
-                if (!binding.IsEmpty()) {
-                    break;
-                }
-            }
+    ComputeMaterialPath(UsdPrim const& prim, ImplData *implData) {
+        // We don't need to walk up the namespace here since 
+        // ComputeBoundMaterial does it for us.
+        if (UsdShadeMaterial mat = UsdShadeMaterialBindingAPI(prim).
+                    ComputeBoundMaterial(&implData->GetBindingsCache(), 
+                                         &implData->GetCollectionQueryCache(),
+                                         implData->GetMaterialPurpose())) {
+            return mat.GetPath();
         }
-    
-        return binding; 
-    }
-};
-
-// -------------------------------------------------------------------------- //
-// MaterialBinding Cache for full material networks
-// -------------------------------------------------------------------------- //
-
-struct UsdImaging_MaterialNetworkStrategy;
-typedef UsdImaging_InheritedCache<UsdImaging_MaterialNetworkStrategy> 
-    UsdImaging_MaterialNetworkBindingCache;
-
-struct UsdImaging_MaterialNetworkStrategy {
-    typedef SdfPath value_type;         // inherited path to bound shader
-    typedef UsdShadeMaterial query_type;
-
-    static
-    value_type MakeDefault() { return SdfPath(); }
-
-    static
-    query_type MakeQuery(UsdPrim prim) {
-        return UsdShadeMaterial::GetBoundMaterial(prim);
-    }
-
-    static
-    SdfPath GetBinding(UsdShadeMaterial const& material);
-
-    static
-    UsdPrim GetTargetedShader(UsdPrim const& materialPrim,
-                              UsdRelationship const& materialRel) {
-        return UsdImaging_MaterialStrategy::GetTargetedShader(
-            materialPrim, materialRel);
-    }
- 
-    static 
-    value_type
-    Inherit(UsdImaging_MaterialNetworkBindingCache const* owner,
-            UsdPrim prim,
-            query_type const* query)
-    { 
-        TF_DEBUG(USDIMAGING_SHADERS).Msg("Looking for material binding %s\n", 
-                      prim.GetPath().GetText());
-        if (*query) {
-            SdfPath binding = GetBinding(*query);
-            if (!binding.IsEmpty()) {
-                return binding;
-            }
-        }
-        return *owner->_GetValue(prim.GetParent());
-    }
-
-    static
-    value_type
-    ComputeMaterialPath(UsdPrim const& prim) {
-        return UsdImaging_MaterialStrategy::ComputeMaterialPath(prim);
+        return value_type();
     }
 };
 
@@ -672,10 +731,9 @@ struct UsdImaging_DrawModeStrategy
     value_type MakeDefault() { return UsdGeomTokens->default_; }
 
     static
-    query_type MakeQuery(UsdPrim prim) {
-        if (UsdGeomModelAPI m = UsdGeomModelAPI(prim))
-            if (UsdAttribute a = m.GetModelDrawModeAttr())
-                return query_type(a);
+    query_type MakeQuery(UsdPrim prim, bool *) {
+        if (UsdAttribute a = UsdGeomModelAPI(prim).GetModelDrawModeAttr())
+            return query_type(a);
         return query_type();
     }
 

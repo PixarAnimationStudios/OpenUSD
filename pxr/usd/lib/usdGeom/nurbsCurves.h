@@ -70,23 +70,17 @@ class SdfAssetPath;
 /// In spite of these slight differences in the spec, curves generated in Maya
 /// should be preserved when roundtripping.
 /// 
-/// 'order' and 'range', when representing a batched NurbsCurve should be
-/// authored one value per curve.  'knots' should be the concatentation of
+/// \em order and \em range, when representing a batched NurbsCurve should be
+/// authored one value per curve.  \em knots should be the concatentation of
 /// all batched curves.
 ///
 class UsdGeomNurbsCurves : public UsdGeomCurves
 {
 public:
-    /// Compile-time constant indicating whether or not this class corresponds
-    /// to a concrete instantiable prim type in scene description.  If this is
-    /// true, GetStaticPrimDefinition() will return a valid prim definition with
-    /// a non-empty typeName.
-    static const bool IsConcrete = true;
-
-    /// Compile-time constant indicating whether or not this class inherits from
-    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
-    /// UsdPrim.
-    static const bool IsTyped = true;
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaType
+    static const UsdSchemaType schemaType = UsdSchemaType::ConcreteTyped;
 
     /// Construct a UsdGeomNurbsCurves on UsdPrim \p prim .
     /// Equivalent to UsdGeomNurbsCurves::Get(prim.GetStage(), prim.GetPath())
@@ -155,6 +149,13 @@ public:
     static UsdGeomNurbsCurves
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
+protected:
+    /// Returns the type of schema this class belongs to.
+    ///
+    /// \sa UsdSchemaType
+    USDGEOM_API
+    UsdSchemaType _GetSchemaType() const override;
+
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
@@ -165,7 +166,7 @@ private:
 
     // override SchemaBase virtuals.
     USDGEOM_API
-    virtual const TfType &_GetTfType() const;
+    const TfType &_GetTfType() const override;
 
 public:
     // --------------------------------------------------------------------- //
@@ -173,8 +174,8 @@ public:
     // --------------------------------------------------------------------- //
     /// Order of the curve.  Order must be positive and is
     /// equal to the degree of the polynomial basis to be evaluated, plus 1.
-    /// Its value for the 'i'th curve must be less than or equal to the 
-    /// number of cvs in the curveVertexCount[i]
+    /// Its value for the 'i'th curve must be less than or equal to
+    /// curveVertexCount[i]
     ///
     /// \n  C++ Type: VtArray<int>
     /// \n  Usd Type: SdfValueTypeNames->IntArray

@@ -172,27 +172,27 @@ public:
 
         // -------------------------------------------------------------------
         // for a primvar in non-interleaved buffer array (Vertex, Element, ...)
-        struct PrimVar {
-            PrimVar() {}
-            PrimVar(TfToken const &name, TfToken const &dataType)
+        struct Primvar {
+            Primvar() {}
+            Primvar(TfToken const &name, TfToken const &dataType)
                 : name(name), dataType(dataType) {}
             TfToken name;
             TfToken dataType;
         };
-        typedef std::map<HdBinding, PrimVar> PrimVarBinding;
+        typedef std::map<HdBinding, Primvar> PrimvarBinding;
 
         // -------------------------------------------------------------------
         // for instance primvars
-        struct NestedPrimVar {
-            NestedPrimVar() {}
-            NestedPrimVar(TfToken const &name, TfToken const &dataType,
+        struct NestedPrimvar {
+            NestedPrimvar() {}
+            NestedPrimvar(TfToken const &name, TfToken const &dataType,
                         int level)
                 : name(name), dataType(dataType), level(level) {}
             TfToken name;
             TfToken dataType;
             int level;
         };
-        typedef std::map<HdBinding, NestedPrimVar> NestedPrimVarBinding;
+        typedef std::map<HdBinding, NestedPrimvar> NestedPrimvarBinding;
 
         // -------------------------------------------------------------------
         // for shader parameter accessors
@@ -200,11 +200,11 @@ public:
              ShaderParameterAccessor() {}
              ShaderParameterAccessor(TfToken const &name,
                                      TfToken const &dataType,
-                                     TfTokenVector const &inPrimVars=TfTokenVector())
-                 : name(name), dataType(dataType), inPrimVars(inPrimVars) {}
+                                     TfTokenVector const &inPrimvars=TfTokenVector())
+                 : name(name), dataType(dataType), inPrimvars(inPrimvars) {}
              TfToken name;        // e.g. Kd
              TfToken dataType;    // e.g. vec4
-             TfTokenVector inPrimVars;  // for primvar renaming and texture coordinates,
+             TfTokenVector inPrimvars;  // for primvar renaming and texture coordinates,
         };
         typedef std::map<HdBinding, ShaderParameterAccessor> ShaderParameterBinding;
 
@@ -225,23 +225,26 @@ public:
 
         StructBlockBinding constantData;
         StructBlockBinding shaderData;
-        PrimVarBinding elementData;
-        PrimVarBinding vertexData;
-        PrimVarBinding fvarData;
-        PrimVarBinding computeReadWriteData;
-        PrimVarBinding computeReadOnlyData;
-        NestedPrimVarBinding instanceData;
+        StructBlockBinding topologyVisibilityData;
+        PrimvarBinding elementData;
+        PrimvarBinding vertexData;
+        PrimvarBinding fvarData;
+        PrimvarBinding computeReadWriteData;
+        PrimvarBinding computeReadOnlyData;
+        NestedPrimvarBinding instanceData;
         int instancerNumLevels;
 
         ShaderParameterBinding shaderParameterBinding;
 
         BindingDeclaration drawingCoord0Binding;
         BindingDeclaration drawingCoord1Binding;
+        BindingDeclaration drawingCoord2Binding;
         BindingDeclaration drawingCoordIBinding;
         BindingDeclaration instanceIndexArrayBinding;
         BindingDeclaration culledInstanceIndexArrayBinding;
         BindingDeclaration instanceIndexBaseBinding;
         BindingDeclaration primitiveParamBinding;
+        BindingDeclaration edgeIndexBinding;
 
         StructBlockBinding customInterleavedBindings;
         std::vector<BindingDeclaration> customBindings;
@@ -293,6 +296,16 @@ public:
     HDST_API
     void UnbindConstantBuffer(
         HdStBufferArrayRangeGLSharedPtr const &constantBar) const;
+
+    /// bind/unbind interleaved buffer
+    HDST_API
+    void BindInterleavedBuffer(
+        HdStBufferArrayRangeGLSharedPtr const & constantBar,
+        TfToken const &name) const;
+    HDST_API
+    void UnbindInterleavedBuffer(
+        HdStBufferArrayRangeGLSharedPtr const &constantBar,
+        TfToken const &name) const;
 
     /// bind/unbind nested instance BufferArray
     HDST_API

@@ -4,7 +4,7 @@ set(PXR_PACKAGE pcp)
 pxr_library(pcp
     LIBRARIES
         tf
-        tracelite
+        trace
         vt
         sdf
         work
@@ -77,10 +77,9 @@ pxr_library(pcp
         wrapNode.cpp
         wrapPathTranslation.cpp
         wrapPropertyIndex.cpp
-        wrapPayloadContext.cpp
-        wrapPayloadDecorator.cpp
         wrapSite.cpp
         wrapTestChangeProcessor.cpp
+        wrapTestPayloadDecorator.cpp
         wrapTypes.cpp
 
     PYMODULE_FILES
@@ -104,6 +103,16 @@ pxr_test_scripts(
     testenv/testPcpRegressionBugs_bug92955.py
     testenv/testPcpRegressionBugs_bug101300.py
     testenv/testPcpCompositionResults.py
+)
+
+pxr_build_test(testPcpHardToReach
+    LIBRARIES
+        tf 
+        pcp 
+        sdf
+
+    CPPFILES
+        testenv/testPcpHardToReach.cpp
 )
 
 pxr_build_test(testPcpIterator
@@ -272,6 +281,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_BasicPayloadDiamond.testenv
+    DEST testPcpMuseum_BasicPayloadDiamond
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_BasicReference.testenv
     DEST testPcpMuseum_BasicReference
 )
@@ -302,8 +316,8 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/testPcpMuseum_BasicClassOverride.testenv
-    DEST testPcpMuseum_BasicClassOverride
+    SRC testenv/testPcpMuseum_BasicInherits.testenv
+    DEST testPcpMuseum_BasicInherits
 )
 
 pxr_install_test_dir(
@@ -387,6 +401,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_RelativePathPayloads.testenv
+    DEST testPcpMuseum_RelativePathPayloads
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_RelativePathReferences.testenv
     DEST testPcpMuseum_RelativePathReferences
 )
@@ -394,6 +413,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testPcpMuseum_RelocatePrimsWithSameName.testenv
     DEST testPcpMuseum_RelocatePrimsWithSameName
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_SpecializesAndAncestralArcs.testenv
+    DEST testPcpMuseum_SpecializesAndAncestralArcs
 )
 
 pxr_install_test_dir(
@@ -748,6 +772,15 @@ pxr_register_test(testPcpMuseum_BasicInstancingAndVariants
         PCP_OVERRIDE_INSTANCEABLE=1
 )
 
+pxr_register_test(testPcpMuseum_BasicPayloadDiamond
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --payloads ^(?!/RootUnloaded) BasicPayloadDiamond/root.sdf" 
+    STDOUT_REDIRECT compositionResults_BasicPayloadDiamond.txt
+    DIFF_COMPARE compositionResults_BasicPayloadDiamond.txt 
+    ENV 
+        PCP_OVERRIDE_INSTANCEABLE=1
+)
+
 pxr_register_test(testPcpMuseum_BasicReference
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicReference/root.sdf --session BasicReference/session.sdf" 
@@ -790,11 +823,11 @@ pxr_register_test(testPcpMuseum_BasicRelocateToAnimInterface
     DIFF_COMPARE compositionResults_BasicRelocateToAnimInterface.txt 
 )
 
-pxr_register_test(testPcpMuseum_BasicClassOverride
+pxr_register_test(testPcpMuseum_BasicInherits
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicClassOverride/root.sdf" 
-    STDOUT_REDIRECT compositionResults_BasicClassOverride.txt
-    DIFF_COMPARE compositionResults_BasicClassOverride.txt 
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicInherits/root.sdf" 
+    STDOUT_REDIRECT compositionResults_BasicInherits.txt
+    DIFF_COMPARE compositionResults_BasicInherits.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicLocalAndGlobalClassCombination
@@ -869,9 +902,9 @@ pxr_register_test(testPcpMuseum_BasicOwner
 
 pxr_register_test(testPcpMuseum_BasicPayload
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicPayload/root.sdf" 
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --session BasicPayload/session.sdf --errorFile compositionErrors_BasicPayload_pcp.txt BasicPayload/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicPayload_pcp.txt
-    DIFF_COMPARE compositionResults_BasicPayload_pcp.txt 
+    DIFF_COMPARE compositionResults_BasicPayload_pcp.txt compositionErrors_BasicPayload_pcp.txt
 )
 
 pxr_register_test(testPcpMuseum_BasicSpecializes
@@ -909,6 +942,13 @@ pxr_register_test(testPcpMuseum_PayloadsAndAncestralArcs
     DIFF_COMPARE compositionResults_PayloadsAndAncestralArcs.txt 
 )
 
+pxr_register_test(testPcpMuseum_RelativePathPayloads
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults RelativePathPayloads/root.sdf" 
+    STDOUT_REDIRECT compositionResults_RelativePathPayloads.txt
+    DIFF_COMPARE compositionResults_RelativePathPayloads.txt 
+)
+
 pxr_register_test(testPcpMuseum_RelativePathReferences
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults RelativePathReferences/root.sdf" 
@@ -921,6 +961,13 @@ pxr_register_test(testPcpMuseum_RelocatePrimsWithSameName
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults RelocatePrimsWithSameName/root.sdf" 
     STDOUT_REDIRECT compositionResults_RelocatePrimsWithSameName.txt
     DIFF_COMPARE compositionResults_RelocatePrimsWithSameName.txt 
+)
+
+pxr_register_test(testPcpMuseum_SpecializesAndAncestralArcs
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults SpecializesAndAncestralArcs/root.sdf" 
+    STDOUT_REDIRECT compositionResults_SpecializesAndAncestralArcs.txt
+    DIFF_COMPARE compositionResults_SpecializesAndAncestralArcs.txt 
 )
 
 pxr_register_test(testPcpMuseum_SubrootReferenceAndClasses
@@ -1319,6 +1366,11 @@ pxr_register_test(testPcpChanges
 pxr_register_test(testPcpDependencies
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpDependencies"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testPcpHardToReach
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpHardToReach"
     EXPECTED_RETURN_CODE 0
 )
 

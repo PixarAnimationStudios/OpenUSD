@@ -111,3 +111,19 @@ Prim Stack:
     root.sdf             /Specializes_2
     ref.sdf              /Specializes_2
 
+------------------------------------------------------------------------
+Results for composing </NonExistentSpecializes>
+
+Prim Stack:
+    root.sdf             /NonExistentSpecializes
+    ref.sdf              /NonExistentSpecializes
+
+Child names:
+     ['Child']
+
+------------------------------------------------------------------------
+Results for composing </NonExistentSpecializes/Child>
+
+Prim Stack:
+    ref.sdf              /NonExistentSpecializes/Child
+

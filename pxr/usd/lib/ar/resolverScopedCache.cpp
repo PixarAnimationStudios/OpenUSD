@@ -30,18 +30,18 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 ArResolverScopedCache::ArResolverScopedCache()
 {
-    ArGetResolver()._BeginCacheScope(&_cacheScopeData);
+    ArGetResolver().BeginCacheScope(&_cacheScopeData);
 }
 
 ArResolverScopedCache::ArResolverScopedCache(const ArResolverScopedCache* parent)
     : _cacheScopeData(parent->_cacheScopeData)
 {
-    ArGetResolver()._BeginCacheScope(&_cacheScopeData);
+    ArGetResolver().BeginCacheScope(&_cacheScopeData);
 }
 
 ArResolverScopedCache::~ArResolverScopedCache()
 {
-    ArGetResolver()._EndCacheScope(&_cacheScopeData);
+    ArGetResolver().EndCacheScope(&_cacheScopeData);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

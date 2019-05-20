@@ -31,8 +31,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 class HdSceneDelegate;
+class HdRenderIndex;
+class HdRprim;
 
 /// \class HdInstancer
 ///
@@ -130,6 +131,10 @@ public:
     SdfPath const& GetParentId() const { return _parentId; }
 
     HdSceneDelegate* GetDelegate() const { return _delegate; }
+
+    HD_API
+    static int GetInstancerNumLevels(HdRenderIndex& index,
+                                     HdRprim const& rprim);
 
 private:
     HdSceneDelegate* _delegate;

@@ -138,12 +138,12 @@ My_TestGLDrawing::InitTest()
     _delegate->SetTaskParam(renderSetupTask, HdTokens->params,
                             VtValue(param));
     _delegate->SetTaskParam(renderTask, HdTokens->collection,
-                            VtValue(HdRprimCollection(HdTokens->geometry, HdTokens->hull)));
+                            VtValue(HdRprimCollection(HdTokens->geometry,
+                                    HdReprSelector(HdReprTokens->hull))));
     HdxSelectionTaskParams selParam;
     selParam.enableSelection = true;
     selParam.selectionColor = GfVec4f(1, 1, 0, 1);
     selParam.locateColor = GfVec4f(1, 0, 1, 1);
-    selParam.maskColor = GfVec4f(0, 1, 1, 1);
     _delegate->SetTaskParam(selectionTask, HdTokens->params,
                             VtValue(selParam));
 
@@ -158,7 +158,8 @@ My_TestGLDrawing::InitTest()
     // Worth noting that the collection's repr is set to refined (and not 
     // hull). When a prim has an authored repr, we'll use that instead, as
     // the collection's forcedRepr defaults to false.
-    _pickablesCol = HdRprimCollection(_tokens->pickables, HdTokens->refined);
+    _pickablesCol = HdRprimCollection(_tokens->pickables,
+                        HdReprSelector(HdReprTokens->refined));
     _marquee.InitGLResources();
     _picker.InitIntersector(_renderIndex);
     _SetPickParams();
@@ -197,7 +198,7 @@ My_TestGLDrawing::_SetPickParams()
     pParams.viewMatrix     = GetViewMatrix();
     pParams.engine         = &_engine;
     pParams.pickablesCol   = &_pickablesCol;
-    pParams.highlightMode  = HdxSelectionHighlightModeSelect;
+    pParams.highlightMode  = HdSelection::HighlightModeSelect;
 
     _picker.SetPickParams(pParams);
 }
@@ -256,8 +257,8 @@ My_TestGLDrawing::OffscreenTest()
     // (d) Change refine level on prim B ==> Drawn image should reflect the refineLevel
     //  if its repr supports it (refined, refinedWire, refinedWireOnSurf)
 
-    HdxSelectionHighlightMode mode = HdxSelectionHighlightModeSelect;
-    HdxSelectionSharedPtr selection;
+    HdSelection::HighlightMode mode = HdSelection::HighlightModeSelect;
+    HdSelectionSharedPtr selection;
 
     // (a)
     {
@@ -266,7 +267,7 @@ My_TestGLDrawing::OffscreenTest()
         std::cout << "Changing refine level of cube1" << std::endl;
         _delegate->SetRefineLevel(SdfPath("/cube1"), 2);
         // The repr corresponding to picking (refined) would be the one that
-        // handles the DirtyRefineLevel bit, since we don't call DrawScene()
+        // handles the DirtyDisplayStyle bit, since we don't call DrawScene()
         // before Pick(). We don't explicitly mark the collections dirty in this
         // case, since refine level changes trigger change tracker garbage 
         // collection and the render delegate marks all collections dirty.
@@ -282,7 +283,7 @@ My_TestGLDrawing::OffscreenTest()
         DrawScene();
         WriteToFile("color", "color2_refine_wont_change_cube1.png");
         selection = _picker.GetSelection();
-        TF_VERIFY(selection->GetSelectedPrims(mode).size() == 0);
+        TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 0);
     }
 
     // (b)
@@ -290,7 +291,8 @@ My_TestGLDrawing::OffscreenTest()
         _picker.Pick(GfVec2i(0,0), GfVec2i(0,0)); // deselect
 
         std::cout << "Changing repr for cube2" << std::endl;
-        _delegate->SetReprName(SdfPath("/cube2"), HdTokens->refinedWireOnSurf);
+        _delegate->SetReprName(SdfPath("/cube2"), 
+            HdReprTokens->refinedWireOnSurf);
 
         // XXX: Repr initialization doesn't currently trigger the collection's
         // command buffer to be rebuilt, so we have to do that explicitly here.
@@ -301,8 +303,8 @@ My_TestGLDrawing::OffscreenTest()
         DrawScene();
         WriteToFile("color", "color3_repr_change_cube2.png");
         selection = _picker.GetSelection();
-        TF_VERIFY(selection->GetSelectedPrims(mode).size() == 1);
-        TF_VERIFY(selection->GetSelectedPrims(mode)[0] == SdfPath("/cube2"));
+        TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1);
+        TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube2"));
     }
 
     // (c)
@@ -311,7 +313,7 @@ My_TestGLDrawing::OffscreenTest()
 
        std::cout << "Changing repr on cube1" << std::endl;
 
-        _delegate->SetReprName(SdfPath("/cube1"), HdTokens->refinedWire);
+        _delegate->SetReprName(SdfPath("/cube1"), HdReprTokens->refinedWire);
         // XXX: If we don't mark the collection dirty, it'll be drawn with the
         // same command buffer and thus, cube1 will appear as hull and 
         // not refinedWireOnSurf.
@@ -321,8 +323,8 @@ My_TestGLDrawing::OffscreenTest()
         DrawScene();
         WriteToFile("color", "color4_repr_and_refine_change_cube1.png");
         selection = _picker.GetSelection();
-        TF_VERIFY(selection->GetSelectedPrims(mode).size() == 1);
-        TF_VERIFY(selection->GetSelectedPrims(mode)[0] == SdfPath("/cube1"));
+        TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1);
+        TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube1"));
     }
 
 
@@ -337,12 +339,7 @@ My_TestGLDrawing::OffscreenTest()
         DrawScene();
         WriteToFile("color", "color5_refine_change_cube2.png");
         selection = _picker.GetSelection();
-        // XXX: A bug in primvar sharing (HD_ENABLE_SHARED_VERTEX_PRIMVAR)
-        // makes cube2 disappear because the vertex primvar BAR is not
-        // updated correctly. The dumped image and the verify below will
-        // fail once it is fixed.
-        TF_VERIFY(selection->GetSelectedPrims(mode).size() == 0);
-        //TF_VERIFY(selection->GetSelectedPrims(mode)[0] == SdfPath("/cube2"));
+        TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube2"));
     }
 
      // deselect    

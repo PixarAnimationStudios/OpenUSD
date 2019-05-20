@@ -23,11 +23,17 @@
 //
 #include "pxr/pxr.h"
 
+#include "pxr/imaging/glf/glew.h"
+
+#include "pxr/imaging/glf/contextCaps.h"
+#include "pxr/imaging/glf/glContext.h"
+#include "pxr/imaging/glf/testGLContext.h"
+
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/tokens.h"
 
-#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
 #include "pxr/imaging/hdSt/renderPass.h"
@@ -53,21 +59,26 @@ class Hd_TestTask final : public HdTask
 public:
     Hd_TestTask(HdRenderPassSharedPtr const &renderPass,
                 HdRenderPassStateSharedPtr const &renderPassState)
-    : HdTask()
+    : HdTask(SdfPath::EmptyPath())
     , _renderPass(renderPass)
     , _renderPassState(renderPassState)
     {
     }
 
-protected:
-    virtual void _Sync( HdTaskContext* ctx) override
+    virtual void Sync(HdSceneDelegate*,
+                      HdTaskContext*,
+                      HdDirtyBits*) override
     {
         _renderPass->Sync();
-        _renderPassState->Sync(
-            _renderPass->GetRenderIndex()->GetResourceRegistry());
     }
 
-    virtual void _Execute(HdTaskContext* ctx) override
+    virtual void Prepare(HdTaskContext* ctx,
+                         HdRenderIndex* renderIndex) override
+    {
+        _renderPassState->Prepare(renderIndex->GetResourceRegistry());
+    }
+
+    virtual void Execute(HdTaskContext* ctx) override
     {
         _renderPassState->Bind();
         _renderPass->Execute(_renderPassState);
@@ -90,7 +101,8 @@ static void CameraAndLightTest()
     HdChangeTracker& tracker = index->GetChangeTracker();
     HdPerfLog& perfLog = HdPerfLog::GetInstance();
     perfLog.Enable();
-    HdRprimCollection collection(HdTokens->geometry, HdTokens->hull);
+    HdRprimCollection collection(HdTokens->geometry, 
+        HdReprSelector(HdReprTokens->hull));
     HdRenderPassStateSharedPtr renderPassState(new HdStRenderPassState());
     HdRenderPassSharedPtr renderPass(
         new HdSt_RenderPass(index.get(), collection));
@@ -105,14 +117,14 @@ static void CameraAndLightTest()
     SdfPath cube("/geometry");
     delegate->AddCube(cube, tx);
 
-    SdfPath camera("/camera");
+    SdfPath camera("/camera_test");
     SdfPath light("/light");
 
     delegate->AddCamera(camera);
     delegate->AddLight(light, GlfSimpleLight());
-    delegate->SetLight(light, HdStLightTokens->shadowCollection,
+    delegate->SetLight(light, HdLightTokens->shadowCollection,
                       VtValue(HdRprimCollection(HdTokens->geometry,
-                                                HdTokens->hull)));
+                                        HdReprSelector(HdReprTokens->hull))));
 
     engine.Execute(*index, tasks);
 
@@ -120,8 +132,8 @@ static void CameraAndLightTest()
 
     // Update camera matrix
     delegate->SetCamera(camera, GfMatrix4d(2), GfMatrix4d(2));
-    tracker.MarkSprimDirty(camera, HdStCamera::DirtyViewMatrix);
-    tracker.MarkSprimDirty(camera, HdStCamera::DirtyProjMatrix);
+    tracker.MarkSprimDirty(camera, HdCamera::DirtyViewMatrix);
+    tracker.MarkSprimDirty(camera, HdCamera::DirtyProjMatrix);
 
     engine.Execute(*index, tasks);
 
@@ -129,10 +141,10 @@ static void CameraAndLightTest()
     VERIFY_PERF_COUNT(HdPerfTokens->rebuildBatches, 1);
 
     // Update shadow collection
-    delegate->SetLight(light, HdStLightTokens->shadowCollection,
+    delegate->SetLight(light, HdLightTokens->shadowCollection,
                       VtValue(HdRprimCollection(HdTokens->geometry,
-                                                HdTokens->refined)));
-    tracker.MarkSprimDirty(light, HdStLight::DirtyCollection);
+                        HdReprSelector(HdReprTokens->refined))));
+    tracker.MarkSprimDirty(light, HdLight::DirtyCollection);
 
     engine.Execute(*index, tasks);
 
@@ -140,10 +152,10 @@ static void CameraAndLightTest()
     VERIFY_PERF_COUNT(HdPerfTokens->rebuildBatches, 2);
 
     // Update shadow collection again with the same data
-    delegate->SetLight(light, HdStLightTokens->shadowCollection,
+    delegate->SetLight(light, HdLightTokens->shadowCollection,
                       VtValue(HdRprimCollection(HdTokens->geometry,
-                                                HdTokens->refined)));
-    tracker.MarkSprimDirty(light, HdStLight::DirtyCollection);
+                                HdReprSelector(HdReprTokens->refined))));
+    tracker.MarkSprimDirty(light, HdLight::DirtyCollection);
 
     engine.Execute(*index, tasks);
 
@@ -154,6 +166,12 @@ static void CameraAndLightTest()
 int main()
 {
     TfErrorMark mark;
+
+    // Test uses ContextCaps, so need to create a GL instance.
+    GlfTestGLContext::RegisterGLContextCallbacks();
+    GlfGlewInit();
+    GlfSharedGLContextScopeHolder sharedContext;
+    GlfContextCaps::InitInstance();
 
     CameraAndLightTest();
 

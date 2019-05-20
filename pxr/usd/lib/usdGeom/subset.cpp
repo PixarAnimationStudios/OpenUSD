@@ -74,6 +74,11 @@ UsdGeomSubset::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdGeomSubset::_GetSchemaType() const {
+    return UsdGeomSubset::schemaType;
+}
+
 /* static */
 const TfType &
 UsdGeomSubset::_GetStaticTfType()
@@ -209,13 +214,13 @@ TF_DEFINE_PRIVATE_TOKENS(
 UsdGeomSubset 
 UsdGeomSubset::CreateGeomSubset(
     const UsdGeomImageable &geom, 
-    const std::string &subsetName,
+    const TfToken &subsetName,
     const TfToken &elementType,
     const VtIntArray &indices,
     const TfToken &familyName,
     const TfToken &familyType)
 {
-    SdfPath subsetPath = geom.GetPath().AppendChild(TfToken(subsetName));
+    SdfPath subsetPath = geom.GetPath().AppendChild(subsetName);
     UsdGeomSubset subset = UsdGeomSubset::Define(geom.GetPrim().GetStage(), 
                                                  subsetPath);
  
@@ -242,8 +247,8 @@ _CreateUniqueGeomSubset(
     size_t idx = 0;
     while (true) {
         SdfPath childPath = parentPath.AppendChild(TfToken(name));
-        bool exists = stage->GetPrimAtPath(childPath);
-        if (!exists) {
+        auto subsetPrim = stage->GetPrimAtPath(childPath);
+        if (!subsetPrim) {
             return UsdGeomSubset::Define(stage, childPath);
         }
         idx++;
@@ -256,7 +261,7 @@ _CreateUniqueGeomSubset(
 UsdGeomSubset 
 UsdGeomSubset::CreateUniqueGeomSubset(
     const UsdGeomImageable &geom, 
-    const std::string &subsetName,
+    const TfToken &subsetName,
     const TfToken &elementType,
     const VtIntArray &indices,
     const TfToken &familyName,
@@ -474,7 +479,7 @@ UsdGeomSubset::ValidateSubsets(
             indicesInFamily.size() != elementCount) {
             valid = false;
             if (reason) {
-                *reason += TfStringPrintf("Number of unique indices at time %s"
+                *reason += TfStringPrintf("Number of unique indices at time %s "
                     "does not match the element count %ld.", 
                     TfStringify(t).c_str(), elementCount);
             }
@@ -570,7 +575,7 @@ UsdGeomSubset::ValidateFamily(
                     if (!indicesInFamily.insert(index).second) {
                         valid = false;
                         if (reason) {
-                            *reason += TfStringPrintf("Found duplicate index %d"
+                            *reason += TfStringPrintf("Found duplicate index %d "
                                 "in GeomSubset at path <%s>.\n", index,
                                 subset.GetPath().GetText());
                         }
@@ -585,7 +590,7 @@ UsdGeomSubset::ValidateFamily(
         {
             valid = false;
             if (reason) {
-                *reason += TfStringPrintf("Number of unique indices at time %s"
+                *reason += TfStringPrintf("Number of unique indices at time %s "
                     "does not match the face count %ld.", 
                     TfStringify(t).c_str(), faceCount);
             }

@@ -86,7 +86,7 @@ public:
     USD_API
     bool HasAuthoredVariant(const std::string& variantName) const;
 
-    /// Return the the variant selection for this VariantSet.  If there is
+    /// Return the variant selection for this VariantSet.  If there is
     /// no selection, return the empty string.
     USD_API
     std::string GetVariantSelection() const;
@@ -166,7 +166,7 @@ public:
     /// Is this UsdVariantSet object usable?  If not, calling any of
     /// its other methods is likely to crash.
     bool IsValid() const {
-        return _prim;
+        return static_cast<bool>(_prim);
     }
 
     /// Equivalent to IsValid().

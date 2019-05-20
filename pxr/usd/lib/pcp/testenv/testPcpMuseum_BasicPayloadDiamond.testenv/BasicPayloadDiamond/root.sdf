@@ -1,0 +1,23 @@
+#sdf 1.4.32
+(
+    """
+    This example has a prim, Root, with payloads to
+    A.sdf and B.sdf. These payloads will both
+    reference C.sdf, forming a 'payload diamond'.
+    This is a legal setup, so we don't want to report
+    errors about cycles in this case.
+    """
+)
+
+def "Root" (
+    payload = [ @./A.sdf@</A>, @./B.sdf@</B> ]
+)
+{
+}
+
+# This is the same as Root prim setup but the test will leave it unloaded
+def "RootUnloaded" (
+    payload = [ @./A.sdf@</A>, @./B.sdf@</B> ]
+)
+{
+}

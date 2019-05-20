@@ -107,7 +107,7 @@ Garch_GLPlatformDebugWindow::Init(const char *title,
 
     if (GarchGLPlatformDebugContext::IsEnabledDebugOutput()) {
         // switch to the debug context
-        _glDebugContext.reset(new GarchGLPlatformDebugContext(4, 5, true, true));
+        _glDebugContext = GarchGLPlatformDebugContext::New(4, 5, true, true);
         _glDebugContext->makeCurrent();
         glXDestroyContext(_display, tmpCtx);
     } else {
@@ -206,7 +206,7 @@ Garch_GLPlatformDebugWindow::Run()
 
     glXMakeCurrent(_display, 0, 0);
     if (_glDebugContext) {
-        _glDebugContext.reset();
+        _glDebugContext.Reset();
     } else {
         glXDestroyContext(_display, _glContext);
     }

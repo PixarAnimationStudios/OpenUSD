@@ -24,6 +24,7 @@
 #include "pxr/usdImaging/usdImaging/nurbsPatchAdapter.h"
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
+#include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/mesh.h"
@@ -71,7 +72,7 @@ UsdImagingNurbsPatchAdapter::TrackVariability(UsdPrim const& prim,
                                           SdfPath const& cachePath,
                                           HdDirtyBits* timeVaryingBits,
                                           UsdImagingInstancerContext const* 
-                                              instancerContext)
+                                              instancerContext) const
 {
     BaseAdapter::TrackVariability(
         prim, cachePath, timeVaryingBits, instancerContext);
@@ -83,7 +84,7 @@ UsdImagingNurbsPatchAdapter::TrackVariability(UsdPrim const& prim,
     _IsVarying(prim,
                UsdGeomTokens->points,
                HdChangeTracker::DirtyPoints,
-               UsdImagingTokens->usdVaryingPrimVar,
+               UsdImagingTokens->usdVaryingPrimvar,
                timeVaryingBits,
                /*isInherited*/false);
 
@@ -103,7 +104,7 @@ UsdImagingNurbsPatchAdapter::UpdateForTime(UsdPrim const& prim,
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext)
+                                   instancerContext) const
 {
     BaseAdapter::UpdateForTime(
         prim, cachePath, time, requestedBits, instancerContext);
@@ -113,15 +114,21 @@ UsdImagingNurbsPatchAdapter::UpdateForTime(UsdPrim const& prim,
         valueCache->GetTopology(cachePath) = GetMeshTopology(prim, time);
     }
 
-    if (requestedBits & HdChangeTracker::DirtyPoints) {
-        valueCache->GetPoints(cachePath) = GetMeshPoints(prim, time);
-
-        // Expose points as a primvar.
-        UsdImagingValueCache::PrimvarInfo primvar;
-        primvar.name = HdTokens->points;
-        primvar.interpolation = UsdGeomTokens->vertex;
-        _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
+    if (_IsRefined(cachePath)) {
+        if (requestedBits & HdChangeTracker::DirtySubdivTags) {
+            valueCache->GetSubdivTags(cachePath);
+        }
     }
+}
+
+/*virtual*/
+VtValue
+UsdImagingNurbsPatchAdapter::GetPoints(UsdPrim const& prim,
+                                       SdfPath const& cachePath,
+                                       UsdTimeCode time) const
+{
+    TF_UNUSED(cachePath);
+    return GetMeshPoints(prim, time);   
 }
 
 // -------------------------------------------------------------------------- //

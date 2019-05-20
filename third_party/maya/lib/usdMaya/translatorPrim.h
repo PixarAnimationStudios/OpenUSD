@@ -24,12 +24,15 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_PRIM_H
 #define PXRUSDMAYA_TRANSLATOR_PRIM_H
 
-#include "pxr/pxr.h"
-#include "usdMaya/api.h"
-#include "pxr/usd/usd/prim.h"
+/// \file usdMaya/translatorPrim.h
 
-#include "usdMaya/primReaderContext.h"
+#include "usdMaya/api.h"
 #include "usdMaya/primReaderArgs.h"
+#include "usdMaya/primReaderContext.h"
+
+#include "pxr/pxr.h"
+
+#include "pxr/usd/usd/prim.h"
 
 #include <maya/MObject.h>
 
@@ -38,17 +41,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \brief Provides helper functions for reading UsdPrim.  This should more
 /// accurately take a UsdGeomImageable.
-struct PxrUsdMayaTranslatorPrim
+struct UsdMayaTranslatorPrim
 {
     PXRUSDMAYA_API
     static void Read(
             const UsdPrim& prim, 
             MObject mayaNode,
-            const PxrUsdMayaPrimReaderArgs& args,
-            PxrUsdMayaPrimReaderContext* context);
+            const UsdMayaPrimReaderArgs& args,
+            UsdMayaPrimReaderContext* context);
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSD_TRANSLATOR_PRIM_H
+#endif

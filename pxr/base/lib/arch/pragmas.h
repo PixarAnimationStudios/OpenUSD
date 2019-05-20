@@ -65,8 +65,14 @@
     #define ARCH_PRAGMA_MACRO_REDEFINITION \
         _Pragma("clang diagnostic ignored \"-Wbuiltin-macro-redefined\"")
 
+    #define ARCH_PRAGMA_UNDEFINED_VAR_TEMPLATE \
+        _Pragma("clang diagnostic ignored \"-Wundefined-var-template\"")
+
     #define ARCH_PRAGMA_WRITE_STRINGS \
         _Pragma("clang diagnostic ignored \"-Wwrite-strings\"")
+
+    #define ARCH_PRAGMA_INSTANTIATION_AFTER_SPECIALIZATION \
+        _Pragma("clang diagnostic ignored \"-Winstantiation-after-specialization\"")
 
 #elif defined(ARCH_COMPILER_MSVC)
 
@@ -183,6 +189,14 @@
 
 #if !defined ARCH_PRAGMA_UNARY_MINUS_ON_UNSIGNED
     #define ARCH_PRAGMA_UNARY_MINUS_ON_UNSIGNED
+#endif
+
+#if !defined ARCH_PRAGMA_INSTANTIATION_AFTER_SPECIALIZATION
+    #define ARCH_PRAGMA_INSTANTIATION_AFTER_SPECIALIZATION
+#endif
+
+#if !defined ARCH_PRAGMA_UNDEFINED_VAR_TEMPLATE
+    #define ARCH_PRAGMA_UNDEFINED_VAR_TEMPLATE
 #endif
 
 #endif // ARCH_PRAGMAS_H

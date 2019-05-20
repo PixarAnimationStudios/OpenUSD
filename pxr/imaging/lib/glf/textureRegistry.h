@@ -28,6 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
+#include "pxr/imaging/glf/image.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/singleton.h"
@@ -37,6 +38,7 @@
 
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <functional>
 #include <map>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -56,11 +58,20 @@ public:
     static GlfTextureRegistry & GetInstance();
 
     GLF_API
-    GlfTextureHandleRefPtr GetTextureHandle(const TfToken &texture);
+    GlfTextureHandleRefPtr GetTextureHandle(const TfToken &texture,
+                                  GlfImage::ImageOriginLocation originLocation = 
+                                                     GlfImage::OriginUpperLeft);
     GLF_API
-    GlfTextureHandleRefPtr GetTextureHandle(const TfTokenVector &textures);
+    GlfTextureHandleRefPtr GetTextureHandle(const TfTokenVector &textures,
+                                  GlfImage::ImageOriginLocation originLocation = 
+                                                     GlfImage::OriginUpperLeft);
     GLF_API
     GlfTextureHandleRefPtr GetTextureHandle(GlfTextureRefPtr texture);
+    GLF_API
+    GlfTextureHandleRefPtr GetTextureHandle(
+        const TfToken& texture,
+        GlfImage::ImageOriginLocation originLocation,
+        const GlfTextureFactoryBase* textureFactory);
 
     // garbage collection methods
     GLF_API
@@ -70,7 +81,9 @@ public:
 
     // Returns true if the registry contains a texture sampler for \a texture;
     GLF_API
-    bool HasTexture(const TfToken &texture) const;
+    bool HasTexture(const TfToken &texture,
+                    GlfImage::ImageOriginLocation originLocation = 
+                                               GlfImage::OriginUpperLeft) const;
 
     // diagnostics
     GLF_API
@@ -85,9 +98,15 @@ private:
     friend class TfSingleton< GlfTextureRegistry >;
     GlfTextureRegistry();
 
-    GlfTextureHandleRefPtr _CreateTexture(const TfToken &texture);
+    GlfTextureHandleRefPtr _CreateTexture(const TfToken &texture,
+                                  GlfImage::ImageOriginLocation originLocation);
     GlfTextureHandleRefPtr _CreateTexture(const TfTokenVector &textures,
-                                           const size_t numTextures);
+                                          const size_t numTextures,
+                                  GlfImage::ImageOriginLocation originLocation);
+    GlfTextureHandleRefPtr _CreateTexture(const TfToken &texture,
+                                  GlfImage::ImageOriginLocation originLocation,
+                                  const GlfTextureFactoryBase *textureFactory);
+
     GlfTextureFactoryBase* _GetTextureFactory(const TfToken &filename);
 
     // Metadata for texture files to aid in cache invalidation.
@@ -122,8 +141,10 @@ private:
     };
 
 public:
-    typedef std::map<TfToken, _TextureMetadata> TextureRegistryMap;
-    typedef std::map<GlfTexturePtr, GlfTextureHandlePtr> TextureRegistryNonSharedMap;
+    typedef std::map<std::pair<TfToken, GlfImage::ImageOriginLocation>, 
+                     _TextureMetadata> TextureRegistryMap;
+    typedef std::map<GlfTexturePtr, GlfTextureHandlePtr> 
+        TextureRegistryNonSharedMap;
 
 private:
 

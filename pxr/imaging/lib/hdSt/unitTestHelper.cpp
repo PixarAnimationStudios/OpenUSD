@@ -57,21 +57,27 @@ class HdSt_DrawTask final : public HdTask
 public:
     HdSt_DrawTask(HdRenderPassSharedPtr const &renderPass,
                   HdStRenderPassStateSharedPtr const &renderPassState)
-    : HdTask()
+    : HdTask(SdfPath::EmptyPath())
     , _renderPass(renderPass)
     , _renderPassState(renderPassState)
     {
     }
 
-protected:
-    virtual void _Sync(HdTaskContext* ctx) override
+    virtual void Sync(HdSceneDelegate*,
+                      HdTaskContext*,
+                      HdDirtyBits*) override
     {
         _renderPass->Sync();
-        _renderPassState->Sync(
-            _renderPass->GetRenderIndex()->GetResourceRegistry());
     }
 
-    virtual void _Execute(HdTaskContext* ctx) override
+    virtual void Prepare(HdTaskContext* ctx,
+                         HdRenderIndex* renderIndex) override
+    {
+        _renderPassState->Prepare(
+            renderIndex->GetResourceRegistry());
+    }
+
+    virtual void Execute(HdTaskContext* ctx) override
     {
         _renderPassState->Bind();
         _renderPass->Execute(_renderPassState);
@@ -81,6 +87,10 @@ protected:
 private:
     HdRenderPassSharedPtr _renderPass;
     HdStRenderPassStateSharedPtr _renderPassState;
+
+    HdSt_DrawTask() = delete;
+    HdSt_DrawTask(const HdSt_DrawTask &) = delete;
+    HdSt_DrawTask &operator =(const HdSt_DrawTask &) = delete;
 };
 
 template <typename T>
@@ -97,19 +107,19 @@ HdSt_TestDriver::HdSt_TestDriver()
  , _renderDelegate()
  , _renderIndex(nullptr)
  , _sceneDelegate(nullptr)
- , _reprName()
+ , _reprToken()
  , _geomPass()
  , _geomAndGuidePass()
  , _renderPassState(
     boost::dynamic_pointer_cast<HdStRenderPassState>(
         _renderDelegate.CreateRenderPassState()))
 {
-    TfToken reprName = HdTokens->hull;
     if (TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "CPU" ||
         TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "GPU") {
-        reprName = HdTokens->smoothHull;
+        _Init(HdReprSelector(HdReprTokens->smoothHull));
+    } else {
+        _Init(HdReprSelector(HdReprTokens->hull));
     }
-    _Init(reprName);
 }
 
 HdSt_TestDriver::HdSt_TestDriver(TfToken const &reprName)
@@ -117,14 +127,29 @@ HdSt_TestDriver::HdSt_TestDriver(TfToken const &reprName)
  , _renderDelegate()
  , _renderIndex(nullptr)
  , _sceneDelegate(nullptr)
- , _reprName()
+ , _reprToken()
  , _geomPass()
  , _geomAndGuidePass()
  , _renderPassState(
     boost::dynamic_pointer_cast<HdStRenderPassState>(
         _renderDelegate.CreateRenderPassState()))
 {
-    _Init(reprName);
+    _Init(HdReprSelector(reprName));
+}
+
+HdSt_TestDriver::HdSt_TestDriver(HdReprSelector const &reprToken)
+ : _engine()
+ , _renderDelegate()
+ , _renderIndex(nullptr)
+ , _sceneDelegate(nullptr)
+ , _reprToken()
+ , _geomPass()
+ , _geomAndGuidePass()
+ , _renderPassState(
+    boost::dynamic_pointer_cast<HdStRenderPassState>(
+        _renderDelegate.CreateRenderPassState()))
+{
+    _Init(reprToken);
 }
 
 HdSt_TestDriver::~HdSt_TestDriver()
@@ -134,7 +159,7 @@ HdSt_TestDriver::~HdSt_TestDriver()
 }
 
 void
-HdSt_TestDriver::_Init(TfToken const &reprName)
+HdSt_TestDriver::_Init(HdReprSelector const &reprToken)
 {
     _renderIndex = HdRenderIndex::New(&_renderDelegate);
     TF_VERIFY(_renderIndex != nullptr);
@@ -142,7 +167,7 @@ HdSt_TestDriver::_Init(TfToken const &reprName)
     _sceneDelegate = new HdSt_UnitTestDelegate(_renderIndex,
                                              SdfPath::AbsoluteRootPath());
 
-    _reprName = reprName;
+    _reprToken = reprToken;
 
     GfMatrix4d viewMatrix = GfMatrix4d().SetIdentity();
     viewMatrix *= GfMatrix4d().SetTranslate(GfVec3d(0.0, 1000.0, 0.0));
@@ -177,8 +202,8 @@ HdSt_TestDriver::Draw(HdRenderPassSharedPtr const &renderPass)
 
 void
 HdSt_TestDriver::SetCamera(GfMatrix4d const &modelViewMatrix,
-                         GfMatrix4d const &projectionMatrix,
-                         GfVec4d const &viewport)
+                           GfMatrix4d const &projectionMatrix,
+                           GfVec4d const &viewport)
 {
     _renderPassState->SetCamera(modelViewMatrix,
                                 projectionMatrix,
@@ -202,7 +227,7 @@ HdSt_TestDriver::GetRenderPass(bool withGuides)
             
             HdRprimCollection col = HdRprimCollection(
                                      HdTokens->geometry,
-                                     _reprName);
+                                     _reprToken);
             col.SetRenderTags(renderTags);
             _geomAndGuidePass = HdRenderPassSharedPtr(
                 new HdSt_RenderPass(&_sceneDelegate->GetRenderIndex(), col));
@@ -215,7 +240,7 @@ HdSt_TestDriver::GetRenderPass(bool withGuides)
 
             HdRprimCollection col = HdRprimCollection(
                                         HdTokens->geometry,
-                                        _reprName);
+                                        _reprToken);
             col.SetRenderTags(renderTags);
             _geomPass = HdRenderPassSharedPtr(
                 new HdSt_RenderPass(&_sceneDelegate->GetRenderIndex(), col));
@@ -225,9 +250,9 @@ HdSt_TestDriver::GetRenderPass(bool withGuides)
 }
 
 void
-HdSt_TestDriver::SetRepr(TfToken const &reprName)
+HdSt_TestDriver::SetRepr(HdReprSelector const &reprToken)
 {
-    _reprName = reprName;
+    _reprToken = reprToken;
 
     if (_geomAndGuidePass) {
         TfTokenVector renderTags;
@@ -236,7 +261,7 @@ HdSt_TestDriver::SetRepr(TfToken const &reprName)
         
         HdRprimCollection col = HdRprimCollection(
                                  HdTokens->geometry,
-                                 _reprName);
+                                 _reprToken);
         col.SetRenderTags(renderTags);
         _geomAndGuidePass->SetRprimCollection(col);
     }
@@ -246,7 +271,7 @@ HdSt_TestDriver::SetRepr(TfToken const &reprName)
         
         HdRprimCollection col = HdRprimCollection(
                                  HdTokens->geometry,
-                                 _reprName);
+                                 _reprToken);
         col.SetRenderTags(renderTags);
         _geomPass->SetRprimCollection(col);
     }
@@ -277,7 +302,7 @@ HdSt_TestLightingShader::HdSt_TestLightingShader()
     _sceneAmbient    = GfVec3f(0.04, 0.04, 0.04);
 
     std::stringstream ss(lightingShader);
-    _glslfx.reset(new GlfGLSLFX(ss));
+    _glslfx.reset(new HioGlslfx(ss));
 }
 
 HdSt_TestLightingShader::~HdSt_TestLightingShader()

@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Based on MaterialX Looks.mtlx example. -->
+<materialx version="1.36" cms="ocio" colorspace="acescg" geomprefix="/X/Y">
+  <xi:include href="SimpleSrf.mtlx"/>
+
+  <typedef name="customtype"/>
+
+  <material name="Msimple">
+    <shaderref name="sr_mp1" node="simple_srf">
+    </shaderref>
+    <shaderref name="sr_mp2" node="simple_vol"/>
+  </material>
+  <material name="Msimple2">
+    <shaderref name="sr_mp1" node="simple_srf"/>
+  </material>
+
+  <variantset name="vs_simple_srf">
+    <variant name="plastic1">
+      <input name="diffColor" type="color3" value="0.134, 0.130, 0.125"/>
+      <input name="specColor" type="color3" value="0.114, 0.114, 0.114"/>
+      <input name="specRoughness" type="float" value="0.38"/>
+      <parameter name="otherColor4" type="color3" value="0.1, 0.1, 0.1"/>
+      <parameter name="otherColor5" type="color3" value="0.1, 0.1, 0.1" colorspace="acescg"/>
+      <parameter name="otherColor6" type="color3" value="0.1, 0.1, 0.1" colorspace="lin_rec709"/>
+    </variant>
+    <variant name="plastic2">
+      <input name="diffColor" type="color3" value="0.17, 0.26, 0.23"/>
+      <input name="specRoughness" type="float" value="0.24"/>
+    </variant>
+    <variant name="metal1">
+      <input name="diffColor" type="color3" value="0.001, 0.001, 0.001"/>
+      <input name="specColor" type="color3" value="0.671, 0.676, 0.667"/>
+      <input name="specRoughness" type="float" value="0.005"/>
+    </variant>
+    <variant name="metal2">
+      <input name="diffColor" type="color3" value="0.049, 0.043, 0.033"/>
+      <input name="specColor" type="color3" value="0.115, 0.091, 0.064"/>
+      <input name="specRoughness" type="float" value="0.35"/>
+    </variant>
+  </variantset>
+
+  <collection name="c_plastic" includegeom="/a/g1, /a/g2, /a/g5" excludegeom="/a/g3,/a/g5"/>
+  <collection name="c_metal" includegeom="/a/g3,    /a/g4" doc="This is a collection"/>
+  <collection name="c_lamphouse" includegeom="/a/lamp1/housing*Mesh" includecollection="c_metal"/>
+  <collection name="c_setgeom" includegeom="/b//*"/>
+
+  <nodedef name="nd_headlight0" type="lightshader" node="disk_lgt_base">
+    <parameter name="gain" type="float" value="1000.0"/>
+    <parameter name="custom" type="customtype"/>
+    <token name="mumble" type="string" value="whisper"/>
+  </nodedef>
+  <nodedef name="nd_headlight1" type="lightshader" node="disk_lgt" inherit="nd_headlight0">
+    <parameter name="emissionmap" type="filename" value="" colorspace="lin_rec709"/>
+    <parameter name="gain" type="float" value="2000.0"/>
+  </nodedef>
+  <material name="mheadlight">
+    <shaderref name="lgtsr1" node="disk_lgt">
+      <bindparam name="gain" type="float" value="500.0" doc="This is a bound param" xpos="0" ypos="0"/>
+    </shaderref>
+  </material>
+  <material name="mheadlight1">
+    <shaderref name="lgtsr2" node="disk_lgt_base">
+      <bindparam name="gain" type="float" value="100.0" valuerange="11,15" valuecurve="110.0,220.0,300.0,480.0,500.0"/>
+      <bindtoken name="mumble" type="string" value="shout"/>
+    </shaderref>
+  </material>
+  <material name="mheadlight2">
+    <shaderref name="lgtsr3" node="disk_lgt">
+    </shaderref>
+  </material>
+
+  <propertyset name="standard">
+    <property name="displacementbound_sphere" target="rmanris" type="float" value="0.05"/>
+    <property name="trace_maxdiffusedepth" target="rmanris" type="float" value="3"/>
+  </propertyset>
+
+  <look name="lookA" uicolor="1,0,0" doc="Look A" xpos="1" ypos="1">
+    <materialassign name="ma1" material="Msimple" geomprefix="/U/V" collection="c_plastic" uicolor="1,1,0" doc="Plastic 1" xpos="2" ypos="1">
+      <variantassign name="ma1_va1" variantset="vs_simple_srf" variant="plastic1" uicolor="1,0,1" doc="Variant 1" xpos="3" ypos="1"/>
+    </materialassign>
+    <materialassign name="ma2" material="Msimple"  geomprefix="/A/B" collection="c_metal" uicolor="0,1,0" doc="Metal 1" xpos="4" ypos="1">
+      <variantassign name="ma2_va1" variantset="vs_simple_srf" variant="metal1"/>
+    </materialassign>
+    <materialassign name="ma3" material="mheadlight" geom="/a/b/headlight"/>
+    <visibility name="v1" viewergeom="/a/b/headlight" vistype="shadow" geom="//*" visible="false"/>
+    <visibility name="v2" viewergeom="/a/b/headlight" vistype="shadow" collection="c_lamphouse"/>
+    <propertysetassign name="psa1" propertysetname="standard" geom="//*"/>
+  </look>
+  <look name="lookB" uicolor="0,0,1" doc="Look B" xpos="1" ypos="2">
+    <materialassign name="ma4" material="Msimple"  geomprefix="/U/V" geom=" /a/g3 , /a/g5 , /a/g6 ">
+      <variantassign name="ma4_va1" variantset="vs_simple_srf" variant="plastic2"/>
+    </materialassign>
+    <materialassign name="ma5" material="Msimple" collection="c_metal">
+      <variantassign name="ma5_va1" variantset="vs_simple_srf" variant="metal2"/>
+    </materialassign>
+    <propertysetassign name="psa2" propertysetname="standard" geom="//*"/>
+    <!-- make the setgeom invisible to camera but still visible to shadows and reflections -->
+    <visibility name="v3" vistype="camera" collection="c_setgeom" visible="false"/>
+  </look>
+  <look name="lookC" uicolor="0,0.5,1" doc="Look C" xpos="1" ypos="2" inherit="lookA">
+    <materialassign name="ma1" material="Msimple2" geomprefix="/C/D" collection="c_plastic" doc="Plastic 2">
+      <variantassign name="ma1_va1" variantset="vs_simple_srf" variant="plastic2" shaderref="sr_mp1"/>
+    </materialassign>
+  </look>
+  <look name="lookD">
+    <materialassign name="ma1" material="Msimple2"/>
+  </look>
+
+  <nodedef name="nd_vn_1_0" node="VN" type="surfaceshader" version="1.0"/>
+  <nodedef name="nd_vn_2" node="VN" type="surfaceshader" version="2.0" isdefaultversion="true"/>
+  <nodedef name="nd_vn_2_1" node="VN" type="surfaceshader" version="2.1" inherit="nd_vn_2"/>
+  <implementation name="im_vn_1_0" nodedef="nd_vn_1_0" file="vn.osl" function="vn_1_0"/>
+  <implementation name="im_vn_2_0" nodedef="nd_vn_2" file="vn.osl" function="vn_2_0"/>
+  <implementation name="im_vn_2_1" nodedef="nd_vn_2_1" file="vn.osl" function="vn_2_1"/>
+
+  <material name="m_vn">
+    <shaderref name="sr_vn" node="VN"/>
+  </material>
+  <material name="m_vn_1_0">
+    <shaderref name="sr_vn" node="VN" version="1.0"/>
+  </material>
+  <material name="m_vn_nd_1_0">
+    <shaderref name="sr_vn" nodedef="nd_vn_1_0"/>
+  </material>
+  <material name="m_vn_2_0">
+    <shaderref name="sr_vn" node="VN" version="2.0"/>
+  </material>
+  <material name="m_vn_2_1">
+    <shaderref name="sr_vn" node="VN" version="2.1"/>
+  </material>
+  <material name="m_vn_nd_2x">
+    <shaderref name="sr_vn" nodedef="nd_vn_2"/>
+  </material>
+</materialx>

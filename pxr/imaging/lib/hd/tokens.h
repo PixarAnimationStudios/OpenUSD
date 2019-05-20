@@ -31,7 +31,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-            
 #define HD_TOKENS                               \
     (adjacency)                                 \
     (bboxLocalMin)                              \
@@ -41,40 +40,37 @@ PXR_NAMESPACE_OPEN_SCOPE
     (bSpline)                                   \
     (camera)                                    \
     (catmullRom)                                \
-    (children)                                  \
-    (color)                                     \
     (collection)                                \
     (computeShader)                             \
-    (constantPrimVars)                          \
     (cubic)                                     \
     (culledInstanceIndices)                     \
     (cullStyle)                                 \
     (doubleSided)                               \
-    (dispatchBuffer)                            \
+    (dispatchCount)                             \
+    (displayColor)                              \
+    (displayOpacity)                            \
+    (displayStyle)                              \
     (drawDispatch)                              \
-    (drawCommandIndex)                          \
-    (drawIndirect)                              \
-    (drawIndirectCull)                          \
-    (drawIndirectResult)                        \
     (drawingShader)                             \
     (drawingCoord0)                             \
     (drawingCoord1)                             \
+    (drawingCoord2)                             \
     (drawingCoordI)                             \
+    (edgeIndices)                               \
     (elementCount)                              \
+    (elementsVisibility)                        \
     (extent)                                    \
     (faceColors)                                \
+    (full)                                      \
     (geometry)                                  \
     (guide)                                     \
     (hermite)                                   \
     (hidden)                                    \
-    (hull)                                      \
     (hullIndices)                               \
     (indices)                                   \
     (instancer)                                 \
     (instancerTransform)                        \
     (instancerTransformInverse)                 \
-    (instancePrimVars)                          \
-    (instanceCountInput)                        \
     (instanceIndices)                           \
     (instanceIndexBase)                         \
     (instanceTransform)                         \
@@ -83,42 +79,46 @@ PXR_NAMESPACE_OPEN_SCOPE
     (layout)                                    \
     (leftHanded)                                \
     (linear)                                    \
+    (lightLink)                                 \
     (materialParams)                            \
     (nonperiodic)                               \
     (normals)                                   \
-    (packedNormals)                             \
     (params)                                    \
     (patchParam)                                \
     (periodic)                                  \
     (points)                                    \
     (pointsIndices)                             \
     (power)                                     \
-    (primVar)                                   \
+    (preview)                                   \
+    (pointsVisibility)                          \
+    (primvar)                                   \
     (primID)                                    \
     (primitiveParam)                            \
     (proxy)                                     \
     (quadInfo)                                  \
-    (refineLevel)                               \
-    (refined)                                   \
-    (refinedWire)                               \
-    (refinedWireOnSurf)                         \
     (renderTags)                                \
-    (ulocDrawCommandNumUints)                   \
-    (ulocResetPass)                             \
-    (ulocCullMatrix)                            \
-    (ulocDrawRangeNDC)                          \
     (rightHanded)                               \
     (segmented)                                 \
-    (smoothHull)                                \
+    (shadowLink)                                \
     (subdivTags)                                \
     (taskState)                                 \
     (taskParams)                                \
     (topology)                                  \
+    (topologyVisibility)                        \
     (totalItemCount)                            \
     (transform)                                 \
     (transformInverse)                          \
     (visibility)                                \
-    (widths)                                    \
+    (widths)
+
+#define HD_REPR_TOKENS                          \
+    (disabled)                                  \
+    (hull)                                      \
+    (points)                                    \
+    (smoothHull)                                \
+    (refined)                                   \
+    (refinedWire)                               \
+    (refinedWireOnSurf)                         \
     (wire)                                      \
     (wireOnSurf)
 
@@ -143,6 +143,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (gpuMemoryUsed)                             \
     (instBasisCurvesTopology)                   \
     (instBasisCurvesTopologyRange)              \
+    (instExtComputationDataRange)               \
     (instMeshTopology)                          \
     (instMeshTopologyRange)                     \
     (instPrimvarRange)                          \
@@ -175,10 +176,15 @@ PXR_NAMESPACE_OPEN_SCOPE
     (environmentMap)                            \
     (fragmentShader)                            \
     (geometryShader)                            \
+    (indicatorColor)                            \
     (lightingBlendAmount)                       \
-    (material)                                  \
     (overrideColor)                             \
+    (maskColor)                                 \
     (projectionMatrix)                          \
+    (pointColor)                                \
+    (pointSize)                                 \
+    (pointSelectedSize)                         \
+    (materialTag)                               \
     (tessControlShader)                         \
     (tessEvalShader)                            \
     (tessLevel)                                 \
@@ -188,6 +194,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (worldToViewMatrix)                         \
     (worldToViewInverseMatrix)
 
+#define HD_MATERIALTAG_TOKENS                   \
+    (defaultMaterialTag)
 
 #define HD_OPTION_TOKENS                        \
     (parallelRprimSync)                        
@@ -197,6 +205,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (mesh)                                      \
     (basisCurves)                               \
     (points)                                    \
+    (volume)                                    \
                                                 \
     /* Sprims */                                \
     (camera)                                    \
@@ -204,19 +213,122 @@ PXR_NAMESPACE_OPEN_SCOPE
     (material)                                  \
     /* Sprims Lights */                         \
     (simpleLight)                               \
+    (cylinderLight)                             \
+    (diskLight)                                 \
+    (distantLight)                              \
     (domeLight)                                 \
     (rectLight)                                 \
     (sphereLight)                               \
+    /* Sprims ExtComputations */                \
+    (extComputation)                            \
                                                 \
     /* Bprims */                                \
-    (texture)
+    (texture)                                   \
+    (renderBuffer)
+
+#define HD_PRIMVAR_ROLE_TOKENS                  \
+    ((none, ""))                                \
+    (color)                                     \
+    (vector)                                    \
+    (normal)                                    \
+    (point)                                     \
+    (textureCoordinate)
+
+/* Schema for "Alternate Output Values" rendering,
+ * describing which values a renderpass should
+ * compute and write at render time.
+ */
+#define HD_AOV_TOKENS                           \
+    /* Standard rendering outputs */            \
+                                                \
+    /* HdAovTokens->color represents the final
+     * fragment RGBA color.
+     */                                         \
+    (color)                                     \
+    /* HdAovTokens->depth represents the clip-space
+     * depth of the final fragment.
+     */                                         \
+    (depth)                                     \
+    /* HdAovTokens->linearDepth represents the camera-space
+     * depth of the final fragment.
+     */                                         \
+    (linearDepth)                               \
+    /* ID rendering - these tokens represent the
+     * prim, instance, and subprim ids of the final
+     * fragment.
+     */                                         \
+    (primId)                                    \
+    (instanceId)                                \
+    (elementId)                                 \
+    (edgeId)                                    \
+    (pointId)                                   \
+    /* Geometric data */                        \
+    (Peye)                                      \
+    (Neye)                                      \
+    (patchCoord)                                \
+    (primitiveParam)                            \
+    (normal)                                    \
+    /* Others we might want to add:
+     * https://rmanwiki.pixar.com/display/REN/Arbitrary+Output+Variables
+     * - curvature
+     * - tangent
+     * - velocity
+     */                                         \
+    /* Primvars:
+     *   The tokens don't try to enumerate primvars,
+     *   but instead provide an identifying namespace.
+     *   The "color" primvar is addressable as "primvars:color".
+     */                                         \
+    ((primvars, "primvars:"))                   \
+    /* Light path expressions:
+     *   Applicable only to raytracers, these tell
+     *   the renderer to output specific shading
+     *   components for specific classes of lightpath.
+     *
+     *   Lightpath syntax is defined here:
+     *   https://rmanwiki.pixar.com/display/REN/Light+Path+Expressions
+     *   ... so for example, you could specify
+     *   "lpe:CD[<L.>O]"
+     */                                         \
+    ((lpe, "lpe:"))                             \
+    /* Shader signals:
+     *   This tells the renderer to output a partial shading signal,
+     *   whether from the BXDF (e.g. bxdf.diffuse) or from an intermediate
+     *   shading node (e.g. fractal.rgb).
+     *   XXX: The exact format is TBD.
+     */                                         \
+    ((shader, "shader:"))
+
+HD_API
+TfToken HdAovTokensMakePrimvar(TfToken const& primvar);
+
+HD_API
+TfToken HdAovTokensMakeLpe(TfToken const& lpe);
+
+HD_API
+TfToken HdAovTokensMakeShader(TfToken const& shader);
+
+/* Schema for application-configurable render settings. */
+#define HD_RENDER_SETTINGS_TOKENS                     \
+    /* General graphical options */                   \
+    (enableShadows)                                   \
+    (enableSceneMaterials)                            \
+    (enableSceneLights)                               \
+    /* Raytracer sampling settings */                 \
+    (convergedVariance)                               \
+    (convergedSamplesPerPixel)
+
 
 TF_DECLARE_PUBLIC_TOKENS(HdTokens, HD_API, HD_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdReprTokens, HD_API, HD_REPR_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPerfTokens, HD_API, HD_PERF_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdShaderTokens, HD_API, HD_SHADER_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdMaterialTagTokens, HD_API, HD_MATERIALTAG_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdOptionTokens, HD_API, HD_OPTION_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPrimTypeTokens, HD_API, HD_PRIMTYPE_TOKENS);
-
+TF_DECLARE_PUBLIC_TOKENS(HdPrimvarRoleTokens, HD_API, HD_PRIMVAR_ROLE_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdAovTokens, HD_API, HD_AOV_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdRenderSettingsTokens, HD_API, HD_RENDER_SETTINGS_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

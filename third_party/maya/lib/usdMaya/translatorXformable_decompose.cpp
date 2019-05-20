@@ -66,8 +66,8 @@ _RotMatToRotTriplet(
 static void
 _MatrixToVectorsWithPivotInvariant(
     const GfMatrix4d &m,
-    const GfVec3d pivotPosition,
-    const GfVec3d pivotOrientation,
+    const GfVec3d& pivotPosition,
+    const GfVec3d& pivotOrientation,
     GfVec3d *translation, 
     GfVec3d *rotation, 
     GfVec3d *scale, 
@@ -101,7 +101,7 @@ _MatrixToVectorsWithPivotInvariant(
     _RotMatToRotTriplet(scaleOrientMat, scaleOrientation);
 }
 
-bool PxrUsdMayaTranslatorXformable::ConvertUsdMatrixToComponents(
+bool UsdMayaTranslatorXformable::ConvertUsdMatrixToComponents(
         const GfMatrix4d &usdMatrix, 
         GfVec3d *trans, 
         GfVec3d *rot, 

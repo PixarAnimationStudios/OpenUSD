@@ -49,3 +49,23 @@ def "MultiRef" (
 )
 {
 }
+
+# The follow cases are repeats of the above case but using payloads instead
+# of references and using a scale as well in the layer offset.
+def "PayloadRoot" (
+    payload = @./A.sdf@</Model> (offset = 10; scale = 2)
+)
+{
+}
+
+def "PayloadRefPayload" (
+    payload = @./ref.sdf@</Ref> (offset = 10; scale = 2)
+)
+{
+}
+
+def "PayloadMultiRef" (
+    payload = @./ref.sdf@</Ref2> (offset = 10; scale = 2)
+)
+{
+}

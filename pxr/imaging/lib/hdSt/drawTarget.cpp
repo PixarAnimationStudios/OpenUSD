@@ -25,10 +25,10 @@
 #include "pxr/imaging/hdSt/drawTarget.h"
 #include "pxr/imaging/hdSt/drawTargetAttachmentDescArray.h"
 #include "pxr/imaging/hdSt/drawTargetTextureResource.h"
-#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
-#include "pxr/imaging/hdSt/glConversions.h"
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/sprim.h"
@@ -73,7 +73,7 @@ HdStDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
 
     TF_UNUSED(renderParam);
 
-    SdfPath const &id = GetID();
+    SdfPath const &id = GetId();
     if (!TF_VERIFY(sceneDelegate != nullptr)) {
         return;
     }
@@ -168,16 +168,6 @@ HdStDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
 }
 
 // virtual
-VtValue
-HdStDrawTarget::Get(TfToken const &token) const
-{
-    // nothing here, since right now all draw target tasks accessing
-    // HdStDrawTarget perform downcast from Sprim To HdStDrawTarget
-    // and use the C++ interface (e.g. IsEnabled(), GetRenderPassState()).
-    return VtValue();
-}
-
-// virtual
 HdDirtyBits
 HdStDrawTarget::GetInitialDirtyBitsMask() const
 {
@@ -207,7 +197,7 @@ HdStDrawTarget::WriteToFile(const HdRenderIndex &renderIndex,
         return false;
     }
 
-    const HdStCamera *camera = _GetCamera(renderIndex);
+    const HdCamera *camera = _GetCamera(renderIndex);
     if (camera == nullptr) {
         TF_WARN("Missing camera\n");
         return false;
@@ -340,6 +330,8 @@ HdStDrawTarget::_SetAttachments(
                               attachments.GetDepthMagFilter());
    _drawTarget->Unbind();
 
+   _renderPassState.SetDepthPriority(attachments.GetDepthPriority());
+
    GlfGLContext::MakeCurrent(oldContext);
 
    // The texture bindings have changed so increment the version
@@ -347,10 +339,10 @@ HdStDrawTarget::_SetAttachments(
 }
 
 
-const HdStCamera *
+const HdCamera *
 HdStDrawTarget::_GetCamera(const HdRenderIndex &renderIndex) const
 {
-    return static_cast<const HdStCamera *>(
+    return static_cast<const HdCamera *>(
             renderIndex.GetSprim(HdPrimTypeTokens->camera, _cameraId));
 }
 
@@ -387,16 +379,29 @@ HdStDrawTarget::_RegisterTextureResource(
         sceneDelegate->GetRenderIndex().GetResourceRegistry();
 
     // Create Path for the texture resource
-    SdfPath resourcePath = GetID().AppendProperty(TfToken(name));
+    SdfPath resourcePath = GetId().AppendProperty(TfToken(name));
 
     // Ask delegate for an ID for this tex
     HdTextureResource::ID texID =
                               sceneDelegate->GetTextureResourceID(resourcePath);
 
+    // Use render index to convert local texture id into global
+    // texture key.  This is because the instance registry is shared by
+    // multiple render indexes, but the scene delegate generated
+    // texture id's are only unique to the scene.  (i.e. two draw
+    // targets at the same path in the scene are likely to produce the
+    // same texture id, even though they refer to textures on different
+    // render indexes).
+    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+    HdResourceRegistry::TextureKey texKey = renderIndex.GetTextureKey(texID);
+
+
     // Add to resource registry
-    HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> texInstance;
+    HdInstance<HdResourceRegistry::TextureKey,
+               HdTextureResourceSharedPtr> texInstance;
     std::unique_lock<std::mutex> regLock =
-                  resourceRegistry->RegisterTextureResource(texID, &texInstance);
+                  resourceRegistry->RegisterTextureResource(texKey,
+                                                            &texInstance);
 
     if (texInstance.IsFirstInstance()) {
         texInstance.SetValue(HdTextureResourceSharedPtr(
@@ -409,23 +414,21 @@ HdStDrawTarget::_RegisterTextureResource(
 
 /*static*/
 void
-HdStDrawTarget::GetDrawTargets(HdSceneDelegate *sceneDelegate,
+HdStDrawTarget::GetDrawTargets(HdRenderIndex* renderIndex,
                                HdStDrawTargetPtrConstVector *drawTargets)
 {
     HF_MALLOC_TAG_FUNCTION();
 
-    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
-
     SdfPathVector sprimPaths;
 
-    if (renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->drawTarget)) {
-        sprimPaths = renderIndex.GetSprimSubtree(HdPrimTypeTokens->drawTarget,
+    if (renderIndex->IsSprimTypeSupported(HdPrimTypeTokens->drawTarget)) {
+        sprimPaths = renderIndex->GetSprimSubtree(HdPrimTypeTokens->drawTarget,
             SdfPath::AbsoluteRootPath());
     }
 
     TF_FOR_ALL (it, sprimPaths) {
         HdSprim const *drawTarget =
-                        renderIndex.GetSprim(HdPrimTypeTokens->drawTarget, *it);
+                        renderIndex->GetSprim(HdPrimTypeTokens->drawTarget, *it);
 
         if (drawTarget != nullptr)
         {

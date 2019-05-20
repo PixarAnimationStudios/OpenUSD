@@ -24,64 +24,160 @@
 #include "pxr/pxr.h"
 #include "usdMaya/translatorUtil.h"
 
+#include "usdMaya/adaptor.h"
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 #include "usdMaya/translatorXformable.h"
+#include "usdMaya/util.h"
+#include "usdMaya/xformStack.h"
 
+#include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usdGeom/xformable.h"
 
 #include <maya/MDagModifier.h>
+#include <maya/MFnSet.h>
 #include <maya/MObject.h>
 #include <maya/MString.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+const MString _DEFAULT_TRANSFORM_TYPE("transform");
 
 /* static */
 bool
-PxrUsdMayaTranslatorUtil::CreateTransformNode(
+UsdMayaTranslatorUtil::CreateTransformNode(
         const UsdPrim& usdPrim,
         MObject& parentNode,
-        const PxrUsdMayaPrimReaderArgs& args,
-        PxrUsdMayaPrimReaderContext* context,
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext* context,
         MStatus* status,
         MObject* mayaNodeObj)
 {
-    static const MString _defaultTypeName("transform");
-
     if (!usdPrim || !usdPrim.IsA<UsdGeomXformable>()) {
         return false;
     }
 
     if (!CreateNode(usdPrim,
-                       _defaultTypeName,
-                       parentNode,
-                       context,
-                       status,
-                       mayaNodeObj)) {
+                    _DEFAULT_TRANSFORM_TYPE,
+                    parentNode,
+                    context,
+                    status,
+                    mayaNodeObj)) {
         return false;
     }
 
     // Read xformable attributes from the UsdPrim on to the transform node.
     UsdGeomXformable xformable(usdPrim);
-    PxrUsdMayaTranslatorXformable::Read(xformable, *mayaNodeObj, args, context);
+    UsdMayaTranslatorXformable::Read(xformable, *mayaNodeObj, args, context);
 
     return true;
 }
 
 /* static */
 bool
-PxrUsdMayaTranslatorUtil::CreateNode(
+UsdMayaTranslatorUtil::CreateDummyTransformNode(
         const UsdPrim& usdPrim,
-        const MString& nodeTypeName,
         MObject& parentNode,
-        PxrUsdMayaPrimReaderContext* context,
+        bool importTypeName,
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext* context,
         MStatus* status,
         MObject* mayaNodeObj)
 {
-    if (!CreateNode(MString(usdPrim.GetName().GetText()),
+    if (!usdPrim) {
+        return false;
+    }
+
+    if (!CreateNode(usdPrim,
+                    _DEFAULT_TRANSFORM_TYPE,
+                    parentNode,
+                    context,
+                    status,
+                    mayaNodeObj)) {
+        return false;
+    }
+
+    MFnDagNode dagNode(*mayaNodeObj);
+
+    // Set the typeName on the adaptor.
+    if (UsdMayaAdaptor adaptor = UsdMayaAdaptor(*mayaNodeObj)) {
+        VtValue typeName;
+        if (!usdPrim.HasAuthoredTypeName()) {
+            // A regular typeless def.
+            typeName = TfToken();
+        }
+        else if (importTypeName) {
+            // Preserve type info for round-tripping.
+            typeName = usdPrim.GetTypeName();
+        }
+        else {
+            // Unknown type name; treat this as though it were a typeless def.
+            typeName = TfToken();
+
+            // If there is a typename that we're ignoring, leave a note so that
+            // we know where it came from.
+            const std::string notes = TfStringPrintf(
+                    "Imported from @%s@<%s> with type '%s'",
+                    usdPrim.GetStage()->GetRootLayer()->GetIdentifier().c_str(),
+                    usdPrim.GetPath().GetText(),
+                    usdPrim.GetTypeName().GetText());
+            UsdMayaUtil::SetNotes(dagNode, notes);
+        }
+        adaptor.SetMetadata(SdfFieldKeys->TypeName, typeName);
+    }
+
+    // Lock all the transform attributes.
+    for (const UsdMayaXformOpClassification& opClass :
+            UsdMayaXformStack::MayaStack().GetOps()) {
+        if (!opClass.IsInvertedTwin()) {
+            MPlug plug = dagNode.findPlug(opClass.GetName().GetText(), true);
+            if (!plug.isNull()) {
+                if (plug.isCompound()) {
+                    for (unsigned int i = 0; i < plug.numChildren(); ++i) {
+                        MPlug child = plug.child(i);
+                        child.setKeyable(false);
+                        child.setLocked(true);
+                        child.setChannelBox(false);
+                    }
+                }
+                else {
+                    plug.setKeyable(false);
+                    plug.setLocked(true);
+                    plug.setChannelBox(false);
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+/* static */
+bool
+UsdMayaTranslatorUtil::CreateNode(
+        const UsdPrim& usdPrim,
+        const MString& nodeTypeName,
+        MObject& parentNode,
+        UsdMayaPrimReaderContext* context,
+        MStatus* status,
+        MObject* mayaNodeObj)
+{
+    return CreateNode(usdPrim.GetPath(), nodeTypeName, parentNode,
+                      context, status, mayaNodeObj);
+}
+
+/* static */
+bool
+UsdMayaTranslatorUtil::CreateNode(
+        const SdfPath& path,
+        const MString& nodeTypeName,
+        MObject& parentNode,
+        UsdMayaPrimReaderContext* context,
+        MStatus* status,
+        MObject* mayaNodeObj)
+{
+    if (!CreateNode(MString(path.GetName().c_str(), path.GetName().size()),
                        nodeTypeName,
                        parentNode,
                        status,
@@ -90,7 +186,7 @@ PxrUsdMayaTranslatorUtil::CreateNode(
     }
 
     if (context) {
-        context->RegisterNewMayaNode(usdPrim.GetPath().GetString(), *mayaNodeObj);
+        context->RegisterNewMayaNode(path.GetString(), *mayaNodeObj);
     }
 
     return true;
@@ -98,7 +194,7 @@ PxrUsdMayaTranslatorUtil::CreateNode(
 
 /* static */
 bool
-PxrUsdMayaTranslatorUtil::CreateNode(
+UsdMayaTranslatorUtil::CreateNode(
         const MString& nodeName,
         const MString& nodeTypeName,
         MObject& parentNode,
@@ -122,6 +218,56 @@ PxrUsdMayaTranslatorUtil::CreateNode(
 
     return TF_VERIFY(!mayaNodeObj->isNull());
 }
+
+/* static */
+bool
+UsdMayaTranslatorUtil::CreateShaderNode(
+        const MString& nodeName,
+        const MString& nodeTypeName,
+        const bool asShader,
+        MStatus* status,
+        MObject* shaderObj)
+{
+    MFnDependencyNode depFn;
+    depFn.create(nodeTypeName, nodeName, status);
+    CHECK_MSTATUS_AND_RETURN(*status, false);
+    *shaderObj = depFn.object(status);
+
+    if (asShader) {
+        MPlug shaderListPlug = UsdMayaUtil::GetMayaShaderListPlug();
+        if (shaderListPlug.isNull()) {
+            return false;
+        }
+
+        MPlug msgPlug = depFn.findPlug("msg", true, status);
+        CHECK_MSTATUS_AND_RETURN(*status, false);
+
+        UsdMayaUtil::Connect(msgPlug, shaderListPlug, false);
+    }
+
+    return true;
+}
+
+/* static */
+bool
+UsdMayaTranslatorUtil::ConnectDefaultLightNode(
+        MObject& lightNode,
+        MStatus* status)
+{
+    MObject lightSetObject = UsdMayaUtil::GetDefaultLightSetObject();
+    if (lightSetObject.isNull()) {
+        return false;
+    }
+
+    MFnSet setFn(lightSetObject, status);
+    CHECK_MSTATUS_AND_RETURN(*status, false);
+
+    *status = setFn.addMember(lightNode);
+    CHECK_MSTATUS_AND_RETURN(*status, false);
+
+    return true;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

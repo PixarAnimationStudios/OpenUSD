@@ -58,7 +58,7 @@ available for the attribute in the Stage's scene description, which means
 is.  CreatePointsAttr(), by contrast, will actually create a typed
 definition for the attribute in the current UsdEditTarget if no definition
 for the attribute yet exists - it follows that it is legal and safe to 
-call CreatePointsAttr() even if the atttribute is already defined in the
+call CreatePointsAttr() even if the attribute is already defined in the
 current UsdEditTarget().
 
 In general, you should use CreateXXXAttr() when authoring scene description,

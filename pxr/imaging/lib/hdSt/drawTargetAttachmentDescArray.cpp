@@ -32,6 +32,7 @@ HdStDrawTargetAttachmentDescArray::HdStDrawTargetAttachmentDescArray()
  , _depthWrapT(HdWrapRepeat)
  , _depthMinFilter(HdMinFilterLinear)
  , _depthMagFilter(HdMagFilterLinear)
+ , _depthPriority(HdDepthPriorityNearest)
 {
 
 }
@@ -39,6 +40,11 @@ HdStDrawTargetAttachmentDescArray::HdStDrawTargetAttachmentDescArray()
 HdStDrawTargetAttachmentDescArray::HdStDrawTargetAttachmentDescArray(
                                                          size_t attachmentCount)
  : _attachments()
+ , _depthWrapS(HdWrapRepeat)
+ , _depthWrapT(HdWrapRepeat)
+ , _depthMinFilter(HdMinFilterLinear)
+ , _depthMagFilter(HdMagFilterLinear)
+ , _depthPriority(HdDepthPriorityNearest)
 {
     _attachments.reserve(attachmentCount);
 }
@@ -51,6 +57,7 @@ HdStDrawTargetAttachmentDescArray::HdStDrawTargetAttachmentDescArray(
   , _depthWrapT(copy._depthWrapT)
   , _depthMinFilter(copy._depthMinFilter)
   , _depthMagFilter(copy._depthMagFilter)
+  , _depthPriority(copy._depthPriority)
 {
 
 }
@@ -65,6 +72,7 @@ HdStDrawTargetAttachmentDescArray::operator =(
     _depthWrapT     = copy._depthWrapT;
     _depthMinFilter = copy._depthMinFilter;
     _depthMagFilter = copy._depthMagFilter;
+    _depthPriority  = copy._depthPriority;
 
     return *this;
 }
@@ -116,6 +124,13 @@ HdStDrawTargetAttachmentDescArray::SetDepthSampler(
     _depthMagFilter = depthMagFilter;
 }
 
+void
+HdStDrawTargetAttachmentDescArray::SetDepthPriority(
+                                                  HdDepthPriority depthPriority)
+{
+    _depthPriority = depthPriority;
+}
+
 
 size_t
 HdStDrawTargetAttachmentDescArray::GetHash() const
@@ -125,6 +140,7 @@ HdStDrawTargetAttachmentDescArray::GetHash() const
     boost::hash_combine(hash, _depthWrapT);
     boost::hash_combine(hash, _depthMinFilter);
     boost::hash_combine(hash, _depthMagFilter);
+    boost::hash_combine(hash, _depthPriority);
 
     return hash;
 }
@@ -147,7 +163,8 @@ HdStDrawTargetAttachmentDescArray::Dump(std::ostream &out) const
     out << _depthWrapS     << " "
         << _depthWrapT     << " "
         << _depthMinFilter << " "
-        << _depthMagFilter << " ";
+        << _depthMagFilter << " "
+        << _depthPriority  << " ";
 }
 
 
@@ -159,7 +176,8 @@ HdStDrawTargetAttachmentDescArray::operator==(
             (_depthWrapS      == other._depthWrapS)     &&
             (_depthWrapT      == other._depthWrapT)     &&
             (_depthMinFilter  == other._depthMinFilter) &&
-            (_depthMagFilter  == other._depthMagFilter));
+            (_depthMagFilter  == other._depthMagFilter) &&
+            (_depthPriority   == other._depthPriority));
 }
 
 
@@ -171,7 +189,8 @@ HdStDrawTargetAttachmentDescArray::operator!=(
             (_depthWrapS      != other._depthWrapS)     ||
             (_depthWrapT      != other._depthWrapT)     ||
             (_depthMinFilter  != other._depthMinFilter) ||
-            (_depthMagFilter  != other._depthMagFilter));
+            (_depthMagFilter  != other._depthMagFilter) ||
+            (_depthPriority   != other._depthPriority));
 }
 
 

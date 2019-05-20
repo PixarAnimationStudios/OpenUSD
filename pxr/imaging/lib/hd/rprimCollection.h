@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hd/repr.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/token.h"
 
@@ -41,29 +42,48 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// A named, semantic collection of objects.
 ///
 /// Note that the collection object itself doesn't hold HdRprim objects, rather
-/// it acts and addressing mechanism to identify a specific group of HdRprim 
+/// it acts as an addressing mechanism to identify a specific group of HdRprim 
 /// objects that can be requested from the HdRenderIndex.
+/// 
+/// HdDirtyList provides the above algorithmic functionality, while HdRenderPass
+/// uses HdRprimCollection to concisely represent the HdRprim's it operates on.
+/// 
+/// \sa
+/// HdRenderPass
+/// HdDirtyList
 ///
 class HdRprimCollection {
 public:
     HD_API
     HdRprimCollection();
 
-    /// Constructs an rprim collection with \p reprName. \p if forcedRepr is
+    /// Constructs an rprim collection with \p reprSelector. \p if forcedRepr is
     /// set to true, prims authored repr will be ignored.
+    /// If \p materialTag is provided, only prims who's material have 
+    /// a matching tag will end up in the collection. This can be used to make 
+    /// seperate collections for e.g. opaque vs translucent prims.
+    /// An empty materialTag opts-out of using material tags entirely and will
+    /// return all prims in the collection, regardless of their material tags.
     HD_API
     HdRprimCollection(TfToken const& name,
-                      TfToken const& reprName,
-                      bool forcedRepr=false);
+                      HdReprSelector const& reprSelector,
+                      bool forcedRepr=false,
+                      TfToken const& materialTag = TfToken());
 
     /// Constructs an rprim collection, excluding all Rprims not prefixed by \p
     /// rootPath. \p if forcedRepr is set to true, prims authored repr will be
     /// ignored.
+    /// If \p materialTag is provided, only prims who's material have 
+    /// a matching tag will end up in the collection. This can be used to make 
+    /// seperate collections for e.g. opaque vs translucent prims.
+    /// An empty materialTag opts-out of using material tags entirely and will
+    /// return all prims in the collection, regardless of their material tags.
     HD_API
     HdRprimCollection(TfToken const& name,
-                      TfToken const& reprName,
+                      HdReprSelector const& reprSelector,
                       SdfPath const& rootPath,
-                      bool forcedRepr=false);
+                      bool forcedRepr=false,
+                      TfToken const& materialTag = TfToken());
 
     /// Copy constructor.
     HD_API
@@ -93,16 +113,16 @@ public:
 
     /// Returns the representation name.
     ///
-    /// The repr name corresponds to specific aspects of the requested set of 
-    /// Rprims, for example one can request "hullAndPoints" repr which
+    /// The repr selector corresponds to specific aspects of the requested set
+    /// of Rprims, for example one can request "hullAndPoints" repr which
     /// would cause both the hull and points representations of all prims named
     /// by the collection to be included.
-    TfToken const& GetReprName() const {
-        return _reprName;
+    HdReprSelector const& GetReprSelector() const {
+        return _reprSelector;
     }
 
-    void SetReprName(TfToken const &reprName) {
-        _reprName = reprName;
+    void SetReprSelector(HdReprSelector const& reprSelector) {
+        _reprSelector = reprSelector;
     }
 
     bool IsForcedRepr() const {
@@ -123,7 +143,7 @@ public:
 
     /// Sets all root paths for this collection, replacing any existing paths
     /// that were present previously. All paths must be absolute. Duplicate
-    /// paths are allowed, but may result in peformance degradation.
+    /// paths are allowed, but may result in performance degradation.
     HD_API
     void SetRootPaths(SdfPathVector const& rootPaths);
 
@@ -134,7 +154,7 @@ public:
     void SetRootPath(SdfPath const& rootPath);
 
     /// Sets all exclude paths for this collection. All paths must be absolute. 
-    /// Duplicate paths are allowed, but may result in peformance degradation.
+    /// Duplicate paths are allowed, but may result in performance degradation.
     HD_API
     void SetExcludePaths(SdfPathVector const& excludePaths);
 
@@ -156,6 +176,23 @@ public:
     HD_API
     bool HasRenderTag(TfToken const & renderTag) const;
 
+    /// A MaterialTag can be used to ensure only prims whos material have
+    /// a matching tag will end up in the collection. Different rendering 
+    /// backends can control what material properties are useful for splitting 
+    /// up collections. For example, when Stream finds the 'translucent'
+    /// MaterialTag in a material it will transfer this tag onto the
+    /// prim's DrawItem. This ensures that opaque and translucent prims end up
+    /// in different collections so they can be rendered seperately.
+    /// A path-tracer backend may find the translucent MaterialTag on a material
+    /// and choose NOT to transfer the tag onto the DrawItem because the
+    /// backend wants to render opaque and translucent prims in the same
+    /// collection.
+    HD_API
+    void SetMaterialTag(TfToken const& tag);
+
+    HD_API
+    TfToken const& GetMaterialTag() const;
+
     HD_API
     size_t ComputeHash() const;
 
@@ -176,8 +213,9 @@ private:
         HdRprimCollection const & v);
 
     TfToken _name;
-    TfToken _reprName;
+    HdReprSelector _reprSelector;
     bool _forcedRepr;
+    TfToken _materialTag;
     SdfPathVector _rootPaths;
     SdfPathVector _excludePaths;
     TfTokenVector _renderTags;

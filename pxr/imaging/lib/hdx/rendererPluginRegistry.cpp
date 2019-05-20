@@ -48,6 +48,35 @@ HdxRendererPluginRegistry::~HdxRendererPluginRegistry()
 {
 }
 
+TfToken 
+HdxRendererPluginRegistry::GetDefaultPluginId()
+{
+    // Get all the available plugins to see if any of them is supported on this
+    // platform and use the first one as the default.
+    // 
+    // Important note, we want to avoid loading plugins as much as possible, 
+    // we would prefer to only load plugins when the user asks for them.  So
+    // we will only load plugins until we find the first one that works.
+    HfPluginDescVector pluginDescriptors;
+    GetPluginDescs(&pluginDescriptors);
+    for (const HfPluginDesc &desc : pluginDescriptors) {
+        
+        HdxRendererPlugin *plugin = HdxRendererPluginRegistry::GetInstance().
+            GetRendererPlugin(desc.id);
+
+        // Important to bail out as soon as we found a plugin that works to
+        // avoid loading plugins unnecessary as that can be arbitrarily
+        // expensive.
+        if (plugin && plugin->IsSupported()) {
+            HdxRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
+            return desc.id;
+        }
+
+        HdxRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
+    }
+
+    return TfToken();
+}
 
 HdxRendererPlugin *
 HdxRendererPluginRegistry::GetRendererPlugin(const TfToken &pluginId)

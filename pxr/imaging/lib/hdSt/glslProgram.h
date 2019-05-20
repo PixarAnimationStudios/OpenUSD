@@ -84,6 +84,11 @@ public:
 private:
     HdStResourceGL _program;
     HdStResourceGL _uniformBuffer;
+    // An identifier for uniquely identifying the program, for debugging
+    // purposes - programs that fail to compile for one reason or another
+    // will get deleted, and their GL program IDs reused, so we can't use
+    // that to identify it uniquely
+    size_t _debugID;
 };
 
 

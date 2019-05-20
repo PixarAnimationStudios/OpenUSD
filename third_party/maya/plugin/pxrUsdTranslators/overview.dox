@@ -1,0 +1,31 @@
+/*!
+\page usd_maya_plugin_pxrUsdTranslators_page_front PxrUsdTranslators : USD translation for built-in Maya nodes
+\if ( PIXAR_MFB_BUILD )
+\mainpage PxrUsdTranslators : USD translation for built-in Maya nodes
+\publicLib
+\endif
+
+## Overview
+
+The \c pxrUsdTranslators Maya plugin provides the USD importers and exporters
+for built-in Maya nodes. It also provides an example for users who are trying
+to implement their own custom USD importers or exporters.
+
+It registers itself via the plugin mechanism used by the
+\ref usd_maya_lib_usdMaya_page_front "UsdMaya library" so that the import and
+export functionality is available to all UsdMaya clients, such as the \c pxrUsd
+plugin. It doesn't directly expose any public APIs.
+
+You don't have to load the \c pxrUsdTranslators plugin manually. It will
+automatically be loaded by UsdMaya when needed.
+
+## Coding Conventions
+
+The files in this plugin are organized in the following ways:
+- All classes should be private; nothing should be linking to this plugin.
+- Importer plugins have the file name <tt>[usdTypeName]Reader</tt>, and any
+  importer classes are named <tt>PxrUsdTranslators_[usdTypeName]Reader</tt>.
+- Exporter plugins have the file name <tt>[mayaTypeName]Writer</tt>, and any
+  exporter classes are named <tt>PxrUsdTranslators_[mayaTypeName]Writer</tt>.
+
+*/

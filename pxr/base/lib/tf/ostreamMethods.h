@@ -41,7 +41,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/hashmap.h"
 
-#include <iostream>
+#include <ostream>
 #include <vector>
 #include <list>
 #include <map>

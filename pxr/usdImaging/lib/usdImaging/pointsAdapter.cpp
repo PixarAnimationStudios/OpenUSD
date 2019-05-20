@@ -24,12 +24,14 @@
 #include "pxr/usdImaging/usdImaging/pointsAdapter.h"
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
+#include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/points.h"
 #include "pxr/imaging/hd/perfLog.h"
 
 #include "pxr/usd/usdGeom/points.h"
+#include "pxr/usd/usdGeom/primvarsAPI.h"
 
 #include "pxr/base/tf/type.h"
 
@@ -67,7 +69,7 @@ UsdImagingPointsAdapter::TrackVariability(UsdPrim const& prim,
                                           SdfPath const& cachePath,
                                           HdDirtyBits* timeVaryingBits,
                                           UsdImagingInstancerContext const* 
-                                              instancerContext)
+                                              instancerContext) const
 {
     BaseAdapter::TrackVariability(
         prim, cachePath, timeVaryingBits, instancerContext);
@@ -76,15 +78,53 @@ UsdImagingPointsAdapter::TrackVariability(UsdPrim const& prim,
     _IsVarying(prim,
                UsdGeomTokens->points,
                HdChangeTracker::DirtyPoints,
-               UsdImagingTokens->usdVaryingPrimVar,
+               UsdImagingTokens->usdVaryingPrimvar,
                timeVaryingBits,
                /*isInherited*/false);
 
-    _IsVarying(prim, UsdGeomTokens->widths,
-                       HdChangeTracker::DirtyWidths,
-                       UsdImagingTokens->usdVaryingWidths,
-                       timeVaryingBits,
-                       /*isInherited*/false);
+    // Check for time-varying primvars:widths, and if that attribute
+    // doesn't exist also check for time-varying widths.
+    bool widthsExists = false;
+    _IsVarying(prim,
+               UsdImagingTokens->primvarsWidths,
+               HdChangeTracker::DirtyWidths,
+               UsdImagingTokens->usdVaryingWidths,
+               timeVaryingBits,
+               /*isInherited*/false,
+               &widthsExists);
+    if (!widthsExists) {
+        _IsVarying(prim, UsdGeomTokens->widths,
+                HdChangeTracker::DirtyWidths,
+                UsdImagingTokens->usdVaryingWidths,
+                timeVaryingBits,
+                /*isInherited*/false);
+    }
+
+    // Check for time-varying primvars:normals, and if that attribute
+    // doesn't exist also check for time-varying normals.
+    bool normalsExists = false;
+    _IsVarying(prim,
+               UsdImagingTokens->primvarsNormals,
+               HdChangeTracker::DirtyNormals,
+               UsdImagingTokens->usdVaryingNormals,
+               timeVaryingBits,
+               /*isInherited*/false,
+               &normalsExists);
+    if (!normalsExists) {
+        _IsVarying(prim, UsdGeomTokens->normals,
+                HdChangeTracker::DirtyNormals,
+                UsdImagingTokens->usdVaryingNormals,
+                timeVaryingBits,
+                /*isInherited*/false);
+    }
+}
+
+bool
+UsdImagingPointsAdapter::_IsBuiltinPrimvar(TfToken const& primvarName) const
+{
+    return (primvarName == HdTokens->normals ||
+            primvarName == HdTokens->widths) ||
+        UsdImagingGprimAdapter::_IsBuiltinPrimvar(primvarName);
 }
 
 void 
@@ -93,65 +133,59 @@ UsdImagingPointsAdapter::UpdateForTime(UsdPrim const& prim,
                                        UsdTimeCode time,
                                        HdDirtyBits requestedBits,
                                        UsdImagingInstancerContext const* 
-                                           instancerContext)
+                                           instancerContext) const
 {
     BaseAdapter::UpdateForTime(
         prim, cachePath, time, requestedBits, instancerContext);
     UsdImagingValueCache* valueCache = _GetValueCache();
 
-    PrimvarInfoVector& primvars = valueCache->GetPrimvars(cachePath);
-
-    VtValue& pointsValues = valueCache->GetPoints(cachePath);
-
-    if (requestedBits & HdChangeTracker::DirtyPoints) {
-        _GetPoints(prim, &pointsValues, time);
-        UsdImagingValueCache::PrimvarInfo primvar;
-        primvar.name = HdTokens->points;
-        primvar.interpolation = UsdGeomTokens->vertex;
-        _MergePrimvar(primvar, &primvars);
-    }
+    HdPrimvarDescriptorVector& primvars = valueCache->GetPrimvars(cachePath);
 
     if (requestedBits & HdChangeTracker::DirtyWidths) {
-        UsdImagingValueCache::PrimvarInfo primvar;
-        UsdGeomPoints points(prim);
-        VtFloatArray widths;
-        primvar.name = UsdGeomTokens->widths;
-
-        // XXX Add support for real constant interpolation
-        primvar.interpolation = UsdGeomTokens->vertex;
-
-        // Read the widths, if there is no widths create a buffer
-        // and fill it with default widths of 1.0f
-        if (!points.GetWidthsAttr().Get(&widths, time)) {
-
-            // Check if we have just updated the points because in that
-            // case we don't need to read the points again
-            if (!(requestedBits & HdChangeTracker::DirtyPoints)) {
-                _GetPoints(prim, &pointsValues, time);
+        // First check for "primvars:widths"
+        UsdGeomPrimvarsAPI primvarsApi(prim);
+        UsdGeomPrimvar pv = primvarsApi.GetPrimvar(
+            UsdImagingTokens->primvarsWidths);
+        if (pv) {
+            _ComputeAndMergePrimvar(prim, cachePath, pv, time, valueCache);
+        } else {
+            UsdGeomPoints points(prim);
+            HdInterpolation interpolation;
+            VtFloatArray widths;
+            if (points.GetWidthsAttr().Get(&widths, time)) {
+                interpolation = _UsdToHdInterpolation(
+                    points.GetWidthsInterpolation());
+            } else {
+                widths = VtFloatArray(1);
+                widths[0] = 1.0f;
+                interpolation = HdInterpolationConstant;
             }
+            _MergePrimvar(&primvars, UsdGeomTokens->widths, interpolation);
+            valueCache->GetWidths(cachePath) = VtValue(widths);
+        }
+    }
 
-            for(size_t i = 0; i < pointsValues.Get<VtVec3fArray>().size() ; i ++) {
-                widths.push_back(1.0f);
+    if (requestedBits & HdChangeTracker::DirtyNormals) {
+        // First check for "primvars:normals"
+        UsdGeomPrimvarsAPI primvarsApi(prim);
+        UsdGeomPrimvar pv = primvarsApi.GetPrimvar(
+            UsdImagingTokens->primvarsNormals);
+        if (pv) {
+            _ComputeAndMergePrimvar(prim, cachePath, pv, time, valueCache);
+        } else {
+            UsdGeomPoints points(prim);
+            VtVec3fArray normals;
+            if (points.GetNormalsAttr().Get(&normals, time)) {
+                _MergePrimvar(&primvars,
+                        UsdGeomTokens->normals,
+                        _UsdToHdInterpolation(points.GetNormalsInterpolation()),
+                        HdPrimvarRoleTokens->normal);
+                valueCache->GetNormals(cachePath) = VtValue(normals);
             }
         }
-        _MergePrimvar(primvar, &primvars);
-        valueCache->GetWidths(cachePath) = VtValue(widths);
     }
 }
 
-
-// -------------------------------------------------------------------------- //
-
-void
-UsdImagingPointsAdapter::_GetPoints(UsdPrim const& prim, 
-                                   VtValue* value, 
-                                   UsdTimeCode time)
-{
-    HD_TRACE_FUNCTION();
-    if (!prim.GetAttribute(UsdGeomTokens->points).Get(value, time)) {
-        *value = VtVec3fArray();
-    }
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -38,76 +38,29 @@
 
 #include "pxrUsdInShipped/declareCoreOps.h"
 
+#include <FnGeolibServices/FnBuiltInOpArgsUtil.h>
+
+#include <FnAPI/FnAPI.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-// Small attribute cache:
-// The problem we're trying to solve is that Katana reads these groups typically
-// twice, because of it's access pattern on typicall assets.
-// After the second cook, it realizes it shouldn't evict this group.
-// This is pretty expensive however, as all the looks are cooked at once. We 
-// want to cache the result. Since there are multiple threads cooking 
-// potentially different materialGroups, we want about one slot per thread.
+// We previously processed and cached material groups in their entirety.
+// Instead the material group just figures out the katana path and defers
+// reading of the material data itself to the material locations.
+// 
+// The caching is also done per material now -- as implemented in material.cpp
+// 
+// However, the cache key is still generated from the material group and
+// therefore the envvar (and terminology) for enabling it remains here.
+// 
 // We start with a reasonable constant.
 TF_DEFINE_ENV_SETTING(
     USD_KATANA_CACHE_MATERIALGROUPS, true,
-    "Toggle a small cache for repeated access of the same materialGroups.");
-#define MAX_CACHED_MATERIALGROUPS 20
-
-namespace
-{
-    class MaterialGroupCache {
-    public: 
-        void add(const FnKat::Hash& key, const FnKat::GroupAttribute& attr) {
-
-            boost::upgrade_lock<boost::upgrade_mutex> lock(
-                cachedMaterialGroupsMutex);
-
-            _cache.push_front(std::pair<FnKat::Hash, FnKat::GroupAttribute>(
-                key, attr));
-            if (_cache.size() > MAX_CACHED_MATERIALGROUPS) {
-                _cache.pop_back();
-            }
-        }
-
-        FnKat::GroupAttribute get(const FnKat::Hash& key) {
-            boost::upgrade_lock<boost::upgrade_mutex> lock(
-                cachedMaterialGroupsMutex);
-            for (auto it = _cache.begin(); it!=_cache.end(); ++it) {
-                auto p = *it;
-                if (p.first == key) {
-                    auto retval = p.second;
-                    _cache.erase(it);
-                    _cache.push_front(p);
-
-                    return retval;
-                }
-            }
-
-            return FnKat::GroupAttribute();
-        }
-
-        void clear() {
-            boost::upgrade_lock<boost::upgrade_mutex> lock(
-                cachedMaterialGroupsMutex);
-            _cache.clear();
-        }
-
-    private:
-        boost::upgrade_mutex cachedMaterialGroupsMutex;
-        std::list<std::pair<FnKat::Hash, FnKat::GroupAttribute> > _cache;
-    };
-    
-    MaterialGroupCache g_materialGroupCache;
-    
-    void FlushMaterialGroupCache()
-    {
-        g_materialGroupCache.clear();
-    }
-}
+    "Toggle inclusion of a cache key representing this scope " \
+    "(respected by PxrUsdInCore_LookOp)");
 
 
-FnKat::Hash _GetCacheKey(const PxrUsdKatanaUsdInPrivateData& privateData) {
+FnKat::Attribute _GetCacheKey(const PxrUsdKatanaUsdInPrivateData& privateData) {
     PxrUsdKatanaUsdInArgsRefPtr args = privateData.GetUsdInArgs();
 
     std::string location;
@@ -126,75 +79,138 @@ FnKat::Hash _GetCacheKey(const PxrUsdKatanaUsdInPrivateData& privateData) {
         "location", FnKat::StringAttribute(location),
         false);
         
-    return cacheKey.getHash();
+    return cacheKey;
 }
 
 
 
-PXRUSDKATANA_USDIN_PLUGIN_DEFINE_WITH_FLUSH(
-    PxrUsdInCore_LooksGroupOp, privateData, opArgs, interface, FlushMaterialGroupCache)
+PXRUSDKATANA_USDIN_PLUGIN_DEFINE(
+    PxrUsdInCore_LooksGroupOp, privateData, opArgs, interface)
 {
     // leave for debugging purposes
     // TfStopwatch timer_loadUsdMaterialGroup;
     // timer_loadUsdMaterialGroup.Start();
 
-    //
-    // Construct the group attribute argument for the StaticSceneCreate
-    // op which will construct the materials scenegraph branch.
-    //
-    FnKat::Hash cacheKey;
-    FnKat::GroupAttribute sscArgs;
-
-    if (TfGetEnvSetting(USD_KATANA_CACHE_MATERIALGROUPS)) {
-        cacheKey = _GetCacheKey(privateData);
-        sscArgs = g_materialGroupCache.get(cacheKey);
+    
+    FnKat::Attribute cacheKeyAttr;
+    if (TfGetEnvSetting(USD_KATANA_CACHE_MATERIALGROUPS))
+    {
+        // check for an explicit cache key from above
+        cacheKeyAttr = opArgs.getChildByName("sharedLooksCacheKey");
+        
+        if (!cacheKeyAttr.isValid())
+        {
+            // check locally also
+            UsdAttribute keyAttr = privateData.GetUsdPrim().GetAttribute(
+                    TfToken("sharedLooksCacheKey"));
+            if (keyAttr.IsValid())
+            {
+                std::string cacheKey;
+                keyAttr.Get(&cacheKey);
+                
+                cacheKeyAttr = FnKat::StringAttribute(cacheKey);
+            }
+        }
+        
+        if (!cacheKeyAttr.isValid())
+        {
+            cacheKeyAttr = _GetCacheKey(privateData);
+        }
     }
     
-    if (!sscArgs.isValid())
+    
+    struct usdPrimInfo
     {
-        UsdPrim prim = privateData.GetUsdPrim();
-        FnKat::GroupBuilder gb;
-        const std::string& rootLocation = interface.getRootLocationPath();
+        std::vector<std::string> usdPrimPathValues;
+        std::vector<std::string> usdPrimNameValues;
+    };
+    
+    std::map<std::string, usdPrimInfo> primInfoPerLocation;
 
-        for (UsdPrim child : prim.GetChildren()) {
-            UsdShadeMaterial materialSchema(child);
-            if (!materialSchema) {
-                continue;
-            }
+    UsdPrim prim = privateData.GetUsdPrim();
+    FnKat::GroupBuilder gb;
+    const std::string& rootLocation = interface.getRootLocationPath();
 
-            // do not flatten child material (specialize arcs) 
-            // if we have any.
-            bool flatten = !materialSchema.HasBaseMaterial();
+    for (UsdPrim child : prim.GetChildren()) {
+        
+        std::string materialLocation = 
+            PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
+                child.GetPath(), privateData);
+        
+        
+        std::string relativeMaterialLocation =
+                materialLocation.substr(rootLocation.size()+1);
 
-            std::string location = 
-                PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
-                    child.GetPath(), privateData);
-
-            PxrUsdKatanaAttrMap attrs;
-            PxrUsdKatanaReadMaterial(materialSchema, flatten, 
-                privateData, attrs, rootLocation);
-
-            // Read blind data.
-            PxrUsdKatanaReadBlindData(
-                UsdKatanaBlindDataObject(materialSchema), attrs);
-
-            // location is "/root/world/geo/Model/Wood/Walnut/Aged"
-            // where rootLocation is "/root/world/geo/Model/"
-            // want to get, "c.Wood.c.Walnut.c.Aged"
-
-            std::string childPath = "c.";
-            childPath += TfStringReplace(
-                    location.substr(rootLocation.size()+1), "/", ".c.");
-            childPath += ".a";
-
-            gb.set(childPath, attrs.build());
+        auto lastSlash = relativeMaterialLocation.rfind('/');
+        
+        std::string parentPath;
+        std::string baseName;
+        
+        
+        if (lastSlash != std::string::npos)
+        {
+            parentPath = relativeMaterialLocation.substr(0, lastSlash);
+            baseName = relativeMaterialLocation.substr(lastSlash + 1);
         }
-
-        sscArgs = gb.build();
-        if (TfGetEnvSetting(USD_KATANA_CACHE_MATERIALGROUPS)) {
-            g_materialGroupCache.add(cacheKey, sscArgs);
+        else
+        {
+            baseName = relativeMaterialLocation;
         }
+        
+        auto & locationEntry = primInfoPerLocation[parentPath];
+        
+
+        locationEntry.usdPrimPathValues.push_back(
+                child.GetPath().GetText());
+        locationEntry.usdPrimNameValues.push_back(baseName);
+        
+
     }
+
+    FnGeolibServices::StaticSceneCreateOpArgsBuilder sscb(false);
+    
+    for (const auto & I : primInfoPerLocation)
+    {
+        const auto & locationParent = I.first;
+        const auto & entry = I.second;
+        
+        sscb.setAttrAtLocation(locationParent, "usdPrimPath",
+                FnKat::StringAttribute(entry.usdPrimPathValues));
+        sscb.setAttrAtLocation(locationParent, "usdPrimName",
+                FnKat::StringAttribute(entry.usdPrimNameValues));
+    }
+    
+    // TODO consider caching this? Observed performance doesn't appear to
+    //      warrant caching it.
+    
+    auto args = sscb.build();
+    
+    
+    interface.execOp("PxrUsdIn.BuildIntermediate",
+                FnKat::GroupBuilder()
+                        .update(interface.getOpArg())
+                        .set("staticScene", args)
+                        .set("looksGroupLocation",
+                                FnAttribute::StringAttribute(
+                                        interface.getOutputLocationPath()))
+                        .set("forceFlattenLooks",
+                                FnAttribute::IntAttribute(0))
+                        .set("looksCacheKeyPrefixAttr",
+                                cacheKeyAttr)
+                        .build()
+
+// katana 2.x doesn't allow private data to be overridden in execOp as it'll
+// automatically use that of the calling op while katana 3.x does allow it
+// to be overridden but requires it to be specified even if unchanged (as here).
+#if KATANA_VERSION_MAJOR >= 3
+                ,
+                new PxrUsdKatanaUsdInPrivateData(
+                            privateData.GetUsdInArgs()->GetRootPrim(),
+                            privateData.GetUsdInArgs(), &privateData),
+                PxrUsdKatanaUsdInPrivateData::Delete
+#endif
+                );
+
 
     // leave for debugging purposes
     // timer_loadUsdMaterialGroup.Stop();
@@ -203,7 +219,6 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE_WITH_FLUSH(
     //     interface.getOutputLocationPath()
     //     << " " << materialGroupTime << "\n";
 
-    interface.execOp("StaticSceneCreate", sscArgs);
 
     interface.setAttr("type", FnKat::StringAttribute("materialgroup"));
 

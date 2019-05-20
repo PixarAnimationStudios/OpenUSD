@@ -7,6 +7,7 @@
 def Xform "World" (
     customData = {
         bool zUp = 1
+        string testString = "foo"
     }
     kind = "group"
     add references = @./letters_perFrame.protos.usda@</World>

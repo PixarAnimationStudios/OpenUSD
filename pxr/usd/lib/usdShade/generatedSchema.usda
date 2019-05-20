@@ -1,6 +1,10 @@
 #usda 1.0
 (
     "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
+    customLayerData = {
+        string[] appliedAPISchemas = ["MaterialBindingAPI"]
+        string[] multipleApplyAPISchemas = []
+    }
 )
 
 class NodeGraph "NodeGraph" (
@@ -74,14 +78,21 @@ class Material "Material" (
     """
 )
 {
-}
-
-class Look "Look" (
-    doc = """\\deprecated Deprecated in favor of Material.
-    Please refer to UsdMaterial
-    """
-)
-{
+    token outputs:displacement (
+        displayGroup = "Outputs"
+        doc = '''Represents the universal "displacement" output terminal of a 
+        material.'''
+    )
+    token outputs:surface (
+        displayGroup = "Outputs"
+        doc = '''Represents the universal "surface" output terminal of a
+        material.'''
+    )
+    token outputs:volume (
+        displayGroup = "Outputs"
+        doc = '''Represents the universal "volume" output terminal of a
+        material.'''
+    )
 }
 
 class Shader "Shader" (
@@ -114,8 +125,25 @@ class Shader "Shader" (
         doc = """The id is an identifier for the type or purpose of the 
         shader. E.g.: Texture or FractalFloat.
         The use of this id will depend on the render target: some will turn it
-        into an actual shader path, some will use it to generate dynamically
-        a shader source code.
+        into an actual shader path, some will use it to generate shader source 
+        code dynamically.
+        
+        \\sa SetShaderId()
+        """
+    )
+    uniform token info:implementationSource = "id" (
+        allowedTokens = ["id", "sourceAsset", "sourceCode"]
+        doc = """Specifies the attribute that should be consulted to get the 
+        shader's implementation or its source code.
+
+        * If set to \"id\", the \"info:id\" attribute's value is used to 
+        determine the shader source from the shader registry.
+        * If set to \"sourceAsset\", the resolved value of the \"info:sourceAsset\" 
+        attribute corresponding to the desired implementation (or source-type)
+        is used to locate the shader source.
+        * If set to \"sourceCode\", the value of \"info:sourceCode\" attribute 
+        corresponding to the desired implementation (or source type) is used as 
+        the shader source.
         """
     )
 }
@@ -148,7 +176,7 @@ class "ConnectableAPI" (
 class "MaterialBindingAPI" (
     doc = """UsdShadeMaterialBindingAPI is an API schema that provides an 
     interface for binding materials to prims or collections of prims 
-    (represented UsdCollectionAPI objects). 
+    (represented by UsdCollectionAPI objects). 
     
     In the USD shading model, each renderable gprim computes a single 
     <b>resolved Material</b> that will be used to shade the gprim (exceptions, 
@@ -231,6 +259,10 @@ class "MaterialBindingAPI" (
     not authored (i.e. empty) on a binding-relationship, the default behavior 
     matches UsdShadeTokens->weakerThanDescendants.
 
+    \\note If a material binding relationship is a built-in property defined as 
+    part of a typed prim's schema, a fallback value should not be provided for 
+    it. This is because the \"material resolution\" algorithm only conisders 
+    <i>authored</i> properties.
     """
 )
 {

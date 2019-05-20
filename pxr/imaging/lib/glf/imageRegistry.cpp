@@ -27,6 +27,8 @@
 
 #include "pxr/imaging/glf/debugCodes.h"
 
+#include "pxr/usd/ar/resolver.h"
+
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
 
@@ -65,8 +67,8 @@ GlfImageRegistry::_ConstructImage(std::string const & filename)
 {
     static GlfImageSharedPtr NULL_IMAGE;
 
-    // Lookup the plug-in type name based on the prim type.
-    TfToken fileExtension(TfStringGetSuffix(filename));
+    // Lookup the plug-in type name based on the filename.
+    TfToken fileExtension(ArGetResolver().GetExtension(filename));
 
     TfType const & pluginType = _typeMap->Find(fileExtension);
 

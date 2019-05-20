@@ -149,6 +149,7 @@ void wrapUsdAttributeQuery()
         .def("HasValue", &UsdAttributeQuery::HasValue)
         .def("HasAuthoredValueOpinion", 
                 &UsdAttributeQuery::HasAuthoredValueOpinion)
+        .def("HasAuthoredValue", &UsdAttributeQuery::HasAuthoredValue)
         .def("HasFallbackValue", &UsdAttributeQuery::HasFallbackValue)
 
         .def("ValueMightBeTimeVarying", 

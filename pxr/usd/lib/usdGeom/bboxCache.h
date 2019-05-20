@@ -31,6 +31,7 @@
 #include "pxr/usd/usd/attributeQuery.h"
 #include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/tf/hashmap.h"
+#include "pxr/base/work/arenaDispatcher.h"
 
 #include <boost/optional.hpp>
 #include <boost/shared_array.hpp>
@@ -100,9 +101,20 @@ public:
     /// includedPurposes by combining bounding box hints that have been cached
     /// for various values of purposes.
     ///
+    /// If \p ignoreVisibility is true invisible prims will be included during
+    /// bounds computations.
+    ///
     USDGEOM_API
     UsdGeomBBoxCache(UsdTimeCode time, TfTokenVector includedPurposes,
-                     bool useExtentsHint=false);
+                     bool useExtentsHint=false, bool ignoreVisibility=false);
+
+    /// Copy constructor.
+    USDGEOM_API
+    UsdGeomBBoxCache(UsdGeomBBoxCache const &other);
+     
+    /// Copy assignment.
+    USDGEOM_API
+    UsdGeomBBoxCache &operator=(UsdGeomBBoxCache const &other);
 
     /// Compute the bound of the given prim in world space, leveraging any
     /// pre-existing, cached bounds.
@@ -309,6 +321,12 @@ public:
         return _useExtentsHint;
     }
 
+    /// Returns whether prim visibility should be ignored when computing
+    /// bounding boxes.
+    bool GetIgnoreVisibility() const {
+        return _ignoreVisibility;
+    }    
+
     /// Use the new \p time when computing values and may clear any existing
     /// values cached for the previous time. Setting \p time to the current time
     /// is a no-op.
@@ -382,6 +400,12 @@ private:
     // bbox volume > 0.
     bool _Resolve(const UsdPrim& prim, _PurposeToBBoxMap *bboxes);
 
+    // Compute the extent of a UsdGeomBoundable object. Return true if the
+    // computation succeeds and false on failure.
+    bool _ComputeExtent(
+        const UsdGeomBoundable& boundableObj,
+        VtVec3fArray* extent) const;
+
     // Resolves a single prim. This method must be thread safe. Assumes the
     // cache entry has been created for \p prim.
     //
@@ -453,12 +477,14 @@ private:
     typedef boost::hash<UsdPrim> _UsdPrimHash;
     typedef TfHashMap<UsdPrim, _Entry, _UsdPrimHash> _PrimBBoxHashMap;
 
+    WorkArenaDispatcher _dispatcher;
     UsdTimeCode _time;
     boost::optional<UsdTimeCode> _baseTime;
     TfTokenVector _includedPurposes;
     UsdGeomXformCache _ctmCache;
     _PrimBBoxHashMap _bboxCache;
     bool _useExtentsHint;
+    bool _ignoreVisibility;
 };
 
 

@@ -38,7 +38,14 @@ TF_REGISTRY_FUNCTION(TfType)
 HdRenderDelegate *
 HdStreamRendererPlugin::CreateRenderDelegate()
 {
-    return new HdStRenderDelegate;
+    return new HdStRenderDelegate();
+}
+
+HdRenderDelegate*
+HdStreamRendererPlugin::CreateRenderDelegate(
+    HdRenderSettingsMap const& settingsMap)
+{
+    return new HdStRenderDelegate(settingsMap);
 }
 
 void
@@ -46,5 +53,12 @@ HdStreamRendererPlugin::DeleteRenderDelegate(HdRenderDelegate *renderDelegate)
 {
     delete renderDelegate;
 }
+
+bool
+HdStreamRendererPlugin::IsSupported() const
+{
+    return HdStRenderDelegate::IsSupported();
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

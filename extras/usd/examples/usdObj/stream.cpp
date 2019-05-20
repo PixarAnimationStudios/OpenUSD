@@ -25,6 +25,7 @@
 #include "stream.h"
 
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/registryManager.h"
 
 #include <map>

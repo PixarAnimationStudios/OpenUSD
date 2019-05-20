@@ -80,11 +80,11 @@ public:
     /// (Note: Embree resources are released in Finalize()).
     virtual ~HdEmbreeMesh() = default;
 
-    /// Release any resources this class is holding onto: in this case,
-    /// destroy the geometry object in the embree scene graph.
-    ///   \param renderParam An HdEmbreeRenderParam object containing top-level
-    ///                      embree state.
-    virtual void Finalize(HdRenderParam *renderParam) override;
+    /// Inform the scene graph which state needs to be downloaded in the
+    /// first Sync() call: in this case, topology and points data to build
+    /// the geometry object in the embree scene graph.
+    ///   \return The initial dirty state this mesh wants to query.
+    virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
 
     /// Pull invalidated scene data and prepare/update the renderable
     /// representation.
@@ -109,31 +109,34 @@ public:
     ///   \param renderParam An HdEmbreeRenderParam object containing top-level
     ///                      embree state.
     ///   \param dirtyBits A specifier for which scene data has changed.
-    ///   \param reprName A specifier for which representation to draw with.
-    ///   \param forcedRepr A specifier for how to resolve reprName opinions.
+    ///   \param reprToken A specifier for which representation to draw with.
     ///
     virtual void Sync(HdSceneDelegate* sceneDelegate,
                       HdRenderParam*   renderParam,
                       HdDirtyBits*     dirtyBits,
-                      TfToken const&   reprName,
-                      bool             forcedRepr) override;
+                      TfToken const    &reprToken) override;
+
+    /// Release any resources this class is holding onto: in this case,
+    /// destroy the geometry object in the embree scene graph.
+    ///   \param renderParam An HdEmbreeRenderParam object containing top-level
+    ///                      embree state.
+    virtual void Finalize(HdRenderParam *renderParam) override;
 
 protected:
-    // Return the named repr object for this Rprim. Repr objects are
-    // created to support specific reprName tokens, and contain a list of
-    // HdDrawItems to be passed to the renderpass (via the renderpass calling
-    // HdRenderIndex::GetDrawItems()). Draw items contain prim data to be
-    // rendered, but HdEmbreeMesh bypasses them for now, so this function is
-    // a no-op.
-    virtual HdReprSharedPtr const&
-        _GetRepr(HdSceneDelegate *sceneDelegate,
-                 TfToken const &reprName,
-                 HdDirtyBits *dirtyBits) override;
-
-    // Inform the scene graph which state needs to be downloaded in the
-    // first Sync() call: in this case, topology and points data to build
-    // the geometry object in the embree scene graph.
-    virtual HdDirtyBits _GetInitialDirtyBits() const override;
+    // Initialize the given representation of this Rprim.
+    // This is called prior to syncing the prim, the first time the repr
+    // is used.
+    //
+    // reprToken is the name of the repr to initalize.
+    //
+    // dirtyBits is an in/out value.  It is initialized to the dirty bits
+    // from the change tracker.  InitRepr can then set additional dirty bits
+    // if additional data is required from the scene delegate when this
+    // repr is synced.  InitRepr occurs before dirty bit propagation.
+    //
+    // See HdRprim::InitRepr()
+    virtual void _InitRepr(TfToken const &reprToken,
+                           HdDirtyBits *dirtyBits) override;
 
     // This callback from Rprim gives the prim an opportunity to set
     // additional dirty bits based on those already set.  This is done
@@ -146,22 +149,6 @@ protected:
     //
     // See HdRprim::PropagateRprimDirtyBits()
     virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
-
-    // Initialize the given representation of this Rprim.
-    // This is called prior to syncing the prim, the first time the repr
-    // is used.
-    //
-    // reprName is the name of the repr to initalize.  HdRprim has already
-    // resolved the reprName to its final value.
-    //
-    // dirtyBits is an in/out value.  It is initialized to the dirty bits
-    // from the change tracker.  InitRepr can then set additional dirty bits
-    // if additional data is required from the scene delegate when this
-    // repr is synced.  InitRepr occurs before dirty bit propagation.
-    //
-    // See HdRprim::InitRepr()
-    virtual void _InitRepr(TfToken const &reprName,
-                           HdDirtyBits *dirtyBits) override;
 
 private:
     // Helper functions for getting the prototype and instance contexts.
@@ -178,10 +165,16 @@ private:
                          HdMeshReprDesc const &desc);
 
     // Populate _primvarSourceMap (our local cache of primvar data) based on
-    // scene data. Primvars will be turned into samplers in _PopulateRtMesh,
+    // authored scene data.
+    // Primvars will be turned into samplers in _PopulateRtMesh,
     // through the help of the _CreatePrimvarSampler() method.
     void _UpdatePrimvarSources(HdSceneDelegate* sceneDelegate,
                                HdDirtyBits dirtyBits);
+
+    // Populate _primvarSourceMap with primvars that are computed.
+    // Return the names of the primvars that were successfully updated.
+    TfTokenVector _UpdateComputedPrimvarSources(HdSceneDelegate* sceneDelegate,
+                                                HdDirtyBits dirtyBits);
 
     // Populate a single primvar, with given name and data, in the prototype
     // context. Overwrites the current mapping for the name, if necessary.

@@ -33,6 +33,8 @@
 
 #include <boost/foreach.hpp>
 
+#include <iostream>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // drand48 and srand48 defined in SYS_Math.h as of 13.5.153. and conflicts with imath.
@@ -149,13 +151,6 @@ redefine( const UsdStagePtr& stage,
     return true;
 }
 
-bool GusdXformWrapper::
-getUniqueID(int64& id) const
-{
-    static const int s_id = GT_Primitive::createPrimitiveTypeId();
-    id = s_id;
-    return true;
-}
 
 const char* GusdXformWrapper::
 className() const
@@ -197,7 +192,7 @@ doSoftCopy() const
 bool GusdXformWrapper::
 isValid() const
 {
-    return m_usdXform;
+    return static_cast<bool>(m_usdXform);
 }
 
 bool GusdXformWrapper::

@@ -48,6 +48,11 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     _add_define(BUILD_OPTLEVEL_DEV)
 endif()
 
+# Set plugin path environment variable name
+if (PXR_OVERRIDE_PLUGINPATH_NAME)
+    _add_define("PXR_PLUGINPATH_NAME=${PXR_OVERRIDE_PLUGINPATH_NAME}")
+endif()
+
 set(_PXR_CXX_FLAGS ${_PXR_CXX_FLAGS} ${_PXR_CXX_WARNING_FLAGS})
 
 # CMake list to string.

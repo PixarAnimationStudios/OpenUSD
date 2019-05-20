@@ -33,6 +33,7 @@
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec4d.h"
 
+#include <cstring>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -130,6 +131,50 @@ UsdGeomXformOp::UsdGeomXformOp(const UsdAttribute &attr, bool isInverseOp)
     }
 }
 
+void
+UsdGeomXformOp::_Init()
+{
+    // _Initialize _opType.
+    const TfToken &name = GetName();
+
+    // Take the second namespace component.
+    static char nsDelim = UsdObject::GetNamespaceDelimiter();
+    char const *start = strchr(name.GetText(), nsDelim);
+    if (!start) {
+        TF_CODING_ERROR("Invalid xform op: <%s>.",
+                        GetAttr().GetPath().GetText());
+        return;
+    }
+    ++start;
+    char const *end = strchr(start, nsDelim);
+    if (!end) {
+        end = start + strlen(start);
+    }
+    _opType = _GetOpTypeEnumFromCString(start, end-start);
+    if (_opType == TypeInvalid) {
+        TF_CODING_ERROR("Invalid xform opType token '%s'.",
+                        std::string(start, end).c_str());
+    }
+}
+
+UsdGeomXformOp::UsdGeomXformOp(const UsdAttribute &attr, bool isInverseOp,
+                               _ValidAttributeTagType)
+    : _attr(attr)
+    , _opType(TypeInvalid)
+    , _isInverseOp(isInverseOp)
+{
+    _Init();
+}
+
+UsdGeomXformOp::UsdGeomXformOp(UsdAttributeQuery &&query, bool isInverseOp,
+                               _ValidAttributeTagType)
+    : _attr(std::move(query))
+    , _opType(TypeInvalid)
+    , _isInverseOp(isInverseOp)
+{
+    _Init();
+}
+
 TfToken 
 UsdGeomXformOp::GetOpName() const
 {
@@ -164,12 +209,11 @@ UsdGeomXformOp::_GetXformOpAttr(UsdPrim const& prim, const TfToken &opName,
 
     // Is it is an inverse operation, strip off the "invert:" at the beginning 
     // of opName to get the associated attribute's name.
-    const TfToken &xformOpAttrName = *isInverseOp 
-        ? TfToken(opName.GetString().substr(
-            _tokens->invertPrefix.GetString().size())) 
-        : opName;
-  
-    return prim.GetAttribute(xformOpAttrName);
+    return *isInverseOp ?
+        prim.GetAttribute(
+            TfToken(opName.GetString().substr(
+                        _tokens->invertPrefix.GetString().size()))) :
+        prim.GetAttribute(opName);
 }
 
 /* static */
@@ -259,8 +303,46 @@ UsdGeomXformOp::GetOpTypeEnum(TfToken const &opTypeToken)
     else if (opTypeToken == UsdGeomXformOpTypes->orient)
         return TypeOrient;
     
-    TF_CODING_ERROR("Invalid xform opType token %s.", opTypeToken.GetText());
+    TF_CODING_ERROR("Invalid xform opType token '%s'.", opTypeToken.GetText());
     return TypeInvalid;
+}
+
+/* static */
+UsdGeomXformOp::Type
+UsdGeomXformOp::_GetOpTypeEnumFromCString(char const *str, size_t len)
+
+{
+    auto check = [str, len](char const *name) {
+        return (strlen(name) == len) && (strncmp(name, str, len) == 0);
+    };
+    if (check("transform"))
+        return TypeTransform;
+    else if (check("translate"))
+        return TypeTranslate;
+    else if (check("rotateXYZ"))
+        return TypeRotateXYZ;
+    else if (check("scale"))
+        return TypeScale;
+    else if (check("rotateX"))
+        return TypeRotateX;
+    else if (check("rotateY"))
+        return TypeRotateY;
+    else if (check("rotateZ"))
+        return TypeRotateZ;
+    else if (check("rotateXZY"))
+        return TypeRotateXZY;
+    else if (check("rotateYXZ"))
+        return TypeRotateYXZ;
+    else if (check("rotateYZX"))
+        return TypeRotateYZX;
+    else if (check("rotateZXY"))
+        return TypeRotateZXY;
+    else if (check("rotateZYX"))
+        return TypeRotateZYX;
+    else if (check("orient"))
+        return TypeOrient;
+    else
+        return TypeInvalid;
 }
 
 /* static */

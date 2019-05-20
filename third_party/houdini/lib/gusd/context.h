@@ -85,7 +85,7 @@ public:
     bool writeStaticTopology;
     bool writeStaticPrimvars;
 
-    // Filter specifing what primvars to write for each prim.
+    // Filter specifying what primvars to write for each prim.
     const GusdGT_AttrFilter& attributeFilter;
 
     // Name of attribute that specifies usd prim path to write prims to.
@@ -97,9 +97,9 @@ public:
     // attributes if they exist.
     std::string usdPrototypesPath;
 
-    // Identifer (and possibly path to a primitive) to both create an entry
+    // Identifier (and possibly path to a primitive) to both create an entry
     // in a point instancer's relationship array and mark which prototype to use
-    // for a point. Will be overriden by attributes if they exist.
+    // for a point. Will be overridden by attributes if they exist.
     std::string usdInstancePath;
 
     // Offset value to set in a Layer Offset of a USD reference. For retiming

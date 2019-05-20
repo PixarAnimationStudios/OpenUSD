@@ -1,6 +1,8 @@
 #usda 1.0
 
-def "ANode"
+def "ANode" (
+    prepend apiSchemas = ["SceneGraphPrimAPI"]
+)
 {
     uniform token ui:displayGroup = "bar"
     uniform token ui:displayName = "foo"

@@ -47,11 +47,12 @@ HdMesh::_MeshReprConfig HdMesh::_reprDescConfig;
 void
 HdMesh::ConfigureRepr(TfToken const &reprName,
                       HdMeshReprDesc desc1,
-                      HdMeshReprDesc desc2)
+                      HdMeshReprDesc desc2/*=HdMeshReprDesc()*/)
 {
     HD_TRACE_FUNCTION();
 
-    _reprDescConfig.Append(reprName, _MeshReprConfig::DescArray{desc1, desc2});
+    _reprDescConfig.AddOrUpdate(
+        reprName, _MeshReprConfig::DescArray{desc1, desc2});
 }
 
 /* static */

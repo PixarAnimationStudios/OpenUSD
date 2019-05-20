@@ -26,12 +26,16 @@
 
 #include "pxr/base/tf/refPtr.h"
 
+#include "pxr/base/arch/debugger.h"
+#include "pxr/base/arch/demangle.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 int
-Tf_RefPtr_UniqueChangedCounter::_AddRef(TfRefBase const *refBase,
-                                        TfRefBase::UniqueChangedListener const &listener)
+Tf_RefPtr_UniqueChangedCounter::_AddRef(TfRefBase const *refBase)
 {
+    TfRefBase::UniqueChangedListener const &listener =
+        TfRefBase::_uniqueChangedListener;
     listener.lock();
     int oldValue = refBase->GetRefCount()._FetchAndAdd(1);
     if (oldValue == 1)
@@ -41,9 +45,10 @@ Tf_RefPtr_UniqueChangedCounter::_AddRef(TfRefBase const *refBase,
 }
 
 bool
-Tf_RefPtr_UniqueChangedCounter::_RemoveRef(TfRefBase const *refBase,
-                                           TfRefBase::UniqueChangedListener const &listener)
+Tf_RefPtr_UniqueChangedCounter::_RemoveRef(TfRefBase const *refBase)
 {
+    TfRefBase::UniqueChangedListener const &listener =
+        TfRefBase::_uniqueChangedListener;
     listener.lock();
     int oldValue = refBase->GetRefCount()._FetchAndAdd(-1);
     if (oldValue == 2)
@@ -54,9 +59,10 @@ Tf_RefPtr_UniqueChangedCounter::_RemoveRef(TfRefBase const *refBase,
 }
 
 bool Tf_RefPtr_UniqueChangedCounter::_AddRefIfNonzero(
-    TfRefBase const *refBase,
-    TfRefBase::UniqueChangedListener const &listener)
+    TfRefBase const *refBase)
 {
+    TfRefBase::UniqueChangedListener const &listener =
+        TfRefBase::_uniqueChangedListener;
     listener.lock();
     auto &counter = refBase->GetRefCount()._counter;
     int oldValue = counter.load(std::memory_order_relaxed);
@@ -68,6 +74,19 @@ bool Tf_RefPtr_UniqueChangedCounter::_AddRefIfNonzero(
     counter.store(oldValue + 1, std::memory_order_relaxed);
     listener.unlock();
     return true;
+}
+
+void
+Tf_PostNullSmartPtrDereferenceFatalError(
+    const TfCallContext &ctx,
+    const std::type_info &ti)
+{
+    Tf_DiagnosticHelper(ctx, TF_DIAGNOSTIC_FATAL_ERROR_TYPE)
+        .IssueFatalError("attempted member lookup on NULL %s",
+                         ArchGetDemangled(ti).c_str());
+    // Currently, Tf fatal diagnostics are not themselves marked as noreturn
+    // even though they should not return.  See bug 162691.
+    ArchAbort();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

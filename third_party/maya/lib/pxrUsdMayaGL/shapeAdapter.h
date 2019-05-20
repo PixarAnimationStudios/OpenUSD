@@ -24,26 +24,33 @@
 #ifndef PXRUSDMAYAGL_SHAPE_ADAPTER_H
 #define PXRUSDMAYAGL_SHAPE_ADAPTER_H
 
-/// \file shapeAdapter.h
+/// \file pxrUsdMayaGL/shapeAdapter.h
 
 #include "pxr/pxr.h"
 
 #include "pxrUsdMayaGL/api.h"
 #include "pxrUsdMayaGL/renderParams.h"
+#include "pxrUsdMayaGL/userData.h"
 
-#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/matrix4d.h"
-#include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usdImaging/usdImaging/delegate.h"
+
+// XXX: On Linux, some Maya headers (notably M3dView.h) end up indirectly
+//      including X11/Xlib.h, which #define's "Bool" as int. This can cause
+//      compilation issues if sdf/types.h is included afterwards, so to fix
+//      this, we ensure that it gets included first.
+#include "pxr/usd/sdf/types.h"
 
 #include <maya/M3dView.h>
+#include <maya/MBoundingBox.h>
 #include <maya/MColor.h>
 #include <maya/MDagPath.h>
+#include <maya/MDrawRequest.h>
 #include <maya/MHWGeometryUtilities.h>
+#include <maya/MPxSurfaceShapeUI.h>
+#include <maya/MUserData.h>
 
 #include <memory>
 
@@ -51,103 +58,222 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// Class to manage translation of Maya shape node data and viewport state for
-/// imaging with Hydra.
+/// Abstract base class for objects that manage translation of Maya shape node
+/// data and viewport state for imaging with Hydra.
 class PxrMayaHdShapeAdapter
 {
     public:
 
-        /// Construct a new uninitialized \c PxrMayaHdShapeAdapter.
+        /// Update the shape adapter's state from the shape with the given
+        /// \p shapeDagPath and the legacy viewport display state.
         PXRUSDMAYAGL_API
-        PxrMayaHdShapeAdapter(
+        virtual bool Sync(
                 const MDagPath& shapeDagPath,
-                const UsdPrim& rootPrim,
-                const SdfPathVector& excludedPrimPaths);
+                const M3dView::DisplayStyle legacyDisplayStyle,
+                const M3dView::DisplayStatus legacyDisplayStatus);
 
+        /// Update the shape adapter's state from the shape with the given
+        /// \p shapeDagPath and the Viewport 2.0 display state.
         PXRUSDMAYAGL_API
-        size_t GetHash() const;
-
-        PXRUSDMAYAGL_API
-        void Init(HdRenderIndex* renderIndex);
-
-        /// Prepare the shape adapter for being added to the batch renderer's
-        /// queues.
-        PXRUSDMAYAGL_API
-        void PrepareForQueue(
-                const UsdTimeCode time,
-                const uint8_t refineLevel,
-                const bool showGuides,
-                const bool showRenderGuides,
-                const bool tint,
-                const GfVec4f& tintColor);
-
-        /// Get a set of render params from the legacy viewport's display state.
-        ///
-        /// Sets \p drawShape and \p drawBoundingBox depending on whether shape
-        /// and/or bounding box rendering is indicated from the state.
-        PXRUSDMAYAGL_API
-        PxrMayaHdRenderParams GetRenderParams(
-                const M3dView::DisplayStyle displayStyle,
-                const M3dView::DisplayStatus displayStatus,
-                bool* drawShape,
-                bool* drawBoundingBox);
-
-        /// Get a set of render params from the Viewport 2.0 display state.
-        ///
-        /// Sets \p drawShape and \p drawBoundingBox depending on whether shape
-        /// and/or bounding box rendering is indicated from the state.
-        PXRUSDMAYAGL_API
-        PxrMayaHdRenderParams GetRenderParams(
+        virtual bool Sync(
+                const MDagPath& shapeDagPath,
                 const unsigned int displayStyle,
-                const MHWRender::DisplayStatus displayStatus,
+                const MHWRender::DisplayStatus displayStatus);
+
+        /// Update the shape adapter's visibility state from the display status
+        /// of its shape.
+        ///
+        /// When a Maya shape is made invisible, it may no longer be included
+        /// in the "prepare" phase of a viewport render (i.e. we get no
+        /// getDrawRequests() or prepareForDraw() callbacks for that shape).
+        /// This method can be called on demand to ensure that the shape
+        /// adapter is updated with the current visibility state of the shape.
+        ///
+        /// The optional \p view parameter can be passed to have view-based
+        /// state such as view and/or plugin object filtering factor into the
+        /// shape's visibility.
+        ///
+        /// Returns true if the visibility state was changed, or false
+        /// otherwise.
+        PXRUSDMAYAGL_API
+        virtual bool UpdateVisibility(const M3dView* view = nullptr);
+
+        /// Gets whether the shape adapter's shape is visible.
+        ///
+        /// This should be called after a call to UpdateVisibility() to ensure
+        /// that the returned value is correct. 
+        PXRUSDMAYAGL_API
+        virtual bool IsVisible() const;
+
+        /// Get the Maya user data object for drawing in the legacy viewport.
+        ///
+        /// This Maya user data is attached to the given \p drawRequest. Its
+        /// lifetime is *not* managed by Maya, so the batch renderer deletes it
+        /// manually at the end of a legacy viewport Draw().
+        ///
+        /// \p boundingBox may be set to nullptr if no box is desired to be
+        /// drawn.
+        ///
+        PXRUSDMAYAGL_API
+        virtual void GetMayaUserData(
+                MPxSurfaceShapeUI* shapeUI,
+                MDrawRequest& drawRequest,
+                const MBoundingBox* boundingBox = nullptr);
+
+        /// Get the Maya user data object for drawing in Viewport 2.0.
+        ///
+        /// \p oldData should be the same \p oldData parameter that Maya passed
+        /// into the calling prepareForDraw() method. The return value from
+        /// this method should then be returned back to Maya in the calling
+        /// prepareForDraw().
+        ///
+        /// Note that this version of GetMayaUserData() is also invoked by the
+        /// legacy viewport version, in which case we expect oldData to be
+        /// nullptr.
+        ///
+        /// \p boundingBox may be set to nullptr if no box is desired to be
+        /// drawn.
+        ///
+        /// Returns a pointer to a new PxrMayaHdUserData object populated with
+        /// the given parameters if oldData is nullptr (or not an instance of
+        /// PxrMayaHdUserData), otherwise returns oldData after having
+        /// re-populated it.
+        PXRUSDMAYAGL_API
+        virtual PxrMayaHdUserData* GetMayaUserData(
+                MUserData* oldData,
+                const MBoundingBox* boundingBox = nullptr);
+
+        /// Gets the HdReprSelector that corresponds to the given Maya display
+        /// state.
+        ///
+        /// \p displayStyle should be a bitwise combination of
+        /// MHWRender::MFrameContext::DisplayStyle values, typically either
+        /// up-converted from a single M3dView::DisplayStyle value obtained
+        /// using MDrawInfo::displayStyle() for the legacy viewport, or
+        /// obtained using MHWRender::MFrameContext::getDisplayStyle() for
+        /// Viewport 2.0.
+        ///
+        /// \p displayStatus is typically either up-converted from
+        /// a M3dView::DisplayStatus value obtained using
+        /// MDrawInfo::displayStatus() for the legacy viewport, or obtained
+        /// using MHWRender::MGeometryUtilities::displayStatus() for Viewport
+        /// 2.0.
+        ///
+        /// If there is no corresponding HdReprSelector for the given display
+        /// state, an empty HdReprSelector is returned.
+        PXRUSDMAYAGL_API
+        virtual HdReprSelector GetReprSelectorForDisplayState(
+                const unsigned int displayStyle,
+                const MHWRender::DisplayStatus displayStatus) const;
+
+        /// Get a set of render params from the shape adapter's current state.
+        ///
+        /// Sets \p drawShape and \p drawBoundingBox depending on whether shape
+        /// and/or bounding box rendering is indicated from the state.
+        PXRUSDMAYAGL_API
+        virtual PxrMayaHdRenderParams GetRenderParams(
                 bool* drawShape,
-                bool* drawBoundingBox);
+                bool* drawBoundingBox) const;
 
         PXRUSDMAYAGL_API
-        const HdRprimCollection& GetRprimCollection() const {
-            return _rprimCollection;
-        }
+        virtual const HdRprimCollection& GetRprimCollection() const;
 
         PXRUSDMAYAGL_API
-        const GfMatrix4d& GetRootXform() const { return _rootXform; }
-
-        /// Returns base params as set previously by \c PrepareForQueue().
-        PXRUSDMAYAGL_API
-        const PxrMayaHdRenderParams& GetBaseParams() const {
-            return _baseParams;
-        }
+        virtual const GfMatrix4d& GetRootXform() const;
 
         PXRUSDMAYAGL_API
-        const SdfPath& GetSharedId() const { return _sharedId; }
+        virtual void SetRootXform(const GfMatrix4d& transform);
 
-    private:
+        PXRUSDMAYAGL_API
+        virtual const SdfPath& GetDelegateID() const;
 
-        /// Private helper for getting the wireframe color of the shape.
+        PXRUSDMAYAGL_API
+        virtual const MDagPath& GetDagPath() const;
+
+        /// Get whether this shape adapter is for use with Viewport 2.0.
+        ///
+        /// The shape adapter gets its viewport renderer affiliation from the
+        /// version of Sync() that is used to populate it.
+        ///
+        /// Returns true if the shape adapter should be used for batched
+        /// drawing/selection in Viewport 2.0, or false if it should be used
+        /// in the legacy viewport.
+        PXRUSDMAYAGL_API
+        virtual bool IsViewport2() const;
+
+    protected:
+
+        /// Update the shape adapter's state from the shape with the given
+        /// \p dagPath and display state.
+        ///
+        /// This method should be called by both public versions of Sync() and
+        /// should perform shape data updates that are common to both the
+        /// legacy viewport and Viewport 2.0. The legacy viewport Sync() method
+        /// "promotes" the display state parameters to their Viewport 2.0
+        /// equivalents before calling this method.
+        PXRUSDMAYAGL_API
+        virtual bool _Sync(
+                const MDagPath& shapeDagPath,
+                const unsigned int displayStyle,
+                const MHWRender::DisplayStatus displayStatus) = 0;
+
+        /// Helper for getting the wireframe color of the shape.
         ///
         /// Determining the wireframe color may involve inspecting the soft
         /// selection, for which the batch renderer manages a helper. This
         /// class is made a friend of the batch renderer class so that it can
         /// access the soft selection info.
-        bool _GetWireframeColor(
+        ///
+        /// Returns true if the wireframe color should be used, that is if the
+        /// object and/or its component(s) are involved in a selection, or if
+        /// the displayStyle indicates that a wireframe style is being drawn
+        /// (either kWireFrame or kBoundingBox). Otherwise returns false.
+        ///
+        /// The wireframe color will always be returned in \p mayaWireColor (if
+        /// it is not nullptr) in case the caller wants to use other criteria
+        /// for determining whether to use it.
+        static bool _GetWireframeColor(
+                const unsigned int displayStyle,
                 const MHWRender::DisplayStatus displayStatus,
+                const MDagPath& shapeDagPath,
                 MColor* mayaWireColor);
 
+        /// Helper for computing the viewport visibility of the shape.
+        ///
+        /// Takes into account the visibility attribute on the shape and its
+        /// DAG ancestors. If an M3dView is provided to \p view, then
+        /// view-based state such as view and/or plugin object filtering will
+        /// also be factored into the shape's visibility.
+        ///
+        /// Returns true if computing the visibility was successful, false if
+        /// there was an error. The visibility is returned in \p visibility.
+        static bool _GetVisibility(
+                const MDagPath& dagPath,
+                const M3dView* view,
+                bool* visibility);
+
+        /// Construct a new uninitialized PxrMayaHdShapeAdapter.
+        PXRUSDMAYAGL_API
+        PxrMayaHdShapeAdapter();
+
+        PXRUSDMAYAGL_API
+        virtual ~PxrMayaHdShapeAdapter();
+
         MDagPath _shapeDagPath;
-        UsdPrim _rootPrim;
-        SdfPathVector _excludedPrimPaths;
-        GfMatrix4d _rootXform;
 
-        PxrMayaHdRenderParams _baseParams;
-
-        SdfPath _sharedId;
-        bool _isPopulated;
-        std::shared_ptr<UsdImagingDelegate> _delegate;
+        PxrMayaHdRenderParams _renderParams;
+        bool _drawShape;
+        bool _drawBoundingBox;
 
         HdRprimCollection _rprimCollection;
+
+        GfMatrix4d _rootXform;
+
+        bool _isViewport2;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
 
-#endif // PXRUSDMAYAGL_SHAPE_ADAPTER_H
+#endif

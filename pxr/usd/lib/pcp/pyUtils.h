@@ -35,7 +35,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// Convert the Python dictionary \p dict to a PcpVariantFallbackMap
-/// object and return it via \p result, returning true if succesful.
+/// object and return it via \p result, returning true if successful.
 PCP_API
 bool
 PcpVariantFallbackMapFromPython(

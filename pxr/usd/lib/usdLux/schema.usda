@@ -10,6 +10,29 @@ over "GLOBAL" (
     customData = {
         string libraryName      = "usdLux"
         string libraryPath      = "pxr/usd/usdLux"
+        dictionary libraryTokens = {
+            dictionary lightLink = {
+                string doc = """
+                This token represents the collection name to use
+                with UsdCollectionAPI to represent light-linking
+                of a UsdLuxLight prim.
+                """
+            }
+            dictionary shadowLink = {
+                string doc = """
+                This token represents the collection name to use
+                with UsdCollectionAPI to represent shadow-linking
+                of a UsdLuxLight prim.
+                """
+            }
+            dictionary filterLink = {
+                string doc = """
+                This token represents the collection name to use
+                with UsdCollectionAPI to represent filter-linking
+                of a UsdLuxLightFilter prim.
+                """
+            }
+        }
     }
 )
 {
@@ -17,12 +40,37 @@ over "GLOBAL" (
 
 class "Light" (
     inherits = </Xformable>
-    doc = """Base class for all lights."""
+    doc = """Base class for all lights.
+
+    <b>Linking</b>
+
+    Lights can be linked to geometry.  Linking controls which geometry
+    a light illuminates, and which geometry casts shadows from the light.
+
+    Linking is specified as collections (UsdCollectionAPI) which can
+    be accessed via GetLightLinkCollection() and GetShadowLinkCollection().
+    Note however that there are extra semantics in how UsdLuxLight
+    uses its collections: if a collection is empty, the light is treated
+    as linked to <i>all</i> geometry for the respective purpose.
+    UsdCollectionAPI and UsdCollectionAPI::MembershipQuery are unaware
+    of this light-specific interpretation.
+    """
     customData = {
         string extraIncludes = """
-#include "pxr/usd/usdLux/linkingAPI.h" """
+#include "pxr/usd/usd/collectionAPI.h" """
     }
+    prepend apiSchemas = ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
 ) {
+    uniform bool collection:lightLink:includeRoot = 1 (
+        customData = {
+            token apiName = ""
+        }
+    )
+    uniform bool collection:shadowLink:includeRoot = 1 (
+        customData = {
+            token apiName = ""
+        }
+    )
     float intensity = 1 (
         doc = """Scales the power of the light linearly."""
     )
@@ -71,6 +119,7 @@ class "Light" (
 }
 
 class "ListAPI" (
+    inherits = </APISchemaBase>
     doc = """API schema to support discovery and publishing of lights in a scene.
 
     \\section UsdLuxListAPI_Discovery Discovering Lights via Traversal
@@ -185,7 +234,7 @@ class "ListAPI" (
     \\section UsdLuxListAPI_Instancing Instancing
 
     Where instances are present, UsdLuxListAPI::ComputeLightList() will
-    return the instance-unqiue paths to any lights discovered within
+    return the instance-unique paths to any lights discovered within
     those instances.  Lights within a UsdGeomPointInstancer will
     not be returned, however, since they cannot be referred to
     solely via paths.
@@ -213,6 +262,7 @@ class "ListAPI" (
 }
 
 class "ShapingAPI" (
+    inherits = </APISchemaBase>
     doc = """Controls for shaping a light's emission."""
 ) {
     float shaping:focus = 0 (
@@ -251,6 +301,7 @@ class "ShapingAPI" (
 }
 
 class "ShadowAPI" (
+    inherits = </APISchemaBase>
     doc = """Controls to refine a light's shadow behavior.  These are
     non-physical controls that are valuable for visual lighting work."""
 ) {
@@ -295,12 +346,33 @@ class LightFilter "LightFilter" (
     inherits = </Xformable>
     doc = """A light filter modifies the effect of a light.
     Lights refer to filters via relationships so that filters may be
-    shared."""
+    shared.
+
+    <b>Linking</b>
+
+    Filters can be linked to geometry.  Linking controls which geometry
+    a light-filter affects, when considering the light filters attached
+    to a light illuminating the geometry.
+
+    Linking is specified as a collection (UsdCollectionAPI) which can
+    be accessed via GetFilterLinkCollection().
+    Note however that there are extra semantics in how UsdLuxLightFilter
+    uses its collection: if a collection is empty, the filter is treated
+    as linked to <i>all</i> geometry for the respective purpose.
+    UsdCollectionAPI and UsdCollectionAPI::MembershipQuery are unaware
+    of this filter-specific interpretation.
+    """
     customData = {
         string extraIncludes = """
-#include "pxr/usd/usdLux/linkingAPI.h" """
+#include "pxr/usd/usd/collectionAPI.h" """
     }
+    prepend apiSchemas = ["CollectionAPI:filterLink"]
 ) {
+    uniform bool collection:filterLink:includeRoot = 1 (
+        customData = {
+            token apiName = ""
+        }
+    )
 }
 
 class DistantLight "DistantLight" (
@@ -323,10 +395,9 @@ class DistantLight "DistantLight" (
 class DiskLight "DiskLight" (
     inherits = </Light>
     doc = """Light emitted from one side of a circular disk.
-    The disk is centered in the XY plane and emits light along the -Z axis.
-    The disk has a diameter of 1 unit in local space."""
+    The disk is centered in the XY plane and emits light along the -Z axis."""
 ) {
-    float radius = 1 (
+    float radius = 0.5 (
         doc = "Radius of the disk."
     )
 }
@@ -335,13 +406,13 @@ class RectLight "RectLight" (
     inherits = </Light>
     doc = """Light emitted from one side of a rectangle.
     The rectangle is centered in the XY plane and emits light along the -Z axis.
-    The rectangle is 1 unit long in local space."""
+    The rectangle is 1 unit in length in the X and Y axis."""
 ) {
     float width = 1 (
-        doc = "Width of the rectangle."
+        doc = "Width of the rectangle, in the local X axis."
     )
     float height = 1 (
-        doc = "Height of the rectangle."
+        doc = "Height of the rectangle, in the local Y axis."
     )
     asset texture:file (
         doc = """A color texture to use on the rectangle."""
@@ -350,11 +421,37 @@ class RectLight "RectLight" (
 
 class SphereLight "SphereLight" (
     inherits = </Light>
-    doc = """Light emitted outward from a sphere.
-    The sphere has a diameter of 1 unit in local space."""
+    doc = """Light emitted outward from a sphere."""
 ) {
-    float radius = 1 (
+    float radius = 0.5 (
         doc = "Radius of the sphere."
+    )
+    bool treatAsPoint = false (
+        doc = """A hint that this light can be treated as a 'point'
+        light (effectively, a zero-radius sphere) by renderers that
+        benefit from non-area lighting. Renderers that only support
+        area lights can disregard this."""
+    )
+}
+
+class CylinderLight "CylinderLight" (
+    inherits = </Light>
+    doc = """Light emitted outward from a cylinder.
+    The cylinder is centered at the origin and has its major axis on the X axis.
+    The cylinder does not emit light from the flat end-caps.
+    """
+) {
+    float length = 1 (
+        doc = "Width of the rectangle, in the local X axis."
+    )
+    float radius = 0.5 (
+        doc = "Radius of the cylinder."
+    )
+    bool treatAsLine = false (
+        doc = """A hint that this light can be treated as a 'line'
+        light (effectively, a zero-radius cylinder) by renderers that
+        benefit from non-area lighting. Renderers that only support
+        area lights can disregard this."""
     )
 }
 

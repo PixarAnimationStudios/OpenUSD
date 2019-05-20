@@ -1,15 +1,21 @@
 set(PXR_PACKAGE usdKatana)
 
+set(vtKatana_LIBRARY "")
+if (NOT ${KATANA_API_VERSION} VERSION_LESS "3.0.0")
+    set(vtKatana_LIBRARY "vtKatana")
+endif()
+
 pxr_shared_library(${PXR_PACKAGE}
     LIBRARIES
         plug
         gf
         tf
-        tracelite
+        trace
         vt
         ar
         sdf
         usd
+        usdHydra
         usdImaging
         usdImagingGL
         usdShade
@@ -20,8 +26,10 @@ pxr_shared_library(${PXR_PACKAGE}
         usdUI
         usdUtils
         cameraUtil
+        hio
+        glf
         katanaAttrfncApi
-        ${Boost_SYSTEM_LIBRARY} 
+        ${vtKatana_LIBRARY}
         ${Boost_THREAD_LIBRARY} 
 
     PUBLIC_CLASSES

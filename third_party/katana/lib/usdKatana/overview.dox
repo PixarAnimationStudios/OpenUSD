@@ -1,26 +1,52 @@
 /*!
+\page usd_katana_page_front Katana USD Support
+\if ( PIXAR_MFB_BUILD )
+\publicLib
+\endif
 
-\mainpage
+\subpage usd_katana_lib_usdKatana_page_front
+
+\subpage usd_katana_plugins_page_front
+
+*/
+
+/*!
+\page usd_katana_plugins_page_front Ops
+\if ( PIXAR_MFB_BUILD )
+\publicLib
+\endif
+
+\subpage usd_katana_plugins_pxrUsdIn_page_front
+
+*/
+
+/*!
+\if ( PIXAR_MFB_BUILD )
+\mainpage UsdKatana: Consuming USD in Katana
+\publicLib
+\else
+\page usd_katana_lib_usdKatana_page_front UsdKatana: Consuming USD in Katana
+\endif
 
 The \c read* files have functions that take \c UsdSchema objects and populate
 \c PxrUsdKatanaAttrMap with attributes.  For now, all the logic is bundled but if
 other ops need access to just specific pieces of that data, we can expose other
 functions.
 
-\section PxrOpUsdInPlugins Extending PxrUsdOpIn Plugins
+\section PxrUsdInPlugins Extending PxrUsdIn Plugins
 
 This library provides a mechanism to create new ops that handle different types
-and kinds.  To teach the \c PxrOpUsdIn op about new types (or kinds), first
+and kinds.  To teach the \c PxrUsdIn op about new types (or kinds), first
 declare your op:
 
 \code
-PXRUSDKATANA_OPUSDIN_PLUGIN_DECLARE(MyOp)
+PXRUSDKATANA_USDIN_PLUGIN_DECLARE(MyOp)
 \endcode
 
 and then define the ops behavior:
 
 \code
-PXRUSDKATANA_OPUSDIN_PLUGIN_DEFINE(MyOp, args, interface)
+PXRUSDKATANA_USDIN_PLUGIN_DEFINE(MyOp, args, interface)
 {
     // all ops need to be safe to run concurrently
 }
@@ -30,23 +56,23 @@ The above function body should be written as if it were the definition of the
 function:
 \code
 void Function(
-    const PxrUsdKatanaOpUsdInPrivateData& args,
+    const PxrUsdKatanaUsdInPrivateData& args,
     Foundry::Katana::GeolibCookInterface& interface);
 \endcode
 
-Finally, the plugin needs to be registered with katana and the registry:
+Finally, the plugin needs to be registered with Katana and the registry:
 \code
 REGISTER_PLUGIN(MyOp, "MyOp", 0, 1);
 
 // for UsdMyType
-PxrUsdKatanaOpUsdInPluginRegistry::RegisterUsdType<UsdMyType>("MyOp");
+PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdMyType>("MyOp");
 
 // for kind
-PxrUsdKatanaOpUsdInPluginRegistry::RegisterKind(TfToken("myKind"), "MyOp");
+PxrUsdKatanaUsdInPluginRegistry::RegisterKind(TfToken("myKind"), "MyOp");
 \endcode
 
-\sa PxrUsdKatanaOpUsdInPluginRegistry
-\sa PxrUsdKatanaOpUsdInPrivateData
-\sa PxrUsdKatanaOpUsdInRootArgs
+\sa PxrUsdKatanaUsdInPluginRegistry
+\sa PxrUsdKatanaUsdInPrivateData
+\sa PxrUsdKatanaUsdInArgs
 
 */

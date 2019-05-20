@@ -24,7 +24,7 @@
 from pxr import Usd
 from qt import QtCore, QtWidgets
 from attributeValueEditorUI import Ui_AttributeValueEditor
-from common import GetAttributeColor, UIPropertyValueSourceColors
+from common import GetPropertyColor, UIPropertyValueSourceColors
 from scalarTypes import ToString
 
 # This is the widget that appears when selecting an attribute and
@@ -60,7 +60,7 @@ class AttributeValueEditor(QtWidgets.QWidget):
         self._primPath = primPath
 
         try:
-            self._attribute = self._appController._attributeDict[propName]
+            self._attribute = self._appController._propertiesDict[propName]
         except KeyError:
             self._attribute = None
 
@@ -109,7 +109,7 @@ class AttributeValueEditor(QtWidgets.QWidget):
             whichView.SetAttribute(self._attribute, frame)
         else:
             self._ui.stackedWidget.setCurrentWidget(self._defaultView)
-            txtColor = GetAttributeColor(self._attribute, frame)
+            txtColor = GetPropertyColor(self._attribute, frame)
 
             # set text and color in the value viewer
             self._ui.valueViewer.setTextColor(txtColor)

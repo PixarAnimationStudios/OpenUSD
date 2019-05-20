@@ -83,14 +83,6 @@ void wrapUsdGeomPoints()
         .def("Define", &This::Define, (arg("stage"), arg("path")))
         .staticmethod("Define")
 
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
-
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
              arg("includeInherited")=true,
@@ -178,6 +170,10 @@ _ComputeExtent(object points, object widths) {
 
 WRAP_CUSTOM {
     _class
+        .def("GetWidthsInterpolation", &UsdGeomPoints::GetWidthsInterpolation)
+        .def("SetWidthsInterpolation", &UsdGeomPoints::SetWidthsInterpolation,
+             arg("interpolation"))
+
         .def("ComputeExtent",
             &_ComputeExtent, 
             (arg("points"), arg("widths")))

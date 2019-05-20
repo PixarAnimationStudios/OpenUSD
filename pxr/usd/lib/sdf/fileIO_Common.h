@@ -87,8 +87,7 @@ public:
                 size_t indent, VtValue value);
 
     static void WriteSdfPath(std::ostream &out,
-                size_t indent, const SdfPath &path,
-                const std::string &markerName = "");
+                size_t indent, const SdfPath &path);
 
     static bool WriteNameVector(std::ostream &out,
                 size_t indent, const std::vector<std::string> &vec);
@@ -96,7 +95,7 @@ public:
                 size_t indent, const std::vector<TfToken> &vec);
 
     static bool WriteTimeSamples(std::ostream &out,
-                size_t indent, const SdfTimeSampleMap &);
+                size_t indent, const SdfPropertySpec &);
 
     static bool WriteRelocates(std::ostream &out,
                 size_t indent, bool multiLine,
@@ -356,19 +355,12 @@ Sdf_WritePrimMetadata(
                 multiLine ? "\n" : "");
         }
         else if (field == SdfFieldKeys->Payload) {
-            if (multiLine) {
-                Sdf_FileIOUtility::Puts(out, indent+1, "");
-            }
-            Sdf_FileIOUtility::Puts(out, 0, "payload = ");
-            if (SdfPayload payload = prim.GetPayload()) {
-                Sdf_FileIOUtility::WriteAssetPath(out, 0, payload.GetAssetPath());
-                if (!payload.GetPrimPath().IsEmpty())
-                    Sdf_FileIOUtility::WriteSdfPath(out, 0, payload.GetPrimPath());
-            } else {
-                Sdf_FileIOUtility::Puts(out, 0, "None");
-            }
-            if (multiLine) {
-                Sdf_FileIOUtility::Puts(out, 0, "\n");
+            const VtValue v = prim.GetField(field);
+            if (!Sdf_WriteIfListOp<SdfPayloadListOp>(
+                    out, indent+1, TfToken("payload"), v)) {
+                TF_CODING_ERROR(
+                    "'%s' field holding unexpected type '%s'",
+                    field.GetText(), v.GetTypeName().c_str());
             }
         }
         else if (field == SdfFieldKeys->References) {
@@ -625,15 +617,13 @@ Sdf_WriteConnectionStatement(
         Sdf_FileIOUtility::Puts(out, 0, "None\n");
     } 
     else if (connections.size() == 1) {
-        Sdf_FileIOUtility::WriteSdfPath(out, 0, connections.front(),
-            (attrOwner ? attrOwner->GetConnectionMarker(connections.front()) : ""));
+        Sdf_FileIOUtility::WriteSdfPath(out, 0, connections.front());
         Sdf_FileIOUtility::Puts(out, 0, "\n");
     } 
     else {
         Sdf_FileIOUtility::Puts(out, 0, "[\n");
         TF_FOR_ALL(it, connections) {
-            Sdf_FileIOUtility::WriteSdfPath(out, indent+1, (*it),
-                (attrOwner ? attrOwner->GetConnectionMarker(*it) : ""));
+            Sdf_FileIOUtility::WriteSdfPath(out, indent+1, (*it));
             Sdf_FileIOUtility::Puts(out, 0, ",\n");
         }
         Sdf_FileIOUtility::Puts(out, indent, "]\n");
@@ -725,9 +715,6 @@ Sdf_WriteAttribute(
         attr.GetFieldAs<SdfPathVector>(SdfChildrenKeys->MapperChildren);
     bool hasMappers = !mapperPaths.empty();
 
-    const SdfPathVector markerPaths = attr.GetConnectionMarkerPaths();
-    bool hasMarkers = !markerPaths.empty();
-
     std::string typeName =
         SdfValueTypeNames->GetSerializationName(attr.GetTypeName()).GetString();
 
@@ -747,8 +734,7 @@ Sdf_WriteAttribute(
     // Write the basic line if we have info or a default or if we
     // have nothing else to write.
     if (hasInfo || hasDefault || hasCustomDeclaration ||
-        (!hasConnections &&
-         !hasMappers && !hasMarkers && !hasTimeSamples))
+        (!hasConnections && !hasMappers && !hasTimeSamples))
     {
         VtValue value;
 
@@ -816,10 +802,9 @@ Sdf_WriteAttribute(
 
     if (hasTimeSamples) {
         Sdf_FileIOUtility::Write(out, indent, "%s%s %s.timeSamples = {\n",
-                                variabilityStr.c_str(),
-                                typeName.c_str(), attr.GetName().c_str() );
-        Sdf_FileIOUtility::WriteTimeSamples( out, indent,
-                                            attr.GetTimeSampleMap() );
+                                 variabilityStr.c_str(),
+                                 typeName.c_str(), attr.GetName().c_str() );
+        Sdf_FileIOUtility::WriteTimeSamples(out, indent, attr);
         Sdf_FileIOUtility::Puts(out, indent, "}\n");
     }
 
@@ -910,8 +895,7 @@ Sdf_WriteRelationshipTargetList(
         if (targetPaths.size() > 1) {
             Sdf_FileIOUtility::Write(out, indent, "");
         }
-        Sdf_FileIOUtility::WriteSdfPath( out, 0, targetPaths[i],
-                    rel.GetTargetMarker(targetPaths[i]));
+        Sdf_FileIOUtility::WriteSdfPath( out, 0, targetPaths[i] );
         if (flags & Sdf_WriteFlagAttributes) {
 
             std::vector< SdfAttributeSpecHandle > attrs =
@@ -1021,8 +1005,6 @@ Sdf_WriteRelationship(
     bool hasTimeSamples       = rel.HasField(SdfFieldKeys->TimeSamples);
 
     bool hasCustom            = rel.IsCustom();
-    SdfPathVector markerPaths  = rel.GetTargetMarkerPaths();
-    bool hasMarkers           = !markerPaths.empty();
 
     // Partition this attribute's fields so that all fields to write in the
     // metadata section are in the range [fields.begin(), metadataFieldsEnd).
@@ -1074,7 +1056,7 @@ Sdf_WriteRelationship(
     // Write the basic line if we have info or a default (i.e. explicit
     // targets) or if we have nothing else to write and we're not custom
     if (hasInfo || (hasTargets && hasExplicitTargets) ||
-        (!hasTargetListOps && !hasRelAttrs && !hasMarkers && !rel.IsCustom()))
+        (!hasTargetListOps && !hasRelAttrs && !rel.IsCustom()))
     {
 
         if (hasCustom) {
@@ -1212,10 +1194,9 @@ Sdf_WriteRelationship(
 
     if (hasTimeSamples) {
         Sdf_FileIOUtility::Write(out, indent, "%srel %s.timeSamples = {\n",
-                                varyingStr.c_str(),
-                                rel.GetName().c_str());
-        Sdf_FileIOUtility::WriteTimeSamples( out, indent,
-                                            rel.GetTimeSampleMap() );
+                                 varyingStr.c_str(),
+                                 rel.GetName().c_str());
+        Sdf_FileIOUtility::WriteTimeSamples(out, indent, rel);
         Sdf_FileIOUtility::Puts(out, indent, "}\n");
     }
 

@@ -35,6 +35,7 @@
 {% endblock %}
 
 {% block forwardDeclarations %}
+class GfQuat{{ SCL[0] }};
 class GfRotation;
 class GfMatrix3{{ SCL[0] }};
 {% endblock %}
@@ -169,6 +170,16 @@ class GfMatrix3{{ SCL[0] }};
 
     /// \name 3D Transformation Utilities
     /// @{
+
+    /// Sets the matrix to specify a rotation equivalent to \e rot,
+    /// and clears the translation.
+    GF_API
+    {{ MAT }}& SetRotate(const GfQuat{{ SCL[0] }} &rot);
+
+    /// Sets the matrix to specify a rotation equivalent to \e rot,
+    /// without clearing the translation.
+    GF_API
+    {{ MAT }}& SetRotateOnly(const GfQuat{{ SCL[0] }} &rot);
 
     /// Sets the matrix to specify a rotation equivalent to \e rot,
     /// and clears the translation.
@@ -374,4 +385,9 @@ private:
 
     /// Diagonalizes the upper 3x3 matrix of a matrix known to be symmetric.
     void _Jacobi3(GfVec3d *eigenvalues, GfVec3d eigenvectors[3]) const;
+
+    /// Set the 3x3 submatrix to the rotation given by a quaternion,
+    /// defined by the real component \p r and imaginary components \p i.
+    void _SetRotateFromQuat({{ SCL }} r, const GfVec3{{ SCL[0] }}& i);
+
 {% endblock customXformFunctions %}

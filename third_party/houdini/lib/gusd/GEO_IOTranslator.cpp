@@ -71,7 +71,8 @@ checkExtension(const char* name)
     UT_String nameStr(name);
     if(nameStr.fileExtension()
      &&  (!strcmp(nameStr.fileExtension(), ".usd")
-       || !strcmp(nameStr.fileExtension(), ".usda"))) {
+       || !strcmp(nameStr.fileExtension(), ".usda")
+       || !strcmp(nameStr.fileExtension(), ".usdc"))) {
         return true;
     }
     return false;
@@ -99,7 +100,10 @@ fileLoad(GEO_Detail* gdp, UT_IStream& is, bool ate_magic)
         return GA_Detail::IOStatus( false );
     }
 
-    float f = CHgetSampleFromTime( CHgetEvalTime() );
+    float f = 1.0;
+
+    if (CH_Manager::getContextExists())
+	CHgetSampleFromTime( CHgetEvalTime() );
 
     GU_Detail* detail = dynamic_cast<GU_Detail *>(gdp); 
     if( !detail ) {
@@ -110,11 +114,13 @@ fileLoad(GEO_Detail* gdp, UT_IStream& is, bool ate_magic)
     // all the top level prims.
     auto defPrim = stage->GetDefaultPrim();
     if(  defPrim ) {
-        GusdGU_PackedUSD::Build( *detail, fileName, defPrim.GetPath(), f );
+        GusdGU_PackedUSD::Build(*detail, fileName, defPrim.GetPath(), f, NULL,
+	    GusdPurposeSet(GUSD_PURPOSE_DEFAULT | GUSD_PURPOSE_PROXY));
     }
     else {
         for( const auto &child : stage->GetPseudoRoot().GetChildren() ) {
-            GusdGU_PackedUSD::Build( *detail, fileName, child.GetPath(), f );
+            GusdGU_PackedUSD::Build(*detail, fileName, child.GetPath(), f, NULL,
+		GusdPurposeSet(GUSD_PURPOSE_DEFAULT | GUSD_PURPOSE_PROXY));
         }
     }
 

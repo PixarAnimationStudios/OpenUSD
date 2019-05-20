@@ -25,8 +25,9 @@
 #include "pxr/imaging/hdSt/renderDelegate.h"
 
 #include "pxr/imaging/hdSt/basisCurves.h"
-#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdSt/drawTarget.h"
+#include "pxr/imaging/hdSt/extComputation.h"
 #include "pxr/imaging/hdSt/glslfxShader.h"
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/light.h"
@@ -37,14 +38,24 @@
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/texture.h"
+#include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
+#include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/perfLog.h"
 
-#include "pxr/imaging/glf/glslfx.h"
+#include "pxr/imaging/glf/contextCaps.h"
+#include "pxr/imaging/glf/diagnostic.h"
+#include "pxr/imaging/hio/glslfx.h"
+
+#include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/getenv.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_TINY_PRIM_CULLING, false,
+                      "Enable tiny prim culling");
 
 const TfTokenVector HdStRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
@@ -57,6 +68,7 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_SPRIM_TYPES =
 {
     HdPrimTypeTokens->camera,
     HdPrimTypeTokens->drawTarget,
+    HdPrimTypeTokens->extComputation,
     HdPrimTypeTokens->material,
     HdPrimTypeTokens->rectLight,
     HdPrimTypeTokens->simpleLight,
@@ -74,6 +86,18 @@ HdStResourceRegistrySharedPtr HdStRenderDelegate::_resourceRegistry;
 
 HdStRenderDelegate::HdStRenderDelegate()
 {
+    _Initialize();
+}
+
+HdStRenderDelegate::HdStRenderDelegate(HdRenderSettingsMap const& settingsMap)
+    : HdRenderDelegate(settingsMap)
+{
+    _Initialize();
+}
+
+void
+HdStRenderDelegate::_Initialize()
+{
     // Initialize one resource registry for all St plugins
     // It will also add the resource to the logging object so we
     // can query the resources used by all St plugins later
@@ -83,6 +107,19 @@ HdStRenderDelegate::HdStRenderDelegate()
         _resourceRegistry.reset( new HdStResourceRegistry() );
         HdPerfLog::GetInstance().AddResourceRegistry(_resourceRegistry);
     }
+
+    // Initialize the settings and settings descriptors.
+    _settingDescriptors.resize(1);
+    _settingDescriptors[0] = { "Enable Tiny Prim Culling",
+        HdStRenderSettingsTokens->enableTinyPrimCulling,
+        VtValue(bool(TfGetEnvSetting(HD_ENABLE_GPU_TINY_PRIM_CULLING))) };
+    _PopulateDefaultSettings(_settingDescriptors);
+}
+
+HdRenderSettingDescriptorList
+HdStRenderDelegate::GetRenderSettingDescriptors() const
+{
+    return _settingDescriptors;
 }
 
 HdStRenderDelegate::~HdStRenderDelegate()
@@ -178,7 +215,7 @@ HdStRenderDelegate::CreateSprim(TfToken const& typeId,
                                     SdfPath const& sprimId)
 {
     if (typeId == HdPrimTypeTokens->camera) {
-        return new HdStCamera(sprimId);
+        return new HdCamera(sprimId);
     } else if (typeId == HdPrimTypeTokens->simpleLight) {
         return new HdStLight(sprimId, HdPrimTypeTokens->simpleLight);
     } else if (typeId == HdPrimTypeTokens->sphereLight) {
@@ -187,6 +224,8 @@ HdStRenderDelegate::CreateSprim(TfToken const& typeId,
         return new HdStLight(sprimId, HdPrimTypeTokens->rectLight);
     } else  if (typeId == HdPrimTypeTokens->drawTarget) {
         return new HdStDrawTarget(sprimId);
+    } else  if (typeId == HdPrimTypeTokens->extComputation) {
+        return new HdStExtComputation(sprimId);
     } else  if (typeId == HdPrimTypeTokens->material) {
         return new HdStMaterial(sprimId);
     } else {
@@ -200,7 +239,7 @@ HdSprim *
 HdStRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
 {
     if (typeId == HdPrimTypeTokens->camera) {
-        return new HdStCamera(SdfPath::EmptyPath());
+        return new HdCamera(SdfPath::EmptyPath());
     } else if (typeId == HdPrimTypeTokens->simpleLight) {
         return new HdStLight(SdfPath::EmptyPath(),
                              HdPrimTypeTokens->simpleLight);
@@ -212,6 +251,8 @@ HdStRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
                              HdPrimTypeTokens->rectLight);
     } else  if (typeId == HdPrimTypeTokens->drawTarget) {
         return new HdStDrawTarget(SdfPath::EmptyPath());
+    } else  if (typeId == HdPrimTypeTokens->extComputation) {
+        return new HdStExtComputation(SdfPath::EmptyPath());
     } else  if (typeId == HdPrimTypeTokens->material) {
         return _CreateFallbackMaterialPrim();
     } else {
@@ -261,8 +302,8 @@ HdStRenderDelegate::DestroyBprim(HdBprim *bPrim)
 HdSprim *
 HdStRenderDelegate::_CreateFallbackMaterialPrim()
 {
-    GlfGLSLFXSharedPtr glslfx(
-        new GlfGLSLFX(HdStPackageFallbackSurfaceShader()));
+    HioGlslfxSharedPtr glslfx(
+        new HioGlslfx(HdStPackageFallbackSurfaceShader()));
 
     HdStSurfaceShaderSharedPtr fallbackShaderCode(new HdStGLSLFXShader(glslfx));
 
@@ -272,10 +313,11 @@ HdStRenderDelegate::_CreateFallbackMaterialPrim()
     return material;
 }
 
-
 void
 HdStRenderDelegate::CommitResources(HdChangeTracker *tracker)
 {
+    GLF_GROUP_FUNCTION();
+    
     // --------------------------------------------------------------------- //
     // RESOLVE, COMPUTE & COMMIT PHASE
     // --------------------------------------------------------------------- //
@@ -291,7 +333,6 @@ HdStRenderDelegate::CommitResources(HdChangeTracker *tracker)
     if (tracker->IsGarbageCollectionNeeded()) {
         _resourceRegistry->GarbageCollect();
         tracker->ClearGarbageCollectionNeeded();
-        tracker->MarkAllCollectionsDirty();
     }
 
     // see bug126621. currently dispatch buffers need to be released
@@ -299,5 +340,22 @@ HdStRenderDelegate::CommitResources(HdChangeTracker *tracker)
     _resourceRegistry->GarbageCollectDispatchBuffers();
 }
 
+bool
+HdStRenderDelegate::IsSupported()
+{
+    return (GlfContextCaps::GetInstance().glVersion >= 400);
+}
+
+TfTokenVector
+HdStRenderDelegate::GetShaderSourceTypes() const
+{
+    return {HioGlslfxTokens->glslfx};
+}
+
+TfToken 
+HdStRenderDelegate::GetMaterialNetworkSelector() const
+{
+    return HioGlslfxTokens->glslfx;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

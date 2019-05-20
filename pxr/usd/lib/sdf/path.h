@@ -27,19 +27,16 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/tokens.h"
-#include "pxr/base/tf/hash.h"
-#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/token.h"
 
 #include <boost/intrusive_ptr.hpp>
 #include <boost/operators.hpp>
-#include "pxr/base/tf/hashmap.h"
 
 #include <algorithm>
-#include <functional>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -124,10 +121,10 @@ typedef std::vector<class SdfPath> SdfPathVector;
 /// SdfPath is strongly thread-safe, in the sense that zero additional
 /// synchronization is required between threads creating or using SdfPath
 /// values. Just like TfToken, SdfPath values are immutable. Internally,
-/// SdfPath uses a global prefix tree to efficienty share representations
+/// SdfPath uses a global prefix tree to efficiently share representations
 /// of paths, and provide fast equality/hashing operations, but
 /// modifications to this table are internally synchronized. Consequently,
-/// as with TfToken, for best performance it is importantant to minimize
+/// as with TfToken, for best performance it is important to minimize
 /// the number of values created (since it requires synchronized access to
 /// this table) or copied (since it requires atomic ref-counting operations).
 ///
@@ -621,10 +618,6 @@ public:
     static bool IsValidPathString(const std::string &pathString,
                                   std::string *errMsg = 0);
 
-    /// Returns true, if \p marker denotes a built in marker.
-    SDF_API
-    static bool IsBuiltInMarker(const std::string &marker);
-
     /// @}
 
     /// \name Operators
@@ -633,7 +626,7 @@ public:
     /// Equality operator.
     /// (Boost provides inequality from this.)
     inline bool operator==(const SdfPath &rhs) const {
-        return (_pathNode == rhs._pathNode);
+        return _pathNode == rhs._pathNode;
     }
 
     /// Comparison operator.
@@ -660,7 +653,8 @@ public:
         return Hash()(*this);
     }
 
-    // For ordered maps
+    // For cases where an unspecified total order that is not stable from
+    // run-to-run is needed.
     struct FastLessThan {
         bool operator()(const SdfPath& a, const SdfPath& b) const {
             return a._pathNode < b._pathNode;
@@ -697,6 +691,8 @@ private:
     // via nodes and then want to return a new path with a resulting node.
     // The node is expected to already be Retain'ed for the resulting path.
     explicit SdfPath(const Sdf_PathNodeConstRefPtr &pathNode);
+    // Accept rvalues too.
+    explicit SdfPath(Sdf_PathNodeConstRefPtr &&pathNode);
 
     friend class Sdf_PathNode;
     friend class Sdfext_PathAccess;
@@ -707,11 +703,6 @@ private:
 
     // Helper used by the string path elem constructors.
     void _InitWithString(const std::string &path);
-
-    // Helper for ReplacePrefix().
-    SdfPath
-    _ReplacePrefix(const SdfPath &oldPrefix, const SdfPath &newPrefix,
-                   bool fixTargetPaths) const;
 
     // Helper to implement the uninlined portion of operator<.
     SDF_API static bool

@@ -55,7 +55,7 @@ void wrapUsdModelAPI()
 {
     typedef UsdModelAPI This;
 
-    class_<This, bases<UsdSchemaBase> >
+    class_<This, bases<UsdAPISchemaBase> >
         cls("ModelAPI");
 
     cls
@@ -65,17 +65,6 @@ void wrapUsdModelAPI()
 
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
-
-        .def("Apply", &This::Apply, (arg("stage"), arg("path")))
-        .staticmethod("Apply")
-
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
@@ -114,6 +103,7 @@ void wrapUsdModelAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyStaticTokens.h"
 
 namespace {
@@ -159,25 +149,33 @@ WRAP_CUSTOM {
 
     TF_PY_WRAP_PUBLIC_TOKENS("AssetInfoKeys", UsdModelAPIAssetInfoKeys,
                              USDMODEL_ASSET_INFO_KEYS);
+    {
+        scope parent = _class;
+        // This must be defined before KindValidationModelHierarchy is used
+        // as a default argument to validation.
+        TfPyWrapEnum<UsdModelAPI::KindValidation>();
+        _class
+            .def("GetKind", _GetKind)
+            .def("SetKind", &UsdModelAPI::SetKind, arg("value"))
+            .def("IsKind", &UsdModelAPI::IsKind,
+                 (arg("baseKind"),
+                  arg("validation")=UsdModelAPI::KindValidationModelHierarchy))
+            .def("IsModel", &UsdModelAPI::IsModel)
+            .def("IsGroup", &UsdModelAPI::IsGroup)
 
-    _class
-        .def("GetKind", _GetKind)
-        .def("SetKind", &UsdModelAPI::SetKind, arg("value"))
-        .def("IsModel", &UsdModelAPI::IsModel)
-        .def("IsGroup", &UsdModelAPI::IsGroup)
-
-        .def("GetAssetIdentifier", _GetAssetIdentifier)
-        .def("SetAssetIdentifier", &UsdModelAPI::SetAssetIdentifier)
-        .def("GetAssetName", _GetAssetName)
-        .def("SetAssetName", &UsdModelAPI::SetAssetName)
-        .def("GetAssetVersion", _GetAssetVersion)
-        .def("SetAssetVersion", &UsdModelAPI::SetAssetVersion)
-        .def("GetPayloadAssetDependencies", _GetPayloadAssetDependencies)
-        .def("SetPayloadAssetDependencies", 
-             &UsdModelAPI::SetPayloadAssetDependencies)
-        .def("GetAssetInfo", _GetAssetInfo)
-        .def("SetAssetInfo", &UsdModelAPI::SetAssetInfo)
-        ;
+            .def("GetAssetIdentifier", _GetAssetIdentifier)
+            .def("SetAssetIdentifier", &UsdModelAPI::SetAssetIdentifier)
+            .def("GetAssetName", _GetAssetName)
+            .def("SetAssetName", &UsdModelAPI::SetAssetName)
+            .def("GetAssetVersion", _GetAssetVersion)
+            .def("SetAssetVersion", &UsdModelAPI::SetAssetVersion)
+            .def("GetPayloadAssetDependencies", _GetPayloadAssetDependencies)
+            .def("SetPayloadAssetDependencies", 
+                 &UsdModelAPI::SetPayloadAssetDependencies)
+            .def("GetAssetInfo", _GetAssetInfo)
+            .def("SetAssetInfo", &UsdModelAPI::SetAssetInfo)
+            ;
+    }
 }
 
 } // anonymous namespace

@@ -20,7 +20,7 @@ responsibility to retain the strong SdfLayerRefPtr that the above methods
 return, if they expect the layer to persist.  UsdStage takes care of this for
 the layer for which the stage was opened, and all layers reached during the
 process of population the stage by traversing composition arcs; the set of 
-"reached" layers may be differennt for different variant selections on the
+"reached" layers may be different for different variant selections on the
 stage, different activation opinions, and different load-states.
 
 \note <b>USDeeper: Layer-related plugins</b> Sdf also defines the
@@ -47,7 +47,7 @@ of UsdPrim s that enables efficient scene traversal, data extraction and
 authoring.  A UsdStage can contain any number of "root level" prims, each of
 which represents a different tree/graph (which may be related to each other
 via composition operators or \ref Usd_OM_UsdRelationship "relationships").
-To faciliate traversals that visit all root prims, every UsdStage has an
+To facilitate traversals that visit all root prims, every UsdStage has an
 un-named "pseudo-root" prim that is the parent of all root prims; it can be
 accessed via UsdStage::GetPseudoRoot().
 
@@ -213,7 +213,7 @@ value resolution behavior other than "strongest opinion wins."  A class of
 metadata used to specify composition behavior (as well as relationships) subscribe
 to \ref Usd_OM_ListOps "list-editing composition".  Other metadata, like
 attribute \em typeName, adhere to "weakest opinion wins".  The prim metadata
-\em specifier has a highly speciailized resolution behavior owing to the way
+\em specifier has a highly specialized resolution behavior owing to the way
 in which overs, defs, and classes combine.  *Value resolution behavior may
 not be changed for extension metadata,* however - all extension metadata will
 be resolved based on its datatype: strongest wins for primitive datatypes,

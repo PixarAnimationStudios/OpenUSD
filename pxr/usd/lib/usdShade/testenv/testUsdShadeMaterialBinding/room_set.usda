@@ -33,7 +33,7 @@ def Xform "World" (
         ]
 
         def Xform "Table_grp" (
-            prepend apiSchemas = ["CollectionAPI:lampA", "CollectionAPI:lampB", "CollectionAPI:lampC"]
+            prepend apiSchemas = ["CollectionAPI:lamps"]
         )
         {
             uniform token collection:lamps:expansionRule = "expandPrims"

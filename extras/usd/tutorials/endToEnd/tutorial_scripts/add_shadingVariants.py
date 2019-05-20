@@ -47,12 +47,12 @@ def main():
     stage.GetRootLayer().Save()
 
 def _AddShadingToBall(stage):
-    from pxr import Sdf, UsdRi
+    from pxr import Sdf, UsdShade
     model = stage.OverridePrim('/Ball')
     texDir =  os.path.join(ASSET_BASE, 'Ball/tex')
     mesh = stage.OverridePrim('/Ball/mesh')
 
-    ballTextureNode = UsdRi.RisObject(stage.OverridePrim(
+    ballTexture = UsdShade.Shader(stage.OverridePrim(
         model.GetPath().AppendPath('Looks/BallMaterial/BallTexture')))
 
     # now we'll show adding some shading variants to the ball as well.
@@ -94,7 +94,7 @@ def _AddShadingToBall(stage):
             whichBall = variantName.split('_')[-1]
             texPath = os.path.join(texDir, 'ball%s.tex' % whichBall)
             # in the current variant, modify the color
-            _SetParameters(ballTextureNode, [
+            _SetParameters(ballTexture, [
                 ('filename', Sdf.ValueTypeNames.String, texPath),
             ])
 
@@ -110,7 +110,7 @@ def _AddShadingToBall(stage):
 
 def _SetParameters(shadingNode, params):
     '''
-    shadingNode is a RisObject
+    shadingNode is a UsdShadeShader
     params are (paramName, paramType, value) tuples
     '''
 

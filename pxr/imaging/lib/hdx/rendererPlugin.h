@@ -27,11 +27,11 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hf/pluginBase.h"
+#include "pxr/imaging/hd/renderDelegate.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfPath;
-class HdRenderDelegate;
 class HdRenderIndex;
 
 ///
@@ -55,9 +55,27 @@ public:
     virtual HdRenderDelegate *CreateRenderDelegate() = 0;
 
     ///
+    /// Factory a Render Delegate object, that Hydra can use to
+    /// factory prims and communicate with a renderer.  Pass in initial
+    /// settings...
+    ///
+    HDX_API
+    virtual HdRenderDelegate *CreateRenderDelegate(
+        HdRenderSettingsMap const& settingsMap);
+
+    ///
     /// Release the object factoried by CreateRenderDelegate().
     ///
     virtual void DeleteRenderDelegate(HdRenderDelegate *renderDelegate) = 0;
+
+    ///
+    /// Returns \c true if this renderer plugin is supported in the running 
+    /// process and \c false if not.
+    /// 
+    /// This gives the plugin a chance to perform some runtime checks to make
+    /// sure that the system meets minimum requirements.
+    ///
+    virtual bool IsSupported() const = 0;
 
 protected:
     HdxRendererPlugin() = default;

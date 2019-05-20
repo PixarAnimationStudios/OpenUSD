@@ -74,6 +74,11 @@ UsdContrivedDerived::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdContrivedDerived::_GetSchemaType() const {
+    return UsdContrivedDerived::schemaType;
+}
+
 /* static */
 const TfType &
 UsdContrivedDerived::_GetStaticTfType()

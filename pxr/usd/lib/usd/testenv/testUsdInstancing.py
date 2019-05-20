@@ -73,7 +73,7 @@ def ValidateExpectedInstances(stage, expectedInstances):
                     "Found unexpected instance prim <%s> with master <%s>" % \
                     (prim.GetPath(), prim.GetMaster().GetPath())
 
-def ValidateExpectedChanges(noticeListener, expectedResyncs, 
+def ValidateExpectedChanges(noticeListener, expectedResyncs = [], 
                             expectedChangedInfo = []):
     """
     Validate the expected changes received by the noticeListener.
@@ -87,7 +87,7 @@ def ValidateExpectedChanges(noticeListener, expectedResyncs,
     assert set(noticeListener.changedInfoPaths) == \
         set([Sdf.Path(p) for p in expectedChangedInfo]), \
         "Expected changed info for %s, got %s" % \
-        (set(expectedChangedInfo), noticeListener.expectedChangedInfo)
+        (set(expectedChangedInfo), noticeListener.changedInfoPaths)
 
 def ValidateAndDumpUsdStage(stage):
     """
@@ -154,9 +154,13 @@ class NoticeListener:
         self.changedInfoPaths = []
 
     def _HandleNotice(self, notice, sender):
-        print "Resynced:\n  ", [str(p) for p in notice.GetResyncedPaths()]
-        print "Changed Info:\n  ", \
-            [str(p) for p in notice.GetChangedInfoOnlyPaths()]
+        resyncChanges = dict([(str(p), notice.GetChangedFields(p))
+                              for p in notice.GetResyncedPaths()])
+        infoChanges = dict([(str(p), notice.GetChangedFields(p))
+                            for p in notice.GetChangedInfoOnlyPaths()])
+        print "Resynced:\n  ", resyncChanges.items()
+        print "Changed Info:\n  ", infoChanges.items()
+
         self.resyncedPrimPaths = notice.GetResyncedPaths()
         self.changedInfoPaths = notice.GetChangedInfoOnlyPaths()
         ValidateAndDumpUsdStage(notice.GetStage())
@@ -453,6 +457,47 @@ class TestUsdInstancing(unittest.TestCase):
         ValidateExpectedChanges(nl,
             ['/__Master_1/Prop_1/Scope', '/__Master_1/Prop_2/Scope', 
              '/__Master_5/Scope',])
+
+    def test_Nested2(self):
+        """Test loading and unloading instances with nested instances."""
+        nl = NoticeListener()
+
+        print "Opening stage with nothing loaded initially"
+        s = OpenStage('nested_2/root.usda', Usd.Stage.LoadNone)
+
+        instances = ['/A_1', '/A_2', '/A_3']
+        ValidateExpectedInstances(s,
+            { '/__Master_1': instances })
+
+        print "-" * 60
+        print "Loading instances"
+
+        s.LoadAndUnload(instances, [])
+        ValidateExpectedInstances(s,
+            { '/__Master_2': instances,
+              '/__Master_3': ['/__Master_2/B'] })
+        ValidateExpectedChanges(nl,
+            ['/A_1', '/A_2', '/A_3'])
+
+        print "-" * 60
+        print "Unloading instances"
+
+        s.LoadAndUnload([], instances)
+        ValidateExpectedInstances(s,
+            { '/__Master_4': instances })
+        ValidateExpectedChanges(nl,
+            ['/A_1', '/A_2', '/A_3'])
+
+        # Stress-test by repeatedly loading and unloading instances.
+        # Don't want too much output, so we delete the notice listener.
+        del nl
+
+        print "-" * 60
+        print "Stress-test loading and unloading instances"
+
+        for _ in xrange(100):
+            s.LoadAndUnload(instances, [])
+            s.LoadAndUnload([], instances)
 
     def test_Payloads(self):
         """Test instancing and change processing with asset structure involving
@@ -852,6 +897,101 @@ class TestUsdInstancing(unittest.TestCase):
             { '/__Master_1': ['/Ref_1'],
               '/__Master_2': ['/__Master_1/Ref1_Child'],
               '/__Master_3': ['/SubrootRef_1', '/SubrootRef_2'] })
+
+    def test_PropertyChanges(self):
+        """Test that changes to properties that affect masters cause the
+        correct notifications to be sent."""
+        s = OpenStage('basic/root.usda')
+        nl = NoticeListener()
+
+        ValidateExpectedInstances(s,
+            { '/__Master_1': ['/World/sets/Set_1/Prop_1', 
+                              '/World/sets/Set_1/Prop_2'] })
+
+        instancedPropLayer = Sdf.Layer.Find('basic/prop.usda')
+
+        # Author to an attribute on a child of the referenced prop asset.
+        # This should cause change notices for the corresponding attribute
+        # on the master prim as well as any other un-instanced prim that
+        # references that prop.
+        print "-" * 60
+        print "Adding new attribute spec to child of referenced prop"
+        primSpec = instancedPropLayer.GetPrimAtPath('/Prop/geom/Scope')
+        attrSpec = Sdf.AttributeSpec(primSpec, "attr", Sdf.ValueTypeNames.Int)
+
+        ValidateExpectedChanges(nl,
+            ['/World/sets/Set_1/Prop_3/geom/Scope.attr', 
+             '/__Master_1/geom/Scope.attr'])
+
+        print "-" * 60
+        print "Changing value for attribute spec on child of referenced prop"
+        attrSpec.default = 1
+
+        ValidateExpectedChanges(nl,
+            expectedChangedInfo = [
+                '/World/sets/Set_1/Prop_3/geom/Scope.attr', 
+                '/__Master_1/geom/Scope.attr'])
+
+        # Author to an attribute on the referenced prop asset. This should
+        # *not* cause change notices on the master prim, since master prims
+        # don't have any properties. Instead, these should cause change
+        # notices on all of the affected instances.
+        print "-" * 60
+        print "Adding new attribute spec to referenced prop"
+        primSpec = instancedPropLayer.GetPrimAtPath('/Prop')
+        attrSpec = Sdf.AttributeSpec(primSpec, "attr", Sdf.ValueTypeNames.Int)
+
+        ValidateExpectedChanges(nl,
+            ['/World/sets/Set_1/Prop_1.attr',
+             '/World/sets/Set_1/Prop_2.attr', 
+             '/World/sets/Set_1/Prop_3.attr'])
+
+        print "-" * 60
+        print "Changing value for attribute spec on referenced prop"
+        attrSpec.default = 1
+
+        ValidateExpectedChanges(nl,
+            expectedChangedInfo = [
+                '/World/sets/Set_1/Prop_1.attr',
+                '/World/sets/Set_1/Prop_2.attr', 
+                '/World/sets/Set_1/Prop_3.attr'])
+
+    def test_MetadataChanges(self):
+        """Test that metadata changes to prims that affect masters cause
+        the correct notifications to be sent."""
+        s = OpenStage('basic/root.usda')
+        nl = NoticeListener()
+        
+        instancedPropLayer = Sdf.Layer.Find('basic/prop.usda')
+
+        # Author metadata on a child of the referenced prop asset.
+        # This should cause change notices for the corresponding child prim
+        # of the master prim as well as any other un-instanced prim that
+        # references that prop.
+        print "-" * 60
+        print "Changing metadata on child of referenced prop"
+        primSpec = instancedPropLayer.GetPrimAtPath('/Prop/geom/Scope')
+        primSpec.documentation = "Test metadata change"
+
+        ValidateExpectedChanges(nl,
+            expectedChangedInfo = [
+                '/World/sets/Set_1/Prop_3/geom/Scope', 
+                '/__Master_1/geom/Scope'])
+
+        # Author metadata on the referenced prop asset. This should
+        # *not* cause change notices on the master prim, since master prims
+        # don't have any metadata. Instead, these should cause change
+        # notices on all of the affected instances.
+        print "-" * 60
+        print "Changing metadata on prop"
+        primSpec = instancedPropLayer.GetPrimAtPath('/Prop')
+        primSpec.documentation = "Test metadata change"
+
+        ValidateExpectedChanges(nl,
+            expectedChangedInfo = [
+                '/World/sets/Set_1/Prop_1',
+                '/World/sets/Set_1/Prop_2', 
+                '/World/sets/Set_1/Prop_3'])
 
     def test_Editing(self):
         """Test that edits cannot be made on objects in masters"""

@@ -18,10 +18,12 @@ creating USD assets. The high-level grouping of classes and functions is as foll
     generating \ref Usd_Page_ValueClips "value clips" 
     from sets of layers (see \ref usdUtils/stitchClips.h "stitchClips").
 
-\li \ref usdUtils/dependencies.h "Dependency Analysis"
-    provides functionality for extracting \ref SdfReference "references",
-    \ref SdfPayload "payloads", and \ref SdfLayer "sublayers" used by a given
-    layer. 
+\li \ref usdUtils/dependencies.h "Dependency analysis and asset packaging"
+    provides functionality for extracting the external dependencies (i.e. 
+    \ref SdfReference "references", \ref SdfPayload "payloads", and 
+    \ref SdfLayer "sublayers") of a given layer. 
+    See \ref UsdUtilsExtractExternalReferences and  
+    \ref UsdUtilsCreateNewUsdzPackage
 
 \li \ref usdUtils/introspection.h "Introspection" 
     provides functionality for understanding various charactersitics

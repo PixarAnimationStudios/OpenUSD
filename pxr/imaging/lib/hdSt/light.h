@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/sprim.h"
+#include "pxr/imaging/hd/light.h"
 
 #include "pxr/imaging/glf/simpleLight.h"
 
@@ -42,17 +42,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-#define HDST_LIGHT_TOKENS                       \
-    (angle)                                     \
-    (exposure)                                  \
-    (intensity)                                 \
-    (params)                                    \
-    (shadowCollection)                          \
-    (shadowParams)                              \
-    (transform)
-
-TF_DECLARE_PUBLIC_TOKENS(HdStLightTokens, HDST_API, HDST_LIGHT_TOKENS);
-
 class HdSceneDelegate;
 typedef boost::shared_ptr<class HdStLight> HdStLightSharedPtr;
 typedef std::vector<class HdStLight const *> HdStLightPtrConstVector;
@@ -61,25 +50,12 @@ typedef std::vector<class HdStLight const *> HdStLightPtrConstVector;
 ///
 /// A light model, used in conjunction with HdRenderPass.
 ///
-class HdStLight final : public HdSprim {
+class HdStLight final : public HdLight {
 public:
     HDST_API
     HdStLight(SdfPath const & id, TfToken const &lightType);
     HDST_API
     virtual ~HdStLight();
-
-    // change tracking for HdStLight
-    enum DirtyBits : HdDirtyBits {
-        Clean                 = 0,
-        DirtyTransform        = 1 << 0,
-        DirtyParams           = 1 << 1,
-        DirtyShadowParams     = 1 << 2,
-        DirtyCollection       = 1 << 3,
-        AllDirty              = (DirtyTransform
-                                 |DirtyParams
-                                 |DirtyShadowParams
-                                 |DirtyCollection)
-    };
 
     /// Synchronizes state from the delegate to this object.
     HDST_API
@@ -89,7 +65,7 @@ public:
 
     /// Accessor for tasks to get the parameters cached in this object.
     HDST_API
-    virtual VtValue Get(TfToken const &token) const override;
+    VtValue Get(TfToken const &token) const;
 
     /// Returns the minimal set of dirty bits to place in the
     /// change tracker for use in the first sync of this prim.

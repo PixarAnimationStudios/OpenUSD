@@ -387,7 +387,7 @@ GfGetLength(GfVec4d const &v)
 inline double
 GfNormalize(GfVec4d *v, double eps = GF_MIN_VECTOR_LENGTH)
 {
-    return v->Normalize();
+    return v->Normalize(eps);
 }
 
 /// Returns a normalized (unit-length) vector with the same direction as \p v.

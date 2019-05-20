@@ -69,14 +69,6 @@ void wrapUsdShadeNodeGraph()
         .def("Define", &This::Define, (arg("stage"), arg("path")))
         .staticmethod("Define")
 
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
-
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
              arg("includeInherited")=true,
@@ -118,8 +110,20 @@ void wrapUsdShadeNodeGraph()
 
 namespace {
 
+static object
+_WrapComputeOutputSource(const UsdShadeNodeGraph &self, 
+                         const TfToken &outputName)
+{
+    TfToken sourceName;
+    UsdShadeAttributeType sourceType;
+    UsdShadeShader source = self.ComputeOutputSource(outputName, &sourceName, 
+            &sourceType);
+    return boost::python::make_tuple (source, sourceName, sourceType);
+}
+
 WRAP_CUSTOM {
     _class
+        .def(init<UsdShadeConnectableAPI>(arg("connectable")))
         .def("ConnectableAPI", &UsdShadeNodeGraph::ConnectableAPI)
 
         .def("CreateOutput", 
@@ -131,6 +135,8 @@ WRAP_CUSTOM {
         .def("GetOutputs",
              &UsdShadeNodeGraph::GetOutputs,
              return_value_policy<TfPySequenceToList>())
+        .def("ComputeOutputSource", _WrapComputeOutputSource, 
+             (arg("outputName")))
 
         .def("CreateInput", &UsdShadeNodeGraph::CreateInput,
              (arg("name"), arg("type")))
@@ -146,8 +152,6 @@ WRAP_CUSTOM {
              (arg("computeTransitiveConsumers")=false))
 
     ;
-
-    implicitly_convertible<UsdShadeNodeGraph, UsdShadeConnectableAPI>();
 }
 
 } // anonymous namespace

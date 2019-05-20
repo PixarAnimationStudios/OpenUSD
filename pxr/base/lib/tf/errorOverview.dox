@@ -193,7 +193,7 @@ TF_REGISTRY_FUNCTION(TfEnum) {
 Also wrap the enum to python in Oof/wrapError.cpp. 
 
 The following code allows the enum values to be accessible from python
-under the a scope named Error.
+under a scope named Error.
 
 \code
 // wrapOofError.cpp

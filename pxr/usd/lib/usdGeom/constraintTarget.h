@@ -68,9 +68,7 @@ class UsdGeomXformCache;
 ///
 class UsdGeomConstraintTarget
 {
-    typedef const UsdAttribute UsdGeomConstraintTarget::*_UnspecifiedBoolType;
-
- public:
+public:
   
     // Default constructor returns an invalid ConstraintTarget.  Exists for 
     // container classes
@@ -83,18 +81,18 @@ class UsdGeomConstraintTarget
     /// UsdGeomConstraintTarget when \p attr already represents an attribute
     /// that is a UsdGeomConstraintTarget, and produces an \em invalid
     /// UsdGeomConstraintTarget otherwise (i.e.  
-    /// \ref UsdGeomConstraintTarget_bool_type "unspecified-bool-type()"
-    /// will return false).
+    /// \ref UsdGeomConstraintTarget_explicit_bool will return false).
     ///
     /// Calling \c UsdGeomConstraintTarget::IsValid(attr) will return the
     /// same truth value as the object returned by this constructor, but if
-    /// you plan to subsequently use the ConstraintTarget anyways, just construct
-    /// the object and bool-evaluate it before proceeding.
+    /// you plan to subsequently use the ConstraintTarget anyways, just 
+    /// construct the object and bool-evaluate it before proceeding.
     USDGEOM_API
     explicit UsdGeomConstraintTarget(const UsdAttribute &attr);
 
-    /// Test whether a given UsdAttribute represents valid ConstraintTarget, which
-    /// implies that creating a UsdGeomConstraintTarget from the attribute will succeed.
+    /// Test whether a given UsdAttribute represents valid ConstraintTarget, 
+    /// which implies that creating a UsdGeomConstraintTarget from the attribute 
+    /// will succeed.
     ///
     /// Success implies that \c attr.IsDefined() is true.
     USDGEOM_API
@@ -104,9 +102,9 @@ class UsdGeomConstraintTarget
     /// \name UsdAttribute API
     // ---------------------------------------------------------------
     
-    /// Allow UsdGeomConstraintTarget to auto-convert to UsdAttribute, so you can
-    /// pass a UsdGeomConstraintTarget to any function that accepts a UsdAttribute or
-    /// const-ref thereto.
+    /// Allow UsdGeomConstraintTarget to auto-convert to UsdAttribute, so you 
+    /// can pass a UsdGeomConstraintTarget to any function that accepts a 
+    /// UsdAttribute or const-ref thereto.
     operator UsdAttribute const& () const { return _attr; }
 
     /// Explicit UsdAttribute extractor
@@ -116,24 +114,25 @@ class UsdGeomConstraintTarget
     /// addition the attribute is identified as a ConstraintTarget.
     bool IsDefined() const { return IsValid(_attr); }
 
-    /// \anchor UsdGeomConstraintTarget_bool_type
-    /// Return true if this ConstraintTarget is valid for querying and authoring
-    /// values and metadata, which is identically equivalent to IsDefined().
-#ifdef doxygen
-    operator unspecified-bool-type() const();
-#else
-    operator _UnspecifiedBoolType() const {
-        return IsDefined() ? &UsdGeomConstraintTarget::_attr : 0;
+    
+    /// \anchor UsdGeomConstraintTarget_explicit_bool
+    /// Explicit bool conversion operator. A ConstraintTarget object converts
+    /// to \c true iff it is valid for querying and authoring values and 
+    /// metadata (which is identically equivalent to IsDefined()). It converts
+    /// to \c false otherwise.
+    explicit operator bool() const {
+        return IsDefined();
     }
-#endif // doxygen
 
     /// Get the attribute value of the ConstraintTarget at \p time 
     USDGEOM_API
-    bool Get(GfMatrix4d* value, UsdTimeCode time = UsdTimeCode::Default()) const;
+    bool Get(GfMatrix4d* value, UsdTimeCode time = UsdTimeCode::Default()) 
+            const;
 
     /// Set the attribute value of the ConstraintTarget at \p time 
     USDGEOM_API
-    bool Set(const GfMatrix4d& value, UsdTimeCode time = UsdTimeCode::Default()) const;
+    bool Set(const GfMatrix4d& value, UsdTimeCode time = UsdTimeCode::Default()) 
+            const;
 
     /// Get the stored identifier unique to the enclosing model's namespace for
     /// this constraint target.

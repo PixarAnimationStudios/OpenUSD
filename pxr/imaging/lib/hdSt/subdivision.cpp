@@ -63,7 +63,7 @@ HdSt_OsdTopologyComputation::HdSt_OsdTopologyComputation(
 
 /*virtual*/
 void
-HdSt_OsdTopologyComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_OsdTopologyComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     // nothing
 }
@@ -78,7 +78,7 @@ HdSt_OsdIndexComputation::HdSt_OsdIndexComputation(
 
 /*virtual*/
 void
-HdSt_OsdIndexComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_OsdIndexComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     if (HdSt_Subdivision::RefinesToTriangles(_topology->GetScheme())) {
         // triangles (loop)
@@ -86,15 +86,17 @@ HdSt_OsdIndexComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
                             HdTupleType {HdTypeInt32Vec3, 1});
         specs->emplace_back(HdTokens->primitiveParam,
                             HdTupleType {HdTypeInt32Vec3, 1});
+        // vec3 will suffice, but this unifies it for all the cases
+        specs->emplace_back(HdTokens->edgeIndices,
+                            HdTupleType {HdTypeInt32Vec4, 1});
     } else if (_topology->RefinesToBSplinePatches()) {
         // bi-cubic bspline patches
-        // Note that we don't have an HdType corresponding to
-        // Hd_BSplinePatchIndex; instead, we use its underlying
-        // in-memory representation as an array of 16 int32 values.
         specs->emplace_back(HdTokens->indices,
                             HdTupleType {HdTypeInt32, 16});
         // 3+1 (includes sharpness)
         specs->emplace_back(HdTokens->primitiveParam,
+                            HdTupleType {HdTypeInt32Vec4, 1});
+        specs->emplace_back(HdTokens->edgeIndices,
                             HdTupleType {HdTypeInt32Vec4, 1});
     } else {
         // quads (catmark, bilinear)
@@ -102,6 +104,8 @@ HdSt_OsdIndexComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
                             HdTupleType {HdTypeInt32Vec4, 1});
         specs->emplace_back(HdTokens->primitiveParam,
                             HdTupleType {HdTypeInt32Vec3, 1});
+        specs->emplace_back(HdTokens->edgeIndices,
+                            HdTupleType {HdTypeInt32Vec4, 1});
     }
 }
 
@@ -113,10 +117,10 @@ HdSt_OsdIndexComputation::HasChainedBuffer() const
 }
 
 /*virtual*/
-HdBufferSourceSharedPtr
-HdSt_OsdIndexComputation::GetChainedBuffer() const
+HdBufferSourceVector
+HdSt_OsdIndexComputation::GetChainedBuffers() const
 {
-    return _primitiveBuffer;
+    return { _primitiveBuffer, _edgeIndicesBuffer };
 }
 
 /*virtual*/
@@ -140,7 +144,7 @@ HdSt_OsdRefineComputationGPU::HdSt_OsdRefineComputationGPU(
 }
 
 void
-HdSt_OsdRefineComputationGPU::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_OsdRefineComputationGPU::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     // nothing
     //

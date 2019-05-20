@@ -36,19 +36,23 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class GarchGLPlatformDebugContextPrivate;
 
-TF_DECLARE_WEAK_PTRS(GarchGLPlatformDebugContext);
+TF_DECLARE_WEAK_AND_REF_PTRS(GarchGLPlatformDebugContext);
 
 /// \class GarchGLPlatformDebugContext
 ///
 /// Platform specific context (e.g. X11/GLX) which supports debug output.
 ///
-class GarchGLPlatformDebugContext : public TfWeakBase {
+class GarchGLPlatformDebugContext : public TfRefBase, public TfWeakBase {
 public:
-    GARCH_API
-    GarchGLPlatformDebugContext(int majorVersion,
-                               int minorVersion,
-                               bool coreProfile,
-                               bool directRenderering);
+    
+    static GarchGLPlatformDebugContextRefPtr
+    New(int majorVersion, int minorVersion, bool coreProfile,
+        bool directRenderering) {
+        return TfCreateRefPtr(
+            new GarchGLPlatformDebugContext(
+                majorVersion, minorVersion, coreProfile, directRenderering));
+    }
+
     virtual ~GarchGLPlatformDebugContext();
 
     GARCH_API
@@ -66,6 +70,14 @@ public:
 public:
     boost::scoped_ptr<GarchGLPlatformDebugContextPrivate> _private;
     bool _coreProfile;
+
+protected:
+    GARCH_API
+    GarchGLPlatformDebugContext(int majorVersion,
+                               int minorVersion,
+                               bool coreProfile,
+                               bool directRenderering);
+
 };
 
 

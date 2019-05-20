@@ -1,0 +1,21 @@
+{
+    "Plugins": [
+        {
+            "Type": "library",
+            "Name": "TestArAdvancedAPI",
+            "Root": "@TEST_PLUG_INFO_ROOT@",
+            "LibraryPath": "@TEST_PLUG_INFO_LIBRARY_PATH@",
+            "ResourcePath": "@TEST_PLUG_INFO_RESOURCE_PATH@",
+            "Info": {
+                "Types": {
+                    "_TestResolver1": {
+                        "bases": ["ArDefaultResolver"]
+                    },
+                    "_TestResolver2": {
+                        "bases": ["ArDefaultResolver"]
+                    }
+                }
+            }
+        }
+    ]
+}

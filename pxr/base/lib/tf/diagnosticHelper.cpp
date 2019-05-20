@@ -26,10 +26,11 @@
 #include "pxr/base/tf/diagnosticHelper.h"
 
 #include "pxr/base/tf/callContext.h"
+#include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/diagnosticMgr.h"
 #include "pxr/base/tf/enum.h"
 
-#include <stdarg.h>
+#include <cstdarg>
 
 using std::string;
 
@@ -50,7 +51,29 @@ Tf_PostErrorHelper(
 bool
 Tf_PostErrorHelper(
     const TfCallContext &context,
+    TfDiagnosticType code,
+    const std::string &msg)
+{
+    return Tf_PostErrorHelper(context, TfEnum(code), msg);
+}
+
+bool
+Tf_PostErrorHelper(
+    const TfCallContext &context,
     const TfEnum &code,
+    const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    Tf_PostErrorHelper(context, code, TfVStringPrintf(fmt, ap));
+    va_end(ap);
+    return false;
+}
+
+bool
+Tf_PostErrorHelper(
+    const TfCallContext &context,
+    TfDiagnosticType code,
     const char *fmt, ...)
 {
     va_list ap;
@@ -167,7 +190,27 @@ Tf_PostWarningHelper(
 void
 Tf_PostWarningHelper(
     const TfCallContext &context,
+    TfDiagnosticType code,
+    const std::string &msg)
+{
+    Tf_PostWarningHelper(context, TfEnum(code), msg);
+}
+
+void
+Tf_PostWarningHelper(
+    const TfCallContext &context,
     const TfEnum &code,
+    const char *fmt, ...)
+{
+    va_list ap; va_start(ap, fmt);
+    Tf_PostWarningHelper(context, code, TfVStringPrintf(fmt, ap));
+    va_end(ap);
+}
+
+void
+Tf_PostWarningHelper(
+    const TfCallContext &context,
+    TfDiagnosticType code,
     const char *fmt, ...)
 {
     va_list ap; va_start(ap, fmt);

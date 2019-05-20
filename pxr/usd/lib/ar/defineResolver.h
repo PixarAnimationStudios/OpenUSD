@@ -30,13 +30,9 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
 #include "pxr/usd/ar/resolver.h"
-#include "pxr/base/tf/preprocessorUtils.h"
+
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
-
-#include <boost/preprocessor/comma_if.hpp>
-#include <boost/preprocessor/empty.hpp>
-#include <boost/preprocessor/if.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -53,30 +49,37 @@ PXR_NAMESPACE_OPEN_SCOPE
 #ifdef doxygen
 #define AR_DEFINE_RESOLVER(ResolverClass, BaseClass1, ...)
 #else
-#define AR_DEFINE_RESOLVER(c, ...)                                  \
-TF_REGISTRY_FUNCTION(TfType) {                                      \
-    TfType t = TfType::Define<                                      \
-        c BOOST_PP_COMMA_IF(TF_NUM_ARGS(__VA_ARGS__))               \
-        BOOST_PP_IF(TF_NUM_ARGS(__VA_ARGS__),                       \
-            TfType::Bases<__VA_ARGS__>, BOOST_PP_EMPTY) >();        \
-    t.SetFactory<ArResolverFactory<c> >();                          \
+#define AR_DEFINE_RESOLVER(...)       \
+TF_REGISTRY_FUNCTION(TfType) {        \
+    Ar_DefineResolver<__VA_ARGS__>(); \
 }
 #endif // doxygen
 
-class ArResolverFactoryBase : public TfType::FactoryBase {
+class Ar_ResolverFactoryBase 
+    : public TfType::FactoryBase 
+{
 public:
     AR_API
     virtual ArResolver* New() const = 0;
 };
 
 template <class T>
-class ArResolverFactory : public ArResolverFactoryBase {
+class Ar_ResolverFactory 
+    : public Ar_ResolverFactoryBase 
+{
 public:
-    virtual ArResolver* New() const
+    virtual ArResolver* New() const override
     {
         return new T;
     }
 };
+
+template <class Resolver, class ...Bases>
+void Ar_DefineResolver()
+{
+    TfType::Define<Resolver, TfType::Bases<Bases...>>()
+        .template SetFactory<Ar_ResolverFactory<Resolver> >();
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

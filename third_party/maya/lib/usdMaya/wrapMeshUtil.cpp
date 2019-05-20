@@ -56,7 +56,7 @@ _GetMeshNormals(const std::string& meshDagPath)
     TfToken interpolation;
 
     MObject meshObj;
-    MStatus status = PxrUsdMayaUtil::GetMObjectByName(meshDagPath, meshObj);
+    MStatus status = UsdMayaUtil::GetMObjectByName(meshDagPath, meshObj);
     if (status != MS::kSuccess) {
         TF_CODING_ERROR("Could not get MObject for dagPath: %s",
                         meshDagPath.c_str());
@@ -70,12 +70,12 @@ _GetMeshNormals(const std::string& meshDagPath)
         return make_tuple(normalsArray, interpolation);
     }
 
-    PxrUsdMayaMeshUtil::GetMeshNormals(meshFn, &normalsArray, &interpolation);
+    UsdMayaMeshUtil::GetMeshNormals(meshFn, &normalsArray, &interpolation);
 
     return make_tuple(normalsArray, interpolation);
 }
 
-// Dummy class for putting PxrUsdMayaMeshUtil namespace functions in a Python
+// Dummy class for putting UsdMayaMeshUtil namespace functions in a Python
 // MeshUtil namespace.
 class DummyScopeClass{};
 

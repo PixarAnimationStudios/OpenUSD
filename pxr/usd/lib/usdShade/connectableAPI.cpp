@@ -35,9 +35,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdShadeConnectableAPI,
-        TfType::Bases< UsdSchemaBase > >();
+        TfType::Bases< UsdAPISchemaBase > >();
     
 }
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _schemaTokens,
+    (ConnectableAPI)
+);
 
 /* virtual */
 UsdShadeConnectableAPI::~UsdShadeConnectableAPI()
@@ -56,53 +61,9 @@ UsdShadeConnectableAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 }
 
 
-/* static */
-UsdShadeConnectableAPI
-UsdShadeConnectableAPI::Apply(const UsdStagePtr &stage, const SdfPath &path)
-{
-    // Ensure we have a valid stage, path and prim
-    if (!stage) {
-        TF_CODING_ERROR("Invalid stage");
-        return UsdShadeConnectableAPI();
-    }
-
-    if (path == SdfPath::AbsoluteRootPath()) {
-        TF_CODING_ERROR("Cannot apply an api schema on the pseudoroot");
-        return UsdShadeConnectableAPI();
-    }
-
-    auto prim = stage->GetPrimAtPath(path);
-    if (!prim) {
-        TF_CODING_ERROR("Prim at <%s> does not exist.", path.GetText());
-        return UsdShadeConnectableAPI();
-    }
-
-    TfToken apiName("ConnectableAPI");  
-
-    // Get the current listop at the edit target
-    UsdEditTarget editTarget = stage->GetEditTarget();
-    SdfPrimSpecHandle primSpec = editTarget.GetPrimSpecForScenePath(path);
-    SdfTokenListOp listOp = primSpec->GetInfo(UsdTokens->apiSchemas)
-                                    .UncheckedGet<SdfTokenListOp>();
-
-    // Append our name to the prepend list, if it doesnt exist locally
-    TfTokenVector prepends = listOp.GetPrependedItems();
-    if (std::find(prepends.begin(), prepends.end(), apiName) != prepends.end()) { 
-        return UsdShadeConnectableAPI();
-    }
-
-    SdfTokenListOp prependListOp;
-    prepends.push_back(apiName);
-    prependListOp.SetPrependedItems(prepends);
-    auto result = listOp.ApplyOperations(prependListOp);
-    if (!result) {
-        TF_CODING_ERROR("Failed to prepend api name to current listop.");
-        return UsdShadeConnectableAPI();
-    }
-
-    // Set the listop at the current edit target and return the API prim
-    primSpec->SetInfo(UsdTokens->apiSchemas, VtValue(*result));
-    return UsdShadeConnectableAPI(prim);
+/* virtual */
+UsdSchemaType UsdShadeConnectableAPI::_GetSchemaType() const {
+    return UsdShadeConnectableAPI::schemaType;
 }
 
 /* static */
@@ -134,7 +95,7 @@ UsdShadeConnectableAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames;
     static TfTokenVector allNames =
-        UsdSchemaBase::GetSchemaAttributeNames(true);
+        UsdAPISchemaBase::GetSchemaAttributeNames(true);
 
     if (includeInherited)
         return allNames;
@@ -208,8 +169,13 @@ UsdShadeConnectableAPI::IsNodeGraph() const
 
 /* virtual */
 bool 
-UsdShadeConnectableAPI::_IsCompatible(const UsdPrim &prim) const
+UsdShadeConnectableAPI::_IsCompatible() const
 {
+    if (!UsdAPISchemaBase::_IsCompatible() )
+        return false;
+
+    // Shaders and node-graphs are compatible with this API schema. 
+    // XXX: What if the typeName isn't known (eg, pure over)?
     return IsShader() || IsNodeGraph();
 }
 
@@ -645,12 +611,12 @@ UsdShadeConnectableAPI::GetConnectedSource(
             // If this is a terminal-style output, then allow connection 
             // to a prim.
             if (shadingProp.Is<UsdRelationship>()) {
-                return *source;
+                return static_cast<bool>(*source);
             }
         }
     }
 
-    return *source;
+    return static_cast<bool>(*source);
 }
 
 /* static  */
@@ -924,7 +890,7 @@ UsdShadeConnectableAPI::GetOutputs() const
 
 UsdShadeInput 
 UsdShadeConnectableAPI::CreateInput(const TfToken& name,
-                                     const SdfValueTypeName& typeName) const
+                                    const SdfValueTypeName& typeName) const
 {
     return UsdShadeInput(GetPrim(), name, typeName);
 }

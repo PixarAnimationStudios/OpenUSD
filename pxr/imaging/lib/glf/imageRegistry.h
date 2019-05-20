@@ -57,10 +57,6 @@ private:
     friend class TfSingleton<GlfImageRegistry>;
     GlfImageRegistry();
 
-    void _RegisterPluginForType(TfToken const & fileExtension,
-                                TfType const & type,
-                                int precedence);
-
     friend class GlfImage;
 
     GlfImageSharedPtr _ConstructImage(std::string const & filename);

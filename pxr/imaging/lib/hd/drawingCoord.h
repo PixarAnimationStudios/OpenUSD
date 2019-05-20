@@ -32,26 +32,28 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-// DrawingCoord is a bundle of buffer array ranges that are used for drawing.
-//
-// Hd_DrawBatch requires drawitem to have 7 different types of buffer
-// resources (some of them are optional) as a drawing coordinate.
-//
-// a. Constant
-// b. Vertex Primvars
-// c. Topology
-// d. Element Primvars  (optional)
-// e. Instance PrimVars (optional)
-// f. Instance Index    (optional)
-// g. FaceVarying Primvars (optional)
-//
-
 /// \class HdDrawingCoord
 ///
-/// A tiny 6-integers entity which provides a mapping between the client
-/// facing interface to the actual internal location stored in the
-/// HdBufferArrayRangeContainer, which is owned by rprim.
+/// A tiny set of integers, which provides an indirection mapping from the 
+/// conceptual space of an HdRprim's resources (topological, primvar & 
+/// instancing) to the index within HdBufferArrayRangeContainer, where the
+/// resource is stored.
+/// 
+/// Each HdDrawItem contains a HdDrawingCoord, with the relevant compositional
+/// hierarchy being:
+/// 
+///  HdRprim
+///  |
+///  +--HdRepr(s)
+///  |    |
+///  |    +--HdDrawItem(s)----------.
+///  |         |                    |
+///  |         +--HdDrawingCoord    |
+///  |                              | (mapping provided by HdDrawingCoord)
+///  +--HdRprimSharedData           |
+///     |                           |
+///     +--HdBARContainer  <--------+
+///  
 ///
 /// Having this indirection provides a recipe for how to configure
 /// a drawing coordinate, which is a bundle of HdBufferArrayRanges, while
@@ -78,60 +80,53 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class HdDrawingCoord {
 public:
-    static const int CustomSlotsBegin = 6;
+    static const int CustomSlotsBegin = 7;
     static const int DefaultNumSlots = 3; /* Constant, Vertex, Topology */
     static const int Unassigned = -1;
 
     HdDrawingCoord() :
         // default slots:
-        _constantPrimVar(0),
-        _vertexPrimVar(1),
+        _constantPrimvar(0),
+        _vertexPrimvar(1),
         _topology(2),
-        _elementPrimVar(3),
+        _elementPrimvar(3),
         _instanceIndex(4),
-        _faceVaryingPrimVar(5),
-        _instancePrimVarNumLevels(0),
-        _instancePrimVar(Unassigned) {
+        _faceVaryingPrimvar(5),
+        _topologyVisibility(6),
+        _instancePrimvar(Unassigned) {
     }
 
-    int GetConstantPrimVarIndex() const    { return _constantPrimVar; }
-    void SetConstantPrimVarIndex(int slot) { _constantPrimVar = slot; }
-    int GetVertexPrimVarIndex() const      { return _vertexPrimVar; }
-    void SetVertexPrimVarIndex(int slot)   { _vertexPrimVar = slot; }
+    int GetConstantPrimvarIndex() const    { return _constantPrimvar; }
+    void SetConstantPrimvarIndex(int slot) { _constantPrimvar = slot; }
+    int GetVertexPrimvarIndex() const      { return _vertexPrimvar; }
+    void SetVertexPrimvarIndex(int slot)   { _vertexPrimvar = slot; }
     int GetTopologyIndex() const           { return _topology; }
     void SetTopologyIndex(int slot)        { _topology = slot; }
-    int GetElementPrimVarIndex() const     { return _elementPrimVar; }
-    void SetElementPrimVarIndex(int slot)  { _elementPrimVar = slot; }
+    int GetElementPrimvarIndex() const     { return _elementPrimvar; }
+    void SetElementPrimvarIndex(int slot)  { _elementPrimvar = slot; }
     int GetInstanceIndexIndex() const      { return _instanceIndex; }
     void SetInstanceIndexIndex(int slot)   { _instanceIndex = slot; }
-    int GetFaceVaryingPrimVarIndex() const    { return _faceVaryingPrimVar; }
-    void SetFaceVaryingPrimVarIndex(int slot) { _faceVaryingPrimVar = slot; }
+    int GetFaceVaryingPrimvarIndex() const    { return _faceVaryingPrimvar; }
+    void SetFaceVaryingPrimvarIndex(int slot) { _faceVaryingPrimvar = slot; }
+    int GetTopologyVisibilityIndex() const    { return _topologyVisibility; }
+    void SetTopologyVisibilityIndex(int slot) { _topologyVisibility = slot; }
 
-    // instance primvars
-    int GetInstancePrimVarIndex(int level) const {
-        return _instancePrimVar + level;
+    // instance primvars take up a range of slots.
+    void SetInstancePrimvarBaseIndex(int slot) { _instancePrimvar = slot; }
+    int GetInstancePrimvarIndex(int level) const {
+        TF_VERIFY(_instancePrimvar != Unassigned);
+        return _instancePrimvar + level;
     }
-    void SetInstancePrimVarIndex(int level, int slot) {
-        if (_instancePrimVar == Unassigned) {
-            _instancePrimVar = slot - level;
-        } else {
-            TF_VERIFY(_instancePrimVar == (slot - level));
-        }
-        // update num levels
-        _instancePrimVarNumLevels
-            = std::max(int8_t(level+1), _instancePrimVarNumLevels);
-    }
-    int GetInstancePrimVarNumLevels() const { return _instancePrimVarNumLevels; }
 
 private:
-    int8_t _constantPrimVar;
-    int8_t _vertexPrimVar;
+    int8_t _constantPrimvar;
+    int8_t _vertexPrimvar;
     int8_t _topology;
-    int8_t _elementPrimVar;
+    int8_t _elementPrimvar;
     int8_t _instanceIndex;
-    int8_t _faceVaryingPrimVar;
-    int8_t _instancePrimVarNumLevels;
-    int8_t _instancePrimVar;
+    int8_t _faceVaryingPrimvar;
+    int8_t _topologyVisibility;
+    int8_t _instancePrimvar;
 };
 
 

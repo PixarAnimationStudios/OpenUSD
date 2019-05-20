@@ -45,6 +45,13 @@ _GetShaderPath(char const * shader)
 }
 
 TfToken
+HdxPackageFullscreenShader()
+{
+    static TfToken shader = _GetShaderPath("fullscreen.glslfx");
+    return shader;
+}
+
+TfToken
 HdxPackageRenderPassShader()
 {
     static TfToken shader = _GetShaderPath("renderPassShader.glslfx");
@@ -71,6 +78,13 @@ HdxPackageSimpleLightingShader()
     static TfToken simpleLightingShader =
         _GetShaderPath("simpleLightingShader.glslfx");
     return simpleLightingShader;
+}
+
+TfToken
+HdxPackageColorCorrectionShader()
+{
+    static TfToken shader = _GetShaderPath("colorCorrection.glslfx");
+    return shader;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

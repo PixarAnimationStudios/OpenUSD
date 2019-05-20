@@ -1,6 +1,6 @@
---- openexr/IlmBase/Half/half.cpp	2017-03-14 16:58:25.704467232 -0700
-+++ ilmbase_half.cpp	2017-03-14 17:17:17.359821757 -0700
-@@ -45,18 +45,24 @@
+--- openexr/IlmBase/Half/half.cpp	2018-10-01 18:23:23.824246552 -0700
++++ ilmbase_half.cpp	2018-08-28 11:19:11.563834456 -0700
+@@ -45,18 +45,27 @@
  //---------------------------------------------------------------------------
  
  #include <assert.h>
@@ -8,6 +8,9 @@
 +
 +#include "pxr/pxr.h"
 +#include "pxr/base/gf/ilmbase_half.h"
++
++#include <istream>
++#include <ostream>
  
  using namespace std;
  
@@ -30,7 +33,7 @@
  
  //-----------------------------------------------
  // Overflow handler for float-to-half conversion;
-@@ -64,14 +70,14 @@
+@@ -64,14 +73,14 @@
  // which may be trapped by the operating system.
  //-----------------------------------------------
  
@@ -47,7 +50,7 @@
      return f;
  }
  
-@@ -81,7 +87,7 @@
+@@ -81,7 +90,7 @@
  // zeroes, denormalized numbers and exponent overflows.
  //-----------------------------------------------------
  
@@ -56,7 +59,7 @@
  half::convert (int i)
  {
      //
-@@ -221,7 +227,7 @@
+@@ -221,7 +230,7 @@
  // Stream I/O operators
  //---------------------
  
@@ -65,7 +68,7 @@
  operator << (ostream &os, half h)
  {
      os << float (h);
-@@ -229,7 +235,7 @@
+@@ -229,7 +238,7 @@
  }
  
  
@@ -74,7 +77,7 @@
  operator >> (istream &is, half &h)
  {
      float f;
-@@ -244,7 +250,7 @@
+@@ -244,7 +253,7 @@
  // floats and halfs, mostly for debugging
  //---------------------------------------
  
@@ -83,7 +86,7 @@
  printBits (ostream &os, half h)
  {
      unsigned short b = h.bits();
-@@ -259,7 +265,7 @@
+@@ -259,7 +268,7 @@
  }
  
  
@@ -92,7 +95,7 @@
  printBits (ostream &os, float f)
  {
      half::uif x;
-@@ -275,7 +281,7 @@
+@@ -275,7 +284,7 @@
  }
  
  
@@ -101,7 +104,7 @@
  printBits (char c[19], half h)
  {
      unsigned short b = h.bits();
-@@ -292,7 +298,7 @@
+@@ -292,7 +301,7 @@
  }
  
  
@@ -110,7 +113,7 @@
  printBits (char c[35], float f)
  {
      half::uif x;
-@@ -308,3 +314,7 @@
+@@ -308,3 +317,7 @@
  
      c[34] = 0;
  }
@@ -118,9 +121,9 @@
 +} // namespace pxr_half
 +
 +PXR_NAMESPACE_CLOSE_SCOPE
---- openexr/IlmBase/Half/half.h	2017-03-14 16:48:21.376739032 -0700
-+++ ilmbase_half.h	2017-03-14 17:17:17.350150189 -0700
-@@ -82,12 +82,18 @@
+--- openexr/IlmBase/Half/half.h	2018-10-01 18:22:02.106135931 -0700
++++ ilmbase_half.h	2018-08-28 11:18:33.291309415 -0700
+@@ -82,11 +82,17 @@
  //
  //---------------------------------------------------------------------------
  
@@ -128,20 +131,20 @@
 -#define _HALF_H_
 +#ifndef PXR_HALF_H
 +#define PXR_HALF_H
-+
-+#include "pxr/pxr.h"
-+#include "pxr/base/gf/api.h"
  
 -#include "halfExport.h"    // for definition of HALF_EXPORT
- #include <iostream>
- 
+-#include <iostream>
++#include "pxr/pxr.h"
++#include "pxr/base/gf/api.h"
++
++#include <iosfwd>
++
 +PXR_NAMESPACE_OPEN_SCOPE
 +
 +namespace pxr_half {
-+
+ 
  class half
  {
-   public:
 @@ -197,8 +203,8 @@
      // Access to the internal representation
      //--------------------------------------
@@ -206,8 +209,8 @@
 +
  #endif
 +
---- openexr/IlmBase/Half/halfLimits.h	2017-11-22 10:45:00.877107971 -0800
-+++ ilmbase_halfLimits.h	2017-11-22 10:43:14.895586372 -0800
+--- openexr/IlmBase/Half/halfLimits.h	2018-10-01 18:23:29.296320927 -0700
++++ ilmbase_halfLimits.h	2017-12-14 12:23:20.000000000 -0800
 @@ -38,8 +38,8 @@
  //     Rod Bogart <rgb@ilm.com>
  
@@ -219,12 +222,11 @@
  
  
  //------------------------------------------------------------------------
-@@ -49,13 +49,17 @@
+@@ -49,13 +49,16 @@
  //------------------------------------------------------------------------
  
  #include <limits>
 -#include "half.h"
-+#include "pxr/pxr.h"
 +#include "pxr/base/gf/ilmbase_half.h"
  
  namespace std {

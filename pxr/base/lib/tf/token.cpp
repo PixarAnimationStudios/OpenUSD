@@ -36,13 +36,10 @@
 
 #include "pxr/base/arch/align.h"
 
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/hashed_index.hpp>
-
 #include <tbb/spin_mutex.h>
 
 #include <string>
-#include <iostream>
+#include <ostream>
 #include <vector>
 #include <cstring>
 #include <utility>
@@ -261,7 +258,7 @@ TF_REGISTRY_FUNCTION(TfType)
 void
 TfToken::_PossiblyDestroyRep() const
 {
-    Tf_TokenRegistry::_GetInstance()._PossiblyDestroyRep(_rep);
+    Tf_TokenRegistry::_GetInstance()._PossiblyDestroyRep(_rep.Get());
 }
 
 string const&

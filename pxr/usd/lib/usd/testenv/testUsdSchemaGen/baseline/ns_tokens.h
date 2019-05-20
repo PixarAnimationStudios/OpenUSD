@@ -58,14 +58,82 @@ namespace foo {
 /// Use UsdContrivedTokens like so:
 ///
 /// \code
-///     gprim.GetMyTokenValuedAttr().Set(UsdContrivedTokens->binding);
+///     gprim.GetMyTokenValuedAttr().Set(UsdContrivedTokens->asset);
 /// \endcode
 struct UsdContrivedTokensType {
     USDCONTRIVED_API UsdContrivedTokensType();
+    /// \brief "asset"
+    /// 
+    /// UsdContrivedBase
+    const TfToken asset;
+    /// \brief "assetArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken assetArray;
+    /// \brief "attrWithoutGeneratedAccessorAPI"
+    /// 
+    /// UsdContrivedTestHairman
+    const TfToken attrWithoutGeneratedAccessorAPI;
     /// \brief "binding"
     /// 
     /// UsdContrivedDerived
     const TfToken binding;
+    /// \brief "bool"
+    /// 
+    /// UsdContrivedBase
+    const TfToken bool;
+    /// \brief "boolArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken boolArray;
+    /// \brief "color3d"
+    /// 
+    /// UsdContrivedBase
+    const TfToken color3d;
+    /// \brief "color3dArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken color3dArray;
+    /// \brief "color3f"
+    /// 
+    /// UsdContrivedBase
+    const TfToken color3f;
+    /// \brief "color3fArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken color3fArray;
+    /// \brief "color3h"
+    /// 
+    /// UsdContrivedBase
+    const TfToken color3h;
+    /// \brief "color3hArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken color3hArray;
+    /// \brief "color4d"
+    /// 
+    /// UsdContrivedBase
+    const TfToken color4d;
+    /// \brief "color4dArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken color4dArray;
+    /// \brief "color4f"
+    /// 
+    /// UsdContrivedBase
+    const TfToken color4f;
+    /// \brief "color4fArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken color4fArray;
+    /// \brief "color4h"
+    /// 
+    /// UsdContrivedBase
+    const TfToken color4h;
+    /// \brief "color4hArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken color4hArray;
     /// \brief "cornerIndices"
     /// 
     /// UsdContrivedDerived
@@ -78,10 +146,154 @@ struct UsdContrivedTokensType {
     /// 
     /// UsdContrivedDerived
     const TfToken creaseLengths;
+    /// \brief "double2"
+    /// 
+    /// UsdContrivedBase
+    const TfToken double2;
+    /// \brief "double2Array"
+    /// 
+    /// UsdContrivedBase
+    const TfToken double2Array;
+    /// \brief "double3"
+    /// 
+    /// UsdContrivedBase
+    const TfToken double3;
+    /// \brief "double3Array"
+    /// 
+    /// UsdContrivedBase
+    const TfToken double3Array;
+    /// \brief "double4"
+    /// 
+    /// UsdContrivedBase
+    const TfToken double4;
+    /// \brief "double4Array"
+    /// 
+    /// UsdContrivedBase
+    const TfToken double4Array;
+    /// \brief "double"
+    /// 
+    /// UsdContrivedBase
+    const TfToken double_;
+    /// \brief "doubleArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken doubleArray;
+    /// \brief "float2"
+    /// 
+    /// UsdContrivedBase
+    const TfToken float2;
+    /// \brief "float2Array"
+    /// 
+    /// UsdContrivedBase
+    const TfToken float2Array;
+    /// \brief "float3"
+    /// 
+    /// UsdContrivedBase
+    const TfToken float3;
+    /// \brief "float3Array"
+    /// 
+    /// UsdContrivedBase
+    const TfToken float3Array;
+    /// \brief "float4"
+    /// 
+    /// UsdContrivedBase
+    const TfToken float4;
+    /// \brief "float4Array"
+    /// 
+    /// UsdContrivedBase
+    const TfToken float4Array;
+    /// \brief "float"
+    /// 
+    /// UsdContrivedBase
+    const TfToken float_;
+    /// \brief "floatArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken floatArray;
+    /// \brief "frame4d"
+    /// 
+    /// UsdContrivedBase
+    const TfToken frame4d;
+    /// \brief "frame4dArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken frame4dArray;
+    /// \brief "half"
+    /// 
+    /// UsdContrivedBase
+    const TfToken half;
+    /// \brief "half2"
+    /// 
+    /// UsdContrivedBase
+    const TfToken half2;
+    /// \brief "half2Array"
+    /// 
+    /// UsdContrivedBase
+    const TfToken half2Array;
+    /// \brief "half3"
+    /// 
+    /// UsdContrivedBase
+    const TfToken half3;
+    /// \brief "half3Array"
+    /// 
+    /// UsdContrivedBase
+    const TfToken half3Array;
+    /// \brief "half4"
+    /// 
+    /// UsdContrivedBase
+    const TfToken half4;
+    /// \brief "half4Array"
+    /// 
+    /// UsdContrivedBase
+    const TfToken half4Array;
+    /// \brief "halfArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken halfArray;
     /// \brief "holeIndices"
     /// 
     /// UsdContrivedDerived
     const TfToken holeIndices;
+    /// \brief "int2"
+    /// 
+    /// UsdContrivedBase
+    const TfToken int2;
+    /// \brief "int2Array"
+    /// 
+    /// UsdContrivedBase
+    const TfToken int2Array;
+    /// \brief "int3"
+    /// 
+    /// UsdContrivedBase
+    const TfToken int3;
+    /// \brief "int3Array"
+    /// 
+    /// UsdContrivedBase
+    const TfToken int3Array;
+    /// \brief "int4"
+    /// 
+    /// UsdContrivedBase
+    const TfToken int4;
+    /// \brief "int4Array"
+    /// 
+    /// UsdContrivedBase
+    const TfToken int4Array;
+    /// \brief "int64"
+    /// 
+    /// UsdContrivedBase
+    const TfToken int64;
+    /// \brief "int64Array"
+    /// 
+    /// UsdContrivedBase
+    const TfToken int64Array;
+    /// \brief "int"
+    /// 
+    /// UsdContrivedBase
+    const TfToken int_;
+    /// \brief "intArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken intArray;
     /// \brief "justDefault"
     /// 
     /// UsdContrivedDerived
@@ -94,26 +306,34 @@ struct UsdContrivedTokensType {
     /// 
     /// libraryToken2 doc
     const TfToken libraryToken2;
-    /// \brief "myColorFloat"
+    /// \brief "matrix2d"
     /// 
     /// UsdContrivedBase
-    const TfToken myColorFloat;
+    const TfToken matrix2d;
+    /// \brief "matrix2dArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken matrix2dArray;
+    /// \brief "matrix3d"
+    /// 
+    /// UsdContrivedBase
+    const TfToken matrix3d;
+    /// \brief "matrix3dArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken matrix3dArray;
+    /// \brief "matrix4d"
+    /// 
+    /// UsdContrivedBase
+    const TfToken matrix4d;
+    /// \brief "matrix4dArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken matrix4dArray;
     /// \brief "myDouble"
     /// 
     /// UsdContrivedBase
     const TfToken myDouble;
-    /// \brief "myFloat"
-    /// 
-    /// UsdContrivedBase
-    const TfToken myFloat;
-    /// \brief "myNormals"
-    /// 
-    /// UsdContrivedBase
-    const TfToken myNormals;
-    /// \brief "myPoints"
-    /// 
-    /// UsdContrivedBase
-    const TfToken myPoints;
     /// \brief "myUniformBool"
     /// 
     /// UsdContrivedBase
@@ -126,10 +346,6 @@ struct UsdContrivedTokensType {
     /// 
     /// UsdContrivedDerived
     const TfToken myVecfArray;
-    /// \brief "myVelocities"
-    /// 
-    /// UsdContrivedBase
-    const TfToken myVelocities;
     /// \brief "namespaced:property"
     /// 
     /// UsdContrivedDerived
@@ -138,10 +354,82 @@ struct UsdContrivedTokensType {
     /// 
     /// Default value for UsdContrivedDerived::GetJustDefaultAttr()
     const TfToken newToken;
+    /// \brief "normal3d"
+    /// 
+    /// UsdContrivedBase
+    const TfToken normal3d;
+    /// \brief "normal3dArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken normal3dArray;
+    /// \brief "normal3f"
+    /// 
+    /// UsdContrivedBase
+    const TfToken normal3f;
+    /// \brief "normal3fArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken normal3fArray;
+    /// \brief "normal3h"
+    /// 
+    /// UsdContrivedBase
+    const TfToken normal3h;
+    /// \brief "normal3hArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken normal3hArray;
     /// \brief "pivotPosition"
     /// 
     /// UsdContrivedDerived
     const TfToken pivotPosition;
+    /// \brief "point3d"
+    /// 
+    /// UsdContrivedBase
+    const TfToken point3d;
+    /// \brief "point3dArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken point3dArray;
+    /// \brief "point3f"
+    /// 
+    /// UsdContrivedBase
+    const TfToken point3f;
+    /// \brief "point3fArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken point3fArray;
+    /// \brief "point3h"
+    /// 
+    /// UsdContrivedBase
+    const TfToken point3h;
+    /// \brief "point3hArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken point3hArray;
+    /// \brief "quatd"
+    /// 
+    /// UsdContrivedBase
+    const TfToken quatd;
+    /// \brief "quatdArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken quatdArray;
+    /// \brief "quatf"
+    /// 
+    /// UsdContrivedBase
+    const TfToken quatf;
+    /// \brief "quatfArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken quatfArray;
+    /// \brief "quath"
+    /// 
+    /// UsdContrivedBase
+    const TfToken quath;
+    /// \brief "quathArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken quathArray;
     /// \brief "relCanShareApiNameWithAttr"
     /// 
     /// UsdContrivedTestHairman
@@ -150,30 +438,70 @@ struct UsdContrivedTokensType {
     /// 
     /// UsdContrivedTestHairman
     const TfToken riStatementsAttributesUserGofur_GeomOnHairdensity;
+    /// \brief "string"
+    /// 
+    /// UsdContrivedBase
+    const TfToken string;
+    /// \brief "stringArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken stringArray;
     /// \brief "temp"
     /// 
     /// UsdContrivedTestHairman
     const TfToken temp;
+    /// \brief "testAttrOne"
+    /// 
+    /// UsdContrivedPublicMultipleApplyAPI, UsdContrivedMultipleApplyAPI
+    const TfToken testAttrOne;
+    /// \brief "testAttrThree"
+    /// 
+    /// UsdContrivedDerivedMultipleApplyAPI
+    const TfToken testAttrThree;
+    /// \brief "testAttrTwo"
+    /// 
+    /// UsdContrivedPublicMultipleApplyAPI, UsdContrivedMultipleApplyAPI
+    const TfToken testAttrTwo;
     /// \brief "testingAsset"
     /// 
     /// UsdContrivedDerived
     const TfToken testingAsset;
+    /// \brief "token"
+    /// 
+    /// Default value for UsdContrivedBase::GetTokenAttr(), UsdContrivedBase
+    const TfToken token;
+    /// \brief "tokenArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken tokenArray;
     /// \brief "transform"
     /// 
     /// UsdContrivedDerived
     const TfToken transform;
-    /// \brief "unsignedChar"
+    /// \brief "uchar"
     /// 
     /// UsdContrivedBase
-    const TfToken unsignedChar;
-    /// \brief "unsignedInt"
+    const TfToken uchar;
+    /// \brief "ucharArray"
     /// 
     /// UsdContrivedBase
-    const TfToken unsignedInt;
-    /// \brief "unsignedInt64Array"
+    const TfToken ucharArray;
+    /// \brief "uint"
     /// 
     /// UsdContrivedBase
-    const TfToken unsignedInt64Array;
+    const TfToken uint;
+    /// \brief "uint64"
+    /// 
+    /// UsdContrivedBase
+    const TfToken uint64;
+    /// \brief "uint64Array"
+    /// 
+    /// UsdContrivedBase
+    const TfToken uint64Array;
+    /// \brief "uintArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken uintArray;
     /// \brief "VariableTokenAllowed1"
     /// 
     /// Possible value for UsdContrivedBase::GetMyVaryingTokenAttr()
@@ -186,6 +514,30 @@ struct UsdContrivedTokensType {
     /// 
     /// Default value for UsdContrivedBase::GetMyVaryingTokenAttr()
     const TfToken variableTokenDefault;
+    /// \brief "vector3d"
+    /// 
+    /// UsdContrivedBase
+    const TfToken vector3d;
+    /// \brief "vector3dArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken vector3dArray;
+    /// \brief "vector3f"
+    /// 
+    /// UsdContrivedBase
+    const TfToken vector3f;
+    /// \brief "vector3fArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken vector3fArray;
+    /// \brief "vector3h"
+    /// 
+    /// UsdContrivedBase
+    const TfToken vector3h;
+    /// \brief "vector3hArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken vector3hArray;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

@@ -93,7 +93,7 @@ class TestPcpOwner(unittest.TestCase):
 
         # Make the owner of the "owned" layer the same as the owner denoted by
         # the session layer. Now the "owned" layer's opinion should win.
-        self.userLayer.owner = self.sessionLayer.sessionOwner;
+        self.userLayer.owner = self.sessionLayer.sessionOwner
         TestResolve(self.userLayer)
 
         # If we change the session's owner, the "stronger" layer should win
@@ -101,7 +101,7 @@ class TestPcpOwner(unittest.TestCase):
         self.sessionLayer.sessionOwner = "_bogus_user_"
         TestResolve(self.strongerLayer)
 
-        self.sessionLayer.sessionOwner = self.userLayer.owner;
+        self.sessionLayer.sessionOwner = self.userLayer.owner
         TestResolve(self.userLayer)
 
         # Similarly, changing the owner of a sublayer should also let the
@@ -109,7 +109,7 @@ class TestPcpOwner(unittest.TestCase):
         self.userLayer.owner = "_other_bogus_user_"
         TestResolve(self.strongerLayer)
 
-        self.userLayer.owner = self.sessionLayer.sessionOwner;
+        self.userLayer.owner = self.sessionLayer.sessionOwner
         TestResolve(self.userLayer)
 
         # Changing both the session owner and the layer's owner to another

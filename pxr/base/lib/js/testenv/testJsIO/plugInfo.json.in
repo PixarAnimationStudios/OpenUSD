@@ -1,52 +1,52 @@
 {
     "Types" : {
         "MoverBend::MultiMode" : {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverFrameDeform::RotationFrame" : {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverLatticeDeform::Version" : {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverRadialSquetch::Mode" : {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverRotate::Mode" : {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverRotate::RotationDirection" : {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverScale::Mode" : {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverSubdivWarp::Version" : {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverSubdivWarp::Complexity" : {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverSurfaceDeform::Version" : {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverTransformDeform::Mode" : {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverTransformDeform::MultiMode" : {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverTransformDeform::TransformOrder" : {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverTransformDeform::FramePivotMethod" : {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverTranslate::Mode" : {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverMultiSculpt::Basis" : {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverAttachPoints"     : {
             "bases": ["MoverConstraintBase"],
@@ -77,7 +77,7 @@
             "bases": ["MfMover"]
         },
         "MoverConstraintBase::LocalSpaceMode" : {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },        
         "MoverCopySubdivPoints" : {
             "bases": ["MfMover"],

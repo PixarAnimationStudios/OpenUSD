@@ -43,7 +43,7 @@ class TestUsdGeomXformable(unittest.TestCase):
     def test_ScaleOp(self):
         s = Usd.Stage.CreateInMemory()
         x = UsdGeom.Xform.Define(s, '/World')
-        scaleVec = Gf.Vec3f(1., 2., 3.);
+        scaleVec = Gf.Vec3f(1., 2., 3.)
         x.AddScaleOp().Set(scaleVec)
         xform = x.GetLocalTransformation(Usd.TimeCode.Default())
         self._AssertCloseXf(xform, Gf.Matrix4d(1.0).SetScale(Gf.Vec3d(scaleVec)))
@@ -133,9 +133,9 @@ class TestUsdGeomXformable(unittest.TestCase):
                     Vt.TokenArray(('xformOp:rotateXYZ', )))
 
         xyz2 = UsdGeom.Xform.Define(s, '/XYZ2')
-        xyz2.AddRotateZOp().Set(rot[2]);
-        xyz2.AddRotateYOp().Set(rot[1]);
-        xyz2.AddRotateXOp().Set(rot[0]);
+        xyz2.AddRotateZOp().Set(rot[2])
+        xyz2.AddRotateYOp().Set(rot[1])
+        xyz2.AddRotateXOp().Set(rot[0])
         xformXYZ2 = xyz2.GetLocalTransformation(Usd.TimeCode.Default())
         self.assertEqual(xyz2.GetXformOpOrderAttr().Get(), 
                     Vt.TokenArray(('xformOp:rotateZ', 'xformOp:rotateY', 
@@ -150,9 +150,9 @@ class TestUsdGeomXformable(unittest.TestCase):
                     Vt.TokenArray(('xformOp:rotateXZY', )))
 
         xzy2 = UsdGeom.Xform.Define(s, '/XZY2')
-        xzy2.AddRotateYOp().Set(rot[1]);
-        xzy2.AddRotateZOp().Set(rot[2]);
-        xzy2.AddRotateXOp().Set(rot[0]);
+        xzy2.AddRotateYOp().Set(rot[1])
+        xzy2.AddRotateZOp().Set(rot[2])
+        xzy2.AddRotateXOp().Set(rot[0])
         xformXZY2 = xzy2.GetLocalTransformation(Usd.TimeCode.Default())
         self.assertEqual(xzy2.GetXformOpOrderAttr().Get(), 
                     Vt.TokenArray(('xformOp:rotateY', 'xformOp:rotateZ', 
@@ -167,9 +167,9 @@ class TestUsdGeomXformable(unittest.TestCase):
                     Vt.TokenArray(('xformOp:rotateYXZ', )))
 
         yxz2 = UsdGeom.Xform.Define(s, '/YXZ2')
-        yxz2.AddRotateZOp().Set(rot[2]);
-        yxz2.AddRotateXOp().Set(rot[0]);
-        yxz2.AddRotateYOp().Set(rot[1]);
+        yxz2.AddRotateZOp().Set(rot[2])
+        yxz2.AddRotateXOp().Set(rot[0])
+        yxz2.AddRotateYOp().Set(rot[1])
         xformYXZ2 = yxz2.GetLocalTransformation(Usd.TimeCode.Default())
         self.assertEqual(yxz2.GetXformOpOrderAttr().Get(), 
                     Vt.TokenArray(('xformOp:rotateZ', 'xformOp:rotateX', 
@@ -185,9 +185,9 @@ class TestUsdGeomXformable(unittest.TestCase):
                     Vt.TokenArray(('xformOp:rotateYZX', )))
 
         yzx2 = UsdGeom.Xform.Define(s, '/YZX2')
-        yzx2.AddRotateXOp().Set(rot[0]);
-        yzx2.AddRotateZOp().Set(rot[2]);
-        yzx2.AddRotateYOp().Set(rot[1]);
+        yzx2.AddRotateXOp().Set(rot[0])
+        yzx2.AddRotateZOp().Set(rot[2])
+        yzx2.AddRotateYOp().Set(rot[1])
         xformYZX2 = yzx2.GetLocalTransformation(Usd.TimeCode.Default())
         self.assertEqual(yzx2.GetXformOpOrderAttr().Get(), 
                     Vt.TokenArray(('xformOp:rotateX', 'xformOp:rotateZ', 
@@ -203,9 +203,9 @@ class TestUsdGeomXformable(unittest.TestCase):
                     Vt.TokenArray(('xformOp:rotateZXY', )))
 
         zxy2 = UsdGeom.Xform.Define(s, '/ZXY2')
-        zxy2.AddRotateYOp().Set(rot[1]);
-        zxy2.AddRotateXOp().Set(rot[0]);
-        zxy2.AddRotateZOp().Set(rot[2]);
+        zxy2.AddRotateYOp().Set(rot[1])
+        zxy2.AddRotateXOp().Set(rot[0])
+        zxy2.AddRotateZOp().Set(rot[2])
         xformZXY2 = zxy2.GetLocalTransformation(Usd.TimeCode.Default())
         self.assertEqual(zxy2.GetXformOpOrderAttr().Get(), 
                     Vt.TokenArray(('xformOp:rotateY', 'xformOp:rotateX', 
@@ -221,9 +221,9 @@ class TestUsdGeomXformable(unittest.TestCase):
                     Vt.TokenArray(('xformOp:rotateZYX', )))
 
         zyx2 = UsdGeom.Xform.Define(s, '/ZYX2')
-        zyx2.AddRotateXOp().Set(rot[0]);
-        zyx2.AddRotateYOp().Set(rot[1]);
-        zyx2.AddRotateZOp().Set(rot[2]);
+        zyx2.AddRotateXOp().Set(rot[0])
+        zyx2.AddRotateYOp().Set(rot[1])
+        zyx2.AddRotateZOp().Set(rot[2])
         xformZYX2 = zyx2.GetLocalTransformation(Usd.TimeCode.Default())
         self.assertEqual(zyx2.GetXformOpOrderAttr().Get(), 
                     Vt.TokenArray(('xformOp:rotateX', 'xformOp:rotateY', 
@@ -488,16 +488,16 @@ class TestUsdGeomXformable(unittest.TestCase):
 
         halfRotOp = x1.AddRotateXYZOp(precision=UsdGeom.XformOp.PrecisionHalf,
                                         opSuffix='Half')
-        self.assertEqual(halfRotOp.GetPrecision(), UsdGeom.XformOp.PrecisionHalf);
+        self.assertEqual(halfRotOp.GetPrecision(), UsdGeom.XformOp.PrecisionHalf)
         halfRotOp.Set(Gf.Vec3h(0.0, 0.0, 60.0))
 
         doubleRotOp = x1.AddRotateXYZOp(precision=UsdGeom.XformOp.PrecisionDouble,
                                         opSuffix='Double')
-        self.assertEqual(doubleRotOp.GetPrecision(), UsdGeom.XformOp.PrecisionDouble);
+        self.assertEqual(doubleRotOp.GetPrecision(), UsdGeom.XformOp.PrecisionDouble)
         doubleRotOp.Set(Gf.Vec3d(0.0, 45.123456789, 0.0))
 
         floatRotOp = x1.AddRotateXYZOp(opSuffix='Float')
-        self.assertEqual(floatRotOp.GetPrecision(), UsdGeom.XformOp.PrecisionFloat);
+        self.assertEqual(floatRotOp.GetPrecision(), UsdGeom.XformOp.PrecisionFloat)
         floatRotOp.Set(Gf.Vec3f(30.0, 0.0, 0.0))
 
         self.assertEqual(x1.GetXformOpOrderAttr().Get(),
@@ -609,10 +609,10 @@ class TestUsdGeomXformable(unittest.TestCase):
         self.assertEqual([], scaleOp.GetTimeSamples())
 
         xlate1 = Gf.Vec3d(10., 20., 30.)
-        scale2 = Gf.Vec3f(1., 2., 3.);
+        scale2 = Gf.Vec3f(1., 2., 3.)
 
         xlate3 = Gf.Vec3d(10., 20., 30.)
-        scale4 = Gf.Vec3f(1., 2., 3.);
+        scale4 = Gf.Vec3f(1., 2., 3.)
 
         self.assertEqual(x.GetTimeSamples(), [])
 

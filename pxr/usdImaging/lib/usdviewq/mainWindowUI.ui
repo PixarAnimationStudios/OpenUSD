@@ -110,7 +110,59 @@
           <number>6</number>
          </property>
          <item>
-          <widget class="QTreeWidget" name="primView">
+          <widget class="QMenuBar" name="primViewMenuBar">
+           <property name="layoutDirection">
+            <enum>Qt::LeftToRight</enum>
+           </property>
+           <property name="nativeMenuBar">
+            <bool>false</bool>
+           </property>
+           <widget class="QMenu" name="menuNavigation">
+            <property name="title">
+             <string>&amp;Navigation</string>
+            </property>
+            <addaction name="actionFind_Prims"/>
+            <addaction name="actionSelect_Stage_Root"/>
+            <addaction name="actionSelect_Model_Root"/>
+            <addaction name="separator"/>
+            <addaction name="actionSelect_Bound_Preview_Material"/>
+            <addaction name="actionSelect_Bound_Full_Material"/>
+            <addaction name="actionSelect_Preview_Binding_Relationship"/>
+            <addaction name="actionSelect_Full_Binding_Relationship"/>
+           </widget>
+           <widget class="QMenu" name="menuShow">
+            <property name="title">
+             <string>&amp;Show</string>
+            </property>
+            <widget class="QMenu" name="menuPrim_View_Depth">
+             <property name="title">
+              <string>Prim View Depth</string>
+             </property>
+             <addaction name="actionLevel_1"/>
+             <addaction name="actionLevel_2"/>
+             <addaction name="actionLevel_3"/>
+             <addaction name="actionLevel_4"/>
+             <addaction name="actionLevel_5"/>
+             <addaction name="actionLevel_6"/>
+             <addaction name="actionLevel_7"/>
+             <addaction name="actionLevel_8"/>
+             <addaction name="separator"/>
+             <addaction name="actionExpand_All"/>
+             <addaction name="actionCollapse_All"/>
+            </widget>
+            <addaction name="menuPrim_View_Depth"/>
+            <addaction name="separator"/>
+            <addaction name="actionShow_Inactive_Prims"/>
+            <addaction name="actionShow_All_Master_Prims"/>
+            <addaction name="actionShow_Undefined_Prims"/>
+            <addaction name="actionShow_Abstract_Prims"/>
+           </widget>
+           <addaction name="menuNavigation"/>
+           <addaction name="menuShow"/>
+          </widget>
+         </item>
+         <item>
+          <widget class="PrimTreeWidget" name="primView">
            <property name="font">
             <font>
              <family>Gotham Rounded</family>
@@ -174,7 +226,12 @@
              <string>Vis</string>
             </property>
             <property name="textAlignment">
-             <set>AlignLeft|AlignVCenter</set>
+             <set>AlignLeading|AlignVCenter</set>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Draw Mode</string>
             </property>
            </column>
           </widget>
@@ -221,6 +278,9 @@
              </property>
              <property name="focusPolicy">
               <enum>Qt::NoFocus</enum>
+             </property>
+             <property name="toolTip">
+              <string>Prim legend</string>
              </property>
              <property name="text">
               <string>?</string>
@@ -371,6 +431,9 @@
            <property name="alternatingRowColors">
             <bool>true</bool>
            </property>
+           <property name="textElideMode">
+            <enum>Qt::ElideMiddle</enum>
+           </property>
            <property name="columnCount">
             <number>3</number>
            </property>
@@ -421,6 +484,9 @@
              </property>
              <property name="focusPolicy">
               <enum>Qt::NoFocus</enum>
+             </property>
+             <property name="toolTip">
+              <string>Property legend</string>
              </property>
              <property name="text">
               <string>?</string>
@@ -490,7 +556,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QFrame" name="attributeInspectorFrame">
+       <widget class="QFrame" name="propertyInspectorFrame">
         <property name="frameShape">
          <enum>QFrame::NoFrame</enum>
         </property>
@@ -517,7 +583,7 @@
           <number>2</number>
          </property>
          <item>
-          <widget class="QFrame" name="attributeInspectorContainer">
+          <widget class="QFrame" name="propertyInspectorContainer">
            <property name="frameShape">
             <enum>QFrame::NoFrame</enum>
            </property>
@@ -525,11 +591,20 @@
             <enum>QFrame::Plain</enum>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_3">
-            <property name="margin">
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
              <number>0</number>
             </property>
             <item>
-             <widget class="QTabWidget" name="attributeInspector">
+             <widget class="QTabWidget" name="propertyInspector">
               <property name="currentIndex">
                <number>0</number>
               </property>
@@ -538,7 +613,16 @@
                 <string>Value</string>
                </attribute>
                <layout class="QVBoxLayout" name="verticalLayout">
-                <property name="margin">
+                <property name="leftMargin">
+                 <number>6</number>
+                </property>
+                <property name="topMargin">
+                 <number>6</number>
+                </property>
+                <property name="rightMargin">
+                 <number>6</number>
+                </property>
+                <property name="bottomMargin">
                  <number>6</number>
                 </property>
                 <item>
@@ -865,12 +949,15 @@
            </widget>
           </item>
           <item>
-           <widget class="QSlider" name="frameSlider">
+           <widget class="FrameSlider" name="frameSlider">
             <property name="minimumSize">
              <size>
               <width>0</width>
               <height>0</height>
              </size>
+            </property>
+            <property name="pageStep">
+             <number>0</number>
             </property>
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
@@ -1098,7 +1185,7 @@
      <x>0</x>
      <y>0</y>
      <width>1145</width>
-     <height>23</height>
+     <height>25</height>
     </rect>
    </property>
    <property name="minimumSize">
@@ -1120,26 +1207,36 @@
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
-   <widget class="QMenu" name="menuOptions">
+   <widget class="QMenu" name="menuEdit">
     <property name="title">
-     <string>&amp;Options</string>
+     <string>&amp;Edit</string>
     </property>
-    <widget class="QMenu" name="menuPrim_View_Depth">
+    <widget class="QMenu" name="menuInterpolation">
      <property name="title">
-      <string>Prim View Depth</string>
+      <string>Stage Interpolation</string>
      </property>
-     <addaction name="actionLevel_1"/>
-     <addaction name="actionLevel_2"/>
-     <addaction name="actionLevel_3"/>
-     <addaction name="actionLevel_4"/>
-     <addaction name="actionLevel_5"/>
-     <addaction name="actionLevel_6"/>
-     <addaction name="actionLevel_7"/>
-     <addaction name="actionLevel_8"/>
-     <addaction name="separator"/>
-     <addaction name="actionExpand_All"/>
-     <addaction name="actionCollapse_All"/>
     </widget>
+    <addaction name="menuInterpolation"/>
+    <addaction name="separator"/>
+    <addaction name="actionLoad"/>
+    <addaction name="actionUnload"/>
+    <addaction name="separator"/>
+    <addaction name="actionActivate"/>
+    <addaction name="actionDeactivate"/>
+    <addaction name="separator"/>
+    <addaction name="actionMake_Visible"/>
+    <addaction name="actionVis_Only"/>
+    <addaction name="actionMake_Invisible"/>
+    <addaction name="actionRemove_Session_Visibility"/>
+    <addaction name="actionReset_All_Session_Visibility"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>&amp;View</string>
+    </property>
+    <property name="toolTipsVisible">
+     <bool>true</bool>
+    </property>
     <widget class="QMenu" name="menuHUD">
      <property name="title">
       <string>Heads-Up Display</string>
@@ -1153,7 +1250,7 @@
     </widget>
     <widget class="QMenu" name="menuPickMode">
      <property name="title">
-      <string>Pick mode...</string>
+      <string>Pick mode</string>
      </property>
      <addaction name="actionPick_Prims"/>
      <addaction name="actionPick_Models"/>
@@ -1161,7 +1258,7 @@
     </widget>
     <widget class="QMenu" name="menuSelection_Highlighting">
      <property name="title">
-      <string>Selection Highlighting...</string>
+      <string>Selection Highlighting</string>
      </property>
      <widget class="QMenu" name="menuHighlightColor">
       <property name="title">
@@ -1176,29 +1273,12 @@
      <addaction name="actionAlways"/>
      <addaction name="menuHighlightColor"/>
     </widget>
-    <addaction name="menuHUD"/>
-    <addaction name="separator"/>
-    <addaction name="menuPrim_View_Depth"/>
-    <addaction name="actionShow_Inactive_Prims"/>
-    <addaction name="actionShow_All_Master_Prims"/>
-    <addaction name="actionShow_Undefined_Prims"/>
-    <addaction name="actionShow_Abstract_Prims"/>
-    <addaction name="separator"/>
-    <addaction name="actionRollover_Prim_Info"/>
-    <addaction name="separator"/>
-    <addaction name="menuPickMode"/>
-    <addaction name="menuSelection_Highlighting"/>
-   </widget>
-   <widget class="QMenu" name="menuView">
-    <property name="title">
-     <string>&amp;View</string>
-    </property>
     <widget class="QMenu" name="menuLights">
      <property name="enabled">
       <bool>true</bool>
      </property>
      <property name="title">
-      <string>Lights...</string>
+      <string>Lights</string>
      </property>
      <addaction name="actionAmbient_Only"/>
      <addaction name="separator"/>
@@ -1208,7 +1288,7 @@
     </widget>
     <widget class="QMenu" name="menuShading_Mode">
      <property name="title">
-      <string>Shading Mode...</string>
+      <string>Shading Mode</string>
      </property>
      <addaction name="actionWireframe"/>
      <addaction name="actionWireframeOnSurface"/>
@@ -1219,6 +1299,14 @@
      <addaction name="actionGeom_Smooth"/>
      <addaction name="actionGeom_Flat"/>
      <addaction name="actionHidden_Surface_Wireframe"/>
+    </widget>
+    <widget class="QMenu" name="menuColorCorrection">
+     <property name="title">
+      <string>Color Management</string>
+     </property>
+     <addaction name="actionNoColorCorrection"/>
+     <addaction name="actionSRGBColorCorrection"/>
+     <addaction name="actionOpenColorIO"/>
     </widget>
     <widget class="QMenu" name="menuBackground_Color">
      <property name="title">
@@ -1234,7 +1322,7 @@
       <bool>true</bool>
      </property>
      <property name="title">
-      <string>Camera...</string>
+      <string>Camera</string>
      </property>
      <addaction name="actionFreeCam"/>
     </widget>
@@ -1243,7 +1331,7 @@
       <bool>true</bool>
      </property>
      <property name="title">
-      <string>Camera Guides...</string>
+      <string>Camera Guides</string>
      </property>
      <widget class="QMenu" name="menuCamera_Masking">
       <property name="title">
@@ -1271,7 +1359,7 @@
     </widget>
     <widget class="QMenu" name="menuDisplay">
      <property name="title">
-      <string>Display Purposes...</string>
+      <string>Display Purposes</string>
      </property>
      <addaction name="actionDisplay_Guide"/>
      <addaction name="actionDisplay_Proxy"/>
@@ -1289,26 +1377,42 @@
      <addaction name="separator"/>
      <addaction name="useExtentsHint"/>
     </widget>
-    <widget class="QMenu" name="menuInterpolation">
-     <property name="title">
-      <string>Interpolation</string>
-     </property>
-    </widget>
     <widget class="QMenu" name="menuRendererPlugin">
      <property name="title">
-      <string>Hydra Renderer...</string>
+      <string>Hydra Renderer</string>
      </property>
+    </widget>
+    <widget class="QMenu" name="menuRendererSettings">
+     <property name="title">
+      <string>Hydra Settings</string>
+     </property>
+    </widget>
+    <widget class="QMenu" name="menuRendererAovs">
+     <property name="title">
+      <string>Hydra AOVs</string>
+     </property>
+    </widget>
+    <widget class="QMenu" name="menuComplexity">
+     <property name="title">
+      <string>Complexity</string>
+     </property>
+     <addaction name="actionLow"/>
+     <addaction name="actionMedium"/>
+     <addaction name="actionHigh"/>
+     <addaction name="actionVery_High"/>
     </widget>
     <addaction name="actionToggle_Viewer_Mode"/>
     <addaction name="separator"/>
     <addaction name="menuRendererPlugin"/>
+    <addaction name="menuRendererSettings"/>
+    <addaction name="menuRendererAovs"/>
     <addaction name="separator"/>
     <addaction name="actionReset_View"/>
     <addaction name="actionAdjust_FOV"/>
-    <addaction name="actionRecompute_Clipping_Planes"/>
+    <addaction name="actionAuto_Compute_Clipping_Planes"/>
     <addaction name="actionAdjust_Clipping"/>
     <addaction name="actionAdjust_Default_Material"/>
-    <addaction name="actionComplexity"/>
+    <addaction name="menuComplexity"/>
     <addaction name="menuBBox"/>
     <addaction name="separator"/>
     <addaction name="actionFrame_Selection"/>
@@ -1318,13 +1422,20 @@
     <addaction name="actionFrame_Backwards"/>
     <addaction name="separator"/>
     <addaction name="menuShading_Mode"/>
+    <addaction name="menuColorCorrection"/>
     <addaction name="menuLights"/>
     <addaction name="menuBackground_Color"/>
     <addaction name="menuCamera"/>
     <addaction name="menuCameraGuides"/>
     <addaction name="menuDisplay"/>
-    <addaction name="menuInterpolation"/>
-    <addaction name="actionEnable_Hardware_Shading"/>
+    <addaction name="separator"/>
+    <addaction name="menuHUD"/>
+    <addaction name="separator"/>
+    <addaction name="menuPickMode"/>
+    <addaction name="menuSelection_Highlighting"/>
+    <addaction name="actionRollover_Prim_Info"/>
+    <addaction name="separator"/>
+    <addaction name="actionEnable_Scene_Materials"/>
     <addaction name="actionDisplay_PrimId"/>
     <addaction name="actionCull_Backfaces"/>
    </widget>
@@ -1340,35 +1451,13 @@
     </property>
     <addaction name="showInterpreter"/>
    </widget>
-   <widget class="QMenu" name="menuEdit_Prim">
-    <property name="title">
-     <string>Edit Prim(s)</string>
-    </property>
-    <addaction name="actionFind_Prims"/>
-    <addaction name="actionJump_to_Stage_Root"/>
-    <addaction name="actionJump_to_Model_Root"/>
-    <addaction name="actionJump_to_Bound_Material"/>
-    <addaction name="separator"/>
-    <addaction name="actionMake_Visible"/>
-    <addaction name="actionVis_Only"/>
-    <addaction name="actionMake_Invisible"/>
-    <addaction name="actionRemove_Session_Visibility"/>
-    <addaction name="actionReset_All_Session_Visibility"/>
-    <addaction name="separator"/>
-    <addaction name="actionLoad"/>
-    <addaction name="actionUnload"/>
-    <addaction name="separator"/>
-    <addaction name="actionActivate"/>
-    <addaction name="actionDeactivate"/>
-   </widget>
    <widget class="QMenu" name="menuDebug">
     <property name="title">
      <string>Debug</string>
     </property>
    </widget>
    <addaction name="menuFile"/>
-   <addaction name="menuEdit_Prim"/>
-   <addaction name="menuOptions"/>
+   <addaction name="menuEdit"/>
    <addaction name="menuView"/>
    <addaction name="menuWindow"/>
    <addaction name="menuDebug"/>
@@ -1739,11 +1828,6 @@
     <string>Redraw While Frame Scrubbing</string>
    </property>
   </action>
-  <action name="actionComplexity">
-   <property name="text">
-    <string>Adjust Complexity...</string>
-   </property>
-  </action>
   <action name="actionIncrementComplexity1">
    <property name="text">
     <string>IncrementComplexity</string>
@@ -1855,6 +1939,39 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+9</string>
+   </property>
+  </action>
+  <action name="actionNoColorCorrection">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>disabled</string>
+   </property>
+  </action>
+  <action name="actionSRGBColorCorrection">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>sRGB</string>
+   </property>
+  </action>
+  <action name="actionOpenColorIO">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>openColorIO</string>
    </property>
   </action>
   <action name="actionFreeCam">
@@ -2025,12 +2142,15 @@
     <string>Display Prim Id</string>
    </property>
   </action>
-  <action name="actionEnable_Hardware_Shading">
+  <action name="actionEnable_Scene_Materials">
    <property name="checkable">
     <bool>true</bool>
    </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
    <property name="text">
-    <string>Enable Hardware Shading</string>
+    <string>Enable Scene Materials</string>
    </property>
   </action>
   <action name="actionShow_Inactive_Prims">
@@ -2038,7 +2158,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show Inactive Prims</string>
+    <string>Inactive Prims</string>
    </property>
   </action>
   <action name="showAABBox">
@@ -2123,7 +2243,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Cull Backfaces</string>
+    <string>Cull Backfaces (GL)</string>
    </property>
   </action>
   <action name="actionSave_Overrides_To_Scene">
@@ -2171,12 +2291,12 @@
     <string>Deactivate</string>
    </property>
   </action>
-  <action name="actionJump_to_Model_Root">
+  <action name="actionSelect_Model_Root">
    <property name="enabled">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Jump to Enclosing Model</string>
+    <string>Select Enclosing Model</string>
    </property>
    <property name="shortcut">
     <string>\</string>
@@ -2230,7 +2350,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show Master Prims</string>
+    <string>Master Prims</string>
    </property>
   </action>
   <action name="actionShow_Undefined_Prims">
@@ -2238,7 +2358,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show Undefined Prims (Overs)</string>
+    <string>Undefined Prims (Overs)</string>
    </property>
   </action>
   <action name="actionShow_Abstract_Prims">
@@ -2246,7 +2366,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show Abstract Prims (Classes)</string>
+    <string>Abstract Prims (Classes)</string>
    </property>
   </action>
   <action name="actionPick_Prims">
@@ -2378,9 +2498,9 @@
     <string>Unload</string>
    </property>
   </action>
-  <action name="actionJump_to_Bound_Material">
+  <action name="actionSelect_Bound_Preview_Material">
    <property name="text">
-    <string>Jump to Bound Material</string>
+    <string>Select Bound Preview Material</string>
    </property>
    <property name="shortcut">
     <string>Shift+L</string>
@@ -2397,9 +2517,15 @@
     <string>Shift+I</string>
    </property>
   </action>
-  <action name="actionRecompute_Clipping_Planes">
+  <action name="actionAuto_Compute_Clipping_Planes">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
-    <string>Recompute Clipping Planes</string>
+    <string>Auto Compute Clipping Planes</string>
+   </property>
+   <property name="toolTip">
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;Auto Clipping&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:400;&quot;&gt;Expansive scenes may show &amp;quot;Z-fighting&amp;quot;, where nearby surfaces pop or shimmer.  &lt;/span&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Auto Compute Clipping Planes&lt;/span&gt;&lt;span style=&quot; font-weight:400;&quot;&gt; adjusts the camera's clipping planes to fix this.  When enabled, the &lt;/span&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Frame Selected&lt;/span&gt;&lt;span style=&quot; font-weight:400;&quot;&gt; command readjusts clip planes too.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:400;&quot;&gt;Leaving and then re-entering this mode will reset the view used to optimize the clipping planes.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:400;&quot;&gt;Auto clipping is not useful in all situations, such as animated scenes in which the &amp;quot;extent&amp;quot; of the scene changes over time, and for close-up work.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
    <property name="shortcut">
     <string>C</string>
@@ -2413,9 +2539,9 @@
     <string>Ctrl+F</string>
    </property>
   </action>
-  <action name="actionJump_to_Stage_Root">
+  <action name="actionSelect_Stage_Root">
    <property name="text">
-    <string>Jump to Stage Root</string>
+    <string>Select Stage Root</string>
    </property>
    <property name="shortcut">
     <string>|</string>
@@ -2470,6 +2596,53 @@
   <action name="actionCameraReticles_Color">
    <property name="text">
     <string>Select Color...</string>
+   </property>
+  </action>
+  <action name="actionLow">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Low</string>
+   </property>
+  </action>
+  <action name="actionMedium">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Medium</string>
+   </property>
+  </action>
+  <action name="actionHigh">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>High</string>
+   </property>
+  </action>
+  <action name="actionVery_High">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Very High</string>
+   </property>
+  </action>
+  <action name="actionSelect_Bound_Full_Material">
+   <property name="text">
+    <string>Select Bound Full Material</string>
+   </property>
+  </action>
+  <action name="actionSelect_Preview_Binding_Relationship">
+   <property name="text">
+    <string>Select Preview Binding Relationship</string>
+   </property>
+  </action>
+  <action name="actionSelect_Full_Binding_Relationship">
+   <property name="text">
+    <string>Select Full Binding Relationship</string>
    </property>
   </action>
   <actiongroup name="actionGroupCameraMask">
@@ -2534,6 +2707,16 @@
    <extends>QWidget</extends>
    <header>propertyLegend</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>PrimTreeWidget</class>
+   <extends>QTreeWidget</extends>
+   <header>primTreeWidget</header>
+  </customwidget>
+  <customwidget>
+   <class>FrameSlider</class>
+   <extends>QSlider</extends>
+   <header>frameSlider</header>
   </customwidget>
  </customwidgets>
  <resources/>

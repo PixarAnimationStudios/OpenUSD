@@ -25,13 +25,6 @@ over "GLOBAL" (
                 denote a collection-based binding to a UsdShadeMaterial.
                 """
             }
-            dictionary lookBinding = {
-                string value = "look:binding"
-                string doc = """The relationship name on non shading prims to
-                denote a binding to a UsdShadeLook. This is a deprecated
-                relationship and is superceded by material:binding.
-                """
-            }
             dictionary materialVariant = {
                 string doc = """The variant name of material variation
                 described on a UsdShadeMaterial.
@@ -49,22 +42,44 @@ over "GLOBAL" (
                 """
             }
             dictionary surface = {
-                string doc = """Describes the surface relationship terminal on
-                a UsdShadeMaterial. Used to find the terminal UsdShadeShader
-                describing the surface of a UsdShadeMaterial.
-                """
-            }
-            dictionary displacement = {
-                string doc = """Describes the displacement relationship
-                terminal on a UsdShadeMaterial. Used to find the terminal
-                UsdShadeShader describing the displacement of a
+                string doc = """Describes the <i>surface</i> output 
+                terminal on a UsdShadeMaterial. It is used to define the 
+                terminal UsdShadeShader describing the surface of a 
                 UsdShadeMaterial.
                 """
             }
-
+            dictionary displacement = {
+                string doc = """Describes the <i>displacement</i> output 
+                terminal on a UsdShadeMaterial. It is used to define the 
+                terminal UsdShadeShader describing the displacement of a 
+                UsdShadeMaterial.
+                """
+            }
+            dictionary volume = {
+                string doc = """Describes the <i>volume</i> output 
+                terminal on a UsdShadeMaterial. It is used to define the 
+                terminal UsdShadeShader describing the volume of a 
+                UsdShadeMaterial.
+                """
+            }
+            dictionary universalSourceType = {
+                string value = ""
+                string doc = """Possible value for the "sourceType" parameter 
+                in \\ref UsdShadeShader_ImplementationSource API. Represents 
+                the universal or fallback source type.
+                """
+            }
+            dictionary universalRenderContext = {
+                string value = ""
+                string doc = """Possible value for the "renderContext" parameter
+                in \\ref UsdShadeMaterial_Outputs API. Represents the universal
+                renderContext. An output with a universal renderContext is 
+                applicable to all possible rendering contexts.
+                """
+            }
             dictionary allPurpose = {
                 string value = ""
-                string doc = """Possible value for the 'materialPurpose' paramter
+                string doc = """Possible value for the 'materialPurpose' parameter
                 in the various methods available in UsdShadeMaterialBindingAPI.
                 Its value is empty and its purpose is to represent a general 
                 purpose material-binding that applies in the absence of a 
@@ -138,7 +153,7 @@ over "GLOBAL" (
                 """
             }
             dictionary bindMaterialAs = {
-                string doc="""Token valued metadata key authored on a material 
+                string doc = """Token valued metadata key authored on a material 
                 binding relationship to indicate the strength of the binding 
                 relative to bindings authored on descendants.
                 """
@@ -156,12 +171,20 @@ over "GLOBAL" (
                 any bindings authored on the descendants."""
             }
             dictionary fallbackStrength = {
-                string doc="""Sentinal value to be used for 'bindMaterialAs' 
+                string doc = """Sentinal value to be used for 'bindMaterialAs' 
                 metadata's default value. Clients should pass this in for the 
                 'bindingStrength' argument to UsdShadeMaterialBindingAPI::Bind(),
                 if they want to author the default value (weakerThanDescendants)
                 sparsely. The value "fallbackStrength" never gets authored 
                 into scene description."""
+            }
+            dictionary sdrMetadata = {
+                string doc = """Dictionary valued metadata key authored on
+                Shader prims with implementationSource value of sourceAsset or 
+                sourceCode to pass along metadata to the shader parser or 
+                compiler. It is also used to author metadata on shader 
+                properties in a UsdShade-based shader definition file.
+                """
             }
         }
     }
@@ -195,6 +218,7 @@ class NodeGraph "NodeGraph" (
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
+#include "pxr/usd/usdShade/shader.h"
 """
     }
 ) {
@@ -254,24 +278,36 @@ class Material "Material" (
         string extraIncludes = """
 #include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/usdGeom/subset.h"
-#include "pxr/usd/usdGeom/faceSetAPI.h"
+#include "pxr/usd/usdShade/connectableAPI.h"
+#include "pxr/usd/usdShade/tokens.h"
 """
     }
-) {
-}
-
-class Look "Look" (
-    inherits = </Material>
-    doc = """\\deprecated Deprecated in favor of Material.
-    Please refer to UsdMaterial
-    """
-    customData = {
-        string extraIncludes = """
-#include "pxr/usd/usd/variantSets.h"
-#include "pxr/usd/usdGeom/faceSetAPI.h"
-"""
-    }
-) {
+) 
+{
+    token outputs:surface (
+        doc = """Represents the universal "surface" output terminal of a
+        material."""
+        displayGroup = "Outputs"
+        customData = {
+            string apiName = "surface"
+        }
+    )
+    token outputs:displacement (
+        doc = """Represents the universal "displacement" output terminal of a 
+        material."""
+        displayGroup = "Outputs"
+        customData = {
+            string apiName = "displacement"
+        }
+    )
+    token outputs:volume (
+        doc = """Represents the universal "volume" output terminal of a
+        material."""
+        displayGroup = "Outputs"
+        customData = {
+            string apiName = "volume"
+        }
+    )
 }
 
 class Shader "Shader" (
@@ -303,15 +339,38 @@ class Shader "Shader" (
         string extraIncludes = """
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
+#include "pxr/usd/ndr/declare.h"
+#include "pxr/usd/sdr/shaderNode.h"
     """
     }
 ) {
+    uniform token info:implementationSource = "id" (
+        allowedTokens = ["id", "sourceAsset", "sourceCode"]
+        doc = """Specifies the attribute that should be consulted to get the 
+        shader's implementation or its source code.
+
+        * If set to "id", the "info:id" attribute's value is used to 
+        determine the shader source from the shader registry.
+        * If set to "sourceAsset", the resolved value of the "info:sourceAsset" 
+        attribute corresponding to the desired implementation (or source-type)
+        is used to locate the shader source.
+        * If set to "sourceCode", the value of "info:sourceCode" attribute 
+        corresponding to the desired implementation (or source type) is used as 
+        the shader source.
+        """
+        customData = {
+            string apiName = "implementationSource"
+        }
+    )
+
     uniform token info:id (
         doc = """The id is an identifier for the type or purpose of the 
         shader. E.g.: Texture or FractalFloat.
         The use of this id will depend on the render target: some will turn it
-        into an actual shader path, some will use it to generate dynamically
-        a shader source code.
+        into an actual shader path, some will use it to generate shader source 
+        code dynamically.
+        
+        \\sa SetShaderId()
         """
         customData = {
             string apiName = "id"
@@ -321,6 +380,7 @@ class Shader "Shader" (
 
 class "ConnectableAPI"
 (
+    inherits = </APISchemaBase>
     doc = """UsdShadeConnectableAPI is an API schema that provides a common
     interface for creating outputs and making connections between shading 
     parameters and outputs. The interface is common to all UsdShade schemas
@@ -342,6 +402,7 @@ class "ConnectableAPI"
     UsdShadeInput and UsdShadeOutput.
     """ 
     customData = {
+        token apiSchemaType = "nonApplied"
         string extraIncludes = """
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/nodeGraph.h"
@@ -353,9 +414,10 @@ class "ConnectableAPI"
 
 class "MaterialBindingAPI"
 (
+    inherits = </APISchemaBase>
     doc = """UsdShadeMaterialBindingAPI is an API schema that provides an 
     interface for binding materials to prims or collections of prims 
-    (represented UsdCollectionAPI objects). 
+    (represented by UsdCollectionAPI objects). 
     
     In the USD shading model, each renderable gprim computes a single 
     <b>resolved Material</b> that will be used to shade the gprim (exceptions, 
@@ -438,6 +500,10 @@ class "MaterialBindingAPI"
     not authored (i.e. empty) on a binding-relationship, the default behavior 
     matches UsdShadeTokens->weakerThanDescendants.
 
+    \\note If a material binding relationship is a built-in property defined as 
+    part of a typed prim's schema, a fallback value should not be provided for 
+    it. This is because the "material resolution" algorithm only conisders 
+    <i>authored</i> properties.
     """ 
     customData = {
         string extraIncludes = """
@@ -445,7 +511,7 @@ class "MaterialBindingAPI"
 #include "pxr/usd/usdGeom/subset.h"
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdShade/tokens.h"
-    """
+#include <tbb/concurrent_unordered_map.h>"""
     }
 )
 {

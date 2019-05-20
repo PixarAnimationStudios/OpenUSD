@@ -190,16 +190,7 @@ public:
     /// must either be the same as or a base class of \a DataType or DataType
     /// must be polymorphic.
     template <class T>
-    typename boost::enable_if<boost::is_base_of<T, DataType> >::type
-    PointsToA() const {
-        return _FetchPointer();  // points to a T if not null.
-    }
-
-    template <class T>
-    typename boost::disable_if<boost::is_base_of<T, DataType>, bool>::type
-    PointsToA() const {
-        static_assert(std::is_polymorphic<DataType>::value,
-                      "DataType must be polymorphic.");
+    bool PointsToA() const {
         return dynamic_cast<T *>(_FetchPointer());
     }
 
@@ -221,11 +212,11 @@ public:
     
     DataType *operator -> () const {
         DataType *ptr = _FetchPointer();
-        if (ARCH_LIKELY(ptr))
+        if (ARCH_LIKELY(ptr)) {
             return ptr;
-        TF_FATAL_ERROR("Dereferenced an invalid %s",
-                       ArchGetDemangled(typeid(Derived)).c_str());
-        return 0;
+        }
+        static const TfCallContext ctx(TF_CALL_CONTEXT);
+        Tf_PostNullSmartPtrDereferenceFatalError(ctx, typeid(Derived));
     }
 
     DataType &operator * () const {

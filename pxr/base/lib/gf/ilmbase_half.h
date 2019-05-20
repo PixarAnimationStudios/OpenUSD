@@ -88,7 +88,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/gf/api.h"
 
-#include <iostream>
+#include <iosfwd>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

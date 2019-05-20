@@ -27,6 +27,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/sdf/pathParser.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE

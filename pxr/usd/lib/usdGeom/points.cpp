@@ -74,6 +74,11 @@ UsdGeomPoints::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdGeomPoints::_GetSchemaType() const {
+    return UsdGeomPoints::schemaType;
+}
+
 /* static */
 const TfType &
 UsdGeomPoints::_GetStaticTfType()
@@ -175,12 +180,42 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usdGeom/boundableComputeExtent.h"
 #include "pxr/base/tf/registryManager.h"
+#include "pxr/usd/usdGeom/sphere.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TfToken 
+UsdGeomPoints::GetWidthsInterpolation() const
+{
+    // Because widths is a builtin, we don't need to check validity
+    // of the attribute before using it
+    TfToken interp;
+    if (GetWidthsAttr().GetMetadata(UsdGeomTokens->interpolation, &interp)){
+        return interp;
+    }
+    
+    return UsdGeomTokens->vertex;
+}
+
 bool
-UsdGeomPoints::ComputeExtent(const VtVec3fArray& points, 
-    const VtFloatArray& widths, VtVec3fArray* extent)
+UsdGeomPoints::SetWidthsInterpolation(TfToken const &interpolation)
+{
+    if (UsdGeomPrimvar::IsValidInterpolation(interpolation)){
+        return GetWidthsAttr().SetMetadata(UsdGeomTokens->interpolation, 
+                                            interpolation);
+    }
+
+    TF_CODING_ERROR("Attempt to set invalid interpolation "
+                     "\"%s\" for widths attr on prim %s",
+                     interpolation.GetText(),
+                     GetPrim().GetPath().GetString().c_str());
+    
+    return false;
+}
+
+static bool
+_ComputeExtent(const VtVec3fArray& points, const VtFloatArray& widths,
+    const GfMatrix4d* transform, VtVec3fArray* extent)
 {
     // Check for Valid Widths/Points Attributes Size 
     if (points.size() != widths.size()) {
@@ -194,10 +229,33 @@ UsdGeomPoints::ComputeExtent(const VtVec3fArray& points,
     GfRange3d bbox;
     TfIterator<const VtFloatArray> widthsItr(widths);
     TF_FOR_ALL(pointsItr, points) {
-        float halfWidth = *widthsItr/2;
-        GfVec3f widthVec(halfWidth);
-        bbox.UnionWith(GfVec3f(*pointsItr) + widthVec);
-        bbox.UnionWith(GfVec3f(*pointsItr) - widthVec);
+
+        float halfWidth = (*widthsItr) * 0.5;
+
+        if (transform) {
+            // Union bbox with min and max of transformed sphere extents.
+            VtVec3fArray sphereExtent;
+
+            // We want to transform the sphere without translation. The translation
+            // was already applied to each point, so we just need to find the extent
+            // of each point.
+            GfMatrix4d transformDir(*transform);
+            transformDir.SetTranslateOnly(GfVec3d(0.0));
+
+            if (!UsdGeomSphere::ComputeExtent(halfWidth,
+                                              transformDir,
+                                              &sphereExtent)) {
+                return false;
+            }
+
+            GfVec3f transformedPoint = transform->Transform(*pointsItr);
+            bbox.UnionWith(transformedPoint + sphereExtent[0]);
+            bbox.UnionWith(transformedPoint + sphereExtent[1]);
+        } else {
+            GfVec3f widthVec(halfWidth);
+            bbox.UnionWith(*pointsItr + widthVec);
+            bbox.UnionWith(*pointsItr - widthVec);
+        }
 
         widthsItr++;
     }
@@ -208,10 +266,26 @@ UsdGeomPoints::ComputeExtent(const VtVec3fArray& points,
     return true;
 }
 
+bool
+UsdGeomPoints::ComputeExtent(const VtVec3fArray& points, 
+    const VtFloatArray& widths, VtVec3fArray* extent)
+{
+    return _ComputeExtent(points, widths, nullptr, extent);
+}
+
+bool
+UsdGeomPoints::ComputeExtent(const VtVec3fArray& points, 
+    const VtFloatArray& widths, const GfMatrix4d& transform,
+    VtVec3fArray* extent)
+{
+    return _ComputeExtent(points, widths, &transform, extent);
+}
+
 static bool
 _ComputeExtentForPoints(
-    const UsdGeomBoundable& boundable, 
-    const UsdTimeCode& time, 
+    const UsdGeomBoundable& boundable,
+    const UsdTimeCode& time,
+    const GfMatrix4d* transform,
     VtVec3fArray* extent)
 {
     const UsdGeomPoints pointsSchema(boundable);
@@ -226,10 +300,18 @@ _ComputeExtentForPoints(
 
     VtFloatArray widths;
     if (!pointsSchema.GetWidthsAttr().Get(&widths, time)) {
-        return UsdGeomPointBased::ComputeExtent(points, extent);
+        if (transform) {
+            return UsdGeomPointBased::ComputeExtent(points, *transform, extent);
+        } else {
+            return UsdGeomPointBased::ComputeExtent(points, extent);
+        }
     }
     
-    return UsdGeomPoints::ComputeExtent(points, widths, extent);
+    if (transform) {
+        return UsdGeomPoints::ComputeExtent(points, widths, *transform, extent);
+    } else {
+        return UsdGeomPoints::ComputeExtent(points, widths, extent);
+    }
 }
 
 TF_REGISTRY_FUNCTION(UsdGeomBoundable)

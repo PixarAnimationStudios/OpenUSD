@@ -74,6 +74,11 @@ UsdGeomNurbsPatch::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdGeomNurbsPatch::_GetSchemaType() const {
+    return UsdGeomNurbsPatch::schemaType;
+}
+
 /* static */
 const TfType &
 UsdGeomNurbsPatch::_GetStaticTfType()

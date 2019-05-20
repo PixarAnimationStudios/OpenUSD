@@ -38,6 +38,7 @@
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
 #include <boost/python/class.hpp>
+#include <boost/python/def.hpp>
 #include <boost/python/detail/api_placeholder.hpp>
 #include <boost/python/errors.hpp>
 #include <boost/python/extract.hpp>
@@ -264,6 +265,9 @@ void wrapMatrix{{ SUFFIX }}()
     typedef {{ MAT }} This;
 
     static const tuple _dimension = make_tuple({{ DIM }}, {{ DIM }});
+
+    def("IsClose", (bool (*)(const {{ MAT}} &m1, const {{ MAT }} &m2, double))
+        GfIsClose);
     
     class_<This> cls( "Matrix{{ SUFFIX }}", no_init);
     cls

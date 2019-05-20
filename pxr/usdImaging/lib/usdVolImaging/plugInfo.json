@@ -1,0 +1,29 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "UsdImagingOpenVDBAssetAdapter": {
+                        "bases": [
+                            "UsdImagingFieldAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "OpenVDBAsset"
+                    },
+                    "UsdImagingField3DAssetAdapter": {
+                        "bases": [
+                            "UsdImagingFieldAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "Field3DAsset"
+                    }
+                }
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Name": "usdVolImaging",
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

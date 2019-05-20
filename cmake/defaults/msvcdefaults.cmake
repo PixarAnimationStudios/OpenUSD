@@ -26,9 +26,7 @@
 set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /EHsc")
 
 # Standards compliant.
-set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Zc:rvalueCast
-                                      /Zc:strictStrings
-                                      /Zc:inline")
+set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Zc:rvalueCast /Zc:strictStrings /Zc:inline")
 
 # Turn on all but informational warnings.
 set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /W3")
@@ -82,8 +80,11 @@ _add_define("NOMINMAX")
 _add_define("YY_NO_UNISTD_H")
 
 # Forces all libraries that have separate source to be linked as
-# DLL's rather than static libraries on Microsoft Windows.
-_add_define("BOOST_ALL_DYN_LINK")
+# DLL's rather than static libraries on Microsoft Windows, unless
+# explicitly told otherwise.
+if (NOT Boost_USE_STATIC_LIBS)
+    _add_define("BOOST_ALL_DYN_LINK")
+endif()
 
 # Need half::_toFloat and half::_eLut.
 _add_define("OPENEXR_DLL")

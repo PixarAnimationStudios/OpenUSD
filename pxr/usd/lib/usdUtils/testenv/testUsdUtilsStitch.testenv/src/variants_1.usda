@@ -1,0 +1,23 @@
+#usda 1.0
+
+def "Root" (
+    variants = {
+        string a = "x"
+    }
+    prepend variantSets = ["a"]
+)
+{
+    variantSet "a" = {
+        "x" {
+            def "Child"
+            {
+                double testAttr = 1.0
+                double testAttr.timeSamples = {
+                    1: 1.0
+                }
+                prepend rel testRel = </Root/Test>
+            }
+        }
+    }
+}
+

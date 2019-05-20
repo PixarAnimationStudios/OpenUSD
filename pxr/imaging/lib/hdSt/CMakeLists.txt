@@ -1,6 +1,12 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE hdSt)
 
+if (NOT ${PXR_ENABLE_GL_SUPPORT})
+    message(STATUS
+        "Skipping ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
+    return()
+endif()
+
 if (OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK)
     add_definitions(-DOPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK)
 endif()
@@ -10,12 +16,12 @@ endif()
 
 pxr_library(hdSt
     LIBRARIES
-        cameraUtil
+        hio
         garch
         glf
         hd
         tf
-        tracelite
+        trace
         ${GLEW_LIBRARY}
         ${OPENSUBDIV_LIBRARIES}
 
@@ -27,10 +33,10 @@ pxr_library(hdSt
         basisCurves
         bufferArrayRangeGL
         bufferResourceGL
-        camera
         commandBuffer
         computeShader
         copyComputation
+        debugCodes
         dispatchBuffer
         drawItem
         drawItemInstance
@@ -38,10 +44,13 @@ pxr_library(hdSt
         drawTargetAttachmentDesc
         drawTargetAttachmentDescArray
         drawTargetRenderPassState
+        extComputation
         extCompGpuComputation
         extCompGpuComputationBufferSource
         extCompGpuComputationResource
+        extCompGpuPrimvarBufferSource
         fallbackLightingShader
+        flatNormals
         geometricShader
         glConversions
         glslfxShader
@@ -57,7 +66,6 @@ pxr_library(hdSt
         package
         persistentBuffer
         points
-        renderContextCaps
         renderDelegate
         renderPass
         renderPassShader
@@ -103,6 +111,7 @@ pxr_library(hdSt
         plugInfo.json
         shaders/basisCurves.glslfx
         shaders/compute.glslfx
+        shaders/edgeId.glslfx
         shaders/fallbackLighting.glslfx
         shaders/fallbackLightingShader.glslfx
         shaders/fallbackSurface.glslfx
@@ -114,10 +123,12 @@ pxr_library(hdSt
         shaders/meshNormal.glslfx
         shaders/meshWire.glslfx
         shaders/points.glslfx
+        shaders/pointId.glslfx
         shaders/ptexTexture.glslfx
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx
         shaders/terminals.glslfx
+        shaders/visibility.glslfx
 )
 
 if (X11_FOUND OR APPLE)

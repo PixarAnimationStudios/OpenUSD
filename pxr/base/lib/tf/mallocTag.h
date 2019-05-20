@@ -27,9 +27,6 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/api.h"
 
-#include <boost/noncopyable.hpp>
-#include <boost/optional.hpp>
-
 #include <cstdlib>
 #include <iosfwd>
 #include <stdint.h>
@@ -63,7 +60,7 @@ public:
         /// \struct PathNode
         /// Node in the call tree structure.
         ///
-        /// A \c PathNode captures the hiearchy of active \c TfAutoMallocTag
+        /// A \c PathNode captures the hierarchy of active \c TfAutoMallocTag
         /// objects that are pushed and popped during program execution.  Each
         /// \c PathNode thus describes a sequence of call-sites (i.e. a path
         /// down the call tree).  Repeated call sites (in the case of
@@ -80,7 +77,7 @@ public:
         /// node (\c siteName) corresponds to the tag name of the final tag in
         /// the path.
         struct PathNode {
-            size_t nBytes,          ///< Allocated bytes by this or descendent nodes.
+            size_t nBytes,          ///< Allocated bytes by this or descendant nodes.
                    nBytesDirect;    ///< Allocated bytes (only for this node).
             size_t nAllocations;    ///< The number of allocations for this node.
             std::string siteName;   ///< Tag name.
@@ -136,14 +133,18 @@ public:
 
         /// Generates a report to the ostream \p out.
         ///
-        /// This report is printed in a way that is intened to be used by
-        /// xxtracediff.  If \p rootName is provided and is non-empty it will
-        /// replace the name of the tree root in the report.
+        /// This report is printed in a way that is intended to be used by
+        /// xxtracediff.  If \p rootName is non-empty it will replace the name
+        /// of the tree root in the report.
         TF_API
         void Report(
             std::ostream &out,
-            const boost::optional<std::string> &rootName =
-                boost::optional<std::string>()) const;
+            const std::string &rootName) const;
+
+        /// \overload
+        TF_API
+        void Report(
+            std::ostream &out) const;
 
         /// All call sites.
         std::vector<CallSite> callSites;
@@ -175,7 +176,7 @@ public:
     /// Initialize the memory tagging system.
     ///
     /// This function returns \c true if the memory tagging system can be
-    /// succesfully initialized or it has already been initialized. Otherwise,
+    /// successfully initialized or it has already been initialized. Otherwise,
     /// \p *errMsg is set with an explanation for the failure.
     ///
     /// Until the system is initialized, the various memory reporting calls
@@ -187,7 +188,7 @@ public:
 
     /// Return true if the tagging system is active.
     ///
-    /// If \c Initialize() has been succesfully called, this function returns
+    /// If \c Initialize() has been successfully called, this function returns
     /// \c true.
     static bool IsInitialized() {
         return TfMallocTag::_doTagging;
@@ -258,8 +259,14 @@ public:
     /// simply locking a mutex; typically, pushing or popping the call stack
     /// does not actually cause any memory allocation unless this is the first
     /// time that the given named tag has been encountered.
-    class Auto : public boost::noncopyable {
+    class Auto {
     public:
+        Auto(const Auto &) = delete;
+        Auto& operator=(const Auto &) = delete;
+
+        Auto(Auto &&) = delete;
+        Auto& operator=(Auto &&) = delete;
+
         /// Push a memory tag onto the local-call stack with name \p name.
         ///
         /// If \c TfMallocTag::Initialize() has not been called, this
@@ -284,7 +291,7 @@ public:
         /// be incurred even if tagging is not active.  If this is an issue,
         /// you can query \c TfMallocTag::IsInitialized() to avoid unneeded
         /// work when tagging is inactive.  Note that the case when \p name is
-        /// a string literal does not apply here: instead, the constuctor that
+        /// a string literal does not apply here: instead, the constructor that
         /// takes a \c const \c char* (above) will be called.
         ///
         /// Objects of this class should only be created as local variables;
@@ -459,10 +466,16 @@ public:
 private:
     friend struct Tf_MallocGlobalData;
     
-    class _TemporaryTaggingState : public boost::noncopyable {
+    class _TemporaryTaggingState {
     public:
         explicit _TemporaryTaggingState(_Tagging state);
         ~_TemporaryTaggingState();
+
+        _TemporaryTaggingState(const _TemporaryTaggingState &);
+        _TemporaryTaggingState& operator=(const _TemporaryTaggingState &);
+
+        _TemporaryTaggingState(_TemporaryTaggingState &&);
+        _TemporaryTaggingState& operator=(_TemporaryTaggingState &&);
 
     private:
         _Tagging _oldState;

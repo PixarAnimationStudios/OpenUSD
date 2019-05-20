@@ -30,7 +30,9 @@
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/primTypeIndex.h"
+#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sortedIds.h"
+#include "pxr/imaging/hd/textureResource.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hf/perfLog.h"
@@ -75,11 +77,44 @@ typedef std::unordered_map<TfToken,
 
 /// \class HdRenderIndex
 ///
-/// The mapping from client scenegraph to the render engine's scene.
-///
-/// The HdRenderIndex only tracks primitives that result in draw calls and
-/// relies on the HdSceneDelegate to provide any hierarchical or other
-/// computed values.
+/// The Hydra render index is a flattened representation of the client scene 
+/// graph, which may be composed of several self-contained scene graphs, each of
+/// which provides a HdSceneDelegate adapter for data access.
+/// 
+/// Thus, multiple HdSceneDelegate's may be tied to the same HdRenderIndex.
+/// 
+/// The render index, however, is tied to a single HdRenderDelegate, which
+/// handles the actual creation and deletion of Hydra scene primitives. These
+/// include geometry and non-drawable objects (such as the camera and texture
+/// buffers). The render index simply holds a handle to these primitives, and 
+/// tracks any changes to them via the HdChangeTracker. 
+/// It also tracks computations and tasks that may update resources and render a
+/// subset of the renderable primitives.
+/// 
+/// The render index orchestrates the "syncing" of scene primitives, by
+/// providing the relevant scene delegate for data access, and leaves resource
+/// management to the rendering backend (via HdResourceRegistry).
+/// 
+/// It also provides "execution" functionality for application facing Hydra
+/// concepts (such as HdTask/HdRenderPass) in computing the set of HdDrawItems
+/// for a given HdRprimCollection, for rendering.
+/// 
+/// \sa
+/// HdChangeTracker
+/// HdDrawItem
+/// HdRenderDelegate
+/// HdRprimCollection
+/// HdSceneDelegate
+/// 
+/// \note
+/// The current design ties a HdRenderIndex to a HdRenderDelegate.
+/// However, the HdRenderIndex isn't tied to a viewer (viewport). 
+/// It is common to have multiple viewers image the composed scene (for example,
+/// with different cameras), in which case the HdRenderIndex and
+/// HdRenderDelegate are shared by the viewers.
+/// 
+/// If two viewers use different HdRenderDelegate's, then it may unfortunately 
+/// require populating two HdRenderIndex's.
 ///
 class HdRenderIndex final : public boost::noncopyable {
 public:
@@ -90,14 +125,7 @@ public:
     /// Create a render index with the given render delegate.
     /// Returns null if renderDelegate is null.
     HD_API
-    static HdRenderIndex* New(HdRenderDelegate *renderDelegate) {
-        if (renderDelegate == nullptr) {
-            TF_CODING_ERROR(
-                "Null Render Delegate provided to create render index");
-            return nullptr;
-        }
-        return new HdRenderIndex(renderDelegate);
-    }
+    static HdRenderIndex* New(HdRenderDelegate *renderDelegate);
 
     HD_API
     ~HdRenderIndex();
@@ -114,7 +142,7 @@ public:
     void RemoveSubtree(const SdfPath &root, HdSceneDelegate* sceneDelegate);
 
     // ---------------------------------------------------------------------- //
-    /// Given a prim id, returns the path of the correspoding rprim
+    /// Given a prim id, returns the path of the corresponding rprim
     /// or an empty path if none is found.
     HD_API
     SdfPath GetRprimPathFromPrimId(int primId) const;
@@ -122,19 +150,34 @@ public:
     // ---------------------------------------------------------------------- //
     /// \name Synchronization
     // ---------------------------------------------------------------------- //
-    HD_API
-    HdDrawItemView GetDrawItems(HdRprimCollection const& collection);
 
-    /// Synchronize all objects in the DirtyList
+    /// Adds the dirty list to the sync queue. The actual processing of the
+    /// dirty list happens later in SyncAll().
+    /// 
+    /// This is typically called from HdRenderPass::Sync. However, the current
+    /// call chain ties it to SyncAll, i.e.
+    /// HdRenderIndex::SyncAll > .... > HdRenderPass::Sync > HdRenderIndex::Sync
     HD_API
     void Sync(HdDirtyListSharedPtr const &dirtyList);
 
-    /// Processes all pending dirty lists 
+    /// Syncs input tasks, B & S prims, (external) computations and processes 
+    /// all pending dirty lists (which syncs the R prims). At the end of this
+    /// step, all the resources that need to be updated have handles to their
+    /// data sources.
+    /// This is the first phase in Hydra's execution. See HdEngine::Execute
     HD_API
     void SyncAll(HdTaskSharedPtrVector const &tasks, HdTaskContext *taskContext);
 
-    /// Returns a vector of Rprim IDs that are bound to the given DelegateID.
+    // ---------------------------------------------------------------------- //
+    /// \name Execution
+    // ---------------------------------------------------------------------- //
 
+    /// Returns a tag based grouping of the list of relevant draw items for the 
+    /// collection.
+    /// The is typically called during render pass execution, which is the 
+    /// final phase in the Hydra's execution. See HdRenderPass::Execute
+    HD_API
+    HdDrawItemView GetDrawItems(HdRprimCollection const& collection);
 
     // ---------------------------------------------------------------------- //
     /// \name Change Tracker
@@ -144,7 +187,7 @@ public:
     HdChangeTracker const& GetChangeTracker() const { return _tracker; }
 
     // ---------------------------------------------------------------------- //
-    /// \name Rprim Support
+    /// \name Renderable prims (e.g. meshes, basis curves)
     // ---------------------------------------------------------------------- //
 
     /// Returns whether the rprim type is supported by this render index.
@@ -184,7 +227,11 @@ public:
 
     /// Returns the render tag for the given rprim
     HD_API
-    TfToken GetRenderTag(SdfPath const& id, TfToken const& reprName) const;
+    TfToken GetRenderTag(SdfPath const& id) const;
+
+    /// Return the material tag for the given rprim
+    HD_API
+    TfToken GetMaterialTag(SdfPath const& id) const;
 
     /// Returns a sorted list of all Rprims in the render index.
     /// The list is sorted by std::less<SdfPath>
@@ -224,7 +271,7 @@ public:
     /// \name Task Support
     // ---------------------------------------------------------------------- //
 
-    /// Inserts a new task into the render index with an identifer of \p id.
+    /// Inserts a new task into the render index with an identifier of \p id.
     template <typename T>
     void InsertTask(HdSceneDelegate* delegate, SdfPath const& id);
 
@@ -290,7 +337,7 @@ public:
     void RemoveBprim(TfToken const& typeId, SdfPath const &id);
 
     HD_API
-    HdBprim const *GetBprim(TfToken const& typeId, SdfPath const &id) const;
+    HdBprim *GetBprim(TfToken const& typeId, SdfPath const &id) const;
 
     /// Returns the subtree rooted under the given path for the given bprim
     /// type.
@@ -302,33 +349,11 @@ public:
     HD_API
     HdBprim *GetFallbackBprim(TfToken const& typeId) const;
 
-    // ---------------------------------------------------------------------- //
-    /// \name ExtComputation Support
-    // ---------------------------------------------------------------------- //
-
-    /// Insert an ExtComputation into index
+    /// Helper utility to convert texture resource id's which are unique
+    /// to this render index, into a globally unique texture key
     HD_API
-    void InsertExtComputation(HdSceneDelegate* delegate,
-                              SdfPath const &id);
-
-    /// Remove an ExtComputation from index
-    HD_API
-    void RemoveExtComputation(SdfPath const& id);
-
-    /// Returns true if ExtComputation \p id exists in index.
-    bool HasExtComputation(SdfPath const& id) {
-        return _extComputationMap.find(id) != _extComputationMap.end();
-    }
-
-    /// Returns the ExtComputation of id
-    HD_API
-    HdExtComputation const *GetExtComputation(SdfPath const &id) const;
-
-    /// Query function to look up a computation and its delegate
-    HD_API
-    void GetExtComputationInfo(SdfPath const &id,
-                               HdExtComputation **computation,
-                               HdSceneDelegate **sceneDelegate);
+    HdResourceRegistry::TextureKey
+        GetTextureKey(HdTextureResource::ID id) const;
 
 
     // ---------------------------------------------------------------------- //
@@ -391,14 +416,12 @@ private:
         HdRprim         *rprim;
     };
 
-    typedef std::unique_ptr<HdExtComputation> HdExtComputationPtr;
-    struct _ExtComputationInfo {
-        HdSceneDelegate     *sceneDelegate;
-        HdExtComputationPtr  extComputation;
+    struct _TaskInfo {
+        HdSceneDelegate *sceneDelegate;
+        HdTaskSharedPtr  task;
     };
 
-
-    typedef TfHashMap<SdfPath, HdTaskSharedPtr, SdfPath::Hash> _TaskMap;
+    typedef std::unordered_map<SdfPath, _TaskInfo, SdfPath::Hash> _TaskMap;
     typedef TfHashMap<SdfPath, _RprimInfo, SdfPath::Hash> _RprimMap;
     typedef std::map<uint32_t, SdfPath> _RprimPrimIDMap;
 
@@ -420,12 +443,6 @@ private:
 
     typedef TfHashMap<SdfPath, HdInstancer*, SdfPath::Hash> _InstancerMap;
     _InstancerMap _instancerMap;
-
-
-    typedef std::unordered_map<SdfPath, _ExtComputationInfo, SdfPath::Hash>
-                                                             _ExtComputationMap;
-    _ExtComputationMap _extComputationMap;
-
 
     // XXX: TO FIX Move
     typedef std::vector<HdDirtyListSharedPtr> _DirtyListVector;

@@ -31,7 +31,6 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/mapperArgSpec.h"
 #include "pxr/usd/sdf/mapperSpec.h"
-#include "pxr/usd/sdf/markerUtils.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
 #include "pxr/usd/sdf/schema.h"
@@ -39,7 +38,7 @@
 
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/ostreamMethods.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -325,81 +324,6 @@ SdfAttributeSpec::ChangeMapperPath(
     *mapperIt = newAbsPath;
     SetField(SdfChildrenKeys->MapperChildren, VtValue(mapperPaths));
 
-}
-
-//
-// Markers
-//
-
-SdfSpecHandle 
-SdfAttributeSpec::_FindOrCreateChildSpecForMarker(const SdfPath& key)
-{
-    SdfChangeBlock block;
-
-    const SdfPath targetPath = _CanonicalizeConnectionPath(key);
-    const SdfPath connectionSpecPath = GetPath().AppendTarget(targetPath);
-
-    SdfSpecHandle child = GetLayer()->GetObjectAtPath(connectionSpecPath);
-    if (!child) {
-        Sdf_ChildrenUtils<Sdf_AttributeConnectionChildPolicy>::CreateSpec(
-            GetLayer(), connectionSpecPath, SdfSpecTypeConnection);
-        child = GetLayer()->GetObjectAtPath(connectionSpecPath);
-    }
-
-    if (child) {
-        // Insert key into list editor if it's not there.  We must
-        // add it because the menva syntax does not support expressing
-        // a marker without expressing existence of the corresponding
-        // connection path.
-        GetConnectionPathList().Add(targetPath);
-    }
-
-    return child;
-}
-
-std::string 
-SdfAttributeSpec::GetConnectionMarker(const SdfPath& path) const
-{
-    const SdfPath connectionPath = _CanonicalizeConnectionPath(path);
-    return Sdf_MarkerUtils<SdfAttributeSpec>::GetMarker(
-        static_cast<const SdfAttributeSpec&>(*this), connectionPath);
-}
-
-void 
-SdfAttributeSpec::SetConnectionMarker(
-    const SdfPath& path, const std::string& marker)
-{
-    const SdfPath connectionPath = _CanonicalizeConnectionPath(path);
-    Sdf_MarkerUtils<SdfAttributeSpec>::SetMarker(
-        static_cast<SdfAttributeSpec*>(this), connectionPath, marker);
-}
-
-void 
-SdfAttributeSpec::ClearConnectionMarker(const SdfPath& path)
-{
-    const SdfPath connectionPath = _CanonicalizeConnectionPath(path);
-    Sdf_MarkerUtils<SdfAttributeSpec>::ClearMarker(
-        static_cast<SdfAttributeSpec*>(this), connectionPath);
-}
-
-SdfPathVector 
-SdfAttributeSpec::GetConnectionMarkerPaths() const
-{
-    return Sdf_MarkerUtils<SdfAttributeSpec>::GetMarkerPaths(
-        static_cast<const SdfAttributeSpec&>(*this));
-}
-
-void
-SdfAttributeSpec::SetConnectionMarkers(const ConnectionMarkerMap& markers)
-{
-    // Canonicalize all paths in the map before passing along to marker utils.
-    Sdf_MarkerUtils<SdfAttributeSpec>::MarkerMap m;
-    TF_FOR_ALL(it, markers) {
-        m[_CanonicalizeConnectionPath(it->first)] = it->second;
-    }
-
-    Sdf_MarkerUtils<SdfAttributeSpec>::SetMarkers(
-        static_cast<SdfAttributeSpec*>(this), m);
 }
 
 //

@@ -78,14 +78,23 @@ public:
     /// Constructs a value holding the given object.
     JS_API JsValue(const JsObject& value);
 
+    /// Constructs a value holding the given object rvalue reference.
+    JS_API JsValue(JsObject&& value);
+
     /// Constructs a value holding the given array.
     JS_API JsValue(const JsArray& value);
+
+    /// Constructs a value holding the given array rvalue reference.
+    JS_API JsValue(JsArray&& value);
 
     /// Constructs a value holding the given char array as a std::string.
     JS_API explicit JsValue(const char* value);
 
     /// Constructs a value holding the given std::string.
     JS_API explicit JsValue(const std::string& value);
+
+    /// Constructs a value holding the given std::string rvalue reference.
+    JS_API explicit JsValue(std::string&& value);
 
     /// Constructs a value holding a bool.
     JS_API explicit JsValue(bool value);

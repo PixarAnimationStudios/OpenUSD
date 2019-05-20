@@ -35,7 +35,7 @@
 #include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/usd/sdf/types.h"
 
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include <boost/optional.hpp>
 

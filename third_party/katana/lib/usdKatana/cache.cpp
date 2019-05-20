@@ -28,13 +28,13 @@
 
 #include "pxr/usd/ar/resolver.h"
 
-#include "pxr/usdImaging/usdImagingGL/gl.h"
+#include "pxr/usdImaging/usdImagingGL/engine.h"
 
 #include "pxr/usd/usdUtils/stageCache.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/attributeSpec.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stageCacheContext.h"
 
@@ -309,6 +309,119 @@ UsdKatanaCache::_FindOrCreateSessionLayer(
                 };
             }
         }
+        
+
+
+        FnAttribute::GroupAttribute metadataAttr =
+                sessionAttr.getChildByName("metadata");
+        for (int64_t i = 0, e = metadataAttr.getNumberOfChildren(); i != e;
+                ++i)
+        {            
+            std::string entryName = FnAttribute::DelimiterDecode(
+                    metadataAttr.getChildName(i));
+            
+            FnAttribute::GroupAttribute entryAttr =
+                    metadataAttr.getChildByIndex(i);            
+            
+            if (!pystring::startswith(entryName, rootLocationPlusSlash))
+            {
+                continue;
+            }
+            
+            std::string primPath = pystring::slice(entryName,
+                    rootLocation.size());
+            
+            SdfPath varSelPath(primPath);
+            
+            SdfPrimSpecHandle spec = SdfCreatePrimInLayer(
+                        sessionLayer, varSelPath.GetPrimPath());
+            
+            if (!spec)
+            {
+                continue;
+            }
+            
+            
+            // Currently support only metadata at the prim level
+            FnAttribute::GroupAttribute primEntries =
+                    entryAttr.getChildByName("prim");
+            for (int64_t i = 0, e = primEntries.getNumberOfChildren(); i < e; ++i)
+            {
+                FnAttribute::GroupAttribute attrDefGrp =
+                        primEntries.getChildByIndex(i);
+                std::string attrName = primEntries.getChildName(i);
+                
+                std::string typeName  = FnAttribute::StringAttribute(
+                        attrDefGrp.getChildByName("type")).getValue("", false);
+                if (typeName == "SdfInt64ListOp")
+                {
+                    FnAttribute::IntAttribute valueAttr;
+                    
+                    SdfInt64ListOp listOp;
+                    std::vector<int64_t> itemList;
+                    
+                    auto convertFnc = [](
+                            FnAttribute::IntAttribute intAttr,
+                            std::vector<int64_t> & outputItemList)
+                    {
+                        outputItemList.clear();
+                        if (intAttr.getNumberOfValues() == 0)
+                        {
+                            return;
+                        }
+                        
+                        auto sample = intAttr.getNearestSample(0);
+                        outputItemList.reserve(sample.size());
+                        outputItemList.insert(outputItemList.end(),
+                                sample.begin(), sample.end());
+                    };
+                    
+                    valueAttr = attrDefGrp.getChildByName("listOp.explicit");
+                    if (valueAttr.isValid())
+                    {
+                        convertFnc(valueAttr, itemList);
+                        listOp.SetExplicitItems(itemList);
+                    }
+                    
+                    valueAttr = attrDefGrp.getChildByName("listOp.added");
+                    if (valueAttr.isValid())
+                    {
+                        convertFnc(valueAttr, itemList);
+                        listOp.SetAddedItems(itemList);
+                    }
+                    
+                    valueAttr = attrDefGrp.getChildByName("listOp.deleted");
+                    if (valueAttr.isValid())
+                    {
+                        convertFnc(valueAttr, itemList);
+                        listOp.SetDeletedItems(itemList);
+                    }
+                    
+                    valueAttr = attrDefGrp.getChildByName("listOp.ordered");
+                    if (valueAttr.isValid())
+                    {
+                        convertFnc(valueAttr, itemList);
+                        listOp.SetOrderedItems(itemList);
+                    }
+                    
+                    valueAttr = attrDefGrp.getChildByName("listOp.prepended");
+                    if (valueAttr.isValid())
+                    {
+                        convertFnc(valueAttr, itemList);
+                        listOp.SetPrependedItems(itemList);
+                    }
+                    
+                    valueAttr = attrDefGrp.getChildByName("listOp.appended");
+                    if (valueAttr.isValid())
+                    {
+                        convertFnc(valueAttr, itemList);
+                        listOp.SetAppendedItems(itemList);
+                    }
+                    
+                    spec->SetInfo(TfToken(attrName), VtValue(listOp));
+                }
+            }
+        }
 
         FnAttribute::StringAttribute dynamicSublayersAttr =
                 sessionAttr.getChildByName("subLayers");
@@ -358,7 +471,14 @@ UsdKatanaCache::_SetMutedLayers(
     
     // use a better regex library?
     regex_t regex;
-    regcomp(&regex, layerRegex.c_str(), REG_EXTENDED);
+    if (regcomp(&regex, layerRegex.c_str(), REG_EXTENDED))
+    {
+        TF_WARN("UsdKatanaCache: Invalid ignoreLayerRegex value: %s",
+                layerRegex.c_str());
+        regexIsEmpty = true;
+    }
+
+
     regmatch_t* rmatch = 0;
 
     TF_FOR_ALL(stageLayer, stageLayers)
@@ -553,10 +673,6 @@ UsdStageRefPtr UsdKatanaCache::GetStage(
         std::string const& ignoreLayerRegex,
         bool forcePopulate)
 {
-    bool givenAbsPath = TfStringStartsWith(fileName, "/");
-    const std::string contextPath = givenAbsPath ? 
-                                    TfGetPathName(fileName) : ArchGetCwd();
-
     TF_DEBUG(USDKATANA_CACHE_STAGE).Msg(
             "{USD STAGE CACHE} Creating and caching UsdStage for "
             "given filePath @%s@, which resolves to @%s@\n", 
@@ -630,10 +746,6 @@ UsdKatanaCache::GetUncachedStage(std::string const& fileName,
                             std::string const& ignoreLayerRegex,
                             bool forcePopulate)
 {
-    bool givenAbsPath = TfStringStartsWith(fileName, "/");
-    const std::string contextPath = givenAbsPath ? 
-                                    TfGetPathName(fileName) : ArchGetCwd();
-
     TF_DEBUG(USDKATANA_CACHE_STAGE).Msg(
             "{USD STAGE CACHE} Creating UsdStage for "
             "given filePath @%s@, which resolves to @%s@\n", 
@@ -688,7 +800,7 @@ void UsdKatanaCache::FlushStage(const UsdStageRefPtr & stage)
 }
 
 
-UsdImagingGLSharedPtr const& 
+UsdImagingGLEngineSharedPtr const& 
 UsdKatanaCache::GetRenderer(UsdStageRefPtr const& stage,
                             UsdPrim const& root,
                             std::string const& sessionKey)
@@ -747,8 +859,8 @@ UsdKatanaCache::GetRenderer(UsdStageRefPtr const& stage,
     SdfPathVector excludedPaths;
     std::pair<_RendererCache::iterator,bool> res  = 
         _rendererCache.insert(std::make_pair(key, 
-                   UsdImagingGLSharedPtr(new UsdImagingGL(root.GetPath(), 
-                                                          excludedPaths))));
+           UsdImagingGLEngineSharedPtr(new UsdImagingGLEngine(root.GetPath(), 
+                                                             excludedPaths))));
     return res.first->second;
 }
 
@@ -756,7 +868,10 @@ std::string UsdKatanaCache::_ComputeCacheKey(
     FnAttribute::GroupAttribute sessionAttr,
     const std::string& rootLocation) {
     return FnAttribute::GroupAttribute(
-        "s", sessionAttr, "r", FnAttribute::StringAttribute(rootLocation), true)
+        // replace invalid sessionAttr with empty valid group for consistency
+        // with external queries based on "info.usd.outputSession"
+        "s", sessionAttr.isValid() ? sessionAttr : FnAttribute::GroupAttribute(true),
+        "r", FnAttribute::StringAttribute(rootLocation), true)
         .getHash()
         .str();
 }
@@ -778,6 +893,25 @@ SdfLayerRefPtr UsdKatanaCache::FindSessionLayer(
     }
     return NULL;
 }
+
+
+
+SdfLayerRefPtr UsdKatanaCache::FindOrCreateSessionLayer(
+        const std::string& sessionAttrXML,
+        const std::string& rootLocation)
+{
+    FnAttribute::GroupAttribute sessionAttr =
+            FnAttribute::Attribute::parseXML(sessionAttrXML.c_str());
+    
+    if (!sessionAttr.isValid())
+    {
+        sessionAttr = FnAttribute::GroupAttribute(true);
+    }
+    
+    return _FindOrCreateSessionLayer(sessionAttr, rootLocation);
+}
+
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

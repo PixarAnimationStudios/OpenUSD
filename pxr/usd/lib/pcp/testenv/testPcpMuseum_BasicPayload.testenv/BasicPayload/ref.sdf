@@ -1,0 +1,19 @@
+#sdf 1.4.32
+
+def Scope "PayloadPrimA" (
+    add payload = @./ref2.sdf@</PrimC>
+)
+{
+    def Scope "PrimA_Child"
+    {
+    }
+}
+
+def Scope "RefPrimA" (
+    add references = @./ref2.sdf@</PrimC>
+)
+{
+    def Scope "PrimA_Child"
+    {
+    }
+}

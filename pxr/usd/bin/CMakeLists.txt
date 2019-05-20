@@ -1,11 +1,16 @@
 set(DIRS
     usdcat
-    usdcheck
+    usdchecker
     usddiff
+    usddumpcrate
     usdedit
+    usdresolve
     usdstitch
     usdstitchclips
+    usdzip
     sdfdump
+    sdffilter
+    usdtree
 )
 
 foreach(d ${DIRS})

@@ -354,10 +354,6 @@ struct UsdRiTokensType {
     /// 
     /// UsdRiPxrAovLight
     const TfToken onVolumeBoundaries;
-    /// \brief "outputs:ri:bxdf"
-    /// 
-    /// UsdRiMaterialAPI
-    const TfToken outputsRiBxdf;
     /// \brief "outputs:ri:displacement"
     /// 
     /// UsdRiMaterialAPI
@@ -438,10 +434,6 @@ struct UsdRiTokensType {
     /// 
     /// UsdRiLightFilterAPI
     const TfToken riExposure;
-    /// \brief "ri:focusRegion"
-    /// 
-    /// UsdRiStatementsAPI
-    const TfToken riFocusRegion;
     /// \brief "ri:intensity"
     /// 
     /// UsdRiLightFilterAPI

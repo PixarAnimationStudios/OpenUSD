@@ -1,0 +1,12 @@
+#usda 1.0
+
+def "Ref" (
+    references = [
+        @sub/ref_in_subdir.usd@</Ref_1>,
+        @sub/ref_in_root.usd@</Ref_2>,
+        @sub/ref_in_both.usd@</Ref_3>
+    ]
+)
+{
+    string attr_usd = "usd"
+}

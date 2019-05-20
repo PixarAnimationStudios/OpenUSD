@@ -29,6 +29,7 @@
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/scoped.h"
 #include <mutex>
 #include <string>
 
@@ -46,8 +47,11 @@ Plug_StaticInterfaceBase::_LoadAndInstantiate(const std::type_info& type) const
         return;
     }
 
-    // We've now been initialized, even if we fail to load or instantiate.
-    _initialized = true;
+    // We attempt initialization only once so set _initialized when we return
+    // even if we fail to load or instantiate.  We must not set it before we
+    // return because other threads would be able to observe partial
+    // initialization.
+    TfScoped<> initializeOnReturn{[this]() { _initialized = true; }};
 
     // Validate type.
     // We use FindByName because Find requres that std::type_info has been

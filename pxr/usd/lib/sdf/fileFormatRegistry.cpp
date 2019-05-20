@@ -30,7 +30,7 @@
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -137,6 +137,19 @@ Sdf_FileFormatRegistry::FindByExtension(
     }
 
     return formatInfo ? _GetFileFormat(formatInfo) : TfNullPtr;
+}
+
+std::set<std::string>
+Sdf_FileFormatRegistry::FindAllFileFormatExtensions()
+{
+    _RegisterFormatPlugins();
+
+    std::set<std::string> result; 
+    for (const auto& p : _extensionIndex) {
+        result.insert(p.first);
+    }
+
+    return result;
 }
 
 TfToken

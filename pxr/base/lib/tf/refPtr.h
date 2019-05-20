@@ -290,7 +290,7 @@
 /// from parent to child, everything is fine: if you "lose" the root of the
 /// tree, the tree will correctly destroy itself.
 ///
-/// But what if childen point back to parents?  Then a simple parent/child
+/// But what if children point back to parents?  Then a simple parent/child
 /// pair is stable, because the parent and child point at each other, and
 /// even if nobody else has a pointer to the parent, the reference count
 /// of the two nodes remains at one.
@@ -433,7 +433,6 @@
 #include "pxr/base/tf/typeFunctions.h"
 #include "pxr/base/tf/api.h"
 
-#include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/hints.h"
 
 #include <boost/functional/hash_fwd.hpp>
@@ -483,13 +482,12 @@ inline void Tf_RefPtrTracker_Assign(const void*, const void*, const void*) { }
 // becomes unique or non-unique.
 struct Tf_RefPtr_UniqueChangedCounter {
     static inline int
-    AddRef(TfRefBase const *refBase,
-           TfRefBase::UniqueChangedListener const &listener)
+    AddRef(TfRefBase const *refBase)
     {
         if (refBase) {
             // Check to see if we need to invoke the unique changed listener.
             if (refBase->_shouldInvokeUniqueChangedListener)
-                return _AddRef(refBase, listener);
+                return _AddRef(refBase);
             else
                 return refBase->GetRefCount()._FetchAndAdd(1);
         }
@@ -497,12 +495,11 @@ struct Tf_RefPtr_UniqueChangedCounter {
     }
 
     static inline bool
-    RemoveRef(TfRefBase const* refBase,
-              TfRefBase::UniqueChangedListener const &listener) {
+    RemoveRef(TfRefBase const* refBase) {
         if (refBase) {
             // Check to see if we need to invoke the unique changed listener.
             return refBase->_shouldInvokeUniqueChangedListener ?
-                        _RemoveRef(refBase, listener) :
+                        _RemoveRef(refBase) :
                         refBase->GetRefCount()._DecrementAndTestIfZero();
         }
         return false;
@@ -511,12 +508,11 @@ struct Tf_RefPtr_UniqueChangedCounter {
     // Increment ptr's count if it is not zero.  Return true if done so
     // successfully, false if its count is zero.
     static inline bool
-    AddRefIfNonzero(TfRefBase const *ptr,
-                    TfRefBase::UniqueChangedListener const &listener) {
+    AddRefIfNonzero(TfRefBase const *ptr) {
         if (!ptr)
             return false;
         if (ptr->_shouldInvokeUniqueChangedListener) {
-            return _AddRefIfNonzero(ptr, listener);
+            return _AddRefIfNonzero(ptr);
         } else {
             auto &counter = ptr->GetRefCount()._counter;
             auto val = counter.load();
@@ -528,38 +524,32 @@ struct Tf_RefPtr_UniqueChangedCounter {
         }
     }
     
-    TF_API static bool _RemoveRef(TfRefBase const *refBase,
-                           TfRefBase::UniqueChangedListener const &listener);
+    TF_API static bool _RemoveRef(TfRefBase const *refBase);
 
-    TF_API static int _AddRef(TfRefBase const *refBase,
-                       TfRefBase::UniqueChangedListener const &listener);
+    TF_API static int _AddRef(TfRefBase const *refBase);
 
-    TF_API static bool _AddRefIfNonzero(TfRefBase const *refBase,
-                       TfRefBase::UniqueChangedListener const &listener);
+    TF_API static bool _AddRefIfNonzero(TfRefBase const *refBase);
 };
 
 // This code is used to increment and decrement ref counts in the case where
 // the object pointed to explicitly does not support unique changed listeners.
 struct Tf_RefPtr_Counter {
     static inline int
-    AddRef(TfRefBase const *refBase,
-           TfRefBase::UniqueChangedListener const &) {
+    AddRef(TfRefBase const *refBase) {
         if (refBase)
             return refBase->GetRefCount()._FetchAndAdd(1);
         return 0;
     }
 
     static inline bool
-    RemoveRef(TfRefBase const *ptr,
-              TfRefBase::UniqueChangedListener const &) {
+    RemoveRef(TfRefBase const *ptr) {
         return (ptr && (ptr->GetRefCount()._DecrementAndTestIfZero()));
     }
 
     // Increment ptr's count if it is not zero.  Return true if done so
     // successfully, false if its count is zero.
     static inline bool
-    AddRefIfNonzero(TfRefBase const *ptr,
-                    TfRefBase::UniqueChangedListener const &) {
+    AddRefIfNonzero(TfRefBase const *ptr) {
         if (!ptr)
             return false;
         auto &counter = ptr->GetRefCount()._counter;
@@ -571,6 +561,12 @@ struct Tf_RefPtr_Counter {
         return true;
     }
 };
+
+// Helper to post a fatal error when a NULL Tf pointer is dereferenced.
+[[noreturn]]
+TF_API void
+Tf_PostNullSmartPtrDereferenceFatalError(
+    const TfCallContext &, const std::type_info &);
 
 /// \class TfRefPtr
 /// \ingroup group_tf_Memory
@@ -608,6 +604,19 @@ public:
     /// until the pointer is given a value.
     TfRefPtr() : _refBase(nullptr) {
         Tf_RefPtrTracker_New(this, _GetObjectForTracking());
+    }
+
+    /// Moves the pointer managed by \p p to \c *this.
+    ///
+    /// After construction, \c *this will point to the object \p p had
+    /// been pointing at and \p p will be pointing at the NULL object. 
+    /// The reference count of the object being pointed at does not
+    /// change.
+    TfRefPtr(TfRefPtr<T>&& p) : _refBase(p._refBase) {
+        p._refBase = nullptr;
+        Tf_RefPtrTracker_New(this, _GetObjectForTracking());
+        Tf_RefPtrTracker_Assign(&p, p._GetObjectForTracking(),
+                                _GetObjectForTracking());
     }
 
     /// Initializes \c *this to point at \p p's object.
@@ -712,7 +721,7 @@ public:
     /// however that this has an important side effect, since it
     /// decrements the reference count of the object previously pointed
     /// to by \c ptr, possibly triggering destruction of that object.
-    TfRefPtr<T>& operator= (const TfRefPtr<T>& p) {
+    TfRefPtr<T>& operator=(const TfRefPtr<T>& p) {
         //
         // It is quite possible for
         //   ptr = TfNullPtr;
@@ -731,6 +740,27 @@ public:
 
         p._AddRef();            // first!
         _RemoveRef(tmp);        // second!
+        return *this;
+    }
+
+    /// Moves the pointer managed by \p p to \c *this and leaves \p p
+    /// pointing at the NULL object.
+    /// 
+    /// The object (if any) pointed at before the assignment has its
+    /// reference count decremented, while the reference count of the
+    /// object newly pointed at is not changed.
+    TfRefPtr<T>& operator=(TfRefPtr<T>&& p) {
+        // See comment in assignment operator.
+        Tf_RefPtrTracker_Assign(this, p._GetObjectForTracking(),
+                                _GetObjectForTracking());
+        Tf_RefPtrTracker_Assign(&p, nullptr,
+                                p._GetObjectForTracking());
+
+        const TfRefBase* tmp = _refBase;
+        _refBase = p._refBase;
+        p._refBase = nullptr;
+        
+        _RemoveRef(tmp);
         return *this;
     }
 
@@ -782,6 +812,31 @@ public:
         Tf_RefPtrTracker_New(this, _GetObjectForTracking());
     }
 
+    /// Moves the pointer managed by \p p to \c *this and leaves \p p
+    /// pointing at the NULL object. The reference count of the object
+    /// being pointed to is not changed.
+    ///
+    /// This initialization is legal only if
+    /// \code
+    ///     U* uPtr;
+    ///     T* tPtr = uPtr;
+    /// \endcode
+    /// is legal.
+#if !defined(doxygen)
+    template <class U>
+#endif
+    TfRefPtr(TfRefPtr<U>&& p) : _refBase(p._refBase) {
+        if (!boost::is_same<T,U>::value) {
+            if (false)
+                _CheckTypeAssignability<U>();
+        }
+
+        p._refBase = nullptr;
+        Tf_RefPtrTracker_New(this, _GetObjectForTracking());
+        Tf_RefPtrTracker_Assign(&p, p._GetObjectForTracking(),
+                                _GetObjectForTracking());
+    }
+
     /// Assigns pointer to point at \c p's object, and increments reference
     /// count.
     ///
@@ -795,7 +850,7 @@ public:
 #if !defined(doxygen)
     template <class U>
 #endif
-    TfRefPtr<T>& operator= (const TfRefPtr<U>& p) {
+    TfRefPtr<T>& operator=(const TfRefPtr<U>& p) {
         if (!boost::is_same<T,U>::value) {
             if (false)
                 _CheckTypeAssignability<U>();
@@ -808,6 +863,39 @@ public:
         _refBase = p._GetData();
         p._AddRef();            // first!
         _RemoveRef(tmp);        // second!
+        return *this;
+    }
+
+    /// Moves the pointer managed by \p p to \c *this and leaves \p p
+    /// pointing at the NULL object. The reference count of the object
+    /// being pointed to is not changed.
+    /// 
+    /// This assignment is legal only if
+    /// \code
+    ///     U* uPtr;
+    ///     T* tPtr;
+    ///     tPtr = uPtr;
+    /// \endcode
+    /// is legal.
+#if !defined(doxygen)
+    template <class U>
+#endif
+    TfRefPtr<T>& operator=(TfRefPtr<U>&& p) {
+        if (!boost::is_same<T,U>::value) {
+            if (false)
+                _CheckTypeAssignability<U>();
+        }
+
+        Tf_RefPtrTracker_Assign(this,
+                                reinterpret_cast<T*>(p._GetObjectForTracking()),
+                                _GetObjectForTracking());
+        Tf_RefPtrTracker_Assign(&p,
+                                nullptr,
+                                reinterpret_cast<T*>(p._GetObjectForTracking()));
+        const TfRefBase* tmp = _refBase;
+        _refBase = p._GetData();
+        p._refBase = nullptr;
+        _RemoveRef(tmp);
         return *this;
     }
 
@@ -884,10 +972,11 @@ public:
 
     /// Accessor to \c T's public members.
     T* operator ->() const {
-        if (ARCH_UNLIKELY(!_refBase))
-            TF_FATAL_ERROR("attempted member lookup on NULL %s",
-                           ArchGetDemangled(typeid(TfRefPtr)).c_str());
-        return static_cast<T*>(const_cast<TfRefBase*>(_refBase));
+        if (ARCH_LIKELY(_refBase)) {
+            return static_cast<T*>(const_cast<TfRefBase*>(_refBase));
+        }
+        static const TfCallContext ctx(TF_CALL_CONTEXT);
+        Tf_PostNullSmartPtrDereferenceFatalError(ctx, typeid(TfRefPtr));
     }
 
     /// Dereferences the stored pointer.
@@ -1055,11 +1144,11 @@ private:
     friend const std::type_info& TfTypeid(const TfRefPtr<U>& ptr);
 
     void _AddRef() const {
-        _Counter::AddRef(_refBase, TfRefBase::_uniqueChangedListener);
+        _Counter::AddRef(_refBase);
     }
 
     void _RemoveRef(const TfRefBase* ptr) const {
-        if (_Counter::RemoveRef(ptr, TfRefBase::_uniqueChangedListener)) {
+        if (_Counter::RemoveRef(ptr)) {
             Tf_RefPtrTracker_LastRef(this,
                 reinterpret_cast<T*>(const_cast<TfRefBase*>(ptr)));
             delete ptr;

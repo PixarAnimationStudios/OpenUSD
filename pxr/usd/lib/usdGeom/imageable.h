@@ -61,9 +61,10 @@ class SdfAssetPath;
 /// what geometry should be included for processing by rendering and other
 /// computations.
 /// 
-/// Imageable also introduces the concept (and API) of geometric
-/// "primitive variables", as UsdGeomPrimvar, which interpolate across a 
-/// primitive and can override shader inputs.
+/// \deprecated Imageable also provides API for accessing primvars, which
+/// has been moved to the UsdGeomPrimvarsAPI schema, because primvars can now
+/// be applied on non-Imageable prim types.  This API is planned
+/// to be removed, UsdGeomPrimvarsAPI should be used directly instead.
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
 /// that are text/tokens, the actual token is published and defined in \ref UsdGeomTokens.
@@ -73,16 +74,10 @@ class SdfAssetPath;
 class UsdGeomImageable : public UsdTyped
 {
 public:
-    /// Compile-time constant indicating whether or not this class corresponds
-    /// to a concrete instantiable prim type in scene description.  If this is
-    /// true, GetStaticPrimDefinition() will return a valid prim definition with
-    /// a non-empty typeName.
-    static const bool IsConcrete = false;
-
-    /// Compile-time constant indicating whether or not this class inherits from
-    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
-    /// UsdPrim.
-    static const bool IsTyped = true;
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaType
+    static const UsdSchemaType schemaType = UsdSchemaType::AbstractTyped;
 
     /// Construct a UsdGeomImageable on UsdPrim \p prim .
     /// Equivalent to UsdGeomImageable::Get(prim.GetStage(), prim.GetPath())
@@ -126,6 +121,13 @@ public:
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
+protected:
+    /// Returns the type of schema this class belongs to.
+    ///
+    /// \sa UsdSchemaType
+    USDGEOM_API
+    UsdSchemaType _GetSchemaType() const override;
+
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
@@ -136,7 +138,7 @@ private:
 
     // override SchemaBase virtuals.
     USDGEOM_API
-    virtual const TfType &_GetTfType() const;
+    const TfType &_GetTfType() const override;
 
 public:
     // --------------------------------------------------------------------- //
@@ -272,79 +274,29 @@ public:
     /// @{
     // --------------------------------------------------------------------- //
  
-    /// Author scene description to create an attribute on this prim that
-    /// will be recognized as Primvar (i.e. will present as a valid
-    /// UsdGeomPrimvar).
-    ///
-    /// The name of the created attribute may or may not be the specified
-    /// \p attrName, due to the possible need to apply property namespacing
-    /// for primvars.  See \ref Usd_Creating_and_Accessing_Primvars
-    /// for more information.  Creation may fail and return an invalid
-    /// Primvar if \p attrName contains a reserved keyword, such as the 
-    /// "indices" suffix we use for indexed primvars.
-    ///
-    /// The behavior with respect to the provided \p typeName
-    /// is the same as for UsdAttributes::Create(), and
-    /// \p interpolation and \p elementSize are as described in
-    /// UsdGeomPrimvar::GetInterpolation() and UsdGeomPrimvar::GetElementSize().
-    ///
-    /// If \p interpolation and/or \p elementSize are left unspecified, we
-    /// will author no opinions for them, which means any (strongest) opinion
-    /// already authored in any contributing layer for these fields will
-    /// become the Primvar's values, or the fallbacks if no opinions
-    /// have been authored.
-    ///
-    /// \return an invalid UsdGeomPrimvar if we failed to create a valid
-    /// attribute, a valid UsdGeomPrimvar otherwise.  It is not an
-    /// error to create over an existing, compatible attribute.
-    ///
-    /// \sa UsdPrim::CreateAttribute(), UsdGeomPrimvar::IsPrimvar()
+    /// \deprecated Please use UsdGeomPrimvarsAPI::CreatePrimvar() instead.
     USDGEOM_API
     UsdGeomPrimvar CreatePrimvar(const TfToken& attrName,
                                  const SdfValueTypeName &typeName,
                                  const TfToken& interpolation = TfToken(),
                                  int elementSize = -1) const;
 
-    /// Return the Primvar attribute named by \p name, which will
-    /// be valid if a Primvar attribute definition already exists.
-    ///
-    /// Name lookup will account for Primvar namespacing, which means
-    /// that this method will succeed in some cases where
-    /// \code
-    /// UsdGeomPrimvar(prim->GetAttribute(name))
-    /// \endcode
-    /// will not, unless \p name is properly namespace prefixed.
-    ///
-    /// \sa HasPrimvar()
+    /// \deprecated Please use UsdGeomPrimvarsAPI::GetPrimvar() instead.
     USDGEOM_API
     UsdGeomPrimvar GetPrimvar(const TfToken &name) const;
     
-    /// Return valid UsdGeomPrimvar objects for all defined Primvars on
-    /// this prim.
-    ///
-    /// Although we hope eventually to make this faster, this is currently
-    /// a fairly expensive operation.  If you know you'll need to process
-    /// other attributes as well, you might do better by fetching all
-    /// the attributes at once, and using the pattern described in 
-    /// \ref UsdGeomPrimvar_Using_Primvar "Using Primvars" to test individual
-    /// attributes.
+    /// \deprecated Please use UsdGeomPrimvarsAPI::GetPrimvars() instead.
     USDGEOM_API
     std::vector<UsdGeomPrimvar> GetPrimvars() const;
 
-    /// Like GetPrimvars(), but exclude primvars that have no authored scene
-    /// description.
+    /// \deprecated Please use UsdGeomPrimvarsAPI::GetAuthoredPrimvars() instead.
     USDGEOM_API
     std::vector<UsdGeomPrimvar> GetAuthoredPrimvars() const;
 
-    /// Is there defined Primvar \p name on this prim?
-    ///
-    /// Name lookup will account for Primvar namespacing.
-    ///
-    /// \sa GetPrimvar()
+    /// \deprecated Please use UsdGeomPrimvarsAPI::HasPrimvar() instead.
     USDGEOM_API
     bool HasPrimvar(const TfToken &name) const;
 
-    /// @}
 
     /// Returns an ordered list of allowed values of the purpose attribute.
     /// 
@@ -447,6 +399,15 @@ public:
     USDGEOM_API
     TfToken ComputeVisibility(UsdTimeCode const &time = UsdTimeCode::Default()) const;
 
+    /// \overload 
+    /// Calculates the effective visibility of this prim, given the computed 
+    /// visibility of its parent prim at the given \p time.
+    /// 
+    /// \sa GetVisibilityAttr()
+    USDGEOM_API
+    TfToken ComputeVisibility(const TfToken &parentVisibility,
+                              UsdTimeCode const &time = UsdTimeCode::Default()) const;
+
     /// Calculate the effective purpose of this prim, as defined by its
     /// most ancestral authored non-"default" opinion, if any.
     ///
@@ -474,6 +435,14 @@ public:
     /// \sa GetPurposeAttr()
     USDGEOM_API
     TfToken ComputePurpose() const;
+
+    /// \overload 
+    /// Calculates the effective purpose of this prim, given the computed 
+    /// purpose of its parent prim.
+    /// 
+    /// \sa GetPurposeAttr()
+    USDGEOM_API
+    TfToken ComputePurpose(const TfToken &parentPurpose) const;
 
     /// Find the prim whose purpose is \em proxy that serves as the proxy
     /// for this prim, as established by the GetProxyPrimRel(), or an
@@ -603,11 +572,6 @@ public:
     GfMatrix4d ComputeParentToWorldTransform(UsdTimeCode const &time) const;
 
     /// @}
-
-private:
-    // Helper for Get(Authored)Primvars().
-    std::vector<UsdGeomPrimvar>
-    _MakePrimvars(std::vector<UsdProperty> const &props) const;
 
 };
 

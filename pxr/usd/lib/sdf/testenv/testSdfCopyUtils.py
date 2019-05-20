@@ -268,6 +268,176 @@ class TestSdfCopyUtils(unittest.TestCase):
         self.assertEqual(list(dstSpec.nameChildren), [])
         self.assertEqual(list(dstSpec.properties), [])
 
+    def test_CopyPrimsAndVariant(self):
+        """Tests that a prim spec can be copied to a variant and vice-versa."""
+        srcLayer = Sdf.Layer.CreateAnonymous()
+        srcLayerStr = '''\
+        #sdf 1.4.32
+
+        def SourceType "Source"
+        {
+            double attr = 1.0
+            def "Child"
+            {
+            }
+
+            variantSet "y" = {
+                "a" {
+                    double attr = 1.0
+                    def "Child"
+                    {
+                    }
+                }
+            }
+        }
+
+        over "OverSource"
+        {
+            variantSet "x" = {
+                "a" {
+                    def "Child"
+                    {
+                    }
+                }
+            }
+        }
+
+        def "Dest"
+        {
+            variantSet "x" = {
+                "a" {
+                }
+            }
+        }
+
+        def "Dest2"
+        {
+        }
+        '''
+
+        srcLayer.ImportFromString(textwrap.dedent(srcLayerStr))
+
+        # Copy the /Source prim over /Dest{x=a}
+        self.assertTrue(
+            Sdf.CopySpec(srcLayer, "/Source", srcLayer, "/Dest{x=a}"))
+        self._VerifyExpectedData(
+            srcLayer, expected = {
+                "/Dest{x=a}" : {
+                    "specifier" : Sdf.SpecifierOver,
+                },
+                "/Dest{x=a}.attr" : {
+                    "typeName" : Sdf.ValueTypeNames.Double,
+                    "default": 1.0,
+                    "variability": Sdf.VariabilityVarying,
+                    "custom": False
+                },
+                "/Dest{x=a}Child" : {
+                    "specifier" : Sdf.SpecifierDef
+                },
+                "/Dest{x=a}{y=a}" : {
+                    "specifier" : Sdf.SpecifierOver
+                },
+                "/Dest{x=a}{y=a}.attr" : {
+                    "typeName" : Sdf.ValueTypeNames.Double,
+                    "default": 1.0,
+                    "variability": Sdf.VariabilityVarying,
+                    "custom": False
+                },
+                "/Dest{x=a}{y=a}Child" : {
+                    "specifier" : Sdf.SpecifierDef
+                }
+            })
+
+        # Copy the /Source prim into a new variant /Dest{x=b}
+        self.assertTrue(
+            Sdf.CopySpec(srcLayer, "/Source", srcLayer, "/Dest{x=b}"))
+        self._VerifyExpectedData(
+            srcLayer, expected = {
+                "/Dest{x=b}" : {
+                    "specifier" : Sdf.SpecifierOver,
+                },
+                "/Dest{x=b}.attr" : {
+                    "typeName" : Sdf.ValueTypeNames.Double,
+                    "default": 1.0,
+                    "variability": Sdf.VariabilityVarying,
+                    "custom": False
+                },
+                "/Dest{x=b}Child" : {
+                    "specifier" : Sdf.SpecifierDef
+                },
+                "/Dest{x=b}{y=a}" : {
+                    "specifier" : Sdf.SpecifierOver
+                },
+                "/Dest{x=b}{y=a}.attr" : {
+                    "typeName" : Sdf.ValueTypeNames.Double,
+                    "default": 1.0,
+                    "variability": Sdf.VariabilityVarying,
+                    "custom": False
+                },
+                "/Dest{x=b}{y=a}Child" : {
+                    "specifier" : Sdf.SpecifierDef
+                }
+            })
+
+        # Copy the /Source{y=a} variant over /Dest2
+        # Note the specifier and typename from the source variant's owning
+        # prim are copied over to the destination prim.
+        self.assertTrue(
+            Sdf.CopySpec(srcLayer, "/Source{y=a}", srcLayer, "/Dest2"))
+        self._VerifyExpectedData(
+            srcLayer, expected = {
+                "/Dest2" : {
+                    "specifier" : Sdf.SpecifierDef,
+                    "typeName" : "SourceType"
+                },
+                "/Dest2.attr" : {
+                    "typeName" : Sdf.ValueTypeNames.Double,
+                    "default": 1.0,
+                    "variability": Sdf.VariabilityVarying,
+                    "custom": False
+                },
+                "/Dest2/Child" : {
+                    "specifier" : Sdf.SpecifierDef
+                }
+            })
+
+        # Copy the /Source{y=a} variant into a new prim /Dest3
+        # Note the specifier and typename from the source variant's owning
+        # prim are copied over to the to the destination prim.
+        self.assertTrue(
+            Sdf.CopySpec(srcLayer, "/Source{y=a}", srcLayer, "/Dest3"))
+        self._VerifyExpectedData(
+            srcLayer, expected = {
+                "/Dest3" : {
+                    "specifier" : Sdf.SpecifierDef,
+                    "typeName" : "SourceType"
+                },
+                "/Dest3.attr" : {
+                    "typeName" : Sdf.ValueTypeNames.Double,
+                    "default": 1.0,
+                    "variability": Sdf.VariabilityVarying,
+                    "custom": False
+                },
+                "/Dest3/Child" : {
+                    "specifier" : Sdf.SpecifierDef
+                }
+            })
+
+        # Copy the /OverSource variant into a new prim /Dest4. 
+        # Note the specifier and typename from the source variant's owning
+        # prim are copied over to the to the destination prim.
+        self.assertTrue(
+            Sdf.CopySpec(srcLayer, "/OverSource{x=a}", srcLayer, "/Dest4"))
+        self._VerifyExpectedData(
+            srcLayer, expected = {
+                "/Dest4" : {
+                    "specifier" : Sdf.SpecifierOver,
+                },
+                "/Dest4/Child" : {
+                    "specifier" : Sdf.SpecifierDef
+                }
+            })
+
     def test_AttributeConnectionRemapping(self):
         """Tests that attribute connections that point to a child of the 
         source path are remapped to the destination path."""
@@ -277,7 +447,6 @@ class TestSdfCopyUtils(unittest.TestCase):
         attrSpec.connectionPathList.explicitItems = \
             [ "/Test/Child.attr2", "/Test/Child/Subchild.attr3", 
               "/Test/Sibling.attr" ]
-        attrSpec.SetConnectionMarker("/Test/Child.attr2", "final")
         Sdf.MapperSpec(attrSpec, "/Test/Child.attr2", "mapper")
 
         # Copy root prim and verify that connections on the child prim that
@@ -293,8 +462,6 @@ class TestSdfCopyUtils(unittest.TestCase):
               "/TestCopy/Sibling.attr" ]
         self.assertEqual(
             dstAttrSpec.GetInfo("connectionPaths"), expectedListOp)
-        self.assertEqual(dstAttrSpec.connectionMarkers["/TestCopy/Child.attr2"], 
-                         "final")
 
         # Copy prim with attribute and verify that connections that point
         # to objects beneath the source /Test/Child prim are remapped to
@@ -309,8 +476,6 @@ class TestSdfCopyUtils(unittest.TestCase):
             [ "/Dest.attr2", "/Dest/Subchild.attr3", "/Test/Sibling.attr" ]
         self.assertEqual(
             dstAttrSpec.GetInfo("connectionPaths"), expectedListOp)
-        self.assertEqual(
-            dstAttrSpec.connectionMarkers["/Dest.attr2"], "final")
         self.assertTrue(
             dstAttrSpec.connectionMappers["/Dest.attr2"].typeName, "mapper")
 
@@ -328,8 +493,6 @@ class TestSdfCopyUtils(unittest.TestCase):
             [ "/Variant.attr2", "/Variant/Subchild.attr3", "/Test/Sibling.attr" ]
         self.assertEqual(
             dstAttrSpec.GetInfo("connectionPaths"), expectedListOp)
-        self.assertEqual(
-            dstAttrSpec.connectionMarkers["/Variant.attr2"], "final")
         self.assertTrue(
             dstAttrSpec.connectionMappers["/Variant.attr2"].typeName, "mapper")
 
@@ -345,8 +508,6 @@ class TestSdfCopyUtils(unittest.TestCase):
 
         self.assertEqual(
             dstAttrSpec.GetInfo("connectionPaths"), expectedListOp)
-        self.assertEqual(
-            dstAttrSpec.connectionMarkers["/Variant.attr2"], "final")
         self.assertTrue(
             dstAttrSpec.connectionMappers["/Variant.attr2"].typeName, "mapper")
 
@@ -359,7 +520,6 @@ class TestSdfCopyUtils(unittest.TestCase):
         relSpec.targetPathList.explicitItems = \
             [ "/Test/Child.attr2", "/Test/Child/Subchild.attr3", 
               "/Test/Sibling.attr" ]
-        relSpec.SetTargetMarker("/Test/Child.attr2", "final")
 
         # Copy root prim and verify that targets on the child prim that
         # point to objects beneath /Test are remapped to /TestCopy.
@@ -374,8 +534,6 @@ class TestSdfCopyUtils(unittest.TestCase):
               "/TestCopy/Sibling.attr" ]
         self.assertEqual(
             dstRelSpec.GetInfo("targetPaths"), expectedListOp)
-        self.assertEqual(dstRelSpec.targetMarkers["/TestCopy/Child.attr2"], 
-                         "final")
 
         # Copy prim with relationship and verify that targets that point
         # to objects beneath the source /Test/Child prim are remapped to
@@ -390,7 +548,6 @@ class TestSdfCopyUtils(unittest.TestCase):
             [ "/Dest.attr2", "/Dest/Subchild.attr3", "/Test/Sibling.attr" ]
         self.assertEqual(
             dstRelSpec.GetInfo("targetPaths"), expectedListOp)
-        self.assertEqual(dstRelSpec.targetMarkers["/Dest.attr2"], "final")
 
         # Same as above, but copy to variant to ensure that variant selection
         # paths aren't authored into the connection list.
@@ -406,7 +563,6 @@ class TestSdfCopyUtils(unittest.TestCase):
             [ "/Variant.attr2", "/Variant/Subchild.attr3", "/Test/Sibling.attr" ]
         self.assertEqual(
             dstRelSpec.GetInfo("targetPaths"), expectedListOp)
-        self.assertEqual(dstRelSpec.targetMarkers["/Variant.attr2"], "final")
 
         # Copy from variant to variant, again to ensure that variant selection
         # paths aren't authored into the connection list.
@@ -420,7 +576,6 @@ class TestSdfCopyUtils(unittest.TestCase):
 
         self.assertEqual(
             dstRelSpec.GetInfo("targetPaths"), expectedListOp)
-        self.assertEqual(dstRelSpec.targetMarkers["/Variant.attr2"], "final")
 
     def test_InheritsAndSpecializesRemapping(self):
         def _TestRemapping(fieldName):
@@ -503,6 +658,54 @@ class TestSdfCopyUtils(unittest.TestCase):
         
         self.assertEqual(
             layer.GetPrimAtPath("/ChildCopy").GetInfo("references"), 
+            expectedListOp)
+
+    def test_PayloadRemapping(self):
+        layer = Sdf.Layer.CreateAnonymous()
+        srcPrimSpec = Sdf.CreatePrimInLayer(layer, "/Root/Child")
+        srcPrimSpec.payloadList.explicitItems = [
+            # External payload
+            Sdf.Payload("./test.sdf", "/Ref"), 
+            # External sub-root payload
+            Sdf.Payload("./test.sdf", "/Root/Ref"), 
+            # Internal payload
+            Sdf.Payload("", "/Ref"),
+            # Internal sub-root payload
+            Sdf.Payload("", "/Root/Ref")
+        ]
+
+        # Copy the root prim spec and verify that the internal sub-root 
+        # payloads on the child prim that target a prim beneath /Root are 
+        # remapped to /RootCopy.
+        self.assertTrue(Sdf.CopySpec(layer, "/Root", layer, "/RootCopy"))
+
+        expectedListOp = Sdf.PayloadListOp()
+        expectedListOp.explicitItems = [
+            Sdf.Payload("./test.sdf", "/Ref"), 
+            Sdf.Payload("./test.sdf", "/Root/Ref"), 
+            Sdf.Payload("", "/Ref"),
+            Sdf.Payload("", "/RootCopy/Ref")
+        ]
+
+        self.assertEqual(
+            layer.GetPrimAtPath("/RootCopy/Child").GetInfo("payload"), 
+            expectedListOp)
+
+        # Copy the child prim spec. Since all of the internal sub-root
+        # payloads point outside the root of the copy operation, none
+        # of them will be remapped.
+        self.assertTrue(Sdf.CopySpec(layer, "/Root/Child", layer, "/ChildCopy"))
+
+        expectedListOp = Sdf.PayloadListOp()
+        expectedListOp.explicitItems = [
+            Sdf.Payload("./test.sdf", "/Ref"), 
+            Sdf.Payload("./test.sdf", "/Root/Ref"), 
+            Sdf.Payload("", "/Ref"),
+            Sdf.Payload("", "/Root/Ref")
+        ]
+
+        self.assertEqual(
+            layer.GetPrimAtPath("/ChildCopy").GetInfo("payload"), 
             expectedListOp)
 
     def test_Relocates(self):

@@ -40,10 +40,25 @@ HdEmbreeRendererPlugin::CreateRenderDelegate()
     return new HdEmbreeRenderDelegate();
 }
 
+HdRenderDelegate*
+HdEmbreeRendererPlugin::CreateRenderDelegate(
+    HdRenderSettingsMap const& settingsMap)
+{
+    return new HdEmbreeRenderDelegate(settingsMap);
+}
+
 void
 HdEmbreeRendererPlugin::DeleteRenderDelegate(HdRenderDelegate *renderDelegate)
 {
     delete renderDelegate;
+}
+
+bool 
+HdEmbreeRendererPlugin::IsSupported() const
+{
+    // Nothing more to check for now, we assume if the plugin loads correctly
+    // it is supported.
+    return true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

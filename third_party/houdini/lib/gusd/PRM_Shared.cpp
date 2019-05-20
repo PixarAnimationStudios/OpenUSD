@@ -25,6 +25,7 @@
 
 #include <OP/OP_Node.h>
 #include <PRM/PRM_AutoDeleter.h>
+#include <PRM/PRM_Conditional.h>
 #include <PRM/PRM_Parm.h>
 #include <PRM/PRM_SpareData.h>
 #include <UT/UT_Singleton.h>
@@ -37,6 +38,7 @@
 #include "gusd/USD_Traverse.h"
 #include "gusd/USD_Utils.h"
 
+#include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/prim.h"
@@ -88,7 +90,7 @@ void _GenUsdPrimMenu(void* data, PRM_Name* names, int size,
             for(const auto& prim : prims) {
                 if(++i > primEnd)
                     break;
-                const char* path = prim.GetPath().GetString().c_str();
+                const char* path = prim.GetPath().GetText();
                 names[i] = PRM_Name(path,path);
                 names[i].harden();
             }
@@ -182,9 +184,11 @@ void _AppendTypes(const TfType& type, UT_Array<PRM_Name>& names,
     // Add spacing at front, by depth, to indicate hierarchy.
     UT_String label;
     _MakePrefixedName(label, typeName.c_str(), depth, "|   ");
-    
+
+    // Only 16.5 (not 16.0 and not 17.0) needs to use hboost::function here.
+    // In 16.0 hboost doesn't exist yet. In 17.0 the argument is templated.
     names.append(PRM_Name(typeName.c_str(), deleter.appendCallback(
-#if HDK_API_VERSION >= 16050000
+#if SYS_VERSION_FULL_INT >= 0x10050000 && SYS_VERSION_FULL_INT < 0x11000000
 	hboost::function<void (char *)>(free), label.steal())));
 #else
 	boost::function<void (char *)>(free), label.steal())));
@@ -218,8 +222,10 @@ void _AppendKinds(const GusdUSD_Utils::KindNode* kind,
     UT_String label;
     _MakePrefixedName(label, name.c_str(), depth, "|   ");
 
+    // Only 16.5 (not 16.0 and not 17.0) needs to use hboost::function here.
+    // In 16.0 hboost doesn't exist yet. In 17.0 the argument is templated.
     names.append(PRM_Name(name.c_str(), deleter.appendCallback(
-#if HDK_API_VERSION >= 16050000
+#if SYS_VERSION_FULL_INT >= 0x10050000 && SYS_VERSION_FULL_INT < 0x11000000
 	hboost::function<void (char *)>(free), label.steal())));
 #else
 	boost::function<void (char *)>(free), label.steal())));
@@ -248,9 +254,35 @@ PRM_Name* _GetPurposeNames()
 {
     static UT_Array<PRM_Name> names;
     for(const auto& p : UsdGeomImageable::GetOrderedPurposeTokens())
-        names.append(PRM_Name(p.GetString().c_str()));
+        names.append(PRM_Name(p.GetText(), p.GetText()));
     names.append(PRM_Name());
     return &names(0);
+}
+
+
+UT_String
+_ComputeFileFormatExtensionsPattern()
+{
+    UT_WorkBuffer buf;
+    
+    const auto extensions = SdfFileFormat::FindAllFileFormatExtensions();
+    
+    if (!extensions.empty()) {
+
+        auto it = extensions.begin();
+
+        buf.append("*."_UTsh);
+        buf.append(*it);
+
+        for (++it; it != extensions.end(); ++it) {
+            buf.append(",*."_UTsh);
+            buf.append(*it);
+        }
+    }
+    
+    UT_String str;
+    buf.stealIntoString(str);
+    return str;
 }
 
 
@@ -264,7 +296,7 @@ GusdPRM_Shared::GusdPRM_Shared()
 
 
 GusdPRM_Shared::Components::Components() :
-    filePattern("*.usd,*.usda,*.usdb,*.usdc"),
+    filePattern(_ComputeFileFormatExtensionsPattern()),
     usdFileROData(
         PRM_SpareArgs()
         << PRM_SpareToken(PRM_SpareData::getFileChooserPatternToken(),

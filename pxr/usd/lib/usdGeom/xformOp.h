@@ -153,7 +153,7 @@ public:
     /// Speculative constructor that will produce a valid UsdGeomXformOp when
     /// \p attr already represents an attribute that is XformOp, and
     /// produces an \em invalid XformOp otherwise (i.e. 
-    /// unspecified_bool_type() will return false).
+    /// explicit-bool conversion operator will return false).
     ///
     /// Calling \c UsdGeomXformOp::IsXformOp(attr) will return the same truth
     /// value as this constructor, but if you plan to subsequently use the
@@ -335,20 +335,15 @@ public:
     /// addition the attribute is identified as a XformOp.
     bool IsDefined() const { return IsXformOp(GetAttr()); }
 
-private:
-    typedef const Type UsdGeomXformOp::*_UnspecifiedBoolType;
-
 public:
-    /// \anchor UsdGeomXformOp_bool_type
-    /// Return true if this XformOp is valid for querying and authoring
-    /// values and metadata, which is identically equivalent to IsDefined().
-#ifdef doxygen
-    operator unspecified_bool_type() const;
-#else
-    operator _UnspecifiedBoolType() const {
-        return IsDefined() ? &UsdGeomXformOp::_opType : NULL;
+    /// \anchor UsdGeomXformOp_explicit_bool
+    /// Explicit bool conversion operator. An XformOp object converts to 
+    /// \c true iff it is valid for querying and authoring values and metadata, 
+    /// (which is identically equivalent to IsDefined()), and converts to 
+    /// \c false otherwise.
+    explicit operator bool() const {
+        return IsDefined();
     }
-#endif // doxygen
 
     /// \sa UsdAttribute::GetName()
     TfToken const &GetName() const {  return GetAttr().GetName(); }
@@ -414,9 +409,26 @@ public:
     }
 
 private:
+    struct _ValidAttributeTagType {};
 
+public:
+    // Allow clients that guarantee \p attr is valid avoid having
+    // UsdGeomXformOp's ctor check again.
+    USDGEOM_API
+    UsdGeomXformOp(const UsdAttribute &attr, bool isInverseOp,
+                   _ValidAttributeTagType);
+    USDGEOM_API
+    UsdGeomXformOp(UsdAttributeQuery &&query, bool isInverseOp,
+                   _ValidAttributeTagType);
+private:
     friend class UsdGeomXformable;
-    
+
+    // Shared initialization function.
+    void _Init();
+
+    // Return the op-type for the string value \p str.
+    static Type _GetOpTypeEnumFromCString(char const *str, size_t len);
+
     // Returns the attribute belonging to \p prim that corresponds to the  
     // given \p opName. It also populates the output parameter \p isInverseOp 
     // appropriately. 

@@ -469,14 +469,21 @@ void wrapLayer()
            arg("args") = boost::python::dict()),
          return_value_policy<TfPyRefPtrFactory<ThisHandle> >());
 
+    def("ComputeAssetPathRelativeToLayer", &SdfComputeAssetPathRelativeToLayer,
+        ( arg("anchor"),
+          arg("assetPath")));
+
     scope s = class_<This,
                      ThisHandle,
-                     bases<SdfLayerBase>,
                      boost::noncopyable>("Layer", no_init)
 
         .def(TfPyRefAndWeakPtr())
 
         .def("__repr__", _Repr)
+
+        .def("GetFileFormat", &This::GetFileFormat)
+        .def("GetFileFormatArguments", &This::GetFileFormatArguments,
+             return_value_policy<return_by_value>())
 
         .def("CreateNew", &_CreateNew,
              ( arg("identifier"),
@@ -485,9 +492,16 @@ void wrapLayer()
              return_value_policy<TfPyRefPtrFactory<ThisHandle> >())
         .staticmethod("CreateNew")
 
-        .def("CreateAnonymous", This::CreateAnonymous,
+        .def("CreateAnonymous", (SdfLayerRefPtr (*)(const std::string &))
+             This::CreateAnonymous,
              return_value_policy<TfPyRefPtrFactory<ThisHandle> >(),
              ( arg("tag") = std::string() ))
+        .def("CreateAnonymous",
+             (SdfLayerRefPtr (*)(const std::string &,
+                                 const SdfFileFormatConstPtr &))
+             This::CreateAnonymous,
+             return_value_policy<TfPyRefPtrFactory<ThisHandle> >(),
+             ( arg("tag"), arg("format") ))
         .staticmethod("CreateAnonymous")
 
         .def("New", &_New,
@@ -511,7 +525,8 @@ void wrapLayer()
              return_value_policy<TfPyRefPtrFactory<ThisHandle> >())
         .staticmethod("OpenAsAnonymous")
 
-        .def("Save", &This::Save)
+        .def("Save", &This::Save,
+             ( arg("force") = false ))
         .def("Export", &_Export,
              ( arg("filename"),
                arg("comment") = std::string(),

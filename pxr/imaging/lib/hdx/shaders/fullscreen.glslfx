@@ -1,0 +1,92 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2018 Pixar
+//
+// Licensed under the Apache License, Version 2.0 (the "Apache License")
+// with the following modification; you may not use this file except in
+// compliance with the Apache License and the following modification to it:
+// Section 6. Trademarks. is deleted and replaced with:
+//
+// 6. Trademarks. This License does not grant permission to use the trade
+//    names, trademarks, service marks, or product names of the Licensor
+//    and its affiliates, except as required to comply with Section 4(c) of
+//    the License and to reproduce the content of the NOTICE file.
+//
+// You may obtain a copy of the Apache License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Apache License with the above modification is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the Apache License for the specific
+// language governing permissions and limitations under the Apache License.
+//
+
+-- configuration
+{
+    "techniques": {
+        "default": {
+            "FullscreenVertex": {
+                "source": [ "Fullscreen.Vertex" ]
+            },
+            "CompositeFragmentNoDepth": {
+                "source": [ "Composite.FragmentNoDepth" ]
+            },
+            "CompositeFragmentWithDepth": {
+                "source": [ "Composite.FragmentWithDepth" ]
+            }
+        }
+    }
+}
+
+-- glsl Fullscreen.Vertex
+
+#version 120
+
+attribute vec4 position;
+attribute vec2 uvIn;
+
+varying vec2 uv;
+
+void main(void)
+{
+    gl_Position = position;
+    uv = uvIn;
+}
+
+-- glsl Composite.FragmentNoDepth
+
+#version 120
+
+varying vec2 uv;
+
+uniform sampler2D colorIn;
+
+void main(void)
+{
+    gl_FragColor = texture2D(colorIn, uv);
+}
+
+-- glsl Composite.FragmentWithDepth
+
+#version 120
+
+varying vec2 uv;
+
+uniform sampler2D colorIn;
+uniform sampler2D depthIn;
+uniform bool remapDepthIn = true;
+
+float 
+RemapDepth(float depth) {
+    return (0.5 * depth + 0.5) * gl_DepthRange.diff + gl_DepthRange.near;
+}
+
+void main(void)
+{
+    float depth = texture2D(depthIn, uv).r;
+    gl_FragColor = texture2D(colorIn, uv);
+    gl_FragDepth = remapDepthIn ? RemapDepth(depth) : depth;
+}

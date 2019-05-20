@@ -1,6 +1,18 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE hdx)
 
+if (NOT ${PXR_ENABLE_GL_SUPPORT})
+    message(STATUS
+        "Skipping ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
+    return()
+endif()
+
+set (optionalCppFiles "")
+if (PXR_BUILD_OPENCOLORIO_PLUGIN)
+    list(APPEND optionalLibs ${OCIO_LIBRARIES})
+    list(APPEND optionalIncludeDirs ${OCIO_INCLUDE_DIRS})
+endif()
+
 pxr_library(hdx
     LIBRARIES
         plug
@@ -16,16 +28,22 @@ pxr_library(hdx
         cameraUtil
         sdf
         ${GLEW_LIBRARY}
+        ${optionalLibs}
 
     INCLUDE_DIRS
         ${GLEW_INCLUDE_DIR}
+        ${optionalIncludeDirs}
 
     PUBLIC_CLASSES
+        colorizeTask
+        colorCorrectionTask
+        compositor
         drawTargetRenderPass
         drawTargetTask
         drawTargetResolveTask
         intersector
         package
+        progressiveTask
         rendererPlugin
         rendererPluginRegistry
         renderTask
@@ -35,7 +53,6 @@ pxr_library(hdx
         shadowTask
         simpleLightingShader
         simpleLightTask
-        simpleLightBypassTask
         taskController
         tokens
         types
@@ -55,14 +72,17 @@ pxr_library(hdx
 
     RESOURCE_FILES
         plugInfo.json
-        shaders/simpleLightingShader.glslfx
+        shaders/colorCorrection.glslfx
+        shaders/fullscreen.glslfx
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx
         shaders/renderPassIdShader.glslfx
         shaders/renderPassShadowShader.glslfx
+        shaders/selection.glslfx
+        shaders/simpleLightingShader.glslfx
 )
 
-if (X11_FOUND OR APPLE)
+if (X11_FOUND)
 pxr_build_test(testHdxRenderTask
     LIBRARIES
         hdx

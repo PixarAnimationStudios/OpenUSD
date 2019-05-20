@@ -121,9 +121,9 @@ public:
         // GlfTexture overrides
         GLF_API
         virtual BindingVector GetBindings(TfToken const & identifier,
-                                          GLuint samplerName) const;
+                                          GLuint samplerName);
         GLF_API
-        virtual VtDictionary GetTextureInfo() const;
+        virtual VtDictionary GetTextureInfo(bool forceLoad);
 
         /// Updates the contents signature for the underlying texture
         /// to allow downstream consumers to know that the texture image

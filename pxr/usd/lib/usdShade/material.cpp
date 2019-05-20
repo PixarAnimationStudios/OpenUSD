@@ -74,6 +74,11 @@ UsdShadeMaterial::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdShadeMaterial::_GetSchemaType() const {
+    return UsdShadeMaterial::schemaType;
+}
+
 /* static */
 const TfType &
 UsdShadeMaterial::_GetStaticTfType()
@@ -97,13 +102,82 @@ UsdShadeMaterial::_GetTfType() const
     return _GetStaticTfType();
 }
 
+UsdAttribute
+UsdShadeMaterial::GetSurfaceAttr() const
+{
+    return GetPrim().GetAttribute(UsdShadeTokens->outputsSurface);
+}
+
+UsdAttribute
+UsdShadeMaterial::CreateSurfaceAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdShadeTokens->outputsSurface,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdShadeMaterial::GetDisplacementAttr() const
+{
+    return GetPrim().GetAttribute(UsdShadeTokens->outputsDisplacement);
+}
+
+UsdAttribute
+UsdShadeMaterial::CreateDisplacementAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdShadeTokens->outputsDisplacement,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdShadeMaterial::GetVolumeAttr() const
+{
+    return GetPrim().GetAttribute(UsdShadeTokens->outputsVolume);
+}
+
+UsdAttribute
+UsdShadeMaterial::CreateVolumeAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdShadeTokens->outputsVolume,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+namespace {
+static inline TfTokenVector
+_ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
+{
+    TfTokenVector result;
+    result.reserve(left.size() + right.size());
+    result.insert(result.end(), left.begin(), left.end());
+    result.insert(result.end(), right.begin(), right.end());
+    return result;
+}
+}
+
 /*static*/
 const TfTokenVector&
 UsdShadeMaterial::GetSchemaAttributeNames(bool includeInherited)
 {
-    static TfTokenVector localNames;
+    static TfTokenVector localNames = {
+        UsdShadeTokens->outputsSurface,
+        UsdShadeTokens->outputsDisplacement,
+        UsdShadeTokens->outputsVolume,
+    };
     static TfTokenVector allNames =
-        UsdShadeNodeGraph::GetSchemaAttributeNames(true);
+        _ConcatenateAttributeNames(
+            UsdShadeNodeGraph::GetSchemaAttributeNames(true),
+            localNames);
 
     if (includeInherited)
         return allNames;
@@ -144,10 +218,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 TF_DEFINE_ENV_SETTING(
-    USD_HONOR_LEGACY_USD_LOOK, true,
-    "If on, keep reading look bindings when material bindings are missing.");
-
-TF_DEFINE_ENV_SETTING(
     USD_USE_LEGACY_BASE_MATERIAL, false,
     "If on, store base material as derivesFrom relationship.");
 
@@ -158,54 +228,25 @@ TF_DEFINE_ENV_SETTING(
 bool 
 UsdShadeMaterial::Bind(const UsdPrim& prim) const
 {
-    // delete old relationship, if any
-    UsdRelationship oldRel = 
-        prim.GetRelationship(UsdShadeTokens->lookBinding);
-    if (oldRel) {
-        oldRel.BlockTargets();
-    }
-
     return UsdShadeMaterialBindingAPI(prim).Bind(*this);
 }
 
 bool 
 UsdShadeMaterial::Unbind(const UsdPrim& prim)
 {
-    // delete old relationship too, if any
-    UsdRelationship oldRel = 
-        prim.GetRelationship(UsdShadeTokens->lookBinding);
-    if (oldRel) {
-        oldRel.BlockTargets();
-    }
-
     return UsdShadeMaterialBindingAPI(prim).UnbindDirectBinding();
 }
 
 UsdRelationship
 UsdShadeMaterial::GetBindingRel(const UsdPrim& prim)
 {
-    UsdRelationship rel = UsdShadeMaterialBindingAPI(prim).GetDirectBindingRel();
-    if (TfGetEnvSetting(USD_HONOR_LEGACY_USD_LOOK)) {
-        if (!rel) {
-            // honor legacy assets using UsdShadeLook
-            return prim.GetRelationship(UsdShadeTokens->lookBinding);
-        }
-    }
-    return rel;
+    return UsdShadeMaterialBindingAPI(prim).GetDirectBindingRel();
 }
 
 UsdShadeMaterial
 UsdShadeMaterial::GetBoundMaterial(const UsdPrim &prim)
 {
-    if (UsdRelationship rel = UsdShadeMaterial::GetBindingRel(prim)) {
-        SdfPathVector targetPaths;
-        rel.GetForwardedTargets(&targetPaths);
-        if ((targetPaths.size() == 1) && targetPaths.front().IsPrimPath()) {
-            return UsdShadeMaterial(
-                prim.GetStage()->GetPrimAtPath(targetPaths.front()));
-        }
-    }
-    return UsdShadeMaterial();
+    return UsdShadeMaterialBindingAPI(prim).ComputeBoundMaterial();
 }
 
 std::pair<UsdStagePtr, UsdEditTarget >
@@ -508,6 +549,146 @@ UsdShadeMaterial::HasBaseMaterial() const
     return !GetBaseMaterialPath().IsEmpty();
 }
 
+// --------------------------------------------------------------------- //
+static 
+TfToken 
+_GetOutputName(const TfToken &baseName, const TfToken &renderContext)
+{
+    return TfToken(SdfPath::JoinIdentifier(renderContext, baseName));
+}
+
+bool
+UsdShadeMaterial::_ComputeNamedOutputSource(
+    const TfToken &baseName, 
+    const TfToken &renderContext,
+    UsdShadeConnectableAPI *source,
+    TfToken *sourceName,
+    UsdShadeAttributeType *sourceType) const
+{
+    const TfToken outputName = _GetOutputName(baseName, renderContext);
+    UsdShadeOutput output = GetOutput(outputName);
+    if (output) {
+        if (renderContext == UsdShadeTokens->universalRenderContext && 
+            !output.GetAttr().IsAuthored()) {
+            return false;
+        } else if (output.GetConnectedSource(source, sourceName, sourceType)) {
+            return true;
+        }
+    }
+
+    if (renderContext != UsdShadeTokens->universalRenderContext) {
+        const TfToken universalOutputName = _GetOutputName(
+                baseName, UsdShadeTokens->universalRenderContext);
+        UsdShadeOutput universalOutput = GetOutput(universalOutputName);
+        if (TF_VERIFY(universalOutput)) {
+            if (renderContext == UsdShadeTokens->universalRenderContext && 
+                !universalOutput.GetAttr().IsAuthored()) {
+                return false;
+            } else if (universalOutput.GetConnectedSource(source, sourceName, 
+                    sourceType)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+UsdShadeShader 
+UsdShadeMaterial::_ComputeNamedOutputShader(
+    const TfToken &baseName,
+    const TfToken &renderContext,
+    TfToken *sourceName, 
+    UsdShadeAttributeType *sourceType) const
+{
+    UsdShadeConnectableAPI source;
+    TfToken srcName; 
+    UsdShadeAttributeType srcType;
+    if (_ComputeNamedOutputSource(baseName, renderContext, 
+                                  &source, &srcName, &srcType)) {
+        if (source.IsNodeGraph()) {
+            source = UsdShadeNodeGraph(source.GetPrim()).ComputeOutputSource(
+                srcName, &srcName, &srcType);
+        }
+        if (sourceName)
+            *sourceName = srcName;
+        if (sourceType)
+            *sourceType = srcType;
+    }
+    return source;
+}
+
+UsdShadeOutput 
+UsdShadeMaterial::CreateSurfaceOutput(const TfToken &renderContext) const
+{
+    return CreateOutput(_GetOutputName(UsdShadeTokens->surface, renderContext),
+                        SdfValueTypeNames->Token);
+}
+
+UsdShadeOutput 
+UsdShadeMaterial::GetSurfaceOutput(const TfToken &renderContext) const
+{
+    return GetOutput(_GetOutputName(UsdShadeTokens->surface, renderContext));
+}
+
+UsdShadeShader 
+UsdShadeMaterial::ComputeSurfaceSource(
+    const TfToken &renderContext,
+    TfToken *sourceName, 
+    UsdShadeAttributeType *sourceType) const
+{
+    return _ComputeNamedOutputShader(UsdShadeTokens->surface, 
+            renderContext, sourceName, sourceType);
+}
+
+UsdShadeOutput 
+UsdShadeMaterial::CreateDisplacementOutput(const TfToken &renderContext) const
+{
+    return CreateOutput(_GetOutputName(UsdShadeTokens->displacement, renderContext),
+                        SdfValueTypeNames->Token);
+}
+
+UsdShadeOutput 
+UsdShadeMaterial::GetDisplacementOutput(const TfToken &renderContext) const
+{
+    return GetOutput(_GetOutputName(UsdShadeTokens->displacement, renderContext));
+}
+
+UsdShadeShader 
+UsdShadeMaterial::ComputeDisplacementSource(
+    const TfToken &renderContext,
+    TfToken *sourceName, 
+    UsdShadeAttributeType *sourceType) const
+{
+    return _ComputeNamedOutputShader(UsdShadeTokens->displacement, 
+            renderContext, sourceName, sourceType);
+}
+
+UsdShadeOutput 
+UsdShadeMaterial::CreateVolumeOutput(const TfToken &renderContext) const
+{
+    return CreateOutput(_GetOutputName(UsdShadeTokens->volume, renderContext),
+                        SdfValueTypeNames->Token);
+}
+
+UsdShadeOutput 
+UsdShadeMaterial::GetVolumeOutput(const TfToken &renderContext) const
+{
+    return GetOutput(_GetOutputName(UsdShadeTokens->volume, renderContext));
+}
+
+UsdShadeShader 
+UsdShadeMaterial::ComputeVolumeSource(
+    const TfToken &renderContext,
+    TfToken *sourceName, 
+    UsdShadeAttributeType *sourceType) const
+{
+    return _ComputeNamedOutputShader(UsdShadeTokens->volume, renderContext, 
+            sourceName, sourceType);
+}
+
+// --------------------------------------------------------------------- //
+
 /* static */
 UsdGeomSubset 
 UsdShadeMaterial::CreateMaterialBindSubset(
@@ -556,42 +737,6 @@ UsdShadeMaterial::GetMaterialBindSubsetsFamilyType(
         const UsdGeomImageable &geom)
 {
     return UsdGeomSubset::GetFamilyType(geom, UsdShadeTokens->materialBind);
-}
-   
-// --------------------------------------------------------------------- //
-
-/* static */
-UsdGeomFaceSetAPI 
-UsdShadeMaterial::CreateMaterialFaceSet(const UsdPrim &prim)
-{
-    if (HasMaterialFaceSet(prim))
-        return UsdGeomFaceSetAPI(prim, _tokens->material);
-
-    // No face can be bound to more than one Material, hence set isPartition to 
-    // true.
-    UsdGeomFaceSetAPI faceSet(prim, _tokens->material);
-    faceSet.SetIsPartition(true);
-
-    return faceSet;
-}
-
-/* static */
-UsdGeomFaceSetAPI 
-UsdShadeMaterial::GetMaterialFaceSet(const UsdPrim &prim) 
-{
-    if (HasMaterialFaceSet(prim))
-        return UsdGeomFaceSetAPI(prim, _tokens->material);
-
-    return UsdGeomFaceSetAPI();
-}
-
-/* static */
-bool 
-UsdShadeMaterial::HasMaterialFaceSet(const UsdPrim &prim)
-{
-    UsdGeomFaceSetAPI faceSet(prim, _tokens->material);
-    bool isPartition=false;
-    return faceSet.GetIsPartitionAttr().Get(&isPartition) && isPartition;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

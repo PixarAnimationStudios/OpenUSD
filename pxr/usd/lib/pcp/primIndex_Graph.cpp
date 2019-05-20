@@ -30,7 +30,7 @@
 #include "pxr/usd/pcp/strengthOrdering.h"
 #include "pxr/usd/pcp/types.h"
 
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/mallocTag.h"
 
 #include <boost/bind.hpp>
@@ -154,18 +154,18 @@ PcpPrimIndex_Graph::IsUsd() const
 }
 
 void 
-PcpPrimIndex_Graph::SetHasPayload(bool hasPayload)
+PcpPrimIndex_Graph::SetHasPayloads(bool hasPayloads)
 {
-    if (_data->hasPayload != hasPayload) {
+    if (_data->hasPayloads != hasPayloads) {
         _DetachSharedNodePool();
-        _data->hasPayload = hasPayload;
+        _data->hasPayloads = hasPayloads;
     }
 }
 
 bool
-PcpPrimIndex_Graph::HasPayload() const
+PcpPrimIndex_Graph::HasPayloads() const
 {
-    return _data->hasPayload;
+    return _data->hasPayloads;
 }
 
 void 

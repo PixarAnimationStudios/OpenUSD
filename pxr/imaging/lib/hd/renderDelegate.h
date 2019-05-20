@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/base/tf/token.h"
 
@@ -39,6 +40,7 @@ class HdRprim;
 class HdSprim;
 class HdBprim;
 class HdSceneDelegate;
+class HdRenderIndex;
 class HdRenderPass;
 class HdInstancer;
 
@@ -63,6 +65,23 @@ private:
     HdRenderParam &operator =(const HdRenderParam &) = delete;
 };
 
+typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> HdRenderSettingsMap;
+
+///
+/// HdRenderSettingDescriptor represents a render setting that a render delegate
+/// wants to export (e.g. to UI).
+///
+struct HdRenderSettingDescriptor {
+    // A human readable name.
+    std::string name;
+    // The key for HdRenderDelegate::SetRenderSetting/GetRenderSetting.
+    TfToken key;
+    // The default value.
+    VtValue defaultValue;
+};
+
+typedef std::vector<HdRenderSettingDescriptor> HdRenderSettingDescriptorList;
+
 /// \class HdRenderDelegate
 ///
 class HdRenderDelegate
@@ -75,14 +94,12 @@ public:
     /// Returns a list of typeId's of all supported Rprims by this render
     /// delegate.
     ///
-    HD_API
     virtual const TfTokenVector &GetSupportedRprimTypes() const = 0;
 
     ///
     /// Returns a list of typeId's of all supported Sprims by this render
     /// delegate.
     ///
-    HD_API
     virtual const TfTokenVector &GetSupportedSprimTypes() const = 0;
 
 
@@ -90,7 +107,6 @@ public:
     /// Returns a list of typeId's of all supported Bprims by this render
     /// delegate.
     ///
-    HD_API
     virtual const TfTokenVector &GetSupportedBprimTypes() const = 0;
 
     ///
@@ -105,15 +121,46 @@ public:
     ///
     /// A render delegate may return null for the param.
     ///
-    HD_API
     virtual HdRenderParam *GetRenderParam() const = 0;
 
     ///
     /// Returns a shared ptr to the resource registry of the current render
     /// delegate.
     ///
-    HD_API
     virtual HdResourceRegistrySharedPtr GetResourceRegistry() const = 0;
+
+    ///
+    /// Set a custom render setting on this render delegate.
+    ///
+    HD_API
+    virtual void SetRenderSetting(TfToken const& key, VtValue const& value);
+
+    ///
+    /// Get the current value for a render setting.
+    ///
+    HD_API
+    virtual VtValue GetRenderSetting(TfToken const& key) const;
+
+    ///
+    /// Get the current value for a render setting, taking a desired type
+    /// and a fallback value in case of type mismatch.
+    ///
+    template<typename T>
+    T GetRenderSetting(TfToken const& key, T const& defValue) const {
+        return GetRenderSetting(key).Cast<T>().GetWithDefault(defValue);
+    }
+
+    ///
+    /// Get the backend-exported render setting descriptors.
+    ///
+    HD_API
+    virtual HdRenderSettingDescriptorList GetRenderSettingDescriptors() const;
+
+    ///
+    /// Get the current version of the render settings dictionary.
+    ///
+    HD_API
+    virtual unsigned int GetRenderSettingsVersion() const;
 
     ////////////////////////////////////////////////////////////////////////////
     ///
@@ -127,7 +174,6 @@ public:
     /// \param collection the rprim collection to bind to the new renderpass.
     /// \return A shared pointer to the new renderpass or empty on error.
     ///
-    HD_API
     virtual HdRenderPassSharedPtr CreateRenderPass(HdRenderIndex *index,
                                       HdRprimCollection const& collection) = 0;
 
@@ -155,12 +201,10 @@ public:
     ///                    uses this instancer as a prototype (may be empty).
     /// \return A pointer to the new instancer or nullptr on error.
     ///
-    HD_API
     virtual HdInstancer *CreateInstancer(HdSceneDelegate *delegate,
                                          SdfPath const& id,
                                          SdfPath const& instancerId) = 0;
 
-    HD_API
     virtual void DestroyInstancer(HdInstancer *instancer) = 0;
 
     ////////////////////////////////////////////////////////////////////////////
@@ -178,7 +222,6 @@ public:
     ///                    the prim (optional: May be empty).
     /// \return A pointer to the new prim or nullptr on error.
     ///                     
-    HD_API
     virtual HdRprim *CreateRprim(TfToken const& typeId,
                                  SdfPath const& rprimId,
                                  SdfPath const& instancerId) = 0;
@@ -186,7 +229,6 @@ public:
     ///
     /// Request to Destruct and deallocate the prim.
     /// 
-    HD_API
     virtual void DestroyRprim(HdRprim *rPrim) = 0;
 
     ///
@@ -195,7 +237,6 @@ public:
     /// \param sprimId a unique identifier for the prim
     /// \return A pointer to the new prim or nullptr on error.
     ///
-    HD_API
     virtual HdSprim *CreateSprim(TfToken const& typeId,
                                  SdfPath const& sprimId) = 0;
 
@@ -208,13 +249,11 @@ public:
     /// \param typeId the type identifier of the prim to allocate
     /// \return A pointer to the new prim or nullptr on error.
     ///
-    HD_API
     virtual HdSprim *CreateFallbackSprim(TfToken const& typeId) = 0;
 
     ///
     /// Request to Destruct and deallocate the prim.
     ///
-    HD_API
     virtual void DestroySprim(HdSprim *sprim) = 0;
 
     ///
@@ -223,7 +262,6 @@ public:
     /// \param sprimId a unique identifier for the prim
     /// \return A pointer to the new prim or nullptr on error.
     ///
-    HD_API
     virtual HdBprim *CreateBprim(TfToken const& typeId,
                                  SdfPath const& bprimId) = 0;
 
@@ -237,13 +275,11 @@ public:
     /// \param typeId the type identifier of the prim to allocate
     /// \return A pointer to the new prim or nullptr on error.
     ///
-    HD_API
     virtual HdBprim *CreateFallbackBprim(TfToken const& typeId) = 0;
 
     ///
     /// Request to Destruct and deallocate the prim.
     ///
-    HD_API
     virtual void DestroyBprim(HdBprim *bprim) = 0;
 
     ////////////////////////////////////////////////////////////////////////////
@@ -263,7 +299,6 @@ public:
     /// For example, the render delegate might fill primvar buffers or texture
     /// memory.
     ///
-    HD_API
     virtual void CommitResources(HdChangeTracker *tracker) = 0;
 
     ////////////////////////////////////////////////////////////////////////////
@@ -271,23 +306,64 @@ public:
     /// Materials
     ///
     ////////////////////////////////////////////////////////////////////////////
+    
     ///
-    /// Returns true if this renderer can deal with full materials.
+    /// Returns a token that indicates material bindings should be used,
+    /// based on the indicated purpose.  The default purpose is
+    /// HdTokens->preview.
     ///
     HD_API
-    virtual bool CanComputeMaterialNetworks() const { return false; }
+    virtual TfToken GetMaterialBindingPurpose() const;
+
+    ///
+    /// Returns a token that can be used to select among multiple
+    /// material network implementations.  The default is empty.
+    ///
+    HD_API
+    virtual TfToken GetMaterialNetworkSelector() const;
+
+    ///
+    /// Returns the ordered list of shader source types that the render delegate 
+    /// supports.
+    /// 
+    HD_API
+    virtual TfTokenVector GetShaderSourceTypes() const;
+
+    ////////////////////////////////////////////////////////////////////////////
+    ///
+    /// AOVs
+    ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    ///
+    /// Returns a default AOV descriptor for the given named AOV, specifying
+    /// things like preferred format.
+    ///
+    HD_API
+    virtual HdAovDescriptor GetDefaultAovDescriptor(TfToken const& name) const;
 
 protected:
-    /// This class must be derived from
-    HdRenderDelegate()          = default;
+    /// This class must be derived from.
+    HD_API
+    HdRenderDelegate();
+    /// Allow derived classes to pass construction-time render settings.
+    HD_API
+    HdRenderDelegate(HdRenderSettingsMap const& settingsMap);
 
     ///
     /// This class is not intended to be copied.
     ///
     HdRenderDelegate(const HdRenderDelegate &) = delete;
     HdRenderDelegate &operator=(const HdRenderDelegate &) = delete;
-};
 
+    HD_API
+    void _PopulateDefaultSettings(
+        HdRenderSettingDescriptorList const& defaultSettings);
+
+    /// Render settings state.
+    HdRenderSettingsMap _settingsMap;
+    unsigned int _settingsVersion;
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

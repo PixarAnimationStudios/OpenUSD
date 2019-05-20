@@ -1,18 +1,23 @@
 #usda 1.0
 (
     "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
+    customLayerData = {
+        string[] appliedAPISchemas = ["GeomModelAPI", "MotionAPI"]
+        string[] multipleApplyAPISchemas = []
+    }
 )
 
 class "Imageable" (
-    doc = '''Base class for all prims that may require rendering or 
+    doc = """Base class for all prims that may require rendering or 
     visualization of some sort. The primary attributes of Imageable 
     are visibility and purpose, which each provide instructions for
     what geometry should be included for processing by rendering and other
     computations.
-    
-    Imageable also introduces the concept (and API) of geometric
-    "primitive variables", as UsdGeomPrimvar, which interpolate across a 
-    primitive and can override shader inputs.'''
+
+    \\deprecated Imageable also provides API for accessing primvars, which
+    has been moved to the UsdGeomPrimvarsAPI schema, because primvars can now
+    be applied on non-Imageable prim types.  This API is planned
+    to be removed, UsdGeomPrimvarsAPI should be used directly instead."""
 )
 {
     rel proxyPrim (
@@ -84,6 +89,36 @@ class "Imageable" (
         deactivating geometry prims, invisible geometry is still 
         available for inspection, for positioning, for defining volumes, etc.'''
     )
+}
+
+class "PrimvarsAPI" (
+    doc = """UsdGeomPrimvarsAPI encodes geometric \"primitive variables\",
+    as UsdGeomPrimvar, which interpolate across a primitive's topology,
+    can override shader inputs, and inherit down namespace.
+    
+    Which Method to Use to Retrieve Primvars
+     
+     While creating primvars is unambiguous (CreatePrimvar()), there are quite
+     a few methods available for retrieving primvars, making it potentially
+     confusing knowing which one to use.  Here are some guidelines:
+     
+     - If you are populating a GUI with the primvars already available for 
+     authoring values on a prim, use GetPrimvars().
+     - If you want all of the \"useful\" (e.g. to a renderer) primvars
+     available at a prim, including those inherited from ancestor prims, use
+     FindPrimvarsWithInheritance().  Note that doing so individually for many
+     prims will be inefficient.
+     - To find a particular primvar defined directly on a prim, which may
+     or may not provide a value, use GetPrimvar().
+     - To find a particular primvar defined on a prim or inherited from
+     ancestors, which may or may not provide a value, use 
+     FindPrimvarWithInheritance().
+     - To *efficiently* query for primvars using the overloads of
+     FindPrimvarWithInheritance() and FindPrimvarsWithInheritance(), one
+     must first cache the results of FindIncrementallyInheritablePrimvars() for
+     each non-leaf prim on the stage. """
+)
+{
 }
 
 class "Xformable" (
@@ -710,7 +745,7 @@ class "Gprim" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -843,7 +878,7 @@ class Cube "Cube" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -982,7 +1017,7 @@ class Sphere "Sphere" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -1132,7 +1167,7 @@ class Cylinder "Cylinder" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -1281,7 +1316,7 @@ class Capsule "Capsule" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -1432,7 +1467,7 @@ class Cone "Cone" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -1561,13 +1596,14 @@ class "PointBased" (
         during traversal."""
     )
     normal3f[] normals (
-        doc = """Provide orientation for individual points, which, depending on
-        subclass, may define a surface, curve, or free points.  Note that in
-        general you should not need or want to provide 'normals' for any
-        Mesh that is subdivided, as the subdivision scheme will provide smooth
-        normals.  'normals' is not a generic Primvar,
-        but the number of elements in this attribute will be determined by
-        its 'interpolation'.  See \\ref SetNormalsInterpolation()"""
+        doc = """Provide an object-space orientation for individual points, 
+        which, depending on subclass, may define a surface, curve, or free 
+        points.  Note that 'normals' should not be authored on any Mesh that
+        is subdivided, since the subdivision algorithm will define its own
+        normals. 'normals' is not a generic primvar, but the number of elements
+        in this attribute will be determined by its 'interpolation'.  See
+        . If 'normals' and 'primvars:normals'
+        are both specified, the latter has precedence."""
     )
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
@@ -1591,7 +1627,7 @@ class "PointBased" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -1691,24 +1727,29 @@ class "PointBased" (
 }
 
 class Mesh "Mesh" (
-    doc = '''Encodes a mesh surface whose definition and feature-set
+    doc = """Encodes a mesh surface whose definition and feature-set
     will converge with that of OpenSubdiv, http://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html. Current exceptions/divergences include:
     
-    1. Certain interpolation ("tag") parameters not yet supported
+    1. Certain interpolation (\"tag\") parameters not yet supported
     
     2. Does not (as of 9/2014) yet support hierarchical edits.  We do intend
     to provide some encoding in a future version of the schema.
     
     A key property of this mesh schema is that it encodes both subdivision
-    surfaces, and non-subdived "polygonal meshes", by varying the
+    surfaces, and non-subdived \"polygonal meshes\", by varying the
     subdivisionScheme attribute.
     
     A Note About Normals
-    
-    Although the normals attribute inherited from PointBased can be authored
-    on any mesh, they are almost never needed for subdivided meshes, and only
-    add rendering cost.  You may consider only authoring them for polygonal
-    meshes.'''
+
+    Normals should not be authored on a subdivided mesh, since subdivision
+    algorithms define their own normals. They should only be authored for
+    polygonal meshes.
+
+    The 'normals' attribute inherited from UsdGeomPointBased is not a generic
+    primvar, but the number of elements in this attribute will be determined by
+    its 'interpolation'.  See .
+    If 'normals' and 'primvars:normals' are both specified, the latter has
+    precedence."""
 )
 {
     int[] cornerIndices = [] (
@@ -1809,13 +1850,14 @@ class Mesh "Mesh" (
         "edgeAndCorner" (the default), or "edgeOnly".'''
     )
     normal3f[] normals (
-        doc = """Provide orientation for individual points, which, depending on
-        subclass, may define a surface, curve, or free points.  Note that in
-        general you should not need or want to provide 'normals' for any
-        Mesh that is subdivided, as the subdivision scheme will provide smooth
-        normals.  'normals' is not a generic Primvar,
-        but the number of elements in this attribute will be determined by
-        its 'interpolation'.  See \\ref SetNormalsInterpolation()"""
+        doc = """Provide an object-space orientation for individual points, 
+        which, depending on subclass, may define a surface, curve, or free 
+        points.  Note that 'normals' should not be authored on any Mesh that
+        is subdivided, since the subdivision algorithm will define its own
+        normals. 'normals' is not a generic primvar, but the number of elements
+        in this attribute will be determined by its 'interpolation'.  See
+        . If 'normals' and 'primvars:normals'
+        are both specified, the latter has precedence."""
     )
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
@@ -1839,7 +1881,7 @@ class Mesh "Mesh" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -2101,13 +2143,14 @@ class NurbsPatch "NurbsPatch" (
         during traversal."""
     )
     normal3f[] normals (
-        doc = """Provide orientation for individual points, which, depending on
-        subclass, may define a surface, curve, or free points.  Note that in
-        general you should not need or want to provide 'normals' for any
-        Mesh that is subdivided, as the subdivision scheme will provide smooth
-        normals.  'normals' is not a generic Primvar,
-        but the number of elements in this attribute will be determined by
-        its 'interpolation'.  See \\ref SetNormalsInterpolation()"""
+        doc = """Provide an object-space orientation for individual points, 
+        which, depending on subclass, may define a surface, curve, or free 
+        points.  Note that 'normals' should not be authored on any Mesh that
+        is subdivided, since the subdivision algorithm will define its own
+        normals. 'normals' is not a generic primvar, but the number of elements
+        in this attribute will be determined by its 'interpolation'.  See
+        . If 'normals' and 'primvars:normals'
+        are both specified, the latter has precedence."""
     )
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
@@ -2139,7 +2182,7 @@ class NurbsPatch "NurbsPatch" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -2323,10 +2366,11 @@ class NurbsPatch "NurbsPatch" (
 
 class "Curves" (
     doc = """Base class for BasisCurves and NurbsCurves.  The BasisCurves
-             schema is designed to be analagous to RenderMan's RiCurves 
-\t     and RiBasis, while the NurbsCurve schema is designed to be 
-             analgous to  the NURBS curves found in packages like Maya 
-             and Houdini while retaining their consistency with the 
+             schema is designed to be analagous to offline renderers' notion
+             of batched curves (such as the classical RIB definition via
+             Basis and Curves statements), while the NurbsCurve schema
+             is designed to be analgous to the NURBS curves found in packages
+             like Maya and Houdini while retaining their consistency with the 
              RenderMan specification for NURBS Patches."""
 )
 {
@@ -2369,13 +2413,14 @@ class "Curves" (
         during traversal."""
     )
     normal3f[] normals (
-        doc = """Provide orientation for individual points, which, depending on
-        subclass, may define a surface, curve, or free points.  Note that in
-        general you should not need or want to provide 'normals' for any
-        Mesh that is subdivided, as the subdivision scheme will provide smooth
-        normals.  'normals' is not a generic Primvar,
-        but the number of elements in this attribute will be determined by
-        its 'interpolation'.  See \\ref SetNormalsInterpolation()"""
+        doc = """Provide an object-space orientation for individual points, 
+        which, depending on subclass, may define a surface, curve, or free 
+        points.  Note that 'normals' should not be authored on any Mesh that
+        is subdivided, since the subdivision algorithm will define its own
+        normals. 'normals' is not a generic primvar, but the number of elements
+        in this attribute will be determined by its 'interpolation'.  See
+        . If 'normals' and 'primvars:normals'
+        are both specified, the latter has precedence."""
     )
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
@@ -2399,7 +2444,7 @@ class "Curves" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -2491,7 +2536,8 @@ class "Curves" (
         it), in which case widths are \"ribbon width\", or unoriented, in which
         case widths are cylinder width.  'widths' is not a generic Primvar,
         but the number of elements in this attribute will be determined by
-        its 'interpolation'.  See \\ref SetWidthsInterpolation()"""
+        its 'interpolation'.  See .  If 'widths'
+        and 'primvars:widths' are both specified, the latter has precedence."""
     )
     uniform token[] xformOpOrder (
         doc = """Encodes the sequence of transformation operations in the
@@ -2507,62 +2553,81 @@ class "Curves" (
 }
 
 class BasisCurves "BasisCurves" (
-    doc = """Basis curves are analagous to RiCurves.  A 'basis' matrix and 
-    vstep are used to uniformly interpolate the curves.  These curves are 
-    often used to render dense aggregate geometry like hair.
-    
-    A curves prim may have many curves, determined implicitly by the length of
-    the 'curveVertexCounts' vector.  An individual curve is composed of one 
-    or more curve segments, the smoothly interpolated part between vertices.
+    doc = """BasisCurves are a batched curve representation analogous to the
+    classic RIB definition via Basis and Curves statements. BasisCurves are
+    often used to render dense aggregate geometry like hair or grass.
 
-    Curves may have a m'type' of either linear or cubic.  Linear curve 
-    segments are interpolated between two vertices, and cubic curve segments are 
-    interpolated between 4 vertices.  The segment count of a cubic curve  
-    is determined by the vertex count, the 'wrap' (periodicity), and 
-    the vstep of the basis.
+    A 'matrix' and 'vstep' associated with the basis are used to
+    interpolate the vertices of a cubic BasisCurves. (The basis attribute
+    is unused for linear BasisCurves.)
+    
+    A single prim may have many curves whose count is determined implicitly by
+    the length of the curveVertexCounts vector.  Each individual curve is
+    composed of one or more segments. Each segment is defined by four vertices
+    for cubic curves and two vertices for linear curves. See the next section
+    for more information on how to map curve vertex counts to segment counts.
+
+    Segment Indexing
+    Interpolating a curve requires knowing how to decompose it into its 
+    individual segments.
+
+    The segments of a cubic curve are determined by the vertex count,
+    the wrap (periodicity), and the vstep of the basis. For linear
+    curves, the basis token is ignored and only the vertex count and
+    wrap are needed.
     
     cubic basis   | vstep
-    ------------- | -------------
+    ------------- | ------
     bezier        | 3
     catmullRom    | 1
     bspline       | 1
     hermite       | 2
     power         | 4
     
-    The first segment of a cubic curve is always defined by its first 4 points. 
-    The vstep is the increment used to determine what cv determines the 
-    next segment.  For a two segment bspline basis curve (vstep = 1), the first 
-    segment will be defined by interpolating vertices [0, 1, 2, 3] and the 
-    second  segment will be defined by [1, 2, 3, 4].  For a two segment bezier 
-    basis curve (vstep = 3), the first segment will be defined by interpolating 
-    vertices [0, 1, 2, 3] and the second segment will be defined by 
-    [3, 4, 5, 6].  If the vstep is not one, then you must take special care
-    to make sure that the number of cvs properly divides by your vstep.  If 
-    the type of a curve is linear, the basis matrix and vstep are unused.
-    
-    When validating curve topology, each entry in the curveVertexCounts vector
-    must pass this check.
+    The first segment of a cubic (nonperiodic) curve is always defined by its
+    first four points. The vstep is the increment used to determine what
+    vertex indices define the next segment.  For a two segment (nonperiodic)
+    bspline basis curve (vstep = 1), the first segment will be defined by
+    interpolating vertices [0, 1, 2, 3] and the second segment will be defined
+    by [1, 2, 3, 4].  For a two segment bezier basis curve (vstep = 3), the
+    first segment will be defined by interpolating vertices [0, 1, 2, 3] and
+    the second segment will be defined by [3, 4, 5, 6].  If the vstep is not
+    one, then you must take special care to make sure that the number of cvs
+    properly divides by your vstep. (The indices described are relative to
+    the initial vertex index for a batched curve.)
 
-    wrap           | cubic vertex count validity
-    -------------- | ---------------------------------------
-    nonperiodic    | (curveVertexCounts[i] - 4) % vstep == 0
-    periodic       | (curveVertexCounts[i]) % vstep == 0
+    For periodic curves, at least one of the curves' initial vertices are
+    repeated to close the curve.
+    (TODO: Explain the rules for how to repeat vertices for periodic curves.)
 
+    Linear curve segments are defined by two vertices.
+    A two segment linear curve's first segment would be defined by
+    interpolating vertices [0, 1]. The second segment would be defined by 
+    vertices [1, 2]. (Again, for a batched curve indices are relative to
+    the initial vertex index.)
+
+    When validating curve topology, each renderable entry in the
+    curveVertexCounts vector must pass this check.
+
+    type    | wrap           | validitity
+    ------- | -------------- | ----------------
+    linear  | nonperiodic    | curveVertexCounts[i] > 2
+    linear  | periodic       | curveVertexCounts[i] > 3
+    cubic   | nonperiodic    | (curveVertexCounts[i] - 4) % vstep == 0
+    cubic   | periodic       | (curveVertexCounts[i]) % vstep == 0
+
+    Cubic Vertex Interpolation
+ 
+    \\image html USDCurveBasisMatrix.png width=750
         
-    To convert an entry in the curveVertexCounts vector into a segment count 
-    for an individual curve, apply these rules.  Sum up all the results in
-    order to compute how many total segments all curves have.
+    Linear Vertex Interpolation
+ 
+    Linear interpolation is always used on curves of type linear.
+    't' with domain [0, 1], the curve is defined by the equation 
+    P0 * (1-t) + P1 * t. t at 0 describes the first point and t at 1 describes
+    the end point.
 
-    wrap          | segment count [linear curves]
-    ------------- | ----------------------------------------
-    nonperiodic   | curveVertexCounts[i] - 1
-    periodic      | curveVertexCounts[i]
-    
-    wrap          | segment count [cubic curves]
-    ------------- | ----------------------------------------
-    nonperiodic   | (curveVertexCounts[i] - 4) / vstep + 1
-    periodic      | curveVertexCounts[i] / vstep 
-
+    Primvar Interpolation
         
     For cubic curves, primvar data can be either interpolated cubically between 
     vertices or linearly across segments.  The corresponding token
@@ -2572,35 +2637,60 @@ class BasisCurves "BasisCurves" (
     wrap (periodicity) and number of segments in your curve.  For linear curves,
     varying and vertex data would be interpolated the same way.  By convention 
     varying is the preferred interpolation because of the association of 
-    varying with linear interpolation. 
+    varying with linear interpolation.
     
-    wrap          | expected linear (varying) data size
-    ------------- | ----------------------------------------
-    nonperiodic   | segmentCount + 1
-    periodic      | segmentCount
+    \\image html USDCurvePrimvars.png 
 
-    Both curve types additionally define 'constant'
-    interpolation for the entire prim and 'uniform' interpolation as per curve 
-    data.
+    To convert an entry in the curveVertexCounts vector into a segment count 
+    for an individual curve, apply these rules.  Sum up all the results in
+    order to compute how many total segments all curves have.
 
-    \\image html USDCurvePrimvars.png
+    The following tables describe the expected segment count for the 'i'th
+    curve in a curve batch as well as the entire batch. Python syntax
+    like '[:]' (to describe all members of an array) and 'len(...)' 
+    (to describe the length of an array) are used.
 
-    While not technically UsdGeomPrimvars, the widths and optional normals
-    also have interpolation metadata.  It's common for authored widths to have
-    constant, varying, or vertex interpolation
-    (see UsdGeomCurves::GetWidthsInterpolation()).  It's common for
-    authored normals to have varying interpolation
-    (see UsdGeomPointBased::GetNormalsInterpolation()).
-    
-    This prim represents two different entries in the RI spec:  RiBasis
-    and RiCurves, hence the name \"BasisCurves.\"  If we are interested in
-    specifying a custom basis as RenderMan allows you to do, the basis
-    enum could be extended with a new \"custom\" token and with additional 
-    attributes vstep and matrix, but for compatability with AbcGeom and the
-    rarity of this use case, it is omitted for now.
+    type    | wrap          | curve segment count                    | batch segment count                                                       
+    ------- | ------------- | -------------------------------------- | --------------------------
+    linear  | nonperiodic   | curveVertexCounts[i] - 1               | sum(curveVertexCounts[:]) - len(curveVertexCounts)
+    linear  | periodic      | curveVertexCounts[i]                   | sum(curveVertexCounts[:])
+    cubic   | nonperiodic   | (curveVertexCounts[i] - 4) / vstep + 1 | sum(curveVertexCounts[:] - 4) / vstep + len(curveVertexCounts)
+    cubic   | periodic      | curveVertexCounts[i] / vstep           | sum(curveVertexCounts[:]) / vstep
+ 
+    The following table descrives the expected size of varying
+    (linearly interpolated) data, derived from the segment counts computed
+    above.
 
-    Example of deriving per curve segment and varying primvar data counts from
-    the wrap, type, basis, and curveVertexCount.
+    wrap          | curve varying count          | batch varying count
+    ------------- | ---------------------------- | ------------------------------------------------
+    nonperiodic   | segmentCounts[i] + 1         | sum(segmentCounts[:]) + len(curveVertexCounts)
+    periodic      | segmentCounts[i]             | sum(segmentCounts[:])
+
+    Both curve types additionally define 'constant' interpolation for the
+    entire prim and 'uniform' interpolation as per curve data.
+
+ 
+    \\note Take care when providing support for linearly interpolated data for
+    cubic curves. Its shape doesn't provide a one to one mapping with either
+    the number of curves (like 'uniform') or the number of vertices (like
+    'vertex') and so it is often overlooked. This is the only primitive in
+    UsdGeom (as of this writing) where this is true. For meshes, while they
+    use different interpolation methods, 'varying' and 'vertex' are both
+    specified per point. It's common to assume that curves follow a similar
+    pattern and build in structures and language for per primitive, per
+    element, and per point data only to come upon these arrays that don't 
+    quite fit into either of those categories. It is
+    also common to conflate 'varying' with being per segment data and use the
+    segmentCount rules table instead of its neighboring varying data table
+    rules. We suspect that this is because for the common case of
+    nonperiodic cubic curves, both the provided segment count and varying data
+    size formula end with '+ 1'. While debugging, users may look at the double
+    '+ 1' as a mistake and try to remove it.  We take this time to enumerate
+    these issues because we've fallen into them before and hope that we save
+    others time in their own implementations.
+
+    As an example of deriving per curve segment and varying primvar data counts from
+    the wrap, type, basis, and curveVertexCount, the following table is provided.
 
     wrap          | type    | basis   | curveVertexCount  | curveSegmentCount  | varyingDataCount
     ------------- | ------- | ------- | ----------------- | ------------------ | -------------------------
@@ -2610,16 +2700,44 @@ class BasisCurves "BasisCurves" (
     periodic      | cubic   | bezier  | [6 9 6]           | [2 3 2]            | [2 3 2]
     periodic      | linear  | N/A     | [3 7]             | [3 7]              | [3 7]
 
+    Tubes and Ribbons
+    
+    The strictest definition of a curve as an infinitely thin wire is not 
+    particularly useful for describing production scenes. The additional
+    widths and normals attributes can be used to describe cylindrical
+    tubes and or flat oriented ribbons.
+
+    Curves with only widths defined are imaged as tubes with radius
+    'width / 2'. Curves with both widths and normals are imaged as ribbons
+    oriented in the direction of the interpolated normal vectors.
+
+    While not technically UsdGeomPrimvars, widths and normals
+    also have interpolation metadata. It's common for authored widths to have
+    constant, varying, or vertex interpolation 
+    (see UsdGeomCurves::GetWidthsInterpolation()).  It's common for
+    authored normals to have varying interpolation 
+    (see UsdGeomPointBased::GetNormalsInterpolation()).
+
+    \\image html USDCurveHydra.png
+
+    The file used to generate these curves can be found in
+    pxr/extras/examples/usdGeomExamples/basisCurves.usda.  It's provided
+    as a reference on how to properly image both tubes and ribbons. The first
+    row of curves are linear; the second are cubic bezier. (We aim in future
+    releases of HdSt to fix the discontinuity seen with broken tangents to
+    better match offline renderers like RenderMan.) The yellow and violet
+    cubic curves represent cubic vertex width interpolation for which there is
+    no equivalent for linear curves.
+    
+    \\note How did this prim type get its name?  This prim is a portmanteau of
+    two different statements in the original RenderMan specification:
+    'Basis' and 'Curves'.
 """
 )
 {
     uniform token basis = "bezier" (
         allowedTokens = ["bezier", "bspline", "catmullRom", "hermite", "power"]
-        doc = """the basis specifies the vstep and matrix used for interpolation.
-        a custom basis could be supported with the addition of a custom token
-        and an additional set of matrix/vstep parameters.  For simplicity and
-        consistency with AbcGeom, we have omitted this.  The order of basis
-        and default value is intentionally the same as AbcGeom."""
+        doc = "The basis specifies the vstep and matrix used for cubic interpolation."
     )
     int[] curveVertexCounts (
         doc = """Curves-derived primitives can represent multiple distinct,
@@ -2660,13 +2778,14 @@ class BasisCurves "BasisCurves" (
         during traversal."""
     )
     normal3f[] normals (
-        doc = """Provide orientation for individual points, which, depending on
-        subclass, may define a surface, curve, or free points.  Note that in
-        general you should not need or want to provide 'normals' for any
-        Mesh that is subdivided, as the subdivision scheme will provide smooth
-        normals.  'normals' is not a generic Primvar,
-        but the number of elements in this attribute will be determined by
-        its 'interpolation'.  See \\ref SetNormalsInterpolation()"""
+        doc = """Provide an object-space orientation for individual points, 
+        which, depending on subclass, may define a surface, curve, or free 
+        points.  Note that 'normals' should not be authored on any Mesh that
+        is subdivided, since the subdivision algorithm will define its own
+        normals. 'normals' is not a generic primvar, but the number of elements
+        in this attribute will be determined by its 'interpolation'.  See
+        . If 'normals' and 'primvars:normals'
+        are both specified, the latter has precedence."""
     )
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
@@ -2690,7 +2809,7 @@ class BasisCurves "BasisCurves" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -2755,8 +2874,8 @@ class BasisCurves "BasisCurves" (
     )
     uniform token type = "cubic" (
         allowedTokens = ["linear", "cubic"]
-        doc = """Linear curves interpolate linearly between cvs.  
-        Cubic curves use a basis matrix with 4 cvs to interpolate a segment."""
+        doc = """Linear curves interpolate linearly between two vertices.  
+        Cubic curves use a basis matrix with four vertices to interpolate a segment."""
     )
     vector3f[] velocities (
         doc = """If provided, 'velocities' should be used by renderers to 
@@ -2787,13 +2906,14 @@ class BasisCurves "BasisCurves" (
         it), in which case widths are \"ribbon width\", or unoriented, in which
         case widths are cylinder width.  'widths' is not a generic Primvar,
         but the number of elements in this attribute will be determined by
-        its 'interpolation'.  See \\ref SetWidthsInterpolation()"""
+        its 'interpolation'.  See .  If 'widths'
+        and 'primvars:widths' are both specified, the latter has precedence."""
     )
     uniform token wrap = "nonperiodic" (
         allowedTokens = ["nonperiodic", "periodic"]
-        doc = """if wrap is set to periodic, the curve when rendered will 
-        repeat the initial vertices (dependent on the vstep) to connect the
-        end points."""
+        doc = """If wrap is set to periodic, the curve when rendered will 
+        repeat the initial vertices (dependent on the vstep) to close the
+        curve."""
     )
     uniform token[] xformOpOrder (
         doc = """Encodes the sequence of transformation operations in the
@@ -2827,8 +2947,8 @@ class NurbsCurves "NurbsCurves" (
     In spite of these slight differences in the spec, curves generated in Maya
     should be preserved when roundtripping.
     
-    'order' and 'range', when representing a batched NurbsCurve should be
-    authored one value per curve.  'knots' should be the concatentation of
+    order and range, when representing a batched NurbsCurve should be
+    authored one value per curve.  knots should be the concatentation of
     all batched curves."""
 )
 {
@@ -2877,19 +2997,20 @@ class NurbsCurves "NurbsCurves" (
         entries must take on monotonically increasing values."""
     )
     normal3f[] normals (
-        doc = """Provide orientation for individual points, which, depending on
-        subclass, may define a surface, curve, or free points.  Note that in
-        general you should not need or want to provide 'normals' for any
-        Mesh that is subdivided, as the subdivision scheme will provide smooth
-        normals.  'normals' is not a generic Primvar,
-        but the number of elements in this attribute will be determined by
-        its 'interpolation'.  See \\ref SetNormalsInterpolation()"""
+        doc = """Provide an object-space orientation for individual points, 
+        which, depending on subclass, may define a surface, curve, or free 
+        points.  Note that 'normals' should not be authored on any Mesh that
+        is subdivided, since the subdivision algorithm will define its own
+        normals. 'normals' is not a generic primvar, but the number of elements
+        in this attribute will be determined by its 'interpolation'.  See
+        . If 'normals' and 'primvars:normals'
+        are both specified, the latter has precedence."""
     )
     int[] order = [] (
         doc = """Order of the curve.  Order must be positive and is
         equal to the degree of the polynomial basis to be evaluated, plus 1.
-        Its value for the 'i'th curve must be less than or equal to the 
-        number of cvs in the curveVertexCount[i]"""
+        Its value for the 'i'th curve must be less than or equal to
+        curveVertexCount[i]"""
     )
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
@@ -2913,7 +3034,7 @@ class NurbsCurves "NurbsCurves" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -3013,7 +3134,8 @@ class NurbsCurves "NurbsCurves" (
         it), in which case widths are \"ribbon width\", or unoriented, in which
         case widths are cylinder width.  'widths' is not a generic Primvar,
         but the number of elements in this attribute will be determined by
-        its 'interpolation'.  See \\ref SetWidthsInterpolation()"""
+        its 'interpolation'.  See .  If 'widths'
+        and 'primvars:widths' are both specified, the latter has precedence."""
     )
     uniform token[] xformOpOrder (
         doc = """Encodes the sequence of transformation operations in the
@@ -3029,12 +3151,16 @@ class NurbsCurves "NurbsCurves" (
 }
 
 class Points "Points" (
-    doc = '''Points are analogous to the <A HREF="https://renderman.pixar.com/resources/current/RenderMan/appnote.18.html">RiPoints spec</A>.  
+    doc = """Points are analogous to the <A HREF=\"https://renderman.pixar.com/resources/current/RenderMan/appnote.18.html\">RiPoints spec</A>.  
     
     Points can be an efficient means of storing and rendering particle
     effects comprised of thousands or millions of small particles.  Points
     generally receive a single shading sample each, which should take 
-    normals into account, if present.'''
+    normals into account, if present.
+
+    While not technically UsdGeomPrimvars, the widths and normals also
+    have interpolation metadata.  It's common for authored widths and normals
+    to have constant or varying interpolation."""
 )
 {
     uniform bool doubleSided = 0 (
@@ -3078,13 +3204,14 @@ class Points "Points" (
                  primvar."""
     )
     normal3f[] normals (
-        doc = """Provide orientation for individual points, which, depending on
-        subclass, may define a surface, curve, or free points.  Note that in
-        general you should not need or want to provide 'normals' for any
-        Mesh that is subdivided, as the subdivision scheme will provide smooth
-        normals.  'normals' is not a generic Primvar,
-        but the number of elements in this attribute will be determined by
-        its 'interpolation'.  See \\ref SetNormalsInterpolation()"""
+        doc = """Provide an object-space orientation for individual points, 
+        which, depending on subclass, may define a surface, curve, or free 
+        points.  Note that 'normals' should not be authored on any Mesh that
+        is subdivided, since the subdivision algorithm will define its own
+        normals. 'normals' is not a generic primvar, but the number of elements
+        in this attribute will be determined by its 'interpolation'.  See
+        . If 'normals' and 'primvars:normals'
+        are both specified, the latter has precedence."""
     )
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
@@ -3108,7 +3235,7 @@ class Points "Points" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -3196,7 +3323,11 @@ class Points "Points" (
     )
     float[] widths (
         doc = """Widths are defined as the diameter of the points, in 
-                 object space"""
+                 object space.  'widths' is not a generic Primvar, but
+                 the number of elements in this attribute will be determined by
+                 its 'interpolation'.  See .  If
+                 'widths' and 'primvars:widths' are both specified, the latter
+                 has precedence."""
     )
     uniform token[] xformOpOrder (
         doc = """Encodes the sequence of transformation operations in the
@@ -3290,6 +3421,11 @@ class PointInstancer "PointInstancer" (
     prim itself (or the UsdGeomImageable::ComputeLocalToWorldTransform() of the 
     PointInstancer to put the instance directly into world space)
 
+    If neither *velocities* nor *angularVelocities* are authored, we fallback to
+    standard position and orientation computation logic (using linear
+    interpolation between timeSamples) as described by
+    .
+
     \\anchor UsdGeom_PITimeScaling
     <b>Scaling Velocities for Interpolation</b>
     
@@ -3298,11 +3434,18 @@ class PointInstancer "PointInstancer" (
     ( 1.0 / UsdStage::GetTimeCodesPerSecond() ), because velocities are recorded
     in units/second, while we are interpolating in UsdTimeCode ordinates.
     
+    Additionally, if *motion:velocityScale* is authored or inherited (see
+    UsdGeomMotionAPI::ComputeVelocityScale()), it is used to scale both the
+    velocity and angular velocity by a constant value during computation. The
+    *motion:velocityScale* attribute is encoded by UsdGeomMotionAPI.
+
     We provide both high and low-level API's for dealing with the
     transformation as a matrix, both will compute the instance matrices using
     multiple threads; the low-level API allows the client to cache unvarying
     inputs so that they need not be read duplicately when computing over
     time.
+
+    See also .
     
     Primvars on PointInstancer
     
@@ -3787,13 +3930,17 @@ class "GeomModelAPI" (
     model:drawMode is inheritable so that a whole scene, a large group, or
     all prototypes of a model hierarchy PointInstancer can be assigned a draw
     mode with a single attribute edit.  model:applyDrawMode is meant to be
-    authored earlier, and provides flexibility for different asset types. For
-    example, a character assembly (composed of character, clothes, etc) might
-    have model:applyDrawMode set at the top of the subtree so the whole
-    group can be drawn as a single card object. An effects subtree might have
-    model:applyDrawMode set at the component level so each particle group
-    draws individually in bounding box mode.
+    written when an asset is authored, and provides flexibility for different
+    asset types. For example, a character assembly (composed of character,
+    clothes, etc) might have model:applyDrawMode set at the top of the
+    subtree so the whole group can be drawn as a single card object. An effects
+    subtree might have model:applyDrawMode set at a lower level so each
+    particle group draws individually.
 
+    Models of kind component are treated as if model:applyDrawMode
+    were true.  This means a prim is drawn with proxy geometry when: the
+    prim has kind component, and/or model:applyDrawMode is set; and
+    the prim or an ancestor has a non-default value for model:drawMode.
     A value for model:drawMode on a child prim takes precedence over a
     value on a parent prim.
 
@@ -3819,6 +3966,10 @@ class "GeomModelAPI" (
     s-axis. Any card faces with invalid asset paths will be drawn with
     model:drawModeColor.
 
+    Both model:cardGeometry and model:drawModeColor should be
+    authored on the prim where the draw mode takes effect, since these
+    attributes are not inherited.
+
     For fromTexture mode, only card faces with valid textures assigned
     are drawn. The geometry is generated by pulling the worldtoscreen
     attribute out of texture metadata.  This is expected to be a 4x4 matrix
@@ -3829,7 +3980,7 @@ class "GeomModelAPI" (
     If the metadata cannot be read in the right format, or the matrix can't
     be inverted, the card face is not drawn.
 
-    All card faces are drawn and textured as double-sided.
+    All card faces are drawn and textured as single-sided.
 
     \\todo CreatePayload() """
 )
@@ -3877,7 +4028,7 @@ class "GeomModelAPI" (
                  has kind component. See \\ref UsdGeomModelAPI_drawMode
                  for mode descriptions."""
     )
-    uniform Vec3f model:drawModeColor (
+    uniform float3 model:drawModeColor (
         doc = """The base color of imaging prims inserted for alternate
                  imaging modes. For origin and bounds modes, this
                  controls line color; for cards mode, this controls the

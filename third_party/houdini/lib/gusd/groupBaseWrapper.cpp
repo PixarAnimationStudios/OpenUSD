@@ -44,12 +44,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 #undef drand48
 #undef srand48
 
-using std::cout;
-using std::cerr;
-using std::endl;
-using std::vector;
-using std::string;
-
 #ifdef DEBUG
 #define DBG(x) x
 #else
@@ -224,6 +218,12 @@ GusdGroupBaseWrapper::updateGroupFromGTPrim(
         // cache this transform so that if we write a child, we can compute its
         // relative transform.
         xformCache[destPrim.GetPrim().GetPath()] = houXform;
+    }
+
+    // sourcePrim can be NULL if the ROP wants to write a transform without having
+    // a corresponding GT_Primitive
+    if( !sourcePrim ) {
+        return true;
     }
 
     if( !ctxt.writeOverlay || ctxt.overlayPrimvars || ctxt.overlayAll )

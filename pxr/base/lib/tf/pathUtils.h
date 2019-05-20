@@ -64,8 +64,13 @@ std::string TfRealPath(std::string const& path,
 /// This canonicalizes paths, removing any double slashes, and eliminiating
 /// '.', and '..' components of the path.  This emulates the behavior of
 /// os.path.normpath in Python.
+///
+/// On Windows, all backslashes are converted to forward slashes and drive
+/// specifiers (e.g., "C:") are lower-cased. If \p stripDriveSpecifier
+/// is \c true, these drive specifiers are removed from the path.
 TF_API
-std::string TfNormPath(std::string const& path);
+std::string TfNormPath(std::string const& path, 
+                       bool stripDriveSpecifier = false);
 
 /// Return the index delimiting the longest accessible prefix of \a path.
 ///

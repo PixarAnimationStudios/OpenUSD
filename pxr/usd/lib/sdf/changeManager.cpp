@@ -29,7 +29,7 @@
 #include "pxr/usd/sdf/notice.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/spec.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/stackTrace.h"
 
@@ -327,20 +327,6 @@ Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
     else if (field == SdfFieldKeys->TargetPaths) {
         changes[layer].DidChangeRelationshipTargets(path);
     }
-    else if (field == SdfFieldKeys->Marker) {
-        const SdfSpecType specType = layer->GetSpecType(path);
-
-        if (specType == SdfSpecTypeConnection) {
-            changes[layer].DidChangeAttributeConnection(path.GetParentPath());
-        }
-        else if (specType == SdfSpecTypeRelationshipTarget) {
-            changes[layer].DidChangeRelationshipTargets(path.GetParentPath());
-        }
-        else {
-            TF_CODING_ERROR("Unknown spec type for marker value change at "
-                            "path <%s>", path.GetText());
-        }
-    }
     else if (field == SdfFieldKeys->SubLayers) {
         std::vector<std::string> addedLayers, removedLayers;
         {        
@@ -439,9 +425,6 @@ Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
             }
         }
     }
-    else if (field == SdfFieldKeys->Script) {
-        changes[layer].DidChangeAttributeConnection(path.GetParentPath());
-    }
     else if (field == SdfFieldKeys->Variability ||
              field == SdfFieldKeys->Custom ||
              field == SdfFieldKeys->Specifier) {
@@ -499,6 +482,15 @@ Sdf_ChangeManager::DidMoveSpec(const SdfLayerHandle &layer,
             changes[layer].DidChangePrimName(oldPath, newPath);
         } else if (oldPath.IsPropertyPath()) {
             changes[layer].DidChangePropertyName(oldPath, newPath);
+        } else if (oldPath.IsTargetPath()) {
+            const SdfPath& parentPropPath = oldPath.GetParentPath();
+            const SdfSpecType specType = layer->GetSpecType(parentPropPath);
+            if (specType == SdfSpecTypeAttribute) {
+                changes[layer].DidChangeAttributeConnection(parentPropPath);
+            }
+            else if (specType == SdfSpecTypeRelationship) {
+                changes[layer].DidChangeRelationshipTargets(parentPropPath);
+            }
         }
     } else {
         // Reparent
@@ -510,6 +502,18 @@ Sdf_ChangeManager::DidMoveSpec(const SdfLayerHandle &layer,
                 /* hasOnlyRequiredFields = */ false);
             changes[layer].DidAddProperty(newPath, 
                 /* hasOnlyRequiredFields = */ false);
+        } else if (oldPath.IsTargetPath()) {
+            const SdfPath& oldParentPropPath = oldPath.GetParentPath();
+            const SdfPath& newParentPropPath = newPath.GetParentPath();
+            const SdfSpecType specType = layer->GetSpecType(oldParentPropPath);
+            if (specType == SdfSpecTypeAttribute) {
+                changes[layer].DidChangeAttributeConnection(oldParentPropPath);
+                changes[layer].DidChangeAttributeConnection(newParentPropPath);
+            }
+            else if (specType == SdfSpecTypeRelationship) {
+                changes[layer].DidChangeRelationshipTargets(oldParentPropPath);
+                changes[layer].DidChangeRelationshipTargets(newParentPropPath);
+            }
         }
     }
 }

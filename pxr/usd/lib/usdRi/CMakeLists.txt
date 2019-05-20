@@ -92,6 +92,8 @@ pxr_register_test(testUsdRiSchemata
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdRiSchemata"  
     EXPECTED_RETURN_CODE 0
+    ENV
+        USD_RI_WRITE_BXDF_OUTPUT=0
 )
 
 pxr_register_test(testUsdRiSplineAPI

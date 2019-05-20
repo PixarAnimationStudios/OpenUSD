@@ -25,7 +25,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/cleanupEnabler.h"
 #include <boost/python.hpp>
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 
 using namespace boost::python;
 
@@ -70,7 +70,7 @@ public:
     }
 
 private :
-    boost::scoped_ptr<SdfCleanupEnabler> _state;
+    std::unique_ptr<SdfCleanupEnabler> _state;
 };
 
 } // anonymous namespace 

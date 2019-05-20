@@ -74,6 +74,11 @@ UsdGeomScope::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdGeomScope::_GetSchemaType() const {
+    return UsdGeomScope::schemaType;
+}
+
 /* static */
 const TfType &
 UsdGeomScope::_GetStaticTfType()

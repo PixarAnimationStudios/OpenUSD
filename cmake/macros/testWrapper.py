@@ -78,7 +78,10 @@ def _parseArgs():
     parser.add_argument('--expected-return-code', type=int, default=0,
             help='Expected return code of this test.')
     parser.add_argument('--env-var', dest='envVars', default=[], type=str, 
-            action='append', help='Variable to set in the test environment.')
+            action='append',
+            help=('Variable to set in the test environment, in KEY=VALUE form. '
+                  'If "<PXR_TEST_DIR>" is in the value, it is replaced with the '
+                  'absolute path of the temp directory the tests are run in'))
     parser.add_argument('--pre-path', dest='prePaths', default=[], type=str, 
             action='append', help='Path to prepend to the PATH env var.')
     parser.add_argument('--post-path', dest='postPaths', default=[], type=str, 
@@ -243,6 +246,7 @@ if __name__ == '__main__':
             sys.exit(1)
         try:
             k, v = varStr.split('=', 1)
+            v = v.replace('<PXR_TEST_DIR>', testDir)
             env[k] = v
         except IndexError:
             sys.stderr.write("Error: envvar '{0}' not of the form "

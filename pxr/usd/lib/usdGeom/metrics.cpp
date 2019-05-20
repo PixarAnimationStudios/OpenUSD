@@ -37,6 +37,8 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 
+#include <cfloat>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -48,7 +50,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 TfToken 
 UsdGeomGetStageUpAxis(const UsdStageWeakPtr &stage)
 {
-    if (!TF_VERIFY(stage)){
+    if (!stage){
+        TF_CODING_ERROR("Invalid UsdStage");
         return TfToken();
     }
 
@@ -67,9 +70,11 @@ UsdGeomGetStageUpAxis(const UsdStageWeakPtr &stage)
 bool 
 UsdGeomSetStageUpAxis(const UsdStageWeakPtr &stage, const TfToken &axis)
 {
-    if (!TF_VERIFY(stage)){
+    if (!stage){
+        TF_CODING_ERROR("Invalid UsdStage");
         return false;
     }
+
     if (axis != UsdGeomTokens->y && axis != UsdGeomTokens->z){
         TF_CODING_ERROR("UsdStage upAxis can only be set to \"Y\" or \"Z\", "
                         "not attempted \"%s\" on stage %s.",
@@ -162,6 +167,66 @@ TfToken
 UsdGeomGetFallbackUpAxis()
 {
     return *_fallbackUpAxis;
+}
+
+
+constexpr double UsdGeomLinearUnits::nanometers;
+constexpr double UsdGeomLinearUnits::micrometers;
+constexpr double UsdGeomLinearUnits::millimeters;
+constexpr double UsdGeomLinearUnits::centimeters;
+constexpr double UsdGeomLinearUnits::meters;
+constexpr double UsdGeomLinearUnits::kilometers;
+constexpr double UsdGeomLinearUnits::lightYears;
+constexpr double UsdGeomLinearUnits::inches;
+constexpr double UsdGeomLinearUnits::feet;
+constexpr double UsdGeomLinearUnits::yards;
+constexpr double UsdGeomLinearUnits::miles;
+
+double 
+UsdGeomGetStageMetersPerUnit(const UsdStageWeakPtr &stage)
+{
+    double  units = UsdGeomLinearUnits::centimeters;
+    if (!stage){
+        TF_CODING_ERROR("Invalid UsdStage");
+        return units;
+    }
+
+    stage->GetMetadata(UsdGeomTokens->metersPerUnit, &units);
+    return units;
+}
+
+bool 
+UsdGeomStageHasAuthoredMetersPerUnit(const UsdStageWeakPtr &stage)
+{
+    if (!stage){
+        TF_CODING_ERROR("Invalid UsdStage");
+        return false;
+    }
+    return stage->HasAuthoredMetadata(UsdGeomTokens->metersPerUnit);
+}
+
+bool
+UsdGeomSetStageMetersPerUnit(const UsdStageWeakPtr &stage, 
+                             double metersPerUnit)
+{
+    if (!stage){
+        TF_CODING_ERROR("Invalid UsdStage");
+        return false;
+    }
+
+    return stage->SetMetadata(UsdGeomTokens->metersPerUnit, metersPerUnit);
+}
+
+bool
+UsdGeomLinearUnitsAre(double authoredUnits, double standardUnits,
+                      double epsilon)
+{
+    if (authoredUnits <= 0 || standardUnits <= 0){
+        return false;
+    }
+
+    const double diff = GfAbs(authoredUnits - standardUnits);
+    return (diff / authoredUnits < epsilon) && (diff / standardUnits < epsilon);
 }
 
 

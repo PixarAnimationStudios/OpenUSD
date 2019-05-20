@@ -1,0 +1,24 @@
+#usda 1.0
+
+def "PayloadRef1" (
+payload = @Payload.usda@</Parent>
+)
+{
+}
+
+def "PayloadRef2" (
+payload = @Payload2.usda@</Parent>
+)
+{
+}
+
+def "PayloadRefNone" (
+payload = None
+)
+{
+}
+
+def "PayloadNoOpinion" (
+)
+{
+}

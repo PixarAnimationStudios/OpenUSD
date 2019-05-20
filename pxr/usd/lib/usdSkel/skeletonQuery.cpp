@@ -23,10 +23,10 @@
 //
 #include "pxr/usd/usdSkel/skeletonQuery.h"
 
+#include "pxr/base/tf/span.h"
+
 #include "pxr/usd/usd/prim.h"
-
 #include "pxr/usd/usdGeom/xformCache.h"
-
 #include "pxr/usd/usdSkel/animQuery.h"
 #include "pxr/usd/usdSkel/cacheImpl.h"
 #include "pxr/usd/usdSkel/skeleton.h"
@@ -42,7 +42,7 @@ UsdSkelSkeletonQuery::UsdSkelSkeletonQuery(
     const UsdSkelAnimQuery& animQuery)
     : _definition(definition), _animQuery(animQuery)
 {
-    if(definition && animQuery) {
+    if (definition && animQuery) {
         _animToSkelMapper = UsdSkelAnimMapper(animQuery.GetJointOrder(),
                                               definition->GetJointOrder());
     }
@@ -65,43 +65,20 @@ UsdSkelSkeletonQuery::_HasMappableAnim() const
 }
 
 
+template <typename Matrix4>
 bool
-UsdSkelSkeletonQuery::ComputeAnimTransform(GfMatrix4d* xform,
-                                           UsdTimeCode time) const
-{
-    TRACE_FUNCTION();
-
-    if(TF_VERIFY(IsValid(), "invalid skeleton query.")) {
-        if(_animQuery) {
-            return _animQuery.ComputeTransform(xform, time);
-        }
-
-        if(!xform) {
-            TF_CODING_ERROR("'xform' pointer is null.");
-            return false;
-        }
-
-        // No anim; fallback to using identity.
-        xform->SetIdentity();
-        return true;
-    }
-    return false;
-}
-
-
-bool
-UsdSkelSkeletonQuery::ComputeJointLocalTransforms(VtMatrix4dArray* xforms,
+UsdSkelSkeletonQuery::ComputeJointLocalTransforms(VtArray<Matrix4>* xforms,
                                                   UsdTimeCode time,
                                                   bool atRest) const
 {
     TRACE_FUNCTION();
 
-    if(!xforms) {
+    if (!xforms) {
         TF_CODING_ERROR("'xforms' pointer is null.");
         return false;
     }
 
-    if(TF_VERIFY(IsValid(), "invalid skeleton query.")) {
+    if (TF_VERIFY(IsValid(), "invalid skeleton query.")) {
         atRest = atRest || !_HasMappableAnim();
         return _ComputeJointLocalTransforms(xforms, time, atRest);
     }
@@ -109,43 +86,69 @@ UsdSkelSkeletonQuery::ComputeJointLocalTransforms(VtMatrix4dArray* xforms,
 }
 
 
+template USDSKEL_API bool
+UsdSkelSkeletonQuery::ComputeJointLocalTransforms(VtArray<GfMatrix4d>*,
+                                                  UsdTimeCode, bool) const;
+
+template USDSKEL_API bool
+UsdSkelSkeletonQuery::ComputeJointLocalTransforms(VtArray<GfMatrix4f>*,
+                                                  UsdTimeCode, bool) const;
+
+
+template <typename Matrix4>
 bool
-UsdSkelSkeletonQuery::_ComputeJointLocalTransforms(VtMatrix4dArray* xforms,
+UsdSkelSkeletonQuery::_ComputeJointLocalTransforms(VtArray<Matrix4>* xforms,
                                                    UsdTimeCode time,
                                                    bool atRest) const
 {
-    if(atRest) {
-        *xforms = _definition->GetJointLocalRestTransforms();
-        return true;
+    if (atRest) {
+        return _definition->GetJointLocalRestTransforms(xforms);
     }
 
-    if(_animToSkelMapper.IsSparse()) {
+    if (_animToSkelMapper.IsSparse()) {
         // Animation does not override all values;
-        // Need to first fill in rest transforms.
-        *xforms = _definition->GetJointLocalRestTransforms();
+        // Need to first fill in bind transforms.
+        if (!_definition->GetJointLocalRestTransforms(xforms)) {
+            TF_WARN("%s -- Failed computing local space transforms: "
+                    "the the animation source (<%s>) is sparse, but the "
+                    "'restTransforms' of the Skeleton are either unset, "
+                    "or do not match the number of joints.",
+                    GetSkeleton().GetPrim().GetPath().GetText(),
+                    GetAnimQuery().GetPrim().GetPath().GetText());
+            return false;
+        }
     }
 
-    VtMatrix4dArray animXforms;
-    if(_animQuery.ComputeJointLocalTransforms(&animXforms, time)) {
-        return _animToSkelMapper.Remap(animXforms, xforms);
+    VtArray<Matrix4> animXforms;
+    if (_animQuery.ComputeJointLocalTransforms(&animXforms, time)) {
+        return _animToSkelMapper.RemapTransforms(animXforms, xforms);
+    } else {
+        // Failed to compute anim xforms.
+        // Fall back to our rest transforms.
+        // These will have already been initialized above,
+        // unless we have a non-sparse mapping.
+        if (!_animToSkelMapper.IsSparse()) {
+            return _definition->GetJointLocalRestTransforms(xforms);
+        }
     }
-    return false;
+    return true;
 }
 
 
+template <typename Matrix4>
 bool
-UsdSkelSkeletonQuery::ComputeJointSkelTransforms(VtMatrix4dArray* xforms,
+UsdSkelSkeletonQuery::ComputeJointSkelTransforms(VtArray<Matrix4>* xforms,
                                                  UsdTimeCode time,
                                                  bool atRest) const
 {
     TRACE_FUNCTION();
     
-    if(!xforms) {
+    if (!xforms) {
         TF_CODING_ERROR("'xforms' pointer is null.");
         return false;
     }
 
-    if(TF_VERIFY(IsValid(), "invalid skeleton query.")) {
+    if (TF_VERIFY(IsValid(), "invalid skeleton query.")) {
         atRest = atRest || !_HasMappableAnim();
         return _ComputeJointSkelTransforms(xforms, time, atRest);
     }
@@ -153,39 +156,37 @@ UsdSkelSkeletonQuery::ComputeJointSkelTransforms(VtMatrix4dArray* xforms,
 }
 
 
+template USDSKEL_API bool
+UsdSkelSkeletonQuery::ComputeJointSkelTransforms(VtArray<GfMatrix4d>*,
+                                                 UsdTimeCode, bool) const;
+
+template USDSKEL_API bool
+UsdSkelSkeletonQuery::ComputeJointSkelTransforms(VtArray<GfMatrix4f>*,
+                                                 UsdTimeCode, bool) const;
+
+
+template <typename Matrix4>
 bool
-UsdSkelSkeletonQuery::_ComputeJointSkelTransforms(VtMatrix4dArray* xforms,
+UsdSkelSkeletonQuery::_ComputeJointSkelTransforms(VtArray<Matrix4>* xforms,
                                                   UsdTimeCode time,
                                                   bool atRest) const
 {
-    if(atRest) {
+    if (atRest) {
         // This is cached on the definition.
-        *xforms = _definition->GetJointSkelRestTransforms();
-        return true;
+        return _definition->GetJointSkelRestTransforms(xforms);
     }
 
-    VtMatrix4dArray localXforms;
-    if(_ComputeJointLocalTransforms(&localXforms, time, atRest)) {
-        const auto& topology = _definition->GetTopology();
-        return UsdSkelConcatJointTransforms(topology, localXforms, xforms);
-    }
-    return false;
-}
-
-
-bool
-UsdSkelSkeletonQuery::ComputeSkinningTransforms(VtMatrix4dArray* xforms,
-                                                UsdTimeCode time) const
-{
-    TRACE_FUNCTION();
-
-    if(!xforms) {
-        TF_CODING_ERROR("'xforms' pointer is null.");
+    if (!xforms) {
+        TF_CODING_ERROR("'xforms' is null");
         return false;
     }
 
-    if(TF_VERIFY(IsValid(), "invalid skeleton query.")) {
-        return _ComputeSkinningTransforms(xforms, time);
+    VtArray<Matrix4> localXforms;
+    if (_ComputeJointLocalTransforms(&localXforms, time, atRest)) {
+        const auto& topology = _definition->GetTopology();
+
+        xforms->resize(topology.size());
+        return UsdSkelConcatJointTransforms(topology, localXforms, *xforms);
     }
     return false;
 }
@@ -193,59 +194,220 @@ UsdSkelSkeletonQuery::ComputeSkinningTransforms(VtMatrix4dArray* xforms,
 
 namespace {
 
-/// Compute xforms = premult*xforms.
+/// Compute `out = a * b`.
+template <typename Matrix4>
 void
-_PreMultXforms(const VtMatrix4dArray& premult, VtMatrix4dArray* xforms)
+_MultTransforms(TfSpan<const Matrix4> a,
+                TfSpan<const Matrix4> b,
+                TfSpan<Matrix4> out)
 {
-    TRACE_FUNCTION();
+    TF_DEV_AXIOM(a.size() == b.size() && a.size() == out.size());
 
-    const GfMatrix4d* premultData = premult.cdata();
-    GfMatrix4d* xformsData = xforms->data();
-    for(size_t i = 0; i < xforms->size(); ++i) {
-        xformsData[i] = premultData[i] * xformsData[i];
+    for (ptrdiff_t i = 0; i < out.size(); ++i) {    
+        out[i] = a[i] * b[i];
     }
 }
 
 } // namespace
-        
 
+
+template <typename Matrix4>
 bool
-UsdSkelSkeletonQuery::_ComputeSkinningTransforms(VtMatrix4dArray* xforms,
-                                                 UsdTimeCode time) const
+UsdSkelSkeletonQuery::ComputeJointRestRelativeTransforms(
+    VtArray<Matrix4>* xforms, UsdTimeCode time) const
 {
-    if(!_animQuery) {
-        // All transforms would be identity.
-        xforms->assign(_definition->GetTopology().GetNumJoints(),
-                       GfMatrix4d(1));
-        return true;
+    TRACE_FUNCTION();
+
+    if (!xforms) {
+        TF_CODING_ERROR("'xforms' pointer is null.");
+        return false;
     }
 
-    if(_ComputeJointSkelTransforms(xforms, time, /*rest*/ false)) {
+    if (TF_VERIFY(IsValid(), "invalid skeleton query.")) {
+        if (_HasMappableAnim()) {
+            // jointLocalXf = restRelativeXf * restXf
+            // restRelativeXf = jointLocalXf * inv(restXf)
 
-        // XXX: Since this is a fairly frequent computation request,
-        // skel-space inverse rest transforms are cached on-demand
-        // on the definition
+            // Pull inverse rest transforms first
+            // They are cached on the definition.
+            VtArray<Matrix4> invRestXforms;
+            if (_definition->GetJointLocalInverseRestTransforms(
+                    &invRestXforms)) {
 
-        const VtMatrix4dArray& restInverseXforms = 
-            _definition->GetJointSkelInverseRestTransforms();
+                VtArray<Matrix4> localXforms;
+                if (_ComputeJointLocalTransforms(
+                        &localXforms, time, /*atRest*/ false)) {
+                    if (TF_VERIFY(localXforms.size() == invRestXforms.size())) {
+                        
+                        xforms->resize(localXforms.size());
 
-        if(xforms->size() == restInverseXforms.size()) {
-            // xforms = restInverseXforms * xforms
-            _PreMultXforms(restInverseXforms, xforms);
-            return true;
+                        _MultTransforms<Matrix4>(localXforms,
+                                                 invRestXforms, *xforms);
+                        return true;
+                    }
+                }
+            } else {
+                TF_WARN("%s -- Failed computing rest-relative transforms: "
+                        "the 'restTransforms' of the Skeleton are either unset, "
+                        "or do not have a matching number of joints.",
+                        GetSkeleton().GetPrim().GetPath().GetText());
+            }
         } else {
-            TF_WARN("Xforms.size() [%zu] != restInverseXforms.size() [%zu].",
-                    xforms->size(), restInverseXforms.size());
+            // No bound animation, so rest relative transforms are identity.
+            xforms->assign(GetTopology().size(), Matrix4(1));
+            return true;
         }
     }
     return false;
 }
 
 
+template USDSKEL_API bool
+UsdSkelSkeletonQuery::ComputeJointRestRelativeTransforms(
+    VtArray<GfMatrix4d>*, UsdTimeCode) const;
+
+template USDSKEL_API bool
+UsdSkelSkeletonQuery::ComputeJointRestRelativeTransforms(
+    VtArray<GfMatrix4f>*, UsdTimeCode) const;
+
+
+template <typename Matrix4>
+bool
+UsdSkelSkeletonQuery::ComputeJointWorldTransforms(VtArray<Matrix4>* xforms,
+                                                  UsdGeomXformCache* xfCache,
+                                                  bool atRest) const
+{
+    TRACE_FUNCTION();
+
+    if (!xforms) {
+        TF_CODING_ERROR("'xforms' is null");
+        return false;
+    }
+
+    if (!xfCache) {
+        TF_CODING_ERROR("'xfCache' is null.");
+        return false;
+    }
+    
+    VtArray<Matrix4> localXforms;
+    if (ComputeJointLocalTransforms(&localXforms, xfCache->GetTime(), atRest)) {
+        const auto& topology = _definition->GetTopology();
+
+        const Matrix4 rootXform(xfCache->GetLocalToWorldTransform(GetPrim()));
+
+        xforms->resize(topology.size());
+        return UsdSkelConcatJointTransforms(topology, localXforms,
+                                            *xforms, &rootXform);
+    }
+    return false;
+}
+
+
+template USDSKEL_API bool
+UsdSkelSkeletonQuery::ComputeJointWorldTransforms(
+    VtArray<GfMatrix4d>*, UsdGeomXformCache*, bool) const;
+
+template USDSKEL_API bool
+UsdSkelSkeletonQuery::ComputeJointWorldTransforms(
+    VtArray<GfMatrix4f>*, UsdGeomXformCache*, bool) const;
+
+
+template <typename Matrix4>
+bool
+UsdSkelSkeletonQuery::ComputeSkinningTransforms(VtArray<Matrix4>* xforms,
+                                                UsdTimeCode time) const
+{
+    TRACE_FUNCTION();
+
+    if (!xforms) {
+        TF_CODING_ERROR("'xforms' pointer is null.");
+        return false;
+    }
+
+    if (TF_VERIFY(IsValid(), "invalid skeleton query.")) {
+        return _ComputeSkinningTransforms(xforms, time);
+    }
+    return false;
+}
+
+
+template USDSKEL_API bool
+UsdSkelSkeletonQuery::ComputeSkinningTransforms(VtArray<GfMatrix4d>*,
+                                                UsdTimeCode) const;
+
+template USDSKEL_API bool
+UsdSkelSkeletonQuery::ComputeSkinningTransforms(VtArray<GfMatrix4f>*,
+                                                UsdTimeCode) const;
+
+
+template <typename Matrix4>
+bool
+UsdSkelSkeletonQuery::_ComputeSkinningTransforms(VtArray<Matrix4>* xforms,
+                                                 UsdTimeCode time) const
+{
+    if (ComputeJointSkelTransforms(xforms, time)) {
+
+        // XXX: Since this is a fairly frequent computation request,
+        // skel-space inverse rest transforms are cached on-demand
+        // on the definition
+        
+        VtArray<Matrix4> inverseBindXforms;
+        if (!_definition->GetJointWorldInverseBindTransforms(
+                &inverseBindXforms)) {
+            TF_WARN("%s -- Failed fetching bind transforms. The "
+                    "'bindTransforms' attribute may be unauthored, "
+                    "or may not match the number of joints.",
+                    GetSkeleton().GetPrim().GetPath().GetText());
+            return false;
+        }
+
+        if (xforms->size() == inverseBindXforms.size()) {
+            // xforms = inverseBindXforms * xforms
+            _MultTransforms<Matrix4>(inverseBindXforms, *xforms, *xforms);
+            return true;
+        } else {
+            TF_WARN("%s -- Size of computed joints transforms [%zu] does not "
+                    "match the number of elements in the 'bindTransforms' "
+                    "attr [%zu].", GetSkeleton().GetPrim().GetPath().GetText(),
+                    xforms->size(), inverseBindXforms.size());
+        }
+    }
+    return false;
+}
+
+
+template <typename Matrix4>
+bool
+UsdSkelSkeletonQuery::GetJointWorldBindTransforms(
+    VtArray<Matrix4>* xforms) const
+{
+    if (TF_VERIFY(IsValid(), "invalid skeleton query.")) {
+        return _definition->GetJointWorldBindTransforms(xforms);
+    }
+    return false;
+}
+
+
+template USDSKEL_API bool
+UsdSkelSkeletonQuery::GetJointWorldBindTransforms(
+    VtArray<GfMatrix4d>* xforms) const;
+
+template USDSKEL_API bool
+UsdSkelSkeletonQuery::GetJointWorldBindTransforms(
+    VtArray<GfMatrix4f>* xforms) const;
+
+
+UsdPrim
+UsdSkelSkeletonQuery::GetPrim() const
+{
+    return GetSkeleton().GetPrim();
+}
+
+
 const UsdSkelSkeleton&
 UsdSkelSkeletonQuery::GetSkeleton() const
 {
-    if(TF_VERIFY(IsValid(), "invalid skeleton query.")) {
+    if (TF_VERIFY(IsValid(), "invalid skeleton query.")) {
         return _definition->GetSkeleton();
     }
     static UsdSkelSkeleton null;
@@ -263,10 +425,10 @@ UsdSkelSkeletonQuery::GetAnimQuery() const
 const UsdSkelTopology&
 UsdSkelSkeletonQuery::GetTopology() const
 {
-    if(TF_VERIFY(IsValid(), "invalid skeleton query.")) {
+    if (TF_VERIFY(IsValid(), "invalid skeleton query.")) {
         return _definition->GetTopology();
     }
-    static const UsdSkelTopology null;
+    static const UsdSkelTopology null{};
     return null;
 }
 
@@ -274,7 +436,7 @@ UsdSkelSkeletonQuery::GetTopology() const
 VtTokenArray
 UsdSkelSkeletonQuery::GetJointOrder() const
 {
-    if(TF_VERIFY(IsValid(), "invalid skeleton query.")) {
+    if (TF_VERIFY(IsValid(), "invalid skeleton query.")) {
         return _definition->GetJointOrder();
     }
     return VtTokenArray();
@@ -284,10 +446,10 @@ UsdSkelSkeletonQuery::GetJointOrder() const
 std::string
 UsdSkelSkeletonQuery::GetDescription() const
 {
-    if(IsValid()) {
+    if (IsValid()) {
         return TfStringPrintf(
             "UsdSkelSkeletonQuery (skel = <%s>, anim = <%s>)",
-            _definition->GetSkeleton().GetPrim().GetPath().GetText(),
+            GetPrim().GetPath().GetText(),
             _animQuery.GetPrim().GetPath().GetText());
     }
     return "invalid UsdSkelSkeletonQuery";

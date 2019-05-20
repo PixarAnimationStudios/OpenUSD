@@ -24,16 +24,18 @@
 #ifndef PXRUSDMAYAGL_PROXY_SHAPE_UI_H
 #define PXRUSDMAYAGL_PROXY_SHAPE_UI_H
 
-/// \file proxyShapeUI.h
+/// \file pxrUsdMayaGL/proxyShapeUI.h
 
 #include "pxr/pxr.h"
 #include "pxrUsdMayaGL/api.h"
-#include "pxrUsdMayaGL/batchRenderer.h"
+#include "pxrUsdMayaGL/usdProxyShapeAdapter.h"
 
 #include <maya/M3dView.h>
 #include <maya/MDrawInfo.h>
 #include <maya/MDrawRequest.h>
 #include <maya/MDrawRequestQueue.h>
+#include <maya/MMessage.h>
+#include <maya/MObject.h>
 #include <maya/MPointArray.h>
 #include <maya/MPxSurfaceShapeUI.h>
 #include <maya/MSelectInfo.h>
@@ -51,18 +53,18 @@ class UsdMayaProxyShapeUI : public MPxSurfaceShapeUI
         static void* creator();
 
         PXRUSDMAYAGL_API
-        virtual void getDrawRequests(
+        void getDrawRequests(
                 const MDrawInfo& drawInfo,
-                bool isObjectAndActiveOnly,
+                bool objectAndActiveOnly,
                 MDrawRequestQueue& requests) override;
 
         PXRUSDMAYAGL_API
-        virtual void draw(
+        void draw(
                 const MDrawRequest& request,
                 M3dView& view) const override;
 
         PXRUSDMAYAGL_API
-        virtual bool select(
+        bool select(
                 MSelectInfo& selectInfo,
                 MSelectionList& selectionList,
                 MPointArray& worldSpaceSelectPts) const override;
@@ -70,15 +72,31 @@ class UsdMayaProxyShapeUI : public MPxSurfaceShapeUI
     private:
 
         UsdMayaProxyShapeUI();
-        UsdMayaProxyShapeUI(const UsdMayaProxyShapeUI&);
+        ~UsdMayaProxyShapeUI() override;
 
-        virtual ~UsdMayaProxyShapeUI();
+        UsdMayaProxyShapeUI(const UsdMayaProxyShapeUI&) = delete;
+        UsdMayaProxyShapeUI& operator=(const UsdMayaProxyShapeUI&) = delete;
 
-        UsdMayaProxyShapeUI& operator=(const UsdMayaProxyShapeUI&);
+        // Note that MPxSurfaceShapeUI::select() is declared as const, so we
+        // must declare _shapeAdapter as mutable so that we're able to modify
+        // it.
+        mutable PxrMayaHdUsdProxyShapeAdapter _shapeAdapter;
+
+        // In Viewport 2.0, the MPxDrawOverride destructor is called when its
+        // shape is deleted, in which case the shape's adapter is removed from
+        // the batch renderer. In the legacy viewport though, that's not the
+        // case. The MPxSurfaceShapeUI destructor may not get called until the
+        // scene is closed or Maya exits. As a result, MPxSurfaceShapeUI
+        // objects must listen for node removal messages from Maya and remove
+        // their shape adapter from the batch renderer if their node is the one
+        // being removed. Otherwise, deleted shapes may still be drawn.
+        static void _OnNodeRemoved(MObject& node, void* clientData);
+
+        MCallbackId _onNodeRemovedCallbackId;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
 
-#endif // PXRUSDMAYAGL_PROXY_SHAPE_UI_H
+#endif

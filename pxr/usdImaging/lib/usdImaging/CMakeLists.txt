@@ -1,56 +1,49 @@
 set(PXR_PREFIX pxr/usdImaging)
 set(PXR_PACKAGE usdImaging)
 
-# Note: both python include directives are included for compatibility.
 pxr_library(usdImaging
     LIBRARIES
         gf
         tf
         plug
-        tracelite
+        trace
         vt
         work
-        garch
-        glf
         hd
-        hdx
         pxOsd
         sdf
         usd
         usdGeom
-        usdHydra
         usdLux
-        usdRi
         usdShade
+        usdVol
         ar
-        ${Boost_PYTHON_LIBRARY}
-        ${PYTHON_LIBRARY}
         ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS
-        ${PYTHON_INCLUDE_PATH}
-        ${PYTHON_INCLUDE_DIRS}
         ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
         adapterRegistry
+        collectionCache
         debugCodes
         delegate
+        indexProxy
         inheritedCache
         instancerContext
-        package
         tokens
-        unitTestHelper
         valueCache
         basisCurvesAdapter
         capsuleAdapter
         coneAdapter
         cubeAdapter
         cylinderAdapter
+        cylinderLightAdapter
+        diskLightAdapter
+        distantLightAdapter
         domeLightAdapter
-        drawModeAdapter
+        fieldAdapter
         gprimAdapter
-        hydraMaterialAdapter
         instanceAdapter
         lightAdapter
         materialAdapter
@@ -62,13 +55,15 @@ pxr_library(usdImaging
         rectLightAdapter
         sphereAdapter
         sphereLightAdapter
+        textureUtils
+        volumeAdapter
 
     PUBLIC_HEADERS
         api.h
+        unitTestHelper.h
         version.h
 
     RESOURCE_FILES
         plugInfo.json
-        shaders/drawMode.glslfx
 )
 

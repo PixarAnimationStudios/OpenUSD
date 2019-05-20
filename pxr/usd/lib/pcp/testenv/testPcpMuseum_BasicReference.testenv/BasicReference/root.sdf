@@ -94,3 +94,31 @@ def Scope "PrimWithInternalSubrootReference" (
 )
 {
 }
+
+def Scope "PrimWithReferencesInVariants" (
+    append variantSets = ["v"]
+    variants = {
+        string "v" = "ref"
+    }
+)
+{
+    variantSet "v" = {
+        "ref" {
+            def "Ref"
+            {
+            }
+
+            def "A" (
+                references = </PrimWithReferencesInVariants/Ref>
+            )
+            {
+            }    
+        }
+    }
+
+    def "B" (
+        references = </PrimWithReferencesInVariants/Ref>
+    )
+    {
+    }
+}

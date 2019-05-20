@@ -30,6 +30,7 @@
 /// functionality.
 
 #include "pxr/pxr.h"
+#include "pxr/usd/pcp/composeSite.h"
 #include "pxr/usd/pcp/node_Iterator.h"
 #include "pxr/usd/pcp/primIndex.h"
 
@@ -98,6 +99,14 @@ Pcp_ChildNodeIsInstanceable(
     // this allows prim indexes with implied arcs in different layer stacks
     // that have no overrides to still be considered equivalent for sharing.
     return !node.IsDueToAncestor() && node.HasSpecs();
+}
+
+inline bool
+Pcp_ChildNodeInstanceableChanged(
+    const PcpNodeRef& node)
+{
+    return !node.IsDueToAncestor()
+        && (PcpComposeSiteHasPrimSpecs(node) != node.HasSpecs());
 }
 
 template <class Visitor>

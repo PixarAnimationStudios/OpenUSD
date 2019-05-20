@@ -126,16 +126,29 @@ class TestConstantGroup(unittest.TestCase):
 
     def test_Functions(self):
         """Functions and lambdas are ususally converted to methods (which expect
-        a `self` parameter) in classes. This doesn't happen with ConstantGroups.
+        a `self` parameter) in classes. This doesn't happen with ConstantGroups
+        except with classmethods.
         """
 
         class Test(ConstantGroup):
+
             def A():
                 return 1
+
             B = lambda: 2
+
+            @classmethod
+            def C(cls):
+                return 3
+
+            @staticmethod
+            def D():
+                return 4
 
         self.assertEqual(Test.A(), 1)
         self.assertEqual(Test.B(), 2)
+        self.assertEqual(Test.C(), 3)
+        self.assertEqual(Test.D(), 4)
 
         # Normally, calling functions like this fails.
 

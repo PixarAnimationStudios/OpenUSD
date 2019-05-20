@@ -30,7 +30,7 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/atomicOfstreamWrapper.h"
 
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include <fstream>
 #include <sstream>

@@ -22,9 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/imaging/hdSt/persistentBuffer.h"
-#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hd/perfLog.h"
 
 #include "pxr/imaging/hf/perfLog.h"
@@ -40,7 +40,7 @@ HdStPersistentBuffer::HdStPersistentBuffer(
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
+    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
 
     GLuint newId = 0;
     glGenBuffers(1, &newId);

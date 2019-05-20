@@ -181,6 +181,7 @@ private:
 
     struct _Untyped 
     {
+        AR_API
         virtual ~_Untyped();
 
         bool IsHolding(const std::type_info& ti) const

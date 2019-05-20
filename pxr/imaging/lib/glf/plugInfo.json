@@ -6,8 +6,13 @@
                 "Types": {                                                                  
                     "Glf_OIIOImage" : {
                         "bases": ["GlfImage"],
-                        "imageTypes": ["bmp", "exr", "jpg", "png", "tif", "zfile"],
-                        "precedence": 0
+                        "imageTypes": ["bmp", "exr", "jpg", "png", "tif", "zfile", "tx"],
+                        "precedence": 0 
+                    },
+                    "Glf_StbImage" : {
+                        "bases": ["GlfImage"],
+                        "imageTypes": ["bmp", "jpg", "png", "tga", "hdr"],
+                        "precedence": 2
                     },
                     "GlfPtexTexture" : {
                         "bases": ["GlfTexture"],

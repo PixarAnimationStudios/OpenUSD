@@ -33,6 +33,8 @@
 #include <GT/GT_RefineParms.h>
 #include <GT/GT_GEOPrimPacked.h>
 
+#include <iostream>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 using std::cerr;
@@ -134,28 +136,48 @@ refine(GT_Refine& refiner, const GT_RefineParms* parms) const
     pointsAttr.Get(&usdPoints, m_time);
     auto gtPoints = new GusdGT_VtArray<GfVec3f>(usdPoints,GT_TYPE_POINT);
     gtPointAttrs = gtPointAttrs->addAttribute("P", gtPoints, true);
+    
+    // normals
+    UsdAttribute normalsAttr = points.GetNormalsAttr();
+    if(normalsAttr.HasAuthoredValue() && normalsAttr.Get(&vtVec3Array, m_time)) {
+        
+        if( vtVec3Array.size() < usdPoints.size() ) {
+            TF_WARN( "Not enough values found for normals in %s. Expected %zd, got %zd.",
+                     points.GetPrim().GetPath().GetText(),
+                     usdPoints.size(), vtVec3Array.size() );
+        }
+        else {
+            GT_DataArrayHandle gtNormals = 
+                new GusdGT_VtArray<GfVec3f>(vtVec3Array, GT_TYPE_NORMAL);
+            gtPointAttrs = gtPointAttrs->addAttribute("N", gtNormals, true);
+        }
+    }
+
+    // widths
+    UsdAttribute widthsAttr = points.GetWidthsAttr();
+    if( widthsAttr.HasAuthoredValue() && widthsAttr.Get(&vtFloatArray, m_time)) {
+        
+        if( vtFloatArray.size() < usdPoints.size() ) {
+            TF_WARN( "Not enough values found for widths in %s. Expected %zd, got %zd.",
+                     points.GetPrim().GetPath().GetText(),
+                     usdPoints.size(), vtFloatArray.size() );
+        }
+        else {
+            auto s = vtFloatArray.size();
+            auto gtWidths = new GT_Real32Array( s, 1 );
+            fpreal32 *d = gtWidths->data();
+            for( size_t i = 0; i < s; ++i ) {
+                *d++ = vtFloatArray[i] * .5;
+            }
+            gtPointAttrs = gtPointAttrs->addAttribute("pscale", gtWidths, true);
+        }
+    }
 
     if( !refineForViewport ) {
-        // normals
-        UsdAttribute normalsAttr = points.GetNormalsAttr();
-        if(normalsAttr && normalsAttr.HasAuthoredValueOpinion()) {
-            normalsAttr.Get(&vtVec3Array, m_time);
-            if( vtVec3Array.size() < usdPoints.size() ) {
-                TF_WARN( "Not enough values found for normals in %s. Expected %zd, got %zd.",
-                         points.GetPrim().GetPath().GetText(),
-                         usdPoints.size(), vtVec3Array.size() );
-            }
-            else {
-                GT_DataArrayHandle gtNormals = 
-                    new GusdGT_VtArray<GfVec3f>(vtVec3Array, GT_TYPE_NORMAL);
-                gtPointAttrs = gtPointAttrs->addAttribute("N", gtNormals, true);
-            }
-        }
-
         // velocities
         UsdAttribute velAttr = points.GetVelocitiesAttr();
-        if (velAttr && velAttr.HasAuthoredValueOpinion()) {
-            velAttr.Get(&vtVec3Array, m_time);
+        if ( velAttr.HasAuthoredValue() && velAttr.Get(&vtVec3Array, m_time) ) {
+            
             if( vtVec3Array.size() < usdPoints.size() ) {
                 TF_WARN( "Not enough values found for velocities in %s. Expected %zd, got %zd.",
                          points.GetPrim().GetPath().GetText(),
@@ -168,26 +190,6 @@ refine(GT_Refine& refiner, const GT_RefineParms* parms) const
             }
         }
         
-        // widths
-        UsdAttribute widthsAttr = points.GetWidthsAttr();
-        if( widthsAttr && widthsAttr.HasAuthoredValueOpinion()) {
-            widthsAttr.Get(&vtFloatArray, m_time);
-            if( vtFloatArray.size() < usdPoints.size() ) {
-                TF_WARN( "Not enough values found for widths in %s. Expected %zd, got %zd.",
-                         points.GetPrim().GetPath().GetText(),
-                         usdPoints.size(), vtFloatArray.size() );
-            }
-            else {
-                auto s = vtFloatArray.size();
-                auto gtWidths = new GT_Real32Array( s, 1 );
-                fpreal32 *d = gtWidths->data();
-                for( size_t i = 0; i < s; ++i ) {
-                    *d++ = vtFloatArray[i] * .5;
-                }
-                gtPointAttrs = gtPointAttrs->addAttribute("pscale", gtWidths, true);
-            }
-        }
-
         loadPrimvars( m_time, parms, 
               0, 
               usdPoints.size(),
@@ -204,15 +206,6 @@ refine(GT_Refine& refiner, const GT_RefineParms* parms) const
                                gtDetailAttrs );
 
     refiner.addPrimitive(refinedPrimHandle);
-    return true;
-}
-
-
-bool GusdPointsWrapper::
-getUniqueID(int64& id) const
-{
-    static const int s_id = GT_Primitive::createPrimitiveTypeId();
-    id = s_id;
     return true;
 }
 
@@ -258,7 +251,7 @@ doSoftCopy() const
 
 bool GusdPointsWrapper::isValid() const
 {
-    return m_usdPoints;
+    return static_cast<bool>(m_usdPoints);
 }
 
 bool GusdPointsWrapper::

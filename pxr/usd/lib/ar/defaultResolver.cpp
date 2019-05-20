@@ -24,7 +24,10 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/defaultResolver.h"
+
+#include "pxr/usd/ar/defaultResolverContext.h"
 #include "pxr/usd/ar/defineResolver.h"
+#include "pxr/usd/ar/filesystemAsset.h"
 #include "pxr/usd/ar/assetInfo.h"
 #include "pxr/usd/ar/resolverContext.h"
 
@@ -69,22 +72,7 @@ ArDefaultResolver::ArDefaultResolver()
             searchPath.end(), envSearchPath.begin(), envSearchPath.end());
     }
 
-    _searchPath.reserve(searchPath.size());
-    for (const std::string& p : searchPath) {
-        if (p.empty()) {
-            continue;
-        }
-
-        const std::string absPath = TfAbsPath(p);
-        if (absPath.empty()) {
-            TF_WARN(
-                "Could not determine absolute path for search path prefix "
-                "'%s'", p.c_str());
-            continue;
-        }
-
-        _searchPath.push_back(absPath);
-    }
+    _fallbackContext = ArDefaultResolverContext(searchPath);
 }
 
 ArDefaultResolver::~ArDefaultResolver()
@@ -101,7 +89,7 @@ ArDefaultResolver::SetDefaultSearchPath(
 void
 ArDefaultResolver::ConfigureResolverForAsset(const std::string& path)
 {
-    // no configuration takes place in search path resolver
+    _defaultContext = CreateDefaultContextForAsset(path);
 }
 
 bool
@@ -122,8 +110,7 @@ ArDefaultResolver::AnchorRelativePath(
     const std::string& path)
 {
     if (TfIsRelativePath(anchorPath) ||
-        !ArDefaultResolver::IsRelativePath(path) ||
-        !_IsFileRelative(path)) {
+        !IsRelativePath(path)) {
         return path;
     }
 
@@ -201,10 +188,16 @@ ArDefaultResolver::_ResolveNoCache(const std::string& path)
         // If that fails and the path is a search path, try to resolve
         // against each directory in the specified search paths.
         if (IsSearchPath(path)) {
-            for (const auto& searchPath : _searchPath) {
-                resolvedPath = _Resolve(searchPath, path);
-                if (!resolvedPath.empty()) {
-                    return resolvedPath;
+            const ArDefaultResolverContext* contexts[2] =
+                {_GetCurrentContext(), &_fallbackContext};
+            for (const ArDefaultResolverContext* ctx : contexts) {
+                if (ctx) {
+                    for (const auto& searchPath : ctx->GetSearchPath()) {
+                        resolvedPath = _Resolve(searchPath, path);
+                        if (!resolvedPath.empty()) {
+                            return resolvedPath;
+                        }
+                    }
                 }
             }
         }
@@ -289,6 +282,18 @@ ArDefaultResolver::FetchToLocalResolvedPath(
     return true;
 }
 
+std::shared_ptr<ArAsset> 
+ArDefaultResolver::OpenAsset(
+    const std::string& resolvedPath)
+{
+    FILE* f = ArchOpenFile(resolvedPath.c_str(), "rb");
+    if (!f) {
+        return nullptr;
+    }
+
+    return std::shared_ptr<ArAsset>(new ArFilesystemAsset(f));
+}
+
 bool
 ArDefaultResolver::CanWriteLayerToPath(
     const std::string& path,
@@ -308,21 +313,21 @@ ArDefaultResolver::CanCreateNewLayerWithIdentifier(
 ArResolverContext 
 ArDefaultResolver::CreateDefaultContext()
 {
-    return ArResolverContext();
+    return _defaultContext;
 }
 
 ArResolverContext 
 ArDefaultResolver::CreateDefaultContextForAsset(
     const std::string& filePath)
 {
-    return ArResolverContext();
-}
+    if (filePath.empty()){
+        return ArResolverContext(ArDefaultResolverContext());
+    }
 
-ArResolverContext
-ArDefaultResolver::CreateDefaultContextForDirectory(
-    const std::string& fileDirectory)
-{
-    return ArResolverContext();
+    std::string assetDir = TfGetPathName(TfAbsPath(filePath));
+    
+    return ArResolverContext(ArDefaultResolverContext(
+                                 std::vector<std::string>(1, assetDir)));
 }
 
 void 
@@ -333,68 +338,71 @@ ArDefaultResolver::RefreshContext(const ArResolverContext& context)
 ArResolverContext
 ArDefaultResolver::GetCurrentContext()
 {
-    return ArResolverContext();
+    const ArDefaultResolverContext* ctx = _GetCurrentContext();
+    return ctx ? ArResolverContext(*ctx) : ArResolverContext();
 }
 
 void 
-ArDefaultResolver::_BeginCacheScope(
+ArDefaultResolver::BeginCacheScope(
     VtValue* cacheScopeData)
 {
-    // cacheScopeData is held by ArResolverScopedCache instances
-    // but is only populated by this function, so we know it must 
-    // be empty (when constructing a regular ArResolverScopedCache)
-    // or holding on to a _CachePtr (when constructing an 
-    // ArResolverScopedCache that shares data with another one).
-    TF_VERIFY(cacheScopeData &&
-              (cacheScopeData->IsEmpty() ||
-               cacheScopeData->IsHolding<_CachePtr>()));
-
-    _CachePtrStack& cacheStack = _threadCacheStack.local();
-
-    if (cacheScopeData->IsHolding<_CachePtr>()) {
-        cacheStack.push_back(cacheScopeData->UncheckedGet<_CachePtr>());
-    }
-    else {
-        if (cacheStack.empty()) {
-            cacheStack.push_back(std::make_shared<_Cache>());
-        }
-        else {
-            cacheStack.push_back(cacheStack.back());
-        }
-    }
-
-    *cacheScopeData = cacheStack.back();
+    _threadCache.BeginCacheScope(cacheScopeData);
 }
 
 void 
-ArDefaultResolver::_EndCacheScope(
+ArDefaultResolver::EndCacheScope(
     VtValue* cacheScopeData)
 {
-    _CachePtrStack& cacheStack = _threadCacheStack.local();
-    if (TF_VERIFY(!cacheStack.empty())) {
-        cacheStack.pop_back();
-    }
+    _threadCache.EndCacheScope(cacheScopeData);
 }
 
 ArDefaultResolver::_CachePtr 
 ArDefaultResolver::_GetCurrentCache()
 {
-    _CachePtrStack& cacheStack = _threadCacheStack.local();
-    return (cacheStack.empty() ? _CachePtr() : cacheStack.back());
+    return _threadCache.GetCurrentCache();
 }
 
 void 
-ArDefaultResolver::_BindContext(
+ArDefaultResolver::BindContext(
     const ArResolverContext& context,
     VtValue* bindingData)
 {
+    const ArDefaultResolverContext* ctx = 
+        context.Get<ArDefaultResolverContext>();
+
+    if (!context.IsEmpty() && !ctx) {
+        TF_CODING_ERROR(
+            "Unknown resolver context object: %s", 
+            context.GetDebugString().c_str());
+    }
+
+    _ContextStack& contextStack = _threadContextStack.local();
+    contextStack.push_back(ctx);
 }
 
 void 
-ArDefaultResolver::_UnbindContext(
+ArDefaultResolver::UnbindContext(
     const ArResolverContext& context,
     VtValue* bindingData)
 {
+    _ContextStack& contextStack = _threadContextStack.local();
+    if (contextStack.empty() ||
+        contextStack.back() != context.Get<ArDefaultResolverContext>()) {
+        TF_CODING_ERROR(
+            "Unbinding resolver context in unexpected order: %s",
+            context.GetDebugString().c_str());
+    }
+
+    if (!contextStack.empty()) {
+        contextStack.pop_back();
+    }
+}
+
+const ArDefaultResolverContext* 
+ArDefaultResolver::_GetCurrentContext()
+{
+    _ContextStack& contextStack = _threadContextStack.local();
+    return contextStack.empty() ? nullptr : contextStack.back();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

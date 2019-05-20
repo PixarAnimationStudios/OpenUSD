@@ -99,6 +99,8 @@ public:
     void AddType(const std::string& name,
                  const VtValue& defaultValue,
                  const VtValue& defaultArrayValue,
+                 const std::string& cppTypeName, 
+                 const std::string& arrayCppTypeName,
                  TfEnum defaultUnit,
                  const TfToken& role,
                  const SdfTupleDimensions& dimensions);
@@ -106,6 +108,8 @@ public:
     // Add a type with a C++ implementation that may not yet be available.
     void AddType(const std::string& name,
                  const TfType& type, const TfType& arrayType,
+                 const std::string& cppTypeName, 
+                 const std::string& arrayCppTypeName,
                  TfEnum defaultUnit, const TfToken& role,
                  const SdfTupleDimensions& dimensions);
 
@@ -140,6 +144,8 @@ private:
                   const std::string& name,
                   const TfType& defaultValueType,
                   const TfType& defaultArrayValueType,
+                  const std::string& cppTypeName, 
+                  const std::string& arrayCppTypeName,
                   const TfToken& role,
                   const SdfTupleDimensions& dimensions,
                   const VtValue& defaultValue,
@@ -147,6 +153,7 @@ private:
                   TfEnum defaultUnit);
     const CoreType* _AddCoreType(const std::string& name,
                                  const TfType& tfType,
+                                 const std::string& cppTypeName,
                                  const TfToken& role,
                                  const SdfTupleDimensions& dimensions,
                                  const VtValue& value,
@@ -211,6 +218,8 @@ Registry::AddType(
     const std::string& name,
     const VtValue& defaultValue,
     const VtValue& defaultArrayValue,
+    const std::string& cppTypeName, 
+    const std::string& arrayCppTypeName,
     TfEnum defaultUnit,
     const TfToken& role,
     const SdfTupleDimensions& dimensions)
@@ -225,6 +234,7 @@ Registry::AddType(
     if (!_AddType(&scalar, &array, name,
                   type != TfType::Find<void>() ? type : TfType(),
                   arrayType != TfType::Find<void>() ? arrayType : TfType(),
+                  cppTypeName, arrayCppTypeName,
                   role, dimensions,
                   defaultValue, defaultArrayValue, defaultUnit)) {
         // Error already reported.
@@ -236,6 +246,8 @@ Registry::AddType(
     const std::string& name,
     const TfType& type,
     const TfType& arrayType,
+    const std::string& cppTypeName, 
+    const std::string& arrayCppTypeName,
     TfEnum defaultUnit,
     const TfToken& role,
     const SdfTupleDimensions& dimensions)
@@ -244,8 +256,8 @@ Registry::AddType(
 
     Sdf_ValueTypeImpl* scalar, *array;
     if (!_AddType(&scalar, &array, name,
-                  type, arrayType, role, dimensions,
-                  VtValue(), VtValue(), defaultUnit)) {
+                  type, arrayType, cppTypeName, arrayCppTypeName, 
+                  role, dimensions, VtValue(), VtValue(), defaultUnit)) {
         // Error already reported.
     }
 }
@@ -257,6 +269,8 @@ Registry::_AddType(
     const std::string& name,
     const TfType& type,
     const TfType& arrayType,
+    const std::string& cppTypeName, 
+    const std::string& arrayCppTypeName,
     const TfToken& role,
     const SdfTupleDimensions& dimensions,
     const VtValue& defaultValue,
@@ -268,6 +282,10 @@ Registry::_AddType(
 
     // Preconditions.
     if (!TF_VERIFY(!name.empty(), "Types must have names")) {
+        return false;
+    }
+    if (!TF_VERIFY(!cppTypeName.empty() || !arrayCppTypeName.empty(),
+                   "Type '%s' must have C++ names", name.c_str())) {
         return false;
     }
     if (!TF_VERIFY(!type.IsUnknown() || !arrayType.IsUnknown(),
@@ -295,8 +313,8 @@ Registry::_AddType(
     const CoreType* coreType = NULL, *coreArrayType = NULL;
     if (!type.IsUnknown()) {
         coreType =
-            _AddCoreType(name, type, role, dimensions,
-                         defaultValue, defaultUnit);
+            _AddCoreType(name, type, cppTypeName, 
+                         role, dimensions, defaultValue, defaultUnit);
         if (!coreType) {
             // Error already reported.
             return false;
@@ -304,8 +322,8 @@ Registry::_AddType(
     }
     if (!arrayType.IsUnknown()) {
         coreArrayType =
-            _AddCoreType(arrayName, arrayType, role, dimensions,
-                         defaultArrayValue, defaultUnit);
+            _AddCoreType(arrayName, arrayType, arrayCppTypeName, 
+                         role, dimensions, defaultArrayValue, defaultUnit);
         if (!coreArrayType) {
             // Error already reported.
             return false;
@@ -421,6 +439,7 @@ const Registry::CoreType*
 Registry::_AddCoreType(
     const std::string& name,
     const TfType& tfType,
+    const std::string& cppTypeName,
     const TfToken& role,
     const SdfTupleDimensions& dimensions,
     const VtValue& value,
@@ -442,17 +461,22 @@ Registry::_AddCoreType(
     CoreType& coreType = _coreTypes[key];
     if (coreType.type.IsUnknown()) {
         // Create.
-        coreType.type  = tfType;
-        coreType.role  = role;
-        coreType.dim   = dimensions;
-        coreType.value = value;
-        coreType.unit  = unit;
+        coreType.type        = tfType;
+        coreType.cppTypeName = cppTypeName;
+        coreType.role        = role;
+        coreType.dim         = dimensions;
+        coreType.value       = value;
+        coreType.unit        = unit;
     }
     else {
         // Found.  Preconditions.
         if (!TF_VERIFY(coreType.type == tfType,
                        "Internal error: unexpected core type for '%s'",
                        name.c_str())) {
+            return NULL;
+        }
+        if (!TF_VERIFY(coreType.cppTypeName == cppTypeName,
+                       "Mismatched C++ name for core type '%s'", name.c_str())) {
             return NULL;
         }
         if (!TF_VERIFY(coreType.role == role,
@@ -539,11 +563,14 @@ Sdf_ValueTypeRegistry::AddType(
     const std::string& name,
     const VtValue& defaultValue,
     const VtValue& defaultArrayValue,
+    const std::string& cppTypeName, 
+    const std::string& arrayCppTypeName,
     TfEnum defaultUnit,
     const TfToken& role,
     const SdfTupleDimensions& dimensions)
 {
-    _impl->AddType(name, defaultValue, defaultArrayValue,
+    _impl->AddType(name, defaultValue, defaultArrayValue, 
+                   cppTypeName, arrayCppTypeName,
                    defaultUnit, role, dimensions);
 }
 
@@ -552,10 +579,14 @@ Sdf_ValueTypeRegistry::AddType(
     const std::string& name,
     const TfType& type,
     const TfType& arrayType,
+    const std::string& cppTypeName, 
+    const std::string& arrayCppTypeName,
     TfEnum defaultUnit, const TfToken& role,
     const SdfTupleDimensions& dimensions)
 {
-    _impl->AddType(name, type, arrayType, defaultUnit, role, dimensions);
+    _impl->AddType(name, type, arrayType, 
+                   cppTypeName, arrayCppTypeName,
+                   defaultUnit, role, dimensions);
 }
 
 void

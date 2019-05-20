@@ -41,26 +41,26 @@ TfDiagnosticBase::TfDiagnosticBase(
     TfDiagnosticInfo info, bool quiet)
     : _context(context)
 {
-    _data->_commentary = commentary;
-    _data->_code = code;
-    _data->_codeString = TfEnum::GetName(code);
-    _data->_info = info;
-    _data->_quiet = quiet;
+    _commentary = commentary;
+    _code = code;
+    _codeString = TfEnum::GetName(code);
+    _info = info;
+    _quiet = quiet;
     
-    if (_data->_codeString.empty())
-        _data->_codeString = TfSafeString(codeString);
+    if (_codeString.empty())
+        _codeString = TfSafeString(codeString);
 }
 
 string
 TfDiagnosticBase::GetPrettyPrintString() const
 {
-    return _data->_commentary;
+    return _commentary;
 }
 
 bool
 TfDiagnosticBase::IsFatal() const
 {
-    TfEnum code = _data->_code;
+    TfEnum code = _code;
     return (code == TF_DIAGNOSTIC_FATAL_CODING_ERROR_TYPE) ||
            (code == TF_DIAGNOSTIC_FATAL_ERROR_TYPE) ||
            (code == TF_APPLICATION_EXIT_TYPE);
@@ -69,7 +69,7 @@ TfDiagnosticBase::IsFatal() const
 bool
 TfDiagnosticBase::IsCodingError() const
 {
-    TfEnum code = _data->_code;
+    TfEnum code = _code;
     return (code == TF_DIAGNOSTIC_CODING_ERROR_TYPE) ||
            (code == TF_DIAGNOSTIC_FATAL_CODING_ERROR_TYPE);
 }

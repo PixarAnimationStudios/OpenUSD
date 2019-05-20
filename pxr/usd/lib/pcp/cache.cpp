@@ -45,7 +45,7 @@
 #include "pxr/usd/ar/resolverContextBinder.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/schema.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/work/arenaDispatcher.h"
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/singularTask.h"
@@ -60,6 +60,7 @@
 #include <tbb/spin_rw_mutex.h>
 
 #include <algorithm>
+#include <iostream>
 #include <utility>
 #include <vector>
 
@@ -1604,7 +1605,7 @@ PcpCache::ComputePropertyIndex(const SdfPath & path, PcpErrorVector *allErrors)
 void 
 PcpCache::PrintStatistics() const
 {
-    Pcp_PrintCacheStatistics(this);
+    Pcp_PrintCacheStatistics(this, std::cout);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -35,7 +35,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 template <class TypePolicy> class Sdf_ListEditor;
-template <class T> class Sdf_MarkerUtils;
 
 /// \class SdfRelationshipSpec
 ///
@@ -193,38 +192,6 @@ public:
         const SdfPath& path, std::vector<TfToken>* vec) const;
 
     /// @}
-    /// \name Markers
-    /// @{
-
-    // A simple type used for bulk replacement of all target markers.
-    typedef std::map<SdfPath, std::string, 
-                     SdfPath::FastLessThan> TargetMarkerMap;
-
-    /// Returns a copy of all the target markers for this relationship.
-    SDF_API
-    TargetMarkerMap GetTargetMarkers() const;
-
-    /// Sets the all the target markers for this relationship.
-    SDF_API
-    void SetTargetMarkers(const TargetMarkerMap& markers);
-
-    /// Returns the marker for this relationship for the given target path.
-    SDF_API
-    std::string GetTargetMarker(const SdfPath& path) const;
-
-    /// Sets the marker for this relationship for the given target path. 
-    /// 
-    /// If an empty string is specified, the target marker will be cleared.
-    SDF_API
-    void SetTargetMarker(const SdfPath& path, const std::string& marker);
-
-    /// Clears the marker for the given target path.
-    SDF_API
-    void ClearTargetMarker(const SdfPath& path);
-
-    /// Returns all target paths on which markers are specified.
-    SDF_API
-    SdfPathVector GetTargetMarkerPaths() const;
 
     /// Get whether loading the target of this relationship is necessary
     /// to load the prim we're attached to
@@ -249,11 +216,6 @@ private:
 
     boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >
     _GetTargetAttributeOrderEditor(const SdfPath& path) const;
-
-    SdfSpecHandle _FindOrCreateChildSpecForMarker(const SdfPath& key);
-
-    // Allow access to functions for creating child specs for markers.
-    friend class Sdf_MarkerUtils<SdfRelationshipSpec>;
 
     // Allow access to _GetTarget() for the  relational attribute c'tor
     friend class SdfAttributeSpec;

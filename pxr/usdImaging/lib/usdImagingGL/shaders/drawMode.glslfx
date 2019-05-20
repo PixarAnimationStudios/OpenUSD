@@ -1,0 +1,77 @@
+-- glslfx version 0.1
+
+-- configuration
+{
+    "techniques": {
+        "default": {
+            "surfaceShader": {
+                "source": ["Surface.Fallback"]
+            }
+        }
+    }
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Surface.Fallback
+
+#ifdef HD_HAS_cardsTexAssign
+// Case 1: Drawing cards with assigned textures. Sample the textures.
+
+vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    // Texture assignment values, from drawModeAdapter.cpp's AxesMask.
+    const int X_POS = 1;
+    const int Y_POS = 2;
+    const int Z_POS = 4;
+    const int X_NEG = 8;
+    const int Y_NEG = 16;
+    const int Z_NEG = 32;
+
+    // XXX: This is a terrible way to do this.
+    vec4 diffuse = color;
+    const int texAssign = HdGet_cardsTexAssign();
+    if (texAssign == X_POS) {
+#ifdef HD_HAS_textureXPos
+        diffuse = HdGet_textureXPos();
+#endif
+    } else if (texAssign == X_NEG) {
+#ifdef HD_HAS_textureXNeg
+        diffuse = HdGet_textureXNeg();
+#endif
+    } else if (texAssign == Y_POS) {
+#ifdef HD_HAS_textureYPos
+        diffuse = HdGet_textureYPos();
+#endif
+    } else if (texAssign == Y_NEG) {
+#ifdef HD_HAS_textureYNeg
+        diffuse = HdGet_textureYNeg();
+#endif
+    } else if (texAssign == Z_POS) {
+#ifdef HD_HAS_textureZPos
+        diffuse = HdGet_textureZPos();
+#endif
+    } else if (texAssign == Z_NEG) {
+#ifdef HD_HAS_textureZNeg
+        diffuse = HdGet_textureZNeg();
+#endif
+    }
+
+    // Apply selection pre-lighting
+    diffuse.rgb = ApplyColorOverrides(diffuse.rgbb).rgb;
+
+    color.rgb = FallbackLighting(Peye.xyz, Neye, diffuse.rgb);
+    color.a = diffuse.a;
+    return color;
+}
+#else
+// Case 2: Drawing cards with no textures, fall back to "color".
+
+vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    // Apply selection pre-lighting
+    color.rgb = ApplyColorOverrides(color.rgbb).rgb;
+
+    color.rgb = FallbackLighting(Peye.xyz, Neye, color.rgb);
+    return color;
+}
+#endif

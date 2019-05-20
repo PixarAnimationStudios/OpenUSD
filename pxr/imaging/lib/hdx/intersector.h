@@ -51,12 +51,12 @@ class HdRenderIndex;
 class HdRprimCollection;
 
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
-typedef boost::shared_ptr<class HdStRenderPassState> HdStRenderPassStateSharedPtr;
+typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
+typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
+typedef boost::shared_ptr<class HdStRenderPassState> 
+    HdStRenderPassStateSharedPtr;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
-
-HDX_API
-void HdxNoDepthMask();
 
 class HdxIntersector {
 public:
@@ -68,6 +68,20 @@ public:
     HdxIntersector(HdRenderIndex *index);
     HDX_API
     ~HdxIntersector() = default;
+
+    /// The ID render pass encodes the ID as color in a specific order.
+    /// Use this method to ensure the read back is done in an endian
+    /// correct fashion.
+    ///
+    /// As packing of IDs may change in the future we encapsulate the
+    /// correct behavior here.
+    /// \param idColor a byte buffer of length 4.
+    static inline int DecodeIDRenderColor(unsigned char const idColor[4]) {
+        return (int32_t(idColor[0] & 0xff) << 0)  |
+               (int32_t(idColor[1] & 0xff) << 8)  |
+               (int32_t(idColor[2] & 0xff) << 16) |
+               (int32_t(idColor[3] & 0xff) << 24);
+    }
 
     /// Given some parameters, populate a collection of resulting hit points,
     /// potentially running commands on the GPU to accelerate the query. Return
@@ -82,7 +96,7 @@ public:
                HdxIntersector::Result*);
 
     /// Set the resolution of the intersector in pixels. Note that setting this
-    /// resolution frequently may result in poor preformance.
+    /// resolution frequently may result in poor performance.
     HDX_API
     void SetResolution(GfVec2i const& widthHeight);
 
@@ -95,18 +109,32 @@ public:
     /// selection.
     typedef std::function<void(void)> DepthMaskCallback;
 
+    /// The target of the picking operation, which allows us to write out the
+    /// minimal number of id's during the ID render pass.
+    enum PickTarget {
+        PickPrimsAndInstances = 0,
+        PickFaces,
+        PickEdges,
+        PickPoints
+    };
+
     struct Params {
         Params() 
             : hitMode(HitFirst)
+            , pickTarget(PickPrimsAndInstances)
+            , doUnpickablesOcclude(false)
             , projectionMatrix(1)
             , viewMatrix(1)
             , alphaThreshold(0.0f)
             , cullStyle(HdCullStyleNothing)
-            , depthMaskCallback(HdxNoDepthMask)
+            , depthMaskCallback(nullptr)
             , renderTags()
+            , enableSceneMaterials(true)
         {}
 
         HitMode hitMode;
+        PickTarget pickTarget;
+        bool doUnpickablesOcclude;
         GfMatrix4d projectionMatrix;
         GfMatrix4d viewMatrix;
         float alphaThreshold;
@@ -114,6 +142,7 @@ public:
         std::vector<GfVec4d> clipPlanes;
         DepthMaskCallback depthMaskCallback;
         TfTokenVector renderTags;
+        bool enableSceneMaterials;
     };
 
     struct Hit {
@@ -122,6 +151,8 @@ public:
         SdfPath instancerId;
         int instanceIndex;
         int elementIndex;
+        int edgeIndex;
+        int pointIndex;
         GfVec3f worldSpaceHitPoint;
         float ndcDepth;
 
@@ -129,6 +160,7 @@ public:
             return !objectId.IsEmpty();
         }
 
+        HDX_API
         size_t GetHash() const;
         struct Hash {
             inline size_t operator()(Hit const& hit) const {
@@ -142,13 +174,15 @@ public:
         HDX_API
         bool operator==(Hit const& lhs) const;
 
-        // Depth and position are ignored, used for object/element/instance
+        // Depth and position are ignored, used for object/instance/subprimitive
         // aggregation.
         struct HitSetHash {
+            HDX_API
             size_t operator()(Hit const& hit) const;
         };
         // Equality ignores depth and position.
         struct HitSetEq{
+            HDX_API
             bool operator()(Hit const& a, Hit const& b) const;
         };
     };
@@ -164,6 +198,8 @@ public:
         Result(std::unique_ptr<unsigned char[]> primIds,
                std::unique_ptr<unsigned char[]> instanceIds,
                std::unique_ptr<unsigned char[]> elementIds,
+               std::unique_ptr<unsigned char[]> edgeIds,
+               std::unique_ptr<unsigned char[]> pointIds,
                std::unique_ptr<float[]> depths,
                HdRenderIndex const *index,
                Params params,
@@ -181,11 +217,17 @@ public:
             return _viewport[2] > 0 && _viewport[3] > 0;
         }
 
-        /// Return the nearest single hit point. Not that this method may be
+        /// Return the nearest single hit point. Note that this method may be
         /// considerably more efficient, as it only needs to construct a single
         /// Hit object.
         HDX_API
-        bool ResolveNearest(HdxIntersector::Hit* hit) const;
+        bool ResolveNearestToCamera(HdxIntersector::Hit* hit) const;
+
+        /// Return the nearest single hit point from the center of the viewport.
+        /// Note that this method may be considerably more efficient, as it only
+        /// needs to construct a single Hit object.
+        HDX_API
+        bool ResolveNearestToCenter(HdxIntersector::Hit* hit) const;
 
         /// Return all hit points. Note that this may contain redundant objects,
         /// however it allows access to all depth values for a given object.
@@ -200,10 +242,17 @@ public:
     private:
         bool _ResolveHit(int index, int x, int y, float z, Hit* hit) const;
         size_t _GetHash(int index) const;
+        bool _IsIdValid(unsigned char const* ids, int index) const;
+        bool _IsPrimIdValid(int index) const;
+        bool _IsPointIdValid(int index) const;
+        bool _IsEdgeIdValid(int index) const;
+        bool _IsValidHit(int index) const;
         
         std::unique_ptr<unsigned char[]> _primIds;
         std::unique_ptr<unsigned char[]> _instanceIds;
         std::unique_ptr<unsigned char[]> _elementIds;
+        std::unique_ptr<unsigned char[]> _edgeIds;
+        std::unique_ptr<unsigned char[]> _pointIds;
         std::unique_ptr<float[]> _depths;
         HdRenderIndex const *_index;
         Params _params;
@@ -212,13 +261,22 @@ public:
 
 private:
     void _Init(GfVec2i const&);
+    void _ConditionStencilWithGLCallback(DepthMaskCallback callback);
+    void _ConfigureSceneMaterials(bool enableSceneMaterials,
+        HdStRenderPassState *renderPassState);
 
-    // Create a shared render pass for pickables and unpickables
+    // Create a shared render pass each for pickables and unpickables
     HdRenderPassSharedPtr _pickableRenderPass;
-    HdRenderPassSharedPtr _unpickableRenderPass;
+    HdRenderPassSharedPtr _occluderRenderPass;
 
-    HdStRenderPassStateSharedPtr _pickableRenderPassState;
-    HdStRenderPassStateSharedPtr _unpickableRenderPassState;
+    // Override shader is used when scene materials are disabled
+    HdStShaderCodeSharedPtr _overrideShader;
+
+    // Having separate render pass states allows us to queue up the tasks
+    // corresponding to each of the above render passes. It also lets us use
+    // different shader mixins if we choose to (we don't currently.)
+    HdRenderPassStateSharedPtr _pickableRenderPassState;
+    HdRenderPassStateSharedPtr _occluderRenderPassState;
 
     // A single draw target is shared for all contexts. Since the FBO cannot be
     // shared, we clone the attachements on each request.

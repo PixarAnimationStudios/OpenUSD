@@ -1,0 +1,202 @@
+#usda 1.0
+(
+    startTimeCode = 0
+    endTimeCode = 10
+)
+
+def PointInstancer "Base" () {
+    Vec3f[] extent = [(-1, -1, -1), (26, 51, 103)]
+    int[] protoIndices = []
+    Vec3f[] positions = []
+    rel prototypes = [ <Protos/Proto1>, <Protos/Proto2> ]
+    def "Protos" {
+        def Cube "Proto1" () {
+            ColorFloat[] primvars:displayColor = [(1,0,0)]
+        }
+        def Cube "Proto2" () {
+            ColorFloat[] primvars:displayColor = [(0,1,0)]
+        }
+    }
+}
+
+def PointInstancer "NoInstances" (
+    references = </Base>
+) {
+    int[] protoIndices = []
+    Vec3f[] positions.timeSamples = {
+        0: [ ],
+        5: [ ],
+        10: [ ]
+    }
+    Quath[] orientations.timeSamples = {
+        0: [ ],
+        5: [ ],
+        10: [ ]
+    }
+    Vec3f[] velocities.timeSamples = {
+        0: [ ],
+        5: [ ],
+        10: [ ]
+    }
+    Vec3f[] angularVelocities.timeSamples = {
+        0: [ ],
+        5: [ ],
+        10: [ ]
+    }
+}
+
+def PointInstancer "OneInstanceNoSamples" (
+    references = </Base>
+) {
+    int[] protoIndices = [ 0 ]
+    Vec3f[] positions = [ (0,0,0) ]
+    Quath[] orientations = [ (1,0,0,0) ]
+    Vec3f[] velocities = [ (120,240,480) ]
+    Vec3f[] angularVelocities = [ (0,0,864) ]
+}
+
+def PointInstancer "OneInstanceNoVelocities" (
+    references = </Base>
+) {
+    int[] protoIndices = [ 0 ]
+    Vec3f[] positions.timeSamples = {
+        0: [ (0,0,0) ],
+        5: [ (25,50,100) ],
+        10: [ (0,0,0) ]
+    }
+    Quath[] orientations.timeSamples = {
+        0: [ (1,0,0,0) ],
+        5: [ (0,0,0,1) ],
+        10: [ (1,0,0,0) ]
+    }
+}
+
+def PointInstancer "OneInstance" (
+    references = </Base>
+) {
+    int[] protoIndices = [ 0 ]
+    Vec3f[] positions.timeSamples = {
+        0: [ (0,0,0) ],
+        5: [ (25,50,100) ],
+        10: [ (0,0,0) ]
+    }
+    Quath[] orientations.timeSamples = {
+        0: [ (1,0,0,0) ],
+        5: [ (0,0,0,1) ],
+        10: [ (1,0,0,0) ]
+    }
+    Vec3f[] velocities.timeSamples = {
+        0: [ (120,240,480) ],
+        5: [ (-120,-240,-480) ],
+        10: [ (0,0,0) ]
+    }
+    Vec3f[] angularVelocities.timeSamples = {
+        0: [ (0,0,864) ],
+        5: [ (0,0,-864) ],
+        10: [ (0,0,0) ]
+    }
+}
+
+def PointInstancer "OneInstanceUnalignedData" (
+    references = </Base>
+) {
+    int[] protoIndices = [ 0 ]
+    Vec3f[] positions.timeSamples = {
+        0: [ (0,0,0) ],
+        1: [ (0,0,0) ],
+        6: [ (25,50,100) ],
+        10: [ (0,0,0) ]
+    }
+    Quath[] orientations.timeSamples = {
+        0: [ (1,0,0,0) ],
+        2: [ (1,0,0,0) ],
+        7: [ (0,0,0,1) ],
+        10: [ (1,0,0,0) ]
+    }
+    Vec3f[] velocities.timeSamples = {
+        0: [ (0,0,0) ],
+        1: [ (120,240,480) ],
+        6: [ (-120,-240,-480) ],
+        10: [ (0,0,0) ]
+    }
+    Vec3f[] angularVelocities.timeSamples = {
+        0: [ (0,0,0) ],
+        2: [ (0,0,864) ],
+        7: [ (0,0,-864) ],
+        10: [ (0,0,0) ]
+    }
+}
+
+def PointInstancer "OneInstanceVelocityScale" (
+    references = </OneInstance>
+) {
+    float motion:velocityScale = 2.0
+}
+
+def PointInstancer "MultiInstance" (
+    references = </Base>
+) {
+    int[] protoIndices = [ 0, 1, 1 ]
+    Vec3f[] positions.timeSamples = {
+        0: [ (0,0,0), (0,0,1), (0,0,2) ],
+        5: [ (25,50,100), (25,50,101), (25,50,102) ],
+        10: [ (0,0,0), (0,0,1), (0,0,2) ]
+    }
+    Quath[] orientations.timeSamples = {
+        0: [ (1,0,0,0), (1,0,0,0), (0,0,0,1) ],
+        5: [ (0,0,0,1), (0,0,0,1), (1,0,0,0) ],
+        10: [ (1,0,0,0), (1,0,0,0), (0,0,0,1) ]
+    }
+    Vec3f[] velocities.timeSamples = {
+        0: [ (120,240,480), (120,240,480), (120,240,480) ],
+        5: [ (-120,-240,-480), (-120,-240,-480), (-120,-240,-480) ],
+        10: [ (0,0,0), (0,0,0), (0,0,0) ]
+    }
+    Vec3f[] angularVelocities.timeSamples = {
+        0: [ (0,0,864), (0,0,864), (0,0,-864) ],
+        5: [ (0,0,-864), (0,0,-864), (0,0,864) ],
+        10: [ (0,0,0), (0,0,0), (0,0,0) ]
+    }
+}
+
+def PointInstancer "MultiInstanceMask" (
+    inactiveIds = [ 1 ]
+    references = </MultiInstance>
+) {
+}
+
+def PointInstancer "OneInstanceProtoXform" (
+    references = </OneInstance>
+) {
+
+    def "Protos" {
+        def Cube "Proto1" () {
+            ColorFloat[] primvars:displayColor = [(0,1,0)]
+            double3 xformOp:rotateXYZ = (0, 0, 180)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
+        }
+        def Cube "Proto2" () {
+            ColorFloat[] primvars:displayColor = [(0,1,0)]
+        }
+    }
+}
+
+def PointInstancer "MultiInstanceForExtents" (
+    references = </Base>
+) {
+    int[] protoIndices = [ 0, 1, 1 ]
+    Vec3f[] positions.timeSamples = {
+        0: [ (0,0,0), (0,0,0), (0,0,0) ],
+        10: [ (25,25,25), (-25,25,25), (0,50,0) ]
+    }
+    Quath[] orientations.timeSamples = {
+        0: [ (1,0,0,0), (1,0,0,0), (0,0,0,1) ],
+        10: [ (0,0,0,1), (0,0,0,1), (1,0,0,0) ]
+    }
+    Vec3f[] velocities.timeSamples = {
+        0: [ (60,60,60), (-60,60,60), (0,120,0) ]
+    }
+    Vec3f[] angularVelocities.timeSamples = {
+        0: [ (0,0,432), (0,0,432), (0,0,-432) ]
+    }
+}

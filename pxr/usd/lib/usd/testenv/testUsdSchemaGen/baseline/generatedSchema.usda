@@ -1,17 +1,106 @@
 #usda 1.0
 (
     "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
+    customLayerData = {
+        string[] appliedAPISchemas = ["SingleApplyAPI", "EmptyMultipleApplyAPI", "MultipleApplyAPI", "DerivedMultipleApplyAPI", "PublicMultipleApplyAPI"]
+        string[] multipleApplyAPISchemas = ["EmptyMultipleApplyAPI", "MultipleApplyAPI", "DerivedMultipleApplyAPI", "PublicMultipleApplyAPI"]
+    }
 )
+
+class "NonAppliedAPI"
+{
+}
+
+class "SingleApplyAPI"
+{
+}
+
+class "EmptyMultipleApplyAPI"
+{
+}
+
+class "MultipleApplyAPI"
+{
+    int testAttrOne
+    double testAttrTwo
+}
+
+class "DerivedMultipleApplyAPI"
+{
+    int testAttrOne
+    int testAttrThree
+    double testAttrTwo
+}
+
+class "PublicMultipleApplyAPI"
+{
+    int testAttrOne
+    double testAttrTwo
+}
 
 class "Base" (
     doc = 'This doc should only exist on the "Base" class.'
 )
 {
-    color3f myColorFloat = (1, 1, 1)
+    asset asset = @asset@
+    asset[] assetArray
+    bool bool = 1
+    bool[] boolArray
+    color3d color3d = (0, 0, 0)
+    color3d[] color3dArray
+    color3f color3f = (0, 0, 0)
+    color3f[] color3fArray
+    color3h color3h = (0, 0, 0)
+    color3h[] color3hArray
+    color4d color4d = (0, 0, 0, 0)
+    color4d[] color4dArray
+    color4f color4f = (0, 0, 0, 0)
+    color4f[] color4fArray
+    color4h color4h = (0, 0, 0, 0)
+    color4h[] color4hArray
+    double double = 0
+    double2 double2 = (0, 0)
+    double2[] double2Array
+    double3 double3 = (0, 0, 0)
+    double3[] double3Array
+    double4 double4 = (0, 0, 0, 0)
+    double4[] double4Array
+    double[] doubleArray
+    float float = 0
+    float2 float2 = (0, 0)
+    float2[] float2Array
+    float3 float3 = (0, 0, 0)
+    float3[] float3Array
+    float4 float4 = (0, 0, 0, 0)
+    float4[] float4Array
+    float[] floatArray
+    frame4d frame4d = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+    frame4d[] frame4dArray
+    half half = 0
+    half2 half2 = (0, 0)
+    half2[] half2Array
+    half3 half3 = (0, 0, 0)
+    half3[] half3Array
+    half4 half4 = (0, 0, 0, 0)
+    half4[] half4Array
+    half[] halfArray
+    int int = 0
+    int2 int2 = (0, 0)
+    int2[] int2Array
+    int3 int3 = (0, 0, 0)
+    int3[] int3Array
+    int4 int4 = (0, 0, 0, 0)
+    int4[] int4Array
+    int64 int64 = 0
+    int64[] int64Array
+    int[] intArray
+    matrix2d matrix2d = ( (1, 0), (0, 1) )
+    matrix2d[] matrix2dArray
+    matrix3d matrix3d = ( (1, 0, 0), (0, 1, 0), (0, 0, 1) )
+    matrix3d[] matrix3dArray
+    matrix4d matrix4d = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+    matrix4d[] matrix4dArray
     custom double myDouble
-    float myFloat = 1
-    normal3f[] myNormals
-    point3f[] myPoints
     uniform bool myUniformBool = 0 (
         doc = "Uniform bool, default false"
     )
@@ -19,19 +108,65 @@ class "Base" (
         allowedTokens = ["VariableTokenAllowed1", "VariabletokenAllowed2"]
         doc = "VariableToken attribute docs."
     )
-    vector3f[] myVelocities
-    uchar unsignedChar
-    uint unsignedInt
-    uint64[] unsignedInt64Array
+    normal3d normal3d = (0, 0, 0)
+    normal3d[] normal3dArray
+    normal3f normal3f = (0, 0, 0)
+    normal3f[] normal3fArray
+    normal3h normal3h = (0, 0, 0)
+    normal3h[] normal3hArray
+    point3d point3d = (0, 0, 0)
+    point3d[] point3dArray
+    point3f point3f = (0, 0, 0)
+    point3f[] point3fArray
+    point3h point3h = (0, 0, 0)
+    point3h[] point3hArray
+    quatd quatd = (1, 0, 0, 0)
+    quatd[] quatdArray
+    quatf quatf = (1, 0, 0, 0)
+    quatf[] quatfArray
+    quath quath = (1, 0, 0, 0)
+    quath[] quathArray
+    string string = "string"
+    string[] stringArray
+    token token = "token"
+    token[] tokenArray
+    uchar uchar = 0
+    uchar[] ucharArray
+    uint uint = 0
+    uint64 uint64 = 0
+    uint64[] uint64Array
+    uint[] uintArray
+    vector3d vector3d = (0, 0, 0)
+    vector3d[] vector3dArray
+    vector3f vector3f = (0, 0, 0)
+    vector3f[] vector3fArray
+    vector3h vector3h = (0, 0, 0)
+    vector3h[] vector3hArray
 }
 
 class Derived "Derived" (
     doc = "Emphasized! Test Section"
 )
 {
+    asset asset = @asset@
+    asset[] assetArray
     rel binding (
         doc = "This is my awesome relationship."
     )
+    bool bool = 1
+    bool[] boolArray
+    color3d color3d = (0, 0, 0)
+    color3d[] color3dArray
+    color3f color3f = (0, 0, 0)
+    color3f[] color3fArray
+    color3h color3h = (0, 0, 0)
+    color3h[] color3hArray
+    color4d color4d = (0, 0, 0, 0)
+    color4d[] color4dArray
+    color4f color4f = (0, 0, 0, 0)
+    color4f[] color4fArray
+    color4h color4h = (0, 0, 0, 0)
+    color4h[] color4hArray
     int[] cornerIndices = [] (
         doc = "The vertex indices of all vertices that are sharp corners."
     )
@@ -48,18 +183,56 @@ class Derived "Derived" (
         attribute. Since each crease must be at least one edge long, each
         element of this array should be greater than one."""
     )
+    double double = 0
+    double2 double2 = (0, 0)
+    double2[] double2Array
+    double3 double3 = (0, 0, 0)
+    double3[] double3Array
+    double4 double4 = (0, 0, 0, 0)
+    double4[] double4Array
+    double[] doubleArray
+    float float = 0
+    float2 float2 = (0, 0)
+    float2[] float2Array
+    float3 float3 = (0, 0, 0)
+    float3[] float3Array
+    float4 float4 = (0, 0, 0, 0)
+    float4[] float4Array
+    float[] floatArray
+    frame4d frame4d = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+    frame4d[] frame4dArray
+    half half = 0
+    half2 half2 = (0, 0)
+    half2[] half2Array
+    half3 half3 = (0, 0, 0)
+    half3[] half3Array
+    half4 half4 = (0, 0, 0, 0)
+    half4[] half4Array
+    half[] halfArray
     int[] holeIndices = [] (
         doc = """The face indices (indexing into the 'faceVertexCounts'
         attribute) of all faces that should be made invisible."""
     )
+    int int = 0
+    int2 int2 = (0, 0)
+    int2[] int2Array
+    int3 int3 = (0, 0, 0)
+    int3[] int3Array
+    int4 int4 = (0, 0, 0, 0)
+    int4[] int4Array
+    int64 int64 = 0
+    int64[] int64Array
+    int[] intArray
     token justDefault = "newToken" (
         doc = "newToken should be included in the global token set."
     )
-    color3f myColorFloat = (1, 1, 1)
+    matrix2d matrix2d = ( (1, 0), (0, 1) )
+    matrix2d[] matrix2dArray
+    matrix3d matrix3d = ( (1, 0, 0), (0, 1, 0), (0, 0, 1) )
+    matrix3d[] matrix3dArray
+    matrix4d matrix4d = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+    matrix4d[] matrix4dArray
     custom double myDouble
-    float myFloat = 1
-    normal3f[] myNormals
-    point3f[] myPoints
     uniform bool myUniformBool = 0 (
         doc = "Uniform bool, default false"
     )
@@ -68,26 +241,59 @@ class Derived "Derived" (
         doc = "VariableToken attribute docs."
     )
     float3[] myVecfArray
-    vector3f[] myVelocities
     float namespaced:property = 1
+    normal3d normal3d = (0, 0, 0)
+    normal3d[] normal3dArray
+    normal3f normal3f = (0, 0, 0)
+    normal3f[] normal3fArray
+    normal3h normal3h = (0, 0, 0)
+    normal3h[] normal3hArray
     float3 pivotPosition = (0, 0, 0) (
         doc = """Rotation pivot position for this prim's transformation. 
          Provided as advisory data only for use by authoring applications,
          and should have no effect on the transformation encoded in the
          'transform' attribute."""
     )
+    point3d point3d = (0, 0, 0)
+    point3d[] point3dArray
+    point3f point3f = (0, 0, 0)
+    point3f[] point3fArray
+    point3h point3h = (0, 0, 0)
+    point3h[] point3hArray
+    quatd quatd = (1, 0, 0, 0)
+    quatd[] quatdArray
+    quatf quatf = (1, 0, 0, 0)
+    quatf[] quatfArray
+    quath quath = (1, 0, 0, 0)
+    quath[] quathArray
+    string string = "string"
+    string[] stringArray
     asset[] testingAsset
+    token token = "token"
+    token[] tokenArray
     matrix4d transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) ) (
         doc = """Double-precision transformation matrix, which should encode
         the entire local transformation for a prim."""
     )
-    uchar unsignedChar
-    uint unsignedInt
-    uint64[] unsignedInt64Array
+    uchar uchar = 0
+    uchar[] ucharArray
+    uint uint = 0
+    uint64 uint64 = 0
+    uint64[] uint64Array
+    uint[] uintArray
+    vector3d vector3d = (0, 0, 0)
+    vector3d[] vector3dArray
+    vector3f vector3f = (0, 0, 0)
+    vector3f[] vector3fArray
+    vector3h vector3h = (0, 0, 0)
+    vector3h[] vector3hArray
 }
 
 class TestPxHairman "TestPxHairman"
 {
+    float attrWithoutGeneratedAccessorAPI (
+        doc = "This exercises empty apiName to skip accessor generation."
+    )
     rel relCanShareApiNameWithAttr (
         doc = "This exercises custom API naming."
     )

@@ -29,12 +29,12 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/hashmap.h"
 
+#include <memory>
 #include <vector>
 
 #include <boost/compressed_pair.hpp>
 #include <boost/operators.hpp>
 #include <boost/iterator/iterator_facade.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <boost/utility.hpp>
 
 #include <cstdio>
@@ -43,7 +43,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfDenseHashSet
 ///
-/// This is a space efficent container that mimics the TfHashSet API that
+/// This is a space efficient container that mimics the TfHashSet API that
 /// uses a vector for storage when the size of the set is small.
 ///
 /// When the set gets bigger than \p Threshold a TfHashMap is allocated
@@ -203,7 +203,7 @@ public:
         return iter;
     }
 
-    /// Returns the number of elemens with key \p k.  Which is either 0 or 1.
+    /// Returns the number of elements with key \p k.  Which is either 0 or 1.
     ///
     size_t count(const Element &k) const {
         return find(k) != end();
@@ -294,11 +294,12 @@ public:
     
         // If we are not removing that last element...
         if (iter != std::prev(end())) {
-    
+            using std::swap;
+
             // ... move the last element into the erased placed.
             // Note that we can cast constness away because we explicitly update
             // the TfHashMap _h below.
-            std::swap(*const_cast<Element *>(&(*iter)), _vec().back());
+            swap(*const_cast<Element *>(&(*iter)), _vec().back());
     
             // ... and update the moved element's index.
             if (_h)
@@ -412,7 +413,7 @@ private:
 
     // Vector holding all elements along with the EqualElement functor.  Since
     // sizeof(EqualElement) == 0 in many cases we use a compressed_pair to not
-    // pay a size penality.
+    // pay a size penalty.
 
     typedef
         boost::compressed_pair<
@@ -423,7 +424,7 @@ private:
     _VectorHashFnEqualFn _vectorHashFnEqualFn;
 
     // Optional hash map that maps from keys to vector indices.
-    boost::scoped_ptr<_HashMap> _h;
+    std::unique_ptr<_HashMap> _h;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

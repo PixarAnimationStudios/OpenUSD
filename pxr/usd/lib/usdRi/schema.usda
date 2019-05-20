@@ -47,19 +47,26 @@ def "GLOBAL" (
 }
 
 class "StatementsAPI" (
-    doc = """Container namespace schema for all renderman statements""" 
+    inherits = </APISchemaBase>
+    doc = """Container namespace schema for all renderman statements.
+
+    \\note The longer term goal is for clients to go directly to primvar
+    or render-attribute API's, instead of using UsdRi StatementsAPI
+    for inherited attributes.  Anticpating this, StatementsAPI
+    can smooth the way via a few environment variables:
+
+    * USDRI_STATEMENTS_WRITE_NEW_ENCODING: Causes StatementsAPI to write
+      attributes to primvars in the "ri:" namespace.
+    * USDRI_STATEMENTS_READ_OLD_ENCODING: Causes StatementsAPI to read
+      old-style attributes instead of primvars in the "ri:"
+      namespace.
+    """ 
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdGeom/primvarsAPI.h"
+"""
+    }
 ) {
-    float ri:focusRegion (
-        customData = {
-            string apiName = "focusRegion"
-        }
-        doc = """Represents the value of the 'focusregion' option to RiCamera 
-        in centimeters. Specifies the stretch of space along the camera view 
-        axis surrounding the focus plane that contains everything that will 
-        be rendered in perfect focus.  If unauthored, a value of zero should
-        be assumed. <b>Note:</b> this parameter may not be supportable in
-        RIS renders in RenderMan 19 and above."""
-    )
 }
 
 ##### RSL #####
@@ -78,7 +85,9 @@ class RslShader "RslShader" (
 
 class RisObject "RisObject" (
     inherits = [</Shader>]
-    doc = """Represents a ris object with connectable parameters. """ 
+    doc = """\\deprecated Specialized RIS shader schemas have been deprecated in 
+    favor of all shader prims being simple UsdShadeShader.
+    Represents a ris object with connectable parameters. """ 
 ) {
     asset info:filePath (
         customData = { 
@@ -94,13 +103,17 @@ class RisObject "RisObject" (
 
 class RisPattern "RisPattern" (
     inherits = [</RisObject>]
-    doc = """Represents a ris pattern object. Multiple of these can be assigned.""" 
+    doc = """\\deprecated Specialized RIS shader schemas have been deprecated in 
+    favor of all shader prims being simple UsdShadeShader.
+    Represents a ris pattern object. Multiple of these can be assigned.""" 
 ) {
 }
 
 class RisOslPattern "RisOslPattern" (
     inherits = [</RisPattern>]
-    doc = """Represents a ris osl pattern object.""" 
+    doc = """\\deprecated Specialized RIS shader schemas have been deprecated in 
+    favor of all shader prims being simple UsdShadeShader.
+    Represents a ris osl pattern object.""" 
 ) {
     asset info:filePath = @PxrOSL@ (
         hidden = true
@@ -117,7 +130,9 @@ class RisOslPattern "RisOslPattern" (
 
 class RisBxdf "RisBxdf" (
     inherits = [</RisObject>]
-    doc = """Represents a ris bxdf object. One of these is assigned at one time.""" 
+    doc = """\\deprecated Specialized RIS shader schemas have been deprecated in 
+    favor of all shader prims being simple UsdShadeShader.
+    Represents a ris bxdf object. One of these is assigned at one time.""" 
 ) {
 }
 
@@ -132,6 +147,7 @@ class RisIntegrator "RisIntegrator" (
 ### Material API common to both RSL and RIS ###
 
 class "RiMaterialAPI" (
+    inherits = </APISchemaBase>
     doc = """This API provides outputs that connect a material prim to prman 
     shaders and RIS objects."""
     customData = {
@@ -141,29 +157,25 @@ class "RiMaterialAPI" (
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
 #include "pxr/usd/usdShade/material.h"
-#include "pxr/usd/usdRi/rslShader.h"
-#include "pxr/usd/usdRi/risBxdf.h"
 """
     }
 ) {
-    uniform token outputs:ri:surface (
+    token outputs:ri:surface (
+        displayGroup = "Outputs"
         customData = {
             string apiName = "surface"
         }
     )
-    uniform token outputs:ri:displacement (
+    token outputs:ri:displacement (
+        displayGroup = "Outputs"
         customData = {
             string apiName = "displacement"
         }
     )
-    uniform token outputs:ri:volume (
+    token outputs:ri:volume (
+        displayGroup = "Outputs"
         customData = {
             string apiName = "volume"
-        }
-    )
-    uniform token outputs:ri:bxdf (
-        customData = {
-            string apiName = "bxdf"
         }
     )
 }
@@ -173,6 +185,7 @@ class "RiMaterialAPI" (
 # Lighting API
 
 class "RiLightAPI" (
+    inherits = </APISchemaBase>
     doc = """RiLightAPI is an API schema that provides an interface
     to add Renderman-specific attributes to lights."""
     customData = {
@@ -230,6 +243,7 @@ class "RiLightAPI" (
 }
 
 class "RiLightFilterAPI" (
+    inherits = </APISchemaBase>
     doc = """Renderman-specific attributes for light filters."""
     customData = {
         string className = "LightFilterAPI"
@@ -281,6 +295,7 @@ class "RiLightFilterAPI" (
 }
 
 class "RiLightPortalAPI" (
+    inherits = </APISchemaBase>
     doc = """Renderman-specific attributes for light portals."""
     customData = {
         string className = "LightPortalAPI"
@@ -300,6 +315,7 @@ class "RiLightPortalAPI" (
 }
 
 class "RiSplineAPI" (
+    inherits = </APISchemaBase>
     doc = """RiSplineAPI is a general purpose API schema used to describe
     a named spline stored as a set of attributes on a prim.
     
@@ -323,6 +339,7 @@ class "RiSplineAPI" (
 }
 
 class "RiTextureAPI" (
+    inherits = </APISchemaBase>
     doc = """RiTextureAPI is an API schema that provides an interface
     to add Renderman-specific attributes to adjust textures."""
     customData = {

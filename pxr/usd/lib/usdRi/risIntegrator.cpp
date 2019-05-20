@@ -74,6 +74,11 @@ UsdRiRisIntegrator::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdRiRisIntegrator::_GetSchemaType() const {
+    return UsdRiRisIntegrator::schemaType;
+}
+
 /* static */
 const TfType &
 UsdRiRisIntegrator::_GetStaticTfType()

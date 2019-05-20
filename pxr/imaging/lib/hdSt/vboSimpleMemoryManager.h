@@ -49,7 +49,8 @@ public:
     HDST_API
     virtual HdBufferArraySharedPtr CreateBufferArray(
         TfToken const &role,
-        HdBufferSpecVector const &bufferSpecs);
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint);
 
     /// Factory for creating HdBufferArrayRange
     HDST_API
@@ -58,7 +59,8 @@ public:
     /// Returns id for given bufferSpecs to be used for aggregation
     HDST_API
     virtual HdAggregationStrategy::AggregationId ComputeAggregationId(
-        HdBufferSpecVector const &bufferSpecs) const;
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint) const;
 
     /// Returns the buffer specs from a given buffer array
     virtual HdBufferSpecVector GetBufferSpecs(
@@ -122,7 +124,7 @@ protected:
         }
 
         /// Returns the number of elements allocated
-        virtual int GetNumElements() const {
+        virtual size_t GetNumElements() const {
             return _numElements;
         }
 
@@ -145,6 +147,10 @@ protected:
         HDST_API
         virtual size_t GetMaxNumElements() const;
 
+        /// Returns the usage hint from the underlying buffer array
+        HDST_API
+        virtual HdBufferArrayUsageHint GetUsageHint() const override;
+
         /// Returns the GPU resource. If the buffer array contains more than one
         /// resource, this method raises a coding error.
         HDST_API
@@ -158,7 +164,7 @@ protected:
         HDST_API
         virtual HdStBufferResourceGLNamedList const& GetResources() const;
 
-        /// Sets the buffer array assosiated with this buffer;
+        /// Sets the buffer array associated with this buffer;
         HDST_API
         virtual void SetBufferArray(HdBufferArray *bufferArray);
 
@@ -185,7 +191,7 @@ protected:
 
     private:
         _SimpleBufferArray * _bufferArray;
-        int _numElements;
+        size_t _numElements;
     };
 
     typedef boost::shared_ptr<_SimpleBufferArray>
@@ -204,7 +210,9 @@ protected:
     public:
         /// Constructor.
         HDST_API
-        _SimpleBufferArray(TfToken const &role, HdBufferSpecVector const &bufferSpecs);
+        _SimpleBufferArray(TfToken const &role,
+                           HdBufferSpecVector const &bufferSpecs,
+                           HdBufferArrayUsageHint usageHint);
 
         /// Destructor. It invalidates _range
         HDST_API
@@ -249,7 +257,7 @@ protected:
         HdStBufferResourceGLSharedPtr GetResource() const;
 
         /// Returns the named GPU resource. This method returns the first found
-        /// resource. In HD_SAFE_MODE it checkes all underlying GL buffers
+        /// resource. In HD_SAFE_MODE it checks all underlying GL buffers
         /// in _resourceMap and raises a coding error if there are more than
         /// one GL buffers exist.
         HDST_API

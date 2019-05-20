@@ -6,7 +6,7 @@
 
 \section Usd_DataStreaming Reading Data Efficiently
 
-Procesing different subtrees of a stage in different threads to reduce
+Processing different subtrees of a stage in different threads to reduce
 contention for prims and paths.
 
 Converting datatypes (VtValue::Cast) and potentially reading native datatypes. 

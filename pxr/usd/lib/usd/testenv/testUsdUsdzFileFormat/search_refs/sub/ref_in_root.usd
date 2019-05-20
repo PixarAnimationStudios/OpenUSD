@@ -1,0 +1,6 @@
+#usda 1.0
+
+def "Ref_2"
+{
+    string attr_in_root = "attr_in_root"
+}

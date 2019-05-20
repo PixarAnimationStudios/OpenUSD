@@ -27,7 +27,6 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
 #include "pxr/usd/ar/resolverContext.h"
-#include "pxr/usd/ar/pyResolverContext.h"
 
 /// \file ar/defineResolverContext.h
 /// Macros for defining an object for use with ArResolverContext
@@ -51,15 +50,6 @@ struct ArIsContextObject<context>                      \
     static const bool value = true;                    \
 }
 #endif
-
-/// Register the specified type as a context object that may be
-/// converted from a Python into a ArResolverContext object
-/// in C++ and vice versa. This typically would be called in the
-/// source file where the Python wrapping for the context object
-/// is defined.
-template <class Context>
-void 
-ArWrapResolverContextForPython();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

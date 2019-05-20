@@ -23,7 +23,6 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-from pxr import UsdImagingGL
 from pxr.Usdviewq.qt import QtWidgets
 from pxr.Usdviewq.selectionDataModel import ALL_INSTANCES
 from pxr.Usdviewq.common import SelectionHighlightModes

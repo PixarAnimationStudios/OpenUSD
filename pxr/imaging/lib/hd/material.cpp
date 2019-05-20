@@ -50,21 +50,16 @@ std::ostream& operator<<(std::ostream& out, const HdMaterialNetwork& pv)
 bool operator==(const HdMaterialRelationship& lhs, 
                 const HdMaterialRelationship& rhs)
 {
-    return lhs.sourceId       == rhs.sourceId && 
-           lhs.sourceTerminal == rhs.sourceTerminal &&
-           lhs.remoteId       == rhs.remoteId &&
-           lhs.remoteTerminal == rhs.remoteTerminal;
-}
-
-bool operator==(const HdValueAndRole& lhs, const HdValueAndRole& rhs) 
-{
-    return lhs.value == rhs.value && lhs.role == rhs.role;
+    return lhs.outputId   == rhs.outputId && 
+           lhs.outputName == rhs.outputName &&
+           lhs.inputId    == rhs.inputId &&
+           lhs.inputName  == rhs.inputName;
 }
 
 bool operator==(const HdMaterialNode& lhs, const HdMaterialNode& rhs)
 {
     return lhs.path == rhs.path &&
-           lhs.type == rhs.type &&
+           lhs.identifier == rhs.identifier &&
            lhs.parameters == rhs.parameters;
 }
 
@@ -76,6 +71,25 @@ bool operator==(const HdMaterialNetwork& lhs, const HdMaterialNetwork& rhs)
 }
 
 bool operator!=(const HdMaterialNetwork& lhs, const HdMaterialNetwork& rhs) 
+{
+    return !(lhs == rhs);
+}
+
+
+std::ostream& operator<<(std::ostream& out, const HdMaterialNetworkMap& pv)
+{
+    out << "HdMaterialNetworkMap Params: (...) " ;
+    return out;
+}
+
+bool operator==(const HdMaterialNetworkMap& lhs,
+                const HdMaterialNetworkMap& rhs) 
+{
+    return lhs.map == rhs.map;
+}
+
+bool operator!=(const HdMaterialNetworkMap& lhs,
+                const HdMaterialNetworkMap& rhs) 
 {
     return !(lhs == rhs);
 }

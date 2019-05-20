@@ -46,24 +46,21 @@ PXR_NAMESPACE_OPEN_SCOPE
     (I.e., instances of multi parms) cannot be tracked through this class.
 
     This class is not thread safe!*/
-class GusdOP_ParmChangeMicroNode : public DEP_TimedMicroNode
+class GUSD_API GusdOP_ParmChangeMicroNode : public DEP_TimedMicroNode
 {
 public:
     explicit GusdOP_ParmChangeMicroNode(OP_Parameters& node)
         : DEP_TimedMicroNode(), _node(node), _parmsAdded(false) {}
 
-    GUSD_API
     virtual ~GusdOP_ParmChangeMicroNode();
 
     /** Begin tracking the given parm.
         If @a vectorIdx is less than zero, all elements of the parm
         tuple are tracked.*/
-    GUSD_API
     void            addParm(int parmIdx, int vecIdx=-1);
 
     /** Update the resolved parm values.
         @return true if any resolved values changed.*/
-    GUSD_API
     bool            updateVals(fpreal t, int thread=SYSgetSTID());
 
     bool            updateIfNeeded(fpreal t, int thread=SYSgetSTID())

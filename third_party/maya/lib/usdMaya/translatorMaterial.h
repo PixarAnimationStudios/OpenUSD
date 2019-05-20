@@ -24,72 +24,59 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_MATERIAL_H
 #define PXRUSDMAYA_TRANSLATOR_MATERIAL_H
 
+/// \file usdMaya/translatorMaterial.h
+
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
-#include "pxr/base/tf/staticTokens.h"
+#include "usdMaya/primReaderContext.h"
+#include "usdMaya/util.h"
+#include "usdMaya/writeJobContext.h"
+
+#include "pxr/base/tf/token.h"
+#include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usdShade/material.h"
 
-#include "usdMaya/primReaderContext.h"
-#include "usdMaya/util.h"
-
 #include <maya/MObject.h>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-#define PXRUSDMAYA_TRANSLATOR_MATERIAL_TOKENS \
-    ((MaterialNamespace, "USD_Materials"))
-
-TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaTranslatorMaterialTokens,
-    PXRUSDMAYA_TRANSLATOR_MATERIAL_TOKENS);
-
 /// \brief Provides helper functions for reading UsdShadeMaterial
-struct PxrUsdMayaTranslatorMaterial
+struct UsdMayaTranslatorMaterial
 {
-    /// \brief Reads \p material according to \p shadingMode .  Some shading modes
-    /// may want to know the \p boundPrim.  This returns an MObject that is the
-    /// maya shadingEngine that corresponds to \p material.
+    /// Reads \p material according to \p shadingMode . Some shading modes may
+    /// want to know the \p boundPrim. This returns an MObject that is the Maya
+    /// shadingEngine that corresponds to \p material.
     PXRUSDMAYA_API
     static MObject Read(
             const TfToken& shadingMode,
             const UsdShadeMaterial& material,
             const UsdGeomGprim& boundPrim,
-            PxrUsdMayaPrimReaderContext* context);
+            UsdMayaPrimReaderContext* context);
 
-    /// \brief Given a \p prim, assigns a material to it according to \p
-    /// shadingMode.  This will see which UsdShadeMaterial is bound to \p prim.  If
-    /// the material has not been read already, it will read it.  The
-    /// created/retrieved shadingEngine will be assigned to \p shapeObj.
+    /// Given a \p prim, assigns a material to it according to \p shadingMode.
+    /// This will see which UsdShadeMaterial is bound to \p prim. If the
+    /// material has not been read already, it will read it.
+    /// The created/retrieved shadingEngine will be assigned to \p shapeObj.
     PXRUSDMAYA_API
     static bool AssignMaterial(
             const TfToken& shadingMode,
             const UsdGeomGprim& prim,
             MObject shapeObj,
-            PxrUsdMayaPrimReaderContext* context);
+            UsdMayaPrimReaderContext* context);
 
-    /// Finds shadingEngines in the maya scene and exports them to \p stage.  This
-    /// will call the current export for the shadingMode.
-    /// Shaders that are bound to prims under \p bindableRoot paths will get
-    /// exported.  If \p bindableRoots is empty, it will export all.
-    /// If \p materialCollectionsPath is not empty, then a set of collections 
-    /// are exported on the prim pointed to by the path, each representing 
-    /// the collection of geometry bound to the various shading group sets in 
-    /// maya.
+    /// Finds shadingEngines in the Maya scene and exports them to the USD
+    /// stage contained in \p writeJobContext.
     PXRUSDMAYA_API
-    static void 
-    ExportShadingEngines(
-            const UsdStageRefPtr& stage,
-            const PxrUsdMayaUtil::ShapeSet& bindableRoots,
-            const TfToken& shadingMode,
-            bool mergeTransformAndShape,
-            SdfPath overrideRootPath,
-            const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& dagPathToUsdMap,
-            const SdfPath &materialCollectionsPath);
+    static void ExportShadingEngines(
+            UsdMayaWriteJobContext& writeJobContext,
+            const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap);
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_TRANSLATOR_MATERIAL_H
 
+#endif

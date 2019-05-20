@@ -52,10 +52,15 @@ Usd_Resolver::_Init() {
 void
 Usd_Resolver::_SkipEmptyNodes()
 {
-    while (IsValid() &&
-           ((_skipEmptyNodes && !_curNode->HasSpecs()) ||
-            _curNode->IsInert())) {
-        _curNode++;
+    if (_skipEmptyNodes) {
+        for (; IsValid() && (!_curNode->HasSpecs() ||
+                             _curNode->IsInert()); ++_curNode) {
+            // do nothing.
+        }
+    } else {
+        for (; IsValid() && _curNode->IsInert(); ++_curNode) {
+            // do nothing.
+        }
     }
 }
 
@@ -126,6 +131,15 @@ Usd_Resolver::NextLayer() {
     return false;
 }
 
+Usd_Resolver::Position 
+Usd_Resolver::GetPosition() const
+{
+    if (!IsValid()) {
+        return Position();
+    }
+
+    return Position(_curNode, _curLayer);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

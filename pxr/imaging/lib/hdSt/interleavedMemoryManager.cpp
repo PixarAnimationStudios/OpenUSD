@@ -22,10 +22,11 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/diagnostic.h"
+#include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/imaging/hdSt/interleavedMemoryManager.h"
 #include "pxr/imaging/hdSt/bufferResourceGL.h"
-#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hdSt/glUtils.h"
 
 #include <boost/make_shared.hpp>
@@ -106,13 +107,16 @@ HdStInterleavedMemoryManager::GetResourceAllocation(
 HdBufferArraySharedPtr
 HdStInterleavedUBOMemoryManager::CreateBufferArray(
     TfToken const &role,
-    HdBufferSpecVector const &bufferSpecs)
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayUsageHint usageHint)
 {
-    HdStRenderContextCaps &caps = HdStRenderContextCaps::GetInstance();
+    const GlfContextCaps &caps = GlfContextCaps::GetInstance();
 
     return boost::make_shared<
         HdStInterleavedMemoryManager::_StripedInterleavedBuffer>(
-            role, bufferSpecs,
+            role,
+            bufferSpecs,
+            usageHint,
             caps.uniformBufferOffsetAlignment,
             /*structAlignment=*/sizeof(float)*4,
             caps.maxUniformBlockSize,
@@ -121,7 +125,8 @@ HdStInterleavedUBOMemoryManager::CreateBufferArray(
 
 HdAggregationStrategy::AggregationId
 HdStInterleavedUBOMemoryManager::ComputeAggregationId(
-    HdBufferSpecVector const &bufferSpecs) const
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayUsageHint usageHint) const
 {
     static size_t salt = ArchHash(__FUNCTION__, sizeof(__FUNCTION__));
     size_t result = salt;
@@ -134,6 +139,8 @@ HdStInterleavedUBOMemoryManager::ComputeAggregationId(
         boost::hash_combine(result,
                 ArchHash((char const*)params, sizeof(size_t) * 3));
     }
+    boost::hash_combine(result, usageHint.value);
+
     // promote to size_t
     return (AggregationId)result;
 }
@@ -144,13 +151,16 @@ HdStInterleavedUBOMemoryManager::ComputeAggregationId(
 HdBufferArraySharedPtr
 HdStInterleavedSSBOMemoryManager::CreateBufferArray(
     TfToken const &role,
-    HdBufferSpecVector const &bufferSpecs)
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayUsageHint usageHint)
 {
-    HdStRenderContextCaps &caps = HdStRenderContextCaps::GetInstance();
+    const GlfContextCaps &caps = GlfContextCaps::GetInstance();
 
     return boost::make_shared<
         HdStInterleavedMemoryManager::_StripedInterleavedBuffer>(
-            role, bufferSpecs,
+            role,
+            bufferSpecs,
+            usageHint,
             /*bufferOffsetAlignment=*/0,
             /*structAlignment=*/0,
             caps.maxShaderStorageBlockSize,
@@ -159,7 +169,8 @@ HdStInterleavedSSBOMemoryManager::CreateBufferArray(
 
 HdAggregationStrategy::AggregationId
 HdStInterleavedSSBOMemoryManager::ComputeAggregationId(
-    HdBufferSpecVector const &bufferSpecs) const
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayUsageHint usageHint) const
 {
     static size_t salt = ArchHash(__FUNCTION__, sizeof(__FUNCTION__));
     size_t result = salt;
@@ -172,6 +183,8 @@ HdStInterleavedSSBOMemoryManager::ComputeAggregationId(
         boost::hash_combine(result,
                 ArchHash((char const*)params, sizeof(size_t) * 3));
     }
+    boost::hash_combine(result, usageHint.value);
+
     return result;
 }
 
@@ -218,11 +231,12 @@ _ComputeAlignment(HdTupleType tupleType)
 HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuffer(
     TfToken const &role,
     HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayUsageHint usageHint,
     int bufferOffsetAlignment = 0,
     int structAlignment = 0,
     size_t maxSize = 0,
     TfToken const &garbageCollectionPerfToken = HdPerfTokens->garbageCollectedUbo)
-    : HdBufferArray(role, garbageCollectionPerfToken),
+    : HdBufferArray(role, garbageCollectionPerfToken, usageHint),
       _needsCompaction(false),
       _stride(0),
       _bufferOffsetAlignment(bufferOffsetAlignment),
@@ -379,6 +393,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
+    GLF_GROUP_FUNCTION();
 
     // XXX: make sure glcontext
 
@@ -425,7 +440,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
     if (glGenBuffers) {
         glGenBuffers(1, &newId);
 
-        HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
+        GlfContextCaps const &caps = GlfContextCaps::GetInstance();
         if (caps.directStateAccessEnabled) {
             glNamedBufferDataEXT(newId, totalSize, /*data=*/NULL, GL_STATIC_DRAW);
         } else {
@@ -649,6 +664,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
                         bufferSource->GetName().GetText());
         return;
     }
+    GLF_GROUP_FUNCTION();
 
     // overrun check
     // XXX:Arrays:  Note that we only check tuple type here, not arity.
@@ -668,7 +684,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
         return;
     }
 
-    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
+    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
     if (glBufferSubData != NULL) {
         int vboStride = VBO->GetStride();
         GLintptr vboOffset = VBO->GetOffset() + vboStride * _index;
@@ -676,7 +692,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
         const unsigned char *data =
             (const unsigned char*)bufferSource->GetData();
 
-        for (int i = 0; i < _numElements; ++i) {
+        for (size_t i = 0; i < _numElements; ++i) {
             HD_PERF_COUNTER_INCR(HdPerfTokens->glBufferSubData);
 
             // XXX: MapBuffer?
@@ -727,6 +743,17 @@ size_t
 HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::GetMaxNumElements() const
 {
     return _stripedBuffer->GetMaxNumElements();
+}
+
+HdBufferArrayUsageHint
+HdStInterleavedMemoryManager::
+_StripedInterleavedBufferRange::GetUsageHint() const
+{
+    if (!TF_VERIFY(_stripedBuffer)) {
+        return HdBufferArrayUsageHint();
+    }
+
+    return _stripedBuffer->GetUsageHint();
 }
 
 HdStBufferResourceGLSharedPtr

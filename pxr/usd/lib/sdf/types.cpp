@@ -34,6 +34,7 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/ostreamMethods.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/staticData.h"
@@ -45,12 +46,6 @@ using std::string;
 using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-TF_DEFINE_ENV_SETTING(SDF_WRITE_OLD_TYPENAMES, false,
-                      "Write values using old type-name alias");
-
-TF_DEFINE_ENV_SETTING(SDF_CONVERT_TO_NEW_TYPENAMES, false,
-                      "Force all serialized type-names to the new style");
 
 TF_DEFINE_PUBLIC_TOKENS(SdfValueRoleNames, SDF_VALUE_ROLE_NAME_TOKENS);
 
@@ -461,19 +456,10 @@ TfToken
 Sdf_ValueTypeNamesType::GetSerializationName(
     const SdfValueTypeName& typeName) const
 {
-    if (TfGetEnvSetting(SDF_WRITE_OLD_TYPENAMES)) {
-        // Return the last registered alias, which is the old type name.
-        const TfToken name = typeName.GetAliasesAsTokens().back();
-        if (!name.IsEmpty()) {
-            return name;
-        }
-    }
-    if (TfGetEnvSetting(SDF_CONVERT_TO_NEW_TYPENAMES)) {
-        // Return the first registered alias, which is the new type name.
-        const TfToken name = typeName.GetAliasesAsTokens().front();
-        if (!name.IsEmpty()) {
-            return name;
-        }
+    // Return the first registered alias, which is the new type name.
+    const TfToken name = typeName.GetAliasesAsTokens().front();
+    if (!name.IsEmpty()) {
+        return name;
     }
         
     return typeName.GetAsToken();
@@ -499,6 +485,18 @@ std::ostream&
 operator<<(std::ostream& ostr, SdfValueBlock const& block)
 { 
     return ostr << "None"; 
+}
+
+std::ostream &
+operator<<(std::ostream &out, const SdfHumanReadableValue &hrval)
+{
+    return out << "<< " << hrval.GetText() << " >>";
+}
+
+size_t
+hash_value(const SdfHumanReadableValue &hrval)
+{
+    return TfHash()(hrval.GetText());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

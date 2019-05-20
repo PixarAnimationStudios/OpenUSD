@@ -32,7 +32,7 @@
 
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/renderPass.h"
-#include "pxr/imaging/glf/glslfx.h"
+#include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -55,6 +55,7 @@ class HdSt_TestDriver final {
 public:
     HdSt_TestDriver();
     HdSt_TestDriver(TfToken const &reprName);
+    HdSt_TestDriver(HdReprSelector const &reprToken);
     ~HdSt_TestDriver();
 
     /// Draw
@@ -83,17 +84,17 @@ public:
     HdSt_UnitTestDelegate& GetDelegate() { return *_sceneDelegate; }
 
     /// Switch repr
-    void SetRepr(TfToken const &reprName);
+    void SetRepr(HdReprSelector const &reprToken);
 
 private:
 
-    void _Init(TfToken const &reprName);
+    void _Init(HdReprSelector const &reprToken);
 
     HdEngine _engine;
     HdStRenderDelegate   _renderDelegate;
     HdRenderIndex       *_renderIndex;
     HdSt_UnitTestDelegate *_sceneDelegate;
-    TfToken _reprName;
+    HdReprSelector _reprToken;
     HdRenderPassSharedPtr _geomPass;
     HdRenderPassSharedPtr _geomAndGuidePass;
     HdStRenderPassStateSharedPtr _renderPassState;
@@ -132,7 +133,7 @@ private:
     };
     Light _lights[2];
     GfVec3f _sceneAmbient;
-    boost::scoped_ptr<GlfGLSLFX> _glslfx;
+    boost::scoped_ptr<HioGlslfx> _glslfx;
 };
 
 

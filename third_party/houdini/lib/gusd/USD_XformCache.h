@@ -24,6 +24,8 @@
 #ifndef _GUSD_USD_XFORMCACHE_H_
 #define _GUSD_USD_XFORMCACHE_H_
 
+#include "gusd/api.h"
+
 #include "gusd/defaultArray.h"
 #include "gusd/UT_CappedCache.h"
 #include "gusd/USD_DataCache.h"
@@ -39,6 +41,7 @@ class GusdUSD_XformCache final : public GusdUSD_DataCache
 {
 public:
 
+    GUSD_API
     static GusdUSD_XformCache&  GetInstance();
 
     GusdUSD_XformCache(GusdStageCache& cache);
@@ -118,10 +121,13 @@ public:
     typedef UT_IntrusivePtr<const XformInfo>    XformInfoHandle;
 
 
+    GUSD_API
     XformInfoHandle GetXformInfo(const UsdPrim& prim);
 
-
+    GUSD_API
     virtual void    Clear() override;
+
+    GUSD_API
     virtual int64   Clear(const UT_StringSet& paths) override;
 
 private:

@@ -2,7 +2,7 @@
 
 \page Usd_Page_ValueClips Sequencable, Re-timable Animated "Value Clips"
 
-\section Overview
+\section Usd_ValueClips_Overview Overview
 
 USD's <a HREF="http://openusd.org/docs/USD-Glossary.html#USDGlossary-CompositionArcs">composition arcs</a> 
 allow timeSampled animation to be assembled from a variety of sources into
@@ -34,7 +34,7 @@ indicating:
 - which samples to consume within the active clip
 
 
-\subsection Terminology
+\subsection Usd_ValueClips_Terminology  Terminology
 
 Before going further, let's establish some terminology:
 
@@ -61,7 +61,7 @@ Before going further, let's establish some terminology:
   given clip set. This determines the strength of clips with respect to
   value resolution, see \ref Usd_ValueClips_ClipValueResolution for details.
 
-\subsection Metadata
+\subsection Usd_ValueClips_Metadata Metadata
 
 Value Clip behavior is controlled by metadata authored on a particular prim.
 Each application of value clips takes one of two possible forms: \em template 
@@ -338,7 +338,7 @@ it finds one with timeSamples authored. In the case that many consecutive clips
 don't have timeSamples authored, the user pays a cost of opening all those
 layers.
 
-\subsection usdview
+\subsection Usd_ValueClips_usdview usdview
 
 - Usdview supports value clip debugging through the layer stack viewer(lower left).
 When a particular attribute(who's value is held in a clip layer) is highlighted,
@@ -347,7 +347,7 @@ the layer stack viewer will show which clip the value is coming from.
 - The metadata tab will display the value of each piece of metadata authored
 on the prim introducing clips.
 
-\subsection usdcat
+\subsection Usd_ValueClips_usdcat usdcat
 
 Usdcat supports flattening value clips. Attributes with values from clips 
 flatten to timeSamples. Any active clip at
@@ -449,7 +449,7 @@ Note that both clip1.usda, which has an authored \ref SdfValueBlock,
 and clip3.usda, which does not have an authored value, produce a block in the 
 resulting timeSamples. 
 
-\subsection usdstitchclips
+\subsection Usd_ValueClips_usdstitchclips usdstitchclips
 
 The USD toolset provides a tool, usdstitchclips, for generating the necessary 
 value clip metadata as well as the static scene topology. This tool can author

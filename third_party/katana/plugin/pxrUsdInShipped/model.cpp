@@ -98,11 +98,32 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_ModelOp, privateData, opArgs, inte
         
     if (lookPrim)
     {
+        FnKat::GroupAttribute childOpArgs = opArgs;
+        
+        // across instances, we won't easily be able to over this attr onto
+        // the Looks scope. We'll check for it on the parent also.
+        UsdAttribute keyAttr = prim.GetAttribute(
+                TfToken("sharedLooksCacheKey"));
+        if (keyAttr.IsValid())
+        {
+            std::string cacheKey;
+            keyAttr.Get(&cacheKey);
+            
+            if (!cacheKey.empty())
+            {
+                childOpArgs = FnKat::GroupBuilder()
+                        .update(childOpArgs)
+                        .set("sharedLooksCacheKey",
+                                FnKat::StringAttribute(cacheKey))
+                        .build();
+            }
+        }
+       
         interface.setAttr(UsdKatanaTokens->katanaLooksChildNameExclusionAttrName,
                 FnKat::IntAttribute(1));
         interface.createChild(TfToken(UsdKatanaTokens->katanaLooksScopeName),
                 "UsdInCore_LooksGroupOp",
-                FnKat::GroupAttribute(),
+                childOpArgs,
                 FnKat::GeolibCookInterface::ResetRootTrue,
                 new PxrUsdKatanaUsdInPrivateData(
                     lookPrim,

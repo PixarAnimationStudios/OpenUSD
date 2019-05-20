@@ -74,6 +74,11 @@ UsdKatanaBlindDataObject::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdKatanaBlindDataObject::_GetSchemaType() const {
+    return UsdKatanaBlindDataObject::schemaType;
+}
+
 /* static */
 const TfType &
 UsdKatanaBlindDataObject::_GetStaticTfType()
@@ -309,13 +314,6 @@ UsdKatanaBlindDataObject::GetKbdAttribute(
 {
     std::string fullName = _MakeKbdAttrName(katanaAttrName);
     return GetPrim().GetAttribute(TfToken(fullName));
-}
-
-bool
-UsdKatanaBlindDataObject::_IsCompatible(const UsdPrim &prim) const
-{
-    // HasA schemas compatible with all types for now.
-    return true;
 }
 
 bool

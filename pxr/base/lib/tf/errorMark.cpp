@@ -47,7 +47,7 @@ bool
 TfErrorMark::_IsCleanImpl(TfDiagnosticMgr &mgr) const
 {
     Iterator b = mgr.GetErrorBegin(), e = mgr.GetErrorEnd();
-    return b == e || std::prev(e)->_data->_serial < _mark;
+    return b == e || std::prev(e)->_serial < _mark;
 }
 
 void

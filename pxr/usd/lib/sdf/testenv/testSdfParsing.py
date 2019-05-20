@@ -23,10 +23,10 @@
 # language governing permissions and limitations under the Apache License.
 
 # This tests a set of sample sdf files that are either expected to load
-# succesfully, or to emit warnings.  Files with _bad_ in the name are
+# successfully, or to emit warnings.  Files with _bad_ in the name are
 # expected to emit warnings, but in no case should they cause a crash.
 #
-# For files that we expect to read succesfully, we take the further step
+# For files that we expect to read successfully, we take the further step
 # of writing them out, reading in what we wrote, and writing it out again,
 # and then comparing the two versions written to make sure they are the
 # same.  This is to detect any accumulative error, such as quoting or
@@ -48,7 +48,7 @@ def removeFiles(*filenames):
 
 class TestSdfParsing(unittest.TestCase):
     def test_Basic(self):
-        # NOTE: Any file with "_bad_" in the name is a file that should not load succesfully.
+        # NOTE: Any file with "_bad_" in the name is a file that should not load successfully.
         # NOTE: This list is reverse sorted.  Add new tests at the top!
         # This will mean that your new test runs first and you can spot
         # failures much quicker.
@@ -80,7 +80,7 @@ class TestSdfParsing(unittest.TestCase):
         177_bad_empty_lists.sdf
         176_empty_lists.sdf
         175_asset_path_with_colons.sdf
-        164_attr_mappers_and_markers.sdf
+        164_attr_mappers.sdf
         163_bad_variant_selection2.sdf
         162_bad_variant_selection1.sdf
         161_bad_variant_name2.sdf
@@ -139,7 +139,6 @@ class TestSdfParsing(unittest.TestCase):
         82_bad_tuple_dimensions1.sdf
         81_namespace_reorder.sdf
         80_bad_hidden.sdf
-        77_connections_at_markers.sdf
         76_relationship_customData.sdf
         75_attribute_customData.sdf
         74_prim_customData.sdf
@@ -219,18 +218,9 @@ class TestSdfParsing(unittest.TestCase):
 
         # Create a temporary file for diffs and choose where to get test data.
         import tempfile
-        if os.environ.get('SDF_WRITE_OLD_TYPENAMES') == '1':
-            layerFileOut = tempfile.NamedTemporaryFile(suffix='testSdfParsingOld1.sdf', delete=False)
-            layerDir = os.path.join(os.getcwd(), 'testSdfParsingOld.testenv')
-            baselineDir = os.path.join(layerDir, 'baseline')
-        elif os.environ.get('SDF_CONVERT_TO_NEW_TYPENAMES') == "1":
-            layerFileOut = tempfile.NamedTemporaryFile(suffix='testSdfParsingNew1.sdf', delete=False)
-            layerDir = os.path.join(os.getcwd(), 'testSdfParsingNew.testenv')
-            baselineDir = os.path.join(layerDir, 'baseline_newtypes')
-        else:
-            layerFileOut = tempfile.NamedTemporaryFile(suffix='testSdfParsing1.sdf', delete=False)
-            layerDir = os.path.join(os.getcwd(), 'testSdfParsing.testenv')
-            baselineDir = os.path.join(layerDir, 'baseline')
+        layerFileOut = tempfile.NamedTemporaryFile(suffix='testSdfParsing1.sdf', delete=False)
+        layerDir = os.path.join(os.getcwd(), 'testSdfParsing.testenv')
+        baselineDir = os.path.join(layerDir, 'baseline')
 
         # Close the temporary file.  We only wanted a temporary file name
         # and we'll open/close/remove this file once per test file.  On

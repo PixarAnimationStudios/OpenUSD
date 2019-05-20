@@ -240,7 +240,7 @@ class TestUsdGeomSchemata(unittest.TestCase):
 
         xform = UsdGeom.Xform.Define(stage, "/Xform")  # direct subclass
         xformOpOrder = xform.GetXformOpOrderAttr()
-        self.assertFalse(xformOpOrder.HasAuthoredValueOpinion())
+        self.assertFalse(xformOpOrder.HasAuthoredValue())
         # xformOpOrder has no fallback value
         self.assertEqual(xformOpOrder.Get(), None)
         self.assertFalse(xformOpOrder.HasFallbackValue())
@@ -252,11 +252,11 @@ class TestUsdGeomSchemata(unittest.TestCase):
 
         opOrderVal = ["xformOp:transform"]
         self.assertTrue(xformOpOrderAttr.Set(opOrderVal))
-        self.assertTrue(xformOpOrderAttr.HasAuthoredValueOpinion())
+        self.assertTrue(xformOpOrderAttr.HasAuthoredValue())
 
         self.assertNotEqual(xformOpOrderAttr.Get(), None)
         self.assertTrue(xformOpOrderAttr.Clear())
-        self.assertFalse(xformOpOrderAttr.HasAuthoredValueOpinion())
+        self.assertFalse(xformOpOrderAttr.HasAuthoredValue())
         self.assertEqual(xformOpOrderAttr.Get(), None)
         self.assertFalse(xformOpOrder.HasFallbackValue())
 
@@ -264,21 +264,21 @@ class TestUsdGeomSchemata(unittest.TestCase):
 
         # PointBased and Curves
         curves = UsdGeom.BasisCurves.Define(stage, "/Curves")
-        self.assertEqual(curves.GetNormalsInterpolation(), UsdGeom.Tokens.varying)
-        self.assertEqual(curves.GetWidthsInterpolation(), UsdGeom.Tokens.varying)
+        self.assertEqual(curves.GetNormalsInterpolation(), UsdGeom.Tokens.vertex)
+        self.assertEqual(curves.GetWidthsInterpolation(), UsdGeom.Tokens.vertex)
 
         # Before we go, test that CreateXXXAttr performs as we expect in various
         # scenarios
         # Number 1: Sparse and non-sparse authoring on def'd prim
         mesh.CreateDoubleSidedAttr(False, True)
-        self.assertFalse(mesh.GetDoubleSidedAttr().HasAuthoredValueOpinion())
+        self.assertFalse(mesh.GetDoubleSidedAttr().HasAuthoredValue())
         mesh.CreateDoubleSidedAttr(False, False)
-        self.assertTrue(mesh.GetDoubleSidedAttr().HasAuthoredValueOpinion())
+        self.assertTrue(mesh.GetDoubleSidedAttr().HasAuthoredValue())
 
         # Number 2: Sparse authoring demotes to dense for non-defed prim
         overMesh = UsdGeom.Mesh(stage.OverridePrim('/overMesh'))
         overMesh.CreateDoubleSidedAttr(False, True)
-        self.assertTrue(overMesh.GetDoubleSidedAttr().HasAuthoredValueOpinion())
+        self.assertTrue(overMesh.GetDoubleSidedAttr().HasAuthoredValue())
         self.assertEqual(overMesh.GetDoubleSidedAttr().Get(), False)
         overMesh.CreateDoubleSidedAttr(True, True)
         self.assertEqual(overMesh.GetDoubleSidedAttr().Get(), True)
@@ -594,7 +594,7 @@ class TestUsdGeomSchemata(unittest.TestCase):
     def test_TypeUsage(self):
         # Perform Type-Ness Checking for ComputeExtent
         pointsAsList = [(0, 0, 0), (1, 1, 1), (2, 2, 2)]
-        pointsAsVec3fArr = Vt.Vec3fArray(pointsAsList);
+        pointsAsVec3fArr = Vt.Vec3fArray(pointsAsList)
 
         comp = UsdGeom.PointBased.ComputeExtent
         expectedExtent = comp(pointsAsVec3fArr)
@@ -647,16 +647,16 @@ class TestUsdGeomSchemata(unittest.TestCase):
         self.assertEqual([], root.GetAppliedSchemas())
 
         # Check duplicates
-        UsdGeom.MotionAPI.Apply(s, '/hello')
+        UsdGeom.MotionAPI.Apply(root)
         self.assertEqual(['MotionAPI'], root.GetAppliedSchemas())
-        UsdGeom.MotionAPI.Apply(s, '/hello')
+        UsdGeom.MotionAPI.Apply(root)
         self.assertEqual(['MotionAPI'], root.GetAppliedSchemas())
         
         # Ensure duplicates aren't picked up
-        UsdGeom.ModelAPI.Apply(s, '/hello')
+        UsdGeom.ModelAPI.Apply(root)
         self.assertEqual(['MotionAPI', 'GeomModelAPI'], root.GetAppliedSchemas())
 
-    def test_IsA(self):
+    def test_IsATypeless(self):
         from pxr import Usd, Tf
         s = Usd.Stage.CreateInMemory()
         spherePrim = s.DefinePrim('/sphere', typeName='Sphere')
@@ -682,19 +682,15 @@ class TestUsdGeomSchemata(unittest.TestCase):
         prim = s.DefinePrim('/prim')
 
         types = [Tf.Type.FindByName('UsdGeomMotionAPI'),
-                 Tf.Type.FindByName('UsdGeomModelAPI'),
-                 Tf.Type.FindByName('UsdModelAPI')]
+                 Tf.Type.FindByName('UsdGeomModelAPI')]
 
         # Check that no APIs have yet been applied
         for t in types:
             self.assertFalse(prim.HasAPI(t))
 
         # Apply our schemas to this prim
-        UsdGeom.ModelAPI.Apply(s, '/prim')
-        UsdGeom.MotionAPI.Apply(s, '/prim')
-
-        # Note that were applying an ancestor type of UsdGeomModelAPI
-        Usd.ModelAPI.Apply(s, '/prim')
+        UsdGeom.ModelAPI.Apply(prim)
+        UsdGeom.MotionAPI.Apply(prim)
 
         # Check that all our applied schemas show up
         for t in types:
@@ -709,6 +705,10 @@ class TestUsdGeomSchemata(unittest.TestCase):
 
         with self.assertRaises(Tf.ErrorException):
             prim.HasAPI(Tf.Type.FindByName('UsdGeomImageable'))
+
+        with self.assertRaises(Tf.ErrorException):
+            # Test with a non-applied API schema.
+            prim.HasAPI(Tf.Type.FindByName('UsdModelAPI'))
 
 if __name__ == "__main__":
     unittest.main()

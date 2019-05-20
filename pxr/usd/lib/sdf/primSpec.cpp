@@ -43,7 +43,7 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/ostreamMethods.h"
 #include "pxr/base/tf/type.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include <ostream>
 #include <utility>
@@ -560,7 +560,6 @@ SDF_DEFINE_GET_SET(SuffixSubstitutions,  SdfFieldKeys->SuffixSubstitutions,
 
 SDF_DEFINE_GET_SET_HAS_CLEAR(Active,         SdfFieldKeys->Active,       bool)
 SDF_DEFINE_GET_SET_HAS_CLEAR(Kind,           SdfFieldKeys->Kind,    TfToken)
-SDF_DEFINE_GET_SET_HAS_CLEAR(Payload,        SdfFieldKeys->Payload, SdfPayload)
 SDF_DEFINE_GET_SET_HAS_CLEAR(Instanceable,   SdfFieldKeys->Instanceable, bool)
 
 SDF_DEFINE_TYPED_GET_SET(Specifier,  SdfFieldKeys->Specifier,  
@@ -643,6 +642,31 @@ SdfPrimSpec::ClearSpecializesList()
 {
     if (_ValidateEdit(SdfFieldKeys->Specializes)) {
         GetSpecializesList().ClearEdits();
+    }
+}
+
+//
+// Payloads
+//
+
+SdfPayloadsProxy
+SdfPrimSpec::GetPayloadList() const
+{
+    return SdfGetPayloadEditorProxy(
+        SdfCreateHandle(this), SdfFieldKeys->Payload);
+}
+
+bool
+SdfPrimSpec::HasPayloads() const
+{
+    return GetPayloadList().HasKeys();
+}
+
+void
+SdfPrimSpec::ClearPayloadList()
+{
+    if (_ValidateEdit(SdfFieldKeys->Payload)) {
+        GetPayloadList().ClearEdits();
     }
 }
 
@@ -817,7 +841,7 @@ _FindOrCreateVariantSpec(const SdfPrimSpecHandle &primSpec,
 
     // Create a new variant set spec and add it to the variant set list.
     if (!varSetSpec) {
-        if (varSetSpec = SdfVariantSetSpec::New(primSpec, varSel.first))
+        if ((varSetSpec = SdfVariantSetSpec::New(primSpec, varSel.first)))
             primSpec->GetVariantSetNameList().Add(varSel.first);
     }
 

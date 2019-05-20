@@ -26,6 +26,7 @@
 
 #include "pxr/usd/usdUtils/flattenLayerStack.h"
 #include "pxr/usd/sdf/layer.h"
+#include "pxr/base/tf/pyFunction.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/makePyConstructor.h"
@@ -34,11 +35,44 @@ using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+static
+SdfLayerRefPtr
+_UsdUtilsFlattenLayerStack2(
+    const UsdStagePtr &stage, 
+    const std::string& tag)
+{
+    return UsdUtilsFlattenLayerStack(stage, tag);
+}
+
+using Py_UsdUtilsResolveAssetPathSig = std::string(const SdfLayerHandle&, const std::string&);
+using Py_UsdUtilsResolveAssetPathFn = std::function<Py_UsdUtilsResolveAssetPathSig>;
+
+static
+SdfLayerRefPtr
+_UsdUtilsFlattenLayerStack3(
+    const UsdStagePtr &stage,
+    const Py_UsdUtilsResolveAssetPathFn& resolveAssetPathFn,
+    const std::string& tag)
+{
+    return UsdUtilsFlattenLayerStack(stage, resolveAssetPathFn, tag);
+}
+
 void wrapFlattenLayerStack()
 {
     def("FlattenLayerStack",
-        UsdUtilsFlattenLayerStack,
+        &_UsdUtilsFlattenLayerStack2,
         (arg("stage"), arg("tag")=std::string()),
         boost::python::return_value_policy<
         TfPyRefPtrFactory<SdfLayerHandle> >());
+
+    TfPyFunctionFromPython<Py_UsdUtilsResolveAssetPathSig>();
+    def("FlattenLayerStack",
+        &_UsdUtilsFlattenLayerStack3,
+        (arg("stage"), arg("resolveAssetPathFn"), arg("tag")=std::string()),
+        boost::python::return_value_policy<
+        TfPyRefPtrFactory<SdfLayerHandle> >());
+
+    def("FlattenLayerStackResolveAssetPath",
+        UsdUtilsFlattenLayerStackResolveAssetPath,
+        (arg("sourceLayer"), arg("assetPath")));
 }

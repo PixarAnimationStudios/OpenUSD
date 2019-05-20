@@ -48,6 +48,7 @@ enum UsdInterpolationType
     UsdInterpolationTypeLinear ///< Linear interpolation
 };
 
+/// \anchor USD_LINEAR_INTERPOLATION_TYPES
 /// Sequence of value types that support linear interpolation.
 /// These types and VtArrays of these types are supported:
 /// \li <b>GfHalf</b>

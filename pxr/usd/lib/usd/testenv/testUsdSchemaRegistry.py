@@ -89,5 +89,25 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertFalse(Usd.SchemaRegistry.IsConcrete(clipsAPI))
         self.assertFalse(Usd.SchemaRegistry.IsConcrete(collectionAPI))
 
+    def test_IsAppliedAPISchema(self):
+        modelAPI = Tf.Type.FindByName("UsdModelAPI")
+        clipsAPI = Tf.Type.FindByName("UsdClipsAPI")
+        collectionAPI = Tf.Type.FindByName("UsdCollectionAPI")
+
+        self.assertFalse(Usd.SchemaRegistry.IsAppliedAPISchema(modelAPI))
+        self.assertFalse(Usd.SchemaRegistry.IsAppliedAPISchema(clipsAPI))
+        self.assertTrue(Usd.SchemaRegistry.IsAppliedAPISchema(
+                            collectionAPI))
+
+    def test_IsMultipleApplyAPISchema(self):
+        modelAPI = Tf.Type.FindByName("UsdModelAPI")
+        clipsAPI = Tf.Type.FindByName("UsdClipsAPI")
+        collectionAPI = Tf.Type.FindByName("UsdCollectionAPI")
+
+        self.assertFalse(Usd.SchemaRegistry.IsMultipleApplyAPISchema(modelAPI))
+        self.assertFalse(Usd.SchemaRegistry.IsMultipleApplyAPISchema(clipsAPI))
+        self.assertTrue(Usd.SchemaRegistry.IsMultipleApplyAPISchema(
+                            collectionAPI))
+
 if __name__ == "__main__":
     unittest.main()
