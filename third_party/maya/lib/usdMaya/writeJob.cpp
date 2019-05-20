@@ -416,7 +416,7 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     // Perform post-processing for instances, skel, etc.
     // We shouldn't be creating new instance masters after this point, and we
     // want to cleanup the InstanceSources prim before writing model hierarchy.
-    if (!mJobCtx._PostProcess()) {
+    if (!mJobCtx._PostProcess(mDagPathToUsdPathMap)) {
         return false;
     }
 
