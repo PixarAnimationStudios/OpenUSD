@@ -57,7 +57,6 @@ class PcpMapFunction;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(PcpLayerStack);
 TF_DECLARE_WEAK_AND_REF_PTRS(Pcp_LayerStackRegistry);
-TF_DECLARE_REF_PTRS(PcpPayloadDecorator);
 SDF_DECLARE_HANDLES(SdfSpec);
 
 /// \class PcpCache
@@ -102,10 +101,6 @@ public:
     /// for or opening a layer, Pcp will specify \p targetSchema as the layer's
     /// target.
     ///
-    /// If \p payloadDecorator is specified, it will be used when computing
-    /// any prim index. See documentation for \c PcpPayloadDecorator for
-    /// more details.
-    ///
     /// If \p usd is true, computation of prim indices and composition of prim 
     /// child names are performed without relocates, inherits, permissions, 
     /// symmetry, or payloads, and without populating the prim stack and 
@@ -113,9 +108,7 @@ public:
     PCP_API
     PcpCache(const PcpLayerStackIdentifier & layerStackIdentifier,
              const std::string& targetSchema = std::string(),
-             bool usd = false,
-             const PcpPayloadDecoratorRefPtr& payloadDecorator 
-                 = PcpPayloadDecoratorRefPtr());
+             bool usd = false);
     PCP_API ~PcpCache();
 
     /// \name Parameters
@@ -141,11 +134,6 @@ public:
     /// Returns the target schema this cache is configured for.
     PCP_API
     const std::string& GetTargetSchema() const;
-
-    /// Returns the payload decorator used by this cache or NULL if
-    /// this cache does not have one set.
-    PCP_API
-    PcpPayloadDecorator* GetPayloadDecorator() const;
 
     /// Get the list of fallbacks to attempt to use when evaluating
     /// variant sets that lack an authored selection.
@@ -695,10 +683,6 @@ private:
     // Target schema for all scene description layers this cache will
     // find or open during prim index computation.
     const std::string _targetSchema;
-
-    // Reference decorator for this cache. May be NULL if no decorator
-    // was specified in the constructor.
-    PcpPayloadDecoratorRefPtr _payloadDecorator;
 
     // The layer stack for this cache.  Holding this by ref ptr means we
     // hold all of our local layers by ref ptr (including the root and

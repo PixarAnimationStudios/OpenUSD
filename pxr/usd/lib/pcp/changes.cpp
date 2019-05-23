@@ -32,7 +32,6 @@
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/layerStackRegistry.h"
 #include "pxr/usd/pcp/pathTranslation.h"
-#include "pxr/usd/pcp/payloadDecorator.h"
 #include "pxr/usd/pcp/utils.h"
 #include "pxr/usd/sdf/changeList.h"
 #include "pxr/usd/sdf/layer.h"
@@ -278,25 +277,6 @@ Pcp_EntryRequiresPropertyIndexChange(const SdfChangeList::Entry& entry)
     return entry.infoChanged.count(SdfFieldKeys->Permission) != 0;
 }
 
-static bool
-Pcp_MayNeedPrimIndexChangeForDecorator(PcpPayloadDecorator* decorator,
-                                       const SdfLayerHandle& layer,
-                                       const SdfPath& path,
-                                       const SdfChangeList::Entry& entry)
-{
-    if (!decorator) {
-        return false;
-    }
-
-    using _InfoChange = std::pair<TfToken, SdfChangeList::Entry::InfoChange>;
-    for (const _InfoChange& change : entry.infoChanged) {
-        if (decorator->IsFieldRelevantForDecoration(change.first)) {
-            return true;
-        }
-    }
-    return false;
-}
-
 // Returns true if any changed info field in the changelist entry is a
 // field that may be an input used to compute file format arguments for a 
 // dynamic file format used by a prim index in the cache. This is a minimal
@@ -487,7 +467,6 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
     SdfPathVector oldPaths, newPaths;
     SdfPathSet fallbackToAncestorPaths;
 
-    CacheAndLayerPathPairVector payloadDecoratorChanges;
     CacheAndLayerPathPairVector fieldForFileFormatArgumentsChanges;
 
     // As we process each layer below, we'll look for changes that
@@ -569,7 +548,6 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
         oldPaths.clear();
         newPaths.clear();
         fallbackToAncestorPaths.clear();
-        payloadDecoratorChanges.clear();
         fieldForFileFormatArgumentsChanges.clear();
 
         // Loop over each entry on the layer.
@@ -752,35 +730,21 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
                 else {
                     for (const auto& c : cacheLayerStacks) {
                         PcpCache* cache = c.first;
-                        // Existence of a payload decorator in the cache
-                        // disables file formats from generating arguments
-                        // themselves. Decorators will eventually be removed
-                        // completely.
-                        if (PcpPayloadDecorator *decorator = 
-                                cache->GetPayloadDecorator()) {
-                            if (Pcp_MayNeedPrimIndexChangeForDecorator(
-                                    decorator, layer, path, entry)) {
+                        // Gather info changes that may affect dynamic file
+                        // format arguments so we can check dependents on
+                        // these changes later.
+                        if (Pcp_ChangeMayAffectDynamicFileFormatArguments(
+                                cache, entry, debugSummary)) {
+                            PCP_APPEND_DEBUG(
+                                "  Info change on @%s@<%s> may affect file "
+                                "format arguments in cache '%s'\n",
+                                layer->GetIdentifier().c_str(),
+                                path.GetText(),
+                                cache->GetLayerStackIdentifier().rootLayer
+                                    ->GetIdentifier().c_str());
 
-                                payloadDecoratorChanges.push_back(
-                                    CacheAndLayerPathPair(cache, path));
-                            }
-                        } else {
-                            // Gather info changes that may affect dynamic file
-                            // format arguments so we can check dependents on
-                            // these changes later.
-                            if (Pcp_ChangeMayAffectDynamicFileFormatArguments(
-                                    cache, entry, debugSummary)) {
-                                PCP_APPEND_DEBUG(
-                                    "  Info change on @%s@<%s> may affect file "
-                                    "format arguments in cache '%s'\n",
-                                    layer->GetIdentifier().c_str(),
-                                    path.GetText(),
-                                    cache->GetLayerStackIdentifier().rootLayer
-                                        ->GetIdentifier().c_str());
-
-                                fieldForFileFormatArgumentsChanges.push_back(
-                                    CacheAndLayerPathPair(cache, path));
-                            }
+                            fieldForFileFormatArgumentsChanges.push_back(
+                                CacheAndLayerPathPair(cache, path));
                         }
                     }
                 }
@@ -909,26 +873,6 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
                     },
                     debugSummary);
             }
-        }
-
-        // For every (layer, path) site we've found that has a change 
-        // to a field that a cache's payload decorator cares about, find 
-        // all paths in the cache that depend on that site and register a
-        // significant change if the decorator says the field change affects
-        // how it decorates payloads.
-        for (const auto& p : payloadDecoratorChanges) {
-            const bool onlyExistingDependentPaths =
-                fallbackToAncestorPaths.count(p.second) == 0;
-
-            Pcp_DidChangeDependents(
-                p.first, layer, p.second, /*processPrimDescendants*/ false, 
-                onlyExistingDependentPaths, 
-                [&](const PcpDependency &dep) 
-                {
-                    DidChangeFieldsForDecorator(
-                        p.first, dep.indexPath, layer, dep.sitePath, changeList);
-                },
-                debugSummary);
         }
 
         // For every (layer, path) site we've found that has a change 
@@ -1488,34 +1432,6 @@ PcpChanges::DidChangePaths(
                               oldPath.GetText(), newPath.GetText());
 
     _GetCacheChanges(cache).didChangePath[oldPath] = newPath;
-}
-
-void 
-PcpChanges::DidChangeFieldsForDecorator(PcpCache* cache, const SdfPath& path,
-                                        const SdfLayerHandle& changedLayer,
-                                        const SdfPath& changedPath,
-                                        const SdfChangeList& changeList)
-{
-    const SdfChangeList::Entry* changes = 
-        TfMapLookupPtr(changeList.GetEntryList(), changedPath);
-    if (!TF_VERIFY(changes)) {
-        return;
-    }
-
-    PcpPayloadDecorator* decorator = cache->GetPayloadDecorator();
-    if (!TF_VERIFY(decorator)) {
-        return;
-    }
-
-    using _InfoChange = std::pair<TfToken, SdfChangeList::Entry::InfoChange>;
-    for (const _InfoChange& change : changes->infoChanged) {
-        if (decorator->IsFieldRelevantForDecoration(change.first) &&
-            decorator->IsFieldChangeRelevantForDecoration(
-                path, changedLayer, changedPath, change.first, change.second)) {
-            DidChangeSignificantly(cache, path);
-            break;
-        }
-    }
 }
 
 void

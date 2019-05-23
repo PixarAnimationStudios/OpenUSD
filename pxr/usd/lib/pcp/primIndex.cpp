@@ -37,8 +37,6 @@
 #include "pxr/usd/pcp/node_Iterator.h"
 #include "pxr/usd/pcp/primIndex_Graph.h"
 #include "pxr/usd/pcp/primIndex_StackFrame.h"
-#include "pxr/usd/pcp/payloadContext.h"
-#include "pxr/usd/pcp/payloadDecorator.h"
 #include "pxr/usd/pcp/statistics.h"
 #include "pxr/usd/pcp/strengthOrdering.h"
 #include "pxr/usd/pcp/types.h"
@@ -1696,11 +1694,6 @@ _AddArc(
 ////////////////////////////////////////////////////////////////////////
 // References
 
-// Declare helper function for creating PcpPayloadContext, 
-// implemented in payloadContext.cpp
-PcpPayloadContext 
-Pcp_CreatePayloadContext(const PcpNodeRef&, PcpPrimIndex_StackFrame*);
-
 static SdfPath
 _GetDefaultPrimPath(SdfLayerHandle const &layer)
 {
@@ -1709,34 +1702,10 @@ _GetDefaultPrimPath(SdfLayerHandle const &layer)
         SdfPath::AbsoluteRootPath().AppendChild(target) : SdfPath();
 }
 
-// Decorates a payload for payload arcs
-static void
-_ApplyPayloadDecorator(const PcpNodeRef &node,
-                       const Pcp_PrimIndexer &indexer,
-                       const SdfPayload& payload,
-                       SdfLayer::FileFormatArguments *args)
-{
-    PcpPayloadContext payloadCtx = Pcp_CreatePayloadContext(
-        node, indexer.previousFrame);
-    indexer.inputs.payloadDecorator->
-        DecoratePayload(indexer.rootSite.path, payload, payloadCtx, args);
-}
-
-// Define a no op payload decorate function for SdfReference so that 
-// _EvalRefOrPayloadArcs can compile for references.
-static void
-_ApplyPayloadDecorator(const PcpNodeRef &, 
-                       const Pcp_PrimIndexer &,
-                       const SdfReference&,
-                       SdfLayer::FileFormatArguments *)
-{
-    // Do nothing
-}
-
 // Declare helper function for creating PcpDynamicFileFormatContext, 
 // implemented in dynamicFileFormatContext.cpp
 PcpDynamicFileFormatContext
-Pcp_CreateComposeFieldContext(
+Pcp_CreateDynamicFileFormatContext(
     const PcpNodeRef &, PcpPrimIndex_StackFrame *, TfToken::Set *);
 
 // Generates dynamic file format arguments for a payload's asset path if the 
@@ -1760,7 +1729,7 @@ _ComposeFieldsForFileFormatArguments(const PcpNodeRef &node,
         // state of the index. This context will also populate a list of the
         // fields that it composed for dependency tracking
         TfToken::Set composedFieldNames;
-        PcpDynamicFileFormatContext context = Pcp_CreateComposeFieldContext(
+        PcpDynamicFileFormatContext context = Pcp_CreateDynamicFileFormatContext(
             node, indexer.previousFrame, &composedFieldNames);
         // Ask the file format to generate dynamic file format arguments for 
         // the asset in this context.
@@ -1874,14 +1843,10 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
             }
 
             SdfLayer::FileFormatArguments args;
-            // Existence of a payload decorator disables dynamic file format
-            // arguments. Decorators will eventually be removed.
-            if (indexer->inputs.payloadDecorator) {
-                _ApplyPayloadDecorator(node, *indexer, refOrPayload, &args);
-            } else {
-                _ComposeFieldsForFileFormatArguments(
-                    node, *indexer, refOrPayload, &args);
-            }
+            // Compose any file format arguments that may come from the asset
+            // file format if it's dynamic.
+            _ComposeFieldsForFileFormatArguments(
+                node, *indexer, refOrPayload, &args);
             Pcp_GetArgumentsForTargetSchema(
                 refOrPayload.GetAssetPath(), 
                 indexer->inputs.targetSchema, &args);

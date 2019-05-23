@@ -60,7 +60,6 @@ class PcpCache;
 class PcpPrimIndex;
 class PcpPrimIndexInputs;
 class PcpPrimIndexOutputs;
-class PcpPayloadDecorator;
 class SdfPath;
 
 /// \class PcpPrimIndex
@@ -329,7 +328,6 @@ public:
         , includedPayloads(nullptr)
         , includedPayloadsMutex(nullptr)
         , parentIndex(nullptr)
-        , payloadDecorator(nullptr)
         , cull(true)
         , usd(false) 
     { }
@@ -342,11 +340,6 @@ public:
     /// needed intermediate results.
     PcpPrimIndexInputs& Cache(PcpCache* cache_)
     { cache = cache_; return *this; }
-
-    /// If supplied, the given PcpPayloadDecorator will be invoked when
-    /// processing a payload arc.
-    PcpPrimIndexInputs& PayloadDecorator(PcpPayloadDecorator* decorator)
-    { payloadDecorator = decorator; return *this; }
 
     /// Ordered list of variant names to use for the "standin" variant set
     /// if there is no authored opinion in scene description.
@@ -395,7 +388,6 @@ public:
     std::function<bool (const SdfPath &)> includePayloadPredicate;
     const PcpPrimIndex *parentIndex;
     std::string targetSchema;
-    PcpPayloadDecorator* payloadDecorator;
     bool cull;
     bool usd;
 };

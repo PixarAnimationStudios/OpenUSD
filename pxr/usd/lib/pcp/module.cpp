@@ -44,6 +44,5 @@ TF_WRAP_MODULE
     TF_WRAP( PropertyIndex );
     TF_WRAP( Site );
     TF_WRAP( TestChangeProcessor );
-    TF_WRAP( TestPayloadDecorator );
     TF_WRAP( Types );
 }

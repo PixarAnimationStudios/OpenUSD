@@ -39,8 +39,6 @@ pxr_library(pcp
         namespaceEdits
         node
         pathTranslation
-        payloadContext
-        payloadDecorator
         primIndex
         propertyIndex
         site
@@ -83,7 +81,6 @@ pxr_library(pcp
         wrapPropertyIndex.cpp
         wrapSite.cpp
         wrapTestChangeProcessor.cpp
-        wrapTestPayloadDecorator.cpp
         wrapTypes.cpp
 
     PYMODULE_FILES
@@ -96,7 +93,6 @@ pxr_test_scripts(
     testenv/testPcpInstanceKey.py
     testenv/testPcpLayerMuting.py
     testenv/testPcpDependencies.py
-    testenv/testPcpPayloadDecorator.py
     testenv/testPcpPathTranslation.py
     testenv/testPcpDynamicFileFormatPlugin.py
     testenv/testPcpMapFunction.py
@@ -225,11 +221,6 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testPcpPathTranslation.testenv
     DEST testPcpPathTranslation
-)
-
-pxr_install_test_dir(
-    SRC testenv/testPcpPayloadDecorator.testenv
-    DEST testPcpPayloadDecorator
 )
 
 pxr_install_test_dir(
@@ -1486,12 +1477,6 @@ pxr_register_test(testPcpPathTranslation
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpPathTranslation"
     EXPECTED_RETURN_CODE 0
-)
-
-pxr_register_test(testPcpPayloadDecorator
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpPayloadDecorator"
-    EXPECTED_RETURN_CODE 0  
 )
 
 pxr_register_test(testPcpDynamicFileFormatPlugin

@@ -246,11 +246,12 @@ PcpDynamicFileFormatContext::ComposeValueStack(
 // "Private" function for creating a PcpDynamicFileFormatContext; should only
 // be used by prim indexing.
 PcpDynamicFileFormatContext
-Pcp_CreateComposeFieldContext(const PcpNodeRef &parentNode, 
-                              PcpPrimIndex_StackFrame *previousFrame,
-                              TfToken::Set *composedFieldNames)
+Pcp_CreateDynamicFileFormatContext(const PcpNodeRef &parentNode, 
+                                   PcpPrimIndex_StackFrame *previousFrame,
+                                   TfToken::Set *composedFieldNames)
 {
-    return PcpDynamicFileFormatContext(parentNode, previousFrame, composedFieldNames);
+    return PcpDynamicFileFormatContext(
+        parentNode, previousFrame, composedFieldNames);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

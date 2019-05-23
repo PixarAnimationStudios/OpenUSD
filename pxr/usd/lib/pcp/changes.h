@@ -262,16 +262,6 @@ public:
     void DidChangePaths(PcpCache* cache,
                         const SdfPath& oldPath, const SdfPath& newPath);
 
-    /// The changes in \p changes to the prim spec at \p changePath in 
-    /// \p changedLayer may affect the payload decoration for the composed
-    /// prim at \p path in \p cache.  If this is the case, register a
-    /// significant change for that composed prim.
-    PCP_API 
-    void DidChangeFieldsForDecorator(PcpCache* cache, const SdfPath& path,
-                                     const SdfLayerHandle& changedLayer,
-                                     const SdfPath& changedPath,
-                                     const SdfChangeList& changes);
-
     /// Remove any changes for \p cache.
     PCP_API
     void DidDestroyCache(PcpCache* cache);

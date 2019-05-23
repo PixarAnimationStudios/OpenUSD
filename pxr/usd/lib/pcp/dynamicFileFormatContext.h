@@ -86,7 +86,7 @@ private:
         PcpPrimIndex_StackFrame *previousFrame,
         TfToken::Set *composedFieldNames);
     /// Access to private constructor. Should only be called by prim indexing.
-    friend PcpDynamicFileFormatContext Pcp_CreateComposeFieldContext(
+    friend PcpDynamicFileFormatContext Pcp_CreateDynamicFileFormatContext(
         const PcpNodeRef &, PcpPrimIndex_StackFrame *, TfToken::Set *);
 
     /// Returns whether the given \p field is allowed to be used to generate
