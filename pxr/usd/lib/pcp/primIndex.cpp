@@ -1718,7 +1718,7 @@ _ComposeFieldsForFileFormatArguments(const PcpNodeRef &node,
 {
     SdfFileFormatConstPtr fileFormat = SdfFileFormat::FindByExtension(
         SdfFileFormat::GetFileExtension(payload.GetAssetPath()),
-        indexer.inputs.targetSchema);
+        indexer.inputs.fileFormatTarget);
     if (!fileFormat) {
         return;
     }
@@ -1847,9 +1847,9 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
             // file format if it's dynamic.
             _ComposeFieldsForFileFormatArguments(
                 node, *indexer, refOrPayload, &args);
-            Pcp_GetArgumentsForTargetSchema(
+            Pcp_GetArgumentsForFileFormatTarget(
                 refOrPayload.GetAssetPath(), 
-                indexer->inputs.targetSchema, &args);
+                indexer->inputs.fileFormatTarget, &args);
 
             TfErrorMark m;
 

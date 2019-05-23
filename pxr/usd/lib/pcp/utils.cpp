@@ -42,38 +42,38 @@ _TargetIsSpecifiedInIdentifier(
 }
 
 SdfLayer::FileFormatArguments 
-Pcp_GetArgumentsForTargetSchema(
+Pcp_GetArgumentsForFileFormatTarget(
     const std::string& identifier,
-    const std::string& targetSchema)
+    const std::string& target)
 {
     SdfLayer::FileFormatArguments args;
-    Pcp_GetArgumentsForTargetSchema(identifier, targetSchema, &args);
+    Pcp_GetArgumentsForFileFormatTarget(identifier, target, &args);
     return args;
 }
 
 void 
-Pcp_GetArgumentsForTargetSchema(
+Pcp_GetArgumentsForFileFormatTarget(
     const std::string& identifier,
-    const std::string& targetSchema,
+    const std::string& target,
     SdfLayer::FileFormatArguments* args)
 {
-    if (!targetSchema.empty() && !_TargetIsSpecifiedInIdentifier(identifier)) {
-        (*args)[SdfFileFormatTokens->TargetArg] = targetSchema;
+    if (!target.empty() && !_TargetIsSpecifiedInIdentifier(identifier)) {
+        (*args)[SdfFileFormatTokens->TargetArg] = target;
     }
 }
 
 SdfLayer::FileFormatArguments 
-Pcp_GetArgumentsForTargetSchema(
-    const std::string& targetSchema)
+Pcp_GetArgumentsForFileFormatTarget(
+    const std::string& target)
 {
-    if (targetSchema.empty()) {
+    if (target.empty()) {
         return {};
     }
-    return {{ SdfFileFormatTokens->TargetArg, targetSchema }};
+    return {{ SdfFileFormatTokens->TargetArg, target }};
 }
 
 const SdfLayer::FileFormatArguments&
-Pcp_GetArgumentsForTargetSchema(
+Pcp_GetArgumentsForFileFormatTarget(
     const std::string& identifier,
     const SdfLayer::FileFormatArguments* defaultArgs,
     SdfLayer::FileFormatArguments* localArgs)

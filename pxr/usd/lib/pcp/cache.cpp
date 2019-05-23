@@ -110,14 +110,14 @@ private:
 
 PcpCache::PcpCache(
     const PcpLayerStackIdentifier & layerStackIdentifier,
-    const std::string& targetSchema,
+    const std::string& fileFormatTarget,
     bool usd) :
     _rootLayer(layerStackIdentifier.rootLayer),
     _sessionLayer(layerStackIdentifier.sessionLayer),
     _pathResolverContext(layerStackIdentifier.pathResolverContext),
     _usd(usd),
-    _targetSchema(targetSchema),
-    _layerStackCache(Pcp_LayerStackRegistry::New(_targetSchema, _usd)),
+    _fileFormatTarget(fileFormatTarget),
+    _layerStackCache(Pcp_LayerStackRegistry::New(_fileFormatTarget, _usd)),
     _primDependencies(new Pcp_Dependencies())
 {
     // Do nothing
@@ -201,9 +201,9 @@ PcpCache::IsUsd() const
 }
 
 const std::string& 
-PcpCache::GetTargetSchema() const
+PcpCache::GetFileFormatTarget() const
 {
-    return _targetSchema;
+    return _fileFormatTarget;
 }
 
 PcpVariantFallbackMap
@@ -385,7 +385,7 @@ PcpCache::GetPrimIndexInputs()
         .VariantFallbacks(&_variantFallbackMap)
         .IncludedPayloads(&_includedPayloads)
         .Cull(TfGetEnvSetting(PCP_CULLING))
-        .TargetSchema(_targetSchema);
+        .FileFormatTarget(_fileFormatTarget);
 }
 
 PcpLayerStackRefPtr

@@ -48,8 +48,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class Pcp_LayerStackRegistryData {
 public:
     Pcp_LayerStackRegistryData(
-        const std::string& targetSchema_, bool isUsd) 
-        : targetSchema(targetSchema_)
+        const std::string& fileFormatTarget_, bool isUsd) 
+        : fileFormatTarget(fileFormatTarget_)
         , isUsd(isUsd)
     { }
 
@@ -74,7 +74,7 @@ public:
     LayerStackToMutedLayerIdentifiers layerStackToMutedLayerIdentifiers;
 
     const PcpLayerStackPtrVector empty;
-    const std::string targetSchema;
+    const std::string fileFormatTarget;
     bool isUsd;
     Pcp_MutedLayers mutedLayers;
 
@@ -82,14 +82,14 @@ public:
 };
 
 Pcp_LayerStackRegistryRefPtr
-Pcp_LayerStackRegistry::New(const std::string& targetSchema, bool isUsd)
+Pcp_LayerStackRegistry::New(const std::string& fileFormatTarget, bool isUsd)
 {
-    return TfCreateRefPtr(new Pcp_LayerStackRegistry(targetSchema, isUsd));
+    return TfCreateRefPtr(new Pcp_LayerStackRegistry(fileFormatTarget, isUsd));
 }
 
 Pcp_LayerStackRegistry::Pcp_LayerStackRegistry(
-    const std::string& targetSchema, bool isUsd)
-    : _data(new Pcp_LayerStackRegistryData(targetSchema, isUsd))
+    const std::string& fileFormatTarget, bool isUsd)
+    : _data(new Pcp_LayerStackRegistryData(fileFormatTarget, isUsd))
 {
     // Do nothing
 }
@@ -153,7 +153,8 @@ Pcp_LayerStackRegistry::FindOrCreate(const PcpLayerStackIdentifier& identifier,
 
         PcpLayerStackRefPtr refLayerStack =
             TfCreateRefPtr(new PcpLayerStack(
-                identifier, _GetTargetSchema(), _GetMutedLayers(), _IsUsd()));
+                identifier, _GetFileFormatTarget(), _GetMutedLayers(), 
+                _IsUsd()));
 
         // Take the lock and see if we get to install the layerstack.
         lock.acquire(_data->mutex);
@@ -297,9 +298,9 @@ Pcp_LayerStackRegistry::_SetLayers(const PcpLayerStack* layerStack)
 }
 
 const std::string&
-Pcp_LayerStackRegistry::_GetTargetSchema() const
+Pcp_LayerStackRegistry::_GetFileFormatTarget() const
 {
-    return _data->targetSchema;
+    return _data->fileFormatTarget;
 }
 
 bool

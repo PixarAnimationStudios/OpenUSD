@@ -78,8 +78,8 @@ SDF_DECLARE_HANDLES(SdfSpec);
 ///     prims should have their payloads included during composition;
 ///     this is the basis for explicit control over the "working set"
 ///     of composition
-/// \li target schema: the target schema that Pcp will request when
-///     opening scene description layers
+/// \li file format target: the file format target that Pcp will request
+///     when opening scene description layers
 /// \li "USD mode" configures the Pcp composition algorithm to provide
 ///     only a custom, lighter subset of the full feature set, as needed
 ///     by the Universal Scene Description system
@@ -96,10 +96,8 @@ public:
     /// Construct a PcpCache to compose results for the layer stack identified
     /// by \a layerStackIdentifier. 
     /// 
-    /// If \p targetSchema is specified, Pcp will require all scene description
-    /// layers it encounters to adhere to the identified schema. When searching
-    /// for or opening a layer, Pcp will specify \p targetSchema as the layer's
-    /// target.
+    /// If \p fileFormatTarget is given, Pcp will specify \p fileFormatTarget
+    /// as the file format target when searching for or opening a layer.
     ///
     /// If \p usd is true, computation of prim indices and composition of prim 
     /// child names are performed without relocates, inherits, permissions, 
@@ -107,7 +105,7 @@ public:
     /// gathering its dependencies.
     PCP_API
     PcpCache(const PcpLayerStackIdentifier & layerStackIdentifier,
-             const std::string& targetSchema = std::string(),
+             const std::string& fileFormatTarget = std::string(),
              bool usd = false);
     PCP_API ~PcpCache();
 
@@ -131,9 +129,9 @@ public:
     PCP_API
     bool IsUsd() const;
 
-    /// Returns the target schema this cache is configured for.
+    /// Returns the file format target this cache is configured for.
     PCP_API
-    const std::string& GetTargetSchema() const;
+    const std::string& GetFileFormatTarget() const;
 
     /// Get the list of fallbacks to attempt to use when evaluating
     /// variant sets that lack an authored selection.
@@ -680,9 +678,9 @@ private:
     // prim indices and composition of prim child names.
     const bool _usd;
 
-    // Target schema for all scene description layers this cache will
+    // File format target for all scene description layers this cache will
     // find or open during prim index computation.
-    const std::string _targetSchema;
+    const std::string _fileFormatTarget;
 
     // The layer stack for this cache.  Holding this by ref ptr means we
     // hold all of our local layers by ref ptr (including the root and
