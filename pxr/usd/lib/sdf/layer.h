@@ -43,6 +43,7 @@
 
 #include <boost/optional.hpp>
 
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <set>
@@ -737,7 +738,7 @@ public:
     /// Callback function for Traverse. This callback will be invoked with
     /// the path of each spec that is visited.
     /// \sa Traverse
-    typedef boost::function<void(const SdfPath&)> TraversalFunction;
+    typedef std::function<void(const SdfPath&)> TraversalFunction;
 
     // Traverse will perform a traversal of the scene description hierarchy
     // rooted at \a path, calling \a func on each spec that it finds.
