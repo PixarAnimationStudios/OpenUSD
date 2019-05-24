@@ -242,10 +242,12 @@ UsdSkelAnimMapper::Remap(const Container& source,
 
         for (size_t i = 0; i < copyCount; ++i) {
             int targetIdx = indexMap[i];
-            if (targetIdx >= 0 && targetIdx < target->size()) {
+            if (targetIdx >= 0 && 
+                    static_cast<size_t>(targetIdx) < target->size()) {
                 TF_DEV_AXIOM(i*elementSize < source.size());
                 TF_DEV_AXIOM((i+1)*elementSize <= source.size());
-                TF_DEV_AXIOM((targetIdx+1)*elementSize <= target->size());
+                TF_DEV_AXIOM(static_cast<size_t>((targetIdx+1)*elementSize) 
+                                <= target->size());
                 std::copy(sourceData + i*elementSize,
                           sourceData + (i+1)*elementSize,
                           targetData + targetIdx*elementSize);
