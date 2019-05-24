@@ -120,8 +120,6 @@ typedef std::shared_ptr<SdfPathVector> HdIdVectorSharedPtr;
 class HdRenderIndex final : public boost::noncopyable {
 public:
     typedef std::vector<HdDrawItem const*> HdDrawItemPtrVector;
-    typedef std::unordered_map<TfToken, HdDrawItemPtrVector,
-                               boost::hash<TfToken> > HdDrawItemView;
 
     /// Create a render index with the given render delegate.
     /// Returns null if renderDelegate is null.
@@ -174,12 +172,13 @@ public:
     /// \name Execution
     // ---------------------------------------------------------------------- //
 
-    /// Returns a tag based grouping of the list of relevant draw items for the 
-    /// collection.
+    /// Returns a list of relevant draw items that match the criteria specified
+    //  by renderTags and collection.
     /// The is typically called during render pass execution, which is the 
     /// final phase in the Hydra's execution. See HdRenderPass::Execute
     HD_API
-    HdDrawItemView GetDrawItems(HdRprimCollection const& collection);
+    HdDrawItemPtrVector GetDrawItems(HdRprimCollection const& collection,
+                                     TfTokenVector const& renderTags);
 
     // ---------------------------------------------------------------------- //
     /// \name Change Tracker
@@ -473,7 +472,7 @@ private:
 
     void _GatherRenderTags(const HdTaskSharedPtrVector *tasks);
 
-    typedef tbb::enumerable_thread_specific<HdRenderIndex::HdDrawItemView>
+    typedef tbb::enumerable_thread_specific<HdDrawItemPtrVector>
                                                            _ConcurrentDrawItems;
 
     void _AppendDrawItems(const SdfPathVector &rprimIds,

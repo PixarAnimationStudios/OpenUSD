@@ -109,17 +109,10 @@ public:
     /// \name Execution
     // ---------------------------------------------------------------------- //
 
-    /// Execute all of the buckets in this renderpass.
-    HD_API
-    void Execute(HdRenderPassStateSharedPtr const &renderPassState);
     /// Execute a subset of buckets of this renderpass.
     HD_API
     void Execute(HdRenderPassStateSharedPtr const &renderPassState,
                  TfTokenVector const &renderTags);
-    /// Execute a single bucket of this renderpass.
-    HD_API
-    void Execute(HdRenderPassStateSharedPtr const &renderPassState,
-                 TfToken const &renderTag);
 
     // ---------------------------------------------------------------------- //
     /// \name Optional API hooks for progressive rendering

@@ -80,7 +80,7 @@ public:
     virtual void Execute(HdTaskContext* ctx) override
     {
         _renderPassState->Bind();
-        _renderPass->Execute(_renderPassState);
+        _renderPass->Execute(_renderPassState, GetRenderTags());
         _renderPassState->Unbind();
     }
 

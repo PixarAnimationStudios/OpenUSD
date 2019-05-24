@@ -367,7 +367,7 @@ HdxDrawTargetTask::Execute(HdTaskContext* ctx)
         HdStRenderPassStateSharedPtr renderPassState =
             _renderPassesInfo[renderPassIdx].renderPassState;
         renderPassState->Bind();
-        renderPass->Execute(renderPassState);
+        renderPass->Execute(renderPassState, GetRenderTags());
         renderPassState->Unbind();
     }
 

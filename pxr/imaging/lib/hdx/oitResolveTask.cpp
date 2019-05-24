@@ -171,7 +171,7 @@ HdxOitResolveTask::Execute(HdTaskContext* ctx)
 
     glDisable(GL_DEPTH_TEST);
 
-    _renderPass->Execute(_renderPassState);
+    _renderPass->Execute(_renderPassState, GetRenderTags());
 
     glEnable(GL_DEPTH_TEST);
 

@@ -100,21 +100,6 @@ HdRenderPass::SetRprimCollection(HdRprimCollection const& col)
 }
 
 void
-HdRenderPass::Execute(HdRenderPassStateSharedPtr const &renderPassState)
-{
-    TfTokenVector renderTags = {};
-    _Execute(renderPassState, renderTags);
-}
-
-void
-HdRenderPass::Execute(HdRenderPassStateSharedPtr const &renderPassState,
-                      TfToken const &renderTag)
-{
-    TfTokenVector renderTags = { renderTag };
-    _Execute(renderPassState, renderTags);
-}
-
-void
 HdRenderPass::Execute(HdRenderPassStateSharedPtr const &renderPassState,
                       TfTokenVector const &renderTags)
 {

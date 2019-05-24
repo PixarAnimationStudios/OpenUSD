@@ -436,21 +436,13 @@ HdxPickTask::Execute(HdTaskContext* ctx)
 
     if (_UseOcclusionPass()) {
         _occluderRenderPassState->Bind();
-        if (_params.renderTags.size() > 0) {
-            _occluderRenderPass->Execute(_occluderRenderPassState,
-                                         _params.renderTags);
-        } else {
-            _occluderRenderPass->Execute(_occluderRenderPassState);
-        }
+        _occluderRenderPass->Execute(_occluderRenderPassState,
+                                     GetRenderTags());
         _occluderRenderPassState->Unbind();
     }
     _pickableRenderPassState->Bind();
-    if (_params.renderTags.size() > 0) {
-        _pickableRenderPass->Execute(_pickableRenderPassState,
-                                     _params.renderTags);
-    } else {
-        _pickableRenderPass->Execute(_pickableRenderPassState);
-    }
+    _pickableRenderPass->Execute(_pickableRenderPassState,
+                                 GetRenderTags());
     _pickableRenderPassState->Unbind();
 
     glDisable(GL_STENCIL_TEST);
@@ -543,6 +535,12 @@ HdxPickTask::Execute(HdTaskContext* ctx)
         TF_CODING_ERROR("Unrecognized interesection mode '%s'",
             _contextParams.resolveMode.GetText());
     }
+}
+
+const TfTokenVector &
+HdxPickTask::GetRenderTags() const
+{
+    return _params.renderTags;
 }
 
 HdxPickResult::HdxPickResult(

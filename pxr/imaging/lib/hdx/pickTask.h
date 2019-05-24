@@ -187,6 +187,9 @@ public:
     HDX_API
     virtual void Execute(HdTaskContext* ctx) override;
 
+    HDX_API
+    virtual const TfTokenVector &GetRenderTags() const override;
+
     /// Utility: Given a UNorm8Vec4 pixel, unpack it into an int32 ID.
     static inline int DecodeIDRenderColor(unsigned char const idColor[4]) {
         return (int32_t(idColor[0] & 0xff) << 0)  |
