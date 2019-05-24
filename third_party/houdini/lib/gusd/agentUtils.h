@@ -134,46 +134,6 @@ GusdReadSkinnablePrims(const UsdSkelBinding& binding,
                        UT_ErrorSeverity sev=UT_ERROR_WARNING);
 
 
-/// Helper for writing out a rig, shape library and layer, for 
-/// the skinnable primitives in \p binding.
-///
-/// The Skeleton primitive is converted to a GU_AgentRig, and written to
-/// \p rigFile.
-///
-/// Each skinnable primitive is converted to a shape inside of a
-/// GU_AgentShapeLibrary, with the shape named according to the prim path.
-/// The resulting shape library is written to \p shapeLibFile.
-///
-/// Finally, a new GU_AgentLayer, named \p layerName, is created for the full
-/// set of shapes in the shape library. The layer is saved as \p layerFile.
-///
-/// @warning: This is a *TEMPORARY* method to facilitate conversion of UsdSkel
-/// based assets to GU agents for testing purposes. This method may be removed
-/// in a future release of Gusd, when more robust import mechanisms have been
-/// put in place.
-bool
-GusdWriteAgentFiles(const UsdSkelBinding& binding,
-                    const char* rigFile,
-                    const char* shapeLibFile,
-                    const char* layerFile,
-                    const char* layerName="default");
-
-
-/// Helper for writing out a shape library, consisting of a single shape
-/// resulting from coalescing all prims in \p binding.
-///
-/// The name of the single shape in the shape lib is given by \p shapeName.
-///
-/// @warning: This is a *TEMPORARY* method to facilitate conversion of UsdSkel
-/// based assets to GU agents for testing purposes. This method may be removed
-/// in a future release of Gusd, when more robust import mechanisms have been
-/// put in place.
-bool
-GusdWriteCoalescedShapeLib(const UsdSkelBinding& binding,
-                           const char* shapeLibFile,
-                           const char* shapeName);
-
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GUSD_AGENTUTILS_H
