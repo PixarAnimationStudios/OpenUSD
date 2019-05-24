@@ -695,25 +695,6 @@ UsdMayaGLBatchRenderer::Draw(
     }
 }
 
-void UsdMayaGLBatchRenderer::DrawCustomCollection(
-        const HdRprimCollection& collection,
-        const GfMatrix4d& viewMatrix,
-        const GfMatrix4d& projectionMatrix,
-        const GfVec4d& viewport,
-        const PxrMayaHdRenderParams& params)
-{
-    // Custom collection implementation.
-
-    PxrMayaHdRenderParams paramsCopy = params;
-    paramsCopy.customBucketName = collection.GetName();
-    std::vector<_RenderItem> items = {
-        {paramsCopy, HdRprimCollectionVector({collection})}
-    };
-
-    // Currently, we're just using the existing lighting settings.
-    _Render(viewMatrix, projectionMatrix, viewport, items);
-}
-
 GfVec2i
 UsdMayaGLBatchRenderer::GetSelectionResolution() const
 {

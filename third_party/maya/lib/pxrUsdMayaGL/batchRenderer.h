@@ -170,19 +170,6 @@ public:
             const MHWRender::MDrawContext& context,
             const MUserData* userData);
 
-    /// Render the contents of the given custom collection (previously obtained
-    /// via PopulateCustomCollection).
-    /// The caller is responsible for ensuring that an appropriate OpenGL
-    /// context is available; this function is not appropriate for drawing into
-    /// the native Maya viewport.
-    PXRUSDMAYAGL_API
-    void DrawCustomCollection(
-            const HdRprimCollection& collection,
-            const GfMatrix4d& viewMatrix,
-            const GfMatrix4d& projectionMatrix,
-            const GfVec4d& viewport,
-            const PxrMayaHdRenderParams& params = PxrMayaHdRenderParams());
-
     /// Gets the resolution of the draw target used for computing selections.
     ///
     /// The resolution is specified as (width, height).
