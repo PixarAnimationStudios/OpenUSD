@@ -124,6 +124,10 @@ void wrapEngine()
             .def("GetRprimPathFromPrimId", 
                     &UsdImagingGLEngine::GetRprimPathFromPrimId)
             .def("GetPrimPathFromInstanceIndex", &_GetPrimPathFromInstanceIndex)
+            .def("ConvertCachePathToIndexPath",
+                    &UsdImagingGLEngine::ConvertCachePathToIndexPath)
+            .def("ConvertIndexPathToCachePath",
+                    &UsdImagingGLEngine::ConvertIndexPathToCachePath)
             .def("TestIntersection", &_TestIntersection)
             .def("IsHydraEnabled", &UsdImagingGLEngine::IsHydraEnabled)
                 .staticmethod("IsHydraEnabled")
