@@ -1404,7 +1404,7 @@ static void _EmitFVarGSAccessor(
 
             TF_CODING_ERROR("Face varing bindings for unexpected for" 
                             " HdSt_GeometricShader::PrimitiveType %d", 
-                            primType);
+                            (int)primType);
         }
     }
 
@@ -2071,7 +2071,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
                 {
                     TF_CODING_ERROR("HdSt_GeometricShader::PrimitiveType %d is "
                       "unexpected in _GenerateElementPrimvar().",
-                      _geometricShader->GetPrimitiveType());
+                      (int)_geometricShader->GetPrimitiveType());
                 }
             }
 
@@ -2112,7 +2112,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
         else {
             TF_CODING_ERROR("HdSt_GeometricShader::PrimitiveType %d is "
                   "unexpected in _GenerateElementPrimvar().",
-                  _geometricShader->GetPrimitiveType());
+                  (int)_geometricShader->GetPrimitiveType());
         }
     } else {
         // no primitiveParamBinding
