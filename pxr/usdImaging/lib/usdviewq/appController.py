@@ -726,7 +726,7 @@ class AppController(QtCore.QObject):
 
             self._ui.primView.expanded.connect(self._primViewExpanded)
 
-            self._ui.frameSlider.valueChanged.connect(self.setFrame)
+            self._ui.frameSlider.valueChanged.connect(self._setFrameIndex)
             self._ui.frameSlider.sliderMoved.connect(self._sliderMoved)
             self._ui.frameSlider.sliderReleased.connect(self._updateGUIForFrameChange)
 
@@ -1207,7 +1207,17 @@ class AppController(QtCore.QObject):
         self._ui.stageBegin.setText(str(stageStartTimeCode))
         self._ui.stageEnd.setText(str(stageEndTimeCode))
 
+        # Use a valid current frame supplied by user, or allow _UpdateTimeSamples
+        # to set the current frame.
+        cf = self._parserData.currentframe
+        if cf:
+            if (cf < self.realStartTimeCode or cf > self.realEndTimeCode):
+                sys.stderr.write('Warning: Invalid current frame specified (%s)\n' % (cf))
+            else:
+                self._dataModel.currentFrame = Usd.TimeCode(cf)
+        
         self._UpdateTimeSamples(resetStageDataOnly)
+
 
     def _UpdateTimeSamples(self, resetStageDataOnly=False):
         if self.realStartTimeCode is not None and self.realEndTimeCode is not None:
@@ -1229,11 +1239,15 @@ class AppController(QtCore.QObject):
         if self._hasTimeSamples:
             self._ui.rangeBegin.setText(str(self._timeSamples[0]))
             self._ui.rangeEnd.setText(str(self._timeSamples[-1]))
-
+            if ( self._dataModel.currentFrame.IsDefault() or
+                 self._dataModel.currentFrame < self._timeSamples[0] ):
+                self._dataModel.currentFrame = Usd.TimeCode(self._timeSamples[0])
+            if self._dataModel.currentFrame > self._timeSamples[-1]:
+                self._dataModel.currentFrame = Usd.TimeCode(self._timeSamples[-1])
+        else:
+            self._dataModel.currentFrame = Usd.TimeCode(0.0)
+        
         if not resetStageDataOnly:
-            self._dataModel.currentFrame = (
-                Usd.TimeCode(self._timeSamples[0])
-                if self._hasTimeSamples else Usd.TimeCode(0.0))
             self._ui.frameField.setText(
                 str(self._dataModel.currentFrame.GetValue()))
 
@@ -1816,7 +1830,7 @@ class AppController(QtCore.QObject):
             int: The closest matching frame index or 0 if one cannot be
             found.
         """
-        closestIndex = int((timeSample - self._timeSamples[0]) / self.step)
+        closestIndex = int(round((timeSample - self._timeSamples[0]) / self.step))
 
         # Bounds checking
         # 0 <= closestIndex <= number of time samples - 1
@@ -1844,19 +1858,12 @@ class AppController(QtCore.QObject):
             self._UpdateTimeSamples(resetStageDataOnly=False)
 
     def _frameStringChanged(self):
-        timeSample = float(self._ui.frameField.text())
-        indexOfFrame = self._findClosestFrameIndex(timeSample)
-
-        if (indexOfFrame != Usd.TimeCode.Default()):
-            self.setFrame(indexOfFrame, forceUpdate=True)
-            self._ui.frameSlider.setValue(indexOfFrame)
-
-        self._ui.frameField.setText(
-            str(self._dataModel.currentFrame.GetValue()))
+        value = float(self._ui.frameField.text())
+        self.setFrame(value)
 
     def _sliderMoved(self, frameIndex):
         """Slot called when the frame slider is moved by a user.
-        
+
         Args:
             frameIndex (int): The new frame index value.
         """
@@ -3187,32 +3194,36 @@ class AppController(QtCore.QObject):
         self.contextMenu = PrimContextMenu(self._mainWindow, item, self)
         self.contextMenu.exec_(QtGui.QCursor.pos())
 
-    def setFrame(self, frameIndex, forceUpdate=False):
-        frameAtStart = self._dataModel.currentFrame
+    def setFrame(self, frame):
+        """Set the `frame`.
 
-        frame = self._timeSamples[int(frameIndex)]
-        if self._dataModel.currentFrame.GetValue() != frame:
-            minDist = 1.0e30
-            closestFrame = None
-            for t in self._timeSamples:
-                dist = abs(t - frame)
-                if dist < minDist:
-                    minDist = dist
-                    closestFrame = t
+        Args:
+            frame (float): The new frame value.
+        """
+        frameIndex = self._findClosestFrameIndex(frame)
+        self._setFrameIndex(frameIndex)
 
-            if closestFrame is None:
-                return
+    def _setFrameIndex(self, frameIndex):
+        """Set the `frameIndex`.
 
-            self._dataModel.currentFrame = Usd.TimeCode(closestFrame)
+        Args:
+            frameIndex (int): The new frame index value.
+        """
+        # Ensure the frameIndex exists, if not, return.
+        try:
+            frame = self._timeSamples[frameIndex]
+        except IndexError:
+            return
 
-        # XXX Why do we *always* update the widget, but only
-        # conditionally update?  All this function should do, after
-        # computing a new frame number, is emit a signal that the
-        # time has changed.  Future work.
-        self.setFrameField(self._dataModel.currentFrame.GetValue())
+        currentFrame = Usd.TimeCode(frame)
+        if self._dataModel.currentFrame != currentFrame:
+            self._dataModel.currentFrame = currentFrame
 
-        if (self._dataModel.currentFrame != frameAtStart) or forceUpdate:
+            self._ui.frameSlider.setValue(frameIndex)
+
             self._updateOnFrameChange()
+
+        self.setFrameField(self._dataModel.currentFrame.GetValue())
 
     def _updateGUIForFrameChange(self):
         """Called when the frame changes have finished.

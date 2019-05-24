@@ -2,6 +2,7 @@
 (
     startTimeCode = 1
     endTimeCode = 10
+    upAxis = "Z"
 )
 def SkelRoot "Model" {
     def Skeleton "Skel" {

@@ -40,7 +40,7 @@ def _modifySettings(appController):
 # Set the complexity and refresh the view.
 def _setComplexity(appController, complexity):
     appController._dataModel.viewSettings.complexity = complexity
-    appController._stageView.updateGL()
+    appController._stageView.updateView()
 
 # Take a shot of the viewport and save it to a file.
 def _takeShot(appController, fileName):
@@ -54,32 +54,32 @@ def _testChangeComplexity(appController):
 
 def _testInvisVisOnPlayback(appController):
     # Start playback
-    appController.setFrame(4, forceUpdate=True)
-    appController._stageView.updateGL()
+    appController.setFrame(4)
+    appController._stageView.updateView()
     _takeShot(appController, "vis_frame_4.png")
 
     stage = appController._dataModel.stage
     skelRoot = UsdGeom.Imageable(stage.GetPrimAtPath("/Model"))
     print("Invising skel root.")
     skelRoot.MakeInvisible()
-    appController._stageView.updateGL()
+    appController._stageView.updateView()
     _takeShot(appController, "invis_frame_4.png")
     
     print("Scrubbing a few frames ahead.")
-    appController.setFrame(5, forceUpdate=True)
-    appController.setFrame(6, forceUpdate=True)
-    appController.setFrame(7, forceUpdate=True)
+    appController.setFrame(5)
+    appController.setFrame(6)
+    appController.setFrame(7)
 
     print("Vising skel root.")
     skelRoot.MakeVisible()
-    appController.setFrame(8, forceUpdate=True)
+    appController.setFrame(8)
     _takeShot(appController, "vis_frame_8.png")
 
 # Force the skinned prim to resync by modifying a built-in primvar (such
 # as displayColor).
 def _testResyncSkinnedPrim(appController):
     appController._dataModel.viewSettings.renderMode = RenderModes.FLAT_SHADED
-    appController.setFrame(2, forceUpdate=True)
+    appController.setFrame(2)
     _takeShot(appController, "pre_skinned_prim_resync_frame_2.png")
 
     stage = appController._dataModel.stage
@@ -88,13 +88,13 @@ def _testResyncSkinnedPrim(appController):
     # Changing the display color should trigger the resync
     attr.Set(Vt.Vec3fArray(1, Gf.Vec3f(1.0,0.0,0.0)))
 
-    appController._stageView.updateGL()
+    appController._stageView.updateView()
     _takeShot(appController, "post_skinned_prim_resync_frame_2.png")
 
 # Force the skeleton prim to resync by modifying its rest xform.
 def _testResyncSkeleton(appController):
     appController._dataModel.viewSettings.renderMode = RenderModes.FLAT_SHADED
-    appController.setFrame(6, forceUpdate=True)
+    appController.setFrame(6)
     _takeShot(appController, "pre_skel_resync_frame_6.png")
 
     stage = appController._dataModel.stage
@@ -114,7 +114,7 @@ def _testResyncSkeleton(appController):
                                               0.0, 0.0, 1.0, 0.0,
                                               2.0, 0.0, 2.0, 1.0))))
 
-    appController._stageView.updateGL()
+    appController._stageView.updateView()
     _takeShot(appController, "post_skel_resync_frame_6.png")
 
 # Skinning makes use of adapter hijacking (for the skinned prims). Callbacks
