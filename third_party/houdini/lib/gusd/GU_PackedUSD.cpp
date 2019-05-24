@@ -697,8 +697,7 @@ GusdGU_PackedUSD::unpackPrim(
     UsdGeomImageable        prim, 
     const SdfPath&          primPath,
     const UT_Matrix4D&      xform,
-    const GT_RefineParms&   rparms,
-    bool                    addPathAttributes ) const
+    const GT_RefineParms&   rparms ) const
 {
     GT_PrimitiveHandle gtPrim = 
         GusdPrimWrapper::defineForRead( 
@@ -756,9 +755,9 @@ GusdGU_PackedUSD::unpackPrim(
             delete details(i);
         }
 
-        if( addPathAttributes ) { 
+        if (GT_RefineParms::getBool(&rparms, "usd:addPathAttributes", true)) {
             // Add usdpath and usdprimpath attributes to unpacked geometry.
-            GA_Size endIndex = destgdp.getNumPrimitives();
+            const GA_Size endIndex = destgdp.getNumPrimitives();
 
             if( endIndex > startIndex )
             {
@@ -793,7 +792,7 @@ GusdGU_PackedUSD::unpackGeometry(
 #if SYS_VERSION_FULL_INT >= 0x11000000
     const UT_Matrix4D *transform,
 #endif
-    bool addPathAttributes) const
+    const GT_RefineParms* refineParms) const
 {
     UsdPrim usdPrim = getUsdPrim();
 
@@ -812,6 +811,10 @@ GusdGU_PackedUSD::unpackGeometry(
 #endif
 
     GT_RefineParms      rparms;
+    if (refineParms) {
+        rparms = *refineParms;
+    }
+
     // Need to manually force polysoup to be turned off.
     rparms.setAllowPolySoup( false );
 
@@ -822,11 +825,11 @@ GusdGU_PackedUSD::unpackGeometry(
     DBG( cerr << "GusdGU_PackedUSD::unpackGeometry: " << usdPrim.GetTypeName() << ", " << usdPrim.GetPath() << endl; )
     
 #if SYS_VERSION_FULL_INT >= 0x11000000
-    return unpackPrim( destgdp, UsdGeomImageable( usdPrim ), m_primPath,
-                       *transform, rparms, addPathAttributes );
+    return unpackPrim( destgdp, UsdGeomImageable( usdPrim ),
+                       m_primPath, *transform, rparms );
 #else
     return unpackPrim( destgdp, UsdGeomImageable( usdPrim ),
-                       m_primPath, xform, rparms, addPathAttributes );
+                       m_primPath, xform, rparms );
 #endif
 }
 

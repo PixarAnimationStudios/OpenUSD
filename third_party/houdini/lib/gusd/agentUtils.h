@@ -50,6 +50,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+class GT_RefineParms;
 class UsdSkelBinding;
 class UsdSkelSkeleton;
 class UsdSkelSkinningQuery;
@@ -81,7 +82,8 @@ GusdCreateAgentShapeLib(const UsdSkelBinding& binding,
                         const char* lod=nullptr,
                         GusdPurposeSet purpose=GusdPurposeSet(
                             GUSD_PURPOSE_DEFAULT|GUSD_PURPOSE_PROXY),
-                        UT_ErrorSeverity sev=UT_ERROR_WARNING);
+                        UT_ErrorSeverity sev=UT_ERROR_WARNING,
+                        const GT_RefineParms* refineParms=nullptr);
 
 
 /// Read in all skinnable shapes for \p binding, coalescing them into \p gd.
@@ -96,7 +98,8 @@ GusdCoalesceAgentShapes(GEO_Detail& gd,
                         const char* lod=nullptr,
                         GusdPurposeSet purpose=GusdPurposeSet(
                             GUSD_PURPOSE_DEFAULT|GUSD_PURPOSE_PROXY),
-                        UT_ErrorSeverity sev=UT_ERROR_WARNING);
+                        UT_ErrorSeverity sev=UT_ERROR_WARNING,
+                        const GT_RefineParms* refineParms=nullptr);
 
 
 /// Read in a skinnable prim given by \p skinningQuery into \p gd.
@@ -115,7 +118,8 @@ GusdReadSkinnablePrim(GU_Detail& gd,
                       const char* lod=nullptr,
                       GusdPurposeSet purpose=GusdPurposeSet(
                           GUSD_PURPOSE_DEFAULT|GUSD_PURPOSE_PROXY),
-                      UT_ErrorSeverity sev=UT_ERROR_ABORT);
+                      UT_ErrorSeverity sev=UT_ERROR_ABORT,
+                      const GT_RefineParms* refineParms=nullptr);
 
 
 /// Read shapes for each shape in \p binding.
@@ -131,7 +135,8 @@ GusdReadSkinnablePrims(const UsdSkelBinding& binding,
                        const char* lod=nullptr,
                        GusdPurposeSet purpose=GusdPurposeSet(
                             GUSD_PURPOSE_DEFAULT|GUSD_PURPOSE_PROXY),
-                       UT_ErrorSeverity sev=UT_ERROR_WARNING);
+                       UT_ErrorSeverity sev=UT_ERROR_WARNING,
+                       const GT_RefineParms* refineParms=nullptr);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

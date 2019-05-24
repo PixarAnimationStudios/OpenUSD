@@ -1689,7 +1689,7 @@ GusdGU_USD::ImportPrimUnpacked(GU_Detail& gd,
                                GusdPurposeSet purpose,
                                const char* primvarPattern,
                                const UT_Matrix4D* xform,
-                               bool addPathAttributes)
+                               const GT_RefineParms* refineParms)
 {
     if (prim) {
 
@@ -1711,10 +1711,9 @@ GusdGU_USD::ImportPrimUnpacked(GU_Detail& gd,
             UT_Matrix4D xform;
             packedPrim->getFullTransform4(xform);
 
-            return impl->unpackGeometry(gd, primvarPattern,
-                                        &xform, addPathAttributes);
+            return impl->unpackGeometry(gd, primvarPattern, &xform, refineParms);
 #else
-            return impl->unpackGeometry(gd, primvarPattern, addPathAttributes);
+            return impl->unpackGeometry(gd, primvarPattern, refineParms);
 #endif
         }
     }

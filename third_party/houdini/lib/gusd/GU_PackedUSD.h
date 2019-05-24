@@ -275,12 +275,12 @@ public:
         GU_Detail &destgdp,
         const char* primvarPattern,
         const UT_Matrix4D *transform,
-        bool addPathAttributes=true) const;
+        const GT_RefineParms* parms=nullptr) const;
 #else
     bool unpackGeometry(
         GU_Detail &destgdp,
         const char* primvarPattern,
-        bool addPathAttributes=true) const;
+        const GT_RefineParms* parms=nullptr) const;
 #endif
 
     const UT_Matrix4D& getUsdTransform() const;
@@ -292,8 +292,7 @@ private:
             UsdGeomImageable        prim, 
             const SdfPath&          primPath,
             const UT_Matrix4D&      xform,
-            const GT_RefineParms&   rparms,
-            bool                    addPathAttributes ) const;
+            const GT_RefineParms&   rparms ) const;
 
     void resetCaches();
     void updateTransform();

@@ -38,6 +38,7 @@
 #include "USD_Utils.h"
 
 class GA_AttributeFilter;
+class GT_RefineParms;
 class GU_Detail;
 class GU_PrimPacked;
 
@@ -319,7 +320,7 @@ public:
                                        GUSD_PURPOSE_DEFAULT|GUSD_PURPOSE_PROXY),
                                    const char* primvarPattern = "*",
                                    const UT_Matrix4D* xform = nullptr,
-                                   bool addPathAttributes = true);
+                                   const GT_RefineParms* refineParms = nullptr);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

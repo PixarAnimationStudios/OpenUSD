@@ -29,8 +29,9 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/mesh.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
+class GT_PrimSubdivisionMesh;
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 class GusdMeshWrapper : public GusdPrimWrapper
 {
@@ -104,6 +105,29 @@ public:
                    GusdPurposeSet           purposes );
 
 private:
+
+    GT_PrimitiveHandle
+    _RefineSubdiv(GT_Refine& refiner, 
+                  const TfToken& subdScheme,
+                  const GT_DataArrayHandle& gtVertexCounts,
+                  const GT_DataArrayHandle& gtIndices,
+                  const GT_AttributeListHandle& gtPointAttrs,
+                  const GT_AttributeListHandle& gtVertexAttrs,
+                  const GT_AttributeListHandle& gtUniformAttrs,
+                  const GT_AttributeListHandle& gtDetailAttrs,
+                  const GT_RefineParms* parms) const;
+
+    void _RefineSubdivCorners(GT_PrimSubdivisionMesh& mesh,
+                              GT_Refine& refiner) const;
+
+    void _RefineSubdivCreases(GT_PrimSubdivisionMesh& mesh,
+                              GT_Refine& refiner) const;
+
+    void _RefineSubdivHoles(GT_PrimSubdivisionMesh& mesh,
+                            GT_Refine& refiner) const;
+
+    void _RefineSubdivOsdTags(GT_PrimSubdivisionMesh& mesh,
+                              GT_Refine& refiner) const;
 
     bool initUsdPrim(const UsdStagePtr& stage,
                      const SdfPath& path,
