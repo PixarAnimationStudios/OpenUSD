@@ -105,7 +105,11 @@ void wrapEngine()
                 "Engine", "UsdImaging Renderer class")
             .def( init<>() )
             .def( init<const SdfPath &, const SdfPathVector&,
-                    const SdfPathVector& >() )
+                    const SdfPathVector&, const SdfPath & >
+                ((args("rootPath"),
+                  args("excludedPaths") = SdfPathVector(),
+                  args("invisedPaths") = SdfPathVector(),
+                  args("delegateID") = SdfPath::AbsoluteRootPath())))
             .def("Render", &UsdImagingGLEngine::Render)
             .def("SetCameraState", &UsdImagingGLEngine::SetCameraState)
             .def("SetLightingStateFromOpenGL",
