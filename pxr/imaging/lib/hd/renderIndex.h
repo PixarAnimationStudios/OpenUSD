@@ -74,7 +74,6 @@ typedef std::vector<HdTaskSharedPtr> HdTaskSharedPtrVector;
 typedef std::unordered_map<TfToken,
                            VtValue,
                            TfToken::HashFunctor> HdTaskContext;
-typedef std::shared_ptr<SdfPathVector> HdIdVectorSharedPtr;
 
 /// \class HdRenderIndex
 ///

@@ -55,6 +55,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdExtComputationContext;
 
+/// A shared pointer to a vector of id's.
+typedef std::shared_ptr<SdfPathVector> HdIdVectorSharedPtr;
+
 /// \class HdSyncRequestVector
 ///
 /// The SceneDelegate is requested to synchronize prims as the result of
