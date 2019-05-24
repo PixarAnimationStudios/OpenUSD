@@ -245,7 +245,7 @@ private:
                       bool *isLeafInstancer);
 
     // For a usd path, collects the instancers to resync.
-    void _ResyncPath(SdfPath const& usdPath,
+    void _ResyncPath(SdfPath const& cachePath,
                      UsdImagingIndexProxy* index,
                      bool reload);
     // Removes and optionally reloads all instancer data, both locally and
@@ -418,7 +418,7 @@ private:
         std::mutex mutex;
     };
 
-    // Map from instancer path to instancer data.
+    // Map from instancer cache path to instancer data.
     // Note: this map is modified in multithreaded code paths and must be
     // locked.
     typedef boost::unordered_map<SdfPath, _InstancerData, SdfPath::Hash> 

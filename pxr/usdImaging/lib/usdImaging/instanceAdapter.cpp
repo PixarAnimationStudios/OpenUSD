@@ -118,18 +118,34 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
     const SdfPath& instancerMaterialUsdPath =
         instancerAdapter->GetMaterialUsdPath(prim);
 
+    // Storage for various instancer chains built up below.
+    SdfPathVector instancerChain;
+
     // Construct the instance proxy path for "instancePath" to look up the
     // draw mode for this instance.  If this is a nested instance (meaning
     // "prim" is part of a master), parentProxyPath contains the instance
     // proxy path for the master we're currently in, so we can stitch the full
     // proxy path together.
-    SdfPathVector instancerChain;
-    instancerChain = { instancePath };
-    if (prim.IsInMaster()) {
-        instancerChain.push_back(parentProxyPath);
+    TfToken instanceDrawMode;
+    {
+        instancerChain = { instancePath };
+        if (prim.IsInMaster()) {
+            instancerChain.push_back(parentProxyPath);
+        }
+        SdfPath instanceChainPath =
+            _GetPrimPathFromInstancerChain(instancerChain);
+        if (UsdPrim instanceUsdPrim = _GetPrim(instanceChainPath)) {
+            instanceDrawMode = GetModelDrawMode(instanceUsdPrim);
+        } else {
+            TF_CODING_ERROR("Could not find USD instance prim at "
+                            "instanceChainPath <%s> given instancePath <%s>, "
+                            "parentProxyPath <%s>; isInMaster %i",
+                            instanceChainPath.GetText(),
+                            instancePath.GetText(),
+                            parentProxyPath.GetText(),
+                            int(prim.IsInMaster()));
+        }
     }
-    const TfToken& instanceDrawMode = GetModelDrawMode(_GetPrim(
-        _GetPrimPathFromInstancerChain(instancerChain)));
 
     // Check if there's an instance in use as a hydra instancer for this master
     // with the appropriate inherited attributes.
@@ -922,15 +938,15 @@ UsdImagingInstanceAdapter::ProcessPropertyChange(UsdPrim const& prim,
 }
 
 void
-UsdImagingInstanceAdapter::_ResyncPath(SdfPath const& usdPath,
+UsdImagingInstanceAdapter::_ResyncPath(SdfPath const& cachePath,
                                        UsdImagingIndexProxy* index,
                                        bool reload)
 {
     // If prim data exists at this path, we'll drop it now.
-    _InstancerDataMap::iterator instIt = _instancerData.find(usdPath);
+    _InstancerDataMap::iterator instIt = _instancerData.find(cachePath);
     if (instIt != _instancerData.end()) {
         // Nuke the entire instancer.
-        _ResyncInstancer(usdPath, index, reload);
+        _ResyncInstancer(cachePath, index, reload);
         return;
     }
 
@@ -945,7 +961,7 @@ UsdImagingInstanceAdapter::_ResyncPath(SdfPath const& usdPath,
 
         // The resync'd prim is a dependency if it is a descendent of
         // the instancer master prim.
-        if (usdPath.HasPrefix(inst.masterPath)) {
+        if (cachePath.HasPrefix(inst.masterPath)) {
             instancersToUnload.push_back(instancerPath);
             continue;
         }
@@ -953,7 +969,7 @@ UsdImagingInstanceAdapter::_ResyncPath(SdfPath const& usdPath,
         // The resync'd prim is a dependency if it is an instance of
         // the instancer master prim.
         const SdfPathVector& instances = inst.instancePaths;
-        if (std::binary_search(instances.begin(), instances.end(), usdPath)) {
+        if (std::binary_search(instances.begin(), instances.end(), cachePath)) {
             instancersToUnload.push_back(instancerPath);
             continue;
         }
