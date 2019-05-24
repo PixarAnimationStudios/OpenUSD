@@ -563,7 +563,7 @@ Vt_ConvertFromPySequence(TfPyObjWrapper const &obj)
         Py_ssize_t len = PySequence_Length(obj.ptr());
         Array result(len);
         ElemType *elem = result.data();
-        for (size_t i = 0; i != len; ++i) {
+        for (Py_ssize_t i = 0; i != len; ++i) {
             boost::python::handle<> h(PySequence_ITEM(obj.ptr(), i));
             if (!h) {
                 if (PyErr_Occurred())
