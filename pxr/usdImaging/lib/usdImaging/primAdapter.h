@@ -401,9 +401,9 @@ public:
     USDIMAGING_API
     SdfPath GetMaterialUsdPath(UsdPrim const& prim) const; 
 
-    /// Gets the instancer ID for the given prim and instancerContext.
+    /// Gets the instancer cachePath for the given prim and instancerContext.
     USDIMAGING_API
-    SdfPath GetInstancerBinding(UsdPrim const& prim,
+    SdfPath GetInstancerCachePath(UsdPrim const& prim,
                             UsdImagingInstancerContext const* instancerContext);
 
     /// Returns the depending rprim paths which don't exist in descendants.

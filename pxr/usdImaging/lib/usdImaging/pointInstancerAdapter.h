@@ -362,7 +362,7 @@ private:
     // to keep everything bundled up under the instancer path.
     struct _InstancerData {
         _InstancerData() {}
-        SdfPath parentInstancerPath;
+        SdfPath parentInstancerCachePath;
         _ProtoRPrimMap protoRprimMap;
         _UsdToCacheMap usdToCacheMap;
         std::vector<_PrototypeSharedPtr> prototypes;

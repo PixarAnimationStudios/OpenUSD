@@ -846,7 +846,7 @@ UsdImagingPrimAdapter::GetModelDrawMode(UsdPrim const& prim)
 }
 
 SdfPath
-UsdImagingPrimAdapter::GetInstancerBinding(UsdPrim const& prim,
+UsdImagingPrimAdapter::GetInstancerCachePath(UsdPrim const& prim,
                         UsdImagingInstancerContext const* instancerContext)
 {
     return instancerContext ? instancerContext->instancerCachePath
