@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<Autodesk_Cache_File>
+  <cacheType Type="OneFile" Format="mcx"/>
+  <time Range="250-25000"/>
+  <cacheTimePerFrame TimePerFrame="250"/>
+  <cacheVersion Version="2.0"/>
+  <Channels>
+    <channel0 ChannelName="nParticleShape1_id" ChannelType="DoubleArray" ChannelInterpretation="id" SamplingType="Regular" SamplingRate="250" StartTime="1000" EndTime="25000"/>
+    <channel1 ChannelName="nParticleShape1_count" ChannelType="DoubleArray" ChannelInterpretation="count" SamplingType="Regular" SamplingRate="250" StartTime="250" EndTime="25000"/>
+    <channel2 ChannelName="nParticleShape1_position" ChannelType="FloatVectorArray" ChannelInterpretation="position" SamplingType="Regular" SamplingRate="250" StartTime="1000" EndTime="25000"/>
+    <channel3 ChannelName="nParticleShape1_velocity" ChannelType="FloatVectorArray" ChannelInterpretation="velocity" SamplingType="Regular" SamplingRate="250" StartTime="1000" EndTime="25000"/>
+    <channel4 ChannelName="nParticleShape1_acceleration" ChannelType="FloatVectorArray" ChannelInterpretation="acceleration" SamplingType="Regular" SamplingRate="250" StartTime="1000" EndTime="25000"/>
+    <channel5 ChannelName="nParticleShape1_worldPosition" ChannelType="FloatVectorArray" ChannelInterpretation="worldPosition" SamplingType="Regular" SamplingRate="250" StartTime="1000" EndTime="25000"/>
+    <channel6 ChannelName="nParticleShape1_worldVelocity" ChannelType="FloatVectorArray" ChannelInterpretation="worldVelocity" SamplingType="Regular" SamplingRate="250" StartTime="1000" EndTime="25000"/>
+    <channel7 ChannelName="nParticleShape1_worldVelocityInObjectSpace" ChannelType="FloatVectorArray" ChannelInterpretation="worldVelocityInObjectSpace" SamplingType="Regular" SamplingRate="250" StartTime="1000" EndTime="25000"/>
+    <channel8 ChannelName="nParticleShape1_mass" ChannelType="DoubleArray" ChannelInterpretation="mass" SamplingType="Regular" SamplingRate="250" StartTime="1000" EndTime="25000"/>
+    <channel9 ChannelName="nParticleShape1_birthTime" ChannelType="DoubleArray" ChannelInterpretation="birthTime" SamplingType="Regular" SamplingRate="250" StartTime="1000" EndTime="25000"/>
+    <channel10 ChannelName="nParticleShape1_age" ChannelType="DoubleArray" ChannelInterpretation="age" SamplingType="Regular" SamplingRate="250" StartTime="1000" EndTime="25000"/>
+    <channel11 ChannelName="nParticleShape1_finalLifespanPP" ChannelType="DoubleArray" ChannelInterpretation="finalLifespanPP" SamplingType="Regular" SamplingRate="250" StartTime="1000" EndTime="25000"/>
+    <channel12 ChannelName="nParticleShape1_lifespanPP" ChannelType="DoubleArray" ChannelInterpretation="lifespanPP" SamplingType="Regular" SamplingRate="250" StartTime="1000" EndTime="25000"/>
+  </Channels>
+</Autodesk_Cache_File>
