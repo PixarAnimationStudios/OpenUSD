@@ -10,6 +10,7 @@ pxr_library(usdAppUtils
         tf
         usd
         usdGeom
+        usdImagingGL
         ${Boost_PYTHON_LIBRARY}
 
     INCLUDE_DIRS
@@ -20,6 +21,7 @@ pxr_library(usdAppUtils
 
     PUBLIC_CLASSES
         camera
+        frameRecorder
 
     PYTHON_CPPFILES
         moduleDeps.cpp
@@ -27,6 +29,7 @@ pxr_library(usdAppUtils
     PYMODULE_CPPFILES
         module.cpp
         wrapCamera.cpp
+        wrapFrameRecorder.cpp
 
     PYMODULE_FILES
         __init__.py
@@ -34,12 +37,14 @@ pxr_library(usdAppUtils
         colorArgs.py
         complexityArgs.py
         framesArgs.py
+        rendererArgs.py
 )
 
 pxr_test_scripts(
     testenv/testUsdAppUtilsCamera.py
     testenv/testUsdAppUtilsCmdlineArgs.py
     testenv/testUsdAppUtilsComplexity.py
+    testenv/testUsdAppUtilsFrameRecorder.py
 )
 
 pxr_install_test_dir(
@@ -63,3 +68,15 @@ pxr_register_test(testUsdAppUtilsComplexity
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAppUtilsComplexity"
     EXPECTED_RETURN_CODE 0
 )
+
+pxr_install_test_dir(
+    SRC testenv/FrameRecorderTest
+    DEST testUsdAppUtilsFrameRecorder
+)
+if (NOT PXR_HEADLESS_TEST_MODE)
+    pxr_register_test(testUsdAppUtilsFrameRecorder
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAppUtilsFrameRecorder"
+        EXPECTED_RETURN_CODE 0
+    )
+endif()

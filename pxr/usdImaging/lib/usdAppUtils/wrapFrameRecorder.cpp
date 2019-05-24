@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,33 +21,38 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-////////////////////////////////////////////////////////////////////////
-
 #include "pxr/pxr.h"
-#include "pxr/base/tf/registryManager.h"
-#include "pxr/base/tf/scriptModuleLoader.h"
-#include "pxr/base/tf/token.h"
+#include "pxr/usdImaging/usdAppUtils/frameRecorder.h"
 
-#include <vector>
+#include <boost/python.hpp>
+#include <boost/python/class.hpp>
+#include <boost/python/def.hpp>
+#include <boost/python/scope.hpp>
 
-PXR_NAMESPACE_OPEN_SCOPE
+using namespace boost::python;
 
-TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
-    // List of direct dependencies for this library.
-    const std::vector<TfToken> reqs = {
-        TfToken("garch"),
-        TfToken("gf"),
-        TfToken("glf"),
-        TfToken("sdf"),
-        TfToken("tf"),
-        TfToken("usd"),
-        TfToken("usdGeom"),
-        TfToken("usdImagingGL")
-    };
-    TfScriptModuleLoader::GetInstance().
-        RegisterLibrary(TfToken("usdAppUtils"), TfToken("pxr.UsdAppUtils"), reqs);
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+
+void
+wrapFrameRecorder()
+{
+    using This = UsdAppUtilsFrameRecorder;
+
+    scope s = class_<This, boost::noncopyable>("FrameRecorder")
+        .def(init<>())
+        .def("GetCurrentRendererId", &This::GetCurrentRendererId)
+        .def("SetRendererPlugin", &This::SetRendererPlugin)
+        .def("SetImageWidth", &This::SetImageWidth)
+        .def("SetComplexity", &This::SetComplexity)
+        .def("SetColorCorrectionMode", &This::SetColorCorrectionMode)
+        .def(
+            "Record",
+            &This::Record,
+            (arg("stage"),
+             arg("usdCamera"),
+             arg("timeCode"),
+             arg("outputImagePath")))
+    ;
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-

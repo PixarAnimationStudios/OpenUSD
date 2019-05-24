@@ -241,6 +241,28 @@ class TestUsdAppUtilsCmdlineArgs(unittest.TestCase):
             UsdAppUtils.framesArgs.ValidateCmdlineArgs(parser, args,
                 frameFormatArgName='outputImagePath')
 
+    def testRendererCmdlineArgs(self):
+        """
+        Tests argument parsing when Hydra renderer-related args are added.
+        """
+        UsdAppUtils.rendererArgs.AddCmdlineArgs(self._parser)
+
+        # No renderer plugin is specified by default.
+        args = self._parser.parse_args([])
+        self.assertEqual(args.rendererPluginId, None)
+
+        args = self._parser.parse_args(['--renderer', 'HdStreamRendererPlugin'])
+        self.assertEqual(args.rendererPluginId, 'HdStreamRendererPlugin')
+
+        args = self._parser.parse_args(['-r', 'HdStreamRendererPlugin'])
+        self.assertEqual(args.rendererPluginId, 'HdStreamRendererPlugin')
+
+        # Test passing an invalid option.
+        parser = _NonExitingArgumentParser(prog=self._progName)
+        UsdAppUtils.rendererArgs.AddCmdlineArgs(parser)
+        with self.assertRaises(ValueError):
+            args = parser.parse_args(['--renderer', 'bogus'])
+
 
 if __name__ == "__main__":
     unittest.main()

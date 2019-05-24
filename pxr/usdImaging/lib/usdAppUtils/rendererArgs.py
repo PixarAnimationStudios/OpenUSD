@@ -22,21 +22,20 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-from . import _usdAppUtils
-from pxr import Tf
-Tf.PrepareModule(_usdAppUtils, locals())
-del _usdAppUtils, Tf
+def AddCmdlineArgs(argsParser, altHelpText=''):
+    """
+    Adds Hydra renderer-related command line arguments to argsParser.
 
-try:
-    from . import __DOC
-    __DOC.Execute(locals())
-    del __DOC
-except Exception:
-    pass
+    The resulting 'rendererPluginId' argument will be a Python string.
+    """
+    from pxr import UsdImagingGL
 
+    helpText = altHelpText
+    if not helpText:
+        helpText = (
+            'Hydra renderer plugin to use when generating images')
 
-from . import cameraArgs
-from . import colorArgs
-from . import complexityArgs
-from . import framesArgs
-from . import rendererArgs
+    argsParser.add_argument('--renderer', '-r', action='store', type=str,
+        dest='rendererPluginId',
+        choices=[r for r in UsdImagingGL.Engine.GetRendererPlugins()],
+        help=helpText)

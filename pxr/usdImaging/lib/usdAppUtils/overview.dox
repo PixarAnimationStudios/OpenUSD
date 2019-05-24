@@ -26,6 +26,9 @@ command-line arguments to tools that operate on USD:
     application should operate on. This module also provides support for
     working with \ref UsdAppUtils_frame_format_strings.
 
+\li \b rendererArgs allows adding arguments for specifying which renderer
+    plugin to use when generating images using Hydra.
+
 \subsection UsdAppUtils_frame_format_strings Frame Format Strings
 
 A frame format string is a string that is expected to vary with time and

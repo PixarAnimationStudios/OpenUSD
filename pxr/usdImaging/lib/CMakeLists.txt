@@ -1,10 +1,10 @@
 set(DIRS
-    usdAppUtils
     usdImaging
     usdImagingGL
     usdShaders
     usdSkelImaging
     usdVolImaging
+    usdAppUtils
     usdviewq
 )
 
