@@ -47,15 +47,25 @@ class TestShaderNode(unittest.TestCase):
         # Verify the test plugins have been found.  When building monolithic
         # we should find at least these derived types.
         self.assertEqual(len(plugins), 1)
-        fsdpType = Tf.Type.FindByName('_NdrFilesystemDiscoveryPlugin')
         tdpType  = Tf.Type.FindByName('_NdrTestDiscoveryPlugin')
-        self.assertEqual(set([fsdpType, tdpType]) -
-                         set(pr.GetAllDerivedTypes('NdrDiscoveryPlugin')),
-                         set())
-        self.assertEqual(set([Tf.Type.FindByName('_NdrArgsTestParserPlugin'),
-                              Tf.Type.FindByName('_NdrOslTestParserPlugin')]) -
+        tdp2Type = Tf.Type.FindByName('_NdrTestDiscoveryPlugin2')
+
+        # We don't check for all the derived types of NdrDiscoveryPlugin
+        # because this test only uses the two discovery plugins that are defined
+        # in this testenv
+        assert {tdpType, tdp2Type}.issubset(
+            set(pr.GetAllDerivedTypes('NdrDiscoveryPlugin')))
+        self.assertEqual({Tf.Type.FindByName('_NdrArgsTestParserPlugin'),
+                              Tf.Type.FindByName('_NdrOslTestParserPlugin')} -
                          set(pr.GetAllDerivedTypes('NdrParserPlugin')),
                          set())
+
+        # The following source types are what we expect to discover from
+        # _NdrTestDiscoveryPlugin and _NdrTestDiscoveryPlugin2.  Note that there
+        # is no glslfx parser plugin provided in this test.
+        argsType = "RmanCpp"
+        oslType = "OSL"
+        glslfxType = "glslfx"
 
         # Instantiating the registry will kick off the discovery process.
         # This test assumes the PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY has
@@ -65,23 +75,63 @@ class TestShaderNode(unittest.TestCase):
         # Setting this from within the script does not work on Windows.
         # os.environ["PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY"] = ""
         reg = Sdr.Registry()
-        reg.SetExtraDiscoveryPlugins([fsdpType, tdpType])
 
+        # We will register the discovery plugins one by one so that we can check
+        # source types are not duplicated in the registry if we have plugins
+        # that discover nodes of the same source type
+
+        # The _NdrTestDiscoveryPlugin should find discovery results that have
+        # source types of RmanCpp and OSL
+        reg.SetExtraDiscoveryPlugins([tdpType])
+        assert reg.GetAllNodeSourceTypes() == [oslType, argsType]
+
+        # The _NdrTestDiscoveryPlugin2 should find discovery results that have
+        # source types of RmanCpp and glslfx
+        reg.SetExtraDiscoveryPlugins([tdp2Type])
+
+        # Test that the registry does not see 'RmanCpp' twice as a source type,
+        # and that it finds 'glslfx' as a source type
+        assert reg.GetAllNodeSourceTypes() == [oslType, argsType, glslfxType]
+
+        # Calling SdrRegistry::GetShaderNodesByFamily() will actually parse the
+        # discovery results.
+        # Notice that in the five node names we find, we get 'TestNodeSameName'
+        # twice because there are two nodes with different source types that
+        # have the same name.
+        # Notice that we do not see 'TestNodeGLSLFX' because we don't have a
+        # parser plugin to support it
         nodes = reg.GetShaderNodesByFamily()
-        assert len(nodes) == 4
-        assert reg.GetSearchURIs() == ["/TestSearchPath"]
-        assert set(reg.GetNodeNames()) == {
-            "TestNodeARGS", "TestNodeOSL", "TestNodeSameName"
+        shaderNodeNames = [node.GetName() for node in nodes]
+        assert set(shaderNodeNames) == {
+            "TestNodeARGS",
+            "TestNodeARGS2",
+            "TestNodeOSL",
+            "TestNodeSameName",
+            "TestNodeSameName"
         }
+
+        assert reg.GetSearchURIs() == ["/TestSearchPath", "/TestSearchPath2"]
+
+        # Calling SdrRegistry::GetNodeNames only looks at discovery results
+        # without parsing them.
+        # Notice that we get 'TestNodeSameName' only once because we only show
+        # unique names.
+        # Notice that we see 'TestNodeGLSLFX' because it is in our discovery
+        # results even though we do not have a parser plugin that supports its
+        # source type.
+        assert set(reg.GetNodeNames()) == {
+            "TestNodeARGS",
+            "TestNodeARGS2",
+            "TestNodeOSL",
+            "TestNodeSameName",
+            "TestNodeGLSLFX"
+        }
+
         assert id(reg.GetShaderNodeByURI(nodes[0].GetSourceURI())) == id(nodes[0])
         assert id(reg.GetShaderNodeByName(nodes[0].GetName())) == id(nodes[0])
 
-        argsType = "RmanCpp"
-        oslType = "OSL"
-
         # Ensure that the registry can retrieve two nodes of the same name but
         # different source types
-        assert {argsType, oslType}.issubset(set(reg.GetAllNodeSourceTypes()))
         assert len(reg.GetShaderNodesByName("TestNodeSameName")) == 2
         assert reg.GetShaderNodeByNameAndType("TestNodeSameName", oslType) is not None
         assert reg.GetShaderNodeByNameAndType("TestNodeSameName", argsType) is not None
