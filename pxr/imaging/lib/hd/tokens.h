@@ -68,6 +68,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (hermite)                                   \
     (hidden)                                    \
     (hullIndices)                               \
+    (HydraPbsSurface)                           \
     (indices)                                   \
     (instancer)                                 \
     (instancerTransform)                        \
@@ -81,6 +82,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (leftHanded)                                \
     (linear)                                    \
     (lightLink)                                 \
+    (Material)                                  \
     (materialParams)                            \
     (nonperiodic)                               \
     (normals)                                   \

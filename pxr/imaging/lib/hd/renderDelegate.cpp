@@ -83,6 +83,13 @@ HdRenderDelegate::GetMaterialBindingPurpose() const
     return HdTokens->preview;
 }
 
+TfToken
+HdRenderDelegate::GetMaterialAdapterKey() const
+{
+    return GetMaterialBindingPurpose() == HdTokens->preview
+        ? HdTokens->HydraPbsSurface : HdTokens->Material;
+}
+
 TfTokenVector 
 HdRenderDelegate::GetShaderSourceTypes() const
 {

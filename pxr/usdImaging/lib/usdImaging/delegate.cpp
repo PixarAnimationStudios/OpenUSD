@@ -82,8 +82,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (instance)
     (texturePath)
-    (Material)
-    (HydraPbsSurface)
 );
 
 // This environment variable matches a set of similar ones in
@@ -238,11 +236,9 @@ UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
         // treated like Materials. When not using networks,
         // we want Shaders to be treated like HydraPbsSurface
         // for backwards compatibility.
-        TfToken bindingPurpose = GetRenderIndex().
-            GetRenderDelegate()->GetMaterialBindingPurpose();
-        if (bindingPurpose == HdTokens->preview &&
-            adapterKey == _tokens->Material) {
-            adapterKey = _tokens->HydraPbsSurface;
+        if (adapterKey == HdTokens->Material) {
+            adapterKey = GetRenderIndex().
+                GetRenderDelegate()->GetMaterialAdapterKey();
         }
     }
 

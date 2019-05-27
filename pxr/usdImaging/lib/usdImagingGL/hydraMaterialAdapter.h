@@ -104,12 +104,14 @@ public:
     /// \name Texture resources
     // ---------------------------------------------------------------------- //
 
+    USDIMAGING_API
     virtual HdTextureResource::ID
     GetTextureResourceID(UsdPrim const& usdPrim, 
                          SdfPath const &id, 
                          UsdTimeCode time, 
                          size_t salt) const override;
 
+    USDIMAGING_API
     virtual HdTextureResourceSharedPtr
     GetTextureResource(UsdPrim const& usdPrim, 
                        SdfPath const &id, 

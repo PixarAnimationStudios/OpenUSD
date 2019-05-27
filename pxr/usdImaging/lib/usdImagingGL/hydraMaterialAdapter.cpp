@@ -208,7 +208,6 @@ _GetDeprecatedSurfaceShaderPrim(const UsdShadeMaterial &material)
     // Deprecated shader style - hydraLook:Surface
     // ---------------------------------------------------------------------- //
     static const TfToken hdSurf("hydraLook:surface");
-    static const TfToken surfType("HydraPbsSurface");
 
     UsdRelationship displayShaderRel = material.GetPrim().GetRelationship(
         displayLookBxdf);
@@ -249,7 +248,7 @@ _GetDeprecatedSurfaceShaderPrim(const UsdShadeMaterial &material)
 
     UsdPrim shaderPrim = displayShaderRel.GetStage()->GetPrimAtPath(targets[0]);
     if (displayShaderRel.GetName() == hdSurf) {
-        if (TF_VERIFY(shaderPrim.GetTypeName() == surfType)) {
+        if (TF_VERIFY(shaderPrim.GetTypeName() == HdTokens->HydraPbsSurface)) {
             TF_DEBUG(USDIMAGING_SHADERS).Msg(
                      "\t Deprecated hydraLook:surface binding found: %s\n", 
                      shaderPrim.GetPath().GetText());

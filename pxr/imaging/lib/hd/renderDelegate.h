@@ -316,6 +316,12 @@ public:
     virtual TfToken GetMaterialBindingPurpose() const;
 
     ///
+    /// Returns a primTypeName token used to find a matching material adapter.
+    ///
+    HD_API
+    virtual TfToken GetMaterialAdapterKey() const;
+
+    ///
     /// Returns a token that can be used to select among multiple
     /// material network implementations.  The default is empty.
     ///
