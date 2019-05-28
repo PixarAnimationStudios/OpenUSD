@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hd/unitTestHelper.h"
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/unitTestNullRenderPass.h"
@@ -144,6 +145,7 @@ Hd_TestDriver::_Init(HdReprSelector const &reprSelector)
     _sceneDelegate = new HdUnitTestDelegate(_renderIndex,
                                              SdfPath::AbsoluteRootPath());
 
+    _sceneDelegate->AddCamera(_cameraId);
     _reprSelector = reprSelector;
 
     GfMatrix4d viewMatrix = GfMatrix4d().SetIdentity();
@@ -180,9 +182,21 @@ Hd_TestDriver::SetCamera(GfMatrix4d const &modelViewMatrix,
                          GfMatrix4d const &projectionMatrix,
                          GfVec4d const &viewport)
 {
-    _renderPassState->SetCamera(modelViewMatrix,
-                                projectionMatrix,
-                                viewport);
+    _sceneDelegate->UpdateCamera(
+        _cameraId, HdCameraTokens->worldToViewMatrix, VtValue(modelViewMatrix));
+    _sceneDelegate->UpdateCamera(
+        _cameraId, HdCameraTokens->projectionMatrix, VtValue(projectionMatrix));
+    // Baselines for tests were generated without constraining the view
+    // frustum based on the viewport aspect ratio.
+    _sceneDelegate->UpdateCamera(
+        _cameraId, HdCameraTokens->windowPolicy,
+        VtValue(CameraUtilDontConform));
+    
+    HdSprim const *cam = _renderIndex->GetSprim(HdPrimTypeTokens->camera,
+                                                 _cameraId);
+    TF_VERIFY(cam);
+    _renderPassState->SetCameraAndViewport(
+        dynamic_cast<HdCamera const *>(cam), viewport);
 }
 
 void

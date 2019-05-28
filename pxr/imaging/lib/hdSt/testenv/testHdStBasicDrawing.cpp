@@ -102,7 +102,7 @@ My_TestGLDrawing::InitTest()
             _lightingShader);
     }
 
-    _driver->GetRenderPassState()->SetClipPlanes(_clipPlanes);
+    _driver->SetCameraClipPlanes(_clipPlanes);
 }
 
 void

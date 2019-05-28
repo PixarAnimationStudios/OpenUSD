@@ -193,10 +193,11 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
         std::min(shadows->GetNumLayers(), _passes.size());
     for(size_t passId = 0; passId < shadowCount; passId++) {
         // Move the camera to the correct position to take the shadow map
-        _renderPassStates[passId]->SetCamera( 
+        _renderPassStates[passId]->SetCameraFramingState( 
             shadows->GetViewMatrix(passId), 
             shadows->GetProjectionMatrix(passId),
-            GfVec4d(0,0,shadows->GetSize()[0],shadows->GetSize()[1]));
+            GfVec4d(0,0,shadows->GetSize()[0],shadows->GetSize()[1]),
+            HdRenderPassState::ClipPlanesVector());
 
         _passes[passId]->Sync();
     }

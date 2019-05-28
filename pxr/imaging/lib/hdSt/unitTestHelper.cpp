@@ -24,6 +24,7 @@
 #include "pxr/imaging/hdSt/unitTestHelper.h"
 #include "pxr/imaging/hdSt/renderPass.h"
 
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -167,6 +168,8 @@ HdSt_TestDriver::_Init(HdReprSelector const &reprToken)
     _sceneDelegate = new HdSt_UnitTestDelegate(_renderIndex,
                                              SdfPath::AbsoluteRootPath());
 
+    _cameraId = SdfPath("/testCam");
+    _sceneDelegate->AddCamera(_cameraId);
     _reprToken = reprToken;
 
     GfMatrix4d viewMatrix = GfMatrix4d().SetIdentity();
@@ -205,9 +208,28 @@ HdSt_TestDriver::SetCamera(GfMatrix4d const &modelViewMatrix,
                            GfMatrix4d const &projectionMatrix,
                            GfVec4d const &viewport)
 {
-    _renderPassState->SetCamera(modelViewMatrix,
-                                projectionMatrix,
-                                viewport);
+    _sceneDelegate->UpdateCamera(
+        _cameraId, HdCameraTokens->worldToViewMatrix, VtValue(modelViewMatrix));
+    _sceneDelegate->UpdateCamera(
+        _cameraId, HdCameraTokens->projectionMatrix, VtValue(projectionMatrix));
+    // Baselines for tests were generated without constraining the view
+    // frustum based on the viewport aspect ratio.
+    _sceneDelegate->UpdateCamera(
+        _cameraId, HdCameraTokens->windowPolicy,
+        VtValue(CameraUtilDontConform));
+    
+    HdSprim const *cam = _renderIndex->GetSprim(HdPrimTypeTokens->camera,
+                                                 _cameraId);
+    TF_VERIFY(cam);
+    _renderPassState->SetCameraAndViewport(
+        dynamic_cast<HdCamera const *>(cam), viewport);
+}
+
+void
+HdSt_TestDriver::SetCameraClipPlanes(std::vector<GfVec4d> const& clipPlanes)
+{
+    _sceneDelegate->UpdateCamera(
+        _cameraId, HdCameraTokens->clipPlanes, VtValue(clipPlanes));
 }
 
 void

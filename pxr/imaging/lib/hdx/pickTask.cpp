@@ -314,10 +314,11 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
             state->SetStencilEnabled(false);
         }
         state->SetAlphaThreshold(_params.alphaThreshold);
-        state->SetClipPlanes(_contextParams.clipPlanes);
         state->SetCullStyle(_params.cullStyle);
-        state->SetCamera(_contextParams.viewMatrix, 
-                         _contextParams.projectionMatrix, viewport);
+        state->SetCameraFramingState(_contextParams.viewMatrix, 
+                                     _contextParams.projectionMatrix,
+                                     viewport,
+                                     _contextParams.clipPlanes);
         state->SetLightingEnabled(false);
 
         // If scene materials are disabled in this environment then 

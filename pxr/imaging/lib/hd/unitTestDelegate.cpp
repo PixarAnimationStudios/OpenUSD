@@ -532,7 +532,6 @@ HdUnitTestDelegate::UpdateCamera(SdfPath const &id,
 {
     _cameras[id].params[key] = value;
    HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
-   // XXX: we could be more granular here if the tokens weren't in hdx.
    tracker.MarkSprimDirty(id, HdChangeTracker::AllDirty);
 }
 

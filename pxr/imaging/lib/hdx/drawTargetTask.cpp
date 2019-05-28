@@ -235,17 +235,6 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
             return;
         }
 
-        GfVec2i const &resolution = drawTarget->GetGlfDrawTarget()->GetSize();
-
-        GfMatrix4d const& viewMatrix = camera->GetViewMatrix();
-        GfMatrix4d projectionMatrix = camera->GetProjectionMatrix();
-        projectionMatrix = CameraUtilConformedWindow(projectionMatrix, 
-            camera->GetWindowPolicy(),
-            resolution[1] != 0.0 ? resolution[0] / resolution[1] : 1.0);
-        projectionMatrix = projectionMatrix * yflip;
-
-        GfVec4d viewport(0, 0, resolution[0], resolution[1]);
-
         HdCompareFunction depthFunc =
             HdxDrawTargetTask_GetResolvedDepthFunc(
                 _depthFunc,
@@ -266,8 +255,21 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
 
         renderPassState->SetLightingShader(simpleLightingShader);
 
-        renderPassState->SetCamera(viewMatrix, projectionMatrix, viewport);
-        renderPassState->SetClipPlanes(camera->GetClipPlanes());
+        // Update camera/framing state
+        // XXX Since we flip the projection matrix below, we can't set the
+        // camera handle on renderPassState and use its projection matrix.
+        GfVec2i const &resolution = drawTarget->GetGlfDrawTarget()->GetSize();
+
+        GfMatrix4d const& viewMatrix = camera->GetViewMatrix();
+        GfMatrix4d projectionMatrix = camera->GetProjectionMatrix();
+        projectionMatrix = CameraUtilConformedWindow(projectionMatrix, 
+            camera->GetWindowPolicy(),
+            resolution[1] != 0.0 ? resolution[0] / resolution[1] : 1.0);
+        projectionMatrix = projectionMatrix * yflip;
+
+        GfVec4d viewport(0, 0, resolution[0], resolution[1]);
+        renderPassState->SetCameraFramingState(
+            viewMatrix, projectionMatrix, viewport, camera->GetClipPlanes());
 
         simpleLightingContext->SetCamera(viewMatrix, projectionMatrix);
 

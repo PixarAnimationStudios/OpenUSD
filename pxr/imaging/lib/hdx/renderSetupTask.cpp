@@ -218,17 +218,10 @@ HdxRenderSetupTask::PrepareCamera(HdRenderIndex* renderIndex)
         renderIndex->GetSprim(HdPrimTypeTokens->camera, _cameraId));
 
     if (camera) {
-        GfMatrix4d const& modelView = camera->GetViewMatrix();
-        GfMatrix4d projection = camera->GetProjectionMatrix(); 
-        CameraUtilConformWindowPolicy const& policy = camera->GetWindowPolicy();
-        projection = CameraUtilConformedWindow(projection, policy,
-            _viewport[3] != 0.0 ? _viewport[2] / _viewport[3] : 1.0);
-
         // sync render pass state
         HdRenderPassStateSharedPtr &renderPassState =
                 _GetRenderPassState(renderIndex);
-        renderPassState->SetCamera(modelView, projection, _viewport);
-        renderPassState->SetClipPlanes(camera->GetClipPlanes());
+        renderPassState->SetCameraAndViewport(camera, _viewport);
     }
 }
 

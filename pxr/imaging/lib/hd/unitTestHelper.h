@@ -90,7 +90,10 @@ private:
     Hd_UnitTestNullRenderDelegate _renderDelegate;
     HdRenderIndex       *_renderIndex;
     HdUnitTestDelegate *_sceneDelegate;
+
+    SdfPath _cameraId;
     HdReprSelector _reprSelector;
+
     HdRenderPassSharedPtr _geomPass;
     HdRenderPassSharedPtr _geomAndGuidePass;
     HdRenderPassStateSharedPtr _renderPassState;

@@ -68,6 +68,8 @@ public:
     void SetCamera(GfMatrix4d const &modelViewMatrix,
                    GfMatrix4d const &projectionMatrix,
                    GfVec4d const &viewport);
+    
+    void SetCameraClipPlanes(std::vector<GfVec4d> const& clipPlanes);
 
     /// Set cull style
     void SetCullStyle(HdCullStyle cullStyle);
@@ -94,7 +96,10 @@ private:
     HdStRenderDelegate   _renderDelegate;
     HdRenderIndex       *_renderIndex;
     HdSt_UnitTestDelegate *_sceneDelegate;
+
+    SdfPath _cameraId;
     HdReprSelector _reprToken;
+    
     HdRenderPassSharedPtr _geomPass;
     HdRenderPassSharedPtr _geomAndGuidePass;
     HdStRenderPassStateSharedPtr _renderPassState;
