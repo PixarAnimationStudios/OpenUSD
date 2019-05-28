@@ -137,6 +137,14 @@ UsdImagingMeshAdapter::TrackVariability(UsdPrim const& prim,
                 /*isInherited*/false,
                 &normalsExists);
         if (!normalsExists) {
+            UsdGeomPrimvar pv = _GetInheritedPrimvar(prim, HdTokens->normals);
+            if (pv && pv.ValueMightBeTimeVarying()) {
+                *timeVaryingBits |= HdChangeTracker::DirtyNormals;
+                HD_PERF_COUNTER_INCR(UsdImagingTokens->usdVaryingNormals);
+                normalsExists = true;
+            }
+        }
+        if (!normalsExists) {
             _IsVarying(prim,
                     UsdGeomTokens->normals,
                     HdChangeTracker::DirtyNormals,
@@ -279,6 +287,10 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
             UsdGeomPrimvarsAPI primvarsApi(prim);
             UsdGeomPrimvar pv = primvarsApi.GetPrimvar(
                     UsdImagingTokens->primvarsNormals);
+            if (!pv) {
+                // If it's not found locally, see if it's inherited
+                pv = _GetInheritedPrimvar(prim, HdTokens->normals);
+            }
             if (pv) {
                 _ComputeAndMergePrimvar(prim, cachePath, pv, time, valueCache);
             } else {

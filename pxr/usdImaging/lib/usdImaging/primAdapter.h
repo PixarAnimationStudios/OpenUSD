@@ -559,6 +559,10 @@ protected:
     _GetCoordSysBindings(UsdPrim const& prim) const;
 
     USDIMAGING_API
+    UsdImaging_InheritedPrimvarStrategy::value_type
+    _GetInheritedPrimvars(UsdPrim const& prim) const;
+
+    USDIMAGING_API
     bool _DoesDelegateSupportCoordSys() const;
 
     // Conversion functions between usd and hydra enums.

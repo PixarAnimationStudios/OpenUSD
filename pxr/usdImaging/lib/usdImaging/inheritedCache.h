@@ -880,4 +880,73 @@ struct UsdImaging_CoordSysBindingStrategy
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
+// -------------------------------------------------------------------------- //
+// Inherited Primvar Cache
+// -------------------------------------------------------------------------- //
+
+#include "pxr/usd/usdGeom/primvarsAPI.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+struct UsdImaging_InheritedPrimvarStrategy;
+typedef UsdImaging_InheritedCache<UsdImaging_InheritedPrimvarStrategy>
+    UsdImaging_InheritedPrimvarCache;
+
+struct UsdImaging_InheritedPrimvarStrategy
+{
+    struct PrimvarRecord {
+        std::vector<UsdGeomPrimvar> primvars;
+        bool variable;
+    };
+    typedef std::shared_ptr<PrimvarRecord> value_type;
+    typedef UsdGeomPrimvarsAPI query_type;
+
+    // While primvar data might be time-varying, the set of primvars applying
+    // to a prim will not.
+    static
+    bool ValueMightBeTimeVarying() { return false; }
+
+    static
+    value_type MakeDefault() {
+        return value_type();
+    }
+
+    static
+    query_type MakeQuery(UsdPrim prim, bool *) {
+        return query_type(UsdGeomPrimvarsAPI(prim));
+    }
+
+    static
+    value_type Inherit(UsdImaging_InheritedPrimvarCache const* owner,
+                       UsdPrim prim,
+                       query_type const* query)
+    {
+        value_type v;
+        if (*query) {
+            // Pull inherited bindings first.
+            if (UsdPrim parentPrim = prim.GetParent()) {
+                v = *owner->_GetValue(parentPrim);
+            }
+            // Merge any local bindings.
+            std::vector<UsdGeomPrimvar> primvars =
+                query->FindIncrementallyInheritablePrimvars(
+                    v ? v->primvars : std::vector<UsdGeomPrimvar>());
+            if (!primvars.empty()) {
+                v = std::make_shared<PrimvarRecord>();
+                v->primvars = std::move(primvars);
+                v->variable = false;
+                for (UsdGeomPrimvar const& pv : v->primvars) {
+                    if (pv.ValueMightBeTimeVarying()) {
+                        v->variable = true;
+                        break;
+                    }
+                }
+            }
+        }
+        return v;
+    }
+};
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif // USDIMAGING_INHERITEDCACHE_H

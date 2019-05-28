@@ -637,6 +637,12 @@ UsdImagingPrimAdapter::_GetCoordSysBindings(UsdPrim const& prim) const
     return _delegate->_coordSysBindingCache.GetValue(prim);
 }
 
+UsdImaging_InheritedPrimvarStrategy::value_type
+UsdImagingPrimAdapter::_GetInheritedPrimvars(UsdPrim const& prim) const
+{
+    return _delegate->_inheritedPrimvarCache.GetValue(prim);
+}
+
 bool
 UsdImagingPrimAdapter::_DoesDelegateSupportCoordSys() const
 {

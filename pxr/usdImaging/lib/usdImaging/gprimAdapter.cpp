@@ -156,20 +156,25 @@ UsdImagingGprimAdapter::TrackVariability(UsdPrim const& prim,
     
     UsdImagingValueCache* valueCache = _GetValueCache();
 
-    if (!_IsVarying(prim,
-               UsdGeomTokens->primvarsDisplayColor,
-               HdChangeTracker::DirtyPrimvar,
-               UsdImagingTokens->usdVaryingPrimvar,
-               timeVaryingBits,
-               false)) {
-        // Only do this second check if the displayColor isn't already known
-        // to be varying.
-        _IsVarying(prim,
-               UsdGeomTokens->primvarsDisplayOpacity,
-               HdChangeTracker::DirtyPrimvar,
-               UsdImagingTokens->usdVaryingPrimvar,
-               timeVaryingBits,
-               false);
+    // See if any of the inherited primvars are time-dependent.
+    UsdImaging_InheritedPrimvarStrategy::value_type inheritedPrimvarRecord =
+        _GetInheritedPrimvars(prim.GetParent());
+    if (inheritedPrimvarRecord && inheritedPrimvarRecord->variable) {
+        *timeVaryingBits |= HdChangeTracker::DirtyPrimvar;
+        HD_PERF_COUNTER_INCR(UsdImagingTokens->usdVaryingPrimvar);
+    }
+    if (!(*timeVaryingBits & HdChangeTracker::DirtyPrimvar)) {
+        // See if any local primvars are time-dependent.
+        UsdGeomPrimvarsAPI primvarsAPI(prim);
+        std::vector<UsdGeomPrimvar> primvars =
+            primvarsAPI.GetPrimvarsWithValues();
+        for (UsdGeomPrimvar const& pv : primvars) {
+            if (pv.ValueMightBeTimeVarying()) {
+                *timeVaryingBits |= HdChangeTracker::DirtyPrimvar;
+                HD_PERF_COUNTER_INCR(UsdImagingTokens->usdVaryingPrimvar);
+                break;
+            }
+        }
     }
 
     // Discover time-varying extent.
@@ -272,6 +277,9 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         // XXX: need to validate gprim schema
         UsdGeomGprim gprim(prim);
 
+        // Handle color/opacity specially, since they can be shadowed by
+        // material parameters.  If we don't find them, check inherited
+        // primvars.
         TfToken colorInterp;
         VtValue color;
         if (GetColor(prim, time, &colorInterp, &color)) {
@@ -281,6 +289,12 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                 HdTokens->displayColor,
                 _UsdToHdInterpolation(colorInterp),
                 HdPrimvarRoleTokens->color);
+        } else {
+            UsdGeomPrimvar pv =
+                _GetInheritedPrimvar(prim, HdTokens->displayColor);
+            if (pv) {
+                _ComputeAndMergePrimvar(prim, cachePath, pv, time, valueCache);
+            }
         }
 
         TfToken opacityInterp;
@@ -291,49 +305,46 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                 &primvars,
                 HdTokens->displayOpacity,
                 _UsdToHdInterpolation(opacityInterp));
+        } else {
+            UsdGeomPrimvar pv =
+                _GetInheritedPrimvar(prim, HdTokens->displayOpacity);
+            if (pv) {
+                _ComputeAndMergePrimvar(prim, cachePath, pv, time, valueCache);
+            }
         }
 
-        if (_GetMaterialBindingPurpose() == HdTokens->full) {
-            // XXX:HACK: Currently GetMaterialPrimvars() does not return
-            // correct results, so in the meantime let's just ask USD
-            // for the list of primvars.  The inherited primvars from parent
-            // should really be cached and shared...
-            
-            // All primvars returned by plural Find* methods have already
-            // been verified to have some authored value
-            UsdGeomPrimvarsAPI primvars(prim);
-            for (auto const &pv: primvars.FindPrimvarsWithInheritance()) {
-                if (_IsBuiltinPrimvar(pv.GetPrimvarName())) {
-                    continue;
-                }
-                _ComputeAndMergePrimvar(
-                    prim, cachePath, pv, time, valueCache);
-            }
-        } else {
+        // Compile a list of primvars to check.
+        std::vector<UsdGeomPrimvar> primvars;
+        UsdImaging_InheritedPrimvarStrategy::value_type inheritedPrimvarRecord =
+            _GetInheritedPrimvars(prim.GetParent());
+        if (inheritedPrimvarRecord) {
+            primvars = inheritedPrimvarRecord->primvars;
+        }
+        UsdGeomPrimvarsAPI primvarsAPI(prim);
+        std::vector<UsdGeomPrimvar> local = primvarsAPI.GetPrimvarsWithValues();
+        primvars.insert(primvars.end(), local.begin(), local.end());
 
-            if (!materialUsdPath.IsEmpty()) {
-                // Obtain the primvars used in the material bound to this prim
-                // and check if they are in this prim, if so, add them to the 
-                // primvars descriptions.
-                TfTokenVector matPrimvarNames;
-                valueCache->FindMaterialPrimvars(materialUsdPath, 
-                                                 &matPrimvarNames);
+        // A list of primvar names to filter against.
+        // XXX: This currently doesn't work for the material network adapter;
+        // we should fix that!
+        TfTokenVector matPrimvarNames;
+        if (_GetMaterialBindingPurpose() != HdTokens->full &&
+            !materialUsdPath.IsEmpty()) {
+            valueCache->FindMaterialPrimvars(materialUsdPath, &matPrimvarNames);
+        }
 
-                UsdGeomPrimvarsAPI primvars(gprim);
-                for (auto const &pvName : matPrimvarNames) {
-                    if (_IsBuiltinPrimvar(pvName)) {
-                        continue;
-                    }
-                    // XXX If we can cache inheritable primvars at each 
-                    // non-leaf prim, then we can use the overload that keeps
-                    // us from needing to search up ancestors.
-                    UsdGeomPrimvar pv = primvars.FindPrimvarWithInheritance(pvName);
-                    if (pv.HasValue()) {
-                        _ComputeAndMergePrimvar(
-                            prim, cachePath, pv, time, valueCache);
-                    }
-                }
+        for (auto const &pv : primvars) {
+            if (_IsBuiltinPrimvar(pv.GetPrimvarName())) {
+                continue;
             }
+            if (_GetMaterialBindingPurpose() != HdTokens->full &&
+                std::find(matPrimvarNames.begin(),
+                          matPrimvarNames.end(),
+                          pv.GetPrimvarName()) == matPrimvarNames.end()) {
+                continue;
+            }
+
+            _ComputeAndMergePrimvar(prim, cachePath, pv, time, valueCache);
         }
     }
 
@@ -655,6 +666,22 @@ UsdImagingGprimAdapter::GetOpacity(UsdPrim const& prim,
         *opacity = VtValue(result);
     }
     return true;
+}
+
+UsdGeomPrimvar
+UsdImagingGprimAdapter::_GetInheritedPrimvar(UsdPrim const& prim,
+                                             TfToken const& primvarName) const
+{
+    UsdImaging_InheritedPrimvarStrategy::value_type inheritedPrimvarRecord =
+        _GetInheritedPrimvars(prim.GetParent());
+    if (inheritedPrimvarRecord) {
+        for (UsdGeomPrimvar const& pv : inheritedPrimvarRecord->primvars) {
+            if (pv.GetPrimvarName() == primvarName) {
+                return pv;
+            }
+        }
+    }
+    return UsdGeomPrimvar();
 }
 
 bool 

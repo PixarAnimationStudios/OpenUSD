@@ -704,6 +704,7 @@ private:
     UsdImaging_PurposeCache _purposeCache;
     UsdImaging_DrawModeCache _drawModeCache;
     UsdImaging_CollectionCache _collectionCache;
+    UsdImaging_InheritedPrimvarCache _inheritedPrimvarCache;
 
     // Pickability
     PickabilityMap _pickablesMap;
