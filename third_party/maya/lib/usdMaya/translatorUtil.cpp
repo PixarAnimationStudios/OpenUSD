@@ -36,13 +36,21 @@
 #include "pxr/usd/usdGeom/xformable.h"
 
 #include <maya/MDagModifier.h>
-#include <maya/MFnSet.h>
+#include <maya/MDagPath.h>
+#include <maya/MFn.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MGlobal.h>
 #include <maya/MObject.h>
+#include <maya/MStatus.h>
 #include <maya/MString.h>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
 const MString _DEFAULT_TRANSFORM_TYPE("transform");
+
 
 /* static */
 bool
@@ -224,50 +232,86 @@ bool
 UsdMayaTranslatorUtil::CreateShaderNode(
         const MString& nodeName,
         const MString& nodeTypeName,
-        const bool asShader,
+        const UsdMayaShadingNodeType shadingNodeType,
         MStatus* status,
-        MObject* shaderObj)
+        MObject* shaderObj,
+        const MObject parentNode)
 {
-    MFnDependencyNode depFn;
-    depFn.create(nodeTypeName, nodeName, status);
-    CHECK_MSTATUS_AND_RETURN(*status, false);
-    *shaderObj = depFn.object(status);
-
-    if (asShader) {
-        MPlug shaderListPlug = UsdMayaUtil::GetMayaShaderListPlug();
-        if (shaderListPlug.isNull()) {
-            return false;
+    MString typeFlag;
+    switch (shadingNodeType) {
+        case UsdMayaShadingNodeType::Light:
+            typeFlag = "-al"; // -asLight
+            break;
+        case UsdMayaShadingNodeType::PostProcess:
+            typeFlag = "-app"; // -asPostProcess
+            break;
+        case UsdMayaShadingNodeType::Rendering:
+            typeFlag = "-ar"; // -asRendering
+            break;
+        case UsdMayaShadingNodeType::Shader:
+            typeFlag = "-as"; // -asShader
+            break;
+        case UsdMayaShadingNodeType::Texture:
+            typeFlag = "-icm -at"; // -isColorManaged -asTexture
+            break;
+        case UsdMayaShadingNodeType::Utility:
+            typeFlag = "-au"; // -asUtility
+            break;
+        default: {
+            MFnDependencyNode depNodeFn;
+            depNodeFn.create(nodeTypeName, nodeName, status);
+            CHECK_MSTATUS_AND_RETURN(*status, false);
+            *shaderObj = depNodeFn.object(status);
+            CHECK_MSTATUS_AND_RETURN(*status, false);
+            return true;
         }
+    }
 
-        MPlug msgPlug = depFn.findPlug("msg", true, status);
+    MString parentFlag;
+    if (!parentNode.isNull()) {
+        const MFnDagNode parentDag(parentNode, status);
         CHECK_MSTATUS_AND_RETURN(*status, false);
-
-        UsdMayaUtil::Connect(msgPlug, shaderListPlug, false);
+        *status = parentFlag.format(" -p \"^1s\"", parentDag.fullPathName());
+        CHECK_MSTATUS_AND_RETURN(*status, false);
     }
 
-    return true;
-}
+    MString cmd;
+    // ss = skipSelect
+    *status = cmd.format("shadingNode ^1s^2s -ss -n \"^3s\" \"^4s\"",
+               typeFlag, parentFlag, nodeName, nodeTypeName);
+    CHECK_MSTATUS_AND_RETURN(*status, false);
 
-/* static */
-bool
-UsdMayaTranslatorUtil::ConnectDefaultLightNode(
-        MObject& lightNode,
-        MStatus* status)
-{
-    MObject lightSetObject = UsdMayaUtil::GetDefaultLightSetObject();
-    if (lightSetObject.isNull()) {
-        return false;
+    const MString createdNode =
+        MGlobal::executeCommandStringResult(cmd, false, false, status);
+    CHECK_MSTATUS_AND_RETURN(*status, false);
+
+    *status = UsdMayaUtil::GetMObjectByName(createdNode.asChar(), *shaderObj);
+    CHECK_MSTATUS_AND_RETURN(*status, false);
+
+    // Lights are unique in that they're the only DAG nodes we might create in
+    // this function, so they also involve a transform node. The shadingNode
+    // command unfortunately seems to return the transform node for the light
+    // and not the light node itself, so we may need to manually find the light
+    // so we can return that instead.
+    if (shaderObj->hasFn(MFn::kDagNode)) {
+        const MFnDagNode dagNodeFn(*shaderObj, status);
+        CHECK_MSTATUS_AND_RETURN(*status, false);
+        MDagPath dagPath;
+        *status = dagNodeFn.getPath(dagPath);
+        CHECK_MSTATUS_AND_RETURN(*status, false);
+        unsigned int numShapes = 0u;
+        *status = dagPath.numberOfShapesDirectlyBelow(numShapes);
+        CHECK_MSTATUS_AND_RETURN(*status, false);
+        if (numShapes == 1u) {
+            *status = dagPath.extendToShape();
+            CHECK_MSTATUS_AND_RETURN(*status, false);
+            *shaderObj = dagPath.node(status);
+            CHECK_MSTATUS_AND_RETURN(*status, false);
+        }
     }
-
-    MFnSet setFn(lightSetObject, status);
-    CHECK_MSTATUS_AND_RETURN(*status, false);
-
-    *status = setFn.addMember(lightNode);
-    CHECK_MSTATUS_AND_RETURN(*status, false);
 
     return true;
 }
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
