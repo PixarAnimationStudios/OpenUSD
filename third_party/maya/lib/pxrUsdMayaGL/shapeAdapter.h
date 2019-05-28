@@ -33,6 +33,7 @@
 #include "pxrUsdMayaGL/userData.h"
 
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/usd/sdf/path.h"
@@ -101,7 +102,7 @@ class PxrMayaHdShapeAdapter
         /// Gets whether the shape adapter's shape is visible.
         ///
         /// This should be called after a call to UpdateVisibility() to ensure
-        /// that the returned value is correct. 
+        /// that the returned value is correct.
         PXRUSDMAYAGL_API
         virtual bool IsVisible() const;
 
@@ -216,6 +217,20 @@ class PxrMayaHdShapeAdapter
                 const MDagPath& shapeDagPath,
                 const unsigned int displayStyle,
                 const MHWRender::DisplayStatus displayStatus) = 0;
+
+        /// Helper for computing the name of the shape's HdRprimCollection.
+        ///
+        /// The batch renderer currently creates a render task for each shape's
+        /// HdRprimCollection, and those render tasks are identified by an
+        /// SdfPath constructed using the collection's name. We therefore need
+        /// the collection to have a name that is unique to the shape it
+        /// represents and also sanitized for use in SdfPaths.
+        ///
+        /// Returns a TfToken collection name that is unique to the shape and
+        /// is a valid SdfPath identifier, or an empty TfToken is there is an
+        /// error.
+        PXRUSDMAYAGL_API
+        virtual TfToken _GetRprimCollectionName() const;
 
         /// Helper for getting the wireframe color of the shape.
         ///

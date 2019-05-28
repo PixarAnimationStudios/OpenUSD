@@ -332,13 +332,15 @@ PxrMayaHdUsdProxyShapeAdapter::_Init(HdRenderIndex* renderIndex)
         return true;
     }
 
-    const TfToken collectionName(_shapeDagPath.fullPathName().asChar());
+    const TfToken collectionName = _GetRprimCollectionName();
 
     TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
         "Initializing PxrMayaHdUsdProxyShapeAdapter: %p\n"
+        "    shape DAG path : %s\n"
         "    collection name: %s\n"
         "    delegateId     : %s\n",
         this,
+        _shapeDagPath.fullPathName().asChar(),
         collectionName.GetText(),
         delegateId.GetText());
 

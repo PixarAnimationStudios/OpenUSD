@@ -466,30 +466,21 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
               ++collectionNum)
 
     {
-        const HdRprimCollection &collection = rprimCollections[collectionNum];
-
-
-        SdfPath renderTaskId;
+        const HdRprimCollection& collection = rprimCollections[collectionNum];
 
         _RenderTaskIdMapKey key = {hash, collection.GetName()};
 
-
+        SdfPath renderTaskId;
         if (!TfMapLookup(_renderTaskIdMap, key, &renderTaskId)) {
-            // The collection name derived from Maya's shape name
-            // and therefore can contain symbols that are not
-            // valid in a SdfPath.  This converts any invalid
-            // symbol to an _.  This may therefore protentially
-            // cause collisions, if two collection names differ
-            // only in invalid symbols.
-            std::string safeCollectionName =
-                        TfMakeValidIdentifier(key.collectionName.GetString());
-
-            // Create a new render task if one does not exist for this hash.
+            // Create a new render task if one does not exist for this key.
+            // Note that we expect the collection name to have already been
+            // sanitized for use in SdfPaths.
+            TF_VERIFY(TfIsValidIdentifier(key.collectionName.GetString()));
             renderTaskId = _rootId.AppendChild(
                 TfToken(TfStringPrintf("%s_%zx_%s",
                                        HdxPrimitiveTokens->renderTask.GetText(),
                                        key.hash,
-                                       safeCollectionName.c_str())));
+                                       key.collectionName.GetText())));
 
             GetRenderIndex().InsertTask<HdxRenderTask>(this, renderTaskId);
 
