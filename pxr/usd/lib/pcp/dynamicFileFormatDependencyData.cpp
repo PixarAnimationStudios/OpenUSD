@@ -89,6 +89,12 @@ PcpDynamicFileFormatDependencyData::CanFieldChangeAffectFileFormatArguments(
     if (!_data) {
         return false;
     }
+
+    // Early out if this particular field wasn't composed for this dependency.
+    if (_data->relevantFieldNames.count(fieldName) == 0) {
+        return false;
+    }
+
     // Check each dependency context.
     for (const _Data::_ContextData &contextData : _data->dependencyContexts) {
         // We better not have logged a dependency for a file format that doesn't
@@ -96,6 +102,7 @@ PcpDynamicFileFormatDependencyData::CanFieldChangeAffectFileFormatArguments(
         if (!TF_VERIFY(contextData.first)) {
             continue;
         }
+        
         // Return true if any context's file format can be affect by this 
         // field change.
         if (contextData.first->CanFieldChangeAffectFileFormatArguments(

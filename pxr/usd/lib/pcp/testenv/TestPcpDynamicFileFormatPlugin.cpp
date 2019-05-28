@@ -541,19 +541,6 @@ Test_PcpDynamicFileFormatPlugin_FileFormat::CanFieldChangeAffectFileFormatArgume
     const VtValue& newValue,
     const VtValue &dependencyContextData) const
 {
-    static TfToken::Set relevantFields = {
-        Test_PcpDynamicFileFormatPlugin_FileFormatTokens->ArgDict,
-        Test_PcpDynamicFileFormatPlugin_FileFormatTokens->Num,
-        Test_PcpDynamicFileFormatPlugin_FileFormatTokens->Depth,
-        Test_PcpDynamicFileFormatPlugin_FileFormatTokens->Radius,
-        Test_PcpDynamicFileFormatPlugin_FileFormatTokens->Height
-    };
-
-    // Reject change if the field is not one of the relevant fields.
-    if (relevantFields.count(field) == 0) {
-        return false;
-    }
-
     // Our implementation of ComposeFieldsForFileFormatArguments sets a 
     // VtDictionary in the dependencyContextData. That better be what we get
     // back here.
