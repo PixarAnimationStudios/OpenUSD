@@ -86,6 +86,8 @@ class testUsdImportRfMLight(unittest.TestCase):
 
         depNodeFn = self._GetMayaDependencyNode(nodePath)
 
+        self.assertTrue(lightTypeName in cmds.listConnections('defaultLightSet'))
+
         testNumber = None
         if lightTypeName == 'CylinderLight':
             self.assertEqual(depNodeFn.typeName(), 'PxrCylinderLight')
