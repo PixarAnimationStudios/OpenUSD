@@ -1184,11 +1184,6 @@ UsdImagingGLEngine::_UpdateHydraCollection(
             HdReprTokens->refined : HdReprTokens->smoothHull);
     }
 
-    // Calculate the rendertags needed based on the parameters passed by
-    // the application
-    TfTokenVector renderTags;
-    _ComputeRenderTags(params, &renderTags);
-
     // By default our main collection will be called geometry
     TfToken colName = HdTokens->geometry;
 
@@ -1198,8 +1193,7 @@ UsdImagingGLEngine::_UpdateHydraCollection(
     // inexpensive comparison first
     bool match = collection->GetName() == colName &&
                  oldRoots.size() == roots.size() &&
-                 collection->GetReprSelector() == reprSelector &&
-                 collection->GetRenderTags().size() == renderTags.size();
+                 collection->GetReprSelector() == reprSelector;
 
     // Only take the time to compare root paths if everything else matches.
     if (match) {
@@ -1216,11 +1210,6 @@ UsdImagingGLEngine::_UpdateHydraCollection(
             }
         }
 
-        // Compare if rendertags match
-        if (renderTags != collection->GetRenderTags()) {
-            match = false;
-        }
-
         // if everything matches, do nothing.
         if (match) return false;
     }
@@ -1228,7 +1217,6 @@ UsdImagingGLEngine::_UpdateHydraCollection(
     // Recreate the collection.
     *collection = HdRprimCollection(colName, reprSelector);
     collection->SetRootPaths(roots);
-    collection->SetRenderTags(renderTags);
 
     return true;
 }

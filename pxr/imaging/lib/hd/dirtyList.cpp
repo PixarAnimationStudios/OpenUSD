@@ -147,8 +147,7 @@ HdDirtyList::ApplyEdit(HdRprimCollection const& col)
     // DirtyBits may change.
     if (col.GetName() != _collection.GetName()
         || col.GetReprSelector() != _collection.GetReprSelector()
-        || col.IsForcedRepr() != _collection.IsForcedRepr()
-        || col.GetRenderTags() != _collection.GetRenderTags()) {
+        || col.IsForcedRepr() != _collection.IsForcedRepr()) {
         return false;
     }
 

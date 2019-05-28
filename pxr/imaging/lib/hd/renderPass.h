@@ -89,11 +89,6 @@ public:
         return _dirtyList;
     }
 
-    /// Returns the most recent list of render tags that this render pass
-    /// has found in the render items included in the collection.
-    HD_API
-    TfTokenVector const &GetRenderTags();
-
     /// Return the render index
     HdRenderIndex* GetRenderIndex() const { return _renderIndex; }
 

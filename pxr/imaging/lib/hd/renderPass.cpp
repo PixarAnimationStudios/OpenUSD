@@ -54,12 +54,6 @@ HdRenderPass::SetRprimCollection(HdRprimCollection const& col)
         return;
     }
 
-    if (col.GetRenderTags() != _collection.GetRenderTags()) {
-        HdChangeTracker &changeTracker = _renderIndex->GetChangeTracker();
-
-        changeTracker.MarkRenderTagsDirty();
-    }
-
     _collection = col; 
 
     // update dirty list subscription for the new collection.
@@ -81,10 +75,6 @@ HdRenderPass::SetRprimCollection(HdRprimCollection const& col)
             s << "    - " << i << "\n";
         }
         s << "  Repr: " << col.GetReprSelector() << "\n";
-        s << "  Render Tags: \n";
-        for (auto i : col.GetRenderTags()) {
-            s << "    - " << i << "\n";
-        }
 
         TF_DEBUG(HD_DIRTY_LIST).Msg("RenderPass(%p)::SetRprimCollection (%s) - "
             "constructing new DirtyList(%p) minorChange(%d) \n%s\n",
@@ -117,15 +107,6 @@ HdRenderPass::Sync()
 
     // Give derived classes a chance to sync.
     _Sync();
-}
-
-TfTokenVector const &
-HdRenderPass::GetRenderTags()
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    return _collection.GetRenderTags();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
