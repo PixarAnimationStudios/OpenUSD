@@ -234,8 +234,8 @@ protected:
         // We assume that duplicate data items are never allowed to be
         // authored. For full generality, this information ought to come from
         // the layer schema.
-        for (int i = 0; i < newValues.size(); ++i) {
-            for (int j = i + 1; j < newValues.size(); ++j) {
+        for (size_t i = 0; i < newValues.size(); ++i) {
+            for (size_t j = i + 1; j < newValues.size(); ++j) {
                 if (newValues[i] == newValues[j]) {
                     TF_CODING_ERROR("Duplicate item '%s' not allowed for "
                                     "field '%s' on <%s>",

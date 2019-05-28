@@ -213,7 +213,7 @@ void _EncodeNHelper(
     auto getCode = [commonValue](SInt x) {
         std::numeric_limits<SmallInt> smallLimit;
         std::numeric_limits<MediumInt> mediumLimit;
-        if (x == commonValue) { return Common; }
+        if (x == _Signed(commonValue)) { return Common; }
         if (x >= smallLimit.min() && x <= smallLimit.max()) { return Small; }
         if (x >= mediumLimit.min() && x <= mediumLimit.max()) { return Medium; }
         return Large;

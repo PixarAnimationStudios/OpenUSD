@@ -101,7 +101,10 @@ public:
         Handle &operator=(Handle const &) = default;
         Handle &operator=(std::nullptr_t) { return *this = Handle(); }
         inline char *GetPtr() const noexcept {
+	    ARCH_PRAGMA_PUSH
+	    ARCH_PRAGMA_MAYBE_UNINITIALIZED
             return Sdf_Pool::_GetPtr(value & RegionMask, value >> RegionBits);
+	    ARCH_PRAGMA_POP
         }
         static inline Handle GetHandle(char const *ptr) noexcept {
             return Sdf_Pool::_GetHandle(ptr);
@@ -229,8 +232,10 @@ private:
             for (unsigned region = 1; region != NumRegions+1; ++region) {
                 char const *start = _regionStarts[region];
                 ptrdiff_t diff = ptr - start;
-                if (ARCH_LIKELY(start && (diff < ElemsPerRegion*ElemSize))) {
-                    return Handle(region, static_cast<uint32_t>(diff / ElemSize));
+                if (ARCH_LIKELY(start && 
+                     (diff < static_cast<ptrdiff_t>(ElemsPerRegion*ElemSize)))){
+                    return Handle(region, 
+                                  static_cast<uint32_t>(diff / ElemSize));
                 }
             }
         }

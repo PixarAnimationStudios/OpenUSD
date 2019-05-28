@@ -3003,7 +3003,7 @@ CrateFile::_BootStrap
 CrateFile::_ReadBootStrap(ByteStream src, int64_t fileSize)
 {
     _BootStrap b;
-    if (fileSize < sizeof(_BootStrap)) {
+    if (fileSize < (int64_t)sizeof(_BootStrap)) {
         TF_RUNTIME_ERROR("File too small to contain bootstrap structure");
         return b;
     }
