@@ -379,6 +379,14 @@ PxrMayaHdShapeAdapter::GetRprimCollection() const
 }
 
 /* virtual */
+const TfTokenVector&
+PxrMayaHdShapeAdapter::GetRenderTags() const
+{
+    return _renderTags;
+}
+
+
+/* virtual */
 const GfMatrix4d&
 PxrMayaHdShapeAdapter::GetRootXform() const
 {

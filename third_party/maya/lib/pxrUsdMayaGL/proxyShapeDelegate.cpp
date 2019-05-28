@@ -44,9 +44,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static HdRprimCollection _sharedRprimCollection(
-        TfToken("UsdMayaGL_ClosestPointOnProxyShape"),
-        HdReprSelector(HdReprTokens->refined));
+static PxrMayaHdPrimFilter _sharedPrimFilter = {
+        HdRprimCollection(
+                TfToken("UsdMayaGL_ClosestPointOnProxyShape"),
+                HdReprSelector(HdReprTokens->refined)
+        ),
+        TfTokenVector()  // Render Tags
+};
 
 /// Delegate for computing a ray intersection against a UsdMayaProxyShape by
 /// rendering using Hydra via the UsdMayaGLBatchRenderer.
@@ -68,8 +72,8 @@ UsdMayaGL_ClosestPointOnProxyShape(
     // Try to populate our shared collection with the shape. If we can't, then
     // we must bail.
     UsdMayaGLBatchRenderer& renderer = UsdMayaGLBatchRenderer::GetInstance();
-    if (!renderer.PopulateCustomCollection(
-            shapeDagPath, _sharedRprimCollection)) {
+    if (!renderer.PopulateCustomPrimFilter(
+            shapeDagPath, _sharedPrimFilter)) {
         return false;
     }
 
@@ -97,8 +101,8 @@ UsdMayaGL_ClosestPointOnProxyShape(
     GfMatrix4d projectionMatrix = frustum.ComputeProjectionMatrix();
 
     HdxPickHitVector isectResult;
-    bool didIsect = renderer.TestIntersectionCustomCollection(
-            _sharedRprimCollection,
+    bool didIsect = renderer.TestIntersectionCustomPrimFilter(
+            _sharedPrimFilter,
             viewMatrix,
             projectionMatrix,
             &isectResult);

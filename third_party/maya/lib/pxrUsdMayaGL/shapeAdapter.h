@@ -179,6 +179,16 @@ class PxrMayaHdShapeAdapter
         PXRUSDMAYAGL_API
         virtual const HdRprimCollection& GetRprimCollection() const;
 
+        /// Retrieves the render tags for this shape.  I.e. which
+        /// prim purposes should be drawn (such as geomerty, proxy, guides
+        /// and/or render).
+        /// This function just returns the _renderTags attribute and it
+        /// is expected each subclass update the attribute in _Sync() or
+        /// overrides this function if it needs special processing.
+        PXRUSDMAYAGL_API
+        virtual const TfTokenVector& GetRenderTags() const;
+
+
         PXRUSDMAYAGL_API
         virtual const GfMatrix4d& GetRootXform() const;
 
@@ -281,6 +291,7 @@ class PxrMayaHdShapeAdapter
         bool _drawBoundingBox;
 
         HdRprimCollection _rprimCollection;
+        TfTokenVector     _renderTags;
 
         GfMatrix4d _rootXform;
 

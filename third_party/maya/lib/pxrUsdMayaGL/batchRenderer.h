@@ -148,17 +148,23 @@ public:
     PXRUSDMAYAGL_API
     static void Reset();
 
-    /// Replaces the contents of the given \p collection with \p dagPath, if
+    /// Replaces the contents of the given \p primFilter with \p dagPath, if
     /// a shape adapter for \p dagPath has already been batched. Returns true
-    /// if successful. Otherwise, does not modify the \p collection, and returns
-    /// false.
+    /// if successful. Otherwise, does not modify the \p primFilter, and
+    /// returns false.
+    ///
+    /// The primFilter is used by Hydra to determine which prims should be
+    /// present in the render path.  It consists of a collection
+    /// (which prim paths to include/exclude) and Render Tags (which prim
+    /// purposes to include).
+    ///
     /// Note that the VP2 shape adapters are searched first, followed by the
     /// Legacy shape adapters. You cannot rely on the shape adapters being
     /// associated with a specific viewport.
     PXRUSDMAYAGL_API
-    bool PopulateCustomCollection(
+    bool PopulateCustomPrimFilter(
             const MDagPath& dagPath,
-            HdRprimCollection& collection);
+            PxrMayaHdPrimFilter& primFilter);
 
     /// Render batch or bounding box in the legacy viewport based on \p request
     PXRUSDMAYAGL_API
@@ -223,8 +229,8 @@ public:
             const MHWRender::MSelectionInfo& selectionInfo,
             const MHWRender::MDrawContext& context);
 
-    /// Tests the contents of the given custom collection (previously obtained
-    /// via PopulateCustomCollection) for intersection with the current OpenGL
+    /// Tests the contents of the given prim filter (previously obtained
+    /// via PopulateCustomFilter) for intersection with the current OpenGL
     /// context.
     /// The caller is responsible for ensuring that an appropriate OpenGL
     /// context is available; this function is not appropriate for interesecting
@@ -233,8 +239,8 @@ public:
     /// If hit(s) are found, returns \c true and populates \p *outResult with
     /// the intersection result.
     PXRUSDMAYAGL_API
-    bool TestIntersectionCustomCollection(
-            const HdRprimCollection& collection,
+    bool TestIntersectionCustomPrimFilter(
+            const PxrMayaHdPrimFilter& primFilter,
             const GfMatrix4d& viewMatrix,
             const GfMatrix4d& projectionMatrix,
             HdxPickHitVector* outResult);
@@ -284,7 +290,7 @@ private:
     /// Allow shape adapters access to the soft selection helper.
     friend PxrMayaHdShapeAdapter;
 
-    typedef std::pair<PxrMayaHdRenderParams, HdRprimCollectionVector>
+    typedef std::pair<PxrMayaHdRenderParams, PxrMayaHdPrimFilterVector>
             _RenderItem;
 
     /// Private helper function to render the given list of render items.
@@ -314,6 +320,7 @@ private:
     /// the \p *result.
     bool _TestIntersection(
             const HdRprimCollection& rprimCollection,
+            const TfTokenVector& renderTags,
             const GfMatrix4d& viewMatrix,
             const GfMatrix4d& projectionMatrix,
             const bool singleSelection,
@@ -402,7 +409,7 @@ private:
     /// map of shape adapters we should use to compute the selection.
     bool _viewport2UsesLegacySelection;
 
-    /// Gets the vector of rprim collections to use for intersection testing.
+    /// Gets the vector of prim filters to use for intersection testing.
     ///
     /// As an optimization for when we do not need to do intersection testing
     /// against all objects in depth (i.e. with single selections or when the
@@ -411,10 +418,10 @@ private:
     /// registered with the batch renderer for the active viewport renderer
     /// (legacy viewport or Viewport 2.0), since we're only interested in the
     /// single nearest hit in depth for a particular pixel. This is much faster
-    /// than testing against each shape adapter's collection individually.
-    /// Otherwise, we test each shape adapter's collection individually so that
+    /// than testing against each shape adapter's prim filter individually.
+    /// Otherwise, we test each shape adapter's prim filter individually so that
     /// occluded shapes will be included in the selection.
-    HdRprimCollectionVector _GetIntersectionRprimCollections(
+    PxrMayaHdPrimFilterVector _GetIntersectionPrimFilters(
             _ShapeAdapterBucketsMap& bucketsMap,
             const M3dView* view,
             const bool useDepthSelection) const;

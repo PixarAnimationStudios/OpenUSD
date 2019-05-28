@@ -52,7 +52,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using HdRprimCollectionVector = std::vector<HdRprimCollection>;
+struct PxrMayaHdPrimFilter {
+    HdRprimCollection collection;
+    TfTokenVector     renderTags;
+};
+
+using PxrMayaHdPrimFilterVector = std::vector<PxrMayaHdPrimFilter>;
 
 class PxrMayaHdSceneDelegate : public HdSceneDelegate
 {
@@ -98,11 +103,11 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
         HdTaskSharedPtrVector GetRenderTasks(
                 const size_t hash,
                 const PxrMayaHdRenderParams& renderParams,
-                const HdRprimCollectionVector& rprimCollections);
+                const PxrMayaHdPrimFilterVector& primFilters);
 
         PXRUSDMAYAGL_API
         HdTaskSharedPtrVector GetPickingTasks(
-                const HdRprimCollection& rprimCollection);
+                const TfTokenVector& renderTags);
 
     protected:
         PXRUSDMAYAGL_API
@@ -111,8 +116,13 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
         template <typename T>
         const T& _GetValue(const SdfPath& id, const TfToken& key) {
             VtValue vParams = _valueCacheMap[id][key];
-            TF_VERIFY(vParams.IsHolding<T>());
-            return vParams.Get<T>();
+            if (!TF_VERIFY(vParams.IsHolding<T>(),
+                           "For Id = %s, Key = %s",
+                           id.GetText(), key.GetText())) {
+                static T ERROR_VALUE;
+                return ERROR_VALUE;
+            }
+            return vParams.UncheckedGet<T>();
         }
 
         template <typename T>
