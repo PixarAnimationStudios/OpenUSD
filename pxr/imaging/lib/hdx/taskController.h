@@ -95,6 +95,14 @@ public:
     HDX_API
     void SetRenderParams(HdxRenderTaskParams const& params);
 
+    /// Set the "view" opinion of the scenes render tags.
+    /// The opinion is the base opinion for the entire scene.
+    /// Individual tasks (such as the shadow task) may
+    /// have a stronger opinion and override this opinion
+    HDX_API
+    void SetRenderTags(TfTokenVector const& renderTags);
+
+
     /// -------------------------------------------------------
     /// AOV API
 
@@ -270,6 +278,8 @@ private:
         virtual bool IsEnabled(TfToken const& option) const;
         virtual HdRenderBufferDescriptor
             GetRenderBufferDescriptor(SdfPath const& id);
+        virtual TfTokenVector GetTaskRenderTags(SdfPath const& taskId);
+
 
     private:
         typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _ValueCache;

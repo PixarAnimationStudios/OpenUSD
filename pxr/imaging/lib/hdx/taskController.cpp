@@ -67,6 +67,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // For the internal delegate...
     (renderBufferDescriptor)
+    (renderTags)
 );
 
 // ---------------------------------------------------------------------------
@@ -113,6 +114,15 @@ HdxTaskController::_Delegate::GetRenderBufferDescriptor(SdfPath const& id)
     return GetParameter<HdRenderBufferDescriptor>(id,
                 _tokens->renderBufferDescriptor);
 }
+
+
+/* virtual */
+TfTokenVector
+HdxTaskController::_Delegate::GetTaskRenderTags(SdfPath const& taskId)
+{
+    return GetParameter<TfTokenVector>(taskId, _tokens->renderTags);
+}
+
 
 // ---------------------------------------------------------------------------
 // Task controller implementation.
@@ -265,8 +275,12 @@ HdxTaskController::_CreateRenderTask(TfToken const& materialTag)
         GetRenderIndex()->InsertTask<HdxOitRenderTask>(&_delegate, taskId);
     }
 
+    // Create an initial set of render tags in case the user doesn't set any
+    TfTokenVector renderTags = { HdTokens->geometry };
+
     _delegate.SetParameter(taskId, HdTokens->params, renderParams);
     _delegate.SetParameter(taskId, HdTokens->collection, collection);
+    _delegate.SetParameter(taskId, HdTokens->renderTags, renderTags);
 
     return taskId;
 }
@@ -385,7 +399,10 @@ HdxTaskController::_CreateShadowTask()
 
     GetRenderIndex()->InsertTask<HdxShadowTask>(&_delegate, _shadowTaskId);
 
+    TfTokenVector renderTags = { HdTokens->geometry };
+
     _delegate.SetParameter(_shadowTaskId, HdTokens->params, shadowParams);
+    _delegate.SetParameter(_shadowTaskId, _tokens->renderTags, renderTags);
 }
 
 void
@@ -944,6 +961,22 @@ HdxTaskController::SetRenderParams(HdxRenderTaskParams const& params)
         }
     }
 }
+
+
+void
+HdxTaskController::SetRenderTags(TfTokenVector const& renderTags)
+{
+    HdChangeTracker &tracker = GetRenderIndex()->GetChangeTracker();
+
+    for (SdfPath const& renderTaskId : _renderTaskIds) {
+        _delegate.SetParameter(renderTaskId,
+                               _tokens->renderTags,
+                               renderTags);
+
+        tracker.MarkTaskDirty(renderTaskId, HdChangeTracker::DirtyRenderTags);
+    }
+}
+
 
 void
 HdxTaskController::SetShadowParams(HdxShadowTaskParams const& params)
