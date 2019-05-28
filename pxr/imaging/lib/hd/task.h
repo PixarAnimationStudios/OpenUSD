@@ -155,6 +155,13 @@ public:
 
     SdfPath const& GetId() const { return _id; }
 
+    /// Returns the minimal set of dirty bits to place in the
+    /// change tracker for use in the first sync of this prim.
+    /// Typically this would be all dirty bits.
+    HD_API
+    virtual HdDirtyBits GetInitialDirtyBitsMask() const;
+
+
 protected:
     /// Extracts a typed value out of the task context at the given id.
     /// If the id is missing or of the wrong type, the code will
@@ -178,6 +185,9 @@ protected:
     template <class T>
     bool _GetTaskParams(HdSceneDelegate* delegate,
                         T* outValue);
+
+    HD_API
+    TfTokenVector _GetTaskRenderTags(HdSceneDelegate* delegate);
 
 private:
     SdfPath _id;

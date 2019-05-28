@@ -685,6 +685,12 @@ public:
     virtual HdPrimvarDescriptorVector
     GetPrimvarDescriptors(SdfPath const& id, HdInterpolation interpolation);
 
+    // -----------------------------------------------------------------------//
+    /// \name Task Aspects
+    // -----------------------------------------------------------------------//
+    HD_API
+    virtual TfTokenVector GetTaskRenderTags(SdfPath const& taskId);
+
 private:
     HdRenderIndex *_index;
     SdfPath _delegateID;

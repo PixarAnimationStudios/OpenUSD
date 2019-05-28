@@ -329,7 +329,7 @@ HdRenderIndex::_TrackDelegateTask(HdSceneDelegate* delegate,
     if (taskId == SdfPath()) {
         return;
     }
-    _tracker.TaskInserted(taskId);
+    _tracker.TaskInserted(taskId, task->GetInitialDirtyBitsMask());
     _taskMap.emplace(taskId, _TaskInfo{delegate, task});
 }
 

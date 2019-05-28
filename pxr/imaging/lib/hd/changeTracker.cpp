@@ -261,10 +261,10 @@ HdChangeTracker::InstancerRPrimRemoved(SdfPath const& instancerId, SdfPath const
 // -------------------------------------------------------------------------- //
 
 void
-HdChangeTracker::TaskInserted(SdfPath const& id)
+HdChangeTracker::TaskInserted(SdfPath const& id, HdDirtyBits initialDirtyState)
 {
     TF_DEBUG(HD_TASK_ADDED).Msg("Task Added: %s\n", id.GetText());
-    _taskState[id] = AllDirty;
+    _taskState[id] = initialDirtyState;
     ++_sceneStateVersion;
 }
 
@@ -288,6 +288,12 @@ HdChangeTracker::MarkTaskDirty(SdfPath const& id, HdDirtyBits bits)
     if (!TF_VERIFY(it != _taskState.end(), "Task Id = %s", id.GetText())) {
         return;
     }
+
+    if (((bits & DirtyRenderTags) != 0) &&
+        ((it->second & DirtyRenderTags) == 0)) {
+        MarkRenderTagsDirty();
+    }
+
     it->second = it->second | bits;
     ++_sceneStateVersion;
 }

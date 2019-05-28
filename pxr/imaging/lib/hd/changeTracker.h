@@ -94,6 +94,7 @@ public:
         DirtyType             = 1 << 1,
         DirtyParams           = 1 << 2,
         DirtyCollection       = 1 << 3,
+        DirtyRenderTags       = 1 << 4,
     };
 
     HD_API
@@ -324,7 +325,7 @@ public:
 
     /// Start tracking Task with the given \p id.
     HD_API
-    void TaskInserted(SdfPath const& id);
+    void TaskInserted(SdfPath const& id, HdDirtyBits initialDirtyState);
 
     /// Stop tracking Task with the given \p id.
     HD_API
