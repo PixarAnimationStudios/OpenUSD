@@ -57,6 +57,7 @@ HdxShadowTask::HdxShadowTask(HdSceneDelegate* delegate, SdfPath const& id)
     , _passes()
     , _renderPassStates()
     , _params()
+    , _renderTags()
 {
 }
 
@@ -73,6 +74,13 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
     HF_MALLOC_TAG_FUNCTION();
     GLF_GROUP_FUNCTION();
 
+    HdRenderIndex &renderIndex = delegate->GetRenderIndex();
+    if (!renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)) {
+        // Clean to prevent repeated calling.
+        *dirtyBits = HdChangeTracker::Clean;
+        return;
+    }
+
     // Extract the lighting context information from the task context
     GlfSimpleLightingContextRefPtr lightingContext;
     if (!_GetTaskContextData(ctx, 
@@ -83,18 +91,18 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
 
     GlfSimpleLightVector const glfLights = lightingContext->GetLights();
     GlfSimpleShadowArrayRefPtr const shadows = lightingContext->GetShadows();
-    HdRenderIndex &renderIndex = delegate->GetRenderIndex();
 
     const bool dirtyParams = (*dirtyBits) & HdChangeTracker::DirtyParams;
     if (dirtyParams) {
-        // Extract the new shadow task params from exec
+        // Extract the new shadow task params from scene delegate
         if (!_GetTaskParams(delegate, &_params)) {
             return;
         }
     }
 
-    if (!renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)) {
-        return;
+    if ((*dirtyBits) & HdChangeTracker::DirtyRenderTags) {
+        // Update render tags from scene delegate
+        _renderTags = _GetTaskRenderTags(delegate);
     }
 
     // Iterate through all lights and for those that have shadows enabled
@@ -272,13 +280,7 @@ HdxShadowTask::Execute(HdTaskContext* ctx)
 const TfTokenVector &
 HdxShadowTask::GetRenderTags() const
 {
-    // This task currently uses a hard coded set of render tags.
-    static TfTokenVector renderTags = {
-            HdTokens->geometry,
-            HdxRenderTagsTokens->interactiveOnlyGeom
-    };
-
-    return renderTags;
+    return _renderTags;
 }
 
 void

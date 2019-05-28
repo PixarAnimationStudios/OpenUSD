@@ -108,6 +108,7 @@ private:
 
     // Alpha sample alpha to coverage
     bool _enableSampleAlphaToCoverage;
+    TfTokenVector _renderTags;
 
     HdxDrawTargetTask()                                      = delete;
     HdxDrawTargetTask(const HdxDrawTargetTask &)             = delete;

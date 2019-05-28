@@ -140,6 +140,8 @@ private:
     HdRenderPassSharedPtrVector _passes;
     HdRenderPassStateSharedPtrVector _renderPassStates;
     HdxShadowTaskParams _params;
+    TfTokenVector       _renderTags;
+
 
     HdxShadowTask() = delete;
     HdxShadowTask(const HdxShadowTask &) = delete;

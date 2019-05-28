@@ -92,6 +92,7 @@ HdxDrawTargetTask::HdxDrawTargetTask(HdSceneDelegate* delegate,
  , _depthFunc(HdCmpFuncLEqual)
  , _cullStyle(HdCullStyleBackUnlessDoubleSided)
  , _enableSampleAlphaToCoverage(true)
+ , _renderTags()
 {
 }
 
@@ -129,6 +130,10 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
         _depthBiasConstantFactor = params.depthBiasConstantFactor;
         _depthBiasSlopeFactor    = params.depthBiasSlopeFactor;
         _depthFunc               = params.depthFunc;
+    }
+
+    if ((*dirtyBits) & HdChangeTracker::DirtyRenderTags) {
+        _renderTags = _GetTaskRenderTags(delegate);
     }
 
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
@@ -383,13 +388,7 @@ HdxDrawTargetTask::Execute(HdTaskContext* ctx)
 const TfTokenVector &
 HdxDrawTargetTask::GetRenderTags() const
 {
-    // This task currently uses a hard coded set of render tags.
-    static TfTokenVector renderTags = {
-            HdTokens->geometry,
-            HdxRenderTagsTokens->interactiveOnlyGeom
-    };
-
-    return renderTags;
+    return _renderTags;
 }
 // --------------------------------------------------------------------------- //
 // VtValue Requirements
