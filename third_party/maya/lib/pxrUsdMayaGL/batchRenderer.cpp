@@ -1049,7 +1049,7 @@ UsdMayaGLBatchRenderer::_TestIntersection(
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     HdTaskSharedPtrVector tasks;
-    tasks = _taskDelegate->GetPickingTasks();
+    tasks = _taskDelegate->GetPickingTasks(rprimCollection);
 
     HdxPickTaskContextParams pickParams;
     pickParams.resolution = _selectionResolution;

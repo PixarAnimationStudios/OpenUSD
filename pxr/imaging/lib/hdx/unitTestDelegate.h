@@ -177,6 +177,8 @@ public:
     virtual HdTextureResource::ID GetTextureResourceID(SdfPath const& textureId);
     virtual HdTextureResourceSharedPtr GetTextureResource(SdfPath const& textureId);
 
+    virtual TfTokenVector GetTaskRenderTags(SdfPath const& taskId);
+
 private:
     struct _Mesh {
         _Mesh() { }

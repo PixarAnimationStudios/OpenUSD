@@ -83,6 +83,7 @@ _IsStreamRenderingBackend(HdRenderIndex *index)
 
 HdxPickTask::HdxPickTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdTask(id)
+    , _renderTags()
     , _index(nullptr)
 {
 }
@@ -253,8 +254,12 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
     // Gather params from the scene and the task context.
     if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
         _GetTaskParams(delegate, &_params);
-        *dirtyBits = HdChangeTracker::Clean;
     }
+
+    if ((*dirtyBits) & HdChangeTracker::DirtyRenderTags) {
+        _renderTags = _GetTaskRenderTags(delegate);
+    }
+
     _GetTaskContextData(ctx, HdxPickTokens->pickParams, &_contextParams);
 
     // Store the render index so we can map ids to paths in Execute()...
@@ -346,6 +351,8 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
         _occluderRenderPass->Sync();
     }
     _pickableRenderPass->Sync();
+
+    *dirtyBits = HdChangeTracker::Clean;
 }
 
 void
@@ -540,7 +547,7 @@ HdxPickTask::Execute(HdTaskContext* ctx)
 const TfTokenVector &
 HdxPickTask::GetRenderTags() const
 {
-    return _params.renderTags;
+    return _renderTags;
 }
 
 HdxPickResult::HdxPickResult(
@@ -909,7 +916,6 @@ operator==(HdxPickTaskParams const& lhs, HdxPickTaskParams const& rhs)
 {
     return lhs.alphaThreshold == rhs.alphaThreshold
         && lhs.cullStyle == rhs.cullStyle
-        && lhs.renderTags == rhs.renderTags
         && lhs.enableSceneMaterials == rhs.enableSceneMaterials;
 }
 
@@ -926,9 +932,6 @@ operator<<(std::ostream& out, HdxPickTaskParams const& p)
         << p.alphaThreshold << " "
         << p.cullStyle << " "
         << p.enableSceneMaterials;
-    for (auto const& a : p.renderTags) {
-        out << a << " ";
-    }
     return out;
 }
 

@@ -72,6 +72,9 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
                 TfToken const& paramName) override;
 
         PXRUSDMAYAGL_API
+        TfTokenVector GetTaskRenderTags(SdfPath const& taskId) override;
+
+        PXRUSDMAYAGL_API
         void SetCameraState(
                 const GfMatrix4d& worldToViewMatrix,
                 const GfMatrix4d& projectionMatrix,
@@ -98,7 +101,8 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
                 const HdRprimCollectionVector& rprimCollections);
 
         PXRUSDMAYAGL_API
-        HdTaskSharedPtrVector GetPickingTasks();
+        HdTaskSharedPtrVector GetPickingTasks(
+                const HdRprimCollection& rprimCollection);
 
     protected:
         PXRUSDMAYAGL_API

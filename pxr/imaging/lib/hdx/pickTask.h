@@ -82,13 +82,11 @@ struct HdxPickTaskParams
     HdxPickTaskParams()
         : alphaThreshold(0.0f)
         , cullStyle(HdCullStyleNothing)
-        , renderTags()
         , enableSceneMaterials(true)
     {}
 
     float alphaThreshold;
     HdCullStyle cullStyle;
-    TfTokenVector renderTags;
     bool enableSceneMaterials;
 };
 
@@ -201,6 +199,8 @@ public:
 private:
     HdxPickTaskParams _params;
     HdxPickTaskContextParams _contextParams;
+    TfTokenVector _renderTags;
+
     // We need to cache a pointer to the render index so Execute() can
     // map prim ID to paths.
     HdRenderIndex *_index;

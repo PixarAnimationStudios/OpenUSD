@@ -44,6 +44,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdxRenderTask::HdxRenderTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdxProgressiveTask(id)
     , _pass()
+    , _renderTags()
     , _setupTask()
 {
 }
@@ -122,6 +123,10 @@ HdxRenderTask::Sync(HdSceneDelegate* delegate,
         }
     }
 
+    if (bits & HdChangeTracker::DirtyRenderTags) {
+        _renderTags = _GetTaskRenderTags(delegate);
+    }
+
     // sync render pass
     if (_pass) {
         _pass->Sync();
@@ -146,7 +151,6 @@ HdxRenderTask::Execute(HdTaskContext* ctx)
     HF_MALLOC_TAG_FUNCTION();
 
     HdRenderPassStateSharedPtr renderPassState = _GetRenderPassState(ctx);
-    TfTokenVector renderTags = _GetRenderTagsForExecute(ctx);
 
     if (!TF_VERIFY(renderPassState)) return;
 
@@ -158,7 +162,7 @@ HdxRenderTask::Execute(HdTaskContext* ctx)
     // Bind the render state and render geometry with the rendertags (if any)
     if (_pass) {
         renderPassState->Bind();
-        _pass->Execute(renderPassState, renderTags);
+        _pass->Execute(renderPassState, GetRenderTags());
         renderPassState->Unbind();
     }
 }
@@ -166,22 +170,7 @@ HdxRenderTask::Execute(HdTaskContext* ctx)
 const TfTokenVector &
 HdxRenderTask::GetRenderTags() const
 {
-    // The setupTask manages the render tags.  So if we own the
-    // setup task, forward the message.  Otherwise if the
-    // task is in the task list, it will add them itself.
-    // (we don't have the task context
-    // ctx to obtain them from the setup task to here, so the
-    // setup task has to do it).
-    // As Sync will agregate the render tags across all tasks
-    // in the task list, it is ok for the setup task
-    // to do this on this tasks behalf and return the
-    // empty set here.
-    if (_setupTask) {
-        return _setupTask->GetRenderTags();
-    } else {
-        static const TfTokenVector EMPTY_SET;
-        return EMPTY_SET;
-    }
+    return _renderTags;
 }
 
 HdRenderPassStateSharedPtr 
@@ -199,24 +188,6 @@ HdxRenderTask::_GetRenderPassState(HdTaskContext *ctx) const
         HdRenderPassStateSharedPtr renderPassState;
         _GetTaskContextData(ctx, HdxTokens->renderPassState, &renderPassState);
         return renderPassState;
-    }
-}
-
-TfTokenVector
-HdxRenderTask::_GetRenderTagsForExecute(HdTaskContext *ctx) const
-{
-    if (_setupTask) {
-        // If HdxRenderTaskParams is set on this task, we will have created an
-        // internal HdxRenderSetupTask in _Sync, to sync and unpack the params,
-        // and we should use the resulting resources.
-        return _setupTask->GetRenderTags();
-    } else {
-        // Otherwise, we expect an application-created HdxRenderSetupTask to
-        // have run and put the renderpass resources in the task context.
-        // See HdxRenderSetupTask::_Execute.
-        TfTokenVector renderTags;
-        _GetTaskContextData(ctx, HdxTokens->renderTags, &renderTags);
-        return renderTags;
     }
 }
 

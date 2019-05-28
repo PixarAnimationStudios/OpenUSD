@@ -70,6 +70,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     (selectionTask)
+    (renderTags)
 );
 
 
@@ -183,6 +184,15 @@ PxrMayaHdSceneDelegate::GetCameraParamValue(
         TfToken const& paramName)
 {
     return Get(cameraId, paramName);
+}
+
+PXRUSDMAYAGL_API
+TfTokenVector
+PxrMayaHdSceneDelegate::GetTaskRenderTags(SdfPath const& taskId)
+{
+    VtValue value = Get(taskId, _tokens->renderTags);
+
+    return value.Get<TfTokenVector>();
 }
 
 void
@@ -405,8 +415,22 @@ PxrMayaHdSceneDelegate::GetSetupTasks()
 }
 
 HdTaskSharedPtrVector
-PxrMayaHdSceneDelegate::GetPickingTasks()
+PxrMayaHdSceneDelegate::GetPickingTasks(
+        const HdRprimCollection& rprimCollection)
 {
+    // Update tasks render tags to match those in the collection
+    const TfTokenVector &currentRenderTags =
+        _GetValue<TfTokenVector>(_pickingTaskId, _tokens->renderTags);
+
+    const TfTokenVector &desiredRenderTags = rprimCollection.GetRenderTags();
+
+    if (currentRenderTags != desiredRenderTags) {
+        _SetValue(_pickingTaskId, _tokens->renderTags, desiredRenderTags);
+        GetRenderIndex().GetChangeTracker().MarkTaskDirty(
+            _pickingTaskId,
+            HdChangeTracker::DirtyRenderTags);
+    }
+
     HdTaskSharedPtrVector tasks;
 
     tasks.push_back(GetRenderIndex().GetTask(_pickingTaskId));
@@ -501,6 +525,19 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
         GetRenderIndex().GetChangeTracker().MarkTaskDirty(
             renderTaskId,
             HdChangeTracker::DirtyCollection);
+
+        // Update tasks render tags to match those in the collection
+        const TfTokenVector &currentRenderTags =
+            _GetValue<TfTokenVector>(renderTaskId, _tokens->renderTags);
+
+        const TfTokenVector &desiredRenderTags = collection.GetRenderTags();
+
+        if (currentRenderTags != desiredRenderTags) {
+            _SetValue(renderTaskId, _tokens->renderTags, desiredRenderTags);
+            GetRenderIndex().GetChangeTracker().MarkTaskDirty(
+                    renderTaskId,
+                HdChangeTracker::DirtyRenderTags);
+        }
     }
 
     SdfPath selectionTaskId;
@@ -571,37 +608,11 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
     HdxRenderTaskParams renderSetupTaskParams =
         _GetValue<HdxRenderTaskParams>(renderSetupTaskId, HdTokens->params);
 
-    // Aggregate Render Tags across from all collections, to set in the
-    // setup task.
-    // This is a summary state, to help avoid syncing prims that don't
-    // participate in the final scene.  This doesn't effect which prims gets
-    // rendered in the final task.
-    TfTokenVector renderTags;
-    for (size_t collectionNum = 0;
-                collectionNum <  numCollections;
-              ++collectionNum)
-
-    {
-        const HdRprimCollection &collection = rprimCollections[collectionNum];
-        const TfTokenVector &colRenderTags = collection.GetRenderTags();
-
-        renderTags.insert(renderTags.end(),
-                          colRenderTags.cbegin(),
-                          colRenderTags.cend());
-    }
-    std::sort(renderTags.begin(), renderTags.end());
-
-    TfTokenVector::iterator newEnd =
-            std::unique(renderTags.begin(), renderTags.end());
-    renderTags.erase(newEnd, renderTags.end());
-
     if (renderSetupTaskParams.enableLighting != renderParams.enableLighting ||
-        renderSetupTaskParams.wireframeColor != renderParams.wireframeColor ||
-        renderSetupTaskParams.renderTags     != renderTags) {
+        renderSetupTaskParams.wireframeColor != renderParams.wireframeColor) {
         // Update the render setup task params.
         renderSetupTaskParams.enableLighting = renderParams.enableLighting;
         renderSetupTaskParams.wireframeColor = renderParams.wireframeColor;
-        renderSetupTaskParams.renderTags.swap(renderTags);
 
         // Store the updated render setup task params back in the cache and
         // mark them dirty.

@@ -98,6 +98,7 @@ protected:
 
 private:
     HdRenderPassSharedPtr _pass;
+    TfTokenVector _renderTags;
 
     // Optional internal render setup task, for params unpacking.
     HdxRenderSetupTaskSharedPtr _setupTask;
@@ -106,12 +107,6 @@ private:
     // XXX: This should be moved to hdSt!
     void _SetHdStRenderPassState(HdTaskContext *ctx,
                                  HdStRenderPassState *renderPassState);
-
-    // Get Render Tags for Execute Phase.
-    // The setup task is what manages the render tags and so the dataflow
-    // is different depending on the phase and whether this task owns the
-    // setup task.
-    TfTokenVector _GetRenderTagsForExecute(HdTaskContext *ctx) const;
 
     HdxRenderTask() = delete;
     HdxRenderTask(const HdxRenderTask &) = delete;

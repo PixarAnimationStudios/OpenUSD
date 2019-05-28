@@ -558,6 +558,10 @@ UsdImagingGLEngine::TestIntersection(
     SdfPathVector roots(1, _delegate->ConvertCachePathToIndexPath(cachePath));
     _UpdateHydraCollection(&_intersectCollection, roots, params);
 
+    TfTokenVector renderTags;
+    _ComputeRenderTags(params, &renderTags);
+    _taskController->SetRenderTags(renderTags);
+
     HdxRenderTaskParams hdParams = _MakeHydraUsdImagingGLRenderParams(params);
     _taskController->SetRenderParams(hdParams);
 
@@ -1279,8 +1283,6 @@ UsdImagingGLEngine::_MakeHydraUsdImagingGLRenderParams(
     }
 
     params.enableSceneMaterials = renderParams.enableSceneMaterials;
-
-    _ComputeRenderTags(renderParams, &params.renderTags);
 
     // We don't provide the following because task controller ignores them:
     // - params.camera

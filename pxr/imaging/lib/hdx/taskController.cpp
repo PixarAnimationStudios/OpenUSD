@@ -947,12 +947,10 @@ HdxTaskController::SetRenderParams(HdxRenderTaskParams const& params)
         
         if (pickParams.alphaThreshold != params.alphaThreshold ||
             pickParams.cullStyle != params.cullStyle ||
-            pickParams.renderTags != params.renderTags ||
             pickParams.enableSceneMaterials != params.enableSceneMaterials) {
 
             pickParams.alphaThreshold = params.alphaThreshold;
             pickParams.cullStyle = params.cullStyle;
-            pickParams.renderTags = params.renderTags;
             pickParams.enableSceneMaterials = params.enableSceneMaterials;
 
             _delegate.SetParameter(_pickTaskId, HdTokens->params, pickParams);
@@ -974,6 +972,14 @@ HdxTaskController::SetRenderTags(TfTokenVector const& renderTags)
                                renderTags);
 
         tracker.MarkTaskDirty(renderTaskId, HdChangeTracker::DirtyRenderTags);
+    }
+
+    if (!_pickTaskId.IsEmpty()) {
+        _delegate.SetParameter(_pickTaskId,
+                               _tokens->renderTags,
+                               renderTags);
+
+        tracker.MarkTaskDirty(_pickTaskId, HdChangeTracker::DirtyRenderTags);
     }
 }
 

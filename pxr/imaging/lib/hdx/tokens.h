@@ -57,7 +57,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (oitSamples)                \
     (renderPassState)           \
     (renderIndexVersion)        \
-    (renderTags)                \
     (selection)                 \
     (selectionState)            \
     (selectionOffsets)          \

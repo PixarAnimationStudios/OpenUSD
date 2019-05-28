@@ -56,6 +56,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (rotate)
     (scale)
     (translate)
+    (renderTags)
 );
 
 static void
@@ -324,6 +325,10 @@ Hdx_UnitTestDelegate::AddRenderTask(SdfPath const &id)
     cache[HdTokens->collection]
         = HdRprimCollection(HdTokens->geometry, 
             HdReprSelector(HdReprTokens->smoothHull));
+
+    // Don't filter on render tag.
+    // XXX: However, this will mean no prim passes if any stage defines a tag
+    cache[_tokens->renderTags] = TfTokenVector();
 }
 
 void
@@ -393,6 +398,11 @@ Hdx_UnitTestDelegate::AddPickTask(SdfPath const &id)
 
     HdxPickTaskParams params;
     cache[HdTokens->params] = params;
+
+    // Don't filter on render tag.
+    // XXX: However, this will mean no prim passes if any stage defines a tag
+    cache[_tokens->renderTags] = TfTokenVector();
+
 }
 
 void
@@ -960,6 +970,13 @@ Hdx_UnitTestDelegate::GetTextureResourceID(SdfPath const& textureId)
 {
     return SdfPath::Hash()(textureId);
 }
+
+TfTokenVector
+Hdx_UnitTestDelegate::GetTaskRenderTags(SdfPath const& taskId)
+{
+    return _valueCacheMap[taskId][_tokens->renderTags].Get<TfTokenVector>();
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -53,7 +53,6 @@ HdxRenderSetupTask::HdxRenderSetupTask(HdSceneDelegate* delegate, SdfPath const&
     , _idRenderPassShader()
     , _viewport()
     , _cameraId()
-    , _renderTags()
     , _aovBindings()
 {
     _colorRenderPassShader.reset(
@@ -109,14 +108,6 @@ HdxRenderSetupTask::Execute(HdTaskContext* ctx)
 
     // set raster state to TaskContext
     (*ctx)[HdxTokens->renderPassState] = VtValue(_renderPassState);
-    (*ctx)[HdxTokens->renderTags] = VtValue(_renderTags);
-}
-
-/// Gather render tags
-const TfTokenVector &
-HdxRenderSetupTask::GetRenderTags() const
-{
-    return _renderTags;
 }
 
 void
@@ -193,15 +184,6 @@ HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
     _viewport = params.viewport;
     _cameraId = params.camera;
     _aovBindings = params.aovBindings;
-
-    // We have to notify Hydra that the render tags have changed.
-    // So that sync will pick it up.
-    if (_renderTags != params.renderTags) {
-        _renderTags = params.renderTags;
-
-        renderIndex.GetChangeTracker().MarkRenderTagsDirty();
-    }
-
 
     if (HdStRenderPassState* extendedState =
             dynamic_cast<HdStRenderPassState*>(renderPassState.get())) {
@@ -322,9 +304,6 @@ std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv)
         for (auto const& a : pv.aovBindings) {
             out << a << " ";
         }
-        for (auto const& rt : pv.renderTags) {
-            out << rt << " ";
-        }
     return out;
 }
 
@@ -365,8 +344,7 @@ bool operator==(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs)
            lhs.cullStyle               == rhs.cullStyle               &&
            lhs.aovBindings             == rhs.aovBindings             &&
            lhs.camera                  == rhs.camera                  &&
-           lhs.viewport                == rhs.viewport                &&
-           lhs.renderTags              == rhs.renderTags;
+           lhs.viewport                == rhs.viewport;
 }
 
 bool operator!=(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs) 
