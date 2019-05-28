@@ -138,6 +138,17 @@ UsdSkelBlendShapeQuery::GetInbetween(size_t subShapeIndex) const
 }
 
 
+size_t
+UsdSkelBlendShapeQuery::GetBlendShapeIndex(size_t subShapeIndex) const
+{
+    if (subShapeIndex < _subShapes.size()) {
+        return _subShapes[subShapeIndex].GetBlendShapeIndex();
+    }
+    return 0;
+}
+
+
+
 std::vector<VtUIntArray>
 UsdSkelBlendShapeQuery::ComputeBlendShapePointIndices() const
 {

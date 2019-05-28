@@ -156,6 +156,10 @@ public:
     bool GetBlendShapeWeightTimeSamplesInInterval(const GfInterval& interval,
                                                   std::vector<double>* times) const;
 
+    /// Get the attributes contributing to blendshape weight computations.
+    USDSKEL_API
+    bool GetBlendShapeWeightAttributes(std::vector<UsdAttribute>* attrs) const;
+
     /// Return true if it possible, but not certain, that the blend shape
     /// weights computed through this animation query change over time,
     /// false otherwise.

@@ -1956,25 +1956,6 @@ _BakeSkinnedPoints(const UsdPrim& prim,
     const std::vector<VtVec3fArray> subShapePointOffsets =
         blendShapeQuery.ComputeSubShapePointOffsets();
 
-    // Compute mapper for remapping blend shape weights.
-    UsdSkelAnimMapper blendShapeMapper;
-    bool haveBlendShapes = false;
-
-    if (skinningQuery.HasBlendShapes()) {
-
-        // We have bindings for blend shapes, but these only mean
-        // something if we have an animation source to provide weight values.
-        if (const auto& animQuery = skelQuery.GetAnimQuery()) {
-            VtTokenArray blendShapeOrder;
-            if (skinningQuery.GetBlendShapesAttr().Get(&blendShapeOrder)) {
-                blendShapeMapper =
-                    UsdSkelAnimMapper(animQuery.GetBlendShapeOrder(),
-                                      blendShapeOrder);
-                haveBlendShapes = true;
-            }
-        }
-    }
-
     for (size_t i = 0; i < times.size(); ++i) {
         const VtValue& points = pointsValues[i];
         if (!points.IsHolding<VtVec3fArray>()) {
@@ -1989,25 +1970,10 @@ _BakeSkinnedPoints(const UsdPrim& prim,
             "(sample %zu of %zu)\n",
             TfStringify(time).c_str(), i, times.size());
 
-        // XXX: More complete and sophisticated skinning code would compute
-        // skinning transforms and blend shape weights once for all prims
-        // deformed by a single skeleton, instead of recomputing them for each
-        // individual prim skinned.
-        // However, since this method is intended only for testing, simplicity
-        // and correctness are greater priorities than performance.
-
-        VtMatrix4dArray xforms;
-        if (!skelQuery.ComputeSkinningTransforms(&xforms, time)) {
-            TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
-                "[UsdSkelBakeSkinning]   Failed computing "
-                "skinning transforms\n");
-            return false;
-        }
-
         VtVec3fArray skinnedPoints(points.UncheckedGet<VtVec3fArray>());
 
         // Apply blend shapes before skinning.
-        if (haveBlendShapes) {
+        if (skinningQuery.HasBlendShapes()) {
 
             TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
                 "[UsdSkelBakeSkinning]    Applying blend shapes\n");
@@ -2024,7 +1990,8 @@ _BakeSkinnedPoints(const UsdPrim& prim,
             // Remap the weights from the order on the animation source
             // to the order of the shapes bound to this skinnable prim.
             VtFloatArray weightsForPrim;
-            if (!blendShapeMapper.Remap(weights, &weightsForPrim)) {
+            if (!skinningQuery.GetBlendShapeMapper()->Remap(
+                    weights, &weightsForPrim)) {
                 return false;
             }
 
@@ -2048,6 +2015,21 @@ _BakeSkinnedPoints(const UsdPrim& prim,
 
             TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
                 "[UsdSkelBakeSkinning]    Applying linear blend skinning\n");
+
+            // XXX: More complete and sophisticated skinning code would compute
+            // skinning transforms and blend shape weights once for all prims
+            // deformed by a single skeleton, instead of recomputing them for each
+            // individual prim skinned.
+            // However, since this method is intended only for testing, simplicity
+            // and correctness are greater priorities than performance.
+
+            VtMatrix4dArray xforms;
+            if (!skelQuery.ComputeSkinningTransforms(&xforms, time)) {
+                TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
+                    "[UsdSkelBakeSkinning]   Failed computing "
+                    "skinning transforms\n");
+                return false;
+            }
 
             if (!skinningQuery.ComputeSkinnedPoints(
                     xforms, &skinnedPoints, time)) {

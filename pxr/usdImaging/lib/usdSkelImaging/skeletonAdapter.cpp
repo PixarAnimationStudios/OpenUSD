@@ -2060,8 +2060,8 @@ UsdSkelImagingSkeletonAdapter::_SkinnedPrimData::_SkinnedPrimData(
 
     hasJointInfluences = skinningQuery.HasJointInfluences();
     if (hasJointInfluences) {
-        if (skinningQuery.GetMapper()) {
-            jointMapper = *skinningQuery.GetMapper();
+        if (skinningQuery.GetJointMapper()) {
+            jointMapper = *skinningQuery.GetJointMapper();
         } else {
             // Store an identity mapper.
             jointMapper = UsdSkelAnimMapper(skelQuery.GetTopology().size());
@@ -2074,23 +2074,7 @@ UsdSkelImagingSkeletonAdapter::_SkinnedPrimData::_SkinnedPrimData(
             std::make_shared<UsdSkelBlendShapeQuery>(
                 UsdSkelBindingAPI(skinningQuery.GetPrim()));
         if (blendShapeQuery->IsValid()) {
-
-            const VtTokenArray blendShapeAnimOrder =
-                skelQuery.GetAnimQuery().GetBlendShapeOrder();
-            
-            // See if the skinned prim has a custom blend shape order.
-            VtTokenArray blendShapePrimOrder;
-            const UsdAttribute& blendShapesAttr =
-                skinningQuery.GetBlendShapesAttr();
-            if (blendShapesAttr && blendShapesAttr.Get(&blendShapePrimOrder)) {
-                blendShapeMapper =
-                    UsdSkelAnimMapper(blendShapeAnimOrder,
-                                      blendShapePrimOrder);
-            } else {
-                // Store an identity map to indicate no mapping is required.
-                blendShapeMapper =
-                    UsdSkelAnimMapper(blendShapeAnimOrder.size());
-            }
+            blendShapeMapper = *skinningQuery.GetBlendShapeMapper();
         } else {
             blendShapeQuery.reset();
         }

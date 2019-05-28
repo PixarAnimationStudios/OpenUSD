@@ -84,6 +84,9 @@ public:
              const GfInterval& interval,
              std::vector<double>* times) const override;
 
+    bool GetBlendShapeWeightAttributes(
+             std::vector<UsdAttribute>* attrs) const override;
+
     bool BlendShapeWeightsMightBeTimeVarying() const override;
 
 private:
@@ -228,6 +231,14 @@ UsdSkel_SkelAnimationQueryImpl::GetBlendShapeWeightTimeSamples(
     return _blendShapeWeights.GetTimeSamplesInInterval(interval, times);
 }
 
+
+bool
+UsdSkel_SkelAnimationQueryImpl::GetBlendShapeWeightAttributes(
+    std::vector<UsdAttribute>* attrs) const
+{
+    attrs->push_back(_blendShapeWeights.GetAttribute());
+    return true;
+}
 
 bool
 UsdSkel_SkelAnimationQueryImpl::BlendShapeWeightsMightBeTimeVarying() const
