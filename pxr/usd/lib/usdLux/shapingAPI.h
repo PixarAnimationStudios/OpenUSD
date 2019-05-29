@@ -284,7 +284,7 @@ public:
     /// \n  C++ Type: bool
     /// \n  Usd Type: SdfValueTypeNames->Bool
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// \n  Fallback Value: False
     USDLUX_API
     UsdAttribute GetShapingIesNormalizeAttr() const;
 
