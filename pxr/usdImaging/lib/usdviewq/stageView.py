@@ -216,13 +216,13 @@ class OutlineRect(Rect):
 
         self._glslProgram = GLSLProgram(
             # for OpenGL 3.1 or later
-            """#version 140
+            """#version 150
                uniform vec4 rect;
                in vec2 st;
                void main() {
                  gl_Position = vec4(rect.x + rect.z*st.x,
                                     rect.y + rect.w*st.y, 0, 1); }""",
-            """#version 140
+            """#version 150
                out vec4 fragColor;
                uniform vec4 color;
               void main() { fragColor = color; }""",
@@ -293,13 +293,13 @@ class FilledRect(Rect):
 
         self._glslProgram = GLSLProgram(
             # for OpenGL 3.1 or later
-            """#version 140
+            """#version 150
                uniform vec4 rect;
                in vec2 st;
                void main() {
                  gl_Position = vec4(rect.x + rect.z*st.x,
                                     rect.y + rect.w*st.y, 0, 1); }""",
-            """#version 140
+            """#version 150
                out vec4 fragColor;
                uniform vec4 color;
               void main() { fragColor = color; }""",
@@ -491,7 +491,7 @@ class HUD():
 
         self._glslProgram = GLSLProgram(
             # for OpenGL 3.1 or later
-            """#version 140
+            """#version 150
                uniform vec4 rect;
                in vec2 st;
                out vec2 uv;
@@ -499,7 +499,7 @@ class HUD():
                  gl_Position = vec4(rect.x + rect.z*st.x,
                                     rect.y + rect.w*st.y, 0, 1);
                  uv          = vec2(st.x, 1 - st.y); }""",
-            """#version 140
+            """#version 150
                in vec2 uv;
                out vec4 color;
                uniform sampler2D tex;
@@ -1018,11 +1018,11 @@ class StageView(QtOpenGL.QGLWidget):
     def GetSimpleGLSLProgram(self):
         if self._simpleGLSLProgram == None:
             self._simpleGLSLProgram = GLSLProgram(
-            """#version 140
+            """#version 150
                uniform mat4 mvpMatrix;
                in vec3 position;
                void main() { gl_Position = vec4(position, 1)*mvpMatrix; }""",
-            """#version 140
+            """#version 150
                out vec4 outColor;
                uniform vec4 color;
                void main() { outColor = color; }""",

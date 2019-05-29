@@ -196,7 +196,7 @@ HdxColorCorrectionTask::_CreateShaderResources()
 
     HioGlslfx glslfx(HdxPackageColorCorrectionShader());
 
-    std::string fragCode = "#version 120\n";
+    std::string fragCode = "#version 150\n";
 
     if (useOCIO) {
         fragCode += "#define GLSLFX_USE_OCIO\n";
