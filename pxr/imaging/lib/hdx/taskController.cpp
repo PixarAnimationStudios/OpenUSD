@@ -120,7 +120,10 @@ HdxTaskController::_Delegate::GetRenderBufferDescriptor(SdfPath const& id)
 TfTokenVector
 HdxTaskController::_Delegate::GetTaskRenderTags(SdfPath const& taskId)
 {
-    return GetParameter<TfTokenVector>(taskId, _tokens->renderTags);
+    if (HasParameter(taskId, _tokens->renderTags)) {
+        return GetParameter<TfTokenVector>(taskId, _tokens->renderTags);
+    }
+    return TfTokenVector();
 }
 
 
@@ -967,11 +970,13 @@ HdxTaskController::SetRenderTags(TfTokenVector const& renderTags)
     HdChangeTracker &tracker = GetRenderIndex()->GetChangeTracker();
 
     for (SdfPath const& renderTaskId : _renderTaskIds) {
-        _delegate.SetParameter(renderTaskId,
-                               _tokens->renderTags,
-                               renderTags);
-
-        tracker.MarkTaskDirty(renderTaskId, HdChangeTracker::DirtyRenderTags);
+        if (_delegate.GetTaskRenderTags(renderTaskId) != renderTags) {
+            _delegate.SetParameter(renderTaskId,
+                                   _tokens->renderTags,
+                                   renderTags);
+            tracker.MarkTaskDirty(renderTaskId,
+                                  HdChangeTracker::DirtyRenderTags);
+        }
     }
 
     if (!_pickTaskId.IsEmpty()) {
