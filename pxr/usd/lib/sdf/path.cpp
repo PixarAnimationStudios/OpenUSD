@@ -709,7 +709,27 @@ struct _PerThreadPrimPathCache
 };
 }
 
-using _PrimPathCache = Sdf_FastThreadLocalBase<_PerThreadPrimPathCache>;
+namespace {
+// XXX: Workaround for Windows issue USD-5306 -- this avoids destroying the
+// per-thread caches to deal with static destruction order problems.
+template <class T>
+struct _FastThreadLocalBase
+{
+    static T &Get() {
+        static thread_local T *theTPtr = nullptr;
+        if (ARCH_LIKELY(theTPtr)) {
+            return *theTPtr;
+        }
+        static thread_local
+            typename std::aligned_storage<sizeof(T)>::type storage;
+        void *addr = &storage;
+        T *p = new (addr) T;
+        theTPtr = p;
+        return *p;
+    }
+};
+}
+using _PrimPathCache = _FastThreadLocalBase<_PerThreadPrimPathCache>;
 static _PrimPathCache _primPathCache;
 
 SdfPath
