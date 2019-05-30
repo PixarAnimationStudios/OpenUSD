@@ -440,5 +440,47 @@ class TestUsdBugs(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             nullPrim.IsDefined()
 
+    def test_PIPE_6232(self):
+        # This interaction between nested instancing, load/unload, activation,
+        # and inherits triggered a corruption of instancing data structures and
+        # ultimately a crash bug in the USD core.
+        from pxr import Usd, Sdf
+        l = Sdf.Layer.CreateAnonymous('.usda')
+        l.ImportFromString('''#usda 1.0
+def "outerM" ( instanceable = true )
+{
+    def "inner" ( payload = </innerM> )
+    {
+    }
+}
+def "innerM" (
+    instanceable = true
+    inherits = </_someClass>
+)
+{
+}
+def "World"
+{
+    def "i" ( prepend references = </outerM> )
+    {
+    }
+}
+def "OtherWorld"
+{
+    def "i" ( prepend references = </outerM> )
+    {
+    }
+}''')
+        s = Usd.Stage.Open(l, load=Usd.Stage.LoadNone)
+        # === Load /World/i ===
+        s.Load('/World/i')
+        # === Deactivate /World ==='
+        s.GetPrimAtPath('/World').SetActive(False)
+        # === Create class /_someClass ==='
+        s.CreateClassPrim('/_someClass')
+        p = s.GetPrimAtPath('/OtherWorld/i/inner')
+        self.assertTrue(p.IsInstance())
+        self.assertTrue(p.GetMaster())
+
 if __name__ == '__main__':
     unittest.main()

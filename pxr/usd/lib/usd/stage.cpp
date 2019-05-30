@@ -4079,11 +4079,15 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
                 if (*iter == oldPath)
                     continue;
                 SdfPath payloadPath = iter->ReplacePrefix(oldPath, newPath);
-                newPayloads.insert(payloadPath);
-                TF_DEBUG(USD_INSTANCING).Msg(
-                    "Including equivalent payload <%s> -> <%s> for instancing "
-                    "changes.\n",
-                    iter->GetText(), payloadPath.GetText());
+                // Only include the equivalent payload if we have a prim at the
+                // newPath.
+                if (GetPrimAtPath(newPath)) {
+                    newPayloads.insert(payloadPath);
+                    TF_DEBUG(USD_INSTANCING).Msg(
+                        "Including equivalent payload <%s> -> <%s> for "
+                        "instancing changes.\n",
+                        iter->GetText(), payloadPath.GetText());
+                }
             }
         }
         if (!newPayloads.empty()) {
