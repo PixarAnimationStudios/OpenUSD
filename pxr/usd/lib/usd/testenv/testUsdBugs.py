@@ -445,19 +445,22 @@ class TestUsdBugs(unittest.TestCase):
         # and inherits triggered a corruption of instancing data structures and
         # ultimately a crash bug in the USD core.
         from pxr import Usd, Sdf
-        l = Sdf.Layer.CreateAnonymous('.usda')
-        l.ImportFromString('''#usda 1.0
-def "outerM" ( instanceable = true )
-{
-    def "inner" ( payload = </innerM> )
-    {
-    }
-}
+        lpay = Sdf.Layer.CreateAnonymous('.usda')
+        lpay.ImportFromString('''#usda 1.0
 def "innerM" (
     instanceable = true
     inherits = </_someClass>
 )
 {
+}
+''')
+        l = Sdf.Layer.CreateAnonymous('.usda')
+        l.ImportFromString('''#usda 1.0
+def "outerM" ( instanceable = true )
+{
+    def "inner" ( payload = @%s@</innerM> )
+    {
+    }
 }
 def "World"
 {
@@ -470,7 +473,7 @@ def "OtherWorld"
     def "i" ( prepend references = </outerM> )
     {
     }
-}''')
+}'''%lpay.identifier)
         s = Usd.Stage.Open(l, load=Usd.Stage.LoadNone)
         # === Load /World/i ===
         s.Load('/World/i')
