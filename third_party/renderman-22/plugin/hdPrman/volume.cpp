@@ -24,6 +24,7 @@
 #include "hdPrman/volume.h"
 
 #include "hdPrman/context.h"
+#include "hdPrman/instancer.h"
 #include "hdPrman/material.h"
 #include "hdPrman/renderParam.h"
 #include "hdPrman/renderPass.h"
@@ -72,7 +73,6 @@ HdPrman_Volume::HdPrman_Volume(SdfPath const& id,
                            SdfPath const& instancerId)
     : HdVolume(id, instancerId)
     , _masterId(riley::GeometryMasterId::k_InvalidId)
-    , _instanceId(riley::GeometryInstanceId::k_InvalidId)
 {
 }
 
@@ -87,15 +87,16 @@ HdPrman_Volume::Finalize(HdRenderParam *renderParam)
     // Release retained conversions of coordSys bindings.
     context->ReleaseCoordSysBindings(GetId());
 
+    // Delete instances before deleting the masters they use.
+    for (const auto &id: _instanceIds) {
+        riley->DeleteGeometryInstance(
+            riley::GeometryMasterId::k_InvalidId, id);
+    }
+    _instanceIds.clear();
+
     if (_masterId != riley::GeometryMasterId::k_InvalidId) {
         riley->DeleteGeometryMaster(_masterId);
         _masterId = riley::GeometryMasterId::k_InvalidId;
-    }
-    if (_instanceId != riley::GeometryInstanceId::k_InvalidId) {
-        riley->DeleteGeometryInstance(
-            riley::GeometryMasterId::k_InvalidId, // no group
-            _instanceId);
-        _instanceId = riley::GeometryInstanceId::k_InvalidId;
     }
 }
 
@@ -110,6 +111,7 @@ HdPrman_Volume::GetInitialDirtyBitsMask() const
         | HdChangeTracker::DirtyVisibility
         | HdChangeTracker::DirtyPrimvar
         | HdChangeTracker::DirtyMaterialId
+        | HdChangeTracker::DirtyInstanceIndex
         ;
 
     return (HdDirtyBits)mask;
@@ -200,11 +202,11 @@ HdPrman_Volume::Sync(HdSceneDelegate *sceneDelegate,
     }
 
     SdfPath const& id = GetId();
+    const bool isInstance = !GetInstancerId().IsEmpty();
 
-    float const zerotime = 0.0f;
-    RtMatrix4x4 matrix =
-        HdPrman_GfMatrixToRtMatrix(sceneDelegate->GetTransform(id));
-    riley::Transform xform = { 1, &matrix, &zerotime };
+    // Sample transform
+    HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
+    sceneDelegate->SampleTransform(id, &xf);
 
     RixRileyManager *mgr = context->mgr;
     riley::Riley *riley = context->riley;
@@ -235,50 +237,148 @@ HdPrman_Volume::Sync(HdSceneDelegate *sceneDelegate,
         HdChangeTracker::DirtyVisibility |
         HdChangeTracker::DirtyTransform;
 
-    // Lazily initialize _primType.
+    // Create or modify geometry master.
+    primvars = _PopulatePrimvars(*this, mgr, sceneDelegate, id, &primType);
+    TF_VERIFY(primvars);
     if (_masterId == riley::GeometryMasterId::k_InvalidId) {
-        // Lazily initialize _masterId.
-        primvars = _PopulatePrimvars(*this, mgr, sceneDelegate, id, &primType);
-        _masterId = riley->CreateGeometryMaster(
-            primType,
-            dispId,
-            *primvars);
+        _masterId = riley->CreateGeometryMaster(primType, dispId, *primvars);
     } else if (*dirtyBits & prmanPrimvarBits) {
-        // Modify existing master.
-        primvars = _PopulatePrimvars(*this, mgr, sceneDelegate, id, &primType);
-        riley->ModifyGeometryMaster(
-            primType,
-            _masterId,
-            &dispId,
-            primvars);
+        riley->ModifyGeometryMaster(primType, _masterId, &dispId, primvars);
     }
 
-    if (_instanceId == riley::GeometryInstanceId::k_InvalidId) {
-        // Lazily initialize _instanceId.
+    // Create or modify geometry instances.
+    if (!isInstance) {
+        // Simple, non-Hydra-instanced case.
+        RtMatrix4x4 xf_rt_values[HDPRMAN_MAX_TIME_SAMPLES];
+        for (size_t i=0; i < xf.count; ++i) {
+            xf_rt_values[i] = HdPrman_GfMatrixToRtMatrix(xf.values[i]);
+        }
+        const riley::Transform xform = {
+            unsigned(xf.count), xf_rt_values, xf.times};
         attrs = context->ConvertAttributes(sceneDelegate, id);
         // Add "identifier:id" with the hydra prim id, and "identifier:id2"
         // with the instance number.
         attrs->SetInteger(RixStr.k_identifier_id, GetPrimId());
         attrs->SetInteger(RixStr.k_identifier_id2, 0);
-        _instanceId = riley->CreateGeometryInstance(
-            riley::GeometryMasterId::k_InvalidId, // no group
-            _masterId,
-            materialId,
-            coordSys, xform, *attrs);
-    } else if (*dirtyBits & prmanAttrBits) {
-        // Modify existing instance.
-        attrs = context->ConvertAttributes(sceneDelegate, id);
-        // Add "identifier:id" with the hydra prim id, and "identifier:id2"
-        // with the instance number.
-        attrs->SetInteger(RixStr.k_identifier_id, GetPrimId());
-        attrs->SetInteger(RixStr.k_identifier_id2, 0);
-        riley->ModifyGeometryInstance(
-            riley::GeometryMasterId::k_InvalidId, // no group
-            _instanceId,
-            &materialId,
-            &coordSys,
-            &xform,
-            attrs);
+        // Truncate extra instances.
+        if (_instanceIds.size() > 1) {
+            for (size_t i=1; i < _instanceIds.size(); ++i) {
+                riley->DeleteGeometryInstance(
+                    riley::GeometryMasterId::k_InvalidId, _instanceIds[i]);
+            }
+            _instanceIds.resize(1);
+        }
+        // Create or modify single instance.
+        if (_instanceIds.empty()) {
+            _instanceIds.push_back( riley->CreateGeometryInstance(
+                riley::GeometryMasterId::k_InvalidId,
+                _masterId, materialId, coordSys, xform, *attrs) );
+        } else if (*dirtyBits & prmanAttrBits) {
+            riley->ModifyGeometryInstance(
+                riley::GeometryMasterId::k_InvalidId,
+                _instanceIds[0], &materialId, &coordSys, &xform, attrs);
+        }
+    } else {
+        // Hydra Instancer case.
+        HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+        HdPrmanInstancer *instancer = static_cast<HdPrmanInstancer*>(
+            renderIndex.GetInstancer(GetInstancerId()));
+        VtIntArray instanceIndices =
+            sceneDelegate->GetInstanceIndices(GetInstancerId(), GetId());
+
+        instancer->SyncPrimvars();
+
+        HdTimeSampleArray<VtMatrix4dArray, HDPRMAN_MAX_TIME_SAMPLES> ixf;
+        instancer->SampleInstanceTransforms(GetId(), instanceIndices, &ixf);
+
+        // Retrieve instance categories.
+        std::vector<VtArray<TfToken>> instanceCategories =
+            sceneDelegate->GetInstanceCategories(GetInstancerId());
+
+        // Adjust size of PRMan instance array.
+        const size_t oldSize = _instanceIds.size();
+        const size_t newSize = (ixf.count > 0) ? ixf.values[0].size() : 0;
+        if (newSize != oldSize) {
+            for (size_t i=newSize; i < oldSize; ++i) {
+                riley->DeleteGeometryInstance(
+                    riley::GeometryMasterId::k_InvalidId, // no group
+                    _instanceIds[i]);
+            }
+            _instanceIds.resize(newSize);
+        }
+
+        // We can only retrieve the primvars from Hydra once.
+        RixParamList *instancerAttrs =
+            context->ConvertAttributes(sceneDelegate, id);
+        // Add "identifier:id" with the hydra prim id.
+        instancerAttrs->SetInteger(RixStr.k_identifier_id, GetPrimId());
+
+        // Create or modify PRMan instances.
+        for (size_t i=0; i < newSize; ++i) {
+            // XXX: Add support for nested instancing instance primvars.
+            size_t instanceIndex = 0;
+            if (i < instanceIndices.size()) {
+                instanceIndex = instanceIndices[i];
+            }
+
+            // Create a copy of the instancer attrs.
+            RixParamList *attrs = mgr->CreateRixParamList();
+            instancer->GetInstancePrimvars(id, instanceIndex, attrs);
+            // Inherit instancer attributes under the instance attrs.
+            attrs->Inherit(*instancerAttrs);
+            // Add "identifier:id2" with the instance number.
+            attrs->SetInteger(RixStr.k_identifier_id2, i);
+
+            // Convert categories.
+            if (instanceIndex < instanceCategories.size()) {
+                context->ConvertCategoriesToAttributes(
+                    id, instanceCategories[instanceIndex], attrs);
+            }
+
+            // PRMan does not allow transforms on geometry masters,
+            // so we apply that transform (xf) to all the instances, here.
+            RtMatrix4x4 rt_xf[HDPRMAN_MAX_TIME_SAMPLES];
+            if (xf.count == 0 ||
+                (xf.count == 1 && (xf.values[0] == GfMatrix4d(1)))) {
+                // Expected case: master xf is constant & exactly identity.
+                for (size_t j=0; j < ixf.count; ++j) {
+                    rt_xf[j] = HdPrman_GfMatrixToRtMatrix(ixf.values[j][i]);
+                }
+            } else {
+                // Multiply resampled master xf against instance xforms.
+                for (size_t j=0; j < ixf.count; ++j) {
+                    GfMatrix4d xf_j = xf.Resample(ixf.times[j]);
+                    rt_xf[j] =
+                        HdPrman_GfMatrixToRtMatrix(xf_j * ixf.values[j][i]);
+                }
+            }
+
+            const riley::Transform xform = 
+                { unsigned(ixf.count), rt_xf, ixf.times };
+
+            if (i >= oldSize) {
+                riley::GeometryInstanceId id = riley->CreateGeometryInstance(
+                    riley::GeometryMasterId::k_InvalidId, // no group
+                    _masterId, materialId, coordSys, xform, *attrs);
+                // This can fail when inserting meshes with nans (for example)
+                if (TF_VERIFY(id != riley::GeometryInstanceId::k_InvalidId, 
+                    "HdPrman failed to create geometry %s", 
+                    GetId().GetText())) {
+                        _instanceIds[i] = id;
+                }
+            } else {
+                riley->ModifyGeometryInstance(
+                    riley::GeometryMasterId::k_InvalidId, // no group
+                    _instanceIds[i],
+                    &materialId,
+                    &coordSys,
+                    &xform, attrs);
+            }
+            mgr->DestroyRixParamList(attrs);
+            attrs = nullptr;
+        }
+        mgr->DestroyRixParamList(instancerAttrs);
+        instancerAttrs = nullptr;
     }
 
     if (primvars) {

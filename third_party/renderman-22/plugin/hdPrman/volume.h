@@ -69,7 +69,7 @@ protected:
 
 private:
     riley::GeometryMasterId _masterId;
-    riley::GeometryInstanceId _instanceId;
+    std::vector<riley::GeometryInstanceId> _instanceIds;
 
     // This class does not support copying.
     HdPrman_Volume(const HdPrman_Volume&)             = delete;
