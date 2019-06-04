@@ -283,6 +283,28 @@ private:
     struct _IsInstanceTransformVaryingFn;
     bool _IsInstanceTransformVarying(UsdPrim const& instancer) const;
 
+    // Computes the value of a primvar for all instances corresponding to the
+    // given instancer. The templated version runs the templated functor,
+    // and the un-templated version does type dispatch.
+    template<typename T> struct _ComputeInheritedPrimvarFn;
+
+    template<typename T>
+    bool _ComputeInheritedPrimvar(UsdPrim const& instancer,
+                                  TfToken const& primvarName,
+                                  VtValue *result,
+                                  UsdTimeCode time) const;
+
+    bool _ComputeInheritedPrimvar(UsdPrim const& instancer,
+                                  TfToken const& primvarName,
+                                  SdfValueTypeName const& type,
+                                  VtValue *result,
+                                  UsdTimeCode time) const;
+
+    // Returns true if any of the instances corresponding to the given
+    // instancer has varying inherited primvars.
+    struct _IsInstanceInheritedPrimvarVaryingFn;
+    bool _IsInstanceInheritedPrimvarVarying(UsdPrim const& instancer) const;
+
     struct _GetPathForInstanceIndexFn;
     struct _PopulateInstanceSelectionFn;
 
@@ -381,6 +403,15 @@ private:
 
         // The drawmode associated with this instancer.
         TfToken drawMode;
+
+        // Inherited primvar
+        struct PrimvarInfo {
+            TfToken name;
+            SdfValueTypeName type;
+            bool operator==(const PrimvarInfo& rhs) const;
+            bool operator<(const PrimvarInfo& rhs) const;
+        };
+        std::vector<PrimvarInfo> inheritedPrimvars;
 
         // Paths to Usd instance prims. Note that this is not necessarily
         // equivalent to all the instances that will be drawn. See below.

@@ -38,7 +38,22 @@
 #include "pxr/usd/usdGeom/points.h"
 #include "pxr/usd/usdGeom/imageable.h"
 
+#include "pxr/base/gf/matrix3d.h"
+#include "pxr/base/gf/matrix3f.h"
+#include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
+#include "pxr/base/gf/vec2d.h"
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec2i.h"
+#include "pxr/base/gf/vec2h.h"
+#include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/vec3i.h"
+#include "pxr/base/gf/vec3h.h"
+#include "pxr/base/gf/vec4d.h"
+#include "pxr/base/gf/vec4f.h"
+#include "pxr/base/gf/vec4i.h"
+#include "pxr/base/gf/vec4h.h"
 
 #include "pxr/base/tf/type.h"
 
@@ -122,11 +137,12 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
     SdfPathVector instancerChain;
 
     // Construct the instance proxy path for "instancePath" to look up the
-    // draw mode for this instance.  If this is a nested instance (meaning
-    // "prim" is part of a master), parentProxyPath contains the instance
-    // proxy path for the master we're currently in, so we can stitch the full
-    // proxy path together.
+    // draw mode and inherited primvars for this instance.  If this is a
+    // nested instance (meaning "prim" is part of a master), parentProxyPath
+    // contains the instance proxy path for the master we're currently in,
+    // so we can stitch the full proxy path together.
     TfToken instanceDrawMode;
+    std::vector<_InstancerData::PrimvarInfo> inheritedPrimvars;
     {
         instancerChain = { instancePath };
         if (prim.IsInMaster()) {
@@ -136,6 +152,16 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
             _GetPrimPathFromInstancerChain(instancerChain);
         if (UsdPrim instanceUsdPrim = _GetPrim(instanceChainPath)) {
             instanceDrawMode = GetModelDrawMode(instanceUsdPrim);
+            UsdImaging_InheritedPrimvarStrategy::value_type
+                inheritedPrimvarRecord = _GetInheritedPrimvars(instanceUsdPrim);
+            if (inheritedPrimvarRecord) {
+                for (auto const& pv : inheritedPrimvarRecord->primvars) {
+                    inheritedPrimvars.push_back({
+                        pv.GetPrimvarName(),
+                        pv.GetTypeName()});
+                }
+                std::sort(inheritedPrimvars.begin(), inheritedPrimvars.end());
+            }
         } else {
             TF_CODING_ERROR("Could not find USD instance prim at "
                             "instanceChainPath <%s> given instancePath <%s>, "
@@ -153,9 +179,11 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
     auto range = _masterToInstancerMap.equal_range(masterPrim.GetPath());
     for (auto it = range.first; it != range.second; ++it) {
         _InstancerData& instancerData = _instancerData[it->second];
-        // If material ID or draw mode differ, split the instance.
+        // If material ID, draw mode, or inherited primvar set differ,
+        // split the instance.
         if (instancerData.materialUsdPath == instancerMaterialUsdPath &&
-            instancerData.drawMode == instanceDrawMode) {
+            instancerData.drawMode == instanceDrawMode &&
+            instancerData.inheritedPrimvars == inheritedPrimvars) {
             instancerPath = it->second;
             break;
         }
@@ -186,6 +214,7 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
         instancerData.masterPath = masterPrim.GetPath();
         instancerData.materialUsdPath = instancerMaterialUsdPath;
         instancerData.drawMode = instanceDrawMode;
+        instancerData.inheritedPrimvars = inheritedPrimvars;
 
         // Add this instancer into the render index.
         UsdImagingInstancerContext ctx = { SdfPath(),
@@ -799,6 +828,229 @@ UsdImagingInstanceAdapter::_IsInstanceTransformVarying(UsdPrim const& instancer)
     return isTransformVarying.result;
 }
 
+template<typename T>
+struct UsdImagingInstanceAdapter::_ComputeInheritedPrimvarFn
+{
+    _ComputeInheritedPrimvarFn(
+        const UsdImagingInstanceAdapter* adapter_,
+        TfToken const& name_,
+        UsdTimeCode const& time_)
+        : adapter(adapter_), name(name_), time(time_) { }
+
+    void Initialize(size_t numInstances)
+    {
+        result.resize(numInstances);
+    }
+
+    bool operator()(
+        const std::vector<UsdPrim>& instanceContext, size_t instanceIdx)
+    {
+        if (!TF_VERIFY(instanceIdx < result.size())) {
+            result.resize(instanceIdx + 1);
+        }
+
+        SdfPathVector instanceChain;
+        for (UsdPrim const& prim : instanceContext) {
+            instanceChain.push_back(prim.GetPath());
+        }
+        SdfPath instanceChainPath =
+            adapter->_GetPrimPathFromInstancerChain(instanceChain);
+        if (UsdPrim instanceProxyPrim =
+                adapter->_GetPrim(instanceChainPath)) {
+            UsdImaging_InheritedPrimvarStrategy::value_type
+                inheritedPrimvarRecord =
+                    adapter->_GetInheritedPrimvars(instanceProxyPrim);
+            if (inheritedPrimvarRecord) {
+                for (auto const& pv : inheritedPrimvarRecord->primvars) {
+                    if (pv.GetPrimvarName() == name) {
+                        VtValue v;
+                        pv.ComputeFlattened(&v, time);
+                        result[instanceIdx] = v.Get<T>();
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    const UsdImagingInstanceAdapter* adapter;
+    TfToken name;
+    UsdTimeCode time;
+    VtArray<T> result;
+};
+
+bool
+UsdImagingInstanceAdapter::_ComputeInheritedPrimvar(UsdPrim const& instancer,
+                                                    TfToken const& primvarName,
+                                                    SdfValueTypeName const& type,
+                                                    VtValue *result,
+                                                    UsdTimeCode time) const
+{
+    // Unfortunately, we have the type info as the run-time SdfValueTypeName
+    // object, but not the compile-time T.  If we put a dispatch hook in
+    // Sdf or VtValue, we wouldn't need this table.
+    //
+    // This set of types was chosen to match HdGetValueData(), e.g. the set
+    // of types hydra can reliably transport through primvars.
+    VtValue dv = type.GetDefaultValue();
+    if (dv.IsHolding<GfHalf>()) {
+        return _ComputeInheritedPrimvar<GfHalf>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<GfMatrix3d>()) {
+        return _ComputeInheritedPrimvar<GfMatrix3d>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<GfMatrix3f>()) {
+        return _ComputeInheritedPrimvar<GfMatrix3f>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<GfMatrix4d>()) {
+        return _ComputeInheritedPrimvar<GfMatrix4d>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<GfMatrix4f>()) {
+        return _ComputeInheritedPrimvar<GfMatrix4f>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<GfVec2d>()) {
+        return _ComputeInheritedPrimvar<GfVec2d>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<GfVec2f>()) {
+        return _ComputeInheritedPrimvar<GfVec2f>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<GfVec2h>()) {
+        return _ComputeInheritedPrimvar<GfVec2h>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<GfVec2i>()) {
+        return _ComputeInheritedPrimvar<GfVec2i>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<GfVec3d>()) {
+        return _ComputeInheritedPrimvar<GfVec3d>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<GfVec3f>()) {
+        return _ComputeInheritedPrimvar<GfVec3f>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<GfVec3h>()) {
+        return _ComputeInheritedPrimvar<GfVec3h>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<GfVec3i>()) {
+        return _ComputeInheritedPrimvar<GfVec3i>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<GfVec4d>()) {
+        return _ComputeInheritedPrimvar<GfVec4d>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<GfVec4f>()) {
+        return _ComputeInheritedPrimvar<GfVec4f>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<GfVec4h>()) {
+        return _ComputeInheritedPrimvar<GfVec4h>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<GfVec4i>()) {
+        return _ComputeInheritedPrimvar<GfVec4i>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<bool>()) {
+        return _ComputeInheritedPrimvar<bool>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<char>()) {
+        return _ComputeInheritedPrimvar<char>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<double>()) {
+        return _ComputeInheritedPrimvar<double>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<float>()) {
+        return _ComputeInheritedPrimvar<float>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<int16_t>()) {
+        return _ComputeInheritedPrimvar<int16_t>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<int32_t>()) {
+        return _ComputeInheritedPrimvar<int32_t>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<uint16_t>()) {
+        return _ComputeInheritedPrimvar<uint16_t>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<uint32_t>()) {
+        return _ComputeInheritedPrimvar<uint32_t>(
+                instancer, primvarName, result, time);
+    } else if (dv.IsHolding<unsigned char>()) {
+        return _ComputeInheritedPrimvar<unsigned char>(
+                instancer, primvarName, result, time);
+    } else {
+        TF_WARN("Unrecognized inherited primvar type %s",
+                type.GetAsToken().GetText());
+        return false;
+    }
+}
+
+template<typename T>
+bool
+UsdImagingInstanceAdapter::_ComputeInheritedPrimvar(UsdPrim const& instancer,
+                                                    TfToken const& primvarName,
+                                                    VtValue *result,
+                                                    UsdTimeCode time) const
+{
+    _ComputeInheritedPrimvarFn<T> computeInheritedPrimvar(
+        this, primvarName, time);
+    _RunForAllInstancesToDraw(instancer, &computeInheritedPrimvar);
+    *result = VtValue(computeInheritedPrimvar.result);
+    return true;
+}
+
+struct UsdImagingInstanceAdapter::_IsInstanceInheritedPrimvarVaryingFn
+{
+    _IsInstanceInheritedPrimvarVaryingFn(
+        const UsdImagingInstanceAdapter* adapter_)
+        : adapter(adapter_), result(false) { }
+
+    void Initialize(size_t numInstances)
+    { }
+
+    bool operator()(
+        const std::vector<UsdPrim>& instanceContext, size_t instanceIdx)
+    {
+        SdfPathVector instanceChain;
+        for (UsdPrim const& prim : instanceContext) {
+            instanceChain.push_back(prim.GetPath());
+        }
+        SdfPath instanceChainPath =
+            adapter->_GetPrimPathFromInstancerChain(instanceChain);
+        if (UsdPrim instanceProxyPrim =
+                adapter->_GetPrim(instanceChainPath)) {
+            UsdImaging_InheritedPrimvarStrategy::value_type
+                inheritedPrimvarRecord =
+                    adapter->_GetInheritedPrimvars(instanceProxyPrim);
+            if (inheritedPrimvarRecord && inheritedPrimvarRecord->variable) {
+                result = true;
+            }
+        }
+        return !result;
+    }
+
+    const UsdImagingInstanceAdapter* adapter;
+    bool result;
+};
+
+bool
+UsdImagingInstanceAdapter::_IsInstanceInheritedPrimvarVarying(
+                                UsdPrim const& instancer) const
+{
+    _IsInstanceInheritedPrimvarVaryingFn isPrimvarVarying(this);
+    _RunForAllInstancesToDraw(instancer, &isPrimvarVarying);
+    return isPrimvarVarying.result;
+}
+
+bool
+UsdImagingInstanceAdapter::_InstancerData::PrimvarInfo::operator<
+    (const UsdImagingInstanceAdapter::_InstancerData::PrimvarInfo &rhs) const {
+    // This is the logic from std::pair, except for the GetAsToken calls.
+    if (name < rhs.name) { return true; }
+    else if (rhs.name < name) { return false; }
+    else if (type.GetAsToken() < rhs.type.GetAsToken()) { return true; }
+    else { return false; }
+}
+
+bool
+UsdImagingInstanceAdapter::_InstancerData::PrimvarInfo::operator==
+    (const UsdImagingInstanceAdapter::_InstancerData::PrimvarInfo &rhs) const {
+    return (name == rhs.name && type == rhs.type);
+}
+
 void 
 UsdImagingInstanceAdapter::UpdateForTimePrep(UsdPrim const& prim,
                                    SdfPath const& cachePath, 
@@ -904,7 +1156,8 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
             }
         }
 
-    } else if (TfMapLookupPtr(_instancerData, prim.GetPath()) != nullptr) {
+    } else if (_InstancerData *instrData =
+               TfMapLookupPtr(_instancerData, prim.GetPath())) {
         // For the instancer itself, we only send the instance transforms
         // back as primvars, which falls into the DirtyPrimvar bucket
         // currently.
@@ -917,6 +1170,16 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
                     &valueCache->GetPrimvars(cachePath),
                     HdTokens->instanceTransform,
                     HdInterpolationInstance);
+            }
+            for (auto const& ipv : instrData->inheritedPrimvars) {
+                VtValue val;
+                if (_ComputeInheritedPrimvar(prim, ipv.name, ipv.type,
+                                             &val, time)) {
+                    valueCache->GetPrimvar(cachePath, ipv.name) = val;
+                    _MergePrimvar(&valueCache->GetPrimvars(cachePath),
+                                  ipv.name, HdInterpolationInstance,
+                                  _UsdToHdRole(ipv.type.GetRole()));
+                }
             }
         }
 
@@ -1578,6 +1841,10 @@ UsdImagingInstanceAdapter::_UpdateDirtyBits(
     instrData.dirtyBits = HdChangeTracker::Clean;
     if (_IsInstanceTransformVarying(instancerPrim)) {
         instrData.dirtyBits |= HdChangeTracker::DirtyInstancer;
+    }
+    if (!instrData.inheritedPrimvars.empty() &&
+        _IsInstanceInheritedPrimvarVarying(instancerPrim)) {
+        instrData.dirtyBits |= HdChangeTracker::DirtyPrimvar;
     }
 
     return instrData.dirtyBits;

@@ -444,7 +444,7 @@ UsdImagingPrimAdapter::_GetAdapter(TfToken const& adapterKey) const
 
 SdfPath
 UsdImagingPrimAdapter::_GetPrimPathFromInstancerChain(
-                                            SdfPathVector const& instancerChain)
+                                     SdfPathVector const& instancerChain) const
 {
     // The instancer chain is stored more-to-less local.  For example:
     //

@@ -467,7 +467,8 @@ protected:
     // instance paths (possibly in master); the last path is the prim or
     // instance path in the scene.
     USDIMAGING_API
-    SdfPath _GetPrimPathFromInstancerChain(SdfPathVector const& instancerChain);
+    SdfPath _GetPrimPathFromInstancerChain(
+                                    SdfPathVector const& instancerChain) const;
 
     USDIMAGING_API
     UsdTimeCode _GetTimeWithOffset(float offset) const;
