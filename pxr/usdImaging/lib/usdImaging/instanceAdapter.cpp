@@ -520,18 +520,8 @@ UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
         
         UsdPrim protoPrim = _GetPrim(rproto.path);
         rproto.adapter->TrackVariability(
-            protoPrim, cachePath, &rproto.variabilityBits,
+            protoPrim, cachePath, timeVaryingBits,
             &instancerContext);
-        *timeVaryingBits |= rproto.variabilityBits;
-
-        if (!(rproto.variabilityBits & HdChangeTracker::DirtyVisibility)) {
-            // Pre-cache visibility, because we now know that it is static for
-            // the rprim prototype over all time.
-            // XXX: The usage of _GetTimeWithOffset here is super-sketch, but
-            // it avoids blowing up the inherited visibility cache... We should
-            // let this be initialized by the first UpdateForTime instead.
-            rproto.visible = GetVisible(protoPrim, _GetTimeWithOffset(0.0));
-        }
 
         // If any of the instances varies over time, we should flag the 
         // DirtyInstancer bits on the Rprim on every frame, to be sure the 
@@ -539,7 +529,6 @@ UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
         int instancerBits = _UpdateDirtyBits(
                 _GetPrim(instancerContext.instancerCachePath));
         *timeVaryingBits |=  (instancerBits & HdChangeTracker::DirtyInstancer);
-        *timeVaryingBits |= HdChangeTracker::DirtyVisibility;
 
     } else if (TfMapLookupPtr(_instancerData, prim.GetPath()) != nullptr) {
         // In this case, prim is an instance master. Master prims provide
@@ -1102,12 +1091,8 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
                                           rproto.protoGroup->indices;
         }
 
-        // Never pull visibility directly from the prototype, since we will
-        // need to compute visibility relative to the model root anyway.
-        // Similarly, the InstanceIndex was already updated, if needed.
-        int protoReqBits = requestedBits 
-                         & ~HdChangeTracker::DirtyInstanceIndex
-                         & ~HdChangeTracker::DirtyVisibility;
+        // DirtyInstanceIndex is handled above...
+        int protoReqBits = requestedBits & ~HdChangeTracker::DirtyInstanceIndex;
 
         // Allow the prototype's adapter to update, if there's anything left
         // to do.
@@ -1116,27 +1101,6 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
         if (protoReqBits != HdChangeTracker::Clean) {
             rproto.adapter->UpdateForTime(protoPrim, cachePath, 
                 rproto.protoGroup->time, protoReqBits, &instancerContext);
-        }
-
-        // Make sure we always query and return visibility. This is done
-        // after the adapter update to ensure we get our specialized view of
-        // visibility.
-
-        // Apply the instancer visibility at the current time to the
-        // instance. Notice that the instance will also pickup the instancer
-        // visibility at the time offset.
-        bool& vis = valueCache->GetVisible(cachePath);
-        bool protoHasFixedVis = !(rproto.variabilityBits
-                                  & HdChangeTracker::DirtyVisibility);
-        if (protoHasFixedVis) {
-            // The proto prim has fixed visibility (it does not vary over time),
-            // we can use the pre-cached visibility.
-            vis = rproto.visible;
-        }
-        else {
-            // The instancer is visible and the prototype has varying
-            // visibility, we must compute visibility.
-            vis = GetVisible(_GetPrim(instancerContext.instancerCachePath), time);
         }
 
         if (requestedBits & HdChangeTracker::DirtyTransform) {

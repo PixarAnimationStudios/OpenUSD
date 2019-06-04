@@ -364,7 +364,7 @@ private:
     // prototypes relationship, which will have many meshes, each mesh is
     // represented as a proto rprim.
     struct _ProtoRprim {
-        _ProtoRprim() : variabilityBits(0), visible(true) {}
+        _ProtoRprim() {}
         // Each rprim will become a prototype "child" under the instancer. This
         // path is the path to the gprim on the Usd Stage (the path to a single
         // mesh, for example).
@@ -377,13 +377,6 @@ private:
         // of animation. This ID maps the rprim its associated instance data
         // over time.
         _ProtoGroupPtr protoGroup;
-        // Tracks the variability of the underlying adapter to avoid
-        // redundantly reading data. This value is stored as
-        // HdDirtyBits flags.
-        HdDirtyBits variabilityBits;
-        // When variabilityBits does not include HdChangeTracker::DirtyVisibility
-        // the visible field is the unvarying value for visibility.
-        bool visible;
     };
 
     // Indexed by cachePath (each rprim has one entry)
