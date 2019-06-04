@@ -259,6 +259,15 @@ private:
     void _UpdateInstanceMap(UsdPrim const& instancerPrim, 
             UsdTimeCode time) const;
 
+    // Precomputes the instancer visibility data (as visible, invis, varying
+    // per-node), and returns whether the instance map is variable.
+    // Note: this function assumes the instancer data is already locked by
+    // the caller...
+    struct _InstancerData;
+    struct _ComputeInstanceMapVariabilityFn;
+    bool _ComputeInstanceMapVariability(UsdPrim const& instancerPrim,
+                                        _InstancerData& instrData) const;
+
     // Update the dirty bits per-instancer. This is only executed once per
     // instancer, this method uses the instancer mutex to avoid redundant work.
     //
