@@ -417,7 +417,7 @@ UsdStage::UsdStage(const SdfLayerRefPtr& rootLayer,
                    const ArResolverContext& pathResolverContext,
                    const UsdStagePopulationMask& mask,
                    InitialLoadSet load)
-    : _pseudoRoot(0)
+    : _pseudoRoot(nullptr)
     , _rootLayer(rootLayer)
     , _sessionLayer(sessionLayer)
     , _editTarget(_rootLayer)
@@ -1801,7 +1801,7 @@ UsdStage::_GetPrimDataAtPath(const SdfPath &path) const
     if (_primMapMutex)
         lock.acquire(*_primMapMutex, /*write=*/false);
     PathToNodeMap::const_iterator entry = _primMap.find(path);
-    return entry != _primMap.end() ? entry->second.get() : NULL;
+    return entry != _primMap.end() ? entry->second.get() : nullptr;
 }
 
 Usd_PrimDataPtr
@@ -1811,7 +1811,7 @@ UsdStage::_GetPrimDataAtPath(const SdfPath &path)
     if (_primMapMutex)
         lock.acquire(*_primMapMutex, /*write=*/false);
     PathToNodeMap::const_iterator entry = _primMap.find(path);
-    return entry != _primMap.end() ? entry->second.get() : NULL;
+    return entry != _primMap.end() ? entry->second.get() : nullptr;
 }
 
 Usd_PrimDataConstPtr 
@@ -2330,13 +2330,13 @@ Usd_PrimDataConstPtr
 UsdStage::_GetMasterForInstance(Usd_PrimDataConstPtr prim) const
 {
     if (!prim->IsInstance()) {
-        return NULL;
+        return nullptr;
     }
 
     const SdfPath masterPath =
         _instanceCache->GetMasterForInstanceablePrimIndexPath(
             prim->GetPrimIndex().GetPath());
-    return masterPath.IsEmpty() ? NULL : _GetPrimDataAtPath(masterPath);
+    return masterPath.IsEmpty() ? nullptr : _GetPrimDataAtPath(masterPath);
 }
 
 bool 
@@ -2908,7 +2908,7 @@ UsdStage::_DestroyDescendents(Usd_PrimDataPtr prim)
     // Recurse to children first.
     Usd_PrimDataSiblingIterator
         childIt = prim->_ChildrenBegin(), childEnd = prim->_ChildrenEnd();
-    prim->_firstChild = NULL;
+    prim->_firstChild = nullptr;
     while (childIt != childEnd) {
         if (_dispatcher) {
             _dispatcher->Run(&UsdStage::_DestroyPrim, this, *childIt++);
@@ -5245,7 +5245,7 @@ struct ExistenceComposer
 {
     static const bool ProducesValue = false;
 
-    ExistenceComposer() : _done(false), _strongestLayer(NULL) {}
+    ExistenceComposer() : _done(false), _strongestLayer(nullptr) {}
     explicit ExistenceComposer(SdfLayerRefPtr *strongestLayer) 
         : _done(false), _strongestLayer(strongestLayer) {}
 
@@ -5259,9 +5259,9 @@ struct ExistenceComposer
                          const SdfLayerOffset & = SdfLayerOffset()) {
         _done = keyPath.IsEmpty() ?
             layer->HasField(specId, fieldName,
-                            static_cast<VtValue *>(NULL)) :
+                            static_cast<VtValue *>(nullptr)) :
             layer->HasFieldDictKey(specId, fieldName, keyPath,
-                                   static_cast<VtValue*>(NULL));
+                                   static_cast<VtValue*>(nullptr));
         if (_done && _strongestLayer)
             *_strongestLayer = layer;
         return _done;
@@ -5273,10 +5273,10 @@ struct ExistenceComposer
         _done = keyPath.IsEmpty() ?
             UsdSchemaRegistry::HasField(
                 primTypeName, propName, fieldName,
-                static_cast<VtValue *>(NULL)) :
+                static_cast<VtValue *>(nullptr)) :
             UsdSchemaRegistry::HasFieldDictKey(
                 primTypeName, propName, fieldName, keyPath,
-                static_cast<VtValue*>(NULL));
+                static_cast<VtValue*>(nullptr));
         if (_strongestLayer)
             *_strongestLayer = TfNullPtr;
     }
@@ -5965,7 +5965,7 @@ UsdStage::_ListMetadataFields(const UsdObject &obj, bool useFallbacks) const
     }
 
     // Insert required fields for spec type.
-    const SdfSchema::SpecDefinition* specDef = NULL;
+    const SdfSchema::SpecDefinition* specDef = nullptr;
     specDef = SdfSchema::GetInstance().GetSpecDefinition(specType);
     if (specDef) {
         for (const auto& fieldName : specDef->GetRequiredFields()) {
@@ -6193,7 +6193,7 @@ template <class T>
 struct UsdStage::_ExtraResolveInfo
 {
     _ExtraResolveInfo()
-        : lowerSample(0), upperSample(0), defaultOrFallbackValue(NULL)
+        : lowerSample(0), upperSample(0), defaultOrFallbackValue(nullptr)
     { }
 
     double lowerSample;
@@ -7174,7 +7174,7 @@ UsdStage::_ValueMightBeTimeVarying(const UsdAttribute &attr) const
 {
     UsdResolveInfo info;
     _ExtraResolveInfo<SdfAbstractDataValue> extraInfo;
-    _GetResolveInfo(attr, &info, NULL, &extraInfo);
+    _GetResolveInfo(attr, &info, nullptr, &extraInfo);
 
     if (info._source == UsdResolveInfoSourceValueClips ||
         info._source == UsdResolveInfoSourceIsTimeDependent) {
@@ -7332,7 +7332,7 @@ UsdStage::HasAuthoredMetadata(const TfToken& key) const
     if (!schema.IsValidFieldForSpec(key, SdfSpecTypePseudoRoot))
         return false;
 
-    return _HasStageMetadataOrDictKey(*this, key, TfToken(), NULL);
+    return _HasStageMetadataOrDictKey(*this, key, TfToken(), nullptr);
 }
 
 static
@@ -7501,7 +7501,7 @@ UsdStage::HasMetadataDictKey(const TfToken& key, const TfToken &keyPath) const
     const VtValue &fallback =  schema.GetFallback(key);
     
     return ((!fallback.IsEmpty()) &&
-            (fallback.Get<VtDictionary>().GetValueAtPath(keyPath) != NULL));
+            (fallback.Get<VtDictionary>().GetValueAtPath(keyPath) != nullptr));
 }
 
 bool
@@ -7511,7 +7511,7 @@ UsdStage::HasAuthoredMetadataDictKey(
     if (keyPath.IsEmpty())
         return false;
 
-    return _HasStageMetadataOrDictKey(*this, key, keyPath, NULL);
+    return _HasStageMetadataOrDictKey(*this, key, keyPath, nullptr);
 }
 
 bool

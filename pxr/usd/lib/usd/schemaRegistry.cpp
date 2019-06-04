@@ -161,9 +161,10 @@ const SdfAbstractDataSpecId *
 UsdSchemaRegistry::_GetSpecId(const TfToken &primType,
                               const TfToken &propName) const
 {
-    return TfMapLookupByValue(_primTypePropNameToSpecIdMap,
-                              make_pair(primType, propName),
-                              static_cast<const SdfAbstractDataSpecId *>(NULL));
+    return TfMapLookupByValue(
+        _primTypePropNameToSpecIdMap,
+        make_pair(primType, propName),
+        static_cast<const SdfAbstractDataSpecId *>(nullptr));
 }
 
 void

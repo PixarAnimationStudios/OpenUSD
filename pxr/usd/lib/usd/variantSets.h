@@ -97,7 +97,7 @@ public:
     /// If requested, the variant selection (if any) will be returned in
     /// \p value .
     USD_API
-    bool HasAuthoredVariantSelection(std::string *value = NULL) const;
+    bool HasAuthoredVariantSelection(std::string *value = nullptr) const;
 
     /// Author a variant selection for this VariantSet, setting it to
     /// \a variantName in the stage's current EditTarget.  Return true if the

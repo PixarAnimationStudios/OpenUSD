@@ -1657,7 +1657,7 @@ private:
         const std::vector<SdfPath>& primIndexPaths,
         _IncludePayloadsRule includeRule,
         const std::string& context,
-        Usd_InstanceChanges* instanceChanges = NULL);
+        Usd_InstanceChanges* instanceChanges = nullptr);
 
     // Recompose the subtree rooted at \p prim: compose its type, flags, and
     // list of children, then invoke _ComposeSubtree on all its children.
@@ -1672,7 +1672,7 @@ private:
     void _ComposeSubtreeInParallel(Usd_PrimDataPtr prim);
     void _ComposeSubtreesInParallel(
         const std::vector<Usd_PrimDataPtr> &prims,
-        const std::vector<SdfPath> *primIndexPaths = NULL);
+        const std::vector<SdfPath> *primIndexPaths = nullptr);
 
     // Compose subtree rooted at \p prim under \p parent.  This function
     // ensures that the appropriate prim index is specified for \p prim if

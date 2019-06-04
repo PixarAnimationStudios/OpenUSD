@@ -65,7 +65,7 @@ public:
     virtual bool Has(const SdfAbstractDataSpecId& id, const TfToken& fieldName,
                      SdfAbstractDataValue* value) const;
     virtual bool Has(const SdfAbstractDataSpecId& id, const TfToken& fieldName,
-                     VtValue *value=NULL) const;
+                     VtValue *value=nullptr) const;
     virtual VtValue Get(const SdfAbstractDataSpecId& id, 
                         const TfToken& fieldName) const;
     virtual void Set(const SdfAbstractDataSpecId& id, const TfToken& fieldName,

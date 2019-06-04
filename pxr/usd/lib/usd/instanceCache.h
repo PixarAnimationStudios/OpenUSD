@@ -251,7 +251,7 @@ private:
 
     bool _MasterUsesPrimIndexPath(
         const SdfPath& primIndexPath,
-        std::vector<SdfPath>* masterPaths = NULL) const;
+        std::vector<SdfPath>* masterPaths = nullptr) const;
 
     SdfPath _GetNextMasterPath(const Usd_InstanceKey& key);
     
