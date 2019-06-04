@@ -216,13 +216,11 @@ HdxRenderSetupTask::PrepareCamera(HdRenderIndex* renderIndex)
 {
     const HdCamera *camera = static_cast<const HdCamera *>(
         renderIndex->GetSprim(HdPrimTypeTokens->camera, _cameraId));
+    TF_VERIFY(camera);
 
-    if (camera) {
-        // sync render pass state
-        HdRenderPassStateSharedPtr &renderPassState =
-                _GetRenderPassState(renderIndex);
-        renderPassState->SetCameraAndViewport(camera, _viewport);
-    }
+    HdRenderPassStateSharedPtr &renderPassState =
+            _GetRenderPassState(renderIndex);
+    renderPassState->SetCameraAndViewport(camera, _viewport);
 }
 
 void
