@@ -980,11 +980,14 @@ HdxTaskController::SetRenderTags(TfTokenVector const& renderTags)
     }
 
     if (!_pickTaskId.IsEmpty()) {
-        _delegate.SetParameter(_pickTaskId,
-                               _tokens->renderTags,
-                               renderTags);
+        if (_delegate.GetTaskRenderTags(_pickTaskId) != renderTags) {
+            _delegate.SetParameter(_pickTaskId,
+                                   _tokens->renderTags,
+                                   renderTags);
 
-        tracker.MarkTaskDirty(_pickTaskId, HdChangeTracker::DirtyRenderTags);
+            tracker.MarkTaskDirty(_pickTaskId,
+                                  HdChangeTracker::DirtyRenderTags);
+        }
     }
 }
 
