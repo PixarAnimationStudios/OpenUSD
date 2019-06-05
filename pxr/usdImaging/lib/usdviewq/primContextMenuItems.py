@@ -47,7 +47,8 @@ def _GetContextMenuItems(appController, item):
             CopyPrimPathMenuItem(appController, item),
             CopyModelPathMenuItem(appController, item),
             SeparatorMenuItem(appController, item),
-            IsolateAssetMenuItem(appController, item)]
+            IsolateAssetMenuItem(appController, item),
+            SetAsActiveCamera(appController, item)]
 
 #
 # The base class for per-prim context menu items.
@@ -59,9 +60,6 @@ class PrimContextMenuItem(UsdviewContextMenuItem):
         self._currentFrame = appController._dataModel.currentFrame
         self._appController = appController
         self._item = item
-
-    def IsVisible(self):
-        return True
 
     def IsEnabled(self):
         return True
@@ -413,3 +411,29 @@ class IsolateAssetMenuItem(PrimContextMenuItem):
         print "Spawning usdview %s" % self._filePath
         os.system("usdview %s &" % self._filePath)
 
+#
+# If the selected prim is a camera and not the currently active camera, display
+# an enabled menu item to set it as the active camera.
+#
+class SetAsActiveCamera(PrimContextMenuItem):
+
+    def __init__(self, appController, item):
+        PrimContextMenuItem.__init__(self, appController, item)
+
+        self._nonActiveCameraPrim = None
+        if len(self._selectionDataModel.getPrims()) is 1:
+            prim = self._selectionDataModel.getPrims()[0]
+            from pxr import UsdGeom
+            cam = UsdGeom.Camera(prim)
+            if cam:
+                if prim != appController.getActiveCamera():
+                    self._nonActiveCameraPrim = prim
+
+    def IsEnabled(self):
+        return self._nonActiveCameraPrim
+
+    def GetText(self):
+        return "Set As Active Camera"
+
+    def RunCommand(self):
+        self._appController._cameraSelectionChanged(self._nonActiveCameraPrim)

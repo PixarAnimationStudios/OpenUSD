@@ -4610,6 +4610,9 @@ class AppController(QtCore.QObject):
         for action in self._clearColorActions:
             action.setChecked(str(action.text()) == clearColorText)
 
+    def getActiveCamera(self):
+        return self._dataModel.viewSettings.cameraPrim
+
     def _refreshCameraMenu(self):
         cameraPath = self._dataModel.viewSettings.cameraPath
         for action in self._ui.menuCamera.actions():
