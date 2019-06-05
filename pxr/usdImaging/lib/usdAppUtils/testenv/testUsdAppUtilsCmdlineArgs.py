@@ -249,13 +249,13 @@ class TestUsdAppUtilsCmdlineArgs(unittest.TestCase):
 
         # No renderer plugin is specified by default.
         args = self._parser.parse_args([])
-        self.assertEqual(args.rendererPluginId, None)
+        self.assertEqual(args.rendererPlugin, None)
 
-        args = self._parser.parse_args(['--renderer', 'HdStreamRendererPlugin'])
-        self.assertEqual(args.rendererPluginId, 'HdStreamRendererPlugin')
+        args = self._parser.parse_args(['--renderer', 'GL'])
+        self.assertEqual(args.rendererPlugin.id, 'HdStreamRendererPlugin')
 
-        args = self._parser.parse_args(['-r', 'HdStreamRendererPlugin'])
-        self.assertEqual(args.rendererPluginId, 'HdStreamRendererPlugin')
+        args = self._parser.parse_args(['-r', 'GL'])
+        self.assertEqual(args.rendererPlugin.id, 'HdStreamRendererPlugin')
 
         # Test passing an invalid option.
         parser = _NonExitingArgumentParser(prog=self._progName)

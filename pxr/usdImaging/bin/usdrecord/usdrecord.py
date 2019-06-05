@@ -127,8 +127,8 @@ def main():
     glWidget = _SetupOpenGLContext(args.imageWidth, args.imageWidth)
 
     frameRecorder = UsdAppUtils.FrameRecorder()
-    if args.rendererPluginId:
-        frameRecorder.SetRendererPlugin(args.rendererPluginId)
+    if args.rendererPlugin:
+        frameRecorder.SetRendererPlugin(args.rendererPlugin.id)
     frameRecorder.SetImageWidth(args.imageWidth)
     frameRecorder.SetComplexity(args.complexity.value)
     frameRecorder.SetColorCorrectionMode(args.colorCorrectionMode)
