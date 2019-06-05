@@ -806,13 +806,6 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
             return;
         }
 
-        // At this point we can flip the initialized flag, only
-        // _FilterRequestedBits requires it.
-        if (!rproto.initialized) {
-            _ProtoRprim& rprotoRW = const_cast<_ProtoRprim&>(rproto);
-            rprotoRW.initialized = true;
-        }
-
         if (requestedBits & HdChangeTracker::DirtyInstanceIndex) {
             valueCache->GetInstanceIndices(cachePath) = 
                 rproto.prototype->indices;

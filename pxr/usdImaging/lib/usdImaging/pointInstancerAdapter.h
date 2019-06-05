@@ -322,7 +322,7 @@ private:
     // prototypes relationship, which will have many meshes, each mesh is
     // represented as a proto rprim.
     struct _ProtoRprim {
-        _ProtoRprim() : variabilityBits(0), visible(true), initialized(false) {}
+        _ProtoRprim() : variabilityBits(0), visible(true) {}
         // Each rprim will become a prototype "child" under the instancer.
         // paths is a list of paths we had to hop across when resolving native
         // USD instances.
@@ -342,10 +342,6 @@ private:
         // When variabilityBits does not include HdChangeTracker::DirtyVisibility
         // the visible field is the unvarying value for visibility.
         bool visible;
-        // We need to ensure that all prims have their topology (e.g.)
-        // initialized because even if they are invisible, they need to be
-        // scheduled into a command buffer.
-        bool initialized;
     };
 
     // Indexed by cachePath (each rprim has one entry)
