@@ -31,6 +31,7 @@ pxr_shared_library(${PXR_PACKAGE}
         coordSys
         debugCodes
         basisCurves
+        gprim
         instancer
         light
         material
