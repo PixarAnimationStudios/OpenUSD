@@ -45,6 +45,7 @@ pxr_library(usdImaging
         domeLightAdapter
         fieldAdapter
         gprimAdapter
+        implicitSurfaceMeshUtils
         instanceAdapter
         lightAdapter
         materialAdapter
