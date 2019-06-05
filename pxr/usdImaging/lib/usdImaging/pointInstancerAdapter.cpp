@@ -611,86 +611,25 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
         // to update visibility
         _UpdateDirtyBits(prim);
 
-        UsdGeomPointInstancer instancer(prim);
-
-        // TODO: verify lengths of arrays vs. the actual instance count for
-        // this frame.
-
-        bool anyVarying = false;
-
-        VtVec3fArray positions;
-        if (instancer.GetPositionsAttr().Get(&positions, time)) {
-            if (!positions.empty()) {
-                valueCache->GetPrimvar(cachePath, _tokens->translate) =
-                    positions;
-                _MergePrimvar(
-                    &valueCache->GetPrimvars(cachePath),
-                    _tokens->translate,
-                    HdInterpolationInstance,
-                    HdPrimvarRoleTokens->vector);
-            }
-
-            anyVarying = _IsVarying(prim,
-                                    UsdGeomTokens->positions,
-                                    HdChangeTracker::DirtyPrimvar,
-                                    _tokens->instancer,
-                                    timeVaryingBits,
-                                    false);
-        }
-
-        VtQuathArray orientations;
-        if (instancer.GetOrientationsAttr().Get(&orientations, time)) {
-            if (!orientations.empty()) {
-                // convert to Vec4Array that hydra instancer requires.
-                // Also note that hydra's instancer takes GfQuaterion layout
-                // (real, imaginary) which differs from GfQuath's
-                // (imaginary, real)
-                VtVec4fArray rotations;
-                rotations.reserve(orientations.size());
-                for (const GfQuath& orientation : orientations) {
-                    rotations.push_back(
-                        GfVec4f(orientation.GetReal(),
-                                orientation.GetImaginary()[0],
-                                orientation.GetImaginary()[1],
-                                orientation.GetImaginary()[2]));
-                }
-
-                valueCache->GetPrimvar(cachePath, _tokens->rotate) =
-                    rotations;
-
-                _MergePrimvar(
-                    &valueCache->GetPrimvars(cachePath),
-                    _tokens->rotate,
-                    HdInterpolationInstance);
-            }
-
-            anyVarying = anyVarying ||
-                _IsVarying(prim,
-                           UsdGeomTokens->orientations,
-                           HdChangeTracker::DirtyPrimvar,
-                           _tokens->instancer,
-                           timeVaryingBits,
-                           false);
-        }
-
-        VtVec3fArray scales(1);
-        if (instancer.GetScalesAttr().Get(&scales, time)) {
-            if (!scales.empty()) {
-                valueCache->GetPrimvar(cachePath, _tokens->scale) = scales;
-                _MergePrimvar(
-                    &valueCache->GetPrimvars(cachePath),
-                    _tokens->scale,
-                    HdInterpolationInstance);
-            }
-
-            anyVarying = anyVarying ||
-                _IsVarying(prim,
-                           UsdGeomTokens->scales,
-                           HdChangeTracker::DirtyPrimvar,
-                           _tokens->instancer,
-                           timeVaryingBits,
-                           false);
-        }
+        // Check per-instance transform primvars
+        _IsVarying(prim,
+                UsdGeomTokens->positions,
+                HdChangeTracker::DirtyPrimvar,
+                _tokens->instancer,
+                timeVaryingBits,
+                false) ||
+            _IsVarying(prim,
+                    UsdGeomTokens->orientations,
+                    HdChangeTracker::DirtyPrimvar,
+                    _tokens->instancer,
+                    timeVaryingBits,
+                    false) ||
+            _IsVarying(prim,
+                    UsdGeomTokens->scales,
+                    HdChangeTracker::DirtyPrimvar,
+                    _tokens->instancer,
+                    timeVaryingBits,
+                    false);
     }
 }
 
