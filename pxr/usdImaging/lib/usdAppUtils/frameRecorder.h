@@ -102,6 +102,9 @@ public:
     /// The recorded image will represent the view from \p usdCamera looking at
     /// the imageable prims on USD stage \p stage at time \p timeCode.
     ///
+    /// If \p usdCamera is not a valid camera, a camera will be computed
+    /// to automatically frame the stage geometry.
+    ///
     /// Returns true if the image was generated and written successfully, or
     /// false otherwise.
     USDAPPUTILS_API

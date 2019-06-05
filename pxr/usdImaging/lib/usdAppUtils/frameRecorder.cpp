@@ -43,7 +43,10 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usdGeom/bboxCache.h"
 #include "pxr/usd/usdGeom/camera.h"
+#include "pxr/usd/usdGeom/metrics.h"
+#include "pxr/usd/usdGeom/tokens.h"
 
 #include <string>
 
@@ -60,6 +63,50 @@ UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder() :
     _imagingEngine.SetEnableFloatPointDrawTarget(true);
 }
 
+static GfCamera
+_ComputeCameraToFrameStage(const UsdStagePtr& stage, UsdTimeCode timeCode)
+{
+    // Start with a default (50mm) perspective GfCamera.
+    GfCamera gfCamera;
+    TfTokenVector includedPurposes;
+    includedPurposes.push_back(UsdGeomTokens->default_);
+    includedPurposes.push_back(UsdGeomTokens->render);
+    UsdGeomBBoxCache bboxCache(timeCode, includedPurposes,
+                               /* useExtentsHint = */ true);
+    GfBBox3d bbox = bboxCache.ComputeWorldBound(stage->GetPseudoRoot());
+    GfVec3d center = bbox.ComputeCentroid();
+    GfRange3d range = bbox.ComputeAlignedRange();
+    GfVec3d dim = range.GetSize();
+    TfToken upAxis = UsdGeomGetStageUpAxis(stage);
+    // Find corner of bbox in the focal plane.
+    GfVec2d plane_corner;
+    if (upAxis == UsdGeomTokens->y) {
+        plane_corner = GfVec2d(dim[0], dim[1])/2;
+    } else {
+        plane_corner = GfVec2d(dim[0], dim[2])/2;
+    }
+    float plane_radius = sqrt(GfDot(plane_corner, plane_corner));
+    // Compute distance to focal plane.
+    float half_fov = gfCamera.GetFieldOfView(GfCamera::FOVHorizontal)/2.0;
+    float distance = plane_radius / tan(GfDegreesToRadians(half_fov));
+    // Back up to frame the front face of the bbox.
+    if (upAxis == UsdGeomTokens->y) {
+        distance += dim[2] / 2;
+    } else {
+        distance += dim[1] / 2;
+    }
+    // Compute local-to-world transform for camera filmback.
+    GfMatrix4d xf;
+    if (upAxis == UsdGeomTokens->y) {
+        xf.SetTranslate(center + GfVec3d(0, 0, distance));
+    } else {
+        xf.SetRotate(GfRotation(GfVec3d(1,0,0), 90));
+        xf.SetTranslateOnly(center + GfVec3d(0, -distance, 0));
+    }
+    gfCamera.SetTransform(xf);
+    return gfCamera;
+}
+
 bool
 UsdAppUtilsFrameRecorder::Record(
         const UsdStagePtr& stage,
@@ -69,11 +116,6 @@ UsdAppUtilsFrameRecorder::Record(
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return false;
-    }
-
-    if (!usdCamera) {
-        TF_CODING_ERROR("Invalid UsdGeomCamera");
         return false;
     }
 
@@ -88,7 +130,12 @@ UsdAppUtilsFrameRecorder::Record(
 
     // XXX: If the camera's aspect ratio is animated, then a range of calls to
     // this function may generate a sequence of images with different sizes.
-    const GfCamera gfCamera = usdCamera.GetCamera(timeCode);
+    GfCamera gfCamera;
+    if (usdCamera) {
+        gfCamera = usdCamera.GetCamera(timeCode);
+    } else {
+        gfCamera = _ComputeCameraToFrameStage(stage, timeCode);
+    }
     float aspectRatio = gfCamera.GetAspectRatio();
     if (GfIsClose(aspectRatio, 0.0f, 1e-4)) {
         aspectRatio = 1.0f;
