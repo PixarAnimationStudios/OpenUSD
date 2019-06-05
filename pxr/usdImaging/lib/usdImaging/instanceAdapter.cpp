@@ -471,26 +471,6 @@ UsdImagingInstanceAdapter::_IsChildPrim(UsdPrim const& prim,
 }
 
 void 
-UsdImagingInstanceAdapter::TrackVariabilityPrep(UsdPrim const& prim,
-                                      SdfPath const& cachePath,
-                                      UsdImagingInstancerContext const* 
-                                          instancerContext)
-{
-    if (_IsChildPrim(prim, cachePath)) {
-        UsdImagingInstancerContext instancerContext;
-        _ProtoRprim const& rproto = _GetProtoRprim(prim.GetPath(),
-                                                    cachePath,
-                                                    &instancerContext);
-        if (!TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
-            return;
-        }
-        rproto.adapter->TrackVariabilityPrep(
-            _GetPrim(rproto.path), cachePath, 
-            &instancerContext);
-    } 
-}
-
-void 
 UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
@@ -1037,30 +1017,6 @@ bool
 UsdImagingInstanceAdapter::_InstancerData::PrimvarInfo::operator==
     (const UsdImagingInstanceAdapter::_InstancerData::PrimvarInfo &rhs) const {
     return (name == rhs.name && type == rhs.type);
-}
-
-void 
-UsdImagingInstanceAdapter::UpdateForTimePrep(UsdPrim const& prim,
-                                   SdfPath const& cachePath, 
-                                   UsdTimeCode time,
-                                   HdDirtyBits requestedBits,
-                                   UsdImagingInstancerContext const* 
-                                       instancerContext)
-{
-    if (_IsChildPrim(prim, cachePath)) {
-        // Note that the proto group in this rproto has not yet been
-        // updated with new instances at this point.
-        UsdImagingInstancerContext instancerContext;
-        _ProtoRprim const& rproto = _GetProtoRprim(prim.GetPath(),
-                                                    cachePath,
-                                                    &instancerContext);
-        if (!TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
-            return;
-        }
-        rproto.adapter->UpdateForTimePrep(
-            _GetPrim(rproto.path), cachePath, time, requestedBits,
-            &instancerContext);
-    }
 }
 
 void 

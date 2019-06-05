@@ -114,13 +114,6 @@ public:
     /// \name Parallel Setup and Resolve
     // ---------------------------------------------------------------------- //
  
-    /// Prepare local state and \p cache entries for parallel
-    /// TrackVariability().
-    virtual void TrackVariabilityPrep(UsdPrim const& prim,
-                                      SdfPath const& cachePath,
-                                      UsdImagingInstancerContext const* 
-                                          instancerContext = NULL) {};
-
     /// For the given \p prim, variability is detected and
     /// stored in \p timeVaryingBits. Initial values are cached into the value
     /// cache.
@@ -131,14 +124,6 @@ public:
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
                                       instancerContext = NULL) const = 0;
-
-    /// Prepare local state and \p cache entries for parallel UpdateForTime().
-    virtual void UpdateForTimePrep(UsdPrim const& prim,
-                                   SdfPath const& cachePath, 
-                                   UsdTimeCode time,
-                                   HdDirtyBits requestedBits,
-                                   UsdImagingInstancerContext const* 
-                                       instancerContext = NULL) {};
 
     /// Populates the \p cache for the given \p prim, \p time and \p
     /// requestedBits.

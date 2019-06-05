@@ -440,26 +440,6 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
 }
 
 void 
-UsdImagingPointInstancerAdapter::TrackVariabilityPrep(UsdPrim const& prim,
-                                      SdfPath const& cachePath,
-                                      UsdImagingInstancerContext const* 
-                                          instancerContext)
-{
-    if (IsChildPath(cachePath)) {
-        _ProtoRprim const& rproto = _GetProtoRprim(prim.GetPath(), cachePath);
-        if (!TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
-            return;
-        }
-        if (!TF_VERIFY(rproto.paths.size() > 0, "%s", cachePath.GetText())) {
-            return;
-        }
-
-        rproto.adapter->TrackVariabilityPrep(_GetProtoUsdPrim(rproto),
-                                             cachePath);
-    }
-}
-
-void 
 UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
@@ -649,32 +629,6 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
                 }
             }
         }
-    }
-}
-
-void
-UsdImagingPointInstancerAdapter::UpdateForTimePrep(UsdPrim const& prim,
-                                   SdfPath const& cachePath,
-                                   UsdTimeCode time,
-                                   HdDirtyBits requestedBits,
-                                   UsdImagingInstancerContext const*
-                                       instancerContext)
-{
-    if (IsChildPath(cachePath)) {
-        // Find the Hydra rprim that implements this USD prim for this
-        // instancer.
-        _ProtoRprim const& rproto = _GetProtoRprim(prim.GetPath(), cachePath);
-
-        if (!TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
-            return;
-        }
-        if (!TF_VERIFY(rproto.paths.size() > 0, "%s", cachePath.GetText())) {
-            return;
-        }
-
-        rproto.adapter->UpdateForTimePrep(_GetProtoUsdPrim(rproto),
-                                          cachePath,
-                                          time, requestedBits);
     }
 }
 

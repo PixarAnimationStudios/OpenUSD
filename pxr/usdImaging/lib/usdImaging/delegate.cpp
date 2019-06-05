@@ -340,22 +340,6 @@ public:
         }
     }
 
-    // Preps all tasks for parallel update.
-    void UpdateVariabilityPrep() {
-        TF_FOR_ALL(it, _tasks) {
-            UsdImagingDelegate* delegate = it->delegate;
-            SdfPath const& cachePath = it->path;
-
-            _HdPrimInfo *primInfo = delegate->_GetHdPrimInfo(cachePath);
-            if (TF_VERIFY(primInfo, "%s\n", cachePath.GetText())) {
-                _AdapterSharedPtr const& adapter = primInfo->adapter;
-                if (TF_VERIFY(adapter, "%s\n", cachePath.GetText())) {
-                    adapter->TrackVariabilityPrep(primInfo->usdPrim, cachePath);
-                }
-            }
-        }
-    }
-
     // Populates prim variability and initial state.
     // Used as a parallel callback method for use with WorkParallelForN.
     void UpdateVariability(size_t start, size_t end) {
@@ -445,10 +429,6 @@ UsdImagingDelegate::SyncAll(bool includeUnvarying)
                       HdChangeTracker::StringifyDirtyBits(
                                                    primInfo.dirtyBits).c_str());
 
-            adapter->UpdateForTimePrep(primInfo.usdPrim,
-                                       cachePath,
-                                       _time,
-                                       primInfo.dirtyBits);
             worker.AddTask(this, cachePath);
         }
     }
@@ -491,10 +471,6 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
                     primInfo->dirtyBits,
                     HdChangeTracker::StringifyDirtyBits(primInfo->dirtyBits).c_str());
 
-            adapter->UpdateForTimePrep(primInfo->usdPrim,
-                                       cachePath,
-                                       _time,
-                                       primInfo->dirtyBits);
             worker.AddTask(this, cachePath);
         }
     }
@@ -518,10 +494,6 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
                     primInfo->dirtyBits,
                     HdChangeTracker::StringifyDirtyBits(
                                               primInfo->dirtyBits).c_str());
-            adapter->UpdateForTimePrep(primInfo->usdPrim,
-                                       cachePath,
-                                       _time,
-                                       primInfo->dirtyBits);
             worker.AddTask(this, cachePath);
         }
     }
@@ -731,7 +703,6 @@ UsdImagingDelegate::_ExecuteWorkForVariabilityUpdate(_Worker* worker)
         .Msg("[Repopulate] %zu variability tasks in worker\n", 
              worker->GetTaskCount());
 
-    worker->UpdateVariabilityPrep(); 
     worker->DisableValueCacheMutations();
     {
         // Release the GIL to ensure that threaded work won't deadlock if
@@ -1413,7 +1384,6 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
                 // Do nothing
             } else if (dirtyBits != HdChangeTracker::AllDirty) {
                 // Update Variability
-                adapter->TrackVariabilityPrep(primInfo->usdPrim, affectedCachePath);
                 adapter->TrackVariability(primInfo->usdPrim, affectedCachePath,
                                           &primInfo->timeVaryingBits);
 
@@ -1447,8 +1417,6 @@ UsdImagingDelegate::_UpdateSingleValue(SdfPath const& cachePath,
     if (TF_VERIFY(primInfo, "%s\n", cachePath.GetText()) &&
         TF_VERIFY(primInfo->adapter, "%s\n", cachePath.GetText())) {
         _AdapterSharedPtr &adapter = primInfo->adapter;
-        adapter->UpdateForTimePrep(primInfo->usdPrim, cachePath,
-                                   _time, requestBits);
         adapter->UpdateForTime(primInfo->usdPrim, cachePath,
                                _time, requestBits);
     }
