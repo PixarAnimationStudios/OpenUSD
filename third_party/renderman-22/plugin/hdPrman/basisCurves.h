@@ -55,7 +55,7 @@ protected:
 
 private:
     riley::GeometryMasterId _masterId;
-    riley::GeometryInstanceId _instanceId;
+    std::vector<riley::GeometryInstanceId> _instanceIds;
 
     // This class does not support copying.
     HdPrman_BasisCurves(const HdPrman_BasisCurves&)             = delete;
