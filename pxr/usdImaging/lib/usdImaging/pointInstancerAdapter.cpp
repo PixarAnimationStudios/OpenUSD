@@ -632,6 +632,21 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
                     _tokens->instancer,
                     timeVaryingBits,
                     false);
+
+        if (!(*timeVaryingBits & HdChangeTracker::DirtyPrimvar)) {
+            UsdGeomPointInstancer instancer(prim);
+            UsdGeomPrimvarsAPI primvars(instancer);
+            for (auto const &pv: primvars.GetPrimvarsWithValues()) {
+                TfToken const& interp = pv.GetInterpolation();
+                if (interp != UsdGeomTokens->constant &&
+                    interp != UsdGeomTokens->uniform &&
+                    pv.ValueMightBeTimeVarying()) {
+                    *timeVaryingBits |= HdChangeTracker::DirtyPrimvar;
+                    HD_PERF_COUNTER_INCR(_tokens->instancer);
+                    break;
+                }
+            }
+        }
     }
 }
 
@@ -897,11 +912,10 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
             // Convert non-constant primvars on UsdGeomPointInstancer
             // into instance-rate primvars.
             UsdGeomPrimvarsAPI primvars(instancer);
-            for (auto const &pv: primvars.GetPrimvars()) {
+            for (auto const &pv: primvars.GetPrimvarsWithValues()) {
                 TfToken const& interp = pv.GetInterpolation();
                 if (interp != UsdGeomTokens->constant &&
-                    interp != UsdGeomTokens->uniform &&
-                    pv.HasAuthoredValue()) {
+                    interp != UsdGeomTokens->uniform) {
                     HdInterpolation interp = HdInterpolationInstance;
                     _ComputeAndMergePrimvar(
                         prim, cachePath, pv, time, valueCache, &interp);
