@@ -182,6 +182,8 @@ UsdImagingPointInstancerAdapter::_Populate(UsdPrim const& prim,
     instrData.visible = true;
     instrData.dirtyBits = HdChangeTracker::AllDirty;
     instrData.parentInstancerCachePath = parentInstancerCachePath;
+    instrData.visibleTime = std::numeric_limits<double>::infinity();
+    instrData.indicesTime = std::numeric_limits<double>::infinity();
 
     TF_DEBUG(USDIMAGING_INSTANCER)
         .Msg("[Add PI] %s, parentInstancerCachePath <%s>\n",
@@ -658,40 +660,12 @@ UsdImagingPointInstancerAdapter::UpdateForTimePrep(UsdPrim const& prim,
                                    UsdImagingInstancerContext const*
                                        instancerContext)
 {
-    // XXX: There is some prim/adapter dependency here when the instancer
-    // is a nested instancer.
-    //
-    // _UpdateInstanceMap() updates the instance indexes an instancer.
-    //
-    // In the case of nested instancer, the parent instancer manages the
-    // instance indexes on the child instancer behalf.  Therefore,
-    // _UpdateInstanceMap() must be called on the parent before the child.
-    //
-    // However, this leads to some challenges:
-    // Making sure _UpdateInstanceMap() is called on the parent at all.
-    // Ideally _UpdateInstanceMap() is only called once for the parent.
-    // Don't read the instance indexes while _UpdateInstanceMap() is updating.
-    //
-    // Therefore, currently _UpdateInstanceMap() is updated in a single
-    // threaded pass (this UpdateForTimePrep()) before the multi-threaded
-    // pass is run.  However, it does mean _UpdateInstanceMap() could be called
-    // multiple times for the same prim.
     if (IsChildPath(cachePath)) {
-        // extract instancerPath from cachePath.
-        //
-        // cachePath:/path/pointInstancer.proto_*
-        // instancerPath:/path/pointInstancer
-        //
-        _UpdateInstanceMap(cachePath.GetParentPath(), time);
-
         // Find the Hydra rprim that implements this USD prim for this
         // instancer.
         _ProtoRprim const& rproto = _GetProtoRprim(prim.GetPath(), cachePath);
 
         if (!TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
-            return;
-        }
-        if (!TF_VERIFY(rproto.prototype, "%s", cachePath.GetText())) {
             return;
         }
         if (!TF_VERIFY(rproto.paths.size() > 0, "%s", cachePath.GetText())) {
@@ -701,40 +675,6 @@ UsdImagingPointInstancerAdapter::UpdateForTimePrep(UsdPrim const& prim,
         rproto.adapter->UpdateForTimePrep(_GetProtoUsdPrim(rproto),
                                           cachePath,
                                           time, requestedBits);
-    } else {
-        if (requestedBits & HdChangeTracker::DirtyInstanceIndex) {
-            // If this is a nested instancer, we need to prime the
-            // InstanceIndices in the value cache and make sure the parent
-            // instancer has been updated for the current time.
-            _InstancerDataMap::const_iterator instr =
-                _instancerData.find(cachePath);
-            if (instr != _instancerData.end()) {
-                SdfPath const& parentInstancerCachePath =
-                    instr->second.parentInstancerCachePath;
-                if (!parentInstancerCachePath.IsEmpty()) {
-                    // if this instancer has a parent instancer, make sure
-                    // the parent instancer is up to date too.
-                    // note that the parent instancer doesn't necessarily be
-                    // UsdGeomPointInstancer, we delegate to the adapter
-                    UsdPrim parentInstancer = _GetPrim(
-                        parentInstancerCachePath.GetAbsoluteRootOrPrimPath());
-                    UsdImagingPrimAdapterSharedPtr adapter =
-                        _GetPrimAdapter(parentInstancer);
-                    if (adapter) {
-                        adapter->UpdateForTimePrep(
-                            parentInstancer, parentInstancerCachePath,
-                            time, requestedBits, instancerContext);
-                    } else {
-                        TF_CODING_ERROR("PI: adapter not found for %s\n",
-                                        cachePath.GetText());
-                    }
-                }   
-                _UpdateInstanceMap(cachePath, time);
-            } else {
-                TF_CODING_ERROR("PI: %s is not found in _instancerData\n",
-                                cachePath.GetText());
-            }
-        }
     }
 }
 
@@ -763,6 +703,7 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
         }
 
         if (requestedBits & HdChangeTracker::DirtyInstanceIndex) {
+            _UpdateInstanceMap(instancerPath, time);
             valueCache->GetInstanceIndices(cachePath) = 
                 rproto.prototype->indices;
         }
@@ -788,6 +729,8 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
             bool& vis = valueCache->GetVisible(cachePath);
             bool protoHasFixedVis = !(rproto.variabilityBits
                     & HdChangeTracker::DirtyVisibility);
+
+            _UpdateInstancerVisibility(instancerPath, time);
 
             _InstancerDataMap::const_iterator it
                 = _instancerData.find(instancerPath);
@@ -849,7 +792,7 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
 
                     valueCache->GetInstanceIndices(cachePath) =
                         adapter->GetInstanceIndices(parentInstancerCachePath,
-                                                cachePath);
+                                                    cachePath, time);
                 }
             } else {
                 TF_CODING_ERROR("PI: %s is not found in _instancerData\n",
@@ -1383,7 +1326,7 @@ UsdImagingPointInstancerAdapter::_GetInstancerVisible(
 void
 UsdImagingPointInstancerAdapter::_UpdateInstanceMap(
                     SdfPath const& instancerPath,
-                    UsdTimeCode time)
+                    UsdTimeCode time) const
 {
     UsdPrim instancerPrim = _GetPrim(instancerPath.GetPrimPath());
 
@@ -1416,10 +1359,12 @@ UsdImagingPointInstancerAdapter::_UpdateInstanceMap(
     // grabbing the lock, but it's not thread safe.
     std::lock_guard<std::mutex> lock(instrData.mutex);
 
-    // Grab the instancer visibility, if it varies over time.
-    if (instrData.dirtyBits & HdChangeTracker::DirtyVisibility) {
-        instrData.visible = _GetInstancerVisible(instancerPath, time);
-    }
+    // Don't recompute the indices if they're already up to date (for example,
+    // if a different prototype requested them).
+    bool upToDate = instrData.indicesTime == time;
+    if (upToDate)
+        return;
+    instrData.indicesTime = time;
 
     std::vector<_PrototypeSharedPtr>& prototypes = instrData.prototypes;
 
@@ -1459,6 +1404,52 @@ UsdImagingPointInstancerAdapter::_UpdateInstanceMap(
     TF_DEBUG(USDIMAGING_POINT_INSTANCER_PROTO_CREATED).Msg(
         "[Instancer Updated]: <%s>\n",
         instancerPrim.GetPath().GetText());
+}
+
+void
+UsdImagingPointInstancerAdapter::_UpdateInstancerVisibility(
+        SdfPath const& instancerPath,
+        UsdTimeCode time) const
+{
+    UsdPrim instancerPrim = _GetPrim(instancerPath.GetPrimPath());
+
+    TF_DEBUG(USDIMAGING_INSTANCER).Msg(
+        "[PointInstancer::_UpdateInstancerVisibility] %s\n",
+        instancerPath.GetText());
+
+    UsdGeomPointInstancer instancer(instancerPrim);
+    if (!instancer) {
+        TF_WARN("Instancer prim <%s> is not a valid PointInstancer\n",
+                instancerPath.GetText());
+        return;
+    }
+
+    // We expect the instancerData entry for this instancer to be established
+    // before this method is called. This map should also never be accessed and
+    // mutated at the same time, so doing this lookup from multiple threads is
+    // safe.
+    _InstancerDataMap::iterator it = _instancerData.find(instancerPath);
+
+    if (it == _instancerData.end()) {
+        TF_CODING_ERROR("Instancer prim <%s> had no associated instancerData "
+                "entry\n",
+                instancerPrim.GetPath().GetText());
+        return;
+    }
+    _InstancerData& instrData = it->second;
+
+    // It's tempting to scan through the protoPools here and attempt to avoid
+    // grabbing the lock, but it's not thread safe.
+    std::lock_guard<std::mutex> lock(instrData.mutex);
+
+    // Grab the instancer visibility, if it varies over time.
+    if (instrData.dirtyBits & HdChangeTracker::DirtyVisibility) {
+        bool upToDate = instrData.visibleTime == time;
+        if (!upToDate) {
+            instrData.visible = _GetInstancerVisible(instancerPath, time);
+            instrData.visibleTime = time;
+        }
+    }
 }
 
 int
@@ -1988,7 +1979,7 @@ UsdImagingPointInstancerAdapter::_RemovePrim(SdfPath const& cachePath,
 /*virtual*/
 VtIntArray
 UsdImagingPointInstancerAdapter::GetInstanceIndices(
-    SdfPath const &instancerPath, SdfPath const &protoRprim)
+    SdfPath const &instancerPath, SdfPath const &protoRprim, UsdTimeCode time)
 {
     if (!instancerPath.IsEmpty()) {
         _ProtoRprim const &rproto =
@@ -1998,6 +1989,7 @@ UsdImagingPointInstancerAdapter::GetInstanceIndices(
                     instancerPath.GetText(),
                     protoRprim.GetText());
         } else {
+            _UpdateInstanceMap(instancerPath, time);
             return rproto.prototype->indices;
         }
     }

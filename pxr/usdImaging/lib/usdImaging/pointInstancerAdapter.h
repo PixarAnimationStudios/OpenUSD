@@ -181,7 +181,8 @@ public:
                                             SdfPathVector *instanceContext) override;
 
     virtual VtIntArray GetInstanceIndices(SdfPath const &instancerPath,
-                                          SdfPath const &protoRprimPath) override;
+                                          SdfPath const &protoRprimPath,
+                                          UsdTimeCode time) override;
 
     virtual GfMatrix4d GetRelativeInstancerTransform(
         SdfPath const &instancerPath,
@@ -239,9 +240,13 @@ private:
     void _UnloadInstancer(SdfPath const& instancerPath,
                           UsdImagingIndexProxy* index);
 
-    // Updates per-frame data in the instancer map. This is primarily used
-    // during update to send new instance indices out to Hydra.
-    void _UpdateInstanceMap(SdfPath const &instancerPath, UsdTimeCode time);
+    // Updates per-frame instance indices.
+    void _UpdateInstanceMap(SdfPath const &instancerPath,
+                            UsdTimeCode time) const;
+
+    // Updates per-frame instancer visibility.
+    void _UpdateInstancerVisibility(SdfPath const& instancerPath,
+                                    UsdTimeCode time) const;
 
     // Returns true if the instancer is visible, taking into account all
     // parent instancers visibilities.
@@ -365,6 +370,11 @@ private:
         std::mutex mutex;
         HdDirtyBits dirtyBits;
         bool visible;
+
+        // _InstancerData::visible and _Prototype::indices are both caches,
+        // so we want to record what usd timecode they correspond to.
+        UsdTimeCode visibleTime;
+        UsdTimeCode indicesTime;
     };
 
     // A map of instancer data, one entry per instancer prim that has been

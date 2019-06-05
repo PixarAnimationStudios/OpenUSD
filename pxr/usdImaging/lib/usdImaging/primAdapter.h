@@ -312,7 +312,8 @@ public:
     /// adapter.
     USDIMAGING_API
     virtual VtIntArray GetInstanceIndices(SdfPath const &instancerPath,
-                                          SdfPath const &protoRprimPath);
+                                          SdfPath const &protoRprimPath,
+                                          UsdTimeCode time);
 
     /// Returns the transform of \p protoInstancerPath relative to
     /// \p instancerPath. \p instancerPath must be managed by this

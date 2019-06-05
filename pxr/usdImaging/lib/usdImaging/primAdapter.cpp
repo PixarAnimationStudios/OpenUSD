@@ -869,7 +869,8 @@ UsdImagingPrimAdapter::GetDependPaths(SdfPath const &path) const
 /*virtual*/
 VtIntArray
 UsdImagingPrimAdapter::GetInstanceIndices(SdfPath const &instancerPath,
-                                          SdfPath const &protoRprimPath)
+                                          SdfPath const &protoRprimPath,
+                                          UsdTimeCode time)
 {
     return VtIntArray();
 }

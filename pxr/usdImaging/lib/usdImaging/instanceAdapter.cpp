@@ -2195,7 +2195,8 @@ UsdImagingInstanceAdapter::_RemovePrim(SdfPath const& cachePath,
 /*virtual*/
 VtIntArray
 UsdImagingInstanceAdapter::GetInstanceIndices(SdfPath const &instancerPath,
-                                              SdfPath const &protoRprimPath)
+                                              SdfPath const &protoRprimPath,
+                                              UsdTimeCode time)
 {
     if (!instancerPath.IsEmpty()) {
         UsdImagingInstancerContext ctx;
@@ -2206,6 +2207,7 @@ UsdImagingInstanceAdapter::GetInstanceIndices(SdfPath const &instancerPath,
                     instancerPath.GetText(),
                     protoRprimPath.GetText());
         } else {
+            _UpdateInstanceMap(_GetPrim(ctx.instancerCachePath), time);
             return rproto.protoGroup->indices;
         }
     }

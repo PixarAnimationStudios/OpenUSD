@@ -184,7 +184,8 @@ public:
     // ---------------------------------------------------------------------- //
 
     virtual VtIntArray GetInstanceIndices(SdfPath const &instancerPath,
-                                          SdfPath const &protoRprimPath) override;
+                                          SdfPath const &protoRprimPath,
+                                          UsdTimeCode time) override;
 
     virtual GfMatrix4d GetRelativeInstancerTransform(
         SdfPath const &parentInstancerPath,
