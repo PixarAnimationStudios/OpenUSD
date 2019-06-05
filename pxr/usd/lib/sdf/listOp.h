@@ -29,7 +29,7 @@
 #include "pxr/base/tf/token.h"
 
 #include <boost/functional/hash.hpp>
-#include <boost/optional.hpp>
+#include <boost/optional/optional_fwd.hpp>
 
 #include <functional>
 #include <iosfwd>
