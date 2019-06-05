@@ -1614,7 +1614,7 @@ UsdImagingPointInstancerAdapter::_ComputeProtoVisibility(
                                  bool* vis) const
 {
     if (!TF_VERIFY(vis)) { return; }
-    if (!protoGprim.GetPath().HasPrefix(protoGprim.GetPath())) {
+    if (!protoGprim.GetPath().HasPrefix(protoRoot.GetPath())) {
         TF_CODING_ERROR("Prototype <%s> is not prefixed under "
                 "proto root <%s>\n",
                 protoGprim.GetPath().GetText(),
