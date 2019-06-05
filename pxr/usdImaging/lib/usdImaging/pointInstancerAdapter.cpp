@@ -766,36 +766,34 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
             rproto.adapter->UpdateForTime(protoPrim,
                                           cachePath, time, protoReqBits);
 
-        // Make sure we always query and return visibility. This is done
-        // after the adapter update to ensure we get our specialized view of
-        // visibility.
+        if (requestedBits & HdChangeTracker::DirtyVisibility) {
+            // Apply the instancer visibility at the current time to the
+            // instance. Notice that the instance will also pickup the instancer
+            // visibility at the time offset.
+            bool& vis = valueCache->GetVisible(cachePath);
+            bool protoHasFixedVis = !(rproto.variabilityBits
+                    & HdChangeTracker::DirtyVisibility);
 
-        // Apply the instancer visibility at the current time to the
-        // instance. Notice that the instance will also pickup the instancer
-        // visibility at the time offset.
-        bool& vis = valueCache->GetVisible(cachePath);
-        bool protoHasFixedVis = !(rproto.variabilityBits
-                                  & HdChangeTracker::DirtyVisibility);
-
-        _InstancerDataMap::const_iterator it
-            = _instancerData.find(instancerPath);
-        if (TF_VERIFY(it != _instancerData.end())) {
-            vis = it->second.visible;
-        }
-        if (protoHasFixedVis) {
-            // The instancer is visible and the proto prim has fixed
-            // visibility (it does not vary over time), we can use the
-            // pre-cached visibility.
-            vis = vis && rproto.visible;
-        } else if (vis) {
-            // The instancer is visible and the prototype has varying
-            // visibility, we must compute visibility from the proto
-            // prim to the model instance root.
-            _ComputeProtoVisibility(
-                _GetPrim(rproto.prototype->protoRootPath),
-                _GetPrim(rproto.paths.front()),
-                time,
-                &vis);
+            _InstancerDataMap::const_iterator it
+                = _instancerData.find(instancerPath);
+            if (TF_VERIFY(it != _instancerData.end())) {
+                vis = it->second.visible;
+            }
+            if (protoHasFixedVis) {
+                // The instancer is visible and the proto prim has fixed
+                // visibility (it does not vary over time), we can use the
+                // pre-cached visibility.
+                vis = vis && rproto.visible;
+            } else if (vis) {
+                // The instancer is visible and the prototype has varying
+                // visibility, we must compute visibility from the proto
+                // prim to the model instance root.
+                _ComputeProtoVisibility(
+                        _GetPrim(rproto.prototype->protoRootPath),
+                        _GetPrim(rproto.paths.front()),
+                        time,
+                        &vis);
+            }
         }
 
         if (requestedBits & HdChangeTracker::DirtyTransform) {
