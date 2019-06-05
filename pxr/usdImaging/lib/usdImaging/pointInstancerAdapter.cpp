@@ -497,12 +497,12 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
             HdChangeTracker::DirtyInstanceIndex,
             _tokens->instancer,
             timeVaryingBits,
-            true) || _IsVarying(prim,
+            false) || _IsVarying(prim,
                 UsdGeomTokens->protoIndices,
                 HdChangeTracker::DirtyInstanceIndex,
                 _tokens->instancer,
                 timeVaryingBits,
-                true);
+                false);
 
         // XXX: We should never pull purpose directly from the prototype's
         // adapter, since we must compute purpose relative to the model root,
@@ -585,20 +585,22 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
         if (instr != _instancerData.end()) {
             SdfPath parentInstancerCachePath =
                 instr->second.parentInstancerCachePath;
-            if (!parentInstancerCachePath.IsEmpty()) {
+            UsdPrim parentInstancer = _GetPrim(
+                    parentInstancerCachePath.GetAbsoluteRootOrPrimPath());
+            if (parentInstancer) {
                 // Mark instance indices as time varying if any of the following
                 // is time varying : protoIndices, invisibleIds
-                _IsVarying(prim,
+                _IsVarying(parentInstancer,
                     UsdGeomTokens->invisibleIds,
                     HdChangeTracker::DirtyInstanceIndex,
                     _tokens->instancer,
                     timeVaryingBits,
-                    true) || _IsVarying(prim,
+                    false) || _IsVarying(parentInstancer,
                         UsdGeomTokens->protoIndices,
                         HdChangeTracker::DirtyInstanceIndex,
                         _tokens->instancer,
                         timeVaryingBits,
-                        true);
+                        false);
             }
         }
 
