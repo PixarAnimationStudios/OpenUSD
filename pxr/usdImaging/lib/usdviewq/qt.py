@@ -47,10 +47,19 @@ if QtCore.__name__.startswith('PySide.'):
         QtGui.QWheelEvent.angleDelta = angleDelta
 
     # Patch missing classes to make PySide look like PySide2
-    if not hasattr(QtCore, "QItemSelectionModel"):
+    if not hasattr(QtCore, 'QItemSelectionModel'):
         QtCore.QItemSelectionModel = QtGui.QItemSelectionModel
+        
+    if not hasattr(QtCore, 'QStringListModel'):
+        QtCore.QStringListModel = QtGui.QStringListModel
 
 elif QtCore.__name__.startswith('PySide2.'):
     from PySide2 import QtGui, QtWidgets, QtOpenGL
+    
+    # Older versions still have QtGui.QStringListModel - this
+    # is apparently a bug:
+    #    https://bugreports.qt.io/browse/PYSIDE-614
+    if not hasattr(QtCore, 'QStringListModel'):
+        QtCore.QStringListModel = QtGui.QStringListModel
 else:
     raise ImportError()
