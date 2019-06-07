@@ -29,6 +29,7 @@
 #include "pxr/usdImaging/usdImaging/delegate.h"
 
 #include "pxr/usd/usdGeom/tokens.h"
+#include "pxr/usd/usdGeom/camera.h"
 
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/contextCaps.h"
@@ -243,7 +244,7 @@ UsdImagingGLEngine::RenderBatch(
 
     TF_VERIFY(_taskController);
 
-    _taskController->SetCameraClipPlanes(params.clipPlanes);
+    _taskController->SetFreeCameraClipPlanes(params.clipPlanes);
     _UpdateHydraCollection(&_renderCollection, paths, params);
     _taskController->SetCollection(_renderCollection);
 
@@ -286,7 +287,7 @@ UsdImagingGLEngine::Render(
     SdfPath cachePath = root.GetPath();
     SdfPathVector roots(1, _delegate->ConvertCachePathToIndexPath(cachePath));
 
-    _taskController->SetCameraClipPlanes(params.clipPlanes);
+    _taskController->SetFreeCameraClipPlanes(params.clipPlanes);
     _UpdateHydraCollection(&_renderCollection, roots, params);
     _taskController->SetCollection(_renderCollection);
 
@@ -360,23 +361,57 @@ UsdImagingGLEngine::SetRootVisibility(bool isVisible)
 // Camera and Light State
 //----------------------------------------------------------------------------
 
-void 
-UsdImagingGLEngine::SetCameraState(
-    const GfMatrix4d& viewMatrix,
-    const GfMatrix4d& projectionMatrix,
-    const GfVec4d& viewport)
+void
+UsdImagingGLEngine::SetRenderViewport(GfVec4d const& viewport)
 {
     if (ARCH_UNLIKELY(_legacyImpl)) {
-        _legacyImpl->SetCameraState(viewMatrix, projectionMatrix, viewport);
+        _legacyImpl->SetRenderViewport(viewport);
         return;
     }
 
     TF_VERIFY(_taskController);
+    _taskController->SetRenderViewport(viewport);
+}
 
-    // usdview passes these matrices from OpenGL state.
-    // update the camera in the task controller accordingly.
-    _taskController->SetCameraMatrices(viewMatrix, projectionMatrix);
-    _taskController->SetCameraViewport(viewport);
+void
+UsdImagingGLEngine::SetWindowPolicy(CameraUtilConformWindowPolicy policy)
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        _legacyImpl->SetWindowPolicy(policy);
+        return;
+    }
+
+    TF_VERIFY(_taskController);
+    // Note: Free cam uses SetCameraState, which expects the frustum to be
+    // pre-adjusted for the viewport size.
+    
+    // The usdImagingDelegate manages the window policy for scene cameras.
+    _delegate->SetWindowPolicy(policy);
+}
+
+void
+UsdImagingGLEngine::SetCameraPath(SdfPath const& id)
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        _legacyImpl->SetCameraPath(id);
+        return;
+    }
+
+    TF_VERIFY(_taskController);
+    _taskController->SetCameraPath(id);
+}
+
+void 
+UsdImagingGLEngine::SetCameraState(const GfMatrix4d& viewMatrix,
+                                   const GfMatrix4d& projectionMatrix)
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        _legacyImpl->SetFreeCameraMatrices(viewMatrix, projectionMatrix);
+        return;
+    }
+
+    TF_VERIFY(_taskController);
+    _taskController->SetFreeCameraMatrices(viewMatrix, projectionMatrix);
 }
 
 void
@@ -388,7 +423,8 @@ UsdImagingGLEngine::SetCameraStateFromOpenGL()
     glGetDoublev(GL_PROJECTION_MATRIX, projectionMatrix.GetArray());
     glGetDoublev(GL_VIEWPORT, &viewport[0]);
 
-    SetCameraState(viewMatrix, projectionMatrix, viewport);
+    SetCameraState(viewMatrix, projectionMatrix);
+    SetRenderViewport(viewport);
 }
 
 void

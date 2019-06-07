@@ -34,6 +34,8 @@
 #include "pxr/usdImaging/usdImagingGL/renderParams.h"
 #include "pxr/usdImaging/usdImagingGL/rendererSettings.h"
 
+#include "pxr/imaging/cameraUtil/conformWindow.h"
+
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 
@@ -157,20 +159,47 @@ public:
     /// @}
 
     // ---------------------------------------------------------------------
-    /// \name Camera and Light State
+    /// \name Camera State
     /// @{
     // ---------------------------------------------------------------------
     
+    /// Set the viewport to use for rendering as (x,y,w,h), where (x,y)
+    /// represents the lower left corner of the viewport rectangle, and (w,h)
+    /// is the width and height of the viewport in pixels.
+    USDIMAGINGGL_API
+    void SetRenderViewport(GfVec4d const& viewport);
+
+    /// Set the window policy to use.
+    /// XXX: This is currently used for scene cameras set via SetCameraPath.
+    /// See comment in SetCameraState for the free cam.
+    USDIMAGINGGL_API
+    void SetWindowPolicy(CameraUtilConformWindowPolicy policy);
+    
+    /// Scene camera API
+    /// Set the scene camera path to use for rendering.
+    USDIMAGINGGL_API
+    void SetCameraPath(SdfPath const& id);
+
+    /// Free camera API
+    /// Set camera framing state directly (without pointing to a camera on the 
+    /// USD stage). The projection matrix is expected to be pre-adjusted for the
+    /// window policy.
     USDIMAGINGGL_API
     void SetCameraState(const GfMatrix4d& viewMatrix,
-                                const GfMatrix4d& projectionMatrix,
-                                const GfVec4d& viewport);
+                        const GfMatrix4d& projectionMatrix);
 
-    /// Helper function to extract camera state from opengl and then
-    /// call SetCameraState.
+    /// Helper function to extract camera and viewport state from opengl and
+    /// then call SetCameraState and SetRenderViewport
     USDIMAGINGGL_API
     void SetCameraStateFromOpenGL();
 
+    /// @}
+
+    // ---------------------------------------------------------------------
+    /// \name Light State
+    /// @{
+    // ---------------------------------------------------------------------
+    
     /// Helper function to extract lighting state from opengl and then
     /// call SetLights.
     USDIMAGINGGL_API
@@ -469,7 +498,6 @@ protected:
     bool _useFloatPointDrawTarget;
     HdxCompositor _compositor;
     GlfDrawTargetRefPtr _drawTarget;
-
     // An implementation of much of the engine functionality that doesn't
     // invoke any of the advanced Hydra features.  It is kept around for 
     // backwards compatibility and may one day be deprecated.  Most of the 

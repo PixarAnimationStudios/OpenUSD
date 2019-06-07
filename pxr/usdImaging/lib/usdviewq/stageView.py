@@ -1382,15 +1382,33 @@ class StageView(QtOpenGL.QGLWidget):
         if self._dataModel.playing:
             super(StageView, self).updateGL()
 
-    def computeGfCameraForCurrentCameraPrim(self):
+    def getActiveSceneCamera(self):
         cameraPrim = self._dataModel.viewSettings.cameraPrim
         if cameraPrim and cameraPrim.IsActive():
-            gfCamera = UsdGeom.Camera(cameraPrim).GetCamera(
-                self._dataModel.currentFrame)
-            return gfCamera
-        else:
-            return None
+            return cameraPrim
+        return None
+    
+    # XXX: Consolidate window/frustum conformance code that is littered in
+    # several places.
+    def computeWindowPolicy(self, cameraAspectRatio):
+        # The freeCam always uses 'MatchVertically'.
+        # When using a scene cam, we factor in the masking setting and window
+        # size to compute it.
+        windowPolicy = CameraUtil.MatchVertically
+        
+        if self.getActiveSceneCamera():
+            if self._cropImageToCameraViewport:
+                targetAspect = (
+                    float(self.size().width()) / max(1.0, self.size().height()))
 
+                if targetAspect < cameraAspectRatio:
+                    windowPolicy =  CameraUtil.MatchHorizontally
+            else:
+                if self._fitCameraInViewport:
+                    windowPolicy =  CameraUtil.Fit
+        
+        return windowPolicy
+    
     def computeWindowSize(self):
          size = self.size() * QtWidgets.QApplication.instance().devicePixelRatio()
          return (int(size.width()), int(size.height()))
@@ -1406,28 +1424,32 @@ class StageView(QtOpenGL.QGLWidget):
         camera frustum has changed since the last time resolveCamera was called."""
 
         # If 'camera' is None, make sure we have a valid freeCamera
-        camera = self.computeGfCameraForCurrentCameraPrim()
-        if not camera:
+        sceneCam = self.getActiveSceneCamera()
+        if sceneCam:
+            gfCam = UsdGeom.Camera(sceneCam).GetCamera(
+                                                self._dataModel.currentFrame)
+        else:
             self.switchToFreeCamera()
-            camera = self._dataModel.viewSettings.freeCamera.computeGfCamera(self._bbox, autoClip=self.autoClip)
+            gfCam = self._dataModel.viewSettings.freeCamera.computeGfCamera(
+                            self._bbox, autoClip=self.autoClip)
 
-        cameraAspectRatio = camera.aspectRatio
+        cameraAspectRatio = gfCam.aspectRatio
 
         # Conform the camera's frustum to the window viewport, if necessary.
         if not self._cropImageToCameraViewport:
             targetAspect = float(self.size().width()) / max(1.0, self.size().height())
             if self._fitCameraInViewport:
-                CameraUtil.ConformWindow(camera, CameraUtil.Fit, targetAspect)
+                CameraUtil.ConformWindow(gfCam, CameraUtil.Fit, targetAspect)
             else:
-                CameraUtil.ConformWindow(camera, CameraUtil.MatchVertically, targetAspect)
+                CameraUtil.ConformWindow(gfCam, CameraUtil.MatchVertically, targetAspect)
 
         frustumChanged = ((not self._lastComputedGfCamera) or
-                          self._lastComputedGfCamera.frustum != camera.frustum)
+                          self._lastComputedGfCamera.frustum != gfCam.frustum)
         # We need to COPY the camera, not assign it...
-        self._lastComputedGfCamera = Gf.Camera(camera)
+        self._lastComputedGfCamera = Gf.Camera(gfCam)
         if frustumChanged:
             self.signalFrustumChanged.emit()
-        return (camera, cameraAspectRatio)
+        return (gfCam, cameraAspectRatio)
 
     def computeCameraViewport(self, cameraAspectRatio):
         # Conform the camera viewport to the camera's aspect ratio,
@@ -1567,6 +1589,9 @@ class StageView(QtOpenGL.QGLWidget):
             GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
             GL.glEnable(GL.GL_BLEND)
 
+            # Note: camera lights and camera guides require the
+            # resolved (adjusted) camera viewProjection matrix, which is
+            # why we resolve the camera above always.
             (gfCamera, cameraAspect) = self.resolveCamera()
             frustum = gfCamera.frustum
             cameraViewport = self.computeCameraViewport(cameraAspect)
@@ -1582,11 +1607,20 @@ class StageView(QtOpenGL.QGLWidget):
 
             # not using the actual camera dist ...
             cam_light_dist = self._dist
+            
+            sceneCam = self.getActiveSceneCamera()
+            renderer.SetRenderViewport(viewport)
+            renderer.SetWindowPolicy(self.computeWindowPolicy(cameraAspect))
 
-            renderer.SetCameraState(
-                frustum.ComputeViewMatrix(),
-                frustum.ComputeProjectionMatrix(),
-                Gf.Vec4d(*viewport))
+            if sceneCam:
+                # When using a USD camera, simply set it as the active camera.
+                # Window policy conformance is handled in the engine/hydra.
+                renderer.SetCameraPath(sceneCam.GetPath())
+            else:
+            # When using the free cam (which isn't currently backed on the
+            # USD stage), we send the camera matrices to the engine.
+                renderer.SetCameraState(frustum.ComputeViewMatrix(),
+                                        frustum.ComputeProjectionMatrix())
 
             viewProjectionMatrix = Gf.Matrix4f(frustum.ComputeViewMatrix()
                                             * frustum.ComputeProjectionMatrix())

@@ -40,6 +40,7 @@
 #include "pxr/usd/usd/primRange.h"
 
 // Geometry Schema
+#include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usdGeom/scope.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/mesh.h"
@@ -95,7 +96,11 @@ UsdImagingGLLegacyEngine::UsdImagingGLLegacyEngine(
     _vertCount(0),
     _lineVertCount(0),
     _attribBuffer(0),
-    _indexBuffer(0)
+    _indexBuffer(0),
+    _freeCamViewMatrix(1.0),
+    _freeCamProjMatrix(1.0),
+    _windowPolicy(CameraUtilFit),
+    _usingSceneCam(false)
 {
     // Build a TfHashSet of excluded prims for fast rejection.
     TF_FOR_ALL(pathIt, excludedPrimPaths) {
@@ -306,6 +311,8 @@ UsdImagingGLLegacyEngine::Render(const UsdPrim& root,
     _root = root;
     _params = params;
 
+    _ResolveCamera();
+
     glPushAttrib( GL_LIGHTING_BIT );
     glPushAttrib( GL_POLYGON_BIT );
     glPushAttrib( GL_CURRENT_BIT );
@@ -479,17 +486,39 @@ UsdImagingGLLegacyEngine::Render(const UsdPrim& root,
 }
 
 void
-UsdImagingGLLegacyEngine::SetCameraState(const GfMatrix4d& viewMatrix,
-                            const GfMatrix4d& projectionMatrix,
-                            const GfVec4d& viewport)
+UsdImagingGLLegacyEngine::SetFreeCameraMatrices(
+    const GfMatrix4d& viewMatrix,
+    const GfMatrix4d& projectionMatrix)
 {
-    glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);   
+    _freeCamViewMatrix = viewMatrix;
+    _freeCamProjMatrix = projectionMatrix;
+    _usingSceneCam = false;
+}
 
-    glMatrixMode(GL_PROJECTION);
-    glLoadMatrixd(projectionMatrix.GetArray());
+void
+UsdImagingGLLegacyEngine::SetCameraPath(const SdfPath& id)
+{
+    // Validate the path before setting to true.
+    _usingSceneCam = false;
+    if (id.IsEmpty()) {
+        return;
+    }
+    
+    if (_sceneCamId != id) {
+        _sceneCamId = id;
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadMatrixd(viewMatrix.GetArray());
+        // Update handle to camera prim.
+        UsdPrim prim = _root.GetStage()->GetPrimAtPath(_sceneCamId);
+        if (!TF_VERIFY(prim)) {
+            return;
+        }
+        if (!TF_VERIFY(prim.IsA<UsdGeomCamera>())) {
+            return;
+        }
+        _sceneCam = prim;
+    }
+
+    _usingSceneCam = true;
 }
 
 void
@@ -718,6 +747,56 @@ UsdImagingGLLegacyEngine::_TraverseStage(const UsdPrim& root)
     TF_FOR_ALL(itr, _lineVertIdxOffsets) {
         *itr = (GLvoid*)((size_t)(*itr) + polygonVertOffset);
     }
+}
+
+void
+UsdImagingGLLegacyEngine::_ResolveCamera()
+{
+    double targetAspect = 1.0;
+    if (_viewport[3] != 0.0) {
+        targetAspect = _viewport[2] / _viewport[3];
+    }
+
+    if (_usingSceneCam) {
+        // Validation is handled in SetCameraPath, so the verify below is legit.
+        UsdGeomCamera cam(_sceneCam);
+        TF_VERIFY(cam);
+
+        GfCamera gfCam = cam.GetCamera(_params.frame);
+        GfFrustum frustum = gfCam.GetFrustum();
+
+        GfMatrix4d adjustedProj = CameraUtilConformedWindow(
+                                    frustum.ComputeProjectionMatrix(),
+                                    _windowPolicy,
+                                    targetAspect);
+
+        _UpdateGLCameraFramingState(gfCam.GetTransform().GetInverse(),
+                                    adjustedProj, _viewport);
+
+    } else {
+        // GfMatrix4d adjustedProj = CameraUtilConformedWindow(
+        //                             _freeCamProjMatrix,
+        //                             _windowPolicy,
+        //                             targetAspect);
+
+        _UpdateGLCameraFramingState(_freeCamViewMatrix,
+                                    _freeCamProjMatrix, _viewport);
+    }
+}
+
+void
+UsdImagingGLLegacyEngine::_UpdateGLCameraFramingState(
+    const GfMatrix4d& viewMatrix,
+    const GfMatrix4d& projectionMatrix,
+    const GfVec4d& viewport)
+{
+    glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);   
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadMatrixd(projectionMatrix.GetArray());
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadMatrixd(viewMatrix.GetArray());
 }
 
 void
@@ -1331,9 +1410,7 @@ UsdImagingGLLegacyEngine::TestIntersection(
     // Setup the modelview matrix
     const GfMatrix4d modelViewMatrix = worldToLocalSpace * viewMatrix;
 
-    // Set up camera matrices and viewport. At some point in the future,
-    // this may be handled by Hydra itself since we are calling SetCameraState
-    // with all of this information so we can support culling
+    // Set up camera matrices and viewport for picking.
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadMatrixd(projectionMatrix.GetArray());
@@ -1343,9 +1420,6 @@ UsdImagingGLLegacyEngine::TestIntersection(
     glLoadMatrixd(modelViewMatrix.GetArray());
    
     glViewport(0, 0, width, height);
-
-    SetCameraState(
-        modelViewMatrix, projectionMatrix, GfVec4d(0,0,width, height) );
 
     GLF_POST_PENDING_GL_ERRORS();
     
