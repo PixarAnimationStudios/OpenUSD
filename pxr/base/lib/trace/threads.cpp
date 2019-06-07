@@ -55,7 +55,12 @@ TraceThreadId::operator==(const TraceThreadId& rhs) const
 bool
 TraceThreadId::operator<(const TraceThreadId& rhs) const
 {
-    return _id < rhs._id;
+    // Because thread ids are stored in a string, sort the shorter strings to 
+    // the front of the list. This results is a numerically sorted list rather
+    // than an alphabetically sorted one, assuming all the thread ids are in 
+    // the form of "Thread XXX" or "XXX".
+    return _id.length() != rhs._id.length() ? 
+        _id.length() < rhs._id.length() : _id < rhs._id;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
