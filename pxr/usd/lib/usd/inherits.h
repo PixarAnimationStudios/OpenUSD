@@ -99,7 +99,6 @@ public:
     // ---------------------------------------------------------------------- //
 private:
 
-    SdfPrimSpecHandle _CreatePrimSpecForEditing();
     UsdPrim _prim;
 };
 

@@ -2104,7 +2104,7 @@ private:
     friend class Usd_PrimData;
     friend class Usd_StageOpenRequest;
     template <class RefsOrPayloadsEditorType, class RefsOrPayloadsProxyType> 
-        friend struct Usd_RefOrPayloadListEditImpl;
+        friend struct Usd_ListEditImpl;
 };
 
 template<typename T>
