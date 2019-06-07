@@ -557,6 +557,20 @@ class TestUsdPayloads(unittest.TestCase):
             # is considered loaded.
             self.assertTrue(intPayload.IsLoaded())
 
+            # Set the list of payloads to explicitly empty from cleared
+            # verifying that it is indeed set to explicit.empty list op
+            self.assertTrue(intPayload.GetPayloads().SetPayloads([]))
+            # XXX: Though there is payload metadata that is an explicit empty
+            # payload list op, HasAuthoredPayloads still returns true as there
+            # are no actual payloads for this prim. This is inconsistent with
+            # explicit empty list op behavior of 
+            # HasAuthoredReferences/Inherits/Specializes which only return 
+            # whether metadata is present. This inconsistency should be fixed.
+            self.assertTrue(not intPayload.HasAuthoredPayloads())
+            explicitEmpty = Sdf.PayloadListOp()
+            explicitEmpty.ClearAndMakeExplicit()
+            self.assertEqual(intPayload.GetMetadata("payload"), explicitEmpty)
+
     def test_Bug160419(self):
         for fmt in allFormats:
             payloadLayer = Sdf.Layer.CreateAnonymous("payload."+fmt)

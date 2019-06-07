@@ -177,7 +177,16 @@ struct Usd_RefOrPayloadListEditImpl
 
         SdfChangeBlock block;
         if (RefsOrPayloadsProxyType listEditor = _GetListEditor(prim)) {
-            listEditor.GetExplicitItems() = items;
+            // There's a specific semantic meaning to setting the references or
+            // payloads to an empty list which is to make the list explicitly
+            // empty. We have to handle this case specifically as setting the
+            // the list edit proxy's explicit items to an empty vector is a 
+            // no-op when the list op is not currently explicit.
+            if (items.empty()) {
+                listEditor.ClearEditsAndMakeExplicit();
+            } else {
+                listEditor.GetExplicitItems() = items;
+            }
         }
 
         bool success = mark.IsClean();

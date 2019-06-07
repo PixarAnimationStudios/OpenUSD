@@ -159,7 +159,16 @@ UsdInherits::SetInherits(const SdfPathVector& itemsIn)
     SdfChangeBlock block;
     if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
         SdfInheritsProxy paths = spec->GetInheritPathList();
-        paths.GetExplicitItems() = items;
+        // There's a specific semantic meaning to setting the inherits
+        // to an empty list which is to make the list explicitly
+        // empty. We have to handle this case specifically as setting the
+        // the list edit proxy's explicit items to an empty vector is a 
+        // no-op when the list op is not currently explicit.
+        if (items.empty()) {
+            paths.ClearEditsAndMakeExplicit();
+        } else {
+            paths.GetExplicitItems() = items;
+        }
     }
 
     return m.IsClean();
