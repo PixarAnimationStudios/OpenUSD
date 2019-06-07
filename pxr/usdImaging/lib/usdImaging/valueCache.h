@@ -28,6 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/materialParam.h"
@@ -362,35 +363,43 @@ public:
             _Erase<HdMaterialParamVector>(Key::MaterialParams(path));
         }
 
-        TfTokenVector sceneInputNames;
-        if (FindExtComputationSceneInputNames(path, &sceneInputNames)) {
-            // Add computation "config" params to the list of inputs
-            sceneInputNames.emplace_back(HdTokens->dispatchCount);
-            sceneInputNames.emplace_back(HdTokens->elementCount);
-            for (TfToken const& input : sceneInputNames) {
-                _Erase<VtValue>(Key(path, input));
+        {
+            // ExtComputation related state
+            TfTokenVector sceneInputNames;
+            if (FindExtComputationSceneInputNames(path, &sceneInputNames)) {
+                // Add computation "config" params to the list of inputs
+                sceneInputNames.emplace_back(HdTokens->dispatchCount);
+                sceneInputNames.emplace_back(HdTokens->elementCount);
+                for (TfToken const& input : sceneInputNames) {
+                    _Erase<VtValue>(Key(path, input));
+                }
+
+                _Erase<TfTokenVector>(Key::ExtComputationSceneInputNames(path));
+            }
+            
+            // Computed inputs are tied to the computation that computes them.
+            // We don't walk the dependency chain to clear them.
+            _Erase<HdExtComputationInputDescriptorVector>(
+                Key::ExtComputationInputs(path));
+
+            HdExtComputationOutputDescriptorVector outputDescs;
+            if (FindExtComputationOutputs(path, &outputDescs)) {
+                for (auto const& desc : outputDescs) {
+                    _Erase<VtValue>(Key(path, desc.name));
+                }
+                _Erase<HdExtComputationOutputDescriptorVector>(
+                    Key::ExtComputationOutputs(path));
             }
 
-            _Erase<TfTokenVector>(Key::ExtComputationSceneInputNames(path));
-        }
-        
-        // Computed inputs are tied to the computation that computes them.
-        // We don't walk the dependency chain to clear them.
-        _Erase<HdExtComputationInputDescriptorVector>(
-            Key::ExtComputationInputs(path));
-
-        HdExtComputationOutputDescriptorVector outputDescs;
-        if (FindExtComputationOutputs(path, &outputDescs)) {
-            for (auto const& desc : outputDescs) {
-                _Erase<VtValue>(Key(path, desc.name));
-            }
-            _Erase<HdExtComputationOutputDescriptorVector>(
-                Key::ExtComputationOutputs(path));
+            _Erase<HdExtComputationPrimvarDescriptorVector>(
+                Key::ExtComputationPrimvars(path));
+            _Erase<std::string>(Key::ExtComputationKernel(path));
         }
 
-        _Erase<HdExtComputationPrimvarDescriptorVector>(
-            Key::ExtComputationPrimvars(path));
-        _Erase<std::string>(Key::ExtComputationKernel(path));
+        // Camera state
+        for (const TfToken& paramName : HdCameraTokens->allTokens) {
+            _Erase<VtValue>(Key(path, paramName));
+        }
     }
 
     VtValue& GetColor(SdfPath const& path) const {
@@ -493,6 +502,9 @@ public:
     }
     std::string& GetExtComputationKernel(SdfPath const& path) const {
         return _Get<std::string>(Key::ExtComputationKernel(path));
+    }
+    VtValue& GetCameraParam(SdfPath const& path, TfToken const& name) const {
+        return _Get<VtValue>(Key(path, name));
     }
 
     bool FindPrimvar(SdfPath const& path, TfToken const& name, VtValue* value) const {
@@ -598,6 +610,10 @@ public:
     bool FindExtComputationKernel(SdfPath const& path, std::string* value) const {
         return _Find(Key::ExtComputationKernel(path), value);
     }
+    bool FindCameraParam(SdfPath const& path, TfToken const& name,
+                         VtValue* value) const {
+        return _Find(Key(path, name), value);
+    }
 
     bool ExtractColor(SdfPath const& path, VtValue* value) {
         return _Extract(Key::Color(path), value);
@@ -700,6 +716,10 @@ public:
     }
     bool ExtractExtComputationKernel(SdfPath const& path, std::string* value) {
         return _Extract(Key::ExtComputationKernel(path), value);
+    }
+    bool ExtractCameraParam(SdfPath const& path, TfToken const& name,
+                            VtValue* value) {
+        return _Extract(Key(path, name), value);
     }
 
     /// Remove any items from the cache that are marked for defered deletion.

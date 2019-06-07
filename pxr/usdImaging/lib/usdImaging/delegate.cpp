@@ -33,6 +33,7 @@
 
 #include "pxr/imaging/hd/basisCurves.h"
 #include "pxr/imaging/hd/basisCurvesTopology.h"
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/material.h"
@@ -51,6 +52,7 @@
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/kind/registry.h"
 
+#include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/modelAPI.h"
 
@@ -126,6 +128,7 @@ UsdImagingDelegate::UsdImagingDelegate(
                            .HasAdapter(UsdImagingAdapterKeyTokens
                                        ->drawModeAdapterKey) )
     , _sceneMaterialsEnabled(true)
+    , _appWindowPolicy(CameraUtilMatchVertically)
     , _coordSysEnabled(parentIndex
                        ->IsSprimTypeSupported(HdPrimTypeTokens->coordSys))
 {
@@ -1484,7 +1487,6 @@ UsdImagingDelegate::SetUsdDrawModesEnabled(bool enableUsdDrawModes)
     }
 }
 
-
 void
 UsdImagingDelegate::SetSceneMaterialsEnabled(bool enable)
 {
@@ -1494,10 +1496,11 @@ UsdImagingDelegate::SetSceneMaterialsEnabled(bool enable)
 
         UsdImagingIndexProxy indexProxy(this, nullptr);
 
-        // Mark dirty.
-        TF_FOR_ALL(it, _hdPrimInfoMap) {
-            const SdfPath &cachePath = it->first;
-            _HdPrimInfo &primInfo = it->second;
+        // XXX: Need to unfortunately go through all prim info entries to
+        // propagate dirtyness to gprims.
+        for (auto& pair : _hdPrimInfoMap) {
+            const SdfPath &cachePath = pair.first;
+            _HdPrimInfo &primInfo = pair.second;
             if (TF_VERIFY(primInfo.adapter, "%s", cachePath.GetText())) {
                 primInfo.adapter->MarkMaterialDirty(primInfo.usdPrim,
                                                     cachePath, &indexProxy);
@@ -1506,6 +1509,26 @@ UsdImagingDelegate::SetSceneMaterialsEnabled(bool enable)
     }
 }
 
+void
+UsdImagingDelegate::SetWindowPolicy(CameraUtilConformWindowPolicy policy)
+{
+    if (_appWindowPolicy != policy) {
+        _appWindowPolicy = policy;
+
+        UsdImagingIndexProxy indexProxy(this, nullptr);
+
+        // XXX: Need to unfortunately go through all prim info entries to
+        // propagate dirtyness to all the scene cameras.
+        for (auto& pair : _hdPrimInfoMap) {
+            const SdfPath &cachePath = pair.first;
+            _HdPrimInfo &primInfo = pair.second;
+             if (TF_VERIFY(primInfo.adapter, "%s", cachePath.GetText())) {
+                primInfo.adapter->MarkWindowPolicyDirty(primInfo.usdPrim,
+                                                    cachePath, &indexProxy);
+            }
+        }
+    }
+}
 
 /*virtual*/
 TfToken
@@ -2846,6 +2869,39 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
     }
 
     return VtValue();
+}
+
+VtValue 
+UsdImagingDelegate::GetCameraParamValue(SdfPath const &id, 
+                                        TfToken const &paramName)
+{
+    if (paramName == HdCameraTokens->windowPolicy) {
+        // Hydra expects the window policy to be authored on the camera.
+        // Since UsdGeomCamera doesn't have this property, we store the app
+        // state via SetWindowPolicy (see above).
+        return VtValue(_appWindowPolicy);
+    }
+
+    SdfPath cachePath = ConvertIndexPathToCachePath(id);
+    VtValue value;
+    if (!_valueCache.ExtractCameraParam(cachePath, paramName, &value)) {
+        HdDirtyBits dirtyBit = HdCamera::Clean;
+        if (paramName == HdCameraTokens->worldToViewMatrix) {
+            dirtyBit = HdCamera::DirtyViewMatrix;
+        } else if (paramName == HdCameraTokens->projectionMatrix) {
+            dirtyBit = HdCamera::DirtyProjMatrix;
+        } else if (paramName == HdCameraTokens->clipPlanes) {
+            dirtyBit = HdCamera::DirtyClipPlanes;
+        } else {
+            TF_WARN("Unhandled camera param '%s' on camera '%s'\n",
+            paramName.GetText(), id.GetText());
+        }
+        
+        _UpdateSingleValue(cachePath, dirtyBit);
+         TF_VERIFY(
+             _valueCache.ExtractCameraParam(cachePath, paramName, &value));
+    }
+    return value;
 }
 
 HdVolumeFieldDescriptorVector

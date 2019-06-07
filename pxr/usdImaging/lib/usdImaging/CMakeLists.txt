@@ -35,6 +35,7 @@ pxr_library(usdImaging
         valueCache
         basisCurvesAdapter
         capsuleAdapter
+        cameraAdapter
         coneAdapter
         coordSysAdapter
         cubeAdapter

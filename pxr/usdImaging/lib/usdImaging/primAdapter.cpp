@@ -216,6 +216,14 @@ UsdImagingPrimAdapter::MarkMaterialDirty(UsdPrim const& prim,
 
 /*virtual*/
 void
+UsdImagingPrimAdapter::MarkWindowPolicyDirty(UsdPrim const& prim,
+                                             SdfPath const& cachePath,
+                                             UsdImagingIndexProxy* index)
+{
+}
+
+/*virtual*/
+void
 UsdImagingPrimAdapter::InvokeComputation(SdfPath const& computationPath,
                                          HdExtComputationContext* context)
 {

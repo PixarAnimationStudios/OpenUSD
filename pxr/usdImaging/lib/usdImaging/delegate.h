@@ -33,6 +33,8 @@
 #include "pxr/usdImaging/usdImaging/inheritedCache.h"
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
 
+#include "pxr/imaging/cameraUtil/conformWindow.h"
+
 #include "pxr/imaging/hd/coordSys.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/selection.h"
@@ -264,6 +266,11 @@ public:
     USDIMAGING_API
     void SetSceneMaterialsEnabled(bool enable);
 
+    /// Set the window policy on all scene cameras. This comes from
+    /// the application.
+    USDIMAGING_API
+    void SetWindowPolicy(CameraUtilConformWindowPolicy policy);
+
     // ---------------------------------------------------------------------- //
     // See HdSceneDelegate for documentation of the following virtual methods.
     // ---------------------------------------------------------------------- //
@@ -359,6 +366,10 @@ public:
     USDIMAGING_API
     virtual VtValue GetLightParamValue(SdfPath const &id, 
                                        TfToken const &paramName) override;
+    // Camera Support
+    USDIMAGING_API
+    virtual VtValue GetCameraParamValue(SdfPath const &id, 
+                                        TfToken const &paramName) override;
 
     // Volume Support
     USDIMAGING_API
@@ -717,6 +728,8 @@ private:
 
     /// Enable custom shading of prims
     bool _sceneMaterialsEnabled;
+
+    CameraUtilConformWindowPolicy _appWindowPolicy;
 
     // Enable HdCoordSys tracking
     const bool _coordSysEnabled;
