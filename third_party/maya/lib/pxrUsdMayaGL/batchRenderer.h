@@ -258,7 +258,7 @@ public:
     ///
     /// Returns -1 if unable to get the absoluteInstanceIndex.
     PXRUSDMAYAGL_API
-    int GetAbsoluteInstanceIndexForHit(const HdxPickHit& hit) const;
+    int GetInstancerIndexForHit(const HdxPickHit& hit) const;
 
     /// Returns whether soft selection for proxy shapes is currently enabled.
     PXRUSDMAYAGL_API

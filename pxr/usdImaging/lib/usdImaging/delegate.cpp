@@ -2121,24 +2121,24 @@ UsdImagingDelegate::SetRootVisibility(bool isVisible)
 }
 
 SdfPath 
-UsdImagingDelegate::GetPathForInstanceIndex(SdfPath const& protoPrimPath,
-                                            int instanceIndex,
-                                            int *absoluteInstanceIndex,
-                                            SdfPath *rprimPath,
+UsdImagingDelegate::GetPathForInstanceIndex(const SdfPath &protoRprimId,
+                                            int protoIndex,
+                                            int *instancerIndex,
+                                            SdfPath *masterCachePath,
                                             SdfPathVector *instanceContext)
 {
-    SdfPath cachePath = ConvertIndexPathToCachePath(protoPrimPath);
+    SdfPath cachePath = ConvertIndexPathToCachePath(protoRprimId);
 
     TF_DEBUG(USDIMAGING_SELECTION).Msg(
         "GetPathForInstanceIndex(%s, %d)\n",
-        cachePath.GetText(), instanceIndex);
+        cachePath.GetText(), protoIndex);
 
     // resolve all instancer hierarchy.
     int instanceCount = 0;
-    int protoInstanceIndex = instanceIndex;
-    int absIndex = ALL_INSTANCES; // PointInstancer may overwrite.
+    int origPrototypeIndex = protoIndex;
+    int resolvedInstancerIndex = ALL_INSTANCES; // PointInstancer may overwrite.
     SdfPathVector resolvedInstanceContext;
-    SdfPath resolvedRprimPath;
+    SdfPath resolvedMasterCachePath;
     do {
         _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
         if (!TF_VERIFY(primInfo, "%s\n", cachePath.GetText()) ||
@@ -2148,8 +2148,8 @@ UsdImagingDelegate::GetPathForInstanceIndex(SdfPath const& protoPrimPath,
 
         _AdapterSharedPtr const& adapter = primInfo->adapter;
         cachePath = adapter->GetPathForInstanceIndex(
-            cachePath, instanceIndex, &instanceCount, &absIndex, 
-            &resolvedRprimPath, &resolvedInstanceContext);
+            cachePath, protoIndex, &instanceCount, &resolvedInstancerIndex,
+            &resolvedMasterCachePath, &resolvedInstanceContext);
 
         if (cachePath.IsEmpty()) {
             break;
@@ -2160,25 +2160,26 @@ UsdImagingDelegate::GetPathForInstanceIndex(SdfPath const& protoPrimPath,
             break;
         }
 
-        // decode instanceIndex to the next level
+        // decode protoIndex to the next level
         if (instanceCount > 0) {
-            instanceIndex /= instanceCount;
+            protoIndex /= instanceCount;
         }
 
     } while(true);
 
     TF_DEBUG(USDIMAGING_SELECTION).Msg("GetPathForInstanceIndex(%s, %d) = "
-        "(%s, %d, %s)\n", protoPrimPath.GetText(), protoInstanceIndex,
-        cachePath.GetText(), absIndex,
+        "(%s, %d, %s, %s)\n", protoRprimId.GetText(), origPrototypeIndex,
+        cachePath.GetText(), resolvedInstancerIndex,
+        resolvedMasterCachePath.GetText(),
         resolvedInstanceContext.empty() ? "(empty)" :
         resolvedInstanceContext.back().GetText());
 
-    if (absoluteInstanceIndex) {
-        *absoluteInstanceIndex = absIndex;
+    if (instancerIndex) {
+        *instancerIndex = resolvedInstancerIndex;
     }
 
-    if (rprimPath) {
-        *rprimPath = resolvedRprimPath;
+    if (masterCachePath) {
+        *masterCachePath = resolvedMasterCachePath;
     }
 
     if (instanceContext) {

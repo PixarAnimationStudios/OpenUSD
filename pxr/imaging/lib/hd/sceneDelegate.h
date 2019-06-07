@@ -496,27 +496,69 @@ public:
     virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerId);
 
 
-    /// Resolves a pair of rprimPath and instanceIndex back to original
-    /// (instance) path by backtracking nested instancer hierarchy.
+    /// Resolves a \p protoRprimId and \p protoIndex back to original
+    /// instancer path by backtracking nested instancer hierarchy.
     ///
-    /// if the instancer instances heterogeneously, instanceIndex of the
-    /// prototype rprim doesn't match the instanceIndex in the instancer.
+    /// It will be an empty path if the given protoRprimId is not
+    /// instanced.
     ///
-    /// for example:
-    ///   instancer = [ A, B, A, B, B ]
-    ///        instanceIndex       absoluteInstanceIndex
+    /// (Note: see usdImaging/delegate.h for details specific to USD
+    /// instancing)
+    ///
+    /// If the instancer instances heterogeneously, the instance index of the
+    /// prototype rprim doesn't match the instance index in the instancer.
+    ///
+    /// For example, if we have:
+    ///
+    ///     instancer {
+    ///         prototypes = [ A, B, A, B, B ]
+    ///     }
+    ///
+    /// ...then the indices would be:
+    ///
+    ///        protoIndex          instancerIndex
     ///     A: [0, 1]              [0, 2]
     ///     B: [0, 1, 2]           [1, 3, 5]
     ///
-    /// To track this mapping, absoluteInstanceIndex is returned which
-    /// is an instanceIndex of the instancer for the given instanceIndex of
-    /// the prototype.
+    /// To track this mapping, the \p instancerIndex is returned which
+    /// corresponds to the given protoIndex.
     ///
+    /// Also, note if there are nested instancers, the returned path will
+    /// be the top-level instancer, and the \p instancerIndex will be for
+    /// that top-level instancer. This can lead to situations where, contrary
+    /// to the previous scenario, the instancerIndex has fewer possible values
+    /// than the \p protoIndex:
+    ///
+    /// For example, if we have:
+    ///
+    ///     instancerBottom {
+    ///         prototypes = [ A, A, B ]
+    ///     }
+    ///     instancerTop {
+    ///         prototypes = [ instancerBottom, instancerBottom ]
+    ///     }
+    ///
+    /// ...then the indices might be:
+    ///
+    ///        protoIndex          instancerIndex  (for instancerTop)
+    ///     A: [0, 1, 2, 3]        [0, 0, 1, 1]
+    ///     B: [0, 1]              [0, 1]
+    ///
+    /// because \p instancerIndex are indices for instancerTop, which only has
+    /// two possible indices.
+    ///
+    /// If \p masterCachePath is not NULL, then it may be set to the cache path
+    /// corresponding instance master prim, if there is one. Otherwise, it will
+    /// be set to null.
+    ///
+    /// If \p instanceContext is not NULL, it is populated with the list of
+    /// instance roots that must be traversed to get to the rprim. If this
+    /// list is non-empty, the last prim is always the forwarded rprim.
     HD_API
-    virtual SdfPath GetPathForInstanceIndex(const SdfPath &protoPrimPath,
-                                            int instanceIndex,
-                                            int *absoluteInstanceIndex,
-                                            SdfPath * rprimPath=NULL,
+    virtual SdfPath GetPathForInstanceIndex(const SdfPath &protoRprimId,
+                                            int protoIndex,
+                                            int *instancerIndex,
+                                            SdfPath *masterCachePath=NULL,
                                             SdfPathVector *instanceContext=NULL);
 
     // -----------------------------------------------------------------------//

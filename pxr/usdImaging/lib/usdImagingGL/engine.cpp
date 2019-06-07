@@ -653,11 +653,11 @@ UsdImagingGLEngine::GetPrimPathFromPrimIdColor(
 
 SdfPath 
 UsdImagingGLEngine::GetPrimPathFromInstanceIndex(
-    SdfPath const& protoPrimPath,
-    int instanceIndex,
-    int *absoluteInstanceIndex,
-    SdfPath *rprimPath,
-    SdfPathVector *instanceContext)
+        const SdfPath &protoRprimId,
+        int protoIndex,
+        int *instancerIndex,
+        SdfPath *masterCachePath,
+        SdfPathVector *instanceContext)
 {
     if (ARCH_UNLIKELY(_legacyImpl)) {
         return SdfPath();
@@ -665,9 +665,9 @@ UsdImagingGLEngine::GetPrimPathFromInstanceIndex(
 
     TF_VERIFY(_delegate);
 
-    return _delegate->GetPathForInstanceIndex(protoPrimPath, instanceIndex,
-                                             absoluteInstanceIndex, rprimPath,
-                                             instanceContext);
+    return _delegate->GetPathForInstanceIndex(protoRprimId, protoIndex,
+                                              instancerIndex, masterCachePath,
+                                              instanceContext);
 }
 
 //----------------------------------------------------------------------------

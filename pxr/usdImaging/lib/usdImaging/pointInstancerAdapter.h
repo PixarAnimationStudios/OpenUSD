@@ -138,12 +138,13 @@ public:
     /// \name Instancing
     // ---------------------------------------------------------------------- //
 
-    virtual SdfPath GetPathForInstanceIndex(SdfPath const &path,
-                                            int instanceIndex,
+    virtual SdfPath GetPathForInstanceIndex(SdfPath const &protoCachePath,
+                                            int protoIndex,
                                             int *instanceCountForThisLevel,
-                                            int *absoluteInstanceIndex,
-                                            SdfPath *rprimPath=NULL,
-                                            SdfPathVector *instanceContext=NULL) override;
+                                            int *instancerIndex,
+                                            SdfPath *masterCachePath = NULL,
+                                            SdfPathVector *
+                                                instanceContext = NULL) override;
 
     virtual size_t
     SampleInstancerTransform(UsdPrim const& instancerPrim,
@@ -172,12 +173,12 @@ public:
     // ---------------------------------------------------------------------- //
     /// \name Nested instancing support
     // ---------------------------------------------------------------------- //
-    virtual SdfPath GetPathForInstanceIndex(SdfPath const &instancerPath,
-                                            SdfPath const &protoPath,
-                                            int instanceIndex,
+    virtual SdfPath GetPathForInstanceIndex(SdfPath const &instancerCachePath,
+                                            SdfPath const &protoCachePath,
+                                            int protoIndex,
                                             int *instanceCountForThisLevel,
-                                            int *absoluteInstanceIndex,
-                                            SdfPath *rprimPath,
+                                            int *instancerIndex,
+                                            SdfPath *masterCachePath,
                                             SdfPathVector *instanceContext) override;
 
     virtual VtIntArray GetInstanceIndices(SdfPath const &instancerPath,

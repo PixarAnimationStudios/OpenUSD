@@ -1755,11 +1755,14 @@ UsdImagingPointInstancerAdapter::_ComputeProtoPurpose(
 /*virtual*/
 SdfPath 
 UsdImagingPointInstancerAdapter::GetPathForInstanceIndex(
-    SdfPath const &protoPath, int instanceIndex, int *instanceCount,
-    int *absoluteInstanceIndex, SdfPath *rprimPath,
+    SdfPath const &protoCachePath,
+    int protoIndex,
+    int *instanceCountForThisLevel,
+    int *instancerIndex,
+    SdfPath *masterCachePath,
     SdfPathVector *instanceContext)
 {
-    // if the protoPath is a prim path, protoPath is a point instancer
+    // if the protoCachePath is a prim path, protoCachePath is a point instancer
     // and it may have a parent instancer.
     // if the parent instancer is a native instancer, it could be a
     // variant selection path.
@@ -1767,12 +1770,12 @@ UsdImagingPointInstancerAdapter::GetPathForInstanceIndex(
     //     /path/pointInstancer
     //     /path/pointInstancer{instance=1}
     //
-    if (protoPath.IsPrimOrPrimVariantSelectionPath()) {
+    if (protoCachePath.IsPrimOrPrimVariantSelectionPath()) {
         TF_DEBUG(USDIMAGING_SELECTION).Msg(
             "PI: Look for instancer %s [%d]\n",
-            protoPath.GetText(), instanceIndex);
+            protoCachePath.GetText(), protoIndex);
 
-        _InstancerDataMap::iterator it = _instancerData.find(protoPath);
+        _InstancerDataMap::iterator it = _instancerData.find(protoCachePath);
         if (it != _instancerData.end()) {
             SdfPath parentInstancerCachePath =
                 it->second.parentInstancerCachePath;
@@ -1785,9 +1788,9 @@ UsdImagingPointInstancerAdapter::GetPathForInstanceIndex(
                     _GetPrimAdapter(parentInstancerUsdPrim);
                 if (adapter) {
                     adapter->GetPathForInstanceIndex(
-                        parentInstancerCachePath, protoPath, instanceIndex,
-                        instanceCount, absoluteInstanceIndex,
-                        rprimPath, instanceContext);
+                        parentInstancerCachePath, protoCachePath, protoIndex,
+                        instanceCountForThisLevel, instancerIndex,
+                        masterCachePath, instanceContext);
                 } else {
                     TF_CODING_ERROR("PI: adapter not found for %s\n",
                                     parentInstancerCachePath.GetText());
@@ -1798,72 +1801,76 @@ UsdImagingPointInstancerAdapter::GetPathForInstanceIndex(
             }
         }
         // end of recursion.
-        if (instanceCount) {
-            *instanceCount = 0;
+        if (instanceCountForThisLevel) {
+            *instanceCountForThisLevel = 0;
         }
-        // don't touch absoluteInstanceIndex.
-        return protoPath;
+        // don't touch instancerIndex.
+        return protoCachePath;
     }
 
-    // extract instancerPath from protoPath.
+    // extract instancerPath from protoCachePath.
     //
-    // protoPath     = /path/pointInstancer{instance=1}.proto_*
-    // instancerPath = /path/pointInstancer{instance=1}
+    // protoCachePath = /path/pointInstancer{instance=1}.proto_*
+    // instancerPath  = /path/pointInstancer{instance=1}
     //
-    SdfPath instancerPath = protoPath.GetPrimOrPrimVariantSelectionPath();
+    SdfPath instancerPath = protoCachePath.GetPrimOrPrimVariantSelectionPath();
 
     return GetPathForInstanceIndex(instancerPath,
-                                   protoPath, instanceIndex, instanceCount,
-                                   absoluteInstanceIndex, rprimPath,
+                                   protoCachePath, protoIndex,
+                                   instanceCountForThisLevel,
+                                   instancerIndex, masterCachePath,
                                    instanceContext);
 }
 
 /*virtual*/
 SdfPath 
 UsdImagingPointInstancerAdapter::GetPathForInstanceIndex(
-    SdfPath const &instancerPath, SdfPath const &protoPath,
-    int instanceIndex, int *instanceCount,
-    int *absoluteInstanceIndex, SdfPath *rprimPath,
+    SdfPath const &instancerCachePath,
+    SdfPath const &protoCachePath,
+    int protoIndex,
+    int *instanceCountForThisLevel,
+    int *instancerIndex,
+    SdfPath *masterCachePath,
     SdfPathVector *instanceContext)
 {
     TF_DEBUG(USDIMAGING_SELECTION).Msg(
-        "PI: Look for %s [%d]\n", protoPath.GetText(), instanceIndex);
+        "PI: Look for %s [%d]\n", protoCachePath.GetText(), protoIndex);
 
-    _InstancerDataMap::iterator it = _instancerData.find(instancerPath);
+    _InstancerDataMap::iterator it = _instancerData.find(instancerCachePath);
     if (it != _instancerData.end()) {
         _InstancerData& instancerData = it->second;
 
-        // find protoPath
+        // find protoCachePath
         TF_FOR_ALL (protoRprimIt, instancerData.protoRprimMap) {
-            if (protoRprimIt->first == protoPath) {
+            if (protoRprimIt->first == protoCachePath) {
                 // found.
                 int count = (int)protoRprimIt->second.prototype->indices.size();
                 TF_DEBUG(USDIMAGING_SELECTION).Msg(
                     "  found %s at %d/%d\n",
-                    protoRprimIt->first.GetText(), instanceIndex, count);
+                    protoRprimIt->first.GetText(), protoIndex, count);
 
-                if (instanceCount) {
-                    *instanceCount = count;
+                if (instanceCountForThisLevel) {
+                    *instanceCountForThisLevel = count;
                 }
 
                 //
                 // for individual instance selection, returns absolute index of
                 // this instance.
-                int absIndex = protoRprimIt->second.prototype->indices[instanceIndex % count];
-                if (absoluteInstanceIndex) {
-                    *absoluteInstanceIndex = absIndex;
+                int absIndex = protoRprimIt->second.prototype->indices[protoIndex % count];
+                if (instancerIndex) {
+                    *instancerIndex = absIndex;
                 }
 
                 // return the instancer
-                return instancerPath;
+                return instancerCachePath;
             }
         }
     }
     // not found. prevent infinite recursion
-    if (instanceCount) {
-        *instanceCount = 0;
+    if (instanceCountForThisLevel) {
+        *instanceCountForThisLevel = 0;
     }
-    return instancerPath;
+    return instancerCachePath;
 }
 
 /*virtual*/

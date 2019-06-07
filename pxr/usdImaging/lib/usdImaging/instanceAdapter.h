@@ -143,12 +143,13 @@ public:
     /// \name Instancing
     // ---------------------------------------------------------------------- //
 
-    virtual SdfPath GetPathForInstanceIndex(SdfPath const &path,
-                                            int instanceIndex,
-                                            int *instanceCount,
-                                            int *absoluteInstanceIndex,
-                                            SdfPath * rprimPath=NULL,
-                                            SdfPathVector *instanceContext=NULL) override;
+    virtual SdfPath GetPathForInstanceIndex(SdfPath const &protoCachePath,
+                                            int protoIndex,
+                                            int *instanceCountForThisLevel,
+                                            int *instancerIndex,
+                                            SdfPath *masterCachePath = NULL,
+                                            SdfPathVector *
+                                                instanceContext = NULL) override;
 
     virtual SdfPath GetInstancer(SdfPath const &cachePath) override;
 

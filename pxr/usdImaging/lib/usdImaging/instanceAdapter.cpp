@@ -1625,12 +1625,14 @@ struct UsdImagingInstanceAdapter::_GetPathForInstanceIndexFn
 /*virtual*/
 SdfPath 
 UsdImagingInstanceAdapter::GetPathForInstanceIndex(
-    SdfPath const &path, int instanceIndex, int *instanceCount,
-    int *absoluteInstanceIndex,
-    SdfPath * rprimPath,
-    SdfPathVector *instanceContext)
+                    SdfPath const &protoCachePath,
+                    int protoIndex,
+                    int *instanceCount,
+                    int *instancerIndex,
+                    SdfPath *masterCachePath,
+                    SdfPathVector *instanceContext)
 {
-    UsdPrim const &prim = _GetPrim(path.GetAbsoluteRootOrPrimPath());
+    UsdPrim const &prim = _GetPrim(protoCachePath.GetAbsoluteRootOrPrimPath());
     if (!prim) {
         TF_CODING_ERROR("Invalid prim");
         return SdfPath();
@@ -1642,9 +1644,9 @@ UsdImagingInstanceAdapter::GetPathForInstanceIndex(
         return SdfPath();
     }
 
-    SdfPath instancerPath = path.GetPrimPath();
+    SdfPath instancerPath = protoCachePath.GetPrimPath();
     TF_DEBUG(USDIMAGING_SELECTION).Msg(
-        "NI: Look for %s [%d]\n", instancerPath.GetText(), instanceIndex);
+        "NI: Look for %s [%d]\n", instancerPath.GetText(), protoIndex);
 
     _InstancerDataMap::iterator instIt = _instancerData.find(instancerPath);
     if (instIt == _instancerData.end()) {
@@ -1655,10 +1657,10 @@ UsdImagingInstanceAdapter::GetPathForInstanceIndex(
             if (inst.childInstancers.find(instancerPath) !=
                 inst.childInstancers.end()) {
                     return GetPathForInstanceIndex(instIt->first,
-                                                   instanceIndex,
+                                                   protoIndex,
                                                    instanceCount,
-                                                   absoluteInstanceIndex,
-                                                   rprimPath,
+                                                   instancerIndex,
+                                                   masterCachePath,
                                                    instanceContext);
             }
         }
@@ -1666,7 +1668,7 @@ UsdImagingInstanceAdapter::GetPathForInstanceIndex(
         return SdfPath();
     }
 
-    // remap instanceIndex
+    // remap protoIndex
     //
     // lookup instanceIndices to get the absolute index to
     // instancePaths.
@@ -1680,9 +1682,10 @@ UsdImagingInstanceAdapter::GetPathForInstanceIndex(
     //
     //         instanceIndices = [0, 2, 3]
     //
-    // if we pick 3, this function takes instanceIndex = 2.
-    // we need to map 2 back to 3 by instanceIndices[instanceIndex]
+    // if we pick 3, this function takes protoIndex = 2.
+    // we need to map 2 back to 3 by instanceIndices[protoIndex]
     //
+    auto instanceIndex = protoIndex;
     TF_FOR_ALL (it, instIt->second.primMap) {
         // pick the first proto
         VtIntArray const &instanceIndices = it->second.protoGroup->indices;
@@ -1709,17 +1712,17 @@ UsdImagingInstanceAdapter::GetPathForInstanceIndex(
         *instanceCount = 0;
     }
 
-    if (rprimPath) {
-        const auto rprimPathIt = instIt->second.primMap.find(path);
+    if (masterCachePath) {
+        const auto rprimPathIt = instIt->second.primMap.find(protoCachePath);
         if (rprimPathIt != instIt->second.primMap.end()) {
-            *rprimPath = rprimPathIt->second.path;
+            *masterCachePath = rprimPathIt->second.path;
 
             TF_DEBUG(USDIMAGING_SELECTION).Msg(
-                "NI: rprimPath %s\n", rprimPath->GetText());
+                "NI: masterCachePath %s\n", masterCachePath->GetText());
         }
     }
 
-    // intentionally leave absoluteInstanceIndex as it is, so that
+    // intentionally leave instancerIndex as it is, so that
     // partial selection of point instancer can be passed through.
 
     return getPathForInstanceIndexFn.instancePath;
