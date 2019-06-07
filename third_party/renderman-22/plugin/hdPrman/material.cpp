@@ -51,6 +51,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (displacement)
     (pbsMaterialIn)
     (inputMaterial)
+    (vstructmemberaliases)
 );
 
 HdPrmanMaterial::HdPrmanMaterial(SdfPath const& id)
@@ -87,17 +88,15 @@ HdPrmanMaterial::_ResetMaterial(HdPrman_Context *context)
     }
 }
 
-
-// Apply studio-specific network transformations, similar to what
-// PxRfkPbsNetworkMaterialStandInResolveOp does in katana.
+// XXX(HdPrmanMaterialHacks) Temporary material hacks for testing.
 //
-// Roughly speaking, this means: 
-// - using the bxdf relationship to imply displacement as well
-// - PbsNetworkMaterialStandIn_2 substitution
-// - conditional vstruct expansion (vstructConditionalExpr metadata)
-//
-// XXX Ideally this logic can be eventually be driven by the
-// SdrRegistry or a related helper library.
+// Part of our strategy for testing HdPrman is to try it on real
+// studio assets.  Currently, those rely on a series of features
+// which are not yet implemented by UsdShading, Hydra or UsdImaging.
+// To make progress with testing while discussion is underway
+// about the right future approach for those features, we provide
+// a limited, hacky form of support for them here, with the
+// disclaimer that real work should not rely on this behavior.
 //
 static void
 _ApplyStudioFixes(HdMaterialNetworkMap *netMap)
@@ -106,8 +105,9 @@ _ApplyStudioFixes(HdMaterialNetworkMap *netMap)
     TfMapLookup(netMap->map, _tokens->bxdf, &bxdfNet);
     TfMapLookup(netMap->map, _tokens->displacement, &dispNet);
 
-    // If no disp network was bound, try using the "bxdf" network
-    // for that purpose.
+    // XXX(HdPrmanMaterialHacks) 
+    // If no displacement network was provided, try using the bxdf
+    // network, since it may provide a displacement signal.
     if (dispNet.nodes.empty() && !bxdfNet.nodes.empty()) {
         dispNet = bxdfNet;
     }
@@ -117,7 +117,8 @@ _ApplyStudioFixes(HdMaterialNetworkMap *netMap)
         if (node.identifier == _tokens->PbsNetworkMaterialStandIn_2) {
             node.identifier = _tokens->PxrSurface;
         }
-        // XXX Hacky upgrade for testing w/ existing show assets
+        // XXX(HdPrmanMaterialHacks) 
+        // Hacky upgrade of older-style material layers.
         if (node.identifier == _tokens->MaterialLayer_1) {
             node.identifier = _tokens->MaterialLayer_2;
         }
@@ -271,9 +272,20 @@ _ExpandVstructs(
                     // Different vstruct, or not part of a vstruct
                     continue;
                 }
+
                 if (output->GetVStructMemberName() != member) {
-                    // Different field of this vstruct
-                    continue;
+                    // Different field of this vstruct, ignore.
+                    //
+                    // XXX(HdPrmanMaterialHacks) 
+                    // Check if there is a match via vstructmemberaliases,
+                    // which is used to allow staged upgrading of mixed
+                    // C++/OSL shading networks.
+                    std::string alias;
+                    if (!TfMapLookup(output->GetHints(),
+                                     _tokens->vstructmemberaliases, &alias)
+                        || alias != member) {
+                        continue;
+                    }
                 }
 
                 // Check if there is already an explicit connection
@@ -305,13 +317,12 @@ _ExpandVstructs(
                 }
 
                 // Create the implied connection.
-                HdMaterialRelationship newRel {
-                    rel.inputId,
-                    input->GetName(),
-                    rel.outputId,
-                    output->GetName()
-                };
-                result.push_back(newRel);
+                result.emplace_back(
+                    HdMaterialRelationship {
+                        rel.inputId, input->GetName(),
+                        rel.outputId, output->GetName()
+                    });
+                break;
             }
         }
     }
