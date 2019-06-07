@@ -148,7 +148,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     _ResetLight(context);
 
     // Attributes.
-    RixParamList *attrs = mgr->CreateRixParamList();
+    RixParamList *attrs = context->ConvertAttributes(sceneDelegate, id);
 
     // Light shader.
     RixParamList *params = mgr->CreateRixParamList();
