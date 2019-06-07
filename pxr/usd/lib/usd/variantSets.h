@@ -262,6 +262,13 @@ public:
     bool SetSelection(const std::string& variantSetName,
                       const std::string& variantName);
 
+    /// Returns the composed map of all variant selections authored on the
+    /// the originating UsdPrim, regardless of whether a corresponding 
+    /// variant set exists.
+    USD_API
+    SdfVariantSelectionMap GetAllVariantSelections() const;
+
+
 private:
     explicit UsdVariantSets(const UsdPrim& prim) 
         : _prim(prim)

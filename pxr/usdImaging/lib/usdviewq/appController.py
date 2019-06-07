@@ -3668,8 +3668,16 @@ class AppController(QtCore.QObject):
         
         numMetadataRows = (len(m) - 1) + numClipRows
 
+        # Variant selections that don't have a defined variant set will be 
+        # displayed as well to aid debugging. Collect them separately from
+        # the variant sets.
         variantSets = {}
+        setlessVariantSelections = {}
         if (isinstance(obj, Usd.Prim)):
+            # Get all variant selections as setless and remove the ones we find
+            # sets for.
+            setlessVariantSelections = obj.GetVariantSets().GetAllVariantSelections()
+
             variantSetNames = obj.GetVariantSets().GetNames()
             for variantSetName in variantSetNames:
                 variantSet = obj.GetVariantSet(variantSetName)
@@ -3684,8 +3692,11 @@ class AppController(QtCore.QObject):
                 indexToSelect = combo.findText(variantSelection)
                 combo.setCurrentIndex(indexToSelect)
                 variantSets[variantSetName] = combo
+                # Remove found variant set from setless.
+                setlessVariantSelections.pop(variantSetName, None)
 
-        tableWidget.setRowCount(numMetadataRows + len(variantSets))
+        tableWidget.setRowCount(numMetadataRows + len(variantSets) + 
+                                len(setlessVariantSelections))
 
         rowIndex = 0
         for key in sorted(m.keys()):
@@ -3723,6 +3734,21 @@ class AppController(QtCore.QObject):
             combo.currentIndexChanged.connect(
                 lambda i, combo=combo: combo.updateVariantSelection(
                     i, self._printTiming))
+            rowIndex += 1
+
+        # Add all the setless variant selections directly after the variant 
+        # combo boxes
+        for variantSetName, variantSelection in setlessVariantSelections.iteritems():
+            attrName = QtWidgets.QTableWidgetItem(str(variantSetName+ ' variant'))
+            tableWidget.setItem(rowIndex, 0, attrName)
+
+            valStr, ttStr = self._formatMetadataValueView(variantSelection)
+            # Italicized label to stand out when debugging a scene.
+            label = QtWidgets.QLabel('<i>' + valStr + '</i>')
+            label.setIndent(3)
+            label.setToolTip(ttStr)
+            tableWidget.setCellWidget(rowIndex, 1, label)
+
             rowIndex += 1
 
         tableWidget.resizeColumnToContents(0)
