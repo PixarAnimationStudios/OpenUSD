@@ -547,6 +547,7 @@ AlembicProperty::AlembicProperty(
     // Do nothing
 }
 
+ARCH_UNUSED_FUNCTION
 const SdfPath&
 AlembicProperty::GetPath() const
 {
@@ -1979,6 +1980,7 @@ _PrimReaderContext::GetPath() const
     return _path;
 }
 
+ARCH_UNUSED_FUNCTION
 bool
 _PrimReaderContext::IsFlagSet(const TfToken& flagName) const
 {
@@ -1999,6 +2001,7 @@ _PrimReaderContext::GetPrim()
     return _context.AddPrim(GetPath());
 }
 
+ARCH_UNUSED_FUNCTION
 const _PrimReaderContext::Property&
 _PrimReaderContext::GetProperty(const TfToken& name) const
 {
@@ -2010,6 +2013,8 @@ _PrimReaderContext::GetProperty(const TfToken& name) const
     return empty;
 }
 
+
+ARCH_UNUSED_FUNCTION
 void
 _PrimReaderContext::SetPropertyConverter(
     const TfToken& name,
@@ -2069,6 +2074,7 @@ _PrimReaderContext::GetUnextractedNames() const
     return _unextracted;
 }
 
+ARCH_UNUSED_FUNCTION
 std::vector<std::string>
 _PrimReaderContext::GetUnextractedSchemaNames() const
 {

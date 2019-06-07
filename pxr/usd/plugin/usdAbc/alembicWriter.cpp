@@ -1030,6 +1030,7 @@ _PrimWriterContext::GetPropertyField(
     return _context.GetData().Get(propId, fieldName);
 }
 
+ARCH_UNUSED_FUNCTION
 const OArchive&
 _PrimWriterContext::GetArchive() const
 {
