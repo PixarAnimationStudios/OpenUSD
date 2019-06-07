@@ -133,7 +133,7 @@ public:
     ///   \param pixel         What index to write
     ///   \param numComponents The arity of the value to write.
     ///   \param value         A float-valued vector to write. 
-    void Write(GfVec3i const& pixel, int numComponents, float const* value);
+    void Write(GfVec3i const& pixel, size_t numComponents, float const* value);
 
     /// Write an int, vec2i, vec3i, or vec4i to the renderbuffer.
     /// This should only be called on a mapped buffer. Extra components will
@@ -142,7 +142,7 @@ public:
     ///   \param pixel         What index to write
     ///   \param numComponents The arity of the value to write.
     ///   \param value         An int-valued vector to write. 
-    void Write(GfVec3i const& pixel, int numComponents, int const* value);
+    void Write(GfVec3i const& pixel, size_t numComponents, int const* value);
 
     /// Clear the renderbuffer with a float, vec2f, vec3f, or vec4f.
     /// This should only be called on a mapped buffer. Extra components will
@@ -150,7 +150,7 @@ public:
     /// remainder will be taken as 0.
     ///   \param numComponents The arity of the value to write.
     ///   \param value         A float-valued vector to write. 
-    void Clear(int numComponents, float const* value);
+    void Clear(size_t numComponents, float const* value);
 
     /// Clear the renderbuffer with an int, vec2i, vec3i, or vec4i.
     /// This should only be called on a mapped buffer. Extra components will
@@ -158,7 +158,7 @@ public:
     /// remainder will be taken as 0.
     ///   \param numComponents The arity of the value to write.
     ///   \param value         An int-valued vector to write. 
-    void Clear(int numComponents, int const* value);
+    void Clear(size_t numComponents, int const* value);
 
 private:
     // Calculate the needed buffer size, given the allocation parameters.

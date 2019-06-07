@@ -215,7 +215,7 @@ _TestRandomAccessOperations(IteratorType first, IteratorType last)
 {
     TF_AXIOM(first != last);
 
-    size_t idx = 0;
+    decltype(first - last) idx = 0;
     for (IteratorType it = first; it != last; ++it, ++idx) {
         TF_AXIOM(it - first == idx);
         TF_AXIOM(it - idx == first);
