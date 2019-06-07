@@ -51,7 +51,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     (displacement)
     (pbsMaterialIn)
     (inputMaterial)
+
+    // XXX(HdPrmanMaterialHacks) Temporary tokens for material ugrades:
     (vstructmemberaliases)
+    ((globalAttrModelName, "{globalattr:modelName}"))
+    (Looks)
+    (singlescatterSubset)
+    (subsurfaceSubset)
 );
 
 HdPrmanMaterial::HdPrmanMaterial(SdfPath const& id)
@@ -106,6 +112,46 @@ _ApplyStudioFixes(HdMaterialNetworkMap *netMap)
     TfMapLookup(netMap->map, _tokens->displacement, &dispNet);
 
     // XXX(HdPrmanMaterialHacks) 
+    // {globalattr:modelName} expansion.
+    for (HdMaterialNode &node: bxdfNet.nodes) {
+        for (auto& param: node.parameters) {
+            std::string s;
+            if (param.second.IsHolding<std::string>()) {
+                s = param.second.UncheckedGet<std::string>();
+            } else if (param.second.IsHolding<TfToken>()) {
+                s = param.second.UncheckedGet<TfToken>().GetString();
+            } else if (param.second.IsHolding<SdfAssetPath>()) {
+                s = param.second.UncheckedGet<SdfAssetPath>().GetAssetPath();
+            }
+            if (TfStringContains(s, _tokens->globalAttrModelName)) {
+                // We do not have the modelName available.
+                // As a heuristic for testing, try to guess the
+                // modelName based on the id.
+                SdfPath modelRoot;
+                for (SdfPath p=node.path;
+                     !p.IsEmpty() && modelRoot.IsEmpty();
+                     p=p.GetParentPath()) {
+                    if (p.GetName() == _tokens->Looks) {
+                        // Found "Looks" scope; assume parent is name.
+                        modelRoot = p.GetParentPath();
+                    }
+                }
+                if (!modelRoot.IsEmpty())  {
+                    s = TfStringReplace(s, _tokens->globalAttrModelName,
+                                        modelRoot.GetName());
+                    if (param.second.IsHolding<std::string>()) {
+                        param.second = VtValue(s);
+                    } else if (param.second.IsHolding<TfToken>()) {
+                        param.second = VtValue(TfToken(s));
+                    } else if (param.second.IsHolding<SdfAssetPath>()) {
+                        param.second = VtValue(SdfAssetPath(s));
+                    }
+                }
+            }
+        }
+    }
+
+    // XXX(HdPrmanMaterialHacks) 
     // If no displacement network was provided, try using the bxdf
     // network, since it may provide a displacement signal.
     if (dispNet.nodes.empty() && !bxdfNet.nodes.empty()) {
@@ -121,6 +167,24 @@ _ApplyStudioFixes(HdMaterialNetworkMap *netMap)
         // Hacky upgrade of older-style material layers.
         if (node.identifier == _tokens->MaterialLayer_1) {
             node.identifier = _tokens->MaterialLayer_2;
+        }
+        // XXX(HdPrmanMaterialHacks) 
+        // PxrSurface subsurface/singlescatter subset pruning.
+        // We do not yet support passthrough of the subset grouping
+        // assignments, so eject this.
+        if (node.identifier == _tokens->PxrSurface) {
+            for (auto& param: node.parameters) {
+                if (param.first == _tokens->subsurfaceSubset ||
+                    param.first == _tokens->singlescatterSubset) {
+                    static bool reported = false;
+                    if (!reported) {
+                        TF_WARN("HdPrman: PxrSurface %s is not yet supported; "
+                                "ignoring.", param.first.GetText());
+                        reported = true;
+                    }
+                    param.second = VtValue(std::string());
+                }
+            }
         }
     }
     for (HdMaterialRelationship &rel: bxdfNet.relationships) {
