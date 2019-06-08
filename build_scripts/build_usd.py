@@ -1912,3 +1912,7 @@ if context.buildKatana:
 if context.buildHoudini:
     Print("See documentation at http://openusd.org/docs/Houdini-USD-Plugins.html "
           "for setting up the Houdini plugin.\n")
+
+if context.buildPrman:
+    Print("See documentation at http://openusd.org/docs/RenderMan-USD-Imaging-Plugin.html "
+          "for setting up the RenderMan plugin.\n")

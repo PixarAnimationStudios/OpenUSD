@@ -182,6 +182,20 @@ Embree 2.16.1. The additional dependencies that must be supplied when invoking c
 | --------------        | -----------------------------------         | -------   |
 | EMBREE_LOCATION       | The root path to an embree library install. | 2.16.1    |
 
+##### RenderMan Rendering
+
+This plugin uses Pixar's RenderMan as a rendering backend for Hydra and 
+usdview. Enable the plugin in the build by specifying the cmake flag 
+```PXR_BUILD_PRMAN_PLUGIN=TRUE``` when invoking cmake. This plugin is 
+compatible with RenderMan 22.5.  The additional dependencies that must be 
+supplied when invoking cmake are:
+
+| Dependency Name       | Description                                 | Version   |
+| --------------        | -----------------------------------         | -------   |
+| RENDERMAN_LOCATION    | The root path to an RenderMan install.      | 22.5      |
+
+More documentation is available [here](http://openusd.org/docs/RenderMan-USD-Imaging-Plugin.html).
+
 ## Third Party Plugins
 
 USD provides several plugins for integration with third-party software packages,
