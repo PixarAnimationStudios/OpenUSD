@@ -78,9 +78,8 @@ class DebugFlagsWidget(QtWidgets.QWidget):
         allDebugPrefixes = [ x[:x.find('_')] if x.find('_') > 0 else x
                 for x in allDebugFlags]
         self._allDebugFlagPrefixes = list(sorted(set(allDebugPrefixes)))
-        listModel = QtGui.QStringListModel(self._allDebugFlagPrefixes)
+        listModel = QtCore.QStringListModel(self._allDebugFlagPrefixes)
         listView.setModel(listModel)
-
 
     def _populateDebugFlagsTableView(self, debugFlagPrefix):
         debugFlags = _GetDebugFlagsWithPrefix(debugFlagPrefix)
