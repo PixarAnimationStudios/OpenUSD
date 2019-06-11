@@ -108,9 +108,10 @@ typedef std::set<double> UsdAbc_TimeSamples;
 
 #define XXX_UNSUPPORTED(M) TF_RUNTIME_ERROR("Alembic file " #M "() not supported")
 
-UsdAbc_AlembicData::UsdAbc_AlembicData()
+UsdAbc_AlembicData::UsdAbc_AlembicData(const SdfFileFormat::FileFormatArguments* args)
 {
-    // Do nothing
+    if (args && !args->empty())
+        _arguments.reset(new SdfFileFormat::FileFormatArguments(*args));
 }
 
 UsdAbc_AlembicData::~UsdAbc_AlembicData()
@@ -119,9 +120,9 @@ UsdAbc_AlembicData::~UsdAbc_AlembicData()
 }
 
 UsdAbc_AlembicDataRefPtr
-UsdAbc_AlembicData::New()
+UsdAbc_AlembicData::New(const SdfFileFormat::FileFormatArguments* args)
 {
-    return TfCreateRefPtr(new UsdAbc_AlembicData);
+    return TfCreateRefPtr(new UsdAbc_AlembicData(args));
 }
 
 bool
@@ -148,7 +149,7 @@ UsdAbc_AlembicData::Open(const std::string& filePath)
     //_reader->SetFlag(UsdAbc_AlembicContextFlagNames->verbose);
 
     // Open the archive.
-    if (_reader->Open(filePath)) {
+    if (_reader->Open(filePath, _arguments ? _arguments.get() : nullptr)) {
         return true;
     }
 
