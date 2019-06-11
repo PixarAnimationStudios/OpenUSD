@@ -170,6 +170,10 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     , _restoreViewport(0)
     , _useFloatPointDrawTarget(false)
 {
+    static std::once_flag initFlag;
+
+    std::call_once(initFlag, _InitGL);
+
     if (IsHydraEnabled()) {
 
         // _renderIndex, _taskController, and _delegate are initialized
