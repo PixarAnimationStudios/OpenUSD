@@ -505,6 +505,12 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
         self.assertEqual(s4p.FindPrimvarWithInheritance(UsdGeom.Tokens.primvarsDisplayColor).GetAttr().GetPrim(),
                 s1.GetPrim())
 
+    def test_InvalidPrimvar(self):
+        p = UsdGeom.Primvar()
+        # This used to crash before the Primvar __getattribute__ method
+        # was overridden to test the validity of the underlying prim.
+        with self.assertRaises(RuntimeError):
+            p.BlockIndices()
 
 if __name__ == "__main__":
     unittest.main()
