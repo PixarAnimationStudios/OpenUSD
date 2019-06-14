@@ -113,9 +113,25 @@ static TfStaticData<TfPyObjWrapper> _object__getattribute__;
 static object
 __getattribute__(object selfObj, const char *name) {
     // Allow attribute lookups if the attribute name starts with '__', or
-    // if the object's prim is valid.
+    // if the object's prim and attribute are both valid, or whitelist a few
+    // methods if just the prim is valid, or an even smaller subset if neither
+    // are valid.
     if ((name[0] == '_' && name[1] == '_') ||
-        extract<UsdGeomPrimvar &>(selfObj)().GetAttr().GetPrim().IsValid() ||
+        // prim and attr are valid, let everything through.
+        (extract<UsdGeomPrimvar &>(selfObj)().GetAttr().IsValid() &&
+         extract<UsdGeomPrimvar &>(selfObj)().GetAttr().GetPrim().IsValid()) ||
+        // prim is valid, but attr is invalid, let a few things through.
+        (extract<UsdGeomPrimvar &>(selfObj)().GetAttr().GetPrim().IsValid() &&
+         (strcmp(name, "IsDefined") == 0 ||
+          strcmp(name, "HasValue") == 0 ||
+          strcmp(name, "HasAuthoredValue") == 0 ||
+          strcmp(name, "GetName") == 0 ||
+          strcmp(name, "GetPrimvarName") == 0 ||
+          strcmp(name, "NameContainsNamespaces") == 0 ||
+          strcmp(name, "GetBaseName") == 0 ||
+          strcmp(name, "GetNamespace") == 0 ||
+          strcmp(name, "SplitName") == 0)) ||
+        // prim and attr are both invalid, let almost nothing through.
         strcmp(name, "GetAttr") == 0) {
         // Dispatch to object's __getattribute__.
         return (*_object__getattribute__)(selfObj, name);
