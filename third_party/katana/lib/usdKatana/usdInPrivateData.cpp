@@ -319,6 +319,28 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
             }
         }
     }
+
+
+    if (parentData)
+    {
+        _collectionQueryCache = parentData->_collectionQueryCache;
+        _bindingsCache = parentData->_bindingsCache;
+        
+    }
+
+    if (!_collectionQueryCache)
+    {
+        _collectionQueryCache.reset(
+                new UsdShadeMaterialBindingAPI::CollectionQueryCache);
+    }
+
+    if (!_bindingsCache)
+    {
+        _bindingsCache.reset(
+            new UsdShadeMaterialBindingAPI::BindingsCache);
+    }
+
+
 }
 
 const bool
@@ -338,20 +360,20 @@ PxrUsdKatanaUsdInPrivateData::IsMotionBackward() const
     }
 }
 
-std::vector<std::pair<double, double> >
+std::vector<PxrUsdKatanaUsdInPrivateData::UsdKatanaTimePair>
 PxrUsdKatanaUsdInPrivateData::GetUsdAndKatanaTimes(
         const UsdAttribute& attr) const
 {
     const std::vector<double> motionSampleTimes = GetMotionSampleTimes(attr);
-    std::vector<std::pair<double, double> > result;
-    result.reserve(motionSampleTimes.size());
-    bool isMotionBackward = IsMotionBackward();
-    double u, k;
-    for(auto t : motionSampleTimes) 
-    {
-        u = _currentTime + t;
-        k = isMotionBackward ? PxrUsdKatanaUtils::ReverseTimeSample(t) : t;
-        result.emplace_back(u,k);
+    std::vector<UsdKatanaTimePair> result(motionSampleTimes.size());
+    const bool isMotionBackward = IsMotionBackward();
+    for (size_t i = 0; i < motionSampleTimes.size(); ++i) {
+        double t = motionSampleTimes[i];
+
+        UsdKatanaTimePair& pair = result[i];
+        pair.usdTime = _currentTime + t;
+        pair.katanaTime = isMotionBackward ?
+            PxrUsdKatanaUtils::ReverseTimeSample(t) : t;
     } 
     return result;
 }
@@ -529,6 +551,21 @@ PxrUsdKatanaUsdInPrivateData::updateExtensionOpArgs(
         .deepUpdate(_extGb->build())
         .build();
 }
+
+
+UsdShadeMaterialBindingAPI::CollectionQueryCache *
+PxrUsdKatanaUsdInPrivateData::GetCollectionQueryCache() const
+{
+    return _collectionQueryCache.get();
+   
+}
+
+UsdShadeMaterialBindingAPI::BindingsCache *
+PxrUsdKatanaUsdInPrivateData::GetBindingsCache() const
+{
+    return _bindingsCache.get();
+}
+
 
 PxrUsdKatanaUsdInPrivateData *
 PxrUsdKatanaUsdInPrivateData::GetPrivateData(

@@ -113,6 +113,7 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(CameraUtilMatchHorizontally, "MatchHotizontally");
     TF_ADD_ENUM_NAME(CameraUtilFit,               "Fit");
     TF_ADD_ENUM_NAME(CameraUtilCrop,              "Crop");
+    TF_ADD_ENUM_NAME(CameraUtilDontConform,       "DontConform");
 }
 
 static
@@ -156,12 +157,23 @@ _ResolveConformWindowPolicy(const GfVec2d &size,
     return CameraUtilMatchHorizontally;
 }
 
+static
+bool
+_DoesNotRequireAdjustment(CameraUtilConformWindowPolicy policy)
+{
+    return (policy == CameraUtilDontConform);
+}
+
 GfVec2d
 CameraUtilConformedWindow(
     const GfVec2d &window,
     CameraUtilConformWindowPolicy policy,
     double targetAspect)
 {
+    if (_DoesNotRequireAdjustment(policy)) {
+        return window;
+    }
+
     const CameraUtilConformWindowPolicy resolvedPolicy =
         _ResolveConformWindowPolicy(window, policy, targetAspect);
 
@@ -178,6 +190,10 @@ CameraUtilConformedWindow(
     CameraUtilConformWindowPolicy policy,
     double targetAspect)
 {
+    if (_DoesNotRequireAdjustment(policy)) {
+        return window;
+    }
+
     const GfVec2d &size = window.GetSize();
     const GfVec2d center = (window.GetMin() + window.GetMax()) / 2.0;
 
@@ -206,6 +222,10 @@ CameraUtilConformedWindow(
     CameraUtilConformWindowPolicy policy,
     double targetAspect)
 {
+    if (_DoesNotRequireAdjustment(policy)) {
+        return window;
+    }
+
     const GfRange2d original(GfVec2d(window[0], window[2]),
                              GfVec2d(window[1], window[3]));
 
@@ -232,6 +252,10 @@ CameraUtilConformedWindow(
     const GfMatrix4d &projectionMatrix,
     CameraUtilConformWindowPolicy policy, double targetAspect)
 {
+    if (_DoesNotRequireAdjustment(policy)) {
+        return projectionMatrix;
+    }
+
     GfMatrix4d result(projectionMatrix);
 
     // The aspect ratio of the frustum corresponding to the given
@@ -290,6 +314,10 @@ CameraUtilConformWindow(
     CameraUtilConformWindowPolicy policy,
     double targetAspect)
 {
+    if (_DoesNotRequireAdjustment(policy)) {
+        return;
+    }
+    
     const GfVec2d original(camera->GetHorizontalAperture(),
                            camera->GetVerticalAperture());
     const GfVec2d conformed = 
@@ -305,6 +333,10 @@ CameraUtilConformWindow(
     GfFrustum *frustum,
     CameraUtilConformWindowPolicy policy, double targetAspect)
 {
+    if (_DoesNotRequireAdjustment(policy)) {
+        return;
+    }
+    
     GfRange2d screenWindowFitted = CameraUtilConformedWindow(
         frustum->GetWindow(), policy, targetAspect);
     frustum->SetWindow(screenWindowFitted);

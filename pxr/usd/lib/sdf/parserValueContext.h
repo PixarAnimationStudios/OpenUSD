@@ -28,6 +28,7 @@
 #include "pxr/usd/sdf/parserHelpers.h"
 #include "pxr/base/vt/array.h"
 
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -62,7 +63,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class Sdf_ParserValueContext {
 public:
     typedef Sdf_ParserHelpers::Value Value;
-    typedef boost::function<void (const std::string &)> ErrorReporter;
+    typedef std::function<void (const std::string &)> ErrorReporter;
 
     Sdf_ParserValueContext();
 

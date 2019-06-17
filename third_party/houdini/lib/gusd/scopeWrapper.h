@@ -26,8 +26,8 @@
 
 #include "groupBaseWrapper.h"
 
-#include <pxr/pxr.h>
-#include <pxr/usd/usdGeom/scope.h>
+#include "pxr/pxr.h"
+#include "pxr/usd/usdGeom/scope.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

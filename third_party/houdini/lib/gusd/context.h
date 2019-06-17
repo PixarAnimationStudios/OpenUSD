@@ -25,13 +25,14 @@
 #ifndef __GUSD_CONTEXT_H__
 #define __GUSD_CONTEXT_H__
 
-#include <pxr/pxr.h>
-#include <pxr/usd/usd/timeCode.h>
-#include <pxr/usd/usd/stage.h>
-#include <pxr/usd/usdGeom/tokens.h>
+#include "pxr/pxr.h"
+#include "pxr/usd/usd/timeCode.h"
+#include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usdGeom/tokens.h"
 
 #include <GT/GT_Primitive.h>
 
+#include <functional>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -44,7 +45,7 @@ class UsdGeomXformCache;
 
 class GusdContext {
 public:
-    typedef boost::function<UsdStageRefPtr ()> GetStageFunc;
+    typedef std::function<UsdStageRefPtr ()> GetStageFunc;
     enum Granularity { ONE_FILE, PER_FRAME };
 
     GusdContext( UsdTimeCode t, 

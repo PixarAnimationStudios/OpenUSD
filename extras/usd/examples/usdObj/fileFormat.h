@@ -83,10 +83,6 @@ private:
                          std::istream &input,
                          bool metadataOnly,
                          std::string *outErr) const;
-
-    virtual bool _IsStreamingLayer(const SdfLayer& layer) const override {
-        return false;
-    }
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

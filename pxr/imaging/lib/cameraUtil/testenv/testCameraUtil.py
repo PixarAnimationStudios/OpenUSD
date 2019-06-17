@@ -110,6 +110,12 @@ class TestCameraUtil(unittest.TestCase):
                                        1.0),
             Gf.Vec2d(2.1, 2.1))
 
+        self._IsClose(
+            CameraUtil.ConformedWindow(Gf.Vec2d(2.1, 1.9),
+                                       CameraUtil.DontConform,
+                                       1.0),
+            Gf.Vec2d(2.1, 1.9))
+
     def test_ConformedWindowGfRange2d(self):
         self._IsClose(
             CameraUtil.ConformedWindow(
@@ -131,6 +137,13 @@ class TestCameraUtil(unittest.TestCase):
                 CameraUtil.MatchVertically,
                 1.5),
             Gf.Range2d(Gf.Vec2d(-13, -11), Gf.Vec2d(2, -1)))
+        
+        self._IsClose(
+            CameraUtil.ConformedWindow(
+                Gf.Range2d(Gf.Vec2d(-10, -11), Gf.Vec2d(-1, -1)),
+                CameraUtil.DontConform,
+                1.5),
+            Gf.Range2d(Gf.Vec2d(-10, -11), Gf.Vec2d(-1, -1)))
                 
     def test_ConformedWindowGfVec4d(self):
 
@@ -200,6 +213,11 @@ class TestCameraUtil(unittest.TestCase):
 
         self._IsClose(frustum.window.min, Gf.Vec2d(-1.2, -0.575020625515638))
         self._IsClose(frustum.window.max, Gf.Vec2d(1.0, 1.075020625515638))
+
+        frustum.window = Gf.Range2d(Gf.Vec2d(-1.2, -1.0), Gf.Vec2d(1.0, 1.5))
+        CameraUtil.ConformWindow(frustum, CameraUtil.DontConform, 1.3333)
+        self._IsClose(frustum.window.min, Gf.Vec2d(-1.2, -1.0))
+        self._IsClose(frustum.window.max, Gf.Vec2d(1.0, 1.5))
 
 if __name__ == '__main__':
     unittest.main()

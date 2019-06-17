@@ -78,6 +78,7 @@ public:
     void AddSelectionTask(SdfPath const &id);
     void AddDrawTargetTask(SdfPath const &id);
     void AddDrawTargetResolveTask(SdfPath const &id);
+    void AddPickTask(SdfPath const &id);
 
     void SetTaskParam(SdfPath const &id, TfToken const &name, VtValue val);
     VtValue GetTaskParam(SdfPath const &id, TfToken const &name);
@@ -171,8 +172,12 @@ public:
     virtual HdMaterialParamVector GetMaterialParams(SdfPath const &shaderId);
     virtual VtValue GetMaterialParamValue(SdfPath const &shaderId,
                                           TfToken const &paramName);
+    virtual VtValue GetCameraParamValue(SdfPath const &cameraId,
+                                        TfToken const &paramName);
     virtual HdTextureResource::ID GetTextureResourceID(SdfPath const& textureId);
     virtual HdTextureResourceSharedPtr GetTextureResource(SdfPath const& textureId);
+
+    virtual TfTokenVector GetTaskRenderTags(SdfPath const& taskId);
 
 private:
     struct _Mesh {

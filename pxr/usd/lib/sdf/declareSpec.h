@@ -47,13 +47,14 @@ class SdfSpec;
 /// };
 ///
 /// <in MySpecType.cpp>
-/// SDF_DEFINE_SPEC(MySpecType, MyBaseSpecType);
+/// SDF_DEFINE_SPEC(MySchemaType, <SdfSpecType enum value>, MySpecType, 
+///                 MyBaseSpecType);
 ///
 /// There are two sets of these macros, one for concrete spec types
 /// and one for 'abstract' spec types that only serve as a base class
 /// for concrete specs.
 ///
-#define SDF_DECLARE_ABSTRACT_SPEC(SchemaType, SpecType, BaseSpecType)      \
+#define SDF_DECLARE_ABSTRACT_SPEC(SpecType, BaseSpecType)                  \
 public:                                                                    \
     SpecType() { }                                                         \
     SpecType(const SpecType& spec)                                         \
@@ -64,57 +65,52 @@ protected:                                                                 \
     friend struct Sdf_CastAccess;                                          \
     explicit SpecType(const SdfSpec& spec)                                 \
         : BaseSpecType(spec) { }                                           \
-public:                                                                    \
-    static const std::type_info& GetSchemaType()                           \
-    { return typeid(SchemaType); }                                         \
 
-#define SDF_DEFINE_ABSTRACT_SPEC(SpecType, BaseSpecType)                   \
+#define SDF_DEFINE_ABSTRACT_SPEC(SchemaType, SpecType, BaseSpecType)       \
 TF_REGISTRY_FUNCTION_WITH_TAG(TfType, Type)                                \
 {                                                                          \
     TfType::Define<SpecType, TfType::Bases<BaseSpecType> >();              \
 }                                                                          \
 TF_REGISTRY_FUNCTION_WITH_TAG(SdfSpecTypeRegistration, Registration)       \
 {                                                                          \
-    SdfSpecTypeRegistration::RegisterAbstractSpecType<SpecType>();         \
+    SdfSpecTypeRegistration::RegisterAbstractSpecType<                     \
+        SchemaType, SpecType>();                                           \
 }
 
 // ------------------------------------------------------------
 
-#define SDF_DECLARE_SPEC(SchemaType, SpecTypeEnum, SpecType, BaseSpecType) \
-    SDF_DECLARE_ABSTRACT_SPEC(SchemaType, SpecType, BaseSpecType)          \
-public:                                                                    \
-    static SdfSpecType GetStaticSpecType() { return SpecTypeEnum; }        \
+#define SDF_DECLARE_SPEC(SpecType, BaseSpecType)                           \
+    SDF_DECLARE_ABSTRACT_SPEC(SpecType, BaseSpecType)                      \
 
-#define SDF_DEFINE_SPEC(SpecType, BaseSpecType)                            \
+#define SDF_DEFINE_SPEC(SchemaType, SpecTypeEnum, SpecType, BaseSpecType)  \
 TF_REGISTRY_FUNCTION_WITH_TAG(TfType, Type)                                \
 {                                                                          \
     TfType::Define<SpecType, TfType::Bases<BaseSpecType> >();              \
 }                                                                          \
 TF_REGISTRY_FUNCTION_WITH_TAG(SdfSpecTypeRegistration, Registration)       \
 {                                                                          \
-    SdfSpecTypeRegistration::RegisterSpecType<SpecType>();                 \
+    SdfSpecTypeRegistration::RegisterSpecType<SchemaType, SpecType>        \
+        (SpecTypeEnum);                                                    \
 }
 
 // ------------------------------------------------------------
 // Special set of macros for SdfSpec only.
 
-#define SDF_DECLARE_BASE_SPEC(SchemaType, SpecType)                        \
+#define SDF_DECLARE_BASE_SPEC(SpecType)                                    \
 public:                                                                    \
     SpecType() { }                                                         \
     SpecType(const SpecType& spec) : _id(spec._id) { }                     \
     explicit SpecType(const Sdf_IdentityRefPtr& id) : _id(id) { }          \
-public:                                                                    \
-    static const std::type_info& GetSchemaType()                           \
-    { return typeid(SchemaType); }                                         \
 
-#define SDF_DEFINE_BASE_SPEC(SpecType)                                     \
+#define SDF_DEFINE_BASE_SPEC(SchemaType, SpecType)                         \
 TF_REGISTRY_FUNCTION_WITH_TAG(TfType, Type)                                \
 {                                                                          \
     TfType::Define<SpecType>();                                            \
 }                                                                          \
 TF_REGISTRY_FUNCTION_WITH_TAG(SdfSpecTypeRegistration, Registration)       \
 {                                                                          \
-    SdfSpecTypeRegistration::RegisterAbstractSpecType<SpecType>();         \
+    SdfSpecTypeRegistration::RegisterAbstractSpecType<                     \
+        SchemaType, SpecType>();                                           \
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -41,7 +41,6 @@ class HdSceneDelegate;
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 typedef boost::shared_ptr<class HdxRenderSetupTask> HdxRenderSetupTaskSharedPtr;
-typedef std::vector<HdRenderPassSharedPtr> HdRenderPassSharedPtrVector;
 
 /// \class HdxRenderTask
 ///
@@ -89,9 +88,17 @@ public:
     HDX_API
     virtual void Execute(HdTaskContext* ctx) override;
 
+    /// Collect Render Tags used by the task.
+    HDX_API
+    virtual const TfTokenVector &GetRenderTags() const override;
+
+protected:
+    HDX_API
+    HdRenderPassStateSharedPtr _GetRenderPassState(HdTaskContext *ctx) const;
 
 private:
-    HdRenderPassSharedPtrVector _passes;
+    HdRenderPassSharedPtr _pass;
+    TfTokenVector _renderTags;
 
     // Optional internal render setup task, for params unpacking.
     HdxRenderSetupTaskSharedPtr _setupTask;

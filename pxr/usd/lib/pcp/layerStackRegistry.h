@@ -50,7 +50,7 @@ class Pcp_LayerStackRegistry : public TfRefBase, public TfWeakBase {
 public:
     /// Create a new Pcp_LayerStackRegistry.
     static Pcp_LayerStackRegistryRefPtr New(
-        const std::string& targetSchema = std::string(),
+        const std::string& fileFormatTarget = std::string(),
         bool isUsd=false);
 
     /// Adds layers specified in \p layersToMute and removes layers
@@ -101,7 +101,7 @@ public:
 
 private:
     /// Private constructor -- see New().
-    Pcp_LayerStackRegistry(const std::string& targetSchema,
+    Pcp_LayerStackRegistry(const std::string& fileFormatTarget,
                            bool isUsd);
     ~Pcp_LayerStackRegistry();
 
@@ -116,9 +116,9 @@ private:
     // given layer stack.
     void _SetLayers(const PcpLayerStack*);
 
-    // Returns the target schema for layer stacks managed by this
+    // Returns the file format target for layer stacks managed by this
     // registry.
-    const std::string& _GetTargetSchema() const;
+    const std::string& _GetFileFormatTarget() const;
 
     // Returns whether or not we are in USD mode for avoiding
     // extra calls such as Pcp_ComputeRelocationForLayerStack()
@@ -128,7 +128,7 @@ private:
     // computation can easily query whether a layer is muted.
     const Pcp_MutedLayers& _GetMutedLayers() const;
 
-    // PcpLayerStack can access private _GetTargetSchema(), 
+    // PcpLayerStack can access private _GetFileFormatTarget(), 
     // _Remove(), and _SetLayers().
     friend class PcpLayerStack;
 

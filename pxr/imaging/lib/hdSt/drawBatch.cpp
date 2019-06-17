@@ -213,7 +213,8 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
     HdStShaderCodeSharedPtr overrideShader = state->GetOverrideShader();
     HdStShaderCodeSharedPtr surfaceShader  = overrideShader ? overrideShader
                                        : firstDrawItem->GetMaterialShader();
-    boost::hash_combine(shaderHash, surfaceShader->ComputeHash());
+    size_t surfaceHash = surfaceShader ? surfaceShader->ComputeHash() : 0;
+    boost::hash_combine(shaderHash, surfaceHash);
     bool shaderChanged = (_shaderHash != shaderHash);
     
     // Set shaders (lighting and renderpass) to the program. 

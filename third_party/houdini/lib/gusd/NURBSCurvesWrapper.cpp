@@ -26,17 +26,15 @@
 #include "context.h"
 #include "GT_VtArray.h"
 #include "tokens.h"
-#include "UT_Gf.h"
 #include "USD_XformCache.h"
+#include "UT_Gf.h"
 
-#include <GT/GT_PrimCurveMesh.h>
-#include <GT/GT_PrimNURBSCurveMesh.h>
-#include <GT/GT_RefineParms.h>
-#include <GT/GT_Refine.h>
-#include <GT/GT_TransformArray.h>
-#include <GT/GT_PrimInstance.h>
 #include <GT/GT_DAIndirect.h>
 #include <GT/GT_GEOPrimPacked.h>
+#include <GT/GT_PrimCurveMesh.h>
+#include <GT/GT_PrimNURBSCurveMesh.h>
+#include <GT/GT_Refine.h>
+#include <GT/GT_RefineParms.h>
 
 #include <numeric>
 
@@ -277,8 +275,7 @@ GusdNURBSCurvesWrapper::refine(
 
         UsdAttribute widthsAttr = usdCurves.GetWidthsAttr();
         VtFloatArray usdWidths;
-        if( widthsAttr.HasAuthoredValue() && 
-            widthsAttr.Get(&usdWidths, m_time) ) {
+        if( widthsAttr.Get(&usdWidths, m_time) ) {
 
             GT_DataArrayHandle gtWidths = new GusdGT_VtArray<fpreal32>(usdWidths); 
 
@@ -332,7 +329,7 @@ GusdNURBSCurvesWrapper::refine(
         // velocities
         UsdAttribute velAttr = usdCurves.GetVelocitiesAttr();
         VtVec3fArray usdVelocities;
-        if( velAttr.HasAuthoredValue() && velAttr.Get(&usdVelocities, m_time) ) {
+        if( velAttr.Get(&usdVelocities, m_time) ) {
 
             GT_DataArrayHandle gtVelocities = 
                 new GusdGT_VtArray<GfVec3f>(usdVelocities,GT_TYPE_VECTOR);
@@ -343,7 +340,7 @@ GusdNURBSCurvesWrapper::refine(
         // normals
         UsdAttribute normAttr = usdCurves.GetNormalsAttr();
         VtVec3fArray usdNormals;
-        if(normAttr.HasAuthoredValue() && normAttr.Get(&usdNormals, m_time) ) {
+        if(normAttr.Get(&usdNormals, m_time) ) {
             
             GT_DataArrayHandle gtNormals = 
                 new GusdGT_VtArray<GfVec3f>(usdNormals,GT_TYPE_NORMAL);

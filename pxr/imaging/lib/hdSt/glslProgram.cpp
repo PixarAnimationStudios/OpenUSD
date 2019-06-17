@@ -25,6 +25,7 @@
 #include "pxr/imaging/hio/glslfx.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/glUtils.h"
@@ -107,7 +108,7 @@ HdStGLSLProgram::CompileShader(GLenum type,
         return false;
     }
 
-    if (TfDebug::IsEnabled(HD_DUMP_SHADER_SOURCE)) {
+    if (TfDebug::IsEnabled(HDST_DUMP_SHADER_SOURCE)) {
         std::cout << "--------- " << shaderType << " ----------\n";
         std::cout << shaderSource;
         std::cout << "---------------------------\n";
@@ -133,7 +134,7 @@ HdStGLSLProgram::CompileShader(GLenum type,
     glCompileShader(shader);
 
     std::string fname;
-    if (TfDebug::IsEnabled(HD_DUMP_SHADER_SOURCEFILE)) {
+    if (TfDebug::IsEnabled(HDST_DUMP_SHADER_SOURCEFILE)) {
         std::stringstream fnameStream;
         static size_t debugShaderID = 0;
         fnameStream << "program" << _debugID << "_shader" << debugShaderID++
@@ -183,7 +184,7 @@ HdStGLSLProgram::Link()
         return false;
     }
 
-    bool dumpShaderBinary = TfDebug::IsEnabled(HD_DUMP_SHADER_BINARY);
+    bool dumpShaderBinary = TfDebug::IsEnabled(HDST_DUMP_SHADER_BINARY);
 
     if (dumpShaderBinary) {
         // set RETRIEVABLE_HINT to true for getting program binary length.

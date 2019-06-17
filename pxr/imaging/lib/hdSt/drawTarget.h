@@ -144,7 +144,7 @@ private:
     bool                    _enabled;
     SdfPath                 _cameraId;
     GfVec2i                 _resolution;
-    HdRprimCollectionVector _collections;
+    HdRprimCollection       _collection;
 
     HdStDrawTargetRenderPassState _renderPassState;
     std::vector<HdTextureResourceSharedPtr> _colorTextureResources;

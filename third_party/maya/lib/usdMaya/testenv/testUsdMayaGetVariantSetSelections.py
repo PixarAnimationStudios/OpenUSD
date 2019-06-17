@@ -83,6 +83,15 @@ class testUsdMayaGetVariantSetSelections(unittest.TestCase):
              'modelingVariant': 'ModVariantB',
              'shadingVariant': 'ShadVariantA'})
 
+        # Verify that selecting a non-registered variant set affects the
+        # stage's composition.
+        prim = UsdMaya.GetPrim(self.assemblyNodeName)
+        geomPrim = prim.GetChild('Geom')
+        cubePrim = geomPrim.GetChild('Cube')
+
+        attrValue = cubePrim.GetAttribute('variantAttribute').Get()
+        self.assertEqual(attrValue, 'C')
+
     def testBogusVariantName(self):
         self._SetSelection('bogusVariant', 'NotARealVariantSet')
 

@@ -44,9 +44,9 @@
 #include <Alembic/AbcGeom/OXform.h>
 #include <Alembic/AbcGeom/Visibility.h>
 #include <Alembic/AbcCoreOgawa/All.h>
-#include <boost/function.hpp>
 #include <boost/functional/hash.hpp>
 #include <algorithm>
+#include <functional>
 #include <memory>
 #include <set>
 #include <type_traits>
@@ -526,7 +526,7 @@ class _PrimWriterContext;
 /// previous via a \c _PrimWriterContext.
 class _WriterSchema {
 public:
-    typedef boost::function<void (_PrimWriterContext*)> PrimWriter;
+    typedef std::function<void (_PrimWriterContext*)> PrimWriter;
     typedef std::vector<PrimWriter> PrimWriterVector;
     typedef UsdAbc_AlembicDataConversion::FromUsdConverter Converter;
 
@@ -614,7 +614,7 @@ _WriterSchema::GetPrimWriters(const TfToken& name) const
 bool
 _WriterSchema::IsValid(const UsdSamples& samples) const
 {
-    return GetConverter(samples.GetTypeName());
+    return GetConverter(samples.GetTypeName()) ? true : false;
 }
 
 bool
@@ -2265,7 +2265,7 @@ void
 _WriteNamespacedPropertyGroup(
     _PrimWriterContext* context,
     const TfToken& namespaceName,
-    const boost::function<OCompoundProperty()>& getParentProperty)
+    const std::function<OCompoundProperty()>& getParentProperty)
 {
     // First check if there are any properties to convert.  We only ask
     // for that property if so, because asking for it will create it on

@@ -23,19 +23,19 @@
 //
 #include "GT_PackedUSD.h"
 
+#include "GT_Utils.h"
 #include "GU_PackedUSD.h"
 #include "GU_USD.h"
-
-#include "GT_Utils.h"
 #include "UT_Gf.h"
 
+#include <GA/GA_Names.h>
 #include <GT/GT_DAIndexedString.h>
 #include <GT/GT_DANumeric.h>
 #include <GT/GT_DASubArray.h>
 #include <GT/GT_GEOAttributeFilter.h>
 #include <GT/GT_GEODetailList.h>
-#include <GT/GT_GEOPrimPacked.h>
 #include <GT/GT_GEOPrimCollectBoxes.h>
+#include <GT/GT_GEOPrimPacked.h>
 #include <GT/GT_PrimCollect.h>
 #include <GT/GT_PrimInstance.h>
 #include <GT/GT_PrimPointMesh.h>
@@ -45,14 +45,13 @@
 #include <GT/GT_RefineCollect.h>
 #include <GT/GT_RefineParms.h>
 #include <GU/GU_PrimPacked.h>
-#include <GA/GA_Names.h>
-#include <UT/UT_Options.h>
 #include <SYS/SYS_Version.h>
+#include <UT/UT_Options.h>
 
-#include <pxr/usd/usdGeom/xformCache.h>
+#include "pxr/usd/usdGeom/xformCache.h"
 
-#include <unordered_map>
 #include <iostream>
+#include <unordered_map>
 
 using std::cout;
 using std::cerr;
@@ -450,7 +449,7 @@ public:
                     for( int i = 0; i < collect->entries(); ++i ) {
                         addInstances( *rv, collect->getPrim(i), kv.second );
                     }
-		        }
+                }
                 else {
                     addInstances( *rv, geo, kv.second );
                 }
@@ -675,7 +674,7 @@ enlargeBounds(UT_BoundingBox boxes[], int nsegments) const
     }
 }
 
-int	GusdGT_PackedUSDMesh::
+int GusdGT_PackedUSDMesh::
 getMotionSegments() const
 {
     if(m_mesh) {
@@ -692,7 +691,7 @@ getMemoryUsage() const
     if(m_mesh) {
         size += m_mesh->getMemoryUsage();
     }
-    for(auto p : m_sourceMeshes) {
+    for(const auto& p : m_sourceMeshes) {
         size += p->getMemoryUsage();
     }
 

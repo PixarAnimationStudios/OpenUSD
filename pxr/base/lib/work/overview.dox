@@ -75,11 +75,11 @@ static void _DoubleTheValues(size_t begin, size_t end, std::vector<int> *v)
 
 static void DoubleInParallel(std::vector<int> *v)
 {
-    WorkParallelForN(v->size(), boost::bind(&_DoubleTheValues, _1, _2, v));
+    WorkParallelForN(v->size(), std::bind(&_DoubleTheValues, _1, _2, v));
 }
 
 \endcode
 
-You can avoid the boost::bind and provide your own functor object as well.
+You can avoid the std::bind and provide your own functor object as well.
 
 */

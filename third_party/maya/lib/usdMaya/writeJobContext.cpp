@@ -211,13 +211,9 @@ UsdMayaWriteJobContext::_GetInstanceMasterPaths(const MDagPath& instancePath) co
         return _ExportAndRefPaths();
     }
 
-    std::string fullName;
+    std::string fullName = instancePath.fullPathName().asChar();
     if (mArgs.stripNamespaces){
-        fullName = UsdMayaUtil::stripNamespaces(
-                instancePath.fullPathName()).asChar();
-    }
-    else {
-        fullName = instancePath.fullPathName().asChar();
+        fullName = UsdMayaUtil::stripNamespaces(fullName);
     }
 
     // Trim leading pipe; it's superfluous because all Maya full paths have it.

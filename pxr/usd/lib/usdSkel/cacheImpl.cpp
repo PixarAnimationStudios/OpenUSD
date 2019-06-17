@@ -170,11 +170,13 @@ UsdSkel_CacheImpl::ReadScope::_FindOrCreateSkinningQuery(
     const SkinningQueryKey& key)
 {
     UsdSkelSkeletonQuery skelQuery = FindOrCreateSkelQuery(key.skel);
+    const UsdSkelAnimQuery& animQuery = skelQuery.GetAnimQuery();
 
     // TODO: Consider some form of deduplication.
     return UsdSkelSkinningQuery(
         skinnedPrim,
         skelQuery ? skelQuery.GetJointOrder() : VtTokenArray(),
+        animQuery ? animQuery.GetBlendShapeOrder() : VtTokenArray(),
         key.jointIndicesAttr, key.jointWeightsAttr,
         key.geomBindTransformAttr, key.jointsAttr,
         key.blendShapesAttr, key.blendShapeTargetsRel);

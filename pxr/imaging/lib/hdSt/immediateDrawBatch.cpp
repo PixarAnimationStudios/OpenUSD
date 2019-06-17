@@ -290,12 +290,13 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
                 if (static_cast<size_t>(i) >= instanceBarCurrents.size()) {
                     instanceBarCurrents.push_back(instanceBar);
                     binder.BindInstanceBufferArray(instanceBar, i);
+                    continue;
                 } else if (!instanceBar->IsAggregatedWith(
                                instanceBarCurrents[i])) {
                     binder.UnbindInstanceBufferArray(instanceBarCurrents[i], i);
                     binder.BindInstanceBufferArray(instanceBar, i);
-                    instanceBarCurrents[i] = instanceBar;
                 }
+                instanceBarCurrents[i] = instanceBar;
             }
         }
 
@@ -319,7 +320,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         // shader buffer
         //
         HdBufferArrayRangeSharedPtr const & shaderBar_ =
-            renderPassState->GetOverrideShader()
+            renderPassState->GetOverrideShader() || !program.GetSurfaceShader()
                 ? HdStBufferArrayRangeGLSharedPtr()
                 : program.GetSurfaceShader()->GetShaderData();
         HdStBufferArrayRangeGLSharedPtr shaderBar =
@@ -339,7 +340,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         //
         // shader textures
         //
-        if (!hasOverrideShader) {
+        if (!hasOverrideShader && program.GetSurfaceShader()) {
             program.GetSurfaceShader()->BindResources(binder, programId);
         }
 
@@ -448,7 +449,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
                 instanceCount);
         }
 
-        if (!hasOverrideShader) {
+        if (!hasOverrideShader && program.GetSurfaceShader()) {
             program.GetSurfaceShader()->UnbindResources(binder, programId);
         }
 

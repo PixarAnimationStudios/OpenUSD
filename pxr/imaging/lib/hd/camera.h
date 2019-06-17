@@ -29,18 +29,20 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/sprim.h"
 
+#include "pxr/imaging/cameraUtil/conformWindow.h"
+
 #include "pxr/usd/sdf/path.h"
-#include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/vt/dictionary.h"
 #include "pxr/base/gf/matrix4d.h"
 
 #include <boost/shared_ptr.hpp>
 
+#include <vector>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-#define HD_CAMERA_TOKENS                      \
+#define HD_CAMERA_TOKENS                        \
     (clipPlanes)                                \
     (worldToViewMatrix)                         \
     (worldToViewInverseMatrix)                  \
@@ -77,24 +79,64 @@ public:
                                 |DirtyClipPlanes)
     };
 
+    // ---------------------------------------------------------------------- //
+    /// Sprim API
+    // ---------------------------------------------------------------------- //
+ 
     /// Synchronizes state from the delegate to this object.
     HD_API
     virtual void Sync(HdSceneDelegate *sceneDelegate,
                       HdRenderParam   *renderParam,
                       HdDirtyBits     *dirtyBits) override;
 
-    /// Accessor for tasks to get the parameters cached in this object.
-    HD_API
-    VtValue Get(TfToken const &token) const;
 
     /// Returns the minimal set of dirty bits to place in the
     /// change tracker for use in the first sync of this prim.
     /// Typically this would be all dirty bits.
     HD_API
     virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
+ 
+    // ---------------------------------------------------------------------- //
+    /// Camera parameters accessor API
+    // ---------------------------------------------------------------------- //
+
+    /// Returns the matrix transformation from world to camera space.
+    HD_API
+    GfMatrix4d const& GetViewMatrix() const {
+        return _worldToViewMatrix;
+    }
+
+    /// Returns the matrix transformation from camera to world space.
+    HD_API
+    GfMatrix4d const& GetViewInverseMatrix() const {
+        return _worldToViewInverseMatrix;
+    }
+
+    /// Returns the projection matrix for the camera.
+    HD_API
+    GfMatrix4d const& GetProjectionMatrix() const {
+        return _projectionMatrix;
+    }
+
+    /// Returns any additional clipping planes defined in camera space.
+    HD_API
+    std::vector<GfVec4d> const& GetClipPlanes() const {
+        return _clipPlanes;
+    }
+
+    /// Returns the window policy of the camera. If no opinion is authored, we
+    /// default to "CameraUtilFit"
+    HD_API
+    CameraUtilConformWindowPolicy const& GetWindowPolicy() const {
+        return _windowPolicy;
+    }
 
 protected:
-    TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _cameraValues;
+    GfMatrix4d _worldToViewMatrix;
+    GfMatrix4d _worldToViewInverseMatrix;
+    GfMatrix4d _projectionMatrix;
+    CameraUtilConformWindowPolicy _windowPolicy;
+    std::vector<GfVec4d> _clipPlanes;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -47,7 +47,7 @@ PXR_NAMESPACE_OPEN_SCOPE
             return VtArray<T>();                                             \
         }                                                                    \
         VtArray<rettype> ret(vec.size());                                    \
-        for (int i = 0; i < length; ++i) {                                   \
+        for (size_t i = 0; i < length; ++i) {                                \
             if (!extract<T>(obj[i]).check())                                 \
                 TfPyThrowValueError("Element is of incorrect type.");        \
             ret[i] = expr;                                                   \
@@ -106,7 +106,7 @@ PXR_NAMESPACE_OPEN_SCOPE
             return VtArray<bool>();                                   \
         }                                                             \
         VtArray<bool> ret(vec.size());                                \
-        for (int i = 0; i < length; ++i) {                            \
+        for (size_t i = 0; i < length; ++i) {                         \
             if (!extract<T>(obj[i]).check())                          \
                 TfPyThrowValueError("Element is of incorrect type."); \
             ret[i] = expr;                                            \

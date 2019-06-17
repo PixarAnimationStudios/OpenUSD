@@ -26,6 +26,8 @@
 #include "gusd/USD_PropertyMap.h"
 #include "gusd/USD_Utils.h"
 
+#include "pxr/base/arch/hints.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 GusdUSD_VisCache::GusdUSD_VisCache(GusdStageCache& cache)
@@ -52,8 +54,8 @@ namespace {
 
 enum VisFlags
 {
-    FLAGS_ISMAYBETIMEVARYING=0x1,
-    FLAGS_RESOLVED_ISMAYBETIMEVARYING=0x2
+    FLAGS_ISMAYBETIMEVARYING = 1 << 0,
+    FLAGS_RESOLVED_ISMAYBETIMEVARYING = 1 << 1
 };
 
 
@@ -68,8 +70,8 @@ enum VisType
         
 enum VisState
 {
-    STATE_VISIBLE=0x1,
-    STATE_COMPUTED=0x2
+    STATE_VISIBLE = 1 << 0,
+    STATE_COMPUTED = 1 << 1
 };
 
 
@@ -87,8 +89,16 @@ using _UnvaryingKey = GusdUT_CappedKey<GusdUSD_UnvaryingPropertyKey,
 bool _QueryVisibility(const UsdAttributeQuery& query, UsdTimeCode time)
 {
     TfToken vis;
-    query.Get(&vis, time);  
-    return vis == UsdGeomTokens->inherited;
+    query.Get(&vis, time);
+    return vis != UsdGeomTokens->invisible;
+}
+
+
+bool
+_ShouldCacheVisibility(int flags, UsdTimeCode time)
+{
+    // Only time-invariant visibility is cached.
+    return !(flags&FLAGS_ISMAYBETIMEVARYING) || time.IsDefault();
 }
 
 
@@ -100,25 +110,26 @@ GusdUSD_VisCache::_GetVisInfo(const UsdPrim& prim)
 {
     _UnvaryingKey key((GusdUSD_UnvaryingPropertyKey(prim)));
 
-    if(UT_CappedItemHandle info = _visInfos.findItem(key))
+    if (UT_CappedItemHandle info = _visInfos.findItem(key)) {
         return VisInfoHandle(UTverify_cast<VisInfo*>(info.get()));
-    /* XXX: Potential race in construction, but in the worst case that will
-            just mean a few extra computes.*/
+    }
+    // XXX: Potential race in construction, but in the worst case that will
+    // just mean a few extra computes.
 
     UsdGeomImageable ip(prim);
-    if(BOOST_UNLIKELY(!ip))
+    if (ARCH_UNLIKELY(!ip)) {
         return VisInfoHandle();
+    }
 
     UsdAttribute visAttr(ip.GetVisibilityAttr());
 
     int flags = 0;
-    if(visAttr.ValueMightBeTimeVarying())
+    if (visAttr.ValueMightBeTimeVarying()) {
         flags |= FLAGS_ISMAYBETIMEVARYING|FLAGS_RESOLVED_ISMAYBETIMEVARYING;
-    else if(UsdPrim parent = prim.GetParent()) {
-        
-        if(auto parentInfo = _GetVisInfo(parent)) {
-            if(parentInfo->flags.relaxedLoad()&
-               FLAGS_RESOLVED_ISMAYBETIMEVARYING) {
+    } else if (UsdPrim parent = prim.GetParent()) {
+        if (auto parentInfo = _GetVisInfo(parent)) {
+            if (parentInfo->flags.relaxedLoad()&
+                FLAGS_RESOLVED_ISMAYBETIMEVARYING) {
                 flags |= FLAGS_RESOLVED_ISMAYBETIMEVARYING;
             }
         }
@@ -135,11 +146,12 @@ bool
 GusdUSD_VisCache::GetVisibility(const UsdPrim& prim,
                                 UsdTimeCode time)
 {
-    if(auto info = _GetVisInfo(prim)) {
+    if (auto info = _GetVisInfo(prim)) {
         int flags = info->flags.relaxedLoad();
         bool vis = true;
-        if(_GetVisibility(flags, info->query, time, vis))
+        if (_GetVisibility(flags, info->query, time, vis)) {
             info->flags.store(flags);
+        }
         return vis;
     }
     return false;
@@ -152,18 +164,20 @@ GusdUSD_VisCache::_GetVisibility(int& flags,
                                  UsdTimeCode time,
                                  bool& vis)
 {
-    if(!(flags&FLAGS_ISMAYBETIMEVARYING) || time.IsDefault()) {
+    if (_ShouldCacheVisibility(flags, time)) {
         VisType visType = time.IsDefault() ? VIS_UNVARYING : VIS_VARYING;
         int stateFlags = _GetStateFlags(flags, visType);
-        if(stateFlags&STATE_COMPUTED) {
+        if (stateFlags&STATE_COMPUTED) {
             vis = stateFlags&STATE_VISIBLE;
             return false;
         } else {
-            if(vis == _QueryVisibility(query, time))
+            if (vis = _QueryVisibility(query, time)) {
                 stateFlags |= STATE_VISIBLE;
+            }
             flags = _SetStateFlags(flags, stateFlags|STATE_COMPUTED, visType);
         }
     } else {
+        // Visibility is not cached when time-varying.
         vis = _QueryVisibility(query, time);
         return false;
     }
@@ -172,40 +186,44 @@ GusdUSD_VisCache::_GetVisibility(int& flags,
 
 
 bool
-GusdUSD_VisCache::GetResolvedVisibility(const UsdPrim& prim,
-                                        UsdTimeCode time)
+GusdUSD_VisCache::GetResolvedVisibility(const UsdPrim& prim, UsdTimeCode time)
 {
     auto info = _GetVisInfo(prim);
-    if(BOOST_UNLIKELY(!info))
+    if (ARCH_UNLIKELY(!info)) {
         return false;
+    }
 
     int flags = info->flags.relaxedLoad();
-    if(!(flags&FLAGS_RESOLVED_ISMAYBETIMEVARYING) || time.IsDefault()) {
+    if (_ShouldCacheVisibility(flags, time)) {
         VisType visType = time.IsDefault() ?
             VIS_UNVARYING_RESOLVED : VIS_VARYING_RESOLVED;
         int stateFlags = _GetStateFlags(flags, visType);
-        if(stateFlags&STATE_COMPUTED) {
+        if (stateFlags&STATE_COMPUTED) {
             return stateFlags&STATE_VISIBLE;
         } else {
             bool vis = true;
             _GetVisibility(flags, info->query, time, vis);
-            if(vis) {
-                if(UsdPrim parent = prim.GetParent()) {
-                    if(parent.GetPath() != SdfPath::AbsoluteRootPath())
+            if (vis) {
+                if (UsdPrim parent = prim.GetParent()) {
+                    if (!parent.IsPseudoRoot()) {
                         vis = GetResolvedVisibility(parent, time);
+                    }
                 }
             }
-            if(vis)
+            if (vis) {
                 stateFlags |= STATE_VISIBLE;
+            }
             flags = _SetStateFlags(flags, stateFlags|STATE_COMPUTED, visType);
             info->flags.store(flags);
             return vis;
         }
     } else {
-        if(_QueryVisibility(info->query, time)) {
-            if(UsdPrim parent = prim.GetParent()) {
-                if(parent.GetPath() != SdfPath::AbsoluteRootPath())
+        // Visibility is not cached when time-varying.
+        if (_QueryVisibility(info->query, time)) {
+            if (UsdPrim parent = prim.GetParent()) {
+                if (!parent.IsPseudoRoot()) {
                     return GetResolvedVisibility(parent, time);
+                }
             }
             return true;
         }

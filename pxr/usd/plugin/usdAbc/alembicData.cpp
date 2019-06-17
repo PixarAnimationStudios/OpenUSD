@@ -198,6 +198,12 @@ UsdAbc_AlembicData::Write(
     return false;
 }
 
+bool
+UsdAbc_AlembicData::StreamsData() const
+{
+    return true;
+}
+
 void
 UsdAbc_AlembicData::CreateSpec(
     const SdfAbstractDataSpecId& id, 

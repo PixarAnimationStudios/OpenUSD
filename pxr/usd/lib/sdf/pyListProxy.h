@@ -79,6 +79,7 @@ private:
             .def("remove", &Type::Remove)
             .def("replace", &Type::Replace)
             .def("ApplyList", &Type::ApplyList)
+            .def("ApplyEditsToList", &This::_ApplyEditsToList)
             .add_property("expired", &This::_IsExpired)
             .def(self == self)
             .def(self != self)
@@ -257,6 +258,14 @@ private:
     static bool _IsExpired(const Type& x)
     {
         return x.IsExpired();
+    }
+
+    static value_vector_type _ApplyEditsToList(Type& x, 
+                                               const value_vector_type& values)
+    {
+        value_vector_type newValues = values;
+        x.ApplyEditsToList(&newValues);
+        return newValues;
     }
 };
 

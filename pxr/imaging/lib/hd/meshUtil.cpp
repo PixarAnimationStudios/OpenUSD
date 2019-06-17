@@ -249,7 +249,7 @@ void _TriangulateFaceVarying(
     int numFVarValues = 0;
     int holeIndex = 0;
     int numHoleFaces = holeFaces.size();
-    for (int i = 0; i < faceVertexCounts.size(); ++i) {
+    for (int i = 0; i < (int)faceVertexCounts.size(); ++i) {
         int nv = faceVertexCounts[i] - 2;
         if (nv < 1) {
             // skip degenerated face
@@ -271,7 +271,7 @@ void _TriangulateFaceVarying(
     holeIndex = 0;
 
     int dstIndex = 0;
-    for (int i = 0, v = 0; i < faceVertexCounts.size(); ++i) {
+    for (int i = 0, v = 0; i < (int)faceVertexCounts.size(); ++i) {
         int nVerts = faceVertexCounts[i];
 
         if (nVerts < 3) {
@@ -814,7 +814,7 @@ _QuadrangulateFaceVarying(SdfPath const& id,
     int numFVarValues = 0;
     int holeIndex = 0;
     int numHoleFaces = holeFaces.size();
-    for (int i = 0; i < faceVertexCounts.size(); ++i) {
+    for (int i = 0; i < (int)faceVertexCounts.size(); ++i) {
         int nVerts = faceVertexCounts[i];
         if (nVerts < 3) {
             // skip degenerated face
@@ -838,7 +838,7 @@ _QuadrangulateFaceVarying(SdfPath const& id,
     holeIndex = 0;
 
     int dstIndex = 0;
-    for (int i = 0, v = 0; i < faceVertexCounts.size(); ++i) {
+    for (int i = 0, v = 0; i < (int)faceVertexCounts.size(); ++i) {
         int nVerts = faceVertexCounts[i];
         if (nVerts < 3) {
             // skip degenerated faces.

@@ -27,9 +27,9 @@
 #include "gusd/api.h"
 #include "gusd/purpose.h"
 
-#include <pxr/pxr.h>
-#include <pxr/usd/sdf/path.h>
-#include <pxr/usd/usd/timeCode.h>
+#include "pxr/pxr.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/timeCode.h"
 
 #include <GT/GT_GEOPrimCollect.h>
 #include <GT/GT_Primitive.h>

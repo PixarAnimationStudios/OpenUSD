@@ -92,6 +92,7 @@ HdxDrawTargetTask::HdxDrawTargetTask(HdSceneDelegate* delegate,
  , _depthFunc(HdCmpFuncLEqual)
  , _cullStyle(HdCullStyleBackUnlessDoubleSided)
  , _enableSampleAlphaToCoverage(true)
+ , _renderTags()
 {
 }
 
@@ -129,6 +130,10 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
         _depthBiasConstantFactor = params.depthBiasConstantFactor;
         _depthBiasSlopeFactor    = params.depthBiasSlopeFactor;
         _depthFunc               = params.depthFunc;
+    }
+
+    if ((*dirtyBits) & HdChangeTracker::DirtyRenderTags) {
+        _renderTags = _GetTaskRenderTags(delegate);
     }
 
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
@@ -235,27 +240,6 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
             return;
         }
 
-        GfVec2i const &resolution = drawTarget->GetGlfDrawTarget()->GetSize();
-
-        VtValue viewMatrixVt  = camera->Get(HdCameraTokens->worldToViewMatrix);
-        VtValue projMatrixVt  = camera->Get(HdCameraTokens->projectionMatrix);
-        GfMatrix4d viewMatrix = viewMatrixVt.Get<GfMatrix4d>();
-
-        // XXX : If you need to change the following code that generates a 
-        //       draw target capture, remember you will also need to change
-        //       how draw target camera matrices are passed to shaders. 
-        const GfMatrix4d &projMatrix = projMatrixVt.Get<GfMatrix4d>();
-        GfMatrix4d projectionMatrix = CameraUtilConformedWindow(projMatrix, 
-            CameraUtilFit,
-            resolution[1] != 0.0 ? resolution[0] / resolution[1] : 1.0);
-        projectionMatrix = projectionMatrix * yflip;
-
-        const VtValue &vClipPlanes = camera->Get(HdCameraTokens->clipPlanes);
-        const HdRenderPassState::ClipPlanesVector &clipPlanes =
-                        vClipPlanes.Get<HdRenderPassState::ClipPlanesVector>();
-
-        GfVec4d viewport(0, 0, resolution[0], resolution[1]);
-
         HdCompareFunction depthFunc =
             HdxDrawTargetTask_GetResolvedDepthFunc(
                 _depthFunc,
@@ -276,8 +260,21 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
 
         renderPassState->SetLightingShader(simpleLightingShader);
 
-        renderPassState->SetCamera(viewMatrix, projectionMatrix, viewport);
-        renderPassState->SetClipPlanes(clipPlanes);
+        // Update camera/framing state
+        // XXX Since we flip the projection matrix below, we can't set the
+        // camera handle on renderPassState and use its projection matrix.
+        GfVec2i const &resolution = drawTarget->GetGlfDrawTarget()->GetSize();
+
+        GfMatrix4d const& viewMatrix = camera->GetViewMatrix();
+        GfMatrix4d projectionMatrix = camera->GetProjectionMatrix();
+        projectionMatrix = CameraUtilConformedWindow(projectionMatrix, 
+            camera->GetWindowPolicy(),
+            resolution[1] != 0.0 ? resolution[0] / resolution[1] : 1.0);
+        projectionMatrix = projectionMatrix * yflip;
+
+        GfVec4d viewport(0, 0, resolution[0], resolution[1]);
+        renderPassState->SetCameraFramingState(
+            viewMatrix, projectionMatrix, viewport, camera->GetClipPlanes());
 
         simpleLightingContext->SetCamera(viewMatrix, projectionMatrix);
 
@@ -377,7 +374,7 @@ HdxDrawTargetTask::Execute(HdTaskContext* ctx)
         HdStRenderPassStateSharedPtr renderPassState =
             _renderPassesInfo[renderPassIdx].renderPassState;
         renderPassState->Bind();
-        renderPass->Execute(renderPassState);
+        renderPass->Execute(renderPassState, GetRenderTags());
         renderPassState->Unbind();
     }
 
@@ -388,6 +385,11 @@ HdxDrawTargetTask::Execute(HdTaskContext* ctx)
     glFrontFace(GL_CCW);
 }
 
+const TfTokenVector &
+HdxDrawTargetTask::GetRenderTags() const
+{
+    return _renderTags;
+}
 // --------------------------------------------------------------------------- //
 // VtValue Requirements
 // --------------------------------------------------------------------------- //

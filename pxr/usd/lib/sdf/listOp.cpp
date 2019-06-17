@@ -99,6 +99,28 @@ SdfListOp<T>::Swap(SdfListOp<T>& rhs)
 }
 
 template <typename T>
+bool
+SdfListOp<T>::HasItem(const T& item) const
+{
+    if (IsExplicit()) {
+        return std::find(_explicitItems.begin(), _explicitItems.end(), item)
+            != _explicitItems.end();
+    }
+
+    return 
+        (std::find(_addedItems.begin(), _addedItems.end(), item)
+            != _addedItems.end()) ||
+        (std::find(_prependedItems.begin(), _prependedItems.end(), item)
+            != _prependedItems.end()) ||
+        (std::find(_appendedItems.begin(), _appendedItems.end(), item)
+            != _appendedItems.end()) ||
+        (std::find(_deletedItems.begin(), _deletedItems.end(), item)
+            != _deletedItems.end()) ||
+        (std::find(_orderedItems.begin(), _orderedItems.end(), item)
+            != _orderedItems.end());
+}
+
+template <typename T>
 const typename SdfListOp<T>::ItemVector &
 SdfListOp<T>::GetItems(SdfListOpType type) const
 {

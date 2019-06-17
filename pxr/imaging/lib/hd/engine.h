@@ -72,8 +72,8 @@ public:
 
     /// Execute tasks.
     HD_API
-    void Execute(HdRenderIndex& index, 
-                 HdTaskSharedPtrVector const &tasks);
+    void Execute(HdRenderIndex *index,
+                 HdTaskSharedPtrVector *tasks);
 
     HD_API
     void ReloadAllShaders(HdRenderIndex& index);

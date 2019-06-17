@@ -255,7 +255,7 @@ HdEmbreeRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
     } else if (name == HdAovTokens->primId ||
                name == HdAovTokens->instanceId ||
                name == HdAovTokens->elementId) {
-        return HdAovDescriptor(HdFormatInt32, false, VtValue(0));
+        return HdAovDescriptor(HdFormatInt32, false, VtValue(-1));
     } else {
         HdParsedAovToken aovId(name);
         if (aovId.isPrimvar) {

@@ -36,7 +36,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 HdChangeTracker::HdChangeTracker() 
     : _rprimState()
     , _instancerState()
@@ -48,10 +47,16 @@ HdChangeTracker::HdChangeTracker()
     , _needsGarbageCollection(false)
     , _needsBprimGarbageCollection(false)
     , _instancerRprimMap()
+    // Note: Version numbers start at 1, with observers resetting theirs to 0.
+    // This is to cause a version mismatch during first-time processing.
     , _varyingStateVersion(1)
-    , _indexVersion(0)
-    , _changeCount(1)       // changeCount in DirtyList starts from 0.
-    , _visChangeCount(1)    // Clients (commandBuffer) start from 0.
+    , _rprimIndexVersion(1)
+    , _sprimIndexVersion(1)
+    , _bprimIndexVersion(1)
+    , _instancerIndexVersion(1)
+    , _sceneStateVersion(1)
+    , _visChangeCount(1)
+    , _renderTagVersion(1)
     , _batchVersion(1)
 {
     /*NOTHING*/
@@ -81,10 +86,8 @@ HdChangeTracker::RprimInserted(SdfPath const& id, HdDirtyBits initialDirtyState)
     TF_DEBUG(HD_RPRIM_ADDED).Msg("Rprim Added: %s\n", id.GetText());
     _rprimState[id] = initialDirtyState;
 
-    // Make sure cached DrawItems get flushed out.
-    ++_changeCount;
-    ++_indexVersion;
-    ++_varyingStateVersion;
+    ++_sceneStateVersion;
+    ++_rprimIndexVersion;
 }
 
 void
@@ -95,9 +98,9 @@ HdChangeTracker::RprimRemoved(SdfPath const& id)
     // Make sure cached DrawItems get flushed out and their buffers are
     // reclaimed.
     _needsGarbageCollection = true;
-    ++_changeCount;
-    ++_indexVersion;
-    ++_varyingStateVersion;
+
+    ++_sceneStateVersion;
+    ++_rprimIndexVersion;
 }
 
 
@@ -116,10 +119,18 @@ HdChangeTracker::MarkRprimDirty(SdfPath const& id, HdDirtyBits bits)
 
     // Early out if no new bits are being set.
     if ((bits & (~it->second)) == 0) {
-        return;
+        // Can not early out if the change represents
+        // a change to the prim filter.  These need to
+        // trigger a re-evaluation of the dirty list so need
+        // certain version flags to be incremented.
+        // These may not be marked clean if the prim
+        // is filtered out, so don't early out!
+        if ((bits & (DirtyRenderTag | DirtyRepr)) == 0) {
+            return;
+        }
     }
 
-    // used ensure the repr has been created. don't touch changeCount
+    // used ensure the repr has been created. don't touch scene state version
     if (bits == HdChangeTracker::InitRepr) {
         it->second |= HdChangeTracker::InitRepr;
         return;
@@ -137,19 +148,27 @@ HdChangeTracker::MarkRprimDirty(SdfPath const& id, HdDirtyBits bits)
         ++_varyingStateVersion;
     }
     it->second = oldBits | bits;
-    ++_changeCount;
+    ++_sceneStateVersion;
 
-    if (bits & DirtyVisibility) {
+    if ((bits & DirtyVisibility) != 0) {
         ++_visChangeCount;
     }
 
-    if (bits & DirtyRenderTag) {
-        // Need to treat this like a scene edit
+    if ((bits & DirtyRenderTag) != 0) {
+        ++_renderTagVersion;
+    }
+
+    if ((bits & (DirtyRenderTag | DirtyRepr)) != 0) {
+        // Need to treat these like a scene edits
+        // For Render Tag
         //  - DirtyLists will filter out prims that don't match render tag,
         //  - Batches filter out prim that don't match render tag,
+        // With Repr, it may require the new repr to be initialized
+        //  - DirtyLists manages repr initialization
+        //  - Batches gather only draw items that match the repr.
         // So both need to be rebuilt.
         // So increment the render index version.
-        ++_indexVersion;
+        ++_rprimIndexVersion;
     }
 }
 
@@ -157,7 +176,6 @@ void
 HdChangeTracker::ResetVaryingState()
 { 
     ++_varyingStateVersion;
-    ++_changeCount;
 
     // reset all variability bit
     TF_FOR_ALL (it, _rprimState) {
@@ -201,6 +219,8 @@ HdChangeTracker::InstancerInserted(SdfPath const& id)
 {
     TF_DEBUG(HD_INSTANCER_ADDED).Msg("Instancer Added: %s\n", id.GetText());
     _instancerState[id] = AllDirty;
+    ++_sceneStateVersion;
+    ++_instancerIndexVersion;
 }
 
 void
@@ -208,6 +228,8 @@ HdChangeTracker::InstancerRemoved(SdfPath const& id)
 {
     TF_DEBUG(HD_INSTANCER_REMOVED).Msg("Instancer Removed: %s\n", id.GetText());
     _instancerState.erase(id);
+    ++_sceneStateVersion;
+    ++_instancerIndexVersion;
 }
 
 void
@@ -239,10 +261,11 @@ HdChangeTracker::InstancerRPrimRemoved(SdfPath const& instancerId, SdfPath const
 // -------------------------------------------------------------------------- //
 
 void
-HdChangeTracker::TaskInserted(SdfPath const& id)
+HdChangeTracker::TaskInserted(SdfPath const& id, HdDirtyBits initialDirtyState)
 {
     TF_DEBUG(HD_TASK_ADDED).Msg("Task Added: %s\n", id.GetText());
-    _taskState[id] = AllDirty;
+    _taskState[id] = initialDirtyState;
+    ++_sceneStateVersion;
 }
 
 void
@@ -250,6 +273,7 @@ HdChangeTracker::TaskRemoved(SdfPath const& id)
 {
     TF_DEBUG(HD_TASK_REMOVED).Msg("Task Removed: %s\n", id.GetText());
     _taskState.erase(id);
+    ++_sceneStateVersion;
 }
 
 void
@@ -261,9 +285,17 @@ HdChangeTracker::MarkTaskDirty(SdfPath const& id, HdDirtyBits bits)
     }
 
     _IDStateMap::iterator it = _taskState.find(id);
-    if (!TF_VERIFY(it != _taskState.end()))
+    if (!TF_VERIFY(it != _taskState.end(), "Task Id = %s", id.GetText())) {
         return;
+    }
+
+    if (((bits & DirtyRenderTags) != 0) &&
+        ((it->second & DirtyRenderTags) == 0)) {
+        MarkRenderTagsDirty();
+    }
+
     it->second = it->second | bits;
+    ++_sceneStateVersion;
 }
 
 HdDirtyBits
@@ -283,6 +315,19 @@ HdChangeTracker::MarkTaskClean(SdfPath const& id, HdDirtyBits newBits)
         return;
     // preserve the variability bit
     it->second = (it->second & Varying) | newBits;
+}
+
+void
+HdChangeTracker::MarkRenderTagsDirty()
+{
+    ++_renderTagVersion;
+    ++_sceneStateVersion;
+}
+
+unsigned
+HdChangeTracker::GetRenderTagVersion() const
+{
+    return _renderTagVersion;
 }
 
 // -------------------------------------------------------------------------- //
@@ -314,6 +359,7 @@ HdChangeTracker::MarkInstancerDirty(SdfPath const& id, HdDirtyBits bits)
     // scale, translate, rotate primvars and there's no dependency between them
     // unlike points and normals on rprim.
     it->second = it->second | bits;
+    ++_sceneStateVersion;
 
     // Now mark any associated rprims dirty.
     _InstancerRprimMap::iterator mapIt = _instancerRprimMap.find(id);
@@ -348,6 +394,8 @@ HdChangeTracker::SprimInserted(SdfPath const& id, HdDirtyBits initialDirtyState)
 {
     TF_DEBUG(HD_SPRIM_ADDED).Msg("Sprim Added: %s\n", id.GetText());
     _sprimState[id] = initialDirtyState;
+    ++_sceneStateVersion;
+    ++_sprimIndexVersion;
 }
 
 void
@@ -357,6 +405,8 @@ HdChangeTracker::SprimRemoved(SdfPath const& id)
     _sprimState.erase(id);
     // Make sure sprim resources are reclaimed.
     _needsGarbageCollection = true;
+    ++_sceneStateVersion;
+    ++_sprimIndexVersion;
 }
 
 HdDirtyBits
@@ -380,6 +430,7 @@ HdChangeTracker::MarkSprimDirty(SdfPath const& id, HdDirtyBits bits)
     if (!TF_VERIFY(it != _sprimState.end()))
         return;
     it->second = it->second | bits;
+    ++_sceneStateVersion;
 }
 
 void
@@ -400,6 +451,8 @@ HdChangeTracker::BprimInserted(SdfPath const& id, HdDirtyBits initialDirtyState)
 {
     TF_DEBUG(HD_BPRIM_ADDED).Msg("Bprim Added: %s\n", id.GetText());
     _bprimState[id] = initialDirtyState;
+    ++_sceneStateVersion;
+    ++_bprimIndexVersion;
 }
 
 void
@@ -408,6 +461,8 @@ HdChangeTracker::BprimRemoved(SdfPath const& id)
     TF_DEBUG(HD_BPRIM_REMOVED).Msg("Bprim Removed: %s\n", id.GetText());
     _bprimState.erase(id);
     _needsBprimGarbageCollection = true;
+    ++_sceneStateVersion;
+    ++_bprimIndexVersion;
 }
 
 HdDirtyBits
@@ -431,6 +486,7 @@ HdChangeTracker::MarkBprimDirty(SdfPath const& id, HdDirtyBits bits)
     if (!TF_VERIFY(it != _bprimState.end()))
         return;
     it->second = it->second | bits;
+    ++_sceneStateVersion;
 }
 
 void
@@ -638,6 +694,8 @@ HdChangeTracker::IsPrimvarDirty(HdDirtyBits dirtyBits, SdfPath const& id,
     bool isDirty = false;
     if (name == HdTokens->points) {
         isDirty = (dirtyBits & DirtyPoints) != 0;
+    } else if (name == HdTokens->velocities) {
+        isDirty = (dirtyBits & DirtyPoints) != 0;
     } else if (name == HdTokens->normals) {
         isDirty = (dirtyBits & DirtyNormals) != 0;
     } else if (name == HdTokens->widths) {
@@ -705,7 +763,10 @@ HdChangeTracker::MarkAllRprimsDirty(HdDirtyBits bits)
 
         HdDirtyBits &rprimDirtyBits = it->second;
 
-        if ((bits & (~rprimDirtyBits)) != 0) {
+        // If RenderTag or Repr are marked dirty, we always want to update
+        // the varying state (This matches the don't early out condition in
+        // MarkRprim dirty).
+        if ((bits & ((~rprimDirtyBits) | DirtyRenderTag | DirtyRepr)) != 0) {
             rprimDirtyBits |= bits;
 
             if ((rprimDirtyBits & HdChangeTracker::Varying) == 0) {
@@ -721,14 +782,17 @@ HdChangeTracker::MarkAllRprimsDirty(HdDirtyBits bits)
 
     // These counters get updated every time, even if no prims
     // have moved into the dirty state.
-    ++_changeCount;
-    if (bits & DirtyVisibility) {
+    ++_sceneStateVersion;
+    if ((bits & DirtyVisibility) != 0) {
         ++_visChangeCount;
     }
-    if (bits & DirtyRenderTag) {
+    if ((bits & DirtyRenderTag) != 0) {
+        ++_renderTagVersion;
+    }
+    if ((bits & (DirtyRenderTag | DirtyRepr)) != 0) {
         // Render tags affect dirty lists and batching, so they need to be
         // treated like a scene edit: see comment in MarkRprimDirty.
-        ++_indexVersion;
+        ++_rprimIndexVersion;
     }
 }
 
@@ -789,29 +853,7 @@ HdChangeTracker::MarkCollectionDirty(TfToken const& collectionName)
     // bump the version number
     it->second += 1;
 
-    // Also force DirtyLists to refresh: 
-    // This is needed in the event that a collection changes due to changes in
-    // the delegate's scene graph, but those changes have no direct effect on
-    // the RenderIndex.
-    ++_changeCount;
-}
-
-void 
-HdChangeTracker::MarkAllCollectionsDirty()
-{
-    HD_TRACE_FUNCTION();
-    if (TfDebug::IsEnabled(HD_DIRTY_ALL_COLLECTIONS)) {
-        TfPrintStackTrace(std::cout, __ARCH_PRETTY_FUNCTION__);
-    }
-
-    ++_indexVersion;
-    ++_varyingStateVersion;
-
-    // Also force DirtyLists to refresh: 
-    // This is needed in the event that a collection changes due to changes in
-    // the delegate's scene graph, but those changes have no direct effect on
-    // the RenderIndex.
-    ++_changeCount;
+    ++_sceneStateVersion;
 }
 
 unsigned
@@ -821,9 +863,9 @@ HdChangeTracker::GetCollectionVersion(TfToken const& collectionName) const
     if (!(it != _collectionState.end())) {
         TF_CODING_ERROR("Change Tracker unable to find collection %s",
                         collectionName.GetText());
-        return _indexVersion;
+        return _rprimIndexVersion;
     }
-    return it->second + _indexVersion;
+    return it->second + _rprimIndexVersion;
 }
 
 unsigned
@@ -842,12 +884,6 @@ unsigned
 HdChangeTracker::GetBatchVersion() const
 {
     return _batchVersion;
-}
-
-unsigned
-HdChangeTracker::GetRenderIndexVersion() const
-{
-    return _indexVersion;
 }
 
 void

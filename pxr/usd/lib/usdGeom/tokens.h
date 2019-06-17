@@ -426,6 +426,10 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomCamera::GetProjectionAttr(), Default value for UsdGeomCamera::GetProjectionAttr()
     const TfToken perspective;
+    /// \brief "pinned"
+    /// 
+    /// Possible value for UsdGeomBasisCurves::GetWrapAttr()
+    const TfToken pinned;
     /// \brief "points"
     /// 
     /// UsdGeomPointBased

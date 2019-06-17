@@ -34,7 +34,6 @@
 #include "pxr/usd/pcp/layerStackRegistry.h"
 #include "pxr/usd/pcp/node_Iterator.h"
 #include "pxr/usd/pcp/pathTranslation.h"
-#include "pxr/usd/pcp/payloadDecorator.h"
 #include "pxr/usd/pcp/primIndex.h"
 #include "pxr/usd/pcp/propertyIndex.h"
 #include "pxr/usd/pcp/statistics.h"
@@ -111,16 +110,14 @@ private:
 
 PcpCache::PcpCache(
     const PcpLayerStackIdentifier & layerStackIdentifier,
-    const std::string& targetSchema,
-    bool usd,
-    const PcpPayloadDecoratorRefPtr& payloadDecorator) :
+    const std::string& fileFormatTarget,
+    bool usd) :
     _rootLayer(layerStackIdentifier.rootLayer),
     _sessionLayer(layerStackIdentifier.sessionLayer),
     _pathResolverContext(layerStackIdentifier.pathResolverContext),
     _usd(usd),
-    _targetSchema(targetSchema),
-    _payloadDecorator(payloadDecorator),
-    _layerStackCache(Pcp_LayerStackRegistry::New(_targetSchema, _usd)),
+    _fileFormatTarget(fileFormatTarget),
+    _layerStackCache(Pcp_LayerStackRegistry::New(_fileFormatTarget, _usd)),
     _primDependencies(new Pcp_Dependencies())
 {
     // Do nothing
@@ -147,7 +144,6 @@ PcpCache::~PcpCache()
 
     wd.Run([this]() { _rootLayer.Reset(); });
     wd.Run([this]() { _sessionLayer.Reset(); });
-    wd.Run([this]() { _payloadDecorator.Reset(); });
     wd.Run([this]() { TfReset(_includedPayloads); });
     wd.Run([this]() { TfReset(_variantFallbackMap); });
     wd.Run([this]() { _primIndexCache.ClearInParallel(); });
@@ -205,15 +201,9 @@ PcpCache::IsUsd() const
 }
 
 const std::string& 
-PcpCache::GetTargetSchema() const
+PcpCache::GetFileFormatTarget() const
 {
-    return _targetSchema;
-}
-
-PcpPayloadDecorator* 
-PcpCache::GetPayloadDecorator() const
-{
-    return boost::get_pointer(_payloadDecorator);
+    return _fileFormatTarget;
 }
 
 PcpVariantFallbackMap
@@ -244,10 +234,10 @@ PcpCache::IsPayloadIncluded(const SdfPath &path) const
     return _includedPayloads.find(path) != _includedPayloads.end();
 }
 
-SdfPathSet
+PcpCache::PayloadSet const &
 PcpCache::GetIncludedPayloads() const
 {
-    return SdfPathSet(_includedPayloads.begin(), _includedPayloads.end());
+    return _includedPayloads;
 }
 
 void
@@ -392,11 +382,10 @@ PcpCache::GetPrimIndexInputs()
 {
     return PcpPrimIndexInputs()
         .Cache(this)
-        .PayloadDecorator(GetPayloadDecorator())
         .VariantFallbacks(&_variantFallbackMap)
         .IncludedPayloads(&_includedPayloads)
         .Cull(TfGetEnvSetting(PCP_CULLING))
-        .TargetSchema(_targetSchema);
+        .FileFormatTarget(_fileFormatTarget);
 }
 
 PcpLayerStackRefPtr
@@ -861,6 +850,27 @@ PcpCache::IsInvalidAssetPath(const std::string& resolvedAssetPath) const
     return false;
 }
 
+bool 
+PcpCache::HasAnyDynamicFileFormatArgumentDependencies() const
+{
+    return _primDependencies->HasAnyDynamicFileFormatArgumentDependencies();
+}
+
+bool 
+PcpCache::IsPossibleDynamicFileFormatArgumentField(
+    const TfToken &field) const
+{
+    return _primDependencies->IsPossibleDynamicFileFormatArgumentField(field);
+}
+
+const PcpDynamicFileFormatDependencyData &
+PcpCache::GetDynamicFileFormatArgumentDependencyData(
+    const SdfPath &primIndexPath) const
+{
+    return _primDependencies->GetDynamicFileFormatArgumentDependencyData(
+        primIndexPath);
+}
+
 void
 PcpCache::Apply(const PcpCacheChanges& changes, PcpLifeboat* lifeboat)
 {
@@ -964,7 +974,7 @@ PcpCache::Apply(const PcpCacheChanges& changes, PcpLifeboat* lifeboat)
     static const bool fixTargetPaths = true;
     std::vector<SdfPath> newIncludes;
     TF_FOR_ALL(i, changes.didChangePath) {
-        for (_PayloadSet::iterator j = _includedPayloads.begin();
+        for (PayloadSet::iterator j = _includedPayloads.begin();
                 j != _includedPayloads.end(); ) {
             // If the payload path has the old path as a prefix then remove
             // the payload path and add the payload path with the old path
@@ -1347,7 +1357,9 @@ struct Pcp_ParallelIndexer
             // ideally.  We have to make a copy to move into the _cache itself,
             // since sibling caches in other tasks will still require that their
             // parent be valid.
-            _consumerScratch.push_back(outputs->primIndex);
+            _consumerScratch.emplace_back(
+                outputs->primIndex, 
+                std::move(outputs->dynamicFileFormatDependency));
 
             // Store included payload path to the side to publish several at
             // once, as well.
@@ -1404,13 +1416,14 @@ struct Pcp_ParallelIndexer
             if (locked) {
                 for (auto &index: _consumerScratch) {
                     // Save the prim index in the cache.
-                    const SdfPath &path = index.GetPath();
+                    const SdfPath &path = index.first.GetPath();
                     PcpPrimIndex &entry = _cache->_primIndexCache[path];
                     if (TF_VERIFY(!entry.IsValid(),
                                   "PrimIndex for %s already exists in cache",
                                   entry.GetPath().GetText())) {
-                        entry.Swap(index);
-                        _cache->_primDependencies->Add(entry);
+                        entry.Swap(index.first);
+                        _cache->_primDependencies->Add(
+                            entry, std::move(index.second));
                     }
                 }
                 lock.release();
@@ -1429,7 +1442,8 @@ struct Pcp_ParallelIndexer
     tbb::spin_rw_mutex _primIndexCacheMutex;
     tbb::spin_rw_mutex _includedPayloadsMutex;
     tbb::concurrent_queue<PcpPrimIndexOutputs *> _finishedOutputs;
-    vector<PcpPrimIndex> _consumerScratch;
+    vector<std::pair<PcpPrimIndex, 
+                     PcpDynamicFileFormatDependencyData>> _consumerScratch;
     vector<SdfPath> _consumerScratchPayloads;
     ArResolver& _resolver;
     WorkArenaDispatcher _dispatcher;
@@ -1530,7 +1544,8 @@ PcpCache::_ComputePrimIndexWithCompatibleInputs(
         outputs.allErrors.end());
 
     // Add dependencies.
-    _primDependencies->Add(outputs.primIndex);
+    _primDependencies->Add(outputs.primIndex, 
+                           std::move(outputs.dynamicFileFormatDependency));
 
     // Update _includedPayloads if we included a discovered payload.
     if (outputs.includedDiscoveredPayload) {

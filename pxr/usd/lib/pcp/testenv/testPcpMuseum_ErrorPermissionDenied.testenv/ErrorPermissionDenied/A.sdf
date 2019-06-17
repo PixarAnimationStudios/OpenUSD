@@ -8,13 +8,9 @@ def Prim "A"
         permission = private
     )
 
-    custom rel privateRel = </A.A_attr> {
-        string a = "A"
-    } (permission = private)
+    custom rel privateRel = </A.A_attr> (permission = private)
 
-    custom rel publicRel = </A.A_attr> {
-        string a = "A" (permission = private)
-    }
+    custom rel publicRel = </A.A_attr>
 }
 
 def "Parent" 

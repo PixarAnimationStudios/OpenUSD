@@ -264,7 +264,7 @@ _WriteLayerToMenva(
     string headerStr = header.str();
     if (!headerStr.empty()) {
         _Write(out, 0, "(\n");
-        _Write(out, 0, headerStr.c_str());
+        _Write(out, 0, "%s", headerStr.c_str());
         _Write(out, 0, ")\n");
     }
 
@@ -384,12 +384,6 @@ SdfTextFileFormat::WriteToStream(
 
 bool
 SdfTextFileFormat::_ShouldSkipAnonymousReload() const
-{
-    return false;
-}
-
-bool 
-SdfTextFileFormat::_IsStreamingLayer(const SdfLayer& layer) const
 {
     return false;
 }

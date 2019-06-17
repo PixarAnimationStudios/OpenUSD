@@ -90,7 +90,7 @@ public:
                            instancerContext=nullptr) const override;
 
     // ---------------------------------------------------------------------- //
-    /// \name Change Processing
+    /// \name Change Processing API (public)
     // ---------------------------------------------------------------------- //
 
     USDSKELIMAGING_API
@@ -99,25 +99,38 @@ public:
                                       const TfToken& propertyName) override;
 
     USDSKELIMAGING_API
+    void ProcessPrimResync(SdfPath const& primPath,
+                           UsdImagingIndexProxy* index) override;
+
+    USDSKELIMAGING_API
+    void ProcessPrimRemoval(SdfPath const& primPath,
+                            UsdImagingIndexProxy* index) override;
+
+    USDSKELIMAGING_API
     void MarkDirty(const UsdPrim& prim,
                    const SdfPath& cachePath,
                    HdDirtyBits dirty,
                    UsdImagingIndexProxy* index) override;
 
     USDSKELIMAGING_API
-    virtual void MarkRefineLevelDirty(UsdPrim const& prim,
+    void MarkRefineLevelDirty(UsdPrim const& prim,
                                       SdfPath const& cachePath,
                                       UsdImagingIndexProxy* index) override;
 
     USDSKELIMAGING_API
-    virtual void MarkReprDirty(UsdPrim const& prim,
-                               SdfPath const& cachePath,
-                               UsdImagingIndexProxy* index) override;
+    void MarkReprDirty(UsdPrim const& prim,
+                       SdfPath const& cachePath,
+                       UsdImagingIndexProxy* index) override;
 
     USDSKELIMAGING_API
-    virtual void MarkCullStyleDirty(UsdPrim const& prim,
-                                    SdfPath const& cachePath,
-                                    UsdImagingIndexProxy* index) override;
+    void MarkCullStyleDirty(UsdPrim const& prim,
+                            SdfPath const& cachePath,
+                            UsdImagingIndexProxy* index) override;
+
+    USDSKELIMAGING_API
+    void MarkRenderTagDirty(UsdPrim const& prim,
+                            SdfPath const& cachePath,
+                            UsdImagingIndexProxy* index) override;
 
     USDSKELIMAGING_API
     void MarkTransformDirty(const UsdPrim& prim,
@@ -150,7 +163,7 @@ public:
 
 protected:
     // ---------------------------------------------------------------------- //
-    /// \name Utility methods
+    /// \name Change Processing API (protected)
     // ---------------------------------------------------------------------- //
     void _RemovePrim(const SdfPath& cachePath,
                      UsdImagingIndexProxy* index) override;
@@ -195,6 +208,9 @@ private:
     // ---------------------------------------------------------------------- //
     bool _IsAffectedByTimeVaryingSkelAnim(const SdfPath& skinnedPrimPath)
         const;
+    
+    void _RemoveSkinnedPrimAndComputations(const SdfPath& cachePath,
+                                           UsdImagingIndexProxy* index);
 
     // ---------------------------------------------------------------------- //
     /// Handlers for the skinning computations

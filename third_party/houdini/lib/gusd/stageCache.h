@@ -33,7 +33,7 @@
 #include "gusd/stageOpts.h"
 #include "gusd/USD_Utils.h"
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/usd/stage.h"
 
@@ -193,7 +193,7 @@ public:
     /// performance for certain access patterns, such as if many separate prims
     /// are being queried from the cache with different stage edits.
     ///
-    /// \subection Primitive Encapsulation
+    /// \subsection Primitive Encapsulation
     ///
     /// Because primitives are masked to include a subset of a stage,
     /// there is an expectation that the caller follows _encapsulation_ rules.
@@ -213,6 +213,10 @@ public:
     /// If \p path and \p primPath are both valid, and either a stage load
     /// error occurs or no prim can be found, errors are reported on the
     /// currently scoped error manager at a severity of \p sev.
+    /// If \p primPath is equal to 'defaultPrim', the stage's defaultPrim
+    /// is returned.
+    /// If \p primPath is equal to '/', the entire stage is loaded,
+    /// and the pseudo-root is returned.
     PrimStagePair
     GetPrim(const UT_StringRef& path,
             const SdfPath& primPath,
@@ -228,6 +232,10 @@ public:
     /// \p sev. If \p sev is less than UT_ERROR_ABORT, prim loading will
     /// continue even when errors occur for some prims. Otherwise, loading
     /// aborts upon the first error.
+    /// If a path in \p primPaths is equal to 'defaultPrim', the stage's
+    /// defaultPrim will be returned for that element.
+    /// If a path in \p primPaths is equal to '/', the full stage of the
+    /// corresponding element is loaded, and the pseudo-root is returned.
     bool
     GetPrims(const GusdDefaultArray<UT_StringHolder>& filePaths,
              const UT_Array<SdfPath>& primPaths,
@@ -240,6 +248,10 @@ public:
     /// variant selections. This is a convenience for the common case
     /// of accessing a prim given parameters for just a file path and
     /// prim path.
+    /// If \p primPath is equal to 'defaultPrim', the stage's defaultPrim
+    /// is returned.
+    /// If \p primPath is equal to '/', the entire stage is loaded,
+    /// and the pseudo-root is returned.
     /// @{
     PrimStagePair
     GetPrimWithVariants(const UT_StringRef& path,

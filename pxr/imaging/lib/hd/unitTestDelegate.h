@@ -360,6 +360,9 @@ public:
     virtual VtValue GetMaterialParamValue(SdfPath const &materialId, 
                                           TfToken const &paramName);
     HD_API
+    virtual VtValue GetCameraParamValue(SdfPath const &cameraId, 
+                                        TfToken const &paramName);
+    HD_API
     virtual HdTextureResource::ID GetTextureResourceID(SdfPath const& textureId);
     HD_API
     virtual HdTextureResourceSharedPtr GetTextureResource(SdfPath const& textureId);

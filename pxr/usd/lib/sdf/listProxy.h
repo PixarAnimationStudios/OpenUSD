@@ -508,6 +508,14 @@ public:
         }
     }
 
+    /// Apply the edits in this list to the given \p vec.
+    void ApplyEditsToList(value_vector_type* vec)
+    {
+        if (_Validate()) {
+            _listEditor->ApplyEditsToList(vec);
+        }
+    }
+
 private:
     bool _Validate()
     {

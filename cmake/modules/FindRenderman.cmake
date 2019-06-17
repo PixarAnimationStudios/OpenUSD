@@ -27,6 +27,8 @@
 #   RENDERMAN_INCLUDE_DIR - path to renderman header directory
 #   RENDERMAN_LIBRARY     - path to renderman library files
 #       RENDERMAN_FOUND   - true if renderman was found
+#   RENDERMAN_VERSION_MAJOR - major version of renderman found
+#   RENDERMAN_VERSION_MINOR - minor version of renderman found
 #
 # Example usage:
 #   find_package(RENDERMAN)
@@ -37,7 +39,11 @@
 #=============================================================================
 
 # Use libloadprman.a to handle runtime loading of prman.
-set (RENDERMAN_LIB_NAME libloadprman.a)
+if(WIN32)
+    set (RENDERMAN_LIB_NAME libloadprman.lib)
+else()
+    set (RENDERMAN_LIB_NAME libloadprman.a)
+endif()
 
 find_library(RENDERMAN_LIBRARY
         "${RENDERMAN_LIB_NAME}"
@@ -46,6 +52,8 @@ find_library(RENDERMAN_LIBRARY
         "${RENDERMAN_LOCATION}/lib"
         "$ENV{RENDERMAN_LOCATION}/lib64"
         "$ENV{RENDERMAN_LOCATION}/lib"
+        "$ENV{RMANTREE}/lib"
+        "$ENV{RMANTREE}/lib64"
     DOC
         "Renderman library path"
 )
@@ -55,6 +63,7 @@ find_path(RENDERMAN_INCLUDE_DIR
     HINTS
         "${RENDERMAN_LOCATION}/include"
         "$ENV{RENDERMAN_LOCATION}/include"
+        "$ENV{RMANTREE}/include"
     DOC
         "Renderman headers path"
 )
@@ -69,6 +78,8 @@ if (RENDERMAN_INCLUDE_DIR AND EXISTS "${RENDERMAN_INCLUDE_DIR}/RixInterfaces.h" 
     string(REGEX MATCHALL "[0-9]+" PATCH ${TMP})
 
     set (RENDERMAN_VERSION ${MAJOR}.${MINOR}.${PATCH})
+    set (RENDERMAN_VERSION_MAJOR ${MAJOR})
+    set (RENDERMAN_VERSION_MINOR ${MINOR})
 endif()
 
 # will set RENDERMAN_FOUND
@@ -78,6 +89,8 @@ find_package_handle_standard_args(Renderman
     REQUIRED_VARS
         RENDERMAN_INCLUDE_DIR
         RENDERMAN_LIBRARY
+        RENDERMAN_VERSION_MAJOR
+        RENDERMAN_VERSION_MINOR
     VERSION_VAR
         RENDERMAN_VERSION
 )

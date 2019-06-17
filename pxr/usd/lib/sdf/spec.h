@@ -48,8 +48,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Base class for all Sdf spec classes.
 ///
-class SdfSpec {
-    SDF_DECLARE_BASE_SPEC(SdfSchema, SdfSpec);
+class SdfSpec 
+{
+    SDF_DECLARE_BASE_SPEC(SdfSpec);
 
 public:
     SDF_API

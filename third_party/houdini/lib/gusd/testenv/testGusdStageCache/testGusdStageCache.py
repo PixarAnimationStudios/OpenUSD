@@ -314,6 +314,36 @@ class TestGusdStageCache(unittest.TestCase):
         assert(all(prims))
 
 
+    def test_GetDefaultPrim(self):
+        """
+        Tests prim queries using defaultPrim.
+        """
+        path = "defaultPrim.usda"
+        cache = Gusd.StageCache()
+
+        defaultPrimPath = Sdf.Path("/DefaultPrim")
+
+        prim,stage = cache.GetPrim(path, "defaultPrim")
+        self.assertTrue(stage)
+        self.assertEqual(prim.GetPath(), defaultPrimPath)
+        
+        prim,stage = cache.GetPrimWithVariants(path, "defaultPrim")
+        self.assertTrue(stage)
+        self.assertEqual(prim.GetPath(), defaultPrimPath)
+
+        paths = [path, path]
+        primPaths = [defaultPrimPath, defaultPrimPath]
+        prims = cache.GetPrims(paths, primPaths)
+        self.assertTrue(all(p.GetPath() == defaultPrimPath for p in prims))
+
+        # If we query a child of the defaultPrim, the cache
+        # should utilize the same stage.
+        childPath = Sdf.Path("/DefaultPrim/Child")
+        childPrim,childStage = cache.GetPrim(path, childPath)
+        self.assertEqual(childPrim.GetPath(), childPath)
+        self.assertEqual(childStage, stage)
+
+
     def test_Clear(self):
         """
         Tests cache clearing.

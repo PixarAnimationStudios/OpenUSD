@@ -32,23 +32,23 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((baseGLSLFX,         "points.glslfx"))
 
-    // point id fallback mixin
-    // The only reason this is here is to generate fallback versions of
-    // functions to keep the compiler happy during code gen.
-    ((pointIdVS,          "PointId.Vertex.None"))
-    ((pointIdFS,          "PointId.Fragment.Fallback"))
+    // point id mixins (for point picking & selection)
+    ((pointIdVS,                "PointId.Vertex.PointParam"))
+    ((pointIdSelDecodeUtilsVS,  "Selection.DecodeUtils"))
+    ((pointIdSelPointSelVS,     "Selection.Vertex.PointSel"))
+    ((pointIdFS,                "PointId.Fragment.PointParam"))
 
     // main for all the shader stages
-    ((mainVS,             "Point.Vertex"))
-    ((mainFS,             "Point.Fragment"))
+    ((mainVS,                   "Point.Vertex"))
+    ((mainFS,                   "Point.Fragment"))
 
-    // terminals
-    ((commonFS,           "Fragment.CommonTerminals"))
-    ((surfaceFS,          "Fragment.Surface"))
-    ((noScalarOverrideFS, "Fragment.NoScalarOverride"))
-    
-    // instancing
-    ((instancing,         "Instancing.Transform"))
+    // terminals        
+    ((commonFS,                 "Fragment.CommonTerminals"))
+    ((surfaceFS,                "Fragment.Surface"))
+    ((noScalarOverrideFS,       "Fragment.NoScalarOverride"))
+
+    // instancing       
+    ((instancing,               "Instancing.Transform"))
 );
 
 HdSt_PointsShaderKey::HdSt_PointsShaderKey()
@@ -57,7 +57,9 @@ HdSt_PointsShaderKey::HdSt_PointsShaderKey()
     VS[0] = _tokens->instancing;
     VS[1] = _tokens->mainVS;
     VS[2] = _tokens->pointIdVS;
-    VS[3] = TfToken();
+    VS[3] = _tokens->pointIdSelDecodeUtilsVS;
+    VS[4] = _tokens->pointIdSelPointSelVS;
+    VS[5] = TfToken();
 
     // Common must be first as it defines terminal interfaces
     FS[0] = _tokens->commonFS;

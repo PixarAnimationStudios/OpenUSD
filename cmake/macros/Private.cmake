@@ -1190,8 +1190,8 @@ function(_pxr_library NAME)
     # these libraries are not separately loadable at runtime. In these cases,
     # we don't need to specify the library's location, so we leave
     # pluginToLibraryPath empty.
-    if(";${PXR_CORE_LIBS};" MATCHES ";${NAME};")
-        if (NOT _building_monolithic AND NOT args_TYPE STREQUAL "STATIC")
+    if(NOT args_TYPE STREQUAL "STATIC")
+   	if(NOT (";${PXR_CORE_LIBS};" MATCHES ";${NAME};" AND _building_monolithic))
             file(RELATIVE_PATH
                 pluginToLibraryPath
                 ${CMAKE_INSTALL_PREFIX}/${pluginInstallPrefix}/${NAME}

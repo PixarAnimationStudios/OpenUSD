@@ -92,6 +92,15 @@ class "PublicMultipleApplyAPI" (
 class "Base" (
     inherits = </Typed>
     doc = "This doc should only exist on the \"Base\" class."
+    customData = {
+        dictionary schemaTokens = {
+            dictionary schemaToken1 = {}
+            dictionary schemaToken2 = {
+                string value = "/non-identifier-tokenValue!"
+                string doc = """schemaToken2 doc"""
+            }
+        }
+    }
 ) {
     
     token myVaryingToken = "VariableTokenDefault" (

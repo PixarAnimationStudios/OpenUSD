@@ -1,0 +1,25 @@
+#usda 1.0
+
+# Example parameters metadata
+def "Params" (
+    # These are the parameters that affect any payload that composes them.
+    UsdExample_depth = 5
+    UsdExample_num = 3
+    UsdExample_radius = 50.0
+    # This is an example of the dictionary value for overriding particular
+    # parameters on a payload with a matching payloadId in its file format
+    # arguments.
+    UsdExample_argDict = {
+        # Overrides for the specifically named Foo payload
+        dictionary "Foo" = {
+            int UsdExample_depth = 5
+            int UsdExample_num = 4
+        }
+        # Overrides for the specifically named Bar payload
+        dictionary "Bar" = {
+            double UsdExample_height = 5
+        }
+    }
+)
+{
+}

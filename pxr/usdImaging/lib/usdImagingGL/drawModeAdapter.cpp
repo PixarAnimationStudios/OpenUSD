@@ -119,7 +119,7 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
     SdfPath cachePath = UsdImagingGprimAdapter::_ResolveCachePath(
         prim.GetPath(), instancerContext);
     SdfPath instancer = instancerContext ?
-        instancerContext->instancerId : SdfPath();
+        instancerContext->instancerCachePath : SdfPath();
 
     // The draw mode adapter only supports models. This is enforced in
     // UsdImagingDelegate::_IsDrawModeApplied.

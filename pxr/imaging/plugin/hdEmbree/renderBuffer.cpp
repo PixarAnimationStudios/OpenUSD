@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdEmbree/renderBuffer.h"
+#include "pxr/imaging/hdEmbree/renderParam.h"
 #include "pxr/base/gf/half.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -44,6 +45,33 @@ HdEmbreeRenderBuffer::~HdEmbreeRenderBuffer()
 {
 }
 
+/*virtual*/
+void
+HdEmbreeRenderBuffer::Sync(HdSceneDelegate *sceneDelegate,
+                           HdRenderParam *renderParam,
+                           HdDirtyBits *dirtyBits)
+{
+    if (*dirtyBits & DirtyDescription) {
+        // Embree has the background thread write directly into render buffers,
+        // so we need to stop the render thread before reallocating them.
+        static_cast<HdEmbreeRenderParam*>(renderParam)->AcquireSceneForEdit();
+    }
+
+    HdRenderBuffer::Sync(sceneDelegate, renderParam, dirtyBits);
+}
+
+/*virtual*/
+void
+HdEmbreeRenderBuffer::Finalize(HdRenderParam *renderParam)
+{
+    // Embree has the background thread write directly into render buffers,
+    // so we need to stop the render thread before removing them.
+    static_cast<HdEmbreeRenderParam*>(renderParam)->AcquireSceneForEdit();
+
+    HdRenderBuffer::Finalize(renderParam);
+}
+
+/*virtual*/
 void
 HdEmbreeRenderBuffer::_Deallocate()
 {

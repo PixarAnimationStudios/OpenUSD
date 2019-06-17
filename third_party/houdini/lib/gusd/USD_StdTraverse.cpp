@@ -26,6 +26,8 @@
 #include "gusd/USD_Traverse.h"
 #include "gusd/USD_TraverseSimple.h"
 
+#include "pxr/base/arch/hints.h"
+
 #include "pxr/usd/kind/registry.h"
 #include "pxr/usd/usd/modelAPI.h"
 
@@ -49,7 +51,7 @@ struct _VisitByTypeT
                        UsdTimeCode time,
                        GusdUSD_TraverseControl& ctl) const
             {
-                if(BOOST_UNLIKELY((bool)Type(prim))) {
+                if(ARCH_UNLIKELY((bool)Type(prim))) {
                     ctl.PruneChildren();
                     return true;
                 }
@@ -72,7 +74,8 @@ struct _VisitBoundablesAndInstances
                        UsdTimeCode time,
                        GusdUSD_TraverseControl& ctl) const
             {
-                if(BOOST_UNLIKELY((bool)UsdGeomBoundable(prim) || prim.IsInstance())) {
+                if(ARCH_UNLIKELY((bool)UsdGeomBoundable(prim) ||
+                                 prim.IsInstance())) {
                     ctl.PruneChildren();
                     return true;
                 }
@@ -89,7 +92,7 @@ struct _VisitModels
                        UsdTimeCode time,
                        GusdUSD_TraverseControl& ctl)
             {
-                if(BOOST_UNLIKELY(prim.IsModel())) {
+                if(ARCH_UNLIKELY(prim.IsModel())) {
                     UsdModelAPI model(prim);
                     if(model) {
                         TfToken kind;
@@ -116,7 +119,7 @@ struct _VisitNonGroupModels
                        UsdTimeCode time,
                        GusdUSD_TraverseControl& ctl)
             {
-                if(BOOST_UNLIKELY(prim.IsModel() && !prim.IsGroup())) {
+                if(ARCH_UNLIKELY(prim.IsModel() && !prim.IsGroup())) {
                     ctl.PruneChildren();
                     return true;
                 }
@@ -133,7 +136,7 @@ struct _VisitGroups
                        UsdTimeCode time,
                        GusdUSD_TraverseControl& ctl)
             {
-                if(BOOST_UNLIKELY(prim.IsGroup())) {
+                if(ARCH_UNLIKELY(prim.IsGroup())) {
                     ctl.PruneChildren();
                     return true;
                 }
@@ -151,15 +154,15 @@ struct _VisitComponentsAndBoundables
                        GusdUSD_TraverseControl& ctl)
             {
 
-                if(BOOST_UNLIKELY(prim.IsA<UsdGeomBoundable>())) {
+                if(ARCH_UNLIKELY(prim.IsA<UsdGeomBoundable>())) {
                     ctl.PruneChildren();
                     return true;
                 }                    
                 UsdModelAPI model(prim);
-                if(BOOST_UNLIKELY((bool)model)) {
+                if(ARCH_UNLIKELY((bool)model)) {
                     TfToken kind;
                     model.GetKind(&kind);
-                    if( BOOST_UNLIKELY( 
+                    if( ARCH_UNLIKELY( 
                           KindRegistry::IsA(kind, KindTokens->component) ||
                           KindRegistry::IsA(kind, KindTokens->subcomponent))) {
                         ctl.PruneChildren();
@@ -183,10 +186,10 @@ struct _VisitByKindT
                        GusdUSD_TraverseControl& ctl)
             {
                 UsdModelAPI model(prim);
-                if(BOOST_UNLIKELY((bool)model)) {
+                if(ARCH_UNLIKELY((bool)model)) {
                     TfToken kind;
                     model.GetKind(&kind);
-                    if(BOOST_UNLIKELY(MatchKind()(kind))) {
+                    if(ARCH_UNLIKELY(MatchKind()(kind))) {
                         ctl.PruneChildren();
                         return true;
                     }

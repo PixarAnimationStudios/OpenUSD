@@ -30,9 +30,9 @@
 #include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/path.h"
 
-#include <boost/function.hpp>
 #include <boost/operators.hpp>
 
+#include <functional>
 #include <iosfwd>
 #include <string>
 #include <vector>
@@ -241,11 +241,11 @@ public:
     }
 
     /// Functor that returns \c true iff an object exists at the given path.
-    typedef boost::function<bool(const SdfPath&)> HasObjectAtPath;
+    typedef std::function<bool(const SdfPath&)> HasObjectAtPath;
 
     /// Functor that returns \c true iff the namespace edit will succeed.
     /// If not it returns \c false and sets the string argument.
-    typedef boost::function<bool(const SdfNamespaceEdit&,std::string*)> CanEdit;
+    typedef std::function<bool(const SdfNamespaceEdit&,std::string*)> CanEdit;
 
     /// Validate the edits and generate a possibly more efficient edit
     /// sequence.  Edits are treated as if they were performed one at time

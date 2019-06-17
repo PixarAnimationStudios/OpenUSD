@@ -31,15 +31,20 @@
 
 #include "usdMaya/hdImagingShape.h"
 
+#include "pxr/base/gf/vec2i.h"
 #include "pxr/base/tf/debug.h"
 
 #include <maya/M3dView.h>
+#include <maya/MDGContext.h>
 #include <maya/MDagPath.h>
 #include <maya/MDrawData.h>
 #include <maya/MDrawInfo.h>
 #include <maya/MDrawRequest.h>
 #include <maya/MDrawRequestQueue.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MPlug.h>
 #include <maya/MPxSurfaceShapeUI.h>
+#include <maya/MStatus.h>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -70,6 +75,47 @@ PxrMayaHdImagingShapeUI::getDrawRequests(
     TF_DEBUG(PXRUSDMAYAGL_BATCHED_DRAWING).Msg(
         "PxrMayaHdImagingShapeUI::getDrawRequests(), shapeDagPath: %s\n",
         shapeDagPath.fullPathName().asChar());
+
+    // Grab batch renderer settings values from the shape here and pass them
+    // along to the batch renderer. Settings that affect selection should then
+    // be set appropriately for subsequent selections.
+    MStatus status;
+    const MFnDependencyNode depNodeFn(imagingShape->thisMObject(), &status);
+    if (status == MS::kSuccess) {
+        const MPlug selectionResolutionPlug =
+            depNodeFn.findPlug(
+                PxrMayaHdImagingShape::selectionResolutionAttr,
+                &status);
+        if (status == MS::kSuccess) {
+            const short selectionResolution =
+#if MAYA_API_VERSION >= 20180000
+                selectionResolutionPlug.asShort(&status);
+#else
+                selectionResolutionPlug.asShort(MDGContext::fsNormal, &status);
+#endif
+            if (status == MS::kSuccess) {
+                UsdMayaGLBatchRenderer::GetInstance().SetSelectionResolution(
+                    GfVec2i(selectionResolution));
+            }
+        }
+
+        const MPlug enableDepthSelectionPlug =
+            depNodeFn.findPlug(
+                PxrMayaHdImagingShape::enableDepthSelectionAttr,
+                &status);
+        if (status == MS::kSuccess) {
+            const bool enableDepthSelection =
+#if MAYA_API_VERSION >= 20180000
+                enableDepthSelectionPlug.asBool(&status);
+#else
+                enableDepthSelectionPlug.asBool(MDGContext::fsNormal, &status);
+#endif
+            if (status == MS::kSuccess) {
+                UsdMayaGLBatchRenderer::GetInstance().SetDepthSelectionEnabled(
+                    enableDepthSelection);
+            }
+        }
+    }
 
     // Sync any instancers that need Hydra drawing.
     UsdMayaGL_InstancerImager::GetInstance().SyncShapeAdapters(

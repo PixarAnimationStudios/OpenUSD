@@ -1,7 +1,7 @@
 -- glslfx version 0.1
 
 //
-// Copyright 2016 Pixar
+// Copyright 2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -56,7 +56,8 @@
                             "RenderPass.ShouldCullFace",
                             "Selection.DecodeUtils",
                             "Selection.ComputeColor",
-                            "HdxRenderPass.RenderColorOutputWithSelection" ]
+                            "RenderPass.ApplyColorOverrides",
+                            "RenderPass.RenderColor" ]
             }
         }
     }

@@ -67,7 +67,7 @@ UsdImagingCapsuleAdapter::Populate(UsdPrim const& prim,
 
 {
     return _AddRprim(HdPrimTypeTokens->mesh,
-                     prim, index, GetMaterialId(prim), instancerContext);
+                     prim, index, GetMaterialUsdPath(prim), instancerContext);
 }
 
 void 
@@ -290,7 +290,7 @@ _GenerateCapsuleMeshTopology()
 
     TF_VERIFY(face == numCounts && index == numIndices);
 
-    return HdMeshTopology(PxOsdOpenSubdivTokens->catmark,
+    return HdMeshTopology(PxOsdOpenSubdivTokens->catmullClark,
                           HdTokens->rightHanded,
                           countsArray, indicesArray);
 }

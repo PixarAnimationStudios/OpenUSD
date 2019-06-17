@@ -45,7 +45,7 @@ def TraceScope(label):
 
 del contextlib
 
-def TraceFunction(obj, isFree=True):
+def TraceFunction(obj):
     """A decorator that enables tracing the function that it decorates.
     If you decorate with 'TraceFunction' the function will be traced in the
     global collector."""

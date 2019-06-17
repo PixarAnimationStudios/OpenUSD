@@ -44,6 +44,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class ArAssetInfo;
+class SdfSchemaBase;
 
 SDF_DECLARE_HANDLES(SdfLayer);
 SDF_DECLARE_HANDLES(SdfSpec);
@@ -62,6 +63,9 @@ TF_DECLARE_PUBLIC_TOKENS(SdfFileFormatTokens, SDF_API, SDF_FILE_FORMAT_TOKENS);
 class SdfFileFormat : public TfRefBase, public TfWeakBase, boost::noncopyable
 {
 public:
+    /// Returns the schema for this format.
+    SDF_API const SdfSchemaBase& GetSchema() const;
+
     /// Returns the format identifier.
     SDF_API const TfToken& GetFormatId() const;
 
@@ -132,21 +136,6 @@ public:
     /// Return true if this file format prefers to skip reloading anonymous
     /// layers.
     SDF_API bool ShouldSkipAnonymousReload() const;
-
-    /// Return true if the \p layer produced by this file format
-    /// streams its data to and from its serialized data store on demand.
-    ///
-    /// Sdf will treat streaming layers differently to avoid pulling
-    /// in data unnecessarily. For example, reloading a streaming layer 
-    /// will not perform fine-grained change notification, since doing 
-    /// so would require the full contents of the layer to be loaded.
-    ///
-    /// Edits to a streaming layer are assumed to immediately affect
-    /// the serialized data without an explicit call to SdfLayer::Save.
-    ///
-    /// It is a coding error to call this function with a layer that was
-    /// not created with this file format.
-    SDF_API bool IsStreamingLayer(const SdfLayer& layer) const;
 
     /// Return true if layers produced by this file format are based
     /// on physical files on disk. If so, this file format requires
@@ -255,7 +244,24 @@ protected:
         const TfToken& formatId,
         const TfToken& versionString,
         const TfToken& target,
-        const std::string& extensions);
+        const std::string& extension);
+
+    /// Constructor.
+    /// \p schema must remain valid for the lifetime of this file format.
+    SDF_API SdfFileFormat(
+        const TfToken& formatId,
+        const TfToken& versionString,
+        const TfToken& target,
+        const std::string& extension,
+        const SdfSchemaBase& schema);
+
+    /// Disallow temporary SdfSchemaBase objects being passed to the c'tor.
+    SDF_API SdfFileFormat(
+        const TfToken& formatId,
+        const TfToken& versionString,
+        const TfToken& target,
+        const std::string& extension,
+        const SdfSchemaBase&& schema) = delete;
 
     /// Constructor.
     SDF_API SdfFileFormat(
@@ -263,6 +269,23 @@ protected:
         const TfToken& versionString,
         const TfToken& target,
         const std::vector<std::string> &extensions);
+
+    /// Constructor.
+    /// \p schema must remain valid for the lifetime of this file format.
+    SDF_API SdfFileFormat(
+        const TfToken& formatId,
+        const TfToken& versionString,
+        const TfToken& target,
+        const std::vector<std::string> &extensions,
+        const SdfSchemaBase& schema);
+
+    /// Disallow temporary SdfSchemaBase objects being passed to the c'tor.
+    SDF_API SdfFileFormat(
+        const TfToken& formatId,
+        const TfToken& versionString,
+        const TfToken& target,
+        const std::vector<std::string> &extensions,
+        const SdfSchemaBase&& schema) = delete;
 
     /// Destructor.
     SDF_API virtual ~SdfFileFormat();
@@ -297,17 +320,13 @@ private:
     SDF_API
     virtual bool _ShouldSkipAnonymousReload() const;
 
-    // File format subclasses must override this to determine whether the
-    // given layer is streaming or not. The file format of \p layer is 
-    // guaranteed to be an instance of this class.
-    virtual bool _IsStreamingLayer(const SdfLayer& layer) const = 0;
-
     /// File format subclasses may override this to specify whether
     /// their layers are backed by physical files on disk.
     /// Default implementation returns true.
     SDF_API
     virtual bool _LayersAreFileBased() const;
 
+    const SdfSchemaBase& _schema;
     const TfToken _formatId;
     const TfToken _target;
     const std::string _cookie;

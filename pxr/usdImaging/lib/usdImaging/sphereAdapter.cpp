@@ -64,7 +64,7 @@ UsdImagingSphereAdapter::Populate(UsdPrim const& prim,
                             UsdImagingInstancerContext const* instancerContext)
 {
     return _AddRprim(HdPrimTypeTokens->mesh,
-                     prim, index, GetMaterialId(prim), instancerContext);
+                     prim, index, GetMaterialUsdPath(prim), instancerContext);
 }
 
 void 
@@ -222,7 +222,7 @@ UsdImagingSphereAdapter::GetMeshTopology()
             ,81 ,82 ,91 ,82 ,83 ,91 ,83, 84 ,91 ,84 ,85 ,91 ,85 ,86 ,91 ,86 ,87
             ,91 ,87 ,88 ,91 ,88 ,89 ,91 ,89 ,80 ,91,
     };
-    static HdMeshTopology sphereTopo(PxOsdOpenSubdivTokens->catmark,
+    static HdMeshTopology sphereTopo(PxOsdOpenSubdivTokens->catmullClark,
                                    HdTokens->rightHanded,
                _BuildVtArray(numVerts, sizeof(numVerts) / sizeof(numVerts[0])),
                _BuildVtArray(verts, sizeof(verts) / sizeof(verts[0])));
@@ -244,6 +244,27 @@ UsdImagingSphereAdapter::GetMeshTransform(UsdPrim const& prim,
     }
     GfMatrix4d xf(GfVec4d(radius, radius, radius, 1.0));   
     return xf;
+}
+
+size_t
+UsdImagingSphereAdapter::SampleTransform(
+    UsdPrim const& prim, SdfPath const& cachePath,
+    const std::vector<float>& configuredSampleTimes,
+    size_t maxNumSamples, float *sampleTimes,
+    GfMatrix4d *sampleValues)
+{
+    const size_t numSamples = BaseAdapter::SampleTransform(
+        prim, cachePath, configuredSampleTimes, maxNumSamples,
+        sampleTimes, sampleValues);
+
+    // Apply modeling transformation (which may be time-varying)
+    for (size_t i=0; i < numSamples; ++i) {
+        UsdTimeCode usdTime = _GetTimeWithOffset(sampleTimes[i]);
+        GfMatrix4d xf = GetMeshTransform(prim, usdTime);
+        sampleValues[i] = xf * sampleValues[i];
+    }
+
+    return numSamples;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

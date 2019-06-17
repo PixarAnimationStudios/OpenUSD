@@ -37,6 +37,7 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/primFlags.h"
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/stageCacheContext.h"
@@ -199,12 +200,23 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
                 .SetVariantSelection(variant.second);
     }
 
-    bool isSceneAssembly = mMayaRootDagPath.node().hasFn(MFn::kAssembly);
+    Usd_PrimFlagsPredicate predicate = UsdPrimDefaultPredicate;
+
+    const bool isSceneAssembly = mMayaRootDagPath.node().hasFn(MFn::kAssembly);
     if (isSceneAssembly) {
         mArgs.shadingMode = ASSEMBLY_SHADING_MODE;
+
+        // When importing on behalf of a scene assembly, we want to make sure
+        // that we traverse down into instances. The expectation is that the
+        // user switched an assembly to its Expanded or Full representation
+        // because they want to see the hierarchy underneath it, possibly with
+        // the intention of making modifications down there. As a result, we
+        // don't really want to try to preserve instancing, but we do need to
+        // be able to access the scene description below the root prim.
+        predicate.TraverseInstanceProxies(true);
     }
 
-    UsdPrimRange range(usdRootPrim);
+    UsdPrimRange range(usdRootPrim, predicate);
     if (range.empty()) {
         // XXX: This shouldn't really be possible, but it currently is because
         // combinations of nested assembly nodes with variant set selections

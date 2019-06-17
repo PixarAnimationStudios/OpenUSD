@@ -73,11 +73,6 @@ public:
     // State for sublayer offsets
     std::vector<SdfLayerOffset> subLayerOffsets;
 
-    // The connection target for the mapper currently being specified
-    SdfPath mapperTarget;
-    std::string mapperParamName;
-    std::vector<TfToken> mapperArgsNameVector;
-
     // String list currently being built
     std::vector<TfToken> nameVector;
 

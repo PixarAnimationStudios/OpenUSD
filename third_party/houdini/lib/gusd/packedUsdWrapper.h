@@ -26,8 +26,8 @@
 
 #include "primWrapper.h"
 
-#include <pxr/pxr.h>
-#include <pxr/usd/usdGeom/xform.h>
+#include "pxr/pxr.h"
+#include "pxr/usd/usdGeom/xform.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

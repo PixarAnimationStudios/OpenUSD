@@ -36,6 +36,7 @@
 
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/hints.h"
+#include "pxr/base/tf/anyUniquePtr.h"
 #include "pxr/base/tf/pointerAndBits.h"
 #include "pxr/base/tf/safeTypeCompare.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -59,12 +60,8 @@
 #include <boost/type_traits/has_trivial_destructor.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/utility/enable_if.hpp>
-#include <boost/utility/value_init.hpp>
-
-#include <tbb/atomic.h>
 
 #include <iosfwd>
-#include <memory>
 #include <typeinfo>
 #include <type_traits>
 
@@ -80,32 +77,37 @@ struct Vt_DefaultValueFactory;
 // its type erased and only known at runtime via a std::type_info.
 struct Vt_DefaultValueHolder
 {
-    // Constructor and implicit conversion from any type.  Creates a copy of the
-    // object and stores the type_info for the static type.
-    template<class T>
+    // Creates a value-initialized object and stores the type_info for the
+    // static type.
+    template <typename T>
+    static Vt_DefaultValueHolder Create() {
+        return Vt_DefaultValueHolder(TfAnyUniquePtr::New<T>(), typeid(T));
+    }
+
+    // Creates a copy of the object and stores the type_info for the static
+    // type.
+    template <typename T>
     static Vt_DefaultValueHolder Create(T const &val) {
-        return Vt_DefaultValueHolder(
-            std::shared_ptr<void>(new T(val)), typeid(T));
+        return Vt_DefaultValueHolder(TfAnyUniquePtr::New(val), typeid(T));
     }
 
     // Return the runtime type of the held object.
     std::type_info const &GetType() const {
-        return _type;
+        return *_type;
     }
 
     // Return a pointer to the held object.  This may be safely cast to the
     // static type corresponding to the type_info returned by GetType.
     void const *GetPointer() const {
-        return _ptr.get();
+        return _ptr.Get();
     }
 
 private:
-    Vt_DefaultValueHolder(std::shared_ptr<void> const &ptr,
-                          std::type_info const &type)
-        : _ptr(ptr), _type(type) {}
+    Vt_DefaultValueHolder(TfAnyUniquePtr &&ptr, std::type_info const &type)
+        : _ptr(std::move(ptr)), _type(&type) {}
 
-    std::shared_ptr<void> _ptr;
-    std::type_info const &_type;
+    TfAnyUniquePtr _ptr;
+    std::type_info const *_type;
 };
 
 class VtValue;
@@ -187,8 +189,6 @@ class VtValue
     struct _Counted {
         explicit _Counted(T const &obj) : _obj(obj) {
             _refCount = 0;
-            TF_AXIOM(static_cast<void const *>(this) ==
-                     static_cast<void const *>(&_obj));
         }
         bool IsUnique() const { return _refCount == 1; }
         T const &Get() const { return _obj; }
@@ -196,14 +196,16 @@ class VtValue
 
     private:
         T _obj;
-        mutable tbb::atomic<int> _refCount;
+        mutable std::atomic<int> _refCount;
 
         friend inline void intrusive_ptr_add_ref(_Counted const *d) {
-            ++d->_refCount;
+            d->_refCount.fetch_add(1, std::memory_order_relaxed);
         }
         friend inline void intrusive_ptr_release(_Counted const *d) {
-            if (d->_refCount.fetch_and_decrement() == 1)
+            if (d->_refCount.fetch_sub(1, std::memory_order_release) == 1) {
+                std::atomic_thread_fence(std::memory_order_acquire);
                 delete d;
+            }
         }
     };
 
@@ -1178,8 +1180,7 @@ template <class T>
 struct Vt_DefaultValueFactory {
     /// This function *must* return an object of type \a T.
     static Vt_DefaultValueHolder Invoke() {
-        return Vt_DefaultValueHolder::Create<T>(
-            boost::value_initialized<T>().data());
+        return Vt_DefaultValueHolder::Create<T>();
     }
 };
 

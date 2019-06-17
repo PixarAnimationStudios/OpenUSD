@@ -1,0 +1,8 @@
+#sdf 1.4.32
+(
+    """This comment contains
+some format specifiers like %s, %f, %d.  This was formerly
+improperly handled, by passing payload data like this as a
+format string instead of writing it out with '%s'
+"""
+)

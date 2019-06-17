@@ -56,31 +56,13 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DIRTY_LIST,
         "Reports dirty list state changes");
 
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DISABLE_FRUSTUM_CULLING,
-        "Disable view frustum culling");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DISABLE_MULTITHREADED_CULLING,
-        "Force the use of the single threaded version of frustum culling");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DISABLE_MULTITHREADED_RPRIM_SYNC,
         "Run RPrim sync on a single thread");
 
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DRAW_BATCH,
-        "Reports diagnostics for draw batches");
-
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DRAWITEM_DRAWN,
         "Report each draw item as it is drawn");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DRAWITEM_CLEANED,
-        "Report when draw items are cleaned");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DRAWITEMS_CULLED,
         "Report the number of draw items culled in each render pass");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DUMP_GLSLFX_CONFIG,
-        "Print composed GLSLFX configuration");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DUMP_SHADER_SOURCE,
-        "Print generated shader source code");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DUMP_SHADER_SOURCEFILE,
-        "Write out generated shader source code to files");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DUMP_SHADER_BINARY,
-        "Write out compiled GLSL shader binary to files");
-
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_ENGINE_PHASE_INFO,
         "Report the execution phase of the Hydra engine");
 

@@ -259,7 +259,8 @@ SdfUnitCategory( const TfEnum &unit )
     return it->second;
 }
 
-std::pair<uint32_t, uint32_t>
+// Gets the type/unit pair for a unit enum.
+static std::pair<uint32_t, uint32_t>
 Sdf_GetUnitIndices( const TfEnum &unit )
 {
     _UnitsInfo &info = _GetUnitsInfo();
@@ -446,10 +447,13 @@ Sdf_ValueTypeNamesType::~Sdf_ValueTypeNamesType()
     // Do nothing
 }
 
+// Defined in schema.cpp
+const Sdf_ValueTypeNamesType* Sdf_InitializeValueTypeNames();
+
 const Sdf_ValueTypeNamesType*
 Sdf_ValueTypeNamesType::_Init::New()
 {
-    return SdfSchema::GetInstance()._NewValueTypeNames();
+    return Sdf_InitializeValueTypeNames();
 }
 
 TfToken

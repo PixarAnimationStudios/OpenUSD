@@ -28,7 +28,7 @@
 #ifndef __GUSD_PRM_SHARED_H__
 #define __GUSD_PRM_SHARED_H__
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 
 #include "gusd/api.h"
 

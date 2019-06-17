@@ -38,13 +38,13 @@
 #include "pxr/base/tf/type.h"
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb/stb_image.h"
+#include "pxr/imaging/glf/stb/stb_image.h"
 
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
-#include "stb/stb_image_resize.h"
+#include "pxr/imaging/glf/stb/stb_image_resize.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb/stb_image_write.h"
+#include "pxr/imaging/glf/stb/stb_image_write.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -53,25 +53,43 @@ SdfFileFormat::SdfFileFormat(
     const TfToken& formatId,
     const TfToken& versionString,
     const TfToken& target,
-    const std::string& extension)
-    : _formatId(formatId)
-    , _target(target)
-    , _cookie("#" + formatId.GetString())
-    , _versionString(versionString)
-    , _extensions(1, extension)
-    , _isPrimaryFormat(
-        _FileFormatRegistry
-            ->GetPrimaryFormatForExtension(extension) == formatId)
+    const std::string& extension,
+    const SdfSchemaBase& schema)
+    : SdfFileFormat(
+        formatId, versionString, target, std::vector<std::string>{extension}, 
+        schema)
 {
-    // Do Nothing.
 }
 
 SdfFileFormat::SdfFileFormat(
     const TfToken& formatId,
     const TfToken& versionString,
     const TfToken& target,
-    const std::vector<std::string>& extensions)
-    : _formatId(formatId)
+    const std::string& extension)
+    : SdfFileFormat(
+        formatId, versionString, target, std::vector<std::string>{extension}, 
+        SdfSchema::GetInstance())
+{
+}
+
+SdfFileFormat::SdfFileFormat(
+    const TfToken& formatId,
+    const TfToken& versionString,
+    const TfToken& target,
+    const std::vector<std::string> &extensions)
+    : SdfFileFormat(
+        formatId, versionString, target, extensions, SdfSchema::GetInstance())
+{
+}
+
+SdfFileFormat::SdfFileFormat(
+    const TfToken& formatId,
+    const TfToken& versionString,
+    const TfToken& target,
+    const std::vector<std::string>& extensions,
+    const SdfSchemaBase& schema)
+    : _schema(schema)
+    , _formatId(formatId)
     , _target(target)
     , _cookie("#" + formatId.GetString())
     , _versionString(versionString)
@@ -130,23 +148,16 @@ SdfFileFormat::ShouldSkipAnonymousReload() const
     return _ShouldSkipAnonymousReload();
 }
 
-bool 
-SdfFileFormat::IsStreamingLayer(const SdfLayer& layer) const
-{
-    if (layer.GetFileFormat()->GetFormatId() != GetFormatId()) {
-        TF_CODING_ERROR(
-            "Layer does not use file format '%s'",
-            layer.GetFileFormat()->GetFormatId().GetText());
-        return true;
-    }
-
-    return _IsStreamingLayer(layer);
-}
-
 bool
 SdfFileFormat::LayersAreFileBased() const
 {
     return _LayersAreFileBased();
+}
+
+const SdfSchemaBase&
+SdfFileFormat::GetSchema() const
+{
+    return _schema;
 }
 
 const TfToken&
@@ -259,13 +270,17 @@ SdfFileFormat::GetFileExtension(
         return s;
     }
 
+    // We remove any file format arguments that may be appended to the layer
+    // path so we can get just the raw extension.
+    std::string layerPath;
+    std::string dummyArgs;
     // XXX: if it is a dot file (e.g. .sdf) we append a temp
     // name to retain behavior of specifier stripping.
     // this is in place for backwards compatibility
-    std::string strippedExtension = (s[0] == '.' ? 
-        "temp_file_name" + s : s);
+    Sdf_SplitIdentifier((s[0] == '.' ? "temp_file_name" + s : s), 
+                        &layerPath, &dummyArgs);
 
-    std::string extension = Sdf_GetExtension(strippedExtension);
+    std::string extension = Sdf_GetExtension(layerPath);
        
     return extension.empty() ? s : extension;
 }

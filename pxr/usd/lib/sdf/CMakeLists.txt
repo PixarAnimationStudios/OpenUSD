@@ -42,8 +42,6 @@ pxr_library(sdf
         listEditor
         listEditorProxy
         listOp
-        mapperArgSpec
-        mapperSpec
         mapEditProxy
         mapEditor
         namespaceEdit
@@ -52,6 +50,7 @@ pxr_library(sdf
         pathNode
         pathTable
         payload
+        pool
         primSpec
         propertySpec
         proxyPolicies
@@ -111,6 +110,7 @@ pxr_library(sdf
         vectorListEditor
 
     PRIVATE_HEADERS
+        instantiatePool.h
         valueTypePrivate.h
 
     CPPFILES
@@ -133,8 +133,6 @@ pxr_library(sdf
         wrapLayer.cpp
         wrapLayerOffset.cpp
         wrapLayerTree.cpp
-        wrapMapperSpec.cpp
-        wrapMapperArgSpec.cpp
         wrapNamespaceEdit.cpp
         wrapNotice.cpp
         wrapPath.cpp

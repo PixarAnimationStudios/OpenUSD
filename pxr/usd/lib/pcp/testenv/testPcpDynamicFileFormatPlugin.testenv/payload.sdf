@@ -1,0 +1,22 @@
+#sdf 1.4.32
+
+def "PayloadCone" (
+payload = @cone.testpcpdynamic@
+)
+{
+}
+
+def "PayloadSphere" (
+payload = @sphere.testpcpdynamic@
+)
+{
+}
+
+# Prim with two dynamic payloads that are identified through use of static
+# file format arguments.
+def "PayloadMulti" (
+payload = [@cone.testpcpdynamic:SDF_FORMAT_ARGS:TestPcp_payloadId=2@,
+           @sphere.testpcpdynamic:SDF_FORMAT_ARGS:TestPcp_payloadId=1@]
+)
+{
+}

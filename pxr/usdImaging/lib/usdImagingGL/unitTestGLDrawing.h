@@ -90,7 +90,8 @@ protected:
     
     void _Render(UsdImagingGLEngine *engine, 
                  const UsdImagingGLRenderParams &params) {
-        engine->_Render(params);
+        SdfPathVector roots(1, SdfPath::AbsoluteRootPath());
+        engine->RenderBatch(roots, params);
     }
 
 private:

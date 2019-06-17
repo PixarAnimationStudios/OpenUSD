@@ -1,0 +1,20 @@
+#usda 1.0
+(
+    defaultPrim = "PrimitiveModel"
+)
+
+def Xform "PrimitiveModel" (
+    assetInfo = {
+        asset identifier = @./PrimitiveModel.usda@
+        string name = "PrimitiveModel"
+    }
+    kind = "component"
+)
+{
+    def Xform "Geom"
+    {
+        def Cube "Primitive"
+        {
+        }
+    }
+}

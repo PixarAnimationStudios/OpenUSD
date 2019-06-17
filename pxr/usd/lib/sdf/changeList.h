@@ -79,7 +79,6 @@ public:
 
     void DidChangeAttributeTimeSamples(const SdfPath &attrPath);
     void DidChangeAttributeConnection(const SdfPath &attrPath);
-    void DidChangeMapperArgument(const SdfPath &attrPath);
     void DidChangeRelationshipTargets(const SdfPath &relPath);
     void DidAddTarget(const SdfPath &targetPath);
     void DidRemoveTarget(const SdfPath &targetPath);
@@ -149,7 +148,6 @@ public:
             // SdfPropertySpec
             bool didChangeAttributeTimeSamples:1;
             bool didChangeAttributeConnection:1;
-            bool didChangeMapperArgument:1;
             bool didChangeRelationshipTargets:1;
             bool didAddTarget:1;
             bool didRemoveTarget:1;

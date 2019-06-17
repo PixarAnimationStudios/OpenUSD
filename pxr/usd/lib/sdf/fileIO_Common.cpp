@@ -143,7 +143,7 @@ struct _ListOpWriter
     }
     static void Write(ostream& out, size_t indent, const T& item)
     {
-        Sdf_FileIOUtility::Write(out, indent, TfStringify(item).c_str());
+        Sdf_FileIOUtility::Write(out, indent, "%s", TfStringify(item).c_str());
     }
 };
 

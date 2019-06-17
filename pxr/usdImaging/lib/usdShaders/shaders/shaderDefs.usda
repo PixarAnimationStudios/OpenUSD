@@ -158,11 +158,13 @@ def Shader "UsdUVTexture" (
     )
 
     float4 inputs:scale = (1.0, 1.0, 1.0, 1.0) (
+        connectability = "interfaceOnly"
         doc = """Scale to be applied to all components of the texture. 
                  value * scale + bias"""
     )
 
     float4 inputs:bias = (0.0, 0.0, 0.0, 0.0) (
+        connectability = "interfaceOnly"
         doc = """Bias to be applied to all components of the texture. 
                  value * scale + bias)"""
     )
@@ -177,6 +179,10 @@ def Shader "UsdUVTexture" (
 
     float outputs:b (
         doc = "Outputs the blue channnel."
+    )
+
+    float outputs:a (
+        doc = "Outputs the alpha channnel."
     )
 
     float3 outputs:rgb (

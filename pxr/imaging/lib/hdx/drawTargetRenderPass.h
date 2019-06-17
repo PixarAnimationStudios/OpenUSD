@@ -83,7 +83,8 @@ public:
 
     /// Execute the draw target render pass
     HDX_API
-    void Execute(HdRenderPassStateSharedPtr const &renderPassState);
+    void Execute(HdRenderPassStateSharedPtr const &renderPassState,
+                 TfTokenVector const &renderTags);
 
 private:
     /// RenderPass

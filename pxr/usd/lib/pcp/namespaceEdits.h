@@ -45,7 +45,6 @@ class PcpMapFunction;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(PcpLayerStack);
 TF_DECLARE_WEAK_AND_REF_PTRS(Pcp_LayerStackRegistry);
-TF_DECLARE_REF_PTRS(PcpPayloadDecorator);
 SDF_DECLARE_HANDLES(SdfSpec);
 
 /// Sites that must respond to a namespace edit.

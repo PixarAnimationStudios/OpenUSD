@@ -24,23 +24,23 @@
 
 #include "GT_PrimCache.h"
 
-#include "primWrapper.h"
 #include "GT_PackedUSD.h"
-#include "USD_StdTraverse.h"
-#include "UT_Gf.h"
+#include "primWrapper.h"
 #include "USD_PropertyMap.h"
+#include "USD_StdTraverse.h"
 #include "USD_XformCache.h"
+#include "UT_Gf.h"
 
-#include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdGeom/boundable.h"
+#include "pxr/usd/usdGeom/xformable.h"
 
+#include <GT/GT_CatPolygonMesh.h>
 #include <GT/GT_PrimCollect.h>
-#include <GT/GT_PrimPolygonMesh.h>
-#include <GT/GT_TransformArray.h>
 #include <GT/GT_PrimInstance.h>
+#include <GT/GT_PrimPolygonMesh.h>
 #include <GT/GT_RefineCollect.h>
 #include <GT/GT_RefineParms.h>
-#include <GT/GT_CatPolygonMesh.h>
+#include <GT/GT_TransformArray.h>
 #include <SYS/SYS_Hash.h>
 #include <SYS/SYS_Version.h>
 #include <UT/UT_HDKVersion.h>
@@ -383,7 +383,7 @@ CreateEntryFn::operator()(
             // Iterate though all the prims and find matching instances.
             for( auto it = gprims.begin(); it != gprims.end(); ++it ) 
             {
-                UsdPrim p = *it;
+                const UsdPrim& p = *it;
 
                 GT_PrimitiveHandle gtPrim = 
                     m_cache.GetPrim( p,

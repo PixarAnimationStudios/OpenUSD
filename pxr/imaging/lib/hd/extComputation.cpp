@@ -73,11 +73,12 @@ HdExtComputation::_Sync(HdSceneDelegate *sceneDelegate,
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg("HdExtComputation::Sync\n");
 
     if (!TF_VERIFY(sceneDelegate != nullptr)) {
         return;
     }
+    TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg("HdExtComputation::Sync for %s"
+        " (dirty bits = 0x%x)\n", GetId().GetText(), *dirtyBits);
 
     HdDirtyBits bits = *dirtyBits;
 
@@ -127,7 +128,11 @@ HdExtComputation::_Sync(HdSceneDelegate *sceneDelegate,
         // with the new kernel if we want to provide a good editing flow.
     }
 
-    *dirtyBits = Clean;
+    // Clear processed bits
+    *dirtyBits &= ~(DirtyInputDesc | DirtyOutputDesc | DirtyDispatchCount |
+                     DirtyElementCount | DirtyKernel);
+    // XXX: DirtyCompInput isn't used yet.
+    *dirtyBits &= ~DirtyCompInput;
 }
 
 HdDirtyBits

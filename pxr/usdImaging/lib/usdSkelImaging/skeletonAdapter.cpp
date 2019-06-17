@@ -38,6 +38,7 @@
 
 #include "pxr/usd/usdSkel/animMapper.h"
 #include "pxr/usd/usdSkel/bindingAPI.h"
+#include "pxr/usd/usdSkel/root.h"
 #include "pxr/usd/usdSkel/tokens.h"
 #include "pxr/usd/usdSkel/utils.h"
 
@@ -141,23 +142,26 @@ UsdSkelImagingSkeletonAdapter::Populate(
         return SdfPath();
     }
 
-    auto skelData = std::make_shared<_SkelData>();
-    skelData->skelQuery = _skelCache.GetSkelQuery(UsdSkelSkeleton(prim));
-
     SdfPath const& skelPath = prim.GetPath();
-    _skelDataCache[skelPath] = skelData;
+    // Populate may be called via Resync processing for skinned prims, in which
+    // case we shouldn't have to repopulate the bone mesh.
+    if (_skelDataCache.find(skelPath) == _skelDataCache.end()) {
+        // New skeleton prim
+        // - Add bone mesh cache entry for the skeleton
+        auto skelData = std::make_shared<_SkelData>();
+        skelData->skelQuery = _skelCache.GetSkelQuery(UsdSkelSkeleton(prim));
+        _skelDataCache[skelPath] = skelData;
 
-    SdfPath instancer = instancerContext ?
-        instancerContext->instancerId : SdfPath();
+        // Insert mesh prim to visualize the bone mesh for the skeleton.
+        // Note: This uses the "rest" pose of the skeleton.
+        // Also, since the bone mesh isn't backed by the UsdStage, we register 
+        // the skeleton prim on its behalf.
+        SdfPath instancer = instancerContext ?
+            instancerContext->instancerCachePath : SdfPath();
+        index->InsertRprim(HdPrimTypeTokens->mesh, prim.GetPath(),
+                        instancer, prim, shared_from_this());
+    }
 
-    // Insert mesh prim to visualize the bone mesh for the skeleton.
-    // Note: This uses the "rest" pose of the skeleton.
-    // Also, since the bone mesh isn't backed by the UsdStage, we register the
-    // skeleton prim on its behalf.
-    index->InsertRprim(HdPrimTypeTokens->mesh, prim.GetPath(),
-                       instancer, prim, shared_from_this());
-    
-    
     // Insert a computation for each skinned prim targeted by this
     // skeleton. We know this because the SkelRootAdapter populated all the
     // "skeleton -> skinned prims" during Populate.
@@ -168,6 +172,7 @@ UsdSkelImagingSkeletonAdapter::Populate(
     
     if (bindingIt != _skelBindingMap.end()) {
         UsdSkelBinding const& binding = bindingIt->second;
+        auto const& skelData = _GetSkelData(skelPath);
 
         for (UsdSkelSkinningQuery const& query : binding.GetSkinningTargets()) {
             
@@ -341,9 +346,8 @@ UsdSkelImagingSkeletonAdapter::ProcessPropertyChange(
         // We don't have access to the UsdImagingIndexProxy here, so we cannot
         // use the property name to propagate dirtyness.
 
-        // TODO: Perform granular tracking of only the relevant properties.
-        // The main problem with this is that we can't easily track changes
-        // related to the inherited SkelAnimation.
+        // Returning AllDirty triggers a resync of the skeleton.
+        // See ProcessPrimResync(..)
         return HdChangeTracker::AllDirty;
     }
     
@@ -366,8 +370,9 @@ UsdSkelImagingSkeletonAdapter::ProcessPropertyChange(
             
             if (dirtyBits == HdChangeTracker::AllDirty) {
                 // XXX: We don't have access to the UsdImagingIndexProxy here,
-                // so We propagate the dirtyness to the computations in
-                // MarkDirty(..)
+                // so we can't propagate dirtyness to the computation Sprims
+                // here. Instead, we set the DirtyPrimvar bit on the skinned
+                // prim, and handle the dirtyness propagation in MarkDirty(..).
                 dirtyBits = HdChangeTracker::DirtyPrimvar;
             } else {
                 TF_WARN("Skinned prim %s needs to be resync'd because of a"
@@ -379,6 +384,12 @@ UsdSkelImagingSkeletonAdapter::ProcessPropertyChange(
         return dirtyBits;
     }
     
+    if (_IsSkinningComputationPath(cachePath) ||
+        _IsSkinningInputAggregatorComputationPath(cachePath)) {
+        // Nothing to do.
+        return HdChangeTracker::Clean;
+    }
+
     // We don't expect to get callbacks on behalf of any other prims on
     // the USD stage.
     TF_WARN("Unhandled ProcessPropertyChange callback for cachePath <%s> "
@@ -386,6 +397,56 @@ UsdSkelImagingSkeletonAdapter::ProcessPropertyChange(
     return HdChangeTracker::Clean;
 }
 
+void
+UsdSkelImagingSkeletonAdapter::ProcessPrimResync(
+    SdfPath const& primPath,
+    UsdImagingIndexProxy* index)
+{
+    TF_DEBUG(USDIMAGING_CHANGES).Msg(
+        "[SkeletonAdapter] ProcessPrimResync called for %s\n",
+        primPath.GetText());
+
+    // Do this prior to removal of cache entries.
+    bool isSkelPath = _skelBindingMap.find(primPath) != _skelBindingMap.end();
+    bool isCallbackForPrimsOnTheStage = isSkelPath ||
+                                        _IsSkinnedPrimPath(primPath);
+
+    // Remove prim and primInfo entries.
+    // A skeleton removal triggers all skinned prims using it to be removed as
+    // well.
+    _RemovePrim(primPath, index);
+
+    // Ignore resyncs called on behalf of computations.
+    if (isCallbackForPrimsOnTheStage) {
+        SdfPath skelRootPath;
+        UsdPrim prim = _GetPrim(primPath);
+        while (prim) {
+            prim = prim.GetParent();
+            if (prim.IsValid() && prim.IsA<UsdSkelRoot>()) {
+                skelRootPath = prim.GetPath();
+                break;
+            }
+        }
+
+        if (!skelRootPath.IsEmpty()) {
+            // This isn't as bad as it seems.
+            // While Populate will be called on all prims under the SkelRoot,
+            // we'll only re-insert prims that were removed.
+            // See UsdImagingIndexProxy::AddPrimInfo.
+            index->Repopulate(skelRootPath);
+        }
+    }
+}
+
+void
+UsdSkelImagingSkeletonAdapter::ProcessPrimRemoval(
+    SdfPath const& primPath,
+    UsdImagingIndexProxy* index)
+{
+    // Note: _RemovePrim removes the Hydra prim and the UsdImaging primInfo
+    // entries as well (unlike the pattern followed in PrimAdapter)
+    _RemovePrim(primPath, index);
+}
 
 void
 UsdSkelImagingSkeletonAdapter::MarkDirty(const UsdPrim& prim,
@@ -405,9 +466,12 @@ UsdSkelImagingSkeletonAdapter::MarkDirty(const UsdPrim& prim,
 
         // Propagate dirtyness to the computations.
         // See related comment in ProcessPropertyChange(..)
-        if (dirty & HdChangeTracker::DirtyPoints ||
-            dirty & HdChangeTracker::DirtyTransform ||
+        if (dirty & HdChangeTracker::DirtyTransform ||
             dirty & HdChangeTracker::DirtyPrimvar) {
+          
+            TF_DEBUG(USDIMAGING_COMPUTATIONS).Msg(
+                "[SkeletonAdapter::MarkDirty] Propagating dirtyness from "
+                "skinned prim %s to its computations\n", cachePath.GetText());
             
             index->MarkSprimDirty(_GetSkinningComputationPath(cachePath),
                                   HdExtComputation::DirtySceneInput);
@@ -423,9 +487,9 @@ UsdSkelImagingSkeletonAdapter::MarkDirty(const UsdPrim& prim,
               _IsSkinningInputAggregatorComputationPath(cachePath)) {
 
          TF_DEBUG(USDIMAGING_COMPUTATIONS).Msg(
-                "[SkeletonAdapter::Populate] Marking "
-                "computation %s for skinned prim %s as Dirty.\n",
-                cachePath.GetText(), prim.GetPath().GetText());
+                "[SkeletonAdapter::MarkDirty] Marking "
+                "computation %s for skinned prim %s as Dirty (bits = 0x%x\n",
+                cachePath.GetText(), prim.GetPath().GetText(), dirty);
 
         index->MarkSprimDirty(cachePath, dirty);
     
@@ -482,6 +546,23 @@ UsdSkelImagingSkeletonAdapter::MarkCullStyleDirty(const UsdPrim& prim,
         // make sure to delegate to the actual adapter registered for the prim.
         UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(prim);
         adapter->MarkCullStyleDirty(prim, cachePath, index);
+
+    }
+    // Nothing to do otherwise.
+}
+
+void
+UsdSkelImagingSkeletonAdapter::MarkRenderTagDirty(const UsdPrim& prim,
+                                                  const SdfPath& cachePath,
+                                                  UsdImagingIndexProxy* index)
+{
+    if (_IsCallbackForSkeleton(prim)) {
+        // Cullstyle changes shouldn't affect the bone visualization.
+    } else if ( _IsSkinnedPrimPath(cachePath)) {
+        // Since The SkeletonAdapter hijacks callbacks for the skinned prim,
+        // make sure to delegate to the actual adapter registered for the prim.
+        UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(prim);
+        adapter->MarkRenderTagDirty(prim, cachePath, index);
 
     }
     // Nothing to do otherwise.
@@ -563,12 +644,8 @@ UsdSkelImagingSkeletonAdapter::MarkMaterialDirty(const UsdPrim& prim,
         UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(prim);
         adapter->MarkMaterialDirty(prim, cachePath, index);
 
-    } else {
-        // We don't expect to get callbacks on behalf of computations or
-        // any other prims on the USD stage 
-         TF_WARN("Unhandled MarkDirty callback for cachePath <%s> "
-                 "in UsdSkelImagingSkelAdapter.", cachePath.GetText());
     }
+    // Nothing to do otherwise.
 }
 
 
@@ -593,8 +670,8 @@ _ApplyPackedBlendShapes(const TfSpan<const GfVec4f>& offsets,
                         const TfSpan<const float>& weights,
                         TfSpan<GfVec3f> points)
 {
-    const ptrdiff_t end = std::min(ranges.size(), points.size());
-    for (ptrdiff_t i = 0; i < end; ++i) {
+    const size_t end = std::min(ranges.size(), points.size());
+    for (size_t i = 0; i < end; ++i) {
         const GfVec2i range = ranges[i];
 
         GfVec3f p = points[i];
@@ -736,41 +813,50 @@ UsdSkelImagingSkeletonAdapter::RegisterSkelBinding(
 }
 
 // ---------------------------------------------------------------------- //
-/// Utility methods
+/// Change Processing API (protected)
 // ---------------------------------------------------------------------- //
 
 void
 UsdSkelImagingSkeletonAdapter::_RemovePrim(const SdfPath& cachePath,
                                            UsdImagingIndexProxy* index)
 {
-    // XXX: We could just delegate to the registered adapter if _RemovePrim
-    // wasn't protected
-    if (index->HasRprim(cachePath)) {
-        index->RemoveRprim(cachePath);
-    }
-
+    // Note: We remove both prim (R/Sprim) and primInfo entries (unlike
+    // UsdImagingPrimAdapter::_RemovePrim) since we override
+    // ProcessPrimRemoval and ProcessPrimResync, which call _RemovePrim.
+    
+    // Alternative way of finding whether this is a callback for the skeleton/
+    // bone mesh.
     bool isSkelPath = _skelBindingMap.find(cachePath) != _skelBindingMap.end();
     if (isSkelPath) {
-        _skelBindingMap.erase(cachePath);
-    } else if (_IsSkinnedPrimPath(cachePath)) {
-        // Remove the computations as well.
-        index->RemoveSprim(HdPrimTypeTokens->extComputation,
-                           _GetSkinningComputationPath(cachePath));
-        
-        if (_IsEnabledAggregatorComputation()) {
-            index->RemoveSprim(HdPrimTypeTokens->extComputation,
-                        _GetSkinningInputAggregatorComputationPath(cachePath));
 
-        }
+        TF_DEBUG(USDIMAGING_CHANGES).Msg(
+                "[SkeletonAdapter::_RemovePrim] Remove skeleton"
+                "%s\n", cachePath.GetText());
         
-        _skinnedPrimDataCache.erase(cachePath);
+        // Remove bone mesh.
+        index->RemoveRprim(cachePath);
+        index->RemoveHdPrimInfo(cachePath);
+
+        // Remove all skinned prims that are targered by the skeleton, and their
+        // computations.
+        UsdSkelBinding const& binding = _skelBindingMap[cachePath];
+        for (auto const& skinningQuery : binding.GetSkinningTargets()) {
+            _RemoveSkinnedPrimAndComputations(
+                skinningQuery.GetPrim().GetPath(), index);
+        }
+
+        // Clear various caches.
+        _skelBindingMap.erase(cachePath);
+        _skelDataCache.erase(cachePath);
+        // TODO: Clearing the entire skel cache is excessive, but correct.
+        _skelCache.Clear();
+
+    } else if (_IsSkinnedPrimPath(cachePath)) {
+        _RemoveSkinnedPrimAndComputations(cachePath, index);
     }
 
-    // Remove internal bookkeeping entries.
-    _skelDataCache.erase(cachePath);
-
-    // TODO: Clearing the entire cache is excessive, but correct.
-    _skelCache.Clear();
+    // Ignore callbacks on behalf of the computations since we remove them
+    // only when removing the skinned prim.
 }
 
 // ---------------------------------------------------------------------- //
@@ -1033,6 +1119,34 @@ UsdSkelImagingSkeletonAdapter::_IsAffectedByTimeVaryingSkelAnim(
     return false;
 }
 
+void
+UsdSkelImagingSkeletonAdapter::_RemoveSkinnedPrimAndComputations(
+    const SdfPath& cachePath,
+    UsdImagingIndexProxy* index)
+{
+    TF_DEBUG(USDIMAGING_CHANGES).Msg(
+                "[SkeletonAdapter::_RemovePrim] Remove skinned prim %s and its"
+                "computations.\n", cachePath.GetText());
+    
+    // Remove skinned prim.
+    index->RemoveRprim(cachePath);
+    index->RemoveHdPrimInfo(cachePath);
+
+    // Remove the computations it participates in.
+    SdfPath compPath = _GetSkinningComputationPath(cachePath);
+    index->RemoveSprim(HdPrimTypeTokens->extComputation, compPath);
+    index->RemoveHdPrimInfo(compPath);
+    
+    if (_IsEnabledAggregatorComputation()) {
+        SdfPath aggrCompPath =
+            _GetSkinningInputAggregatorComputationPath(cachePath);
+        index->RemoveSprim(HdPrimTypeTokens->extComputation, aggrCompPath);
+        index->RemoveHdPrimInfo(aggrCompPath);
+    }
+    
+    // Clear cache entry.
+    _skinnedPrimDataCache.erase(cachePath);
+}
 
 // ---------------------------------------------------------------------- //
 /// Handlers for the skinning computations
@@ -1946,8 +2060,8 @@ UsdSkelImagingSkeletonAdapter::_SkinnedPrimData::_SkinnedPrimData(
 
     hasJointInfluences = skinningQuery.HasJointInfluences();
     if (hasJointInfluences) {
-        if (skinningQuery.GetMapper()) {
-            jointMapper = *skinningQuery.GetMapper();
+        if (skinningQuery.GetJointMapper()) {
+            jointMapper = *skinningQuery.GetJointMapper();
         } else {
             // Store an identity mapper.
             jointMapper = UsdSkelAnimMapper(skelQuery.GetTopology().size());
@@ -1960,23 +2074,7 @@ UsdSkelImagingSkeletonAdapter::_SkinnedPrimData::_SkinnedPrimData(
             std::make_shared<UsdSkelBlendShapeQuery>(
                 UsdSkelBindingAPI(skinningQuery.GetPrim()));
         if (blendShapeQuery->IsValid()) {
-
-            const VtTokenArray blendShapeAnimOrder =
-                skelQuery.GetAnimQuery().GetBlendShapeOrder();
-            
-            // See if the skinned prim has a custom blend shape order.
-            VtTokenArray blendShapePrimOrder;
-            const UsdAttribute& blendShapesAttr =
-                skinningQuery.GetBlendShapesAttr();
-            if (blendShapesAttr && blendShapesAttr.Get(&blendShapePrimOrder)) {
-                blendShapeMapper =
-                    UsdSkelAnimMapper(blendShapeAnimOrder,
-                                      blendShapePrimOrder);
-            } else {
-                // Store an identity map to indicate no mapping is required.
-                blendShapeMapper =
-                    UsdSkelAnimMapper(blendShapeAnimOrder.size());
-            }
+            blendShapeMapper = *skinningQuery.GetBlendShapeMapper();
         } else {
             blendShapeQuery.reset();
         }

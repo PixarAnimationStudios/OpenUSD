@@ -25,6 +25,13 @@
 /// \file usdUtils/wrapDependencies.cpp
 
 #include "pxr/pxr.h"
+
+#include "pxr/base/arch/pragmas.h"
+
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_PLACEMENT_NEW  // because of pyFunction.h and boost::function
+
+
 #include <boost/python/def.hpp>
 #include <boost/python/list.hpp>
 #include <boost/python/tuple.hpp>
@@ -102,3 +109,5 @@ void wrapDependencies()
         (bp::arg("layer"), bp::arg("modifyFn")));
 
 }
+
+ARCH_PRAGMA_POP

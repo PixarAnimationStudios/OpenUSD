@@ -54,11 +54,11 @@
 #include <boost/python/raw_function.hpp>
 #include <boost/python/scope.hpp>
 
-#include <boost/function.hpp>
-#include <boost/mpl/vector.hpp>
+#include <boost/mpl/vector/vector10.hpp>
 
 #include <string>
 #include <vector>
+#include <functional>
 
 using std::string;
 using std::vector;
@@ -72,7 +72,7 @@ public:
 
     typedef Tf_ModuleProcessor This;
     
-    typedef boost::function<
+    typedef std::function<
         bool (char const *, object const &, object const &)
     > WalkCallbackFn;
     
@@ -217,7 +217,7 @@ public:
                    *fullNamePrefix + "." + name, *fullNamePrefix, 0,
                    std::placeholders::_1, std::placeholders::_2),
                   default_call_policies(),
-                  boost::mpl::vector<handle<>, tuple, dict>()));
+                  boost::mpl::vector3<handle<>, tuple, dict>()));
 
             // set the wrapper function's name, and namespace name.
             // XXX copy __name__, __doc__, possibly __dict__.

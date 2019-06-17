@@ -23,7 +23,7 @@
 //
 #include "pxr/usd/usdSkel/binding.h"
 
- #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -42,13 +42,32 @@ using namespace boost::python;
 PXR_NAMESPACE_USING_DIRECTIVE
 
 
+namespace {
+
+
+UsdSkelBinding*
+_New(const UsdSkelSkeleton& skel, const boost::python::list& skinningQueries)
+{
+    const size_t numQueries = len(skinningQueries);
+    VtArray<UsdSkelSkinningQuery> skinningQueriesArray(numQueries);
+    for (size_t i = 0; i < numQueries; ++i) {
+        skinningQueriesArray[i] =
+            extract<const UsdSkelSkinningQuery&>(skinningQueries[i]);
+    }
+    return new UsdSkelBinding(skel, skinningQueriesArray);
+}
+
+
+} // namespace
+
+
 void wrapUsdSkelBinding()
 {
     using This = UsdSkelBinding;
 
     class_<This>("Binding", init<>())
 
-        .def(init<UsdSkelSkeleton,VtArray<UsdSkelSkinningQuery> >())
+        .def("__init__", make_constructor(&_New))
 
         .def("GetSkeleton", &This::GetSkeleton,
              return_value_policy<return_by_value>())

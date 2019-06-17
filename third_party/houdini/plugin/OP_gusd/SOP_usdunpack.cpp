@@ -419,7 +419,7 @@ GusdSOP_usdunpack::_Cook(OP_Context& ctx)
 
     if (!packedPrims) {
         GusdGU_USD::AppendExpandedRefPoints(
-            *gdp, *gdp, rng, traversedPrims, filter,
+            *gdp, *inputGeo(0), rng, traversedPrims, filter,
             GUSD_PATH_ATTR, GUSD_PRIMPATH_ATTR);
 
     } else {
@@ -440,8 +440,9 @@ GusdSOP_usdunpack::_Cook(OP_Context& ctx)
         evalString(importPrimvars, "import_primvars", 0, t);
 
         GusdGU_USD::AppendExpandedPackedPrims(
-            *gdp, *gdp, rng, traversedPrims, expandedVariants, traversedTimes,
-            filter, unpackToPolygons, importPrimvars);
+            *gdp, *inputGeo(0), rng, traversedPrims,
+            expandedVariants, traversedTimes, filter, 
+            unpackToPolygons, importPrimvars);
     }
 
     if(evalInt("unpack_delold", 0, t)) {

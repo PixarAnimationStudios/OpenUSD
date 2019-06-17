@@ -80,6 +80,22 @@ string Tf_PyCleanEnumName(string name)
     return TfStringReplace(name, " ", "_");
 }
 
+void Tf_PyEnumAddAttribute(boost::python::scope &s,
+                           const std::string &name,
+                           const boost::python::object &value) {
+    // Skip exporting attr if the scope already has an attribute
+    // with that name, but do make sure to place it in .allValues
+    // for the class.
+    if (PyObject_HasAttrString(s.ptr(), name.c_str())) {
+        TF_CODING_ERROR(
+            "Ignoring enum value '%s'; an attribute with that "
+            "name already exists in that scope.", name.c_str());
+    }
+    else {
+        s.attr(name.c_str()) = value;
+    }
+}
+
 void
 Tf_PyEnumRegistry::
 RegisterValue(TfEnum const &e, object const &obj)

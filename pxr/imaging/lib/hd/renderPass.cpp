@@ -50,10 +50,10 @@ HdRenderPass::~HdRenderPass()
 void 
 HdRenderPass::SetRprimCollection(HdRprimCollection const& col)
 {
-    if (col == _collection){
+    if (col == _collection) {
         return;
     }
-         
+
     _collection = col; 
 
     // update dirty list subscription for the new collection.
@@ -75,10 +75,6 @@ HdRenderPass::SetRprimCollection(HdRprimCollection const& col)
             s << "    - " << i << "\n";
         }
         s << "  Repr: " << col.GetReprSelector() << "\n";
-        s << "  Render Tags: \n";
-        for (auto i : col.GetRenderTags()) {
-            s << "    - " << i << "\n";
-        }
 
         TF_DEBUG(HD_DIRTY_LIST).Msg("RenderPass(%p)::SetRprimCollection (%s) - "
             "constructing new DirtyList(%p) minorChange(%d) \n%s\n",
@@ -91,21 +87,6 @@ HdRenderPass::SetRprimCollection(HdRprimCollection const& col)
 
     // Mark the collection dirty in derived classes.
     _MarkCollectionDirty();
-}
-
-void
-HdRenderPass::Execute(HdRenderPassStateSharedPtr const &renderPassState)
-{
-    TfTokenVector renderTags = {};
-    _Execute(renderPassState, renderTags);
-}
-
-void
-HdRenderPass::Execute(HdRenderPassStateSharedPtr const &renderPassState,
-                      TfToken const &renderTag)
-{
-    TfTokenVector renderTags = { renderTag };
-    _Execute(renderPassState, renderTags);
 }
 
 void
@@ -122,19 +103,10 @@ HdRenderPass::Sync()
     HF_MALLOC_TAG_FUNCTION();
 
     // Sync the dirty list of prims
-    _renderIndex->Sync(_dirtyList);
+    _renderIndex->Sync(_dirtyList, _collection);
 
     // Give derived classes a chance to sync.
     _Sync();
-}
-
-TfTokenVector const &
-HdRenderPass::GetRenderTags()
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    return _collection.GetRenderTags();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

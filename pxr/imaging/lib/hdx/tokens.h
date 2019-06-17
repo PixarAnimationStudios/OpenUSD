@@ -33,13 +33,30 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 #define HDX_TOKENS              \
+    (hdxOitCounterBuffer)       \
+    (hdxOitDataBuffer)          \
+    (hdxOitDepthBuffer)         \
+    (hdxOitIndexBuffer)         \
     (hdxSelectionBuffer)        \
     (imagerVersion)             \
     (lightingContext)           \
     (lightingShader)            \
+    (oitCounter)                \
+    (oitData)                   \
+    (oitDepth)                  \
+    (oitIndices)                \
+    (oitUniforms)               \
+    (oitCounterBufferBar)       \
+    (oitDataBufferBar)          \
+    (oitDepthBufferBar)         \
+    (oitIndexBufferBar)         \
+    (oitUniformBar)             \
+    (oitRenderPassState)        \
+    (oitHeight)                 \
+    (oitWidth)                  \
+    (oitSamples)                \
     (renderPassState)           \
     (renderIndexVersion)        \
-    (renderTags)                \
     (selection)                 \
     (selectionState)            \
     (selectionOffsets)          \
@@ -56,12 +73,19 @@ TF_DECLARE_PUBLIC_TOKENS(HdxTokens, HDX_API, HDX_TOKENS);
     (lightTypeDirectional)      \
     (lightTypeSpot)             \
                                 \
+    (oitRenderTask)             \
+    (oitRenderSetupTask)        \
+    (oitResolveTask)            \
     (renderTask)                \
     (renderSetupTask)           \
     (simpleLightTask)           \
     (shadowTask)                \
     (drawTargetTask)            \
-    (drawTargetResolveTask)
+    (drawTargetResolveTask)     \
+    (pickTask)                  \
+    (pickFromRenderBufferTask)  \
+    (colorizeTask)              \
+    (colorizeSelectionTask)
 
 TF_DECLARE_PUBLIC_TOKENS(HdxPrimitiveTokens, HDX_API, HDX_PRIMITIVE_TOKENS);
 
@@ -82,6 +106,7 @@ TF_DECLARE_PUBLIC_TOKENS(HdxOptionTokens, HDX_API, HDX_OPTION_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdxRenderTagsTokens, HDX_API, HDX_RENDERTAGS_TOKENS);
 
 #define HDX_MATERIALTAG_TOKENS   \
+    (additive)                   \
     (translucent)
 
 TF_DECLARE_PUBLIC_TOKENS(HdxMaterialTagTokens, HDX_API, HDX_MATERIALTAG_TOKENS);

@@ -210,42 +210,60 @@ HdExtComputationUtils::DependencySort(
         return false;
     }
     
-    // Kahn's topological sorting algorithm
+    // --  Kahn's topological sorting algorithm --
     using CompQueue = std::deque<HdExtComputation const *>;
     CompQueue independentComps;
-    for (auto const& pair : cdm) {
-        if (pair.second.empty()) {
-            independentComps.emplace_back(pair.first);
-            cdm.erase(pair.first);
+    // Add independent comps to the queue and remove them from the graph.
+    using GraphIterator = 
+        HdExtComputationUtils::ComputationDependencyMap::iterator;
+    GraphIterator it = cdm.begin();
+    while (it != cdm.end()) {
+        HdExtComputation const *comp = it->first;
+        HdExtComputationConstPtrVector const& dependencies = it->second;
+        if (dependencies.empty()) {
+            independentComps.emplace_back(comp);
+            it = cdm.erase(it);
+        } else {
+            it++;
         }
     }
 
+    // On each iteration, pop a computation from the queue, and remove it from
+    // the dependency list for each computation in the graph (if it exists).
+    // On removal, if the latter has no remaining dependencies, add it to the
+    // queue and remove it from the graph.
     while (!independentComps.empty()) {
         HdExtComputation const * indComp = independentComps.back();
         sortedComps->emplace_back(indComp);
         independentComps.pop_back();
 
         // Remove dependency edge from computations that depend on comp.
-        for (auto& pair : cdm) {
-            auto const& depComp = pair.first;
-            auto& dependencies = pair.second;
-            auto it = std::find(dependencies.begin(), dependencies.end(),
-                                indComp);
-            if (it != dependencies.end()) {
-                dependencies.erase(it);
+        GraphIterator it = cdm.begin();
+        while (it != cdm.end()) {
+            HdExtComputation const *comp = it->first;
+            HdExtComputationConstPtrVector& dependencies = it->second;
+            auto depIt = std::find(dependencies.begin(), dependencies.end(),
+                                   indComp);
+            if (depIt != dependencies.end()) {
+                dependencies.erase(depIt);
             }
 
             if (dependencies.empty()) {
-                // Add the computation to the indepdendent list, since its
-                // dependencies have been resolved.
-                independentComps.emplace_front(depComp);
+                // Add the computation to the queue, since its dependencies have
+                // been resolved.
+                independentComps.emplace_front(comp);
 
                 // Remove it from the graph, so we don't revisit it again.
-                cdm.erase(depComp);
+                it = cdm.erase(it);
+            } else {
+                it++;
             }
         }
     }
 
+    // If the graph isn't empty, it indicates that there are computations whose
+    // dependencies haven't been resolved. This can happen only when there are
+    // cycles.
     if (!cdm.empty()) {
         TF_WARN("Cycle detected in ExtComputation dependency graph. "
                 "Unresolved dependencies:\n");

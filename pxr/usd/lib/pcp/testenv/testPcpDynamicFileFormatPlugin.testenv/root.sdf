@@ -1,0 +1,28 @@
+#sdf 1.4.32
+
+def "RootCone" (
+references = [@./params.sdf@</Params>, @./payload.sdf@</PayloadCone>]
+)
+{
+}
+
+def "RootSphere" (
+references = [@./params.sdf@</Params>, @./payload.sdf@</PayloadSphere>]
+)
+{
+    # Convenience overs for testing changes to procedurally generated subprim
+    # specs
+    over "geom"
+    {
+    }
+    over "Xform__3_0"
+    {
+    }
+}
+
+def "RootMulti" (
+references = [@./params.sdf@</Params>, @./payload.sdf@</PayloadMulti>]
+)
+{
+}
+

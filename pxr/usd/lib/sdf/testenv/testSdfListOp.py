@@ -195,5 +195,38 @@ class TestSdfListOp(unittest.TestCase):
                     a.ApplyOperations(b.ApplyOperations(l)),
                     c.ApplyOperations(l))
 
+    def test_HasItem(self):
+        a = [1, 2, 3]
+
+        listOp = _ExplicitItems(a)
+        for v in a:
+            self.assertTrue(listOp.HasItem(v))
+        self.assertFalse(listOp.HasItem(4))
+
+        listOp = _AddedItems(a)
+        for v in a:
+            self.assertTrue(listOp.HasItem(v))
+        self.assertFalse(listOp.HasItem(4))
+
+        listOp = _PrependedItems(a)
+        for v in a:
+            self.assertTrue(listOp.HasItem(v))
+        self.assertFalse(listOp.HasItem(4))
+
+        listOp = _AppendedItems(a)
+        for v in a:
+            self.assertTrue(listOp.HasItem(v))
+        self.assertFalse(listOp.HasItem(4))
+
+        listOp = _OrderedItems(a)
+        for v in a:
+            self.assertTrue(listOp.HasItem(v))
+        self.assertFalse(listOp.HasItem(4))
+
+        listOp = _DeletedItems(a)
+        for v in a:
+            self.assertTrue(listOp.HasItem(v))
+        self.assertFalse(listOp.HasItem(4))
+
 if __name__ == "__main__":
     unittest.main()

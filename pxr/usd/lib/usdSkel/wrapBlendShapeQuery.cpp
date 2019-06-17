@@ -94,6 +94,7 @@ void wrapUsdSkelBlendShapeQuery()
 
         .def("GetBlendShape", &This::GetBlendShape)
         .def("GetInbetween", &This::GetInbetween)
+        .def("GetBlendShapeIndex", &This::GetBlendShapeIndex)
 
         .def("GetNumBlendShapes", &This::GetNumBlendShapes)
         .def("GetNumSubShapes", &This::GetNumSubShapes)

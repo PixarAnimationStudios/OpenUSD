@@ -55,6 +55,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdExtComputationContext;
 
+/// A shared pointer to a vector of id's.
+typedef std::shared_ptr<SdfPathVector> HdIdVectorSharedPtr;
+
 /// \class HdSyncRequestVector
 ///
 /// The SceneDelegate is requested to synchronize prims as the result of
@@ -393,6 +396,15 @@ public:
     HD_API
     virtual VtArray<TfToken> GetCategories(SdfPath const& id);
 
+    /// Returns the categories for all instances in the instancer.
+    HD_API
+    virtual std::vector<VtArray<TfToken>>
+    GetInstanceCategories(SdfPath const &instancerId);
+
+    /// Returns the coordinate system bindings, or a nullptr if none are bound.
+    HD_API
+    virtual HdIdVectorSharedPtr GetCoordSysBindings(SdfPath const& id);
+
     // -----------------------------------------------------------------------//
     /// \name Motion samples
     // -----------------------------------------------------------------------//
@@ -579,10 +591,11 @@ public:
     /// \name Camera Aspects
     // -----------------------------------------------------------------------//
 
-    /// Returns an array of clip plane equations in eye-space with y-up
-    /// orientation.
+    /// Returns a single value for a given camera and parameter.
+    /// See HdCameraTokens for the list of paramters.
     HD_API
-    virtual std::vector<GfVec4d> GetClipPlanes(SdfPath const& cameraId);
+    virtual VtValue GetCameraParamValue(SdfPath const& cameraId,
+                                        TfToken const& paramName);
 
     // -----------------------------------------------------------------------//
     /// \name Volume Aspects
@@ -671,6 +684,12 @@ public:
     HD_API
     virtual HdPrimvarDescriptorVector
     GetPrimvarDescriptors(SdfPath const& id, HdInterpolation interpolation);
+
+    // -----------------------------------------------------------------------//
+    /// \name Task Aspects
+    // -----------------------------------------------------------------------//
+    HD_API
+    virtual TfTokenVector GetTaskRenderTags(SdfPath const& taskId);
 
 private:
     HdRenderIndex *_index;

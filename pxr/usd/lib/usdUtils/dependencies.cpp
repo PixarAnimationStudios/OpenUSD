@@ -538,10 +538,12 @@ _FileAnalyzer::_AnalyzeDependencies()
         SdfPrimSpecHandle curr = dfs.top();
         dfs.pop();
 
+        // Metadata is processed even on the pseudoroot, which ensures
+        // we process layer metadata properly.
+        _ProcessMetadata(curr);
         if (curr != _layer->GetPseudoRoot()) {
             _ProcessPayloads(curr);    
             _ProcessProperties(curr);
-            _ProcessMetadata(curr);
             _ProcessReferences(curr);
         }
 

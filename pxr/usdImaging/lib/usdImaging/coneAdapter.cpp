@@ -66,7 +66,7 @@ UsdImagingConeAdapter::Populate(UsdPrim const& prim,
                             UsdImagingInstancerContext const* instancerContext)
 {
     return _AddRprim(HdPrimTypeTokens->mesh,
-                     prim, index, GetMaterialId(prim), instancerContext);
+                     prim, index, GetMaterialUsdPath(prim), instancerContext);
 }
 
 void 
@@ -261,7 +261,7 @@ _GenerateConeMeshTopology()
 
     TF_VERIFY(face == numCounts && index == numIndices);
 
-    return HdMeshTopology(PxOsdOpenSubdivTokens->catmark,
+    return HdMeshTopology(PxOsdOpenSubdivTokens->catmullClark,
                           HdTokens->rightHanded,
                           countsArray, indicesArray);
 }

@@ -92,6 +92,9 @@ public:
                                    std::vector<double>* times) const = 0;
 
     virtual bool
+    GetBlendShapeWeightAttributes(std::vector<UsdAttribute>* attrs) const = 0;
+
+    virtual bool
     BlendShapeWeightsMightBeTimeVarying() const = 0;
 
     const VtTokenArray& GetJointOrder() const { return _jointOrder; }
