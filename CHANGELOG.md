@@ -68,8 +68,6 @@
   to individual instances.
 - Added order independent transparency (OIT) to Hydra GL.
 - Added support for backend-independent picking and highlighting.
-- Inherited primvars are now accessible for renderers that can consume either
-  full or preview bindings.
 - Improved Hydra support for scenegraph cameras.
 - Added support for instance-rate primvar queries in Hydra GL shading code.
 - Added support for generating normals for picking hits in Hydra GL.
