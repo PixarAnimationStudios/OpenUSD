@@ -178,6 +178,7 @@ HdxOitRenderTask::_PrepareOitBuffers(
         _depthBar.reset();
         _indexBar.reset();
         _uniformBar.reset();
+        renderIndex->GetChangeTracker().SetGarbageCollectionNeeded();
 
         _viewport = viewport;
     }
