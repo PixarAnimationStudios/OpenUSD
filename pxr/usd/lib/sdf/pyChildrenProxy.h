@@ -245,9 +245,8 @@ private:
 
     mapped_type _GetItemByIndex(int index) const
     {
-        if (index >= _proxy.size()) {
-            TfPyThrowIndexError("list index out of range");
-        }
+        size_t size = _proxy.size();
+        index = TfPyNormalizeIndex(index, size, true /*throwError*/);
         return _GetView()[index];
     }
 

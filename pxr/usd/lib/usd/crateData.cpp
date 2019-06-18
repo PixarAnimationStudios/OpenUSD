@@ -202,6 +202,10 @@ public:
         return false;
     }
 
+    inline bool StreamsData() const {
+        return true;
+    }
+
     inline bool _GetTargetOrConnectionListOp(
         SdfPath const &path, SdfPathListOp *listOp) const {
         if (path.IsPrimPropertyPath()) {
@@ -471,8 +475,10 @@ public:
     inline bool Has(const SdfAbstractDataSpecId& id,
                     const TfToken & field,
                     VtValue *value) const {
-        TF_DESCRIBE_SCOPE(GetAssetPath().c_str());
-        TfScopeDescription desc2(field.GetText());
+        // These are too expensive to do here, but could be uncommented for
+        // debugging & tracking down corruption.
+        //TF_DESCRIBE_SCOPE(GetAssetPath().c_str());
+        //TfScopeDescription desc2(field.GetText());
         if (VtValue const *fieldValue = _GetFieldValue(id, field)) {
             if (value) {
                 *value = _DetachValue(*fieldValue);
@@ -653,7 +659,9 @@ public:
 
     inline bool QueryTimeSample(const SdfAbstractDataSpecId& id, double time,
                                 VtValue *value) const {
-        TF_DESCRIBE_SCOPE(GetAssetPath().c_str());
+        // This is too expensive to do here, but could be uncommented to help
+        // debugging or tracking down file corruption.
+        //TF_DESCRIBE_SCOPE(GetAssetPath().c_str());
         if (VtValue const *fieldValue =
             _GetFieldValue(id, SdfDataTokens->TimeSamples)) {
             if (fieldValue->IsHolding<TimeSamples>()) {
@@ -1216,6 +1224,12 @@ Usd_CrateData::Open(const std::string &assetPath)
 // ------------------------------------------------------------------------- //
 // Abstract Data Implementation.
 //
+
+bool
+Usd_CrateData::StreamsData() const
+{
+    return _impl->StreamsData();
+}
 
 bool
 Usd_CrateData::HasSpec(const SdfAbstractDataSpecId &id) const

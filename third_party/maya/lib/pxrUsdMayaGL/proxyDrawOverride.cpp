@@ -35,7 +35,6 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/tf/stringUtils.h"
-#include "pxr/imaging/hdx/intersector.h"
 
 #include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
@@ -282,13 +281,13 @@ UsdMayaProxyDrawOverride::userSelect(
         return false;
     }
 
-    const HdxIntersector::HitSet* hitSet =
+    const HdxPickHitVector* hitSet =
         UsdMayaGLBatchRenderer::GetInstance().TestIntersection(
             &_shapeAdapter,
             selectionInfo,
             context);
 
-    const HdxIntersector::Hit* nearestHit =
+    const HdxPickHit* nearestHit =
         UsdMayaGLBatchRenderer::GetNearestHit(hitSet);
 
     if (!nearestHit) {

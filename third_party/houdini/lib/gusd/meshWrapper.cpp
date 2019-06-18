@@ -24,29 +24,26 @@
 #include "meshWrapper.h"
 
 #include "context.h"
-#include "UT_Gf.h"
-#include "GU_USD.h"
 #include "GT_VtArray.h"
-#include "GT_VtStringArray.h"
 #include "tokens.h"
 #include "USD_XformCache.h"
+#include "UT_Gf.h"
 
+#include <GT/GT_DAConstant.h>
 #include <GT/GT_DAConstantValue.h>
-#include <GT/GT_DANumeric.h>
-#include <GT/GT_PrimPolygonMesh.h>
-#include <GT/GT_PrimSubdivisionMesh.h>
-#include <GT/GT_RefineParms.h>
-#include <GT/GT_Refine.h>
-#include <GT/GT_DAIndexedString.h>
-#include <GT/GT_TransformArray.h>
-#include <GT/GT_PrimInstance.h>
 #include <GT/GT_DAIndirect.h>
+#include <GT/GT_DANumeric.h>
 #include <GT/GT_DASubArray.h>
 #include <GT/GT_GEOPrimPacked.h>
-#include <GT/GT_DAConstant.h>
+#include <GT/GT_PrimPolygonMesh.h>
+#include <GT/GT_PrimSubdivisionMesh.h>
+#include <GT/GT_Refine.h>
+#include <GT/GT_RefineParms.h>
+#include <GT/GT_UtilOpenSubdiv.h>
 #include <SYS/SYS_Version.h>
-#include <numeric>
+
 #include <iostream>
+#include <numeric>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -54,6 +51,10 @@ using std::cerr;
 using std::endl;
 using std::string;
 using std::map;
+
+#if SYS_VERSION_FULL_INT >= 0x10050000
+using osd = GT_UtilOpenSubdiv::SdcOptions;
+#endif
 
 #ifdef DEBUG
 #define DBG(x) x
@@ -330,7 +331,7 @@ GusdMeshWrapper::refine(
     gtPointAttrs = gtPointAttrs->addAttribute("P", gtPoints, true);
 
     UsdAttribute normalsAttr = m_usdMesh.GetNormalsAttr();
-    if( normalsAttr.HasAuthoredValue() && normalsAttr.Get(&vtVec3Array, m_time) ) {
+    if( normalsAttr.Get(&vtVec3Array, m_time) ) {
         
         GT_DataArrayHandle gtNormals = 
                 new GusdGT_VtArray<GfVec3f>(vtVec3Array, GT_TYPE_NORMAL);
@@ -357,7 +358,7 @@ GusdMeshWrapper::refine(
 
         // point velocities
         UsdAttribute velAttr = m_usdMesh.GetVelocitiesAttr();
-        if ( velAttr.HasAuthoredValue() && velAttr.Get(&vtVec3Array, m_time) ) {
+        if ( velAttr.Get(&vtVec3Array, m_time) ) {
             
             GT_DataArrayHandle gtVel = 
                     new GusdGT_VtArray<GfVec3f>(vtVec3Array, GT_TYPE_VECTOR);
@@ -450,19 +451,19 @@ GusdMeshWrapper::refine(
     }
 
     if( gtVertexAttrs->entries() > 0 ) {
-	if( reverseWindingOrder ) {
-	    // Construct an index array which will be used to lookup vertex
-	    // attributes in the correct order.
-	    GT_Int32Array* vertexIndirect
-		= new GT_Int32Array(gtIndicesHandle->entries(), 1);
-	    GT_DataArrayHandle vertexIndirectHandle(vertexIndirect);
-	    for(int i=0; i<gtIndicesHandle->entries(); ++i) {
-		vertexIndirect->set(i, i);
-	    }
-	    _reverseWindingOrder(vertexIndirect, gtVertexCounts );
+        if( reverseWindingOrder ) {
+            // Construct an index array which will be used to lookup vertex
+            // attributes in the correct order.
+            GT_Int32Array* vertexIndirect
+                = new GT_Int32Array(gtIndicesHandle->entries(), 1);
+            GT_DataArrayHandle vertexIndirectHandle(vertexIndirect);
+            for(int i=0; i<gtIndicesHandle->entries(); ++i) {
+                vertexIndirect->set(i, i);
+            }
+            _reverseWindingOrder(vertexIndirect, gtVertexCounts );
 
-	    gtVertexAttrs = gtVertexAttrs->createIndirect(vertexIndirect);
-	}
+            gtVertexAttrs = gtVertexAttrs->createIndirect(vertexIndirect);
+        }
     }
 
     // build GT_Primitive
@@ -472,150 +473,14 @@ GusdMeshWrapper::refine(
 
     GT_PrimitiveHandle meshPrim;
     if(isSubdMesh) {
-        GT_PrimSubdivisionMesh *subdPrim =
-            new GT_PrimSubdivisionMesh(gtVertexCounts,
-                                       gtIndicesHandle,
-                                       gtPointAttrs,
-                                       gtVertexAttrs,
-                                       gtUniformAttrs,
-                                       gtDetailAttrs);
-        meshPrim = subdPrim;
-
-        // See the houdini distribution's alembic importer for examples
-        // of how to use these tags:
-        //     ./HoudiniAlembic/GABC/GABC_IObject.C
-        // inside HFS/houdini/public/Alembic/HoudiniAlembic.tgz
-
-        // Scheme
-        if (subdScheme == UsdGeomTokens->catmullClark) {
-            subdPrim->setScheme(GT_CATMULL_CLARK);
-        } else if (subdScheme == UsdGeomTokens->loop) {
-            subdPrim->setScheme(GT_LOOP);
-        } else {
-            // Other values, like bilinear, have no equivalent in houdini.
-        }
-
-        // Corners
-        UsdAttribute cornerIndicesAttr   = m_usdMesh.GetCornerIndicesAttr();
-        UsdAttribute cornerSharpnessAttr = m_usdMesh.GetCornerSharpnessesAttr();
-        if (cornerIndicesAttr.IsValid() && cornerSharpnessAttr.IsValid()) {
-            cornerIndicesAttr.Get(&vtIntArray, m_time);
-            cornerSharpnessAttr.Get(&vtFloatArray, m_time);
-            if(!vtIntArray.empty() && !vtFloatArray.empty()) {
-                GT_DataArrayHandle cornerArrayHandle
-                    = new GT_Int32Array(vtIntArray.data(), vtIntArray.size(), 1);
-                subdPrim->appendIntTag("corner", cornerArrayHandle);
-
-                GT_DataArrayHandle corenerWeightArrayHandle
-                    = new GT_Real32Array(vtFloatArray.data(), vtFloatArray.size(), 1);
-                subdPrim->appendRealTag("corner", corenerWeightArrayHandle);
-            }
-        }
-
-        // Creases
-        UsdAttribute creaseIndicesAttr = m_usdMesh.GetCreaseIndicesAttr();
-        UsdAttribute creaseLengthsAttr = m_usdMesh.GetCreaseLengthsAttr();
-        UsdAttribute creaseSharpnessesAttr = m_usdMesh.GetCreaseSharpnessesAttr();
-        // creaseIndices are mandatory, so we validate as part of the guard
-        VtIntArray vtCreaseIndices;
-        if (creaseLengthsAttr.IsValid() &&
-            creaseSharpnessesAttr.IsValid() &&
-            creaseIndicesAttr.Get(&vtCreaseIndices, m_time)) {
-            // Extract vt arrays
-            VtIntArray vtCreaseLengths;
-            VtFloatArray vtCreaseSharpnesses;
-            creaseLengthsAttr.Get(&vtCreaseLengths, m_time);
-            creaseSharpnessesAttr.Get(&vtCreaseSharpnesses, m_time);
-
-            // Unpack creases to vertex-pairs.
-            // Usd stores creases as N-length chains of vertices;
-            // Houdini expects separate creases per vertex pair.
-            std::vector<int> creaseIndices;
-            std::vector<float> creaseSharpness;
-            // XXX There is no validation that vtCreaseIndices is long enough!
-            if (vtCreaseLengths.size() == vtCreaseSharpnesses.size()) {
-                // We have exactly 1 sharpness per crease.
-                size_t i=0;
-                for (size_t creaseNum=0; creaseNum < vtCreaseLengths.size();
-                     ++creaseNum) {
-                    const float length = vtCreaseLengths[creaseNum];
-                    const float sharp = vtCreaseSharpnesses[creaseNum];
-                    for (size_t indexInCrease=0; indexInCrease < length-1;
-                         ++indexInCrease) {
-                        creaseIndices.push_back( vtCreaseIndices[i] );
-                        creaseIndices.push_back( vtCreaseIndices[i+1] );
-                        creaseSharpness.push_back( sharp );
-                        ++i;
-                    }
-                    // Last index is only used once.
-                    ++i;
-                }
-                UT_ASSERT(i == vtCreaseIndices.size());
-            } else {
-                // We have N-1 sharpnesses for each crease that has N edges,
-                // i.e. the sharpness varies along each crease.
-                size_t i=0;
-                size_t sharpIndex=0;
-                for (size_t creaseNum=0; creaseNum < vtCreaseLengths.size();
-                     ++creaseNum) {
-                    const float length = vtCreaseLengths[creaseNum];
-                    for (size_t indexInCrease=0; indexInCrease < length-1;
-                         ++indexInCrease) {
-                        creaseIndices.push_back( vtCreaseIndices[i] );
-                        creaseIndices.push_back( vtCreaseIndices[i+1] );
-                        const float sharp = vtCreaseSharpnesses[sharpIndex];
-                        creaseSharpness.push_back(sharp);
-                        ++i;
-                        ++sharpIndex;
-                    }
-                    // Last index is only used once.
-                    ++i;
-                }
-                UT_ASSERT(i == vtCreaseIndices.size());
-                UT_ASSERT(sharpIndex == vtCreaseSharpnesses.size());
-            }
-
-            // Store tag.
-            GT_Int32Array *index =
-                new GT_Int32Array( &creaseIndices[0],
-                                   creaseIndices.size(), 1);
-            GT_Real32Array *weight =
-                new GT_Real32Array( &creaseSharpness[0],
-                                    creaseSharpness.size(), 1);
-            UT_ASSERT(index->entries() == weight->entries()*2);
-            subdPrim->appendIntTag("crease", GT_DataArrayHandle(index));
-            subdPrim->appendRealTag("crease", GT_DataArrayHandle(weight));
-        }
-
-        // Holes
-        UsdAttribute holeIndicesAttr = m_usdMesh.GetHoleIndicesAttr();
-        VtIntArray holeIndices;
-        holeIndicesAttr.Get(&holeIndices, m_time);
-        if (!holeIndices.empty()) {
-            subdPrim->appendIntTag("hole", GT_DataArrayHandle(
-                                       new GusdGT_VtArray<int>(holeIndices)));
-        }
-
-        // Interpolation boundaries
-        UsdAttribute interpBoundaryAttr = m_usdMesh.GetInterpolateBoundaryAttr();
-        if(interpBoundaryAttr.IsValid()) {
-            TfToken val;
-            interpBoundaryAttr.Get(&val, m_time);
-            GT_DataArrayHandle interpBoundaryHandle = new GT_IntConstant(1, 1);
-            subdPrim->appendIntTag("interpolateboundary", interpBoundaryHandle);
-        }
-        //if (ival = sample.getFaceVaryingInterpolateBoundary())
-        //{
-            //GT_IntConstant    *val = new GT_IntConstant(1, ival);
-            //gt->appendIntTag("facevaryinginterpolateboundary",
-                //GT_DataArrayHandle(val));
-        //}
-        //if (ival = sample.getFaceVaryingPropagateCorners())
-        //{
-            //GT_IntConstant    *val = new GT_IntConstant(1, ival);
-            //gt->appendIntTag("facevaryingpropagatecorners",
-                //GT_DataArrayHandle(val));
-        //}
+        meshPrim = _RefineSubdiv(refiner, subdScheme,
+                                 gtVertexCounts,
+                                 gtIndicesHandle,
+                                 gtPointAttrs,
+                                 gtVertexAttrs,
+                                 gtUniformAttrs,
+                                 gtDetailAttrs,
+                                 parms);
     }
     else {
         meshPrim
@@ -630,6 +495,268 @@ GusdMeshWrapper::refine(
     refiner.addPrimitive( meshPrim );
     return true;
 }
+
+GT_PrimitiveHandle
+GusdMeshWrapper::_RefineSubdiv(
+    GT_Refine& refiner, 
+    const TfToken& subdScheme,
+    const GT_DataArrayHandle& gtVertexCounts,
+    const GT_DataArrayHandle& gtIndices,
+    const GT_AttributeListHandle& gtPointAttrs,
+    const GT_AttributeListHandle& gtVertexAttrs,
+    const GT_AttributeListHandle& gtUniformAttrs,
+    const GT_AttributeListHandle& gtDetailAttrs,
+    const GT_RefineParms* parms) const
+{
+    std::unique_ptr<GT_PrimSubdivisionMesh> mesh(
+        new GT_PrimSubdivisionMesh(gtVertexCounts,
+                                   gtIndices,
+                                   gtPointAttrs,
+                                   gtVertexAttrs,
+                                   gtUniformAttrs,
+                                   gtDetailAttrs));
+
+    // See the houdini distribution's alembic importer for examples
+    // of how to use these tags:
+    //     ./HoudiniAlembic/GABC/GABC_IObject.C
+    // inside HFS/houdini/public/Alembic/HoudiniAlembic.tgz
+
+    // Scheme
+    if (subdScheme == UsdGeomTokens->catmullClark) {
+        mesh->setScheme(GT_CATMULL_CLARK);
+    } else if (subdScheme == UsdGeomTokens->loop) {
+        mesh->setScheme(GT_LOOP);
+    } else {
+        // Other values, like bilinear, have no equivalent in houdini.
+    }
+
+    // Subdiv tags.
+    if (GT_RefineParms::getBool(parms, "subdiv:corners", true)) {
+        _RefineSubdivCorners(*mesh, refiner);
+    }
+    if (GT_RefineParms::getBool(parms, "subdiv:creases", true)) {
+        _RefineSubdivCreases(*mesh, refiner);
+    }
+    if (GT_RefineParms::getBool(parms, "subdiv:holes", true)) {
+        _RefineSubdivHoles(*mesh, refiner);
+    }
+    if (GT_RefineParms::getBool(parms, "osd:subdivTags", true)) {
+        _RefineSubdivOsdTags(*mesh, refiner);
+    }
+
+    return mesh.release();
+}
+
+void
+GusdMeshWrapper::_RefineSubdivCorners(
+    GT_PrimSubdivisionMesh& mesh,
+    GT_Refine& refiner) const
+{
+    UsdAttribute cornerIndicesAttr   = m_usdMesh.GetCornerIndicesAttr();
+    UsdAttribute cornerSharpnessAttr = m_usdMesh.GetCornerSharpnessesAttr();
+    VtIntArray indices;
+    VtFloatArray sharpness;
+    if (cornerIndicesAttr.IsValid() && cornerSharpnessAttr.IsValid()) {
+        cornerIndicesAttr.Get(&indices, m_time);
+        cornerSharpnessAttr.Get(&sharpness, m_time);
+        if(!indices.empty() && !sharpness.empty()) {
+            GT_DataArrayHandle cornerArrayHandle
+                = new GT_Int32Array(indices.data(), indices.size(), 1);
+            mesh.appendIntTag("corner", cornerArrayHandle);
+
+            GT_DataArrayHandle cornerWeightArrayHandle
+                = new GT_Real32Array(sharpness.data(), sharpness.size(), 1);
+            mesh.appendRealTag("corner", cornerWeightArrayHandle);
+        }
+    }
+}
+
+void
+GusdMeshWrapper::_RefineSubdivCreases(
+    GT_PrimSubdivisionMesh& mesh,
+    GT_Refine& refiner) const
+{
+    UsdAttribute creaseIndicesAttr = m_usdMesh.GetCreaseIndicesAttr();
+    UsdAttribute creaseLengthsAttr = m_usdMesh.GetCreaseLengthsAttr();
+    UsdAttribute creaseSharpnessesAttr = m_usdMesh.GetCreaseSharpnessesAttr();
+    // creaseIndices are mandatory, so we validate as part of the guard
+    VtIntArray vtCreaseIndices;
+    if (creaseIndicesAttr.Get(&vtCreaseIndices, m_time)) {
+        // Extract vt arrays
+        VtIntArray vtCreaseLengths;
+        VtFloatArray vtCreaseSharpnesses;
+        creaseLengthsAttr.Get(&vtCreaseLengths, m_time);
+        creaseSharpnessesAttr.Get(&vtCreaseSharpnesses, m_time);
+
+        // Unpack creases to vertex-pairs.
+        // Usd stores creases as N-length chains of vertices;
+        // Houdini expects separate creases per vertex pair.
+        std::vector<int> creaseIndices;
+        std::vector<float> creaseSharpness;
+        // XXX There is no validation that vtCreaseIndices is long enough!
+        if (vtCreaseLengths.size() == vtCreaseSharpnesses.size()) {
+            // We have exactly 1 sharpness per crease.
+            size_t i=0;
+            for (size_t creaseNum=0; creaseNum < vtCreaseLengths.size();
+                 ++creaseNum) {
+                const float length = vtCreaseLengths[creaseNum];
+                const float sharp = vtCreaseSharpnesses[creaseNum];
+                for (size_t indexInCrease=0; indexInCrease < length-1;
+                     ++indexInCrease) {
+                    creaseIndices.push_back( vtCreaseIndices[i] );
+                    creaseIndices.push_back( vtCreaseIndices[i+1] );
+                    creaseSharpness.push_back( sharp );
+                    ++i;
+                }
+                // Last index is only used once.
+                ++i;
+            }
+            UT_ASSERT(i == vtCreaseIndices.size());
+        } else {
+            // We have N-1 sharpnesses for each crease that has N edges,
+            // i.e. the sharpness varies along each crease.
+            size_t i=0;
+            size_t sharpIndex=0;
+            for (size_t creaseNum=0; creaseNum < vtCreaseLengths.size();
+                 ++creaseNum) {
+                const float length = vtCreaseLengths[creaseNum];
+                for (size_t indexInCrease=0; indexInCrease < length-1;
+                     ++indexInCrease) {
+                    creaseIndices.push_back( vtCreaseIndices[i] );
+                    creaseIndices.push_back( vtCreaseIndices[i+1] );
+                    const float sharp = vtCreaseSharpnesses[sharpIndex];
+                    creaseSharpness.push_back(sharp);
+                    ++i;
+                    ++sharpIndex;
+                }
+                // Last index is only used once.
+                ++i;
+            }
+            UT_ASSERT(i == vtCreaseIndices.size());
+            UT_ASSERT(sharpIndex == vtCreaseSharpnesses.size());
+        }
+
+        // Store tag.
+        GT_Int32Array *index =
+            new GT_Int32Array( &creaseIndices[0],
+                               creaseIndices.size(), 1);
+        GT_Real32Array *weight =
+            new GT_Real32Array( &creaseSharpness[0],
+                                creaseSharpness.size(), 1);
+        UT_ASSERT(index->entries() == weight->entries()*2);
+        mesh.appendIntTag("crease", GT_DataArrayHandle(index));
+        mesh.appendRealTag("crease", GT_DataArrayHandle(weight));
+    }
+}
+
+
+void
+GusdMeshWrapper::_RefineSubdivHoles(
+    GT_PrimSubdivisionMesh& mesh,
+    GT_Refine& refiner) const
+{
+    UsdAttribute holeIndicesAttr = m_usdMesh.GetHoleIndicesAttr();
+    VtIntArray holeIndices;
+    holeIndicesAttr.Get(&holeIndices, m_time);
+    if (!holeIndices.empty()) {
+        mesh.appendIntTag("hole", GT_DataArrayHandle(
+                              new GusdGT_VtArray<int>(holeIndices)));
+    }
+}
+
+
+void
+GusdMeshWrapper::_RefineSubdivOsdTags(
+    GT_PrimSubdivisionMesh& mesh,
+    GT_Refine& refiner) const
+{
+#if SYS_VERSION_FULL_INT >= 0x10050000
+    // The following attributes from the m_usdMesh need to be stored as
+    // specially named tags. (See the help docs for houdini's Subdivide
+    // SOP for more info).
+    UsdAttribute attr;
+    TfToken token;
+
+    // Interpolate boundary -> "osd_vtxboundaryinterpolation"
+    attr = m_usdMesh.GetInterpolateBoundaryAttr();
+    if (attr.IsValid() && attr.HasAuthoredValue() &&
+        attr.Get(&token, m_time)) {
+        int value(-1);
+        if (token == UsdGeomTokens->none) {
+            value = osd::VTX_BOUNDARY_NONE;
+
+        } else if (token == UsdGeomTokens->edgeOnly) {
+            value = osd::VTX_BOUNDARY_EDGE_ONLY;
+
+        } else if (token == UsdGeomTokens->edgeAndCorner) {
+            value = osd::VTX_BOUNDARY_EDGE_AND_CORNER;
+        }
+        if (value != -1) {
+            mesh.appendIntTag("osd_vtxboundaryinterpolation",
+                GT_DataArrayHandle(new GT_IntConstant(1, value)));
+        }
+    }
+
+    // Face varying linear interpolation -> "osd_fvarlinearinterpolation"
+    attr = m_usdMesh.GetFaceVaryingLinearInterpolationAttr();
+    if (attr.IsValid() && attr.HasAuthoredValue() &&
+        attr.Get(&token, m_time)) {
+        int value(-1);
+        if (token == UsdGeomTokens->none) {
+            value = osd::FVAR_LINEAR_NONE;
+
+        } else if (token == UsdGeomTokens->cornersOnly) {
+            value = osd::FVAR_LINEAR_CORNERS_ONLY;
+
+        } else if (token == UsdGeomTokens->cornersPlus1) {
+            value = osd::FVAR_LINEAR_CORNERS_PLUS1;
+
+        } else if (token == UsdGeomTokens->cornersPlus2) {
+            value = osd::FVAR_LINEAR_CORNERS_PLUS2;
+
+        } else if (token == UsdGeomTokens->boundaries) {
+            value = osd::FVAR_LINEAR_BOUNDARIES;
+
+        } else if (token == UsdGeomTokens->all) {
+            value = osd::FVAR_LINEAR_ALL;
+        }
+        if (value != -1) {
+            mesh.appendIntTag("osd_fvarlinearinterpolation",
+                GT_DataArrayHandle(new GT_IntConstant(1, value)));
+        }
+    }
+
+    // Triangle subdivision rule -> "osd_trianglesubdiv"
+    attr = m_usdMesh.GetTriangleSubdivisionRuleAttr();
+    if (attr.IsValid() && attr.HasAuthoredValue() &&
+        attr.Get(&token, m_time)) {
+        int value(-1);
+        if (token == UsdGeomTokens->catmullClark) {
+            value = osd::TRI_SUB_CATMARK;
+
+        } else if (token == UsdGeomTokens->smooth) {
+            value = osd::VTX_BOUNDARY_EDGE_ONLY;
+
+        } else if (token == UsdGeomTokens->edgeAndCorner) {
+            value = osd::TRI_SUB_SMOOTH;
+        }
+        if (value != -1) {
+            mesh.appendIntTag("osd_trianglesubdiv",
+                GT_DataArrayHandle(new GT_IntConstant(1, value)));
+        }
+    }
+#else // for versions earliear than 16.5
+    // Interpolation boundaries
+    UsdAttribute interpBoundaryAttr = m_usdMesh.GetInterpolateBoundaryAttr();
+    if(interpBoundaryAttr.IsValid()) {
+        TfToken val;
+        interpBoundaryAttr.Get(&val, m_time);
+        GT_DataArrayHandle interpBoundaryHandle = new GT_IntConstant(1, 1);
+        mesh.appendIntTag("interpolateboundary", interpBoundaryHandle);
+    }
+#endif
+}    
+
 
 namespace {
 

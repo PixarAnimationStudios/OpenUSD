@@ -236,6 +236,12 @@ public:
         insert(begin, end);
     }
 
+    /// Construct from an initializer_list.
+    ///
+    TfDenseHashMap(std::initializer_list<value_type> l) {
+        insert(l.begin(), l.end());
+    }
+
     /// Copy Ctor.
     ///
     TfDenseHashMap(const TfDenseHashMap &rhs)
@@ -248,6 +254,14 @@ public:
     ///
     TfDenseHashMap &operator=(TfDenseHashMap rhs) {
         swap(rhs);
+        return *this;
+    }
+
+    /// Assignment from an initializer_list.
+    ///
+    TfDenseHashMap &operator=(std::initializer_list<value_type> l) {
+        clear();
+        insert(l.begin(), l.end());
         return *this;
     }
 

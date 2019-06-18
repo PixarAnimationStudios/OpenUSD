@@ -447,7 +447,6 @@ class TestSdfCopyUtils(unittest.TestCase):
         attrSpec.connectionPathList.explicitItems = \
             [ "/Test/Child.attr2", "/Test/Child/Subchild.attr3", 
               "/Test/Sibling.attr" ]
-        Sdf.MapperSpec(attrSpec, "/Test/Child.attr2", "mapper")
 
         # Copy root prim and verify that connections on the child prim that
         # point to objects beneath /Test are remapped to /TestCopy.
@@ -476,8 +475,6 @@ class TestSdfCopyUtils(unittest.TestCase):
             [ "/Dest.attr2", "/Dest/Subchild.attr3", "/Test/Sibling.attr" ]
         self.assertEqual(
             dstAttrSpec.GetInfo("connectionPaths"), expectedListOp)
-        self.assertTrue(
-            dstAttrSpec.connectionMappers["/Dest.attr2"].typeName, "mapper")
 
         # Same as above, but copy to variant to ensure that variant selection
         # paths aren't authored into the connection list.
@@ -493,8 +490,6 @@ class TestSdfCopyUtils(unittest.TestCase):
             [ "/Variant.attr2", "/Variant/Subchild.attr3", "/Test/Sibling.attr" ]
         self.assertEqual(
             dstAttrSpec.GetInfo("connectionPaths"), expectedListOp)
-        self.assertTrue(
-            dstAttrSpec.connectionMappers["/Variant.attr2"].typeName, "mapper")
 
         # Copy from variant to variant, again to ensure that variant selection
         # paths aren't authored into the connection list.
@@ -508,8 +503,6 @@ class TestSdfCopyUtils(unittest.TestCase):
 
         self.assertEqual(
             dstAttrSpec.GetInfo("connectionPaths"), expectedListOp)
-        self.assertTrue(
-            dstAttrSpec.connectionMappers["/Variant.attr2"].typeName, "mapper")
 
     def test_RelationshipTargetRemapping(self):
         """Tests that relationship targets that point to a child of the 

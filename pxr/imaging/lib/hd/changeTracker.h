@@ -94,6 +94,7 @@ public:
         DirtyType             = 1 << 1,
         DirtyParams           = 1 << 2,
         DirtyCollection       = 1 << 3,
+        DirtyRenderTags       = 1 << 4,
     };
 
     HD_API
@@ -324,7 +325,7 @@ public:
 
     /// Start tracking Task with the given \p id.
     HD_API
-    void TaskInserted(SdfPath const& id);
+    void TaskInserted(SdfPath const& id, HdDirtyBits initialDirtyState);
 
     /// Stop tracking Task with the given \p id.
     HD_API
@@ -341,6 +342,19 @@ public:
     /// Set the dirty flags to \p newBits.
     HD_API
     void MarkTaskClean(SdfPath const& id, HdDirtyBits newBits=Clean);
+
+    /// Called to flag when the set of active render tags have changed.
+    /// This can either be because either the Task's opinion (which
+    /// resolves both view and render pass opinions) and a Prims opinion.
+    ///
+    /// Calling this means that any cached prim gathers that filter by render
+    /// tag need to invalidated.
+    HD_API
+    void MarkRenderTagsDirty();
+
+    /// Retrieve the current version number of the render tag set
+    HD_API
+    unsigned GetRenderTagVersion() const;
 
     // ---------------------------------------------------------------------- //
     /// @}
@@ -466,10 +480,6 @@ public:
     HD_API
     void MarkCollectionDirty(TfToken const& collectionName);
 
-    /// Invalidates all collections by bumping a global version number.
-    HD_API
-    void MarkAllCollectionsDirty();
-
     /// Returns the current version of the named collection.
     HD_API
     unsigned GetCollectionVersion(TfToken const& collectionName) const;
@@ -485,11 +495,6 @@ public:
         return _varyingStateVersion;
     }
 
-    /// Returns the change count 
-    unsigned GetChangeCount() const {
-        return _changeCount;
-    }
-
     /// Marks all batches dirty, meaning they need to be validated and
     /// potentially rebuilt.
     HD_API
@@ -499,9 +504,49 @@ public:
     HD_API
     unsigned GetBatchVersion() const;
 
+    // ---------------------------------------------------------------------- //
+    /// @}
+    /// \name Render Index Versioning
+    /// @{
+    // ---------------------------------------------------------------------- //
+
     /// Returns the current version of the Render Index's RPrim set.
-    HD_API
-    unsigned GetRenderIndexVersion() const;
+    /// This version number changes when Rprims are inserted or removed
+    /// from the render index.  Invalidating any cached gather operations.
+    unsigned GetRprimIndexVersion() const {
+        return _rprimIndexVersion;
+    }
+
+    /// Returns the current version of the Render Index's SPrim set.
+    /// This version number changes when Sprims are inserted or removed
+    /// from the render index.  Invalidating any cached gather operations.
+    unsigned GetSprimIndexVersion() const {
+        return _sprimIndexVersion;
+    }
+
+    /// Returns the current version of the Render Index's BPrim set.
+    /// This version number changes when Bprims are inserted or removed
+    /// from the render index.  Invalidating any cached gather operations.
+    unsigned GetBprimIndexVersion() const {
+        return _bprimIndexVersion;
+    }
+
+    /// Returns the current version of the Render Index's Instancer set.
+    /// This version number changes when Instancers are inserted or removed
+    /// from the render index.  Invalidating any cached gather operations.
+    unsigned GetInstancerIndexVersion() const {
+        return _instancerIndexVersion;
+    }
+
+
+    /// Returns the current version of the scene state.
+    /// This version number changes whenever any prims are inserted, removed
+    /// or marked dirty.
+    /// The use case is to detect that nothing has changed, so the Sync
+    /// phase can be avoided.
+    unsigned GetSceneStateVersion() const {
+        return _sceneStateVersion;
+    }
 
     // ---------------------------------------------------------------------- //
     /// @}
@@ -568,14 +613,24 @@ private:
     // the varyingStateVersion, which triggers downstream invalidation.
     unsigned _varyingStateVersion;
  
-    // Used for coarse grain invalidation of all RprimCollections.
-    unsigned _indexVersion;
+    // Tracks changes (insertions/removals) of prims in the render index.
+    // This is used to indicating that cached gather operations need to be
+    // re-evaluated, such as dirty lists or batch building.
+    unsigned _rprimIndexVersion;
+    unsigned _sprimIndexVersion;
+    unsigned _bprimIndexVersion;
+    unsigned _instancerIndexVersion;
 
-    // Used to detect that no changes have occurred when building dirty lists.
-    unsigned _changeCount;
+    // The following tracks any changes of state.  As a result it is very broad.
+    // The use case to detect, when no changes have been made, as to
+    // avoid the need to sync or reset progressive renderers.
+    unsigned _sceneStateVersion;
 
     // Used to detect that visibility changed somewhere in the render index.
     unsigned _visChangeCount;
+
+    // Used to detect changes to the set of active render tags
+    unsigned _renderTagVersion;
 
     // Used to validate draw batches.
     std::atomic_uint _batchVersion;

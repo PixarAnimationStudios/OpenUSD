@@ -310,69 +310,6 @@ struct _CentralDirectoryHeader
     }
 };
 
-// Read _CentralDirectoryHeader from input stream. Returns an invalid
-// _CentralDirectoryHeader if an error occurs of the input stream is too small.
-_CentralDirectoryHeader
-_ReadCentralDirectoryHeader(_InputStream& src)
-{
-    // If the source does not have enough bytes to accommodate the
-    // fixed-sized portion of the header, bail out so we don't try to
-    // read off the end of the source.
-    if (src.RemainingSize() < _CentralDirectoryHeader::FixedSize) {
-        return _CentralDirectoryHeader();
-    }
-
-    _CentralDirectoryHeader h;
-    src.Read(&h.f.signature);
-
-    // If signature is not the expected value, reset the source back to
-    // its original position and bail.
-    if (!h.IsValid()) {
-        src.Advance(-sizeof(decltype(h.f.signature)));
-        return _CentralDirectoryHeader();
-    }
-
-    src.Read(&h.f.versionMadeBy);
-    src.Read(&h.f.versionForExtract);
-    src.Read(&h.f.bits);
-    src.Read(&h.f.compressionMethod);
-    src.Read(&h.f.lastModTime);
-    src.Read(&h.f.lastModDate);
-    src.Read(&h.f.crc32);
-    src.Read(&h.f.compressedSize);
-    src.Read(&h.f.uncompressedSize);
-    src.Read(&h.f.filenameLength);
-    src.Read(&h.f.extraFieldLength);
-    src.Read(&h.f.commentLength);
-    src.Read(&h.f.diskNumberStart);
-    src.Read(&h.f.internalAttrs);
-    src.Read(&h.f.externalAttrs);
-    src.Read(&h.f.localHeaderOffset);
-
-    if (src.RemainingSize() < h.f.filenameLength) {
-        return _CentralDirectoryHeader();
-    }
-
-    h.filenameStart = src.TellMemoryAddress();
-    src.Advance(h.f.filenameLength);
-
-    if (src.RemainingSize() < h.f.extraFieldLength) {
-        return _CentralDirectoryHeader();
-    }
-
-    h.extraFieldStart = src.TellMemoryAddress();
-    src.Advance(h.f.extraFieldLength);
-
-    if (src.RemainingSize() < h.f.commentLength) {
-        return _CentralDirectoryHeader();
-    }
-
-    h.commentStart = src.TellMemoryAddress();
-    src.Advance(h.f.commentLength);
-
-    return h;
-};
-
 // Write given _CentralDirectoryHeader to given output stream.
 void
 _WriteCentralDirectoryHeader(
@@ -439,48 +376,6 @@ struct _EndOfCentralDirectoryRecord
         return f.signature == Signature;
     }
 };
-
-// Read _EndOfCentralDirectoryRecord from input stream. Returns an invalid 
-// _EndOfCentralDirectoryRecord if an error occurs or the input stream is too 
-// small.
-_EndOfCentralDirectoryRecord
-_ReadEndOfCentralDirectoryRecord(_InputStream& src)
-{
-    // If the source does not have enough bytes to accommodate the
-    // fixed-sized portion of the record, bail out so we don't try to
-    // read off the end of the source.
-    if (src.RemainingSize() < _EndOfCentralDirectoryRecord::FixedSize) {
-        return _EndOfCentralDirectoryRecord();
-    }
-
-    _EndOfCentralDirectoryRecord r;
-
-    // If signature is not the expected value, reset the source back to
-    // its original position and bail.
-    src.Read(&r.f.signature);
-    if (!r.IsValid()) {
-        src.Advance(-sizeof(decltype(r.f.signature)));
-        return _EndOfCentralDirectoryRecord();
-    }
-
-    src.Read(&r.f.signature);
-    src.Read(&r.f.diskNumber);
-    src.Read(&r.f.diskNumberForCentralDir);
-    src.Read(&r.f.numCentralDirEntriesOnDisk);
-    src.Read(&r.f.numCentralDirEntries);
-    src.Read(&r.f.centralDirLength);
-    src.Read(&r.f.centralDirOffset);
-    src.Read(&r.f.commentLength);
-
-    if (src.RemainingSize() < r.f.commentLength) {
-        return _EndOfCentralDirectoryRecord();
-    }
-
-    r.commentStart = src.TellMemoryAddress();
-    src.Advance(r.f.commentLength);
-
-    return r;
-}
 
 // Write given _EndOfCentralDirectoryRecord to given output stream.
 void

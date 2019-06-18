@@ -133,6 +133,11 @@ def _GetLibPrefix(layer):
         _ProperCase(_GetLibName(layer)))
 
 
+def _GetLibTokens(layer):
+    """ Return dictionary of library-wide tokens defined in layer. """
+    return _GetLibMetadata(layer).get('libraryTokens', {})
+    
+
 def _GetTokensPrefix(layer):
     """ Return the tokensPrefix defined in layer."""
 
@@ -214,6 +219,16 @@ valueTypeNameToStr = dict(
      for n in dir(Sdf.ValueTypeNames)
      if isinstance(getattr(Sdf.ValueTypeNames, n), Sdf.ValueTypeName)])
 
+def _GetSchemaDefException(msg, path):
+    errorPrefix = ('Invalid schema definition at ' 
+                   + '<' + str(path) + '>')
+    errorSuffix = ('See '
+                   'https://graphics.pixar.com/usd/docs/api/'
+                   '_usd__page__generating_schemas.html '
+                   'for more information.\n')
+    errorMsg = lambda s: errorPrefix + '\n' + s + '\n' + errorSuffix
+    return Exception(errorMsg(msg))
+
 class AttrInfo(PropInfo):
     def __init__(self, sdfProp):
         super(AttrInfo, self).__init__(sdfProp)
@@ -222,8 +237,17 @@ class AttrInfo(PropInfo):
         self.variability = str(sdfProp.variability).replace('Sdf.', 'Sdf')
         self.fallback = sdfProp.default
         self.cppType = sdfProp.typeName.cppTypeName
-        self.usdType = "SdfValueTypeNames->%s" % (
-            valueTypeNameToStr[sdfProp.typeName])
+
+        if sdfProp.typeName not in valueTypeNameToStr:
+            raise _GetSchemaDefException(
+                        "Code generation requires that all attributes "
+                        "have a known type "
+                        "(<%s> has type '%s', which is not a member of "
+                        "Sdf.ValueTypeNames.)"
+                        % (sdfProp.path, sdfProp.typeName), sdfProp.path)
+        else:
+            self.usdType = "SdfValueTypeNames->%s" % (
+                valueTypeNameToStr[sdfProp.typeName])
         
         self.details = [('C++ Type', self.cppType),
                         ('Usd Type', self.usdType),
@@ -261,22 +285,14 @@ def _IsTyped(p):
 
 class ClassInfo(object):
     def __init__(self, usdPrim, sdfPrim):
-        # Error handling
-        errorPrefix = ('Invalid schema definition at ' 
-                       + '<' + str(sdfPrim.path) + '>')
-        errorSuffix = ('See '
-                       'https://graphics.pixar.com/usd/docs/api/'
-                       '_usd__page__generating_schemas.html '
-                       'for more information.\n')
-        errorMsg = lambda s: errorPrefix + '\n' + s + '\n' + errorSuffix
-
         # First validate proper class naming...
         if (sdfPrim.typeName != sdfPrim.path.name and
             sdfPrim.typeName != ''):
-            raise Exception(errorMsg("Code generation requires that every instantiable "
-                                     "class's name must match its declared type "
-                                     "('%s' and '%s' do not match.)" % 
-                                     (sdfPrim.typeName, sdfPrim.path.name)))
+            raise _GetSchemaDefException(
+                "Code generation requires that every instantiable "
+                "class's name must match its declared type "
+                "('%s' and '%s' do not match.)" % 
+                (sdfPrim.typeName, sdfPrim.path.name), sdfPrim.path)
         
         # NOTE: usdPrim should ONLY be used for querying information regarding
         # the class's parent in order to avoid duplicating class members during
@@ -287,10 +303,11 @@ class ClassInfo(object):
         # We do not allow multiple inheritance 
         numInherits = len(inheritsList)
         if numInherits > 1:
-            raise Exception(errorMsg(('Schemas can only inherit from one other schema '
-                                      'at most. This schema inherits from %d (%s).' 
-                                      % (numInherits, 
-                                         ', '.join(map(str, inheritsList))))))
+            raise _GetSchemaDefException(
+                'Schemas can only inherit from one other schema '
+                'at most. This schema inherits from %d (%s).' 
+                 % (numInherits, ', '.join(map(str, inheritsList))), 
+                 sdfPrim.path)
 
         # Allow user to specify custom naming through customData metadata.
         self.customData = dict(sdfPrim.customData)
@@ -307,6 +324,8 @@ class ClassInfo(object):
          self.className,
          self.cppClassName,
          self.baseFileName) = _ExtractNames(sdfPrim, self.customData)
+
+        self.parentCppClassName = ''
 
         # We must also hold onto the authored prim name in schema.usda
         # for cases in which we must differentiate that from the authored
@@ -363,9 +382,10 @@ class ClassInfo(object):
            self.apiSchemaType not in [Usd.Tokens.nonApplied, 
                                       Usd.Tokens.singleApply,
                                       Usd.Tokens.multipleApply]:
-            raise Exception(errorMsg("CustomData 'apiSchemaType' is %s. It must"
-                " be one of {'nonApplied', 'singleApply', 'multipleApply'} "
-                "for an API schema."))
+            raise _GetSchemaDefException("CustomData 'apiSchemaType' is %s. It must"
+                                " be one of {'nonApplied', 'singleApply', 'multipleApply'} "
+                                "for an API schema.",
+                                sdfPrim.path)
 
         self.isAppliedAPISchema = self.apiSchemaType in [Usd.Tokens.singleApply, 
                                                       Usd.Tokens.multipleApply]
@@ -387,34 +407,40 @@ class ClassInfo(object):
             self.schemaType = "UsdSchemaType::AbstractBase"
 
         if self.isConcrete and not self.isTyped:
-            raise Exception(errorMsg('Schema classes must either inherit '
-                                     'Typed(IsA), or neither inherit typed '
-                                     'nor provide a typename(API).'))
+            raise _GetSchemaDefException('Schema classes must either inherit '
+                                'Typed(IsA), or neither inherit typed '
+                                'nor provide a typename(API).',
+                                sdfPrim.path)
 
         if self.isApi and sdfPrim.path.name != "APISchemaBase" and \
             not sdfPrim.path.name.endswith('API'):
-            raise Exception(errorMsg('API schemas must be named with an API suffix.'))
+            raise _GetSchemaDefException(
+                        'API schemas must be named with an API suffix.', 
+                        sdfPrim.path)
         
 
         if self.isApi and not self.isAppliedAPISchema and self.isPrivateApply:
-            raise Exception(errorMsg("Non-applied API schema cannot be tagged "
-                "as private-apply"))
+            raise _GetSchemaDefException("Non-applied API schema cannot be "
+                                "tagged as private-apply", sdfPrim.path)
 
         if self.isApi and sdfPrim.path.name != "APISchemaBase" and \
             (not self.parentCppClassName):
-            raise Exception(errorMsg("API schemas must explicitly inherit from "
-                    "UsdAPISchemaBase."))
+            raise _GetSchemaDefException(
+                "API schemas must explicitly inherit from UsdAPISchemaBase.", 
+                sdfPrim.path)
 
         if not self.isApi and self.isAppliedAPISchema:
-            raise Exception(errorMsg('Non API schemas cannot have non-empty '
-                                     'apiSchemaType value.'))
+            raise _GetSchemaDefException(
+                'Non API schemas cannot have non-empty apiSchemaType value.', 
+                sdfPrim.path)
 
         if (not self.isApi or not self.isAppliedAPISchema) and \
                 self.isPrivateApply:
-            raise Exception(errorMsg('Non API schemas or non-applied API '
-                                     'schemas cannot be marked with '
-                                     'isPrivateApply, only applied API schemas '
-                                     'have an Apply() method generated. '))
+            raise _GetSchemaDefException('Non API schemas or non-applied API '
+                                'schemas cannot be marked with '
+                                'isPrivateApply, only applied API schemas '
+                                'have an Apply() method generated. ',
+                                sdfPrim.path)
          
     def GetHeaderFile(self):
         return self.baseFileName + '.h'
@@ -481,26 +507,21 @@ def ParseUsd(usdFilePath):
         usdPrim = stage.GetPrimAtPath(sdfPrim.path)
         classInfo = ClassInfo(usdPrim, sdfPrim)
 
-        errorPrefix = ('Invalid schema definition at ' 
-                       + '<' + str(sdfPrim.path) + '>')
-        errorSuffix = ('See '
-                       'https://graphics.pixar.com/usd/docs/api/'
-                       '_usd__page__generating_schemas.html '
-                       'for more information.\n')
-        errorMsg = lambda s: errorPrefix + '\n' + s + '\n' + errorSuffix
         # make sure that if we have a multiple-apply schema with a property
         # namespace prefix that the prim actually has some properties
         if classInfo.apiSchemaType == Usd.Tokens.multipleApply:
             if classInfo.propertyNamespacePrefix and \
                 len(sdfPrim.properties) == 0:
-                raise Exception(errorMsg("Multiple-apply schemas that have the "
-                    "propertyNamespacePrefix metadata fields must have at "
-                    "least one property"))
+                    raise _GetSchemaDefException(
+                        "Multiple-apply schemas that have the "
+                        "propertyNamespacePrefix metadata fields must have at "
+                        "least one property", sdfPrim.path)
             if not classInfo.propertyNamespacePrefix and \
                 not len(sdfPrim.properties) == 0:
-                raise Exception(errorMsg("Multiple-apply schemas that do not"
-                    "have a propertyNamespacePrefix metadata field must have "
-                    "zero properties"))
+                    raise _GetSchemaDefException(
+                        "Multiple-apply schemas that do not"
+                        "have a propertyNamespacePrefix metadata field must "
+                        "have zero properties", sdfPrim.path)
 
         classes.append(classInfo)
         #
@@ -606,7 +627,7 @@ def ParseUsd(usdFilePath):
             _GetLibPrefix(sdfLayer),
             _GetTokensPrefix(sdfLayer),
             _GetUseExportAPI(sdfLayer),
-            _GetLibMetadata(sdfLayer).get('libraryTokens', {}),
+            _GetLibTokens(sdfLayer),
             classes)
 
 
@@ -702,6 +723,7 @@ def GatherTokens(classes, libName, libTokens):
 
     # Add tokens from all classes to the token set
     for cls in classes:
+        # Add tokens from attributes to the token set
         for attr in cls.attrs.values():
 
             # Add Attribute Names to token set
@@ -725,16 +747,33 @@ def GatherTokens(classes, libName, libTokens):
                            (cls.cppClassName, _ProperCase(attr.name))
                     cls.tokens.add(tokenId)
                     _AddToken(tokenDict, tokenId, val, desc)
-                    
-        # Add Relationship Names to token set
+
+        # Add tokens from relationships to the token set
         for rel in cls.rels.values():
             cls.tokens.add(rel.name)
             _AddToken(tokenDict, rel.name, rel.rawName, cls.cppClassName)
             
+        # Add schema tokens to token set
+        schemaTokens = cls.customData.get("schemaTokens", {})
+        for token, tokenInfo in schemaTokens.iteritems():
+            cls.tokens.add(token)
+            _AddToken(tokenDict, token, tokenInfo.get("value", token),
+                      _SanitizeDoc(tokenInfo.get("doc", 
+                          "Special token for the %s schema." % cls.cppClassName), ' '))
+
+        # Add property namespace prefix token for multiple-apply API
+        # schema to token set
+        if cls.propertyNamespacePrefix:
+            cls.tokens.add(cls.propertyNamespacePrefix)
+            _AddToken(tokenDict, cls.propertyNamespacePrefix,
+                      cls.propertyNamespacePrefix,
+                      "Property namespace prefix for the %s schema." % cls.cppClassName)
+
     # Add library-wide tokens to token set
     for token, tokenInfo in libTokens.iteritems():
-        _AddToken(tokenDict, token, tokenInfo.get("value", token), _SanitizeDoc(tokenInfo.get("doc",
-            "Special token for the %s library." % libName), ' '))
+        _AddToken(tokenDict, token, tokenInfo.get("value", token), 
+                  _SanitizeDoc(tokenInfo.get("doc",
+                      "Special token for the %s library." % libName), ' '))
 
     return sorted(tokenDict.values(), key=lambda token: token.id.lower())
 

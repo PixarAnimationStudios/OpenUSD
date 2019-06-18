@@ -373,8 +373,6 @@ integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 #endif // HD_HAS_definedIntegrateLights
 #endif
 
-int GetPointId(); // pointId.glslfx
-
 ReprStyle GetReprStyle()
 {
     vec4 pointColor = vec4(vec3(0.18), 1.0);

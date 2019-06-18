@@ -78,7 +78,7 @@ UsdImagingVolumeAdapter::Populate(UsdPrim const& prim,
                             UsdImagingInstancerContext const* instancerContext)
 {
     return  _AddRprim(HdPrimTypeTokens->volume,
-        prim, index, GetMaterialId(prim), instancerContext);
+        prim, index, GetMaterialUsdPath(prim), instancerContext);
 }
 
 void 
@@ -136,9 +136,13 @@ UsdImagingVolumeAdapter::GetVolumeFieldDescriptors(UsdPrim const& usdPrim,
                     adapter.get());
                 if (TF_VERIFY(fieldAdapter)) {
                     fieldPrimType = fieldAdapter->GetPrimTypeToken();
+                    // XXX(UsdImagingPaths): Using usdPath directly
+                    // as cachePath here -- we should do the correct
+                    // mapping in order for instancing to work.
+                    SdfPath const& cachePath = fieldUsdPrim.GetPath();
                     descriptors.push_back(
-                    HdVolumeFieldDescriptor(it->first, fieldPrimType,
-                        _GetPathForIndex(fieldUsdPrim.GetPath())));
+                        HdVolumeFieldDescriptor(it->first, fieldPrimType,
+                            _ConvertCachePathToIndexPath(cachePath)));
                 }
             }
         }

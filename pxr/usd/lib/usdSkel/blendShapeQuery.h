@@ -69,6 +69,9 @@ public:
     /// Returns the inbetween shape corresponding to sub-shape \p i, if any.
     USDSKEL_API UsdSkelInbetweenShape GetInbetween(size_t subShapeIndex) const;
 
+    /// Returns the blend shape index corresponding to the \p i'th sub-shape.
+    USDSKEL_API size_t GetBlendShapeIndex(size_t subShapeIndex) const;
+
     size_t GetNumBlendShapes() const { return _blendShapes.size(); }
     
     size_t GetNumSubShapes() const { return _subShapes.size(); }

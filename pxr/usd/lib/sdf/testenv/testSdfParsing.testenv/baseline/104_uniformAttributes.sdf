@@ -14,6 +14,5 @@ def MfScope "bool_tests"
         </bool_tests/Foo/Blah.blah>,
         </bool_tests/Foo/Bar.blah>,
     ]
-    uniform double foo.mapper[ </bool_tests/Foo/Bar.blah> ] = MfSplineMapper
 }
 

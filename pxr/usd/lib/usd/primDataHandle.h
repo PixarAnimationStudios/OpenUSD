@@ -77,12 +77,6 @@ public:
     Usd_PrimDataHandle(Usd_PrimDataConstPtr primData)
         : _p(Usd_PrimDataConstIPtr(primData)) {}
 
-    // Assignment.
-    Usd_PrimDataHandle &operator=(const Usd_PrimDataHandle &other) {
-        Usd_PrimDataHandle(other).swap(*this);
-        return *this;
-    }
-
     // Reset this handle to null.
     void reset() { _p.reset(); }
 

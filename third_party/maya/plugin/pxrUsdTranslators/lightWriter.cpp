@@ -24,9 +24,16 @@
 #include "usdMaya/translatorRfMLight.h"
 #include "usdMaya/primWriterRegistry.h"
 
+
 PXR_NAMESPACE_OPEN_SCOPE
 
+
 PXRUSDMAYA_DEFINE_WRITER(PxrAovLight, args, context)
+{
+    return UsdMayaTranslatorRfMLight::Write(args, context);
+}
+
+PXRUSDMAYA_DEFINE_WRITER(PxrCylinderLight, args, context)
 {
     return UsdMayaTranslatorRfMLight::Write(args, context);
 }
@@ -65,5 +72,6 @@ PXRUSDMAYA_DEFINE_WRITER(PxrSphereLight, args, context)
 {
     return UsdMayaTranslatorRfMLight::Write(args, context);
 }
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

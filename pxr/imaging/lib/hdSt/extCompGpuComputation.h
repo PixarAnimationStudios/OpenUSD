@@ -41,7 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdSceneDelegate;
 class HdExtComputation;
 typedef boost::shared_ptr<class HdStGLSLProgram> HdStGLSLProgramSharedPtr;
-typedef std::vector<class HdExtComputationPrimvarDescriptor>
+typedef std::vector<struct HdExtComputationPrimvarDescriptor>
                           HdExtComputationPrimvarDescriptorVector;
 
 typedef boost::shared_ptr<class HdStExtCompGpuComputation>

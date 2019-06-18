@@ -72,6 +72,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     (outColorR)
     (outColorG)
     (outColorB)
+    (outTransparency)
+    (outTransparencyR)
+    (outTransparencyG)
+    (outTransparencyB)
     (wrapU)
     (wrapV)
 
@@ -451,7 +455,11 @@ PxrUsdTranslators_FileTextureWriter::GetShadingPropertyNameForMayaAttrName(
         usdAttrName = _tokens->GreenOutputName;
     } else if (mayaAttrName == _tokens->outColorB) {
         usdAttrName = _tokens->BlueOutputName;
-    } else if (mayaAttrName == _tokens->outAlpha) {
+    } else if (mayaAttrName == _tokens->outAlpha ||
+            mayaAttrName == _tokens->outTransparency ||
+            mayaAttrName == _tokens->outTransparencyR ||
+            mayaAttrName == _tokens->outTransparencyG ||
+            mayaAttrName == _tokens->outTransparencyB) {
         usdAttrName = _tokens->AlphaOutputName;
     }
 

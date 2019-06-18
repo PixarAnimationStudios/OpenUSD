@@ -43,16 +43,8 @@ UsdAttributeQuery::UsdAttributeQuery(
 
 UsdAttributeQuery::UsdAttributeQuery(
     const UsdPrim& prim, const TfToken& attrName)
+    : UsdAttributeQuery(prim.GetAttribute(attrName))
 {
-    UsdAttribute attr = prim.GetAttribute(attrName);
-    if (!attr) {
-        TF_CODING_ERROR(
-            "Invalid attribute '%s' on prim <%s>",
-            attrName.GetText(), prim.GetPath().GetString().c_str());
-        return;
-    }
-
-    _Initialize(attr);
 }
 
 std::vector<UsdAttributeQuery>
@@ -77,13 +69,10 @@ UsdAttributeQuery::_Initialize(const UsdAttribute& attr)
 {
     TRACE_FUNCTION();
 
-    if (!attr) {
-        TF_CODING_ERROR("Invalid attribute");
-        return;
+    if (attr) {
+        const UsdStage* stage = attr._GetStage();
+        stage->_GetResolveInfo(attr, &_resolveInfo);
     }
-
-    const UsdStage* stage = attr._GetStage();
-    stage->_GetResolveInfo(attr, &_resolveInfo);
 
     _attr = attr;
 }

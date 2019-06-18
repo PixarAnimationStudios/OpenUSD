@@ -205,13 +205,13 @@ private:
 
     // It's a coding error to construct a layer stack with a NULL root layer.
     PcpLayerStack(const PcpLayerStackIdentifier &identifier,
-                  const std::string &targetSchema,
+                  const std::string &fileFormatTarget,
                   const Pcp_MutedLayers &mutedLayers,
                   bool isUsd);
 
     void _BlowLayers();
     void _BlowRelocations();
-    void _Compute(const std::string &targetSchema,
+    void _Compute(const std::string &fileFormatTarget,
                   const Pcp_MutedLayers &mutedLayers);
 
     SdfLayerTreeHandle _BuildLayerStack(

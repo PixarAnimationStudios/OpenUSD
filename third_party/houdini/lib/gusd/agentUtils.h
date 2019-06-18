@@ -24,7 +24,7 @@
 #ifndef GUSD_AGENTUTILS_H
 #define GUSD_AGENTUTILS_H
 
-/// \file gusd/agentUtils.h
+/// \file agentUtils.h
 /// \ingroup group_gusd_Agents
 /// Utilities for translating agents to/from USD.
 ///
@@ -50,6 +50,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+class GT_RefineParms;
 class UsdSkelBinding;
 class UsdSkelSkeleton;
 class UsdSkelSkinningQuery;
@@ -58,7 +59,7 @@ class UsdSkelTopology;
 
 /// Create an agent rig from a \p skel.
 GUSD_API GU_AgentRigPtr
-GusdCreateAgentRig(const UsdSkelSkeleton& skel);
+GusdCreateAgentRig(const char* name, const UsdSkelSkeleton& skel);
 
 
 /// Create an agent rig from \p topology and \p jointNames.
@@ -79,8 +80,26 @@ GUSD_API GU_AgentShapeLibPtr
 GusdCreateAgentShapeLib(const UsdSkelBinding& binding,
                         UsdTimeCode time=UsdTimeCode::EarliestTime(),
                         const char* lod=nullptr,
-                        GusdPurposeSet purpose=GUSD_PURPOSE_PROXY,
-                        UT_ErrorSeverity sev=UT_ERROR_WARNING);
+                        GusdPurposeSet purpose=GusdPurposeSet(
+                            GUSD_PURPOSE_DEFAULT|GUSD_PURPOSE_PROXY),
+                        UT_ErrorSeverity sev=UT_ERROR_WARNING,
+                        const GT_RefineParms* refineParms=nullptr);
+
+
+/// Read in all skinnable shapes for \p binding, coalescing them into \p gd.
+/// The \p sev defines the error severity when reading in each shape.
+/// If the severity is less than UT_ERROR_ABORT, the invalid shape is
+/// skipped. Otherwise, creation of the coalesced detail fails if errors are
+/// produced processing any shapes.
+GUSD_API bool
+GusdCoalesceAgentShapes(GEO_Detail& gd,
+                        const UsdSkelBinding& binding,
+                        UsdTimeCode time=UsdTimeCode::EarliestTime(),
+                        const char* lod=nullptr,
+                        GusdPurposeSet purpose=GusdPurposeSet(
+                            GUSD_PURPOSE_DEFAULT|GUSD_PURPOSE_PROXY),
+                        UT_ErrorSeverity sev=UT_ERROR_WARNING,
+                        const GT_RefineParms* refineParms=nullptr);
 
 
 /// Read in a skinnable prim given by \p skinningQuery into \p gd.
@@ -97,33 +116,27 @@ GusdReadSkinnablePrim(GU_Detail& gd,
                       const VtMatrix4dArray& invBindTransforms,
                       UsdTimeCode time=UsdTimeCode::EarliestTime(),
                       const char* lod=nullptr,
-                      GusdPurposeSet purpose=GUSD_PURPOSE_PROXY,
-                      UT_ErrorSeverity sev=UT_ERROR_ABORT);
+                      GusdPurposeSet purpose=GusdPurposeSet(
+                          GUSD_PURPOSE_DEFAULT|GUSD_PURPOSE_PROXY),
+                      UT_ErrorSeverity sev=UT_ERROR_ABORT,
+                      const GT_RefineParms* refineParms=nullptr);
 
 
-/// Helper for writing out a rig, shape library and layer, for 
-/// the skinnable primitives in \p binding.
-///
-/// The Skeleton primitive is converted to a GU_AgentRig, and written to
-/// \p rigFile.
-///
-/// Each skinnable primitive is converted to a shape inside of a
-/// GU_AgentShapeLibrary, with the shape named according to the prim path.
-/// The resulting shape library is written to \p shapeLibFile.
-///
-/// Finally, a new GU_AgentLayer, named \p layerName, is created for the full
-/// set of shapes in the shape library. The layer is saved as \p layerFile.
-///
-/// @warning: This is a *TEMPORARY* method to facilitate conversion of UsdSkel
-/// based assets to GU agents for testing purposes. This method may be removed
-/// in a future release of Gusd, when more robust import mechanisms have been
-/// put in place.
+/// Read shapes for each shape in \p binding.
+/// The \p sev defines the error severity when reading in each shape.
+/// If the severity is less than UT_ERROR_ABORT, invalid shapes are
+/// skipped, and an empty detail handle is stored in \p details for
+/// the corresponding shape. Otherwise, the process returns false if
+/// errors are encountered processing any shapes.
 bool
-GusdWriteAgentFiles(const UsdSkelBinding& binding,
-                    const char* rigFile,
-                    const char* shapeLibFile,
-                    const char* layerFile,
-                    const char* layerName="default");
+GusdReadSkinnablePrims(const UsdSkelBinding& binding,
+                       UT_Array<GU_DetailHandle>& details,
+                       UsdTimeCode time=UsdTimeCode::EarliestTime(),
+                       const char* lod=nullptr,
+                       GusdPurposeSet purpose=GusdPurposeSet(
+                            GUSD_PURPOSE_DEFAULT|GUSD_PURPOSE_PROXY),
+                       UT_ErrorSeverity sev=UT_ERROR_WARNING,
+                       const GT_RefineParms* refineParms=nullptr);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

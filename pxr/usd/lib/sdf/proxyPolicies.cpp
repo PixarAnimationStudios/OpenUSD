@@ -25,20 +25,8 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/proxyPolicies.h"
-#include "pxr/usd/sdf/mapperSpec.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-//
-// SdfConnectionMapperViewPredicate
-//
-
-bool
-SdfConnectionMapperViewPredicate::operator()(
-    const SdfHandle<SdfMapperSpec>& x) const
-{
-    return x;
-}
 
 //
 // SdfRelocatesMapProxyValuePolicy

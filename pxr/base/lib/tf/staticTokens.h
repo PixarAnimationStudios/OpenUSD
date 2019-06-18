@@ -195,12 +195,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define _TF_DECLARE_TOKENS3(key, seq, eiapi)                                \
     struct _TF_TOKENS_STRUCT_NAME(key) {                                    \
         eiapi _TF_TOKENS_STRUCT_NAME(key)();                                \
+        eiapi ~_TF_TOKENS_STRUCT_NAME(key)();                               \
         _TF_TOKENS_DECLARE_MEMBERS(seq)                                     \
     };
 
 #define _TF_DECLARE_TOKENS2(key, seq)                                       \
     struct _TF_TOKENS_STRUCT_NAME(key) {                                    \
         _TF_TOKENS_STRUCT_NAME(key)();                                      \
+        ~_TF_TOKENS_STRUCT_NAME(key)();                                     \
         _TF_TOKENS_DECLARE_MEMBERS(seq)                                     \
     };
 
@@ -278,6 +280,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // a neat shortcut.
 //
 #define _TF_DEFINE_TOKENS(key, seq)                                         \
+    _TF_TOKENS_STRUCT_NAME(key)::~_TF_TOKENS_STRUCT_NAME(key)() = default;  \
     _TF_TOKENS_STRUCT_NAME(key)::_TF_TOKENS_STRUCT_NAME(key)() :            \
         _TF_TOKENS_INITIALIZE_SEQ(                                          \
             BOOST_PP_SEQ_FILTER(_TF_TOKENS_IS_NOT_ARRAY, ~, seq)            \

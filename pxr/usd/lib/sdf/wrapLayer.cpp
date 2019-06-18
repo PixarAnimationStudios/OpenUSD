@@ -402,6 +402,33 @@ _New(
 }
 
 static SdfLayerRefPtr
+_CreateAnonymous(
+    const std::string& tag,
+    const boost::python::dict& dict)
+{
+    SdfLayer::FileFormatArguments args;
+    if (!_ExtractFileFormatArguments(dict, &args)) {
+        return SdfLayerRefPtr();
+    }
+
+    return SdfLayer::CreateAnonymous(tag, args);
+}
+
+static SdfLayerRefPtr
+_CreateAnonymous(
+    const std::string& tag,
+    const SdfFileFormatConstPtr& fmt,
+    const boost::python::dict& dict)
+{
+    SdfLayer::FileFormatArguments args;
+    if (!_ExtractFileFormatArguments(dict, &args)) {
+        return SdfLayerRefPtr();
+    }
+
+    return SdfLayer::CreateAnonymous(tag, fmt, args);
+}
+
+static SdfLayerRefPtr
 _FindOrOpen(
     const std::string& identifier,
     const boost::python::dict& dict)
@@ -481,7 +508,8 @@ void wrapLayer()
 
         .def("__repr__", _Repr)
 
-        .def("GetFileFormat", &This::GetFileFormat)
+        .def("GetFileFormat", &This::GetFileFormat,
+             return_value_policy<return_by_value>())
         .def("GetFileFormatArguments", &This::GetFileFormatArguments,
              return_value_policy<return_by_value>())
 
@@ -492,16 +520,22 @@ void wrapLayer()
              return_value_policy<TfPyRefPtrFactory<ThisHandle> >())
         .staticmethod("CreateNew")
 
-        .def("CreateAnonymous", (SdfLayerRefPtr (*)(const std::string &))
-             This::CreateAnonymous,
+        .def("CreateAnonymous", 
+             (SdfLayerRefPtr (*)(const std::string &,
+                                 const boost::python::dict &))
+             &_CreateAnonymous,
              return_value_policy<TfPyRefPtrFactory<ThisHandle> >(),
-             ( arg("tag") = std::string() ))
+             ( arg("tag") = std::string(),
+               arg("args") = boost::python::dict()))
         .def("CreateAnonymous",
              (SdfLayerRefPtr (*)(const std::string &,
-                                 const SdfFileFormatConstPtr &))
-             This::CreateAnonymous,
+                                 const SdfFileFormatConstPtr &,
+                                 const boost::python::dict &))
+             &_CreateAnonymous,
              return_value_policy<TfPyRefPtrFactory<ThisHandle> >(),
-             ( arg("tag"), arg("format") ))
+             ( arg("tag"), 
+               arg("format"), 
+               arg("args") = boost::python::dict()))
         .staticmethod("CreateAnonymous")
 
         .def("New", &_New,

@@ -47,9 +47,6 @@ HdxSimpleLightingShader::HdxSimpleLightingShader()
     , _bindingMap(TfCreateRefPtr(new GlfBindingMap()))
     , _useLighting(true)
 {
-    // TODO: robust binding from codegen
-    _bindingMap->GetUniformBinding(TfToken("GlobalUniform"));
-    _bindingMap->GetUniformBinding(TfToken("DrawDataBuffer"));
     _lightingContext->InitUniformBlockBindings(_bindingMap);
     _lightingContext->InitSamplerUnitBindings(_bindingMap);
 

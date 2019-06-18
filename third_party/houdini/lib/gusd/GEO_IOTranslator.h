@@ -24,7 +24,7 @@
 #ifndef __GUSD_IOTRANSLATOR_H__
 #define __GUSD_IOTRANSLATOR_H__
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 
 #include <GEO/GEO_IOTranslator.h>
 

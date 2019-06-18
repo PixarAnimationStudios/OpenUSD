@@ -43,21 +43,22 @@ typedef boost::weak_ptr<class HdDirtyList> HdDirtyListPtr;
 ///
 /// Used for faster iteration of dirty rprims, filtered by mask.
 ///
-/// GetDirtyRprims/GetSize implicitly refresh and cache the list if needed.
+/// GetDirtyRprims implicitly refresh and cache the list if needed.
 /// The returning prims list will be used for sync.
 ///
-/// DirtyList construction is tend to be expensive. We have 3 layer
+/// DirtyList construction can expensive. We have 3 layer
 /// versioning to make it efficient.
 ///
-/// 1. Nothing changed on rprims since last time (super fast)
-///   when orbiting a camera around, no prims need to be synced.
+/// 1. Nothing changed since last time (super fast),
+///   no prims need to be synced.
 ///   DirtyList returns empty vector GetDirtyRprims.
-///   This can be detected by HdChangeTracker::GetChangeCount. It's incremented
-///   when any change made on any prim.
+///   This can be detected by HdChangeTracker::GetSceneStateVersion.
+///   It's incremented when any change made on any prim.
 ///
 /// 2. Constantly updating Prims in a stable set (fast)
 ///   when munging or playing back, the same set of prims are being updated,
-///   while the remaining prims (could be huge -- entire cityset) are static.
+///   while the remaining prims (could be huge -- for example a large set)
+///   are static.
 ///   Those animating prims can be distinguished by the Varying bit. The Varying
 ///   bit is set on a prim when any dirty bit is set, and stays even after clean
 ///   the dirty bit until HdChangeTracker::ResetVaryingState clears out.
@@ -83,22 +84,20 @@ typedef boost::weak_ptr<class HdDirtyList> HdDirtyListPtr;
 ///
 ///    say in change tracker:
 ///       A B C D E [F*] [G] [H*] [I*] [J] [K] L M N ...
-///    and a collection has:
-///               E  F  G  H
 ///    then the dirtylist will be:
-///                  F*, G, H*
+///                  F*, G, H*, I*, J, K
 ///
-///    Note that G is not dirty, but it exists in the dirtylist.
+///    Note that G, J and K are not dirty, but it exists in the dirtylist.
 ///    This optimization gives the maximum efficiency when all of Varying
 ///    prims are being updated.
 ///
-/// 4. Initial creation, collection changes (most expensive)
+/// 4. Initial creation, filter changes (most expensive)
 ///   If we fail to early out all the above condition, such as when we add
-///   new prims or switch to new repr, all prims in a collection should be
+///   new prims or switch the render tag set, all prims should be
 ///   passed down to HdRenderIndex::Sync, except ones we know that are
-///   completely clean. Although it requires to sweep all prims in a collection,
-///   this traversal has already been optimized to some extent in
-///   _FilterByRootPaths and we can still leverage that code.
+///   completely clean. Although it requires to sweep all prims in the
+///   render index, this traversal has already been optimized
+///   using the Gather utility.
 ///
 class HdDirtyList {
 public:
@@ -108,43 +107,33 @@ public:
     HD_API
     ~HdDirtyList();
 
-    /// Return the collection associated to this dirty list.
-    HdRprimCollection const &GetCollection() const {
-        return _collection;
-    }
-
     /// Returns a reference of dirty ids.
     /// If the change tracker hasn't changed any state since the last time
-    /// GetDirtyRprims gets called, it simply returns; Otherwise, refreshes
-    /// the dirty ID list and returns it.
+    /// GetDirtyRprims gets called, it simply returns an empty list.
+    /// Otherwise depending on what changed, it will return a list of
+    /// prims to be synced.
+    /// Therefore, it is expected that GetDirtyRprims is called only once
+    /// per render index sync.
     HD_API
-    SdfPathVector const& GetDirtyRprims();
-
-    /// Return the number of dirty prims in the list.
-    size_t GetSize() {
-        return GetDirtyRprims().size();
-    }
+    SdfPathVector const& GetDirtyRprims(const TfTokenVector &renderTags);
 
     /// Update the tracking state for this HdDirtyList with the new collection,
     /// if the update cannot be applied, return false.
     HD_API
     bool ApplyEdit(HdRprimCollection const& newCollection);
 
-    /// Clears the dirty list, while preserving stable dirty state.
-    HD_API
-    void Clear();
-
 private:
-    void _UpdateIDs(SdfPathVector* ids, HdDirtyBits mask);
+    void _BuildDirtyList(const TfTokenVector& renderTags,
+                         HdDirtyBits mask);
 
     HdRprimCollection _collection;
     SdfPathVector _dirtyIds;
     HdRenderIndex &_renderIndex;
 
-    unsigned int _collectionVersion;
+    unsigned int _sceneStateVersion;
+    unsigned int _rprimIndexVersion;
+    unsigned int _renderTagVersion;
     unsigned int _varyingStateVersion;
-    unsigned int _changeCount;
-    bool _isEmpty;
 };
 
 

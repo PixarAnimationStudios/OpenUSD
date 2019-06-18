@@ -56,6 +56,9 @@ public:
     /// SdfAbstractData overrides
 
     SDF_API
+    virtual bool StreamsData() const;
+
+    SDF_API
     virtual void CreateSpec(const SdfAbstractDataSpecId& id, 
                             SdfSpecType specType);
     SDF_API

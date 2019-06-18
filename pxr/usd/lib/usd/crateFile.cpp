@@ -2287,6 +2287,15 @@ CrateFile::StartPacking(string const &fileName)
         // Get rid of our local list of specs, if we have one -- the client is
         // required to repopulate it.
         vector<Spec>().swap(_specs);
+        // If we have no tokens yet, insert a special token that cannot be used
+        // as a prim property path element so that it gets token index 0.
+        // There's a bug (github issue 811) in the compressed path code where it
+        // uses negative indexes to indicate prim property path elements.  That
+        // fails for index 0.  So inserting a token here that cannot be used as
+        // a property path element sidesteps this.
+        if (_tokens.empty()) {
+            _AddToken(TfToken(";-)"));
+        }
     }
     return Packer(this);
 }
@@ -2994,7 +3003,7 @@ CrateFile::_BootStrap
 CrateFile::_ReadBootStrap(ByteStream src, int64_t fileSize)
 {
     _BootStrap b;
-    if (fileSize < sizeof(_BootStrap)) {
+    if (fileSize < (int64_t)sizeof(_BootStrap)) {
         TF_RUNTIME_ERROR("File too small to contain bootstrap structure");
         return b;
     }
@@ -3010,6 +3019,14 @@ CrateFile::_ReadBootStrap(ByteStream src, int64_t fileSize)
             "Usd crate file version mismatch -- file is %s, "
             "software supports %s", Version(b).AsString().c_str(),
             _SoftwareVersion.AsString().c_str());
+    }
+    // Check that the table of contents is not past the end of the file.  This
+    // catches some cases where a file was corrupted by truncation.
+    else if (fileSize <= b.tocOffset) {
+        TF_RUNTIME_ERROR(
+            "Usd crate file corrupt, possibly truncated: table of contents "
+            "at offset %" PRId64 " but file size is %" PRId64,
+            b.tocOffset, fileSize);
     }
     return b;
 }

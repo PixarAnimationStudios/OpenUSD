@@ -26,12 +26,8 @@
 #include "context.h"
 #include "UT_Gf.h"
 
-#include <GT/GT_PrimInstance.h>
 #include <GT/GT_GEOPrimPacked.h>
 #include <GT/GT_Refine.h>
-#include <GT/GT_PrimCollect.h>
-
-#include <boost/foreach.hpp>
 
 #include <iostream>
 

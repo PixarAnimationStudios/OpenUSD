@@ -25,12 +25,13 @@
 #define __GUSD_INSTANCERWRAPPER_H__
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdGeom/pointInstancer.h"
+
 #include "primWrapper.h"
 
 #include <UT/UT_Map.h>
 #include <UT/UT_StringHolder.h>
 
-#include <pxr/usd/usdGeom/pointInstancer.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -248,19 +248,19 @@ public:
                                         NdrVersionFilter filter =
                                             NdrVersionFilterDefaultOnly);
 
-    /// Get a list of all node source types that may be present on the nodes in
-    /// the registry.
+    /// Get a sorted list of all node source types that may be present on the
+    /// nodes in the registry.
     ///
-    /// Source types originate from the parser plugins that have been
-    /// registered, so the types here depend on the parsers that are available.
-    /// Also note that some parser plugins may not advertise a source type.
+    /// Source types originate from the discovery process, but there is no
+    /// guarantee that the discovered source types will also have a registered
+    /// parser plugin.  The actual supported source types here depend on the
+    /// parsers that are available.  Also note that some parser plugins may not
+    /// advertise a source type.
     ///
     /// See the documentation for `NdrParserPlugin` and
     /// `NdrNode::GetSourceType()` for more information.
     NDR_API
-    const NdrTokenVec& GetAllNodeSourceTypes() const {
-        return _availableSourceTypes;
-    }
+    NdrTokenVec GetAllNodeSourceTypes() const;
 
 protected:
     NdrRegistry(const NdrRegistry&) = delete;

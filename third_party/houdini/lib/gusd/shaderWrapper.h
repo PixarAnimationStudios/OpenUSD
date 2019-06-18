@@ -24,10 +24,10 @@
 #ifndef __GUSD_SHADERWRAPPER_H__
 #define __GUSD_SHADERWRAPPER_H__
 
-#include <pxr/pxr.h>
-#include <pxr/usd/usdShade/material.h>
+#include "pxr/pxr.h"
+#include "pxr/usd/usdShade/material.h"
 
-#include "gusd/api.h"
+#include "api.h"
 
 class VOP_Node;
 

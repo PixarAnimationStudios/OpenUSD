@@ -27,7 +27,7 @@
 
 #include <GT/GT_DataArray.h>
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/array.h"

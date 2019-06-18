@@ -150,12 +150,5 @@ UsdAbcAlembicFileFormat::WriteToStream(
     return _usda->WriteToStream(spec, out, indent);
 }
 
-bool 
-UsdAbcAlembicFileFormat::_IsStreamingLayer(
-    const SdfLayer& layer) const
-{
-    return true;
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE
 

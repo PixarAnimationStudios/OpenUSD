@@ -59,7 +59,7 @@ public:
     /// in the position specified by \p position.
     USD_API
     bool AddInherit(const SdfPath &primPath,
-                    UsdListPosition position=UsdListPositionTempDefault);
+                    UsdListPosition position=UsdListPositionBackOfPrependList);
 
     /// Removes the specified path from the inheritPaths listOp at the
     /// current EditTarget.

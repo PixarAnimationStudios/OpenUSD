@@ -160,6 +160,17 @@ UsdSkelAnimQuery::GetBlendShapeWeightTimeSamples(
 }
 
 
+bool 
+UsdSkelAnimQuery::GetBlendShapeWeightAttributes(
+    std::vector<UsdAttribute>* attrs) const
+{
+    if(TF_VERIFY(IsValid(), "invalid anim query.")) {
+        return _impl->GetBlendShapeWeightAttributes(attrs);
+    }
+    return false;
+}
+
+
 bool
 UsdSkelAnimQuery::GetBlendShapeWeightTimeSamplesInInterval(
     const GfInterval& interval,

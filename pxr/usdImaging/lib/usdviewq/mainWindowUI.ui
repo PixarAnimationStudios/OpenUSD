@@ -1450,17 +1450,12 @@
      <string>Window</string>
     </property>
     <addaction name="showInterpreter"/>
-   </widget>
-   <widget class="QMenu" name="menuDebug">
-    <property name="title">
-     <string>Debug</string>
-    </property>
+    <addaction name="showDebugFlags"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuView"/>
    <addaction name="menuWindow"/>
-   <addaction name="menuDebug"/>
   </widget>
   <widget class="QStatusBar" name="statusbar">
    <property name="sizeGripEnabled">
@@ -2025,6 +2020,17 @@
    </property>
    <property name="shortcut">
     <string>I</string>
+   </property>
+  </action>
+  <action name="showDebugFlags">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Debug Flags</string>
+   </property>
+   <property name="toolTip">
+    <string>Show Debug Flags Window</string>
    </property>
   </action>
   <action name="actionHUD_VBOInfo">

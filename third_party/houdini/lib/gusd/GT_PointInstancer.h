@@ -26,7 +26,7 @@
 
 #include "gusd/api.h"
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 
 #include <GT/GT_PrimPointMesh.h>
 

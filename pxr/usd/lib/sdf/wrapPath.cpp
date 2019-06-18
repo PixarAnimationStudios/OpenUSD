@@ -206,6 +206,7 @@ void wrapPath() {
 
         .def("GetParentPath", &This::GetParentPath)
         .def("GetPrimPath", &This::GetPrimPath)
+        .def("GetPrimOrPrimVariantSelectionPath", &This::GetPrimOrPrimVariantSelectionPath)
         .def("GetAbsoluteRootOrPrimPath", &This::GetAbsoluteRootOrPrimPath)
         .def("StripAllVariantSelections", &This::StripAllVariantSelections)
 

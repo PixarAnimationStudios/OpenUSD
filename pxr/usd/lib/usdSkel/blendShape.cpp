@@ -230,7 +230,7 @@ UsdSkelBlendShape::_MakeInbetweens(const std::vector<UsdProperty>& props) const
     std::vector<UsdSkelInbetweenShape> shapes(props.size());
     size_t index = 0;
     for(const UsdProperty& prop : props) {
-        if(shapes[index] = UsdSkelInbetweenShape(prop.As<UsdAttribute>())) {
+        if((shapes[index] = UsdSkelInbetweenShape(prop.As<UsdAttribute>()))) {
             ++index;
         }
     }
@@ -264,7 +264,7 @@ UsdSkelBlendShape::ValidatePointIndices(TfSpan<const int> indices,
                                         size_t numPoints,
                                         std::string* reason)
 {
-    for (ptrdiff_t i = 0; i < indices.size(); ++i) {
+    for (size_t i = 0; i < indices.size(); ++i) {
         const unsigned pointIndex = indices[i];
         if (pointIndex >= numPoints) {
             if (reason) {

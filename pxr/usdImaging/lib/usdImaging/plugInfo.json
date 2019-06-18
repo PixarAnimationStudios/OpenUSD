@@ -50,6 +50,13 @@
                         "isInternal": true,
                         "primTypeName": "Cone"
                     },
+                    "UsdImagingCoordSysAdapter": {
+                        "bases": [
+                            "UsdImagingPrimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "coordSys"
+                    },
                     "UsdImagingCubeAdapter": {
                         "bases": [
                             "UsdImagingGprimAdapter"

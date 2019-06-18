@@ -23,52 +23,41 @@
 //
 #include "GU_PackedUSD.h"
 
+#include "boundsCache.h"
 #include "GT_PackedUSD.h"
+#include "GT_PrimCache.h"
 #include "GT_Utils.h"
-#include "xformWrapper.h"
+#include "GU_USD.h"
 #include "meshWrapper.h"
 #include "pointsWrapper.h"
 #include "primWrapper.h"
-
-#include "UT_Gf.h"
-#include "GU_USD.h"
 #include "stageEdit.h"
-
-#include "USD_StdTraverse.h"
-#include "GT_PrimCache.h"
 #include "USD_XformCache.h"
-#include "boundsCache.h"
-
-#include "pxr/usd/usd/primRange.h"
-
-#include "pxr/usd/usdGeom/pointBased.h"
-#include "pxr/usd/usdGeom/mesh.h"
-#include "pxr/usd/usdGeom/points.h"
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdGeom/scope.h"
-#include "pxr/usd/usdGeom/xformable.h"
-
+#include "UT_Gf.h"
+#include "xformWrapper.h"
 
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 
+#include "pxr/usd/usd/primRange.h"
+
+#include "pxr/usd/usdGeom/mesh.h"
+#include "pxr/usd/usdGeom/pointBased.h"
+#include "pxr/usd/usdGeom/points.h"
+#include "pxr/usd/usdGeom/scope.h"
+#include "pxr/usd/usdGeom/xform.h"
+#include "pxr/usd/usdGeom/xformable.h"
+
+#include <GA/GA_AIFSharedStringTuple.h>
 #include <GA/GA_SaveMap.h>
-#include <GT/GT_PrimInstance.h>
-#include <GT/GT_GEODetail.h>
-#include <GT/GT_GEOPrimPacked.h>
-#include <GT/GT_PrimPointMesh.h>
-#include <GT/GT_PrimPolygonMesh.h>
-#include <GT/GT_RefineCollect.h>
 #include <GT/GT_RefineParms.h>
-#include <GT/GT_TransformArray.h>
 #include <GT/GT_Util.h>
 #include <GU/GU_PackedFactory.h>
 #include <GU/GU_PrimPacked.h>
-#include <UT/UT_DMatrix4.h>
-#include <UT/UT_Map.h>
+#include <UT/UT_Matrix4.h>
 
-#include <mutex>
 #include <iostream>
+#include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -164,8 +153,8 @@ GusdGU_PackedUSD::Build(
             // XXX This is temporary code, we need to factor the usd read code into GT_Utils.cpp
             // to avoid duplicates and read for types GfHalf,double,int,string ...
             GT_DataArrayHandle gtData = GusdPrimWrapper::convertPrimvarData( primvar, frame );
-	    if (!gtData)
-		continue;
+            if (!gtData)
+                continue;
 
             const UT_String  name(primvar.GetPrimvarName());
             const GT_Storage gtStorage = gtData->getStorage();
@@ -708,8 +697,7 @@ GusdGU_PackedUSD::unpackPrim(
     UsdGeomImageable        prim, 
     const SdfPath&          primPath,
     const UT_Matrix4D&      xform,
-    const GT_RefineParms&   rparms,
-    bool                    addPathAttributes ) const
+    const GT_RefineParms&   rparms ) const
 {
     GT_PrimitiveHandle gtPrim = 
         GusdPrimWrapper::defineForRead( 
@@ -719,10 +707,13 @@ GusdGU_PackedUSD::unpackPrim(
 
     if( !gtPrim ) {
         const TfToken &type = prim.GetPrim().GetTypeName();
-        if( type != "PxHairman" && type != "PxProcArgs" )
+        static const TfToken PxHairman("PxHairman");
+        static const TfToken PxProcArgs("PxProcArgs");
+        if( type != PxHairman && type != PxProcArgs ) {
             TF_WARN( "Can't convert prim for unpack. %s. Type = %s.", 
                       prim.GetPrim().GetPath().GetText(),
                       type.GetText() );
+        }
         return false;
     }
     GusdPrimWrapper* wrapper = UTverify_cast<GusdPrimWrapper*>(gtPrim.get());
@@ -734,9 +725,9 @@ GusdGU_PackedUSD::unpackPrim(
             xform,
             intrinsicFrame(),
 #if SYS_VERSION_FULL_INT < 0x10050000
-	    intrinsicViewportLOD(),
+            intrinsicViewportLOD(),
 #else
-	    intrinsicViewportLOD( getPrim() ),
+            intrinsicViewportLOD( getPrim() ),
 #endif
             m_purposes )) {
 
@@ -746,7 +737,7 @@ GusdGU_PackedUSD::unpackPrim(
         if( prim.GetPrim().IsInMaster() ) {
 
             gtPrim->setPrimitiveTransform( new GT_Transform( &xform, 1 ) );
-        }    
+        }
 
 
         GA_Size startIndex = destgdp.getNumPrimitives();
@@ -764,11 +755,9 @@ GusdGU_PackedUSD::unpackPrim(
             delete details(i);
         }
 
-        if( addPathAttributes ) { 
+        if (GT_RefineParms::getBool(&rparms, "usd:addPathAttributes", true)) {
             // Add usdpath and usdprimpath attributes to unpacked geometry.
-            GA_Size endIndex = destgdp.getNumPrimitives();
-
-            const char *path = prim.GetPrim().GetPath().GetString().c_str();
+            const GA_Size endIndex = destgdp.getNumPrimitives();
 
             if( endIndex > startIndex )
             {
@@ -777,10 +766,18 @@ GusdGU_PackedUSD::unpackPrim(
                 GA_RWHandleS pathAttr( 
                     destgdp.addStringTuple( GA_ATTRIB_PRIMITIVE, GUSD_PATH_ATTR, 1 ));
 
-                for( GA_Size i = startIndex; i < endIndex; ++i )
-                {
-                    primPathAttr.set( destgdp.primitiveOffset( i ), 0, path );
-                    pathAttr.set( destgdp.primitiveOffset( i ), 0, fileName().c_str() );
+                const GA_Range range(destgdp.getPrimitiveMap(),
+                                     startIndex, endIndex, GA_Range::ordered());
+
+                if (const GA_AIFSharedStringTuple* tuple =
+                    primPathAttr.getAttribute()->getAIFSharedStringTuple()) {
+                    tuple->setString(primPathAttr.getAttribute(), range,
+                                     prim.GetPath().GetText(), 0);
+                }
+                if (const GA_AIFSharedStringTuple* tuple =
+                    pathAttr.getAttribute()->getAIFSharedStringTuple()) {
+                    tuple->setString(pathAttr.getAttribute(), range,
+                                     fileName().c_str(), 0);
                 }
             }
         }
@@ -791,11 +788,11 @@ GusdGU_PackedUSD::unpackPrim(
 bool
 GusdGU_PackedUSD::unpackGeometry(
     GU_Detail &destgdp,
-    const char* primvarPattern
+    const char* primvarPattern,
 #if SYS_VERSION_FULL_INT >= 0x11000000
-    , const UT_Matrix4D *transform
+    const UT_Matrix4D *transform,
 #endif
-) const
+    const GT_RefineParms* refineParms) const
 {
     UsdPrim usdPrim = getUsdPrim();
 
@@ -814,6 +811,10 @@ GusdGU_PackedUSD::unpackGeometry(
 #endif
 
     GT_RefineParms      rparms;
+    if (refineParms) {
+        rparms = *refineParms;
+    }
+
     // Need to manually force polysoup to be turned off.
     rparms.setAllowPolySoup( false );
 
@@ -821,17 +822,15 @@ GusdGU_PackedUSD::unpackGeometry(
         rparms.set("usd:primvarPattern", primvarPattern);
     }
 
-    GT_PrimitiveHandle gtPrim;
-
     DBG( cerr << "GusdGU_PackedUSD::unpackGeometry: " << usdPrim.GetTypeName() << ", " << usdPrim.GetPath() << endl; )
     
 #if SYS_VERSION_FULL_INT >= 0x11000000
-    unpackPrim( destgdp, UsdGeomImageable( usdPrim ), m_primPath, *transform, rparms, true );
+    return unpackPrim( destgdp, UsdGeomImageable( usdPrim ),
+                       m_primPath, *transform, rparms );
 #else
-    unpackPrim( destgdp, UsdGeomImageable( usdPrim ), m_primPath, xform, rparms, true );
+    return unpackPrim( destgdp, UsdGeomImageable( usdPrim ),
+                       m_primPath, xform, rparms );
 #endif
-
-    return true;
 }
 
 #if SYS_VERSION_FULL_INT >= 0x11000000

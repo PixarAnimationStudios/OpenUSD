@@ -27,13 +27,16 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/cameraUtil/conformWindow.h"
 
+#include "pxr/base/gf/frustum.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 TF_DEFINE_PUBLIC_TOKENS(HdCameraTokens, HD_CAMERA_TOKENS);
 
 HdCamera::HdCamera(SdfPath const &id)
- : HdSprim(id)
+ :  HdSprim(id)
+  , _windowPolicy(CameraUtilFit)
 {
 }
 
@@ -64,58 +67,40 @@ HdCamera::Sync(HdSceneDelegate *sceneDelegate,
     HdDirtyBits bits = *dirtyBits;
     
     if (bits & DirtyViewMatrix) {
-        GfMatrix4d worldToViewMatrix(1.0);
-        GfMatrix4d worldToViewInverseMatrix(1.0);
-
-        // extract view matrix
-        VtValue vMatrix = sceneDelegate->Get(id,
+        // extract and store view matrix
+        VtValue vMatrix = sceneDelegate->GetCameraParamValue(id,
             HdCameraTokens->worldToViewMatrix);
-        worldToViewMatrix = vMatrix.Get<GfMatrix4d>();
-        worldToViewInverseMatrix = worldToViewMatrix.GetInverse();
-
-        // store view matrix
-        _cameraValues[HdCameraTokens->worldToViewMatrix] =
-            VtValue(worldToViewMatrix);
-        _cameraValues[HdCameraTokens->worldToViewInverseMatrix] =
-            VtValue(worldToViewInverseMatrix);
+        
+        _worldToViewMatrix = vMatrix.Get<GfMatrix4d>();
+        _worldToViewInverseMatrix = _worldToViewMatrix.GetInverse();
     }
 
     if (bits & DirtyProjMatrix) {
-        GfMatrix4d projectionMatrix(1.0);
-
-        // extract projection matrix
-        VtValue vMatrix = sceneDelegate->Get(id,
+        // extract and store projection matrix
+        VtValue vMatrix = sceneDelegate->GetCameraParamValue(id,
             HdCameraTokens->projectionMatrix);
-        projectionMatrix = vMatrix.Get<GfMatrix4d>();
-
-        // store projection matrix
-        _cameraValues[HdCameraTokens->projectionMatrix] =
-            VtValue(projectionMatrix);
+        _projectionMatrix = vMatrix.Get<GfMatrix4d>();
     }
 
     if (bits & DirtyWindowPolicy) {
-        _cameraValues[HdCameraTokens->windowPolicy] =
-                sceneDelegate->Get(id, HdCameraTokens->windowPolicy);
+        // treat window policy as an optional parameter
+        VtValue vPolicy = sceneDelegate->GetCameraParamValue(id, 
+            HdCameraTokens->windowPolicy);
+        if (!vPolicy.IsEmpty())  {
+            _windowPolicy = vPolicy.Get<CameraUtilConformWindowPolicy>();
+        }
     }
 
     if (bits & DirtyClipPlanes) {
-        _cameraValues[HdCameraTokens->clipPlanes] =
-                sceneDelegate->GetClipPlanes(id);
+        // treat clip planes as an optional parameter
+        VtValue vClipPlanes = 
+            sceneDelegate->GetCameraParamValue(id, HdCameraTokens->clipPlanes);
+        if (!vClipPlanes.IsEmpty()) {
+            _clipPlanes = vClipPlanes.Get< std::vector<GfVec4d> >();
+        }
     }
 
     *dirtyBits = Clean;
-}
-
-VtValue
-HdCamera::Get(TfToken const &name) const
-{
-    VtValue r;
-
-    TF_VERIFY(TfMapLookup(_cameraValues, name, &r),
-            "HdCamera - Unknown %s\n",
-            name.GetText());
-
-    return r;
 }
 
 /* virtual */

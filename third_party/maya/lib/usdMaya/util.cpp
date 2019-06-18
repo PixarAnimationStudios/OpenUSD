@@ -32,10 +32,13 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/tokens.h"
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/metrics.h"
 
@@ -72,6 +75,7 @@
 #include <maya/MStringArray.h>
 #include <maya/MTime.h>
 
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -607,46 +611,72 @@ UsdMayaUtil::isWritable(const MObject& object)
         return true;
     }
 
-    const bool isWritableObj = depNodeFn.canBeWritten(&status);
+    const bool isDefaultNode = depNodeFn.isDefaultNode(&status);
     if (status != MS::kSuccess) {
         return true;
     }
 
-    return isWritableObj;
+    const bool canBeWritten = depNodeFn.canBeWritten(&status);
+    if (status != MS::kSuccess) {
+        return true;
+    }
+
+    return (!isDefaultNode && canBeWritten);
 }
 
-MString
-UsdMayaUtil::stripNamespaces(const MString& iNodeName, const int iDepth)
+std::string
+UsdMayaUtil::stripNamespaces(const std::string& nodeName, const int nsDepth)
 {
-    if (iDepth == 0) {
-        return iNodeName;
+    if (nodeName.empty() || nsDepth == 0) {
+        return nodeName;
     }
 
     std::stringstream ss;
-    MStringArray pathPartsArray;
-    if (iNodeName.split('|', pathPartsArray) == MS::kSuccess) {
-        unsigned int partsLen = pathPartsArray.length();
-        for (unsigned int i = 0; i < partsLen; ++i) {
-            ss << '|';
-            MStringArray strArray;
-            if (pathPartsArray[i].split(':', strArray) == MS::kSuccess) {
-                int len = strArray.length();
-                // if iDepth is -1, we don't keep any namespaces
-                if (iDepth != -1) {
-                    // add any ns beyond iDepth so if name is: "stripped:save1:save2:name" add "save1:save2:",
-                    // but if there aren't any to save like: "stripped:name" then add nothing.
-                    for (int j = iDepth; j < len - 1; ++j) {
-                        ss << strArray[j] << ":";
-                    }
-                }
-                ss << strArray[len - 1];  // add the node name
-            }
+
+    const std::vector<std::string> nodeNameParts =
+        TfStringSplit(nodeName, UsdMayaUtil::MayaDagDelimiter);
+
+    const bool isAbsolute =
+        TfStringStartsWith(nodeName, UsdMayaUtil::MayaDagDelimiter);
+
+    for (size_t i = 0u; i < nodeNameParts.size(); ++i) {
+        if (i == 0u && isAbsolute) {
+            // If nodeName was absolute, the first element in nodeNameParts
+            // will be empty, so just skip it. The output path will be made
+            // absolute with the next iteration.
+            continue;
         }
-        auto path = ss.str();
-        return MString(path.c_str());
-    } else {
-        return iNodeName;
+
+        if (i != 0u) {
+            ss << UsdMayaUtil::MayaDagDelimiter;
+        }
+
+        const std::vector<std::string> nsNameParts =
+            TfStringSplit(
+                nodeNameParts[i],
+                UsdMayaUtil::MayaNamespaceDelimiter);
+
+        const size_t nodeNameIndex = nsNameParts.size() - 1u;
+
+        auto startIter = nsNameParts.begin();
+        if (nsDepth < 0) {
+            // If nsDepth is negative, we don't keep any namespaces, so advance
+            // startIter to the last element in the vector, which is just the
+            // node name.
+            startIter += nodeNameIndex;
+        } else {
+            // Otherwise we strip as many namespaces as possible up to nsDepth,
+            // but no more than what would leave us with just the node name.
+            startIter += std::min(static_cast<size_t>(nsDepth), nodeNameIndex);
+        }
+
+        ss << TfStringJoin(
+            startIter,
+            nsNameParts.end(),
+            UsdMayaUtil::MayaNamespaceDelimiter.c_str());
     }
+
+    return ss.str();
 }
 
 std::string
@@ -1243,24 +1273,42 @@ _IsShape(const MDagPath& dagPath)
 }
 
 SdfPath
+UsdMayaUtil::MayaNodeNameToSdfPath(
+        const std::string& nodeName,
+        const bool stripNamespaces)
+{
+    std::string pathString = nodeName;
+
+    if (stripNamespaces) {
+        // Drop namespaces instead of making them part of the path.
+        pathString = UsdMayaUtil::stripNamespaces(pathString);
+    }
+
+    std::replace(
+        pathString.begin(),
+        pathString.end(),
+        UsdMayaUtil::MayaDagDelimiter[0],
+        SdfPathTokens->childDelimiter.GetString()[0]);
+    std::replace(
+        pathString.begin(),
+        pathString.end(),
+        UsdMayaUtil::MayaNamespaceDelimiter[0],
+        '_');
+
+    return SdfPath(pathString);
+}
+
+SdfPath
 UsdMayaUtil::MDagPathToUsdPath(
         const MDagPath& dagPath,
         const bool mergeTransformAndShape,
         const bool stripNamespaces)
 {
-    std::string usdPathStr;
+    SdfPath usdPath =
+        UsdMayaUtil::MayaNodeNameToSdfPath(
+            dagPath.fullPathName().asChar(),
+            stripNamespaces);
 
-    if (stripNamespaces) {
-        // drop namespaces instead of making them part of the path
-        MString stripped = UsdMayaUtil::stripNamespaces(dagPath.fullPathName());
-        usdPathStr = stripped.asChar();
-    } else{
-        usdPathStr = dagPath.fullPathName().asChar();
-    }
-    std::replace(usdPathStr.begin(), usdPathStr.end(), '|', '/');
-    std::replace(usdPathStr.begin(), usdPathStr.end(), ':', '_'); // replace namespace ":" with "_"
-
-    SdfPath usdPath(usdPathStr);
     if (mergeTransformAndShape && _IsShape(dagPath)) {
         usdPath = usdPath.GetParentPath();
     }

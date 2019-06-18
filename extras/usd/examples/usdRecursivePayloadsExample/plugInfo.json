@@ -1,0 +1,64 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "SdfMetadata": {
+                    "UsdExample_depth": {
+                        "type": "int",
+                        "default": 1,
+                        "displayGroup": "Core",
+                        "appliesTo": ["prims"],
+                        "documentation:": "Used to set total number of recursions."
+                    },
+                    "UsdExample_num": {
+                        "type": "int",
+                        "default": 1,
+                        "displayGroup": "Core",
+                        "appliesTo": ["prims"],
+                        "documentation:": "Used to set the number of prims added at each recursion."
+                    },
+                    "UsdExample_radius": {
+                        "type": "double",
+                        "default": 3.0,
+                        "displayGroup": "Core",
+                        "appliesTo": ["prims"],
+                        "documentation:": "Radius of ring used to layout generated prims at each recursion."
+                    },
+                    "UsdExample_height": {
+                        "type": "double",
+                        "default": 3.0,
+                        "displayGroup": "Core",
+                        "appliesTo": ["prims"],
+                        "documentation:": "Height above the previous level to place generated prims."
+                    },
+                    "UsdExample_argDict": {
+                        "type": "dictionary",
+                        "displayGroup": "Core",
+                        "appliesTo": ["prims"],
+                        "documentation:": "Dictionary of parameters that can be specified for individually IDed payloads."
+                    }
+                },
+
+                "Types": {
+                    "UsdRecursivePayloadsExampleFileFormat": {
+                        "bases": [
+                            "SdfFileFormat"
+                        ],
+                        "displayName": "USD Dynamic File Format Example",
+                        "extensions": [
+                            "usdrecursivepayloadsexample"
+                        ],
+                        "formatId": "usdRecursivePayloadsExample",
+                        "primary": true,
+                        "target": "usd"
+                    }
+                }
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Name": "usdRecursivePayloadsExample",
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

@@ -81,7 +81,7 @@ public:
     virtual void Execute(HdTaskContext* ctx) override
     {
         _renderPassState->Bind();
-        _renderPass->Execute(_renderPassState);
+        _renderPass->Execute(_renderPassState, GetRenderTags());
         _renderPassState->Unbind();
     }
 
@@ -126,7 +126,7 @@ static void CameraAndLightTest()
                       VtValue(HdRprimCollection(HdTokens->geometry,
                                         HdReprSelector(HdReprTokens->hull))));
 
-    engine.Execute(*index, tasks);
+    engine.Execute(index.get(), &tasks);
 
     VERIFY_PERF_COUNT(HdPerfTokens->rebuildBatches, 1);
 
@@ -135,7 +135,7 @@ static void CameraAndLightTest()
     tracker.MarkSprimDirty(camera, HdCamera::DirtyViewMatrix);
     tracker.MarkSprimDirty(camera, HdCamera::DirtyProjMatrix);
 
-    engine.Execute(*index, tasks);
+    engine.Execute(index.get(), &tasks);
 
     // batch should not be rebuilt
     VERIFY_PERF_COUNT(HdPerfTokens->rebuildBatches, 1);
@@ -146,7 +146,7 @@ static void CameraAndLightTest()
                         HdReprSelector(HdReprTokens->refined))));
     tracker.MarkSprimDirty(light, HdLight::DirtyCollection);
 
-    engine.Execute(*index, tasks);
+    engine.Execute(index.get(), &tasks);
 
     // batch rebuilt
     VERIFY_PERF_COUNT(HdPerfTokens->rebuildBatches, 2);
@@ -157,7 +157,7 @@ static void CameraAndLightTest()
                                 HdReprSelector(HdReprTokens->refined))));
     tracker.MarkSprimDirty(light, HdLight::DirtyCollection);
 
-    engine.Execute(*index, tasks);
+    engine.Execute(index.get(), &tasks);
 
     // batch should not be rebuilt
     VERIFY_PERF_COUNT(HdPerfTokens->rebuildBatches, 2);

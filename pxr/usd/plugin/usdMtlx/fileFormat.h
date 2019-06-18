@@ -68,10 +68,6 @@ protected:
 
     UsdMtlxFileFormat();
     ~UsdMtlxFileFormat() override;
-
-private:
-    // SdfFileFormat overrides
-    bool _IsStreamingLayer(const SdfLayer& layer) const override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

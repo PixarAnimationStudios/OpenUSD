@@ -23,6 +23,7 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/hash.h"
 
 //
@@ -106,6 +107,7 @@ public:
     //
     // Init: initialize the context of a SpookyHash
     //
+    ARCH_UNUSED_FUNCTION
     void Init(
         uint64 seed1,       // any 64-bit value will do, including 0
         uint64 seed2);      // different seeds produce independent hashes
@@ -113,6 +115,7 @@ public:
     //
     // Update: add a piece of a message to a SpookyHash state
     //
+    ARCH_UNUSED_FUNCTION
     void Update(
         const void *message,  // message fragment
         size_t length);       // length of message fragment in bytes
@@ -126,6 +129,7 @@ public:
     // The result is the same as if SpookyHash() had been called with
     // all the pieces concatenated into one message.
     //
+    ARCH_UNUSED_FUNCTION
     void Final(
         uint64 *hash1,    // out only: first 64 bits of hash value.
         uint64 *hash2);   // out only: second 64 bits of hash value.

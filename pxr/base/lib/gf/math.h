@@ -229,6 +229,19 @@ inline T GfMax(T a1, T a2, T a3, T a4, T a5) {
     return GfMax(GfMax(a1, a2, a3, a4), a5);
 }
 
+/// Returns the dot (inner) product of two vectors.
+/// For scalar types, this is just the regular product.
+/// \ingroup group_gf_BasicMath
+inline float GfDot(float a, float b) {
+    return a * b;
+}
+/// Returns the dot (inner) product of two vectors.
+/// For scalar types, this is just the regular product.
+/// \ingroup group_gf_BasicMath
+inline double GfDot(double a, double b) {
+    return a * b;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // GF_MATH_H 

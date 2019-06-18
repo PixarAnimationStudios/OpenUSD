@@ -1,0 +1,17 @@
+/*!
+\mainpage
+
+This is an example library that provides a dynamic file format plugin for Usd
+that procedurally generates animated cube made up of cubes through use of a 
+custom SdfAbstractData subclass.
+
+The plugin is structured by functional component:
+
+- \b fileFormat contains the SdfFileFormat/PcpDynamicFileFormatInterface 
+     plugin interface implementation.
+- \b data contains SdfAbstractData subclass that provides the interface for
+     querying the dynamically generated specs and fields.
+- \b dataImpl contains the private implementation details for generating specs 
+     and fields which the data uses to provide its interface.
+
+*/

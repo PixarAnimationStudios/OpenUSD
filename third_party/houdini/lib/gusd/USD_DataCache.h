@@ -27,7 +27,7 @@
 #include "gusd/api.h"
 #include "gusd/stageCache.h"
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
 
 #include <UT/UT_StringSet.h>

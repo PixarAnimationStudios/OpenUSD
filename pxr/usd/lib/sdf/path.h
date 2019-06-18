@@ -26,9 +26,11 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
+#include "pxr/usd/sdf/pool.h"
 #include "pxr/usd/sdf/tokens.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/vt/traits.h"
 
 #include <boost/intrusive_ptr.hpp>
 #include <boost/operators.hpp>
@@ -47,12 +49,161 @@ class Sdf_PathNode;
 // Intrusive ref-counts are used to keep the size of SdfPath
 // the same as a raw pointer.  (shared_ptr, by comparison,
 // is the size of two pointers.)
+
 typedef boost::intrusive_ptr<const Sdf_PathNode> Sdf_PathNodeConstRefPtr;
+
+void intrusive_ptr_add_ref(Sdf_PathNode const *);
+void intrusive_ptr_release(Sdf_PathNode const *);
+
+// Tags used for the pools of path nodes.
+struct Sdf_PathPrimTag;
+struct Sdf_PathPropTag;
+
+// These are validated below.
+static constexpr size_t Sdf_SizeofPrimPathNode = sizeof(void *) * 3;
+static constexpr size_t Sdf_SizeofPropPathNode = sizeof(void *) * 3;
+
+using Sdf_PathPrimPartPool = Sdf_Pool<
+    Sdf_PathPrimTag, Sdf_SizeofPrimPathNode, /*regionBits=*/8>;
+
+using Sdf_PathPropPartPool = Sdf_Pool<
+    Sdf_PathPropTag, Sdf_SizeofPropPathNode, /*regionBits=*/8>;
+
+using Sdf_PathPrimHandle = Sdf_PathPrimPartPool::Handle;
+using Sdf_PathPropHandle = Sdf_PathPropPartPool::Handle;
+
+// This handle class wraps up the raw Prim/PropPartPool handles.
+template <class Handle, bool Counted, class PathNode=Sdf_PathNode const>
+struct Sdf_PathNodeHandleImpl {
+private:
+    typedef Sdf_PathNodeHandleImpl this_type;
+
+public:
+    constexpr Sdf_PathNodeHandleImpl() noexcept {};
+
+    explicit
+    Sdf_PathNodeHandleImpl(Sdf_PathNode const *p, bool add_ref = true)
+        : _poolHandle(Handle::GetHandle(reinterpret_cast<char const *>(p))) {
+        if (p && add_ref) {
+            _AddRef(p);
+        }
+    }
+
+    explicit
+    Sdf_PathNodeHandleImpl(Handle h, bool add_ref = true)
+        : _poolHandle(h) {
+        if (h && add_ref) {
+            _AddRef();
+        }
+    }
+
+    Sdf_PathNodeHandleImpl(Sdf_PathNodeHandleImpl const &rhs)
+        : _poolHandle(rhs._poolHandle) {
+        if (_poolHandle) {
+            _AddRef();
+        }
+    }
+
+    ~Sdf_PathNodeHandleImpl() {
+        if (_poolHandle) {
+            _DecRef();
+        }
+    }
+
+    Sdf_PathNodeHandleImpl &
+    operator=(Sdf_PathNodeHandleImpl const &rhs) {
+        this_type(rhs).swap(*this);
+        return *this;
+    }
+
+    Sdf_PathNodeHandleImpl(Sdf_PathNodeHandleImpl &&rhs) noexcept
+        : _poolHandle(rhs._poolHandle) {
+        rhs._poolHandle = nullptr;
+    }
+
+    Sdf_PathNodeHandleImpl &
+    operator=(Sdf_PathNodeHandleImpl &&rhs) noexcept {
+        this_type(std::move(rhs)).swap(*this);
+        return *this;
+    }
+
+    Sdf_PathNodeHandleImpl &
+    operator=(Sdf_PathNode const *rhs) noexcept {
+        this_type(rhs).swap(*this);
+        return *this;
+    }
+
+    void reset() noexcept {
+        _poolHandle = Handle { nullptr };
+    }
+
+    Sdf_PathNode const *
+    get() const noexcept {
+        return reinterpret_cast<Sdf_PathNode *>(_poolHandle.GetPtr());
+    }
+
+    Sdf_PathNode const &
+    operator*() const {
+        return *get();
+    }
+
+    Sdf_PathNode const *
+    operator->() const {
+        return get();
+    }
+
+    explicit operator bool() const noexcept {
+        return static_cast<bool>(_poolHandle);
+    }
+
+    void swap(Sdf_PathNodeHandleImpl &rhs) noexcept {
+        _poolHandle.swap(rhs._poolHandle);
+    }
+
+    inline bool operator==(Sdf_PathNodeHandleImpl const &rhs) const noexcept {
+        return _poolHandle == rhs._poolHandle;
+    }
+    inline bool operator!=(Sdf_PathNodeHandleImpl const &rhs) const noexcept {
+        return _poolHandle != rhs._poolHandle;
+    }
+    inline bool operator<(Sdf_PathNodeHandleImpl const &rhs) const noexcept {
+        return _poolHandle < rhs._poolHandle;
+    }
+private:
+
+    void _AddRef(Sdf_PathNode const *p) const {
+        if (Counted) {
+            intrusive_ptr_add_ref(p);
+        }
+    }
+
+    void _AddRef() const {
+        _AddRef(get());
+    }
+
+    void _DecRef() const {
+        if (Counted) {
+            intrusive_ptr_release(get());
+        }
+    }
+
+    Handle _poolHandle { nullptr };
+};
+
+using Sdf_PathPrimNodeHandle =
+    Sdf_PathNodeHandleImpl<Sdf_PathPrimHandle, /*Counted=*/true>;
+
+using Sdf_PathPropNodeHandle =
+    Sdf_PathNodeHandleImpl<Sdf_PathPropHandle, /*Counted=*/false>;
+
 
 /// A set of SdfPaths.
 typedef std::set<class SdfPath> SdfPathSet;
 /// A vector of SdfPaths.
 typedef std::vector<class SdfPath> SdfPathVector;
+
+// Tell VtValue that SdfPath is cheap to copy.
+VT_TYPE_IS_CHEAP_TO_COPY(class SdfPath);
 
 /// \class SdfPath 
 ///
@@ -65,10 +216,10 @@ typedef std::vector<class SdfPath> SdfPathVector;
 /// \li As a namespace identity for scenegraph objects
 /// \li As a way to refer to other scenegraph objects through relative paths
 ///
-/// The paths represented by an SdfPath class may be either relative or absolute.
-/// Relative paths are relative to the prim object that contains them
-/// (that is, if an SdfRelationshipSpec target is relative, it is relative to the
-/// SdfPrimSpec object that owns the SdfRelationshipSpec object).
+/// The paths represented by an SdfPath class may be either relative or
+/// absolute.  Relative paths are relative to the prim object that contains them
+/// (that is, if an SdfRelationshipSpec target is relative, it is relative to
+/// the SdfPrimSpec object that owns the SdfRelationshipSpec object).
 ///
 /// SdfPath objects can be readily created from and converted back to strings,
 /// but as SdfPath objects, they have behaviors that make it easy and efficient
@@ -128,8 +279,7 @@ typedef std::vector<class SdfPath> SdfPathVector;
 /// the number of values created (since it requires synchronized access to
 /// this table) or copied (since it requires atomic ref-counting operations).
 ///
-class SdfPath :
-    boost::totally_ordered<SdfPath>
+class SdfPath : boost::totally_ordered<SdfPath>
 {
 public:
     /// The empty path value, equivalent to SdfPath().
@@ -147,7 +297,7 @@ public:
     
     /// Constructs the default, empty path.
     ///
-    SDF_API SdfPath();
+    constexpr SdfPath() = default;
 
     /// Creates a path from the given string.
     ///
@@ -242,7 +392,9 @@ public:
     SDF_API bool IsExpressionPath() const;
 
     /// Returns true if this is the empty path (SdfPath::EmptyPath()).
-    SDF_API bool IsEmpty() const;
+    inline bool IsEmpty() const noexcept {
+        return *this == SdfPath();
+    }
 
     /// Returns the string representation of this path as a TfToken.
     SDF_API TfToken const &GetToken() const;
@@ -626,7 +778,7 @@ public:
     /// Equality operator.
     /// (Boost provides inequality from this.)
     inline bool operator==(const SdfPath &rhs) const {
-        return _pathNode == rhs._pathNode;
+        return _AsInt() == rhs._AsInt();
     }
 
     /// Comparison operator.
@@ -634,18 +786,47 @@ public:
     /// This orders paths lexicographically, aka dictionary-style.
     ///
     inline bool operator<(const SdfPath &rhs) const {
-        if (_pathNode == rhs._pathNode)
+        if (_AsInt() == rhs._AsInt()) {
             return false;
-        if (!_pathNode || !rhs._pathNode)
-            return static_cast<bool>(rhs._pathNode);
-        return _LessThanInternal(_pathNode, rhs._pathNode);
+        }
+        if (!_primPart || !rhs._primPart) {
+            return !_primPart && rhs._primPart;
+        }
+        // Valid prim parts -- must walk node structure, etc.
+        return _LessThanInternal(*this, rhs);
     }
 
     // For hash maps and sets
     struct Hash {
         inline size_t operator()(const SdfPath& path) const {
-            // Assumption: heap allocated path nodes are aligned on 32b.
-            return size_t(path._pathNode.get()) >> 5;
+            // The hash function is pretty sensitive performance-wise.  Be
+            // careful making changes here, and run tests.
+            uint32_t primPart, propPart;
+            memcpy(&primPart, &path._primPart, sizeof(primPart));
+            memcpy(&propPart, &path._propPart, sizeof(propPart));
+
+            // Important considerations here:
+            // - It must be fast to execute.
+            // - It must do well in hash tables that find indexes by taking
+            //   the remainder divided by a prime number of buckets.
+            // - It must do well in hash tables that find indexes by taking
+            //   just the low-order bits.
+
+            // This hash function maps the (primPart, propPart) pair to a single
+            // value by using triangular numbers.  So the first few path hash
+            // values would look like this, for primPart as X increasing
+            // left-to-right and for propPart as Y increasing top-to-bottom.
+            //
+            //  0  2  5  9 14 20
+            //  1  4  8 13 19 26
+            //  3  7 12 18 25 33
+            //  6 11 17 24 32 41
+            // 10 16 23 31 40 50
+            // 15 22 30 39 49 60
+
+            uint64_t x = primPart >> 8;
+            uint64_t y = x + (propPart >> 8);
+            return x + (y * (y + 1)) / 2;
         }
     };
 
@@ -656,8 +837,8 @@ public:
     // For cases where an unspecified total order that is not stable from
     // run-to-run is needed.
     struct FastLessThan {
-        bool operator()(const SdfPath& a, const SdfPath& b) const {
-            return a._pathNode < b._pathNode;
+        inline bool operator()(const SdfPath& a, const SdfPath& b) const {
+            return a._AsInt() < b._AsInt();
         }
     };
 
@@ -672,7 +853,8 @@ public:
     /// GetConciseRelativePaths requires a vector of absolute paths. It
     /// finds a set of relative paths such that each relative path is
     /// unique.
-    SDF_API static SdfPathVector GetConciseRelativePaths(const SdfPathVector& paths);
+    SDF_API static SdfPathVector
+    GetConciseRelativePaths(const SdfPathVector& paths);
 
     /// Remove all elements of \a paths that are prefixed by other
     /// elements in \a paths.  As a side-effect, the result is left in sorted
@@ -688,11 +870,24 @@ public:
 private:
 
     // This is used for all internal path construction where we do operations
-    // via nodes and then want to return a new path with a resulting node.
-    // The node is expected to already be Retain'ed for the resulting path.
-    explicit SdfPath(const Sdf_PathNodeConstRefPtr &pathNode);
-    // Accept rvalues too.
-    explicit SdfPath(Sdf_PathNodeConstRefPtr &&pathNode);
+    // via nodes and then want to return a new path with a resulting prim and
+    // property parts.
+
+    // Accept rvalues.
+    explicit SdfPath(Sdf_PathPrimNodeHandle &&primNode)
+        : _primPart(std::move(primNode)) {}
+
+    // Construct from prim & prop parts.
+    SdfPath(Sdf_PathPrimNodeHandle const &primPart,
+            Sdf_PathPropNodeHandle const &propPart)
+        : _primPart(primPart)
+        , _propPart(propPart) {}
+
+    // Construct from prim & prop node pointers.
+    SdfPath(Sdf_PathNode const *primPart,
+            Sdf_PathNode const *propPart)
+        : _primPart(primPart)
+        , _propPart(propPart) {}
 
     friend class Sdf_PathNode;
     friend class Sdfext_PathAccess;
@@ -701,23 +896,32 @@ private:
     static std::string
     _ElementsToString(bool absolute, const std::vector<std::string> &elements);
 
-    // Helper used by the string path elem constructors.
-    void _InitWithString(const std::string &path);
-
     // Helper to implement the uninlined portion of operator<.
     SDF_API static bool
-    _LessThanInternal(Sdf_PathNodeConstRefPtr const &lhs,
-                      Sdf_PathNodeConstRefPtr const &rhs);
+    _LessThanInternal(SdfPath const &lhs, SdfPath const &rhs);
 
-    friend void swap(SdfPath &lhs, SdfPath &rhs) {
-        lhs._pathNode.swap(rhs._pathNode);
+    inline uint64_t _AsInt() const {
+        static_assert(sizeof(*this) == sizeof(uint64_t), "");
+        uint64_t ret;
+        std::memcpy(&ret, this, sizeof(*this));
+        return ret;
     }
 
-    Sdf_PathNodeConstRefPtr _pathNode;
+    friend void swap(SdfPath &lhs, SdfPath &rhs) {
+        lhs._primPart.swap(rhs._primPart);
+        lhs._propPart.swap(rhs._propPart);
+    }
+
+    Sdf_PathPrimNodeHandle _primPart;
+    Sdf_PathPropNodeHandle _propPart;
+
 };
 
 // Overload hash_value for SdfPath.  Used by things like boost::hash.
-SDF_API size_t hash_value(SdfPath const &path);
+inline size_t hash_value(SdfPath const &path)
+{
+    return path.GetHash();
+}
 
 /// Writes the string representation of \p path to \p out.
 SDF_API std::ostream & operator<<( std::ostream &out, const SdfPath &path );
@@ -799,5 +1003,12 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // so we can inline the ref-counting operations, which must manipulate
 // its internal _refCount member.
 #include "pxr/usd/sdf/pathNode.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+static_assert(Sdf_SizeofPrimPathNode == sizeof(Sdf_PrimPathNode), "");
+static_assert(Sdf_SizeofPropPathNode == sizeof(Sdf_PrimPropertyPathNode), "");
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // SDF_PATH_H

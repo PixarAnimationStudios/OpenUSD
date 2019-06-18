@@ -77,6 +77,8 @@ private:
             .def(self == self)
             .def(self != self)
 
+            .def("HasItem", &T::HasItem)
+
             .def("Clear", &T::Clear)
             .def("ClearAndMakeExplicit", &T::ClearAndMakeExplicit)
             .def("ApplyOperations", &This::_ApplyOperations1)

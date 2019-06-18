@@ -28,6 +28,9 @@
 #include "pxr/pxr.h"
 #include "pxr/base/vt/api.h"
 #include "pxr/base/vt/array.h"
+#include <boost/preprocessor/enum_params.hpp>
+#include <boost/preprocessor/iterate.hpp>
+#include <boost/preprocessor/repeat.hpp>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE

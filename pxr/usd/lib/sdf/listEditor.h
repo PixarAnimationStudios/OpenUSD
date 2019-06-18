@@ -33,16 +33,10 @@
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/spec.h"
 
-// XXX: Including this here may not be great, as this header leaks out
-//      of Sdf and causes downstream code to pick up the trace
-//      versions of TRACE_FUNCTION and TRACE_SCOPE instead of the
-//      versions in Common/Trace. Functionally, they should be equivalent,
-//      but could there be unwanted overhead involved?
-// #include "pxr/base/trace/trace.h"
-
-#include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
+
+#include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -77,17 +71,12 @@ public:
 
     bool IsValid() const
     {
-        return (!IsExpired() && !IsNullEditor());
+        return !IsExpired();
     }
 
-    virtual bool IsExpired() const
+    bool IsExpired() const
     {
         return !_owner;
-    }
-
-    virtual bool IsNullEditor() const
-    {
-        return false;
     }
 
     bool HasKeys() const
@@ -127,7 +116,7 @@ public:
     virtual bool ClearEdits() = 0;
     virtual bool ClearEditsAndMakeExplicit() = 0;
 
-    typedef boost::function<
+    typedef std::function<
                 boost::optional<value_type>(const value_type&)
             >
         ModifyCallback;
@@ -138,7 +127,7 @@ public:
     /// returned key.
     virtual void ModifyItemEdits(const ModifyCallback& cb) = 0;
 
-    typedef boost::function<
+    typedef std::function<
                 boost::optional<value_type>(SdfListOpType, const value_type&)
             >
         ApplyCallback;
@@ -150,8 +139,9 @@ public:
     /// the returned key is applied, allowing callbacks to perform key
     /// translation.  Note that this means list editors can't meaningfully
     /// hold the empty key.
-    virtual void ApplyEdits(value_vector_type* vec, 
-                            const ApplyCallback& cb = ApplyCallback()) = 0;
+    virtual void ApplyEditsToList(
+        value_vector_type* vec, 
+        const ApplyCallback& cb = ApplyCallback()) = 0;
 
     /// Returns the number of elements in the specified list of operations.
     size_t GetSize(SdfListOpType op) const
@@ -236,9 +226,6 @@ protected:
                                const value_vector_type& oldValues,
                                const value_vector_type& newValues) const
     {
-        // See XXX comment for pxr/base/trace above.
-        // TRACE_FUNCTION();
-
         // Disallow duplicate items from being stored in the new list
         // editor values. This is O(n^2), but we expect the number of elements
         // stored to be small enough that this won't matter.
@@ -247,8 +234,8 @@ protected:
         // We assume that duplicate data items are never allowed to be
         // authored. For full generality, this information ought to come from
         // the layer schema.
-        for (int i = 0; i < newValues.size(); ++i) {
-            for (int j = i + 1; j < newValues.size(); ++j) {
+        for (size_t i = 0; i < newValues.size(); ++i) {
+            for (size_t j = i + 1; j < newValues.size(); ++j) {
                 if (newValues[i] == newValues[j]) {
                     TF_CODING_ERROR("Duplicate item '%s' not allowed for "
                                     "field '%s' on <%s>",

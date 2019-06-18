@@ -155,6 +155,7 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "partition", UsdGeomTokens->partition);
     _AddToken(cls, "periodic", UsdGeomTokens->periodic);
     _AddToken(cls, "perspective", UsdGeomTokens->perspective);
+    _AddToken(cls, "pinned", UsdGeomTokens->pinned);
     _AddToken(cls, "points", UsdGeomTokens->points);
     _AddToken(cls, "pointWeights", UsdGeomTokens->pointWeights);
     _AddToken(cls, "positions", UsdGeomTokens->positions);

@@ -53,6 +53,7 @@ public:
     bool Save(const std::string &fileName);
     bool Open(const std::string &assetPath);
 
+    virtual bool StreamsData() const;
     virtual void CreateSpec(const SdfAbstractDataSpecId &id, 
                             SdfSpecType specType);
     virtual bool HasSpec(const SdfAbstractDataSpecId &id) const;

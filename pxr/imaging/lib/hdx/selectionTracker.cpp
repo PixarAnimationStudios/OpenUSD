@@ -77,7 +77,7 @@ namespace {
             if (withIndex) {
                 // Print the indices
                 out << name << ": [ ";
-                for (int i = 0; i < array.size(); i++) {
+                for (size_t i = 0; i < array.size(); i++) {
                     out << std::setfill(' ') << std::setw(3) << i << " ";
                 }
                 out << "] (indices)" << std::endl;

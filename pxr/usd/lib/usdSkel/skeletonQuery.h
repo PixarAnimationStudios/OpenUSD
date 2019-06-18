@@ -115,6 +115,11 @@ public:
     USDSKEL_API
     const UsdSkelTopology& GetTopology() const;
 
+    /// Returns a mapper for remapping from the bound animation, if any,
+    /// to the Skeleton.
+    USDSKEL_API
+    const UsdSkelAnimMapper& GetMapper() const;
+
     /// Returns an arrray of joint paths, given as tokens, describing
     /// the order and parent-child relationships of joints in the skeleton.
     ///

@@ -24,15 +24,14 @@
 #ifndef _GUSD_USD_PROPERTYMAP_H_
 #define _GUSD_USD_PROPERTYMAP_H_
 
+#include <SYS/SYS_Hash.h>
 #include <UT/UT_ConcurrentHashMap.h>
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/object.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/timeCode.h"
-
-#include <boost/functional/hash.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -48,8 +47,8 @@ struct GusdUSD_VaryingPropertyKey
 
     static std::size_t  ComputeHash(const UsdPrim& prim, UsdTimeCode time)
                         {
-                            std::size_t h = hash_value(prim);
-                            boost::hash_combine(h, time);
+                            std::size_t h = SYShash(prim);
+                            SYShashCombine(h, time);
                             return h; 
                         }
 
@@ -105,12 +104,12 @@ struct GusdUSD_UnvaryingPropertyKey
                         { return prim == o.prim; }
 
     friend size_t       hash_value(const GusdUSD_UnvaryingPropertyKey& o)
-                        { return hash_value(o.prim); }
+                        { return SYShash(o.prim); }
 
     struct HashCmp
     {
         static std::size_t  hash(const GusdUSD_UnvaryingPropertyKey& key)
-                            { return hash_value(key.prim); }
+                            { return SYShash(key.prim); }
         static bool         equal(const GusdUSD_UnvaryingPropertyKey& a,
                                   const GusdUSD_UnvaryingPropertyKey& b)
                             { return a == b; }

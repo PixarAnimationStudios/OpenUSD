@@ -39,7 +39,7 @@
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyObjWrapper.h"
 
-#include <boost/function.hpp>
+#include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -88,9 +88,9 @@ Ar_ConvertResolverContextToPython(
     return false;
 }
 
-typedef boost::function<bool(PyObject*, ArResolverContext*)> 
+typedef std::function<bool(PyObject*, ArResolverContext*)> 
     Ar_MakeResolverContextFromPythonFn;
-typedef boost::function<bool(const ArResolverContext&, TfPyObjWrapper*)>
+typedef std::function<bool(const ArResolverContext&, TfPyObjWrapper*)>
     Ar_ResolverContextToPythonFn;
 
 AR_API

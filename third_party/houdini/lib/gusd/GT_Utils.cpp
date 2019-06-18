@@ -25,20 +25,21 @@
 #include "UT_Gf.h"
 #include "UT_Version.h"
 
+#include <GA/GA_ATIGroupBool.h>
 #include <GT/GT_DANumeric.h>
 #include <GT/GT_GEOPrimPacked.h>
 #include <GT/GT_PrimInstance.h>
 #include <GT/GT_Util.h>
-#include <GA/GA_ATIGroupBool.h>
 #include <SYS/SYS_Version.h>
 
-#include <pxr/base/tf/stringUtils.h>
-#include <pxr/base/gf/vec3h.h>
-#include <pxr/base/gf/vec4h.h>
-#include <pxr/usd/usd/attribute.h>
-#include <pxr/usd/usd/timeCode.h>
-#include <pxr/usd/usdGeom/boundable.h>
-#include <pxr/usd/usdGeom/xformable.h>
+#include "pxr/base/gf/vec3h.h"
+#include "pxr/base/gf/vec4h.h"
+#include "pxr/base/tf/span.h"
+#include "pxr/base/tf/stringUtils.h"
+#include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usd/timeCode.h"
+#include "pxr/usd/usdGeom/boundable.h"
+#include "pxr/usd/usdGeom/xformable.h"
 
 #include <boost/tuple/tuple.hpp>
 
@@ -98,107 +99,170 @@ struct GtDataToUsdTypename
 
     GtDataToUsdTypename()
     {
-        // Int
-        m_typeLookup[KeyType(GT_STORE_INT32, GT_TYPE_NONE, -1, false)]
-            = SdfValueTypeNames->Int;
-        m_typeLookup[KeyType(GT_STORE_INT32, GT_TYPE_NONE, -1, true)]
-            = SdfValueTypeNames->IntArray;
-        // Int64
-        m_typeLookup[KeyType(GT_STORE_INT64, GT_TYPE_NONE, -1, false)]
-            = SdfValueTypeNames->Int64;
-        m_typeLookup[KeyType(GT_STORE_INT64, GT_TYPE_NONE, -1, true)]
-            = SdfValueTypeNames->Int64Array;
-        // Vec3i
-        m_typeLookup[KeyType(GT_STORE_INT32, GT_TYPE_VECTOR, 3, false)]
-            = SdfValueTypeNames->Int3;
-        m_typeLookup[KeyType(GT_STORE_INT32, GT_TYPE_VECTOR, 3, true)]
-            = SdfValueTypeNames->Int3Array;
-        m_typeLookup[KeyType(GT_STORE_INT32, GT_TYPE_NONE, 3, false)]
-            = SdfValueTypeNames->Int3;
-        m_typeLookup[KeyType(GT_STORE_INT32, GT_TYPE_NONE, 3, true)]
-            = SdfValueTypeNames->Int3Array;
-        // Vec4i
-        m_typeLookup[KeyType(GT_STORE_INT32, GT_TYPE_NONE, 4, false)]
-            = SdfValueTypeNames->Int4;
-        m_typeLookup[KeyType(GT_STORE_INT32, GT_TYPE_NONE, 4, true)]
-            = SdfValueTypeNames->Int4Array;
-        // Float
-        m_typeLookup[KeyType(GT_STORE_REAL32, GT_TYPE_NONE, -1, false)]
-            = SdfValueTypeNames->Float;
-        m_typeLookup[KeyType(GT_STORE_REAL32, GT_TYPE_NONE, -1, true)]
-            = SdfValueTypeNames->FloatArray;
-        // Vec2f
-        m_typeLookup[KeyType(GT_STORE_REAL32, GT_TYPE_NONE, 2, false)]
-            = SdfValueTypeNames->Float2;
-        m_typeLookup[KeyType(GT_STORE_REAL32, GT_TYPE_NONE, 2, true)]
-            = SdfValueTypeNames->Float2Array;
-        // Vec3f
-        m_typeLookup[KeyType(GT_STORE_REAL32, GT_TYPE_NONE, 3, false)]
-            = SdfValueTypeNames->Float3;
-        m_typeLookup[KeyType(GT_STORE_REAL32, GT_TYPE_NONE, 3, true)]
-            = SdfValueTypeNames->Float3Array;
-        // VectorFloat
-        m_typeLookup[KeyType(GT_STORE_REAL32, GT_TYPE_VECTOR, 3, false)]
-            = SdfValueTypeNames->Vector3f;
-        m_typeLookup[KeyType(GT_STORE_REAL32, GT_TYPE_VECTOR, 3, true)]
-            = SdfValueTypeNames->Vector3fArray;
-        // NormalFloat
-        m_typeLookup[KeyType(GT_STORE_REAL32, GT_TYPE_NORMAL, 3, false)]
-            = SdfValueTypeNames->Normal3f;
-        m_typeLookup[KeyType(GT_STORE_REAL32, GT_TYPE_NORMAL, 3, true)]
-            = SdfValueTypeNames->Normal3fArray;
-        // ColorFloat
-        m_typeLookup[KeyType(GT_STORE_REAL32, GT_TYPE_COLOR, 3, false)]
-            = SdfValueTypeNames->Color3f;
-        m_typeLookup[KeyType(GT_STORE_REAL32, GT_TYPE_COLOR, 3, true)]
-            = SdfValueTypeNames->Color3fArray;
-        // PointFloat
-        m_typeLookup[KeyType(GT_STORE_REAL32, GT_TYPE_POINT, 3, false)]
-            = SdfValueTypeNames->Point3f;
-        m_typeLookup[KeyType(GT_STORE_REAL32, GT_TYPE_POINT, 3, true)]
-            = SdfValueTypeNames->Point3fArray;
-        // Vec4f
-        m_typeLookup[KeyType(GT_STORE_REAL32, GT_TYPE_NONE, 4, false)]
-            = SdfValueTypeNames->Float4;
-        m_typeLookup[KeyType(GT_STORE_REAL32, GT_TYPE_NONE, 4, true)]
-            = SdfValueTypeNames->Float4Array;
-        m_typeLookup[KeyType(GT_STORE_REAL32, GT_TYPE_QUATERNION, 4, false)]
-            = SdfValueTypeNames->Float4;
-        m_typeLookup[KeyType(GT_STORE_REAL32, GT_TYPE_QUATERNION, 4, true)]
-            = SdfValueTypeNames->Float4Array;
-        // String
-        m_typeLookup[KeyType(GT_STORE_STRING, GT_TYPE_NONE, -1, false)]
-            = SdfValueTypeNames->String;
-        m_typeLookup[KeyType(GT_STORE_STRING, GT_TYPE_NONE, -1, true)]
-            = SdfValueTypeNames->StringArray;
-        // Half
-        m_typeLookup[KeyType(GT_STORE_REAL16, GT_TYPE_NONE, -1, false)]
-            = SdfValueTypeNames->Half;
-        m_typeLookup[KeyType(GT_STORE_REAL16, GT_TYPE_NONE, -1, true)]
-            = SdfValueTypeNames->HalfArray;
-        // Vec3h
-        m_typeLookup[KeyType(GT_STORE_REAL16, GT_TYPE_NONE, 3, false)]
-            = SdfValueTypeNames->Half3;
-        m_typeLookup[KeyType(GT_STORE_REAL16, GT_TYPE_NONE, 3, true)]
-            = SdfValueTypeNames->Half3Array;
-        // Vec4h
-        m_typeLookup[KeyType(GT_STORE_REAL16, GT_TYPE_NONE, 4, false)]
-            = SdfValueTypeNames->Half4;
-        m_typeLookup[KeyType(GT_STORE_REAL16, GT_TYPE_NONE, 4, true)]
-            = SdfValueTypeNames->Half4Array;
-        m_typeLookup[KeyType(GT_STORE_REAL16, GT_TYPE_QUATERNION, 4, false)]
-            = SdfValueTypeNames->Half4;
-        m_typeLookup[KeyType(GT_STORE_REAL16, GT_TYPE_QUATERNION, 4, true)]
-            = SdfValueTypeNames->Half4Array;
+        // Integral types
 
+        DefineTypeLookup(GT_STORE_INT32, GT_TYPE_NONE, -1,
+                         SdfValueTypeNames->Int);
+        DefineTypeLookup(GT_STORE_INT64, GT_TYPE_NONE, -1,
+                         SdfValueTypeNames->Int64);
+        DefineTypeLookup(GT_STORE_UINT8, GT_TYPE_NONE, -1,
+                         SdfValueTypeNames->UChar);
+
+#if SYS_VERSION_FULL_INT >= 0x11000000
+            // Up-cast int8/int16 to avoid precision loss.
+            DefineTypeLookup(GT_STORE_INT8, GT_TYPE_NONE, -1,
+                             SdfValueTypeNames->Int);
+            DefineTypeLookup(GT_STORE_INT16, GT_TYPE_NONE, -1,
+                             SdfValueTypeNames->Int);
+#endif
+
+        // Integral vectors.
+        // USD only supports a single precision for vectors of integers.
+#if SYS_VERSION_FULL_INT >= 0x11000000
+        for (auto storage : {GT_STORE_UINT8, GT_STORE_INT8, GT_STORE_INT16,
+                             GT_STORE_INT32, GT_STORE_INT64})
+#else
+        for (auto storage : {GT_STORE_UINT8, GT_STORE_INT32, GT_STORE_INT64})
+#endif
+        {
+            DefineTypeLookup(storage, GT_TYPE_NONE, 2,
+                             SdfValueTypeNames->Int2);
+            DefineTypeLookup(storage, GT_TYPE_NONE, 3,
+                             SdfValueTypeNames->Int3);
+            DefineTypeLookup(storage, GT_TYPE_NONE, 4,
+                             SdfValueTypeNames->Int4);
+        }
+
+        DefineTypeLookup(GT_STORE_REAL16, GT_TYPE_NONE, -1,
+                         SdfValueTypeNames->Half);
+        DefineTypeLookup(GT_STORE_REAL32, GT_TYPE_NONE, -1,
+                         SdfValueTypeNames->Float);
+        DefineTypeLookup(GT_STORE_REAL64, GT_TYPE_NONE, -1,
+                         SdfValueTypeNames->Double);
+
+        // Vec2
+        DefineTypeLookup(GT_STORE_REAL16, GT_TYPE_NONE, 2,
+                         SdfValueTypeNames->Half2);
+        DefineTypeLookup(GT_STORE_REAL32, GT_TYPE_NONE, 2,
+                         SdfValueTypeNames->Float2);
+        DefineTypeLookup(GT_STORE_REAL64, GT_TYPE_NONE, 2,
+                         SdfValueTypeNames->Double2);
+
+        // GT_TYPE_TEXTURE
+#if SYS_VERSION_FULL_INT >= 0x10050000
+        DefineTypeLookup(GT_STORE_REAL16, GT_TYPE_TEXTURE, 2,
+                         SdfValueTypeNames->TexCoord2h);
+        DefineTypeLookup(GT_STORE_REAL32, GT_TYPE_TEXTURE, 2,
+                         SdfValueTypeNames->TexCoord2f);
+        DefineTypeLookup(GT_STORE_REAL64, GT_TYPE_TEXTURE, 2,
+                         SdfValueTypeNames->TexCoord2d);
+#endif
+
+        // GT_TYPE_ST
+        DefineTypeLookup(GT_STORE_REAL16, GT_TYPE_ST, 2,
+                         SdfValueTypeNames->TexCoord2h);
+        DefineTypeLookup(GT_STORE_REAL32, GT_TYPE_ST, 2,
+                         SdfValueTypeNames->TexCoord2f);
+        DefineTypeLookup(GT_STORE_REAL64, GT_TYPE_ST, 2,
+                         SdfValueTypeNames->TexCoord2d);
+
+        // Vec3
+        DefineTypeLookup(GT_STORE_REAL16, GT_TYPE_NONE, 3,
+                         SdfValueTypeNames->Half3);
+        DefineTypeLookup(GT_STORE_REAL32, GT_TYPE_NONE, 3,
+                         SdfValueTypeNames->Float3);
+        DefineTypeLookup(GT_STORE_REAL64, GT_TYPE_NONE, 3,
+                         SdfValueTypeNames->Double3);
+
+        // GT_TYPE_VECTOR 3
+        DefineTypeLookup(GT_STORE_REAL16, GT_TYPE_VECTOR, 3,
+                         SdfValueTypeNames->Vector3h);
+        DefineTypeLookup(GT_STORE_REAL32, GT_TYPE_VECTOR, 3,
+                         SdfValueTypeNames->Vector3f);
+        DefineTypeLookup(GT_STORE_REAL64, GT_TYPE_VECTOR, 3,
+                         SdfValueTypeNames->Vector3d);
+
+        // GT_TYPE_NORMAL 3
+        DefineTypeLookup(GT_STORE_REAL16, GT_TYPE_NORMAL, 3,
+                         SdfValueTypeNames->Normal3h);
+        DefineTypeLookup(GT_STORE_REAL32, GT_TYPE_NORMAL, 3,
+                         SdfValueTypeNames->Normal3f);
+        DefineTypeLookup(GT_STORE_REAL64, GT_TYPE_NORMAL, 3,
+                         SdfValueTypeNames->Normal3d);
+
+        // GT_TYPE_COLOR 3
+        DefineTypeLookup(GT_STORE_REAL16, GT_TYPE_COLOR, 3,
+                         SdfValueTypeNames->Color3h);
+        DefineTypeLookup(GT_STORE_REAL32, GT_TYPE_COLOR, 3,
+                         SdfValueTypeNames->Color3f);
+        DefineTypeLookup(GT_STORE_REAL64, GT_TYPE_COLOR, 3,
+                         SdfValueTypeNames->Color3d);
+
+        // GT_TYPE_POINT 3
+        DefineTypeLookup(GT_STORE_REAL16, GT_TYPE_POINT, 3,
+                         SdfValueTypeNames->Point3h);
+        DefineTypeLookup(GT_STORE_REAL32, GT_TYPE_POINT, 3,
+                         SdfValueTypeNames->Point3f);
+        DefineTypeLookup(GT_STORE_REAL64, GT_TYPE_POINT, 3,
+                         SdfValueTypeNames->Point3d);
+
+        // GT_TYPE_TEXTURE 3
+#if SYS_VERSION_FULL_INT >= 0x10050000
+        DefineTypeLookup(GT_STORE_REAL16, GT_TYPE_TEXTURE, 3,
+                         SdfValueTypeNames->TexCoord3h);
+        DefineTypeLookup(GT_STORE_REAL32, GT_TYPE_TEXTURE, 3,
+                         SdfValueTypeNames->TexCoord3f);
+        DefineTypeLookup(GT_STORE_REAL64, GT_TYPE_TEXTURE, 3,
+                         SdfValueTypeNames->TexCoord3d);
+#endif
+
+        // Vec4
+        DefineTypeLookup(GT_STORE_REAL16, GT_TYPE_NONE, 4,
+                         SdfValueTypeNames->Half4);
+        DefineTypeLookup(GT_STORE_REAL32, GT_TYPE_NONE, 4,
+                         SdfValueTypeNames->Float4);
+        DefineTypeLookup(GT_STORE_REAL64, GT_TYPE_NONE, 4,
+                         SdfValueTypeNames->Double4);
+
+        // GT_TYPE_COLOR 4
+        DefineTypeLookup(GT_STORE_REAL16, GT_TYPE_COLOR, 4,
+                         SdfValueTypeNames->Color4h);
+        DefineTypeLookup(GT_STORE_REAL32, GT_TYPE_COLOR, 4,
+                         SdfValueTypeNames->Color4f);
+        DefineTypeLookup(GT_STORE_REAL64, GT_TYPE_COLOR, 4,
+                         SdfValueTypeNames->Color4d);
+
+        // GT_TYPE_QUATERNION
+        DefineTypeLookup(GT_STORE_REAL16, GT_TYPE_QUATERNION, 4,
+                         SdfValueTypeNames->Quath);
+        DefineTypeLookup(GT_STORE_REAL32, GT_TYPE_QUATERNION, 4,
+                         SdfValueTypeNames->Quatf);
+        DefineTypeLookup(GT_STORE_REAL64, GT_TYPE_QUATERNION, 4,
+                         SdfValueTypeNames->Quatd);
+
+        // Matrices.
+        // USD only supports a single precision type for matrices.
+        for (auto storage : {GT_STORE_REAL16,
+                             GT_STORE_REAL32,
+                             GT_STORE_REAL64}) {
+            DefineTypeLookup(storage, GT_TYPE_MATRIX3, 9,
+                             SdfValueTypeNames->Matrix3d);
+            DefineTypeLookup(storage, GT_TYPE_MATRIX, 16,
+                             SdfValueTypeNames->Matrix4d);
+        }
+
+        // String
+        DefineTypeLookup(GT_STORE_STRING, GT_TYPE_NONE, -1,
+                         SdfValueTypeNames->String);
     }
 
     SdfValueTypeName operator()(const GT_DataArrayHandle& gtData, bool isArray) const
     {
         GT_Size tupleSize = gtData->getTupleSize();
-        // Types may be specialized for 3- and 4-vectors.
+        // Types may be specialized for vectors of size 2,3,4 and matrices.
         // -1 means "any size"
-        if(tupleSize != 2 && tupleSize != 3 && tupleSize != 4) {
+        if(tupleSize != 2 && tupleSize != 3 && tupleSize != 4
+           && tupleSize != 9 && tupleSize != 16) {
             tupleSize = -1;
         }
         KeyType key(gtData->getStorage(),
@@ -212,549 +276,524 @@ struct GtDataToUsdTypename
 
         return SdfValueTypeName();
     }
+
+    void
+    DefineTypeLookup(GT_Storage storage, GT_Type type, int tupleSize,
+                     const SdfValueTypeName& typeName)
+    {
+        // Scalar type
+        m_typeLookup[KeyType(storage, type, tupleSize, /*array*/ false)] =
+            typeName.GetScalarType();
+        // Array type
+        m_typeLookup[KeyType(storage, type, tupleSize, /*array*/ true)] =
+            typeName.GetArrayType();
+    }
 };
 //#############################################################################
 
 //#############################################################################
-// struct TypeConvertTraits
+// Converters
 //#############################################################################
-template <typename T_USD> struct TypeConvertTraits;
 
-template <> struct TypeConvertTraits<int>
+
+/// Copy \p count elements from \p src to \p dst.
+template <typename FROM, typename TO>
+void
+_CopyArray(TO* dst, const FROM* src, GT_Size count)
 {
-    enum {GT_Storage = GT_STORE_INT32};
-    typedef int Type;
-    typedef VtIntArray ArrayType;
-    
-    static bool fillValue(Type& usdValue, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->entries() < 1) return false;
-        usdValue = gtData->getI32(0);
-
-        return true;
+    for (GT_Size i = 0; i < count; ++i) {
+        dst[i] = static_cast<TO>(src[i]);
     }
-
-    static bool fillArray(ArrayType& usdArray, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        const int numElements = gtData->entries() * gtData->getTupleSize();
-        GT_DataArrayHandle buffer;
-        const int* flatArray = gtData->getI32Array(buffer);
-        usdArray.resize(numElements);
-        for(int i=0; i<numElements; ++i)
-            usdArray[i] = flatArray[i];
-        
-        return true;
-    }
-};
+}
 
 
-// XXX This needs to be updated once USD supports int64
-template <> struct TypeConvertTraits<int64_t>
+bool _IsNumeric(GT_Storage storage)
 {
-    enum {GT_Storage = GT_STORE_INT64};
-    typedef int64_t Type;
-    typedef VtIntArray ArrayType;
-    
-    static bool fillValue(Type& usdValue, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->entries() < 1) return false;
-        usdValue = static_cast<int>(gtData->getI64(0));
+    return GTisInteger(storage) || GTisFloat(storage);
+}
 
-        return true;
-    }
 
-    static bool fillArray(ArrayType& usdArray, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        const int numElements = gtData->entries() * gtData->getTupleSize();
-        GT_DataArrayHandle buffer;
-        const int64* flatArray = gtData->getI64Array(buffer);
-        usdArray.resize(numElements);
-        for(int i=0; i<numElements; ++i)
-            usdArray[i] = static_cast<int>(flatArray[i]);
-        
-        return true;
-    }
-};
-
-template <> struct TypeConvertTraits<GfHalf>
+/// Convert numeric GT types to USD.
+/// This converter can only be used on types supported directly by the
+/// GT_DataArray interface.
+template <class UsdType>
+struct _ConvertNumericToUsd
 {
-    enum {GT_Storage = GT_STORE_REAL16};
-    typedef GfHalf Type;
-    typedef VtHalfArray ArrayType;
-    
-    static bool fillValue(Type& usdValue, const GT_DataArrayHandle& gtData)
+    using ScalarType = typename GusdPodTupleTraits<UsdType>::ValueType;
+    static const int tupleSize = GusdGetTupleSize<UsdType>();
+
+    static bool fillValue(UsdType& usdValue, const GT_DataArrayHandle& gtData)
     {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->entries() < 1) return false;
-        usdValue = gtData->getF16(0);
+        UT_ASSERT_P(gtData);
 
-        return true;
-    }
+        if (_IsNumeric(gtData->getStorage()) && gtData->entries() > 0 &&
+            gtData->getTupleSize() == tupleSize) {
 
-    static bool fillArray(ArrayType& usdArray, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        const int numElements = gtData->entries() * gtData->getTupleSize();
-        GT_DataArrayHandle buffer;
-        const fpreal16* flatArray = gtData->getF16Array(buffer);
-        usdArray.resize(numElements);
-        for(int i=0; i<numElements; ++i)
-            usdArray[i] = flatArray[i];
-        
-        return true;
-    }
-};
-
-template <> struct TypeConvertTraits<GfVec3h>
-{
-    enum {GT_Storage = GT_STORE_REAL16};
-    typedef GfVec3h Type;
-    typedef VtVec3hArray ArrayType;
-    
-    static bool fillValue(Type& usdValue, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->entries() < 1) return false;
-        usdValue.Set(static_cast<GfHalf>(gtData->getF32(0,0)),
-                     static_cast<GfHalf>(gtData->getF32(0,1)),
-                     static_cast<GfHalf>(gtData->getF32(0,2)));
-
-        return true;
-    }
-
-    static bool fillArray(ArrayType& usdArray, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->getTupleSize() != 3) return false;
-        const int numElements = gtData->entries();
-        GT_DataArrayHandle buffer;
-        const fpreal16* flatArray = gtData->getF16Array(buffer);
-        usdArray.resize(numElements);
-        for(int i=0; i<numElements; ++i)
-            usdArray[i].Set(static_cast<GfHalf>(flatArray[i*3]),
-                            static_cast<GfHalf>(flatArray[i*3+1]),
-                            static_cast<GfHalf>(flatArray[i*3+2]));
-        
-        return true;
-    }
-};
-
-
-template <> struct TypeConvertTraits<GfVec4h>
-{
-    enum {GT_Storage = GT_STORE_REAL16};
-    typedef GfVec4h Type;
-    typedef VtVec4hArray ArrayType;
-    
-    static bool fillValue(Type& usdValue, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->entries() < 1) return false;
-        usdValue.Set(static_cast<GfHalf>(gtData->getF32(0,0)),
-                     static_cast<GfHalf>(gtData->getF32(0,1)),
-                     static_cast<GfHalf>(gtData->getF32(0,2)),
-                     static_cast<GfHalf>(gtData->getF32(0,3)));
-
-        return true;
-    }
-
-    static bool fillArray(ArrayType& usdArray, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->getTupleSize() != 4) return false;
-        const int numElements = gtData->entries();
-        GT_DataArrayHandle buffer;
-        const fpreal16* flatArray = gtData->getF16Array(buffer);
-        usdArray.resize(numElements);
-        for(int i=0; i<numElements; ++i)
-            usdArray[i].Set(static_cast<GfHalf>(flatArray[i*4]),
-                            static_cast<GfHalf>(flatArray[i*4+1]),
-                            static_cast<GfHalf>(flatArray[i*4+2]),
-                            static_cast<GfHalf>(flatArray[i*4+3]));
-        
-        return true;
-    }
-};
-
-template <> struct TypeConvertTraits<float>
-{
-    enum {GT_Storage = GT_STORE_REAL32};
-    typedef float Type;
-    typedef VtFloatArray ArrayType;
-    
-    static bool fillValue(Type& usdValue, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->entries() < 1) return false;
-        usdValue = gtData->getF32(0);
-
-        return true;
-    }
-
-    static bool fillArray(ArrayType& usdArray, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        const int numElements = gtData->entries() * gtData->getTupleSize();
-        GT_DataArrayHandle buffer;
-        const float* flatArray = gtData->getF32Array(buffer);
-        usdArray.resize(numElements);
-        for(int i=0; i<numElements; ++i)
-            usdArray[i] = flatArray[i];
-        
-        return true;
-    }
-};
-
-template <> struct TypeConvertTraits<double>
-{
-    enum {GT_Storage = GT_STORE_REAL64};
-    typedef double Type;
-    typedef VtDoubleArray ArrayType;
-    
-    static bool fillValue(Type& usdValue, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->entries() < 1) return false;
-        usdValue = gtData->getF64(0);
-
-        return true;
-    }
-
-    static bool fillArray(ArrayType& usdArray, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage) {
-            cerr << "storage type does not match" << endl;
-            return false;
+            auto* dst = reinterpret_cast<ScalarType*>(&usdValue);
+            gtData->import(0, dst, tupleSize);
+            return true;
         }
-        const int numElements = gtData->entries() * gtData->getTupleSize();
-        GT_DataArrayHandle buffer;
-        const double* flatArray = gtData->getF64Array(buffer);
-        usdArray.resize(numElements);
-        for(int i=0; i<numElements; ++i)
-            usdArray[i] = flatArray[i];
-        
-        return true;
-    }
-};
-
-template <> struct TypeConvertTraits<bool>
-{
-    enum {GT_Storage = GT_STORE_UINT8};
-    typedef int Type;
-    typedef VtBoolArray ArrayType;
-    
-    static bool fillValue(Type& usdValue, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->entries() < 1) return false;
-        usdValue = gtData->getU8(0);
-
-        return true;
+        return false;
     }
 
-    static bool fillArray(ArrayType& usdArray, const GT_DataArrayHandle& gtData)
+    static bool fillArray(VtArray<UsdType>& usdArray,
+                          const GT_DataArrayHandle& gtData)
     {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        const int numElements = gtData->entries() * gtData->getTupleSize();
-        GT_DataArrayHandle buffer;
-        const uint8* flatArray = gtData->getU8Array(buffer);
-        usdArray.resize(numElements);
-        for(int i=0; i<numElements; ++i)
-            usdArray[i] = flatArray[i];
-        
-        return true;
-    }
-};
+        UT_ASSERT_P(gtData);
 
+        if (_IsNumeric(gtData->getStorage()) &&
+            gtData->getTupleSize() == tupleSize) {
 
-template <> struct TypeConvertTraits<GfVec3i>
-{
-    enum {GT_Storage = GT_STORE_INT32};
-    typedef GfVec3i Type;
-    typedef VtVec3iArray ArrayType;
-    
-    static bool fillValue(Type& usdValue, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->entries() < 1) return false;
-        usdValue.Set(gtData->getI32(0,0),
-                     gtData->getI32(0,1),
-                     gtData->getI32(0,2));
-
-        return true;
-    }
-
-    static bool fillArray(ArrayType& usdArray, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->getTupleSize() != 3) return false;
-        const int numElements = gtData->entries();
-        GT_DataArrayHandle buffer;
-        const int* flatArray = gtData->getI32Array(buffer);
-        usdArray.resize(numElements);
-        for(int i=0; i<numElements; ++i)
-            usdArray[i].Set(flatArray[i*3],
-                            flatArray[i*3+1],
-                            flatArray[i*3+2]);
-        
-        return true;
-    }
-};
-
-
-template <> struct TypeConvertTraits<GfVec4i>
-{
-    enum {GT_Storage = GT_STORE_INT32};
-    typedef GfVec4i Type;
-    typedef VtVec4iArray ArrayType;
-    
-    static bool fillValue(Type& usdValue, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->entries() < 1) return false;
-        usdValue.Set(gtData->getI32(0,0),
-                     gtData->getI32(0,1),
-                     gtData->getI32(0,2),
-                     gtData->getI32(0,3));
-
-        return true;
-    }
-
-    static bool fillArray(ArrayType& usdArray, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->getTupleSize() != 4) return false;
-        const int numElements = gtData->entries();
-        GT_DataArrayHandle buffer;
-        const int* flatArray = gtData->getI32Array(buffer);
-        usdArray.resize(numElements);
-        for(int i=0; i<numElements; ++i)
-            usdArray[i].Set(flatArray[i*3],
-                            flatArray[i*3+1],
-                            flatArray[i*3+2],
-                            flatArray[i*3+3]);
-        
-        return true;
-    }
-};
-
-template <> struct TypeConvertTraits<GfVec2f>
-{
-    enum {GT_Storage = GT_STORE_REAL32};
-    typedef GfVec2f Type;
-    typedef VtVec2fArray ArrayType;
-    
-    static bool fillValue(Type& usdValue, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->entries() < 1) return false;
-        usdValue.Set(gtData->getF32(0,0),
-                     gtData->getF32(0,1));
-
-        return true;
-    }
-
-    static bool fillArray(ArrayType& usdArray, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->getTupleSize() != 2) return false;
-        const int numElements = gtData->entries();
-        GT_DataArrayHandle buffer;
-        const float* flatArray = gtData->getF32Array(buffer);
-        usdArray.resize(numElements);
-        for(int i=0; i<numElements; ++i)
-            usdArray[i].Set(flatArray[i*2],
-                            flatArray[i*2+1]);
-        
-        return true;
-    }
-};
-
-template <> struct TypeConvertTraits<GfVec3f>
-{
-    enum {GT_Storage = GT_STORE_REAL32};
-    typedef GfVec3f Type;
-    typedef VtVec3fArray ArrayType;
-    
-    static bool fillValue(Type& usdValue, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->entries() < 1) return false;
-        usdValue.Set(gtData->getF32(0,0),
-                     gtData->getF32(0,1),
-                     gtData->getF32(0,2));
-
-        return true;
-    }
-
-    static bool fillArray(ArrayType& usdArray, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->getTupleSize() != 3) return false;
-        const int numElements = gtData->entries();
-        GT_DataArrayHandle buffer;
-        const float* flatArray = gtData->getF32Array(buffer);
-        usdArray.resize(numElements);
-        for(int i=0; i<numElements; ++i)
-            usdArray[i].Set(flatArray[i*3],
-                            flatArray[i*3+1],
-                            flatArray[i*3+2]);
-        
-        return true;
-    }
-};
-
-
-template <> struct TypeConvertTraits<GfVec4f>
-{
-    enum {GT_Storage = GT_STORE_REAL32};
-    typedef GfVec4f Type;
-    typedef VtVec4fArray ArrayType;
-    
-    static bool fillValue(Type& usdValue, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->entries() < 1) return false;
-        usdValue.Set(gtData->getF32(0,0),
-                     gtData->getF32(0,1),
-                     gtData->getF32(0,2),
-                     gtData->getF32(0,3));
-
-        return true;
-    }
-
-    static bool fillArray(ArrayType& usdArray, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->getTupleSize() != 4) return false;
-        const int numElements = gtData->entries();
-        GT_DataArrayHandle buffer;
-        const float* flatArray = gtData->getF32Array(buffer);
-        usdArray.resize(numElements);
-        for(int i=0; i<numElements; ++i)
-            usdArray[i].Set(flatArray[i*4],
-                            flatArray[i*4+1],
-                            flatArray[i*4+2],
-                            flatArray[i*4+3]);
-        
-        return true;
-    }
-};
-
-template <> struct TypeConvertTraits<GfQuath>
-{
-    enum {GT_Storage = GT_STORE_REAL32};
-    typedef GfQuath Type;
-    typedef VtQuathArray ArrayType;
-    
-    static bool fillValue(Type& usdValue, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->entries() < 1) return false;
-
-        // Houdini quaternions are i,j,k,w, while Gf is w,i,j,k
-        usdValue.SetReal(static_cast<GfHalf>(gtData->getF32(0,3)));
-        usdValue.SetImaginary(static_cast<GfHalf>(gtData->getF32(0,0)),
-                              static_cast<GfHalf>(gtData->getF32(0,1)),
-                              static_cast<GfHalf>(gtData->getF32(0,2)));
-
-        return true;
-    }
-
-    static bool fillArray(ArrayType& usdArray, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->getTupleSize() != 4) return false;
-        const int numElements = gtData->entries();
-        GT_DataArrayHandle buffer;
-        const float* flatArray = gtData->getF32Array(buffer);
-        usdArray.resize(numElements);
-        for(int i=0; i<numElements; ++i)
-        {
-            // Houdini quaternions are i,j,k,w, while Gf is w,i,j,k
-            usdArray[i].SetReal(static_cast<GfHalf>(flatArray[i*4+3]));
-            usdArray[i].SetImaginary(static_cast<GfHalf>(flatArray[i*4]),
-                                     static_cast<GfHalf>(flatArray[i*4+1]),
-                                     static_cast<GfHalf>(flatArray[i*4+2]));
+            usdArray.resize(gtData->entries());
+            auto* dst = reinterpret_cast<ScalarType*>(usdArray.data());
+            gtData->fillArray(dst, 0, gtData->entries(), tupleSize);
+            return true;
         }
-        
-        return true;
+        return false;
     }
 };
 
-template <> struct TypeConvertTraits<GfMatrix4d>
+
+/// Convert numeric GT types to USD.
+/// This can be used on types that are not directly supported by GT_DataArray,
+/// and which require a static_cast to copy into the output.
+template <class UsdType>
+struct _ConvertNumericWithCastToUsd
 {
-    enum {GT_Storage = GT_STORE_REAL64};
-    typedef GfMatrix4d Type;
-    typedef VtMatrix4dArray ArrayType;
-    
-    static bool fillValue(Type& usdValue, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->entries() < 1) return false;
-        GT_DataArrayHandle buffer;
-        const double* flatArray = gtData->getF64Array(buffer);
-        memcpy(usdValue[0], flatArray, sizeof(double)*4);
-        memcpy(usdValue[1], flatArray+4, sizeof(double)*4);
-        memcpy(usdValue[2], flatArray+8, sizeof(double)*4);
-        memcpy(usdValue[3], flatArray+12, sizeof(double)*4);
+    using ScalarType = typename GusdPodTupleTraits<UsdType>::ValueType;
+    static const int tupleSize = GusdGetTupleSize<UsdType>();
 
-        return true;
-    }
-
-    static bool fillArray(ArrayType& usdArray, const GT_DataArrayHandle& gtData)
+    static bool fillValue(UsdType& usdValue, const GT_DataArrayHandle& gtData)
     {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->getTupleSize() != 16) return false;
-        const int numElements = gtData->entries();
-        GT_DataArrayHandle buffer;
-        usdArray.resize(numElements);
-        // TODO this might not be correct
-        for(int i=0; i<numElements; ++i) {
-            gtData->fillArray(usdArray[i][0], i*16,    1, 16);
-            gtData->fillArray(usdArray[i][1], i*16+4,  1, 16);
-            gtData->fillArray(usdArray[i][2], i*16+8,  1, 16);
-            gtData->fillArray(usdArray[i][3], i*16+12, 1, 16);
+        UT_ASSERT_P(gtData);
+
+        if (gtData->entries() > 0 && gtData->getTupleSize() == tupleSize) {
+            const GT_Storage storage = gtData->getStorage();
+            if (storage == GT_STORE_UINT8) {
+                return _fillValue<uint8>(usdValue, gtData);
+            }
+#if SYS_VERSION_FULL_INT >= 0x11000000
+            else if (storage == GT_STORE_INT8) {
+                return _fillValue<int8>(usdValue, gtData);
+            } else if (storage == GT_STORE_INT16) {
+                return _fillValue<int16>(usdValue, gtData);
+            }
+#endif
+            else if (storage == GT_STORE_INT32) {
+                return _fillValue<int32>(usdValue, gtData);
+            } else if (storage == GT_STORE_INT64) {
+                return _fillValue<int64>(usdValue, gtData);
+            } else if (storage == GT_STORE_REAL16) {
+                return _fillValue<fpreal16>(usdValue, gtData);
+            } else if (storage == GT_STORE_REAL32) {
+                return _fillValue<fpreal32>(usdValue, gtData);
+            } else if (storage == GT_STORE_REAL64) {
+                return _fillValue<fpreal64>(usdValue, gtData);
+            }
         }
+        return false;
+    }
+
+    static bool fillArray(VtArray<UsdType>& usdArray,
+                          const GT_DataArrayHandle& gtData)
+    {
+        UT_ASSERT_P(gtData);
+
+        if (gtData->getTupleSize() == tupleSize) {
+            const GT_Storage storage = gtData->getStorage();
+            if (storage == GT_STORE_UINT8) {
+                return _fillArray<uint8>(usdArray, gtData);
+            }
+#if SYS_VERSION_FULL_INT >= 0x11000000
+            else if (storage == GT_STORE_INT8) {
+                return _fillArray<int8>(usdArray, gtData);
+            } else if (storage == GT_STORE_INT16) {
+                return _fillArray<int16>(usdArray, gtData);
+            }
+#endif
+            else if (storage == GT_STORE_INT32) {
+                return _fillArray<int32>(usdArray, gtData);
+            } else if (storage == GT_STORE_INT64) {
+                return _fillArray<int64>(usdArray, gtData);
+            } else if (storage == GT_STORE_REAL16) {
+                return _fillArray<fpreal16>(usdArray, gtData);
+            } else if (storage == GT_STORE_REAL32) {
+                return _fillArray<fpreal32>(usdArray, gtData);
+            } else if (storage == GT_STORE_REAL64) {
+                return _fillArray<fpreal64>(usdArray, gtData);
+            }
+        }
+        return false;
+    }
+
+private:
+    template <typename GtType>
+    static bool _fillValue(UsdType& usdValue,
+                           const GT_DataArrayHandle& gtData,
+                           GT_Offset offset=0)
+    {   
+        GtType src[tupleSize];
+        gtData->import(offset, src, tupleSize);
         
+        _CopyArray(reinterpret_cast<ScalarType*>(&usdValue), src, tupleSize);
+        return true;
+    }
+
+    template <typename GtType>
+    static bool _fillArray(VtArray<UsdType>& usdArray,
+                           const GT_DataArrayHandle& gtData)
+    {
+        const GT_Size numElems = gtData->entries();
+        usdArray.resize(numElems);
+        auto dst = TfMakeSpan(usdArray);
+        for (GT_Offset i = 0; i < numElems; ++i) {
+            _fillValue<GtType>(dst[i], gtData, i);
+        }
         return true;
     }
 };
 
 
-template <> struct TypeConvertTraits<std::string>
+/// Converter specialized for converting GT data to GfQuat types.
+template <class UsdType>
+struct _ConvertQuatToUsd
 {
-    enum {GT_Storage = GT_STORE_STRING};
-    typedef std::string Type;
-    typedef VtStringArray ArrayType;
-    
-    static bool fillValue(Type& usdValue, const GT_DataArrayHandle& gtData)
-    {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        if(gtData->entries() < 1) return false;
-        GT_String str = gtData->getS(0); 
-        if(str == NULL) return false;
+    using GtScalarType = typename GusdPodTupleTraits<UsdType>::ValueType;
 
-        usdValue = str;
-        return true;
+    static bool fillValue(UsdType& usdValue, const GT_DataArrayHandle& gtData)
+    {
+        UT_ASSERT_P(gtData);
+
+        if (GTisFloat(gtData->getStorage()) &&
+            gtData->entries() > 0 &&
+            gtData->getTupleSize() == 4) {
+            
+            _fillValue(usdValue, gtData, 0);
+            return true;
+        }
+        return false;
     }
 
-    static bool fillArray(ArrayType& usdArray, const GT_DataArrayHandle& gtData)
+    static bool fillArray(VtArray<UsdType>& usdArray,
+                          const GT_DataArrayHandle& gtData)
     {
-        if((int)gtData->getStorage() != (int)GT_Storage)  return false;
-        // XXX tuples of strings not supported
-        const int numElements = gtData->entries();
-        GT_DataArrayHandle buffer;
-        usdArray.resize(numElements);
-        gtData->fillStrings(usdArray.data());
+        UT_ASSERT_P(gtData);
+
+        if (GTisFloat(gtData->getStorage()) && gtData->getTupleSize() == 4) {
+
+            usdArray.resize(gtData->entries());
+            auto dst = TfMakeSpan(usdArray);
+            for (GT_Offset i = 0; i < gtData->entries(); ++i) {
+                _fillValue(dst[i], gtData, i);
+            }
+            return true;
+        }
+        return false;
+    }
+
+private:
+    static void _fillValue(UsdType& usdValue,
+                           const GT_DataArrayHandle& gtData,
+                           GT_Offset offset=0)
+    {
+        GtScalarType src[4];
+        gtData->import(offset, src, 4);
         
-        return true;
+        // Houdini quaternions are stored as i,j,k,w
+        using UsdScalarType = typename UsdType::ScalarType;
+
+        usdValue.SetReal(static_cast<UsdScalarType>(src[3]));
+        usdValue.SetImaginary(static_cast<UsdScalarType>(src[0]),
+                              static_cast<UsdScalarType>(src[1]),
+                              static_cast<UsdScalarType>(src[2]));
     }
 };
+
+
+void _ConvertString(const GT_String& src, std::string* dst)
+{
+    *dst = std::string(src ? src : "");
+}
+
+
+void _ConvertString(const GT_String& src, TfToken* dst)
+{
+    *dst = TfToken(src ? src : "");
+}
+
+
+void _ConvertString(const GT_String& src, SdfAssetPath* dst)
+{
+    *dst = SdfAssetPath(src ? src : "");
+}
+
+
+/// Convert a GT type to a USD string value.
+struct _ConvertStringToUsd
+{
+    static bool fillValue(std::string& usdValue, const GT_DataArrayHandle& gtData)
+    {
+        UT_ASSERT_P(gtData);
+
+        if (GTisString(gtData->getStorage()) &&
+            gtData->entries() > 0 &&
+            gtData->getTupleSize() == 1) {
+
+            _ConvertString(gtData->getS(0), &usdValue);
+            return true;
+        }
+        return false;
+    }
+
+    static bool fillArray(VtStringArray& usdArray,
+                          const GT_DataArrayHandle& gtData)
+    {
+        UT_ASSERT_P(gtData);
+
+        if (GTisString(gtData->getStorage()) &&
+            gtData->getTupleSize() == 1) {
+            // XXX tuples of strings not supported
+            usdArray.resize(gtData->entries());
+            gtData->fillStrings(usdArray.data());
+            return true;
+        }
+        return false;
+    }
+};
+
+
+/// Convert a GT type to string-like types (eg., TfToken)
+struct _ConvertStringLikeToUsd
+{
+    template <class UsdType>
+    static bool fillValue(UsdType& usdValue, const GT_DataArrayHandle& gtData)
+    {
+        UT_ASSERT_P(gtData);
+
+        if (GTisString(gtData->getStorage()) &&
+            gtData->entries() > 0 &&
+            gtData->getTupleSize() == 1) {
+
+            _ConvertString(gtData->getS(0), &usdValue);
+            return true;
+        }
+        return false;
+    }
+
+    template <class UsdType>
+    static bool fillArray(VtArray<UsdType>& usdArray,
+                          const GT_DataArrayHandle& gtData)
+    {
+        UT_ASSERT_P(gtData);
+
+        if (GTisString(gtData->getStorage()) &&
+            gtData->getTupleSize() == 1) {
+
+            // XXX tuples of strings not supported
+            const GT_Size numElems = gtData->entries();
+            usdArray.resize(numElems);
+
+            auto dst = TfMakeSpan(usdArray);
+            for (GT_Size i = 0; i < numElems; ++i) {
+                _ConvertString(gtData->getS(i), &dst[i]);
+            }
+            return true;
+        }
+        return false;
+    }
+};
+
+
+template <class UsdType> struct _ConvertToUsd {};
+
+#define _GUSD_DEFINE_CONVERTER(type, base)                      \
+    template <> struct _ConvertToUsd<type> : public base {};
+
+// Scalars
+_GUSD_DEFINE_CONVERTER(double,  _ConvertNumericToUsd<double>);
+_GUSD_DEFINE_CONVERTER(float,   _ConvertNumericToUsd<float>);
+_GUSD_DEFINE_CONVERTER(GfHalf,  _ConvertNumericWithCastToUsd<GfHalf>);
+_GUSD_DEFINE_CONVERTER(bool,    _ConvertNumericWithCastToUsd<bool>);
+_GUSD_DEFINE_CONVERTER(int,     _ConvertNumericToUsd<int>);
+_GUSD_DEFINE_CONVERTER(uint8,   _ConvertNumericToUsd<uint8>);
+_GUSD_DEFINE_CONVERTER(int64,   _ConvertNumericToUsd<int64>);
+_GUSD_DEFINE_CONVERTER(uint32,  _ConvertNumericWithCastToUsd<uint32>);
+_GUSD_DEFINE_CONVERTER(uint64,  _ConvertNumericWithCastToUsd<uint64>);
+
+// Vectors
+_GUSD_DEFINE_CONVERTER(GfVec2d, _ConvertNumericToUsd<GfVec2d>);
+_GUSD_DEFINE_CONVERTER(GfVec2f, _ConvertNumericToUsd<GfVec2f>);
+_GUSD_DEFINE_CONVERTER(GfVec2h, _ConvertNumericToUsd<GfVec2h>);
+_GUSD_DEFINE_CONVERTER(GfVec2i, _ConvertNumericToUsd<GfVec2i>);
+
+_GUSD_DEFINE_CONVERTER(GfVec3d, _ConvertNumericToUsd<GfVec3d>);
+_GUSD_DEFINE_CONVERTER(GfVec3f, _ConvertNumericToUsd<GfVec3f>);
+_GUSD_DEFINE_CONVERTER(GfVec3h, _ConvertNumericToUsd<GfVec3h>);
+_GUSD_DEFINE_CONVERTER(GfVec3i, _ConvertNumericToUsd<GfVec3i>);
+
+_GUSD_DEFINE_CONVERTER(GfVec4d, _ConvertNumericToUsd<GfVec4d>);
+_GUSD_DEFINE_CONVERTER(GfVec4f, _ConvertNumericToUsd<GfVec4f>);
+_GUSD_DEFINE_CONVERTER(GfVec4h, _ConvertNumericToUsd<GfVec4h>);
+_GUSD_DEFINE_CONVERTER(GfVec4i, _ConvertNumericToUsd<GfVec4i>);
+
+// Quat types
+_GUSD_DEFINE_CONVERTER(GfQuatd, _ConvertQuatToUsd<GfQuatd>);
+_GUSD_DEFINE_CONVERTER(GfQuatf, _ConvertQuatToUsd<GfQuatf>);
+_GUSD_DEFINE_CONVERTER(GfQuath, _ConvertQuatToUsd<GfQuath>);
+
+// Matrices
+_GUSD_DEFINE_CONVERTER(GfMatrix2d, _ConvertNumericToUsd<GfMatrix2d>);
+_GUSD_DEFINE_CONVERTER(GfMatrix3d, _ConvertNumericToUsd<GfMatrix3d>);
+_GUSD_DEFINE_CONVERTER(GfMatrix4d, _ConvertNumericToUsd<GfMatrix4d>);
+
+// Strings a string-like types.
+_GUSD_DEFINE_CONVERTER(std::string,  _ConvertStringToUsd);
+_GUSD_DEFINE_CONVERTER(SdfAssetPath, _ConvertStringLikeToUsd);
+_GUSD_DEFINE_CONVERTER(TfToken,      _ConvertStringLikeToUsd);
+
+
+template <class UsdType>
+bool _SetUsdAttributeT(const UsdAttribute& destAttr,
+                       const GT_DataArrayHandle& sourceAttr,
+                       const SdfValueTypeName& usdType,
+                       UsdTimeCode time)
+{
+    UT_ASSERT(usdType);
+
+    if (usdType.IsArray()) {
+        VtArray<UsdType> usdArray;
+        if (_ConvertToUsd<UsdType>::fillArray(usdArray, sourceAttr)) {
+            return destAttr.Set(usdArray, time);
+        }
+    } else {
+        UsdType usdValue;
+        if (_ConvertToUsd<UsdType>::fillValue(usdValue, sourceAttr)) {
+            return destAttr.Set(usdValue, time);
+        }
+    }
+    return false;
+}
+
+
+bool
+_SetUsdAttribute(const UsdAttribute& destAttr,
+                 const GT_DataArrayHandle& sourceAttr,
+                 const SdfValueTypeName& usdType,
+                 UsdTimeCode time)
+{
+    if (!sourceAttr || !destAttr) {
+        return false;
+    }
+
+    const SdfValueTypeName scalarType = usdType.GetScalarType();
+
+    // GfVec3
+    // GfVec3f is the most common type
+    // XXX: We compare using the TfType rather than the Sdf type name so that
+    // the same converters are employed regardless of the Sdf role.
+
+    if (scalarType.GetType() == SdfValueTypeNames->Float3.GetType()) {
+        return _SetUsdAttributeT<GfVec3f>(destAttr, sourceAttr, usdType, time);
+    }
+    if (scalarType.GetType() == SdfValueTypeNames->Double3.GetType()) {
+        return _SetUsdAttributeT<GfVec3d>(destAttr, sourceAttr, usdType, time);
+    }
+    if (scalarType.GetType() == SdfValueTypeNames->Half3.GetType()) {
+        return _SetUsdAttributeT<GfVec3h>(destAttr, sourceAttr, usdType, time);
+    }
+
+    // GfVec2
+    if (scalarType.GetType() == SdfValueTypeNames->Double2.GetType()) {
+        return _SetUsdAttributeT<GfVec2d>(destAttr, sourceAttr, usdType, time);
+    }
+    if (scalarType.GetType() == SdfValueTypeNames->Float2.GetType()) {
+        return _SetUsdAttributeT<GfVec2f>(destAttr, sourceAttr, usdType, time);
+    }
+    if (scalarType.GetType() == SdfValueTypeNames->Half2.GetType()) {
+        return _SetUsdAttributeT<GfVec2h>(destAttr, sourceAttr, usdType, time);
+    }
+
+    // GfVec4
+    if (scalarType.GetType() == SdfValueTypeNames->Double4.GetType()) {
+        return _SetUsdAttributeT<GfVec4d>(destAttr, sourceAttr, usdType, time);
+    }
+    if (scalarType.GetType() == SdfValueTypeNames->Float4.GetType()) {
+        return _SetUsdAttributeT<GfVec4f>(destAttr, sourceAttr, usdType, time);
+    }
+    if (scalarType.GetType() == SdfValueTypeNames->Half4.GetType()) {
+        return _SetUsdAttributeT<GfVec4h>(destAttr, sourceAttr, usdType, time);
+    }
+
+    // Quaternions
+    if (scalarType == SdfValueTypeNames->Quatd) {
+        return _SetUsdAttributeT<GfQuatd>(destAttr, sourceAttr, usdType, time);
+    }
+    if (scalarType == SdfValueTypeNames->Quatf) {
+        return _SetUsdAttributeT<GfQuatf>(destAttr, sourceAttr, usdType, time);
+    }
+    if (scalarType == SdfValueTypeNames->Quath) {
+        return _SetUsdAttributeT<GfQuath>(destAttr, sourceAttr, usdType, time);
+    }
+
+    // Scalars.
+    if (scalarType == SdfValueTypeNames->Float) {
+        return _SetUsdAttributeT<float>(destAttr, sourceAttr, usdType, time);
+    }
+    if (scalarType == SdfValueTypeNames->Double) {
+        return _SetUsdAttributeT<double>(destAttr, sourceAttr, usdType, time);
+    }
+    if (scalarType == SdfValueTypeNames->Half) {
+        return _SetUsdAttributeT<GfHalf>(destAttr, sourceAttr, usdType, time);
+    }
+    if (scalarType == SdfValueTypeNames->Int) {
+        return _SetUsdAttributeT<int>(destAttr, sourceAttr, usdType, time);
+    }
+    if (scalarType == SdfValueTypeNames->Int64) {
+        return _SetUsdAttributeT<int64>(destAttr, sourceAttr, usdType, time);
+    }
+    if (scalarType == SdfValueTypeNames->UChar) {
+        return _SetUsdAttributeT<uint8>(destAttr, sourceAttr, usdType, time);
+    }
+    if (scalarType == SdfValueTypeNames->UInt) {
+        return _SetUsdAttributeT<uint32>(destAttr, sourceAttr, usdType, time);
+    }
+    if (scalarType == SdfValueTypeNames->UInt64) {
+        return _SetUsdAttributeT<uint64>(destAttr, sourceAttr, usdType, time);
+    }
+
+    // Matrices
+    if (scalarType.GetType() == SdfValueTypeNames->Matrix2d.GetType()) {
+        return _SetUsdAttributeT<GfMatrix2d>(destAttr, sourceAttr,
+                                             usdType, time);
+    }
+    if (scalarType.GetType() == SdfValueTypeNames->Matrix3d.GetType()) {
+        return _SetUsdAttributeT<GfMatrix3d>(destAttr, sourceAttr,
+                                             usdType, time);
+    }
+    if (scalarType.GetType() == SdfValueTypeNames->Matrix4d.GetType()) {
+        return _SetUsdAttributeT<GfMatrix4d>(destAttr, sourceAttr,
+                                             usdType, time);
+    }
+
+    // Strings
+    if (scalarType == SdfValueTypeNames->String) {
+        return _SetUsdAttributeT<std::string>(destAttr, sourceAttr,
+                                              usdType, time);
+    }
+    if (scalarType == SdfValueTypeNames->Token) {
+        return _SetUsdAttributeT<TfToken>(destAttr, sourceAttr,
+                                          usdType, time);
+    }
+    if (scalarType == SdfValueTypeNames->Asset) {
+        return _SetUsdAttributeT<SdfAssetPath>(destAttr, sourceAttr,
+                                               usdType, time);
+    }
+
+    TF_WARN("setUsdAttribute: type not implemented: %s",
+            usdType.GetAsToken().GetText());
+    return false;
+}
+
 
 //#############################################################################
 
@@ -780,26 +819,25 @@ setExtentSample(UsdGeomBoundable& usdPrim,
     return usdPrim.GetExtentAttr().Set(extent, time);
 }
 
-template <typename T> bool
-setPvSample(UsdGeomImageable&           usdPrim,
+bool
+setPvSample(const UsdGeomImageable&     usdPrim,
             const TfToken&              name,
             const GT_DataArrayHandle&   gtData,
             const TfToken&              interpolationIn,
             UsdTimeCode                 time)
 {
-    using Traits = TypeConvertTraits<T>;
     static const GtDataToUsdTypename usdTypename;
 
     TfToken interpolation = interpolationIn;
     //bool isArrayType = (interpolation != UsdGeomTokens->constant);
     SdfValueTypeName typeName = usdTypename( gtData, true );
     if( !typeName ) {
-        TF_WARN( "Can't find type name for primvar %s:%s", 
-                usdPrim.GetPrim().GetPath().GetText(),
-                name.GetText() );
+        TF_WARN( "Unsupported primvar type %s, %s, tupleSize = %zd",
+                 name.GetText(), GTstorage(gtData->getStorage()),
+                 gtData->getTupleSize() );
         return false;
     }
-    UsdGeomPrimvar existingPrimvar = usdPrim.GetPrimvar( name );
+    const UsdGeomPrimvar existingPrimvar = usdPrim.GetPrimvar( name );
     if( existingPrimvar && typeName != existingPrimvar.GetTypeName() ) {
 
         // If this primvar already exists, we can't change its type. Most notably,
@@ -814,21 +852,8 @@ setPvSample(UsdGeomImageable&           usdPrim,
 
     if(!primvar)
         return false;
-    if(primvar.GetTypeName().IsArray()) {
 
-        typename Traits::ArrayType usdValues;
-        if(!Traits::fillArray(usdValues, gtData))
-            return false;
-        return primvar.Set(usdValues, time);
-    } else {
-        typename Traits::Type usdValue;
-        if(!Traits::fillValue(usdValue, gtData))
-            return false;
-        return primvar.Set(usdValue, time);
-    }
-
-    // should never get here
-    return false;
+    return _SetUsdAttribute(primvar.GetAttr(), gtData, typeName, time);
 }
 
 } // anon namespace
@@ -911,116 +936,58 @@ matches(const std::string& attrName) const
 //#############################################################################
 
 
+GT_Type
+GusdGT_Utils::getType(const SdfValueTypeName& typeName)
+{
+    const TfToken& role = typeName.GetRole();
+
+    if (role == SdfValueRoleNames->Point) {
+        return GT_TYPE_POINT;
+    } else if (role == SdfValueRoleNames->Normal) {
+        return GT_TYPE_NORMAL;
+    } else if (role == SdfValueRoleNames->Vector) {
+        return GT_TYPE_VECTOR;
+    } else if (role == SdfValueRoleNames->Color) {
+        return GT_TYPE_COLOR;
+    } else if (role == SdfValueRoleNames->TextureCoordinate) {
+#if SYS_VERSION_FULL_INT >= 0x10050000
+        return GT_TYPE_TEXTURE;
+#endif
+    } else if (typeName == SdfValueTypeNames->Matrix4d) {
+        return GT_TYPE_MATRIX;
+    } else if (typeName == SdfValueTypeNames->Matrix3d) {
+        return GT_TYPE_MATRIX3;
+    }
+    return GT_TYPE_NONE;
+}
+
+
+TfToken
+GusdGT_Utils::getRole(GT_Type type)
+{
+    switch (type)
+    {
+    case GT_TYPE_POINT:  return SdfValueRoleNames->Point;
+    case GT_TYPE_VECTOR: return SdfValueRoleNames->Vector;
+    case GT_TYPE_NORMAL: return SdfValueRoleNames->Normal;
+    case GT_TYPE_COLOR:  return SdfValueRoleNames->Color;
+    case GT_TYPE_ST:
+#if SYS_VERSION_FULL_INT >= 0x10050000
+    case GT_TYPE_TEXTURE:
+        return SdfValueRoleNames->TextureCoordinate;
+#endif
+    default:
+        return TfToken();
+    };
+}
+
+
 bool GusdGT_Utils::
-setUsdAttribute(UsdAttribute& destAttr,
+setUsdAttribute(const UsdAttribute& destAttr,
                 const GT_DataArrayHandle& sourceAttr,
                 UsdTimeCode time)
 {
-    if(!sourceAttr || !destAttr) return false;
-
-    const TfToken usdType = destAttr.GetTypeName().GetAsToken();
-
-    if (SdfValueTypeNames->Point3fArray  == usdType
-     || SdfValueTypeNames->Normal3fArray == usdType
-     || SdfValueTypeNames->Vector3fArray == usdType
-     || SdfValueTypeNames->Float3Array == usdType) {
-
-        TypeConvertTraits<GfVec3f>::ArrayType usdArray;
-        if(!TypeConvertTraits<GfVec3f>::fillArray(usdArray, sourceAttr)) {
-            return false;
-        }
-        return destAttr.Set(usdArray, time);
-    }
-    else if(SdfValueTypeNames->Quath == usdType) {
-        TypeConvertTraits<GfQuath>::Type usdValue;
-        if(!TypeConvertTraits<GfQuath>::fillValue(usdValue, sourceAttr)) {
-            return false;
-        }
-        return destAttr.Set(usdValue, time);
-    }
-    else if(SdfValueTypeNames->QuathArray == usdType) {
-        TypeConvertTraits<GfQuath>::ArrayType usdArray;
-        if(!TypeConvertTraits<GfQuath>::fillArray(usdArray, sourceAttr)) {
-            return false;
-        }
-        return destAttr.Set(usdArray, time);
-    }
-    else if(SdfValueTypeNames->Float4Array == usdType) {
-        TypeConvertTraits<GfVec4f>::ArrayType usdArray;
-        if(!TypeConvertTraits<GfVec4f>::fillArray(usdArray, sourceAttr)) {
-            return false;
-        }
-        return destAttr.Set(usdArray, time);
-    }
-    else if(SdfValueTypeNames->FloatArray == usdType) {        
-        TypeConvertTraits<float>::ArrayType usdArray;
-        if(!TypeConvertTraits<float>::fillArray(usdArray, sourceAttr)) {
-            return false;
-        }
-        return destAttr.Set(usdArray, time);
-    }
-    else if(SdfValueTypeNames->Float == usdType) {     
-        TypeConvertTraits<float>::Type usdValue;
-        if(!TypeConvertTraits<float>::fillValue(usdValue, sourceAttr)) {
-            return false;
-        }
-        return destAttr.Set(usdValue, time);
-    }
-    else if(SdfValueTypeNames->DoubleArray == usdType) {        
-        TypeConvertTraits<double>::ArrayType usdArray;
-        if(!TypeConvertTraits<double>::fillArray(usdArray, sourceAttr)) {
-            return false;
-        }
-        return destAttr.Set(usdArray, time);
-    }
-    else if(SdfValueTypeNames->Double == usdType) {     
-        TypeConvertTraits<double>::Type usdValue;
-        if(!TypeConvertTraits<double>::fillValue(usdValue, sourceAttr)) {
-            return false;
-        }
-        return destAttr.Set(usdValue, time);
-    }
-    else if(SdfValueTypeNames->BoolArray == usdType) {     
-        TypeConvertTraits<bool>::ArrayType usdArray;
-        if(!TypeConvertTraits<bool>::fillArray(usdArray, sourceAttr)) {
-            return false;
-        }
-        return destAttr.Set(usdArray, time);
-    }
-    else if(SdfValueTypeNames->IntArray == usdType) {
-
-        if(GT_STORE_INT64 == sourceAttr->getStorage()) {
-            TypeConvertTraits<int64_t>::ArrayType usdArray;
-            if(!TypeConvertTraits<int64_t>::fillArray(usdArray, sourceAttr)) {
-                return false;
-            }
-            return destAttr.Set(usdArray, time);
-        }
-        else if(GT_STORE_INT32 == sourceAttr->getStorage()) {
-            TypeConvertTraits<int>::ArrayType usdArray;
-            if(!TypeConvertTraits<int>::fillArray(usdArray, sourceAttr)) {
-                return false;
-            }
-            return destAttr.Set(usdArray, time);
-        }
-    }
-    else if(SdfValueTypeNames->HalfArray == usdType) {        
-        TypeConvertTraits<GfHalf>::ArrayType usdArray;
-        if(!TypeConvertTraits<GfHalf>::fillArray(usdArray, sourceAttr)) {
-            return false;
-        }
-        return destAttr.Set(usdArray, time);
-    }
-    else if(SdfValueTypeNames->Half == usdType) {     
-        TypeConvertTraits<GfHalf>::Type usdValue;
-        if(!TypeConvertTraits<GfHalf>::fillValue(usdValue, sourceAttr)) {
-            return false;
-        }
-        return destAttr.Set(usdValue, time);
-    }
-    cerr << "setUsdAttribute: type not implemented: " << usdType << endl;
-
-    return false;
+    return _SetUsdAttribute(destAttr, sourceAttr, destAttr.GetTypeName(), time);
 }
 
 
@@ -1049,115 +1016,19 @@ typedef UT_SymbolTable::traverser               AttrMapIterator;
 #endif
 
 
-void
+bool
 GusdGT_Utils::setPrimvarSample( 
-    UsdGeomImageable& usdPrim, 
+    const UsdGeomImageable& usdPrim, 
     const TfToken &name, 
     const GT_DataArrayHandle& data, 
     const TfToken& interpolation,
     UsdTimeCode time )
 {
-    const GT_Storage gtStorage = data->getStorage();
-    const GT_Size gtTupleSize = data->getTupleSize();
-
-    DBG(cerr << "GusdGT_Utils::setPrimvarSample: " << name << ", " << GTstorage( gtStorage ) << ", " << gtTupleSize << ", " << interpolation << endl);
+    DBG(cerr << "GusdGT_Utils::setPrimvarSample: " << name
+             << ", " << GTstorage( data->getStorage() ) << ", "
+              << data->getTupleSize() << ", " << interpolation << endl);
     
-    if(gtStorage == GT_STORE_REAL32) {
-        if (gtTupleSize == 3) {
-            setPvSample<GfVec3f>(usdPrim,
-                                 name,
-                                 data,
-                                 interpolation,
-                                 time);
-        }
-        else if(gtTupleSize == 4) {
-            setPvSample<GfVec4f>(usdPrim,
-                                 name,
-                                 data,
-                                 interpolation,
-                                 time);
-        }
-        else if(gtTupleSize==2) {
-            setPvSample<GfVec2f>(usdPrim,
-                                 name,
-                                 data,
-                                 interpolation,
-                                 time);
-        }
-        else { 
-            setPvSample<float>(usdPrim,
-                               name,
-                               data,
-                               interpolation,
-                               time);
-        }
-    } 
-    else if(gtStorage == GT_STORE_INT32) {
-        if(gtTupleSize == 3) {
-            setPvSample<GfVec3i>(usdPrim,
-                                 name,
-                                 data,
-                                 interpolation,
-                                 time);
-        }
-        else if(gtTupleSize == 4) {
-            setPvSample<GfVec4i>(usdPrim,
-                                 name,
-                                 data,
-                                 interpolation,
-                                 time);
-        }
-        else {
-            setPvSample<int>(usdPrim,
-                             name,
-                             data,
-                             interpolation,
-                             time);
-        }
-
-    }
-    else if(gtStorage == GT_STORE_INT64) {
-        setPvSample<int64_t>(usdPrim,
-                             name,
-                             data,
-                             interpolation,
-                             time);
-
-    }
-    else if(gtStorage == GT_STORE_STRING) {
-        setPvSample<std::string>(usdPrim,
-                                 name,
-                                 data,
-                                 interpolation,
-                                 time);
-    }
-    else if(gtStorage == GT_STORE_REAL16) {
-        if(gtTupleSize == 3) {
-            setPvSample<GfVec3h>(usdPrim,
-                                 name,
-                                 data,
-                                 interpolation,
-                                 time);
-        }
-        else if(gtTupleSize == 4) {
-            setPvSample<GfVec4h>(usdPrim,
-                                 name,
-                                 data,
-                                 interpolation,
-                                 time);
-        }
-        else {
-            setPvSample<GfHalf>(usdPrim,
-                                name,
-                                data,
-                                interpolation,
-                                time);
-        }
-    }
-    else {
-        TF_WARN( "Unsupported primvar type: %s, %s, tupleSize = %zd", 
-                name.GetText(), GTstorage( gtStorage ), gtTupleSize );
-    }
+    return setPvSample(usdPrim, name, data, interpolation, time);
 }
 
 template <typename T> bool
@@ -1210,77 +1081,63 @@ isDataConstant( const GT_DataArrayHandle& data )
     const GT_Size tupleSize = data->getTupleSize();
     const GT_Size entries = data->entries();
 
-    if( entries <= 1 )
+    if (entries == 0) {
         return true;
+     }
 
-    if( storage == GT_STORE_UINT8 ) {
-
+    if (storage == GT_STORE_UINT8) {
         GT_DataArrayHandle buffer;
-        return isDataConst<uint8>(
-                    data->getU8Array( buffer ),
-                    entries,
-                    tupleSize );
+        return isDataConst<uint8>(data->getU8Array(buffer),
+                                  entries, tupleSize);
 
     }  
-    else if( storage == GT_STORE_INT32 ) {
-
+#if SYS_VERSION_FULL_INT >= 0x11000000
+    else if (storage == GT_STORE_INT8) {
         GT_DataArrayHandle buffer;
-        return isDataConst<int32>(
-                    data->getI32Array( buffer ),
-                    entries,
-                    tupleSize );
-
-    } 
-    else if( storage == GT_STORE_INT64 ) {
-
+        return isDataConst<int8>(data->getI8Array(buffer),
+                                 entries, tupleSize);
+    } else if (storage == GT_STORE_INT16) {
         GT_DataArrayHandle buffer;
-        return isDataConst<int64>(
-                    data->getI64Array( buffer ),
-                    entries,
-                    tupleSize );
-
-    } 
-    else if( storage == GT_STORE_REAL16 ) {
-
-        GT_DataArrayHandle buffer;
-        return isDataConst<fpreal16>(
-                    data->getF16Array( buffer ),
-                    entries,
-                    tupleSize );
-
-    }  
-    else if( storage == GT_STORE_REAL32 ) {
-
-        GT_DataArrayHandle buffer;
-        return isDataConst<fpreal32>(
-                    data->getF32Array( buffer ),
-                    entries,
-                    tupleSize );
-
-    }  
-    else if( storage == GT_STORE_REAL64 ) {
-
-        GT_DataArrayHandle buffer;
-        return isDataConst<fpreal64>(
-                    data->getF64Array( buffer ),
-                    entries,
-                    tupleSize );
-
+        return isDataConst<int16>(data->getI16Array(buffer),
+                                  entries, tupleSize);
     }
-    else if( storage == GT_STORE_STRING ) {
+#endif
+    else if (storage == GT_STORE_INT32) {
+        GT_DataArrayHandle buffer;
+        return isDataConst<int32>(data->getI32Array(buffer),
+                                  entries, tupleSize);
 
-        if( data->getStringIndexCount() >= 0 ) {
+    }  else if (storage == GT_STORE_INT64) {
+        GT_DataArrayHandle buffer;
+        return isDataConst<int64>(data->getI64Array(buffer),
+                                  entries, tupleSize);
 
-            // If this is an indexed string array, we can just compare the indexes.
-            // One would think that getIndexedStrings would return in indexes, 
+    }  else if (storage == GT_STORE_REAL16) {
+        GT_DataArrayHandle buffer;
+        return isDataConst<fpreal16>(data->getF16Array(buffer),
+                                     entries, tupleSize);
+
+    } else if (storage == GT_STORE_REAL32) {
+        GT_DataArrayHandle buffer;
+        return isDataConst<fpreal32>(data->getF32Array(buffer),
+                                     entries, tupleSize);
+
+    } else if (storage == GT_STORE_REAL64) {
+        GT_DataArrayHandle buffer;
+        return isDataConst<fpreal64>(data->getF64Array(buffer),
+                                     entries, tupleSize);
+    } else if (storage == GT_STORE_STRING) {
+        if (data->getStringIndexCount() >= 0) {
+            // If this is an indexed string array, we can just compare the indices.
+            // One would think that getIndexedStrings would return indices,
             // but it doesn't. If we look at the header file for GT_DAIndexedString,
-            // we can deduce that getI32Array gets you the indexes.
+            // we can deduce that getI32Array gets you the indices.
             GT_DataArrayHandle buffer;
-            const int32* indicies = data->getI32Array( buffer );
-            if( indicies ) {
-                int32 first = indicies[0];
-                for( GT_Size i = 1; i < entries; ++i ) {
-                    if( indicies[i] != first ) {
+            const int32* indices = data->getI32Array(buffer);
+            if (indices ) {
+                int32 first = indices[0];
+                for (GT_Size i = 1; i < entries; ++i) {
+                    if (indices[i] != first) {
                         return false;
                     }
                 }
@@ -1289,29 +1146,29 @@ isDataConstant( const GT_DataArrayHandle& data )
         }
 
         UT_StringArray strings;
-        data->getStrings( strings );
+        data->getStrings(strings);
 
         // beware of arrays of strings, I don't how to compare these.
-        if( strings.entries() == 0 ) {
+        if (strings.entries() == 0) {
             return false;
         }
 
         const UT_StringHolder &first = strings(0);
-        for( GT_Size i = 1, end = std::min( entries, strings.entries() ); i < end; ++i ) {
-            if( strings(i) != first ) {
+        for (GT_Size i = 1, end = std::min( entries, strings.entries() ); i < end; ++i) {
+            if (strings(i) != first) {
                 return false;
             }
         }
         return true;
     }
-    TF_WARN( "Unsupported primvar type: %s, tupleSize = %zd", 
-                GTstorage( storage ), tupleSize );
+    TF_WARN("Unsupported primvar type: %s, tupleSize = %zd", 
+            GTstorage(storage), tupleSize);
     return false;
 }
 
 void GusdGT_Utils::
 setCustomAttributesFromGTPrim(
-    UsdGeomImageable &usdGeomPrim,
+    const UsdGeomImageable &usdGeomPrim,
     const GT_AttributeListHandle& gtAttrs,
     set<string>& excludeSet,
     UsdTimeCode time )
@@ -1390,7 +1247,7 @@ getPackedTransformArray(const GT_PrimitiveHandle& gtPrim)
 
 
 bool GusdGT_Utils::
-setTransformFromGTArray(UsdGeomXformable& usdGeom,
+setTransformFromGTArray(const UsdGeomXformable& usdGeom,
                         const GT_DataArrayHandle& xform,
                         const TransformLevel transformLevel,
                         UsdTimeCode time)
@@ -1402,20 +1259,20 @@ setTransformFromGTArray(UsdGeomXformable& usdGeom,
         &resetsXformStack);
     if(xformOps.size() <= transformLevel) return false;
 
-    typedef TypeConvertTraits<GfMatrix4d> Traits;
-    typename Traits::Type mat4;
-    Traits::fillValue(mat4, xform);
-
-    //return xformOps[transformLevel].Set(mat4, time);
-    return xformOps[transformLevel].Set(mat4, time);
+    GfMatrix4d mat4;
+    if (_ConvertToUsd<GfMatrix4d>::fillValue(mat4, xform)) {
+        return xformOps[transformLevel].Set(mat4, time);
+    }
+    return false;
 }
 
 GfMatrix4d GusdGT_Utils::
 getMatrixFromGTArray(const GT_DataArrayHandle& xform)
 {
-    typedef TypeConvertTraits<GfMatrix4d> Traits;
-    typename Traits::Type mat4;
-    Traits::fillValue(mat4, xform);    
+    GfMatrix4d mat4;
+    if (!_ConvertToUsd<GfMatrix4d>::fillValue(mat4, xform)) {
+        mat4.SetIdentity();
+    }
     return mat4;
 }
         

@@ -105,6 +105,25 @@ nb.setHintsForParameter('instanceMode', {
     'conditionalVisOps' : _offForArchiveCondVis,
 })
 
+
+
+
+gb.set('usePurposeBasedMaterialBinding', 0)
+nb.setHintsForParameter('usePurposeBasedMaterialBinding', {
+    'widget' : 'boolean',
+})
+
+gb.set('additionalBindingPurposeNames', FnAttribute.StringAttribute([], 1))
+
+nb.setHintsForParameter('additionalBindingPurposeNames', {
+    'widget' : 'sortableArray',
+    'conditionalVisOp' : 'notEqualTo',
+    'conditionalVisPath' : '../usePurposeBasedMaterialBinding',
+    'conditionalVisValue' : '',
+})
+
+
+
 gb.set('prePopulate', FnAttribute.IntAttribute(1))
 nb.setHintsForParameter('prePopulate', {
     'widget' : 'checkBox',
@@ -193,6 +212,17 @@ def buildPxrUsdInOpArgsAtGraphState(self, graphState):
     gb.set('prePopulate',
             int(self.getParameter('prePopulate').getValue(frameTime)))
     
+
+    if self.getParameter('usePurposeBasedMaterialBinding').getValue(frameTime):
+        purposes = ["",]
+
+        for p in self.getParameter('additionalBindingPurposeNames').getChildren():
+            v = p.getValue(frameTime).strip()
+            if v:
+                purposes.append(v)
+
+        gb.set('materialBindingPurposes', FnAttribute.StringAttribute(purposes, 1))
+
 
     sessionValues = (
             graphState.getDynamicEntry("var:pxrUsdInSession"))
@@ -926,4 +956,46 @@ def buildOpChain(self, interface):
 
 nb.setBuildOpChainFnc(buildOpChain)
 
+nb.build()
+
+#-----------------------------------------------------------------------------
+
+nb = Nodes3DAPI.NodeTypeBuilder('PxrUsdInResolveMaterialBindings')
+
+nb.setInputPortNames(("in",))
+
+nb.setParametersTemplateAttr(FnAttribute.GroupBuilder()
+    .set('purpose', '')
+    .set('omitIfParentValueMatches', 0)
+    .build())
+
+nb.setHintsForParameter('purpose', {
+    'help' : """
+    The name of the purpose from which to tranfer material bindings to the 
+    "materialAssign" attribute. An empty value is treated as "allPurpose". The
+    sources of these values are within the "usd.materialBindings.*" attribute
+    -- which will be present if "usePurposeBasedMaterialBinding" is enabled
+    on the upstream PxrUsdIn.
+    """,
+})
+
+nb.setHintsForParameter('omitIfParentValueMatches', {
+    'widget' : 'boolean',
+    'help' : """If enabled, bindings will be omitted if they are identical
+    to that of their parent. This is useful because collection-based bindings
+    in USD default to apply to all prims at and under the specified paths" 
+    """,
+})
+
+def buildOpChain(self, interface):
+    interface.appendOp("PxrUsdInResolveMaterialBindings",
+            FnAttribute.GroupBuilder()
+            .set("purpose", interface.buildAttrFromParam(
+                    self.getParameter('purpose')))
+            .set("omitIfParentValueMatches", interface.buildAttrFromParam(
+                    self.getParameter('omitIfParentValueMatches'),
+                            numberType=FnAttribute.IntAttribute))
+            .build())
+
+nb.setBuildOpChainFnc(buildOpChain)
 nb.build()

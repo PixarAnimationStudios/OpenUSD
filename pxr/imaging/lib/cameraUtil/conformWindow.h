@@ -49,7 +49,9 @@ enum CameraUtilConformWindowPolicy {
     /// Increase width or height
     CameraUtilFit,
     /// Decrease width or height
-    CameraUtilCrop
+    CameraUtilCrop,
+    /// Leave unchanged (This can result in stretching/shrinking if not pre-fit)
+    CameraUtilDontConform
 };
 
 /// Returns a window with aspect ratio \p targetAspect by applying

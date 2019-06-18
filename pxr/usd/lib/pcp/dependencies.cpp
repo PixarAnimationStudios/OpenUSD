@@ -67,7 +67,9 @@ _ShouldStoreDependency(PcpDependencyFlags depFlags)
 }
 
 void
-Pcp_Dependencies::Add(const PcpPrimIndex &primIndex)
+Pcp_Dependencies::Add(
+    const PcpPrimIndex &primIndex,
+    PcpDynamicFileFormatDependencyData &&fileFormatDependencyData)
 {
     TfAutoMallocTag2 tag("Pcp", "Pcp_Dependencies::Add");
     if (!primIndex.GetRootNode()) {
@@ -98,6 +100,23 @@ Pcp_Dependencies::Add(const PcpPrimIndex &primIndex)
             count++;
         }
     }
+
+    // Store the prim index's dynamic file format dependency of the prim index
+    // if possible
+    if (!fileFormatDependencyData.IsEmpty()) {
+        // Update the cache of field names that are are possible dynamic file
+        // format argument dependencies by incrementing its reference count, 
+        // adding the field to the cache if it isn't already there.
+        for (const TfToken &field : 
+                fileFormatDependencyData.GetRelevantFieldNames()) {
+            auto it = _possibleDynamicFileFormatArgumentFields.emplace(field, 0);
+            it.first->second++;
+        }
+        // Take and store the dependency data.
+        _fileFormatArgumentDependencyMap[primIndexPath] = 
+            std::move(fileFormatDependencyData);
+    }
+
     if (count == 0) {
         TF_DEBUG(PCP_DEPENDENCIES).Msg("    None\n");
     }
@@ -190,6 +209,34 @@ Pcp_Dependencies::Remove(const PcpPrimIndex &primIndex, PcpLifeboat *lifeboat)
             }
         }
     }
+
+    // We need to remove prim index's dynamic format dependency object
+    // if there is one.
+    auto it = _fileFormatArgumentDependencyMap.find(primIndexPath);
+    if (it != _fileFormatArgumentDependencyMap.end()) {
+        if (TF_VERIFY(!it->second.IsEmpty())) {
+            // We need to also update the reference counts for the 
+            // dependency's relevant fields in the field name cache.
+            for (const auto &field : it->second.GetRelevantFieldNames()) {
+                auto fieldIt =
+                     _possibleDynamicFileFormatArgumentFields.find(field);
+                if (TF_VERIFY(fieldIt != 
+                              _possibleDynamicFileFormatArgumentFields.end())) {
+                    // If the field's reference count will drop to 0, we 
+                    // need to remove it completely as 
+                    // IsPossibleDynamicFileFormatArgumentField only tests
+                    // existence.
+                    if (fieldIt->second <= 1) {
+                        _possibleDynamicFileFormatArgumentFields.erase(fieldIt);
+                    } else {
+                        fieldIt->second--;
+                    }
+                }
+            }
+        }
+        // Remove the dependency data.
+        _fileFormatArgumentDependencyMap.erase(it);
+    }
 }
 
 void
@@ -206,6 +253,8 @@ Pcp_Dependencies::RemoveAll(PcpLifeboat* lifeboat)
     }
 
     _deps.clear();
+    _possibleDynamicFileFormatArgumentFields.clear();
+    _fileFormatArgumentDependencyMap.clear();
 }
 
 SdfLayerHandleSet 
@@ -238,6 +287,33 @@ bool
 Pcp_Dependencies::UsesLayerStack(const PcpLayerStackPtr& layerStack) const
 {
     return _deps.find(layerStack) != _deps.end();
+}
+
+bool 
+Pcp_Dependencies::HasAnyDynamicFileFormatArgumentDependencies() const
+{
+    return !_possibleDynamicFileFormatArgumentFields.empty();
+}
+
+bool 
+Pcp_Dependencies::IsPossibleDynamicFileFormatArgumentField(
+    const TfToken &field) const
+{
+    // Any field in the map will have at least one prim index dependency logged
+    // for it.
+    return _possibleDynamicFileFormatArgumentFields.count(field) > 0;
+}
+
+const PcpDynamicFileFormatDependencyData &
+Pcp_Dependencies::GetDynamicFileFormatArgumentDependencyData(
+    const SdfPath &primIndexPath) const
+{
+    static const PcpDynamicFileFormatDependencyData empty;
+    auto it = _fileFormatArgumentDependencyMap.find(primIndexPath);
+    if (it == _fileFormatArgumentDependencyMap.end()) {
+        return empty;
+    }
+    return it->second;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -80,13 +80,6 @@ typedef std::map<class TfToken, VtValue,
                  TfDictionaryLessThan
                  > UsdMetadataValueMap;
 
-/// Returns true if Add() methods in the USD API, when given
-/// UsdListPositionTempDefault, should author "add" operations
-/// in SdfListOp values instead of prepends. Used for backwards
-/// compatibility.
-USD_API
-bool UsdAuthorOldStyleAdd();
-
 /// Returns true if USD uses the historical behavior of applying
 /// the inverse of composed layer offsets to map layer time to
 /// stage time.  Respects the env setting USD_USE_INVERSE_LAYER_OFFSET.
@@ -135,11 +128,6 @@ enum UsdListPosition {
     /// be weaker than other items appended in this layer, but stronger
     /// than items added by weaker layers.
     UsdListPositionBackOfAppendList,
-    /// Default position.
-    /// XXX This value will be removed in the near future. This is
-    /// meant as a temporary value used for staged rollout of the
-    /// new behavior with a TfEnvSetting.
-    UsdListPositionTempDefault,
 };
 
 /// \enum UsdLoadPolicy

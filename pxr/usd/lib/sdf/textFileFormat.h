@@ -134,10 +134,6 @@ private:
     // Override to return false.  Reloading anonymous menva files clears their
     // content.
     SDF_API virtual bool _ShouldSkipAnonymousReload() const override;
-
-    SDF_API 
-    virtual bool _IsStreamingLayer(const SdfLayer& layer) const override;
-
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

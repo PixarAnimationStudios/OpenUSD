@@ -29,11 +29,11 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/attributeSpec.h"
-#include "pxr/usd/sdf/mapperSpec.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/pyChildrenProxy.h"
 #include "pxr/usd/sdf/pySpec.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
+#include "pxr/base/tf/pyContainerConversions.h"
 
 #include <boost/python.hpp>
 
@@ -62,20 +62,16 @@ _WrapSetAllowedTokens(
     spec.SetAllowedTokens(tokenArray);
 }
 
-static
-SdfPyChildrenProxy<SdfConnectionMappersView>
-_WrapGetConnectionMappersProxy(const SdfAttributeSpec& self)
-{
-    return SdfPyChildrenProxy<SdfConnectionMappersView>(
-        self.GetConnectionMappers());
-}
-
 } // anonymous namespace 
 
 void wrapAttributeSpec()
 {
     typedef SdfAttributeSpec This;
     typedef SdfAttributeSpecHandle ThisHandle;
+
+    TfPyContainerConversions::from_python_sequence<
+        std::vector< SdfAttributeSpecHandle >,
+        TfPyContainerConversions::variable_capacity_policy >();
 
     // Get function pointers to static New methods.
     ThisHandle (*wrapNewPrimAttr)(const SdfPrimSpecHandle&,
@@ -84,13 +80,6 @@ void wrapAttributeSpec()
                                   SdfVariability,
                                   bool) = &This::New;
                                 
-    ThisHandle (*wrapNewRelAttr)(const SdfRelationshipSpecHandle&,
-                                 const SdfPath&,
-                                 const std::string&,
-                                 const SdfValueTypeName&,
-                                 SdfVariability,
-                                 bool) = &This::New;
-
     class_<This, SdfHandle<This>, 
            bases<SdfPropertySpec>, boost::noncopyable>
         ("AttributeSpec", no_init)
@@ -114,30 +103,6 @@ void wrapAttributeSpec()
                  arg("variability") = SdfVariabilityVarying,
                  arg("declaresCustom") = false))
 
-        .def("__unused__",
-            SdfMakePySpecConstructor(wrapNewRelAttr,
-                "__init__(ownerRelationshipSpec, targetPath, name, typeName, "
-                "variability = Sd.VariabilityVarying, "
-                "declaresCustom = False)\n"
-                "ownerRelationshipSpec : RelationshipSpec\n"
-                "targetPath : Path\n"
-                "name : string\n"
-                "typeName : SdfValueTypeName\n"
-                "variability : SdfVariability\n"
-                "declaresCustom : bool\n\n"
-                "Create a custom attribute spec that is a relational attribute "
-                "of targetPath in ownerRelationshipSpec with the given name "
-                "and type."),
-                (arg("ownerRelationshipSpec"),
-                 arg("targetPath"),
-                 arg("name"),
-                 arg("typeName"),
-                 arg("variability") = SdfVariabilityVarying,
-                 arg("declaresCustom") = false))
-        
-        .def("GetConnectionPathForMapper", &This::GetConnectionPathForMapper)
-        .def("ChangeMapperPath", &This::ChangeMapperPath)
-        
         // XXX valueType and typeName are actually implemented on PropertySpec,
         //     but are only exposed on AttributeSpec for some reason
         .add_property("valueType",
@@ -165,15 +130,6 @@ void wrapAttributeSpec()
             "value or as a set of list editing operations.  See GdListEditor "
             "for more information.")
 
-        .add_property("connectionMappers",
-            &_WrapGetConnectionMappersProxy,
-            "The mappers for this attribute in a map proxy keyed by "
-            "connection path.\n\n"
-            "The returned proxy can be used to remove the mapper for a given "
-            "path (using erase) or to access the mappers.  Create a mapper "
-            "with this attribute as its owner and the desired connection path "
-            "to assign a mapper.")
-              
 	.add_property("allowedTokens",
 	    &_WrapGetAllowedTokens,
 	    &_WrapSetAllowedTokens,

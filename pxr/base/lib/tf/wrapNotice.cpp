@@ -23,6 +23,12 @@
 //
 
 #include "pxr/pxr.h"
+
+#include "pxr/base/arch/pragmas.h"
+
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_PLACEMENT_NEW  // because of pyFunction.h and boost::function
+
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/notice.h"
 #include "pxr/base/tf/pyFunction.h"
@@ -33,7 +39,6 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
 
-#include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
@@ -41,6 +46,8 @@
 #include <boost/python/manage_new_object.hpp>
 #include <boost/python/return_value_policy.hpp>
 #include <boost/python/scope.hpp>
+
+#include <functional>
 
 using std::string;
 
@@ -78,7 +85,7 @@ class Tf_PyNoticeInternal
     struct Listener : public TfWeakBase, public boost::noncopyable {
 
         typedef void CallbackSig(object const &, handle<> const &);
-        typedef boost::function<CallbackSig> Callback;
+        typedef std::function<CallbackSig> Callback;
 
         static Listener *New(TfType const &noticeType,
                              Callback const &callback,
@@ -310,3 +317,5 @@ void wrapNotice()
         )
         ;
 }
+
+ARCH_PRAGMA_POP

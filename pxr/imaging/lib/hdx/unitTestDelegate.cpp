@@ -38,6 +38,7 @@
 
 #include "pxr/imaging/hdx/drawTargetTask.h"
 #include "pxr/imaging/hdx/drawTargetResolveTask.h"
+#include "pxr/imaging/hdx/pickTask.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTask.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
@@ -55,6 +56,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (rotate)
     (scale)
     (translate)
+    (renderTags)
 );
 
 static void
@@ -323,6 +325,10 @@ Hdx_UnitTestDelegate::AddRenderTask(SdfPath const &id)
     cache[HdTokens->collection]
         = HdRprimCollection(HdTokens->geometry, 
             HdReprSelector(HdReprTokens->smoothHull));
+
+    // Don't filter on render tag.
+    // XXX: However, this will mean no prim passes if any stage defines a tag
+    cache[_tokens->renderTags] = TfTokenVector();
 }
 
 void
@@ -382,6 +388,21 @@ void
 Hdx_UnitTestDelegate::AddDrawTargetResolveTask(SdfPath const &id)
 {
     GetRenderIndex().InsertTask<HdxDrawTargetResolveTask>(this, id);
+}
+
+void
+Hdx_UnitTestDelegate::AddPickTask(SdfPath const &id)
+{
+    GetRenderIndex().InsertTask<HdxPickTask>(this, id);
+    _ValueCache &cache = _valueCacheMap[id];
+
+    HdxPickTaskParams params;
+    cache[HdTokens->params] = params;
+
+    // Don't filter on render tag.
+    // XXX: However, this will mean no prim passes if any stage defines a tag
+    cache[_tokens->renderTags] = TfTokenVector();
+
 }
 
 void
@@ -912,6 +933,20 @@ Hdx_UnitTestDelegate::GetMaterialParamValue(SdfPath const &materialId,
     return VtValue();
 }
 
+/*virtual*/
+VtValue
+Hdx_UnitTestDelegate::GetCameraParamValue(SdfPath const &cameraId,
+                                          TfToken const &paramName)
+{
+    _ValueCache *vcache = TfMapLookupPtr(_valueCacheMap, cameraId);
+    VtValue ret;
+    if (vcache && TfMapLookup(*vcache, paramName, &ret)) {
+        return ret;
+    }
+
+    return VtValue();
+}
+
 HdTextureResourceSharedPtr
 Hdx_UnitTestDelegate::GetTextureResource(SdfPath const& textureId)
 {
@@ -935,6 +970,13 @@ Hdx_UnitTestDelegate::GetTextureResourceID(SdfPath const& textureId)
 {
     return SdfPath::Hash()(textureId);
 }
+
+TfTokenVector
+Hdx_UnitTestDelegate::GetTaskRenderTags(SdfPath const& taskId)
+{
+    return _valueCacheMap[taskId][_tokens->renderTags].Get<TfTokenVector>();
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

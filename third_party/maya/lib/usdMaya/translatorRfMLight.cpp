@@ -43,6 +43,7 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdLux/light.h"
+#include "pxr/usd/usdLux/cylinderLight.h"
 #include "pxr/usd/usdLux/diskLight.h"
 #include "pxr/usd/usdLux/distantLight.h"
 #include "pxr/usd/usdLux/domeLight.h"
@@ -72,6 +73,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // RenderMan for Maya light types.
     ((AovLightMayaTypeName, "PxrAovLight"))
+    ((CylinderLightMayaTypeName, "PxrCylinderLight"))
     ((DiskLightMayaTypeName, "PxrDiskLight"))
     ((DistantLightMayaTypeName, "PxrDistantLight"))
     ((DomeLightMayaTypeName, "PxrDomeLight"))
@@ -1770,6 +1772,8 @@ _DefineUsdLuxLightForMayaLight(
 
     if (mayaLightTypeToken == _tokens->AovLightMayaTypeName) {
         lightSchema = UsdRiPxrAovLight::Define(stage, authorPath);
+    } else if (mayaLightTypeToken == _tokens->CylinderLightMayaTypeName) {
+        lightSchema = UsdLuxCylinderLight::Define(stage, authorPath);
     } else if (mayaLightTypeToken == _tokens->DiskLightMayaTypeName) {
         lightSchema = UsdLuxDiskLight::Define(stage, authorPath);
     } else if (mayaLightTypeToken == _tokens->DistantLightMayaTypeName) {
@@ -1848,6 +1852,8 @@ _GetMayaTypeTokenForUsdLuxLight(const UsdLuxLight& lightSchema)
 
     if (lightPrim.IsA<UsdRiPxrAovLight>()) {
         return _tokens->AovLightMayaTypeName;
+    } else if (lightPrim.IsA<UsdLuxCylinderLight>()) {
+        return _tokens->CylinderLightMayaTypeName;
     } else if (lightPrim.IsA<UsdLuxDiskLight>()) {
         return _tokens->DiskLightMayaTypeName;
     } else if (lightPrim.IsA<UsdLuxDistantLight>()) {
@@ -1912,25 +1918,16 @@ UsdMayaTranslatorRfMLight::Read(
         TfStringPrintf("%sShape", usdPrim.GetName().GetText()).c_str();
 
     MObject lightObj;
-    if (!UsdMayaTranslatorUtil::CreateNode(
+    if (!UsdMayaTranslatorUtil::CreateShaderNode(
             nodeName,
             MString(mayaLightTypeToken.GetText()),
-            mayaNodeTransformObj,
+            UsdMayaShadingNodeType::Light,
             &status,
-            &lightObj)) {
+            &lightObj,
+            mayaNodeTransformObj)) {
         return _ReportError(TfStringPrintf("Failed to create %s node",
                                            mayaLightTypeToken.GetText()),
                             lightSchema.GetPath());
-    }
-
-    if (!UsdMayaTranslatorUtil::ConnectDefaultLightNode(
-            mayaNodeTransformObj,
-            &status)) {
-        return _ReportError(
-            TfStringPrintf(
-                "Could not connect %s as a default light",
-                mayaLightTypeToken.GetText()),
-            lightSchema.GetPath());
     }
 
     const std::string nodePath = lightSchema.GetPath().AppendChild(

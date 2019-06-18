@@ -25,8 +25,9 @@
 
 #include "pxr/imaging/hdSt/geometricShader.h"
 
+#include "pxr/imaging/hdSt/debugCodes.h"
+
 #include "pxr/imaging/hd/binding.h"
-#include "pxr/imaging/hd/debugCodes.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -63,7 +64,7 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
     // the base class (HdStShaderCode) at the end of refactoring, to be able to
     // use same machinery other than geometric shaders.
 
-    if (TfDebug::IsEnabled(HD_DUMP_GLSLFX_CONFIG)) {
+    if (TfDebug::IsEnabled(HDST_DUMP_GLSLFX_CONFIG)) {
         std::cout << debugId << "\n"
                   << glslfxString << "\n";
     }

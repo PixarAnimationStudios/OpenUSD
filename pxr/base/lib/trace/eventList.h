@@ -32,6 +32,7 @@
 #include "pxr/base/trace/event.h"
 #include "pxr/base/trace/eventContainer.h"
 
+#include <list>
 #include <unordered_set>
 
 PXR_NAMESPACE_OPEN_SCOPE

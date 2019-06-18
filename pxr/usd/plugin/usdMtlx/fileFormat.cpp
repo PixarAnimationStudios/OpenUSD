@@ -175,11 +175,4 @@ UsdMtlxFileFormat::WriteToStream(
         WriteToStream(spec, out, indent);
 }
 
-bool 
-UsdMtlxFileFormat::_IsStreamingLayer(
-    const SdfLayer& layer) const
-{
-    return false;
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE

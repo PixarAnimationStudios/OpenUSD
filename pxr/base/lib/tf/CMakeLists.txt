@@ -22,6 +22,7 @@ pxr_library(tf
         ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
+        anyUniquePtr
         anyWeakPtr
         atomicOfstreamWrapper
         bitUtils
@@ -303,6 +304,7 @@ pxr_build_test(testTf
         tf
     CPPFILES
         testenv/main.cpp
+        testenv/anyUniquePtr.cpp
         testenv/atomicOfstreamWrapper.cpp
         testenv/bitUtils.cpp
         testenv/debug.cpp
@@ -396,6 +398,9 @@ pxr_install_test_dir(
     DEST testTfScriptModuleLoader/baseline
 )
 
+pxr_register_test(TfAnyUniquePtr
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfAnyUniquePtr"
+)
 pxr_register_test(TfAtomicOfstreamWrapper
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfAtomicOfstreamWrapper"
 )

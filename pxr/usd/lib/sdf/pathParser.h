@@ -40,7 +40,7 @@ typedef void *yyscan_t;
 // Lexical scanner value type.
 struct Sdf_PathLexerValue {
     PXR_NS::TfToken token;
-    PXR_NS::Sdf_PathNodeConstRefPtr path;
+    PXR_NS::SdfPath path;
 };
 #define YYSTYPE Sdf_PathLexerValue
 
@@ -49,7 +49,7 @@ typedef std::vector< std::pair<PXR_NS::TfToken,
 
 // Lexical scanner context.
 struct Sdf_PathParserContext {
-    PXR_NS::Sdf_PathNodeConstRefPtr node;
+    PXR_NS::SdfPath path;
     std::vector<Sdf_PathVariantSelections> variantSelectionStack;
     std::string errStr;
     yyscan_t scanner;

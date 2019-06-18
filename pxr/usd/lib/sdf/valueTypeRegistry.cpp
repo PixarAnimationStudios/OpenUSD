@@ -558,6 +558,32 @@ Sdf_ValueTypeRegistry::FindOrCreateTypeName(const std::string& name) const
     return SdfValueTypeName(_impl->FindOrCreateTypeName(name));
 }
 
+static std::string
+_GetTypeName(const TfType& type, const std::string& cppTypeName)
+{
+    return (cppTypeName.empty() ? 
+            (type ? type.GetTypeName() : std::string()) :
+            cppTypeName);
+}
+
+void
+Sdf_ValueTypeRegistry::AddType(const Type& type)
+{
+    if (!type._defaultValue.IsEmpty() || !type._defaultArrayValue.IsEmpty()) {
+        AddType(type._name, type._defaultValue, type._defaultArrayValue, 
+                _GetTypeName(type._defaultValue.GetType(), type._cppTypeName),
+                _GetTypeName(type._defaultArrayValue.GetType(), 
+                             type._arrayCppTypeName),
+                type._unit, type._role, type._dimensions);
+    }
+    else {
+        AddType(type._name, type._type, /* arrayType = */ TfType(), 
+                _GetTypeName(type._type, type._cppTypeName),
+                /* arrayCppTypeName = */ std::string(),
+                type._unit, type._role, type._dimensions);
+    }
+}
+
 void
 Sdf_ValueTypeRegistry::AddType(
     const std::string& name,

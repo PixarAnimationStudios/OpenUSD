@@ -315,15 +315,6 @@ Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
     else if (field == SdfFieldKeys->ConnectionPaths) {
         changes[layer].DidChangeAttributeConnection(path);
     }
-    else if (field == SdfFieldKeys->MapperArgValue) {
-        changes[layer].DidChangeMapperArgument(path.GetParentPath());
-    }
-    else if (field == SdfChildrenKeys->MapperChildren) {
-        changes[layer].DidChangeAttributeConnection(path);
-    }
-    else if (field == SdfChildrenKeys->MapperArgChildren) {
-        changes[layer].DidChangeMapperArgument(path);
-    }
     else if (field == SdfFieldKeys->TargetPaths) {
         changes[layer].DidChangeRelationshipTargets(path);
     }
@@ -440,7 +431,6 @@ Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
     } 
     else if (field == SdfChildrenKeys->ConnectionChildren       ||
         field == SdfChildrenKeys->ExpressionChildren            ||
-        field == SdfChildrenKeys->MapperChildren                ||
         field == SdfChildrenKeys->RelationshipTargetChildren    ||
         field == SdfChildrenKeys->VariantChildren               ||
         field == SdfChildrenKeys->VariantSetChildren) {
