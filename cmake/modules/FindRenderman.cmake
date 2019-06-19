@@ -26,6 +26,8 @@
 # The module defines the following variables:
 #   RENDERMAN_INCLUDE_DIR - path to renderman header directory
 #   RENDERMAN_LIBRARY     - path to renderman library files
+#   RENDERMAN_EXECUTABLE  - path the prman executable
+#   RENDERMAN_BINARY_DIR  - path to the renderman binary directory
 #       RENDERMAN_FOUND   - true if renderman was found
 #   RENDERMAN_VERSION_MAJOR - major version of renderman found
 #   RENDERMAN_VERSION_MINOR - minor version of renderman found
@@ -68,6 +70,20 @@ find_path(RENDERMAN_INCLUDE_DIR
         "Renderman headers path"
 )
 
+find_program(RENDERMAN_EXECUTABLE
+    prman
+    HINTS
+        "${RENDERMAN_LOCATION}/bin"
+        "$ENV{RENDERMAN_LOCATION}/bin"
+        "$ENV{RMANTREE}/bin"
+    DOC
+        "Renderman prman executable path"
+)
+
+get_filename_component(RENDERMAN_BINARY_DIR
+    ${RENDERMAN_EXECUTABLE}
+    DIRECTORY)
+
 # Parse version
 if (RENDERMAN_INCLUDE_DIR AND EXISTS "${RENDERMAN_INCLUDE_DIR}/RixInterfaces.h" )
     file(STRINGS "${RENDERMAN_INCLUDE_DIR}/prmanapi.h" TMP REGEX "^#define _PRMANAPI_VERSION_MAJOR_.*$")
@@ -89,6 +105,8 @@ find_package_handle_standard_args(Renderman
     REQUIRED_VARS
         RENDERMAN_INCLUDE_DIR
         RENDERMAN_LIBRARY
+        RENDERMAN_EXECUTABLE
+        RENDERMAN_BINARY_DIR
         RENDERMAN_VERSION_MAJOR
         RENDERMAN_VERSION_MINOR
     VERSION_VAR
