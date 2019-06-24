@@ -243,20 +243,16 @@ _GetArcTypeForRangeType(const PcpRangeType rangeType)
     switch (rangeType) {
     case PcpRangeTypeRoot:
         return PcpArcTypeRoot;
-    case PcpRangeTypeLocalInherit:
-        return PcpArcTypeLocalInherit;
-    case PcpRangeTypeGlobalInherit:
-        return PcpArcTypeGlobalInherit;
+    case PcpRangeTypeInherit:
+        return PcpArcTypeInherit;
     case PcpRangeTypeVariant:
         return PcpArcTypeVariant;
     case PcpRangeTypeReference:
         return PcpArcTypeReference;
     case PcpRangeTypePayload:
         return PcpArcTypePayload;
-    case PcpRangeTypeLocalSpecializes:
-        return PcpArcTypeLocalSpecializes;
-    case PcpRangeTypeGlobalSpecializes:
-        return PcpArcTypeGlobalSpecializes;
+    case PcpRangeTypeSpecialize:
+        return PcpArcTypeSpecialize;
 
     default:
         TF_CODING_ERROR("Unhandled range type");
@@ -282,9 +278,6 @@ PcpPrimIndex_Graph::GetNodeIndexesForRange(PcpRangeType rangeType) const
 
     case PcpRangeTypeAll:
         nodeRange = std::make_pair(0, _GetNumNodes());
-        break;
-    case PcpRangeTypeAllInherits:
-        nodeRange = _FindDirectChildRange(PcpIsInheritArc);
         break;
     case PcpRangeTypeWeakerThanRoot:
         nodeRange = std::make_pair(1, _GetNumNodes());

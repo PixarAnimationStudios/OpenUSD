@@ -106,7 +106,7 @@ PcpCompareSiblingNodeStrength(
 
     // Specializes arcs need special handling because of how specializes
     // nodes throughout the graph are propagated to the root.
-    if (PcpIsSpecializesArc(a.GetArcType())) {
+    if (PcpIsSpecializeArc(a.GetArcType())) {
         const PcpNodeRef aOrigin = a.GetOriginNode();
         const PcpNodeRef bOrigin = b.GetOriginNode();
 

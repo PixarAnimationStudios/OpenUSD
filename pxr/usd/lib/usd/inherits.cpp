@@ -82,7 +82,7 @@ UsdInherits::GetAllDirectInherits() const
 
     std::unordered_set<SdfPath, SdfPath::Hash> seen;
     for (auto const &node:
-             _prim.GetPrimIndex().GetNodeRange(PcpRangeTypeAllInherits)) {
+             _prim.GetPrimIndex().GetNodeRange(PcpRangeTypeInherit)) {
         if (!node.IsDueToAncestor() && seen.insert(node.GetPath()).second) {
             ret.push_back(node.GetPath());
         }

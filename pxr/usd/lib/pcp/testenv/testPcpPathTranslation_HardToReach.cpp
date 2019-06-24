@@ -299,7 +299,7 @@ TestReverseTranslation_3()
     // that originates from within the referenced HumanRig below.
     ++nodeRange.first;
     TF_AXIOM(_IsExpectedNode(
-            *nodeRange.first, PcpArcTypeLocalInherit, 
+            *nodeRange.first, PcpArcTypeInherit, 
             SdfPath("/CharRig/Rig/SymArm/Rig/Some_Internal_Rig_Prim")));
     _TestReverseTranslation(index, *nodeRange.first, 
         /* target */ targetPath, 
@@ -317,7 +317,7 @@ TestReverseTranslation_3()
     // Next is the local inherit to the symmetric arm class.
     ++nodeRange.first;
     TF_AXIOM(_IsExpectedNode(
-            *nodeRange.first, PcpArcTypeLocalInherit, 
+            *nodeRange.first, PcpArcTypeInherit, 
             SdfPath("/HumanRig/Rig/SymArm/Rig/Some_Internal_Rig_Prim")));
     _TestReverseTranslation(index, *nodeRange.first, 
         /* target */ targetPath, 

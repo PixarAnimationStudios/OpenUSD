@@ -426,7 +426,7 @@ static bool
 _HasSpecializesChild(const PcpNodeRef & parent)
 {
     TF_FOR_ALL(child, Pcp_GetChildrenRange(parent)) {
-        if (PcpIsSpecializesArc((*child).GetArcType()))
+        if (PcpIsSpecializeArc((*child).GetArcType()))
             return true;
     }
     return false;
@@ -441,7 +441,7 @@ _FindStartingNodeForImpliedSpecializes(const PcpNodeRef& node)
     PcpNodeRef specializesNode;
     for (PcpNodeRef n = node, e = n.GetRootNode(); n != e; 
          n = n.GetParentNode()) {
-        if (PcpIsSpecializesArc(n.GetArcType())) {
+        if (PcpIsSpecializeArc(n.GetArcType())) {
             specializesNode = n;
         }
     }
@@ -2230,10 +2230,8 @@ _EvalNodeRelocations(
             // add. See TrickyMultipleRelocations for an example.
         case PcpArcTypeReference:
         case PcpArcTypePayload:
-        case PcpArcTypeLocalInherit:
-        case PcpArcTypeGlobalInherit:
-        case PcpArcTypeLocalSpecializes:
-        case PcpArcTypeGlobalSpecializes:
+        case PcpArcTypeInherit:
+        case PcpArcTypeSpecialize:
             // Ancestral opinions at a relocation target across a reference
             // or inherit are silently ignored. See TrickyRelocationSquatter
             // for an example.
@@ -2614,10 +2612,9 @@ _AddClassBasedArc(
     // to the same site.
     const bool skipDuplicateNodes = shouldContributeSpecs;
 
-    // Only local classes need to compute ancestral opinions, since
-    // global classes are root nodes.
+    // Only subroot prim classes need to compute ancestral opinions.
     const bool includeAncestralOpinions =
-        PcpIsLocalClassBasedArc(arcType) && shouldContributeSpecs;
+        shouldContributeSpecs && !inheritPath.IsRootPrimPath();
 
     PcpNodeRef newNode =
         _AddArc( arcType, parent, origin,
@@ -2638,14 +2635,10 @@ _AddClassBasedArcs(
     PcpPrimIndex* index,
     const PcpNodeRef& node,
     const SdfPathVector& classArcs,
-    PcpArcType globalArcType,
-    PcpArcType localArcType,
+    PcpArcType arcType,
     Pcp_PrimIndexer* indexer)
 {
     for (size_t arcNum=0; arcNum < classArcs.size(); ++arcNum) {
-        PcpArcType arcType =
-            classArcs[arcNum].IsRootPrimPath() ? globalArcType : localArcType;
-
         PCP_INDEXING_MSG(indexer, node, "Found %s to <%s>", 
             TfEnum::GetDisplayName(arcType).c_str(),
             classArcs[arcNum].GetText());
@@ -2990,7 +2983,7 @@ _EvalNodeInherits(
     // Add inherits arcs.
     _AddClassBasedArcs(
         index, node, inhArcs,
-        PcpArcTypeGlobalInherit, PcpArcTypeLocalInherit,
+        PcpArcTypeInherit,
         indexer);
 }
 
@@ -3019,7 +3012,7 @@ _EvalNodeSpecializes(
     // Add specializes arcs.
     _AddClassBasedArcs(
         index, node, specArcs,
-        PcpArcTypeGlobalSpecializes, PcpArcTypeLocalSpecializes,
+        PcpArcTypeSpecialize,
         indexer);
 }
 
@@ -3030,7 +3023,7 @@ static bool
 _IsPropagatedSpecializesNode(
     const PcpNodeRef& node)
 {
-    return (PcpIsSpecializesArc(node.GetArcType()) && 
+    return (PcpIsSpecializeArc(node.GetArcType()) && 
             node.GetParentNode() == node.GetRootNode() && 
             node.GetSite() == node.GetOriginNode().GetSite());
 }
@@ -3146,7 +3139,7 @@ _PropagateSpecializesTreeToRoot(
     }
 
     for (PcpNodeRef childNode : Pcp_GetChildren(srcNode)) {
-        if (!PcpIsSpecializesArc(childNode.GetArcType())) {
+        if (!PcpIsSpecializeArc(childNode.GetArcType())) {
             _PropagateSpecializesTreeToRoot(
                 index, newNode.first, childNode, newNode.first, 
                 childNode.GetMapToParent(), srcTreeRoot, indexer);
@@ -3174,7 +3167,7 @@ _FindSpecializesToPropagateToRoot(
         return;
     }
 
-    if (PcpIsSpecializesArc(node.GetArcType())) {
+    if (PcpIsSpecializeArc(node.GetArcType())) {
         PCP_INDEXING_MSG(
             indexer, node, node.GetRootNode(),
             "Propagating specializes arc %s to root", 
@@ -3261,7 +3254,7 @@ _FindArcsToPropagateToOrigin(
     const PcpNodeRef& node,
     Pcp_PrimIndexer* indexer)
 {
-    TF_VERIFY(PcpIsSpecializesArc(node.GetArcType()));
+    TF_VERIFY(PcpIsSpecializeArc(node.GetArcType()));
 
     for (PcpNodeRef childNode : Pcp_GetChildren(node)) {
         PCP_INDEXING_MSG(
@@ -4225,8 +4218,9 @@ _NodeCanBeCulled(
     // global inherits from being culled. However, because of referencing, 
     // the local inherit /Model_1/SymArm *does* exist in the composed scene.
     // So, we can't cull that node -- GetBases needs it.
-    if (node.GetArcType() == PcpArcTypeLocalInherit &&
-        node.GetLayerStack() == rootSite.layerStack) {
+    if (node.GetArcType() == PcpArcTypeInherit &&
+        node.GetLayerStack() == rootSite.layerStack &&
+        !node.GetPathAtIntroduction().IsRootPrimPath()) {
         return false;
     }
 
@@ -4259,7 +4253,7 @@ _CullSubtreesWithNoOpinions(
         // for specializes arcs, so when we cull we need to ensure we do so
         // in both places consistently. For simplicity, we're going to skip
         // this for now and not cull beneath any specializes arcs.
-        if (PcpIsSpecializesArc(child->GetArcType())) {
+        if (PcpIsSpecializeArc(child->GetArcType())) {
             continue;
         }
 

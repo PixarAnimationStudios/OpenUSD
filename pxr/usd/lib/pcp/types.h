@@ -49,14 +49,12 @@ enum PcpArcType {
     PcpArcTypeRoot,
     
     // The following arcs are listed in strength order.
-    PcpArcTypeLocalInherit,
-    PcpArcTypeGlobalInherit,
+    PcpArcTypeInherit,
     PcpArcTypeVariant,
     PcpArcTypeRelocate,
     PcpArcTypeReference,
     PcpArcTypePayload,
-    PcpArcTypeLocalSpecializes,
-    PcpArcTypeGlobalSpecializes,
+    PcpArcTypeSpecialize,
     
     PcpNumArcTypes
 };
@@ -65,19 +63,14 @@ enum PcpArcType {
 enum PcpRangeType {
     // Ranges including direct arcs of the specified type.
     PcpRangeTypeRoot,
-    PcpRangeTypeLocalInherit,
-    PcpRangeTypeGlobalInherit,
+    PcpRangeTypeInherit,
     PcpRangeTypeVariant,
     PcpRangeTypeReference,
     PcpRangeTypePayload,
-    PcpRangeTypeLocalSpecializes,
-    PcpRangeTypeGlobalSpecializes,
+    PcpRangeTypeSpecialize,
 
     // Range including all nodes.
     PcpRangeTypeAll,
-
-    // Range including all direct local and global inherits.
-    PcpRangeTypeAllInherits,
 
     // Range including all nodes weaker than the root node.
     PcpRangeTypeWeakerThanRoot,
@@ -94,17 +87,15 @@ enum PcpRangeType {
 inline bool 
 PcpIsInheritArc(PcpArcType arcType)
 {
-    return (arcType == PcpArcTypeLocalInherit ||
-            arcType == PcpArcTypeGlobalInherit);
+    return (arcType == PcpArcTypeInherit);
 }
 
-/// Returns true if \p arcType represents a specializes arc, false
+/// Returns true if \p arcType represents a specialize arc, false
 /// otherwise.
 inline bool 
-PcpIsSpecializesArc(PcpArcType arcType)
+PcpIsSpecializeArc(PcpArcType arcType)
 {
-    return (arcType == PcpArcTypeLocalSpecializes ||
-            arcType == PcpArcTypeGlobalSpecializes);
+    return (arcType == PcpArcTypeSpecialize);
 }
 
 /// Returns true if \p arcType represents a class-based 
@@ -116,16 +107,7 @@ PcpIsSpecializesArc(PcpArcType arcType)
 inline bool
 PcpIsClassBasedArc(PcpArcType arcType)
 {
-    return PcpIsInheritArc(arcType) || PcpIsSpecializesArc(arcType);
-}
-
-/// Returns true if \p arcType represents a local class-based
-/// composition arc, false otherwise.
-inline bool
-PcpIsLocalClassBasedArc(PcpArcType arcType)
-{
-    return (arcType == PcpArcTypeLocalInherit ||
-            arcType == PcpArcTypeLocalSpecializes);
+    return PcpIsInheritArc(arcType) || PcpIsSpecializeArc(arcType);
 }
 
 /// \struct PcpSiteTrackerSegment

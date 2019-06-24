@@ -265,8 +265,8 @@ class TestUsdInherits(unittest.TestCase):
                              map(Sdf.Path, ['/AI']))
 
             self.assertEqual(child.GetInherits().GetAllDirectInherits(),
-                             map(Sdf.Path, ['/Parent/Sibling',
-                                            '/DI', '/DRI', '/ARI']))
+                             map(Sdf.Path, ['/DI', '/DRI', '/ARI',
+                                            '/Parent/Sibling']))
 
     def test_ListPosition(self):
         for fmt in allFormats:
