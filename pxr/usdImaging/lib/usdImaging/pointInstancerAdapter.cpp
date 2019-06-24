@@ -500,41 +500,30 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
         valueCache->GetPurpose(cachePath) = UsdGeomTokens->default_;
 
         // Compute the purpose.
-        {
-            _ComputeProtoPurpose(protoRootPrim,
-                                 protoPrim,
-                             &valueCache->GetPurpose(cachePath));
-            // We may have hopped across several instance boundaries, we need to
-            // walk back up the stack from instance to master until we get back
-            // to the first instance. In the event that there are no instances,
-            // the paths vector will not be sufficiently large to enter this
-            // loop.
-            for (size_t i = 0; i < rproto.paths.size()-1; ++i) {
-                _ComputeProtoPurpose(_GetPrim(rproto.paths[i+1]),
-                                     _GetPrim(rproto.paths[i+0]),
-                                    &valueCache->GetPurpose(cachePath));
-            }
+        // protoPrim may be across an instance boundary from protoRootPrim, so
+        // compute purpose for each master subtree, and then for the final
+        // path relative to the proto root.
+        for (size_t i = 0; i < rproto.paths.size()-1;++i) {
+            _ComputeProtoPurpose(_GetPrim(rproto.paths[i+1]).GetMaster(),
+                                 _GetPrim(rproto.paths[i+0]),
+                                 &valueCache->GetPurpose(cachePath));
         }
+        _ComputeProtoPurpose(protoRootPrim, _GetPrim(rproto.paths.back()),
+                             &valueCache->GetPurpose(cachePath));
 
         if (!(rproto.variabilityBits & HdChangeTracker::DirtyVisibility)) {
             // Pre-cache visibility, because we now know that it is static for
             // the rprim prototype over all time.
-            _ComputeProtoVisibility(protoRootPrim,
-                                    protoPrim,
-                                    time,
-                                    &rproto.visible);
-            // We may have hopped across several instance boundaries, we need to
-            // walk back up the stack from instance to master until we get back
-            // to the first instance. In the event that there are no instances,
-            // the paths vector will not be sufficiently large to enter this
-            // loop.
+            // protoPrim may be across an instance boundary from protoRootPrim,
+            // so compute purpose for each master subtree, and then for the
+            // final path relative to the proto root.
             for (size_t i = 0; i < rproto.paths.size()-1; ++i) {
-                _ComputeProtoVisibility(
-                                    _GetPrim(rproto.paths[i+1]),
-                                    _GetPrim(rproto.paths[i+0]),
-                                    time,
-                                    &rproto.visible);
+                _ComputeProtoVisibility(_GetPrim(rproto.paths[i+1]).GetMaster(),
+                                        _GetPrim(rproto.paths[i+0]),
+                                        time, &rproto.visible);
             }
+            _ComputeProtoVisibility(protoRootPrim, _GetPrim(rproto.paths.back()),
+                                    time, &rproto.visible);
         }
 
         // If the instancer varies over time, we should flag the DirtyInstancer
@@ -700,11 +689,16 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                 // The instancer is visible and the prototype has varying
                 // visibility, we must compute visibility from the proto
                 // prim to the model instance root.
+                for (size_t i = 0; i < rproto.paths.size()-1; ++i) {
+                    _ComputeProtoVisibility(
+                        _GetPrim(rproto.paths[i+1]).GetMaster(),
+                        _GetPrim(rproto.paths[i+0]),
+                        time, &vis);
+                }
                 _ComputeProtoVisibility(
-                        _GetPrim(rproto.prototype->protoRootPath),
-                        _GetPrim(rproto.paths.front()),
-                        time,
-                        &vis);
+                    _GetPrim(rproto.prototype->protoRootPath),
+                    _GetPrim(rproto.paths.back()),
+                    time, &vis);
             }
         }
 
@@ -1616,7 +1610,7 @@ UsdImagingPointInstancerAdapter::_ComputeProtoPurpose(
                                  TfToken* purpose) const
 {
     if (!TF_VERIFY(purpose)) { return; }
-    if (!protoGprim.GetPath().HasPrefix(protoGprim.GetPath())) {
+    if (!protoGprim.GetPath().HasPrefix(protoRoot.GetPath())) {
         TF_CODING_ERROR("Prototype <%s> is not prefixed under "
                 "proto root <%s>\n",
                 protoGprim.GetPath().GetText(),
