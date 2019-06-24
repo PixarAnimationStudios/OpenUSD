@@ -833,7 +833,24 @@ struct UsdImagingInstanceAdapter::_ComputeInheritedPrimvarFn
                     if (pv.GetPrimvarName() == name) {
                         VtValue v;
                         pv.ComputeFlattened(&v, time);
-                        result[instanceIdx] = v.Get<T>();
+                        if (v.IsHolding<T>()) {
+                            result[instanceIdx] = v.Get<T>();
+                        } else if (v.IsHolding<VtArray<T>>()) {
+                            VtArray<T> a = v.Get<VtArray<T>>();
+                            if (a.size() > 0) {
+                                result[instanceIdx] = a[0];
+                            }
+                            if (a.size() != 1) {
+                                sampleSizeErrorPaths.push_back(
+                                    pv.GetAttr().GetPath());
+                            }
+                        } else {
+                            TF_CODING_ERROR("Unexpected VtValue type %s "
+                                "for primvar %s (expected %s)",
+                                v.GetTypeName().c_str(),
+                                pv.GetAttr().GetPath().GetText(),
+                                TfType::Find<T>().GetTypeName().c_str());
+                        }
                     }
                 }
             }
@@ -845,6 +862,7 @@ struct UsdImagingInstanceAdapter::_ComputeInheritedPrimvarFn
     TfToken name;
     UsdTimeCode time;
     VtArray<T> result;
+    SdfPathVector sampleSizeErrorPaths;
 };
 
 bool
@@ -860,7 +878,7 @@ UsdImagingInstanceAdapter::_ComputeInheritedPrimvar(UsdPrim const& instancer,
     //
     // This set of types was chosen to match HdGetValueData(), e.g. the set
     // of types hydra can reliably transport through primvars.
-    VtValue dv = type.GetDefaultValue();
+    VtValue dv = type.GetScalarType().GetDefaultValue();
     if (dv.IsHolding<GfHalf>()) {
         return _ComputeInheritedPrimvar<GfHalf>(
                 instancer, primvarName, result, time);
@@ -940,8 +958,8 @@ UsdImagingInstanceAdapter::_ComputeInheritedPrimvar(UsdPrim const& instancer,
         return _ComputeInheritedPrimvar<unsigned char>(
                 instancer, primvarName, result, time);
     } else {
-        TF_WARN("Unrecognized inherited primvar type %s",
-                type.GetAsToken().GetText());
+        TF_CODING_ERROR("Native instancing: unrecognized inherited primvar "
+                        "type %s", type.GetAsToken().GetText());
         return false;
     }
 }
@@ -957,6 +975,12 @@ UsdImagingInstanceAdapter::_ComputeInheritedPrimvar(UsdPrim const& instancer,
         this, primvarName, time);
     _RunForAllInstancesToDraw(instancer, &computeInheritedPrimvar);
     *result = VtValue(computeInheritedPrimvar.result);
+    for (SdfPath const& errorPath :
+            computeInheritedPrimvar.sampleSizeErrorPaths) {
+        TF_WARN("Instance inherited primvar %s doesn't define the right "
+                "number of samples (only 1 sample is supported)",
+                errorPath.GetText());
+    }
     return true;
 }
 
