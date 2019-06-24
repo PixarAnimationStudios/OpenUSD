@@ -65,14 +65,20 @@ _GetHydraEnabledEnvVar()
 static
 void _InitGL()
 {
-    // Initialize Glew library for GL Extensions if needed
-    GlfGlewInit();
+    static std::once_flag initFlag;
 
-    // Initialize if needed and switch to shared GL context.
-    GlfSharedGLContextScopeHolder sharedContext;
+    std::call_once(initFlag, []{
 
-    // Initialize GL context caps based on shared context
-    GlfContextCaps::InitInstance();
+        // Initialize Glew library for GL Extensions if needed
+        GlfGlewInit();
+
+        // Initialize if needed and switch to shared GL context.
+        GlfSharedGLContextScopeHolder sharedContext;
+
+        // Initialize GL context caps based on shared context
+        GlfContextCaps::InitInstance();
+
+    });
 }
 
 static
@@ -131,9 +137,7 @@ UsdImagingGLEngine::UsdImagingGLEngine()
     , _restoreViewport(0)
     , _useFloatPointDrawTarget(false)
 {
-    static std::once_flag initFlag;
-
-    std::call_once(initFlag, _InitGL);
+    _InitGL();
 
     if (IsHydraEnabled()) {
 
@@ -171,9 +175,7 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     , _restoreViewport(0)
     , _useFloatPointDrawTarget(false)
 {
-    static std::once_flag initFlag;
-
-    std::call_once(initFlag, _InitGL);
+    _InitGL();
 
     if (IsHydraEnabled()) {
 
