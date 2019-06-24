@@ -193,6 +193,8 @@ public:
     }
 
 private:
+    friend USD_API size_t hash_value(UsdStagePopulationMask const &);
+
     USD_API void _ValidateAndNormalize();
     
     std::vector<SdfPath> _paths;
@@ -208,6 +210,8 @@ inline void swap(UsdStagePopulationMask &l, UsdStagePopulationMask &r)
     l.swap(r);
 }
 
+USD_API
+size_t hash_value(UsdStagePopulationMask const &);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

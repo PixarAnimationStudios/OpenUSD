@@ -32,6 +32,7 @@
 #include "pxr/usd/usd/editTarget.h"
 #include "pxr/usd/usd/interpolation.h"
 #include "pxr/usd/usd/schemaRegistry.h"
+#include "pxr/usd/usd/stageLoadRules.h"
 #include "pxr/usd/usd/stagePopulationMask.h"
 #include "pxr/usd/usd/prim.h"
 
@@ -543,8 +544,7 @@ public:
     ///       absolute root). If the given path has no ancestors, it is an
     ///       error.
     ///     - Loading an inactive prim is an error.
-    ///     - Loading a master prim is an error. However, note that loading
-    ///       a prim in a master is legal.
+    ///     - Loading a master prim or a prim within a master is an error.
     /// @{
     // --------------------------------------------------------------------- //
 
@@ -552,12 +552,13 @@ public:
     /// \p policy is UsdLoadWithDescendants.  If \p policy is
     /// UsdLoadWithoutDescendants, then descendants are not loaded.
     ///
-    /// If an instance prim is encountered during this operation, this
-    /// function will also load prims in the instance's master. In other
-    /// words, loading a single instance may affect other instances because
-    /// it changes the load state of prims in the shared master. However, 
-    /// loading a single instance will never cause other instances to be
-    /// loaded as well.
+    /// If an instance prim (or an prim descendant to an instance) is
+    /// encountered during this operation, this function will may cause
+    /// instancing to change on the stage in order to ensure that no other
+    /// instances are affected.  The load/unload rules that affect a given prim
+    /// hierarchy are considered when determining which prims can be instanced
+    /// together.  Instance sharing occurs when different instances have
+    /// equivalent load rules.
     ///
     /// See the rules under
     /// \ref Usd_workingSetManagement "Working Set Management" for a discussion
@@ -568,12 +569,13 @@ public:
 
     /// Unload the prim and its descendants specified by \p path.
     ///
-    /// If an instance prim is encountered during this operation, this
-    /// function will also unload prims in the instance's master. In other
-    /// words, unloading a single instance may affect other instances because
-    /// it changes the load state of prims in the shared master. However, 
-    /// unloading a single instance will never cause other instances to be
-    /// unloaded as well.
+    /// If an instance prim (or an prim descendant to an instance) is
+    /// encountered during this operation, this function will may cause
+    /// instancing to change on the stage in order to ensure that no other
+    /// instances are affected.  The load/unload rules that affect a given prim
+    /// hierarchy are considered when determining which prims can be instanced
+    /// together.  Instance sharing occurs when different instances have
+    /// equivalent load rules.
     ///
     /// See the rules under
     /// \ref Usd_workingSetManagement "Working Set Management" for a discussion
@@ -764,11 +766,6 @@ private:
     // prim in the instance's master.
     Usd_PrimDataConstPtr 
     _GetPrimDataAtPathOrInMaster(const SdfPath &path) const;
-
-    // A helper function for LoadAndUnload to aggregate notification data
-    void _LoadAndUnload(const SdfPathSet&, const SdfPathSet&, 
-                        SdfPathSet*, SdfPathSet*,
-                        UsdLoadPolicy policy);
 
 public:
 
@@ -1503,13 +1500,7 @@ public:
     /// @}
 
 private:
-    struct _IncludeNewlyDiscoveredPayloadsPredicate;
-
-    enum _IncludePayloadsRule {
-        _IncludeAllDiscoveredPayloads,
-        _IncludeNoDiscoveredPayloads,
-        _IncludeNewPayloadsIfAncestorWasIncluded
-    };
+    struct _IncludePayloadsPredicate;
 
     // --------------------------------------------------------------------- //
     // Stage Construction & Initialization
@@ -1655,7 +1646,6 @@ private:
     // during composition.
     void _ComposePrimIndexesInParallel(
         const std::vector<SdfPath>& primIndexPaths,
-        _IncludePayloadsRule includeRule,
         const std::string& context,
         Usd_InstanceChanges* instanceChanges = nullptr);
 
@@ -1767,16 +1757,6 @@ private:
     bool _IsValidForLoad(const SdfPath& path) const;
     bool _IsValidForUnload(const SdfPath& path) const;
 
-    template <class Callback>
-    void _WalkPrimsWithMasters(const SdfPath &, Callback const &) const;
-
-    template <class Callback>
-    void _WalkPrimsWithMastersImpl(
-        UsdPrim const &prim,
-        Callback const &cb,
-        tbb::concurrent_unordered_set<SdfPath, SdfPath::Hash>
-        *seenMasterPrimPaths) const;
-
     // Discover all payloads in a given subtree, adding the path of each
     // discovered prim index to the \p primIndexPaths set. If specified,
     // the corresponding UsdPrim path will be added to the \p usdPrimPaths
@@ -1790,13 +1770,6 @@ private:
                            SdfPathSet* primIndexPaths,
                            bool unloadedOnly = false,
                            SdfPathSet* usdPrimPaths = nullptr) const;
-
-    // Discover all ancestral payloads above a given root, adding the path
-    // of each discovered prim index to the \p result set. The root path
-    // itself will not be included in the result.
-    void _DiscoverAncestorPayloads(const SdfPath& rootPath,
-                                   SdfPathSet* result,
-                                   bool unloadedOnly = false) const;
 
     // ===================================================================== //
     //                          VALUE RESOLUTION                             //
@@ -2084,6 +2057,9 @@ private:
 
     // The population mask that applies to this stage.
     UsdStagePopulationMask _populationMask;
+    
+    // The load rules that apply to this stage.
+    UsdStageLoadRules _loadRules;
     
     bool _isClosingStage;
 

@@ -418,12 +418,9 @@ class TestUsdPayloads(unittest.TestCase):
             baz_1.Load()
             self.assertEqual(baz.GetMaster(), baz_1.GetMaster())
 
-            # Nested payloads in masters can be individually unloaded. This
-            # affects all instances.
-            garply.Unload()
-            self.assertTrue(not garply.IsLoaded())
-            self.assertTrue(not garply.GetMaster())
-            self.assertEqual(baz.GetMaster(), baz_1.GetMaster())
+            # Prims in masters cannot be individually (un)loaded.
+            with self.assertRaises(Tf.ErrorException):
+                garply.Unload()
 
     def test_Payloads(self):
         for fmt in allFormats:

@@ -475,8 +475,9 @@ def "OtherWorld"
     }
 }'''%lpay.identifier)
         s = Usd.Stage.Open(l, load=Usd.Stage.LoadNone)
-        # === Load /World/i ===
+        # === Load /World/i and /OtherWorld/i ===
         s.Load('/World/i')
+        s.Load('/OtherWorld/i')
         # === Deactivate /World ==='
         s.GetPrimAtPath('/World').SetActive(False)
         # === Create class /_someClass ==='

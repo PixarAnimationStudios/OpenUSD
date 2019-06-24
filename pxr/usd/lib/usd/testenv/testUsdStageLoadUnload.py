@@ -100,6 +100,264 @@ class PayloadedScene(object):
 
 
 class TestUsdLoadUnload(unittest.TestCase):
+    def test_LoadRules(self):
+        """Test the UsdStageLoadRules object."""
+        ################################################################
+        # Basics.
+        r = Usd.StageLoadRules()
+        self.assertEqual(r, Usd.StageLoadRules())
+        self.assertEqual(r, Usd.StageLoadRules.LoadAll())
+        r.AddRule('/', Usd.StageLoadRules.NoneRule)
+        self.assertEqual(r, Usd.StageLoadRules.LoadNone())
+        
+        r.LoadWithDescendants('/')
+        r.Minimize()
+        self.assertEqual(r, Usd.StageLoadRules())
+
+        r.Unload('/')
+        self.assertEqual(r, Usd.StageLoadRules.LoadNone())
+
+        r.LoadWithoutDescendants('/')
+        self.assertEqual(r.GetRules(),
+                         [(Sdf.Path('/'), Usd.StageLoadRules.OnlyRule)])
+
+        r = Usd.StageLoadRules()
+        r.AddRule('/', Usd.StageLoadRules.AllRule)
+        self.assertTrue(r.IsLoaded('/'))
+        self.assertTrue(r.IsLoaded('/foo/bar/baz'))
+        
+        r.AddRule('/', Usd.StageLoadRules.NoneRule)
+        self.assertFalse(r.IsLoaded('/'))
+        self.assertFalse(r.IsLoaded('/foo/bar/baz'))
+        
+        # None for '/', All for /Foo/Bar/Baz/Garply
+        r.AddRule('/Foo/Bar/Baz/Garply', Usd.StageLoadRules.AllRule)
+        self.assertTrue(r.IsLoaded('/'))
+        self.assertTrue(r.IsLoaded('/Foo'))
+        self.assertTrue(r.IsLoaded('/Foo/Bar'))
+        self.assertTrue(r.IsLoaded('/Foo/Bar/Baz'))
+        self.assertTrue(r.IsLoaded('/Foo/Bar/Baz/Garply'))
+        self.assertTrue(r.IsLoaded('/Foo/Bar/Baz/Garply/Child'))
+        self.assertFalse(r.IsLoaded('/Foo/Bear'))
+        self.assertFalse(r.IsLoaded('/Foo/Bear/Baz'))
+        self.assertFalse(r.IsLoaded('/Foo/Bear/Baz/Garply'))
+        self.assertFalse(r.IsLoaded('/Foo/Bear/Baz/Garply/Child'))
+
+        # This unload creates a redundant rule, but everything should function
+        # as expected wrt IsLoaded queries.
+        r.Unload('/Foo/Bar/Baz')
+        self.assertEqual(
+            r.GetRules(),
+            [(Sdf.Path('/'), Usd.StageLoadRules.NoneRule),
+             (Sdf.Path('/Foo/Bar/Baz'), Usd.StageLoadRules.NoneRule)])
+        self.assertFalse(r.IsLoaded('/'))
+        self.assertFalse(r.IsLoaded('/Foo'))
+        self.assertFalse(r.IsLoaded('/Foo/Bar'))
+        self.assertFalse(r.IsLoaded('/Foo/Bar/Baz'))
+        self.assertFalse(r.IsLoaded('/Foo/Bar/Baz/Garply'))
+        self.assertFalse(r.IsLoaded('/Foo/Bar/Baz/Garply/Child'))
+        self.assertFalse(r.IsLoaded('/Foo/Bear'))
+        self.assertFalse(r.IsLoaded('/Foo/Bear/Baz'))
+        self.assertFalse(r.IsLoaded('/Foo/Bear/Baz/Garply'))
+        self.assertFalse(r.IsLoaded('/Foo/Bear/Baz/Garply/Child'))
+        # Minimizing removes the redundant rule, all queries behave the same.
+        r.Minimize()
+        self.assertEqual(r.GetRules(),
+                         [(Sdf.Path('/'), Usd.StageLoadRules.NoneRule)])
+        self.assertFalse(r.IsLoaded('/'))
+        self.assertFalse(r.IsLoaded('/Foo'))
+        self.assertFalse(r.IsLoaded('/Foo/Bar'))
+        self.assertFalse(r.IsLoaded('/Foo/Bar/Baz'))
+        self.assertFalse(r.IsLoaded('/Foo/Bar/Baz/Garply'))
+        self.assertFalse(r.IsLoaded('/Foo/Bar/Baz/Garply/Child'))
+        self.assertFalse(r.IsLoaded('/Foo/Bear'))
+        self.assertFalse(r.IsLoaded('/Foo/Bear/Baz'))
+        self.assertFalse(r.IsLoaded('/Foo/Bear/Baz/Garply'))
+        self.assertFalse(r.IsLoaded('/Foo/Bear/Baz/Garply/Child'))
+
+        ################################################################
+        # LoadAndUnload
+        r = Usd.StageLoadRules()
+        r.LoadAndUnload(
+            loadSet = ['/Load/All', '/Another/Load/All'],
+            unloadSet = ['/Unload/All',
+                         '/Another/Unload/All',
+                         '/Load/All/UnloadIneffective'],
+            policy = Usd.LoadWithDescendants)
+        r.Minimize()
+        self.assertEqual(
+            r.GetRules(),
+            [(Sdf.Path('/Another/Unload/All'), Usd.StageLoadRules.NoneRule),
+             (Sdf.Path('/Unload/All'), Usd.StageLoadRules.NoneRule)])
+
+        r = Usd.StageLoadRules()
+        r.LoadAndUnload(
+            loadSet = ['/Load/All', '/Another/Load/All'],
+            unloadSet = ['/Unload/All',
+                         '/Another/Unload/All',
+                         '/Load/All/UnloadIneffective'],
+            policy = Usd.LoadWithoutDescendants)
+        r.Minimize()
+        self.assertEqual(
+            r.GetRules(),
+            [(Sdf.Path('/Another/Load/All'), Usd.StageLoadRules.OnlyRule),
+             (Sdf.Path('/Another/Unload/All'), Usd.StageLoadRules.NoneRule),
+             (Sdf.Path('/Load/All'), Usd.StageLoadRules.OnlyRule),
+             (Sdf.Path('/Unload/All'), Usd.StageLoadRules.NoneRule)])
+
+        r2 = Usd.StageLoadRules()
+        r2.SetRules(r.GetRules())
+        self.assertEqual(r, r2)
+        self.assertEqual(r.GetRules(), r2.GetRules())
+
+        ################################################################
+        # GetEffectiveRuleForPath
+    
+        r = Usd.StageLoadRules.LoadNone()
+        self.assertEqual(r.GetEffectiveRuleForPath('/any/path'),
+                         Usd.StageLoadRules.NoneRule)
+        r.AddRule('/any', Usd.StageLoadRules.OnlyRule)
+        # Root is now included as OnlyRule due to being in the ancestor chain.
+        self.assertEqual(r.GetEffectiveRuleForPath('/'),
+                         Usd.StageLoadRules.OnlyRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/any'),
+                         Usd.StageLoadRules.OnlyRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/any/path'),
+                         Usd.StageLoadRules.NoneRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/outside/path'),
+                         Usd.StageLoadRules.NoneRule)
+
+        # Root and /other are OnlyRule like above, /other/child and descendants
+        # are AllRule.
+        r.AddRule('/other/child', Usd.StageLoadRules.AllRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/'),
+                         Usd.StageLoadRules.OnlyRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/other'),
+                         Usd.StageLoadRules.OnlyRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/other/child'),
+                         Usd.StageLoadRules.AllRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/other/child/descndt/path'),
+                         Usd.StageLoadRules.AllRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/outside/path'),
+                         Usd.StageLoadRules.NoneRule)
+
+        # Now add an Only and a None under /other/child.
+        r.AddRule('/other/child/only', Usd.StageLoadRules.OnlyRule)
+        r.AddRule('/other/child/none', Usd.StageLoadRules.NoneRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/'),
+                         Usd.StageLoadRules.OnlyRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/other'),
+                         Usd.StageLoadRules.OnlyRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/other/child'),
+                         Usd.StageLoadRules.AllRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/other/child/descndt/path'),
+                         Usd.StageLoadRules.AllRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/other/child/only'),
+                         Usd.StageLoadRules.OnlyRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/other/child/only/child'),
+                         Usd.StageLoadRules.NoneRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/other/child/none'),
+                         Usd.StageLoadRules.NoneRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/other/child/none/child'),
+                         Usd.StageLoadRules.NoneRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/outside/path'),
+                         Usd.StageLoadRules.NoneRule)
+
+        # One more level, an All under a nested None.
+        r.AddRule('/other/child/none/child/all', Usd.StageLoadRules.AllRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/'),
+                         Usd.StageLoadRules.OnlyRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/other'),
+                         Usd.StageLoadRules.OnlyRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/other/child'),
+                         Usd.StageLoadRules.AllRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/other/child/descndt/path'),
+                         Usd.StageLoadRules.AllRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/other/child/none'),
+                         Usd.StageLoadRules.OnlyRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/other/child/none/child'),
+                         Usd.StageLoadRules.OnlyRule)
+        self.assertEqual(
+            r.GetEffectiveRuleForPath('/other/child/none/child/all'),
+            Usd.StageLoadRules.AllRule)
+
+        # Minimize, queries should be the same.
+        r.Minimize()
+        self.assertEqual(r.GetEffectiveRuleForPath('/'),
+                         Usd.StageLoadRules.OnlyRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/other'),
+                         Usd.StageLoadRules.OnlyRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/other/child'),
+                         Usd.StageLoadRules.AllRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/other/child/descndt/path'),
+                         Usd.StageLoadRules.AllRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/other/child/none'),
+                         Usd.StageLoadRules.OnlyRule)
+        self.assertEqual(r.GetEffectiveRuleForPath('/other/child/none/child'),
+                         Usd.StageLoadRules.OnlyRule)
+        self.assertEqual(
+            r.GetEffectiveRuleForPath('/other/child/none/child/all'),
+            Usd.StageLoadRules.AllRule)
+
+        self.assertEqual(
+            r.GetRules(),
+            [(Sdf.Path('/'), Usd.StageLoadRules.NoneRule),
+             (Sdf.Path('/any'), Usd.StageLoadRules.OnlyRule),
+             (Sdf.Path('/other/child'), Usd.StageLoadRules.AllRule),
+             (Sdf.Path('/other/child/none'), Usd.StageLoadRules.NoneRule),
+             (Sdf.Path('/other/child/none/child/all'),
+              Usd.StageLoadRules.AllRule),
+             (Sdf.Path('/other/child/only'), Usd.StageLoadRules.OnlyRule)])
+
+        ################################################################
+        # Swap.
+        r1 = Usd.StageLoadRules.LoadNone()
+        r2 = Usd.StageLoadRules.LoadAll()
+        
+        r1.swap(r2)
+        self.assertEqual(r1, Usd.StageLoadRules.LoadAll())
+        self.assertEqual(r2, Usd.StageLoadRules.LoadNone())
+
+        r1.AddRule('/foo', Usd.StageLoadRules.NoneRule)
+        r2.AddRule('/bar', Usd.StageLoadRules.AllRule)
+
+        r1.swap(r2)
+        self.assertEqual(
+            r1.GetRules(),
+            [(Sdf.Path('/'), Usd.StageLoadRules.NoneRule),
+             (Sdf.Path('/bar'), Usd.StageLoadRules.AllRule)])
+        self.assertEqual(
+            r2.GetRules(),
+            [(Sdf.Path('/foo'), Usd.StageLoadRules.NoneRule)])
+
+        ################################################################
+        # More minimize testing.
+        r = Usd.StageLoadRules()
+        r.Minimize()
+        self.assertEqual(r, Usd.StageLoadRules())
+        r.AddRule('/', Usd.StageLoadRules.AllRule)
+        r.Minimize()
+        self.assertEqual(r, Usd.StageLoadRules())
+        
+        r = Usd.StageLoadRules()
+        r.AddRule('/Foo/Bar/Only', Usd.StageLoadRules.OnlyRule)
+        r.AddRule('/Foo/Bar', Usd.StageLoadRules.AllRule)
+        r.AddRule('/Foo', Usd.StageLoadRules.AllRule)
+        r.AddRule('/World/anim', Usd.StageLoadRules.NoneRule)
+        r.AddRule('/World/anim/chars/group', Usd.StageLoadRules.OnlyRule)
+        r.AddRule('/World/anim/sim', Usd.StageLoadRules.AllRule)
+        r.AddRule('/World/anim/sim/other/prim', Usd.StageLoadRules.AllRule)
+        r.AddRule('/World/anim/sim/another/prim', Usd.StageLoadRules.OnlyRule)
+        r.Minimize()
+        self.assertEqual(
+            r.GetRules(),
+            [(Sdf.Path('/Foo/Bar/Only'), Usd.StageLoadRules.OnlyRule),
+             (Sdf.Path('/World/anim'), Usd.StageLoadRules.NoneRule),
+             (Sdf.Path('/World/anim/chars/group'), Usd.StageLoadRules.OnlyRule),
+             (Sdf.Path('/World/anim/sim'), Usd.StageLoadRules.AllRule),
+             (Sdf.Path('/World/anim/sim/another/prim'),
+              Usd.StageLoadRules.OnlyRule)])
+
     def test_LoadAndUnload(self):
         """Test Stage::LoadUnload thoroughly, as all other requests funnel into it.
         """
@@ -262,15 +520,15 @@ class TestUsdLoadUnload(unittest.TestCase):
             p.PrintPaths()
             assert not p.stage.GetPrimAtPath("/Sad/Panda")
             assert p.stage.GetPrimAtPath("/Foo/Baz/Garply/Qux")
-            assert (set(p.stage.GetLoadSet()) ==
-                    set([Sdf.Path("/Foo/Baz"), 
-                         Sdf.Path("/Foo/Baz/Garply")]))
+            self.assertEqual(set(p.stage.GetLoadSet()),
+                             set([Sdf.Path("/Foo/Baz"), 
+                                  Sdf.Path("/Foo/Baz/Garply")]))
 
             p.stage.Unload("/")
             p.PrintPaths()
             assert not p.stage.GetPrimAtPath("/Sad/Panda")
             assert not p.stage.GetPrimAtPath("/Foo/Baz/Garply/Qux")
-            assert (set(p.stage.GetLoadSet()) == set([]))
+            self.assertEqual(set(p.stage.GetLoadSet()), set([]))
 
             p.stage.Load("/")
             p.PrintPaths()
@@ -417,8 +675,8 @@ class TestUsdLoadUnload(unittest.TestCase):
             with self.assertRaises(Tf.ErrorException):
                 p.stage.LoadAndUnload(set1, set2)
 
-            # In the past, when it was illegal to unload a deactivate prim we'd get
-            # an error for this.  Now it is legal.
+            # In the past, when it was illegal to unload a deactivated prim we'd
+            # get an error for this.  Now it is legal.
             p.stage.Load('/Foo/Baz')
             foo = p.stage.GetPrimAtPath('/Foo')
             baz = p.stage.GetPrimAtPath('/Foo/Baz')
@@ -431,8 +689,7 @@ class TestUsdLoadUnload(unittest.TestCase):
                 p.stage.Load('/Foo/Baz')
             foo.SetActive(True)
             baz = p.stage.GetPrimAtPath('/Foo/Baz')
-            assert baz.IsLoaded()
-
+            assert not baz.IsLoaded()
             p.PrintPaths()
 
 
