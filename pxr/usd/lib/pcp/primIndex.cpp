@@ -382,8 +382,21 @@ PcpPrimIndexOutputs::Append(PcpPrimIndexOutputs&& childOutputs,
         allErrors.end(), 
         childOutputs.allErrors.begin(), childOutputs.allErrors.end());
 
-    includedDiscoveredPayload |= childOutputs.includedDiscoveredPayload;
-
+    if (childOutputs.payloadState == NoPayload) {
+        // Do nothing, keep our payloadState.
+    }
+    else if (payloadState == NoPayload) {
+        // Take the child's payloadState.
+        payloadState = childOutputs.payloadState;
+    }
+    else if (childOutputs.payloadState != payloadState) {
+        // Inconsistent payload state -- issue a warning.
+        TF_WARN("Inconsistent payload states for primIndex <%s> -- "
+                "parent=%d vs child=%d; taking parent=%d\n",
+                primIndex.GetPath().GetText(),
+                payloadState, childOutputs.payloadState, payloadState);
+    }
+                
     return newNode;
 }
 
@@ -2019,21 +2032,31 @@ _EvalNodePayloads(
         return;
     }
     SdfPath const &path = indexer->rootSite.path;
-    tbb::spin_rw_mutex::scoped_lock lock;
-    auto *mutex = indexer->inputs.includedPayloadsMutex;
-    if (mutex) { lock.acquire(*mutex, /*write=*/false); }
-    bool inIncludeSet = includedPayloads->count(path);
-    if (mutex) { lock.release(); }
-    if (!inIncludeSet) {
-        auto const &pred = indexer->inputs.includePayloadPredicate;
-        if (pred && pred(path)) {
-            indexer->outputs->includedDiscoveredPayload = true;
-        } else {
-            PCP_INDEXING_MSG(indexer, node,
-                "Payload <%s> was not included, skipping",
-                path.GetText());
-            return;
-        }
+
+    // If there's a payload predicate, we invoke that to decide whether or not
+    // this payload should be included.
+    bool composePayload = false;
+    if (auto const &pred = indexer->inputs.includePayloadPredicate) {
+        composePayload = pred(path);
+        indexer->outputs->payloadState = composePayload ?
+            PcpPrimIndexOutputs::IncludedByPredicate : 
+            PcpPrimIndexOutputs::ExcludedByPredicate;
+    }
+    else {
+        tbb::spin_rw_mutex::scoped_lock lock;
+        auto *mutex = indexer->inputs.includedPayloadsMutex;
+        if (mutex) { lock.acquire(*mutex, /*write=*/false); }
+        composePayload = includedPayloads->count(path);
+        indexer->outputs->payloadState = composePayload ?
+            PcpPrimIndexOutputs::IncludedByIncludeSet : 
+            PcpPrimIndexOutputs::ExcludedByIncludeSet;
+    }
+     
+    if (!composePayload) {
+        PCP_INDEXING_MSG(indexer, node,
+                         "Payload <%s> was not included, skipping",
+                         path.GetText());
+        return;
     }
 
     _EvalRefOrPayloadArcs<SdfPayload, PcpArcTypePayload>(

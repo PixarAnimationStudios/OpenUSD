@@ -1219,7 +1219,8 @@ struct Pcp_ParallelIndexer
         WorkSwapDestroyAsync(_toCompute);
         WorkMoveDestroyAsync(_finishedOutputs);
         WorkSwapDestroyAsync(_consumerScratch);
-        WorkSwapDestroyAsync(_consumerScratchPayloads);
+        WorkSwapDestroyAsync(_consumerScratchPayloadsIncluded);
+        WorkSwapDestroyAsync(_consumerScratchPayloadsExcluded);
 
         // We need to tear down the _results synchronously because doing so may
         // drop layers, and that's something that clients rely on, but we can
@@ -1363,15 +1364,24 @@ struct Pcp_ParallelIndexer
 
             // Store included payload path to the side to publish several at
             // once, as well.
-            if (outputs->includedDiscoveredPayload)
-                _consumerScratchPayloads.push_back(primIndexPath);
+            switch (outputs->payloadState) {
+            default:
+                break;
+            case PcpPrimIndexOutputs::IncludedByPredicate:
+                _consumerScratchPayloadsIncluded.push_back(primIndexPath);
+                break;
+            case PcpPrimIndexOutputs::ExcludedByPredicate:
+                _consumerScratchPayloadsExcluded.push_back(primIndexPath);
+                break;
+            };
         }
 
         // This size threshold is arbitrary but helps ensure that even with
         // writer starvation we'll avoid growing our working spaces too large.
         static const size_t PendingSizeThreshold = 20000;
 
-        if (!_consumerScratchPayloads.empty()) {
+        if (!_consumerScratchPayloadsIncluded.empty() ||
+            !_consumerScratchPayloadsExcluded.empty()) {
             // Publish to _includedPayloads if possible.  If we're told to
             // flush, or if we're over a threshold number of pending results,
             // then take the write lock and publish.  Otherwise only attempt to
@@ -1381,7 +1391,11 @@ struct Pcp_ParallelIndexer
             tbb::spin_rw_mutex::scoped_lock lock;
 
             bool locked = flush ||
-                _consumerScratch.size() >= PendingSizeThreshold;
+                (_consumerScratchPayloadsIncluded.size() >=
+                 PendingSizeThreshold) ||
+                (_consumerScratchPayloadsExcluded.size() >=
+                 PendingSizeThreshold);
+                
             if (locked) {
                 lock.acquire(_includedPayloadsMutex, /*write=*/true);
             } else {
@@ -1389,11 +1403,15 @@ struct Pcp_ParallelIndexer
                     _includedPayloadsMutex, /*write=*/true);
             }
             if (locked) {
-                for (auto const &path: _consumerScratchPayloads) {
+                for (auto const &path: _consumerScratchPayloadsIncluded) {
                     _cache->_includedPayloads.insert(path);
                 }
+                for (auto const &path: _consumerScratchPayloadsExcluded) {
+                    _cache->_includedPayloads.erase(path);
+                }
                 lock.release();
-                _consumerScratchPayloads.clear();
+                _consumerScratchPayloadsIncluded.clear();
+                _consumerScratchPayloadsExcluded.clear();
             }
         }
             
@@ -1444,7 +1462,8 @@ struct Pcp_ParallelIndexer
     tbb::concurrent_queue<PcpPrimIndexOutputs *> _finishedOutputs;
     vector<std::pair<PcpPrimIndex, 
                      PcpDynamicFileFormatDependencyData>> _consumerScratch;
-    vector<SdfPath> _consumerScratchPayloads;
+    vector<SdfPath> _consumerScratchPayloadsIncluded;
+    vector<SdfPath> _consumerScratchPayloadsExcluded;
     ArResolver& _resolver;
     WorkArenaDispatcher _dispatcher;
     WorkSingularTask _consumer;
@@ -1548,8 +1567,11 @@ PcpCache::_ComputePrimIndexWithCompatibleInputs(
                            std::move(outputs.dynamicFileFormatDependency));
 
     // Update _includedPayloads if we included a discovered payload.
-    if (outputs.includedDiscoveredPayload) {
+    if (outputs.payloadState == PcpPrimIndexOutputs::IncludedByPredicate) {
         _includedPayloads.insert(path);
+    }
+    if (outputs.payloadState == PcpPrimIndexOutputs::ExcludedByPredicate) {
+        _includedPayloads.erase(path);
     }
 
     // Save the prim index.
