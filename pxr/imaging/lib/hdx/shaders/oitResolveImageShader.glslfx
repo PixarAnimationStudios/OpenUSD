@@ -40,12 +40,15 @@
 vec4 imageShader(vec2 uv)
 {
 #if defined(HD_HAS_hdxOitDataBuffer)
-    int screenWidth = HdGet_oitWidth();
-    int screenHeight = HdGet_oitHeight();
-    int numSamples = HdGet_oitSamples();
-    int bufferSize = screenWidth * screenHeight * numSamples;
+    int screenWidth = int(HdGet_oitScreenSize().y);
+    int bufferSize = HdGet_oitBufferSize();
+    int counterBufferSize = bufferSize + 1;
 
     int screenIndex = int(gl_FragCoord.x) + int(gl_FragCoord.y) * screenWidth;
+    if (screenIndex+1 >= counterBufferSize) {
+        return vec4(0);
+    }
+
     int nodeIndex = hdxOitCounterBuffer[screenIndex+1];
     int numDepths = 0;
 
@@ -71,18 +74,19 @@ vec4 imageShader(vec2 uv)
         nodeIndex = hdxOitIndexBuffer[nodeIndex]; 
     } 
     int depth = 0;
-    vec4 colorAccum = vec4(0,0,0,0);
+    vec4 colorAccum = vec4(0);
     while (depth < numDepths) {
-        vec3 cb = sortedColor[depth].rgb * sortedColor[depth].a; 
-        colorAccum.rgb = colorAccum.rgb + cb * (1 - colorAccum.a);
-        colorAccum.a = colorAccum.a + sortedColor[depth].a; 
+        float ca = sortedColor[depth].a * (1 - colorAccum.a);
+        vec3 cb = sortedColor[depth].rgb;
+        colorAccum.rgb = colorAccum.rgb + cb * ca;
+        colorAccum.a = colorAccum.a + ca;
 
-        colorAccum = clamp(colorAccum, vec4(0), vec4(1));
         if (colorAccum.a >= 1.0) break;
 
         depth += 1; 
     }
 
+    colorAccum = clamp(colorAccum, vec4(0), vec4(1));
     return colorAccum;
 #else
     return vec4(0);

@@ -28,29 +28,47 @@
 --- #import $TOOLS/hdx/shaders/renderPass.glslfx
 
 --- --------------------------------------------------------------------------
--- glsl HdxRenderPass.WriteOitLayersToBuffer
 
-layout (early_fragment_tests) in;
+-- glsl HdxRenderPass.RenderOitOpaquePixels
+
 layout (location = 0) out vec4 colorOut;
 
 void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
-#if defined(HD_HAS_hdxOitDataBuffer)
-    int screenWidth = HdGet_oitWidth();
-    int screenHeight = HdGet_oitHeight();
-    int numSamples = HdGet_oitSamples();
-    int bufferSize = screenWidth * screenHeight * numSamples;
-    int writeIndex = atomicAdd(hdxOitCounterBuffer[0], 1) + 1;
+    if (color.a >= 1.0) {
+        colorOut = vec4(color.rgb, 1);
+    } else {
+        discard;
+    }
+}
 
-    if (writeIndex < bufferSize) {
-        int screenIndex =
-            int(gl_FragCoord.x) +
-            int(gl_FragCoord.y) * screenWidth;
-        int prevIndex =
-            atomicExchange(hdxOitCounterBuffer[screenIndex+1], writeIndex);
-        hdxOitDataBuffer[writeIndex] = color;
-        hdxOitDepthBuffer[writeIndex] = gl_FragCoord.z;
-        hdxOitIndexBuffer[writeIndex] = prevIndex;
+-- glsl HdxRenderPass.WriteOitLayersToBuffer
+
+layout (early_fragment_tests) in;
+
+void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+#if defined(HD_HAS_hdxOitDataBuffer)
+    if (color.a < 1.0) {
+        int screenWidth = int(HdGet_oitScreenSize().y);
+        int bufferSize = HdGet_oitBufferSize();
+        int counterBufferSize = bufferSize + 1;
+
+        int writeIndex = atomicAdd(hdxOitCounterBuffer[0], 1) + 1;
+
+        if (writeIndex < bufferSize) {
+            int screenIndex =
+                int(gl_FragCoord.x) +
+                int(gl_FragCoord.y) * screenWidth;
+
+            if (screenIndex < counterBufferSize) {
+                int prevIndex =
+                    atomicExchange(hdxOitCounterBuffer[screenIndex+1], writeIndex);
+                hdxOitDataBuffer[writeIndex] = color;
+                hdxOitDepthBuffer[writeIndex] = gl_FragCoord.z;
+                hdxOitIndexBuffer[writeIndex] = prevIndex;
+            }
+        }
     }
 #endif
 }
