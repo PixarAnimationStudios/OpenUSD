@@ -123,7 +123,7 @@ HdStMaterial::HdStMaterial(SdfPath const &id)
  , _hasPtex(false)
  , _hasLimitSurfaceEvaluation(false)
  , _hasDisplacement(false)
- , _materialTag()
+ , _materialTag(HdMaterialTagTokens->defaultMaterialTag)
 {
     TF_DEBUG(HDST_MATERIAL_ADDED).Msg("HdStMaterial Created: %s\n",
                                       id.GetText());
