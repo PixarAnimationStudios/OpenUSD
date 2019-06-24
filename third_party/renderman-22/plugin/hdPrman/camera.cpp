@@ -27,6 +27,7 @@
 
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/camera.h"
 
 #include "RixParamList.h"
 
@@ -163,21 +164,21 @@ HdPrmanCamera::SetRileyCameraParams(RixParamList *camParams,
     // Rix::k_shutteropening (float[8] [c1 c2 d1 d2 e1 e2 f1 f2): additional
     // control points
     if (camParams) {
-        GfVec2f const *clippingRange =
-            _GetDictItem<GfVec2f>(_params, HdCameraTokens->clippingRange);
+        GfRange1f const *clippingRange =
+            _GetDictItem<GfRange1f>(_params, HdCameraTokens->clippingRange);
         if (clippingRange) {
-            camParams->SetFloat(RixStr.k_nearClip, (*clippingRange)[0]);
-            camParams->SetFloat(RixStr.k_farClip, (*clippingRange)[1]);
+            camParams->SetFloat(RixStr.k_nearClip, clippingRange->GetMin());
+            camParams->SetFloat(RixStr.k_farClip, clippingRange->GetMax());
         }
 
-        float const *shutterOpen =
-            _GetDictItem<float>(_params, HdCameraTokens->shutterOpen);
+        double const *shutterOpen =
+            _GetDictItem<double>(_params, HdCameraTokens->shutterOpen);
         if (shutterOpen) {
             camParams->SetFloat(RixStr.k_shutterOpenTime, *shutterOpen);
         }
 
-        float const *shutterClose =
-            _GetDictItem<float>(_params, HdCameraTokens->shutterClose);
+        double const *shutterClose =
+            _GetDictItem<double>(_params, HdCameraTokens->shutterClose);
         if (shutterClose) {
             camParams->SetFloat(RixStr.k_shutterCloseTime, *shutterClose);
         }

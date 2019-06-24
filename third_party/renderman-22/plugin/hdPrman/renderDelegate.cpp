@@ -43,6 +43,8 @@
 #include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/sprim.h"
 
+#include "pxr/base/tf/getenv.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
  
 TF_DEFINE_PRIVATE_TOKENS(
@@ -99,10 +101,14 @@ HdPrmanRenderDelegate::_Initialize()
     _renderParam = std::make_shared<HdPrman_RenderParam>(_context);
     _resourceRegistry.reset(new HdResourceRegistry());
 
+    std::string integrator = "PxrPathTracer";
+    std::string integratorEnv = TfGetenv("HDX_PRMAN_INTEGRATOR");
+    if (!integratorEnv.empty())
+        integrator = integratorEnv;
     _settingDescriptors.resize(1);
     _settingDescriptors[0] = { std::string("Integrator"),
         HdPrmanRenderSettingsTokens->integrator,
-        VtValue("PxrPathTracer") };
+        VtValue(integrator) };
     _PopulateDefaultSettings(_settingDescriptors);
 }
 

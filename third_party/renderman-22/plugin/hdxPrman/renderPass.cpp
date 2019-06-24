@@ -34,6 +34,7 @@
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/rotation.h"
+#include "pxr/base/tf/getenv.h"
 
 #include "Riley.h"
 #include "RixParamList.h"
@@ -235,7 +236,7 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         float const zerotime = 0.0f;
         riley::Transform xform = { 1, &matrix, &zerotime };
         riley->ModifyCamera(_interactiveContext->cameraId, cameraNode,
-                            &xform, nullptr);
+                            &xform, camParams);
         mgr->DestroyRixParamList(camParams);
         mgr->DestroyRixParamList(projParams);
 
@@ -250,7 +251,7 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
     int currentSettingsVersion = renderDelegate->GetRenderSettingsVersion();
     if (_lastSettingsVersion != currentSettingsVersion) {
         const std::string PxrPathTracer("PxrPathTracer");
-        const std::string integrator = renderDelegate->GetRenderSetting(
+        const std::string integrator = renderDelegate->GetRenderSetting<std::string>(
             HdPrmanRenderSettingsTokens->integrator,
             PxrPathTracer);
         RixParamList *params = mgr->CreateRixParamList();
