@@ -368,7 +368,7 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
     // ---------------------------------------------------------------------- //
     // Buffer Layout
     // ---------------------------------------------------------------------- //
-    // In the folowing code, we want to build up a buffer that is capable of
+    // In the following code, we want to build up a buffer that is capable of
     // driving selection highlighting. To do this, we leverage the fact that the
     // fragment shader has access to the drawing coord, namely the PrimID,
     // InstanceID, ElementID, EdgeID, VertexID, etc.
@@ -385,10 +385,8 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
     //
     // Prim: [ start index | end index | (selection offsets per prim) ]
     // 
-    // The structure described above for prims is also applied for each level
-    // of instancing, per prim.
-    // 
-    // For subprims of a prim, we add a 'type' field before the range.
+    // For subprims of a prim (specific instances, specific faces, etc),
+    // we add a 'type' field before the range.
     // 
     // Subprim: [ type | start index | end index | (selection offsets) ]
     //
@@ -420,9 +418,10 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
     bool const SELECT_NONE = 0;
 
     enum SubPrimType {
-        ELEMENT = 0,
-        EDGE    = 1,
-        POINT   = 2
+        ELEMENT  = 0,
+        EDGE     = 1,
+        POINT    = 2,
+        INSTANCE = 3
     };
 
     _DebugPrintArray("ids", ids);
@@ -541,14 +540,18 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
                     "level-%d: min(%d) max(%d)\n",
                     level, levelMin, levelMax);
 
-                int objLevelSize = levelMax - levelMin +2+1;
+                int const INSTANCE_SELOFFSETS_HEADER_SIZE = 3;
+                int objLevelSize = levelMax - levelMin + 1 +
+                    INSTANCE_SELOFFSETS_HEADER_SIZE;
                 int levelOffset = output->size();
                 output->insert(output->end(), objLevelSize,
                                _EncodeSelOffset(prevLevelOffset, SELECT_NONE));
-                (*output)[levelOffset + 0] = levelMin;
-                (*output)[levelOffset + 1] = levelMax + 1;
+                (*output)[levelOffset    ] = INSTANCE;
+                (*output)[levelOffset + 1] = levelMin;
+                (*output)[levelOffset + 2] = levelMax + 1;
                 for (VtIntArray const& instVec : instanceIndices) {
-                    int instId = instVec[level] - levelMin+2;
+                    int instId = instVec[level] - levelMin +
+                        INSTANCE_SELOFFSETS_HEADER_SIZE;
                     (*output)[levelOffset+instId] =
                         _EncodeSelOffset(prevLevelOffset, SELECT_ALL);
                 }
