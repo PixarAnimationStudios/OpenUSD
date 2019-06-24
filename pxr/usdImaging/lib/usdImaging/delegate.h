@@ -195,10 +195,6 @@ public:
     USDIMAGING_API
     void SetRefineLevel(SdfPath const& usdPath, int level);
 
-    /// Returns true is the USD prim refinement level > 0
-    USDIMAGING_API
-    bool IsRefined(SdfPath const& usdPath) const;
-
     /// Returns the fallback repr name.
     HdReprSelector GetReprFallback() const { return _reprFallback; }
 

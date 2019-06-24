@@ -244,6 +244,15 @@ UsdImagingPrimAdapter::GetInstanceCategories(UsdPrim const& prim)
 }
 
 /*virtual*/
+PxOsdSubdivTags
+UsdImagingPrimAdapter::GetSubdivTags(UsdPrim const& prim,
+                                     SdfPath const& cachePath,
+                                     UsdTimeCode time) const
+{
+    return PxOsdSubdivTags();
+}
+
+/*virtual*/
 size_t
 UsdImagingPrimAdapter::SampleInstancerTransform(
     UsdPrim const& instancerPrim,
@@ -695,12 +704,6 @@ UsdImagingPrimAdapter::_IsVarying(UsdPrim prim,
     } while (isInherited && prim.GetPath() != SdfPath::AbsoluteRootPath());
 
     return false;
-}
-
-bool 
-UsdImagingPrimAdapter::_IsRefined(SdfPath const& cachePath) const
-{
-    return _delegate->IsRefined(cachePath);
 }
 
 bool 

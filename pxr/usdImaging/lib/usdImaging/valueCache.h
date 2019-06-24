@@ -34,7 +34,6 @@
 #include "pxr/imaging/hd/materialParam.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/pxOsd/subdivTags.h"
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/value.h"
@@ -59,8 +58,6 @@ class UsdImagingValueCache {
 public:
     UsdImagingValueCache(const UsdImagingValueCache&) = delete;
     UsdImagingValueCache& operator=(const UsdImagingValueCache&) = delete;
-
-    typedef PxOsdSubdivTags SubdivTags;
 
     class Key {
         friend class UsdImagingValueCache;
@@ -127,10 +124,6 @@ public:
         }
         static Key Primvars(SdfPath const& path) {
             static TfToken attr("primvars");
-            return Key(path, attr);
-        }
-        static Key SubdivTags(SdfPath const& path) {
-            static TfToken attr("subdivTags");
             return Key(path, attr);
         }
         static Key Topology(SdfPath const& path) {
@@ -330,7 +323,6 @@ public:
         _Erase<GfRange3d>(Key::Extent(path));
         _Erase<VtValue>(Key::InstanceIndices(path));
         _Erase<TfToken>(Key::Purpose(path));
-        _Erase<SubdivTags>(Key::SubdivTags(path));
         _Erase<VtValue>(Key::Topology(path));
         _Erase<GfMatrix4d>(Key::Transform(path));
         _Erase<bool>(Key::Visible(path));
@@ -431,9 +423,6 @@ public:
     }
     HdPrimvarDescriptorVector& GetPrimvars(SdfPath const& path) const {
         return _Get<HdPrimvarDescriptorVector>(Key::Primvars(path));
-    }
-    SubdivTags& GetSubdivTags(SdfPath const& path) const {
-        return _Get<SubdivTags>(Key::SubdivTags(path));
     }
     VtValue& GetTopology(SdfPath const& path) const {
         return _Get<VtValue>(Key::Topology(path));
@@ -540,9 +529,6 @@ public:
     bool FindPrimvars(SdfPath const& path, HdPrimvarDescriptorVector* value) const {
         return _Find(Key::Primvars(path), value);
     }
-    bool FindSubdivTags(SdfPath const& path, SubdivTags* value) const {
-        return _Find(Key::SubdivTags(path), value);
-    }
     bool FindTopology(SdfPath const& path, VtValue* value) const {
         return _Find(Key::Topology(path), value);
     }
@@ -645,9 +631,6 @@ public:
     bool ExtractPrimvars(SdfPath const& path, HdPrimvarDescriptorVector* value) {
         return _Extract(Key::Primvars(path), value);
     }
-    bool ExtractSubdivTags(SdfPath const& path, SubdivTags* value) {
-        return _Extract(Key::SubdivTags(path), value);
-    }
     bool ExtractTopology(SdfPath const& path, VtValue* value) {
         return _Extract(Key::Topology(path), value);
     }
@@ -734,7 +717,6 @@ public:
         _GarbageCollect(_vec4Cache);
         _GarbageCollect(_valueCache);
         _GarbageCollect(_pviCache);
-        _GarbageCollect(_subdivTagsCache);
         _GarbageCollect(_sdfPathCache);
         // XXX: shader type caches, shader API will be deprecated soon
         _GarbageCollect(_stringCache);
@@ -786,9 +768,6 @@ private:
     typedef _TypedCache<HdPrimvarDescriptorVector> _PviCache;
     mutable _PviCache _pviCache;
 
-    typedef _TypedCache<SubdivTags> _SubdivTagsCache;
-    mutable _SubdivTagsCache _subdivTagsCache;
-
     // XXX: shader type caches, shader API will be deprecated soon
     typedef _TypedCache<std::string> _StringCache;
     mutable _StringCache _stringCache;
@@ -834,9 +813,6 @@ private:
     }
     void _GetCache(_PviCache **cache) const {
         *cache = &_pviCache;
-    }
-    void _GetCache(_SubdivTagsCache **cache) const {
-        *cache = &_subdivTagsCache;
     }
     void _GetCache(_SdfPathCache **cache) const {
         *cache = &_sdfPathCache;

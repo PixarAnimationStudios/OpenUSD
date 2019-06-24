@@ -1615,18 +1615,14 @@ UsdImagingDelegate::GetSubdivTags(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
+
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
-    SubdivTags tags;
-
-    if (_valueCache.ExtractSubdivTags(cachePath, &tags)) {
-        return tags;
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo)) {
+        return primInfo->adapter
+            ->GetSubdivTags(primInfo->usdPrim, cachePath, _time);
     }
-    _UpdateSingleValue(cachePath, HdChangeTracker::DirtySubdivTags);
-    if (TF_VERIFY(_valueCache.ExtractSubdivTags(cachePath, &tags))) {
-        return tags;
-    }
-
-    return tags;
+    return PxOsdSubdivTags();
 }
 
 /*virtual*/
@@ -1772,22 +1768,6 @@ UsdImagingDelegate::ClearRefineLevel(SdfPath const& usdPath)
         }
     }
 }
-
-
-bool
-UsdImagingDelegate::IsRefined(SdfPath const& usdPath) const
-{
-    // XXX(UsdImagingPaths): We use the usdPath directly as the cachePath
-    // here, but we should consult the adapter for this.
-    SdfPath const& cachePath = usdPath; // XXX ?!?
-    _RefineLevelMap::const_iterator it = _refineLevelMap.find(cachePath);
-    if (it == _refineLevelMap.end()) {
-        return (GetRefineLevelFallback() > 0);
-    }
-
-    return (it->second > 0);
-}
-
 
 void
 UsdImagingDelegate::SetReprFallback(HdReprSelector const &repr)

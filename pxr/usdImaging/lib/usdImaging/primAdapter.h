@@ -289,6 +289,12 @@ public:
                   size_t maxNumSamples, float *times,
                   VtValue *samples);
 
+    /// Get the subdiv tags for this prim.
+    USDIMAGING_API
+    virtual PxOsdSubdivTags GetSubdivTags(UsdPrim const& usdPrim,
+                                          SdfPath const& cachePath,
+                                          UsdTimeCode time) const;
+
     // ---------------------------------------------------------------------- //
     /// \name Nested instancing support
     // ---------------------------------------------------------------------- //
@@ -519,10 +525,6 @@ protected:
            HdDirtyBits dirtyFlag, TfToken const& perfToken,
            HdDirtyBits* dirtyFlags, bool isInherited,
            bool* exists = nullptr) const;
-
-    // Returns whether or not the rprim at \p cachePath is refined.
-    USDIMAGING_API
-    bool _IsRefined(SdfPath const& cachePath) const;
 
     // Determines if the prim's transform (CTM) is varying and if so, sets the 
     // given \p dirtyFlag in the \p dirtyFlags and increments a perf counter. 

@@ -94,7 +94,6 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_Context *context,
     const size_t npoints = topology.GetNumPoints();
     const VtIntArray verts = topology.GetFaceVertexIndices();
     const VtIntArray nverts = topology.GetFaceVertexCounts();
-    const int refineLevel = sceneDelegate->GetDisplayStyle(id).refineLevel;
 
     // If the geometry has been partitioned into subsets, add an
     // additional subset representing anything left over.
@@ -195,13 +194,6 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_Context *context,
         *primType = RixStr.k_Ri_PolygonMesh;
     }
 
-    // Topology overrides.
-    if (refineLevel == 0) {
-        // If the refine level is 0, treat this as a polymesh, since the
-        // scene won't be supplying subdiv tags.
-        *primType = RixStr.k_Ri_PolygonMesh;
-    }
-
     VtIntArray holeIndices = topology.GetHoleIndices();
     if (*primType == RixStr.k_Ri_PolygonMesh &&
         !holeIndices.empty()) {
@@ -242,73 +234,74 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_Context *context,
                               holeIndices.begin(), holeIndices.end());
         }
 
-        // If refineLevel is 0, the scene treats the mesh as a polymesh and
-        // isn't required to compute subdiv tags; so only add subdiv tags for
-        // nonzero refine level.
-        if (refineLevel > 0) {
-            PxOsdSubdivTags osdTags = GetSubdivTags(sceneDelegate);
-            // Creases
-            VtIntArray creaseLengths = osdTags.GetCreaseLengths();
-            VtIntArray creaseIndices = osdTags.GetCreaseIndices();
-            VtFloatArray creaseWeights = osdTags.GetCreaseWeights();
-            if (!creaseIndices.empty()) {
-                for (int creaseLength: creaseLengths) {
-                    tagNames.push_back(RixStr.k_crease);
-                    tagArgCounts.push_back(creaseLength); // num int args
-                    tagArgCounts.push_back(1); // num float args
-                    tagArgCounts.push_back(0); // num str args
-                }
-                tagIntArgs.insert(tagIntArgs.end(),
-                        creaseIndices.begin(), creaseIndices.end());
-                tagFloatArgs.insert(tagFloatArgs.end(),
-                        creaseWeights.begin(), creaseWeights.end());
-            }
-            // Corners
-            VtIntArray cornerIndices = osdTags.GetCornerIndices();
-            VtFloatArray cornerWeights = osdTags.GetCornerWeights();
-            if (cornerIndices.size()) {
-                tagNames.push_back(RixStr.k_corner);
-                tagArgCounts.push_back(cornerIndices.size()); // num int args
-                tagArgCounts.push_back(cornerWeights.size()); // num float args
+        PxOsdSubdivTags osdTags = GetSubdivTags(sceneDelegate);
+
+        // Creases
+        VtIntArray creaseLengths = osdTags.GetCreaseLengths();
+        VtIntArray creaseIndices = osdTags.GetCreaseIndices();
+        VtFloatArray creaseWeights = osdTags.GetCreaseWeights();
+        if (!creaseIndices.empty()) {
+            for (int creaseLength: creaseLengths) {
+                tagNames.push_back(RixStr.k_crease);
+                tagArgCounts.push_back(creaseLength); // num int args
+                tagArgCounts.push_back(1); // num float args
                 tagArgCounts.push_back(0); // num str args
-                tagIntArgs.insert(tagIntArgs.end(),
-                        cornerIndices.begin(), cornerIndices.end());
-                tagFloatArgs.insert(tagFloatArgs.end(),
-                        cornerWeights.begin(), cornerWeights.end());
             }
-            // Vertex Interpolation (aka interpolateboundary)
-            TfToken vInterp = osdTags.GetVertexInterpolationRule();
-            if (vInterp.IsEmpty()) {
-                vInterp = PxOsdOpenSubdivTokens->edgeAndCorner;
-            }
-                if (UsdRiConvertToRManInterpolateBoundary(vInterp) != 0) {
-                    tagNames.push_back(RixStr.k_interpolateboundary);
-                    tagArgCounts.push_back(0); // num int args
-                    tagArgCounts.push_back(0); // num float args
-                    tagArgCounts.push_back(0); // num str args
-                }
-            // Face-varying Interpolation (aka facevaryinginterpolateboundary)
-            TfToken fvInterp = osdTags.GetFaceVaryingInterpolationRule();
-            if (fvInterp.IsEmpty()) {
-                fvInterp = PxOsdOpenSubdivTokens->cornersPlus1;
-            }
-                tagNames.push_back(RixStr.k_facevaryinginterpolateboundary);
-                tagArgCounts.push_back(1); // num int args
-                tagArgCounts.push_back(0); // num float args
-                tagArgCounts.push_back(0); // num str args
-                tagIntArgs.push_back(
-                    UsdRiConvertToRManFaceVaryingLinearInterpolation(fvInterp));
-            // Triangle subdivision rule
-            TfToken triSubdivRule = osdTags.GetTriangleSubdivision();
-            if (triSubdivRule == PxOsdOpenSubdivTokens->smooth) {
-                tagNames.push_back(RixStr.k_smoothtriangles);
-                tagArgCounts.push_back(1); // num int args
-                tagArgCounts.push_back(0); // num float args
-                tagArgCounts.push_back(0); // num str args
-                tagIntArgs.push_back(
-                    UsdRiConvertToRManTriangleSubdivisionRule(triSubdivRule));
-            }
+            tagIntArgs.insert(tagIntArgs.end(),
+                    creaseIndices.begin(), creaseIndices.end());
+            tagFloatArgs.insert(tagFloatArgs.end(),
+                    creaseWeights.begin(), creaseWeights.end());
         }
+
+        // Corners
+        VtIntArray cornerIndices = osdTags.GetCornerIndices();
+        VtFloatArray cornerWeights = osdTags.GetCornerWeights();
+        if (cornerIndices.size()) {
+            tagNames.push_back(RixStr.k_corner);
+            tagArgCounts.push_back(cornerIndices.size()); // num int args
+            tagArgCounts.push_back(cornerWeights.size()); // num float args
+            tagArgCounts.push_back(0); // num str args
+            tagIntArgs.insert(tagIntArgs.end(),
+                    cornerIndices.begin(), cornerIndices.end());
+            tagFloatArgs.insert(tagFloatArgs.end(),
+                    cornerWeights.begin(), cornerWeights.end());
+        }
+
+        // Vertex Interpolation (aka interpolateboundary)
+        TfToken vInterp = osdTags.GetVertexInterpolationRule();
+        if (vInterp.IsEmpty()) {
+            vInterp = PxOsdOpenSubdivTokens->edgeAndCorner;
+        }
+        if (UsdRiConvertToRManInterpolateBoundary(vInterp) != 0) {
+            tagNames.push_back(RixStr.k_interpolateboundary);
+            tagArgCounts.push_back(0); // num int args
+            tagArgCounts.push_back(0); // num float args
+            tagArgCounts.push_back(0); // num str args
+        }
+
+        // Face-varying Interpolation (aka facevaryinginterpolateboundary)
+        TfToken fvInterp = osdTags.GetFaceVaryingInterpolationRule();
+        if (fvInterp.IsEmpty()) {
+            fvInterp = PxOsdOpenSubdivTokens->cornersPlus1;
+        }
+        tagNames.push_back(RixStr.k_facevaryinginterpolateboundary);
+        tagArgCounts.push_back(1); // num int args
+        tagArgCounts.push_back(0); // num float args
+        tagArgCounts.push_back(0); // num str args
+        tagIntArgs.push_back(
+                UsdRiConvertToRManFaceVaryingLinearInterpolation(fvInterp));
+
+        // Triangle subdivision rule
+        TfToken triSubdivRule = osdTags.GetTriangleSubdivision();
+        if (triSubdivRule == PxOsdOpenSubdivTokens->smooth) {
+            tagNames.push_back(RixStr.k_smoothtriangles);
+            tagArgCounts.push_back(1); // num int args
+            tagArgCounts.push_back(0); // num float args
+            tagArgCounts.push_back(0); // num str args
+            tagIntArgs.push_back(
+                    UsdRiConvertToRManTriangleSubdivisionRule(triSubdivRule));
+        }
+
         primvars->SetStringArray(RixStr.k_Ri_subdivtags,
                                  &tagNames[0], tagNames.size());
         primvars->SetIntegerArray(RixStr.k_Ri_subdivtagnargs,

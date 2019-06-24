@@ -1484,6 +1484,27 @@ UsdImagingInstanceAdapter::SamplePrimvar(
     }
 }
 
+PxOsdSubdivTags
+UsdImagingInstanceAdapter::GetSubdivTags(UsdPrim const& usdPrim,
+                                         SdfPath const& cachePath,
+                                         UsdTimeCode time) const
+{
+    if (_IsChildPrim(usdPrim, cachePath)) {
+        // Note that the proto group in this rproto has not yet been
+        // updated with new instances at this point.
+        UsdImagingInstancerContext instancerContext;
+        _ProtoRprim const& rproto = _GetProtoRprim(usdPrim.GetPath(),
+                                                   cachePath,
+                                                   &instancerContext);
+        if (!TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
+            return PxOsdSubdivTags();
+        }
+        return rproto.adapter->GetSubdivTags(
+                _GetPrim(rproto.path), cachePath, time);
+    }
+    return UsdImagingPrimAdapter::GetSubdivTags(usdPrim, cachePath, time);
+}
+
 void
 UsdImagingInstanceAdapter::_ResyncInstancer(SdfPath const& instancerPath,
                                             UsdImagingIndexProxy* index,

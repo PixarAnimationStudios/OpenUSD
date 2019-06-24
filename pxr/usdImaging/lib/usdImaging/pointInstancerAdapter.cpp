@@ -1857,6 +1857,21 @@ UsdImagingPointInstancerAdapter::SamplePrimvar(
     }
 }
 
+PxOsdSubdivTags
+UsdImagingPointInstancerAdapter::GetSubdivTags(UsdPrim const& usdPrim,
+                                               SdfPath const& cachePath,
+                                               UsdTimeCode time) const
+{
+    if (IsChildPath(cachePath)) {
+        // Delegate to prototype adapter and USD prim.
+        _ProtoRprim const& rproto = _GetProtoRprim(usdPrim.GetPath(),
+                                                   cachePath);
+        UsdPrim protoPrim = _GetProtoUsdPrim(rproto);
+        return rproto.adapter->GetSubdivTags(protoPrim, cachePath, time);
+    }
+    return UsdImagingPrimAdapter::GetSubdivTags(usdPrim, cachePath, time);
+}
+
 /*virtual*/
 bool
 UsdImagingPointInstancerAdapter::PopulateSelection(
