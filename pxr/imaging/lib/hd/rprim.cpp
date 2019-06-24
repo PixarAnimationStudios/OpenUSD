@@ -309,7 +309,8 @@ HdRprim::_PopulateConstantPrimvars(HdSceneDelegate* delegate,
                                            VtValue(GfVec4f(
                                                localMin[0],
                                                localMin[1],
-                                               localMin[2], 0))));
+                                               localMin[2],
+                                               1.0f))));
         sources.push_back(sourceMin);
 
         GfVec3d const & localMax = drawItem->GetBounds().GetBox().GetMax();
@@ -318,7 +319,8 @@ HdRprim::_PopulateConstantPrimvars(HdSceneDelegate* delegate,
                                            VtValue(GfVec4f(
                                                localMax[0],
                                                localMax[1],
-                                               localMax[2], 0))));
+                                               localMax[2],
+                                               1.0f))));
         sources.push_back(sourceMax);
     }
 
