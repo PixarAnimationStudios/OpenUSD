@@ -1220,7 +1220,7 @@ public:
             for (size_t i = 0; i < usdPrimPathValues.size(); ++i)
             {
                 std::string primPath(usdPrimPathValues[i]);
-                if (usdPrimPathValues.empty())
+                if (!SdfPath::IsValidPathString(primPath))
                 {
                     continue;
                 }
