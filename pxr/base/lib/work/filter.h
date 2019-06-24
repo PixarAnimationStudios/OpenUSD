@@ -107,7 +107,7 @@ WorkParallelFilterN(size_t N,
          &accumVector,
          &starts](size_t begin, size_t end)
            {
-                for(int j = begin; j < end; ++j){
+                for(size_t j = begin; j < end; ++j){
                     const auto& vec = *(parallelVectors.begin()+j);
                     for(unsigned int i =0; i < vec.size(); ++i){
                         accumVector[starts[j] + i] = vec[i];
