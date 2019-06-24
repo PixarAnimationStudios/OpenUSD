@@ -2033,6 +2033,7 @@ _EvalNodePayloads(
     }
     SdfPath const &path = indexer->rootSite.path;
 
+#if 0
     // If there's a payload predicate, we invoke that to decide whether or not
     // this payload should be included.
     bool composePayload = false;
@@ -2051,6 +2052,29 @@ _EvalNodePayloads(
             PcpPrimIndexOutputs::IncludedByIncludeSet : 
             PcpPrimIndexOutputs::ExcludedByIncludeSet;
     }
+#else
+     tbb::spin_rw_mutex::scoped_lock lock;
+     auto *mutex = indexer->inputs.includedPayloadsMutex;
+     if (mutex) { lock.acquire(*mutex, /*write=*/false); }
+     bool inIncludeSet = includedPayloads->count(path);
+     if (mutex) { lock.release(); }
+     bool composePayload = inIncludeSet;
+     if (!inIncludeSet) {
+         auto const &pred = indexer->inputs.includePayloadPredicate;
+         if (pred && pred(path)) {
+             composePayload = true;
+             indexer->outputs->payloadState =
+                 PcpPrimIndexOutputs::IncludedByPredicate;
+         } else {
+             indexer->outputs->payloadState =
+                 PcpPrimIndexOutputs::ExcludedByIncludeSet;
+         }
+     }
+     else {
+         indexer->outputs->payloadState =
+             PcpPrimIndexOutputs::IncludedByIncludeSet;
+     }
+#endif
      
     if (!composePayload) {
         PCP_INDEXING_MSG(indexer, node,
