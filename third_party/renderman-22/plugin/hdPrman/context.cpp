@@ -397,7 +397,14 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
         } else {
             name = _GetPrmanPrimvarName(primvar.name, detail);
         }
-        VtValue val = sceneDelegate->Get(id, primvar.name);
+        // XXX HdPrman does not yet support time-sampled primvars,
+        // but we want to exercise the SamplePrimvar() API, so use it
+        // to request a single sample.
+        const size_t maxNumTimeSamples = 1;
+        float times[1];
+        VtValue val;
+        sceneDelegate->SamplePrimvar(id, primvar.name, maxNumTimeSamples,
+                                     times, &val);
         TF_DEBUG(HDPRMAN_PRIMVARS)
             .Msg("HdPrman: <%s> %s %s \"%s\" (%s) = \"%s\"\n",
                  id.GetText(),

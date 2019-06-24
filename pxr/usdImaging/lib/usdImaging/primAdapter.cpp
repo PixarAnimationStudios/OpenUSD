@@ -288,13 +288,13 @@ UsdImagingPrimAdapter::SamplePrimvar(
                 UsdTimeCode sceneTime =
                     _delegate->GetTimeWithOffset(configuredSampleTimes[i]);
                 times[i] = configuredSampleTimes[i];
-                pv.Get(&samples[i], sceneTime);
+                pv.ComputeFlattened(&samples[i], sceneTime);
             }
             return numSamples;
         } else {
             // Return a single sample for non-varying primvars
             times[0] = 0;
-            pv.Get(samples, time);
+            pv.ComputeFlattened(samples, time);
             return 1;
         }
     }
