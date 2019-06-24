@@ -326,15 +326,15 @@ UsdImagingPrimAdapter::SamplePrimvar(
 /*virtual*/
 SdfPath 
 UsdImagingPrimAdapter::GetPathForInstanceIndex(
-    SdfPath const &protoPath,
-    int instanceIndex,
+    SdfPath const &protoCachePath,
+    int protoIndex,
     int *instanceCount,
-    int *absoluteInstanceIndex,
-    SdfPath *resolvedPrimPath,
+    int *instancerIndex,
+    SdfPath *masterCachePath,
     SdfPathVector *instanceContext)
 {
-    if (absoluteInstanceIndex) {
-        *absoluteInstanceIndex = UsdImagingDelegate::ALL_INSTANCES;
+    if (instancerIndex) {
+        *instancerIndex = UsdImagingDelegate::ALL_INSTANCES;
     }
     return SdfPath();
 }
@@ -342,13 +342,16 @@ UsdImagingPrimAdapter::GetPathForInstanceIndex(
 /*virtual*/
 SdfPath
 UsdImagingPrimAdapter::GetPathForInstanceIndex(
-    SdfPath const &instancerPath, SdfPath const &protoPath,
-    int instanceIndex, int *instanceCount,
-    int *absoluteInstanceIndex, SdfPath *resolvedPrimPath,
+    SdfPath const &instancerCachePath,
+    SdfPath const &protoCachePath,
+    int protoIndex,
+    int *instanceCountForThisLevel,
+    int *instancerIndex,
+    SdfPath *masterCachePath,
     SdfPathVector *instanceContext)
 {
-    if (absoluteInstanceIndex) {
-        *absoluteInstanceIndex = UsdImagingDelegate::ALL_INSTANCES;
+    if (instancerIndex) {
+        *instancerIndex = UsdImagingDelegate::ALL_INSTANCES;
     }
     return SdfPath();
 }

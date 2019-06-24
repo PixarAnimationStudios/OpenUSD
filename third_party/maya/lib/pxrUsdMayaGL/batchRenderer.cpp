@@ -936,7 +936,7 @@ UsdMayaGLBatchRenderer::TestIntersectionCustomPrimFilter(
 }
 
 int
-UsdMayaGLBatchRenderer::GetAbsoluteInstanceIndexForHit(
+UsdMayaGLBatchRenderer::GetInstancerIndexForHit(
         const HdxPickHit& hit) const
 {
     int ret = -1;
