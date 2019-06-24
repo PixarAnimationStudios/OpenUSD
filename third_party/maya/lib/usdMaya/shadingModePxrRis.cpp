@@ -53,6 +53,7 @@
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/tokens.h"
 
+#include <maya/MFnAttribute.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnSet.h>
 #include <maya/MObject.h>
@@ -180,14 +181,22 @@ private:
 
         MStatus status = MS::kFailure;
 
-        std::vector<MPlug> attrPlugs;
+        std::vector<MPlug> inputAttrPlugs;
 
-        // gather all the attrPlugs we want to process.
+        // gather all the inputAttrPlugs we want to process.
         for (unsigned int i = 0u; i < depNode.attributeCount(); ++i) {
             MPlug attrPlug = depNode.findPlug(depNode.attribute(i), true);
             if (attrPlug.isProcedural()) {
                 // maya docs says these should not be saved off.  we skip them
                 // here.
+                continue;
+            }
+
+            // We can identify "output" parameters for Pxr* by checking if they
+            // are writable.  
+            if (!MFnAttribute(attrPlug.attribute()).isWritable()) {
+                // If needed, we could author these as outputs, but
+                // currently don't have an immediate need to bake these out.
                 continue;
             }
 
@@ -204,7 +213,7 @@ private:
             if (attrPlug.isArray()) {
                 const unsigned int numElements = attrPlug.evaluateNumElements();
                 if (numElements > 0u) {
-                    attrPlugs.push_back(attrPlug[0]);
+                    inputAttrPlugs.push_back(attrPlug[0]);
                     if (numElements > 1u) {
                         TF_WARN(
                             "Array with multiple elements encountered at '%s'. "
@@ -215,11 +224,11 @@ private:
                 }
             }
             else {
-                attrPlugs.push_back(attrPlug);
+                inputAttrPlugs.push_back(attrPlug);
             }
         }
 
-        for (const auto& attrPlug : attrPlugs) {
+        for (const auto& attrPlug : inputAttrPlugs) {
             // this is writing out things that live on the MFnDependencyNode.
             // maybe that's OK?  nothing downstream cares about it.
 

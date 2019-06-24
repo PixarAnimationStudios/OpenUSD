@@ -115,13 +115,7 @@ class testUsdExportShadingModePxrRis(unittest.TestCase):
         self.assertEqual(shaderId, 'PxrMayaMarble')
 
         shaderInputs = shader.GetInputs()
-        self.assertEqual(len(shaderInputs), 3)
-
-        inputOutAlpha = shader.GetInput('outAlpha').Get()
-        self.assertTrue(Gf.IsClose(inputOutAlpha, 0.0894, 1e-6))
-
-        inputOutColor = shader.GetInput('outColor').Get()
-        self.assertTrue(Gf.IsClose(inputOutColor, Gf.Vec3f(0.298, 0.0, 0.0), 1e-6))
+        self.assertEqual(len(shaderInputs), 1)
 
         inputPlacementMatrix = shader.GetInput('placementMatrix')
         (connectableAPI, outputName, outputType) = inputPlacementMatrix.GetConnectedSource()
