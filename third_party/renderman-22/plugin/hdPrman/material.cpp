@@ -52,6 +52,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (pbsMaterialIn)
     (inputMaterial)
     (OSL)
+    (RmanCpp)
 
     // XXX(HdPrmanMaterialTemp) Temporary tokens for material upgrades:
     (vstructmemberaliases)
@@ -219,10 +220,15 @@ _FindShaders(
     std::vector<SdrShaderNodeConstPtr> *result)
 {
     auto& reg = SdrRegistry::GetInstance();
+    static NdrTokenVec priority = {
+        _tokens->OSL,
+        _tokens->RmanCpp
+    };
     result->resize(nodes.size());
     for (size_t i=0; i < nodes.size(); ++i) {
         NdrIdentifier id = nodes[i].identifier;
-        if (SdrShaderNodeConstPtr node = reg.GetShaderNodeByIdentifier(id)) {
+        if (SdrShaderNodeConstPtr node =
+            reg.GetShaderNodeByIdentifier(id, priority)) {
             (*result)[i] = node;
         } else {
             (*result)[i] = nullptr;
@@ -429,8 +435,7 @@ _MapHdNodesToRileyNodes(
 
         // Create equivalent Riley shading node.
         riley::ShadingNode sn;
-        //if (shaders[i]->GetContext() == SdrNodeContext->Surface) {
-        if (shaders[i]->GetContext() == TfToken("bxdf")) {
+        if (shaders[i]->GetContext() == _tokens->bxdf) {
             sn.type = riley::ShadingNode::k_Bxdf;
         } else if (shaders[i]->GetContext() == SdrNodeContext->Pattern ||
                    shaders[i]->GetContext() == _tokens->OSL) {
