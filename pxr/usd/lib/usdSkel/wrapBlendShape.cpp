@@ -173,7 +173,8 @@ WRAP_CUSTOM {
         
         .def("GetInbetweens", &This::GetInbetweens,
              return_value_policy<TfPySequenceToList>())
-        .def("GetAuthoredInbetweens", &This::GetAuthoredInbetweens)
+        .def("GetAuthoredInbetweens", &This::GetAuthoredInbetweens,
+             return_value_policy<TfPySequenceToList>())
 
         .def("ValidatePointIndices", &_ValidatePointIndices,
              (arg("pointIndices"), arg("numPoints")))

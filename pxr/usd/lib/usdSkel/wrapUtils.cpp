@@ -23,6 +23,8 @@
 //
 #include "pxr/usd/usdSkel/utils.h"
 
+#include "pxr/base/gf/matrix3d.h"
+#include "pxr/base/gf/matrix3f.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/range3f.h"
@@ -207,7 +209,7 @@ _NonInterleavedSkinTransformLBS(const Matrix4& geomBindTransform,
 }
 
 
-template <typename Matrix4>
+template <class Matrix3, class Matrix4>
 void _WrapUtilsT()
 {
     def("ComputeJointLocalTransforms",
@@ -267,6 +269,33 @@ void _WrapUtilsT()
          arg("points"),
          arg("inSerial")=true));
 
+
+
+    def("SkinNormalsLBS",
+        static_cast<bool (*)(const Matrix3&, TfSpan<const Matrix3>,
+                             TfSpan<const int>, TfSpan<const float>,
+                             int, TfSpan<GfVec3f>, bool)>(
+                                 &UsdSkelSkinNormalsLBS),
+        (arg("geomBindTransform"),
+         arg("jointXforms"),
+         arg("jointIndices"),
+         arg("jointWeights"),
+         arg("numInfluencesPerPoint"),
+         arg("normals"),
+         arg("inSerial")=true));
+
+    def("SkinNormalsLBS",
+        static_cast<bool (*)(const Matrix3&, TfSpan<const Matrix3>,
+                             TfSpan<const GfVec2f>, int,
+                             TfSpan<GfVec3f>, bool)>(
+                                 &UsdSkelSkinNormalsLBS),
+        (arg("geomBindTransform"),
+         arg("jointXforms"),
+         arg("influences"),
+         arg("numInfluencesPerPoint"),
+         arg("normals"),
+         arg("inSerial")=true));
+
     def("SkinTransformLBS", &_InterleavedSkinTransformLBS<Matrix4>,
         (arg("geomBindTransform"),
          arg("jointXforms"),
@@ -286,8 +315,8 @@ void _WrapUtilsT()
 void wrapUsdSkelUtils()
 {
     // Wrap methods supporting different matrix precisions.
-    _WrapUtilsT<GfMatrix4d>();
-    _WrapUtilsT<GfMatrix4f>();
+    _WrapUtilsT<GfMatrix3d, GfMatrix4d>();
+    _WrapUtilsT<GfMatrix3f, GfMatrix4f>();
 
     def("IsSkelAnimationPrim", &UsdSkelIsSkelAnimationPrim, (arg("prim")));
 

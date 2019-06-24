@@ -227,14 +227,17 @@ UsdSkelBlendShape::HasInbetween(const TfToken& name) const
 std::vector<UsdSkelInbetweenShape>
 UsdSkelBlendShape::_MakeInbetweens(const std::vector<UsdProperty>& props) const
 {
-    std::vector<UsdSkelInbetweenShape> shapes(props.size());
-    size_t index = 0;
+    std::vector<UsdSkelInbetweenShape> shapes;
+    shapes.reserve(props.size());
     for(const UsdProperty& prop : props) {
-        if((shapes[index] = UsdSkelInbetweenShape(prop.As<UsdAttribute>()))) {
-            ++index;
+        const UsdAttribute attr = prop.As<UsdAttribute>();
+        // The input property list will often include properties within
+        // the namespace of inbetween shapes, such as
+        // 'inbetweens:shape:normalOffsets' Filter out those cases.
+        if (UsdSkelInbetweenShape::IsInbetween(attr)) {
+            shapes.push_back(UsdSkelInbetweenShape(attr));
         }
     }
-    shapes.resize(index);
     return shapes;
 }
 

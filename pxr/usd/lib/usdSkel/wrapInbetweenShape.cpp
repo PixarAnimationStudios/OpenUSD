@@ -50,6 +50,15 @@ _GetOffsets(const UsdSkelInbetweenShape& self)
 }
 
 
+VtVec3fArray
+_GetNormalOffsets(const UsdSkelInbetweenShape& self)
+{
+    VtVec3fArray points;
+    self.GetNormalOffsets(&points);
+    return points;
+}
+
+
 object
 _GetWeight(const UsdSkelInbetweenShape& self)
 {
@@ -69,13 +78,20 @@ void wrapUsdSkelInbetweenShape()
 
         .def(init<UsdAttribute>(arg("attr")))
         .def(!self)
+        .def(self == self)
 
         .def("GetWeight", &_GetWeight)
         .def("SetWeight", &This::SetWeight, arg("weight"))
         .def("HasAuthoredWeight", &This::HasAuthoredWeight)
 
         .def("GetOffsets", &_GetOffsets)
-        .def("SetOffsts", &This::SetOffsets, arg("offsets"))
+        .def("SetOffsets", &This::SetOffsets, arg("offsets"))
+
+        .def("GetNormalOffsetsAttr", &This::GetNormalOffsetsAttr)
+        .def("CreateNormalOffsetsAttr", &This::CreateNormalOffsetsAttr)
+
+        .def("GetNormalOffsets", &_GetNormalOffsets)
+        .def("SetNormalOffsets", &This::SetNormalOffsets, arg("offsets"))
 
         .def("IsInbetween", &This::IsInbetween, arg("attr"))
         .staticmethod("IsInbetween")
