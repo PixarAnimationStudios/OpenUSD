@@ -236,7 +236,7 @@ class AttrInfo(PropInfo):
         
         self.variability = str(sdfProp.variability).replace('Sdf.', 'Sdf')
         self.fallback = sdfProp.default
-        self.cppType = sdfProp.typeName.cppTypeName
+        self.typeName = sdfProp.typeName
 
         if sdfProp.typeName not in valueTypeNameToStr:
             raise _GetSchemaDefException(
@@ -249,7 +249,7 @@ class AttrInfo(PropInfo):
             self.usdType = "SdfValueTypeNames->%s" % (
                 valueTypeNameToStr[sdfProp.typeName])
         
-        self.details = [('C++ Type', self.cppType),
+        self.details = [('C++ Type', self.typeName.cppTypeName),
                         ('Usd Type', self.usdType),
                         ('Variability', self.variability),
                         ('Fallback Value', 'No Fallback'
@@ -732,7 +732,7 @@ def GatherTokens(classes, libName, libTokens):
 
             
             # Add default value (if token type) to token set
-            if attr.usdType == 'SdfValueTypeNames->Token' and attr.fallback:
+            if attr.typeName == Sdf.ValueTypeNames.Token and attr.fallback:
                 fallbackName = _CamelCase(attr.fallback)
                 desc = 'Default value for %s::Get%sAttr()' % \
                        (cls.cppClassName, _ProperCase(attr.name))
@@ -826,7 +826,8 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
             
     for cls in classes:
         hasTokenAttrs = any(
-            [cls.attrs[attr].usdType == 'SdfValueTypeNames->Token' for attr in cls.attrs])
+            [cls.attrs[attr].typeName == Sdf.ValueTypeNames.Token
+             for attr in cls.attrs])
 
         # header file
         clsHFilePath = os.path.join(codeGenPath, cls.GetHeaderFile())
