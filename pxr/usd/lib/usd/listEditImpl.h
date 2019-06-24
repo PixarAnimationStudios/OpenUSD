@@ -47,9 +47,9 @@ protected:
             return false;
         }
 
-        // Root paths for payloads and references or global specializes/inherits
-        // aren't expected to be mappable across non-local edit targets, so we 
-        // can just use the given path as-is.
+        // Root prim paths for all list edit types aren't expected to be 
+        // mappable across non-local edit targets, so we can just use the given
+        // path as-is.
         if (path->IsRootPrimPath()) {
             return true;
         }

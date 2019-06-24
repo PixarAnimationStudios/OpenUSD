@@ -144,7 +144,7 @@ public:
     /// \name Iteration
     /// @{
 
-    /// Returns range of iterators that encompass all direct children
+    /// Returns range of iterators that encompass all children of the root node
     /// with the given arc type as well as their descendants, in 
     /// strong-to-weak order.
     /// 

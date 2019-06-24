@@ -208,7 +208,7 @@ PcpPrimIndex_Graph::GetNodeUsingSite(const PcpLayerStackSite& site) const
 
 template <class Predicate>
 std::pair<size_t, size_t>
-PcpPrimIndex_Graph::_FindDirectChildRange(
+PcpPrimIndex_Graph::_FindRootChildRange(
     const Predicate& pred) const
 {
     const _Node& rootNode = _GetNode(0);
@@ -283,7 +283,7 @@ PcpPrimIndex_Graph::GetNodeIndexesForRange(PcpRangeType rangeType) const
         nodeRange = std::make_pair(1, _GetNumNodes());
         break;
     case PcpRangeTypeStrongerThanPayload:
-        nodeRange = _FindDirectChildRange(
+        nodeRange = _FindRootChildRange(
             [](PcpArcType arcType) { return arcType == PcpArcTypePayload; });
         nodeRange = std::make_pair(0, nodeRange.first);
         break;
@@ -292,7 +292,7 @@ PcpPrimIndex_Graph::GetNodeIndexesForRange(PcpRangeType rangeType) const
         nodeRange = std::make_pair(0, 1);
         break;
     default:
-        nodeRange = _FindDirectChildRange(
+        nodeRange = _FindRootChildRange(
             [rangeType](PcpArcType arcType) {
                 return arcType == _GetArcTypeForRangeType(rangeType);
             });

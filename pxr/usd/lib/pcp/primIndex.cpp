@@ -409,7 +409,7 @@ Pcp_BuildPrimIndex(
     int ancestorRecursionDepth,
     bool evaluateImpliedSpecializes,
     bool evaluateVariants,
-    bool directNodeShouldContributeSpecs,
+    bool rootNodeShouldContributeSpecs,
     PcpPrimIndex_StackFrame *previousFrame,
     const PcpPrimIndexInputs& inputs,
     PcpPrimIndexOutputs* outputs);
@@ -470,7 +470,7 @@ _HasClassBasedChild(const PcpNodeRef & parent)
 // One tricky aspect is that we need to distinguish nested class
 // hierarchies at different levels of namespace, aka ancestral classes.
 // Returning to the example above, consider if I -> ... -> C3 were all
-// nested as sibling children under a global class, G, with instance M:
+// nested as sibling children under a class, G, with instance M:
 //
 //          inherits
 // M ------------------------> G (depth=1)
@@ -1524,9 +1524,7 @@ _AddArc(
         // Ancestral opinions are those above the source site in namespace.
         // We only need to account for them if the site is not a root prim
         // (since root prims have no ancestors with scene description, only
-        // the pseudo-root). This is why we do not need to handle ancestral
-        // opinions for references, payloads, or global classes: they are
-        // all restricted to root prims.
+        // the pseudo-root).
         //
         // Account for ancestral opinions by building out the graph for
         // that site and incorporating its root node as the new child.
@@ -1586,7 +1584,7 @@ _AddArc(
     // at the new node can be culled. This doesn't have to recurse down
     // the new subtree; instead, it just needs to check the new node only. 
     // This is because computing the source prim index above will have culled
-    // everything it can *except* for the direct node. 
+    // everything it can *except* for the subtree's root node. 
     if (indexer->inputs.cull) {
         if (_NodeCanBeCulled(newNode, indexer->rootSite)) {
             newNode.SetCulled(true);
@@ -2538,10 +2536,10 @@ _AddClassBasedArc(
         // to inherit opinions along this inherit arc.
         //
         // For example, this could be an inherit that reaches outside
-        // a referenced root to another non-global class, which cannot
-        // be mapped across that reference.  Or it could be a global
+        // a referenced root to another subroot class, which cannot
+        // be mapped across that reference.  Or it could be a root class
         // inherit in the context of a variant: variants cannot contain
-        // opinions about global classes.
+        // opinions about root classes.
         //
         // This is not an error; it just means the class arc is not
         // meaningful from this site.
@@ -2947,7 +2945,7 @@ _EvalImpliedClasses(
     // We will use it to map ("transfer") the class to the parent.
     // The mapping to the parent may have a restricted domain, such as
     // for a reference arc, which only maps the reference root prim.
-    // To map global classes across such a mapping, we need to add
+    // To map root classes across such a mapping, we need to add
     // an identity (/->/) entry.  This is not a violation of reference
     // namespace encapsulation: classes deliberately work this way.
     PcpMapExpression transferFunc = node.GetMapToParent().AddRootIdentity();
@@ -3063,7 +3061,7 @@ _PropagateNodeToParent(
             mapToParent, srcNode.GetDepthBelowIntroduction());
 
         if (!newNode) {
-            // Only propagate a node if it's a direct arc or if it's an
+            // Only propagate a node if it's a non-implied arc or if it's an
             // implied arc whose origin is outside the subgraph we're 
             // propagating. If this is an implied arc whose origin is
             // within the subgraph, it will be handled when we evaluate
@@ -4164,14 +4162,14 @@ _NodeCanBeCulled(
     // This could happen if this node was culled ancestrally.
     if (node.IsCulled()) {
 #ifdef PCP_DIAGNOSTIC_VALIDATION
-        TF_VERIFY(!node.IsDirect());
+        TF_VERIFY(!node.IsRootNode());
 #endif // PCP_DIAGNOSTIC_VALIDATION
         return true;
     }
 
     // The root node of a prim index is never culled. If needed, this
     // node will be culled when attached to another prim index in _AddArc.
-    if (node.IsDirect()) {
+    if (node.IsRootNode()) {
         return false;
     }
 
@@ -4202,21 +4200,23 @@ _NodeCanBeCulled(
     // CsdPrim::GetBases wants to return the path of all prims in the
     // composed scene from which this prim inherits opinions. To ensure
     // Csd has all the info it needs for this, Pcp has to avoid culling any
-    // local inherit nodes in the root layer stack. To see why, consider:
+    // subroot prim inherit nodes in the root layer stack. To see why, consider:
     //
     // root layer stack      ref layer stack
-    //                       /GlobalClass <--+ (global inh)
+    //                       /GlobalClass <--+ 
+    //                                       | (root prim inh) 
     // /Model_1  (ref) ----> /Model    ------+
     //                        + SymArm <-+
-    //                        + LArm   --+ (local inh)
+    //                                   | (subroot prim inh)
+    //                        + LArm   --+
     //
     // The prim index for /Model_1/LArm would normally have the inherit nodes 
     // for /GlobalClass/LArm and /Model_1/SymArm culled, as there are no specs
-    // for either in the root layer stack. The nature of global classes implies
+    // for either in the root layer stack. The nature of root classes implies
     // that, if no specs for /GlobalClass exist in the root layer, there is
     // no /GlobalClass in the composed scene. So, we don't have to protect
-    // global inherits from being culled. However, because of referencing, 
-    // the local inherit /Model_1/SymArm *does* exist in the composed scene.
+    // root prim inherits from being culled. However, because of referencing, 
+    // the subroot inherit /Model_1/SymArm *does* exist in the composed scene.
     // So, we can't cull that node -- GetBases needs it.
     if (node.GetArcType() == PcpArcTypeInherit &&
         node.GetLayerStack() == rootSite.layerStack &&
@@ -4296,7 +4296,7 @@ _BuildInitialPrimIndexFromAncestor(
     int ancestorRecursionDepth,
     PcpPrimIndex_StackFrame *previousFrame,
     bool evaluateImpliedSpecializes,
-    bool directNodeShouldContributeSpecs,
+    bool rootNodeShouldContributeSpecs,
     const PcpPrimIndexInputs& inputs,
     PcpPrimIndexOutputs* outputs)
 {
@@ -4342,7 +4342,7 @@ _BuildInitialPrimIndexFromAncestor(
                            evaluateImpliedSpecializes,
                            /* Always pick up ancestral opinions from variants
                               evaluateVariants = */ true,
-                           /* directNodeShouldContributeSpecs = */ true,
+                           /* rootNodeShouldContributeSpecs = */ true,
                            previousFrame, inputs, outputs);
 
         ancestorIsInstanceable = 
@@ -4381,10 +4381,10 @@ _BuildInitialPrimIndexFromAncestor(
     }
 
     // Force the root node to inert if the caller has specified that the
-    // direct root node should not contribute specs. Note that the node
+    // root node should not contribute specs. Note that the node
     // may already be set to inert when applying instancing restrictions
     // above.
-    if (!directNodeShouldContributeSpecs) {
+    if (!rootNodeShouldContributeSpecs) {
         rootNode.SetInert(true);
     }
 
@@ -4401,7 +4401,7 @@ Pcp_BuildPrimIndex(
     int ancestorRecursionDepth,
     bool evaluateImpliedSpecializes,
     bool evaluateVariants,
-    bool directNodeShouldContributeSpecs,
+    bool rootNodeShouldContributeSpecs,
     PcpPrimIndex_StackFrame *previousFrame,
     const PcpPrimIndexInputs& inputs,
     PcpPrimIndexOutputs* outputs )
@@ -4440,7 +4440,7 @@ Pcp_BuildPrimIndex(
 
         PcpNodeRef node = outputs->primIndex.GetGraph()->GetRootNode();
         node.SetHasSpecs(PcpComposeSiteHasPrimSpecs(node));
-        node.SetInert(!directNodeShouldContributeSpecs);
+        node.SetInert(!rootNodeShouldContributeSpecs);
     } else {
         // Start by building and cloning the namespace parent's index.
         // This is to account for ancestral opinions: references and
@@ -4449,7 +4449,7 @@ Pcp_BuildPrimIndex(
         _BuildInitialPrimIndexFromAncestor(
             site, rootSite, ancestorRecursionDepth, previousFrame,
             evaluateImpliedSpecializes,
-            directNodeShouldContributeSpecs,
+            rootNodeShouldContributeSpecs,
             inputs, outputs);
     }
 
@@ -4539,7 +4539,7 @@ PcpComputePrimIndex(
                        /* ancestorRecursionDepth = */ 0,
                        /* evaluateImpliedSpecializes = */ true,
                        /* evaluateVariants = */ true,
-                       /* directNodeShouldContributeSpecs = */ true,
+                       /* rootNodeShouldContributeSpecs = */ true,
                        /* previousFrame = */ NULL,
                        inputs, outputs);
 

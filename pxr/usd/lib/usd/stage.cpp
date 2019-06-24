@@ -5619,7 +5619,7 @@ UsdStage::_GetPrimSpecifierImpl(Usd_PrimDataConstPtr primData,
     //   class "C" {}
     //   def "B" (inherits = </C>) {}
     //
-    // Here /A references /B in other.file, and /B inherits global class /C.
+    // Here /A references /B in other.file, and /B inherits class /C.
     // The strength order of specifiers for /A from strong-to-weak is:
     //
     // 1. 'over'  (from /A)

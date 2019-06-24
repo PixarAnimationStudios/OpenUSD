@@ -44,7 +44,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Describes the type of arc connecting two nodes in the prim index.
 ///
 enum PcpArcType {
-    // The root arc is a special value used for the direct/root node of 
+    // The root arc is a special value used for the root node of 
     // the prim index. Unlike the following arcs, it has no parent node.
     PcpArcTypeRoot,
     
@@ -61,8 +61,11 @@ enum PcpArcType {
 
 /// \enum PcpRangeType
 enum PcpRangeType {
-    // Ranges including direct arcs of the specified type.
+    // Range including just the root node.
     PcpRangeTypeRoot,
+
+    // Ranges including child arcs, from the root node, of the specified type 
+    // as well as all descendants of those arcs.
     PcpRangeTypeInherit,
     PcpRangeTypeVariant,
     PcpRangeTypeReference,
