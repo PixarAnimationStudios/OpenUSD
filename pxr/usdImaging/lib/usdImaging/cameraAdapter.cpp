@@ -86,7 +86,7 @@ UsdImagingCameraAdapter::TrackVariability(UsdPrim const& prim,
         return;
     }
 
-    // Propeties that affect the projection matrix.
+    // Properties that affect the projection matrix.
     // IMPORTANT: Calling _IsVarying will clear the specified bit if the given
     // attribute is _not_ varying.  Since we have multiple attributes that might
     // result in the bit being set, we need to be careful not to reset it.
@@ -145,6 +145,44 @@ UsdImagingCameraAdapter::TrackVariability(UsdPrim const& prim,
         HdCameraTokens->clipPlanes,
         timeVaryingBits,
         false);
+
+    // If any of the physical params that affect the projection matrix are time
+    // varying, we can flag the DirtyParams bit as varying and avoid querying
+    // variability of the remaining params.
+    if (*timeVaryingBits & HdCamera::DirtyProjMatrix) {
+        *timeVaryingBits |= HdCamera::DirtyParams;
+    } else {
+        _IsVarying(prim,
+            cam.GetFStopAttr().GetBaseName(),
+            HdCamera::DirtyParams,
+            HdCameraTokens->fStop,
+            timeVaryingBits,
+            false);
+        if ((*timeVaryingBits & HdCamera::DirtyParams) == 0) {
+            _IsVarying(prim,
+                cam.GetFocusDistanceAttr().GetBaseName(),
+                HdCamera::DirtyParams,
+                HdCameraTokens->focusDistance,
+                timeVaryingBits,
+                false);
+        }
+        if ((*timeVaryingBits & HdCamera::DirtyParams) == 0) {
+            _IsVarying(prim,
+                cam.GetShutterOpenAttr().GetBaseName(),
+                HdCamera::DirtyParams,
+                HdCameraTokens->shutterOpen,
+                timeVaryingBits,
+                false);
+        }
+        if ((*timeVaryingBits & HdCamera::DirtyParams) == 0) {
+            _IsVarying(prim,
+                cam.GetShutterCloseAttr().GetBaseName(),
+                HdCamera::DirtyParams,
+                HdCameraTokens->shutterClose,
+                timeVaryingBits,
+                false);
+        }
+    }
 }
 
 void 
@@ -166,7 +204,8 @@ UsdImagingCameraAdapter::UpdateForTime(UsdPrim const& prim,
     }
     // Create a GfCamera object to help populate the value cache entries
     // pulled on by HdCamera during Sync.
-    GfCamera gfCam = UsdGeomCamera(prim).GetCamera(time);
+    UsdGeomCamera cam(prim);
+    GfCamera gfCam = cam.GetCamera(time);
     GfFrustum frustum = gfCam.GetFrustum();
     
     if (requestedBits & HdCamera::DirtyViewMatrix) {
@@ -189,6 +228,47 @@ UsdImagingCameraAdapter::UpdateForTime(UsdPrim const& prim,
         }
         valueCache->GetCameraParam(cachePath, HdCameraTokens->clipPlanes)
             = dClipPlanes;
+    }
+    if (requestedBits & HdCamera::DirtyParams) {
+        // The USD schema specifies several camera parameters in tenths of a
+        // world unit (e.g., focalLength = 50mm)
+        // Hydra's camera expects these parameters to be expressed in world
+        // units. (e.g., if cm is the world unit, focalLength = 5cm)
+        valueCache->GetCameraParam(cachePath,
+            HdCameraTokens->horizontalAperture)
+                = gfCam.GetHorizontalAperture() / 10.0f;
+        
+        valueCache->GetCameraParam(cachePath,
+            HdCameraTokens->verticalAperture)
+                = gfCam.GetVerticalAperture() / 10.0f;
+        
+        valueCache->GetCameraParam(cachePath,
+            HdCameraTokens->horizontalApertureOffset)
+                = gfCam.GetHorizontalApertureOffset() / 10.0f;
+        
+        valueCache->GetCameraParam(cachePath,
+            HdCameraTokens->verticalApertureOffset)
+                = gfCam.GetVerticalApertureOffset() / 10.0f;
+        
+        valueCache->GetCameraParam(cachePath, HdCameraTokens->focalLength)
+            = gfCam.GetFocalLength() / 10.0f;
+        
+        valueCache->GetCameraParam(cachePath, HdCameraTokens->clippingRange)
+            = gfCam.GetClippingRange(); // in world units
+        
+        valueCache->GetCameraParam(cachePath, HdCameraTokens->fStop)
+            = gfCam.GetFStop(); // lens aperture (conversion n/a)
+        
+        valueCache->GetCameraParam(cachePath, HdCameraTokens->focusDistance)
+            = gfCam.GetFocusDistance(); // in world units
+        
+        VtValue& vShutterOpen =
+            valueCache->GetCameraParam(cachePath, HdCameraTokens->shutterOpen);
+        cam.GetShutterOpenAttr().Get(&vShutterOpen, time); // conversion n/a
+        
+        VtValue& vShutterClose =
+            valueCache->GetCameraParam(cachePath, HdCameraTokens->shutterClose);
+        cam.GetShutterOpenAttr().Get(&vShutterClose, time); // conversion n/a
     }
 }
 

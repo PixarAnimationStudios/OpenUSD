@@ -2894,8 +2894,7 @@ UsdImagingDelegate::GetCameraParamValue(SdfPath const &id,
         } else if (paramName == HdCameraTokens->clipPlanes) {
             dirtyBit = HdCamera::DirtyClipPlanes;
         } else {
-            TF_WARN("Unhandled camera param '%s' on camera '%s'\n",
-            paramName.GetText(), id.GetText());
+            dirtyBit = HdCamera::DirtyParams;
         }
         
         _UpdateSingleValue(cachePath, dirtyBit);

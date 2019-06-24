@@ -92,7 +92,16 @@ VtValue
 HdxTaskController::_Delegate::GetCameraParamValue(SdfPath const& id, 
                                                   TfToken const& key)
 {   
-    return Get(id, key);
+    if (key == HdCameraTokens->worldToViewMatrix ||
+        key == HdCameraTokens->projectionMatrix ||
+        key == HdCameraTokens->clipPlanes ||
+        key == HdCameraTokens->windowPolicy) {
+
+        return Get(id, key);
+    } else {
+        // XXX: For now, skip handling physical params on the free cam.
+        return VtValue();
+    }
 }
 
 /* virtual */

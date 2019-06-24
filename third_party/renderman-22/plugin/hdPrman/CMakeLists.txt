@@ -26,11 +26,12 @@ pxr_shared_library(${PXR_PACKAGE}
         ${RENDERMAN_INCLUDE_DIR}
 
     PUBLIC_CLASSES
+        basisCurves
+        camera
         context
         convertPreviewMaterial
         coordSys
         debugCodes
-        basisCurves
         gprim
         instancer
         light
