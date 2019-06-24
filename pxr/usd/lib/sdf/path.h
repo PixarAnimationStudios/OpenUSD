@@ -112,6 +112,9 @@ public:
 
     Sdf_PathNodeHandleImpl &
     operator=(Sdf_PathNodeHandleImpl const &rhs) {
+        if (Counted && *this == rhs) {
+            return *this;
+        }
         this_type(rhs).swap(*this);
         return *this;
     }
