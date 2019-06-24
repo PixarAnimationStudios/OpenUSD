@@ -52,7 +52,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (pbsMaterialIn)
     (inputMaterial)
 
-    // XXX(HdPrmanMaterialHacks) Temporary tokens for material ugrades:
+    // XXX(HdPrmanMaterialTemp) Temporary tokens for material upgrades:
     (vstructmemberaliases)
     ((globalAttrModelName, "{globalattr:modelName}"))
     (Looks)
@@ -94,7 +94,7 @@ HdPrmanMaterial::_ResetMaterial(HdPrman_Context *context)
     }
 }
 
-// XXX(HdPrmanMaterialHacks) Temporary material hacks for testing.
+// XXX(HdPrmanMaterialTemp) Temporary material hacks for testing.
 //
 // Part of our strategy for testing HdPrman is to try it on real
 // studio assets.  Currently, those rely on a series of features
@@ -111,7 +111,7 @@ _ApplyStudioFixes(HdMaterialNetworkMap *netMap)
     TfMapLookup(netMap->map, _tokens->bxdf, &bxdfNet);
     TfMapLookup(netMap->map, _tokens->displacement, &dispNet);
 
-    // XXX(HdPrmanMaterialHacks) 
+    // XXX(HdPrmanMaterialTemp) 
     // {globalattr:modelName} expansion.
     for (HdMaterialNode &node: bxdfNet.nodes) {
         for (auto& param: node.parameters) {
@@ -151,7 +151,7 @@ _ApplyStudioFixes(HdMaterialNetworkMap *netMap)
         }
     }
 
-    // XXX(HdPrmanMaterialHacks) 
+    // XXX(HdPrmanMaterialTemp) 
     // If no displacement network was provided, try using the bxdf
     // network, since it may provide a displacement signal.
     if (dispNet.nodes.empty() && !bxdfNet.nodes.empty()) {
@@ -163,12 +163,12 @@ _ApplyStudioFixes(HdMaterialNetworkMap *netMap)
         if (node.identifier == _tokens->PbsNetworkMaterialStandIn_2) {
             node.identifier = _tokens->PxrSurface;
         }
-        // XXX(HdPrmanMaterialHacks) 
+        // XXX(HdPrmanMaterialTemp) 
         // Hacky upgrade of older-style material layers.
         if (node.identifier == _tokens->MaterialLayer_1) {
             node.identifier = _tokens->MaterialLayer_2;
         }
-        // XXX(HdPrmanMaterialHacks) 
+        // XXX(HdPrmanMaterialTemp) 
         // PxrSurface subsurface/singlescatter subset pruning.
         // We do not yet support passthrough of the subset grouping
         // assignments, so eject this.
@@ -340,7 +340,7 @@ _ExpandVstructs(
                 if (output->GetVStructMemberName() != member) {
                     // Different field of this vstruct, ignore.
                     //
-                    // XXX(HdPrmanMaterialHacks) 
+                    // XXX(HdPrmanMaterialTemp) 
                     // Check if there is a match via vstructmemberaliases,
                     // which is used to allow staged upgrading of mixed
                     // C++/OSL shading networks.
