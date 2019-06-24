@@ -135,7 +135,7 @@ public:
 
     /// Set literal rules, must be sorted by SdfPath::operator<.
     inline void SetRules(std::vector<std::pair<SdfPath, Rule>> &&rules) {
-        _rules == std::move(rules);
+        _rules = std::move(rules);
     }
 
     /// Remove any redundant rules to make the set of rules as small as possible
