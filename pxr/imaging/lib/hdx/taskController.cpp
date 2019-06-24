@@ -1240,6 +1240,17 @@ HdxTaskController::SetRenderViewport(GfVec4d const& viewport)
             _shadowTaskId, HdChangeTracker::DirtyParams);
     }
 
+    if (!_pickFromRenderBufferTaskId.IsEmpty()) {
+        HdxPickFromRenderBufferTaskParams params =
+            _delegate.GetParameter<HdxPickFromRenderBufferTaskParams>(
+                _pickFromRenderBufferTaskId, HdTokens->params);
+        params.viewport = viewport;
+        _delegate.SetParameter(
+            _pickFromRenderBufferTaskId, HdTokens->params, params);
+        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+            _pickFromRenderBufferTaskId, HdChangeTracker::DirtyParams);
+    }
+
     // Update all of the render buffer sizes as well.
     GfVec3i dimensions = GfVec3i(viewport[2], viewport[3], 1);
     for (auto const& id : _aovBufferIds) {
@@ -1388,10 +1399,14 @@ HdxTaskController::_SetCameraParamForTasks(SdfPath const& id)
         }
 
         if (!_pickFromRenderBufferTaskId.IsEmpty()) {
-            HdxPickFromRenderBufferTaskParams params;
+            HdxPickFromRenderBufferTaskParams params =
+                _delegate.GetParameter<HdxPickFromRenderBufferTaskParams>(
+                    _pickFromRenderBufferTaskId, HdTokens->params);
             params.cameraId = _activeCameraId;
             _delegate.SetParameter(
                 _pickFromRenderBufferTaskId, HdTokens->params, params);
+            GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+                _pickFromRenderBufferTaskId, HdChangeTracker::DirtyParams);
         }
     }
 }
