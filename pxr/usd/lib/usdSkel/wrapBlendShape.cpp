@@ -67,7 +67,7 @@ static UsdAttribute
 _CreatePointIndicesAttr(UsdSkelBlendShape &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreatePointIndicesAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->UIntArray), writeSparsely);
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->IntArray), writeSparsely);
 }
 
 } // anonymous namespace

@@ -81,7 +81,7 @@ public:
     /// ComputeSubShapes().
     /// Since the _pointIndices_ property of blend shapes is optional,
     /// some of the arrays may be empty.
-    USDSKEL_API std::vector<VtUIntArray>
+    USDSKEL_API std::vector<VtIntArray>
     ComputeBlendShapePointIndices() const;
 
     /// Compute an array holding the point offsets of all sub-shapes.
@@ -124,7 +124,7 @@ public:
         const TfSpan<const float> subShapeWeights,
         const TfSpan<const unsigned> blendShapeIndices,
         const TfSpan<const unsigned> subShapeIndices,
-        const std::vector<VtUIntArray>& blendShapePointIndices,
+        const std::vector<VtIntArray>& blendShapePointIndices,
         const std::vector<VtVec3fArray>& subShapePointOffsets,
         TfSpan<GfVec3f> points) const;
 

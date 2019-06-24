@@ -599,7 +599,7 @@ USDSKEL_API
 bool
 UsdSkelApplyBlendShape(const float weight,
                        const TfSpan<const GfVec3f> offsets,
-                       const TfSpan<const unsigned> indices,
+                       const TfSpan<const int> indices,
                        TfSpan<GfVec3f> points);
 
 

@@ -1656,7 +1656,7 @@ namespace {
 bool
 UsdSkel_ApplyIndexedBlendShape(const float weight,
                                const TfSpan<const GfVec3f> offsets,
-                               const TfSpan<const unsigned> indices,
+                               const TfSpan<const int> indices,
                                TfSpan<GfVec3f> points)
 {
     TRACE_FUNCTION();
@@ -1669,8 +1669,8 @@ UsdSkel_ApplyIndexedBlendShape(const float weight,
         [&](size_t start, size_t end)
         {  
             for (size_t i = start; i < end; ++i) {
-                const unsigned index = indices[i];
-                if (static_cast<size_t>(index) < points.size()) { 
+                const int index = indices[i];
+                if (index >= 0 && static_cast<size_t>(index) < points.size()) {
                     points[index] += offsets[i]*weight;
                 }  else {
                     // XXX: If one offset index is bad, an asset has probably
@@ -1713,7 +1713,7 @@ UsdSkel_ApplyNonIndexedBlendShape(const float weight,
 bool
 UsdSkelApplyBlendShape(const float weight,
                        const TfSpan<const GfVec3f> offsets,
-                       const TfSpan<const unsigned> indices,
+                       const TfSpan<const int> indices,
                        TfSpan<GfVec3f> points)
 {
     // Early out if weights are zero.
@@ -1951,7 +1951,7 @@ _BakeSkinnedPoints(const UsdPrim& prim,
     const UsdSkelBindingAPI binding(prim);
     const UsdSkelBlendShapeQuery blendShapeQuery(binding);
     // Cache the offsets and point indices of all blend shapes.
-    const std::vector<VtUIntArray> blendShapePointIndices =
+    const std::vector<VtIntArray> blendShapePointIndices =
         blendShapeQuery.ComputeBlendShapePointIndices();
     const std::vector<VtVec3fArray> subShapePointOffsets =
         blendShapeQuery.ComputeSubShapePointOffsets();
