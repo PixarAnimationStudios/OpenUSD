@@ -51,6 +51,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (displacement)
     (pbsMaterialIn)
     (inputMaterial)
+    (OSL)
 
     // XXX(HdPrmanMaterialTemp) Temporary tokens for material upgrades:
     (vstructmemberaliases)
@@ -221,12 +222,8 @@ _FindShaders(
     result->resize(nodes.size());
     for (size_t i=0; i < nodes.size(); ++i) {
         NdrIdentifier id = nodes[i].identifier;
-        if (SdrShaderNodeConstPtr oslNode = reg.GetShaderNodeByIdentifierAndType(
-                id, TfToken("OSL"))) {
-            (*result)[i] = oslNode;
-        } else if (SdrShaderNodeConstPtr rmapCppNode= 
-                reg.GetShaderNodeByIdentifierAndType(id, TfToken("RmanCpp"))) {
-            (*result)[i] = rmapCppNode;
+        if (SdrShaderNodeConstPtr node = reg.GetShaderNodeByIdentifier(id)) {
+            (*result)[i] = node;
         } else {
             (*result)[i] = nullptr;
             TF_WARN("Did not find shader %s\n", id.GetText());
@@ -436,7 +433,7 @@ _MapHdNodesToRileyNodes(
         if (shaders[i]->GetContext() == TfToken("bxdf")) {
             sn.type = riley::ShadingNode::k_Bxdf;
         } else if (shaders[i]->GetContext() == SdrNodeContext->Pattern ||
-                   shaders[i]->GetContext() == TfToken("OSL")) {
+                   shaders[i]->GetContext() == _tokens->OSL) {
             sn.type = riley::ShadingNode::k_Pattern;
         } else if (shaders[i]->GetContext() == SdrNodeContext->Displacement) {
             sn.type = riley::ShadingNode::k_Displacement;
@@ -449,7 +446,13 @@ _MapHdNodesToRileyNodes(
             continue;
         }
         sn.handle = RtUString(mat.nodes[i].path.GetText());
-        sn.name = RtUString(shaders[i]->GetImplementationName().c_str());
+        std::string implName = shaders[i]->GetImplementationName();
+        if (shaders[i]->GetSourceType() == _tokens->OSL) {
+            // Explicitly specify the .oso extension to avoid possible
+            // mix-up between C++ and OSL shaders of the same name.
+            implName += ".oso";
+        }
+        sn.name = RtUString(implName.c_str());
         RixParamList *params = mgr->CreateRixParamList();
         sn.params = params;
         result->push_back(sn);
