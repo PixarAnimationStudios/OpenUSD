@@ -53,7 +53,7 @@
                 }
             },
             "Name": "@PLUG_INFO_PLUGIN_NAME@",
-            "Type": "python"
+            "Type": "resource"
         }
     ]
 }
