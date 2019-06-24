@@ -118,36 +118,37 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
     //
     // Riley setup
     //
-    static const RtUString us_circle("circle");
-    static const RtUString us_PxrPathTracer("PxrPathTracer");
-    static const RtUString us_PathTracer("PathTracer");
-    static const RtUString us_main_cam("main_cam");
-    static const RtUString us_PxrPerspective("PxrPerspective");
-    static const RtUString us_main_cam_projection("main_cam_projection");
-    static const RtUString us_hydra("hydra");
     static const RtUString us_bufferID("bufferID");
-    static const RtUString us_shadowFalloff("shadowFalloff");
-    static const RtUString us_shadowDistance("shadowDistance");
-    static const RtUString us_PxrDomeLight("PxrDomeLight");
-    static const RtUString us_lightA("lightA");
-    static const RtUString us_PxrPrimvar("PxrPrimvar");
-    static const RtUString us_pv_color("pv_color");
-    static const RtUString us_varname("varname");
-    static const RtUString us_displayColor("displayColor");
+    static const RtUString us_circle("circle");
     static const RtUString us_defaultColor("defaultColor");
-    static const RtUString us_PxrSurface("PxrSurface");
-    static const RtUString us_simpleTestSurface("simpleTestSurface");
-    static const RtUString us_diffuseColor("diffuseColor");
-    static const RtUString us_pv_color_resultRGB("pv_color:resultRGB");
-    static const RtUString us_specularModelType("specularModelType");
-    static const RtUString us_diffuseDoubleSided("diffuseDoubleSided");
-    static const RtUString us_specularDoubleSided("specularDoubleSided");
-    static const RtUString us_specularFaceColor("specularFaceColor");
-    static const RtUString us_specularEdgeColor("specularEdgeColor");
-    static const RtUString us_PxrVolume("PxrVolume");
-    static const RtUString us_simpleVolume("simpleVolume");
-    static const RtUString us_densityFloatPrimVar("densityFloatPrimVar");
+    static const RtUString us_default("default");
     static const RtUString us_density("density");
+    static const RtUString us_densityFloatPrimVar("densityFloatPrimVar");
+    static const RtUString us_diffuseColor("diffuseColor");
+    static const RtUString us_diffuseDoubleSided("diffuseDoubleSided");
+    static const RtUString us_displayColor("displayColor");
+    static const RtUString us_hydra("hydra");
+    static const RtUString us_lightA("lightA");
+    static const RtUString us_main_cam("main_cam");
+    static const RtUString us_main_cam_projection("main_cam_projection");
+    static const RtUString us_PathTracer("PathTracer");
+    static const RtUString us_pv_color("pv_color");
+    static const RtUString us_pv_color_resultRGB("pv_color:resultRGB");
+    static const RtUString us_PxrDomeLight("PxrDomeLight");
+    static const RtUString us_PxrPathTracer("PxrPathTracer");
+    static const RtUString us_PxrPerspective("PxrPerspective");
+    static const RtUString us_PxrPrimvar("PxrPrimvar");
+    static const RtUString us_PxrSurface("PxrSurface");
+    static const RtUString us_PxrVolume("PxrVolume");
+    static const RtUString us_shadowDistance("shadowDistance");
+    static const RtUString us_shadowFalloff("shadowFalloff");
+    static const RtUString us_simpleTestSurface("simpleTestSurface");
+    static const RtUString us_simpleVolume("simpleVolume");
+    static const RtUString us_specularDoubleSided("specularDoubleSided");
+    static const RtUString us_specularEdgeColor("specularEdgeColor");
+    static const RtUString us_specularFaceColor("specularFaceColor");
+    static const RtUString us_specularModelType("specularModelType");
+    static const RtUString us_varname("varname");
 
     riley::ScopedCoordinateSystem const k_NoCoordsys = { 0, nullptr };
 
@@ -320,8 +321,8 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
             us_lightA, // handle
             params
         };
-        riley::LightShaderId _fallbackLightShader = riley->CreateLightShader(
-            &lightNode, 1, nullptr, 0);
+        riley::LightShaderId _fallbackLightShader =
+            riley->CreateLightShader(&lightNode, 1, nullptr, 0);
 
         // Constant identity transform
         float const zerotime = 0.0f;
@@ -329,8 +330,16 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
         riley::Transform xform = { 1, &matrix, &zerotime };
 
         // Light instance
+        SdfPath fallbackLightId("/_FallbackLight");
         _fallbackLightEnabled = true;
         _fallbackLightAttrs = mgr->CreateRixParamList();
+        // Initialize default categories.
+        ConvertCategoriesToAttributes(
+            fallbackLightId, VtArray<TfToken>(), _fallbackLightAttrs);
+        _fallbackLightAttrs->SetString(RixStr.k_grouping_membership,
+                                       us_default);
+        _fallbackLightAttrs->SetString(RixStr.k_identifier_name,
+                                       RtUString(fallbackLightId.GetText()));
         _fallbackLightAttrs->SetInteger(RixStr.k_visibility_camera, 0);
         _fallbackLightAttrs->SetInteger(RixStr.k_visibility_indirect, 1);
         _fallbackLightAttrs->SetInteger(RixStr.k_visibility_transmission, 1);
