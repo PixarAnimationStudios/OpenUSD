@@ -23,6 +23,11 @@
                         "bases": ["GlfBaseTexture"],
                         "textureTypes": ["*"],
                         "precedence": 0
+                    },
+                    "GlfBaseTexture" : {
+                        "bases": ["GlfTexture"],
+                        "textureTypes": [],
+                        "precedence": 3
                     }
                 }
             },
