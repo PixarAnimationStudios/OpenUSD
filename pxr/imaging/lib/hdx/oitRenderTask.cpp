@@ -197,7 +197,15 @@ _GetScreenSize()
         GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME,
         &attachId);
 
-    if (!TF_VERIFY(attachId>0, "Invalid FBO attach id")) {
+    // XXX Fallback to gl viewport in case we do not find a non-default FBO for
+    // bakends that do not attach a custom FB. This is in-correct, but gl does
+    // not let us query size properties of default framebuffer. For this we
+    // need the screenSize to be passed in via app (see note above)
+    if (attachId<=0) {
+        GfVec4i viewport;
+        glGetIntegerv(GL_VIEWPORT, &viewport[0]);
+        s[0] = viewport[2];
+        s[1] = viewport[3];
         return s;
     }
 
