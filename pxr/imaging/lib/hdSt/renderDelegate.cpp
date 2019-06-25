@@ -57,6 +57,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_TINY_PRIM_CULLING, false,
                       "Enable tiny prim culling");
 
+TF_DEFINE_ENV_SETTING(HD_OIT_NUM_SAMPLES, 8,
+                      "Number of Object Independent Transparency samples per "
+                      "pixel. Increasing the value decreases translucency "
+                      "artifacts and flicker, but significantly increases "
+                      "memory usage and degrades performance");
+
 const TfTokenVector HdStRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
     HdPrimTypeTokens->mesh,
@@ -109,10 +115,13 @@ HdStRenderDelegate::_Initialize()
     }
 
     // Initialize the settings and settings descriptors.
-    _settingDescriptors.resize(1);
-    _settingDescriptors[0] = { "Enable Tiny Prim Culling",
+    _settingDescriptors.reserve(2);
+    _settingDescriptors.emplace_back("Enable Tiny Prim Culling",
         HdStRenderSettingsTokens->enableTinyPrimCulling,
-        VtValue(bool(TfGetEnvSetting(HD_ENABLE_GPU_TINY_PRIM_CULLING))) };
+        VtValue(bool(TfGetEnvSetting(HD_ENABLE_GPU_TINY_PRIM_CULLING))));
+    _settingDescriptors.emplace_back("OIT Number of Samples",
+        HdStRenderSettingsTokens->oitNumSamples,
+        VtValue(int(TfGetEnvSetting(HD_OIT_NUM_SAMPLES))));
     _PopulateDefaultSettings(_settingDescriptors);
 }
 

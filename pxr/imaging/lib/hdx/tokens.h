@@ -54,7 +54,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (oitRenderPassState)        \
     (oitHeight)                 \
     (oitWidth)                  \
-    (oitSamples)                \
+    (oitNumSamples)             \
     (renderPassState)           \
     (renderIndexVersion)        \
     (selection)                 \

@@ -27,6 +27,7 @@
 
 #include "pxr/imaging/hdx/package.h"
 #include "pxr/imaging/hdx/oitRenderTask.h"
+#include "pxr/imaging/hdx/oitResolveTask.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdx/debugCodes.h"
 
@@ -43,11 +44,23 @@
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
 #include "pxr/imaging/hdSt/bufferResourceGL.h"
+#include "pxr/imaging/hdSt/renderDelegate.h"
+#include "pxr/imaging/hdSt/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(HDX_ENABLE_OIT, true, 
                       "Enable order independent translucency");
+
+namespace {
+
+decltype(glClearNamedBufferData) _GetGlClearNamedBufferData() {
+    return glClearNamedBufferData ?
+           glClearNamedBufferData :
+           glClearNamedBufferDataEXT;
+}
+
+}
 
 typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceSharedPtrVector;
 
@@ -153,23 +166,40 @@ HdxOitRenderTask::_PrepareOitBuffers(
     // XXX OIT can be globally disabled to preserve GPU memory
     if (!bool(TfGetEnvSetting(HDX_ENABLE_OIT))) return;
 
-    const int numSamples = 8; // Should match glslfx files
+    HdRenderDelegate* renderDelegate = renderIndex->GetRenderDelegate();
+    if (!TF_VERIFY(dynamic_cast<HdStRenderDelegate*>(renderDelegate),
+                  "OIT Task only works with HdSt")) {
+        return;
+    }
 
     HdResourceRegistrySharedPtr const& resourceRegistry = 
         renderIndex->GetResourceRegistry();
 
-    // XXX Rebuilding the buffers is a slow operation that slows viewport
-    //     resizing. We only shrink in steps of 256^2 to reduce the impact.
+
     GfVec4i viewport;
     glGetIntegerv(GL_VIEWPORT, &viewport[0]);
-    
-    int sizeNew = viewport[2] * viewport[3];
-    int sizeOld = _viewport[2] * _viewport[3];
-    bool rebuildOitBuffers = (sizeNew > sizeOld || sizeOld-sizeNew > 256*256);
+
+    bool rebuildOitBuffers = false;
+    if (viewport != _viewport) {
+        rebuildOitBuffers = true;
+        _viewport = viewport;
+    }
+
+    VtValue oitNumSamples = renderDelegate
+        ->GetRenderSetting(HdStRenderSettingsTokens->oitNumSamples);
+    if (!TF_VERIFY(oitNumSamples.IsHolding<int>(),
+        "OIT Number of Samples is not an integer!")) {
+        return;
+    }
+    const int numSamples = std::max(1, oitNumSamples.UncheckedGet<int>());
+    if (_numSamples != numSamples) {
+        rebuildOitBuffers = true;
+        _numSamples = numSamples;
+    }
 
     if (rebuildOitBuffers) {
         // If glew version too old we emit a warning since OIT will not work.
-        if (!glClearNamedBufferData) {
+        if (_GetGlClearNamedBufferData() == nullptr) {
             TF_WARN("glClearNamedBufferData missing for OIT (old glew?)");
         }
 
@@ -179,8 +209,6 @@ HdxOitRenderTask::_PrepareOitBuffers(
         _indexBar.reset();
         _uniformBar.reset();
         renderIndex->GetChangeTracker().SetGarbageCollectionNeeded();
-
-        _viewport = viewport;
     }
 
     //
@@ -195,16 +223,7 @@ HdxOitRenderTask::_PrepareOitBuffers(
                                             /*role*/HdxTokens->oitCounter,
                                             specs,
                                             HdBufferArrayUsageHint());
-
-        VtIntArray counters;
-        size_t countersSize = _viewport[2] * _viewport[3] + 1; 
-        int countersValue = -1; 
-        counters.assign(countersSize, countersValue);
-
-        HdBufferSourceSharedPtr counterSource(
-                new HdVtBufferSource(HdxTokens->hdxOitCounterBuffer,
-                                    VtValue(counters)));
-        resourceRegistry->AddSource(_counterBar, counterSource);
+        _counterBar->Resize(_viewport[2] * _viewport[3] + 1);
     }
 
     (*ctx)[HdxTokens->oitCounterBufferBar] = _counterBar;
@@ -221,16 +240,7 @@ HdxOitRenderTask::_PrepareOitBuffers(
                                             /*role*/HdxTokens->oitIndices,
                                             specs,
                                             HdBufferArrayUsageHint());
-
-        VtIntArray indices;
-        size_t indicesSize = _viewport[2] * _viewport[3] * numSamples; 
-        int indicesValue = -1; 
-        indices.assign(indicesSize, indicesValue);
-
-        HdBufferSourceSharedPtr indicesSource(
-                new HdVtBufferSource(HdxTokens->hdxOitIndexBuffer,
-                                    VtValue(indices)));
-        resourceRegistry->AddSource(_indexBar, indicesSource);
+        _indexBar->Resize(_viewport[2] * _viewport[3] * _numSamples);
     }
 
     (*ctx)[HdxTokens->oitIndexBufferBar] = _indexBar;
@@ -247,16 +257,7 @@ HdxOitRenderTask::_PrepareOitBuffers(
                                             /*role*/HdxTokens->oitData,
                                             specs,
                                             HdBufferArrayUsageHint());
-
-        VtVec4fArray dataArray;
-        size_t dataSize = _viewport[2] * _viewport[3] * numSamples;
-        GfVec4f dataValue = GfVec4f(0.0f, 0.0f, 0.0f, 0.0f); 
-        dataArray.assign(dataSize, dataValue);
-
-        HdBufferSourceSharedPtr dataSource(
-                new HdVtBufferSource(HdxTokens->hdxOitDataBuffer,
-                                    VtValue(dataArray)));
-        resourceRegistry->AddSource(_dataBar, dataSource);
+        _dataBar->Resize(_viewport[2] * _viewport[3] * _numSamples);
     }
 
     (*ctx)[HdxTokens->oitDataBufferBar] = _dataBar;
@@ -273,16 +274,7 @@ HdxOitRenderTask::_PrepareOitBuffers(
                                             /*role*/HdxTokens->oitDepth,
                                             specs,
                                             HdBufferArrayUsageHint());
-
-        VtFloatArray depthArray;
-        size_t depthSize = _viewport[2] * _viewport[3] * numSamples; 
-        float depthValue = 0.0f; 
-        depthArray.assign(depthSize, depthValue);
-
-        HdBufferSourceSharedPtr depthSource(
-                new HdVtBufferSource(HdxTokens->hdxOitDepthBuffer,
-                                    VtValue(depthArray)));
-        resourceRegistry->AddSource(_depthBar, depthSource);
+        _depthBar->Resize(_viewport[2] * _viewport[3] * _numSamples);
     }
 
     (*ctx)[HdxTokens->oitDepthBufferBar] = _depthBar;
@@ -297,7 +289,8 @@ HdxOitRenderTask::_PrepareOitBuffers(
         specs.push_back(
             HdBufferSpec(HdxTokens->oitHeight, HdTupleType {HdTypeInt32, 1}));
         specs.push_back(
-            HdBufferSpec(HdxTokens->oitSamples, HdTupleType {HdTypeInt32, 1}));
+            HdBufferSpec(HdxTokens->oitNumSamples,
+                         HdTupleType {HdTypeInt32, 1}));
         _uniformBar = resourceRegistry->AllocateUniformBufferArrayRange(
                                             /*role*/HdxTokens->oitUniforms,
                                             specs,
@@ -311,8 +304,8 @@ HdxOitRenderTask::_PrepareOitBuffers(
                 new HdVtBufferSource(HdxTokens->oitHeight,
                                     VtValue((int)_viewport[3]))));
         uniformSources.push_back(HdBufferSourceSharedPtr(
-                new HdVtBufferSource(HdxTokens->oitSamples,
-                                    VtValue(numSamples))));
+                new HdVtBufferSource(HdxTokens->oitNumSamples,
+                                     VtValue(_numSamples))));
         resourceRegistry->AddSources(_uniformBar, uniformSources);
     }
 
@@ -348,9 +341,9 @@ HdxOitRenderTask::_PrepareOitBuffers(
 void 
 HdxOitRenderTask::_ClearOitGpuBuffers(HdTaskContext* ctx)
 {
+    auto clearFunc = _GetGlClearNamedBufferData();
     // Exit if glew version used by app is too old
-    if (!glClearNamedBufferData) return;
-    if (!_counterBar) return;
+    if (clearFunc == nullptr || _counterBar == nullptr) return;
 
     //
     // Counter Buffer
@@ -361,53 +354,11 @@ HdxOitRenderTask::_ClearOitGpuBuffers(HdTaskContext* ctx)
         stCounterBar->GetResource(HdxTokens->hdxOitCounterBuffer);
 
     const GLint clearCounter = -1;
-    glClearNamedBufferData(stCounterResource->GetId(),
-                            GL_R32I,
-                            GL_RED_INTEGER,
-                            GL_INT,
-                            &clearCounter);
-
-    //
-    // Index Buffer
-    //
-    HdStBufferArrayRangeGLSharedPtr stIndexBar =
-        boost::dynamic_pointer_cast<HdStBufferArrayRangeGL> (_indexBar);
-    HdStBufferResourceGLSharedPtr stIndexResource = 
-        stIndexBar->GetResource(HdxTokens->hdxOitIndexBuffer);
-    const GLint clearIndex = -1;
-    glClearNamedBufferData(stIndexResource->GetId(),
-                            GL_R32I,
-                            GL_RED_INTEGER,
-                            GL_INT,
-                            &clearIndex);
-
-    //
-    // Data Buffer
-    //
-    HdStBufferArrayRangeGLSharedPtr stDataBar =
-        boost::dynamic_pointer_cast<HdStBufferArrayRangeGL> (_dataBar);
-    HdStBufferResourceGLSharedPtr stDataResource = 
-        stDataBar->GetResource(HdxTokens->hdxOitDataBuffer);
-    const GLfloat clearData = 0.0f;
-    glClearNamedBufferData(stDataResource->GetId(),
-                            GL_RGBA32F,
-                            GL_RED,
-                            GL_FLOAT,
-                            &clearData);
-
-    //
-    // Depth Buffer
-    //
-    HdStBufferArrayRangeGLSharedPtr stDepthBar =
-        boost::dynamic_pointer_cast<HdStBufferArrayRangeGL> (_depthBar);
-    HdStBufferResourceGLSharedPtr stDepthResource = 
-        stDepthBar->GetResource(HdxTokens->hdxOitDepthBuffer);
-    const GLfloat clearDepth = 0.0f;
-    glClearNamedBufferData(stDepthResource->GetId(),
-                            GL_R32F,
-                            GL_RED,
-                            GL_FLOAT,
-                            &clearDepth);
+    clearFunc(stCounterResource->GetId(),
+              GL_R32I,
+              GL_RED_INTEGER,
+              GL_INT,
+              &clearCounter);
 }
 
 

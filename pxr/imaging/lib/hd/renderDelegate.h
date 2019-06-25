@@ -72,6 +72,15 @@ typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> HdRenderSettingsMap;
 /// wants to export (e.g. to UI).
 ///
 struct HdRenderSettingDescriptor {
+    // Default constructor.
+    HdRenderSettingDescriptor() = default;
+    // Constructor that allows the use of emplace_back on standard
+    // containers.
+    HdRenderSettingDescriptor(std::string const& _name,
+                              TfToken const& _key,
+                              VtValue const& _defaultValue)
+        : name(_name), key(_key), defaultValue(_defaultValue)
+    { }
     // A human readable name.
     std::string name;
     // The key for HdRenderDelegate::SetRenderSetting/GetRenderSetting.

@@ -79,6 +79,8 @@ private:
     HdxOitResolveTask() = delete;
     HdxOitResolveTask(const HdxOitResolveTask &) = delete;
     HdxOitResolveTask &operator =(const HdxOitResolveTask &) = delete;
+
+    int _numSamples = -1;
 };
 
 

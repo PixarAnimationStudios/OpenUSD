@@ -40,9 +40,51 @@
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
 #include "pxr/imaging/hdSt/imageShaderRenderPass.h"
+#include "pxr/imaging/hdSt/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
+
+class HdxOitResolveRenderPassShader : public HdStRenderPassShader {
+public:
+    HdxOitResolveRenderPassShader(int numSamples) :
+        HdStRenderPassShader(HdxPackageOitResolveImageShader()),
+        _numSamples(numSamples)
+    {
+        // The hash of this shader is constant, no custom bindings and the
+        // input parameters are constant.
+        _hash = HdStRenderPassShader::ComputeHash();
+        boost::hash_combine(_hash, numSamples);
+    }
+
+    std::string GetSource(const TfToken& shaderStageKey) const override
+    {
+        const auto src = HdStRenderPassShader::GetSource(shaderStageKey);
+
+        std::stringstream defines;
+        defines << "#define OIT_NUM_SAMPLES "
+                << _numSamples
+                << "\n";
+
+        return defines.str() + src;
+    }
+
+    ID ComputeHash() const override
+    {
+        return _hash;
+    }
+
+    ~HdxOitResolveRenderPassShader() override = default;
+private:
+    HdxOitResolveRenderPassShader(const HdxOitResolveRenderPassShader&)             = delete;
+    HdxOitResolveRenderPassShader& operator=(const  HdxOitResolveRenderPassShader&) = delete;
+
+    const int _numSamples;
+    ID _hash;
+};
+
+}
 
 HdxOitResolveTask::HdxOitResolveTask(
     HdSceneDelegate* delegate, 
@@ -69,14 +111,26 @@ void
 HdxOitResolveTask::Prepare(HdTaskContext* ctx,
                        HdRenderIndex* renderIndex)
 {
+    HdRenderDelegate* renderDelegate = renderIndex->GetRenderDelegate();
+    if (!TF_VERIFY(dynamic_cast<HdStRenderDelegate*>(renderDelegate),
+                   "OIT Task only works with HdSt")) {
+        return;
+    }
+    VtValue oitNumSamples = renderDelegate
+        ->GetRenderSetting(HdStRenderSettingsTokens->oitNumSamples);
+    if (!TF_VERIFY(oitNumSamples.IsHolding<int>(),
+        "OIT Number of Samples is not an integer!")) {
+        return;
+    }
+    const int numSamples = std::max(1, oitNumSamples.UncheckedGet<int>());
+    bool rebuildShader = false;
+    if (numSamples != _numSamples) {
+        _numSamples = numSamples;
+        rebuildShader = true;
+    }
+
     if (!_renderPass) {
         HdRprimCollection collection;
-        HdRenderDelegate* renderDelegate = renderIndex->GetRenderDelegate();
-
-        if (!TF_VERIFY(dynamic_cast<HdStRenderDelegate*>(renderDelegate), 
-             "OIT Task only works with HdSt")) {
-            return;
-        }
 
         _renderPass = HdRenderPassSharedPtr(
             new HdSt_ImageShaderRenderPass(renderIndex, collection));
@@ -90,14 +144,20 @@ HdxOitResolveTask::Prepare(HdTaskContext* ctx,
         _renderPassState->SetBlend(
             HdBlendOp::HdBlendOpAdd,
             HdBlendFactor::HdBlendFactorOne,
-            HdBlendFactor::HdBlendFactorOneMinusSrc1Alpha,
+            HdBlendFactor::HdBlendFactorOneMinusSrcAlpha,
             HdBlendOp::HdBlendOpAdd,
             HdBlendFactor::HdBlendFactorOne,
             HdBlendFactor::HdBlendFactorOne);
 
-        _renderPassShader.reset(
-            new HdStRenderPassShader(HdxPackageOitResolveImageShader()));
+        _renderPassShader.reset(new HdxOitResolveRenderPassShader(
+            _numSamples));
 
+        HdStRenderPassState* stRenderPassState =
+            dynamic_cast<HdStRenderPassState*>(_renderPassState.get());
+        stRenderPassState->SetRenderPassShader(_renderPassShader);
+    } else if (rebuildShader) {
+        _renderPassShader.reset(new HdxOitResolveRenderPassShader(
+            _numSamples));
         HdStRenderPassState* stRenderPassState =
             dynamic_cast<HdStRenderPassState*>(_renderPassState.get());
         stRenderPassState->SetRenderPassShader(_renderPassShader);
