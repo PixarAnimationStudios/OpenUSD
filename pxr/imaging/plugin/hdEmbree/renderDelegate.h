@@ -117,6 +117,18 @@ public:
     virtual HdRenderSettingDescriptorList
         GetRenderSettingDescriptors() const override;
 
+    /// Return true to indicate that pausing and resuming are supported.
+    virtual bool IsPauseAndResumeSupported() const override;
+
+    /// Pause background rendering threads.
+    virtual void Pause() override;
+
+    /// Resume background rendering threads.
+    virtual void Resume() override;
+
+    /// Return a user-readable status message.
+    virtual std::string GetStatusMessage() const override;
+
     /// Create a renderpass. Hydra renderpasses are responsible for drawing
     /// a subset of the scene (specified by the "collection" parameter) to the
     /// current framebuffer. This class creates objects of type

@@ -325,6 +325,7 @@ class AppController(QtCore.QObject):
             self._debug = os.getenv('USDVIEW_DEBUG', False)
             self._printTiming = parserData.timing or self._debug
             self._lastViewContext = {}
+            self._paused = False
             if QT_BINDING == 'PySide':
                 self._statusFileName = 'state'
                 self._deprecatedStatusFileNames = ('.usdviewrc')
@@ -783,6 +784,9 @@ class AppController(QtCore.QObject):
 
             self._ui.actionSave_Flattened_As.triggered.connect(
                 self._saveFlattenedAs)
+
+            self._ui.actionPause.triggered.connect(
+                self._togglePause)
 
             # Setup quit actions to ensure _cleanAndClose is only invoked once.
             self._ui.actionQuit.triggered.connect(QtWidgets.QApplication.instance().quit)
@@ -1304,9 +1308,10 @@ class AppController(QtCore.QObject):
                         action.setDisabled(True)
                         break
             else:
-                # Refresh the AOV menu and settings menu
+                # Refresh the AOV menu, settings menu, and pause menu item
                 self._configureRendererAovs()
                 self._configureRendererSettings()
+                self._configurePauseAction()
 
     def _configureRendererPlugins(self):
         if self._stageView:
@@ -1339,9 +1344,10 @@ class AppController(QtCore.QObject):
             # Disable the menu if no plugins were found
             self._ui.menuRendererPlugin.setEnabled(foundPlugin)
 
-            # Refresh the AOV menu and settings menu
+            # Refresh the AOV menu, settings menu, and pause menu item
             self._configureRendererAovs()
             self._configureRendererSettings()
+            self._configurePauseAction()
 
     # Renderer AOV support
     def _rendererAovChanged(self, aov):
@@ -1522,6 +1528,16 @@ class AppController(QtCore.QObject):
                 widget.setValue(widget.defValue)
             if isinstance(widget, QtWidgets.QLineEdit):
                 widget.setText(widget.defValue)
+
+    def _configurePauseAction(self):
+        if self._stageView:
+            # This is called when the user picks a new renderer, which
+            # always starts in an unpaused state.
+            self._paused = False
+            self._ui.actionPause.setEnabled(
+                self._stageView.IsPauseAndResumeRendererSupported())
+            self._ui.actionPause.setChecked(self._paused and
+                self._stageView.IsPauseAndResumeRendererSupported())
 
     def _configureColorManagement(self):
         enableMenu = (not self._noRender and 
@@ -2441,6 +2457,12 @@ class AppController(QtCore.QObject):
 
         with BusyContext():
             self._dataModel.stage.Export(saveName)
+
+    def _togglePause(self):
+        if self._stageView.IsPauseAndResumeRendererSupported():
+            self._paused = not self._paused
+            self._stageView.SetRendererPaused(self._paused)
+            self._ui.actionPause.setChecked(self._paused)
 
     def _reopenStage(self):
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)

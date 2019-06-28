@@ -156,6 +156,12 @@ void wrapEngine()
             .def("IsColorCorrectionCapable", 
                 &UsdImagingGLEngine::IsColorCorrectionCapable)
                 .staticmethod("IsColorCorrectionCapable")
+            .def("IsPauseAndResumeRendererSupported", 
+                &UsdImagingGLEngine::IsPauseAndResumeRendererSupported)
+            .def("PauseRenderer", &UsdImagingGLEngine::PauseRenderer)
+            .def("ResumeRenderer", &UsdImagingGLEngine::ResumeRenderer)
+            .def("GetRendererStatusMessage",
+                &UsdImagingGLEngine::GetRendererStatusMessage)
         ;
 
     }

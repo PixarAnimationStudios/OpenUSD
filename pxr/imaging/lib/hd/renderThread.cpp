@@ -31,6 +31,7 @@ HdRenderThread::HdRenderThread()
     , _shutdownCallback(_DefaultShutdownCallback)
     , _requestedState(StateInitial)
     , _stopRequested(false)
+    , _pauseRender(false)
     , _rendering(false)
 {
 }
@@ -116,6 +117,18 @@ HdRenderThread::IsRendering()
     return _rendering.load();
 }
 
+void
+HdRenderThread::PauseRender()
+{
+    _pauseRender.store(true);
+}
+
+void
+HdRenderThread::ResumeRender()
+{
+    _pauseRender.store(false);
+}
+
 bool
 HdRenderThread::IsStopRequested()
 {
@@ -124,6 +137,12 @@ HdRenderThread::IsStopRequested()
     }
 
     return _stopRequested;
+}
+
+bool
+HdRenderThread::IsPauseRequested()
+{
+    return _pauseRender.load();
 }
 
 std::unique_lock<std::mutex>

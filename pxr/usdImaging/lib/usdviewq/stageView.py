@@ -841,7 +841,7 @@ class StageView(QtOpenGL.QGLWidget):
         # prep HUD regions
         self._hud = HUD()
         self._hud.addGroup("TopLeft",     250, 160)  # subtree
-        self._hud.addGroup("TopRight",    140, 32)   # Hydra: Enabled
+        self._hud.addGroup("TopRight",    160, 48)   # Hydra, AOV, status
         self._hud.addGroup("BottomLeft",  250, 160)  # GPU stats
         self._hud.addGroup("BottomRight", 210, 32)   # Camera, Complexity
 
@@ -986,6 +986,20 @@ class StageView(QtOpenGL.QGLWidget):
         if self._renderer:
             self._renderer.SetRendererSetting(name, value)
             self.updateGL()
+
+    def SetRendererPaused(self, paused):
+        if self._renderer:
+            if paused:
+                self._renderer.PauseRenderer()
+            else:
+                self._renderer.ResumeRenderer()
+
+    def IsPauseAndResumeRendererSupported(self):
+        if self._renderer:
+            if self._renderer.IsPauseAndResumeRendererSupported():
+                return True
+
+        return False
 
     def _stageReplaced(self):
         '''Set the USD Stage this widget will be displaying. To decommission
@@ -1848,14 +1862,19 @@ class StageView(QtOpenGL.QGLWidget):
             if not hydraMode:
                 hydraMode = "Enabled"
 
-        toPrint = {"Hydra": hydraMode}
+        from collections import OrderedDict
+        toPrint = OrderedDict()
+
+        toPrint["Hydra"] = hydraMode
         if self._rendererAovName != "color":
             toPrint["  AOV"] = self._rendererAovName
+        status = self._renderer.GetRendererStatusMessage()
+        if status:
+            toPrint["Status"] = status
         self._hud.updateGroup("TopRight", self.width()-160, 14, col,
                               toPrint, toPrint.keys())
 
         # bottom left
-        from collections import OrderedDict
         toPrint = OrderedDict()
 
         # GPU stats (TimeElapsed is in nano seconds)

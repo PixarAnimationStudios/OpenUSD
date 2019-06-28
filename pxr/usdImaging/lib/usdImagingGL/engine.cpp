@@ -964,6 +964,53 @@ UsdImagingGLEngine::SetEnableFloatPointDrawTarget(bool state)
     _useFloatPointDrawTarget = state;
 }
 
+// ---------------------------------------------------------------------
+// Control and status of background rendering threads.
+// ---------------------------------------------------------------------
+bool
+UsdImagingGLEngine::IsPauseAndResumeRendererSupported() const
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return false;
+    }
+
+    TF_VERIFY(_renderIndex);
+    _renderIndex->GetRenderDelegate()->IsPauseAndResumeSupported();
+}
+
+void
+UsdImagingGLEngine::PauseRenderer()
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return;
+    }
+
+    TF_VERIFY(_renderIndex);
+    _renderIndex->GetRenderDelegate()->Pause();
+}
+
+void
+UsdImagingGLEngine::ResumeRenderer()
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return;
+    }
+
+    TF_VERIFY(_renderIndex);
+    _renderIndex->GetRenderDelegate()->Resume();
+}
+
+std::string
+UsdImagingGLEngine::GetRendererStatusMessage() const
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return std::string();
+    }
+
+    TF_VERIFY(_renderIndex);
+    return _renderIndex->GetRenderDelegate()->GetStatusMessage();
+}
+
 //----------------------------------------------------------------------------
 // Color Correction
 //----------------------------------------------------------------------------

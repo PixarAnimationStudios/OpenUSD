@@ -397,6 +397,29 @@ public:
     /// @}
 
     // ---------------------------------------------------------------------
+    /// \name Control and status of background rendering threads.
+    /// @{
+    // ---------------------------------------------------------------------
+
+    /// Query the renderer as to whether it supports pausing and resuming.
+    USDIMAGINGGL_API
+    bool IsPauseAndResumeRendererSupported() const;
+
+    /// Pause the renderer.
+    USDIMAGINGGL_API
+    void PauseRenderer();
+
+    /// resume the renderer.
+    USDIMAGINGGL_API
+    void ResumeRenderer();
+
+    /// Return a user-facing status message from the renderer.
+    USDIMAGINGGL_API
+    std::string GetRendererStatusMessage() const;
+
+    /// @}
+
+    // ---------------------------------------------------------------------
     /// \name Color Correction
     /// @{
     // ---------------------------------------------------------------------

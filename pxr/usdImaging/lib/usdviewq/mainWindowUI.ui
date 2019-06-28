@@ -1406,6 +1406,7 @@
     <addaction name="menuRendererPlugin"/>
     <addaction name="menuRendererSettings"/>
     <addaction name="menuRendererAovs"/>
+    <addaction name="actionPause"/>
     <addaction name="separator"/>
     <addaction name="actionReset_View"/>
     <addaction name="actionAdjust_FOV"/>
@@ -1479,6 +1480,20 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Q</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionPause">
+   <property name="text">
+       <string>Pause Render</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+P</string>
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>

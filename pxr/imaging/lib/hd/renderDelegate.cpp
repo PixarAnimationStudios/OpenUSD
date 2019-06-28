@@ -151,5 +151,27 @@ HdRenderDelegate::_PopulateDefaultSettings(
     }
 }
 
+bool
+HdRenderDelegate::IsPauseAndResumeSupported() const
+{
+    return false;
+}
+
+void
+HdRenderDelegate::Pause()
+{
+}
+
+void
+HdRenderDelegate::Resume()
+{
+}
+
+std::string
+HdRenderDelegate::GetStatusMessage() const
+{
+    return std::string();
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

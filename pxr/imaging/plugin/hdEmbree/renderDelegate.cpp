@@ -40,6 +40,8 @@
 #include "pxr/imaging/hd/bprim.h"
 //XXX: Add bprim types
 
+#include <sstream>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(HdEmbreeRenderSettingsTokens, HDEMBREE_RENDER_SETTINGS_TOKENS);
@@ -265,6 +267,34 @@ HdEmbreeRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
     }
 
     return HdAovDescriptor();
+}
+
+bool
+HdEmbreeRenderDelegate::IsPauseAndResumeSupported() const
+{
+    return true;
+}
+
+void
+HdEmbreeRenderDelegate::Pause()
+{
+    _renderThread.PauseRender();
+}
+
+void
+HdEmbreeRenderDelegate::Resume()
+{
+    _renderThread.ResumeRender();
+}
+
+std::string
+HdEmbreeRenderDelegate::GetStatusMessage() const
+{
+    std::ostringstream os;
+
+    os << _renderer.GetCompletedSamples() << " samples done";
+
+    return os.str();
 }
 
 HdRenderPassSharedPtr

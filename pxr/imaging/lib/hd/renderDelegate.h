@@ -164,6 +164,43 @@ public:
 
     ////////////////////////////////////////////////////////////////////////////
     ///
+    /// Control and status of background rendering threads.
+    ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    ///
+    /// Advertise whether this delegate supports pausing and resuming of
+    /// background render threads. Default implementation returns false.
+    ///
+    HD_API
+    virtual bool IsPauseAndResumeSupported() const;
+
+    ///
+    /// Pause all of this delegate's background rendering threads. Default
+    /// implementation does nothing.
+    ///
+    HD_API
+    virtual void Pause();
+
+    ///
+    /// Resume all of this delegate's background rendering threads previously
+    /// paused by a call to Pause. Default implementation does nothing.
+    ///
+    HD_API
+    virtual void Resume();
+
+    ///
+    /// Return a string indicating the current status of this render delegate,
+    /// particularly its background rendering process. This string may
+    /// indicate an estimated percentage complete, a total render time, or
+    /// any other status information the user might find useful. The default
+    /// implementation returns an empty string.
+    ///
+    HD_API
+    virtual std::string GetStatusMessage() const;
+
+    ////////////////////////////////////////////////////////////////////////////
+    ///
     /// Renderpass Factory
     ///
     ////////////////////////////////////////////////////////////////////////////
