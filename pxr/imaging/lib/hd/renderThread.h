@@ -86,7 +86,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///             }
 ///             std::this_thread::sleep_for(std::chrono::milliseconds(10));
 ///         }
-///         if(!_renderThread.IsStopRequested()) {
+///         if(_renderThread.IsStopRequested()) {
 ///             break;
 ///         }
 ///         // generate N pixels.
