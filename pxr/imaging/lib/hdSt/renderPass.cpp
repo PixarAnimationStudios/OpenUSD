@@ -51,12 +51,29 @@ HdSt_RenderPass::HdSt_RenderPass(HdRenderIndex *index,
     , _useTinyPrimCulling(false)
     , _collectionVersion(0)
     , _collectionChanged(false)
+    , _drawItemCount(0)
+    , _drawItemsChanged(false)
 {
 }
 
 HdSt_RenderPass::~HdSt_RenderPass()
 {
     /* NOTHING */
+}
+
+size_t
+HdSt_RenderPass::GetDrawItemCount() const
+{
+    // Note that returning '_drawItems.size()' is only correct during Prepare.
+    // During Execute _drawItems is cleared in SwapDrawItems().
+    // For that reason we return the cached '_drawItemCount' here.
+    return _drawItemCount;
+}
+
+void
+HdSt_RenderPass::_Prepare(TfTokenVector const &renderTags)
+{
+    _PrepareDrawItems(renderTags);
 }
 
 void
@@ -97,6 +114,47 @@ HdSt_RenderPass::_MarkCollectionDirty()
 }
 
 void
+HdSt_RenderPass::_PrepareDrawItems(TfTokenVector const& renderTags)
+{
+    HD_TRACE_FUNCTION();
+    GLF_GROUP_FUNCTION();
+
+    HdChangeTracker const &tracker = GetRenderIndex()->GetChangeTracker();
+    HdRprimCollection const &collection = GetRprimCollection();
+
+    const int collectionVersion =
+        tracker.GetCollectionVersion(collection.GetName());
+
+    const int renderTagVersion =
+        tracker.GetRenderTagVersion();
+
+    const bool collectionChanged = _collectionChanged ||
+        (_collectionVersion != collectionVersion);
+
+    const bool renderTagsChanged = _renderTagVersion != renderTagVersion;
+
+    if (collectionChanged || renderTagsChanged) {
+        HD_PERF_COUNTER_INCR(HdPerfTokens->collectionsRefreshed);
+        TF_DEBUG(HD_COLLECTION_CHANGED).Msg("CollectionChanged: %s "
+                                            "(repr = %s)"
+                                            "version: %d -> %d\n", 
+                                             collection.GetName().GetText(),
+                                             collection.GetReprSelector().GetText(),
+                                             _collectionVersion,
+                                             collectionVersion);
+
+        _drawItems = GetRenderIndex()->GetDrawItems(collection, renderTags);
+        _drawItemCount = _drawItems.size();
+        _drawItemsChanged = true;
+
+        _collectionVersion = collectionVersion;
+        _collectionChanged = false;
+
+        _renderTagVersion = renderTagVersion;
+    }
+}
+
+void
 HdSt_RenderPass::_PrepareCommandBuffer(TfTokenVector const& renderTags)
 {
     HD_TRACE_FUNCTION();
@@ -109,47 +167,21 @@ HdSt_RenderPass::_PrepareCommandBuffer(TfTokenVector const& renderTags)
     // so iterate over each prim, cull it and schedule it to be drawn.
 
     HdChangeTracker const &tracker = GetRenderIndex()->GetChangeTracker();
-    HdRprimCollection const &collection = GetRprimCollection();
-
-    const int collectionVersion =
-        tracker.GetCollectionVersion(collection.GetName());
-
-    const int renderTagVersion =
-        tracker.GetRenderTagVersion();
-
     const int batchVersion = tracker.GetBatchVersion();
 
-    const bool collectionChanged = _collectionChanged ||
-        (_collectionVersion != collectionVersion);
+    // It is optional for a render task to call RenderPass::Prepare() to
+    // update the drawItems during the prepare phase. We ensure our drawItems
+    // are always up-to-date before building the command buffers.
+    _PrepareDrawItems(renderTags);
 
-    const bool renderTagsChanged = _renderTagVersion != renderTagVersion;
-
-
-    // Now either the collection or render tags is dirty
-    // or culling needs to be applied.
-    if (collectionChanged || renderTagsChanged) {
-        HD_PERF_COUNTER_INCR(HdPerfTokens->collectionsRefreshed);
-        TF_DEBUG(HD_COLLECTION_CHANGED).Msg("CollectionChanged: %s "
-                                            "(repr = %s)"
-                                            "version: %d -> %d\n", 
-                                             collection.GetName().GetText(),
-                                             collection.GetReprSelector().GetText(),
-                                             _collectionVersion,
-                                             collectionVersion);
-
-        HdRenderIndex::HdDrawItemPtrVector items =
-            GetRenderIndex()->GetDrawItems(collection, renderTags);
-
+    // Rebuild draw batches based on new draw items
+    if (_drawItemsChanged) {
         _cmdBuffer.SwapDrawItems(
             // Downcast the HdDrawItem entries to HdStDrawItems:
-            reinterpret_cast<std::vector<HdStDrawItem const*>*>(&items),
+            reinterpret_cast<std::vector<HdStDrawItem const*>*>(&_drawItems),
             batchVersion);
 
-        _collectionVersion = collectionVersion;
-        _collectionChanged = false;
-
-        _renderTagVersion = renderTagVersion;
-
+        _drawItemsChanged = false;
         size_t itemCount = _cmdBuffer.GetTotalSize();
         HD_PERF_COUNTER_SET(HdTokens->totalItemCount, itemCount);
     } else {
