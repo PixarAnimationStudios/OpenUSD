@@ -486,5 +486,71 @@ def "OtherWorld"
         self.assertTrue(p.IsInstance())
         self.assertTrue(p.GetMaster())
 
+    def test_USD_5386(self):
+        from pxr import Usd, Sdf
+        # This is github issue #883.
+        def MakeLayer(text, *args):
+            l = Sdf.Layer.CreateAnonymous('.usda')
+            l.ImportFromString(text % args)
+            return l
+
+        c = MakeLayer('''#usda 1.0
+def Xform "geo"
+{
+    def Sphere "sphere1"
+    {
+    }
+}
+''')
+        a = MakeLayer('''#usda 1.0
+(
+    defaultPrim = "geo"
+    subLayers = [
+        @%s@
+    ]
+)
+
+def Xform "geo"
+{
+    def Cube "cube2"
+    {
+    }
+}''', c.identifier)
+        b = MakeLayer('''#usda 1.0
+(
+    defaultPrim = "geo"
+    subLayers = [
+        @%s@
+    ]
+)
+
+def Xform "geo"
+{
+    def Cube "cube2"
+    {
+    }
+}''', c.identifier)
+
+        d = MakeLayer('''#usda 1.0
+def "geo" ( append payload = @%s@ )
+{
+}''', a.identifier)
+        e = MakeLayer('''#usda 1.0
+def "geo" ( append payload = @%s@ )
+{
+}''', b.identifier)
+
+        s = Usd.Stage.CreateInMemory()
+        r = s.GetRootLayer()
+        r.subLayerPaths.append(d.identifier)
+        s2 = Usd.Stage.CreateInMemory()
+        r2 = s2.GetRootLayer()
+        r2.subLayerPaths.append(d.identifier)
+        s.MuteAndUnmuteLayers([c.identifier], [])
+        s2.MuteAndUnmuteLayers([c.identifier], [])
+        r.subLayerPaths.clear()
+        r.subLayerPaths.append(e.identifier)
+        s.MuteAndUnmuteLayers([], [c.identifier])
+        
 if __name__ == '__main__':
     unittest.main()
