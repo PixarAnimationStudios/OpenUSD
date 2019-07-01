@@ -358,6 +358,62 @@ class TestUsdLoadUnload(unittest.TestCase):
              (Sdf.Path('/World/anim/sim/another/prim'),
               Usd.StageLoadRules.OnlyRule)])
 
+    def test_GetSetLoadRules(self):
+        """Test calling GetLoadRules and SetLoadRules on a UsdStage"""
+        r = Usd.StageLoadRules.LoadNone()
+        r.AddRule('/any', Usd.StageLoadRules.OnlyRule)
+        r.AddRule('/other/child', Usd.StageLoadRules.AllRule)
+        r.AddRule('/other/child/only', Usd.StageLoadRules.OnlyRule)
+        r.AddRule('/other/child/none', Usd.StageLoadRules.NoneRule)
+        r.AddRule('/other/child/none/child/all', Usd.StageLoadRules.AllRule)
+
+        s = Usd.Stage.CreateInMemory()
+        s.DefinePrim('/any/child')
+        s.DefinePrim('/other/child/prim')
+        s.DefinePrim('/other/child/only/prim')
+        s.DefinePrim('/other/child/only/loaded/prim')
+        s.DefinePrim('/other/child/none/prim')
+        s.DefinePrim('/other/child/none/unloaded/prim')
+        s.DefinePrim('/other/child/none/child/all/one/prim')
+        s.DefinePrim('/other/child/none/child/all/two/prim')
+
+        payload = s.OverridePrim('/__payload')
+
+        def addPayload(prim):
+            prim.GetPayloads().AddInternalPayload(payload.GetPath())
+
+        # Add payloads to all prims except leaf 'prim's and '__payload'.
+        map(addPayload, [prim for prim in s.TraverseAll()
+                         if prim.GetName() not in ('prim', '__payload')])
+
+        # Create a new stage, with nothing loaded.
+        testStage = Usd.Stage.Open(s.GetRootLayer(), load=Usd.Stage.LoadNone)
+
+        self.assertEqual(list(testStage.Traverse()), [])
+        
+        # Now set the load rules and assert that they produce the expected set
+        # of loaded prims.
+        testStage.SetLoadRules(r)
+        self.assertEqual(
+            [prim.GetPath() for prim in testStage.Traverse()],
+            ['/any',
+             '/other',
+             '/other/child',
+             '/other/child/prim',
+             '/other/child/only',
+             '/other/child/only/prim',
+             '/other/child/none',
+             '/other/child/none/prim',
+             '/other/child/none/child',
+             '/other/child/none/child/all',
+             '/other/child/none/child/all/one',
+             '/other/child/none/child/all/one/prim',
+             '/other/child/none/child/all/two',
+             '/other/child/none/child/all/two/prim'])
+
+        self.assertEqual(testStage.GetLoadRules(), r)
+        
+
     def test_LoadAndUnload(self):
         """Test Stage::LoadUnload thoroughly, as all other requests funnel into it.
         """

@@ -2104,6 +2104,17 @@ UsdStage::FindLoadable(const SdfPath& rootPath)
 }
 
 void
+UsdStage::SetLoadRules(UsdStageLoadRules const &rules)
+{
+    // For now just set the rules and recompose everything.
+    _loadRules = rules;
+ 
+    PcpChanges changes;
+    changes.DidChangeSignificantly(_cache.get(), SdfPath::AbsoluteRootPath());
+    _Recompose(changes);
+}
+
+void
 UsdStage::SetPopulationMask(UsdStagePopulationMask const &mask)
 {
     // For now just set the mask and recompose everything.
