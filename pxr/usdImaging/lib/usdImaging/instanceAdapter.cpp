@@ -957,9 +957,14 @@ UsdImagingInstanceAdapter::_ComputeInheritedPrimvar(UsdPrim const& instancer,
     } else if (dv.IsHolding<unsigned char>()) {
         return _ComputeInheritedPrimvar<unsigned char>(
                 instancer, primvarName, result, time);
+    } else if (dv.IsHolding<std::string>()) {
+        return _ComputeInheritedPrimvar<std::string>(
+                instancer, primvarName, result, time);
     } else {
-        TF_CODING_ERROR("Native instancing: unrecognized inherited primvar "
-                        "type %s", type.GetAsToken().GetText());
+        TF_WARN("Native instancing: unrecognized inherited primvar type '%s' "
+                "for primvar '%s'", 
+                type.GetAsToken().GetText(),
+                primvarName.GetText());
         return false;
     }
 }
