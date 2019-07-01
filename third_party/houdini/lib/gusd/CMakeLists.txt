@@ -33,6 +33,7 @@ pxr_shared_library(${PXR_PACKAGE}
         usdGeom
         usdRi
         usdShade
+        usdSkel
         usdUtils
         ${HOUDINI_LIB_NAMES}
 
