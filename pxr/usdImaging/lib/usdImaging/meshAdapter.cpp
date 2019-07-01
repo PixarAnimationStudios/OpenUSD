@@ -200,6 +200,14 @@ UsdImagingMeshAdapter::TrackVariability(UsdPrim const& prim,
     }
 }
 
+static inline bool
+_IsOnBehalfOfGeomSubset(UsdPrim const& prim, SdfPath const& cachePath)
+{
+    return cachePath.IsPrimPath() && 
+           cachePath.GetParentPath() == prim.GetPath();
+}
+
+
 void
 UsdImagingMeshAdapter::MarkDirty(UsdPrim const& prim,
                                  SdfPath const& cachePath,
@@ -208,7 +216,7 @@ UsdImagingMeshAdapter::MarkDirty(UsdPrim const& prim,
 {
     // Check if this is invoked on behalf of a UsdGeomSubset of
     // a parent mesh; if so, dirty the parent instead.
-    if (cachePath.IsPrimPath() && cachePath.GetParentPath() == prim.GetPath()) {
+    if (_IsOnBehalfOfGeomSubset(prim, cachePath)) {
         index->MarkRprimDirty(cachePath.GetParentPath(), dirty);
     } else {
         index->MarkRprimDirty(cachePath, dirty);
@@ -222,12 +230,79 @@ UsdImagingMeshAdapter::MarkRefineLevelDirty(UsdPrim const& prim,
 {
     // Check if this is invoked on behalf of a UsdGeomSubset of
     // a parent mesh; if so, there's nothing to do.
-    if (cachePath.IsPrimPath() && cachePath.GetParentPath() == prim.GetPath()) {
+    if (_IsOnBehalfOfGeomSubset(prim, cachePath)) {
         return;
     }
     index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyDisplayStyle);
 }
 
+void 
+UsdImagingMeshAdapter::MarkReprDirty(UsdPrim const& prim,
+                                     SdfPath const& cachePath,
+                                     UsdImagingIndexProxy* index)
+{
+    // Check if this is invoked on behalf of a UsdGeomSubset of
+    // a parent mesh; if so, there's nothing to do.
+    if (_IsOnBehalfOfGeomSubset(prim, cachePath)) {
+        return;
+    }
+    BaseAdapter::MarkReprDirty(prim, cachePath, index);
+}
+
+
+void 
+UsdImagingMeshAdapter::MarkCullStyleDirty(UsdPrim const& prim,
+                                          SdfPath const& cachePath,
+                                          UsdImagingIndexProxy* index)
+{
+    // Check if this is invoked on behalf of a UsdGeomSubset of
+    // a parent mesh; if so, there's nothing to do.
+    if (_IsOnBehalfOfGeomSubset(prim, cachePath)) {
+        return;
+    }
+    BaseAdapter::MarkCullStyleDirty(prim, cachePath, index);
+}
+
+void 
+UsdImagingMeshAdapter::MarkRenderTagDirty(UsdPrim const& prim,
+                                          SdfPath const& cachePath,
+                                          UsdImagingIndexProxy* index)
+{
+    // Check if this is invoked on behalf of a UsdGeomSubset of
+    // a parent mesh; if so, there's nothing to do.
+    if (_IsOnBehalfOfGeomSubset(prim, cachePath)) {
+        return;
+    }
+    BaseAdapter::MarkRenderTagDirty(prim, cachePath, index);
+
+}
+
+void 
+UsdImagingMeshAdapter::MarkTransformDirty(UsdPrim const& prim,
+                                          SdfPath const& cachePath,
+                                          UsdImagingIndexProxy* index)
+{
+    // Check if this is invoked on behalf of a UsdGeomSubset of
+    // a parent mesh; if so, there's nothing to do.
+    if (_IsOnBehalfOfGeomSubset(prim, cachePath)) {
+        return;
+    }
+    BaseAdapter::MarkTransformDirty(prim, cachePath, index);
+
+}
+
+void 
+UsdImagingMeshAdapter::MarkVisibilityDirty(UsdPrim const& prim,
+                                           SdfPath const& cachePath,
+                                           UsdImagingIndexProxy* index)
+{
+    // Check if this is invoked on behalf of a UsdGeomSubset of
+    // a parent mesh; if so, there's nothing to do.
+    if (_IsOnBehalfOfGeomSubset(prim, cachePath)) {
+        return;
+    }
+    BaseAdapter::MarkVisibilityDirty(prim, cachePath, index);
+}
 
 void
 UsdImagingMeshAdapter::_RemovePrim(SdfPath const& cachePath,
