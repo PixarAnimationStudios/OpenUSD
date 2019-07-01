@@ -49,19 +49,18 @@ layout (early_fragment_tests) in;
 void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
 #if defined(HD_HAS_hdxOitDataBuffer)
-    if (color.a < 1.0) {
-        int screenWidth = int(HdGet_oitScreenSize().y);
-        int bufferSize = HdGet_oitBufferSize();
-        int counterBufferSize = bufferSize + 1;
+    if (color.a < 1.0 && color.a > 0.0001) {
+        int screenWidth = int(HdGet_oitScreenSize().x);
 
+        // +1 because the counter buffer is cleared with -1, but we want the
+        // first index to start at 0.
         int writeIndex = atomicAdd(hdxOitCounterBuffer[0], 1) + 1;
 
-        if (writeIndex < bufferSize) {
+        if (writeIndex < hdxOitDataBuffer.length()) {
             int screenIndex =
-                int(gl_FragCoord.x) +
-                int(gl_FragCoord.y) * screenWidth;
+                int(gl_FragCoord.x) + int(gl_FragCoord.y) * screenWidth;
 
-            if (screenIndex < counterBufferSize) {
+            if (screenIndex < hdxOitCounterBuffer.length()) {
                 int prevIndex =
                     atomicExchange(hdxOitCounterBuffer[screenIndex+1], writeIndex);
                 hdxOitDataBuffer[writeIndex] = color;

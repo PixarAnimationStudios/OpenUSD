@@ -40,16 +40,14 @@
 vec4 imageShader(vec2 uv)
 {
 #if defined(HD_HAS_hdxOitDataBuffer)
-    int screenWidth = int(HdGet_oitScreenSize().y);
-    int bufferSize = HdGet_oitBufferSize();
-    int counterBufferSize = bufferSize + 1;
+    int screenWidth = int(HdGet_oitScreenSize().x);
 
+    // +1 because index 0 of counter buffer is reserved as atomic counter in
+    // WriteOitLayersToBuffer
     int screenIndex = int(gl_FragCoord.x) + int(gl_FragCoord.y) * screenWidth;
-    if (screenIndex+1 >= counterBufferSize) {
-        return vec4(0);
-    }
+    screenIndex += 1;
 
-    int nodeIndex = hdxOitCounterBuffer[screenIndex+1];
+    int nodeIndex = hdxOitCounterBuffer[screenIndex];
     int numDepths = 0;
 
     // XXX renderPass.WriteOitLayersToBuffer does not clamp the number of
@@ -60,7 +58,10 @@ vec4 imageShader(vec2 uv)
     vec4 sortedColor[maxSamples];
     float sortedDepth[maxSamples];
 
-    while (nodeIndex != -1 && numDepths < maxSamples && nodeIndex < bufferSize){
+    while (nodeIndex != -1 && 
+           numDepths < maxSamples && 
+           nodeIndex < hdxOitDataBuffer.length()) 
+    {
         float currentDepth = hdxOitDepthBuffer[nodeIndex]; 
         int insertIndex = numDepths; 
         while (insertIndex > 0 && sortedDepth[insertIndex - 1] > currentDepth) {
@@ -73,6 +74,7 @@ vec4 imageShader(vec2 uv)
         numDepths += 1; 
         nodeIndex = hdxOitIndexBuffer[nodeIndex]; 
     } 
+
     int depth = 0;
     vec4 colorAccum = vec4(0);
     while (depth < numDepths) {

@@ -84,7 +84,7 @@ private:
     HdStRenderPassShaderSharedPtr _oitOpaqueRenderPassShader;
 
     int _bufferSize;
-    GfVec2i _screenSize;
+    bool _isOitEnabled;
     HdBufferArrayRangeSharedPtr _counterBar;
     HdBufferArrayRangeSharedPtr _dataBar;
     HdBufferArrayRangeSharedPtr _depthBar;
