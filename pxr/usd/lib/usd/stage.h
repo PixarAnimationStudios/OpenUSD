@@ -540,51 +540,44 @@ public:
     ///       some recomposition cost. Similarly, unloading an unloaded prim
     ///       is legal.
     ///     - Specifying a path that does not target a prim is legal as long it
-    ///       has at least one ancestor in the scene graph (!including the
-    ///       absolute root). If the given path has no ancestors, it is an
+    ///       has an ancestor present in the scene graph (other than the
+    ///       absolute root). If the given path has no such ancestor, it is an
     ///       error.
-    ///     - Loading an inactive prim is an error.
-    ///     - Loading a master prim or a prim within a master is an error.
+    ///     - Specifying a path to an inactive prim is an error.
+    ///     - Specifying a path to a master prim or a prim within a master is an
+    ///       error.
+    ///
+    /// If an instance prim (or a path identifying a prim descendant to an
+    /// instance) is encountered during a Load/Unload operation, these functions
+    /// may cause instancing to change on the stage in order to ensure that no
+    /// other instances are affected.  The load/unload rules that affect a given
+    /// prim hierarchy are considered when determining which prims can be
+    /// instanced together.  Instance sharing occurs when different instances
+    /// have equivalent load rules.
+    ///
     /// @{
     // --------------------------------------------------------------------- //
 
     /// Load the prim at \p path, its ancestors, and all of its descendants if
     /// \p policy is UsdLoadWithDescendants.  If \p policy is
-    /// UsdLoadWithoutDescendants, then descendants are not loaded.
+    /// UsdLoadWithoutDescendants, then payloads on descendant prims are not
+    /// loaded.
     ///
-    /// If an instance prim (or an prim descendant to an instance) is
-    /// encountered during this operation, this function will may cause
-    /// instancing to change on the stage in order to ensure that no other
-    /// instances are affected.  The load/unload rules that affect a given prim
-    /// hierarchy are considered when determining which prims can be instanced
-    /// together.  Instance sharing occurs when different instances have
-    /// equivalent load rules.
-    ///
-    /// See the rules under
-    /// \ref Usd_workingSetManagement "Working Set Management" for a discussion
-    /// of what paths are considered valid.
+    /// See \ref Usd_workingSetManagement "Working Set Management" for more
+    /// information.
     USD_API
     UsdPrim Load(const SdfPath& path=SdfPath::AbsoluteRootPath(),
                  UsdLoadPolicy policy=UsdLoadWithDescendants);
 
     /// Unload the prim and its descendants specified by \p path.
     ///
-    /// If an instance prim (or an prim descendant to an instance) is
-    /// encountered during this operation, this function will may cause
-    /// instancing to change on the stage in order to ensure that no other
-    /// instances are affected.  The load/unload rules that affect a given prim
-    /// hierarchy are considered when determining which prims can be instanced
-    /// together.  Instance sharing occurs when different instances have
-    /// equivalent load rules.
-    ///
-    /// See the rules under
-    /// \ref Usd_workingSetManagement "Working Set Management" for a discussion
-    /// of what paths are considered valid.
+    /// See \ref Usd_workingSetManagement "Working Set Management" for more
+    /// information.
     USD_API
     void Unload(const SdfPath& path=SdfPath::AbsoluteRootPath());
 
-    /// Unloads and loads the given path sets; the effect is as if the
-    /// unload set were processed first followed by the load set.
+    /// Unload and load the given path sets.  The effect is as if the unload set
+    /// were processed first followed by the load set.
     ///
     /// This is equivalent to calling UsdStage::Unload for each item in the
     /// unloadSet followed by UsdStage::Load for each item in the loadSet,
@@ -592,9 +585,8 @@ public:
     /// a single batch.  The \p policy argument is described in the
     /// documentation for Load().
     ///
-    /// See the rules under
-    /// \ref Usd_workingSetManagement "Working Set Management" for a discussion
-    /// of what paths are considered valid.
+    /// See \ref Usd_workingSetManagement "Working Set Management" for more
+    /// information.
     USD_API
     void LoadAndUnload(const SdfPathSet &loadSet, const SdfPathSet &unloadSet,
                        UsdLoadPolicy policy=UsdLoadWithDescendants);

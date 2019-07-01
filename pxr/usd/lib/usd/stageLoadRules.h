@@ -56,10 +56,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdStageLoadRules
 {
 public:
+    /// \enum Rule
+    ///
+    /// These values are paired with paths to govern payload inclusion on
+    /// UsdStages.
     enum Rule {
-        AllRule,
-        OnlyRule,
-        NoneRule
+        /// Include payloads on the specified prim and all descendants.
+        AllRule,  
+        /// Include payloads on the specified prim but no descendants.
+        OnlyRule, 
+        /// Exclude payloads on the specified prim and all descendants.
+        NoneRule  
     };
 
     /// Construct rules that load all payloads.
@@ -150,9 +157,9 @@ public:
     bool IsLoaded(SdfPath const &path) const;
 
     /// Return the "effective" rule for the given \p path.  For example, if the
-    /// closest ancestral rule of \p path is an \p AllRule, return AllRule.  If
-    /// the closest ancestral rule of \p path is for \p path itself and it is an
-    /// an \p OnlyRule, return OnlyRule.  Otherwise if there is a closest
+    /// closest ancestral rule of \p path is an \p AllRule, return \p AllRule.
+    /// If the closest ancestral rule of \p path is for \p path itself and it is
+    /// an \p OnlyRule, return \p OnlyRule.  Otherwise if there is a closest
     /// descendant rule to \p path this is an \p OnlyRule or an \p AllRule,
     /// return \p OnlyRule.  Otherwise return \p NoneRule.
     USD_API

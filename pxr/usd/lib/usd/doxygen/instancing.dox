@@ -612,6 +612,8 @@ as instanceable and computes an "instancing key" that consists of:
 order from strongest to weakest
 - The variant selections applied to the prim
 - The \ref Usd_Page_ValueClips "value clips" that affect the prim
+- The UsdStageLoadRules from the stage that apply to the prim and its descendants
+- The UsdStagePopulationMask from the stage that applies to the prim and its descendants
 
 These elements, along with the \ref Usd_ScenegraphInstancing_Editing "restriction on per-instance overrides" 
 of descendant prims and their properties, guarantee that every prim with the 
