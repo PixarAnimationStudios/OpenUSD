@@ -23,7 +23,9 @@
 //
 
 #include "pxr/pxr.h"
-#include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/weakPtr.h"
@@ -32,6 +34,7 @@
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ndr/debugCodes.h"
 #include "pxr/usd/ndr/nodeDiscoveryResult.h"
+#include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdr/shaderMetadataHelpers.h"
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderProperty.h"
@@ -489,10 +492,29 @@ RmanArgsParserPlugin::_Parse(
     }
 }
 
+template <class StringOrAsset>
+static VtValue
+_GetStringOrAssetArray(
+    const std::string& stringValue,
+    VtArray<StringOrAsset>* array)
+{
+    std::vector<std::string> tokens = TfStringTokenize(stringValue, " ,");
+
+    array->reserve(tokens.size());
+
+    for (const std::string& token : tokens) {
+        array->push_back(StringOrAsset(token));
+    }
+
+    return VtValue::Take(*array);
+}
 
 VtValue
 RmanArgsParserPlugin::_GetVtValue(
-    const std::string& stringValue, TfToken& type, bool isArray) const
+    const std::string& stringValue,
+    TfToken& type,
+    bool isArray,
+    bool isSdfAssetPath) const
 {
     // INT and INT ARRAY
     // -------------------------------------------------------------------------
@@ -513,14 +535,25 @@ RmanArgsParserPlugin::_GetVtValue(
         }
     }
 
-    // STRING and STRING ARRAY
+    // STRING and STRING ARRAY (ASSET and ASSET ARRAY)
     // -------------------------------------------------------------------------
     else if (type == SdrPropertyTypes->String) {
+        // Handle non-array
         if (!isArray) {
+            if (isSdfAssetPath) {
+                return VtValue(SdfAssetPath(stringValue));
+            }
             return VtValue(stringValue);
         } else {
-            // XXX: This may or may not be the right way to do string arrays
-            return VtValue(TfStringTokenize(stringValue, " ,"));
+            // Handle array of SdfAssetPath
+            if (isSdfAssetPath) {
+                VtArray<SdfAssetPath> array;
+                return _GetStringOrAssetArray(stringValue, &array);
+            }
+
+            // Handle string array
+            VtStringArray array;
+            return _GetStringOrAssetArray(stringValue, &array);
         }
     }
 
@@ -533,6 +566,30 @@ RmanArgsParserPlugin::_GetVtValue(
         } else {
             NdrStringVec parts = TfStringTokenize(stringValue, " ,");
             int numValues = parts.size();
+
+            // We return a fixed-size array for arrays with size 2, 3, or 4
+            // because SdrShaderProperty::GetTypeAsSdfType returns a specific
+            // size type (Float2, Float3, Float4).  If in the future we want to
+            // return a VtFloatArray instead, we need to change the logic in
+            // SdrShaderProperty::GetTypeAsSdfType
+            if (isArray  && numValues == 2) {
+                return VtValue(
+                    GfVec2f(static_cast<float>(atof(parts[0].c_str())),
+                            static_cast<float>(atof(parts[1].c_str()))));
+            } else if (isArray && numValues == 3) {
+                return VtValue(
+                    GfVec3f(static_cast<float>(atof(parts[0].c_str())),
+                            static_cast<float>(atof(parts[1].c_str())),
+                            static_cast<float>(atof(parts[2].c_str()))));
+            } else if (isArray && numValues == 4) {
+                return VtValue(
+                    GfVec4f(static_cast<float>(atof(parts[0].c_str())),
+                            static_cast<float>(atof(parts[1].c_str())),
+                            static_cast<float>(atof(parts[2].c_str())),
+                            static_cast<float>(atof(parts[3].c_str()))));
+            }
+
+            // Fall back to non-fixed size array
             VtFloatArray floats(numValues);
 
             for (int i = 0; i < numValues; ++i) {
@@ -555,7 +612,7 @@ RmanArgsParserPlugin::_GetVtValue(
         if (!isArray) {
             if (parts.size() == 3) {
                 return VtValue(
-                    GfVec3d(atof(parts[0].c_str()),
+                    GfVec3f(atof(parts[0].c_str()),
                             atof(parts[1].c_str()),
                             atof(parts[2].c_str()))
                 );
@@ -564,14 +621,14 @@ RmanArgsParserPlugin::_GetVtValue(
                     "float3 default value [%s] has %zd values; should "
                     "have three.", stringValue.c_str(), parts.size());
 
-                return VtValue(GfVec3d(0.0, 0.0, 0.0));
+                return VtValue(GfVec3f(0.0, 0.0, 0.0));
             }
         } else if (isArray && parts.size() % 3 == 0) {
             int numElements = parts.size() / 3;
-            VtVec3dArray array(numElements);
+            VtVec3fArray array(numElements);
 
             for (int i = 0; i < numElements; ++i) {
-                array[i] = GfVec3d(atof(parts[3*i + 0].c_str()),
+                array[i] = GfVec3f(atof(parts[3*i + 0].c_str()),
                                    atof(parts[3*i + 1].c_str()),
                                    atof(parts[3*i + 2].c_str()));
             }
@@ -645,14 +702,6 @@ RmanArgsParserPlugin::_CreateProperty(
             _OutputDeprecationWarning(_tokens->typeAttr, shaderRep, propName);
         }
     }
-
-
-    // Determine the default value; leave empty if a default isn't found
-    // -------------------------------------------------------------------------
-    const VtValue defaultValue = attributes.count(_tokens->defaultAttr)
-        ? _GetVtValue(attributes.at(_tokens->defaultAttr), typeName, isArray)
-        : VtValue();
-
 
     // The 'tag' attr is deprecated
     // -------------------------------------------------------------------------
@@ -738,6 +787,20 @@ RmanArgsParserPlugin::_CreateProperty(
 
     // Inject any parser-specific metadata into the metadata map
     _injectParserMetadata(attributes, typeName);
+
+    // Determine SdfAssetPath after injection of metadata
+    // -------------------------------------------------------------------------
+    bool isSdfAssetPath =
+        attributes.count(SdrPropertyMetadata->IsAssetIdentifier);
+
+    // Determine the default value; leave empty if a default isn't found
+    // -------------------------------------------------------------------------
+    const VtValue defaultValue = attributes.count(_tokens->defaultAttr)
+        ? _GetVtValue(attributes.at(_tokens->defaultAttr),
+                      typeName,
+                      isArray,
+                      isSdfAssetPath)
+        : VtValue();
 
     return SdrShaderPropertyUniquePtr(
         new SdrShaderProperty(

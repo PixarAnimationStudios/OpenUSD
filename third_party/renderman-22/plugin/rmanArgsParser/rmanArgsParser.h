@@ -118,9 +118,12 @@ public:
     const TfToken& GetSourceType() const override;
 
 private:
-    // Gets a VtValue instance from a string value and a type/array hint
+    // Gets a VtValue instance from a string value and a type/array/asset hint
     VtValue _GetVtValue(
-        const std::string& stringValue, TfToken& type, bool isArray) const;
+        const std::string& stringValue,
+        TfToken& type,
+        bool isArray,
+        bool isSdfAssetPath) const;
 
     // Emits a deprecation warning to the log
     void _OutputDeprecationWarning(
