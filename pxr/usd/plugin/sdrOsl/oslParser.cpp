@@ -22,7 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/weakPtr.h"
@@ -31,6 +33,7 @@
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ndr/debugCodes.h"
 #include "pxr/usd/ndr/nodeDiscoveryResult.h"
+#include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdr/shaderMetadataHelpers.h"
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderProperty.h"
@@ -212,12 +215,20 @@ SdrOslParserPlugin::_getNodeProperties(
             IsTruthy(SdrPropertyMetadata->IsDynamicArray, metadata);
         bool isArray = (arraySize > 0) || isDynamicArray;
 
+        // Determine SdfAssetPath from metadata
+        bool isSdfAssetPath =
+            metadata.count(SdrPropertyMetadata->IsAssetIdentifier);
+
         properties.emplace_back(
             SdrShaderPropertyUniquePtr(
                 new SdrShaderProperty(
                     TfToken(propName),
                     typeName,
-                    _getDefaultValue(*param, typeName, isArray),
+                    _getDefaultValue(
+                        *param,
+                        typeName,
+                        isArray,
+                        isSdfAssetPath),
                     param->isoutput,
                     arraySize,
                     metadata,
@@ -337,11 +348,30 @@ SdrOslParserPlugin::_getTypeName(const OslParameter* param) const
     return std::make_tuple(TfToken(typeName), arraySize);
 }
 
+template <class StringOrAsset>
+static VtValue
+_GetStringOrAssetArray(
+    const SdrOslParserPlugin::OslParameter& param,
+    VtArray<StringOrAsset>* array)
+{
+    array->reserve(param.sdefault.size());
+
+    // Strings are stored as `ustring`s from OIIO; these need to be converted
+    // explicitly into `std::string`s (otherwise the `VtArray<StringOrAsset>`
+    // will contain garbage).
+    for (const OIIO::ustring& ustr : param.sdefault) {
+        array->push_back(StringOrAsset(ustr.string()));
+    }
+
+    return VtValue::Take(*array);
+}
+
 VtValue
 SdrOslParserPlugin::_getDefaultValue(
     const SdrOslParserPlugin::OslParameter& param,
     const std::string& oslType,
-    bool isArray) const
+    bool isArray,
+    bool isSdfAssetPath) const
 {
     // INT and INT ARRAY
     // -------------------------------------------------------------------------
@@ -356,24 +386,27 @@ SdrOslParserPlugin::_getDefaultValue(
         return VtValue::Take(array);
     }
 
-    // STRING and STRING ARRAY
+    // STRING and STRING ARRAY (ASSET and ASSET ARRAY)
     // -------------------------------------------------------------------------
     else if (oslType == SdrPropertyTypes->String) {
+
+        // Handle non-array
         if (!isArray && param.sdefault.size() == 1) {
+            if (isSdfAssetPath) {
+                return VtValue(SdfAssetPath(param.sdefault[0].string()));
+            }
             return VtValue(param.sdefault[0].string());
         }
 
-        VtStringArray array;
-        array.reserve(param.sdefault.size());
-
-        // Strings are stored as `ustring`s from OIIO; these need to be
-        // converted explicitly into `std::string`s (otherwise the
-        // `VtStringArray` will contain garbage).
-        for (const OIIO::ustring& ustr : param.sdefault) {
-            array.push_back(ustr.string());
+        // Handle array of asset paths
+        if (isSdfAssetPath) {
+            VtArray<SdfAssetPath> array;
+            return _GetStringOrAssetArray(param, &array);
         }
 
-        return VtValue::Take(array);
+        // Handle string array
+        VtStringArray array;
+        return _GetStringOrAssetArray(param, &array);
     }
 
     // FLOAT and FLOAT ARRAY
@@ -381,6 +414,28 @@ SdrOslParserPlugin::_getDefaultValue(
     else if (oslType == SdrPropertyTypes->Float) {
         if (!isArray && param.fdefault.size() == 1) {
             return VtValue(param.fdefault[0]);
+        }
+
+        // We return a fixed-size array for arrays with size 2, 3, or 4 because
+        // SdrShaderProperty::GetTypeAsSdfType returns a specific size type
+        // (Float2, Float3, Float4).  If in the future we want to return a
+        // VtFloatArray instead, we need to change the logic in
+        // SdrShaderProperty::GetTypeAsSdfType
+        else if (isArray &&  param.fdefault.size() == 2) {
+            return VtValue(
+                GfVec2f(param.fdefault[0],
+                        param.fdefault[1]));
+        } else if (isArray && param.fdefault.size() == 3) {
+            return VtValue(
+                GfVec3f(param.fdefault[0],
+                        param.fdefault[1],
+                        param.fdefault[2]));
+        } else if (isArray && param.fdefault.size() == 4) {
+            return VtValue(
+                GfVec4f(param.fdefault[0],
+                        param.fdefault[1],
+                        param.fdefault[2],
+                        param.fdefault[3]));
         }
 
         VtFloatArray array;
@@ -397,16 +452,16 @@ SdrOslParserPlugin::_getDefaultValue(
              oslType == SdrPropertyTypes->Vector) {
         if (!isArray && param.fdefault.size() == 3) {
             return VtValue(
-                GfVec3d(param.fdefault[0],
+                GfVec3f(param.fdefault[0],
                         param.fdefault[1],
                         param.fdefault[2])
             );
         } else if (isArray && param.fdefault.size() % 3 == 0) {
             int numElements = param.fdefault.size() / 3;
-            VtVec3dArray array(numElements);
+            VtVec3fArray array(numElements);
 
             for (int i = 0; i < numElements; ++i) {
-                array[i] = GfVec3d(param.fdefault[3*i + 0],
+                array[i] = GfVec3f(param.fdefault[3*i + 0],
                                    param.fdefault[3*i + 1],
                                    param.fdefault[3*i + 2]);
             }

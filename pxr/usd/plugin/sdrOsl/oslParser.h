@@ -158,7 +158,8 @@ private:
     VtValue _getDefaultValue(
         const SdrOslParserPlugin::OslParameter& param,
         const std::string& oslType,
-        bool isArray
+        bool isArray,
+        bool isSdfAssetPath
     ) const;
 };
 
