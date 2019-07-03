@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/imaging/hdx/compositor.h"
 #include "pxr/imaging/hdx/package.h"
@@ -247,6 +248,18 @@ HdxCompositor::Draw(GLuint colorId, GLuint depthId, bool remapDepth)
 
     glUniform1i(_locations[remapDepthIn], (GLint)remapDepth);
 
+    GLuint vao;
+    const bool isCoreProfileContext = GlfContextCaps::GetInstance().coreProfile;
+    if (isCoreProfileContext) {
+        // We must bind a VAO (Vertex Array Object) because core profile
+        // contexts do not have a default vertex array object. VAO objects are
+        // container objects which are not shared between contexts, so we create
+        // and bind a VAO here so that core rendering code does not have to
+        // explicitly manage per-GL context state.
+        glGenVertexArrays(1, &vao);
+        glBindVertexArray(vao);
+    }
+
     glBindBuffer(GL_ARRAY_BUFFER, _vertexBuffer);
     glVertexAttribPointer(_locations[position], 4, GL_FLOAT, GL_FALSE,
             sizeof(float)*6, 0);
@@ -278,6 +291,14 @@ HdxCompositor::Draw(GLuint colorId, GLuint depthId, bool remapDepth)
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, 0);
+
+    if (isCoreProfileContext) {
+        glBindVertexArray(0);
+        // XXX: We should not delete the VAO on every draw call, but we
+        // currently must because it is GL Context state and we do not control
+        // the context.
+        glDeleteVertexArrays(1, &vao);
+    }
 
     GLF_POST_PENDING_GL_ERRORS();
 }
