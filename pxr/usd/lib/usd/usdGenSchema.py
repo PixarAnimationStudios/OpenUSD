@@ -72,6 +72,29 @@ class _Printer():
 Print = _Printer()
 
 #------------------------------------------------------------------------------#
+# Tokens                                                                       #
+#------------------------------------------------------------------------------#
+
+# Custom-data key authored on an API schema class prim in the schema definition,
+# to define the type of API schema.
+API_SCHEMA_TYPE = "apiSchemaType"
+
+# Possible values for customData["apiSchemaType"] on an API schema class prim.
+NON_APPLIED = "nonApplied"
+SINGLE_APPLY = "singleApply"
+MULTIPLE_APPLY = "multipleApply"
+API_SCHEMA_TYPE_TOKENS = [NON_APPLIED, SINGLE_APPLY, MULTIPLE_APPLY]
+
+# Custom-data key authored on an applied API schema class prim in the schema 
+# definition to indicate whether the auto-generated Apply method should be 
+# public or private. 
+IS_PRIVATE_APPLY = "isPrivateApply"
+
+# Custom-data key authored on a multiple-apply API schema class prim in the 
+# schema definition, to define prefix for properties created by the API schema. 
+PROPERTY_NAMESPACE_PREFIX = "propertyNamespacePrefix"
+
+#------------------------------------------------------------------------------#
 # Parsed Objects                                                               #
 #------------------------------------------------------------------------------#
 
@@ -394,30 +417,27 @@ class ClassInfo(object):
 
         self.isApi = not self.isTyped and not self.isConcrete and \
                 not self.isAPISchemaBase
-        self.apiSchemaType = self.customData.get(Usd.Tokens.apiSchemaType, 
-                Usd.Tokens.singleApply if self.isApi else None)
+        self.apiSchemaType = self.customData.get(API_SCHEMA_TYPE, 
+                SINGLE_APPLY if self.isApi else None)
         self.propertyNamespacePrefix = \
-            self.customData.get(Usd.Tokens.propertyNamespacePrefix)
+            self.customData.get(PROPERTY_NAMESPACE_PREFIX)
 
-        if not self.apiSchemaType == Usd.Tokens.multipleApply and \
+        if not self.apiSchemaType == MULTIPLE_APPLY and \
             self.propertyNamespacePrefix:
             raise Exception(errorMsg("propertyNamespacePrefix should only "
                 "be used as a metadata field on multiple-apply API schemas"))
 
         if self.isApi and \
-           self.apiSchemaType not in [Usd.Tokens.nonApplied, 
-                                      Usd.Tokens.singleApply,
-                                      Usd.Tokens.multipleApply]:
-            raise _GetSchemaDefException("CustomData 'apiSchemaType' is %s. It must"
-                                " be one of {'nonApplied', 'singleApply', 'multipleApply'} "
-                                "for an API schema.",
-                                sdfPrim.path)
+           self.apiSchemaType not in API_SCHEMA_TYPE_TOKENS:
+            raise _GetSchemaDefException(
+                "CustomData 'apiSchemaType' is %s. It must be one of %s for an "
+                "API schema." % (self.apiSchemaType, API_SCHEMA_TYPE_TOKENS),
+                sdfPrim.path)
 
-        self.isAppliedAPISchema = self.apiSchemaType in [Usd.Tokens.singleApply, 
-                                                      Usd.Tokens.multipleApply]
-        self.isMultipleApply = self.apiSchemaType == Usd.Tokens.multipleApply
-        self.isPrivateApply = self.customData.get(Usd.Tokens.isPrivateApply, 
-                False)
+        self.isAppliedAPISchema = \
+            self.apiSchemaType in [SINGLE_APPLY, MULTIPLE_APPLY]
+        self.isMultipleApply = self.apiSchemaType == MULTIPLE_APPLY
+        self.isPrivateApply = self.customData.get(IS_PRIVATE_APPLY, False)
 
         if self.isApi and not self.isAppliedAPISchema:
             self.schemaType = "UsdSchemaType::NonAppliedAPI";
@@ -535,7 +555,7 @@ def ParseUsd(usdFilePath):
 
         # make sure that if we have a multiple-apply schema with a property
         # namespace prefix that the prim actually has some properties
-        if classInfo.apiSchemaType == Usd.Tokens.multipleApply:
+        if classInfo.apiSchemaType == MULTIPLE_APPLY:
             if classInfo.propertyNamespacePrefix and \
                 len(sdfPrim.properties) == 0:
                     raise _GetSchemaDefException(
@@ -1018,11 +1038,11 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
         # If this is an API schema, check if it's applied and record necessary
         # information.
         if p.GetName() in primsToKeep and p.GetName().endswith('API'):
-            apiSchemaType = p.GetCustomDataByKey(Usd.Tokens.apiSchemaType)
-            if apiSchemaType == Usd.Tokens.multipleApply:
+            apiSchemaType = p.GetCustomDataByKey(API_SCHEMA_TYPE)
+            if apiSchemaType == MULTIPLE_APPLY:
                 allMultipleApplyAPISchemas.append(p.GetName())
                 allAppliedAPISchemas.append(p.GetName())
-            elif apiSchemaType in [None, Usd.Tokens.singleApply]:
+            elif apiSchemaType in [None, SINGLE_APPLY]:
                 allAppliedAPISchemas.append(p.GetName())
 
         p.ClearCustomData()
