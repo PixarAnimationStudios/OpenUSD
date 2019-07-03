@@ -1360,8 +1360,8 @@ class StageView(QtOpenGL.QGLWidget):
         self._renderParams.enableSceneMaterials = self._dataModel.viewSettings.enableSceneMaterials
         self._renderParams.colorCorrectionMode = self._dataModel.viewSettings.colorCorrectionMode
         self._renderParams.clearColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(self._dataModel.viewSettings.clearColor))
-        self._renderParams.renderResolution[0] = self.width()
-        self._renderParams.renderResolution[1] = self.height()
+        self._renderParams.renderResolution = self.computeWindowSize()
+
 
         pseudoRoot = self._dataModel.stage.GetPseudoRoot()
 
