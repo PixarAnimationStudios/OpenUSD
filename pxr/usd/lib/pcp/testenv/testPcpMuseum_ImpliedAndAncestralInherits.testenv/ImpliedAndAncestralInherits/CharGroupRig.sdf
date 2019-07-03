@@ -1,0 +1,51 @@
+#sdf 1.4.32
+
+# This chargroup inherits a root prim class that defines the namespace 
+# hierarchy Sim/includes. Then it overrides includes to introduce a child prim
+# Hand which inherits its own root prim class. The effect of this is when the
+# prim index for Hand is processed, the ancestral inherit arc from includes is
+# copied but is set to be culled because it doesn't include opinions about Hand.
+# But the inherit arc on Hand adds the task to process implied inherits which
+# in turn caused the ancestral inherit arc from includes to be implied again.
+# It's probably a bug that this "to be culled" inherit is being implied just
+# because of the existence of an unrelated inherit, but as this test is
+# verifying, this reimplied inherit should just end up being culled once again
+# when the CHARGROUP is referenced.
+def "CHARGROUP" (
+    inherits = </_class_CharGroupRig>
+)
+{
+    over "Sim"
+    {
+        over "includes"
+        {
+            def  "Hand" (
+                inherits = </_class_SimHand>
+            )
+            {
+            }
+        }
+    }
+}
+
+class  "_class_CharGroupRig" (
+)
+{
+    def "Sim"
+    {
+        def "includes"
+        {
+        }
+    }
+}
+
+class  "_class_SimHand" (
+)
+{
+    # This child prim is here so we have a prim index to pull on that would
+    # expect to cull the ancestral implied inherit nodes that are not needed.
+    def "Geom" (
+    )
+    {
+    }
+}

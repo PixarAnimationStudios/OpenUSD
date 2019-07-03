@@ -4195,9 +4195,17 @@ _NodeCanBeCulled(
     // the subroot inherit /Model_1/SymArm *does* exist in the composed scene.
     // So, we can't cull that node -- GetBases needs it.
     if (node.GetArcType() == PcpArcTypeInherit &&
-        node.GetLayerStack() == rootSite.layerStack &&
-        !node.GetPathAtIntroduction().IsRootPrimPath()) {
-        return false;
+        node.GetLayerStack() == rootSite.layerStack) {
+        // We check the intro path of the origin node as there are cases where
+        // a new implied inherit arc is created from an ancestral inherit 
+        // which means it will be introduced from a subroot path even if the
+        // original inherit node is a root prim path.
+        const PcpNodeRef &originNode = 
+            node.GetOriginNode() == node.GetParentNode() ? 
+            node : node.GetOriginRootNode();
+        if (!originNode.GetPathAtIntroduction().IsRootPrimPath()) {
+            return false;
+        }
     }
 
     // If any subtree beneath this node wasn't culled, we can't cull
