@@ -404,17 +404,7 @@ HdxColorCorrectionTask::_ApplyColorCorrection()
         glUniform1i(_locations[LUT3D_IN], 1);
     }
 
-    GLuint vao;
-    const bool isCoreProfileContext = GlfContextCaps::GetInstance().coreProfile;
-    if (isCoreProfileContext) {
-        // We must bind a VAO (Vertex Array Object) because core profile
-        // contexts do not have a default vertex array object. VAO objects are
-        // container objects which are not shared between contexts, so we create
-        // and bind a VAO here so that core rendering code does not have to
-        // explicitly manage per-GL context state.
-        glGenVertexArrays(1, &vao);
-        glBindVertexArray(vao);
-    }
+    GlfContextCaps::CoreVAO vao;
 
     glBindBuffer(GL_ARRAY_BUFFER, _vertexBuffer);
     glVertexAttribPointer(_locations[POSITION], 4, GL_FLOAT, GL_FALSE,
@@ -489,14 +479,6 @@ HdxColorCorrectionTask::_ApplyColorCorrection()
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_3D, 0);
         glDisable(GL_TEXTURE_3D);
-    }
-
-    if (isCoreProfileContext) {
-        glBindVertexArray(0);
-        // XXX: We should not delete the VAO on every draw call, but we
-        // currently must because it is GL Context state and we do not control
-        // the context.
-        glDeleteVertexArrays(1, &vao);
     }
 
     GLF_POST_PENDING_GL_ERRORS();
