@@ -54,7 +54,7 @@ namespace {
 
 HdxCompositor::HdxCompositor()
     : _colorTexture(0), _depthTexture(0)
-    , _compositorProgram(), _vertexBuffer(0)
+    , _compositorProgram(), _vao(0), _vertexBuffer(0)
     , _useDepthProgram(false)
 {
 }
@@ -69,6 +69,9 @@ HdxCompositor::~HdxCompositor()
     }
     if (_vertexBuffer != 0) {
         glDeleteBuffers(1, &_vertexBuffer);
+    }
+    if (_vao != 0) {
+        glDeleteVertexArrays(1, &_vao);
     }
     if (_compositorProgram) {
         _compositorProgram.reset();
@@ -247,6 +250,10 @@ HdxCompositor::Draw(GLuint colorId, GLuint depthId, bool remapDepth)
 
     glUniform1i(_locations[remapDepthIn], (GLint)remapDepth);
 
+    if (_vao == 0) {
+        glGenVertexArrays(1, &_vao);
+    }
+    glBindVertexArray(_vao);
     glBindBuffer(GL_ARRAY_BUFFER, _vertexBuffer);
     glVertexAttribPointer(_locations[position], 4, GL_FLOAT, GL_FALSE,
             sizeof(float)*6, 0);
@@ -268,6 +275,7 @@ HdxCompositor::Draw(GLuint colorId, GLuint depthId, bool remapDepth)
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glDisableVertexAttribArray(_locations[position]);
     glDisableVertexAttribArray(_locations[uvIn]);
+    glBindVertexArray(0);
 
     glUseProgram(0);
 
