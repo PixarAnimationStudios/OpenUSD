@@ -62,6 +62,27 @@ class TestUsdInherits(unittest.TestCase):
             self.assertEqual(len(concrete.GetMetadata("inheritPaths").deletedItems), 0)
             self.assertEqual(len(concrete.GetMetadata("inheritPaths").explicitItems), 1)
 
+            # Set the list of added items to explicitly empty. The metadata will
+            # still exist as an explicitly empty list op.
+            assert concrete.GetInherits().SetInherits([])
+            assert concrete.HasAuthoredInherits()
+            self.assertEqual(len(concrete.GetMetadata("inheritPaths").prependedItems), 0)
+            self.assertEqual(len(concrete.GetMetadata("inheritPaths").deletedItems), 0)
+            self.assertEqual(len(concrete.GetMetadata("inheritPaths").explicitItems), 0)
+
+            # Clear the inherits. Still empty but no longer explicit.
+            assert concrete.GetInherits().ClearInherits()
+            assert not concrete.HasAuthoredInherits()
+            assert not concrete.GetMetadata("inheritPaths")
+
+            # Set the list of added items to explicitly empty again from cleared
+            # verifying that it is indeed set to explicit.
+            assert concrete.GetInherits().SetInherits([])
+            assert concrete.HasAuthoredInherits()
+            self.assertEqual(len(concrete.GetMetadata("inheritPaths").prependedItems), 0)
+            self.assertEqual(len(concrete.GetMetadata("inheritPaths").deletedItems), 0)
+            self.assertEqual(len(concrete.GetMetadata("inheritPaths").explicitItems), 0)
+
 
     def test_InheritedPrim(self):
         for fmt in allFormats:
@@ -244,8 +265,8 @@ class TestUsdInherits(unittest.TestCase):
                              map(Sdf.Path, ['/AI']))
 
             self.assertEqual(child.GetInherits().GetAllDirectInherits(),
-                             map(Sdf.Path, ['/Parent/Sibling',
-                                            '/DI', '/DRI', '/ARI']))
+                             map(Sdf.Path, ['/DI', '/DRI', '/ARI',
+                                            '/Parent/Sibling']))
 
     def test_ListPosition(self):
         for fmt in allFormats:

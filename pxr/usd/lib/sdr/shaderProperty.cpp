@@ -103,7 +103,11 @@ namespace {
         SdfValueTypeName convertedType = SdfValueTypeNames->Token;
         bool conversionSuccessful = false;
 
-        // First try to convert to a fixed-dimension float array
+        // We prefer more specific types, so if the array size is 2, 3, or 4,
+        // then try to convert to a fixed-dimension float array.
+        // In the future if we change this to not return a fixed-size array,
+        // all the parsers need to be updated to not return a fixed-size array
+        // as well.
         if (type == SdrPropertyTypes->Float) {
             if (arraySize == 2) {
                 convertedType = SdfValueTypeNames->Float2;
@@ -149,6 +153,9 @@ namespace {
         // There is one Sdf type (Asset) that is not included in the type
         // mapping because it is determined dynamically
         if (_IsAssetIdentifier(metadata)) {
+            if (arraySize > 0) {
+                return std::make_pair(SdfValueTypeNames->AssetArray, TfToken());
+            }
             return std::make_pair(SdfValueTypeNames->Asset, TfToken());
         }
 

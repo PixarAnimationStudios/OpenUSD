@@ -649,6 +649,19 @@ UsdSkelImagingSkeletonAdapter::MarkMaterialDirty(const UsdPrim& prim,
 }
 
 
+PxOsdSubdivTags
+UsdSkelImagingSkeletonAdapter::GetSubdivTags(UsdPrim const& usdPrim,
+                                             SdfPath const& cachePath,
+                                             UsdTimeCode time) const
+{
+    if (_IsSkinnedPrimPath(cachePath)) {
+        UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(usdPrim);
+        return adapter->GetSubdivTags(usdPrim, cachePath, time);
+    }
+    return UsdImagingPrimAdapter::GetSubdivTags(usdPrim, cachePath, time);
+}
+
+
 namespace {
 
 void

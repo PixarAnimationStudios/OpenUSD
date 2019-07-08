@@ -14,7 +14,6 @@ pxr_library(usdShade
     PUBLIC_CLASSES
         connectableAPI
         coordSysAPI
-        debugCodes
         input
         material
         materialBindingAPI

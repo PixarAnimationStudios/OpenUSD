@@ -80,9 +80,11 @@ struct HdPrman_Context
 
     // A helper to look up the set of time samples to evalutae
     // for the given Hydra id.
+    HDPRMAN_API
     const std::vector<float>& GetTimeSamplesForId(SdfPath const&);
 
     // Convert any Hydra primvars that should be Riley instance attributes.
+    HDPRMAN_API
     RixParamList*
     ConvertAttributes(HdSceneDelegate *sceneDelegate, SdfPath const& id);
 
@@ -95,6 +97,7 @@ struct HdPrman_Context
     /// into a Riley equivalent form.  Retain the result internally
     /// in a cache, so that we may re-use the result with other
     /// rprims with the same set of bindings.
+    HDPRMAN_API
     RileyCoordSysIdVecRefPtr
     ConvertAndRetainCoordSysBindings(
         HdSceneDelegate *sceneDelegate,
@@ -102,6 +105,7 @@ struct HdPrman_Context
 
     /// Convert a list of categories returned by Hydra to
     /// equivalent Prman grouping attributes.
+    HDPRMAN_API
     void
     ConvertCategoriesToAttributes(SdfPath const& id,
                                   VtArray<TfToken> const& categories,
@@ -109,10 +113,16 @@ struct HdPrman_Context
 
     /// Release any coordinate system bindings cached for the given
     /// rprim id.
+    HDPRMAN_API
     void ReleaseCoordSysBindings(SdfPath const& id);
 
+    HDPRMAN_API
     void IncrementLightLinkCount(TfToken const& name);
+
+    HDPRMAN_API
     void DecrementLightLinkCount(TfToken const& name);
+
+    HDPRMAN_API
     bool IsLightLinkUsed(TfToken const& name);
 
     virtual ~HdPrman_Context() = default;

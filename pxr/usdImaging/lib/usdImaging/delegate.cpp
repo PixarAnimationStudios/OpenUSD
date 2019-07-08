@@ -33,6 +33,7 @@
 
 #include "pxr/imaging/hd/basisCurves.h"
 #include "pxr/imaging/hd/basisCurvesTopology.h"
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/material.h"
@@ -51,6 +52,7 @@
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/kind/registry.h"
 
+#include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/modelAPI.h"
 
@@ -126,6 +128,7 @@ UsdImagingDelegate::UsdImagingDelegate(
                            .HasAdapter(UsdImagingAdapterKeyTokens
                                        ->drawModeAdapterKey) )
     , _sceneMaterialsEnabled(true)
+    , _appWindowPolicy(CameraUtilMatchVertically)
     , _coordSysEnabled(parentIndex
                        ->IsSprimTypeSupported(HdPrimTypeTokens->coordSys))
 {
@@ -340,22 +343,6 @@ public:
         }
     }
 
-    // Preps all tasks for parallel update.
-    void UpdateVariabilityPrep() {
-        TF_FOR_ALL(it, _tasks) {
-            UsdImagingDelegate* delegate = it->delegate;
-            SdfPath const& cachePath = it->path;
-
-            _HdPrimInfo *primInfo = delegate->_GetHdPrimInfo(cachePath);
-            if (TF_VERIFY(primInfo, "%s\n", cachePath.GetText())) {
-                _AdapterSharedPtr const& adapter = primInfo->adapter;
-                if (TF_VERIFY(adapter, "%s\n", cachePath.GetText())) {
-                    adapter->TrackVariabilityPrep(primInfo->usdPrim, cachePath);
-                }
-            }
-        }
-    }
-
     // Populates prim variability and initial state.
     // Used as a parallel callback method for use with WorkParallelForN.
     void UpdateVariability(size_t start, size_t end) {
@@ -445,10 +432,6 @@ UsdImagingDelegate::SyncAll(bool includeUnvarying)
                       HdChangeTracker::StringifyDirtyBits(
                                                    primInfo.dirtyBits).c_str());
 
-            adapter->UpdateForTimePrep(primInfo.usdPrim,
-                                       cachePath,
-                                       _time,
-                                       primInfo.dirtyBits);
             worker.AddTask(this, cachePath);
         }
     }
@@ -491,10 +474,6 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
                     primInfo->dirtyBits,
                     HdChangeTracker::StringifyDirtyBits(primInfo->dirtyBits).c_str());
 
-            adapter->UpdateForTimePrep(primInfo->usdPrim,
-                                       cachePath,
-                                       _time,
-                                       primInfo->dirtyBits);
             worker.AddTask(this, cachePath);
         }
     }
@@ -518,10 +497,6 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
                     primInfo->dirtyBits,
                     HdChangeTracker::StringifyDirtyBits(
                                               primInfo->dirtyBits).c_str());
-            adapter->UpdateForTimePrep(primInfo->usdPrim,
-                                       cachePath,
-                                       _time,
-                                       primInfo->dirtyBits);
             worker.AddTask(this, cachePath);
         }
     }
@@ -731,7 +706,6 @@ UsdImagingDelegate::_ExecuteWorkForVariabilityUpdate(_Worker* worker)
         .Msg("[Repopulate] %zu variability tasks in worker\n", 
              worker->GetTaskCount());
 
-    worker->UpdateVariabilityPrep(); 
     worker->DisableValueCacheMutations();
     {
         // Release the GIL to ensure that threaded work won't deadlock if
@@ -1413,7 +1387,6 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
                 // Do nothing
             } else if (dirtyBits != HdChangeTracker::AllDirty) {
                 // Update Variability
-                adapter->TrackVariabilityPrep(primInfo->usdPrim, affectedCachePath);
                 adapter->TrackVariability(primInfo->usdPrim, affectedCachePath,
                                           &primInfo->timeVaryingBits);
 
@@ -1447,8 +1420,6 @@ UsdImagingDelegate::_UpdateSingleValue(SdfPath const& cachePath,
     if (TF_VERIFY(primInfo, "%s\n", cachePath.GetText()) &&
         TF_VERIFY(primInfo->adapter, "%s\n", cachePath.GetText())) {
         _AdapterSharedPtr &adapter = primInfo->adapter;
-        adapter->UpdateForTimePrep(primInfo->usdPrim, cachePath,
-                                   _time, requestBits);
         adapter->UpdateForTime(primInfo->usdPrim, cachePath,
                                _time, requestBits);
     }
@@ -1516,7 +1487,6 @@ UsdImagingDelegate::SetUsdDrawModesEnabled(bool enableUsdDrawModes)
     }
 }
 
-
 void
 UsdImagingDelegate::SetSceneMaterialsEnabled(bool enable)
 {
@@ -1526,10 +1496,11 @@ UsdImagingDelegate::SetSceneMaterialsEnabled(bool enable)
 
         UsdImagingIndexProxy indexProxy(this, nullptr);
 
-        // Mark dirty.
-        TF_FOR_ALL(it, _hdPrimInfoMap) {
-            const SdfPath &cachePath = it->first;
-            _HdPrimInfo &primInfo = it->second;
+        // XXX: Need to unfortunately go through all prim info entries to
+        // propagate dirtyness to gprims.
+        for (auto& pair : _hdPrimInfoMap) {
+            const SdfPath &cachePath = pair.first;
+            _HdPrimInfo &primInfo = pair.second;
             if (TF_VERIFY(primInfo.adapter, "%s", cachePath.GetText())) {
                 primInfo.adapter->MarkMaterialDirty(primInfo.usdPrim,
                                                     cachePath, &indexProxy);
@@ -1538,6 +1509,26 @@ UsdImagingDelegate::SetSceneMaterialsEnabled(bool enable)
     }
 }
 
+void
+UsdImagingDelegate::SetWindowPolicy(CameraUtilConformWindowPolicy policy)
+{
+    if (_appWindowPolicy != policy) {
+        _appWindowPolicy = policy;
+
+        UsdImagingIndexProxy indexProxy(this, nullptr);
+
+        // XXX: Need to unfortunately go through all prim info entries to
+        // propagate dirtyness to all the scene cameras.
+        for (auto& pair : _hdPrimInfoMap) {
+            const SdfPath &cachePath = pair.first;
+            _HdPrimInfo &primInfo = pair.second;
+             if (TF_VERIFY(primInfo.adapter, "%s", cachePath.GetText())) {
+                primInfo.adapter->MarkWindowPolicyDirty(primInfo.usdPrim,
+                                                    cachePath, &indexProxy);
+            }
+        }
+    }
+}
 
 /*virtual*/
 TfToken
@@ -1624,18 +1615,14 @@ UsdImagingDelegate::GetSubdivTags(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
+
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
-    SubdivTags tags;
-
-    if (_valueCache.ExtractSubdivTags(cachePath, &tags)) {
-        return tags;
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo)) {
+        return primInfo->adapter
+            ->GetSubdivTags(primInfo->usdPrim, cachePath, _time);
     }
-    _UpdateSingleValue(cachePath, HdChangeTracker::DirtySubdivTags);
-    if (TF_VERIFY(_valueCache.ExtractSubdivTags(cachePath, &tags))) {
-        return tags;
-    }
-
-    return tags;
+    return PxOsdSubdivTags();
 }
 
 /*virtual*/
@@ -1781,22 +1768,6 @@ UsdImagingDelegate::ClearRefineLevel(SdfPath const& usdPath)
         }
     }
 }
-
-
-bool
-UsdImagingDelegate::IsRefined(SdfPath const& usdPath) const
-{
-    // XXX(UsdImagingPaths): We use the usdPath directly as the cachePath
-    // here, but we should consult the adapter for this.
-    SdfPath const& cachePath = usdPath; // XXX ?!?
-    _RefineLevelMap::const_iterator it = _refineLevelMap.find(cachePath);
-    if (it == _refineLevelMap.end()) {
-        return (GetRefineLevelFallback() > 0);
-    }
-
-    return (it->second > 0);
-}
-
 
 void
 UsdImagingDelegate::SetReprFallback(HdReprSelector const &repr)
@@ -2121,24 +2092,24 @@ UsdImagingDelegate::SetRootVisibility(bool isVisible)
 }
 
 SdfPath 
-UsdImagingDelegate::GetPathForInstanceIndex(SdfPath const& protoPrimPath,
-                                            int instanceIndex,
-                                            int *absoluteInstanceIndex,
-                                            SdfPath *rprimPath,
+UsdImagingDelegate::GetPathForInstanceIndex(const SdfPath &protoRprimId,
+                                            int protoIndex,
+                                            int *instancerIndex,
+                                            SdfPath *masterCachePath,
                                             SdfPathVector *instanceContext)
 {
-    SdfPath cachePath = ConvertIndexPathToCachePath(protoPrimPath);
+    SdfPath cachePath = ConvertIndexPathToCachePath(protoRprimId);
 
     TF_DEBUG(USDIMAGING_SELECTION).Msg(
         "GetPathForInstanceIndex(%s, %d)\n",
-        cachePath.GetText(), instanceIndex);
+        cachePath.GetText(), protoIndex);
 
     // resolve all instancer hierarchy.
     int instanceCount = 0;
-    int protoInstanceIndex = instanceIndex;
-    int absIndex = ALL_INSTANCES; // PointInstancer may overwrite.
+    int origPrototypeIndex = protoIndex;
+    int resolvedInstancerIndex = ALL_INSTANCES; // PointInstancer may overwrite.
     SdfPathVector resolvedInstanceContext;
-    SdfPath resolvedRprimPath;
+    SdfPath resolvedMasterCachePath;
     do {
         _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
         if (!TF_VERIFY(primInfo, "%s\n", cachePath.GetText()) ||
@@ -2148,8 +2119,8 @@ UsdImagingDelegate::GetPathForInstanceIndex(SdfPath const& protoPrimPath,
 
         _AdapterSharedPtr const& adapter = primInfo->adapter;
         cachePath = adapter->GetPathForInstanceIndex(
-            cachePath, instanceIndex, &instanceCount, &absIndex, 
-            &resolvedRprimPath, &resolvedInstanceContext);
+            cachePath, protoIndex, &instanceCount, &resolvedInstancerIndex,
+            &resolvedMasterCachePath, &resolvedInstanceContext);
 
         if (cachePath.IsEmpty()) {
             break;
@@ -2160,25 +2131,26 @@ UsdImagingDelegate::GetPathForInstanceIndex(SdfPath const& protoPrimPath,
             break;
         }
 
-        // decode instanceIndex to the next level
+        // decode protoIndex to the next level
         if (instanceCount > 0) {
-            instanceIndex /= instanceCount;
+            protoIndex /= instanceCount;
         }
 
     } while(true);
 
     TF_DEBUG(USDIMAGING_SELECTION).Msg("GetPathForInstanceIndex(%s, %d) = "
-        "(%s, %d, %s)\n", protoPrimPath.GetText(), protoInstanceIndex,
-        cachePath.GetText(), absIndex,
+        "(%s, %d, %s, %s)\n", protoRprimId.GetText(), origPrototypeIndex,
+        cachePath.GetText(), resolvedInstancerIndex,
+        resolvedMasterCachePath.GetText(),
         resolvedInstanceContext.empty() ? "(empty)" :
         resolvedInstanceContext.back().GetText());
 
-    if (absoluteInstanceIndex) {
-        *absoluteInstanceIndex = absIndex;
+    if (instancerIndex) {
+        *instancerIndex = resolvedInstancerIndex;
     }
 
-    if (rprimPath) {
-        *rprimPath = resolvedRprimPath;
+    if (masterCachePath) {
+        *masterCachePath = resolvedMasterCachePath;
     }
 
     if (instanceContext) {
@@ -2878,6 +2850,38 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
     }
 
     return VtValue();
+}
+
+VtValue 
+UsdImagingDelegate::GetCameraParamValue(SdfPath const &id, 
+                                        TfToken const &paramName)
+{
+    if (paramName == HdCameraTokens->windowPolicy) {
+        // Hydra expects the window policy to be authored on the camera.
+        // Since UsdGeomCamera doesn't have this property, we store the app
+        // state via SetWindowPolicy (see above).
+        return VtValue(_appWindowPolicy);
+    }
+
+    SdfPath cachePath = ConvertIndexPathToCachePath(id);
+    VtValue value;
+    if (!_valueCache.ExtractCameraParam(cachePath, paramName, &value)) {
+        HdDirtyBits dirtyBit = HdCamera::Clean;
+        if (paramName == HdCameraTokens->worldToViewMatrix) {
+            dirtyBit = HdCamera::DirtyViewMatrix;
+        } else if (paramName == HdCameraTokens->projectionMatrix) {
+            dirtyBit = HdCamera::DirtyProjMatrix;
+        } else if (paramName == HdCameraTokens->clipPlanes) {
+            dirtyBit = HdCamera::DirtyClipPlanes;
+        } else {
+            dirtyBit = HdCamera::DirtyParams;
+        }
+        
+        _UpdateSingleValue(cachePath, dirtyBit);
+         TF_VERIFY(
+             _valueCache.ExtractCameraParam(cachePath, paramName, &value));
+    }
+    return value;
 }
 
 HdVolumeFieldDescriptorVector

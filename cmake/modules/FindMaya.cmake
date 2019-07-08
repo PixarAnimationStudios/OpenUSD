@@ -27,9 +27,19 @@
 #  License text for the above reference.)
 
 if(APPLE)
+    # Note: according to official Autodesk sources (and how it sets up
+    # MAYA_LOCATION itself), MAYA_LOCATION should include Maya.app/Contents
+    # on MacOS - ie:
+    #   /Applications/Autodesk/maya2019/Maya.app/Contents
+    # However, for legacy reasons, and for maximum compatibility, setting
+    # it to the installation root is also supported, ie:
+    #   /Applications/Autodesk/maya2019
+
     find_path(MAYA_BASE_DIR
             include/maya/MFn.h
         HINTS
+            "${MAYA_LOCATION}/../.."
+            "$ENV{MAYA_LOCATION}/../.."
             "${MAYA_LOCATION}"
             "$ENV{MAYA_LOCATION}"
             "/Applications/Autodesk/maya2019"
@@ -47,6 +57,7 @@ if(APPLE)
             "$ENV{MAYA_LOCATION}"
             "${MAYA_BASE_DIR}"
         PATH_SUFFIXES
+            MacOS/
             Maya.app/Contents/MacOS/
         DOC
             "Maya's libraries path"

@@ -622,5 +622,32 @@ class TestUsdGeomXformAPI(unittest.TestCase):
             Gf.Vec3f(-100.0, -300.0, -500.0),
             UsdGeom.XformCommonAPI.RotationOrderXYZ)
 
+    def test_GetRotationTransform(self):
+        """
+        Asserts that computing the rotation matrix via XformCommonAPI is the
+        same as computing directly from ops.
+        """
+        s = Usd.Stage.CreateInMemory()
+
+        count = 0
+        for opType in [
+            UsdGeom.XformOp.TypeRotateXYZ,
+            UsdGeom.XformOp.TypeRotateXZY,
+            UsdGeom.XformOp.TypeRotateYXZ,
+            UsdGeom.XformOp.TypeRotateYZX,
+            UsdGeom.XformOp.TypeRotateZXY,
+            UsdGeom.XformOp.TypeRotateZYX,
+        ]:
+            count += 1
+            x = UsdGeom.Xform.Define(s, '/X%s' % count)
+            x.AddXformOp(opType, UsdGeom.XformOp.PrecisionFloat).Set(
+                Gf.Vec3f(10, 20, 30))
+            _, rotation, _, _, rotOrder = UsdGeom.XformCommonAPI(x)\
+                .GetXformVectorsByAccumulation(Usd.TimeCode.Default())
+            transform = UsdGeom.XformCommonAPI.GetRotationTransform(
+                rotation, rotOrder)
+            self.assertTrue(Gf.IsClose(
+                x.GetLocalTransformation(), transform, 1e-5))
+
 if __name__ == "__main__":
     unittest.main()

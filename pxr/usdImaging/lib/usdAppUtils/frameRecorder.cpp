@@ -151,7 +151,8 @@ UsdAppUtilsFrameRecorder::Record(
 
     _imagingEngine.SetCameraState(
         frustum.ComputeViewMatrix(),
-        frustum.ComputeProjectionMatrix(),
+        frustum.ComputeProjectionMatrix());
+    _imagingEngine.SetRenderViewport(
         GfVec4d(
             0.0,
             0.0,

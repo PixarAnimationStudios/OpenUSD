@@ -209,8 +209,8 @@ public:
     /// authored, the number of elements must be equal to the number of elements
     /// in the *offsets* array.
     ///
-    /// \n  C++ Type: VtArray<unsigned int>
-    /// \n  Usd Type: SdfValueTypeNames->UIntArray
+    /// \n  C++ Type: VtArray<int>
+    /// \n  Usd Type: SdfValueTypeNames->IntArray
     /// \n  Variability: SdfVariabilityUniform
     /// \n  Fallback Value: No Fallback
     USDSKEL_API

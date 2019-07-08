@@ -417,7 +417,7 @@ UsdStage::UsdStage(const SdfLayerRefPtr& rootLayer,
                    const ArResolverContext& pathResolverContext,
                    const UsdStagePopulationMask& mask,
                    InitialLoadSet load)
-    : _pseudoRoot(0)
+    : _pseudoRoot(nullptr)
     , _rootLayer(rootLayer)
     , _sessionLayer(sessionLayer)
     , _editTarget(_rootLayer)
@@ -517,9 +517,11 @@ namespace {
 // We don't populate such prims in Usd.
 struct _NameChildrenPred
 {
-    explicit _NameChildrenPred(const UsdStagePopulationMask* mask,
+    explicit _NameChildrenPred(const UsdStagePopulationMask *mask,
+                               const UsdStageLoadRules *loadRules,
                                Usd_InstanceCache* instanceCache)
         : _mask(mask)
+        , _loadRules(loadRules)
         , _instanceCache(instanceCache)
     { }
 
@@ -544,47 +546,21 @@ struct _NameChildrenPred
         // to compute indexes for children of instances unless the index will be
         // used as a source for a master prim.
         if (index.IsInstanceable()) {
-            const bool indexUsedAsMasterSource = 
-                _instanceCache->RegisterInstancePrimIndex(index);
-            if (_mask && indexUsedAsMasterSource) {
-                // Add this to the _masterSrcIndexes mask.  We use this to know
-                // which master src indexes need to be populated fully, due to
-                // instancing.
-                tbb::spin_mutex::scoped_lock lock(_masterSrcIndexesMutex);
-                _masterSrcIndexes.Add(index.GetPath());
-            }
-            return indexUsedAsMasterSource;
+            return _instanceCache->RegisterInstancePrimIndex(
+                index, _mask, *_loadRules);
         }
 
         // Compose only the child prims that are included in the population
-        // mask, if any, unless we're composing an index that a master uses, in
-        // which case we do the whole thing.
-        if (_mask) {
-            SdfPath const &indexPath = index.GetPath();
-            bool masterUses = false;
-            {
-                // Check to see if this path is included by one of the master
-                // src indexes we registered for use by a master.  If so, we do
-                // the entire subtree.  Maybe someday in the future we'll do
-                // something fancier for masks beneath instances.
-                masterUses = _instanceCache->MasterUsesPrimIndexPath(indexPath);
-                if (!masterUses) {
-                    tbb::spin_mutex::scoped_lock lock(_masterSrcIndexesMutex);
-                    masterUses = _masterSrcIndexes.IncludesSubtree(indexPath);
-                }
-            }
-            return masterUses ||
-                _mask->GetIncludedChildNames(indexPath, childNamesToCompose);
-        }
-
-        return true;
+        // mask, if any.  Masks are included in instancing keys, so this works
+        // correctly with instancing.
+        return !_mask ||
+            _mask->GetIncludedChildNames(index.GetPath(), childNamesToCompose);
     }
 
 private:
-    const UsdStagePopulationMask* _mask;
-    Usd_InstanceCache* _instanceCache;
-    mutable UsdStagePopulationMask _masterSrcIndexes;
-    mutable tbb::spin_mutex _masterSrcIndexesMutex;
+    const UsdStagePopulationMask *_mask;
+    const UsdStageLoadRules *_loadRules;
+    Usd_InstanceCache *_instanceCache;
 };
 
 } // anon
@@ -627,11 +603,13 @@ UsdStage::_InstantiateStage(const SdfLayerRefPtr &rootLayer,
 
     ArResolverScopedCache resolverCache;
 
+    // Set the stage's load rules.
+    stage->_loadRules = (load == LoadAll) ?
+        UsdStageLoadRules::LoadAll() : UsdStageLoadRules::LoadNone();
+
     // Populate the stage, request payloads according to InitialLoadSet load.
     stage->_ComposePrimIndexesInParallel(
         SdfPathVector(1, SdfPath::AbsoluteRootPath()),
-        load == LoadAll ?
-        _IncludeAllDiscoveredPayloads : _IncludeNoDiscoveredPayloads,
         "instantiating stage");
     stage->_pseudoRoot = stage->_InstantiatePrim(SdfPath::AbsoluteRootPath());
     stage->_ComposeSubtreeInParallel(stage->_pseudoRoot);
@@ -1801,7 +1779,7 @@ UsdStage::_GetPrimDataAtPath(const SdfPath &path) const
     if (_primMapMutex)
         lock.acquire(*_primMapMutex, /*write=*/false);
     PathToNodeMap::const_iterator entry = _primMap.find(path);
-    return entry != _primMap.end() ? entry->second.get() : NULL;
+    return entry != _primMap.end() ? entry->second.get() : nullptr;
 }
 
 Usd_PrimDataPtr
@@ -1811,7 +1789,7 @@ UsdStage::_GetPrimDataAtPath(const SdfPath &path)
     if (_primMapMutex)
         lock.acquire(*_primMapMutex, /*write=*/false);
     PathToNodeMap::const_iterator entry = _primMap.find(path);
-    return entry != _primMap.end() ? entry->second.get() : NULL;
+    return entry != _primMap.end() ? entry->second.get() : nullptr;
 }
 
 Usd_PrimDataConstPtr 
@@ -1842,7 +1820,11 @@ UsdStage::_IsValidForUnload(const SdfPath& path) const
                         path.GetText());
         return false;
     }
-
+    if (_instanceCache->IsPathInMaster(path)) {
+        TF_CODING_ERROR("Attempted to load/unload a master path <%s>",
+                        path.GetText());
+        return false;
+    }
     return true;
 }
 
@@ -1891,41 +1873,6 @@ UsdStage::_IsValidForLoad(const SdfPath& path) const
     return true;
 }
 
-template <class Callback>
-void
-UsdStage::_WalkPrimsWithMasters(
-    const SdfPath& rootPath, Callback const &cb) const
-{
-    tbb::concurrent_unordered_set<SdfPath, SdfPath::Hash> seenMasterPrimPaths;
-    if (UsdPrim root = GetPrimAtPath(rootPath))
-        _WalkPrimsWithMastersImpl(root, cb, &seenMasterPrimPaths);
-}
-
-template <class Callback>
-void
-UsdStage::_WalkPrimsWithMastersImpl(
-    UsdPrim const &prim,
-    Callback const &cb,
-    tbb::concurrent_unordered_set<SdfPath, SdfPath::Hash> *seenMasterPrimPaths
-    ) const
-{
-    UsdPrimRange children = UsdPrimRange::AllPrims(prim);
-    WorkParallelForEach(
-        children.begin(), children.end(),
-        [=](UsdPrim const &child) {
-            cb(child);
-            if (child.IsInstance()) {
-                const UsdPrim masterPrim = child.GetMaster();
-                if (TF_VERIFY(masterPrim) &&
-                    seenMasterPrimPaths->insert(masterPrim.GetPath()).second) {
-                    // Recurse.
-                    _WalkPrimsWithMastersImpl(
-                        masterPrim, cb, seenMasterPrimPaths);
-                }
-            }
-        });
-}
-
 void
 UsdStage::_DiscoverPayloads(const SdfPath& rootPath,
                             UsdLoadPolicy policy,
@@ -1959,7 +1906,12 @@ UsdStage::_DiscoverPayloads(const SdfPath& rootPath,
     };
     
     if (policy == UsdLoadWithDescendants) {
-        _WalkPrimsWithMasters(rootPath, addPrimPayload);
+        if (UsdPrim root = GetPrimAtPath(rootPath)) {
+            UsdPrimRange children = UsdPrimRange(
+                root, UsdTraverseInstanceProxies(UsdPrimAllPrimsPredicate));
+            WorkParallelForEach(
+                children.begin(), children.end(), addPrimPayload);
+        }
     } else {
         addPrimPayload(GetPrimAtPath(rootPath));
     }
@@ -1971,47 +1923,6 @@ UsdStage::_DiscoverPayloads(const SdfPath& rootPath,
     }
     if (usdPrimPaths) {
         usdPrimPaths->insert(usdPrimPathsVec.begin(), usdPrimPathsVec.end());
-    }
-}
-
-void
-UsdStage::_DiscoverAncestorPayloads(const SdfPath& rootPath,
-                                    SdfPathSet* result,
-                                    bool unloadedOnly) const
-{
-    if (rootPath == SdfPath::AbsoluteRootPath())
-        return;
-
-    for (SdfPath parentPath = rootPath.GetParentPath(); 
-         parentPath != SdfPath::AbsoluteRootPath(); 
-         parentPath = parentPath.GetParentPath()) {
-
-        UsdPrim parent = GetPrimAtPath(parentPath);
-        if (!parent)
-            continue;
-
-        // Inactive prims are never included in this query.
-        // Masters are also never included, since they aren't
-        // independently loadable.
-        if (!parent.IsActive() || parent.IsMaster())
-            continue;
-
-        if (parent._GetSourcePrimIndex().HasAnyPayloads()) {
-            const SdfPath& payloadIncludePath = 
-                parent._GetSourcePrimIndex().GetPath();
-            if (!unloadedOnly ||
-                !_cache->IsPayloadIncluded(payloadIncludePath)) {
-                TF_DEBUG(USD_PAYLOADS).Msg(
-                    "PAYLOAD DISCOVERY: discovered ancestor payload at <%s>\n",
-                    payloadIncludePath.GetText());
-                result->insert(payloadIncludePath);
-            } else {
-                TF_DEBUG(USD_PAYLOADS).Msg(
-                        "PAYLOAD DISCOVERY: ignored ancestor payload at <%s> "
-                        "because it was already loaded\n",
-                        payloadIncludePath.GetText());
-            }
-        }
     }
 }
 
@@ -2046,133 +1957,90 @@ UsdStage::LoadAndUnload(const SdfPathSet &loadSet,
 {
     TfAutoMallocTag2 tag("Usd", _mallocTagID);
 
-    SdfPathSet aggregateLoads, aggregateUnloads;
-    _LoadAndUnload(loadSet, unloadSet,
-                   &aggregateLoads, &aggregateUnloads, policy);
-
-    // send notifications when loading or unloading
-    if (aggregateLoads.empty() && aggregateUnloads.empty()) {
-        return;
-    }
-
-    UsdStageWeakPtr self(this);
-    SdfPathVector pathsToRecomposeVec;
-
-    pathsToRecomposeVec.insert(pathsToRecomposeVec.begin(), 
-                               aggregateLoads.begin(), aggregateLoads.end());
-    pathsToRecomposeVec.insert(pathsToRecomposeVec.begin(),
-                               aggregateUnloads.begin(), aggregateUnloads.end());
-    SdfPath::RemoveDescendentPaths(&pathsToRecomposeVec);
-
-    UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges, infoChanges;
-    for (const SdfPath& p : pathsToRecomposeVec) {
-        resyncChanges[p];
-    }
-
-    UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges).Send(self);
-
-    UsdNotice::StageContentsChanged(self).Send(self);
-}
-
-void
-UsdStage::_LoadAndUnload(const SdfPathSet &loadSet,
-                         const SdfPathSet &unloadSet,
-                         SdfPathSet *aggregateLoads,
-                         SdfPathSet *aggregateUnloads,
-                         UsdLoadPolicy policy)
-{
-    // Include implicit (recursive or ancestral) related payloads in both sets.
     SdfPathSet finalLoadSet, finalUnloadSet;
 
-    // It's important that we do not include payloads that were previously
-    // loaded because we need to iterate and will enter an infinite loop if we
-    // do not reduce the load set on each iteration. This manifests below in
-    // the unloadedOnly=true argument.
     for (auto const &path : loadSet) {
         if (!_IsValidForLoad(path)) {
             continue;
         }
-        _DiscoverPayloads(path, policy, &finalLoadSet, /*unloadedOnly=*/true);
-        _DiscoverAncestorPayloads(path, &finalLoadSet, /*unloadedOnly=*/true);
+        finalLoadSet.insert(path);
     }
 
-    // Recursively populate the unload set.
-    SdfPathVector unloadPruneSet;
     for (auto const &path: unloadSet) {
         if (!_IsValidForUnload(path)) {
             continue;
         }
-
-        // Find all the prim index paths including recursively in masters.  Then
-        // the payload exclude set is everything in pcp's payload set prefixed
-        // by these paths.
-        tbb::concurrent_vector<SdfPath> unloadIndexPaths;
-        _WalkPrimsWithMasters(
-            path,
-            [&unloadIndexPaths] (UsdPrim const &prim) {
-                if (prim.IsInMaster() && prim.HasAuthoredPayloads()) {
-                    unloadIndexPaths.push_back(
-                        prim._GetSourcePrimIndex().GetPath());
-                }
-            });
-        UsdPrim prim = GetPrimAtPath(path);
-        if (prim && !prim.IsInMaster())
-            unloadPruneSet.push_back(prim._GetSourcePrimIndex().GetPath());
-        unloadPruneSet.insert(unloadPruneSet.end(),
-                              unloadIndexPaths.begin(), unloadIndexPaths.end());
-    }
-    TF_DEBUG(USD_PAYLOADS).Msg("PAYLOAD: unloadPruneSet: %s\n",
-                               TfStringify(unloadPruneSet).c_str());
-    SdfPath::RemoveDescendentPaths(&unloadPruneSet);
-
-    // Now get the current load set and find everything that's prefixed by
-    // something in unloadPruneSet.  That's the finalUnloadSet.
-    PcpCache::PayloadSet const &curLoadSet = _cache->GetIncludedPayloads(); //GetLoadSet();
-    SdfPathVector curLoadVec(curLoadSet.begin(), curLoadSet.end());
-    curLoadVec.erase(
-        std::remove_if(
-            curLoadVec.begin(), curLoadVec.end(),
-            [&unloadPruneSet](SdfPath const &path) {
-                return SdfPathFindLongestPrefix(
-                    unloadPruneSet.begin(), unloadPruneSet.end(), path) ==
-                    unloadPruneSet.end();
-            }),
-        curLoadVec.end());
-    finalUnloadSet.insert(curLoadVec.begin(), curLoadVec.end());
-
-    // If we aren't changing the load set, terminate recursion.
-    if (finalLoadSet.empty() && finalUnloadSet.empty()) {
-        TF_DEBUG(USD_PAYLOADS).Msg("PAYLOAD: terminate recursion\n");
-        return;
+        finalUnloadSet.insert(path);
     }
 
-    // Debug output only.
-    if (TfDebug::IsEnabled(USD_PAYLOADS)) {
-        TF_DEBUG(USD_PAYLOADS).Msg("PAYLOAD: Load/Unload payload sets\n"
-                                   "  Include set:\n");
-        for (const auto& path : loadSet) {
-            TF_DEBUG(USD_PAYLOADS).Msg("\t<%s>\n", path.GetString().c_str());
-        }
-        TF_DEBUG(USD_PAYLOADS).Msg("  Final Include set:\n");
-        for (const auto& path : finalLoadSet) {
-            TF_DEBUG(USD_PAYLOADS).Msg("\t<%s>\n", path.GetString().c_str());
-        }
+    _loadRules.LoadAndUnload(finalLoadSet, finalUnloadSet, policy);
 
-        TF_DEBUG(USD_PAYLOADS).Msg("  Exclude set:\n");
-        for (const auto& path : unloadSet) {
-            TF_DEBUG(USD_PAYLOADS).Msg("\t<%s>\n", path.GetString().c_str());
-        }
-        TF_DEBUG(USD_PAYLOADS).Msg("  Final Exclude set:\n");
-        for (const auto& path : finalUnloadSet) {
-            TF_DEBUG(USD_PAYLOADS).Msg("\t<%s>\n", path.GetString().c_str());
+    // Go through the finalLoadSet, and check ancestors -- if any are unloaded,
+    // include the most ancestral in the finalLoadSet.
+    for (SdfPath const &p: finalLoadSet) {
+        SdfPath curPath = p;
+        while (true) {
+            SdfPath parentPath = curPath.GetParentPath();
+            if (parentPath.IsEmpty())
+                break;
+            UsdPrim prim = GetPrimAtPath(parentPath);
+            if (prim && prim.IsLoaded() && p != curPath) {
+                finalLoadSet.insert(curPath);
+                break;
+            }
+            curPath = parentPath;
         }
     }
 
-    ArResolverScopedCache resolverCache;
+    // Go through the loadSet and unloadSet, and find the most ancestral
+    // instance path for each (or the path itself if no such path exists) and
+    // treat them as significant changes.
+    SdfPathVector recomposePaths;
+    for (SdfPath const &p: finalLoadSet) {
+        SdfPath instancePath = _instanceCache->GetMostAncestralInstancePath(p);
+        recomposePaths.push_back(instancePath.IsEmpty() ? p : instancePath);
+    }    
+    for (SdfPath const &p: finalUnloadSet) {
+        SdfPath instancePath = _instanceCache->GetMostAncestralInstancePath(p);
+        recomposePaths.push_back(instancePath.IsEmpty() ? p : instancePath);
+    }
 
-    // Send include/exclude sets to the PcpCache.
+    // This leaves recomposePaths sorted.
+    SdfPath::RemoveDescendentPaths(&recomposePaths);
+
     PcpChanges changes;
-    _cache->RequestPayloads(finalLoadSet, finalUnloadSet, &changes);
+    for (SdfPath const &p: recomposePaths) {
+        changes.DidChangeSignificantly(_cache.get(), p);
+    }
+
+    // Remove any included payloads that are descendant to recomposePaths.
+    // We'll re-include everything we need during _Recompose via the inclusion
+    // predicate.
+    PcpCache::PayloadSet const &currentIncludes = _cache->GetIncludedPayloads();
+    SdfPathSet currentIncludesAsSet(currentIncludes.begin(),
+                                    currentIncludes.end());
+    SdfPathSet payloadsToExclude;
+    for (SdfPath const &p: recomposePaths) {
+        auto range = SdfPathFindPrefixedRange(currentIncludesAsSet.begin(),
+                                              currentIncludesAsSet.end(), p);
+        payloadsToExclude.insert(range.first, range.second);
+    }
+    _cache->RequestPayloads(SdfPathSet(), payloadsToExclude, &changes);
+
+    if (TfDebug::IsEnabled(USD_PAYLOADS)) {
+        TF_DEBUG(USD_PAYLOADS).Msg(
+            "UsdStage::LoadAndUnload()\n"
+            "  finalLoadSet: %s\n"
+            "  finalUnloadSet: %s\n"
+            "  _loadRules: %s\n"
+            "  payloadsToExclude: %s\n"
+            "  recomposePaths: %s\n",
+            TfStringify(finalLoadSet).c_str(),
+            TfStringify(finalUnloadSet).c_str(),
+            TfStringify(_loadRules).c_str(),
+            TfStringify(payloadsToExclude).c_str(),
+            TfStringify(recomposePaths).c_str());
+    }
 
     // Recompose, given the resulting changes from Pcp.
     //
@@ -2183,19 +2051,16 @@ UsdStage::_LoadAndUnload(const SdfPathSet &loadSet,
     TF_DEBUG(USD_CHANGES).Msg("\nProcessing Load/Unload changes\n");
     _Recompose(changes);
 
-    // Recurse.
-    //
-    // Note that recursion is not necessary for the unload set, which gets upon
-    // the first recursion.
-    
-    // aggregate our results for notification
-    if (aggregateLoads && aggregateUnloads) {
-        aggregateLoads->insert(finalLoadSet.begin(), finalLoadSet.end());
-        aggregateUnloads->insert(finalUnloadSet.begin(), finalUnloadSet.end());
+    UsdStageWeakPtr self(this);
+
+    UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges, infoChanges;
+    for (SdfPath const &p: recomposePaths) {
+        resyncChanges[p];
     }
 
-    _LoadAndUnload(loadSet, SdfPathSet(),
-                   aggregateLoads, aggregateUnloads, policy);
+    UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges).Send(self);
+
+    UsdNotice::StageContentsChanged(self).Send(self);
 }
 
 SdfPathSet
@@ -2232,22 +2097,21 @@ UsdStage::FindLoadable(const SdfPath& rootPath)
 {
     SdfPath path = rootPath;
 
-    // If the given path points to a prim beneath an instance,
-    // convert it to the path of the prim in the corresponding master.
-    // This ensures _DiscoverPayloads will always return paths to 
-    // prims in masters for loadable prims in instances.
-    if (!Usd_InstanceCache::IsPathInMaster(path)) {
-        const SdfPath pathInMaster = 
-            _instanceCache->GetPathInMasterForInstancePath(path);
-        if (!pathInMaster.IsEmpty()) {
-            path = pathInMaster;
-        }
-    }
-
     SdfPathSet loadable;
     _DiscoverPayloads(path, UsdLoadWithDescendants, nullptr,
                       /* unloadedOnly = */ false, &loadable);
     return loadable;
+}
+
+void
+UsdStage::SetLoadRules(UsdStageLoadRules const &rules)
+{
+    // For now just set the rules and recompose everything.
+    _loadRules = rules;
+ 
+    PcpChanges changes;
+    changes.DidChangeSignificantly(_cache.get(), SdfPath::AbsoluteRootPath());
+    _Recompose(changes);
 }
 
 void
@@ -2330,13 +2194,13 @@ Usd_PrimDataConstPtr
 UsdStage::_GetMasterForInstance(Usd_PrimDataConstPtr prim) const
 {
     if (!prim->IsInstance()) {
-        return NULL;
+        return nullptr;
     }
 
     const SdfPath masterPath =
         _instanceCache->GetMasterForInstanceablePrimIndexPath(
             prim->GetPrimIndex().GetPath());
-    return masterPath.IsEmpty() ? NULL : _GetPrimDataAtPath(masterPath);
+    return masterPath.IsEmpty() ? nullptr : _GetPrimDataAtPath(masterPath);
 }
 
 bool 
@@ -2475,9 +2339,7 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim,
                 // link here.
                 masterPrim->_SetParentLink(_pseudoRoot);
             }
-            // XXX: For now, always do full masters without masking.
-            _ComposeSubtree(masterPrim, _pseudoRoot, /*mask=*/nullptr,
-                            sourceIndexPath);
+            _ComposeSubtree(masterPrim, _pseudoRoot, mask, sourceIndexPath);
         }
         return;
     }
@@ -2808,18 +2670,22 @@ UsdStage::_ComposeSubtreesInParallel(
 
     TRACE_FUNCTION();
 
-    // Begin a subtree composition in parallel.  Calling _ComposeChildren and
-    // passing recurse=true will spawn a task for each subtree.
-
+    // Begin a subtree composition in parallel.
     _primMapMutex = boost::in_place();
     _dispatcher = boost::in_place();
-    
-    for (size_t i = 0; i != prims.size(); ++i) {
-        Usd_PrimDataPtr p = prims[i];
-        _dispatcher->Run(
-            &UsdStage::_ComposeSubtreeImpl, this, p, p->GetParent(),
-            p->IsInMaster() ? nullptr : &_populationMask,
-            primIndexPaths ? (*primIndexPaths)[i] : p->GetPath());
+    try {
+        for (size_t i = 0; i != prims.size(); ++i) {
+            Usd_PrimDataPtr p = prims[i];
+            _dispatcher->Run(
+                &UsdStage::_ComposeSubtreeImpl, this, p, p->GetParent(),
+                &_populationMask,
+                primIndexPaths ? (*primIndexPaths)[i] : p->GetPath());
+        }
+    }
+    catch (...) {
+        _dispatcher = boost::none;
+        _primMapMutex = boost::none;
+        throw;
     }
 
     _dispatcher = boost::none;
@@ -2908,7 +2774,7 @@ UsdStage::_DestroyDescendents(Usd_PrimDataPtr prim)
     // Recurse to children first.
     Usd_PrimDataSiblingIterator
         childIt = prim->_ChildrenBegin(), childEnd = prim->_ChildrenEnd();
-    prim->_firstChild = NULL;
+    prim->_firstChild = nullptr;
     while (childIt != childEnd) {
         if (_dispatcher) {
             _dispatcher->Run(&UsdStage::_DestroyPrim, this, *childIt++);
@@ -3537,10 +3403,10 @@ _Stringify(const ChangedPaths& paths)
 // the vector and extraData is ignored.
 template <class ChangedPaths, class... ExtraData>
 static void
-_AddDependentPaths(const SdfLayerHandle &layer, const SdfPath &path,
-                   const PcpCache &cache,
-                   ChangedPaths *changedPaths,
-                   const ExtraData&... extraData)
+_AddAffectedStagePaths(const SdfLayerHandle &layer, const SdfPath &path,
+                       const PcpCache &cache,
+                       ChangedPaths *changedPaths,
+                       const ExtraData&... extraData)
 {
     // We include virtual dependencies so that we can process
     // changes like adding missing defaultPrim metadata.
@@ -3686,24 +3552,32 @@ UsdStage::_HandleLayersDidChange(
             continue;
         }
 
+        // Loop over the changes in this layer, and determine what parts of the
+        // usd stage are affected by them.
         for (const auto& entryList : layerAndChangelist.second.GetEntryList()) {
 
-            const SdfPath &path = entryList.first;
+            // This path is the path in the layer that was modified -- in
+            // general it's not the same as a path to an object on a usd stage.
+            // Instead, it's the path to the changed part of a layer, which may
+            // affect zero or more objects on the usd stage, depending on
+            // reference structures, active state, etc.  We have to map these
+            // paths to those objects on the stage that are affected.
+            const SdfPath &sdfPath = entryList.first;
             const SdfChangeList::Entry &entry = entryList.second;
 
             // Skip target paths entirely -- we do not create target objects in
             // USD.
-            if (path.IsTargetPath())
+            if (sdfPath.IsTargetPath())
                 continue;
 
             TF_DEBUG(USD_CHANGES).Msg(
                 "<%s> in @%s@ changed.\n",
-                path.GetText(), 
+                sdfPath.GetText(), 
                 layerAndChangelist.first->GetIdentifier().c_str());
 
             bool willRecompose = false;
-            if (path == SdfPath::AbsoluteRootPath() ||
-                path.IsPrimOrPrimVariantSelectionPath()) {
+            if (sdfPath == SdfPath::AbsoluteRootPath() ||
+                sdfPath.IsPrimOrPrimVariantSelectionPath()) {
 
                 bool didChangeActive = false;
                 for (const auto& info : entry.infoChanged) {
@@ -3739,23 +3613,24 @@ UsdStage::_HandleLayersDidChange(
                 }
 
                 if (willRecompose) {
-                    _AddDependentPaths(layerAndChangelist.first, path, 
-                                        *_cache, &recomposeChanges, &entry);
+                    _AddAffectedStagePaths(layerAndChangelist.first, sdfPath, 
+                                           *_cache, &recomposeChanges, &entry);
                 }
                 if (didChangeActive) {
-                    _AddDependentPaths(layerAndChangelist.first, path, 
-                                       *_cache, &changedActivePaths);
+                    _AddAffectedStagePaths(layerAndChangelist.first, sdfPath, 
+                                           *_cache, &changedActivePaths);
                 }
             }
             else {
-                willRecompose = path.IsPropertyPath() &&
+                willRecompose = sdfPath.IsPropertyPath() &&
                     (entry.flags.didAddPropertyWithOnlyRequiredFields ||
                      entry.flags.didAddProperty ||
                      entry.flags.didRemovePropertyWithOnlyRequiredFields ||
                      entry.flags.didRemoveProperty);
 
                 if (willRecompose) {
-                    _AddDependentPaths(layerAndChangelist.first, path, 
+                    _AddAffectedStagePaths(
+                        layerAndChangelist.first, sdfPath, 
                                        *_cache, &otherResyncChanges, &entry);
                 }
             }
@@ -3764,11 +3639,17 @@ UsdStage::_HandleLayersDidChange(
             // scene paths separately so we can notify clients about the
             // changes.
             if (!willRecompose) {
-                _AddDependentPaths(layerAndChangelist.first, path, 
+                _AddAffectedStagePaths(layerAndChangelist.first, sdfPath, 
                                   *_cache, &otherInfoChanges, &entry);
             }
         }
     }
+
+    // Now we have collected the affected paths in UsdStage namespace in
+    // recomposeChanges, otherResyncChanges, otherInfoChanges and
+    // changedActivePaths.  Push changes through Pcp to determine further
+    // invalidation based on composition metadata (reference, inherits, variant
+    // selections, etc).
 
     PcpChanges changes;
     changes.DidChange(std::vector<PcpCache*>(1, _cache.get()),
@@ -3990,8 +3871,7 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
     ArResolverScopedCache resolverCache;
     Usd_InstanceChanges instanceChanges;
     _ComposePrimIndexesInParallel(
-        primPathsToRecompose, _IncludeNewPayloadsIfAncestorWasIncluded,
-        "recomposing stage", &instanceChanges);
+        primPathsToRecompose, "recomposing stage", &instanceChanges);
     
     // Determine what instance master prims on this stage need to
     // be recomposed due to instance prim index changes.
@@ -4058,47 +3938,6 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
         (*pathsToRecompose)[p];
     }
     _DestroyPrimsInParallel(instanceChanges.deadMasterPrims);
-
-    // If the instancing changes produced old/new associated indexes, we need to
-    // square up payload inclusion, and recurse.
-    if (!instanceChanges.associatedIndexOld.empty()) {
-
-        // Walk the old and new, and if the old has payloads included strictly
-        // descendent to the old path, find the equivalent relative path on the
-        // new and include that payload.
-        PcpCache::PayloadSet const &curLoadHashSet = _cache->GetIncludedPayloads();
-        SdfPathSet curLoadSet(curLoadHashSet.begin(), curLoadHashSet.end());
-        SdfPathSet newPayloads;
-
-        for (size_t i = 0;
-             i != instanceChanges.associatedIndexOld.size(); ++i) {
-            SdfPath const &oldPath = instanceChanges.associatedIndexOld[i];
-            SdfPath const &newPath = instanceChanges.associatedIndexNew[i];
-            for (auto iter = curLoadSet.lower_bound(oldPath);
-                 iter != curLoadSet.end() && iter->HasPrefix(oldPath); ++iter) {
-                if (*iter == oldPath)
-                    continue;
-                SdfPath payloadPath = iter->ReplacePrefix(oldPath, newPath);
-                // Only include the equivalent payload if we have a prim at the
-                // newPath.
-                if (GetPrimAtPath(newPath)) {
-                    newPayloads.insert(payloadPath);
-                    TF_DEBUG(USD_INSTANCING).Msg(
-                        "Including equivalent payload <%s> -> <%s> for "
-                        "instancing changes.\n",
-                        iter->GetText(), payloadPath.GetText());
-                }
-            }
-        }
-        if (!newPayloads.empty()) {
-            // Request payloads and recurse.
-            PcpChanges pcpChanges;
-            _cache->RequestPayloads(newPayloads, SdfPathSet(), &pcpChanges);
-            T toRecompose;
-            _RecomposePrims(pcpChanges, &toRecompose);
-            pathsToRecompose->insert(toRecompose.begin(), toRecompose.end());
-        }
-    }
 }
 
 template <class PrimIndexPathMap>
@@ -4215,66 +4054,16 @@ UsdStage::_ComputeSubtreesToRecompose(
     }
 }
 
-struct UsdStage::_IncludeNewlyDiscoveredPayloadsPredicate
+struct UsdStage::_IncludePayloadsPredicate
 {
-    explicit _IncludeNewlyDiscoveredPayloadsPredicate(UsdStage const *stage)
+    explicit _IncludePayloadsPredicate(UsdStage const *stage)
         : _stage(stage) {}
 
-    bool operator()(SdfPath const &path) const {
-        // We want to include newly discovered payloads on existing prims or on
-        // new prims if their nearest loadable ancestor was loaded, or if there
-        // is no nearest loadable ancestor and the stage was initially populated
-        // with LoadAll.
-
-        // First, check to see if this payload is new to us.  This is safe to do
-        // concurrently without a lock since these are only ever reads.
-
-        // The path we're given is a prim index path.  Due to instancing, the
-        // path to the corresponding prim on the stage may differ (it may be a
-        // generated master path).
-        SdfPath stagePath = _stage->_GetPrimPathUsingPrimIndexAtPath(path);
-        if (stagePath.IsEmpty())
-            stagePath = path;
-
-        UsdPrim prim = _stage->GetPrimAtPath(stagePath);
-        bool isNewPayload = !prim || !prim.HasAuthoredPayloads();
-
-        if (!isNewPayload)
-            return false;
-
-        // XXX: This does not quite work correctly with instancing.  What we
-        // need to do is once we hit a master, continue searching ancestors of
-        // all instances that use it.  If we find *any* nearest ancestor that's
-        // loadable, we should return true.
-
-        // This is a new payload -- find the nearest ancestor with a payload.
-        // First walk up by path until we find an existing prim.
-        if (prim) {
-            prim = prim.GetParent();
-        }
-        else {
-            for (SdfPath curPath = stagePath.GetParentPath(); !prim;
-                 curPath = curPath.GetParentPath()) {
-                prim = _stage->GetPrimAtPath(curPath);
-            }
-        }
-
-        UsdPrim root = _stage->GetPseudoRoot();
-        for (; !prim.HasAuthoredPayloads() && prim != root; 
-             prim = prim.GetParent()) {
-            // continue
-        }
-
-        // If we hit the root, then consult the initial population state.
-        if (prim == root) {
-            return _stage->_initialLoadSet == LoadAll;
-        }
-
-        // Otherwise load the payload if the ancestor is loaded, or if it
-        // was formerly active=false.  In that case we only populate indexes
-        // descendant to it because it has become active=true, so we should
-        // include the payload in that case too.
-        return prim.IsLoaded() || !prim.IsActive();
+    bool operator()(SdfPath const &primIndexPath) const {
+        // Apply the stage's load rules to this primIndexPath.  This works
+        // correctly with instancing, because load rules are included in
+        // instancing keys.
+        return _stage->_loadRules.IsLoaded(primIndexPath);
     }
 
     UsdStage const *_stage;
@@ -4283,7 +4072,6 @@ struct UsdStage::_IncludeNewlyDiscoveredPayloadsPredicate
 void 
 UsdStage::_ComposePrimIndexesInParallel(
     const std::vector<SdfPath>& primIndexPaths,
-    _IncludePayloadsRule includeRule,
     const std::string& context,
     Usd_InstanceChanges* instanceChanges)
 {
@@ -4313,27 +4101,11 @@ UsdStage::_ComposePrimIndexesInParallel(
     // prim indexes that won't be used by the stage.
     PcpErrorVector errs;
 
-    if (includeRule == _IncludeAllDiscoveredPayloads) {
-        _cache->ComputePrimIndexesInParallel(
-            primIndexPaths, &errs, 
-            _NameChildrenPred(mask, _instanceCache.get()),
-            [](const SdfPath &) { return true; },
-            "Usd", _mallocTagID);
-    }
-    else if (includeRule == _IncludeNoDiscoveredPayloads) {
-        _cache->ComputePrimIndexesInParallel(
-            primIndexPaths, &errs, 
-            _NameChildrenPred(mask, _instanceCache.get()),
-            [](const SdfPath &) { return false; },
-            "Usd", _mallocTagID);
-    }
-    else if (includeRule == _IncludeNewPayloadsIfAncestorWasIncluded) {
-        _cache->ComputePrimIndexesInParallel(
-            primIndexPaths, &errs, 
-            _NameChildrenPred(mask, _instanceCache.get()),
-            _IncludeNewlyDiscoveredPayloadsPredicate(this),
-            "Usd", _mallocTagID);
-    }
+    _cache->ComputePrimIndexesInParallel(
+        primIndexPaths, &errs, 
+        _NameChildrenPred(mask, &_loadRules, _instanceCache.get()),
+        _IncludePayloadsPredicate(this),
+        "Usd", _mallocTagID);
 
     if (!errs.empty()) {
         _ReportPcpErrors(errs, context);
@@ -4354,8 +4126,7 @@ UsdStage::_ComposePrimIndexesInParallel(
     // instance. Compose the new source prim indexes.
     if (!changes.changedMasterPrims.empty()) {
         _ComposePrimIndexesInParallel(
-            changes.changedMasterPrimIndexes, includeRule,
-            context, instanceChanges);
+            changes.changedMasterPrimIndexes, context, instanceChanges);
     }
 }
 
@@ -5245,7 +5016,7 @@ struct ExistenceComposer
 {
     static const bool ProducesValue = false;
 
-    ExistenceComposer() : _done(false), _strongestLayer(NULL) {}
+    ExistenceComposer() : _done(false), _strongestLayer(nullptr) {}
     explicit ExistenceComposer(SdfLayerRefPtr *strongestLayer) 
         : _done(false), _strongestLayer(strongestLayer) {}
 
@@ -5259,9 +5030,9 @@ struct ExistenceComposer
                          const SdfLayerOffset & = SdfLayerOffset()) {
         _done = keyPath.IsEmpty() ?
             layer->HasField(specId, fieldName,
-                            static_cast<VtValue *>(NULL)) :
+                            static_cast<VtValue *>(nullptr)) :
             layer->HasFieldDictKey(specId, fieldName, keyPath,
-                                   static_cast<VtValue*>(NULL));
+                                   static_cast<VtValue*>(nullptr));
         if (_done && _strongestLayer)
             *_strongestLayer = layer;
         return _done;
@@ -5273,10 +5044,10 @@ struct ExistenceComposer
         _done = keyPath.IsEmpty() ?
             UsdSchemaRegistry::HasField(
                 primTypeName, propName, fieldName,
-                static_cast<VtValue *>(NULL)) :
+                static_cast<VtValue *>(nullptr)) :
             UsdSchemaRegistry::HasFieldDictKey(
                 primTypeName, propName, fieldName, keyPath,
-                static_cast<VtValue*>(NULL));
+                static_cast<VtValue*>(nullptr));
         if (_strongestLayer)
             *_strongestLayer = TfNullPtr;
     }
@@ -5619,7 +5390,7 @@ UsdStage::_GetPrimSpecifierImpl(Usd_PrimDataConstPtr primData,
     //   class "C" {}
     //   def "B" (inherits = </C>) {}
     //
-    // Here /A references /B in other.file, and /B inherits global class /C.
+    // Here /A references /B in other.file, and /B inherits class /C.
     // The strength order of specifiers for /A from strong-to-weak is:
     //
     // 1. 'over'  (from /A)
@@ -5965,7 +5736,7 @@ UsdStage::_ListMetadataFields(const UsdObject &obj, bool useFallbacks) const
     }
 
     // Insert required fields for spec type.
-    const SdfSchema::SpecDefinition* specDef = NULL;
+    const SdfSchema::SpecDefinition* specDef = nullptr;
     specDef = SdfSchema::GetInstance().GetSpecDefinition(specType);
     if (specDef) {
         for (const auto& fieldName : specDef->GetRequiredFields()) {
@@ -6193,7 +5964,7 @@ template <class T>
 struct UsdStage::_ExtraResolveInfo
 {
     _ExtraResolveInfo()
-        : lowerSample(0), upperSample(0), defaultOrFallbackValue(NULL)
+        : lowerSample(0), upperSample(0), defaultOrFallbackValue(nullptr)
     { }
 
     double lowerSample;
@@ -7174,7 +6945,7 @@ UsdStage::_ValueMightBeTimeVarying(const UsdAttribute &attr) const
 {
     UsdResolveInfo info;
     _ExtraResolveInfo<SdfAbstractDataValue> extraInfo;
-    _GetResolveInfo(attr, &info, NULL, &extraInfo);
+    _GetResolveInfo(attr, &info, nullptr, &extraInfo);
 
     if (info._source == UsdResolveInfoSourceValueClips ||
         info._source == UsdResolveInfoSourceIsTimeDependent) {
@@ -7332,7 +7103,7 @@ UsdStage::HasAuthoredMetadata(const TfToken& key) const
     if (!schema.IsValidFieldForSpec(key, SdfSpecTypePseudoRoot))
         return false;
 
-    return _HasStageMetadataOrDictKey(*this, key, TfToken(), NULL);
+    return _HasStageMetadataOrDictKey(*this, key, TfToken(), nullptr);
 }
 
 static
@@ -7501,7 +7272,7 @@ UsdStage::HasMetadataDictKey(const TfToken& key, const TfToken &keyPath) const
     const VtValue &fallback =  schema.GetFallback(key);
     
     return ((!fallback.IsEmpty()) &&
-            (fallback.Get<VtDictionary>().GetValueAtPath(keyPath) != NULL));
+            (fallback.Get<VtDictionary>().GetValueAtPath(keyPath) != nullptr));
 }
 
 bool
@@ -7511,7 +7282,7 @@ UsdStage::HasAuthoredMetadataDictKey(
     if (keyPath.IsEmpty())
         return false;
 
-    return _HasStageMetadataOrDictKey(*this, key, keyPath, NULL);
+    return _HasStageMetadataOrDictKey(*this, key, keyPath, nullptr);
 }
 
 bool

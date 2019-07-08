@@ -29,6 +29,7 @@
 #include "pxr/usdImaging/usdImaging/delegate.h"
 
 #include "pxr/usd/usdGeom/tokens.h"
+#include "pxr/usd/usdGeom/camera.h"
 
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/contextCaps.h"
@@ -64,14 +65,20 @@ _GetHydraEnabledEnvVar()
 static
 void _InitGL()
 {
-    // Initialize Glew library for GL Extensions if needed
-    GlfGlewInit();
+    static std::once_flag initFlag;
 
-    // Initialize if needed and switch to shared GL context.
-    GlfSharedGLContextScopeHolder sharedContext;
+    std::call_once(initFlag, []{
 
-    // Initialize GL context caps based on shared context
-    GlfContextCaps::InitInstance();
+        // Initialize Glew library for GL Extensions if needed
+        GlfGlewInit();
+
+        // Initialize if needed and switch to shared GL context.
+        GlfSharedGLContextScopeHolder sharedContext;
+
+        // Initialize GL context caps based on shared context
+        GlfContextCaps::InitInstance();
+
+    });
 }
 
 static
@@ -130,9 +137,7 @@ UsdImagingGLEngine::UsdImagingGLEngine()
     , _restoreViewport(0)
     , _useFloatPointDrawTarget(false)
 {
-    static std::once_flag initFlag;
-
-    std::call_once(initFlag, _InitGL);
+    _InitGL();
 
     if (IsHydraEnabled()) {
 
@@ -170,9 +175,7 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     , _restoreViewport(0)
     , _useFloatPointDrawTarget(false)
 {
-    static std::once_flag initFlag;
-
-    std::call_once(initFlag, _InitGL);
+    _InitGL();
 
     if (IsHydraEnabled()) {
 
@@ -243,7 +246,7 @@ UsdImagingGLEngine::RenderBatch(
 
     TF_VERIFY(_taskController);
 
-    _taskController->SetCameraClipPlanes(params.clipPlanes);
+    _taskController->SetFreeCameraClipPlanes(params.clipPlanes);
     _UpdateHydraCollection(&_renderCollection, paths, params);
     _taskController->SetCollection(_renderCollection);
 
@@ -286,7 +289,7 @@ UsdImagingGLEngine::Render(
     SdfPath cachePath = root.GetPath();
     SdfPathVector roots(1, _delegate->ConvertCachePathToIndexPath(cachePath));
 
-    _taskController->SetCameraClipPlanes(params.clipPlanes);
+    _taskController->SetFreeCameraClipPlanes(params.clipPlanes);
     _UpdateHydraCollection(&_renderCollection, roots, params);
     _taskController->SetCollection(_renderCollection);
 
@@ -360,23 +363,57 @@ UsdImagingGLEngine::SetRootVisibility(bool isVisible)
 // Camera and Light State
 //----------------------------------------------------------------------------
 
-void 
-UsdImagingGLEngine::SetCameraState(
-    const GfMatrix4d& viewMatrix,
-    const GfMatrix4d& projectionMatrix,
-    const GfVec4d& viewport)
+void
+UsdImagingGLEngine::SetRenderViewport(GfVec4d const& viewport)
 {
     if (ARCH_UNLIKELY(_legacyImpl)) {
-        _legacyImpl->SetCameraState(viewMatrix, projectionMatrix, viewport);
+        _legacyImpl->SetRenderViewport(viewport);
         return;
     }
 
     TF_VERIFY(_taskController);
+    _taskController->SetRenderViewport(viewport);
+}
 
-    // usdview passes these matrices from OpenGL state.
-    // update the camera in the task controller accordingly.
-    _taskController->SetCameraMatrices(viewMatrix, projectionMatrix);
-    _taskController->SetCameraViewport(viewport);
+void
+UsdImagingGLEngine::SetWindowPolicy(CameraUtilConformWindowPolicy policy)
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        _legacyImpl->SetWindowPolicy(policy);
+        return;
+    }
+
+    TF_VERIFY(_taskController);
+    // Note: Free cam uses SetCameraState, which expects the frustum to be
+    // pre-adjusted for the viewport size.
+    
+    // The usdImagingDelegate manages the window policy for scene cameras.
+    _delegate->SetWindowPolicy(policy);
+}
+
+void
+UsdImagingGLEngine::SetCameraPath(SdfPath const& id)
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        _legacyImpl->SetCameraPath(id);
+        return;
+    }
+
+    TF_VERIFY(_taskController);
+    _taskController->SetCameraPath(id);
+}
+
+void 
+UsdImagingGLEngine::SetCameraState(const GfMatrix4d& viewMatrix,
+                                   const GfMatrix4d& projectionMatrix)
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        _legacyImpl->SetFreeCameraMatrices(viewMatrix, projectionMatrix);
+        return;
+    }
+
+    TF_VERIFY(_taskController);
+    _taskController->SetFreeCameraMatrices(viewMatrix, projectionMatrix);
 }
 
 void
@@ -388,7 +425,8 @@ UsdImagingGLEngine::SetCameraStateFromOpenGL()
     glGetDoublev(GL_PROJECTION_MATRIX, projectionMatrix.GetArray());
     glGetDoublev(GL_VIEWPORT, &viewport[0]);
 
-    SetCameraState(viewMatrix, projectionMatrix, viewport);
+    SetCameraState(viewMatrix, projectionMatrix);
+    SetRenderViewport(viewport);
 }
 
 void
@@ -657,11 +695,11 @@ UsdImagingGLEngine::GetPrimPathFromPrimIdColor(
 
 SdfPath 
 UsdImagingGLEngine::GetPrimPathFromInstanceIndex(
-    SdfPath const& protoPrimPath,
-    int instanceIndex,
-    int *absoluteInstanceIndex,
-    SdfPath *rprimPath,
-    SdfPathVector *instanceContext)
+        const SdfPath &protoRprimId,
+        int protoIndex,
+        int *instancerIndex,
+        SdfPath *masterCachePath,
+        SdfPathVector *instanceContext)
 {
     if (ARCH_UNLIKELY(_legacyImpl)) {
         return SdfPath();
@@ -669,9 +707,9 @@ UsdImagingGLEngine::GetPrimPathFromInstanceIndex(
 
     TF_VERIFY(_delegate);
 
-    return _delegate->GetPathForInstanceIndex(protoPrimPath, instanceIndex,
-                                             absoluteInstanceIndex, rprimPath,
-                                             instanceContext);
+    return _delegate->GetPathForInstanceIndex(protoRprimId, protoIndex,
+                                              instancerIndex, masterCachePath,
+                                              instanceContext);
 }
 
 //----------------------------------------------------------------------------

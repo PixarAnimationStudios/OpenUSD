@@ -862,9 +862,6 @@ public:
                              const TfToken& fieldName) const;
 
     /// Returns the archive.
-    const OArchive& GetArchive() const;
-
-    /// Returns the archive.
     OArchive& GetArchive();
 
     /// Returns the writer schema.
@@ -1028,12 +1025,6 @@ _PrimWriterContext::GetPropertyField(
     const SdfAbstractDataSpecId propId(&_id.GetPropertyOwningSpecPath(),
                                        &propertyName);
     return _context.GetData().Get(propId, fieldName);
-}
-
-const OArchive&
-_PrimWriterContext::GetArchive() const
-{
-    return _context.GetArchive();
 }
 
 OArchive&

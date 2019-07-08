@@ -304,12 +304,8 @@ _WriteGraph(
 
     std::string style;
     switch(node.GetArcType()) {
-    case PcpArcTypeLocalInherit:
-        style += TfStringPrintf("color=green, label=\"local inherit%s\"",
-                                msg.c_str());
-    break;
-    case PcpArcTypeGlobalInherit:
-        style += TfStringPrintf("color=green, label=\"global inherit%s\"",
+    case PcpArcTypeInherit:
+        style += TfStringPrintf("color=green, label=\"inherit%s\"",
                                 msg.c_str());
         break;
     case PcpArcTypeReference:
@@ -327,12 +323,8 @@ _WriteGraph(
         style += TfStringPrintf("color=indigo, label=\"payload%s\"",
                                 msg.c_str());
         break;
-    case PcpArcTypeLocalSpecializes:
-        style += TfStringPrintf("color=sienna, label=\"local specializes%s\"",
-                                msg.c_str());
-        break;
-    case PcpArcTypeGlobalSpecializes:
-        style += TfStringPrintf("color=sienna, label=\"global specializes%s\"",
+    case PcpArcTypeSpecialize:
+        style += TfStringPrintf("color=sienna, label=\"specialize%s\"",
                                 msg.c_str());
         break;
 

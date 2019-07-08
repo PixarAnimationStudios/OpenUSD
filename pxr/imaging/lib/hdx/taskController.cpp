@@ -92,7 +92,16 @@ VtValue
 HdxTaskController::_Delegate::GetCameraParamValue(SdfPath const& id, 
                                                   TfToken const& key)
 {   
-    return Get(id, key);
+    if (key == HdCameraTokens->worldToViewMatrix ||
+        key == HdCameraTokens->projectionMatrix ||
+        key == HdCameraTokens->clipPlanes ||
+        key == HdCameraTokens->windowPolicy) {
+
+        return Get(id, key);
+    } else {
+        // XXX: For now, skip handling physical params on the free cam.
+        return VtValue();
+    }
 }
 
 /* virtual */
@@ -151,7 +160,7 @@ HdxTaskController::HdxTaskController(HdRenderIndex *renderIndex,
 
 HdxTaskController::~HdxTaskController()
 {
-    GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->camera, _cameraId);
+    GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->camera, _freeCamId);
     SdfPath const tasks[] = {
         _oitResolveTaskId,
         _selectionTaskId,
@@ -228,18 +237,18 @@ HdxTaskController::_CreateRenderGraph()
 void
 HdxTaskController::_CreateCamera()
 {
-    // Create a default camera, driven by SetCameraMatrices.
-    _cameraId = GetControllerId().AppendChild(_tokens->camera);
+    // Create a default camera, driven by SetFreeCameraMatrices.
+    _freeCamId = GetControllerId().AppendChild(_tokens->camera);
     GetRenderIndex()->InsertSprim(HdPrimTypeTokens->camera,
-        &_delegate, _cameraId);
+        &_delegate, _freeCamId);
 
-    _delegate.SetParameter(_cameraId, HdCameraTokens->windowPolicy,
+    _delegate.SetParameter(_freeCamId, HdCameraTokens->windowPolicy,
         VtValue(CameraUtilFit));
-    _delegate.SetParameter(_cameraId, HdCameraTokens->worldToViewMatrix,
+    _delegate.SetParameter(_freeCamId, HdCameraTokens->worldToViewMatrix,
         VtValue(GfMatrix4d(1.0)));
-    _delegate.SetParameter(_cameraId, HdCameraTokens->projectionMatrix,
+    _delegate.SetParameter(_freeCamId, HdCameraTokens->projectionMatrix,
         VtValue(GfMatrix4d(1.0)));
-    _delegate.SetParameter(_cameraId, HdCameraTokens->clipPlanes,
+    _delegate.SetParameter(_freeCamId, HdCameraTokens->clipPlanes,
         VtValue(std::vector<GfVec4d>()));
 }
 
@@ -258,7 +267,7 @@ HdxTaskController::_CreateRenderTask(TfToken const& materialTag)
     SdfPath taskId = _GetRenderTaskPath(materialTag);
 
     HdxRenderTaskParams renderParams;
-    renderParams.camera = _cameraId;
+    renderParams.camera = _freeCamId;
     renderParams.viewport = GfVec4d(0,0,1,1);
 
     // Set the blend state based on material tag.
@@ -383,7 +392,7 @@ HdxTaskController::_CreateLightingTask()
         _tokens->simpleLightTask);
 
     HdxSimpleLightTaskParams simpleLightParams;
-    simpleLightParams.cameraPath = _cameraId;
+    simpleLightParams.cameraPath = _freeCamId;
 
     GetRenderIndex()->InsertTask<HdxSimpleLightTask>(&_delegate,
         _simpleLightTaskId);
@@ -398,7 +407,7 @@ HdxTaskController::_CreateShadowTask()
     _shadowTaskId = GetControllerId().AppendChild(_tokens->shadowTask);
 
     HdxShadowTaskParams shadowParams;
-    shadowParams.camera = _cameraId;
+    shadowParams.camera = _freeCamId;
 
     GetRenderIndex()->InsertTask<HdxShadowTask>(&_delegate, _shadowTaskId);
 
@@ -459,7 +468,7 @@ HdxTaskController::_CreatePickFromRenderBufferTask()
         _tokens->pickFromRenderBufferTask);
 
     HdxPickFromRenderBufferTaskParams taskParams;
-    taskParams.cameraId = _cameraId;
+    taskParams.cameraId = _freeCamId;
 
     GetRenderIndex()->InsertTask<HdxPickFromRenderBufferTask>(&_delegate,
         _pickFromRenderBufferTaskId);
@@ -1195,36 +1204,7 @@ HdxTaskController::SetLightingState(GlfSimpleLightingContextPtr const& src)
 }
 
 void
-HdxTaskController::SetCameraMatrices(GfMatrix4d const& viewMatrix,
-                                     GfMatrix4d const& projMatrix)
-{
-    GfMatrix4d oldView = _delegate.GetParameter<GfMatrix4d>(_cameraId,
-        HdCameraTokens->worldToViewMatrix);
-
-    if (viewMatrix != oldView) {
-        // Cache the new view matrix
-        _delegate.SetParameter(_cameraId, HdCameraTokens->worldToViewMatrix,
-            viewMatrix);
-        // Invalidate the camera
-        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(_cameraId,
-            HdCamera::DirtyViewMatrix);
-    }
-
-    GfMatrix4d oldProj = _delegate.GetParameter<GfMatrix4d>(_cameraId,
-        HdCameraTokens->projectionMatrix);
-
-    if (projMatrix != oldProj) {
-        // Cache the new proj matrix
-        _delegate.SetParameter(_cameraId, HdCameraTokens->projectionMatrix,
-            projMatrix);
-        // Invalidate the camera
-        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(_cameraId,
-            HdCamera::DirtyProjMatrix);
-    }
-}
-
-void
-HdxTaskController::SetCameraViewport(GfVec4d const& viewport)
+HdxTaskController::SetRenderViewport(GfVec4d const& viewport)
 {
     bool viewportChanged = false;
 
@@ -1260,6 +1240,17 @@ HdxTaskController::SetCameraViewport(GfVec4d const& viewport)
             _shadowTaskId, HdChangeTracker::DirtyParams);
     }
 
+    if (!_pickFromRenderBufferTaskId.IsEmpty()) {
+        HdxPickFromRenderBufferTaskParams params =
+            _delegate.GetParameter<HdxPickFromRenderBufferTaskParams>(
+                _pickFromRenderBufferTaskId, HdTokens->params);
+        params.viewport = viewport;
+        _delegate.SetParameter(
+            _pickFromRenderBufferTaskId, HdTokens->params, params);
+        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+            _pickFromRenderBufferTaskId, HdChangeTracker::DirtyParams);
+    }
+
     // Update all of the render buffer sizes as well.
     GfVec3i dimensions = GfVec3i(viewport[2], viewport[3], 1);
     for (auto const& id : _aovBufferIds) {
@@ -1276,35 +1267,56 @@ HdxTaskController::SetCameraViewport(GfVec4d const& viewport)
 }
 
 void
-HdxTaskController::SetCameraClipPlanes(std::vector<GfVec4d> const& clipPlanes)
+HdxTaskController::SetCameraPath(SdfPath const& id)
 {
-    // Cache the clip planes
-    std::vector<GfVec4d> oldClipPlanes =
-        _delegate.GetParameter<std::vector<GfVec4d>>(_cameraId,
-            HdCameraTokens->clipPlanes);
+    _SetCameraParamForTasks(id);
+}
 
-    if (oldClipPlanes != clipPlanes) {
-        _delegate.SetParameter(_cameraId, HdCameraTokens->clipPlanes,
-            clipPlanes);
-        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(_cameraId,
-            HdCamera::DirtyClipPlanes);
+void
+HdxTaskController::SetFreeCameraMatrices(GfMatrix4d const& viewMatrix,
+                                         GfMatrix4d const& projMatrix)
+{
+    _SetCameraParamForTasks(_freeCamId);
+
+    GfMatrix4d oldView = _delegate.GetParameter<GfMatrix4d>(_freeCamId,
+        HdCameraTokens->worldToViewMatrix);
+
+    if (viewMatrix != oldView) {
+        // Cache the new view matrix
+        _delegate.SetParameter(_freeCamId, HdCameraTokens->worldToViewMatrix,
+            viewMatrix);
+        // Invalidate the camera
+        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(_freeCamId,
+            HdCamera::DirtyViewMatrix);
+    }
+
+    GfMatrix4d oldProj = _delegate.GetParameter<GfMatrix4d>(_freeCamId,
+        HdCameraTokens->projectionMatrix);
+
+    if (projMatrix != oldProj) {
+        // Cache the new proj matrix
+        _delegate.SetParameter(_freeCamId, HdCameraTokens->projectionMatrix,
+            projMatrix);
+        // Invalidate the camera
+        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(_freeCamId,
+            HdCamera::DirtyProjMatrix);
     }
 }
 
 void
-HdxTaskController::SetCameraWindowPolicy(
-    CameraUtilConformWindowPolicy windowPolicy)
+HdxTaskController::
+SetFreeCameraClipPlanes(std::vector<GfVec4d> const& clipPlanes)
 {
-    // Cache the window policy, if needed
-    const CameraUtilConformWindowPolicy oldPolicy =
-        _delegate.GetParameter<CameraUtilConformWindowPolicy>(
-            _cameraId, HdCameraTokens->windowPolicy);
+    // Cache the clip planes
+    std::vector<GfVec4d> oldClipPlanes =
+        _delegate.GetParameter<std::vector<GfVec4d>>(_freeCamId,
+            HdCameraTokens->clipPlanes);
 
-    if (oldPolicy != windowPolicy) {
-        _delegate.SetParameter(_cameraId, HdCameraTokens->windowPolicy,
-            windowPolicy);
-        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(_cameraId,
-            HdCamera::DirtyWindowPolicy);
+    if (oldClipPlanes != clipPlanes) {
+        _delegate.SetParameter(_freeCamId, HdCameraTokens->clipPlanes,
+            clipPlanes);
+        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(_freeCamId,
+            HdCamera::DirtyClipPlanes);
     }
 }
 
@@ -1346,5 +1358,58 @@ HdxTaskController::SetColorCorrectionParams(
             _colorCorrectionTaskId, HdChangeTracker::DirtyParams);
     }
 }
+
+void
+HdxTaskController::_SetCameraParamForTasks(SdfPath const& id)
+{
+    if (_activeCameraId != id) {
+        _activeCameraId = id;
+
+        // Update tasks that take a camera task param.
+        for (SdfPath const& renderTaskId : _renderTaskIds) {
+            HdxRenderTaskParams params =
+                _delegate.GetParameter<HdxRenderTaskParams>(
+                    renderTaskId, HdTokens->params);
+            params.camera = _activeCameraId;
+
+            _delegate.SetParameter(renderTaskId, HdTokens->params, params);
+            GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+                renderTaskId, HdChangeTracker::DirtyParams);
+        }
+        
+        if (!_simpleLightTaskId.IsEmpty()) {
+            HdxSimpleLightTaskParams params =
+                _delegate.GetParameter<HdxSimpleLightTaskParams>(
+                    _simpleLightTaskId, HdTokens->params);
+            params.cameraPath = _activeCameraId;
+            _delegate.SetParameter(_simpleLightTaskId, HdTokens->params,
+                                   params);
+            GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+                _simpleLightTaskId, HdChangeTracker::DirtyParams);
+        }
+
+        if (!_shadowTaskId.IsEmpty()) {
+            HdxShadowTaskParams params =
+                _delegate.GetParameter<HdxShadowTaskParams>(
+                    _shadowTaskId, HdTokens->params);
+            params.camera = _activeCameraId;
+            _delegate.SetParameter(_shadowTaskId, HdTokens->params, params);
+            GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+                _shadowTaskId, HdChangeTracker::DirtyParams);
+        }
+
+        if (!_pickFromRenderBufferTaskId.IsEmpty()) {
+            HdxPickFromRenderBufferTaskParams params =
+                _delegate.GetParameter<HdxPickFromRenderBufferTaskParams>(
+                    _pickFromRenderBufferTaskId, HdTokens->params);
+            params.cameraId = _activeCameraId;
+            _delegate.SetParameter(
+                _pickFromRenderBufferTaskId, HdTokens->params, params);
+            GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+                _pickFromRenderBufferTaskId, HdChangeTracker::DirtyParams);
+        }
+    }
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -120,6 +120,23 @@ UsdVolField3DAsset::CreateFieldNameAttr(VtValue const &defaultValue, bool writeS
 }
 
 UsdAttribute
+UsdVolField3DAsset::GetFieldPurposeAttr() const
+{
+    return GetPrim().GetAttribute(UsdVolTokens->fieldPurpose);
+}
+
+UsdAttribute
+UsdVolField3DAsset::CreateFieldPurposeAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdVolTokens->fieldPurpose,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdVolField3DAsset::GetFieldIndexAttr() const
 {
     return GetPrim().GetAttribute(UsdVolTokens->fieldIndex);
@@ -154,6 +171,7 @@ UsdVolField3DAsset::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         UsdVolTokens->fieldName,
+        UsdVolTokens->fieldPurpose,
         UsdVolTokens->fieldIndex,
     };
     static TfTokenVector allNames =

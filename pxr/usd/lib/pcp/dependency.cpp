@@ -51,10 +51,8 @@ PcpNodeIntroducesDependency(const PcpNodeRef &node)
 {
     if (node.IsInert()) {
         switch(node.GetArcType()) {
-        case PcpArcTypeLocalInherit:
-        case PcpArcTypeGlobalInherit:
-        case PcpArcTypeLocalSpecializes:
-        case PcpArcTypeGlobalSpecializes:
+        case PcpArcTypeInherit:
+        case PcpArcTypeSpecialize:
             // Special case: inert, propagated class-based arcs do not
             // represent dependencies.
             if (node.GetOriginNode() != node.GetParentNode()) {

@@ -53,6 +53,7 @@ pxr_library(usd
         stage
         stageCache
         stageCacheContext
+        stageLoadRules
         stagePopulationMask
         timeCode
         tokens
@@ -86,7 +87,7 @@ pxr_library(usd
     PRIVATE_HEADERS
         crateDataTypes.h
         crateValueInliners.h
-        refOrPayloadListEditImpl.h
+        listEditImpl.h
         wrapUtils.h
 
     PYTHON_CPPFILES
@@ -122,6 +123,7 @@ pxr_library(usd
         wrapStage.cpp
         wrapStageCache.cpp
         wrapStageCacheContext.cpp
+        wrapStageLoadRules.cpp
         wrapStagePopulationMask.cpp
         wrapTokens.cpp
         wrapTimeCode.cpp

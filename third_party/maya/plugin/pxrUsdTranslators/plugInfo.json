@@ -47,13 +47,14 @@
                             "PxrEnvDayLight",
                             "PxrMeshLight",
                             "PxrRectLight",
-                            "PxrSphereLight"
+                            "PxrSphereLight",
+                            "stroke"
                         ]
                     }
                 }
             },
             "Name": "@PLUG_INFO_PLUGIN_NAME@",
-            "Type": "python"
+            "Type": "resource"
         }
     ]
 }

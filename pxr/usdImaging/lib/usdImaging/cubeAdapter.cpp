@@ -24,14 +24,14 @@
 #include "pxr/usdImaging/usdImaging/cubeAdapter.h"
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
+#include "pxr/usdImaging/usdImaging/implicitSurfaceMeshUtils.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/mesh.h"
+#include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
-
-#include "pxr/imaging/pxOsd/tokens.h"
 
 #include "pxr/usd/usdGeom/cube.h"
 #include "pxr/usd/usdGeom/xformCache.h"
@@ -113,11 +113,6 @@ UsdImagingCubeAdapter::UpdateForTime(UsdPrim const& prim,
     if (requestedBits & HdChangeTracker::DirtyTopology) {
         valueCache->GetTopology(cachePath) = GetMeshTopology();
     }
-    if (_IsRefined(cachePath)) {
-        if (requestedBits & HdChangeTracker::DirtySubdivTags) {
-            valueCache->GetSubdivTags(cachePath);
-        }
-    }
 }
 
 /*virtual*/
@@ -130,57 +125,22 @@ UsdImagingCubeAdapter::GetPoints(UsdPrim const& prim,
     return GetMeshPoints(prim, time);   
 }
 
-// -------------------------------------------------------------------------- //
-
 /*static*/
 VtValue
 UsdImagingCubeAdapter::GetMeshPoints(UsdPrim const& prim, 
                                      UsdTimeCode time)
 {
-    static GfVec3f points[] = {
-        GfVec3f( 0.5f, 0.5f, 0.5f ),
-        GfVec3f(-0.5f, 0.5f, 0.5f ),
-        GfVec3f(-0.5f,-0.5f, 0.5f ),
-        GfVec3f( 0.5f,-0.5f, 0.5f ),
-        GfVec3f(-0.5f,-0.5f,-0.5f ),
-        GfVec3f(-0.5f, 0.5f,-0.5f ),
-        GfVec3f( 0.5f, 0.5f,-0.5f ),
-        GfVec3f( 0.5f,-0.5f,-0.5f ),
-    };
-
-    size_t numPoints = sizeof(points) / sizeof(points[0]);
-    VtArray<GfVec3f> output(numPoints);
-    std::copy(points, points + numPoints, output.begin());
-    return VtValue(output);
-}
-
-template <typename T>
-static VtArray<T>
-_BuildVtArray(T values[], int numValues)
-{
-    VtArray<T> result(numValues);
-    std::copy(values, values+numValues, result.begin());
-    return result;
+    // The points are constant; the prim's attributes are accomodated by
+    // manipulating the transform (see GetMeshTransform() below).
+    return VtValue(UsdImagingGetUnitCubeMeshPoints());
 }
 
 /*static*/
 VtValue
 UsdImagingCubeAdapter::GetMeshTopology()
 {
-    static int numVerts[] = { 4, 4, 4, 4, 4, 4 };
-    static int verts[] = {
-        0, 1, 2, 3,
-        4, 5, 6, 7,
-        0, 6, 5, 1,
-        4, 7, 3, 2,
-        0, 3, 7, 6,
-        4, 2, 1, 5,
-    };
-    static HdMeshTopology cubeTopo(PxOsdOpenSubdivTokens->bilinear,
-               HdTokens->rightHanded,
-               _BuildVtArray(numVerts, sizeof(numVerts) / sizeof(numVerts[0])),
-               _BuildVtArray(verts, sizeof(verts) / sizeof(verts[0])));
-    return VtValue(cubeTopo);
+    // Like the points, topology is constant and identical for all cubes.
+    return VtValue(HdMeshTopology(UsdImagingGetUnitCubeMeshTopology()));
 }
 
 /*static*/
@@ -188,11 +148,15 @@ GfMatrix4d
 UsdImagingCubeAdapter::GetMeshTransform(UsdPrim const& prim, 
                                         UsdTimeCode time)
 {
-    double size = 2.0;
     UsdGeomCube cube(prim);
-    TF_VERIFY(cube.GetSizeAttr().Get(&size, time));
-    GfMatrix4d xf(GfVec4d(size, size, size, 1.0));
-    return xf;
+
+    double size = 2.0;
+    if (!cube.GetSizeAttr().Get(&size, time)) {
+        TF_WARN("Could not evaluate double-valued size attribute on prim %s",
+            prim.GetPath().GetText());
+    }
+
+    return UsdImagingGenerateSphereOrCubeTransform(size);
 }
 
 size_t

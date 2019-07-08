@@ -90,7 +90,7 @@ HdxOitResolveTask::Prepare(HdTaskContext* ctx,
         _renderPassState->SetBlend(
             HdBlendOp::HdBlendOpAdd,
             HdBlendFactor::HdBlendFactorOne,
-            HdBlendFactor::HdBlendFactorOneMinusSrc1Alpha,
+            HdBlendFactor::HdBlendFactorOneMinusSrcAlpha,
             HdBlendOp::HdBlendOpAdd,
             HdBlendFactor::HdBlendFactorOne,
             HdBlendFactor::HdBlendFactorOne);

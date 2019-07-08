@@ -150,22 +150,9 @@ _GetShaderProperties(const UsdShadeShader &shaderDef)
         NdrTokenMap hints;
         NdrOptionVec options;
     
-        // Convert SdfAssetPath values to strings.
+        // Update metadata if string should represent a SdfAssetPath
         if (shaderInput.GetTypeName() == SdfValueTypeNames->Asset ||
-            shaderInput.GetTypeName() == SdfValueTypeNames->AssetArray) {               
-            if (!defaultValue.IsEmpty()) {
-                if (defaultValue.IsHolding<SdfAssetPath>()) {
-                    defaultValue = VtValue(defaultValue.UncheckedGet
-                            <SdfAssetPath>().GetAssetPath());
-                } else if (defaultValue.IsHolding<VtArray<SdfAssetPath>>()) {
-                    VtStringArray defValueArray;
-                    for (auto &assetVal : defaultValue.UncheckedGet
-                            <VtArray<SdfAssetPath>>()) {
-                        defValueArray.push_back(assetVal.GetAssetPath());
-                    }
-                    defaultValue = VtValue(defValueArray);
-                }
-            }
+            shaderInput.GetTypeName() == SdfValueTypeNames->AssetArray) {
             metadata[SdrPropertyMetadata->IsAssetIdentifier] = "1";
         }
 
@@ -183,6 +170,34 @@ _GetShaderProperties(const UsdShadeShader &shaderDef)
         size_t arraySize;
         std::tie(propertyType, arraySize) = _GetShaderPropertyTypeAndArraySize(
             shaderInput.GetTypeName());
+
+        // If the property type is a string but the type name is token, we need
+        // to convert the default value's type from token to string so that
+        // there is no inconsistency between the property type and the default
+        // value
+        const SdfValueTypeName typeName = shaderInput.GetTypeName();
+        if (propertyType == SdrPropertyTypes->String) {
+            if (!defaultValue.IsEmpty()) {
+                if (typeName == SdfValueTypeNames->Token) {
+                    if (defaultValue.IsHolding<TfToken>()) {
+                        const TfToken& tokenVal =
+                            defaultValue.UncheckedGet<TfToken>();
+                        defaultValue = VtValue(tokenVal.GetString());
+                    }
+                } else if (typeName == SdfValueTypeNames->TokenArray) {
+                    if (defaultValue.IsHolding< VtArray<TfToken> >()) {
+                        const VtArray<TfToken>& tokenVals =
+                            defaultValue.UncheckedGet< VtArray<TfToken> >();
+                        VtStringArray stringVals;
+                        stringVals.reserve(tokenVals.size());
+                        for (const TfToken& tokenVal : tokenVals) {
+                            stringVals.push_back(tokenVal.GetString());
+                        }
+                        defaultValue = VtValue::Take(stringVals);
+                    }
+                }
+            }
+        }
         
         result.emplace_back(
             SdrShaderPropertyUniquePtr(new SdrShaderProperty(

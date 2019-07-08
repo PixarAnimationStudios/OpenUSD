@@ -35,7 +35,9 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/trace/trace.h"
 
-#include <iostream>
+#include <boost/optional.hpp>
+
+#include <ostream>
 
 using std::string;
 using std::vector;

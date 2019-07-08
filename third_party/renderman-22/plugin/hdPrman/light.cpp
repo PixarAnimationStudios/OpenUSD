@@ -148,7 +148,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     _ResetLight(context);
 
     // Attributes.
-    RixParamList *attrs = mgr->CreateRixParamList();
+    RixParamList *attrs = context->ConvertAttributes(sceneDelegate, id);
 
     // Light shader.
     RixParamList *params = mgr->CreateRixParamList();
@@ -422,6 +422,9 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
                 // geometry must subscribe to that grouping.
                 attrs->SetString(RixStr.k_grouping_membership,
                                  RtUString(_lightLink.GetText()));
+                TF_DEBUG(HDPRMAN_LIGHT_LINKING)
+                    .Msg("HdPrman: Light <%s> lightSubset \"%s\"\n",
+                         id.GetText(), _lightLink.GetText());
             } else {
                 // Default light group
                 attrs->SetString(RixStr.k_grouping_membership, us_default);

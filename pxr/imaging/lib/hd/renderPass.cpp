@@ -109,4 +109,13 @@ HdRenderPass::Sync()
     _Sync();
 }
 
+void
+HdRenderPass::Prepare(TfTokenVector const &renderTags)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    _Prepare(renderTags);
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -25,12 +25,16 @@
 #include "hdxPrman/renderPass.h"
 #include "hdxPrman/context.h"
 #include "hdxPrman/renderBuffer.h"
+
+#include "hdPrman/camera.h"
 #include "hdPrman/renderDelegate.h"
 #include "hdPrman/rixStrings.h"
+
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/rotation.h"
+#include "pxr/base/tf/getenv.h"
 
 #include "Riley.h"
 #include "RixParamList.h"
@@ -105,8 +109,19 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
     GfMatrix4d viewToWorldMatrix =
         renderPassState->GetWorldToViewMatrix().GetInverse();
     GfVec4f vp = renderPassState->GetViewport();
-    if (proj != _lastProj || viewToWorldMatrix != _lastViewToWorldMatrix ||
-        _width != vp[2] || _height != vp[3]) {
+    
+    // XXX: Need to cast away constness to process updated camera params since
+    // the Hydra camera doesn't update the Riley camera directly.
+    HdPrmanCamera *hdCam =
+        const_cast<HdPrmanCamera *>(
+            dynamic_cast<HdPrmanCamera const *>(renderPassState->GetCamera()));
+    
+    bool camParamsChanged = hdCam? hdCam->GetAndResetHasParamsChanged() : false;
+
+    if (proj != _lastProj ||
+        viewToWorldMatrix != _lastViewToWorldMatrix ||
+        _width != vp[2] || _height != vp[3] ||
+        camParamsChanged) {
 
         _width = vp[2];
         _height = vp[3];
@@ -166,6 +181,9 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
             cameraNode->name = us_PxrPerspective;
         }
 
+        // Set riley camera and projection shader params from the Hydra camera.
+        hdCam->SetRileyCameraParams(camParams, projParams);
+
         // XXX Normally we would update RenderMan option 'ScreenWindow' to
         // account for an orthographic camera,
         //     options->SetFloatArray(RixStr.k_Ri_ScreenWindow, window, 4);
@@ -183,7 +201,8 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
             scaleMatrix.SetScale(GfVec3d(w,h,1));
             viewToWorldMatrix = scaleMatrix * viewToWorldMatrix;
         } else {
-            // Extract vertical FOV from hydra projection matrix.
+            // Extract vertical FOV from hydra projection matrix after
+            // accounting for the crop window.
             const float fov_rad = atan(1.0f / (fracHeight * proj[1][1]))*2.0;
             const float fov_deg = fov_rad / M_PI * 180.0;
 
@@ -217,7 +236,7 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         float const zerotime = 0.0f;
         riley::Transform xform = { 1, &matrix, &zerotime };
         riley->ModifyCamera(_interactiveContext->cameraId, cameraNode,
-                            &xform, nullptr);
+                            &xform, camParams);
         mgr->DestroyRixParamList(camParams);
         mgr->DestroyRixParamList(projParams);
 
@@ -232,7 +251,7 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
     int currentSettingsVersion = renderDelegate->GetRenderSettingsVersion();
     if (_lastSettingsVersion != currentSettingsVersion) {
         const std::string PxrPathTracer("PxrPathTracer");
-        const std::string integrator = renderDelegate->GetRenderSetting(
+        const std::string integrator = renderDelegate->GetRenderSetting<std::string>(
             HdPrmanRenderSettingsTokens->integrator,
             PxrPathTracer);
         RixParamList *params = mgr->CreateRixParamList();

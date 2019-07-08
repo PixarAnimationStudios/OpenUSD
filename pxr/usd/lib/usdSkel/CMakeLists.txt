@@ -84,6 +84,7 @@ pxr_test_scripts(
     testenv/testUsdSkelAnimQuery.py 
     testenv/testUsdSkelBakeSkinning.py
     testenv/testUsdSkelBindingAPI.py
+    testenv/testUsdSkelBlendShape.py
     testenv/testUsdSkelCache.py
     testenv/testUsdSkelRoot.py
     testenv/testUsdSkelSkeletonQuery.py

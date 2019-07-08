@@ -216,6 +216,14 @@ UsdImagingPrimAdapter::MarkMaterialDirty(UsdPrim const& prim,
 
 /*virtual*/
 void
+UsdImagingPrimAdapter::MarkWindowPolicyDirty(UsdPrim const& prim,
+                                             SdfPath const& cachePath,
+                                             UsdImagingIndexProxy* index)
+{
+}
+
+/*virtual*/
+void
 UsdImagingPrimAdapter::InvokeComputation(SdfPath const& computationPath,
                                          HdExtComputationContext* context)
 {
@@ -233,6 +241,15 @@ std::vector<VtArray<TfToken>>
 UsdImagingPrimAdapter::GetInstanceCategories(UsdPrim const& prim)
 {
     return std::vector<VtArray<TfToken>>();
+}
+
+/*virtual*/
+PxOsdSubdivTags
+UsdImagingPrimAdapter::GetSubdivTags(UsdPrim const& prim,
+                                     SdfPath const& cachePath,
+                                     UsdTimeCode time) const
+{
+    return PxOsdSubdivTags();
 }
 
 /*virtual*/
@@ -271,13 +288,13 @@ UsdImagingPrimAdapter::SamplePrimvar(
                 UsdTimeCode sceneTime =
                     _delegate->GetTimeWithOffset(configuredSampleTimes[i]);
                 times[i] = configuredSampleTimes[i];
-                pv.Get(&samples[i], sceneTime);
+                pv.ComputeFlattened(&samples[i], sceneTime);
             }
             return numSamples;
         } else {
             // Return a single sample for non-varying primvars
             times[0] = 0;
-            pv.Get(samples, time);
+            pv.ComputeFlattened(samples, time);
             return 1;
         }
     }
@@ -318,15 +335,15 @@ UsdImagingPrimAdapter::SamplePrimvar(
 /*virtual*/
 SdfPath 
 UsdImagingPrimAdapter::GetPathForInstanceIndex(
-    SdfPath const &protoPath,
-    int instanceIndex,
+    SdfPath const &protoCachePath,
+    int protoIndex,
     int *instanceCount,
-    int *absoluteInstanceIndex,
-    SdfPath *resolvedPrimPath,
+    int *instancerIndex,
+    SdfPath *masterCachePath,
     SdfPathVector *instanceContext)
 {
-    if (absoluteInstanceIndex) {
-        *absoluteInstanceIndex = UsdImagingDelegate::ALL_INSTANCES;
+    if (instancerIndex) {
+        *instancerIndex = UsdImagingDelegate::ALL_INSTANCES;
     }
     return SdfPath();
 }
@@ -334,13 +351,16 @@ UsdImagingPrimAdapter::GetPathForInstanceIndex(
 /*virtual*/
 SdfPath
 UsdImagingPrimAdapter::GetPathForInstanceIndex(
-    SdfPath const &instancerPath, SdfPath const &protoPath,
-    int instanceIndex, int *instanceCount,
-    int *absoluteInstanceIndex, SdfPath *resolvedPrimPath,
+    SdfPath const &instancerCachePath,
+    SdfPath const &protoCachePath,
+    int protoIndex,
+    int *instanceCountForThisLevel,
+    int *instancerIndex,
+    SdfPath *masterCachePath,
     SdfPathVector *instanceContext)
 {
-    if (absoluteInstanceIndex) {
-        *absoluteInstanceIndex = UsdImagingDelegate::ALL_INSTANCES;
+    if (instancerIndex) {
+        *instancerIndex = UsdImagingDelegate::ALL_INSTANCES;
     }
     return SdfPath();
 }
@@ -444,7 +464,7 @@ UsdImagingPrimAdapter::_GetAdapter(TfToken const& adapterKey) const
 
 SdfPath
 UsdImagingPrimAdapter::_GetPrimPathFromInstancerChain(
-                                            SdfPathVector const& instancerChain)
+                                     SdfPathVector const& instancerChain) const
 {
     // The instancer chain is stored more-to-less local.  For example:
     //
@@ -687,12 +707,6 @@ UsdImagingPrimAdapter::_IsVarying(UsdPrim prim,
 }
 
 bool 
-UsdImagingPrimAdapter::_IsRefined(SdfPath const& cachePath) const
-{
-    return _delegate->IsRefined(cachePath);
-}
-
-bool 
 UsdImagingPrimAdapter::_IsTransformVarying(UsdPrim prim,
                                            HdDirtyBits dirtyFlag,
                                            TfToken const& perfToken,
@@ -869,7 +883,8 @@ UsdImagingPrimAdapter::GetDependPaths(SdfPath const &path) const
 /*virtual*/
 VtIntArray
 UsdImagingPrimAdapter::GetInstanceIndices(SdfPath const &instancerPath,
-                                          SdfPath const &protoRprimPath)
+                                          SdfPath const &protoRprimPath,
+                                          UsdTimeCode time)
 {
     return VtIntArray();
 }

@@ -46,5 +46,14 @@ class TestUsdSkelBakeSkinning(unittest.TestCase):
         stage.GetRootLayer().Export("blendshapes.baked.usda")
 
 
+    def test_BlendShapesWithNormals(self):
+        testFile = "blendshapesWithNormals.usda"
+        stage = Usd.Stage.Open(testFile)
+
+        self.assertTrue(UsdSkel.BakeSkinning(stage.Traverse()))
+        
+        stage.GetRootLayer().Export("blendshapesWithNormals.baked.usda")
+
+
 if __name__ == "__main__":
     unittest.main()

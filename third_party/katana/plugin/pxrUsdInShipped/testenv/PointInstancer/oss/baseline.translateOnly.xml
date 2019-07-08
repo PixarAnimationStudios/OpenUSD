@@ -127,17 +127,6 @@
 </topAttr>
 </location>
 <location path="/root/world/geo/Rocks/Instances/Prototypes/Rock_0">
-<topAttr name="info">
-<attr type="GroupAttr">
-  <attr name="usd" type="GroupAttr">
-    <attr name="sourceUsdPath" tupleSize="1" type="StringAttr">
-      <sample size="1" time="0">
-        <str value="/Rocks/Instances/Prototypes/Rock_0"/>
-      </sample>
-    </attr>
-  </attr>
-</attr>
-</topAttr>
 <topAttr name="type">
 <attr tupleSize="1" type="StringAttr">
   <sample size="1" time="0">
@@ -146,16 +135,7 @@
 </attr>
 </topAttr>
 </location>
-<location path="/root/world/geo/Rocks/Instances/Prototypes/Rock_0/geo">
-<topAttr name="type">
-<attr tupleSize="1" type="StringAttr">
-  <sample size="1" time="0">
-    <str value="group"/>
-  </sample>
-</attr>
-</topAttr>
-</location>
-<location path="/root/world/geo/Rocks/Instances/Prototypes/Rock_0/geo/mesh_0">
+<location path="/root/world/geo/Rocks/Instances/Prototypes/Rock_0/mesh_0">
 <topAttr name="bound">
 <attr tupleSize="6" type="DoubleAttr">
   <sample size="6" time="0" value="-0.92006158828735352 1.1531225442886353 -1.172377347946167 1.1242444515228271 -0.98169612884521484 1.1446560621261597 "/>

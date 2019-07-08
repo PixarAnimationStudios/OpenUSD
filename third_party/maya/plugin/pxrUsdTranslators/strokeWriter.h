@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,22 +21,43 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef KATANA_USDBAKE_DEBUGCODES_H
-#define KATANA_USDBAKE_DEBUGCODES_H
+#ifndef PXRUSDTRANSLATORS_STROKE_WRITER_H
+#define PXRUSDTRANSLATORS_STROKE_WRITER_H
+
+/// \file pxrUsdTranslators/strokeWriter.h
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/debug.h"
+#include "usdMaya/primWriter.h"
+
+#include "usdMaya/writeJobContext.h"
+
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/timeCode.h"
+
+#include <maya/MFnDependencyNode.h>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEBUG_CODES(
+/// Exports Maya stroke objects (MFnPfxGeometry) as UsdGeomBasisCurves.
+class PxrUsdTranslators_StrokeWriter : public UsdMayaPrimWriter
+{
+public:
+    PxrUsdTranslators_StrokeWriter(
+            const MFnDependencyNode& depNodeFn,
+            const SdfPath& usdPath,
+            UsdMayaWriteJobContext& jobCtx);
 
-    KATANA_USDBAKE_CONNECTIONS
+    void Write(const UsdTimeCode& usdTime) override;
 
-);
+    bool ExportsGprims() const override {
+        return true;
+    }
+};
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
 
 #endif

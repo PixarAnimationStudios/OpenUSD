@@ -247,6 +247,10 @@ HdxColorizeTask::Execute(HdTaskContext* ctx)
     // we failed to look up the renderBuffer in the render index,
     // in which case the error was previously reported
     if (!_aovBuffer) {
+        // If there is no aov buffer to colorize, then this task is never
+        // going to do anything, and so should immediately be marked as
+        // converged.
+        _converged = true;
         return;
     }
 

@@ -62,8 +62,7 @@ _NodeRepresentsLiveBaseMaterial(const PcpNodeRef &node)
             n; // 0, or false, means we are at the root node
             n = n.GetOriginNode()) {
         switch(n.GetArcType()) {
-        case PcpArcTypeLocalSpecializes:
-        case PcpArcTypeGlobalSpecializes:
+        case PcpArcTypeSpecialize:
             isLiveBaseMaterial = true;
             break;
         // dakrunch: specializes across references are actually still valid.

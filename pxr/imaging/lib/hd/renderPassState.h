@@ -109,6 +109,8 @@ public:
 
     GfMatrix4d GetCullMatrix() const { return _cullMatrix; }
 
+    HdCamera const *GetCamera() const { return _camera; }
+
     // ---------------------------------------------------------------------- //
     /// \name Application rendering state
     // ---------------------------------------------------------------------- //

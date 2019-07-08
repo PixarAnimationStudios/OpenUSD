@@ -1,0 +1,101 @@
+Loading @ImpliedAndAncestralInherits/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </World/CharGroup/Sim/includes/Hand/Geom>
+Node 0:
+    Parent node:              NONE
+    Type:                     root
+    DependencyType:           root
+    Source path:              </World/CharGroup/Sim/includes/Hand/Geom>
+    Source layer stack:       @ImpliedAndAncestralInherits/root.sdf@
+    Target path:              <NONE>
+    Target layer stack:       NONE
+    Map to parent:
+        / -> /
+    Map to root:
+        / -> /
+    Namespace depth:          0
+    Depth below introduction: 0
+    Permission:               Public
+    Is restricted:            FALSE
+    Is inert:                 FALSE
+    Contribute specs:         TRUE
+    Has specs:                FALSE
+    Has symmetry:             FALSE
+Node 1:
+    Parent node:              0
+    Type:                     reference
+    DependencyType:           ancestral, non-virtual
+    Source path:              </CharGroup/Sim/includes/Hand/Geom>
+    Source layer stack:       @Group.sdf@
+    Target path:              </World/CharGroup/Sim/includes/Hand/Geom>
+    Target layer stack:       @ImpliedAndAncestralInherits/root.sdf@
+    Map to parent:
+        /CharGroup -> /World/CharGroup
+    Map to root:
+        /CharGroup -> /World/CharGroup
+    Namespace depth:          2
+    Depth below introduction: 4
+    Permission:               Public
+    Is restricted:            FALSE
+    Is inert:                 FALSE
+    Contribute specs:         TRUE
+    Has specs:                FALSE
+    Has symmetry:             FALSE
+Node 2:
+    Parent node:              1
+    Type:                     reference
+    DependencyType:           ancestral, non-virtual
+    Source path:              </CHARGROUP/Sim/includes/Hand/Geom>
+    Source layer stack:       @CharGroupRig.sdf@
+    Target path:              </CharGroup/Sim/includes/Hand/Geom>
+    Target layer stack:       @Group.sdf@
+    Map to parent:
+        /CHARGROUP -> /CharGroup
+    Map to root:
+        /CHARGROUP -> /World/CharGroup
+    Namespace depth:          1
+    Depth below introduction: 4
+    Permission:               Public
+    Is restricted:            FALSE
+    Is inert:                 FALSE
+    Contribute specs:         TRUE
+    Has specs:                FALSE
+    Has symmetry:             FALSE
+Node 3:
+    Parent node:              2
+    Type:                     inherit
+    DependencyType:           ancestral, non-virtual
+    Source path:              </_class_SimHand/Geom>
+    Source layer stack:       @CharGroupRig.sdf@
+    Target path:              </CHARGROUP/Sim/includes/Hand/Geom>
+    Target layer stack:       @CharGroupRig.sdf@
+    Map to parent:
+        / -> /
+        /_class_SimHand -> /CHARGROUP/Sim/includes/Hand
+    Map to root:
+        /CHARGROUP -> /World/CharGroup
+        /_class_SimHand -> /World/CharGroup/Sim/includes/Hand
+    Namespace depth:          4
+    Depth below introduction: 1
+    Permission:               Public
+    Is restricted:            FALSE
+    Is inert:                 FALSE
+    Contribute specs:         TRUE
+    Has specs:                TRUE
+    Has symmetry:             FALSE
+    Prim stack:
+      </_class_SimHand/Geom> CharGroupRig.sdf - @CharGroupRig.sdf@
+
+
+
+
+
+
+Prim Stack:
+    CharGroupRig.sdf     /_class_SimHand/Geom
+

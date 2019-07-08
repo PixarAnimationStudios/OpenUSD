@@ -45,6 +45,55 @@ from jinja2.exceptions import TemplateNotFound, TemplateSyntaxError
 
 from pxr import Plug, Sdf, Usd, Vt, Tf
 
+# Object used for printing. This gives us a way to control output with regards 
+# to program arguments such as --quiet.
+class _Printer():
+    def __init__(self, quiet=False):
+        self._quiet = quiet
+
+    def __PrintImpl(self, stream, *args):
+        if len(args):
+            for arg in args[:-1]:
+                print >>stream, arg,
+            print >>stream, args[-1]
+        else:
+             print >>stream, '\n'
+
+    def __call__(self, *args):
+        if not self._quiet:
+            self.__PrintImpl(sys.stdout, *args)
+
+    def Err(self, *args):
+        self.__PrintImpl(sys.stderr, *args)
+
+    def SetQuiet(self, quiet):
+        self._quiet = quiet
+
+Print = _Printer()
+
+#------------------------------------------------------------------------------#
+# Tokens                                                                       #
+#------------------------------------------------------------------------------#
+
+# Custom-data key authored on an API schema class prim in the schema definition,
+# to define the type of API schema.
+API_SCHEMA_TYPE = "apiSchemaType"
+
+# Possible values for customData["apiSchemaType"] on an API schema class prim.
+NON_APPLIED = "nonApplied"
+SINGLE_APPLY = "singleApply"
+MULTIPLE_APPLY = "multipleApply"
+API_SCHEMA_TYPE_TOKENS = [NON_APPLIED, SINGLE_APPLY, MULTIPLE_APPLY]
+
+# Custom-data key authored on an applied API schema class prim in the schema 
+# definition to indicate whether the auto-generated Apply method should be 
+# public or private. 
+IS_PRIVATE_APPLY = "isPrivateApply"
+
+# Custom-data key authored on a multiple-apply API schema class prim in the 
+# schema definition, to define prefix for properties created by the API schema. 
+PROPERTY_NAMESPACE_PREFIX = "propertyNamespacePrefix"
+
 #------------------------------------------------------------------------------#
 # Parsed Objects                                                               #
 #------------------------------------------------------------------------------#
@@ -202,7 +251,7 @@ class PropInfo(object):
         self.apiName    = self.customData.get('apiName', self.name)
         self.apiGet     = self.customData.get('apiGetImplementation', self.CodeGen.Generated)
         if self.apiGet not in [self.CodeGen.Generated, self.CodeGen.Custom]:
-            print ("Token '%s' is not valid." % self.apiGet)
+            Print.Err("Token '%s' is not valid." % self.apiGet)
         self.rawName    = sdfProp.name
         self.doc        = _SanitizeDoc(sdfProp.documentation, '\n    /// ')
         self.custom     = sdfProp.custom
@@ -236,7 +285,7 @@ class AttrInfo(PropInfo):
         
         self.variability = str(sdfProp.variability).replace('Sdf.', 'Sdf')
         self.fallback = sdfProp.default
-        self.cppType = sdfProp.typeName.cppTypeName
+        self.typeName = sdfProp.typeName
 
         if sdfProp.typeName not in valueTypeNameToStr:
             raise _GetSchemaDefException(
@@ -249,7 +298,7 @@ class AttrInfo(PropInfo):
             self.usdType = "SdfValueTypeNames->%s" % (
                 valueTypeNameToStr[sdfProp.typeName])
         
-        self.details = [('C++ Type', self.cppType),
+        self.details = [('C++ Type', self.typeName.cppTypeName),
                         ('Usd Type', self.usdType),
                         ('Variability', self.variability),
                         ('Fallback Value', 'No Fallback'
@@ -368,30 +417,27 @@ class ClassInfo(object):
 
         self.isApi = not self.isTyped and not self.isConcrete and \
                 not self.isAPISchemaBase
-        self.apiSchemaType = self.customData.get(Usd.Tokens.apiSchemaType, 
-                Usd.Tokens.singleApply if self.isApi else None)
+        self.apiSchemaType = self.customData.get(API_SCHEMA_TYPE, 
+                SINGLE_APPLY if self.isApi else None)
         self.propertyNamespacePrefix = \
-            self.customData.get(Usd.Tokens.propertyNamespacePrefix)
+            self.customData.get(PROPERTY_NAMESPACE_PREFIX)
 
-        if not self.apiSchemaType == Usd.Tokens.multipleApply and \
+        if not self.apiSchemaType == MULTIPLE_APPLY and \
             self.propertyNamespacePrefix:
             raise Exception(errorMsg("propertyNamespacePrefix should only "
                 "be used as a metadata field on multiple-apply API schemas"))
 
         if self.isApi and \
-           self.apiSchemaType not in [Usd.Tokens.nonApplied, 
-                                      Usd.Tokens.singleApply,
-                                      Usd.Tokens.multipleApply]:
-            raise _GetSchemaDefException("CustomData 'apiSchemaType' is %s. It must"
-                                " be one of {'nonApplied', 'singleApply', 'multipleApply'} "
-                                "for an API schema.",
-                                sdfPrim.path)
+           self.apiSchemaType not in API_SCHEMA_TYPE_TOKENS:
+            raise _GetSchemaDefException(
+                "CustomData 'apiSchemaType' is %s. It must be one of %s for an "
+                "API schema." % (self.apiSchemaType, API_SCHEMA_TYPE_TOKENS),
+                sdfPrim.path)
 
-        self.isAppliedAPISchema = self.apiSchemaType in [Usd.Tokens.singleApply, 
-                                                      Usd.Tokens.multipleApply]
-        self.isMultipleApply = self.apiSchemaType == Usd.Tokens.multipleApply
-        self.isPrivateApply = self.customData.get(Usd.Tokens.isPrivateApply, 
-                False)
+        self.isAppliedAPISchema = \
+            self.apiSchemaType in [SINGLE_APPLY, MULTIPLE_APPLY]
+        self.isMultipleApply = self.apiSchemaType == MULTIPLE_APPLY
+        self.isPrivateApply = self.customData.get(IS_PRIVATE_APPLY, False)
 
         if self.isApi and not self.isAppliedAPISchema:
             self.schemaType = "UsdSchemaType::NonAppliedAPI";
@@ -473,14 +519,14 @@ def _ValidateFields(spec):
 
     for key in invalidFields:
         if key == Sdf.RelationshipSpec.TargetsKey:
-            print ("ERROR: Relationship targets on <%s> cannot be specified "
-                   "in a schema." % spec.path)
+            Print.Err("ERROR: Relationship targets on <%s> cannot be "
+                      "specified in a schema." % spec.path)
         elif key == Sdf.AttributeSpec.ConnectionPathsKey:
-            print ("ERROR: Attribute connections on <%s> cannot be specified "
-                   "in a schema." % spec.path)
+            Print.Err("ERROR: Attribute connections on <%s> cannot be "
+                      "specified in a schema." % spec.path)
         else:
-            print ("ERROR: Fallback values for '%s' on <%s> cannot be "
-                   "specified in a schema." % (key, spec.path))
+            Print.Err("ERROR: Fallback values for '%s' on <%s> cannot be "
+                      "specified in a schema." % (key, spec.path))
     return False
 
 def GetClassInfo(classes, cppClassName):
@@ -509,7 +555,7 @@ def ParseUsd(usdFilePath):
 
         # make sure that if we have a multiple-apply schema with a property
         # namespace prefix that the prim actually has some properties
-        if classInfo.apiSchemaType == Usd.Tokens.multipleApply:
+        if classInfo.apiSchemaType == MULTIPLE_APPLY:
             if classInfo.propertyNamespacePrefix and \
                 len(sdfPrim.properties) == 0:
                     raise _GetSchemaDefException(
@@ -645,32 +691,33 @@ def _WriteFile(filePath, content, validate):
     if os.path.exists(filePath):
         existingContent = open(filePath, 'r').read()
         if existingContent == content:
-            print '\tunchanged %s' % filePath
+            Print('\tunchanged %s' % filePath)
             return
 
         # In validation mode, we just want to see if the code being generated
         # would differ from the code that currently exists without writing
         # anything out. So just generate a diff and bail out immediately.
         if validate:
-            print 'Diff: '
-            print '\n'.join(difflib.unified_diff(existingContent.split('\n'),
-                                                 content.split('\n')))
-            print ('Error: validation failed, diffs found. '
-                   'Please rerun usdGenSchema.')
+            Print('Diff: ')
+            Print('\n'.join(difflib.unified_diff(
+                                existingContent.split('\n'),
+                                content.split('\n'))))
+            Print.Err('Error: validation failed, diffs found. '
+                      'Please rerun usdGenSchema.')
             sys.exit(1)
     else:
         if validate:
-            print ('Error: validation failed, file %s does not exist. '
-                   'Please rerun usdGenSchema.' % os.path.basename(filePath))
+            Print.Err('Error: validation failed, file %s does not exist. '
+                      'Please rerun usdGenSchema.' % os.path.basename(filePath))
             sys.exit(1)
 
     # Otherwise attempt to write to file.
     try:
         with open(filePath, 'w') as curfile:
             curfile.write(content)
-            print '\t    wrote %s' % filePath
+            Print('\t    wrote %s' % filePath)
     except IOError as ioe:
-        print '\t', ioe
+        Print.Err('\t ', ioe)
 
 def _ExtractCustomCode(filePath, default=None):
     defaultTxt = default if default else ''
@@ -687,7 +734,7 @@ def _ExtractCustomCode(filePath, default=None):
             return parts[1]
                 
     except Exception as e:
-        print e
+        Print.Err(e)
         return defaultTxt
 
 
@@ -732,7 +779,7 @@ def GatherTokens(classes, libName, libTokens):
 
             
             # Add default value (if token type) to token set
-            if attr.usdType == 'SdfValueTypeNames->Token' and attr.fallback:
+            if attr.typeName == Sdf.ValueTypeNames.Token and attr.fallback:
                 fallbackName = _CamelCase(attr.fallback)
                 desc = 'Default value for %s::Get%sAttr()' % \
                        (cls.cppClassName, _ProperCase(attr.name))
@@ -784,7 +831,7 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
     #
     # Load Templates
     #
-    print 'Loading Templates from {0}'.format(templatePath)
+    Print('Loading Templates from {0}'.format(templatePath))
     try:
         apiTemplate = env.get_template('api.h')
         headerTemplate = env.get_template('schemaClass.h')
@@ -801,13 +848,13 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
                            .format(tse.filename, tse.lineno, tse.message))
 
     if useExportAPI:
-        print 'Writing API:'
+        Print('Writing API:')
         _WriteFile(os.path.join(codeGenPath, 'api.h'),
                    apiTemplate.render(),
                    validate)
     
     if tokenData:
-        print 'Writing Schema Tokens:'
+        Print('Writing Schema Tokens:')
         # tokens.h
         _WriteFile(os.path.join(codeGenPath, 'tokens.h'),
                    tokensHTemplate.render(tokens=tokenData), validate)
@@ -821,12 +868,13 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
     #
     # Generate Schema Class Files
     #
-    print 'Generating Classes:'
+    Print('Generating Classes:')
 
             
     for cls in classes:
         hasTokenAttrs = any(
-            [cls.attrs[attr].usdType == 'SdfValueTypeNames->Token' for attr in cls.attrs])
+            [cls.attrs[attr].typeName == Sdf.ValueTypeNames.Token
+             for attr in cls.attrs])
 
         # header file
         clsHFilePath = os.path.join(codeGenPath, cls.GetHeaderFile())
@@ -873,13 +921,13 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
             try:
                 info = json.loads(''.join(infoLines))
             except ValueError as ve:
-                print '\t', ve, 'reading', plugInfoFile
+                Print.Err('\t', 'reading', plugInfoFile)
         else:
             # use plugInfo.json template as starting point for new files,
             try:
                 info = json.loads(plugInfoTemplate.render())
             except ValueError as ve:
-                print '\t', ve, 'from template', plugInfoTemplate.filename
+                Print.Err('\t', ve, 'from template', plugInfoTemplate.filename)
 
         # pull the types dictionary.
         if 'Plugins' in info:
@@ -890,8 +938,8 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
                              .setdefault('Types', {}))
                     break
             else:
-                print '\t', 'Could not find plugin metadata section for ', \
-                    env.globals['libraryName']
+                Print.Err('\t', 'Could not find plugin metadata section for',
+                          env.globals['libraryName'])
         else:
             types = info.setdefault('Types', {})
         # remove auto-generated types.
@@ -983,18 +1031,18 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
     pathsToDelete = []
     primsToKeep = set(cls.usdPrimTypeName for cls in classes)
     if not flatStage.RemovePrim('/GLOBAL'):
-        print "WARNING: Could not remove GLOBAL prim."
+        Print.Err("ERROR: Could not remove GLOBAL prim.")
     allAppliedAPISchemas = []
     allMultipleApplyAPISchemas = []
     for p in flatStage.GetPseudoRoot().GetAllChildren():
         # If this is an API schema, check if it's applied and record necessary
         # information.
         if p.GetName() in primsToKeep and p.GetName().endswith('API'):
-            apiSchemaType = p.GetCustomDataByKey(Usd.Tokens.apiSchemaType)
-            if apiSchemaType == Usd.Tokens.multipleApply:
+            apiSchemaType = p.GetCustomDataByKey(API_SCHEMA_TYPE)
+            if apiSchemaType == MULTIPLE_APPLY:
                 allMultipleApplyAPISchemas.append(p.GetName())
                 allAppliedAPISchemas.append(p.GetName())
-            elif apiSchemaType in [None, Usd.Tokens.singleApply]:
+            elif apiSchemaType in [None, SINGLE_APPLY]:
                 allAppliedAPISchemas.append(p.GetName())
 
         p.ClearCustomData()
@@ -1019,7 +1067,7 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
     #
     # Generate Schematics
     #
-    print 'Generating Schematics:'
+    Print('Generating Schematics:')
     layerSource = flatLayer.ExportToString()
 
     # Remove doxygen tags from schema registry docs.
@@ -1076,6 +1124,9 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--validate',
         action='store_true',
         help='Verify that the source files are unchanged.')
+    parser.add_argument('-q', '--quiet',
+        action='store_true',
+        help='Do not output text during execution.')
     parser.add_argument('-n', '--namespace',
         nargs='+',
         type=str,
@@ -1122,19 +1173,21 @@ if __name__ == '__main__':
         namespaceClose = 'PXR_NAMESPACE_CLOSE_SCOPE'
         namespaceUsing = 'PXR_NAMESPACE_USING_DIRECTIVE'
 
+    Print.SetQuiet(args.quiet)
+
     #
     # Error Checking
     #
     if not os.path.isfile(schemaPath):
-        print 'Usage Error: First positional argument must be a USD schema file.'
+        Print.Err('Usage Error: First positional argument must be a USD schema file.')
         parser.print_help()
         sys.exit(1)
     if not os.path.isdir(codeGenPath):
-        print 'Usage Error: Second positional argument must be a directory to contain generated code.'
+        Print.Err('Usage Error: Second positional argument must be a directory to contain generated code.')
         parser.print_help()
         sys.exit(1)
     if args.templatePath and not os.path.isdir(templatePath):
-        print 'Usage Error: templatePath argument must be the path to the codegenTemplates.'
+        Print.Err('Usage Error: templatePath argument must be the path to the codegenTemplates.')
         parser.print_help()
         sys.exit(1)
 
@@ -1157,10 +1210,10 @@ if __name__ == '__main__':
         tokenData = GatherTokens(classes, libName, libTokens)
         
         if args.validate:
-            print 'Validation on, any diffs found will cause failure.'
+            Print('Validation on, any diffs found will cause failure.')
 
-        print 'Processing schema classes:' 
-        print ', '.join(map(lambda self: self.usdPrimTypeName, classes))
+        Print('Processing schema classes:')
+        Print(', '.join(map(lambda self: self.usdPrimTypeName, classes)))
 
         #
         # Generate Code from Templates
@@ -1183,8 +1236,9 @@ if __name__ == '__main__':
                      args.validate,
                      namespaceOpen, namespaceClose, namespaceUsing,
                      useExportAPI, j2_env)
-        GenerateRegistry(codeGenPath, schemaPath, classes, args.validate, j2_env)
+        GenerateRegistry(codeGenPath, schemaPath, classes, 
+                         args.validate, j2_env)
     
     except Exception as e:
-        print "ERROR:", str(e)
+        Print.Err("ERROR:", str(e))
         sys.exit(1)

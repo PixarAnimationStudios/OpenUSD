@@ -178,9 +178,9 @@ CreateTestCollection(float startTimeSec=0.0)
 {
     std::unique_ptr<TraceCollection> collection(new TraceCollection);
     collection->AddToCollection(
-        TraceThreadId("MainThread"),
+        TraceThreadId("Thread 1"),
         CreateTestEvents(ArchSecondsToTicks(startTimeSec)));
-    collection->AddToCollection(TraceThreadId("Thread 1"), 
+    collection->AddToCollection(TraceThreadId("Thread 2"), 
         CreateTestEvents(ArchSecondsToTicks(startTimeSec + 0.001)));
     return collection;
 }
