@@ -201,6 +201,13 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(
     // mesh geometry. This should only be run once at default time.
     if (usdTime.IsDefault()) {
         _skelInputMesh = writeSkinningData(primSchema);
+
+        // write out blend shape data and adjust the input geometry mesh
+        // to the base mesh of the blend shape deformer.
+        MObject baseMesh = writeBlendShapeData(primSchema);
+        if (!baseMesh.isNull()) {
+            _skelInputMesh = baseMesh;
+        }
     }
 
     // This is the mesh that "lives" at the end of this dag node. We should

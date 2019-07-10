@@ -69,6 +69,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (defaultCameras) \
     (defaultMeshScheme) \
     (eulerFilter) \
+    (exportBlendShapes) \
     (exportCollectionBasedBindings) \
     (exportColorSets) \
     (exportDisplayColor) \
@@ -138,6 +139,7 @@ struct UsdMayaJobExportArgs
     const TfToken defaultMeshScheme;
     const bool eulerFilter;
     const bool excludeInvisible;
+    const TfToken exportBlendShapes;
 
     /// If set to false, then direct per-gprim bindings are exported.
     /// If set to true and if \p materialCollectionsPath is non-empty, then

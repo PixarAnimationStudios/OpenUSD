@@ -114,6 +114,9 @@ MSyntax UsdMayaExportCommand::createSyntax()
     syntax.addFlag("-skn",
                    UsdMayaJobExportArgsTokens->exportSkin.GetText(),
                    MSyntax::kString);
+    syntax.addFlag("-ebs",
+                   UsdMayaJobExportArgsTokens->exportBlendShapes.GetText(),
+                   MSyntax::kString);
     syntax.addFlag("-psc",
                    UsdMayaJobExportArgsTokens->parentScope.GetText(),
                    MSyntax::kString);
