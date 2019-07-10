@@ -35,6 +35,7 @@ pxr_library(hd
         changeTracker
         compExtCompInputSource
         computation
+        coordSys
         debugCodes
         dirtyList
         drawingCoord
@@ -46,6 +47,7 @@ pxr_library(hd
         extCompPrimvarBufferSource
         extComputation
         extComputationContext
+        extComputationUtils
         field
         flatNormals
         geomSubset

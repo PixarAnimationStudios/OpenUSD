@@ -120,6 +120,23 @@ UsdSkelBlendShape::CreateOffsetsAttr(VtValue const &defaultValue, bool writeSpar
 }
 
 UsdAttribute
+UsdSkelBlendShape::GetNormalOffsetsAttr() const
+{
+    return GetPrim().GetAttribute(UsdSkelTokens->normalOffsets);
+}
+
+UsdAttribute
+UsdSkelBlendShape::CreateNormalOffsetsAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdSkelTokens->normalOffsets,
+                       SdfValueTypeNames->Vector3fArray,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdSkelBlendShape::GetPointIndicesAttr() const
 {
     return GetPrim().GetAttribute(UsdSkelTokens->pointIndices);
@@ -129,7 +146,7 @@ UsdAttribute
 UsdSkelBlendShape::CreatePointIndicesAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(UsdSkelTokens->pointIndices,
-                       SdfValueTypeNames->UIntArray,
+                       SdfValueTypeNames->IntArray,
                        /* custom = */ false,
                        SdfVariabilityUniform,
                        defaultValue,
@@ -154,6 +171,7 @@ UsdSkelBlendShape::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         UsdSkelTokens->offsets,
+        UsdSkelTokens->normalOffsets,
         UsdSkelTokens->pointIndices,
     };
     static TfTokenVector allNames =
@@ -209,14 +227,17 @@ UsdSkelBlendShape::HasInbetween(const TfToken& name) const
 std::vector<UsdSkelInbetweenShape>
 UsdSkelBlendShape::_MakeInbetweens(const std::vector<UsdProperty>& props) const
 {
-    std::vector<UsdSkelInbetweenShape> shapes(props.size());
-    size_t index = 0;
+    std::vector<UsdSkelInbetweenShape> shapes;
+    shapes.reserve(props.size());
     for(const UsdProperty& prop : props) {
-        if(shapes[index] = UsdSkelInbetweenShape(prop.As<UsdAttribute>())) {
-            ++index;
+        const UsdAttribute attr = prop.As<UsdAttribute>();
+        // The input property list will often include properties within
+        // the namespace of inbetween shapes, such as
+        // 'inbetweens:shape:normalOffsets' Filter out those cases.
+        if (UsdSkelInbetweenShape::IsInbetween(attr)) {
+            shapes.push_back(UsdSkelInbetweenShape(attr));
         }
     }
-    shapes.resize(index);
     return shapes;
 }
 
@@ -239,5 +260,34 @@ UsdSkelBlendShape::GetAuthoredInbetweens() const
                                UsdSkelInbetweenShape::_GetNamespacePrefix()) :
                            std::vector<UsdProperty>());
 }
+
+
+bool
+UsdSkelBlendShape::ValidatePointIndices(TfSpan<const int> indices,
+                                        size_t numPoints,
+                                        std::string* reason)
+{
+    for (size_t i = 0; i < indices.size(); ++i) {
+        const int pointIndex = indices[i];
+        if (pointIndex >= 0) {
+            if (ARCH_UNLIKELY(static_cast<size_t>(pointIndex) >= numPoints)) {
+                if (reason) {
+                    *reason = TfStringPrintf(
+                        "Index [%d] at element %td >= numPoints [%zu]",
+                        pointIndex, i, numPoints);
+                }
+                return false;
+            }
+        } else {
+            if (reason) {
+                *reason = TfStringPrintf("Index [%d] at element %td < 0",
+                                         pointIndex, i);
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

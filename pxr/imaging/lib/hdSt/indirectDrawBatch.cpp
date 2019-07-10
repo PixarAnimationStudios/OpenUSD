@@ -26,6 +26,7 @@
 #include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
 #include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hdSt/cullingShaderKey.h"
+#include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/drawItemInstance.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
@@ -41,7 +42,7 @@
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/glf/diagnostic.h"
-#include "pxr/imaging/glf/glslfx.h"
+#include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
@@ -184,7 +185,7 @@ HdSt_IndirectDrawBatch::IsEnabledGPUFrustumCulling()
         TfGetEnvSetting(HD_ENABLE_GPU_FRUSTUM_CULLING) &&
         (caps.explicitUniformLocation);
     return isEnabledGPUFrustumCulling &&
-       !TfDebug::IsEnabled(HD_DISABLE_FRUSTUM_CULLING);
+       !TfDebug::IsEnabled(HDST_DISABLE_FRUSTUM_CULLING);
 }
 
 /* static */

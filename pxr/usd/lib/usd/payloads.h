@@ -35,14 +35,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-SDF_DECLARE_HANDLES(SdfPrimSpec);
-
 /// \class UsdPayloads
 ///
 /// UsdPayloads provides an interface to authoring and introspecting payloads.
 /// Payloads behave the same as Usd references except that payloads can be 
 /// optionally loaded. 
-
 class UsdPayloads {
     friend class UsdPrim;
 
@@ -57,28 +54,28 @@ public:
     /// and composition of listOps. 
     USD_API
     bool AddPayload(const SdfPayload& payload,
-                    UsdListPosition position=UsdListPositionTempDefault);
+                    UsdListPosition position=UsdListPositionBackOfPrependList);
 
     /// \overload 
     USD_API
     bool AddPayload(const std::string &identifier,
                     const SdfPath &primPath,
                     const SdfLayerOffset &layerOffset = SdfLayerOffset(),
-                    UsdListPosition position=UsdListPositionTempDefault);
+                    UsdListPosition position=UsdListPositionBackOfPrependList);
 
     /// \overload
     /// \sa \ref Usd_DefaultPrim_References "Payloads Without Prim Paths"
     USD_API
     bool AddPayload(const std::string &identifier,
                     const SdfLayerOffset &layerOffset = SdfLayerOffset(),
-                    UsdListPosition position=UsdListPositionTempDefault);
+                    UsdListPosition position=UsdListPositionBackOfPrependList);
 
     /// Add an internal payload to the specified prim.
     /// \sa \ref Usd_Internal_References "Internal Payloads"
     USD_API
     bool AddInternalPayload(const SdfPath &primPath,
-                            const SdfLayerOffset &layerOffset = SdfLayerOffset(),
-                            UsdListPosition position=UsdListPositionTempDefault);
+                    const SdfLayerOffset &layerOffset = SdfLayerOffset(),
+                    UsdListPosition position=UsdListPositionBackOfPrependList);
 
     /// Removes the specified payload from the payloads listOp at the
     /// current EditTarget.  This does not necessarily eliminate the payload 
@@ -114,8 +111,6 @@ public:
     explicit operator bool() { return bool(_prim); }
 
 private:
-
-    SdfPrimSpecHandle _CreatePrimSpecForEditing();
     UsdPrim _prim;
 };
 

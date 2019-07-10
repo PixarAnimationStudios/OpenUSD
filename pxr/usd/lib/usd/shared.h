@@ -42,11 +42,15 @@ struct Usd_Counted {
     explicit Usd_Counted(T &&data) : data(std::move(data)), count(0) {}
     
     friend inline void
-    intrusive_ptr_add_ref(Usd_Counted const *c) { ++c->count; }
+    intrusive_ptr_add_ref(Usd_Counted const *c) {
+        c->count.fetch_add(1, std::memory_order_relaxed);
+    }
     friend inline void
     intrusive_ptr_release(Usd_Counted const *c) {
-        if (--c->count == 0)
+        if (c->count.fetch_sub(1, std::memory_order_release) == 1) {
+            std::atomic_thread_fence(std::memory_order_acquire);
             delete c;
+        }
     }
 
     T data;

@@ -165,10 +165,16 @@ private:
                          HdMeshReprDesc const &desc);
 
     // Populate _primvarSourceMap (our local cache of primvar data) based on
-    // scene data. Primvars will be turned into samplers in _PopulateRtMesh,
+    // authored scene data.
+    // Primvars will be turned into samplers in _PopulateRtMesh,
     // through the help of the _CreatePrimvarSampler() method.
     void _UpdatePrimvarSources(HdSceneDelegate* sceneDelegate,
                                HdDirtyBits dirtyBits);
+
+    // Populate _primvarSourceMap with primvars that are computed.
+    // Return the names of the primvars that were successfully updated.
+    TfTokenVector _UpdateComputedPrimvarSources(HdSceneDelegate* sceneDelegate,
+                                                HdDirtyBits dirtyBits);
 
     // Populate a single primvar, with given name and data, in the prototype
     // context. Overwrites the current mapping for the name, if necessary.

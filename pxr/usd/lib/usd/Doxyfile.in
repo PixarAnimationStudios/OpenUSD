@@ -707,6 +707,7 @@ INPUT                  = src/modules/usd/doxygen/externalOverview.dox \
                          src/modules/hdStream \
                                                                       \
                          ## "usdImaging" package \
+                         src/modules/usdAppUtils \
                          src/modules/usdImaging \
                          src/modules/usdImagingGL \
                          src/modules/usdSkelImaging \

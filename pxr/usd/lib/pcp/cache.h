@@ -41,6 +41,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -56,7 +57,6 @@ class PcpMapFunction;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(PcpLayerStack);
 TF_DECLARE_WEAK_AND_REF_PTRS(Pcp_LayerStackRegistry);
-TF_DECLARE_REF_PTRS(PcpPayloadDecorator);
 SDF_DECLARE_HANDLES(SdfSpec);
 
 /// \class PcpCache
@@ -78,8 +78,8 @@ SDF_DECLARE_HANDLES(SdfSpec);
 ///     prims should have their payloads included during composition;
 ///     this is the basis for explicit control over the "working set"
 ///     of composition
-/// \li target schema: the target schema that Pcp will request when
-///     opening scene description layers
+/// \li file format target: the file format target that Pcp will request
+///     when opening scene description layers
 /// \li "USD mode" configures the Pcp composition algorithm to provide
 ///     only a custom, lighter subset of the full feature set, as needed
 ///     by the Universal Scene Description system
@@ -96,14 +96,8 @@ public:
     /// Construct a PcpCache to compose results for the layer stack identified
     /// by \a layerStackIdentifier. 
     /// 
-    /// If \p targetSchema is specified, Pcp will require all scene description
-    /// layers it encounters to adhere to the identified schema. When searching
-    /// for or opening a layer, Pcp will specify \p targetSchema as the layer's
-    /// target.
-    ///
-    /// If \p payloadDecorator is specified, it will be used when computing
-    /// any prim index. See documentation for \c PcpPayloadDecorator for
-    /// more details.
+    /// If \p fileFormatTarget is given, Pcp will specify \p fileFormatTarget
+    /// as the file format target when searching for or opening a layer.
     ///
     /// If \p usd is true, computation of prim indices and composition of prim 
     /// child names are performed without relocates, inherits, permissions, 
@@ -111,10 +105,8 @@ public:
     /// gathering its dependencies.
     PCP_API
     PcpCache(const PcpLayerStackIdentifier & layerStackIdentifier,
-             const std::string& targetSchema = std::string(),
-             bool usd = false,
-             const PcpPayloadDecoratorRefPtr& payloadDecorator 
-                 = PcpPayloadDecoratorRefPtr());
+             const std::string& fileFormatTarget = std::string(),
+             bool usd = false);
     PCP_API ~PcpCache();
 
     /// \name Parameters
@@ -137,14 +129,9 @@ public:
     PCP_API
     bool IsUsd() const;
 
-    /// Returns the target schema this cache is configured for.
+    /// Returns the file format target this cache is configured for.
     PCP_API
-    const std::string& GetTargetSchema() const;
-
-    /// Returns the payload decorator used by this cache or NULL if
-    /// this cache does not have one set.
-    PCP_API
-    PcpPayloadDecorator* GetPayloadDecorator() const;
+    const std::string& GetFileFormatTarget() const;
 
     /// Get the list of fallbacks to attempt to use when evaluating
     /// variant sets that lack an authored selection.
@@ -166,8 +153,9 @@ public:
     bool IsPayloadIncluded(const SdfPath &path) const;
 
     /// Returns the payloads requested for inclusion.
+    using PayloadSet = std::unordered_set<SdfPath, SdfPath::Hash>;
     PCP_API
-    SdfPathSet GetIncludedPayloads() const;
+    PayloadSet const &GetIncludedPayloads() const;
 
     /// Request payloads to be included or excluded from composition.
     /// \param pathsToInclude is a set of paths to add to the set for
@@ -499,6 +487,26 @@ public:
     PCP_API 
     bool IsInvalidAssetPath(const std::string& resolvedAssetPath) const;
 
+    /// Returns true if any prim index in this cache has a dependency on a 
+    /// dynamic file format argument field. 
+    PCP_API
+    bool HasAnyDynamicFileFormatArgumentDependencies() const;
+
+    /// Returns true if the given \p field is the name of a field that 
+    /// was composed while generating dynamic file format arguments for any prim
+    /// index in this cache. 
+    PCP_API
+    bool IsPossibleDynamicFileFormatArgumentField(const TfToken &field) const;
+
+    /// Returns the dynamic file format dependency data object for the prim
+    /// index with the given \p primIndexPath. This will return an empty 
+    /// dependency data if either there is no cache prim index for the path or 
+    /// if the prim index has no dynamic file formats that it depends on.
+    PCP_API
+    const PcpDynamicFileFormatDependencyData &
+    GetDynamicFileFormatArgumentDependencyData(
+        const SdfPath &primIndexPath) const;
+
     /// @}
 
     /// \name Change handling
@@ -670,13 +678,9 @@ private:
     // prim indices and composition of prim child names.
     const bool _usd;
 
-    // Target schema for all scene description layers this cache will
+    // File format target for all scene description layers this cache will
     // find or open during prim index computation.
-    const std::string _targetSchema;
-
-    // Reference decorator for this cache. May be NULL if no decorator
-    // was specified in the constructor.
-    PcpPayloadDecoratorRefPtr _payloadDecorator;
+    const std::string _fileFormatTarget;
 
     // The layer stack for this cache.  Holding this by ref ptr means we
     // hold all of our local layers by ref ptr (including the root and
@@ -686,8 +690,7 @@ private:
     // Modifiable evaluation parameters.
     // Anything that changes these should also yield a PcpChanges
     // value describing the necessary cache invalidation.
-    typedef TfHashSet<SdfPath, SdfPath::Hash> _PayloadSet;
-    _PayloadSet _includedPayloads;
+    PayloadSet _includedPayloads;
     PcpVariantFallbackMap _variantFallbackMap;
 
     // Cached computation types.

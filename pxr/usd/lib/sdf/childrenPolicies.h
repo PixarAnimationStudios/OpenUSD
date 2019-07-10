@@ -39,8 +39,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfAttributeSpec);
-SDF_DECLARE_HANDLES(SdfMapperSpec);
-SDF_DECLARE_HANDLES(SdfMapperArgSpec);
 SDF_DECLARE_HANDLES(SdfPrimSpec);
 SDF_DECLARE_HANDLES(SdfPropertySpec);
 SDF_DECLARE_HANDLES(SdfRelationshipSpec);
@@ -154,7 +152,7 @@ public:
 };
 
 class Sdf_MapperArgChildPolicy :
-    public Sdf_TokenChildPolicy<SdfMapperArgSpecHandle>
+    public Sdf_TokenChildPolicy<SdfSpecHandle>
 {
 public:
 
@@ -255,7 +253,7 @@ public:
 };
 
 class Sdf_MapperChildPolicy :
-    public Sdf_PathChildPolicy<SdfMapperSpecHandle>
+    public Sdf_PathChildPolicy<SdfSpecHandle>
 {
 public:
     static SdfPath GetChildPath(const SdfPath &parentPath, const FieldType &key) {

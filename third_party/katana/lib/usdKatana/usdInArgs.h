@@ -97,6 +97,7 @@ public:
             double shutterClose,
             const std::vector<double>& motionSampleTimes,
             const StringListMap& extraAttributesOrNamespaces,
+            const std::vector<TfToken>& materialBindingPurposes,
             bool prePopulate,
             bool verbose,
             const char * errorMessage = 0) {
@@ -112,6 +113,7 @@ public:
                     shutterClose, 
                     motionSampleTimes,
                     extraAttributesOrNamespaces,
+                    materialBindingPurposes,
                     prePopulate,
                     verbose,
                     errorMessage));
@@ -173,6 +175,10 @@ public:
         return _extraAttributesOrNamespaces;
     }
 
+    const std::vector<TfToken>& GetMaterialBindingPurposes() const {
+        return _materialBindingPurposes;
+    }
+
     bool GetPrePopulate() const {
         return _prePopulate;
     }
@@ -206,6 +212,7 @@ private:
             double shutterClose,
             const std::vector<double>& motionSampleTimes,
             const StringListMap& extraAttributesOrNamespaces,
+            const std::vector<TfToken>& materialBindingPurposes,
             bool prePopulate,
             bool verbose,
             const char * errorMessage = 0);
@@ -229,6 +236,8 @@ private:
     // maps the root-level attribute name to the specified attributes or namespaces
     StringListMap _extraAttributesOrNamespaces;
 
+    std::vector<TfToken> _materialBindingPurposes;
+    
     bool _prePopulate;
     bool _verbose;
 
@@ -257,6 +266,7 @@ struct ArgsBuilder
     double shutterClose;
     std::vector<double> motionSampleTimes;
     PxrUsdKatanaUsdInArgs::StringListMap extraAttributesOrNamespaces;
+    std::vector<TfToken> materialBindingPurposes;
     bool prePopulate;
     bool verbose;
     const char * errorMessage;
@@ -287,6 +297,7 @@ struct ArgsBuilder
             shutterClose,
             motionSampleTimes,
             extraAttributesOrNamespaces,
+            materialBindingPurposes,
             prePopulate,
             verbose,
             errorMessage);
@@ -305,6 +316,7 @@ struct ArgsBuilder
         shutterClose = other->GetShutterClose();
         motionSampleTimes = other->GetMotionSampleTimes();
         extraAttributesOrNamespaces = other->GetExtraAttributesOrNamespaces();
+        materialBindingPurposes = other->GetMaterialBindingPurposes();
         prePopulate = other->GetPrePopulate();
         verbose = other->IsVerbose();
         errorMessage = other->GetErrorMessage().c_str();

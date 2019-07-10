@@ -25,24 +25,23 @@
 
 #include "context.h"
 
-#include <pxr/usd/usdShade/connectableAPI.h>
-
-#include <pxr/usd/usdRi/materialAPI.h>
+#include "pxr/usd/usdRi/materialAPI.h"
+#include "pxr/usd/usdShade/connectableAPI.h"
 
 #include <DEP/DEP_MicroNode.h>
 #include <PRM/PRM_ParmList.h>
 #include <PRM/PRM_SpareData.h>
-#include <UT/UT_Map.h>
-#include <UT/UT_Set.h>
-#include <VOP/VOP_Node.h>
-#include <VOP/VOP_Types.h>
-#include <VOP/VOP_CodeGenerator.h>
-#include <UT/UT_Version.h>
 #include <UT/UT_EnvControl.h>
 #include <UT/UT_FileUtil.h>
+#include <UT/UT_Map.h>
+#include <UT/UT_Set.h>
+#include <UT/UT_Version.h>
+#include <VOP/VOP_CodeGenerator.h>
+#include <VOP/VOP_Node.h>
+#include <VOP/VOP_Types.h>
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -100,7 +99,7 @@ _buildCustomOslNode(const VOP_Node* vopNode,
                      " -cc oslc -I" + houInclude + " -o " +
                      shaderName.toStdString() + " " + shaderNameOsl;
     std::shared_ptr<FILE> pipe(popen(oslcCmd.c_str(), "r"),
-			       [](FILE *f){ pclose(f); });
+                               [](FILE *f){ pclose(f); });
     if (!pipe) {
         TF_CODING_ERROR("Failed to run command '%s'", oslcCmd.c_str());
         return false;

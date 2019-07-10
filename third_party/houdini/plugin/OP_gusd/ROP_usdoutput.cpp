@@ -34,6 +34,7 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usd/primRange.h"
+#include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/usdGeom/bboxCache.h"
 #include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdGeom/modelAPI.h"
@@ -974,6 +975,22 @@ openStage(fpreal tstart, int startTimeCode, int endTimeCode)
         // Set m_usdStage's EditTarget to be its SessionLayer.
         m_usdStage->SetEditTarget(m_usdStage->GetSessionLayer());
 
+        // Set modelingVariant to ALL_VARIANTS per pipeline convention.
+        // For some models, this will activate scopes that we might need to
+        // be present to properly export overlay data. 
+        // TODO: would be nice to loft these constants into a TfToken in a 
+        // shared place.
+        UsdPrim defaultPrim = m_usdStage->GetDefaultPrim();
+        if (defaultPrim) {
+            UsdVariantSets variantSets = defaultPrim.GetVariantSets();
+            if (variantSets.HasVariantSet("modelingVariant")) {
+                UsdVariantSet modelingVariantSet = defaultPrim.GetVariantSet("modelingVariant");
+                if (modelingVariantSet.HasAuthoredVariant("ALL_VARIANTS")) {
+                    modelingVariantSet.SetVariantSelection("ALL_VARIANTS");
+                }
+            }
+        }
+
         // If given model path and asset name detail attributes, we set up an
         // edit target to remap the output of the overlay to the specfied
         // model's scope. For exmaple, uutput would be /model/geom/... instead
@@ -1152,6 +1169,18 @@ closeStage(fpreal tend)
 
     bool overlay = evalInt("overlay", 0, tend);
     if (overlay) {
+        // clear out the modelingVariant selection made during openStage().
+        UsdPrim defaultPrim = m_usdStage->GetDefaultPrim();
+        if (defaultPrim) {
+            UsdVariantSets variantSets = defaultPrim.GetVariantSets();
+            if (variantSets.HasVariantSet("modelingVariant")) {
+                UsdVariantSet modelingVariantSet = defaultPrim.GetVariantSet("modelingVariant");
+                if (modelingVariantSet.HasAuthoredVariantSelection()) {
+                    modelingVariantSet.ClearVariantSelection();
+                }
+            }
+        }
+
         m_usdStage->GetSessionLayer()->Export(usdFile.toStdString());
 
         // Now that the SessionLayer has been exported into a file,

@@ -11,8 +11,6 @@ def MfScope "foo"
 {
     reorder properties = ["destructive", "brilliant", "orally_fixated"]
     reorder nameChildren = ["bart", "lisa", "maggie"]
-    custom rel rel1 = </Blah> {
-        reorder attributes = ["welcome", "robot", "overlords"]
-    }
+    custom rel rel1 = </Blah>
 }
 

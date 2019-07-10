@@ -782,7 +782,7 @@ UsdGeomPrimvar::_ComputeFlattenedHelper(const VtArray<ScalarType> &authored,
     std::vector<size_t> invalidIndexPositions;
     for (size_t i=0; i < indices.size(); i++) {
         int index = indices[i];
-        if (index >= 0 && index < authored.size()) {
+        if (index >= 0 && (size_t)index < authored.size()) {
             (*value)[i] = authored[index];
         } else {
             invalidIndexPositions.push_back(i);

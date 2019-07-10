@@ -35,6 +35,7 @@
 #include "pxr/imaging/glf/simpleMaterial.h"
 
 #include "pxr/imaging/garch/gl.h"
+#include "pxr/imaging/cameraUtil/conformWindow.h"
 
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usd/notice.h"
@@ -48,7 +49,6 @@
 
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DECLARE_WEAK_PTRS(UsdImagingGLLegacyEngine);
 
@@ -70,10 +70,24 @@ public:
     void Render(const UsdPrim& root, 
                 const UsdImagingGLRenderParams& params);
 
+
+    /// Set camera framing state
+    /// -- Free Camera API
     USDIMAGINGGL_API
-    void SetCameraState(const GfMatrix4d& viewMatrix,
-                        const GfMatrix4d& projectionMatrix,
-                        const GfVec4d& viewport);
+    void SetFreeCameraMatrices(const GfMatrix4d& viewMatrix,
+                               const GfMatrix4d& projectionMatrix);
+
+    /// -- Scene camera API
+    USDIMAGINGGL_API
+    void SetCameraPath(const SdfPath& id);
+
+    /// -- Framing API
+    void SetWindowPolicy(CameraUtilConformWindowPolicy policy) {
+        _windowPolicy = policy;
+    }
+    void SetRenderViewport(const GfVec4d& viewport) {
+        _viewport = viewport;
+    }
 
     /// Set lighting state
     USDIMAGINGGL_API
@@ -107,6 +121,12 @@ private:
 
     // Extracts all data necessary for drawing the stage.
     void _TraverseStage(const UsdPrim& root);
+
+    // Update GL camera state
+    void _ResolveCamera();
+    void _UpdateGLCameraFramingState(const GfMatrix4d& viewMatrix,
+                                     const GfMatrix4d& projectionMatrix,
+                                     const GfVec4d& viewport);
 
     // Common logic for extracting color information for all gprims.
     void _ProcessGprimColor(const UsdGeomGprim *gprimSchema,
@@ -220,6 +240,14 @@ private:
     UsdPrim _root;
 
     TfHashSet<SdfPath, SdfPath::Hash> _excludedSet;
+
+    GfMatrix4d _freeCamViewMatrix;
+    GfMatrix4d _freeCamProjMatrix;
+    GfVec4d _viewport;
+    CameraUtilConformWindowPolicy _windowPolicy;
+    bool _usingSceneCam;
+    SdfPath _sceneCamId;
+    UsdPrim _sceneCam;
 
     // Define a type for PrimID along with some helper methods to pack a vec4i
     // into a single value (and the inverse).

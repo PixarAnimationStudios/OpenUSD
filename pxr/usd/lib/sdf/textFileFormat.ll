@@ -93,7 +93,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
        can make use of it. */
 "add"                 { (*yylval_param) = std::string(yytext, yyleng); return TOK_ADD; }
 "append"              { (*yylval_param) = std::string(yytext, yyleng); return TOK_APPEND; }
-"attributes"          { (*yylval_param) = std::string(yytext, yyleng); return TOK_ATTRIBUTES; }
 "class"               { (*yylval_param) = std::string(yytext, yyleng); return TOK_CLASS; }
 "config"              { (*yylval_param) = std::string(yytext, yyleng); return TOK_CONFIG; }
 "connect"             { (*yylval_param) = std::string(yytext, yyleng); return TOK_CONNECT; }
@@ -107,7 +106,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 "doc"                 { (*yylval_param) = std::string(yytext, yyleng); return TOK_DOC; }
 "inherits"            { (*yylval_param) = std::string(yytext, yyleng); return TOK_INHERITS; }
 "kind"                { (*yylval_param) = std::string(yytext, yyleng); return TOK_KIND; }
-"mapper"              { (*yylval_param) = std::string(yytext, yyleng); return TOK_MAPPER; }
 "nameChildren"        { (*yylval_param) = std::string(yytext, yyleng); return TOK_NAMECHILDREN; }
 "None"                { (*yylval_param) = std::string(yytext, yyleng); return TOK_NONE; }
 "offset"              { (*yylval_param) = std::string(yytext, yyleng); return TOK_OFFSET; }

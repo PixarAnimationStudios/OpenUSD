@@ -21,19 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_EDITUTIL_H
-#define PXRUSDMAYA_EDITUTIL_H
+#ifndef PXRUSDMAYA_EDIT_UTIL_H
+#define PXRUSDMAYA_EDIT_UTIL_H
 
 /// \file usdMaya/editUtil.h
 
+#include "pxr/pxr.h"
 #include "usdMaya/api.h"
 
-#include "pxr/pxr.h"
-
 #include "pxr/base/vt/value.h"
-
 #include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/prim.h"
 
 #include <maya/MFnAssembly.h>
@@ -46,23 +43,24 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \brief Utility class for handling edits on Assemblies in Maya.
+
+/// Utility class for handling edits on Assemblies in Maya.
 ///
 class UsdMayaEditUtil
 {
 public:
-        
+
     /// \name Enums for inspecting edits
     /// \{
-    
-    /// \brief Possible operations for a supported edit.
+
+    /// Possible operations for a supported edit.
     enum EditOp {
         OP_TRANSLATE,
         OP_ROTATE,
         OP_SCALE
     };
-    
-    /// \brief Whether the edit affects one component or all components.
+
+    /// Whether the edit affects one component or all components.
     /// The values are explicit, such that X,Y,and Z can be used in []
     /// operators on Vec3s.
     ///
@@ -72,81 +70,83 @@ public:
         SET_Y = 1,
         SET_Z = 2
     };
-    
-    /// \brief A struct containing the data and associated string for an edit.
-    struct RefEdit
+
+    /// A struct containing the data and associated string for an edit.
+    struct AssemblyEdit
     {
         std::string editString;
-        
+
         EditOp op;
         EditSet set;
         VtValue value;
     };
-    
+
     /// \}
-    
-    /// \brief An ordered list of sequential edits.
-    typedef std::vector< RefEdit > RefEditVec;
-    
-    /// \brief An ordered list of sequential edits for multiple paths, sorted
-    /// by path.
-    typedef std::map< SdfPath, RefEditVec > PathEditMap;
-    
-    /// \brief An ordered map of concatenated Avar edits.
-    typedef std::map< std::string, double > AvarValueMap;
-    
-    /// \brief An ordered map of concatenated Avar edits for multiple paths,
-    /// sorted by path.
-    typedef std::map< SdfPath, AvarValueMap > PathAvarMap;
-    
-    /// \brief Translates an edit string into a RefEdit structure.
+
+    /// An ordered list of sequential edits.
+    using AssemblyEditVec = std::vector<AssemblyEdit>;
+
+    /// An ordered list of sequential edits for multiple paths, sorted by path.
+    using PathEditMap = std::map<SdfPath, AssemblyEditVec>;
+
+    /// An ordered map of concatenated Avar edits.
+    using AvarValueMap = std::map<std::string, double>;
+
+    /// An ordered map of concatenated Avar edits for multiple paths, sorted by
+    /// path.
+    using PathAvarMap = std::map<SdfPath, AvarValueMap>;
+
+    /// Translates an edit string into a AssemblyEdit structure.
     /// The output edit path is relative to the root of the assembly.
     /// \returns true if translation was successful.
     PXRUSDMAYA_API
     static bool GetEditFromString(
-            const MFnAssembly &assemblyFn,
-            const std::string &editString,
-            SdfPath *outEditPath,
-            RefEdit *outEdit );
-        
-    /// \brief Inspects all edits on \p assemblyObj and returns a parsed
-    /// set of proper edits in \p refEdits and invalid edits in \p invalidEdits.
+            const MFnAssembly& assemblyFn,
+            const std::string& editString,
+            SdfPath* outEditPath,
+            AssemblyEdit* outEdit);
+
+    /// Inspects all edits on \p assemblyObj and returns a parsed set of proper
+    /// edits in \p assemEdits and invalid edits in \p invalidEdits.
     /// The proper edits are keyed by relative path to the root of the
     /// assembly.
     PXRUSDMAYA_API
     static void GetEditsForAssembly(
-            const MObject &assemblyObj,
-            PathEditMap *refEdits,
-            std::vector< std::string > *invalidEdits );
-    
-    /// \brief Apply \p refEdits to a \p stage for an assembly rooted
-    /// at \p proxyRootPrim.
+            const MObject& assemblyObj,
+            PathEditMap* assemEdits,
+            std::vector<std::string>* invalidEdits);
+
+    /// Apply the assembly edits in \p assemEdits to the USD prim
+    /// \p proxyRootPrim, which is the root prim for the assembly.
+    ///
+    /// If \p failedEdits is not nullptr, it will contain any edits that could
+    /// not be applied to \p proxyRootPrim.
     PXRUSDMAYA_API
     static void ApplyEditsToProxy(
-            const PathEditMap &refEdits,
-            const UsdStagePtr &stage,
-            const UsdPrim &proxyRootPrim,
-            std::vector< std::string > *failedEdits );
-    
+            const PathEditMap& assemEdits,
+            const UsdPrim& proxyRootPrim,
+            std::vector<std::string>* failedEdits);
+
     PXRUSDMAYA_API
     static void GetAvarEdits(
-            const PathEditMap &refEdits,
-            PathAvarMap *avarMap );
+            const PathEditMap& assemEdits,
+            PathAvarMap* avarMap);
 
 private:
     static void _ApplyEditToAvar(
-            EditOp op,
-            EditSet set,
-            double value,
-            AvarValueMap *valueMap );
+            const EditOp op,
+            const EditSet set,
+            const double value,
+            AvarValueMap* valueMap);
 
     static void _ApplyEditToAvars(
-            const RefEdit &refEdit,
-            AvarValueMap *valueMap );
+            const AssemblyEdit& assemEdit,
+            AvarValueMap* valueMap);
 
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
 
 #endif

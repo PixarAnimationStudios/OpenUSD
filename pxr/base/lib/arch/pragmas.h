@@ -54,6 +54,11 @@
     #define ARCH_PRAGMA_WRITE_STRINGS \
         _Pragma("GCC diagnostic ignored \"-Wwrite-strings\"")
 
+#if ARCH_COMPILER_GCC_MAJOR >= 6
+    #define ARCH_PRAGMA_PLACEMENT_NEW \
+        _Pragma("GCC diagnostic ignored \"-Wplacement-new\"")
+#endif
+
 #elif defined(ARCH_COMPILER_CLANG)
 
     #define ARCH_PRAGMA_PUSH \
@@ -64,6 +69,9 @@
 
     #define ARCH_PRAGMA_MACRO_REDEFINITION \
         _Pragma("clang diagnostic ignored \"-Wbuiltin-macro-redefined\"")
+
+    #define ARCH_PRAGMA_UNDEFINED_VAR_TEMPLATE \
+        _Pragma("clang diagnostic ignored \"-Wundefined-var-template\"")
 
     #define ARCH_PRAGMA_WRITE_STRINGS \
         _Pragma("clang diagnostic ignored \"-Wwrite-strings\"")
@@ -190,6 +198,14 @@
 
 #if !defined ARCH_PRAGMA_INSTANTIATION_AFTER_SPECIALIZATION
     #define ARCH_PRAGMA_INSTANTIATION_AFTER_SPECIALIZATION
+#endif
+
+#if !defined ARCH_PRAGMA_UNDEFINED_VAR_TEMPLATE
+    #define ARCH_PRAGMA_UNDEFINED_VAR_TEMPLATE
+#endif
+
+#if !defined ARCH_PRAGMA_PLACEMENT_NEW
+    #define ARCH_PRAGMA_PLACEMENT_NEW
 #endif
 
 #endif // ARCH_PRAGMAS_H

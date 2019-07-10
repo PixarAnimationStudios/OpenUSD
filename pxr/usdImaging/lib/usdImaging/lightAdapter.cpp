@@ -74,15 +74,18 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
         const UsdAttribute& attr = *attrIter;
         if (attr.GetNumTimeSamples()>1){
             *timeVaryingBits |= HdLight::DirtyBits::DirtyParams;
+            break;
         }
     }
 
     UsdImagingValueCache* valueCache = _GetValueCache();
 
-    // See UsdImagingGprimAdapter::TrackVariability() for reasoning
-    // why we use time 1.0 here.
-    UsdTimeCode time(1.0);
-    valueCache->GetVisible(cachePath) = GetVisible(prim, time);
+    // XXX: The usage of _GetTimeWithOffset here is super-sketch, but avoids
+    // blowing up the inherited visibility cache. This belongs in
+    // UpdateForTime, except that we don't currently call UpdateForTime on
+    // lights...
+    valueCache->GetVisible(cachePath) = GetVisible(prim,
+        _GetTimeWithOffset(0.0));
 
     UsdLuxLight light(prim);
     if (TF_VERIFY(light)) {
@@ -91,6 +94,27 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
         collectionCache.UpdateCollection(light.GetShadowLinkCollectionAPI());
         // TODO: When collections change we need to invalidate affected
         // prims with the DirtyCollections flag.
+    }
+
+    // XXX Cache primvars for lights.  Note that this does not yet support
+    // animated lights, since we do not call UpdateForTime() for sprims.
+    {
+        // Establish a valueCache entry.
+        valueCache->GetPrimvars(cachePath);
+        // Compile a list of primvars to check.
+        std::vector<UsdGeomPrimvar> primvars;
+        UsdImaging_InheritedPrimvarStrategy::value_type inheritedPrimvarRecord =
+            _GetInheritedPrimvars(prim.GetParent());
+        if (inheritedPrimvarRecord) {
+            primvars = inheritedPrimvarRecord->primvars;
+        }
+        UsdGeomPrimvarsAPI primvarsAPI(prim);
+        std::vector<UsdGeomPrimvar> local = primvarsAPI.GetPrimvarsWithValues();
+        primvars.insert(primvars.end(), local.begin(), local.end());
+        for (auto const &pv : primvars) {
+            _ComputeAndMergePrimvar(prim, cachePath, pv, UsdTimeCode(),
+                                    valueCache);
+        }
     }
 }
 

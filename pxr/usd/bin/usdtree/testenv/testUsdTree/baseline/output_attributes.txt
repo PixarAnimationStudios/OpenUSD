@@ -1,0 +1,15 @@
+/
+ `--root [def]
+     |--child1 [def Xform]
+     |   | `--(upAxis)
+     |   |--subchild1a [def]
+     |   |     :--.foo
+     |   |     `--.hello
+     |   `--subchild1b [def]
+     |--child2 [def]
+     |   | `--.foo
+     |   |--subchild2a [def]
+     |   |   `--subgrandchild2a1 [def]
+     |   `--subchild2b [def]
+     `--child3 [over] (active = true)
+           `--.whatisthis

@@ -30,6 +30,7 @@ TF_WRAP_MODULE
 {
     TF_WRAP(UsdShadeUtils);
     TF_WRAP(UsdShadeConnectableAPI);
+    TF_WRAP(UsdShadeCoordSysAPI);
     TF_WRAP(UsdShadeInput);
     TF_WRAP(UsdShadeOutput);
     TF_WRAP(UsdShadeShader);

@@ -110,6 +110,12 @@ class TestCameraUtil(unittest.TestCase):
                                        1.0),
             Gf.Vec2d(2.1, 2.1))
 
+        self._IsClose(
+            CameraUtil.ConformedWindow(Gf.Vec2d(2.1, 1.9),
+                                       CameraUtil.DontConform,
+                                       1.0),
+            Gf.Vec2d(2.1, 1.9))
+
     def test_ConformedWindowGfRange2d(self):
         self._IsClose(
             CameraUtil.ConformedWindow(
@@ -131,6 +137,13 @@ class TestCameraUtil(unittest.TestCase):
                 CameraUtil.MatchVertically,
                 1.5),
             Gf.Range2d(Gf.Vec2d(-13, -11), Gf.Vec2d(2, -1)))
+        
+        self._IsClose(
+            CameraUtil.ConformedWindow(
+                Gf.Range2d(Gf.Vec2d(-10, -11), Gf.Vec2d(-1, -1)),
+                CameraUtil.DontConform,
+                1.5),
+            Gf.Range2d(Gf.Vec2d(-10, -11), Gf.Vec2d(-1, -1)))
                 
     def test_ConformedWindowGfVec4d(self):
 
@@ -145,22 +158,29 @@ class TestCameraUtil(unittest.TestCase):
         for projection in Gf.Camera.Projection.allValues:
             for policy in CameraUtil.ConformWindowPolicy.allValues:
                 for targetAspect in [0.5, 1.0, 2.0]:
+                    for xMirror in [-1, 1]:
+                        for yMirror in [-1, 1]:
+                            mirrorMatrix = Gf.Matrix4d(
+                                xMirror, 0, 0, 0,
+                                0, yMirror, 0, 0,
+                                0, 0, 1, 0,
+                                0, 0, 0, 1)
 
-                    cam = Gf.Camera(
-                        projection               = projection,
-                        horizontalAperture       = 100.0,
-                        verticalAperture         = 75.0,
-                        horizontalApertureOffset = 11.0,
-                        verticalApertureOffset   = 12.0)
+                            cam = Gf.Camera(
+                                projection               = projection,
+                                horizontalAperture       = 100.0,
+                                verticalAperture         = 75.0,
+                                horizontalApertureOffset = 11.0,
+                                verticalApertureOffset   = 12.0)
 
-                    originalMatrix = cam.frustum.ComputeProjectionMatrix()
+                            originalMatrix = cam.frustum.ComputeProjectionMatrix()
 
-                    CameraUtil.ConformWindow(cam, policy, targetAspect)
+                            CameraUtil.ConformWindow(cam, policy, targetAspect)
 
-                    self._IsClose(
-                        cam.frustum.ComputeProjectionMatrix(),
-                        CameraUtil.ConformedWindow(
-                            originalMatrix, policy, targetAspect))
+                            self._IsClose(
+                                cam.frustum.ComputeProjectionMatrix() * mirrorMatrix,
+                                CameraUtil.ConformedWindow(
+                                    originalMatrix * mirrorMatrix, policy, targetAspect))
 
             
     def test_ConformWindow(self):
@@ -193,6 +213,11 @@ class TestCameraUtil(unittest.TestCase):
 
         self._IsClose(frustum.window.min, Gf.Vec2d(-1.2, -0.575020625515638))
         self._IsClose(frustum.window.max, Gf.Vec2d(1.0, 1.075020625515638))
+
+        frustum.window = Gf.Range2d(Gf.Vec2d(-1.2, -1.0), Gf.Vec2d(1.0, 1.5))
+        CameraUtil.ConformWindow(frustum, CameraUtil.DontConform, 1.3333)
+        self._IsClose(frustum.window.min, Gf.Vec2d(-1.2, -1.0))
+        self._IsClose(frustum.window.max, Gf.Vec2d(1.0, 1.5))
 
 if __name__ == '__main__':
     unittest.main()

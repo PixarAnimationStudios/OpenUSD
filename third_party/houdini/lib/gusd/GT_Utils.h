@@ -33,10 +33,10 @@
 #include <UT/UT_Set.h>
 #include <UT/UT_Variadic.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/gf/half.h>
-#include <pxr/usd/usd/common.h>
-#include <pxr/usd/usd/timeCode.h>
+#include "pxr/pxr.h"
+#include "pxr/base/gf/half.h"
+#include "pxr/usd/usd/common.h"
+#include "pxr/usd/usd/timeCode.h"
 
 #include <boost/function.hpp>
 
@@ -45,10 +45,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 class GfMatrix4d;
 class GusdContext;
 class SdfPath;
+class SdfValueTypeName;
 class TfToken;
 class UsdAttribute;
-class UsdGeomImageable;
 class UsdGeomBoundable;
+class UsdGeomImageable;
 class UsdGeomXformable;
 
 //------------------------------------------------------------------------------
@@ -102,14 +103,19 @@ public:
 
 public:
 
-    static bool setUsdAttribute(UsdAttribute& destAttr,
+    /// Returns the GT_Type corresponding to a USD type.
+    static GT_Type getType(const SdfValueTypeName& typeName);
+
+    /// Returns the USD role name corresponding to the given GT type.
+    static TfToken getRole(GT_Type type);
+
+    static bool setUsdAttribute(const UsdAttribute& destAttr,
                                 const GT_DataArrayHandle& sourceAttr,
                                 UsdTimeCode time=UsdTimeCode::Default());
 
-
     static GT_DataArrayHandle getExtentsArray(const GT_PrimitiveHandle& gtPrim);
 
-    static void setPrimvarSample( UsdGeomImageable& usdPrim, 
+    static bool setPrimvarSample( const UsdGeomImageable& usdPrim, 
                                   const TfToken &name, 
                                   const GT_DataArrayHandle& data, 
                                   const TfToken& interpolation,
@@ -118,14 +124,14 @@ public:
     static bool isDataConstant( const GT_DataArrayHandle& data );
 
     static void setCustomAttributesFromGTPrim(
-                       UsdGeomImageable &usdGeomPrim,
+                       const UsdGeomImageable &usdGeomPrim,
                        const GT_AttributeListHandle& gtAttrs,
                        std::set<std::string>& excludeSet,
                        UsdTimeCode time=UsdTimeCode::Default());
 
 
     // TODO remove
-    static bool setTransformFromGTArray(UsdGeomXformable& usdGeom,
+    static bool setTransformFromGTArray(const UsdGeomXformable& usdGeom,
                                         const GT_DataArrayHandle& xform,
                                         const TransformLevel transformLevel,
                                         UsdTimeCode time=UsdTimeCode::Default());
@@ -155,8 +161,8 @@ public:
     makeValidIdentifier(const TfToken& usdFilePath, const SdfPath& nodePath);
 
 
-    /** Struct for querying storage by POD type.
-        XXX: replace this with a constexpr in C++11 */
+    /// Struct for querying storage by POD type.
+    /// XXX: replace this with a constexpr in C++11.
     template <typename T>
     struct StorageByType;
 }; 
@@ -170,6 +176,16 @@ struct GusdGT_Utils::StorageByType<bool>
 template <>
 struct GusdGT_Utils::StorageByType<uint8>
 { static const GT_Storage value = GT_STORE_UINT8; };
+
+#if SYS_VERSION_FULL_INT >= 0x11000000
+template <>
+struct GusdGT_Utils::StorageByType<int8>
+{ static const GT_Storage value = GT_STORE_INT8; };
+
+template <>
+struct GusdGT_Utils::StorageByType<int16>
+{ static const GT_Storage value = GT_STORE_INT16; };
+#endif
 
 template <>
 struct GusdGT_Utils::StorageByType<int32>

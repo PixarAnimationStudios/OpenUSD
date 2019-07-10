@@ -170,13 +170,16 @@ UsdSkel_CacheImpl::ReadScope::_FindOrCreateSkinningQuery(
     const SkinningQueryKey& key)
 {
     UsdSkelSkeletonQuery skelQuery = FindOrCreateSkelQuery(key.skel);
+    const UsdSkelAnimQuery& animQuery = skelQuery.GetAnimQuery();
 
     // TODO: Consider some form of deduplication.
     return UsdSkelSkinningQuery(
         skinnedPrim,
         skelQuery ? skelQuery.GetJointOrder() : VtTokenArray(),
+        animQuery ? animQuery.GetBlendShapeOrder() : VtTokenArray(),
         key.jointIndicesAttr, key.jointWeightsAttr,
-        key.geomBindTransformAttr, key.jointsAttr);
+        key.geomBindTransformAttr, key.jointsAttr,
+        key.blendShapesAttr, key.blendShapeTargetsRel);
 }
 
 
@@ -225,7 +228,7 @@ UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root)
 
         if (ARCH_UNLIKELY(!it->IsA<UsdGeomImageable>())) {
             TF_DEBUG(USDSKEL_CACHE).Msg(
-                "[UsdSkelCache]: %sPruning traversal at <%s> "
+                "[UsdSkelCache]  %sPruning traversal at <%s> "
                 "(prim is not UsdGeomImageable)\n",
                 _MakeIndent(stack.size()).c_str(), it->GetPath().GetText());
 
@@ -254,8 +257,13 @@ UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root)
         if (UsdAttribute attr = binding.GetJointsAttr())
             key.jointsAttr = attr;
 
-        if (UsdSkelIsSkinnablePrim(*it) &&
-            key.jointIndicesAttr && key.jointWeightsAttr) {
+        if (UsdAttribute attr = binding.GetBlendShapesAttr())
+            key.blendShapesAttr = attr;
+
+        if (UsdRelationship rel = binding.GetBlendShapeTargetsRel())
+            key.blendShapeTargetsRel = rel;
+
+        if (UsdSkelIsSkinnablePrim(*it)) {
 
             _PrimToSkinningQueryMap::accessor a;
             if (_cache->_primSkinningQueryCache.insert(a, *it)) {
@@ -263,9 +271,12 @@ UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root)
             }
 
             TF_DEBUG(USDSKEL_CACHE).Msg(
-                "[UsdSkelCache] %sAdded skinning query for prim <%s> "
-                "(valid = %d).\n", _MakeIndent(stack.size()).c_str(),
-                it->GetPath().GetText(), a->second.IsValid());
+                "[UsdSkelCache] %sAdded skinning query for prim <%s>\n",
+                _MakeIndent(stack.size()).c_str(),
+                it->GetPath().GetText());
+
+            // TODO: How should nested skinnable primitives be handled?
+            // Should we prune traversal at this point?
         }
 
         stack.emplace_back(key, *it);

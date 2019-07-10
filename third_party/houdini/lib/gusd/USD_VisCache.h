@@ -31,7 +31,7 @@
 
 #include <SYS/SYS_AtomicInt.h>
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/attributeQuery.h"
 #include "pxr/usd/usdGeom/imageable.h"
 

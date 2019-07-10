@@ -28,7 +28,7 @@
 #ifndef _GUSD_UT_CAPPEDCACHE_H_
 #define _GUSD_UT_CAPPEDCACHE_H_
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 
 #include <SYS/SYS_AtomicInt.h>
 #include <UT/UT_Assert.h>

@@ -298,6 +298,11 @@ class "ShapingAPI" (
         doc = """Rescales the angular distribution of the IES profile.
         TODO: clarify semantics"""
     )
+    bool shaping:ies:normalize = false (
+        displayGroup = "Shaping"
+        doc = """Normalizes the IES profile so that it affects the shaping
+        of the light while preserving the overall energy output."""
+    )
 }
 
 class "ShadowAPI" (

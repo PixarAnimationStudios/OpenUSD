@@ -45,7 +45,7 @@ pxr_library(usdRi
     PYTHON_CPPFILES
         moduleDeps.cpp
 
-    CPPFILES
+    PRIVATE_CLASSES
         typeUtils
 
     PYMODULE_CPPFILES

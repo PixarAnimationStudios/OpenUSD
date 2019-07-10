@@ -41,7 +41,7 @@
 #include "gusd/purpose.h"
 #include "gusd/USD_Utils.h"
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
 
 

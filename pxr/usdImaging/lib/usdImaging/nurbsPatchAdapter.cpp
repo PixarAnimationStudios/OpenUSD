@@ -64,7 +64,7 @@ UsdImagingNurbsPatchAdapter::Populate(UsdPrim const& prim,
                             UsdImagingInstancerContext const* instancerContext)
 {
     return _AddRprim(HdPrimTypeTokens->mesh,
-                     prim, index, GetMaterialId(prim), instancerContext);
+                     prim, index, GetMaterialUsdPath(prim), instancerContext);
 }
 
 void 
@@ -112,12 +112,6 @@ UsdImagingNurbsPatchAdapter::UpdateForTime(UsdPrim const& prim,
 
     if (requestedBits & HdChangeTracker::DirtyTopology) {
         valueCache->GetTopology(cachePath) = GetMeshTopology(prim, time);
-    }
-
-    if (_IsRefined(cachePath)) {
-        if (requestedBits & HdChangeTracker::DirtySubdivTags) {
-            valueCache->GetSubdivTags(cachePath);
-        }
     }
 }
 

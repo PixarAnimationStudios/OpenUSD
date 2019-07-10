@@ -53,6 +53,7 @@ public:
     bool Save(const std::string &fileName);
     bool Open(const std::string &assetPath);
 
+    virtual bool StreamsData() const;
     virtual void CreateSpec(const SdfAbstractDataSpecId &id, 
                             SdfSpecType specType);
     virtual bool HasSpec(const SdfAbstractDataSpecId &id) const;
@@ -64,7 +65,7 @@ public:
     virtual bool Has(const SdfAbstractDataSpecId& id, const TfToken& fieldName,
                      SdfAbstractDataValue* value) const;
     virtual bool Has(const SdfAbstractDataSpecId& id, const TfToken& fieldName,
-                     VtValue *value=NULL) const;
+                     VtValue *value=nullptr) const;
     virtual VtValue Get(const SdfAbstractDataSpecId& id, 
                         const TfToken& fieldName) const;
     virtual void Set(const SdfAbstractDataSpecId& id, const TfToken& fieldName,

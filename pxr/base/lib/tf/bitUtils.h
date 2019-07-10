@@ -29,8 +29,8 @@
 
 #include "pxr/pxr.h"
 
-#include <boost/mpl/if.hpp>
-#include <boost/mpl/integral_c.hpp>
+#include <cstddef>
+#include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -52,7 +52,7 @@ struct Tf_NumBits
     // If the upper half contain any ones, then the result is SUM plus BIT
     // plus the result for the upper half.  If not, the result is SUM plus
     // the result for the lower half.
-    typedef typename boost::mpl::if_c<N >= (1ULL<<BIT),
+    typedef typename std::conditional<N >= (1ULL<<BIT),
         Tf_NumBits<(N>>BIT), SUM+BIT, BIT/2>,
         Tf_NumBits<N, SUM, BIT/2> >::type _func;
     typedef typename _func::type type;
@@ -61,7 +61,7 @@ struct Tf_NumBits
 template <size_t N, size_t SUM>
 struct Tf_NumBits<N, SUM, 0>
 {
-    typedef boost::mpl::integral_c<size_t, SUM+1> type;
+    typedef std::integral_constant<size_t, SUM+1> type;
 };
 
 /// Compute the number of bits required to store the given number of (signed)

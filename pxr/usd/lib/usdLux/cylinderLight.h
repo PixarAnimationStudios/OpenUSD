@@ -137,7 +137,7 @@ protected:
     ///
     /// \sa UsdSchemaType
     USDLUX_API
-    virtual UsdSchemaType _GetSchemaType() const;
+    UsdSchemaType _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -149,7 +149,7 @@ private:
 
     // override SchemaBase virtuals.
     USDLUX_API
-    virtual const TfType &_GetTfType() const;
+    const TfType &_GetTfType() const override;
 
 public:
     // --------------------------------------------------------------------- //

@@ -107,6 +107,9 @@ void wrapEngine()
             .def( init<const SdfPath &, const SdfPathVector&,
                     const SdfPathVector& >() )
             .def("Render", &UsdImagingGLEngine::Render)
+            .def("SetWindowPolicy", &UsdImagingGLEngine::SetWindowPolicy)
+            .def("SetRenderViewport", &UsdImagingGLEngine::SetRenderViewport)
+            .def("SetCameraPath", &UsdImagingGLEngine::SetCameraPath)
             .def("SetCameraState", &UsdImagingGLEngine::SetCameraState)
             .def("SetLightingStateFromOpenGL",
                     &UsdImagingGLEngine::SetLightingStateFromOpenGL)

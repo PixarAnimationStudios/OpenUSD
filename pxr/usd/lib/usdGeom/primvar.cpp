@@ -346,6 +346,7 @@ UsdGeomPrimvar::ComputeFlattened(VtValue *value, UsdTimeCode time) const
         _ComputeFlattenedArray<VtStringArray>(attrVal, indices, value)      ||
         _ComputeFlattenedArray<VtDoubleArray>(attrVal, indices, value)      ||
         _ComputeFlattenedArray<VtIntArray>(attrVal, indices, value)         ||
+        _ComputeFlattenedArray<VtUIntArray>(attrVal, indices, value)        ||
         _ComputeFlattenedArray<VtFloatArray>(attrVal, indices, value)       ||
         _ComputeFlattenedArray<VtHalfArray>(attrVal, indices, value);
 

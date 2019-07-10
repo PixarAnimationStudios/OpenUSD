@@ -38,16 +38,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 struct AggregatedHit {
-    AggregatedHit(HdxIntersector::Hit const& h) : hit(h) {}
+    AggregatedHit(HdxPickHit const& h) : hit(h) {}
 
-    HdxIntersector::Hit const& hit;
+    HdxPickHit const& hit;
     std::set<int> elementIndices;
     std::set<int> edgeIndices;
     std::set<int> pointIndices;
 };
 
 static size_t
-_GetPartialHitHash(HdxIntersector::Hit const& hit)
+_GetPartialHitHash(HdxPickHit const& hit)
 {
     size_t hash = 0;
 
@@ -63,11 +63,11 @@ typedef std::unordered_map<size_t, AggregatedHit> AggregatedHits;
 
 // aggregates subprimitive hits to the same prim/instance
 static AggregatedHits
-_AggregateHits(HdxIntersector::HitSet const& hits)
+_AggregateHits(HdxPickHitVector const& allHits)
 {
     AggregatedHits aggrHits;
 
-    for (auto const& hit : hits) {
+    for (auto const& hit : allHits) {
         size_t hitHash = _GetPartialHitHash(hit);
         const auto& it = aggrHits.find(hitHash);
         if (it != aggrHits.end()) {
@@ -100,179 +100,123 @@ _AggregateHits(HdxIntersector::HitSet const& hits)
 
 static void
 _ProcessHit(AggregatedHit const& aHit,
-            HdxIntersector::PickTarget pickTarget,
+            TfToken const& pickTarget,
             HdSelection::HighlightMode highlightMode,
             /*out*/HdSelectionSharedPtr selection)
 {
-    HdxIntersector::Hit const& hit = aHit.hit;
+    HdxPickHit const& hit = aHit.hit;
 
-    switch(pickTarget) {
-        case HdxIntersector::PickPrimsAndInstances:
-        {
-            if (!hit.instancerId.IsEmpty()) {
-                // XXX :this doesn't work for nested instancing.
-                VtIntArray instanceIndex;
-                instanceIndex.push_back(hit.instanceIndex);
-                selection->AddInstance(highlightMode, hit.objectId,
-                                       instanceIndex);
+    if (pickTarget == HdxPickTokens->pickPrimsAndInstances) {
+        if (!hit.instancerId.IsEmpty()) {
+            // XXX :this doesn't work for nested instancing.
+            VtIntArray instanceIndex;
+            instanceIndex.push_back(hit.instanceIndex);
+            selection->AddInstance(highlightMode, hit.objectId,
+                                   instanceIndex);
 
-                std::cout << "Picked instance " << instanceIndex << " of "
-                          <<  "rprim " << hit.objectId << std::endl;
+            std::cout << "Picked instance " << instanceIndex << " of "
+                      <<  "rprim " << hit.objectId << std::endl;
 
-                // we should use GetPathForInstanceIndex instead of it->objectId
-                //SdfPath path = _delegate->GetPathForInstanceIndex(it->objectId, it->instanceIndex);
-                // and also need to add some APIs to compute VtIntArray instanceIndex.
-            } else {
-                selection->AddRprim(highlightMode, hit.objectId);
+            // we should use GetPathForInstanceIndex instead of it->objectId
+            //SdfPath path = _delegate->GetPathForInstanceIndex(it->objectId, it->instanceIndex);
+            // and also need to add some APIs to compute VtIntArray instanceIndex.
+        } else {
+            selection->AddRprim(highlightMode, hit.objectId);
 
-                std::cout << "Picked rprim " << hit.objectId << std::endl;
-            }
-
-            break;
+            std::cout << "Picked rprim " << hit.objectId << std::endl;
         }
+    } else if (pickTarget == HdxPickTokens->pickFaces) {
+        VtIntArray elements(aHit.elementIndices.size());
+        elements.assign(aHit.elementIndices.begin(),
+                        aHit.elementIndices.end());
+        selection->AddElements(highlightMode, hit.objectId, elements);
 
-        case HdxIntersector::PickFaces:
-        {
-            VtIntArray elements(aHit.elementIndices.size());
-            elements.assign(aHit.elementIndices.begin(),
-                            aHit.elementIndices.end());
-            selection->AddElements(highlightMode, hit.objectId, elements);
+        std::cout << "Picked faces ";
+        for(const auto& element : elements) {
+            std::cout << element << ", ";
+        }
+        std::cout << " of prim " << hit.objectId << std::endl;
+    } else if (pickTarget == HdxPickTokens->pickEdges) {
+        if (!aHit.edgeIndices.empty()) {
+            VtIntArray edges(aHit.edgeIndices.size());
+            edges.assign(aHit.edgeIndices.begin(), aHit.edgeIndices.end());
+            selection->AddEdges(highlightMode, hit.objectId, edges);
 
-            std::cout << "Picked faces ";
-            for(const auto& element : elements) {
-                std::cout << element << ", ";
+            std::cout << "Picked edges ";
+            for(const auto& edge : edges) {
+                std::cout << edge << ", ";
             }
             std::cout << " of prim " << hit.objectId << std::endl;
-
-            break;
         }
+    } else if (pickTarget == HdxPickTokens->pickPoints) {
+        if (!aHit.pointIndices.empty()) {
+            VtIntArray points(aHit.pointIndices.size());
+            points.assign(aHit.pointIndices.begin(), aHit.pointIndices.end());
+            selection->AddPoints(highlightMode, hit.objectId, points);
 
-        case HdxIntersector::PickEdges:
-        {
-            if (!aHit.edgeIndices.empty()) {
-                VtIntArray edges(aHit.edgeIndices.size());
-                edges.assign(aHit.edgeIndices.begin(), aHit.edgeIndices.end());
-                selection->AddEdges(highlightMode, hit.objectId, edges);
-
-                std::cout << "Picked edges ";
-                for(const auto& edge : edges) {
-                    std::cout << edge << ", ";
-                }
-                std::cout << " of prim " << hit.objectId << std::endl;
+            std::cout << "Picked points ";
+            for(const auto& point : points) {
+                std::cout << point << ", ";
             }
-            
-            break;
+            std::cout << " of prim " << hit.objectId << std::endl;
         }
-
-        case HdxIntersector::PickPoints:
-        {
-            if (!aHit.pointIndices.empty()) {
-                VtIntArray points(aHit.pointIndices.size());
-                points.assign(aHit.pointIndices.begin(), aHit.pointIndices.end());
-                selection->AddPoints(highlightMode, hit.objectId, points);
-
-                std::cout << "Picked points ";
-                for(const auto& point : points) {
-                    std::cout << point << ", ";
-                }
-                std::cout << " of prim " << hit.objectId << std::endl;
-            }
-            
-            break;
-        }
-        
-        default:
-            std::cout << "Unsupported picking mode." << std::endl;
+    } else {
+        std::cout << "Unsupported picking mode." << std::endl;
     }
 }
 
 } // end anonymous namespace
 
-
 namespace HdxUnitTestUtils {
 
-Picker::Picker() : _selectionTracker(new HdxSelectionTracker()) {}
-
-Picker::~Picker() {}
-
-void
-Picker::InitIntersector(HdRenderIndex* renderIndex)
+HdSelectionSharedPtr
+TranslateHitsToSelection(
+    TfToken const& pickTarget,
+    HdSelection::HighlightMode highlightMode,
+    HdxPickHitVector const& allHits)
 {
-    _intersector.reset(new HdxIntersector(renderIndex));
+    HdSelectionSharedPtr selection(new HdSelection);
+
+    AggregatedHits aggrHits = _AggregateHits(allHits);
+    for(const auto& pair : aggrHits) {
+        _ProcessHit(pair.second, pickTarget, highlightMode, selection);
+    }
+
+    return selection;
 }
 
-void
-Picker::Pick(GfVec2i const& startPos,
-             GfVec2i const& endPos)
+GfVec2i
+CalculatePickResolution(
+        GfVec2i const& start, GfVec2i const& end, GfVec2i const& pickRadius)
 {
-    if (!_intersector)
-        return;
+    int fwidth  = std::max(pickRadius[0], std::abs(start[0] - end[0]));
+    int fheight = std::max(pickRadius[1], std::abs(start[1] - end[1]));
 
-    // for readability
-    GfVec2i const& pickRadius               = _pParams.pickRadius;
-    float const& width                      = _pParams.screenWidth;
-    float const& height                     = _pParams.screenHeight;
-    GfFrustum const& frustum                = _pParams.viewFrustum;
-    GfMatrix4d const& viewMatrix            = _pParams.viewMatrix;
+    return GfVec2i(fwidth, fheight);
+}
 
-    int fwidth  = std::max(pickRadius[0], std::abs(startPos[0] - endPos[0]));
-    int fheight = std::max(pickRadius[1], std::abs(startPos[1] - endPos[1]));
-
-    _intersector->SetResolution(GfVec2i(fwidth, fheight));
-    
-    GfVec2d min(2*startPos[0]/width-1, 1-2*startPos[1]/height);
-    GfVec2d max(2*(endPos[0]+1)/width-1, 1-2*(endPos[1]+1)/height);
+GfMatrix4d
+ComputePickingProjectionMatrix(
+    GfVec2i const& start, GfVec2i const& end, GfVec2i const& screen,
+    GfFrustum const& viewFrustum)
+{
+    GfVec2d min(2*start[0]/float(screen[0])-1, 1-2*start[1]/float(screen[1]));
+    GfVec2d max(2*(end[0]+1)/float(screen[0])-1, 1-2*(end[1]+1)/float(screen[1]));
     // scale window
-    GfVec2d origin = frustum.GetWindow().GetMin();
-    GfVec2d scale = frustum.GetWindow().GetMax() - frustum.GetWindow().GetMin();
+    GfVec2d origin = viewFrustum.GetWindow().GetMin();
+    GfVec2d scale = viewFrustum.GetWindow().GetMax() -
+                    viewFrustum.GetWindow().GetMin();
     min = origin + GfCompMult(scale, 0.5 * (GfVec2d(1.0, 1.0) + min));
     max = origin + GfCompMult(scale, 0.5 * (GfVec2d(1.0, 1.0) + max));
     
-    GfFrustum pickFrustum(frustum);
+    GfFrustum pickFrustum(viewFrustum);
     pickFrustum.SetWindow(GfRange2d(min, max));
 
-    HdxIntersector::Params iParams;
-    iParams.pickTarget         = _pParams.pickTarget;
-    iParams.pickThrough        = _pParams.pickThrough;
-    iParams.hitMode          = HdxIntersector::HitFirst;
-    iParams.projectionMatrix = pickFrustum.ComputeProjectionMatrix();
-    iParams.viewMatrix       = viewMatrix;
-
-    std::cout << "Pick " << startPos << " - " << endPos << "\n";
-
-    HdxIntersector::Result result;
-    _intersector->Query(iParams,
-                        *_pParams.pickablesCol,
-                        _pParams.engine, 
-                        &result);
-
-    HdxIntersector::HitSet hits;
-    HdSelectionSharedPtr selection(new HdSelection);
-    if (result.ResolveUnique(&hits)) {
-        AggregatedHits aggrHits = _AggregateHits(hits);
-
-        for(const auto& pair : aggrHits) {
-            _ProcessHit(pair.second, _pParams.pickTarget, _pParams.highlightMode,
-                        selection);
-        }
-    }
-
-    _selectionTracker->SetSelection(selection);
-}
-
-HdxSelectionTrackerSharedPtr
-Picker::GetSelectionTracker() const
-{
-    return _selectionTracker;
-}
-
-HdSelectionSharedPtr
-Picker::GetSelection() const
-{
-    return _selectionTracker->GetSelectionMap();
+    return pickFrustum.ComputeProjectionMatrix();
 }
 
 //------------------------------------------------------------------------------
+
 Marquee::Marquee()
 {
 

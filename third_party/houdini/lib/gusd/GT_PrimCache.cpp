@@ -24,23 +24,23 @@
 
 #include "GT_PrimCache.h"
 
-#include "primWrapper.h"
 #include "GT_PackedUSD.h"
-#include "USD_StdTraverse.h"
-#include "UT_Gf.h"
+#include "primWrapper.h"
 #include "USD_PropertyMap.h"
+#include "USD_StdTraverse.h"
 #include "USD_XformCache.h"
+#include "UT_Gf.h"
 
-#include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdGeom/boundable.h"
+#include "pxr/usd/usdGeom/xformable.h"
 
+#include <GT/GT_CatPolygonMesh.h>
 #include <GT/GT_PrimCollect.h>
-#include <GT/GT_PrimPolygonMesh.h>
-#include <GT/GT_TransformArray.h>
 #include <GT/GT_PrimInstance.h>
+#include <GT/GT_PrimPolygonMesh.h>
 #include <GT/GT_RefineCollect.h>
 #include <GT/GT_RefineParms.h>
-#include <GT/GT_CatPolygonMesh.h>
+#include <GT/GT_TransformArray.h>
 #include <SYS/SYS_Hash.h>
 #include <SYS/SYS_Version.h>
 #include <UT/UT_HDKVersion.h>
@@ -373,15 +373,17 @@ CreateEntryFn::operator()(
             // into the groups space.
 
             UT_Matrix4D invGroupXform;
-            GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
-                    prim, time, invGroupXform ); 
-            invGroupXform.invert();
-
+            if (GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
+                    prim, time, invGroupXform )) {
+                invGroupXform.invert();
+            } else {
+                invGroupXform.identity();
+            }
 
             // Iterate though all the prims and find matching instances.
             for( auto it = gprims.begin(); it != gprims.end(); ++it ) 
             {
-                UsdPrim p = *it;
+                const UsdPrim& p = *it;
 
                 GT_PrimitiveHandle gtPrim = 
                     m_cache.GetPrim( p,
@@ -410,8 +412,10 @@ CreateEntryFn::operator()(
 
                     UsdPrim p = usdPrims[0];
                     UT_Matrix4D gprimXform;
-                    GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
-                            p, time, gprimXform ); 
+                    if (!GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
+                            p, time, gprimXform )) {
+                        gprimXform.identity();
+                    }
 
                     UT_Matrix4D m = gprimXform * invGroupXform;
 
@@ -426,8 +430,10 @@ CreateEntryFn::operator()(
                     for( auto const &p : usdPrims ) {
 
                         UT_Matrix4D gprimXform;
-                        GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
-                                p, time, gprimXform ); 
+                        if (!GusdUSD_XformCache::GetInstance()
+                            .GetLocalToWorldTransform(p, time, gprimXform )) {
+                            gprimXform.identity();
+                        }
 
                         UT_Matrix4D m = gprimXform * invGroupXform;
 

@@ -40,7 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// A computation provides a way to procedurally generate a primvar.
 ///
-/// In represents a basic Input -> Processing -> Output model.
+/// It represents a basic Input -> Processing -> Output model.
 ///
 /// Primarily inputs are provided by the scene delegate via the Get()
 /// mechanism.

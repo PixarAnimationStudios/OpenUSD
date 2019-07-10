@@ -275,7 +275,7 @@ pxr_register_test(testTraceMarkers
 
 pxr_register_test(testTraceReportPerf
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceReportPerf"
-)
+)    
 
 pxr_register_test(testTraceEventContainer
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceEventContainer"

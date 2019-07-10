@@ -65,6 +65,9 @@ def PrintCommandOutput(output):
         sys.stdout.write(output)
 
 def PrintError(error):
+    if verbosity >= 3 and sys.exc_info()[1] is not None:
+        import traceback
+        traceback.print_exc()
     print "ERROR:", error
 
 # Helpers for determining platform
@@ -118,25 +121,23 @@ def IsVisualStudio2017OrGreater():
         return version >= VISUAL_STUDIO_2017_VERSION
     return False
 
-def GetPythonLibraryAndIncludeDir():
-    """Returns tuple containing the path to the Python shared library
-    and include directory corresponding to the version of python on
-    the users PATH. Returns None if either directory could not be
-    determined. This function always returns None on Windows or Linux.
+def GetPythonInfo():
+    """Returns a tuple containing the path to the Python executable, shared
+    library, and include directory corresponding to the version of Python
+    currently running. Returns None if any path could not be determined. This
+    function always returns None on Windows or Linux.
 
     This function is primarily used to determine which version of
     Python USD should link against when multiple versions are installed.
     """
-    # We just skip all this on Windows. The call to get_config_var('LIBDIR')
-    # doesn't work on Windows, so we'd have to find some other way to get
-    # the same information. But, users on Windows are unlikely to have 
-    # multiple copies of the same version of Python, so the problem this 
+    # We just skip all this on Windows. Users on Windows are unlikely to have
+    # multiple copies of the same version of Python, so the problem this
     # function is intended to solve doesn't arise on that platform.
     if Windows():
         return None
 
-    # We also skip all this on Linux. The below code gets the wrong answer on 
-    # certain distributions like Ubuntu, which organizes libraries based on 
+    # We also skip all this on Linux. The below code gets the wrong answer on
+    # certain distributions like Ubuntu, which organizes libraries based on
     # multiarch. The below code yields /usr/lib/libpython2.7.so, but
     # the library is actually in /usr/lib/x86_64-linux-gnu. Since the problem
     # this function is intended to solve primarily occurs on macOS, so it's
@@ -144,18 +145,29 @@ def GetPythonLibraryAndIncludeDir():
     if Linux():
         return None
 
-    cmd = ("import distutils.sysconfig; "
-           "print distutils.sysconfig.get_python_inc()")
-    pythonIncludeDir = GetCommandOutput("python -c '{}'".format(cmd))
+    try:
+        import distutils.sysconfig
 
-    cmd = ("import distutils.sysconfig; "
-           "print distutils.sysconfig.get_config_var(\"LIBDIR\")")
-    pythonLibPath = GetCommandOutput("python -c '{}'".format(cmd))
-    if pythonLibPath:
-        pythonLibPath = os.path.join(pythonLibPath, "libpython2.7.dylib")
+        pythonExecPath = None
+        pythonLibPath = None
 
-    if pythonIncludeDir and pythonLibPath:
-        return (pythonLibPath, pythonIncludeDir)
+        pythonPrefix = distutils.sysconfig.PREFIX
+        if pythonPrefix:
+            pythonExecPath = os.path.join(pythonPrefix, 'bin', 'python')
+            pythonLibPath = os.path.join(pythonPrefix, 'lib', 'libpython2.7.dylib')
+
+        pythonIncludeDir = distutils.sysconfig.get_python_inc()
+    except:
+        return None
+
+    if pythonExecPath and pythonIncludeDir and pythonLibPath:
+        # Ensure that the paths are absolute, since depending on the version of
+        # Python being run and the path used to invoke it, we may have gotten a
+        # relative path from distutils.sysconfig.PREFIX.
+        return (
+            os.path.abspath(pythonExecPath),
+            os.path.abspath(pythonLibPath),
+            os.path.abspath(pythonIncludeDir))
 
     return None
 
@@ -231,6 +243,16 @@ def CopyDirectory(context, srcDir, destDir):
                        .format(srcDir=srcDir, destDir=instDestDir))
     shutil.copytree(srcDir, instDestDir)
 
+def FormatMultiProcs(numJobs, generator):
+    tag = "-j"
+    if generator:
+        if "Visual Studio" in generator:
+            tag = "/M:"
+        elif "Xcode" in generator:
+            tag = "-j "
+
+    return "{tag}{procs}".format(tag=tag, procs=numJobs)
+
 def RunCMake(context, force, extraArgs = None):
     """Invoke CMake to configure, build, and install a library whose 
     source code is located in the current working directory."""
@@ -250,6 +272,7 @@ def RunCMake(context, force, extraArgs = None):
 
     # On Windows, we need to explicitly specify the generator to ensure we're
     # building a 64-bit project. (Surely there is a better way to do this?)
+    # TODO: figure out exactly what "vcvarsall.bat x64" sets to force x64
     if generator is None and Windows():
         if IsVisualStudio2017OrGreater():
             generator = "Visual Studio 15 2017 Win64"
@@ -264,31 +287,42 @@ def RunCMake(context, force, extraArgs = None):
     if MacOS():
         osx_rpath = "-DCMAKE_MACOSX_RPATH=ON"
 
+    # We use -DCMAKE_BUILD_TYPE for single-configuration generators 
+    # (Ninja, make), and --config for multi-configuration generators 
+    # (Visual Studio); technically we don't need BOTH at the same
+    # time, but specifying both is simpler than branching
+    config=("Debug" if context.buildDebug else "Release")
+
     with CurrentWorkingDirectory(buildDir):
         Run('cmake '
             '-DCMAKE_INSTALL_PREFIX="{instDir}" '
             '-DCMAKE_PREFIX_PATH="{depsInstDir}" '
+            '-DCMAKE_BUILD_TYPE={config} '
             '{osx_rpath} '
             '{generator} '
             '{extraArgs} '
             '"{srcDir}"'
             .format(instDir=instDir,
                     depsInstDir=context.instDir,
+                    config=config,
                     srcDir=srcDir,
                     osx_rpath=(osx_rpath or ""),
                     generator=(generator or ""),
                     extraArgs=(" ".join(extraArgs) if extraArgs else "")))
-        Run("cmake --build . --config Release --target install -- {multiproc}"
-            .format(multiproc=("/M:{procs}" if Windows() else "-j{procs}")
-                               .format(procs=context.numJobs)))
+        Run("cmake --build . --config {config} --target install -- {multiproc}"
+            .format(config=config,
+                    multiproc=FormatMultiProcs(context.numJobs, generator)))
 
-def PatchFile(filename, patches):
+def PatchFile(filename, patches, multiLineMatches=False):
     """Applies patches to the specified file. patches is a list of tuples
     (old string, new string)."""
-    oldLines = open(filename, 'r').readlines()
+    if multiLineMatches:
+        oldLines = [open(filename, 'r').read()]
+    else:
+        oldLines = open(filename, 'r').readlines()
     newLines = oldLines
-    for (oldLine, newLine) in patches:
-        newLines = [s.replace(oldLine, newLine) for s in newLines]
+    for (oldString, newString) in patches:
+        newLines = [s.replace(oldString, newString) for s in newLines]
     if newLines != oldLines:
         PrintInfo("Patching file {filename} (original in {oldFilename})..."
                   .format(filename=filename, oldFilename=filename + ".old"))
@@ -462,11 +496,14 @@ class PythonDependency(object):
         self.moduleNames = moduleNames
 
     def Exists(self, context):
-        # If one of the modules in our list exists we are good
+        # If one of the modules in our list imports successfully, we are good.
         for moduleName in self.moduleNames:
-            cmd = "python -c 'import {module}'".format(module=moduleName)
-            if GetCommandOutput(cmd) != None:
+            try:
+                pyModule = __import__(moduleName)
                 return True
+            except:
+                pass
+
         return False
 
 def AnyPythonDependencies(deps):
@@ -531,7 +568,8 @@ def InstallBoost(context, force, buildArgs):
             'link=shared',
             'runtime-link=shared',
             'threading=multi', 
-            'variant=release',
+            'variant={variant}'
+                .format(variant="debug" if context.buildDebug else "release"),
             '--with-atomic',
             '--with-program_options',
             '--with-regex'
@@ -688,6 +726,34 @@ def InstallOpenEXR(context, force, buildArgs):
 
     ilmbaseSrcDir = os.path.join(srcDir, "IlmBase")
     with CurrentWorkingDirectory(ilmbaseSrcDir):
+        # openexr 2.2 has a bug with Ninja:
+        # https://github.com/openexr/openexr/issues/94
+        # https://github.com/openexr/openexr/pull/142
+        # Fix commit here:
+        # https://github.com/openexr/openexr/commit/8eed7012c10f1a835385d750fd55f228d1d35df9
+        # Merged here:
+        # https://github.com/openexr/openexr/commit/b206a243a03724650b04efcdf863c7761d5d5d5b
+        if context.cmakeGenerator == "Ninja":
+            PatchFile(
+                os.path.join('Half', 'CMakeLists.txt'),
+                [
+                    ("TARGET eLut POST_BUILD",
+                     "OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/eLut.h"),
+                    ("  COMMAND eLut > ${CMAKE_CURRENT_BINARY_DIR}/eLut.h",
+                     "  COMMAND eLut ARGS > ${CMAKE_CURRENT_BINARY_DIR}/eLut.h\n"
+                        "  DEPENDS eLut"),
+                    ("TARGET toFloat POST_BUILD",
+                     "OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/toFloat.h"),
+                    ("  COMMAND toFloat > ${CMAKE_CURRENT_BINARY_DIR}/toFloat.h",
+                     "  COMMAND toFloat ARGS > ${CMAKE_CURRENT_BINARY_DIR}/toFloat.h\n"
+                        "  DEPENDS toFloat"),
+
+                    ("  ${CMAKE_CURRENT_BINARY_DIR}/eLut.h\n"
+                         "  OBJECT_DEPENDS\n"
+                         "  ${CMAKE_CURRENT_BINARY_DIR}/toFloat.h\n",
+                     '  "${CMAKE_CURRENT_BINARY_DIR}/eLut.h;${CMAKE_CURRENT_BINARY_DIR}/toFloat.h"\n'),
+                ],
+                multiLineMatches=True)
         RunCMake(context, force, buildArgs)
 
     openexrSrcDir = os.path.join(srcDir, "OpenEXR")
@@ -874,7 +940,17 @@ def InstallOpenSubdiv(context, force, buildArgs):
         # Add on any user-specified extra arguments.
         extraArgs += buildArgs
 
-        RunCMake(context, force, extraArgs)
+        oldGenerator = context.cmakeGenerator
+    
+        # OpenSubdiv seems to error when building on windows w/ Ninja...
+        # ...so just use the default generator (ie, Visual Studio on Windows)
+        # until someone can sort it out
+        if oldGenerator == "Ninja" and Windows():
+            context.cmakeGenerator = None
+        try:
+            RunCMake(context, force, extraArgs)
+        finally:
+            context.cmakeGenerator = oldGenerator
 
 OPENSUBDIV = Dependency("OpenSubdiv", InstallOpenSubdiv, 
                         "include/opensubdiv/version.h")
@@ -987,9 +1063,9 @@ def InstallUSD(context, force, buildArgs):
         if context.buildPython:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=ON')
 
-            # CMake has trouble finding the library and include directories
-            # when there are multiple versions of Python installed. This
-            # can lead to crashes due to USD being linked against one
+            # CMake has trouble finding the executable, library, and include
+            # directories when there are multiple versions of Python installed.
+            # This can lead to crashes due to USD being linked against one
             # version of Python but running through some other Python
             # interpreter version. This primarily shows up on macOS, as it's
             # common to have a Python install that's separate from the one
@@ -997,12 +1073,14 @@ def InstallUSD(context, force, buildArgs):
             #
             # To avoid this, we try to determine these paths from Python
             # itself rather than rely on CMake's heuristics.
-            pyLibPathAndIncPath = GetPythonLibraryAndIncludeDir()
-            if pyLibPathAndIncPath:
+            pythonInfo = GetPythonInfo()
+            if pythonInfo:
+                extraArgs.append('-DPYTHON_EXECUTABLE="{pyExecPath}"'
+                                 .format(pyExecPath=pythonInfo[0]))
                 extraArgs.append('-DPYTHON_LIBRARY="{pyLibPath}"'
-                                 .format(pyLibPath=pyLibPathAndIncPath[0]))
+                                 .format(pyLibPath=pythonInfo[1]))
                 extraArgs.append('-DPYTHON_INCLUDE_DIR="{pyIncPath}"'
-                                 .format(pyIncPath=pyLibPathAndIncPath[1]))
+                                 .format(pyIncPath=pythonInfo[2]))
         else:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=OFF')
 
@@ -1010,6 +1088,11 @@ def InstallUSD(context, force, buildArgs):
             extraArgs.append('-DBUILD_SHARED_LIBS=ON')
         elif context.buildMonolithic:
             extraArgs.append('-DPXR_BUILD_MONOLITHIC=ON')
+
+        if context.buildDebug:
+            extraArgs.append('-DTBB_USE_DEBUG_BUILD=ON')
+        else:
+            extraArgs.append('-DTBB_USE_DEBUG_BUILD=OFF')
         
         if context.buildDocs:
             extraArgs.append('-DPXR_BUILD_DOCUMENTATION=ON')
@@ -1035,6 +1118,14 @@ def InstallUSD(context, force, buildArgs):
                 extraArgs.append('-DPXR_BUILD_EMBREE_PLUGIN=ON')
             else:
                 extraArgs.append('-DPXR_BUILD_EMBREE_PLUGIN=OFF')
+
+            if context.buildPrman:
+                if context.prmanLocation:
+                    extraArgs.append('-DRENDERMAN_LOCATION="{location}"'
+                                     .format(location=context.prmanLocation))
+                extraArgs.append('-DPXR_BUILD_PRMAN_PLUGIN=ON')
+            else:
+                extraArgs.append('-DPXR_BUILD_PRMAN_PLUGIN=OFF')                
             
             if context.buildOIIO:
                 extraArgs.append('-DPXR_BUILD_OPENIMAGEIO_PLUGIN=ON')
@@ -1145,6 +1236,21 @@ library. Multiple quotes may be needed to ensure arguments are passed on
 exactly as desired. Users must ensure these arguments are suitable for the
 specified library and do not conflict with other options, otherwise build 
 errors may occur.
+
+- Python Versions and DCC Plugins:
+Some DCCs (most notably, Maya) may ship with and run using their own version of
+Python. In that case, it is important that USD and the plugins for that DCC are
+built using the DCC's version of Python and not the system version. This can be
+done by running %(prog)s using the DCC's version of Python.
+
+For example, to build USD and the Maya plugins on macOS for Maya 2019, run:
+
+/Applications/Autodesk/maya2019/Maya.app/Contents/bin/mayapy %(prog)s --maya --no-usdview ...
+
+Note that this is primarily an issue on macOS, where a DCC's version of Python
+is likely to conflict with the version provided by the system. On other
+platforms, %(prog)s *should* be run using the system Python and *should not*
+be run using the DCC's Python.
 """.format(
     libraryList=" ".join(sorted([d.name for d in AllDependencies])))
 
@@ -1206,6 +1312,9 @@ subgroup.add_argument("--build-monolithic", dest="build_type",
                       action="store_const", const=MONOLITHIC_LIB,
                       help="Build a single monolithic shared library")
 
+group.add_argument("--debug", dest="build_debug", action="store_true",
+                    help="Build with debugging information")
+
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--tests", dest="build_tests", action="store_true",
                       default=False, help="Build unit tests")
@@ -1260,6 +1369,14 @@ subgroup.add_argument("--no-embree", dest="build_embree", action="store_false",
                       help="Do not build Embree sample imaging plugin (default)")
 group.add_argument("--embree-location", type=str,
                    help="Directory where Embree is installed.")
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--prman", dest="build_prman", action="store_true",
+                      default=False,
+                      help="Build Pixar's RenderMan imaging plugin")
+subgroup.add_argument("--no-prman", dest="build_prman", action="store_false",
+                      help="Do not build Pixar's RenderMan imaging plugin (default)")
+group.add_argument("--prman-location", type=str,
+                   help="Directory where Pixar's RenderMan is installed.")
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--openimageio", dest="build_oiio", action="store_true", 
                       default=False,
@@ -1384,6 +1501,7 @@ class InstallContext:
             self.buildArgs.setdefault(depName.lower(), []).append(arg)
 
         # Build type
+        self.buildDebug = args.build_debug;
         self.buildShared = (args.build_type == SHARED_LIBS)
         self.buildMonolithic = (args.build_type == MONOLITHIC_LIB)
 
@@ -1413,6 +1531,9 @@ class InstallContext:
         self.buildEmbree = self.buildImaging and args.build_embree
         self.embreeLocation = (os.path.abspath(args.embree_location)
                                if args.embree_location else None)
+        self.buildPrman = self.buildImaging and args.build_prman
+        self.prmanLocation = (os.path.abspath(args.prman_location)
+                               if args.prman_location else None)                               
         self.buildOIIO = args.build_oiio
         self.buildOCIO = args.build_ocio
 
@@ -1546,6 +1667,35 @@ if context.buildMaya and PTEX in requiredDependencies:
                "would conflict with the version used by Maya.")
     sys.exit(1)
 
+# Determine whether we're running in Maya's version of Python. When building
+# against Maya's Python, there are some additional restrictions on what we're
+# able to build.
+isMayaPython = False
+try:
+    import maya
+
+    # If the maya import succeeds and this function returns a tuple, then the
+    # USD build will be configured to use Maya's version of Python.
+    if GetPythonInfo() != None:
+        isMayaPython = True
+except:
+    pass
+
+if context.buildMaya and isMayaPython:
+    if context.buildUsdview:
+        PrintError("Cannot build usdview when building against Maya's version "
+                   "of Python. Maya does not provide access to the 'OpenGL' "
+                   "Python module. Use '--no-usdview' to disable building "
+                   "usdview.")
+        sys.exit(1)
+
+    # We should not attempt to build the plugins for any other DCCs if we're
+    # building against Maya's version of Python.
+    if any([context.buildHoudini, context.buildKatana]):
+        PrintError("Cannot build plugins for other DCCs when building against "
+                   "Maya's version of Python.")
+        sys.exit(1)
+
 dependenciesToBuild = []
 for dep in requiredDependencies:
     if context.ForceBuildDependency(dep) or not dep.Exists(context):
@@ -1612,10 +1762,12 @@ Building with settings:
   Downloader                    {downloader}
 
   Building                      {buildType}
+    Config                      {buildConfig}
     Imaging                     {buildImaging}
       Ptex support:             {enablePtex}
       OpenImageIO support:      {buildOIIO} 
       OpenColorIO support:      {buildOCIO} 
+      PRMan support:            {buildPrman}
     UsdImaging                  {buildUsdImaging}
       usdview:                  {buildUsdview}
     Python support              {buildPython}
@@ -1659,10 +1811,12 @@ summaryMsg = summaryMsg.format(
     buildType=("Shared libraries" if context.buildShared
                else "Monolithic shared library" if context.buildMonolithic
                else ""),
+    buildConfig=("Debug" if context.buildDebug else "Release"),
     buildImaging=("On" if context.buildImaging else "Off"),
     enablePtex=("On" if context.enablePtex else "Off"),
     buildOIIO=("On" if context.buildOIIO else "Off"),
     buildOCIO=("On" if context.buildOCIO else "Off"),
+    buildPrman=("On" if context.buildPrman else "Off"),
     buildUsdImaging=("On" if context.buildUsdImaging else "Off"),
     buildUsdview=("On" if context.buildUsdview else "Off"),
     buildPython=("On" if context.buildPython else "Off"),
@@ -1759,3 +1913,7 @@ if context.buildKatana:
 if context.buildHoudini:
     Print("See documentation at http://openusd.org/docs/Houdini-USD-Plugins.html "
           "for setting up the Houdini plugin.\n")
+
+if context.buildPrman:
+    Print("See documentation at http://openusd.org/docs/RenderMan-USD-Imaging-Plugin.html "
+          "for setting up the RenderMan plugin.\n")

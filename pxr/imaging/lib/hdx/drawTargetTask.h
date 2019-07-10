@@ -59,9 +59,18 @@ public:
                       HdTaskContext* ctx,
                       HdDirtyBits* dirtyBits) override;
 
+    /// Prepare the tasks resources
+    HDX_API
+    virtual void Prepare(HdTaskContext* ctx,
+                         HdRenderIndex* renderIndex) override;
+
     /// Execute render pass task
     HDX_API
     virtual void Execute(HdTaskContext* ctx) override;
+
+    /// Collect Render Tags used by the task.
+    HDX_API
+    virtual const TfTokenVector &GetRenderTags() const override;
 
 private:
     struct RenderPassInfo {
@@ -99,6 +108,7 @@ private:
 
     // Alpha sample alpha to coverage
     bool _enableSampleAlphaToCoverage;
+    TfTokenVector _renderTags;
 
     HdxDrawTargetTask()                                      = delete;
     HdxDrawTargetTask(const HdxDrawTargetTask &)             = delete;

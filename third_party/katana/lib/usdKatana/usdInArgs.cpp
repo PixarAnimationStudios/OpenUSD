@@ -44,6 +44,7 @@ PxrUsdKatanaUsdInArgs::PxrUsdKatanaUsdInArgs(
         double shutterClose,
         const std::vector<double>& motionSampleTimes,
         const StringListMap& extraAttributesOrNamespaces,
+        const std::vector<TfToken>& materialBindingPurposes,
         bool prePopulate,
         bool verbose,
         const char * errorMessage) :
@@ -58,6 +59,7 @@ PxrUsdKatanaUsdInArgs::PxrUsdKatanaUsdInArgs(
     _shutterClose(shutterClose),
     _motionSampleTimes(motionSampleTimes),
     _extraAttributesOrNamespaces(extraAttributesOrNamespaces),
+    _materialBindingPurposes(materialBindingPurposes),
     _prePopulate(prePopulate),
     _verbose(verbose)
 {

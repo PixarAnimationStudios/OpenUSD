@@ -12,6 +12,15 @@
                             "UsdGeomNurbsPatch",
                             "UsdGeomScope",
                             "UsdGeomXform",
+                            "UsdLuxCylinderLight",
+                            "UsdLuxDiskLight",
+                            "UsdLuxDistantLight",
+                            "UsdLuxDomeLight",
+                            "UsdLuxGeometryLight",
+                            "UsdLuxRectLight",
+                            "UsdLuxSphereLight",
+                            "UsdRiPxrAovLight",
+                            "UsdRiPxrEnvDayLight",
                             "UsdShadeMaterial",
                             "UsdSkelRoot",
                             "UsdSkelSkeleton"
@@ -29,13 +38,23 @@
                             "nParticle",
                             "nurbsCurve",
                             "nurbsSurface",
-                            "particle"
+                            "particle",
+                            "PxrAovLight",
+                            "PxrCylinderLight",
+                            "PxrDiskLight",
+                            "PxrDistantLight",
+                            "PxrDomeLight",
+                            "PxrEnvDayLight",
+                            "PxrMeshLight",
+                            "PxrRectLight",
+                            "PxrSphereLight",
+                            "stroke"
                         ]
                     }
                 }
             },
             "Name": "@PLUG_INFO_PLUGIN_NAME@",
-            "Type": "python"
+            "Type": "resource"
         }
     ]
 }

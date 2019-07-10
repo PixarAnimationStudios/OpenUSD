@@ -109,9 +109,9 @@ UsdCollectionAPI::IsCollectionAPIPath(
     }
 
     if (tokens.size() >= 2
-        && tokens[0] == UsdTokens->collection) {
+        && tokens[0] == _schemaTokens->collection) {
         *name = TfToken(propertyName.substr(
-            UsdTokens->collection.GetString().size() + 1));
+            _schemaTokens->collection.GetString().size() + 1));
         return true;
     }
 
@@ -157,7 +157,7 @@ UsdCollectionAPI::_GetTfType() const
 /// Returns the property name prefixed with the correct namespace prefix, which
 /// is composed of the the API's propertyNamespacePrefix metadata and the
 /// instance name of the API.
-inline
+static inline
 TfToken
 _GetNamespacedPropertyName(const TfToken instanceName, const TfToken propName)
 {

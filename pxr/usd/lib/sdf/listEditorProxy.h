@@ -33,10 +33,10 @@
 
 #include "pxr/base/vt/value.h"  // for Vt_DefaultValueFactory
 
-#include <boost/mpl/logical.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/type_traits.hpp>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
+
+#include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -63,11 +63,11 @@ public:
     typedef std::vector<value_type> value_vector_type;
 
     // ApplyEdits types.
-    typedef boost::function<boost::optional<value_type>
+    typedef std::function<boost::optional<value_type>
                         (SdfListOpType, const value_type&)> ApplyCallback;
 
     // ModifyEdits types.
-    typedef boost::function<boost::optional<value_type>
+    typedef std::function<boost::optional<value_type>
                         (const value_type&)> ModifyCallback;
 
     /// Creates a default proxy object. The object evaluates to \c false in a 
@@ -119,7 +119,7 @@ public:
     void ApplyEditsToList(value_vector_type* vec) const
     {
         if (_Validate()) {
-            _listEditor->ApplyEdits(vec, ApplyCallback());
+            _listEditor->ApplyEditsToList(vec, ApplyCallback());
         }
     }
 
@@ -132,7 +132,7 @@ public:
     void ApplyEditsToList(value_vector_type* vec, CB callback) const
     {
         if (_Validate()) {
-            _listEditor->ApplyEdits(vec, ApplyCallback(callback));
+            _listEditor->ApplyEditsToList(vec, ApplyCallback(callback));
         }
     }
 
@@ -299,7 +299,7 @@ public:
     {
         value_vector_type result;
         if (_Validate()) {
-            _listEditor->ApplyEdits(&result);
+            _listEditor->ApplyEditsToList(&result);
         }
         return result;
     }

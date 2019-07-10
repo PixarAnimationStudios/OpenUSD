@@ -182,29 +182,17 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
     PxrMayaHdRenderParams renderParams;
     _renderParams = renderParams;
 
-    TfTokenVector renderTags;
-    renderTags.push_back(HdTokens->geometry);
+    // Update Render Tags
+    _renderTags.clear();
+    _renderTags.push_back(HdTokens->geometry);
     if (drawRenderPurpose) {
-        renderTags.push_back(UsdGeomTokens->render);
+        _renderTags.push_back(UsdGeomTokens->render);
     }
     if (drawProxyPurpose) {
-        renderTags.push_back(HdTokens->proxy);
+        _renderTags.push_back(HdTokens->proxy);
     }
     if (drawGuidePurpose) {
-        renderTags.push_back(HdTokens->guide);
-    }
-
-    if (_rprimCollection.GetRenderTags() != renderTags) {
-        _rprimCollection.SetRenderTags(renderTags);
-
-        TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-            "    Render tags changed: %s\n"
-            "        Marking collection dirty: %s\n",
-            TfStringJoin(renderTags.begin(), renderTags.end()).c_str(),
-            _rprimCollection.GetName().GetText());
-
-        _delegate->GetRenderIndex().GetChangeTracker().MarkCollectionDirty(
-            _rprimCollection.GetName());
+        _renderTags.push_back(HdTokens->guide);
     }
 
     MStatus status;
@@ -332,13 +320,15 @@ PxrMayaHdUsdProxyShapeAdapter::_Init(HdRenderIndex* renderIndex)
         return true;
     }
 
-    const TfToken collectionName(_shapeDagPath.fullPathName().asChar());
+    const TfToken collectionName = _GetRprimCollectionName();
 
     TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
         "Initializing PxrMayaHdUsdProxyShapeAdapter: %p\n"
+        "    shape DAG path : %s\n"
         "    collection name: %s\n"
         "    delegateId     : %s\n",
         this,
+        _shapeDagPath.fullPathName().asChar(),
         collectionName.GetText(),
         delegateId.GetText());
 

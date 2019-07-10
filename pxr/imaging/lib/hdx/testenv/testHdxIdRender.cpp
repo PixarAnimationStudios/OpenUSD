@@ -31,7 +31,7 @@
 
 #include "pxr/imaging/hdSt/renderDelegate.h"
 
-#include "pxr/imaging/hdx/intersector.h"
+#include "pxr/imaging/hdx/pickTask.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/unitTestGLDrawing.h"
@@ -63,11 +63,9 @@ public:
         GfVec4d viewport;
     };
 
-    void DrawScene(PickParam const * pickParam = NULL);
+    void DrawScene(PickParam const * pickParam = nullptr);
 
-    SdfPath PickScene(int pickX, int pickY,
-            int * outInstanceIndex = NULL,
-            int * outElementIndex = NULL);
+    SdfPath PickScene(int pickX, int pickY, int * outInstanceIndex = nullptr);
 
     // Hdx_UnitTestGLDrawing overrides
     virtual void InitTest();
@@ -258,46 +256,21 @@ My_TestGLDrawing::OffscreenTest()
 {
     SdfPath primId;
     int instanceIndex = -1;
-    int elementIndex = -1;
-    bool refined = (_reprName == HdReprTokens->refined);
 
-    primId = PickScene(175, 90, &instanceIndex, &elementIndex);
-    TF_VERIFY(primId == SdfPath("/cube1") &&
-            instanceIndex == 0 &&
-            elementIndex == 3);
+    primId = PickScene(175, 90, &instanceIndex);
+    TF_VERIFY(primId == SdfPath("/cube1") && instanceIndex == 0);
 
-    primId = PickScene(470, 90, &instanceIndex, &elementIndex);
-    TF_VERIFY(primId == SdfPath("/cube0") &&
-            instanceIndex == 0 &&
-            elementIndex == 3);
+    primId = PickScene(470, 90, &instanceIndex);
+    TF_VERIFY(primId == SdfPath("/cube0") && instanceIndex == 0);
 
-    primId = PickScene(470, 364, &instanceIndex, &elementIndex);
-    if (refined) {
-        TF_VERIFY(primId == SdfPath("/cube3") &&
-            instanceIndex == 0 &&
-            elementIndex == 0);
-    }
-    else {
-        TF_VERIFY(primId == SdfPath("/cube3") &&
-            instanceIndex == 0 &&
-            elementIndex == 3);
-    }
+    primId = PickScene(470, 364, &instanceIndex);
+    TF_VERIFY(primId == SdfPath("/cube3") && instanceIndex == 0);
     
-    primId = PickScene(250, 190, &instanceIndex, &elementIndex);
-    if (refined) {
-        TF_VERIFY(primId == SdfPath("/protoTop") &&
-                instanceIndex == 2 &&
-                elementIndex == 4);
-    } else {
-        TF_VERIFY(primId == SdfPath("/protoTop") &&
-                instanceIndex == 2 &&
-                elementIndex == 3);
-    }
+    primId = PickScene(250, 190, &instanceIndex);
+    TF_VERIFY(primId == SdfPath("/protoTop") && instanceIndex == 2);
 
-    primId = PickScene(320, 290, &instanceIndex, &elementIndex);
-    TF_VERIFY(primId == SdfPath("/protoBottom") &&
-            instanceIndex == 1 &&
-            elementIndex == 3);
+    primId = PickScene(320, 290, &instanceIndex);
+    TF_VERIFY(primId == SdfPath("/protoBottom") && instanceIndex == 1);
 }
 
 void
@@ -333,7 +306,7 @@ DrawScene(PickParam const * pickParam)
     HdxRenderTaskParams param
         = _delegate->GetTaskParam(
             renderSetupTask, HdTokens->params).Get<HdxRenderTaskParams>();
-    param.enableIdRender = (pickParam != NULL);
+    param.enableIdRender = (pickParam != nullptr);
     param.viewport = viewport;
     _delegate->SetTaskParam(renderSetupTask, HdTokens->params, VtValue(param));
 
@@ -342,15 +315,13 @@ DrawScene(PickParam const * pickParam)
 
     glBindVertexArray(vao);
 
-    _engine.Execute(_delegate->GetRenderIndex(), tasks);
+    _engine.Execute(&_delegate->GetRenderIndex(), &tasks);
 
     glBindVertexArray(0);
 }
 
 SdfPath
-My_TestGLDrawing::PickScene(int pickX, int pickY,
-        int * outInstanceIndex,
-        int * outElementIndex)
+My_TestGLDrawing::PickScene(int pickX, int pickY, int * outInstanceIndex)
 {
     int width = 128;
     int height = 128;
@@ -362,8 +333,6 @@ My_TestGLDrawing::PickScene(int pickX, int pickY,
     drawTarget->AddAttachment(
         "instanceId", GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8);
     drawTarget->AddAttachment(
-        "elementId", GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8);
-    drawTarget->AddAttachment(
         "depth", GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT32F);
     drawTarget->Unbind();
 
@@ -372,9 +341,8 @@ My_TestGLDrawing::PickScene(int pickX, int pickY,
     GLenum drawBuffers[] = { 
         GL_COLOR_ATTACHMENT0,
         GL_COLOR_ATTACHMENT1,
-        GL_COLOR_ATTACHMENT2
     };
-    glDrawBuffers(3, drawBuffers);
+    glDrawBuffers(2, drawBuffers);
 
     glEnable(GL_DEPTH_TEST);
 
@@ -403,11 +371,6 @@ My_TestGLDrawing::PickScene(int pickX, int pickY,
         drawTarget->GetAttachments().at("instanceId")->GetGlTextureName());
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, instanceId);
 
-    GLubyte elementId[width*height*4];
-    glBindTexture(GL_TEXTURE_2D,
-        drawTarget->GetAttachments().at("elementId")->GetGlTextureName());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, elementId);
-
     GLfloat depths[width*height];
     glBindTexture(GL_TEXTURE_2D,
         drawTarget->GetAttachments().at("depth")->GetGlTextureName());
@@ -431,14 +394,10 @@ My_TestGLDrawing::PickScene(int pickX, int pickY,
         int idIndex = zMinIndex*4;
 
         result = _delegate->GetRenderIndex().GetRprimPathFromPrimId(
-                HdxIntersector::DecodeIDRenderColor(&primId[idIndex]));
+                HdxPickTask::DecodeIDRenderColor(&primId[idIndex]));
         if (outInstanceIndex) {
-            *outInstanceIndex = HdxIntersector::DecodeIDRenderColor(
+            *outInstanceIndex = HdxPickTask::DecodeIDRenderColor(
                     &instanceId[idIndex]);
-        }
-        if (outElementIndex) {
-            *outElementIndex = HdxIntersector::DecodeIDRenderColor(
-                    &elementId[idIndex]);
         }
     }
 
@@ -450,14 +409,12 @@ My_TestGLDrawing::MousePress(int button, int x, int y, int modKeys)
 {
     Hdx_UnitTestGLDrawing::MousePress(button, x, y, modKeys);
     int instanceIndex = 0;
-    int elementIndex = -1;
-    SdfPath primId = PickScene(x, y, &instanceIndex, &elementIndex);
+    SdfPath primId = PickScene(x, y, &instanceIndex);
 
     if (!primId.IsEmpty()) {
         std::cout << "pick(" << x << ", " << y << "): "
                   << "primId == " << primId << " "
-                  << "instance == " << instanceIndex << " "
-                  << "element == " << elementIndex <<  "\n";
+                  << "instance == " << instanceIndex << "\n";
     }
 }
 

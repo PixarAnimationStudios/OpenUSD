@@ -351,7 +351,7 @@ protected:
     ///
     /// \sa UsdSchemaType
     USDGEOM_API
-    virtual UsdSchemaType _GetSchemaType() const;
+    UsdSchemaType _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -363,7 +363,7 @@ private:
 
     // override SchemaBase virtuals.
     USDGEOM_API
-    virtual const TfType &_GetTfType() const;
+    const TfType &_GetTfType() const override;
 
 public:
     // --------------------------------------------------------------------- //
@@ -1152,7 +1152,7 @@ UsdGeomPointInstancer::ApplyMaskToArray(std::vector<bool> const &mask,
         return false;
     }
     size_t maskSize = mask.size();
-    if (maskSize == 0 || dataArray->size() == elementSize){
+    if (maskSize == 0 || dataArray->size() == (size_t)elementSize){
         return true;
     }
     else if ((maskSize * elementSize) != dataArray->size()){
@@ -1168,7 +1168,7 @@ UsdGeomPointInstancer::ApplyMaskToArray(std::vector<bool> const &mask,
     for (size_t i = 0; i < maskSize; ++i) {
         // XXX Could add a fast-path for elementSize == 1 ?
         if (mask[i]) {
-            for (size_t j = 0; j < elementSize; ++j) {
+            for (int j = 0; j < elementSize; ++j) {
                 *currData = beginData[i + j];
                 ++currData;
             }

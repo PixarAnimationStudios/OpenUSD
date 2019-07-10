@@ -361,6 +361,9 @@ Hd_PrimTypeIndex<PrimType>::SyncPrims(HdChangeTracker  &tracker,
 {
     size_t numTypes = _entries.size();
 
+    _dirtyPrimDelegates.clear();
+    HdSceneDelegate *prevDelegate = nullptr;
+
     for (size_t typeIdx = 0; typeIdx < numTypes; ++typeIdx) {
         _PrimTypeEntry &typeEntry =  _entries[typeIdx];
 
@@ -380,10 +383,30 @@ Hd_PrimTypeIndex<PrimType>::SyncPrims(HdChangeTracker  &tracker,
                                     &dirtyBits);
 
                 _TrackerMarkPrimClean(tracker, primPath, dirtyBits);
+
+                if (prevDelegate != primInfo.sceneDelegate) {
+                    _dirtyPrimDelegates.push_back(primInfo.sceneDelegate);
+                    prevDelegate = primInfo.sceneDelegate;
+                }
             }
         }
     }
 }
+
+template <class PrimType>
+const HdSceneDelegatePtrVector&
+Hd_PrimTypeIndex<PrimType>::GetSceneDelegatesForDirtyPrims()
+{
+    // For readability
+    HdSceneDelegatePtrVector& delegates = _dirtyPrimDelegates;
+
+    std::sort(delegates.begin(), delegates.end());
+    HdSceneDelegatePtrVector::iterator last =
+        std::unique(delegates.begin(), delegates.end());
+    delegates.erase(last, delegates.end());
+    return delegates;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //

@@ -78,8 +78,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 {% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
     TfToken name;
     if (!Is{{ cls.usdPrimTypeName }}Path(path, &name)) {
-        TF_CODING_ERROR("Invalid collection path <%s>.", path.GetText());
-        return UsdCollectionAPI();
+        TF_CODING_ERROR("Invalid {{ cls.propertyNamespacePrefix }} path <%s>.", path.GetText());
+        return {{ cls.cppClassName }}();
     }
     return {{ cls.cppClassName }}(stage->GetPrimAtPath(path.GetPrimPath()), name);
 {% else %}
@@ -153,9 +153,9 @@ bool
     }
 
     if (tokens.size() >= 2
-        && tokens[0] == UsdTokens->{{ cls.propertyNamespacePrefix }}) {
+        && tokens[0] == _schemaTokens->{{ cls.propertyNamespacePrefix }}) {
         *name = TfToken(propertyName.substr(
-            UsdTokens->{{ cls.propertyNamespacePrefix }}.GetString().size() + 1));
+            _schemaTokens->{{ cls.propertyNamespacePrefix }}.GetString().size() + 1));
         return true;
     }
 
@@ -222,7 +222,7 @@ const TfType &
 /// Returns the property name prefixed with the correct namespace prefix, which
 /// is composed of the the API's propertyNamespacePrefix metadata and the
 /// instance name of the API.
-inline
+static inline
 TfToken
 _GetNamespacedPropertyName(const TfToken instanceName, const TfToken propName)
 {

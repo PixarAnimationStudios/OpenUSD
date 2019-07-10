@@ -33,8 +33,11 @@
 #include "pxr/usd/usdShade/tokens.h"
 #include "pxr/usd/sdf/path.h"
 
+#include "pxr/base/work/utils.h"
+
 #include <boost/functional/hash.hpp>
 #include <tbb/concurrent_unordered_map.h>
+#include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -97,6 +100,12 @@ public:
     {
     }
 
+    ~UsdImaging_InheritedCache()
+    {
+        WorkSwapDestroyAsync(_cache);
+    }
+
+
     /// Compute the inherited value for the given \p prim, including the value
     /// authored on the Prim itself, if present.
     value_type GetValue(const UsdPrim& prim) const
@@ -135,10 +144,12 @@ public:
         if (time == _time) 
             return;
 
-        // Mark all cached entries as invalid, but leave the queries behind.
-        // We increment by 2 here and always keep the version an odd number,
-        // this enables the use of even versions as a per-entry spin lock.
-        _cacheVersion += 2;
+        if (Strategy::ValueMightBeTimeVarying()) {
+            // Mark all cached entries as invalid, but leave the queries behind.
+            // We increment by 2 here and always keep the version an odd number,
+            // this enables the use of even versions as a per-entry spin lock.
+            _cacheVersion += 2;
+        }
 
         // Update to correct time.
         _time = time;
@@ -419,11 +430,11 @@ UsdImaging_InheritedCache<Strategy, ImplData>::_GetValue(
     return &entry->value;
 }
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // -------------------------------------------------------------------------- //
 // Xform Cache
 // -------------------------------------------------------------------------- //
-
-PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -437,6 +448,8 @@ struct UsdImaging_XfStrategy {
     typedef GfMatrix4d value_type;
     typedef UsdGeomXformable::XformQuery query_type;
 
+    static
+    bool ValueMightBeTimeVarying() { return true; }
     static
     value_type MakeDefault() { return GfMatrix4d(1); }
 
@@ -494,11 +507,11 @@ struct UsdImaging_XfStrategy {
     }
 };
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // -------------------------------------------------------------------------- //
 // Visibility Cache
 // -------------------------------------------------------------------------- //
-
-PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/base/tf/token.h"
@@ -513,6 +526,8 @@ struct UsdImaging_VisStrategy {
     typedef TfToken value_type; // invisible, inherited
     typedef UsdAttributeQuery query_type;
 
+    static
+    bool ValueMightBeTimeVarying() { return true; }
     static
     value_type MakeDefault() { return UsdGeomTokens->inherited; }
 
@@ -546,10 +561,56 @@ struct UsdImaging_VisStrategy {
 };
 
 // -------------------------------------------------------------------------- //
-// Hydra MaterialBinding Cache
+// Purpose Cache
 // -------------------------------------------------------------------------- //
 
+struct UsdImaging_PurposeStrategy;
+typedef UsdImaging_InheritedCache<UsdImaging_PurposeStrategy> 
+    UsdImaging_PurposeCache;
+
+struct UsdImaging_PurposeStrategy {
+    typedef TfToken value_type; // purpose, inherited
+    typedef UsdAttributeQuery query_type;
+
+    static
+    value_type MakeDefault() { return UsdGeomTokens->default_; }
+
+    static
+    query_type MakeQuery(UsdPrim prim, bool *) {
+        UsdGeomImageable im = UsdGeomImageable(prim);
+        return im ? query_type(im.GetPurposeAttr()) : query_type();
+    }
+
+    static 
+    value_type
+    Inherit(UsdImaging_PurposeCache const* owner, 
+            UsdPrim prim,
+            query_type const* query)
+    { 
+
+        value_type v = *owner->_GetValue(prim.GetParent());
+
+        if (v != UsdGeomTokens->default_)
+            return v;
+
+        if (*query)
+            query->Get(&v);
+        return v;
+    }
+
+    static
+    value_type
+    ComputePurpose(UsdPrim const& prim)
+    {
+        return UsdGeomImageable(prim).ComputePurpose();
+    }
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE
+
+// -------------------------------------------------------------------------- //
+// Hydra MaterialBinding Cache
+// -------------------------------------------------------------------------- //
 
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdShade/materialBindingAPI.h"
@@ -605,6 +666,8 @@ struct UsdImaging_MaterialStrategy {
     using ImplData = UsdImaging_MaterialBindingImplData;
 
     static
+    bool ValueMightBeTimeVarying() { return false; }
+    static
     value_type MakeDefault() { return SdfPath(); }
 
     static
@@ -654,11 +717,11 @@ struct UsdImaging_MaterialStrategy {
     }
 };
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // -------------------------------------------------------------------------- //
 // ModelDrawMode Cache
 // -------------------------------------------------------------------------- //
-
-PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usdGeom/modelAPI.h"
 
@@ -673,6 +736,8 @@ struct UsdImaging_DrawModeStrategy
     typedef TfToken value_type; // origin, bounds, cards, default
     typedef UsdAttributeQuery query_type;
 
+    static
+    bool ValueMightBeTimeVarying() { return false; }
     static
     value_type MakeDefault() { return UsdGeomTokens->default_; }
 
@@ -702,6 +767,183 @@ struct UsdImaging_DrawModeStrategy
     ComputeDrawMode(UsdPrim const& prim)
     {
         return UsdGeomModelAPI(prim).ComputeModelDrawMode();
+    }
+};
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+// -------------------------------------------------------------------------- //
+// CoordSysBinding Cache
+// -------------------------------------------------------------------------- //
+
+#include "pxr/usd/usdShade/coordSysAPI.h"
+#include "pxr/imaging/hd/coordSys.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+struct UsdImaging_CoordSysBindingImplData {
+    // Helper provided by the scene delegate to pre-convert
+    // the binding paths to the equivalent Hydra ID.
+    std::function<SdfPath(SdfPath)> usdToHydraPath;
+};
+
+struct UsdImaging_CoordSysBindingStrategy;
+
+typedef UsdImaging_InheritedCache<
+    UsdImaging_CoordSysBindingStrategy,
+    UsdImaging_CoordSysBindingImplData>
+    UsdImaging_CoordSysBindingCache;
+
+struct UsdImaging_CoordSysBindingStrategy
+{
+    using ImplData = UsdImaging_CoordSysBindingImplData;
+
+    typedef std::vector<UsdShadeCoordSysAPI::Binding> UsdBindingVec;
+    typedef std::shared_ptr<UsdBindingVec> UsdBindingVecPtr;
+    typedef std::shared_ptr<SdfPathVector> IdVecPtr;
+
+    struct value_type {
+        IdVecPtr idVecPtr;
+        UsdBindingVecPtr usdBindingVecPtr;
+    };
+    struct query_type {
+        UsdShadeCoordSysAPI coordSysAPI;
+        ImplData *implData;
+
+        // Convert a USD binding relationship to a Hydra ID
+        SdfPath
+        _IdForBinding(UsdShadeCoordSysAPI::Binding const& binding) const {
+            return implData->usdToHydraPath(binding.bindingRelPath);
+        }
+    };
+
+    static
+    bool ValueMightBeTimeVarying() { return false; }
+
+    static
+    value_type MakeDefault() {
+        return value_type();
+    }
+
+    static
+    query_type MakeQuery(UsdPrim prim, ImplData *implData) {
+        return query_type({ UsdShadeCoordSysAPI(prim), implData });
+    }
+
+    static
+    value_type
+    Inherit(UsdImaging_CoordSysBindingCache const* owner,
+            UsdPrim prim,
+            query_type const* query)
+    {
+        value_type v;
+        if (query->coordSysAPI) {
+            // Pull inherited bindings first.
+            if (UsdPrim parentPrim = prim.GetParent()) {
+                v = *owner->_GetValue(parentPrim);
+            }
+            // Merge any local bindings.
+            if (query->coordSysAPI.HasLocalBindings()) {
+                SdfPathVector hdIds;
+                UsdBindingVec usdBindings;
+                if (v.idVecPtr) {
+                    hdIds = *v.idVecPtr;
+                }
+                if (v.usdBindingVecPtr) {
+                    usdBindings = *v.usdBindingVecPtr;
+                }
+                for (auto const& binding:
+                     query->coordSysAPI.GetLocalBindings()) {
+                    bool found = false;
+                    for (size_t i=0, n=hdIds.size(); i<n; ++i) {
+                        if (usdBindings[i].name == binding.name) {
+                            // Found an override -- replace this binding.
+                            usdBindings[i] = binding;
+                            hdIds[i] = query->_IdForBinding(binding);
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        // New binding, so append.
+                        usdBindings.push_back(binding);
+                        hdIds.push_back(query->_IdForBinding(binding));
+                    }
+                }
+                v.idVecPtr.reset(new SdfPathVector(hdIds));
+                v.usdBindingVecPtr.reset(new UsdBindingVec(usdBindings));
+            }
+        }
+        return v;
+    }
+};
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+// -------------------------------------------------------------------------- //
+// Inherited Primvar Cache
+// -------------------------------------------------------------------------- //
+
+#include "pxr/usd/usdGeom/primvarsAPI.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+struct UsdImaging_InheritedPrimvarStrategy;
+typedef UsdImaging_InheritedCache<UsdImaging_InheritedPrimvarStrategy>
+    UsdImaging_InheritedPrimvarCache;
+
+struct UsdImaging_InheritedPrimvarStrategy
+{
+    struct PrimvarRecord {
+        std::vector<UsdGeomPrimvar> primvars;
+        bool variable;
+    };
+    typedef std::shared_ptr<PrimvarRecord> value_type;
+    typedef UsdGeomPrimvarsAPI query_type;
+
+    // While primvar data might be time-varying, the set of primvars applying
+    // to a prim will not.
+    static
+    bool ValueMightBeTimeVarying() { return false; }
+
+    static
+    value_type MakeDefault() {
+        return value_type();
+    }
+
+    static
+    query_type MakeQuery(UsdPrim prim, bool *) {
+        return query_type(UsdGeomPrimvarsAPI(prim));
+    }
+
+    static
+    value_type Inherit(UsdImaging_InheritedPrimvarCache const* owner,
+                       UsdPrim prim,
+                       query_type const* query)
+    {
+        value_type v;
+        if (*query) {
+            // Pull inherited bindings first.
+            if (UsdPrim parentPrim = prim.GetParent()) {
+                v = *owner->_GetValue(parentPrim);
+            }
+            // Merge any local bindings.
+            std::vector<UsdGeomPrimvar> primvars =
+                query->FindIncrementallyInheritablePrimvars(
+                    v ? v->primvars : std::vector<UsdGeomPrimvar>());
+            if (!primvars.empty()) {
+                v = std::make_shared<PrimvarRecord>();
+                v->primvars = std::move(primvars);
+                v->variable = false;
+                for (UsdGeomPrimvar const& pv : v->primvars) {
+                    if (pv.ValueMightBeTimeVarying()) {
+                        v->variable = true;
+                        break;
+                    }
+                }
+            }
+        }
+        return v;
     }
 };
 

@@ -49,7 +49,15 @@
 
 #include <boost/mpl/assert.hpp>
 #include <boost/mpl/if.hpp>
-#include <boost/preprocessor.hpp>
+#include <boost/preprocessor/iterate.hpp>
+#include <boost/preprocessor/punctuation/comma_if.hpp>
+#include <boost/preprocessor/repetition/enum.hpp>
+#include <boost/preprocessor/repetition/enum_binary_params.hpp>
+#include <boost/preprocessor/repetition/enum_params.hpp>
+#include <boost/preprocessor/repetition/enum_trailing_binary_params.hpp>
+#include <boost/preprocessor/repetition/enum_trailing_params.hpp>
+#include <boost/preprocessor/repetition/repeat.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/python/def_visitor.hpp>
 #include <boost/python/dict.hpp>
 #include <boost/python/errors.hpp>

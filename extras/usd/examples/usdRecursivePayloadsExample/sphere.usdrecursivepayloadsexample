@@ -1,0 +1,13 @@
+#usda 1.0
+(
+    defaultPrim = "hello"
+)
+
+def Xform "hello"
+{
+    def Sphere "sphere"
+    {
+        color3f[] primvars:displayColor = [(0, 0, 1)]
+    }
+}
+

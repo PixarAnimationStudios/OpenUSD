@@ -47,12 +47,6 @@ using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_ENV_SETTING(SDF_WRITE_OLD_TYPENAMES, false,
-                      "Write values using old type-name alias");
-
-TF_DEFINE_ENV_SETTING(SDF_CONVERT_TO_NEW_TYPENAMES, false,
-                      "Force all serialized type-names to the new style");
-
 TF_DEFINE_PUBLIC_TOKENS(SdfValueRoleNames, SDF_VALUE_ROLE_NAME_TOKENS);
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -265,7 +259,8 @@ SdfUnitCategory( const TfEnum &unit )
     return it->second;
 }
 
-std::pair<uint32_t, uint32_t>
+// Gets the type/unit pair for a unit enum.
+static std::pair<uint32_t, uint32_t>
 Sdf_GetUnitIndices( const TfEnum &unit )
 {
     _UnitsInfo &info = _GetUnitsInfo();
@@ -452,29 +447,23 @@ Sdf_ValueTypeNamesType::~Sdf_ValueTypeNamesType()
     // Do nothing
 }
 
+// Defined in schema.cpp
+const Sdf_ValueTypeNamesType* Sdf_InitializeValueTypeNames();
+
 const Sdf_ValueTypeNamesType*
 Sdf_ValueTypeNamesType::_Init::New()
 {
-    return SdfSchema::GetInstance()._NewValueTypeNames();
+    return Sdf_InitializeValueTypeNames();
 }
 
 TfToken
 Sdf_ValueTypeNamesType::GetSerializationName(
     const SdfValueTypeName& typeName) const
 {
-    if (TfGetEnvSetting(SDF_WRITE_OLD_TYPENAMES)) {
-        // Return the last registered alias, which is the old type name.
-        const TfToken name = typeName.GetAliasesAsTokens().back();
-        if (!name.IsEmpty()) {
-            return name;
-        }
-    }
-    if (TfGetEnvSetting(SDF_CONVERT_TO_NEW_TYPENAMES)) {
-        // Return the first registered alias, which is the new type name.
-        const TfToken name = typeName.GetAliasesAsTokens().front();
-        if (!name.IsEmpty()) {
-            return name;
-        }
+    // Return the first registered alias, which is the new type name.
+    const TfToken name = typeName.GetAliasesAsTokens().front();
+    if (!name.IsEmpty()) {
+        return name;
     }
         
     return typeName.GetAsToken();

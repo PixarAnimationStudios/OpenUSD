@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    "Test to verify that usdcat can isolate just the layer metadata."
+    customLayerData = {
+        string key = "value"
+    }
+    endTimeCode = 100
+    startTimeCode = 1
+    subLayers = [
+        @sublayer.usd@
+    ]
+)
+def "Prim"
+{
+}

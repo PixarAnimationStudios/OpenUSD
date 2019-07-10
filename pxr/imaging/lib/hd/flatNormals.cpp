@@ -58,7 +58,7 @@ public:
             int count = _faceCounts[i];
 
             SrcType const& v0 = _points[_faceIndices[offset+0]];
-            for (size_t j = 2; j < count; ++j) {
+            for (int j = 2; j < count; ++j) {
                 SrcType const& v1 = _points[_faceIndices[offset+j-1]];
                 SrcType const& v2 = _points[_faceIndices[offset+j]];
                 normal += GfCross(v1-v0, v2-v0) * (_flip ? -1.0 : 1.0);

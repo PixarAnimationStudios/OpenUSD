@@ -26,8 +26,8 @@
 
 #include "primWrapper.h"
 
-#include <pxr/pxr.h>
-#include <pxr/usd/usdGeom/points.h>
+#include "pxr/pxr.h"
+#include "pxr/usd/usdGeom/points.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

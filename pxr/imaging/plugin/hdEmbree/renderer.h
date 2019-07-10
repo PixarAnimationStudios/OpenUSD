@@ -143,8 +143,8 @@ private:
                           GfVec4f const& clearColor);
     // Compute the depth at the given ray hit.
     bool _ComputeDepth(RTCRay const& rayHit, float *depth, bool ndc);
-    // Compute the prim ID at the given ray hit.
-    bool _ComputePrimId(RTCRay const& rayHit, int32_t *primId);
+    // Compute the given ID at the given ray hit.
+    bool _ComputeId(RTCRay const& rayHit, TfToken const& idType, int32_t *id);
     // Compute the normal at the given ray hit.
     bool _ComputeNormal(RTCRay const& rayHit, GfVec3f *normal, bool eye);
     // Compute a primvar at the given ray hit.

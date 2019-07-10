@@ -32,7 +32,7 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/usd/ndr/parserPlugin.h"
 #include "pxr/usd/sdr/declare.h"
-#include "OSL/oslquery.h"
+#include <OSL/oslquery.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -158,7 +158,8 @@ private:
     VtValue _getDefaultValue(
         const SdrOslParserPlugin::OslParameter& param,
         const std::string& oslType,
-        bool isArray
+        bool isArray,
+        bool isSdfAssetPath
     ) const;
 };
 

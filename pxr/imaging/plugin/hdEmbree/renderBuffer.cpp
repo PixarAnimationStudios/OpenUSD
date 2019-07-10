@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdEmbree/renderBuffer.h"
+#include "pxr/imaging/hdEmbree/renderParam.h"
 #include "pxr/base/gf/half.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -44,6 +45,33 @@ HdEmbreeRenderBuffer::~HdEmbreeRenderBuffer()
 {
 }
 
+/*virtual*/
+void
+HdEmbreeRenderBuffer::Sync(HdSceneDelegate *sceneDelegate,
+                           HdRenderParam *renderParam,
+                           HdDirtyBits *dirtyBits)
+{
+    if (*dirtyBits & DirtyDescription) {
+        // Embree has the background thread write directly into render buffers,
+        // so we need to stop the render thread before reallocating them.
+        static_cast<HdEmbreeRenderParam*>(renderParam)->AcquireSceneForEdit();
+    }
+
+    HdRenderBuffer::Sync(sceneDelegate, renderParam, dirtyBits);
+}
+
+/*virtual*/
+void
+HdEmbreeRenderBuffer::Finalize(HdRenderParam *renderParam)
+{
+    // Embree has the background thread write directly into render buffers,
+    // so we need to stop the render thread before removing them.
+    static_cast<HdEmbreeRenderParam*>(renderParam)->AcquireSceneForEdit();
+
+    HdRenderBuffer::Finalize(renderParam);
+}
+
+/*virtual*/
 void
 HdEmbreeRenderBuffer::_Deallocate()
 {
@@ -125,7 +153,7 @@ HdEmbreeRenderBuffer::Allocate(GfVec3i const& dimensions,
 
 template<typename T>
 static void _WriteSample(HdFormat format, uint8_t *dst,
-                         int valueComponents, T const* value)
+                         size_t valueComponents, T const* value)
 {
     HdFormat componentFormat = HdGetComponentFormat(format);
     size_t componentCount = HdGetComponentCount(format);
@@ -143,7 +171,7 @@ static void _WriteSample(HdFormat format, uint8_t *dst,
 
 template<typename T>
 static void _WriteOutput(HdFormat format, uint8_t *dst,
-                         int valueComponents, T const* value)
+                         size_t valueComponents, T const* value)
 {
     HdFormat componentFormat = HdGetComponentFormat(format);
     size_t componentCount = HdGetComponentCount(format);
@@ -170,7 +198,7 @@ static void _WriteOutput(HdFormat format, uint8_t *dst,
 
 void
 HdEmbreeRenderBuffer::Write(
-    GfVec3i const& pixel, int numComponents, float const* value)
+    GfVec3i const& pixel, size_t numComponents, float const* value)
 {
     size_t idx = pixel[1]*_width+pixel[0];
     if (_multiSampled) {
@@ -187,7 +215,7 @@ HdEmbreeRenderBuffer::Write(
 
 void
 HdEmbreeRenderBuffer::Write(
-    GfVec3i const& pixel, int numComponents, int const* value)
+    GfVec3i const& pixel, size_t numComponents, int const* value)
 {
     size_t idx = pixel[1]*_width+pixel[0];
     if (_multiSampled) {
@@ -203,7 +231,7 @@ HdEmbreeRenderBuffer::Write(
 }
 
 void
-HdEmbreeRenderBuffer::Clear(int numComponents, float const* value)
+HdEmbreeRenderBuffer::Clear(size_t numComponents, float const* value)
 {
     size_t formatSize = HdDataSizeOfFormat(_format);
     for (size_t i = 0; i < _width*_height; ++i) {
@@ -218,7 +246,7 @@ HdEmbreeRenderBuffer::Clear(int numComponents, float const* value)
 }
 
 void
-HdEmbreeRenderBuffer::Clear(int numComponents, int const* value)
+HdEmbreeRenderBuffer::Clear(size_t numComponents, int const* value)
 {
     size_t formatSize = HdDataSizeOfFormat(_format);
     for (size_t i = 0; i < _width*_height; ++i) {

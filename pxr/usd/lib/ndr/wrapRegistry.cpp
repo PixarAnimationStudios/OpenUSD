@@ -25,6 +25,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/ndr/discoveryPlugin.h"
 #include "pxr/usd/ndr/registry.h"
+#include "pxr/base/tf/pyAnnotatedBoolResult.h"
 #include "pxr/base/tf/pySingleton.h"
 
 #include <boost/python.hpp>
@@ -33,7 +34,36 @@
 
 using namespace boost::python;
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+// Declare 'private' helper function implemented in registry.cpp
+// for testing purposes.
+bool NdrRegistry_ValidateProperty(
+    const NdrNodeConstPtr& node,
+    const NdrPropertyConstPtr& property,
+    std::string* errorMessage);
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
 PXR_NAMESPACE_USING_DIRECTIVE
+
+struct Ndr_ValidatePropertyAnnotatedBool :
+    public TfPyAnnotatedBoolResult<std::string>
+{
+    Ndr_ValidatePropertyAnnotatedBool(
+        bool value, const std::string& message) :
+        TfPyAnnotatedBoolResult<std::string>(value, message) {}
+};
+
+static Ndr_ValidatePropertyAnnotatedBool
+_ValidateProperty(
+    const NdrNode& node,
+    const NdrProperty& property)
+{
+    std::string errorMessage;
+    bool isValid = NdrRegistry_ValidateProperty(&node, &property, &errorMessage);
+    return Ndr_ValidatePropertyAnnotatedBool(isValid, errorMessage);
+}
 
 static void
 _SetExtraDiscoveryPlugins(NdrRegistry& self, const list& pylist)
@@ -68,8 +98,6 @@ void wrapRegistry()
 {
     typedef NdrRegistry This;
     typedef TfWeakPtr<NdrRegistry> ThisPtr;
-
-    return_value_policy<copy_const_reference> copyRefPolicy;
 
     class_<std::vector<NdrDiscoveryPlugin*>>("DiscoveryPluginList")
         .def(vector_indexing_suite<std::vector<NdrDiscoveryPlugin*>>())
@@ -130,6 +158,14 @@ void wrapRegistry()
         .def("GetNodesByFamily", &This::GetNodesByFamily,
             (args("family") = TfToken(),
              args("filter") = NdrVersionFilterDefaultOnly))
-        .def("GetAllNodeSourceTypes", &This::GetAllNodeSourceTypes, copyRefPolicy)
+        .def("GetAllNodeSourceTypes", &This::GetAllNodeSourceTypes)
         ;
+
+    // We wrap this directly under Ndr rather than under the Registry class
+    // because it's not really part of the Registry, but we want to expose this
+    // for testing property correctness
+    def("_ValidateProperty", _ValidateProperty);
+
+    Ndr_ValidatePropertyAnnotatedBool::Wrap<
+        Ndr_ValidatePropertyAnnotatedBool>("_AnnotatedBool", "message");
 }

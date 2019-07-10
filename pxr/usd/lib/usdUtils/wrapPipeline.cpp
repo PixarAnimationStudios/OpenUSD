@@ -52,4 +52,8 @@ void wrapPipeline()
         "GetMaterialsScopeName",
         UsdUtilsGetMaterialsScopeName,
         arg("forceDefault")=false);
+    def(
+        "GetPrimaryCameraName",
+        UsdUtilsGetPrimaryCameraName,
+        arg("forceDefault")=false);
 }

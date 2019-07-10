@@ -144,39 +144,35 @@ _ConvertGeomAttr(
 
     const bool isMotionBackward = data.IsMotionBackward();
 
-    std::vector<float> times;
-    std::vector<VtArray<T_USD>> values;
-    for (double relSampleTime : motionSampleTimes){
+    std::map<float, VtArray<T_USD>> timeToSampleMap;
+    for (double relSampleTime : motionSampleTimes) {
         double time = currentTime + relSampleTime;
 
         // Eval attr.
         VtArray<T_USD> attrArray;
         usdAttr.Get(&attrArray, time);
-        
-        if (!values.empty()){
-            if (values.front().size() != attrArray.size()){
-                times.clear();
-                values.clear();
+
+        if (!timeToSampleMap.empty()) {
+            if (timeToSampleMap.begin()->second.size() != attrArray.size()) {
+                timeToSampleMap.clear();
                 varyingTopology = true;
                 break;
-	    }
+            }
         }
-        times.push_back(isMotionBackward ? PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime) : relSampleTime);
-        values.push_back(attrArray);
+        float correctedSampleTime =
+            isMotionBackward
+                ? PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime)
+                : relSampleTime;
+        timeToSampleMap.insert({correctedSampleTime, attrArray});
     }
 
     // Varying topology was found, build for the current frame only.
-    if (varyingTopology){
+    if (varyingTopology) {
         VtArray<T_USD> attrArray;
         usdAttr.Get(&attrArray, currentTime);
         return VtKatanaMapOrCopy<T_USD>(attrArray);
-    }
-    else{
-        if (isMotionBackward){
-            std::reverse(times.begin(), times.end());
-            std::reverse(values.begin(), values.end());
-        }
-        return VtKatanaMapOrCopy<T_USD>(times, values);
+    } else {
+        return VtKatanaMapOrCopy<T_USD>(timeToSampleMap);
     }
 }
 

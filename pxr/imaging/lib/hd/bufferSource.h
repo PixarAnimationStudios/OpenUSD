@@ -48,14 +48,11 @@ typedef boost::weak_ptr<HdBufferSource> HdBufferSourceWeakPtr;
 
 /// \class HdBufferSource
 ///
-/// A transient buffer of data that has not yet been committed to the GPU.
+/// A transient buffer of data that has not yet been committed.
 ///
 /// HdBufferSource is an abstract interface class, to be registered to the
 /// resource registry with the buffer array range that specifies the
-/// destination on the GPU memory.
-///
-/// The public interface provided is intended to be convenient for OpenGL API
-/// calls.
+/// destination resource.
 ///
 class HdBufferSource : public boost::noncopyable {
 public:
@@ -77,10 +74,9 @@ public:
 
     /// Prepare the access of GetData(). This process may include some
     /// computations (e.g. cpu smooth normals).
-    /// Important notes: Resolve itself doesn't have to be thread safe, but
-    /// it will be called in parallel from multiple threads
+    /// Note: Resolve may be called in parallel from multiple threads
     /// across buffer sources, so be careful if it uses static/shared
-    /// states (including GL calls) among objects.
+    /// states among objects.
     /// Returns true if it resolved. If the buffer source has to wait
     /// some results of other buffer sources, or the buffer source is
     /// being resolved by other threads, it returns false.

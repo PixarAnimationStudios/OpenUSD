@@ -309,7 +309,8 @@ HdRprim::_PopulateConstantPrimvars(HdSceneDelegate* delegate,
                                            VtValue(GfVec4f(
                                                localMin[0],
                                                localMin[1],
-                                               localMin[2], 0))));
+                                               localMin[2],
+                                               1.0f))));
         sources.push_back(sourceMin);
 
         GfVec3d const & localMax = drawItem->GetBounds().GetBox().GetMax();
@@ -318,7 +319,8 @@ HdRprim::_PopulateConstantPrimvars(HdSceneDelegate* delegate,
                                            VtValue(GfVec4f(
                                                localMax[0],
                                                localMax[1],
-                                               localMax[2], 0))));
+                                               localMax[2],
+                                               1.0f))));
         sources.push_back(sourceMax);
     }
 
@@ -387,14 +389,13 @@ HdRprim::_PopulateConstantPrimvars(HdSceneDelegate* delegate,
 VtMatrix4dArray
 HdRprim::_GetInstancerTransforms(HdSceneDelegate* delegate)
 {
-    SdfPath const& id = GetId();
     SdfPath instancerId = _instancerId;
     VtMatrix4dArray transforms;
 
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
 
     while (!instancerId.IsEmpty()) {
-        transforms.push_back(delegate->GetInstancerTransform(instancerId, id));
+        transforms.push_back(delegate->GetInstancerTransform(instancerId));
         HdInstancer *instancer = renderIndex.GetInstancer(instancerId);
         if (instancer) {
             instancerId = instancer->GetParentId();

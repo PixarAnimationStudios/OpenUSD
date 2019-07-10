@@ -38,18 +38,18 @@ def CamCamera "Test1"
 
     def MfScope "Body"
     {
-        custom Point[] points = [(2, 3, 4), (2, 3, 4), (2, 3, 4), (2, 3, 4)]
-        custom Point[] points2 = [(2, 3, 4), (2, 3, 4), (2, 3, 4), (2, 3, 4)]
-        custom Point[] points3 = [(2, 3, 4), (2, 3, 4), (2, 3, 4), (2, 3, 4)]
-        custom Point[] points4 = [(2, 3, 4), (2, 3, 4), (2, 3, 4), (2, 3, 4)]
+        custom point3d[] points = [(2, 3, 4), (2, 3, 4), (2, 3, 4), (2, 3, 4)]
+        custom point3d[] points2 = [(2, 3, 4), (2, 3, 4), (2, 3, 4), (2, 3, 4)]
+        custom point3d[] points3 = [(2, 3, 4), (2, 3, 4), (2, 3, 4), (2, 3, 4)]
+        custom point3d[] points4 = [(2, 3, 4), (2, 3, 4), (2, 3, 4), (2, 3, 4)]
     }
 
     def MfScope "Whatever"
     {
-        custom Point[] points = [(2, 3, 4), (2, 3, 4), (2, 3, 4), (2, 3, 4)]
-        custom Point[] points2 = [(2, 3, 4), (2, 3, 4), (2, 3, 4), (2, 3, 4)]
-        custom Point[] points3 = [(2, 3, 4), (2, 3, 4), (2, 3, 4), (2, 3, 4)]
-        custom Point[] points4 = [(2, 3, 4), (2, 3, 4), (2, 3, 4), (2, 3, 4)]
+        custom point3d[] points = [(2, 3, 4), (2, 3, 4), (2, 3, 4), (2, 3, 4)]
+        custom point3d[] points2 = [(2, 3, 4), (2, 3, 4), (2, 3, 4), (2, 3, 4)]
+        custom point3d[] points3 = [(2, 3, 4), (2, 3, 4), (2, 3, 4), (2, 3, 4)]
+        custom point3d[] points4 = [(2, 3, 4), (2, 3, 4), (2, 3, 4), (2, 3, 4)]
     }
 
     def MfScope "Leg"

@@ -21,6 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/base/arch/pragmas.h"
+
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_PLACEMENT_NEW  // because of pyFunction.h and boost::function
+
 #include <boost/python/def.hpp>
 #include <boost/python/tuple.hpp>
 
@@ -181,3 +186,5 @@ wrapCopyUtils()
         (arg("srcLayer"), arg("srcPath"), arg("dstLayer"), arg("dstPath"),
          arg("shouldCopyValueFn"), arg("shouldCopyChildrenFn")));
 }
+
+ARCH_PRAGMA_POP

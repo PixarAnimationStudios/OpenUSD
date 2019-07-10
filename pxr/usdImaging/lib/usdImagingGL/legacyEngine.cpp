@@ -40,6 +40,7 @@
 #include "pxr/usd/usd/primRange.h"
 
 // Geometry Schema
+#include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usdGeom/scope.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/mesh.h"
@@ -57,8 +58,6 @@
 
 #include "pxr/base/trace/trace.h"
 
-#include "pxr/imaging/hdx/intersector.h"
-
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/glContext.h"
@@ -66,6 +65,8 @@
 
 // Mesh Topology
 #include "pxr/imaging/hd/meshTopology.h"
+// Pick task, for DecodeIDRenderColor
+#include "pxr/imaging/hdx/pickTask.h"
 
 #include "pxr/base/gf/frustum.h"
 #include "pxr/base/gf/gamma.h"
@@ -89,12 +90,17 @@ typedef TfHashMap< int32_t, _HitData > _HitDataById;
 // single draw call, if the hardware supports it.
 #define _PRIM_RESTART_INDEX 0xffffffff 
 
-UsdImagingGLLegacyEngine::UsdImagingGLLegacyEngine(const SdfPathVector &excludedPrimPaths) :
+UsdImagingGLLegacyEngine::UsdImagingGLLegacyEngine(
+        const SdfPathVector &excludedPrimPaths) :
     _ctm(GfMatrix4d(1.0)),
     _vertCount(0),
     _lineVertCount(0),
     _attribBuffer(0),
-    _indexBuffer(0)
+    _indexBuffer(0),
+    _freeCamViewMatrix(1.0),
+    _freeCamProjMatrix(1.0),
+    _windowPolicy(CameraUtilFit),
+    _usingSceneCam(false)
 {
     // Build a TfHashSet of excluded prims for fast rejection.
     TF_FOR_ALL(pathIt, excludedPrimPaths) {
@@ -305,6 +311,8 @@ UsdImagingGLLegacyEngine::Render(const UsdPrim& root,
     _root = root;
     _params = params;
 
+    _ResolveCamera();
+
     glPushAttrib( GL_LIGHTING_BIT );
     glPushAttrib( GL_POLYGON_BIT );
     glPushAttrib( GL_CURRENT_BIT );
@@ -478,17 +486,39 @@ UsdImagingGLLegacyEngine::Render(const UsdPrim& root,
 }
 
 void
-UsdImagingGLLegacyEngine::SetCameraState(const GfMatrix4d& viewMatrix,
-                            const GfMatrix4d& projectionMatrix,
-                            const GfVec4d& viewport)
+UsdImagingGLLegacyEngine::SetFreeCameraMatrices(
+    const GfMatrix4d& viewMatrix,
+    const GfMatrix4d& projectionMatrix)
 {
-    glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);   
+    _freeCamViewMatrix = viewMatrix;
+    _freeCamProjMatrix = projectionMatrix;
+    _usingSceneCam = false;
+}
 
-    glMatrixMode(GL_PROJECTION);
-    glLoadMatrixd(projectionMatrix.GetArray());
+void
+UsdImagingGLLegacyEngine::SetCameraPath(const SdfPath& id)
+{
+    // Validate the path before setting to true.
+    _usingSceneCam = false;
+    if (id.IsEmpty()) {
+        return;
+    }
+    
+    if (_sceneCamId != id) {
+        _sceneCamId = id;
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadMatrixd(viewMatrix.GetArray());
+        // Update handle to camera prim.
+        UsdPrim prim = _root.GetStage()->GetPrimAtPath(_sceneCamId);
+        if (!TF_VERIFY(prim)) {
+            return;
+        }
+        if (!TF_VERIFY(prim.IsA<UsdGeomCamera>())) {
+            return;
+        }
+        _sceneCam = prim;
+    }
+
+    _usingSceneCam = true;
 }
 
 void
@@ -530,8 +560,9 @@ UsdImagingGLLegacyEngine::SetLightingState(GlfSimpleLightVector const &lights,
 }
 
 void 
-UsdImagingGLLegacyEngine::_OnObjectsChanged(UsdNotice::ObjectsChanged const& notice,
-                                       UsdStageWeakPtr const& sender)
+UsdImagingGLLegacyEngine::_OnObjectsChanged(
+    UsdNotice::ObjectsChanged const& notice,
+    UsdStageWeakPtr const& sender)
 {
     InvalidateBuffers(); 
 }
@@ -600,19 +631,23 @@ UsdImagingGLLegacyEngine_ComputeSmoothNormals(const VtVec3fArray &points,
     }
 
     if (foundOutOfBoundsIndex) {
-        TF_WARN("Out of bound indices detected while computing smooth normals.");
+        TF_WARN("Out of bound indices detected while computing smooth "
+                "normals.");
     }
 }
 
 static bool
-_ShouldCullDueToOpacity(const UsdGeomGprim *gprimSchema, const UsdTimeCode &frame)
+_ShouldCullDueToOpacity(
+    const UsdGeomGprim *gprimSchema,
+    const UsdTimeCode &frame)
 {
     // XXX:
     // Do not draw geometry below the opacity threshold, until we support
     // semi-transparent drawing.
     static const float OPACITY_THRESHOLD = 0.5f;
     VtArray<float> opacityArray;
-    gprimSchema->GetDisplayOpacityPrimvar().ComputeFlattened(&opacityArray, frame);
+    gprimSchema->GetDisplayOpacityPrimvar()
+                    .ComputeFlattened(&opacityArray, frame);
     // XXX display opacity can vary on the surface, just using the first value
     //     for testing (the opacity is likely constant anyway)
     return opacityArray.size() > 0 && opacityArray[0] < OPACITY_THRESHOLD;
@@ -715,6 +750,56 @@ UsdImagingGLLegacyEngine::_TraverseStage(const UsdPrim& root)
 }
 
 void
+UsdImagingGLLegacyEngine::_ResolveCamera()
+{
+    double targetAspect = 1.0;
+    if (_viewport[3] != 0.0) {
+        targetAspect = _viewport[2] / _viewport[3];
+    }
+
+    if (_usingSceneCam) {
+        // Validation is handled in SetCameraPath, so the verify below is legit.
+        UsdGeomCamera cam(_sceneCam);
+        TF_VERIFY(cam);
+
+        GfCamera gfCam = cam.GetCamera(_params.frame);
+        GfFrustum frustum = gfCam.GetFrustum();
+
+        GfMatrix4d adjustedProj = CameraUtilConformedWindow(
+                                    frustum.ComputeProjectionMatrix(),
+                                    _windowPolicy,
+                                    targetAspect);
+
+        _UpdateGLCameraFramingState(gfCam.GetTransform().GetInverse(),
+                                    adjustedProj, _viewport);
+
+    } else {
+        // GfMatrix4d adjustedProj = CameraUtilConformedWindow(
+        //                             _freeCamProjMatrix,
+        //                             _windowPolicy,
+        //                             targetAspect);
+
+        _UpdateGLCameraFramingState(_freeCamViewMatrix,
+                                    _freeCamProjMatrix, _viewport);
+    }
+}
+
+void
+UsdImagingGLLegacyEngine::_UpdateGLCameraFramingState(
+    const GfMatrix4d& viewMatrix,
+    const GfMatrix4d& projectionMatrix,
+    const GfVec4d& viewport)
+{
+    glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);   
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadMatrixd(projectionMatrix.GetArray());
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadMatrixd(viewMatrix.GetArray());
+}
+
+void
 UsdImagingGLLegacyEngine::_ProcessGprimColor(const UsdGeomGprim *gprimSchema,
                                  const UsdPrim &prim,
                                  bool *doubleSided,
@@ -724,14 +809,16 @@ UsdImagingGLLegacyEngine::_ProcessGprimColor(const UsdGeomGprim *gprimSchema,
     // Get DoubleSided Attribute
     gprimSchema->GetDoubleSidedAttr().Get(doubleSided);
 
-    // Get interpolation and color using UsdShadeMaterial
-    VtValue colorAsVt = UsdImagingGprimAdapter::GetColorAndOpacity(prim, 
-                                                _params.frame, interpolation);
-    VtVec4fArray temp = colorAsVt.Get<VtVec4fArray>();
-    GfVec4f rgba = temp[0];
-    GfVec3f rgb = GfVec3f(rgba[0], rgba[1], rgba[2]);
-
-    color->push_back(rgb);
+    // Get interpolation and color using UsdShadeMaterial'
+    VtValue colorAsVt;
+    if (UsdImagingGprimAdapter::GetColor(prim, 
+                _params.frame, interpolation, &colorAsVt)) {
+        VtVec3fArray temp = colorAsVt.Get<VtVec3fArray>();
+        color->push_back(temp[0]);
+    } else {
+        color->push_back(GfVec3f(0.5f, 0.5f, 0.5f));
+        *interpolation = UsdGeomTokens->constant;
+    }
 }
 
 void 
@@ -878,7 +965,8 @@ UsdImagingGLLegacyEngine::_HandleCurves(const UsdPrim& prim)
             // additional offset from the polygon vertex indices, which are
             // before the line vertex indices in the element array buffer.
             _numLineVerts.push_back(*itr);
-            _lineVertIdxOffsets.push_back((GLvoid*)(_lineVertCount * sizeof(GLuint)));
+            _lineVertIdxOffsets.push_back(
+                (GLvoid*)(_lineVertCount * sizeof(GLuint)));
         } else {
             // Append a primitive restart index at the end of each numVerts
             // index boundary.
@@ -905,11 +993,13 @@ UsdImagingGLLegacyEngine::_HandleCube(const UsdPrim &prim)
     _HandleXform(prim);
 
     // Update the transform with the size authored for the cube.
-    GfMatrix4d xf = UsdImagingCubeAdapter::GetMeshTransform(prim, _params.frame);
+    const GfMatrix4d xf =
+        UsdImagingCubeAdapter::GetMeshTransform(prim, _params.frame);
     _ctm = xf * _ctm;
 
     // Get points and topology from the mesh
-    VtValue ptsSource = UsdImagingCubeAdapter::GetMeshPoints(prim, _params.frame);
+    const VtValue ptsSource =
+        UsdImagingCubeAdapter::GetMeshPoints(prim, _params.frame);
     VtArray<GfVec3f> pts = ptsSource.Get< VtArray<GfVec3f> >();
 
     VtValue tpSource = UsdImagingCubeAdapter::GetMeshTopology();
@@ -933,11 +1023,13 @@ UsdImagingGLLegacyEngine::_HandleSphere(const UsdPrim &prim)
     _HandleXform(prim);
 
     // Update the transform with the size authored for the cube.
-    GfMatrix4d xf = UsdImagingSphereAdapter::GetMeshTransform(prim, _params.frame);
+    const GfMatrix4d xf =
+        UsdImagingSphereAdapter::GetMeshTransform(prim, _params.frame);
     _ctm = xf * _ctm;
 
     // Get points and topology from the mesh
-    VtValue ptsSource = UsdImagingSphereAdapter::GetMeshPoints(prim, _params.frame);
+    const VtValue ptsSource =
+        UsdImagingSphereAdapter::GetMeshPoints(prim, _params.frame);
     VtArray<GfVec3f> pts = ptsSource.Get< VtArray<GfVec3f> >();
 
     VtValue tpSource = UsdImagingSphereAdapter::GetMeshTopology();
@@ -960,8 +1052,14 @@ UsdImagingGLLegacyEngine::_HandleCone(const UsdPrim &prim)
     // Apply xforms for node-collapsed geometry.
     _HandleXform(prim);
 
+    // Update the transform with the size authored for the cube.
+    const GfMatrix4d xf =
+        UsdImagingConeAdapter::GetMeshTransform(prim, _params.frame);
+    _ctm = xf * _ctm;
+
     // Get points and topology from the mesh
-    VtValue ptsSource = UsdImagingConeAdapter::GetMeshPoints(prim, _params.frame);
+    const VtValue ptsSource =
+        UsdImagingConeAdapter::GetMeshPoints(prim, _params.frame);
     VtArray<GfVec3f> pts = ptsSource.Get< VtArray<GfVec3f> >();
 
     VtValue tpSource = UsdImagingConeAdapter::GetMeshTopology();
@@ -984,8 +1082,14 @@ UsdImagingGLLegacyEngine::_HandleCylinder(const UsdPrim &prim)
     // Apply xforms for node-collapsed geometry.
     _HandleXform(prim);
 
+    // Update the transform with the size authored for the cube.
+    const GfMatrix4d xf =
+        UsdImagingCylinderAdapter::GetMeshTransform(prim, _params.frame);
+    _ctm = xf * _ctm;
+
     // Get points and topology from the mesh
-    VtValue ptsSource = UsdImagingCylinderAdapter::GetMeshPoints(prim, _params.frame);
+    const VtValue ptsSource =
+        UsdImagingCylinderAdapter::GetMeshPoints(prim, _params.frame);
     VtArray<GfVec3f> pts = ptsSource.Get< VtArray<GfVec3f> >();
 
     VtValue tpSource = UsdImagingCylinderAdapter::GetMeshTopology();
@@ -1009,10 +1113,11 @@ UsdImagingGLLegacyEngine::_HandleCapsule(const UsdPrim &prim)
     _HandleXform(prim);
 
     // Get points and topology from the mesh
-    VtValue ptsSource = UsdImagingCapsuleAdapter::GetMeshPoints(prim, _params.frame);
+    const VtValue ptsSource =
+        UsdImagingCapsuleAdapter::GetMeshPoints(prim, _params.frame);
     VtArray<GfVec3f> pts = ptsSource.Get< VtArray<GfVec3f> >();
 
-    VtValue tpSource = UsdImagingCapsuleAdapter::GetMeshTopology();
+    const VtValue tpSource = UsdImagingCapsuleAdapter::GetMeshTopology();
     HdMeshTopology tp = tpSource.Get<HdMeshTopology>();
     VtIntArray nmvts = tp.GetFaceVertexCounts();
     VtIntArray vts = tp.GetFaceVertexIndices();
@@ -1039,9 +1144,11 @@ UsdImagingGLLegacyEngine::_HandleNurbsPatch(const UsdPrim &prim)
     _HandleXform(prim);
 
     // Get points and topology from the mesh
-    VtValue ptsSource = UsdImagingNurbsPatchAdapter::GetMeshPoints(prim, _params.frame);
+    const VtValue ptsSource =
+        UsdImagingNurbsPatchAdapter::GetMeshPoints(prim, _params.frame);
     VtArray<GfVec3f> pts = ptsSource.Get< VtArray<GfVec3f> >();
-    VtValue tpSource = UsdImagingNurbsPatchAdapter::GetMeshTopology(prim, _params.frame);
+    const VtValue tpSource =
+        UsdImagingNurbsPatchAdapter::GetMeshTopology(prim, _params.frame);
     HdMeshTopology tp = tpSource.Get<HdMeshTopology>();
     VtIntArray nmvts = tp.GetFaceVertexCounts();
     VtIntArray vts = tp.GetFaceVertexIndices();
@@ -1061,7 +1168,8 @@ UsdImagingGLLegacyEngine::_RenderPrimitive(const UsdPrim &prim,
     VtArray<GfVec3f> color;
     TfToken colorInterpolation = UsdGeomTokens->constant;
 
-    _ProcessGprimColor(gprimSchema, prim, &doubleSided, &color, &colorInterpolation);
+    _ProcessGprimColor(
+        gprimSchema, prim, &doubleSided, &color, &colorInterpolation);
     if (color.size() < 1) {
         // set default
         color = VtArray<GfVec3f>(1);
@@ -1131,9 +1239,10 @@ UsdImagingGLLegacyEngine::_RenderPrimitive(const UsdPrim &prim,
     // them have authored opinions.
 
     // If the user is using FLAT SHADING it will still use interpolated normals
-    // which means that OpenGL will pick one normal (provoking vertex) out of the 
-    // normals array.
-    UsdImagingGLLegacyEngine_ComputeSmoothNormals(pts, nmvts, vts, true /*ccw*/, &normals);
+    // which means that OpenGL will pick one normal (provoking vertex) out of
+    // the normals array.
+    UsdImagingGLLegacyEngine_ComputeSmoothNormals(
+        pts, nmvts, vts, true /*ccw*/, &normals);
 
     TF_FOR_ALL(itr, normals) {
         _normals.push_back((*itr)[0]);
@@ -1175,7 +1284,8 @@ UsdImagingGLLegacyEngine::_RenderPrimitive(const UsdPrim &prim,
         if (!_SupportsPrimitiveRestartIndex()) {
             int indexCount = _verts.size();
             for (int i=nmvts.size()-1; i>=0; --i) {
-                _vertIdxOffsets.push_back((GLvoid*)(indexCount * sizeof(GLuint)));
+                _vertIdxOffsets.push_back(
+                    (GLvoid*)(indexCount * sizeof(GLuint)));
                 _numVerts.push_back(nmvts[i]);
                 indexCount += nmvts[i];
             }
@@ -1300,9 +1410,7 @@ UsdImagingGLLegacyEngine::TestIntersection(
     // Setup the modelview matrix
     const GfMatrix4d modelViewMatrix = worldToLocalSpace * viewMatrix;
 
-    // Set up camera matrices and viewport. At some point in the future,
-    // this may be handled by Hydra itself since we are calling SetCameraState
-    // with all of this information so we can support culling
+    // Set up camera matrices and viewport for picking.
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadMatrixd(projectionMatrix.GetArray());
@@ -1312,8 +1420,6 @@ UsdImagingGLLegacyEngine::TestIntersection(
     glLoadMatrixd(modelViewMatrix.GetArray());
    
     glViewport(0, 0, width, height);
-
-    SetCameraState(modelViewMatrix, projectionMatrix, GfVec4d(0,0,width, height) );
 
     GLF_POST_PENDING_GL_ERRORS();
     
@@ -1393,13 +1499,13 @@ UsdImagingGLLegacyEngine::TestIntersection(
             int idIndex = zMinIndex*4;
 
             *outHitPrimPath = GetRprimPathFromPrimId(
-                    HdxIntersector::DecodeIDRenderColor(&primId[idIndex]));
+                    HdxPickTask::DecodeIDRenderColor(&primId[idIndex]));
             if (outHitInstanceIndex) {
-                *outHitInstanceIndex = HdxIntersector::DecodeIDRenderColor(
+                *outHitInstanceIndex = HdxPickTask::DecodeIDRenderColor(
                         &instanceId[idIndex]);
             }
             if (outHitElementIndex) {
-                *outHitElementIndex = HdxIntersector::DecodeIDRenderColor(
+                *outHitElementIndex = HdxPickTask::DecodeIDRenderColor(
                         &elementId[idIndex]);
             }
 

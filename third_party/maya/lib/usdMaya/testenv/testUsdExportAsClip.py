@@ -118,7 +118,7 @@ class testUsdExportAsClip(unittest.TestCase):
 
         stitchedPath = os.path.abspath('result.usda')
         stitchedLayer = Sdf.Layer.CreateNew(stitchedPath)
-        UsdUtils.StitchClips(stitchedLayer, clipFiles, '/world', 1, 20, 'default')
+        self.assertTrue(UsdUtils.StitchClips(stitchedLayer, clipFiles, '/world', 1, 20, 'default'))
 
         # export a non clip version for comparison
         canonicalUsdFile = os.path.abspath('canonical.usda')

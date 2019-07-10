@@ -57,9 +57,9 @@ void wrapUsdSkelTopology()
     using This = UsdSkelTopology;
 
     class_<This>("Topology", no_init)
-        .def(init<SdfPathVector>())
+        .def(init<const SdfPathVector&>())
+        .def(init<const VtTokenArray&>())
         .def(init<VtIntArray>())
-        .def(init<VtTokenArray>())
 
         .def("GetParent", &This::GetParent)
 
@@ -70,7 +70,7 @@ void wrapUsdSkelTopology()
 
         .def("GetNumJoints", &This::GetNumJoints)
 
-        .def("__len__", &This::GetNumJoints)
+        .def("__len__", &This::size)
 
         .def("Validate", &_Validate)
         ;

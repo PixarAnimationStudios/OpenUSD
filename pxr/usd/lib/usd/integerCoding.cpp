@@ -57,9 +57,9 @@ codes to understand how to interpret this variable length data.
 
 Given a list of integers, say:
 
-input = [123, 124, 125, 100125, 100125, 100126, 10026]
+input = [123, 124, 125, 100125, 100125, 100126, 100126]
 
-we encode as follows.  First, we transform the list to be the list of
+We encode as follows.  First, we transform the list to be the list of
 differences to the previous integer, or the integer itself for the first element
 in the list (this can be considered a difference to 0) to get:
 
@@ -213,7 +213,7 @@ void _EncodeNHelper(
     auto getCode = [commonValue](SInt x) {
         std::numeric_limits<SmallInt> smallLimit;
         std::numeric_limits<MediumInt> mediumLimit;
-        if (x == commonValue) { return Common; }
+        if (x == _Signed(commonValue)) { return Common; }
         if (x >= smallLimit.min() && x <= smallLimit.max()) { return Small; }
         if (x >= mediumLimit.min() && x <= mediumLimit.max()) { return Medium; }
         return Large;
@@ -290,23 +290,25 @@ _EncodeIntegers(Int const *begin, size_t numInts, char *output)
     if (numInts == 0)
         return 0;
 
-    // First find the most common element.
-    std::unordered_map<SInt, size_t> counts;
-    SInt prevVal = 0;
-    for (Int const *cur = begin, *end = begin + numInts;
-         cur != end; ++cur) {
-        SInt val = _Signed(*cur) - prevVal;
-        ++counts[val];
-        prevVal = _Signed(*cur);
-    }
-    SInt commonValue=0;
+    // First find the most common element value.
+    SInt commonValue = 0;
     {
-        size_t commonCount=0;
-        for (auto const &p: counts) {
-            if (p.second > commonCount) {
-                commonCount = p.second;
-                commonValue = p.first;
+        size_t commonCount = 0;
+        std::unordered_map<SInt, size_t> counts;
+        SInt prevVal = 0;
+        for (Int const *cur = begin, *end = begin + numInts;
+             cur != end; ++cur) {
+            SInt val = _Signed(*cur) - prevVal;
+            const size_t count = ++counts[val];
+            if (count > commonCount) {
+                commonValue = val;
+                commonCount = count;
+            } else if (count == commonCount && val > commonValue) {
+                // Take the largest common value in case of a tie -- this gives
+                // the biggest potential savings in the encoded stream.
+                commonValue = val;
             }
+            prevVal = _Signed(*cur);
         }
     }
 
@@ -318,7 +320,7 @@ _EncodeIntegers(Int const *begin, size_t numInts, char *output)
     char *vintsOut = p + (numInts * 2 + 7) / 8;
 
     Int const *cur = begin;
-    prevVal = 0;
+    SInt prevVal = 0;
     while (numInts >= 4) {
         _EncodeNHelper<4>(cur, commonValue, prevVal, codesOut, vintsOut);
         numInts -= 4;

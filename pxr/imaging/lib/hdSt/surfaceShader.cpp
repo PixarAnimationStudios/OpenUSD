@@ -46,6 +46,7 @@ HdStSurfaceShader::HdStSurfaceShader()
  , _paramSpec()
  , _paramArray()
  , _textureDescriptors()
+ , _materialTag()
 {
 }
 
@@ -214,6 +215,8 @@ HdStSurfaceShader::ComputeHash() const
         boost::hash_combine(hash, texDesc.type);
     }
 
+    boost::hash_combine(hash, _materialTag.Hash());
+
     return hash;
 }
 
@@ -273,6 +276,18 @@ HdStSurfaceShader::SetBufferSources(HdBufferSourceVector &bufferSources,
             resourceRegistry->AddSources(_paramArray, bufferSources);
         }
     }
+}
+
+TfToken
+HdStSurfaceShader::GetMaterialTag() const
+{
+    return _materialTag;
+}
+
+void
+HdStSurfaceShader::SetMaterialTag(TfToken const &tag)
+{
+    _materialTag = tag;
 }
 
 /// If the prim is based on asset, reload that asset.

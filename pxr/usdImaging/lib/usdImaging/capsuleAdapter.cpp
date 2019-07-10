@@ -24,14 +24,14 @@
 #include "pxr/usdImaging/usdImaging/capsuleAdapter.h"
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
+#include "pxr/usdImaging/usdImaging/implicitSurfaceMeshUtils.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/mesh.h"
+#include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
-
-#include "pxr/imaging/pxOsd/tokens.h"
 
 #include "pxr/usd/usdGeom/capsule.h"
 #include "pxr/usd/usdGeom/xformCache.h"
@@ -67,7 +67,7 @@ UsdImagingCapsuleAdapter::Populate(UsdPrim const& prim,
 
 {
     return _AddRprim(HdPrimTypeTokens->mesh,
-                     prim, index, GetMaterialId(prim), instancerContext);
+                     prim, index, GetMaterialUsdPath(prim), instancerContext);
 }
 
 void 
@@ -83,18 +83,28 @@ UsdImagingCapsuleAdapter::TrackVariability(UsdPrim const& prim,
     // has been carefully pre-populated to avoid mutating the underlying
     // container during update.
 
-    if (!_IsVarying(prim,
-                       UsdGeomTokens->radius,
-                       HdChangeTracker::DirtyPoints,
-                       UsdImagingTokens->usdVaryingPrimvar,
-                       timeVaryingBits,
-                       /*isInherited*/false)) {
-        _IsVarying(prim,
-                   UsdGeomTokens->height,
+    // IMPORTANT: Calling _IsVarying will clear the specified bit if the given
+    // attribute is _not_ varying.  Since we have multiple attributes (and the
+    // base adapter invocation) that might result in the bit being set, we need
+    // to be careful not to reset it.  Translation: only check _IsVarying for a
+    // given cause IFF the bit wasn't already set by a previous invocation.
+    if ((*timeVaryingBits & HdChangeTracker::DirtyPoints) == 0) {
+        _IsVarying(prim, UsdGeomTokens->height,
                    HdChangeTracker::DirtyPoints,
                    UsdImagingTokens->usdVaryingPrimvar,
-                   timeVaryingBits,
-                   /*isInherited*/false);
+                   timeVaryingBits, /*inherited*/false);
+    }
+    if ((*timeVaryingBits & HdChangeTracker::DirtyPoints) == 0) {
+        _IsVarying(prim, UsdGeomTokens->radius,
+                   HdChangeTracker::DirtyPoints,
+                   UsdImagingTokens->usdVaryingPrimvar,
+                   timeVaryingBits, /*inherited*/false);
+    }
+    if ((*timeVaryingBits & HdChangeTracker::DirtyPoints) == 0) {
+        _IsVarying(prim, UsdGeomTokens->axis,
+                   HdChangeTracker::DirtyPoints,
+                   UsdImagingTokens->usdVaryingPrimvar,
+                   timeVaryingBits, /*inherited*/false);
     }
 }
 
@@ -114,14 +124,7 @@ UsdImagingCapsuleAdapter::UpdateForTime(UsdPrim const& prim,
     if (requestedBits & HdChangeTracker::DirtyTopology) {
         valueCache->GetTopology(cachePath) = GetMeshTopology();
     }
-
-    if (_IsRefined(cachePath)) {
-        if (requestedBits & HdChangeTracker::DirtySubdivTags) {
-            valueCache->GetSubdivTags(cachePath);
-        }
-    }
 }
-
 
 /*virtual*/
 VtValue
@@ -133,176 +136,33 @@ UsdImagingCapsuleAdapter::GetPoints(UsdPrim const& prim,
     return GetMeshPoints(prim, time);   
 }
 
-// -------------------------------------------------------------------------- //
-
-// slices are segments around the mesh
-static const int _slices = 10;
-
-// stacks are segments along the spine axis
-static const int _stacks = 1;
-
-// capsules have additional stacks along the spine for each capping hemisphere
-static const int _hemisphereStacks = 4;
-
-static VtVec3fArray
-_GenerateCapsuleMeshPoints(float radius, float height, TfToken const & axis)
-{
-    // choose basis vectors aligned with the spine axis
-    GfVec3f u, v, spine;
-    if (axis == UsdGeomTokens->x) {
-        u = GfVec3f::YAxis();
-        v = GfVec3f::ZAxis();
-        spine = GfVec3f::XAxis();
-    } else if (axis == UsdGeomTokens->y) {
-        u = GfVec3f::ZAxis();
-        v = GfVec3f::XAxis();
-        spine = GfVec3f::YAxis();
-    } else { // (axis == UsdGeomTokens->z)
-        u = GfVec3f::XAxis();
-        v = GfVec3f::YAxis();
-        spine = GfVec3f::ZAxis();
-    }
-
-    // compute a ring of points with unit radius in the uv plane
-    std::vector<GfVec3f> ring(_slices);
-    for (int i=0; i<_slices; ++i) {
-        float a = float(2 * M_PI * i) / _slices;
-        ring[i] = u * cosf(a) + v * sinf(a);
-    }
-
-    int numPoints = _slices * (_stacks + 1)                   // cylinder
-                  + 2 * _slices * (_hemisphereStacks-1)       // hemispheres
-                  + 2;                                        // end points
-
-    // populate points
-    VtVec3fArray pointsArray(numPoints);
-    GfVec3f * p = pointsArray.data();
-
-    // base hemisphere
-    *p++ = spine * (-height/2-radius);
-    for (int i=0; i<_hemisphereStacks-1; ++i) {
-        float a = float(M_PI / 2) * (1.0f - float(i+1) / _hemisphereStacks);
-        float r = radius * cosf(a);
-        float w = radius * sinf(a);
-
-        for (int j=0; j<_slices; ++j) {
-            *p++ = r * ring[j] + spine * (-height/2-w);
-        }
-    }
-
-    // middle
-    for (int i=0; i<=_stacks; ++i) {
-        float t = float(i) / _stacks;
-        float w = height * (t - 0.5f);
-
-        for (int j=0; j<_slices; ++j) {
-            *p++ = radius * ring[j] + spine * w;
-        }
-    }
-
-    // top hemisphere
-    for (int i=0; i<_hemisphereStacks-1; ++i) {
-        float a = float(M_PI / 2) * (float(i+1) / _hemisphereStacks);
-        float r = radius * cosf(a);
-        float w = radius * sinf(a);
-
-        for (int j=0; j<_slices; ++j) {
-            *p++ = r *  ring[j] + spine * (height/2+w);
-        }
-    }
-    *p++ = spine * (height/2.0f+radius);
-
-    TF_VERIFY(p - pointsArray.data() == numPoints);
-
-    return pointsArray;
-}
-
 /*static*/
 VtValue
 UsdImagingCapsuleAdapter::GetMeshPoints(UsdPrim const& prim, 
                                         UsdTimeCode time)
 {
+    // We can't use the trick of constant points and varying transform with this
+    // primitive type (that we use for other implicit surfaces), because any
+    // nonuniform scaling will distort the hemispherical end caps.  So just
+    // generate points for the attribute values as needed.
+
     UsdGeomCapsule capsule(prim);
-    double radius = 0.5;
     double height = 1.0;
+    double radius = 0.5;
     TfToken axis = UsdGeomTokens->z;
-    TF_VERIFY(capsule.GetRadiusAttr().Get(&radius, time));
     TF_VERIFY(capsule.GetHeightAttr().Get(&height, time));
+    TF_VERIFY(capsule.GetRadiusAttr().Get(&radius, time));
     TF_VERIFY(capsule.GetAxisAttr().Get(&axis, time));
 
-    // We can't express varying radius and height via a non-uniform
-    // scaling transformation and maintain spherical end caps.
-    return VtValue(_GenerateCapsuleMeshPoints(float(radius),
-                                              float(height),
-                                              axis));
-}
-
-static HdMeshTopology
-_GenerateCapsuleMeshTopology()
-{
-    int numCounts = _slices * (_stacks + 2 * _hemisphereStacks);
-    int numIndices = 4 * _slices * _stacks                   // cylinder quads
-                   + 4 * 2 * _slices * (_hemisphereStacks-1) // hemisphere quads
-                   + 3 * 2 * _slices;                        // end cap tris
-
-    VtIntArray countsArray(numCounts);
-    int * counts = countsArray.data();
-
-    VtIntArray indicesArray(numIndices);
-    int * indices = indicesArray.data();
-
-    // populate face counts and face indices
-    int face = 0, index = 0, p = 0;
-
-    // base hemisphere end cap triangles
-    int base = p++;
-    for (int i=0; i<_slices; ++i) {
-        counts[face++] = 3;
-        indices[index++] = p + (i+1)%_slices;
-        indices[index++] = p + i;
-        indices[index++] = base;
-    }
-
-    // middle and hemisphere quads
-    for (int i=0; i<_stacks+2*(_hemisphereStacks-1); ++i) {
-        for (int j=0; j<_slices; ++j) {
-            float x0 = 0;
-            float x1 = x0 + _slices;
-            float y0 = j;
-            float y1 = (j + 1) % _slices;
-            counts[face++] = 4;
-            indices[index++] = p + x0 + y0;
-            indices[index++] = p + x0 + y1;
-            indices[index++] = p + x1 + y1;
-            indices[index++] = p + x1 + y0;
-        }
-        p += _slices;
-    }
-
-    // top hemisphere end cap triangles
-    int top = p + _slices;
-    for (int i=0; i<_slices; ++i) {
-        counts[face++] = 3;
-        indices[index++] = p + i;
-        indices[index++] = p + (i+1)%_slices;
-        indices[index++] = top;
-    }
-
-    TF_VERIFY(face == numCounts && index == numIndices);
-
-    return HdMeshTopology(PxOsdOpenSubdivTokens->catmark,
-                          HdTokens->rightHanded,
-                          countsArray, indicesArray);
+    return VtValue(UsdImagingGenerateCapsuleMeshPoints(height, radius, axis));
 }
 
 /*static*/
 VtValue
 UsdImagingCapsuleAdapter::GetMeshTopology()
 {
-    // topology is identical for all capsules
-    static HdMeshTopology capsuleTopo = _GenerateCapsuleMeshTopology();
-
-    return VtValue(capsuleTopo);
+    // Topology is constant and identical for all capsules.
+    return VtValue(HdMeshTopology(UsdImagingGetCapsuleMeshTopology()));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

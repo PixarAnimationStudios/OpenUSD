@@ -44,6 +44,10 @@
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/base/gf/vec4h.h"
 
+#include <unordered_map>
+#include <typeinfo>
+#include <typeindex>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfEnum)
@@ -103,92 +107,113 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(HdFormatInt32Vec4);
 }
 
+
+template <class T>
+static void const *_GetArrayData(VtValue const &v) {
+    return v.UncheckedGet<VtArray<T>>().cdata();
+}
+template <class T>
+static void const *_GetSingleData(VtValue const &v) {
+    return &v.UncheckedGet<T>();
+}
+using GetDataFunc = void const *(*)(VtValue const &);
+using ValueDataGetterMap = std::unordered_map<std::type_index, GetDataFunc>;
+static inline ValueDataGetterMap _MakeValueDataGetterMap() {
+#define ELEM(T)                                          \
+    { typeid(T), &_GetSingleData<T> },                   \
+    { typeid(VtArray<T>), &_GetArrayData<T> }
+
+    return ValueDataGetterMap {
+        ELEM(GfHalf),
+        ELEM(GfMatrix3d),
+        ELEM(GfMatrix3f),
+        ELEM(GfMatrix4d),
+        ELEM(GfMatrix4f),
+        ELEM(GfVec2d),
+        ELEM(GfVec2f),
+        ELEM(GfVec2h),
+        ELEM(GfVec2i),
+        ELEM(GfVec3d),
+        ELEM(GfVec3f),
+        ELEM(GfVec3h),
+        ELEM(GfVec3i),
+        ELEM(GfVec4d),
+        ELEM(GfVec4f),
+        ELEM(GfVec4h),
+        ELEM(GfVec4i),
+        ELEM(HdVec4f_2_10_10_10_REV),
+        ELEM(bool),
+        ELEM(char),
+        ELEM(double),
+        ELEM(float),
+        ELEM(int16_t),
+        ELEM(int32_t),
+        ELEM(uint16_t),
+        ELEM(uint32_t),
+        ELEM(unsigned char),
+    };
+#undef ELEM
+}        
+
 const void* HdGetValueData(const VtValue &value)
 {
-#define TRY(T) \
-    if (value.IsHolding<T>()) { \
-        return &value.UncheckedGet<T>(); \
-    } \
-    if (value.IsHolding<VtArray<T>>()) { \
-        return value.UncheckedGet<VtArray<T>>().cdata(); \
+    static ValueDataGetterMap const getterMap = _MakeValueDataGetterMap();
+    auto const iter = getterMap.find(value.GetTypeid());
+    if (ARCH_UNLIKELY(iter == getterMap.end())) {
+        return nullptr;
     }
+    return iter->second(value);
+}
 
-    // Cases are roughly ordered by assumed frequency.
-    TRY(float);
-    TRY(GfVec2f);
-    TRY(GfVec3f);
-    TRY(GfVec4f);
-    TRY(HdVec4f_2_10_10_10_REV);
-    TRY(GfMatrix3f);
-    TRY(GfMatrix4f);
-    TRY(double);
-    TRY(GfVec2d);
-    TRY(GfVec3d);
-    TRY(GfVec4d);
-    TRY(GfMatrix3d);
-    TRY(GfMatrix4d);
-    TRY(bool);
-    TRY(char);
-    TRY(unsigned char);
-    TRY(int16_t);
-    TRY(uint16_t);
-    TRY(uint32_t);
-    TRY(int32_t);
-    TRY(GfVec2i);
-    TRY(GfVec3i);
-    TRY(GfVec4i);
-    TRY(GfHalf);
-    TRY(GfVec2h);
-    TRY(GfVec3h);
-    TRY(GfVec4h);
-
-#undef TRY
-
-    return nullptr;
+using TupleTypeMap = std::unordered_map<std::type_index, HdType>;
+static inline TupleTypeMap _MakeTupleTypeMap() {
+    return TupleTypeMap {
+        { typeid(GfHalf), HdTypeHalfFloat },
+        { typeid(GfMatrix3d), HdTypeDoubleMat3 },
+        { typeid(GfMatrix3f), HdTypeFloatMat3 },
+        { typeid(GfMatrix4d), HdTypeDoubleMat4 },
+        { typeid(GfMatrix4f), HdTypeFloatMat4 },
+        { typeid(GfVec2d), HdTypeDoubleVec2 },
+        { typeid(GfVec2f), HdTypeFloatVec2 },
+        { typeid(GfVec2h), HdTypeHalfFloatVec2 },
+        { typeid(GfVec2i), HdTypeInt32Vec2 },
+        { typeid(GfVec3d), HdTypeDoubleVec3 },
+        { typeid(GfVec3f), HdTypeFloatVec3 },
+        { typeid(GfVec3h), HdTypeHalfFloatVec3 },
+        { typeid(GfVec3i), HdTypeInt32Vec3 },
+        { typeid(GfVec4d), HdTypeDoubleVec4 },
+        { typeid(GfVec4f), HdTypeFloatVec4 },
+        { typeid(GfVec4h), HdTypeHalfFloatVec4 },
+        { typeid(GfVec4i), HdTypeInt32Vec4 },
+        { typeid(HdVec4f_2_10_10_10_REV), HdTypeInt32_2_10_10_10_REV },
+        { typeid(bool), HdTypeBool },
+        { typeid(char), HdTypeInt8 },
+        { typeid(double), HdTypeDouble },
+        { typeid(float), HdTypeFloat },
+        { typeid(int16_t), HdTypeInt16 },
+        { typeid(int32_t), HdTypeInt32 },
+        { typeid(uint16_t), HdTypeUInt16 },
+        { typeid(uint32_t), HdTypeUInt32 },
+        { typeid(unsigned char), HdTypeUInt8 },
+    };
 }
 
 HdTupleType HdGetValueTupleType(const VtValue &value)
 {
-#define TRY(T, V) \
-    if (value.IsHolding<VtArray<T>>()) { \
-        return HdTupleType { V, value.GetArraySize() }; \
-    } \
-    if (value.IsHolding<T>()) { \
-        return HdTupleType { V, 1 }; \
+    static const TupleTypeMap tupleTypeMap = _MakeTupleTypeMap();
+    
+    if (value.IsArrayValued()) {
+        auto const iter = tupleTypeMap.find(value.GetElementTypeid());
+        if (ARCH_UNLIKELY(iter == tupleTypeMap.end())) {
+            return HdTupleType { HdTypeInvalid, 0 };
+        }
+        return HdTupleType { iter->second, value.GetArraySize() };
     }
-
-    // Cases are roughly ordered by assumed frequency.
-    TRY(float, HdTypeFloat);
-    TRY(GfVec2f, HdTypeFloatVec2);
-    TRY(GfVec3f, HdTypeFloatVec3);
-    TRY(GfVec4f, HdTypeFloatVec4);
-    TRY(HdVec4f_2_10_10_10_REV, HdTypeInt32_2_10_10_10_REV);
-    TRY(GfMatrix3f, HdTypeFloatMat3);
-    TRY(GfMatrix4f, HdTypeFloatMat4);
-    TRY(double, HdTypeDouble);
-    TRY(GfVec2d, HdTypeDoubleVec2);
-    TRY(GfVec3d, HdTypeDoubleVec3);
-    TRY(GfVec4d, HdTypeDoubleVec4);
-    TRY(GfMatrix3d, HdTypeDoubleMat3);
-    TRY(GfMatrix4d, HdTypeDoubleMat4);
-    TRY(bool, HdTypeBool);
-    TRY(char, HdTypeInt8);
-    TRY(unsigned char, HdTypeUInt8);
-    TRY(int16_t, HdTypeInt16);
-    TRY(uint16_t, HdTypeUInt16);
-    TRY(uint32_t, HdTypeUInt32);
-    TRY(int32_t, HdTypeInt32);
-    TRY(GfVec2i, HdTypeInt32Vec2);
-    TRY(GfVec3i, HdTypeInt32Vec3);
-    TRY(GfVec4i, HdTypeInt32Vec4);
-    TRY(GfHalf, HdTypeHalfFloat);
-    TRY(GfVec2h, HdTypeHalfFloatVec2);
-    TRY(GfVec3h, HdTypeHalfFloatVec3);
-    TRY(GfVec4h, HdTypeHalfFloatVec4);
-
-#undef TRY
-
-    return HdTupleType { HdTypeInvalid, 0 };
+    auto const iter = tupleTypeMap.find(value.GetTypeid());
+    if (ARCH_UNLIKELY(iter == tupleTypeMap.end())) {
+        return HdTupleType { HdTypeInvalid, 0 };
+    }
+    return HdTupleType { iter->second, 1 };
 }
 
 HdType HdGetComponentType(HdType t)

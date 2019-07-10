@@ -22,87 +22,12 @@
 # language governing permissions and limitations under the Apache License.
 #
 from qt import QtCore, QtGui, QtWidgets
-import os, time, sys, platform
+import os, time, sys, platform, math
 from pxr import Ar, Tf, Sdf, Kind, Usd, UsdGeom, UsdShade
 from customAttributes import CustomAttribute
 from constantGroup import ConstantGroup
 
 DEBUG_CLIPPING = "USDVIEWQ_DEBUG_CLIPPING"
-
-class Complexities(ConstantGroup):
-    """The available complexity settings for Usdview."""
-
-    class _Complexity(object):
-        """Class which represents a level of mesh refinement complexity. Each level
-        has a string identifier, a display name, and a float complexity value.
-        """
-
-        def __init__(self, compId, name, value):
-            self._id = compId
-            self._name = name
-            self._value = value
-
-        @property
-        def id(self):
-            return self._id
-
-        @property
-        def name(self):
-            return self._name
-
-        @property
-        def value(self):
-            return self._value
-
-    LOW       = _Complexity("low",      "Low",       1.0)
-    MEDIUM    = _Complexity("medium",   "Medium",    1.1)
-    HIGH      = _Complexity("high",     "High",      1.2)
-    VERY_HIGH = _Complexity("veryhigh", "Very High", 1.3)
-
-    _ordered = (LOW, MEDIUM, HIGH, VERY_HIGH)
-
-    @classmethod
-    def ordered(cls):
-        """Get an tuple of all complexity levels in order."""
-        return Complexities._ordered
-
-    @classmethod
-    def fromId(cls, compId):
-        """Get a complexity from its identifier."""
-        matches = [comp for comp in Complexities if comp.id == compId]
-        if len(matches) == 0:
-            raise ValueError("No complexity with id '{}'".format(compId))
-        return matches[0]
-
-    @classmethod
-    def fromName(cls, name):
-        """Get a complexity from its display name."""
-        matches = [comp for comp in Complexities if comp.name == name]
-        if len(matches) == 0:
-            raise ValueError("No complexity with name '{}'".format(name))
-        return matches[0]
-
-    @classmethod
-    def next(cls, comp):
-        """Get the next highest level of complexity. If already at the highest
-        level, return it.
-        """
-        if comp not in Complexities:
-            raise ValueError("Invalid complexity: {}".format(comp))
-        nextIndex = min(
-            len(Complexities._ordered) - 1,
-            Complexities._ordered.index(comp) + 1)
-        return Complexities._ordered[nextIndex]
-
-    @classmethod
-    def prev(cls, comp):
-        """Get the next lowest level of complexity. If already at the lowest
-        level, return it.
-        """
-        if comp not in Complexities:
-            raise ValueError("Invalid complexity: {}".format(comp))
-        prevIndex = max(0, Complexities._ordered.index(comp) - 1)
-        return Complexities._ordered[prevIndex]
 
 class ClearColors(ConstantGroup):
     """Names of available background colors."""
@@ -298,6 +223,13 @@ def GetShortString(prop, frame):
     elif isinstance(prop, Sdf.RelationshipSpec):
         return str(prop.targetPathList)
 
+    # If there is no value opinion, we do not want to display anything,
+    # since python 'None' has a different meaning than usda-authored None,
+    # which is how we encode attribute value blocks (which evaluate to 
+    # Sdf.ValueBlock)
+    if val is None:
+        return ''
+    
     from scalarTypes import GetScalarTypeFromAttr
     scalarType, isArray = GetScalarTypeFromAttr(prop)
     result = ''
@@ -314,6 +246,18 @@ def GetShortString(prop, frame):
         result = str(val)
 
     return result[:500]
+
+# Return a string that reports size in metric units (units of 1000, not 1024).
+def ReportMetricSize(sizeInBytes):
+    if sizeInBytes == 0:
+       return "0 B"
+    sizeSuffixes = ("B", "KB", "MB", "GB", "TB", "PB", "EB")
+    i = int(math.floor(math.log(sizeInBytes, 1000)))
+    if i >= len(sizeSuffixes):
+        i = len(sizeSuffixes) - 1
+    p = math.pow(1000, i)
+    s = round(sizeInBytes / p, 2)
+    return "%s %s" % (s, sizeSuffixes[i])
 
 # Return attribute status at a certian frame (is it using the default, or the
 # fallback? Is it authored at this frame? etc.

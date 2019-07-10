@@ -27,7 +27,7 @@
 #include <SYS/SYS_Types.h>
 #include <UT/UT_Assert.h>
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 #include "pxr/base/vt/array.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

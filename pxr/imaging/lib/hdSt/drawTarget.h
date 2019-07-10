@@ -134,7 +134,7 @@ public:
 
     /// returns all HdStDrawTargets in the render index
     HDST_API
-    static void GetDrawTargets(HdSceneDelegate *sceneDelegate,
+    static void GetDrawTargets(HdRenderIndex* renderIndex,
                                HdStDrawTargetPtrConstVector *drawTargets);
 
 
@@ -144,7 +144,7 @@ private:
     bool                    _enabled;
     SdfPath                 _cameraId;
     GfVec2i                 _resolution;
-    HdRprimCollectionVector _collections;
+    HdRprimCollection       _collection;
 
     HdStDrawTargetRenderPassState _renderPassState;
     std::vector<HdTextureResourceSharedPtr> _colorTextureResources;

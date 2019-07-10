@@ -84,11 +84,17 @@ def _findDiffTools():
 
     # prefer USD_DIFF, then DIFF, else use the internal unified diff.
     diffCmd = (os.environ.get('USD_DIFF') or os.environ.get('DIFF'))
+    diffCmdArgs = list()
+    if diffCmd:
+        diffCmdList = diffCmd.split()
+        diffCmd = diffCmdList[0]
+        if diffCmdList[1:]:
+            diffCmdArgs = diffCmdList[1:]
     if diffCmd and not _findExe(diffCmd):
         _exit("Error: Failed to find diff tool %s." % (diffCmd, ),
               ERROR_EXIT_CODE)
 
-    return (usdcatCmd, diffCmd)
+    return (usdcatCmd, diffCmd, diffCmdArgs)
 
 def _getFileFormat(path):
     from pxr import Sdf, Ar
@@ -145,12 +151,12 @@ def _tryEdit(fileName, tempFileName, usdcatCmd, fileType, flattened):
     
     return _convertTo(tempFileName, fileName, usdcatCmd, flatten=None, fmt=fileType)
 
-def _runDiff(baseline, comparison, flatten, noeffect):
+def _runDiff(baseline, comparison, flatten, noeffect, brief):
     from pxr import Tf
 
     diffResult = 0
 
-    usdcatCmd, diffCmd = _findDiffTools()
+    usdcatCmd, diffCmd, diffCmdArgs = _findDiffTools()
     baselineFileType = _getFileFormat(baseline)
     comparisonFileType = _getFileFormat(comparison)
 
@@ -189,7 +195,10 @@ def _runDiff(baseline, comparison, flatten, noeffect):
 
         if diffCmd:
             # Run the external diff tool.
-            diffResult = call([diffCmd, tempBaseline.name, tempComparison.name])
+            if brief:
+                diffCmdArgs.append("--brief")
+            diffResult = call([diffCmd] + diffCmdArgs + [tempBaseline.name, tempComparison.name])
+
         else:
             # Read the files.
             with open(tempBaseline.name, "r") as f:
@@ -197,14 +206,17 @@ def _runDiff(baseline, comparison, flatten, noeffect):
             with open(tempComparison.name, "r") as f:
                 comparisonData = f.readlines()
 
-            # Generate unified diff and output if there are any differences.
-            diff = list(difflib.unified_diff(
-                baselineData, comparisonData,
-                tempBaseline.name, tempComparison.name, n=0))
-            if diff:
-                # Skip the file names.
-                for line in diff[2:]:
-                    print line,
+            if baselineData != comparisonData:
+                if brief:
+                    print "Files %s and %s differ" % (baseline, comparison)
+                else:
+                    # Generate unified diff and output if there are any differences.
+                    diff = list(difflib.unified_diff(
+                        baselineData, comparisonData,
+                        tempBaseline.name, tempComparison.name, n=0))
+                    # Skip the file names.
+                    for line in diff[2:]:
+                        print line,
                 diffResult = 1
 
         tempBaselineChanged = ( 
@@ -332,6 +344,8 @@ def main():
     parser.add_argument('-f', '--flatten', action='store_true',
                         help='Fully compose both layers as Usd Stages and '
                              'flatten into single layers.')
+    parser.add_argument('-q', '--brief', action='store_true',
+                        help='Do not return full results of diffs. Passes --brief to the diff command.')
 
     results = parser.parse_args()
     diffResult = NO_DIFF_FOUND_EXIT_CODE 
@@ -341,7 +355,7 @@ def main():
 
         for (baseline, comparison) in common:
             if _runDiff(baseline, comparison, 
-                        results.flatten, results.noeffect):
+                        results.flatten, results.noeffect, results.brief):
                 diffResult = DIFF_FOUND_EXIT_CODE
 
         mismatchMsg = 'No corresponding file found for %s, skipping.'

@@ -870,5 +870,16 @@ UsdGeomXformCommonAPI::SetScale(
     return _xformable.SetXformOpOrder(_xformOps, GetResetXformStack());
 }
 
+/* static */
+GfMatrix4d
+UsdGeomXformCommonAPI::GetRotationTransform(
+    const GfVec3f &rotation,
+    const UsdGeomXformCommonAPI::RotationOrder rotationOrder)
+{
+    const UsdGeomXformOp::Type rotateOpType =
+        _GetXformOpTypeForRotationOrder(rotationOrder);
+    return UsdGeomXformOp::GetOpTransform(rotateOpType, VtValue(rotation));
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

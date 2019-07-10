@@ -496,11 +496,6 @@ TF_MAKE_STATIC_DATA(_ValueFactoryMap, _valueFactories) {
 ValueFactory const &GetValueFactoryForMenvaName(std::string const &name,
                                                 bool *found)
 {
-    // XXX: This call is probably not needed anymore; constructing the
-    // schema doesn't affect the value factories we register here.
-    // I'm leaving this here for now to clean up in a separate change.
-    SdfSchema::GetInstance();
-
     _ValueFactoryMap::const_iterator it = _valueFactories->find(name);
     if (it != _valueFactories->end()) {
         *found = true;

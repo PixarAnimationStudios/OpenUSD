@@ -30,6 +30,7 @@
 #include "pxr/usd/sdf/listOpListEditor.h"
 #include "pxr/usd/sdf/payload.h"
 #include "pxr/usd/sdf/reference.h"
+#include "pxr/usd/sdf/vectorListEditor.h"
 
 #include "pxr/base/tf/registryManager.h"
 
@@ -128,6 +129,19 @@ SdfPayloadEditorProxy
 SdfGetPayloadEditorProxy(const SdfSpecHandle& o, const TfToken & n)
 {
     return SdfGetListEditorProxy<SdfPayloadEditorProxy>(o, n);
+}
+
+SdfNameOrderProxy
+SdfGetNameOrderProxy(const SdfSpecHandle& spec, const TfToken& orderField)
+{
+    if (!spec) {
+        return SdfNameOrderProxy(SdfListOpTypeOrdered);
+    }
+
+    boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> > editor(
+        new Sdf_VectorListEditor<SdfNameTokenKeyPolicy>(
+            spec, orderField, SdfListOpTypeOrdered));
+    return SdfNameOrderProxy(editor, SdfListOpTypeOrdered);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

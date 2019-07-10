@@ -365,13 +365,11 @@ _AddLayerStackSite(
         TF_DEBUG(PCP_NAMESPACE_EDIT)
             .Msg("  - final.  direct arc fixup\n");
         switch (node.GetArcType()) {
-        case PcpArcTypeLocalInherit:
-        case PcpArcTypeGlobalInherit:
+        case PcpArcTypeInherit:
             type = PcpNamespaceEdits::EditInherit;
             break;
 
-        case PcpArcTypeLocalSpecializes:
-        case PcpArcTypeGlobalSpecializes:
+        case PcpArcTypeSpecialize:
             type = PcpNamespaceEdits::EditSpecializes;
             break;
 
@@ -605,15 +603,16 @@ PcpComputeNamespaceEdits(
                 // nodes, since the code that handles direct inherits below
                 // needs to have the nodes where the inherits are introduced.
                 for (const SdfPath& descendentPrimPath : descendentPrimPaths) {
-                    // We were just told this prim index is a deependency
+                    // We were just told this prim index is a dependency
                     // so it certainly should exist.
                     const PcpPrimIndex *index =
                         primaryCache->FindPrimIndex(descendentPrimPath);
                     if (TF_VERIFY(index, "Reported descendent dependency "
                                   "lacks a prim index")) {
                         for (const PcpNodeRef &node:
-                             index->GetNodeRange(PcpRangeTypeLocalInherit)) {
+                             index->GetNodeRange(PcpRangeTypeInherit)) {
                             if (node.GetLayerStack() == primaryLayerStack &&
+                                !node.GetPath().IsRootPrimPath() &&
                                 !node.IsDueToAncestor()) {
                                 // Found an inherit using a descendant.
                                 descendantNodes.insert(

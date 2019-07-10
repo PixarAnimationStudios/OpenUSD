@@ -44,7 +44,6 @@ class PxOsdSubdivTags;
 class UsdImagingMeshAdapter : public UsdImagingGprimAdapter {
 public:
     typedef UsdImagingGprimAdapter BaseAdapter;
-    typedef PxOsdSubdivTags SubdivTags;
 
     UsdImagingMeshAdapter()
         : UsdImagingGprimAdapter()
@@ -101,6 +100,40 @@ public:
     virtual void MarkRefineLevelDirty(UsdPrim const& prim,
                                       SdfPath const& cachePath,
                                       UsdImagingIndexProxy* index) override;
+    USDIMAGING_API
+    virtual void MarkReprDirty(UsdPrim const& prim,
+                               SdfPath const& cachePath,
+                               UsdImagingIndexProxy* index) override;
+
+    USDIMAGING_API
+    virtual void MarkCullStyleDirty(UsdPrim const& prim,
+                                    SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index) override;
+
+    USDIMAGING_API
+    virtual void MarkRenderTagDirty(UsdPrim const& prim,
+                                    SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index) override;
+
+    USDIMAGING_API
+    virtual void MarkTransformDirty(UsdPrim const& prim,
+                                    SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index) override;
+
+    USDIMAGING_API
+    virtual void MarkVisibilityDirty(UsdPrim const& prim,
+                                     SdfPath const& cachePath,
+                                     UsdImagingIndexProxy* index) override;
+
+
+    // ---------------------------------------------------------------------- //
+    /// \name Data access
+    // ---------------------------------------------------------------------- //
+
+    USDIMAGING_API
+    virtual PxOsdSubdivTags GetSubdivTags(UsdPrim const& usdPrim,
+                                          SdfPath const& cachePath,
+                                          UsdTimeCode time) const override;
 
 protected:
     USDIMAGING_API
@@ -113,8 +146,6 @@ protected:
 private:
     void _GetMeshTopology(UsdPrim const& prim, VtValue* topoHolder, 
             UsdTimeCode time) const;
-    void _GetSubdivTags(UsdPrim const& prim, SubdivTags* tags, 
-            UsdTimeCode time) const ;
 };
 
 

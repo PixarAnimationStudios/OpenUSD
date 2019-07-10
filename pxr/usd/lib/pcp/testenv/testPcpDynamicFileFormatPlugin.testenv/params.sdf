@@ -1,0 +1,18 @@
+#sdf 1.4.32
+
+def "Params" (
+    TestPcp_depth = 4
+    TestPcp_num = 3
+    TestPcp_radius = 50.0
+    TestPcp_argDict = {
+        dictionary "1" = {
+            int TestPcp_depth = 3
+            int TestPcp_num = 4
+        }
+        dictionary "2" = {
+            double TestPcp_height = 5
+        }
+    }
+    )
+{
+}

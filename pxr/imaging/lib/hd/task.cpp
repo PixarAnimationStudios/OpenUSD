@@ -42,5 +42,30 @@ HdTask::~HdTask()
 {
 }
 
+const TfTokenVector &
+HdTask::GetRenderTags() const
+{
+    static TfTokenVector EMPTY_SET;
+
+    return EMPTY_SET;
+}
+
+/// Returns the minimal set of dirty bits to place in the
+/// change tracker for use in the first sync of this prim.
+/// Typically this would be all dirty bits.
+HdDirtyBits
+HdTask::GetInitialDirtyBitsMask() const
+{
+    return HdChangeTracker::DirtyParams     |
+           HdChangeTracker::DirtyCollection |
+           HdChangeTracker::DirtyRenderTags;
+}
+
+
+TfTokenVector HdTask::_GetTaskRenderTags(HdSceneDelegate* delegate)
+{
+    return delegate->GetTaskRenderTags(GetId());
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

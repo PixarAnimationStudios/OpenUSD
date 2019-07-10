@@ -58,7 +58,7 @@ public:
     void Draw(bool withGuides=false);
 
     /// Draw with external renderPass
-    void Draw(HdRenderPassSharedPtr const &renderPass);
+    void Draw(HdRenderPassSharedPtr const &renderPass, bool withGuides);
 
     /// Set camera to renderpass
     void SetCamera(GfMatrix4d const &modelViewMatrix,
@@ -69,7 +69,7 @@ public:
     void SetCullStyle(HdCullStyle cullStyle);
 
     /// Returns the renderpass
-    HdRenderPassSharedPtr const &GetRenderPass(bool withGuides=false);
+    HdRenderPassSharedPtr const &GetRenderPass();
 
     /// Returns the renderPassState
     HdRenderPassStateSharedPtr const &GetRenderPassState() const {
@@ -90,10 +90,10 @@ private:
     Hd_UnitTestNullRenderDelegate _renderDelegate;
     HdRenderIndex       *_renderIndex;
     HdUnitTestDelegate *_sceneDelegate;
-    HdReprSelector _reprSelector;
-    HdRenderPassSharedPtr _geomPass;
-    HdRenderPassSharedPtr _geomAndGuidePass;
+	SdfPath _cameraId;
+    HdRenderPassSharedPtr _renderPass;
     HdRenderPassStateSharedPtr _renderPassState;
+    HdRprimCollection          _collection;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

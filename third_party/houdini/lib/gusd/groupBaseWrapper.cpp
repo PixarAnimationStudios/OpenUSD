@@ -24,19 +24,17 @@
 #include "groupBaseWrapper.h"
 
 #include "context.h"
-#include "UT_Gf.h"
 #include "GU_PackedUSD.h"
-#include "USD_XformCache.h"
 #include "GU_USD.h"
+#include "USD_XformCache.h"
+#include "UT_Gf.h"
 
 #include "pxr/usd/usdGeom/boundable.h"
 
-#include <GT/GT_PrimInstance.h>
 #include <GT/GT_GEOPrimPacked.h>
-#include <GT/GT_Refine.h>
 #include <GT/GT_PrimCollect.h>
+#include <GT/GT_Refine.h>
 
-#include <boost/foreach.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

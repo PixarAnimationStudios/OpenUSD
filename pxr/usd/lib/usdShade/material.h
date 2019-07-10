@@ -35,7 +35,6 @@
 
 #include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/usdGeom/subset.h"
-#include "pxr/usd/usdGeom/faceSetAPI.h"
 #include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/tokens.h"
 
@@ -191,7 +190,7 @@ protected:
     ///
     /// \sa UsdSchemaType
     USDSHADE_API
-    virtual UsdSchemaType _GetSchemaType() const;
+    UsdSchemaType _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -203,7 +202,7 @@ private:
 
     // override SchemaBase virtuals.
     USDSHADE_API
-    virtual const TfType &_GetTfType() const;
+    const TfType &_GetTfType() const override;
 
 public:
     // --------------------------------------------------------------------- //

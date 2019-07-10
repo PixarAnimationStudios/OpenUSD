@@ -41,7 +41,7 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
-#include "pxr/imaging/glf/glslfx.h"
+#include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/base/tf/getenv.h"
 
@@ -213,7 +213,8 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
     HdStShaderCodeSharedPtr overrideShader = state->GetOverrideShader();
     HdStShaderCodeSharedPtr surfaceShader  = overrideShader ? overrideShader
                                        : firstDrawItem->GetMaterialShader();
-    boost::hash_combine(shaderHash, surfaceShader->ComputeHash());
+    size_t surfaceHash = surfaceShader ? surfaceShader->ComputeHash() : 0;
+    boost::hash_combine(shaderHash, surfaceHash);
     bool shaderChanged = (_shaderHash != shaderHash);
     
     // Set shaders (lighting and renderpass) to the program. 
@@ -248,11 +249,11 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
             // code is broken and needs to be fixed.  When we open up more
             // shaders for customization, we will need to check them as well.
             
-            typedef boost::shared_ptr<class GlfGLSLFX> GlfGLSLFXSharedPtr;
+            typedef boost::shared_ptr<class HioGlslfx> HioGlslfxSharedPtr;
 
-            GlfGLSLFXSharedPtr glslSurfaceFallback = 
-                GlfGLSLFXSharedPtr(
-                        new GlfGLSLFX(HdStPackageFallbackSurfaceShader()));
+            HioGlslfxSharedPtr glslSurfaceFallback = 
+                HioGlslfxSharedPtr(
+                        new HioGlslfx(HdStPackageFallbackSurfaceShader()));
 
             HdStShaderCodeSharedPtr fallbackSurface =
                 HdStShaderCodeSharedPtr(

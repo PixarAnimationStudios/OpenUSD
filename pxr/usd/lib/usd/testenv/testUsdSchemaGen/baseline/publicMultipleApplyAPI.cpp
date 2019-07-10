@@ -60,8 +60,8 @@ UsdContrivedPublicMultipleApplyAPI::Get(const UsdStagePtr &stage, const SdfPath 
     }
     TfToken name;
     if (!IsPublicMultipleApplyAPIPath(path, &name)) {
-        TF_CODING_ERROR("Invalid collection path <%s>.", path.GetText());
-        return UsdCollectionAPI();
+        TF_CODING_ERROR("Invalid testo path <%s>.", path.GetText());
+        return UsdContrivedPublicMultipleApplyAPI();
     }
     return UsdContrivedPublicMultipleApplyAPI(stage->GetPrimAtPath(path.GetPrimPath()), name);
 }
@@ -107,9 +107,9 @@ UsdContrivedPublicMultipleApplyAPI::IsPublicMultipleApplyAPIPath(
     }
 
     if (tokens.size() >= 2
-        && tokens[0] == UsdTokens->testo) {
+        && tokens[0] == _schemaTokens->testo) {
         *name = TfToken(propertyName.substr(
-            UsdTokens->testo.GetString().size() + 1));
+            _schemaTokens->testo.GetString().size() + 1));
         return true;
     }
 
@@ -155,7 +155,7 @@ UsdContrivedPublicMultipleApplyAPI::_GetTfType() const
 /// Returns the property name prefixed with the correct namespace prefix, which
 /// is composed of the the API's propertyNamespacePrefix metadata and the
 /// instance name of the API.
-inline
+static inline
 TfToken
 _GetNamespacedPropertyName(const TfToken instanceName, const TfToken propName)
 {

@@ -390,7 +390,8 @@ HdSt_GetExtComputationPrimvarsComputations(
                             new HdStExtCompGpuPrimvarBufferSource(
                                 compPrimvar.name,
                                 compPrimvar.valueType,
-                                sourceComp->GetElementCount()));
+                                sourceComp->GetElementCount(),
+                                sourceComp->GetId()));
 
                     // Gpu primvar sources only need to reserve space
                     reserveOnlySources->push_back(primvarBufferSource);

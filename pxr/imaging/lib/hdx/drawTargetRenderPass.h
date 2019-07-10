@@ -73,13 +73,18 @@ public:
     HDX_API
     void SetRprimCollection(HdRprimCollection const& col);
 
-    /// Execute render pass task
+    /// Sync the draw target render pass
     HDX_API
     void Sync();
 
-    /// Sync the render pass resources
+    /// Prepare the draw target render pass
     HDX_API
-    void Execute(HdRenderPassStateSharedPtr const &renderPassState);
+    void Prepare();
+
+    /// Execute the draw target render pass
+    HDX_API
+    void Execute(HdRenderPassStateSharedPtr const &renderPassState,
+                 TfTokenVector const &renderTags);
 
 private:
     /// RenderPass

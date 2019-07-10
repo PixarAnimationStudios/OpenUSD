@@ -182,7 +182,7 @@ void wrapUsdAttribute()
 
         .def("AddConnection", &UsdAttribute::AddConnection,
              (arg("source"),
-              arg("position")=UsdListPositionTempDefault))
+              arg("position")=UsdListPositionBackOfPrependList))
         .def("RemoveConnection", &UsdAttribute::RemoveConnection, arg("source"))
         .def("BlockConnections", &UsdAttribute::BlockConnections)
         .def("SetConnections", &UsdAttribute::SetConnections, arg("sources"))

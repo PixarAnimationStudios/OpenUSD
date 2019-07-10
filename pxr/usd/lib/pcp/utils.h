@@ -33,12 +33,38 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-SdfLayer::FileFormatArguments Pcp_GetArgumentsForTargetSchema(
-    const std::string& targetSchema);
+// Returns an SdfLayer::FileFormatArguments object with the "target" argument
+// set to \p target if \p target is not empty.
+SdfLayer::FileFormatArguments 
+Pcp_GetArgumentsForFileFormatTarget(
+    const std::string& target);
 
-void Pcp_GetArgumentsForTargetSchema(
-    const std::string& targetSchema,
+// Returns an SdfLayer::FileFormatArguments object with the "target" argument
+// set to \p target if \p target is not empty and a target is
+// not embedded within the given \p identifier.
+SdfLayer::FileFormatArguments 
+Pcp_GetArgumentsForFileFormatTarget(
+    const std::string& identifier,
+    const std::string& target);
+
+// \overload
+// Same as above, but modifies \p args instead of returning by value.
+void 
+Pcp_GetArgumentsForFileFormatTarget(
+    const std::string& identifier,
+    const std::string& target,
     SdfLayer::FileFormatArguments* args);
+
+// If a target argument is embedded in \p identifier, copies contents of 
+// \p defaultArgs to \p localArgs, removes the "target" argument, and returns
+// a const reference to \p localArgs. Otherwise, returns a const reference to
+// \p defaultArgs. This lets us avoid making a copy of \p defaultArgs unless 
+// needed.
+const SdfLayer::FileFormatArguments&
+Pcp_GetArgumentsForFileFormatTarget(
+    const std::string& identifier,
+    const SdfLayer::FileFormatArguments* defaultArgs,
+    SdfLayer::FileFormatArguments* localArgs);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -90,6 +90,13 @@ _CreateShapingIesAngleScaleAttr(UsdLuxShapingAPI &self,
     return self.CreateShapingIesAngleScaleAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
+        
+static UsdAttribute
+_CreateShapingIesNormalizeAttr(UsdLuxShapingAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateShapingIesNormalizeAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
+}
 
 } // anonymous namespace
 
@@ -163,6 +170,13 @@ void wrapUsdLuxShapingAPI()
              &This::GetShapingIesAngleScaleAttr)
         .def("CreateShapingIesAngleScaleAttr",
              &_CreateShapingIesAngleScaleAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetShapingIesNormalizeAttr",
+             &This::GetShapingIesNormalizeAttr)
+        .def("CreateShapingIesNormalizeAttr",
+             &_CreateShapingIesNormalizeAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2016-2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -62,6 +62,7 @@
 #include <Alembic/AbcGeom/IXform.h>
 #include <Alembic/AbcGeom/SchemaInfoDeclarations.h>
 #include <Alembic/AbcGeom/Visibility.h>
+#include <functional>
 #include <memory>
 #include <mutex>
 
@@ -94,6 +95,12 @@ TF_DEFINE_ENV_SETTING(
 TF_DEFINE_ENV_SETTING(
     USD_ABC_XFORM_PRIM_COLLAPSE, true,
     "Collapse Xforms containing a single geometry into a single geom Prim in USD");
+
+#if ALEMBIC_LIBRARY_VERSION >= 10709
+TF_DEFINE_ENV_SETTING(
+    USD_ABC_READ_ARCHIVE_USE_MMAP, false,
+    "Use mmap when reading from an Ogawa archive.");
+#endif
 
 namespace {
 
@@ -480,9 +487,6 @@ public:
     AlembicProperty(const SdfPath& path, const std::string& name,
                     const ICompoundProperty& parent);
 
-    /// Returns the Usd path for this property.
-    const SdfPath& GetPath() const;
-
     /// Returns the parent compound property.
     ICompoundProperty GetParent() const;
 
@@ -540,12 +544,6 @@ AlembicProperty::AlembicProperty(
     // Do nothing
 }
 
-const SdfPath&
-AlembicProperty::GetPath() const
-{
-    return _path;
-}
-
 ICompoundProperty
 AlembicProperty::GetParent() const
 {
@@ -576,7 +574,7 @@ AlembicProperty::GetHeader() const
 /// previous via a \c _PrimReaderContext.
 class _ReaderSchema {
 public:
-    typedef boost::function<void (_PrimReaderContext*)> PrimReader;
+    typedef std::function<void (_PrimReaderContext*)> PrimReader;
     typedef std::vector<PrimReader> PrimReaderVector;
     typedef UsdAbc_AlembicDataConversion::ToUsdConverter Converter;
 
@@ -655,8 +653,8 @@ _ReaderSchema::GetPrimReaders(const std::string& schema) const
 class _ReaderContext {
 public:
     /// Gets data from some property at a given sample.
-    typedef boost::function<bool (const UsdAbc_AlembicDataAny&,
-                                  const ISampleSelector&)> Converter;
+    typedef std::function<bool (const UsdAbc_AlembicDataAny&,
+                                const ISampleSelector&)> Converter;
 
     /// An optional ordering of name children or properties.
     typedef boost::optional<TfTokenVector> Ordering;
@@ -946,6 +944,17 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog)
         usedRootNames.insert(name);
     }
 
+    // Fetch authored timeCodesPerSecond early so that we can use it 
+    // for rescaling timeSamples.
+    if (const PropertyHeader* property =
+            root.getProperties().getPropertyHeader("Usd")) {
+        const MetaData& metadata = property->getMetaData();
+        _pseudoRoot->metadata[SdfFieldKeys->TimeCodesPerSecond] = 24.0;
+       _GetDoubleMetadata(metadata, _pseudoRoot->metadata,
+                           SdfFieldKeys->TimeCodesPerSecond);
+       _timeScale = _pseudoRoot->metadata[SdfFieldKeys->TimeCodesPerSecond].Get<double>();
+    }
+
     // Collect instancing information.
     // Skipping this step makes later code expand instances.
     if (!IsFlagSet(UsdAbc_AlembicContextFlagNames->expandInstances)) {
@@ -992,10 +1001,6 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog)
             *_allTimeSamples.begin();
         _pseudoRoot->metadata[SdfFieldKeys->EndTimeCode]   =
             *_allTimeSamples.rbegin();
-
-        // The time ordinate is in seconds in alembic files.
-        _pseudoRoot->metadata[SdfFieldKeys->TimeCodesPerSecond] = 1.0;
-        _pseudoRoot->metadata[SdfFieldKeys->FramesPerSecond] = 24.0;
     }
 
     // If no upAxis is authored, pretend that it was authored as 'Y'.  This
@@ -1014,8 +1019,6 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog)
         _GetDoubleMetadata(metadata, _pseudoRoot->metadata,
                            SdfFieldKeys->EndTimeCode);
 
-        _GetDoubleMetadata(metadata, _pseudoRoot->metadata,
-                           SdfFieldKeys->TimeCodesPerSecond);
         _GetDoubleMetadata(metadata, _pseudoRoot->metadata,
                            SdfFieldKeys->FramesPerSecond);
 
@@ -1119,16 +1122,6 @@ _ReaderContext::ConvertSampleTimes(
 {
     std::vector<double> result;
     result.resize(alembicTimes.size());
-
-    // Check special case from TidScene.  If there's just one time and
-    // it's really big then we assume it's TidSceneObject::FRAME_UNVARYING
-    // or FRAME_INVALID except possibly scaled by frame rate.  In this
-    // case we just use 0.0.
-    if (alembicTimes.size() == 1 && 
-        GfAbs(alembicTimes[0]) > std::numeric_limits<double>::max() / 100.0) {
-        result[0] = 0.0;
-        return TimeSamples(result);
-    }
 
     // Special case.
     if (_timeScale == 1.0 && _timeOffset == 0.0) {
@@ -1374,8 +1367,16 @@ _ReaderContext::_OpenOgawa(
     std::recursive_mutex** mutex) const
 {
     *format = "Ogawa";
+    #if ALEMBIC_LIBRARY_VERSION >= 10709
+    *result = IArchive(
+                Alembic::AbcCoreOgawa::ReadArchive(
+                    _GetNumOgawaStreams(), 
+                    TfGetEnvSetting(USD_ABC_READ_ARCHIVE_USE_MMAP)),
+                filePath, ErrorHandler::kQuietNoopPolicy);
+    #else
     *result = IArchive(Alembic::AbcCoreOgawa::ReadArchive(_GetNumOgawaStreams()),
                        filePath, ErrorHandler::kQuietNoopPolicy);
+    #endif
     return *result;
 }
 
@@ -1813,9 +1814,9 @@ public:
     typedef _IsValidTag IsValidTag;
     typedef _MetaDataTag MetaDataTag;
     typedef _SampleTimesTag SampleTimesTag;
-    typedef boost::function<bool (IsValidTag)> IsValid;
-    typedef boost::function<const MetaData& (MetaDataTag)> GetMetaData;
-    typedef boost::function<_AlembicTimeSamples(SampleTimesTag)> GetSampleTimes;
+    typedef std::function<bool (IsValidTag)> IsValid;
+    typedef std::function<const MetaData& (MetaDataTag)> GetMetaData;
+    typedef std::function<_AlembicTimeSamples(SampleTimesTag)> GetSampleTimes;
 
     _PrimReaderContext(_ReaderContext&,
                        const IObject& prim,
@@ -1827,19 +1828,12 @@ public:
     /// Returns the Usd path to this prim.
     const SdfPath& GetPath() const;
 
-    /// Returns \c true iff a flag is in the set.
-    bool IsFlagSet(const TfToken& flagName) const;
-
     /// Returns \p name converted to a valid Usd name not currently used
     /// by any property on this prim.
     std::string GetUsdName(const std::string& name) const;
 
     /// Returns the prim cache.
     Prim& GetPrim();
-
-    /// Returns the property cache for the property named \p name.  Returns
-    /// an empty property if the property hasn't been added yet.
-    const Property& GetProperty(const TfToken& name) const;
 
     /// Adds a property named \p name of type \p typeName with the converter
     /// \p converter.  \p converter must be a functor object that conforms
@@ -1865,10 +1859,6 @@ public:
     /// property hierarchy with \p name as the left-most component.
     void AddOutOfSchemaProperty(const std::string& name,
                                 const AlembicProperty& property);
-
-    /// Replaces the converter on the property named \p name.
-    void SetPropertyConverter(const TfToken& name,
-                              const Converter& converter);
 
     /// Set the schema.  This makes additional properties available via
     /// the \c ExtractSchema() method.
@@ -1905,9 +1895,8 @@ public:
     /// in Alembic property order.
     std::vector<std::string> GetUnextractedNames() const;
 
-    /// Returns the names of properties that have not been extracted yet
-    /// from the schema in Alembic property order.
-    std::vector<std::string> GetUnextractedSchemaNames() const;
+    /// Returns a _PrimReaderContext corresponding to the parent of this context.
+    _PrimReaderContext GetParentContext() const;
 
 private:
     Property& _AddProperty(const TfToken& name);
@@ -1966,12 +1955,6 @@ _PrimReaderContext::GetPath() const
     return _path;
 }
 
-bool
-_PrimReaderContext::IsFlagSet(const TfToken& flagName) const
-{
-    return _context.IsFlagSet(flagName);
-}
-
 std::string
 _PrimReaderContext::GetUsdName(const std::string& name) const
 {
@@ -1984,28 +1967,6 @@ _PrimReaderContext::Prim&
 _PrimReaderContext::GetPrim()
 {
     return _context.AddPrim(GetPath());
-}
-
-const _PrimReaderContext::Property&
-_PrimReaderContext::GetProperty(const TfToken& name) const
-{
-    if (const _ReaderContext::Property* property =
-            _context.FindProperty(GetPath().AppendProperty(name))) {
-        return *property;
-    }
-    static _ReaderContext::Property empty;
-    return empty;
-}
-
-void
-_PrimReaderContext::SetPropertyConverter(
-    const TfToken& name,
-    const Converter& converter)
-{
-    const SdfPath path = GetPath().AppendProperty(name);
-    if (TF_VERIFY(_context.FindProperty(path))) {
-        _context.FindOrCreateProperty(path).converter = converter;
-    }
 }
 
 void
@@ -2054,12 +2015,6 @@ std::vector<std::string>
 _PrimReaderContext::GetUnextractedNames() const
 {
     return _unextracted;
-}
-
-std::vector<std::string>
-_PrimReaderContext::GetUnextractedSchemaNames() const
-{
-    return _unextractedSchema;
 }
 
 template <class T>
@@ -2298,6 +2253,16 @@ _PrimReaderContext::_GetPropertyMetadata(
                        UsdAbcCustomMetadata->riType);
     _GetBoolMetadata(alembicMetadata, usdMetadata,
                      UsdAbcCustomMetadata->gprimDataRender);
+}
+
+_PrimReaderContext 
+_PrimReaderContext::GetParentContext() const
+{    
+    _PrimReaderContext parentContext(
+        _context, 
+        _prim.getParent(), 
+        _path.GetParentPath());
+    return parentContext;
 }
 
 //
@@ -2849,6 +2814,65 @@ struct _CopyFaceVaryingInterpolateBoundary : _CopyGeneric<IInt32Property> {
     }
 };
 
+
+/// Base class to copy attributes of an alembic faceset to a USD GeomSubset
+struct _CopyFaceSetBase {
+    IFaceSet object;
+
+    _CopyFaceSetBase(const IFaceSet& object_) : object(object_) { }
+
+    bool operator()(_IsValidTag) const
+    {
+        return object.valid();
+    }
+
+    const MetaData& operator()(_MetaDataTag) const
+    {
+        return object.getMetaData();
+    }
+
+    _AlembicTimeSamples operator()(_SampleTimesTag) const
+    {
+        return _GetSampleTimes(object);
+    }
+};
+
+/// Class to copy faceset isPartition into the family type
+struct _CopyFaceSetFamilyType : _CopyFaceSetBase {
+    using _CopyFaceSetBase::operator();
+
+    _CopyFaceSetFamilyType(const IFaceSet& object_) 
+        : _CopyFaceSetBase(object_) {};
+
+    bool operator()(const UsdAbc_AlembicDataAny& dst,
+                    const ISampleSelector& iss) const
+    {
+        // Because the absence of the ".facesExclusive" will trigger an
+        // exception in IFaceSetSchema, we need to manually deal with the
+        // default state (and discard the exception thrown erroneously by
+        // getFaceExclusivity()).
+        //
+        // This is a bug in Alembic that has been fixed in Alembic 1.7.2, but 
+        // the mininum required version for USD is 1.5.2. This workaround must 
+        // remain until the required Alembic version is changed for USD.
+        //
+        // The Alembic issue can be tracked here:
+        // https://github.com/alembic/alembic/issues/129
+        bool isPartition = false;
+        try {
+            isPartition = object.getSchema().getFaceExclusivity() == kFaceSetExclusive;
+        }
+        catch(const Alembic::Util::Exception&) {}
+
+        if (isPartition)
+        {
+            return dst.Set(UsdGeomTokens->nonOverlapping);
+        }
+
+        return dst.Set(UsdGeomTokens->unrestricted);
+    }
+};
+
 static
 TfToken
 _ConvertCurveBasis(BasisType value)
@@ -2993,20 +3017,6 @@ _ReadProperty(_PrimReaderContext* context, const char* name, TfToken propName, S
             _CopyGeneric<T, UsdValueType>(prop));
     }
 }
-
-/* Unused
-static
-void
-_ReadOtherSchema(_PrimReaderContext* context)
-{
-    // Read every unextracted property to Usd using default converters.
-    // This handles any property we don't have specific rules for.
-    for (const auto& name : context->GetUnextractedSchemaNames()) {
-        context->AddOutOfSchemaProperty(
-            context->GetUsdName(name), context->ExtractSchema(name));
-    }
-}
-*/
 
 static
 void
@@ -3262,6 +3272,58 @@ _ReadSubD(_PrimReaderContext* context)
 
     // Read texture coordinates
     _ReadProperty<IV2fGeomParam, GfVec2f>(context, "uv", _GetUVPropertyName(), _GetUVTypeName());
+}
+
+static
+void
+_ReadFaceSet(_PrimReaderContext* context)
+{
+    typedef IFaceSet Type;
+
+    // Wrap the object.
+    if (!Type::matches(context->GetObject().getHeader())) {
+        // Not of type Type.
+        return;
+    }
+
+    // A FaceSet must be a child of another Alembic object.
+    if (!context->GetObject().getParent()) {
+        // No parent exists.
+        return;
+    }
+
+    Type object(context->GetObject(), kWrapExisting);
+
+    // Add child properties under schema.
+    context->SetSchema(Type::schema_type::info_type::defaultName());
+
+    // Set prim type.
+    context->GetPrim().typeName = UsdAbcPrimTypeNames->GeomSubset;
+
+    context->AddProperty(
+        UsdGeomTokens->indices,
+        SdfValueTypeNames->IntArray,
+        _CopyGeneric<IInt32ArrayProperty, int>(
+            context->ExtractSchema(".faces")));
+    context->AddUniformProperty(
+        UsdGeomTokens->elementType,
+        SdfValueTypeNames->Token,
+        _CopySynthetic(UsdGeomTokens->face));
+
+    context->AddUniformProperty(
+        UsdGeomTokens->familyName,
+        SdfValueTypeNames->Token,
+        _CopySynthetic(UsdAbcPropertyNames->defaultFamilyName));
+
+    _PrimReaderContext parentPrimContext = context->GetParentContext();
+
+    parentPrimContext.AddUniformProperty(
+        UsdAbcPropertyNames->defaultFamilyTypeAttributeName,
+        SdfValueTypeNames->Token,
+        _CopyFaceSetFamilyType(object));
+
+    // Consume properties implicitly handled above.
+    context->Extract(Type::schema_type::info_type::defaultName());
 }
 
 static
@@ -3802,6 +3864,9 @@ _ReaderSchemaBuilder::_ReaderSchemaBuilder()
         .AppendReader(_ReadArbGeomParams)
         .AppendReader(_ReadUserProperties)
         .AppendReader(_ReadOther)
+        ;
+    schema.AddType(FaceSetSchemaInfo::title())
+        .AppendReader(_ReadFaceSet)
         ;
     schema.AddType(CurvesSchemaInfo::title())
         .AppendReader(_ReadOrientation)

@@ -146,6 +146,10 @@ struct UsdContrivedTokensType {
     /// 
     /// UsdContrivedDerived
     const TfToken creaseLengths;
+    /// \brief "derived"
+    /// 
+    /// Property namespace prefix for the UsdContrivedDerivedMultipleApplyAPI schema.
+    const TfToken derived;
     /// \brief "double2"
     /// 
     /// UsdContrivedBase
@@ -438,6 +442,14 @@ struct UsdContrivedTokensType {
     /// 
     /// UsdContrivedTestHairman
     const TfToken riStatementsAttributesUserGofur_GeomOnHairdensity;
+    /// \brief "schemaToken1"
+    /// 
+    /// Special token for the UsdContrivedBase schema.
+    const TfToken schemaToken1;
+    /// \brief "/non-identifier-tokenValue!"
+    /// 
+    /// schemaToken2 doc
+    const TfToken schemaToken2;
     /// \brief "string"
     /// 
     /// UsdContrivedBase
@@ -450,6 +462,10 @@ struct UsdContrivedTokensType {
     /// 
     /// UsdContrivedTestHairman
     const TfToken temp;
+    /// \brief "test"
+    /// 
+    /// Property namespace prefix for the UsdContrivedMultipleApplyAPI schema.
+    const TfToken test;
     /// \brief "testAttrOne"
     /// 
     /// UsdContrivedPublicMultipleApplyAPI, UsdContrivedMultipleApplyAPI
@@ -466,6 +482,10 @@ struct UsdContrivedTokensType {
     /// 
     /// UsdContrivedDerived
     const TfToken testingAsset;
+    /// \brief "testo"
+    /// 
+    /// Property namespace prefix for the UsdContrivedPublicMultipleApplyAPI schema.
+    const TfToken testo;
     /// \brief "token"
     /// 
     /// Default value for UsdContrivedBase::GetTokenAttr(), UsdContrivedBase

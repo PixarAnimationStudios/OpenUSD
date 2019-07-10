@@ -134,7 +134,7 @@ protected:
     ///
     /// \sa UsdSchemaType
     USDKATANA_API
-    virtual UsdSchemaType _GetSchemaType() const;
+    UsdSchemaType _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -146,7 +146,7 @@ private:
 
     // override SchemaBase virtuals.
     USDKATANA_API
-    virtual const TfType &_GetTfType() const;
+    const TfType &_GetTfType() const override;
 
 public:
     // --------------------------------------------------------------------- //

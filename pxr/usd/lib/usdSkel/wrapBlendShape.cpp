@@ -57,10 +57,17 @@ _CreateOffsetsAttr(UsdSkelBlendShape &self,
 }
         
 static UsdAttribute
+_CreateNormalOffsetsAttr(UsdSkelBlendShape &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateNormalOffsetsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Vector3fArray), writeSparsely);
+}
+        
+static UsdAttribute
 _CreatePointIndicesAttr(UsdSkelBlendShape &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreatePointIndicesAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->UIntArray), writeSparsely);
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->IntArray), writeSparsely);
 }
 
 } // anonymous namespace
@@ -103,6 +110,13 @@ void wrapUsdSkelBlendShape()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
+        .def("GetNormalOffsetsAttr",
+             &This::GetNormalOffsetsAttr)
+        .def("CreateNormalOffsetsAttr",
+             &_CreateNormalOffsetsAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
         .def("GetPointIndicesAttr",
              &This::GetPointIndicesAttr)
         .def("CreatePointIndicesAttr",
@@ -136,6 +150,18 @@ void wrapUsdSkelBlendShape()
 
 namespace {
 
+
+tuple
+_ValidatePointIndices(TfSpan<const int> pointIndices,
+                      size_t numPoints)
+{
+    std::string reason;
+    bool valid = UsdSkelBlendShape::ValidatePointIndices(
+        pointIndices, numPoints, &reason);
+    return boost::python::make_tuple(valid, reason);
+}
+
+
 WRAP_CUSTOM {
 
     using This = UsdSkelBlendShape;
@@ -147,7 +173,12 @@ WRAP_CUSTOM {
         
         .def("GetInbetweens", &This::GetInbetweens,
              return_value_policy<TfPySequenceToList>())
-        .def("GetAuthoredInbetweens", &This::GetAuthoredInbetweens)
+        .def("GetAuthoredInbetweens", &This::GetAuthoredInbetweens,
+             return_value_policy<TfPySequenceToList>())
+
+        .def("ValidatePointIndices", &_ValidatePointIndices,
+             (arg("pointIndices"), arg("numPoints")))
+        .staticmethod("ValidatePointIndices")
         ;
 }
 

@@ -89,7 +89,9 @@ GusdBoundsCache::_ComputeBound(
     if( !prim.IsValid() )
         return false;
 
-    TfToken stageId( prim.GetStage()->GetRootLayer()->GetRealPath() );
+    TfToken stageId( prim.GetStage()->GetRootLayer()->IsAnonymous()
+	    ? prim.GetStage()->GetRootLayer()->GetIdentifier()
+	    : prim.GetStage()->GetRootLayer()->GetRealPath() );
 
     MapType::accessor accessor;
     if( !m_map.find( accessor, Key( stageId, includedPurposes ))) {

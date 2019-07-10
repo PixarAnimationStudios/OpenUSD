@@ -83,8 +83,10 @@ public:
 
 protected:
     void _InitScene();
-    void _SetPickParams();
     void _Clear();
+    HdSelectionSharedPtr _Pick(
+        GfVec2i const& startPos, GfVec2i const& endPos,
+        bool doUnpickablesOcclude);
 
 private:
     HdEngine _engine;
@@ -93,8 +95,8 @@ private:
     std::unique_ptr<Hdx_UnitTestDelegate> _delegate;
     
     HdRprimCollection _pickablesCol;
-    HdxUnitTestUtils::Picker _picker;
     HdxUnitTestUtils::Marquee _marquee;
+    HdxSelectionTrackerSharedPtr _selTracker;
 
     GfVec2i _startPos, _endPos;
 };
@@ -122,14 +124,17 @@ My_TestGLDrawing::InitTest()
     _renderIndex = HdRenderIndex::New(&_renderDelegate);
     TF_VERIFY(_renderIndex != nullptr);
     _delegate.reset(new Hdx_UnitTestDelegate(_renderIndex));
+    _selTracker.reset(new HdxSelectionTracker);
 
     // prepare render task
     SdfPath renderSetupTask("/renderSetupTask");
     SdfPath renderTask("/renderTask");
     SdfPath selectionTask("/selectionTask");
+    SdfPath pickTask("/pickTask");
     _delegate->AddRenderSetupTask(renderSetupTask);
     _delegate->AddRenderTask(renderTask);
     _delegate->AddSelectionTask(selectionTask);
+    _delegate->AddPickTask(pickTask);
 
     // render task parameters.
     VtValue vParam = _delegate->GetTaskParam(renderSetupTask, HdTokens->params);
@@ -155,8 +160,6 @@ My_TestGLDrawing::InitTest()
     _pickablesCol = HdRprimCollection(_tokens->pickables, 
         HdReprSelector(HdReprTokens->hull));
     _marquee.InitGLResources();
-    _picker.InitIntersector(_renderIndex);
-    _SetPickParams();
     // We have to unfortunately explictly add collections besides 'geometry'
     // See HdRenderIndex constructor.
     _delegate->GetRenderIndex().GetChangeTracker().AddCollection(_tokens->pickables);
@@ -180,21 +183,30 @@ My_TestGLDrawing::_InitScene()
     _delegate->AddCube(SdfPath("/cube1"), _GetTranslate( 0, 5, 1));
 }
 
-void
-My_TestGLDrawing::_SetPickParams()
+HdSelectionSharedPtr
+My_TestGLDrawing::_Pick(GfVec2i const& startPos, GfVec2i const& endPos,
+    bool doUnpickablesOcclude)
 {
-    HdxUnitTestUtils::PickParams pParams;
+    HdxPickHitVector allHits;
+    HdxPickTaskContextParams p;
+    p.resolution = HdxUnitTestUtils::CalculatePickResolution(
+            startPos, endPos, GfVec2i(4,4));
+    p.resolveMode = HdxPickTokens->resolveUnique;
+    p.doUnpickablesOcclude = doUnpickablesOcclude;
+    p.viewMatrix = GetViewMatrix();
+    p.projectionMatrix = HdxUnitTestUtils::ComputePickingProjectionMatrix(
+            startPos, endPos, GfVec2i(GetWidth(), GetHeight()), GetFrustum());
+    p.collection = _pickablesCol;
+    p.outHits = &allHits;
 
-    pParams.pickRadius     = GfVec2i(4,4);
-    pParams.screenWidth    = GetWidth();
-    pParams.screenHeight   = GetHeight();
-    pParams.viewFrustum    = GetFrustum();
-    pParams.viewMatrix     = GetViewMatrix();
-    pParams.engine         = &_engine;
-    pParams.pickablesCol   = &_pickablesCol;
-    pParams.highlightMode  = HdSelection::HighlightModeSelect;
+    HdTaskSharedPtrVector tasks;
+    tasks.push_back(_renderIndex->GetTask(SdfPath("/pickTask")));
+    VtValue pickParams(p);
+    _engine.SetTaskContextData(HdxPickTokens->pickParams, pickParams);
+    _engine.Execute(_renderIndex, &tasks);
 
-    _picker.SetPickParams(pParams);
+    return HdxUnitTestUtils::TranslateHitsToSelection(
+            p.pickTarget, HdSelection::HighlightModeSelect, allHits);
 }
 
 void
@@ -224,10 +236,11 @@ My_TestGLDrawing::OffscreenTest()
     WriteToFile("color", "color1_unselected.png");
 
     // select cube0
-    _picker.Pick(GfVec2i(319,221), GfVec2i(320,222));
+    HdSelectionSharedPtr selection =
+        _Pick(GfVec2i(319,221), GfVec2i(320,222), false);
+    _selTracker->SetSelection(selection);
     DrawScene();
     WriteToFile("color", "color2_cube0_pickable.png");
-    HdSelectionSharedPtr selection = _picker.GetSelection();
     HdSelection::HighlightMode mode = HdSelection::HighlightModeSelect;
 
     TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1);
@@ -236,10 +249,10 @@ My_TestGLDrawing::OffscreenTest()
     // make cube0 unpickable; it should not let us pick cube1 since it occludes
     SdfPathVector excludePaths = {SdfPath("/cube0")};
     _pickablesCol.SetExcludePaths(excludePaths);
-    _picker.Pick(GfVec2i(319,221), GfVec2i(320,222));
+    selection = _Pick(GfVec2i(319,221), GfVec2i(320,222), true);
+    _selTracker->SetSelection(selection);
     DrawScene();
     WriteToFile("color", "color3_cube0_unpickable.png");
-    selection = _picker.GetSelection();
     //TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 0);
 }
 
@@ -272,17 +285,16 @@ My_TestGLDrawing::DrawScene()
     _delegate->SetTaskParam(renderSetupTask, HdTokens->params, VtValue(param));
 
     HdTaskSharedPtrVector tasks;
-    tasks.push_back(_delegate->GetRenderIndex().GetTask(renderSetupTask));
-    tasks.push_back(_delegate->GetRenderIndex().GetTask(renderTask));
-    tasks.push_back(_delegate->GetRenderIndex().GetTask(selectionTask));
+    tasks.push_back(_renderIndex->GetTask(renderSetupTask));
+    tasks.push_back(_renderIndex->GetTask(renderTask));
+    tasks.push_back(_renderIndex->GetTask(selectionTask));
 
     glEnable(GL_DEPTH_TEST);
     glBindVertexArray(vao);
 
-    VtValue v(_picker.GetSelectionTracker());
-    _engine.SetTaskContextData(HdxTokens->selectionState, v);
-
-    _engine.Execute(_delegate->GetRenderIndex(), tasks);
+    VtValue selTracker(_selTracker);
+    _engine.SetTaskContextData(HdxTokens->selectionState, selTracker);
+    _engine.Execute(&_delegate->GetRenderIndex(), &tasks);
 
     glBindVertexArray(0);
 }
@@ -306,7 +318,8 @@ My_TestGLDrawing::MouseRelease(int button, int x, int y, int modKeys)
     Hdx_UnitTestGLDrawing::MouseRelease(button, x, y, modKeys);
 
     if (!(modKeys & GarchGLDebugWindow::Alt)) {
-        _picker.Pick(_startPos, _endPos);
+        HdSelectionSharedPtr selection = _Pick(_startPos, _endPos, false);
+        _selTracker->SetSelection(selection);
     }
     _startPos = _endPos = GfVec2i(0);
 }

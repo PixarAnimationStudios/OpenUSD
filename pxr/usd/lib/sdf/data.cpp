@@ -38,6 +38,12 @@ SdfData::~SdfData()
 }
 
 bool
+SdfData::StreamsData() const
+{
+    return false;
+}
+
+bool
 SdfData::HasSpec(const SdfAbstractDataSpecId& id) const
 {
     return (_data.find(id.GetFullSpecPath()) != _data.end());

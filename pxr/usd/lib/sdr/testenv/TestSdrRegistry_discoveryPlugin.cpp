@@ -108,4 +108,66 @@ private:
 
 NDR_REGISTER_DISCOVERY_PLUGIN(_NdrTestDiscoveryPlugin)
 
+/// A second simple test-only discovery plugin that directly returns the nodes
+/// in the test's testenv folder.
+class _NdrTestDiscoveryPlugin2 : public NdrDiscoveryPlugin
+{
+public:
+    _NdrTestDiscoveryPlugin2() {
+        _searchPaths.push_back("/TestSearchPath2");
+    }
+
+    ~_NdrTestDiscoveryPlugin2() { }
+
+    NdrNodeDiscoveryResultVec DiscoverNodes(const Context&) override
+    {
+        return {
+            NdrNodeDiscoveryResult(
+                // Identifier
+                TfToken("TestNodeARGS2"),
+
+                // Version
+                NdrVersion().GetAsDefault(),
+
+                // Name
+                "TestNodeARGS2",
+
+                // Family
+                TfToken(),
+
+                // Discovery type
+                TfToken("args"),
+
+                // Source type
+                TfToken("RmanCpp"),
+
+                // URI
+                "TestNodeARGS2.args",
+
+                // Resolved URI
+                "TestNodeARGS2.args"
+            ),
+            NdrNodeDiscoveryResult(
+                TfToken("TestNodeGLSLFX"),
+                NdrVersion().GetAsDefault(),
+                "TestNodeGLSLFX",
+                TfToken(),
+                TfToken("glslfx"),
+                TfToken("glslfx"),
+                "TestNodeGLSLFX.glslfx",
+                "TestNodeGLSLFX.glslfx"
+            )
+        };
+    }
+
+    /// Gets the paths that this plugin is searching for nodes in.
+    const NdrStringVec& GetSearchURIs() const override { return _searchPaths; }
+
+private:
+    /// The paths (abs) indicating where the plugin should search for nodes.
+    NdrStringVec _searchPaths;
+};
+
+NDR_REGISTER_DISCOVERY_PLUGIN(_NdrTestDiscoveryPlugin2)
+
 PXR_NAMESPACE_CLOSE_SCOPE

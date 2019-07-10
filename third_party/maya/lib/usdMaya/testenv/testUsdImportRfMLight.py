@@ -43,6 +43,7 @@ class testUsdImportRfMLight(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         standalone.initialize('usd')
+
         cmds.file(new=True, force=True)
 
         cmds.loadPlugin('RenderMan_for_Maya', quiet=True)
@@ -85,31 +86,36 @@ class testUsdImportRfMLight(unittest.TestCase):
 
         depNodeFn = self._GetMayaDependencyNode(nodePath)
 
+        self.assertTrue(lightTypeName in cmds.listConnections('defaultLightSet'))
+
         testNumber = None
-        if lightTypeName == 'DiskLight':
-            self.assertEqual(depNodeFn.typeName(), 'PxrDiskLight')
+        if lightTypeName == 'CylinderLight':
+            self.assertEqual(depNodeFn.typeName(), 'PxrCylinderLight')
             testNumber = 1
+        elif lightTypeName == 'DiskLight':
+            self.assertEqual(depNodeFn.typeName(), 'PxrDiskLight')
+            testNumber = 2
         elif lightTypeName == 'DistantLight':
             self.assertEqual(depNodeFn.typeName(), 'PxrDistantLight')
-            testNumber = 2
+            testNumber = 3
         elif lightTypeName == 'DomeLight':
             self.assertEqual(depNodeFn.typeName(), 'PxrDomeLight')
-            testNumber = 3
+            testNumber = 4
         elif lightTypeName == 'MeshLight':
             self.assertEqual(depNodeFn.typeName(), 'PxrMeshLight')
-            testNumber = 4
+            testNumber = 5
         elif lightTypeName == 'RectLight':
             self.assertEqual(depNodeFn.typeName(), 'PxrRectLight')
-            testNumber = 5
+            testNumber = 6
         elif lightTypeName == 'SphereLight':
             self.assertEqual(depNodeFn.typeName(), 'PxrSphereLight')
-            testNumber = 6
+            testNumber = 7
         elif lightTypeName == 'AovLight':
             self.assertEqual(depNodeFn.typeName(), 'PxrAovLight')
-            testNumber = 7
+            testNumber = 8
         elif lightTypeName == 'EnvDayLight':
             self.assertEqual(depNodeFn.typeName(), 'PxrEnvDayLight')
-            testNumber = 8
+            testNumber = 9
         else:
             raise NotImplementedError('Invalid light type %s' % lightTypeName)
 
@@ -236,29 +242,29 @@ class testUsdImportRfMLight(unittest.TestCase):
     def _ValidatePxrEnvDayLight(self):
         nodePath = '|RfMLightsTest|Lights|EnvDayLight|EnvDayLightShape'
 
-        expectedDay = 8
+        expectedDay = 9
         self.assertEqual(cmds.getAttr('%s.day' % nodePath), expectedDay)
 
-        expectedHaziness = 1.8
+        expectedHaziness = 1.9
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.haziness' % nodePath),
             expectedHaziness, 1e-6))
 
-        expectedHour = 8.8
+        expectedHour = 9.9
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.hour' % nodePath),
             expectedHour, 1e-6))
 
-        expectedLatitude = 80.0
+        expectedLatitude = 90.0
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.latitude' % nodePath),
             expectedLatitude, 1e-6))
 
-        expectedLongitude = -80.0
+        expectedLongitude = -90.0
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.longitude' % nodePath),
             expectedLongitude, 1e-6))
 
-        expectedMonth = 8
+        expectedMonth = 9
         self.assertEqual(cmds.getAttr('%s.month' % nodePath), expectedMonth)
 
-        expectedSkyTint = Gf.Vec3f(0.8)
+        expectedSkyTint = Gf.Vec3f(0.9)
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.skyTintR' % nodePath),
             expectedSkyTint[0], 1e-6))
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.skyTintG' % nodePath),
@@ -266,7 +272,7 @@ class testUsdImportRfMLight(unittest.TestCase):
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.skyTintB' % nodePath),
             expectedSkyTint[2], 1e-6))
 
-        expectedSunDirection = Gf.Vec3f(0.0, 0.0, 0.8)
+        expectedSunDirection = Gf.Vec3f(0.0, 0.0, 0.9)
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.sunDirectionX' % nodePath),
             expectedSunDirection[0], 1e-6))
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.sunDirectionY' % nodePath),
@@ -274,11 +280,11 @@ class testUsdImportRfMLight(unittest.TestCase):
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.sunDirectionZ' % nodePath),
             expectedSunDirection[2], 1e-6))
 
-        expectedSunSize = 0.8
+        expectedSunSize = 0.9
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.sunSize' % nodePath),
             expectedSunSize, 1e-6))
 
-        expectedSunTint = Gf.Vec3f(0.8)
+        expectedSunTint = Gf.Vec3f(0.9)
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.sunTintR' % nodePath),
             expectedSunTint[0], 1e-6))
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.sunTintG' % nodePath),
@@ -286,21 +292,21 @@ class testUsdImportRfMLight(unittest.TestCase):
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.sunTintB' % nodePath),
             expectedSunTint[2], 1e-6))
 
-        expectedYear = 2018
+        expectedYear = 2019
         self.assertEqual(cmds.getAttr('%s.year' % nodePath), expectedYear)
 
-        expectedZone = 8.0
+        expectedZone = 9.0
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.zone' % nodePath),
             expectedZone, 1e-6))
 
     def _ValidateMayaLightShaping(self):
         nodePath = '|RfMLightsTest|Lights|DiskLight|DiskLightShape'
 
-        expectedFocus = 0.1
+        expectedFocus = 0.2
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.emissionFocus' % nodePath),
             expectedFocus, 1e-6))
 
-        expectedFocusTint = 0.1
+        expectedFocusTint = 0.2
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.emissionFocusTintR' % nodePath),
             expectedFocusTint, 1e-6))
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.emissionFocusTintG' % nodePath),
@@ -308,11 +314,11 @@ class testUsdImportRfMLight(unittest.TestCase):
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.emissionFocusTintB' % nodePath),
             expectedFocusTint, 1e-6))
 
-        expectedConeAngle = 91.0
+        expectedConeAngle = 92.0
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.coneAngle' % nodePath),
             expectedConeAngle, 1e-6))
 
-        expectedConeSoftness = 0.1
+        expectedConeSoftness = 0.2
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.coneSoftness' % nodePath),
             expectedConeSoftness, 1e-6))
 
@@ -320,7 +326,7 @@ class testUsdImportRfMLight(unittest.TestCase):
         self.assertEqual(cmds.getAttr('%s.iesProfile' % nodePath),
             expectedProfilePath)
 
-        expectedProfileScale = 1.1
+        expectedProfileScale = 1.2
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.iesProfileScale' % nodePath),
             expectedProfileScale, 1e-6))
 
@@ -331,7 +337,7 @@ class testUsdImportRfMLight(unittest.TestCase):
         self.assertEqual(cmds.getAttr('%s.enableShadows' % nodePath),
             expectedShadowsEnabled)
 
-        expectedShadowColor = 0.5
+        expectedShadowColor = 0.6
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.shadowColorR' % nodePath),
             expectedShadowColor, 1e-6))
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.shadowColorG' % nodePath),
@@ -339,15 +345,15 @@ class testUsdImportRfMLight(unittest.TestCase):
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.shadowColorB' % nodePath),
             expectedShadowColor, 1e-6))
 
-        expectedShadowDistance = -0.5
+        expectedShadowDistance = -0.6
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.shadowDistance' % nodePath),
             expectedShadowDistance, 1e-6))
 
-        expectedShadowFalloff = -0.5
+        expectedShadowFalloff = -0.6
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.shadowFalloff' % nodePath),
             expectedShadowFalloff, 1e-6))
 
-        expectedShadowFalloffGamma = 0.5
+        expectedShadowFalloffGamma = 0.6
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.shadowFalloffGamma' % nodePath),
             expectedShadowFalloffGamma, 1e-6))
 
@@ -358,6 +364,8 @@ class testUsdImportRfMLight(unittest.TestCase):
         """
         self.assertTrue(cmds.pluginInfo('RenderMan_for_Maya', query=True,
             loaded=True))
+
+        self._ValidateMayaLight('CylinderLight')
 
         self._ValidateMayaLight('DiskLight')
         self._ValidatePxrDiskLightTransformAnimation()

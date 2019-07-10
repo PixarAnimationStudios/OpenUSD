@@ -17,36 +17,9 @@ def MfScope "foo"
         </foo/Bar>,
         </foo/Baz>,
     ]
-    rel attr_rel = </foo/Foo/Bar> {
-        double x = 1.234
-    }
-    rel multi_attr_rel = [
-        </foo/One> {
-            double x = 1
-        },
-        </foo/Two> {
-            double x = 2
-        },
-    ]
-    rel semicolons_rel = [
-        </foo/One> {
-            double x = 1
-        },
-        </foo/Two> {
-            double x = 2
-        },
-    ]
     rel complex_rel = [
-        </foo/Foo/Bar> {
-            double scale = 0.5
-            color3d rgb = (0.2, 0.3, 0.4)
-            frame4d xform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
-        },
-        </foo/Blah/Blah> {
-            double scale = 0.5
-            color3d rgb = (0.2, 0.3, 0.4)
-            frame4d xform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
-        },
+        </foo/Foo/Bar>,
+        </foo/Blah/Blah>,
     ] (
         """Exercise full syntax"""
         doc = '''use this for \"stuff\"...'''
@@ -59,10 +32,7 @@ def MfScope "foo"
         </bar>,
     ]
     add rel rel_list_editing = [
-        </baz> {
-            double intensity = 0.5
-            double intensity.connect = </foo.bar>
-        },
+        </baz>,
         </boom>,
     ]
     reorder rel rel_list_editing = [
@@ -71,10 +41,7 @@ def MfScope "foo"
         </whatever>,
     ]
     add rel rel_list_editing2 = [
-        </baz> {
-            double intensity = 0.5
-            double intensity.connect = </foo.bar>
-        },
+        </baz>,
         </boom>,
     ]
     reorder rel rel_list_editing3 = [
@@ -100,9 +67,6 @@ def MfScope "foo"
         </foo>,
         </bar>,
     ]
-    rel rel_with_attr[</foo/Foo>] {
-        double y = 1.234
-    }
 }
 
 def MfScope "customFoo"
@@ -117,36 +81,9 @@ def MfScope "customFoo"
         </foo/Bar>,
         </foo/Baz>,
     ]
-    custom rel attr_rel = </foo/Foo/Bar> {
-        double x = 1.234
-    }
-    custom rel multi_attr_rel = [
-        </foo/One> {
-            double x = 1
-        },
-        </foo/Two> {
-            double x = 2
-        },
-    ]
-    custom rel semicolons_rel = [
-        </foo/One> {
-            double x = 1
-        },
-        </foo/Two> {
-            double x = 2
-        },
-    ]
     custom rel complex_rel = [
-        </foo/Foo/Bar> {
-            double scale = 0.5
-            color3d rgb = (0.2, 0.3, 0.4)
-            frame4d xform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
-        },
-        </foo/Blah/Blah> {
-            double scale = 0.5
-            color3d rgb = (0.2, 0.3, 0.4)
-            frame4d xform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
-        },
+        </foo/Foo/Bar>,
+        </foo/Blah/Blah>,
     ] (
         """Exercise full syntax"""
         doc = '''use this for \"stuff\"...'''
@@ -160,10 +97,7 @@ def MfScope "customFoo"
         </bar>,
     ]
     add rel rel_list_editing = [
-        </baz> {
-            double intensity = 0.5
-            double intensity.connect = </foo.bar>
-        },
+        </baz>,
         </boom>,
     ]
     reorder rel rel_list_editing = [
@@ -173,10 +107,7 @@ def MfScope "customFoo"
     ]
     custom rel rel_list_editing2
     add rel rel_list_editing2 = [
-        </baz> {
-            double intensity = 0.5
-            double intensity.connect = </foo.bar>
-        },
+        </baz>,
         </boom>,
     ]
     custom rel rel_list_editing3
@@ -204,8 +135,5 @@ def MfScope "customFoo"
         </foo>,
         </bar>,
     ]
-    custom rel rel_with_attr[</foo/Foo>] {
-        double y = 1.234
-    }
 }
 

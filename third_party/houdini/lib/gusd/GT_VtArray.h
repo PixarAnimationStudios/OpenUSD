@@ -24,14 +24,13 @@
 #ifndef _GUSD_GT_VTARRAY_H_
 #define _GUSD_GT_VTARRAY_H_
 
-
 #include <GT/GT_DataArray.h>
 #include <GT/GT_DANumeric.h>
 #include <SYS/SYS_Compiler.h>
 #include <SYS/SYS_Version.h>
 #include <SYS/SYS_Math.h>
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 #include "pxr/base/vt/array.h"
 
 #include "gusd/UT_TypeTraits.h"
@@ -39,54 +38,50 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/** GT_DataArray implementation that wraps a VtArray.
-
-    This allows, in some cases, for arrays read in from USD to be
-    pushed into GT prims without having to incur copying.
-
-    Example:
-
-    @code
-    VtArray<int> valsFromUSD;
-    GT_DataArrayHandle hnd(new GusdGT_VtArray<int>(valsFromUSD));
-    @endcode
-
-    These arrays are designed to be read-only.
-    If you need to make edits, use the following pattern:
-
-    @code
-    GusdGT_VtArray<int> srcData;
-    // swap data into tmp array, modify.
-    VtArray<int> tmp;
-    srcData.swap(tmp);
-    tmp[10] = 37;
-    // swap data back into place.
-    srcData.swap(tmp);
-    @encode
-    
-    Note that this kind of swapping trick does *not* require the
-    full array to be copied; only the internal references are swapped.*/
+/// GT_DataArray implementation that wraps a VtArray.
+///
+/// This allows, in some cases, for arrays read in from USD to be
+/// pushed into GT prims without having to incur copying.
+/// Example:
+/// \code
+///     VtArray<int> valsFromUSD;
+///     GT_DataArrayHandle hnd(new GusdGT_VtArray<int>(valsFromUSD));
+/// \endcode
+///
+/// These arrays are designed to be read-only.
+/// If you need to make edits, use the following pattern:
+///
+/// \code
+///     GusdGT_VtArray<int> srcData;
+///     // swap data into tmp array, modify.
+///     VtArray<int> tmp;
+///     srcData.swap(tmp);
+///     tmp[10] = 37;
+///     // swap data back into place.
+///     srcData.swap(tmp);
+/// \endcode
+/// 
+/// Note that this kind of swapping trick does *not* require the
+/// full array to be copied; only the internal references are swapped.
 template <class T>
 class GusdGT_VtArray : public GT_DataArray
 {
 public:
-    SYS_STATIC_ASSERT(GUSDUT_IS_PODTUPLE(T));
+    SYS_STATIC_ASSERT(GusdIsPodTuple<T>());
 
-    typedef GusdGT_VtArray<T>   This;
-    typedef T                   ValueType;
-    typedef VtArray<T>          ArrayType;
-
-    typedef typename GusdUT_TypeTraits::PODTuple<T> PODTuple;
-    typedef typename PODTuple::ValueType            PODType;
+    using This = GusdGT_VtArray<T>;
+    using ValueType = T;
+    using ArrayType = VtArray<T>;
+    using PODType = typename GusdPodTupleTraits<T>::ValueType;
     
-    static const int        tupleSize = PODTuple::tupleSize;
-    static const GT_Storage storage   = GusdGT_Utils::StorageByType<PODType>::value;
-
+    static const int        tupleSize = GusdGetTupleSize<T>();
+    static const GT_Storage storage =
+        GusdGT_Utils::StorageByType<PODType>::value;
 
     GusdGT_VtArray(const ArrayType& array, GT_Type type=GT_TYPE_NONE);
     GusdGT_VtArray(GT_Type type=GT_TYPE_NONE);
 
-    virtual ~GusdGT_VtArray() {}
+    ~GusdGT_VtArray() override = default;
 
     virtual const char* className() const   { return "GusdGT_VtArray"; }
     
@@ -103,7 +98,7 @@ public:
 
     const PODType*      data() const        { return _data; }
 
-    /** Swap our array contents with another array.*/
+    /// Swap our array contents with another array.
     void                swap(ArrayType& o);
 
     virtual GT_DataArrayHandle  harden() const;
@@ -114,27 +109,27 @@ public:
                             return _data + o*tupleSize;
                         }
 
-    /** Access to individual elements as given POD type.
-        For performance, this is preferred to the virtual getXX() methods.*/
+    /// Access to individual elements as given POD type.
+    /// For performance, this is preferred to the virtual getXX() methods.
     template <typename PODT>
     PODT                getT(GT_Offset o, int idx=0) const;
 
-    /** Get access to a raw array of data.
-        If @a OTHERPODT is not the same as the array's underlying type,
-        the raw array will be stored in the given @a buf.*/
+    /// Get access to a raw array of data.
+    /// If @a OTHERPODT is not the same as the array's underlying type,
+    /// the raw array will be stored in the given @a buf.
     template <typename PODT>
     const PODT*         getArrayT(GT_DataArrayHandle& buf) const;
 
-    /** Extract a tuple into @a dst.*/
+    /// Extract a tuple into @a dst
     template <typename PODT>
     void                importT(GT_Offset o, PODT* dst, int tsize=-1) const;
 
-    /** Extract data for entire array into @a dst.*/
+    /// Extract data for entire array into @a dst.
     template <typename PODT>
     void                fillArrayT(PODT* dst, GT_Offset start, GT_Size length,
                                    int tsize=-1, int stride=-1) const;
 
-    /** Extended form of array extraction that supports repeated elems.*/
+    /// Extended form of array extraction that supports repeated elems.
     template <typename PODT>
     void                extendedFillT(PODT* dst, GT_Offset start,
                                       GT_Size length, int tsize=-1,
@@ -147,7 +142,7 @@ public:
     virtual int64       getMemoryUsage() const
                         { return sizeof(*this) + sizeof(T)*_size; }
 
-    /** Type-specific virtual getters.*/
+    // Type-specific virtual getters.
 
 #define _DECL_GETTERS(suffix,podt)                                      \
 public:                                                                 \
@@ -186,16 +181,16 @@ protected:                                                              \
 #undef _DECL_GETTER
 
 protected:
-    /** Update our @a _data member to point at the array data.
-        This must be called after any operation that changes
-        the contents of @a _array.*/
+    /// Update our @a _data member to point at the array data.
+    /// This must be called after any operation that changes
+    /// the contents of @a _array.
     void                _UpdateDataPointer(bool makeUnique);
 
 private:
-    /* No string support. For strings, use GusdGT_VtStringArray.*/
-    virtual GT_String   getS(GT_Offset, int) const              { return NULL; }
-    virtual GT_Size     getStringIndexCount() const             { return -1; }
-    virtual GT_Offset   getStringIndex(GT_Offset,int) const     { return -1; }
+    // No string support. For strings, use GusdGT_VtStringArray.
+    virtual GT_String   getS(GT_Offset, int) const          { return nullptr; }
+    virtual GT_Size     getStringIndexCount() const         { return -1; }
+    virtual GT_Offset   getStringIndex(GT_Offset,int) const { return -1; }
     virtual void        getIndexedStrings(UT_StringArray&,
                                           UT_IntArray&) const {}
 
@@ -203,8 +198,8 @@ protected:
     ArrayType       _array;
     const GT_Type   _type;
     GT_Size         _size;
-    const PODType*  _data;  /*! Raw pointer to the underlying data.
-                                Held separately as an optimization.*/
+    const PODType*  _data;  /// Raw pointer to the underlying data.
+                            /// Held separately as an optimization.
 };
 
 
@@ -218,7 +213,7 @@ GusdGT_VtArray<T>::GusdGT_VtArray(const ArrayType& array, GT_Type type)
 
 template <class T>
 GusdGT_VtArray<T>::GusdGT_VtArray(GT_Type type)
-    : _type(type), _size(0), _data(NULL)
+    : _type(type), _size(0), _data(nullptr)
 {}
 
 
@@ -226,10 +221,10 @@ template <class T>
 void
 GusdGT_VtArray<T>::_UpdateDataPointer(bool makeUnique)
 {
-    /* Access a non-const pointer to make the array unique.*/
+    // Access a non-const pointer to make the array unique.
     _data = reinterpret_cast<const PODType*>(
         makeUnique ? _array.data() : _array.cdata());
-    UT_ASSERT(_size == 0 || _data != NULL);
+    UT_ASSERT(_size == 0 || _data != nullptr);
 }
 
 
@@ -273,10 +268,10 @@ GusdGT_VtArray<T>::getArrayT(GT_DataArrayHandle& buf) const
         return reinterpret_cast<const PODT*>(_data);
 
 #if SYS_VERSION_FULL_INT < 0x10050000
-    typedef GT_DANumeric<PODT,
-        GusdGT_Utils::StorageByType<PODT>::value> _GTArrayType;
+    using _GTArrayType =
+       GT_DANumeric<PODT, GusdGT_Utils::StorageByType<PODType>::value>;
 #else
-    typedef GT_DANumeric<PODT> _GTArrayType;
+    using _GTArrayType = GT_DANumeric<PODT>;
 #endif
     
     _GTArrayType* tmpArray = new _GTArrayType(_size, tupleSize, _type);
@@ -311,13 +306,13 @@ GusdGT_VtArray<T>::fillArrayT(PODT* dst, GT_Offset start, GT_Size length,
         return;
     if(tsize < 1)
         tsize = tupleSize;
-    /* Stride is >= the unclamped tuple size.
-       This seems wrong, but is consistent with GT_DANumeric.*/
+    // Stride is >= the unclamped tuple size.
+    // This seems wrong, but is consistent with GT_DANumeric.
     stride = SYSmax(stride, tsize);
     tsize = SYSmin(tsize, tupleSize);
     if(SYS_IsSame<PODT,PODType>::value &&
        tsize == tupleSize && stride == tupleSize) {
-        /* direct copy is safe */
+        // direct copy is safe
         memcpy(dst, getData(start), length*tsize*sizeof(PODT));
     } else {
         const PODType* src = getData(start*tupleSize);

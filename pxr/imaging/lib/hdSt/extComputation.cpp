@@ -86,14 +86,24 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg(
-        "HdStExtComputation::Sync %s\n", GetId().GetText());
 
     HdExtComputation::_Sync(sceneDelegate, renderParam, dirtyBits);
 
-    // We only commit GPU resources when directly executing a GPU computation
-    // or when aggregating inputs for a downstream computation.
+    TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg(
+        "HdStExtComputation::Sync for %s (dirty bits = 0x%x)\n",
+        GetId().GetText(), *dirtyBits);
+
+    // During Sprim sync, we only commit GPU resources when directly executing a
+    // GPU computation or when aggregating inputs for a downstream computation.
+    // Note: For CPU computations, we pull the inputs when we create the
+    // HdExtCompCpuComputation, which happens during Rprim sync.
     if (GetGpuKernelSource().empty() && !IsInputAggregation()) {
+        return;
+    }
+
+    if (!(*dirtyBits & DirtySceneInput)) {
+        // No scene inputs to sync. All other computation dirty bits (barring
+        // DirtyCompInput) are sync'd in HdExtComputation::_Sync.
         return;
     }
 
@@ -156,6 +166,8 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
         // Make sure that we also release any stale input range data
         renderIndex.GetChangeTracker().SetGarbageCollectionNeeded();
     }
+
+    *dirtyBits &= ~DirtySceneInput;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -180,6 +180,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     // binding assignments
     BindingLocator locator;
     locator.textureUnit = 5; // XXX: skip glop's texture --- need fix.
+    locator.uboLocation = 3; // XXX  skip lighting context UBOs
 
     int bindlessTextureLocation = 0;
     // Note that these locations are used for hash keys only and

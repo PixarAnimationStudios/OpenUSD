@@ -32,6 +32,7 @@
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/diagnosticLite.h"
 
+#include <iterator>
 #include <type_traits>
 #include <utility>
 
@@ -191,11 +192,7 @@ public:
     typedef Tf_IteratorInterface<T, Reverse> IterInterface;
     typedef typename IterInterface::IteratorType Iterator;
 
-    typedef typename Iterator::reference Reference;
-    typedef typename std::result_of<decltype(&Iterator::operator*)(Iterator)>
-        ::type StarReturnType;
-    typedef typename std::result_of<decltype(&Iterator::operator->)(Iterator)>
-        ::type ArrowReturnType;
+    typedef typename std::iterator_traits<Iterator>::reference Reference;
 
     /// Default constructor.  This iterator is uninitialized.
     TfIterator() { }
@@ -269,7 +266,7 @@ public:
 
     /// Returns the element referenced by this iterator.
     /// \return element
-    StarReturnType operator*() {
+    Reference operator*() {
         if (ARCH_UNLIKELY(!*this))
             TF_FATAL_ERROR("iterator exhausted");
         return *_data.current;
@@ -277,7 +274,7 @@ public:
 
     /// Returns the element referenced by this iterator.
     /// \return element
-    StarReturnType operator*() const {
+    Reference operator*() const {
         if (ARCH_UNLIKELY(!*this))
             TF_FATAL_ERROR("iterator exhausted");
         return *_data.current;
@@ -285,10 +282,10 @@ public:
 
     /// Returns a pointer to the element referenced by this iterator.
     /// \return pointer to element
-    ArrowReturnType operator->() {
+    Iterator& operator->() {
         if (ARCH_UNLIKELY(!*this))
             TF_FATAL_ERROR("iterator exhausted");
-        return _data.current.operator->();
+        return _data.current;
     }   
 
     /// Explicit bool conversion operator.

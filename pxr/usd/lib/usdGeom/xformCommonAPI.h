@@ -135,7 +135,7 @@ public:
 protected:
     /// Returns whether the underlying xformable is compatible with the API.
     USDGEOM_API
-    virtual bool _IsCompatible() const override;
+    bool _IsCompatible() const override;
 
 public:
 
@@ -246,6 +246,18 @@ public:
     /// i.e., does not inherit the parent transformation.
     USDGEOM_API
     bool SetResetXformStack(bool resetXformStack) const;
+
+    /// @}
+
+    /// \name Computing transforms
+    /// @{
+
+    /// Return the 4x4 matrix that applies the rotation encoded by rotation
+    /// vector \p rotation using the rotation order \p rotationOrder.
+    USDGEOM_API
+    static GfMatrix4d GetRotationTransform(
+            const GfVec3f &rotation,
+            const UsdGeomXformCommonAPI::RotationOrder rotationOrder);
 
     /// @}
 

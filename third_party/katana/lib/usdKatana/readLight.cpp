@@ -109,6 +109,7 @@ PxrUsdKatanaReadLight(
             .Set("coneSoftness", shapingAPI.GetShapingConeSoftnessAttr())
             .Set("iesProfile", shapingAPI.GetShapingIesFileAttr())
             .Set("iesProfileScale", shapingAPI.GetShapingIesAngleScaleAttr())
+            .Set("iesProfileNormalize", shapingAPI.GetShapingIesNormalizeAttr())
             ;
 
         UsdLuxShadowAPI shadowAPI(lightPrim);

@@ -1,6 +1,7 @@
 set(DIRS
     garch
     hf
+    hio
     cameraUtil
     pxOsd
     glf

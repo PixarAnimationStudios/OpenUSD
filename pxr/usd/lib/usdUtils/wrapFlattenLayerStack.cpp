@@ -22,6 +22,11 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "pxr/base/arch/pragmas.h"
+
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_PLACEMENT_NEW  // because of pyFunction.h and boost::function
+
 #include <boost/python/def.hpp>
 
 #include "pxr/usd/usdUtils/flattenLayerStack.h"
@@ -76,3 +81,5 @@ void wrapFlattenLayerStack()
         UsdUtilsFlattenLayerStackResolveAssetPath,
         (arg("sourceLayer"), arg("assetPath")));
 }
+
+ARCH_PRAGMA_POP

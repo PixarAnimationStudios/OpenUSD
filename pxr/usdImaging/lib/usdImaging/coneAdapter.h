@@ -91,6 +91,17 @@ public:
     
     USDIMAGING_API
     static VtValue GetMeshTopology();
+
+    USDIMAGING_API
+    static GfMatrix4d GetMeshTransform(UsdPrim const& prim, 
+                                       UsdTimeCode time);
+
+    USDIMAGING_API
+    virtual size_t
+    SampleTransform(UsdPrim const& prim, SdfPath const& cachePath,
+                    const std::vector<float>& configuredSampleTimes,
+                    size_t maxNumSamples, float *sampleTimes,
+                    GfMatrix4d *sampleValues) override;
 };
 
 

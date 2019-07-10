@@ -24,21 +24,19 @@
 #include "pxr/usdImaging/usdImaging/coneAdapter.h"
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
+#include "pxr/usdImaging/usdImaging/implicitSurfaceMeshUtils.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/mesh.h"
+#include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
-
-#include "pxr/imaging/pxOsd/tokens.h"
 
 #include "pxr/usd/usdGeom/cone.h"
 #include "pxr/usd/usdGeom/xformCache.h"
 
 #include "pxr/base/tf/type.h"
-
-#include <cmath>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -66,7 +64,7 @@ UsdImagingConeAdapter::Populate(UsdPrim const& prim,
                             UsdImagingInstancerContext const* instancerContext)
 {
     return _AddRprim(HdPrimTypeTokens->mesh,
-                     prim, index, GetMaterialId(prim), instancerContext);
+                     prim, index, GetMaterialUsdPath(prim), instancerContext);
 }
 
 void 
@@ -82,20 +80,28 @@ UsdImagingConeAdapter::TrackVariability(UsdPrim const& prim,
     // has been carefully pre-populated to avoid mutating the underlying
     // container during update.
     
-    UsdGeomCone cone(prim);
-
-    if (!_IsVarying(prim,
-                       UsdGeomTokens->radius,
-                       HdChangeTracker::DirtyPoints,
-                       UsdImagingTokens->usdVaryingPrimvar,
-                       timeVaryingBits,
-                       /*isInherited*/false)) {
-        _IsVarying(prim,
-                   UsdGeomTokens->height,
-                   HdChangeTracker::DirtyPoints,
-                   UsdImagingTokens->usdVaryingPrimvar,
-                   timeVaryingBits,
-                   /*isInherited*/false);
+    // IMPORTANT: Calling _IsVarying will clear the specified bit if the given
+    // attribute is _not_ varying.  Since we have multiple attributes (and the
+    // base adapter invocation) that might result in the bit being set, we need
+    // to be careful not to reset it.  Translation: only check _IsVarying for a
+    // given cause IFF the bit wasn't already set by a previous invocation.
+    if ((*timeVaryingBits & HdChangeTracker::DirtyTransform) == 0) {
+        _IsVarying(prim, UsdGeomTokens->height,
+                   HdChangeTracker::DirtyTransform,
+                   UsdImagingTokens->usdVaryingXform,
+                   timeVaryingBits, /*inherited*/false);
+    }
+    if ((*timeVaryingBits & HdChangeTracker::DirtyTransform) == 0) {
+        _IsVarying(prim, UsdGeomTokens->radius,
+                   HdChangeTracker::DirtyTransform,
+                   UsdImagingTokens->usdVaryingXform,
+                   timeVaryingBits, /*inherited*/false);
+    }
+    if ((*timeVaryingBits & HdChangeTracker::DirtyTransform) == 0) {
+        _IsVarying(prim, UsdGeomTokens->axis,
+                   HdChangeTracker::DirtyTransform,
+                   UsdImagingTokens->usdVaryingXform,
+                   timeVaryingBits, /*inherited*/false);
     }
 }
 
@@ -112,14 +118,14 @@ UsdImagingConeAdapter::UpdateForTime(UsdPrim const& prim,
     BaseAdapter::UpdateForTime(
         prim, cachePath, time, requestedBits, instancerContext);
     UsdImagingValueCache* valueCache = _GetValueCache();
+    if (requestedBits & HdChangeTracker::DirtyTransform) {
+        // Update the transform with the size authored for the sphere.
+        GfMatrix4d& ctm = valueCache->GetTransform(cachePath);
+        GfMatrix4d xf = GetMeshTransform(prim, time);
+        ctm = xf * ctm;
+    }
     if (requestedBits & HdChangeTracker::DirtyTopology) {
         valueCache->GetTopology(cachePath) = GetMeshTopology();
-    }
-
-    if (_IsRefined(cachePath)) {
-        if (requestedBits & HdChangeTracker::DirtySubdivTags) {
-            valueCache->GetSubdivTags(cachePath);
-        }
     }
 }
 
@@ -133,147 +139,70 @@ UsdImagingConeAdapter::GetPoints(UsdPrim const& prim,
     return GetMeshPoints(prim, time);   
 }
 
-// -------------------------------------------------------------------------- //
-
-// slices are segments around the mesh
-static const int _slices = 10;
-
-// stacks are segments along the spine axis
-static const int _stacks = 1;
-
-static VtVec3fArray
-_GenerateConeMeshPoints(float radius,
-                        float height,
-                        TfToken const & axis)
-{
-    // choose basis vectors aligned with the spine axis
-    GfVec3f u, v, spine;
-    if (axis == UsdGeomTokens->x) {
-        u = GfVec3f::YAxis();
-        v = GfVec3f::ZAxis();
-        spine = GfVec3f::XAxis();
-    } else if (axis == UsdGeomTokens->y) {
-        u = GfVec3f::ZAxis();
-        v = GfVec3f::XAxis();
-        spine = GfVec3f::YAxis();
-    } else { // (axis == UsdGeomTokens->z)
-        u = GfVec3f::XAxis();
-        v = GfVec3f::YAxis();
-        spine = GfVec3f::ZAxis();
-    }
-
-    // compute a ring of points with unit radius in the uv plane
-    std::vector<GfVec3f> ring(_slices);
-    for (int i=0; i<_slices; ++i) {
-        float a = float(2 * M_PI * i) / _slices;
-        ring[i] = u * cosf(a) + v * sinf(a);
-    }
-
-    int numPoints = _slices * (_stacks + 1 + 1) + 1;
-
-    // populate points
-    VtVec3fArray pointsArray(numPoints);
-    GfVec3f * p = pointsArray.data();
-
-    // base cap
-    *p++ = spine * -height/2.0f;
-    for (int j=0; j<_slices; ++j) {
-        *p++ = radius * ring[j] + spine * -height/2.0f;
-    }
-
-    // cone
-    for (int i=0; i<=_stacks; ++i) {
-        float t = float(i) / _stacks;
-        float r = radius * (1.0f - t);
-        float w = height * (t - 0.5f);
-
-        for (int j=0; j<_slices; ++j) {
-            *p++ = r * ring[j] + spine * w;
-        }
-    }
-
-    TF_VERIFY(p - pointsArray.data() == numPoints);
-
-    return pointsArray;
-}
-
 /*static*/
 VtValue
-UsdImagingConeAdapter::GetMeshPoints(UsdPrim const& prim, 
+UsdImagingConeAdapter::GetMeshPoints(UsdPrim const& prim,
                                      UsdTimeCode time)
 {
-    UsdGeomCone cone(prim);
-    double radius = 1.0;
-    double height = 2.0;
-    TfToken axis = UsdGeomTokens->z;
-    TF_VERIFY(cone.GetRadiusAttr().Get(&radius, time));
-    TF_VERIFY(cone.GetHeightAttr().Get(&height, time));
-    TF_VERIFY(cone.GetAxisAttr().Get(&axis, time));
-
-    // We could express radius and height via a
-    // (potentially non-uniform) scaling transformation.
-    return VtValue(_GenerateConeMeshPoints(float(radius),
-                                           float(height),
-                                           axis));
-}
-
-static HdMeshTopology
-_GenerateConeMeshTopology()
-{
-    int numCounts = _slices * _stacks + _slices;
-    int numIndices = 4 * _slices * _stacks  // cone quads
-                   + 3 * _slices;           // end cap triangles
-
-    VtIntArray countsArray(numCounts);
-    int * counts = countsArray.data();
-
-    VtIntArray indicesArray(numIndices);
-    int * indices = indicesArray.data();
-
-    // populate face counts and face indices
-    int face = 0, index = 0, p = 0;
-
-    // base end cap triangles
-    int base = p++;
-    for (int i=0; i<_slices; ++i) {
-        counts[face++] = 3;
-        indices[index++] = p + (i+1)%_slices;
-        indices[index++] = p + i;
-        indices[index++] = base;
-    }
-    p += _slices;
-
-    // cone quads
-    for (int i=0; i<_stacks; ++i) {
-        for (int j=0; j<_slices; ++j) {
-            float x0 = 0;
-            float x1 = x0 + _slices;
-            float y0 = j;
-            float y1 = (j + 1) % _slices;
-            counts[face++] = 4;
-            indices[index++] = p + x0 + y0;
-            indices[index++] = p + x0 + y1;
-            indices[index++] = p + x1 + y1;
-            indices[index++] = p + x1 + y0;
-        }
-        p += _slices;
-    }
-
-    TF_VERIFY(face == numCounts && index == numIndices);
-
-    return HdMeshTopology(PxOsdOpenSubdivTokens->catmark,
-                          HdTokens->rightHanded,
-                          countsArray, indicesArray);
+    // The points are constant; the prim's attributes are accomodated by
+    // manipulating the transform (see GetMeshTransform() below).
+    return VtValue(UsdImagingGetUnitConeMeshPoints());
 }
 
 /*static*/
 VtValue
 UsdImagingConeAdapter::GetMeshTopology()
 {
-    // topology is identical for all cones
-    static HdMeshTopology coneTopo = _GenerateConeMeshTopology();
+    // Like the points, topology is constant and identical for all cylinders.
+    return VtValue(HdMeshTopology(UsdImagingGetUnitConeMeshTopology()));
+}
 
-    return VtValue(coneTopo);
+/*static*/
+GfMatrix4d
+UsdImagingConeAdapter::GetMeshTransform(UsdPrim const& prim, 
+                                        UsdTimeCode time)
+{
+    UsdGeomCone cone(prim);
+
+    double height = 2.0;
+    UsdGeomSphere sphere(prim);
+    if (!cone.GetHeightAttr().Get(&height, time)) {
+        TF_WARN("Could not evaluate double-valued height attribute on prim %s",
+            prim.GetPath().GetText());
+    }
+    double radius = 1.0;
+    if (!cone.GetRadiusAttr().Get(&radius, time)) {
+        TF_WARN("Could not evaluate double-valued radius attribute on prim %s",
+            prim.GetPath().GetText());
+    }
+    TfToken axis = UsdGeomTokens->z;
+    if (!cone.GetAxisAttr().Get(&axis, time)) {
+        TF_WARN("Could not evaluate token-valued axis attribute on prim %s",
+            prim.GetPath().GetText());
+    }
+
+    return UsdImagingGenerateConeOrCylinderTransform(height, radius, axis);
+}
+
+size_t
+UsdImagingConeAdapter::SampleTransform(
+    UsdPrim const& prim, SdfPath const& cachePath,
+    const std::vector<float>& configuredSampleTimes,
+    size_t maxNumSamples, float *sampleTimes,
+    GfMatrix4d *sampleValues)
+{
+    const size_t numSamples = BaseAdapter::SampleTransform(
+        prim, cachePath, configuredSampleTimes, maxNumSamples,
+        sampleTimes, sampleValues);
+
+    // Apply modeling transformation (which may be time-varying)
+    for (size_t i=0; i < numSamples; ++i) {
+        UsdTimeCode usdTime = _GetTimeWithOffset(sampleTimes[i]);
+        GfMatrix4d xf = GetMeshTransform(prim, usdTime);
+        sampleValues[i] = xf * sampleValues[i];
+    }
+
+    return numSamples;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

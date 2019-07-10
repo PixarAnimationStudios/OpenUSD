@@ -863,6 +863,8 @@ class TestUsdMetadata(unittest.TestCase):
         '''Test path resolution for asset path-valued metadata'''
         s = Usd.Stage.Open("assetPaths/root.usda")
         prim = s.GetPrimAtPath("/AssetPathTest")
+
+        # Test attribute timeSample resolution
         attr = prim.GetAttribute("assetPath")
         
         timeSamples = attr.GetMetadata("timeSamples")
@@ -881,6 +883,7 @@ class TestUsdMetadata(unittest.TestCase):
                   for p in attr.GetMetadata("default")]),
             [os.path.abspath("assetPaths/asset.usda")])
 
+        # Test prim metadata resolution
         metadataDict = prim.GetMetadata("customData")
         self.assertEqual(
             os.path.normpath(metadataDict["assetPath"].resolvedPath),
@@ -898,6 +901,28 @@ class TestUsdMetadata(unittest.TestCase):
             list([os.path.normpath(p.resolvedPath) 
                   for p in metadataDict["assetPathArray"]]),
             [os.path.abspath("assetPaths/asset.usda")])
+
+        # Test stage metadata resolution
+        metadataDict = s.GetMetadata("customLayerData")
+        self.assertEqual(
+            os.path.normpath(metadataDict["assetPath"].resolvedPath),
+            os.path.abspath("assetPaths/asset.usda"))
+        self.assertEqual(
+            list([os.path.normpath(p.resolvedPath) 
+                  for p in metadataDict["assetPathArray"]]),
+            [os.path.abspath("assetPaths/asset.usda")])
+            
+        metadataDict = metadataDict["subDict"]
+        self.assertEqual(
+            os.path.normpath(metadataDict["assetPath"].resolvedPath),
+            os.path.abspath("assetPaths/asset.usda"))
+        self.assertEqual(
+            list([os.path.normpath(p.resolvedPath) 
+                  for p in metadataDict["assetPathArray"]]),
+            [os.path.abspath("assetPaths/asset.usda")])
+        
+        
+
 
     def test_TimeSamplesMetadata(self):
         '''Test timeSamples composition, with layer offsets'''

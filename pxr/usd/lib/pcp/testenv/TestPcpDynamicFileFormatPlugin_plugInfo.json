@@ -1,0 +1,64 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "SdfMetadata": {
+                    "TestPcp_depth": {
+                        "type": "int",
+                        "default": 1,
+                        "displayGroup": "Core",
+                        "appliesTo": ["prims"],
+                        "documentation:": "Used to set number of copies."
+                    },
+                    "TestPcp_num": {
+                        "type": "int",
+                        "default": 1,
+                        "displayGroup": "Core",
+                        "appliesTo": ["prims"],
+                        "documentation:": "Used to set number of copies."
+                    },
+                    "TestPcp_radius": {
+                        "type": "double",
+                        "default": 3.0,
+                        "displayGroup": "Core",
+                        "appliesTo": ["prims"],
+                        "documentation:": "Used to set number of copies."
+                    },
+                    "TestPcp_height": {
+                        "type": "double",
+                        "default": 3.0,
+                        "displayGroup": "Core",
+                        "appliesTo": ["prims"],
+                        "documentation:": "Used to set number of copies."
+                    },
+                    "TestPcp_argDict": {
+                        "type": "dictionary",
+                        "displayGroup": "Core",
+                        "appliesTo": ["prims"],
+                        "documentation:": "Used to set number of copies."
+                    }
+                },
+
+                "Types": {
+                    "Test_PcpDynamicFileFormatPlugin_FileFormat": {
+                        "bases": [
+                            "SdfFileFormat"
+                        ],
+                        "displayName": "Dynamic file format plugin example for testing",
+                        "extensions": [
+                            "testpcpdynamic"
+                        ],
+                        "formatId": "Test_PcpDynamicFileFormat",
+                        "primary": true,
+                        "target": "usd"
+                    }
+                }
+            },
+            "LibraryPath": "@TEST_PLUG_INFO_LIBRARY_PATH@",
+            "Name": "TestPcpDynamicFileFormatPlugin",
+            "ResourcePath": "@TEST_PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@TEST_PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

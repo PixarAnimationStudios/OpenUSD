@@ -35,7 +35,9 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/trace/trace.h"
 
-#include <iostream>
+#include <boost/optional.hpp>
+
+#include <ostream>
 
 using std::string;
 using std::vector;
@@ -96,6 +98,28 @@ SdfListOp<T>::Swap(SdfListOp<T>& rhs)
     _appendedItems.swap(rhs._appendedItems);
     _deletedItems.swap(rhs._deletedItems);
     _orderedItems.swap(rhs._orderedItems);
+}
+
+template <typename T>
+bool
+SdfListOp<T>::HasItem(const T& item) const
+{
+    if (IsExplicit()) {
+        return std::find(_explicitItems.begin(), _explicitItems.end(), item)
+            != _explicitItems.end();
+    }
+
+    return 
+        (std::find(_addedItems.begin(), _addedItems.end(), item)
+            != _addedItems.end()) ||
+        (std::find(_prependedItems.begin(), _prependedItems.end(), item)
+            != _prependedItems.end()) ||
+        (std::find(_appendedItems.begin(), _appendedItems.end(), item)
+            != _appendedItems.end()) ||
+        (std::find(_deletedItems.begin(), _deletedItems.end(), item)
+            != _deletedItems.end()) ||
+        (std::find(_orderedItems.begin(), _orderedItems.end(), item)
+            != _orderedItems.end());
 }
 
 template <typename T>

@@ -160,6 +160,7 @@ class "SkelBindingAPI" (
     customData = {
         string className = "BindingAPI"
         string extraIncludes = """
+#include "pxr/base/tf/span.h"
 #include "pxr/usd/usdGeom/primvar.h"
 #include "pxr/usd/usdSkel/skeleton.h" """
     }
@@ -263,6 +264,7 @@ class BlendShape "BlendShape" (
       """
     customData = {
         string extraIncludes = """
+#include "pxr/base/tf/span.h"
 #include "pxr/usd/usdSkel/inbetweenShape.h" """
     }
 )
@@ -272,7 +274,12 @@ class BlendShape "BlendShape" (
         base pose, provides the target shape."""
     )
 
-    uniform uint[] pointIndices (
+    uniform vector3f[] normalOffsets (
+        doc = """**Required property**. Normal offsets which, when added to the
+        base pose, provides the normals of the target shape."""
+    )
+
+    uniform int[] pointIndices (
         doc = """**Optional property**. Indices into the original mesh that
         correspond to the values in *offsets* and of any inbetween shapes. If
         authored, the number of elements must be equal to the number of elements

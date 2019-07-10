@@ -28,6 +28,7 @@
 // Defines the RenderMan for Maya mapping between Pxr objects and Maya internal nodes
 #include "usdMaya/shadingModePxrRis_rfm_map.h"
 #include "usdMaya/shadingModeRegistry.h"
+#include "usdMaya/translatorUtil.h"
 #include "usdMaya/util.h"
 #include "usdMaya/writeUtil.h"
 
@@ -52,6 +53,7 @@
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/tokens.h"
 
+#include <maya/MFnAttribute.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnSet.h>
 #include <maya/MObject.h>
@@ -73,7 +75,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((DefaultShaderOutputName, "out"))
     ((MayaShaderOutputName, "outColor"))
 
-    ((RmanPlugPreferenceName, "rfmShadingEngineUsePrmanPlugs"))
+    ((RmanPlugPreferenceName, "rfmShadingEngineUseRmanPlugs"))
 
     ((RmanVolumeShaderPlugName, "volumeShader"))
 );
@@ -179,14 +181,22 @@ private:
 
         MStatus status = MS::kFailure;
 
-        std::vector<MPlug> attrPlugs;
+        std::vector<MPlug> inputAttrPlugs;
 
-        // gather all the attrPlugs we want to process.
+        // gather all the inputAttrPlugs we want to process.
         for (unsigned int i = 0u; i < depNode.attributeCount(); ++i) {
             MPlug attrPlug = depNode.findPlug(depNode.attribute(i), true);
             if (attrPlug.isProcedural()) {
                 // maya docs says these should not be saved off.  we skip them
                 // here.
+                continue;
+            }
+
+            // We can identify "output" parameters for Pxr* by checking if they
+            // are writable.  
+            if (!MFnAttribute(attrPlug.attribute()).isWritable()) {
+                // If needed, we could author these as outputs, but
+                // currently don't have an immediate need to bake these out.
                 continue;
             }
 
@@ -203,7 +213,7 @@ private:
             if (attrPlug.isArray()) {
                 const unsigned int numElements = attrPlug.evaluateNumElements();
                 if (numElements > 0u) {
-                    attrPlugs.push_back(attrPlug[0]);
+                    inputAttrPlugs.push_back(attrPlug[0]);
                     if (numElements > 1u) {
                         TF_WARN(
                             "Array with multiple elements encountered at '%s'. "
@@ -214,11 +224,11 @@ private:
                 }
             }
             else {
-                attrPlugs.push_back(attrPlug);
+                inputAttrPlugs.push_back(attrPlug);
             }
         }
 
-        for (const auto& attrPlug : attrPlugs) {
+        for (const auto& attrPlug : inputAttrPlugs) {
             // this is writing out things that live on the MFnDependencyNode.
             // maybe that's OK?  nothing downstream cares about it.
 
@@ -395,14 +405,16 @@ namespace {
 
 static
 MObject
-_CreateShaderObject(
+_CreateAndPopulateShaderObject(
         const UsdShadeShader& shaderSchema,
+        const UsdMayaShadingNodeType shadingNodeType,
         UsdMayaShadingModeImportContext* context);
 
 static
 MObject
 _GetOrCreateShaderObject(
         const UsdShadeShader& shaderSchema,
+        const UsdMayaShadingNodeType shadingNodeType,
         UsdMayaShadingModeImportContext* context)
 {
     MObject shaderObj;
@@ -414,7 +426,7 @@ _GetOrCreateShaderObject(
         return shaderObj;
     }
 
-    shaderObj = _CreateShaderObject(shaderSchema, context);
+    shaderObj = _CreateAndPopulateShaderObject(shaderSchema, shadingNodeType, context);
     return context->AddCreatedObject(shaderSchema.GetPrim(), shaderObj);
 }
 
@@ -443,32 +455,117 @@ _ImportAttr(const UsdAttribute& usdAttr, const MFnDependencyNode& fnDep)
     return mayaAttrPlug;
 }
 
+static
+TfToken
+_GetMayaTypeNameForShaderId(
+        const TfToken& shaderId)
+{
+    // Remap the mayaTypeName if found in the RIS table.
+    for (const auto & i : _RFM_RISNODE_TABLE) {
+        if (i.second == shaderId) {
+            return i.first;
+        }
+    }
+
+    // Otherwise, just return shaderId
+    return shaderId;
+}
+
+static 
+UsdMayaShadingNodeType
+_ComputeShadingNodeTypeForShaderId(
+        const TfToken& shaderId, 
+        const UsdMayaShadingNodeType& fallback)
+{
+    MString mayaType(_GetMayaTypeNameForShaderId(shaderId).GetText());
+    MStatus status;
+    MString cmd;
+    status = cmd.format("getClassification ^1s", mayaType);
+    CHECK_MSTATUS_AND_RETURN(status, fallback);
+
+    MStringArray compoundClassifications;
+    status = MGlobal::executeCommand(cmd, compoundClassifications, false, false);
+    CHECK_MSTATUS_AND_RETURN(status, fallback);
+
+    static const std::vector<std::pair<std::string, UsdMayaShadingNodeType> >
+        _classificationsToTypes = {
+            { "texture/", UsdMayaShadingNodeType::Texture },
+            { "utility/", UsdMayaShadingNodeType::Utility },
+            { "shader/", UsdMayaShadingNodeType::Shader },
+        };
+
+    // The docs for getClassification are pretty confusing.  You'd think that
+    // the string array returned would give you each "classification", but
+    // instead, it's a list of "single compound classification string by joining
+    // the individual classifications with ':'".  
+
+    // Loop over the compoundClassifications, though I believe
+    // compoundClassifications will always have size 0 or 1.
+#if MAYA_API_VERSION >= 20190000
+    for (const MString& compoundClassification : compoundClassifications) {
+#else
+    for (unsigned int i = 0; i < compoundClassifications.length(); ++i) {
+        const MString& compoundClassification = compoundClassifications[i];
+#endif
+        const std::string compoundClassificationStr(compoundClassification.asChar());
+        for (const std::string& classification :
+             TfStringSplit(compoundClassificationStr, ":")) {
+            for (const auto& classPrefixAndType : _classificationsToTypes) {
+                if (TfStringStartsWith(
+                        classification, classPrefixAndType.first)) {
+                    return classPrefixAndType.second;
+                }
+            }
+        }
+    }
+
+    return fallback;
+}
+
+static 
+UsdMayaShadingNodeType
+_GetShadingNodeTypeForNestedNode(
+        const UsdShadeShader& shaderSchema)
+{
+    TfToken shaderId;
+    shaderSchema.GetIdAttr().Get(&shaderId);
+
+    static std::map<TfToken, UsdMayaShadingNodeType> _cache;
+    const auto iter = _cache.find(shaderId);
+    if (iter != _cache.end()) {
+        return iter->second;
+    }
+
+    return _cache[shaderId] = _ComputeShadingNodeTypeForShaderId(
+               shaderId, 
+               // any "nested" shader objects that we can't classify should
+               // fallback to NonShading.
+               UsdMayaShadingNodeType::NonShading);
+}
+
+
 // Should only be called by _GetOrCreateShaderObject, no one else.
 MObject
-_CreateShaderObject(
+_CreateAndPopulateShaderObject(
         const UsdShadeShader& shaderSchema,
+        const UsdMayaShadingNodeType shadingNodeType,
         UsdMayaShadingModeImportContext* context)
 {
     TfToken shaderId;
     shaderSchema.GetIdAttr().Get(&shaderId);
 
-    TfToken mayaTypeName = shaderId;
-
-    // Now remap the mayaTypeName if found in the RIS table.
-    for (const auto & i : _RFM_RISNODE_TABLE) {
-        if (i.second == mayaTypeName) {
-            mayaTypeName = i.first;
-            break;
-        }
-    }
+    TfToken mayaTypeName = _GetMayaTypeNameForShaderId(shaderId);
 
     MStatus status;
+    MObject shaderObj;
     MFnDependencyNode depFn;
-    MObject shaderObj =
-        depFn.create(MString(mayaTypeName.GetText()),
-                     MString(shaderSchema.GetPrim().GetName().GetText()),
-                     &status);
-    if (status != MS::kSuccess) {
+    if (!(UsdMayaTranslatorUtil::CreateShaderNode(
+                MString(shaderSchema.GetPrim().GetName().GetText()),
+                mayaTypeName.GetText(),
+                shadingNodeType,
+                &status,
+                &shaderObj) 
+            && depFn.setObject(shaderObj))) {
         // we need to make sure assumes those types are loaded..
         TF_RUNTIME_ERROR(
                 "Could not create node of type '%s' for shader '%s'. "
@@ -502,8 +599,11 @@ _CreateShaderObject(
             continue;
         }
 
-        MObject sourceObj = _GetOrCreateShaderObject(sourceShaderSchema,
-                                                     context);
+        MObject sourceObj = _GetOrCreateShaderObject(
+            sourceShaderSchema,
+            _GetShadingNodeTypeForNestedNode(sourceShaderSchema),
+            context);
+
         MFnDependencyNode sourceDepFn(sourceObj, &status);
         if (status != MS::kSuccess) {
             continue;
@@ -569,9 +669,12 @@ DEFINE_SHADING_MODE_IMPORTER(pxrRis, context)
         displacementShader = UsdRiMaterialAPI(shadeMaterial).GetDisplacement();
     }
 
-    MObject surfaceShaderObj = _GetOrCreateShaderObject(surfaceShader, context);
-    MObject volumeShaderObj = _GetOrCreateShaderObject(volumeShader, context);
-    MObject displacementShaderObj = _GetOrCreateShaderObject(displacementShader, context);
+    MObject surfaceShaderObj = _GetOrCreateShaderObject(
+        surfaceShader, UsdMayaShadingNodeType::Shader, context);
+    MObject volumeShaderObj = _GetOrCreateShaderObject(
+        volumeShader, UsdMayaShadingNodeType::Shader, context);
+    MObject displacementShaderObj = _GetOrCreateShaderObject(
+        displacementShader, UsdMayaShadingNodeType::Shader, context);
 
     if (surfaceShaderObj.isNull() &&
             volumeShaderObj.isNull() &&

@@ -23,6 +23,12 @@
 //
 
 #include "pxr/pxr.h"
+
+#include "pxr/base/arch/pragmas.h"
+
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_PLACEMENT_NEW  // because of pyFunction.h and boost::function
+
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/tf/pyContainerConversions.h"
@@ -36,6 +42,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <functional>
 #include <string>
 #include <thread>
 #include <utility>
@@ -91,7 +98,7 @@ _GetAllDerivedTypes(TfType const &type)
 // For testing -- load plugins in parallel.
 
 typedef bool PluginPredicateSig(PlugPluginPtr);
-typedef boost::function<PluginPredicateSig> PluginPredicateFn;
+typedef std::function<PluginPredicateSig> PluginPredicateFn;
 
 struct SharedState : boost::noncopyable {
 
@@ -237,3 +244,5 @@ void wrapRegistry()
         _LoadPluginsConcurrently,
         (arg("predicate"), arg("numThreads")=0, arg("verbose")=false));
 }
+
+ARCH_PRAGMA_POP

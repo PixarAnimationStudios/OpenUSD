@@ -32,7 +32,7 @@
 #include "pxr/base/gf/vec2i.h"
 
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/hdx/intersector.h"
+#include "pxr/imaging/hdx/pickTask.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 
 #include <memory>
@@ -40,74 +40,23 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdEngine;
-class HdxIntersector;
 class HdRprimCollection;
 
 namespace HdxUnitTestUtils
 {
-    struct PickParams {
-        PickParams() :
-             highlightMode(HdSelection::HighlightModeSelect)
-           , pickTarget(HdxIntersector::PickPrimsAndInstances)
-           , pickThrough(false) {}
+    HdSelectionSharedPtr TranslateHitsToSelection(
+        TfToken const& pickTarget,
+        HdSelection::HighlightMode highlightMode,
+        HdxPickHitVector const& allHits);
 
-    public:
-        GfVec2i pickRadius;
+    // For a drag-select from start to end, with given pick radius, what size
+    // ID buffer should we ask for?
+    GfVec2i CalculatePickResolution(
+        GfVec2i const& start, GfVec2i const& end, GfVec2i const& pickRadius);
 
-        // window/viewport
-        int screenWidth;
-        int screenHeight;
-        GfFrustum viewFrustum;
-        GfMatrix4d viewMatrix;
-
-        // hd/hdx
-        HdEngine* engine;
-        const HdRprimCollection* pickablesCol;
-        HdSelection::HighlightMode highlightMode;
-        HdxIntersector::PickTarget pickTarget;
-        bool pickThrough;
-    };
-
-    class Picker {
-    public:
-        Picker();
-        ~Picker();
-
-        void InitIntersector(HdRenderIndex* renderIndex);
-        
-        void SetPickParams(PickParams const& pParams) {
-            _pParams = pParams;
-        }
-        void SetWidthHeight(int w, int h) {
-            _pParams.screenWidth  = w;
-            _pParams.screenHeight = h;
-        }
-        void SetViewFrustum(GfFrustum const& frustum) {
-            _pParams.viewFrustum = frustum;
-        }
-        void SetViewMatrix(GfMatrix4d const& matrix) {
-            _pParams.viewMatrix = matrix;
-        }
-        void SetHighlightMode(HdSelection::HighlightMode mode) {
-            _pParams.highlightMode = mode;
-        }
-        void SetPickTarget(HdxIntersector::PickTarget mode) {
-            _pParams.pickTarget = mode;
-        }
-         void SetPickThrough(bool pickThrough) {
-            _pParams.pickThrough = pickThrough;
-        }
-
-        void Pick(GfVec2i const& startPos,
-                  GfVec2i const& endPos);
-        HdxSelectionTrackerSharedPtr GetSelectionTracker() const;
-        HdSelectionSharedPtr GetSelection() const;
-
-    private:
-        std::unique_ptr<HdxIntersector> _intersector;
-        HdxSelectionTrackerSharedPtr _selectionTracker;
-        PickParams _pParams;
-    };
+    GfMatrix4d ComputePickingProjectionMatrix(
+        GfVec2i const& start, GfVec2i const& end, GfVec2i const& screen,
+        GfFrustum const& viewFrustum);
 
     class Marquee {
     public:

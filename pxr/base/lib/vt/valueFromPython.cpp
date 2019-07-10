@@ -32,10 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(Vt_ValueFromPythonRegistry);
 
-// Holders are created and inserted into the registry, and currently never die.
-Vt_ValueFromPythonRegistry::_Extractor::_HolderBase::~_HolderBase()
-{
-}
+Vt_ValueFromPythonRegistry::~Vt_ValueFromPythonRegistry() = default;
 
 VtValue
 Vt_ValueFromPythonRegistry::Invoke(PyObject *obj) {
@@ -62,8 +59,8 @@ Vt_ValueFromPythonRegistry::Invoke(PyObject *obj) {
         VtValue result = self._lvalueExtractors[i-1].Invoke(obj);
         if (!result.IsEmpty()) {
             // Cache the result.
-            self._lvalueExtractorCache[PyObject_Type(obj)] =
-                self._lvalueExtractors[i-1];
+            self._lvalueExtractorCache.insert(
+                {PyObject_Type(obj), self._lvalueExtractors[i-1]});
             return result;
         }
     }

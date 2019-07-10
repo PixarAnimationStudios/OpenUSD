@@ -36,8 +36,7 @@ SDF_DECLARE_HANDLES(SdfPseudoRootSpec);
 
 class SdfPseudoRootSpec : public SdfPrimSpec
 {
-    SDF_DECLARE_SPEC(SdfSchema, SdfSpecTypePseudoRoot,
-                     SdfPseudoRootSpec, SdfPrimSpec);
+    SDF_DECLARE_SPEC(SdfPseudoRootSpec, SdfPrimSpec);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

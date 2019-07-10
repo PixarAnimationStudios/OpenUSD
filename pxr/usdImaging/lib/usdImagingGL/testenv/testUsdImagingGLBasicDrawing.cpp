@@ -239,7 +239,8 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     }
 
     GfVec4d viewport(0, 0, width, height);
-    _engine->SetCameraState(modelViewMatrix, projMatrix, viewport);
+    _engine->SetCameraState(modelViewMatrix, projMatrix);
+    _engine->SetRenderViewport(viewport);
 
     size_t i = 0;
     TF_FOR_ALL(timeIt, GetTimes()) {
