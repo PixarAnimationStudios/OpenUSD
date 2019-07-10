@@ -90,6 +90,13 @@
                         "isInternal": true,
                         "primTypeName": "Mesh"
                     },
+                    "UsdImagingNurbsCurvesAdapter": {
+                        "bases": [
+                            "UsdImagingGprimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "NurbsCurves"
+                    },
                     "UsdImagingNurbsPatchAdapter": {
                         "bases": [
                             "UsdImagingGprimAdapter"
