@@ -42,6 +42,7 @@ pxr_plugin(${PXR_PACKAGE}
         lightWriter.cpp
         materialReader.cpp
         meshReader.cpp
+        meshWriter_BlendShape.cpp
         meshWriter_Primvars.cpp
         meshWriter_Skin.cpp
         meshWriter_Subdiv.cpp

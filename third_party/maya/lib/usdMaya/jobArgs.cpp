@@ -304,6 +304,14 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
                     UsdMayaJobExportArgsTokens->auto_,
                     UsdMayaJobExportArgsTokens->explicit_
                 })),
+        exportBlendShapes(
+            _Token(userArgs,
+                UsdMayaJobExportArgsTokens->exportBlendShapes,
+                UsdMayaJobExportArgsTokens->none,
+                {
+                    UsdMayaJobExportArgsTokens->auto_,
+                    UsdMayaJobExportArgsTokens->explicit_
+                })),
         exportVisibility(
             _Boolean(userArgs, UsdMayaJobExportArgsTokens->exportVisibility)),
         materialCollectionsPath(
@@ -368,6 +376,7 @@ operator <<(std::ostream& out, const UsdMayaJobExportArgs& exportArgs)
         << "defaultMeshScheme: " << exportArgs.defaultMeshScheme << std::endl
         << "eulerFilter: " << TfStringify(exportArgs.eulerFilter) << std::endl
         << "excludeInvisible: " << TfStringify(exportArgs.excludeInvisible) << std::endl
+        << "exportBlendShapes: " << TfStringify(exportArgs.exportBlendShapes) << std::endl
         << "exportCollectionBasedBindings: " << TfStringify(exportArgs.exportCollectionBasedBindings) << std::endl
         << "exportColorSets: " << TfStringify(exportArgs.exportColorSets) << std::endl
         << "exportDefaultCameras: " << TfStringify(exportArgs.exportDefaultCameras) << std::endl
@@ -455,6 +464,8 @@ UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->defaultMeshScheme] = 
                 UsdGeomTokens->catmullClark.GetString();
         d[UsdMayaJobExportArgsTokens->eulerFilter] = false;
+        d[UsdMayaJobExportArgsTokens->exportBlendShapes] =
+                UsdMayaJobExportArgsTokens->none.GetString();
         d[UsdMayaJobExportArgsTokens->exportCollectionBasedBindings] = false;
         d[UsdMayaJobExportArgsTokens->exportColorSets] = true;
         d[UsdMayaJobExportArgsTokens->exportDisplayColor] = true;

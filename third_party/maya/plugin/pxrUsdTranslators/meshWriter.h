@@ -86,6 +86,8 @@ private:
     /// This should only be called once at the default time.
     MObject writeSkinningData(UsdGeomMesh& primSchema);
 
+    MObject writeBlendShapeData(UsdGeomMesh& primSchema);
+
     bool _GetMeshUVSetData(
             const MFnMesh& mesh,
             const MString& uvSetName,
