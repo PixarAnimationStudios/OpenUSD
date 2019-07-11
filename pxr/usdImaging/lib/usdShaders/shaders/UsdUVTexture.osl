@@ -28,7 +28,8 @@ shader UsdUVTexture
 ]]
 (
     // Details : Image source
-    string file = "",
+    string file = ""
+        [[ string widget = "assetIdInput" ]],
 
     // Details : Texture coordinates
     float st[2] = {0.0, 0.0},
