@@ -229,17 +229,17 @@ class TestUsdTimeOffsets(unittest.TestCase):
             rootLyr = Sdf.Layer.CreateNew("TestPayloadOffsets."+fmt)
             nestedRootLyr = Sdf.Layer.CreateNew("TestPayloadOffsetsNested."+fmt)
 
-            print "-"*80
-            print "Testing flat offsets:"
-            print "-"*80
+            print("-"*80)
+            print("Testing flat offsets:")
+            print("-"*80)
             adjPrims = BuildReferenceOffsets(rootLyr, testLyr, makePayloads=True)
             for adjPrim in adjPrims:
                 VerifyOffset(adjPrim)
 
-            print
-            print "-"*80
-            print "Testing nested offsets:"
-            print "-"*80
+            print("")
+            print("-"*80)
+            print("Testing nested offsets:")
+            print("-"*80)
             for adjPrim in BuildNestedReferenceOffsets(
                 adjPrims, nestedRootLyr, rootLyr, makePayloads=True):
                 VerifyOffset(adjPrim)
@@ -315,8 +315,8 @@ class TestUsdTimeOffsets(unittest.TestCase):
                      attr.Get(time=2.0)))
                 # Check that the time value in the payload is correctly
                 # transformed.
-                authoredTime = bazPayload.attributes[
-                    'attrFromBaz'].GetInfo('timeSamples').keys()[0]
+                authoredTime = list(bazPayload.attributes[
+                    'attrFromBaz'].GetInfo('timeSamples').keys())[0]
                 self.assertEqual(
                     Usd.PrepLayerOffset(payloadOffset).GetInverse() * 2.0,
                     authoredTime)

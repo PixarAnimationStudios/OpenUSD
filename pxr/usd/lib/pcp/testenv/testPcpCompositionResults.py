@@ -43,7 +43,7 @@ payloadRegex = re.compile(args.payloads)
 hadError = False
 errorFile = None
 if args.errorFileName:
-    errorFile = file(args.errorFileName, "w")
+    errorFile = open(args.errorFileName, "w")
 if args.dumpMaps and args.dumpPathStr == '':
     print('--dumpMaps must be used in tandem with --dumpPath')
     sys.exit(0)

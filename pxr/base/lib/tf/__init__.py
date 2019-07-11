@@ -73,8 +73,8 @@ def GetCodeLocation(framesUp):
 
     and genericDebugFacility() will get information associated with its caller, 
     i.e. the function someCode()."""
-    import inspect
-    f_back = inspect.currentframe(framesUp).f_back
+    import sys
+    f_back = sys._getframe(framesUp).f_back
     return (f_back.f_globals['__name__'], f_back.f_code.co_name,
             f_back.f_code.co_filename, f_back.f_lineno)
 
