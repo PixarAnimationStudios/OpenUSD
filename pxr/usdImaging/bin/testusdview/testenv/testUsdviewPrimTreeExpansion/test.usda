@@ -1,0 +1,131 @@
+#usda 1.0
+
+def Xform "Shapes" (
+    add variantSets = ["a_shapeVariant", "b_shapeVariant"]
+)
+{
+    variantSet "a_shapeVariant" = {
+        "capsule" {
+            def Capsule "Pill"
+            {
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+        "cone" {
+            def Cone "PartyHat"
+            {
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+        "cube" {
+            def Cube "Box"
+            {
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+        "cylinder" {
+            def Cylinder "Tube"
+            {
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+    }
+
+    variantSet "b_shapeVariant" = {
+        "capsule" {
+            def Capsule "Pill"
+            {
+                double3 xformOp:translate = (4, 5, 6)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+        "cone" {
+            def Cone "PartyHat"
+            {
+                double3 xformOp:translate = (4, 5, 6)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+        "cube" {
+            def Cube "Box"
+            {
+                double3 xformOp:translate = (4, 5, 6)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+        "cylinder" {
+            def Cylinder "Tube"
+            {
+                double3 xformOp:translate = (4, 5, 6)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+    }
+}
+
+
+def Xform "Implicits" (
+    add variantSets = "shapeVariant"
+)
+{
+    variantSet "shapeVariant" = {
+        "Sphere" {
+            def Sphere "Ball"
+            {
+            }
+        }
+        "Sphere2" {
+            def Sphere "Ball2"
+            {
+            }
+        }
+    }
+}
+
+def Xform "spheres" {
+
+    def Sphere "a" {
+        double3 xformOp:translate = (2, 2, 2)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "b" {
+        double3 xformOp:translate = (3, 4, 3)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+}
+
+def Sphere "c" {
+    double3 xformOp:translate = (4, 6, 4)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def "A" {
+    def "B" {
+        def "C" {
+            def "D" {
+
+            }
+        }
+    }
+}
+
+def "C2" (payload = </A/B/C>) {
+    
+}
+
+class "_class_X" {
+    def "Y" {
+    }
+}
+
+def "X" (
+    inherits = [ </_class_X> ]
+    instanceable = true
+) {
+}

@@ -1591,6 +1591,24 @@ class AppController(QtCore.QObject):
         """
         self._ui.primView.resizeColumnToContents(0)
 
+    # Retrieve the list of prims currently expanded in the primTreeWidget
+    def _getExpandedPrimViewPrims(self):
+        rootItem = self._ui.primView.invisibleRootItem()
+        expandedItems = list()
+
+        # recursive function for adding all expanded items to expandedItems
+        def findExpanded(item):
+            if item.isExpanded():
+                expandedItems.append(item)
+            for i in range(item.childCount()):
+                findExpanded(item.child(i))
+
+        findExpanded(rootItem)
+
+        expandedPrims = [item.prim for item in expandedItems]
+        return expandedPrims
+
+
     # This appears to be "reasonably" performant in normal sized pose caches.
     # If it turns out to be too slow, or if we want to do a better job of
     # preserving the view the user currently has, we could look into ways of
@@ -1598,6 +1616,8 @@ class AppController(QtCore.QObject):
     # (far and away) faster solution would be to implement our own TreeView
     # and model in C++.
     def _resetPrimView(self, restoreSelection=True):
+        expandedPrims = self._getExpandedPrimViewPrims()
+
         with Timer() as t, BusyContext():
             startingDepth = 3
             self._computeDisplayPredicate()
@@ -1612,7 +1632,22 @@ class AppController(QtCore.QObject):
                 self._populateRoots()
                 # it's confusing to see timing for expand followed by reset with
                 # the times being similar (esp when they are large)
-                self._expandToDepth(startingDepth, suppressTiming=True)
+                if not expandedPrims:
+                    self._expandToDepth(startingDepth, suppressTiming=True)
+                # to maintain the primview, for each prim that has been 
+                # expanded, first check that it exists. then if its item has not 
+                # yet been populated,  use _getItemAtPath to populate its "chain" 
+                # of parents, so that the prim's item can be expanded. if it
+                # does already exist in the _primToItemMap, expand the item.
+                else:
+                    for prim in expandedPrims:
+                        if prim:
+                            item = self._primToItemMap.get(prim)
+                            if not item:
+                                primPath = prim.GetPrimPath()
+                                item = self._getItemAtPath(primPath)
+                            item.setExpanded(True)
+
                 if restoreSelection:
                     self._refreshPrimViewSelection()
                 self._ui.primView.setUpdatesEnabled(True)
