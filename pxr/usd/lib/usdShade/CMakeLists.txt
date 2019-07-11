@@ -105,6 +105,11 @@ pxr_install_test_dir(
     DEST testUsdShadeMaterialSpecializesBaseComposition
 )
 
+pxr_install_test_dir(
+    SRC testenv/testUsdShadeShaderDef
+    DEST testUsdShadeShaderDef
+)
+
 pxr_register_test(testUsdShadeBinding
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeBinding"

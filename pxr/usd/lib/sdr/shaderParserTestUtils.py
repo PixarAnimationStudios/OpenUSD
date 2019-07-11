@@ -29,7 +29,7 @@ This is mostly focused on dealing with OSL and Args files. This may need to be
 expanded/generalized to accommodate other types in the future.
 """
 
-from pixar import Ndr
+from pxr import Ndr
 from pxr import Sdr
 from pxr.Sdf import ValueTypeNames as SdfTypes
 from pxr import Tf
@@ -416,25 +416,35 @@ def TestShaderSpecificNode(node):
 def TestShaderPropertiesNode(node):
     """
     Tests property correctness on the specified shader node, which must be
-    one of the following pre-defined nodes: 'TestShaderPropertiesNodeOSL' or
-    'TestShaderPropertiesNodeARGS'.  These pre-defined nodes have a property of
-    every type that Sdr supports.
+    one of the following pre-defined nodes:
+    * 'TestShaderPropertiesNodeOSL'
+    * 'TestShaderPropertiesNodeARGS'
+    * 'TestShaderPropertiesNodeUSD'
+    These pre-defined nodes have a property of every type that Sdr supports.
 
     Property correctness is defined as:
     * The shader property has the expected type
     * If the shader property has a default value, the default value's type
       matches the shader property's type
     """
-    isOSL = IsNodeOSL(node)
-
     # This test should only be run on the following allowed node names
     # --------------------------------------------------------------------------
-    nodeName = "TestShaderPropertiesNodeOSL" if isOSL else \
-        "TestShaderPropertiesNodeARGS"
+    allowedNodeNames = ["TestShaderPropertiesNodeOSL",
+                        "TestShaderPropertiesNodeARGS",
+                        "TestShaderPropertiesNodeUSD"]
 
     # If this assertion on the name fails, then this test was called with the
     # wrong node.
-    assert node.GetName() == nodeName
+    assert node.GetName() in allowedNodeNames
+
+    # If we have the correct node name, double check that the source type is
+    # also correct
+    if node.GetName() == "TestShaderPropertiesNodeOSL":
+        assert node.GetSourceType() == "OSL"
+    elif node.GetName() == "TestShaderPropertiesNodeARGS":
+        assert node.GetSourceType() == "RmanCpp"
+    elif node.GetName() == "TestShaderPropertiesNodeUSD":
+        assert node.GetSourceType() == "glslfx"
 
     nodeInputs = {propertyName: node.GetShaderInput(propertyName)
                   for propertyName in node.GetInputNames()}
@@ -467,11 +477,18 @@ def TestShaderPropertiesNode(node):
            Tf.Type.FindByName("GfMatrix4d")
     assert Ndr._ValidateProperty(node, nodeInputs["inputMatrix"])
 
-    assert GetType(nodeInputs["inputStruct"]) == Tf.Type.FindByName("TfToken")
-    assert Ndr._ValidateProperty(node, nodeInputs["inputStruct"])
+    if node.GetName() != "TestShaderPropertiesNodeUSD":
+        # XXX Note that 'struct' and 'vstruct' types are currently unsupported
+        # by the UsdShadeShaderDefParserPlugin, which parses shaders defined in
+        # usd files. Please see UsdShadeShaderDefParserPlugin implementation for
+        # details.
+        assert GetType(nodeInputs["inputStruct"]) == \
+               Tf.Type.FindByName("TfToken")
+        assert Ndr._ValidateProperty(node, nodeInputs["inputStruct"])
 
-    assert GetType(nodeInputs["inputVstruct"]) == Tf.Type.FindByName("TfToken")
-    assert Ndr._ValidateProperty(node, nodeInputs["inputVstruct"])
+        assert GetType(nodeInputs["inputVstruct"]) == \
+               Tf.Type.FindByName("TfToken")
+        assert Ndr._ValidateProperty(node, nodeInputs["inputVstruct"])
 
     assert GetType(nodeInputs["inputIntArray"]) == \
            Tf.Type.FindByName("VtArray<int>")
