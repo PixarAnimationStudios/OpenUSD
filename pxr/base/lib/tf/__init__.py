@@ -94,7 +94,7 @@ class ErrorException(RuntimeError):
         self.__TfException = True
 
     def __str__(self):
-        return '\n\t' + '\n\t'.join([str(e) for e in self])
+        return '\n\t' + '\n\t'.join([str(e) for e in self.args])
 __SetErrorExceptionClass(ErrorException)
 
 try:
