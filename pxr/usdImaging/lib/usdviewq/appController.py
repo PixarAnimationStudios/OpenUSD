@@ -3687,12 +3687,6 @@ class AppController(QtCore.QObject):
             if not v is None:
                 m[k] = v
 
-        m["[object type]"] = "Attribute" if type(obj) is Usd.Attribute \
-                       else "Prim" if type(obj) is Usd.Prim \
-                       else "Relationship" if type(obj) is Usd.Relationship \
-                       else "Unknown"
-        m["[path]"] = str(obj.GetPath())
-
         clipMetadata = obj.GetMetadata("clips")
         if clipMetadata is None:
             clipMetadata = {}
@@ -3731,36 +3725,40 @@ class AppController(QtCore.QObject):
                 setlessVariantSelections.pop(variantSetName, None)
 
         tableWidget.setRowCount(numMetadataRows + len(variantSets) + 
-                                len(setlessVariantSelections))
+                                len(setlessVariantSelections) + 2)
 
         rowIndex = 0
-        for key in sorted(m.keys()):
-            if key == "clips":
-                for (clip, metadataGroup) in m[key].items():
-                    attrName = QtWidgets.QTableWidgetItem(str('clip:' + clip))
-                    tableWidget.setItem(rowIndex, 0, attrName)
-                    for metadata in metadataGroup.keys():
-                        dataPair = (metadata, metadataGroup[metadata])
-                        valStr, ttStr = self._formatMetadataValueView(dataPair)
-                        attrVal = QtWidgets.QTableWidgetItem(valStr)
-                        attrVal.setToolTip(ttStr)
-                        tableWidget.setItem(rowIndex, 1, attrVal)
-                        rowIndex += 1
-            else:
-                attrName = QtWidgets.QTableWidgetItem(str(key))
-                tableWidget.setItem(rowIndex, 0, attrName)
-                # Get metadata value
-                if key == "customData":
-                    val = obj.GetCustomData()
-                else:
-                    val = m[key]
 
-                valStr, ttStr = self._formatMetadataValueView(val)
-                attrVal = QtWidgets.QTableWidgetItem(valStr)
-                attrVal.setToolTip(ttStr)
+        # Although most metadata should be presented alphabetically,the most 
+        # user-facing items should be placed at the beginning of the  metadata 
+        # list, these consist of [object type], [path], variant sets, active, 
+        # assetInfo, and kind.
+        def populateMetadataTable(key, val, rowIndex):
+            attrName = QtWidgets.QTableWidgetItem(str(key))
+            tableWidget.setItem(rowIndex, 0, attrName)
 
-                tableWidget.setItem(rowIndex, 1, attrVal)
-                rowIndex += 1
+            valStr, ttStr = self._formatMetadataValueView(val)
+            attrVal = QtWidgets.QTableWidgetItem(valStr)
+            attrVal.setToolTip(ttStr)
+
+            tableWidget.setItem(rowIndex, 1, attrVal)
+
+        sortedKeys = sorted(m.keys())
+        reorderedKeys = ["kind", "assetInfo", "active"]
+
+        for key in reorderedKeys:
+            if key in sortedKeys:
+                sortedKeys.remove(key)
+                sortedKeys.insert(0, key)
+
+        object_type = "Attribute" if type(obj) is Usd.Attribute \
+               else "Prim" if type(obj) is Usd.Prim \
+               else "Relationship" if type(obj) is Usd.Relationship \
+               else "Unknown"
+        populateMetadataTable("[object type]", object_type, rowIndex)
+        rowIndex += 1
+        populateMetadataTable("[path]", str(obj.GetPath()), rowIndex)
+        rowIndex += 1
 
         for variantSetName, combo in variantSets.iteritems():
             attrName = QtWidgets.QTableWidgetItem(str(variantSetName+ ' variant'))
@@ -3785,6 +3783,26 @@ class AppController(QtCore.QObject):
             tableWidget.setCellWidget(rowIndex, 1, label)
 
             rowIndex += 1
+
+        for key in sortedKeys:
+            if key == "clips":
+                for (clip, metadataGroup) in m[key].items():
+                    attrName = QtWidgets.QTableWidgetItem(str('clip:' + clip))
+                    tableWidget.setItem(rowIndex, 0, attrName)
+                    for metadata in metadataGroup.keys():
+                        dataPair = (metadata, metadataGroup[metadata])
+                        valStr, ttStr = self._formatMetadataValueView(dataPair)
+                        attrVal = QtWidgets.QTableWidgetItem(valStr)
+                        attrVal.setToolTip(ttStr)
+                        tableWidget.setItem(rowIndex, 1, attrVal)
+                        rowIndex += 1
+            elif key == "customData":
+                populateMetadataTable(key, obj.GetCustomData(), rowIndex)
+                rowIndex += 1
+            else:
+                populateMetadataTable(key, m[key], rowIndex)
+                rowIndex += 1
+
 
         tableWidget.resizeColumnToContents(0)
 
