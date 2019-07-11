@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/hd/repr.h"
 #include <boost/functional/hash.hpp>
+#include <tuple>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -73,35 +74,22 @@ HdReprSelector::CompositeOver(const HdReprSelector &under) const
 bool
 HdReprSelector::operator==(const HdReprSelector &rhs) const
 {
-    return (refinedToken == rhs.refinedToken)
-        && (unrefinedToken == rhs.unrefinedToken)
-        && (pointsToken == rhs.pointsToken);
+    return std::tie(refinedToken, unrefinedToken, pointsToken) ==
+           std::tie(rhs.refinedToken, rhs.unrefinedToken, rhs.pointsToken);
 }
 
 bool
 HdReprSelector::operator!=(const HdReprSelector &rhs) const
 {
-    return (refinedToken != rhs.refinedToken)
-        || (unrefinedToken != rhs.unrefinedToken)
-        || (pointsToken != rhs.pointsToken);
+    return std::tie(refinedToken, unrefinedToken, pointsToken) !=
+           std::tie(rhs.refinedToken, rhs.unrefinedToken, rhs.pointsToken);
 }
 
 bool
 HdReprSelector::operator<(const HdReprSelector &rhs) const
 {
-    if (refinedToken < rhs.refinedToken) {
-        return true;
-    } else if (refinedToken > rhs.refinedToken) {
-        return false;
-    }
-
-    if (unrefinedToken < rhs.unrefinedToken) {
-        return true;
-    } else if (unrefinedToken < rhs.unrefinedToken) {
-        return false;
-    }
-
-    return (pointsToken < rhs.pointsToken);
+    return std::tie(refinedToken, unrefinedToken, pointsToken) <
+           std::tie(rhs.refinedToken, rhs.unrefinedToken, rhs.pointsToken);
 }
 
 size_t
