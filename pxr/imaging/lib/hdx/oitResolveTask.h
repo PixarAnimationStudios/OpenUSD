@@ -36,8 +36,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
 
-typedef boost::shared_ptr<class HdRenderPassState>
-    HdRenderPassStateSharedPtr;
+typedef boost::shared_ptr<class HdStRenderPassState>
+    HdStRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdRenderPass>
     HdRenderPassSharedPtr;
 typedef boost::shared_ptr<class HdStRenderPassShader>
@@ -73,7 +73,7 @@ public:
 
 private:
     HdRenderPassSharedPtr _renderPass;
-    HdRenderPassStateSharedPtr _renderPassState;
+    HdStRenderPassStateSharedPtr _renderPassState;
     HdStRenderPassShaderSharedPtr _renderPassShader;
 
     HdxOitResolveTask() = delete;

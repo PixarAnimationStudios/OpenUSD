@@ -78,8 +78,8 @@ HdxOitResolveTask::Prepare(HdTaskContext* ctx,
             return;
         }
 
-        _renderPass = HdRenderPassSharedPtr(
-            new HdSt_ImageShaderRenderPass(renderIndex, collection));
+        _renderPass = boost::make_shared<HdSt_ImageShaderRenderPass>(
+            renderIndex, collection);
 
         // We do not use renderDelegate->CreateRenderPassState because
         // ImageShaders always use HdSt
@@ -95,12 +95,9 @@ HdxOitResolveTask::Prepare(HdTaskContext* ctx,
             HdBlendFactor::HdBlendFactorOne,
             HdBlendFactor::HdBlendFactorOne);
 
-        _renderPassShader.reset(
-            new HdStRenderPassShader(HdxPackageOitResolveImageShader()));
-
-        HdStRenderPassState* stRenderPassState =
-            dynamic_cast<HdStRenderPassState*>(_renderPassState.get());
-        stRenderPassState->SetRenderPassShader(_renderPassShader);
+        _renderPassShader = boost::make_shared<HdStRenderPassShader>(
+            HdxPackageOitResolveImageShader());
+        _renderPassState->SetRenderPassShader(_renderPassShader);
 
         _renderPass->Prepare(GetRenderTags());
     }
@@ -113,9 +110,7 @@ HdxOitResolveTask::Execute(HdTaskContext* ctx)
     HF_MALLOC_TAG_FUNCTION();
 
     if (!TF_VERIFY(_renderPassState)) return;
-
-    HdStRenderPassState* stRenderPassState =
-            dynamic_cast<HdStRenderPassState*>(_renderPassState.get());
+    if (!TF_VERIFY(_renderPassShader)) return;
 
     // Resolve Setup
     // Note that resolveTask comes after render + oitRender tasks,
@@ -125,9 +120,6 @@ HdxOitResolveTask::Execute(HdTaskContext* ctx)
     VtValue vde = (*ctx)[HdxTokens->oitDepthBufferBar];
     VtValue vi = (*ctx)[HdxTokens->oitIndexBufferBar];
     VtValue vu = (*ctx)[HdxTokens->oitUniformBar];
-
-    HdStRenderPassShaderSharedPtr renderPassShader
-        = stRenderPassState->GetRenderPassShader();
 
     if (!vda.IsEmpty()) {
         HdBufferArrayRangeSharedPtr cbar
@@ -141,32 +133,32 @@ HdxOitResolveTask::Execute(HdTaskContext* ctx)
         HdBufferArrayRangeSharedPtr ubar
             = vu.Get<HdBufferArrayRangeSharedPtr>();
 
-        renderPassShader->AddBufferBinding(
+        _renderPassShader->AddBufferBinding(
             HdBindingRequest(HdBinding::SSBO,
                              HdxTokens->oitCounterBufferBar, cbar,
                              /*interleave*/false));
-        renderPassShader->AddBufferBinding(
+        _renderPassShader->AddBufferBinding(
             HdBindingRequest(HdBinding::SSBO,
                              HdxTokens->oitDataBufferBar, dabar,
                              /*interleave*/false));
-        renderPassShader->AddBufferBinding(
+        _renderPassShader->AddBufferBinding(
             HdBindingRequest(HdBinding::SSBO,
                              HdxTokens->oitDepthBufferBar, debar,
                              /*interleave*/false));
-        renderPassShader->AddBufferBinding(
+        _renderPassShader->AddBufferBinding(
             HdBindingRequest(HdBinding::SSBO,
                              HdxTokens->oitIndexBufferBar, ibar,
                              /*interleave*/false));
-        renderPassShader->AddBufferBinding(
+        _renderPassShader->AddBufferBinding(
             HdBindingRequest(HdBinding::UBO, 
                              HdxTokens->oitUniformBar, ubar,
                              /*interleave*/true));
     } else {
-        renderPassShader->RemoveBufferBinding(HdxTokens->oitCounterBufferBar);
-        renderPassShader->RemoveBufferBinding(HdxTokens->oitDataBufferBar);
-        renderPassShader->RemoveBufferBinding(HdxTokens->oitDepthBufferBar);
-        renderPassShader->RemoveBufferBinding(HdxTokens->oitIndexBufferBar);
-        renderPassShader->RemoveBufferBinding(HdxTokens->oitUniformBar);
+        _renderPassShader->RemoveBufferBinding(HdxTokens->oitCounterBufferBar);
+        _renderPassShader->RemoveBufferBinding(HdxTokens->oitDataBufferBar);
+        _renderPassShader->RemoveBufferBinding(HdxTokens->oitDepthBufferBar);
+        _renderPassShader->RemoveBufferBinding(HdxTokens->oitIndexBufferBar);
+        _renderPassShader->RemoveBufferBinding(HdxTokens->oitUniformBar);
     }
 
     _renderPassState->Bind(); 
