@@ -107,7 +107,7 @@ UsdSkelSkeletonQuery::_ComputeJointLocalTransforms(VtArray<Matrix4>* xforms,
 
     if (_animToSkelMapper.IsSparse()) {
         // Animation does not override all values;
-        // Need to first fill in bind transforms.
+        // Need to first fill in rest transforms.
         if (!_definition->GetJointLocalRestTransforms(xforms)) {
             TF_WARN("%s -- Failed computing local space transforms: "
                     "the the animation source (<%s>) is sparse, but the "
