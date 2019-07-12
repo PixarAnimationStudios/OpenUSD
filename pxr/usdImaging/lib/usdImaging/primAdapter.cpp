@@ -645,6 +645,32 @@ UsdImagingPrimAdapter::_ComputeAndMergePrimvar(
     }
 }
 
+bool
+UsdImagingPrimAdapter::_PrimvarChangeRequiresResync(
+        UsdPrim const& prim,
+        SdfPath const& cachePath,
+        TfToken const& propertyName,
+        TfToken const& primvarName) const
+{
+    bool primvarInValueCache = false;
+    HdPrimvarDescriptorVector const& vec =
+        _GetValueCache()->GetPrimvars(cachePath);
+    for (HdPrimvarDescriptor const& desc : vec) {
+        if (desc.name == primvarName) {
+            primvarInValueCache = true;
+            break;
+        }
+    }
+
+    bool primvarOnPrim = false;
+    UsdAttribute attr = prim.GetAttribute(propertyName);
+    if (attr && attr.HasValue()) {
+        primvarOnPrim = true;
+    }
+
+    return primvarOnPrim ^ primvarInValueCache;
+}
+
 UsdImaging_CollectionCache&
 UsdImagingPrimAdapter::_GetCollectionCache() const
 {

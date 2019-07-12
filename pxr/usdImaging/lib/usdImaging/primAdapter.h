@@ -557,6 +557,15 @@ protected:
                                  HdInterpolation *interpOverride = nullptr)
                                  const;
 
+    // If a primvar is added or removed from the list of primvar descriptors,
+    // we need to do extra change processing.  This returns true if:
+    // (the primvar is in the value cache) XOR (the primvar is on the usd prim)
+    USDIMAGING_API
+    bool _PrimvarChangeRequiresResync(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      TfToken const& propertyName,
+                                      TfToken const& primvarName) const;
+
     virtual void _RemovePrim(SdfPath const& cachePath,
                              UsdImagingIndexProxy* index) = 0;
 

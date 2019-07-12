@@ -881,7 +881,22 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
     if (propertyName == UsdGeomTokens->positions ||
         propertyName == UsdGeomTokens->orientations ||
         propertyName == UsdGeomTokens->scales) {
-        return HdChangeTracker::DirtyPrimvar;
+
+        TfToken primvarName = propertyName;
+        if (propertyName == UsdGeomTokens->positions) {
+            primvarName = _tokens->translate;
+        } else if (propertyName == UsdGeomTokens->orientations) {
+            primvarName = _tokens->rotate;
+        } else if (propertyName == UsdGeomTokens->scales) {
+            primvarName = _tokens->scale;
+        }
+
+        if (_PrimvarChangeRequiresResync(
+                prim, cachePath, propertyName, primvarName)) {
+            return HdChangeTracker::AllDirty;
+        } else {
+            return HdChangeTracker::DirtyPrimvar;
+        }
     }
 
     // XXX: Treat indices & transform changes as re-sync. In theory, we
