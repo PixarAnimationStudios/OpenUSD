@@ -3107,7 +3107,6 @@ UsdImagingDelegate::InvokeExtComputation(SdfPath const& computationId,
 {
     _HdPrimInfo *primInfo = _GetHdPrimInfo(computationId);
 
-    _HdPrimInfoMap::iterator it = _hdPrimInfoMap.find(computationId);
     if (TF_VERIFY(primInfo, "%s\n", computationId.GetText()) &&
         TF_VERIFY(primInfo->adapter, "%s\n", computationId.GetText())) {
         primInfo->adapter->InvokeComputation(computationId, context);
