@@ -128,7 +128,7 @@ public:
 
 protected:
     HD_API
-    virtual bool _CheckValid() const;
+    virtual bool _CheckValid() const override;
 
 private:
     // Constructor helper.
