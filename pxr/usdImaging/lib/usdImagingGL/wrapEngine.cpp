@@ -142,8 +142,8 @@ void wrapEngine()
                  return_value_policy< TfPySequenceToList >())
             .def("SetRendererAov", 
                     &UsdImagingGLEngine::SetRendererAov)
-            .def("GetResourceAllocation", 
-                    &UsdImagingGLEngine::GetResourceAllocation)
+            .def("GetRenderStats", 
+                    &UsdImagingGLEngine::GetRenderStats)
             .def("GetRendererSettingsList", 
                     &UsdImagingGLEngine::GetRendererSettingsList,
                  return_value_policy< TfPySequenceToList >())

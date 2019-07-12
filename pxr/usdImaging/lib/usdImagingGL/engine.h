@@ -417,13 +417,17 @@ public:
     static bool IsColorCorrectionCapable();
 
     // ---------------------------------------------------------------------
-    /// \name Resource Information
+    /// \name Render Statistics
     /// @{
     // ---------------------------------------------------------------------
 
-    /// Returns GPU resource allocation info
+    /// Returns render statistics.
+    ///
+    /// The contents of the dictionary will depend on the current render 
+    /// delegate.
+    ///
     USDIMAGINGGL_API
-    VtDictionary GetResourceAllocation() const;
+    VtDictionary GetRenderStats() const;
 
     /// @}
 

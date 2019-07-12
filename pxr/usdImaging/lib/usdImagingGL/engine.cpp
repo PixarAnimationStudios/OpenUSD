@@ -1000,14 +1000,14 @@ UsdImagingGLEngine::IsColorCorrectionCapable()
 //----------------------------------------------------------------------------
 
 VtDictionary
-UsdImagingGLEngine::GetResourceAllocation() const
+UsdImagingGLEngine::GetRenderStats() const
 {
     if (ARCH_UNLIKELY(_legacyImpl)) {
         return VtDictionary();
     }
 
     TF_VERIFY(_renderIndex);
-    return _renderIndex->GetResourceRegistry()->GetResourceAllocation();
+    return _renderIndex->GetRenderDelegate()->GetRenderStats();
 }
 
 //----------------------------------------------------------------------------

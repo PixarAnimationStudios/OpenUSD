@@ -139,6 +139,12 @@ HdRenderDelegate::GetRenderSettingsVersion() const
     return _settingsVersion;
 }
 
+VtDictionary 
+HdRenderDelegate::GetRenderStats() const
+{
+    return VtDictionary();
+}
+
 void
 HdRenderDelegate::_PopulateDefaultSettings(
     HdRenderSettingDescriptorList const& defaultSettings)

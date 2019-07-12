@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/changeTracker.h"
+#include "pxr/base/vt/dictionary.h"
 #include "pxr/base/tf/token.h"
 
 #include <boost/shared_ptr.hpp>
@@ -161,6 +162,12 @@ public:
     ///
     HD_API
     virtual unsigned int GetRenderSettingsVersion() const;
+
+    ///
+    /// Returns an open-format dictionary of render statistics
+    ///
+    HD_API
+    virtual VtDictionary GetRenderStats() const;
 
     ////////////////////////////////////////////////////////////////////////////
     ///

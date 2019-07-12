@@ -1860,22 +1860,22 @@ class StageView(QtOpenGL.QGLWidget):
 
         # GPU stats (TimeElapsed is in nano seconds)
         if self._dataModel.viewSettings.showHUD_GPUstats:
-            allocInfo = renderer.GetResourceAllocation()
-            gpuMemTotal = 0
-            texMem = 0
-            if "gpuMemoryUsed" in allocInfo:
-                gpuMemTotal = allocInfo["gpuMemoryUsed"]
-            if "textureMemory" in allocInfo:
-                texMem = allocInfo["textureMemory"]
-                gpuMemTotal += texMem
+
+            def _addSizeMetric(toPrint, stats, label, key):
+                if key in stats:
+                    toPrint[label] = ReportMetricSize(stats[key])
+                else:
+                    toPrint[label] = "N/A"
+
+            rStats = renderer.GetRenderStats()
 
             toPrint["GL prims "] = self._glPrimitiveGeneratedQuery.GetResult()
             toPrint["GPU time "] = "%.2f ms " % (self._glTimeElapsedQuery.GetResult() / 1000000.0)
-            toPrint["GPU mem  "] = ReportMetricSize(gpuMemTotal)
-            toPrint[" primvar "] = ReportMetricSize(allocInfo["primvar"]) if "primvar" in allocInfo else "N/A"
-            toPrint[" topology"] = ReportMetricSize(allocInfo["topology"]) if "topology" in allocInfo else "N/A"
-            toPrint[" shader  "] = ReportMetricSize(allocInfo["drawingShader"]) if "drawingShader" in allocInfo else "N/A"
-            toPrint[" texture "] = ReportMetricSize(texMem)
+            _addSizeMetric(toPrint, rStats, "GPU mem  ", "gpuMemoryUsed")
+            _addSizeMetric(toPrint, rStats, " primvar ", "primvar")
+            _addSizeMetric(toPrint, rStats, " topology", "topology")
+            _addSizeMetric(toPrint, rStats, " shader  ", "drawingShader")
+            _addSizeMetric(toPrint, rStats, " texture ", "textureMemory")
 
         # Playback Rate
         if self._dataModel.viewSettings.showHUD_Performance:
