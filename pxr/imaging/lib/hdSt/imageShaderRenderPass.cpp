@@ -89,19 +89,11 @@ HdSt_ImageShaderRenderPass::_SetupVertexPrimvarBAR(
 }
 
 void
-HdSt_ImageShaderRenderPass::_Execute(
-    HdRenderPassStateSharedPtr const &renderPassState,
-    TfTokenVector const& renderTags)
+HdSt_ImageShaderRenderPass::_Prepare(TfTokenVector const &renderTags)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
     GLF_GROUP_FUNCTION();
-
-    // Downcast render pass state
-    HdStRenderPassStateSharedPtr stRenderPassState =
-        boost::dynamic_pointer_cast<HdStRenderPassState>(
-        renderPassState);
-    if (!TF_VERIFY(stRenderPassState)) return;
 
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
         boost::dynamic_pointer_cast<HdStResourceRegistry>(
@@ -121,6 +113,27 @@ HdSt_ImageShaderRenderPass::_Execute(
 
         _drawItem.SetGeometricShader(geometricShader);
     }
+}
+
+void
+HdSt_ImageShaderRenderPass::_Execute(
+    HdRenderPassStateSharedPtr const &renderPassState,
+    TfTokenVector const& renderTags)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+    GLF_GROUP_FUNCTION();
+
+    // Downcast render pass state
+    HdStRenderPassStateSharedPtr stRenderPassState =
+        boost::dynamic_pointer_cast<HdStRenderPassState>(
+        renderPassState);
+    if (!TF_VERIFY(stRenderPassState)) return;
+
+    HdStResourceRegistrySharedPtr const& resourceRegistry = 
+        boost::dynamic_pointer_cast<HdStResourceRegistry>(
+        GetRenderIndex()->GetResourceRegistry());
+    TF_VERIFY(resourceRegistry);
 
     _immediateBatch->PrepareDraw(stRenderPassState, resourceRegistry);
     _immediateBatch->ExecuteDraw(stRenderPassState, resourceRegistry);

@@ -101,6 +101,8 @@ HdxOitResolveTask::Prepare(HdTaskContext* ctx,
         HdStRenderPassState* stRenderPassState =
             dynamic_cast<HdStRenderPassState*>(_renderPassState.get());
         stRenderPassState->SetRenderPassShader(_renderPassShader);
+
+        _renderPass->Prepare(GetRenderTags());
     }
 }
 
