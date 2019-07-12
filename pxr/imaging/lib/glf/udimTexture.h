@@ -52,7 +52,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(GlfUdimTexture);
 class GlfUdimTexture : public GlfTexture {
 public:
     GLF_API
-    virtual ~GlfUdimTexture();
+    ~GlfUdimTexture() override;
 
     GLF_API
     static GlfUdimTextureRefPtr New(

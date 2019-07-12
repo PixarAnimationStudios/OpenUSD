@@ -82,7 +82,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(GlfPtexTexture);
 class GlfPtexTexture : public GlfTexture {
 public:
     GLF_API
-    virtual ~GlfPtexTexture();
+    ~GlfPtexTexture() override;
 
     /// Creates a new instance.
     GLF_API
@@ -90,16 +90,17 @@ public:
 
     /// GlfTexture overrides
     GLF_API
-    virtual BindingVector GetBindings(TfToken const & identifier,
-                                      GLuint samplerName);
-    GLF_API
-    virtual VtDictionary GetTextureInfo(bool forceLoad);
+    BindingVector GetBindings(TfToken const & identifier,
+                              GLuint samplerName) override;
 
     GLF_API
-    virtual bool IsMinFilterSupported(GLenum filter);
+    VtDictionary GetTextureInfo(bool forceLoad) override;
 
     GLF_API
-    virtual bool IsMagFilterSupported(GLenum filter);
+    bool IsMinFilterSupported(GLenum filter) override;
+
+    GLF_API
+    bool IsMagFilterSupported(GLenum filter) override;
 
     // get/set guttering control variables
     static int GetGutterWidth() { return _gutterWidth; }
@@ -122,7 +123,7 @@ protected:
     void _FreePtexTextureObject();
 
     GLF_API
-    virtual void _OnMemoryRequestedDirty();
+    void _OnMemoryRequestedDirty() override;
 
 private:
     bool _ReadImage();
