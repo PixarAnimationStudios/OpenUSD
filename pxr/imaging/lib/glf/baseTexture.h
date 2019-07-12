@@ -56,7 +56,7 @@ public:
 
     /// Returns the OpenGl texture name for the texture. 
     GLF_API
-    GLuint GetGlTextureName();
+    GLuint GetGlTextureName() override;
 
     GLF_API
     int	GetWidth();

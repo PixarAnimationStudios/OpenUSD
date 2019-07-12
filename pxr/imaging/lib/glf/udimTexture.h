@@ -68,10 +68,7 @@ public:
     GLF_API
     VtDictionary GetTextureInfo(bool forceLoad) override;
 
-    GLuint GetGlTextureName() {
-        _ReadImage();
-        return _imageArray;
-    }
+    GLuint GetGlTextureName() override;
 
     GLuint GetGlLayoutName() {
         _ReadImage();

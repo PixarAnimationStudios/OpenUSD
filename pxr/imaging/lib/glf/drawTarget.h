@@ -100,7 +100,7 @@ public:
         ~Attachment() override;
 
         /// Returns the GL texture index (can be used as any regular GL texture)
-        GLuint GetGlTextureName() const { return _textureName; }
+        GLuint GetGlTextureName() override;
 
         /// Returns the GL texture index multisampled of this attachment
         GLuint GetGlTextureMSName() const { return _textureNameMS; }

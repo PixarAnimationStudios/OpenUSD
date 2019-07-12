@@ -92,37 +92,8 @@ HdTextureType HdStSimpleTextureResource::GetTextureType() const
 
 GLuint HdStSimpleTextureResource::GetTexelsTextureId() 
 {
-    if (_textureType == HdTextureType::Ptex) {
-#ifdef PXR_PTEX_SUPPORT_ENABLED
-        GlfPtexTextureRefPtr ptexTexture =
-                                 TfDynamic_cast<GlfPtexTextureRefPtr>(_texture);
-
-        if (ptexTexture) {
-            return ptexTexture->GetTexelsTextureName();
-        }
-        return 0;
-#else
-        TF_CODING_ERROR("Ptex support is disabled.  "
-            "This code path should be unreachable");
-        return 0;
-#endif
-    }
-
-    if (_textureType == HdTextureType::Udim) {
-        GlfUdimTextureRefPtr udimTexture =
-            TfDynamic_cast<GlfUdimTextureRefPtr>(_texture);
-        if (udimTexture) {
-            return udimTexture->GetGlTextureName();
-        }
-
-        return 0;
-    }
-
-    GlfBaseTextureRefPtr baseTexture =
-                             TfDynamic_cast<GlfBaseTextureRefPtr>(_texture);
-
-    if (baseTexture) {
-        return baseTexture->GetGlTextureName();
+    if (_texture) {
+        return _texture->GetGlTextureName();
     }
     return 0;
 }

@@ -113,7 +113,7 @@ public:
 
     // return GL texture for texels data texture
     GLF_API
-    GLuint GetTexelsTextureName();
+    GLuint GetGlTextureName() override;
 
 protected:
     GLF_API
