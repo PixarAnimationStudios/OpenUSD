@@ -1575,11 +1575,11 @@ UsdImagingDelegate::GetRenderTag(SdfPath const& id)
 
     if (purpose == UsdGeomTokens->default_) {
         // Simple mapping so all render tags in multiple delegates match
-        purpose = HdTokens->geometry;    
+        purpose = HdRenderTagTokens->geometry;
     } else if (purpose == UsdGeomTokens->guide && !_displayGuides) {
         // When guides are disabled on the delegate we move the
         // guide prims to the hidden command buffer
-        purpose = HdTokens->hidden;
+        purpose = HdRenderTagTokens->hidden;
     }
 
     TF_DEBUG(USDIMAGING_COLLECTIONS).Msg("GetRenderTag %s -> %s \n",

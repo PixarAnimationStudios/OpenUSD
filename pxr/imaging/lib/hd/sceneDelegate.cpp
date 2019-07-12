@@ -77,7 +77,7 @@ HdSceneDelegate::IsEnabled(TfToken const& option) const
 TfToken
 HdSceneDelegate::GetRenderTag(SdfPath const& id)
 {
-    return HdTokens->geometry;
+    return HdRenderTagTokens->geometry;
 }
 
 // -----------------------------------------------------------------------//

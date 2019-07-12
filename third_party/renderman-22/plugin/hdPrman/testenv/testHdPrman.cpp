@@ -549,7 +549,7 @@ int main(int argc, char *argv[])
         hdUsdFrontend.SetTime(frameNum);
         hdUsdFrontend.SetRefineLevelFallback(8); // max refinement
 
-        TfTokenVector renderTags(1, HdTokens->geometry);
+        TfTokenVector renderTags(1, HdRenderTagTokens->geometry);
         // The collection of scene contents to render
         HdRprimCollection hdCollection(_tokens->testCollection,
                                    HdReprSelector(HdReprTokens->smoothHull));

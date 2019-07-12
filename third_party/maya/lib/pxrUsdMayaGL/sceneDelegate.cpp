@@ -143,9 +143,8 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
     {
         // By default we only want geometry in the shadow pass
         const TfTokenVector defaultShadowRenderTags = {
-           HdTokens->geometry,
+           HdRenderTagTokens->geometry,
         };
-
 
         renderIndex->InsertTask<HdxShadowTask>(this, _shadowTaskId);
         _ValueCache& cache = _valueCacheMap[_shadowTaskId];

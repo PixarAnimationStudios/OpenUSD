@@ -1330,15 +1330,15 @@ UsdImagingGLEngine::_ComputeRenderTags(UsdImagingGLRenderParams const& params,
     // the application
     renderTags->clear();
     renderTags->reserve(4);
-    renderTags->push_back(HdTokens->geometry);
+    renderTags->push_back(HdRenderTagTokens->geometry);
     if (params.showGuides) {
-        renderTags->push_back(HdxRenderTagsTokens->guide);
+        renderTags->push_back(HdRenderTagTokens->guide);
     }
     if (params.showProxy) {
-        renderTags->push_back(UsdGeomTokens->proxy);
+        renderTags->push_back(HdRenderTagTokens->proxy);
     }
     if (params.showRender) {
-        renderTags->push_back(UsdGeomTokens->render);
+        renderTags->push_back(HdRenderTagTokens->render);
     }
 }
 

@@ -1023,7 +1023,9 @@ UsdMayaGLBatchRenderer::_GetIntersectionPrimFilters(
         primFilters.push_back(
             PxrMayaHdPrimFilter {
                 collection,
-                TfTokenVector{HdTokens->geometry, HdTokens->proxy}
+                TfTokenVector{
+                    HdRenderTagTokens->geometry,
+                    HdRenderTagTokens->proxy}
         });
     }
 

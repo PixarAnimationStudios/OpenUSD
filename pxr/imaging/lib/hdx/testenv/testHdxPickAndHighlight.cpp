@@ -180,7 +180,8 @@ My_TestGLDrawing::InitTest()
     _delegate->SetTaskParam(renderSetupTask, HdTokens->params,
                             VtValue(param));
     _delegate->SetTaskParam(renderTask, HdTokens->collection,
-                            VtValue(HdRprimCollection(HdTokens->geometry, HdReprSelector(_reprName))));
+                            VtValue(HdRprimCollection(HdTokens->geometry, 
+                            HdReprSelector(_reprName))));
     HdxSelectionTaskParams selParam;
     selParam.enableSelection = true;
     selParam.selectionColor = GfVec4f(1, 1, 0, 1);

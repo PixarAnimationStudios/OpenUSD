@@ -288,7 +288,7 @@ HdxTaskController::_CreateRenderTask(TfToken const& materialTag)
     }
 
     // Create an initial set of render tags in case the user doesn't set any
-    TfTokenVector renderTags = { HdTokens->geometry };
+    TfTokenVector renderTags = { HdRenderTagTokens->geometry };
 
     _delegate.SetParameter(taskId, HdTokens->params, renderParams);
     _delegate.SetParameter(taskId, HdTokens->collection, collection);
@@ -411,7 +411,7 @@ HdxTaskController::_CreateShadowTask()
 
     GetRenderIndex()->InsertTask<HdxShadowTask>(&_delegate, _shadowTaskId);
 
-    TfTokenVector renderTags = { HdTokens->geometry };
+    TfTokenVector renderTags = { HdRenderTagTokens->geometry };
 
     _delegate.SetParameter(_shadowTaskId, HdTokens->params, shadowParams);
     _delegate.SetParameter(_shadowTaskId, _tokens->renderTags, renderTags);

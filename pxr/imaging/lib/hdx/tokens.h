@@ -91,8 +91,7 @@ TF_DECLARE_PUBLIC_TOKENS(HdxPrimitiveTokens, HDX_API, HDX_PRIMITIVE_TOKENS);
 
 TF_DECLARE_PUBLIC_TOKENS(HdxOptionTokens, HDX_API, HDX_OPTION_TOKENS);
 
-#define HDX_RENDERTAGS_TOKENS   \
-    (guide)                     \
+#define HDX_RENDERTAG_TOKENS   \
     (renderingGuide)            \
     (label)                     \
     (cameraGuide)               \
@@ -100,7 +99,7 @@ TF_DECLARE_PUBLIC_TOKENS(HdxOptionTokens, HDX_API, HDX_OPTION_TOKENS);
     (interactiveOnlyGeom)       \
     (path)
 
-TF_DECLARE_PUBLIC_TOKENS(HdxRenderTagsTokens, HDX_API, HDX_RENDERTAGS_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdxRenderTagTokens, HDX_API, HDX_RENDERTAG_TOKENS);
 
 #define HDX_MATERIALTAG_TOKENS   \
     (additive)                   \
