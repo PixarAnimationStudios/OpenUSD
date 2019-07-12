@@ -1185,6 +1185,11 @@ class AppController(QtCore.QObject):
         self.realEndTimeCode = None
 
         self.framesPerSecond = self._dataModel.stage.GetFramesPerSecond()
+        if self.framesPerSecond < 1:
+            err = ("Error: Invalid value for field framesPerSecond of %.2f. Using default value of 24 \n" % self.framesPerSecond)
+            sys.stderr.write(err)
+            self.statusMessage(err)
+            self.framesPerSecond = 24.0
 
         if not resetStageDataOnly:
             self.step = self._dataModel.stage.GetTimeCodesPerSecond() / self.framesPerSecond
