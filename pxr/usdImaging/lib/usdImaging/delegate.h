@@ -601,6 +601,9 @@ private:
         return p;
     }
 
+    VtValue _GetUsdPrimAttribute(SdfPath const& cachePath,
+                                 TfToken const &attrName);
+
     void _UpdateSingleValue(SdfPath const& cachePath, int dirtyFlags);
 
     // ---------------------------------------------------------------------- //

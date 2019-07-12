@@ -1409,6 +1409,25 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
 // -------------------------------------------------------------------------- //
 // Data Collection
 // -------------------------------------------------------------------------- //
+
+VtValue
+UsdImagingDelegate::_GetUsdPrimAttribute(SdfPath const& cachePath,
+                                         TfToken const &attrName)
+{
+    VtValue value;
+
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo, "%s\n", cachePath.GetText())) {
+        UsdPrim const& prim = primInfo->usdPrim;
+        if (prim.HasAttribute(attrName)) {
+            UsdAttribute attr = prim.GetAttribute(attrName);
+            attr.Get(&value, GetTime());
+        }
+    }
+
+    return value;
+}
+
 void
 UsdImagingDelegate::_UpdateSingleValue(SdfPath const& cachePath,
                                        int requestBits)
@@ -2841,15 +2860,7 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
     }
 
     // Fallback to USD attributes.
-    if (prim.HasAttribute(paramName)) {
-        UsdAttribute attr = prim.GetAttribute(paramName);
-        VtValue value;
-        // Reading the value may fail, should we warn here when it does?
-        attr.Get(&value, GetTime());
-        return value;
-    }
-
-    return VtValue();
+    return _GetUsdPrimAttribute(id, paramName);
 }
 
 VtValue 
@@ -2878,8 +2889,10 @@ UsdImagingDelegate::GetCameraParamValue(SdfPath const &id,
         }
         
         _UpdateSingleValue(cachePath, dirtyBit);
-         TF_VERIFY(
-             _valueCache.ExtractCameraParam(cachePath, paramName, &value));
+         if (!_valueCache.ExtractCameraParam(cachePath, paramName, &value)) {
+            // Fallback to USD attributes.
+            value = _GetUsdPrimAttribute(id, paramName);
+        }
     }
     return value;
 }
