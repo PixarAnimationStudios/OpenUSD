@@ -41,6 +41,9 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+template <class T>
+class TemplatedDummyClass { };
+
 struct Mangled {};
 
 struct FooSsSsSsBar {};
@@ -61,6 +64,10 @@ TestDemangle(const std::string& typeName)
     std::string toBeDemangledName = typeInfo.name();
 
     ARCH_AXIOM(ArchDemangle(&toBeDemangledName));
+
+    printf("ArchDemangle('%s') => '%s', expected '%s'\n",
+        mangledName.c_str(), toBeDemangledName.c_str(), typeName.c_str());
+
     ARCH_AXIOM(toBeDemangledName == typeName);
     ARCH_AXIOM(ArchGetDemangled(mangledName) == typeName);
     ARCH_AXIOM(ArchGetDemangled(typeInfo) == typeName);
@@ -77,6 +84,8 @@ int main()
     TestDemangle<MangleEnum>("MangleEnum");
     // We have special case code for std::string.
     TestDemangle<std::string>("string");
+    TestDemangle<TemplatedDummyClass<std::string>>(
+        "TemplatedDummyClass<string>");
     // This one is a regression test for a demangle bug on Linux.
     TestDemangle<FooSsSsSsBar>("FooSsSsSsBar");
 
