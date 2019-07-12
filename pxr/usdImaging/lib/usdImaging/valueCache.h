@@ -28,7 +28,6 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
-#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/materialParam.h"
@@ -193,6 +192,10 @@ public:
         }
         static Key ExtComputationKernel(SdfPath const& path) {
             const TfToken attr("extComputationKernel");
+            return Key(path, attr);
+        }
+        static Key CameraParamNames(SdfPath const& path) {
+            static TfToken attr("CameraParamNames");
             return Key(path, attr);
         }
     };
@@ -389,8 +392,13 @@ public:
         }
 
         // Camera state
-        for (const TfToken& paramName : HdCameraTokens->allTokens) {
-            _Erase<VtValue>(Key(path, paramName));
+        TfTokenVector CameraParamNames;
+        if (FindCameraParamNames(path, &CameraParamNames)) {
+            for (const TfToken& paramName : CameraParamNames) {
+                _Erase<VtValue>(Key(path, paramName));
+            }
+
+            _Erase<TfTokenVector>(Key::CameraParamNames(path));
         }
     }
 
@@ -494,6 +502,9 @@ public:
     }
     VtValue& GetCameraParam(SdfPath const& path, TfToken const& name) const {
         return _Get<VtValue>(Key(path, name));
+    }
+    TfTokenVector& GetCameraParamNames(SdfPath const& path) const {
+        return _Get<TfTokenVector>(Key::CameraParamNames(path));
     }
 
     bool FindPrimvar(SdfPath const& path, TfToken const& name, VtValue* value) const {
@@ -600,6 +611,9 @@ public:
                          VtValue* value) const {
         return _Find(Key(path, name), value);
     }
+    bool FindCameraParamNames(SdfPath const& path, TfTokenVector* value) const {
+        return _Find(Key::CameraParamNames(path), value);
+    }
 
     bool ExtractColor(SdfPath const& path, VtValue* value) {
         return _Extract(Key::Color(path), value);
@@ -704,6 +718,8 @@ public:
                             VtValue* value) {
         return _Extract(Key(path, name), value);
     }
+    // Skip adding ExtractCameraParamNames as we don't expose scene delegate
+    // functionality to query all available parameters on a camera.
 
     /// Remove any items from the cache that are marked for defered deletion.
     void GarbageCollect()

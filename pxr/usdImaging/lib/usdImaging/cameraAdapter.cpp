@@ -183,6 +183,18 @@ UsdImagingCameraAdapter::TrackVariability(UsdPrim const& prim,
                 false);
         }
     }
+
+    // In addition to variability tracking, populate the camera tokens for which
+    // values are going to always be added to the value cache,
+    // This lets us avoid redundant lookups in UpdateForTime for the
+    // corresponding dirty bits.
+    // This is populated purely to aid prim entry deletion.
+    UsdImagingValueCache* valueCache = _GetValueCache();
+    TfTokenVector& cameraParams = valueCache->GetCameraParamNames(cachePath);
+    cameraParams = {HdCameraTokens->worldToViewMatrix,
+                    HdCameraTokens->projectionMatrix,
+                    HdCameraTokens->clipPlanes,
+                    HdCameraTokens->windowPolicy};
 }
 
 void 
@@ -269,6 +281,32 @@ UsdImagingCameraAdapter::UpdateForTime(UsdPrim const& prim,
         VtValue& vShutterClose =
             valueCache->GetCameraParam(cachePath, HdCameraTokens->shutterClose);
         cam.GetShutterOpenAttr().Get(&vShutterClose, time); // conversion n/a
+
+        // Add all the above params to the list of camera params for which
+        // value cache entries have been populated. Test for one, and push
+        // all of them if it doesn't exist.
+        // This is populated purely to aid prim entry deletion.
+        TfTokenVector& cameraParams = valueCache->GetCameraParamNames(cachePath);
+        if (std::find(cameraParams.begin(), cameraParams.end(),
+                      HdCameraTokens->horizontalAperture) == 
+            cameraParams.end()) {
+
+            TfTokenVector params = {
+                HdCameraTokens->horizontalAperture,
+                HdCameraTokens->verticalAperture,
+                HdCameraTokens->horizontalApertureOffset,
+                HdCameraTokens->verticalApertureOffset,
+                HdCameraTokens->focalLength,
+                HdCameraTokens->clippingRange,
+                HdCameraTokens->fStop,
+                HdCameraTokens->focusDistance,
+                HdCameraTokens->shutterOpen,
+                HdCameraTokens->shutterClose
+            };
+
+            std::copy(params.begin(), params.end(),
+                      std::back_inserter(cameraParams));
+        }
     }
 }
 
