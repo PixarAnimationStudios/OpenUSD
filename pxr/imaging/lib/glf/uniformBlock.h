@@ -32,6 +32,7 @@
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/weakBase.h"
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -70,6 +71,7 @@ protected:
 private:
     GLuint _buffer;
     int _size;
+    std::string _debugLabel;
 };
 
 
