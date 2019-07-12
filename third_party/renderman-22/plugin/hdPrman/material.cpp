@@ -139,8 +139,10 @@ _ApplyStudioFixes(HdMaterialNetworkMap *netMap)
                     }
                 }
                 if (!modelRoot.IsEmpty())  {
+		    std::string modelName = modelRoot.GetName();
+		    modelName = TfStringGetBeforeSuffix(modelName, '_');
                     s = TfStringReplace(s, _tokens->globalAttrModelName,
-                                        modelRoot.GetName());
+                                        modelName);
                     if (param.second.IsHolding<std::string>()) {
                         param.second = VtValue(s);
                     } else if (param.second.IsHolding<TfToken>()) {
@@ -469,7 +471,7 @@ _MapHdNodesToRileyNodes(
             if (!prop) {
                 TF_DEBUG(HDPRMAN_MATERIALS)
                     .Msg("Unknown shader property '%s' for "
-                         "shader '%s' at '%s'; ignoring.",
+                         "shader '%s' at '%s'; ignoring.\n",
                          param.first.GetText(),
                          shaders[i]->GetName().c_str(),
                          mat.nodes[i].path.GetText());
@@ -485,7 +487,7 @@ _MapHdNodesToRileyNodes(
                 }
                 TF_DEBUG(HDPRMAN_MATERIALS)
                     .Msg("Unknown shader entry field type for "
-                         "field '%s' on shader '%s' at '%s'; ignoring.",
+                         "field '%s' on shader '%s' at '%s'; ignoring.\n",
                          param.first.GetText(),
                          shaders[i]->GetName().c_str(),
                          mat.nodes[i].path.GetText());
@@ -613,7 +615,7 @@ _MapHdNodesToRileyNodes(
                 TF_DEBUG(HDPRMAN_MATERIALS)
                     .Msg("Unknown shading parameter type '%s'; skipping "
                          "parameter '%s' on node '%s' ('%s'); "
-                         "expected type '%s'",
+                         "expected type '%s'\n",
                          param.second.GetTypeName().c_str(),
                          param.first.GetText(),
                          mat.nodes[i].path.GetText(),
