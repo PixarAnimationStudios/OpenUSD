@@ -342,6 +342,10 @@ UsdImagingMaterialAdapter::_GetMaterialNetworkMap(UsdPrim const &usdPrim,
         _WalkGraph(d, &materialNetworkMap->map[UsdImagingTokens->displacement],
                   _GetShaderSourceTypes());
     }
+    if (UsdShadeShader v = material.ComputeVolumeSource(context)) {
+        _WalkGraph(v, &materialNetworkMap->map[UsdImagingTokens->volume],
+                  _GetShaderSourceTypes());
+    }
 }
 
 

@@ -50,6 +50,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (usdVaryingTexture)     \
     (bxdf)                  \
     (displacement)          \
+    (volume)                \
     (uvPrimvar)             \
     (UsdPreviewSurface)     \
     (UsdUVTexture)          \
