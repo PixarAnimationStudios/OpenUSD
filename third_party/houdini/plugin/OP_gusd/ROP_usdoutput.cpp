@@ -978,18 +978,9 @@ openStage(fpreal tstart, int startTimeCode, int endTimeCode)
         // Set modelingVariant to ALL_VARIANTS per pipeline convention.
         // For some models, this will activate scopes that we might need to
         // be present to properly export overlay data. 
-        // TODO: would be nice to loft these constants into a TfToken in a 
-        // shared place.
-        UsdPrim defaultPrim = m_usdStage->GetDefaultPrim();
-        if (defaultPrim) {
-            UsdVariantSets variantSets = defaultPrim.GetVariantSets();
-            if (variantSets.HasVariantSet("modelingVariant")) {
-                UsdVariantSet modelingVariantSet = defaultPrim.GetVariantSet("modelingVariant");
-                if (modelingVariantSet.HasAuthoredVariant("ALL_VARIANTS")) {
-                    modelingVariantSet.SetVariantSelection("ALL_VARIANTS");
-                }
-            }
-        }
+        GusdUSD_Utils::SetModelingVariant(m_usdStage,
+            m_usdStage->GetDefaultPrim(),
+            GusdUSD_Utils::kAllVariantsToken);
 
         // If given model path and asset name detail attributes, we set up an
         // edit target to remap the output of the overlay to the specfied
@@ -1170,16 +1161,8 @@ closeStage(fpreal tend)
     bool overlay = evalInt("overlay", 0, tend);
     if (overlay) {
         // clear out the modelingVariant selection made during openStage().
-        UsdPrim defaultPrim = m_usdStage->GetDefaultPrim();
-        if (defaultPrim) {
-            UsdVariantSets variantSets = defaultPrim.GetVariantSets();
-            if (variantSets.HasVariantSet("modelingVariant")) {
-                UsdVariantSet modelingVariantSet = defaultPrim.GetVariantSet("modelingVariant");
-                if (modelingVariantSet.HasAuthoredVariantSelection()) {
-                    modelingVariantSet.ClearVariantSelection();
-                }
-            }
-        }
+        GusdUSD_Utils::ClearModelingVariant(m_usdStage,
+            m_usdStage->GetDefaultPrim());
 
         m_usdStage->GetSessionLayer()->Export(usdFile.toStdString());
 
