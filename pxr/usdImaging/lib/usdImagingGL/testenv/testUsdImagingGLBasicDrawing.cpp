@@ -216,30 +216,34 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     perfLog.SetCounter(UsdImagingTokens->usdVaryingVisibility, 0);
     perfLog.SetCounter(UsdImagingTokens->usdVaryingXform, 0);
 
-    int width = GetWidth(), height = GetHeight();
-
-    double aspectRatio = double(width)/height;
-    GfFrustum frustum;
-    frustum.SetPerspective(60.0, aspectRatio, 1, 100000.0);
-
-    GfMatrix4d viewMatrix;
-    viewMatrix.SetIdentity();
-    viewMatrix *= GfMatrix4d().SetRotate(GfRotation(GfVec3d(0, 1, 0), _rotate[0]));
-    viewMatrix *= GfMatrix4d().SetRotate(GfRotation(GfVec3d(1, 0, 0), _rotate[1]));
-    viewMatrix *= GfMatrix4d().SetTranslate(GfVec3d(_translate[0], _translate[1], _translate[2]));
-
-    GfMatrix4d projMatrix = frustum.ComputeProjectionMatrix();
-
-    GfMatrix4d modelViewMatrix = viewMatrix; 
-    if (UsdGeomGetStageUpAxis(_stage) == UsdGeomTokens->z) {
-        // rotate from z-up to y-up
-        modelViewMatrix = 
-            GfMatrix4d().SetRotate(GfRotation(GfVec3d(1.0,0.0,0.0), -90.0)) *
-            modelViewMatrix;
-    }
+    const int width = GetWidth();
+    const int height = GetHeight();
 
     GfVec4d viewport(0, 0, width, height);
-    _engine->SetCameraState(modelViewMatrix, projMatrix);
+
+    if (GetCameraPath().empty()) {
+        GfMatrix4d viewMatrix(1.0);
+        viewMatrix *= GfMatrix4d().SetRotate(GfRotation(GfVec3d(0, 1, 0), _rotate[0]));
+        viewMatrix *= GfMatrix4d().SetRotate(GfRotation(GfVec3d(1, 0, 0), _rotate[1]));
+        viewMatrix *= GfMatrix4d().SetTranslate(GfVec3d(_translate[0], _translate[1], _translate[2]));
+
+        GfMatrix4d modelViewMatrix = viewMatrix; 
+        if (UsdGeomGetStageUpAxis(_stage) == UsdGeomTokens->z) {
+            // rotate from z-up to y-up
+            modelViewMatrix = 
+                GfMatrix4d().SetRotate(GfRotation(GfVec3d(1.0,0.0,0.0), -90.0)) *
+                modelViewMatrix;
+        }
+
+        const double aspectRatio = double(width)/height;
+        GfFrustum frustum;
+        frustum.SetPerspective(60.0, aspectRatio, 1, 100000.0);
+        const GfMatrix4d projMatrix = frustum.ComputeProjectionMatrix();
+
+        _engine->SetCameraState(modelViewMatrix, projMatrix);
+    } else {
+        _engine->SetCameraPath(SdfPath(GetCameraPath()));
+    }
     _engine->SetRenderViewport(viewport);
 
     size_t i = 0;

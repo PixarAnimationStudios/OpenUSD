@@ -61,6 +61,7 @@ public:
     std::string const & GetStageFilePath() const { return _stageFilePath; }
     std::string const & GetOutputFilePath() const { return _outputFilePath; }
 
+    std::string const & GetCameraPath() const { return _cameraPath; }
     std::vector<GfVec4d> const & GetClipPlanes() const { return _clipPlanes; }
     std::vector<double> const& GetTimes() const { return _times; }
     GfVec4f const & GetClearColor() const { return _clearColor; }
@@ -102,6 +103,7 @@ private:
     UsdImagingGL_UnitTestWindow *_widget;
     bool _testLighting;
     bool _cameraLight;
+    std::string _cameraPath;
     bool _testIdRender;
 
     std::string _stageFilePath;

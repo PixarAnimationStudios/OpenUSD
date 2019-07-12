@@ -313,6 +313,7 @@ static void Usage(int argc, char *argv[])
     static const char usage[] =
 "%s [-stage filePath] [-write filePath]\n"
 "                           [-offscreen] [-lighting] [-idRender]\n"
+"                           [-camera pathToCamera]\n"
 "                           [-complexity complexity]\n"
 "                           [-renderer rendererName]\n"
 "                           [-shading [flat|smooth|wire|wireOnSurface]]\n"
@@ -427,6 +428,10 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
         }
         else if (strcmp(argv[i], "-camlight") == 0) {
             _cameraLight = true;
+        }
+        else if (strcmp(argv[i], "-camera") == 0) {
+            CheckForMissingArguments(i, 1, argc, argv);
+            _cameraPath = argv[++i];
         }
         else if (strcmp(argv[i], "-idRender") == 0) {
             _testIdRender = true;
