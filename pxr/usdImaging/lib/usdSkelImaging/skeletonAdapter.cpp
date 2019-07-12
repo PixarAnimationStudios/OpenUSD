@@ -1430,13 +1430,14 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningComputationForTime(
             SdfPath skinnedPrimPath =
                 UsdImagingGprimAdapter::_ResolveCachePath(
                             skinnedPrim.GetPath(), instancerContext);
-            SdfPath aggrCompId =
-                _GetSkinningInputAggregatorComputationPath(skinnedPrimPath);
+            SdfPath renderIndexAggrCompId = _ConvertCachePathToIndexPath(
+                _GetSkinningInputAggregatorComputationPath(skinnedPrimPath));
             
             HdExtComputationInputDescriptorVector compInputDescs;
             for (auto const& input : compInputNames) {
                 compInputDescs.emplace_back(
-                    HdExtComputationInputDescriptor(input, aggrCompId, input));
+                    HdExtComputationInputDescriptor(input,
+                        renderIndexAggrCompId, input));
             }
             valueCache->GetExtComputationInputs(computationPath)
                 = compInputDescs;
@@ -1900,7 +1901,8 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinnedPrimForTime(
                         HdTokens->points,
                         HdInterpolationVertex,
                         HdPrimvarRoleTokens->point,
-                        _GetSkinningComputationPath(skinnedPrimPath),
+                        _ConvertCachePathToIndexPath(
+                            _GetSkinningComputationPath(skinnedPrimPath)),
                         _tokens->skinnedPoints,
                         pointsType);
         
