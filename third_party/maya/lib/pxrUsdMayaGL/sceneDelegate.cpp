@@ -161,7 +161,6 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
         renderIndex->InsertTask<HdxPickTask>(this, _pickingTaskId);
         _ValueCache& cache = _valueCacheMap[_pickingTaskId];
         HdxPickTaskParams taskParams;
-        taskParams.alphaThreshold = 0.1f;
         taskParams.enableSceneMaterials = true;
         cache[HdTokens->params] = VtValue(taskParams);
 

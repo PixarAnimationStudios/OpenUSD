@@ -957,11 +957,9 @@ HdxTaskController::SetRenderParams(HdxRenderTaskParams const& params)
             _delegate.GetParameter<HdxPickTaskParams>(
                 _pickTaskId, HdTokens->params);
         
-        if (pickParams.alphaThreshold != params.alphaThreshold ||
-            pickParams.cullStyle != params.cullStyle ||
+        if (pickParams.cullStyle != params.cullStyle ||
             pickParams.enableSceneMaterials != params.enableSceneMaterials) {
 
-            pickParams.alphaThreshold = params.alphaThreshold;
             pickParams.cullStyle = params.cullStyle;
             pickParams.enableSceneMaterials = params.enableSceneMaterials;
 

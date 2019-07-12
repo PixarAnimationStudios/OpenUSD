@@ -313,7 +313,8 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
         } else {
             state->SetStencilEnabled(false);
         }
-        state->SetAlphaThreshold(_params.alphaThreshold);
+        // Make sure translucent pixels can be picked by not discarding them
+        state->SetAlphaThreshold(0.0f);
         state->SetCullStyle(_params.cullStyle);
         state->SetCameraFramingState(_contextParams.viewMatrix, 
                                      _contextParams.projectionMatrix,
@@ -915,8 +916,7 @@ operator<<(std::ostream& out, HdxPickHit const& h)
 bool
 operator==(HdxPickTaskParams const& lhs, HdxPickTaskParams const& rhs)
 {
-    return lhs.alphaThreshold == rhs.alphaThreshold
-        && lhs.cullStyle == rhs.cullStyle
+    return lhs.cullStyle == rhs.cullStyle
         && lhs.enableSceneMaterials == rhs.enableSceneMaterials;
 }
 
@@ -930,7 +930,6 @@ std::ostream&
 operator<<(std::ostream& out, HdxPickTaskParams const& p)
 {
     out << "PickTask Params: (...) "
-        << p.alphaThreshold << " "
         << p.cullStyle << " "
         << p.enableSceneMaterials;
     return out;
