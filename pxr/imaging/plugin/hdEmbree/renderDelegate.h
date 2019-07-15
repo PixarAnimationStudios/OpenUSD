@@ -229,6 +229,10 @@ public:
     virtual HdAovDescriptor
         GetDefaultAovDescriptor(TfToken const& name) const override;
 
+    /// This function allows the renderer to report back some useful statistics
+    /// that the application can display to the user.
+    virtual VtDictionary GetRenderStats() const override;
+
 private:
     static const TfTokenVector SUPPORTED_RPRIM_TYPES;
     static const TfTokenVector SUPPORTED_SPRIM_TYPES;

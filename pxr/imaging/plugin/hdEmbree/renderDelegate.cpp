@@ -267,6 +267,15 @@ HdEmbreeRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
     return HdAovDescriptor();
 }
 
+VtDictionary 
+HdEmbreeRenderDelegate::GetRenderStats() const
+{
+    VtDictionary stats;
+    stats[HdPerfTokens->numCompletedSamples.GetString()] = 
+        _renderer.GetCompletedSamples();
+    return stats;
+}
+
 HdRenderPassSharedPtr
 HdEmbreeRenderDelegate::CreateRenderPass(HdRenderIndex *index,
                             HdRprimCollection const& collection)

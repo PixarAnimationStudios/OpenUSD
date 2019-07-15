@@ -149,6 +149,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (instVertexAdjacency)                       \
     (meshTopology)                              \
     (nonUniformSize)                            \
+    (numCompletedSamples)                       \
     (quadrangulateCPU)                          \
     (quadrangulateGPU)                          \
     (quadrangulateFaceVarying)                  \

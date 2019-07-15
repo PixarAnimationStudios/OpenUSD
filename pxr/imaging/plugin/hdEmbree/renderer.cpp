@@ -51,6 +51,7 @@ HdEmbreeRenderer::HdEmbreeRenderer()
     , _samplesToConvergence(0)
     , _ambientOcclusionSamples(0)
     , _enableSceneColors(false)
+    , _completedSamples(0)
 {
 }
 
@@ -357,9 +358,17 @@ HdEmbreeRenderer::MarkAovBuffersUnconverged()
     }
 }
 
+int
+HdEmbreeRenderer::GetCompletedSamples() const
+{
+    return _completedSamples.load();
+}
+
 void
 HdEmbreeRenderer::Render(HdRenderThread *renderThread)
 {
+    _completedSamples.store(0);
+
     // Commit any pending changes to the scene.
     rtcCommit(_scene);
 
@@ -407,9 +416,13 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
                 }
             }
             if (!moreWork) {
+                _completedSamples.store(i+1);
                 break;
             }
         }
+
+        // Track the number of completed samples for external consumption.
+        _completedSamples.store(i+1);
 
         // Cancellation point.
         if (renderThread->IsStopRequested()) {

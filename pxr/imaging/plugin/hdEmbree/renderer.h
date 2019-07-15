@@ -36,6 +36,7 @@
 #include <embree2/rtcore_ray.h>
 
 #include <random>
+#include <atomic>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -109,6 +110,9 @@ public:
 
     /// Mark the aov buffers as unconverged.
     void MarkAovBuffersUnconverged();
+
+    /// Get the number of samples completed so far.
+    int GetCompletedSamples() const;
 
 private:
     // Validate the internal consistency of aov bindings provided to
@@ -194,6 +198,9 @@ private:
     int _ambientOcclusionSamples;
     // Should we enable scene colors?
     bool _enableSceneColors;
+
+    // How many samples have been completed.
+    std::atomic<int> _completedSamples;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

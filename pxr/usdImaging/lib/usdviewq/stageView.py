@@ -1864,8 +1864,6 @@ class StageView(QtOpenGL.QGLWidget):
             def _addSizeMetric(toPrint, stats, label, key):
                 if key in stats:
                     toPrint[label] = ReportMetricSize(stats[key])
-                else:
-                    toPrint[label] = "N/A"
 
             rStats = renderer.GetRenderStats()
 
@@ -1876,6 +1874,9 @@ class StageView(QtOpenGL.QGLWidget):
             _addSizeMetric(toPrint, rStats, " topology", "topology")
             _addSizeMetric(toPrint, rStats, " shader  ", "drawingShader")
             _addSizeMetric(toPrint, rStats, " texture ", "textureMemory")
+            
+            if "numCompletedSamples" in rStats:
+                toPrint["Samples done "] = rStats["numCompletedSamples"]
 
         # Playback Rate
         if self._dataModel.viewSettings.showHUD_Performance:
