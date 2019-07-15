@@ -190,8 +190,11 @@ _SetParamValue(RtUString const& name,
             params->SetPoint(name, RtPoint3(v[0], v[1], v[2]));
         } else if (role == HdPrimvarRoleTokens->normal) {
             params->SetPoint(name, RtNormal3(v[0], v[1], v[2]));
-        } else {
+        } else if (role == HdPrimvarRoleTokens->vector) {
             params->SetVector(name, RtVector3(v[0], v[1], v[2]));
+        } else {
+            params->SetFloatArray(name,
+                reinterpret_cast<const float*>(&v), 3);
         }
     } else if (val.IsHolding<VtArray<GfVec3f>>()) {
         VtArray<GfVec3f> v = val.UncheckedGet<VtArray<GfVec3f>>();
@@ -207,10 +210,14 @@ _SetParamValue(RtUString const& name,
             params->SetNormalDetail(
                 name, reinterpret_cast<const RtNormal3*>(v.cdata()),
                 detail);
-        } else {
+        } else if (role == HdPrimvarRoleTokens->vector) {
             params->SetVectorDetail(
                 name, reinterpret_cast<const RtVector3*>(v.cdata()),
                 detail);
+        } else {
+            params->SetFloatArrayDetail(
+                name, reinterpret_cast<const float*>(v.cdata()),
+                3, detail);
         }
     } else if (val.IsHolding<GfVec3d>()) {
         // double->float
@@ -221,8 +228,11 @@ _SetParamValue(RtUString const& name,
             params->SetPoint(name, RtPoint3(v[0], v[1], v[2]));
         } else if (role == HdPrimvarRoleTokens->normal) {
             params->SetPoint(name, RtNormal3(v[0], v[1], v[2]));
-        } else {
+        } else if (role == HdPrimvarRoleTokens->vector) {
             params->SetVector(name, RtVector3(v[0], v[1], v[2]));
+        } else {
+            params->SetFloatArray(name,
+                reinterpret_cast<const float*>(&v), 3);
         }
     } else if (val.IsHolding<VtArray<GfVec3d>>()) {
         VtArray<GfVec3d> vd = val.UncheckedGet<VtArray<GfVec3d>>();
@@ -244,10 +254,14 @@ _SetParamValue(RtUString const& name,
             params->SetNormalDetail(
                 name, reinterpret_cast<const RtNormal3*>(v.cdata()),
                 detail);
-        } else {
+        } else if (role == HdPrimvarRoleTokens->vector) {
             params->SetVectorDetail(
                 name, reinterpret_cast<const RtVector3*>(v.cdata()),
                 detail);
+        } else {
+            params->SetFloatArrayDetail(
+                name, reinterpret_cast<const float*>(v.cdata()),
+                3, detail);
         }
     } else if (val.IsHolding<GfVec4f>()) {
         GfVec4f v = val.UncheckedGet<GfVec4f>();
