@@ -704,7 +704,7 @@ INPUT                  = src/modules/usd/doxygen/externalOverview.dox \
                          src/modules/hf \
                          src/modules/pxOsd \
                          src/modules/hdEmbree \
-                         src/modules/hdStream \
+                         src/modules/hdStorm \
                                                                       \
                          ## "usdImaging" package \
                          src/modules/usdAppUtils \

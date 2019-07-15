@@ -21,44 +21,33 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#ifndef HDSTORM_RENDERER_PLUGIN_H
+#define HDSTORM_RENDERER_PLUGIN_H
+
 #include "pxr/pxr.h"
-#include "pxr/imaging/hdStream/rendererPlugin.h"
-
-#include "pxr/imaging/hdSt/renderDelegate.h"
-#include "pxr/imaging/hdx/rendererPluginRegistry.h"
-
+#include "pxr/imaging/hdx/rendererPlugin.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfType)
-{
-    HdxRendererPluginRegistry::Define<HdStreamRendererPlugin>();
-}
+class HdStormRendererPlugin final : public HdxRendererPlugin {
+public:
+    HdStormRendererPlugin()          = default;
+    virtual ~HdStormRendererPlugin() = default;
 
-HdRenderDelegate *
-HdStreamRendererPlugin::CreateRenderDelegate()
-{
-    return new HdStRenderDelegate();
-}
+    virtual HdRenderDelegate *CreateRenderDelegate() override;
+    virtual HdRenderDelegate *CreateRenderDelegate(
+        HdRenderSettingsMap const& settingsMap) override;
 
-HdRenderDelegate*
-HdStreamRendererPlugin::CreateRenderDelegate(
-    HdRenderSettingsMap const& settingsMap)
-{
-    return new HdStRenderDelegate(settingsMap);
-}
+    virtual void DeleteRenderDelegate(HdRenderDelegate *renderDelegate) 
+        override;
 
-void
-HdStreamRendererPlugin::DeleteRenderDelegate(HdRenderDelegate *renderDelegate)
-{
-    delete renderDelegate;
-}
+    virtual bool IsSupported() const override;
 
-bool
-HdStreamRendererPlugin::IsSupported() const
-{
-    return HdStRenderDelegate::IsSupported();
-}
-
+private:
+    HdStormRendererPlugin(const HdStormRendererPlugin &)             = delete;
+    HdStormRendererPlugin &operator =(const HdStormRendererPlugin &) = delete;
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // HDSTORM_RENDERER_PLUGIN_H
