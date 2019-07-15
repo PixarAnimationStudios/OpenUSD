@@ -59,6 +59,10 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
     SdfPath const &id = GetId();
     HdDirtyBits& bits = *dirtyBits;
 
+    if (bits & DirtyViewMatrix) {
+        sceneDelegate->SampleTransform(id, &_sampleXforms);
+    }
+
     if (bits & DirtyParams) {
         TfToken params[] = {
             HdCameraTokens->horizontalAperture,

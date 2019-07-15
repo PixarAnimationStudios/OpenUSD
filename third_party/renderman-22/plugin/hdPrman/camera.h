@@ -26,7 +26,9 @@
 
 #include "pxr/pxr.h"
 #include "hdPrman/api.h"
+#include "hdPrman/context.h"
 #include "pxr/imaging/hd/camera.h"
+#include "pxr/imaging/hd/timeSampleArray.h"
 #include "pxr/base/vt/dictionary.h"
 
 class RixParamList;
@@ -41,7 +43,7 @@ class HdSceneDelegate;
 /// cameras.
 /// Note: We do not create a Riley camera per HdCamera because in PRman 22,
 /// it'd require a render target to be created and bound (per camera), which
-/// would be prohibitively expensive.
+/// would be prohibitively expensive in Prman 22.
 ///
 class HdPrmanCamera final : public HdCamera
 {
@@ -65,6 +67,13 @@ public:
     HDPRMAN_API
     bool GetAndResetHasParamsChanged();
 
+    /// Returns the time sampled xforms that were queried during Sync.
+    HDPRMAN_API
+    HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> const&
+    GetTimeSampleXforms() const {
+        return _sampleXforms;
+    }
+ 
     /// Sets the camera and projection shader parameters as expected by Riley
     /// from the USD physical camera params.
     HDPRMAN_API
@@ -72,6 +81,8 @@ public:
                               RixParamList *projParams) const;
 
 private:
+    HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> _sampleXforms;
+    
     VtDictionary _params;
     bool _dirtyParams;
 };

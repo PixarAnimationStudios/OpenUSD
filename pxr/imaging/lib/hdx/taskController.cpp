@@ -88,6 +88,23 @@ HdxTaskController::_Delegate::Get(SdfPath const& id, TfToken const& key)
 }
 
 /* virtual */
+GfMatrix4d
+HdxTaskController::_Delegate::GetTransform(SdfPath const& id)
+{
+    // We expect this to be called only for the free cam.
+    VtValue val = GetCameraParamValue(id, HdCameraTokens->worldToViewMatrix);
+    GfMatrix4d xform(1.0);
+    if (val.IsHolding<GfMatrix4d>()) {
+        xform = val.Get<GfMatrix4d>().GetInverse(); // camera to world
+    } else {
+        TF_CODING_ERROR(
+            "Unexpected call to GetTransform for %s in HdxTaskController's "
+            "internal scene delegate.\n", id.GetText());
+    }
+    return xform;
+}
+
+/* virtual */
 VtValue
 HdxTaskController::_Delegate::GetCameraParamValue(SdfPath const& id, 
                                                   TfToken const& key)

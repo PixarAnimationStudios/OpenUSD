@@ -38,6 +38,7 @@
 #include "pxr/usd/sdr/registry.h"
 #include "pxr/usd/usdLux/listAPI.h"
 #include "pxr/usd/usdGeom/camera.h"
+#include "pxr/usd/usdGeom/xformCache.h"
 
 #include "pxr/base/gf/camera.h"
 #include "pxr/base/tf/getenv.h"
@@ -249,6 +250,10 @@ int main(int argc, char *argv[])
     // Shutter settings from studio katana defaults
     float shutterInterval[2] = { 0.0f, 0.5f };
     float shutterCurve[10] = {0, 0.05, 0, 0, 0, 0, 0.05, 1, 0.35, 0};
+
+    // Use two samples (start and end) of a frame for now.
+    std::vector<double> timeSampleOffsets = {0.0, 1.0};
+
     // Options
     {
         RixParamList *options = mgr->CreateRixParamList();
@@ -337,13 +342,30 @@ int main(int argc, char *argv[])
                 };
                 
                 // Transform
-                GfMatrix4d const& cameraToWorld = gfCam.GetTransform();
+                std::vector<GfMatrix4d> xforms;
+                xforms.reserve(timeSampleOffsets.size());
+                // Get the xform at each time sample
+                for (double const& offset : timeSampleOffsets) {
+                    UsdGeomXformCache xformCache(frameNum + offset);
+                    xforms.emplace_back(
+                        xformCache.GetLocalToWorldTransform(prim));
+                }
+
+                // USD camera looks down -Z (RHS), while 
+                // Prman camera looks down +Z (RHS)
                 GfMatrix4d flipZ(1.0);
                 flipZ[2][2] = -1.0;
-                RtMatrix4x4 matrix =
-                    HdPrman_GfMatrixToRtMatrix(flipZ * cameraToWorld);
-                float const zerotime = 0.0f;
-                xform = {1, &matrix, &zerotime};
+                RtMatrix4x4 xf_rt_values[HDPRMAN_MAX_TIME_SAMPLES];
+                float times[HDPRMAN_MAX_TIME_SAMPLES];
+                size_t numNetSamples = std::min(xforms.size(),
+                                            (size_t) HDPRMAN_MAX_TIME_SAMPLES);
+                for (size_t i=0; i < numNetSamples; i++) {
+                    xf_rt_values[i] = 
+                        HdPrman_GfMatrixToRtMatrix(flipZ * xforms[i]);
+                    times[i] = timeSampleOffsets[i];
+                }
+
+                xform = {(unsigned) numNetSamples, xf_rt_values, times};
             } else {
                 TF_WARN("Invalid scene camera at %s. Falling back to the "
                         "free cam.\n", sceneCamPath.GetText());
@@ -534,8 +556,9 @@ int main(int argc, char *argv[])
         hdPrmanContext->fallbackVolumeMaterial = fallbackVolumeMaterial;
 
         // Configure default time samples.
-        hdPrmanContext->defaultTimeSamples.push_back(0.0);
-        hdPrmanContext->defaultTimeSamples.push_back(1.0);
+        for (double const& offset : timeSampleOffsets) {
+            hdPrmanContext->defaultTimeSamples.push_back(offset);
+        }
         hdPrmanContext->timeSampleMap[SdfPath::AbsoluteRootPath()] =
             hdPrmanContext->defaultTimeSamples;
 

@@ -190,6 +190,7 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         // But we cannot update this option in Renderman once it is running.
         // We apply the orthographic-width to the viewMatrix scale instead.
         // Inverse computation of GfFrustum::ComputeProjectionMatrix()
+        GfMatrix4d viewToWorldCorrectionMatrix(1.0);
         if (wantsOrtho) {
             double left   = -(1 + proj[3][0]) / proj[0][0];
             double right  =  (1 - proj[3][0]) / proj[0][0];
@@ -199,7 +200,7 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
             double h = (top-bottom)/(2 * fracHeight);
             GfMatrix4d scaleMatrix;
             scaleMatrix.SetScale(GfVec3d(w,h,1));
-            viewToWorldMatrix = scaleMatrix * viewToWorldMatrix;
+            viewToWorldCorrectionMatrix = scaleMatrix;
         } else {
             // Extract vertical FOV from hydra projection matrix after
             // accounting for the crop window.
@@ -218,23 +219,29 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
             const float vpAspect = _width / float(_height);
             GfMatrix4d aspectCorrection(1.0);
             aspectCorrection[0][0] = vpAspect / fbAspect;
-            viewToWorldMatrix = aspectCorrection * viewToWorldMatrix;
+            viewToWorldCorrectionMatrix = aspectCorrection;
         }
 
         // Riley camera xform is "move the camera", aka viewToWorld.
-        // Convert left-handed Y-up camera space (USD, Hydra) to
-        // right-handed Y-up (Prman) coordinates.  This just amounts to
+        // Convert right-handed Y-up camera space (USD, Hydra) to
+        // left-handed Y-up (Prman) coordinates.  This just amounts to
         // flipping the Z axis.
         GfMatrix4d flipZ(1.0);
         flipZ[2][2] = -1.0;
-        viewToWorldMatrix = flipZ * viewToWorldMatrix;
+        viewToWorldCorrectionMatrix = flipZ * viewToWorldCorrectionMatrix;
 
-        // Convert from Gf to Rt.
-        RtMatrix4x4 matrix = HdPrman_GfMatrixToRtMatrix(viewToWorldMatrix);
+        // Convert  from Gf to Rt.
+        HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xforms =
+            hdCam->GetTimeSampleXforms();
+        RtMatrix4x4 xf_rt_values[HDPRMAN_MAX_TIME_SAMPLES];
+        for (size_t i=0; i < xforms.count; ++i) {
+            xf_rt_values[i] = HdPrman_GfMatrixToRtMatrix(
+                viewToWorldCorrectionMatrix * xforms.values[i]);
+        }
 
         // Commit new camera.
-        float const zerotime = 0.0f;
-        riley::Transform xform = { 1, &matrix, &zerotime };
+        riley::Transform xform = {
+            unsigned(xforms.count), xf_rt_values, xforms.times };
         riley->ModifyCamera(_interactiveContext->cameraId, cameraNode,
                             &xform, camParams);
         mgr->DestroyRixParamList(camParams);

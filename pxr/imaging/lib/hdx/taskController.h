@@ -238,8 +238,8 @@ private:
     SdfPath _GetRenderTaskPath(TfToken const& materialTag) const;
     SdfPath _GetAovPath(TfToken const& aov) const;
 
-    // A private scene delegate member variable backs the tasks this
-    // controller generates. To keep _Delegate simple, the containing class
+    // A private scene delegate member variable backs the tasks and the free cam
+    // this controller generates. To keep _Delegate simple, the containing class
     // is responsible for marking things dirty.
     class _Delegate : public HdSceneDelegate
     {
@@ -277,6 +277,7 @@ private:
 
         // HdSceneDelegate interface
         virtual VtValue Get(SdfPath const& id, TfToken const& key);
+        virtual GfMatrix4d GetTransform(SdfPath const& id);
         virtual VtValue GetCameraParamValue(SdfPath const& id, 
                                             TfToken const& key);
         virtual bool IsEnabled(TfToken const& option) const;
