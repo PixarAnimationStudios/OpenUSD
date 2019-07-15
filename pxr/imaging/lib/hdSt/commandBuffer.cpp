@@ -46,6 +46,7 @@
 #include <tbb/enumerable_thread_specific.h>
 
 #include <functional>
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -162,8 +163,27 @@ HdStCommandBuffer::_RebuildDrawBatches()
     bool bindlessTexture = GlfContextCaps::GetInstance()
                                                .bindlessTextureEnabled;
 
-    // XXX: Temporary sorting by shader.
-    std::map<size_t, HdSt_DrawBatchSharedPtr> batchMap;
+    // Use a cheap bucketing strategy to reduce to number of comparison tests
+    // required to figure out if a draw item can be batched.
+    // We use a hash of the geometric shader, BAR version and (optionally)
+    // material params as the key, and test (in the worst case) against each of 
+    // the batches for the key.
+    // Test against the previous draw item's hash and batch prior to looking up
+    // the map.
+    struct _PrevBatchHit {
+        _PrevBatchHit() : key(0) {}
+        void Update(size_t _key, HdSt_DrawBatchSharedPtr &_batch) {
+            key = _key;
+            batch = _batch;
+        }
+        size_t key;
+        HdSt_DrawBatchSharedPtr batch;
+    };
+    _PrevBatchHit prevBatch;
+    
+    using _DrawBatchMap = 
+        std::unordered_map<size_t, HdSt_DrawBatchSharedPtrVector>;
+    _DrawBatchMap batchMap;
 
     for (size_t i = 0; i < _drawItems.size(); i++) {
         HdStDrawItem const * drawItem = _drawItems[i];
@@ -180,7 +200,6 @@ HdStCommandBuffer::_RebuildDrawBatches()
 
         size_t key = drawItem->GetGeometricShader()->ComputeHash();
         boost::hash_combine(key, drawItem->GetBufferArraysHash());
-
         if (!bindlessTexture) {
             // Geometric, RenderPass and Lighting shaders should never break
             // batches, however materials can. We consider the material 
@@ -192,14 +211,40 @@ HdStCommandBuffer::_RebuildDrawBatches()
         TF_DEBUG(HDST_DRAW_BATCH).Msg("%lu (%lu)\n", 
                 key, 
                 drawItem->GetBufferArraysHash());
-                //, drawItem->GetRprimID().GetText());
 
-        HdSt_DrawBatchSharedPtr batch;
-        TfMapLookup(batchMap, key, &batch);
-        if (!batch || !batch->Append(drawItemInstance)) {
-            batch = _NewDrawBatch(drawItemInstance);
-            _drawBatches.push_back(batch);
-            batchMap[key] = batch;
+        // Do a quick check to see if the draw item can be batched with the
+        // previous draw item, before checking the batchMap.
+        if (key == prevBatch.key && prevBatch.batch) {
+            if (prevBatch.batch->Append(drawItemInstance)) {
+                continue;
+            }
+        }
+
+        _DrawBatchMap::iterator const batchIter = batchMap.find(key);
+        bool const foundKey = batchIter != batchMap.end();
+        bool batched = false;
+        if (foundKey) {
+            HdSt_DrawBatchSharedPtrVector &batches = batchIter->second;
+            for (HdSt_DrawBatchSharedPtr &batch : batches) {
+                if (batch->Append(drawItemInstance)) {
+                    batched = true;
+                    prevBatch.Update(key, batch);
+                    break;
+                }
+            }
+        }
+
+        if (!batched) {
+            HdSt_DrawBatchSharedPtr batch = _NewDrawBatch(drawItemInstance);
+            _drawBatches.emplace_back(batch);
+            prevBatch.Update(key, batch);
+
+            if (foundKey) {
+                HdSt_DrawBatchSharedPtrVector &batches = batchIter->second;
+                batches.emplace_back(batch);
+            } else {
+                batchMap[key] = HdSt_DrawBatchSharedPtrVector({batch});
+            }
         }
     }
 }
