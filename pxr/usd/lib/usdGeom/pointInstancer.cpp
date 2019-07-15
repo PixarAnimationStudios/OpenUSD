@@ -608,6 +608,8 @@ _GetAttrForInstanceTransforms(
     const UsdAttribute& attr,
     UsdTimeCode baseTime,
     UsdTimeCode* attrSampleTime,
+    double* lowerTimeValue,
+    double* upperTimeValue,
     bool* attrHasSamples,
     T* attrData)
 {
@@ -615,12 +617,12 @@ _GetAttrForInstanceTransforms(
     if (baseTime.IsNumeric()) {
 
         double sampleTimeValue;
-        double upperTimeValue;
+        double sampleUpperTimeValue;
         bool hasSamples;
         if (!attr.GetBracketingTimeSamples(
                 baseTime.GetValue(),
                 &sampleTimeValue,
-                &upperTimeValue,
+                &sampleUpperTimeValue,
                 &hasSamples)) {
             return false;
         }
@@ -634,7 +636,28 @@ _GetAttrForInstanceTransforms(
             return false;
         }
 
+        // if the basetime is exactly at a sampled value, increase basetime by an 
+        // "epsilon" value based on the maximum time value and calculate bracketed 
+        // time sample values again
+
+        if (GfIsClose(
+                sampleTimeValue,
+                sampleUpperTimeValue,
+                std::numeric_limits<double>::epsilon())) {
+            double timeValueEpsilon = baseTime.GetValue() + UsdTimeCode::SafeStep();
+            UsdTimeCode baseTimeEpsilon = UsdTimeCode(timeValueEpsilon);
+            if (!attr.GetBracketingTimeSamples(
+                baseTimeEpsilon.GetValue(),
+                &sampleTimeValue,
+                &sampleUpperTimeValue,
+                &hasSamples)) {
+                return false;
+            }
+        }
+
         *attrSampleTime = sampleTime;
+        *lowerTimeValue = sampleTimeValue;
+        *upperTimeValue = sampleUpperTimeValue;
         *attrHasSamples = hasSamples;
 
     } else {
@@ -644,6 +667,8 @@ _GetAttrForInstanceTransforms(
             return false;
         }
         *attrSampleTime = baseTime;
+        *lowerTimeValue = baseTime.GetValue();
+        *upperTimeValue = baseTime.GetValue();
         *attrHasSamples = false;
 
     }
@@ -657,11 +682,15 @@ UsdGeomPointInstancer::_GetProtoIndicesForInstanceTransforms(
     VtIntArray* protoIndices) const
 {
     UsdTimeCode sampleTime;
+    double dummyLowerTimeValue;
+    double dummyUpperTimeValue;
     bool hasSamples;
     if (!_GetAttrForInstanceTransforms<VtIntArray>(
             GetProtoIndicesAttr(),
             baseTime,
             &sampleTime,
+            &dummyLowerTimeValue,
+            &dummyUpperTimeValue,
             &hasSamples,
             protoIndices)) {
         // We don't TF_WARN here because computing transforms on an empty
@@ -677,16 +706,22 @@ UsdGeomPointInstancer::_GetPositionsForInstanceTransforms(
     UsdTimeCode baseTime,
     size_t numInstances,
     UsdTimeCode* positionsSampleTime,
+    double* positionsLowerTimeValue,
+    double* positionsUpperTimeValue,
     bool* positionsHasSamples,
     VtVec3fArray* positions) const
 {
     UsdTimeCode sampleTime;
+    double lowerTimeValue;
+    double upperTimeValue;
     bool hasSamples;
     VtVec3fArray positionData;
     if (!_GetAttrForInstanceTransforms<VtVec3fArray>(
             GetPositionsAttr(),
             baseTime,
             &sampleTime,
+            &lowerTimeValue,
+            &upperTimeValue,
             &hasSamples,
             &positionData)) {
         TF_WARN("%s -- no positions", GetPrim().GetPath().GetText());
@@ -702,6 +737,8 @@ UsdGeomPointInstancer::_GetPositionsForInstanceTransforms(
     }
 
     *positionsSampleTime = sampleTime;
+    *positionsLowerTimeValue = lowerTimeValue;
+    *positionsUpperTimeValue = upperTimeValue;
     *positionsHasSamples = hasSamples;
     *positions = positionData;
     return true;
@@ -712,22 +749,39 @@ UsdGeomPointInstancer::_GetVelocitiesForInstanceTransforms(
     UsdTimeCode baseTime,
     size_t numInstances,
     UsdTimeCode positionsSampleTime,
+    double positionsLowerTimeValue,
+    double positionsUpperTimeValue,
     UsdTimeCode* velocitiesSampleTime,
     VtVec3fArray* velocities) const
 {
     UsdTimeCode sampleTime;
+    double lowerTimeValue;
+    double upperTimeValue;
     bool hasSamples;
     VtVec3fArray velocityData;
     if (!_GetAttrForInstanceTransforms<VtVec3fArray>(
             GetVelocitiesAttr(),
             baseTime,
             &sampleTime,
+            &lowerTimeValue,
+            &upperTimeValue,
             &hasSamples,
             &velocityData)) {
         return false;
     }
 
-    if (!hasSamples || !GfIsClose(
+    // boolean value indicating whether or not the bracketing time samples for
+    // position and velocity are equivalent
+    bool bracketingTimeSamplesAligned = hasSamples && GfIsClose(
+            positionsLowerTimeValue, 
+            lowerTimeValue, 
+            std::numeric_limits<double>::epsilon()) 
+            && GfIsClose(
+            positionsUpperTimeValue,
+            upperTimeValue,
+            std::numeric_limits<double>::epsilon());
+
+    if (!bracketingTimeSamplesAligned || !GfIsClose(
             sampleTime.GetValue(),
             positionsSampleTime.GetValue(),
             std::numeric_limits<double>::epsilon())) {
@@ -758,11 +812,15 @@ UsdGeomPointInstancer::_GetPositionsAndVelocitiesForInstanceTransforms(
     UsdTimeCode* velocitiesSampleTime) const
 {
     UsdTimeCode positionsSampleTime;
+    double positionsLowerTimeValue;
+    double positionsUpperTimeValue;
     bool positionsHasSamples;
     if (!_GetPositionsForInstanceTransforms(
             baseTime,
             numInstances,
             &positionsSampleTime,
+            &positionsLowerTimeValue,
+            &positionsUpperTimeValue,
             &positionsHasSamples,
             positions)) {
         return false;
@@ -772,6 +830,8 @@ UsdGeomPointInstancer::_GetPositionsAndVelocitiesForInstanceTransforms(
             baseTime,
             numInstances,
             positionsSampleTime,
+            positionsLowerTimeValue,
+            positionsUpperTimeValue,
             velocitiesSampleTime,
             velocities)) {
         velocities->clear();
@@ -787,12 +847,16 @@ UsdGeomPointInstancer::_GetScalesForInstanceTransforms(
     VtVec3fArray* scales) const
 {
     UsdTimeCode scalesSampleTime;
+    double dummyLowerTimeValue;
+    double dummyUpperTimeValue;
     bool scalesHasSamples;
     VtVec3fArray scaleData;
     if (!_GetAttrForInstanceTransforms<VtVec3fArray>(
             GetScalesAttr(),
             baseTime,
             &scalesSampleTime,
+            &dummyLowerTimeValue,
+            &dummyUpperTimeValue,
             &scalesHasSamples,
             &scaleData)) {
         return false;
@@ -815,16 +879,22 @@ UsdGeomPointInstancer::_GetOrientationsForInstanceTransforms(
     UsdTimeCode baseTime,
     size_t numInstances,
     UsdTimeCode* orientationsSampleTime,
+    double* orientationsLowerTimeValue,
+    double* orientationsUpperTimeValue,
     bool* orientationsHasSamples,
     VtQuathArray* orientations) const
 {
     UsdTimeCode sampleTime;
+    double lowerTimeValue;
+    double upperTimeValue;
     bool hasSamples;
     VtQuathArray orientationData;
     if (!_GetAttrForInstanceTransforms<VtQuathArray>(
             GetOrientationsAttr(),
             baseTime,
             &sampleTime,
+            &lowerTimeValue,
+            &upperTimeValue,
             &hasSamples,
             &orientationData)) {
         return false;
@@ -839,6 +909,8 @@ UsdGeomPointInstancer::_GetOrientationsForInstanceTransforms(
     }
 
     *orientationsSampleTime = sampleTime;
+    *orientationsLowerTimeValue = lowerTimeValue;
+    *orientationsUpperTimeValue = upperTimeValue;
     *orientationsHasSamples = hasSamples;
     *orientations = orientationData;
     return true;
@@ -849,22 +921,39 @@ UsdGeomPointInstancer::_GetAngularVelocitiesForInstanceTransforms(
     UsdTimeCode baseTime,
     size_t numInstances,
     UsdTimeCode orientationsSampleTime,
+    double orientationsLowerTimeValue,
+    double orientationsUpperTimeValue,
     UsdTimeCode* angularVelocitiesSampleTime,
     VtVec3fArray* angularVelocities) const
 {
     UsdTimeCode sampleTime;
+    double lowerTimeValue;
+    double upperTimeValue;
     bool hasSamples;
     VtVec3fArray angularVelocityData;
     if (!_GetAttrForInstanceTransforms<VtVec3fArray>(
             GetAngularVelocitiesAttr(),
             baseTime,
             &sampleTime,
+            &lowerTimeValue,
+            &upperTimeValue,
             &hasSamples,
             &angularVelocityData)) {
         return false;
     }
 
-    if (!hasSamples || !GfIsClose(
+    // boolean value indicating whether or not the bracketing time samples for
+    // orientation and angular velocity are equivalent
+    bool bracketingTimeSamplesAligned = hasSamples && GfIsClose(
+            orientationsLowerTimeValue, 
+            lowerTimeValue, 
+            std::numeric_limits<double>::epsilon()) 
+            && GfIsClose(
+            orientationsUpperTimeValue,
+            upperTimeValue,
+            std::numeric_limits<double>::epsilon());
+
+    if (!bracketingTimeSamplesAligned || !GfIsClose(
             sampleTime.GetValue(),
             orientationsSampleTime.GetValue(),
             std::numeric_limits<double>::epsilon())) {
@@ -897,11 +986,15 @@ UsdGeomPointInstancer::_GetOrientationsAndAngularVelocitiesForInstanceTransforms
     UsdTimeCode* angularVelocitiesSampleTime) const
 {
     UsdTimeCode orientationsSampleTime;
+    double orientationsLowerTimeValue;
+    double orientationsUpperTimeValue;
     bool orientationsHasSamples;
     if (!_GetOrientationsForInstanceTransforms(
             baseTime,
             numInstances,
             &orientationsSampleTime,
+            &orientationsLowerTimeValue,
+            &orientationsUpperTimeValue,
             &orientationsHasSamples,
             orientations)) {
         return false;
@@ -911,6 +1004,8 @@ UsdGeomPointInstancer::_GetOrientationsAndAngularVelocitiesForInstanceTransforms
             baseTime,
             numInstances,
             orientationsSampleTime,
+            orientationsLowerTimeValue,
+            orientationsUpperTimeValue,
             angularVelocitiesSampleTime,
             angularVelocities)) {
         angularVelocities->clear();

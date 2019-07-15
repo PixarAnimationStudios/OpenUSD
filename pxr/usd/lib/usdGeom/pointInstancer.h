@@ -935,6 +935,8 @@ private:
         UsdTimeCode baseTime,
         size_t numInstances,
         UsdTimeCode* positionsSampleTime,
+        double* positionsLowerTimeValue,
+        double* positionsUpperTimeValue,
         bool* positionsHasSamples,
         VtVec3fArray* positions) const;
 
@@ -946,6 +948,8 @@ private:
         UsdTimeCode baseTime,
         size_t numInstances,
         UsdTimeCode positionsSampleTime,
+        double positionsLowerTimeValue,
+        double positionsUpperTimeValue,
         UsdTimeCode* velocitiesSampleTime,
         VtVec3fArray* velocities) const;
 
@@ -976,6 +980,8 @@ private:
         UsdTimeCode baseTime,
         size_t numInstances,
         UsdTimeCode* orientationsSampleTime,
+        double* orientationsLowerTimeValue,
+        double* orientationsUpperTimeValue,
         bool* orientationsHasSamples,
         VtQuathArray* orientations) const;
 
@@ -987,6 +993,8 @@ private:
         UsdTimeCode baseTime,
         size_t numInstances,
         UsdTimeCode orientationsSampleTime,
+        double orientationsLowerTimeValue,
+        double orientationsUpperTimeValue,
         UsdTimeCode* angularVelocitiesSampleTime,
         VtVec3fArray* angularVelocities) const;
 
