@@ -191,6 +191,7 @@ pxr_test_scripts(
     testenv/testUsdPrims.py
     testenv/testUsdReferences.py
     testenv/testUsdRelationships.py
+    testenv/testUsdSchemaBasePy.py
     testenv/testUsdSchemaRegistry.py
     testenv/testUsdSpecializes.py
     testenv/testUsdStage.py
@@ -829,6 +830,12 @@ pxr_register_test(testUsdRelationships
 
 pxr_register_test(testUsdSchemaBase
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSchemaBase"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdSchemaBasePy
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSchemaBasePy"
     EXPECTED_RETURN_CODE 0
 )
 
