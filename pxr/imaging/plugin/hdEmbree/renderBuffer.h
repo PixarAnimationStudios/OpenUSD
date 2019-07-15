@@ -90,7 +90,7 @@ public:
     /// before any I/O, followed by memory access, followed by Unmap() when
     /// done.
     ///   \return The address of the buffer.
-    virtual uint8_t* Map() override {
+    virtual void* Map() override {
         _mappers++;
         return _buffer.data();
     }

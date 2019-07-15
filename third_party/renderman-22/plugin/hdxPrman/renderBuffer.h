@@ -50,7 +50,7 @@ public:
     // HdPrman doesn't handle sampling decisions at the hydra level.
     virtual bool IsMultiSampled() const override { return false; }
 
-    virtual uint8_t* Map() override {
+    virtual void* Map() override {
         _mappers++;
         return _buffer.data();
     }

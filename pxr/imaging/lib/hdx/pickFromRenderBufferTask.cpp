@@ -141,10 +141,14 @@ HdxPickFromRenderBufferTask::Execute(HdTaskContext* ctx)
         }
     }
 
-    uint8_t *primIdPtr = _primId->Map();
-    uint8_t *depthPtr = _depth->Map();
-    uint8_t *elementIdPtr = _elementId ? _elementId->Map() : nullptr;
-    uint8_t *instanceIdPtr = _instanceId ? _instanceId->Map() : nullptr;
+    uint8_t *primIdPtr = reinterpret_cast<uint8_t*>(_primId->Map());
+    uint8_t *depthPtr = reinterpret_cast<uint8_t*>(_depth->Map());
+    uint8_t *elementIdPtr = _elementId ? 
+                            reinterpret_cast<uint8_t*>(_elementId->Map()) : 
+                            nullptr;
+    uint8_t *instanceIdPtr = _instanceId ? 
+                             reinterpret_cast<uint8_t*>(_instanceId->Map()) : 
+                             nullptr;
 
     GfVec2i renderBufferSize = GfVec2i(_primId->GetWidth(),
                                        _primId->GetHeight());
