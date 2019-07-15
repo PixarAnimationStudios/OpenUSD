@@ -25,6 +25,7 @@
 
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/rprimUtils.h"
 #include "pxr/imaging/hdSt/volumeShaderKey.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -44,8 +45,8 @@ HdStVolume::GetInitialDirtyBitsMask() const
 {
     const int mask = HdChangeTracker::Clean
         | HdChangeTracker::DirtyExtent
-	| HdChangeTracker::DirtyPrimID
-	| HdChangeTracker::DirtyRepr
+        | HdChangeTracker::DirtyPrimID
+        | HdChangeTracker::DirtyRepr
         | HdChangeTracker::DirtyTransform
         | HdChangeTracker::DirtyVisibility
         | HdChangeTracker::DirtyPrimvar
@@ -56,7 +57,6 @@ HdStVolume::GetInitialDirtyBitsMask() const
     return (HdDirtyBits)mask;
 }
 
-// Do we actually really need to override this?
 HdDirtyBits 
 HdStVolume::_PropagateDirtyBits(HdDirtyBits bits) const
 {
@@ -67,7 +67,6 @@ void
 HdStVolume::_InitRepr(TfToken const &reprToken, HdDirtyBits* dirtyBits)
 {
     // All representations point to _volumeRepr.
-
     if (!_volumeRepr) {
         _volumeRepr = HdReprSharedPtr(new HdRepr());
         HdDrawItem * const drawItem = new HdStDrawItem(&_sharedData);
@@ -211,8 +210,8 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     /* CONSTANT PRIMVARS, TRANSFORM AND EXTENT */
     HdPrimvarDescriptorVector constantPrimvars =
         GetPrimvarDescriptors(sceneDelegate, HdInterpolationConstant);
-    _PopulateConstantPrimvars(sceneDelegate, drawItem, dirtyBits,
-            constantPrimvars);
+    HdStPopulateConstantPrimvars(this, &_sharedData, sceneDelegate, drawItem, 
+        dirtyBits, constantPrimvars);
 
     /* MATERIAL SHADER */
     drawItem->SetMaterialShaderFromRenderIndex(

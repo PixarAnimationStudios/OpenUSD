@@ -74,6 +74,7 @@ pxr_library(hdSt
         resourceBinder
         resourceGL
         resourceRegistry
+        rprimUtils
         shaderCode
         shaderKey
         smoothNormals

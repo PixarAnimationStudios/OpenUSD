@@ -39,6 +39,7 @@
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/quadrangulate.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/rprimUtils.h"
 #include "pxr/imaging/hdSt/smoothNormals.h"
 #include "pxr/imaging/hdSt/surfaceShader.h"
 #include "pxr/imaging/hdSt/tokens.h"
@@ -1677,8 +1678,8 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
             constantPrimvars =
                 GetPrimvarDescriptors(sceneDelegate, HdInterpolationConstant);
         }
-        _PopulateConstantPrimvars(sceneDelegate, drawItem, dirtyBits,
-                                  constantPrimvars);
+        HdStPopulateConstantPrimvars(this, &_sharedData, sceneDelegate, drawItem, 
+            dirtyBits, constantPrimvars);
 
         // Check if normals are provided as a constant primvar
         for (const HdPrimvarDescriptor& pv : constantPrimvars) {

@@ -35,6 +35,7 @@
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/rprimUtils.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
@@ -150,8 +151,8 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     /* CONSTANT PRIMVARS, TRANSFORM AND EXTENT */
     HdPrimvarDescriptorVector constantPrimvars =
         GetPrimvarDescriptors(sceneDelegate, HdInterpolationConstant);
-    _PopulateConstantPrimvars(sceneDelegate, drawItem, dirtyBits,
-            constantPrimvars);
+    HdStPopulateConstantPrimvars(this, &_sharedData, sceneDelegate, drawItem, 
+        dirtyBits, constantPrimvars);
 
     /* INSTANCE PRIMVARS */
     if (!GetInstancerId().IsEmpty()) {
