@@ -34,6 +34,9 @@
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/work/loops.h"
 
+#include <chrono>
+#include <thread>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdEmbreeRenderer::HdEmbreeRenderer()
@@ -389,6 +392,18 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
     // We consider the image converged after N samples, which is a convenient
     // and simple heuristic.
     for (int i = 0; i < _samplesToConvergence; ++i) {
+        // Pause point.
+        while (renderThread->IsPauseRequested()) {
+            if (renderThread->IsStopRequested()) {
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        // Cancellation point.
+        if (renderThread->IsStopRequested()) {
+            break;
+        }
+
         unsigned int tileSize = HdEmbreeConfig::GetInstance().tileSize;
         const unsigned int numTilesX = (_width + tileSize-1) / tileSize;
         const unsigned int numTilesY = (_height + tileSize-1) / tileSize;

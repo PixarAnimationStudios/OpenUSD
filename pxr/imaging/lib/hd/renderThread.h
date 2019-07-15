@@ -77,10 +77,22 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///     }
 ///   private:
 ///     void _RenderCallback() {
-///       while(!_renderThread.IsStopRequested()) {
+///       bool renderComplete = false;
+///       while(!renderComplete) {
+///         // Check if we have been asked to pause.
+///         while(_renderThread.IsPauseRequested()) {
+///             if(_renderThread.IsStopRequested()) {
+///                 break;
+///             }
+///             std::this_thread::sleep_for(std::chrono::milliseconds(10));
+///         }
+///         if(_renderThread.IsStopRequested()) {
+///             break;
+///         }
 ///         // generate N pixels.
 ///         auto lock = _renderThread.LockFramebuffer();
 ///         // resolve pixels to shared buffer.
+///         // Set renderComplete = true when finished rendering.
 ///       }
 ///     }
 ///     HdRenderThread _renderThread;
@@ -210,6 +222,17 @@ public:
     HD_API
     bool IsRendering();
 
+    /// Ask the render thread to pause rendering. The speed at which the
+    /// renderer actually enters the pause state depends on the delegate.
+    HD_API
+    void PauseRender();
+
+    /// Ask the render thread to resume rendering. Pause and Resume calls do
+    /// not need to be paired. The last call (to Pause or Resume) decides the
+    /// current state.
+    HD_API
+    void ResumeRender();
+
     /// @}
 
     /// \anchor RenderThreadAPI
@@ -225,6 +248,12 @@ public:
     /// this to determine whether to cancel rendering.
     HD_API
     bool IsStopRequested();
+
+    /// Query whether hydra has asked to pause rendering. This will continue
+    /// to return true until a request has been made for rendering to resume.
+    /// Remember to check for a stop request while paused.
+    HD_API
+    bool IsPauseRequested();
 
     /// @}
 
@@ -302,6 +331,11 @@ private:
     // the last time the render callback was called (since _enableRender is
     // reset on read).
     bool _stopRequested;
+
+    // _pauseRender provides a properly locked boolean flag that holds the
+    // current pause state of the thread. Toggled by calling PauseRender and
+    // ResumeRender, tested by IsPauseRequested.
+    std::atomic<bool> _pauseRender;
 
     // _rendering records whether the render thread is currently inside the
     // render callback, or planning to be inside the render callback.

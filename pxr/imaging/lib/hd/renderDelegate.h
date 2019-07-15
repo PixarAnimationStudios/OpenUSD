@@ -171,6 +171,37 @@ public:
 
     ////////////////////////////////////////////////////////////////////////////
     ///
+    /// Control of background rendering threads.
+    ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    ///
+    /// Advertise whether this delegate supports pausing and resuming of
+    /// background render threads. Default implementation returns false.
+    ///
+    HD_API
+    virtual bool IsPauseSupported() const;
+
+    ///
+    /// Pause all of this delegate's background rendering threads. Default
+    /// implementation does nothing.
+    ///
+    /// Returns \c true if successful.
+    ///
+    HD_API
+    virtual bool Pause();
+
+    ///
+    /// Resume all of this delegate's background rendering threads previously
+    /// paused by a call to Pause. Default implementation does nothing.
+    ///
+    /// Returns \c true if successful.
+    ///
+    HD_API
+    virtual bool Resume();
+
+    ////////////////////////////////////////////////////////////////////////////
+    ///
     /// Renderpass Factory
     ///
     ////////////////////////////////////////////////////////////////////////////
