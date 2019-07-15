@@ -283,13 +283,30 @@ lightingComputation(vec3 rayPointEye, vec3 rayDirectionEye)
 
 #endif
 
-vec4
+// Result of integrating volume along a ray
+struct VolumeContribution
+{
+    // Coordinates where ray marching hit the first non-empty voxel
+    // in eye space. 0 indicates the ray hit only empty voxels.
+    vec3 firstHitPeye;
+
+    // Integrated color
+    vec3 color;
+
+    // Integrated transmittance, i.e., what fraction of light from
+    // geometry behind the volume is still visible.
+    float transmittance;
+};
+
+VolumeContribution
 volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye)
 {
     int i = 1;
 
-    vec3 integratedLightColor = vec3(0.0);
-    float transmittance = 1.0;
+    VolumeContribution result;
+    result.firstHitPeye = vec3(0.0);
+    result.color = vec3(0.0);
+    result.transmittance = 1.0;
 
     // integrate transmittance and light along ray for bounding box
     while(i < maxNumSteps) {
@@ -300,22 +317,39 @@ volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye)
             break;
         }
 
+        // Evaluate volume shader functions to determine extinction,
+        // scattering, and emission.
+        float extinctionValue = extinctionFunction(rayPoint);
+        float scatteringValue = scatteringFunction(rayPoint);
+        vec3 emissionValue = emissionFunction(rayPoint);
+
+        // If this is the first time the ray is hitting a non-empty voxel,
+        // record the coordinates.
+        if (result.firstHitPeye == vec3(0.0)) {
+            if (  extinctionValue > 0 ||
+                  scatteringValue > 0 ||
+                  any(greaterThan(emissionValue, vec3(0)))) {
+                result.firstHitPeye = rayPointEye;
+            }
+        }
+
+        // In scattering contribution
         vec3 inScattering =
-             scatteringFunction(rayPoint) *
-             lightingComputation(rayPointEye, rayDirectionEye);
+            scatteringValue *
+            lightingComputation(rayPointEye, rayDirectionEye);
 
-        vec3 emissionContribution =
-             emissionFunction(rayPoint);
+        // In scattering and emission contribution
+        result.color += 
+            (stepSize * result.transmittance) *
+            (inScattering + emissionValue);
 
-        integratedLightColor += 
-            (stepSize * transmittance) * (emissionContribution + inScattering);
-
-        transmittance *= exp(-extinctionFunction(rayPoint) * stepSize);
+        // Update transmittance
+        result.transmittance *= exp(-extinctionValue * stepSize);
 
         i+=1;
     }
 
-    return vec4(integratedLightColor, 1.0 - transmittance);
+    return result;
 }
 
 void main(void)
@@ -330,10 +364,13 @@ void main(void)
     // Assuming perspective camera
     vec3 rayDirectionEye = normalize(inData.Peye);
 
-    vec4 color = ApplyColorOverrides(
-        volumeIntegrator(inData.Peye, rayDirectionEye));
+    VolumeContribution volumeContribution =
+        volumeIntegrator(inData.Peye, rayDirectionEye);
+    float alpha = 1 - volumeContribution.transmittance;
+    vec4 color = ApplyColorOverrides(vec4(volumeContribution.color, alpha));
 
     vec4 patchCoord = vec4(0.0);
 
-    RenderOutput(vec4(inData.Peye, 1), Neye, color, patchCoord);
+    RenderOutput(vec4(volumeContribution.firstHitPeye, 1),
+                 Neye, color, patchCoord);
 }

@@ -64,7 +64,8 @@ vec4 imageShader(vec2 uv)
     {
         float currentDepth = hdxOitDepthBuffer[nodeIndex]; 
         int insertIndex = numDepths; 
-        while (insertIndex > 0 && sortedDepth[insertIndex - 1] > currentDepth) {
+        // Recall that depths are in eye space, so inequality is flipped.
+        while (insertIndex > 0 && sortedDepth[insertIndex - 1] < currentDepth) {
             sortedDepth[insertIndex] = sortedDepth[insertIndex - 1];
             sortedColor[insertIndex] = sortedColor[insertIndex - 1]; 
             insertIndex -= 1; 

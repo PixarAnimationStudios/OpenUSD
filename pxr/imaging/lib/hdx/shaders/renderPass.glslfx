@@ -64,7 +64,28 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
                 int prevIndex =
                     atomicExchange(hdxOitCounterBuffer[screenIndex+1], writeIndex);
                 hdxOitDataBuffer[writeIndex] = color;
-                hdxOitDepthBuffer[writeIndex] = gl_FragCoord.z;
+
+                // Note that we have a choice here to either pick gl_FragCoord.z or
+                // the depth value from Peye. The former is obtained by applying
+                // the perspective transform and cannot be changed by a shader.
+                //
+                // We pick Peye here so that a shader has an opportunity to change
+                // the depth of the sample inserted into the OIT list.
+                //
+                // This is used by volumes. However, non-volume translucent
+                // geometry should never modify Peye value and call RenderOutput
+                // with the Peye value from the vertex shader so that it is
+                // consistent with gl_FragCoord. This is because such geometry is
+                // subject to a opaque pixel render pass performing a z-test
+                // against gl_FragCoord.z.
+                //
+                // Note there are implications of using the depth value from Peye
+                // instead of gl_FragCoord.z here for the subsequent OIT resolve
+                // shader: the depth sorting order needs to be flipped and the
+                // OIT resolve shader cannot compare depths in the OIT list
+                // against the depth buffer unless it takes the perspective
+                // transform into account.
+                hdxOitDepthBuffer[writeIndex] = Peye.z / Peye.w;
                 hdxOitIndexBuffer[writeIndex] = prevIndex;
             }
         }
