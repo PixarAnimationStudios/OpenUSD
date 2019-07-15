@@ -133,11 +133,7 @@ _SetParamValue(RtUString const& name,
     } else if (val.IsHolding<VtArray<float>>()) {
         VtArray<float> v = val.UncheckedGet<VtArray<float>>();
         if (detail == RixDetailType::k_constant) {
-            if (v.size() == 1) {
-                params->SetFloat(name, v[0]);
-            } else {
-                params->SetFloatArray(name, v.cdata(), v.size());
-            }
+            params->SetFloatArray(name, v.cdata(), v.size());
         } else {
             params->SetFloatDetail(name, v.cdata(), detail);
         }
@@ -150,11 +146,7 @@ _SetParamValue(RtUString const& name,
             v[i] = float(vd[i]);
         }
         if (detail == RixDetailType::k_constant) {
-            if (v.size() == 1) {
-                params->SetFloat(name, v[0]);
-            } else {
-                params->SetFloatArray(name, v.cdata(), v.size());
-            }
+            params->SetFloatArray(name, v.cdata(), v.size());
         } else {
             params->SetFloatDetail(name, v.cdata(), detail);
         }
@@ -164,11 +156,7 @@ _SetParamValue(RtUString const& name,
     } else if (val.IsHolding<VtArray<int>>()) {
         VtArray<int> v = val.UncheckedGet<VtArray<int>>();
         if (detail == RixDetailType::k_constant) {
-            if (v.size() == 1) {
-                params->SetInteger(name, v[0]);
-            } else {
-                params->SetIntegerArray(name, v.cdata(), v.size());
-            }
+            params->SetIntegerArray(name, v.cdata(), v.size());
         } else {
             params->SetIntegerDetail(name, v.cdata(), detail);
         }
