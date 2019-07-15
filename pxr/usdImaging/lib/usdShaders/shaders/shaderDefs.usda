@@ -134,7 +134,7 @@ def Shader "UsdUVTexture" (
         doc = """Path to the texture this node uses."""
     )
 
-    float2 inputs:st (
+    float2 inputs:st = (0.0, 0.0) (
         doc = """This input provides the texture coordinates. It is usually 
                 connected to a (primvar) node that will provide the texture 
                 coords."""
@@ -202,7 +202,7 @@ class "UsdPrimvarReader" (
 {
     uniform token info:implementationSource = "sourceAsset"
     uniform asset info:glslfx:sourceAsset = @./primvarReader.glslfx@
-    token inputs:varname  (
+    token inputs:varname = "" (
         connectability = "interfaceOnly"
         doc = """Name of the primvar to be fetched from the geometry."""
         sdrMetadata = {
