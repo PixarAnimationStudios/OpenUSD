@@ -281,8 +281,6 @@ when invoking cmake. This plugin is compatible with Draco 1.3.4. The additional 
 | ------------------ |----------------------------------------  | ------- |
 | DRACO_ROOT         | The root path to a Draco SDK install.    | 1.3.4   |
 
-Note that the Draco plugin is only tested on Linux.
-
 ## Tests
 
 Disable unit testing and prevent tests from being built by specifying the cmake flag ```PXR_BUILD_TESTS=FALSE```
