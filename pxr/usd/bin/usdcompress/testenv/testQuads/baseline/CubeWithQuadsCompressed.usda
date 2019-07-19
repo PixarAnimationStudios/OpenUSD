@@ -1,0 +1,60 @@
+#usda 1.0
+(
+    defaultPrim = "Cube"
+    upAxis = "Z"
+)
+
+def Xform "Cube" (
+    assetInfo = {
+        asset identifier = @./Cube.usda@
+        string name = "Cube"
+    }
+    kind = "component"
+    variants = {
+        string shadingVariant = "Default"
+    }
+    add variantSets = "shadingVariant"
+)
+{
+    def Xform "Geom"
+    {
+        def Mesh "Cube" (
+            prepend references = @CubeWithQuadsCompressed.usda.draco/Cube_Geom_Cube.drc@
+        )
+        {
+        }
+    }
+    variantSet "shadingVariant" = {
+        "Blue" {
+            over "Geom"
+            {
+                over "Cube"
+                {
+                    color3f[] primvars:displayColor = [(0, 0, 0.8)]
+                }
+            }
+
+        }
+        "Default" {
+            over "Geom"
+            {
+                over "Cube"
+                {
+                    color3f[] primvars:displayColor = [(0.217638, 0.217638, 0.217638)]
+                }
+            }
+
+        }
+        "Red" {
+            over "Geom"
+            {
+                over "Cube"
+                {
+                    color3f[] primvars:displayColor = [(0.8, 0, 0)]
+                }
+            }
+
+        }
+    }
+}
+
