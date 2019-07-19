@@ -198,7 +198,7 @@ def Run(cmd, logCommandOutput = True):
             p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, 
                                  stderr=subprocess.STDOUT)
             while True:
-                l = p.stdout.readline()
+                l = p.stdout.readline().decode('utf-8')
                 if l != "":
                     logfile.write(l)
                     PrintCommandOutput(l)
