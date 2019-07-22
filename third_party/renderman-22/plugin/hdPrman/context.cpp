@@ -131,14 +131,14 @@ _SetParamValue(RtUString const& name,
         double v = val.UncheckedGet<double>();
         params->SetFloat(name, static_cast<float>(v));
     } else if (val.IsHolding<VtArray<float>>()) {
-        VtArray<float> v = val.UncheckedGet<VtArray<float>>();
+        const VtArray<float>& v = val.UncheckedGet<VtArray<float>>();
         if (detail == RixDetailType::k_constant) {
             params->SetFloatArray(name, v.cdata(), v.size());
         } else {
             params->SetFloatDetail(name, v.cdata(), detail);
         }
     } else if (val.IsHolding<VtArray<double>>()) {
-        VtArray<double> vd = val.UncheckedGet<VtArray<double>>();
+        const VtArray<double>& vd = val.UncheckedGet<VtArray<double>>();
         // Convert double->float
         VtArray<float> v;
         v.resize(vd.size());
@@ -154,7 +154,7 @@ _SetParamValue(RtUString const& name,
         int v = val.UncheckedGet<int>();
         params->SetInteger(name, v);
     } else if (val.IsHolding<VtArray<int>>()) {
-        VtArray<int> v = val.UncheckedGet<VtArray<int>>();
+        const VtArray<int>& v = val.UncheckedGet<VtArray<int>>();
         if (detail == RixDetailType::k_constant) {
             params->SetIntegerArray(name, v.cdata(), v.size());
         } else {
@@ -165,7 +165,7 @@ _SetParamValue(RtUString const& name,
         params->SetFloatArray(
             name, reinterpret_cast<const float*>(&v), 2);
     } else if (val.IsHolding<VtArray<GfVec2f>>()) {
-        VtArray<GfVec2f> v = val.UncheckedGet<VtArray<GfVec2f>>();
+        const VtArray<GfVec2f>& v = val.UncheckedGet<VtArray<GfVec2f>>();
         params->SetFloatArrayDetail(name,
             reinterpret_cast<const float*>(v.cdata()), 2, detail);
     } else if (val.IsHolding<GfVec2d>()) {
@@ -173,7 +173,7 @@ _SetParamValue(RtUString const& name,
         float v[2] = {float(vd[0]), float(vd[1])};
         params->SetFloatArray(name, v, 2);
     } else if (val.IsHolding<VtArray<GfVec2d>>()) {
-        VtArray<GfVec2d> vd = val.UncheckedGet<VtArray<GfVec2d>>();
+        const VtArray<GfVec2d>& vd = val.UncheckedGet<VtArray<GfVec2d>>();
         // Convert double->float
         VtArray<GfVec2f> v;
         v.resize(vd.size());
@@ -197,7 +197,7 @@ _SetParamValue(RtUString const& name,
                 reinterpret_cast<const float*>(&v), 3);
         }
     } else if (val.IsHolding<VtArray<GfVec3f>>()) {
-        VtArray<GfVec3f> v = val.UncheckedGet<VtArray<GfVec3f>>();
+        const VtArray<GfVec3f>& v = val.UncheckedGet<VtArray<GfVec3f>>();
         if (role == HdPrimvarRoleTokens->color) {
             params->SetColorDetail(
                 name, reinterpret_cast<const RtColorRGB*>(v.cdata()),
@@ -235,7 +235,7 @@ _SetParamValue(RtUString const& name,
                 reinterpret_cast<const float*>(&v), 3);
         }
     } else if (val.IsHolding<VtArray<GfVec3d>>()) {
-        VtArray<GfVec3d> vd = val.UncheckedGet<VtArray<GfVec3d>>();
+        const VtArray<GfVec3d>& vd = val.UncheckedGet<VtArray<GfVec3d>>();
         // double->float
         VtArray<GfVec3f> v;
         v.resize(vd.size());
@@ -268,7 +268,7 @@ _SetParamValue(RtUString const& name,
         params->SetFloatArray(
             name, reinterpret_cast<const float*>(&v), 4);
     } else if (val.IsHolding<VtArray<GfVec4f>>()) {
-        VtArray<GfVec4f> v = val.UncheckedGet<VtArray<GfVec4f>>();
+        const VtArray<GfVec4f>& v = val.UncheckedGet<VtArray<GfVec4f>>();
         params->SetFloatArrayDetail(
             name, reinterpret_cast<const float*>(v.cdata()), 4, detail);
     } else if (val.IsHolding<GfVec4d>()) {
@@ -277,7 +277,7 @@ _SetParamValue(RtUString const& name,
         params->SetFloatArray(
             name, reinterpret_cast<const float*>(&v), 4);
     } else if (val.IsHolding<VtArray<GfVec4d>>()) {
-        VtArray<GfVec4d> vd = val.UncheckedGet<VtArray<GfVec4d>>();
+        const VtArray<GfVec4d>& vd = val.UncheckedGet<VtArray<GfVec4d>>();
         // double->float
         VtArray<GfVec4f> v;
         v.resize(vd.size());
@@ -293,7 +293,7 @@ _SetParamValue(RtUString const& name,
         int v = val.UncheckedGet<int>();
         params->SetInteger(name, v);
     } else if (val.IsHolding<VtArray<int>>()) {
-        VtArray<int> v = val.UncheckedGet<VtArray<int>>();
+        const VtArray<int>& v = val.UncheckedGet<VtArray<int>>();
         params->SetIntegerArrayDetail(
             name, reinterpret_cast<const int*>(v.cdata()), 1, detail);
     } else if (val.IsHolding<bool>()) {
@@ -301,7 +301,7 @@ _SetParamValue(RtUString const& name,
         int v = val.UncheckedGet<bool>();
         params->SetInteger(name, v);
     } else if (val.IsHolding<VtArray<bool>>()) {
-        VtArray<bool> vb = val.UncheckedGet<VtArray<bool>>();
+        const VtArray<bool>& vb = val.UncheckedGet<VtArray<bool>>();
         // bool->integer
         VtArray<int> v;
         v.resize(vb.size());
@@ -318,7 +318,7 @@ _SetParamValue(RtUString const& name,
         params->SetString(name, RtUString(v.c_str()));
     } else if (val.IsHolding<VtArray<std::string>>()) {
         // Convert to RtUString.
-        VtArray<std::string> v =
+        const VtArray<std::string>& v =
             val.UncheckedGet<VtArray<std::string>>();
         std::vector<RtUString> us;
         us.reserve(v.size());
@@ -332,7 +332,7 @@ _SetParamValue(RtUString const& name,
         }
     } else if (val.IsHolding<VtArray<TfToken>>()) {
         // Convert to RtUString.
-        VtArray<TfToken> v =
+        const VtArray<TfToken>& v =
             val.UncheckedGet<VtArray<TfToken>>();
         std::vector<RtUString> us;
         us.reserve(v.size());

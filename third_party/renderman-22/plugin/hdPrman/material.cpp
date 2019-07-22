@@ -522,7 +522,7 @@ _MapHdNodesToRileyNodes(
                     ok = true;
                 }
             } else if (param.second.IsHolding<VtArray<GfVec3f>>()) {
-                VtArray<GfVec3f> v =
+                const VtArray<GfVec3f>& v =
                     param.second.UncheckedGet<VtArray<GfVec3f>>();
                 if (propType == SdrPropertyTypes->Color) {
                     params->SetColorArray(
@@ -576,7 +576,8 @@ _MapHdNodesToRileyNodes(
                     ok = true;
                 }
             } else if (param.second.IsHolding<VtArray<float>>()) {
-                VtArray<float> v = param.second.UncheckedGet<VtArray<float>>();
+                const VtArray<float>& v =
+                    param.second.UncheckedGet<VtArray<float>>();
                 if (propType == SdrPropertyTypes->Float) {
                     params->SetFloatArray(name, v.cdata(), v.size());
                     ok = true;
