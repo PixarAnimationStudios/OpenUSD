@@ -148,22 +148,31 @@ def GetPythonInfo():
     # this function is intended to solve primarily occurs on macOS, so it's
     # simpler to just skip this for now.
     if Linux():
-        return None
+        try:
+            import distutils.sysconfig
 
-    try:
-        import distutils.sysconfig
+            pythonExecPath = sys.executable
+            pythonLibPath = os.path.join(
+                                distutils.sysconfig.get_config_var('LIBDIR'),
+                                distutils.sysconfig.get_config_var('LDLIBRARY'))
+            pythonIncludeDir = distutils.sysconfig.get_python_inc()
+        except:
+            return None
+    else:
+        try:
+            import distutils.sysconfig
 
-        pythonExecPath = None
-        pythonLibPath = None
+            pythonExecPath = None
+            pythonLibPath = None
 
-        pythonPrefix = distutils.sysconfig.PREFIX
-        if pythonPrefix:
-            pythonExecPath = os.path.join(pythonPrefix, 'bin', 'python')
-            pythonLibPath = os.path.join(pythonPrefix, 'lib', 'libpython2.7.dylib')
+            pythonPrefix = distutils.sysconfig.PREFIX
+            if pythonPrefix:
+                pythonExecPath = os.path.join(pythonPrefix, 'bin', 'python')
+                pythonLibPath = os.path.join(pythonPrefix, 'lib', 'libpython2.7.dylib')
 
-        pythonIncludeDir = distutils.sysconfig.get_python_inc()
-    except:
-        return None
+            pythonIncludeDir = distutils.sysconfig.get_python_inc()
+        except:
+            return None
 
     if pythonExecPath and pythonIncludeDir and pythonLibPath:
         # Ensure that the paths are absolute, since depending on the version of
@@ -559,8 +568,18 @@ def InstallBoost(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(BOOST_URL, context, force, 
                                              dontExtract)):
         bootstrap = "bootstrap.bat" if Windows() else "./bootstrap.sh"
-        Run('{bootstrap} --prefix="{instDir}"'
-            .format(bootstrap=bootstrap, instDir=context.instDir))
+        bootstrap_cmdline = '{bootstrap} --prefix="{instDir}"'.format(
+            bootstrap=bootstrap, instDir=context.instDir)
+
+        pythonInfo = None
+        if context.buildPython:
+            pythonInfo = GetPythonInfo()
+        if pythonInfo:
+            # set python executable to running interpreter
+            # (pyExec, pyLib, pyInc) = pythonInfo
+            pyExec = pythonInfo[0]
+            bootstrap_cmdline += ' --with-python={pyExec}'.format(pyExec=pyExec)
+        Run(bootstrap_cmdline)
 
         # b2 supports at most -j64 and will error if given a higher value.
         num_procs = min(64, context.numJobs)
@@ -1067,6 +1086,8 @@ def InstallUSD(context, force, buildArgs):
 
         if context.buildPython:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=ON')
+            if sys.version[0] == '3':
+                extraArgs.append('-DPXR_PYTHON_MAJOR_3=ON')
 
             # CMake has trouble finding the executable, library, and include
             # directories when there are multiple versions of Python installed.
@@ -1530,6 +1551,7 @@ class InstallContext:
         # - usdview
         self.buildUsdview = (self.buildUsdImaging and 
                              self.buildPython and 
+                             sys.version[0] == '2' and
                              args.build_usdview)
 
         # - Imaging plugins
