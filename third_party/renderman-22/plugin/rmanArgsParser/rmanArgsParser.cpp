@@ -492,23 +492,6 @@ RmanArgsParserPlugin::_Parse(
     }
 }
 
-template <class StringOrAsset>
-static VtValue
-_GetStringOrAssetArray(
-    const std::string& stringValue,
-    VtArray<StringOrAsset>* array)
-{
-    std::vector<std::string> tokens = TfStringTokenize(stringValue, " ,");
-
-    array->reserve(tokens.size());
-
-    for (const std::string& token : tokens) {
-        array->push_back(StringOrAsset(token));
-    }
-
-    return VtValue::Take(*array);
-}
-
 VtValue
 RmanArgsParserPlugin::_GetVtValue(
     const std::string& stringValue,
@@ -535,25 +518,24 @@ RmanArgsParserPlugin::_GetVtValue(
         }
     }
 
-    // STRING and STRING ARRAY (ASSET and ASSET ARRAY)
+    // STRING and STRING ARRAY
     // -------------------------------------------------------------------------
     else if (type == SdrPropertyTypes->String) {
         // Handle non-array
         if (!isArray) {
-            if (isSdfAssetPath) {
-                return VtValue(SdfAssetPath(stringValue));
-            }
             return VtValue(stringValue);
         } else {
-            // Handle array of SdfAssetPath
-            if (isSdfAssetPath) {
-                VtArray<SdfAssetPath> array;
-                return _GetStringOrAssetArray(stringValue, &array);
+            // Handle array
+            VtStringArray array;
+            std::vector<std::string> tokens =
+                TfStringTokenize(stringValue, " ,");
+            array.reserve(tokens.size());
+
+            for (const std::string& token : tokens) {
+                array.push_back(token);
             }
 
-            // Handle string array
-            VtStringArray array;
-            return _GetStringOrAssetArray(stringValue, &array);
+            return VtValue::Take(array);
         }
     }
 
@@ -567,31 +549,7 @@ RmanArgsParserPlugin::_GetVtValue(
             NdrStringVec parts = TfStringTokenize(stringValue, " ,");
             int numValues = parts.size();
 
-            // We return a fixed-size array for arrays with size 2, 3, or 4
-            // because SdrShaderProperty::GetTypeAsSdfType returns a specific
-            // size type (Float2, Float3, Float4).  If in the future we want to
-            // return a VtFloatArray instead, we need to change the logic in
-            // SdrShaderProperty::GetTypeAsSdfType
-            if (isArray  && numValues == 2) {
-                return VtValue(
-                    GfVec2f(static_cast<float>(atof(parts[0].c_str())),
-                            static_cast<float>(atof(parts[1].c_str()))));
-            } else if (isArray && numValues == 3) {
-                return VtValue(
-                    GfVec3f(static_cast<float>(atof(parts[0].c_str())),
-                            static_cast<float>(atof(parts[1].c_str())),
-                            static_cast<float>(atof(parts[2].c_str()))));
-            } else if (isArray && numValues == 4) {
-                return VtValue(
-                    GfVec4f(static_cast<float>(atof(parts[0].c_str())),
-                            static_cast<float>(atof(parts[1].c_str())),
-                            static_cast<float>(atof(parts[2].c_str())),
-                            static_cast<float>(atof(parts[3].c_str()))));
-            }
-
-            // Fall back to non-fixed size array
             VtFloatArray floats(numValues);
-
             for (int i = 0; i < numValues; ++i) {
                 floats[i] = static_cast<float>(atof(parts[i].c_str()));
             }

@@ -374,23 +374,6 @@ RmanOslParserPlugin::_getTypeName(const RixShaderParameter* param) const
     return std::make_tuple(TfToken(typeName), arraySize);
 }
 
-template <class StringOrAsset>
-static VtValue
-_GetStringOrAssetArray(
-    const RixShaderParameter* param,
-    VtArray<StringOrAsset>* array)
-{
-    array->reserve( (size_t) param->ArrayLength() );
-
-    const char** dflts = param->DefaultS();
-    for (int i = 0; i <  param->ArrayLength(); ++i)
-    {
-        array->push_back( StringOrAsset( std::string( dflts[i] ) ) );
-    }
-
-    return VtValue::Take(*array);
-}
-
 VtValue
 RmanOslParserPlugin::_getDefaultValue(
     const RixShaderParameter* param, 
@@ -416,28 +399,24 @@ RmanOslParserPlugin::_getDefaultValue(
         return VtValue::Take(array);
     }
 
-    // STRING and STRING ARRAY (ASSET and ASSET ARRAY)
+    // STRING and STRING ARRAY
     // -------------------------------------------------------------------------
     else if (oslType == SdrPropertyTypes->String) {
         const char** dflts = param->DefaultS();
 
         // Handle non-array
         if (!isArray && param->DefaultSize() == 1) {
-            if (isSdfAssetPath) {
-                return VtValue(SdfAssetPath( std::string( *dflts) ) );
-            }
             return VtValue( std::string( *dflts) );
         }
 
-        // Handle array of asset paths
-        if (isSdfAssetPath) {
-            VtArray<SdfAssetPath> array;
-            return _GetStringOrAssetArray(param, &array);
-        }
-
-        // Handle string array
+        // Handle array
         VtStringArray array;
-        return _GetStringOrAssetArray(param, &array);
+        array.reserve( (size_t) param->ArrayLength() );
+        for (int i = 0; i <  param->ArrayLength(); ++i)
+        {
+            array.push_back( std::string( dflts[i] ) );
+        }
+        return VtValue::Take(array);
     }
 
     // FLOAT and FLOAT ARRAY
@@ -447,26 +426,6 @@ RmanOslParserPlugin::_getDefaultValue(
 
         if (!isArray && param->DefaultSize() == 1) {
             return VtValue( *dflts );
-        }
-
-        // We return a fixed-size array for arrays with size 2, 3, or 4 because
-        // SdrShaderProperty::GetTypeAsSdfType returns a specific size type
-        // (Float3, Float3, Float4).
-        else if (isArray && param->DefaultSize() == 2) {
-            return VtValue(
-                GfVec2f(dflts[0],
-                        dflts[1]));
-        } else if (isArray && param->DefaultSize() == 3) {
-            return VtValue(
-                GfVec3f(dflts[0],
-                        dflts[1],
-                        dflts[2]));
-        } else if (isArray && param->DefaultSize() == 4) {
-            return VtValue(
-                GfVec4f(dflts[0],
-                        dflts[1],
-                        dflts[2],
-                        dflts[3]));
         }
 
         VtFloatArray array;

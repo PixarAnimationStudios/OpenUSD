@@ -33,6 +33,7 @@ TF_DEFINE_PUBLIC_TOKENS(SdrPropertyTypes, SDR_PROPERTY_TYPE_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(SdrPropertyMetadata, SDR_PROPERTY_METADATA_TOKENS);
 
 using ShaderMetadataHelpers::IsTruthy;
+using ShaderMetadataHelpers::IsPropertyAnAssetIdentifier;
 using ShaderMetadataHelpers::StringVal;
 using ShaderMetadataHelpers::StringVecVal;
 using ShaderMetadataHelpers::TokenVal;
@@ -180,6 +181,109 @@ namespace {
             conversionSuccessful ? TfToken() : type
         );
     }
+
+    // -------------------------------------------------------------------------
+
+    template <class T>
+    bool
+    _GetValue(const VtValue& defaultValue, T* val)
+    {
+        if (defaultValue.IsHolding<T>()) {
+            *val = defaultValue.UncheckedGet<T>();
+            return true;
+        }
+        return false;
+    };
+
+    // This methods conforms the given default value's type with the property's
+    // SdfValueTypeName.  This step is important because a Sdr parser should not
+    // care about what SdfValueTypeName the parsed property will eventually map
+    // to, and a parser will just return the value it sees with the type that
+    // most closely matches the type in the shader file.  Any special type
+    // 'transformations' that make use of metadata and other knowledge should
+    // happen in this conformance step when the SdrShaderProperty is
+    // instantiated.
+    VtValue
+    _ConformDefaultValue(
+        const VtValue& defaultValue,
+        const TfToken& sdrType,
+        size_t arraySize,
+        const NdrTokenMap& metadata)
+    {
+        // Return early if there is no value to conform
+        if (defaultValue.IsEmpty()) {
+            return defaultValue;
+        }
+
+        // Return early if no conformance issue
+        const SdfTypeIndicator sdfTypeIndicator = _GetTypeAsSdfType(
+            sdrType, arraySize, metadata);
+        const SdfValueTypeName sdfType = sdfTypeIndicator.first;
+
+        if (defaultValue.GetType() == sdfType.GetType()) {
+            return defaultValue;
+        }
+
+        bool isDynamicArray =
+            IsTruthy(SdrPropertyMetadata->IsDynamicArray, metadata);
+        bool isArray = (arraySize > 0) || isDynamicArray;
+
+        // ASSET and ASSET ARRAY
+        // ---------------------------------------------------------------------
+        if (sdrType == SdrPropertyTypes->String &&
+            IsPropertyAnAssetIdentifier(metadata)) {
+            if (isArray) {
+                VtStringArray arrayVal;
+                _GetValue(defaultValue, &arrayVal);
+
+                VtArray<SdfAssetPath> array;
+                array.reserve(arrayVal.size());
+
+                for (const std::string& val : arrayVal) {
+                    array.push_back(SdfAssetPath(val));
+                }
+                return VtValue::Take(array);
+            } else {
+                std::string val;
+                _GetValue(defaultValue, &val);
+                return VtValue(SdfAssetPath(val));
+            }
+        }
+
+        // FLOAT ARRAY (FIXED SIZE 2, 3, 4)
+        // ---------------------------------------------------------------------
+        else if (sdrType == SdrPropertyTypes->Float &&
+                 isArray) {
+            VtFloatArray arrayVal;
+            _GetValue(defaultValue, &arrayVal);
+
+            // We return a fixed-size array for arrays with size 2, 3, or 4
+            // because SdrShaderProperty::GetTypeAsSdfType returns a specific
+            // size type (Float2, Float3, Float4).  If in the future we want to
+            // return a VtFloatArray instead, we need to change the logic in
+            // SdrShaderProperty::GetTypeAsSdfType
+            if (arraySize == 2) {
+                return VtValue(
+                    GfVec2f(arrayVal[0],
+                            arrayVal[1]));
+            } else if (arraySize == 3) {
+                return VtValue(
+                    GfVec3f(arrayVal[0],
+                            arrayVal[1],
+                            arrayVal[2]));
+            } else if (arraySize == 4) {
+                return VtValue(
+                    GfVec4f(arrayVal[0],
+                            arrayVal[1],
+                            arrayVal[2],
+                            arrayVal[3]));
+            }
+        }
+
+        // Default value's type was not conformant, but no special translation
+        // step was found
+        return defaultValue;
+    };
 }
 
 SdrShaderProperty::SdrShaderProperty(
@@ -191,8 +295,14 @@ SdrShaderProperty::SdrShaderProperty(
     const NdrTokenMap& metadata,
     const NdrTokenMap& hints,
     const NdrOptionVec& options)
-    : NdrProperty(name, type, defaultValue, isOutput, arraySize,
-               /* isDynamicArray= */false, metadata),
+    : NdrProperty(
+        name,
+        type,
+        _ConformDefaultValue(defaultValue, type, arraySize, metadata),
+        isOutput,
+        arraySize,
+        /* isDynamicArray= */false,
+        metadata),
 
       _hints(hints),
       _options(options)
