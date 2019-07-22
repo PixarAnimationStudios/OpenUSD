@@ -141,20 +141,28 @@ def GetPythonInfo():
     if Windows():
         return None
 
-    # We also skip all this on Linux. The below code gets the wrong answer on
-    # certain distributions like Ubuntu, which organizes libraries based on
-    # multiarch. The below code yields /usr/lib/libpython2.7.so, but
-    # the library is actually in /usr/lib/x86_64-linux-gnu. Since the problem
-    # this function is intended to solve primarily occurs on macOS, so it's
-    # simpler to just skip this for now.
     if Linux():
         try:
             import distutils.sysconfig
 
             pythonExecPath = sys.executable
-            pythonLibPath = os.path.join(
-                                distutils.sysconfig.get_config_var('LIBDIR'),
-                                distutils.sysconfig.get_config_var('LDLIBRARY'))
+            pythonLibDir = distutils.sysconfig.get_config_var('LIBDIR'),
+            pythonLibName = distutils.sysconfig.get_config_var('LDLIBRARY')
+            pythonLibPath = os.path.join(pythonLibDir, pythonLibName)
+            if not os.path.isfile(pythonLibPath):
+                fileFound = False
+                # Search for python lib under lib path. Certain distributions
+                # such as Ubuntu store it in a subdirectory
+                for path, _, filenames in os.walk(pythonLibDir):
+                    for filename in filenames:
+                        if filename == pythonLibName:
+                            pythonLibPath = os.path.abspath(os.path.join(path, filename))
+                            fileFound = True
+                            break
+                    if fileFound:
+                        break
+                if not fileFound:
+                    return None
             pythonIncludeDir = distutils.sysconfig.get_python_inc()
         except:
             return None
