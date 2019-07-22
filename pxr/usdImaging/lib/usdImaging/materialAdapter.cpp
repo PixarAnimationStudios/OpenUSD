@@ -250,6 +250,9 @@ void _WalkGraph(UsdShadeShader const & shadeNode,
             // other sources (ex: a connection to a material
             // public interface parameter), since they are not
             // part of the shading node graph.
+            // XXX NodeGraph - if the target node is an instanced
+            // NodeGraph, we want to share its processed form, or even
+            // use a pre-baked implementation instead of recursing.
             if (sourceType == UsdShadeAttributeType::Output) {
                 UsdShadeShader connectedNode(source);
                 _WalkGraph(connectedNode, materialNetwork, shaderSourceTypes);
@@ -282,7 +285,11 @@ void _WalkGraph(UsdShadeShader const & shadeNode,
         node.identifier = TfToken("PbsNetworkMaterialStandIn_2");
     }
 
+
     // Add the parameters and the relationships of this node
+    // XXX: Ideally, this loop would be combined with the one above,
+    // so that we are only calling GetConnectedSource once per input...
+    // it's not particularly cheap.
     VtValue value;
     for (UsdShadeInput const& input: shadeNodeInputs) {
         // Check if this input is a connection and if so follow the path
@@ -293,6 +300,9 @@ void _WalkGraph(UsdShadeShader const & shadeNode,
             &source, &sourceName, &sourceType)) {
             if (sourceType == UsdShadeAttributeType::Output) {
                 // Store the relationship
+                // XXX NodeGraph - If this is a NodeGraph output and
+                // we are not consuming the NodeGraph as a monolithic
+                // shader, we need to recurse until we hit a Shader output.
                 HdMaterialRelationship relationship;
                 relationship.outputId = shadeNode.GetPath();
                 relationship.outputName = input.GetBaseName();
@@ -303,9 +313,17 @@ void _WalkGraph(UsdShadeShader const & shadeNode,
                 // Connected to an input on the public interface.
                 // The source is not a node in the shader network, so
                 // pull the value and pass it in as a parameter.
+                // XXX NodeGraph - If this is a NodeGraph input, chase
+                // its own connection, if it has one, since the "outermost"
+                // is the one whose value we want.
                 if (UsdShadeInput connectedInput =
                     source.GetInput(sourceName)) {
                     if (connectedInput.Get(&value)) {
+                        node.parameters[input.GetBaseName()] = value;
+                    }
+                    // If the target input has no value, use our own if
+                    // one exists
+                    else if (input.Get(&value)) {
                         node.parameters[input.GetBaseName()] = value;
                     }
                 }

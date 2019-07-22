@@ -337,15 +337,16 @@ public:
     /// 
     /// \p source is an output parameter which will be set to the source 
     /// connectable prim.
-    /// \p sourceName will be set to the name of the source shading property, 
-    /// which could be the parameter name, output name or the interface 
-    /// attribute name. This does not include the namespace prefix associated 
-    /// with the source type. 
-    /// \p sourceType will have the value type of the source shading property.
+    /// \p sourceName will be set to the name of the source shading attribute, 
+    /// which may be an input or an output, as specified by \p sourceType
+    /// \p sourceType will have the type of the source shading property, i.e.
+    /// whether it is an \c Input or \c Output
     ///
     /// \return 
-    /// \c true if this Input is connected to a valid, defined source.
-    /// \c false if this Input is not connected to a single, valid source.
+    /// \c true if the shading property is connected to a valid, defined source
+    /// attribute.
+    /// \c false if the shading property is not connected to a single, defined 
+    /// source attribute. 
     /// 
     /// \note The python wrapping for this method returns a 
     /// (source, sourceName, sourceType) tuple if the parameter is connected, 
