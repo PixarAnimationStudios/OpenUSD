@@ -42,6 +42,7 @@ pxr_library(hdx
         drawTargetRenderPass
         drawTargetTask
         drawTargetResolveTask
+        oitBufferAccessor
         oitRenderTask
         oitResolveTask
         package

@@ -21,60 +21,52 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDX_OIT_RENDER_TASK_H
-#define HDX_OIT_RENDER_TASK_H
+#ifndef HDX_OIT_BUFFER_ACCESSOR_H
+#define HDX_OIT_BUFFER_ACCESSOR_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
-#include "pxr/imaging/hdx/renderTask.h"
 
-#include "pxr/imaging/hdSt/renderPassState.h"
+#include "pxr/imaging/hd/task.h"
 
 #include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class HdxOitRenderTask
-///
-/// A task for rendering transparent geometry into OIT buffers.
-/// Its companion task, OITResolveTask, will blend the buffers to screen.
-///
-class HdxOitRenderTask : public HdxRenderTask 
-{
+typedef boost::shared_ptr<class HdBufferArrayRange>
+    HdBufferArrayRangeSharedPtr;
+typedef boost::shared_ptr<class HdStRenderPassShader>
+    HdStRenderPassShaderSharedPtr;
+
+/// Class for OIT render tasks to access the OIT buffers.
+class HdxOitBufferAccessor {
 public:
-    HDX_API
-    HdxOitRenderTask(HdSceneDelegate* delegate, SdfPath const& id);
+    static bool IsOitEnabled();
 
     HDX_API
-    virtual ~HdxOitRenderTask();
+    HdxOitBufferAccessor(HdTaskContext *ctx);
 
-    /// Sync the render pass resources
+    /// Called during Prepare to indicate that OIT buffers are needed.
     HDX_API
-    virtual void Sync(HdSceneDelegate* delegate,
-                      HdTaskContext* ctx,
-                      HdDirtyBits* dirtyBits) override;
+    void RequestOitBuffers();
 
-    /// Prepare the tasks resources
+    /// Called during Excecute before writing to OIT buffers.
     HDX_API
-    virtual void Prepare(HdTaskContext* ctx, 
-                         HdRenderIndex* renderIndex) override;
+    void InitializeOitBuffersIfNecessary();
 
-    /// Execute render pass task
+    /// Called during Execute to add necessary OIT buffer shader bindings.
+    ///
+    /// Returns false if the OIT buffers were not allocated.
     HDX_API
-    virtual void Execute(HdTaskContext* ctx) override;
+    bool AddOitBufferBindings(const HdStRenderPassShaderSharedPtr &);
 
 private:
-    HdxOitRenderTask() = delete;
-    HdxOitRenderTask(const HdxOitRenderTask &) = delete;
-    HdxOitRenderTask &operator =(const HdxOitRenderTask &) = delete;
+    HdBufferArrayRangeSharedPtr const &_GetBar(const TfToken &);
 
-    HdStRenderPassShaderSharedPtr _oitTranslucentRenderPassShader;
-    HdStRenderPassShaderSharedPtr _oitOpaqueRenderPassShader;
-    const bool _isOitEnabled;
+    HdTaskContext * const _ctx;
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //HDX_OIT_RENDER_TASK_H
+#endif
