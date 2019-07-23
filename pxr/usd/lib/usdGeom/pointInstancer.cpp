@@ -616,8 +616,8 @@ _GetAttrForInstanceTransforms(
 
     if (baseTime.IsNumeric()) {
 
-        double sampleTimeValue;
-        double sampleUpperTimeValue;
+        double sampleTimeValue = 0.0;
+        double sampleUpperTimeValue = 0.0;
         bool hasSamples;
         if (!attr.GetBracketingTimeSamples(
                 baseTime.GetValue(),
@@ -682,8 +682,8 @@ UsdGeomPointInstancer::_GetProtoIndicesForInstanceTransforms(
     VtIntArray* protoIndices) const
 {
     UsdTimeCode sampleTime;
-    double dummyLowerTimeValue;
-    double dummyUpperTimeValue;
+    double dummyLowerTimeValue = 0.0;
+    double dummyUpperTimeValue = 0.0;
     bool hasSamples;
     if (!_GetAttrForInstanceTransforms<VtIntArray>(
             GetProtoIndicesAttr(),
@@ -712,8 +712,8 @@ UsdGeomPointInstancer::_GetPositionsForInstanceTransforms(
     VtVec3fArray* positions) const
 {
     UsdTimeCode sampleTime;
-    double lowerTimeValue;
-    double upperTimeValue;
+    double lowerTimeValue = 0.0;
+    double upperTimeValue = 0.0;
     bool hasSamples;
     VtVec3fArray positionData;
     if (!_GetAttrForInstanceTransforms<VtVec3fArray>(
@@ -755,8 +755,8 @@ UsdGeomPointInstancer::_GetVelocitiesForInstanceTransforms(
     VtVec3fArray* velocities) const
 {
     UsdTimeCode sampleTime;
-    double lowerTimeValue;
-    double upperTimeValue;
+    double lowerTimeValue = 0.0;
+    double upperTimeValue = 0.0;
     bool hasSamples;
     VtVec3fArray velocityData;
     if (!_GetAttrForInstanceTransforms<VtVec3fArray>(
@@ -812,8 +812,8 @@ UsdGeomPointInstancer::_GetPositionsAndVelocitiesForInstanceTransforms(
     UsdTimeCode* velocitiesSampleTime) const
 {
     UsdTimeCode positionsSampleTime;
-    double positionsLowerTimeValue;
-    double positionsUpperTimeValue;
+    double positionsLowerTimeValue = 0.0;
+    double positionsUpperTimeValue = 0.0;
     bool positionsHasSamples;
     if (!_GetPositionsForInstanceTransforms(
             baseTime,
@@ -847,8 +847,8 @@ UsdGeomPointInstancer::_GetScalesForInstanceTransforms(
     VtVec3fArray* scales) const
 {
     UsdTimeCode scalesSampleTime;
-    double dummyLowerTimeValue;
-    double dummyUpperTimeValue;
+    double dummyLowerTimeValue = 0.0;
+    double dummyUpperTimeValue = 0.0;
     bool scalesHasSamples;
     VtVec3fArray scaleData;
     if (!_GetAttrForInstanceTransforms<VtVec3fArray>(
@@ -885,8 +885,8 @@ UsdGeomPointInstancer::_GetOrientationsForInstanceTransforms(
     VtQuathArray* orientations) const
 {
     UsdTimeCode sampleTime;
-    double lowerTimeValue;
-    double upperTimeValue;
+    double lowerTimeValue = 0.0;
+    double upperTimeValue = 0.0;
     bool hasSamples;
     VtQuathArray orientationData;
     if (!_GetAttrForInstanceTransforms<VtQuathArray>(
@@ -927,8 +927,8 @@ UsdGeomPointInstancer::_GetAngularVelocitiesForInstanceTransforms(
     VtVec3fArray* angularVelocities) const
 {
     UsdTimeCode sampleTime;
-    double lowerTimeValue;
-    double upperTimeValue;
+    double lowerTimeValue = 0.0;
+    double upperTimeValue = 0.0;
     bool hasSamples;
     VtVec3fArray angularVelocityData;
     if (!_GetAttrForInstanceTransforms<VtVec3fArray>(
