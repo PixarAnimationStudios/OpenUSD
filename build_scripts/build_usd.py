@@ -21,6 +21,10 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from distutils.spawn import find_executable
 
 import argparse
@@ -146,7 +150,7 @@ def GetPythonInfo():
             import distutils.sysconfig
 
             pythonExecPath = sys.executable
-            pythonLibDir = distutils.sysconfig.get_config_var('LIBDIR'),
+            pythonLibDir = distutils.sysconfig.get_config_var('LIBDIR')
             pythonLibName = distutils.sysconfig.get_config_var('LDLIBRARY')
             pythonLibPath = os.path.join(pythonLibDir, pythonLibName)
             if not os.path.isfile(pythonLibPath):
