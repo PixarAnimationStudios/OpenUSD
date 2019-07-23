@@ -27,6 +27,7 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/rprimUtils.h"
 #include "pxr/imaging/hdSt/volumeShaderKey.h"
+#include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -112,19 +113,7 @@ HdStVolume::Sync(HdSceneDelegate *delegate,
 const TfToken&
 HdStVolume::_GetMaterialTag(const HdRenderIndex &renderIndex) const
 {
-    // Returning "translucent" to indicate that volumes use OIT
-    // (order independent translucency).
-    //
-    // HdxMaterialTagTokens->translucent is defined in hdx, so we just
-    // explicitly say "translucent" here to avoid dependency problems.
-    //
-    // Note that this is only a temporary solution as we might designate
-    // a separate render task for volumes all together so volumes will have
-    // their own material tag.
-
-    static TfToken result("translucent");
-
-    return result;
+    return HdStMaterialTagTokens->volume;
 }
 
 void

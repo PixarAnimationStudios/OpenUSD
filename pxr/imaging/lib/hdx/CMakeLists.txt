@@ -45,6 +45,7 @@ pxr_library(hdx
         oitBufferAccessor
         oitRenderTask
         oitResolveTask
+        oitVolumeRenderTask
         package
         pickTask
         pickFromRenderBufferTask
