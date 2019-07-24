@@ -590,7 +590,7 @@ def InstallBoost(context, force, buildArgs):
             # set python executable to running interpreter
             # (pyExec, pyLib, pyInc) = pythonInfo
             pyExec = pythonInfo[0]
-            bootstrap_cmdline += ' --with-python={pyExec}'.format(pyExec=pyExec)
+            bootstrap_cmdline += ' --with-python="{pyExec}"'.format(pyExec=pyExec)
         Run(bootstrap_cmdline)
 
         # b2 supports at most -j64 and will error if given a higher value.
