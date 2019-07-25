@@ -232,7 +232,7 @@ _GetScreenSize()
 
     GlfContextCaps const &caps = GlfContextCaps::GetInstance();
 
-    if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
+    if (ARCH_LIKELY(caps.directStateAccessEnabled) && glGetTextureLevelParameteriv) {
         if (attachType == GL_TEXTURE) {
             glGetTextureLevelParameteriv(attachId, 0, GL_TEXTURE_WIDTH, &s[0]);
             glGetTextureLevelParameteriv(attachId, 0, GL_TEXTURE_HEIGHT, &s[1]);
