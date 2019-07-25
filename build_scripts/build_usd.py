@@ -49,6 +49,8 @@ except:
     # python 3
     from urllib.request import urlopen
 import zipfile
+import sysconfig
+import codecs
 
 # Helpers for printing output
 verbosity = 1
@@ -133,69 +135,44 @@ def IsVisualStudio2017OrGreater():
 def GetPythonInfo():
     """Returns a tuple containing the path to the Python executable, shared
     library, and include directory corresponding to the version of Python
-    currently running. Returns None if any path could not be determined. This
-    function always returns None on Windows or Linux.
+    currently running. Returns None if any path could not be determined.
 
-    This function is primarily used to determine which version of
-    Python USD should link against when multiple versions are installed.
+    This function is used to extract build information from the Python 
+    interpreter used to launch this script. This information is used
+    in the Boost and USD builds. By taking this approach we can support
+    the use case where multiple Python versions of USD are built on the same
+    machine. This is very useful, especially when developers have multiple
+    versions installed on their machine, which is quite common now with 
+    Python2 and Python3 co-existing.
     """
-    # We just skip all this on Windows. Users on Windows are unlikely to have
-    # multiple copies of the same version of Python, so the problem this
-    # function is intended to solve doesn't arise on that platform.
+    # First we extract the information that can be uniformly dealt with across
+    # the platforms:
+    pythonExecPath = sys.executable
+    pythonVersion = sysconfig.get_config_var('py_version_short') 
+    pythonIncludeDir = sysconfig.get_config_var('INCLUDEPY')
+
+    # Lib path is unfortunately special for each platform and there is no
+    # config_var for it. But we can deduce it for each platform, and this
+    # logic works for any Python version.
     if Windows():
-        return None
-
-    if Linux():
-        try:
-            import distutils.sysconfig
-
-            pythonExecPath = sys.executable
-            pythonLibDir = distutils.sysconfig.get_config_var('LIBDIR')
-            pythonLibName = distutils.sysconfig.get_config_var('LDLIBRARY')
-            pythonLibPath = os.path.join(pythonLibDir, pythonLibName)
-            if not os.path.isfile(pythonLibPath):
-                fileFound = False
-                # Search for python lib under lib path. Certain distributions
-                # such as Ubuntu store it in a subdirectory
-                for path, _, filenames in os.walk(pythonLibDir):
-                    for filename in filenames:
-                        if filename == pythonLibName:
-                            pythonLibPath = os.path.abspath(os.path.join(path, filename))
-                            fileFound = True
-                            break
-                    if fileFound:
-                        break
-                if not fileFound:
-                    return None
-            pythonIncludeDir = distutils.sysconfig.get_python_inc()
-        except:
-            return None
+        pythonBaseDir = sysconfig.get_config_var('base')
+        pythonVersionNoDot = sysconfig.get_config_var('py_version_nodot')
+        pythonLibPath = os.path.join(pythonBaseDir, 'libs', 'python' + pythonVersionNoDot + '.lib' )
+    elif Linux():
+        pythonLibDir = sysconfig.get_config_var('LIBDIR')
+        pythonLibName = sysconfig.get_config_var('LDLIBRARY')
+        pythonMultiarch = sysconfig.get_config_var('MULTIARCH')
+        if pythonMultiarch:
+            pythonLibDir = os.path.join(pythonLibDir, pythonMultiarch)
+        pythonLibPath = os.path.join(pythonLibDir, pythonLibName)
+    elif MacOS():
+        pythonBaseDir = sysconfig.get_config_var('base')
+        pythonLibPath = os.path.join(pythonBaseDir, 'lib', 'libpython' + pythonVersion + '.dylib')
     else:
-        try:
-            import distutils.sysconfig
+        raise RuntimeError("Platform not supported")
 
-            pythonExecPath = None
-            pythonLibPath = None
+    return (pythonExecPath, pythonLibPath, pythonIncludeDir, pythonVersion)
 
-            pythonPrefix = distutils.sysconfig.PREFIX
-            if pythonPrefix:
-                pythonExecPath = os.path.join(pythonPrefix, 'bin', 'python')
-                pythonLibPath = os.path.join(pythonPrefix, 'lib', 'libpython2.7.dylib')
-
-            pythonIncludeDir = distutils.sysconfig.get_python_inc()
-        except:
-            return None
-
-    if pythonExecPath and pythonIncludeDir and pythonLibPath:
-        # Ensure that the paths are absolute, since depending on the version of
-        # Python being run and the path used to invoke it, we may have gotten a
-        # relative path from distutils.sysconfig.PREFIX.
-        return (
-            os.path.abspath(pythonExecPath),
-            os.path.abspath(pythonLibPath),
-            os.path.abspath(pythonIncludeDir))
-
-    return None
 
 def GetCPUCount():
     try:
@@ -207,7 +184,7 @@ def Run(cmd, logCommandOutput = True):
     """Run the specified command in a subprocess."""
     PrintInfo('Running "{cmd}"'.format(cmd=cmd))
 
-    with open("log.txt", "a") as logfile:
+    with codecs.open("log.txt", "a", "utf-8") as logfile:
         logfile.write(datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
         logfile.write("\n")
         logfile.write(cmd)
@@ -219,8 +196,8 @@ def Run(cmd, logCommandOutput = True):
             p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, 
                                  stderr=subprocess.STDOUT)
             while True:
-                l = p.stdout.readline().decode('utf-8')
-                if l != "":
+                l = p.stdout.readline().decode(sys.stdout.encoding)
+                if l:
                     logfile.write(l)
                     PrintCommandOutput(l)
                 elif p.poll() is not None:
@@ -244,6 +221,7 @@ def CurrentWorkingDirectory(dir):
     directory and resets it to the original directory when closed."""
     curdir = os.getcwd()
     os.chdir(dir)
+    PrintInfo("Changed current working directory to '%s'" % dir)
     try: yield
     finally: os.chdir(curdir)
 
@@ -553,7 +531,7 @@ if Linux():
     BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.68.0/boost_1_68_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost/version.hpp"
 elif MacOS():
-    BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz"
+    BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_68_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost/version.hpp"
 elif Windows():
     BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz"
@@ -583,14 +561,6 @@ def InstallBoost(context, force, buildArgs):
         bootstrap_cmdline = '{bootstrap} --prefix="{instDir}"'.format(
             bootstrap=bootstrap, instDir=context.instDir)
 
-        pythonInfo = None
-        if context.buildPython:
-            pythonInfo = GetPythonInfo()
-        if pythonInfo:
-            # set python executable to running interpreter
-            # (pyExec, pyLib, pyInc) = pythonInfo
-            pyExec = pythonInfo[0]
-            bootstrap_cmdline += ' --with-python="{pyExec}"'.format(pyExec=pyExec)
         Run(bootstrap_cmdline)
 
         # b2 supports at most -j64 and will error if given a higher value.
@@ -613,6 +583,28 @@ def InstallBoost(context, force, buildArgs):
 
         if context.buildPython:
             b2_settings.append("--with-python")
+            pythonInfo = GetPythonInfo()
+            if Windows():
+                # Unfortunately Boost build scripts require the Python folder 
+                # that contains the executable on Windows
+                pythonPath = os.path.dirname(pythonInfo[0])
+            else:
+                # While other platforms want the complete executable path
+                pythonPath = pythonInfo[0]
+            # This is the only platform-independent way to configure these
+            # settings correctly and robustly for the Boost jam build system.
+            # There are Python config arguments that can be passed to bootstrap 
+            # but those are not available in boostrap.bat (Windows) so we must 
+            # take the following
+            # approach:
+            projectPath = 'project-config.jam'
+            with open(projectPath, 'r') as projectFile:
+                config = projectFile.read()
+            with open(projectPath, 'w') as projectFile:
+                line = 'using python : %s : %s : %s ;\n' % (pythonInfo[3], 
+                       pythonPath, pythonInfo[2])
+                config = line + config
+                projectFile.write(config)
 
         if context.buildKatana or context.buildOIIO:
             b2_settings.append("--with-date_time")
