@@ -195,8 +195,11 @@ def Run(cmd, logCommandOutput = True):
         if logCommandOutput:
             p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, 
                                  stderr=subprocess.STDOUT)
+            encoding = sys.stdout.encoding
+            if not encoding:
+                encoding = 'UTF-8'
             while True:
-                l = p.stdout.readline().decode(sys.stdout.encoding)
+                l = p.stdout.readline().decode(encoding)
                 if l:
                     logfile.write(l)
                     PrintCommandOutput(l)
