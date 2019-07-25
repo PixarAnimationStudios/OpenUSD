@@ -161,9 +161,9 @@ def GetPythonInfo():
     elif Linux():
         pythonLibDir = sysconfig.get_config_var('LIBDIR')
         pythonLibName = sysconfig.get_config_var('LDLIBRARY')
-        pythonMultiarch = sysconfig.get_config_var('MULTIARCH')
-        if pythonMultiarch:
-            pythonLibDir = os.path.join(pythonLibDir, pythonMultiarch)
+        pythonMultiarchSubdir = sysconfig.get_config_var('multiarchsubdir')
+        if pythonMultiarchSubdir:
+            pythonLibDir = pythonLibDir + pythonMultiarchSubdir
         pythonLibPath = os.path.join(pythonLibDir, pythonLibName)
     elif MacOS():
         pythonBaseDir = sysconfig.get_config_var('base')
@@ -222,8 +222,11 @@ def CurrentWorkingDirectory(dir):
     curdir = os.getcwd()
     os.chdir(dir)
     PrintInfo("Changed current working directory to '%s'" % dir)
-    try: yield
-    finally: os.chdir(curdir)
+    try: 
+        yield
+    finally: 
+        os.chdir(curdir)
+        PrintInfo("Changed current working directory to '%s'" % curdir)
 
 def CopyFiles(context, src, dest):
     """Copy files like shutil.copy, but src may be a glob pattern."""
@@ -1111,6 +1114,8 @@ def InstallUSD(context, force, buildArgs):
                                  .format(pyLibPath=pythonInfo[1]))
                 extraArgs.append('-DPYTHON_INCLUDE_DIR="{pyIncPath}"'
                                  .format(pyIncPath=pythonInfo[2]))
+                extraArgs.append('-DPYTHON_VERSION_NODOT={pyVersion}'
+                                 .format(pyVersion=pythonInfo[3].replace('.','')))
         else:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=OFF')
 

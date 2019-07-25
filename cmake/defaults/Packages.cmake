@@ -40,23 +40,20 @@ set(PXR_THREAD_LIBS "${CMAKE_THREAD_LIBS_INIT}")
 if(PXR_ENABLE_PYTHON_SUPPORT)
     # --Python.
     if(PXR_PYTHON_MAJOR_3)
-        find_package(PythonInterp 3.6 REQUIRED)
-        find_package(PythonLibs 3.6 REQUIRED)
-        if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-            SET(BOOST_PYTHON_COMPONENT_NAME "python3")
-        else()
-            SET(BOOST_PYTHON_COMPONENT_NAME "python36")
-        endif()
+        find_package(PythonInterp 3.0 REQUIRED)
+        find_package(PythonLibs 3.0 REQUIRED)
     else()
         # We are generally but not completely 2.6 compliant.
         find_package(PythonInterp 2.7 REQUIRED)
         find_package(PythonLibs 2.7 REQUIRED)
         if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-            SET(BOOST_PYTHON_COMPONENT_NAME "python")
+            set(BOOST_PYTHON_COMPONENT_NAME "python")
         else()
-            SET(BOOST_PYTHON_COMPONENT_NAME "python27")
+            set(BOOST_PYTHON_COMPONENT_NAME "python27")
         endif()
     endif()
+
+    set(BOOST_PYTHON_COMPONENT_NAME "python${PYTHON_VERSION_NODOT}")
 
     # --Boost
     find_package(Boost
@@ -66,15 +63,7 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
         REQUIRED
     )
 
-    if(Boost_PYTHON3_LIBRARY)
-        set(Boost_PYTHON_LIBRARY "${Boost_PYTHON3_LIBRARY}")
-    endif()
-    if(Boost_PYTHON36_LIBRARY)
-        set(Boost_PYTHON_LIBRARY "${Boost_PYTHON36_LIBRARY}")
-    endif()
-    if(Boost_PYTHON27_LIBRARY)
-        set(Boost_PYTHON_LIBRARY "${Boost_PYTHON27_LIBRARY}")
-    endif()
+    set(Boost_PYTHON_LIBRARY "${Boost_PYTHON${PYTHON_VERSION_NODOT}_LIBRARY}")
 
     # --Jinja2
     find_package(Jinja2)
