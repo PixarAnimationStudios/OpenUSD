@@ -46,11 +46,6 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
         # We are generally but not completely 2.6 compliant.
         find_package(PythonInterp 2.7 REQUIRED)
         find_package(PythonLibs 2.7 REQUIRED)
-        if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-            set(BOOST_PYTHON_COMPONENT_NAME "python")
-        else()
-            set(BOOST_PYTHON_COMPONENT_NAME "python27")
-        endif()
     endif()
 
     set(BOOST_PYTHON_COMPONENT_NAME "python${PYTHON_VERSION_NODOT}")

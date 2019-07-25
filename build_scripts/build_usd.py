@@ -540,17 +540,12 @@ elif MacOS():
     BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.68.0/boost_1_68_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost/version.hpp"
 elif Windows():
-    BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz"
+    BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.68.0/boost_1_68_0.tar.gz"
     # The default installation of boost on Windows puts headers in a versioned 
     # subdirectory, which we have to account for here. In theory, specifying 
     # "layout=system" would make the Windows install match Linux/MacOS, but that 
     # causes problems for other dependencies that look for boost.
-    BOOST_VERSION_FILE = "include/boost-1_61/boost/version.hpp"
-
-    # On Visual Studio 2017 we need at least boost 1.65.1
-    if IsVisualStudio2017OrGreater():
-        BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.65.1/boost_1_65_1.tar.gz"
-        BOOST_VERSION_FILE = "include/boost-1_65_1/boost/version.hpp"
+    BOOST_VERSION_FILE = "include/boost-1_68_0/boost/version.hpp"
 
 def InstallBoost(context, force, buildArgs):
     # Documentation files in the boost archive can have exceptionally
