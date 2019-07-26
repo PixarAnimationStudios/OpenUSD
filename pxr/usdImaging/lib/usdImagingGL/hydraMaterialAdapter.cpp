@@ -25,6 +25,8 @@
 #include "pxr/usdImaging/usdImagingGL/package.h"
 #include "pxr/usdImaging/usdImagingGL/textureUtils.h"
 
+#include "pxr/base/tf/envSetting.h"
+
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
@@ -57,6 +59,14 @@ TF_DEFINE_PRIVATE_TOKENS(
     (isPtex)
     (opacity)
 );
+
+TF_DEFINE_ENV_SETTING(
+    PXR_PREVIEW_SURFACE_TRANSLUCENT_TAG, "translucent",
+    "Sets the material tag for UsdPreviewSurface if opacity is less than one "
+    "or mapped to a texture. Default value is \"translucent\", which enables "
+    "OIT translucency, but is more expensive for surfaces with opacity < 1. "
+    "Set to \"additive\" for a faster render, but that doesn't display "
+    "\"correctly\" (especially for mostly-opaque surfaces).");
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -190,8 +200,9 @@ _GetMaterialTag(const TfToken& inputName, const UsdAttribute& attr,
         }
 
         if (isTranslucent) {
-            // Default to our cheapest blending: unsorted additive
-            *materialTag = HdxMaterialTagTokens->additive;
+            const static TfToken translucentMaterialTag(
+                TfGetEnvSetting(PXR_PREVIEW_SURFACE_TRANSLUCENT_TAG));
+            *materialTag = translucentMaterialTag;
         }
     }
 }
