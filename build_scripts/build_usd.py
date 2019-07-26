@@ -607,8 +607,11 @@ def InstallBoost(context, force, buildArgs):
             with open(projectPath, 'r') as projectFile:
                 config = projectFile.read()
             with open(projectPath, 'w') as projectFile:
+                # Note that we must escape any special characters, like backslashes for jam, hence
+                # the mods below for the path arguments
                 line = 'using python : %s : %s : %s ;\n' % (pythonInfo[3], 
-                       pythonPath, pythonInfo[2])
+                       pythonPath.replace('\\', '\\\\'), 
+                       pythonInfo[2].replace('\\', '\\\\'))
                 config = line + config
                 projectFile.write(config)
 
