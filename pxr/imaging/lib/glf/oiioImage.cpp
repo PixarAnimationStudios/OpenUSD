@@ -486,20 +486,19 @@ Glf_OIIOImage::ReadCropped(int const cropTop,
         image = &scaled;
     }
 
-//XXX:
-//'OpenImageIO::v1_7::ImageBuf::get_pixels': Use get_pixels(ROI, ...) instead. [1.6] 
-ARCH_PRAGMA_PUSH
-ARCH_PRAGMA_DEPRECATED_POSIX_NAME
-
     // Read pixel data
     TypeDesc type = _GetOIIOBaseType(storage.type);
+
+#if OIIO_VERSION > 10603
+    if (!image->get_pixels(ROI(0, storage.width, 0, storage.height, 0, 1),
+                           type, storage.data)) {
+#else
     if (!image->get_pixels(0, storage.width, 0, storage.height, 0, 1,
-                              type, storage.data)) {
+                           type, storage.data)) {
+#endif
         TF_CODING_ERROR("unable to get_pixels");
         return false;
     }
-
-ARCH_PRAGMA_POP
 
     if (image != &_imagebuf) {
         _imagebuf.swap(*image);
