@@ -603,17 +603,15 @@ def InstallBoost(context, force, buildArgs):
             # but those are not available in boostrap.bat (Windows) so we must 
             # take the following
             # approach:
-            projectPath = 'project-config.jam'
-            with open(projectPath, 'r') as projectFile:
-                config = projectFile.read()
+            projectPath = 'python-config.jam'
             with open(projectPath, 'w') as projectFile:
                 # Note that we must escape any special characters, like backslashes for jam, hence
                 # the mods below for the path arguments
                 line = 'using python : %s : %s : %s ;\n' % (pythonInfo[3], 
                        pythonPath.replace('\\', '\\\\'), 
                        pythonInfo[2].replace('\\', '\\\\'))
-                config = line + config
-                projectFile.write(config)
+                projectFile.write(line)
+            b2_settings.append("--user-config=python-config.jam")
 
         if context.buildKatana or context.buildOIIO:
             b2_settings.append("--with-date_time")
