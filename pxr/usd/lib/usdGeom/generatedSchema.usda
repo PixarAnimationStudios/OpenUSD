@@ -3587,6 +3587,14 @@ class PointInstancer "PointInstancer" (
     """
 )
 {
+    vector3f[] accelerations (
+        doc = """If authored, per-instance 'accelerations' will be used with
+        velocities to compute positions between samples for the 'positions'
+        attribute rather than interpolating between neighboring 'positions'
+        samples. Acceleration is measured in position units per second-squared.
+        To convert to position units per squared UsdTimeCode, divide by the
+        square of UsdStage::GetTimeCodesPerSecond()."""
+    )
     vector3f[] angularVelocities (
         doc = """If authored, per-instance angular velocity vector to be used for
       interoplating orientations.  Angular velocities should be considered

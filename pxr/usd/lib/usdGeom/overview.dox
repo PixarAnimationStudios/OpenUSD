@@ -192,17 +192,18 @@ hidden surface detection and lighting calculations.
 
 UsdGeomPointBased primitives and UsdGeomPointInstancer primitives all allow
 the specification of \ref UsdGeomPointBased::GetVelocitiesAttr() "velocities"
+and \ref UsdGeomPointInstancer::GetAccelerationsAttr() "accelerations"
 to describe point (or instance) motion at off-sample UsdTimeCode s, as an
 alternative to relying on native UsdStage linear sample interpolation.  
 Using velocities is the __only reliable way__ of encoding the motion of 
 primitives whose topology is varying over time, as adjacent samples' indices
 may be unrelated to each other, and the samples themselves may not even 
-possesss the same number of elements.
+possess the same number of elements.
 
 To help ensure that all consumers of UsdGeom data will compute identical posing
-from the same dataset, we describe how the position and velocity data should be
-sampled and combined to produce "interpolated" positions.  There are two
-cases to consider, for both of which, we stipulate the following logic:
+from the same dataset, we describe how the position, velocity, and acceleration
+data should be sampled and combined to produce "interpolated" positions.  There
+are several cases to consider, for which we stipulate the following logic:
 
 - If no _velocities_ are authored, then we fall back to the "standard" 
   position computation logic: if the timeSamples bracketing a requested sample 
@@ -218,14 +219,32 @@ cases to consider, for both of which, we stipulate the following logic:
   of _points_, fall back to standard position computation logic, as if
   no _velocities_ were authored.  This is effectively a silent error case.
 
-__In summary,__ we stipulate that the sample-placement of the _points_ and
-_velocities_ attributes be identical in each range over which we want
-to compute motion samples.  We do not allow velocities to be recorded at
-times at which there is not a corresponding _points_ sample.  This is to
-simplify and expedite the calculations required to compute a position at any
-requested time.  Since most simulators produce both a position and velocity
-at each timeStep, we do not believe this restriction should impose an undue
-burden.
+- If no _accelerations_ are authored, __use the lower _velocities_ timeSample
+  and the lower _points_ timeSample__ for the computations described below.
+  _accelerations_ are set to 0 in all dimensions for the computations. 
+
+- If the bracketing timeSamples for _accelerations_ from the requested 
+  timeSample have the _same ordinates_ as those for _velocities_ and 
+  _points_ then __use the lower _accelerations_ timeSample, the lower
+  _velocities_ timeSample and the lower _points_ timeSample__ for the
+  computations described below. 
+
+- If _accelerations_ are authored but the sampling does not line up with that
+  of _velocities_, if the sampling of _velocities_ lines up with that of 
+  _positions_ __use the lower _velocities_ timeSample and the lower _points_ 
+  timeSample__ for the computations described below, as if no _accelerations_
+  were authored. If the sampling of _velocities_ does not line up with that of
+  _positions_, fall back to the "standard" position computation logic as if no 
+  _velocities_ or _accelerations_ were authored. 
+
+__In summary,__ we stipulate that the sample-placement of the _points_,
+_velocities_, and _accelerations_ attributes be identical in each range 
+over which we want to compute motion samples.  We do not allow velocities
+to be recorded at times at which there is not a corresponding _points_ sample.  
+This is to simplify and expedite the calculations required to compute a position 
+at any requested time.  Since most simulators produce both a position and
+velocity at each timeStep, we do not believe this restriction should impose
+an undue burden.
 
 Note that the sampling requirements are applied to each requested motion
 sampling interval independently.  So, for example, if _points_ and _velocities_ 
@@ -238,20 +257,26 @@ frames 0, 1, and 3, but no interpolation for frame 2.
 
 If one requires a pose at only a single point in time, _sampleTime_, such as
 when stepping through "sub-frames" in an application like _usdview_, then we
-need simply apply the above rules, and if we successfully sample both _points_ 
-and _velocities_, let:
+need simply apply the above rules, and if we successfully sample _points_, 
+_velocities_, and _accelerations_, let:
 
 \par
 <em>t<sub>points</sub></em> = the lower bracketing time sample for the 
 evaluated _points_ attribute
 
+\par
+_velocityScale_ = the inherited value from UsdGeomMotionAPI::ComputeVelocityScale()
+
 \par 
-_timeScale_ = 1.0 / <tt>stage->GetTimeCodesPerSecond()</tt>
+_timeScale_ = _velocityScale_ / <tt>stage->GetTimeCodesPerSecond()</tt>
+
 
 ... then
 
 \par
-<em> __pointsInterpolated__ =  __points__ + (sampleTime - t<sub>points</sub>) * timeScale * __velocities__</em> 
+<em> __pointsInterpolated__ =  __points__ + (sampleTime - t<sub>points</sub>) * 
+timeScale * (__velocities__ + (0.5 * (sampleTime - t<sub>points</sub>) * 
+timeScale * __accelerations__))</em> 
 
 
 \subsection UsdGeom_VelocityAtMultipleSamples Computing a Range of Requested Positions
@@ -269,9 +294,9 @@ Therefore, if we are sampling a topologically varying,
 _velocities_-possessing UsdGeomMesh at sample times <em>t<sub>1</sub></em>,
 <em>t<sub>2</sub></em> ...  <em>t<sub>n</sub></em> in order to render the
 mesh with motion blur, we stipulate that all _n_ samples be computed from
-<b>the same sampled _points_ and _velocities_ values sampled at
-_sampleTime_</b>.  Therefore, we would compute all _n_ samples using
-the above formula, but iterating over the _n_ samples, substituting
+<b>the same sampled _points_, _velocities_, and _accelerations_ values
+sampled at_sampleTime_</b>.  Therefore, we would compute all _n_ samples
+using the above formula, but iterating over the _n_ samples, substituting
 <em>t<sub>i</sub></em> for _sampleTime_.
 
 Two things to note:
@@ -293,7 +318,8 @@ Two things to note:
   computed value for the same __singular__ time using the motion blur
   technique.  This derives from our requirement that over the given motion
   range, the topology must not change, so we specifically ignore any other
-  _points_ or _velocities_ samples that occur in the requested motion range.
+  _points_, _velocities_, or _accelerations_ samples that occur in the
+  requested motion range.
 
 
 \section UsdGeom_StageMetrics Stage Metrics

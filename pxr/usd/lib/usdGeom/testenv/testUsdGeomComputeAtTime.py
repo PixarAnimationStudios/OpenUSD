@@ -190,6 +190,50 @@ class TestUsdGeomComputeAtTimeBase(object):
             for time, delta in tr]
         self.assertAllMatrixListsEqual(xformsArray, compares)
 
+    def test_OneInstanceAcceleration(self):
+        stage = Usd.Stage.Open("test.usda")
+        pi = UsdGeom.PointInstancer(stage.GetPrimAtPath("/OneInstanceAcceleration"))
+
+        # Test directly on sample.
+        baseTime = 0
+        tr = timeRange(baseTime)
+        xformsArray = self.computeInstanceTransforms(pi, tr, baseTime)
+        compares = [[Gf.Matrix4d(
+                Gf.Rotation(Gf.Vec3d(0, 0, 1), time * 36),
+                Gf.Vec3d((time / 24.0) * (120 + (time * 1 * 0.5)), (time / 24.0) * (120 + (time * 1 * 0.5)), (time / 24.0) * (120 + (time * 1 * 0.5))))]
+            for time, delta in tr]
+        self.assertAllMatrixListsEqual(xformsArray, compares)
+
+        # Test in-between samples.
+        baseTime = 2
+        tr = timeRange(baseTime)
+        xformsArray = self.computeInstanceTransforms(pi, tr, baseTime)
+        compares = [[Gf.Matrix4d(
+                Gf.Rotation(Gf.Vec3d(0, 0, 1), time * 36),
+                Gf.Vec3d((time / 24.0) * (120 + (time * 1 * 0.5)), (time / 24.0) * (120 + (time * 1 * 0.5)), (time / 24.0) * (120 + (time * 1 * 0.5))))]
+            for time, delta in tr]
+        self.assertAllMatrixListsEqual(xformsArray, compares)
+
+        # Test with basetime before natural sample.
+        baseTime = 5
+        tr = timeRange(baseTime)
+        xformsArray = self.computeInstanceTransforms(pi, tr, baseTime - 1)
+        compares = [[Gf.Matrix4d(
+                Gf.Rotation(Gf.Vec3d(0, 0, 1), time * 36),
+                Gf.Vec3d((time / 24.0) * (120 + (time * 1 * 0.5)), (time / 24.0) * (120 + (time * 1 * 0.5)), (time / 24.0) * (120 + (time * 1 * 0.5))))]
+            for time, delta in tr]
+        self.assertAllMatrixListsEqual(xformsArray, compares)
+
+        # Test with basetime on natural sample.
+        baseTime = 5
+        tr = timeRange(baseTime)
+        xformsArray = self.computeInstanceTransforms(pi, tr, baseTime)
+        compares = [[Gf.Matrix4d(
+                Gf.Rotation(Gf.Vec3d(0, 0, 1), 180 - delta * 36),
+                Gf.Vec3d(25 + (delta / 24.0) * (120 + (delta * 1 * 0.5)), 50 + (delta / 24.0) * (240 + (delta * 2 * 0.5)), 100 + (delta / 24.0) * (480 + (delta * 3 * 0.5))))]
+            for time, delta in tr]
+        self.assertAllMatrixListsEqual(xformsArray, compares)
+
     def test_OneInstanceUnalignedData(self):
         stage = Usd.Stage.Open("test.usda")
         pi = UsdGeom.PointInstancer(stage.GetPrimAtPath("/OneInstanceUnalignedData"))
@@ -242,6 +286,27 @@ class TestUsdGeomComputeAtTimeBase(object):
         # of the point instancer that only has time samples for orientations
         self.assertAllMatrixListsEqual(xformsArrayDiffNumberOrientationsAndAngularVelocities, xformsArrayOrientationsOnly)
         self.assertAllMatrixListsEqual(xformsArrayUnalignedOrientationsAndAngularVelocities, xformsArrayOrientationsOnly)
+
+
+        piDiffNumberVelocitiesAndAccelerations = UsdGeom.PointInstancer(stage.GetPrimAtPath("/OneInstanceDiffNumberVelocitiesAndAccelerations"))
+        piUnalignedVelocitiesAndAccelerations = UsdGeom.PointInstancer(stage.GetPrimAtPath("/OneInstanceUnalignedVelocitiesAndAccelerations"))
+        piDiffNumberPositionsAndVelocitiesAndAccelerations = UsdGeom.PointInstancer(stage.GetPrimAtPath("/OneInstanceDiffNumberPositionsAndVelocitiesAndAccelerations"))
+        piPositionsAndVelocitiesOnly = UsdGeom.PointInstancer(stage.GetPrimAtPath("/OneInstancePositionsAndVelocitiesOnly"))
+
+        baseTime = 2
+        tr = timeRange(baseTime)
+        xformsArrayDiffNumberVelocitiesAndAccelerations = self.computeInstanceTransforms(piDiffNumberVelocitiesAndAccelerations, tr, baseTime)
+        xformsArrayUnalignedVelocitiesAndAccelerations = self.computeInstanceTransforms(piUnalignedVelocitiesAndAccelerations, tr, baseTime)
+        xformsArrayDiffNumberPositionsAndVelocitiesAndAccelerations = self.computeInstanceTransforms(piDiffNumberPositionsAndVelocitiesAndAccelerations, tr, baseTime)
+        xformsArrayPositionsAndVelocitiesOnly = self.computeInstanceTransforms(piPositionsAndVelocitiesOnly, tr, baseTime)
+
+        # Test that time sample correspondence validation works for velocities 
+        # and accelerations by comparing the transformations of the point instancers
+        # with invalid time sample correspondence with the transformations of the 
+        # point instancer that only has time samples for positions and velocities
+        self.assertAllMatrixListsEqual(xformsArrayDiffNumberVelocitiesAndAccelerations, xformsArrayPositionsAndVelocitiesOnly)
+        self.assertAllMatrixListsEqual(xformsArrayUnalignedVelocitiesAndAccelerations, xformsArrayPositionsAndVelocitiesOnly)
+        self.assertAllMatrixListsEqual(xformsArrayDiffNumberPositionsAndVelocitiesAndAccelerations, xformsArrayPositionsOnly)
 
     def test_OneInstanceVelocityScale(self):
         stage = Usd.Stage.Open("test.usda")
