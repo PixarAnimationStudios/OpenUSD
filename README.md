@@ -50,7 +50,7 @@ Dependencies
 | C++ compiler                                                      | GCC 4.8, Clang 3.5, MSVC 14.0(VS 2015), MSVC 14.1(VS 2017) |   |
 | C compiler                                                        | GCC 4.8, Clang 3.5, MSVC 14.0(VS 2015), MSVC 14.1(VS 2017) |   |
 | [CMake](https://cmake.org/documentation/)                         | 2.8.8 (Linux), 3.12 (macOS/Windows)    |   |
-| [Python](https://python.org)                                      | 2.7.5                                  | x |
+| [Python](https://python.org)                                      | 2.7.5+, 3.5+                           | x |
 | [Boost](https://boost.org)                                        | 1.55 (Linux), 1.61.0 (macOS/Windows VS 2015), 1.65.1 (Windows VS 2017)   |   |
 | [Intel TBB](https://www.threadingbuildingblocks.org/)             | 4.4 Update 6                           |   |
 
@@ -81,7 +81,11 @@ Getting and Building the Code
 
 The simplest way to build USD is to run the supplied ```build_usd.py``` 
 script. This script will download required dependencies and build 
-and install them along with USD in a given directory. 
+and install them along with USD in a given directory. If you are building Python
+bindings for USD then those are built for the Python interpreter used to launch 
+the `build_usd.py` script. If you are not building Python support with USD
+then you don't have to be careful about which Python interpreter you use for
+executing the build script.
 
 Follow the instructions below to run the script with its default behavior, 
 which will build the USD core libraries, Imaging, and USD Imaging components.

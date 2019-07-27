@@ -17,7 +17,9 @@ Advanced Build Configuration
 
 The simplest way to build USD is to run the supplied ```build_usd.py``` 
 script. This script will download required dependencies and build 
-and install them along with USD in a given directory. 
+and install them along with USD in a given directory. If you are building
+Python bindings then those will be compatible with the Python interpreter
+used to launch the `build_usd.py` script.
 
 See instructions and examples in [README.md](README.md#getting-and-building-the-code).
 
