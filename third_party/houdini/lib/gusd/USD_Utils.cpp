@@ -209,6 +209,38 @@ ExtractPrimPathAndVariants(const SdfPath& path,
     }
 }
 
+void
+SetModelingVariant(
+    const UsdStageRefPtr& stage,
+    const UsdPrim& prim,
+    const TfToken& variant)
+{
+    if (prim) {
+        UsdVariantSets variantSets = prim.GetVariantSets();
+        if (variantSets.HasVariantSet(kModelingVariantToken)) {
+            UsdVariantSet modelingVariantSet =
+                prim.GetVariantSet(kModelingVariantToken);
+            if (modelingVariantSet.HasAuthoredVariant(variant)) {
+                modelingVariantSet.SetVariantSelection(variant);
+            }
+        }
+    }
+}
+
+void
+ClearModelingVariant(const UsdStageRefPtr& stage, const UsdPrim& prim)
+{
+    if (prim) {
+        UsdVariantSets variantSets = prim.GetVariantSets();
+        if (variantSets.HasVariantSet(kModelingVariantToken)) {
+            UsdVariantSet modelingVariantSet =
+                prim.GetVariantSet(kModelingVariantToken);
+            if (modelingVariantSet.HasAuthoredVariantSelection()) {
+                modelingVariantSet.ClearVariantSelection();
+            }
+        }
+    }
+}
 
 bool
 SortPrims(UT_Array<UsdPrim>& prims)

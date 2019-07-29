@@ -52,7 +52,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(GlfUdimTexture);
 class GlfUdimTexture : public GlfTexture {
 public:
     GLF_API
-    virtual ~GlfUdimTexture();
+    ~GlfUdimTexture() override;
 
     GLF_API
     static GlfUdimTextureRefPtr New(
@@ -68,10 +68,7 @@ public:
     GLF_API
     VtDictionary GetTextureInfo(bool forceLoad) override;
 
-    GLuint GetGlTextureName() {
-        _ReadImage();
-        return _imageArray;
-    }
+    GLuint GetGlTextureName() override;
 
     GLuint GetGlLayoutName() {
         _ReadImage();

@@ -36,8 +36,6 @@
 #include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/usdGeom/subset.h"
 #include "pxr/usd/usdShade/connectableAPI.h"
-#include "pxr/usd/usdShade/tokens.h"
-
 
 #include "pxr/base/vt/value.h"
 

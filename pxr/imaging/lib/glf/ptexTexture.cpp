@@ -356,7 +356,7 @@ GlfPtexTexture::GetLayoutTextureName()
 }
 
 GLuint
-GlfPtexTexture::GetTexelsTextureName()
+GlfPtexTexture::GetGlTextureName()
 {
     if (!_loaded) {
         _ReadImage();

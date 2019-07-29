@@ -52,11 +52,11 @@ TF_DECLARE_WEAK_AND_REF_PTRS(GlfBaseTextureData);
 class GlfBaseTexture : public GlfTexture {
 public:
     GLF_API
-    virtual ~GlfBaseTexture();
+    ~GlfBaseTexture() override;
 
     /// Returns the OpenGl texture name for the texture. 
     GLF_API
-    GLuint GetGlTextureName();
+    GLuint GetGlTextureName() override;
 
     GLF_API
     int	GetWidth();
@@ -69,10 +69,10 @@ public:
 
     // GlfTexture overrides
     GLF_API
-    virtual BindingVector GetBindings(TfToken const & identifier,
-                                      GLuint samplerName);
+    BindingVector GetBindings(TfToken const & identifier,
+                              GLuint samplerName) override;
     GLF_API
-    virtual VtDictionary GetTextureInfo(bool forceLoad);
+    VtDictionary GetTextureInfo(bool forceLoad) override;
 
 
 protected:
@@ -84,7 +84,7 @@ protected:
     GlfBaseTexture(GlfImage::ImageOriginLocation originLocation);
 
     GLF_API
-    virtual void _OnMemoryRequestedDirty() final;
+    void _OnMemoryRequestedDirty() override final;
 
     GLF_API
     virtual void _ReadTexture() = 0;

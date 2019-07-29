@@ -107,6 +107,9 @@ void wrapEngine()
             .def( init<const SdfPath &, const SdfPathVector&,
                     const SdfPathVector& >() )
             .def("Render", &UsdImagingGLEngine::Render)
+            .def("SetWindowPolicy", &UsdImagingGLEngine::SetWindowPolicy)
+            .def("SetRenderViewport", &UsdImagingGLEngine::SetRenderViewport)
+            .def("SetCameraPath", &UsdImagingGLEngine::SetCameraPath)
             .def("SetCameraState", &UsdImagingGLEngine::SetCameraState)
             .def("SetLightingStateFromOpenGL",
                     &UsdImagingGLEngine::SetLightingStateFromOpenGL)
@@ -139,8 +142,8 @@ void wrapEngine()
                  return_value_policy< TfPySequenceToList >())
             .def("SetRendererAov", 
                     &UsdImagingGLEngine::SetRendererAov)
-            .def("GetResourceAllocation", 
-                    &UsdImagingGLEngine::GetResourceAllocation)
+            .def("GetRenderStats", 
+                    &UsdImagingGLEngine::GetRenderStats)
             .def("GetRendererSettingsList", 
                     &UsdImagingGLEngine::GetRendererSettingsList,
                  return_value_policy< TfPySequenceToList >())
@@ -153,6 +156,10 @@ void wrapEngine()
             .def("IsColorCorrectionCapable", 
                 &UsdImagingGLEngine::IsColorCorrectionCapable)
                 .staticmethod("IsColorCorrectionCapable")
+            .def("IsPauseRendererSupported", 
+                &UsdImagingGLEngine::IsPauseRendererSupported)
+            .def("PauseRenderer", &UsdImagingGLEngine::PauseRenderer)
+            .def("ResumeRenderer", &UsdImagingGLEngine::ResumeRenderer)
         ;
 
     }

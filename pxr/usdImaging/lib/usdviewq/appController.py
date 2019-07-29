@@ -325,6 +325,7 @@ class AppController(QtCore.QObject):
             self._debug = os.getenv('USDVIEW_DEBUG', False)
             self._printTiming = parserData.timing or self._debug
             self._lastViewContext = {}
+            self._paused = False
             if QT_BINDING == 'PySide':
                 self._statusFileName = 'state'
                 self._deprecatedStatusFileNames = ('.usdviewrc')
@@ -784,6 +785,9 @@ class AppController(QtCore.QObject):
             self._ui.actionSave_Flattened_As.triggered.connect(
                 self._saveFlattenedAs)
 
+            self._ui.actionPause.triggered.connect(
+                self._togglePause)
+
             # Setup quit actions to ensure _cleanAndClose is only invoked once.
             self._ui.actionQuit.triggered.connect(QtWidgets.QApplication.instance().quit)
 
@@ -1092,7 +1096,7 @@ class AppController(QtCore.QObject):
 
     def _openStage(self, usdFilePath, sessionFilePath, populationMaskPaths):
 
-        def _GetFormattedError(reasons=[]):
+        def _GetFormattedError(reasons=None):
             err = ("Error: Unable to open stage '{0}'\n".format(usdFilePath))
             if reasons:
                 err += "\n".join(reasons) + "\n"
@@ -1185,6 +1189,11 @@ class AppController(QtCore.QObject):
         self.realEndTimeCode = None
 
         self.framesPerSecond = self._dataModel.stage.GetFramesPerSecond()
+        if self.framesPerSecond < 1:
+            err = ("Error: Invalid value for field framesPerSecond of %.2f. Using default value of 24 \n" % self.framesPerSecond)
+            sys.stderr.write(err)
+            self.statusMessage(err)
+            self.framesPerSecond = 24.0
 
         if not resetStageDataOnly:
             self.step = self._dataModel.stage.GetTimeCodesPerSecond() / self.framesPerSecond
@@ -1304,9 +1313,10 @@ class AppController(QtCore.QObject):
                         action.setDisabled(True)
                         break
             else:
-                # Refresh the AOV menu and settings menu
+                # Refresh the AOV menu, settings menu, and pause menu item
                 self._configureRendererAovs()
                 self._configureRendererSettings()
+                self._configurePauseAction()
 
     def _configureRendererPlugins(self):
         if self._stageView:
@@ -1339,9 +1349,10 @@ class AppController(QtCore.QObject):
             # Disable the menu if no plugins were found
             self._ui.menuRendererPlugin.setEnabled(foundPlugin)
 
-            # Refresh the AOV menu and settings menu
+            # Refresh the AOV menu, settings menu, and pause menu item
             self._configureRendererAovs()
             self._configureRendererSettings()
+            self._configurePauseAction()
 
     # Renderer AOV support
     def _rendererAovChanged(self, aov):
@@ -1523,6 +1534,16 @@ class AppController(QtCore.QObject):
             if isinstance(widget, QtWidgets.QLineEdit):
                 widget.setText(widget.defValue)
 
+    def _configurePauseAction(self):
+        if self._stageView:
+            # This is called when the user picks a new renderer, which
+            # always starts in an unpaused state.
+            self._paused = False
+            self._ui.actionPause.setEnabled(
+                self._stageView.IsPauseRendererSupported())
+            self._ui.actionPause.setChecked(self._paused and
+                self._stageView.IsPauseRendererSupported())
+
     def _configureColorManagement(self):
         enableMenu = (not self._noRender and 
                       UsdImagingGL.Engine.IsColorCorrectionCapable())
@@ -1591,6 +1612,24 @@ class AppController(QtCore.QObject):
         """
         self._ui.primView.resizeColumnToContents(0)
 
+    # Retrieve the list of prims currently expanded in the primTreeWidget
+    def _getExpandedPrimViewPrims(self):
+        rootItem = self._ui.primView.invisibleRootItem()
+        expandedItems = list()
+
+        # recursive function for adding all expanded items to expandedItems
+        def findExpanded(item):
+            if item.isExpanded():
+                expandedItems.append(item)
+            for i in range(item.childCount()):
+                findExpanded(item.child(i))
+
+        findExpanded(rootItem)
+
+        expandedPrims = [item.prim for item in expandedItems]
+        return expandedPrims
+
+
     # This appears to be "reasonably" performant in normal sized pose caches.
     # If it turns out to be too slow, or if we want to do a better job of
     # preserving the view the user currently has, we could look into ways of
@@ -1598,6 +1637,8 @@ class AppController(QtCore.QObject):
     # (far and away) faster solution would be to implement our own TreeView
     # and model in C++.
     def _resetPrimView(self, restoreSelection=True):
+        expandedPrims = self._getExpandedPrimViewPrims()
+
         with Timer() as t, BusyContext():
             startingDepth = 3
             self._computeDisplayPredicate()
@@ -1612,7 +1653,22 @@ class AppController(QtCore.QObject):
                 self._populateRoots()
                 # it's confusing to see timing for expand followed by reset with
                 # the times being similar (esp when they are large)
-                self._expandToDepth(startingDepth, suppressTiming=True)
+                if not expandedPrims:
+                    self._expandToDepth(startingDepth, suppressTiming=True)
+                # to maintain the primview, for each prim that has been 
+                # expanded, first check that it exists. then if its item has not 
+                # yet been populated,  use _getItemAtPath to populate its "chain" 
+                # of parents, so that the prim's item can be expanded. if it
+                # does already exist in the _primToItemMap, expand the item.
+                else:
+                    for prim in expandedPrims:
+                        if prim:
+                            item = self._primToItemMap.get(prim)
+                            if not item:
+                                primPath = prim.GetPrimPath()
+                                item = self._getItemAtPath(primPath)
+                            item.setExpanded(True)
+
                 if restoreSelection:
                     self._refreshPrimViewSelection()
                 self._ui.primView.setUpdatesEnabled(True)
@@ -2441,6 +2497,12 @@ class AppController(QtCore.QObject):
 
         with BusyContext():
             self._dataModel.stage.Export(saveName)
+
+    def _togglePause(self):
+        if self._stageView.IsPauseRendererSupported():
+            self._paused = not self._paused
+            self._stageView.SetRendererPaused(self._paused)
+            self._ui.actionPause.setChecked(self._paused)
 
     def _reopenStage(self):
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
@@ -3652,12 +3714,6 @@ class AppController(QtCore.QObject):
             if not v is None:
                 m[k] = v
 
-        m["[object type]"] = "Attribute" if type(obj) is Usd.Attribute \
-                       else "Prim" if type(obj) is Usd.Prim \
-                       else "Relationship" if type(obj) is Usd.Relationship \
-                       else "Unknown"
-        m["[path]"] = str(obj.GetPath())
-
         clipMetadata = obj.GetMetadata("clips")
         if clipMetadata is None:
             clipMetadata = {}
@@ -3668,8 +3724,16 @@ class AppController(QtCore.QObject):
         
         numMetadataRows = (len(m) - 1) + numClipRows
 
+        # Variant selections that don't have a defined variant set will be 
+        # displayed as well to aid debugging. Collect them separately from
+        # the variant sets.
         variantSets = {}
+        setlessVariantSelections = {}
         if (isinstance(obj, Usd.Prim)):
+            # Get all variant selections as setless and remove the ones we find
+            # sets for.
+            setlessVariantSelections = obj.GetVariantSets().GetAllVariantSelections()
+
             variantSetNames = obj.GetVariantSets().GetNames()
             for variantSetName in variantSetNames:
                 variantSet = obj.GetVariantSet(variantSetName)
@@ -3684,11 +3748,70 @@ class AppController(QtCore.QObject):
                 indexToSelect = combo.findText(variantSelection)
                 combo.setCurrentIndex(indexToSelect)
                 variantSets[variantSetName] = combo
+                # Remove found variant set from setless.
+                setlessVariantSelections.pop(variantSetName, None)
 
-        tableWidget.setRowCount(numMetadataRows + len(variantSets))
+        tableWidget.setRowCount(numMetadataRows + len(variantSets) + 
+                                len(setlessVariantSelections) + 2)
 
         rowIndex = 0
-        for key in sorted(m.keys()):
+
+        # Although most metadata should be presented alphabetically,the most 
+        # user-facing items should be placed at the beginning of the  metadata 
+        # list, these consist of [object type], [path], variant sets, active, 
+        # assetInfo, and kind.
+        def populateMetadataTable(key, val, rowIndex):
+            attrName = QtWidgets.QTableWidgetItem(str(key))
+            tableWidget.setItem(rowIndex, 0, attrName)
+
+            valStr, ttStr = self._formatMetadataValueView(val)
+            attrVal = QtWidgets.QTableWidgetItem(valStr)
+            attrVal.setToolTip(ttStr)
+
+            tableWidget.setItem(rowIndex, 1, attrVal)
+
+        sortedKeys = sorted(m.keys())
+        reorderedKeys = ["kind", "assetInfo", "active"]
+
+        for key in reorderedKeys:
+            if key in sortedKeys:
+                sortedKeys.remove(key)
+                sortedKeys.insert(0, key)
+
+        object_type = "Attribute" if type(obj) is Usd.Attribute \
+               else "Prim" if type(obj) is Usd.Prim \
+               else "Relationship" if type(obj) is Usd.Relationship \
+               else "Unknown"
+        populateMetadataTable("[object type]", object_type, rowIndex)
+        rowIndex += 1
+        populateMetadataTable("[path]", str(obj.GetPath()), rowIndex)
+        rowIndex += 1
+
+        for variantSetName, combo in variantSets.iteritems():
+            attrName = QtWidgets.QTableWidgetItem(str(variantSetName+ ' variant'))
+            tableWidget.setItem(rowIndex, 0, attrName)
+            tableWidget.setCellWidget(rowIndex, 1, combo)
+            combo.currentIndexChanged.connect(
+                lambda i, combo=combo: combo.updateVariantSelection(
+                    i, self._printTiming))
+            rowIndex += 1
+
+        # Add all the setless variant selections directly after the variant 
+        # combo boxes
+        for variantSetName, variantSelection in setlessVariantSelections.iteritems():
+            attrName = QtWidgets.QTableWidgetItem(str(variantSetName+ ' variant'))
+            tableWidget.setItem(rowIndex, 0, attrName)
+
+            valStr, ttStr = self._formatMetadataValueView(variantSelection)
+            # Italicized label to stand out when debugging a scene.
+            label = QtWidgets.QLabel('<i>' + valStr + '</i>')
+            label.setIndent(3)
+            label.setToolTip(ttStr)
+            tableWidget.setCellWidget(rowIndex, 1, label)
+
+            rowIndex += 1
+
+        for key in sortedKeys:
             if key == "clips":
                 for (clip, metadataGroup) in m[key].items():
                     attrName = QtWidgets.QTableWidgetItem(str('clip:' + clip))
@@ -3700,30 +3823,13 @@ class AppController(QtCore.QObject):
                         attrVal.setToolTip(ttStr)
                         tableWidget.setItem(rowIndex, 1, attrVal)
                         rowIndex += 1
+            elif key == "customData":
+                populateMetadataTable(key, obj.GetCustomData(), rowIndex)
+                rowIndex += 1
             else:
-                attrName = QtWidgets.QTableWidgetItem(str(key))
-                tableWidget.setItem(rowIndex, 0, attrName)
-                # Get metadata value
-                if key == "customData":
-                    val = obj.GetCustomData()
-                else:
-                    val = m[key]
-
-                valStr, ttStr = self._formatMetadataValueView(val)
-                attrVal = QtWidgets.QTableWidgetItem(valStr)
-                attrVal.setToolTip(ttStr)
-
-                tableWidget.setItem(rowIndex, 1, attrVal)
+                populateMetadataTable(key, m[key], rowIndex)
                 rowIndex += 1
 
-        for variantSetName, combo in variantSets.iteritems():
-            attrName = QtWidgets.QTableWidgetItem(str(variantSetName+ ' variant'))
-            tableWidget.setItem(rowIndex, 0, attrName)
-            tableWidget.setCellWidget(rowIndex, 1, combo)
-            combo.currentIndexChanged.connect(
-                lambda i, combo=combo: combo.updateVariantSelection(
-                    i, self._printTiming))
-            rowIndex += 1
 
         tableWidget.resizeColumnToContents(0)
 
@@ -4609,6 +4715,9 @@ class AppController(QtCore.QObject):
         clearColorText = self._dataModel.viewSettings.clearColorText
         for action in self._clearColorActions:
             action.setChecked(str(action.text()) == clearColorText)
+
+    def getActiveCamera(self):
+        return self._dataModel.viewSettings.cameraPrim
 
     def _refreshCameraMenu(self):
         cameraPath = self._dataModel.viewSettings.cameraPath

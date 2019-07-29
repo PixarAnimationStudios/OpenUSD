@@ -34,6 +34,9 @@
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/work/loops.h"
 
+#include <chrono>
+#include <thread>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdEmbreeRenderer::HdEmbreeRenderer()
@@ -51,6 +54,7 @@ HdEmbreeRenderer::HdEmbreeRenderer()
     , _samplesToConvergence(0)
     , _ambientOcclusionSamples(0)
     , _enableSceneColors(false)
+    , _completedSamples(0)
 {
 }
 
@@ -357,9 +361,17 @@ HdEmbreeRenderer::MarkAovBuffersUnconverged()
     }
 }
 
+int
+HdEmbreeRenderer::GetCompletedSamples() const
+{
+    return _completedSamples.load();
+}
+
 void
 HdEmbreeRenderer::Render(HdRenderThread *renderThread)
 {
+    _completedSamples.store(0);
+
     // Commit any pending changes to the scene.
     rtcCommit(_scene);
 
@@ -380,6 +392,18 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
     // We consider the image converged after N samples, which is a convenient
     // and simple heuristic.
     for (int i = 0; i < _samplesToConvergence; ++i) {
+        // Pause point.
+        while (renderThread->IsPauseRequested()) {
+            if (renderThread->IsStopRequested()) {
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        // Cancellation point.
+        if (renderThread->IsStopRequested()) {
+            break;
+        }
+
         unsigned int tileSize = HdEmbreeConfig::GetInstance().tileSize;
         const unsigned int numTilesX = (_width + tileSize-1) / tileSize;
         const unsigned int numTilesY = (_height + tileSize-1) / tileSize;
@@ -407,9 +431,13 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
                 }
             }
             if (!moreWork) {
+                _completedSamples.store(i+1);
                 break;
             }
         }
+
+        // Track the number of completed samples for external consumption.
+        _completedSamples.store(i+1);
 
         // Cancellation point.
         if (renderThread->IsStopRequested()) {

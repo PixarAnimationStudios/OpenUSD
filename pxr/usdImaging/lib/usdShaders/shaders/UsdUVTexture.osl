@@ -28,14 +28,23 @@ shader UsdUVTexture
 ]]
 (
     // Details : Image source
-    string file = "",
+    string file = ""
+    [[
+        string widget = "assetIdInput"
+    ]],
 
     // Details : Texture coordinates
     float st[2] = {0.0, 0.0},
 
     // Details : [options] useMetadata, black, clamp, repeat, mirror.
-    string wrapS = "useMetadata",
-    string wrapT = "useMetadata",
+    string wrapS = "useMetadata"
+    [[
+        string options = "useMetadata|black|clamp|repeat|mirror"
+    ]],
+    string wrapT = "useMetadata"
+    [[
+        string options = "useMetadata|black|clamp|repeat|mirror"
+    ]],
 
     // Details : Fallback value used when no texture is connected.
     color fallback = color(0.0, 0.0, 0.0),

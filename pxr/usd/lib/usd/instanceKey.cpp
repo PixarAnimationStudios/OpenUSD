@@ -23,47 +23,142 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/instanceKey.h"
-
 #include "pxr/usd/usd/resolver.h"
+#include "pxr/usd/pcp/primIndex.h"
+
+#include <boost/functional/hash.hpp>
+
+#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 Usd_InstanceKey::Usd_InstanceKey()
+    : _hash(_ComputeHash())
 {
 }
 
-Usd_InstanceKey::Usd_InstanceKey(const PcpPrimIndex& instance)
+static UsdStagePopulationMask
+_MakeMaskRelativeTo(SdfPath const &path, UsdStagePopulationMask const &mask)
+{
+    SdfPath const &absRoot = SdfPath::AbsoluteRootPath();
+    std::vector<SdfPath> maskPaths = mask.GetPaths();
+    for (SdfPath &maskPath: maskPaths) {
+        if (maskPath.HasPrefix(path)) {
+            maskPath = maskPath.ReplacePrefix(path, absRoot);
+        }
+        else {
+            maskPath = SdfPath();
+        }
+    }
+    // Remove the empty paths to the end, and construct a mask with the
+    // translated paths.
+    return UsdStagePopulationMask(
+        maskPaths.begin(),
+        std::remove(maskPaths.begin(), maskPaths.end(), SdfPath()));
+}
+
+static UsdStageLoadRules
+_MakeLoadRulesRelativeTo(SdfPath const &path, UsdStageLoadRules const &rules)
+{
+    UsdStageLoadRules::Rule rootRule = rules.GetEffectiveRuleForPath(path);
+    std::vector<std::pair<SdfPath, UsdStageLoadRules::Rule> >
+        elems = rules.GetRules();
+    
+    SdfPath const &absRoot = SdfPath::AbsoluteRootPath();
+    for (auto &p: elems) {
+        if (p.first == path) {
+            p.first = absRoot;
+            p.second = rootRule;
+        }
+        else if (p.first.HasPrefix(path)) {
+            p.first = p.first.ReplacePrefix(path, absRoot);
+        }
+        else {
+            p.first = SdfPath();
+        }
+    }
+    elems.erase(
+        std::remove_if(
+            elems.begin(), elems.end(),
+            [](std::pair<SdfPath, UsdStageLoadRules::Rule> const &rule) {
+                return rule.first.IsEmpty();
+            }),
+        elems.end());
+
+    // Ensure the first element is the root rule.
+    if (elems.empty() || elems.front().first != absRoot) {
+        elems.emplace(elems.begin(), absRoot, rootRule);
+    }
+    else {
+        elems.front().second = rootRule;
+    }
+
+    UsdStageLoadRules ret;
+    ret.SetRules(elems);
+    ret.Minimize();
+    return ret;
+}
+
+Usd_InstanceKey::Usd_InstanceKey(const PcpPrimIndex& instance,
+                                 const UsdStagePopulationMask *mask,
+                                 const UsdStageLoadRules &loadRules)
     : _pcpInstanceKey(instance)
 {
     std::vector<Usd_ResolvedClipInfo> clipInfo;
     if (Usd_ResolveClipInfo(instance, &clipInfo)) {
         _clipInfo.swap(clipInfo);
     }
+    // Make the population mask "relative" to this prim index by removing the
+    // index's path prefix from all paths in the mask that it prefixes.  So for
+    // example, if the mask is [/World/set/prop1, /World/set/tableGroup/table,
+    // /World/set/prop2], and this prim index is /World/set/tableGroup, then we
+    // want the resulting mask to be [/table].  The special cases where the mask
+    // includes the whole subtree or excludes the whole subtree are easy to deal
+    // with.
+    if (!mask) {
+        _mask = UsdStagePopulationMask::All();
+    }
+    else {
+        _mask = _MakeMaskRelativeTo(instance.GetPath(), *mask);
+    }
+
+    // Do the same with the load rules.
+    _loadRules = _MakeLoadRulesRelativeTo(instance.GetPath(), loadRules);
+
+    // Compute and cache the hash code.
+    _hash = _ComputeHash();
 }
 
 bool 
 Usd_InstanceKey::operator==(const Usd_InstanceKey& rhs) const
 {
-    return _pcpInstanceKey == rhs._pcpInstanceKey &&
-        _clipInfo == rhs._clipInfo;
+    return _hash == rhs._hash &&
+        _pcpInstanceKey == rhs._pcpInstanceKey &&
+        _clipInfo == rhs._clipInfo &&
+        _mask == rhs._mask &&
+        _loadRules == rhs._loadRules;
 }
 
-bool
-Usd_InstanceKey::operator!=(const Usd_InstanceKey& rhs) const
+size_t
+Usd_InstanceKey::_ComputeHash() const
 {
-    return !(*this == rhs);
-}
-
-size_t hash_value(const Usd_InstanceKey& key)
-{
-    size_t hash = hash_value(key._pcpInstanceKey);
-    for (const Usd_ResolvedClipInfo& clipInfo: key._clipInfo) {
+    size_t hash = hash_value(_pcpInstanceKey);
+    for (const Usd_ResolvedClipInfo& clipInfo: _clipInfo) {
         boost::hash_combine(hash, clipInfo.GetHash());
     }
-
+    boost::hash_combine(hash, _mask);
+    boost::hash_combine(hash, _loadRules);
     return hash;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+std::ostream &
+operator<<(std::ostream &os, const Usd_InstanceKey &key)
+{
+    os << "_pcpInstanceKey:\n" << key._pcpInstanceKey.GetString() << '\n'
+       << "_mask: " << key._mask << '\n'
+       << "_loadRules: " << key._loadRules << '\n'
+       << "_hash: " << key._hash << '\n';
+    return os;
+}
 
+PXR_NAMESPACE_CLOSE_SCOPE

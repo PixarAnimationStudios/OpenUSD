@@ -81,7 +81,10 @@ def _findEditorTools(usdFileName, readOnly):
 
 # this generates a temporary usd file which the user will edit.
 def _generateTemporaryFile(usdcatCmd, usdFileName, readOnly, prefix):
-    fullPrefix = prefix or "tmp"
+    # gets the base name of the USD file opened
+    usdFileNameBasename = os.path.splitext(os.path.basename(usdFileName))[0]
+
+    fullPrefix = prefix or usdFileNameBasename + "_tmp"
     import tempfile
     (usdaFile, usdaFileName) = tempfile.mkstemp(
         prefix=fullPrefix, suffix='.usda', dir=os.getcwd())
@@ -111,12 +114,13 @@ def _editTemporaryFile(editorCmd, usdaFileName):
 
 # attempt to write out our changes to the actual usd file
 def _writeOutChanges(temporaryFileName, permanentFileName):
-    from pxr import Sdf
-    temporaryLayer = Sdf.Layer.FindOrOpen(temporaryFileName)
+    from pxr import Sdf, Tf
 
-    if not temporaryLayer:
-        sys.exit("Error: Failed to open temporary layer %s." \
-                 %temporaryFileName)
+    try:
+        temporaryLayer = Sdf.Layer.FindOrOpen(temporaryFileName)
+    except Tf.ErrorException as err:
+        sys.exit("Error: Failed to open temporary layer %s, and therefore cannot save your edits back to original file %s"
+                 ". An error occurred trying to parse the file: %s" % (temporaryFileName, permanentFileName, str(err)))
 
     # Note that we attempt to overwrite the permanent file's contents
     # rather than explicitly creating a new layer. This avoids aligning

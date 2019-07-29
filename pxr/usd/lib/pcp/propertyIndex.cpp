@@ -79,13 +79,13 @@ PcpPropertyIndex::GetPropertyRange(bool localOnly) const
     if (localOnly) {
         size_t startIdx = 0;
         for (; startIdx < _propertyStack.size(); ++startIdx) {
-            if (_propertyStack[startIdx].originatingNode.IsDirect())
+            if (_propertyStack[startIdx].originatingNode.IsRootNode())
                 break;
         }
 
         size_t endIdx = startIdx;
         for (; endIdx < _propertyStack.size(); ++endIdx) {
-            if (!_propertyStack[endIdx].originatingNode.IsDirect())
+            if (!_propertyStack[endIdx].originatingNode.IsRootNode())
                 break;
         }
 
@@ -107,7 +107,7 @@ PcpPropertyIndex::GetNumLocalSpecs() const
 {
     size_t numLocalSpecs = 0;
     for (size_t i = 0; i < _propertyStack.size(); ++i) {
-        if (_propertyStack[i].originatingNode.IsDirect()) {
+        if (_propertyStack[i].originatingNode.IsRootNode()) {
             ++numLocalSpecs;
         }
     }

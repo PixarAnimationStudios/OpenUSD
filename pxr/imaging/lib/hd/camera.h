@@ -41,13 +41,30 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+/// Camera state that can be requested from the scene delegate via
+/// GetCameraParamValue(id, token).
+/// The parameters below mimic the USD camera schema (with the exception of
+/// window policy).
 #define HD_CAMERA_TOKENS                        \
-    (clipPlanes)                                \
+    /* basic params */                          \
     (worldToViewMatrix)                         \
-    (worldToViewInverseMatrix)                  \
     (projectionMatrix)                          \
-    (windowPolicy)
+    (clipPlanes)                                \
+    (windowPolicy)                              \
+    /* additional params (in world units)*/     \
+    (horizontalAperture)                        \
+    (verticalAperture)                          \
+    (horizontalApertureOffset)                  \
+    (verticalApertureOffset)                    \
+    (focalLength)                               \
+    (clippingRange)                             \
+                                                \
+    (fStop)                                     \
+    (focusDistance)                             \
+                                                \
+    (shutterOpen)                               \
+    (shutterClose)
+
 
 TF_DECLARE_PUBLIC_TOKENS(HdCameraTokens, HD_API, HD_CAMERA_TOKENS);
 
@@ -55,7 +72,10 @@ class HdSceneDelegate;
 
 /// \class HdCamera
 ///
-/// Hydra schema for a camera.
+/// Hydra schema for a camera that pulls the basic params (see above) during
+/// Sync.
+/// Backends that use additional camera parameters can inherit from HdCamera and
+/// pull on them.
 ///
 class HdCamera : public HdSprim {
 public:
@@ -73,10 +93,12 @@ public:
         DirtyProjMatrix       = 1 << 1,
         DirtyWindowPolicy     = 1 << 2,
         DirtyClipPlanes       = 1 << 3,
+        DirtyParams           = 1 << 4,
         AllDirty              = (DirtyViewMatrix
                                 |DirtyProjMatrix
                                 |DirtyWindowPolicy
-                                |DirtyClipPlanes)
+                                |DirtyClipPlanes
+                                |DirtyParams)
     };
 
     // ---------------------------------------------------------------------- //

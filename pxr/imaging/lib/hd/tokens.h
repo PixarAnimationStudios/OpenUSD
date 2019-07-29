@@ -64,9 +64,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (faceColors)                                \
     (full)                                      \
     (geometry)                                  \
-    (guide)                                     \
     (hermite)                                   \
-    (hidden)                                    \
     (hullIndices)                               \
     (indices)                                   \
     (instancer)                                 \
@@ -95,7 +93,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (primvar)                                   \
     (primID)                                    \
     (primitiveParam)                            \
-    (proxy)                                     \
     (quadInfo)                                  \
     (renderTags)                                \
     (rightHanded)                               \
@@ -152,6 +149,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (instVertexAdjacency)                       \
     (meshTopology)                              \
     (nonUniformSize)                            \
+    (numCompletedSamples)                       \
     (quadrangulateCPU)                          \
     (quadrangulateGPU)                          \
     (quadrangulateFaceVarying)                  \
@@ -198,6 +196,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HD_MATERIALTAG_TOKENS                   \
     (defaultMaterialTag)
+
+#define HD_RENDERTAG_TOKENS                     \
+    (geometry)                                  \
+    (guide)                                     \
+    (hidden)                                    \
+    (proxy)                                     \
+    (render)
 
 #define HD_OPTION_TOKENS                        \
     (parallelRprimSync)                        
@@ -322,12 +327,12 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
     (convergedVariance)                               \
     (convergedSamplesPerPixel)
 
-
 TF_DECLARE_PUBLIC_TOKENS(HdTokens, HD_API, HD_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdReprTokens, HD_API, HD_REPR_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPerfTokens, HD_API, HD_PERF_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdShaderTokens, HD_API, HD_SHADER_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdMaterialTagTokens, HD_API, HD_MATERIALTAG_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdRenderTagTokens, HD_API, HD_RENDERTAG_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdOptionTokens, HD_API, HD_OPTION_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPrimTypeTokens, HD_API, HD_PRIMTYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPrimvarRoleTokens, HD_API, HD_PRIMVAR_ROLE_TOKENS);

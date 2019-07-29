@@ -54,13 +54,6 @@ over "GLOBAL" (
                 interpolated over each face of the mesh. Bilinear interpolation 
                 is used for interpolation between the four values."""
             }
-            dictionary extentsHint = {
-                string doc = """Name of the attribute used to author extents
-                hints at the root of leaf models. Extents hints are stored by purpose
-                as a vector of GfVec3f values. They are ordered based on the order
-                of purpose tokens returned by 
-                UsdGeomImageable::GetOrderedPurposeTokens."""
-            }
             dictionary upAxis = {
                 string doc = """Stage-level metadata that encodes a scene's
                 orientation as a token whose value can be "Y" or "Z"."""
@@ -68,11 +61,6 @@ over "GLOBAL" (
             dictionary metersPerUnit = {
                 string doc = """Stage-level metadata that encodes a scene's
                 linear unit of measure as meters per encoded unit."""
-            }
-            dictionary inactiveIds = {
-                string doc = """int64listop prim metadata that specifies
-                the PointInstancer ids that should be masked (unrenderable)
-                over all time."""
             }
             dictionary partition = {
                 string doc = """A type of family of GeomSubsets. It implies 
@@ -1690,6 +1678,13 @@ class PointInstancer "PointInstancer" (
         dictionary extraPlugInfo = {
             bool implementsComputeExtent = true
         }
+        dictionary schemaTokens = {
+            dictionary inactiveIds = {
+                string doc = """int64listop prim metadata that specifies
+                the PointInstancer ids that should be masked (unrenderable)
+                over all time."""
+            }
+        }
     }
 ) {
   rel prototypes (
@@ -1869,11 +1864,20 @@ class "GeomModelAPI"
 (
     inherits = </APISchemaBase>
     customData = {
-         string className = "ModelAPI"
-         string extraIncludes = """
+        string className = "ModelAPI"
+        string extraIncludes = """
 #include "pxr/usd/usdGeom/bboxCache.h"
 #include "pxr/usd/usdGeom/constraintTarget.h"
 #include "pxr/usd/usdGeom/imageable.h" """
+        dictionary schemaTokens = {
+            dictionary extentsHint = {
+                string doc = """Name of the attribute used to author extents
+                hints at the root of leaf models. Extents hints are stored by purpose
+                as a vector of GfVec3f values. They are ordered based on the order
+                of purpose tokens returned by 
+                UsdGeomImageable::GetOrderedPurposeTokens."""
+            }
+        }
     }
     doc = """UsdGeomModelAPI extends the generic UsdModelAPI schema with
     geometry specific concepts such as cached extents for the entire model,

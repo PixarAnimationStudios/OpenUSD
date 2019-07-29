@@ -161,6 +161,15 @@ public:
     USDSKELIMAGING_API
     void RegisterSkelBinding(UsdSkelBinding const& binding);
 
+    // ---------------------------------------------------------------------- //
+    /// \name Virtual public API
+    // ---------------------------------------------------------------------- //
+
+    USDSKELIMAGING_API
+    PxOsdSubdivTags GetSubdivTags(UsdPrim const& usdPrim,
+                                  SdfPath const& cachePath,
+                                  UsdTimeCode time) const override;
+
 protected:
     // ---------------------------------------------------------------------- //
     /// \name Change Processing API (protected)

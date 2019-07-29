@@ -22,7 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/weakPtr.h"
@@ -31,6 +33,7 @@
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ndr/debugCodes.h"
 #include "pxr/usd/ndr/nodeDiscoveryResult.h"
+#include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdr/shaderMetadataHelpers.h"
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderProperty.h"
@@ -223,12 +226,20 @@ RmanOslParserPlugin::_getNodeProperties(
             IsTruthy(SdrPropertyMetadata->IsDynamicArray, metadata);
         bool isArray = (arraySize > 0) || isDynamicArray;
 
+        // Determine SdfAssetPath from metadata
+        bool isSdfAssetPath =
+            metadata.count(SdrPropertyMetadata->IsAssetIdentifier);
+
         properties.emplace_back(
             SdrShaderPropertyUniquePtr(
                 new SdrShaderProperty(
                     TfToken(propName),
                     typeName,
-                    _getDefaultValue(param, typeName, isArray),
+                    _getDefaultValue(
+                        param,
+                        typeName,
+                        isArray,
+                        isSdfAssetPath),
                     param->IsOutput(),
                     arraySize,
                     metadata,
@@ -363,11 +374,29 @@ RmanOslParserPlugin::_getTypeName(const RixShaderParameter* param) const
     return std::make_tuple(TfToken(typeName), arraySize);
 }
 
+template <class StringOrAsset>
+static VtValue
+_GetStringOrAssetArray(
+    const RixShaderParameter* param,
+    VtArray<StringOrAsset>* array)
+{
+    array->reserve( (size_t) param->ArrayLength() );
+
+    const char** dflts = param->DefaultS();
+    for (int i = 0; i <  param->ArrayLength(); ++i)
+    {
+        array->push_back( StringOrAsset( std::string( dflts[i] ) ) );
+    }
+
+    return VtValue::Take(*array);
+}
+
 VtValue
 RmanOslParserPlugin::_getDefaultValue(
     const RixShaderParameter* param, 
     const std::string& oslType,
-    bool isArray) const
+    bool isArray,
+    bool isSdfAssetPath) const
 {
     // INT and INT ARRAY
     // -------------------------------------------------------------------------
@@ -387,23 +416,28 @@ RmanOslParserPlugin::_getDefaultValue(
         return VtValue::Take(array);
     }
 
-    // STRING and STRING ARRAY
+    // STRING and STRING ARRAY (ASSET and ASSET ARRAY)
     // -------------------------------------------------------------------------
     else if (oslType == SdrPropertyTypes->String) {
         const char** dflts = param->DefaultS();
 
+        // Handle non-array
         if (!isArray && param->DefaultSize() == 1) {
+            if (isSdfAssetPath) {
+                return VtValue(SdfAssetPath( std::string( *dflts) ) );
+            }
             return VtValue( std::string( *dflts) );
         }
 
-        VtStringArray array;
-        array.reserve( (size_t) param->ArrayLength() );
-        for (int i = 0; i <  param->ArrayLength(); ++i)
-        {
-            array.push_back( std::string( dflts[i] ) );
+        // Handle array of asset paths
+        if (isSdfAssetPath) {
+            VtArray<SdfAssetPath> array;
+            return _GetStringOrAssetArray(param, &array);
         }
 
-        return VtValue::Take(array);
+        // Handle string array
+        VtStringArray array;
+        return _GetStringOrAssetArray(param, &array);
     }
 
     // FLOAT and FLOAT ARRAY
@@ -413,6 +447,26 @@ RmanOslParserPlugin::_getDefaultValue(
 
         if (!isArray && param->DefaultSize() == 1) {
             return VtValue( *dflts );
+        }
+
+        // We return a fixed-size array for arrays with size 2, 3, or 4 because
+        // SdrShaderProperty::GetTypeAsSdfType returns a specific size type
+        // (Float3, Float3, Float4).
+        else if (isArray && param->DefaultSize() == 2) {
+            return VtValue(
+                GfVec2f(dflts[0],
+                        dflts[1]));
+        } else if (isArray && param->DefaultSize() == 3) {
+            return VtValue(
+                GfVec3f(dflts[0],
+                        dflts[1],
+                        dflts[2]));
+        } else if (isArray && param->DefaultSize() == 4) {
+            return VtValue(
+                GfVec4f(dflts[0],
+                        dflts[1],
+                        dflts[2],
+                        dflts[3]));
         }
 
         VtFloatArray array;
@@ -438,16 +492,16 @@ RmanOslParserPlugin::_getDefaultValue(
 
         if (!isArray && dflt_size == 3) {
             return VtValue(
-                GfVec3d(dflts[0],
+                GfVec3f(dflts[0],
                         dflts[1],
                         dflts[2])
             );
         } else if (isArray && dflt_size % 3 == 0) {
             int numElements = dflt_size / 3;
-            VtVec3dArray array(numElements);
+            VtVec3fArray array(numElements);
 
             for (int i = 0; i < numElements; ++i) {
-                array[i] = GfVec3d(dflts[3*i + 0],
+                array[i] = GfVec3f(dflts[3*i + 0],
                                    dflts[3*i + 1],
                                    dflts[3*i + 2]);
             }

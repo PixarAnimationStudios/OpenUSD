@@ -97,10 +97,10 @@ public:
                                     unsigned int numSamples);
 
         GLF_API
-        virtual ~Attachment();
+        ~Attachment() override;
 
         /// Returns the GL texture index (can be used as any regular GL texture)
-        GLuint GetGlTextureName() const { return _textureName; }
+        GLuint GetGlTextureName() override;
 
         /// Returns the GL texture index multisampled of this attachment
         GLuint GetGlTextureMSName() const { return _textureNameMS; }
@@ -120,10 +120,10 @@ public:
 
         // GlfTexture overrides
         GLF_API
-        virtual BindingVector GetBindings(TfToken const & identifier,
-                                          GLuint samplerName);
+        BindingVector GetBindings(TfToken const & identifier,
+                                          GLuint samplerName) override;
         GLF_API
-        virtual VtDictionary GetTextureInfo(bool forceLoad);
+        VtDictionary GetTextureInfo(bool forceLoad) override;
 
         /// Updates the contents signature for the underlying texture
         /// to allow downstream consumers to know that the texture image

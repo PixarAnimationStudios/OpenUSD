@@ -76,8 +76,7 @@ public:
     /// Returns a reference to the newly constructed event.
     template < class... Args>
     const TraceEvent& EmplaceBack(Args&&... args) {
-        _events.emplace_back(std::forward<Args>(args)...);
-        return _events.back();
+        return _events.emplace_back(std::forward<Args>(args)...);
     }
 
     /// For speed the TraceEvent class holds a pointer to a TraceStaticKeyData. 

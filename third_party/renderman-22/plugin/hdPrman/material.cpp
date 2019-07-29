@@ -49,8 +49,18 @@ TF_DEFINE_PRIVATE_TOKENS(
     (MaterialLayer_2)
     (bxdf)
     (displacement)
+    (volume)
     (pbsMaterialIn)
     (inputMaterial)
+    (OSL)
+    (RmanCpp)
+
+    // XXX(HdPrmanMaterialTemp) Temporary tokens for material upgrades:
+    (vstructmemberaliases)
+    ((globalAttrModelName, "{globalattr:modelName}"))
+    (Looks)
+    (singlescatterSubset)
+    (subsurfaceSubset)
 );
 
 HdPrmanMaterial::HdPrmanMaterial(SdfPath const& id)
@@ -87,17 +97,15 @@ HdPrmanMaterial::_ResetMaterial(HdPrman_Context *context)
     }
 }
 
-
-// Apply studio-specific network transformations, similar to what
-// PxRfkPbsNetworkMaterialStandInResolveOp does in katana.
+// XXX(HdPrmanMaterialTemp) Temporary material hacks for testing.
 //
-// Roughly speaking, this means: 
-// - using the bxdf relationship to imply displacement as well
-// - PbsNetworkMaterialStandIn_2 substitution
-// - conditional vstruct expansion (vstructConditionalExpr metadata)
-//
-// XXX Ideally this logic can be eventually be driven by the
-// SdrRegistry or a related helper library.
+// Part of our strategy for testing HdPrman is to try it on real
+// studio assets.  Currently, those rely on a series of features
+// which are not yet implemented by UsdShading, Hydra or UsdImaging.
+// To make progress with testing while discussion is underway
+// about the right future approach for those features, we provide
+// a limited, hacky form of support for them here, with the
+// disclaimer that real work should not rely on this behavior.
 //
 static void
 _ApplyStudioFixes(HdMaterialNetworkMap *netMap)
@@ -106,8 +114,51 @@ _ApplyStudioFixes(HdMaterialNetworkMap *netMap)
     TfMapLookup(netMap->map, _tokens->bxdf, &bxdfNet);
     TfMapLookup(netMap->map, _tokens->displacement, &dispNet);
 
-    // If no disp network was bound, try using the "bxdf" network
-    // for that purpose.
+    // XXX(HdPrmanMaterialTemp) 
+    // {globalattr:modelName} expansion.
+    for (HdMaterialNode &node: bxdfNet.nodes) {
+        for (auto& param: node.parameters) {
+            std::string s;
+            if (param.second.IsHolding<std::string>()) {
+                s = param.second.UncheckedGet<std::string>();
+            } else if (param.second.IsHolding<TfToken>()) {
+                s = param.second.UncheckedGet<TfToken>().GetString();
+            } else if (param.second.IsHolding<SdfAssetPath>()) {
+                s = param.second.UncheckedGet<SdfAssetPath>().GetAssetPath();
+            }
+            if (TfStringContains(s, _tokens->globalAttrModelName)) {
+                // We do not have the modelName available.
+                // As a heuristic for testing, try to guess the
+                // modelName based on the id.
+                SdfPath modelRoot;
+                for (SdfPath p=node.path;
+                     !p.IsEmpty() && modelRoot.IsEmpty();
+                     p=p.GetParentPath()) {
+                    if (p.GetName() == _tokens->Looks) {
+                        // Found "Looks" scope; assume parent is name.
+                        modelRoot = p.GetParentPath();
+                    }
+                }
+                if (!modelRoot.IsEmpty())  {
+		    std::string modelName = modelRoot.GetName();
+		    modelName = TfStringGetBeforeSuffix(modelName, '_');
+                    s = TfStringReplace(s, _tokens->globalAttrModelName,
+                                        modelName);
+                    if (param.second.IsHolding<std::string>()) {
+                        param.second = VtValue(s);
+                    } else if (param.second.IsHolding<TfToken>()) {
+                        param.second = VtValue(TfToken(s));
+                    } else if (param.second.IsHolding<SdfAssetPath>()) {
+                        param.second = VtValue(SdfAssetPath(s));
+                    }
+                }
+            }
+        }
+    }
+
+    // XXX(HdPrmanMaterialTemp) 
+    // If no displacement network was provided, try using the bxdf
+    // network, since it may provide a displacement signal.
     if (dispNet.nodes.empty() && !bxdfNet.nodes.empty()) {
         dispNet = bxdfNet;
     }
@@ -117,9 +168,28 @@ _ApplyStudioFixes(HdMaterialNetworkMap *netMap)
         if (node.identifier == _tokens->PbsNetworkMaterialStandIn_2) {
             node.identifier = _tokens->PxrSurface;
         }
-        // XXX Hacky upgrade for testing w/ existing show assets
+        // XXX(HdPrmanMaterialTemp) 
+        // Hacky upgrade of older-style material layers.
         if (node.identifier == _tokens->MaterialLayer_1) {
             node.identifier = _tokens->MaterialLayer_2;
+        }
+        // XXX(HdPrmanMaterialTemp) 
+        // PxrSurface subsurface/singlescatter subset pruning.
+        // We do not yet support passthrough of the subset grouping
+        // assignments, so eject this.
+        if (node.identifier == _tokens->PxrSurface) {
+            for (auto& param: node.parameters) {
+                if (param.first == _tokens->subsurfaceSubset ||
+                    param.first == _tokens->singlescatterSubset) {
+                    static bool reported = false;
+                    if (!reported) {
+                        TF_WARN("HdPrman: PxrSurface %s is not yet supported; "
+                                "ignoring.", param.first.GetText());
+                        reported = true;
+                    }
+                    param.second = VtValue(std::string());
+                }
+            }
         }
     }
     for (HdMaterialRelationship &rel: bxdfNet.relationships) {
@@ -153,15 +223,16 @@ _FindShaders(
     std::vector<SdrShaderNodeConstPtr> *result)
 {
     auto& reg = SdrRegistry::GetInstance();
+    static NdrTokenVec priority = {
+        _tokens->OSL,
+        _tokens->RmanCpp
+    };
     result->resize(nodes.size());
     for (size_t i=0; i < nodes.size(); ++i) {
         NdrIdentifier id = nodes[i].identifier;
-        if (SdrShaderNodeConstPtr oslNode = reg.GetShaderNodeByIdentifierAndType(
-                id, TfToken("OSL"))) {
-            (*result)[i] = oslNode;
-        } else if (SdrShaderNodeConstPtr rmapCppNode= 
-                reg.GetShaderNodeByIdentifierAndType(id, TfToken("RmanCpp"))) {
-            (*result)[i] = rmapCppNode;
+        if (SdrShaderNodeConstPtr node =
+            reg.GetShaderNodeByIdentifier(id, priority)) {
+            (*result)[i] = node;
         } else {
             (*result)[i] = nullptr;
             TF_WARN("Did not find shader %s\n", id.GetText());
@@ -271,9 +342,20 @@ _ExpandVstructs(
                     // Different vstruct, or not part of a vstruct
                     continue;
                 }
+
                 if (output->GetVStructMemberName() != member) {
-                    // Different field of this vstruct
-                    continue;
+                    // Different field of this vstruct, ignore.
+                    //
+                    // XXX(HdPrmanMaterialTemp) 
+                    // Check if there is a match via vstructmemberaliases,
+                    // which is used to allow staged upgrading of mixed
+                    // C++/OSL shading networks.
+                    std::string alias;
+                    if (!TfMapLookup(output->GetHints(),
+                                     _tokens->vstructmemberaliases, &alias)
+                        || alias != member) {
+                        continue;
+                    }
                 }
 
                 // Check if there is already an explicit connection
@@ -305,13 +387,12 @@ _ExpandVstructs(
                 }
 
                 // Create the implied connection.
-                HdMaterialRelationship newRel {
-                    rel.inputId,
-                    input->GetName(),
-                    rel.outputId,
-                    output->GetName()
-                };
-                result.push_back(newRel);
+                result.emplace_back(
+                    HdMaterialRelationship {
+                        rel.inputId, input->GetName(),
+                        rel.outputId, output->GetName()
+                    });
+                break;
             }
         }
     }
@@ -357,11 +438,11 @@ _MapHdNodesToRileyNodes(
 
         // Create equivalent Riley shading node.
         riley::ShadingNode sn;
-        //if (shaders[i]->GetContext() == SdrNodeContext->Surface) {
-        if (shaders[i]->GetContext() == TfToken("bxdf")) {
+        if (shaders[i]->GetContext() == _tokens->bxdf ||
+            shaders[i]->GetContext() == SdrNodeContext->Volume) {
             sn.type = riley::ShadingNode::k_Bxdf;
         } else if (shaders[i]->GetContext() == SdrNodeContext->Pattern ||
-                   shaders[i]->GetContext() == TfToken("OSL")) {
+                   shaders[i]->GetContext() == _tokens->OSL) {
             sn.type = riley::ShadingNode::k_Pattern;
         } else if (shaders[i]->GetContext() == SdrNodeContext->Displacement) {
             sn.type = riley::ShadingNode::k_Displacement;
@@ -374,7 +455,13 @@ _MapHdNodesToRileyNodes(
             continue;
         }
         sn.handle = RtUString(mat.nodes[i].path.GetText());
-        sn.name = RtUString(shaders[i]->GetImplementationName().c_str());
+        std::string implName = shaders[i]->GetImplementationName();
+        if (shaders[i]->GetSourceType() == _tokens->OSL) {
+            // Explicitly specify the .oso extension to avoid possible
+            // mix-up between C++ and OSL shaders of the same name.
+            implName += ".oso";
+        }
+        sn.name = RtUString(implName.c_str());
         RixParamList *params = mgr->CreateRixParamList();
         sn.params = params;
         result->push_back(sn);
@@ -386,7 +473,7 @@ _MapHdNodesToRileyNodes(
             if (!prop) {
                 TF_DEBUG(HDPRMAN_MATERIALS)
                     .Msg("Unknown shader property '%s' for "
-                         "shader '%s' at '%s'; ignoring.",
+                         "shader '%s' at '%s'; ignoring.\n",
                          param.first.GetText(),
                          shaders[i]->GetName().c_str(),
                          mat.nodes[i].path.GetText());
@@ -402,7 +489,7 @@ _MapHdNodesToRileyNodes(
                 }
                 TF_DEBUG(HDPRMAN_MATERIALS)
                     .Msg("Unknown shader entry field type for "
-                         "field '%s' on shader '%s' at '%s'; ignoring.",
+                         "field '%s' on shader '%s' at '%s'; ignoring.\n",
                          param.first.GetText(),
                          shaders[i]->GetName().c_str(),
                          mat.nodes[i].path.GetText());
@@ -530,7 +617,7 @@ _MapHdNodesToRileyNodes(
                 TF_DEBUG(HDPRMAN_MATERIALS)
                     .Msg("Unknown shading parameter type '%s'; skipping "
                          "parameter '%s' on node '%s' ('%s'); "
-                         "expected type '%s'",
+                         "expected type '%s'\n",
                          param.second.GetTypeName().c_str(),
                          param.first.GetText(),
                          mat.nodes[i].path.GetText(),
@@ -667,7 +754,7 @@ _ConvertHdMaterialToRman(
     _FindShaders(mat.nodes, &shaders);
     _ExpandVstructs(&mat, shaders);
     _MapHdNodesToRileyNodes(mgr, mat, shaders, result);
-    return true;
+    return !result->empty();
 }
 
 /* virtual */
@@ -694,9 +781,10 @@ HdPrmanMaterial::Sync(HdSceneDelegate *sceneDelegate,
             HdPrman_ConvertUsdPreviewMaterial(&networkMap);
             _ApplyStudioFixes(&networkMap);
 
-            HdMaterialNetwork bxdfNet, dispNet;
+            HdMaterialNetwork bxdfNet, dispNet, volNet;
             TfMapLookup(networkMap.map, _tokens->bxdf, &bxdfNet);
             TfMapLookup(networkMap.map, _tokens->displacement, &dispNet);
+            TfMapLookup(networkMap.map, _tokens->volume, &volNet);
 
             if (TfDebug::IsEnabled(HDPRMAN_MATERIALS)) {
                 if (!bxdfNet.nodes.empty()) {
@@ -705,12 +793,16 @@ HdPrmanMaterial::Sync(HdSceneDelegate *sceneDelegate,
                 if (!dispNet.nodes.empty()) {
                     HdPrman_DumpMat("Displacement", id, dispNet);
                 }
+                if (!volNet.nodes.empty()) {
+                    HdPrman_DumpMat("Volume", id, volNet);
+                }
             }
 
             std::vector<riley::ShadingNode> nodes;
 
-            // Bxdf
-            if (_ConvertHdMaterialToRman(mgr, bxdfNet, &nodes)) {
+            // Surface/Volume
+            if (_ConvertHdMaterialToRman(mgr, bxdfNet, &nodes) ||
+                _ConvertHdMaterialToRman(mgr, volNet, &nodes)) {
                 if (_materialId == riley::MaterialId::k_InvalidId) {
                     _materialId = riley->CreateMaterial(&nodes[0],
                                                         nodes.size());
@@ -730,9 +822,9 @@ HdPrmanMaterial::Sync(HdSceneDelegate *sceneDelegate,
                 mgr->DestroyRixParamList(
                     const_cast<RixParamList*>(node.params));
             }
+            nodes.clear();
 
             // Displacement
-            nodes.clear();
             if (_ConvertHdMaterialToRman(mgr, dispNet, &nodes)) {
                 if (_displacementId == riley::DisplacementId::k_InvalidId) {
                     _displacementId = riley->CreateDisplacement(&nodes[0],

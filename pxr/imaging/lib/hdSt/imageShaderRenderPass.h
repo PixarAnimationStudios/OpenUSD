@@ -58,6 +58,8 @@ public:
     virtual ~HdSt_ImageShaderRenderPass();
 
 protected:
+    virtual void _Prepare(TfTokenVector const &renderTags) override;
+
     virtual void _Execute(HdRenderPassStateSharedPtr const &renderPassState,
                           TfTokenVector const &renderTags) override;
 

@@ -1,5 +1,5 @@
 //
-// Copyright 2017 Pixar
+// Copyright 2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,33 +21,4 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDSTREAM_RENDERER_PLUGIN_H
-#define HDSTREAM_RENDERER_PLUGIN_H
-
-#include "pxr/pxr.h"
-#include "pxr/imaging/hdx/rendererPlugin.h"
-
-PXR_NAMESPACE_OPEN_SCOPE
-
-class HdStreamRendererPlugin final : public HdxRendererPlugin {
-public:
-    HdStreamRendererPlugin()          = default;
-    virtual ~HdStreamRendererPlugin() = default;
-
-    virtual HdRenderDelegate *CreateRenderDelegate() override;
-    virtual HdRenderDelegate *CreateRenderDelegate(
-        HdRenderSettingsMap const& settingsMap) override;
-
-    virtual void DeleteRenderDelegate(HdRenderDelegate *renderDelegate) 
-        override;
-
-    virtual bool IsSupported() const override;
-
-private:
-    HdStreamRendererPlugin(const HdStreamRendererPlugin &)             = delete;
-    HdStreamRendererPlugin &operator =(const HdStreamRendererPlugin &) = delete;
-};
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif // HDSTREAM_RENDERER_PLUGIN_H
+#include "hdPrman/gprim.h"

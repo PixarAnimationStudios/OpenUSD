@@ -123,6 +123,10 @@ void wrapUsdGeomXformCommonAPI()
 
         .def("SetResetXformStack", &This::SetResetXformStack,
             arg("resetXformStack"))
+
+        .def("GetRotationTransform", &This::GetRotationTransform,
+            (arg("rotation"), arg("rotationOrder")))
+        .staticmethod("GetRotationTransform")
         ;
 }
 

@@ -23,6 +23,7 @@
 # language governing permissions and limitations under the Apache License. 
 
 from pxr import Ndr, Sdf, Sdr, Usd, UsdShade
+from pxr.Sdr import shaderParserTestUtils as utils
 
 import unittest
 import os
@@ -141,6 +142,27 @@ class TestUsdShadeShaderDef(unittest.TestCase):
         os.remove("shaderDef.usda")
         os.remove(osoPath)
         os.remove(glslfxPath)
+
+    def test_ShaderProperties(self):
+        """
+        Test property correctness on the "TestShaderPropertiesNodeUSD" node.
+
+        See shaderParserTestUtils TestShaderPropertiesNode method for detailed
+        description of the test.
+        """
+        stage = Usd.Stage.Open('shaderDefs.usda')
+        shaderDef = UsdShade.Shader.Get(stage,
+                                           "/TestShaderPropertiesNodeUSD")
+
+        discoveryResults = UsdShade.ShaderDefUtils.GetNodeDiscoveryResults(
+                shaderDef, stage.GetRootLayer().realPath)
+        self.assertEqual(len(discoveryResults), 1)
+
+        discoveryResult = discoveryResults[0]
+        node = UsdShade.ShaderDefParserPlugin().Parse(discoveryResult)
+        assert node is not None
+
+        utils.TestShaderPropertiesNode(node)
 
 if __name__ == '__main__':
     unittest.main()

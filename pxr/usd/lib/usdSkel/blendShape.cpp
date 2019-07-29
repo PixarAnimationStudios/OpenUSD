@@ -146,7 +146,7 @@ UsdAttribute
 UsdSkelBlendShape::CreatePointIndicesAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(UsdSkelTokens->pointIndices,
-                       SdfValueTypeNames->UIntArray,
+                       SdfValueTypeNames->IntArray,
                        /* custom = */ false,
                        SdfVariabilityUniform,
                        defaultValue,
@@ -227,14 +227,17 @@ UsdSkelBlendShape::HasInbetween(const TfToken& name) const
 std::vector<UsdSkelInbetweenShape>
 UsdSkelBlendShape::_MakeInbetweens(const std::vector<UsdProperty>& props) const
 {
-    std::vector<UsdSkelInbetweenShape> shapes(props.size());
-    size_t index = 0;
+    std::vector<UsdSkelInbetweenShape> shapes;
+    shapes.reserve(props.size());
     for(const UsdProperty& prop : props) {
-        if((shapes[index] = UsdSkelInbetweenShape(prop.As<UsdAttribute>()))) {
-            ++index;
+        const UsdAttribute attr = prop.As<UsdAttribute>();
+        // The input property list will often include properties within
+        // the namespace of inbetween shapes, such as
+        // 'inbetweens:shape:normalOffsets' Filter out those cases.
+        if (UsdSkelInbetweenShape::IsInbetween(attr)) {
+            shapes.push_back(UsdSkelInbetweenShape(attr));
         }
     }
-    shapes.resize(index);
     return shapes;
 }
 
@@ -265,12 +268,20 @@ UsdSkelBlendShape::ValidatePointIndices(TfSpan<const int> indices,
                                         std::string* reason)
 {
     for (size_t i = 0; i < indices.size(); ++i) {
-        const unsigned pointIndex = indices[i];
-        if (pointIndex >= numPoints) {
+        const int pointIndex = indices[i];
+        if (pointIndex >= 0) {
+            if (ARCH_UNLIKELY(static_cast<size_t>(pointIndex) >= numPoints)) {
+                if (reason) {
+                    *reason = TfStringPrintf(
+                        "Index [%d] at element %td >= numPoints [%zu]",
+                        pointIndex, i, numPoints);
+                }
+                return false;
+            }
+        } else {
             if (reason) {
-                *reason = TfStringPrintf(
-                    "Index [%d] at element %td >= numPoints [%zu]",
-                    pointIndex, i, numPoints);
+                *reason = TfStringPrintf("Index [%d] at element %td < 0",
+                                         pointIndex, i);
             }
             return false;
         }

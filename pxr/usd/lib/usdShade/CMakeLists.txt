@@ -14,7 +14,6 @@ pxr_library(usdShade
     PUBLIC_CLASSES
         connectableAPI
         coordSysAPI
-        debugCodes
         input
         material
         materialBindingAPI
@@ -104,6 +103,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdShadeMaterialSpecializesBaseComposition
     DEST testUsdShadeMaterialSpecializesBaseComposition
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdShadeShaderDef
+    DEST testUsdShadeShaderDef
 )
 
 pxr_register_test(testUsdShadeBinding

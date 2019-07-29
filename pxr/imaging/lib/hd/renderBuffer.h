@@ -104,7 +104,7 @@ public:
     virtual bool IsMultiSampled() const = 0;
 
     /// Map the buffer for reading and writing.
-    virtual uint8_t* Map() = 0;
+    virtual void* Map() = 0;
     /// Unmap the buffer.
     virtual void Unmap() = 0;
     /// Return whether the buffer is currently mapped by anybody.

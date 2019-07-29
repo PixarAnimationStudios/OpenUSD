@@ -105,18 +105,20 @@ PcpCompareSiblingNodeStrength(
         return 1;
 
     // Specializes arcs need special handling because of how specializes
-    // nodes throughout the graph are propagated to the root.
-    if (PcpIsSpecializesArc(a.GetArcType())) {
+    // nodes throughout the graph are copied to the root.
+    if (PcpIsSpecializeArc(a.GetArcType())) {
         const PcpNodeRef aOrigin = a.GetOriginNode();
         const PcpNodeRef bOrigin = b.GetOriginNode();
 
-        // Special case: We should only have two implied specializes nodes
+        // Special case: We should only have two specializes nodes
         // with the same origin and that are siblings when one has been 
         // implied across a composition arc to the root node and the other 
-        // has been propagated (i.e., copied) to the root node. In this
-        // case, the implied arc is more local, and thus stronger. The implied
-        // node will be the one whose site is *not* the same as its origin;
-        // the propagated node is the one whose site is the same as its origin.
+        // has been copied to the root node for strength ordering. In this
+        // case, the implied arc expresses the opinions local to the root layer
+        // stack, and is meant to be stronger than the copied specialize. The 
+        // implied node will be the one whose site is *not* the same as its 
+        // origin; the copied node is the one whose site is the same as its 
+        // origin.
         if (aOrigin == bOrigin &&
             aOrigin != a.GetParentNode() &&
             bOrigin != b.GetParentNode()) {
@@ -125,15 +127,15 @@ PcpCompareSiblingNodeStrength(
                       b.GetParentNode() == b.GetRootNode());
 
             if (a.GetSite() == aOrigin.GetSite()) {
-                // a was propagated, so it's weaker than b.
+                // a was copied from its origin, so it's weaker than b.
                 return 1;
             }
             else if (b.GetSite() == bOrigin.GetSite()) {
-                // b was propagated, so it's weaker than a.
+                // b was copied from its origin, so it's weaker than a.
                 return -1;
             }
             
-            TF_VERIFY(false, "Did not find implied or propagated node.");
+            TF_VERIFY(false, "Did not find copied specialize node.");
             return 0;
         }
 

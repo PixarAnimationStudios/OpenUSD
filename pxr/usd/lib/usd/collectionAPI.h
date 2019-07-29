@@ -285,6 +285,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Token
     /// \n  Variability: SdfVariabilityUniform
     /// \n  Fallback Value: No Fallback
+    /// \n  \ref UsdTokens "Allowed Values": [explicitOnly, expandPrims, expandPrimsAndProperties]
     USD_API
     UsdAttribute GetExpansionRuleAttr() const;
 
@@ -437,7 +438,7 @@ public:
         /// \ref UsdCollectionAPI::ComputeIncludedObjects or 
         /// \ref UsdCollectionAPI::ComputeIncludedPaths.
         /// 
-        /// If \p expansionRule is not NULL, it is set to the expansion-
+        /// If \p expansionRule is not nullptr, it is set to the expansion-
         /// rule value that caused the path to be included in or excluded from 
         /// the collection. If \p path is not included in the collection, 
         /// \p expansionRule is set to UsdTokens->exclude. 
@@ -461,7 +462,7 @@ public:
         /// given the parent-path's inherited expansion rule, 
         /// \p parentExpansionRule.
         /// 
-        /// If \p expansionRule is not NULL, it is set to the expansion-
+        /// If \p expansionRule is not nullptr, it is set to the expansion-
         /// rule value that caused the path to be included in or excluded from 
         /// the collection. If \p path is not included in the collection, 
         /// \p expansionRule is set to UsdTokens->exclude. 
@@ -672,9 +673,9 @@ private:
     // \p chainedCollectionPaths is used to pass in the set of all seen and
     // included collections in the dependency chain and is used to detect 
     // circular dependencies.
-    // If \p foundCircularDependency is not NULL, it is set to true if a 
+    // If \p foundCircularDependency is not nullptr, it is set to true if a 
     // circular dependency is detected amongst the included collections.
-    // If it is NULL, a warning is issued when a circular dependency is 
+    // If it is nullptr, a warning is issued when a circular dependency is 
     // detected.
     void _ComputeMembershipQueryImpl(
         MembershipQuery *query,

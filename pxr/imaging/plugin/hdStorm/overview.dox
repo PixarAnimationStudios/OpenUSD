@@ -1,0 +1,13 @@
+/*!
+\page hdStorm_page_front HdStorm : Real-time Hydra renderer plugin
+\if ( PIXAR_MFB_BUILD )
+\mainpage  HdStorm : Real-time Hydra renderer plugin
+\publicLib
+\endif
+
+HdStorm implements a Hydra renderer plugin that uses the graphics API
+to produce frames. Currently, it supports OpenGL.
+This is a thin plugin layer, you will find most rendering functionality 
+in the HdSt library.
+
+*/

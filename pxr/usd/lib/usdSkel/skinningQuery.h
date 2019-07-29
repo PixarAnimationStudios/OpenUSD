@@ -203,6 +203,19 @@ public:
                               VtVec3fArray* points,
                               UsdTimeCode time=UsdTimeCode::Default()) const;
 
+    /// Compute skinned normals using linear blend skinning.
+    /// Both \p xforms and \p points are given in _skeleton space_,
+    /// using the joint order of the bound skeleton.
+    /// Joint influences and the (optional) binding transform are computed
+    /// at time \p time (which will typically be unvarying).
+    ///
+    /// \sa UsdSkelSkeletonQuery::ComputeSkinningTransforms
+    template <typename Matrix4>
+    USDSKEL_API
+    bool ComputeSkinnedNormals(const VtArray<Matrix4>& xforms,
+                              VtVec3fArray* points,
+                              UsdTimeCode time=UsdTimeCode::Default()) const;
+
     /// Compute a skinning transform using linear blend skinning.
     /// The \p xforms are given in _skeleton space_, using the joint order of
     /// the bound skeleton.

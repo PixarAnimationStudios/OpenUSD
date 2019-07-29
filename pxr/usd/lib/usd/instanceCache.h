@@ -58,16 +58,6 @@ public:
             c.newMasterPrimIndexes.begin(), 
             c.newMasterPrimIndexes.end());
 
-        associatedIndexOld.insert(
-            associatedIndexOld.end(),
-            c.associatedIndexOld.begin(),
-            c.associatedIndexOld.end());
-
-        associatedIndexNew.insert(
-            associatedIndexNew.end(),
-            c.associatedIndexNew.begin(),
-            c.associatedIndexNew.end());
-
         changedMasterPrims.insert(
             changedMasterPrims.end(),
             c.changedMasterPrims.begin(), 
@@ -88,18 +78,6 @@ public:
     std::vector<SdfPath> newMasterPrims;
     std::vector<SdfPath> newMasterPrimIndexes;
 
-    /// List of index paths that are "associated" in a before/after sense.  For
-    /// example, if a prim </foo/bar> previously wasn't instanced, but becomes
-    /// instanced and its master uses the prim index at </x/y>, then there will
-    /// be an index i such that associatedIndexOld[i] == </foo/bar> and
-    /// associatedIndexNew[i] == </x/y>.  Similarly if subsequently </foo/bar>
-    /// ceases to be instanced, then we'll see corresponding entries with </x/y>
-    /// in Old and </foo/bar> in new.  This will also track changes where an
-    /// instancing master changes its source prim index.  This information is
-    /// used to propagate payload inclusion across instancing changes.
-    std::vector<SdfPath> associatedIndexOld;
-    std::vector<SdfPath> associatedIndexNew;
-    
     /// List of master prims that have been changed to use a new
     /// source prim index.
     std::vector<SdfPath> changedMasterPrims;
@@ -159,7 +137,9 @@ public:
     /// Returns true if the given instance prim index requires a new 
     /// master prim or is the source for an existing master prim, false
     /// otherwise.
-    bool RegisterInstancePrimIndex(const PcpPrimIndex& index);
+    bool RegisterInstancePrimIndex(const PcpPrimIndex& index,
+                                   const UsdStagePopulationMask *mask,
+                                   const UsdStageLoadRules &loadRules);
 
     /// Unregisters all instance prim indexes at or under \p primIndexPath.
     /// The indexes will be added to a list of pending changes and will
@@ -223,6 +203,10 @@ public:
     /// instanceable prim index.
     bool IsPathDescendantToAnInstance(const SdfPath& primPath) const;
 
+    /// Returns the shortest ancestor of \p primPath that identifies an
+    /// instanceable prim.  If there is no such ancestor, return the empty path.
+    SdfPath GetMostAncestralInstancePath(const SdfPath &primPath) const;
+
     /// Return the corresponding master prim path if \p primPath is descendant
     /// to an instance (see IsPathDescendantToAnInstance()), otherwise the empty
     /// path.
@@ -251,7 +235,7 @@ private:
 
     bool _MasterUsesPrimIndexPath(
         const SdfPath& primIndexPath,
-        std::vector<SdfPath>* masterPaths = NULL) const;
+        std::vector<SdfPath>* masterPaths = nullptr) const;
 
     SdfPath _GetNextMasterPath(const Usd_InstanceKey& key);
     

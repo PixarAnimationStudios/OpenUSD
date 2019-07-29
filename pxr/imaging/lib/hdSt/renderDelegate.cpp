@@ -40,6 +40,7 @@
 #include "pxr/imaging/hdSt/texture.h"
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/volume.h"
 
 #include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -57,11 +58,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_TINY_PRIM_CULLING, false,
                       "Enable tiny prim culling");
 
+TF_DEFINE_ENV_SETTING(HDST_ENABLE_EXPERIMENTAL_VOLUME_ELLIPSOID_STANDINS, false,
+                      "Render constant density ellipsoid standins for "
+                      "volume prims");
+
 const TfTokenVector HdStRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
     HdPrimTypeTokens->mesh,
     HdPrimTypeTokens->basisCurves,
-    HdPrimTypeTokens->points
+    HdPrimTypeTokens->points,
+    HdPrimTypeTokens->volume
 };
 
 const TfTokenVector HdStRenderDelegate::SUPPORTED_SPRIM_TYPES =
@@ -120,6 +126,26 @@ HdRenderSettingDescriptorList
 HdStRenderDelegate::GetRenderSettingDescriptors() const
 {
     return _settingDescriptors;
+}
+
+VtDictionary 
+HdStRenderDelegate::GetRenderStats() const
+{
+    VtDictionary ra = _resourceRegistry->GetResourceAllocation();
+
+    const VtDictionary::iterator gpuMemIt = 
+        ra.find(HdPerfTokens->gpuMemoryUsed.GetString());
+    if (gpuMemIt != ra.end()) {
+        // If we find gpuMemoryUsed, add the texture memory to it.
+        // XXX: We should look into fixing this in the resource registry itself
+        size_t texMem = 
+            VtDictionaryGet<size_t>(ra, HdPerfTokens->textureMemory.GetString(),
+                VtDefault = 0);
+        size_t gpuMemTotal = gpuMemIt->second.Get<size_t>();
+        gpuMemIt->second = VtValue(gpuMemTotal + texMem);
+    }
+
+    return ra;
 }
 
 HdStRenderDelegate::~HdStRenderDelegate()
@@ -197,6 +223,10 @@ HdStRenderDelegate::CreateRprim(TfToken const& typeId,
         return new HdStBasisCurves(rprimId, instancerId);
     } else  if (typeId == HdPrimTypeTokens->points) {
         return new HdStPoints(rprimId, instancerId);
+    } else  if (typeId == HdPrimTypeTokens->volume &&
+                bool(TfGetEnvSetting(
+                         HDST_ENABLE_EXPERIMENTAL_VOLUME_ELLIPSOID_STANDINS))) {
+        return new HdStVolume(rprimId, instancerId);
     } else {
         TF_CODING_ERROR("Unknown Rprim Type %s", typeId.GetText());
     }

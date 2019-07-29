@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/changeTracker.h"
+#include "pxr/base/vt/dictionary.h"
 #include "pxr/base/tf/token.h"
 
 #include <boost/shared_ptr.hpp>
@@ -161,6 +162,43 @@ public:
     ///
     HD_API
     virtual unsigned int GetRenderSettingsVersion() const;
+
+    ///
+    /// Returns an open-format dictionary of render statistics
+    ///
+    HD_API
+    virtual VtDictionary GetRenderStats() const;
+
+    ////////////////////////////////////////////////////////////////////////////
+    ///
+    /// Control of background rendering threads.
+    ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    ///
+    /// Advertise whether this delegate supports pausing and resuming of
+    /// background render threads. Default implementation returns false.
+    ///
+    HD_API
+    virtual bool IsPauseSupported() const;
+
+    ///
+    /// Pause all of this delegate's background rendering threads. Default
+    /// implementation does nothing.
+    ///
+    /// Returns \c true if successful.
+    ///
+    HD_API
+    virtual bool Pause();
+
+    ///
+    /// Resume all of this delegate's background rendering threads previously
+    /// paused by a call to Pause. Default implementation does nothing.
+    ///
+    /// Returns \c true if successful.
+    ///
+    HD_API
+    virtual bool Resume();
 
     ////////////////////////////////////////////////////////////////////////////
     ///

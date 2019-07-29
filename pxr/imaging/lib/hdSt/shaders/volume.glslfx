@@ -1,0 +1,376 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2019 Pixar
+//
+// Licensed under the Apache License, Version 2.0 (the "Apache License")
+// with the following modification; you may not use this file except in
+// compliance with the Apache License and the following modification to it:
+// Section 6. Trademarks. is deleted and replaced with:
+//
+// 6. Trademarks. This License does not grant permission to use the trade
+//    names, trademarks, service marks, or product names of the Licensor
+//    and its affiliates, except as required to comply with Section 4(c) of
+//    the License and to reproduce the content of the NOTICE file.
+//
+// You may obtain a copy of the Apache License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Apache License with the above modification is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the Apache License for the specific
+// language governing permissions and limitations under the Apache License.
+//
+
+--- This is what an import might look like.
+--- #import $TOOLS/hdSt/shaders/volume.glslfx
+
+#import $TOOLS/hdSt/shaders/instancing.glslfx
+#import $TOOLS/hdSt/shaders/pointId.glslfx
+
+--- --------------------------------------------------------------------------
+-- glsl Volume.Vertex
+
+out VertexData
+{
+    // Relying on perspectively correct interpolation.
+    vec3 Peye;
+} outData;
+
+void main(void)
+{
+    MAT4 transform  = ApplyInstanceTransform(HdGet_transform());
+
+    // Bounding box
+    vec3 localMin = HdGet_bboxLocalMin().xyz;
+    vec3 localMax = HdGet_bboxLocalMax().xyz;
+
+    // We are called with vertices {0,1}^3 and need to convert to ...
+    vec3 p = HdGet_points().xyz;
+    vec3 q = vec3(1.0, 1.0, 1.0) - p;
+
+    // ... bounding box vertices.
+    vec4 point = vec4(p * localMax + q * localMin, 1);
+
+    // Bounding box vertex in eye space.
+    vec4 pointEye = vec4(GetWorldToViewMatrix() * transform * point); 
+
+    outData.Peye = pointEye.xyz / pointEye.w;
+
+    gl_Position = vec4(GetProjectionMatrix() * pointEye);
+
+    ProcessPrimvars();
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Volume.VolumeShader
+
+// Functions that the volume shader of a volume material would provide.
+//
+// The functions give extinction, scattering, emission at a point as well as
+// a phase function such as Henyey-Greenstein (see, e.g., [1]).
+//
+// Only single scattering is taken into account and the result of the
+// scattering function (together with the phase function) is used to compute
+// the in-scattering component of the volume rendering equation for a light
+// source (point lights only).
+// The extinction function is supposed to return the sum of the
+// absorption and out-scattering cross section.
+// Note that the interpretation of emission here follows [1] rather than [2],
+// so the emission is added without being "pre-multiplied" by absorption.
+//
+// [1] Matt Pharr, Wenzel Jakob, Greg Humphreys, "Physically Based Rendering",
+// Third Edition).
+// [2] Julian Fong, Magnus Wrenninge, Christopher Kulla, Ralf Habel,
+// "Production Volume Rendering", SIGGRAPH 2017 Course.
+
+// The functions given here are for an ellipsoid shaped volume of constant
+// density not emitting light.
+
+// "Distance" of point p in local space to center of bounding box.
+// It is such that it is >0.5 exactly for the points outside the ellipsoid
+// bounded by the bounding box.
+float
+scaledDistance(vec3 p)
+{
+    // Bounding box
+    vec3 localMin = HdGet_bboxLocalMin().xyz;
+    vec3 localMax = HdGet_bboxLocalMax().xyz;
+
+    vec3 relativeToCenter = p - (localMin + localMax) / 2;
+    relativeToCenter /= (localMax - localMin);
+
+    return length(relativeToCenter);
+}
+
+// Extinction function, returns sum of absorption and out-scattering cross
+// ratio.
+//
+// Here: constant on ellipsoid and zero outside.
+float
+extinctionFunction(vec3 p)
+{
+    const float density = 1.5;
+
+    // Note that we want a decreasing step function, so we swapped the
+    // arguments to step.
+    return density * step(scaledDistance(p), 0.5);
+}
+
+// Scattering function, returns in-scattering cross-section (will be combined
+// with phase function).
+//
+// Here: constant on ellipsoid and zero outside.
+float
+scatteringFunction(vec3 p)
+{
+    const float scattering = 0.5;
+
+    // Note that we want a decreasing step function, so we swapped the
+    // arguments to step.
+    return scattering * step(scaledDistance(p), 0.5);
+}
+
+// Emission function, returns emission cross-section.
+//
+// Here: zero since volume is not emitting light.
+vec3
+emissionFunction(vec3 p)
+{
+    const vec3 emission = vec3(0.0);
+
+    return emission;
+}
+
+// Phase function in volume rendering equation.
+//
+// Here: isotropic.
+float
+phaseFunction(vec3 direction1, vec3 direction2)
+{
+    const float pi = 3.14159265358979;
+    const float sphereArea = 4.0 * pi;
+    const float inverseSphereArea = 1.0 / sphereArea;
+
+    return inverseSphereArea;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Volume.Fragment
+
+// Quality knobs, should eventually be configurable.
+//
+// We also might have different values for the raymarch
+// integrating the pixel value and for the raymarch doing
+// the lighting computation.
+
+// Ray-marching step size in eye space.
+const float stepSize = 0.05;
+const int maxNumSteps = 10000;
+
+in VertexData
+{
+    vec3 Peye;
+} inData;
+
+// Is point (in local coordinates) in bounding box.
+bool
+inBoundingBox(vec3 p)
+{
+    // Bounding box
+    vec3 localMin = HdGet_bboxLocalMin().xyz;
+    vec3 localMax = HdGet_bboxLocalMax().xyz;
+
+    return
+        all(lessThanEqual(localMin, p)) &&
+        all(lessThanEqual(p, localMax));
+}
+
+// Matrix to go from eye space to local space.
+// Used frequently per ray-marching step in both volumeIntegrator
+// and accumulatedTransmittance, so computed only once in main.
+//
+MAT4 instanceModelViewInverse;
+
+vec3
+eyeToLocal(vec3 p)
+{
+    vec4 t = instanceModelViewInverse * vec4(p, 1);
+    return t.xyz / t.w;
+}
+
+#if NUM_LIGHTS == 0
+
+vec3
+lightingComputation(vec3 rayPointEye, vec3 rayDirectionEye)
+{
+    return vec3(0.0);
+}
+
+#else
+
+// Compute how the transmittance of volume from Peye to a
+// light source in the given direction rayDirection.
+// This integrates the density from Peye to the boundary of
+// the volume. The assumption is that the light source is
+// out of the volume.
+float
+accumulatedTransmittance(vec3 rayStartEye, vec3 rayDirectionEye)
+{
+    int i = 1;
+    
+    float totalExtinction = 0.0;
+    
+    while(i < maxNumSteps) {
+        vec3 rayPointEye = rayStartEye + stepSize * i * rayDirectionEye;
+        vec3 rayPoint = eyeToLocal(rayPointEye);
+
+        if (!inBoundingBox(rayPoint)) {
+            break;
+        }
+
+        totalExtinction += extinctionFunction(rayPoint);
+
+        i+=1;
+    }
+
+    return exp(-totalExtinction * stepSize);
+}
+
+// Computes amount of light arriving at point Peye
+// taking attenuation (e.g., by inverse-square law), shadows,
+// transmittance by volume into account.
+vec3
+lightingComputation(vec3 rayPointEye, vec3 rayDirectionEye)
+{
+    vec3 result = vec3(0.0);
+    for (int i = 0; i < NUM_LIGHTS; ++i) {
+
+        vec4 Plight = lightSource[i].position;
+
+        vec3 lightDirectionEye = normalize(
+            (Plight.w == 0.0) ? Plight.xyz : Plight.xyz - rayPointEye);
+
+        float atten =
+            lightDistanceAttenuation(vec4(rayPointEye,1), i) *
+            lightSpotAttenuation(lightDirectionEye, i);
+
+// For now, not using shadows for volumes.
+#if USE_SHADOWS && 0
+        float shadow = (lightSource[i].hasShadow) ?
+            shadowing(lightSource[i].shadowIndex, rayPointEye) : 1.0;
+#else
+        float shadow = 1.0;
+#endif
+
+        if (shadow > 0.0001) {
+            result +=
+                shadow *
+                atten *
+                // Assuming that light source is outside of volume's
+                // bounding box (might integrate extinction along ray
+                // beyond light source).
+                accumulatedTransmittance(rayPointEye, lightDirectionEye) *
+                phaseFunction(-rayDirectionEye, lightDirectionEye) *
+                lightSource[i].diffuse.rgb;
+        }
+    }
+
+    return result;
+}
+
+#endif
+
+// Result of integrating volume along a ray
+struct VolumeContribution
+{
+    // Coordinates where ray marching hit the first non-empty voxel
+    // in eye space. 0 indicates the ray hit only empty voxels.
+    vec3 firstHitPeye;
+
+    // Integrated color
+    vec3 color;
+
+    // Integrated transmittance, i.e., what fraction of light from
+    // geometry behind the volume is still visible.
+    float transmittance;
+};
+
+VolumeContribution
+volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye)
+{
+    int i = 1;
+
+    VolumeContribution result;
+    result.firstHitPeye = vec3(0.0);
+    result.color = vec3(0.0);
+    result.transmittance = 1.0;
+
+    // integrate transmittance and light along ray for bounding box
+    while(i < maxNumSteps) {
+        vec3 rayPointEye = rayStartEye + stepSize * i * rayDirectionEye;
+        vec3 rayPoint = eyeToLocal(rayPointEye);
+
+        if (!inBoundingBox(rayPoint)) {
+            break;
+        }
+
+        // Evaluate volume shader functions to determine extinction,
+        // scattering, and emission.
+        float extinctionValue = extinctionFunction(rayPoint);
+        float scatteringValue = scatteringFunction(rayPoint);
+        vec3 emissionValue = emissionFunction(rayPoint);
+
+        // If this is the first time the ray is hitting a non-empty voxel,
+        // record the coordinates.
+        if (result.firstHitPeye == vec3(0.0)) {
+            if (  extinctionValue > 0 ||
+                  scatteringValue > 0 ||
+                  any(greaterThan(emissionValue, vec3(0)))) {
+                result.firstHitPeye = rayPointEye;
+            }
+        }
+
+        // In scattering contribution
+        vec3 inScattering =
+            scatteringValue *
+            lightingComputation(rayPointEye, rayDirectionEye);
+
+        // In scattering and emission contribution
+        result.color += 
+            (stepSize * result.transmittance) *
+            (inScattering + emissionValue);
+
+        // Update transmittance
+        result.transmittance *= exp(-extinctionValue * stepSize);
+
+        i+=1;
+    }
+
+    return result;
+}
+
+void main(void)
+{
+    instanceModelViewInverse =
+        ApplyInstanceTransformInverse(HdGet_transformInverse()) *
+        GetWorldToViewInverseMatrix();
+    
+    // camera facing.
+    vec3 Neye = vec3(0, 0, 1);
+
+    // Assuming perspective camera
+    vec3 rayDirectionEye = normalize(inData.Peye);
+
+    VolumeContribution volumeContribution =
+        volumeIntegrator(inData.Peye, rayDirectionEye);
+    float alpha = 1 - volumeContribution.transmittance;
+    vec4 color = ApplyColorOverrides(vec4(volumeContribution.color, alpha));
+
+    vec4 patchCoord = vec4(0.0);
+
+    RenderOutput(vec4(volumeContribution.firstHitPeye, 1),
+                 Neye, color, patchCoord);
+}

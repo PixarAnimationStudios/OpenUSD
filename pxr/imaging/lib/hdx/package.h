@@ -39,6 +39,7 @@ TfToken HdxPackageRenderPassShadowShader();
 TfToken HdxPackageSimpleLightingShader();
 TfToken HdxPackageColorCorrectionShader();
 TfToken HdxPackageRenderPassOitShader();
+TfToken HdxPackageRenderPassOitOpaqueShader();
 TfToken HdxPackageOitResolveImageShader();
 
 

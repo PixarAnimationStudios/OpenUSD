@@ -74,6 +74,7 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
         const UsdAttribute& attr = *attrIter;
         if (attr.GetNumTimeSamples()>1){
             *timeVaryingBits |= HdLight::DirtyBits::DirtyParams;
+            break;
         }
     }
 
@@ -93,6 +94,27 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
         collectionCache.UpdateCollection(light.GetShadowLinkCollectionAPI());
         // TODO: When collections change we need to invalidate affected
         // prims with the DirtyCollections flag.
+    }
+
+    // XXX Cache primvars for lights.  Note that this does not yet support
+    // animated lights, since we do not call UpdateForTime() for sprims.
+    {
+        // Establish a valueCache entry.
+        valueCache->GetPrimvars(cachePath);
+        // Compile a list of primvars to check.
+        std::vector<UsdGeomPrimvar> primvars;
+        UsdImaging_InheritedPrimvarStrategy::value_type inheritedPrimvarRecord =
+            _GetInheritedPrimvars(prim.GetParent());
+        if (inheritedPrimvarRecord) {
+            primvars = inheritedPrimvarRecord->primvars;
+        }
+        UsdGeomPrimvarsAPI primvarsAPI(prim);
+        std::vector<UsdGeomPrimvar> local = primvarsAPI.GetPrimvarsWithValues();
+        primvars.insert(primvars.end(), local.begin(), local.end());
+        for (auto const &pv : primvars) {
+            _ComputeAndMergePrimvar(prim, cachePath, pv, UsdTimeCode(),
+                                    valueCache);
+        }
     }
 }
 

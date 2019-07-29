@@ -1,5 +1,5 @@
 set(PXR_PREFIX pxr/imaging)
-set(PXR_PACKAGE hdStream)
+set(PXR_PACKAGE hdStorm)
 
 if (NOT ${PXR_ENABLE_GL_SUPPORT})
     message(STATUS
@@ -16,7 +16,7 @@ if (OPENSUBDIV_HAS_GLSL_COMPUTE)
     add_definitions(-DOPENSUBDIV_HAS_GLSL_COMPUTE)
 endif()
 
-pxr_plugin(hdStream
+pxr_plugin(hdStorm
     LIBRARIES
         plug
         tf

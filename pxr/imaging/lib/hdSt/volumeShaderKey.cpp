@@ -1,5 +1,5 @@
 //
-// Copyright 2018 Pixar
+// Copyright 2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,12 +21,40 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-// sort.cpp
-//
+#include "pxr/pxr.h"
+#include "pxr/imaging/hdSt/volumeShaderKey.h"
+#include "pxr/base/tf/staticTokens.h"
 
-#include "pxr/base/work/filter.h"
-#include "pxr/base/work/threadLimits.h"
+PXR_NAMESPACE_OPEN_SCOPE
 
-//
-// WorkParallelSortN implementation for TBB
-//
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    ((baseGLSLFX,         "volume.glslfx"))
+
+    // point id mixins (provide functions for picking system)
+    ((pointIdFS,          "PointId.Fragment.Fallback"))
+
+    // Volume shader (eventually provided by volume material)
+    ((volumeShader,       "Volume.VolumeShader"))
+
+    // main for all the shader stages
+    ((mainVS,             "Volume.Vertex"))
+    ((mainFS,             "Volume.Fragment"))
+
+    // instancing       
+    ((instancing,         "Instancing.Transform"))
+);
+
+HdSt_VolumeShaderKey::HdSt_VolumeShaderKey()
+    : glslfx(_tokens->baseGLSLFX),
+      VS{ _tokens->instancing, _tokens->mainVS, TfToken() },
+      FS{ _tokens->pointIdFS, _tokens->instancing,
+          _tokens->volumeShader, _tokens->mainFS, TfToken() }
+{
+}
+
+HdSt_VolumeShaderKey::~HdSt_VolumeShaderKey() = default;
+
+PXR_NAMESPACE_CLOSE_SCOPE
+

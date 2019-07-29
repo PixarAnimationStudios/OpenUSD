@@ -207,6 +207,42 @@ class TestUsdGeomComputeAtTimeBase(object):
                 Gf.Vec3d(velocityTime * 5, velocityTime * 10, velocityTime * 20))])
         self.assertAllMatrixListsEqual(xformsArray, compares)
 
+    def test_OneInstanceTimeSampleCorrespondenceValidation(self):
+        stage = Usd.Stage.Open("test.usda")
+        piDiffNumberPositionsAndVelocities = UsdGeom.PointInstancer(stage.GetPrimAtPath("/OneInstanceDifferingNumberPositionsAndVelocities"))
+        piUnalignedPositionsAndVelocities = UsdGeom.PointInstancer(stage.GetPrimAtPath("/OneInstanceUnalignedPositionsAndVelocities"))
+        piPositionsOnly = UsdGeom.PointInstancer(stage.GetPrimAtPath("/OneInstanceUnalignedPositionsOnly"))
+
+        baseTime = 2
+        tr = timeRange(baseTime)
+        xformsArrayDiffNumberPositionsAndVelocities = self.computeInstanceTransforms(piDiffNumberPositionsAndVelocities, tr, baseTime)
+        xformsArrayUnalignedPositionsAndVelocities = self.computeInstanceTransforms(piUnalignedPositionsAndVelocities, tr, baseTime)
+        xformsArrayPositionsOnly = self.computeInstanceTransforms(piPositionsOnly, tr, baseTime)
+
+        # Test that time sample correspondence validation works for positions 
+        # and velocities by comparing the transformations of the point instancers
+        # with invalid time sample correspondence with the transformations of the 
+        # point instancer that only has time samples for positions
+        self.assertAllMatrixListsEqual(xformsArrayDiffNumberPositionsAndVelocities, xformsArrayPositionsOnly)
+        self.assertAllMatrixListsEqual(xformsArrayUnalignedPositionsAndVelocities, xformsArrayPositionsOnly)
+
+        piDiffNumberOrientationsAndAngularVelocities = UsdGeom.PointInstancer(stage.GetPrimAtPath("/OneInstanceDifferingNumberOrientationsAndAngularVelocities"))
+        piUnalignedOrientationsAndAngularVelocities = UsdGeom.PointInstancer(stage.GetPrimAtPath("/OneInstanceUnalignedOrientationsAndAngularVelocities"))
+        piOrientationsOnly = UsdGeom.PointInstancer(stage.GetPrimAtPath("/OneInstanceUnalignedOrientationsOnly"))
+
+        baseTime = 2
+        tr = timeRange(baseTime)
+        xformsArrayDiffNumberOrientationsAndAngularVelocities = self.computeInstanceTransforms(piDiffNumberOrientationsAndAngularVelocities, tr, baseTime)
+        xformsArrayUnalignedOrientationsAndAngularVelocities = self.computeInstanceTransforms(piUnalignedOrientationsAndAngularVelocities, tr, baseTime)
+        xformsArrayOrientationsOnly = self.computeInstanceTransforms(piOrientationsOnly, tr, baseTime)
+
+        # Test that time sample correspondence validation works for orientations 
+        # and angular velocities by comparing the transformations of the point 
+        # instancers with invalid time sample correspondence with the transformations 
+        # of the point instancer that only has time samples for orientations
+        self.assertAllMatrixListsEqual(xformsArrayDiffNumberOrientationsAndAngularVelocities, xformsArrayOrientationsOnly)
+        self.assertAllMatrixListsEqual(xformsArrayUnalignedOrientationsAndAngularVelocities, xformsArrayOrientationsOnly)
+
     def test_OneInstanceVelocityScale(self):
         stage = Usd.Stage.Open("test.usda")
         pi = UsdGeom.PointInstancer(stage.GetPrimAtPath("/OneInstanceVelocityScale"))

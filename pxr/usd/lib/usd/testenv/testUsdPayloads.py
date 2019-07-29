@@ -418,12 +418,9 @@ class TestUsdPayloads(unittest.TestCase):
             baz_1.Load()
             self.assertEqual(baz.GetMaster(), baz_1.GetMaster())
 
-            # Nested payloads in masters can be individually unloaded. This
-            # affects all instances.
-            garply.Unload()
-            self.assertTrue(not garply.IsLoaded())
-            self.assertTrue(not garply.GetMaster())
-            self.assertEqual(baz.GetMaster(), baz_1.GetMaster())
+            # Prims in masters cannot be individually (un)loaded.
+            with self.assertRaises(Tf.ErrorException):
+                garply.Unload()
 
     def test_Payloads(self):
         for fmt in allFormats:
@@ -556,6 +553,20 @@ class TestUsdPayloads(unittest.TestCase):
             # Again, assert that it's loaded because anything without a payload 
             # is considered loaded.
             self.assertTrue(intPayload.IsLoaded())
+
+            # Set the list of payloads to explicitly empty from cleared
+            # verifying that it is indeed set to explicit.empty list op
+            self.assertTrue(intPayload.GetPayloads().SetPayloads([]))
+            # XXX: Though there is payload metadata that is an explicit empty
+            # payload list op, HasAuthoredPayloads still returns true as there
+            # are no actual payloads for this prim. This is inconsistent with
+            # explicit empty list op behavior of 
+            # HasAuthoredReferences/Inherits/Specializes which only return 
+            # whether metadata is present. This inconsistency should be fixed.
+            self.assertTrue(not intPayload.HasAuthoredPayloads())
+            explicitEmpty = Sdf.PayloadListOp()
+            explicitEmpty.ClearAndMakeExplicit()
+            self.assertEqual(intPayload.GetMetadata("payload"), explicitEmpty)
 
     def test_Bug160419(self):
         for fmt in allFormats:

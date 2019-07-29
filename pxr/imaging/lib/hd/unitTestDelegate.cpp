@@ -560,22 +560,22 @@ HdUnitTestDelegate::GetRenderTag(SdfPath const& id)
     HD_TRACE_FUNCTION();
 
     if (_hiddenRprims.find(id) != _hiddenRprims.end()) {
-        return HdTokens->hidden;
+        return HdRenderTagTokens->hidden;
     }
 
     if (_Mesh *mesh = TfMapLookupPtr(_meshes, id)) {
         if (mesh->guide) {
-            return HdTokens->guide;
+            return HdRenderTagTokens->guide;
         } else {
-            return HdTokens->geometry;
+            return HdRenderTagTokens->geometry;
         }
     } else if (_curves.count(id) > 0) {
-        return HdTokens->geometry;
+        return HdRenderTagTokens->geometry;
     } else if (_points.count(id) > 0) {
-        return HdTokens->geometry;
+        return HdRenderTagTokens->geometry;
     }
 
-    return HdTokens->hidden;
+    return HdRenderTagTokens->hidden;
 }
 
 /*virtual*/

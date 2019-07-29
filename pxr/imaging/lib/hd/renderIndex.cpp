@@ -717,7 +717,7 @@ HdRenderIndex::GetRenderTag(SdfPath const& id) const
 {
     _RprimInfo const* info = TfMapLookupPtr(_rprimMap, id);
     if (info == nullptr) {
-        return HdTokens->hidden;
+        return HdRenderTagTokens->hidden;
     }
 
     return info->rprim->GetRenderTag(info->sceneDelegate);

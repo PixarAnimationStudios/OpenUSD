@@ -166,6 +166,11 @@ if (NOT PXR_HEADLESS_TEST_MODE)
         DEST testusdviewSkinning
     )
 
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewPrimTreeExpansion
+        DEST testusdviewPrimTreeExpansion
+    )
+
     pxr_register_test(testusdviewAlive                                               
         PRE_COMMAND "${PYTHON_EXECUTABLE} testUsdviewAliveSetup.py"
         PYTHON
@@ -360,6 +365,12 @@ if (NOT PXR_HEADLESS_TEST_MODE)
     pxr_register_test(testusdviewSkinning
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewSkinning.py arm.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+    
+    pxr_register_test(testusdviewPrimTreeExpansion
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewPrimTreeExpansion.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
 

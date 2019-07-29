@@ -139,6 +139,12 @@ HdRenderDelegate::GetRenderSettingsVersion() const
     return _settingsVersion;
 }
 
+VtDictionary 
+HdRenderDelegate::GetRenderStats() const
+{
+    return VtDictionary();
+}
+
 void
 HdRenderDelegate::_PopulateDefaultSettings(
     HdRenderSettingDescriptorList const& defaultSettings)
@@ -149,6 +155,24 @@ HdRenderDelegate::_PopulateDefaultSettings(
                 defaultSettings[i].defaultValue;
         }
     }
+}
+
+bool
+HdRenderDelegate::IsPauseSupported() const
+{
+    return false;
+}
+
+bool
+HdRenderDelegate::Pause()
+{
+    return false;
+}
+
+bool
+HdRenderDelegate::Resume()
+{
+    return false;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

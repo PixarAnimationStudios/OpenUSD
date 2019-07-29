@@ -247,6 +247,10 @@ HdxColorizeTask::Execute(HdTaskContext* ctx)
     // we failed to look up the renderBuffer in the render index,
     // in which case the error was previously reported
     if (!_aovBuffer) {
+        // If there is no aov buffer to colorize, then this task is never
+        // going to do anything, and so should immediately be marked as
+        // converged.
+        _converged = true;
         return;
     }
 
@@ -283,9 +287,10 @@ HdxColorizeTask::Execute(HdTaskContext* ctx)
     // Colorize!
 
     if (_depthBuffer && _depthBuffer->GetFormat() == HdFormatFloat32) {
+        uint8_t* db = reinterpret_cast<uint8_t*>(_depthBuffer->Map());
         _compositor.UpdateDepth(_depthBuffer->GetWidth(),
                                 _depthBuffer->GetHeight(),
-                                _depthBuffer->Map());
+                                db);
         _depthBuffer->Unmap();
     } else {
         // If no depth buffer is bound, don't draw with depth.
@@ -296,9 +301,10 @@ HdxColorizeTask::Execute(HdTaskContext* ctx)
         _aovBuffer->GetFormat() == HdFormatUNorm8Vec4) {
         // Special handling for color: to avoid a copy, just read the data
         // from the render buffer.
+        uint8_t* ab = reinterpret_cast<uint8_t*>(_aovBuffer->Map());
         _compositor.UpdateColor(_aovBuffer->GetWidth(),
                                 _aovBuffer->GetHeight(),
-                                _aovBuffer->Map());
+                                ab);
         _aovBuffer->Unmap();
     } else {
 
@@ -309,8 +315,8 @@ HdxColorizeTask::Execute(HdTaskContext* ctx)
         for (auto& colorizer : _colorizerTable) {
             if (_aovName == colorizer.aovName &&
                 _aovBuffer->GetFormat() == colorizer.aovFormat) {
-                colorizer.callback(_outputBuffer, _aovBuffer->Map(),
-                                   _outputBufferSize);
+                uint8_t* ab = reinterpret_cast<uint8_t*>(_aovBuffer->Map());                    
+                colorizer.callback(_outputBuffer, ab, _outputBufferSize);
                 _aovBuffer->Unmap();
                 colorized = true;
                 break;
@@ -321,8 +327,8 @@ HdxColorizeTask::Execute(HdTaskContext* ctx)
         // function...
         if (!colorized && HdParsedAovToken(_aovName).isPrimvar &&
             _aovBuffer->GetFormat() == HdFormatFloat32Vec3) {
-            _colorizePrimvar(_outputBuffer, _aovBuffer->Map(),
-                             _outputBufferSize);
+            uint8_t* ab = reinterpret_cast<uint8_t*>(_aovBuffer->Map());
+            _colorizePrimvar(_outputBuffer, ab, _outputBufferSize);
             _aovBuffer->Unmap();
             colorized = true;
         }

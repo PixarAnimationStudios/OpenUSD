@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,22 +21,30 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef KATANA_USDBAKE_DEBUGCODES_H
-#define KATANA_USDBAKE_DEBUGCODES_H
+#ifndef HDST_RPRIM_UTILS_H
+#define HDST_RPRIM_UTILS_H
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/debug.h"
+#include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hd/sceneDelegate.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdDrawItem;
+class HdRprim;
+class HdRprimSharedData;
 
-TF_DEBUG_CODES(
-
-    KATANA_USDBAKE_CONNECTIONS
-
-);
-
+// Given prim information it will create sources representing
+// constant primvars and hand it to the resource registry.
+HDST_API
+void HdStPopulateConstantPrimvars(
+    HdRprim *prim,
+    HdRprimSharedData *sharedData,
+    HdSceneDelegate *delegate,
+    HdDrawItem *drawItem,
+    HdDirtyBits *dirtyBits,
+    HdPrimvarDescriptorVector const& constantPrimvars);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif
+#endif // HDST_RPRIM_UTILS_H

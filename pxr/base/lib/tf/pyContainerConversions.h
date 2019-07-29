@@ -256,7 +256,7 @@ namespace TfPyContainerConversions {
         bool is_range = PyRange_Check(obj_ptr);
         std::size_t i=0;
         if (!all_elements_convertible(obj_iter, is_range, i)) return 0;
-        if (!is_range) assert(i == obj_size);
+        if (!is_range) assert(i == (std::size_t)obj_size);
       }
       return obj_ptr;
     }

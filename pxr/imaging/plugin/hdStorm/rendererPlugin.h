@@ -1,5 +1,5 @@
 //
-// Copyright 2018 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,37 +21,33 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef WORK_SORT_H
-#define WORK_SORT_H
+#ifndef HDSTORM_RENDERER_PLUGIN_H
+#define HDSTORM_RENDERER_PLUGIN_H
 
-/// \file work/sort.h
-#include "pxr/base/work/threadLimits.h"
-
-#include <tbb/parallel_sort.h>
-#include <algorithm>
+#include "pxr/pxr.h"
+#include "pxr/imaging/hdx/rendererPlugin.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdStormRendererPlugin final : public HdxRendererPlugin {
+public:
+    HdStormRendererPlugin()          = default;
+    virtual ~HdStormRendererPlugin() = default;
 
-///////////////////////////////////////////////////////////////////////////////
-///
-/// WorkParallelSort(Container& container)
-///
-///
-/// Sorts in-place a container that has a begin and end iterator
-///
-template <typename C>
-void 
-WorkParallelSort(C* container)
-{
-    // Don't bother with parallel_for, if concurrency is limited to 1.
-    if (WorkGetConcurrencyLimit() > 1) {
-        tbb::parallel_sort(container->begin(), container->end());
-    }else{
-        std::sort(container->begin(), container->end());
-    }
-}
+    virtual HdRenderDelegate *CreateRenderDelegate() override;
+    virtual HdRenderDelegate *CreateRenderDelegate(
+        HdRenderSettingsMap const& settingsMap) override;
+
+    virtual void DeleteRenderDelegate(HdRenderDelegate *renderDelegate) 
+        override;
+
+    virtual bool IsSupported() const override;
+
+private:
+    HdStormRendererPlugin(const HdStormRendererPlugin &)             = delete;
+    HdStormRendererPlugin &operator =(const HdStormRendererPlugin &) = delete;
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // WORK_SORT_H
+#endif // HDSTORM_RENDERER_PLUGIN_H

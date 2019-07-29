@@ -47,21 +47,14 @@
 #include <boost/python/handle.hpp>
 #include <boost/python/object.hpp>
 #include <boost/python/object/function.hpp>
-#include <boost/python/str.hpp>
 #include <boost/python/tuple.hpp>
 #include <boost/python/dict.hpp>
-#include <boost/python/make_function.hpp>
 #include <boost/python/raw_function.hpp>
 #include <boost/python/scope.hpp>
 
-#include <boost/mpl/vector/vector10.hpp>
-
 #include <string>
-#include <vector>
-#include <functional>
 
 using std::string;
-using std::vector;
 
 using namespace boost::python;
 
@@ -71,11 +64,10 @@ class Tf_ModuleProcessor {
 public:
 
     typedef Tf_ModuleProcessor This;
-    
-    typedef std::function<
-        bool (char const *, object const &, object const &)
-    > WalkCallbackFn;
-    
+
+    using WalkCallbackFn =
+        bool (This::*) (char const *, object const &, object const &);
+
     inline bool IsBoostPythonFunc(object const &obj)
     {
         if (!_cachedBPFuncType) {
@@ -118,7 +110,7 @@ public:
     }
 
 private:
-    void _WalkModule(object const &obj, WalkCallbackFn const &callback,
+    void _WalkModule(object const &obj, WalkCallbackFn callback,
                      TfHashSet<PyObject *, TfHash> *visitedObjs)
     {
 #if PY_MAJOR_VERSION == 3
@@ -136,7 +128,7 @@ private:
                 object value = items[i][1];
                 if (!visitedObjs->count(value.ptr())) {
                     const std::string name = PyString_AsStdString(object(items[i][0]).ptr());
-                    bool keepGoing = callback(name.c_str(), obj, value);
+                    bool keepGoing = (this->*callback)(name.c_str(), obj, value);
                     visitedObjs->insert(value.ptr());
                     if (IsBoostPythonClass(value) && keepGoing) {
                         _WalkModule(value, callback, visitedObjs);
@@ -147,59 +139,74 @@ private:
     }
 
 public:
-    void WalkModule(object const &obj, WalkCallbackFn const &callback)
+    void WalkModule(object const &obj, WalkCallbackFn callback)
     {
         TfHashSet<PyObject *, TfHash> visited;
         _WalkModule(obj, callback, &visited);
     }
 
-    static handle<> _InvokeWithErrorHandling(object const &fn,
-                                             string const &funcName,
-                                             string const &fileName,
-                                             int funcLine,
-                                             tuple const &args, dict const &kw)
+    class _InvokeWithErrorHandling
     {
-        // Fabricate a python tracing event to record the python -> c++ ->
-        // python transition.
-        TfPyTraceInfo info;
-        info.arg = NULL;
-        info.funcName = funcName.c_str();
-        info.fileName = fileName.c_str();
-        info.funcLine = 0;
+    public:
+        _InvokeWithErrorHandling(object const &fn,
+                                 string const &funcName,
+                                 string const &fileName)
+            : _fn(fn)
+            , _funcName(funcName)
+            , _fileName(fileName)
+        {}
 
-        // Fabricate the call tracing event.
-        info.what = PyTrace_CALL;
-        Tf_PyFabricateTraceEvent(info);
+        handle<> operator()(tuple const &args, dict const &kw) const {
 
-        // Make an error mark.
-        TfErrorMark m;
+            // Fabricate a python tracing event to record the python -> c++ ->
+            // python transition.
+            TfPyTraceInfo info;
+            info.arg = NULL;
+            info.funcName = _funcName.c_str();
+            info.fileName = _fileName.c_str();
+            info.funcLine = 0;
 
-        // Call the function.
-        handle<> ret(allow_null(PyObject_Call(fn.ptr(), args.ptr(), kw.ptr())));
+            // Fabricate the call tracing event.
+            info.what = PyTrace_CALL;
+            Tf_PyFabricateTraceEvent(info);
 
-        // Fabricate the return tracing event.
-        info.what = PyTrace_RETURN;
-        Tf_PyFabricateTraceEvent(info);
+            // Make an error mark.
+            TfErrorMark m;
 
-        // If the call did not complete successfully, just throw back into
-        // python.
-        if (ARCH_UNLIKELY(!ret)) {
-            TF_VERIFY(PyErr_Occurred());
-            throw_error_already_set();
+            // Call the function.
+            handle<> ret(allow_null(
+                             PyObject_Call(_fn.ptr(), args.ptr(), kw.ptr())));
+
+            // Fabricate the return tracing event.
+            info.what = PyTrace_RETURN;
+            Tf_PyFabricateTraceEvent(info);
+
+            // If the call did not complete successfully, just throw back into
+            // python.
+            if (ARCH_UNLIKELY(!ret)) {
+                TF_VERIFY(PyErr_Occurred());
+                throw_error_already_set();
+            }
+
+            // If the call completed successfully, then we need to see if any tf
+            // errors occurred, and if so, convert them to python exceptions.
+            if (ARCH_UNLIKELY(!m.IsClean() &&
+                              TfPyConvertTfErrorsToPythonException(m))) {
+                throw_error_already_set();
+            }
+
+            // Otherwise everything was clean -- return the result.
+            return ret;
         }
 
-        // If the call completed successfully, then we need to see if any tf
-        // errors occurred, and if so, convert them to python exceptions.
-        if (ARCH_UNLIKELY(!m.IsClean() &&
-                          TfPyConvertTfErrorsToPythonException(m))) {
-            throw_error_already_set();
-        }
-    
-        // Otherwise everything was clean -- return the result.
-        return ret;
-    }
+    private:
+        object _fn;
+        std::string _funcName;
+        std::string _fileName;
+    };
 
-    object DecorateForErrorHandling(const char *name, object owner, object fn)
+    object DecorateForErrorHandling(
+        const char *name, object const &owner, object const &fn)
     {
         object ret = fn;
         if (ARCH_LIKELY(fn.ptr() != Py_None)) {
@@ -218,21 +225,13 @@ public:
                 fullNamePrefix = &localPrefix;
             }
 
-            ret = raw_function
-                (make_function
-                 (std::bind
-                  (_InvokeWithErrorHandling, fn,
-                   *fullNamePrefix + "." + name, *fullNamePrefix, 0,
-                   std::placeholders::_1, std::placeholders::_2),
-                  default_call_policies(),
-                  boost::mpl::vector3<handle<>, tuple, dict>()));
+            ret = raw_function(
+                _InvokeWithErrorHandling(
+                    fn, *fullNamePrefix + "." + name, *fullNamePrefix));
 
-            // set the wrapper function's name, and namespace name.
-            // XXX copy __name__, __doc__, possibly __dict__.
-            //wrapperFn.attr("__name__") = handle<>(PyObject_GetAttrString(fn, "__name__"));
             ret.attr("__doc__") = fn.attr("__doc__");
         }
-        
+
         return ret;
     }
 
@@ -244,7 +243,8 @@ public:
         return newFn;
     }
     
-    bool WrapForErrorHandlingCB(char const *name, object owner, object obj)
+    bool WrapForErrorHandlingCB(
+        char const *name, object const &owner, object const &obj)
     {
         // Handle no-throw list stuff...
         if (!strcmp(name, "RepostErrors") || 
@@ -288,7 +288,7 @@ public:
                 object newProp =
                     propType(newfget, newfset, newfdel,
                              object(obj.attr("__doc__")));
-                owner.attr(name) = newProp;
+                setattr(owner, name, newProp);
             }
             return false;
         } else if (IsStaticMethod(obj)) {
@@ -298,8 +298,8 @@ public:
                 // decorating the underlying function.
                 object newFn =
                     ReplaceFunctionOnOwner(name, owner, underlyingFn);
-                owner.attr(name) =
-                    object(handle<>(PyStaticMethod_New(newFn.ptr())));
+                setattr(owner, name,
+                    object(handle<>(PyStaticMethod_New(newFn.ptr()))));
             }
             return false;
         } else if (IsClassMethod(obj)) {
@@ -309,8 +309,8 @@ public:
                 // the underlying function.
                 object newFn =
                     ReplaceFunctionOnOwner(name, owner, underlyingFn);
-                owner.attr(name) =
-                    object(handle<>(PyClassMethod_New(newFn.ptr())));
+                setattr(owner, name,
+                    object(handle<>(PyClassMethod_New(newFn.ptr()))));
             }
             return false;
         }
@@ -319,13 +319,12 @@ public:
     }
 
     void WrapForErrorHandling() {
-        namespace ph = std::placeholders;
-        WalkModule(_module, std::bind(&This::WrapForErrorHandlingCB,
-                                      this, ph::_1, ph::_2, ph::_3));
+        WalkModule(_module, &This::WrapForErrorHandlingCB);
     }
 
 
-    bool FixModuleAttrsCB(char const *name, object const &owner, object obj)
+    bool FixModuleAttrsCB(
+        char const *name, object const& owner, object const &obj)
     {
         if (PyObject_HasAttrString(obj.ptr(), "__module__")) {
             PyObject_SetAttrString(obj.ptr(), "__module__",
@@ -341,9 +340,7 @@ public:
     }
     
     void FixModuleAttrs() {
-        namespace ph = std::placeholders;
-        WalkModule(_module, std::bind(&This::FixModuleAttrsCB,
-                                      this, ph::_1, ph::_2, ph::_3));
+        WalkModule(_module, &This::FixModuleAttrsCB);
     }
 
 

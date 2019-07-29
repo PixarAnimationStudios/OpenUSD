@@ -146,7 +146,8 @@ private:
     VtValue _getDefaultValue(
         const RixShaderParameter* param,
         const std::string& oslType,
-        bool isArray
+        bool isArray,
+        bool isSdfAssetPath
     ) const;
 
 private:

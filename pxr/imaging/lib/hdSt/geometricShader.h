@@ -56,7 +56,9 @@ public:
         PRIM_MESH_REFINED_TRIANGLES, // e.g: loop subdiv
         PRIM_MESH_COARSE_QUADS,      // e.g: quadrangulation for ptex
         PRIM_MESH_REFINED_QUADS,     // e.g: catmark/bilinear subdiv
-        PRIM_MESH_PATCHES
+        PRIM_MESH_PATCHES,
+        PRIM_VOLUME                  // Simply draws triangles of bounding
+                                     // box of a volume.
     };                                         
 
     /// static query functions for PrimitiveType
@@ -80,7 +82,8 @@ public:
 
     static inline bool IsPrimTypeTriangles(PrimitiveType primType) {
         return (primType == PrimitiveType::PRIM_MESH_COARSE_TRIANGLES ||
-                primType == PrimitiveType::PRIM_MESH_REFINED_TRIANGLES);
+                primType == PrimitiveType::PRIM_MESH_REFINED_TRIANGLES ||
+                primType == PrimitiveType::PRIM_VOLUME);
     }
 
     static inline bool IsPrimTypeQuads(PrimitiveType primType) {

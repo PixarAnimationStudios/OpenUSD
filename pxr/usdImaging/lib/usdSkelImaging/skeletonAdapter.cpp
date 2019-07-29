@@ -649,6 +649,19 @@ UsdSkelImagingSkeletonAdapter::MarkMaterialDirty(const UsdPrim& prim,
 }
 
 
+PxOsdSubdivTags
+UsdSkelImagingSkeletonAdapter::GetSubdivTags(UsdPrim const& usdPrim,
+                                             SdfPath const& cachePath,
+                                             UsdTimeCode time) const
+{
+    if (_IsSkinnedPrimPath(cachePath)) {
+        UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(usdPrim);
+        return adapter->GetSubdivTags(usdPrim, cachePath, time);
+    }
+    return UsdImagingPrimAdapter::GetSubdivTags(usdPrim, cachePath, time);
+}
+
+
 namespace {
 
 void
@@ -1417,13 +1430,14 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinningComputationForTime(
             SdfPath skinnedPrimPath =
                 UsdImagingGprimAdapter::_ResolveCachePath(
                             skinnedPrim.GetPath(), instancerContext);
-            SdfPath aggrCompId =
-                _GetSkinningInputAggregatorComputationPath(skinnedPrimPath);
+            SdfPath renderIndexAggrCompId = _ConvertCachePathToIndexPath(
+                _GetSkinningInputAggregatorComputationPath(skinnedPrimPath));
             
             HdExtComputationInputDescriptorVector compInputDescs;
             for (auto const& input : compInputNames) {
                 compInputDescs.emplace_back(
-                    HdExtComputationInputDescriptor(input, aggrCompId, input));
+                    HdExtComputationInputDescriptor(input,
+                        renderIndexAggrCompId, input));
             }
             valueCache->GetExtComputationInputs(computationPath)
                 = compInputDescs;
@@ -1887,7 +1901,8 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinnedPrimForTime(
                         HdTokens->points,
                         HdInterpolationVertex,
                         HdPrimvarRoleTokens->point,
-                        _GetSkinningComputationPath(skinnedPrimPath),
+                        _ConvertCachePathToIndexPath(
+                            _GetSkinningComputationPath(skinnedPrimPath)),
                         _tokens->skinnedPoints,
                         pointsType);
         

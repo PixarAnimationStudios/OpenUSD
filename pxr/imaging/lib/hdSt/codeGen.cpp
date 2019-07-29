@@ -652,7 +652,18 @@ HdSt_CodeGen::Compile()
         _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
     }
     TF_FOR_ALL (it, _metaData.shaderParameterBinding) {
-        _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
+
+        // XXX: HdBinding::PRIMVAR_REDIRECT won't define an accessor if it's
+        // an alias of like-to-like, so we want to suppress the HD_HAS_* flag
+        // as well.
+        HdBinding::Type bindingType = it->first.GetType();
+        if (bindingType == HdBinding::PRIMVAR_REDIRECT) {
+            if (it->second.name != it->second.inPrimvars[0]) {
+                _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
+            }
+        } else {
+            _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
+        }
     }
 
     // mixin shaders

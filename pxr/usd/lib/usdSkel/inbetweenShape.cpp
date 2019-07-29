@@ -30,6 +30,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((inbetweensPrefix, "inbetweens:"))
+    ((normalOffsetsSuffix, ":normalOffsets"))
 );
 
 
@@ -70,11 +71,11 @@ UsdSkelInbetweenShape::_IsValidInbetweenName(const std::string& name,
                                              bool quiet)
 {
     // All properly namespaced attributes are legal inbetweens.
-    // However, if we extend the schema to include any special attributes
-    // -- say, inbetweens:foo:pointIndices, to allow each inbetween to
-    // specify its own point indices -- then we should not consider such
-    // names to be invalid.
-    return TfStringStartsWith(name, _tokens->inbetweensPrefix);
+    // We do, however, need to exclude extra properties that apply
+    // within the namespace of each inbetween. For now, the only
+    // such property is 'normalOffsets', which we elide here manually.
+    return TfStringStartsWith(name, _tokens->inbetweensPrefix) &&
+          !TfStringEndsWith(name, _tokens->normalOffsetsSuffix);
 }
 
 
@@ -118,6 +119,36 @@ UsdSkelInbetweenShape::_GetNamespacePrefix()
 }
 
 
+UsdAttribute
+UsdSkelInbetweenShape::_GetNormalOffsetsAttr(bool create) const
+{
+    const TfToken normalOffsetsName(_attr.GetName().GetString() +
+                                    _tokens->normalOffsetsSuffix.GetString());
+
+    if (!create) {
+        return _attr.GetPrim().GetAttribute(normalOffsetsName);
+    } else {
+        return _attr.GetPrim().CreateAttribute(
+            normalOffsetsName, SdfValueTypeNames->Vector3fArray,
+            /*custom*/ false, SdfVariabilityVarying);
+    }
+}
+
+
+UsdAttribute
+UsdSkelInbetweenShape::GetNormalOffsetsAttr() const
+{
+    return _GetNormalOffsetsAttr(/*create*/ false);
+}
+
+
+UsdAttribute
+UsdSkelInbetweenShape::CreateNormalOffsetsAttr() const
+{
+    return _GetNormalOffsetsAttr(/*create*/ true);
+}
+
+
 bool
 UsdSkelInbetweenShape::GetWeight(float* weight) const
 {
@@ -150,6 +181,26 @@ bool
 UsdSkelInbetweenShape::SetOffsets(const VtVec3fArray& offsets) const
 {
     return _attr.Set(offsets);
+}
+
+
+bool
+UsdSkelInbetweenShape::GetNormalOffsets(VtVec3fArray* offsets) const
+{
+    if (const UsdAttribute attr = GetNormalOffsetsAttr()) {
+        return attr.Get(offsets);
+    }
+    return false;
+}
+
+
+bool
+UsdSkelInbetweenShape::SetNormalOffsets(const VtVec3fArray& offsets) const
+{
+    if (const UsdAttribute attr = _GetNormalOffsetsAttr(/*create*/ true)) {
+        return attr.Set(offsets);
+    }
+    return false;
 }
 
 

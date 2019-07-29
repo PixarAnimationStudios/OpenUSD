@@ -80,12 +80,10 @@ typedef boost::shared_ptr<HdStShaderCode> HdStShaderCodeSharedPtr;
 struct HdxPickTaskParams
 {
     HdxPickTaskParams()
-        : alphaThreshold(0.0f)
-        , cullStyle(HdCullStyleNothing)
+        : cullStyle(HdCullStyleNothing)
         , enableSceneMaterials(true)
     {}
 
-    float alphaThreshold;
     HdCullStyle cullStyle;
     bool enableSceneMaterials;
 };

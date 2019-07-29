@@ -24,14 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/specializes.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/valueUtils.h"
-
-#include "pxr/usd/sdf/changeBlock.h"
-#include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/primSpec.h"
-#include "pxr/usd/sdf/schema.h"
+#include "pxr/usd/usd/listEditImpl.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -39,143 +32,41 @@ PXR_NAMESPACE_OPEN_SCOPE
 // UsdSpecializes
 // ------------------------------------------------------------------------- //
 
-namespace
+using _ListEditImpl = 
+    Usd_ListEditImpl<UsdSpecializes, SdfSpecializesProxy>;
+
+// The implementation doesn't define this function as it needs to be specialized
+// so we implement it here.
+template <>
+SdfSpecializesProxy 
+_ListEditImpl::_GetListEditorForSpec(const SdfPrimSpecHandle &spec)
 {
-
-SdfPath 
-_TranslatePath(const SdfPath& path, const UsdEditTarget& editTarget)
-{
-    if (path.IsEmpty()) {
-        TF_CODING_ERROR("Invalid empty path");
-        return SdfPath();
-    }
-
-    // Global specializes aren't expected to be mappable across non-local 
-    // edit targets, so we can just use the given path as-is.
-    if (path.IsRootPrimPath()) {
-        return path;
-    }
-
-    const SdfPath mappedPath = editTarget.MapToSpecPath(path);
-    if (mappedPath.IsEmpty()) {
-        TF_CODING_ERROR(
-            "Cannot map <%s> to current edit target.", path.GetText());
-    }
-
-    // If the edit target points inside a variant, the mapped path may 
-    // contain a variant selection. We need to strip this out, since
-    // inherit paths may not contain variant selections.
-    return mappedPath.StripAllVariantSelections();
-}
-
+    return spec->GetSpecializesList();
 }
 
 bool
 UsdSpecializes::AddSpecialize(const SdfPath &primPathIn, 
                               UsdListPosition position)
 {
-    if (!_prim) {
-        TF_CODING_ERROR("Invalid prim");
-        return false;
-    }
-
-    const SdfPath primPath = 
-        _TranslatePath(primPathIn, _prim.GetStage()->GetEditTarget());
-    if (primPath.IsEmpty()) {
-        return false;
-    }
-
-    SdfChangeBlock block;
-    if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
-        Usd_InsertListItem( spec->GetSpecializesList(), primPath, position );
-        return true;
-    }
-    return false;
+    return _ListEditImpl::Add(*this, primPathIn, position);
 }
 
 bool
 UsdSpecializes::RemoveSpecialize(const SdfPath &primPathIn)
 {
-    if (!_prim) {
-        TF_CODING_ERROR("Invalid prim");
-        return false;
-    }
-
-    const SdfPath primPath = 
-        _TranslatePath(primPathIn, _prim.GetStage()->GetEditTarget());
-    if (primPath.IsEmpty()) {
-        return false;
-    }
-
-    SdfChangeBlock block;
-    if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
-        SdfSpecializesProxy paths = spec->GetSpecializesList();
-        paths.Remove(primPath);
-        return true;
-    }
-    return false;
+    return _ListEditImpl::Remove(*this, primPathIn);
 }
 
 bool
 UsdSpecializes::ClearSpecializes()
 {
-    if (!_prim) {
-        TF_CODING_ERROR("Invalid prim");
-        return false;
-    }
-
-    SdfChangeBlock block;
-    if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
-        SdfSpecializesProxy paths = spec->GetSpecializesList();
-        return paths.ClearEdits();
-    }
-    return false;
+    return _ListEditImpl::Clear(*this);
 }
 
 bool 
 UsdSpecializes::SetSpecializes(const SdfPathVector& itemsIn)
 {
-    if (!_prim) {
-        TF_CODING_ERROR("Invalid prim");
-        return false;
-    }
-
-    const UsdEditTarget& editTarget = _prim.GetStage()->GetEditTarget();
-
-    TfErrorMark m;
-
-    SdfPathVector items(itemsIn.size());
-    std::transform(
-        itemsIn.begin(), itemsIn.end(), items.begin(),
-        [&editTarget](const SdfPath& p) { 
-            return _TranslatePath(p, editTarget); 
-        });
-
-    if (!m.IsClean()) {
-        return false;
-    }
-
-    SdfChangeBlock block;
-    if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
-        SdfSpecializesProxy paths = spec->GetSpecializesList();
-        paths.GetExplicitItems() = items;
-    }
-
-    return m.IsClean();
-}
-
-// ---------------------------------------------------------------------- //
-// UsdSpecializes: Private Methods and Members 
-// ---------------------------------------------------------------------- //
-
-SdfPrimSpecHandle
-UsdSpecializes::_CreatePrimSpecForEditing()
-{
-    if (!TF_VERIFY(_prim)) {
-        return SdfPrimSpecHandle();
-    }
-
-    return _prim.GetStage()->_CreatePrimSpecForEditing(_prim);
+    return _ListEditImpl::Set(*this, itemsIn);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

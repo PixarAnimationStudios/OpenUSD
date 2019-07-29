@@ -198,7 +198,7 @@ RtxGlfImagePlugin::Open(TextureCtx& tCtx)
         _ConvertWrapMode(wrapModeS, m_msgHandler, filename, &tCtx.sWrap);
     }
     if (image->GetSamplerMetadata(GL_TEXTURE_WRAP_T, &wrapModeT)) {
-        _ConvertWrapMode(wrapModeT, m_msgHandler, filename, &tCtx.sWrap);
+        _ConvertWrapMode(wrapModeT, m_msgHandler, filename, &tCtx.tWrap);
     }
 
     // Allocate storage for this context.  Renderman will

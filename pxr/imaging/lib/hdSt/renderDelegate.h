@@ -116,6 +116,9 @@ public:
     virtual HdRenderSettingDescriptorList
         GetRenderSettingDescriptors() const override;
 
+    HDST_API
+    virtual VtDictionary GetRenderStats() const override;
+
 private:
     static const TfTokenVector SUPPORTED_RPRIM_TYPES;
     static const TfTokenVector SUPPORTED_SPRIM_TYPES;

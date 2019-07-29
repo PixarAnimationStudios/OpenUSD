@@ -1,5 +1,5 @@
 //
-// Copyright 2017 Pixar
+// Copyright 2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,44 +21,43 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
-#include "pxr/imaging/hdStream/rendererPlugin.h"
+#ifndef PXRUSDTRANSLATORS_STROKE_WRITER_H
+#define PXRUSDTRANSLATORS_STROKE_WRITER_H
 
-#include "pxr/imaging/hdSt/renderDelegate.h"
-#include "pxr/imaging/hdx/rendererPluginRegistry.h"
+/// \file pxrUsdTranslators/strokeWriter.h
+
+#include "pxr/pxr.h"
+#include "usdMaya/primWriter.h"
+
+#include "usdMaya/writeJobContext.h"
+
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/timeCode.h"
+
+#include <maya/MFnDependencyNode.h>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfType)
-{
-    HdxRendererPluginRegistry::Define<HdStreamRendererPlugin>();
-}
 
-HdRenderDelegate *
-HdStreamRendererPlugin::CreateRenderDelegate()
+/// Exports Maya stroke objects (MFnPfxGeometry) as UsdGeomBasisCurves.
+class PxrUsdTranslators_StrokeWriter : public UsdMayaPrimWriter
 {
-    return new HdStRenderDelegate();
-}
+public:
+    PxrUsdTranslators_StrokeWriter(
+            const MFnDependencyNode& depNodeFn,
+            const SdfPath& usdPath,
+            UsdMayaWriteJobContext& jobCtx);
 
-HdRenderDelegate*
-HdStreamRendererPlugin::CreateRenderDelegate(
-    HdRenderSettingsMap const& settingsMap)
-{
-    return new HdStRenderDelegate(settingsMap);
-}
+    void Write(const UsdTimeCode& usdTime) override;
 
-void
-HdStreamRendererPlugin::DeleteRenderDelegate(HdRenderDelegate *renderDelegate)
-{
-    delete renderDelegate;
-}
-
-bool
-HdStreamRendererPlugin::IsSupported() const
-{
-    return HdStRenderDelegate::IsSupported();
-}
+    bool ExportsGprims() const override {
+        return true;
+    }
+};
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+
+#endif

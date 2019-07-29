@@ -212,10 +212,9 @@ public:
     PCP_API
     const PcpLayerStackRefPtr& GetLayerStack() const;
 
-    /// Returns true if this node is a source of direct opinions.
-    /// There should only be one direct node per prim index.
+    /// Returns true if this node is the root node of the prim index graph.
     PCP_API
-    bool IsDirect() const;
+    bool IsRootNode() const;
 
     /// Returns true if this node is due to an ancestral opinion.
     PCP_API

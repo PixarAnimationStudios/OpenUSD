@@ -28,6 +28,7 @@
 #include "usdKatana/utils.h"
 
 #include "pxr/usd/usdGeom/pointInstancer.h"
+#include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/kind/registry.h"
@@ -338,6 +339,7 @@ PxrUsdKatanaReadPointInstancer(
     omitList.reserve(numInstances);
 
     std::map<SdfPath, std::string> protoPathsToKatPaths;
+    std::map<std::string, std::vector<std::string>> usdPrimPathsTracker;
 
     
 
@@ -356,14 +358,14 @@ PxrUsdKatanaReadPointInstancer(
 
         const SdfPath &protoPath = protoPaths[index];
 
-        // Compute the full (Katana) path to this prototype.
+        // Compute the Katana path to this prototype.
         //
-        std::string fullProtoPath;
+        std::string katProtoPath;
         std::map<SdfPath, std::string>::const_iterator pptkpIt =
                 protoPathsToKatPaths.find(protoPath);
         if (pptkpIt != protoPathsToKatPaths.end())
         {
-            fullProtoPath = pptkpIt->second;
+            katProtoPath = pptkpIt->second;
         }
         else
         {
@@ -374,8 +376,8 @@ PxrUsdKatanaReadPointInstancer(
             }
 
             // Determine where (what path) to start building the prototype prim
-            // such that its material bindings will be preserved. This could be
-            // the prototype path itself or an ancestor path.
+            // such that the Look prims that it depends on will also get built.
+            // This could be the prototype path itself or an ancestor path.
             //
             SdfPathVector commonPrefixes;
 
@@ -446,6 +448,7 @@ PxrUsdKatanaReadPointInstancer(
             }
 
             // Fail-safe in case no common prefixes were found.
+            //
             if (commonPrefixes.empty())
             {
                 commonPrefixes.push_back(protoPath);
@@ -453,7 +456,7 @@ PxrUsdKatanaReadPointInstancer(
 
             // XXX Unhandled case.
             // We'll use the first common ancestor even if there is more than
-            // one (which shouldn't appen if the prototype prim and its bindings
+            // one (which shouldn't happen if the prototype prim and its bindings
             // are under the same parent).
             //
             SdfPath::RemoveDescendentPaths(&commonPrefixes);
@@ -475,70 +478,116 @@ PxrUsdKatanaReadPointInstancer(
                         FnGeolibUtil::Path::GetLeafName(buildPath);
             }
 
-            // Start generating the full path to the prototype.
+            // Start generating the Katana path to the prototype.
             //
-            fullProtoPath = katOutputPath + "/" + relBuildPath;
-
-            // Make the common ancestor our instance source.
-            //
-            sourcesBldr.setAttrAtLocation(relBuildPath,
-                    "type", FnKat::StringAttribute("instance source"));
-
-            // Author a tracking attr.
-            //
-            sourcesBldr.setAttrAtLocation(relBuildPath,
-                    "info.usd.sourceUsdPath",
-                    FnKat::StringAttribute(buildPath));
+            katProtoPath = katOutputPath + "/" + relBuildPath;
 
             // Tell the BuildIntermediate op to start building at the common
-            // ancestor.
+            // ancestor, but don't clobber the paths of any other prims that
+            // need to be built out too.
             //
-            sourcesBldr.setAttrAtLocation(relBuildPath,
-                    "usdPrimPath", FnKat::StringAttribute(buildPath));
-            sourcesBldr.setAttrAtLocation(relBuildPath,
-                    "usdPrimName", FnKat::StringAttribute("geo"));
+            const std::string relBuildPathUpOne =
+                    FnGeolibUtil::Path::GetLocationParent(relBuildPath);
+            if (usdPrimPathsTracker.find(relBuildPathUpOne) ==
+                    usdPrimPathsTracker.end())
+            {
+                usdPrimPathsTracker[relBuildPathUpOne].push_back(buildPath);
+            }
+            else
+            {
+                auto& primPaths = usdPrimPathsTracker[relBuildPathUpOne];
+                if (std::find(primPaths.begin(), primPaths.end(), buildPath) ==
+                        primPaths.end())
+                {
+                    primPaths.push_back(buildPath);
+                }
+            }
+            sourcesBldr.setAttrAtLocation(relBuildPathUpOne,
+                    "usdPrimPath", FnKat::StringAttribute(
+                            usdPrimPathsTracker[relBuildPathUpOne]));
 
             // Build an AttributeSet op that will delete the prototype's
             // transform, since we've already folded it into the instance
             // transforms via IncludeProtoXform.
             //
-            FnGeolibServices::AttributeSetOpArgsBuilder asb;
-            asb.deleteAttr("xform");
+            FnGeolibServices::AttributeSetOpArgsBuilder delXformBldr;
+            delXformBldr.deleteAttr("xform");
 
+            std::string relProtoPath = relBuildPath;
             if (protoPath.GetString() != buildPath)
             {
-                // Finish generating the full path to the prototype.
+                // Finish generating the Katana path to the prototype.
                 //
-                fullProtoPath = fullProtoPath + "/geo" + pystring::replace(
+                katProtoPath = katProtoPath + pystring::replace(
                         protoPath.GetString(), buildPath, "");
+                relProtoPath = relProtoPath + pystring::replace(
+                        protoPath.GetString(), buildPath, "");
+            }
 
-                asb.setLocationPaths(fullProtoPath);
+            // Dermine whether or not we can use the prototype prim itself as
+            // the instance source or if we should insert an empty group into
+            // the hierarchy to hold the instance source type. The latter will
+            // be true if the prototype's native Katana type needs to be
+            // preserved, for example, if the prototype is a gprim.
+            //
+            // XXX Since we can't make an assumption about what Katana type the
+            // PxrUsdIn ops will author, we'll have to make a best guess. For
+            // now, consider Xform prims without an authored kind to be usable
+            // as instance sources.
+            //
+            TfToken kind;
+            const bool useProtoAsInstanceSource =
+                    protoPrim.IsA<UsdGeomXform>() &&
+                    !UsdModelAPI(protoPrim).GetKind(&kind);
+            if (useProtoAsInstanceSource)
+            {
+                delXformBldr.setLocationPaths(katProtoPath);
                 sourcesBldr.addSubOpAtLocation(
-                        relBuildPath + "/geo" + pystring::replace(
-                                protoPath.GetString(), buildPath, ""),
-                        "AttributeSet", asb.build());
+                        relProtoPath,
+                        "AttributeSet", delXformBldr.build());
             }
             else
             {
-                asb.setLocationPaths(fullProtoPath + "/geo");
+                // Tell PxrUsdIn to create an empty group when it gets to the
+                // prototype's location.
+                //
+                sourcesBldr.setAttrAtLocation(relProtoPath,
+                        "insertEmptyGroup", FnKat::IntAttribute(1));
+
+                // Since the empty group will have the same name as the
+                // prototype, we can add the prototype's name to its original
+                // Katana path to get its post-insertion Katana path.
+                //
+                const std::string protoName = protoPrim.GetName();
+                delXformBldr.setLocationPaths(katProtoPath + "/" + protoName);
                 sourcesBldr.addSubOpAtLocation(
-                        relBuildPath + "/geo",
-                        "AttributeSet", asb.build());
+                        relProtoPath + "/" + protoName,
+                        "AttributeSet", delXformBldr.build());
             }
 
-            // Create a mapping that will link the instance's index to its
-            // prototype's full path.
+            // Build an AttributeSet op that will set the instance source type
+            // on the prototype or the empty group (if we inserted one).
             //
-            instanceSourceIndexMap[fullProtoPath] = instanceSources.size();
-            instanceSources.push_back(fullProtoPath);
+            FnGeolibServices::AttributeSetOpArgsBuilder setTypeBldr;
+            setTypeBldr.setAttr("type",
+                    FnKat::StringAttribute("instance source"));
+            setTypeBldr.setLocationPaths(katProtoPath);
+            sourcesBldr.addSubOpAtLocation(relProtoPath,
+                    "AttributeSet", setTypeBldr.build());
 
-            // Finally, store the full path in the map so we won't have to do
+            // Create a mapping that will link the instance's index to its
+            // prototype's Katana path.
+            //
+            instanceSourceIndexMap[katProtoPath] = instanceSources.size();
+            instanceSources.push_back(katProtoPath);
+
+            // Finally, store the Katana path in the map so we won't have to do
             // this work again.
             //
-            protoPathsToKatPaths[protoPath] = fullProtoPath;
+            protoPathsToKatPaths[protoPath] = katProtoPath;
         }
 
-        instanceIndices.push_back(instanceSourceIndexMap[fullProtoPath]);
+        instanceIndices.push_back(instanceSourceIndexMap[katProtoPath]);
     }
 
     //

@@ -112,6 +112,9 @@ public:
 
     Sdf_PathNodeHandleImpl &
     operator=(Sdf_PathNodeHandleImpl const &rhs) {
+        if (Counted && *this == rhs) {
+            return *this;
+        }
         this_type(rhs).swap(*this);
         return *this;
     }
@@ -926,26 +929,46 @@ inline size_t hash_value(SdfPath const &path)
 /// Writes the string representation of \p path to \p out.
 SDF_API std::ostream & operator<<( std::ostream &out, const SdfPath &path );
 
+// Helper for SdfPathFindPrefixedRange & SdfPathFindLongestPrefix.  A function
+// object that returns an SdfPath const & unchanged.
+struct Sdf_PathIdentity {
+    inline SdfPath const &operator()(SdfPath const &arg) const {
+        return arg;
+    }
+};
+
 /// Find the subrange of the sorted range [\a begin, \a end) that includes all
 /// paths prefixed by \a path.  The input range must be ordered according to
 /// SdfPath::operator<.  If your range's iterators' value_types are not SdfPath,
 /// but you can obtain SdfPaths from them (e.g. map<SdfPath, X>::iterator), you
-/// can use this function with boost::transform_iterator, supplying a functor to
-/// transform_iterator that extracts the SdfPath.
-template <class ForwardIterator>
+/// can pass a function to extract the path from the dereferenced iterator in
+/// \p getPath.
+template <class ForwardIterator, class GetPathFn = Sdf_PathIdentity>
 std::pair<ForwardIterator, ForwardIterator>
 SdfPathFindPrefixedRange(ForwardIterator begin, ForwardIterator end,
-                         SdfPath const &prefix) {
+                         SdfPath const &prefix,
+                         GetPathFn const &getPath = GetPathFn()) {
+    using IterRef = 
+        typename std::iterator_traits<ForwardIterator>::reference;
+
+    struct Compare {
+        Compare(GetPathFn const &getPath) : _getPath(getPath) {}
+        GetPathFn const &_getPath;
+        bool operator()(IterRef a, SdfPath const &b) const {
+            return _getPath(a) < b;
+        }
+    };
+
     std::pair<ForwardIterator, ForwardIterator> result;
 
     // First, use lower_bound to find where \a prefix would go.
-    result.first = std::lower_bound(begin, end, prefix);
+    result.first = std::lower_bound(begin, end, prefix, Compare(getPath));
 
     // Next, find end of range starting from the lower bound, using the
     // prefixing condition to define the boundary.
     result.second = TfFindBoundary(result.first, end,
-                                   [&prefix](SdfPath const &path) {
-                                       return path.HasPrefix(prefix);
+                                   [&prefix, &getPath](IterRef iterRef) {
+                                       return getPath(iterRef).HasPrefix(prefix);
                                    });
 
     return result;
@@ -955,15 +978,26 @@ SdfPathFindPrefixedRange(ForwardIterator begin, ForwardIterator end,
 /// prefix of the given path, if there is such an element, otherwise \a end.
 /// The input range must be ordered according to SdfPath::operator<.  If your
 /// range's iterators' value_types are not SdfPath, but you can obtain SdfPaths
-/// from them (e.g. map<SdfPath, X>::iterator), you can use this function with
-/// boost::transform_iterator, supplying a functor to transform_iterator that
-/// extracts the SdfPath.
-template <class BidirectionalIterator>
+/// from them (e.g. map<SdfPath, X>::iterator), you can pass a function to
+/// extract the path from the dereferenced iterator in \p getPath.
+template <class BidirectionalIterator, class GetPathFn = Sdf_PathIdentity>
 BidirectionalIterator
 SdfPathFindLongestPrefix(BidirectionalIterator begin,
                          BidirectionalIterator end,
-                         SdfPath const &path)
+                         SdfPath const &path,
+                         GetPathFn const &getPath = GetPathFn())
 {
+    using IterRef = 
+        typename std::iterator_traits<BidirectionalIterator>::reference;
+
+    struct Compare {
+        Compare(GetPathFn const &getPath) : _getPath(getPath) {}
+        GetPathFn const &_getPath;
+        bool operator()(IterRef a, SdfPath const &b) const {
+            return _getPath(a) < b;
+        }
+    };
+
     // Search for the path in [begin, end).  If present, return it.  If not,
     // examine prior element in [begin, end).  If none, return end.  Else, is it
     // a prefix of path?  If so, return it.  Else find common prefix of that
@@ -974,10 +1008,11 @@ SdfPathFindLongestPrefix(BidirectionalIterator begin,
         return end;
 
     // Search for where this path would lexicographically appear in the range.
-    BidirectionalIterator result = std::lower_bound(begin, end, path);
+    BidirectionalIterator result =
+        std::lower_bound(begin, end, path, Compare(getPath));
 
     // If we didn't get the end, check to see if we got the path exactly.
-    if (result != end && *result == path)
+    if (result != end && getPath(*result) == path)
         return result;
 
     // If we got begin and didn't match then there's no prefix.
@@ -985,13 +1020,14 @@ SdfPathFindLongestPrefix(BidirectionalIterator begin,
         return end;
 
     // If the prior element is a prefix, we're done.
-    if (path.HasPrefix(*--result))
+    if (path.HasPrefix(getPath(*--result)))
         return result;
 
     // Otherwise, find the common prefix of the lexicographical predecessor and
     // recurse looking for it or its longest prefix in the preceding range.
     BidirectionalIterator final =
-        SdfPathFindLongestPrefix(begin, result, path.GetCommonPrefix(*result));
+        SdfPathFindLongestPrefix(
+            begin, result, path.GetCommonPrefix(getPath(*result)), getPath);
 
     // If the recursion failed, promote the recursive call's end to our end.
     return final == result ? end : final;

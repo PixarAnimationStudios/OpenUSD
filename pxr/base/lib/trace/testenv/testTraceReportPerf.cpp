@@ -76,11 +76,29 @@ int main(int argc, char* argv[])
     FILE *statsFile = fopen("perfstats.raw", "w");
     TfStopwatch watch;
 
-    int recrusionSizes[] = {1, 2, 10};//, 100};
-    int testSizes[] = {1000000, 10000000, 100000000};
+    std::vector<int> recrusionSizes = {1, 2, 10};
+    std::vector<int> testSizes = {1000000, 10000000, 100000000};
+
+    // Take any command line arguments and parse to see if a valid test size 
+    // index was passed. If there are too many arguments or the arguments are 
+    // invalid, they are ignored completely. By default only the first test
+    // size is run. Larger sizes better stress the system but heavily increase
+    // runtime and memory consumption.
+    size_t maxTestSize = 1;
+    if (argc == 2) {
+        std::stringstream convert(argv[1]);
+        size_t tmp;
+        if (convert >> tmp) {
+            if (tmp <= testSizes.size() && tmp > 0) {
+                maxTestSize = tmp;
+            }
+        }
+    }
+
     for (int R : recrusionSizes) {
         std::cout << "Recursion depth: " << R << std::endl;  
-        for (int size : testSizes) {
+        for (size_t i = 0; i < maxTestSize; ++i) {
+            int size = testSizes[i];
 
             watch.Reset();
             watch.Start();
