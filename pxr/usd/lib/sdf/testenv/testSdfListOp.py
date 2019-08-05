@@ -26,31 +26,40 @@ from pxr import Sdf
 import unittest, itertools
 
 def _ExplicitItems(l):
-    r = Sdf.IntListOp()
-    r.explicitItems = l
-    return r
+    return Sdf.IntListOp.CreateExplicit(l)
 def _AddedItems(l):
     r = Sdf.IntListOp()
     r.addedItems = l
     return r
 def _PrependedItems(l):
-    r = Sdf.IntListOp()
-    r.prependedItems = l
-    return r
+    return Sdf.IntListOp.Create(prependedItems=l)
 def _AppendedItems(l):
-    r = Sdf.IntListOp()
-    r.appendedItems = l
-    return r
+    return Sdf.IntListOp.Create(appendedItems=l)
+def _DeletedItems(l):
+    return Sdf.IntListOp.Create(deletedItems=l)
 def _OrderedItems(l):
     r = Sdf.IntListOp()
     r.orderedItems = l
     return r
-def _DeletedItems(l):
-    r = Sdf.IntListOp()
-    r.deletedItems = l
-    return r
 
 class TestSdfListOp(unittest.TestCase):
+    def test_Basics(self):
+        """Test basic behaviors across all ListOp types"""
+        # Cheesy way of getting all ListOp types
+        listOpTypes = [
+            getattr(Sdf, t) for t in dir(Sdf) if t.endswith("ListOp")
+        ]
+
+        for t in listOpTypes:
+            listOp = t.Create()
+            self.assertFalse(listOp.isExplicit)
+
+            explicitListOp = t.CreateExplicit()
+            self.assertTrue(explicitListOp.isExplicit)
+
+            self.assertNotEqual(listOp, explicitListOp)
+            self.assertNotEqual(str(listOp), str(explicitListOp))
+
     def test_BasicSemantics(self):
         # Default empty listop does nothing.
         self.assertEqual(

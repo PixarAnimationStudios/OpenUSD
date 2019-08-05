@@ -82,9 +82,33 @@ TF_REGISTRY_FUNCTION(TfEnum)
 
 
 template <typename T>
-SdfListOp<T>::SdfListOp() :
-    _isExplicit(false)
+SdfListOp<T>::SdfListOp()
+    : _isExplicit(false)
 {
+}
+
+template <typename T>
+SdfListOp<T>
+SdfListOp<T>::CreateExplicit(
+    const ItemVector& explicitItems)
+{
+    SdfListOp<T> listOp;
+    listOp.SetExplicitItems(explicitItems);
+    return listOp;
+}
+
+template <typename T>
+SdfListOp<T>
+SdfListOp<T>::Create(
+    const ItemVector& prependedItems,
+    const ItemVector& appendedItems,
+    const ItemVector& deletedItems)
+{
+    SdfListOp<T> listOp;
+    listOp.SetPrependedItems(prependedItems);
+    listOp.SetAppendedItems(appendedItems);
+    listOp.SetDeletedItems(deletedItems);
+    return listOp;
 }
 
 template <typename T>
@@ -736,9 +760,10 @@ _StreamOutItems(
     std::ostream &out,
     const string &itemsName,
     const std::vector<T> &items,
-    bool *firstItems)
+    bool *firstItems,
+    bool isExplicitList = false)
 {
-    if (!items.empty()) {
+    if (isExplicitList || !items.empty()) {
         out << (*firstItems ? "" : ", ") << itemsName << " Items: [";
         *firstItems = false;
         TF_FOR_ALL(it, items) {
@@ -752,14 +777,24 @@ template <typename T>
 static std::ostream &
 _StreamOut(std::ostream &out, const SdfListOp<T> &op)
 {
-    out << "SdfListOp" << "(";
+    const std::vector<std::string>& listOpAliases = 
+        TfType::GetRoot().GetAliases(TfType::Find<SdfListOp<T>>());
+    TF_VERIFY(!listOpAliases.empty());
+
+    out << listOpAliases.front() << "(";
     bool firstItems = true;
-    _StreamOutItems(out, "Explicit", op.GetExplicitItems(), &firstItems);
-    _StreamOutItems(out, "Deleted", op.GetDeletedItems(), &firstItems);
-    _StreamOutItems(out, "Added", op.GetAddedItems(), &firstItems);
-    _StreamOutItems(out, "Prepended", op.GetPrependedItems(), &firstItems);
-    _StreamOutItems(out, "Appended", op.GetAppendedItems(), &firstItems);
-    _StreamOutItems(out, "Ordered", op.GetOrderedItems(), &firstItems);
+    if (op.IsExplicit()) {
+        _StreamOutItems(
+            out, "Explicit", op.GetExplicitItems(), &firstItems,
+            /* isExplicitList = */ true);
+    }
+    else {
+        _StreamOutItems(out, "Deleted", op.GetDeletedItems(), &firstItems);
+        _StreamOutItems(out, "Added", op.GetAddedItems(), &firstItems);
+        _StreamOutItems(out, "Prepended", op.GetPrependedItems(), &firstItems);
+        _StreamOutItems(out, "Appended", op.GetAppendedItems(), &firstItems);
+        _StreamOutItems(out, "Ordered", op.GetOrderedItems(), &firstItems);
+    }
     out << ")";
     return out;
 }
