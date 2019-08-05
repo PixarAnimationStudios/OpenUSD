@@ -23,6 +23,7 @@ pxr_library(usdSkel
         animation
         animMapper
         animQuery
+        bakeSkinning
         bindingAPI
         blendShape
         blendShapeQuery
@@ -58,6 +59,7 @@ pxr_library(usdSkel
         wrapAnimation.cpp
         wrapAnimMapper.cpp
         wrapAnimQuery.cpp
+        wrapBakeSkinning.cpp
         wrapBlendShapeQuery.cpp
         wrapBinding.cpp
         wrapBindingAPI.cpp

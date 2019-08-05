@@ -13,8 +13,6 @@ def Xform "GroundTruth"
         color3f[] primvars:displayColor = [(1,0,0)] (
             interpolation = "constant"
         )
-        #uniform token[] xformOpOrder = ["xformOp:translate"]
-        #double3 xformOp:translate = (0, 0, 12)
     
         float3[] extent.timeSamples = {
             1: [(-5, -0.00000166893, -5), (5, 0.0000023841858, 5)],

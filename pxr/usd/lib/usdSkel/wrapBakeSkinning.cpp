@@ -21,29 +21,28 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+#include "pxr/usd/usdSkel/bakeSkinning.h"
+
+#include "pxr/usd/usd/primRange.h"
+#include "pxr/usd/usdSkel/cache.h"
+#include "pxr/usd/usdSkel/root.h"
+
+#include <boost/python.hpp>
+
+
+using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE
+
+void wrapUsdSkelBakeSkinning()
 {
-    TF_WRAP(UsdSkelAnimation);
-    TF_WRAP(UsdSkelAnimMapper);
-    TF_WRAP(UsdSkelAnimQuery);
-    TF_WRAP(UsdSkelBakeSkinning);
-    TF_WRAP(UsdSkelBinding);
-    TF_WRAP(UsdSkelBindingAPI);
-    TF_WRAP(UsdSkelBlendShape);
-    TF_WRAP(UsdSkelBlendShapeQuery);
-    TF_WRAP(UsdSkelCache);
-    TF_WRAP(UsdSkelInbetweenShape);
-    TF_WRAP(UsdSkelPackedJointAnimation);
-    TF_WRAP(UsdSkelSkeleton);
-    TF_WRAP(UsdSkelSkeletonQuery);
-    TF_WRAP(UsdSkelSkinningQuery);
-    TF_WRAP(UsdSkelRoot);
-    TF_WRAP(UsdSkelTokens);
-    TF_WRAP(UsdSkelTopology);
-    TF_WRAP(UsdSkelUtils);
+    def("BakeSkinning", ((bool (*)(const UsdSkelRoot&,
+                                   const GfInterval&))&UsdSkelBakeSkinning),
+        (arg("root"), arg("interval")=GfInterval::GetFullInterval()));
+
+    def("BakeSkinning", ((bool (*)(const UsdPrimRange&,
+                                   const GfInterval&))&UsdSkelBakeSkinning),
+        (arg("range"), arg("interval")=GfInterval::GetFullInterval()));
+
 }
