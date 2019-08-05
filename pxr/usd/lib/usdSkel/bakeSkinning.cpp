@@ -700,7 +700,7 @@ _SkelAdapter::UpdateTransform(const size_t timeIndex,
         TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
             "[UsdSkelBakeSkinning]   Updating transform for "
             "<%s> @ time %s\n", GetPrim().GetPath().GetText(),
-            TfStringify(time).c_str());
+            TfStringify(xfCache->GetTime()).c_str());
 
         _skelLocalToWorldXformTask.Run(
             xfCache->GetTime(), GetPrim(), "compute skel local to world xform",
