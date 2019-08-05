@@ -38,6 +38,7 @@ pxr_library(usd
         object
         payloads
         prim
+        primCompositionQuery
         primData
         primDataHandle
         primFlags
@@ -111,6 +112,7 @@ pxr_library(usd
         wrapObject.cpp
         wrapPayloads.cpp
         wrapPrim.cpp
+        wrapPrimCompositionQuery.cpp
         wrapPrimFlags.cpp
         wrapPrimRange.cpp
         wrapProperty.cpp
@@ -186,6 +188,7 @@ pxr_test_scripts(
     testenv/testUsdModel.py
     testenv/testUsdNotices.py
     testenv/testUsdPayloads.py
+    testenv/testUsdPrimCompositionQuery.py
     testenv/testUsdPrimFlagsPredicate.py
     testenv/testUsdPrimRange.py
     testenv/testUsdPrims.py
@@ -407,6 +410,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdPrims.testenv
     DEST testUsdPrims
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdPrimCompositionQuery.testenv
+    DEST testUsdPrimCompositionQuery
 )
 
 pxr_install_test_dir(
@@ -644,6 +652,12 @@ pxr_register_test(testUsdReferences
 
 pxr_register_test(testUsdTemplatedIO
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTemplatedIO"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdPrimCompositionQuery
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdPrimCompositionQuery"
     EXPECTED_RETURN_CODE 0
 )
 
