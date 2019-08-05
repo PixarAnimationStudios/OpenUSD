@@ -1325,7 +1325,7 @@ _SkinningAdapter::UpdateTransform(const size_t timeIndex,
             "[UsdSkelBakeSkinning]   Updating transforms for "
             "<%s> @ time %s\n",
             GetPrim().GetPath().GetText(),
-            TfStringify(time).c_str());
+            TfStringify(xfCache->GetTime()).c_str());
 
         _localToWorldXformTask.Run(
             xfCache->GetTime(), GetPrim(), "compute prim local to world xform",
