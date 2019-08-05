@@ -75,13 +75,7 @@ public:
     static const size_t dimension = {{ DIM }};
 
     /// Default constructor does no initialization.
-    {{ VEC }}() {}
-
-    // Copy constructor.
-    // TODO Remove this, use compiler-generated.
-    {{ VEC }}(const {{ VEC }} &other) {
-        *this = other;
-    }
+    {{ VEC }}() = default;
 
     /// Initialize all elements to a single value.
     explicit {{ VEC }}({{ SCL }} value) {

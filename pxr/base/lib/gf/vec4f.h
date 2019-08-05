@@ -68,13 +68,7 @@ public:
     static const size_t dimension = 4;
 
     /// Default constructor does no initialization.
-    GfVec4f() {}
-
-    // Copy constructor.
-    // TODO Remove this, use compiler-generated.
-    GfVec4f(const GfVec4f &other) {
-        *this = other;
-    }
+    GfVec4f() = default;
 
     /// Initialize all elements to a single value.
     explicit GfVec4f(float value) {
