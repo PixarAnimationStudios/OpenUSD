@@ -77,6 +77,12 @@ GlfUVTextureData::GlfUVTextureData(std::string const &filePath,
     /* nothing */
 }
 
+int
+GlfUVTextureData::NumDimensions() const
+{
+    return 2;
+}
+
 // Compute required GPU memory
 size_t
 GlfUVTextureData_ComputeMemory(GlfImageSharedPtr const &img,
@@ -482,6 +488,13 @@ GlfUVTextureData::ResizedHeight(int mipLevel) const
 {
     if (static_cast<size_t>(mipLevel) >= _rawBufferMips.size()) return 0;
     return _rawBufferMips[mipLevel].height;
+}
+
+int
+GlfUVTextureData::ResizedDepth(int mipLevel) const
+{
+    // We can think of a 2d-texture as x*y*1 3d-texture.
+    return 1;
 }
 
 int 

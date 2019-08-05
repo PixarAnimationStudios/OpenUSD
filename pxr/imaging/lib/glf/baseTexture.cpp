@@ -59,11 +59,15 @@ GlfBaseTexture::GlfBaseTexture()
     _loaded(false),
     _currentWidth(0),
     _currentHeight(0),
+    // 1 since a 2d-texture can be thought of as x*y*1 3d-texture
+    _currentDepth(1),
     _format(GL_RGBA),
     _hasWrapModeS(false),
     _hasWrapModeT(false),
+    _hasWrapModeR(false),
     _wrapModeS(GL_REPEAT),
-    _wrapModeT(GL_REPEAT)
+    _wrapModeT(GL_REPEAT),
+    _wrapModeR(GL_REPEAT)
 {
     /* nothing */
 }
@@ -74,11 +78,15 @@ GlfBaseTexture::GlfBaseTexture(GlfImage::ImageOriginLocation originLocation)
     _loaded(false),
     _currentWidth(0),
     _currentHeight(0),
+    // 1 since a 2d-texture can be thought of as x*y*1 3d-texture
+    _currentDepth(1),
     _format(GL_RGBA),
     _hasWrapModeS(false),
     _hasWrapModeT(false),
+    _hasWrapModeR(false),
     _wrapModeS(GL_REPEAT),
-    _wrapModeT(GL_REPEAT)
+    _wrapModeT(GL_REPEAT),
+    _wrapModeR(GL_REPEAT)
 {
     /* nothing */
 }
@@ -123,6 +131,16 @@ GlfBaseTexture::GetHeight()
 }
 
 int
+GlfBaseTexture::GetDepth()
+{
+    if (!_loaded) {
+        _ReadTexture();
+    }
+
+    return _currentDepth;
+}
+
+int
 GlfBaseTexture::GetFormat()
 {
     if (!_loaded) {
@@ -130,6 +148,23 @@ GlfBaseTexture::GetFormat()
     }
 
     return _format;
+}
+
+static
+GLenum
+_NumDimensionsToGlTextureTarget(const int d)
+{
+    switch(d) {
+    case 1:
+        return GL_TEXTURE_1D;
+    case 2:
+        return GL_TEXTURE_2D;
+    case 3:
+        return GL_TEXTURE_3D;
+    default:
+        TF_CODING_ERROR("Bad dimension for texture: %d", d);
+        return GL_TEXTURE_2D;
+    }
 }
 
 /* virtual */
@@ -142,8 +177,10 @@ GlfBaseTexture::GetBindings(TfToken const & identifier,
     }
 
     return BindingVector(1,
-                Binding(identifier, GlfTextureTokens->texels,
-                        GL_TEXTURE_2D, _textureName, samplerName));
+                Binding(
+                    identifier, GlfTextureTokens->texels,
+                    _NumDimensionsToGlTextureTarget(GetNumDimensions()),
+                    _textureName, samplerName));
 }
 
 VtDictionary
@@ -159,7 +196,7 @@ GlfBaseTexture::GetTextureInfo(bool forceLoad)
         info["memoryUsed"] = GetMemoryUsed();
         info["width"] = _currentWidth;
         info["height"] = _currentHeight;
-        info["depth"] = 1;
+        info["depth"] = _currentDepth;
         info["format"] = _format;
 
         if (_hasWrapModeS) {
@@ -168,6 +205,10 @@ GlfBaseTexture::GetTextureInfo(bool forceLoad)
 
         if (_hasWrapModeT) {
             info["wrapModeT"] = _wrapModeT;
+        }
+
+        if (_hasWrapModeR) {
+            info["wrapModeR"] = _wrapModeR;
         }
     } else {
         info["memoryUsed"] = (size_t)0;
@@ -194,37 +235,122 @@ GlfBaseTexture::_UpdateTexture(GlfBaseTextureDataConstPtr texData)
     if (texData && texData->HasRawBuffer()) {
         _currentWidth  = texData->ResizedWidth();
         _currentHeight = texData->ResizedHeight();
+        _currentDepth  = texData->ResizedDepth();
         _format        = texData->GLFormat();
         _hasWrapModeS  = texData->GetWrapInfo().hasWrapModeS;
         _hasWrapModeT  = texData->GetWrapInfo().hasWrapModeT;
+        _hasWrapModeR  = texData->GetWrapInfo().hasWrapModeR;
         _wrapModeS     = texData->GetWrapInfo().wrapModeS;
         _wrapModeT     = texData->GetWrapInfo().wrapModeT;
+        _wrapModeR     = texData->GetWrapInfo().wrapModeR;
 
         _SetMemoryUsed(texData->ComputeBytesUsed());
 
     } else {
         _currentWidth  = _currentHeight = 0;
+        _currentDepth  = 1;
         _format        =  GL_RGBA;
-        _hasWrapModeS  = _hasWrapModeT  = false;
-        _wrapModeS     = _wrapModeT     = GL_REPEAT;
+        _hasWrapModeS  = _hasWrapModeT  = _hasWrapModeR = false;
+        _wrapModeS     = _wrapModeT     = _wrapModeR    = GL_REPEAT;
 
         _SetMemoryUsed(0);
     }
 }
 
+static
+void _GlTexImageND(const int numDimensions,
+                   const GLenum target,
+                   const GLint level,
+                   const GLint internalformat,
+                   const GLsizei width,
+                   const GLsizei height,
+                   const GLsizei depth,
+                   const GLint border,
+                   const GLenum format,
+                   const GLenum type,
+                   const GLvoid* data)
+{
+    switch(numDimensions) {
+    case 1:
+        glTexImage1D(target, level, internalformat,
+                     width,
+                     border, format, type, data);
+        break;
+    case 2:
+        glTexImage2D(target, level, internalformat,
+                     width, height,
+                     border, format, type, data);
+        break;
+    case 3:
+        glTexImage3D(target, level, internalformat,
+                     width, height, depth,
+                     border, format, type, data);
+        break;
+    default:
+        TF_CODING_ERROR("Bad dimension for OpenGL texture %d", numDimensions);
+    }
+}
+
+static
+void _GlCompressedTexImageND(const int numDimensions,
+                             const GLenum target,
+                             const GLint level,
+                             const GLint internalformat,
+                             const GLsizei width,
+                             const GLsizei height,
+                             const GLsizei depth,
+                             const GLint border,
+                             const GLsizei imageSize,
+                             const GLvoid* data)
+{
+    switch(numDimensions) {
+    case 1:
+        glCompressedTexImage1D(target, level, internalformat,
+                               width,
+                               border, imageSize, data);
+        break;
+    case 2:
+        glCompressedTexImage2D(target, level, internalformat,
+                               width, height,
+                               border, imageSize, data);
+        break;
+    case 3:
+        glCompressedTexImage3D(target, level, internalformat,
+                               width, height, depth,
+                               border, imageSize, data);
+        break;
+    default:
+        TF_CODING_ERROR("Bad dimension for OpenGL texture %d", numDimensions);
+    }
+}
+
 void 
 GlfBaseTexture::_CreateTexture(GlfBaseTextureDataConstPtr texData,
-                bool const useMipmaps,
-                int const unpackCropTop,
-                int const unpackCropBottom,
-                int const unpackCropLeft,
-                int const unpackCropRight)
+                               bool const useMipmaps,
+                               int const unpackCropTop,
+                               int const unpackCropBottom,
+                               int const unpackCropLeft,
+                               int const unpackCropRight,
+                               int const unpackCropFront,
+                               int const unpackCropBack)
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
     if (texData && texData->HasRawBuffer()) {
-        glBindTexture(GL_TEXTURE_2D, _textureName);
+        const int numDimensions = GetNumDimensions();
+
+        if (texData->NumDimensions() != numDimensions) {
+            TF_CODING_ERROR("Dimension mismatch %d != %d between "
+                            "GlfBaseTextureData and GlfBaseTexture",
+                            texData->NumDimensions(), numDimensions);
+            return;
+        }
+
+        // GL_TEXTURE_1D, GL_TEXTURE_2D, or GL_TEXTURE_3d
+        const GLenum textureTarget = _NumDimensionsToGlTextureTarget(numDimensions);
+
+        glBindTexture(textureTarget, _textureName);
 
         // Check if mip maps have been requested, if so, it will either
         // enable automatic generation or use the ones loaded in cpu memory
@@ -241,25 +367,28 @@ GlfBaseTexture::_CreateTexture(GlfBaseTextureDataConstPtr texData,
                     numMipLevels = 1;
             }
             if (numMipLevels > 1) {
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, numMipLevels-1);
+                glTexParameteri(textureTarget, GL_TEXTURE_MAX_LEVEL, numMipLevels-1);
             } else {
-                glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
+                glTexParameteri(textureTarget, GL_GENERATE_MIPMAP, GL_TRUE);
             }
         } else {
-            glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE);
+            glTexParameteri(textureTarget, GL_GENERATE_MIPMAP, GL_FALSE);
         }
 
         if (texData->IsCompressed()) {
             // Compressed textures don't have as many options, so 
             // we just need to send the mips to the driver.
             for (int i = 0 ; i < numMipLevels; i++) {
-                glCompressedTexImage2D( GL_TEXTURE_2D, i,
-                                texData->GLInternalFormat(),
-                                texData->ResizedWidth(i),
-                                texData->ResizedHeight(i),
-                                0,
-                                texData->ComputeBytesUsedByMip(i),
-                                texData->GetRawBuffer(i));
+                _GlCompressedTexImageND(
+                    numDimensions,
+                    textureTarget, i,
+                    texData->GLInternalFormat(),
+                    texData->ResizedWidth(i),
+                    texData->ResizedHeight(i),
+                    texData->ResizedDepth(i),
+                    0,
+                    texData->ComputeBytesUsedByMip(i),
+                    texData->GetRawBuffer(i));
             }
         } else {
             // Uncompressed textures can have cropping and other special 
@@ -267,7 +396,7 @@ GlfBaseTexture::_CreateTexture(GlfBaseTextureDataConstPtr texData,
             if (GlfGetNumElements(texData->GLFormat()) == 1) {
                 GLint swizzleMask[] = {GL_RED, GL_RED, GL_RED, GL_ONE};
                 glTexParameteriv(
-                    GL_TEXTURE_2D,
+                    textureTarget,
                     GL_TEXTURE_SWIZZLE_RGBA, 
                     swizzleMask);
             }
@@ -275,69 +404,99 @@ GlfBaseTexture::_CreateTexture(GlfBaseTextureDataConstPtr texData,
             // If we are not sending full mipchains to the gpu then we can 
             // do some extra work in the driver to prepare our textures.
             if (numMipLevels == 1) {
-                int texDataWidth = texData->ResizedWidth();
-                int texDataHeight = texData->ResizedHeight();
-                int unpackRowLength = texDataWidth;
-                int unpackSkipPixels = 0;
-                int unpackSkipRows = 0;
+                const int width = texData->ResizedWidth();
+                const int height = texData->ResizedHeight();
+                const int depth = texData->ResizedDepth();
 
-                if (unpackCropTop < 0 || unpackCropTop > texDataHeight) {
+                int croppedWidth  = width;
+                int croppedHeight = height;
+                int croppedDepth  = depth;
+
+                if (unpackCropLeft < 0 || unpackCropLeft > croppedWidth) {
                     return;
-                } else if (unpackCropTop > 0) {
-                    unpackSkipRows = unpackCropTop;
-                    texDataHeight -= unpackCropTop;
-                }
-                if (unpackCropBottom < 0 || unpackCropBottom > texDataHeight) {
-                    return;
-                } else if (unpackCropBottom) {
-                    texDataHeight -= unpackCropBottom;
-                }
-                if (unpackCropLeft < 0 || unpackCropLeft > texDataWidth) {
-                    return;
-                } else {
-                    unpackSkipPixels = unpackCropLeft;
-                    texDataWidth -= unpackCropLeft;
-                }
-                if (unpackCropRight < 0 || unpackCropRight > texDataWidth) {
-                    return;
-                } else if (unpackCropRight > 0) {
-                    texDataWidth -= unpackCropRight;
                 }
 
+                croppedWidth -= unpackCropLeft;
+
+                if (unpackCropRight < 0 || unpackCropRight > croppedWidth) {
+                    return;
+                }
+
+                croppedWidth -= unpackCropRight;
+
+                if (unpackCropTop < 0 || unpackCropTop > croppedHeight) {
+                    return;
+                }
+
+                croppedHeight -= unpackCropTop;
+
+                if (unpackCropBottom < 0 || unpackCropBottom > croppedHeight) {
+                    return;
+                }
+
+                croppedHeight -= unpackCropBottom;
+
+                if (unpackCropFront < 0 || unpackCropFront > croppedDepth) {
+                    return;
+                }
+
+                croppedDepth -= unpackCropFront;
+
+                if (unpackCropBack < 0 || unpackCropBack > croppedDepth) {
+                    return;
+                }
+
+                croppedDepth -= unpackCropBack;
+                
                 glPushClientAttrib(GL_CLIENT_PIXEL_STORE_BIT);
-                glPixelStorei(GL_UNPACK_ROW_LENGTH, unpackRowLength);
-                glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-                glPixelStorei(GL_UNPACK_SKIP_PIXELS, unpackSkipPixels);
-                glPixelStorei(GL_UNPACK_SKIP_ROWS, unpackSkipRows);
+
+                {
+                    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+                    glPixelStorei(GL_UNPACK_SKIP_PIXELS, unpackCropLeft);
+                }
+
+                if (numDimensions >= 2) {
+                    glPixelStorei(GL_UNPACK_SKIP_ROWS, unpackCropTop);
+                    glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
+                }
+
+                if (numDimensions >= 3) {
+                    glPixelStorei(GL_UNPACK_SKIP_IMAGES, unpackCropFront);
+                    glPixelStorei(GL_UNPACK_IMAGE_HEIGHT, height);
+                }
 
                 // Send the mip to the driver now
-                glTexImage2D( GL_TEXTURE_2D, 0,
-                                texData->GLInternalFormat(),
-                                texDataWidth,
-                                texDataHeight,
-                                0,
-                                texData->GLFormat(),
-                                texData->GLType(),
-                                texData->GetRawBuffer(0));
-
+                _GlTexImageND(numDimensions,
+                              textureTarget, 0,
+                              texData->GLInternalFormat(),
+                              croppedWidth,
+                              croppedHeight,
+                              croppedDepth,
+                              0,
+                              texData->GLFormat(),
+                              texData->GLType(),
+                              texData->GetRawBuffer(0));
+                
                 // Reset the OpenGL state if we have modify it previously
                 glPopClientAttrib();
             } else {
                 // Send the mips to the driver now
                 for (int i = 0 ; i < numMipLevels; i++) {
-                    glTexImage2D( GL_TEXTURE_2D, i,
-                                    texData->GLInternalFormat(),
-                                    texData->ResizedWidth(i),
-                                    texData->ResizedHeight(i),
-                                    0,
-                                    texData->GLFormat(),
-                                    texData->GLType(),
-                                    texData->GetRawBuffer(i));
+                    _GlTexImageND(numDimensions,
+                                  textureTarget, i,
+                                  texData->GLInternalFormat(),
+                                  texData->ResizedWidth(i),
+                                  texData->ResizedHeight(i),
+                                  texData->ResizedDepth(i),
+                                  0,
+                                  texData->GLFormat(),
+                                  texData->GLType(),
+                                  texData->GetRawBuffer(i));
                 }
             }
         }
 
-        glBindTexture(GL_TEXTURE_2D, 0);
+        glBindTexture(textureTarget, 0);
         _SetMemoryUsed(texData->ComputeBytesUsed());
     }
 }

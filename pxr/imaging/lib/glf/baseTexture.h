@@ -58,11 +58,18 @@ public:
     GLF_API
     GLuint GetGlTextureName() override;
 
+    /// Is this a 1-, 2- or 3-dimensional texture.
+    GLF_API
+    virtual int GetNumDimensions() const = 0;
+
     GLF_API
     int	GetWidth();
 
     GLF_API
     int GetHeight();
+
+    GLF_API
+    int GetDepth();
 
     GLF_API
     int GetFormat();
@@ -93,11 +100,13 @@ protected:
     void _UpdateTexture(GlfBaseTextureDataConstPtr texData);
     GLF_API
     void _CreateTexture(GlfBaseTextureDataConstPtr texData,
-                        bool const useMipmaps,
-                        int const unpackCropTop = 0,
-                        int const unpackCropBottom = 0,
-                        int const unpackCropLeft = 0,
-                        int const unpackCropRight = 0);
+                        bool useMipmaps,
+                        int unpackCropTop = 0,
+                        int unpackCropBottom = 0,
+                        int unpackCropLeft = 0,
+                        int unpackCropRight = 0,
+                        int unpackCropFront = 0,
+                        int unpackCropBack = 0);
 
     GLF_API
     void _SetLoaded();
@@ -109,12 +118,14 @@ private:
 
     // required for stats/tracking
     bool    _loaded;
-    int     _currentWidth, _currentHeight;
+    int     _currentWidth, _currentHeight, _currentDepth;
     int     _format;
     bool    _hasWrapModeS;
     bool    _hasWrapModeT;
+    bool    _hasWrapModeR;
     GLenum	_wrapModeS;
     GLenum	_wrapModeT;
+    GLenum      _wrapModeR;
 };
 
 

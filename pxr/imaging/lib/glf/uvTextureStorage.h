@@ -55,6 +55,8 @@ public:
         unsigned int height, 
         const VtValue &storageData);
 
+    int GetNumDimensions() const override;
+
 protected:
     GLF_API
     GlfUVTextureStorage(
