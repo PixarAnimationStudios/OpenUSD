@@ -159,6 +159,8 @@ GlfUVTextureData::_ReadDegradedImageInput(bool generateMipmap,
                                            size_t targetMemory,
                                            size_t degradeLevel)
 {
+    TRACE_FUNCTION();
+
     // Read the header of the image (no subimageIndex given, so at full
     // resolutin when evaluated).
     const GlfImageSharedPtr fullImage = GlfImage::OpenForReading(_filePath);
@@ -318,7 +320,7 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap,
                                 _glFormat, _glType, image->IsColorSpaceSRGB());
 
         if (needsCropping) {
-            TRACE_SCOPE("GlfUVTextureData::Read(int, bool) (cropping)");
+            TRACE_FUNCTION_SCOPE("cropping");
 
             // The cropping parameters are with respect to the original image,
             // we need to scale them if we have a down-sampled image.
@@ -397,14 +399,20 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap,
         _size += mip.size;
     }
 
-    _rawBuffer.reset(new unsigned char[_size]);
-    if (!_rawBuffer) {
-        TF_RUNTIME_ERROR("Unable to allocate memory for the mip levels.");
-        return false;
+    {
+        TRACE_FUNCTION_SCOPE("memory allocation");
+
+        _rawBuffer.reset(new unsigned char[_size]);
+        if (!_rawBuffer) {
+            TF_RUNTIME_ERROR("Unable to allocate memory for the mip levels.");
+            return false;
+        }
     }
 
     // Read the actual mips from each image and store them in a big buffer of
     // contiguous memory.
+    TRACE_FUNCTION_SCOPE("filling in image data");
+
     for(int i = 0 ; i < numMipLevels; i++) {
         GlfImageSharedPtr image = degradedImage.images[i];
         if (!image) {
