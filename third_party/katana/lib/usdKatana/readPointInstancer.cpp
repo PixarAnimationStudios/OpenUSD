@@ -322,7 +322,7 @@ PxrUsdKatanaReadPointInstancer(
     }
 
     //
-    // Build sources. Keep track of which instances use them.
+    // Build sources (prototypes). Keep track of which instances use them.
     //
 
     FnGeolibServices::StaticSceneCreateOpArgsBuilder sourcesBldr(false);
@@ -669,16 +669,25 @@ PxrUsdKatanaReadPointInstancer(
     for (int64_t i = 0; i < primvarAttrs.getNumberOfChildren(); ++i)
     {
         const std::string primvarName = primvarAttrs.getChildName(i);
+        FnKat::GroupAttribute primvarAttr = primvarAttrs.getChildByIndex(i);
 
-        // Use "point" scope for the instancer.
-        instancerPrimvarsBldr.set(primvarName, primvarAttrs.getChildByIndex(i));
-        instancerPrimvarsBldr.set(primvarName + ".scope",
-                FnKat::StringAttribute("point"));
-
-        // User "primitive" scope for the instances.
-        instancesPrimvarsBldr.set(primvarName, primvarAttrs.getChildByIndex(i));
-        instancesPrimvarsBldr.set(primvarName + ".scope",
-                FnKat::StringAttribute("primitive"));
+        if (FnKat::StringAttribute(primvarAttr.getChildByName("scope")
+                ).getValue("", false) == "primitive")
+        {
+            // If this primvar is constant, leave it on the instancer.
+            //
+            instancerPrimvarsBldr.set(primvarName, primvarAttr);
+        }
+        else
+        {
+            // If this primvar is non-constant, move it down to the instances,
+            // but make it constant so that it can be sliced and used by each
+            // instance.
+            //
+            instancesPrimvarsBldr.set(primvarName, primvarAttr);
+            instancesPrimvarsBldr.set(primvarName + ".scope",
+                    FnKat::StringAttribute("primitive"));
+        }
     }
     instancerAttrMap.set("geometry.arbitrary", instancerPrimvarsBldr.build());
     instancesBldr.setAttrAtLocation("instances",
