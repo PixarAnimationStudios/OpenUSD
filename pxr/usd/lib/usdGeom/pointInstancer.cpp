@@ -783,7 +783,7 @@ UsdGeomPointInstancer::_GetPositionsVelocitiesAndAccelerationsForInstanceTransfo
 
     double velocitiesLowerTimeValue = 0.0;
     double velocitiesUpperTimeValue = 0.0;
-    bool velocitiesHasSamples;
+    bool velocitiesHasSamples = true;
     bool velocitiesAlignmentValid;
     bool velocitiesCorrectLength;
 
@@ -829,7 +829,7 @@ UsdGeomPointInstancer::_GetPositionsVelocitiesAndAccelerationsForInstanceTransfo
     UsdTimeCode accelerationsSampleTime;
     double accelerationsLowerTimeValue = 0.0;
     double accelerationsUpperTimeValue = 0.0;
-    bool accelerationsHasSamples;
+    bool accelerationsHasSamples = true;
     bool accelerationsAlignmentValid;
     bool accelerationsCorrectLength;
 
@@ -887,7 +887,7 @@ UsdGeomPointInstancer::_GetOrientationsAndAngularVelocitiesForInstanceTransforms
     UsdTimeCode orientationsSampleTime;
     double orientationsLowerTimeValue = 0.0;
     double orientationsUpperTimeValue = 0.0;
-    bool orientationsHasSamples;
+    bool orientationsHasSamples = true;
 
     if (!_GetAttrForInstanceTransforms<VtQuathArray>(
             GetOrientationsAttr(),
@@ -913,7 +913,7 @@ UsdGeomPointInstancer::_GetOrientationsAndAngularVelocitiesForInstanceTransforms
 
     double angularVelocitiesLowerTimeValue = 0.0;
     double angularVelocitiesUpperTimeValue = 0.0;
-    bool angularVelocitiesHasSamples;
+    bool angularVelocitiesHasSamples = true;
     bool angularVelocitiesAlignmentValid;
     bool angularVelocitiesCorrectLength;
 
