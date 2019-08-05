@@ -809,19 +809,20 @@ UsdGeomPointInstancer::_GetPositionsVelocitiesAndAccelerationsForInstanceTransfo
             numInstances,
             &velocitiesAlignmentValid,
             &velocitiesCorrectLength)) {
+        if (!velocities->empty() && !velocitiesAlignmentValid) {
+            TF_WARN("%s -- velocity samples are not aligned with position samples",
+                GetPrim().GetPath().GetText());
+        }
+        if (!velocities->empty() && 
+                velocitiesAlignmentValid && 
+                !velocitiesCorrectLength) {
+            TF_WARN("%s -- found [%zu] velocities, but expected [%zu]",
+                GetPrim().GetPath().GetText(),
+                velocities->size(),
+                numInstances);
+        }
         velocities->clear();
     }
-    if (!velocitiesAlignmentValid) {
-        TF_WARN("%s -- velocity samples are not aligned with position samples",
-            GetPrim().GetPath().GetText());
-    }
-    if (velocitiesAlignmentValid && !velocitiesCorrectLength) {
-        TF_WARN("%s -- found [%zu] velocities, but expected [%zu]",
-            GetPrim().GetPath().GetText(),
-            velocities->size(),
-            numInstances);
-    }
-
 
     // Get accelerations attribute and check sample alignment with velocities
     // attribute and array size
@@ -856,19 +857,19 @@ UsdGeomPointInstancer::_GetPositionsVelocitiesAndAccelerationsForInstanceTransfo
             numInstances,
             &accelerationsAlignmentValid,
             &accelerationsCorrectLength)) {
+        if (!accelerations->empty() && !accelerationsAlignmentValid) {
+            TF_WARN("%s -- acceleration samples are not aligned with velocity samples",
+                GetPrim().GetPath().GetText());
+        }
+        if (!accelerations->empty() && 
+                accelerationsAlignmentValid && 
+                !accelerationsCorrectLength) {
+            TF_WARN("%s -- found [%zu] accelerations, but expected [%zu]",
+                GetPrim().GetPath().GetText(),
+                accelerations->size(),
+                numInstances);
+        }
         accelerations->clear();
-    }
-    if (!accelerationsAlignmentValid) {
-        TF_WARN("%s -- acceleration samples are not aligned with velocity samples",
-            GetPrim().GetPath().GetText());
-    }
-    if (accelerations->size() > 0 && 
-            accelerationsAlignmentValid && 
-            !accelerationsCorrectLength) {
-        TF_WARN("%s -- found [%zu] accelerations, but expected [%zu]",
-            GetPrim().GetPath().GetText(),
-            accelerations->size(),
-            numInstances);
     }
 
     return true;
@@ -939,17 +940,19 @@ UsdGeomPointInstancer::_GetOrientationsAndAngularVelocitiesForInstanceTransforms
             numInstances,
             &angularVelocitiesAlignmentValid,
             &angularVelocitiesCorrectLength)) {
+        if (!angularVelocities->empty() && !angularVelocitiesAlignmentValid) {
+            TF_WARN("%s -- angular velocity samples are not aligned with orientation samples",
+                GetPrim().GetPath().GetText());
+        }
+        if (!angularVelocities->empty() &&
+                angularVelocitiesAlignmentValid && 
+                !angularVelocitiesCorrectLength) {
+            TF_WARN("%s -- found [%zu] angular velocities, but expected [%zu]",
+                GetPrim().GetPath().GetText(),
+                angularVelocities->size(),
+                numInstances);
+        }
         angularVelocities->clear();
-    }
-    if (!angularVelocitiesAlignmentValid) {
-        TF_WARN("%s -- angular velocity samples are not aligned with orientation samples",
-            GetPrim().GetPath().GetText());
-    }
-    if (angularVelocitiesAlignmentValid && !angularVelocitiesCorrectLength) {
-        TF_WARN("%s -- found [%zu] angular velocities, but expected [%zu]",
-            GetPrim().GetPath().GetText(),
-            angularVelocities->size(),
-            numInstances);
     }
 
     return true;
