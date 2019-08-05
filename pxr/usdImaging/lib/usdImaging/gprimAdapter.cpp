@@ -510,6 +510,7 @@ UsdImagingGprimAdapter::_GetExtent(UsdPrim const& prim, UsdTimeCode time) const
         return GfRange3d(extent[0], extent[1]);
     } else {
         // Return empty range if no value was found.
+        // Note: The default empty is [FLT_MAX,-FLT_MAX].
         // TODO: Should this compute the extent based on the points instead?
         return GfRange3d();
     }

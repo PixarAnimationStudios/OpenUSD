@@ -25,7 +25,7 @@
 Module that provides the StageView class.
 '''
 
-from math import tan, floor, ceil, radians as rad
+from math import tan, floor, ceil, radians as rad, isinf
 import os, sys
 from time import time
 
@@ -1308,15 +1308,20 @@ class StageView(QtOpenGL.QGLWidget):
             renderer = None
 
     def _getEmptyBBox(self):
+        # This returns the default empty bbox [FLT_MAX,-FLT_MAX]
         return Gf.BBox3d()
 
     def _getDefaultBBox(self):
         return Gf.BBox3d(Gf.Range3d((-10,-10,-10), (10,10,10)))
 
+    def _isInfiniteBBox(self, bbox):
+        return isinf(bbox.GetRange().GetMin().GetLength()) or \
+               isinf(bbox.GetRange().GetMax().GetLength())
+
     def getStageBBox(self):
         bbox = self._dataModel.computeWorldBound(
             self._dataModel.stage.GetPseudoRoot())
-        if bbox.GetRange().IsEmpty():
+        if bbox.GetRange().IsEmpty() or self._isInfiniteBBox(bbox):
             bbox = self._getEmptyBBox()
         return bbox
 

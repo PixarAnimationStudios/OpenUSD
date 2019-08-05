@@ -92,10 +92,15 @@ FrustumCullIsTinyPrim(vec4 bboxMin, vec4 bboxMax)
 bool
 FrustumCullIsVisible(MAT4 toClip, vec4 localMin, vec4 localMax)
 {
-    // Disable culling when bbox is empty
-    if (localMin.x > localMax.x || localMin.y > localMax.y || localMin.z > localMax.z)
+    // Disable culling when:
+    // (a) BBox is empty. An empty bbox defaults to [FLT_MAX, -FLT_MAX]), so
+    //     min > max.
+    // (b) Bounds are infinite.
+    if (any(greaterThan(localMin, localMax)) || 
+        any(isinf(localMin)) || any(isinf(localMax))) {
         return true;
-
+    }
+    
     // Transform the corners of the bounding box to clipping space.
     vec4 p[8];
     p[0] = vec4(toClip * vec4(localMin.x, localMin.y, localMin.z, 1));
