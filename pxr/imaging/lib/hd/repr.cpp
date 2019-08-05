@@ -137,6 +137,9 @@ HdRepr::HdRepr()
 
 HdRepr::~HdRepr()
 {
+    for (HdDrawItem* item : _drawItems) {
+        delete item;
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
