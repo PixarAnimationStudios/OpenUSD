@@ -227,6 +227,11 @@ class TestUsdLoadUnload(unittest.TestCase):
         self.assertEqual(r.GetEffectiveRuleForPath('/outside/path'),
                          Usd.StageLoadRules.NoneRule)
 
+        self.assertTrue(r.IsLoadedWithNoDescendants('/any'))
+        self.assertFalse(r.IsLoadedWithNoDescendants('/any/path'))
+        self.assertFalse(r.IsLoadedWithAllDescendants('/any'))
+        self.assertFalse(r.IsLoadedWithAllDescendants('/any/path'))
+
         # Root and /other are OnlyRule like above, /other/child and descendants
         # are AllRule.
         r.AddRule('/other/child', Usd.StageLoadRules.AllRule)
@@ -240,6 +245,12 @@ class TestUsdLoadUnload(unittest.TestCase):
                          Usd.StageLoadRules.AllRule)
         self.assertEqual(r.GetEffectiveRuleForPath('/outside/path'),
                          Usd.StageLoadRules.NoneRule)
+
+        self.assertTrue(r.IsLoadedWithNoDescendants('/any'))
+        self.assertFalse(r.IsLoadedWithNoDescendants('/any/path'))
+        self.assertTrue(r.IsLoadedWithAllDescendants('/other/child'))
+        self.assertTrue(r.IsLoadedWithAllDescendants(
+            '/other/child/descndt/path'))
 
         # Now add an Only and a None under /other/child.
         r.AddRule('/other/child/only', Usd.StageLoadRules.OnlyRule)
@@ -464,6 +475,32 @@ class TestUsdLoadUnload(unittest.TestCase):
 
             #
             # Load /Foo which will pull in /Foo/Baz and /Foo/Baz/Garply
+            # 
+            p.stage.LoadAndUnload((Sdf.Path("/Foo"),), tuple())
+            p.PrintPaths("/Foo loaded")
+            assert not p.stage.GetPrimAtPath("/Sad/Panda")
+            assert Sdf.Path("/Foo") not in p.stage.GetLoadSet()
+            assert Sdf.Path("/Foo/Baz") in p.stage.GetLoadSet()
+            assert Sdf.Path("/Foo/Baz/Garply") in p.stage.GetLoadSet()
+            assert len(p.stage.FindLoadable()) == 3
+            assert Sdf.Path("/Foo/Baz/Garply") in p.stage.FindLoadable()
+
+            #
+            # Load /Foo/Baz without descendants, which should pull in just
+            # /Foo/Baz.
+            # 
+            p.stage.LoadAndUnload((Sdf.Path("/Foo/Baz"),), tuple(),
+                                  policy=Usd.LoadWithoutDescendants)
+            p.PrintPaths("/Foo/Baz loaded w/o descendants")
+            assert not p.stage.GetPrimAtPath("/Sad/Panda")
+            assert Sdf.Path("/Foo") not in p.stage.GetLoadSet()
+            assert Sdf.Path("/Foo/Baz") in p.stage.GetLoadSet()
+            assert Sdf.Path("/Foo/Baz/Garply") not in p.stage.GetLoadSet()
+            assert len(p.stage.FindLoadable()) == 3
+            assert Sdf.Path("/Foo/Baz/Garply") in p.stage.FindLoadable()
+
+            #
+            # Load /Foo again, which will pull in /Foo/Baz and /Foo/Baz/Garply
             # 
             p.stage.LoadAndUnload((Sdf.Path("/Foo"),), tuple())
             p.PrintPaths("/Foo loaded")

@@ -169,6 +169,72 @@ UsdStageLoadRules::IsLoaded(SdfPath const &path) const
     return GetEffectiveRuleForPath(path) != NoneRule;
 }
 
+bool
+UsdStageLoadRules::IsLoadedWithAllDescendants(SdfPath const &path) const
+{
+    if (_rules.empty()) {
+        // LoadAll case.
+        return true;
+    }
+
+    // Find the longest prefix of \p path.  It must be an AllRule.
+    auto prefixIter = SdfPathFindLongestPrefix(
+        _rules.begin(), _rules.end(), path, _GetPath());
+
+    // There must either be no prefix, or a prefix that's AllRule.
+    if (prefixIter != _rules.end() && prefixIter->second != AllRule) {
+        return false;
+    }
+
+    // Find the range of paths prefixed by the given path.  There must either be
+    // none, or all of them must be AllRules.
+    auto range = SdfPathFindPrefixedRange(
+        _rules.begin(), _rules.end(), path, _GetPath());
+
+    for (auto iter = range.first; iter != range.second; ++iter) {
+        if (iter->second != AllRule) {
+            return false;
+        }
+    }
+
+    // This path and all descendants are considered loaded.
+    return true;
+}
+
+bool
+UsdStageLoadRules::IsLoadedWithNoDescendants(SdfPath const &path) const
+{
+    if (_rules.empty()) {
+        // LoadAll case.
+        return false;
+    }
+
+    // Look for \p path in _rules.  It must be present and must be an OnlyRule.
+    auto compareFn = [](std::pair<SdfPath, Rule> const &entry,
+                        SdfPath const &p) {
+        return entry.first < p;
+    };
+    auto iter =
+        std::lower_bound(_rules.begin(), _rules.end(), path, compareFn);
+    
+    if (iter == _rules.end() ||
+        iter->first != path ||
+        iter->second != OnlyRule) {
+        return false;
+    }
+
+    // Skip the entry for this path, and scan forward to the next non-NoneRule.
+    // If it has this path as prefix, return false, otherwise return true.
+    for (++iter; iter != _rules.end(); ++iter) {
+        if (iter->second != NoneRule) {
+            return !iter->first.HasPrefix(path);
+        }
+    }
+
+    // Encountered only NoneRules: this path is loaded with no descendants.
+    return true;
+}
+
 UsdStageLoadRules::Rule
 UsdStageLoadRules::GetEffectiveRuleForPath(SdfPath const &path) const
 {

@@ -101,6 +101,12 @@ void wrapUsdStageLoadRules()
 
         .def("IsLoaded", &UsdStageLoadRules::IsLoaded, arg("path"))
 
+        .def("IsLoadedWithAllDescendants",
+             &UsdStageLoadRules::IsLoadedWithAllDescendants, arg("path"))
+
+        .def("IsLoadedWithNoDescendants",
+             &UsdStageLoadRules::IsLoadedWithNoDescendants, arg("path"))
+
         .def("GetEffectiveRuleForPath",
              &UsdStageLoadRules::GetEffectiveRuleForPath, arg("path"))
 

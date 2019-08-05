@@ -1957,6 +1957,39 @@ UsdStage::LoadAndUnload(const SdfPathSet &loadSet,
 {
     TfAutoMallocTag2 tag("Usd", _mallocTagID);
 
+    // Optimization: If either or both of the sets is empty then check the other
+    // set to see if the load rules already produce the desired state.  If so
+    // this is a noop and we can early-out.
+    if (loadSet.empty() || unloadSet.empty()) {
+        bool isNoOp = true;
+        if (unloadSet.empty()) {
+            // Check the loadSet to see if we're already in the desired state.
+            for (SdfPath const &path: loadSet) {
+                if ((policy == UsdLoadWithDescendants &&
+                     !_loadRules.IsLoadedWithAllDescendants(path)) ||
+                    (policy == UsdLoadWithoutDescendants &&
+                     !_loadRules.IsLoadedWithNoDescendants(path))) {
+                    isNoOp = false;
+                    break;
+                }
+            }
+        }
+        else {
+            // Check the unloadSet to see if we're already in the desired state.
+            for (SdfPath const &path: unloadSet) {
+                if (_loadRules.GetEffectiveRuleForPath(path) !=
+                    UsdStageLoadRules::NoneRule) {
+                    isNoOp = false;
+                    break;
+                }
+            }
+        }
+        if (isNoOp) {
+            // No changes in effective load state for given paths, early-out.
+            return;
+        }
+    }
+
     SdfPathSet finalLoadSet, finalUnloadSet;
 
     for (auto const &path : loadSet) {
