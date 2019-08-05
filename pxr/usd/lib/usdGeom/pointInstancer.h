@@ -954,52 +954,6 @@ public:
 
 private:
 
-    // Get the authored prototype indices for instance transform computation.
-    // Fail if prototype indices are not authored.
-    bool _GetProtoIndicesForInstanceTransforms(
-        UsdTimeCode baseTime,
-        VtIntArray* protoIndices) const;
-
-    // Get the authored positions for instance transform computation. Fail if
-    // there are no authored positions or the number of positions doesn't match
-    // the number of instances.
-    bool _GetPositionsForInstanceTransforms(
-        UsdTimeCode baseTime,
-        size_t numInstances,
-        UsdTimeCode* positionsSampleTime,
-        double* positionsLowerTimeValue,
-        double* positionsUpperTimeValue,
-        bool* positionsHasSamples,
-        VtVec3fArray* positions) const;
-
-    // Get the authored velocities for instance transform computation. Fail if
-    // there are no authored velocities, the number of velocities doesn't match
-    // the number of instances, or the velocity timesample does not align with
-    // the position timesample.
-    bool _GetVelocitiesForInstanceTransforms(
-        UsdTimeCode baseTime,
-        size_t numInstances,
-        UsdTimeCode positionsSampleTime,
-        double positionsLowerTimeValue,
-        double positionsUpperTimeValue,
-        UsdTimeCode* velocitiesSampleTime,
-        double* velocitiesLowerTimeValue,
-        double* velocitiesUpperTimeValue,
-        bool* velocitiesHasSamples,
-        VtVec3fArray* velocities) const;
-
-    // Get the authored accelerations for instance transform computation. Fail
-    // if there are no authored accelerations, the number of accelerations
-    // doesn't match the number of instances, or the acceleration timesample
-    // does not align with the velocity timesample.
-    bool _GetAccelerationsForInstanceTransforms(
-        UsdTimeCode baseTime,
-        size_t numInstances,
-        UsdTimeCode velocitiesSampleTime,
-        double velocitiesLowerTimeValue,
-        double velocitiesUpperTimeValue,
-        VtVec3fArray* accelerations) const;
-
     // Get the authored positions, velocities, and accelerations for instance
     // transform computation. This method fails if the positions can't be
     // fetched (see _GetPositionsForInstanceTransforms). If velocities can't
@@ -1015,39 +969,6 @@ private:
         VtVec3fArray* velocities,
         UsdTimeCode* velocitiesSampleTime,
         VtVec3fArray* accelerations) const;
-
-    // Get the authored scales for instance transform computation. Fail if there
-    // are no authored scales or the number of scales doesn't match the number
-    // of instances.
-    bool _GetScalesForInstanceTransforms(
-        UsdTimeCode baseTime,
-        size_t numInstances,
-        VtVec3fArray* scales) const;
-
-    // Get the authored orientations for instance transform computation. Fail if
-    // there are no authored orientations or the number of orientations doesn't
-    // match the number of instances.
-    bool _GetOrientationsForInstanceTransforms(
-        UsdTimeCode baseTime,
-        size_t numInstances,
-        UsdTimeCode* orientationsSampleTime,
-        double* orientationsLowerTimeValue,
-        double* orientationsUpperTimeValue,
-        bool* orientationsHasSamples,
-        VtQuathArray* orientations) const;
-
-    // Get the authored angular velocities for instance transform computation.
-    // Fail if there are no authored angular velocities, the number of angular
-    // velocities doesn't match the number of instances, or the angular velocity
-    // timesample does not align with the orientation timesample.
-    bool _GetAngularVelocitiesForInstanceTransforms(
-        UsdTimeCode baseTime,
-        size_t numInstances,
-        UsdTimeCode orientationsSampleTime,
-        double orientationsLowerTimeValue,
-        double orientationsUpperTimeValue,
-        UsdTimeCode* angularVelocitiesSampleTime,
-        VtVec3fArray* angularVelocities) const;
 
     // Get the authored orientations and angular velocities for instance
     // transform computation. This method fails if the orientations can't be
