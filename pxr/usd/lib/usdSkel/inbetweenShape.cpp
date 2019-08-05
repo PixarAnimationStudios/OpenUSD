@@ -143,9 +143,14 @@ UsdSkelInbetweenShape::GetNormalOffsetsAttr() const
 
 
 UsdAttribute
-UsdSkelInbetweenShape::CreateNormalOffsetsAttr() const
+UsdSkelInbetweenShape::CreateNormalOffsetsAttr(
+    const VtValue &defaultValue) const
 {
-    return _GetNormalOffsetsAttr(/*create*/ true);
+    const UsdAttribute attr = _GetNormalOffsetsAttr(/*create*/ true);
+    if (attr && !defaultValue.IsEmpty()) {
+        attr.Set(defaultValue);
+    }
+    return attr;
 }
 
 

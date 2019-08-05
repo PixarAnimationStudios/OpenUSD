@@ -94,7 +94,8 @@ public:
     /// Returns the existing normal offsets attribute if the shape has
     /// normal offsets, or creates a new one.
     USDSKEL_API
-    UsdAttribute CreateNormalOffsetsAttr() const;
+    UsdAttribute
+    CreateNormalOffsetsAttr(const VtValue &defaultValue = VtValue()) const;
 
     /// Get the normal offsets authored for this shape.
     /// Normal offsets are optional, and may be left unspecified.

@@ -67,6 +67,35 @@ _GetWeight(const UsdSkelInbetweenShape& self)
 }
 
 
+bool
+_SetOffsets(const UsdSkelInbetweenShape& self, const object& val)
+{
+    const VtValue vtVal =
+        UsdPythonToSdfType(val, SdfValueTypeNames->Vector3fArray);
+    return vtVal.IsHolding<VtVec3fArray>() ?
+        self.SetOffsets(vtVal.UncheckedGet<VtVec3fArray>()) : false;
+}
+
+
+bool
+_SetNormalOffsets(const UsdSkelInbetweenShape& self, const object& val)
+{
+    const VtValue vtVal =
+        UsdPythonToSdfType(val, SdfValueTypeNames->Vector3fArray);
+    return vtVal.IsHolding<VtVec3fArray>() ?
+        self.SetNormalOffsets(vtVal.UncheckedGet<VtVec3fArray>()) : false;
+}
+
+
+UsdAttribute
+_CreateNormalOffsetsAttr(const UsdSkelInbetweenShape& self,
+                         const object& defaultValue)
+{
+    return self.CreateNormalOffsetsAttr(
+        UsdPythonToSdfType(defaultValue, SdfValueTypeNames->Vector3fArray));
+}            
+
+
 } // namespace
 
 
@@ -85,13 +114,13 @@ void wrapUsdSkelInbetweenShape()
         .def("HasAuthoredWeight", &This::HasAuthoredWeight)
 
         .def("GetOffsets", &_GetOffsets)
-        .def("SetOffsets", &This::SetOffsets, arg("offsets"))
+        .def("SetOffsets", &_SetOffsets, arg("offsets"))
 
         .def("GetNormalOffsetsAttr", &This::GetNormalOffsetsAttr)
-        .def("CreateNormalOffsetsAttr", &This::CreateNormalOffsetsAttr)
+        .def("CreateNormalOffsetsAttr", &_CreateNormalOffsetsAttr)
 
         .def("GetNormalOffsets", &_GetNormalOffsets)
-        .def("SetNormalOffsets", &This::SetNormalOffsets, arg("offsets"))
+        .def("SetNormalOffsets", &_SetNormalOffsets, arg("offsets"))
 
         .def("IsInbetween", &This::IsInbetween, arg("attr"))
         .staticmethod("IsInbetween")
