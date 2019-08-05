@@ -1,5 +1,5 @@
 test: testProxyShapeSelectionPerformance_LegacyViewport
-spec: third/mayapkg_2019.base/lib/pxrUsdMayaGL
+spec: third/mayapkg_2019.update1/lib/pxrUsdMayaGL
 configs:
 - name: fedora-gcc64-opt
   epoch: 1518466338

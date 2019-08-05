@@ -1,5 +1,5 @@
-test: testProxyShapeSelectionPerformance_VP2WithLegacySelection
-spec: third/mayapkg_2019.base/lib/pxrUsdMayaGL
+test: testProxyShapeSelectionPerformance
+spec: third/mayapkg_2019.update1/lib/pxrUsdMayaGL
 configs:
 - name: fedora-gcc64-opt
   epoch: 1518466338
@@ -28,25 +28,25 @@ configs:
     inputs:
     - {metric: samples, value: 1}
     outputs:
-    - {metric: time, value: 0.0064}
+    - {metric: time, value: 0.0084}
   - name: CombinedMesh Proxy Selection Append 2 Time
     digest: 96bc3d0bb7ce3570cb2d6bd32e101a76
     inputs:
     - {metric: samples, value: 1}
     outputs:
-    - {metric: time, value: 0.0064}
+    - {metric: time, value: 0.0084}
   - name: CombinedMesh Proxy Selection Append 3 Time
     digest: 96bc3d0bb7ce3570cb2d6bd32e101a76
     inputs:
     - {metric: samples, value: 1}
     outputs:
-    - {metric: time, value: 0.0064}
+    - {metric: time, value: 0.0084}
   - name: CombinedMesh Proxy Selection Append 4 Time
     digest: 96bc3d0bb7ce3570cb2d6bd32e101a76
     inputs:
     - {metric: samples, value: 1}
     outputs:
-    - {metric: time, value: 0.0064}
+    - {metric: time, value: 0.0084}
   - name: CombinedMesh_ProxyOnly Proxy Select Center Time
     digest: 96bc3d0bb7ce3570cb2d6bd32e101a76
     inputs:
