@@ -45,6 +45,9 @@ typedef std::vector<class HdBindingRequest> HdBindingRequestVector;
 typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 typedef std::vector<HdStShaderCodeSharedPtr> HdStShaderCodeSharedPtrVector;
 
+typedef boost::shared_ptr<class HdStTextureResourceHandle>
+                HdStTextureResourceHandleSharedPtr;
+
 
 /// \class HdStShaderCode
 ///
@@ -80,11 +83,10 @@ public:
 
     struct TextureDescriptor {
         TfToken name;
-        size_t handle; // GLuint64, for bindless textures
+        HdStTextureResourceHandleSharedPtr handle;
         enum { TEXTURE_2D, TEXTURE_UDIM_ARRAY, TEXTURE_UDIM_LAYOUT,
                TEXTURE_PTEX_TEXEL, TEXTURE_PTEX_LAYOUT };
         int type;
-        unsigned int sampler;
     };
     typedef std::vector<TextureDescriptor> TextureDescriptorVector;
 

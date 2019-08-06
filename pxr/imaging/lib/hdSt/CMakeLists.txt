@@ -81,6 +81,7 @@ pxr_library(hdSt
         surfaceShader
         texture
         textureResource
+        textureResourceHandle
         tokens
         unitTestGLDrawing
         vboMemoryManager

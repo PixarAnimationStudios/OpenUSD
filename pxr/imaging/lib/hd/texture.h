@@ -42,6 +42,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+class HdRenderIndex;
 class HdSceneDelegate;
 
 typedef boost::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
@@ -101,6 +102,12 @@ protected:
         HdSceneDelegate *sceneDelegate,
         const SdfPath &sceneId,
         HdTextureResource::ID texID) const;
+
+    HD_API
+    virtual void _RegisterTextureResource(
+        HdRenderIndex *renderIndex,
+        const SdfPath &textureHandleId,
+        const HdTextureResourceSharedPtr &textureResource);
 
 private:
     // Make sure we have a reference to the texture resource, so its

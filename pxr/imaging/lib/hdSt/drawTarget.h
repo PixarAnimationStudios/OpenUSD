@@ -27,10 +27,10 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/drawTargetRenderPassState.h"
+#include "pxr/imaging/hdSt/textureResourceHandle.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sprim.h"
-#include "pxr/imaging/hd/textureResource.h"
 #include "pxr/imaging/glf/drawTarget.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -147,8 +147,8 @@ private:
     HdRprimCollection       _collection;
 
     HdStDrawTargetRenderPassState _renderPassState;
-    std::vector<HdTextureResourceSharedPtr> _colorTextureResources;
-    HdTextureResourceSharedPtr              _depthTextureResource;
+    std::vector<HdStTextureResourceHandleSharedPtr> _colorTextureResourceHandles;
+    HdStTextureResourceHandleSharedPtr              _depthTextureResourceHandle;
 
     /// The context which owns the draw target object.
     GlfGLContextSharedPtr  _drawTargetContext;
@@ -162,9 +162,9 @@ private:
     const HdCamera *_GetCamera(const HdRenderIndex &renderIndex) const;
 
     void _ResizeDrawTarget();
-    void _RegisterTextureResource(HdSceneDelegate *sceneDelegate,
+    void _RegisterTextureResourceHandle(HdSceneDelegate *sceneDelegate,
                                   const std::string &name,
-                                  HdTextureResourceSharedPtr *resourcePtr);
+                                  HdStTextureResourceHandleSharedPtr *handlePtr);
 
     // No copy
     HdStDrawTarget()                                   = delete;

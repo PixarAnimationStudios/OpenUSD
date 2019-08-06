@@ -25,6 +25,8 @@
 
 #include "pxr/imaging/hdSt/surfaceShader.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/textureResource.h"
+#include "pxr/imaging/hdSt/textureResourceHandle.h"
 
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/bufferArrayRange.h"
@@ -106,36 +108,43 @@ HdStSurfaceShader::BindResources(HdSt_ResourceBinder const &binder, int program)
     int samplerUnit = binder.GetNumReservedTextureUnits();
     TF_FOR_ALL(it, _textureDescriptors) {
         HdBinding binding = binder.GetBinding(it->name);
+
+        if (!TF_VERIFY(it->handle)) {
+            continue;
+        }
+        HdStTextureResourceSharedPtr resource =
+                it->handle->GetTextureResource();
+
         // XXX: put this into resource binder.
         if (binding.GetType() == HdBinding::TEXTURE_2D) {
             glActiveTexture(GL_TEXTURE0 + samplerUnit);
-            glBindTexture(GL_TEXTURE_2D, (GLuint)it->handle);
-            glBindSampler(samplerUnit, it->sampler);
+            glBindTexture(GL_TEXTURE_2D, resource->GetTexelsTextureId());
+            glBindSampler(samplerUnit, resource->GetTexelsSamplerId());
             
             glProgramUniform1i(program, binding.GetLocation(), samplerUnit);
             samplerUnit++;
         } else if (binding.GetType() == HdBinding::TEXTURE_UDIM_ARRAY) {
             glActiveTexture(GL_TEXTURE0 + samplerUnit);
-            glBindTexture(GL_TEXTURE_2D_ARRAY, (GLuint)it->handle);
-            glBindSampler(samplerUnit, it->sampler);
+            glBindTexture(GL_TEXTURE_2D_ARRAY, resource->GetTexelsTextureId());
+            glBindSampler(samplerUnit, resource->GetTexelsSamplerId());
 
             glProgramUniform1i(program, binding.GetLocation(), samplerUnit);
             samplerUnit++;
         } else if (binding.GetType() == HdBinding::TEXTURE_UDIM_LAYOUT) {
             glActiveTexture(GL_TEXTURE0 + samplerUnit);
-            glBindTexture(GL_TEXTURE_1D, (GLuint)it->handle);
+            glBindTexture(GL_TEXTURE_1D, resource->GetLayoutTextureId());
 
             glProgramUniform1i(program, binding.GetLocation(), samplerUnit);
             samplerUnit++;
         } else if (binding.GetType() == HdBinding::TEXTURE_PTEX_TEXEL) {
             glActiveTexture(GL_TEXTURE0 + samplerUnit);
-            glBindTexture(GL_TEXTURE_2D_ARRAY, (GLuint)it->handle);
+            glBindTexture(GL_TEXTURE_2D_ARRAY, resource->GetTexelsTextureId());
 
             glProgramUniform1i(program, binding.GetLocation(), samplerUnit);
             samplerUnit++;
         } else if (binding.GetType() == HdBinding::TEXTURE_PTEX_LAYOUT) {
             glActiveTexture(GL_TEXTURE0 + samplerUnit);
-            glBindTexture(GL_TEXTURE_BUFFER, (GLuint)it->handle);
+            glBindTexture(GL_TEXTURE_BUFFER, resource->GetLayoutTextureId());
 
             glProgramUniform1i(program, binding.GetLocation(), samplerUnit);
             samplerUnit++;

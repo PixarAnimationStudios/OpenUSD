@@ -36,8 +36,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 typedef boost::shared_ptr<class HdStSurfaceShader> HdStSurfaceShaderSharedPtr;
 typedef boost::shared_ptr<class HdStTextureResource> HdStTextureResourceSharedPtr;
-typedef std::vector<HdStTextureResourceSharedPtr>
-                                HdStTextureResourceSharedPtrVector;
+typedef boost::shared_ptr<class HdStTextureResourceHandle> HdStTextureResourceHandleSharedPtr;
+typedef std::vector<HdStTextureResourceHandleSharedPtr>
+                                HdStTextureResourceHandleSharedPtrVector;
 
 class HioGlslfx;
 
@@ -122,9 +123,9 @@ public:
     void SetSurfaceShader(HdStSurfaceShaderSharedPtr &shaderCode);
 
 private:
-    HdStTextureResourceSharedPtr
-    _GetTextureResource(HdSceneDelegate *sceneDelegate,
-                        HdMaterialParam const &param);
+    HdStTextureResourceHandleSharedPtr
+    _GetTextureResourceHandle(HdSceneDelegate *sceneDelegate,
+                              HdMaterialParam const &param);
 
     bool
     _GetHasLimitSurfaceEvaluation(VtDictionary const & metadata) const;
@@ -136,7 +137,7 @@ private:
     static HioGlslfx                  *_fallbackSurfaceShader;
 
     HdStSurfaceShaderSharedPtr         _surfaceShader;
-    HdStTextureResourceSharedPtrVector _fallbackTextureResources;
+    HdStTextureResourceHandleSharedPtrVector _fallbackTextureResourceHandles;
 
     bool                               _hasPtex : 1;
     bool                               _hasLimitSurfaceEvaluation : 1;

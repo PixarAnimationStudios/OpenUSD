@@ -30,6 +30,7 @@
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/surfaceShader.h"
 #include "pxr/imaging/hdSt/textureResource.h"
+#include "pxr/imaging/hdSt/textureResourceHandle.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -211,7 +212,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         _surfaceShader->SetParams(params);
 
         // Release any fallback texture resources
-        _fallbackTextureResources.clear();
+        _fallbackTextureResourceHandles.clear();
 
         bool hasPtex = false;
         for (HdMaterialParam const & param: params) {
@@ -229,75 +230,65 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
                 sources.push_back(source);
             } else if (param.IsTexture()) {
 
-                HdStTextureResourceSharedPtr texResource =
-                    _GetTextureResource(sceneDelegate, param);
+                HdStTextureResourceHandleSharedPtr handle =
+                    _GetTextureResourceHandle(sceneDelegate, param);
 
-                if (!texResource) {
+                if (!(handle && handle->GetTextureResource())) {
                     // we were unable to get the requested resource or
                     // fallback resource so skip this param
                     // (Error already posted).
                     continue;
                 }
+                HdStTextureResourceSharedPtr texResource =
+                    handle->GetTextureResource();
 
                 bool bindless = GlfContextCaps::GetInstance()
                                                         .bindlessTextureEnabled;
-                // register bindless handle
 
                 HdStShaderCode::TextureDescriptor tex;
                 tex.name = param.GetName();
+                tex.handle = handle;
 
                 const HdTextureType textureType = texResource->GetTextureType();
                 if (textureType == HdTextureType::Ptex) {
                     hasPtex = true;
                     tex.type =
                         HdStShaderCode::TextureDescriptor::TEXTURE_PTEX_TEXEL;
-                    tex.handle =
-                                bindless ? texResource->GetTexelsTextureHandle()
-                                         : texResource->GetTexelsTextureId();
-                    textures.push_back(tex);
-
-                    if (bindless) {
-                        HdBufferSourceSharedPtr source(
-                                new HdSt_BindlessSamplerBufferSource(
-                                                           tex.name,
-                                                           GL_SAMPLER_2D_ARRAY,
-                                                           tex.handle));
-                        sources.push_back(source);
-                    }
-
-                    // layout
-
-                    tex.name =
-                       TfToken(param.GetName().GetString() + "_layout");
-                    tex.type =
-                       HdStShaderCode::TextureDescriptor::TEXTURE_PTEX_LAYOUT;
-                    tex.handle =
-                                bindless ? texResource->GetLayoutTextureHandle()
-                                         : texResource->GetLayoutTextureId();
-                    textures.push_back(tex);
-
-                    if (bindless) {
-                        HdBufferSourceSharedPtr source(
-                                new HdSt_BindlessSamplerBufferSource(
-                                                          tex.name,
-                                                          GL_INT_SAMPLER_BUFFER,
-                                                          tex.handle));
-                        sources.push_back(source);
-                    }
-                } else if (textureType == HdTextureType::Udim) {
-                    tex.type = HdStShaderCode::TextureDescriptor::TEXTURE_UDIM_ARRAY;
-                    tex.handle =
-                        bindless ? texResource->GetTexelsTextureHandle()
-                                 : texResource->GetTexelsTextureId();
-                    tex.sampler =  texResource->GetTexelsSamplerId();
                     textures.push_back(tex);
 
                     if (bindless) {
                         HdBufferSourceSharedPtr source(
                             new HdSt_BindlessSamplerBufferSource(
-                                tex.name,
-                                GL_SAMPLER_2D_ARRAY,
-                                tex.handle));
+                                    tex.name,
+                                    GL_SAMPLER_2D_ARRAY,
+                                    texResource->GetTexelsTextureHandle()));
+                        sources.push_back(source);
+                    }
+
+                    tex.name =
+                       TfToken(param.GetName().GetString() + "_layout");
+                    tex.type =
+                       HdStShaderCode::TextureDescriptor::TEXTURE_PTEX_LAYOUT;
+                    textures.push_back(tex);
+
+                    if (bindless) {
+                        HdBufferSourceSharedPtr source(
+                            new HdSt_BindlessSamplerBufferSource(
+                                    tex.name,
+                                    GL_INT_SAMPLER_BUFFER,
+                                    texResource->GetLayoutTextureHandle()));
+                        sources.push_back(source);
+                    }
+                } else if (textureType == HdTextureType::Udim) {
+                    tex.type = HdStShaderCode::TextureDescriptor::TEXTURE_UDIM_ARRAY;
+                    textures.push_back(tex);
+
+                    if (bindless) {
+                        HdBufferSourceSharedPtr source(
+                            new HdSt_BindlessSamplerBufferSource(
+                                    tex.name,
+                                    GL_SAMPLER_2D_ARRAY,
+                                    texResource->GetTexelsTextureHandle()));
                         sources.push_back(source);
                     }
 
@@ -305,34 +296,26 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
                         TfToken(param.GetName().GetString() + "_layout");
                     tex.type =
                         HdStShaderCode::TextureDescriptor::TEXTURE_UDIM_LAYOUT;
-                    tex.handle =
-                        bindless ? texResource->GetLayoutTextureHandle()
-                                 : texResource->GetLayoutTextureId();
-                    tex.sampler = 0;
                     textures.push_back(tex);
 
                     if (bindless) {
                         HdBufferSourceSharedPtr source(
                             new HdSt_BindlessSamplerBufferSource(
-                                tex.name,
-                                GL_SAMPLER_1D,
-                                tex.handle));
+                                    tex.name,
+                                    GL_SAMPLER_1D,
+                                    texResource->GetLayoutTextureHandle()));
                         sources.push_back(source);
                     }
                 } else if (textureType == HdTextureType::Uv) {
                     tex.type = HdStShaderCode::TextureDescriptor::TEXTURE_2D;
-                    tex.handle =
-                                bindless ? texResource->GetTexelsTextureHandle()
-                                         : texResource->GetTexelsTextureId();
-                    tex.sampler =  texResource->GetTexelsSamplerId();
                     textures.push_back(tex);
 
                     if (bindless) {
                         HdBufferSourceSharedPtr source(
-                                new HdSt_BindlessSamplerBufferSource(
-                                                           tex.name,
-                                                           GL_SAMPLER_2D,
-                                                           tex.handle));
+                            new HdSt_BindlessSamplerBufferSource(
+                                    tex.name,
+                                    GL_SAMPLER_2D,
+                                    texResource->GetTexelsTextureHandle()));
                         sources.push_back(source);
                     }
                 }
@@ -360,15 +343,17 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     *dirtyBits = Clean;
 }
 
-HdStTextureResourceSharedPtr
-HdStMaterial::_GetTextureResource(
+HdStTextureResourceHandleSharedPtr
+HdStMaterial::_GetTextureResourceHandle(
         HdSceneDelegate *sceneDelegate,
         HdMaterialParam const &param)
 {
-    HdResourceRegistrySharedPtr const &resourceRegistry = 
-        sceneDelegate->GetRenderIndex().GetResourceRegistry();
+    HdStResourceRegistrySharedPtr const& resourceRegistry =
+        boost::static_pointer_cast<HdStResourceRegistry>(
+            sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
     HdStTextureResourceSharedPtr texResource;
+    HdStTextureResourceHandleSharedPtr handle;
 
     SdfPath const &connection = param.GetConnection();
     if (!connection.IsEmpty()) {
@@ -376,7 +361,6 @@ HdStMaterial::_GetTextureResource(
             GetTextureResourceID(sceneDelegate, connection);
 
         if (texID != HdTextureResource::ID(-1)) {
-
             // Use render index to convert local texture id into global
             // texture key
             HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
@@ -403,6 +387,29 @@ HdStMaterial::_GetTextureResource(
                     (texInstance.GetValue());
             }
         }
+
+        HdResourceRegistry::TextureKey handleKey =
+            HdStTextureResourceHandle::GetHandleKey(
+                &sceneDelegate->GetRenderIndex(), connection);
+
+        HdInstance<HdResourceRegistry::TextureKey,
+                    HdStTextureResourceHandleSharedPtr> handleInstance;
+
+        bool handleFound = false;
+        std::unique_lock<std::mutex> regLock =
+            resourceRegistry->FindTextureResourceHandle
+                              (handleKey, &handleInstance, &handleFound);
+
+        // A bad asset can cause the texture resource to not
+        // be found. Hence, issue a warning and continue onto the
+        // next param.
+        if (!handleFound) {
+            TF_WARN("No texture resource handle found with path %s",
+                param.GetConnection().GetText());
+        } else {
+            handle = handleInstance.GetValue();
+            handle->SetTextureResource(texResource);
+        }
     }
 
     // There are many reasons why texResource could be null here:
@@ -414,7 +421,7 @@ HdStMaterial::_GetTextureResource(
     // fallback value
     //
     // XXX todo handle fallback Ptex textures
-    if (!texResource) {
+    if (!(handle && handle->GetTextureResource())) {
         // Fallback texture are only supported for UV textures.
         if (param.GetTextureType() != HdTextureType::Uv) {
             return {};
@@ -423,7 +430,7 @@ HdStMaterial::_GetTextureResource(
             GlfUVTextureStorage::New(1,1, param.GetFallbackValue());
         GlfTextureHandleRefPtr texture =
             GlfTextureRegistry::GetInstance().GetTextureHandle(texPtr);
-        texResource.reset(
+        HdStTextureResourceSharedPtr texResource(
             new HdStSimpleTextureResource(texture,
                                           HdTextureType::Uv,
                                           HdWrapClamp,
@@ -431,10 +438,11 @@ HdStMaterial::_GetTextureResource(
                                           HdMinFilterNearest,
                                           HdMagFilterNearest,
                                           0));
-        _fallbackTextureResources.push_back(texResource);
+        handle.reset(new HdStTextureResourceHandle(texResource));
+        _fallbackTextureResourceHandles.push_back(handle);
     }
 
-    return texResource;
+    return handle;
 }
 
 bool
