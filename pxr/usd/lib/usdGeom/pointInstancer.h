@@ -954,60 +954,28 @@ public:
 
 private:
 
-    // Get the authored positions, velocities, and accelerations for instance
-    // transform computation. This method fails if the positions can't be
-    // fetched (see _GetPositionsForInstanceTransforms). If velocities can't
-    // be fetched (see _GetVelocitiesForInstanceTransforms) or positions are 
-    // not time-varying, then \p velocities is cleared and 
-    // \p velocitiesSampleTime is not changed. If accelerations can't be fetched 
-    // (see _GetAccelerationsForInstanceTransforms) then \p accelerations is 
-    // cleared.
-    bool _GetPositionsVelocitiesAndAccelerationsForInstanceTransforms(
-        UsdTimeCode baseTime,
-        size_t numInstances,
-        VtVec3fArray* positions,
-        VtVec3fArray* velocities,
-        UsdTimeCode* velocitiesSampleTime,
-        VtVec3fArray* accelerations) const;
-
-    // Get the authored orientations and angular velocities for instance
-    // transform computation. This method fails if the orientations can't be
-    // fetched (see _GetOrientationsForInstanceTransforms). If angular
-    // velocities can't be fetched (see
-    // _GetAngularVelocitiesForInstanceTransforms) or orientations are not time-
-    // varying, then \p angularVelocities is cleared and
-    // \p angularVelocitiesSampleTime is not changed.
-    bool _GetOrientationsAndAngularVelocitiesForInstanceTransforms(
-        UsdTimeCode baseTime,
-        size_t numInstances,
-        VtQuathArray* orientations,
-        VtVec3fArray* angularVelocities,
-        UsdTimeCode* angularVelocitiesSampleTime) const;
-
     // Get the authored prototype paths. Fail if there are no authored prototype
     // paths or the prototype indices are out of bounds.
     bool _GetPrototypePathsForInstanceTransforms(
         const VtIntArray& protoIndices,
         SdfPathVector* protoPaths) const;
 
-    // Fetches data from attributes on a UsdGeomPointInstancer required for
-    // instance transform calculations.
-    bool _ComputeInstanceTransformsAtTimePreamble(
+    // Get the authored prototype indices for instance transform computation.
+    // Fail if prototype indices are not authored.
+    bool _GetProtoIndicesForInstanceTransforms(
+        UsdTimeCode baseTime,
+        VtIntArray* protoIndices) const;
+
+    // Fetches data from attributes specific to UsdGeomPointInstancer
+    // required for instance transform calculations; this includes
+    // protoIndices, protoPaths, and the mask. 
+    bool _ComputePointInstancerAttributesPreamble(
         const UsdTimeCode baseTime,
         const ProtoXformInclusion doProtoXforms,
         const MaskApplication applyMask,
         VtIntArray* protoIndices,
-        VtVec3fArray* positions,
-        VtVec3fArray* velocities,
-        UsdTimeCode* velocitiesSampleTime,
-        VtVec3fArray* accelerations,
-        VtVec3fArray* scales,
-        VtQuathArray* orientations,
-        VtVec3fArray* angularVelocities,
-        UsdTimeCode* angularVelocitiesSampleTime,
         SdfPathVector* protoPaths,
-        std::vector<bool>* mask,
-        float* velocityScale) const;
+        std::vector<bool>* mask) const;
 
 public:
 

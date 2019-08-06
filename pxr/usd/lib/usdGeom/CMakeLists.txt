@@ -58,6 +58,9 @@ pxr_library(usdGeom
     PYTHON_CPPFILES
         moduleDeps.cpp
 
+    PRIVATE_CLASSES
+        samplingUtils
+
     PYMODULE_CPPFILES
         module.cpp
         wrapBBoxCache.cpp

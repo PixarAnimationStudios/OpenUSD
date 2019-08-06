@@ -64,6 +64,13 @@ _CreateVelocitiesAttr(UsdGeomPointBased &self,
 }
         
 static UsdAttribute
+_CreateAccelerationsAttr(UsdGeomPointBased &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateAccelerationsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Vector3fArray), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateNormalsAttr(UsdGeomPointBased &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateNormalsAttr(
@@ -114,6 +121,13 @@ void wrapUsdGeomPointBased()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
+        .def("GetAccelerationsAttr",
+             &This::GetAccelerationsAttr)
+        .def("CreateAccelerationsAttr",
+             &_CreateAccelerationsAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
         .def("GetNormalsAttr",
              &This::GetNormalsAttr)
         .def("CreateNormalsAttr",
@@ -144,7 +158,6 @@ void wrapUsdGeomPointBased()
 //
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
-
 namespace {
 
 static TfPyObjWrapper 
@@ -170,6 +183,36 @@ _ComputeExtent(object points) {
     }
 }
 
+static
+VtVec3fArray
+_ComputePointsAtTime(
+    const UsdGeomPointBased& self,
+    const UsdTimeCode time,
+    const UsdTimeCode baseTime)
+{
+    VtVec3fArray points;
+
+    // On error we'll be returning an empty array.
+    self.ComputePointsAtTime(&points, time, baseTime);
+
+    return points;
+}
+
+static
+std::vector<VtVec3fArray>
+_ComputePointsAtTimes(
+    const UsdGeomPointBased& self,
+    const std::vector<UsdTimeCode>& times,
+    const UsdTimeCode baseTime)
+{
+    std::vector<VtVec3fArray> points;
+
+    // On error we'll be returning an empty array.
+    self.ComputePointsAtTimes(&points, times, baseTime);
+
+    return points;
+}
+
 WRAP_CUSTOM {
     _class
         .def("GetNormalsInterpolation",
@@ -182,6 +225,13 @@ WRAP_CUSTOM {
             &_ComputeExtent, 
             (arg("points")))
         .staticmethod("ComputeExtent")
+
+        .def("ComputePointsAtTime",
+             &_ComputePointsAtTime,
+             (arg("time"), arg("baseTime")))
+        .def("ComputePointsAtTimes",
+             &_ComputePointsAtTimes,
+             (arg("times"), arg("baseTime")))
 
         ;
 }

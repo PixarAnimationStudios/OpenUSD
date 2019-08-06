@@ -320,6 +320,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/gf/transform.h"
+#include "pxr/usd/usdGeom/samplingUtils.h"
 #include "pxr/usd/usdGeom/bboxCache.h"
 #include "pxr/usd/usdGeom/debugCodes.h"
 #include "pxr/usd/usdGeom/xformCache.h"
@@ -616,31 +617,19 @@ UsdGeomPointInstancer::ComputeMaskAtTime(UsdTimeCode time,
     return mask;
 }
 
-// Get the authored data of an attribute at the lower bracketing timesample of a
-// given base time. Fails if the attribute is not authored. If baseTime is
-// UsdTimeCode.Default() or the attribute has no time samples, the attribute is
-// sampled at the UsdTimeCode.Default().
-template<class T>
-static bool
-_GetAttrForInstanceTransforms(
-    const UsdAttribute& attr,
+bool
+UsdGeomPointInstancer::_GetProtoIndicesForInstanceTransforms(
     UsdTimeCode baseTime,
-    UsdTimeCode* attrSampleTime,
-    double* lowerTimeValue,
-    double* upperTimeValue,
-    bool* attrHasSamples,
-    T* attrData)
+    VtIntArray* protoIndices) const
 {
-
     if (baseTime.IsNumeric()) {
-
         double sampleTimeValue = 0.0;
-        double sampleUpperTimeValue = 0.0;
+        double upperTimeValue = 0.0;
         bool hasSamples;
-        if (!attr.GetBracketingTimeSamples(
+        if (!GetProtoIndicesAttr().GetBracketingTimeSamples(
                 baseTime.GetValue(),
                 &sampleTimeValue,
-                &sampleUpperTimeValue,
+                &upperTimeValue,
                 &hasSamples)) {
             return false;
         }
@@ -650,311 +639,16 @@ _GetAttrForInstanceTransforms(
             sampleTime = UsdTimeCode(sampleTimeValue);
         }
 
-        if (!attr.Get(attrData, sampleTime)) {
+        if (!GetProtoIndicesAttr().Get(protoIndices, sampleTime)) {
             return false;
         }
-
-        // if the basetime is exactly at a sampled value, increase basetime by an 
-        // "epsilon" value based on the maximum time value and calculate bracketed 
-        // time sample values again
-
-        if (GfIsClose(
-                sampleTimeValue,
-                sampleUpperTimeValue,
-                std::numeric_limits<double>::epsilon())) {
-            double timeValueEpsilon = baseTime.GetValue() + UsdTimeCode::SafeStep();
-            UsdTimeCode baseTimeEpsilon = UsdTimeCode(timeValueEpsilon);
-            if (!attr.GetBracketingTimeSamples(
-                baseTimeEpsilon.GetValue(),
-                &sampleTimeValue,
-                &sampleUpperTimeValue,
-                &hasSamples)) {
-                return false;
-            }
-        }
-
-        *attrSampleTime = sampleTime;
-        *lowerTimeValue = sampleTimeValue;
-        *upperTimeValue = sampleUpperTimeValue;
-        *attrHasSamples = hasSamples;
 
     } else {
-
         // baseTime is UsdTimeCode.Default()
-        if (!attr.Get(attrData, baseTime)) {
+        if (!GetProtoIndicesAttr().Get(protoIndices, baseTime)) {
             return false;
         }
-        *attrSampleTime = baseTime;
-        *lowerTimeValue = baseTime.GetValue();
-        *upperTimeValue = baseTime.GetValue();
-        *attrHasSamples = false;
-
     }
-
-    return true;
-}
-
-// Check if the bracketing time samples for two different attributes are 
-// aligned. Fail if they are not aligned or if the number of time samples
-// do not match. Also check if the size of the array is equivalent to
-// the number of instances. 
-static bool
-_CheckSampleAlignment(
-    bool attribute1HasSamples,
-    double attribute1LowerTimeValue,
-    double attribute1UpperTimeValue,
-    UsdTimeCode attribute1SampleTime,
-    double attribute2LowerTimeValue,
-    double attribute2UpperTimeValue,
-    UsdTimeCode attribute2SampleTime,
-    VtValue attrData,
-    size_t correctAttrDataLength,
-    bool* alignmentValid,
-    bool* attrCorrectLength)
-{
-    // boolean value indicating whether or not the bracketing time samples for
-    // position and velocity are equivalent
-    bool bracketingTimeSamplesAligned = attribute1HasSamples && GfIsClose(
-            attribute1LowerTimeValue, 
-            attribute2LowerTimeValue, 
-            std::numeric_limits<double>::epsilon()) 
-            && GfIsClose(
-            attribute1UpperTimeValue,
-            attribute2UpperTimeValue,
-            std::numeric_limits<double>::epsilon());
-
-    *alignmentValid = true;
-    *attrCorrectLength = true;
-
-    if (!bracketingTimeSamplesAligned || !GfIsClose(
-            attribute1SampleTime.GetValue(),
-            attribute2SampleTime.GetValue(),
-            std::numeric_limits<double>::epsilon())) {
-        *alignmentValid = false;
-    }
-
-    if (attrData.GetArraySize() != correctAttrDataLength) {
-        *attrCorrectLength = false;
-    }
-
-    if (!(*alignmentValid) || !(*attrCorrectLength)) {
-      return false;
-    }
-    return true;
-}
-
-bool
-UsdGeomPointInstancer::_GetPositionsVelocitiesAndAccelerationsForInstanceTransforms(
-    UsdTimeCode baseTime,
-    size_t numInstances,
-    VtVec3fArray* positions,
-    VtVec3fArray* velocities,
-    UsdTimeCode* velocitiesSampleTime,
-    VtVec3fArray* accelerations) const
-{
-    // Get positions attribute and check array size
-
-    UsdTimeCode positionsSampleTime;
-    double positionsLowerTimeValue = 0.0;
-    double positionsUpperTimeValue = 0.0;
-    bool positionsHasSamples;
-
-    if (!_GetAttrForInstanceTransforms<VtVec3fArray>(
-            GetPositionsAttr(),
-            baseTime,
-            &positionsSampleTime,
-            &positionsLowerTimeValue,
-            &positionsUpperTimeValue,
-            &positionsHasSamples,
-            positions)) {
-        TF_WARN("%s -- no positions", GetPrim().GetPath().GetText());
-        return false;
-    }
-    if (positions->size() != numInstances) {
-        TF_WARN("%s -- found [%zu] positions, but expected [%zu]",
-            GetPrim().GetPath().GetText(),
-            positions->size(),
-            numInstances);
-        return false;
-    }
-
-    // Get velocities attribute and check sample alignment with positions
-    // attribute and array size
-
-    double velocitiesLowerTimeValue = 0.0;
-    double velocitiesUpperTimeValue = 0.0;
-    bool velocitiesHasSamples = true;
-    bool velocitiesAlignmentValid;
-    bool velocitiesCorrectLength;
-
-    if (!positionsHasSamples || !_GetAttrForInstanceTransforms<VtVec3fArray>(
-            GetVelocitiesAttr(),
-            baseTime,
-            velocitiesSampleTime,
-            &velocitiesLowerTimeValue,
-            &velocitiesUpperTimeValue,
-            &velocitiesHasSamples,
-            velocities)) {
-        velocities->clear();
-    }
-    if (!_CheckSampleAlignment(
-            velocitiesHasSamples,
-            positionsLowerTimeValue,
-            positionsUpperTimeValue,
-            positionsSampleTime,
-            velocitiesLowerTimeValue,
-            velocitiesUpperTimeValue,
-            *velocitiesSampleTime,
-            VtValue(*velocities),
-            numInstances,
-            &velocitiesAlignmentValid,
-            &velocitiesCorrectLength)) {
-        if (!velocities->empty() && !velocitiesAlignmentValid) {
-            TF_WARN("%s -- velocity samples are not aligned with position samples",
-                GetPrim().GetPath().GetText());
-        }
-        if (!velocities->empty() && 
-                velocitiesAlignmentValid && 
-                !velocitiesCorrectLength) {
-            TF_WARN("%s -- found [%zu] velocities, but expected [%zu]",
-                GetPrim().GetPath().GetText(),
-                velocities->size(),
-                numInstances);
-        }
-        velocities->clear();
-    }
-
-    // Get accelerations attribute and check sample alignment with velocities
-    // attribute and array size
-
-    UsdTimeCode accelerationsSampleTime;
-    double accelerationsLowerTimeValue = 0.0;
-    double accelerationsUpperTimeValue = 0.0;
-    bool accelerationsHasSamples = true;
-    bool accelerationsAlignmentValid;
-    bool accelerationsCorrectLength;
-
-    if (!velocitiesHasSamples || (velocities->size() == 0) 
-            || !_GetAttrForInstanceTransforms<VtVec3fArray>(
-                GetAccelerationsAttr(),
-                baseTime,
-                &accelerationsSampleTime,
-                &accelerationsLowerTimeValue,
-                &accelerationsUpperTimeValue,
-                &accelerationsHasSamples,
-                accelerations)) {
-        accelerations->clear();
-    }
-    if (!_CheckSampleAlignment(
-            accelerationsHasSamples,
-            velocitiesLowerTimeValue,
-            velocitiesUpperTimeValue,
-            *velocitiesSampleTime,
-            accelerationsLowerTimeValue,
-            accelerationsUpperTimeValue,
-            accelerationsSampleTime,
-            VtValue(*accelerations),
-            numInstances,
-            &accelerationsAlignmentValid,
-            &accelerationsCorrectLength)) {
-        if (!accelerations->empty() && !accelerationsAlignmentValid) {
-            TF_WARN("%s -- acceleration samples are not aligned with velocity samples",
-                GetPrim().GetPath().GetText());
-        }
-        if (!accelerations->empty() && 
-                accelerationsAlignmentValid && 
-                !accelerationsCorrectLength) {
-            TF_WARN("%s -- found [%zu] accelerations, but expected [%zu]",
-                GetPrim().GetPath().GetText(),
-                accelerations->size(),
-                numInstances);
-        }
-        accelerations->clear();
-    }
-
-    return true;
-}
-
-bool
-UsdGeomPointInstancer::_GetOrientationsAndAngularVelocitiesForInstanceTransforms(
-    UsdTimeCode baseTime,
-    size_t numInstances,
-    VtQuathArray* orientations,
-    VtVec3fArray* angularVelocities,
-    UsdTimeCode* angularVelocitiesSampleTime) const
-{
-    // Get orientations attribute and check array size
-
-    UsdTimeCode orientationsSampleTime;
-    double orientationsLowerTimeValue = 0.0;
-    double orientationsUpperTimeValue = 0.0;
-    bool orientationsHasSamples = true;
-
-    if (!_GetAttrForInstanceTransforms<VtQuathArray>(
-            GetOrientationsAttr(),
-            baseTime,
-            &orientationsSampleTime,
-            &orientationsLowerTimeValue,
-            &orientationsUpperTimeValue,
-            &orientationsHasSamples,
-            orientations)) {
-        return false;
-    }
-
-    if (orientations->size() != numInstances) {
-        TF_WARN("%s -- found [%zu] orientations, but expected [%zu]",
-            GetPrim().GetPath().GetText(),
-            orientations->size(),
-            numInstances);
-        return false;
-    }
-
-    // Get angular velocities attribute and check sample alignment
-    // with orientations attribute and array size
-
-    double angularVelocitiesLowerTimeValue = 0.0;
-    double angularVelocitiesUpperTimeValue = 0.0;
-    bool angularVelocitiesHasSamples = true;
-    bool angularVelocitiesAlignmentValid;
-    bool angularVelocitiesCorrectLength;
-
-    if (!orientationsHasSamples || !_GetAttrForInstanceTransforms<VtVec3fArray>(
-            GetAngularVelocitiesAttr(),
-            baseTime,
-            angularVelocitiesSampleTime,
-            &angularVelocitiesLowerTimeValue,
-            &angularVelocitiesUpperTimeValue,
-            &angularVelocitiesHasSamples,
-            angularVelocities)) {
-        angularVelocities->clear();
-    }
-    if (!_CheckSampleAlignment(
-            angularVelocitiesHasSamples,
-            orientationsLowerTimeValue,
-            orientationsUpperTimeValue,
-            orientationsSampleTime,
-            angularVelocitiesLowerTimeValue,
-            angularVelocitiesUpperTimeValue,
-            *angularVelocitiesSampleTime,
-            VtValue(*angularVelocities),
-            numInstances,
-            &angularVelocitiesAlignmentValid,
-            &angularVelocitiesCorrectLength)) {
-        if (!angularVelocities->empty() && !angularVelocitiesAlignmentValid) {
-            TF_WARN("%s -- angular velocity samples are not aligned with orientation samples",
-                GetPrim().GetPath().GetText());
-        }
-        if (!angularVelocities->empty() &&
-                angularVelocitiesAlignmentValid && 
-                !angularVelocitiesCorrectLength) {
-            TF_WARN("%s -- found [%zu] angular velocities, but expected [%zu]",
-                GetPrim().GetPath().GetText(),
-                angularVelocities->size(),
-                numInstances);
-        }
-        angularVelocities->clear();
-    }
-
     return true;
 }
 
@@ -986,97 +680,23 @@ UsdGeomPointInstancer::_GetPrototypePathsForInstanceTransforms(
 }
 
 bool
-UsdGeomPointInstancer::_ComputeInstanceTransformsAtTimePreamble(
+UsdGeomPointInstancer::_ComputePointInstancerAttributesPreamble(
     const UsdTimeCode baseTime,
     const ProtoXformInclusion doProtoXforms,
     const MaskApplication applyMask,
     VtIntArray* protoIndices,
-    VtVec3fArray* positions,
-    VtVec3fArray* velocities,
-    UsdTimeCode* velocitiesSampleTime,
-    VtVec3fArray* accelerations,
-    VtVec3fArray* scales,
-    VtQuathArray* orientations,
-    VtVec3fArray* angularVelocities,
-    UsdTimeCode* angularVelocitiesSampleTime,
     SdfPathVector* protoPaths,
-    std::vector<bool>* mask,
-    float* velocityScale) const
+    std::vector<bool>* mask) const
 {
     TRACE_FUNCTION();
-    
-    // dummy values for passing into _GetAttrForInstanceTransforms
-    // when we do not need to use the resulting bracketing time values
-    double dummyLowerTimeValue = 0.0;
-    double dummyUpperTimeValue = 0.0;
 
-    // Get protoIndices attribute
-
-    UsdTimeCode protoIndicesSampleTime;
-    bool protoIndicesHasSamples;
-    if (!_GetAttrForInstanceTransforms<VtIntArray>(
-            GetProtoIndicesAttr(),
+    if (!_GetProtoIndicesForInstanceTransforms(
             baseTime,
-            &protoIndicesSampleTime,
-            &dummyLowerTimeValue,
-            &dummyUpperTimeValue,
-            &protoIndicesHasSamples,
             protoIndices)) {
-        // We don't TF_WARN here because computing transforms on an empty
-        // PointInstancer should return an empty result without error.
         return false;
     }
 
-    // We determine the number of instances from the number of prototype
-    // indices. All other data (positions, velocities, orientations, etc.) is
-    // invalid if it does not conform to this count.
     size_t numInstances = protoIndices->size();
-
-    if (numInstances == 0) {
-        return true;
-    }
-
-    if (!_GetPositionsVelocitiesAndAccelerationsForInstanceTransforms(
-            baseTime,
-            numInstances,
-            positions,
-            velocities,
-            velocitiesSampleTime,
-            accelerations)) {
-        return false;
-    }
-
-    // We don't currently support an attribute which linearly changes the
-    // scale (as velocity does for position). Instead, we lock the scale to
-    // the last authored value without performing any interpolation.
-
-    // Get scales attribute and check array size
-
-    UsdTimeCode scalesSampleTime;
-    bool scalesHasSamples;
-
-    if (_GetAttrForInstanceTransforms<VtVec3fArray>(
-            GetScalesAttr(),
-            baseTime,
-            &scalesSampleTime,
-            &dummyLowerTimeValue,
-            &dummyUpperTimeValue,
-            &scalesHasSamples,
-            scales)) {
-        if (scales->size() != numInstances) {
-            TF_WARN("%s -- found [%zu] scales, but expected [%zu]",
-                GetPrim().GetPath().GetText(),
-                scales->size(),
-                numInstances);
-        }
-    }
-
-    _GetOrientationsAndAngularVelocitiesForInstanceTransforms(
-            baseTime,
-            numInstances,
-            orientations,
-            angularVelocities,
-            angularVelocitiesSampleTime);
 
     if (doProtoXforms == IncludeProtoXform) {
         if (!_GetPrototypePathsForInstanceTransforms(
@@ -1098,9 +718,6 @@ UsdGeomPointInstancer::_ComputeInstanceTransformsAtTimePreamble(
         }
     }
 
-    *velocityScale = UsdGeomMotionAPI(GetPrim()).ComputeVelocityScale(
-        baseTime);
-
     return true;
 }
 
@@ -1114,102 +731,18 @@ UsdGeomPointInstancer::ComputeInstanceTransformsAtTime(
 {
     TRACE_FUNCTION();
 
-    if (!xforms) {
-        TF_WARN(
-            "%s -- null container passed to ComputeInstanceTransformsAtTime()",
-            GetPrim().GetPath().GetText());
+    std::vector<VtArray<GfMatrix4d>> xformsArray;
+    std::vector<UsdTimeCode> times({time});
+    if (!ComputeInstanceTransformsAtTimes(&xformsArray,
+                            times,
+                            baseTime,
+                            doProtoXforms,
+                            applyMask)) {
         return false;
     }
+    *xforms = xformsArray.at(0);
 
-    if (time.IsNumeric() != baseTime.IsNumeric()) {
-        TF_CODING_ERROR(
-            "%s -- time and baseTime must either both be numeric or both be default",
-            GetPrim().GetPath().GetText());
-    }
-
-    VtIntArray protoIndices;
-    VtVec3fArray positions;
-    VtVec3fArray velocities;
-    UsdTimeCode velocitiesSampleTime;
-    VtVec3fArray accelerations;
-    VtVec3fArray scales;
-    VtQuathArray orientations;
-    VtVec3fArray angularVelocities;
-    UsdTimeCode angularVelocitiesSampleTime;
-    SdfPathVector protoPaths;
-    std::vector<bool> mask;
-    float velocityScale;
-    if (!_ComputeInstanceTransformsAtTimePreamble(
-            baseTime,
-            doProtoXforms,
-            applyMask,
-            &protoIndices,
-            &positions,
-            &velocities,
-            &velocitiesSampleTime,
-            &accelerations,
-            &scales,
-            &orientations,
-            &angularVelocities,
-            &angularVelocitiesSampleTime,
-            &protoPaths,
-            &mask,
-            &velocityScale)) {
-        return false;
-    }
-
-    size_t numInstances = protoIndices.size();
-    if (numInstances == 0) {
-        xforms->clear();
-        return true;
-    }
-
-    UsdStageWeakPtr stage = GetPrim().GetStage();
-
-    // If there are no valid velocities or angular velocities, we fallback to
-    // "standard" computation logic (linear interpolation between samples).
-    if (velocities.empty() && angularVelocities.empty()) {
-
-        // Try to fetch the positions, scales, and orientations at the sample
-        // time. If this fails or the fetched data don't have the correct
-        // topology, we fallback to the data from the base time.
-
-        VtVec3fArray interpolatedPositions;
-        if (GetPositionsAttr().Get(&interpolatedPositions, time)
-                && interpolatedPositions.size() == numInstances) {
-            positions = interpolatedPositions;
-        }
-
-        VtVec3fArray interpolatedScales;
-        if (GetScalesAttr().Get(&interpolatedScales, time)
-                && interpolatedScales.size() == numInstances) {
-            scales = interpolatedScales;
-        }
-
-        VtQuathArray interpolatedOrientations;
-        if (GetOrientationsAttr().Get(&interpolatedOrientations, time)
-                && interpolatedOrientations.size() == numInstances) {
-            orientations = interpolatedOrientations;
-        }
-
-    }
-
-    return UsdGeomPointInstancer::ComputeInstanceTransformsAtTime(
-        xforms,
-        stage,
-        time,
-        protoIndices,
-        positions,
-        velocities,
-        velocitiesSampleTime,
-        accelerations,
-        scales,
-        orientations,
-        angularVelocities,
-        angularVelocitiesSampleTime,
-        protoPaths,
-        mask,
-        velocityScale);
+    return true;
 }
 
 bool
@@ -1242,26 +775,51 @@ UsdGeomPointInstancer::ComputeInstanceTransformsAtTimes(
     SdfPathVector protoPaths;
     std::vector<bool> mask;
     float velocityScale;
-    if (!_ComputeInstanceTransformsAtTimePreamble(
+
+    if (!_ComputePointInstancerAttributesPreamble(
             baseTime,
             doProtoXforms,
             applyMask,
             &protoIndices,
-            &positions,
-            &velocities,
-            &velocitiesSampleTime,
-            &accelerations,
-            &scales,
-            &orientations,
-            &angularVelocities,
-            &angularVelocitiesSampleTime,
             &protoPaths,
-            &mask,
-            &velocityScale)) {
+            &mask)) {
         return false;
     }
 
     size_t numInstances = protoIndices.size();
+
+    if (!UsdGeom_GetPositionsVelocitiesAndAccelerations(
+            GetPositionsAttr(),
+            GetVelocitiesAttr(),
+            GetAccelerationsAttr(),
+            baseTime,
+            numInstances,
+            &positions,
+            &velocities,
+            &velocitiesSampleTime,
+            &accelerations,
+            &velocityScale,
+            GetPrim())) {
+        return false;
+    }
+
+    UsdGeom_GetScales(
+            GetScalesAttr(),
+            baseTime,
+            numInstances,
+            &scales,
+            GetPrim());
+
+    UsdGeom_GetOrientationsAndAngularVelocities(
+            GetOrientationsAttr(),
+            GetAngularVelocitiesAttr(),
+            baseTime,
+            numInstances,
+            &orientations,
+            &angularVelocities,
+            &angularVelocitiesSampleTime,
+            GetPrim());
+  
     if (numInstances == 0) {
         xformsArray->clear();
         xformsArray->resize(numSamples);
@@ -1324,7 +882,6 @@ UsdGeomPointInstancer::ComputeInstanceTransformsAtTimes(
                 velocityScale)) {
             return false;
         }
-
     }
 
     *xformsArray = xformsArrayData;
@@ -1354,14 +911,16 @@ UsdGeomPointInstancer::ComputeInstanceTransformsAtTime(
     size_t numInstances = protoIndices.size();
 
     const double timeCodesPerSecond = stage->GetTimeCodesPerSecond();
-    const float velocityTimeDelta =
-        velocityScale * static_cast<float>(
-            (time.GetValue() - velocitiesSampleTime.GetValue())
-            / timeCodesPerSecond);
-    const float angularVelocityTimeDelta =
-        velocityScale * static_cast<float>(
-            (time.GetValue() - angularVelocitiesSampleTime.GetValue())
-            / timeCodesPerSecond);
+    const float velocityTimeDelta = UsdGeom_CalculateTimeDelta(
+                                      velocityScale,
+                                      time,
+                                      velocitiesSampleTime,
+                                      timeCodesPerSecond);
+    const float angularVelocityTimeDelta = UsdGeom_CalculateTimeDelta(
+                                      velocityScale,
+                                      time,
+                                      angularVelocitiesSampleTime,
+                                      timeCodesPerSecond);\
 
     xforms->resize(numInstances);
 

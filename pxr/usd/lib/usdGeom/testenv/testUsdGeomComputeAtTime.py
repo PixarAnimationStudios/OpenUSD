@@ -33,6 +33,8 @@ MATRIX_TOLERANCE = 0.01
 # Maximum tolerated error between the values of extents during comparison.
 EXTENT_TOLERANCE = 0.0001
 
+# Maximum tolerated error between the values of extents during comparison.
+VECTOR_TOLERANCE = 0.0001
 
 def timeRange(time):
     """Iterate over all times within 1 unit of a given time in
@@ -80,6 +82,20 @@ class TestUsdGeomComputeAtTimeBase(object):
             raise AssertionError(
                 "Extents not equal:\n{}\n{}".format(ext1, ext2))
 
+    def assertVectorListsEqual(self, list1, list2):
+        """Assert that two Gf.Vec3f objects are equal."""
+        self.assertEqual(len(list1), len(list2))
+        for vec1, vec2 in zip(list1, list2):
+            try:
+                self.assertTrue(Gf.IsClose(vec1, vec2, VECTOR_TOLERANCE))
+            except AssertionError:
+                # Print a more descriptive message.
+                raise AssertionError(
+                    "Vectors not equal:\n{}\n{}".format(vec1, vec2))
+
+    def assertAllVectorListsEqual(self, lists1, lists2):
+        for list1, list2 in zip(lists1, lists2):
+            self.assertVectorListsEqual(list1, list2)
 
     def computeInstanceTransforms(self, pi, tr, baseTime,
             xformInclusion=UsdGeom.PointInstancer.IncludeProtoXform):
@@ -405,7 +421,198 @@ class TestUsdGeomComputeAtTimeBase(object):
             [(-6.3968024, 3.6031978, -1), (6.3968024, 11.396802, 6)]
         ]
         self.compareExtents(pi, times, 0, expectedExtents)
+    
+    def test_NoPoints(self):
+        stage = Usd.Stage.Open("test.usda")
+        pb = UsdGeom.PointBased(stage.GetPrimAtPath("/NoPoints"))
 
+        for baseTime, _ in timeRange(0):
+            tr = timeRange(baseTime)
+            pointsArray = self.computePoints(pb, tr, baseTime)
+            for points in pointsArray:
+                self.assertEqual(len(points), 0)
+
+    def test_OnePointNoSamples(self):
+        stage = Usd.Stage.Open("test.usda")
+        pb = UsdGeom.PointBased(stage.GetPrimAtPath("/OnePointNoSamples"))
+
+        baseTime = 1
+        tr = timeRange(baseTime)
+        pointsArray = self.computePoints(pb, tr, baseTime)
+        compares = [[Gf.Vec3f(0,0,0)] for time, delta in tr]
+        self.assertAllVectorListsEqual(pointsArray, compares)
+
+    def test_OnePointNoVelocities(self):
+        stage = Usd.Stage.Open("test.usda")
+        pb = UsdGeom.PointBased(stage.GetPrimAtPath("/OnePointNoVelocities"))
+
+        # Test directly on sample.
+        baseTime = 0
+        tr = timeRange(baseTime)
+        pointsArray = self.computePoints(pb, tr, baseTime)
+        compares = []
+        for time, delta in tr:
+            if time < 0:
+                # Samples at times less than 0 should clamp to first sample.
+                compare = [Gf.Vec3f(0, 0, 0)]
+            else:
+                compare = [Gf.Vec3f(time * 5, time * 10, time * 20)]
+            compares.append(compare)
+        self.assertAllVectorListsEqual(pointsArray, compares)
+
+        # Test in-between samples.
+        baseTime = 2
+        tr = timeRange(baseTime)
+        pointsArray = self.computePoints(pb, tr, baseTime)
+        compares = [[Gf.Vec3f(time * 5, time * 10, time * 20)]
+            for time, delta in tr]
+        self.assertAllVectorListsEqual(pointsArray, compares)
+
+        # Test with basetime before and after natural sample. Since we are
+        # interpolating, these should always be the same.
+        baseTime = 5
+        tr = timeRange(baseTime)
+        pointsArrayBefore = self.computePoints(pb, tr, baseTime - 1)
+        pointsArrayAfter = self.computePoints(pb, tr, baseTime)
+        self.assertAllVectorListsEqual(pointsArrayBefore, pointsArrayAfter)
+
+    def test_OnePoint(self):
+        stage = Usd.Stage.Open("test.usda")
+        pb = UsdGeom.PointBased(stage.GetPrimAtPath("/OnePoint"))
+
+        # Test directly on sample.
+        baseTime = 0
+        tr = timeRange(baseTime)
+        pointsArray = self.computePoints(pb, tr, baseTime)
+        compares = [[Gf.Vec3f(time * 5, time * 10, time * 20)]
+            for time, delta in tr]
+        self.assertAllVectorListsEqual(pointsArray, compares)
+
+        # Test in-between samples.
+        baseTime = 2
+        tr = timeRange(baseTime)
+        pointsArray = self.computePoints(pb, tr, baseTime)
+        compares = [[Gf.Vec3f(time * 5, time * 10, time * 20)]
+            for time, delta in tr]
+        self.assertAllVectorListsEqual(pointsArray, compares)
+
+        # Test with basetime before natural sample.
+        baseTime = 5
+        tr = timeRange(baseTime)
+        pointsArray = self.computePoints(pb, tr, baseTime - 1)
+        compares = [[Gf.Vec3f(time * 5, time * 10, time * 20)]
+            for time, delta in tr]
+        self.assertAllVectorListsEqual(pointsArray, compares)
+
+        # Test with basetime on natural sample.
+        baseTime = 5
+        tr = timeRange(baseTime)
+        pointsArray = self.computePoints(pb, tr, baseTime)
+        compares = [[Gf.Vec3f(25 - delta * 5, 50 - delta * 10, 100 - delta * 20)]
+            for time, delta in tr]
+        self.assertAllVectorListsEqual(pointsArray, compares)
+
+    def test_OnePointAcceleration(self):
+        stage = Usd.Stage.Open("test.usda")
+        pb = UsdGeom.PointBased(stage.GetPrimAtPath("/OnePointAcceleration"))
+
+        # Test directly on sample.
+        baseTime = 0
+        tr = timeRange(baseTime)
+        pointsArray = self.computePoints(pb, tr, baseTime)
+        compares = [[Gf.Vec3f((time / 24.0) * (120 + (time * 1 * 0.5)), (time / 24.0) * (120 + (time * 1 * 0.5)), (time / 24.0) * (120 + (time * 1 * 0.5)))]
+            for time, delta in tr]
+        self.assertAllVectorListsEqual(pointsArray, compares)
+
+        # Test in-between samples.
+        baseTime = 2
+        tr = timeRange(baseTime)
+        pointsArray = self.computePoints(pb, tr, baseTime)
+        compares = [[Gf.Vec3f((time / 24.0) * (120 + (time * 1 * 0.5)), (time / 24.0) * (120 + (time * 1 * 0.5)), (time / 24.0) * (120 + (time * 1 * 0.5)))]
+            for time, delta in tr]
+        self.assertAllVectorListsEqual(pointsArray, compares)
+
+        # Test with basetime before natural sample.
+        baseTime = 5
+        tr = timeRange(baseTime)
+        pointsArray = self.computePoints(pb, tr, baseTime - 1)
+        compares = [[Gf.Vec3f((time / 24.0) * (120 + (time * 1 * 0.5)), (time / 24.0) * (120 + (time * 1 * 0.5)), (time / 24.0) * (120 + (time * 1 * 0.5)))]
+            for time, delta in tr]
+        self.assertAllVectorListsEqual(pointsArray, compares)
+
+        # Test with basetime on natural sample.
+        baseTime = 5
+        tr = timeRange(baseTime)
+        pointsArray = self.computePoints(pb, tr, baseTime)
+        compares = [[Gf.Vec3f(25 + (delta / 24.0) * (120 + (delta * 1 * 0.5)), 50 + (delta / 24.0) * (240 + (delta * 2 * 0.5)), 100 + (delta / 24.0) * (480 + (delta * 3 * 0.5)))]
+            for time, delta in tr]
+        self.assertAllVectorListsEqual(pointsArray, compares)
+
+    def test_OnePointTimeSampleCorrespondenceValidation(self):
+        stage = Usd.Stage.Open("test.usda")
+        pbDiffNumberPositionsAndVelocities = UsdGeom.PointBased(stage.GetPrimAtPath("/OnePointDifferingNumberPositionsAndVelocities"))
+        pbUnalignedPositionsAndVelocities = UsdGeom.PointBased(stage.GetPrimAtPath("/OnePointUnalignedPositionsAndVelocities"))
+        pbPositionsOnly = UsdGeom.PointBased(stage.GetPrimAtPath("/OnePointUnalignedPositionsOnly"))
+
+        baseTime = 2
+        tr = timeRange(baseTime)
+        pointsArrayDiffNumberPositionsAndVelocities = self.computePoints(pbDiffNumberPositionsAndVelocities, tr, baseTime)
+        pointsArrayUnalignedPositionsAndVelocities = self.computePoints(pbUnalignedPositionsAndVelocities, tr, baseTime)
+        pointsArrayPositionsOnly = self.computePoints(pbPositionsOnly, tr, baseTime)
+
+        # Test that time sample correspondence validation works for positions 
+        # and velocities by comparing the position of the point
+        # with invalid time sample correspondence with the positions of the point
+        # that only has time samples for positions
+        self.assertAllVectorListsEqual(pointsArrayDiffNumberPositionsAndVelocities, pointsArrayPositionsOnly)
+        self.assertAllVectorListsEqual(pointsArrayUnalignedPositionsAndVelocities, pointsArrayPositionsOnly)
+
+
+        pbDiffNumberVelocitiesAndAccelerations = UsdGeom.PointBased(stage.GetPrimAtPath("/OnePointDiffNumberVelocitiesAndAccelerations"))
+        pbUnalignedVelocitiesAndAccelerations = UsdGeom.PointBased(stage.GetPrimAtPath("/OnePointUnalignedVelocitiesAndAccelerations"))
+        pbDiffNumberPositionsAndVelocitiesAndAccelerations = UsdGeom.PointBased(stage.GetPrimAtPath("/OnePointDiffNumberPositionsAndVelocitiesAndAccelerations"))
+        pbPositionsAndVelocitiesOnly = UsdGeom.PointBased(stage.GetPrimAtPath("/OnePointPositionsAndVelocitiesOnly"))
+
+        baseTime = 2
+        tr = timeRange(baseTime)
+        pointsArrayDiffNumberVelocitiesAndAccelerations = self.computePoints(pbDiffNumberVelocitiesAndAccelerations, tr, baseTime)
+        pointsArrayUnalignedVelocitiesAndAccelerations = self.computePoints(pbUnalignedVelocitiesAndAccelerations, tr, baseTime)
+        pointsArrayDiffNumberPositionsAndVelocitiesAndAccelerations = self.computePoints(pbDiffNumberPositionsAndVelocitiesAndAccelerations, tr, baseTime)
+        pointsArrayPositionsAndVelocitiesOnly = self.computePoints(pbPositionsAndVelocitiesOnly, tr, baseTime)
+
+        # Test that time sample correspondence validation works for velocities 
+        # and accelerations by comparing the positions of points
+        # with invalid time sample correspondence with the positions of the point
+        # that only has time samples for positions and velocities
+        self.assertAllVectorListsEqual(pointsArrayDiffNumberVelocitiesAndAccelerations, pointsArrayPositionsAndVelocitiesOnly)
+        self.assertAllVectorListsEqual(pointsArrayUnalignedVelocitiesAndAccelerations, pointsArrayPositionsAndVelocitiesOnly)
+        self.assertAllVectorListsEqual(pointsArrayDiffNumberPositionsAndVelocitiesAndAccelerations, pointsArrayPositionsOnly)
+
+    def test_OnePointVelocityScale(self):
+        stage = Usd.Stage.Open("test.usda")
+        pb = UsdGeom.PointBased(stage.GetPrimAtPath("/OnePointVelocityScale"))
+
+        # Test when the velocityScale is set to 2.
+        baseTime = 0
+        tr = timeRange(baseTime)
+        pointsArray = self.computePoints(pb, tr, baseTime)
+        compares = [[Gf.Vec3f(time * 10, time * 20, time * 40)]
+            for time, delta in tr]
+        self.assertAllVectorListsEqual(pointsArray, compares)
+
+    def test_MultiPoints(self):
+        stage = Usd.Stage.Open("test.usda")
+        pb = UsdGeom.PointBased(stage.GetPrimAtPath("/MultiPoints"))
+
+        # Test with 3 points.
+        baseTime = 0
+        tr = timeRange(baseTime)
+        pointsArray = self.computePoints(pb, tr, baseTime)
+        compares = [[Gf.Vec3f(time * 5, time * 10, time * 20),
+                    Gf.Vec3f(time * 5, time * 10, 1 + time * 20),
+                    Gf.Vec3f(time * 5, time * 10, 2 + time * 20)]
+            for time, delta in tr]
+        self.assertAllMatrixListsEqual(pointsArray, compares)
 
 class TestUsdGeomComputeAtTime(
         unittest.TestCase, TestUsdGeomComputeAtTimeBase):
@@ -415,6 +622,14 @@ class TestUsdGeomComputeAtTime(
     def computeInstanceTransforms(self, pi, tr, baseTime,
             xformInclusion=UsdGeom.PointInstancer.IncludeProtoXform):
         return [pi.ComputeInstanceTransformsAtTime(time, baseTime, xformInclusion)
+                for time, delta in tr]
+
+    def computePointTransforms(self, pb, tr, baseTime):
+        return [pb.ComputePointTransformsAtTime(time, baseTime)
+                for time, delta in tr]
+
+    def computePoints(self, pb, tr, baseTime):
+        return [pb.ComputePointsAtTime(time, baseTime)
                 for time, delta in tr]
 
     def compareExtents(self, pi, times, baseTime, expectedExtents):
@@ -450,6 +665,14 @@ class TestUsdGeomComputeAtTimeMultisampled(
             xformInclusion=UsdGeom.PointInstancer.IncludeProtoXform):
         return pi.ComputeInstanceTransformsAtTimes(
             [time for time, delta in tr], baseTime, xformInclusion)
+
+    def computePointTransforms(self, pb, tr, baseTime):
+        return pb.ComputePointTransformsAtTimes(
+            [time for time, delta in tr], baseTime)
+
+    def computePoints(self, pb, tr, baseTime):
+        return pb.ComputePointsAtTimes(
+            [time for time, delta in tr], baseTime)
 
     def compareExtents(self, pi, times, baseTime, expectedExtents):
         computedExtents = pi.ComputeExtentAtTimes(times, baseTime)

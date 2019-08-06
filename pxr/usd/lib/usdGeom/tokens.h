@@ -64,7 +64,7 @@ struct UsdGeomTokensType {
     USDGEOM_API UsdGeomTokensType();
     /// \brief "accelerations"
     /// 
-    /// UsdGeomPointInstancer
+    /// UsdGeomPointInstancer, UsdGeomPointBased
     const TfToken accelerations;
     /// \brief "all"
     /// 
