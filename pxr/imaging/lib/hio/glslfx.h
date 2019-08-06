@@ -180,6 +180,10 @@ public:
     HIO_API
     std::string GetFragmentSource() const;
 
+    /// Get the volume source string
+    HIO_API
+    std::string GetVolumeSource() const;
+
     /// @}
 
     /// \name OpenSubdiv composable shader sources

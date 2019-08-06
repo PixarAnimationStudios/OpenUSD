@@ -24,13 +24,18 @@
 #include "pxr/imaging/hdSt/volume.h"
 
 #include "pxr/imaging/hdSt/drawItem.h"
+#include "pxr/imaging/hdSt/material.h"
+#include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/rprimUtils.h"
-#include "pxr/imaging/hdSt/volumeShaderKey.h"
+#include "pxr/imaging/hdSt/surfaceShader.h"
 #include "pxr/imaging/hdSt/tokens.h"
+#include "pxr/imaging/hdSt/volumeShaderKey.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
+
+#include "pxr/imaging/hio/glslfx.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -185,6 +190,26 @@ _GetCubeTriangleIndices()
     return result;
 }
 
+// Fallback volume shader created from source in shaders/fallbackVolume.glslfx
+static
+HdStShaderCodeSharedPtr
+_MakeFallbackVolumeShader()
+{
+    using HioGlslfxSharedPtr = boost::shared_ptr<class HioGlslfx>;
+
+    const HioGlslfx glslfx(HdStPackageFallbackVolumeShader());
+
+    // Note that we use HdStSurfaceShader for a volume shader.
+    // Despite its name, HdStSurfaceShader is really just a pair of
+    // GLSL code and bindings and not specific to surface shading.
+    HdStSurfaceShaderSharedPtr const result =
+        boost::make_shared<HdStSurfaceShader>();
+    
+    result->SetFragmentSource(glslfx.GetVolumeSource());
+
+    return result;
+}
+
 void
 HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                             HdStDrawItem *drawItem,
@@ -203,8 +228,36 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         dirtyBits, constantPrimvars);
 
     /* MATERIAL SHADER */
-    drawItem->SetMaterialShaderFromRenderIndex(
-        sceneDelegate->GetRenderIndex(), GetMaterialId());
+    const HdStMaterial *material = static_cast<const HdStMaterial *>(
+        sceneDelegate->GetRenderIndex().GetSprim(
+            HdPrimTypeTokens->material, GetMaterialId()));
+
+    HdStShaderCodeSharedPtr volumeShader;
+    if (material) {
+        // Use the shader from the HdStMaterial as volume shader.
+        //
+        // Note that rprims should query the material whether they want
+        // a surface or volume shader instead of just asking for "some"
+        // shader with HdStMaterial::GetShaderCode().
+        // We should revisit the API an rprim is using to ask HdStMaterial
+        // for a shader once we switched over to HdMaterialNetworkMap's.
+        volumeShader = material->GetShaderCode();
+    } else {
+        // Instantiate fallback volume shader only once
+        //
+        // Note that the default HdStMaterial provides a fallback surface
+        // shader and we need a volume shader, so we create the shader here
+        // ourselves.
+        static const HdStShaderCodeSharedPtr fallbackVolumeShader =
+            _MakeFallbackVolumeShader();
+        volumeShader = fallbackVolumeShader;
+    }
+
+    // Set volume shader as material shader. It will be concatenated by
+    // the geometry shader which does the raymarching and is calling into
+    // GLSL functions such as "float scattering(vec3)" in the volume shader
+    // to evaluate physical properties of a volume at the point p.
+    drawItem->SetMaterialShader(volumeShader);
 
     HdSt_VolumeShaderKey shaderKey;
     HdStResourceRegistrySharedPtr resourceRegistry =

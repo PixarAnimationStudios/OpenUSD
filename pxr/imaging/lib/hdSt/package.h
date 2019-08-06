@@ -50,6 +50,9 @@ HDST_API
 TfToken HdStPackageFallbackSurfaceShader();
 
 HDST_API
+TfToken HdStPackageFallbackVolumeShader();
+
+HDST_API
 TfToken HdStPackageImageShader();
 
 PXR_NAMESPACE_CLOSE_SCOPE
