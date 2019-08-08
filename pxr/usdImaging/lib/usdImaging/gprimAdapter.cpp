@@ -258,6 +258,22 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
             valueCache->GetPrimvar(cachePath, HdTokens->velocities) = 
                 VtValue(velocities);
         }
+
+        // Acceleration information is expected to be authored at the same sample
+        // rate as points data, so use the points dirty bit to let us know when
+        // to publish accelerations.
+        VtVec3fArray accelerations;
+        if (pointBased.GetAccelerationsAttr() &&
+            pointBased.GetAccelerationsAttr().Get(&accelerations, time)) {
+            // Expose accelerations as a primvar.
+            _MergePrimvar(
+                &primvars,
+                HdTokens->accelerations,
+                HdInterpolationVertex,
+                HdPrimvarRoleTokens->vector);
+            valueCache->GetPrimvar(cachePath, HdTokens->accelerations) = 
+                VtValue(accelerations);
+        }
     }
 
     SdfPath materialUsdPath;
