@@ -57,20 +57,46 @@ PXR_NAMESPACE_OPEN_SCOPE
 UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder() :
     _imageWidth(960u),
     _complexity(1.0f),
-    _colorCorrectionMode("disabled")
+    _colorCorrectionMode("disabled"),
+    _purposes({UsdGeomTokens->default_, UsdGeomTokens->proxy})
 {
     GlfGlewInit();
     _imagingEngine.SetEnableFloatPointDrawTarget(true);
 }
 
+static bool
+_HasPurpose(const TfTokenVector& purposes, const TfToken& purpose)
+{
+    return std::find(purposes.begin(), purposes.end(), purpose) != purposes.end();
+}
+
+void
+UsdAppUtilsFrameRecorder::SetIncludedPurposes(const TfTokenVector& purposes) 
+{
+    TfTokenVector  allPurposes = { UsdGeomTokens->render,
+                                   UsdGeomTokens->proxy,
+                                   UsdGeomTokens->guide };
+    _purposes = { UsdGeomTokens->default_ };
+
+    for ( TfToken const &p : purposes) {
+        if (_HasPurpose(allPurposes, p)){
+            _purposes.push_back(p);
+        }
+        else if (p != UsdGeomTokens->default_) {
+            // We allow "default" to be specified even though
+            // it's unnecessary
+            TF_CODING_ERROR("Unrecognized purpose value '%s'.",
+                            p.GetText());
+        }
+    }
+}
+
 static GfCamera
-_ComputeCameraToFrameStage(const UsdStagePtr& stage, UsdTimeCode timeCode)
+_ComputeCameraToFrameStage(const UsdStagePtr& stage, UsdTimeCode timeCode,
+                           const TfTokenVector& includedPurposes)
 {
     // Start with a default (50mm) perspective GfCamera.
     GfCamera gfCamera;
-    TfTokenVector includedPurposes;
-    includedPurposes.push_back(UsdGeomTokens->default_);
-    includedPurposes.push_back(UsdGeomTokens->render);
     UsdGeomBBoxCache bboxCache(timeCode, includedPurposes,
                                /* useExtentsHint = */ true);
     GfBBox3d bbox = bboxCache.ComputeWorldBound(stage->GetPseudoRoot());
@@ -125,16 +151,18 @@ UsdAppUtilsFrameRecorder::Record(
     }
 
     const GfVec4f CLEAR_COLOR(0.0f);
-    const GfVec4f BLACK(0.0f, 0.0f, 0.0f, 1.0f);
-    const GfVec4f WHITE(1.0f);
-
+    const GfVec4f SCENE_AMBIENT(0.01f, 0.01f, 0.01f, 1.0f);
+    const GfVec4f SPECULAR_DEFAULT(0.1f, 0.1f, 0.1f, 1.0f);
+    const GfVec4f AMBIENT_DEFAULT(0.2f, 0.2f, 0.2f, 1.0f);
+    const float   SHININESS_DEFAULT(32.0);
+    
     // XXX: If the camera's aspect ratio is animated, then a range of calls to
     // this function may generate a sequence of images with different sizes.
     GfCamera gfCamera;
     if (usdCamera) {
         gfCamera = usdCamera.GetCamera(timeCode);
     } else {
-        gfCamera = _ComputeCameraToFrameStage(stage, timeCode);
+        gfCamera = _ComputeCameraToFrameStage(stage, timeCode, _purposes);
     }
     float aspectRatio = gfCamera.GetAspectRatio();
     if (GfIsClose(aspectRatio, 0.0f, 1e-4)) {
@@ -160,16 +188,19 @@ UsdAppUtilsFrameRecorder::Record(
             static_cast<double>(imageHeight)));
 
     GlfSimpleLight cameraLight(
-        GfVec4f(cameraPos[0], cameraPos[1], cameraPos[2], 0.0f));
-    cameraLight.SetAmbient(BLACK);
+        GfVec4f(cameraPos[0], cameraPos[1], cameraPos[2], 1.0f));
+    cameraLight.SetAmbient(SCENE_AMBIENT);
 
     const GlfSimpleLightVector lights({cameraLight});
 
+    // Make default material and lighting match usdview's defaults... we expect 
+    // GlfSimpleMaterial to go away soon, so not worth refactoring for sharing
     GlfSimpleMaterial material;
-    material.SetDiffuse(WHITE);
-    material.SetSpecular(WHITE);
+    material.SetAmbient(AMBIENT_DEFAULT);
+    material.SetSpecular(SPECULAR_DEFAULT);
+    material.SetShininess(SHININESS_DEFAULT);
 
-    _imagingEngine.SetLightingState(lights, material, BLACK);
+    _imagingEngine.SetLightingState(lights, material, SCENE_AMBIENT);
 
     UsdImagingGLRenderParams renderParams;
     renderParams.frame = timeCode;
@@ -177,7 +208,10 @@ UsdAppUtilsFrameRecorder::Record(
     renderParams.colorCorrectionMode = _colorCorrectionMode;
     renderParams.clearColor = CLEAR_COLOR;
     renderParams.renderResolution = renderResolution;
-
+    renderParams.showProxy = _HasPurpose(_purposes, UsdGeomTokens->proxy);
+    renderParams.showRender = _HasPurpose(_purposes, UsdGeomTokens->render);
+    renderParams.showGuides = _HasPurpose(_purposes, UsdGeomTokens->guide);
+    
     glEnable(GL_DEPTH_TEST);
 
     GlfDrawTargetRefPtr drawTarget = GlfDrawTarget::New(renderResolution);
