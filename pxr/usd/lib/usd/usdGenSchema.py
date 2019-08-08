@@ -75,6 +75,9 @@ Print = _Printer()
 # Tokens                                                                       #
 #------------------------------------------------------------------------------#
 
+# Name of script, e.g. "usdGenSchema"
+PROGRAM_NAME = os.path.splitext(os.path.basename(sys.argv[0]))[0]
+
 # Custom-data key authored on an API schema class prim in the schema definition,
 # to define the type of API schema.
 API_SCHEMA_TYPE = "apiSchemaType"
@@ -703,12 +706,13 @@ def _WriteFile(filePath, content, validate):
                                 existingContent.split('\n'),
                                 content.split('\n'))))
             Print.Err('Error: validation failed, diffs found. '
-                      'Please rerun usdGenSchema.')
+                      'Please rerun %s.' % PROGRAM_NAME)
             sys.exit(1)
     else:
         if validate:
             Print.Err('Error: validation failed, file %s does not exist. '
-                      'Please rerun usdGenSchema.' % os.path.basename(filePath))
+                      'Please rerun %s.' % 
+                      (os.path.basename(filePath), PROGRAM_NAME))
             sys.exit(1)
 
     # Otherwise attempt to write to file.
