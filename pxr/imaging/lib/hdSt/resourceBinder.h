@@ -53,7 +53,7 @@ typedef std::vector<class HdBindingRequest> HdBindingRequestVector;
 /// A helper class to maintain all vertex/buffer/uniform binding points to be
 /// used for both codegen time and rendering time.
 ///
-/// Hydra uses 6 different types of coherent buffers.
+/// Storm uses 6 different types of coherent buffers.
 ///
 /// 1. Constant buffer
 ///   constant primvars, which is uniform for all instances/elements/vertices.

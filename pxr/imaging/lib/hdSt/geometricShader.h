@@ -42,7 +42,7 @@ typedef boost::shared_ptr<class HdSt_GeometricShader> HdSt_GeometricShaderShared
 
 /// \class HdSt_GeometricShader
 ///
-/// A geometric shader -- hydra internal use
+/// A geometric shader -- Storm internal use
 ///
 class HdSt_GeometricShader : public HdStShaderCode {
 public:

@@ -55,7 +55,7 @@ typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 /// A scene-based SurfaceShader object.
 ///
 /// When surface shaders are expresed in the scene graph, the HdSceneDelegate
-/// can use this object to express these surface shaders in Hydra. In addition
+/// can use this object to express these surface shaders in Storm. In addition
 /// to the shader itself, a binding from the Rprim to the SurfaceShader must be
 /// expressed as well.
 class HdStSurfaceShader : public HdStShaderCode {

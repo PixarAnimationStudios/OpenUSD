@@ -37,7 +37,7 @@ typedef boost::shared_ptr<class HdStResourceRegistry>
 ///
 /// HdStRenderDelegate
 ///
-/// The Stream Render Delegate provides a Hydra render that uses a
+/// The Storm Render Delegate provides a Hydra render that uses a
 /// streaming graphics implementation to draw the scene.
 ///
 class HdStRenderDelegate final : public HdRenderDelegate {

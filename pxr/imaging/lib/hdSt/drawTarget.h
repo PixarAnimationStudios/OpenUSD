@@ -68,7 +68,7 @@ typedef std::vector<class HdStDrawTarget const *> HdStDrawTargetPtrConstVector;
 ///
 /// Represents an render to texture render pass.
 ///
-/// \note This is a temporary API to aid transition to hydra, and is subject
+/// \note This is a temporary API to aid transition to Storm, and is subject
 /// to major changes.
 ///
 class HdStDrawTarget : public HdSprim {

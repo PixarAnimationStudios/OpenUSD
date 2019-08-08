@@ -246,7 +246,7 @@ HdStDrawTarget::_SetAttachments(
     // XXX: Discard old draw target and create a new one
     // This is necessary because a we have to clone the draw target into each
     // gl context.
-    // XXX : All draw targets in Hydra are currently trying to create MSAA
+    // XXX : All draw targets in Storm are currently trying to create MSAA
     // buffers (as long as they are allowed by the environment variables) 
     // because we need alpha to coverage for transparent object.
     _drawTarget = GlfDrawTarget::New(_resolution, /* MSAA */ true);

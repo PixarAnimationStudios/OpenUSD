@@ -52,7 +52,7 @@ typedef boost::shared_ptr<class HdSt_MeshTopology> HdSt_MeshTopologySharedPtr;
 
 /// \class HdSt_MeshTopology
 ///
-/// Hydra Stream implementation for mesh topology.
+/// Storm implementation for mesh topology.
 ///
 class HdSt_MeshTopology final : public HdMeshTopology {
 public:

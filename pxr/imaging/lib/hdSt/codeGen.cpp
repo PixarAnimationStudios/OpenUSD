@@ -507,7 +507,7 @@ HdSt_CodeGen::Compile()
 
     // Used in glslfx files to determine if it is using new/old
     // imaging system. It can also be used as API guards when
-    // we need new versions of Hydra shading. 
+    // we need new versions of Storm shading. 
     _genCommon << "#define HD_SHADER_API " << HD_SHADER_API << "\n";
 
     // XXX: this is a hacky workaround for experimental support of GL 3.3
@@ -872,7 +872,7 @@ HdSt_CodeGen::CompileComputeProgram()
 
     // Used in glslfx files to determine if it is using new/old
     // imaging system. It can also be used as API guards when
-    // we need new versions of Hydra shading. 
+    // we need new versions of Storm shading. 
     _genCommon << "#define HD_SHADER_API " << HD_SHADER_API << "\n";    
 
     // a trick to tightly pack unaligned data (vec3, etc) into SSBO/UBO.
@@ -1895,7 +1895,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
     For an unrefined prim, the subprimitive ID s simply the gl_PrimitiveID.
     For a refined prim, gl_PrimitiveID corresponds to the refined element ID.
 
-    To map a refined face to its coarse face, Hydra builds a "primitive param"
+    To map a refined face to its coarse face, Storm builds a "primitive param"
     buffer (more details in the section below). This buffer is also aggregated,
     and for each subprimitive, GetDrawingCoord().primitiveCoord gives us the
     index into this buffer (meaning it has already added the gl_PrimitiveID)
@@ -1980,7 +1980,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
     // PatchParam is defined as ivec3 (see opensubdiv/far/patchParam.h)
     //  Field0     | Bits | Content
     //  -----------|:----:|---------------------------------------------------
-    //  faceId     | 28   | the faceId of the patch (Hydra uses ptexIndex)
+    //  faceId     | 28   | the faceId of the patch (Storm uses ptexIndex)
     //  transition | 4    | transition edge mask encoding
     //
     //  Field1     | Bits | Content
