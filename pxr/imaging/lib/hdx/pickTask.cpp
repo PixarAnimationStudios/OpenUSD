@@ -60,6 +60,8 @@ _InitIdRenderPassState(HdRenderIndex *index)
     HdRenderPassStateSharedPtr rps =
         index->GetRenderDelegate()->CreateRenderPassState();
 
+    rps->SetIsRenderPassId(true);
+
     if (HdStRenderPassState* extendedState =
             dynamic_cast<HdStRenderPassState*>(
                 rps.get())) {
@@ -74,11 +76,13 @@ _InitIdRenderPassState(HdRenderIndex *index)
 static bool
 _IsStreamRenderingBackend(HdRenderIndex *index)
 {
-    if(!dynamic_cast<HdStRenderDelegate*>(index->GetRenderDelegate())) {
-        return false;
+    HdRenderDelegate *renderDelegate = index->GetRenderDelegate();
+
+    if(renderDelegate->IsOpenGL()) {
+        return true;
     }
 
-    return true;
+    return false;
 }
 
 HdxPickTask::HdxPickTask(HdSceneDelegate* delegate, SdfPath const& id)
