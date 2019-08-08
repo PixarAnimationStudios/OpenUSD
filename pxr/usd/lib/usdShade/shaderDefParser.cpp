@@ -26,6 +26,7 @@
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/types.h"
 
+#include "pxr/usd/sdr/shaderMetadataHelpers.h"
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderProperty.h"
 
@@ -33,6 +34,8 @@
 #include "pxr/usd/usdShade/shader.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+using ShaderMetadataHelpers::IsPropertyATerminal;
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -103,6 +106,7 @@ static
 std::pair<TfToken, size_t>
 _GetShaderPropertyTypeAndArraySize(
     const SdfValueTypeName &typeName,
+    const NdrTokenMap& metadata,
     VtValue* defaultValue)
 {
     // XXX Note that the shaderDefParser does not currently parse 'struct' or
@@ -111,6 +115,14 @@ _GetShaderPropertyTypeAndArraySize(
     //     type. Vstructs are not parsed at the moment because we have no need
     //     for them in USD-backed shaders currently.
 
+    // Determine SdrPropertyType from metadata first, since metadata can
+    // override the type dictated otherwise by the SdfValueTypeName
+    if (IsPropertyATerminal(metadata)) {
+        return std::make_pair(SdrPropertyTypes->Terminal,
+                              _GetArraySize(defaultValue));
+    }
+
+    // Determine SdrPropertyType from given SdfValueTypeName
     if (typeName == SdfValueTypeNames->Int ||
         typeName == SdfValueTypeNames->IntArray) {
         return std::make_pair(SdrPropertyTypes->Int,
@@ -190,7 +202,9 @@ _GetSdrMetadata(const UsdShadeShader &shaderDef,
             // Check if the input holds a string here and issue a warning if it 
             // doesn't.
             if (_GetShaderPropertyTypeAndArraySize(
-                    shdInput.GetTypeName(), nullptr).first !=
+                    shdInput.GetTypeName(),
+                    shdInput.GetSdrMetadata(),
+                    nullptr).first !=
                     SdrPropertyTypes->String) {
                 TF_WARN("Shader input <%s> is tagged as a primvarProperty, "
                     "but isn't string-valued.", 
@@ -230,7 +244,7 @@ _CreateSdrShaderProperty(
     TfToken propertyType;
     size_t arraySize;
     std::tie(propertyType, arraySize) = _GetShaderPropertyTypeAndArraySize(
-        shaderProperty.GetTypeName(), &defaultValue);
+        shaderProperty.GetTypeName(), shaderMetadata, &defaultValue);
 
     return SdrShaderPropertyUniquePtr(new SdrShaderProperty(
             shaderProperty.GetBaseName(),
@@ -251,7 +265,6 @@ _GetShaderProperties(const UsdShadeShader &shaderDef)
         VtValue defaultValue;
         shaderInput.Get(&defaultValue);
 
-        // Only inputs have metadata provided by default
         NdrTokenMap metadata = shaderInput.GetSdrMetadata();
 
         // Only inputs might have this metadata key
@@ -280,7 +293,7 @@ _GetShaderProperties(const UsdShadeShader &shaderDef)
                 /* shaderProperty */ shaderOutput,
                 /* isOutput */ true,
                 /* shaderDefaultValue */ VtValue() ,
-                /* shaderMetadata */ NdrTokenMap()));
+                /* shaderMetadata */ shaderOutput.GetSdrMetadata()));
     }
 
     return result;

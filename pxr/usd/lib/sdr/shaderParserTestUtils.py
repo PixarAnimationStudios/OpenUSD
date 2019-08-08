@@ -159,7 +159,6 @@ def TestShadingProperties(node):
     assert properties["inputA"].GetPage() == "inputs1"
     assert properties["inputA"].GetWidget() == "number"
     assert properties["inputA"].GetHints() == {
-        "widget": "number",
         "uncategorized": "1"
     }
     assert properties["inputA"].GetOptions() == []
@@ -449,6 +448,9 @@ def TestShaderPropertiesNode(node):
     nodeInputs = {propertyName: node.GetShaderInput(propertyName)
                   for propertyName in node.GetInputNames()}
 
+    nodeOutputs = {propertyName: node.GetShaderOutput(propertyName)
+                  for propertyName in node.GetOutputNames()}
+
     # For each property, we test that:
     # * The property has the expected TfType
     # * The property's type and default value's type match
@@ -538,4 +540,10 @@ def TestShaderPropertiesNode(node):
     assert GetType(nodeInputs["inputAssetArray"]) == \
            Tf.Type.FindByName("VtArray<SdfAssetPath>")
     assert Ndr._ValidateProperty(node, nodeInputs["inputAssetArray"])
+
+    assert GetType(nodeOutputs["outputSurface"]) == \
+           Tf.Type.FindByName("TfToken")
+    assert Ndr._ValidateProperty(node, nodeOutputs["outputSurface"])
+
+
 

@@ -39,6 +39,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((filename, "filename"))            // OSL spec
     ((fileInput, "fileInput"))          // Args spec
     ((assetIdInput, "assetIdInput"))    // Pixar convention
+
+    // Values for "renderType" metadata that indicate the property is a
+    // SdrPropertyTypes->Terminal
+    ((terminal, "terminal"))
 );
 
 namespace ShaderMetadataHelpers
@@ -206,6 +210,29 @@ namespace ShaderMetadataHelpers
             if ((widget == _tokens->assetIdInput) ||
                 (widget == _tokens->filename) ||
                 (widget == _tokens->fileInput)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // -------------------------------------------------------------------------
+
+    bool
+    IsPropertyATerminal(const NdrTokenMap& metadata)
+    {
+        const NdrTokenMap::const_iterator renderTypeSearch =
+            metadata.find(SdrPropertyMetadata->RenderType);
+
+        if (renderTypeSearch != metadata.end()) {
+            // If the property is a SdrPropertyTypes->Terminal, then the
+            // renderType value will be "terminal <terminalName>", where the
+            // <terminalName> is the specific kind of terminal.  To identify
+            // the property as a terminal, we only need to check that the first
+            // string in the renderType value specifies "terminal"
+            if (TfStringStartsWith(
+                renderTypeSearch->second, _tokens->terminal)) {
                 return true;
             }
         }

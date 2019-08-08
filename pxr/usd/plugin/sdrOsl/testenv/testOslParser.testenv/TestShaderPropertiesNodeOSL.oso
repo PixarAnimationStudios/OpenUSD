@@ -27,5 +27,6 @@ param	float[3]	inputFloat3	1 2 3		%read{2147483647,-1} %write{2147483647,-1}
 param	float[4]	inputFloat4	1 2 3 4		%read{2147483647,-1} %write{2147483647,-1}
 param	string	inputAsset	"filename"		%meta{string,widget,"filename"}  %read{2147483647,-1} %write{2147483647,-1}
 param	string[2]	inputAssetArray	"test" "files"		%meta{string,widget,"fileInput"}  %read{2147483647,-1} %write{2147483647,-1}
+oparam	float	outputSurface	1		%meta{string,renderType,"terminal surface"}  %read{2147483647,-1} %write{2147483647,-1}
 code ___main___
 	end

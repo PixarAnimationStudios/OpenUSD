@@ -160,6 +160,16 @@ namespace {
             return std::make_pair(SdfValueTypeNames->Asset, TfToken());
         }
 
+        // We have several special SdrPropertyTypes that we want to map to
+        // 'token', which is the type we otherwise reserve for unknown types.
+        // We call out this conversion here so it is explicitly documented
+        // rather than happening implicitly.
+        if (type == SdrPropertyTypes->Terminal ||
+            type == SdrPropertyTypes->Struct ||
+            type == SdrPropertyTypes->Vstruct) {
+            return std::make_pair(SdfValueTypeNames->Token, type);
+        }
+
         bool conversionSuccessful = false;
 
         // If the conversion can't be made, it defaults to the 'Token' type

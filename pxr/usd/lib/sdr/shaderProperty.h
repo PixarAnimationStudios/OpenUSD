@@ -50,6 +50,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((Vector,   "vector"))       \
     ((Matrix,   "matrix"))       \
     ((Struct,   "struct"))       \
+    ((Terminal, "terminal"))     \
     ((Vstruct,  "vstruct"))      \
     ((Unknown,  "unknown"))
 
@@ -60,6 +61,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((Label, "label"))                               \
     ((Help, "help"))                                 \
     ((Page, "page"))                                 \
+    ((RenderType, "renderType"))                     \
     ((Widget, "widget"))                             \
     ((Hints, "hints"))                               \
     ((Options, "options"))                           \

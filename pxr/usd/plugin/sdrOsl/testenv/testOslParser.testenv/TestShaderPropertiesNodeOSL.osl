@@ -52,6 +52,11 @@ shader TestShaderPropertiesNodeOSL
     string inputAssetArray[2] = { "test", "files" }
     [[
         string widget = "fileInput"
+    ]],
+
+    output float outputSurface = 1.0
+    [[
+        string renderType = "terminal surface"
     ]]
 )
 {
