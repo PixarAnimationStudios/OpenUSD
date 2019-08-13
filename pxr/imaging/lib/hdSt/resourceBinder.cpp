@@ -504,12 +504,14 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     TF_FOR_ALL(shader, shaders) {
 
         // uniform block
-        HdBufferArrayRangeSharedPtr const &shaderBar_ = (*shader)->GetShaderData();
+        HdBufferArrayRangeSharedPtr const &shaderBar_ = 
+                                                (*shader)->GetShaderData();
         HdStBufferArrayRangeGLSharedPtr shaderBar =
             boost::static_pointer_cast<HdStBufferArrayRangeGL> (shaderBar_);
         if (shaderBar) {
             HdBinding shaderParamBinding =
-                locator.GetBinding(structBufferBindingType, HdTokens->materialParams);
+                locator.GetBinding(structBufferBindingType, 
+                                    HdTokens->materialParams);
 
             // for fallback values and bindless textures
             // XXX: name of sblock must be unique for each shaders.
@@ -542,7 +544,8 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
         // for primvar and texture accessors
         TF_FOR_ALL(it, params) {
             // renderpass texture should be bindfull (for now)
-            bool bindless = useBindlessForTexture && ((*shader) == drawItem->GetMaterialShader());
+            bool bindless = useBindlessForTexture && 
+                                ((*shader) == drawItem->GetMaterialShader());
             HdTupleType valueType = it->GetTupleType();
             TfToken glType =
                 HdStGLConversions::GetGLSLTypename(valueType.type);
@@ -550,15 +553,21 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
             TfToken glName =  HdStGLConversions::GetGLSLIdentifier(name);
 
             if (it->IsFallback()) {
-                metaDataOut->shaderParameterBinding[HdBinding(HdBinding::FALLBACK, shaderFallbackLocation++)]
-                    = MetaData::ShaderParameterAccessor(glName,
+                metaDataOut->shaderParameterBinding[
+                            HdBinding(HdBinding::FALLBACK, 
+                            shaderFallbackLocation++)]
+                    = MetaData::ShaderParameterAccessor(glName, 
                                                         /*type=*/glType);
-            } else if (it->IsTexture()) {
+            }
+            else if (it->IsTexture()) {
                 if (it->GetTextureType() == HdTextureType::Ptex) {
                     // ptex texture
                     HdBinding texelBinding = bindless
-                        ? HdBinding(HdBinding::BINDLESS_TEXTURE_PTEX_TEXEL, bindlessTextureLocation++)
-                        : HdBinding(HdBinding::TEXTURE_PTEX_TEXEL, locator.uniformLocation++);
+                        ? HdBinding(HdBinding::BINDLESS_TEXTURE_PTEX_TEXEL,
+                                    bindlessTextureLocation++)
+                        : HdBinding(HdBinding::TEXTURE_PTEX_TEXEL,
+                                    locator.uniformLocation++, 
+                                    locator.textureUnit++);
 
                     metaDataOut->shaderParameterBinding[texelBinding] =
                         MetaData::ShaderParameterAccessor(
@@ -567,26 +576,33 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                     _bindingMap[name] = texelBinding; // used for non-bindless
 
                     HdBinding layoutBinding = bindless
-                        ? HdBinding(HdBinding::BINDLESS_TEXTURE_PTEX_LAYOUT, bindlessTextureLocation++)
-                        : HdBinding(HdBinding::TEXTURE_PTEX_LAYOUT, locator.uniformLocation++);
+                        ? HdBinding(HdBinding::BINDLESS_TEXTURE_PTEX_LAYOUT,
+                                    bindlessTextureLocation++)
+                        : HdBinding(HdBinding::TEXTURE_PTEX_LAYOUT,
+                                    locator.uniformLocation++,
+                                    locator.textureUnit++);
 
-                    TfToken glLayoutName = TfToken(std::string(glName.GetText()) + "_layout");
+                    TfToken glLayoutName = TfToken(std::string(
+                                                glName.GetText()) + "_layout");
                     metaDataOut->shaderParameterBinding[layoutBinding] =
                         MetaData::ShaderParameterAccessor(
                             /*name=*/glLayoutName,
                             /*type=*/TfToken("isamplerBuffer"));
 
                     // XXX: same name ?
-                    TfToken layoutName = TfToken(std::string(name.GetText()) + "_layout");
-                    _bindingMap[layoutName] = layoutBinding; // used for non-bindless
+                    TfToken layoutName = TfToken(std::string(
+                                                name.GetText()) + "_layout");
+                    // used for non-bindless
+                    _bindingMap[layoutName] = layoutBinding; 
                 } else if (it->GetTextureType() == HdTextureType::Udim) {
                     // Texture Array for UDIM
-                    HdBinding textureBinding =
-                        bindless
+                    HdBinding textureBinding = bindless
                         ? HdBinding(HdBinding::BINDLESS_TEXTURE_UDIM_ARRAY,
-                            bindlessTextureLocation++)
+                                bindlessTextureLocation++)
                         : HdBinding(HdBinding::TEXTURE_UDIM_ARRAY,
-                            locator.uniformLocation++);
+                                locator.uniformLocation++,
+                                locator.textureUnit++);
+
                     metaDataOut->shaderParameterBinding[textureBinding] =
                         MetaData::ShaderParameterAccessor(
                             /*name=*/it->GetName(),
@@ -599,12 +615,12 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                     TfToken layoutName =
                         TfToken(std::string(it->GetName().GetText())
                         + "_layout");
-                    HdBinding layoutBinding =
-                        bindless
+                    HdBinding layoutBinding = bindless
                         ? HdBinding(HdBinding::BINDLESS_TEXTURE_UDIM_LAYOUT,
                             bindlessTextureLocation++)
                         : HdBinding(HdBinding::TEXTURE_UDIM_LAYOUT,
-                            locator.uniformLocation++);
+                            locator.uniformLocation++,
+                            locator.textureUnit++);
 
                     metaDataOut->shaderParameterBinding[layoutBinding] =
                         MetaData::ShaderParameterAccessor(
@@ -617,8 +633,11 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                 } else if (it->GetTextureType() == HdTextureType::Uv) {
                     // 2d texture
                     HdBinding textureBinding = bindless
-                        ? HdBinding(HdBinding::BINDLESS_TEXTURE_2D, bindlessTextureLocation++)
-                        : HdBinding(HdBinding::TEXTURE_2D, locator.uniformLocation++);
+                        ? HdBinding(HdBinding::BINDLESS_TEXTURE_2D,
+                                    bindlessTextureLocation++)
+                        : HdBinding(HdBinding::TEXTURE_2D,
+                                    locator.uniformLocation++,
+                                    locator.textureUnit++);
 
                     metaDataOut->shaderParameterBinding[textureBinding] =
                         MetaData::ShaderParameterAccessor(
@@ -636,7 +655,9 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                     glNames.push_back(HdStGLConversions::GetGLSLIdentifier(pv));
                 }
                 
-                metaDataOut->shaderParameterBinding[HdBinding(HdBinding::PRIMVAR_REDIRECT, shaderRedirectLocation++)]
+                metaDataOut->shaderParameterBinding[
+                            HdBinding(HdBinding::PRIMVAR_REDIRECT,
+                                        shaderRedirectLocation++)]
                     = MetaData::ShaderParameterAccessor(
                     /*name=*/glName,
                     /*type=*/glType,
