@@ -53,13 +53,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 class GT_RefineParms;
 class UsdSkelBinding;
 class UsdSkelSkeleton;
+class UsdSkelSkeletonQuery;
 class UsdSkelSkinningQuery;
 class UsdSkelTopology;
 
 
-/// Create an agent rig from a \p skel.
+/// Create an agent rig from a \p skelQuery.
 GUSD_API GU_AgentRigPtr
-GusdCreateAgentRig(const char* name, const UsdSkelSkeleton& skel);
+GusdCreateAgentRig(const char* name, const UsdSkelSkeletonQuery& skelQuery);
 
 
 /// Create an agent rig from \p topology and \p jointNames.
