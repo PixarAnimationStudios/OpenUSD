@@ -255,7 +255,7 @@ RmanOslParserPlugin::_getPropertyMetadata(const RixShaderParameter* param,
         // Vstruct metadata needs to be specially parsed; otherwise, just stuff
         // the value into the map
         if (entryName == _tokens->vstructMember) {
-            std::string vstruct(metaParam->Name()); 
+            std::string vstruct(*metaParam->DefaultS()); 
 
             if (!vstruct.empty()) {
                 // A dot splits struct from member name
@@ -274,8 +274,8 @@ RmanOslParserPlugin::_getPropertyMetadata(const RixShaderParameter* param,
                     vstruct.c_str());
                 }
             }
-        } else {
-            metadata[entryName] = std::string(metaParam->Name());
+        } else if (metaParam->Type() == RixShaderParameter::k_String) {
+            metadata[entryName] = std::string(*metaParam->DefaultS());
         }
     }
 

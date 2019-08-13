@@ -335,6 +335,8 @@ SdrShaderProperty::SdrShaderProperty(
         SdrPropertyMetadata->VstructMemberOf, _metadata);
     _vstructMemberName = TokenVal(
         SdrPropertyMetadata->VstructMemberName, _metadata);
+    _vstructConditionalExpr = TokenVal(
+        SdrPropertyMetadata->VstructConditionalExpr, _metadata);
     _validConnectionTypes = TokenVecVal(
         SdrPropertyMetadata->ValidConnectionTypes, _metadata);
 }

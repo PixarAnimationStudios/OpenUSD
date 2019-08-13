@@ -70,6 +70,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((ValidConnectionTypes, "validConnectionTypes")) \
     ((VstructMemberOf, "vstructMemberOf"))           \
     ((VstructMemberName, "vstructMemberName"))       \
+    ((VstructConditionalExpr, "vstructConditionalExpr"))\
     ((IsAssetIdentifier, "__SDR__isAssetIdentifier"))\
     ((ImplementationName, "__SDR__implementationName"))\
     ((DefaultInput, "__SDR__defaultinput"))          \
@@ -175,6 +176,13 @@ public:
     SDR_API
     bool IsVStruct() const;
 
+
+    /// If this field is part of a vstruct, this is the conditional expression
+    SDR_API
+    const TfToken& GetVStructConditionalExpr() const {
+        return _vstructConditionalExpr;
+    }
+
     /// @}
 
 
@@ -253,6 +261,7 @@ protected:
     TfToken _widget;
     TfToken _vstructMemberOf;
     TfToken _vstructMemberName;
+    TfToken _vstructConditionalExpr;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
