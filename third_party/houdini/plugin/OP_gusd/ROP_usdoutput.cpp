@@ -82,8 +82,6 @@
 #include "gusd/context.h"
 #include "gusd/xformWrapper.h"
 
-#include "boost/foreach.hpp"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 using std::cout;
@@ -1369,8 +1367,7 @@ setKind( const string &path, UsdStagePtr stage )
     if( model && !model.GetKind( &kind )) {
 
         bool hasModelChildren = false;
-        BOOST_FOREACH( UsdPrim child, p.GetChildren()) {
-
+        for( const auto& child : p.GetChildren() ) {
             TfToken childKind;
             UsdModelAPI( child ).GetKind( &childKind );
             if( KindRegistry::IsA( childKind, KindTokens->model )) {

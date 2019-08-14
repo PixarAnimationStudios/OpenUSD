@@ -34,8 +34,6 @@
 #include "pxr/usd/sdf/abstractData.h"
 #include "pxr/usd/sdf/path.h"
 
-#include <boost/mpl/assert.hpp>
-
 #include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -68,8 +66,8 @@ namespace _Detail {
 template <UsdObjType Type>
 struct Const { static const UsdObjType Value = Type; };
 template <class T> struct GetObjType {
-    BOOST_MPL_ASSERT_MSG(false,
-                         Type_must_be_UsdObject_subclass, (T));
+    static_assert(std::is_base_of<UsdObject, T>::value,
+                  "Type T must be a subclass of UsdObject.");
 };
 template <> struct GetObjType<UsdObject> : Const<UsdTypeObject> {};
 template <> struct GetObjType<UsdPrim> : Const<UsdTypePrim> {};
@@ -247,9 +245,8 @@ public:
     /// \endcode
     template <class T>
     bool Is() const {
-        BOOST_MPL_ASSERT_MSG((std::is_base_of<UsdObject, T>::value),
-                             Provided_type_must_derive_or_be_UsdObject,
-                             (T));
+        static_assert(std::is_base_of<UsdObject, T>::value,
+                      "Provided type T must derive from or be UsdObject");
         return UsdIsConvertible(_type, _Detail::GetObjType<T>::Value);
     }
 
