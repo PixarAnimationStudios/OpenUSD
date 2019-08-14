@@ -380,10 +380,10 @@ UsdStage::_MakeResolvedAssetPaths(UsdTimeCode time,
 }
 
 void
-UsdStage::_MakeResolvedAssetPaths(UsdTimeCode time,
-                                  const UsdAttribute& attr,
-                                  VtValue* value,
-                                  bool anchorAssetPathsOnly) const
+UsdStage::_MakeResolvedAssetPathsValue(UsdTimeCode time,
+                                       const UsdAttribute& attr,
+                                       VtValue* value,
+                                       bool anchorAssetPathsOnly) const
 {
     if (value->IsHolding<SdfAssetPath>()) {
         SdfAssetPath assetPath;
@@ -4287,12 +4287,11 @@ public:
             obj, useFallbacks, resultMap, anchorAssetPathsOnly);
     }
 
-    static void MakeResolvedAssetPaths(
-        UsdTimeCode time, const UsdAttribute& attr,
-        VtValue* value, bool anchorAssetPathsOnly)
+    static void MakeAnchoredAssetPaths(
+        UsdTimeCode time, const UsdAttribute& attr, VtValue* value)
     {
-        attr.GetStage()->_MakeResolvedAssetPaths(
-            time, attr, value, anchorAssetPathsOnly);
+        attr.GetStage()->_MakeResolvedAssetPathsValue(
+            time, attr, value, /* anchorAssetPathsOnly = */ true);
     }
 };
 
@@ -4312,8 +4311,13 @@ _GetTimeSampleMap(const UsdAttribute &attr, SdfTimeSampleMap *out,
         for (const auto& timeSample : timeSamples) {
             VtValue value;
             if (attrQuery.Get(&value, timeSample)) {
-                Usd_FlattenAccess::MakeResolvedAssetPaths(
-                    timeSample, attr, &value, anchorAssetPathsOnly);
+                // The values from the attribute query will already be resolved,
+                // but if we're computing the time sample map for flattening,
+                // then we need to anchor any asset path values.
+                if (anchorAssetPathsOnly) {
+                    Usd_FlattenAccess::MakeAnchoredAssetPaths(
+                        timeSample, attr, &value);
+                }
                 (*out)[offset * timeSample].Swap(value);
             }
             else {
@@ -4486,9 +4490,8 @@ _CopyProperty(const UsdProperty &prop,
         if (attr.HasAuthoredMetadata(SdfFieldKeys->Default)) {
             VtValue defaultValue;
             if (attr.Get(&defaultValue)) {
-                Usd_FlattenAccess::MakeResolvedAssetPaths(
-                    UsdTimeCode::Default(), attr, &defaultValue, 
-                    /* anchorAssetPathsOnly = */ true);
+                Usd_FlattenAccess::MakeAnchoredAssetPaths(
+                    UsdTimeCode::Default(), attr, &defaultValue);
             }
             else {
                 defaultValue = SdfValueBlock();
@@ -4895,10 +4898,10 @@ static void _ApplyLayerOffset(Storage storage,
 }
 
 template <class Storage>
-static void _MakeResolvedAssetPaths(Storage storage,
-                                    const ArResolverContext &context,
-                                    const SdfLayerRefPtr &layer,
-                                    bool anchorAssetPathsOnly)
+static void _ResolveAssetPaths(Storage storage,
+                               const ArResolverContext &context,
+                               const SdfLayerRefPtr &layer,
+                               bool anchorAssetPathsOnly)
 {
     if (_IsHolding<SdfAssetPath>(storage)) {
         SdfAssetPath assetPath;
@@ -4935,7 +4938,7 @@ _ResolveAssetPathsInDictionary(const SdfLayerRefPtr &anchor,
             v.UncheckedSwap(resolvedDict);
         }
         else {
-            _MakeResolvedAssetPaths(&v, context, anchor, anchorAssetPathsOnly);
+            _ResolveAssetPaths(&v, context, anchor, anchorAssetPathsOnly);
         }
     }
 }
@@ -4998,7 +5001,7 @@ struct StrongestValueComposer
             } else if (_IsHolding<SdfTimeSampleMap>(_value)) {
                 _ApplyLayerOffset(_value, node, layer);
             } else {
-                _MakeResolvedAssetPaths(
+                _ResolveAssetPaths(
                     _value, context, layer, _anchorAssetPathsOnly);
             }
         }
@@ -5874,26 +5877,147 @@ _GetClipsThatApplyToNode(
     return relevantClips;
 }
 
+// Helper for getting the fully resolved value from an attribute generically
+// for all value types for use by _GetValue and _GetValueForResolveInfo. 
+template <class T>
+struct Usd_AttrGetValueHelper {
 
-bool
-UsdStage::_GetValue(UsdTimeCode time, const UsdAttribute &attr, 
-                    VtValue* result) const
+public:
+    // Get the value at time for the attribute. The getValueImpl function is
+    // templated for sharing of this functionality between _GetValue and 
+    // _GetValueForResolveInfo.
+    template <class Fn>
+    static bool GetValue(const UsdStage &stage, UsdTimeCode time, 
+                         const UsdAttribute &attr, T* result, 
+                         const Fn &getValueImpl)
+    {
+        // Special case if time is default: we can grab the value from the
+        // metadata. This value will be fully resolved already.
+        if (time.IsDefault()) {
+            SdfAbstractDataTypedValue<T> out(result);
+            bool valueFound = stage._GetMetadata(
+                attr, SdfFieldKeys->Default, TfToken(), 
+                /*useFallbacks=*/true, &out);
+            return valueFound && 
+                (!Usd_ClearValueIfBlocked<SdfAbstractDataValue>(&out));
+        }
+
+        return _GetResolvedValue(stage, time, attr, result, getValueImpl);
+    }
+
+private:
+    // Metafunction for selecting the appropriate interpolation object if the
+    // given value type supports linear interpolation.
+    struct _SelectInterpolator 
+        : public boost::mpl::if_c<
+              UsdLinearInterpolationTraits<T>::isSupported,
+              Usd_LinearInterpolator<T>,
+              Usd_HeldInterpolator<T> > { };
+
+    // Gets the attribute value from the implementation with appropriate 
+    // interpolation. In the case of value types that can be further resolved
+    // by context (like SdfAssetPath), the value returned from
+    // from this is NOT fully resolved yet.
+    template <class Fn>
+    static bool _GetValueFromImpl(const UsdStage &stage,
+                                  UsdTimeCode time, const UsdAttribute &attr,
+                                  T* result, const Fn &getValueImpl)
+    {
+        SdfAbstractDataTypedValue<T> out(result);
+
+        if (stage._interpolationType == UsdInterpolationTypeLinear) {
+            typedef typename _SelectInterpolator::type _Interpolator;
+            _Interpolator interpolator(result);
+            return getValueImpl(stage, time, attr, &interpolator, &out);
+        };
+
+        Usd_HeldInterpolator<T> interpolator(result);
+        return getValueImpl(stage, time, attr, &interpolator, &out);
+    }
+
+    // Default implementation for most types: there is no extra resolve step
+    // necessary. This implementation is specialized for types that need to
+    // be further resolved in context.
+    template <class Fn>
+    static bool _GetResolvedValue(const UsdStage &stage,
+                                  UsdTimeCode time, const UsdAttribute &attr,
+                                  T* result, const Fn &getValueImpl)
+    {
+        return _GetValueFromImpl(stage, time, attr, result, getValueImpl);
+    }
+};
+
+// Specializations for SdfAssetPath and VtArray<SdfAssetPath> types which need
+// to be resolved before returned.
+template <>
+template <class Fn>
+bool Usd_AttrGetValueHelper<SdfAssetPath>::_GetResolvedValue(
+    const UsdStage &stage, UsdTimeCode time, const UsdAttribute &attr,
+    SdfAssetPath* result, const Fn &getValueImpl)
 {
-    Usd_UntypedInterpolator interpolator(attr, result);
-    return _GetValueImpl(time, attr, &interpolator, result);
+    if (_GetValueFromImpl(stage, time, attr, result, getValueImpl)) {
+        stage._MakeResolvedAssetPaths(time, attr, result, 1);
+        return true;
+    }
+    return false;
 }
 
-namespace {
+template <>
+template <class Fn>
+bool Usd_AttrGetValueHelper<VtArray<SdfAssetPath>>::_GetResolvedValue(
+    const UsdStage &stage, UsdTimeCode time, const UsdAttribute &attr,
+    VtArray<SdfAssetPath>* result, const Fn &getValueImpl)
+{
+    if (_GetValueFromImpl(stage, time, attr, result, getValueImpl)) {
+        stage._MakeResolvedAssetPaths(time, attr, result->data(), result->size());
+        return true;
+    }
+    return false;
+}
 
-// Metafunction for selecting the appropriate interpolation object if the
-// given value type supports linear interpolation.
-template <typename T>
-struct _SelectInterpolator 
-    : public boost::mpl::if_c<
-          UsdLinearInterpolationTraits<T>::isSupported,
-          Usd_LinearInterpolator<T>,
-          Usd_HeldInterpolator<T> > { };
+// Specialized attribute value getter for type erased VtValue.
+struct Usd_AttrGetUntypedValueHelper {
+    template <class Fn>
+    static bool GetValue(const UsdStage &stage, UsdTimeCode time, 
+                         const UsdAttribute &attr, VtValue* result, 
+                         const Fn &getValueImpl)
+    {
+        // Special case if time is default: we can grab the value from the
+        // metadata. This value will be fully resolved already.
+        if (time.IsDefault()) {
+            bool valueFound = stage._GetMetadata(
+                attr, SdfFieldKeys->Default, TfToken(), 
+                /*useFallbacks=*/true, result);
+            return valueFound && (!Usd_ClearValueIfBlocked(result));
+        }
 
+        Usd_UntypedInterpolator interpolator(attr, result);
+        if (getValueImpl(stage, time, attr, &interpolator, result)) {
+            if (result) {
+                // Always run the resolve functions for value types that need 
+                // it.
+                stage._MakeResolvedAssetPathsValue(time, attr, result);
+            }
+            return true;
+        }
+        return false;
+    }
+};
+
+bool
+UsdStage::_GetValue(UsdTimeCode time, const UsdAttribute &attr,
+                    VtValue* result) const
+{
+    auto getValueImpl = [](const UsdStage &stage,
+                           UsdTimeCode time, const UsdAttribute &attr,
+                           Usd_InterpolatorBase* interpolator,
+                           VtValue* value) 
+    {
+        return stage._GetValueImpl(time, attr, interpolator, value);
+    };
+
+    return Usd_AttrGetUntypedValueHelper::GetValue(
+        *this, time, attr, result, getValueImpl);
 }
 
 template <class T>
@@ -5901,18 +6025,16 @@ bool
 UsdStage::_GetValue(UsdTimeCode time, const UsdAttribute &attr,
                     T* result) const
 {
-    SdfAbstractDataTypedValue<T> out(result);
+    auto getValueImpl = [](const UsdStage &stage,
+                           UsdTimeCode time, const UsdAttribute &attr,
+                           Usd_InterpolatorBase* interpolator,
+                           SdfAbstractDataValue* value) 
+    {
+        return stage._GetValueImpl(time, attr, interpolator, value);
+    };
 
-    if (_interpolationType == UsdInterpolationTypeLinear) {
-        typedef typename _SelectInterpolator<T>::type _Interpolator;
-        _Interpolator interpolator(result);
-        return _GetValueImpl<SdfAbstractDataValue>(
-            time, attr, &interpolator, &out);
-    }
-
-    Usd_HeldInterpolator<T> interpolator(result);
-    return _GetValueImpl<SdfAbstractDataValue>(
-        time, attr, &interpolator, &out);
+    return Usd_AttrGetValueHelper<T>::GetValue(
+        *this, time, attr, result, getValueImpl);
 }
 
 class UsdStage_ResolveInfoAccess
@@ -6041,12 +6163,6 @@ UsdStage::_GetValueImpl(UsdTimeCode time, const UsdAttribute &attr,
                         Usd_InterpolatorBase* interpolator,
                         T *result) const
 {
-    if (time.IsDefault()) {
-        bool valueFound = _GetMetadata(attr, SdfFieldKeys->Default,
-                                       TfToken(), /*useFallbacks=*/true, result);
-        return valueFound && (!Usd_ClearValueIfBlocked(result));
-    }
-
     UsdResolveInfo resolveInfo;
     _ExtraResolveInfo<T> extraResolveInfo;
     extraResolveInfo.defaultOrFallbackValue = result;
@@ -6071,10 +6187,17 @@ UsdStage::_GetValueImpl(UsdTimeCode time, const UsdAttribute &attr,
         // Nothing to do here -- the call to _GetResolveInfo will have
         // filled in the result with the default value.
         return m.IsClean();
+    } 
+    else if (resolveInfo._source == UsdResolveInfoSourceFallback) {
+        return _GetFallbackMetadata(attr, SdfFieldKeys->Default, 
+                                    TfToken(), result);
     }
 
-    return _GetValueFromResolveInfoImpl(
-        resolveInfo, time, attr, interpolator, result);
+    // _GetResolveInfo should never return UsdResolveInfoSourceIsTimeDependent
+    // since we always pass it an exact time in this function.
+    TF_VERIFY(resolveInfo._source != UsdResolveInfoSourceIsTimeDependent);
+
+    return false;
 }
 
 namespace 
@@ -6453,12 +6576,6 @@ UsdStage::_GetValueFromResolveInfoImpl(const UsdResolveInfo &info,
                                        Usd_InterpolatorBase* interpolator,
                                        T* result) const
 {
-    if (time.IsDefault()) {
-        bool valueFound = _GetMetadata(attr, SdfFieldKeys->Default,
-                                       TfToken(), /*useFallbacks=*/true, result);
-        return valueFound && (!Usd_ClearValueIfBlocked(result));
-    }
-
     if (info._source == UsdResolveInfoSourceTimeSamples) {
         return UsdStage_ResolveInfoAccess::_GetTimeSampleValue(
             time, attr, info, nullptr, nullptr, interpolator, result);
@@ -6531,34 +6648,41 @@ UsdStage::_GetValueFromResolveInfoImpl(const UsdResolveInfo &info,
     return false;
 }
 
-bool 
+bool
 UsdStage::_GetValueFromResolveInfo(const UsdResolveInfo &info,
                                    UsdTimeCode time, const UsdAttribute &attr,
-                                   VtValue* value) const
+                                   VtValue* result) const
 {
-    Usd_UntypedInterpolator interpolator(attr, value);
-    return _GetValueFromResolveInfoImpl(
-        info, time, attr, &interpolator, value);
+    auto getValueImpl = [&info](const UsdStage &stage,
+                                UsdTimeCode time, const UsdAttribute &attr,
+                                Usd_InterpolatorBase* interpolator,
+                                VtValue* value) 
+    {
+        return stage._GetValueFromResolveInfoImpl(
+            info, time, attr, interpolator, value);
+    };
+
+    return Usd_AttrGetUntypedValueHelper::GetValue(
+        *this, time, attr, result, getValueImpl);
 }
 
 template <class T>
 bool 
 UsdStage::_GetValueFromResolveInfo(const UsdResolveInfo &info,
                                    UsdTimeCode time, const UsdAttribute &attr,
-                                   T* value) const
+                                   T* result) const
 {
-    SdfAbstractDataTypedValue<T> out(value);
+    auto getValueImpl = [&info](const UsdStage &stage,
+                                UsdTimeCode time, const UsdAttribute &attr, 
+                                Usd_InterpolatorBase* interpolator,
+                                SdfAbstractDataValue* value) 
+    {
+        return stage._GetValueFromResolveInfoImpl(
+            info, time, attr, interpolator, value);
+    };
 
-    if (_interpolationType == UsdInterpolationTypeLinear) {
-        typedef typename _SelectInterpolator<T>::type _Interpolator;
-        _Interpolator interpolator(value);
-        return _GetValueFromResolveInfoImpl<SdfAbstractDataValue>(
-            info, time, attr, &interpolator, &out);
-    }
-
-    Usd_HeldInterpolator<T> interpolator(value);
-    return _GetValueFromResolveInfoImpl<SdfAbstractDataValue>(
-        info, time, attr, &interpolator, &out);
+    return Usd_AttrGetValueHelper<T>::GetValue(
+        *this, time, attr, result, getValueImpl);
 }
 
 // --------------------------------------------------------------------- //
@@ -7047,8 +7171,8 @@ _HasLayerFieldOrDictKey(const SdfLayerHandle &layer,
             val->UncheckedSwap<VtDictionary>(dict);
         }
         else {
-            _MakeResolvedAssetPaths(val, context, layer,
-                                    /* anchorAssetPathsOnly = */ false);
+            _ResolveAssetPaths(val, context, layer,
+                               /* anchorAssetPathsOnly = */ false);
         }
     }
 
