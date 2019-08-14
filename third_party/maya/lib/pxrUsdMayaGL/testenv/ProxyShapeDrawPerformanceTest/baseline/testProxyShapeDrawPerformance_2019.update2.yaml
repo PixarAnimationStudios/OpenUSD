@@ -1,5 +1,5 @@
 test: testProxyShapeDrawPerformance
-spec: third/mayapkg_2019.update1/lib/pxrUsdMayaGL
+spec: third/mayapkg_2019.update2/lib/pxrUsdMayaGL
 configs:
 - name: fedora-gcc64-opt
   epoch: 1516132333
