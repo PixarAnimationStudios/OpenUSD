@@ -20,7 +20,7 @@ pxr_shared_library(${PXR_PACKAGE}
         gf
         hd
         usdRi
-        ${RENDERMAN_LIBRARY}
+        ${LOADPRMAN_LIBRARY}
 
     INCLUDE_DIRS
         ${RENDERMAN_INCLUDE_DIR}
@@ -70,7 +70,7 @@ else()
             hd
             usd
             usdImaging
-            ${RENDERMAN_LIBRARY}
+            ${LOADPRMAN_LIBRARY}
         CPPFILES
             testenv/testHdPrman.cpp
     )
