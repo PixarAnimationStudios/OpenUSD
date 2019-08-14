@@ -1186,22 +1186,30 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
     // Most Maya instancer data sources provide id's. If this once doesn't, then
     // just skip the id's attr because it's optional in USD, and we don't have
     // a good way to generate sane id's.
+    // Note that we need to populate indicesOrIds in either case; the schema
+    // interprets some attributes (e.g. visibility) as referring to id's if
+    // present or indices otherwise.
+    VtInt64Array indicesOrIds;
     MFnArrayAttrsData::Type type;
     if (inputPointsData.checkArrayExist("id", type) &&
             type == MFnArrayAttrsData::kDoubleArray) {
         const MDoubleArray id = inputPointsData.doubleArray("id", &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
 
-        VtArray<int64_t> vtArray = _MapMayaToVtArray<
+        indicesOrIds = _MapMayaToVtArray<
             MDoubleArray, double, int64_t>(
             id,
             [](double x) {
                 return (int64_t) x;
             });
-        _SetAttribute(instancer.CreateIdsAttr(), vtArray, usdTime, valueWriter);
+        _SetAttribute(instancer.CreateIdsAttr(), indicesOrIds, usdTime,
+                valueWriter);
     }
     else {
-        // Skip.
+        // Skip writing the id's, but still generate the indicesOrIds array.
+        for (size_t i = 0; i < numInstances; ++i) {
+            indicesOrIds.push_back(i);
+        }
     }
 
     // Export the rest of the per-instance array attrs.
@@ -1300,6 +1308,28 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
         VtVec3fArray vtArray;
         vtArray.assign(numInstances, GfVec3f(1.0));
         _SetAttribute(instancer.CreateScalesAttr(), vtArray, usdTime,
+                      valueWriter);
+    }
+
+    // Note: Maya stores visibility as an array of doubles, one corresponding
+    // to each instance. USD stores visibility as a sparse array of only the
+    // particular id's (or indices) to be invis'ed.
+    // Visibility isn't required, so skip authoring if it doesn't exist.
+    if (inputPointsData.checkArrayExist("visibility", type) &&
+            type == MFnArrayAttrsData::kDoubleArray) {
+        const MDoubleArray visibility = inputPointsData.doubleArray(
+                "visibility", &status);
+        CHECK_MSTATUS_AND_RETURN(status, false);
+
+        VtInt64Array invisibleIds;
+        for (size_t i = 0; i < visibility.length(); ++i) {
+            if (visibility[i] == 0.0) {
+                if (i < indicesOrIds.size()) {
+                    invisibleIds.push_back(indicesOrIds[i]);
+                }
+            }
+        }
+        _SetAttribute(instancer.CreateInvisibleIdsAttr(), invisibleIds, usdTime,
                       valueWriter);
     }
 
