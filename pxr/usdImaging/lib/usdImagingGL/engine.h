@@ -485,8 +485,10 @@ protected:
     static bool _UpdateHydraCollection(HdRprimCollection *collection,
                           SdfPathVector const& roots,
                           UsdImagingGLRenderParams const& params);
+    USDIMAGINGGL_API
     static HdxRenderTaskParams _MakeHydraUsdImagingGLRenderParams(
                           UsdImagingGLRenderParams const& params);
+    USDIMAGINGGL_API
     static void _ComputeRenderTags(UsdImagingGLRenderParams const& params,
                           TfTokenVector *renderTags);
 
