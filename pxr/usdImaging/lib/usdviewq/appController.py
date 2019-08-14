@@ -1993,12 +1993,68 @@ class AppController(QtCore.QObject):
                 self._primSearchResults = deque(self._primSearchResults)
                 self._lastPrimSearched = self._dataModel.selection.getFocusPrim()
 
+                selectedPrim = self._dataModel.selection.getFocusPrim()
+
+                # reorders search results so results are centered on selected
+                # prim. this could be optimized, but a binary search with a 
+                # custom operator for the result closest to and after the
+                # selected prim is messier to implement.
+                if (selectedPrim != None and 
+                    selectedPrim != self._dataModel.stage.GetPseudoRoot() and 
+                    len(self._primSearchResults) > 0):
+                    for i in range(len(self._primSearchResults)):
+                        searchResultPath = self._primSearchResults[0]
+                        selectedPath = selectedPrim.GetPath()
+                        if self._comparePaths(searchResultPath, selectedPath) < 1:
+                            self._primSearchResults.rotate(-1)
+                        else:
+                            break
+
                 if (len(self._primSearchResults) > 0):
                     self._primViewFindNext()
             if self._printTiming:
                 t.PrintTime("match '%s' (%d matches)" %
                             (self._primSearchString,
                              len(self._primSearchResults)))
+
+    # returns -1 if path1 appears before path2 in flattened tree
+    # returns 0 if path1 and path2 are equal
+    # returns 1 if path2 appears before path1 in flattened tree
+    def _comparePaths(self, path1, path2):
+        # function for removing a certain number of elements from a path
+        def stripPath(path, numElements):
+            strippedPath = path
+            for i in range(numElements):
+                strippedPath = strippedPath.GetParentPath()
+            return strippedPath
+
+        lca = path1.GetCommonPrefix(path2)
+        path1NumElements = path1.pathElementCount
+        path2NumElements = path2.pathElementCount
+        lcaNumElements = lca.pathElementCount
+
+        if path1 == path2:
+            return 0
+        if lca == path1:
+            return -1
+        if lca == path2:
+            return 1
+
+        path1Stripped = stripPath(path1, path1NumElements - (lcaNumElements + 1))
+        path2Stripped = stripPath(path2, path2NumElements - (lcaNumElements + 1))
+
+        lcaChildrenPrims = self._getFilteredChildren(self._dataModel.stage.GetPrimAtPath(lca))
+        lcaChildrenPaths = [prim.GetPath() for prim in lcaChildrenPrims]
+
+        indexPath1 = lcaChildrenPaths.index(path1Stripped)
+        indexPath2 = lcaChildrenPaths.index(path2Stripped)
+
+        if (indexPath1 < indexPath2):
+            return -1
+        if (indexPath1 > indexPath2):
+            return 1
+        else:
+            return 0
 
     def _primLegendToggleCollapse(self):
         ToggleLegendWithBrowser(self._ui.primLegendContainer,
