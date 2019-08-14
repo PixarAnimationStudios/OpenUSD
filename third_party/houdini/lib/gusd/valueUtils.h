@@ -215,7 +215,7 @@ struct GusdUsdValueTypeTupleSize<
     T, typename std::enable_if<VtIsArray<T>::value>::type>
 {
     static const int value =
-        GusdUsdValueTypeTupleSize<typename T::value_type>();
+        GusdUsdValueTypeTupleSize<typename T::value_type>::value;
 };
 
 

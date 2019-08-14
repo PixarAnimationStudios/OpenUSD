@@ -25,6 +25,7 @@
 
 #include "error.h"
 #include "USD_Utils.h"
+#include "UT_TypeTraits.h"
 
 #include "pxr/base/arch/hints.h"
 #include "pxr/usd/sdf/types.h"
@@ -85,7 +86,7 @@ struct _ElemType<T, typename std::enable_if<VtIsArray<T>::value>::type>
 template <class T>
 struct _UsdScalarToGaScalar { using type = T; };
 
-// TODO: For now, we can bools to integers.
+// TODO: For now, we cast bools to integers.
 // But it would also be reasonable to author a group attribute instead.
 template <>
 struct _UsdScalarToGaScalar<bool>           { using type = int32; };
@@ -163,17 +164,17 @@ template <class T>
 struct _UsdNumericValueTraits<
     T, typename std::enable_if<VtIsArray<T>::value>::type>
 {
-    using TupleType = typename VtArray<T>::value_type;
-    using UsdScalarType = typename GusdPodTupleTraits<TupleType>::ValueType;
+    using UsdTupleType = typename T::value_type;
+    using UsdScalarType = typename GusdPodTupleTraits<UsdTupleType>::ValueType;
     using GaScalarType = typename _UsdScalarToGaScalar<UsdScalarType>::type;
 
-    static const int tupleSize = GusdGetTupleSize<TupleType>();
+    static const int tupleSize = GusdGetTupleSize<UsdTupleType>();
 
-    static void     ResizeByTupleCount(const T& value, size_t size)
+    static void     ResizeByTupleCount(T& value, size_t size)
                     { value.resize(size); }
 
-    static void     ResizeByScalarCount(const T& value, size_t size)
-                    { value.resize(size/tupleSize + size%tupleSize ? 1 : 0); }
+    static void     ResizeByScalarCount(T& value, size_t size)
+                    { value.resize(size/tupleSize + (size%tupleSize ? 1 : 0)); }
 
     static size_t   GetNumScalars(const T& value)
                     { return value.size()*tupleSize; }
@@ -445,8 +446,9 @@ template <class T>
 struct _NumericArrayAttrToUsdValues<
     T, typename std::enable_if<
            _UsdValueIsNumeric<T>() &&
-           !SYSisSame<typename _UsdNumericValueTraits<T>::UsdScalarType,
-                      typename _UsdNumericValueTraits<T>::GaScalarType>()>::type>
+           !SYSisSame<
+               typename _UsdNumericValueTraits<T>::UsdScalarType,
+               typename _UsdNumericValueTraits<T>::GaScalarType>()>::type>
 {
     bool operator()(const GA_Attribute& attr,
                     const TfSpan<const GA_Offset>& offsets,
@@ -607,8 +609,9 @@ template <class T>
 struct _UsdValuesToNumericArrayAttr<
     T, typename std::enable_if<
            _UsdValueIsNumeric<T>() &&
-           SYSisSame<typename _UsdNumericValueTraits<T>::UsdScalarType,
-                     typename _UsdNumericValueTraits<T>::GaScalarType>()>::type>
+           SYSisSame<
+               typename _UsdNumericValueTraits<T>::UsdScalarType,
+               typename _UsdNumericValueTraits<T>::GaScalarType>()>::type>
 {
     bool operator()(GA_Attribute& attr,
                     const GA_Range& range,
@@ -748,7 +751,7 @@ struct _UsdStringValueTraits<
 {
     using UsdStringType = typename T::value_type;
 
-    static void                 Resize(const T& value, size_t size)
+    static void                 Resize(T& value, size_t size)
                                 { value.resize(size); }
 
     static size_t               GetSize(const T& value)
@@ -821,8 +824,8 @@ struct _StringAttrToUsdValues<
                     const TfSpan<T>& values) const
     {
         using Traits = _UsdStringValueTraits<T>;
-        using Ops = _UsdStringOps<T>;
         using UsdStringType = typename Traits::UsdStringType;
+        using Ops = _UsdStringOps<UsdStringType>;
 
         const auto* aif = attr.getAIFSharedStringTuple();
         if (!aif) {
@@ -908,8 +911,8 @@ struct _StringArrayAttrToUsdValues<
                     const TfSpan<T>& values) const
     {
         using Traits = _UsdStringValueTraits<T>;
-        using Ops = _UsdStringOps<T>;
         using UsdStringType = typename Traits::UsdStringType;
+        using Ops = _UsdStringOps<UsdStringType>;
 
         const auto* aif = attr.getAIFSharedStringArray();
         if (!aif) {
@@ -1001,8 +1004,8 @@ struct _UsdValuesToStringAttr<
                     const TfSpan<const T>& values) const
     {   
         using Traits = _UsdStringValueTraits<T>;
-        using Ops = _UsdStringOps<T>;
         using UsdStringType = typename Traits::UsdStringType;
+        using Ops = _UsdStringOps<UsdStringType>;
 
         GA_RWHandleS hnd(&attr);
         if (hnd.isInvalid()) {
@@ -1064,8 +1067,8 @@ struct _UsdValuesToStringArrayAttr<
                     const TfSpan<const T>& values) const
     {   
         using Traits = _UsdStringValueTraits<T>;
-        using Ops = _UsdStringOps<T>;
         using UsdStringType = typename Traits::UsdStringType;
+        using Ops = _UsdStringOps<UsdStringType>;
 
         GA_RWHandleSA hnd(&attr);
         if (hnd.isInvalid()) {
@@ -1132,11 +1135,16 @@ GusdReadUsdValuesFromAttr(const GA_Attribute& attr,
 
 // Instantiate templated method for all Sdf value types.
 
-#define GUSD_DEFINE_READ_ATTR(r, unused, elem)          \
-    template bool GusdReadUsdValuesFromAttr(            \
-        const GA_Attribute&,                            \
-        const TfSpan<const GA_Offset>&,                 \
-        const TfSpan<SDF_VALUE_CPP_TYPE(elem)>&);
+#define GUSD_DEFINE_READ_ATTR(r, unused, elem)              \
+    template bool GusdReadUsdValuesFromAttr(                \
+        const GA_Attribute&,                                \
+        const TfSpan<const GA_Offset>&,                     \
+        const TfSpan<SDF_VALUE_CPP_TYPE(elem)>&);           \
+                                                            \
+    template bool GusdReadUsdValuesFromAttr(                \
+        const GA_Attribute&,                                \
+        const TfSpan<const GA_Offset>&,                     \
+        const TfSpan<VtArray<SDF_VALUE_CPP_TYPE(elem)>>&);
 
 BOOST_PP_SEQ_FOR_EACH(GUSD_DEFINE_READ_ATTR, ~, SDF_VALUE_TYPES);
 
@@ -1175,11 +1183,16 @@ GusdWriteUsdValuesToAttr(GA_Attribute& attr,
 
 // Instantiate templated method for all Sdf value types.
 
-#define GUSD_DEFINE_WRITE_ATTR(r, unused, elem)         \
-    template bool GusdWriteUsdValuesToAttr(             \
-        GA_Attribute&, const GA_Range&,                 \
-        const TfSpan<const GA_Index>&,                  \
-        const TfSpan<const SDF_VALUE_CPP_TYPE(elem)>&);
+#define GUSD_DEFINE_WRITE_ATTR(r, unused, elem)                     \
+    template bool GusdWriteUsdValuesToAttr(                         \
+        GA_Attribute&, const GA_Range&,                             \
+        const TfSpan<const GA_Index>&,                              \
+        const TfSpan<const SDF_VALUE_CPP_TYPE(elem)>&);             \
+                                                                    \
+    template bool GusdWriteUsdValuesToAttr(                         \
+        GA_Attribute&, const GA_Range&,                             \
+        const TfSpan<const GA_Index>&,                              \
+        const TfSpan<const VtArray<SDF_VALUE_CPP_TYPE(elem)>>&);
 
 BOOST_PP_SEQ_FOR_EACH(GUSD_DEFINE_WRITE_ATTR, ~, SDF_VALUE_TYPES);
 
@@ -1188,11 +1201,37 @@ BOOST_PP_SEQ_FOR_EACH(GUSD_DEFINE_WRITE_ATTR, ~, SDF_VALUE_TYPES);
 
 namespace {
 
+
+/// Returns the array-valued form of \p nonArrayType if \p isArray is true.
+/// Otherwise returns the \p nonArrayType.
 inline SdfValueTypeName
-_GetTypeName(const SdfValueTypeName& typeName, bool isArray)
+_GetTypeName(const SdfValueTypeName& nonArrayType, bool isArray)
 {
-    return isArray ? typeName.GetArrayType() : typeName;
+    return isArray ? nonArrayType.GetArrayType() : nonArrayType;
 }
+
+
+/// Return the underlying GA_STORAGE type for \p attr.
+GA_Storage
+_GetAttrStorage(const GA_Attribute& attr)
+{
+    if (const auto* aif = attr.getAIFTuple()) {
+        return aif->getStorage(&attr);
+    }
+    if (const auto* aif = attr.getAIFNumericArray()) {
+        return aif->getStorage(&attr);
+    }
+    if (const auto* aif = attr.getAIFSharedStringArray()) {
+        return aif->getStorage(&attr);
+    }
+    // String attributes do not have a GA_AIFTuple implementation.
+    // For strings, refer to the storage class instead.
+    if (attr.getStorageClass() == GA_STORECLASS_STRING) {
+        return GA_STORE_STRING;
+    }
+    return GA_STORE_INVALID;
+}
+
              
 } // namespace
 
@@ -1200,17 +1239,11 @@ _GetTypeName(const SdfValueTypeName& typeName, bool isArray)
 SdfValueTypeName
 GusdGetSdfTypeNameForAttr(const GA_Attribute& attr)
 {
-    const GA_AIFTuple* aifTuple = attr.getAIFTuple();
-    if (!aifTuple) {
-        return SdfValueTypeName();
-    }
 
     const bool isArray =
         GA_ATINumericArray::isType(&attr) || GA_ATIStringArray::isType(&attr);
-
     const int tupleSize = attr.getTupleSize();
-
-    const GA_Storage storage = aifTuple->getStorage(&attr);
+    const GA_Storage storage = _GetAttrStorage(attr);
     const GA_TypeInfo typeInfo = attr.getTypeInfo();
 
     switch (storage)
@@ -1354,7 +1387,10 @@ GusdGetSdfTypeNameForAttr(const GA_Attribute& attr)
         return SdfValueTypeNames->DoubleArray;
 
     case GA_STORE_STRING:
-        return _GetTypeName(SdfValueTypeNames->StringArray,
+        // TODO: String, Token and Asset are all valid answers here.
+        // Should the attribute store metadata telling us which type
+        // to use? Should it be based on the name?
+        return _GetTypeName(SdfValueTypeNames->String,
                             isArray || tupleSize != 1);
     default:
         return SdfValueTypeName();
@@ -1433,45 +1469,39 @@ GusdCreateAttrForUsdValueType(GEO_Detail& gd,
 
     const int tupleSize = GusdGetUsdValueTypeTupleSize<T>();
 
+    GA_Attribute* attr = nullptr;
+
     if (!VtIsArray<T>()) {
-        return gd.addTuple(storage, owner, scope, name, tupleSize);
+        attr = gd.addTuple(storage, owner, scope, name, tupleSize);
     } else {
         if (GAisFloatStorage(storage)) {
-            if (GA_Attribute* attr = gd.addFloatArray(
-                    owner, scope, name, tupleSize, creationArgs,
-                    /*attr options*/ nullptr, storage)) {
-                
-                // XXX: GA_TYPE_QUATERNION is the only type info that can
-                // be inferred from the value type alone.
-                // For all other GA_TypeInfo values, the caller must
-                // query the 'role' from the SdfValueTypeName of the
-                // corresponding USD attribute.
-                //
-                // If the SdfValueTypeName was passed in as an argument
-                // to this method, then we could configure the GA_AIFType
-                // for non-quaternion types at this point as well. The
-                // reason we don't do that is because an attribute's    
-                // SdfValueTypeName is *not* cached, and must be 
-                // potentially read from disk and composed, so querying
-                // the type on every value read introduces extra overhead.
-                // Instead, the caller of this method should apply type
-                // info on the resulting attribute, if necessary, using
-                // GusdUsdValueTypeMayHaveRole() and
-                // GusdGetTypeInfoForUsdRole().
-
-                if (GfIsGfQuat<typename _AttrScalarType<T>::type>::value) {
-                    attr->setTypeInfo(GA_TYPE_QUATERNION);
-                }
-                return attr;
-            }
+            attr = gd.addFloatArray(owner, scope, name, tupleSize, creationArgs,
+                                    /*attr options*/ nullptr, storage);
         } else if (GAisIntStorage(storage)) {
-            return gd.addIntArray(owner, scope, name, tupleSize, creationArgs,
+            attr = gd.addIntArray(owner, scope, name, tupleSize, creationArgs,
                                   /*attr options*/ nullptr, storage);
         } else if (storage == GA_STORE_STRING) {
-            return gd.addStringArray(owner, name, tupleSize, creationArgs);
+            attr = gd.addStringArray(owner, name, tupleSize, creationArgs);
         }
     }
-    return nullptr;
+    if (attr && GfIsGfQuat<typename _AttrScalarType<T>::type>::value) {
+        // XXX: GA_TYPE_QUATERNION is the only type info that can be inferred
+        // from the value type alone. For all other GA_TypeInfo values, the
+        // caller must query the 'role' from the SdfValueTypeName of the
+        // corresponding USD attribute.
+        //
+        // If the SdfValueTypeName was passed in as an argument to this method,
+        // then we could configure the GA_AIFType for non-quaternion types at
+        // this point as well. The reason we don't do that is because an
+        // attribute's SdfValueTypeName is *not* cached, and must be composed
+        // and potentially read from disk, so querying the type on every value
+        // read introduces extra overhead.
+        // Instead, the caller of this method should apply type info on the
+        // resulting attribute, if necessary, using
+        // GusdUsdValueTypeMayHaveRole() and GusdGetTypeInfoForUsdRole().
+        attr->setTypeInfo(GA_TYPE_QUATERNION);
+    }
+    return attr;
 }
 
 // Instantiate templated method for all Sdf value types.
@@ -1479,6 +1509,12 @@ GusdCreateAttrForUsdValueType(GEO_Detail& gd,
 #define GUSD_CREATE_ATTR(r, unused, elem)                           \
     template GA_Attribute*                                          \
         GusdCreateAttrForUsdValueType<SDF_VALUE_CPP_TYPE(elem)>(    \
+            GEO_Detail&, const GA_AttributeScope,                   \
+            const GA_AttributeOwner, const UT_StringHolder&,        \
+            const UT_Options*);                                     \
+                                                                    \
+    template GA_Attribute*                                          \
+        GusdCreateAttrForUsdValueType<VtArray<SDF_VALUE_CPP_TYPE(elem)>>( \
             GEO_Detail&, const GA_AttributeScope,                   \
             const GA_AttributeOwner, const UT_StringHolder&,        \
             const UT_Options*);
