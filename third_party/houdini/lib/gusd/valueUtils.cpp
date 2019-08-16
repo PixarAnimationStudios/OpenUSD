@@ -35,6 +35,7 @@
 #include <GA/GA_AIFSharedStringTuple.h>
 #include <GA/GA_AIFTuple.h>
 #include <GA/GA_Attribute.h>
+#include <GA/GA_ATIGroupBool.h>
 #include <GA/GA_ATINumericArray.h>
 #include <GA/GA_ATIString.h>
 #include <GA/GA_ATIStringArray.h>
@@ -86,8 +87,8 @@ struct _ElemType<T, typename std::enable_if<VtIsArray<T>::value>::type>
 template <class T>
 struct _UsdScalarToGaScalar { using type = T; };
 
-// TODO: For now, we cast bools to integers.
-// But it would also be reasonable to author a group attribute instead.
+// Cast bools to integers for purposes of GA_AIFTuple/GA_AIFNumericArray
+// queries. Group attributes are handled separately.
 template <>
 struct _UsdScalarToGaScalar<bool>           { using type = int32; };
 
@@ -149,7 +150,10 @@ struct _UsdNumericValueTraits
     static size_t   GetNumTuples(const T& value)  { return 1; } 
 
     static UsdScalarType*       GetScalarDataPtr(T& value)
-                                { return reinterpret_cast<UsdScalarType*>(&value); }
+                                {
+                                    return reinterpret_cast<
+                                        UsdScalarType*>(&value);
+                                }
 
     static const UsdScalarType* GetConstScalarDataPtr(const T& value)
                                 {
@@ -275,8 +279,9 @@ template <class T>
 struct _NumericAttrToUsdValues<
     T, typename std::enable_if<
            _UsdValueIsNumeric<T>() &&
-           !SYSisSame<typename _UsdNumericValueTraits<T>::UsdScalarType,
-                      typename _UsdNumericValueTraits<T>::GaScalarType>()>::type>
+           !SYSisSame<
+               typename _UsdNumericValueTraits<T>::UsdScalarType,
+               typename _UsdNumericValueTraits<T>::GaScalarType>()>::type>
 {
     bool operator()(const GA_Attribute& attr,
                     const TfSpan<const GA_Offset>& offsets,
@@ -318,10 +323,71 @@ struct _NumericAttrToUsdValues<
                                    static_cast<int>(
                                        Traits::GetNumScalars(value)));
 
-                        UsdScalarType* dst = Traits::GetScalarDataPtr(values[i]);
+                        UsdScalarType* dst =
+                            Traits::GetScalarDataPtr(values[i]);
                         for (int si = 0; si < numScalarsToExtract; ++si) {
                             dst[si] = static_cast<UsdScalarType>(gaValues[si]);
                         }
+                    }
+                }
+            });
+        return !task.wasInterrupted();
+    }
+};
+
+
+// --------------------------------------------------
+// _GroupAttrToUsdValues
+// --------------------------------------------------
+
+
+template <class T, class U=void>
+struct _GroupAttrToUsdValues
+{
+    bool operator()(const GA_Attribute& attr,
+                    const TfSpan<const GA_Offset>& offsets,
+                    const TfSpan<T>& values) const
+         { return false; }
+};
+
+
+template <class T>
+struct _GroupAttrToUsdValues<
+    T, typename std::enable_if<_UsdValueIsNumeric<T>()>::type>
+{
+    bool operator()(const GA_Attribute& attr,
+                    const TfSpan<const GA_Offset>& offsets,
+                    const TfSpan<T>& values) const
+    {
+        using Traits = _UsdNumericValueTraits<T>;
+        using UsdScalarType = typename Traits::UsdScalarType;
+
+        const auto* groupAttr = GA_ATIGroupBool::cast(&attr);
+        if (!groupAttr) {
+            return false;
+        }
+
+        UT_AutoInterrupt task("Extract USD values from group attr");
+
+        UTparallelForLightItems(
+            UT_BlockedRange<size_t>(0, offsets.size()),
+            [&](const UT_BlockedRange<size_t>& r)
+            {
+                _InterruptPoll interrupt;
+
+                for (size_t i = r.begin(); i < r.end(); ++i) {
+                    if (interrupt()) {
+                        return;
+                    }
+
+                    T& value = values[i];
+
+                    Traits::ResizeByScalarCount(value, 1);
+                    
+                    if (Traits::GetNumScalars(value) > 0) {
+                        *Traits::GetScalarDataPtr(value) =
+                            static_cast<UsdScalarType>(
+                                groupAttr->contains(offsets[i]));
                     }
                 }
             });
@@ -582,6 +648,69 @@ struct _UsdValuesToNumericAttr<
                 }
             });
         return !task.wasInterrupted();
+    }
+};
+
+
+// --------------------------------------------------
+// _UsdValuesToGroupAttr
+// --------------------------------------------------
+
+
+template <class T, class U=void>
+struct _UsdValuesToGroupAttr
+{
+    bool operator()(GA_Attribute& attr,
+                    const GA_Range& range,
+                    const TfSpan<const GA_Index>& rangeIndices,
+                    const TfSpan<const T>& values) const
+         { return false; }
+};
+
+
+/// Numeric value writes.
+/// Writes scalars or the first value of an array of scalars to a group attr.
+template <class T>
+struct _UsdValuesToGroupAttr<
+    T, typename std::enable_if<_UsdValueIsNumeric<T>()>::type>
+{
+    bool operator()(GA_Attribute& attr,
+                    const GA_Range& range,
+                    const TfSpan<const GA_Index>& rangeIndices,
+                    const TfSpan<const T>& values) const
+    {
+        using Traits = _UsdNumericValueTraits<T>;
+        using UsdScalarType = typename Traits::UsdScalarType;
+
+        auto* groupAttr = GA_ATIGroupBool::cast(&attr);
+        if (!groupAttr) {
+            return false;
+        }
+
+        UT_AutoInterrupt task("Write USD values to group attr");
+
+        _InterruptPoll interrupt;
+
+        GA_Offset o,end;
+        for (GA_Iterator it(range); it.blockAdvance(o,end); ) {
+            if (interrupt()) {
+                return false;
+            }
+            
+            for ( ; o < end; ++o) {
+                const GA_Index index = rangeIndices[o];
+                const T& value = values[index];
+
+                if (Traits::GetNumScalars(value) > 0) {
+                    const bool isMember =
+                        static_cast<bool>(
+                            *Traits::GetConstScalarDataPtr(value));
+
+                    groupAttr->setElement(o, isMember);
+                }
+           }
+        }
+        return true;
     }
 };
 
@@ -1127,6 +1256,8 @@ GusdReadUsdValuesFromAttr(const GA_Attribute& attr,
         return _StringArrayAttrToUsdValues<T>()(attr, offsets, values);
     } else if (GA_ATINumericArray::isType(&attr)) {
         return _NumericArrayAttrToUsdValues<T>()(attr, offsets, values);
+    } else if (GA_ATIGroupBool::isType(&attr)) {
+        return _GroupAttrToUsdValues<T>()(attr, offsets, values);
     } else {
         // Try and process all other types as numerics.
         return _NumericAttrToUsdValues<T>()(attr, offsets, values);
@@ -1173,6 +1304,9 @@ GusdWriteUsdValuesToAttr(GA_Attribute& attr,
             attr, range, rangeIndices, values);
     } else if (GA_ATINumericArray::isType(&attr)) {
         return _UsdValuesToNumericArrayAttr<T>()(
+            attr, range, rangeIndices, values);
+    } else if (GA_ATIGroupBool::isType(&attr)) {
+        return _UsdValuesToGroupAttr<T>()(
             attr, range, rangeIndices, values);
     } else {
         // Try and process all other types as numerics.
@@ -1404,7 +1538,7 @@ GusdGetTypeInfoForSdfRole(const TfToken& role, int tupleSize)
     // TODO: Determine if Houdini assumes a specific tupleSize
     // for some of these type infos. Eg., is a color always
     // assumed to have tupleSize == 3? Is it legitimate to
-    // attach GA_TYPE_TRANSFORM to a float of tupleSize == 3?
+    // attach GA_TYPE_TRANSFORM to a float of tupleSize == 9?
 
     if (role == SdfValueRoleNames->Point) {
         if (tupleSize < 0 || tupleSize == 3) {
@@ -1522,7 +1656,6 @@ GusdCreateAttrForUsdValueType(GEO_Detail& gd,
 BOOST_PP_SEQ_FOR_EACH(GUSD_CREATE_ATTR, ~, SDF_VALUE_TYPES);
 
 #undef GUSD_CREATE_ATTR
-
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
