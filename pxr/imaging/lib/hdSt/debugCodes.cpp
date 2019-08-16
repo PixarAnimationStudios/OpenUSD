@@ -33,6 +33,8 @@ TF_REGISTRY_FUNCTION(TfDebug)
 {
      TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_DRAW_BATCH,
         "Reports diagnostics for draw batches");
+     TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_FORCE_DRAW_BATCH_REBUILD,
+        "Forces rebuild of draw batches.");
 
      TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_DISABLE_FRUSTUM_CULLING,
          "Disable view frustum culling");
