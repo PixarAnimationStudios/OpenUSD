@@ -139,6 +139,7 @@ private:
     HdStSurfaceShaderSharedPtr         _surfaceShader;
     HdStTextureResourceHandleSharedPtrVector _fallbackTextureResourceHandles;
 
+    bool                               _isInitialized : 1;
     bool                               _hasPtex : 1;
     bool                               _hasLimitSurfaceEvaluation : 1;
     bool                               _hasDisplacement : 1;

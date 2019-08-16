@@ -59,6 +59,7 @@ HioGlslfx *HdStMaterial::_fallbackSurfaceShader = nullptr;
 HdStMaterial::HdStMaterial(SdfPath const &id)
  : HdMaterial(id)
  , _surfaceShader(new HdStSurfaceShader)
+ , _isInitialized(false)
  , _hasPtex(false)
  , _hasLimitSurfaceEvaluation(false)
  , _hasDisplacement(false)
@@ -179,15 +180,18 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    if (needsRprimMaterialStateUpdate) {
+    if (needsRprimMaterialStateUpdate && _isInitialized) {
         // XXX Forcing rprims to have a dirty material id to re-evaluate
         // their material state as we don't know which rprims are bound to
-        // this one.
+        // this one. We can skip this invalidation the first time this
+        // material is Sync'd since any affected Rprim should already be
+        // marked with a dirty material id.
         HdChangeTracker& changeTracker =
                          sceneDelegate->GetRenderIndex().GetChangeTracker();
         changeTracker.MarkAllRprimsDirty(HdChangeTracker::DirtyMaterialId);
     }
 
+    _isInitialized = true;
     *dirtyBits = Clean;
 }
 
