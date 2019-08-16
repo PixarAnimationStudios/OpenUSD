@@ -364,12 +364,7 @@ _GetPrmanPrimvarName(TfToken const& hdPrimvarName,
         // Hydra "normals" becomes Renderman "N"
         return RixStr.k_N;
     } else if (hdPrimvarName == HdTokens->widths) {
-        // Hydra "widths" becomes Renderman "width" or "constantwidth".
-        if (detail == RixDetailType::k_constant) {
-            return RixStr.k_constantwidth;
-        } else {
-            return RixStr.k_width;
-        }
+        return RixStr.k_width;
     }
 
     return RtUString(hdPrimvarName.GetText());
