@@ -34,20 +34,36 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
 
+/// HdSt_MaterialBufferSourceAndTextureHelper
+///
+/// A helper to generate the buffer sources and texture descriptors
+/// from material params.
+///
 struct HdSt_MaterialBufferSourceAndTextureHelper
 {
+    /// Process material param of type HdMaterialParam::ParamTypePrimvar
     void ProcessPrimvarMaterialParam(
         HdMaterialParam const &param);
+
+    /// Process material param of type HdMaterialParam::ParamTypeFallback
     void ProcessFallbackMaterialParam(
         HdMaterialParam const &param,
         HdSceneDelegate *sceneDelegate,
         SdfPath const &materialId);
+
+    /// Process material param of type HdMaterialParam::ParamTypeTexture
+    /// given the texture requested by the param.
+    ///
+    /// isPtex is set to true if texture request by param is ptex.
     void ProcessTextureMaterialParam(
         HdMaterialParam const &param,
         HdStTextureResourceHandleSharedPtr const &handle,
         bool * isPtex = nullptr);
 
+    /// The buffer sources created by the above methods.
     HdBufferSourceVector sources;
+
+    /// The texture descriptors created by the above methods.
     HdStShaderCode::TextureDescriptorVector textures;
 };
 
