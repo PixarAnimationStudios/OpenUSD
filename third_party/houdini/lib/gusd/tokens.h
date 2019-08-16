@@ -36,7 +36,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     (Alpha)                                     \
     (Cd)                                        \
     (displayColor)                              \
-    (displayOpacity)
+    (displayOpacity)                            \
+    ((usdOutPrimPath, "name"))                  \
+    ((usdAgentPath, "usdagentpath"))            \
+    ((usdAgentPrimPath, "usdagentprimpath"))
 
 TF_DECLARE_PUBLIC_TOKENS(GusdTokens, GUSD_TOKENS);
 
