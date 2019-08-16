@@ -29,6 +29,7 @@
 
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/trace/trace.h"
+#include "pxr/base/work/loops.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -419,31 +420,48 @@ GlfUVTextureData::Read(int degradeLevel, bool generateMipmap,
     // contiguous memory.
     TRACE_FUNCTION_SCOPE("filling in image data");
 
-    for(int i = 0 ; i < numMipLevels; i++) {
-        GlfImageSharedPtr image = degradedImage.images[i];
-        if (!image) {
-            TF_RUNTIME_ERROR("Unable to load mip from Texture '%s'.", 
-                _filePath.c_str());
-            return false;
-        }
+    // This is a storage spec "template" common to all other storage specs,
+    // and is incomplete.
+    GlfImage::StorageSpec commonStorageSpec;
+    commonStorageSpec.format = _glFormat;
+    commonStorageSpec.flipped = (originLocation == GlfImage::OriginLowerLeft) ?
+                      (true) : (false);
+    commonStorageSpec.type = _glType;
 
-        Mip & mip  = _rawBufferMips[i];
-        GlfImage::StorageSpec storage;
-        storage.width = mip.width;
-        storage.height = mip.height;
-        storage.format = _glFormat;
-        storage.flipped = (originLocation == GlfImage::OriginLowerLeft) ?
-                          (true) : (false);
-        storage.type = _glType;
-        storage.data = _rawBuffer.get() + mip.offset;
-        
-        if (!image->ReadCropped(cropTop, cropBottom, cropLeft, cropRight, storage)) {
-            TF_WARN("Unable to read Texture '%s'.", _filePath.c_str());
-            return false;
-        }
-    }
+    std::atomic<bool> returnVal(true);
 
-    return true;
+    WorkParallelForN(numMipLevels, 
+        [this, &degradedImage, cropTop, cropBottom, cropLeft, cropRight, 
+        &commonStorageSpec, &returnVal] (size_t begin, size_t end) {
+
+        for (size_t i = begin; i < end; ++i) {
+            GlfImageSharedPtr image = degradedImage.images[i];
+            if (!image) {
+                TF_RUNTIME_ERROR("Unable to load mip from Texture '%s'.", 
+                    _filePath.c_str());
+                returnVal.store(false);
+                break;
+            }
+
+            Mip & mip  = _rawBufferMips[i];
+            GlfImage::StorageSpec storage;
+            storage.width = mip.width;
+            storage.height = mip.height;
+            storage.format = commonStorageSpec.format;
+            storage.flipped = commonStorageSpec.flipped;
+            storage.type = commonStorageSpec.type;
+            storage.data = _rawBuffer.get() + mip.offset;
+            
+            if (!image->ReadCropped(
+                    cropTop, cropBottom, cropLeft, cropRight, storage)) {
+                TF_WARN("Unable to read Texture '%s'.", _filePath.c_str());
+                returnVal.store(false);
+                break;
+            }
+        }
+    });
+
+    return returnVal.load();
 }
 
 size_t 
