@@ -578,12 +578,12 @@ def InstallBoost(context, force, buildArgs):
         if context.buildPython:
             b2_settings.append("--with-python")
 
-        if context.buildKatana or context.buildOIIO:
+        if context.buildKatana or context.buildOIIO or not context.buildMaya or context.buildMaya:
             b2_settings.append("--with-date_time")
             b2_settings.append("--with-system")
             b2_settings.append("--with-thread")
 
-        if context.buildOIIO:
+        if context.buildOIIO or not context.buildMaya or context.buildMaya:
             b2_settings.append("--with-filesystem")
 
         if force:
