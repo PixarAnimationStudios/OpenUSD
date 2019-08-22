@@ -76,7 +76,9 @@ public:
                 BINDLESS_TEXTURE_UDIM_LAYOUT, // bindless udim layout
                 BINDLESS_TEXTURE_PTEX_TEXEL,  // bindless ptex texels
                 BINDLESS_TEXTURE_PTEX_LAYOUT, // bindless ptex layout
-                PRIMVAR_REDIRECT     // primvar redirection
+                PRIMVAR_REDIRECT,    // primvar redirection
+                FIELD_REDIRECT  // accesses 3d texture with potential
+                                // transform and fallback under different name
     };
     enum Location {
                 // NOT_EXIST is a special value of location for a uniform

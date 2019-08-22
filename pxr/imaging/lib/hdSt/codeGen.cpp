@@ -668,6 +668,13 @@ HdSt_CodeGen::Compile()
         }
     }
 
+    TF_FOR_ALL (it, _metaData.fieldRedirectBinding) {
+        HdBinding::Type bindingType = it->first.GetType();
+        if (bindingType == HdBinding::FIELD_REDIRECT) {
+            _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
+        }
+    }
+
     // mixin shaders
     _genCommon << _geometricShader->GetSource(HdShaderTokens->commonShaderSource);
     TF_FOR_ALL(it, _shaders) {
@@ -2974,6 +2981,34 @@ HdSt_CodeGen::_GenerateShaderParameters()
                     << "\n}\n"
                     ;
             }
+        }
+    }
+
+    TF_FOR_ALL (it, _metaData.fieldRedirectBinding) {
+        HdBinding::Type bindingType = it->first.GetType();
+        if (bindingType == HdBinding::FIELD_REDIRECT) {
+
+            accessors
+                << "vec3 HdGet_" << it->second.name << "(vec3 p) {\n"
+                << "#if defined(HD_HAS_" << it->second.fieldName << "Texture)\n"
+                << "\n"
+                << "#if defined(HD_HAS_" << it->second.fieldName << "SamplingTransform)\n"
+                << "    vec4 q = vec4(HdGet_" << it->second.fieldName << "SamplingTransform() * vec4(p.xyz, 1));\n"
+                << "    vec3 s = q.xyz/q.w;\n"
+                << "#else\n"
+                << "    vec3 s = p;\n"
+                << "#endif\n"
+                << "\n"
+                << "    return vec3(HdGet_" << it->second.fieldName << "Texture(s).xyz);\n"
+                << "#else\n"
+                << "#if defined(HD_HAS_" << it->second.name << "Fallback)\n"
+                << "    return HdGet_" << it->second.name << "Fallback();\n"
+                << "#else\n"
+                << "    return vec3(0.0);\n"
+                << "#endif\n"
+                << "#endif\n"
+                << "};\n"
+                ;
         }
     }
     

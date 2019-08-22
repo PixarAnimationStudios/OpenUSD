@@ -186,7 +186,8 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     // Note that these locations are used for hash keys only and
     // are never used for actual resource binding.
     int shaderFallbackLocation = 0;
-    int shaderRedirectLocation = 0;
+    int shaderPrimvarRedirectLocation = 0;
+    int shaderFieldRedirectLocation = 0;
 
     // clear all
     _bindingMap.clear();
@@ -672,11 +673,28 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                 
                 metaDataOut->shaderParameterBinding[
                             HdBinding(HdBinding::PRIMVAR_REDIRECT,
-                                        shaderRedirectLocation++)]
+                                        shaderPrimvarRedirectLocation++)]
                     = MetaData::ShaderParameterAccessor(
                     /*name=*/glName,
                     /*type=*/glType,
                     /*inPrimvars=*/glNames);
+            } else if (it->IsFieldRedirect()) {
+                TfToken glFieldName;
+                /* We store the field name in sampler coordinates.
+                   There should only ever be one field name */
+                TfTokenVector const& fieldNames
+                    = it->GetSamplerCoordinates();
+                if (!fieldNames.empty()) {
+                    glFieldName = 
+                        HdStGLConversions::GetGLSLIdentifier(fieldNames[0]);
+                }
+                
+                metaDataOut->fieldRedirectBinding[
+                            HdBinding(HdBinding::FIELD_REDIRECT,
+                                        shaderFieldRedirectLocation++)]
+                    = MetaData::FieldRedirectAccessor(
+                        /*name=*/glName,
+                        /*fieldName=*/glFieldName);
             } else {
                 TF_CODING_ERROR("Can't resolve %s", it->GetName().GetText());
             }

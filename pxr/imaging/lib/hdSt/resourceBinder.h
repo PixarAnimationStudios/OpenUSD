@@ -209,6 +209,24 @@ public:
         typedef std::map<HdBinding, ShaderParameterAccessor> ShaderParameterBinding;
 
         // -------------------------------------------------------------------
+        // for accessor with fallback value sampling a 3d texture at
+        // coordinates transformed by an associated matrix
+        // 
+        // The accessor will be named NAME (i.e., vec3 HdGet_NAME(vec3 p)) and
+        // will sample FIELDNAMETexture at the coordinate obtained by transforming
+        // p by FIELDNAMESamplineTransform. If FIELDNAMETexture does not exist,
+        // NAMEFallback is used.
+        struct FieldRedirectAccessor {
+            FieldRedirectAccessor() {}
+            FieldRedirectAccessor(TfToken const &name,
+                                  TfToken const &fieldName)
+                : name(name), fieldName(fieldName) {}
+            TfToken name;
+            TfToken fieldName;
+        };
+        typedef std::map<HdBinding, FieldRedirectAccessor> FieldRedirectBinding;
+
+        // -------------------------------------------------------------------
         // for specific buffer array (drawing coordinate, instance indices)
         struct BindingDeclaration {
             BindingDeclaration() {}
@@ -235,6 +253,7 @@ public:
         int instancerNumLevels;
 
         ShaderParameterBinding shaderParameterBinding;
+        FieldRedirectBinding fieldRedirectBinding;
 
         BindingDeclaration drawingCoord0Binding;
         BindingDeclaration drawingCoord1Binding;

@@ -57,7 +57,10 @@ public:
         // This is a parameter that is connected to a texture.
         ParamTypeTexture,
         // This is a parameter that is connected to a field reader.
-        ParamTypeField
+        ParamTypeField,
+        // Accesses 3d texture with potential transform and fallback under
+        // different name
+        ParamTypeFieldRedirect
     };
 
     HD_API
@@ -98,6 +101,9 @@ public:
     }
     bool IsFallback() const {
         return GetParamType() == ParamTypeFallback;
+    }
+    bool IsFieldRedirect() const {
+        return GetParamType() == ParamTypeFieldRedirect;
     }
 
     HdTextureType GetTextureType() const {

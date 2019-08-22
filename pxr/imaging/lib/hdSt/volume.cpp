@@ -232,87 +232,6 @@ _ComputeVolumeShader(const HdStMaterial * const material)
     }
 }
 
-// Helper to create GLSL code such as "HdGet_density(vec3 p)" for sampling
-// a field.
-struct FieldReaderCode
-{
-    // HdMaterialParam assumed to be of type HdMaterialParam::ParamTypeField.
-    //
-    // Generates function HdGet_NAME(vec3 p) using HdGet_TRANSFORMNAME() to
-    // transform p and HdGet_TEXTURENAME to sample a 3d texture.
-    // 
-    FieldReaderCode(TfToken const &name,
-                    TfToken const &textureName,
-                    TfToken const &transformName)
-        : name(name),
-          textureName(textureName),
-          transformName(transformName)
-    {
-    }
-
-    const TfToken name;
-    const TfToken textureName;
-    const TfToken transformName;
-};
-
-// We take a similar approach to textures here are always return vec3.
-// If the field asset contains a float, we would return a vec3 padded
-// with zeros. It is up to the volume shader GLSL code to consume
-// only the first component of the vec3 if it expects, e.g., density.
-static const std::string glType = "vec3";
-
-// myStream << FieldReaderCode(...);
-// will create the actual code.
-std::ostream & operator << (std::ostream &out,
-                            const FieldReaderCode &code)
-{
-    out << "\n// Field reader - p in local coordinates\n";
-    out << "\n" << glType;
-    out << " HdGet_" << code.name.GetString() << "(vec3 p)\n";
-    out << "{\n";
-    out << "     // Convert to sampling coordinate\n";
-    out << "     vec4 q = vec4(HdGet_" << code.transformName.GetString()
-        << "() * vec4(p, 1.0));\n";
-    out << "     return vec3(HdGet_" << code.textureName.GetString()
-        << "(q.xyz/q.w).xyz);\n";
-    out << "}\n\n";
-    
-    return out;
-}
-
-// Helper to create GLSL code such as "HdGet_density(vec3 p)" to return
-// fallback value when field is not available
-struct FallbackFieldReaderCode
-{
-    // Generates function HdGet_FIELDNAME() using HdGet_FALLBACKNAME().
-    FallbackFieldReaderCode(TfToken const &name,
-                            TfToken const &fallbackName)
-        : name(name),
-          fallbackName(fallbackName)
-    {
-    }
-    
-    const TfToken name;
-    const TfToken fallbackName;
-};
-
-// myStream << FallbackFieldReaderCode(...);
-// will create the actual code.
-std::ostream & operator << (std::ostream &out,
-                            const FallbackFieldReaderCode &code)
-{
-    out << "\n// Field reader (using fallback)\n";
-    out << "\n" << glType;
-    
-    out << " HdGet_" << code.name.GetString() << "(vec3 p)\n";
-    out << "{\n";
-    out << "     return vec3(HdGet_" << code.fallbackName.GetString()
-        << "().xyz);\n";
-    out << "}\n\n";
-    
-    return out;
-}
-
 // Compute transform mapping GfRange3d to unit box [0,1]^3
 GfMatrix4d
 _ComputeSamplingTransform(const GfRange3d &range)
@@ -379,6 +298,8 @@ HdStVolume::_ComputeMaterialShader(
     // Carry over existing texture descriptors... Might not be useful.
     sourcesAndTextures.textures = volumeShader->GetTextures();
 
+    std::set<TfToken> processedFieldNames;
+
     // Scan old parameters...
     for (const auto & param : volumeShader->GetParams()) {
         if (param.IsField()) {
@@ -390,102 +311,100 @@ HdStVolume::_ComputeMaterialShader(
             const TfToken fieldName =
                 samplerCoordinates.empty() ? TfToken() : samplerCoordinates[0];
 
-            // Get the field resource associated with the field name
+            const TfToken textureName(
+                fieldName.GetString() + "Texture");
+            const TfToken samplingTransformName(
+                fieldName.GetString() + "SamplingTransform");
+            const TfToken fallbackName(
+                param.GetName().GetString() + "Fallback");
+
+            // Get the field resource associated with the field name if
+            // field name was not seen before (two field readers could
+            // access the same field).
             const auto it = nameToFieldResource.find(fieldName);
-            HdStFieldResourceSharedPtr const & fieldResource =
-                it == nameToFieldResource.end()
-                ? HdStFieldResourceSharedPtr()
-                : it->second;
-                
-            if (fieldResource) {
-                // Create a new HdMaterialParam such that the resource binder
-                // will bind the 3d texture underling the field resource and
-                // codegen will give us an accessor
-                //     vec3 HdGet_FIELDNAMETexture(vec3)
-                // to sample it.
+            if (it != nameToFieldResource.end()) {
+                if (processedFieldNames.insert(fieldName).second) {
+                    HdStFieldResourceSharedPtr const & fieldResource =
+                        it->second;
 
-                const TfToken textureName(
-                    fieldName.GetString() + "Texture");
-
-                const HdMaterialParam textureParam(
-                    HdMaterialParam::ParamTypeTexture,
-                    textureName,
-                    param.GetFallbackValue(),
-                    SdfPath(),
-                    TfTokenVector(),
-                    HdTextureType::Field);
-
-                sourcesAndTextures.ProcessTextureMaterialParam(
-                    textureParam,
-                    boost::make_shared<HdStTextureResourceHandle>(
+                    // Add HdMaterialParam such that the resource binder
+                    // will bind the 3d texture underling the field resource
+                    // and codegen will give us an accessor
+                    //     vec3 HdGet_FIELDNAMETexture(vec3)
+                    // to sample it.
+                    const HdMaterialParam textureParam(
+                        HdMaterialParam::ParamTypeTexture,
+                        textureName,
+                        param.GetFallbackValue(),
+                        SdfPath(),
+                        TfTokenVector(),
+                        HdTextureType::Field);
+                    
+                    sourcesAndTextures.ProcessTextureMaterialParam(
+                        textureParam,
+                        boost::make_shared<HdStTextureResourceHandle>(
                         fieldResource));
-
-                materialParams.push_back(textureParam);
-
-                // Add HdMaterialParam so that we get an accessor
-                //     mat4 HdGet_FIELDNAMESamplingTransform()
-                // converting local space to the coordinate at which we need
-                // to sample the 3d texture.
-                const TfToken transformName(
-                    fieldName.GetString() + "SamplingTransform");
-
-                // Query the field for its bounding box.
-                // Note that this contains both a GfRange3d and a
-                // matrix.
-                // For a grid in an OpenVDB file, the range is the bounding box
-                // of the active voxels of the tree and the matrix is the grid
-                // transform.
-                const GfBBox3d fieldBoundingBox =
-                    fieldResource->GetBoundingBox();
-
-                // Transform to map the bounding box to [0,1]^3.
-                const VtValue samplingTransform(
-                    _ComputeSamplingTransform(fieldBoundingBox));
-
-                const HdMaterialParam transformParam(
-                    HdMaterialParam::ParamTypeFallback,
-                    transformName,
-                    samplingTransform);
-
-                sourcesAndTextures.ProcessFallbackMaterialParam(
-                    transformParam, samplingTransform);
-
-                materialParams.push_back(transformParam);
-
-                // Generate GLSL function HdGet_NAME(vec3) to sample the
-                // field using HdGet_FIELDNAMETexture() and
-                // HdGet_FIELDNAMESamplingTransform().
-                glsl << FieldReaderCode(param.GetName(),
-                                        textureName, transformName);
-
-                // Update the bounding box containing all fields
-                totalFieldBbox =
-                    GfBBox3d::Combine(totalFieldBbox, fieldBoundingBox);
-            } else {
-                // No such field, so use the fallback value authored on the
-                // field reader node.
-                //
-                // Create a new HdMaterialParam such that codegen will give us an
-                // accessor
-                //     vec3 HdGet_NAMEFallback()
-                // to get the fallback value.
-                const TfToken fallbackName(
-                    param.GetName().GetString() + "Fallback");
-
-                const HdMaterialParam fallbackParam(
-                    HdMaterialParam::ParamTypeFallback,
-                    fallbackName,
-                    param.GetFallbackValue());
-
-                sourcesAndTextures.ProcessFallbackMaterialParam(
-                    fallbackParam, param.GetFallbackValue());
-
-                materialParams.push_back(fallbackParam);
-                
-                // Generate GLSL function HdGet_NAME(vec3) simply returning
-                // the fallback value.
-                glsl << FallbackFieldReaderCode(param.GetName(), fallbackName);
+                    
+                    materialParams.push_back(textureParam);
+                    
+                    // Query the field for its bounding box.  Note
+                    // that this contains both a GfRange3d and a
+                    // matrix.
+                    //
+                    // For a grid in an OpenVDB file, the range is the
+                    // bounding box of the active voxels of the tree
+                    // and the matrix is the grid transform.
+                    const GfBBox3d fieldBoundingBox =
+                        fieldResource->GetBoundingBox();
+                    
+                    // Transform to map the bounding box to [0,1]^3.
+                    const VtValue samplingTransform(
+                        _ComputeSamplingTransform(fieldBoundingBox));
+                    
+                    // Add HdMaterialParam so that we get an accessor
+                    //     mat4 HdGet_FIELDNAMESamplingTransform()
+                    // converting local space to the coordinate at which
+                    // we need to sample the 3d texture.
+                    const HdMaterialParam samplingTransformParam(
+                        HdMaterialParam::ParamTypeFallback,
+                        samplingTransformName,
+                        samplingTransform);
+                    
+                    sourcesAndTextures.ProcessFallbackMaterialParam(
+                    samplingTransformParam, samplingTransform);
+                    
+                    materialParams.push_back(samplingTransformParam);
+                    
+                    // Update the bounding box containing all fields
+                    totalFieldBbox = GfBBox3d::Combine(totalFieldBbox,
+                                                       fieldBoundingBox);
+                }
             }
+
+            // Add HdMaterialParam such that codegen will give us an
+            // accessor
+            //     vec3 HdGet_NAMEFallback()
+            // to get the fallback value.
+            const HdMaterialParam fallbackParam(
+                HdMaterialParam::ParamTypeFallback,
+                fallbackName,
+                param.GetFallbackValue());
+
+            sourcesAndTextures.ProcessFallbackMaterialParam(
+                fallbackParam, param.GetFallbackValue());
+
+            materialParams.push_back(fallbackParam);
+            
+            // Add HdMaterialParam 
+            
+            const HdMaterialParam fieldRedirectParam(
+                HdMaterialParam::ParamTypeFieldRedirect,
+                param.GetName(),
+                param.GetFallbackValue(),
+                SdfPath(),
+                { fieldName });
+                
+            materialParams.push_back(fieldRedirectParam);
         } else {
             // Push non-field params so that codegen will do generate
             // the respective code for them.
