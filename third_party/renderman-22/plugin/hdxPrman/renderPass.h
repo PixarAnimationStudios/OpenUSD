@@ -66,6 +66,9 @@ private:
 
     time_t _frameStart;
     std::string _integrator;
+    std::string _quickIntegrator;
+    float _quickIntegrateTime;
+
     bool _quickIntegrate;
 };
 

@@ -44,10 +44,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_ENV_SETTING(HDXPRMAN_QUICK_INTEGRATE_TIME, 200,
-    "If >0, the time in ms that we'll render quick output before switching "
-    "to path tracing");
-
 HdxPrman_RenderPass::HdxPrman_RenderPass(HdRenderIndex *index,
                                      HdRprimCollection const &collection,
                                      std::shared_ptr<HdPrman_Context> context)
@@ -58,7 +54,9 @@ HdxPrman_RenderPass::HdxPrman_RenderPass(HdRenderIndex *index,
     , _context(context)
     , _lastRenderedVersion(0)
     , _lastSettingsVersion(0)
-    , _integrator("PxrPathTracer")
+    , _integrator(HdPrmanIntegratorTokens->PxrPathTracer)
+    , _quickIntegrator(HdPrmanIntegratorTokens->PxrDirectLighting)
+    , _quickIntegrateTime(200.f/1000.f)
     , _quickIntegrate(false)
 {
     // Check if this is an interactive context.
@@ -266,10 +264,18 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
     if (_lastSettingsVersion != currentSettingsVersion) {
         _interactiveContext->StopRender();
 
-        const std::string PxrPathTracer("PxrPathTracer");
         _integrator = renderDelegate->GetRenderSetting<std::string>(
             HdPrmanRenderSettingsTokens->integrator,
-            PxrPathTracer);
+            HdPrmanIntegratorTokens->PxrPathTracer.GetString());
+
+        _quickIntegrator = renderDelegate->GetRenderSetting<std::string>(
+            HdPrmanRenderSettingsTokens->interactiveIntegrator,
+            HdPrmanIntegratorTokens->PxrDirectLighting.GetString());
+
+        _quickIntegrateTime = renderDelegate->GetRenderSetting<int>(
+            HdPrmanRenderSettingsTokens->interactiveIntegratorTimeout,
+            200) / 1000.f;
+
 
         _lastSettingsVersion = currentSettingsVersion;
         needStartRender = true;
@@ -277,11 +283,9 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
 
     // If we're rendering but we're still in the quick integrate window,
     // check and see if we need to switch to the main integrator yet.
-    float quickIntegrateTime =
-        TfGetEnvSetting(HDXPRMAN_QUICK_INTEGRATE_TIME) / 1000.0f;
     if (_quickIntegrate &&
         _interactiveContext->renderThread.IsRendering() &&
-        difftime(time(NULL), _frameStart) > quickIntegrateTime) {
+        difftime(time(NULL), _frameStart) > _quickIntegrateTime) {
 
         _interactiveContext->StopRender();
         RixParamList *params = mgr->CreateRixParamList();
@@ -300,17 +304,17 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
 
     // Start (or restart) concurrent rendering.
     if (needStartRender) {
-        if (quickIntegrateTime > 0 &&
-           (_integrator == "PxrPathTracer" || _integrator == "PbsPathTracer")) {
-            // Start the frame with PxrDirectLighting to give faster
+        if (_quickIntegrateTime > 0 &&
+           (_integrator == HdPrmanIntegratorTokens->PxrPathTracer.GetString() ||
+            _integrator == HdPrmanIntegratorTokens->PbsPathTracer.GetString())){
+            // Start the frame with interactive integrator to give faster
             // time-to-first-buckets.
-            std::string quickIntegrator = "PxrDirectLighting";
             RixParamList *params = mgr->CreateRixParamList();
             params->SetInteger(RtUString("numLightSamples"), 1);
             params->SetInteger(RtUString("numBxdfSamples"), 1);
             riley::ShadingNode integratorNode {
                 riley::ShadingNode::k_Integrator,
-                    RtUString(quickIntegrator.c_str()),
+                    RtUString(_quickIntegrator.c_str()),
                     us_PathTracer,
                     params
             };

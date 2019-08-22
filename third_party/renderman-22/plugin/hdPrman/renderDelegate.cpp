@@ -54,6 +54,9 @@ TF_DEFINE_PRIVATE_TOKENS(
 TF_DEFINE_PUBLIC_TOKENS(HdPrmanRenderSettingsTokens,
     HDPRMAN_RENDER_SETTINGS_TOKENS);
 
+TF_DEFINE_PUBLIC_TOKENS(HdPrmanIntegratorTokens,
+    HDPRMAN_INTEGRATOR_TOKENS);
+
 const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
     HdPrimTypeTokens->mesh,
@@ -101,14 +104,36 @@ HdPrmanRenderDelegate::_Initialize()
     _renderParam = std::make_shared<HdPrman_RenderParam>(_context);
     _resourceRegistry.reset(new HdResourceRegistry());
 
-    std::string integrator = "PxrPathTracer";
+    std::string integrator = HdPrmanIntegratorTokens->PxrPathTracer;
+    const std::string interactiveIntegrator = 
+        HdPrmanIntegratorTokens->PxrDirectLighting;
     std::string integratorEnv = TfGetenv("HDX_PRMAN_INTEGRATOR");
     if (!integratorEnv.empty())
         integrator = integratorEnv;
-    _settingDescriptors.resize(1);
-    _settingDescriptors[0] = { std::string("Integrator"),
+
+
+    _settingDescriptors.resize(3);
+
+    _settingDescriptors[0] = { 
+        std::string("Integrator"),
         HdPrmanRenderSettingsTokens->integrator,
-        VtValue(integrator) };
+        VtValue(integrator) 
+    };
+
+    _settingDescriptors[1] = {
+        std::string("Interactive Integrator"),
+        HdPrmanRenderSettingsTokens->interactiveIntegrator,
+        VtValue(interactiveIntegrator)
+    };
+
+    // If >0, the time in ms that we'll render quick output before switching
+    // to path tracing
+    _settingDescriptors[2] = {
+        std::string("Interactive Integrator Timeout (ms)"),
+        HdPrmanRenderSettingsTokens->interactiveIntegratorTimeout,
+        VtValue(200)
+    };
+
     _PopulateDefaultSettings(_settingDescriptors);
 }
 
