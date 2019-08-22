@@ -55,7 +55,9 @@ public:
         // This is a parameter that is connected to a primvar.
         ParamTypePrimvar,
         // This is a parameter that is connected to a texture.
-        ParamTypeTexture
+        ParamTypeTexture,
+        // This is a parameter that is connected to a field reader.
+        ParamTypeField
     };
 
     HD_API
@@ -85,6 +87,9 @@ public:
 
     SdfPath const& GetConnection() const { return _connection; }
 
+    bool IsField() const {
+        return GetParamType() == ParamTypeField;
+    }
     bool IsTexture() const {
         return GetParamType() == ParamTypeTexture;
     }

@@ -145,7 +145,8 @@ HdStVolume::_UpdateRepr(HdSceneDelegate *sceneDelegate,
     *dirtyBits &= ~HdChangeTracker::NewRepr;
 }
 
-static
+namespace {
+
 const VtValue &
 _GetCubeVertices()
 {
@@ -163,7 +164,6 @@ _GetCubeVertices()
     return result;
 }
 
-static
 const VtValue &
 _GetCubeTriangleIndices()
 {
@@ -191,7 +191,6 @@ _GetCubeTriangleIndices()
 }
 
 // Fallback volume shader created from source in shaders/fallbackVolume.glslfx
-static
 HdStShaderCodeSharedPtr
 _MakeFallbackVolumeShader()
 {
@@ -209,6 +208,117 @@ _MakeFallbackVolumeShader()
 
     return result;
 }
+
+// Helper to create GLSL code such as "HdGet_density(vec3 p)" for sampling
+// a field.
+struct FieldReaderCode
+{
+    // HdMaterialParam assumed to be of type HdMaterialParam::ParamTypeField.
+    FieldReaderCode(const HdMaterialParam &param)
+        : name(param.GetName())
+    {
+    }
+
+    const TfToken name;
+};
+
+// myStream << FieldReaderCode(...);
+// will create the actual code.
+std::ostream & operator << (std::ostream &out,
+                            const FieldReaderCode &code)
+{
+    // We take a similar approach to textures here are always return vec3.
+    // If the field asset contains a float, we would return a vec3 padded
+    // with zeros. It is up to the volume shader GLSL code to consume
+    // only the first component of the vec3 if it expects, e.g., density.
+    static const std::string glType = "vec3";
+
+    out << "\n// Field reader\n";
+    out << "\n" << glType;
+    out << " HdGet_" << code.name.GetString() << "(vec3 p)\n";
+    out << "{\n";
+    out << "    // Field reader reading from an actual OpenVDB file not\n";
+    out << "    // implemented yet. Using non-constant function here for\n";
+    out << "    // testing\n";
+    out << "    return vec3(length(p) * length(p) * length(p) * 0.1);\n";
+    out << "}\n\n";
+    
+    return out;
+}
+
+// Add GLSL code such as "HdGet_density(vec3 p)" for sampling the fields
+// to the volume shader code and add necessary 3d textures and other
+// parameters to the result HdStSurfaceShader.
+// HdMaterialParam's are consulted to figure out the names of the fields
+// to sample and the names of the associated sampling functions to generate.
+//
+// We actually have not implemented sampling from an OpenVDB file yet.
+// Instead dummy functions giving a non-constant value are generated
+// to enable some amount of testing.
+HdStShaderCodeSharedPtr
+_ComputeMaterialShader(
+    const HdStShaderCodeSharedPtr &volumeShader)
+{
+    // Generate new shader from volume shader
+    HdStSurfaceShaderSharedPtr const result =
+        boost::make_shared<HdStSurfaceShader>();
+
+    // The GLSL code for the new shader
+    std::stringstream glsl;
+    // The params for the new shader
+    HdMaterialParamVector materialParams;
+
+    // Scan old parameters...
+    for (const auto & param : volumeShader->GetParams()) {
+        // ... for field readers
+        if (param.IsField()) {
+            // Generate (dummy) GLSL function to sample
+            // that field.
+            //
+            // Eventually, we will consult the scene delegate's
+            // GetVolumeFieldDescriptor to find the HdStField targeted
+            // by the field- relationship named by
+            // param.GetSamplerCoordinates()[0].
+            // We will query the HdStField for the 3d texture and append
+            // these data to the texture descriptors and also create params
+            // so that codegen will produce a sampling function that we can
+            // use in the GLSL function created here (node that for bindless,
+            // we also need to add HdSt_BindlessSamplerBufferSource).
+            // We will also query the HdStField for the OpenVDB grid transform
+            // and added it to the result's buffer sources and params
+            // so that our GLSL function can perform the necessary transforms
+            // before sampling the 3d texture.
+            glsl << FieldReaderCode(param);
+        } else {
+            // Do we need to copy the param.IsPrimvar() and param.IsFallback()
+            // cases from HdStMaterial::Sync here to compute the respective
+            // HdBufferSource's and call HdStSurfaceShader::SetBufferSources
+            // below.
+            materialParams.push_back(param);
+        }
+    }
+
+
+    // Append the volume shader (calling into the GLSL functions
+    // generated above)
+    glsl << volumeShader->GetSource(HdShaderTokens->fragmentShader);
+
+    result->SetFragmentSource(glsl.str());
+    result->SetParams(materialParams);
+    result->SetTextureDescriptors(volumeShader->GetTextures());
+
+    // Missing: transfer or (re-)generate buffer sources.
+    //
+    // Note that these data are set with HdStSurfaceShader::SetBufferSources, but
+    // HdStSurfaceShader::GetShaderData() gives a HdBufferArrayRange.
+    // We might need to re-create the HdVtBufferSource's that HdStMaterial::Sync
+    // created for the param.IsPrimvar() and param.IsFallback() case and pass them
+    // to HdStSurfaceShader::SetBufferSource here.
+
+    return result;
+}
+
+} // end namespace
 
 void
 HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
@@ -257,11 +367,15 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         volumeShader = fallbackVolumeShader;
     }
 
-    // Set volume shader as material shader. It will be concatenated by
+    // Compute the material shader by adding GLSL code such as
+    // "HdGet_density(vec3 p)" for sampling the fields needed by the volume
+    // shader.
+    // The material shader will eventually be concatenated with
     // the geometry shader which does the raymarching and is calling into
     // GLSL functions such as "float scattering(vec3)" in the volume shader
     // to evaluate physical properties of a volume at the point p.
-    drawItem->SetMaterialShader(volumeShader);
+    drawItem->SetMaterialShader(
+        _ComputeMaterialShader(volumeShader));
 
     HdSt_VolumeShaderKey shaderKey;
     HdStResourceRegistrySharedPtr resourceRegistry =

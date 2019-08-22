@@ -57,6 +57,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (primvar)
     (isPtex)
     (opacity)
+    (fieldname)
 );
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -912,6 +913,10 @@ private:
         VtValue _fallbackValue;
         SdfPath _connection;
         SdfPath _connectionPrimvar;
+        // Note that _samplerCoords is used to store a primvar (or field)
+        // name - no matter whether the primvar is consumed by the shader
+        // directly or whether the primvar is used as sampling coordinate
+        // for a texture whose sample is consumed by the shader.
         TfTokenVector _samplerCoords;
         HdTextureType _textureType;
     };
@@ -940,6 +945,9 @@ private:
     void _ProcessPrimvarNode(const UsdShadeShader &shader,
                              const SdrShaderNodeConstPtr &sdrNode,
                              TfTokenVector *primvars);
+
+    void _ProcessFieldNode(const UsdShadeShader &shader,
+                           const SdrShaderNodeConstPtr &sdrNode);
 
     std::string _GetShaderRole(const UsdShadeShader &shader);
 
@@ -1019,6 +1027,8 @@ _ShaderNetworkWalker::_ShaderNetworkWalker(
                 _ProcessTextureNode(shader, sdrNode, textureIDs, primvars);
             } else if (sdrRole == SdrNodeRole->Primvar) {
                 _ProcessPrimvarNode(shader, sdrNode, primvars);
+            } else if (sdrRole == SdrNodeRole->Field) {
+                _ProcessFieldNode(shader, sdrNode);
             } else {
                 TF_DEBUG(USDIMAGING_SHADERS).Msg("Warning: found shader node "
                     "<%s> with invalid role '%s'!\n", shader.GetPath().GetText(),
@@ -1297,6 +1307,71 @@ _ShaderNetworkWalker::_ProcessPrimvarNode(
                     p._fallbackValue = fallback;
                 }
             }
+        }
+    }
+}
+
+static
+TfToken
+_GetFieldName(const UsdShadeShader &shader,
+              const SdrShaderNodeConstPtr &sdrNode)
+{
+    TfToken result;
+
+    // Hard-coding the name of the attribute of HwFieldReader identifying
+    // the field name for now.
+    // The equivalent of the generic mechanism Sdr provides for primvars
+    // is missing for fields: UsdPrimvarReader.inputs:varname is tagged with
+    // sdrMetadata as primvarProperty="1" so that we can use
+    // sdrNode->GetAdditionalPrimvarProperties to know what attribute to use.
+    const UsdShadeInput usdFieldnameInput =
+        shader.GetInput(_tokens->fieldname);
+    if (!usdFieldnameInput) {
+        return result;
+    }
+
+    // Try to follow connection feeding into the attribute
+    UsdShadeConnectableAPI source;
+    TfToken sourceName;
+    UsdShadeAttributeType sourceType;
+    if (usdFieldnameInput.GetConnectedSource(&source,
+                                             &sourceName,
+                                             &sourceType)) {
+        if (sourceType == UsdShadeAttributeType::Input) {
+            if (UsdShadeInput connectedInput = source.GetInput(sourceName)) {
+                connectedInput.Get(&result);
+                return result;
+            }
+        }
+    }
+
+    // If no connection, use attribute value
+    usdFieldnameInput.Get(&result);
+    return result;
+}
+
+void
+_ShaderNetworkWalker::_ProcessFieldNode(const UsdShadeShader &shader,
+                                        const SdrShaderNodeConstPtr &sdrNode)
+{
+    // Process a field reader node.
+    // We need to extract the name of the field to read (eventually, this will
+    // be used to know which field::FIELD_NAME relationship on avolume to follow
+    // to find the correct OpenVDBAsset).
+    // We store the name of this field on the _MaterialParam that was created when
+    // following the volume shader node input to the field reader node.
+
+    const TfToken fieldName = _GetFieldName(shader, sdrNode);
+
+    if (fieldName.IsEmpty()) {
+        return;
+    }
+
+    for (_MaterialParam &p : _params) {
+        if (p._connection == shader.GetPath()) {
+            // Stashing name of field in _samplerCoords.
+            p._samplerCoords.push_back(fieldName);
+            p._paramType = HdMaterialParam::ParamTypeField;
         }
     }
 }
