@@ -338,7 +338,7 @@ HdStVolume::_ComputeMaterialShader(
                         param.GetFallbackValue(),
                         SdfPath(),
                         TfTokenVector(),
-                        HdTextureType::Field);
+                        HdTextureType::Uvw);
                     
                     sourcesAndTextures.ProcessTextureMaterialParam(
                         textureParam,

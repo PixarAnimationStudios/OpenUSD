@@ -49,7 +49,8 @@ _GetBoundingBox(const GlfTextureHandleRefPtr &textureHandle)
 
 HdStFieldResource::HdStFieldResource(const GlfTextureHandleRefPtr &textureHandle)
     : _simpleTextureResource(textureHandle,
-                             HdTextureType::Field,
+                             HdTextureType::Uvw,
+                             HdWrapBlack,
                              HdWrapBlack,
                              HdWrapBlack,
                              HdMinFilterLinear,
@@ -65,9 +66,6 @@ HdStFieldResource::HdStFieldResource(const GlfTextureHandleRefPtr &textureHandle
       // on OpenVDBAsset in USD).
       _boundingBox(_GetBoundingBox(textureHandle))
 {
-    // Wrap mode S and T for sampler were already set in
-    // HdStSimpleTextureResource::GetTexelsSamplerId.
-    glSamplerParameteri(_samplerId, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
 }
 
 HdStFieldResource::~HdStFieldResource() = default;
@@ -75,7 +73,7 @@ HdStFieldResource::~HdStFieldResource() = default;
 HdTextureType 
 HdStFieldResource::GetTextureType() const
 {
-    return HdTextureType::Field;
+    return HdTextureType::Uvw;
 }
 
 size_t
