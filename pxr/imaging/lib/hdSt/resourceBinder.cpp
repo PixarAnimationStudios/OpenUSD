@@ -645,6 +645,21 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                             /*type=*/glType,
                             /*inPrimvars=*/it->GetSamplerCoordinates());
                     _bindingMap[name] = textureBinding; // used for non-bindless
+                } else if (it->GetTextureType() == HdTextureType::Field) {
+                    // 3d texture
+                    HdBinding textureBinding = bindless
+                        ? HdBinding(HdBinding::BINDLESS_TEXTURE_3D,
+                                    bindlessTextureLocation++)
+                        : HdBinding(HdBinding::TEXTURE_3D,
+                                    locator.uniformLocation++,
+                                    locator.textureUnit++);
+
+                    metaDataOut->shaderParameterBinding[textureBinding] =
+                        MetaData::ShaderParameterAccessor(
+                            /*name=*/glName,
+                            /*type=*/glType,
+                            /*inPrimvars=*/it->GetSamplerCoordinates());
+                    _bindingMap[name] = textureBinding; // used for non-bindless
                 }
             } else if (it->IsPrimvar()) {
                 TfTokenVector const& samplePrimvars
@@ -904,6 +919,7 @@ HdSt_ResourceBinder::BindBuffer(TfToken const &name,
         }
         break;
     case HdBinding::TEXTURE_2D:
+    case HdBinding::TEXTURE_3D:
         // nothing
         break;
     default:
@@ -977,6 +993,7 @@ HdSt_ResourceBinder::UnbindBuffer(TfToken const &name,
         }
         break;
     case HdBinding::TEXTURE_2D:
+    case HdBinding::TEXTURE_3D:
         // nothing
         break;
     default:
@@ -1061,8 +1078,10 @@ HdSt_ResourceBinder::BindShaderResources(HdStShaderCode const *shader) const
         HdBinding binding = GetBinding(it->name);
         HdBinding::Type type = binding.GetType();
 
-        if (type == HdBinding::TEXTURE_2D) {
+        if (type == HdBinding::TEXTURE_2D ||
+            type == HdBinding::TEXTURE_3D) {
         } else if (type == HdBinding::BINDLESS_TEXTURE_2D
+                || type == HdBinding::BINDLESS_TEXTURE_3D
                 || type == HdBinding::BINDLESS_TEXTURE_PTEX_TEXEL
                 || type == HdBinding::BINDLESS_TEXTURE_PTEX_LAYOUT) {
             // nothing? or make it resident?? but it only binds the first one.
@@ -1085,8 +1104,10 @@ HdSt_ResourceBinder::UnbindShaderResources(HdStShaderCode const *shader) const
         HdBinding binding = GetBinding(it->name);
         HdBinding::Type type = binding.GetType();
 
-        if (type == HdBinding::TEXTURE_2D) {
+        if (type == HdBinding::TEXTURE_2D ||
+            type == HdBinding::TEXTURE_3D) {
         } else if (type == HdBinding::BINDLESS_TEXTURE_2D
+                || type == HdBinding::BINDLESS_TEXTURE_3D
                 || type == HdBinding::BINDLESS_TEXTURE_PTEX_TEXEL
                    || type == HdBinding::BINDLESS_TEXTURE_PTEX_LAYOUT) {
 //            if (glIsTextureHandleResidentARB(it->handle)) {
@@ -1306,6 +1327,13 @@ HdSt_ResourceBinder::IntrospectBindings(HdStResourceGL const & programResource)
                 // note: sampler2d_ prefix is added in
                 // HdCodeGen::_GenerateShaderParameters()
                 name = "sampler2d_" + name;
+                GLint loc = glGetUniformLocation(program, name.c_str());
+                if (loc < 0) loc = HdBinding::NOT_EXIST;
+                it->second.Set(type, loc, binding.GetTextureUnit());
+            } else if (type == HdBinding::TEXTURE_3D) {
+                // note: sampler3d_ prefix is added in
+                // HdCodeGen::_GenerateShaderParameters()
+                name = "sampler3d_" + name;
                 GLint loc = glGetUniformLocation(program, name.c_str());
                 if (loc < 0) loc = HdBinding::NOT_EXIST;
                 it->second.Set(type, loc, binding.GetTextureUnit());

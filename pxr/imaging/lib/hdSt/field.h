@@ -21,29 +21,50 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef GLF_DEBUG_CODES_H
-#define GLF_DEBUG_CODES_H
-
-/// \file glf/debugCodes.h
+#ifndef HDST_FIELD_H
+#define HDST_FIELD_H
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/debug.h"
+#include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hd/field.h"
+#include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hdSt/fieldResource.h"
+
+#include "pxr/base/tf/declarePtrs.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+///
+/// Represents a Field Buffer Prim.
+///
+class HdStField : public HdField {
+public:
+    /// For now, only fieldType HdStTokens->openvdbAsset is supported.
+    HDST_API
+    HdStField(SdfPath const & id, TfToken const & fieldType);
+    HDST_API
+    ~HdStField() override;
 
-TF_DEBUG_CODES(
+    /// Loads field as 3d texture to generate GetFieldResource.
+    HDST_API
+    void Sync(HdSceneDelegate *sceneDelegate,
+              HdRenderParam   *renderParam,
+              HdDirtyBits     *dirtyBits) override;
 
-    GLF_DEBUG_CONTEXT_CAPS,
-    GLF_DEBUG_ERROR_STACKTRACE,
-    GLF_DEBUG_SHADOW_TEXTURES,
-    GLF_DEBUG_TEXTURE_IMAGE_PLUGINS,
-    GLF_DEBUG_TEXTURE_PLUGINS,
-    GLF_DEBUG_VDB_TEXTURE
+    HDST_API
+    HdDirtyBits GetInitialDirtyBitsMask() const override;
 
-);
+    /// Initialized by Sync.
+    HdStFieldResourceSharedPtr GetFieldResource() const {
+        return _fieldResource;
+    }
 
+private:
+    const TfToken _fieldType;
+
+    HdStFieldResourceSharedPtr _fieldResource;
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif
+#endif //HDST_FIELD_H

@@ -24,6 +24,11 @@
                         "textureTypes": ["*"],
                         "precedence": 0
                     },
+                    "GlfVdbTexture" : {
+                        "bases": ["GlfBaseTexture"],
+                        "textureTypes": ["vdb"],
+                        "precedence": 0
+                    },
                     "GlfBaseTexture" : {
                         "bases": ["GlfTexture"],
                         "textureTypes": [],

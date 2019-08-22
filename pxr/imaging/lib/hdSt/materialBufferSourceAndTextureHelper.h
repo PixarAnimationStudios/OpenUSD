@@ -46,10 +46,17 @@ struct HdSt_MaterialBufferSourceAndTextureHelper
         HdMaterialParam const &param);
 
     /// Process material param of type HdMaterialParam::ParamTypeFallback
+    /// using scene delegate.
     void ProcessFallbackMaterialParam(
         HdMaterialParam const &param,
         HdSceneDelegate *sceneDelegate,
         SdfPath const &materialId);
+
+    /// Process material param of type HdMaterialParam::ParamTypeFallback
+    /// using given value.
+    void ProcessFallbackMaterialParam(
+        HdMaterialParam const &param,
+        VtValue const &fallbackValue);
 
     /// Process material param of type HdMaterialParam::ParamTypeTexture
     /// given the texture requested by the param.

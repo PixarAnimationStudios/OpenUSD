@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdSt/drawTarget.h"
 #include "pxr/imaging/hdSt/extComputation.h"
+#include "pxr/imaging/hdSt/field.h"
 #include "pxr/imaging/hdSt/glslfxShader.h"
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/light.h"
@@ -51,6 +52,7 @@
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"
+#include "pxr/base/tf/staticTokens.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -61,6 +63,13 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_TINY_PRIM_CULLING, false,
 TF_DEFINE_ENV_SETTING(HDST_ENABLE_EXPERIMENTAL_VOLUME_ELLIPSOID_STANDINS, false,
                       "Render constant density ellipsoid standins for "
                       "volume prims");
+
+// This token is repeated from usdVolImaging which we cannot access from here.
+// Should we even instantiate bprims of different types for OpenVDB vs Field3d?
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (openvdbAsset)
+);
 
 const TfTokenVector HdStRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
@@ -83,7 +92,8 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_SPRIM_TYPES =
 
 const TfTokenVector HdStRenderDelegate::SUPPORTED_BPRIM_TYPES =
 {
-    HdPrimTypeTokens->texture
+    HdPrimTypeTokens->texture,
+    _tokens->openvdbAsset
 };
 
 std::mutex HdStRenderDelegate::_mutexResourceRegistry;
@@ -300,11 +310,13 @@ HdStRenderDelegate::DestroySprim(HdSprim *sPrim)
 
 HdBprim *
 HdStRenderDelegate::CreateBprim(TfToken const& typeId,
-                                    SdfPath const& bprimId)
+                                SdfPath const& bprimId)
 {
     if (typeId == HdPrimTypeTokens->texture) {
         return new HdStTexture(bprimId);
-    } else  {
+    } else if (typeId == _tokens->openvdbAsset) {
+        return new HdStField(bprimId, typeId);
+    } else {
         TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
     }
 
@@ -316,6 +328,8 @@ HdStRenderDelegate::CreateFallbackBprim(TfToken const& typeId)
 {
     if (typeId == HdPrimTypeTokens->texture) {
         return new HdStTexture(SdfPath::EmptyPath());
+    } else if (typeId == _tokens->openvdbAsset) {
+        return new HdStField(SdfPath::EmptyPath(), typeId);
     } else {
         TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
     }

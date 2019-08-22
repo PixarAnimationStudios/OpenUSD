@@ -96,6 +96,8 @@ protected:
     GLF_API
     virtual void _ReadTexture() = 0;
 
+    void _ReadTextureIfNotLoaded();
+
     GLF_API
     void _UpdateTexture(GlfBaseTextureDataConstPtr texData);
     GLF_API

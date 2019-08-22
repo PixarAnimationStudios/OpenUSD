@@ -280,7 +280,8 @@ enum class HdTextureType
 {
     Uv,
     Ptex,
-    Udim
+    Udim,
+    Field    
 };
 
 /// \enum HdDepthPriority

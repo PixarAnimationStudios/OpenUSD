@@ -50,6 +50,8 @@ pxr_library(hdSt
         extCompGpuComputationResource
         extCompGpuPrimvarBufferSource
         fallbackLightingShader
+        field
+        fieldResource
         flatNormals
         geometricShader
         glConversions

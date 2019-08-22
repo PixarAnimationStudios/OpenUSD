@@ -26,16 +26,21 @@
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/package.h"
+#include "pxr/imaging/hdSt/field.h"
+#include "pxr/imaging/hdSt/materialBufferSourceAndTextureHelper.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/rprimUtils.h"
 #include "pxr/imaging/hdSt/surfaceShader.h"
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/volumeShaderKey.h"
+#include "pxr/imaging/hdSt/textureResourceHandle.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/imaging/hio/glslfx.h"
+#include "pxr/imaging/glf/vdbTexture.h"
+#include "pxr/imaging/glf/contextCaps.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -145,6 +150,294 @@ HdStVolume::_UpdateRepr(HdSceneDelegate *sceneDelegate,
     *dirtyBits &= ~HdChangeTracker::NewRepr;
 }
 
+HdStVolume::_NameToFieldResource
+HdStVolume::_ComputeNameToFieldResource(
+    HdSceneDelegate * const sceneDelegate)
+{
+    _NameToFieldResource result;
+
+    const HdVolumeFieldDescriptorVector & fields =
+        sceneDelegate->GetVolumeFieldDescriptors(GetId());
+
+    for (const HdVolumeFieldDescriptor &field : fields) {
+        if (const HdStField * const fieldPrim = 
+                    dynamic_cast<HdStField*>(
+                        sceneDelegate->GetRenderIndex().GetBprim(
+                            field.fieldPrimType, field.fieldId))) {
+            if (const HdStFieldResourceSharedPtr fieldResource =
+                        fieldPrim->GetFieldResource()) {
+                result[field.fieldName] = fieldResource;
+            }
+        }
+    }
+
+    return result;
+}
+
+namespace {
+
+// Fallback volume shader created from source in shaders/fallbackVolume.glslfx
+HdStShaderCodeSharedPtr
+_MakeFallbackVolumeShader()
+{
+    using HioGlslfxSharedPtr = boost::shared_ptr<class HioGlslfx>;
+
+    const HioGlslfx glslfx(HdStPackageFallbackVolumeShader());
+
+    // Note that we use HdStSurfaceShader for a volume shader.
+    // Despite its name, HdStSurfaceShader is really just a pair of
+    // GLSL code and bindings and not specific to surface shading.
+    HdStSurfaceShaderSharedPtr const result =
+        boost::make_shared<HdStSurfaceShader>();
+    
+    result->SetFragmentSource(glslfx.GetVolumeSource());
+
+    return result;
+}
+
+HdStShaderCodeSharedPtr
+_ComputeVolumeShader(const HdStMaterial * const material)
+{
+    if (material) {
+        // Use the shader from the HdStMaterial as volume shader.
+        //
+        // Note that rprims should query the material whether they want
+        // a surface or volume shader instead of just asking for "some"
+        // shader with HdStMaterial::GetShaderCode().
+        // We can use HdStMaterial::GetShaderCode() here because the
+        // UsdImagingGLHydraMaterialAdapter is following the outputs:volume
+        // input of a material if the outputs:surface is unconnected.
+        //
+        // We should revisit the API an rprim is using to ask HdStMaterial
+        // for a shader once we switched over to HdMaterialNetworkMap's.
+        return material->GetShaderCode();
+    } else {
+        // Instantiate fallback volume shader only once
+        //
+        // Note that the default HdStMaterial provides a fallback surface
+        // shader and we need a volume shader, so we create the shader here
+        // ourselves.
+        static const HdStShaderCodeSharedPtr fallbackVolumeShader =
+            _MakeFallbackVolumeShader();
+        return fallbackVolumeShader;
+    }
+}
+
+// Helper to create GLSL code such as "HdGet_density(vec3 p)" for sampling
+// a field.
+struct FieldReaderCode
+{
+    // HdMaterialParam assumed to be of type HdMaterialParam::ParamTypeField.
+    //
+    // Generates function HdGet_FIELDNAME() using HdGet_TEXTURENAME().
+    FieldReaderCode(TfToken const &fieldName,
+                    std::string const &textureName)
+        : fieldName(fieldName),
+          textureName(textureName)
+    {
+    }
+
+    const TfToken fieldName;
+    const std::string textureName;
+};
+
+// We take a similar approach to textures here are always return vec3.
+// If the field asset contains a float, we would return a vec3 padded
+// with zeros. It is up to the volume shader GLSL code to consume
+// only the first component of the vec3 if it expects, e.g., density.
+static const std::string glType = "vec3";
+
+// myStream << FieldReaderCode(...);
+// will create the actual code.
+std::ostream & operator << (std::ostream &out,
+                            const FieldReaderCode &code)
+{
+    out << "\n// Field reader\n";
+    out << "\n" << glType;
+    out << " HdGet_" << code.fieldName.GetString() << "(vec3 p)\n";
+    out << "{\n";
+    out << "     return vec3(HdGet_" << code.textureName << "(p).xyz);\n";
+    out << "}\n\n";
+    
+    return out;
+}
+
+// Helper to create GLSL code such as "HdGet_density(vec3 p)" to return
+// fallback value when field is not available
+struct FallbackFieldReaderCode
+{
+    // Generates function HdGet_FIELDNAME() using HdGet_FALLBACKNAME().
+    FallbackFieldReaderCode(TfToken const &fieldName,
+                            TfToken const &fallbackName)
+        : fieldName(fieldName),
+          fallbackName(fallbackName)
+    {
+    }
+    
+    const TfToken fieldName;
+    const TfToken fallbackName;
+};
+
+// myStream << FallbackFieldReaderCode(...);
+// will create the actual code.
+std::ostream & operator << (std::ostream &out,
+                            const FallbackFieldReaderCode &code)
+{
+    out << "\n// Field reader (using fallback)\n";
+    out << "\n" << glType;
+    
+    out << " HdGet_" << code.fieldName.GetString() << "(vec3 p)\n";
+    out << "{\n";
+    out << "     return vec3(HdGet_" << code.fallbackName.GetString()
+        << "().xyz);\n";
+    out << "}\n\n";
+    
+    return out;
+}
+
+} // end namespace
+
+// Add GLSL code such as "HdGet_density(vec3 p)" for sampling the fields
+// to the volume shader code and add necessary 3d textures and other
+// parameters to the result HdStSurfaceShader.
+// HdMaterialParam's are consulted to figure out the names of the fields
+// to sample and the names of the associated sampling functions to generate.
+//
+// We actually have not implemented sampling from an OpenVDB file yet.
+// Instead dummy functions giving a non-constant value are generated
+// to enable some amount of testing.
+HdStShaderCodeSharedPtr
+HdStVolume::_ComputeMaterialShader(
+    HdSceneDelegate * const sceneDelegate,
+    const HdStMaterial * const material,
+    const HdStShaderCodeSharedPtr &volumeShader,
+    const _NameToFieldResource &nameToFieldResource)
+{
+    HdStResourceRegistrySharedPtr resourceRegistry =
+        boost::static_pointer_cast<HdStResourceRegistry>(
+            sceneDelegate->GetRenderIndex().GetResourceRegistry());
+
+    // Generate new shader from volume shader
+    HdStSurfaceShaderSharedPtr const result =
+        boost::make_shared<HdStSurfaceShader>();
+
+    // The GLSL code for the new shader
+    std::stringstream glsl;
+    // The params for the new shader
+    HdMaterialParamVector materialParams;
+    // The sources and texture descriptors for the new shader
+    HdSt_MaterialBufferSourceAndTextureHelper sourcesAndTextures;
+
+    // Carry over existing texture descriptors... Might not be useful.
+    sourcesAndTextures.textures = volumeShader->GetTextures();
+
+    // Scan old parameters...
+    for (const auto & param : volumeShader->GetParams()) {
+        if (param.IsField()) {
+            // Process field readers.
+
+            // Determine the field name the field reader requests
+            TfTokenVector const &samplerCoordinates =
+                param.GetSamplerCoordinates();
+            const TfToken fieldName =
+                samplerCoordinates.empty() ? TfToken() : samplerCoordinates[0];
+
+            // Get the field resource associated with the field name
+            const auto it = nameToFieldResource.find(fieldName);
+            HdStFieldResourceSharedPtr const & fieldResource =
+                it == nameToFieldResource.end()
+                ? HdStFieldResourceSharedPtr()
+                : it->second;
+                
+            if (fieldResource) {
+                // Create a new HdMaterialParam such that the resource binder
+                // will bind the 3d texture underling the field resource and
+                // codegen will give us an accessor
+                //     vec3 HdGet_FIELDNAMETexture(vec3)
+                // to sample it.
+
+                const std::string textureName = fieldName.GetString() + "Texture";
+
+                const HdMaterialParam textureParam(
+                    HdMaterialParam::ParamTypeTexture,
+                    TfToken(textureName),
+                    VtValue(GfVec3d(0.0)),
+                    SdfPath(),
+                    TfTokenVector(),
+                    HdTextureType::Field);
+
+                sourcesAndTextures.ProcessTextureMaterialParam(
+                    textureParam,
+                    boost::make_shared<HdStTextureResourceHandle>(
+                        fieldResource));
+
+                materialParams.push_back(textureParam);
+
+                // TODO:
+                // Consume fieldResource->GetBoundingBox() to compute local space
+                // to sampling coordinate transform
+                // Add HdMaterialParam so that we get an accessor
+                //     mat4 HdGet_FIELDNAMETransform()
+                //
+
+                // Generate GLSL function HdGet_FIELDNAME(vec3) to sample the
+                // field using HdGet_FIELDNAMETexture() and
+                // HdGet_FIELDNAMETransform().
+                glsl << FieldReaderCode(param.GetName(), textureName);
+            } else {
+                // No such field, so use the fallback value authored on the
+                // field reader node.
+                //
+                // Create a new HdMaterialParam such that codegen will give us an
+                // accessor
+                //     vec3 HdGet_FIELDNAMEFallback()
+                // to get the fallback value.
+                const TfToken fallbackName(
+                    param.GetName().GetString() + "Fallback");
+
+                const HdMaterialParam fallbackParam(
+                    HdMaterialParam::ParamTypeFallback,
+                    fallbackName,
+                    param.GetFallbackValue());
+
+                sourcesAndTextures.ProcessFallbackMaterialParam(
+                    fallbackParam, param.GetFallbackValue());
+
+                materialParams.push_back(fallbackParam);
+                
+                // Generate GLSL function HdGet_FIELDNAME(vec3) simply returning
+                // the fallback value.
+                glsl << FallbackFieldReaderCode(param.GetName(), fallbackName);
+            }
+        } else {
+            // Push non-field params so that codegen will do generate
+            // the respective code for them.
+            materialParams.push_back(param);
+            
+            // Process non-field params similar to how they are handled in
+            // HdStMaterial::Sync.
+            if (param.IsPrimvar()) {
+                sourcesAndTextures.ProcessPrimvarMaterialParam(param);
+            } else if (param.IsFallback()) {
+                sourcesAndTextures.ProcessFallbackMaterialParam(
+                    param, sceneDelegate, material->GetId());
+            }
+        }
+    }
+
+
+    // Append the volume shader (calling into the GLSL functions
+    // generated above)
+    glsl << volumeShader->GetSource(HdShaderTokens->fragmentShader);
+
+    result->SetFragmentSource(glsl.str());
+    result->SetParams(materialParams);
+    result->SetTextureDescriptors(sourcesAndTextures.textures);
+    result->SetBufferSources(sourcesAndTextures.sources, resourceRegistry);
+
+    return result;
+}
+
 namespace {
 
 const VtValue &
@@ -190,134 +483,6 @@ _GetCubeTriangleIndices()
     return result;
 }
 
-// Fallback volume shader created from source in shaders/fallbackVolume.glslfx
-HdStShaderCodeSharedPtr
-_MakeFallbackVolumeShader()
-{
-    using HioGlslfxSharedPtr = boost::shared_ptr<class HioGlslfx>;
-
-    const HioGlslfx glslfx(HdStPackageFallbackVolumeShader());
-
-    // Note that we use HdStSurfaceShader for a volume shader.
-    // Despite its name, HdStSurfaceShader is really just a pair of
-    // GLSL code and bindings and not specific to surface shading.
-    HdStSurfaceShaderSharedPtr const result =
-        boost::make_shared<HdStSurfaceShader>();
-    
-    result->SetFragmentSource(glslfx.GetVolumeSource());
-
-    return result;
-}
-
-// Helper to create GLSL code such as "HdGet_density(vec3 p)" for sampling
-// a field.
-struct FieldReaderCode
-{
-    // HdMaterialParam assumed to be of type HdMaterialParam::ParamTypeField.
-    FieldReaderCode(const HdMaterialParam &param)
-        : name(param.GetName())
-    {
-    }
-
-    const TfToken name;
-};
-
-// myStream << FieldReaderCode(...);
-// will create the actual code.
-std::ostream & operator << (std::ostream &out,
-                            const FieldReaderCode &code)
-{
-    // We take a similar approach to textures here are always return vec3.
-    // If the field asset contains a float, we would return a vec3 padded
-    // with zeros. It is up to the volume shader GLSL code to consume
-    // only the first component of the vec3 if it expects, e.g., density.
-    static const std::string glType = "vec3";
-
-    out << "\n// Field reader\n";
-    out << "\n" << glType;
-    out << " HdGet_" << code.name.GetString() << "(vec3 p)\n";
-    out << "{\n";
-    out << "    // Field reader reading from an actual OpenVDB file not\n";
-    out << "    // implemented yet. Using non-constant function here for\n";
-    out << "    // testing\n";
-    out << "    return vec3(length(p) * length(p) * length(p) * 0.1);\n";
-    out << "}\n\n";
-    
-    return out;
-}
-
-// Add GLSL code such as "HdGet_density(vec3 p)" for sampling the fields
-// to the volume shader code and add necessary 3d textures and other
-// parameters to the result HdStSurfaceShader.
-// HdMaterialParam's are consulted to figure out the names of the fields
-// to sample and the names of the associated sampling functions to generate.
-//
-// We actually have not implemented sampling from an OpenVDB file yet.
-// Instead dummy functions giving a non-constant value are generated
-// to enable some amount of testing.
-HdStShaderCodeSharedPtr
-_ComputeMaterialShader(
-    const HdStShaderCodeSharedPtr &volumeShader)
-{
-    // Generate new shader from volume shader
-    HdStSurfaceShaderSharedPtr const result =
-        boost::make_shared<HdStSurfaceShader>();
-
-    // The GLSL code for the new shader
-    std::stringstream glsl;
-    // The params for the new shader
-    HdMaterialParamVector materialParams;
-
-    // Scan old parameters...
-    for (const auto & param : volumeShader->GetParams()) {
-        // ... for field readers
-        if (param.IsField()) {
-            // Generate (dummy) GLSL function to sample
-            // that field.
-            //
-            // Eventually, we will consult the scene delegate's
-            // GetVolumeFieldDescriptor to find the HdStField targeted
-            // by the field- relationship named by
-            // param.GetSamplerCoordinates()[0].
-            // We will query the HdStField for the 3d texture and append
-            // these data to the texture descriptors and also create params
-            // so that codegen will produce a sampling function that we can
-            // use in the GLSL function created here (node that for bindless,
-            // we also need to add HdSt_BindlessSamplerBufferSource).
-            // We will also query the HdStField for the OpenVDB grid transform
-            // and added it to the result's buffer sources and params
-            // so that our GLSL function can perform the necessary transforms
-            // before sampling the 3d texture.
-            glsl << FieldReaderCode(param);
-        } else {
-            // Do we need to copy the param.IsPrimvar() and param.IsFallback()
-            // cases from HdStMaterial::Sync here to compute the respective
-            // HdBufferSource's and call HdStSurfaceShader::SetBufferSources
-            // below.
-            materialParams.push_back(param);
-        }
-    }
-
-
-    // Append the volume shader (calling into the GLSL functions
-    // generated above)
-    glsl << volumeShader->GetSource(HdShaderTokens->fragmentShader);
-
-    result->SetFragmentSource(glsl.str());
-    result->SetParams(materialParams);
-    result->SetTextureDescriptors(volumeShader->GetTextures());
-
-    // Missing: transfer or (re-)generate buffer sources.
-    //
-    // Note that these data are set with HdStSurfaceShader::SetBufferSources, but
-    // HdStSurfaceShader::GetShaderData() gives a HdBufferArrayRange.
-    // We might need to re-create the HdVtBufferSource's that HdStMaterial::Sync
-    // created for the param.IsPrimvar() and param.IsFallback() case and pass them
-    // to HdStSurfaceShader::SetBufferSource here.
-
-    return result;
-}
-
 } // end namespace
 
 void
@@ -332,40 +497,21 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     _UpdateVisibility(sceneDelegate, dirtyBits);
 
     /* CONSTANT PRIMVARS, TRANSFORM AND EXTENT */
-    HdPrimvarDescriptorVector constantPrimvars =
+    const HdPrimvarDescriptorVector constantPrimvars =
         GetPrimvarDescriptors(sceneDelegate, HdInterpolationConstant);
     HdStPopulateConstantPrimvars(this, &_sharedData, sceneDelegate, drawItem, 
         dirtyBits, constantPrimvars);
 
+    /* FIELDS */
+    const _NameToFieldResource nameToFieldResource =
+        _ComputeNameToFieldResource(sceneDelegate);
+
     /* MATERIAL SHADER */
-    const HdStMaterial *material = static_cast<const HdStMaterial *>(
+    const HdStMaterial * const material = static_cast<const HdStMaterial *>(
         sceneDelegate->GetRenderIndex().GetSprim(
             HdPrimTypeTokens->material, GetMaterialId()));
 
-    HdStShaderCodeSharedPtr volumeShader;
-    if (material) {
-        // Use the shader from the HdStMaterial as volume shader.
-        //
-        // Note that rprims should query the material whether they want
-        // a surface or volume shader instead of just asking for "some"
-        // shader with HdStMaterial::GetShaderCode().
-        // We can use HdStMaterial::GetShaderCode() here because the
-        // UsdImagingGLHydraMaterialAdapter is following the outputs:volume
-        // input of a material if the outputs:surface is unconnected.
-        //
-        // We should revisit the API an rprim is using to ask HdStMaterial
-        // for a shader once we switched over to HdMaterialNetworkMap's.
-        volumeShader = material->GetShaderCode();
-    } else {
-        // Instantiate fallback volume shader only once
-        //
-        // Note that the default HdStMaterial provides a fallback surface
-        // shader and we need a volume shader, so we create the shader here
-        // ourselves.
-        static const HdStShaderCodeSharedPtr fallbackVolumeShader =
-            _MakeFallbackVolumeShader();
-        volumeShader = fallbackVolumeShader;
-    }
+    HdStShaderCodeSharedPtr const volumeShader = _ComputeVolumeShader(material);
 
     // Compute the material shader by adding GLSL code such as
     // "HdGet_density(vec3 p)" for sampling the fields needed by the volume
@@ -375,7 +521,10 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     // GLSL functions such as "float scattering(vec3)" in the volume shader
     // to evaluate physical properties of a volume at the point p.
     drawItem->SetMaterialShader(
-        _ComputeMaterialShader(volumeShader));
+        _ComputeMaterialShader(sceneDelegate,
+                               material,
+                               volumeShader,
+                               nameToFieldResource));
 
     HdSt_VolumeShaderKey shaderKey;
     HdStResourceRegistrySharedPtr resourceRegistry =

@@ -100,12 +100,18 @@ GlfBaseTexture::~GlfBaseTexture()
     }
 }
 
-GLuint
-GlfBaseTexture::GetGlTextureName()
+void
+GlfBaseTexture::_ReadTextureIfNotLoaded()
 {
     if (!_loaded) {
         _ReadTexture();
     }
+}
+
+GLuint
+GlfBaseTexture::GetGlTextureName()
+{
+    _ReadTextureIfNotLoaded();
 
     return _textureName;
 }
@@ -113,9 +119,7 @@ GlfBaseTexture::GetGlTextureName()
 int
 GlfBaseTexture::GetWidth()
 {
-    if (!_loaded) {
-        _ReadTexture();
-    }
+    _ReadTextureIfNotLoaded();
 
     return _currentWidth;
 }
@@ -123,9 +127,7 @@ GlfBaseTexture::GetWidth()
 int
 GlfBaseTexture::GetHeight()
 {
-    if (!_loaded) {
-        _ReadTexture();
-    }
+    _ReadTextureIfNotLoaded();
 
     return _currentHeight;
 }
@@ -133,9 +135,7 @@ GlfBaseTexture::GetHeight()
 int
 GlfBaseTexture::GetDepth()
 {
-    if (!_loaded) {
-        _ReadTexture();
-    }
+    _ReadTextureIfNotLoaded();
 
     return _currentDepth;
 }
@@ -143,9 +143,7 @@ GlfBaseTexture::GetDepth()
 int
 GlfBaseTexture::GetFormat()
 {
-    if (!_loaded) {
-        _ReadTexture();
-    }
+    _ReadTextureIfNotLoaded();
 
     return _format;
 }
@@ -172,9 +170,7 @@ GlfTexture::BindingVector
 GlfBaseTexture::GetBindings(TfToken const & identifier,
                              GLuint samplerName)
 {
-    if (!_loaded) {
-        _ReadTexture();
-    }
+    _ReadTextureIfNotLoaded();
 
     return BindingVector(1,
                 Binding(
@@ -188,8 +184,8 @@ GlfBaseTexture::GetTextureInfo(bool forceLoad)
 {
     VtDictionary info;
 
-    if (!_loaded && forceLoad) {
-        _ReadTexture();
+    if (forceLoad) {
+        _ReadTextureIfNotLoaded();
     }
 
     if (_loaded) {

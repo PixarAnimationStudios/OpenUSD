@@ -1363,15 +1363,22 @@ _ShaderNetworkWalker::_ProcessFieldNode(const UsdShadeShader &shader,
 
     const TfToken fieldName = _GetFieldName(shader, sdrNode);
 
-    if (fieldName.IsEmpty()) {
-        return;
-    }
+    const VtValue fallback = _GetFallbackValue(shader, sdrNode);
 
     for (_MaterialParam &p : _params) {
         if (p._connection == shader.GetPath()) {
-            // Stashing name of field in _samplerCoords.
-            p._samplerCoords.push_back(fieldName);
+            if (!fieldName.IsEmpty()) {
+                // Stashing name of field in _samplerCoords.
+                p._samplerCoords.push_back(fieldName);
+            }
+
             p._paramType = HdMaterialParam::ParamTypeField;
+            if (!fallback.IsEmpty()) {
+                TF_DEBUG(USDIMAGING_SHADERS).Msg(
+                    "\t\t Fallback value: %s\n", 
+                    TfStringify(fallback).c_str());
+                p._fallbackValue = fallback;
+            }
         }
     }
 }

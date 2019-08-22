@@ -50,11 +50,20 @@ HdSt_MaterialBufferSourceAndTextureHelper::ProcessFallbackMaterialParam(
     HdSceneDelegate *sceneDelegate,
     SdfPath const &materialId)
 {
-    const VtValue paramVt = sceneDelegate->GetMaterialParamValue(
-        materialId, param.GetName());
+    ProcessFallbackMaterialParam(
+        param,
+        sceneDelegate->GetMaterialParamValue(
+            materialId, param.GetName()));
+}
+
+void
+HdSt_MaterialBufferSourceAndTextureHelper::ProcessFallbackMaterialParam(
+    HdMaterialParam const &param,
+    VtValue const &fallbackValue)
+{
     sources.push_back(
         boost::make_shared<HdVtBufferSource>(
-            param.GetName(), paramVt));
+            param.GetName(), fallbackValue));
 }
 
 namespace {
@@ -187,6 +196,16 @@ HdSt_MaterialBufferSourceAndTextureHelper::ProcessTextureMaterialParam(
         }
     } else if (textureType == HdTextureType::Uv) {
         tex.type = HdStShaderCode::TextureDescriptor::TEXTURE_2D;
+        textures.push_back(tex);
+        
+        if (bindless) {
+            sources.push_back(
+                boost::make_shared<HdSt_BindlessSamplerBufferSource>(
+                    tex.name,
+                    texResource->GetTexelsTextureHandle()));
+        }
+    } else if (textureType == HdTextureType::Field) {
+        tex.type = HdStShaderCode::TextureDescriptor::TEXTURE_3D;
         textures.push_back(tex);
         
         if (bindless) {
