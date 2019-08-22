@@ -90,6 +90,17 @@ Some of these metadata tags are:
      where terminalName is the actual kind of terminal
    - On a Vstruct, the metadata would be 'renderType' = 'vstruct', since there is
      no further specific type name for a vstruct
+- 'role' - The 'role' metadata can be specified for any SdrPropertyType, and the
+   value of 'role' will determine if the property will be transformed to a
+   different SdrPropertyType.  This metadata is special in that parser plugin
+   writers do NOT need to handle any SdrPropertyType transformations.  Parser
+   writers simply need to parse the property as usual and allow
+   SdrShaderProperty to apply any needed transformations to the SdrPropertyType.
+   The 'role' metadata can only have the following predefined values:
+   - 'none' - If 'role' is 'none', then the SdrPropertyType will be
+     transformed to be as generic as possible.  For example, if a property of
+     original SdrPropertyTypes->Color has 'role' specified as 'none', then the
+     property will actually become SdrPropertyTypes->Float.
 
 ## Sdr metadata that is used to determine SdfValueTypeName
 

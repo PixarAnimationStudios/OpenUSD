@@ -62,6 +62,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((Help, "help"))                                 \
     ((Page, "page"))                                 \
     ((RenderType, "renderType"))                     \
+    ((Role, "role"))                                 \
     ((Widget, "widget"))                             \
     ((Hints, "hints"))                               \
     ((Options, "options"))                           \
@@ -77,10 +78,16 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((Target, "__SDR__target"))                      \
     ((Colorspace, "__SDR__colorspace"))
 
+
+// The following tokens are valid values for the metadata "role"
+#define SDR_PROPERTY_ROLE_TOKENS \
+    ((None, "none"))
+
 TF_DECLARE_PUBLIC_TOKENS(SdrPropertyTypes, SDR_API, SDR_PROPERTY_TYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(SdrPropertyMetadata, SDR_API, 
                          SDR_PROPERTY_METADATA_TOKENS);
-
+TF_DECLARE_PUBLIC_TOKENS(SdrPropertyRole, SDR_API,
+                         SDR_PROPERTY_ROLE_TOKENS);
 
 /// \class SdrShaderProperty
 ///

@@ -31,7 +31,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(SdrPropertyTypes, SDR_PROPERTY_TYPE_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(SdrPropertyMetadata, SDR_PROPERTY_METADATA_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(SdrPropertyRole,
+                        SDR_PROPERTY_ROLE_TOKENS);
 
+using ShaderMetadataHelpers::GetRoleFromMetadata;
 using ShaderMetadataHelpers::IsTruthy;
 using ShaderMetadataHelpers::IsPropertyAnAssetIdentifier;
 using ShaderMetadataHelpers::StringVal;
@@ -76,6 +79,45 @@ namespace {
         return tokenTypeToSdfArrayType;
     }
 
+
+    // -------------------------------------------------------------------------
+
+    // The following typedefs are only needed to support the table below that
+    // indicates how to convert an SdrPropertyType given a particular "role"
+    // value
+    typedef std::unordered_map<
+            TfToken, std::pair<TfToken, size_t>, TfToken::HashFunctor>
+        TokenToPairTable;
+
+    typedef std::unordered_map<TfToken, TokenToPairTable, TfToken::HashFunctor>
+            TokenToMapTable;
+
+    // Establishes exact mappings for converting SdrPropertyTypes using "role"
+    // The keys are original SdrPropertyTypes, and the value is another map,
+    // keyed by the "role" metadata value. The value of that map is the
+    // converted SdrPropertyType and array size.
+    const TokenToMapTable _convertedSdrTypes = {
+        {SdrPropertyTypes->Color,
+            {
+                {SdrPropertyRole->None, {SdrPropertyTypes->Float, 3}}
+            }
+        },
+        {SdrPropertyTypes->Point,
+            {
+                {SdrPropertyRole->None, {SdrPropertyTypes->Float, 3}}
+            }
+        },
+        {SdrPropertyTypes->Normal,
+            {
+                {SdrPropertyRole->None, {SdrPropertyTypes->Float, 3}}
+            }
+        },
+        {SdrPropertyTypes->Vector,
+            {
+                {SdrPropertyRole->None, {SdrPropertyTypes->Float, 3}}
+            }
+        }
+    };
 
     // -------------------------------------------------------------------------
 
@@ -194,6 +236,38 @@ namespace {
 
     // -------------------------------------------------------------------------
 
+    // This method converts a given SdrPropertyType to a new SdrPropertyType
+    // and appropriate array size if the metadata indicates that such a
+    // conversion is necessary.  The conversion is based on the value of the
+    // "role" metadata
+    std::pair<TfToken, size_t>
+    _ConvertSdrPropertyTypeAndArraySize(
+        const TfToken& type,
+        const size_t& arraySize,
+        const NdrTokenMap& metadata)
+    {
+        TfToken role = GetRoleFromMetadata(metadata);
+
+        if (!type.IsEmpty() && !role.IsEmpty()) {
+            // Look up using original type and role declaration
+            const TokenToMapTable::const_iterator& typeSearch =
+                _convertedSdrTypes.find(type);
+            if (typeSearch != _convertedSdrTypes.end()) {
+                const TokenToPairTable::const_iterator& roleSearch =
+                    typeSearch->second.find(role);
+                if (roleSearch != typeSearch->second.end()) {
+                    // Return converted type and size
+                    return roleSearch->second;
+                }
+            }
+        }
+
+        // No conversion needed or found
+        return std::pair<TfToken, size_t>(type, arraySize);
+    }
+
+    // -------------------------------------------------------------------------
+
     template <class T>
     bool
     _GetValue(const VtValue& defaultValue, T* val)
@@ -203,7 +277,7 @@ namespace {
             return true;
         }
         return false;
-    };
+    }
 
     // This methods conforms the given default value's type with the property's
     // SdfValueTypeName.  This step is important because a Sdr parser should not
@@ -293,7 +367,7 @@ namespace {
         // Default value's type was not conformant, but no special translation
         // step was found
         return defaultValue;
-    };
+    }
 }
 
 SdrShaderProperty::SdrShaderProperty(
@@ -307,10 +381,12 @@ SdrShaderProperty::SdrShaderProperty(
     const NdrOptionVec& options)
     : NdrProperty(
         name,
-        type,
+        /* type= */ _ConvertSdrPropertyTypeAndArraySize(
+            type, arraySize, metadata).first,
         _ConformDefaultValue(defaultValue, type, arraySize, metadata),
         isOutput,
-        arraySize,
+        /* arraySize= */ _ConvertSdrPropertyTypeAndArraySize(
+            type, arraySize, metadata).second,
         /* isDynamicArray= */false,
         metadata),
 

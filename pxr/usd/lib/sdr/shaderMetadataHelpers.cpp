@@ -239,6 +239,27 @@ namespace ShaderMetadataHelpers
 
         return false;
     }
+
+    // -------------------------------------------------------------------------
+
+    TfToken
+    GetRoleFromMetadata(const NdrTokenMap& metadata)
+    {
+        const NdrTokenMap::const_iterator roleSearch =
+            metadata.find(SdrPropertyMetadata->Role);
+
+        if (roleSearch != metadata.end()) {
+            // If the value found is an allowed value, then we can return it
+            const TfToken role = TfToken(roleSearch->second);
+            if (std::find(SdrPropertyRole->allTokens.begin(),
+                          SdrPropertyRole->allTokens.end(),
+                          role) != SdrPropertyRole->allTokens.end()) {
+                return role;
+            }
+        }
+        // Return an empty token if no "role" metadata or acceptable value found
+        return TfToken();
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -66,6 +66,12 @@ void wrapShaderProperty()
         "PropertyMetadata", SdrPropertyMetadata, SDR_PROPERTY_METADATA_TOKENS
     );
 
+    TF_PY_WRAP_PUBLIC_TOKENS(
+        "PropertyRole",
+        SdrPropertyRole,
+        SDR_PROPERTY_ROLE_TOKENS
+    );
+
     to_python_converter<NdrOption, TfTokenPairToPythonConverter>();
     return_value_policy<copy_const_reference> copyRefPolicy;
 

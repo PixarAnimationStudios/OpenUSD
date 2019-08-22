@@ -100,6 +100,12 @@ namespace ShaderMetadataHelpers
     SDR_API
     bool
     IsPropertyATerminal(const NdrTokenMap& metadata);
+
+    /// Gets the "role" from metadata if one is provided. Only returns a value
+    // if it's a valid role as defined by SdrPropertyRole tokens.
+    SDR_API
+    TfToken
+    GetRoleFromMetadata(const NdrTokenMap& metadata);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
