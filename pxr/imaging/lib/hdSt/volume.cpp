@@ -42,7 +42,16 @@
 #include "pxr/imaging/glf/vdbTexture.h"
 #include "pxr/imaging/glf/contextCaps.h"
 
+#include "pxr/base/tf/staticTokens.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (volumeBBoxInverseTransform)
+    (volumeBBoxLocalMin)
+    (volumeBBoxLocalMax)
+);
 
 HdStVolume::HdStVolume(SdfPath const& id, SdfPath const & instancerId)
     : HdVolume(id)
@@ -229,16 +238,21 @@ struct FieldReaderCode
 {
     // HdMaterialParam assumed to be of type HdMaterialParam::ParamTypeField.
     //
-    // Generates function HdGet_FIELDNAME() using HdGet_TEXTURENAME().
-    FieldReaderCode(TfToken const &fieldName,
-                    std::string const &textureName)
-        : fieldName(fieldName),
-          textureName(textureName)
+    // Generates function HdGet_NAME(vec3 p) using HdGet_TRANSFORMNAME() to
+    // transform p and HdGet_TEXTURENAME to sample a 3d texture.
+    // 
+    FieldReaderCode(TfToken const &name,
+                    TfToken const &textureName,
+                    TfToken const &transformName)
+        : name(name),
+          textureName(textureName),
+          transformName(transformName)
     {
     }
 
-    const TfToken fieldName;
-    const std::string textureName;
+    const TfToken name;
+    const TfToken textureName;
+    const TfToken transformName;
 };
 
 // We take a similar approach to textures here are always return vec3.
@@ -252,11 +266,15 @@ static const std::string glType = "vec3";
 std::ostream & operator << (std::ostream &out,
                             const FieldReaderCode &code)
 {
-    out << "\n// Field reader\n";
+    out << "\n// Field reader - p in local coordinates\n";
     out << "\n" << glType;
-    out << " HdGet_" << code.fieldName.GetString() << "(vec3 p)\n";
+    out << " HdGet_" << code.name.GetString() << "(vec3 p)\n";
     out << "{\n";
-    out << "     return vec3(HdGet_" << code.textureName << "(p).xyz);\n";
+    out << "     // Convert to sampling coordinate\n";
+    out << "     vec4 q = vec4(HdGet_" << code.transformName.GetString()
+        << "() * vec4(p, 1.0));\n";
+    out << "     return vec3(HdGet_" << code.textureName.GetString()
+        << "(q.xyz/q.w).xyz);\n";
     out << "}\n\n";
     
     return out;
@@ -267,14 +285,14 @@ std::ostream & operator << (std::ostream &out,
 struct FallbackFieldReaderCode
 {
     // Generates function HdGet_FIELDNAME() using HdGet_FALLBACKNAME().
-    FallbackFieldReaderCode(TfToken const &fieldName,
+    FallbackFieldReaderCode(TfToken const &name,
                             TfToken const &fallbackName)
-        : fieldName(fieldName),
+        : name(name),
           fallbackName(fallbackName)
     {
     }
     
-    const TfToken fieldName;
+    const TfToken name;
     const TfToken fallbackName;
 };
 
@@ -286,13 +304,39 @@ std::ostream & operator << (std::ostream &out,
     out << "\n// Field reader (using fallback)\n";
     out << "\n" << glType;
     
-    out << " HdGet_" << code.fieldName.GetString() << "(vec3 p)\n";
+    out << " HdGet_" << code.name.GetString() << "(vec3 p)\n";
     out << "{\n";
     out << "     return vec3(HdGet_" << code.fallbackName.GetString()
         << "().xyz);\n";
     out << "}\n\n";
     
     return out;
+}
+
+// Compute transform mapping GfRange3d to unit box [0,1]^3
+GfMatrix4d
+_ComputeSamplingTransform(const GfRange3d &range)
+{
+    const GfVec3d size(range.GetSize());
+
+    const GfVec3d scale(1.0 / size[0], 1.0 / size[1], 1.0 / size[2]);
+
+    return
+        // First map range so that min becomes (0,0,0)
+        GfMatrix4d(1.0).SetTranslateOnly(-range.GetMin()) *
+        // Then scale to unit box
+        GfMatrix4d(1.0).SetScale(scale);
+}
+
+// Compute transform mapping bounding box to unit box [0,1]^3
+GfMatrix4d
+_ComputeSamplingTransform(const GfBBox3d &bbox)
+{
+    return
+        // First map so that bounding box goes to its GfRange3d
+        bbox.GetInverseMatrix() *
+        // Then scale to unit box [0,1]^3
+        _ComputeSamplingTransform(bbox.GetRange());
 }
 
 } // end namespace
@@ -311,8 +355,12 @@ HdStVolume::_ComputeMaterialShader(
     HdSceneDelegate * const sceneDelegate,
     const HdStMaterial * const material,
     const HdStShaderCodeSharedPtr &volumeShader,
-    const _NameToFieldResource &nameToFieldResource)
+    const _NameToFieldResource &nameToFieldResource,
+    GfBBox3d * const localVolumeBBox)
 {
+    // The bounding box containing all fields.
+    GfBBox3d totalFieldBbox;
+
     HdStResourceRegistrySharedPtr resourceRegistry =
         boost::static_pointer_cast<HdStResourceRegistry>(
             sceneDelegate->GetRenderIndex().GetResourceRegistry());
@@ -356,12 +404,13 @@ HdStVolume::_ComputeMaterialShader(
                 //     vec3 HdGet_FIELDNAMETexture(vec3)
                 // to sample it.
 
-                const std::string textureName = fieldName.GetString() + "Texture";
+                const TfToken textureName(
+                    fieldName.GetString() + "Texture");
 
                 const HdMaterialParam textureParam(
                     HdMaterialParam::ParamTypeTexture,
-                    TfToken(textureName),
-                    VtValue(GfVec3d(0.0)),
+                    textureName,
+                    param.GetFallbackValue(),
                     SdfPath(),
                     TfTokenVector(),
                     HdTextureType::Field);
@@ -373,24 +422,52 @@ HdStVolume::_ComputeMaterialShader(
 
                 materialParams.push_back(textureParam);
 
-                // TODO:
-                // Consume fieldResource->GetBoundingBox() to compute local space
-                // to sampling coordinate transform
                 // Add HdMaterialParam so that we get an accessor
-                //     mat4 HdGet_FIELDNAMETransform()
-                //
+                //     mat4 HdGet_FIELDNAMESamplingTransform()
+                // converting local space to the coordinate at which we need
+                // to sample the 3d texture.
+                const TfToken transformName(
+                    fieldName.GetString() + "SamplingTransform");
 
-                // Generate GLSL function HdGet_FIELDNAME(vec3) to sample the
+                // Query the field for its bounding box.
+                // Note that this contains both a GfRange3d and a
+                // matrix.
+                // For a grid in an OpenVDB file, the range is the bounding box
+                // of the active voxels of the tree and the matrix is the grid
+                // transform.
+                const GfBBox3d fieldBoundingBox =
+                    fieldResource->GetBoundingBox();
+
+                // Transform to map the bounding box to [0,1]^3.
+                const VtValue samplingTransform(
+                    _ComputeSamplingTransform(fieldBoundingBox));
+
+                const HdMaterialParam transformParam(
+                    HdMaterialParam::ParamTypeFallback,
+                    transformName,
+                    samplingTransform);
+
+                sourcesAndTextures.ProcessFallbackMaterialParam(
+                    transformParam, samplingTransform);
+
+                materialParams.push_back(transformParam);
+
+                // Generate GLSL function HdGet_NAME(vec3) to sample the
                 // field using HdGet_FIELDNAMETexture() and
-                // HdGet_FIELDNAMETransform().
-                glsl << FieldReaderCode(param.GetName(), textureName);
+                // HdGet_FIELDNAMESamplingTransform().
+                glsl << FieldReaderCode(param.GetName(),
+                                        textureName, transformName);
+
+                // Update the bounding box containing all fields
+                totalFieldBbox =
+                    GfBBox3d::Combine(totalFieldBbox, fieldBoundingBox);
             } else {
                 // No such field, so use the fallback value authored on the
                 // field reader node.
                 //
                 // Create a new HdMaterialParam such that codegen will give us an
                 // accessor
-                //     vec3 HdGet_FIELDNAMEFallback()
+                //     vec3 HdGet_NAMEFallback()
                 // to get the fallback value.
                 const TfToken fallbackName(
                     param.GetName().GetString() + "Fallback");
@@ -405,7 +482,7 @@ HdStVolume::_ComputeMaterialShader(
 
                 materialParams.push_back(fallbackParam);
                 
-                // Generate GLSL function HdGet_FIELDNAME(vec3) simply returning
+                // Generate GLSL function HdGet_NAME(vec3) simply returning
                 // the fallback value.
                 glsl << FallbackFieldReaderCode(param.GetName(), fallbackName);
             }
@@ -425,6 +502,59 @@ HdStVolume::_ComputeMaterialShader(
         }
     }
 
+    // If there was a field, update the local volume bbox to be
+    // the bounding box containing all fields.
+    if (!totalFieldBbox.GetRange().IsEmpty()) {
+        *localVolumeBBox = totalFieldBbox;
+    }
+
+    // Use it to create HdGet_volumeBBoxInverseTransform(),
+    // HdGet_volumeBBoxLocalMin() and HdGet_volumeBBoxLocalMax().
+    //
+    // These are used by the volume fragment shader to determine when
+    // to stop ray marching (localVolumeBBox also gives the vertices
+    // of the box that we draw to invoke the volume fragment shader).
+    {
+        // volume bounding box transform
+
+        const HdMaterialParam transformParam(
+            HdMaterialParam::ParamTypeFallback,
+            _tokens->volumeBBoxInverseTransform,
+            VtValue(localVolumeBBox->GetMatrix().GetInverse()));
+        
+        sourcesAndTextures.ProcessFallbackMaterialParam(
+            transformParam, transformParam.GetFallbackValue());
+        
+        materialParams.push_back(transformParam);
+    }
+
+    {
+        // volume bounding box min
+
+        const HdMaterialParam minParam(
+            HdMaterialParam::ParamTypeFallback,
+            _tokens->volumeBBoxLocalMin,
+            VtValue(localVolumeBBox->GetRange().GetMin()));
+        
+        sourcesAndTextures.ProcessFallbackMaterialParam(
+            minParam, minParam.GetFallbackValue());
+        
+        materialParams.push_back(minParam);
+    }
+
+    {
+        // volume bounding box max
+
+        const HdMaterialParam maxParam(
+            HdMaterialParam::ParamTypeFallback,
+            _tokens->volumeBBoxLocalMax,
+            VtValue(localVolumeBBox->GetRange().GetMax()));
+        
+        sourcesAndTextures.ProcessFallbackMaterialParam(
+            maxParam, maxParam.GetFallbackValue());
+        
+        materialParams.push_back(maxParam);
+    }
 
     // Append the volume shader (calling into the GLSL functions
     // generated above)
@@ -440,21 +570,31 @@ HdStVolume::_ComputeMaterialShader(
 
 namespace {
 
-const VtValue &
-_GetCubeVertices()
+VtValue
+_GetCubeVertices(GfBBox3d const &bbox)
 {
-    static const VtValue result(
+    const GfMatrix4d &transform = bbox.GetMatrix();
+    const GfVec3d &min = bbox.GetRange().GetMin();
+    const GfVec3d &max = bbox.GetRange().GetMax();
+
+    const float minX = min[0];
+    const float minY = min[1];
+    const float minZ = min[2];
+
+    const float maxX = max[0];
+    const float maxY = max[1];
+    const float maxZ = max[2];
+
+    return VtValue(
         VtVec3fArray{
-                GfVec3f(0, 0, 0),
-                GfVec3f(0, 0, 1),
-                GfVec3f(0, 1, 0),
-                GfVec3f(0, 1, 1),
-                GfVec3f(1, 0, 0),
-                GfVec3f(1, 0, 1),
-                GfVec3f(1, 1, 0),
-                GfVec3f(1, 1, 1)});
-    
-    return result;
+            transform.Transform(GfVec3f(minX, minY, minZ)),
+            transform.Transform(GfVec3f(minX, minY, maxZ)),
+            transform.Transform(GfVec3f(minX, maxY, minZ)),
+            transform.Transform(GfVec3f(minX, maxY, maxZ)),
+            transform.Transform(GfVec3f(maxX, minY, minZ)),
+            transform.Transform(GfVec3f(maxX, minY, maxZ)),
+            transform.Transform(GfVec3f(maxX, maxY, minZ)),
+            transform.Transform(GfVec3f(maxX, maxY, maxZ))});
 }
 
 const VtValue &
@@ -513,6 +653,15 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
     HdStShaderCodeSharedPtr const volumeShader = _ComputeVolumeShader(material);
 
+    // The bounding box of the volume in the local frame (but not necessarily
+    // aligned with the local frame).
+    // 
+    // It will be computed by _ComputeMaterialShader from the bounding boxes
+    // of the fiels. But if there is no field, it fals back to the extends
+    // provided by the scene delegate for the volume prim.
+    //
+    GfBBox3d localVolumeBBox(_sharedData.bounds.GetRange());
+
     // Compute the material shader by adding GLSL code such as
     // "HdGet_density(vec3 p)" for sampling the fields needed by the volume
     // shader.
@@ -524,8 +673,12 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         _ComputeMaterialShader(sceneDelegate,
                                material,
                                volumeShader,
-                               nameToFieldResource));
+                               nameToFieldResource,
+                               &localVolumeBBox));
 
+    // Question: Should we transform localVolumeBBox to world space to update
+    // update _sharedData.bounds if there was a field?
+    
     HdSt_VolumeShaderKey shaderKey;
     HdStResourceRegistrySharedPtr resourceRegistry =
         boost::static_pointer_cast<HdStResourceRegistry>(
@@ -535,11 +688,9 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
     /* VERTICES */
     {
-        // XXX:
-        // Always the same vertices, should they be allocated only
-        // once and shared across all volumes?
-        HdBufferSourceSharedPtr source(
-            new HdVtBufferSource(HdTokens->points, _GetCubeVertices()));
+        HdBufferSourceSharedPtr const source =
+            boost::make_shared<HdVtBufferSource>(
+                HdTokens->points, _GetCubeVertices(localVolumeBBox));
 
         HdBufferSourceVector sources = { source };
 

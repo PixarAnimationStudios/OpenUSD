@@ -85,7 +85,8 @@ private:
         HdSceneDelegate * const sceneDelegate,
         const HdStMaterial * const material,
         const HdStShaderCodeSharedPtr &volumeShader,
-        const _NameToFieldResource &nameToFieldResource);
+        const _NameToFieldResource &nameToFieldResource,
+        GfBBox3d * localVolumeBBox);
 
     HdReprSharedPtr _volumeRepr;
 };

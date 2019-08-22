@@ -60,6 +60,9 @@ HdStFieldResource::HdStFieldResource(const GlfTextureHandleRefPtr &textureHandle
           GlfContextCaps::GetInstance().bindlessTextureEnabled
           ? _simpleTextureResource.GetTexelsTextureHandle()
           : 0),
+      // Note that we use the grid transform from the grid in the openvdb file
+      // but ignore the transform on the field prim itself (e.g., authored
+      // on OpenVDBAsset in USD).
       _boundingBox(_GetBoundingBox(textureHandle))
 {
     // Wrap mode S and T for sampler were already set in

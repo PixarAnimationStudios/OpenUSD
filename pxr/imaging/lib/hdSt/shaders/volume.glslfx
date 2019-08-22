@@ -41,18 +41,10 @@ out VertexData
 
 void main(void)
 {
+    // Bounding box vertex in local spce
+    vec4 point = vec4(HdGet_points().xyz, 1);
+
     MAT4 transform  = ApplyInstanceTransform(HdGet_transform());
-
-    // Bounding box
-    vec3 localMin = HdGet_bboxLocalMin().xyz;
-    vec3 localMax = HdGet_bboxLocalMax().xyz;
-
-    // We are called with vertices {0,1}^3 and need to convert to ...
-    vec3 p = HdGet_points().xyz;
-    vec3 q = vec3(1.0, 1.0, 1.0) - p;
-
-    // ... bounding box vertices.
-    vec4 point = vec4(p * localMax + q * localMin, 1);
 
     // Bounding box vertex in eye space.
     vec4 pointEye = vec4(GetWorldToViewMatrix() * transform * point); 
@@ -86,13 +78,18 @@ in VertexData
 bool
 inBoundingBox(vec3 p)
 {
+    vec4 pVolHom = vec4(
+        HdGet_volumeBBoxInverseTransform() * vec4(p, 1));
+    vec3 pVol = pVolHom.xyz / pVolHom.w;
+    
+
     // Bounding box
-    vec3 localMin = HdGet_bboxLocalMin().xyz;
-    vec3 localMax = HdGet_bboxLocalMax().xyz;
+    vec3 localMin = vec3(HdGet_volumeBBoxLocalMin().xyz);
+    vec3 localMax = vec3(HdGet_volumeBBoxLocalMax().xyz);
 
     return
-        all(lessThanEqual(localMin, p)) &&
-        all(lessThanEqual(p, localMax));
+        all(lessThanEqual(localMin, pVol)) &&
+        all(lessThanEqual(pVol, localMax));
 }
 
 // Matrix to go from eye space to local space.
