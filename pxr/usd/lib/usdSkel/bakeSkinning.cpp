@@ -1468,7 +1468,7 @@ _SkinningAdapter::_DeformWithLBS(const UsdTimeCode time, const size_t timeIndex)
         return;
     }
     
-    if (_flags & (UsdSkelBakeSkinningParms::DeformPointsWithLBS ||
+    if (_flags & (UsdSkelBakeSkinningParms::DeformPointsWithLBS |
                   UsdSkelBakeSkinningParms::DeformNormalsWithLBS)) {
         
         // Skinning deforms points/normals in *skel* space.
