@@ -764,16 +764,20 @@ PcpComputeNamespaceEdits(
             LayerStackSites& layerStackSites = 
                 _GetLayerStackSitesForEdit(&result, oldNodePath, newNodePath);
             layerStackSites.resize(layerStackSites.size()+1);
-            LayerStackSite& site = layerStackSites.back();
-            site.cacheIndex      = cacheIndex;
-            site.type            = PcpNamespaceEdits::EditPath;
-            site.sitePath        = oldNodePath;
-            site.oldPath         = oldNodePath;
-            site.newPath         = newNodePath;
-            site.layerStack      = node.GetLayerStack();
-
+            {
+                LayerStackSite& site = layerStackSites.back();
+                site.cacheIndex      = cacheIndex;
+                site.type            = PcpNamespaceEdits::EditPath;
+                site.sitePath        = oldNodePath;
+                site.oldPath         = oldNodePath;
+                site.newPath         = newNodePath;
+                site.layerStack      = node.GetLayerStack();
+                // Drop the 'site' reference here since the call to
+                // _AddRelocateEditsForLayerStack can invalidate the reference
+                // from layerStackSites, when it resizes the vector.
+            }
             _AddRelocateEditsForLayerStack(
-                &result, site.layerStack, cacheIndex,
+                &result, node.GetLayerStack(), cacheIndex,
                 oldNodePath, newNodePath);
         }
 
