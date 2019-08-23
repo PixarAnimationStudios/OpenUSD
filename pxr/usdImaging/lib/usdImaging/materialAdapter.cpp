@@ -67,16 +67,6 @@ UsdImagingMaterialAdapter::Populate(UsdPrim const& prim,
                        cachePath,
                        prim, shared_from_this());
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
-
-    // Also register this adapter on behalf of any descendent
-    // UsdShadeShader prims, since they are consumed to
-    // create the material network.
-    for (UsdPrim const& child: prim.GetDescendants()) {
-        if (child.IsA<UsdShadeShader>()) {
-            index->AddHdPrimInfo(child.GetPath(), child, shared_from_this());
-        }
-    }
-
     return prim.GetPath();
 }
 
@@ -143,9 +133,9 @@ UsdImagingMaterialAdapter::ProcessPropertyChange(UsdPrim const& prim,
 /* virtual */
 void
 UsdImagingMaterialAdapter::MarkDirty(UsdPrim const& prim,
-                                   SdfPath const& cachePath,
-                                   HdDirtyBits dirty,
-                                   UsdImagingIndexProxy* index)
+                                     SdfPath const& cachePath,
+                                     HdDirtyBits dirty,
+                                     UsdImagingIndexProxy* index)
 {
     // If this is invoked on behalf of a Shader prim underneath a
     // Material prim, walk up to the enclosing Material.
@@ -169,19 +159,7 @@ UsdImagingMaterialAdapter::MarkMaterialDirty(UsdPrim const& prim,
                                              SdfPath const& cachePath,
                                              UsdImagingIndexProxy* index)
 {
-    // If this is invoked on behalf of a Shader prim underneath a
-    // Material prim, walk up to the enclosing Material.
-    SdfPath materialCachePath = cachePath;
-    UsdPrim materialPrim = prim;
-    while (materialPrim && !materialPrim.IsA<UsdShadeMaterial>()) {
-        materialPrim = materialPrim.GetParent();
-        materialCachePath = materialCachePath.GetParentPath();
-    }
-    if (!TF_VERIFY(materialPrim)) {
-        return;
-    }
-
-    index->MarkSprimDirty(materialCachePath, HdMaterial::DirtyResource);
+    MarkDirty(prim, cachePath, HdMaterial::DirtyResource, index);
 }
 
 

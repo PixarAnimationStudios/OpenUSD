@@ -609,8 +609,9 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
 
     SdfPathVector const& usdPathsToRepopulate =
         proxy->_GetUsdPathsToRepopulate();
-    if (usdPathsToRepopulate.empty())
+    if (usdPathsToRepopulate.empty()) {
         return;
+    }
 
     // Force initialization of SchemaRegistry (doing this in parallel causes all
     // threads to block).
@@ -1110,8 +1111,9 @@ UsdImagingDelegate::_ResyncUsdPrim(SdfPath const& usdPath,
             UsdPrimRange range(prim);
 
             for (auto iter = range.begin(); iter != range.end(); ++iter) {
-                if (prunedByParent)
+                if (prunedByParent) {
                     break;
+                }
 
                 const UsdPrim &usdPrim = *iter;
                 _HdPrimInfo *primInfo = _GetHdPrimInfo(usdPrim.GetPath());
@@ -1339,12 +1341,35 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
             //
             // XXX(UsdImagingPaths): We need to use a cachePath here,
             // not a usdPrimPath.
-            if (!_GetHdPrimInfo(usdPrimPath)) {
-                return;
+            if (_GetHdPrimInfo(usdPrimPath)) {
+                // XXX(UsdImagingPaths): We need to use a cachePath here,
+                // not a usdPrimPath.
+                affectedCachePaths.push_back(usdPrimPath);
+            } else {
+                // Since we are not populating UsdShadeShader nodes, just the
+                // UsdShadeMaterial nodes, we need to walk the usd hierarchy to 
+                // find the closest UsdShadeMaterial node and communicate that a
+                // prim has changed.
+                UsdPrim prim = _stage->GetPrimAtPath(usdPrimPath);
+                if (!prim.IsA<UsdShadeShader>()) {
+                    return;
+                } else {
+                    while (prim && !prim.IsA<UsdShadeMaterial>()) {
+                        prim = prim.GetParent();
+                    }
+
+                    // If this if check succeeds, it means that the material
+                    // is being used in UsdImaging since it was correctly
+                    // populated from GprimAdapter::_AddRprim.
+                    if (prim && _GetHdPrimInfo(prim.GetPath())) {
+                        TF_DEBUG(USDIMAGING_CHANGES).Msg("[Refresh Object]: "
+                            "HdMaterialNetwork %s affected by %s\n", 
+                            prim.GetPath().GetText(), 
+                            usdPath.GetText());
+                        affectedCachePaths.push_back(prim.GetPath());
+                    }
+                }
             }
-            // XXX(UsdImagingPaths): We need to use a cachePath here,
-            // not a usdPrimPath.
-            affectedCachePaths.push_back(usdPrimPath);
         }
     }
 
