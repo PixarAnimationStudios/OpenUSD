@@ -30,7 +30,7 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "Riley.h"
 
-#include <time.h>
+#include <chrono>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -64,11 +64,10 @@ private:
 
     HdxCompositor _compositor;
 
-    time_t _frameStart;
+    std::chrono::steady_clock::time_point _frameStart;
     std::string _integrator;
     std::string _quickIntegrator;
     float _quickIntegrateTime;
-
     bool _quickIntegrate;
 };
 

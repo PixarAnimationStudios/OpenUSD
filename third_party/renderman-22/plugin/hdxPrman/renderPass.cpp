@@ -77,6 +77,16 @@ HdxPrman_RenderPass::IsConverged() const
     return _converged;
 }
 
+// Return the seconds between now and then.
+static double
+_DiffTimeToNow(std::chrono::steady_clock::time_point const& then)
+{
+    std::chrono::duration<double> diff;
+    diff = std::chrono::duration_cast<std::chrono::duration<double>>
+                                (std::chrono::steady_clock::now()-then);
+    return(diff.count());
+}
+
 void
 HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
                             TfTokenVector const &renderTags)
@@ -276,7 +286,6 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
             HdPrmanRenderSettingsTokens->interactiveIntegratorTimeout,
             200) / 1000.f;
 
-
         _lastSettingsVersion = currentSettingsVersion;
         needStartRender = true;
     }
@@ -284,8 +293,9 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
     // If we're rendering but we're still in the quick integrate window,
     // check and see if we need to switch to the main integrator yet.
     if (_quickIntegrate &&
+        (!needStartRender) &&
         _interactiveContext->renderThread.IsRendering() &&
-        difftime(time(NULL), _frameStart) > _quickIntegrateTime) {
+        _DiffTimeToNow(_frameStart) > _quickIntegrateTime) {
 
         _interactiveContext->StopRender();
         RixParamList *params = mgr->CreateRixParamList();
@@ -306,23 +316,27 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
     if (needStartRender) {
         if (_quickIntegrateTime > 0 &&
            (_integrator == HdPrmanIntegratorTokens->PxrPathTracer.GetString() ||
-            _integrator == HdPrmanIntegratorTokens->PbsPathTracer.GetString())){
-            // Start the frame with interactive integrator to give faster
-            // time-to-first-buckets.
-            RixParamList *params = mgr->CreateRixParamList();
-            params->SetInteger(RtUString("numLightSamples"), 1);
-            params->SetInteger(RtUString("numBxdfSamples"), 1);
-            riley::ShadingNode integratorNode {
-                riley::ShadingNode::k_Integrator,
-                    RtUString(_quickIntegrator.c_str()),
-                    us_PathTracer,
-                    params
-            };
-            riley->CreateIntegrator(integratorNode);
-            mgr->DestroyRixParamList(params);
+            _integrator == HdPrmanIntegratorTokens->PbsPathTracer.GetString())) {
+            if (!_quickIntegrate) {
+                // Start the frame with interactive integrator to give faster
+                // time-to-first-buckets.
+                RixParamList *params = mgr->CreateRixParamList();
+                params->SetInteger(RtUString("numLightSamples"), 1);
+                params->SetInteger(RtUString("numBxdfSamples"), 1);
+                params->SetInteger(RtUString("numIndirectSamples"), 0);
+                params->SetInteger(RtUString("maxPathLength"), 0);
+                riley::ShadingNode integratorNode {
+                    riley::ShadingNode::k_Integrator,
+                        RtUString(_quickIntegrator.c_str()),
+                        us_PathTracer,
+                        params
+                };
+                riley->CreateIntegrator(integratorNode);
+                mgr->DestroyRixParamList(params);
 
-            _quickIntegrate = true;
-        } else {
+                _quickIntegrate = true;
+            }
+        } else if (_quickIntegrateTime <= 0 || _quickIntegrate) {
             // Disable quick integrate
             RixParamList *params = mgr->CreateRixParamList();
             riley::ShadingNode integratorNode {
@@ -333,10 +347,12 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
             };
             riley->CreateIntegrator(integratorNode);
             mgr->DestroyRixParamList(params);
+
+            _quickIntegrate = false;
         }
 
         _interactiveContext->renderThread.StartRender();
-        _frameStart = time(NULL);
+        _frameStart = std::chrono::steady_clock::now();
     }
 
     _converged = !_interactiveContext->renderThread.IsRendering();
