@@ -55,6 +55,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     (volumeBBoxLocalMax)
 );
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _fallbackShaderTokens,
+
+    (density)
+    (emission)
+);
+
 HdStVolume::HdStVolume(SdfPath const& id, SdfPath const & instancerId)
     : HdVolume(id)
 {
@@ -202,6 +209,20 @@ _MakeFallbackVolumeShader()
         boost::make_shared<HdStSurfaceShader>();
     
     result->SetFragmentSource(glslfx.GetVolumeSource());
+    result->SetParams(
+        {
+            HdMaterialParam(
+                HdMaterialParam::ParamTypeField,
+                _fallbackShaderTokens->density,
+                VtValue(GfVec3f(0.0, 0.0, 0.0)),
+                SdfPath(),
+                { _fallbackShaderTokens->density }),
+            HdMaterialParam(
+                HdMaterialParam::ParamTypeField,
+                _fallbackShaderTokens->emission,
+                VtValue(GfVec3f(0.0, 0.0, 0.0)),
+                SdfPath(),
+                { _fallbackShaderTokens->emission })});
 
     return result;
 }
