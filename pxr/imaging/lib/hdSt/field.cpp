@@ -52,7 +52,7 @@ HdStField::Sync(HdSceneDelegate *sceneDelegate,
         //
         // TODO: also read field name.
         const VtValue filePath = sceneDelegate->Get(GetId(),
-                                                    HdVolumeTokens->filePath);
+                                                    HdFieldTokens->filePath);
         const SdfAssetPath fileAssetPath = filePath.Get<SdfAssetPath>();
 
         // Resolve asset path
