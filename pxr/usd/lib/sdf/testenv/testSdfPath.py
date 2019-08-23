@@ -364,6 +364,10 @@ class TestSdfPath(unittest.TestCase):
         self.assertEqual(p.ReplacePrefix('/A', '/_', fixTargetPaths=True),
                          Sdf.Path('/_/B.a[/C/D.a[/_/F.a]].a'))
 
+        self.assertEqual(Sdf.Path('/Model/Sym/B.r[/Model/Sym/B.x]').
+                         ReplacePrefix('/Model/Sym/B.x', '/Model/Sym/B.x2'),
+                         Sdf.Path('/Model/Sym/B.r[/Model/Sym/B.x2]'))
+
         # ReplacePrefix with an empty old or new prefix returns an empty path.
         self.assertEqual(Sdf.Path("/A/B").ReplacePrefix(Sdf.Path.emptyPath, "/C"),
                          Sdf.Path.emptyPath)
@@ -373,6 +377,8 @@ class TestSdfPath(unittest.TestCase):
         self.assertEqual(Sdf.Path.emptyPath.ReplacePrefix(Sdf.Path.emptyPath, "/C"),
                          Sdf.Path.emptyPath)
         self.assertEqual(Sdf.Path.emptyPath.ReplacePrefix("/A", Sdf.Path.emptyPath),
+                         Sdf.Path.emptyPath)
+        self.assertEqual(Sdf.Path.emptyPath.ReplacePrefix("/A", "/B"),
                          Sdf.Path.emptyPath)
         
         # ========================================================================

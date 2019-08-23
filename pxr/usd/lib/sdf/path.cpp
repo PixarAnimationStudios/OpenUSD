@@ -1024,152 +1024,176 @@ SdfPath::AppendElementToken(const TfToken &elementTok) const
         
 }
 
-
 SdfPath
-SdfPath::ReplacePrefix(const SdfPath &oldPrefix, const SdfPath &newPrefix,
-                       bool fixTargetPaths) const
+SdfPath::_ReplacePrimPrefix(SdfPath const &oldPrefix,
+                            SdfPath const &newPrefix) const
 {
-    // Perhaps surprisingly, this path need not have oldPrefix as a prefix.  For
-    // example, '/a.rel[/target]'.ReplacePrefix('/target', '/other/target') ->
-    // '/a.rel[/other/target]' when fixTargetPaths == true.
-
-    TRACE_FUNCTION();
-
-    if (oldPrefix == newPrefix) {
-        return *this;
-    }
-    if (oldPrefix.IsEmpty() || newPrefix.IsEmpty()) {
-        return EmptyPath();
-    }
-    if (*this == oldPrefix) {
-        return newPrefix;
-    }
-
     using Sdf_PathNodeConstPtr = Sdf_PathNode const *;
 
+    // Walk up the prim part of this path until we have the same depth as
+    // oldPrefix, recording tail elements along the way.  If we find oldPrefix
+    // is in fact a prefix, then tack the tail elements onto newPrefix and
+    // return the resulting path with our property element (if any).  Otherwise
+    // return this path unchanged.
+    
     Sdf_PathNodeConstPtr primNode = _primPart.get();
-    Sdf_PathNodeConstPtr propNode = _propPart.get();
+    Sdf_PathNodeConstPtr prefixPrimNode = oldPrefix._primPart.get();
+        
+    int prefixDepth = prefixPrimNode->GetElementCount();
+    int curDepth = primNode->GetElementCount();
 
-    size_t thisElemCount = GetPathElementCount();
-    size_t oldPfxElemCount = oldPrefix.GetPathElementCount();
-
-    // We only have target paths to fix if the property part contains target
-    // paths to fix.
-    fixTargetPaths =
-        fixTargetPaths && _propPart && _propPart->ContainsTargetPath();
-
-    if (thisElemCount == 0 ||
-        (oldPfxElemCount >= thisElemCount && !fixTargetPaths)) {
+    if (curDepth < prefixDepth) {
         return *this;
     }
 
-    // Get temporary node storage -- stack if small enough, heap otherwise.
+    // Make space for temporary tail nodes.  Use stack if small enough.
     constexpr size_t MaxLocalNodes = 16;
     Sdf_PathNodeConstPtr localNodes[MaxLocalNodes];
     std::unique_ptr<Sdf_PathNodeConstPtr []> remoteNodes;
     Sdf_PathNodeConstPtr *tmpNodes = localNodes;
-
-    // If we're fixing target paths, we may need to examine the entirety of the
-    // property part of this path, not just the tail elements.
-    size_t requiredTmpNodes;
-    if (fixTargetPaths) {
-        requiredTmpNodes = thisElemCount > oldPfxElemCount ?
-            std::max(thisElemCount - oldPfxElemCount,
-                     _propPart->GetElementCount()) :
-            _propPart->GetElementCount();
-    }
-    else {
-        requiredTmpNodes = thisElemCount - oldPfxElemCount;
-    }
+    size_t requiredTmpNodes = curDepth - prefixDepth;
     if (requiredTmpNodes > MaxLocalNodes) {
         remoteNodes.reset(new Sdf_PathNodeConstPtr[requiredTmpNodes]);
         tmpNodes = remoteNodes.get();
     }
-    // Now tmpNodes is our temporary node storage.
 
-    // Walk up this path until we do not need to check anymore.  If we're not
-    // fixing target paths, this is just until we hit the same elem count as
-    // oldPrefix.  If we are doing target paths it's additionally until there
-    // are no more target path elements to examine.
     size_t i = 0;
-    tmpNodes[i++] = propNode ? propNode : primNode;
-    size_t numTailNodes =
-        thisElemCount > oldPfxElemCount ? thisElemCount - oldPfxElemCount : 0;
-    bool foundOldPrefix = false;
-    bool foundTargetPaths = fixTargetPaths;
-    bool moreTargetPaths = foundTargetPaths;
-    Sdf_PathNodeConstPtr oldPrefixPrimNode = oldPrefix._primPart.get();
-    Sdf_PathNodeConstPtr oldPrefixPropNode = oldPrefix._propPart.get();
-    bool inPrimPart = !propNode;
-    while (numTailNodes || moreTargetPaths) {
-        Sdf_PathNodeConstPtr tmp = tmpNodes[i-1]->GetParentNode();
-        if (!tmp) {
-            tmp = primNode;
-            inPrimPart = true;
-        }
-        if (numTailNodes) {
-            --numTailNodes;
-            foundOldPrefix = (
-                (inPrimPart && tmp == oldPrefixPrimNode) ||
-                (primNode == oldPrefixPrimNode && tmp == oldPrefixPropNode));
-            if (foundOldPrefix)
-                break;
-        }
-        moreTargetPaths =
-            moreTargetPaths && tmpNodes[i-1]->ContainsTargetPath();
-        tmpNodes[i++] = tmp;
+    while (curDepth > prefixDepth) {
+        tmpNodes[i++] = primNode;
+        primNode = primNode->GetParentNode();
+        --curDepth;
     }
-
-    // Now tmpNodes[i-1]->GetParentNode() is either equal to oldPrefix or we
-    // never hit oldPrefix and we're just fixing target paths above.
-
-    // If we didn't find the old prefix and we're not fixing up embedded target
-    // paths, then oldPrefix is not a prefix of this path so we just return this
-    // path.
-    if (!foundOldPrefix && (!fixTargetPaths || !foundTargetPaths)) {
+    
+    if (primNode != prefixPrimNode) {
         return *this;
     }
 
-    --i;
-
-    // Append the tail component.  Use _AppendNode() except in these cases:
-    // - For prims and properties, we construct child nodes directly
-    //   so as to not expand out ".." components and to avoid the cost
-    //   of unnecessarily re-validating identifiers.
-    // - For embedded target paths, translate the target path.
-
-    SdfPath newPath;
-    if (foundOldPrefix) {
-        newPath = newPrefix;
-    }
-    else {
-        Sdf_PathNodeConstPtr newStart = tmpNodes[i]->GetParentNode();
-        if (!newStart) {
-            // In this case, tmpNodes[i] was a root property node, so we know to
-            // just start with our prim component.
-            newPath._primPart = _primPart;
-        }
-        else {
-            // Start with newStart, if it's prim-like, use it, otherwise use our
-            // primPart and it as the property part.
-            Sdf_PathNode::NodeType newNodeType = newStart->GetNodeType();
-            if (newNodeType == Sdf_PathNode::RootNode ||
-                newNodeType == Sdf_PathNode::PrimNode ||
-                newNodeType == Sdf_PathNode::PrimVariantSelectionNode) {
-                newPath._primPart = newStart;
-            } else {
-                newPath._primPart = _primPart;
-                newPath._propPart = newStart;
-            }
-        }
-    }
-
-    do {
+    // Tack the prim elements onto newPrefix.
+    SdfPath newPath = newPrefix;
+    while (i--) {
         switch (tmpNodes[i]->GetNodeType()) {
         case Sdf_PathNode::PrimNode:
             newPath._primPart = Sdf_PathNode::FindOrCreatePrim(
                 newPath._primPart.get(), tmpNodes[i]->GetName());
             break;
+        default:
+            newPath = _AppendNode(newPath, tmpNodes[i]);
+        }
+    }
+
+    // Add our property element.
+    newPath._propPart = _propPart;
+
+    return newPath;
+}
+
+SdfPath
+SdfPath::_ReplaceTargetPathPrefixes(SdfPath const &oldPrefix,
+                                    SdfPath const &newPrefix) const
+{
+    using Sdf_PathNodeConstPtr = Sdf_PathNode const *;
+
+    // Go through all the target paths in this path, and replace their prefixes.
+    Sdf_PathNode const *propNode = _propPart.get();
+    if (!propNode->ContainsTargetPath()) {
+        return *this;
+    }
+
+    // Make space for temporary tail nodes.  Use stack if small enough.
+    constexpr size_t MaxLocalNodes = 16;
+    Sdf_PathNodeConstPtr localNodes[MaxLocalNodes];
+    std::unique_ptr<Sdf_PathNodeConstPtr []> remoteNodes;
+    Sdf_PathNodeConstPtr *tmpNodes = localNodes;
+    size_t requiredTmpNodes = propNode->GetElementCount();
+    if (requiredTmpNodes > MaxLocalNodes) {
+        remoteNodes.reset(new Sdf_PathNodeConstPtr[requiredTmpNodes]);
+        tmpNodes = remoteNodes.get();
+    }
+
+    size_t i = 0;
+    while (propNode && propNode->ContainsTargetPath()) {
+        tmpNodes[i++] = propNode;
+        propNode = propNode->GetParentNode();
+    }
+    
+    // Tack the prop elements onto newPrefix's prop part.
+    SdfPath newPath(_primPart.get(), propNode);
+    while (i--) {
+        switch (tmpNodes[i]->GetNodeType()) {
+        case Sdf_PathNode::PrimPropertyNode:
+            newPath._propPart = Sdf_PathNode::FindOrCreatePrimProperty(
+                nullptr, tmpNodes[i]->GetName());
+            break;
+        case Sdf_PathNode::TargetNode:
+            newPath = newPath.AppendTarget(
+                tmpNodes[i]->GetTargetPath().ReplacePrefix(
+                    oldPrefix, newPrefix, /*fixTargetPaths=*/true));
+            break;
+        case Sdf_PathNode::MapperNode:
+            newPath = newPath.AppendMapper(
+                tmpNodes[i]->GetTargetPath().ReplacePrefix(
+                    oldPrefix, newPrefix, /*fixTargetPaths=*/true));
+            break;
+        default:
+            newPath = _AppendNode(newPath, tmpNodes[i]);
+        }
+    }
+
+    return newPath;
+}
+
+SdfPath
+SdfPath::_ReplacePropPrefix(SdfPath const &oldPrefix,
+                            SdfPath const &newPrefix,
+                            bool fixTargetPaths) const
+{ 
+    using Sdf_PathNodeConstPtr = Sdf_PathNode const *;
+
+    // Walk up the prop part of this path until we have the same depth as
+    // oldPrefix's prop part, recording tail elements along the way.  If we find
+    // oldPrefix is in fact a prefix, then tack the tail elements onto newPrefix
+    // (replacing prefixes in target paths if \p fixTargetPaths is true).  If
+    // oldPrefix is not found, then just replace target paths in all the
+    // elements.
+    
+    Sdf_PathNodeConstPtr propNode = _propPart.get();
+    Sdf_PathNodeConstPtr prefixPropNode = oldPrefix._propPart.get();
+        
+    int prefixDepth = prefixPropNode->GetElementCount();
+    int curDepth = propNode->GetElementCount();
+
+    if (curDepth < prefixDepth) {
+        return (fixTargetPaths && propNode->ContainsTargetPath()) ? 
+            _ReplaceTargetPathPrefixes(oldPrefix, newPrefix) : *this;
+    }
+
+    // Make space for temporary tail nodes.  Use stack if small enough.
+    constexpr size_t MaxLocalNodes = 16;
+    Sdf_PathNodeConstPtr localNodes[MaxLocalNodes];
+    std::unique_ptr<Sdf_PathNodeConstPtr []> remoteNodes;
+    Sdf_PathNodeConstPtr *tmpNodes = localNodes;
+    size_t requiredTmpNodes = curDepth - prefixDepth;
+    if (requiredTmpNodes > MaxLocalNodes) {
+        remoteNodes.reset(new Sdf_PathNodeConstPtr[requiredTmpNodes]);
+        tmpNodes = remoteNodes.get();
+    }
+
+    size_t i = 0;
+    while (curDepth > prefixDepth) {
+        tmpNodes[i++] = propNode;
+        propNode = propNode->GetParentNode();
+        --curDepth;
+    }
+    
+    if (propNode != prefixPropNode) {
+        return (fixTargetPaths && ContainsTargetPath()) ?
+            _ReplaceTargetPathPrefixes(oldPrefix, newPrefix) : *this;
+    }
+
+    // Tack the prop elements onto newPrefix's prop part.
+    SdfPath newPath = newPrefix;
+    while (i--) {
+        switch (tmpNodes[i]->GetNodeType()) {
         case Sdf_PathNode::PrimPropertyNode:
             newPath._propPart = Sdf_PathNode::FindOrCreatePrimProperty(
                 nullptr, tmpNodes[i]->GetName());
@@ -1195,8 +1219,79 @@ SdfPath::ReplacePrefix(const SdfPath &oldPrefix, const SdfPath &newPrefix,
         default:
             newPath = _AppendNode(newPath, tmpNodes[i]);
         }
-    } while (i--);
+    }
+
+    return newPath;
+}
+
+
+SdfPath
+SdfPath::ReplacePrefix(const SdfPath &oldPrefix, const SdfPath &newPrefix,
+                       bool fixTargetPaths) const
+{
+    // Perhaps surprisingly, this path need not have oldPrefix as a prefix.  For
+    // example, '/a.rel[/target]'.ReplacePrefix('/target', '/other/target') ->
+    // '/a.rel[/other/target]' when fixTargetPaths == true.
+
+    TRACE_FUNCTION();
+
+    if (IsEmpty() || oldPrefix == newPrefix) {
+        return *this;
+    }
+    if (oldPrefix.IsEmpty() || newPrefix.IsEmpty()) {
+        return EmptyPath();
+    }
+    if (*this == oldPrefix) {
+        return newPrefix;
+    }
+
+    using Sdf_PathNodeConstPtr = Sdf_PathNode const *;
+
+    Sdf_PathNodeConstPtr primNode = _primPart.get();
+    Sdf_PathNodeConstPtr propNode = _propPart.get();
+
+    SdfPath newPath;
     
+    if (!oldPrefix._propPart) {
+        // oldPrefix is a prim-like path.  Replace the prefix in the prim part,
+        // if it has oldPrefix as a prefix.
+        newPath = _ReplacePrimPrefix(oldPrefix, newPrefix);
+
+        if (fixTargetPaths && propNode && propNode->ContainsTargetPath()) {
+            // This path is property-like and contains targets that we need to
+            // fix, so fix them up.
+            newPath = newPath._ReplaceTargetPathPrefixes(oldPrefix, newPrefix);
+        }
+    }
+    else {
+        // oldPrefix is a property-like path.  If this path is a prim-like path
+        // then oldPrefix cannot be a prefix of this path and we do not have
+        // targets to fix.
+        if (!propNode) {
+            return *this;
+        }
+
+        // Both oldPrefix and this are property-like paths.  If the prim parts
+        // do not match, then we just replace targets (or do nothing).  If they
+        // do match, then we walk up prop nodes to same depth (or as long as we
+        // need to fix targets) and replace.  But crucially, we have to search
+        // for the property part of oldPrefix as a prefix of this path's
+        // property part.  If we find it then the resulting path has newPrefix's
+        // prim part, otherwise it has this path's prim part.
+        
+        if (primNode != oldPrefix._primPart.get()) {
+            if (fixTargetPaths && propNode->ContainsTargetPath()) {
+                newPath = _ReplaceTargetPathPrefixes(oldPrefix, newPrefix);
+            }
+            else {
+                return *this;
+            }
+        }
+        else {
+            newPath = _ReplacePropPrefix(oldPrefix, newPrefix, fixTargetPaths);
+        }
+    }
+
     return newPath;
 }
 

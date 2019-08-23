@@ -899,6 +899,16 @@ private:
     static std::string
     _ElementsToString(bool absolute, const std::vector<std::string> &elements);
 
+    SdfPath _ReplacePrimPrefix(SdfPath const &oldPrefix,
+                               SdfPath const &newPrefix) const;
+
+    SdfPath _ReplaceTargetPathPrefixes(SdfPath const &oldPrefix,
+                                       SdfPath const &newPrefix) const;
+
+    SdfPath _ReplacePropPrefix(SdfPath const &oldPrefix,
+                               SdfPath const &newPrefix,
+                               bool fixTargetPaths) const;
+
     // Helper to implement the uninlined portion of operator<.
     SDF_API static bool
     _LessThanInternal(SdfPath const &lhs, SdfPath const &rhs);
