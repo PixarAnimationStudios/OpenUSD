@@ -37,7 +37,6 @@
 #include "pxr/imaging/hdSt/bufferResourceGL.h"
 #include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/imaging/hdSt/vboMemoryManager.h"
-#include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 

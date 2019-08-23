@@ -30,7 +30,6 @@
 #include "pxr/base/tf/iterator.h"
 
 #include "pxr/imaging/hdSt/bufferResourceGL.h"
-#include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/imaging/hdSt/vboSimpleMemoryManager.h"
 
