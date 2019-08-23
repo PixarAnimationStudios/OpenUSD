@@ -423,10 +423,7 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
             for (size_t i = 0; i < _aovBindings.size(); ++i) {
                 HdEmbreeRenderBuffer *rb = static_cast<HdEmbreeRenderBuffer*>(
                     _aovBindings[i].renderBuffer);
-                if (!rb->IsMultiSampled()) {
-                    rb->Unmap();
-                    rb->SetConverged(true);
-                } else {
+                if (rb->IsMultiSampled()) {
                     moreWork = true;
                 }
             }
@@ -445,14 +442,12 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
         }
     }
 
-    // Mark the multisampled attachments as converged and unmap them.
+    // Mark the multisampled attachments as converged and unmap all buffers.
     for (size_t i = 0; i < _aovBindings.size(); ++i) {
         HdEmbreeRenderBuffer *rb = static_cast<HdEmbreeRenderBuffer*>(
             _aovBindings[i].renderBuffer);
-        if (rb->IsMultiSampled()) {
-            rb->Unmap();
-            rb->SetConverged(true);
-        }
+        rb->Unmap();
+        rb->SetConverged(true);
     }
 }
 
