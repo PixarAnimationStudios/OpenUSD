@@ -280,7 +280,7 @@ UsdImagingCameraAdapter::UpdateForTime(UsdPrim const& prim,
         
         VtValue& vShutterClose =
             valueCache->GetCameraParam(cachePath, HdCameraTokens->shutterClose);
-        cam.GetShutterOpenAttr().Get(&vShutterClose, time); // conversion n/a
+        cam.GetShutterCloseAttr().Get(&vShutterClose, time); // conversion n/a
 
         // Add all the above params to the list of camera params for which
         // value cache entries have been populated. Test for one, and push
