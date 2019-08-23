@@ -132,6 +132,13 @@ HdxOitVolumeRenderTask::Execute(HdTaskContext* ctx)
     bool oldPointSmooth = glIsEnabled(GL_POINT_SMOOTH);
     glEnable(GL_POINT_SMOOTH);
 
+    // XXX HdxRenderTask::Prepare calls HdStRenderPassState::Prepare.
+    // This sets the cullStyle for the render pass shader.
+    // Since Oit uses a custom render pass shader, we must manually
+    // set cullStyle.
+    _oitVolumeRenderPassShader->SetCullStyle(
+        renderPassState->GetCullStyle());
+
     //
     // Translucent pixels pass
     //
