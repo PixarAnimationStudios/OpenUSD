@@ -20,6 +20,7 @@ pxr_library(hdSt
         garch
         glf
         hd
+        hgiGL
         tf
         trace
         ${GLEW_LIBRARY}

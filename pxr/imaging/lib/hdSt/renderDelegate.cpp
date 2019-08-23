@@ -402,4 +402,10 @@ HdStRenderDelegate::GetMaterialNetworkSelector() const
     return HioGlslfxTokens->glslfx;
 }
 
+Hgi*
+HdStRenderDelegate::GetHgi()
+{
+    return &_hgiGL;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
