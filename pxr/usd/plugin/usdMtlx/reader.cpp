@@ -1557,27 +1557,6 @@ _Context::AddMaterialVariant(
     usdVariantSet.ClearVariantSelection();
 }
 
-bool
-_Context::_AddShaderVariant(
-    const std::string& mtlxMaterialName,
-    const std::string& mtlxShaderRefName,
-    const Variant& variant)
-{
-    // Find the USD shader.
-    auto usdShader = _shaders[mtlxMaterialName][mtlxShaderRefName];
-    if (!usdShader) {
-        // Unknown shader.
-        return false;
-    }
-
-    // Copy the values.
-    for (auto& nameAndValue: variant) {
-        auto& mtlxValue = nameAndValue.second;
-        _CopyValue(_MakeInput(usdShader, mtlxValue), mtlxValue);
-    }
-    return true;
-}
-
 UsdCollectionAPI
 _Context::AddCollection(const mx::ConstCollectionPtr& mtlxCollection)
 {
