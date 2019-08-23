@@ -18,7 +18,6 @@ pxr_plugin(${PXR_PACKAGE}
         usdSkel
         usdUtils
         vt
-        ${Boost_PYTHON_LIBRARY}
         ${MAYA_LIBRARIES}
 
     INCLUDE_DIRS
