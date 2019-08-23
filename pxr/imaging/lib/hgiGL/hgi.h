@@ -50,7 +50,7 @@ public:
     //
 
     HGIGL_API
-    HgiImmediateCommandBuffer* GetImmediateCommandBuffer() override;
+    HgiImmediateCommandBuffer& GetImmediateCommandBuffer() override;
 
     //
     // Resources

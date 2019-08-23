@@ -39,10 +39,10 @@ HgiGL::~HgiGL()
 {
 }
 
-HgiImmediateCommandBuffer*
+HgiImmediateCommandBuffer&
 HgiGL::GetImmediateCommandBuffer()
 {
-    return &_immediateCommandBuffer;
+    return _immediateCommandBuffer;
 }
 
 HgiTextureHandle

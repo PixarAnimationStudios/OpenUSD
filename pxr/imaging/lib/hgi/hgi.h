@@ -68,7 +68,7 @@ public:
 
     /// Returns the immediate command buffer.
     HGI_API
-    virtual HgiImmediateCommandBuffer* GetImmediateCommandBuffer() = 0;
+    virtual HgiImmediateCommandBuffer& GetImmediateCommandBuffer() = 0;
 
     //
     // Resource API
