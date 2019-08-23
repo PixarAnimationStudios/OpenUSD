@@ -92,6 +92,8 @@ void wrapShaderProperty()
             &This::GetImplementationName, copyRefPolicy)
         .def("GetVStructMemberOf", &This::GetVStructMemberOf, copyRefPolicy)
         .def("GetVStructMemberName", &This::GetVStructMemberName, copyRefPolicy)
+        .def("GetVStructConditionalExpr",
+            &This::GetVStructConditionalExpr, copyRefPolicy)
         .def("IsVStructMember", &This::IsVStructMember)
         .def("IsVStruct", &This::IsVStruct)
         .def("GetValidConnectionTypes", &This::GetValidConnectionTypes,

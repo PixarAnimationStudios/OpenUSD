@@ -396,9 +396,15 @@ SdrShaderProperty::SdrShaderProperty(
     _isDynamicArray =
         IsTruthy(SdrPropertyMetadata->IsDynamicArray, _metadata);
 
-    _isConnectable = _metadata.count(SdrPropertyMetadata->Connectable)
-        ? IsTruthy(SdrPropertyMetadata->Connectable, _metadata)
-        : true;
+    // Note that outputs are always connectable. If "connectable" metadata is
+    // found on outputs, ignore it.
+    if (isOutput) {
+        _isConnectable = true;
+    } else {
+        _isConnectable = _metadata.count(SdrPropertyMetadata->Connectable)
+            ? IsTruthy(SdrPropertyMetadata->Connectable, _metadata)
+            : true;
+    }
 
     // Indicate a "default" widget if one was not assigned
     _metadata.insert({SdrPropertyMetadata->Widget, "default"});
@@ -449,8 +455,16 @@ SdrShaderProperty::CanConnectTo(const NdrProperty& other) const
     size_t outputArraySize = output->GetArraySize();
     const NdrTokenMap& outputMetadata = output->GetMetadata();
 
-    // Connections are always possible if the types match exactly
+    // Connections are always possible if the types match exactly and the
+    // array size matches
     if ((inputType == outputType) && (inputArraySize == outputArraySize)) {
+        return true;
+    }
+
+    // Connections are also possible if the types match exactly and the input
+    // is a dynamic array
+    if ((inputType == outputType) && !output->IsArray()
+            && input->IsDynamicArray()) {
         return true;
     }
 

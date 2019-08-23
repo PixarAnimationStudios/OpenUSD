@@ -133,6 +133,7 @@ def TestShadingProperties(node):
         "inputA": node.GetShaderInput("inputA"),
         "inputB": node.GetShaderInput("inputB"),
         "inputC": node.GetShaderInput("inputC"),
+        "inputD": node.GetShaderInput("inputD"),
         "inputF2": node.GetShaderInput("inputF2"),
         "inputF3": node.GetShaderInput("inputF3"),
         "inputF4": node.GetShaderInput("inputF4"),
@@ -196,6 +197,7 @@ def TestShadingProperties(node):
     assert properties["inputNormal"].CanConnectTo(properties["outputVector"])
     assert properties["inputNormal"].CanConnectTo(properties["resultF3"])
     assert properties["inputF2"].CanConnectTo(properties["resultF2"])
+    assert properties["inputD"].CanConnectTo(properties["resultI"])
     assert not properties["inputNormal"].CanConnectTo(properties["resultF2"])
     assert not properties["inputF4"].CanConnectTo(properties["resultF2"])
     assert not properties["inputF2"].CanConnectTo(properties["resultF3"])
