@@ -52,6 +52,7 @@ public:
     int GetHeight() const;
 
     bool IsEnabledTestLighting() const { return _testLighting; }
+    bool IsEnabledSceneLights() const { return _sceneLights; }
     bool IsEnabledCameraLight() const { return _cameraLight; }
     bool IsEnabledCullBackfaces() const { return _cullBackfaces; }
     bool IsEnabledIdRender() const { return _testIdRender; }
@@ -102,6 +103,7 @@ private:
 private:
     UsdImagingGL_UnitTestWindow *_widget;
     bool _testLighting;
+    bool _sceneLights;
     bool _cameraLight;
     std::string _cameraPath;
     bool _testIdRender;

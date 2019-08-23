@@ -86,6 +86,7 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_SPRIM_TYPES =
     HdPrimTypeTokens->drawTarget,
     HdPrimTypeTokens->extComputation,
     HdPrimTypeTokens->material,
+    HdPrimTypeTokens->domeLight,
     HdPrimTypeTokens->rectLight,
     HdPrimTypeTokens->simpleLight,
     HdPrimTypeTokens->sphereLight
@@ -291,18 +292,17 @@ HdStRenderDelegate::CreateSprim(TfToken const& typeId,
 {
     if (typeId == HdPrimTypeTokens->camera) {
         return new HdCamera(sprimId);
-    } else if (typeId == HdPrimTypeTokens->simpleLight) {
-        return new HdStLight(sprimId, HdPrimTypeTokens->simpleLight);
-    } else if (typeId == HdPrimTypeTokens->sphereLight) {
-        return new HdStLight(sprimId, HdPrimTypeTokens->sphereLight);
-    } else if (typeId == HdPrimTypeTokens->rectLight) {
-        return new HdStLight(sprimId, HdPrimTypeTokens->rectLight);
     } else  if (typeId == HdPrimTypeTokens->drawTarget) {
         return new HdStDrawTarget(sprimId);
     } else  if (typeId == HdPrimTypeTokens->extComputation) {
         return new HdStExtComputation(sprimId);
     } else  if (typeId == HdPrimTypeTokens->material) {
         return new HdStMaterial(sprimId);
+    } else if (typeId == HdPrimTypeTokens->domeLight ||
+                typeId == HdPrimTypeTokens->simpleLight ||
+                typeId == HdPrimTypeTokens->sphereLight ||
+                typeId == HdPrimTypeTokens->rectLight) {
+        return new HdStLight(sprimId, typeId);
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
@@ -315,21 +315,17 @@ HdStRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
 {
     if (typeId == HdPrimTypeTokens->camera) {
         return new HdCamera(SdfPath::EmptyPath());
-    } else if (typeId == HdPrimTypeTokens->simpleLight) {
-        return new HdStLight(SdfPath::EmptyPath(),
-                             HdPrimTypeTokens->simpleLight);
-    } else if (typeId == HdPrimTypeTokens->sphereLight) {
-        return new HdStLight(SdfPath::EmptyPath(), 
-                             HdPrimTypeTokens->sphereLight);
-    } else if (typeId == HdPrimTypeTokens->rectLight) {
-        return new HdStLight(SdfPath::EmptyPath(), 
-                             HdPrimTypeTokens->rectLight);
     } else  if (typeId == HdPrimTypeTokens->drawTarget) {
         return new HdStDrawTarget(SdfPath::EmptyPath());
     } else  if (typeId == HdPrimTypeTokens->extComputation) {
         return new HdStExtComputation(SdfPath::EmptyPath());
     } else  if (typeId == HdPrimTypeTokens->material) {
         return _CreateFallbackMaterialPrim();
+    } else if (typeId == HdPrimTypeTokens->domeLight ||
+                typeId == HdPrimTypeTokens->simpleLight ||
+                typeId == HdPrimTypeTokens->sphereLight ||
+                typeId == HdPrimTypeTokens->rectLight) {
+        return new HdStLight(SdfPath::EmptyPath(), typeId);
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }

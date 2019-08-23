@@ -36,6 +36,7 @@
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/extComputation.h"
+#include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/meshTopology.h"
@@ -83,9 +84,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (instance)
-    (texturePath)
     (Material)
     (HydraPbsSurface)
+    (DomeLight)
+    (PreviewDomeLight)
 );
 
 // This environment variable matches a set of similar ones in
@@ -247,6 +249,10 @@ UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
         if (bindingPurpose == HdTokens->preview &&
             adapterKey == _tokens->Material) {
             adapterKey = _tokens->HydraPbsSurface;
+        } 
+        if (bindingPurpose == HdTokens->preview &&
+            adapterKey == _tokens->DomeLight) {
+            adapterKey = _tokens->PreviewDomeLight;
         }
     }
 
@@ -2845,7 +2851,7 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
 {
     // PERFORMANCE: We should schedule this to be updated during Sync, rather
     // than pulling values on demand.
- 
+
     if (!TF_VERIFY(id != SdfPath())) {
         return VtValue();
     }
@@ -2866,16 +2872,27 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
         return VtValue();
     }
 
-    // Special handling of non-attribute parameters
-    if (paramName == _tokens->texturePath) {
+    // Special handling of non-attribute parameters and textureResources
+    if (paramName == HdLightTokens->textureResource) {
         // This can be moved to a separate function as we add support for 
         // other light types that use textures in multiple ways
-        UsdLuxDomeLight domeLight(prim);
-        SdfAssetPath asset; 
-        if (!domeLight.GetTextureFileAttr().Get(&asset)) {
-            return VtValue();
-        }
-        return VtValue(asset.GetResolvedPath());
+        
+        // if we were able to get the texture file attribute from the prim
+        if (UsdAttribute textureFileAttr = prim.GetAttribute(
+                                                HdLightTokens->textureFile)) {
+
+            _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+            if (TF_VERIFY(primInfo)) {
+                SdfPath textureFilePath = ConvertIndexPathToCachePath(
+                                                textureFileAttr.GetPath());
+
+                // return the laoded texture
+                return VtValue(primInfo->adapter->GetTextureResource(
+                                                primInfo->usdPrim, 
+                                                textureFilePath, _time));
+            }
+        } 
+        return VtValue();
     } else if (paramName == HdTokens->lightLink) {
         UsdCollectionAPI lightLink = light.GetLightLinkCollectionAPI();
         return VtValue(_collectionCache.GetIdForCollection(lightLink));

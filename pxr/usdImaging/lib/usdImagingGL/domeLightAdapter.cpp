@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,43 +21,30 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDST_PACKAGE_H
-#define HDST_PACKAGE_H
-
-#include "pxr/pxr.h"
-#include "pxr/imaging/hdSt/api.h"
-#include "pxr/base/tf/token.h"
+#include "pxr/usdImaging/usdImagingGL/domeLightAdapter.h"
+#include "pxr/usdImaging/usdImagingGL/textureUtils.h"
+#include "pxr/imaging/glf/image.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HDST_API
-TfToken HdStPackageComputeShader();
+TF_REGISTRY_FUNCTION(TfType)
+{
+    typedef UsdImagingGLDomeLightAdapter Adapter;
+    TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
+    t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
+}
 
-HDST_API
-TfToken HdStPackageDomeLightShader();
+UsdImagingGLDomeLightAdapter::~UsdImagingGLDomeLightAdapter() 
+{
+}
 
-HDST_API
-TfToken HdStPackagePtexTextureShader();
-
-HDST_API
-TfToken HdStPackageRenderPassShader();
-
-HDST_API
-TfToken HdStPackageFallbackLightingShader();
-
-HDST_API
-TfToken HdStPackageLightingIntegrationShader();
-
-HDST_API
-TfToken HdStPackageFallbackSurfaceShader();
-
-HDST_API
-TfToken HdStPackageFallbackVolumeShader();
-
-HDST_API
-TfToken HdStPackageImageShader();
+HdTextureResourceSharedPtr
+UsdImagingGLDomeLightAdapter::GetTextureResource(UsdPrim const& usdPrim,
+                                                     SdfPath const &id,
+                                                     UsdTimeCode time) const
+{
+    return UsdImagingGL_GetTextureResource(usdPrim, id, time);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif

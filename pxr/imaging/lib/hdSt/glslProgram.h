@@ -80,6 +80,12 @@ public:
     static HdStGLSLProgramSharedPtr GetComputeProgram(
         TfToken const &shaderToken,
         HdStResourceRegistry *resourceRegistry);
+    
+    HDST_API
+    static HdStGLSLProgramSharedPtr GetComputeProgram(
+        TfToken const &shaderFileName,
+        TfToken const &shaderToken,
+        HdStResourceRegistry *resourceRegistry);
 
 private:
     HdStResourceGL _program;

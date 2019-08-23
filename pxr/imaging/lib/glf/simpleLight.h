@@ -129,6 +129,33 @@ public:
     void SetID(SdfPath const & id);
 
     GLF_API
+    bool IsDomeLight() const;
+    GLF_API
+    void SetIsDomeLight(bool isDomeLight);
+
+    // the following Id's are GL resource handles for the precomputed textures
+    // created by HdStLight 
+    GLF_API
+    uint32_t const & GetIrradianceId() const;
+    GLF_API
+    void SetIrradianceId(uint32_t const & irradianceId);
+
+    GLF_API
+    uint32_t const & GetPrefilterId() const;
+    GLF_API
+    void SetPrefilterId(uint32_t const & prefilterId);
+
+    GLF_API
+    uint32_t const & GetBrdfId() const;
+    GLF_API
+    void SetBrdfId(uint32_t const & brdfId);
+
+    GLF_API
+    uint32_t const & GetSamplerId() const;
+    GLF_API
+    void SetSamplerId(uint32_t const & samplerId);
+
+    GLF_API
     bool operator ==(GlfSimpleLight const & other) const;
     GLF_API
     bool operator !=(GlfSimpleLight const & other) const;
@@ -155,6 +182,14 @@ private:
 
     GfMatrix4d _transform;
     GfMatrix4d _shadowMatrix;
+
+    // domeLight specific parameters 
+    bool _isDomeLight;
+    // handles for the resource bindings from HdXSimpleLightingShader
+    uint32_t _samplerId;
+    uint32_t _irradianceId; // pre-computed irradiance map
+    uint32_t _prefilterId;  // pre-computed preFiltered map
+    uint32_t _brdfId;       // pre-computed BRDF look up texture
 
     SdfPath _id;
 };

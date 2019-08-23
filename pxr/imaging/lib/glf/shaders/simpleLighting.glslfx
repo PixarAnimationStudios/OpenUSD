@@ -98,8 +98,8 @@ struct LightSource {
     vec4 attenuation;
     bool hasShadow;
     int shadowIndex;
+    bool isIndirectLight;
     int padding0;
-    int padding1;
 };
 
 struct ShadowMatrix {

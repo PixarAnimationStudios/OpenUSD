@@ -39,6 +39,7 @@ pxr_library(hdSt
         copyComputation
         debugCodes
         dispatchBuffer
+        domeLightComputations
         drawItem
         drawItemInstance
         drawTarget

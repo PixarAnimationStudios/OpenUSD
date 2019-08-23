@@ -51,6 +51,13 @@ HdStPackageComputeShader()
 }
 
 TfToken
+HdStPackageDomeLightShader()
+{
+    static TfToken s = _GetShaderPath("domeLight.glslfx");
+    return s;
+}
+
+TfToken
 HdStPackagePtexTextureShader()
 {
     static TfToken s = _GetShaderPath("ptexTexture.glslfx");
