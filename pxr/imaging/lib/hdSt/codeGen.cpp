@@ -3002,7 +3002,7 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << "    return vec3(HdGet_" << it->second.fieldName << "Texture(s).xyz);\n"
                 << "#else\n"
                 << "#if defined(HD_HAS_" << it->second.name << "Fallback)\n"
-                << "    return HdGet_" << it->second.name << "Fallback();\n"
+                << "    return vec3(HdGet_" << it->second.name << "Fallback().xyz);\n"
                 << "#else\n"
                 << "    return vec3(0.0);\n"
                 << "#endif\n"
