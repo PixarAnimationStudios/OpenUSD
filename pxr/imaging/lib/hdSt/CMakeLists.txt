@@ -59,6 +59,7 @@ pxr_library(hdSt
         glslfxShader
         glslProgram
         glUtils
+        hgiConversions
         imageShaderRenderPass
         instancer
         interleavedMemoryManager
@@ -70,6 +71,7 @@ pxr_library(hdSt
         package
         persistentBuffer
         points
+        renderBuffer
         renderDelegate
         renderPass
         renderPassShader

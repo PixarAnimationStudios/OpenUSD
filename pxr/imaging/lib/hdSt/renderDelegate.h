@@ -121,6 +121,10 @@ public:
     HDST_API
     virtual VtDictionary GetRenderStats() const override;
 
+    HDST_API
+    virtual HdAovDescriptor
+        GetDefaultAovDescriptor(TfToken const& name) const override;
+
     // Returns Hydra graphics interface
     HDST_API
     Hgi* GetHgi();

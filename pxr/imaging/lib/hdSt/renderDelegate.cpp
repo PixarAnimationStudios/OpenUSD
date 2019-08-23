@@ -36,6 +36,7 @@
 #include "pxr/imaging/hdSt/mesh.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/points.h"
+#include "pxr/imaging/hdSt/renderBuffer.h"
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/texture.h"
@@ -94,6 +95,8 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_BPRIM_TYPES =
 {
     HdPrimTypeTokens->texture,
     _tokens->openvdbAsset
+    // XXX Wait with enabling AOV in HdSt until TaskController has HdSt AOV code
+    //HdPrimTypeTokens->renderBuffer
 };
 
 std::mutex HdStRenderDelegate::_mutexResourceRegistry;
@@ -193,6 +196,38 @@ HdResourceRegistrySharedPtr
 HdStRenderDelegate::GetResourceRegistry() const
 {
     return _resourceRegistry;
+}
+
+HdAovDescriptor
+HdStRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
+{
+    const bool colorDepthMSAA = true; // GL requires color/depth to be matching.
+
+    if (name == HdAovTokens->color) {
+        HdFormat colorFormat = 
+            GlfContextCaps::GetInstance().floatingPointBuffersEnabled ?
+            HdFormatFloat16Vec4 : HdFormatUNorm8Vec4;
+        return HdAovDescriptor(colorFormat,colorDepthMSAA, VtValue(GfVec4f(0)));
+    } else if (name == HdAovTokens->normal || name == HdAovTokens->Neye) {
+        return HdAovDescriptor(HdFormatFloat32Vec3, /*msaa*/ false,
+                               VtValue(GfVec3f(-1.0f)));
+    } else if (name == HdAovTokens->depth) {
+        return HdAovDescriptor(HdFormatFloat32, colorDepthMSAA, VtValue(1.0f));
+    } else if (name == HdAovTokens->linearDepth) {
+        return HdAovDescriptor(HdFormatFloat32, /*msaa*/ false, VtValue(0.0f));
+    } else if (name == HdAovTokens->primId ||
+               name == HdAovTokens->instanceId ||
+               name == HdAovTokens->elementId) {
+        return HdAovDescriptor(HdFormatInt32, /*msaa*/ false, VtValue(-1));
+    } else {
+        HdParsedAovToken aovId(name);
+        if (aovId.isPrimvar) {
+            return HdAovDescriptor(HdFormatFloat32Vec3, /*msaa*/ false,
+                                   VtValue(GfVec3f(0.0f)));
+        }
+    }
+
+    return HdAovDescriptor();
 }
 
 HdRenderPassSharedPtr
@@ -316,6 +351,8 @@ HdStRenderDelegate::CreateBprim(TfToken const& typeId,
         return new HdStTexture(bprimId);
     } else if (typeId == _tokens->openvdbAsset) {
         return new HdStField(bprimId, typeId);
+    } else if (typeId == HdPrimTypeTokens->renderBuffer) {
+        return new HdStRenderBuffer(&_hgiGL, bprimId);
     } else {
         TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
     }
@@ -330,6 +367,8 @@ HdStRenderDelegate::CreateFallbackBprim(TfToken const& typeId)
         return new HdStTexture(SdfPath::EmptyPath());
     } else if (typeId == _tokens->openvdbAsset) {
         return new HdStField(SdfPath::EmptyPath(), typeId);
+    } else if (typeId == HdPrimTypeTokens->renderBuffer) {
+        return new HdStRenderBuffer(&_hgiGL, SdfPath::EmptyPath());
     } else {
         TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
     }
