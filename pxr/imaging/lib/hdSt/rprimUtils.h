@@ -32,7 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdDrawItem;
 class HdRprim;
-class HdRprimSharedData;
+struct HdRprimSharedData;
 
 // Given prim information it will create sources representing
 // constant primvars and hand it to the resource registry.

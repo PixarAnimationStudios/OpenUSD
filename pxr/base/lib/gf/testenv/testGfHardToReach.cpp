@@ -191,23 +191,23 @@ struct _CheckTraits
     static_assert(std::is_trivial<T>::value, "");
 };
 
-template class _CheckTraits<GfVec2d>;
-template class _CheckTraits<GfVec2f>;
-template class _CheckTraits<GfVec2h>;
-template class _CheckTraits<GfVec2i>;
-template class _CheckTraits<GfVec3d>;
-template class _CheckTraits<GfVec3f>;
-template class _CheckTraits<GfVec3h>;
-template class _CheckTraits<GfVec3i>;
-template class _CheckTraits<GfVec4d>;
-template class _CheckTraits<GfVec4f>;
-template class _CheckTraits<GfVec4h>;
-template class _CheckTraits<GfVec4i>;
+template struct _CheckTraits<GfVec2d>;
+template struct _CheckTraits<GfVec2f>;
+template struct _CheckTraits<GfVec2h>;
+template struct _CheckTraits<GfVec2i>;
+template struct _CheckTraits<GfVec3d>;
+template struct _CheckTraits<GfVec3f>;
+template struct _CheckTraits<GfVec3h>;
+template struct _CheckTraits<GfVec3i>;
+template struct _CheckTraits<GfVec4d>;
+template struct _CheckTraits<GfVec4f>;
+template struct _CheckTraits<GfVec4h>;
+template struct _CheckTraits<GfVec4i>;
 
-template class _CheckTraits<GfMatrix2d>;
-template class _CheckTraits<GfMatrix3d>;
-template class _CheckTraits<GfMatrix4d>;
+template struct _CheckTraits<GfMatrix2d>;
+template struct _CheckTraits<GfMatrix3d>;
+template struct _CheckTraits<GfMatrix4d>;
 
-template class _CheckTraits<GfMatrix2f>;
-template class _CheckTraits<GfMatrix3f>;
-template class _CheckTraits<GfMatrix4f>;
+template struct _CheckTraits<GfMatrix2f>;
+template struct _CheckTraits<GfMatrix3f>;
+template struct _CheckTraits<GfMatrix4f>;
