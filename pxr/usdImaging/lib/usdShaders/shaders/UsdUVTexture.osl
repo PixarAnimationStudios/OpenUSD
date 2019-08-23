@@ -21,6 +21,17 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+//
+// Note: This shader needs to stay in sync with usdImaging's usdShaders as
+// defined by the shaderDefs.usda file.  Thus, we must work precisely in this
+// part of the shader space to ensure that properties defined here have the
+// same types as their usd definition.  Use of special metadata like 'role' is
+// necessary to make some of the types match.  Please see Sdr overview
+// documentation for more information about different metadata tags that are
+// used to inform property type translation.
+//
+
 shader UsdUVTexture
 [[ 
     string category="generator"
@@ -58,7 +69,10 @@ shader UsdUVTexture
 
     // Details : [options] r, g, b, a, rgb, rgba
     output color rgb = color(0.0, 0.0 ,0.0)
-        [[ string widget = "null" ]],
+        [[
+           string widget = "null",
+           string role = "none"
+        ]],
     output float r = 0.0
         [[ string widget = "null" ]],
     output float g = 0.0
