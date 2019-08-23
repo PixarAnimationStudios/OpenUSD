@@ -70,6 +70,10 @@ public:
     /// Resolve a multi-sample texture (MSAA) so it can be read from.
     HGI_API
     virtual void ResolveImage(HgiResolveImageOp const& resolveOp)= 0;
+
+private:
+    HgiBlitEncoder & operator=(const HgiBlitEncoder&) = delete;
+    HgiBlitEncoder(const HgiBlitEncoder&) = delete;
 };
 
 

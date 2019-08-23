@@ -59,6 +59,8 @@ public:
 
 private:
     HgiGLGraphicsEncoder() = delete;
+    HgiGLGraphicsEncoder & operator=(const HgiGLGraphicsEncoder&) = delete;
+    HgiGLGraphicsEncoder(const HgiGLGraphicsEncoder&) = delete;
 
     HgiGLImmediateCommandBuffer* _commandBuffer;
 

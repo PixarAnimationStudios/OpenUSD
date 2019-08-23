@@ -55,6 +55,8 @@ public:
 
 private:
     HgiTexture() = delete;
+    HgiTexture & operator=(const HgiTexture&) = delete;
+    HgiTexture(const HgiTexture&) = delete;
 };
 
 typedef HgiTexture* HgiTextureHandle;

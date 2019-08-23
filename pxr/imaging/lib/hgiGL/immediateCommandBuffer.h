@@ -54,6 +54,10 @@ public:
     HgiBlitEncoderUniquePtr CreateBlitEncoder() override;
 
 private:
+    HgiGLImmediateCommandBuffer & operator=
+        (const HgiGLImmediateCommandBuffer&) = delete;
+    HgiGLImmediateCommandBuffer(const HgiGLImmediateCommandBuffer&) = delete;
+
     HgiGLDescriptorCacheVec _descriptorCache;
 };
 

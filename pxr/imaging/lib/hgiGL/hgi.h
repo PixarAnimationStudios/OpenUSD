@@ -63,6 +63,8 @@ public:
     void DestroyTexture(HgiTextureHandle* texHandle) override;
 
 private:
+    HgiGL & operator=(const HgiGL&) = delete;
+    HgiGL(const HgiGL&) = delete;
 
     HgiGLImmediateCommandBuffer _immediateCommandBuffer;
 };

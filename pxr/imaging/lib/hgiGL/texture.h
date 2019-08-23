@@ -47,6 +47,8 @@ public:
 
 private:
     HgiGLTexture() = delete;
+    HgiGLTexture & operator=(const HgiGLTexture&) = delete;
+    HgiGLTexture(const HgiGLTexture&) = delete;
 
     uint32_t _textureId;
 };

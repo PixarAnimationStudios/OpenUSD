@@ -81,6 +81,10 @@ public:
     /// Destroy a texture in rendering backend.
     HGI_API
     virtual void DestroyTexture(HgiTextureHandle* texHandle) = 0;
+
+private:
+    Hgi & operator=(const Hgi&) = delete;
+    Hgi(const Hgi&) = delete;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

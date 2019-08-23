@@ -58,6 +58,10 @@ public:
     /// Pop the lastest debug marker off encoder.
     HGI_API
     virtual void PopDebugGroup() = 0;
+
+private:
+    HgiGraphicsEncoder & operator=(const HgiGraphicsEncoder&) = delete;
+    HgiGraphicsEncoder(const HgiGraphicsEncoder&) = delete;
 };
 
 

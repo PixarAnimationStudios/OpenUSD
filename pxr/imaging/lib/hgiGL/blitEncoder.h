@@ -62,6 +62,10 @@ public:
     void ResolveImage(HgiResolveImageOp const& resolveOp) override;
 
 private:
+    HgiGLBlitEncoder() = delete;
+    HgiGLBlitEncoder & operator=(const HgiGLBlitEncoder&) = delete;
+    HgiGLBlitEncoder(const HgiGLBlitEncoder&) = delete;
+
     HgiGLImmediateCommandBuffer* _commandBuffer;
 
     // Encoder is used only one frame so storing multi-frame state on encoder

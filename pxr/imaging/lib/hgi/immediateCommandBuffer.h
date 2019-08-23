@@ -69,6 +69,11 @@ public:
     /// should be re-acquired each frame (don't hold onto it after EndEncoding).
     HGI_API
     virtual HgiBlitEncoderUniquePtr CreateBlitEncoder() = 0;
+
+private:
+    HgiImmediateCommandBuffer & operator=
+        (const HgiImmediateCommandBuffer&) = delete;
+    HgiImmediateCommandBuffer(const HgiImmediateCommandBuffer&) = delete;
 };
 
 
