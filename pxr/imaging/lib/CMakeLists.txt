@@ -6,6 +6,7 @@ set(DIRS
     pxOsd
     glf
     hgi
+    hgiGL
     hd
     hdSt
     hdx
