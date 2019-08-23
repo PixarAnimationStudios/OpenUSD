@@ -57,6 +57,13 @@ _CreateMyVaryingTokenAttr(UsdContrivedBase &self,
 }
         
 static UsdAttribute
+_CreateMyVaryingTokenArrayAttr(UsdContrivedBase &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateMyVaryingTokenArrayAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateMyUniformBoolAttr(UsdContrivedBase &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateMyUniformBoolAttr(
@@ -748,6 +755,13 @@ void wrapUsdContrivedBase()
              &This::GetMyVaryingTokenAttr)
         .def("CreateMyVaryingTokenAttr",
              &_CreateMyVaryingTokenAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetMyVaryingTokenArrayAttr",
+             &This::GetMyVaryingTokenArrayAttr)
+        .def("CreateMyVaryingTokenArrayAttr",
+             &_CreateMyVaryingTokenArrayAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         

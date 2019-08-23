@@ -300,16 +300,26 @@ class AttrInfo(PropInfo):
         else:
             self.usdType = "SdfValueTypeNames->%s" % (
                 valueTypeNameToStr[sdfProp.typeName])
+
+        # Format fallback string.
+        if isinstance(self.fallback, Vt.TokenArray):
+            fallbackStr = ('[' + ', '.join(
+                [x if x else '""' for x in self.fallback]) + ']')
+        elif self.fallback != None:
+            fallbackStr = str(self.fallback)
+        else:
+            fallbackStr = 'No Fallback'
         
         self.details = [('C++ Type', self.typeName.cppTypeName),
                         ('Usd Type', self.usdType),
                         ('Variability', self.variability),
-                        ('Fallback Value', 'No Fallback'
-                         if self.fallback is None else str(self.fallback))]
+                        ('Fallback Value', fallbackStr)]
         if self.allowedTokens:
+            tokenListStr = ('[' + ', '.join(
+                [x if x else '""' for x in self.allowedTokens]) + ']')
             self.details.append(('\\ref ' + \
                 _GetTokensPrefix(sdfProp.layer) + \
-                'Tokens "Allowed Values"', str(self.allowedTokens)))
+                'Tokens "Allowed Values"', tokenListStr))
 
 def _ExtractNames(sdfPrim, customData):
     usdPrimTypeName = sdfPrim.path.name
@@ -793,11 +803,14 @@ def GatherTokens(classes, libName, libTokens):
             # Add Allowed Tokens for this attribute to token set
             if attr.allowedTokens:
                 for val in attr.allowedTokens:
-                    tokenId = _CamelCase(val)
-                    desc = 'Possible value for %s::Get%sAttr()' % \
-                           (cls.cppClassName, _ProperCase(attr.name))
-                    cls.tokens.add(tokenId)
-                    _AddToken(tokenDict, tokenId, val, desc)
+                    # Empty string is a valid allowedTokens member,
+                    # but do not declare a named literal for it.
+                    if val != '':
+                        tokenId = _CamelCase(val)
+                        desc = 'Possible value for %s::Get%sAttr()' % \
+                               (cls.cppClassName, _ProperCase(attr.name))
+                        cls.tokens.add(tokenId)
+                        _AddToken(tokenDict, tokenId, val, desc)
 
         # Add tokens from relationships to the token set
         for rel in cls.rels.values():

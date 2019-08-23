@@ -101,6 +101,23 @@ UsdContrivedBase::CreateMyVaryingTokenAttr(VtValue const &defaultValue, bool wri
 }
 
 UsdAttribute
+UsdContrivedBase::GetMyVaryingTokenArrayAttr() const
+{
+    return GetPrim().GetAttribute(UsdContrivedTokens->myVaryingTokenArray);
+}
+
+UsdAttribute
+UsdContrivedBase::CreateMyVaryingTokenArrayAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdContrivedTokens->myVaryingTokenArray,
+                       SdfValueTypeNames->TokenArray,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdContrivedBase::GetMyUniformBoolAttr() const
 {
     return GetPrim().GetAttribute(UsdContrivedTokens->myUniformBool);
@@ -1716,6 +1733,7 @@ UsdContrivedBase::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         UsdContrivedTokens->myVaryingToken,
+        UsdContrivedTokens->myVaryingTokenArray,
         UsdContrivedTokens->myUniformBool,
         UsdContrivedTokens->myDouble,
         UsdContrivedTokens->bool,
