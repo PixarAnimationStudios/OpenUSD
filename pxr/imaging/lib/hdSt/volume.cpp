@@ -38,6 +38,8 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+#include "pxr/imaging/hf/diagnostic.h"
+
 #include "pxr/imaging/hio/glslfx.h"
 #include "pxr/imaging/glf/vdbTexture.h"
 #include "pxr/imaging/glf/contextCaps.h"
@@ -266,11 +268,8 @@ _ComputeSamplingTransform(const GfBBox3d &bbox)
 // HdMaterialParam's are consulted to figure out the names of the fields
 // to sample and the names of the associated sampling functions to generate.
 //
-// We actually have not implemented sampling from an OpenVDB file yet.
-// Instead dummy functions giving a non-constant value are generated
-// to enable some amount of testing.
 HdStShaderCodeSharedPtr
-HdStVolume::_ComputeMaterialShader(
+HdStVolume::_ComputeMaterialShaderAndBBox(
     HdSceneDelegate * const sceneDelegate,
     const HdStMaterial * const material,
     const HdStShaderCodeSharedPtr &volumeShader,
@@ -576,10 +575,11 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     // aligned with the local frame).
     // 
     // It will be computed by _ComputeMaterialShader from the bounding boxes
-    // of the fiels. But if there is no field, it fals back to the extends
+    // of the fields. But if there is no field, it falls back to the extents
     // provided by the scene delegate for the volume prim.
     //
-    GfBBox3d localVolumeBBox(_sharedData.bounds.GetRange());
+    const GfRange3d &extents = _sharedData.bounds.GetRange();
+    GfBBox3d localVolumeBBox(extents);
 
     // Compute the material shader by adding GLSL code such as
     // "HdGet_density(vec3 p)" for sampling the fields needed by the volume
@@ -589,11 +589,24 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     // GLSL functions such as "float scattering(vec3)" in the volume shader
     // to evaluate physical properties of a volume at the point p.
     drawItem->SetMaterialShader(
-        _ComputeMaterialShader(sceneDelegate,
-                               material,
-                               volumeShader,
-                               nameToFieldResource,
-                               &localVolumeBBox));
+        _ComputeMaterialShaderAndBBox(sceneDelegate,
+                                      material,
+                                      volumeShader,
+                                      nameToFieldResource,
+                                      &localVolumeBBox));
+
+    // Note that then extents on the volume are with respect to the volume's
+    // prim space but the localVolumeBBox might have an additional transform
+    // (from the field).
+    if (!(extents.IsEmpty() || extents.Contains(
+              localVolumeBBox.ComputeAlignedRange()))) {
+        HF_VALIDATION_WARN(
+            GetId(),
+            "Authored extents on volume prim should be updated since they do "
+            "not contain volume (more precisely, they do not contain the "
+            "bounding box computed from the fields associated with the "
+            "volume)");
+    }
 
     // Question: Should we transform localVolumeBBox to world space to update
     // update _sharedData.bounds if there was a field?

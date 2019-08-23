@@ -81,7 +81,7 @@ private:
         HdSceneDelegate *sceneDelegate);
 
     static HdStShaderCodeSharedPtr
-    _ComputeMaterialShader(
+    _ComputeMaterialShaderAndBBox(
         HdSceneDelegate * const sceneDelegate,
         const HdStMaterial * const material,
         const HdStShaderCodeSharedPtr &volumeShader,
