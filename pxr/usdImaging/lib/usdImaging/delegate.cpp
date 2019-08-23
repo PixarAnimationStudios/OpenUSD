@@ -2902,7 +2902,7 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
     }
 
     // Fallback to USD attributes.
-    return _GetUsdPrimAttribute(id, paramName);
+    return _GetUsdPrimAttribute(cachePath, paramName);
 }
 
 VtValue 
@@ -2933,7 +2933,7 @@ UsdImagingDelegate::GetCameraParamValue(SdfPath const &id,
         _UpdateSingleValue(cachePath, dirtyBit);
          if (!_valueCache.ExtractCameraParam(cachePath, paramName, &value)) {
             // Fallback to USD attributes.
-            value = _GetUsdPrimAttribute(id, paramName);
+            value = _GetUsdPrimAttribute(cachePath, paramName);
         }
     }
     return value;
