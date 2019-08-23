@@ -285,9 +285,33 @@ RmanArgsParserPlugin::_ParseChildElem(
         // Help text
         // -------------------
         if (EQUALS(helpStr, attrChild.name())) {
-            const char* helpText = attrChild.child_value();
+            // The help element's value might contain HTML, and the HTML should
+            // be included in the value of the help text. Getting the element's
+            // value will cut off anything after the first HTML tag, so instead
+            // capture the raw value of the element via "print". "print" has the
+            // downside that the <help> and </help> tags are included in the
+            // value, so those need to be manually removed. This is a bit of a
+            // sloppy solution, but getting the raw value of the element with
+            // the HTML intact seems to be quite difficult with pugixml. Note
+            // that the "format_no_escapes" option is given so that pugixml does
+            // not change, for example, ">" into "&gt;".
+            std::ostringstream helpStream;
+            attrChild.print(helpStream, /*indent=*/"\t",
+                pugi::format_default | pugi::format_no_escapes);
+            std::string helpText = TfStringTrim(helpStream.str());
 
-            attributes[TfToken(helpStr)] = helpText;
+            // Not using TfStringReplace() here -- which replaces all
+            // occurrences -- since it _is_ possible that someone decides to
+            // include a <help> tag in the help text itself
+            if (TfStringStartsWith(helpText, "<help>")) {
+                helpText = helpText.substr(6);
+            }
+
+            if (TfStringEndsWith(helpText, "</help>")) {
+                helpText = helpText.substr(0, helpText.size() - 7);
+            }
+
+            attributes[TfToken(helpStr)] = helpText.c_str();
         }
 
         // Hint dictionary
