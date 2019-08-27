@@ -605,7 +605,7 @@ _SkelAdapter::_SkelAdapter(const UsdSkelBakeSkinningParms& parms,
     if (parms.deformationFlags & UsdSkelBakeSkinningParms::DeformWithLBS) {
         if (const UsdSkelSkeleton& skel = skelQuery.GetSkeleton()) {
             const auto& animQuery = skelQuery.GetAnimQuery();
-            if ((animQuery&& !skelQuery.GetMapper().IsNull()) ||
+            if ((animQuery && !skelQuery.GetMapper().IsNull()) ||
                 skel.GetRestTransformsAttr().HasAuthoredValue()) {
 
                 // XXX: Activate computations, but tag them as not required;
@@ -614,9 +614,13 @@ _SkelAdapter::_SkelAdapter(const UsdSkelBakeSkinningParms& parms,
                 _skinningInvTransposeXformsTask.SetActive(
                     true, /*required*/ false);
 
-                if (animQuery.JointTransformsMightBeTimeVarying()) {
+                if (animQuery&& animQuery.JointTransformsMightBeTimeVarying()) {
                     _skinningXformsTask.SetMightBeTimeVarying(true);
                     _skinningInvTransposeXformsTask.SetMightBeTimeVarying(true);
+                }
+                else {
+                    _skinningXformsTask.SetMightBeTimeVarying(false);
+                    _skinningInvTransposeXformsTask.SetMightBeTimeVarying(false);
                 }
 
                 // Also active computation for skel's local to world transform.
