@@ -32,6 +32,7 @@
 #include "pxr/imaging/hdSt/rprimUtils.h"
 #include "pxr/imaging/hdSt/surfaceShader.h"
 #include "pxr/imaging/hdSt/tokens.h"
+#include "pxr/imaging/hdSt/volumeShader.h"
 #include "pxr/imaging/hdSt/volumeShaderKey.h"
 #include "pxr/imaging/hdSt/textureResourceHandle.h"
 
@@ -194,7 +195,7 @@ HdStVolume::_ComputeNameToFieldResource(
 
 namespace {
 
-// Fallback volume shader created from source in shaders/fallbackVolume.glslfx
+// Fallback volume shader created from shaders/fallbackVolume.glslfx
 HdStShaderCodeSharedPtr
 _MakeFallbackVolumeShader()
 {
@@ -305,8 +306,9 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
             sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
     // Generate new shader from volume shader
-    HdStSurfaceShaderSharedPtr const result =
-        boost::make_shared<HdStSurfaceShader>();
+    HdSt_VolumeShaderSharedPtr const result =
+        boost::make_shared<HdSt_VolumeShader>(
+            sceneDelegate->GetRenderIndex().GetRenderDelegate());
 
     // The GLSL code for the new shader
     std::stringstream glsl;

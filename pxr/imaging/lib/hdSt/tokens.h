@@ -56,7 +56,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (color)
 
 #define HDST_RENDER_SETTINGS_TOKENS             \
-    (enableTinyPrimCulling)
+    (enableTinyPrimCulling)                     \
+    (volumeRaymarchingStepSize)                 \
+    (volumeRaymarchingStepSizeLighting)
 
 #define HDST_MATERIAL_TAG_TOKENS                \
     (volume)

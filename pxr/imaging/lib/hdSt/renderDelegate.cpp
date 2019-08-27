@@ -129,10 +129,21 @@ HdStRenderDelegate::_Initialize()
     }
 
     // Initialize the settings and settings descriptors.
-    _settingDescriptors.resize(1);
-    _settingDescriptors[0] = { "Enable Tiny Prim Culling",
-        HdStRenderSettingsTokens->enableTinyPrimCulling,
-        VtValue(bool(TfGetEnvSetting(HD_ENABLE_GPU_TINY_PRIM_CULLING))) };
+    _settingDescriptors = {
+        HdRenderSettingDescriptor{
+            "Enable Tiny Prim Culling",
+            HdStRenderSettingsTokens->enableTinyPrimCulling,
+            VtValue(bool(TfGetEnvSetting(HD_ENABLE_GPU_TINY_PRIM_CULLING))) },
+        HdRenderSettingDescriptor{
+            "Step size when raymarching volume",
+            HdStRenderSettingsTokens->volumeRaymarchingStepSize,
+            VtValue(0.05f) },
+        HdRenderSettingDescriptor{
+            "Step size when raymarching volume for lighting computation",
+            HdStRenderSettingsTokens->volumeRaymarchingStepSizeLighting,
+            VtValue(0.05f) }
+    };
+
     _PopulateDefaultSettings(_settingDescriptors);
 }
 

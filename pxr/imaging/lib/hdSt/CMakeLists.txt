@@ -118,6 +118,7 @@ pxr_library(hdSt
         triangulate
         unitTestDelegate
         unitTestHelper
+        volumeShader
         volumeShaderKey
 
     RESOURCE_FILES

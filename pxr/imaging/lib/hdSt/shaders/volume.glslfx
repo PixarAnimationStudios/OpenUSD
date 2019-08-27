@@ -65,8 +65,6 @@ void main(void)
 // integrating the pixel value and for the raymarch doing
 // the lighting computation.
 
-// Ray-marching step size in eye space.
-const float stepSize = 0.05;
 const int maxNumSteps = 10000;
 
 in VertexData
@@ -123,6 +121,7 @@ lightingComputation(vec3 rayPointEye, vec3 rayDirectionEye)
 float
 accumulatedTransmittance(vec3 rayStartEye, vec3 rayDirectionEye)
 {
+    const float stepSize = HdGet_stepSizeLighting();
     int i = 1;
     
     float totalExtinction = 0.0;
@@ -205,6 +204,7 @@ struct VolumeContribution
 VolumeContribution
 volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye)
 {
+    const float stepSize = HdGet_stepSize();
     int i = 1;
 
     VolumeContribution result;
