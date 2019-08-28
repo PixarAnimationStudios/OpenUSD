@@ -66,7 +66,7 @@ class UsdDracoEncoder(object):
         fileName = dracoDir + self.getFileName(mesh) + '.drc'
 
         # Compress mesh and write to file.
-        self.encodeMesh(mesh, fileName)
+        self.encodeMesh(stage, mesh, fileName)
         if self.options.verbose:
           print '  saved ' + fileName
 
@@ -81,7 +81,7 @@ class UsdDracoEncoder(object):
     # Invert option value if requested.
     return 1 - option if invert else option
 
-  def encodeMesh(self, mesh, fileName):
+  def encodeMesh(self, stage, mesh, fileName):
     """Compresses mesh to file and strips geometry properties from USD mesh."""
 
     # Prepare options for Draco encoder.
@@ -103,17 +103,59 @@ class UsdDracoEncoder(object):
 
     # Strip encoded geometry properties from the USD mesh.
     for name in self.ENCODED_PROPERTIES:
-      mesh.GetPrim().RemoveProperty(name)
+      self.removePropertyOrExit(stage, mesh, name)
 
     # Strip encoded geometry primvars from the USD mesh.
     for primvar in UsdGeom.PrimvarsAPI(mesh.GetPrim()).GetPrimvars():
       if UsdDraco._PrimvarSupported(primvar):
         name = primvar.GetName()
-        mesh.GetPrim().RemoveProperty(name)
-        mesh.GetPrim().RemoveProperty(name + ':indices')
+        self.removePropertyOrExit(stage, mesh, name)
+        self.removePropertyOrExit(stage, mesh, name + ':indices')
 
     # Add Draco file as a reference to the USD mesh.
     mesh.GetPrim().GetReferences().AddReference(fileName)
+
+  def removePropertyOrExit(self, stage, mesh, name):
+    """Removes mesh property if possible or exits with error."""
+
+    # Do nothing if mesh has no property with a given name.
+    if not mesh.GetPrim().HasProperty(name):
+      return
+
+    # Get a list of property specs that provide opinions for this property.
+    prop = mesh.GetPrim().GetProperty(name)
+    specs = prop.GetPropertyStack(Usd.TimeCode.Default())
+
+    # Do nothing if property has no opinions.
+    if len(specs) == 0:
+      return
+
+    # Exit with error (or optionally warn the user) if property has multiple
+    # opinions or a single opinion that will not be cleared.
+    if len(specs) > 1:
+      self.warnOrExit(prop, True)
+    else:
+      editTarget = stage.GetEditTarget()
+      if specs[0] != editTarget.GetPropertySpecForScenePath(prop.GetPath()):
+        self.warnOrExit(prop, False)
+
+    # Clear property.
+    mesh.GetPrim().RemoveProperty(name)
+
+  def warnOrExit(self, prop, plural):
+    """Depending on a flag, prints a warning or exits with error."""
+
+    # Prepare message for the user.
+    level = 'WARNING' if self.options.ignore_opinion_errors else 'ERROR'
+    opinion = 'Opinions' if plural else 'Opinion'
+    message = (level + ': Results may be invalid. ' + opinion +
+               ' will not be cleared for property: ' + str(prop.GetPath()))
+
+    # Print message and possibly exit.
+    if self.options.ignore_opinion_errors:
+      print message
+    else:
+      sys.exit(message)
 
   def getFileName(self, mesh):
     """Returns a uique file name without extension for a given mesh."""
@@ -153,6 +195,8 @@ def ParseOptions():
                       metavar='0|1')
   parser.add_argument('--discard_subdivision', type=int, choices={0, 1},
                       metavar='0|1', help=argparse.SUPPRESS)
+  parser.add_argument('--ignore_opinion_errors', action='store_true',
+                      help='proceed when opinions cannot be cleared')
 
   # Parse command-line options.
   options = parser.parse_args()
@@ -178,6 +222,8 @@ def ParseOptions():
     if options.discard_subdivision is not None:
       print '  discard subdivision : ' + \
           ('yes' if options.discard_subdivision == 1 else 'no')
+    if options.ignore_opinion_errors:
+      print '  ignore opinion errors'
   return options
 
 

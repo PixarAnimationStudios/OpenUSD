@@ -166,6 +166,23 @@ if (PXR_BUILD_DRACO_PLUGIN)
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
     )
+
+    # Checks that USD diff tool can load USDZ file that includes Draco files.
+    # Note that the files are flattened in order to pull in the content of
+    # referred Draco files and not just their references.
+    pxr_install_test_dir(
+	SRC testenv/testDiffToolDracoFormat
+        DEST testUsdDiffWithDracoUsdz
+    )
+
+    pxr_register_test(testUsdDiffWithDracoUsdz
+    PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff --noeffect --flatten \
+	ComplexSetCompressed.usdz ComplexSetCompressed.usdz"
+        EXPECTED_RETURN_CODE 0
+        PRE_PATH
+            ${CMAKE_INSTALL_PREFIX}/bin
+    )
 else()
     message(STATUS "Skipping Draco-based usddiff tests because PXR_BUILD_DRACO_PLUGIN=OFF")
 endif()

@@ -77,10 +77,11 @@ protected:
     UsdDracoFileFormat();
 
 private:
-    bool _ReadFromStream(SdfLayer *layer,
-                         const std::string &str,
-                         bool metadataOnly,
-                         std::string *outErr) const;
+    bool _ReadFromChars(SdfLayer *layer,
+                        const char *str,
+                        size_t size,
+                        bool metadataOnly,
+                        std::string *outErr) const;
 
     virtual bool _IsStreamingLayer(const SdfLayer &layer) const {
         return false;

@@ -53,6 +53,53 @@ pxr_register_test(testUsdCompressExitCodeBadArgumentName
         ${CMAKE_INSTALL_PREFIX}/bin
 )
 
+# Checks that compression fails when property has one custom opinion.
+pxr_install_test_dir(
+    SRC testenv/testPropertyOpinions
+    DEST testUsdCompressPropertyOpinionsOneCustom
+)
+
+pxr_register_test(testUsdCompressPropertyOpinionsOneCustom
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress CubeOneCustomOpinion.usda \
+            -o out.usda"
+    EXPECTED_RETURN_CODE 1
+    PRE_PATH
+        ${CMAKE_INSTALL_PREFIX}/bin
+)
+
+# Checks that compression fails when property has multiple opinions.
+pxr_install_test_dir(
+    SRC testenv/testPropertyOpinions
+    DEST testUsdCompressPropertyOpinionsMultiple
+)
+
+pxr_register_test(testUsdCompressPropertyOpinionsMultiple
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress CubeMultipleOpinions.usda \
+            -o out.usda"
+    EXPECTED_RETURN_CODE 1
+    PRE_PATH
+        ${CMAKE_INSTALL_PREFIX}/bin
+)
+
+# Checks that compression finishes with flag to ignore opinion errors.
+pxr_install_test_dir(
+    SRC testenv/testPropertyOpinions
+    DEST testUsdCompressPropertyOpinionsIgnoreErrors
+)
+
+pxr_register_test(testUsdCompressPropertyOpinionsIgnoreErrors
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcompress CubeMultipleOpinions.usda \
+    -o CubeMultipleOpinionsCompressed.usda --ignore_opinion_errors"
+    EXPECTED_RETURN_CODE 0
+    DIFF_COMPARE CubeMultipleOpinionsCompressed.usda
+    DIFF_COMPARE CubeMultipleOpinionsCompressed.usda.draco/Cube_Geom_Cube.drc
+    PRE_PATH
+        ${CMAKE_INSTALL_PREFIX}/bin
+)
+
 # Checks that a complex set scene can be successfully compressed.
 pxr_install_test_dir(
     SRC testenv/testComplexSet
