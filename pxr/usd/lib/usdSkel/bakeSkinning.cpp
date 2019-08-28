@@ -601,7 +601,7 @@ _SkelAdapter::_SkelAdapter(const UsdSkelBakeSkinningParms& parms,
         skelQuery.GetPrim().GetPath().GetText());
 
     // Activate skinning transform computations if we have a mappable anim,
-    // or if restTransforms are auathored as a fallback.
+    // or if restTransforms are authored as a fallback.
     if (parms.deformationFlags & UsdSkelBakeSkinningParms::DeformWithLBS) {
         if (const UsdSkelSkeleton& skel = skelQuery.GetSkeleton()) {
             const auto& animQuery = skelQuery.GetAnimQuery();
@@ -614,7 +614,9 @@ _SkelAdapter::_SkelAdapter(const UsdSkelBakeSkinningParms& parms,
                 _skinningInvTransposeXformsTask.SetActive(
                     true, /*required*/ false);
 
-                if (animQuery&& animQuery.JointTransformsMightBeTimeVarying()) {
+                // The animQuery object may not be valid if the skeleton has a
+                // rest transform attribute.
+                if (animQuery && animQuery.JointTransformsMightBeTimeVarying()) {
                     _skinningXformsTask.SetMightBeTimeVarying(true);
                     _skinningInvTransposeXformsTask.SetMightBeTimeVarying(true);
                 }
