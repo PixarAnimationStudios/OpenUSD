@@ -28,6 +28,8 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/registryManager.h"
+#include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/usd/usdaFileFormat.h"
 #include "pxr/usd/sdf/layer.h"
 
@@ -65,12 +67,12 @@ bool UsdDracoFileFormat::CanRead(const std::string &filePath) const {
     return true;
 }
 
-bool UsdDracoFileFormat::_ReadFromStream(
-        SdfLayer *layer, const std::string &str,
+bool UsdDracoFileFormat::_ReadFromChars(
+        SdfLayer *layer, const char *str, size_t size,
         bool metadataOnly, std::string *outErr) const {
     // Create Draco decoder buffer from the given string.
     draco::DecoderBuffer buffer;
-    buffer.Init(str.c_str(), str.size());
+    buffer.Init(str, size);
 
     // Determine whether Draco data is a mesh or a point cloud.
     const draco::StatusOr<draco::EncodedGeometryType> maybeGeometryType =
@@ -117,18 +119,16 @@ bool UsdDracoFileFormat::_ReadFromStream(
 bool UsdDracoFileFormat::Read(
         SdfLayer *layer, const std::string &resolvedPath,
         bool metadataOnly) const {
-    // Open the file with Draco data.
-    std::ifstream fin(resolvedPath.c_str(), std::ios::binary);
-    if (!fin.is_open()) {
+    // Open an asset with Draco data.
+    std::shared_ptr <ArAsset> asset = ArGetResolver().OpenAsset(resolvedPath);
+    if (!asset) {
         TF_RUNTIME_ERROR("Failed to open file \"%s\"", resolvedPath.c_str());
         return false;
     }
 
     std::string error;
-    std::ostringstream oss;
-    oss << fin.rdbuf();
-    const std::string str = oss.str();
-    if (!_ReadFromStream(layer, str, metadataOnly, &error)) {
+    if (!_ReadFromChars(layer, asset->GetBuffer().get(), asset->GetSize(),
+                        metadataOnly, &error)) {
         TF_RUNTIME_ERROR("Failed to read from Draco file \"%s\": %s",
             resolvedPath.c_str(), error.c_str());
         return false;
@@ -139,7 +139,7 @@ bool UsdDracoFileFormat::Read(
 bool UsdDracoFileFormat::ReadFromString(SdfLayer *layer,
                                         const std::string &str) const {
     std::string error;
-    if (!_ReadFromStream(layer, str, false, &error)) {
+    if (!_ReadFromChars(layer, str.c_str(), str.size(), false, &error)) {
         TF_RUNTIME_ERROR("Failed to read data from Draco string: %s",
             error.c_str());
         return false;
