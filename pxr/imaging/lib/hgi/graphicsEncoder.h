@@ -25,6 +25,7 @@
 #define HGI_GRAPHICS_ENCODER_H
 
 #include "pxr/pxr.h"
+#include "pxr/base/gf/vec4i.h"
 #include "pxr/imaging/hgi/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -50,6 +51,10 @@ public:
     /// Finish recording of commands. No further commands can be recorded.
     HGI_API
     virtual void EndEncoding() = 0;
+
+    /// Set viewport [left, BOTTOM, width, height] - OpenGL coords
+    HGI_API
+    virtual void SetViewport(GfVec4i const& vp) = 0;
 
     /// Push a debug marker onto the encoder.
     HGI_API

@@ -39,6 +39,21 @@ struct HgiGLDescriptorCacheItem {
     uint32_t framebuffer = 0;
 }; 
 
+std::ostream& operator<<(
+    std::ostream& out,
+    const HgiGLImmediateCommandBuffer& cmdBuf)
+{
+    out << "HgiGLImmediateCommandBuffer: {"
+        << "descriptor cache: { ";
+
+    for (HgiGLDescriptorCacheItem const * d : cmdBuf._descriptorCache) {
+        out << d->descriptor;
+    }
+
+    out << "}}";
+    return out;
+}
+
 
 static HgiGLDescriptorCacheItem*
 _CreateDescriptorCacheItem(const HgiGraphicsEncoderDesc& desc)
@@ -167,9 +182,8 @@ _AcquireDescriptorCacheItem(
         // use a vector instead of a linked list LRU.
         const size_t descriptorLRUsize = 32;
         if (descriptorCache.size() == descriptorLRUsize) {
+            _DestroyDescriptorCacheItem(descriptorCache.front());
             descriptorCache.erase(descriptorCache.begin());
-            _DestroyDescriptorCacheItem(descriptorCache.back());
-            descriptorCache.pop_back();
         }
     }
 
@@ -237,7 +251,7 @@ HgiGLImmediateCommandBuffer::CreateGraphicsEncoder(
 
     _BindFramebuffer(dci);
 
-    HgiGLGraphicsEncoder* encoder(new HgiGLGraphicsEncoder(this));
+    HgiGLGraphicsEncoder* encoder(new HgiGLGraphicsEncoder(desc));
 
     return HgiGraphicsEncoderUniquePtr(encoder);
 }

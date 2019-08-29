@@ -51,7 +51,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///   The value to clear the attachment with (r,g,b,a) or (depth,stencil,x,x)</li>
 ///
 struct HgiAttachmentDesc {
-    HgiTextureHandle texture = nullptr;
+    HgiAttachmentDesc() 
+    : texture(nullptr)
+    , sampleCount(HgiSampleCount1)
+    , loadOp(HgiAttachmentLoadOpLoad)
+    , storeOp(HgiAttachmentStoreOpStore)
+    , clearValue(0)
+    {}
+
+    HgiTextureHandle texture;
     HgiSampleCount sampleCount;
     HgiAttachmentLoadOp loadOp;
     HgiAttachmentStoreOp storeOp;
@@ -70,6 +78,11 @@ bool operator!=(
     const HgiAttachmentDesc& lhs,
     const HgiAttachmentDesc& rhs);
 
+HGI_API
+std::ostream& operator<<(
+    std::ostream& out,
+    const HgiAttachmentDesc& attachment);
+
 
 /// \struct HgiGraphicsEncoderDesc
 ///
@@ -80,15 +93,28 @@ bool operator!=(
 ///   Describes each of the color attachments.</li>
 /// <li>depthAttachment:
 ///   Describes the depth attachment (optional)</li>
+/// <li>width:
+///   Render target width (in pixels)</li>
+/// <li>height:
+///   Render target height (in pixels)</li>
 /// </ul>
 ///
 struct HgiGraphicsEncoderDesc {
+    HgiGraphicsEncoderDesc()
+    : colorAttachments()
+    , depthAttachment()
+    , width(0)
+    , height(0)
+    {}
+
     inline bool HasAttachments() const {
         return !colorAttachments.empty() || depthAttachment.texture;
     }
 
     HgiAttachmentDescVector colorAttachments;
     HgiAttachmentDesc depthAttachment;
+    uint32_t width;
+    uint32_t height;
 };
 
 HGI_API
@@ -100,6 +126,11 @@ HGI_API
 bool operator!=(
     const HgiGraphicsEncoderDesc& lhs,
     const HgiGraphicsEncoderDesc& rhs);
+
+HGI_API
+std::ostream& operator<<(
+    std::ostream& out,
+    const HgiGraphicsEncoderDesc& encoder);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

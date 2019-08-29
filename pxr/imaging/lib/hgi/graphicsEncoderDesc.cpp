@@ -43,12 +43,28 @@ bool operator!=(
     return !(lhs == rhs);
 }
 
+std::ostream& operator<<(
+    std::ostream& out,
+    const HgiAttachmentDesc& attachment)
+{
+    out << "HgiAttachmentDesc: {"
+        << "has_texture: " << (attachment.texture!=nullptr) << ", "
+        << "clearValue: " << attachment.clearValue << ", "
+        << "loadOp: " << attachment.loadOp << ", "
+        << "sampleCount: " << attachment.sampleCount << ", "
+        << "storeOp: " << attachment.storeOp <<
+    "}";
+    return out;
+}
+
 bool operator==(
     const HgiGraphicsEncoderDesc& lhs,
     const HgiGraphicsEncoderDesc& rhs) 
 {
-    return  lhs.colorAttachments == rhs.colorAttachments &&
-            lhs.depthAttachment == rhs.depthAttachment;
+    return  lhs.width == rhs.width &&
+            lhs.height == rhs.height &&
+            lhs.depthAttachment == rhs.depthAttachment &&
+            lhs.colorAttachments == rhs.colorAttachments;
 }
 
 bool operator!=(
@@ -56,6 +72,24 @@ bool operator!=(
     const HgiGraphicsEncoderDesc& rhs)
 {
     return !(lhs == rhs);
+}
+
+std::ostream& operator<<(
+    std::ostream& out,
+    const HgiGraphicsEncoderDesc& encoder)
+{
+    out << "HgiGraphicsEncoderDesc: {";
+    out << "width: " << encoder.width << ", ";
+    out << "height: " << encoder.height << ", ";
+
+    for (HgiAttachmentDesc const& a : encoder.colorAttachments) {
+        out << a;
+    }
+
+    out << encoder.depthAttachment;
+
+    out << "}";
+    return out;
 }
 
 

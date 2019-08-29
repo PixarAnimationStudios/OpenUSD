@@ -32,6 +32,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+struct HgiGraphicsEncoderDesc;
 class HgiGLImmediateCommandBuffer;
 
 
@@ -43,13 +44,16 @@ class HgiGLGraphicsEncoder final : public HgiGraphicsEncoder
 {
 public:
     HGIGL_API
-    HgiGLGraphicsEncoder(HgiGLImmediateCommandBuffer* cmdBuf);
+    HgiGLGraphicsEncoder(HgiGraphicsEncoderDesc const& desc);
 
     HGIGL_API
     virtual ~HgiGLGraphicsEncoder();
 
     HGIGL_API
     void EndEncoding() override;
+
+    HGIGL_API
+    void SetViewport(GfVec4i const& vp) override;
 
     HGIGL_API
     void PushDebugGroup(const char* label) override;
@@ -61,8 +65,6 @@ private:
     HgiGLGraphicsEncoder() = delete;
     HgiGLGraphicsEncoder & operator=(const HgiGLGraphicsEncoder&) = delete;
     HgiGLGraphicsEncoder(const HgiGLGraphicsEncoder&) = delete;
-
-    HgiGLImmediateCommandBuffer* _commandBuffer;
 
     // Encoder is used only one frame so storing multi-frame state on encoder
     // will not survive. Store onto HgiGLImmediateCommandBuffer instead.

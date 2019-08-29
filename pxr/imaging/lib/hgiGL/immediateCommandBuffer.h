@@ -58,9 +58,12 @@ private:
         (const HgiGLImmediateCommandBuffer&) = delete;
     HgiGLImmediateCommandBuffer(const HgiGLImmediateCommandBuffer&) = delete;
 
+    friend std::ostream& operator<<(
+        std::ostream& out,
+        const HgiGLImmediateCommandBuffer& cmdBuf);
+
     HgiGLDescriptorCacheVec _descriptorCache;
 };
-
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

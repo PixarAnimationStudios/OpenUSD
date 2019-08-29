@@ -22,17 +22,17 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include <GL/glew.h>
+#include "pxr/imaging/hgi/graphicsEncoderDesc.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
 #include "pxr/imaging/hgiGL/graphicsEncoder.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 HgiGLGraphicsEncoder::HgiGLGraphicsEncoder(
-    HgiGLImmediateCommandBuffer* cmdBuf)
+    HgiGraphicsEncoderDesc const& desc)
     : HgiGraphicsEncoder()
-    , _commandBuffer(cmdBuf)
 {
-
+    TF_VERIFY(desc.width>0 && desc.height>0);
 }
 
 HgiGLGraphicsEncoder::~HgiGLGraphicsEncoder()
@@ -42,6 +42,16 @@ HgiGLGraphicsEncoder::~HgiGLGraphicsEncoder()
 void
 HgiGLGraphicsEncoder::EndEncoding()
 {
+}
+
+void
+HgiGLGraphicsEncoder::SetViewport(GfVec4i const& vp)
+{
+    int x = vp[0];
+    int y = vp[1];
+    int w = vp[2];
+    int h = vp[3];
+    glViewport(x, y, w, h);
 }
 
 void

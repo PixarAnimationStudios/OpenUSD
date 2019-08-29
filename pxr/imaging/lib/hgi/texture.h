@@ -79,6 +79,13 @@ typedef HgiTexture* HgiTextureHandle;
 /// </ul>
 ///
 struct HgiTextureDesc {
+    HgiTextureDesc()
+    : usage(HgiTextureUsageBitsColorTarget)
+    , format(HgiFormatInvalid)
+    , dimensions(0)
+    , sampleCount(HgiSampleCount1)
+    {}
+
     HgiTextureUsage usage;
     HgiFormat format;
     GfVec3i dimensions;

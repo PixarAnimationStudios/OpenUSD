@@ -73,6 +73,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// </ul>
 ///
 struct HgiCopyResourceOp {
+    HgiCopyResourceOp()
+    : format(HgiFormatInvalid)
+    , usage(HgiTextureUsageBitsColorTarget)
+    , dimensions(0)
+    , sourceByteOffset(0)
+    , cpuSourceBuffer(nullptr)
+    , destinationByteOffset(0)
+    , destinationBufferByteSize(0)
+    , cpuDestinationBuffer(nullptr)
+    {}
+
     // Source
     HgiFormat format;
     HgiTextureUsageBits usage;
@@ -82,7 +93,7 @@ struct HgiCopyResourceOp {
     union {
         // XXX HgiBufferHandle gpuSourceBuffer;
         HgiTextureHandle gpuSourceTexture;
-        void* cpuSourceBuffer = nullptr;
+        void* cpuSourceBuffer;
     };
 
     // Destination
@@ -92,7 +103,7 @@ struct HgiCopyResourceOp {
     union {
         // XXX HgiBufferHandle gpuDistinationBuffer;
         HgiTextureHandle gpuDestinationTexture;
-        void* cpuDestinationBuffer = nullptr;
+        void* cpuDestinationBuffer;
     };
 };
 
@@ -116,6 +127,14 @@ struct HgiCopyResourceOp {
 /// </ul>
 ///
 struct HgiResolveImageOp {
+    HgiResolveImageOp()
+    : usage(HgiTextureUsageBitsColorTarget)
+    , sourceRegion(0)
+    , source(nullptr)
+    , destinationRegion(0)
+    , destination(nullptr)
+    {}
+
     HgiTextureUsageBits usage;
     GfVec4i sourceRegion;
     HgiTextureHandle source;
