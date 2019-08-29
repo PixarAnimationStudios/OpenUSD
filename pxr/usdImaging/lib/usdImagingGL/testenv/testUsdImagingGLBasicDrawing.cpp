@@ -119,6 +119,11 @@ My_TestGLDrawing::InitTest()
                     excludedPaths));
     }
 
+    for (const auto &renderSetting : GetRenderSettings()) {
+        _engine->SetRendererSetting(TfToken(renderSetting.first),
+                                    renderSetting.second);
+    }
+
     std::cout << glGetString(GL_VENDOR) << "\n";
     std::cout << glGetString(GL_RENDERER) << "\n";
     std::cout << glGetString(GL_VERSION) << "\n";

@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec4d.h"
+#include "pxr/base/vt/dictionary.h"
 
 #include "pxr/base/tf/declarePtrs.h"
 
@@ -67,6 +68,7 @@ public:
     std::vector<double> const& GetTimes() const { return _times; }
     GfVec4f const & GetClearColor() const { return _clearColor; }
     GfVec3f const & GetTranslate() const { return _translate; }
+    VtDictionary const &GetRenderSettings() const { return _renderSettings; }
 
     void RunTest(int argc, char *argv[]);
 
@@ -123,6 +125,7 @@ private:
     bool _cullBackfaces;
     GfVec4f _clearColor;
     GfVec3f _translate;
+    VtDictionary _renderSettings;
 };
 
 
