@@ -243,16 +243,18 @@ template<typename T>                                                \
 VtArray<bool>                                                       \
 funcname(T const &scalar, VtArray<T> const &vec) {                  \
     VtArray<bool> ret(vec.size());                                  \
-    for (size_t i = 0, n = vec.size(); i != n; ++i)                 \
+    for (size_t i = 0, n = vec.size(); i != n; ++i) {               \
         ret[i] = (scalar op vec[i]);                                \
+    }                                                               \
     return ret;                                                     \
 }                                                                   \
 template<typename T>                                                \
 VtArray<bool>                                                       \
 funcname(VtArray<T> const &vec, T const &scalar) {                  \
     VtArray<bool> ret(vec.size());                                  \
-    for (size_t i = 0, n = vec.size(); i != n; ++i)                 \
+    for (size_t i = 0, n = vec.size(); i != n; ++i) {               \
         ret[i] = (vec[i] op scalar);                                \
+    }                                                               \
     return ret;                                                     \
 }                                                                   \
 template<typename T>                                                \
