@@ -13,7 +13,7 @@ about which are required and which are optional for the various subsystems.
 Our test machines have the following software versions installed
 
 | Software      | Linux        | macOS        | Windows      |
-| ============= | ============ | ============ | ============ |
+| ------------- | ------------ | ------------ | ------------ |
 | C++ Compiler  | gcc 4.8.5    | AppleClang 10.0.0 | MSVC 14.0 (Visual Studio 2015) |
 | CMake         | 2.8.11, 3.6.3 | 3.4.0, 3.9.0  | 3.7.0-rc1    |
 | Python        | 2.7.5        | 2.7.5,2.71.0 | 2.7.5,2.7.12 |
@@ -47,7 +47,7 @@ Our test machines have the following software versions installed
 These other versions have been known to work as well:
 
 | Software      | Linux        | macOS        | Windows      |
-| ============= | ============ | ============ | ============ |
+| ------------- | ------------ | ------------ | ------------ |
 | C++ Compiler  |              |              | MSVC 15.0 (Visual Studio 2017) |
 | Boost         |              |              | 1.65.1 (VS 2017) |
 | Alembic       | 1.5.8, 1.7.9 |              |              |
