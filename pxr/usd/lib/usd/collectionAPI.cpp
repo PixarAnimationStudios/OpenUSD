@@ -949,8 +949,15 @@ UsdCollectionAPI::MembershipQuery::IsPathIncluded(
     const SdfPath &path,
     TfToken *expansionRule) const
 {
+    // Coding Error if one passes in a relative path to IsPathIncluded
+    // Passing one causes a infinite loop because of how `GetParentPath` works.
+    if (!path.IsAbsolutePath()) {
+        TF_CODING_ERROR("Relative paths are not allowed");
+        return false;
+    }
+
     // Only prims and properties can belong to a collection.
-    if (!path.IsPrimPath() && !path.IsPropertyPath()) 
+    if (!path.IsPrimPath() && !path.IsPropertyPath())
         return false;
 
     // Have separate code paths for prim and property paths as we'd like this 
@@ -1007,8 +1014,14 @@ UsdCollectionAPI::MembershipQuery::IsPathIncluded(
     const TfToken &parentExpansionRule,
     TfToken *expansionRule) const
 {
+    // Coding Error if one passes in a relative path to IsPathIncluded
+    if (!path.IsAbsolutePath()) {
+        TF_CODING_ERROR("Relative paths are not allowed");
+        return false;
+    }
+
     // Only prims and properties can belong to a collection.
-    if (!path.IsPrimPath() && !path.IsPropertyPath()) 
+    if (!path.IsPrimPath() && !path.IsPropertyPath())
         return false;
 
     // Check if there's a direct entry in the path-expansionRule map.
