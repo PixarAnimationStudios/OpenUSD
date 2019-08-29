@@ -1248,15 +1248,29 @@ function(_pxr_library NAME)
         PREFIX
             ${PXR_PREFIX}
     )
-    target_include_directories(${NAME}
-        PRIVATE
-            "${CMAKE_BINARY_DIR}/include"
-            "${CMAKE_BINARY_DIR}/${PXR_INSTALL_SUBDIR}/include"
-        PUBLIC
-            ${args_INCLUDE_DIRS}
-        INTERFACE
-            $<INSTALL_INTERFACE:${headerInstallDir}>
-    )
+
+    # XXX: Versions of CMake 2.8.11 and earlier complain about
+    # INTERFACE_INCLUDE_DIRECTORIES containing a relative path if we include
+    # the INTERFACE directory here, so only do so for more recent versions.
+    if(${CMAKE_VERSION} VERSION_GREATER 2.8.11.2)
+        target_include_directories(${NAME}
+            PRIVATE
+                "${CMAKE_BINARY_DIR}/include"
+                "${CMAKE_BINARY_DIR}/${PXR_INSTALL_SUBDIR}/include"
+            PUBLIC
+                ${args_INCLUDE_DIRS}
+            INTERFACE
+                $<INSTALL_INTERFACE:${headerInstallDir}>
+        )
+    else()
+        target_include_directories(${NAME}
+            PRIVATE
+                "${CMAKE_BINARY_DIR}/include"
+                "${CMAKE_BINARY_DIR}/${PXR_INSTALL_SUBDIR}/include"
+            PUBLIC
+                ${args_INCLUDE_DIRS}
+        )
+    endif()
 
     # XXX -- May want some plugins to be baked into monolithic.
     _pxr_target_link_libraries(${NAME} ${args_LIBRARIES})
