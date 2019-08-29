@@ -89,7 +89,7 @@ ivec2 GetPixelCoords(vec2 fragCoords) {
 
     // y axis is flipped between texture and pixel coordinates
     fragCoords.y = 1.0f - fragCoords.y;
-        
+
     vec2 outCoords = fragCoords * outDims;
     outCoords.y = outCoords.y + 0.5f;
     return ivec2(ceil(outCoords));
@@ -192,7 +192,7 @@ ivec2 GetPixelCoords(vec2 fragCoords) {
 
     vec2 outCoords = fragCoords * outDims;
     // for some reason needed this to eliminate lines in the final texture
-    outCoords.y += 0.5f;    
+    outCoords.y += 0.5f;
     return ivec2(ceil(outCoords));
 }
 float GetInTextureResolution() {
@@ -368,6 +368,8 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
 
 // using the Split-Sum approach to integrate the BRDF
 vec2 IntegrateBRDF(float NdotV, float roughness) {
+    // make sure NdotV doesn't go exactly to 0 to avoid NAN
+    NdotV = max(NdotV, 0.001);
     vec3 V;
     V.x = sqrt(1.0 - NdotV*NdotV);
     V.y = 0.0;

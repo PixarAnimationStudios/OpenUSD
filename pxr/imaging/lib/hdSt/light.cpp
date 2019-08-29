@@ -281,7 +281,7 @@ HdStLight::Sync(HdSceneDelegate *sceneDelegate,
         else if (_lightType == HdPrimTypeTokens->domeLight) {
             _params[HdLightTokens->params] = 
                 _PrepareDomeLight(id, sceneDelegate);
-        }        
+        }
         // If it is an area light we will extract the parameters and convert
         // them to a gl friendly representation. 
         else {

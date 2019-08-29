@@ -136,11 +136,10 @@ HdxSimpleLightingShader::BindResources(HdSt_ResourceBinder const &binder,
                 int samplerUnit = irradianceBinding.GetTextureUnit();
                 
                 uint32_t textureId = uint32_t(light.GetIrradianceId());
-                uint32_t samplerId = uint32_t(light.GetSamplerId());
                 
                 glActiveTexture(GL_TEXTURE0 + samplerUnit);
                 glBindTexture(GL_TEXTURE_2D, (GLuint)textureId);
-                glBindSampler(samplerUnit, (unsigned int)samplerId);
+                glBindSampler(samplerUnit, 0);
                 
                 glProgramUniform1i(program, irradianceBinding.GetLocation(), 
                                     samplerUnit); 
@@ -151,11 +150,10 @@ HdxSimpleLightingShader::BindResources(HdSt_ResourceBinder const &binder,
                 int samplerUnit = prefilterBinding.GetTextureUnit();
                 
                 uint32_t textureId = uint32_t(light.GetPrefilterId());
-                uint32_t samplerId = uint32_t(light.GetSamplerId());
                 
                 glActiveTexture(GL_TEXTURE0 + samplerUnit);
                 glBindTexture(GL_TEXTURE_2D, (GLuint)textureId); 
-                glBindSampler(samplerUnit, (unsigned int)samplerId);
+                glBindSampler(samplerUnit, 0);
                 
                 glProgramUniform1i(program, prefilterBinding.GetLocation(), 
                                     samplerUnit); 
@@ -165,11 +163,10 @@ HdxSimpleLightingShader::BindResources(HdSt_ResourceBinder const &binder,
                 int samplerUnit = brdfBinding.GetTextureUnit();
                 
                 uint32_t textureId = uint32_t(light.GetBrdfId());
-                uint32_t samplerId = uint32_t(light.GetSamplerId());
                 
                 glActiveTexture(GL_TEXTURE0 + samplerUnit);
                 glBindTexture(GL_TEXTURE_2D, (GLuint)textureId);
-                glBindSampler(samplerUnit, (unsigned int)samplerId);
+                glBindSampler(samplerUnit, 0);
                 
                 glProgramUniform1i(program, brdfBinding.GetLocation(), 
                                     samplerUnit);
