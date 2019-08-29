@@ -96,6 +96,12 @@ UsdSkelImagingSkelRootAdapter::Populate(
         skinningQueries.reserve(binding.GetSkinningTargets().size());
 
         for (const auto& skinningQuery : binding.GetSkinningTargets()) {
+
+            if (!skinningQuery.HasBlendShapes() &&
+                !skinningQuery.HasJointInfluences()) {
+                continue;
+            }
+
             UsdPrim const& skinnedPrim = skinningQuery.GetPrim();
 
             // Register the SkeletonAdapter for each skinned prim, effectively
