@@ -137,11 +137,11 @@ HdStRenderDelegate::_Initialize()
         HdRenderSettingDescriptor{
             "Step size when raymarching volume",
             HdStRenderSettingsTokens->volumeRaymarchingStepSize,
-            VtValue(0.05f) },
+            VtValue(HdStVolume::defaultStepSize) },
         HdRenderSettingDescriptor{
             "Step size when raymarching volume for lighting computation",
             HdStRenderSettingsTokens->volumeRaymarchingStepSizeLighting,
-            VtValue(0.05f) }
+            VtValue(HdStVolume::defaultStepSizeLighting) }
     };
 
     _PopulateDefaultSettings(_settingDescriptors);

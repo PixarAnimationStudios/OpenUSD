@@ -57,6 +57,12 @@ public:
               HdDirtyBits*     dirtyBits,
               TfToken const  &reprToken) override;
 
+    /// Default step size used for raymarching
+    static const float defaultStepSize;
+
+    /// Default step size used for raymarching for lighting computation
+    static const float defaultStepSizeLighting;
+
 protected:
     void _InitRepr(TfToken const &reprToken,
                    HdDirtyBits* dirtyBits) override;

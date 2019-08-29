@@ -63,6 +63,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (emission)
 );
 
+const float HdStVolume::defaultStepSize         = 1.0f;
+const float HdStVolume::defaultStepSizeLighting = 2.0f;
+
 HdStVolume::HdStVolume(SdfPath const& id, SdfPath const & instancerId)
     : HdVolume(id)
 {

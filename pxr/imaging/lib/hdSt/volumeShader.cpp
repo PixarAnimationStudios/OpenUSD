@@ -24,6 +24,7 @@
 #include "pxr/imaging/hdSt/volumeShader.h"
 
 #include "pxr/imaging/hdSt/tokens.h"
+#include "pxr/imaging/hdSt/volume.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 
 #include "pxr/base/tf/staticTokens.h"
@@ -39,8 +40,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 HdSt_VolumeShader::HdSt_VolumeShader(HdRenderDelegate * const renderDelegate)
     : _renderDelegate(renderDelegate),
       _lastRenderSettingsVersion(0),
-      _stepSize(0.1f),
-      _stepSizeLighting(0.1f)
+      _stepSize(HdStVolume::defaultStepSize),
+      _stepSizeLighting(HdStVolume::defaultStepSizeLighting)
 {
 }
 
@@ -75,10 +76,10 @@ HdSt_VolumeShader::BindResources(HdSt_ResourceBinder const &binder,
         _lastRenderSettingsVersion = currentRenderSettingsVersion;
         _stepSize = _renderDelegate->GetRenderSetting<float>(
             HdStRenderSettingsTokens->volumeRaymarchingStepSize,
-            0.1f);
+            HdStVolume::defaultStepSize);
         _stepSizeLighting = _renderDelegate->GetRenderSetting<float>(
             HdStRenderSettingsTokens->volumeRaymarchingStepSizeLighting,
-            0.1f);
+            HdStVolume::defaultStepSizeLighting);
     }
     
     binder.BindUniformf(_tokens->stepSize, 1, &_stepSize);
