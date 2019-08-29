@@ -1861,6 +1861,12 @@ _ComputeTimeSamples(
 
     // Pre-compute time samples for each skel adapter.
     std::unordered_map<_SkelAdapterRefPtr, std::vector<double> > skelTimesMap;
+    // Pre-populate the skelTimesMap on a single thread. Each worker thread
+    // will only access its own members in this map, so access to each vector
+    // is safe.
+    for (auto &&adapter : skelAdapters)
+        skelTimesMap[adapter] = std::vector<double>();
+
     WorkParallelForN(
         skelAdapters.size(),
         [&](size_t start, size_t end) {
