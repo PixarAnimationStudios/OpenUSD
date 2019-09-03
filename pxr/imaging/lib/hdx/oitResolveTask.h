@@ -84,24 +84,30 @@ public:
     virtual void Execute(HdTaskContext* ctx) override;
 
 private:
-    HdRenderPassSharedPtr _renderPass;
-    HdStRenderPassStateSharedPtr _renderPassState;
-    HdStRenderPassShaderSharedPtr _renderPassShader;
-
     HdxOitResolveTask() = delete;
     HdxOitResolveTask(const HdxOitResolveTask &) = delete;
     HdxOitResolveTask &operator =(const HdxOitResolveTask &) = delete;
 
-    void _PrepareOitBuffers(HdTaskContext* ctx, HdRenderIndex* renderIndex);
+    void _PrepareOitBuffers(
+        HdTaskContext* ctx, 
+        HdRenderIndex* renderIndex,
+        GfVec2i const& screenSize);
 
-    int _bufferSize;
+    void _PrepareAovBindings(
+        HdTaskContext* ctx,
+        HdRenderIndex* renderIndex);
+
+    HdRenderPassSharedPtr _renderPass;
+    HdStRenderPassStateSharedPtr _renderPassState;
+    HdStRenderPassShaderSharedPtr _renderPassShader;
+
+    GfVec2i _screenSize;
     HdBufferArrayRangeSharedPtr _counterBar;
     HdBufferArrayRangeSharedPtr _dataBar;
     HdBufferArrayRangeSharedPtr _depthBar;
     HdBufferArrayRangeSharedPtr _indexBar;
     HdBufferArrayRangeSharedPtr _uniformBar;
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

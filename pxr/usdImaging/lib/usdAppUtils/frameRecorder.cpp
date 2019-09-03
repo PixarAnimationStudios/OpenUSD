@@ -61,7 +61,6 @@ UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder() :
     _purposes({UsdGeomTokens->default_, UsdGeomTokens->proxy})
 {
     GlfGlewInit();
-    _imagingEngine.SetEnableFloatPointDrawTarget(true);
 }
 
 static bool

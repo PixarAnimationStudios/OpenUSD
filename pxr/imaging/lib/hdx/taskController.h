@@ -127,6 +127,10 @@ public:
     void SetRenderOutputSettings(TfToken const& name,
                                  HdAovDescriptor const& desc);
 
+    // Get parameters for an AOV.
+    HDX_API
+    HdAovDescriptor GetRenderOutputSettings(TfToken const& name) const;
+
     /// -------------------------------------------------------
     /// Lighting API
 
@@ -221,7 +225,9 @@ private:
     void _CreateColorCorrectionTask();
     void _CreatePickTask();
     void _CreatePickFromRenderBufferTask();
-    
+    SdfPath _CreateAovResolveTask(TfToken const& aovName);
+    void _CreatePresentTask();
+
     void _SetCameraParamForTasks(SdfPath const& id);
 
     void _SetBlendStateForMaterialTag(TfToken const& materialTag,
@@ -237,6 +243,8 @@ private:
     // Helper function for renderbuffer management.
     SdfPath _GetRenderTaskPath(TfToken const& materialTag) const;
     SdfPath _GetAovPath(TfToken const& aov) const;
+    SdfPathVector _GetAovEnabledTasks() const;
+
 
     // A private scene delegate member variable backs the tasks and the free cam
     // this controller generates. To keep _Delegate simple, the containing class
@@ -304,6 +312,9 @@ private:
     SdfPath _colorCorrectionTaskId;
     SdfPath _pickTaskId;
     SdfPath _pickFromRenderBufferTaskId;
+    SdfPath _aovColorResolveTaskId;
+    SdfPath _aovDepthResolveTaskId;
+    SdfPath _presentTaskId;
 
     // Generated camera (for the default/free cam)
     SdfPath _freeCamId;

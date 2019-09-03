@@ -25,6 +25,7 @@ pxr_library(hdx
         pxOsd
         hd
         hdSt
+        hgi
         cameraUtil
         sdf
         ${GLEW_LIBRARY}
@@ -35,6 +36,7 @@ pxr_library(hdx
         ${optionalIncludeDirs}
 
     PUBLIC_CLASSES
+        aovResolveTask
         colorizeTask
         colorizeSelectionTask
         colorCorrectionTask
@@ -49,6 +51,7 @@ pxr_library(hdx
         package
         pickTask
         pickFromRenderBufferTask
+        presentTask
         progressiveTask
         rendererPlugin
         rendererPluginRegistry

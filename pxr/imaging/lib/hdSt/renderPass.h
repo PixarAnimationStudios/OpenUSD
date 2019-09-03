@@ -36,6 +36,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 typedef boost::shared_ptr<class HdSt_RenderPass> HdSt_RenderPassSharedPtr;
 
+class Hgi;
+
 /// \class HdSt_RenderPass
 ///
 /// A single draw pass to a render target/buffer. Stream implementation.
@@ -86,7 +88,6 @@ private:
     // The version number of the currently active render tags
     int _renderTagVersion;
 
-
     // A flag indicating that the held collection changed since this renderPass
     // was last drawn.
     //
@@ -99,6 +100,8 @@ private:
     HdRenderIndex::HdDrawItemPtrVector _drawItems;
     size_t _drawItemCount;
     bool _drawItemsChanged;
+
+    Hgi* _hgi;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

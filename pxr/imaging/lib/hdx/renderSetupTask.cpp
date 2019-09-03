@@ -91,7 +91,7 @@ HdxRenderSetupTask::Prepare(HdTaskContext* ctx,
                             HdRenderIndex* renderIndex)
 {
 
-    PrepareAovBindings(renderIndex);
+    _PrepareAovBindings(ctx, renderIndex);
     PrepareCamera(renderIndex);
 
     HdRenderPassStateSharedPtr &renderPassState =
@@ -192,23 +192,26 @@ HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
 }
 
 void
-HdxRenderSetupTask::PrepareAovBindings(HdRenderIndex* renderIndex)
+HdxRenderSetupTask::_PrepareAovBindings(HdTaskContext* ctx,
+                                        HdRenderIndex* renderIndex)
 {
     // Walk the aov bindings, resolving the render index references as they're
     // encountered.
-    HdRenderPassAovBindingVector aovBindings = _aovBindings;
-    for (size_t i = 0; i < aovBindings.size(); ++i)
-    {
-        if (aovBindings[i].renderBuffer == nullptr) {
-            aovBindings[i].renderBuffer = static_cast<HdRenderBuffer*>(
+    for (size_t i = 0; i < _aovBindings.size(); ++i) {
+        if (_aovBindings[i].renderBuffer == nullptr) {
+            _aovBindings[i].renderBuffer = static_cast<HdRenderBuffer*>(
                 renderIndex->GetBprim(HdPrimTypeTokens->renderBuffer,
-                aovBindings[i].renderBufferId));
+                _aovBindings[i].renderBufferId));
         }
     }
 
     HdRenderPassStateSharedPtr &renderPassState =
             _GetRenderPassState(renderIndex);
-    renderPassState->SetAovBindings(aovBindings);
+    renderPassState->SetAovBindings(_aovBindings);
+
+    // XXX Tasks that are not RenderTasks (OIT, ColorCorrection etc) also need
+    // access to AOVs, but cannot access SetupTask or RenderPassState.
+    (*ctx)[HdxTokens->aovBindings] = VtValue(_aovBindings);
 }
 
 void

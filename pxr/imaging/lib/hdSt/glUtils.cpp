@@ -36,7 +36,6 @@
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
-#include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/base/vt/array.h"

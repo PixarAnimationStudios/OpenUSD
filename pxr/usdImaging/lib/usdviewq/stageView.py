@@ -920,6 +920,10 @@ class StageView(QtOpenGL.QGLWidget):
         self._rendererDisplayName = self.GetRendererDisplayName(rendererId)
         self._rendererAovName = "color"
         self._renderPauseState = False
+        # XXX For HdSt we explicitely enable AOV via SetRendererAov
+        # This is because ImagingGL / TaskController are spawned via prims in
+        # Presto, so we default AOVs OFF until everything is AOV ready.
+        self.SetRendererAov(self.rendererAovName)
 
     def closeRenderer(self):
         '''Close the current renderer.'''
@@ -1366,9 +1370,6 @@ class StageView(QtOpenGL.QGLWidget):
         pseudoRoot = self._dataModel.stage.GetPseudoRoot()
 
         renderer.SetSelectionColor(self._dataModel.viewSettings.highlightColor)
-
-        # Enable floating point framebuffer (for color correction)
-        renderer.SetEnableFloatPointDrawTarget(True)
 
         try:
             renderer.Render(pseudoRoot, self._renderParams)

@@ -64,7 +64,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (selColor)                  \
     (selLocateColor)            \
     (selectionPointColors)      \
-    (drawTargetRenderPasses)
+    (drawTargetRenderPasses)    \
+    (aovBindings)
 
 TF_DECLARE_PUBLIC_TOKENS(HdxTokens, HDX_API, HDX_TOKENS);
 

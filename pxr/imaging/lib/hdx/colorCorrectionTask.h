@@ -25,6 +25,7 @@
 #define HDX_COLORCORRECTION_TASK_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/path.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hdx/tokens.h"
@@ -87,6 +88,9 @@ private:
     // Copies the client framebuffer texture into ours
     void _CopyTexture();
 
+    // Extracts the HgiTexture from the AOV
+    class HgiGLTexture* _GetAovHgiGLTexture();
+
     /// Apply color correction to the currently bound framebuffer.
     void _ApplyColorCorrection();
 
@@ -98,7 +102,7 @@ private:
     GLuint _vertexBuffer;
 
     GlfGLContextSharedPtr _owningContext;
-    GLuint _framebuffer;
+    GLuint _copyFramebuffer;
     GfVec2i _framebufferSize;
 
     TfToken _colorCorrectionMode;
@@ -107,6 +111,12 @@ private:
     std::string _colorspaceOCIO;
     std::string _looksOCIO;
     int _lut3dSizeOCIO;
+
+    TfToken _aovName;
+    SdfPath _aovBufferPath;
+    HdRenderBuffer* _aovBuffer;
+    class HgiGLTexture* _aovTexture;
+    GLuint _aovFramebuffer;
 };
 
 
@@ -144,6 +154,11 @@ struct HdxColorCorrectionTaskParams
     // The width, height and depth used for the GPU LUT 3d texture
     // 0-64 (65) is the current pxr default
     int lut3dSizeOCIO = 65;
+
+    // When no AOV is provided ColorCorrection will operate on the default FB
+    // color attachment.
+    TfToken aovName;
+    SdfPath aovBufferPath;
 };
 
 // VtValue requirements

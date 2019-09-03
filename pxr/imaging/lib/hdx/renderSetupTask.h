@@ -75,8 +75,6 @@ public:
                     HdxRenderTaskParams const &params);
     HDX_API
     void PrepareCamera(HdRenderIndex* renderIndex);
-    HDX_API
-    void PrepareAovBindings(HdRenderIndex* renderIndex);
 
     HdRenderPassStateSharedPtr const &GetRenderPassState() const {
         return _renderPassState;
@@ -113,6 +111,8 @@ private:
                                  HdStRenderPassState *renderPassState);
 
     HdRenderPassStateSharedPtr &_GetRenderPassState(HdRenderIndex* renderIndex);
+
+    void _PrepareAovBindings(HdTaskContext* ctx, HdRenderIndex* renderIndex);
 
 
     HdxRenderSetupTask() = delete;

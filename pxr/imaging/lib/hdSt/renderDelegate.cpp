@@ -91,9 +91,8 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_SPRIM_TYPES =
 const TfTokenVector HdStRenderDelegate::SUPPORTED_BPRIM_TYPES =
 {
     HdPrimTypeTokens->texture,
-    _tokens->openvdbAsset
-    // XXX Wait with enabling AOV in HdSt until TaskController has HdSt AOV code
-    //HdPrimTypeTokens->renderBuffer
+    _tokens->openvdbAsset,
+    HdPrimTypeTokens->renderBuffer
 };
 
 std::mutex HdStRenderDelegate::_mutexResourceRegistry;
@@ -216,7 +215,10 @@ HdStRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
             GlfContextCaps::GetInstance().floatingPointBuffersEnabled ?
             HdFormatFloat16Vec4 : HdFormatUNorm8Vec4;
         return HdAovDescriptor(colorFormat,colorDepthMSAA, VtValue(GfVec4f(0)));
-    } else if (name == HdAovTokens->normal || name == HdAovTokens->Neye) {
+    } else if (name == HdAovTokens->normal) {
+        return HdAovDescriptor(HdFormatFloat32Vec3, /*msaa*/ false,
+                               VtValue(GfVec3f(0.0f)));
+    } else if (name == HdAovTokens->Neye) {
         return HdAovDescriptor(HdFormatFloat32Vec3, /*msaa*/ false,
                                VtValue(GfVec3f(-1.0f)));
     } else if (name == HdAovTokens->depth) {
