@@ -57,7 +57,8 @@ from selectionDataModel import ALL_INSTANCES, SelectionDataModel
 # Common Utilities
 from common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts,
                     GetPropertyColor, GetPropertyTextFont,
-                    Timer, Drange, BusyContext, DumpMallocTags, GetShortString,
+                    Timer, Drange, BusyContext, DumpMallocTags, 
+                    GetValueAtFrame, GetShortStringForValue,
                     GetInstanceIdForIndex,
                     ResetSessionVisibility, InvisRootPrims, GetAssetCreationTime,
                     PropertyViewIndex, PropertyViewIcons, PropertyViewDataRoles, 
@@ -3503,9 +3504,11 @@ class AppController(QtCore.QObject):
                     (key, type(primProperty)))
                 continue
 
-            attrText = GetShortString(primProperty, frame)
-            treeWidget.addTopLevelItem(
-                QtWidgets.QTreeWidgetItem(["", str(key), attrText]))
+            val = GetValueAtFrame(primProperty, frame)
+            attrText = GetShortStringForValue(primProperty, val)
+            item = QtWidgets.QTreeWidgetItem(["", str(key), attrText])
+            item.setData(PropertyViewIndex.VALUE, PropertyViewIndex.RawValueRole, val)
+            treeWidget.addTopLevelItem(item)
 
             treeWidget.topLevelItem(currRow).setIcon(PropertyViewIndex.TYPE, 
                     typeContent)
@@ -4037,8 +4040,8 @@ class AppController(QtCore.QObject):
                 tableWidget.setItem(i, 1, pathItem)
 
                 if path.IsPropertyPath():
-                    valStr = GetShortString(
-                        spec, self._dataModel.currentFrame)
+                    val = GetValueAtFrame(spec, self._dataModel.currentFrame)
+                    valStr = GetShortStringForValue(spec, val)
                     ttStr = valStr
                     valueItem = QtWidgets.QTableWidgetItem(valStr)
                     sampleBased = (spec.HasInfo('timeSamples') and

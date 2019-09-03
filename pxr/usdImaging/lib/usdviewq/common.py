@@ -77,7 +77,7 @@ class UIFonts(ConstantGroup):
     BOLD.setWeight(QtGui.QFont.Bold)
 
     BOLD_ITALIC = QtGui.QFont()
-    BOLD_ITALIC .setWeight(QtGui.QFont.Bold)
+    BOLD_ITALIC.setWeight(QtGui.QFont.Bold)
     BOLD_ITALIC.setItalic(True)
 
     OVER_PRIM = ITALIC
@@ -91,6 +91,8 @@ class UIFonts(ConstantGroup):
 
 class PropertyViewIndex(ConstantGroup):
     TYPE, NAME, VALUE = range(3)
+
+    RawValueRole = QtCore.Qt.UserRole + 0
 
 ICON_DIR_ROOT = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'icons')
 
@@ -202,24 +204,32 @@ def PrintWarning(title, description):
     print >> msg, description
     print >> msg, "------------------------------------------------------------"
 
-def GetShortString(prop, frame):
+def GetValueAtFrame(prop, frame):
     if isinstance(prop, Usd.Relationship):
-        val = ", ".join(str(p) for p in prop.GetTargets())
+        return prop.GetTargets()
     elif isinstance(prop, (Usd.Attribute, CustomAttribute)):
-        val = prop.Get(frame)
+        return prop.Get(frame)
     elif isinstance(prop, Sdf.AttributeSpec):
         if frame == Usd.TimeCode.Default():
-            val = prop.default
+            return prop.default
         else:
             numTimeSamples = -1
             if prop.HasInfo('timeSamples'):
                 numTimeSamples = prop.layer.GetNumTimeSamplesForPath(prop.path)
             if numTimeSamples == -1:
-                val = prop.default
+                return prop.default
             elif numTimeSamples == 1:
                 return "1 time sample"
             else:
                 return str(numTimeSamples) + " time samples"
+    elif isinstance(prop, Sdf.RelationshipSpec):
+        return prop.targetPathList
+
+    return val
+
+def GetShortStringForValue(prop, val):
+    if isinstance(prop, Usd.Relationship):
+        val = ", ".join(str(p) for p in val)
     elif isinstance(prop, Sdf.RelationshipSpec):
         return str(prop.targetPathList)
 
