@@ -71,9 +71,9 @@ public:
 
     virtual bool Read(StorageSpec const & storage);
     virtual bool ReadCropped(int const cropTop,
-	                     int const cropBottom,
-	                     int const cropLeft,
-	                     int const cropRight,
+                             int const cropBottom,
+                             int const cropLeft,
+                             int const cropRight,
                              StorageSpec const & storage);
 
     virtual bool Write(StorageSpec const & storage,
@@ -88,7 +88,7 @@ private:
     std::string _filename;
     int _subimage;
     int _miplevel;
-    ImageBuf _imagebuf;
+    ImageSpec _imagespec;
 };
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -292,51 +292,51 @@ Glf_OIIOImage::GetFilename() const
 int
 Glf_OIIOImage::GetWidth() const
 {
-    return _imagebuf.spec().width;
+    return _imagespec.width;
 }
 
 /* virtual */
 int
 Glf_OIIOImage::GetHeight() const
 {
-    return _imagebuf.spec().height;
+    return _imagespec.height;
 }
 
 /* virtual */
 GLenum
 Glf_OIIOImage::GetFormat() const
 {
-    return _GLFormatFromImageData(_imagebuf.spec().nchannels);
+    return _GLFormatFromImageData(_imagespec.nchannels);
 }
 
 /* virtual */
 GLenum
 Glf_OIIOImage::GetType() const
 {
-    return _GLTypeFromImageData(_imagebuf.spec().format);
+    return _GLTypeFromImageData(_imagespec.format);
 }
 
 /* virtual */
 int
 Glf_OIIOImage::GetBytesPerPixel() const
 {
-    return _imagebuf.spec().pixel_bytes();
+    return _imagespec.pixel_bytes();
 }
 
 /* virtual */
 bool
 Glf_OIIOImage::IsColorSpaceSRGB() const
 {
-    return ((_imagebuf.spec().nchannels == 3  ||
-             _imagebuf.spec().nchannels == 4) &&
-            _imagebuf.spec().format == TypeDesc::UINT8);
+    return ((_imagespec.nchannels == 3  ||
+             _imagespec.nchannels == 4) &&
+            _imagespec.format == TypeDesc::UINT8);
 }
 
 /* virtual */
 bool
 Glf_OIIOImage::GetMetadata(TfToken const & key, VtValue * value) const
 {
-    VtValue result = _FindAttribute(_imagebuf.spec(), key.GetString());
+    VtValue result = _FindAttribute(_imagespec, key.GetString());
     if (!result.IsEmpty()) {
         *value = result;
         return true;
@@ -365,14 +365,14 @@ Glf_OIIOImage::GetSamplerMetadata(GLenum pname, VtValue * param) const
 {
     switch (pname) {
         case GL_TEXTURE_WRAP_S: {
-                VtValue smode = _FindAttribute(_imagebuf.spec(), "s mode");
+                VtValue smode = _FindAttribute(_imagespec, "s mode");
                 if (!smode.IsEmpty() && smode.IsHolding<std::string>()) {
                     *param = VtValue(_TranslateWrap(smode.Get<std::string>()));
                     return true;
                 }
             } return false;
         case GL_TEXTURE_WRAP_T: {
-                VtValue tmode = _FindAttribute(_imagebuf.spec(), "t mode");
+                VtValue tmode = _FindAttribute(_imagespec, "t mode");
                 if (!tmode.IsEmpty() && tmode.IsHolding<std::string>()) {
                     *param = VtValue(_TranslateWrap(tmode.Get<std::string>()));
                     return true;
@@ -398,11 +398,20 @@ Glf_OIIOImage::_OpenForReading(std::string const & filename, int subimage,
 {
     _filename = filename;
     _subimage = subimage;
-    _miplevel = mip;
-    _imagebuf.clear();
-    return _imagebuf.init_spec(_filename, subimage, mip)
-           && (_imagebuf.nsubimages() > subimage)
-           && _imagebuf.nmiplevels() > mip;
+    _miplevel = mip;    
+    _imagespec = ImageSpec();
+
+    std::unique_ptr<ImageInput> imageInput(ImageInput::open(_filename));
+
+    if (!imageInput) {
+        return false;
+    }
+
+    if (!imageInput->seek_subimage(subimage, mip, _imagespec)) {
+        return false;
+    }
+
+    return true;
 }
 
 /* virtual */
@@ -421,7 +430,6 @@ Glf_OIIOImage::ReadCropped(int const cropTop,
                            StorageSpec const & storage)
 {
     // read from file
-    ImageBuf * image = &_imagebuf;
     std::unique_ptr<ImageInput> imageInput(ImageInput::open(_filename));
 
     //// seek subimage
@@ -463,7 +471,7 @@ Glf_OIIOImage::ReadCropped(int const cropTop,
     
     // Construct ImageBuf that wraps around allocated pixels memory
     ImageBuf imagebuf =ImageBuf(imageInput->spec(), pixels);
-    image = &imagebuf;
+    ImageBuf *image = &imagebuf;
 
     // Convert color images to linear (unless they are sRGB)
     // (Currently unimplemented, requires OpenColorIO support from OpenImageIO)
@@ -500,9 +508,8 @@ Glf_OIIOImage::ReadCropped(int const cropTop,
         return false;
     }
 
-    if (image != &_imagebuf) {
-        _imagebuf.swap(*image);
-    }
+    _imagespec = image->spec();
+
     return true;
 }
 
@@ -511,7 +518,7 @@ bool
 Glf_OIIOImage::_OpenForWriting(std::string const & filename)
 {
     _filename = filename;
-    _imagebuf.clear();
+    _imagespec = ImageSpec();
     return true;
 }
 
@@ -545,9 +552,8 @@ Glf_OIIOImage::Write(StorageSpec const & storage,
         return false;
     }
 
-    if (image != &_imagebuf) {
-        _imagebuf.swap(*image);
-    }
+    _imagespec = image->spec();
+
     return true;
 }
 
