@@ -76,6 +76,8 @@ class PxrMayaHdImagingShape : public MPxSurfaceShape
         // Attributes
         PXRUSDMAYA_API
         static MObject selectionResolutionAttr;
+        PXRUSDMAYA_API
+        static MObject enableDepthSelectionAttr;
 
         PXRUSDMAYA_API
         static void* creator();

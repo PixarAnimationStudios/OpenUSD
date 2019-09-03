@@ -145,13 +145,6 @@ Usd_InsertListItem(PROXY proxy, const typename PROXY::value_type &item,
     typename PROXY::ListProxy list(/* unused */ SdfListOpTypeExplicit);
     bool atFront = false;
     switch (position) {
-    case UsdListPositionTempDefault:
-        if (UsdAuthorOldStyleAdd()) {
-            proxy.Add(item);
-            return;
-        } else {
-            // Fall through to UsdListPositionBackOfPrependList case.
-        }
     case UsdListPositionBackOfPrependList:
         list = proxy.GetPrependedItems();
         atFront = false;
@@ -182,7 +175,7 @@ Usd_InsertListItem(PROXY proxy, const typename PROXY::value_type &item,
         list.Insert(-1, item);
     } else {
         const size_t pos = list.Find(item);
-        if (pos != -1) {
+        if (pos != size_t(-1)) {
             const size_t targetPos = atFront ? 0 : list.size()-1;
             if (pos == targetPos) {
                 // Item already exists in the right position.

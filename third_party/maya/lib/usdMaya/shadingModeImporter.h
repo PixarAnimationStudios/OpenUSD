@@ -41,6 +41,8 @@
 
 #include <maya/MObject.h>
 
+#include <functional>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -153,7 +155,7 @@ private:
     TfToken _volumeShaderPlugName;
     TfToken _displacementShaderPlugName;
 };
-typedef boost::function< MObject (UsdMayaShadingModeImportContext*) > UsdMayaShadingModeImporter;
+typedef std::function< MObject (UsdMayaShadingModeImportContext*) > UsdMayaShadingModeImporter;
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

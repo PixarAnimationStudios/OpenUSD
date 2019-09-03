@@ -48,18 +48,19 @@ public:
     Pcp_PyTestChangeProcessor(PcpCache* cache)
         : _cache(cache)
     {
+    }
+
+    void Enter()
+    {
         _layerChangedNoticeKey = TfNotice::Register(
             TfCreateWeakPtr(this),
             &Pcp_PyTestChangeProcessor::_HandleLayerDidChange);
     }
 
-    void Enter()
-    {
-    }
-
     void Exit(const object&, const object&, const object&)
     {
         TfNotice::Revoke(_layerChangedNoticeKey);
+        _changes = PcpChanges();
     }
 
     SdfPathVector GetSignificantChanges() const

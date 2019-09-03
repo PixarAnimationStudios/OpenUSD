@@ -46,8 +46,8 @@
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
-#include "pxr/imaging/hdx/intersector.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
+#include "pxr/imaging/hdx/pickTask.h"
 #include "pxr/usd/sdf/path.h"
 
 #include <maya/M3dView.h>
@@ -148,17 +148,23 @@ public:
     PXRUSDMAYAGL_API
     static void Reset();
 
-    /// Replaces the contents of the given \p collection with \p dagPath, if
+    /// Replaces the contents of the given \p primFilter with \p dagPath, if
     /// a shape adapter for \p dagPath has already been batched. Returns true
-    /// if successful. Otherwise, does not modify the \p collection, and returns
-    /// false.
+    /// if successful. Otherwise, does not modify the \p primFilter, and
+    /// returns false.
+    ///
+    /// The primFilter is used by Hydra to determine which prims should be
+    /// present in the render path.  It consists of a collection
+    /// (which prim paths to include/exclude) and Render Tags (which prim
+    /// purposes to include).
+    ///
     /// Note that the VP2 shape adapters are searched first, followed by the
     /// Legacy shape adapters. You cannot rely on the shape adapters being
     /// associated with a specific viewport.
     PXRUSDMAYAGL_API
-    bool PopulateCustomCollection(
+    bool PopulateCustomPrimFilter(
             const MDagPath& dagPath,
-            HdRprimCollection& collection);
+            PxrMayaHdPrimFilter& primFilter);
 
     /// Render batch or bounding box in the legacy viewport based on \p request
     PXRUSDMAYAGL_API
@@ -169,19 +175,6 @@ public:
     void Draw(
             const MHWRender::MDrawContext& context,
             const MUserData* userData);
-
-    /// Render the contents of the given custom collection (previously obtained
-    /// via PopulateCustomCollection).
-    /// The caller is responsible for ensuring that an appropriate OpenGL
-    /// context is available; this function is not appropriate for drawing into
-    /// the native Maya viewport.
-    PXRUSDMAYAGL_API
-    void DrawCustomCollection(
-            const HdRprimCollection& collection,
-            const GfMatrix4d& viewMatrix,
-            const GfMatrix4d& projectionMatrix,
-            const GfVec4d& viewport,
-            const PxrMayaHdRenderParams& params = PxrMayaHdRenderParams());
 
     /// Gets the resolution of the draw target used for computing selections.
     ///
@@ -199,6 +192,14 @@ public:
     PXRUSDMAYAGL_API
     void SetSelectionResolution(const GfVec2i& widthHeight);
 
+    /// Gets whether depth selection has been enabled.
+    PXRUSDMAYAGL_API
+    bool IsDepthSelectionEnabled() const;
+
+    /// Sets whether to enable depth selection.
+    PXRUSDMAYAGL_API
+    void SetDepthSelectionEnabled(const bool enabled);
+
     /// Tests the object from the given shape adapter for intersection with
     /// a given selection context in the legacy viewport.
     ///
@@ -209,7 +210,7 @@ public:
     /// erased at the next selection, so clients should make copies if they
     /// need the data to persist.
     PXRUSDMAYAGL_API
-    const HdxIntersector::HitSet* TestIntersection(
+    const HdxPickHitVector* TestIntersection(
             const PxrMayaHdShapeAdapter* shapeAdapter,
             MSelectInfo& selectInfo);
 
@@ -223,13 +224,13 @@ public:
     /// erased at the next selection, so clients should make copies if they
     /// need the data to persist.
     PXRUSDMAYAGL_API
-    const HdxIntersector::HitSet* TestIntersection(
+    const HdxPickHitVector* TestIntersection(
             const PxrMayaHdShapeAdapter* shapeAdapter,
             const MHWRender::MSelectionInfo& selectionInfo,
             const MHWRender::MDrawContext& context);
 
-    /// Tests the contents of the given custom collection (previously obtained
-    /// via PopulateCustomCollection) for intersection with the current OpenGL
+    /// Tests the contents of the given prim filter (previously obtained
+    /// via PopulateCustomFilter) for intersection with the current OpenGL
     /// context.
     /// The caller is responsible for ensuring that an appropriate OpenGL
     /// context is available; this function is not appropriate for interesecting
@@ -238,11 +239,11 @@ public:
     /// If hit(s) are found, returns \c true and populates \p *outResult with
     /// the intersection result.
     PXRUSDMAYAGL_API
-    bool TestIntersectionCustomCollection(
-            const HdRprimCollection& collection,
+    bool TestIntersectionCustomPrimFilter(
+            const PxrMayaHdPrimFilter& primFilter,
             const GfMatrix4d& viewMatrix,
             const GfMatrix4d& projectionMatrix,
-            HdxIntersector::Result* outResult);
+            HdxPickHitVector* outResult);
 
     /// Utility function for finding the nearest hit (in terms of ndcDepth) in
     /// the given \p hitSet.
@@ -250,14 +251,14 @@ public:
     /// If \p hitSet is nullptr or is empty, nullptr is returned. Otherwise a
     /// pointer to the nearest hit in \p hitSet is returned.
     PXRUSDMAYAGL_API
-    static const HdxIntersector::Hit* GetNearestHit(
-            const HdxIntersector::HitSet* hitSet);
+    static const HdxPickHit* GetNearestHit(
+            const HdxPickHitVector* hitSet);
 
     /// Returns the absoluteInstanceIndex (index within the point instancer) for \c hit.
     ///
     /// Returns -1 if unable to get the absoluteInstanceIndex.
     PXRUSDMAYAGL_API
-    int GetAbsoluteInstanceIndexForHit(const HdxIntersector::Hit& hit) const;
+    int GetAbsoluteInstanceIndexForHit(const HdxPickHit& hit) const;
 
     /// Returns whether soft selection for proxy shapes is currently enabled.
     PXRUSDMAYAGL_API
@@ -289,7 +290,7 @@ private:
     /// Allow shape adapters access to the soft selection helper.
     friend PxrMayaHdShapeAdapter;
 
-    typedef std::pair<PxrMayaHdRenderParams, HdRprimCollectionVector>
+    typedef std::pair<PxrMayaHdRenderParams, PxrMayaHdPrimFilterVector>
             _RenderItem;
 
     /// Private helper function to render the given list of render items.
@@ -319,8 +320,11 @@ private:
     /// the \p *result.
     bool _TestIntersection(
             const HdRprimCollection& rprimCollection,
-            HdxIntersector::Params queryParams,
-            HdxIntersector::Result* result);
+            const TfTokenVector& renderTags,
+            const GfMatrix4d& viewMatrix,
+            const GfMatrix4d& projectionMatrix,
+            const bool singleSelection,
+            HdxPickHitVector* result);
 
     // Handler for Maya scene resets (e.g. new scene or switch scenes).
     void _OnMayaSceneReset(const UsdMayaSceneResetNotice& notice);
@@ -405,7 +409,7 @@ private:
     /// map of shape adapters we should use to compute the selection.
     bool _viewport2UsesLegacySelection;
 
-    /// Gets the vector of rprim collections to use for intersection testing.
+    /// Gets the vector of prim filters to use for intersection testing.
     ///
     /// As an optimization for when we do not need to do intersection testing
     /// against all objects in depth (i.e. with single selections or when the
@@ -414,10 +418,10 @@ private:
     /// registered with the batch renderer for the active viewport renderer
     /// (legacy viewport or Viewport 2.0), since we're only interested in the
     /// single nearest hit in depth for a particular pixel. This is much faster
-    /// than testing against each shape adapter's collection individually.
-    /// Otherwise, we test each shape adapter's collection individually so that
+    /// than testing against each shape adapter's prim filter individually.
+    /// Otherwise, we test each shape adapter's prim filter individually so that
     /// occluded shapes will be included in the selection.
-    HdRprimCollectionVector _GetIntersectionRprimCollections(
+    PxrMayaHdPrimFilterVector _GetIntersectionPrimFilters(
             _ShapeAdapterBucketsMap& bucketsMap,
             const M3dView* view,
             const bool useDepthSelection) const;
@@ -438,7 +442,7 @@ private:
     /// A cache of all selection results gathered since the last selection was
     /// computed. It maps delegate IDs to a HitSet of all of the intersection
     /// hits for that delegate ID.
-    std::unordered_map<SdfPath, HdxIntersector::HitSet, SdfPath::Hash> _selectResults;
+    std::unordered_map<SdfPath, HdxPickHitVector, SdfPath::Hash> _selectResults;
 
     /// We keep track of a "key" that's associated with the select results.
     /// This is used to determine if the results can be shared among multiple
@@ -472,8 +476,8 @@ private:
 
     PxrMayaHdSceneDelegateSharedPtr _taskDelegate;
 
-    std::unique_ptr<HdxIntersector> _intersector;
     GfVec2i _selectionResolution;
+    bool _enableDepthSelection;
 
     HdxSelectionTrackerSharedPtr _selectionTracker;
 

@@ -94,6 +94,18 @@ SdfAttributeSpec::_New(
         return TfNullPtr;
     }
 
+    const SdfLayerHandle layer = owner->GetLayer();
+    if (layer->_ValidateAuthoring()) {
+        const SdfValueTypeName typeInSchema = 
+            layer->GetSchema().FindType(typeName.GetAsToken().GetString());
+        if (!typeInSchema) {
+            TF_CODING_ERROR(
+                "Cannot create attribute spec <%s> with invalid type",
+                attrPath.GetText());
+            return TfNullPtr;
+        }
+    }
+
     SdfChangeBlock block;
 
     // AttributeSpecs are considered initially to have only required fields 
@@ -101,15 +113,13 @@ SdfAttributeSpec::_New(
     bool hasOnlyRequiredFields = (!custom);
 
     if (!Sdf_ChildrenUtils<Sdf_AttributeChildPolicy>::CreateSpec(
-            owner->GetLayer(), attrPath, SdfSpecTypeAttribute, 
-            hasOnlyRequiredFields)) {
+            layer, attrPath, SdfSpecTypeAttribute, hasOnlyRequiredFields)) {
         return TfNullPtr;
     }
 
-    SdfAttributeSpecHandle spec =
-	owner->GetLayer()->GetAttributeAtPath(attrPath);
+    SdfAttributeSpecHandle spec = layer->GetAttributeAtPath(attrPath);
 
-    // Avoid expensive dormancy checks in the case of binary-backed data.
+    // Avoid expensive dormancy checks
     SdfAttributeSpec *specPtr = get_pointer(spec);
     if (TF_VERIFY(specPtr)) {
         specPtr->SetField(SdfFieldKeys->Custom, custom);

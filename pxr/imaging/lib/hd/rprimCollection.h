@@ -32,7 +32,6 @@
 #include "pxr/base/tf/token.h"
 
 #include <string>
-#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -164,18 +163,6 @@ public:
     HD_API
     SdfPathVector const& GetExcludePaths() const;
 
-    /// Sets the render tags that this collection will render.
-    HD_API
-    void SetRenderTags(TfTokenVector const& renderTags);
-
-    /// Returns the render tags.
-    HD_API
-    TfTokenVector const& GetRenderTags() const;
-
-    /// Returns if a tag is used by this collection
-    HD_API
-    bool HasRenderTag(TfToken const & renderTag) const;
-
     /// A MaterialTag can be used to ensure only prims whos material have
     /// a matching tag will end up in the collection. Different rendering 
     /// backends can control what material properties are useful for splitting 
@@ -218,10 +205,7 @@ private:
     TfToken _materialTag;
     SdfPathVector _rootPaths;
     SdfPathVector _excludePaths;
-    TfTokenVector _renderTags;
 };
-
-typedef std::vector<HdRprimCollection> HdRprimCollectionVector;
 
 // VtValue requirements
 HD_API

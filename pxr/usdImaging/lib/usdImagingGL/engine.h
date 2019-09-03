@@ -40,6 +40,7 @@
 #include "pxr/imaging/hdx/compositor.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
+#include "pxr/imaging/hdx/pickTask.h"
 
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/simpleLight.h"
@@ -296,6 +297,11 @@ public:
         SdfPath * rprimPath=NULL,
         SdfPathVector *instanceContext=NULL);
 
+    /// Resolves a 4-byte pixel from an id render to an int32 prim ID.
+    static inline int DecodeIDRenderColor(unsigned char const idColor[4]) {
+        return HdxPickTask::DecodeIDRenderColor(idColor);
+    }
+
     /// @}
     
     // ---------------------------------------------------------------------
@@ -398,7 +404,9 @@ protected:
     HdRenderIndex *_GetRenderIndex() const;
 
     USDIMAGINGGL_API
-    void _Render(const UsdImagingGLRenderParams &params);
+    void _Execute(const UsdImagingGLRenderParams &params,
+                  bool fp16DrawTarget,
+                  HdTaskSharedPtrVector tasks);
 
     // These functions factor batch preparation into separate steps so they
     // can be reused by both the vectorized and non-vectorized API.

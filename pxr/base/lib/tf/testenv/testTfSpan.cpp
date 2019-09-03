@@ -137,7 +137,7 @@ int main(int argc, char** argv)
     // Test span edits.
     {
         TfSpan<int> span(data);
-        for (ptrdiff_t i = 0; i < span.size(); ++i) {
+        for (size_t i = 0; i < span.size(); ++i) {
             span[i] = (i+1)*10;
         }
         

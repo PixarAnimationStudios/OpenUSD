@@ -532,7 +532,6 @@ HdUnitTestDelegate::UpdateCamera(SdfPath const &id,
 {
     _cameras[id].params[key] = value;
    HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
-   // XXX: we could be more granular here if the tokens weren't in hdx.
    tracker.MarkSprimDirty(id, HdChangeTracker::AllDirty);
 }
 
@@ -762,6 +761,17 @@ HdUnitTestDelegate::GetMaterialParamValue(SdfPath const &materialId,
 }
 
 /*virtual*/
+VtValue
+HdUnitTestDelegate::GetCameraParamValue(SdfPath const &cameraId, 
+                                        TfToken const &paramName)
+{
+    if (_cameras.find(cameraId) != _cameras.end()) {
+        return _cameras[cameraId].params[paramName];
+    } 
+    return VtValue();
+}
+
+/*virtual*/
 VtValue 
 HdUnitTestDelegate::GetMaterialResource(SdfPath const &materialId)
 {
@@ -829,8 +839,6 @@ HdUnitTestDelegate::Get(SdfPath const& id, TfToken const& key)
     // camera, light, tasks
     if (_tasks.find(id) != _tasks.end()) {
         return _tasks[id].params[key];
-    } else if (_cameras.find(id) != _cameras.end()) {
-        return _cameras[id].params[key];
     } else if (_lights.find(id) != _lights.end()) {
         return _lights[id].params[key];
     }

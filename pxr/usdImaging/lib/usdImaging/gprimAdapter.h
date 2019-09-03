@@ -158,15 +158,16 @@ public:
     // Helper function: add a given type of rprim, potentially with instancer
     // name mangling, and add any bound shader.
     USDIMAGING_API
-    static SdfPath _AddRprim(TfToken const& primType,
+    SdfPath _AddRprim(TfToken const& primType,
                       UsdPrim const& usdPrim,
                       UsdImagingIndexProxy* index,
-                      SdfPath const& materialId,
+                      SdfPath const& materialUsdPath,
                       UsdImagingInstancerContext const* instancerContext);
 
-    // Helper function: apply gprim name mangling.
+    // Helper function: map USD path to UsdImaging cache path,
+    // applying any name-encoding required by the instancerContext.
     USDIMAGING_API
-    static SdfPath _ResolveCachePath(SdfPath const& cachePath,
+    static SdfPath _ResolveCachePath(SdfPath const& usdPath,
             UsdImagingInstancerContext const* instancerContext);
 
 protected:
@@ -179,6 +180,11 @@ protected:
     // of certain primvars.
     USDIMAGING_API
     virtual bool _IsBuiltinPrimvar(TfToken const& primvarName) const;
+
+    // Utility for derived classes to try to find an inherited primvar.
+    USDIMAGING_API
+    UsdGeomPrimvar _GetInheritedPrimvar(UsdPrim const& prim,
+                                        TfToken const& primvarName) const;
 
 private:
 

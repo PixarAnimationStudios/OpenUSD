@@ -21,107 +21,65 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from qt import QtCore, QtGui, QtWidgets
+from qt import QtCore, QtWidgets, QtGui
+
 
 class FrameSlider(QtWidgets.QSlider):
-    # Emitted when the current frame of the slider changes and the stage's 
-    # current frame needs to be updated.
-    signalFrameChanged = QtCore.Signal(int)
+    """Custom QSlider class to allow scrubbing on left-click."""
 
-    # Emitted when the slider position has changed but the underlying frame 
-    # value hasn't been changed.
-    signalPositionChanged = QtCore.Signal(int)
+    PAUSE_TIMER_INTERVAL = 500
 
-    def __init__(self, parent):
-        super(FrameSlider, self).__init__(parent)
-        self._sliderTimer = QtCore.QTimer(self)
-        self._sliderTimer.setInterval(500)
-        self._sliderTimer.timeout.connect(self.sliderTimeout)     
-        self.valueChanged.connect(self.sliderValueChanged)
-        self._mousePressed = False
-        self._scrubbing = False
-        self._updateOnFrameScrub = False
+    def __init__(self, parent=None):
+        super(FrameSlider, self).__init__(parent=parent)
+        # Create a mouse pause timer to trigger an update if the slider
+        # scrubbing pauses.
+        self._mousePauseTimer = QtCore.QTimer(self)
+        self._mousePauseTimer.setInterval(self.PAUSE_TIMER_INTERVAL)
+        self._mousePauseTimer.timeout.connect(self.mousePaused)
 
-    def setUpdateOnFrameScrub(self, updateOnFrameScrub):
-        self._updateOnFrameScrub = updateOnFrameScrub
-
-    def sliderTimeout(self):
-        if not self._updateOnFrameScrub and self._mousePressed:
-            self._sliderTimer.stop()
-            self.signalPositionChanged.emit(self.value())
-            return
-        self.frameChanged()
-
-    def frameChanged(self):
-        self._sliderTimer.stop()
-        self.signalFrameChanged.emit(self.value())
-
-    def sliderValueChanged(self, value):
-        self._sliderTimer.stop()
-        self._sliderTimer.start()
-
-    def setValueImmediate(self, value):
-        self.setValue(value)
-        self.frameChanged()
-
-    def setValueFromEvent(self, event, immediate=True):
-        currentValue = self.value()
-        movePosition = self.minimum() + ((self.maximum()-self.minimum()) * 
-            event.x()) / float(self.width())
-        targetPosition = round(movePosition)
-        if targetPosition == currentValue:
-            if (movePosition - currentValue) >= 0:
-                targetPosition = currentValue + 1
-            else:
-                targetPosition = currentValue - 1;
-        if immediate:
-            self.setValueImmediate(targetPosition)
-        else:
-            self.setValue(targetPosition)
+    def mousePaused(self):
+        """Slot called when the slider scrubbing is paused."""
+        self._mousePauseTimer.stop()
+        self.valueChanged.emit(self.sliderPosition())
 
     def mousePressEvent(self, event):
-        if event.button() == QtCore.Qt.LeftButton:
-            self._mousePressed = True
-            self.setValueFromEvent(event)
-            event.accept()
+        # This is a temporary solution that should revisited in future.
+        #
+        # The issue is that the current QStyle on the application
+        # only allows the slider position to be set on a MiddleButton
+        # MouseEvent.
+        #
+        # The correct solution is for us to create a QProxyStyle for the
+        # application so we can edit the value of the
+        # QStyle.SH_Slider_AbsoluteSetButtons property (to include
+        # LeftButton). Unfortunately QProxyStyle is not yet available
+        # in this version of PySide.
+        #
+        # Instead, we are forced to duplicate the MouseEvent as a
+        # MiddleButton event. This creates the exact behavior we
+        # want to see from the QSlider.
+        styleHint = QtWidgets.QStyle.SH_Slider_AbsoluteSetButtons
+        if self.style().styleHint(styleHint) == QtCore.Qt.MiddleButton:
+            if event.button() == QtCore.Qt.LeftButton:
+                event = QtGui.QMouseEvent(
+                    event.type(),
+                    event.pos(),
+                    QtCore.Qt.MiddleButton,
+                    QtCore.Qt.MiddleButton,
+                    event.modifiers()
+                )
+
         super(FrameSlider, self).mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
-        # Since mouseTracking is disabled by default, this event callback is 
-        # only invoked when a mouse is pressed down and moved (i.e. dragged or 
-        # scrubbed).
-        self._scrubbing = True
-        self.setValueFromEvent(event, immediate=self._updateOnFrameScrub)
-        event.accept()
+        super(FrameSlider, self).mouseMoveEvent(event)
+
+        # Start the pause timer if tracking is disabled.
+        if not self.hasTracking():
+            self._mousePauseTimer.start()
 
     def mouseReleaseEvent(self, event):
-        if event.button() == QtCore.Qt.LeftButton:
-            self._mousePressed = False
-            # If this is just a click (and not a drag with mouse pressed), 
-            # we don't want setValue twice for the same frame value.
-            if self._scrubbing:
-                self.setValueFromEvent(event)
-            event.accept()
-            self._scrubbing = False
+        # Stop the pause timer.
+        self._mousePauseTimer.stop()
+
         super(FrameSlider, self).mouseReleaseEvent(event)
-
-    def advanceFrame(self):
-        newValue = self.value() + 1
-        if newValue > self.maximum():
-            newValue = self.minimum()
-        self.setValueImmediate(newValue)
-
-    def retreatFrame(self):
-        newValue = self.value() - 1
-        if newValue < self.minimum():
-            newValue = self.maximum()
-        self.setValueImmediate(newValue)
-
-    def resetSlider(self, numTimeSamples):
-        self.setRange(0, numTimeSamples-1)
-        self.resetToMinimum()
-
-    def resetToMinimum(self):
-        self.setValue(self.minimum())
-        # Call this here to push the update immediately.
-        self.frameChanged()

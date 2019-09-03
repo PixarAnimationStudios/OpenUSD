@@ -39,8 +39,8 @@ struct HdxColorizeSelectionTaskParams
 {
     HdxColorizeSelectionTaskParams()
         : enableSelection(false)
-        , selectionColor()
-        , locateColor()
+        , selectionColor(0)
+        , locateColor(0)
         , primIdBufferPath()
         , instanceIdBufferPath()
         , elementIdBufferPath()

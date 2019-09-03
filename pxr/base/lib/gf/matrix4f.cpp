@@ -320,27 +320,14 @@ GfMatrix4f::SetTransform(const GfMatrix3f& rotate,
 GfMatrix4f
 GfMatrix4f::GetInverse(double *detPtr, double eps) const
 {
-    float x00, x01, x02;
-    float x10, x11, x12;
-    float x20, x21, x22;
-    float x30, x31, x32;
+    float x00, x01, x02, x03;
+    float x10, x11, x12, x13;
+    float x20, x21, x22, x23;
+    float x30, x31, x32, x33;
     double y01, y02, y03, y12, y13, y23;
+    float z00, z10, z20, z30;
+    float z01, z11, z21, z31;
     double z02, z03, z12, z13, z22, z23, z32, z33;
-
-#define x03 x01
-#define x13 x11
-#define x23 x21
-#define x33 x31
-#define z00 x02
-#define z10 x12
-#define z20 x22
-#define z30 x32
-#define z01 x03
-#define z11 x13
-#define z21 x23
-#define z31 x33
-#define det y01
-#define rcp y02
 
     // Pickle 1st two columns of matrix into registers
     x00 = _mtx[0][0];
@@ -388,16 +375,6 @@ GfMatrix4f::GetInverse(double *detPtr, double eps) const
     y13 = x12*x33 - x32*x13;
     y23 = x22*x33 - x32*x23;
 
-    // Pickle 1st two columns of matrix into registers
-    x00 = _mtx[0][0];
-    x01 = _mtx[0][1];
-    x10 = _mtx[1][0];
-    x11 = _mtx[1][1];
-    x20 = _mtx[2][0];
-    x21 = _mtx[2][1];
-    x30 = _mtx[3][0];
-    x31 = _mtx[3][1];
-
     // Compute all 3x3 cofactors for 1st two columns
     z30 = x11*y02 - x21*y01 - x01*y12;
     z20 = x01*y13 - x11*y03 + x31*y01;
@@ -409,7 +386,7 @@ GfMatrix4f::GetInverse(double *detPtr, double eps) const
     z01 = x20*y13 - x30*y12 - x10*y23;
 
     // compute 4x4 determinant & its reciprocal
-    det = x30*z30 + x20*z20 + x10*z10 + x00*z00;
+    double det = x30*z30 + x20*z20 + x10*z10 + x00*z00;
     if (detPtr) {
 	*detPtr = det;
     }
@@ -418,7 +395,7 @@ GfMatrix4f::GetInverse(double *detPtr, double eps) const
 
     if (GfAbs(det) > eps) {
 
-        rcp = 1.0 / det;
+        double rcp = 1.0 / det;
 	// Multiply all 3x3 cofactors by reciprocal & transpose
         inverse._mtx[0][0] = static_cast<float>(z00*rcp);
         inverse._mtx[0][1] = static_cast<float>(z10*rcp);
@@ -437,20 +414,6 @@ GfMatrix4f::GetInverse(double *detPtr, double eps) const
         inverse._mtx[3][2] = static_cast<float>(z23*rcp);
         inverse._mtx[3][3] = static_cast<float>(z33*rcp);
 
-#undef x03
-#undef x13
-#undef x23
-#undef x33
-#undef z00
-#undef z10
-#undef z20
-#undef z30
-#undef z01
-#undef z11
-#undef z21
-#undef z31
-#undef det
-#undef rcp
     }
     else {
 	inverse.SetScale(FLT_MAX);

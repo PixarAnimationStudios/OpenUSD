@@ -66,6 +66,13 @@ HdxPackageRenderPassIdShader()
 }
 
 TfToken
+HdxPackageRenderPassPickingShader()
+{
+    static TfToken shader = _GetShaderPath("renderPassPickingShader.glslfx");
+    return shader;
+}
+
+TfToken
 HdxPackageRenderPassShadowShader()
 {
     static TfToken shader = _GetShaderPath("renderPassShadowShader.glslfx");

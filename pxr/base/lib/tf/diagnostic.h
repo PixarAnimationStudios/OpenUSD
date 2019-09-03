@@ -416,19 +416,18 @@ void Tf_TerminateHandler();
 #define TF_VERIFY(cond, ...)                                                   \
     (ARCH_LIKELY(cond) ? true :                                                \
      Tf_FailedVerifyHelper(TF_CALL_CONTEXT, # cond,                            \
-                           Tf_DiagnosticStringPrintf(__VA_ARGS__)))
-
-// Helpers for TF_VERIFY
-TF_API  bool
-Tf_FailedVerifyHelper(TfCallContext const &context,
-                      char const *condition,
-                      std::string const &msg);
+                           Tf_VerifyStringFormat(__VA_ARGS__)))
 
 // Helpers for TF_VERIFY.
-TF_API std::string Tf_DiagnosticStringPrintf();
-TF_API std::string Tf_DiagnosticStringPrintf(const char *format, ...)
-    ARCH_PRINTF_FUNCTION(1, 2)
-    ;
+TF_API  bool
+Tf_FailedVerifyHelper(TfCallContext const &context,
+                      char const *condition, char const *msg);
+
+// Helpers for TF_VERIFY.
+inline char const *
+Tf_VerifyStringFormat() { return nullptr; }
+TF_API char const *
+Tf_VerifyStringFormat(const char *format, ...) ARCH_PRINTF_FUNCTION(1, 2);
 
 #endif // !doxygen
 

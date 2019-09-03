@@ -66,7 +66,9 @@
 
 #include <boost/noncopyable.hpp>
 #include <boost/preprocessor/list/for_each.hpp>
+#include <boost/preprocessor/list/size.hpp>
 #include <boost/preprocessor/punctuation/comma.hpp>
+#include <boost/preprocessor/selection/max.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/preprocessor/seq/seq.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
@@ -284,9 +286,6 @@ SDF_API const TfEnum &SdfDefaultUnit( const TfEnum &unit );
 
 /// Gets the unit category for a given /a unit.
 SDF_API const std::string &SdfUnitCategory( const TfEnum &unit );
-
-/// Gets the type/unit pair for a unit enum.
-std::pair<uint32_t, uint32_t> Sdf_GetUnitIndices( const TfEnum &unit );
 
 /// Converts from one unit of measure to another. The \a fromUnit and \a toUnit
 /// units must be of the same type (for example, both of type SdfLengthUnit).

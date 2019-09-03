@@ -1918,25 +1918,16 @@ UsdMayaTranslatorRfMLight::Read(
         TfStringPrintf("%sShape", usdPrim.GetName().GetText()).c_str();
 
     MObject lightObj;
-    if (!UsdMayaTranslatorUtil::CreateNode(
+    if (!UsdMayaTranslatorUtil::CreateShaderNode(
             nodeName,
             MString(mayaLightTypeToken.GetText()),
-            mayaNodeTransformObj,
+            UsdMayaShadingNodeType::Light,
             &status,
-            &lightObj)) {
+            &lightObj,
+            mayaNodeTransformObj)) {
         return _ReportError(TfStringPrintf("Failed to create %s node",
                                            mayaLightTypeToken.GetText()),
                             lightSchema.GetPath());
-    }
-
-    if (!UsdMayaTranslatorUtil::ConnectDefaultLightNode(
-            mayaNodeTransformObj,
-            &status)) {
-        return _ReportError(
-            TfStringPrintf(
-                "Could not connect %s as a default light",
-                mayaLightTypeToken.GetText()),
-            lightSchema.GetPath());
     }
 
     const std::string nodePath = lightSchema.GetPath().AppendChild(

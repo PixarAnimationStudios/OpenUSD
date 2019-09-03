@@ -39,41 +39,54 @@ class TestUsdShadeCoordSysAPI(unittest.TestCase):
         geomCoords = UsdShade.CoordSysAPI(geom)
         boxCoords = UsdShade.CoordSysAPI(box)
 
-        # Bindings
+        # Local Bindings
         self.assertEqual(
             worldCoords.GetLocalBindings(),
-            [('worldSpace', Sdf.Path('/World/Space'))])
+            [('worldSpace', '/World.coordSys:worldSpace', '/World/Space')])
         self.assertEqual(
             modelCoords.GetLocalBindings(),
-            [('instanceSpace', Sdf.Path('/World/Model')),
-             ('modelSpace', Sdf.Path('/World/Model/Geom')),
-             ('paintSpace', Sdf.Path('/World/Model/Place3dTexture'))])
+            [('instanceSpace', '/World/Model.coordSys:instanceSpace',
+              '/World/Model'),
+             ('modelSpace', '/World/Model.coordSys:modelSpace',
+              '/World/Model/Geom'),
+             ('paintSpace', '/World/Model.coordSys:paintSpace',
+               '/World/Model/Place3dTexture')])
+        self.assertEqual(
+            geomCoords.GetLocalBindings(), [])
+        self.assertEqual(
+            boxCoords.GetLocalBindings(), [])
 
-        # GetCoordinateSystems
+        # Full (including inherited) Bindings
         self.assertEqual(
-            [(name, xf.GetPath()) for (name, xf)
-            in worldCoords.GetCoordinateSystems()],
-            [('worldSpace', Sdf.Path('/World/Space'))])
+            worldCoords.FindBindingsWithInheritance(),
+            [('worldSpace', '/World.coordSys:worldSpace', '/World/Space')])
         self.assertEqual(
-            [(name, xf.GetPath()) for (name, xf)
-            in modelCoords.GetCoordinateSystems()],
-            [('instanceSpace', Sdf.Path('/World/Model')),
-             ('modelSpace', Sdf.Path('/World/Model/Geom')),
-             ('paintSpace', Sdf.Path('/World/Model/Place3dTexture'))])
-
-        # FindCoordinateSystemsWithInheritance
+            modelCoords.FindBindingsWithInheritance(),
+            [('instanceSpace', '/World/Model.coordSys:instanceSpace',
+              '/World/Model'),
+             ('modelSpace', '/World/Model.coordSys:modelSpace',
+              '/World/Model/Geom'),
+             ('paintSpace', '/World/Model.coordSys:paintSpace',
+               '/World/Model/Place3dTexture'),
+             ('worldSpace', '/World.coordSys:worldSpace', '/World/Space')])
         self.assertEqual(
-            [(name, xf.GetPath()) for (name, xf)
-            in worldCoords.FindCoordinateSystemsWithInheritance()],
-            [('worldSpace', Sdf.Path('/World/Space'))])
-        print modelCoords.FindCoordinateSystemsWithInheritance()
+            geomCoords.FindBindingsWithInheritance(),
+            [('instanceSpace', '/World/Model.coordSys:instanceSpace',
+              '/World/Model'),
+             ('modelSpace', '/World/Model.coordSys:modelSpace',
+              '/World/Model/Geom'),
+             ('paintSpace', '/World/Model.coordSys:paintSpace',
+               '/World/Model/Place3dTexture'),
+             ('worldSpace', '/World.coordSys:worldSpace', '/World/Space')])
         self.assertEqual(
-            [(name, xf.GetPath()) for (name, xf)
-            in modelCoords.FindCoordinateSystemsWithInheritance()],
-            [('instanceSpace', Sdf.Path('/World/Model')),
-             ('modelSpace', Sdf.Path('/World/Model/Geom')),
-             ('paintSpace', Sdf.Path('/World/Model/Place3dTexture')),
-             ('worldSpace', Sdf.Path('/World/Space'))])
+            boxCoords.FindBindingsWithInheritance(),
+            [('instanceSpace', '/World/Model.coordSys:instanceSpace',
+              '/World/Model'),
+             ('modelSpace', '/World/Model.coordSys:modelSpace',
+              '/World/Model/Geom'),
+             ('paintSpace', '/World/Model.coordSys:paintSpace',
+               '/World/Model/Place3dTexture'),
+             ('worldSpace', '/World.coordSys:worldSpace', '/World/Space')])
 
         # Bind
         relName = UsdShade.CoordSysAPI.GetCoordSysRelationshipName('boxSpace')
@@ -82,8 +95,8 @@ class TestUsdShadeCoordSysAPI(unittest.TestCase):
         self.assertTrue(geom.HasRelationship(relName))
         self.assertEqual(
             geomCoords.GetLocalBindings(),
-            [('boxSpace', box.GetPath())])
-
+            [('boxSpace', '/World/Model/Geom.coordSys:boxSpace',
+              box.GetPath())])
         # BlockBinding
         self.assertTrue(geom.HasRelationship(relName))
         self.assertTrue(geom.GetRelationship(relName).HasAuthoredTargets())
@@ -100,15 +113,6 @@ class TestUsdShadeCoordSysAPI(unittest.TestCase):
         self.assertFalse(geom.GetRelationship(relName).HasAuthoredTargets())
         geomCoords.ClearBinding('boxSpace', True)
         self.assertFalse(geom.HasRelationship(relName))
-
-        # Bindings to a non-Xformable are not resolved
-        relName = UsdShade.CoordSysAPI.GetCoordSysRelationshipName('invalid')
-        scope = UsdGeom.Scope.Define(stage, '/World/Model/Geom/Scope')
-        geomCoords.Bind('invalid', scope.GetPath())
-        self.assertTrue(geom.HasRelationship(relName))
-        self.assertTrue(geom.GetRelationship(relName).HasAuthoredTargets())
-        self.assertNotEqual(geomCoords.GetLocalBindings(), [])
-        self.assertEqual(geomCoords.GetCoordinateSystems(), [])
 
 if __name__ == '__main__':
     unittest.main()

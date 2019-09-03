@@ -40,6 +40,8 @@
 #include <maya/MFn.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnEnumAttribute.h>
+#include <maya/MFnNumericAttribute.h>
+#include <maya/MFnNumericData.h>
 #include <maya/MFnSet.h>
 #include <maya/MNamespace.h>
 #include <maya/MNodeMessage.h>
@@ -67,6 +69,17 @@ TF_DEFINE_ENV_SETTING(
     "pxrHdImagingShape's \"selectionResolution\" attribute (256, 512, 1024, "
     "2048, or 4096).");
 
+// XXX: Supporting area selections in depth (where an object that is occluded
+// by another object in the selection is also selected) currently comes with a
+// significant performance penalty if the number of objects grows large, so for
+// now it is disabled by default. It can be enabled by default using this env
+// setting, and within a Maya session it can be toggled on and off with an
+// attribute on the pxrHdImagingShape.
+TF_DEFINE_ENV_SETTING(
+    PXRMAYAHD_ENABLE_DEPTH_SELECTION,
+    false,
+    "Enables area selection of objects occluded in depth");
+
 
 TF_DEFINE_PUBLIC_TOKENS(PxrMayaHdImagingShapeTokens,
                         PXRUSDMAYA_HD_IMAGING_SHAPE_TOKENS);
@@ -77,6 +90,7 @@ const MString PxrMayaHdImagingShape::typeName(
 
 // Attributes
 MObject PxrMayaHdImagingShape::selectionResolutionAttr;
+MObject PxrMayaHdImagingShape::enableDepthSelectionAttr;
 
 namespace {
 
@@ -115,6 +129,7 @@ PxrMayaHdImagingShape::initialize()
     MStatus status;
 
     MFnEnumAttribute enumAttrFn;
+    MFnNumericAttribute numericAttrFn;
 
     const int defaultSelectionResolution =
         TfGetEnvSetting(PXRMAYAHD_DEFAULT_SELECTION_RESOLUTION);
@@ -143,6 +158,27 @@ PxrMayaHdImagingShape::initialize()
     status = enumAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(status);
     status = addAttribute(selectionResolutionAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
+    const bool enableDepthSelection =
+        TfGetEnvSetting(PXRMAYAHD_ENABLE_DEPTH_SELECTION);
+
+    enableDepthSelectionAttr = numericAttrFn.create(
+        "enableDepthSelection",
+        "eds",
+        MFnNumericData::kBoolean,
+        0.0,
+        &status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    status = numericAttrFn.setDefault(enableDepthSelection);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    status = numericAttrFn.setInternal(true);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    status = numericAttrFn.setStorable(false);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    status = numericAttrFn.setAffectsAppearance(true);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    status = addAttribute(enableDepthSelectionAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     return MS::kSuccess;
@@ -306,7 +342,8 @@ PxrMayaHdImagingShape::getInternalValue(
         const MPlug& plug,
         MDataHandle& dataHandle)
 {
-    if (plug == selectionResolutionAttr) {
+    if (plug == selectionResolutionAttr ||
+            plug == enableDepthSelectionAttr) {
         // We just want notification of attribute gets and sets. We return
         // false here to tell Maya that it should still manage storage of the
         // value in the data block.
@@ -322,10 +359,11 @@ PxrMayaHdImagingShape::setInternalValue(
         const MPlug& plug,
         const MDataHandle& dataHandle)
 {
-    if (plug == selectionResolutionAttr) {
-        // If the selection resolution is changed, we mark the HdImagingShape
-        // as needing to be redrawn, which is when we'll pull the resolution
-        // value from the shape and pass it to the batch renderer.
+    if (plug == selectionResolutionAttr ||
+            plug == enableDepthSelectionAttr) {
+        // If these attributes are changed, we mark the HdImagingShape as
+        // needing to be redrawn, which is when we'll pull the new values from
+        // the shape and pass them to the batch renderer.
         MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
 
         // We just want notification of attribute gets and sets. We return

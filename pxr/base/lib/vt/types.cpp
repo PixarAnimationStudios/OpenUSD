@@ -32,13 +32,8 @@
 #include "pxr/base/tf/type.h"
 
 #include <algorithm>
-#include <vector>
 
-#include <boost/utility/enable_if.hpp>
-#include <boost/preprocessor.hpp>
-#include <boost/type_traits/is_same.hpp>
-
-using std::vector;
+#include <boost/preprocessor/seq/for_each.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

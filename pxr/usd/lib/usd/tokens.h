@@ -116,7 +116,7 @@ struct UsdTokensType {
     const TfToken clipTimes;
     /// \brief "collection"
     /// 
-    /// This is the namespace prefix used by  UsdCollectionAPI for authoring collections.
+    /// Property namespace prefix for the UsdCollectionAPI schema.
     const TfToken collection;
     /// \brief "exclude"
     /// 

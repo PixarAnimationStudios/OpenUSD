@@ -49,6 +49,13 @@ namespace pxr_half {
     hash_value(const Half& h) { return h.bits(); }
 }
 
+/// Returns the dot (inner) product of two vectors.
+/// For scalar types, this is just the regular product.
+/// \ingroup group_gf_BasicMath
+inline GfHalf GfDot(GfHalf a, GfHalf b) {
+    return a * b;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 

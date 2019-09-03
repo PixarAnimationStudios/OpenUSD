@@ -335,6 +335,11 @@ class "ShapingAPI" (
         doc = """An IES (Illumination Engineering Society) light
         profile describing the angular distribution of light."""
     )
+    bool shaping:ies:normalize = 0 (
+        displayGroup = "Shaping"
+        doc = """Normalizes the IES profile so that it affects the shaping
+        of the light while preserving the overall energy output."""
+    )
 }
 
 class "ShadowAPI" (

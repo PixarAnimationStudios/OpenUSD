@@ -888,6 +888,20 @@ public:
             }
         }
         
+        FnKat::StringAttribute materialBindingPurposesAttr = 
+                opArgs.getChildByName("materialBindingPurposes");
+        if (materialBindingPurposesAttr.getNumberOfValues())
+        {
+            auto sample = materialBindingPurposesAttr.getNearestSample(0.0f);
+
+            for (const auto & v : sample)
+            {
+                ab.materialBindingPurposes.emplace_back(v);
+            }
+        }
+
+
+
         // always include userProperties if not explicitly included.
         if (ab.extraAttributesOrNamespaces.find("userProperties")
                 == ab.extraAttributesOrNamespaces.end())

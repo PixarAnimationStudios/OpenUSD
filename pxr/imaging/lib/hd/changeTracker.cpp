@@ -56,6 +56,7 @@ HdChangeTracker::HdChangeTracker()
     , _instancerIndexVersion(1)
     , _sceneStateVersion(1)
     , _visChangeCount(1)
+    , _renderTagVersion(1)
     , _batchVersion(1)
 {
     /*NOTHING*/
@@ -260,10 +261,10 @@ HdChangeTracker::InstancerRPrimRemoved(SdfPath const& instancerId, SdfPath const
 // -------------------------------------------------------------------------- //
 
 void
-HdChangeTracker::TaskInserted(SdfPath const& id)
+HdChangeTracker::TaskInserted(SdfPath const& id, HdDirtyBits initialDirtyState)
 {
     TF_DEBUG(HD_TASK_ADDED).Msg("Task Added: %s\n", id.GetText());
-    _taskState[id] = AllDirty;
+    _taskState[id] = initialDirtyState;
     ++_sceneStateVersion;
 }
 
@@ -284,8 +285,15 @@ HdChangeTracker::MarkTaskDirty(SdfPath const& id, HdDirtyBits bits)
     }
 
     _IDStateMap::iterator it = _taskState.find(id);
-    if (!TF_VERIFY(it != _taskState.end()))
+    if (!TF_VERIFY(it != _taskState.end(), "Task Id = %s", id.GetText())) {
         return;
+    }
+
+    if (((bits & DirtyRenderTags) != 0) &&
+        ((it->second & DirtyRenderTags) == 0)) {
+        MarkRenderTagsDirty();
+    }
+
     it->second = it->second | bits;
     ++_sceneStateVersion;
 }
@@ -685,6 +693,8 @@ HdChangeTracker::IsPrimvarDirty(HdDirtyBits dirtyBits, SdfPath const& id,
 {
     bool isDirty = false;
     if (name == HdTokens->points) {
+        isDirty = (dirtyBits & DirtyPoints) != 0;
+    } else if (name == HdTokens->velocities) {
         isDirty = (dirtyBits & DirtyPoints) != 0;
     } else if (name == HdTokens->normals) {
         isDirty = (dirtyBits & DirtyNormals) != 0;

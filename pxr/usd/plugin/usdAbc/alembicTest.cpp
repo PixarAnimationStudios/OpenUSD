@@ -35,7 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 template <class T>
-static bool _Truncate(VtValue& v, int max = 5)
+static bool _Truncate(VtValue& v, size_t max = 5)
 {
     if (v.IsHolding<VtArray<T> >()) {
         const VtArray<T> array = v.UncheckedGet<VtArray<T> >();

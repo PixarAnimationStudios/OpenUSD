@@ -34,8 +34,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct _FilterParam {
-    const HdRprimCollection &collection;
     const HdRenderIndex     &renderIndex;
+    const TfTokenVector     &renderTags;
     HdDirtyBits              mask;
 };
 
@@ -45,15 +45,27 @@ _DirtyListFilterPredicate(const SdfPath &rprimID, const void *predicateParam)
     const _FilterParam *filterParam =
                               static_cast<const _FilterParam *>(predicateParam);
 
-    const HdRprimCollection &collection = filterParam->collection;
     const HdRenderIndex &renderIndex    = filterParam->renderIndex;
     HdDirtyBits mask                    = filterParam->mask;
 
     HdChangeTracker const &tracker = renderIndex.GetChangeTracker();
 
    if (mask == 0 || tracker.GetRprimDirtyBits(rprimID) & mask) {
-       if (collection.HasRenderTag(renderIndex.GetRenderTag(rprimID))) {
+       // An empty render tag set means everything passes the filter
+       // Primary user is tests, but some single task render delegates
+       // that don't support render tags yet also use it.
+       if (filterParam->renderTags.empty()) {
            return true;
+       }
+
+       // As the number of tags is expected to be low (<10)
+       // use a simple linear search.
+       TfToken primRenderTag = renderIndex.GetRenderTag(rprimID);
+       size_t numRenderTags = filterParam->renderTags.size();
+       for (size_t tagNum = 0; tagNum < numRenderTags; ++tagNum) {
+           if (filterParam->renderTags[tagNum] == primRenderTag) {
+               return true;
+           }
        }
    }
 
@@ -65,14 +77,16 @@ _DirtyListFilterPredicate(const SdfPath &rprimID, const void *predicateParam)
 HdDirtyList::HdDirtyList(HdRprimCollection const& collection,
                   HdRenderIndex & index)
         : _collection(collection)
+        , _dirtyIds()
         , _renderIndex(index)
-        , _collectionVersion(
-            _renderIndex.GetChangeTracker().GetCollectionVersion(_collection.GetName()) - 1)
-        , _varyingStateVersion(
-            _renderIndex.GetChangeTracker().GetVaryingStateVersion() - 1)
         , _sceneStateVersion(
             _renderIndex.GetChangeTracker().GetSceneStateVersion() - 1)
-        , _isEmpty(false)
+        , _rprimIndexVersion(
+            _renderIndex.GetChangeTracker().GetRprimIndexVersion() - 1)
+        , _renderTagVersion(
+            _renderIndex.GetChangeTracker().GetRenderTagVersion() - 1)
+        , _varyingStateVersion(
+            _renderIndex.GetChangeTracker().GetVaryingStateVersion() - 1)
 {
     HD_PERF_COUNTER_INCR(HdPerfTokens->dirtyLists);
 }
@@ -86,7 +100,8 @@ HdDirtyList::~HdDirtyList()
 }
 
 void
-HdDirtyList::_UpdateIDs(SdfPathVector* ids, HdDirtyBits mask)
+HdDirtyList::_BuildDirtyList(const TfTokenVector& renderTags,
+                             HdDirtyBits mask)
 {
     HD_TRACE_FUNCTION();
     HD_PERF_COUNTER_INCR(HdPerfTokens->dirtyListsRebuilt);
@@ -105,10 +120,10 @@ HdDirtyList::_UpdateIDs(SdfPathVector* ids, HdDirtyBits mask)
     static const SdfPathVector includePaths = {SdfPath::AbsoluteRootPath()};
     static const SdfPathVector excludePaths;
     
-    const SdfPathVector &paths        = _renderIndex.GetRprimIds();
+    const SdfPathVector &paths = _renderIndex.GetRprimIds();
 
 
-    _FilterParam filterParam = {_collection, _renderIndex, mask};
+    _FilterParam filterParam = {_renderIndex, renderTags, mask};
 
     HdPrimGather gather;
 
@@ -117,37 +132,7 @@ HdDirtyList::_UpdateIDs(SdfPathVector* ids, HdDirtyBits mask)
                             excludePaths,
                             _DirtyListFilterPredicate,
                             &filterParam,
-                            ids);
-}
-
-void
-HdDirtyList::Clear()
-{
-    HdChangeTracker &changeTracker = _renderIndex.GetChangeTracker();
-    unsigned int currentCollectionVersion
-        = changeTracker.GetCollectionVersion(_collection.GetName());
-
-    TF_DEBUG(HD_DIRTY_LIST).Msg("DirtyList(%p): Clear()"
-            "(collection: %s, ver: %d, cur-ver: %d)\n",
-            (void*)this,
-            _collection.GetName().GetText(),
-            _collectionVersion,
-            currentCollectionVersion);
-
-    if (_collectionVersion != currentCollectionVersion) {
-        unsigned int currentVaryingStateVersion
-            = changeTracker.GetVaryingStateVersion();
-        // we just cleaned the initialization set.
-        // this collection is clean, and the next step is to find out stable
-        // varying set.
-        _collectionVersion = currentCollectionVersion;
-        _varyingStateVersion = currentVaryingStateVersion - 1;
-    }
-
-    // in any case, this list is now clean until the changeCount changes.
-    // Don't clear dirtyIds so that we can reuse the saved list for
-    // the next stable change (playback) rather than rebuilding again.
-    _isEmpty = true;
+                            &_dirtyIds);
 }
 
 bool
@@ -162,8 +147,7 @@ HdDirtyList::ApplyEdit(HdRprimCollection const& col)
     // DirtyBits may change.
     if (col.GetName() != _collection.GetName()
         || col.GetReprSelector() != _collection.GetReprSelector()
-        || col.IsForcedRepr() != _collection.IsForcedRepr()
-        || col.GetRenderTags() != _collection.GetRenderTags()) {
+        || col.IsForcedRepr() != _collection.IsForcedRepr()) {
         return false;
     }
 
@@ -173,109 +157,129 @@ HdDirtyList::ApplyEdit(HdRprimCollection const& col)
 }
 
 SdfPathVector const&
-HdDirtyList::GetDirtyRprims()
+HdDirtyList::GetDirtyRprims(const TfTokenVector &renderTags)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
     /*
        HdDirtyList has 3-states:
-          - initialization list (any dirty bits)
-          - stable varying list (Varying bit)
-          - empty               (isEmpty = true)
+          - Init                (any dirty bits)
+          - Empty               (no changes)
+          - Stable              (varying)
 
-                                            MarkDirtyStable -----------+
-                                                   ^                   |
-  [init list build] <-+- CollectionChange          |                   |
-         |            ^          ^                 |                   |
-         v            |          |                 |    +-------+      |
-     +---------+      |          +<----------------+<---| empty |      |
-     |init list|--> MarkDirty    |                 |    +-------+      |
-     +---------+                 |                 |        ^       [reuse]
-         |                       |                 |        |          |
-       Clean                     v                 |      Clean        |
-         |                MarkDirtyUnstable        |        ^          |
-         v                       |                 |        |          |
-     +-------+                   |                 |        |          |
-     | empty |                   |             +---------------+       |
-     +-------+                   |             |  varying list | <-----+
-         |                       |             +---------------+
-      MarkDirty                  |                   ^
-         |                       v                   |
-         +----------->  [varying list build] --------+
+                              +---------+
+        Start State O ----->  |  Init   |
+                              +---------+
+                                |     ^
+                                |     |    Scene State Changed &&
+                                |     |    Filter Params Changed
+                                |     |    -----------------------
+                                |     |    Build Init List,
+                                V     |    Invalidate cached varying state.
+                              +---------+
+                              |  Empty  |
+                              +---------+
+        Scene State Changed && |   ^   |    Scene State Changed &&
+     !Varying State Changed && |   |   |    Varying State Changed &&
+     !Filter Params Changed    |   |   |   !Filter Params Changed
+        -------------------    |   |   |   ------------------------
+        Reused cached varying  |   |   |   Rebuild cached varying state list
+        state list             |   |   |
+                               V   |   V
+                              +---------+
+                              | Stable  |
+                              +---------+
+
+        Transitions to the empty state are automatic after the list has been
+        returned.
+
+        "Filter Params Changed" represent are the tracked parameters that
+         effect the gather operation.  This is the render tag version and
+         the * index version.
     */
 
     // see if there's any variability change or not.
     HdChangeTracker &changeTracker = _renderIndex.GetChangeTracker();
 
-    unsigned int currentCollectionVersion
-        = changeTracker.GetCollectionVersion(_collection.GetName());
-    unsigned int currentVaryingStateVersion
-        = changeTracker.GetVaryingStateVersion();
-    unsigned int currentSceneStateVersion
-        = changeTracker.GetSceneStateVersion();
 
-    // if nothing changed, and if it's clean, returns empty.
-    if (_isEmpty && _sceneStateVersion == currentSceneStateVersion) {
+    unsigned int currentSceneStateVersion =
+            changeTracker.GetSceneStateVersion();
+
+    // The scene state hasn't changed since the last call.
+    // Nothing to do.
+    // This could happen in progressive rendering or in multi-viewer scenarios.
+    // XXX: This could be caught earlier and avoid Sync altogether.
+    if (_sceneStateVersion == currentSceneStateVersion) {
+        TF_DEBUG(HD_DIRTY_LIST).Msg("DirtyList(%p): Scene State the same %d\n",
+                                    (void*)this,
+                                    _sceneStateVersion);
+
         static SdfPathVector _EMPTY;
         return _EMPTY;
     }
-    // if nothing changed, but not yet cleaned, returns the cached result.
-    // this list can be either initialization-set or varying-set
-    if (_sceneStateVersion == currentSceneStateVersion) {
-        return _dirtyIds;
-    }
+    _sceneStateVersion = currentSceneStateVersion;
 
-    if (_collectionVersion != currentCollectionVersion) {
-        TF_DEBUG(HD_DIRTY_LIST).Msg("DirtyList(%p): collection version"
-                " changed (%s, %d -> %d)\n",
+    // Something has change, So which of the 3 possible transitions:
+    //
+    //  - New Prims Added/Removed (either because of a structural change
+    //                             or a filter change)
+    //  - Varying Set Changed
+    //  - Time Step               (neither of the above)
+
+    unsigned int currentRprimIndexVersion =
+            changeTracker.GetRprimIndexVersion();
+    unsigned int currentRenderTagVersion =
+            changeTracker.GetRenderTagVersion();
+    unsigned int currentVaryingStateVersion =
+            changeTracker.GetVaryingStateVersion();
+
+    if ((_rprimIndexVersion != currentRprimIndexVersion) ||
+        (_renderTagVersion != currentRenderTagVersion))  {
+        TF_DEBUG(HD_DIRTY_LIST).Msg("DirtyList(%p): Filter Changed:\n"
+                "  (Rprim Index Version %d -> %d)\n"
+                "  (Render Tag Version %d -> %d)\n",
                 (void*)this,
-                _collection.GetName().GetText(),
-                _collectionVersion, currentCollectionVersion);
+                _rprimIndexVersion, currentRprimIndexVersion,
+                _renderTagVersion, currentRenderTagVersion);
 
-        // populate dirty rprims in the collection
-        _UpdateIDs(&_dirtyIds, 0);
-        TF_FOR_ALL(it, _dirtyIds) {
-            changeTracker.MarkRprimDirty(*it, HdChangeTracker::InitRepr);
+        _rprimIndexVersion = currentRprimIndexVersion;
+        _renderTagVersion  = currentRenderTagVersion;
+
+        // Build list including all dirty prims
+        _BuildDirtyList(renderTags, 0);
+
+       // There maybe new prims in the list, that might have repr's they've not
+       // seen before.  To flag these up as needing re-evaluating.
+
+        size_t rprimListSize = _dirtyIds.size();
+        for (size_t primNum = 0; primNum < rprimListSize; ++primNum) {
+            changeTracker.MarkRprimDirty(_dirtyIds[primNum],
+                                         HdChangeTracker::InitRepr);
         }
 
-        // this is very conservative list and is expected to be rebuilt
-        // once it gets cleaned.
-        //
-        // Don't update _collectionVersion so that Clear() can detect that
-        // we'll need to build varying set next.
-    } else if (_varyingStateVersion != currentVaryingStateVersion) {
+        // Need to invalidate the cache varying state
+        _varyingStateVersion = currentVaryingStateVersion - 1;
+    }else if (_varyingStateVersion != currentVaryingStateVersion) {
         TF_DEBUG(HD_DIRTY_LIST).Msg("DirtyList(%p): varying state changed "
-                "(%s, %d -> %d)\n",
+                "(%d -> %d)\n",
                 (void*)this,
-                _collection.GetName().GetText(),
                 _varyingStateVersion,
                 currentVaryingStateVersion);
 
-        // populate only varying prims in the collection
-        _UpdateIDs(&_dirtyIds, HdChangeTracker::Varying);
         _varyingStateVersion = currentVaryingStateVersion;
-    } else if (_sceneStateVersion != currentSceneStateVersion) {
-        // reuse the existing varying prims list.
-        // note that the varying prims list may contain cleaned rprims,
-        // clients still need to ask the actual dirtyBits to ChangeTracker
+
+        // Build list only with prims in varying state
+        _BuildDirtyList(renderTags, HdChangeTracker::Varying);
     }
+    // If not either of the above, we can used the cached results.
 
     if (TfDebug::IsEnabled(HD_DIRTY_LIST)) {
-        std::cout << "  Collection: " << std::endl;
-        for (auto const& i : _collection.GetRootPaths()) {
-            std::cout << "    " << i << std::endl;
-        }
         std::cout << "  _dirtyIds: " << std::endl;
         for (auto const& i : _dirtyIds) {
             std::cout << "    " << i << std::endl;
         }
     }
-
-
-    // this dirtyList reflects the latest state of change tracker.
-    _sceneStateVersion = currentSceneStateVersion;
-    _isEmpty = false;
 
     return _dirtyIds;
 }

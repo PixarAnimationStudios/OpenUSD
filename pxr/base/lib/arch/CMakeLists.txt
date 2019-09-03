@@ -33,6 +33,7 @@ pxr_library(arch
         systemInfo
         threads
         timing
+        virtualMemory
         vsnprintf
 
     PUBLIC_HEADERS

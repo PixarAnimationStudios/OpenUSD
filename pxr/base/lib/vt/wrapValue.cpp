@@ -23,6 +23,11 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/pragmas.h"
+
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_PLACEMENT_NEW  // because of pyFunction.h and boost::function
+
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/vt/array.h"
@@ -339,3 +344,5 @@ void wrapValue()
     TfPyFunctionFromPython<VtValue ()>();
     
 }
+
+ARCH_PRAGMA_POP

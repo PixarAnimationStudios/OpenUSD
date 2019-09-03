@@ -79,8 +79,8 @@ void main(void)
     //    u,v=0,0          u,v=2,0
     //
     //
-    float x = -1.0 + float((gl_VertexID & 1) << 2);
-    float y = -1.0 + float((gl_VertexID & 2) << 1);
+    float x = -1.0 + float(((gl_VertexID%3) & 1) << 2);
+    float y = -1.0 + float(((gl_VertexID%3) & 2) << 1);
     outData.uv.x = (x+1.0) * 0.5;
     outData.uv.y = (y+1.0) * 0.5;
 

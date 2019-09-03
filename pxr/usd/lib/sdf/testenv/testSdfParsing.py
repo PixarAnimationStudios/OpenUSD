@@ -53,6 +53,7 @@ class TestSdfParsing(unittest.TestCase):
         # This will mean that your new test runs first and you can spot
         # failures much quicker.
         testFiles = '''
+        201_format_specifiers_in_strings.sdf
         200_bad_emptyFile.sdf
         199_bad_colorSpace_metadata.sdf
         198_colorSpace_metadata.sdf
@@ -290,8 +291,9 @@ class TestSdfParsing(unittest.TestCase):
             print '\nTest %s' % layerFile
 
             print '\tReading...'
-            layer = Sdf.Layer.FindOrOpen( layerFile )
-            self.assertTrue(layer is not None)
+            layer = Sdf.Layer.FindOrOpen(layerFile)
+            self.assertTrue(layer is not None,
+                            "failed to open @%s@" % layerFile)
             print '\tWriting...'
             try:
                 self.assertTrue(layer.Export( layerFileOut.name ))

@@ -62,6 +62,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 void registerPxrUsdInShippedLightLightListFnc();
 void registerPxrUsdInShippedLightFilterLightListFnc();
 void registerPxrUsdInShippedUiUtils();
+void registerPxrUsdInResolveMaterialBindingsOp();
 
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInCore_XformOp)
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInCore_ScopeOp)
@@ -140,7 +141,8 @@ void registerPlugins()
     registerPxrUsdInShippedLightLightListFnc();
     registerPxrUsdInShippedLightFilterLightListFnc();
     registerPxrUsdInShippedUiUtils();
-
+    registerPxrUsdInResolveMaterialBindingsOp();
+    
     REGISTER_PLUGIN(MaterialReferenceAttrFnc, "PxrUsdInMaterialReference", 0, 1);
     REGISTER_PLUGIN(LibraryMaterialNamesAttrFnc, "PxrUsdInLibraryMaterialNames", 0, 1);
 }

@@ -11,6 +11,9 @@
           "_NdrTestDiscoveryPlugin": {
             "bases": ["NdrDiscoveryPlugin"]
           },
+          "_NdrTestDiscoveryPlugin2": {
+            "bases": ["NdrDiscoveryPlugin"]
+          },
           "_NdrArgsTestParserPlugin": {
             "bases": ["NdrParserPlugin"]
           },

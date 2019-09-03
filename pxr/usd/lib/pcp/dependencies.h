@@ -64,12 +64,15 @@ public:
     /// \name Registration
     /// @{
 
-    /// Add dependency information for the given PcpPrimIndex.
+    /// Add dependency information for the given PcpPrimIndex along with a
+    /// dynamic file format dependency data object if the prim index has
+    /// any arcs that depend on a dynamic file format.
     ///
     /// Assumptions:
     /// - A computed prim index will be added exactly once
     /// - Parent indices will be added before children
-    void Add(const PcpPrimIndex &primIndex);
+    void Add(const PcpPrimIndex &primIndex,
+        PcpDynamicFileFormatDependencyData &&fileFormatDependencyData);
 
     /// Remove dependency information for the given PcpPrimIndex.
     /// Any layer stacks in use by any site are added to \p lifeboat,
@@ -157,6 +160,24 @@ public:
     /// layer stack.
     bool UsesLayerStack(const PcpLayerStackPtr& layerStack) const;
 
+    /// Returns true if there are any dynamic file format argument dependencies
+    /// in this dependencies object. 
+    bool HasAnyDynamicFileFormatArgumentDependencies() const;
+
+    /// Returns true if the given \p field name is a field that was 
+    /// composed while generating dynamic file format arguments for any prim 
+    /// index that was added to this dependencies object. 
+    bool IsPossibleDynamicFileFormatArgumentField(
+        const TfToken &field) const;
+
+    /// Returns the dynamic file format dependency data object for the prim
+    /// index with the given \p primIndexPath. This will return an empty 
+    /// dependency data if either there is no cache prim index for the path or 
+    /// if the prim index has no dynamic file formats that it depends on.
+    const PcpDynamicFileFormatDependencyData &
+    GetDynamicFileFormatArgumentDependencyData(
+        const SdfPath &primIndexPath) const;
+
     /// @}
 
 private:
@@ -171,6 +192,20 @@ private:
     using _LayerStackDepMap = 
         std::unordered_map<PcpLayerStackRefPtr, _SiteDepMap, TfHash>;
     _LayerStackDepMap _deps;
+
+    // Map of prim index paths to the dynamic file format dependency info for 
+    // the prim index.
+    using _FileFormatArgumentDependencyMap = std::unordered_map<
+        SdfPath, PcpDynamicFileFormatDependencyData, SdfPath::Hash>;
+    _FileFormatArgumentDependencyMap _fileFormatArgumentDependencyMap;
+
+    // Map of field name to the number of cached prim indices that depend on
+    // the field for dynamic file format arguments. This for quick lookup of
+    // possible file format argument relevant field changes.
+    using _FileFormatArgumentFieldDepMap = 
+        std::unordered_map<TfToken, int, TfToken::HashFunctor>;
+    _FileFormatArgumentFieldDepMap _possibleDynamicFileFormatArgumentFields; 
+
 };
 
 template <typename FN>

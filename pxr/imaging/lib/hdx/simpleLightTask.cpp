@@ -121,11 +121,13 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
     // Place lighting context in task context
     (*ctx)[HdxTokens->lightingContext] = lightingContext;
 
-    VtValue modelViewMatrix = camera->Get(HdShaderTokens->worldToViewMatrix);
-    TF_VERIFY(modelViewMatrix.IsHolding<GfMatrix4d>());
-    VtValue projectionMatrix = camera->Get(HdShaderTokens->projectionMatrix);
-    TF_VERIFY(projectionMatrix.IsHolding<GfMatrix4d>());
-    GfMatrix4d invCamXform = modelViewMatrix.Get<GfMatrix4d>().GetInverse();
+    GfMatrix4d const& viewMatrix = camera->GetViewMatrix();
+    GfMatrix4d const& viewInverseMatrix = camera->GetViewInverseMatrix();
+    GfMatrix4d const& projectionMatrix = camera->GetProjectionMatrix();
+    // Extract the camera window policy to adjust the frustum correctly for
+    // lights that have shadows.
+    CameraUtilConformWindowPolicy const& windowPolicy =
+        camera->GetWindowPolicy();
 
     // Unique identifier for lights with shadows
     int shadowIndex = -1;
@@ -134,15 +136,6 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
     // because we need to create an array of shadow maps with the same resolution
     int maxShadowRes = 0;
 
-    // Extract the camera window policy to adjust the frustum correctly for
-    // lights that have shadows.
-    CameraUtilConformWindowPolicy windowPolicy = CameraUtilFit;
-    const VtValue vtWindowPolicy = camera->Get(HdCameraTokens->windowPolicy);
-    const bool cameraHasWindowPolicy =
-        vtWindowPolicy.IsHolding<CameraUtilConformWindowPolicy>();
-    if (cameraHasWindowPolicy) {
-        windowPolicy = vtWindowPolicy.Get<CameraUtilConformWindowPolicy>();
-    }
 
     // Extract all light paths for each type of light
     static const TfTokenVector lightTypes = 
@@ -198,9 +191,9 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
             // HdxSimpleLightingShader.
             if (glfl.IsCameraSpaceLight()) {
                 GfVec4f lightPos = glfl.GetPosition();
-                glfl.SetPosition(lightPos * invCamXform);
+                glfl.SetPosition(lightPos * viewInverseMatrix);
                 GfVec3f lightDir = glfl.GetSpotDirection();
-                glfl.SetSpotDirection(invCamXform.TransformDir(lightDir));
+                glfl.SetSpotDirection(viewInverseMatrix.TransformDir(lightDir));
 
                 // Since the light position has been transformed to world space,
                 // record that it's no longer a camera-space light for any
@@ -225,8 +218,7 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
             // Setup the rest of the light parameters necessary 
             // to calculate shadows.
             if (glfl.HasShadow()) {
-                if (!TF_VERIFY(cameraHasWindowPolicy) ||
-                    !TF_VERIFY(lightShadowParams.shadowMatrix)) {
+                if (!TF_VERIFY(lightShadowParams.shadowMatrix)) {
                     glfl.SetHasShadow(false);
                     continue;
                 }
@@ -246,8 +238,7 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
 
     lightingContext->SetUseLighting(_numLights > 0);
     lightingContext->SetLights(_glfSimpleLights);
-    lightingContext->SetCamera(modelViewMatrix.Get<GfMatrix4d>(),
-                               projectionMatrix.Get<GfMatrix4d>());
+    lightingContext->SetCamera(viewMatrix, projectionMatrix);
     // XXX: compatibility hack for passing some unit tests until we have
     //      more formal material plumbing.
     lightingContext->SetMaterial(_material);

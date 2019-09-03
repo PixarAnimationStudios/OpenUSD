@@ -186,6 +186,11 @@ over "GLOBAL" (
                 properties in a UsdShade-based shader definition file.
                 """
             }
+            dictionary coordSys = {
+                string value = "coordSys:"
+                string doc = """Namespace prefix for relationships that
+                bind coordinate systems."""
+            }
         }
     }
 )

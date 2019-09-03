@@ -48,7 +48,7 @@ _ComputePointInstanceWorldBounds(UsdGeomBBoxCache &self,
     boost::python::list ret;
     for (auto const &elem: boxes)
         ret.append(elem);
-    return ret;
+    return std::move(ret);
 }
 
 static object
@@ -68,7 +68,7 @@ _ComputePointInstanceRelativeBounds(UsdGeomBBoxCache &self,
     boost::python::list ret;
     for (auto const &elem: boxes)
         ret.append(elem);
-    return ret;
+    return std::move(ret);
 }
 
 static object
@@ -86,7 +86,7 @@ _ComputePointInstanceLocalBounds(UsdGeomBBoxCache &self,
     boost::python::list ret;
     for (auto const &elem: boxes)
         ret.append(elem);
-    return ret;
+    return std::move(ret);
 }
 
 static object
@@ -104,7 +104,7 @@ _ComputePointInstanceUntransformedBounds(UsdGeomBBoxCache &self,
     boost::python::list ret;
     for (auto const &elem: boxes)
         ret.append(elem);
-    return ret;
+    return std::move(ret);
 }
 
 void wrapUsdGeomBBoxCache()

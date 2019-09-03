@@ -231,7 +231,7 @@ wrapCache()
               const std::string&, 
               bool>(
               (arg("layerStackIdentifier"),
-               arg("targetSchema") = std::string(),
+               arg("fileFormatTarget") = std::string(),
                arg("usd") = false)))
 
         // Note: The following parameters are not wrapped as a properties
@@ -256,8 +256,8 @@ wrapCache()
              (args("layerIdentifier")))
 
         .add_property("layerStack", &PcpCache::GetLayerStack)
-        .add_property("targetSchema", 
-                      make_function(&PcpCache::GetTargetSchema,
+        .add_property("fileFormatTarget", 
+                      make_function(&PcpCache::GetFileFormatTarget,
                                     return_value_policy<return_by_value>()))
 
         .def("ComputeLayerStack", &_ComputeLayerStack)
@@ -295,6 +295,14 @@ wrapCache()
         .def("IsInvalidAssetPath", &PcpCache::IsInvalidAssetPath)
         .def("IsInvalidSublayerIdentifier", 
              &PcpCache::IsInvalidSublayerIdentifier)
+
+        .def("HasAnyDynamicFileFormatArgumentDependencies", 
+             &PcpCache::HasAnyDynamicFileFormatArgumentDependencies)
+        .def("IsPossibleDynamicFileFormatArgumentField", 
+             &PcpCache::IsPossibleDynamicFileFormatArgumentField)
+        .def("GetDynamicFileFormatArgumentDependencyData", 
+             &PcpCache::GetDynamicFileFormatArgumentDependencyData,
+             return_value_policy<reference_existing_object>())
 
         .def("PrintStatistics", &PcpCache::PrintStatistics)
         .def("Reload", &_Reload)

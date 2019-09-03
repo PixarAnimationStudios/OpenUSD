@@ -33,9 +33,10 @@
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/spec.h"
 
-#include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
+
+#include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -115,7 +116,7 @@ public:
     virtual bool ClearEdits() = 0;
     virtual bool ClearEditsAndMakeExplicit() = 0;
 
-    typedef boost::function<
+    typedef std::function<
                 boost::optional<value_type>(const value_type&)
             >
         ModifyCallback;
@@ -126,7 +127,7 @@ public:
     /// returned key.
     virtual void ModifyItemEdits(const ModifyCallback& cb) = 0;
 
-    typedef boost::function<
+    typedef std::function<
                 boost::optional<value_type>(SdfListOpType, const value_type&)
             >
         ApplyCallback;
@@ -233,8 +234,8 @@ protected:
         // We assume that duplicate data items are never allowed to be
         // authored. For full generality, this information ought to come from
         // the layer schema.
-        for (int i = 0; i < newValues.size(); ++i) {
-            for (int j = i + 1; j < newValues.size(); ++j) {
+        for (size_t i = 0; i < newValues.size(); ++i) {
+            for (size_t j = i + 1; j < newValues.size(); ++j) {
                 if (newValues[i] == newValues[j]) {
                     TF_CODING_ERROR("Duplicate item '%s' not allowed for "
                                     "field '%s' on <%s>",

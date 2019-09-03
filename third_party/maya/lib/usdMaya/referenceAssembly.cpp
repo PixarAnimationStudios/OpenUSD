@@ -67,7 +67,9 @@
 #include <maya/MSelectionList.h>
 #include <maya/MString.h>
 
+#include <algorithm>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -607,39 +609,47 @@ _GetEdits(
 }
 
 static
-std::set<std::string> _GetVariantSetNamesForStageCache(
-        const MFnDependencyNode& depNodeFn)
+std::set<std::string>
+_GetVariantSetNamesForStageCache(const MFnDependencyNode& depNodeFn)
 {
-    const auto& regVarSets = UsdUtilsGetRegisteredVariantSets();
-    if (!regVarSets.empty()) {
-        std::set<std::string> ret;
-        for (const auto& regVarSet: regVarSets) {
-            ret.insert(regVarSet.name);
-        }
-        return ret;
-    }
-
     std::set<std::string> varSetNames;
-    for (unsigned int i = 0; i < depNodeFn.attributeCount(); i++) {
-        MObject attrObj = depNodeFn.attribute(i);
+
+    // Always include all registered variants sets, if there are any.
+    const auto& regVarSets = UsdUtilsGetRegisteredVariantSets();
+    std::transform(
+        regVarSets.cbegin(),
+        regVarSets.cend(),
+        std::inserter(varSetNames, varSetNames.begin()),
+        [](const UsdUtilsRegisteredVariantSet& varSet) {
+            return varSet.name;
+        }
+    );
+
+    // Also include any variant set selection attributes authored on the Maya
+    // node, even if they are for variant sets that have not been registered.
+    for (unsigned int i = 0u; i < depNodeFn.attributeCount(); ++i) {
+        const MObject attrObj = depNodeFn.attribute(i);
         if (attrObj.isNull()) {
             continue;
         }
 
-        MPlug attrPlug = depNodeFn.findPlug(attrObj);
+        const MPlug attrPlug = depNodeFn.findPlug(attrObj);
         if (attrPlug.isNull()) {
             continue;
         }
 
-        std::string attrName(attrPlug.partialName().asChar());
-        if (!TfStringStartsWith(attrName, UsdMayaVariantSetTokens->PlugNamePrefix)) {
+        const std::string attrName(attrPlug.partialName().asChar());
+        if (!TfStringStartsWith(
+                attrName,
+                UsdMayaVariantSetTokens->PlugNamePrefix)) {
             continue;
         }
 
-        std::string variantSet = attrName.substr(
+        const std::string variantSet = attrName.substr(
             UsdMayaVariantSetTokens->PlugNamePrefix.GetString().size());
         varSetNames.insert(variantSet);
     }
+
     return varSetNames;
 }
 

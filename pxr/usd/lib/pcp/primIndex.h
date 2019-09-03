@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/composeSite.h"
+#include "pxr/usd/pcp/dynamicFileFormatDependencyData.h"
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/pcp/iterator.h"
 #include "pxr/usd/pcp/node.h"
@@ -59,7 +60,6 @@ class PcpCache;
 class PcpPrimIndex;
 class PcpPrimIndexInputs;
 class PcpPrimIndexOutputs;
-class PcpPayloadDecorator;
 class SdfPath;
 
 /// \class PcpPrimIndex
@@ -289,11 +289,18 @@ public:
     /// that wasn't previously in the cache's payload include set.
     bool includedDiscoveredPayload = false;
     
+    /// A list of names of fields that were composed to generate dynamic file 
+    /// format arguments for a node in primIndex. These are not necessarily 
+    /// fields that had values, but is the list of all fields that a  composed 
+    /// value was requested for. 
+    PcpDynamicFileFormatDependencyData dynamicFileFormatDependency;
+
     /// Swap content with \p r.
     inline void swap(PcpPrimIndexOutputs &r) {
         primIndex.swap(r.primIndex);
         allErrors.swap(r.allErrors);
         std::swap(includedDiscoveredPayload, r.includedDiscoveredPayload);
+        dynamicFileFormatDependency.swap(r.dynamicFileFormatDependency);
     }
 
     /// Appends the outputs from \p childOutputs to this object, using 
@@ -302,7 +309,7 @@ public:
     /// 
     /// Returns the node in this object's prim index corresponding to the root
     /// node of \p childOutputs' prim index.
-    PcpNodeRef Append(const PcpPrimIndexOutputs& childOutputs,
+    PcpNodeRef Append(PcpPrimIndexOutputs&& childOutputs,
                       const PcpArc& arcToParent);
 };
 
@@ -321,7 +328,6 @@ public:
         , includedPayloads(nullptr)
         , includedPayloadsMutex(nullptr)
         , parentIndex(nullptr)
-        , payloadDecorator(nullptr)
         , cull(true)
         , usd(false) 
     { }
@@ -334,11 +340,6 @@ public:
     /// needed intermediate results.
     PcpPrimIndexInputs& Cache(PcpCache* cache_)
     { cache = cache_; return *this; }
-
-    /// If supplied, the given PcpPayloadDecorator will be invoked when
-    /// processing a payload arc.
-    PcpPrimIndexInputs& PayloadDecorator(PcpPayloadDecorator* decorator)
-    { payloadDecorator = decorator; return *this; }
 
     /// Ordered list of variant names to use for the "standin" variant set
     /// if there is no authored opinion in scene description.
@@ -374,10 +375,10 @@ public:
     PcpPrimIndexInputs& USD(bool doUSD = true)
     { usd = doUSD; return *this; }
 
-    /// The target schema for scene description layers encountered during
+    /// The file format target for scene description layers encountered during
     /// prim index computation.
-    PcpPrimIndexInputs& TargetSchema(const std::string& schema)
-    { targetSchema = schema; return *this; }
+    PcpPrimIndexInputs& FileFormatTarget(const std::string& target)
+    { fileFormatTarget = target; return *this; }
 
 // private:
     PcpCache* cache;
@@ -386,8 +387,7 @@ public:
     tbb::spin_rw_mutex *includedPayloadsMutex;
     std::function<bool (const SdfPath &)> includePayloadPredicate;
     const PcpPrimIndex *parentIndex;
-    std::string targetSchema;
-    PcpPayloadDecorator* payloadDecorator;
+    std::string fileFormatTarget;
     bool cull;
     bool usd;
 };

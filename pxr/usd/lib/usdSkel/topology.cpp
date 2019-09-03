@@ -79,7 +79,7 @@ _ComputeParentIndicesFromPaths(TfSpan<const SdfPath> paths)
     TRACE_FUNCTION();
 
     _PathIndexMap pathMap;
-    for (ptrdiff_t i = 0; i < paths.size(); ++i) {
+    for (size_t i = 0; i < paths.size(); ++i) {
         pathMap[paths[i]] = static_cast<int>(i);
     }
 
@@ -87,7 +87,7 @@ _ComputeParentIndicesFromPaths(TfSpan<const SdfPath> paths)
     parentIndices.assign(paths.size(), -1);
     
     const auto parentIndicesSpan = TfMakeSpan(parentIndices);
-    for (ptrdiff_t i = 0; i < paths.size(); ++i) {
+    for (size_t i = 0; i < paths.size(); ++i) {
         parentIndicesSpan[i] = _GetParentIndex(pathMap, paths[i]);
     }
     return parentIndices;
@@ -99,7 +99,7 @@ _ComputeParentIndicesFromTokens(TfSpan<const TfToken> tokens)
 {
     // Convert tokens to paths.
     SdfPathVector paths(tokens.size());
-    for (ptrdiff_t i = 0; i < tokens.size(); ++i) {
+    for (size_t i = 0; i < tokens.size(); ++i) {
         paths[i] = SdfPath(tokens[i].GetString());
     }
     return _ComputeParentIndicesFromPaths(paths);

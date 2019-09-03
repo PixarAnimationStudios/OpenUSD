@@ -291,12 +291,17 @@ void HdEmbree_TestGLDrawing::InitTest()
     _sceneDelegate->UpdateCamera(camera,
         HdCameraTokens->projectionMatrix,
         VtValue(frustum.ComputeProjectionMatrix()));
+    _sceneDelegate->UpdateCamera(camera,
+        HdCameraTokens->windowPolicy,
+        VtValue(CameraUtilCrop));
 };
 
 void HdEmbree_TestGLDrawing::DrawTest()
 {
     // The GL viewport needs to be set before calling execute.
     glViewport(0, 0, GetWidth(), GetHeight());
+
+    // XXX: We don't plumb changes to window size to the task.
 
     // Ask hydra to execute our render task (producing an image).
     HdTaskSharedPtr renderTask = _renderIndex->GetTask(SdfPath("/renderTask"));

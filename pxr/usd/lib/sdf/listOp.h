@@ -28,10 +28,10 @@
 #include "pxr/usd/sdf/api.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/function.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/optional.hpp>
 
+#include <functional>
 #include <iosfwd>
 #include <list>
 #include <map>
@@ -165,7 +165,7 @@ public:
     SDF_API void ClearAndMakeExplicit();
 
     /// Callback type for ApplyOperations.
-    typedef boost::function<
+    typedef std::function<
         boost::optional<ItemType>(SdfListOpType, const ItemType&)
     > ApplyCallback;
 
@@ -193,7 +193,7 @@ public:
     ApplyOperations(const SdfListOp<T> &inner) const;
 
     /// Callback type for ModifyOperations.
-    typedef boost::function<
+    typedef std::function<
         boost::optional<ItemType>(const ItemType&)
     > ModifyCallback;
 

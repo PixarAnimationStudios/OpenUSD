@@ -149,10 +149,10 @@ PxrMayaHdImagingShapeDrawOverride::prepareForDraw(
         objPath.fullPathName().asChar());
 
     // The HdImagingShape is very rarely marked dirty, but one of the things
-    // that does so is changing the selection resolution, so we grab the value
-    // from the shape here and use it to set the resolution in the batch
-    // renderer. The selection resolution should then be set appropriately for
-    // subsequent selections.
+    // that does so is changing batch renderer settings attributes, so we grab
+    // the values from the shape here and pass them along to the batch
+    // renderer. Settings that affect selection should then be set
+    // appropriately for subsequent selections.
     MStatus status;
     const MFnDependencyNode depNodeFn(imagingShape->thisMObject(), &status);
     if (status == MS::kSuccess) {
@@ -170,6 +170,23 @@ PxrMayaHdImagingShapeDrawOverride::prepareForDraw(
             if (status == MS::kSuccess) {
                 UsdMayaGLBatchRenderer::GetInstance().SetSelectionResolution(
                     GfVec2i(selectionResolution));
+            }
+        }
+
+        const MPlug enableDepthSelectionPlug =
+            depNodeFn.findPlug(
+                PxrMayaHdImagingShape::enableDepthSelectionAttr,
+                &status);
+        if (status == MS::kSuccess) {
+            const bool enableDepthSelection =
+#if MAYA_API_VERSION >= 20180000
+                enableDepthSelectionPlug.asBool(&status);
+#else
+                enableDepthSelectionPlug.asBool(MDGContext::fsNormal, &status);
+#endif
+            if (status == MS::kSuccess) {
+                UsdMayaGLBatchRenderer::GetInstance().SetDepthSelectionEnabled(
+                    enableDepthSelection);
             }
         }
     }

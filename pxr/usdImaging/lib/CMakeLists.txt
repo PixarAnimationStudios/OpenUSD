@@ -4,6 +4,7 @@ set(DIRS
     usdShaders
     usdSkelImaging
     usdVolImaging
+    usdAppUtils
     usdviewq
 )
 

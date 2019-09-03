@@ -30,10 +30,11 @@
 #include "pxr/imaging/hdx/colorizeSelectionTask.h"
 #include "pxr/imaging/hdx/colorizeTask.h"
 #include "pxr/imaging/hdx/colorCorrectionTask.h"
-#include "pxr/imaging/hdx/intersector.h"
-#include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/oitRenderTask.h"
 #include "pxr/imaging/hdx/oitResolveTask.h"
+#include "pxr/imaging/hdx/pickTask.h"
+#include "pxr/imaging/hdx/pickFromRenderBufferTask.h"
+#include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTask.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
 #include "pxr/imaging/hdx/shadowTask.h"
@@ -47,9 +48,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(HdxIntersectionModeTokens, \
-    HDX_INTERSECTION_MODE_TOKENS);
-
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -61,12 +59,15 @@ TF_DEFINE_PRIVATE_TOKENS(
     (colorizeSelectionTask)
     (oitResolveTask)
     (colorCorrectionTask)
+    (pickTask)
+    (pickFromRenderBufferTask)
 
     // global camera
     (camera)
 
     // For the internal delegate...
     (renderBufferDescriptor)
+    (renderTags)
 );
 
 // ---------------------------------------------------------------------------
@@ -87,6 +88,14 @@ HdxTaskController::_Delegate::Get(SdfPath const& id, TfToken const& key)
 }
 
 /* virtual */
+VtValue
+HdxTaskController::_Delegate::GetCameraParamValue(SdfPath const& id, 
+                                                  TfToken const& key)
+{   
+    return Get(id, key);
+}
+
+/* virtual */
 bool
 HdxTaskController::_Delegate::IsEnabled(TfToken const& option) const
 {
@@ -99,20 +108,24 @@ HdxTaskController::_Delegate::IsEnabled(TfToken const& option) const
 }
 
 /* virtual */
-std::vector<GfVec4d>
-HdxTaskController::_Delegate::GetClipPlanes(SdfPath const& cameraId)
-{
-    return GetParameter<std::vector<GfVec4d>>(cameraId,
-                HdCameraTokens->clipPlanes);
-}
-
-/* virtual */
 HdRenderBufferDescriptor
 HdxTaskController::_Delegate::GetRenderBufferDescriptor(SdfPath const& id)
 {
     return GetParameter<HdRenderBufferDescriptor>(id,
                 _tokens->renderBufferDescriptor);
 }
+
+
+/* virtual */
+TfTokenVector
+HdxTaskController::_Delegate::GetTaskRenderTags(SdfPath const& taskId)
+{
+    if (HasParameter(taskId, _tokens->renderTags)) {
+        return GetParameter<TfTokenVector>(taskId, _tokens->renderTags);
+    }
+    return TfTokenVector();
+}
+
 
 // ---------------------------------------------------------------------------
 // Task controller implementation.
@@ -131,10 +144,39 @@ HdxTaskController::HdxTaskController(HdRenderIndex *renderIndex,
                                      SdfPath const& controllerId)
     : _index(renderIndex)
     , _controllerId(controllerId)
-    , _intersector(new HdxIntersector(renderIndex))
     , _delegate(renderIndex, controllerId)
 {
     _CreateRenderGraph();
+}
+
+HdxTaskController::~HdxTaskController()
+{
+    GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->camera, _cameraId);
+    SdfPath const tasks[] = {
+        _oitResolveTaskId,
+        _selectionTaskId,
+        _simpleLightTaskId,
+        _shadowTaskId,
+        _colorizeSelectionTaskId,
+        _colorizeTaskId,
+        _colorCorrectionTaskId,
+        _pickTaskId,
+        _pickFromRenderBufferTaskId,
+    };
+    for (size_t i = 0; i < sizeof(tasks)/sizeof(tasks[0]); ++i) {
+        if (!tasks[i].IsEmpty()) {
+            GetRenderIndex()->RemoveTask(tasks[i]);
+        }
+    }
+    for (auto const& id : _renderTaskIds) {
+        GetRenderIndex()->RemoveTask(id);
+    }
+    for (auto const& id : _lightIds) {
+        GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->simpleLight, id);
+    }
+    for (auto const& id : _aovBufferIds) {
+        GetRenderIndex()->RemoveBprim(HdPrimTypeTokens->renderBuffer, id);
+    }
 }
 
 void
@@ -151,6 +193,7 @@ HdxTaskController::_CreateRenderGraph()
     // delegate capabilities evolve, we'll need a more complicated switch
     // than this...
     if (_IsStreamRenderingBackend(GetRenderIndex())) {
+        // Rendering rendergraph
         _CreateLightingTask();
         _CreateShadowTask();
         _renderTaskIds.push_back(_CreateRenderTask(
@@ -162,11 +205,16 @@ HdxTaskController::_CreateRenderGraph()
         _CreateOitResolveTask();
         _CreateSelectionTask();
         _CreateColorCorrectionTask();
+
+        // Picking rendergraph
+        _CreatePickTask();
     } else {
         _renderTaskIds.push_back(_CreateRenderTask(TfToken()));
         if (_AovsSupported()) {
             _CreateColorizeTask();
             _CreateColorizeSelectionTask();
+
+            _CreatePickFromRenderBufferTask();
 
             // Initialize the AOV system to render color. Note:
             // SetRenderOutputs special-cases color to include support for
@@ -230,8 +278,12 @@ HdxTaskController::_CreateRenderTask(TfToken const& materialTag)
         GetRenderIndex()->InsertTask<HdxOitRenderTask>(&_delegate, taskId);
     }
 
+    // Create an initial set of render tags in case the user doesn't set any
+    TfTokenVector renderTags = { HdTokens->geometry };
+
     _delegate.SetParameter(taskId, HdTokens->params, renderParams);
     _delegate.SetParameter(taskId, HdTokens->collection, collection);
+    _delegate.SetParameter(taskId, HdTokens->renderTags, renderTags);
 
     return taskId;
 }
@@ -282,15 +334,8 @@ HdxTaskController::_CreateOitResolveTask()
 {
     _oitResolveTaskId = GetControllerId().AppendChild(_tokens->oitResolveTask);
 
-    HdxRenderTaskParams params;
-    params.camera = _cameraId;
-    params.viewport = GfVec4d(0,0,1,1);
-
     GetRenderIndex()->InsertTask<HdxOitResolveTask>(&_delegate,
         _oitResolveTaskId);
-
-    _delegate.SetParameter(_oitResolveTaskId, HdTokens->params,
-        params);
 }
 
 void
@@ -357,7 +402,10 @@ HdxTaskController::_CreateShadowTask()
 
     GetRenderIndex()->InsertTask<HdxShadowTask>(&_delegate, _shadowTaskId);
 
+    TfTokenVector renderTags = { HdTokens->geometry };
+
     _delegate.SetParameter(_shadowTaskId, HdTokens->params, shadowParams);
+    _delegate.SetParameter(_shadowTaskId, _tokens->renderTags, renderTags);
 }
 
 void
@@ -391,32 +439,33 @@ HdxTaskController::_CreateColorCorrectionTask()
         taskParams);
 }
 
-HdxTaskController::~HdxTaskController()
+void
+HdxTaskController::_CreatePickTask()
 {
-    GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->camera, _cameraId);
-    SdfPath const tasks[] = {
-        _oitResolveTaskId,
-        _selectionTaskId,
-        _simpleLightTaskId,
-        _shadowTaskId,
-        _colorizeSelectionTaskId,
-        _colorizeTaskId,
-        _colorCorrectionTaskId
-    };
-    for (size_t i = 0; i < sizeof(tasks)/sizeof(tasks[0]); ++i) {
-        if (!tasks[i].IsEmpty()) {
-            GetRenderIndex()->RemoveTask(tasks[i]);
-        }
-    }
-    for (auto const& id : _renderTaskIds) {
-        GetRenderIndex()->RemoveTask(id);
-    }
-    for (auto const& id : _lightIds) {
-        GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->simpleLight, id);
-    }
-    for (auto const& id : _aovBufferIds) {
-        GetRenderIndex()->RemoveBprim(HdPrimTypeTokens->renderBuffer, id);
-    }
+    _pickTaskId = GetControllerId().AppendChild(
+        _tokens->pickTask);
+
+    HdxPickTaskParams taskParams;
+
+    GetRenderIndex()->InsertTask<HdxPickTask>(&_delegate, _pickTaskId);
+
+    _delegate.SetParameter(_pickTaskId, HdTokens->params, taskParams);
+}
+
+void
+HdxTaskController::_CreatePickFromRenderBufferTask()
+{
+    _pickFromRenderBufferTaskId = GetControllerId().AppendChild(
+        _tokens->pickFromRenderBufferTask);
+
+    HdxPickFromRenderBufferTaskParams taskParams;
+    taskParams.cameraId = _cameraId;
+
+    GetRenderIndex()->InsertTask<HdxPickFromRenderBufferTask>(&_delegate,
+        _pickFromRenderBufferTaskId);
+
+    _delegate.SetParameter(_pickFromRenderBufferTaskId, HdTokens->params,
+        taskParams);
 }
 
 bool
@@ -481,7 +530,7 @@ HdxTaskController::_AovsSupported() const
 }
 
 HdTaskSharedPtrVector const
-HdxTaskController::GetTasks() const
+HdxTaskController::GetRenderingTasks() const
 {
     HdTaskSharedPtrVector tasks;
 
@@ -526,6 +575,18 @@ HdxTaskController::GetTasks() const
 
     if (!_colorCorrectionTaskId.IsEmpty() && _ColorCorrectionEnabled())
         tasks.push_back(GetRenderIndex()->GetTask(_colorCorrectionTaskId));
+
+    return tasks;
+}
+
+HdTaskSharedPtrVector const
+HdxTaskController::GetPickingTasks() const
+{
+    HdTaskSharedPtrVector tasks;
+    if (!_pickTaskId.IsEmpty())
+        tasks.push_back(GetRenderIndex()->GetTask(_pickTaskId));
+    if (!_pickFromRenderBufferTaskId.IsEmpty())
+        tasks.push_back(GetRenderIndex()->GetTask(_pickFromRenderBufferTaskId));
 
     return tasks;
 }
@@ -704,6 +765,35 @@ HdxTaskController::SetViewportRenderOutput(TfToken const& name)
         GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
             _colorizeSelectionTaskId, HdChangeTracker::DirtyParams);
     }
+
+    if (!_pickFromRenderBufferTaskId.IsEmpty()) {
+        HdxPickFromRenderBufferTaskParams pickParams =
+            _delegate.GetParameter<HdxPickFromRenderBufferTaskParams>(
+                _pickFromRenderBufferTaskId, HdTokens->params);
+
+        if (name == HdAovTokens->color) {
+            // If we're rendering color, make sure the pick task has the
+            // proper id & depth buffers...
+            pickParams.primIdBufferPath =
+                _GetAovPath(HdAovTokens->primId);
+            pickParams.instanceIdBufferPath =
+                _GetAovPath(HdAovTokens->instanceId);
+            pickParams.elementIdBufferPath =
+                _GetAovPath(HdAovTokens->elementId);
+            pickParams.depthBufferPath =
+                _GetAovPath(HdAovTokens->depth);
+        } else {
+            pickParams.primIdBufferPath = SdfPath::EmptyPath();
+            pickParams.instanceIdBufferPath = SdfPath::EmptyPath();
+            pickParams.elementIdBufferPath = SdfPath::EmptyPath();
+            pickParams.depthBufferPath = SdfPath::EmptyPath();
+        }
+
+        _delegate.SetParameter(_pickFromRenderBufferTaskId, HdTokens->params,
+            pickParams);
+        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+            _pickFromRenderBufferTaskId, HdChangeTracker::DirtyParams);
+    }
 }
 
 HdRenderBuffer*
@@ -851,7 +941,56 @@ HdxTaskController::SetRenderParams(HdxRenderTaskParams const& params)
                 _shadowTaskId, HdChangeTracker::DirtyParams);
         }
     }
+
+    // Update pick task
+    if (!_pickTaskId.IsEmpty()) {
+        HdxPickTaskParams pickParams =
+            _delegate.GetParameter<HdxPickTaskParams>(
+                _pickTaskId, HdTokens->params);
+        
+        if (pickParams.alphaThreshold != params.alphaThreshold ||
+            pickParams.cullStyle != params.cullStyle ||
+            pickParams.enableSceneMaterials != params.enableSceneMaterials) {
+
+            pickParams.alphaThreshold = params.alphaThreshold;
+            pickParams.cullStyle = params.cullStyle;
+            pickParams.enableSceneMaterials = params.enableSceneMaterials;
+
+            _delegate.SetParameter(_pickTaskId, HdTokens->params, pickParams);
+            GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+                _pickTaskId, HdChangeTracker::DirtyParams);
+        }
+    }
 }
+
+
+void
+HdxTaskController::SetRenderTags(TfTokenVector const& renderTags)
+{
+    HdChangeTracker &tracker = GetRenderIndex()->GetChangeTracker();
+
+    for (SdfPath const& renderTaskId : _renderTaskIds) {
+        if (_delegate.GetTaskRenderTags(renderTaskId) != renderTags) {
+            _delegate.SetParameter(renderTaskId,
+                                   _tokens->renderTags,
+                                   renderTags);
+            tracker.MarkTaskDirty(renderTaskId,
+                                  HdChangeTracker::DirtyRenderTags);
+        }
+    }
+
+    if (!_pickTaskId.IsEmpty()) {
+        if (_delegate.GetTaskRenderTags(_pickTaskId) != renderTags) {
+            _delegate.SetParameter(_pickTaskId,
+                                   _tokens->renderTags,
+                                   renderTags);
+
+            tracker.MarkTaskDirty(_pickTaskId,
+                                  HdChangeTracker::DirtyRenderTags);
+        }
+    }
+}
+
 
 void
 HdxTaskController::SetShadowParams(HdxShadowTaskParams const& params)
@@ -957,61 +1096,6 @@ HdxTaskController::SetSelectionColor(GfVec4f const& color)
                 _colorizeSelectionTaskId, HdChangeTracker::DirtyParams);
         }
     }
-}
-
-void
-HdxTaskController::SetPickResolution(unsigned int size)
-{
-    _intersector->SetResolution(GfVec2i(size, size));
-}
-
-bool
-HdxTaskController::TestIntersection(
-        HdEngine* engine,
-        HdRprimCollection const& collection,
-        HdxIntersector::Params const& qparams,
-        TfToken const& intersectionMode,
-        HdxIntersector::HitVector *allHits)
-{
-    if (allHits == nullptr) {
-        TF_CODING_ERROR("Null hit vector passed to TestIntersection");
-        return false;
-    }
-
-    HdxIntersector::Result result;
-    if (!_intersector->Query(qparams, collection, engine, &result)) {
-        return false;
-    }
-
-    if (intersectionMode == HdxIntersectionModeTokens->nearestToCenter) {
-        HdxIntersector::Hit hit;
-        if (!result.ResolveNearestToCenter(&hit)) {
-            return false;
-        }
-        allHits->push_back(hit);
-    } else if (intersectionMode == HdxIntersectionModeTokens->nearestToCamera) {
-        HdxIntersector::Hit hit;
-        if (!result.ResolveNearestToCamera(&hit)) {
-            return false;
-        }
-        allHits->push_back(hit);
-    } else if (intersectionMode == HdxIntersectionModeTokens->unique) {
-        HdxIntersector::HitSet hits;
-        if (!result.ResolveUnique(&hits)) {
-            return false;
-        }
-        allHits->assign(hits.begin(), hits.end());
-    } else if (intersectionMode == HdxIntersectionModeTokens->all) {
-        if (!result.ResolveAll(allHits)) {
-            return false;
-        }
-    } else {
-        TF_CODING_ERROR("Unrecognized interesection mode '%s'",
-            intersectionMode.GetText());
-        return false;
-    }
-
-    return true;
 }
 
 void
@@ -1229,7 +1313,7 @@ HdxTaskController::IsConverged() const
 {
     bool converged = true;
 
-    HdTaskSharedPtrVector tasks = GetTasks();
+    HdTaskSharedPtrVector tasks = GetRenderingTasks();
     for (auto const& task : tasks) {
         boost::shared_ptr<HdxProgressiveTask> progressiveTask =
             boost::dynamic_pointer_cast<HdxProgressiveTask>(task);

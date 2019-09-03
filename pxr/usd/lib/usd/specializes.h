@@ -60,7 +60,7 @@ public:
     /// in the position specified by \p position.
     USD_API
     bool AddSpecialize(const SdfPath &primPath,
-                       UsdListPosition position=UsdListPositionTempDefault);
+               UsdListPosition position=UsdListPositionBackOfPrependList);
 
     /// Removes the specified path from the specializes listOp at the
     /// current EditTarget.

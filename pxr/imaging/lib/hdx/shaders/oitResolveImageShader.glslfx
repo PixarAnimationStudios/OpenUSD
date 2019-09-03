@@ -39,6 +39,7 @@
 
 vec4 imageShader(vec2 uv)
 {
+#if defined(HD_HAS_hdxOitDataBuffer)
     int screenWidth = HdGet_oitWidth();
     int screenHeight = HdGet_oitHeight();
     int numSamples = HdGet_oitSamples();
@@ -83,4 +84,7 @@ vec4 imageShader(vec2 uv)
     }
 
     return colorAccum;
+#else
+    return vec4(0);
+#endif
 }

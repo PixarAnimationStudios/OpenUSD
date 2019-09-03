@@ -156,47 +156,49 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
-    /// A name bound to a path indicating a coordinate system.
-    typedef std::pair<TfToken, SdfPath> Binding;
+    /// A coordinate system binding.
+    /// Binds a name to a coordSysPrim for the bindingPrim
+    /// (and its descendants, unless overriden).
+    typedef struct {
+        TfToken name;
+        SdfPath bindingRelPath;
+        SdfPath coordSysPrimPath;
+    } Binding;
 
-    /// A name resolved to a UsdGeomXformable coordinate system.
-    typedef std::pair<TfToken, UsdGeomXformable> CoordinateSystem;
-
-    /// Find the list of named coordinate systems introduced
-    /// by bindings at this pirm.
-    ///
-    /// To be valid, a binding must target an Xformable prim.
-    /// Invalid bindings will be silently skipped.
+    /// Returns true if the prim has local coordinate system binding
+    /// opinions.  Note that the resulting binding list may still be
+    /// empty.
     USDGEOM_API
-    std::vector<UsdShadeCoordSysAPI::CoordinateSystem>
-    GetCoordinateSystems() const;
+    bool HasLocalBindings() const;
 
-    /// Find the list of named coordinate systems that apply at
-    /// this prim, including inherited bindings.
+    /// Get the list of coordinate system bindings local to this prim.
+    /// This does not process inherited bindings.  It does not
+    /// validate that a prim exists at the indicated path.
+    /// If the binding relationship has multiple targets,
+    /// only the first is used.
+    USDGEOM_API
+    std::vector<Binding> GetLocalBindings() const;
+
+    /// Find the list of coordinate system bindings that apply
+    /// to this prim, including inherited bindings.
     ///
     /// This computation examines this prim and ancestors for
     /// the strongest binding for each name.  A binding expressed by
     /// a child prim supercedes bindings on ancestors.
     ///
-    /// To be valid, a binding must target an Xformable prim.
-    /// Invalid bindings will be silently skipped.
+    /// Note that this API does not validate the prims at the
+    /// target paths; they may be of incorrect type, or missing
+    /// entirely.
+    ///
+    /// Binding relationships with no resolved targets are skipped.
     USDGEOM_API
-    std::vector<UsdShadeCoordSysAPI::CoordinateSystem>
-    FindCoordinateSystemsWithInheritance() const;
-
-    /// Get the list of coordinate system bindings local to this prim.
-    /// This does not process inherited bindings.  It does not
-    /// validate that a prim exists at the indicated path.
-    /// If the relationship has multiple targets, only the first
-    /// is used.
-    USDGEOM_API
-    std::vector<Binding> GetLocalBindings() const;
+    std::vector<Binding> FindBindingsWithInheritance() const;
 
     /// Bind the name to the given path.
     /// The prim at the given path is expected to be UsdGeomXformable,
     /// in order for the binding to be succesfully resolved.
     USDGEOM_API
-    bool Bind(TfToken const &name, SdfPath const &path) const;
+    bool Bind(const TfToken &name, const SdfPath &path) const;
 
     /// Clear the indicated coordinate system binding on this prim
     /// from the current edit target.
@@ -205,7 +207,7 @@ public:
     /// preserve meta-data we may have intentionally authored on the
     /// relationship)
     USDGEOM_API
-    bool ClearBinding(TfToken const& name, bool removeSpec) const;
+    bool ClearBinding(const TfToken &name, bool removeSpec) const;
 
     /// Block the indicated coordinate system binding on this prim
     /// by blocking targets on the underlying relationship.
@@ -216,12 +218,6 @@ public:
     /// name, given the coordinate system name.
     USDGEOM_API
     static TfToken GetCoordSysRelationshipName(const std::string &coordSysName);
-
-private:
-    void
-    _ResolveCoordinateSystems(
-        std::vector<UsdShadeCoordSysAPI::CoordinateSystem> *result,
-        bool includeInherited) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -27,8 +27,8 @@ import unittest
 
 from pxr.Usdviewq.viewSettingsDataModel import (ClearColors, HighlightColors,
     ViewSettingsDataModel)
-from pxr.Usdviewq.common import (
-    CameraMaskModes, SelectionHighlightModes, Complexities)
+from pxr.Usdviewq.common import CameraMaskModes, SelectionHighlightModes
+from pxr.UsdAppUtils.complexityArgs import RefinementComplexities
 
 
 class SignalCounter(object):
@@ -134,18 +134,19 @@ class TestViewSettingsDataModel(unittest.TestCase):
 
         vsDM = ViewSettingsDataModel(None, None)
 
-        vsDM.complexity = Complexities.MEDIUM
-        self.assertEquals(vsDM.complexity, Complexities.MEDIUM)
+        vsDM.complexity = RefinementComplexities.MEDIUM
+        self.assertEquals(vsDM.complexity, RefinementComplexities.MEDIUM)
 
         # Users can't create their own complexities.
         with self.assertRaises(ValueError):
-            vsDM.complexity = Complexities._Complexity("none", "None", 1.5)
-        self.assertEquals(vsDM.complexity, Complexities.MEDIUM)
+            vsDM.complexity = RefinementComplexities._RefinementComplexity(
+                "none", "None", 1.5)
+        self.assertEquals(vsDM.complexity, RefinementComplexities.MEDIUM)
 
         # Users can't set the float complexity directly.
         with self.assertRaises(ValueError):
             vsDM.complexity = 1.0
-        self.assertEquals(vsDM.complexity, Complexities.MEDIUM)
+        self.assertEquals(vsDM.complexity, RefinementComplexities.MEDIUM)
 
     def test_ShowMask(self):
         """Test that updating the camera mask mode properly updates showMask and

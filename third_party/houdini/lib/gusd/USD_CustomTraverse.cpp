@@ -30,6 +30,7 @@
 #include "gusd/USD_ThreadedTraverse.h"
 #include "gusd/USD_Utils.h"
 
+#include "pxr/base/arch/hints.h"
 #include "pxr/base/plug/registry.h"
 #include "pxr/usd/kind/registry.h"
 #include "pxr/usd/usd/modelAPI.h"
@@ -307,7 +308,7 @@ _Visitor::AcceptPrim(const UsdPrim& prim,
 
     bool visit = true;
 
-    if(BOOST_UNLIKELY(!(bool)ip)) {
+    if(ARCH_UNLIKELY(!(bool)ip)) {
         // Prim is not imageable
         if(_opts.imageable == GusdUSD_CustomTraverse::TRUE_STATE) {
             visit = false;

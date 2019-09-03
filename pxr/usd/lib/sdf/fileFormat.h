@@ -44,6 +44,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class ArAssetInfo;
+class SdfSchemaBase;
 
 SDF_DECLARE_HANDLES(SdfLayer);
 SDF_DECLARE_HANDLES(SdfSpec);
@@ -62,6 +63,9 @@ TF_DECLARE_PUBLIC_TOKENS(SdfFileFormatTokens, SDF_API, SDF_FILE_FORMAT_TOKENS);
 class SdfFileFormat : public TfRefBase, public TfWeakBase, boost::noncopyable
 {
 public:
+    /// Returns the schema for this format.
+    SDF_API const SdfSchemaBase& GetSchema() const;
+
     /// Returns the format identifier.
     SDF_API const TfToken& GetFormatId() const;
 
@@ -240,7 +244,24 @@ protected:
         const TfToken& formatId,
         const TfToken& versionString,
         const TfToken& target,
-        const std::string& extensions);
+        const std::string& extension);
+
+    /// Constructor.
+    /// \p schema must remain valid for the lifetime of this file format.
+    SDF_API SdfFileFormat(
+        const TfToken& formatId,
+        const TfToken& versionString,
+        const TfToken& target,
+        const std::string& extension,
+        const SdfSchemaBase& schema);
+
+    /// Disallow temporary SdfSchemaBase objects being passed to the c'tor.
+    SDF_API SdfFileFormat(
+        const TfToken& formatId,
+        const TfToken& versionString,
+        const TfToken& target,
+        const std::string& extension,
+        const SdfSchemaBase&& schema) = delete;
 
     /// Constructor.
     SDF_API SdfFileFormat(
@@ -248,6 +269,23 @@ protected:
         const TfToken& versionString,
         const TfToken& target,
         const std::vector<std::string> &extensions);
+
+    /// Constructor.
+    /// \p schema must remain valid for the lifetime of this file format.
+    SDF_API SdfFileFormat(
+        const TfToken& formatId,
+        const TfToken& versionString,
+        const TfToken& target,
+        const std::vector<std::string> &extensions,
+        const SdfSchemaBase& schema);
+
+    /// Disallow temporary SdfSchemaBase objects being passed to the c'tor.
+    SDF_API SdfFileFormat(
+        const TfToken& formatId,
+        const TfToken& versionString,
+        const TfToken& target,
+        const std::vector<std::string> &extensions,
+        const SdfSchemaBase&& schema) = delete;
 
     /// Destructor.
     SDF_API virtual ~SdfFileFormat();
@@ -288,6 +326,7 @@ private:
     SDF_API
     virtual bool _LayersAreFileBased() const;
 
+    const SdfSchemaBase& _schema;
     const TfToken _formatId;
     const TfToken _target;
     const std::string _cookie;

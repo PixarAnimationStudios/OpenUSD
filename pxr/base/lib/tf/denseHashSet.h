@@ -119,10 +119,24 @@ public:
         insert(begin, end);
     }
 
+    /// Construct from an initializer_list.
+    ///
+    TfDenseHashSet(std::initializer_list<Element> l) {
+        insert(l.begin(), l.end());
+    }
+
     /// Assignment operator.
     ///
     TfDenseHashSet &operator=(TfDenseHashSet rhs) {
         swap(rhs);
+        return *this;
+    }
+
+    /// Assignment from an initializer_list.
+    ///
+    TfDenseHashSet &operator=(std::initializer_list<Element> l) {
+        clear();
+        insert(l.begin(), l.end());
         return *this;
     }
 

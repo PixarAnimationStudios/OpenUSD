@@ -81,3 +81,15 @@ pxr_register_test(testUsdCatLoadOnly
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat --loadOnly input.usda"
     EXPECTED_RETURN_CODE 0
 )
+
+pxr_install_test_dir(
+    SRC testenv/testUsdCatLayerMetadata
+    DEST testUsdCatLayerMetadata
+)
+
+pxr_register_test(testUsdCatLayerMetadata
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat --layerMetadata input.usda -o output.usda"
+    DIFF_COMPARE output.usda
+    EXPECTED_RETURN_CODE 0
+)

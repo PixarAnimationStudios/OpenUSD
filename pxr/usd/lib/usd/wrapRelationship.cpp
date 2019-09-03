@@ -77,7 +77,7 @@ void wrapUsdRelationship()
         .def("__repr__", __repr__)
         .def("AddTarget", &UsdRelationship::AddTarget,
              (arg("target"),
-              arg("position")=UsdListPositionTempDefault))
+              arg("position")=UsdListPositionBackOfPrependList))
         .def("RemoveTarget", &UsdRelationship::RemoveTarget, arg("target"))
         .def("BlockTargets", &UsdRelationship::BlockTargets)
         .def("SetTargets", &UsdRelationship::SetTargets, arg("targets"))

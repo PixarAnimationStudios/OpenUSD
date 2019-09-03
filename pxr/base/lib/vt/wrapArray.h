@@ -48,7 +48,10 @@
 #include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include <boost/preprocessor.hpp>
+#include <boost/preprocessor/facilities/empty.hpp>
+#include <boost/preprocessor/punctuation/comma_if.hpp>
+#include <boost/preprocessor/repetition/repeat.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
 
 #include <boost/python/class.hpp>
 #include <boost/python/copy_const_reference.hpp>
@@ -560,7 +563,7 @@ Vt_ConvertFromPySequence(TfPyObjWrapper const &obj)
         Py_ssize_t len = PySequence_Length(obj.ptr());
         Array result(len);
         ElemType *elem = result.data();
-        for (size_t i = 0; i != len; ++i) {
+        for (Py_ssize_t i = 0; i != len; ++i) {
             boost::python::handle<> h(PySequence_ITEM(obj.ptr(), i));
             if (!h) {
                 if (PyErr_Occurred())

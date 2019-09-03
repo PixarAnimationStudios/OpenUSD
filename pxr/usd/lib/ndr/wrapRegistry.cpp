@@ -69,8 +69,6 @@ void wrapRegistry()
     typedef NdrRegistry This;
     typedef TfWeakPtr<NdrRegistry> ThisPtr;
 
-    return_value_policy<copy_const_reference> copyRefPolicy;
-
     class_<std::vector<NdrDiscoveryPlugin*>>("DiscoveryPluginList")
         .def(vector_indexing_suite<std::vector<NdrDiscoveryPlugin*>>())
         ;
@@ -130,6 +128,6 @@ void wrapRegistry()
         .def("GetNodesByFamily", &This::GetNodesByFamily,
             (args("family") = TfToken(),
              args("filter") = NdrVersionFilterDefaultOnly))
-        .def("GetAllNodeSourceTypes", &This::GetAllNodeSourceTypes, copyRefPolicy)
+        .def("GetAllNodeSourceTypes", &This::GetAllNodeSourceTypes)
         ;
 }

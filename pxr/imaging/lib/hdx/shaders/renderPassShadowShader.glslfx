@@ -53,7 +53,9 @@
             "fragmentShader" : {
                 "source": [ "RenderPass.Camera",
                             "RenderPass.ShouldCullFace",
-                            "HdxRenderPass.RenderColorShadowsOutput" ]
+                            "RenderPass.NoSelection",
+                            "RenderPass.NoColorOverrides",
+                            "RenderPass.RenderColor" ]
             }
         }
     }

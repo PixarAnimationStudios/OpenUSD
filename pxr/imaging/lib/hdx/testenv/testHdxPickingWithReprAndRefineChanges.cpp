@@ -83,8 +83,8 @@ public:
 
 protected:
     void _InitScene();
-    void _SetPickParams();
     void _Clear();
+    HdSelectionSharedPtr _Pick(GfVec2i const& startPos, GfVec2i const& endPos);
 
 private:
     HdEngine _engine;
@@ -93,8 +93,8 @@ private:
     std::unique_ptr<Hdx_UnitTestDelegate> _delegate;
     
     HdRprimCollection _pickablesCol;
-    HdxUnitTestUtils::Picker _picker;
     HdxUnitTestUtils::Marquee _marquee;
+    HdxSelectionTrackerSharedPtr _selTracker;
 
     GfVec2i _startPos, _endPos;
 };
@@ -122,14 +122,17 @@ My_TestGLDrawing::InitTest()
     _renderIndex = HdRenderIndex::New(&_renderDelegate);
     TF_VERIFY(_renderIndex != nullptr);
     _delegate.reset(new Hdx_UnitTestDelegate(_renderIndex));
+    _selTracker.reset(new HdxSelectionTracker);
 
     // prepare render task
     SdfPath renderSetupTask("/renderSetupTask");
     SdfPath renderTask("/renderTask");
     SdfPath selectionTask("/selectionTask");
+    SdfPath pickTask("/pickTask");
     _delegate->AddRenderSetupTask(renderSetupTask);
     _delegate->AddRenderTask(renderTask);
     _delegate->AddSelectionTask(selectionTask);
+    _delegate->AddPickTask(pickTask);
 
     // render task parameters.
     VtValue vParam = _delegate->GetTaskParam(renderSetupTask, HdTokens->params);
@@ -161,8 +164,6 @@ My_TestGLDrawing::InitTest()
     _pickablesCol = HdRprimCollection(_tokens->pickables,
                         HdReprSelector(HdReprTokens->refined));
     _marquee.InitGLResources();
-    _picker.InitIntersector(_renderIndex);
-    _SetPickParams();
     // We have to unfortunately explictly add collections besides 'geometry'
     // See HdRenderIndex constructor.
     _delegate->GetRenderIndex().GetChangeTracker().AddCollection(_tokens->pickables);
@@ -186,21 +187,28 @@ My_TestGLDrawing::_InitScene()
     _delegate->AddCube(SdfPath("/cube2"), _GetTranslate(-5, 0,-5));
 }
 
-void
-My_TestGLDrawing::_SetPickParams()
+HdSelectionSharedPtr
+My_TestGLDrawing::_Pick(GfVec2i const& startPos, GfVec2i const& endPos)
 {
-    HdxUnitTestUtils::PickParams pParams;
+    HdxPickHitVector allHits;
+    HdxPickTaskContextParams p;
+    p.resolution = HdxUnitTestUtils::CalculatePickResolution(
+            startPos, endPos, GfVec2i(4,4));
+    p.resolveMode = HdxPickTokens->resolveUnique;
+    p.viewMatrix = GetViewMatrix();
+    p.projectionMatrix = HdxUnitTestUtils::ComputePickingProjectionMatrix(
+            startPos, endPos, GfVec2i(GetWidth(), GetHeight()), GetFrustum());
+    p.collection = _pickablesCol;
+    p.outHits = &allHits;
 
-    pParams.pickRadius     = GfVec2i(4,4);
-    pParams.screenWidth    = GetWidth();
-    pParams.screenHeight   = GetHeight();
-    pParams.viewFrustum    = GetFrustum();
-    pParams.viewMatrix     = GetViewMatrix();
-    pParams.engine         = &_engine;
-    pParams.pickablesCol   = &_pickablesCol;
-    pParams.highlightMode  = HdSelection::HighlightModeSelect;
+    HdTaskSharedPtrVector tasks;
+    tasks.push_back(_renderIndex->GetTask(SdfPath("/pickTask")));
+    VtValue pickParams(p);
+    _engine.SetTaskContextData(HdxPickTokens->pickParams, pickParams);
+    _engine.Execute(_renderIndex, &tasks);
 
-    _picker.SetPickParams(pParams);
+    return HdxUnitTestUtils::TranslateHitsToSelection(
+            p.pickTarget, HdSelection::HighlightModeSelect, allHits);
 }
 
 void
@@ -262,8 +270,6 @@ My_TestGLDrawing::OffscreenTest()
 
     // (a)
     {
-        _picker.Pick(GfVec2i(0,0), GfVec2i(0,0)); // deselect
-
         std::cout << "Changing refine level of cube1" << std::endl;
         _delegate->SetRefineLevel(SdfPath("/cube1"), 2);
         // The repr corresponding to picking (refined) would be the one that
@@ -279,41 +285,37 @@ My_TestGLDrawing::OffscreenTest()
         // However, the picking collection will render the refined version, and
         // we won't be able to select cube1 by picking the unrefined version's
         // left top corner.
-        _picker.Pick(GfVec2i(138, 60), GfVec2i(138, 60));
+        selection = _Pick(GfVec2i(138, 60), GfVec2i(138, 60));
+        _selTracker->SetSelection(selection);
         DrawScene();
         WriteToFile("color", "color2_refine_wont_change_cube1.png");
-        selection = _picker.GetSelection();
         TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 0);
     }
 
     // (b)
     {
-        _picker.Pick(GfVec2i(0,0), GfVec2i(0,0)); // deselect
-
         std::cout << "Changing repr for cube2" << std::endl;
         _delegate->SetReprName(SdfPath("/cube2"), 
             HdReprTokens->refinedWireOnSurf);
 
-        _picker.Pick(GfVec2i(152, 376), GfVec2i(152, 376));
+        selection = _Pick(GfVec2i(152, 376), GfVec2i(152, 376));
+        _selTracker->SetSelection(selection);
         DrawScene();
         WriteToFile("color", "color3_repr_change_cube2.png");
-        selection = _picker.GetSelection();
         TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1);
         TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube2"));
     }
 
     // (c)
     {
-        _picker.Pick(GfVec2i(0,0), GfVec2i(0,0)); // deselect
-
        std::cout << "Changing repr on cube1" << std::endl;
 
         _delegate->SetReprName(SdfPath("/cube1"), HdReprTokens->refinedWire);
 
-        _picker.Pick(GfVec2i(176, 96), GfVec2i(179, 99));
+        selection = _Pick(GfVec2i(176, 96), GfVec2i(179, 99));
+        _selTracker->SetSelection(selection);
         DrawScene();
         WriteToFile("color", "color4_repr_and_refine_change_cube1.png");
-        selection = _picker.GetSelection();
         TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1);
         TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube1"));
     }
@@ -321,20 +323,19 @@ My_TestGLDrawing::OffscreenTest()
 
     // (d)
     {
-        _picker.Pick(GfVec2i(0,0), GfVec2i(0,0)); // deselect
-
         std::cout << "## Changing refine level of cube2 ##" << std::endl;
         _delegate->SetRefineLevel(SdfPath("/cube2"), 3);
 
-        _picker.Pick(GfVec2i(152, 376), GfVec2i(152, 376));
+        selection = _Pick(GfVec2i(152, 376), GfVec2i(152, 376));
+        _selTracker->SetSelection(selection);
         DrawScene();
         WriteToFile("color", "color5_refine_change_cube2.png");
-        selection = _picker.GetSelection();
         TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube2"));
     }
 
      // deselect    
-    _picker.Pick(GfVec2i(0,0), GfVec2i(0,0));
+    selection = _Pick(GfVec2i(0,0), GfVec2i(0,0));
+    _selTracker->SetSelection(selection);
     DrawScene();
     WriteToFile("color", "color6_unselected.png");
 }
@@ -368,17 +369,16 @@ My_TestGLDrawing::DrawScene()
     _delegate->SetTaskParam(renderSetupTask, HdTokens->params, VtValue(param));
 
     HdTaskSharedPtrVector tasks;
-    tasks.push_back(_delegate->GetRenderIndex().GetTask(renderSetupTask));
-    tasks.push_back(_delegate->GetRenderIndex().GetTask(renderTask));
-    tasks.push_back(_delegate->GetRenderIndex().GetTask(selectionTask));
+    tasks.push_back(_renderIndex->GetTask(renderSetupTask));
+    tasks.push_back(_renderIndex->GetTask(renderTask));
+    tasks.push_back(_renderIndex->GetTask(selectionTask));
 
     glEnable(GL_DEPTH_TEST);
     glBindVertexArray(vao);
 
-    VtValue v(_picker.GetSelectionTracker());
-    _engine.SetTaskContextData(HdxTokens->selectionState, v);
-
-    _engine.Execute(&_delegate->GetRenderIndex(), &tasks);
+    VtValue selTracker(_selTracker);
+    _engine.SetTaskContextData(HdxTokens->selectionState, selTracker);
+    _engine.Execute(_renderIndex, &tasks);
 
     glBindVertexArray(0);
 }
@@ -402,7 +402,8 @@ My_TestGLDrawing::MouseRelease(int button, int x, int y, int modKeys)
     Hdx_UnitTestGLDrawing::MouseRelease(button, x, y, modKeys);
 
     if (!(modKeys & GarchGLDebugWindow::Alt)) {
-        _picker.Pick(_startPos, _endPos);
+        HdSelectionSharedPtr selection = _Pick(_startPos, _endPos);
+        _selTracker->SetSelection(selection);
     }
     _startPos = _endPos = GfVec2i(0);
 }

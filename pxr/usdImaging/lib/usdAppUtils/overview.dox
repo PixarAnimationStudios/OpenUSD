@@ -1,0 +1,67 @@
+/*!
+\page usdAppUtils_page_front UsdAppUtils: USD Application Utilities
+\if ( PIXAR_MFB_BUILD )
+\mainpage  UsdAppUtils: USD Application Utility Libraries
+\publicLib
+\endif
+
+\section usdAppUtils_overview Overview
+
+UsdAppUtils contains a number of utilities and common functionality for
+applications that view and/or record images of USD stages.
+
+There are a handful of modules provided for adding common and consistent
+command-line arguments to tools that operate on USD:
+
+\li \b cameraArgs allows adding arguments for specifying the camera to operate
+    on.
+
+\li \b colorArgs allows adding arguments for setting the type of color
+    correction to be applied when generating images using Hydra.
+
+\li \b complexityArgs allows adding arguments for specifying the level of
+    refinement to use for the geometry being displayed.
+
+\li \b framesArgs allows adding arguments for specifying which frames the
+    application should operate on. This module also provides support for
+    working with \ref UsdAppUtils_frame_format_strings.
+
+\li \b rendererArgs allows adding arguments for specifying which renderer
+    plugin to use when generating images using Hydra.
+
+\subsection UsdAppUtils_frame_format_strings Frame Format Strings
+
+A frame format string is a string that is expected to vary with time and
+contains a frame placeholder that should be replaced with actual frame
+numbers, producing a complete, formatted frame string.
+
+A frame placeholder must be composed of exactly one or two groups of one or
+more hashes ('#'), and if there are two, they must be separated by a dot
+('.').
+
+The hashes after the dot indicate the floating point precision to use in
+the frame numbers inserted into the frame format string. If there is only
+a single group of hashes, the precision is zero and the inserted frame
+numbers will be integer values.
+
+The overall width of the frame placeholder specifies the minimum width to
+use when inserting frame numbers into the frame format string. Formatted
+frame numbers smaller than the minimum width will be zero-padded on the
+left until they reach the minimum width.
+
+For example, the frame format string 'image.#.exr' over the frame
+range from 101 to 103 would result in the following formatted frame
+strings:
+
+    image.101.exr
+    image.102.exr
+    image.103.exr
+
+The frame format string 'image.###.#.exr' over the frame range from
+1 to 3 would result in the following formatted frame strings:
+
+    image.001.0.exr
+    image.002.0.exr
+    image.003.0.exr
+
+*/

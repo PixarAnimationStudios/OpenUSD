@@ -157,7 +157,7 @@ UsdSkelImagingSkeletonAdapter::Populate(
         // Also, since the bone mesh isn't backed by the UsdStage, we register 
         // the skeleton prim on its behalf.
         SdfPath instancer = instancerContext ?
-            instancerContext->instancerId : SdfPath();
+            instancerContext->instancerCachePath : SdfPath();
         index->InsertRprim(HdPrimTypeTokens->mesh, prim.GetPath(),
                         instancer, prim, shared_from_this());
     }
@@ -670,8 +670,8 @@ _ApplyPackedBlendShapes(const TfSpan<const GfVec4f>& offsets,
                         const TfSpan<const float>& weights,
                         TfSpan<GfVec3f> points)
 {
-    const ptrdiff_t end = std::min(ranges.size(), points.size());
-    for (ptrdiff_t i = 0; i < end; ++i) {
+    const size_t end = std::min(ranges.size(), points.size());
+    for (size_t i = 0; i < end; ++i) {
         const GfVec2i range = ranges[i];
 
         GfVec3f p = points[i];
@@ -835,7 +835,7 @@ UsdSkelImagingSkeletonAdapter::_RemovePrim(const SdfPath& cachePath,
         
         // Remove bone mesh.
         index->RemoveRprim(cachePath);
-        index->RemovePrimInfo(cachePath);
+        index->RemoveHdPrimInfo(cachePath);
 
         // Remove all skinned prims that are targered by the skeleton, and their
         // computations.
@@ -1130,18 +1130,18 @@ UsdSkelImagingSkeletonAdapter::_RemoveSkinnedPrimAndComputations(
     
     // Remove skinned prim.
     index->RemoveRprim(cachePath);
-    index->RemovePrimInfo(cachePath);
+    index->RemoveHdPrimInfo(cachePath);
 
     // Remove the computations it participates in.
     SdfPath compPath = _GetSkinningComputationPath(cachePath);
     index->RemoveSprim(HdPrimTypeTokens->extComputation, compPath);
-    index->RemovePrimInfo(compPath);
+    index->RemoveHdPrimInfo(compPath);
     
     if (_IsEnabledAggregatorComputation()) {
         SdfPath aggrCompPath =
             _GetSkinningInputAggregatorComputationPath(cachePath);
         index->RemoveSprim(HdPrimTypeTokens->extComputation, aggrCompPath);
-        index->RemovePrimInfo(aggrCompPath);
+        index->RemoveHdPrimInfo(aggrCompPath);
     }
     
     // Clear cache entry.
@@ -2060,8 +2060,8 @@ UsdSkelImagingSkeletonAdapter::_SkinnedPrimData::_SkinnedPrimData(
 
     hasJointInfluences = skinningQuery.HasJointInfluences();
     if (hasJointInfluences) {
-        if (skinningQuery.GetMapper()) {
-            jointMapper = *skinningQuery.GetMapper();
+        if (skinningQuery.GetJointMapper()) {
+            jointMapper = *skinningQuery.GetJointMapper();
         } else {
             // Store an identity mapper.
             jointMapper = UsdSkelAnimMapper(skelQuery.GetTopology().size());
@@ -2074,23 +2074,7 @@ UsdSkelImagingSkeletonAdapter::_SkinnedPrimData::_SkinnedPrimData(
             std::make_shared<UsdSkelBlendShapeQuery>(
                 UsdSkelBindingAPI(skinningQuery.GetPrim()));
         if (blendShapeQuery->IsValid()) {
-
-            const VtTokenArray blendShapeAnimOrder =
-                skelQuery.GetAnimQuery().GetBlendShapeOrder();
-            
-            // See if the skinned prim has a custom blend shape order.
-            VtTokenArray blendShapePrimOrder;
-            const UsdAttribute& blendShapesAttr =
-                skinningQuery.GetBlendShapesAttr();
-            if (blendShapesAttr && blendShapesAttr.Get(&blendShapePrimOrder)) {
-                blendShapeMapper =
-                    UsdSkelAnimMapper(blendShapeAnimOrder,
-                                      blendShapePrimOrder);
-            } else {
-                // Store an identity map to indicate no mapping is required.
-                blendShapeMapper =
-                    UsdSkelAnimMapper(blendShapeAnimOrder.size());
-            }
+            blendShapeMapper = *skinningQuery.GetBlendShapeMapper();
         } else {
             blendShapeQuery.reset();
         }

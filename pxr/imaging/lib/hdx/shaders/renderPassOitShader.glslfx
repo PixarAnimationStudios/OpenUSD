@@ -56,7 +56,7 @@
                             "RenderPass.ShouldCullFace",
                             "Selection.DecodeUtils",
                             "Selection.ComputeColor",
-                            "HdxRenderPass.ApplySelectionColor",
+                            "RenderPass.ApplyColorOverrides",
                             "HdxRenderPass.WriteOitLayersToBuffer" ]
             }
         }

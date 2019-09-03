@@ -76,7 +76,6 @@ HdRprimCollection::HdRprimCollection(HdRprimCollection const& col)
     _name = col._name;
     _reprSelector = col._reprSelector;
     _forcedRepr = col._forcedRepr;
-    _renderTags = col._renderTags;
     _rootPaths = col._rootPaths;
     _excludePaths = col._excludePaths;
     _materialTag = col._materialTag;
@@ -151,34 +150,6 @@ HdRprimCollection::GetExcludePaths() const
 }
 
 void 
-HdRprimCollection::SetRenderTags(TfTokenVector const& renderTags)
-{
-    _renderTags = renderTags;
-}
-
-TfTokenVector const& 
-HdRprimCollection::GetRenderTags() const
-{
-    return _renderTags;
-}
-
-bool
-HdRprimCollection::HasRenderTag(TfToken const & renderTag) const
-{
-    if (_renderTags.empty()) {
-        return true;  
-    } 
-
-    TF_FOR_ALL (t, _renderTags) {
-        if (renderTag == *t) {
-            return true;  
-        } 
-    }
-
-    return false;
-}
-
-void 
 HdRprimCollection::SetMaterialTag(TfToken const& tag)
 {
     _materialTag = tag;
@@ -202,9 +173,6 @@ HdRprimCollection::ComputeHash() const
     TF_FOR_ALL(pathIt, _excludePaths) {
         boost::hash_combine(h, SdfPath::Hash()(*pathIt));
     }
-    TF_FOR_ALL(rtIt, _renderTags) {
-        boost::hash_combine(h, rtIt->Hash());
-    }
 
     boost::hash_combine(h, _materialTag);
     return h;
@@ -217,7 +185,6 @@ bool HdRprimCollection::operator==(HdRprimCollection const & other) const
        && _forcedRepr == other._forcedRepr
        && _rootPaths == other._rootPaths
        && _excludePaths == other._excludePaths
-       && _renderTags == other._renderTags
        && _materialTag == other._materialTag;
 }
 

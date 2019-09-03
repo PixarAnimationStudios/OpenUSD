@@ -176,13 +176,16 @@ class TestPcpChanges(unittest.TestCase):
         with Pcp._TestChangeProcessor(pcp):
             refLayer.subLayerOffsets[0] = Sdf.LayerOffset(200.0)
 
-        self.assertFalse(pcp.FindPrimIndex('/A'))
-        (pi, err) = pcp.ComputePrimIndex('/A')
-        refNode = pi.rootNode.children[0]
-        ref2Node = refNode.children[0]
+            self.assertFalse(pcp.FindPrimIndex('/A'))
+            # Compute the prim index in the change processing block as the 
+            # changed refLayer is only being held onto by the changes' lifeboat
+            # as its referencing prim index has been invalidated.
+            (pi, err) = pcp.ComputePrimIndex('/A')
+            refNode = pi.rootNode.children[0]
+            ref2Node = refNode.children[0]
 
-        self.assertEqual(refNode.mapToRoot.timeOffset, Sdf.LayerOffset(200.0))
-        self.assertEqual(ref2Node.mapToRoot.timeOffset, Sdf.LayerOffset(400.0))
+            self.assertEqual(refNode.mapToRoot.timeOffset, Sdf.LayerOffset(200.0))
+            self.assertEqual(ref2Node.mapToRoot.timeOffset, Sdf.LayerOffset(400.0))
 
     def test_DefaultReferenceTargetChanges(self):
         # create a layer, set DefaultPrim, then reference it.

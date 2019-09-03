@@ -46,6 +46,10 @@
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usdGeom/imageable.h"
 
+#if !(SYS_VERSION_FULL_INT >= 0x10050000 && SYS_VERSION_FULL_INT < 0x11000000)
+#include <boost/function.hpp>
+#endif
+
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE

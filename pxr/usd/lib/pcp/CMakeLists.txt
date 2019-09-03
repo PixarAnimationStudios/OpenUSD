@@ -18,6 +18,7 @@ pxr_library(pcp
         
     PUBLIC_HEADERS
         api.h
+        dynamicFileFormatInterface.h
 
     PUBLIC_CLASSES
         arc
@@ -25,6 +26,8 @@ pxr_library(pcp
         changes
         composeSite
         dependency
+        dynamicFileFormatContext
+        dynamicFileFormatDependencyData
         errors
         instanceKey
         iterator
@@ -36,8 +39,6 @@ pxr_library(pcp
         namespaceEdits
         node
         pathTranslation
-        payloadContext
-        payloadDecorator
         primIndex
         propertyIndex
         site
@@ -67,6 +68,7 @@ pxr_library(pcp
         module.cpp
         wrapCache.cpp
         wrapDependency.cpp
+        wrapDynamicFileFormatDependencyData.cpp
         wrapErrors.cpp
         wrapInstanceKey.cpp
         wrapPrimIndex.cpp
@@ -79,7 +81,6 @@ pxr_library(pcp
         wrapPropertyIndex.cpp
         wrapSite.cpp
         wrapTestChangeProcessor.cpp
-        wrapTestPayloadDecorator.cpp
         wrapTypes.cpp
 
     PYMODULE_FILES
@@ -92,8 +93,8 @@ pxr_test_scripts(
     testenv/testPcpInstanceKey.py
     testenv/testPcpLayerMuting.py
     testenv/testPcpDependencies.py
-    testenv/testPcpPayloadDecorator.py
     testenv/testPcpPathTranslation.py
+    testenv/testPcpDynamicFileFormatPlugin.py
     testenv/testPcpMapFunction.py
     testenv/testPcpOwner.py
     testenv/testPcpRegressionBugs_bug70951.py
@@ -103,6 +104,18 @@ pxr_test_scripts(
     testenv/testPcpRegressionBugs_bug92955.py
     testenv/testPcpRegressionBugs_bug101300.py
     testenv/testPcpCompositionResults.py
+)
+
+pxr_build_test_shared_lib(TestPcpDynamicFileFormatPlugin
+    CREATE_FRAMEWORK
+    INSTALL_PREFIX PcpPlugins
+    LIBRARIES
+        tf
+        pcp
+        sdf
+        
+    CPPFILES
+        testenv/TestPcpDynamicFileFormatPlugin.cpp
 )
 
 pxr_build_test(testPcpHardToReach
@@ -211,8 +224,8 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/testPcpPayloadDecorator.testenv
-    DEST testPcpPayloadDecorator
+    SRC testenv/testPcpDynamicFileFormatPlugin.testenv
+    DEST testPcpDynamicFileFormatPlugin
 )
 
 pxr_install_test_dir(
@@ -1466,9 +1479,9 @@ pxr_register_test(testPcpPathTranslation
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_register_test(testPcpPayloadDecorator
+pxr_register_test(testPcpDynamicFileFormatPlugin
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpPayloadDecorator"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpDynamicFileFormatPlugin"
     EXPECTED_RETURN_CODE 0  
 )
 

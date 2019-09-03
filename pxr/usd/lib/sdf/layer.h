@@ -43,6 +43,7 @@
 
 #include <boost/optional.hpp>
 
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <set>
@@ -108,10 +109,10 @@ public:
 
     /// Returns the schema this layer adheres to. This schema provides details
     /// about the scene description that may be authored in this layer.
-    SDF_API virtual const SdfSchemaBase& GetSchema() const;
+    SDF_API const SdfSchemaBase& GetSchema() const;
 
     /// Returns the file format used by this layer.
-    SDF_API SdfFileFormatConstPtr GetFileFormat() const;
+    SDF_API const SdfFileFormatConstPtr& GetFileFormat() const;
 
     /// Type for specifying additional file format-specific arguments to
     /// layer API.
@@ -737,7 +738,7 @@ public:
     /// Callback function for Traverse. This callback will be invoked with
     /// the path of each spec that is visited.
     /// \sa Traverse
-    typedef boost::function<void(const SdfPath&)> TraversalFunction;
+    typedef std::function<void(const SdfPath&)> TraversalFunction;
 
     // Traverse will perform a traversal of the scene description hierarchy
     // rooted at \a path, calling \a func on each spec that it finds.
@@ -1433,7 +1434,8 @@ protected:
              const std::string &identifier,
              const std::string &realPath = std::string(),
              const ArAssetInfo& assetInfo = ArAssetInfo(),
-             const FileFormatArguments &args = FileFormatArguments());
+             const FileFormatArguments &args = FileFormatArguments(),
+             bool validateAuthoring = false);
 
 private:
     // Create a new layer.
@@ -1575,6 +1577,9 @@ private:
     /// If \p prim is inert (has no affect on the scene), removes prim, then 
     /// prunes inert parent prims back to the root.
     void _RemoveInertToRootmost(SdfPrimSpecHandle prim);
+
+    /// Returns whether this layer is validating authoring operations.
+    bool _ValidateAuthoring() const { return _validateAuthoring; }
 
     /// Returns the path used in the muted layers set.
     std::string _GetMutedPath() const;
@@ -1764,9 +1769,13 @@ private:
     bool _permissionToEdit;
     bool _permissionToSave;
 
-    // Allow access to _FindLayerForData() and _IsInert().
+    // Whether layer edits are validated.
+    bool _validateAuthoring;
+
+    // Allow access to _ValidateAuthoring() and _IsInert().
     friend class SdfSpec;
     friend class SdfPropertySpec;
+    friend class SdfAttributeSpec;
 
     friend class Sdf_ChangeManager;
 
@@ -1781,9 +1790,6 @@ private:
     // Give layer state delegates access to our data as well as to
     // the various _Prim functions.
     friend class SdfLayerStateDelegateBase;
-
-    // Give SdSpec access to _MoveSpec
-    friend class SdSpec;
 };
 
 // Inlined implementations for convenience field and time sample API.

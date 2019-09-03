@@ -28,7 +28,7 @@
 #ifndef _GUSD_USD_STDTRAVERSE_H_
 #define _GUSD_USD_STDTRAVERSE_H_
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 
 #include "gusd/USD_Traverse.h"
 

@@ -76,9 +76,9 @@ PxrMayaHdImagingShapeUI::getDrawRequests(
         "PxrMayaHdImagingShapeUI::getDrawRequests(), shapeDagPath: %s\n",
         shapeDagPath.fullPathName().asChar());
 
-    // Grab the selection resolution value from the shape here and use it to
-    // set the resolution in the batch renderer. The selection resolution
-    // should then be set appropriately for subsequent selections.
+    // Grab batch renderer settings values from the shape here and pass them
+    // along to the batch renderer. Settings that affect selection should then
+    // be set appropriately for subsequent selections.
     MStatus status;
     const MFnDependencyNode depNodeFn(imagingShape->thisMObject(), &status);
     if (status == MS::kSuccess) {
@@ -96,6 +96,23 @@ PxrMayaHdImagingShapeUI::getDrawRequests(
             if (status == MS::kSuccess) {
                 UsdMayaGLBatchRenderer::GetInstance().SetSelectionResolution(
                     GfVec2i(selectionResolution));
+            }
+        }
+
+        const MPlug enableDepthSelectionPlug =
+            depNodeFn.findPlug(
+                PxrMayaHdImagingShape::enableDepthSelectionAttr,
+                &status);
+        if (status == MS::kSuccess) {
+            const bool enableDepthSelection =
+#if MAYA_API_VERSION >= 20180000
+                enableDepthSelectionPlug.asBool(&status);
+#else
+                enableDepthSelectionPlug.asBool(MDGContext::fsNormal, &status);
+#endif
+            if (status == MS::kSuccess) {
+                UsdMayaGLBatchRenderer::GetInstance().SetDepthSelectionEnabled(
+                    enableDepthSelection);
             }
         }
     }

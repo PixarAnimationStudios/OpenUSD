@@ -281,7 +281,7 @@ bool Sdf_ChildrenUtils<ChildPolicy>::InsertChild(
     const SdfLayerHandle &layer,
     const SdfPath &path,
     const typename ChildPolicy::ValueType& value,
-    size_t index)
+    int index)
 {
     typedef typename ChildPolicy::FieldType FieldType;
     const TfToken childrenKey = ChildPolicy::GetChildrenToken(path);
@@ -321,8 +321,8 @@ bool Sdf_ChildrenUtils<ChildPolicy>::InsertChild(
         index = childNames.size();
     }
 
-    if (index > childNames.size()) {
-        TF_CODING_ERROR("Attempt to insert spec %s at an invalid index %zd",
+    if ((size_t)index > childNames.size()) {
+        TF_CODING_ERROR("Attempt to insert spec %s at an invalid index %d",
             newPath.GetText(), index);
         return false;
     }
@@ -429,7 +429,7 @@ Sdf_ChildrenUtils<ChildPolicy>::MoveChildForBatchNamespaceEdit(
     const SdfPath &path,
     const typename ChildPolicy::ValueType& value,
     const typename ChildPolicy::FieldType& newName,
-    size_t index)
+    int index)
 {
     typedef typename ChildPolicy::FieldType FieldType;
     const TfToken childrenKey = ChildPolicy::GetChildrenToken(path);
@@ -453,7 +453,7 @@ Sdf_ChildrenUtils<ChildPolicy>::MoveChildForBatchNamespaceEdit(
         index = std::find(childNames.begin(), childNames.end(), oldKey) -
                 childNames.begin();
     }
-    else if (index > childNames.size()) {
+    else if ((size_t)index > childNames.size()) {
         // This catches all negative indexes.
         index = childNames.size();
     }
@@ -526,7 +526,7 @@ Sdf_ChildrenUtils<ChildPolicy>::CanMoveChildForBatchNamespaceEdit(
     const SdfPath &path,
     const typename ChildPolicy::ValueType& value,
     const typename ChildPolicy::FieldType& newName,
-    size_t index,
+    int index,
     std::string* whyNot)
 {
     typedef typename ChildPolicy::FieldType FieldType;
@@ -591,7 +591,7 @@ Sdf_ChildrenUtils<ChildPolicy>::CanMoveChildForBatchNamespaceEdit(
     }
 
     // Any index not in the child name range other than Same is invalid.
-    if (index != SdfNamespaceEdit::Same && index > childNames.size()) {
+    if (index != SdfNamespaceEdit::Same && (size_t)index > childNames.size()) {
         if (whyNot) {
             *whyNot = "Invalid index";
         }

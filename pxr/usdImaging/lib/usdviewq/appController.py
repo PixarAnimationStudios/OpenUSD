@@ -32,6 +32,8 @@ from collections import deque, OrderedDict
 
 # Usd Library Components
 from pxr import Usd, UsdGeom, UsdShade, UsdUtils, UsdImagingGL, Glf, Sdf, Tf, Ar
+from pxr import UsdAppUtils
+from pxr.UsdAppUtils.complexityArgs import RefinementComplexities
 
 # UI Components
 from ._usdviewq import Utils
@@ -63,7 +65,7 @@ from common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts,
                     PickModes, SelectionHighlightModes, CameraMaskModes,
                     PropTreeWidgetTypeIsRel, PrimNotFoundException,
                     GetRootLayerStackInfo, HasSessionVis, GetEnclosingModelPrim,
-                    GetPrimsLoadability, Complexities, ClearColors,
+                    GetPrimsLoadability, ClearColors,
                     HighlightColors)
 
 import settings2
@@ -93,15 +95,6 @@ class HUDEntries(ConstantGroup):
 
 class PropertyIndex(ConstantGroup):
     VALUE, METADATA, LAYERSTACK, COMPOSITION = range(4)
-
-class DebugTypes(ConstantGroup):
-    # Tf Debug entries to include in debug menu
-    HDST = "HDST"
-    HD = "HD"
-    HDX = "HDX"
-    USD = "USD"
-    USDIMAGING = "USDIMAGING"
-    USDVIEWQ = "USDVIEWQ"
 
 class UIDefaults(ConstantGroup):
     STAGE_VIEW_WIDTH = 604
@@ -322,6 +315,7 @@ class AppController(QtCore.QObject):
             self._currentSpec = None
             self._currentLayer = None
             self._console = None
+            self._debugFlagsWindow = None
             self._interpreter = None
             self._parserData = parserData
             self._noRender = parserData.noRender
@@ -418,10 +412,9 @@ class AppController(QtCore.QObject):
                 self._initialSelectPrim = None
 
             try:
-                self._dataModel.viewSettings.complexity = Complexities.fromId(
-                    parserData.complexity)
+                self._dataModel.viewSettings.complexity = parserData.complexity
             except ValueError:
-                fallback = Complexities.LOW
+                fallback = RefinementComplexities.LOW
                 sys.stderr.write(("Error: Invalid complexity '{}'. "
                     "Using fallback '{}' instead.\n").format(
                         parserData.complexity, fallback.id))
@@ -431,11 +424,12 @@ class AppController(QtCore.QObject):
             self._timeSamples = None
             self._stageView = None
             self._startingPrimCamera = None
-            if isinstance(parserData.camera, Sdf.Path):
+            if (parserData.camera.IsAbsolutePath() or
+                    parserData.camera.pathElementCount > 1):
                 self._startingPrimCameraName = None
                 self._startingPrimCameraPath = parserData.camera
             else:
-                self._startingPrimCameraName = parserData.camera
+                self._startingPrimCameraName = parserData.camera.pathString
                 self._startingPrimCameraPath = None
 
             settingsPathDir = self._outputBaseDirectory()
@@ -545,7 +539,7 @@ class AppController(QtCore.QObject):
             self._ui.propertyView.setHorizontalScrollMode(
                 QtWidgets.QAbstractItemView.ScrollPerPixel)
 
-            self._ui.frameSlider.setUpdateOnFrameScrub(
+            self._ui.frameSlider.setTracking(
                     self._dataModel.viewSettings.redrawOnScrub)
 
             self._ui.colorGroup = QtWidgets.QActionGroup(self)
@@ -732,8 +726,9 @@ class AppController(QtCore.QObject):
 
             self._ui.primView.expanded.connect(self._primViewExpanded)
 
-            self._ui.frameSlider.signalFrameChanged.connect(self.setFrame)
-            self._ui.frameSlider.signalPositionChanged.connect(self._sliderMoved)
+            self._ui.frameSlider.valueChanged.connect(self._setFrameIndex)
+            self._ui.frameSlider.sliderMoved.connect(self._sliderMoved)
+            self._ui.frameSlider.sliderReleased.connect(self._updateGUIForFrameChange)
 
             self._ui.frameField.editingFinished.connect(self._frameStringChanged)
 
@@ -747,7 +742,7 @@ class AppController(QtCore.QObject):
 
             self._ui.actionFrame_Backwards.triggered.connect(self._retreatFrame)
 
-            self._ui.actionReset_View.triggered.connect(self._resetView)
+            self._ui.actionReset_View.triggered.connect(lambda: self._resetView())
 
             self._ui.topBottomSplitter.splitterMoved.connect(self._cacheViewerModeEscapeSizes)
             self._ui.primStageSplitter.splitterMoved.connect(self._cacheViewerModeEscapeSizes)
@@ -766,6 +761,8 @@ class AppController(QtCore.QObject):
             self._ui.useExtentsHint.triggered.connect(self._setUseExtentsHint)
 
             self._ui.showInterpreter.triggered.connect(self._showInterpreter)
+
+            self._ui.showDebugFlags.triggered.connect(self._showDebugFlags)
 
             self._ui.redrawOnScrub.toggled.connect(self._redrawOptionToggled)
 
@@ -1034,8 +1031,6 @@ class AppController(QtCore.QObject):
 
             self._ui.actionDeactivate.triggered.connect(self.deactivateSelectedPrims)
 
-            self._setupDebugMenu()
-
             # We refresh as if all view settings changed. In the future, we
             # should do more granular refreshes. This first requires more
             # granular signals from ViewSettingsDataModel.
@@ -1212,7 +1207,17 @@ class AppController(QtCore.QObject):
         self._ui.stageBegin.setText(str(stageStartTimeCode))
         self._ui.stageEnd.setText(str(stageEndTimeCode))
 
+        # Use a valid current frame supplied by user, or allow _UpdateTimeSamples
+        # to set the current frame.
+        cf = self._parserData.currentframe
+        if cf:
+            if (cf < self.realStartTimeCode or cf > self.realEndTimeCode):
+                sys.stderr.write('Warning: Invalid current frame specified (%s)\n' % (cf))
+            else:
+                self._dataModel.currentFrame = Usd.TimeCode(cf)
+        
         self._UpdateTimeSamples(resetStageDataOnly)
+
 
     def _UpdateTimeSamples(self, resetStageDataOnly=False):
         if self.realStartTimeCode is not None and self.realEndTimeCode is not None:
@@ -1234,20 +1239,26 @@ class AppController(QtCore.QObject):
         if self._hasTimeSamples:
             self._ui.rangeBegin.setText(str(self._timeSamples[0]))
             self._ui.rangeEnd.setText(str(self._timeSamples[-1]))
-
+            if ( self._dataModel.currentFrame.IsDefault() or
+                 self._dataModel.currentFrame < self._timeSamples[0] ):
+                self._dataModel.currentFrame = Usd.TimeCode(self._timeSamples[0])
+            if self._dataModel.currentFrame > self._timeSamples[-1]:
+                self._dataModel.currentFrame = Usd.TimeCode(self._timeSamples[-1])
+        else:
+            self._dataModel.currentFrame = Usd.TimeCode(0.0)
+        
         if not resetStageDataOnly:
-            self._dataModel.currentFrame = (
-                Usd.TimeCode(self._timeSamples[0])
-                if self._hasTimeSamples else Usd.TimeCode(0.0))
             self._ui.frameField.setText(
                 str(self._dataModel.currentFrame.GetValue()))
 
         if self._playbackAvailable:
             if not resetStageDataOnly:
-                self._ui.frameSlider.resetSlider(len(self._timeSamples))
+                self._ui.frameSlider.setRange(0, len(self._timeSamples) - 1)
+                self._ui.frameSlider.setValue(0)
             self._setPlayShortcut()
             self._ui.playButton.setCheckable(True)
-            self._ui.playButton.setChecked(False)
+            # Ensure the play button state respects the current playback state
+            self._ui.playButton.setChecked(self._dataModel.playing)
 
     def _clearCaches(self, preserveCamera=False):
         """Clears value and computation caches maintained by the controller.
@@ -1529,8 +1540,6 @@ class AppController(QtCore.QObject):
         else:
             self._resetPrimView(restoreSelection=False)
 
-        self._ui.frameSlider.resetToMinimum()
-
         if not self._stageView:
 
             # The second child is self._ui.glFrame, which disappears if
@@ -1559,8 +1568,6 @@ class AppController(QtCore.QObject):
                 layout.setContentsMargins(0, 0, 0, 0)
                 self._ui.glFrame.setLayout(layout)
                 layout.addWidget(self._stageView)
-
-        self._playbackFrameIndex = 0
 
         self._primSearchResults = deque([])
         self._attrSearchResults = deque([])
@@ -1681,17 +1688,17 @@ class AppController(QtCore.QObject):
 
     def _incrementComplexity(self):
         """Jump up to the next level of complexity."""
-        self._setComplexity(Complexities.next(
+        self._setComplexity(RefinementComplexities.next(
             self._dataModel.viewSettings.complexity))
 
     def _decrementComplexity(self):
         """Jump back to the previous level of complexity."""
-        self._setComplexity(Complexities.prev(
+        self._setComplexity(RefinementComplexities.prev(
             self._dataModel.viewSettings.complexity))
 
     def _changeComplexity(self, action):
         """Update the complexity from a selected QAction."""
-        self._setComplexity(Complexities.fromName(action.text()))
+        self._setComplexity(RefinementComplexities.fromName(action.text()))
 
     def _adjustFOV(self):
         fov = QtWidgets.QInputDialog.getDouble(self._mainWindow, "Adjust FOV",
@@ -1728,7 +1735,7 @@ class AppController(QtCore.QObject):
 
     def _redrawOptionToggled(self, checked):
         self._dataModel.viewSettings.redrawOnScrub = checked
-        self._ui.frameSlider.setUpdateOnFrameScrub(
+        self._ui.frameSlider.setTracking(
             self._dataModel.viewSettings.redrawOnScrub)
 
     # Frame-by-frame/Playback functionality ===================================
@@ -1752,10 +1759,14 @@ class AppController(QtCore.QObject):
         self._ui.stageBegin.setEnabled(isEnabled)
         self._ui.stageEnd.setEnabled(isEnabled)
         self._ui.redrawOnScrub.setEnabled(isEnabled)
+        self._ui.stepSizeLabel.setEnabled(isEnabled)
+        self._ui.stepSize.setEnabled(isEnabled)
 
 
     def _playClicked(self):
         if self._ui.playButton.isChecked():
+            # Enable tracking whilst playing
+            self._ui.frameSlider.setTracking(True)
             # Start playback.
             self._dataModel.playing = True
             self._ui.playButton.setText("Stop")
@@ -1768,6 +1779,7 @@ class AppController(QtCore.QObject):
             self._primViewUpdateTimer.stop()
             self._playbackIndex = 0
         else:
+            self._ui.frameSlider.setTracking(self._ui.redrawOnScrub.isChecked())
             # Stop playback.
             self._dataModel.playing = False
             self._ui.playButton.setText("Play")
@@ -1777,7 +1789,7 @@ class AppController(QtCore.QObject):
             self._fpsHUDInfo[HUDEntries.PLAYBACK]  = "N/A"
             self._timer.stop()
             self._primViewUpdateTimer.start()
-            self._updateOnFrameChange(refreshUI=True)
+            self._updateOnFrameChange()
 
     def _advanceFrameForPlayback(self):
         sleep(max(0, 1. / self.framesPerSecond - (time() - self._lastFrameTime)))
@@ -1795,14 +1807,18 @@ class AppController(QtCore.QObject):
         self._advanceFrame()
 
     def _advanceFrame(self):
-        if not self._playbackAvailable:
-            return
-        self._ui.frameSlider.advanceFrame()
+        if self._playbackAvailable:
+            value = self._ui.frameSlider.value() + 1
+            if value > self._ui.frameSlider.maximum():
+                value = self._ui.frameSlider.minimum()
+            self._ui.frameSlider.setValue(value)
 
     def _retreatFrame(self):
-        if not self._playbackAvailable:
-            return
-        self._ui.frameSlider.retreatFrame()
+        if self._playbackAvailable:
+            value = self._ui.frameSlider.value() - 1
+            if value < self._ui.frameSlider.minimum():
+                value = self._ui.frameSlider.maximum()
+            self._ui.frameSlider.setValue(value)
 
     def _findClosestFrameIndex(self, timeSample):
         """Find the closest frame index for the given `timeSample`.
@@ -1814,7 +1830,7 @@ class AppController(QtCore.QObject):
             int: The closest matching frame index or 0 if one cannot be
             found.
         """
-        closestIndex = int((timeSample - self._timeSamples[0]) / self.step)
+        closestIndex = int(round((timeSample - self._timeSamples[0]) / self.step))
 
         # Bounds checking
         # 0 <= closestIndex <= number of time samples - 1
@@ -1842,18 +1858,28 @@ class AppController(QtCore.QObject):
             self._UpdateTimeSamples(resetStageDataOnly=False)
 
     def _frameStringChanged(self):
-        timeSample = float(self._ui.frameField.text())
-        indexOfFrame = self._findClosestFrameIndex(timeSample)
+        value = float(self._ui.frameField.text())
+        self.setFrame(value)
 
-        if (indexOfFrame != Usd.TimeCode.Default()):
-            self.setFrame(indexOfFrame, forceUpdate=True)
-            self._ui.frameSlider.setValueImmediate(indexOfFrame)
+    def _sliderMoved(self, frameIndex):
+        """Slot called when the frame slider is moved by a user.
 
-        self._ui.frameField.setText(
-            str(self._dataModel.currentFrame.GetValue()))
+        Args:
+            frameIndex (int): The new frame index value.
+        """
+        # If redraw on scrub is disabled, ensure we still update the
+        # frame field.
+        if not self._ui.redrawOnScrub.isChecked():
+            self.setFrameField(self._timeSamples[frameIndex])
 
-    def _sliderMoved(self, value):
-        self._ui.frameField.setText(str(self._timeSamples[value]))
+    def setFrameField(self, frame):
+        """Set the frame field to the given `frame`.
+
+        Args:
+            frame (str|int|float): The new frame value.
+        """
+        frame = round(float(frame), ndigits=2)
+        self._ui.frameField.setText(str(frame))
 
     # Prim/Attribute search functionality =====================================
 
@@ -2248,6 +2274,13 @@ class AppController(QtCore.QObject):
         self._interpreter.show()
         self._interpreter.activateWindow()
         self._interpreter.setFocus()
+
+    def _showDebugFlags(self):
+        if self._debugFlagsWindow is None:
+            from debugFlagsWidget import DebugFlagsWidget
+            self._debugFlagsWindow = DebugFlagsWidget()
+
+        self._debugFlagsWindow.show()
 
     # Screen capture functionality ===========================================
 
@@ -3161,54 +3194,59 @@ class AppController(QtCore.QObject):
         self.contextMenu = PrimContextMenu(self._mainWindow, item, self)
         self.contextMenu.exec_(QtGui.QCursor.pos())
 
-    def setFrame(self, frameIndex, forceUpdate=False):
-        frameAtStart = self._dataModel.currentFrame
-        self._playbackFrameIndex = frameIndex
+    def setFrame(self, frame):
+        """Set the `frame`.
 
-        frame = self._timeSamples[int(frameIndex)]
-        if self._dataModel.currentFrame.GetValue() != frame:
-            minDist = 1.0e30
-            closestFrame = None
-            for t in self._timeSamples:
-                dist = abs(t - frame)
-                if dist < minDist:
-                    minDist = dist
-                    closestFrame = t
+        Args:
+            frame (float): The new frame value.
+        """
+        frameIndex = self._findClosestFrameIndex(frame)
+        self._setFrameIndex(frameIndex)
 
-            if closestFrame is None:
-                return
+    def _setFrameIndex(self, frameIndex):
+        """Set the `frameIndex`.
 
-            self._dataModel.currentFrame = Usd.TimeCode(closestFrame)
+        Args:
+            frameIndex (int): The new frame index value.
+        """
+        # Ensure the frameIndex exists, if not, return.
+        try:
+            frame = self._timeSamples[frameIndex]
+        except IndexError:
+            return
 
-        # XXX Why do we *always* update the widget, but only
-        # conditionally update?  All this function should do, after
-        # computing a new frame number, is emit a signal that the
-        # time has changed.  Future work.
-        self._ui.frameField.setText(
-            str(round(self._dataModel.currentFrame.GetValue(), ndigits=2)))
+        currentFrame = Usd.TimeCode(frame)
+        if self._dataModel.currentFrame != currentFrame:
+            self._dataModel.currentFrame = currentFrame
 
-        if (self._dataModel.currentFrame != frameAtStart) or forceUpdate:
-            # do not update HUD/BBOX if scrubbing or playing
-            updateUI = forceUpdate or not (self._dataModel.playing or
-                                          self._ui.frameSlider.isSliderDown())
-            self._updateOnFrameChange(updateUI)
+            self._ui.frameSlider.setValue(frameIndex)
 
-    def _updateOnFrameChange(self, refreshUI = True):
-        """Called when the frame changed, updates the renderer and such"""
+            self._updateOnFrameChange()
 
-        if refreshUI: # slow stuff that we do only when not playing
-            # topology might have changed, recalculate
-            self._updateHUDGeomCounts()
-            self._updatePropertyView()
-            self._refreshAttributeValue()
+        self.setFrameField(self._dataModel.currentFrame.GetValue())
 
-            # value sources of an attribute can change upon frame change
-            # due to value clips, so we must update the layer stack.
-            self._updateLayerStackView()
+    def _updateGUIForFrameChange(self):
+        """Called when the frame changes have finished.
+        e.g When the playback/scrubbing has stopped.
+        """
+        # slow stuff that we do only when not playing
+        # topology might have changed, recalculate
+        self._updateHUDGeomCounts()
+        self._updatePropertyView()
+        self._refreshAttributeValue()
 
-            # refresh the visibility column
-            self._resetPrimViewVis(selItemsOnly=False, authoredVisHasChanged=False)
+        # value sources of an attribute can change upon frame change
+        # due to value clips, so we must update the layer stack.
+        self._updateLayerStackView()
 
+        # refresh the visibility column
+        self._resetPrimViewVis(selItemsOnly=False, authoredVisHasChanged=False)
+
+    def _updateOnFrameChange(self):
+        """Called when the frame changes, updates the renderer and such"""
+        # do not update HUD/BBOX if scrubbing or playing
+        if not (self._dataModel.playing or self._ui.frameSlider.isSliderDown()):
+            self._updateGUIForFrameChange()
         if self._stageView:
             # this is the part that renders
             if self._dataModel.playing:
@@ -3347,7 +3385,7 @@ class AppController(QtCore.QObject):
                     (key, type(primProperty)))
                 continue
 
-            attrText = GetShortString(primProperty, frame) or ""
+            attrText = GetShortString(primProperty, frame)
             treeWidget.addTopLevelItem(
                 QtWidgets.QTreeWidgetItem(["", str(key), attrText]))
 
@@ -4050,29 +4088,6 @@ class AppController(QtCore.QObject):
             print "Error encountered while computing prim subtree HUD info: %s" % err
         finally:
             QtWidgets.QApplication.restoreOverrideCursor()
-
-
-    def _setupDebugMenu(self):
-        def __helper(debugType, menu):
-            return lambda: self._createTfDebugMenu(menu, '{0}_'.format(debugType))
-
-        for debugType in DebugTypes:
-            menu = self._ui.menuDebug.addMenu('{0} Flags'.format(debugType))
-            menu.aboutToShow.connect(__helper(debugType, menu))
-
-    def _createTfDebugMenu(self, menu, flagFilter):
-        def __createTriggerLambda(flagToSet, value):
-            return lambda: Tf.Debug.SetDebugSymbolsByName(flagToSet, value)
-
-        flags = [flag for flag in Tf.Debug.GetDebugSymbolNames() if flag.startswith(flagFilter)]
-        menu.clear()
-        for flag in flags:
-            action = menu.addAction(flag)
-            isEnabled = Tf.Debug.IsDebugSymbolNameEnabled(flag)
-            action.setCheckable(True)
-            action.setChecked(isEnabled)
-            action.setStatusTip(Tf.Debug.GetDebugSymbolDescription(flag))
-            action.triggered[bool].connect(__createTriggerLambda(flag, not isEnabled))
 
     def _updateNavigationMenu(self):
         """Make the Navigation menu items enabled or disabled depending on the
