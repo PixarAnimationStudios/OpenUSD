@@ -198,7 +198,9 @@ UsdAttribute::HasValue() const
 bool
 UsdAttribute::HasFallbackValue() const
 {
-    return _GetStage()->_GetAttributeDefinition(*this)->HasDefaultValue();
+    SdfAttributeSpecHandle attrDef =
+        _GetStage()->_GetAttributeDefinition(*this);
+    return attrDef && attrDef->HasDefaultValue();
 }
 
 bool 

@@ -52,6 +52,8 @@ class TestUsdPrim(unittest.TestCase):
             assert a is not b
             assert a == b
             assert hash(a) == hash(b)
+            assert not a.HasFallbackValue()
+            assert not b.HasFallbackValue()
 
             p.CreateRelationship('relationship')
             a = p.GetRelationship('relationship')
