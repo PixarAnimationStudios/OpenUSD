@@ -118,12 +118,17 @@ public:
     const TfToken& GetSourceType() const override;
 
 private:
-    // Gets a VtValue instance from a string value and a type/array/asset hint
+    // Gets a common type + array size (if array) from the property attributes
+    std::tuple<TfToken, size_t> _GetTypeName(
+        const NdrTokenMap& attributes) const;
+
+    // Gets a VtValue instance from a string value and a type, array, metadata
+    // hint
     VtValue _GetVtValue(
         const std::string& stringValue,
         TfToken& type,
-        bool isArray,
-        bool isSdfAssetPath) const;
+        size_t arraySize,
+        const NdrTokenMap& metadata) const;
 
     // Emits a deprecation warning to the log
     void _OutputDeprecationWarning(

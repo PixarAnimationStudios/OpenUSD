@@ -133,24 +133,46 @@ HdStCommandBuffer::RebuildDrawBatchesIfNeeded(unsigned currentBatchVersion)
 {
     HD_TRACE_FUNCTION();
 
-    bool deepValidation
-        = (currentBatchVersion != _batchVersion);
+    bool deepValidation = (currentBatchVersion != _batchVersion);
+    _batchVersion = currentBatchVersion;
+    
+    // Force rebuild of all batches for debugging purposes. This helps quickly
+    // triage issues wherein the command buffer wasn't updated correctly.
+    bool rebuildAllDrawBatches =
+        TfDebug::IsEnabled(HDST_FORCE_DRAW_BATCH_REBUILD);
 
-    for (auto const& batch : _drawBatches) {
-        if (!batch->Validate(deepValidation) && !batch->Rebuild()) {
-            TRACE_SCOPE("Invalid Batches");
-            _RebuildDrawBatches();
-            _batchVersion = currentBatchVersion;
-            return;
+    if (ARCH_LIKELY(!rebuildAllDrawBatches)) {
+        for (auto const& batch : _drawBatches) {
+            // Validate checks if the batch is referring to up-to-date
+            // buffer arrays (via a cheap version number hash check).
+            // If deepValidation is set, we loop over the draw items to check
+            // if they can be aggregated. If these checks fail, we need to
+            // rebuild the batch.
+            bool needToRebuildBatch = !batch->Validate(deepValidation);
+            if (needToRebuildBatch) {
+                // Attempt to rebuild the batch. If that fails, we use a big
+                // hammer and rebuilt ALL batches.
+                bool rebuildSuccess = batch->Rebuild();
+                if (!rebuildSuccess) {
+                    rebuildAllDrawBatches = true;
+                    break;
+                }
+            }
         }
     }
-    _batchVersion = currentBatchVersion;
+
+    if (rebuildAllDrawBatches) {
+        _RebuildDrawBatches();
+    }   
 }
 
 void
 HdStCommandBuffer::_RebuildDrawBatches()
 {
     HD_TRACE_FUNCTION();
+
+    TF_DEBUG(HDST_DRAW_BATCH).Msg(
+        "Rebuilding all draw batches for command buffer %p ...\n", (void*)this);
 
     _visibleSize = 0;
 
@@ -208,10 +230,6 @@ HdStCommandBuffer::_RebuildDrawBatches()
                             drawItem->GetMaterialShader()->GetParams()));
         }
 
-        TF_DEBUG(HDST_DRAW_BATCH).Msg("%lu (%lu)\n", 
-                key, 
-                drawItem->GetBufferArraysHash());
-
         // Do a quick check to see if the draw item can be batched with the
         // previous draw item, before checking the batchMap.
         if (key == prevBatch.key && prevBatch.batch) {
@@ -247,6 +265,10 @@ HdStCommandBuffer::_RebuildDrawBatches()
             }
         }
     }
+
+    TF_DEBUG(HDST_DRAW_BATCH).Msg(
+        "   %lu draw batches created for %lu draw items\n", _drawBatches.size(),
+        _drawItems.size());
 }
 
 void

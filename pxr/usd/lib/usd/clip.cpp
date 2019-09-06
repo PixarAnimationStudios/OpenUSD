@@ -590,7 +590,7 @@ struct _ClipSet {
         size_t layerStackOrder;
         SdfLayerOffset offset;
     };
-    boost::optional<_AnchorInfo> anchorInfo;
+    _AnchorInfo anchorInfo;
     VtDictionary clipInfo;
 };
 }
@@ -630,7 +630,7 @@ _RecordAnchorInfo(
         const SdfPath& path = node.GetPath();
         const PcpLayerStackRefPtr& layerStack = node.GetLayerStack();
         const SdfLayerRefPtr& layer = layerStack->GetLayers()[layerIdx];
-        clipSet->anchorInfo = _ClipSet::_AnchorInfo{
+        clipSet->anchorInfo = _ClipSet::_AnchorInfo {
             layerStack, path, layerIdx, 0, // This will get filled in later
             _GetLayerOffsetToRoot(node, layer)
         };
@@ -760,8 +760,8 @@ _ResolveClipSetsInNode(
         else {
             // If no anchor info is found, this clip set will be removed
             // later on.
-            if (it->second.anchorInfo) {
-                it->second.anchorInfo->layerStackOrder = 
+            if (it->second.anchorInfo.layerStack) {
+                it->second.anchorInfo.layerStackOrder = 
                     std::distance(addedClipSets.begin(), addedIt);
             }
             ++it;
@@ -788,7 +788,7 @@ _ResolveClipInfo(
             const _ClipSet& nodeClipSet = entry.second;
 
             _ClipSet& composedClipSet = composedClipSets[clipSetName];
-            if (!composedClipSet.anchorInfo) {
+            if (!composedClipSet.anchorInfo.layerStack) {
                 composedClipSet.anchorInfo = nodeClipSet.anchorInfo;
             }
             VtDictionaryOverRecursive(
@@ -799,7 +799,7 @@ _ResolveClipInfo(
     // Remove all clip sets that have no anchor info; without anchor info,
     // value resolution won't know at which point to introduce these clip sets.
     for (auto it = composedClipSets.begin(); it != composedClipSets.end(); ) {
-        if (!it->second.anchorInfo) {
+        if (!it->second.anchorInfo.layerStack) {
             it = composedClipSets.erase(it);
         }
         else {
@@ -821,10 +821,10 @@ _ResolveClipInfo(
     }
     std::sort(sortedClipSets.begin(), sortedClipSets.end(),
         [](const _ClipSet& x, const _ClipSet& y) {
-            return std::tie(x.anchorInfo->layerStack, x.anchorInfo->primPath,
-                            x.anchorInfo->layerStackOrder) <
-                std::tie(y.anchorInfo->layerStack, y.anchorInfo->primPath,
-                         y.anchorInfo->layerStackOrder);
+            return std::tie(x.anchorInfo.layerStack, x.anchorInfo.primPath,
+                            x.anchorInfo.layerStackOrder) <
+                std::tie(y.anchorInfo.layerStack, y.anchorInfo.primPath,
+                         y.anchorInfo.layerStackOrder);
         });
 
     // Unpack the information in the composed clip sets into individual
@@ -834,9 +834,9 @@ _ResolveClipInfo(
         resolvedClipInfo->push_back(Usd_ResolvedClipInfo());
         Usd_ResolvedClipInfo& out = resolvedClipInfo->back();
 
-        out.sourceLayerStack = clipSet.anchorInfo->layerStack;
-        out.sourcePrimPath = clipSet.anchorInfo->primPath;
-        out.indexOfLayerWhereAssetPathsFound = clipSet.anchorInfo->layerIndex;
+        out.sourceLayerStack = clipSet.anchorInfo.layerStack;
+        out.sourcePrimPath = clipSet.anchorInfo.primPath;
+        out.indexOfLayerWhereAssetPathsFound = clipSet.anchorInfo.layerIndex;
 
         const VtDictionary& clipInfo = clipSet.clipInfo;
         _SetInfo(clipInfo, UsdClipsAPIInfoKeys->primPath, &out.clipPrimPath);
@@ -887,9 +887,9 @@ _ResolveClipInfo(
                 // author all clip metadata in the same layer -- and it's not
                 // clear what the desired result in that case would be anyway.
                 _ApplyLayerOffsetToExternalTimes(
-                    clipSet.anchorInfo->offset, &*out.clipTimes);
+                    clipSet.anchorInfo.offset, &*out.clipTimes);
                 _ApplyLayerOffsetToExternalTimes(
-                    clipSet.anchorInfo->offset, &*out.clipActive);
+                    clipSet.anchorInfo.offset, &*out.clipActive);
             }
         }
     }

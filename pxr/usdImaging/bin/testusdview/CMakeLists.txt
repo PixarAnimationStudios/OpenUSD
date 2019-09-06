@@ -171,6 +171,11 @@ if (NOT PXR_HEADLESS_TEST_MODE)
         DEST testusdviewPrimTreeExpansion
     )
 
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewInfGeom
+        DEST testusdviewInfGeom
+    )
+
     pxr_register_test(testusdviewAlive                                               
         PRE_COMMAND "${PYTHON_EXECUTABLE} testUsdviewAliveSetup.py"
         PYTHON
@@ -371,6 +376,12 @@ if (NOT PXR_HEADLESS_TEST_MODE)
     pxr_register_test(testusdviewPrimTreeExpansion
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewPrimTreeExpansion.py test.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+    
+    pxr_register_test(testusdviewInfGeom
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewInfGeom.py infGeom.usda"
         EXPECTED_RETURN_CODE 0
     )
 

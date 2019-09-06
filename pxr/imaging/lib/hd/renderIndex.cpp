@@ -62,12 +62,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdRenderIndex::HdRenderIndex(HdRenderDelegate *renderDelegate)
     :  _rprimMap()
     , _rprimIds()
-    , _rprimPrimIdMap()
     , _taskMap()
     , _sprimIndex()
     , _bprimIndex()
     , _tracker()
-    , _nextPrimId(1)
     , _instancerMap()
     , _syncQueue()
     , _renderDelegate(renderDelegate)
@@ -75,6 +73,8 @@ HdRenderIndex::HdRenderIndex(HdRenderDelegate *renderDelegate)
     , _renderTagVersion(_tracker.GetRenderTagVersion() - 1)
 {
     // Note: HdRenderIndex::New(...) guarantees renderDelegate is non-null.
+
+    _rprimPrimIdMap.reserve(128);
 
     // Register well-known reprs (to be deprecated).
     static std::once_flag reprsOnce;
@@ -1432,15 +1432,13 @@ void HdRenderIndex::_GatherRenderTags(const HdTaskSharedPtrVector *tasks)
 void
 HdRenderIndex::_CompactPrimIds()
 {
-    _rprimPrimIdMap.clear();
-    // Start prim id as 1 because background for id
-    // render is black (id 0)
-    _nextPrimId = 1;
+    _rprimPrimIdMap.resize(_rprimMap.size());
+    int32_t nextPrimId = 0;
     TF_FOR_ALL(it, _rprimMap) {
-        it->second.rprim->SetPrimId(_nextPrimId);
+        it->second.rprim->SetPrimId(nextPrimId);
         _tracker.MarkRprimDirty(it->first, HdChangeTracker::DirtyPrimID);
-        _rprimPrimIdMap[_nextPrimId] = it->first;
-        ++_nextPrimId;
+        _rprimPrimIdMap[nextPrimId] = it->first;
+        ++nextPrimId;
     }
 
 }
@@ -1448,29 +1446,27 @@ HdRenderIndex::_CompactPrimIds()
 void
 HdRenderIndex::_AllocatePrimId(HdRprim *prim)
 {
-    int32_t maxId = (1 << 24) - 1;
-    if(_nextPrimId > maxId) {
+    const size_t maxId = (1 << 24) - 1;
+    if (_rprimPrimIdMap.size() > maxId) {
         // We are wrapping around our max prim id.. time to reallocate
         _CompactPrimIds();
         // Make sure we have a valid next id after compacting
-        TF_VERIFY(_nextPrimId <= maxId);
+        TF_VERIFY(_rprimPrimIdMap.size() < maxId);
     }
-    prim->SetPrimId(_nextPrimId);
+    int32_t nextPrimId = _rprimPrimIdMap.size();
+    prim->SetPrimId(nextPrimId);
     // note: not marking DirtyPrimID here to avoid undesirable variability tracking.
-    _rprimPrimIdMap[_nextPrimId] = prim->GetId();
-
-    ++ _nextPrimId;
+    _rprimPrimIdMap.push_back(prim->GetId());
 }
 
 SdfPath
 HdRenderIndex::GetRprimPathFromPrimId(int primId) const
 {
-    _RprimPrimIDMap::const_iterator it = _rprimPrimIdMap.find(primId);
-    if(it == _rprimPrimIdMap.end()) {
+    if (static_cast<size_t>(primId) >= _rprimPrimIdMap.size()) {
         return SdfPath();
     }
 
-    return it->second;
+    return _rprimPrimIdMap[primId];
 }
 
 void

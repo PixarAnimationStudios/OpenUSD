@@ -76,4 +76,6 @@ TF_WRAP_MODULE
     TF_WRAP(UsdResolveInfo);
     TF_WRAP(Version);
     TF_WRAP(UsdZipFile);
+    TF_WRAP(UsdPrimCompositionQueryArc);
+    TF_WRAP(UsdPrimCompositionQuery);
 }

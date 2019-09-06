@@ -3,12 +3,11 @@
 //Last modified: Wed, Jan 03, 2018 01:48:33 PM
 //Codeset: UTF-8
 requires maya "2018";
-requires -nodeType "MASH_Waiter" -nodeType "MASH_Offset" -nodeType "MASH_Random"
-		 -nodeType "MASH_Id" -nodeType "MASH_Distribute" "MASH" "450";
-requires -nodeType "pxrUsdReferenceAssembly" -dataType "pxrUsdStageData" "pxrUsd" "1.0";
-requires -nodeType "MASH_BulletSolver" -nodeType "MASH_Waiter" -nodeType "MASH_Offset"
-		 -nodeType "MASH_Random" -nodeType "MASH_Id" -nodeType "MASH_Distribute" -nodeType "MASH_Dynamics"
-		 "MASH" "450";
+requires -nodeType "pxrUsdReferenceAssembly" -nodeType "pxrHdImagingShape" -dataType "pxrUsdStageData"
+		 "pxrUsd" "1.0";
+requires -nodeType "MASH_Points" -nodeType "MASH_Falloff" -nodeType "MASH_BulletSolver"
+		 -nodeType "MASH_Waiter" -nodeType "MASH_Visibility" -nodeType "MASH_Offset" -nodeType "MASH_Random"
+		 -nodeType "MASH_Id" -nodeType "MASH_Distribute" -nodeType "MASH_Dynamics" "MASH" "450";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
 fileInfo "product" "Maya 2018";
@@ -1397,6 +1396,25 @@ createNode mesh -n "MASH2_PrototypeShape" -p "MASH2_Prototype";
 	setAttr ".ds" no;
 	setAttr ".covm[0]"  0 1 1;
 	setAttr ".cdvm[0]"  0 1 1;
+createNode instancer -n "MASH3_Instancer" -p "InstancerTest";
+	rename -uid "38F68940-0000-1743-5D4C-59A2000002DD";
+	addAttr -s false -ci true -h true -sn "instancerMessage" -ln "instancerMessage" 
+		-at "message";
+createNode transform -n "pTorus1" -p "MASH3_Instancer";
+	rename -uid "38F68940-0000-1743-5D4C-599A000002D5";
+	addAttr -ci true -sn "mashOutFilter" -ln "mashOutFilter" -min 0 -max 1 -at "bool";
+	setAttr ".v" no;
+createNode mesh -n "pTorusShape1" -p "pTorus1";
+	rename -uid "38F68940-0000-1743-5D4C-599A000002D4";
+	setAttr -k off ".v";
+	setAttr ".vir" yes;
+	setAttr ".vif" yes;
+	setAttr ".uvst[0].uvsn" -type "string" "map1";
+	setAttr ".cuvs" -type "string" "map1";
+	setAttr ".dcc" -type "string" "Ambient+Diffuse";
+	setAttr ".ds" no;
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
 createNode transform -n "MASH2_BulletSolver";
 	rename -uid "08F20900-0000-7D12-5B05-E6C60000029D";
 createNode MASH_BulletSolver -n "MASH2_BulletSolverShape" -p "MASH2_BulletSolver";
@@ -1404,6 +1422,17 @@ createNode MASH_BulletSolver -n "MASH2_BulletSolverShape" -p "MASH2_BulletSolver
 	addAttr -s false -ci true -h true -sn "instancerMessage" -ln "instancerMessage" 
 		-at "message";
 	setAttr -k off ".v";
+createNode transform -n "MASH3_Points";
+	rename -uid "38F68940-0000-1743-5D4C-59BB000002DE";
+createNode MASH_Points -n "MASH3_PointsShape" -p "MASH3_Points";
+	rename -uid "38F68940-0000-1743-5D4C-59BB000002DF";
+	setAttr -k off ".v";
+createNode transform -n "Falloff_MASH3_Visibility";
+	rename -uid "38F68940-0000-1743-5D4C-59C3000002E2";
+createNode MASH_Falloff -n "Falloff_MASH3_VisibilityShape" -p "Falloff_MASH3_Visibility";
+	rename -uid "38F68940-0000-1743-5D4C-59C3000002E1";
+	setAttr -k off ".v";
+	setAttr -s 2 ".falloffR[0:1]"  0 1 1 1 0 1;
 createNode lightLinker -s -n "lightLinker1";
 	rename -uid "468F9900-0000-525D-5A1C-9E9C000002A8";
 	setAttr -s 3 ".lnk";
@@ -1644,6 +1673,79 @@ createNode nodeGraphEditorInfo -n "MayaNodeEditorSavedTabsInfo";
 	setAttr ".tgi[0].ni[19].x" 860.27691650390625;
 	setAttr ".tgi[0].ni[19].y" -374.36669921875;
 	setAttr ".tgi[0].ni[19].nvs" 1923;
+createNode polyTorus -n "polyTorus1";
+	rename -uid "38F68940-0000-1743-5D4C-599A000002D3";
+createNode MASH_Waiter -n "MASH3";
+	rename -uid "38F68940-0000-1743-5D4C-599F000002D6";
+	addAttr -s false -ci true -h true -sn "instancerMessage" -ln "instancerMessage" 
+		-at "message";
+	setAttr ".filename" -type "string" "0";
+createNode MASH_Distribute -n "MASH3_Distribute";
+	rename -uid "38F68940-0000-1743-5D4C-599F000002D7";
+	setAttr ".savedData" -type "newParticles" ;
+	setAttr ".mapDirection" 4;
+	setAttr ".fArray" -type "vectorArray" 0 ;
+	setAttr ".inPPP" -type "vectorArray" 0 ;
+	setAttr -s 3 ".scaleRamp[0:2]"  0 0 1 0 0 1 1 1 1;
+	setAttr -s 3 ".rotationRamp[0:2]"  0 0 1 0 0 1 1 1 1;
+	setAttr -s 3 ".bRmp[0:2]"  0 0 1 0 0 1 1 1 1;
+	setAttr ".bRmpX[0]"  0 1 1;
+	setAttr ".bRmpY[0]"  0 1 1;
+	setAttr ".bRmpZ[0]"  0 1 1;
+createNode MASH_Visibility -n "MASH3_Visibility";
+	rename -uid "38F68940-0000-1743-5D4C-59BF000002E0";
+	setAttr ".fArray" -type "vectorArray" 0 ;
+createNode animCurveTL -n "Falloff_MASH3_Visibility_translateX";
+	rename -uid "38F68940-0000-1743-5D4C-59CC000002E5";
+	setAttr ".tan" 18;
+	setAttr ".wgt" no;
+	setAttr -s 2 ".ktv[0:1]"  0 0 400 22.978999928072184;
+createNode animCurveTL -n "Falloff_MASH3_Visibility_translateY";
+	rename -uid "38F68940-0000-1743-5D4C-59CC000002E6";
+	setAttr ".tan" 18;
+	setAttr ".wgt" no;
+	setAttr -s 2 ".ktv[0:1]"  0 0 400 0;
+createNode animCurveTL -n "Falloff_MASH3_Visibility_translateZ";
+	rename -uid "38F68940-0000-1743-5D4C-59CC000002E7";
+	setAttr ".tan" 18;
+	setAttr ".wgt" no;
+	setAttr -s 2 ".ktv[0:1]"  0 0 400 0;
+createNode animCurveTU -n "Falloff_MASH3_Visibility_visibility";
+	rename -uid "38F68940-0000-1743-5D4C-59CC000002E8";
+	setAttr ".tan" 9;
+	setAttr ".wgt" no;
+	setAttr -s 2 ".ktv[0:1]"  0 1 400 1;
+	setAttr -s 2 ".kot[0:1]"  5 5;
+createNode animCurveTA -n "Falloff_MASH3_Visibility_rotateX";
+	rename -uid "38F68940-0000-1743-5D4C-59CC000002E9";
+	setAttr ".tan" 18;
+	setAttr ".wgt" no;
+	setAttr -s 2 ".ktv[0:1]"  0 0 400 0;
+createNode animCurveTA -n "Falloff_MASH3_Visibility_rotateY";
+	rename -uid "38F68940-0000-1743-5D4C-59CC000002EA";
+	setAttr ".tan" 18;
+	setAttr ".wgt" no;
+	setAttr -s 2 ".ktv[0:1]"  0 0 400 0;
+createNode animCurveTA -n "Falloff_MASH3_Visibility_rotateZ";
+	rename -uid "38F68940-0000-1743-5D4C-59CC000002EB";
+	setAttr ".tan" 18;
+	setAttr ".wgt" no;
+	setAttr -s 2 ".ktv[0:1]"  0 0 400 0;
+createNode animCurveTU -n "Falloff_MASH3_Visibility_scaleX";
+	rename -uid "38F68940-0000-1743-5D4C-59CC000002EC";
+	setAttr ".tan" 18;
+	setAttr ".wgt" no;
+	setAttr -s 2 ".ktv[0:1]"  0 10 400 10;
+createNode animCurveTU -n "Falloff_MASH3_Visibility_scaleY";
+	rename -uid "38F68940-0000-1743-5D4C-59CC000002ED";
+	setAttr ".tan" 18;
+	setAttr ".wgt" no;
+	setAttr -s 2 ".ktv[0:1]"  0 10 400 10;
+createNode animCurveTU -n "Falloff_MASH3_Visibility_scaleZ";
+	rename -uid "38F68940-0000-1743-5D4C-59CC000002EE";
+	setAttr ".tan" 18;
+	setAttr ".wgt" no;
+	setAttr -s 2 ".ktv[0:1]"  0 10 400 10;
 select -ne :time1;
 	setAttr ".ihi" 0;
 	setAttr ".o" 0;
@@ -1664,7 +1766,7 @@ select -ne :postProcessList1;
 	setAttr -s 2 ".p";
 select -ne :defaultRenderingList1;
 select -ne :initialShadingGroup;
-	setAttr -s 5 ".dsm";
+	setAttr -s 6 ".dsm";
 	setAttr ".ro" yes;
 select -ne :initialParticleSE;
 	setAttr ".ro" yes;
@@ -1677,6 +1779,8 @@ select -ne :defaultColorMgtGlobals;
 select -ne :hardwareRenderGlobals;
 	setAttr ".ctrs" 256;
 	setAttr ".btrs" 512;
+select -ne :ikSystem;
+	setAttr -s 4 ".sol";
 connectAttr ":time1.o" "emitter1.ct";
 connectAttr "nParticleShape1.ifl" "emitter1.full[0]";
 connectAttr "nParticleShape1.tss" "emitter1.dt[0]";
@@ -1724,6 +1828,10 @@ connectAttr "MASH2_Prototype.m" "MASH2_Instancer.inh[0]";
 connectAttr "MASH2_BulletSolverShape.instancerMessage" "MASH2_Instancer.dynamicsMessage"
 		;
 connectAttr "polySphere3.out" "MASH2_PrototypeShape.i";
+connectAttr "pTorus1.m" "MASH3_Instancer.inh[0]";
+connectAttr "MASH3.outputPoints" "MASH3_Instancer.inp";
+connectAttr "MASH3.instancerMessage" "MASH3_Instancer.instancerMessage";
+connectAttr "polyTorus1.out" "pTorusShape1.i";
 connectAttr ":time1.o" "MASH2_BulletSolverShape.time";
 connectAttr "MASH2_Dynamics.enable" "MASH2_BulletSolverShape.inputNetworks[0].mashEnable"
 		;
@@ -1788,6 +1896,26 @@ connectAttr "MASH2_Dynamics.initialStateJSON" "MASH2_BulletSolverShape.inputNetw
 connectAttr "MASH2_Dynamics.useDensity" "MASH2_BulletSolverShape.inputNetworks[0].mashUseDensity"
 		;
 connectAttr "MASH2.outputPoints" "MASH2_BulletSolverShape.inputNetworks[0].inputPoints"
+		;
+connectAttr "MASH3.outputPoints" "MASH3_PointsShape.inputPoints";
+connectAttr "Falloff_MASH3_Visibility_translateX.o" "Falloff_MASH3_Visibility.tx"
+		;
+connectAttr "Falloff_MASH3_Visibility_translateY.o" "Falloff_MASH3_Visibility.ty"
+		;
+connectAttr "Falloff_MASH3_Visibility_translateZ.o" "Falloff_MASH3_Visibility.tz"
+		;
+connectAttr "Falloff_MASH3_Visibility_visibility.o" "Falloff_MASH3_Visibility.v"
+		;
+connectAttr "Falloff_MASH3_Visibility_rotateX.o" "Falloff_MASH3_Visibility.rx";
+connectAttr "Falloff_MASH3_Visibility_rotateY.o" "Falloff_MASH3_Visibility.ry";
+connectAttr "Falloff_MASH3_Visibility_rotateZ.o" "Falloff_MASH3_Visibility.rz";
+connectAttr "Falloff_MASH3_Visibility_scaleX.o" "Falloff_MASH3_Visibility.sx";
+connectAttr "Falloff_MASH3_Visibility_scaleY.o" "Falloff_MASH3_Visibility.sy";
+connectAttr "Falloff_MASH3_Visibility_scaleZ.o" "Falloff_MASH3_Visibility.sz";
+connectAttr ":time1.o" "Falloff_MASH3_VisibilityShape.time";
+connectAttr "Falloff_MASH3_Visibility.wm" "Falloff_MASH3_VisibilityShape.inMatrix"
+		;
+connectAttr "MASH3_Distribute.outputPoints" "Falloff_MASH3_VisibilityShape.falloffIn"
 		;
 relationship "link" ":lightLinker1" ":initialShadingGroup.message" ":defaultLightSet.message";
 relationship "link" ":lightLinker1" ":initialParticleSE.message" ":defaultLightSet.message";
@@ -1855,8 +1983,11 @@ connectAttr "|InstancerTest|MASH1_Instancer|prototypeUnderInstancer|prototypeUnd
 		;
 connectAttr "|InstancerTest|MASH1_Instancer|prototypeUnderInstancer.msg" "MayaNodeEditorSavedTabsInfo.tgi[0].ni[19].dn"
 		;
-connectAttr ":time1.o" "MASH1_Offset.ti";
-connectAttr "MASH1_ID.outputPoints" "MASH1_Offset.inputPoints";
+connectAttr "MASH3_Visibility.outputPoints" "MASH3.inputPoints";
+connectAttr "MASH3_Distribute.waiterMessage" "MASH3.waiterMessage";
+connectAttr "MASH3_Distribute.outputPoints" "MASH3_Visibility.inputPoints";
+connectAttr "Falloff_MASH3_VisibilityShape.falloffOut" "MASH3_Visibility.strengthPP[0]"
+		;
 connectAttr "nParticlePointsSE.pa" ":renderPartition.st" -na;
 connectAttr "npPointsBlinn.msg" ":defaultShaderList1.s" -na;
 connectAttr "npPointsVolume.msg" ":defaultShaderList1.s" -na;
@@ -1868,4 +1999,5 @@ connectAttr "|InstancerTest|instancer1|prototypeUnderInstancer|prototypeUnderIns
 connectAttr "|InstancerTest|MASH1_Instancer|prototypeUnderInstancer|prototypeUnderInstancerShape.iog" ":initialShadingGroup.dsm"
 		 -na;
 connectAttr "MASH2_PrototypeShape.iog" ":initialShadingGroup.dsm" -na;
+connectAttr "pTorusShape1.iog" ":initialShadingGroup.dsm" -na;
 // End of InstancerTestMash.ma

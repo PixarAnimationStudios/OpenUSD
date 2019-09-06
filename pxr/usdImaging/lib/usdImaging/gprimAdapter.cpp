@@ -258,6 +258,22 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
             valueCache->GetPrimvar(cachePath, HdTokens->velocities) = 
                 VtValue(velocities);
         }
+
+        // Acceleration information is expected to be authored at the same sample
+        // rate as points data, so use the points dirty bit to let us know when
+        // to publish accelerations.
+        VtVec3fArray accelerations;
+        if (pointBased.GetAccelerationsAttr() &&
+            pointBased.GetAccelerationsAttr().Get(&accelerations, time)) {
+            // Expose accelerations as a primvar.
+            _MergePrimvar(
+                &primvars,
+                HdTokens->accelerations,
+                HdInterpolationVertex,
+                HdPrimvarRoleTokens->vector);
+            valueCache->GetPrimvar(cachePath, HdTokens->accelerations) = 
+                VtValue(accelerations);
+        }
     }
 
     SdfPath materialUsdPath;
@@ -503,13 +519,15 @@ UsdImagingGprimAdapter::_GetExtent(UsdPrim const& prim, UsdTimeCode time) const
     HF_MALLOC_TAG_FUNCTION();
     UsdGeomGprim gprim(prim);
     VtVec3fArray extent;
-    if (gprim.GetExtentAttr().Get(&extent, time)) {
+    if (gprim.GetExtentAttr().Get(&extent, time) && extent.size() == 2) {
         // Note:
         // Usd stores extent as 2 float vecs. We do an implicit 
         // conversion to doubles
         return GfRange3d(extent[0], extent[1]);
     } else {
-        // Return empty range if no value was found.
+        // Return empty range if no value was found, or the wrong number of 
+        // extent values were provided.        
+        // Note: The default empty is [FLT_MAX,-FLT_MAX].
         // TODO: Should this compute the extent based on the points instead?
         return GfRange3d();
     }

@@ -24,9 +24,12 @@
 #ifndef HDX_SIMPLE_LIGHTING_SHADER_H
 #define HDX_SIMPLE_LIGHTING_SHADER_H
 
+#include "pxr/imaging/glf/glew.h"
+
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hd/materialParam.h"
 #include "pxr/imaging/hd/resource.h"
 #include "pxr/imaging/hdSt/lightingShader.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
@@ -49,7 +52,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 typedef boost::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShaderSharedPtr;
-
+typedef boost::shared_ptr<class HdStTextureResource> 
+                                                HdStTextureResourceSharedPtr;
 /// \class HdxSimpleLightingShader
 ///
 /// A shader that supports simple lighting functionality.
@@ -73,6 +77,10 @@ public:
     HDX_API
     virtual void AddBindings(HdBindingRequestVector *customBindings);
 
+    /// HdStShaderCode overrides
+    HDST_API
+    virtual HdMaterialParamVector const& GetParams() const override;
+
     /// HdStLightingShader overrides
     HDX_API
     virtual void SetCamera(GfMatrix4d const &worldToViewMatrix,
@@ -92,6 +100,8 @@ private:
     GlfBindingMapRefPtr _bindingMap;
     bool _useLighting;
     boost::scoped_ptr<HioGlslfx> _glslfx;
+
+    HdMaterialParamVector _lightTextureParams;
 };
 
 

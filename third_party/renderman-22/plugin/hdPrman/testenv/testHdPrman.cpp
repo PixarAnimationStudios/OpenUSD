@@ -189,6 +189,18 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    // Find USD camera prim.
+    UsdGeomCamera usdCam;
+    if (!sceneCamPath.IsEmpty()) {
+        UsdPrim prim = stage->GetPrimAtPath(sceneCamPath);
+        if (prim && prim.IsA<UsdGeomCamera>()) {
+            usdCam = UsdGeomCamera(prim);
+        } else {
+            TF_WARN("Invalid scene camera at %s. Falling back to the "
+                    "free cam.\n", sceneCamPath.GetText());
+        }
+    }
+
     //////////////////////////////////////////////////////////////////////// 
     //
     // PRMan setup
@@ -247,9 +259,14 @@ int main(int argc, char *argv[])
     riley::MaterialId fallbackMaterial;
     riley::MaterialId fallbackVolumeMaterial;
     riley::ScopedCoordinateSystem const k_NoCoordsys = { 0, nullptr };
-    // Shutter settings from studio katana defaults
+
+    // Shutter settings from studio production.
     float shutterInterval[2] = { 0.0f, 0.5f };
-    float shutterCurve[10] = {0, 0.05, 0, 0, 0, 0, 0.05, 1, 0.35, 0};
+    float shutterCurve[10] = {0, 0, 0, 0, 0, 0, 0, 1, 0.3, 0};
+    if (usdCam) {
+        usdCam.GetShutterOpenAttr().Get(&shutterInterval[0], frameNum);
+        usdCam.GetShutterCloseAttr().Get(&shutterInterval[1], frameNum);
+    }
 
     // Use two samples (start and end) of a frame for now.
     std::vector<double> timeSampleOffsets = {0.0, 1.0};
@@ -297,87 +314,62 @@ int main(int argc, char *argv[])
         RixParamList *camParams = mgr->CreateRixParamList();
         RixParamList *projParams = mgr->CreateRixParamList();
 
-        bool useFreeCam = true;
-        if (!sceneCamPath.IsEmpty()) {
-            // XXX Since HdPrmanCamera doesn't own the riley camera, we need
-            // to manually extract the USD camera info and set it on the riley
-            // camera.
-            UsdPrim prim = stage->GetPrimAtPath(sceneCamPath);
-            if (prim && prim.IsA<UsdGeomCamera>()) {
-                useFreeCam = false;
-                UsdGeomCamera cam(prim);
-                GfCamera gfCam = cam.GetCamera(frameNum);
+        // Shutter curve (this is relative to the Shutter interval above).
+        camParams->SetFloat(RixStr.k_shutterOpenTime, shutterCurve[0]);
+        camParams->SetFloat(RixStr.k_shutterCloseTime, shutterCurve[1]);
+        camParams->SetFloatArray(RixStr.k_shutteropening, shutterCurve+2, 8);
 
-                // Camera params
-                VtValue vShutterOpen, vShutterClose;
-                cam.GetShutterOpenAttr().Get(&vShutterOpen, frameNum);
-                cam.GetShutterCloseAttr().Get(&vShutterClose, frameNum);
-                camParams->SetFloat(RixStr.k_shutterOpenTime,
-                                    vShutterOpen.UncheckedGet<float>());
-                camParams->SetFloat(RixStr.k_shutterCloseTime,
-                                    vShutterClose.UncheckedGet<float>());
-                camParams->SetFloatArray(RixStr.k_shutteropening,
-                                         shutterCurve+2, 8);
-                GfRange1f clipRange = gfCam.GetClippingRange();
-                camParams->SetFloat(RixStr.k_nearClip, clipRange.GetMin());
-                camParams->SetFloat(RixStr.k_farClip, clipRange.GetMax());
-                
-                // Projection shader parameters
-                projParams->SetFloat(
-                    RixStr.k_fov, gfCam.GetFieldOfView(GfCamera::FOVVertical));
-                // Convert parameters that are specified in tenths of a world
-                // unit in USD to world units for Riley. See
-                // UsdImagingCameraAdapter::UpdateForTime for reference.
-                projParams->SetFloat(RixStr.k_focalLength,
-                    gfCam.GetFocalLength() / 10.0f);
-                projParams->SetFloat(RixStr.k_fStop, gfCam.GetFStop());
-                projParams->SetFloat(RixStr.k_focalDistance,
-                    gfCam.GetFocusDistance());
+        if (usdCam) {
+            GfCamera gfCam = usdCam.GetCamera(frameNum);
 
-                cameraNode = riley::ShadingNode {
-                    riley::ShadingNode::k_Projection,
-                    RtUString(cameraProjection.c_str()),
-                    RtUString("main_cam_projection"),
-                    projParams
-                };
-                
-                // Transform
-                std::vector<GfMatrix4d> xforms;
-                xforms.reserve(timeSampleOffsets.size());
-                // Get the xform at each time sample
-                for (double const& offset : timeSampleOffsets) {
-                    UsdGeomXformCache xformCache(frameNum + offset);
-                    xforms.emplace_back(
-                        xformCache.GetLocalToWorldTransform(prim));
-                }
-
-                // USD camera looks down -Z (RHS), while 
-                // Prman camera looks down +Z (RHS)
-                GfMatrix4d flipZ(1.0);
-                flipZ[2][2] = -1.0;
-                RtMatrix4x4 xf_rt_values[HDPRMAN_MAX_TIME_SAMPLES];
-                float times[HDPRMAN_MAX_TIME_SAMPLES];
-                size_t numNetSamples = std::min(xforms.size(),
-                                            (size_t) HDPRMAN_MAX_TIME_SAMPLES);
-                for (size_t i=0; i < numNetSamples; i++) {
-                    xf_rt_values[i] = 
-                        HdPrman_GfMatrixToRtMatrix(flipZ * xforms[i]);
-                    times[i] = timeSampleOffsets[i];
-                }
-
-                xform = {(unsigned) numNetSamples, xf_rt_values, times};
-            } else {
-                TF_WARN("Invalid scene camera at %s. Falling back to the "
-                        "free cam.\n", sceneCamPath.GetText());
+            // Clip planes
+            GfRange1f clipRange = gfCam.GetClippingRange();
+            camParams->SetFloat(RixStr.k_nearClip, clipRange.GetMin());
+            camParams->SetFloat(RixStr.k_farClip, clipRange.GetMax());
+            
+            // Projection
+            projParams->SetFloat(
+                RixStr.k_fov, gfCam.GetFieldOfView(GfCamera::FOVVertical));
+            // Convert parameters that are specified in tenths of a world
+            // unit in USD to world units for Riley. See
+            // UsdImagingCameraAdapter::UpdateForTime for reference.
+            projParams->SetFloat(RixStr.k_focalLength,
+                gfCam.GetFocalLength() / 10.0f);
+            projParams->SetFloat(RixStr.k_fStop, gfCam.GetFStop());
+            projParams->SetFloat(RixStr.k_focalDistance,
+                gfCam.GetFocusDistance());
+            cameraNode = riley::ShadingNode {
+                riley::ShadingNode::k_Projection,
+                RtUString(cameraProjection.c_str()),
+                RtUString("main_cam_projection"),
+                projParams
+            };
+            
+            // Transform
+            std::vector<GfMatrix4d> xforms;
+            xforms.reserve(timeSampleOffsets.size());
+            // Get the xform at each time sample
+            for (double const& offset : timeSampleOffsets) {
+                UsdGeomXformCache xfc(frameNum + offset);
+                xforms.emplace_back(xfc.GetLocalToWorldTransform(
+                    usdCam.GetPrim()));
             }
-        }
-        
-        if (useFreeCam) {
-            camParams->SetFloat(RixStr.k_shutterOpenTime, shutterCurve[0]);
-            camParams->SetFloat(RixStr.k_shutterCloseTime, shutterCurve[1]);
-            camParams->SetFloatArray(RixStr.k_shutteropening, 
-                shutterCurve+2, 8);
 
+            // USD camera looks down -Z (RHS), while 
+            // Prman camera looks down +Z (RHS)
+            GfMatrix4d flipZ(1.0);
+            flipZ[2][2] = -1.0;
+            RtMatrix4x4 xf_rt_values[HDPRMAN_MAX_TIME_SAMPLES];
+            float times[HDPRMAN_MAX_TIME_SAMPLES];
+            size_t numNetSamples = std::min(xforms.size(),
+                                        (size_t) HDPRMAN_MAX_TIME_SAMPLES);
+            for (size_t i=0; i < numNetSamples; i++) {
+                xf_rt_values[i] = HdPrman_GfMatrixToRtMatrix(flipZ * xforms[i]);
+                times[i] = timeSampleOffsets[i];
+            }
+
+            xform = {(unsigned) numNetSamples, xf_rt_values, times};
+        } else {
             // Projection
             projParams->SetFloat(RixStr.k_fov, 60.0f);
             cameraNode = riley::ShadingNode {
@@ -389,7 +381,6 @@ int main(int argc, char *argv[])
             // Transform
             float const zerotime = 0.0f;
             RtMatrix4x4 matrix = RixConstants::k_IdentityMatrix;
-
             // Orthographic camera:
             // XXX In HdPrman RenderPass we apply orthographic projection as a
             // scale onto the viewMatrix. This is because we currently cannot
@@ -397,7 +388,6 @@ int main(int argc, char *argv[])
             if (isOrthographic) {
                 matrix.Scale(10,10,10);
             }
-
             // Translate camera back a bit
             matrix.Translate(0.f, 0.f, -10.0f);
             xform = { 1, &matrix, &zerotime };

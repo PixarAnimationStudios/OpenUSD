@@ -32,7 +32,6 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdSkel/api.h"
 
-#include "pxr/base/gf/interval.h"
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/matrix3d.h"
 #include "pxr/base/gf/matrix3f.h"
@@ -47,6 +46,9 @@
 #include "pxr/usd/sdf/path.h"
 
 #include <cstddef>
+
+// XXX: Included for backwards compatibility.
+#include "pxr/usd/usdSkel/bakeSkinning.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -657,38 +659,6 @@ UsdSkelApplyBlendShape(const float weight,
                        const TfSpan<const GfVec3f> offsets,
                        const TfSpan<const int> indices,
                        TfSpan<GfVec3f> points);
-
-
-/// Bake the effect of skinning prims directly into points and transforms,
-/// over \p interval.
-/// This is intended to serve as a complete reference implementation,
-/// providing a ground truth for testing and validation purposes.
-///
-/// \warning Since baking the effect of skinning will undo the IO gains that
-/// deferred skeletal posing provides, this method should not be used except
-/// for testing. It also has been written with an emphasis on correctness rather
-/// than performance, and is not expected to scale. Usage should be limited to
-/// testing and towards conversion when transmitting the resulting of skinning
-/// to an application that does not have an equivalent skinning representation.
-USDSKEL_API
-bool
-UsdSkelBakeSkinning(const UsdSkelRoot& root,
-                    const GfInterval& interval=GfInterval::GetFullInterval());
-
-
-/// Overload of UsdSkelBakeSkinning, which bakes the effect of skinning prims
-/// directly into points and transforms, for all SkelRoot prims in \p range.
-USDSKEL_API
-bool
-UsdSkelBakeSkinning(const UsdPrimRange& range,
-                    const GfInterval& interval=GfInterval::GetFullInterval());
-
-
-
-/// @}
-
-
-/// @}
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

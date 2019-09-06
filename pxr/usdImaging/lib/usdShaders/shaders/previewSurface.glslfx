@@ -252,6 +252,79 @@ evaluateLight(
 
 -- glsl Preview.LightIntegration
 
+vec2 convertSampleVec(vec3 sample3D)
+{
+    // 1 - the v component to flip the image and match Renderman
+    vec2 temp = vec2((atan(sample3D.y, sample3D.x) ) / (2.0*PI), 
+                1.0 - acos(sample3D.z) / PI);
+
+    // making sure the values wrap around the texture
+    if (temp.x <= 0.0) {
+        temp.x += 1.0f;
+    }
+    return temp;
+}
+
+vec3 
+evaluateIndirectLighting(
+        vec3 diffuseColor, 
+        vec3 specularColor,
+        vec3 Neye,
+        vec3 reflectVec,
+        float NdotE,
+        float EdotH,
+        float ior, 
+        float metallic, 
+        float occlusion,
+        float roughness,
+        bool useSpecularWorkflow)
+{
+    vec3 F0 = specularColor;
+    vec3 F90 = vec3(1.0);
+    vec3 d = diffuseColor;
+    if (!useSpecularWorkflow){
+        float R = (1.0 - ior) / (1.0 + ior);
+        vec3 specColor = mix(vec3(1.0), diffuseColor, metallic);
+        F0  = R * R * specColor;
+        F90 = specColor;
+
+        // For metallic workflows, pure metals have no diffuse
+        d *= 1.0 - metallic;
+    }
+    // Adjust the diffuse so glazing angles have less diffuse
+    float fresnel = SchlickFresnel(EdotH);
+    vec3 F = mix(F0, F90, fresnel);
+    d *= (1.0 - F);
+
+    vec3 ambient = vec3(0.0);
+    vec3 prefilteredColor = vec3(0.0);
+
+#ifdef HD_HAS_domeLightIrradiance
+    // Diffuse Component
+    vec3 dir = vec4(GetWorldToViewInverseMatrix() * vec4(Neye,0.0)).xyz;
+    vec2 coord = convertSampleVec(dir);
+    vec3 diffuse = HdGet_domeLightIrradiance(coord).rgb;
+
+    // Specular Component
+    const float MAX_REFLECTION_LOD = 4.0;
+    float lod = roughness * MAX_REFLECTION_LOD;
+    vec3 Rdir = vec4(GetWorldToViewInverseMatrix() * vec4(reflectVec,0.0)).xyz; 
+    vec2 Rcoord = convertSampleVec(Rdir);
+
+    ivec2 dims = textureSize(HdGetSampler_domeLightPrefilter(), int(lod));
+    prefilteredColor = texelFetch(HdGetSampler_domeLightPrefilter(), 
+                                    ivec2(ceil(Rcoord * dims)), int(lod)).rgb;
+
+    vec2 brdf = HdGet_domeLightBRDF(vec2(NdotE, roughness + 0.001)).rg;
+    vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+
+    // Indirect Lighting
+    ambient = (d * diffuse + specular) * occlusion;
+#endif
+
+    return ambient;
+}
+
 vec3
 evaluateLights(
         vec3 emissiveColor,
@@ -273,6 +346,8 @@ evaluateLights(
     vec3 e = normalize(-Peye.xyz);
     float NdotE = max(0.0, dot(n, e));
 
+    vec3 reflectVec = reflect(-e, n); 
+
     vec3 directLight = vec3(0.0);
     vec3 indirectLight = vec3(0.0);
 
@@ -280,7 +355,9 @@ evaluateLights(
     for (int i = 0; i < NUM_LIGHTS; ++i) {
 
         // Calculate necessary vector information for lighting
-        vec4 Plight = lightSource[i].position;
+        vec4 Plight = (lightSource[i].isIndirectLight)
+                        ? vec4(0,0,0,1)
+                        : lightSource[i].position;
         vec3 l = (Plight.w == 0.0)
                     ? normalize(Plight.xyz)
                     : normalize(Plight - Peye).xyz;
@@ -324,7 +401,18 @@ evaluateLights(
             lightDiffuseIrradiance,
             lightSpecularIrradiance);
 
-        directLight += (lightingContrib.diffuse + lightingContrib.specular);
+        // calculate the indirect light (DomeLight)
+        if (lightSource[i].isIndirectLight) {
+
+            indirectLight = evaluateIndirectLighting(diffuseColor,
+                                    specularColor, Neye, reflectVec, NdotE,
+                                    EdotH, ior, metallic, occlusion,
+                                    specularRoughness, useSpecularWorkflow);
+        }
+        // all other light sources contribute to the direct lighting
+        else {
+            directLight += (lightingContrib.diffuse + lightingContrib.specular);        
+        }
     }
 #endif
 

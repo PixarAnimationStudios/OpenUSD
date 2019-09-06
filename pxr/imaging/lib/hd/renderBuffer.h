@@ -103,9 +103,9 @@ public:
     /// Get whether the buffer is multisampled.
     virtual bool IsMultiSampled() const = 0;
 
-    /// Map the buffer for reading and writing.
+    /// Map the buffer for reading.
     virtual void* Map() = 0;
-    /// Unmap the buffer.
+    /// Unmap the buffer. It is no longer safe to read from the buffer.
     virtual void Unmap() = 0;
     /// Return whether the buffer is currently mapped by anybody.
     virtual bool IsMapped() const = 0;

@@ -24,14 +24,36 @@
 #include "pxr/imaging/hdSt/volume.h"
 
 #include "pxr/imaging/hdSt/drawItem.h"
+#include "pxr/imaging/hdSt/material.h"
+#include "pxr/imaging/hdSt/package.h"
+#include "pxr/imaging/hdSt/field.h"
+#include "pxr/imaging/hdSt/materialBufferSourceAndTextureHelper.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/rprimUtils.h"
+#include "pxr/imaging/hdSt/surfaceShader.h"
+#include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/volumeShaderKey.h"
+#include "pxr/imaging/hdSt/textureResourceHandle.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+#include "pxr/imaging/hf/diagnostic.h"
+
+#include "pxr/imaging/hio/glslfx.h"
+#include "pxr/imaging/glf/vdbTexture.h"
+#include "pxr/imaging/glf/contextCaps.h"
+
+#include "pxr/base/tf/staticTokens.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (volumeBBoxInverseTransform)
+    (volumeBBoxLocalMin)
+    (volumeBBoxLocalMax)
+);
 
 HdStVolume::HdStVolume(SdfPath const& id, SdfPath const & instancerId)
     : HdVolume(id)
@@ -112,19 +134,7 @@ HdStVolume::Sync(HdSceneDelegate *delegate,
 const TfToken&
 HdStVolume::_GetMaterialTag(const HdRenderIndex &renderIndex) const
 {
-    // Returning "translucent" to indicate that volumes use OIT
-    // (order independent translucency).
-    //
-    // HdxMaterialTagTokens->translucent is defined in hdx, so we just
-    // explicitly say "translucent" here to avoid dependency problems.
-    //
-    // Note that this is only a temporary solution as we might designate
-    // a separate render task for volumes all together so volumes will have
-    // their own material tag.
-
-    static TfToken result("translucent");
-
-    return result;
+    return HdStMaterialTagTokens->volume;
 }
 
 void
@@ -151,25 +161,360 @@ HdStVolume::_UpdateRepr(HdSceneDelegate *sceneDelegate,
     *dirtyBits &= ~HdChangeTracker::NewRepr;
 }
 
-static
-const VtValue &
-_GetCubeVertices()
+HdStVolume::_NameToFieldResource
+HdStVolume::_ComputeNameToFieldResource(
+    HdSceneDelegate * const sceneDelegate)
 {
-    static const VtValue result(
-        VtVec3fArray{
-                GfVec3f(0, 0, 0),
-                GfVec3f(0, 0, 1),
-                GfVec3f(0, 1, 0),
-                GfVec3f(0, 1, 1),
-                GfVec3f(1, 0, 0),
-                GfVec3f(1, 0, 1),
-                GfVec3f(1, 1, 0),
-                GfVec3f(1, 1, 1)});
-    
+    _NameToFieldResource result;
+
+    const HdVolumeFieldDescriptorVector & fields =
+        sceneDelegate->GetVolumeFieldDescriptors(GetId());
+
+    for (const HdVolumeFieldDescriptor &field : fields) {
+        if (const HdStField * const fieldPrim = 
+                    dynamic_cast<HdStField*>(
+                        sceneDelegate->GetRenderIndex().GetBprim(
+                            field.fieldPrimType, field.fieldId))) {
+            if (const HdStFieldResourceSharedPtr fieldResource =
+                        fieldPrim->GetFieldResource()) {
+                result[field.fieldName] = fieldResource;
+            }
+        }
+    }
+
     return result;
 }
 
-static
+namespace {
+
+// Fallback volume shader created from source in shaders/fallbackVolume.glslfx
+HdStShaderCodeSharedPtr
+_MakeFallbackVolumeShader()
+{
+    using HioGlslfxSharedPtr = boost::shared_ptr<class HioGlslfx>;
+
+    const HioGlslfx glslfx(HdStPackageFallbackVolumeShader());
+
+    // Note that we use HdStSurfaceShader for a volume shader.
+    // Despite its name, HdStSurfaceShader is really just a pair of
+    // GLSL code and bindings and not specific to surface shading.
+    HdStSurfaceShaderSharedPtr const result =
+        boost::make_shared<HdStSurfaceShader>();
+    
+    result->SetFragmentSource(glslfx.GetVolumeSource());
+
+    return result;
+}
+
+HdStShaderCodeSharedPtr
+_ComputeVolumeShader(const HdStMaterial * const material)
+{
+    if (material) {
+        // Use the shader from the HdStMaterial as volume shader.
+        //
+        // Note that rprims should query the material whether they want
+        // a surface or volume shader instead of just asking for "some"
+        // shader with HdStMaterial::GetShaderCode().
+        // We can use HdStMaterial::GetShaderCode() here because the
+        // UsdImagingGLHydraMaterialAdapter is following the outputs:volume
+        // input of a material if the outputs:surface is unconnected.
+        //
+        // We should revisit the API an rprim is using to ask HdStMaterial
+        // for a shader once we switched over to HdMaterialNetworkMap's.
+        return material->GetShaderCode();
+    } else {
+        // Instantiate fallback volume shader only once
+        //
+        // Note that the default HdStMaterial provides a fallback surface
+        // shader and we need a volume shader, so we create the shader here
+        // ourselves.
+        static const HdStShaderCodeSharedPtr fallbackVolumeShader =
+            _MakeFallbackVolumeShader();
+        return fallbackVolumeShader;
+    }
+}
+
+// Compute transform mapping GfRange3d to unit box [0,1]^3
+GfMatrix4d
+_ComputeSamplingTransform(const GfRange3d &range)
+{
+    const GfVec3d size(range.GetSize());
+
+    const GfVec3d scale(1.0 / size[0], 1.0 / size[1], 1.0 / size[2]);
+
+    return
+        // First map range so that min becomes (0,0,0)
+        GfMatrix4d(1.0).SetTranslateOnly(-range.GetMin()) *
+        // Then scale to unit box
+        GfMatrix4d(1.0).SetScale(scale);
+}
+
+// Compute transform mapping bounding box to unit box [0,1]^3
+GfMatrix4d
+_ComputeSamplingTransform(const GfBBox3d &bbox)
+{
+    return
+        // First map so that bounding box goes to its GfRange3d
+        bbox.GetInverseMatrix() *
+        // Then scale to unit box [0,1]^3
+        _ComputeSamplingTransform(bbox.GetRange());
+}
+
+} // end namespace
+
+// Add GLSL code such as "HdGet_density(vec3 p)" for sampling the fields
+// to the volume shader code and add necessary 3d textures and other
+// parameters to the result HdStSurfaceShader.
+// HdMaterialParam's are consulted to figure out the names of the fields
+// to sample and the names of the associated sampling functions to generate.
+//
+HdStShaderCodeSharedPtr
+HdStVolume::_ComputeMaterialShaderAndBBox(
+    HdSceneDelegate * const sceneDelegate,
+    const HdStMaterial * const material,
+    const HdStShaderCodeSharedPtr &volumeShader,
+    const _NameToFieldResource &nameToFieldResource,
+    GfBBox3d * const localVolumeBBox)
+{
+    // The bounding box containing all fields.
+    GfBBox3d totalFieldBbox;
+
+    HdStResourceRegistrySharedPtr resourceRegistry =
+        boost::static_pointer_cast<HdStResourceRegistry>(
+            sceneDelegate->GetRenderIndex().GetResourceRegistry());
+
+    // Generate new shader from volume shader
+    HdStSurfaceShaderSharedPtr const result =
+        boost::make_shared<HdStSurfaceShader>();
+
+    // The GLSL code for the new shader
+    std::stringstream glsl;
+    // The params for the new shader
+    HdMaterialParamVector materialParams;
+    // The sources and texture descriptors for the new shader
+    HdSt_MaterialBufferSourceAndTextureHelper sourcesAndTextures;
+
+    // Carry over existing texture descriptors... Might not be useful.
+    sourcesAndTextures.textures = volumeShader->GetTextures();
+
+    std::set<TfToken> processedFieldNames;
+
+    // Scan old parameters...
+    for (const auto & param : volumeShader->GetParams()) {
+        if (param.IsField()) {
+            // Process field readers.
+
+            // Determine the field name the field reader requests
+            TfTokenVector const &samplerCoordinates =
+                param.GetSamplerCoordinates();
+            const TfToken fieldName =
+                samplerCoordinates.empty() ? TfToken() : samplerCoordinates[0];
+
+            const TfToken textureName(
+                fieldName.GetString() + "Texture");
+            const TfToken samplingTransformName(
+                fieldName.GetString() + "SamplingTransform");
+            const TfToken fallbackName(
+                param.GetName().GetString() + "Fallback");
+
+            // Get the field resource associated with the field name if
+            // field name was not seen before (two field readers could
+            // access the same field).
+            const auto it = nameToFieldResource.find(fieldName);
+            if (it != nameToFieldResource.end()) {
+                if (processedFieldNames.insert(fieldName).second) {
+                    HdStFieldResourceSharedPtr const & fieldResource =
+                        it->second;
+
+                    // Add HdMaterialParam such that the resource binder
+                    // will bind the 3d texture underling the field resource
+                    // and codegen will give us an accessor
+                    //     vec3 HdGet_FIELDNAMETexture(vec3)
+                    // to sample it.
+                    const HdMaterialParam textureParam(
+                        HdMaterialParam::ParamTypeTexture,
+                        textureName,
+                        param.GetFallbackValue(),
+                        SdfPath(),
+                        TfTokenVector(),
+                        HdTextureType::Uvw);
+                    
+                    sourcesAndTextures.ProcessTextureMaterialParam(
+                        textureParam,
+                        boost::make_shared<HdStTextureResourceHandle>(
+                        fieldResource));
+                    
+                    materialParams.push_back(textureParam);
+                    
+                    // Query the field for its bounding box.  Note
+                    // that this contains both a GfRange3d and a
+                    // matrix.
+                    //
+                    // For a grid in an OpenVDB file, the range is the
+                    // bounding box of the active voxels of the tree
+                    // and the matrix is the grid transform.
+                    const GfBBox3d fieldBoundingBox =
+                        fieldResource->GetBoundingBox();
+                    
+                    // Transform to map the bounding box to [0,1]^3.
+                    const VtValue samplingTransform(
+                        _ComputeSamplingTransform(fieldBoundingBox));
+                    
+                    // Add HdMaterialParam so that we get an accessor
+                    //     mat4 HdGet_FIELDNAMESamplingTransform()
+                    // converting local space to the coordinate at which
+                    // we need to sample the 3d texture.
+                    const HdMaterialParam samplingTransformParam(
+                        HdMaterialParam::ParamTypeFallback,
+                        samplingTransformName,
+                        samplingTransform);
+                    
+                    sourcesAndTextures.ProcessFallbackMaterialParam(
+                    samplingTransformParam, samplingTransform);
+                    
+                    materialParams.push_back(samplingTransformParam);
+                    
+                    // Update the bounding box containing all fields
+                    totalFieldBbox = GfBBox3d::Combine(totalFieldBbox,
+                                                       fieldBoundingBox);
+                }
+            }
+
+            // Add HdMaterialParam such that codegen will give us an
+            // accessor
+            //     vec3 HdGet_NAMEFallback()
+            // to get the fallback value.
+            const HdMaterialParam fallbackParam(
+                HdMaterialParam::ParamTypeFallback,
+                fallbackName,
+                param.GetFallbackValue());
+
+            sourcesAndTextures.ProcessFallbackMaterialParam(
+                fallbackParam, param.GetFallbackValue());
+
+            materialParams.push_back(fallbackParam);
+            
+            // Add HdMaterialParam 
+            
+            const HdMaterialParam fieldRedirectParam(
+                HdMaterialParam::ParamTypeFieldRedirect,
+                param.GetName(),
+                param.GetFallbackValue(),
+                SdfPath(),
+                { fieldName });
+                
+            materialParams.push_back(fieldRedirectParam);
+        } else {
+            // Push non-field params so that codegen will do generate
+            // the respective code for them.
+            materialParams.push_back(param);
+            
+            // Process non-field params similar to how they are handled in
+            // HdStMaterial::Sync.
+            if (param.IsPrimvar()) {
+                sourcesAndTextures.ProcessPrimvarMaterialParam(param);
+            } else if (param.IsFallback()) {
+                sourcesAndTextures.ProcessFallbackMaterialParam(
+                    param, sceneDelegate, material->GetId());
+            }
+        }
+    }
+
+    // If there was a field, update the local volume bbox to be
+    // the bounding box containing all fields.
+    if (!totalFieldBbox.GetRange().IsEmpty()) {
+        *localVolumeBBox = totalFieldBbox;
+    }
+
+    // Use it to create HdGet_volumeBBoxInverseTransform(),
+    // HdGet_volumeBBoxLocalMin() and HdGet_volumeBBoxLocalMax().
+    //
+    // These are used by the volume fragment shader to determine when
+    // to stop ray marching (localVolumeBBox also gives the vertices
+    // of the box that we draw to invoke the volume fragment shader).
+    {
+        // volume bounding box transform
+
+        const HdMaterialParam transformParam(
+            HdMaterialParam::ParamTypeFallback,
+            _tokens->volumeBBoxInverseTransform,
+            VtValue(localVolumeBBox->GetMatrix().GetInverse()));
+        
+        sourcesAndTextures.ProcessFallbackMaterialParam(
+            transformParam, transformParam.GetFallbackValue());
+        
+        materialParams.push_back(transformParam);
+    }
+
+    {
+        // volume bounding box min
+
+        const HdMaterialParam minParam(
+            HdMaterialParam::ParamTypeFallback,
+            _tokens->volumeBBoxLocalMin,
+            VtValue(localVolumeBBox->GetRange().GetMin()));
+        
+        sourcesAndTextures.ProcessFallbackMaterialParam(
+            minParam, minParam.GetFallbackValue());
+        
+        materialParams.push_back(minParam);
+    }
+
+    {
+        // volume bounding box max
+
+        const HdMaterialParam maxParam(
+            HdMaterialParam::ParamTypeFallback,
+            _tokens->volumeBBoxLocalMax,
+            VtValue(localVolumeBBox->GetRange().GetMax()));
+        
+        sourcesAndTextures.ProcessFallbackMaterialParam(
+            maxParam, maxParam.GetFallbackValue());
+        
+        materialParams.push_back(maxParam);
+    }
+
+    // Append the volume shader (calling into the GLSL functions
+    // generated above)
+    glsl << volumeShader->GetSource(HdShaderTokens->fragmentShader);
+
+    result->SetFragmentSource(glsl.str());
+    result->SetParams(materialParams);
+    result->SetTextureDescriptors(sourcesAndTextures.textures);
+    result->SetBufferSources(sourcesAndTextures.sources, resourceRegistry);
+
+    return result;
+}
+
+namespace {
+
+VtValue
+_GetCubeVertices(GfBBox3d const &bbox)
+{
+    const GfMatrix4d &transform = bbox.GetMatrix();
+    const GfVec3d &min = bbox.GetRange().GetMin();
+    const GfVec3d &max = bbox.GetRange().GetMax();
+
+    const float minX = min[0];
+    const float minY = min[1];
+    const float minZ = min[2];
+
+    const float maxX = max[0];
+    const float maxY = max[1];
+    const float maxZ = max[2];
+
+    return VtValue(
+        VtVec3fArray{
+            transform.Transform(GfVec3f(minX, minY, minZ)),
+            transform.Transform(GfVec3f(minX, minY, maxZ)),
+            transform.Transform(GfVec3f(minX, maxY, minZ)),
+            transform.Transform(GfVec3f(minX, maxY, maxZ)),
+            transform.Transform(GfVec3f(maxX, minY, minZ)),
+            transform.Transform(GfVec3f(maxX, minY, maxZ)),
+            transform.Transform(GfVec3f(maxX, maxY, minZ)),
+            transform.Transform(GfVec3f(maxX, maxY, maxZ))});
+}
+
 const VtValue &
 _GetCubeTriangleIndices()
 {
@@ -196,6 +541,8 @@ _GetCubeTriangleIndices()
     return result;
 }
 
+} // end namespace
+
 void
 HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                             HdStDrawItem *drawItem,
@@ -208,15 +555,62 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     _UpdateVisibility(sceneDelegate, dirtyBits);
 
     /* CONSTANT PRIMVARS, TRANSFORM AND EXTENT */
-    HdPrimvarDescriptorVector constantPrimvars =
+    const HdPrimvarDescriptorVector constantPrimvars =
         GetPrimvarDescriptors(sceneDelegate, HdInterpolationConstant);
     HdStPopulateConstantPrimvars(this, &_sharedData, sceneDelegate, drawItem, 
         dirtyBits, constantPrimvars);
 
-    /* MATERIAL SHADER */
-    drawItem->SetMaterialShaderFromRenderIndex(
-        sceneDelegate->GetRenderIndex(), GetMaterialId());
+    /* FIELDS */
+    const _NameToFieldResource nameToFieldResource =
+        _ComputeNameToFieldResource(sceneDelegate);
 
+    /* MATERIAL SHADER */
+    const HdStMaterial * const material = static_cast<const HdStMaterial *>(
+        sceneDelegate->GetRenderIndex().GetSprim(
+            HdPrimTypeTokens->material, GetMaterialId()));
+
+    HdStShaderCodeSharedPtr const volumeShader = _ComputeVolumeShader(material);
+
+    // The bounding box of the volume in the local frame (but not necessarily
+    // aligned with the local frame).
+    // 
+    // It will be computed by _ComputeMaterialShader from the bounding boxes
+    // of the fields. But if there is no field, it falls back to the extents
+    // provided by the scene delegate for the volume prim.
+    //
+    const GfRange3d &extents = _sharedData.bounds.GetRange();
+    GfBBox3d localVolumeBBox(extents);
+
+    // Compute the material shader by adding GLSL code such as
+    // "HdGet_density(vec3 p)" for sampling the fields needed by the volume
+    // shader.
+    // The material shader will eventually be concatenated with
+    // the geometry shader which does the raymarching and is calling into
+    // GLSL functions such as "float scattering(vec3)" in the volume shader
+    // to evaluate physical properties of a volume at the point p.
+    drawItem->SetMaterialShader(
+        _ComputeMaterialShaderAndBBox(sceneDelegate,
+                                      material,
+                                      volumeShader,
+                                      nameToFieldResource,
+                                      &localVolumeBBox));
+
+    // Note that then extents on the volume are with respect to the volume's
+    // prim space but the localVolumeBBox might have an additional transform
+    // (from the field).
+    if (!(extents.IsEmpty() || extents.Contains(
+              localVolumeBBox.ComputeAlignedRange()))) {
+        HF_VALIDATION_WARN(
+            GetId(),
+            "Authored extents on volume prim should be updated since they do "
+            "not contain volume (more precisely, they do not contain the "
+            "bounding box computed from the fields associated with the "
+            "volume)");
+    }
+
+    // Question: Should we transform localVolumeBBox to world space to update
+    // update _sharedData.bounds if there was a field?
+    
     HdSt_VolumeShaderKey shaderKey;
     HdStResourceRegistrySharedPtr resourceRegistry =
         boost::static_pointer_cast<HdStResourceRegistry>(
@@ -226,11 +620,9 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
     /* VERTICES */
     {
-        // XXX:
-        // Always the same vertices, should they be allocated only
-        // once and shared across all volumes?
-        HdBufferSourceSharedPtr source(
-            new HdVtBufferSource(HdTokens->points, _GetCubeVertices()));
+        HdBufferSourceSharedPtr const source =
+            boost::make_shared<HdVtBufferSource>(
+                HdTokens->points, _GetCubeVertices(localVolumeBBox));
 
         HdBufferSourceVector sources = { source };
 

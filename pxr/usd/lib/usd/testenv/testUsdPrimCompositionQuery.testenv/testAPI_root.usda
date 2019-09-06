@@ -1,0 +1,33 @@
+#usda 1.0
+(
+    subLayers = [
+        @testAPI_sub1.usda@,
+        @testAPI_sub2.usda@
+    ]
+)
+
+def "Sarah_Ref" (
+    add inherits = </_class_Sarah_Ref>
+)
+{
+    custom color3d color = (1, 1, 1)
+}
+
+class "_class_Sarah_Ref"
+{
+
+}
+
+def "Sarah_Container_Ref" (
+)
+{
+    class "_class_Sarah_Specialized" (
+    #    inherits = </Sarah_Container_Ref/_class_Sarah_Inherited>
+    )
+    {
+    }
+
+    class "_class_Sarah_Inherited"
+    {
+    }
+}

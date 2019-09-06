@@ -287,31 +287,9 @@ UsdImagingGLEngine::Render(
     // XXX(UsdImagingPaths): Is it correct to map USD root path directly
     // to the cachePath here?
     SdfPath cachePath = root.GetPath();
-    SdfPathVector roots(1, _delegate->ConvertCachePathToIndexPath(cachePath));
+    SdfPathVector paths(1, _delegate->ConvertCachePathToIndexPath(cachePath));
 
-    _taskController->SetFreeCameraClipPlanes(params.clipPlanes);
-    _UpdateHydraCollection(&_renderCollection, roots, params);
-    _taskController->SetCollection(_renderCollection);
-
-    TfTokenVector renderTags;
-    _ComputeRenderTags(params, &renderTags);
-    _taskController->SetRenderTags(renderTags);
-
-
-    HdxRenderTaskParams hdParams = _MakeHydraUsdImagingGLRenderParams(params);
-    _taskController->SetRenderParams(hdParams);
-    _taskController->SetEnableSelection(params.highlight);
-
-    SetColorCorrectionSettings(params.colorCorrectionMode, 
-                               params.renderResolution);
-
-    // Forward scene materials enable option to delegate
-    _delegate->SetSceneMaterialsEnabled(params.enableSceneMaterials);
-
-    VtValue selectionValue(_selTracker);
-    _engine.SetTaskContextData(HdxTokens->selectionState, selectionValue);
-    _Execute(params, /*fp16 draw target*/true,
-             _taskController->GetRenderingTasks());
+    RenderBatch(paths, params);
 }
 
 void

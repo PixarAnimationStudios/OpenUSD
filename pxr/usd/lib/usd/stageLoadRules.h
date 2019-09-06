@@ -156,6 +156,16 @@ public:
     USD_API
     bool IsLoaded(SdfPath const &path) const;
 
+    /// Return true if the given \p path and all descendants are considered
+    /// loaded by these rules; false otherwise.
+    USD_API
+    bool IsLoadedWithAllDescendants(SdfPath const &path) const;
+
+    /// Return true if the given \p path and is considered loaded, but none of
+    /// its descendants are considered loaded by these rules; false otherwise.
+    USD_API
+    bool IsLoadedWithNoDescendants(SdfPath const &path) const;
+
     /// Return the "effective" rule for the given \p path.  For example, if the
     /// closest ancestral rule of \p path is an \p AllRule, return \p AllRule.
     /// If the closest ancestral rule of \p path is for \p path itself and it is

@@ -48,6 +48,17 @@ UsdSkelSkeletonQuery::UsdSkelSkeletonQuery(
     }
 }
 
+bool 
+UsdSkelSkeletonQuery::HasBindPose() const 
+{
+    return _definition->HasBindPose();
+}
+
+bool 
+UsdSkelSkeletonQuery::HasRestPose() const 
+{
+    return _definition->HasRestPose();
+}
 
 size_t
 hash_value(const UsdSkelSkeletonQuery& query)

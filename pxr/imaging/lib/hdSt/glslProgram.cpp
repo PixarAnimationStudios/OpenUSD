@@ -441,6 +441,16 @@ HdStGLSLProgram::GetComputeProgram(
         TfToken const &shaderToken,
         HdStResourceRegistry *resourceRegistry)
 {
+    return GetComputeProgram(HdStPackageComputeShader(), shaderToken, 
+                            resourceRegistry);
+}
+
+HdStGLSLProgramSharedPtr
+HdStGLSLProgram::GetComputeProgram(
+        TfToken const &shaderFileName,
+        TfToken const &shaderToken,
+        HdStResourceRegistry *resourceRegistry)
+{
     // Find the program from registry
     HdInstance<HdStGLSLProgram::ID, HdStGLSLProgramSharedPtr> programInstance;
 
@@ -453,7 +463,13 @@ HdStGLSLProgram::GetComputeProgram(
         HdStGLSLProgramSharedPtr newProgram(
             new HdStGLSLProgram(HdTokens->computeShader));
 
-        HioGlslfx glslfx(HdStPackageComputeShader());
+        HioGlslfx glslfx(shaderFileName);
+        std::string errorString;
+        if (!glslfx.IsValid(&errorString)){
+            TF_CODING_ERROR("Failed to parse " + shaderFileName.GetString() 
+                            + ": " + errorString);
+            return HdStGLSLProgramSharedPtr();
+        }
         std::string version = "#version 430\n";
         if (!newProgram->CompileShader(
                 GL_COMPUTE_SHADER, version + glslfx.GetSource(shaderToken))) {

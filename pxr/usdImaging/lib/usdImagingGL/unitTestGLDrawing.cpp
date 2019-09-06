@@ -229,6 +229,7 @@ UsdImagingGL_UnitTestWindow::OnMouseMove(int x, int y, int modKeys)
 UsdImagingGL_UnitTestGLDrawing::UsdImagingGL_UnitTestGLDrawing()
     : _widget(NULL)
     , _testLighting(false)
+    , _sceneLights(false)
     , _cameraLight(false)
     , _testIdRender(false)
     , _complexity(1.0f)
@@ -425,6 +426,9 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
         }
         else if (strcmp(argv[i], "-lighting") == 0) {
             _testLighting = true;
+        }
+        else if (strcmp(argv[i], "-sceneLights") == 0) {
+            _sceneLights = true;
         }
         else if (strcmp(argv[i], "-camlight") == 0) {
             _cameraLight = true;

@@ -38,6 +38,7 @@ pxr_library(usd
         object
         payloads
         prim
+        primCompositionQuery
         primData
         primDataHandle
         primFlags
@@ -111,6 +112,7 @@ pxr_library(usd
         wrapObject.cpp
         wrapPayloads.cpp
         wrapPrim.cpp
+        wrapPrimCompositionQuery.cpp
         wrapPrimFlags.cpp
         wrapPrimRange.cpp
         wrapProperty.cpp
@@ -186,6 +188,7 @@ pxr_test_scripts(
     testenv/testUsdModel.py
     testenv/testUsdNotices.py
     testenv/testUsdPayloads.py
+    testenv/testUsdPrimCompositionQuery.py
     testenv/testUsdPrimFlagsPredicate.py
     testenv/testUsdPrimRange.py
     testenv/testUsdPrims.py
@@ -410,6 +413,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdPrimCompositionQuery.testenv
+    DEST testUsdPrimCompositionQuery
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdPrimGetDescendants.testenv
     DEST testUsdPrimGetDescendants
 )
@@ -611,6 +619,11 @@ pxr_register_test(testUsdCreateAttributeCpp
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdHardToReach
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdHardToReach"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdInstancing
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdInstancing"
@@ -621,6 +634,11 @@ pxr_register_test(testUsdInstancing
 pxr_register_test(testUsdInstanceProxy
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdInstanceProxy"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdIntegerCoding
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdIntegerCoding"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -644,6 +662,12 @@ pxr_register_test(testUsdReferences
 
 pxr_register_test(testUsdTemplatedIO
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTemplatedIO"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdPrimCompositionQuery
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdPrimCompositionQuery"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -854,5 +878,9 @@ pxr_register_test(testUsdUsdzFileFormat
 pxr_register_test(testUsdZipFile
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdZipFile"
+    EXPECTED_RETURN_CODE 0
+)
+pxr_register_test(testUsdUsdzResolver
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUsdzResolver"
     EXPECTED_RETURN_CODE 0
 )

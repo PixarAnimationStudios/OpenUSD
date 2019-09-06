@@ -472,10 +472,13 @@ protected:
 
     // These functions factor batch preparation into separate steps so they
     // can be reused by both the vectorized and non-vectorized API.
+    USDIMAGINGGL_API
     bool _CanPrepareBatch(const UsdPrim& root, 
         const UsdImagingGLRenderParams& params);
+    USDIMAGINGGL_API
     void _PreSetTime(const UsdPrim& root, 
         const UsdImagingGLRenderParams& params);
+    USDIMAGINGGL_API
     void _PostSetTime(const UsdPrim& root, 
         const UsdImagingGLRenderParams& params);
 
@@ -485,21 +488,27 @@ protected:
     static bool _UpdateHydraCollection(HdRprimCollection *collection,
                           SdfPathVector const& roots,
                           UsdImagingGLRenderParams const& params);
+    USDIMAGINGGL_API
     static HdxRenderTaskParams _MakeHydraUsdImagingGLRenderParams(
                           UsdImagingGLRenderParams const& params);
+    USDIMAGINGGL_API
     static void _ComputeRenderTags(UsdImagingGLRenderParams const& params,
                           TfTokenVector *renderTags);
 
     // This function disposes of: the render index, the render plugin,
     // the task controller, and the usd imaging delegate.
+    USDIMAGINGGL_API
     void _DeleteHydraResources();
 
+    USDIMAGINGGL_API
     static TfToken _GetDefaultRendererPluginId();
 
     // Creates and binds the internal draw-target that Hydra draws into.
+    USDIMAGINGGL_API
     void _BindInternalDrawTarget(UsdImagingGLRenderParams const& params);
 
     // Restores clients framebuffer and copies our result into their framebuffer
+    USDIMAGINGGL_API
     void _RestoreClientDrawTarget(UsdImagingGLRenderParams const& params);
 
     HdEngine _engine;

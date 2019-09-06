@@ -419,20 +419,24 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
             sceneDelegate->GetLightParamValue(id, HdTokens->lightLink);
         if (val.IsHolding<TfToken>()) {
             _lightLink = val.UncheckedGet<TfToken>();
+        }
+        
+        if (!_lightLink.IsEmpty()) {
             context->IncrementLightLinkCount(_lightLink);
-            if (!_lightLink.IsEmpty()) {
-                // For lights to link geometry, the lights must
-                // be assigned a grouping membership, and the
-                // geometry must subscribe to that grouping.
-                attrs->SetString(RixStr.k_grouping_membership,
-                                 RtUString(_lightLink.GetText()));
-                TF_DEBUG(HDPRMAN_LIGHT_LINKING)
-                    .Msg("HdPrman: Light <%s> lightSubset \"%s\"\n",
-                         id.GetText(), _lightLink.GetText());
-            } else {
-                // Default light group
-                attrs->SetString(RixStr.k_grouping_membership, us_default);
-            }
+            // For lights to link geometry, the lights must
+            // be assigned a grouping membership, and the
+            // geometry must subscribe to that grouping.
+            attrs->SetString(RixStr.k_grouping_membership,
+                                RtUString(_lightLink.GetText()));
+            TF_DEBUG(HDPRMAN_LIGHT_LINKING)
+                .Msg("HdPrman: Light <%s> grouping membership \"%s\"\n",
+                        id.GetText(), _lightLink.GetText());
+        } else {
+            // Default light group
+            attrs->SetString(RixStr.k_grouping_membership, us_default);
+            TF_DEBUG(HDPRMAN_LIGHT_LINKING)
+                .Msg("HdPrman: Light <%s> grouping membership \"default\"\n",
+                     id.GetText());
         }
     }
 

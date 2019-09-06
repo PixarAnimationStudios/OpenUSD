@@ -59,6 +59,7 @@ pxr_shared_library(${PXR_PACKAGE}
         stageCache
         stageEdit
         tokens
+        valueUtils
         writeCtrlFlags
         xformWrapper
         GEO_IOTranslator

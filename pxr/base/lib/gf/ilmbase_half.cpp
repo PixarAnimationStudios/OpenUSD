@@ -80,7 +80,7 @@ half::overflow ()
 
     for (int i = 0; i < 10; i++)	
 	f *= f;				// this will overflow before
-					// the forÂ­loop terminates
+					// the for­loop terminates
     return f;
 }
 
@@ -103,9 +103,9 @@ half::convert (int i)
     // of float and half (127 versus 15).
     //
 
-    register int s =  (i >> 16) & 0x00008000;
-    register int e = ((i >> 23) & 0x000000ff) - (127 - 15);
-    register int m =   i        & 0x007fffff;
+    int s =  (i >> 16) & 0x00008000;
+    int e = ((i >> 23) & 0x000000ff) - (127 - 15);
+    int m =   i        & 0x007fffff;
 
     //
     // Now reassemble s, e and m into a half:

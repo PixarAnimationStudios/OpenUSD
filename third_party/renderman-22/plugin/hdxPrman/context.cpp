@@ -45,6 +45,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// This RenderMan callback allows scene edits to be flushed asynchronously
+// during IPR. It is unused here because hydra requires edits to be flushed
+// immediately during scene traversal.
+static riley::RileyCallback nullRileyCallback([](void*){}, nullptr);
+
 void HdxPrman_RenderThreadCallback(HdxPrman_InteractiveContext *context)
 {
     context->riley->Render();
@@ -425,7 +430,8 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
     }
 
     // Prepare Riley state for rendering.
-    riley->Begin(nullptr);
+    // Pass a valid riley callback pointer during IPR
+    riley->Begin(&nullRileyCallback);
 
     renderThread.StartThread();
 }

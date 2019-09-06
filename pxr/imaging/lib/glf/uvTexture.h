@@ -72,6 +72,8 @@ public:
         unsigned int cropRight  = 0,
         GlfImage::ImageOriginLocation originLocation = 
                            GlfImage::OriginUpperLeft); 
+
+    int GetNumDimensions() const override;
     
     /// Returns true if the file at \p imageFilePath is an image that
     /// can be used with this texture object.

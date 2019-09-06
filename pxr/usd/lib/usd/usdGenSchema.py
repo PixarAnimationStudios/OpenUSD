@@ -74,6 +74,9 @@ Print = _Printer()
 # Tokens                                                                       #
 #------------------------------------------------------------------------------#
 
+# Name of script, e.g. "usdGenSchema"
+PROGRAM_NAME = os.path.splitext(os.path.basename(sys.argv[0]))[0]
+
 # Custom-data key authored on an API schema class prim in the schema definition,
 # to define the type of API schema.
 API_SCHEMA_TYPE = "apiSchemaType"
@@ -296,16 +299,26 @@ class AttrInfo(PropInfo):
         else:
             self.usdType = "SdfValueTypeNames->%s" % (
                 valueTypeNameToStr[sdfProp.typeName])
+
+        # Format fallback string.
+        if isinstance(self.fallback, Vt.TokenArray):
+            fallbackStr = ('[' + ', '.join(
+                [x if x else '""' for x in self.fallback]) + ']')
+        elif self.fallback != None:
+            fallbackStr = str(self.fallback)
+        else:
+            fallbackStr = 'No Fallback'
         
         self.details = [('C++ Type', self.typeName.cppTypeName),
                         ('Usd Type', self.usdType),
                         ('Variability', self.variability),
-                        ('Fallback Value', 'No Fallback'
-                         if self.fallback is None else str(self.fallback))]
+                        ('Fallback Value', fallbackStr)]
         if self.allowedTokens:
+            tokenListStr = ('[' + ', '.join(
+                [x if x else '""' for x in self.allowedTokens]) + ']')
             self.details.append(('\\ref ' + \
                 _GetTokensPrefix(sdfProp.layer) + \
-                'Tokens "Allowed Values"', str(self.allowedTokens)))
+                'Tokens "Allowed Values"', tokenListStr))
 
 def _ExtractNames(sdfPrim, customData):
     usdPrimTypeName = sdfPrim.path.name
@@ -702,12 +715,13 @@ def _WriteFile(filePath, content, validate):
                                 existingContent.split('\n'),
                                 content.split('\n'))))
             Print.Err('Error: validation failed, diffs found. '
-                      'Please rerun usdGenSchema.')
+                      'Please rerun %s.' % PROGRAM_NAME)
             sys.exit(1)
     else:
         if validate:
             Print.Err('Error: validation failed, file %s does not exist. '
-                      'Please rerun usdGenSchema.' % os.path.basename(filePath))
+                      'Please rerun %s.' % 
+                      (os.path.basename(filePath), PROGRAM_NAME))
             sys.exit(1)
 
     # Otherwise attempt to write to file.
@@ -788,11 +802,14 @@ def GatherTokens(classes, libName, libTokens):
             # Add Allowed Tokens for this attribute to token set
             if attr.allowedTokens:
                 for val in attr.allowedTokens:
-                    tokenId = _CamelCase(val)
-                    desc = 'Possible value for %s::Get%sAttr()' % \
-                           (cls.cppClassName, _ProperCase(attr.name))
-                    cls.tokens.add(tokenId)
-                    _AddToken(tokenDict, tokenId, val, desc)
+                    # Empty string is a valid allowedTokens member,
+                    # but do not declare a named literal for it.
+                    if val != '':
+                        tokenId = _CamelCase(val)
+                        desc = 'Possible value for %s::Get%sAttr()' % \
+                               (cls.cppClassName, _ProperCase(attr.name))
+                        cls.tokens.add(tokenId)
+                        _AddToken(tokenDict, tokenId, val, desc)
 
         # Add tokens from relationships to the token set
         for rel in list(cls.rels.values()):

@@ -52,6 +52,27 @@ shader TestShaderPropertiesNodeOSL
     string inputAssetArray[2] = { "test", "files" }
     [[
         string widget = "fileInput"
+    ]],
+    color inputColorRoleNone = color(1.0, 2.0, 3.0)
+    [[
+        string role = "none"
+    ]],
+    color inputPointRoleNone = point(1.0, 2.0, 3.0)
+    [[
+        string role = "none"
+    ]],
+    color inputNormalRoleNone = normal(1.0, 2.0, 3.0)
+    [[
+        string role = "none"
+    ]],
+    color inputVectorRoleNone = vector(1.0, 2.0, 3.0)
+    [[
+        string role = "none"
+    ]],
+
+    output float outputSurface = 1.0
+    [[
+        string renderType = "terminal surface"
     ]]
 )
 {

@@ -104,8 +104,15 @@ class "Base" (
 ) {
     
     token myVaryingToken = "VariableTokenDefault" (
-        allowedTokens = ["VariableTokenAllowed1", "VariabletokenAllowed2"]
+        allowedTokens = ["VariableTokenAllowed1", "VariableTokenAllowed2", ""]
         doc = "VariableToken attribute docs.")
+    
+    uniform token[] myVaryingTokenArray = ["VariableTokenArrayAllowed1", ""] (
+        allowedTokens = [
+            "VariableTokenArrayAllowed1",
+            "VariableTokenArrayAllowed2",
+            ""]
+        doc = "VariableTokenArray attribute docs.")
     
     uniform bool myUniformBool = false (
         doc = "Uniform bool, default false")

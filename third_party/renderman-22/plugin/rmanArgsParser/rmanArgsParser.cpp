@@ -47,6 +47,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 using ShaderMetadataHelpers::CreateStringFromStringVec;
 using ShaderMetadataHelpers::IsPropertyAnAssetIdentifier;
+using ShaderMetadataHelpers::IsPropertyATerminal;
 using ShaderMetadataHelpers::IsTruthy;
 using ShaderMetadataHelpers::OptionVecVal;
 
@@ -80,10 +81,17 @@ namespace {
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    // XML attribute names (as they come from the args file). Many attributes
-    // are named exactly like the metadata on the node/property, and are not
-    // included here because the node and property classes have their own
-    // tokens for these.
+    // Discovery and source type
+    ((discoveryType, "args"))
+    ((sourceType, "RmanCpp"))
+);
+
+// XML attribute names (as they come from the args file). Many attributes are
+// named exactly like the metadata on the node/property, and are not included
+// here because the node and property classes have their own tokens for these.
+TF_DEFINE_PRIVATE_TOKENS(
+    _xmlAttributeNames,
+
     ((nameAttr, "name"))
     ((typeAttr, "type"))
     ((arraySizeAttr, "arraySize"))
@@ -91,10 +99,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((inputAttr, "input"))
     ((tagAttr, "tag"))
     ((vstructmemberAttr, "vstructmember"))
-
-    // Discovery and source type
-    ((discoveryType, "args"))
-    ((sourceType, "RmanCpp"))
 );
 
 // Data that represents an SdrShaderNode before it is turned into one. The
@@ -146,15 +150,16 @@ RmanArgsParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
     xml_document doc;
 
     if (!discoveryResult.resolvedUri.empty()) {
-        // Get the resolved URI to a location that it can be read by the Args parser
+        // Get the resolved URI to a location that it can be read by the Args
+        // parser
         bool localFetchSuccessful = ArGetResolver().FetchToLocalResolvedPath(
             discoveryResult.uri,
             discoveryResult.resolvedUri
         );
 
         if (!localFetchSuccessful) {
-            TF_WARN("Could not localize the args file at URI [%s] into a local path. "
-                    "An invalid Sdr node definition will be created.", 
+            TF_WARN("Could not localize the args file at URI [%s] into a local "
+                    "path. An invalid Sdr node definition will be created.",
                     discoveryResult.uri.c_str());
 
             return NdrParserPlugin::GetInvalidNode(discoveryResult);
@@ -280,9 +285,33 @@ RmanArgsParserPlugin::_ParseChildElem(
         // Help text
         // -------------------
         if (EQUALS(helpStr, attrChild.name())) {
-            const char* helpText = attrChild.child_value();
+            // The help element's value might contain HTML, and the HTML should
+            // be included in the value of the help text. Getting the element's
+            // value will cut off anything after the first HTML tag, so instead
+            // capture the raw value of the element via "print". "print" has the
+            // downside that the <help> and </help> tags are included in the
+            // value, so those need to be manually removed. This is a bit of a
+            // sloppy solution, but getting the raw value of the element with
+            // the HTML intact seems to be quite difficult with pugixml. Note
+            // that the "format_no_escapes" option is given so that pugixml does
+            // not change, for example, ">" into "&gt;".
+            std::ostringstream helpStream;
+            attrChild.print(helpStream, /*indent=*/"\t",
+                pugi::format_default | pugi::format_no_escapes);
+            std::string helpText = TfStringTrim(helpStream.str());
 
-            attributes[TfToken(helpStr)] = helpText;
+            // Not using TfStringReplace() here -- which replaces all
+            // occurrences -- since it _is_ possible that someone decides to
+            // include a <help> tag in the help text itself
+            if (TfStringStartsWith(helpText, "<help>")) {
+                helpText = helpText.substr(6);
+            }
+
+            if (TfStringEndsWith(helpText, "</help>")) {
+                helpText = helpText.substr(0, helpText.size() - 7);
+            }
+
+            attributes[TfToken(helpStr)] = helpText.c_str();
         }
 
         // Hint dictionary
@@ -338,11 +367,12 @@ RmanArgsParserPlugin::_ParseChildElem(
     // Conform connection types into the standard string-based format that can
     // be consumed by the shader node
     // -------------------------------------------------------------------------
-    bool hasTagAttr = attributes.count(_tokens->tagAttr);
+    bool hasTagAttr = attributes.count(_xmlAttributeNames->tagAttr);
     if (validConnectionTypes.size() || hasTagAttr) {
         // Merge the tag attr into valid connection types
         if (hasTagAttr) {
-            validConnectionTypes.push_back(attributes.at(_tokens->tagAttr));
+            validConnectionTypes.push_back(
+                attributes.at(_xmlAttributeNames->tagAttr));
         }
 
         attributes.emplace(
@@ -373,12 +403,12 @@ RmanArgsParserPlugin::_ParseChildElem(
     // Sub elements have been processed. If a type doesn't exist at this point,
     // make a last-ditch effort to determine what it is.
     // -------------------------------------------------------------------------
-    if (attributes.count(_tokens->typeAttr) == 0) {
+    if (attributes.count(_xmlAttributeNames->typeAttr) == 0) {
         // Try to infer it from the valid connection types
         if (validConnectionTypes.size() > 0) {
             // Use the first valid type only
             attributes.emplace(
-                _tokens->typeAttr,
+                _xmlAttributeNames->typeAttr,
                 validConnectionTypes[0]
             );
         }
@@ -492,30 +522,41 @@ RmanArgsParserPlugin::_Parse(
     }
 }
 
-template <class StringOrAsset>
-static VtValue
-_GetStringOrAssetArray(
-    const std::string& stringValue,
-    VtArray<StringOrAsset>* array)
+std::tuple<TfToken, size_t>
+RmanArgsParserPlugin::_GetTypeName(
+    const NdrTokenMap& attributes) const
 {
-    std::vector<std::string> tokens = TfStringTokenize(stringValue, " ,");
+    // Determine arraySize
+    // -------------------------------------------------------------------------
+    size_t arraySize = _Get(attributes, _xmlAttributeNames->arraySizeAttr, 0);
 
-    array->reserve(tokens.size());
+    // Determine type
+    // -------------------------------------------------------------------------
+    TfToken typeName =
+        _Get(attributes, _xmlAttributeNames->typeAttr, TfToken());
 
-    for (const std::string& token : tokens) {
-        array->push_back(StringOrAsset(token));
+    // If the attributes indicates the property is a terminal, then the property
+    // should be SdrPropertyTypes->Terminal
+    if (IsPropertyATerminal(attributes)) {
+        typeName = SdrPropertyTypes->Terminal;
     }
 
-    return VtValue::Take(*array);
+    return std::make_tuple(typeName, arraySize);
 }
 
 VtValue
 RmanArgsParserPlugin::_GetVtValue(
     const std::string& stringValue,
     TfToken& type,
-    bool isArray,
-    bool isSdfAssetPath) const
+    size_t arraySize,
+    const NdrTokenMap& metadata) const
 {
+    // Determine array-ness
+    // -------------------------------------------------------------------------
+    int isDynamicArray =
+        IsTruthy(SdrPropertyMetadata->IsDynamicArray, metadata);
+    bool isArray = (arraySize > 0) || isDynamicArray;
+
     // INT and INT ARRAY
     // -------------------------------------------------------------------------
     if (type == SdrPropertyTypes->Int) {
@@ -535,25 +576,24 @@ RmanArgsParserPlugin::_GetVtValue(
         }
     }
 
-    // STRING and STRING ARRAY (ASSET and ASSET ARRAY)
+    // STRING and STRING ARRAY
     // -------------------------------------------------------------------------
     else if (type == SdrPropertyTypes->String) {
         // Handle non-array
         if (!isArray) {
-            if (isSdfAssetPath) {
-                return VtValue(SdfAssetPath(stringValue));
-            }
             return VtValue(stringValue);
         } else {
-            // Handle array of SdfAssetPath
-            if (isSdfAssetPath) {
-                VtArray<SdfAssetPath> array;
-                return _GetStringOrAssetArray(stringValue, &array);
+            // Handle array
+            VtStringArray array;
+            std::vector<std::string> tokens =
+                TfStringTokenize(stringValue, " ,");
+            array.reserve(tokens.size());
+
+            for (const std::string& token : tokens) {
+                array.push_back(token);
             }
 
-            // Handle string array
-            VtStringArray array;
-            return _GetStringOrAssetArray(stringValue, &array);
+            return VtValue::Take(array);
         }
     }
 
@@ -567,31 +607,7 @@ RmanArgsParserPlugin::_GetVtValue(
             NdrStringVec parts = TfStringTokenize(stringValue, " ,");
             int numValues = parts.size();
 
-            // We return a fixed-size array for arrays with size 2, 3, or 4
-            // because SdrShaderProperty::GetTypeAsSdfType returns a specific
-            // size type (Float2, Float3, Float4).  If in the future we want to
-            // return a VtFloatArray instead, we need to change the logic in
-            // SdrShaderProperty::GetTypeAsSdfType
-            if (isArray  && numValues == 2) {
-                return VtValue(
-                    GfVec2f(static_cast<float>(atof(parts[0].c_str())),
-                            static_cast<float>(atof(parts[1].c_str()))));
-            } else if (isArray && numValues == 3) {
-                return VtValue(
-                    GfVec3f(static_cast<float>(atof(parts[0].c_str())),
-                            static_cast<float>(atof(parts[1].c_str())),
-                            static_cast<float>(atof(parts[2].c_str()))));
-            } else if (isArray && numValues == 4) {
-                return VtValue(
-                    GfVec4f(static_cast<float>(atof(parts[0].c_str())),
-                            static_cast<float>(atof(parts[1].c_str())),
-                            static_cast<float>(atof(parts[2].c_str())),
-                            static_cast<float>(atof(parts[3].c_str()))));
-            }
-
-            // Fall back to non-fixed size array
             VtFloatArray floats(numValues);
-
             for (int i = 0; i < numValues; ++i) {
                 floats[i] = static_cast<float>(atof(parts[i].c_str()));
             }
@@ -656,6 +672,18 @@ RmanArgsParserPlugin::_GetVtValue(
 
     }
 
+    // STRUCT, TERMINAL, VSTRUCT
+    // -------------------------------------------------------------------------
+    else if (type == SdrPropertyTypes->Struct ||
+             type == SdrPropertyTypes->Terminal ||
+             type == SdrPropertyTypes->Vstruct) {
+        // We return an empty VtValue for Struct, Terminal, and Vstruct
+        // properties because their value may rely on being computed within the
+        // renderer, or we might not have a reasonable way to represent their
+        // value within Sdr
+        return VtValue();
+    }
+
     // Didn't find a supported type
     return VtValue();
 }
@@ -677,19 +705,15 @@ RmanArgsParserPlugin::_CreateProperty(
     NdrOptionVec& options) const
 {
     TfToken propName =
-        _Get(attributes, _tokens->nameAttr, TfToken("NAME UNSPECIFIED"));
+        _Get(attributes,
+             _xmlAttributeNames->nameAttr,
+             TfToken("NAME UNSPECIFIED"));
 
-    // Determine array-ness
-    // -------------------------------------------------------------------------
-    int isDynamicArray =
-        IsTruthy(SdrPropertyMetadata->IsDynamicArray, attributes);
-    size_t arraySize = _Get(attributes, _tokens->arraySizeAttr, 0);
-    bool isArray = (arraySize > 0) || isDynamicArray;
+    // Get type name, and determine the size of the array (if an array)
+    TfToken typeName;
+    size_t arraySize;
+    std::tie(typeName, arraySize) = _GetTypeName(attributes);
 
-
-    // Determine type
-    // -------------------------------------------------------------------------
-    TfToken typeName = _Get(attributes, _tokens->typeAttr, TfToken());
     if (typeName.IsEmpty()) {
         typeName = SdrPropertyTypes->Unknown;
 
@@ -699,37 +723,41 @@ RmanArgsParserPlugin::_CreateProperty(
             propName.GetText());
     } else {
         if (isOutput) {
-            _OutputDeprecationWarning(_tokens->typeAttr, shaderRep, propName);
+            _OutputDeprecationWarning(
+                _xmlAttributeNames->typeAttr, shaderRep, propName);
         }
     }
 
     // The 'tag' attr is deprecated
     // -------------------------------------------------------------------------
-    if (attributes.count(_tokens->tagAttr)) {
-        _OutputDeprecationWarning(_tokens->tagAttr, shaderRep, propName);
+    if (attributes.count(_xmlAttributeNames->tagAttr)) {
+        _OutputDeprecationWarning(
+            _xmlAttributeNames->tagAttr, shaderRep, propName);
 
         // Rename to 'validConnectionTypes'
         attributes.insert({
             SdrPropertyMetadata->ValidConnectionTypes,
-            attributes.at(_tokens->tagAttr)
+            attributes.at(_xmlAttributeNames->tagAttr)
         });
-        attributes.erase(_tokens->tagAttr);
+        attributes.erase(_xmlAttributeNames->tagAttr);
     }
 
 
     // More deprecation warnings
     // -------------------------------------------------------------------------
-    if (attributes.count(_tokens->inputAttr)) {
+    if (attributes.count(_xmlAttributeNames->inputAttr)) {
         // Just output a warning here; it will be inserted into the hints map
         // later on
-        _OutputDeprecationWarning(_tokens->inputAttr, shaderRep, propName);
+        _OutputDeprecationWarning(
+            _xmlAttributeNames->inputAttr, shaderRep, propName);
     }
 
 
     // Handle vstruct information
     // -------------------------------------------------------------------------
-    if (attributes.count(_tokens->vstructmemberAttr)) {
-        std::string vstructMember = attributes.at(_tokens->vstructmemberAttr);
+    if (attributes.count(_xmlAttributeNames->vstructmemberAttr)) {
+        std::string vstructMember =
+            attributes.at(_xmlAttributeNames->vstructmemberAttr);
 
         if (!vstructMember.empty()) {
             // Find the dot that splits struct from member name
@@ -763,21 +791,15 @@ RmanArgsParserPlugin::_CreateProperty(
         const TfToken attrName = pair.first;
         const std::string attrValue = pair.second;
 
-        if ((attrName == _tokens->arraySizeAttr)                    ||
-            (attrName == _tokens->defaultAttr)                      ||
-            (attrName == _tokens->nameAttr)                         ||
-            (attrName == _tokens->tagAttr)                          ||
-            (attrName == _tokens->typeAttr)                         ||
-            (attrName == _tokens->vstructmemberAttr)                ||
-            (attrName == SdrPropertyMetadata->Connectable)          ||
-            (attrName == SdrPropertyMetadata->Help)                 ||
-            (attrName == SdrPropertyMetadata->IsDynamicArray)       ||
-            (attrName == SdrPropertyMetadata->Label)                ||
-            (attrName == SdrPropertyMetadata->Options)              ||
-            (attrName == SdrPropertyMetadata->Page)                 ||
-            (attrName == SdrPropertyMetadata->ValidConnectionTypes) ||
-            (attrName == SdrPropertyMetadata->VstructMemberName)    ||
-            (attrName == SdrPropertyMetadata->VstructMemberOf)) {
+        if (std::find(SdrPropertyMetadata->allTokens.begin(),
+                      SdrPropertyMetadata->allTokens.end(),
+                      attrName) != SdrPropertyMetadata->allTokens.end()){
+            continue;
+        }
+
+        if (std::find(_xmlAttributeNames->allTokens.begin(),
+                      _xmlAttributeNames->allTokens.end(),
+                      attrName) != _xmlAttributeNames->allTokens.end()){
             continue;
         }
 
@@ -788,18 +810,14 @@ RmanArgsParserPlugin::_CreateProperty(
     // Inject any parser-specific metadata into the metadata map
     _injectParserMetadata(attributes, typeName);
 
-    // Determine SdfAssetPath after injection of metadata
-    // -------------------------------------------------------------------------
-    bool isSdfAssetPath =
-        attributes.count(SdrPropertyMetadata->IsAssetIdentifier);
-
     // Determine the default value; leave empty if a default isn't found
     // -------------------------------------------------------------------------
-    const VtValue defaultValue = attributes.count(_tokens->defaultAttr)
-        ? _GetVtValue(attributes.at(_tokens->defaultAttr),
+    const VtValue defaultValue =
+        attributes.count(_xmlAttributeNames->defaultAttr)
+        ? _GetVtValue(attributes.at(_xmlAttributeNames->defaultAttr),
                       typeName,
-                      isArray,
-                      isSdfAssetPath)
+                      arraySize,
+                      attributes)
         : VtValue();
 
     return SdrShaderPropertyUniquePtr(

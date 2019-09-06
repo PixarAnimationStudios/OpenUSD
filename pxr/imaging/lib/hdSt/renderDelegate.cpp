@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdSt/drawTarget.h"
 #include "pxr/imaging/hdSt/extComputation.h"
+#include "pxr/imaging/hdSt/field.h"
 #include "pxr/imaging/hdSt/glslfxShader.h"
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/light.h"
@@ -35,6 +36,7 @@
 #include "pxr/imaging/hdSt/mesh.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/points.h"
+#include "pxr/imaging/hdSt/renderBuffer.h"
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/texture.h"
@@ -51,6 +53,7 @@
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"
+#include "pxr/base/tf/staticTokens.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -61,6 +64,13 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_TINY_PRIM_CULLING, false,
 TF_DEFINE_ENV_SETTING(HDST_ENABLE_EXPERIMENTAL_VOLUME_ELLIPSOID_STANDINS, false,
                       "Render constant density ellipsoid standins for "
                       "volume prims");
+
+// This token is repeated from usdVolImaging which we cannot access from here.
+// Should we even instantiate bprims of different types for OpenVDB vs Field3d?
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (openvdbAsset)
+);
 
 const TfTokenVector HdStRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
@@ -76,6 +86,7 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_SPRIM_TYPES =
     HdPrimTypeTokens->drawTarget,
     HdPrimTypeTokens->extComputation,
     HdPrimTypeTokens->material,
+    HdPrimTypeTokens->domeLight,
     HdPrimTypeTokens->rectLight,
     HdPrimTypeTokens->simpleLight,
     HdPrimTypeTokens->sphereLight
@@ -83,7 +94,10 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_SPRIM_TYPES =
 
 const TfTokenVector HdStRenderDelegate::SUPPORTED_BPRIM_TYPES =
 {
-    HdPrimTypeTokens->texture
+    HdPrimTypeTokens->texture,
+    _tokens->openvdbAsset
+    // XXX Wait with enabling AOV in HdSt until TaskController has HdSt AOV code
+    //HdPrimTypeTokens->renderBuffer
 };
 
 std::mutex HdStRenderDelegate::_mutexResourceRegistry;
@@ -185,6 +199,38 @@ HdStRenderDelegate::GetResourceRegistry() const
     return _resourceRegistry;
 }
 
+HdAovDescriptor
+HdStRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
+{
+    const bool colorDepthMSAA = true; // GL requires color/depth to be matching.
+
+    if (name == HdAovTokens->color) {
+        HdFormat colorFormat = 
+            GlfContextCaps::GetInstance().floatingPointBuffersEnabled ?
+            HdFormatFloat16Vec4 : HdFormatUNorm8Vec4;
+        return HdAovDescriptor(colorFormat,colorDepthMSAA, VtValue(GfVec4f(0)));
+    } else if (name == HdAovTokens->normal || name == HdAovTokens->Neye) {
+        return HdAovDescriptor(HdFormatFloat32Vec3, /*msaa*/ false,
+                               VtValue(GfVec3f(-1.0f)));
+    } else if (name == HdAovTokens->depth) {
+        return HdAovDescriptor(HdFormatFloat32, colorDepthMSAA, VtValue(1.0f));
+    } else if (name == HdAovTokens->linearDepth) {
+        return HdAovDescriptor(HdFormatFloat32, /*msaa*/ false, VtValue(0.0f));
+    } else if (name == HdAovTokens->primId ||
+               name == HdAovTokens->instanceId ||
+               name == HdAovTokens->elementId) {
+        return HdAovDescriptor(HdFormatInt32, /*msaa*/ false, VtValue(-1));
+    } else {
+        HdParsedAovToken aovId(name);
+        if (aovId.isPrimvar) {
+            return HdAovDescriptor(HdFormatFloat32Vec3, /*msaa*/ false,
+                                   VtValue(GfVec3f(0.0f)));
+        }
+    }
+
+    return HdAovDescriptor();
+}
+
 HdRenderPassSharedPtr
 HdStRenderDelegate::CreateRenderPass(HdRenderIndex *index,
                         HdRprimCollection const& collection)
@@ -246,18 +292,17 @@ HdStRenderDelegate::CreateSprim(TfToken const& typeId,
 {
     if (typeId == HdPrimTypeTokens->camera) {
         return new HdCamera(sprimId);
-    } else if (typeId == HdPrimTypeTokens->simpleLight) {
-        return new HdStLight(sprimId, HdPrimTypeTokens->simpleLight);
-    } else if (typeId == HdPrimTypeTokens->sphereLight) {
-        return new HdStLight(sprimId, HdPrimTypeTokens->sphereLight);
-    } else if (typeId == HdPrimTypeTokens->rectLight) {
-        return new HdStLight(sprimId, HdPrimTypeTokens->rectLight);
     } else  if (typeId == HdPrimTypeTokens->drawTarget) {
         return new HdStDrawTarget(sprimId);
     } else  if (typeId == HdPrimTypeTokens->extComputation) {
         return new HdStExtComputation(sprimId);
     } else  if (typeId == HdPrimTypeTokens->material) {
         return new HdStMaterial(sprimId);
+    } else if (typeId == HdPrimTypeTokens->domeLight ||
+                typeId == HdPrimTypeTokens->simpleLight ||
+                typeId == HdPrimTypeTokens->sphereLight ||
+                typeId == HdPrimTypeTokens->rectLight) {
+        return new HdStLight(sprimId, typeId);
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
@@ -270,21 +315,17 @@ HdStRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
 {
     if (typeId == HdPrimTypeTokens->camera) {
         return new HdCamera(SdfPath::EmptyPath());
-    } else if (typeId == HdPrimTypeTokens->simpleLight) {
-        return new HdStLight(SdfPath::EmptyPath(),
-                             HdPrimTypeTokens->simpleLight);
-    } else if (typeId == HdPrimTypeTokens->sphereLight) {
-        return new HdStLight(SdfPath::EmptyPath(), 
-                             HdPrimTypeTokens->sphereLight);
-    } else if (typeId == HdPrimTypeTokens->rectLight) {
-        return new HdStLight(SdfPath::EmptyPath(), 
-                             HdPrimTypeTokens->rectLight);
     } else  if (typeId == HdPrimTypeTokens->drawTarget) {
         return new HdStDrawTarget(SdfPath::EmptyPath());
     } else  if (typeId == HdPrimTypeTokens->extComputation) {
         return new HdStExtComputation(SdfPath::EmptyPath());
     } else  if (typeId == HdPrimTypeTokens->material) {
         return _CreateFallbackMaterialPrim();
+    } else if (typeId == HdPrimTypeTokens->domeLight ||
+                typeId == HdPrimTypeTokens->simpleLight ||
+                typeId == HdPrimTypeTokens->sphereLight ||
+                typeId == HdPrimTypeTokens->rectLight) {
+        return new HdStLight(SdfPath::EmptyPath(), typeId);
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
@@ -300,11 +341,15 @@ HdStRenderDelegate::DestroySprim(HdSprim *sPrim)
 
 HdBprim *
 HdStRenderDelegate::CreateBprim(TfToken const& typeId,
-                                    SdfPath const& bprimId)
+                                SdfPath const& bprimId)
 {
     if (typeId == HdPrimTypeTokens->texture) {
         return new HdStTexture(bprimId);
-    } else  {
+    } else if (typeId == _tokens->openvdbAsset) {
+        return new HdStField(bprimId, typeId);
+    } else if (typeId == HdPrimTypeTokens->renderBuffer) {
+        return new HdStRenderBuffer(&_hgiGL, bprimId);
+    } else {
         TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
     }
 
@@ -316,6 +361,10 @@ HdStRenderDelegate::CreateFallbackBprim(TfToken const& typeId)
 {
     if (typeId == HdPrimTypeTokens->texture) {
         return new HdStTexture(SdfPath::EmptyPath());
+    } else if (typeId == _tokens->openvdbAsset) {
+        return new HdStField(SdfPath::EmptyPath(), typeId);
+    } else if (typeId == HdPrimTypeTokens->renderBuffer) {
+        return new HdStRenderBuffer(&_hgiGL, SdfPath::EmptyPath());
     } else {
         TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
     }
@@ -386,6 +435,12 @@ TfToken
 HdStRenderDelegate::GetMaterialNetworkSelector() const
 {
     return HioGlslfxTokens->glslfx;
+}
+
+Hgi*
+HdStRenderDelegate::GetHgi()
+{
+    return &_hgiGL;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

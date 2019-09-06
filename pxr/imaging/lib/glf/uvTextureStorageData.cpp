@@ -54,6 +54,12 @@ GlfUVTextureStorageData::~GlfUVTextureStorageData()
     }
 }
 
+int
+GlfUVTextureStorageData::NumDimensions() const
+{
+    return 2;
+}
+
 size_t GlfUVTextureStorageData::ComputeBytesUsed() const
 {
     if (_rawBuffer) {

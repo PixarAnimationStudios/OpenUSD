@@ -50,6 +50,8 @@ public:
     GLF_API
     virtual ~GlfUVTextureStorageData();
 
+    int NumDimensions() const override;
+
    // GlfBaseTextureData overrides
     virtual int ResizedWidth(int mipLevel = 0) const {
         return _resizedWidth;
@@ -57,6 +59,10 @@ public:
 
     virtual int ResizedHeight(int mipLevel = 0) const {
         return _resizedHeight;
+    };
+
+    int ResizedDepth(int mipLevel = 0) const override {
+        return 1;
     };
 
     virtual GLenum GLInternalFormat() const {

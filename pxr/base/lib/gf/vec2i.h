@@ -66,13 +66,7 @@ public:
     static const size_t dimension = 2;
 
     /// Default constructor does no initialization.
-    GfVec2i() {}
-
-    // Copy constructor.
-    // TODO Remove this, use compiler-generated.
-    GfVec2i(const GfVec2i &other) {
-        *this = other;
-    }
+    GfVec2i() = default;
 
     /// Initialize all elements to a single value.
     explicit GfVec2i(int value) {

@@ -58,6 +58,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HDST_RENDER_SETTINGS_TOKENS             \
     (enableTinyPrimCulling)
 
+#define HDST_MATERIAL_TAG_TOKENS                \
+    (volume)
+
 TF_DECLARE_PUBLIC_TOKENS(HdStGLSLProgramTokens, HDST_API,
                          HDST_GLSL_PROGRAM_TOKENS);
 
@@ -67,6 +70,9 @@ TF_DECLARE_PUBLIC_TOKENS(HdStLightTokens, HDST_API, HDST_LIGHT_TOKENS);
 
 TF_DECLARE_PUBLIC_TOKENS(HdStRenderSettingsTokens, HDST_API,
                          HDST_RENDER_SETTINGS_TOKENS);
+
+TF_DECLARE_PUBLIC_TOKENS(HdStMaterialTagTokens, HDST_API,
+                         HDST_MATERIAL_TAG_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

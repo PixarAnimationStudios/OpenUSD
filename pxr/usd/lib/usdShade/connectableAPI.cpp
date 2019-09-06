@@ -581,26 +581,30 @@ UsdShadeConnectableAPI::GetConnectedSource(
         }
     }
 
-    // XXX(validation)  sources.size() <= 1, also sourceName
+    // XXX(validation)  sources.size() <= 1, also sourceName,
+    //                  target Material == source Material ?
     if (sources.size() == 1) {
         SdfPath const & path = sources[0];
-        *source = UsdShadeConnectableAPI::Get(shadingProp.GetStage(), 
-                                              path.GetPrimPath());
-        if (path.IsPropertyPath()){
+        UsdObject target = shadingProp.GetStage()->GetObjectAtPath(path);
+        *source = UsdShadeConnectableAPI(target.GetPrim());
+
+       if (path.IsPropertyPath()){
             TfToken const &attrName(path.GetNameToken());
 
             std::tie(*sourceName, *sourceType) = 
                 UsdShadeUtils::GetBaseNameAndType(attrName);
+            return target.Is<UsdAttribute>();
         } else {
             // If this is a terminal-style output, then allow connection 
             // to a prim.
-            if (shadingProp.Is<UsdRelationship>()) {
+            if (UsdShadeUtils::ReadOldEncoding() && 
+                shadingProp.Is<UsdRelationship>()) {
                 return static_cast<bool>(*source);
             }
         }
     }
 
-    return static_cast<bool>(*source);
+    return false;
 }
 
 /* static  */

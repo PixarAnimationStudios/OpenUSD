@@ -50,18 +50,25 @@ public:
 
     struct WrapInfo {
         WrapInfo() :
-          hasWrapModeS(false), hasWrapModeT(false),
-          wrapModeS(GL_REPEAT), wrapModeT(GL_REPEAT) {};
+          hasWrapModeS(false), hasWrapModeT(false), hasWrapModeR(false),
+          wrapModeS(GL_REPEAT), wrapModeT(GL_REPEAT), wrapModeR(GL_REPEAT) {};
 
         bool    hasWrapModeS;
         bool    hasWrapModeT;
+        bool    hasWrapModeR;
         GLenum  wrapModeS;
         GLenum  wrapModeT;
+        GLenum  wrapModeR;
     };
+
+    /// Is this a 1-, 2- or 3-dimensional texture.
+    virtual int NumDimensions() const = 0;
 
     virtual int ResizedWidth(int mipLevel = 0) const = 0;
 
     virtual int ResizedHeight(int mipLevel = 0) const = 0;
+
+    virtual int ResizedDepth(int mipLevel = 0) const = 0;
 
     virtual GLenum GLInternalFormat() const = 0;
 

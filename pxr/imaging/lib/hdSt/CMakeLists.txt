@@ -20,6 +20,7 @@ pxr_library(hdSt
         garch
         glf
         hd
+        hgiGL
         tf
         trace
         ${GLEW_LIBRARY}
@@ -38,6 +39,7 @@ pxr_library(hdSt
         copyComputation
         debugCodes
         dispatchBuffer
+        domeLightComputations
         drawItem
         drawItemInstance
         drawTarget
@@ -50,12 +52,15 @@ pxr_library(hdSt
         extCompGpuComputationResource
         extCompGpuPrimvarBufferSource
         fallbackLightingShader
+        field
+        fieldResource
         flatNormals
         geometricShader
         glConversions
         glslfxShader
         glslProgram
         glUtils
+        hgiConversions
         imageShaderRenderPass
         instancer
         interleavedMemoryManager
@@ -67,6 +72,7 @@ pxr_library(hdSt
         package
         persistentBuffer
         points
+        renderBuffer
         renderDelegate
         renderPass
         renderPassShader
@@ -81,6 +87,7 @@ pxr_library(hdSt
         surfaceShader
         texture
         textureResource
+        textureResourceHandle
         tokens
         unitTestGLDrawing
         vboMemoryManager
@@ -101,6 +108,7 @@ pxr_library(hdSt
         imageShaderShaderKey
         immediateDrawBatch
         indirectDrawBatch
+        materialBufferSourceAndTextureHelper
         meshShaderKey
         meshTopology 
         pointsShaderKey
@@ -120,6 +128,7 @@ pxr_library(hdSt
         shaders/fallbackLighting.glslfx
         shaders/fallbackLightingShader.glslfx
         shaders/fallbackSurface.glslfx
+        shaders/fallbackVolume.glslfx
         shaders/frustumCull.glslfx
         shaders/imageShader.glslfx
         shaders/instancing.glslfx

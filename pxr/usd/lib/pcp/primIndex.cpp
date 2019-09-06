@@ -1771,13 +1771,13 @@ static void
 _EvalRefOrPayloadArcs(PcpNodeRef node, 
                       Pcp_PrimIndexer *indexer,
                       const std::vector<RefOrPayloadType> &arcs,
-                      const PcpSourceReferenceInfoVector &infoVec)
+                      const PcpSourceArcInfoVector &infoVec)
 {
     const SdfPath & srcPath = node.GetPath();
 
     for (size_t arcNum=0; arcNum < arcs.size(); ++arcNum) {
         const RefOrPayloadType & refOrPayload = arcs[arcNum];
-        const PcpSourceReferenceInfo& info = infoVec[arcNum];
+        const PcpSourceArcInfo& info = infoVec[arcNum];
         const SdfLayerHandle & srcLayer = info.layer;
         const SdfLayerOffset & srcLayerOffset = info.layerOffset;
         SdfLayerOffset layerOffset = refOrPayload.GetLayerOffset();
@@ -1976,7 +1976,7 @@ _EvalNodeReferences(
 
     // Compose value for local references.
     SdfReferenceVector refArcs;
-    PcpSourceReferenceInfoVector refInfo;
+    PcpSourceArcInfoVector refInfo;
     PcpComposeSiteReferences(node, &refArcs, &refInfo);
 
     // Add each reference arc.
@@ -2003,7 +2003,7 @@ _EvalNodePayloads(
 
     // Compose value for local payloads.
     SdfPayloadVector payloadArcs;
-    PcpSourceReferenceInfoVector payloadInfo;
+    PcpSourceArcInfoVector payloadInfo;
     PcpComposeSitePayloads(node, &payloadArcs, &payloadInfo);
 
     if (payloadArcs.empty()) {
@@ -4007,7 +4007,7 @@ Pcp_NeedToRecomputeDueToAssetPathChange(const PcpPrimIndex& index)
         auto refNodeRange = _GetDirectChildRange(node, PcpArcTypeReference);
         if (refNodeRange.first != refNodeRange.second) {
             SdfReferenceVector refs;
-            PcpSourceReferenceInfoVector sourceInfo;
+            PcpSourceArcInfoVector sourceInfo;
             PcpComposeSiteReferences(node, &refs, &sourceInfo);
             TF_VERIFY(refs.size() == sourceInfo.size());
             
@@ -4048,7 +4048,7 @@ Pcp_NeedToRecomputeDueToAssetPathChange(const PcpPrimIndex& index)
         auto payloadNodeRange = _GetDirectChildRange(node, PcpArcTypePayload);
         if (payloadNodeRange.first != payloadNodeRange.second) {
             SdfPayloadVector payloads;
-            PcpSourceReferenceInfoVector sourceInfo;
+            PcpSourceArcInfoVector sourceInfo;
             PcpComposeSitePayloads(node, &payloads, &sourceInfo);
 
             const size_t numPayloadArcs = 

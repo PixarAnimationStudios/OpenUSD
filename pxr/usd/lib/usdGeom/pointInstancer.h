@@ -526,6 +526,32 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
+    // ACCELERATIONS 
+    // --------------------------------------------------------------------- //
+    /// If authored, per-instance 'accelerations' will be used with
+    /// velocities to compute positions between samples for the 'positions'
+    /// attribute rather than interpolating between neighboring 'positions'
+    /// samples. Acceleration is measured in position units per second-squared.
+    /// To convert to position units per squared UsdTimeCode, divide by the
+    /// square of UsdStage::GetTimeCodesPerSecond().
+    ///
+    /// \n  C++ Type: VtArray<GfVec3f>
+    /// \n  Usd Type: SdfValueTypeNames->Vector3fArray
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: No Fallback
+    USDGEOM_API
+    UsdAttribute GetAccelerationsAttr() const;
+
+    /// See GetAccelerationsAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateAccelerationsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
     // ANGULARVELOCITIES 
     // --------------------------------------------------------------------- //
     /// If authored, per-instance angular velocity vector to be used for
@@ -875,6 +901,11 @@ public:
     ///                     all velocities were zero in all dimensions.
     /// \param velocitiesSampleTime - time at which the samples from
     ///                               \p velocities were taken.
+    /// \param accelerations - array containing all instance accelerations. 
+    ///                     This array must be either the same size as 
+    ///                     \p protoIndicesor empty. If it is empty, transforms 
+    ///                     are computed as if all accelerations were zero in 
+    ///                     all dimensions.
     /// \param scales - array containing all instance scales. This array must be
     ///                 either the same size as \p protoIndices or empty. If it
     ///                 is empty, transforms are computed with no change in
@@ -912,6 +943,7 @@ public:
         const VtVec3fArray& positions,
         const VtVec3fArray& velocities,
         UsdTimeCode velocitiesSampleTime,
+        const VtVec3fArray& accelerations,
         const VtVec3fArray& scales,
         const VtQuathArray& orientations,
         const VtVec3fArray& angularVelocities,
@@ -922,119 +954,28 @@ public:
 
 private:
 
-    // Get the authored prototype indices for instance transform computation.
-    // Fail if prototype indices are not authored.
-    bool _GetProtoIndicesForInstanceTransforms(
-        UsdTimeCode baseTime,
-        VtIntArray* protoIndices) const;
-
-    // Get the authored positions for instance transform computation. Fail if
-    // there are no authored positions or the number of positions doesn't match
-    // the number of instances.
-    bool _GetPositionsForInstanceTransforms(
-        UsdTimeCode baseTime,
-        size_t numInstances,
-        UsdTimeCode* positionsSampleTime,
-        double* positionsLowerTimeValue,
-        double* positionsUpperTimeValue,
-        bool* positionsHasSamples,
-        VtVec3fArray* positions) const;
-
-    // Get the authored velocities for instance transform computation. Fail if
-    // there are no authored velocities, the number of velocities doesn't match
-    // the number of instances, or the velocity timesample does not align with
-    // the position timesample.
-    bool _GetVelocitiesForInstanceTransforms(
-        UsdTimeCode baseTime,
-        size_t numInstances,
-        UsdTimeCode positionsSampleTime,
-        double positionsLowerTimeValue,
-        double positionsUpperTimeValue,
-        UsdTimeCode* velocitiesSampleTime,
-        VtVec3fArray* velocities) const;
-
-    // Get the authored positions and velocities for instance transform
-    // computation. This method fails if the positions can't be fetched (see
-    // _GetPositionsForInstanceTransforms). If velocities can't be fetched (see
-    // _GetVelocitiesForInstanceTransforms) or positions are not time-varying,
-    // then \p velocities is cleared and \p velocitiesSampleTime is not changed.
-    bool _GetPositionsAndVelocitiesForInstanceTransforms(
-        UsdTimeCode baseTime,
-        size_t numInstances,
-        VtVec3fArray* positions,
-        VtVec3fArray* velocities,
-        UsdTimeCode* velocitiesSampleTime) const;
-
-    // Get the authored scales for instance transform computation. Fail if there
-    // are no authored scales or the number of scales doesn't match the number
-    // of instances.
-    bool _GetScalesForInstanceTransforms(
-        UsdTimeCode baseTime,
-        size_t numInstances,
-        VtVec3fArray* scales) const;
-
-    // Get the authored orientations for instance transform computation. Fail if
-    // there are no authored orientations or the number of orientations doesn't
-    // match the number of instances.
-    bool _GetOrientationsForInstanceTransforms(
-        UsdTimeCode baseTime,
-        size_t numInstances,
-        UsdTimeCode* orientationsSampleTime,
-        double* orientationsLowerTimeValue,
-        double* orientationsUpperTimeValue,
-        bool* orientationsHasSamples,
-        VtQuathArray* orientations) const;
-
-    // Get the authored angular velocities for instance transform computation.
-    // Fail if there are no authored angular velocities, the number of angular
-    // velocities doesn't match the number of instances, or the angular velocity
-    // timesample does not align with the orientation timesample.
-    bool _GetAngularVelocitiesForInstanceTransforms(
-        UsdTimeCode baseTime,
-        size_t numInstances,
-        UsdTimeCode orientationsSampleTime,
-        double orientationsLowerTimeValue,
-        double orientationsUpperTimeValue,
-        UsdTimeCode* angularVelocitiesSampleTime,
-        VtVec3fArray* angularVelocities) const;
-
-    // Get the authored orientations and angular velocities for instance
-    // transform computation. This method fails if the orientations can't be
-    // fetched (see _GetOrientationsForInstanceTransforms). If angular
-    // velocities can't be fetched (see
-    // _GetAngularVelocitiesForInstanceTransforms) or orientations are not time-
-    // varying, then \p angularVelocities is cleared and
-    // \p angularVelocitiesSampleTime is not changed.
-    bool _GetOrientationsAndAngularVelocitiesForInstanceTransforms(
-        UsdTimeCode baseTime,
-        size_t numInstances,
-        VtQuathArray* orientations,
-        VtVec3fArray* angularVelocities,
-        UsdTimeCode* angularVelocitiesSampleTime) const;
-
     // Get the authored prototype paths. Fail if there are no authored prototype
     // paths or the prototype indices are out of bounds.
     bool _GetPrototypePathsForInstanceTransforms(
         const VtIntArray& protoIndices,
         SdfPathVector* protoPaths) const;
 
-    // Fetches data from attributes on a UsdGeomPointInstancer required for
-    // instance transform calculations.
-    bool _ComputeInstanceTransformsAtTimePreamble(
+    // Get the authored prototype indices for instance transform computation.
+    // Fail if prototype indices are not authored.
+    bool _GetProtoIndicesForInstanceTransforms(
+        UsdTimeCode baseTime,
+        VtIntArray* protoIndices) const;
+
+    // Fetches data from attributes specific to UsdGeomPointInstancer
+    // required for instance transform calculations; this includes
+    // protoIndices, protoPaths, and the mask. 
+    bool _ComputePointInstancerAttributesPreamble(
         const UsdTimeCode baseTime,
         const ProtoXformInclusion doProtoXforms,
         const MaskApplication applyMask,
         VtIntArray* protoIndices,
-        VtVec3fArray* positions,
-        VtVec3fArray* velocities,
-        UsdTimeCode* velocitiesSampleTime,
-        VtVec3fArray* scales,
-        VtQuathArray* orientations,
-        VtVec3fArray* angularVelocities,
-        UsdTimeCode* angularVelocitiesSampleTime,
         SdfPathVector* protoPaths,
-        std::vector<bool>* mask,
-        float* velocityScale) const;
+        std::vector<bool>* mask) const;
 
 public:
 

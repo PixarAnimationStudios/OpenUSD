@@ -21,10 +21,20 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
+//
+// Note: This shader needs to stay in sync with usdImaging's usdShaders as
+// defined by the shaderDefs.usda file.  Thus, we must work precisely in this
+// part of the shader space to ensure that properties defined here have the
+// same types as their usd definition.  Use of special metadata like 'role' is
+// necessary to make some of the types match.  Please see Sdr overview
+// documentation for more information about different metadata tags that are
+// used to inform property type translation.
+//
+
 shader UsdUVTexture
 [[ 
-    string category="generator",
-    string primvars="s,t"
+    string category="generator"
 ]]
 (
     // Details : Image source
@@ -47,19 +57,22 @@ shader UsdUVTexture
     ]],
 
     // Details : Fallback value used when no texture is connected.
-    color fallback = color(0.0, 0.0, 0.0),
+    float fallback[4] = {0.0, 0.0, 0.0, 1.0},
 
-    // Details : Scale to be applied to all components of the texture. 
+    // Details : Scale to be applied to all components of the texture.
     //            value * scale + bias
-    color scale = color(1.0, 1.0, 1.0),
- 
-    // Details : Bias to be applied to all components of the texture. 
+    float scale[4] = {1.0, 1.0, 1.0, 1.0},
+
+    // Details : Bias to be applied to all components of the texture.
     //            value * scale + bias
-    color bias = color(0.0, 0.0, 0.0),
+    float bias[4] = {0.0, 0.0, 0.0, 0.0},
 
     // Details : [options] r, g, b, a, rgb, rgba
-    output color rgb = color(0.0,0.0,0.0)
-        [[ string widget = "null" ]],
+    output color rgb = color(0.0, 0.0 ,0.0)
+        [[
+           string widget = "null",
+           string role = "none"
+        ]],
     output float r = 0.0
         [[ string widget = "null" ]],
     output float g = 0.0
@@ -70,12 +83,19 @@ shader UsdUVTexture
         [[ string widget = "null" ]],
 ) 
 {
-    color result = fallback;
-    string swrap = wrapS;
-    string twrap = wrapT;
-    float alpha = 1.0;
+    // Create a 'color' type version of each float[4] input.  We will use the
+    // 'color' type versions to perform computations.
+    color fallbackColor = color(fallback[0], fallback[1], fallback[2]);
+    float fallbackAlpha = fallback[3];
+    color scaleColor = color(scale[0], scale[1], scale[2]);
+    float scaleAlpha = scale[3];
+    color biasColor = color(bias[0], bias[1], bias[2]);
+    float biasAlpha = bias[3];
 
     // Wrap mode conversion
+    string swrap = wrapS;
+    string twrap = wrapT;
+
     if (swrap == "repeat") {
         swrap = "periodic";
     }
@@ -93,14 +113,24 @@ shader UsdUVTexture
     }
 
     // Read the texture
-    result = texture(file, st[0], st[1], 
-        "swrap", swrap, "twrap", twrap,
-        "missingcolor", fallback, "alpha", alpha); 
+    float resultAlpha = 1.0;
+    color resultColor = texture(
+            file,
+            st[0], st[1],
+            "swrap", swrap,
+            "twrap", twrap,
+            "missingcolor", fallbackColor,
+            "missingalpha", fallbackAlpha,
+            "alpha", resultAlpha);
+
+    // Apply scale and bias
+    resultColor = resultColor * scaleColor + biasColor;
+    resultAlpha = resultAlpha * scaleAlpha + biasAlpha;
 
     // Output the colors
-    rgb = result * scale + bias;
-    r = rgb[0];
-    g = rgb[1];
-    b = rgb[2];
-    a = alpha;
+    rgb = resultColor;
+    r   = resultColor[0];
+    g   = resultColor[1];
+    b   = resultColor[2];
+    a   = resultAlpha;
 }

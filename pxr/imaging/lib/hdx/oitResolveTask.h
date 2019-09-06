@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDX_RESOLVE_TASK_H
-#define HDX_RESOLVE_TASK_H
+#ifndef HDX_OIT_RESOLVE_TASK_H
+#define HDX_OIT_RESOLVE_TASK_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
@@ -47,9 +47,17 @@ typedef boost::shared_ptr<class HdStRenderPassShader>
 ///
 /// A task for resolving previous passes to pixels.
 ///
+/// It is also responsible for allocating the OIT buffers, but it
+/// leaves the clearing of the OIT buffers to the OIT render tasks.
+/// OIT render tasks coordinate with the resolve task through
+/// HdxOitResolveTask::OitBufferAccessor.
+///
 class HdxOitResolveTask : public HdTask 
 {
 public:
+    HDX_API
+    static bool IsOitEnabled();
+
     HDX_API
     HdxOitResolveTask(HdSceneDelegate* delegate, SdfPath const& id);
 
@@ -63,11 +71,15 @@ public:
                       HdDirtyBits* dirtyBits) override;
 
     /// Prepare the tasks resources
+    ///
+    /// Allocates OIT buffers if requested by OIT render task
     HDX_API
     virtual void Prepare(HdTaskContext* ctx,
                          HdRenderIndex* renderIndex) override;
 
     /// Execute render pass task
+    ///
+    /// Resolves OIT buffers
     HDX_API
     virtual void Execute(HdTaskContext* ctx) override;
 
@@ -79,6 +91,15 @@ private:
     HdxOitResolveTask() = delete;
     HdxOitResolveTask(const HdxOitResolveTask &) = delete;
     HdxOitResolveTask &operator =(const HdxOitResolveTask &) = delete;
+
+    void _PrepareOitBuffers(HdTaskContext* ctx, HdRenderIndex* renderIndex);
+
+    int _bufferSize;
+    HdBufferArrayRangeSharedPtr _counterBar;
+    HdBufferArrayRangeSharedPtr _dataBar;
+    HdBufferArrayRangeSharedPtr _depthBar;
+    HdBufferArrayRangeSharedPtr _indexBar;
+    HdBufferArrayRangeSharedPtr _uniformBar;
 };
 
 

@@ -79,6 +79,20 @@ public:
     typedef ItemType value_type;
     typedef ItemVector value_vector_type;
 
+    /// Create a ListOp in explicit mode with the given \p explicitItems.
+    SDF_API
+    static SdfListOp CreateExplicit(
+        const ItemVector& explicitItems = ItemVector());
+
+    /// Create a ListOp in non-explicit mode with the given 
+    /// \p prependedItems, \p appendedItems, and \p deletedItems
+    SDF_API
+    static SdfListOp Create(
+        const ItemVector& prependedItems = ItemVector(),
+        const ItemVector& appendedItems = ItemVector(),
+        const ItemVector& deletedItems = ItemVector());
+
+    /// Create an empty ListOp in non-explicit mode.
     SDF_API SdfListOp();
 
     SDF_API void Swap(SdfListOp<T>& rhs);

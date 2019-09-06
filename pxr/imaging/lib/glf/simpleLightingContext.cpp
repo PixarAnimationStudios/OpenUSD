@@ -280,7 +280,8 @@ GlfSimpleLightingContext::BindUniformBlocks(GlfBindingMapPtr const &bindingMap)
             float attenuation[4];
             bool hasShadow;
             int32_t shadowIndex;
-            int32_t padding2[2];
+            bool isIndirectLight;
+            int32_t padding2;
         };
 
         struct Lighting {
@@ -338,6 +339,7 @@ GlfSimpleLightingContext::BindUniformBlocks(GlfBindingMapPtr const &bindingMap)
             lightingData->lightSource[i].spotCutoff = light.GetSpotCutoff();
             lightingData->lightSource[i].spotFalloff = light.GetSpotFalloff();
             lightingData->lightSource[i].hasShadow = light.HasShadow();
+            lightingData->lightSource[i].isIndirectLight = light.IsDomeLight();
 
             if (lightingData->lightSource[i].hasShadow) {
                 int shadowIndex = light.GetShadowIndex();

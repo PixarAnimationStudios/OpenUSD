@@ -30,6 +30,8 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "Riley.h"
 
+#include <chrono>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct HdPrman_Context;
@@ -61,6 +63,12 @@ private:
     GfMatrix4d _lastProj, _lastViewToWorldMatrix;
 
     HdxCompositor _compositor;
+
+    std::chrono::steady_clock::time_point _frameStart;
+    std::string _integrator;
+    std::string _quickIntegrator;
+    float _quickIntegrateTime;
+    bool _quickIntegrate;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -35,9 +35,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     // point id mixins (provide functions for picking system)
     ((pointIdFS,          "PointId.Fragment.Fallback"))
 
-    // Volume shader (eventually provided by volume material)
-    ((volumeShader,       "Volume.VolumeShader"))
-
     // main for all the shader stages
     ((mainVS,             "Volume.Vertex"))
     ((mainFS,             "Volume.Fragment"))
@@ -50,7 +47,7 @@ HdSt_VolumeShaderKey::HdSt_VolumeShaderKey()
     : glslfx(_tokens->baseGLSLFX),
       VS{ _tokens->instancing, _tokens->mainVS, TfToken() },
       FS{ _tokens->pointIdFS, _tokens->instancing,
-          _tokens->volumeShader, _tokens->mainFS, TfToken() }
+          _tokens->mainFS, TfToken() }
 {
 }
 

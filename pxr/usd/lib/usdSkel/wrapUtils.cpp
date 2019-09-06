@@ -382,12 +382,4 @@ void wrapUsdSkelUtils()
          arg("offsets"),
          arg("indices"),
          arg("points")));
-
-    def("BakeSkinning", ((bool (*)(const UsdSkelRoot&,
-                                   const GfInterval&))&UsdSkelBakeSkinning),
-        (arg("root"), arg("interval")=GfInterval::GetFullInterval()));
-
-    def("BakeSkinning", ((bool (*)(const UsdPrimRange&,
-                                   const GfInterval&))&UsdSkelBakeSkinning),
-        (arg("range"), arg("interval")=GfInterval::GetFullInterval()));
 }

@@ -763,7 +763,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     // safely access all valid data without having separate change tracking.
     //
     // This could be a performance concern, where a prim has higher refine level
-    // and a hydra client keeps drawing only hull repr for some reason.
+    // and a Storm client keeps drawing only hull repr for some reason.
     // Currently we assume it's not likely a use-case, but we may revisit later
     // and optimize if necessary.
     //

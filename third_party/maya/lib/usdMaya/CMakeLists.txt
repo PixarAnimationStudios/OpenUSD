@@ -17,6 +17,7 @@ pxr_shared_library(${PXR_PACKAGE}
         usdSkel
         usdUtils
         vt
+        ${Boost_LIBRARIES}
         ${Boost_PYTHON_LIBRARY}
         ${MAYA_Foundation_LIBRARY}
         ${MAYA_OpenMaya_LIBRARY}
@@ -26,6 +27,7 @@ pxr_shared_library(${PXR_PACKAGE}
         ${MAYA_OpenMayaUI_LIBRARY}
 
     INCLUDE_DIRS
+        ${Boost_INCLUDE_DIRS}
         ${MAYA_INCLUDE_DIRS}
 
     PUBLIC_HEADERS

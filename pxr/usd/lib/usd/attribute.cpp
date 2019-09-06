@@ -217,45 +217,7 @@ UsdAttribute::_Get(T* value, UsdTimeCode time) const
 bool 
 UsdAttribute::Get(VtValue* value, UsdTimeCode time) const 
 {
-    auto stage = _GetStage();
-    bool foundValue = stage->_GetValue(time, *this, value);
-
-    // Special case for SdfAssetPath -- compute the resolved asset path.
-    if (foundValue && value) {
-        stage->_MakeResolvedAssetPaths(time, *this, value);
-    }
-
-    return foundValue;
-}
-
-// Specializations for SdfAssetPath(Array) that do path resolution.
-template <>
-USD_API bool
-UsdAttribute::_Get(SdfAssetPath *assetPath, UsdTimeCode time) const
-{
-    auto stage = _GetStage();
-
-    if (stage->_GetValue(time, *this, assetPath)) {
-        stage->_MakeResolvedAssetPaths(time, *this, assetPath, 1);
-        return true;
-    }
-
-    return false;
-}
-
-template <>
-USD_API bool
-UsdAttribute::_Get(VtArray<SdfAssetPath> *assetPaths, UsdTimeCode time) const
-{
-    auto stage = _GetStage();
-
-    if (stage->_GetValue(time, *this, assetPaths)) {
-        stage->_MakeResolvedAssetPaths(time, *this, assetPaths->data(), 
-                                       assetPaths->size());
-        return true;
-    }
-
-    return false;
+    return _GetStage()->_GetValue(time, *this, value);
 }
 
 UsdResolveInfo

@@ -40,13 +40,34 @@
 
 # Use libloadprman.a to handle runtime loading of prman.
 if(WIN32)
-    set (RENDERMAN_LIB_NAME libloadprman.lib)
-else()
-    set (RENDERMAN_LIB_NAME libloadprman.a)
+    set (LOADPRMAN_LIB_NAME libloadprman.lib)
+    set (PRMAN_LIB_NAME libprman.lib)
+    set (PXRCORE_LIB_NAME libpxrcore.lib)
+elseif(APPLE)
+    set (LOADPRMAN_LIB_NAME libloadprman.a)
+    set (PRMAN_LIB_NAME libprman.dylib)
+    set (PXRCORE_LIB_NAME libpxrcore.dylib)
+elseif(UNIX)
+    set (LOADPRMAN_LIB_NAME libloadprman.a)
+    set (PRMAN_LIB_NAME libprman.so)
+    set (PXRCORE_LIB_NAME libpxrcore.so)
 endif()
 
-find_library(RENDERMAN_LIBRARY
-        "${RENDERMAN_LIB_NAME}"
+find_library(LOADPRMAN_LIBRARY
+        "${LOADPRMAN_LIB_NAME}"
+    HINTS
+        "${RENDERMAN_LOCATION}/lib64"
+        "${RENDERMAN_LOCATION}/lib"
+        "$ENV{RENDERMAN_LOCATION}/lib64"
+        "$ENV{RENDERMAN_LOCATION}/lib"
+        "$ENV{RMANTREE}/lib"
+        "$ENV{RMANTREE}/lib64"
+    DOC
+        "Load Renderman library path"
+)
+
+find_library(PRMAN_LIBRARY
+    "${PRMAN_LIB_NAME}"
     HINTS
         "${RENDERMAN_LOCATION}/lib64"
         "${RENDERMAN_LOCATION}/lib"
@@ -58,8 +79,21 @@ find_library(RENDERMAN_LIBRARY
         "Renderman library path"
 )
 
+find_library(PXRCORE_LIBRARY
+    "${PXRCORE_LIB_NAME}"
+    HINTS
+        "${RENDERMAN_LOCATION}/lib64"
+        "${RENDERMAN_LOCATION}/lib"
+        "$ENV{RENDERMAN_LOCATION}/lib64"
+        "$ENV{RENDERMAN_LOCATION}/lib"
+        "$ENV{RMANTREE}/lib"
+        "$ENV{RMANTREE}/lib64"
+    DOC
+        "Renderman core library path"
+)
+
 find_path(RENDERMAN_INCLUDE_DIR
-    RixInterfaces.h
+    prmanapi.h
     HINTS
         "${RENDERMAN_LOCATION}/include"
         "$ENV{RENDERMAN_LOCATION}/include"
@@ -69,28 +103,30 @@ find_path(RENDERMAN_INCLUDE_DIR
 )
 
 # Parse version
-if (RENDERMAN_INCLUDE_DIR AND EXISTS "${RENDERMAN_INCLUDE_DIR}/RixInterfaces.h" )
+if (RENDERMAN_INCLUDE_DIR AND EXISTS "${RENDERMAN_INCLUDE_DIR}/prmanapi.h" )
     file(STRINGS "${RENDERMAN_INCLUDE_DIR}/prmanapi.h" TMP REGEX "^#define _PRMANAPI_VERSION_MAJOR_.*$")
     string(REGEX MATCHALL "[0-9]+" MAJOR ${TMP})
-    file(STRINGS "${RENDERMAN_INCLUDE_DIR}/prmanapi.h" TMP REGEX "^#define _PRMANAPI_VERSION_MINOR_.*$")
-    string(REGEX MATCHALL "[0-9]+" MINOR ${TMP})
-    file(STRINGS "${RENDERMAN_INCLUDE_DIR}/prmanapi.h" TMP REGEX "^#define _PRMANAPI_VERSION_BUILD_.*$")
-    string(REGEX MATCHALL "[0-9]+" PATCH ${TMP})
 
-    set (RENDERMAN_VERSION ${MAJOR}.${MINOR}.${PATCH})
     set (RENDERMAN_VERSION_MAJOR ${MAJOR})
-    set (RENDERMAN_VERSION_MINOR ${MINOR})
 endif()
 
 # will set RENDERMAN_FOUND
 include(FindPackageHandleStandardArgs)
 
-find_package_handle_standard_args(Renderman
-    REQUIRED_VARS
-        RENDERMAN_INCLUDE_DIR
-        RENDERMAN_LIBRARY
-        RENDERMAN_VERSION_MAJOR
-        RENDERMAN_VERSION_MINOR
-    VERSION_VAR
-        RENDERMAN_VERSION
-)
+if("${RENDERMAN_VERSION_MAJOR}" EQUAL "22")
+    find_package_handle_standard_args(Renderman
+        REQUIRED_VARS
+            RENDERMAN_INCLUDE_DIR
+            LOADPRMAN_LIBRARY
+            RENDERMAN_VERSION_MAJOR
+    )
+elseif("${RENDERMAN_VERSION_MAJOR}" EQUAL "23")
+    find_package_handle_standard_args(Renderman
+        REQUIRED_VARS
+            RENDERMAN_INCLUDE_DIR
+            PRMAN_LIBRARY
+            PXRCORE_LIBRARY
+            RENDERMAN_VERSION_MAJOR
+    )
+endif()
+

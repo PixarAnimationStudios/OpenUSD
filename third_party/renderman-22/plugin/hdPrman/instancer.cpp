@@ -419,17 +419,17 @@ HdPrmanInstancer::GetInstancePrimvars(
         }
 
         if (val.IsHolding<VtArray<float>>()) {
-            VtArray<float> v = val.UncheckedGet<VtArray<float>>();
+            const VtArray<float>& v = val.UncheckedGet<VtArray<float>>();
             attrs->SetFloat(name, v[instanceIndex]);
         } else if (val.IsHolding<VtArray<int>>()) {
-            VtArray<int> v = val.UncheckedGet<VtArray<int>>();
+            const VtArray<int>& v = val.UncheckedGet<VtArray<int>>();
             attrs->SetInteger(name, v[instanceIndex]);
         } else if (val.IsHolding<VtArray<GfVec2f>>()) {
-            VtArray<GfVec2f> v = val.UncheckedGet<VtArray<GfVec2f>>();
+            const VtArray<GfVec2f>& v = val.UncheckedGet<VtArray<GfVec2f>>();
             attrs->SetFloatArray(
                 name, reinterpret_cast<const float*>(v.cdata()), 2);
         } else if (val.IsHolding<VtArray<GfVec3f>>()) {
-            GfVec3f v =
+            const GfVec3f& v =
                 val.UncheckedGet<VtArray<GfVec3f>>()[instanceIndex];
             if (primvar.role == HdPrimvarRoleTokens->color) {
                 attrs->SetColor(name, RtColorRGB(v[0], v[1], v[2]));
@@ -441,18 +441,20 @@ HdPrmanInstancer::GetInstancePrimvars(
                 attrs->SetVector(name, RtVector3(v[0], v[1], v[2]));
             }
         } else if (val.IsHolding<VtArray<GfVec4f>>()) {
-            VtArray<GfVec4f> v = val.UncheckedGet<VtArray<GfVec4f>>();
+            const VtArray<GfVec4f>& v = val.UncheckedGet<VtArray<GfVec4f>>();
             attrs->SetFloatArray(
                 name, reinterpret_cast<const float*>(v.cdata()), 4);
         } else if (val.IsHolding<VtArray<GfMatrix4d>>()) {
-            VtArray<GfMatrix4d> v = val.UncheckedGet<VtArray<GfMatrix4d>>();
+            const VtArray<GfMatrix4d>& v =
+                val.UncheckedGet<VtArray<GfMatrix4d>>();
             attrs->SetMatrix(name,
                 HdPrman_GfMatrixToRtMatrix(v[instanceIndex]));
         } else if (val.IsHolding<VtArray<std::string>>()) {
-            VtArray<std::string> v = val.UncheckedGet<VtArray<std::string>>();
+            const VtArray<std::string>& v =
+                val.UncheckedGet<VtArray<std::string>>();
             attrs->SetString(name, RtUString(v[instanceIndex].c_str()));
         } else if (val.IsHolding<VtArray<TfToken>>()) {
-            VtArray<TfToken> v = val.UncheckedGet<VtArray<TfToken>>();
+            const VtArray<TfToken>& v = val.UncheckedGet<VtArray<TfToken>>();
             attrs->SetString(name, RtUString(v[instanceIndex].GetText()));
         }
     }

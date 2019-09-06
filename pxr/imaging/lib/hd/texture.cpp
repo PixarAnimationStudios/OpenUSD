@@ -104,6 +104,8 @@ HdTexture::Sync(HdSceneDelegate *sceneDelegate,
             _textureResource.reset();
         }
 
+        _RegisterTextureResource(&renderIndex, id, _textureResource);
+
         // The texture resource may have been cleared, so we need to release the
         // old one.
         //
@@ -143,6 +145,15 @@ HdTexture::_GetTextureResource( HdSceneDelegate *sceneDelegate,
                                 HdTextureResource::ID texID) const
 {
     return nullptr;
+}
+
+void
+HdTexture::_RegisterTextureResource(
+        HdRenderIndex *renderIndex,
+        const SdfPath &textureConnectionId,
+        const HdTextureResourceSharedPtr &textureResource)
+{
+    // default implementation does nothing
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -520,14 +520,24 @@ public:
     /// \name Creating new paths by modifying existing paths
     /// @{
 
-    /// Creates a path by stripping a single element off of this path.
+    /// Return the path that identifies this path's namespace parent.
     ///
-    /// For a relational attribute path, returns the relationship target
-    /// path.  For a path to a prim's property, returns the prim's path.
-    /// For a prim path, returns the prim's parent.  For a root prim
-    /// path, returns EmptyPath.  For a single element relative prim
-    /// path, returns ReflexiveRelativePath.  For ReflexiveRelativePath,
-    /// returns EmptyPath.
+    /// For a prim path (like '/foo/bar'), return the prim's parent's path
+    /// ('/foo').  For a prim property path (like '/foo/bar.property'), return
+    /// the prim's path ('/foo/bar').  For a target path (like
+    /// '/foo/bar.property[/target]') return the property path
+    /// ('/foo/bar.property').  For a relational attribute or mapper path (like
+    /// '/foo/bar.property[/target].relAttr') return the relationship target's
+    /// path ('/foo/bar.property[/target]').  For a prim variant selection path
+    /// (like '/foo/bar{var=sel}') return the prim path ('/foo/bar').  For a
+    /// root prim path (like '/rootPrim'), return AbsoluteRootPath() ('/').  For
+    /// a single element relative prim path (like 'relativePrim'), return
+    /// ReflexiveRelativePath() ('.').  For ReflexiveRelativePath(), return the
+    /// relative parent path ('..').
+    ///
+    /// Note that the parent path of a relative parent path ('..') is a relative
+    /// grandparent path ('../..').  Use caution writing loops that walk to
+    /// parent paths since relative paths have infinitely many ancestors.
     SDF_API SdfPath GetParentPath() const;
 
     /// Creates a path by stripping all relational attributes, targets,
@@ -898,6 +908,16 @@ private:
     // converts elements to a string for parsing (unfortunate)
     static std::string
     _ElementsToString(bool absolute, const std::vector<std::string> &elements);
+
+    SdfPath _ReplacePrimPrefix(SdfPath const &oldPrefix,
+                               SdfPath const &newPrefix) const;
+
+    SdfPath _ReplaceTargetPathPrefixes(SdfPath const &oldPrefix,
+                                       SdfPath const &newPrefix) const;
+
+    SdfPath _ReplacePropPrefix(SdfPath const &oldPrefix,
+                               SdfPath const &newPrefix,
+                               bool fixTargetPaths) const;
 
     // Helper to implement the uninlined portion of operator<.
     SDF_API static bool

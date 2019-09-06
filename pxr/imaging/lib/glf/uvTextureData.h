@@ -83,6 +83,8 @@ public:
     static GlfUVTextureDataRefPtr
     New(std::string const &filePath, Params const &params);
 
+    int NumDimensions() const override;
+
     const Params& GetParams() const { return _params; }
 
     // GlfBaseTextureData overrides
@@ -91,6 +93,9 @@ public:
 
     GLF_API
     virtual int ResizedHeight(int mipLevel = 0) const;
+
+    GLF_API
+    int ResizedDepth(int mipLevel = 0) const override;
 
     virtual GLenum GLInternalFormat() const {
         return _glInternalFormat;

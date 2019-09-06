@@ -31,7 +31,6 @@
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdx/debugCodes.h"
 
-#include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdSt/drawTarget.h"
 #include "pxr/imaging/hdSt/renderPassState.h"

@@ -32,6 +32,7 @@
 #include "pxr/imaging/hdx/colorCorrectionTask.h"
 #include "pxr/imaging/hdx/oitRenderTask.h"
 #include "pxr/imaging/hdx/oitResolveTask.h"
+#include "pxr/imaging/hdx/oitVolumeRenderTask.h"
 #include "pxr/imaging/hdx/pickTask.h"
 #include "pxr/imaging/hdx/pickFromRenderBufferTask.h"
 #include "pxr/imaging/hdx/renderTask.h"
@@ -42,6 +43,7 @@
 
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
+#include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
@@ -228,6 +230,8 @@ HdxTaskController::_CreateRenderGraph()
             HdxMaterialTagTokens->additive));
         _renderTaskIds.push_back(_CreateRenderTask(
             HdxMaterialTagTokens->translucent));
+        _renderTaskIds.push_back(_CreateRenderTask(
+            HdStMaterialTagTokens->volume));
         _CreateOitResolveTask();
         _CreateSelectionTask();
         _CreateColorCorrectionTask();
@@ -302,6 +306,8 @@ HdxTaskController::_CreateRenderTask(TfToken const& materialTag)
         GetRenderIndex()->InsertTask<HdxRenderTask>(&_delegate, taskId);
     } else if (materialTag == HdxMaterialTagTokens->translucent) {
         GetRenderIndex()->InsertTask<HdxOitRenderTask>(&_delegate, taskId);
+    } else if (materialTag == HdStMaterialTagTokens->volume) {
+        GetRenderIndex()->InsertTask<HdxOitVolumeRenderTask>(&_delegate, taskId);
     }
 
     // Create an initial set of render tags in case the user doesn't set any
@@ -343,7 +349,8 @@ HdxTaskController::_SetBlendStateForMaterialTag(TfToken const& materialTag,
         // Since we are using alpha blending, we disable screen door
         // transparency for this renderpass.
         renderParams->enableAlphaToCoverage = false;
-    } else if (materialTag == HdxMaterialTagTokens->translucent) {
+    } else if (materialTag == HdxMaterialTagTokens->translucent ||
+               materialTag == HdStMaterialTagTokens->volume) {
         // Order Independent Transparency blend state or its first render pass.
         renderParams->blendEnable = false;
         renderParams->enableAlphaToCoverage = false;

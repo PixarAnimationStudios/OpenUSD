@@ -63,7 +63,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((Surface, "surface"))           \
     ((Displacement, "displacement")) \
     ((Primvar, "primvar"))           \
-    ((Texture, "texture"))
+    ((Texture, "texture"))           \
+    ((Field, "field"))
 
 TF_DECLARE_PUBLIC_TOKENS(SdrNodeMetadata, SDR_API, SDR_NODE_METADATA_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(SdrNodeContext, SDR_API, SDR_NODE_CONTEXT_TOKENS);

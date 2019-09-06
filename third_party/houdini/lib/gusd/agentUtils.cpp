@@ -36,6 +36,7 @@
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdSkel/binding.h"
 #include "pxr/usd/usdSkel/skeleton.h"
+#include "pxr/usd/usdSkel/skeletonQuery.h"
 #include "pxr/usd/usdSkel/topology.h"
 
 #include <GA/GA_AIFIndexPair.h>
@@ -168,9 +169,23 @@ Gusd_GetChildren(const UsdSkelTopology& topology,
 
 
 GU_AgentRigPtr
-GusdCreateAgentRig(const char* name, const UsdSkelSkeleton& skel)
+GusdCreateAgentRig(const char* name, const UsdSkelSkeletonQuery& skelQuery)
 {
     TRACE_FUNCTION();
+
+    if (!skelQuery.IsValid()) {
+        GUSD_WARN().Msg("%s -- invalid skelDefinition.",
+                        skelQuery.GetSkeleton().GetPrim().GetPath().GetText());
+        return nullptr;
+    }
+
+    if(!skelQuery.HasBindPose()) {
+        GUSD_WARN().Msg("%s -- `bindTransformsAttrs` is invalid.",
+                        skelQuery.GetSkeleton().GetPrim().GetPath().GetText());                 
+        return nullptr;
+    }        
+   
+    const UsdSkelSkeleton& skel = skelQuery.GetSkeleton();
 
     if (!skel) {
         TF_CODING_ERROR("'skel' is invalid");
@@ -189,7 +204,7 @@ GusdCreateAgentRig(const char* name, const UsdSkelSkeleton& skel)
         return nullptr;
     }
 
-    UsdSkelTopology topology(joints);
+    const UsdSkelTopology topology(joints);
     std::string reason;
     if (!topology.Validate(&reason)) {
         GUSD_WARN().Msg("%s -- invalid topology: %s",
@@ -197,6 +212,7 @@ GusdCreateAgentRig(const char* name, const UsdSkelSkeleton& skel)
                         reason.c_str());
         return nullptr;
     }
+
     return GusdCreateAgentRig(name, topology, jointNames);
 }
 

@@ -272,19 +272,9 @@ SdrShaderNode::_ComputePages() const
 {
     NdrTokenVec pages;
 
-    for (const SdrPropertyMap::value_type& input : _shaderInputs) {
-        const TfToken page = TfToken(input.second->GetPage());
-
-        // Exclude duplicate pages
-        if (std::find(pages.begin(), pages.end(), page) != pages.end()) {
-            continue;
-        }
-
-        pages.emplace_back(std::move(page));
-    }
-
-    for (const SdrPropertyMap::value_type& output : _shaderOutputs) {
-        const TfToken page = TfToken(output.second->GetPage());
+    for (const NdrPropertyUniquePtr& property : _properties) {
+        auto sdrProperty = static_cast<SdrShaderPropertyPtr>(property.get());
+        const TfToken& page = sdrProperty->GetPage();
 
         // Exclude duplicate pages
         if (std::find(pages.begin(), pages.end(), page) != pages.end()) {

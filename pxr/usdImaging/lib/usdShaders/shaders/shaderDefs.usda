@@ -17,8 +17,16 @@ def Shader "UsdPreviewSurface" (
     uniform asset info:glslfx:sourceAsset = @./previewSurface.glslfx@
 
     # Outputs
-    token outputs:surface
-    token outputs:displacement
+    token outputs:surface (
+        sdrMetadata = {
+            string renderType = "terminal surface"
+        }
+    )
+    token outputs:displacement (
+        sdrMetadata = {
+            string renderType = "terminal displacement"
+        }
+    )
  
     # Inputs
     color3f inputs:diffuseColor = (0.18, 0.18, 0.18) (

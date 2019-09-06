@@ -44,6 +44,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 using ShaderMetadataHelpers::IsPropertyAnAssetIdentifier;
+using ShaderMetadataHelpers::IsPropertyATerminal;
 using ShaderMetadataHelpers::IsTruthy;
 using ShaderMetadataHelpers::OptionVecVal;
 
@@ -168,26 +169,22 @@ SdrOslParserPlugin::_getNodeProperties(
             continue;
         }
 
+        // Extract metadata
+        NdrTokenMap metadata = _getPropertyMetadata(param, discoveryResult);
+
         // Get type name, and determine the size of the array (if an array)
         TfToken typeName;
         size_t arraySize;
-        std::tie(typeName, arraySize) = _getTypeName(param);
+        std::tie(typeName, arraySize) = _getTypeName(param, metadata);
 
-        // Extract metadata
-        NdrTokenMap metadata = _getPropertyMetadata(param, discoveryResult);
         _injectParserMetadata(metadata, typeName);
 
         // Non-standard properties in the metadata are considered hints
         NdrTokenMap hints;
         for (const auto& meta : metadata) {
-            if ((meta.first == SdrPropertyMetadata->Connectable)       ||
-                (meta.first == SdrPropertyMetadata->Page)              ||
-                (meta.first == SdrPropertyMetadata->Help)              ||
-                (meta.first == SdrPropertyMetadata->Label)             ||
-                (meta.first == SdrPropertyMetadata->IsDynamicArray)    ||
-                (meta.first == SdrPropertyMetadata->Options)           ||
-                (meta.first == SdrPropertyMetadata->VstructMemberName) ||
-                (meta.first == SdrPropertyMetadata->VstructMemberOf)) {
+            if (std::find(SdrPropertyMetadata->allTokens.begin(),
+                          SdrPropertyMetadata->allTokens.end(),
+                          meta.first) != SdrPropertyMetadata->allTokens.end()){
                 continue;
             }
 
@@ -210,15 +207,6 @@ SdrOslParserPlugin::_getNodeProperties(
             options = OptionVecVal(metadata.at(SdrPropertyMetadata->Options));
         }
 
-        // Determine array-ness
-        bool isDynamicArray =
-            IsTruthy(SdrPropertyMetadata->IsDynamicArray, metadata);
-        bool isArray = (arraySize > 0) || isDynamicArray;
-
-        // Determine SdfAssetPath from metadata
-        bool isSdfAssetPath =
-            metadata.count(SdrPropertyMetadata->IsAssetIdentifier);
-
         properties.emplace_back(
             SdrShaderPropertyUniquePtr(
                 new SdrShaderProperty(
@@ -227,8 +215,8 @@ SdrOslParserPlugin::_getNodeProperties(
                     _getDefaultValue(
                         *param,
                         typeName,
-                        isArray,
-                        isSdfAssetPath),
+                        arraySize,
+                        metadata),
                     param->isoutput,
                     arraySize,
                     metadata,
@@ -325,11 +313,19 @@ SdrOslParserPlugin::_getParamAsString(const OslParameter& param) const
 }
 
 std::tuple<TfToken, size_t>
-SdrOslParserPlugin::_getTypeName(const OslParameter* param) const
+SdrOslParserPlugin::_getTypeName(
+    const OslParameter* param,
+    const NdrTokenMap& metadata) const
 {
     // Exit early if this param is known to be a struct
     if (param->isstruct) {
         return std::make_tuple(SdrPropertyTypes->Struct, /* array size = */ 0);
+    }
+
+    // Exit early if the param's metadata indicates the param is a terminal type
+    if (IsPropertyATerminal(metadata)) {
+        return std::make_tuple(
+            SdrPropertyTypes->Terminal, /* array size = */ 0);
     }
 
     // Otherwise, continue on to determine the type (and possibly array size)
@@ -348,31 +344,18 @@ SdrOslParserPlugin::_getTypeName(const OslParameter* param) const
     return std::make_tuple(TfToken(typeName), arraySize);
 }
 
-template <class StringOrAsset>
-static VtValue
-_GetStringOrAssetArray(
-    const SdrOslParserPlugin::OslParameter& param,
-    VtArray<StringOrAsset>* array)
-{
-    array->reserve(param.sdefault.size());
-
-    // Strings are stored as `ustring`s from OIIO; these need to be converted
-    // explicitly into `std::string`s (otherwise the `VtArray<StringOrAsset>`
-    // will contain garbage).
-    for (const OIIO::ustring& ustr : param.sdefault) {
-        array->push_back(StringOrAsset(ustr.string()));
-    }
-
-    return VtValue::Take(*array);
-}
-
 VtValue
 SdrOslParserPlugin::_getDefaultValue(
     const SdrOslParserPlugin::OslParameter& param,
     const std::string& oslType,
-    bool isArray,
-    bool isSdfAssetPath) const
+    size_t arraySize,
+    const NdrTokenMap& metadata) const
 {
+    // Determine array-ness
+    bool isDynamicArray =
+        IsTruthy(SdrPropertyMetadata->IsDynamicArray, metadata);
+    bool isArray = (arraySize > 0) || isDynamicArray;
+
     // INT and INT ARRAY
     // -------------------------------------------------------------------------
     if (oslType == SdrPropertyTypes->Int) {
@@ -386,27 +369,26 @@ SdrOslParserPlugin::_getDefaultValue(
         return VtValue::Take(array);
     }
 
-    // STRING and STRING ARRAY (ASSET and ASSET ARRAY)
+    // STRING and STRING ARRAY
     // -------------------------------------------------------------------------
     else if (oslType == SdrPropertyTypes->String) {
 
         // Handle non-array
         if (!isArray && param.sdefault.size() == 1) {
-            if (isSdfAssetPath) {
-                return VtValue(SdfAssetPath(param.sdefault[0].string()));
-            }
             return VtValue(param.sdefault[0].string());
         }
 
-        // Handle array of asset paths
-        if (isSdfAssetPath) {
-            VtArray<SdfAssetPath> array;
-            return _GetStringOrAssetArray(param, &array);
-        }
-
-        // Handle string array
+        // Handle array
         VtStringArray array;
-        return _GetStringOrAssetArray(param, &array);
+        array.reserve(param.sdefault.size());
+
+        // Strings are stored as `ustring`s from OIIO; these need to be
+        // converted explicitly into `std::string`s (otherwise the VtStringArray
+        // will contain garbage).
+        for (const OIIO::ustring& ustr : param.sdefault) {
+            array.push_back(ustr.string());
+        }
+        return VtValue::Take(array);
     }
 
     // FLOAT and FLOAT ARRAY
@@ -414,28 +396,6 @@ SdrOslParserPlugin::_getDefaultValue(
     else if (oslType == SdrPropertyTypes->Float) {
         if (!isArray && param.fdefault.size() == 1) {
             return VtValue(param.fdefault[0]);
-        }
-
-        // We return a fixed-size array for arrays with size 2, 3, or 4 because
-        // SdrShaderProperty::GetTypeAsSdfType returns a specific size type
-        // (Float2, Float3, Float4).  If in the future we want to return a
-        // VtFloatArray instead, we need to change the logic in
-        // SdrShaderProperty::GetTypeAsSdfType
-        else if (isArray &&  param.fdefault.size() == 2) {
-            return VtValue(
-                GfVec2f(param.fdefault[0],
-                        param.fdefault[1]));
-        } else if (isArray && param.fdefault.size() == 3) {
-            return VtValue(
-                GfVec3f(param.fdefault[0],
-                        param.fdefault[1],
-                        param.fdefault[2]));
-        } else if (isArray && param.fdefault.size() == 4) {
-            return VtValue(
-                GfVec4f(param.fdefault[0],
-                        param.fdefault[1],
-                        param.fdefault[2],
-                        param.fdefault[3]));
         }
 
         VtFloatArray array;
@@ -484,6 +444,18 @@ SdrOslParserPlugin::_getDefaultValue(
 
             return VtValue::Take(mat);
         }
+    }
+
+    // STRUCT, TERMINAL, VSTRUCT
+    // -------------------------------------------------------------------------
+    else if (oslType == SdrPropertyTypes->Struct ||
+             oslType == SdrPropertyTypes->Terminal ||
+             oslType == SdrPropertyTypes->Vstruct) {
+        // We return an empty VtValue for Struct, Terminal, and Vstruct
+        // properties because their value may rely on being computed within the
+        // renderer, or we might not have a reasonable way to represent their
+        // value within Sdr
+        return VtValue();
     }
 
     // Didn't find a supported type

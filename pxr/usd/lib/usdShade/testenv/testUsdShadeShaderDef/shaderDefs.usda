@@ -31,4 +31,30 @@ def Shader "TestShaderPropertiesNodeUSD" (
     float4 inputs:inputFloat4 = ( 1.0, 2.0, 3.0, 4.0 )
     asset inputs:inputAsset = @filename@
     asset[] inputs:inputAssetArray = [@test@, @files@ ]
+    color3f inputs:inputColorRoleNone = (1.0, 2.0, 3.0) (
+        sdrMetadata = {
+            string role = "none"
+        }
+    )
+    point3f inputs:inputPointRoleNone = (1.0, 2.0, 3.0) (
+        sdrMetadata = {
+            string role = "none"
+        }
+    )
+    normal3f inputs:inputNormalRoleNone = (1.0, 2.0, 3.0) (
+        sdrMetadata = {
+            string role = "none"
+        }
+    )
+    vector3f inputs:inputVectorRoleNone = (1.0, 2.0, 3.0) (
+        sdrMetadata = {
+            string role = "none"
+        }
+    )
+
+    token outputs:outputSurface (
+        sdrMetadata = {
+            string renderType = "terminal surface"
+        }
+    )
 }

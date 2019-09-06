@@ -101,6 +101,9 @@ HdStPopulateConstantPrimvars(
         }
     }
     if (HdChangeTracker::IsExtentDirty(*dirtyBits, id)) {
+        // Note: If the scene description doesn't provide the extents, we use
+        // the default constructed GfRange3d which is [FLT_MAX, -FLT_MAX],
+        // which disables frustum culling for the prim.
         sharedData->bounds.SetRange(prim->GetExtent(delegate));
 
         GfVec3d const & localMin = drawItem->GetBounds().GetBox().GetMin();
