@@ -51,7 +51,7 @@ Dependencies
 | C compiler                                                        | GCC 4.8, Clang 3.5, MSVC 14.0(VS 2015), MSVC 14.1(VS 2017) |   |
 | [CMake](https://cmake.org/documentation/)                         | 2.8.8 (Linux), 3.12 (macOS/Windows)    |   |
 | [Python](https://python.org)                                      | 2.7.5+, 3.5+                           | x |
-| [Boost](https://boost.org)                                        | 1.55 (Linux), 1.61.0 (macOS/Windows VS 2015), 1.65.1 (Windows VS 2017)   |   |
+| [Boost](https://boost.org)                                        | 1.68                                   |   |
 | [Intel TBB](https://www.threadingbuildingblocks.org/)             | 4.4 Update 6                           |   |
 
 Additional dependencies are required for the following components. These components
