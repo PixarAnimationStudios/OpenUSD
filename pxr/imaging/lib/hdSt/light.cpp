@@ -125,9 +125,8 @@ HdStLight::_PrepareDomeLight(SdfPath const &id,
     GfVec3d hdp = transform.ExtractTranslation();
     GfVec4f p = GfVec4f(hdp[0], hdp[1], hdp[2], 1.0f);
 
-    // get/load the texture resource
-    uint32_t textureId = 0; // environment map
-    uint32_t samplerId = 0;
+    // get/load the environment map texture resource
+    uint32_t textureId = 0;
     VtValue textureResourceValue = sceneDelegate->GetLightParamValue(id, 
                                             HdLightTokens->textureResource);
         
@@ -142,7 +141,6 @@ HdStLight::_PrepareDomeLight(SdfPath const &id,
             // Use the texture resource (environment map) to pre-compute 
             // the necessary maps (irradiance, pre-filtered, BRDF LUT)
             textureId = uint32_t(_textureResource->GetTexelsTextureId());
-            samplerId = uint32_t(_textureResource->GetTexelsSamplerId());
 
             // Schedule texture computations
             _SetupComputations(textureId, 
@@ -157,7 +155,6 @@ HdStLight::_PrepareDomeLight(SdfPath const &id,
     l.SetDiffuse(c);
     l.SetHasShadow(false);
     l.SetIsDomeLight(true);
-    l.SetSamplerId(samplerId);
     l.SetIrradianceId(_irradianceTexture);
     l.SetPrefilterId(_prefilterTexture);
     l.SetBrdfId(_brdfTexture);

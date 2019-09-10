@@ -151,11 +151,6 @@ public:
     void SetBrdfId(uint32_t const & brdfId);
 
     GLF_API
-    uint32_t const & GetSamplerId() const;
-    GLF_API
-    void SetSamplerId(uint32_t const & samplerId);
-
-    GLF_API
     bool operator ==(GlfSimpleLight const & other) const;
     GLF_API
     bool operator !=(GlfSimpleLight const & other) const;
@@ -186,7 +181,6 @@ private:
     // domeLight specific parameters 
     bool _isDomeLight;
     // handles for the resource bindings from HdXSimpleLightingShader
-    uint32_t _samplerId;
     uint32_t _irradianceId; // pre-computed irradiance map
     uint32_t _prefilterId;  // pre-computed preFiltered map
     uint32_t _brdfId;       // pre-computed BRDF look up texture
