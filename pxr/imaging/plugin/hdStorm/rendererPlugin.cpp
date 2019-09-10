@@ -25,14 +25,14 @@
 #include "pxr/imaging/hdStorm/rendererPlugin.h"
 
 #include "pxr/imaging/hdSt/renderDelegate.h"
-#include "pxr/imaging/hdx/rendererPluginRegistry.h"
+#include "pxr/imaging/hd/rendererPluginRegistry.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    HdxRendererPluginRegistry::Define<HdStormRendererPlugin>();
+    HdRendererPluginRegistry::Define<HdStormRendererPlugin>();
 }
 
 HdRenderDelegate *

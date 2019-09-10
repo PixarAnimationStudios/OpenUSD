@@ -24,7 +24,7 @@
 #include "hdxPrman/rendererPlugin.h"
 #include "hdxPrman/context.h"
 #include "hdxPrman/renderDelegate.h"
-#include "pxr/imaging/hdx/rendererPluginRegistry.h"
+#include "pxr/imaging/hd/rendererPluginRegistry.h"
 
 #include "pxr/base/tf/getenv.h"
 
@@ -32,7 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    HdxRendererPluginRegistry::Define<HdxPrmanRendererPlugin>();
+    HdRendererPluginRegistry::Define<HdxPrmanRendererPlugin>();
 }
 
 HdRenderDelegate*

@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDX_RENDERER_PLUGIN_H
-#define HDX_RENDERER_PLUGIN_H
+#ifndef HD_RENDERER_PLUGIN_H
+#define HD_RENDERER_PLUGIN_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hdx/api.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hf/pluginBase.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 
@@ -45,7 +45,7 @@ class HdRenderIndex;
 /// The class is used to factory objects that provide delegate support
 /// to other parts of the Hydra Ecosystem.
 ///
-class HdxRendererPlugin : public HfPluginBase {
+class HdRendererPlugin : public HfPluginBase {
 public:
 
     ///
@@ -59,7 +59,7 @@ public:
     /// factory prims and communicate with a renderer.  Pass in initial
     /// settings...
     ///
-    HDX_API
+    HD_API
     virtual HdRenderDelegate *CreateRenderDelegate(
         HdRenderSettingsMap const& settingsMap);
 
@@ -78,19 +78,19 @@ public:
     virtual bool IsSupported() const = 0;
 
 protected:
-    HdxRendererPlugin() = default;
-    HDX_API
-    virtual ~HdxRendererPlugin();
+    HdRendererPlugin() = default;
+    HD_API
+    virtual ~HdRendererPlugin();
 
 
 private:
     // This class doesn't require copy support.
-    HdxRendererPlugin(const HdxRendererPlugin &)             = delete;
-    HdxRendererPlugin &operator =(const HdxRendererPlugin &) = delete;
+    HdRendererPlugin(const HdRendererPlugin &)             = delete;
+    HdRendererPlugin &operator =(const HdRendererPlugin &) = delete;
 
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // HDX_RENDERER_PLUGIN_H
+#endif  // HD_RENDERER_PLUGIN_H

@@ -53,8 +53,6 @@ pxr_library(hdx
         pickFromRenderBufferTask
         presentTask
         progressiveTask
-        rendererPlugin
-        rendererPluginRegistry
         renderTask
         renderSetupTask
         selectionTask

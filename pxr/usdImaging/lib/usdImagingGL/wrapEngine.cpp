@@ -31,8 +31,6 @@
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
 
-#include "pxr/imaging/hdx/rendererPluginRegistry.h"
-
 #include "pxr/usd/usd/prim.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyEnum.h"

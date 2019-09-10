@@ -21,30 +21,30 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDX_RENDER_PLUGIN_REGISTRY_H
-#define HDX_RENDER_PLUGIN_REGISTRY_H
+#ifndef HD_RENDER_PLUGIN_REGISTRY_H
+#define HD_RENDER_PLUGIN_REGISTRY_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hdx/api.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/imaging/hf/pluginRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class HdxRendererPlugin;
+class HdRendererPlugin;
 
-class HdxRendererPluginRegistry final  : public HfPluginRegistry
+class HdRendererPluginRegistry final  : public HfPluginRegistry
 {
 public:
     ///
-    /// Returns the singleton registry for \c HdxRendererPlugin
+    /// Returns the singleton registry for \c HdRendererPlugin
     ///
-    HDX_API
-    static HdxRendererPluginRegistry &GetInstance();
+    HD_API
+    static HdRendererPluginRegistry &GetInstance();
 
     ///
-    /// Entry point for defining an HdxRendererPlugin plugin.
+    /// Entry point for defining an HdRendererPlugin plugin.
     ///
     template<typename T, typename... Bases>
     static void Define();
@@ -52,7 +52,7 @@ public:
     ///
     /// Returns the id of plugin to use as the default
     ///
-    HDX_API
+    HD_API
     TfToken GetDefaultPluginId();
 
     ///
@@ -60,32 +60,32 @@ public:
     /// if not found.  The reference count on the returned
     /// delegate is incremented.
     ///
-    HDX_API
-    HdxRendererPlugin *GetRendererPlugin(const TfToken &pluginId);
+    HD_API
+    HdRendererPlugin *GetRendererPlugin(const TfToken &pluginId);
 
 private:
     // Friend required by TfSingleton to access constructor (as it is private).
-    friend class TfSingleton<HdxRendererPluginRegistry>;
+    friend class TfSingleton<HdRendererPluginRegistry>;
 
     // Singleton gets private constructed
-    HdxRendererPluginRegistry();
-    virtual ~HdxRendererPluginRegistry();
+    HdRendererPluginRegistry();
+    virtual ~HdRendererPluginRegistry();
 
     //
     /// This class is not intended to be copied.
     ///
-    HdxRendererPluginRegistry(const HdxRendererPluginRegistry &)            = delete;
-    HdxRendererPluginRegistry &operator=(const HdxRendererPluginRegistry &) = delete;
+    HdRendererPluginRegistry(const HdRendererPluginRegistry &)            = delete;
+    HdRendererPluginRegistry &operator=(const HdRendererPluginRegistry &) = delete;
 };
 
 
 template<typename T, typename... Bases>
-void HdxRendererPluginRegistry::Define()
+void HdRendererPluginRegistry::Define()
 {
-    HfPluginRegistry::Define<T, HdxRendererPlugin, Bases...>();
+    HfPluginRegistry::Define<T, HdRendererPlugin, Bases...>();
 }
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDX_RENDER_PLUGIN_REGISTRY_H
+#endif // HD_RENDER_PLUGIN_REGISTRY_H

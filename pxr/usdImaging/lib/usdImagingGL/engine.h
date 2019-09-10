@@ -65,7 +65,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdPrim;
 class HdRenderIndex;
-class HdxRendererPlugin;
+class HdRendererPlugin;
 class HdxTaskController;
 class UsdImagingDelegate;
 class UsdImagingGLLegacyEngine;
@@ -508,7 +508,7 @@ protected:
     SdfPath const _delegateID;
     UsdImagingDelegate *_delegate;
 
-    HdxRendererPlugin *_rendererPlugin;
+    HdRendererPlugin *_rendererPlugin;
     TfToken _rendererId;
     HdxTaskController *_taskController;
 

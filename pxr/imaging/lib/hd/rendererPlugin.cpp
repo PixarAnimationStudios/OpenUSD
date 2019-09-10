@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hdx/rendererPlugin.h"
+#include "pxr/imaging/hd/rendererPlugin.h"
 
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
@@ -30,11 +30,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<HdxRendererPlugin>();
+    TfType::Define<HdRendererPlugin>();
 }
 
 HdRenderDelegate*
-HdxRendererPlugin::CreateRenderDelegate(HdRenderSettingsMap const& settingsMap)
+HdRendererPlugin::CreateRenderDelegate(HdRenderSettingsMap const& settingsMap)
 {
     // The settings map is currently an opt-in API, so if there's no
     // derived implementation, fall back to the settings-less factory.
@@ -52,7 +52,7 @@ HdxRendererPlugin::CreateRenderDelegate(HdRenderSettingsMap const& settingsMap)
 // As destruction of the class is not on the performance path,
 // the body of the deleter is provided here, so a vtable is created
 // in this compilation unit.
-HdxRendererPlugin::~HdxRendererPlugin() = default;
+HdRendererPlugin::~HdRendererPlugin() = default;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

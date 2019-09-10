@@ -36,8 +36,8 @@
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/glf/info.h"
 
-#include "pxr/imaging/hdx/rendererPlugin.h"
-#include "pxr/imaging/hdx/rendererPluginRegistry.h"
+#include "pxr/imaging/hd/rendererPlugin.h"
+#include "pxr/imaging/hd/rendererPluginRegistry.h"
 #include "pxr/imaging/hdx/taskController.h"
 #include "pxr/imaging/hdx/tokens.h"
 
@@ -99,7 +99,7 @@ _IsHydraEnabled()
     
     // Check to see if we have a default plugin for the renderer
     TfToken defaultPlugin = 
-        HdxRendererPluginRegistry::GetInstance().GetDefaultPluginId();
+        HdRendererPluginRegistry::GetInstance().GetDefaultPluginId();
 
     return !defaultPlugin.IsEmpty();
 }
@@ -709,7 +709,7 @@ UsdImagingGLEngine::GetRendererPlugins()
     }
 
     HfPluginDescVector pluginDescriptors;
-    HdxRendererPluginRegistry::GetInstance().GetPluginDescs(&pluginDescriptors);
+    HdRendererPluginRegistry::GetInstance().GetPluginDescs(&pluginDescriptors);
 
     TfTokenVector plugins;
     for(size_t i = 0; i < pluginDescriptors.size(); ++i) {
@@ -730,7 +730,7 @@ UsdImagingGLEngine::GetRendererDisplayName(TfToken const &id)
     }
 
     HfPluginDesc pluginDescriptor;
-    if (!TF_VERIFY(HdxRendererPluginRegistry::GetInstance().
+    if (!TF_VERIFY(HdRendererPluginRegistry::GetInstance().
                    GetPluginDesc(id, &pluginDescriptor))) {
         return std::string();
     }
@@ -756,15 +756,15 @@ UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
         return false;
     }
 
-    HdxRendererPlugin *plugin = nullptr;
+    HdRendererPlugin *plugin = nullptr;
     TfToken actualId = id;
 
     // Special case: TfToken() selects the first plugin in the list.
     if (actualId.IsEmpty()) {
-        actualId = HdxRendererPluginRegistry::GetInstance().
+        actualId = HdRendererPluginRegistry::GetInstance().
             GetDefaultPluginId();
     }
-    plugin = HdxRendererPluginRegistry::GetInstance().
+    plugin = HdRendererPluginRegistry::GetInstance().
         GetRendererPlugin(actualId);
 
     if (plugin == nullptr) {
@@ -772,12 +772,12 @@ UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
         return false;
     } else if (plugin == _rendererPlugin) {
         // It's a no-op to load the same plugin twice.
-        HdxRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
+        HdRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
         return true;
     } else if (!plugin->IsSupported()) {
         // Don't do anything if the plugin isn't supported on the running
         // system, just return that we're not able to set it.
-        HdxRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
+        HdRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
         return false;
     }
 
@@ -1365,7 +1365,7 @@ UsdImagingGLEngine::_DeleteHydraResources()
         if (renderDelegate != nullptr) {
             _rendererPlugin->DeleteRenderDelegate(renderDelegate);
         }
-        HdxRendererPluginRegistry::GetInstance().ReleasePlugin(_rendererPlugin);
+        HdRendererPluginRegistry::GetInstance().ReleasePlugin(_rendererPlugin);
         _rendererPlugin = nullptr;
         _rendererId = TfToken();
     }
@@ -1383,7 +1383,7 @@ UsdImagingGLEngine::_GetDefaultRendererPluginId()
     }
 
     HfPluginDescVector pluginDescs;
-    HdxRendererPluginRegistry::GetInstance().GetPluginDescs(&pluginDescs);
+    HdRendererPluginRegistry::GetInstance().GetPluginDescs(&pluginDescs);
 
     // Look for the one with the matching display name
     for (size_t i = 0; i < pluginDescs.size(); ++i) {

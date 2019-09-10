@@ -5,7 +5,7 @@
                 "Types": {
                     "HdxPrmanRendererPlugin": {
                         "bases": [
-                            "HdxRendererPlugin"
+                            "HdRendererPlugin"
                         ],
                         "displayName": "Prman",
                         "priority": 99

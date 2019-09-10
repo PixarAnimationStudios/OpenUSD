@@ -25,7 +25,6 @@ pxr_plugin(hdStorm
         work
         hd
         hdSt
-        hdx
         ${OPENSUBDIV_LIBRARIES}
         ${TBB_tbb_LIBRARY}
 

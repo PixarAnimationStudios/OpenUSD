@@ -21,35 +21,35 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hdx/rendererPluginRegistry.h"
-#include "pxr/imaging/hdx/rendererPlugin.h"
+#include "pxr/imaging/hd/rendererPluginRegistry.h"
+#include "pxr/imaging/hd/rendererPlugin.h"
 
 #include "pxr/base/tf/instantiateSingleton.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_INSTANTIATE_SINGLETON( HdxRendererPluginRegistry );
+TF_INSTANTIATE_SINGLETON( HdRendererPluginRegistry );
 
-HdxRendererPluginRegistry &
-HdxRendererPluginRegistry::GetInstance()
+HdRendererPluginRegistry &
+HdRendererPluginRegistry::GetInstance()
 {
-    return TfSingleton< HdxRendererPluginRegistry >::GetInstance();
+    return TfSingleton< HdRendererPluginRegistry >::GetInstance();
 }
 
 
-HdxRendererPluginRegistry::HdxRendererPluginRegistry()
- : HfPluginRegistry(TfType::Find<HdxRendererPlugin>())
+HdRendererPluginRegistry::HdRendererPluginRegistry()
+ : HfPluginRegistry(TfType::Find<HdRendererPlugin>())
 {
 }
 
 
-HdxRendererPluginRegistry::~HdxRendererPluginRegistry()
+HdRendererPluginRegistry::~HdRendererPluginRegistry()
 {
 }
 
 TfToken 
-HdxRendererPluginRegistry::GetDefaultPluginId()
+HdRendererPluginRegistry::GetDefaultPluginId()
 {
     // Get all the available plugins to see if any of them is supported on this
     // platform and use the first one as the default.
@@ -61,27 +61,27 @@ HdxRendererPluginRegistry::GetDefaultPluginId()
     GetPluginDescs(&pluginDescriptors);
     for (const HfPluginDesc &desc : pluginDescriptors) {
         
-        HdxRendererPlugin *plugin = HdxRendererPluginRegistry::GetInstance().
+        HdRendererPlugin *plugin = HdRendererPluginRegistry::GetInstance().
             GetRendererPlugin(desc.id);
 
         // Important to bail out as soon as we found a plugin that works to
         // avoid loading plugins unnecessary as that can be arbitrarily
         // expensive.
         if (plugin && plugin->IsSupported()) {
-            HdxRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
+            HdRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
             return desc.id;
         }
 
-        HdxRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
+        HdRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
     }
 
     return TfToken();
 }
 
-HdxRendererPlugin *
-HdxRendererPluginRegistry::GetRendererPlugin(const TfToken &pluginId)
+HdRendererPlugin *
+HdRendererPluginRegistry::GetRendererPlugin(const TfToken &pluginId)
 {
-    return static_cast<HdxRendererPlugin *>(GetPlugin(pluginId));
+    return static_cast<HdRendererPlugin *>(GetPlugin(pluginId));
 }
 
 

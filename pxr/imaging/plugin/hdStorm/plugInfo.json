@@ -5,7 +5,7 @@
                 "Types": {
                     "HdStormRendererPlugin": {
                         "bases": [
-                            "HdxRendererPlugin"
+                            "HdRendererPlugin"
                         ],
                         "displayName": "GL",
                         "priority": 0
