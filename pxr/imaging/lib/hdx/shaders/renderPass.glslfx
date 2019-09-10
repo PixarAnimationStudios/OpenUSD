@@ -88,6 +88,10 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
                 hdxOitDepthBuffer[writeIndex] = Peye.z / Peye.w;
                 hdxOitIndexBuffer[writeIndex] = prevIndex;
             }
+        } else {
+            // We may overrun the counter buffer integer and wrap back to 0 if
+            // we have a lot of OIT samples.
+            atomicAdd(hdxOitCounterBuffer[0], -1);
         }
     }
 #endif
