@@ -506,6 +506,12 @@ _MapHdNodesToRileyNodes(
                 // pass data between shaders, not as a way to pass
                 // in parameters.
                 ok = true;
+            } else if (param.second.IsHolding<GfVec2f>()) {
+                GfVec2f v = param.second.UncheckedGet<GfVec2f>();
+                if (propType == SdrPropertyTypes->Float) {
+                    params->SetFloatArray(name, v.data(), 2);
+                    ok = true;
+                } 
             } else if (param.second.IsHolding<GfVec3f>()) {
                 GfVec3f v = param.second.UncheckedGet<GfVec3f>();
                 if (propType == SdrPropertyTypes->Color) {
@@ -521,6 +527,12 @@ _MapHdNodesToRileyNodes(
                     params->SetNormal(name, RtNormal3(v[0], v[1], v[2]));
                     ok = true;
                 }
+            } else if (param.second.IsHolding<GfVec4f>()) {
+                GfVec4f v = param.second.UncheckedGet<GfVec4f>();
+                if (propType == SdrPropertyTypes->Float) {
+                    params->SetFloatArray(name, v.data(), 4);
+                    ok = true;
+                } 
             } else if (param.second.IsHolding<VtArray<GfVec3f>>()) {
                 const VtArray<GfVec3f>& v =
                     param.second.UncheckedGet<VtArray<GfVec3f>>();
