@@ -54,6 +54,9 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
         self.imageable = False
         self.active = False
 
+        # True if this item is an ancestor of a selected item.
+        self.ancestorOfSelected = False
+
         # If we know we'll have children show a norgie, otherwise don't.
         if primHasChildren:
             self.setChildIndicatorPolicy(

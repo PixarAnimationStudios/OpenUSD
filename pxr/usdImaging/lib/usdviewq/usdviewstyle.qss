@@ -233,20 +233,20 @@ QTreeView::item, QTableView::item {
 }
 
 /* Selected items highlighted in orange */
-QTreeView::item:selected,
+.QTreeWidget::item:selected,
 QTreeView::branch:selected,
 QTableView::item:selected {
     background: rgb(189, 155, 84);
 }
 
 /* hover items a bit lighter */
-QTreeView::item:hover:!pressed:!selected,
+.QTreeWidget::item:hover:!pressed:!selected,
 QTreeView::branch:hover:!pressed:!selected,
 QTableView::item:hover:!pressed:!selected {
     background: rgb(70, 70, 70);
 }
 
-QTreeView::item:hover:!pressed:selected,
+.QTreeWidget::item:hover:!pressed:selected,
 QTreeView::branch:hover:!pressed:selected,
 QTableView::item:hover:!pressed:selected {
 /*    background: rgb(132, 109, 59); */

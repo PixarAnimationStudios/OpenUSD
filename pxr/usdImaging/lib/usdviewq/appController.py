@@ -67,7 +67,7 @@ from common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts,
                     PropTreeWidgetTypeIsRel, PrimNotFoundException,
                     GetRootLayerStackInfo, HasSessionVis, GetEnclosingModelPrim,
                     GetPrimsLoadability, ClearColors,
-                    HighlightColors)
+                    HighlightColors, KeyboardShortcuts)
 
 import settings2
 from settings2 import StateSource
@@ -694,7 +694,7 @@ class AppController(QtCore.QObject):
                 QtCore.Qt.ScrollBarAlwaysOn)
 
             self._ui.attributeValueEditor.setAppController(self)
-            self._ui.primView.InitDrawModeDelegate(self)
+            self._ui.primView.InitControllers(self)
 
             self._ui.currentPathWidget.editingFinished.connect(
                 self._currentPathChanged)
@@ -788,8 +788,6 @@ class AppController(QtCore.QObject):
             self._ui.actionReopen_Stage.triggered.connect(self._reopenStage)
 
             self._ui.actionReload_All_Layers.triggered.connect(self._reloadStage)
-
-            self._ui.actionFrame_Selection.triggered.connect(self._frameSelection)
 
             self._ui.actionToggle_Framed_View.triggered.connect(self._toggleFramedView)
 
@@ -1643,22 +1641,9 @@ class AppController(QtCore.QObject):
                 # the times being similar (esp when they are large)
                 if not expandedPrims:
                     self._expandToDepth(startingDepth, suppressTiming=True)
-                # to maintain the primview, for each prim that has been 
-                # expanded, first check that it exists. then if its item has not 
-                # yet been populated,  use _getItemAtPath to populate its "chain" 
-                # of parents, so that the prim's item can be expanded. if it
-                # does already exist in the _primToItemMap, expand the item.
-                else:
-                    for prim in expandedPrims:
-                        if prim:
-                            item = self._primToItemMap.get(prim)
-                            if not item:
-                                primPath = prim.GetPrimPath()
-                                item = self._getItemAtPath(primPath)
-                            item.setExpanded(True)
 
                 if restoreSelection:
-                    self._refreshPrimViewSelection()
+                    self._refreshPrimViewSelection(expandedPrims)
                 self._ui.primView.setUpdatesEnabled(True)
             self._refreshCameraListAndMenu(preserveCurrCamera = True)
         if self._printTiming:
@@ -1970,6 +1955,7 @@ class AppController(QtCore.QObject):
                     self._dataModel.selection.addPrim(nextResult.prim)
                 self._primSearchResults.append(nextResult)
                 self._lastPrimSearched = self._dataModel.selection.getFocusPrim()
+                self._ui.primView.setCurrentItem(nextResult)
             # The path is effectively pruned if we couldn't map the
             # path to an item
         else:
@@ -3186,16 +3172,41 @@ class AppController(QtCore.QObject):
 
             self._dataModel.selection.clearComputedProps()
 
-    def _refreshPrimViewSelection(self):
+    # A function for maintaining the primview. For each prim in prims, 
+    # first check that it exists. Then if its item has not 
+    # yet been populated,  use _getItemAtPath to populate its "chain" 
+    # of parents, so that the prim's item can be accessed. If it
+    # does already exist in the _primToItemMap, either expand or
+    # unexpand the item.
+    def _expandPrims(self, prims, expand=True):
+        if prims:
+            for prim in prims:
+                if prim:
+                    item = self._primToItemMap.get(prim)
+                    if not item:
+                        primPath = prim.GetPrimPath()
+                        item = self._getItemAtPath(primPath)
+                    item.setExpanded(expand)
+
+    def _refreshPrimViewSelection(self, expandedPrims):
         """Refresh the selected prim view items to match the selection data
         model.
         """
         self._ui.primView.clearSelection()
         selectedItems = [
-            self._getItemAtPath(prim.GetPath(), ensureExpanded=True)
+            self._getItemAtPath(prim.GetPath())
             for prim in self._dataModel.selection.getPrims()]
+
         if len(selectedItems) > 0:
             self._ui.primView.setCurrentItem(selectedItems[0])
+
+        # unexpand items that were expanded through setting the current item
+        currExpandedPrims = self._getExpandedPrimViewPrims()
+        self._expandPrims(currExpandedPrims, expand=False)
+
+        # expand previously expanded items in primview
+        self._expandPrims(expandedPrims)
+
         self._ui.primView.updateSelection(selectedItems, [])
 
     def _updatePrimViewSelection(self, added, removed):
@@ -3203,7 +3214,7 @@ class AppController(QtCore.QObject):
         removed prim paths from the selectionDataModel.
         """
         addedItems = [ 
-            self._getItemAtPath(path, ensureExpanded=True) 
+            self._getItemAtPath(path) 
             for path in added ]
         removedItems = [ self._getItemAtPath(path) for path in removed ]
         self._ui.primView.updateSelection(addedItems, removedItems)
@@ -4666,6 +4677,8 @@ class AppController(QtCore.QObject):
         elif key == QtCore.Qt.Key_Left:
             self._retreatFrame()
             return True
+        elif key == KeyboardShortcuts.FramingKey:
+            self._frameSelection()
         return False
 
     def _viewSettingChanged(self):

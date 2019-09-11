@@ -50,8 +50,7 @@ def _takeShot(appController, fileName):
 # camera position, and because it will trigger a redraw after stage
 # mutations, which do not (yet).
 def _emitFrameAction(appController):
-    appController._ui.actionFrame_Selection.triggered.emit() 
-    QtWidgets.QApplication.processEvents()
+    appController._frameSelection()
 
 def _emitReload_All_LayersAction(appController):
     appController._ui.actionReload_All_Layers.triggered.emit() 

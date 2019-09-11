@@ -53,6 +53,13 @@ class UIPrimTypeColors(ConstantGroup):
     INSTANCE = UIBaseColors.LIGHT_SKY_BLUE
     MASTER = QtGui.QBrush(QtGui.QColor(118, 136, 217))
 
+class UIPrimTreeColors(ConstantGroup):
+    SELECTED = QtGui.QBrush(QtGui.QColor(189, 155, 84))
+    SELECTED_HOVER = QtGui.QBrush(QtGui.QColor(227, 186, 101))
+    ANCESTOR_OF_SELECTED = QtGui.QBrush(QtGui.QColor(189, 155, 84, 50))
+    ANCESTOR_OF_SELECTED_HOVER = QtGui.QBrush(QtGui.QColor(189, 155, 84, 100))
+    UNSELECTED_HOVER = QtGui.QBrush(QtGui.QColor(70, 70, 70))
+
 class UIPropertyValueSourceColors(ConstantGroup):
     FALLBACK = UIBaseColors.DARK_YELLOW
     TIME_SAMPLE = QtGui.QBrush(QtGui.QColor(177, 207, 153))
@@ -88,6 +95,9 @@ class UIFonts(ConstantGroup):
     INHERITED.setPointSize(BASE_POINT_SIZE * 0.8)
     INHERITED.setWeight(QtGui.QFont.Normal)
     INHERITED.setItalic(True)
+
+class KeyboardShortcuts(ConstantGroup):
+    FramingKey = QtCore.Qt.Key_F
 
 class PropertyViewIndex(ConstantGroup):
     TYPE, NAME, VALUE = range(3)

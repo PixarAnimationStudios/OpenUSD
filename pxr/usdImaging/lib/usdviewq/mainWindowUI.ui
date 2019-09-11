@@ -1395,7 +1395,6 @@
     <addaction name="menuComplexity"/>
     <addaction name="menuBBox"/>
     <addaction name="separator"/>
-    <addaction name="actionFrame_Selection"/>
     <addaction name="actionToggle_Framed_View"/>
     <addaction name="separator"/>
     <addaction name="actionFrame_Forward"/>
@@ -1465,11 +1464,12 @@
    </property>
   </action>
   <action name="actionPause">
-   <property name="text">
     <string>Pause Render</string>
-   </property>
    <property name="checkable">
     <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Pause Render</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+P</string>
@@ -1481,17 +1481,6 @@
   <action name="actionReset_View">
    <property name="text">
     <string>Reset View</string>
-   </property>
-   <property name="shortcutContext">
-    <enum>Qt::ApplicationShortcut</enum>
-   </property>
-  </action>
-  <action name="actionFrame_Selection">
-   <property name="text">
-    <string>Frame Selection</string>
-   </property>
-   <property name="shortcut">
-    <string>F</string>
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
