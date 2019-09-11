@@ -49,6 +49,11 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((ImplementationName, "__SDR__implementationName"))\
     ((Target, "__SDR__target"))
 
+// Note: The concept of context is defined on NdrNode and can be queried with
+// the GetContext() method. Sdr categorizes shaders by the context in which they
+// are used inside of a renderer. For instance during 'pattern' evaluation to
+// feed into a surface or volume shader. For BXDFs used in 'surface' and
+// 'volume' rendering situations.
 #define SDR_NODE_CONTEXT_TOKENS      \
     ((Pattern, "pattern"))           \
     ((Surface, "surface"))           \
@@ -60,8 +65,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((PixelFilter, "pixelFilter"))
 
 #define SDR_NODE_ROLE_TOKENS         \
-    ((Surface, "surface"))           \
-    ((Displacement, "displacement")) \
     ((Primvar, "primvar"))           \
     ((Texture, "texture"))           \
     ((Field, "field"))
@@ -135,8 +138,11 @@ public:
     const TfToken& GetCategory() const { return _category; }
 
     /// Returns the role of this node. This is used to annotate the role that 
-    /// the shader node plays inside a shader network. Example roles include 
-    /// 'surface', 'displacement', 'texture', 'primvarReader' etc.
+    /// the shader node plays inside a shader network. We can tag certain
+    /// shaders to indicate their role within a shading network. We currently
+    /// tag primvar reading nodes, texture reading nodes and nodes that access
+    /// volume fields (like extinction or scattering). This is done to identify
+    /// resources used by a shading network.
     SDR_API
     const std::string &GetRole() const;
 

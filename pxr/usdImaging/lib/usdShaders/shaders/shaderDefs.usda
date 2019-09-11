@@ -2,10 +2,6 @@
 
 def Shader "UsdPreviewSurface" (
     doc = "Preview surface specification"
-
-    sdrMetadata = {
-       token role = "surface"
-    }
 )
 {
     uniform token info:id = "UsdPreviewSurface"
