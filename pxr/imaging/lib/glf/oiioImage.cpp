@@ -25,6 +25,9 @@
 #include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/glf/utils.h"
 
+#include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/resolver.h"
+
 // use gf types to read and write metadata
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -33,12 +36,14 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
+#include "pxr/base/tf/staticData.h"
 
 ARCH_PRAGMA_PUSH
 ARCH_PRAGMA_MACRO_REDEFINITION // due to Python copysign
 #include <OpenImageIO/imagebuf.h>
 #include <OpenImageIO/imagebufalgo.h>
 #include <OpenImageIO/imageio.h>
+#include <OpenImageIO/filesystem.h>
 #include <OpenImageIO/typedesc.h>
 ARCH_PRAGMA_POP
 
@@ -46,6 +51,18 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 OIIO_NAMESPACE_USING
+
+// _ioProxySupportedExtensions is a list of hardcoded file extensions that 
+// support ioProxy. Although OIIO has an api call for checking whether or 
+// not a file type supports ioProxy, version 2.0.9 does not include this 
+// for EXR's, even though EXR's support ioProxy. This issue was fixed in
+// commit 7677d498b599295fa8277d050ef994efbd297b55. Thus, for now we check 
+// whether or not a file extension is included in our hardcoded list of 
+// extensions we know to support ioProxy. 
+TF_MAKE_STATIC_DATA(std::vector<std::string>, _ioProxySupportedExtensions)
+{
+    _ioProxySupportedExtensions->push_back("exr");
+}
 
 class Glf_OIIOImage : public GlfImage {
 public:
@@ -85,6 +102,14 @@ protected:
     virtual bool _OpenForWriting(std::string const & filename);
 
 private:
+    std::string _GetFilenameExtension() const;
+#if OIIO_VERSION >= 20003
+    cspan<unsigned char> _GenerateBufferCSpan(
+        const std::shared_ptr<const char>& buffer,
+        int bufferSize) const;
+#endif
+    bool _CanUseIOProxyForExtension(std::string extension, 
+                                    const ImageSpec &config) const;
     std::string _filename;
     int _subimage;
     int _miplevel;
@@ -391,6 +416,49 @@ Glf_OIIOImage::GetNumMipLevels() const
     return 1;
 }
 
+std::string 
+Glf_OIIOImage::_GetFilenameExtension() const
+{
+    std::string fileExtension = ArGetResolver().GetExtension(_filename);
+    return TfStringToLower(fileExtension);
+}
+
+#if OIIO_VERSION >= 20003
+cspan<unsigned char>
+Glf_OIIOImage::_GenerateBufferCSpan(const std::shared_ptr<const char>& buffer, 
+                                    int bufferSize) const
+{
+    const char* bufferPtr = buffer.get(); 
+    const unsigned char* bufferPtrUnsigned = (const unsigned char *) bufferPtr;
+    cspan<unsigned char> bufferCSpan(bufferPtrUnsigned, bufferSize);
+    return bufferCSpan;
+}
+#endif
+
+bool
+Glf_OIIOImage::_CanUseIOProxyForExtension(std::string extension, 
+                                          const ImageSpec & config) const
+{
+    if (std::find(_ioProxySupportedExtensions->begin(), 
+                  _ioProxySupportedExtensions->end(), 
+                  extension)
+            != _ioProxySupportedExtensions->end()) {
+        return true;
+    }
+    std::string inputFilename("test.");
+    inputFilename.append(extension);
+    std::unique_ptr<ImageInput> imageInput(
+        ImageInput::open(inputFilename, &config));
+
+    if (!imageInput) {
+        return false;
+    }
+    if (imageInput->supports("ioproxy")) {
+        return true;
+    }
+    return false;
+}
+
 /* virtual */
 bool
 Glf_OIIOImage::_OpenForReading(std::string const & filename, int subimage,
@@ -401,7 +469,39 @@ Glf_OIIOImage::_OpenForReading(std::string const & filename, int subimage,
     _miplevel = mip;    
     _imagespec = ImageSpec();
 
+#if OIIO_VERSION >= 20003
+    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(_filename);
+    if (!asset) { 
+        return false;
+    }
+
+    std::shared_ptr<const char> buffer = asset->GetBuffer();
+    if (!buffer) {
+        return false;
+    }
+
+    size_t bufferSize = asset->GetSize();
+
+    Filesystem::IOMemReader memreader(_GenerateBufferCSpan(buffer, bufferSize));
+    void *ptr = &memreader;
+    ImageSpec config;
+    config.attribute("oiio:ioproxy", TypeDesc::PTR, &ptr);
+
+    std::string extension = _GetFilenameExtension();
+
+    std::unique_ptr<ImageInput> imageInput;
+
+    if (_CanUseIOProxyForExtension(extension, config)) {
+        std::string inputFileName("in.");
+        inputFileName.append(extension);
+        imageInput = ImageInput::open(inputFileName, &config);
+    }
+    else {
+        imageInput = ImageInput::open(_filename);
+    }
+#else
     std::unique_ptr<ImageInput> imageInput(ImageInput::open(_filename));
+#endif
 
     if (!imageInput) {
         return false;
@@ -429,8 +529,44 @@ Glf_OIIOImage::ReadCropped(int const cropTop,
                            int const cropRight,
                            StorageSpec const & storage)
 {
+
+#if OIIO_VERSION >= 20003
+    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(_filename);
+    if (!asset) { 
+        return false;
+    }
+
+    std::shared_ptr<const char> buffer = asset->GetBuffer();
+    if (!buffer) {
+        return false;
+    }
+
+    size_t bufferSize = asset->GetSize();
+    
+    Filesystem::IOMemReader memreader(_GenerateBufferCSpan(buffer, bufferSize));
+    void *ptr = &memreader;
+    ImageSpec config;
+    config.attribute("oiio:ioproxy", TypeDesc::PTR, &ptr);
+
+    std::string extension = _GetFilenameExtension();
+
+    std::unique_ptr<ImageInput> imageInput;
+
+    if (_CanUseIOProxyForExtension(extension, config)) {
+        std::string inputFileName("in.");
+        inputFileName.append(extension);
+
+        imageInput = ImageInput::open(inputFileName, &config);
+    }
+    else {
+        imageInput = ImageInput::open(_filename);
+    }
+
+#else
     // read from file
     std::unique_ptr<ImageInput> imageInput(ImageInput::open(_filename));
+
+#endif
 
     //// seek subimage
     ImageSpec spec = imageInput->spec();
