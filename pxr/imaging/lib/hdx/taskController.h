@@ -245,6 +245,16 @@ private:
     SdfPath _GetAovPath(TfToken const& aov) const;
     SdfPathVector _GetAovEnabledTasks() const;
 
+    // Helper function to load the default domeLight texture
+    void _LoadDefaultDomeLightTexture();
+
+    // Helper function to set the parameters of a light, get a particular light 
+    // in the scene, replace and remove Sprims from the scene 
+    void _SetParameters(SdfPath const& pathName, GlfSimpleLight const& light);
+    GlfSimpleLight _GetLightAtId(size_t const& pathIdx);
+    void _RemoveLightSprim(size_t const& pathIdx);
+    void _ReplaceLightSprim(size_t const& pathIdx, GlfSimpleLight const& light, 
+                        SdfPath const& pathName);
 
     // A private scene delegate member variable backs the tasks and the free cam
     // this controller generates. To keep _Delegate simple, the containing class
@@ -288,6 +298,8 @@ private:
         virtual GfMatrix4d GetTransform(SdfPath const& id);
         virtual VtValue GetCameraParamValue(SdfPath const& id, 
                                             TfToken const& key);
+        virtual VtValue GetLightParamValue(SdfPath const& id, 
+                                            TfToken const& paramName);
         virtual bool IsEnabled(TfToken const& option) const;
         virtual HdRenderBufferDescriptor
             GetRenderBufferDescriptor(SdfPath const& id);
@@ -321,8 +333,9 @@ private:
     // Current active camera
     SdfPath _activeCameraId;
     
-    // Generated lights
+    // Built-in lights
     SdfPathVector _lightIds;
+    HdTextureResourceSharedPtr _defaultDomeLightTextureResource;
 
     // Generated renderbuffers
     SdfPathVector _aovBufferIds;

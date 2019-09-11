@@ -91,6 +91,7 @@ pxr_library(hdx
         shaders/renderPassOitShader.glslfx
         shaders/renderPassOitOpaqueShader.glslfx
         shaders/oitResolveImageShader.glslfx
+        textures/StinsonBeach.exr
 )
 
 if (X11_FOUND)

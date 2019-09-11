@@ -42,6 +42,7 @@ TfToken HdxPackageRenderPassOitShader();
 TfToken HdxPackageRenderPassOitOpaqueShader();
 TfToken HdxPackageOitResolveImageShader();
 
+TfToken HdxPackageDefaultDomeLightTexture();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

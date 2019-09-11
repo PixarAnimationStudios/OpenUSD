@@ -44,6 +44,17 @@ _GetShaderPath(char const * shader)
     return TfToken(path);
 }
 
+static TfToken
+_GetTexturePath(char const * texture)
+{
+    static PlugPluginPtr plugin = PLUG_THIS_PLUGIN;
+    const std::string path =
+        PlugFindPluginResource(plugin, TfStringCatPaths("textures", texture));
+    TF_VERIFY(!path.empty(), "Could not find texture: %s\n", texture);
+
+    return TfToken(path);
+}
+
 TfToken
 HdxPackageFullscreenShader()
 {
@@ -115,5 +126,11 @@ HdxPackageOitResolveImageShader()
     return shader;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+TfToken
+HdxPackageDefaultDomeLightTexture()
+{
+    static TfToken domeLightTexture = _GetTexturePath("StinsonBeach.exr");
+    return domeLightTexture;
+}
 
+PXR_NAMESPACE_CLOSE_SCOPE

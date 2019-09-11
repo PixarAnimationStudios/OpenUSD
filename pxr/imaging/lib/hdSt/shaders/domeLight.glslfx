@@ -76,8 +76,8 @@ vec3 GetWorldPos(vec2 textureCoord) {
     return vec3(y, x, -z); 
 }
 vec2 GetFragCoords(ivec2 pixelCoords) {
+    // get the dimensions of the calling texture (outTexture)
     vec2 inDims = imageSize(outTexture);
-    // vec2 inDims = textureSize(inTexture, 0);
     vec2 fragCoords = (pixelCoords / inDims);
 
     // y axis is flipped between texture and pixel coordinates
@@ -91,7 +91,6 @@ ivec2 GetPixelCoords(vec2 fragCoords) {
     fragCoords.y = 1.0f - fragCoords.y;
 
     vec2 outCoords = fragCoords * outDims;
-    outCoords.y = outCoords.y + 0.5f;
     return ivec2(ceil(outCoords));
 }
 
@@ -175,8 +174,8 @@ vec3 GetWorldPos(vec2 textureCoord) {
     return vec3(x, y, z);
 }
 vec2 GetFragCoords(ivec2 pixelCoords) {
-    // get the dimensions from the full enviornment map 
-    vec2 inDims = textureSize(inTexture, 0);
+    // get the dimensions of the calling texture (outTexture)
+    vec2 inDims = imageSize(outTexture);
     vec2 fragCoords = (pixelCoords / inDims);
     
     // y axis is flipped between texture and pixel coordinates
@@ -191,8 +190,6 @@ ivec2 GetPixelCoords(vec2 fragCoords) {
     fragCoords.y = 1.0 - fragCoords.y;
 
     vec2 outCoords = fragCoords * outDims;
-    // for some reason needed this to eliminate lines in the final texture
-    outCoords.y += 0.5f;
     return ivec2(ceil(outCoords));
 }
 float GetInTextureResolution() {
@@ -309,7 +306,8 @@ uniform int sampleLevel = 0;
 const float PI = 3.14159265359;
 
 vec2 GetFragCoords(ivec2 pixelCoords) {
-    vec2 inDims = textureSize(inTexture, sampleLevel);
+    // get the dimensions of the calling texture (outTexture)
+    vec2 inDims = imageSize(outTexture);
     vec2 fragCoords = (pixelCoords / inDims);
     return fragCoords;
 }
@@ -350,19 +348,15 @@ vec3 ImportanceSampleGGX(vec2 Xi, vec3 N, float roughness) {
     return normalize(sampleVec);
 }
 
-float GeometrySchlickGGX(float NdotV, float roughness) {
-    // note that we use a different k for IBL
-    float a = roughness;
-    float k = (a * a) / 2.0;
-    float nom   = NdotV;
-    float denom = NdotV * (1.0 - k) + k;
-    return nom / denom;
-}
 float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
     float NdotV = max(dot(N, V), 0.0);
     float NdotL = max(dot(N, L), 0.0);
-    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
-    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+
+    float alpha = roughness * roughness;
+    float k = alpha * 0.5;
+
+    float ggx2 = NdotV / (NdotV * (1.0 - k) + k);
+    float ggx1 = NdotL / (NdotL * (1.0 - k) + k);
     return ggx1 * ggx2;
 }
 

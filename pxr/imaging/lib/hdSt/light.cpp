@@ -102,29 +102,6 @@ GlfSimpleLight
 HdStLight::_PrepareDomeLight(SdfPath const &id, 
                                  HdSceneDelegate *sceneDelegate)
 {
-    // Get the color of the light
-    GfVec3f hdc = sceneDelegate->GetLightParamValue(id, HdStLightTokens->color)
-            .Get<GfVec3f>();
-
-    // Extract intensity
-    float intensity = 
-        sceneDelegate->GetLightParamValue(id, HdLightTokens->intensity)
-            .Get<float>();
-
-    // Extract the exposure of the light
-    float exposure = 
-        sceneDelegate->GetLightParamValue(id, HdLightTokens->exposure)
-            .Get<float>();
-    intensity *= powf(2.0f, GfClamp(exposure, -50.0f, 50.0f));
-
-    // Calculate the final color of the light
-    GfVec4f c(hdc[0]*intensity, hdc[1]*intensity, hdc[2]*intensity, 1.0f); 
-
-    // Get the transform of the light
-    GfMatrix4d transform = _params[HdTokens->transform].Get<GfMatrix4d>();
-    GfVec3d hdp = transform.ExtractTranslation();
-    GfVec4f p = GfVec4f(hdp[0], hdp[1], hdp[2], 1.0f);
-
     // get/load the environment map texture resource
     uint32_t textureId = 0;
     VtValue textureResourceValue = sceneDelegate->GetLightParamValue(id, 
@@ -149,10 +126,8 @@ HdStLight::_PrepareDomeLight(SdfPath const &id,
     } 
 
     // Create the Glf Simple Light object that will be used by the rest
-    // of the pipeline. No support for shadows for this translated light.
+    // of the pipeline. No support for shadows for dome light.
     GlfSimpleLight l;
-    l.SetPosition(p);
-    l.SetDiffuse(c);
     l.SetHasShadow(false);
     l.SetIsDomeLight(true);
     l.SetIrradianceId(_irradianceTexture);
@@ -176,6 +151,9 @@ HdStLight::_SetupComputations(GLuint sourceTexture,
 
     // initialize the 3 textures and add computations to the resource registry
     GLuint numLevels = 1, numPrefilterLevels = 5, level = 0;
+    // make the computed textures half the size of the given environment map
+    textureHeight = textureHeight/2;
+    textureWidth = textureWidth/2;
 
     // Diffuse Irradiance
     glGenTextures(1, &_irradianceTexture);
@@ -226,10 +204,10 @@ HdStLight::_SetupComputations(GLuint sourceTexture,
     glTexStorage2D(GL_TEXTURE_2D, numLevels, GL_RGBA16F, 
                     textureHeight, textureHeight);
 
-    // Add Computation 
+    // Add Computation
     HdSt_DomeLightComputationGPUSharedPtr brdfComputation(
             new HdSt_DomeLightComputationGPU(_tokens->domeLightBRDF, 
-            sourceTexture, _brdfTexture, textureWidth, textureHeight, 
+            sourceTexture, _brdfTexture, textureHeight, textureHeight, 
             numLevels, level));    
     resourceRegistry->AddComputation(nullptr, brdfComputation);
 }

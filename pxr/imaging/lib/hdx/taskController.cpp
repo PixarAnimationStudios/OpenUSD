@@ -34,6 +34,7 @@
 #include "pxr/imaging/hdx/oitRenderTask.h"
 #include "pxr/imaging/hdx/oitResolveTask.h"
 #include "pxr/imaging/hdx/oitVolumeRenderTask.h"
+#include "pxr/imaging/hdx/package.h"
 #include "pxr/imaging/hdx/pickTask.h"
 #include "pxr/imaging/hdx/pickFromRenderBufferTask.h"
 #include "pxr/imaging/hdx/presentTask.h"
@@ -45,10 +46,12 @@
 
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
+#include "pxr/imaging/hdSt/textureResource.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
+#include "pxr/imaging/glf/textureRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -129,6 +132,14 @@ HdxTaskController::_Delegate::GetCameraParamValue(SdfPath const& id,
 }
 
 /* virtual */
+VtValue
+HdxTaskController::_Delegate::GetLightParamValue(SdfPath const& id, 
+                                                  TfToken const& paramName)
+{   
+    return Get(id, paramName);
+}
+
+/* virtual */
 bool
 HdxTaskController::_Delegate::IsEnabled(TfToken const& option) const
 {
@@ -195,6 +206,7 @@ HdxTaskController::HdxTaskController(HdRenderIndex *renderIndex,
     , _delegate(renderIndex, controllerId)
 {
     _CreateRenderGraph();
+    _LoadDefaultDomeLightTexture();
 }
 
 HdxTaskController::~HdxTaskController()
@@ -224,6 +236,7 @@ HdxTaskController::~HdxTaskController()
     }
     for (auto const& id : _lightIds) {
         GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->simpleLight, id);
+        GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->domeLight, id);
     }
     for (auto const& id : _aovBufferIds) {
         GetRenderIndex()->RemoveBprim(HdPrimTypeTokens->renderBuffer, id);
@@ -725,6 +738,86 @@ HdxTaskController::_GetAovPath(TfToken const& aov) const
     std::string str = TfStringPrintf("aov_%s", aov.GetText());
     std::replace(str.begin(), str.end(), ':', '_');
     return GetControllerId().AppendChild(TfToken(str));
+}
+
+void
+HdxTaskController::_LoadDefaultDomeLightTexture()
+{
+    // load and attach the texture for the Default DomeLight Texture
+    GlfTextureHandleRefPtr texture = 
+                GlfTextureRegistry::GetInstance().GetTextureHandle(
+                HdxPackageDefaultDomeLightTexture(),
+                GlfImage::ImageOriginLocation::OriginUpperLeft);
+
+    _defaultDomeLightTextureResource = HdTextureResourceSharedPtr(
+                new HdStSimpleTextureResource(texture, HdTextureType::Uv, 
+                HdWrap::HdWrapRepeat, HdWrap::HdWrapRepeat, 
+                HdWrap::HdWrapRepeat, HdMinFilter::HdMinFilterLinear, 
+                HdMagFilter::HdMagFilterLinear, 
+                0.0f));
+}
+
+void 
+HdxTaskController::_SetParameters(SdfPath const& pathName, 
+                                    GlfSimpleLight const& light)
+{
+    _delegate.SetParameter(pathName, HdLightTokens->transform,
+        VtValue());
+    _delegate.SetParameter(pathName, HdLightTokens->shadowParams,
+        HdxShadowParams());
+    _delegate.SetParameter(pathName, HdLightTokens->shadowCollection,
+        VtValue());
+    _delegate.SetParameter(pathName, HdLightTokens->params,
+        light);
+
+    // if we are setting the parameters for the dome light we need to add the 
+    // default texture resource as well
+    if (light.IsDomeLight()) {
+        _delegate.SetParameter(pathName, HdLightTokens->textureResource, 
+            _defaultDomeLightTextureResource);
+    }
+}
+
+GlfSimpleLight
+HdxTaskController::_GetLightAtId(size_t const& pathIdx)
+{
+    GlfSimpleLight light = GlfSimpleLight();
+    if (pathIdx < _lightIds.size()) {
+        light = _delegate.GetParameter<GlfSimpleLight>(
+            _lightIds[pathIdx], HdLightTokens->params);
+    }
+    return light;
+}
+
+void 
+HdxTaskController::_RemoveLightSprim(size_t const& pathIdx)
+{
+    if (pathIdx < _lightIds.size()) {
+        GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->simpleLight, 
+                        _lightIds[pathIdx]);
+        GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->domeLight, 
+                        _lightIds[pathIdx]);
+    }
+}
+
+void 
+HdxTaskController::_ReplaceLightSprim(size_t const& pathIdx, 
+                        GlfSimpleLight const& light, SdfPath const& pathName)
+{                
+    _RemoveLightSprim(pathIdx);
+    if (light.IsDomeLight()) {
+        GetRenderIndex()->InsertSprim(HdPrimTypeTokens->domeLight,
+                        &_delegate, pathName);
+    }
+    else {
+        GetRenderIndex()->InsertSprim(HdPrimTypeTokens->simpleLight,
+                            &_delegate, pathName);
+    }
+    // set the parameters for lights[i] and mark as dirty
+    _SetParameters(pathName, light);            
+    GetRenderIndex()->GetChangeTracker().MarkSprimDirty(pathName, 
+                                                HdLight::AllDirty);
+
 }
 
 void
@@ -1388,58 +1481,77 @@ HdxTaskController::SetLightingState(GlfSimpleLightingContextPtr const& src)
     GlfSimpleLightVector const& lights = src->GetLights();
 
     // HdxTaskController inserts a set of light prims to represent the lights
-    // passed in through the simple lighting context. These are managed by
-    // the task controller, and not by the scene; they represent transient
-    // application state such as camera lights.
+    // passed in through the simple lighting context (lights vector). These are 
+    // managed by the task controller, and not by the scene; they represent the
+    // application state which
     //
-    // The light pool can be re-used as lights change, but we need to make sure
-    // we have the right number of light prims. Add them as necessary until
-    // there are enough light prims to represent the light context.
-    while (_lightIds.size() < lights.size()) {
-        SdfPath lightId = GetControllerId().AppendChild(TfToken(
-            TfStringPrintf("light%d", (int)_lightIds.size())));
-        _lightIds.push_back(lightId);
+    // if we need to add any lights to the _lightIds vector 
+    if (_lightIds.size() < lights.size()) {
 
-        GetRenderIndex()->InsertSprim(HdPrimTypeTokens->simpleLight, 
-            &_delegate,
-            lightId);
+        // cycle through the lights, add the new light and make sure the Sprims
+        // at _lightIds[i] match with what is in lights[i]
+        for (size_t i = 0; i < lights.size(); ++i) {
+            
+            // Get or create the light path for lights[i]
+            bool needToAddLightPath = false;
+            SdfPath lightPath = SdfPath();            
+            if (i >= _lightIds.size()) {
+                lightPath = GetControllerId().AppendChild(TfToken(
+                            TfStringPrintf("light%d", (int)_lightIds.size())));
+                needToAddLightPath = true;
+            }
+            else {
+                lightPath = _lightIds[i];
+            }
+            // make sure that light at _lightIds[i] matches with lights[i]
+            GlfSimpleLight currLight = _GetLightAtId(i);
+            if (currLight != lights[i]) {
 
-        // After inserting a light, initialize its parameters and mark the light
-        // as dirty.
-        _delegate.SetParameter(lightId, HdLightTokens->transform,
-            VtValue());
-        _delegate.SetParameter(lightId, HdLightTokens->shadowParams,
-            HdxShadowParams());
-        _delegate.SetParameter(lightId, HdLightTokens->shadowCollection,
-            VtValue());
-        _delegate.SetParameter(lightId, HdLightTokens->params,
-            GlfSimpleLight());
-
-        // Note: Marking the shadowCollection as dirty (included in AllDirty)
-        // will mark the geometry collection dirty.
-        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(lightId,
-            HdLight::AllDirty);
+                // replace _lightIds[i] with the appropriate light 
+                _ReplaceLightSprim(i, lights[i], lightPath);
+            }
+            if (needToAddLightPath){
+                _lightIds.push_back(lightPath);
+            }
+        }
     }
 
-    // If the light pool is too big for the light context, remove the extra
-    // sprims.
-    while (_lightIds.size() > lights.size()) {
-        GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->simpleLight,
-            _lightIds.back());
+    // if we need to remove Ids from the _lightIds vector 
+    else if (_lightIds.size() > lights.size()) {
 
+        // cycle through the lights making sure the Sprims at _lightIds[i] 
+        // match with what is in lights[i]
+        for (size_t i = 0; i < lights.size(); ++i) {
+            
+            // Get the light path for lights[i]
+            SdfPath lightPath = _lightIds[i];
+            
+            // make sure that light at _lightIds[i] matches with lights[i]
+            GlfSimpleLight currLight = _GetLightAtId(i);
+            if (currLight != lights[i]) {
+
+                // replace _lightIds[i] with the appropriate light 
+                _ReplaceLightSprim(i, lights[i], lightPath);
+            }
+        }
+        // now that everything matches just remove the last item in _lightIds
+        _RemoveLightSprim(_lightIds.size()-1);
         _lightIds.pop_back();
     }
 
-    // Update light Sprims to match the lights passed in through the context;
-    // hydra simpleLight prims store a GlfSimpleLight as their "params" field.
+    // if there has been no change in the number of lights we still may need to 
+    // update the light parameters eg. if the free camera has moved 
     for (size_t i = 0; i < lights.size(); ++i) {
-        GlfSimpleLight lt = _delegate.GetParameter<GlfSimpleLight>(
-            _lightIds[i], HdLightTokens->params);
+        GlfSimpleLight light = _GetLightAtId(i);
+        if (light != lights[i]) {
+            _delegate.SetParameter(_lightIds[i], 
+                                    HdLightTokens->params, lights[i]);
 
-        if (lt != lights[i]) {
-            _delegate.SetParameter(_lightIds[i], HdLightTokens->params,
-                lights[i]);
-
+            if (light.IsDomeLight()) {
+                _delegate.SetParameter(_lightIds[i], 
+                                    HdLightTokens->textureResource, 
+                                    _defaultDomeLightTextureResource);
+            }
             GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
                 _lightIds[i], HdLight::DirtyParams);
         }
