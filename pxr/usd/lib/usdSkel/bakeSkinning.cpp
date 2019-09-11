@@ -605,7 +605,7 @@ _SkelAdapter::_SkelAdapter(const UsdSkelBakeSkinningParms& parms,
     if (parms.deformationFlags & UsdSkelBakeSkinningParms::DeformWithLBS) {
         if (const UsdSkelSkeleton& skel = skelQuery.GetSkeleton()) {
             const auto& animQuery = skelQuery.GetAnimQuery();
-            if ((animQuery&& !skelQuery.GetMapper().IsNull()) ||
+            if ((animQuery && !skelQuery.GetMapper().IsNull()) ||
                 skel.GetRestTransformsAttr().HasAuthoredValue()) {
 
                 // XXX: Activate computations, but tag them as not required;
@@ -614,7 +614,7 @@ _SkelAdapter::_SkelAdapter(const UsdSkelBakeSkinningParms& parms,
                 _skinningInvTransposeXformsTask.SetActive(
                     true, /*required*/ false);
 
-                if (animQuery.JointTransformsMightBeTimeVarying()) {
+                if (animQuery && animQuery.JointTransformsMightBeTimeVarying()) {
                     _skinningXformsTask.SetMightBeTimeVarying(true);
                     _skinningInvTransposeXformsTask.SetMightBeTimeVarying(true);
                 }
@@ -1903,7 +1903,7 @@ _ComputeTimeSamples(
     // the driving animation, particularly when considering joint rotations.
     // It is impossible to get a perfect match at every possible sub-frame,
     // since the resulting stage may be read at arbitrary sub-frames, but
-    // we can at least make sure that the samples are correctly at the
+    // we can at least make sure that the samples are correct at the
     // frames on which the stage is expected to be sampled, based on the
     // stage's time-code metadata.
     // In other words, we wish to bake skinning at every time ordinate at
