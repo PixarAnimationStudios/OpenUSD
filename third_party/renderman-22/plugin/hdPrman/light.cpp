@@ -139,9 +139,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     riley::Riley *riley = context->riley;
 
     // Some lights have parameters that scale the size of the light.
-    // Scale lights by negative -y and -z to account for RenderMan vs USD
-    // light orientation.
-    GfVec3d geomScale(1.0f, -1.0f, -1.0);
+    GfVec3d geomScale(1.0f);
 
     // For simplicity just re-create the light.  In the future we may
     // want to consider adding a path to use the Modify() API in Riley.
@@ -458,6 +456,31 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     RtMatrix4x4 xf_rt_values[HDPRMAN_MAX_TIME_SAMPLES];
     GfMatrix4d geomMat(1.0);
     geomMat.SetScale(geomScale);
+
+    // adjust orientation to make prman match the USD spec
+    // TODO: Add another orientMat for PxrEnvDayLight when supported
+    GfMatrix4d orientMat(1.0);
+    if (rileyTypeName == us_PxrDomeLight)
+    {
+        // Transform Dome to match OpenEXR spec for environment maps
+        // Rotate -90 X, Rotate 90 Y
+        orientMat = GfMatrix4d(0.0, 0.0, -1.0, 0.0, 
+                               -1.0, 0.0, 0.0, 0.0, 
+                               0.0, 1.0, 0.0, 0.0, 
+                               0.0, 0.0, 0.0, 1.0);
+    }
+    else
+    {
+        // Transform lights to match correct orientation
+        // Scale -1 Z, Rotate 180 Z
+        orientMat = GfMatrix4d(-1.0, 0.0, 0.0, 0.0, 
+                               0.0, -1.0, 0.0, 0.0, 
+                               0.0, 0.0, -1.0, 0.0, 
+                               0.0, 0.0, 0.0, 1.0);
+    }
+
+    geomMat = orientMat * geomMat;
+
     for (size_t i=0; i < xf.count; ++i) {
         xf_rt_values[i] = HdPrman_GfMatrixToRtMatrix(geomMat * xf.values[i]);
     }
