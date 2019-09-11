@@ -365,7 +365,7 @@ public:
                 _flatTypes.insert(
                     _flatTypes.begin() + index, _SpecType(specType));
             } else {
-                TF_VERIFY(_flatTypes[index].type == specType);
+                _flatTypes[index].type = specType;
             }
         }
     }
