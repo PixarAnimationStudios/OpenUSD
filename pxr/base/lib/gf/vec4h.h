@@ -72,21 +72,23 @@ public:
     GfVec4h() = default;
 
     /// Initialize all elements to a single value.
-    explicit GfVec4h(GfHalf value) {
-        _data[0] = value;
-        _data[1] = value;
-        _data[2] = value;
-        _data[3] = value;
+    constexpr explicit GfVec4h(GfHalf value)
+        : _data{ value, value, value, value }
+    {
     }
 
     /// Initialize all elements with explicit arguments.
-    GfVec4h(GfHalf s0, GfHalf s1, GfHalf s2, GfHalf s3) {
-        Set(s0, s1, s2, s3);
+    constexpr GfVec4h(GfHalf s0, GfHalf s1, GfHalf s2, GfHalf s3)
+        : _data{ s0, s1, s2, s3 }
+    {
     }
 
     /// Construct with pointer to values.
     template <class Scl>
-    explicit GfVec4h(Scl const *p) { Set(p); }
+    constexpr explicit GfVec4h(Scl const *p)
+        : _data{ p[0], p[1], p[2], p[3] }
+    {
+    }
 
     /// Construct from GfVec4d.
     explicit GfVec4h(class GfVec4d const &other);

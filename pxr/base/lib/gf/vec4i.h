@@ -69,21 +69,23 @@ public:
     GfVec4i() = default;
 
     /// Initialize all elements to a single value.
-    explicit GfVec4i(int value) {
-        _data[0] = value;
-        _data[1] = value;
-        _data[2] = value;
-        _data[3] = value;
+    constexpr explicit GfVec4i(int value)
+        : _data{ value, value, value, value }
+    {
     }
 
     /// Initialize all elements with explicit arguments.
-    GfVec4i(int s0, int s1, int s2, int s3) {
-        Set(s0, s1, s2, s3);
+    constexpr GfVec4i(int s0, int s1, int s2, int s3)
+        : _data{ s0, s1, s2, s3 }
+    {
     }
 
     /// Construct with pointer to values.
     template <class Scl>
-    explicit GfVec4i(Scl const *p) { Set(p); }
+    constexpr explicit GfVec4i(Scl const *p)
+        : _data{ p[0], p[1], p[2], p[3] }
+    {
+    }
  
     /// Create a unit vector along the X-axis.
     static GfVec4i XAxis() {

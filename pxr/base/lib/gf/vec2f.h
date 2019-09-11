@@ -71,19 +71,23 @@ public:
     GfVec2f() = default;
 
     /// Initialize all elements to a single value.
-    explicit GfVec2f(float value) {
-        _data[0] = value;
-        _data[1] = value;
+    constexpr explicit GfVec2f(float value)
+        : _data{ value, value }
+    {
     }
 
     /// Initialize all elements with explicit arguments.
-    GfVec2f(float s0, float s1) {
-        Set(s0, s1);
+    constexpr GfVec2f(float s0, float s1)
+        : _data{ s0, s1 }
+    {
     }
 
     /// Construct with pointer to values.
     template <class Scl>
-    explicit GfVec2f(Scl const *p) { Set(p); }
+    constexpr explicit GfVec2f(Scl const *p)
+        : _data{ p[0], p[1] }
+    {
+    }
 
     /// Construct from GfVec2d.
     explicit GfVec2f(class GfVec2d const &other);

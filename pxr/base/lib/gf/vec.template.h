@@ -78,18 +78,23 @@ public:
     {{ VEC }}() = default;
 
     /// Initialize all elements to a single value.
-    explicit {{ VEC }}({{ SCL }} value) {
-        {{ LIST("_data[%(i)s] = value;", sep='\n        ') }}
+    constexpr explicit {{ VEC }}({{ SCL }} value)
+        : _data{ {{ LIST("value") }} }
+    {
     }
 
     /// Initialize all elements with explicit arguments.
-    {{ VEC }}({{ LIST(SCL + " s%(i)s") }}) {
-        Set({{ LIST("s%(i)s") }});
+    constexpr {{ VEC }}({{ LIST(SCL + " s%(i)s") }})
+        : _data{ {{ LIST("s%(i)s") }} }
+    {
     }
 
     /// Construct with pointer to values.
     template <class Scl>
-    explicit {{ VEC }}(Scl const *p) { Set(p); }
+    constexpr explicit {{ VEC }}(Scl const *p)
+        : _data{ {{ LIST("p[%(i)s]") }} }
+    {
+    }
 {% if IS_FLOATING_POINT(SCL) %}
 {% for S in SCALARS if S != SCL %}
 
