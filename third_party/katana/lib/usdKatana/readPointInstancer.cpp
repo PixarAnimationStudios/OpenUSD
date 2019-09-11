@@ -268,12 +268,30 @@ PxrUsdKatanaReadPointInstancer(
     //
     // Compute instance transform matrices.
     //
-    
+
+    // Special case: Ensure that there is more than one sample if velocity is
+    // authored. This will accommodate cases where positions is not sufficiently
+    // sampled to produce motion, but motion can be inferred via velocities.
+    //
+    // XXX Mere presence of the velocities attr does not guarantee that it will
+    // be used in the final instance transforms computation (the velocities attr
+    // must pass additional checks made inside usdGeom's samplingUtils). We are
+    // not currently performing these additional checks.
+    //
+    bool ensureMotion = false;
+    if (UsdAttribute velocitiesAttr = instancer.GetVelocitiesAttr())
+    {
+        if (velocitiesAttr.HasValue())
+        {
+            ensureMotion = true;
+        }
+    }
+
     // Gather frame-relative sample times and add them to the current time to
     // generate absolute sample times.
     //
     const std::vector<double> &motionSampleTimes =
-        data.GetMotionSampleTimes(positionsAttr);
+        data.GetMotionSampleTimes(positionsAttr, ensureMotion);
     const size_t sampleCount = motionSampleTimes.size();
     std::vector<UsdTimeCode> sampleTimes(sampleCount);
     std::transform(motionSampleTimes.begin(), motionSampleTimes.end(), 
