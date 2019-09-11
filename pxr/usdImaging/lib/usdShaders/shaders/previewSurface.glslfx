@@ -254,9 +254,8 @@ evaluateLight(
 
 vec2 convertSampleVec(vec3 sample3D)
 {
-    // 1 - the v component to flip the image and match RenderMan
     vec2 coord = vec2((atan(sample3D.y, sample3D.x)) / (2.0*PI), 
-                1.0 - acos(sample3D.z) / PI);
+                acos(sample3D.z) / PI);
 
     return coord;
 }
