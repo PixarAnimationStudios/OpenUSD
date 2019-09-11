@@ -21,7 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
 #include "hdxPrman/renderPass.h"
 #include "hdxPrman/context.h"
 #include "hdxPrman/renderBuffer.h"
@@ -377,75 +376,37 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
     int offset = skipPixels + skipRows * _interactiveContext->framebuffer.w;
     int stride = _interactiveContext->framebuffer.w;
 
-    if (aovBindings.size() == 0) {
-        // No AOV bindings means blit current framebuffer contents.
-        // We don't bother to synchronize -- but we could, if presenting
-        // partial updates becomes objectionable.
+    // Blit from the framebuffer to the currently selected AOVs.
+    for (size_t aov = 0; aov < aovBindings.size(); ++aov) {
+        if(!TF_VERIFY(aovBindings[aov].renderBuffer)) {
+            continue;
+        }
+        HdxPrmanRenderBuffer *rb = static_cast<HdxPrmanRenderBuffer*>(
+            aovBindings[aov].renderBuffer);
 
-        // Adjust GL blending for compositing.
-        //
-        // As configured, the framebuffer coming from Renderman will be
-        // effectively premultiplied.  The transition from a foreground
-        // object that is blurred (ex: due to motion or lens defocus)
-        // to the background will have alpha go from 1..0 and color
-        // channels likewise to go zero.  To composite this correctly
-        // we want to use GL_ONE for the foreground element.
-        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_BLEND);
+        // Forward convergence state to the render buffers...
+        rb->SetConverged(_converged);
 
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, _interactiveContext->framebuffer.w);
-        glPixelStorei(GL_UNPACK_SKIP_PIXELS, skipPixels);
-        glPixelStorei(GL_UNPACK_SKIP_ROWS,  skipRows);
-        _compositor.UpdateColor(_interactiveContext->framebuffer.w * fracWidth,
-                                _interactiveContext->framebuffer.h * fracHeight,
-                                &_interactiveContext->framebuffer.color[0]);
-        _compositor.UpdateDepth(_interactiveContext->framebuffer.w * fracWidth,
-                                _interactiveContext->framebuffer.h * fracHeight,
-                                reinterpret_cast<uint8_t*>(
-                                   &_interactiveContext->framebuffer.depth[0]));
-        glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-        glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-
-        // Blit
-        _compositor.Draw();
-
-        glBlendFunc(GL_ONE, GL_ZERO);
-        glDisable(GL_BLEND);
-    } else {
-
-        // Blit from the framebuffer to the currently selected AOVs.
-        for (size_t aov = 0; aov < aovBindings.size(); ++aov) {
-            if(!TF_VERIFY(aovBindings[aov].renderBuffer)) {
-                continue;
-            }
-            HdxPrmanRenderBuffer *rb = static_cast<HdxPrmanRenderBuffer*>(
-                aovBindings[aov].renderBuffer);
-
-            // Forward convergence state to the render buffers...
-            rb->SetConverged(_converged);
-
-            if (aovBindings[aov].aovName == HdAovTokens->color) {
-                rb->Blit(HdFormatUNorm8Vec4, width, height, offset, stride,
-                    reinterpret_cast<uint8_t*>(
-                        &_interactiveContext->framebuffer.color[0]));
-            } else if (aovBindings[aov].aovName == HdAovTokens->depth) {
-                rb->Blit(HdFormatFloat32, width, height, offset, stride,
-                    reinterpret_cast<uint8_t*>(
-                        &_interactiveContext->framebuffer.depth[0]));
-            } else if (aovBindings[aov].aovName == HdAovTokens->primId) {
-                rb->Blit(HdFormatInt32, width, height, offset, stride,
-                    reinterpret_cast<uint8_t*>(
-                        &_interactiveContext->framebuffer.primId[0]));
-            } else if (aovBindings[aov].aovName == HdAovTokens->instanceId) {
-                rb->Blit(HdFormatInt32, width, height, offset, stride,
-                    reinterpret_cast<uint8_t*>(
-                        &_interactiveContext->framebuffer.instanceId[0]));
-            } else if (aovBindings[aov].aovName == HdAovTokens->elementId) {
-                rb->Blit(HdFormatInt32, width, height, offset, stride,
-                    reinterpret_cast<uint8_t*>(
-                        &_interactiveContext->framebuffer.elementId[0]));
-            }
+        if (aovBindings[aov].aovName == HdAovTokens->color) {
+            rb->Blit(HdFormatUNorm8Vec4, width, height, offset, stride,
+                reinterpret_cast<uint8_t*>(
+                    &_interactiveContext->framebuffer.color[0]));
+        } else if (aovBindings[aov].aovName == HdAovTokens->depth) {
+            rb->Blit(HdFormatFloat32, width, height, offset, stride,
+                reinterpret_cast<uint8_t*>(
+                    &_interactiveContext->framebuffer.depth[0]));
+        } else if (aovBindings[aov].aovName == HdAovTokens->primId) {
+            rb->Blit(HdFormatInt32, width, height, offset, stride,
+                reinterpret_cast<uint8_t*>(
+                    &_interactiveContext->framebuffer.primId[0]));
+        } else if (aovBindings[aov].aovName == HdAovTokens->instanceId) {
+            rb->Blit(HdFormatInt32, width, height, offset, stride,
+                reinterpret_cast<uint8_t*>(
+                    &_interactiveContext->framebuffer.instanceId[0]));
+        } else if (aovBindings[aov].aovName == HdAovTokens->elementId) {
+            rb->Blit(HdFormatInt32, width, height, offset, stride,
+                reinterpret_cast<uint8_t*>(
+                    &_interactiveContext->framebuffer.elementId[0]));
         }
     }
 }

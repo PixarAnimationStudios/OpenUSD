@@ -3,10 +3,9 @@ set(PXR_PACKAGE hdxPrman)
 
 pxr_plugin(${PXR_PACKAGE}
     LIBRARIES
-        hdx
+        hd
         work
         hdPrman
-        ${GLEW_LIBRARY}
         ${LOADPRMAN_LIBRARY}
 
     INCLUDE_DIRS
