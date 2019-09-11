@@ -138,8 +138,8 @@ _ApplyStudioFixes(HdMaterialNetworkMap *netMap)
                     }
                 }
                 if (!modelRoot.IsEmpty())  {
-		    std::string modelName = modelRoot.GetName();
-		    modelName = TfStringGetBeforeSuffix(modelName, '_');
+                    std::string modelName = modelRoot.GetName();
+                    modelName = TfStringGetBeforeSuffix(modelName, '_');
                     s = TfStringReplace(s, _tokens->globalAttrModelName,
                                         modelName);
                     if (param.second.IsHolding<std::string>()) {

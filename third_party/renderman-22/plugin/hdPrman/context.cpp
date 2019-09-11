@@ -600,14 +600,14 @@ HdPrman_Context::ConvertCategoriesToAttributes(
     RixParamList *attrs)
 {
     if (categories.empty()) {
-	// XXX -- setting k_grouping_membership might not be necessasy
-	attrs->SetString( RixStr.k_grouping_membership,
-			   RtUString("") );
-	attrs->SetString( RixStr.k_lighting_subset,
-			  RtUString("default") );
-	TF_DEBUG(HDPRMAN_LIGHT_LINKING)
-	    .Msg("HdPrman: <%s> no categories; lighting:subset = \"default\"\n",
-		 id.GetText());
+        // XXX -- setting k_grouping_membership might not be necessasy
+        attrs->SetString( RixStr.k_grouping_membership,
+                          RtUString("") );
+        attrs->SetString( RixStr.k_lighting_subset,
+                          RtUString("default") );
+        TF_DEBUG(HDPRMAN_LIGHT_LINKING)
+            .Msg("HdPrman: <%s> no categories; lighting:subset = \"default\"\n",
+                 id.GetText());
         return;
     }
     std::string membership;

@@ -332,8 +332,8 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     }
 
     TF_DEBUG(HDPRMAN_LIGHT_LIST)
-	.Msg("HdPrman: Light <%s> lightType \"%s\"\n",
-	     id.GetText(), _hdLightType.GetText());
+        .Msg("HdPrman: Light <%s> lightType \"%s\"\n",
+             id.GetText(), _hdLightType.GetText());
 
     // Type-specific parameters
     bool supportsLightColorMap = false;
