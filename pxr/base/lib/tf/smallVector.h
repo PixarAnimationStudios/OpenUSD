@@ -64,28 +64,19 @@ protected:
     // Invoke std::uninitialized_copy that either moves or copies entries,
     // depending on whether the type is move constructible or not.
     template <typename Iterator>
-    static void _UninitializedMoveOrCopy(
+    static void _UninitializedMove(
         Iterator first, Iterator last, Iterator dest) {
-        using U = typename std::iterator_traits<Iterator>::value_type;
-        _UninitializedMoveOrCopy(
-            first, last, dest, std::is_move_constructible<U>());
+        std::uninitialized_copy(
+            std::make_move_iterator(first),
+            std::make_move_iterator(last),
+            dest);
     }
 
     // Invokes either the move or copy constructor (via placement new),
     // depending on whether U is move constructible or not.
     template <typename U>
-    static void _MoveOrCopyConstruct(U *p, U *src) {
-        _MoveOrCopyConstruct(p, src, std::is_move_constructible<U>());
-    }
-
-    // Invokes either std::swap, or a custom swap via copy constructor and
-    // assignment operator, depending on whether U is both move constructible
-    // and move assignable.
-    template <typename U>
-    static void _MoveOrCopySwap(U *a, U *b) {
-        _MoveOrCopySwap(a, b, std::integral_constant<bool,
-                std::is_move_constructible<U>::value &&
-                std::is_move_assignable<U>::value>());
+    static void _MoveConstruct(U *p, U *src) {
+        new (p) U(std::move(*src));
     }
 
     // The data storage, which is a union of both the local storage, as well
@@ -157,51 +148,6 @@ protected:
 
     };
 
-private:
-    // Invokes std::uninitialized_copy with a type that is movable.
-    template <typename Iterator>
-    static void _UninitializedMoveOrCopy(
-        Iterator first, Iterator last, Iterator dest, std::true_type) {
-        std::uninitialized_copy(
-            std::make_move_iterator(first),
-            std::make_move_iterator(last),
-            dest);
-    }
-
-    // Invokes std::uninitialzed_copy with a type that is not movable.
-    template <typename Iterator>
-    static void _UninitializedMoveOrCopy(
-        Iterator first, Iterator last, Iterator dest, std::false_type) {
-        std::uninitialized_copy(first, last, dest);
-    }
-
-    // Invokes the move constructor (via placement new.)
-    template <typename U>
-    static void _MoveOrCopyConstruct(U *p, U *src, std::true_type) {
-        new (p) U(std::move(*src));
-    }
-
-    // Invokes the copy constructor (via placement new.)
-    template <typename U>
-    static void _MoveOrCopyConstruct(U *p, U *src, std::false_type) {
-        new (p) U(*src);
-    }
-
-    // Invokes std::swap if U is move constructible and assignable.
-    template <typename U>
-    static void _MoveOrCopySwap(U *a, U *b, std::true_type) {
-        using std::swap;
-        swap(*a, *b);
-    }
-
-    // Swaps by invoking the copy constructor and assignment operator if U is
-    // not move constructible or not move assignable.
-    template <typename U>
-    static void _MoveOrCopySwap(U *a, U *b, std::false_type) {
-        U tmp(*a);
-        *a = *b;
-        *b = tmp;
-    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -316,7 +262,7 @@ public:
         // sizes. Note that capacities will be the same in this case, so no
         // need to swap those.
         else {
-            _UninitializedMoveOrCopy(rhs.begin(), rhs.end(), begin());
+            _UninitializedMove(rhs.begin(), rhs.end(), begin());
             rhs._Destruct();
         }
         std::swap(_size, rhs._size);
@@ -378,14 +324,12 @@ public:
             TfSmallVector<T, N> *large = size() < rhs.size() ? &rhs : this;
 
             // Swap all the entries up to the size of the smaller vector.
-            for (size_type i = 0; i < small->size(); ++i) {
-                _MoveOrCopySwap(&(*small)[i], &(*large)[i]);
-            }
+            std::swap_ranges(small->begin(), small->end(), large->begin());
 
             // Move the tail end of the entries, and destruct them at the
             // source vector.
             for (size_type i = small->size(); i < large->size(); ++i) {
-                _MoveOrCopyConstruct(small->data() + i, &(*large)[i]);
+                _MoveConstruct(small->data() + i, &(*large)[i]);
                 (*large)[i].~value_type();
             }
 
@@ -421,7 +365,7 @@ public:
             // source will become the one with the remote storage, so those
             // entries will be essentially freed.
             for (size_type i = 0; i < local->size(); ++i) {
-                _MoveOrCopyConstruct(
+                _MoveConstruct(
                     remote->_data.GetLocalStorage() + i, &(*local)[i]);
                 (*local)[i].~value_type();
             }
@@ -608,9 +552,9 @@ public:
             iterator newPrefixBegin = iterator(newStorage);
             iterator newPos = newPrefixBegin + posI;
             iterator newSuffixBegin = newPos + numNewElems;
-            _UninitializedMoveOrCopy(begin(), pos, newPrefixBegin);
+            _UninitializedMove(begin(), pos, newPrefixBegin);
             std::uninitialized_copy(first, last, newPos);
-            _UninitializedMoveOrCopy(pos, end(), newSuffixBegin);
+            _UninitializedMove(pos, end(), newSuffixBegin);
 
             // Destroy old data and set up this new buffer.
             _Destruct();
@@ -638,7 +582,7 @@ public:
             // Move our existing elements out of the way of new elements.
             iterator umSrc = pos + numInitMoves;
             iterator umDst = end() + numUninitNews;
-            _UninitializedMoveOrCopy(umSrc, end(), umDst);
+            _UninitializedMove(umSrc, end(), umDst);
             std::copy_backward(pos, umSrc, umDst);
 
             // Copy new elements into place.
@@ -874,7 +818,7 @@ private:
     // always allocates remotes storage.
     void _GrowStorage(const size_type newCapacity) {
         value_type *newStorage = _Allocate(newCapacity);
-        _UninitializedMoveOrCopy(begin(), end(), iterator(newStorage));
+        _UninitializedMove(begin(), end(), iterator(newStorage));
         _Destruct();
         _FreeStorage();
         _data.SetRemoteStorage(newStorage);
