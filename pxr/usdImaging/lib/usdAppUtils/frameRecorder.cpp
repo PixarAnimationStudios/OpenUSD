@@ -224,12 +224,11 @@ UsdAppUtilsFrameRecorder::Record(
     glViewport(0, 0, _imageWidth, imageHeight);
 
     const GLfloat CLEAR_DEPTH[1] = { 1.0f };
-    glClearBufferfv(GL_COLOR, 0, CLEAR_COLOR.data());
-    glClearBufferfv(GL_DEPTH, 0, CLEAR_DEPTH);
-
     const UsdPrim& pseudoRoot = stage->GetPseudoRoot();
 
     do {
+        glClearBufferfv(GL_COLOR, 0, CLEAR_COLOR.data());
+        glClearBufferfv(GL_DEPTH, 0, CLEAR_DEPTH);
         _imagingEngine.Render(pseudoRoot, renderParams);
     } while (!_imagingEngine.IsConverged());
 
