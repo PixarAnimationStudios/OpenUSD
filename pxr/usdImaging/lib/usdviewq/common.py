@@ -102,8 +102,6 @@ class KeyboardShortcuts(ConstantGroup):
 class PropertyViewIndex(ConstantGroup):
     TYPE, NAME, VALUE = range(3)
 
-    RawValueRole = QtCore.Qt.UserRole + 0
-
 ICON_DIR_ROOT = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'icons')
 
 # We use deferred loading because icons can't be constructed before

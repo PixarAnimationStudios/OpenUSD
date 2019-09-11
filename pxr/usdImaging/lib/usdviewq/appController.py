@@ -3490,7 +3490,7 @@ class AppController(QtCore.QObject):
             val = GetValueAtFrame(primProperty, frame)
             attrText = GetShortStringForValue(primProperty, val)
             item = QtWidgets.QTreeWidgetItem(["", str(key), attrText])
-            item.setData(PropertyViewIndex.VALUE, PropertyViewIndex.RawValueRole, val)
+            item.rawValue = val
             treeWidget.addTopLevelItem(item)
 
             treeWidget.topLevelItem(currRow).setIcon(PropertyViewIndex.TYPE, 

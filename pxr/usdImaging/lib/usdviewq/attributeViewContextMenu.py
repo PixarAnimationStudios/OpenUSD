@@ -150,7 +150,7 @@ class CopyAttributeValueMenuItem(AttributeViewContextMenuItem):
         else:
             valueStr = self._value
             if self._item:
-                rawVal = self._item.data(PropertyViewIndex.VALUE, PropertyViewIndex.RawValueRole)
+                rawVal = self._item.rawValue
                 if rawVal is not None:
                     valueStr = str(rawVal)
 
