@@ -26,6 +26,7 @@ pxr_library(usd
         clipsAPI
         attributeQuery
         collectionAPI
+        collectionMembershipQuery
         common
         crateInfo
         debugCodes
@@ -101,6 +102,7 @@ pxr_library(usd
         wrapAttributeQuery.cpp
         wrapClipsAPI.cpp
         wrapCollectionAPI.cpp
+        wrapCollectionMembershipQuery.cpp
         wrapCommon.cpp
         wrapCrateInfo.cpp
         wrapEditContext.cpp

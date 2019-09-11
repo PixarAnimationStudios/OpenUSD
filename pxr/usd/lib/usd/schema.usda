@@ -225,6 +225,7 @@ class "CollectionAPI"
 
     customData = {
         string extraIncludes = """
+#include "pxr/usd/usd/collectionMembershipQuery.h"
 #include "pxr/usd/usd/primFlags.h"
 #include "pxr/usd/usd/tokens.h"
 """
