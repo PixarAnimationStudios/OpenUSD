@@ -35,6 +35,8 @@
 
 #include "pxr/base/gf/matrix4d.h"
 
+#include "pxr/imaging/glf/contextCaps.h"
+
 #include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -140,6 +142,12 @@ void
 HdStLight::_SetupComputations(GLuint sourceTexture, 
                                 HdResourceRegistry *resourceRegistry)
 {
+    // verify that the GL version supports compute shaders
+    if (GlfContextCaps::GetInstance().glVersion < 430) {
+        TF_WARN("Need OpenGL version 4.30 or higher to use DomeLight");
+        return;
+    }
+    
     // get the width and height of the source texture
     int textureWidth = 0, textureHeight = 0;
     glActiveTexture(GL_TEXTURE0);
