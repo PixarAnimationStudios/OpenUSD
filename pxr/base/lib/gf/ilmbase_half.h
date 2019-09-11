@@ -105,6 +105,8 @@ class half
     half () = default;			// no initialization
     half (float f);
 
+    constexpr half (const half& h) = default;
+
 
     //--------------------
     // Conversion to float
