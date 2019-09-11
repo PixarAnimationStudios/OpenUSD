@@ -147,5 +147,11 @@ class TestGfQuaternion(unittest.TestCase):
 
         self.assertTrue(len(str(Gf.Quaternion())))
 
+        for quatType in (Gf.Quatd, Gf.Quatf, Gf.Quath):
+            q1 = quatType(1, [2,3,4])
+            q2 = quatType(2, [3,4,5])
+
+            self.assertTrue(Gf.IsClose(Gf.Dot(q1, q2), 40, 0.0001))
+
 if __name__ == '__main__':
     unittest.main()
