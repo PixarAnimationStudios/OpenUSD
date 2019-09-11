@@ -135,8 +135,16 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
     if (prim.IsInMaster()) {
         instancerChain.push_back(parentProxyPath);
     }
-    const TfToken& instanceDrawMode = GetModelDrawMode(_GetPrim(
-        _GetPrimPathFromInstancerChain(instancerChain)));
+
+    const UsdPrim& instancePrim = _GetPrim(
+        _GetPrimPathFromInstancerChain(instancerChain));
+    if (!TF_VERIFY(
+            instancePrim, "Cannot get instance prim for <%s>",
+            instancePath.GetString().c_str())) {
+        return SdfPath();
+    }
+
+    const TfToken& instanceDrawMode = GetModelDrawMode(instancePrim);
 
     // Check if there's an instance in use as a hydra instancer for this master
     // with the appropriate inherited attributes.
