@@ -266,7 +266,7 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
         // Projection
         RixParamList *projParams = mgr->CreateRixParamList();
         projParams->SetFloat(RixStr.k_fov, 60.0f);
-        cameraNode = riley::ShadingNode {
+        riley::ShadingNode cameraNode = riley::ShadingNode {
             riley::ShadingNode::k_Projection,
             us_PxrPerspective,
             us_main_cam_projection,

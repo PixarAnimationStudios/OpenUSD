@@ -93,6 +93,7 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
     static const RtUString us_PxrPerspective("PxrPerspective");
     static const RtUString us_PxrOrthographic("PxrOrthographic");
     static const RtUString us_PathTracer("PathTracer");
+    static const RtUString us_main_cam_projection("main_cam_projection");
 
     if (!_interactiveContext) {
         // If this is not an interactive context, don't use Hydra to drive
@@ -184,16 +185,13 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         // - World is Y-up
         // - Camera looks along +Z.
 
-        // Check if camera has switched between perspective or orthographic
-        riley::ShadingNode* cameraNode = &_interactiveContext->cameraNode;
-        bool isPerspective = cameraNode->name == us_PxrPerspective;
-        bool wantsOrtho = round(proj[3][3]) == 1 && proj != GfMatrix4d(1);
-
-        if (wantsOrtho && isPerspective) {
-            cameraNode->name = us_PxrOrthographic;
-        } else if (!wantsOrtho && !isPerspective) {
-            cameraNode->name = us_PxrPerspective;
-        }
+        bool isPerspective = round(proj[3][3]) != 1 || proj == GfMatrix4d(1);
+        riley::ShadingNode cameraNode = riley::ShadingNode {
+            riley::ShadingNode::k_Projection,
+            isPerspective ? us_PxrPerspective : us_PxrOrthographic,
+            us_main_cam_projection,
+            projParams
+        };
 
         // Set riley camera and projection shader params from the Hydra camera.
         hdCam->SetRileyCameraParams(camParams, projParams);
@@ -205,7 +203,7 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         // We apply the orthographic-width to the viewMatrix scale instead.
         // Inverse computation of GfFrustum::ComputeProjectionMatrix()
         GfMatrix4d viewToWorldCorrectionMatrix(1.0);
-        if (wantsOrtho) {
+        if (!isPerspective) {
             double left   = -(1 + proj[3][0]) / proj[0][0];
             double right  =  (1 - proj[3][0]) / proj[0][0];
             double bottom = -(1 - proj[3][1]) / proj[1][1];
@@ -222,7 +220,6 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
             const float fov_deg = fov_rad / M_PI * 180.0;
 
             projParams->SetFloat(RixStr.k_fov, fov_deg);
-            _interactiveContext->cameraNode.params = projParams;
 
             // Aspect ratio correction: modify the camera so the image aspect
             // ratio matches the viewport (the image dimensions here being the
@@ -256,7 +253,7 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         // Commit new camera.
         riley::Transform xform = {
             unsigned(xforms.count), xf_rt_values, xforms.times };
-        riley->ModifyCamera(_interactiveContext->cameraId, cameraNode,
+        riley->ModifyCamera(_interactiveContext->cameraId, &cameraNode,
                             &xform, camParams);
         mgr->DestroyRixParamList(camParams);
         mgr->DestroyRixParamList(projParams);
