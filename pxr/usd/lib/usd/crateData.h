@@ -54,27 +54,27 @@ public:
     bool Open(const std::string &assetPath);
 
     virtual bool StreamsData() const;
-    virtual void CreateSpec(const SdfAbstractDataSpecId &id, 
+    virtual void CreateSpec(const SdfPath &path, 
                             SdfSpecType specType);
-    virtual bool HasSpec(const SdfAbstractDataSpecId &id) const;
-    virtual void EraseSpec(const SdfAbstractDataSpecId &id);
-    virtual void MoveSpec(const SdfAbstractDataSpecId& oldId, 
-                          const SdfAbstractDataSpecId& newId);
-    virtual SdfSpecType GetSpecType(const SdfAbstractDataSpecId &id) const;
+    virtual bool HasSpec(const SdfPath &path) const;
+    virtual void EraseSpec(const SdfPath &path);
+    virtual void MoveSpec(const SdfPath& oldPath, 
+                          const SdfPath& newPath);
+    virtual SdfSpecType GetSpecType(const SdfPath &path) const;
 
-    virtual bool Has(const SdfAbstractDataSpecId& id, const TfToken& fieldName,
+    virtual bool Has(const SdfPath& path, const TfToken& fieldName,
                      SdfAbstractDataValue* value) const;
-    virtual bool Has(const SdfAbstractDataSpecId& id, const TfToken& fieldName,
+    virtual bool Has(const SdfPath& path, const TfToken& fieldName,
                      VtValue *value=nullptr) const;
-    virtual VtValue Get(const SdfAbstractDataSpecId& id, 
+    virtual VtValue Get(const SdfPath& path, 
                         const TfToken& fieldName) const;
-    virtual void Set(const SdfAbstractDataSpecId& id, const TfToken& fieldName,
+    virtual void Set(const SdfPath& path, const TfToken& fieldName,
                      const VtValue& value);
-    virtual void Set(const SdfAbstractDataSpecId& id, const TfToken& fieldName,
+    virtual void Set(const SdfPath& path, const TfToken& fieldName,
                      const SdfAbstractDataConstValue& value);
-    virtual void Erase(const SdfAbstractDataSpecId& id, 
+    virtual void Erase(const SdfPath& path, 
                        const TfToken& fieldName);
-    virtual std::vector<TfToken> List(const SdfAbstractDataSpecId& id) const;
+    virtual std::vector<TfToken> List(const SdfPath& path) const;
     
     /// \name Time-sample API
     /// @{
@@ -83,32 +83,32 @@ public:
     ListAllTimeSamples() const;
     
     virtual std::set<double>
-    ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const;
+    ListTimeSamplesForPath(const SdfPath& path) const;
 
     virtual bool
     GetBracketingTimeSamples(double time, double* tLower, double* tUpper) const;
 
     virtual size_t
-    GetNumTimeSamplesForPath(const SdfAbstractDataSpecId& id) const;
+    GetNumTimeSamplesForPath(const SdfPath& path) const;
 
     virtual bool
-    GetBracketingTimeSamplesForPath(const SdfAbstractDataSpecId& id,
+    GetBracketingTimeSamplesForPath(const SdfPath& path,
                                     double time,
                                     double* tLower, double* tUpper) const;
     
     virtual bool
-    QueryTimeSample(const SdfAbstractDataSpecId& id, double time,
+    QueryTimeSample(const SdfPath& path, double time,
                     SdfAbstractDataValue *value) const;
     virtual bool
-    QueryTimeSample(const SdfAbstractDataSpecId& id, double time, 
+    QueryTimeSample(const SdfPath& path, double time, 
                     VtValue *value) const;
 
     virtual void
-    SetTimeSample(const SdfAbstractDataSpecId& id, double time, 
+    SetTimeSample(const SdfPath& path, double time, 
                   const VtValue & value);
 
     virtual void
-    EraseTimeSample(const SdfAbstractDataSpecId& id, double time);
+    EraseTimeSample(const SdfPath& path, double time);
 
     /// @}
 

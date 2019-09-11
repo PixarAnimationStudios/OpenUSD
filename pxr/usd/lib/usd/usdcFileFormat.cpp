@@ -72,9 +72,7 @@ UsdUsdcFileFormat::InitData(const FileFormatArguments& args) const
 
     // The pseudo-root spec must always exist in a layer's SdfData, so
     // add it here.
-    newData->CreateSpec(SdfAbstractDataSpecId(&SdfPath::AbsoluteRootPath()),
-                        SdfSpecTypePseudoRoot);
-
+    newData->CreateSpec(SdfPath::AbsoluteRootPath(), SdfSpecTypePseudoRoot);
     return TfCreateRefPtr(newData);
 }
 

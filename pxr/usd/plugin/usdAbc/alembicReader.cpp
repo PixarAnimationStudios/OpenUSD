@@ -751,20 +751,20 @@ public:
     /// @{
 
     /// Test for the existence of a spec at \p id.
-    bool HasSpec(const SdfAbstractDataSpecId& id) const;
+    bool HasSpec(const SdfPath& path) const;
 
     /// Returns the spec type for the spec at \p id.
-    SdfSpecType GetSpecType(const SdfAbstractDataSpecId& id) const;
+    SdfSpecType GetSpecType(const SdfPath& path) const;
 
     /// Test for the existence of and optionally return the value at
-    /// (\p id,\p fieldName).
-    bool HasField(const SdfAbstractDataSpecId& id,
+    /// (\p path,\p fieldName).
+    bool HasField(const SdfPath& path,
                   const TfToken& fieldName,
                   const UsdAbc_AlembicDataAny& value) const;
 
     /// Test for the existence of and optionally return the value of the
     /// property at \p id at index \p index.
-    bool HasValue(const SdfAbstractDataSpecId& id, Index index,
+    bool HasValue(const SdfPath& path, Index index,
                   const UsdAbc_AlembicDataAny& value) const;
 
     /// Visit the specs.
@@ -772,14 +772,14 @@ public:
                     SdfAbstractDataSpecVisitor* visitor) const;
 
     /// List the fields.
-    TfTokenVector List(const SdfAbstractDataSpecId& id) const;
+    TfTokenVector List(const SdfPath& path) const;
 
     /// Returns the sampled times over all properties.
     const UsdAbc_TimeSamples& ListAllTimeSamples() const;
 
     /// Returns the sampled times for the property with id \p id.
     const TimeSamples& 
-    ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const;
+    ListTimeSamplesForPath(const SdfPath& path) const;
 
     /// @}
 
@@ -812,9 +812,9 @@ private:
     // Clear caches.
     void _Clear();
 
-    const Prim* _GetPrim(const SdfAbstractDataSpecId& id) const;
+    const Prim* _GetPrim(const SdfPath& path) const;
     const Property* _GetProperty(const Prim&,
-                                 const SdfAbstractDataSpecId& id) const;
+                                 const SdfPath& path) const;
     bool _HasField(const Prim* prim,
                    const TfToken& fieldName,
                    const UsdAbc_AlembicDataAny& value) const;
@@ -1147,27 +1147,20 @@ _ReaderContext::AddSampleTimes(const TimeSamples& sampleTimes)
 }
 
 bool
-_ReaderContext::HasSpec(const SdfAbstractDataSpecId& id) const
+_ReaderContext::HasSpec(const SdfPath& path) const
 {
-    if (const Prim* prim = _GetPrim(id)) {
-        if (id.IsProperty()) {
-            return _GetProperty(*prim, id);
-        }
-        else {
-            return true;
-        }
+    if (const Prim* prim = _GetPrim(path)) {
+        return path.IsAbsoluteRootOrPrimPath() || _GetProperty(*prim, path);
     }
-    else {
-        return false;
-    }
+    return false;
 }
 
 SdfSpecType
-_ReaderContext::GetSpecType(const SdfAbstractDataSpecId& id) const
+_ReaderContext::GetSpecType(const SdfPath& path) const
 {
-    if (const Prim* prim = _GetPrim(id)) {
-        if (id.IsProperty()) {
-            if (_GetProperty(*prim, id)) {
+    if (const Prim* prim = _GetPrim(path)) {
+        if (!path.IsAbsoluteRootOrPrimPath()) {
+            if (_GetProperty(*prim, path)) {
                 return SdfSpecTypeAttribute;
             }
         }
@@ -1183,15 +1176,15 @@ _ReaderContext::GetSpecType(const SdfAbstractDataSpecId& id) const
 
 bool
 _ReaderContext::HasField(
-    const SdfAbstractDataSpecId& id,
+    const SdfPath& path,
     const TfToken& fieldName,
     const UsdAbc_AlembicDataAny& value) const
 {
     TRACE_FUNCTION();
 
-    if (const Prim* prim = _GetPrim(id)) {
-        if (id.IsProperty()) {
-            if (const Property* property = _GetProperty(*prim, id)) {
+    if (const Prim* prim = _GetPrim(path)) {
+        if (!path.IsAbsoluteRootOrPrimPath()) {
+            if (const Property* property = _GetProperty(*prim, path)) {
                 return _HasField(property, fieldName, value);
             }
         }
@@ -1204,15 +1197,15 @@ _ReaderContext::HasField(
 
 bool
 _ReaderContext::HasValue(
-    const SdfAbstractDataSpecId& id,
+    const SdfPath& path,
     Index index,
     const UsdAbc_AlembicDataAny& value) const
 {
     TRACE_FUNCTION();
 
-    if (const Prim* prim = _GetPrim(id)) {
-        if (id.IsProperty()) {
-            if (const Property* property = _GetProperty(*prim, id)) {
+    if (const Prim* prim = _GetPrim(path)) {
+        if (!path.IsAbsoluteRootOrPrimPath()) {
+            if (const Property* property = _GetProperty(*prim, path)) {
                 return _HasValue(property, ISampleSelector(index), value);
             }
         }
@@ -1229,7 +1222,7 @@ _ReaderContext::VisitSpecs(
     for (const auto& v : _prims) {
         // Visit the prim.
         const SdfPath& primPath = v.first;
-        if (!visitor->VisitSpec(owner, SdfAbstractDataSpecId(&primPath))) {
+        if (!visitor->VisitSpec(owner, primPath)) {
             return;
         }
 
@@ -1238,7 +1231,7 @@ _ReaderContext::VisitSpecs(
         if (&prim != _pseudoRoot) {
             for (const auto& w : prim.propertiesCache) {
                 if (!visitor->VisitSpec(owner,
-                            SdfAbstractDataSpecId(&primPath, &w.first))) {
+                                        primPath.AppendProperty(w.first))) {
                     return;
                 }
             }
@@ -1247,15 +1240,15 @@ _ReaderContext::VisitSpecs(
 }
 
 TfTokenVector
-_ReaderContext::List(const SdfAbstractDataSpecId& id) const
+_ReaderContext::List(const SdfPath& path) const
 {
     TRACE_FUNCTION();
 
     TfTokenVector result;
 
-    if (const Prim* prim = _GetPrim(id)) {
-        if (id.IsProperty()) {
-            if (const Property* property = _GetProperty(*prim, id)) {
+    if (const Prim* prim = _GetPrim(path)) {
+        if (!path.IsAbsoluteRootOrPrimPath()) {
+            if (const Property* property = _GetProperty(*prim, path)) {
                 result.push_back(SdfFieldKeys->TypeName);
                 result.push_back(SdfFieldKeys->Custom);
                 result.push_back(SdfFieldKeys->Variability);
@@ -1316,13 +1309,13 @@ _ReaderContext::ListAllTimeSamples() const
 }
 
 const _ReaderContext::TimeSamples& 
-_ReaderContext::ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
+_ReaderContext::ListTimeSamplesForPath(const SdfPath& path) const
 {
     TRACE_FUNCTION();
 
-    if (id.IsProperty()) {
-        if (const Prim* prim = _GetPrim(id)) {
-            if (const Property* property = _GetProperty(*prim, id)) {
+    if (path.IsPropertyPath()) {
+        if (const Prim* prim = _GetPrim(path)) {
+            if (const Property* property = _GetProperty(*prim, path)) {
                 if (property->timeSampled) {
                     return property->sampleTimes;
                 }
@@ -1525,19 +1518,24 @@ _ReaderContext::_Clear()
 }
 
 const _ReaderContext::Prim*
-_ReaderContext::_GetPrim(const SdfAbstractDataSpecId& id) const
+_ReaderContext::_GetPrim(const SdfPath& path) const
 {
-    _PrimMap::const_iterator i = _prims.find(id.GetPropertyOwningSpecPath());
+    _PrimMap::const_iterator i = _prims.find(path.GetAbsoluteRootOrPrimPath());
     return i == _prims.end() ? NULL : &i->second;
 }
 
 const _ReaderContext::Property*
 _ReaderContext::_GetProperty(
     const Prim& prim,
-    const SdfAbstractDataSpecId& id) const
+    const SdfPath& path) const
 {
+    // The alembic reader does not support relational attributes; only prim
+    // properties.
+    if (!path.IsPrimPropertyPath()) {
+        return nullptr;
+    }
     PropertyMap::const_iterator i =
-        prim.propertiesCache.find(id.GetPropertyName());
+        prim.propertiesCache.find(path.GetNameToken());
     return i == prim.propertiesCache.end() ? NULL : &i->second;
 }
 
@@ -4095,51 +4093,51 @@ UsdAbc_AlembicDataReader::SetFlag(const TfToken& flagName, bool set)
 }
 
 bool
-UsdAbc_AlembicDataReader::HasSpec(const SdfAbstractDataSpecId& id) const
+UsdAbc_AlembicDataReader::HasSpec(const SdfPath& path) const
 {
-    return _impl->HasSpec(id);
+    return _impl->HasSpec(path);
 }
 
 SdfSpecType
-UsdAbc_AlembicDataReader::GetSpecType(const SdfAbstractDataSpecId& id) const
+UsdAbc_AlembicDataReader::GetSpecType(const SdfPath& path) const
 {
-    return _impl->GetSpecType(id);
+    return _impl->GetSpecType(path);
 }
 
 bool
 UsdAbc_AlembicDataReader::HasField(
-    const SdfAbstractDataSpecId& id,
+    const SdfPath& path,
     const TfToken& fieldName,
     SdfAbstractDataValue* value) const
 {
-    return _impl->HasField(id, fieldName, UsdAbc_AlembicDataAny(value));
+    return _impl->HasField(path, fieldName, UsdAbc_AlembicDataAny(value));
 }
 
 bool
 UsdAbc_AlembicDataReader::HasField(
-    const SdfAbstractDataSpecId& id,
+    const SdfPath& path,
     const TfToken& fieldName,
     VtValue* value) const
 {
-    return _impl->HasField(id, fieldName, UsdAbc_AlembicDataAny(value));
+    return _impl->HasField(path, fieldName, UsdAbc_AlembicDataAny(value));
 }
 
 bool
 UsdAbc_AlembicDataReader::HasValue(
-    const SdfAbstractDataSpecId& id,
+    const SdfPath& path,
     Index index,
     SdfAbstractDataValue* value) const
 {
-    return _impl->HasValue(id, index, UsdAbc_AlembicDataAny(value));
+    return _impl->HasValue(path, index, UsdAbc_AlembicDataAny(value));
 }
 
 bool
 UsdAbc_AlembicDataReader::HasValue(
-    const SdfAbstractDataSpecId& id,
+    const SdfPath& path,
     Index index,
     VtValue* value) const
 {
-    return _impl->HasValue(id, index, UsdAbc_AlembicDataAny(value));
+    return _impl->HasValue(path, index, UsdAbc_AlembicDataAny(value));
 }
 
 void
@@ -4151,9 +4149,9 @@ UsdAbc_AlembicDataReader::VisitSpecs(
 }
 
 TfTokenVector
-UsdAbc_AlembicDataReader::List(const SdfAbstractDataSpecId& id) const
+UsdAbc_AlembicDataReader::List(const SdfPath& path) const
 {
-    return _impl->List(id);
+    return _impl->List(path);
 }
 
 const std::set<double>&
@@ -4164,9 +4162,9 @@ UsdAbc_AlembicDataReader::ListAllTimeSamples() const
 
 const UsdAbc_AlembicDataReader::TimeSamples&
 UsdAbc_AlembicDataReader::ListTimeSamplesForPath(
-    const SdfAbstractDataSpecId& id) const
+    const SdfPath& path) const
 {
-    return _impl->ListTimeSamplesForPath(id);
+    return _impl->ListTimeSamplesForPath(path);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -1092,16 +1092,16 @@ _GetBracketingTimeSamples(const Container& authoredClipTimes,
 
 bool 
 Usd_Clip::_GetBracketingTimeSamplesForPathInternal(
-    const SdfAbstractDataSpecId& id, ExternalTime time, 
+    const SdfPath& path, ExternalTime time, 
     ExternalTime* tLower, ExternalTime* tUpper) const
 {
     const SdfLayerRefPtr& clip = _GetLayerForClip();
-    const _TranslatedSpecId idInClip = _TranslateIdToClip(id);
+    const SdfPath clipPath = _TranslatePathToClip(path);
     const InternalTime timeInClip = _TranslateTimeToInternal(time);
     InternalTime lowerInClip, upperInClip;
 
     if (!clip->GetBracketingTimeSamplesForPath(
-            idInClip.id, timeInClip, &lowerInClip, &upperInClip)) {
+            clipPath, timeInClip, &lowerInClip, &upperInClip)) {
         return false;
     }
 
@@ -1230,12 +1230,12 @@ Usd_Clip::_GetBracketingTimeSamplesForPathInternal(
 
 bool 
 Usd_Clip::GetBracketingTimeSamplesForPath(
-    const SdfAbstractDataSpecId& id, ExternalTime time, 
+    const SdfPath& path, ExternalTime time, 
     ExternalTime* tLower, ExternalTime* tUpper) const
 {
     double lowerInClipLayer, upperInClipLayer;
     bool fetchFromClip = _GetBracketingTimeSamplesForPathInternal(
-        id, time, &lowerInClipLayer, &upperInClipLayer);
+        path, time, &lowerInClipLayer, &upperInClipLayer);
 
     bool fetchFromAuthoredClipTimes = false;
     double lowerInClipTimes, upperInClipTimes;
@@ -1267,10 +1267,10 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
 }
 
 std::set<Usd_Clip::InternalTime>
-Usd_Clip::_GetMergedTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
+Usd_Clip::_GetMergedTimeSamplesForPath(const SdfPath& path) const
 {
     std::set<Usd_Clip::InternalTime> timeSamplesInClip = 
-        _GetLayerForClip()->ListTimeSamplesForPath(_TranslateIdToClip(id).id);
+        _GetLayerForClip()->ListTimeSamplesForPath(_TranslatePathToClip(path));
     for (const TimeMapping& t : times) {
         timeSamplesInClip.insert(t.internalTime);
     }
@@ -1279,15 +1279,15 @@ Usd_Clip::_GetMergedTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
 }
 
 size_t
-Usd_Clip::GetNumTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
+Usd_Clip::GetNumTimeSamplesForPath(const SdfPath& path) const
 {
-    return _GetMergedTimeSamplesForPath(id).size();
+    return _GetMergedTimeSamplesForPath(path).size();
 }
 
 std::set<Usd_Clip::ExternalTime>
-Usd_Clip::ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
+Usd_Clip::ListTimeSamplesForPath(const SdfPath& path) const
 {
-    std::set<InternalTime> timeSamplesInClip = _GetMergedTimeSamplesForPath(id);
+    std::set<InternalTime> timeSamplesInClip = _GetMergedTimeSamplesForPath(path);
     if (times.empty()) {
         return timeSamplesInClip;
     }
@@ -1348,17 +1348,15 @@ Usd_Clip::ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
 }
 
 bool 
-Usd_Clip::HasField(const SdfAbstractDataSpecId& id, const TfToken& field) const
+Usd_Clip::HasField(const SdfPath& path, const TfToken& field) const
 {
-    return _GetLayerForClip()->HasField(_TranslateIdToClip(id).id, field);
+    return _GetLayerForClip()->HasField(_TranslatePathToClip(path), field);
 }
 
-Usd_Clip::_TranslatedSpecId 
-Usd_Clip::_TranslateIdToClip(const SdfAbstractDataSpecId& id) const
+SdfPath
+Usd_Clip::_TranslatePathToClip(const SdfPath& path) const
 {
-    return _TranslatedSpecId(
-        id.GetPropertyOwningSpecPath().ReplacePrefix(sourcePrimPath, primPath),
-        id.GetPropertyName());
+    return path.ReplacePrefix(sourcePrimPath, primPath);
 }
 
 Usd_Clip::InternalTime
@@ -1412,10 +1410,9 @@ Usd_Clip::_TranslateTimeToExternal(
 }
 
 SdfPropertySpecHandle
-Usd_Clip::GetPropertyAtPath(const SdfAbstractDataSpecId &id) const
+Usd_Clip::GetPropertyAtPath(const SdfPath &path) const
 {
-    const auto path = _TranslateIdToClip(id).id.GetFullSpecPath();
-    return _GetLayerForClip()->GetPropertyAtPath(path);
+    return _GetLayerForClip()->GetPropertyAtPath(_TranslatePathToClip(path));
 }
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -1479,16 +1476,16 @@ Usd_Clip::GetLayerIfOpen() const
 template <class T>
 bool
 Usd_Clip::_Interpolate(
-    const SdfLayerRefPtr& clip, const _TranslatedSpecId& clipId,
+    const SdfLayerRefPtr& clip, const SdfPath &clipPath,
     InternalTime clipTime, Usd_InterpolatorBase* interpolator,
     T* value) const
 {
     double lowerInClip, upperInClip;
     if (clip->GetBracketingTimeSamplesForPath(
-            clipId.id, clipTime, &lowerInClip, &upperInClip)) {
+            clipPath, clipTime, &lowerInClip, &upperInClip)) {
             
         return Usd_GetOrInterpolateValue(
-            clip, clipId.id, clipTime, lowerInClip, upperInClip,
+            clip, clipPath, clipTime, lowerInClip, upperInClip,
             interpolator, value);
     }
 
@@ -1497,11 +1494,11 @@ Usd_Clip::_Interpolate(
 
 #define _INSTANTIATE_INTERPOLATE(r, unused, elem)               \
     template bool Usd_Clip::_Interpolate(                       \
-        const SdfLayerRefPtr&, const _TranslatedSpecId&,        \
+        const SdfLayerRefPtr&, const SdfPath &,                 \
         InternalTime, Usd_InterpolatorBase*,                    \
         SDF_VALUE_CPP_TYPE(elem)*) const;                       \
     template bool Usd_Clip::_Interpolate(                       \
-        const SdfLayerRefPtr&, const _TranslatedSpecId&,        \
+        const SdfLayerRefPtr&, const SdfPath &,                 \
         InternalTime, Usd_InterpolatorBase*,                    \
         SDF_VALUE_CPP_ARRAY_TYPE(elem)*) const;                 \
 
@@ -1509,12 +1506,12 @@ BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_INTERPOLATE, ~, SDF_VALUE_TYPES)
 #undef _INSTANTIATE_INTERPOLATE
 
 template bool Usd_Clip::_Interpolate(
-    const SdfLayerRefPtr&, const _TranslatedSpecId&,
+    const SdfLayerRefPtr&, const SdfPath&,
     InternalTime, Usd_InterpolatorBase*,
     SdfAbstractDataValue*) const;
 
 template bool Usd_Clip::_Interpolate(
-    const SdfLayerRefPtr&, const _TranslatedSpecId&,
+    const SdfLayerRefPtr&, const SdfPath&,
     InternalTime, Usd_InterpolatorBase*,
     VtValue*) const;
 

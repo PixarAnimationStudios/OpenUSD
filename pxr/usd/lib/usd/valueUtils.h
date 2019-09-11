@@ -103,19 +103,19 @@ Usd_ClearValueIfBlocked(VtValue* value)
 template <class T>
 inline bool
 Usd_QueryTimeSample(
-    const SdfLayerRefPtr& layer, const SdfAbstractDataSpecId& specId,
+    const SdfLayerRefPtr& layer, const SdfPath& path,
     double time, Usd_InterpolatorBase* interpolator, T* result)
 {
-    return layer->QueryTimeSample(specId, time, result);
+    return layer->QueryTimeSample(path, time, result);
 }
 
 template <class T>
 inline bool
 Usd_QueryTimeSample(
-    const Usd_ClipRefPtr& clip, const SdfAbstractDataSpecId& specId,
+    const Usd_ClipRefPtr& clip, const SdfPath& path,
     double time, Usd_InterpolatorBase* interpolator, T* result)
 {
-    return clip->QueryTimeSample(specId, time, interpolator, result);
+    return clip->QueryTimeSample(path, time, interpolator, result);
 }
 
 /// Merges sample times in \p additionalTimeSamples into the vector pointed to 

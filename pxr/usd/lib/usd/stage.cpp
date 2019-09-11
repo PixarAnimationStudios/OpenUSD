@@ -1570,18 +1570,16 @@ UsdStage::_ClearValue(UsdTimeCode time, const UsdAttribute &attr)
     }
 
     const SdfLayerHandle &layer = editTarget.GetLayer();
-    SdfPath localPath = editTarget.MapToSpecPath(attr.GetPrimPath());
-    const TfToken &attrName = attr.GetName();
-    if (!layer->HasSpec(SdfAbstractDataSpecId(&localPath, &attrName))) {
+    if (!layer->HasSpec(editTarget.MapToSpecPath(attr.GetPath()))) {
         return true;
     }
 
     SdfAttributeSpecHandle attrSpec = _CreateAttributeSpecForEditing(attr);
 
     if (!TF_VERIFY(attrSpec, 
-                      "Failed to get attribute spec <%s> in layer @%s@",
-                      editTarget.MapToSpecPath(attr.GetPath()).GetText(),
-                      editTarget.GetLayer()->GetIdentifier().c_str())) {
+                   "Failed to get attribute spec <%s> in layer @%s@",
+                   editTarget.MapToSpecPath(attr.GetPath()).GetText(),
+                   editTarget.GetLayer()->GetIdentifier().c_str())) {
         return false;
     }
 
@@ -1611,10 +1609,7 @@ UsdStage::_ClearMetadata(const UsdObject &obj, const TfToken& fieldName,
     }
 
     const SdfLayerHandle &layer = editTarget.GetLayer();
-    SdfPath localPath = editTarget.MapToSpecPath(obj.GetPrimPath());
-    static TfToken empty;
-    const TfToken &propName = obj.Is<UsdProperty>() ? obj.GetName() : empty;
-    if (!layer->HasSpec(SdfAbstractDataSpecId(&localPath, &propName))) {
+    if (!layer->HasSpec(editTarget.MapToSpecPath(obj.GetPath()))) {
         return true;
     }
 
@@ -1625,9 +1620,9 @@ UsdStage::_ClearMetadata(const UsdObject &obj, const TfToken& fieldName,
         spec = _CreatePrimSpecForEditing(obj.As<UsdPrim>());
 
     if (!TF_VERIFY(spec, 
-                      "No spec at <%s> in layer @%s@",
-                      editTarget.MapToSpecPath(obj.GetPath()).GetText(),
-                      editTarget.GetLayer()->GetIdentifier().c_str())) {
+                   "No spec at <%s> in layer @%s@",
+                   editTarget.MapToSpecPath(obj.GetPath()).GetText(),
+                   editTarget.GetLayer()->GetIdentifier().c_str())) {
         return false;
     }
 
@@ -4255,12 +4250,12 @@ UsdStage::_GetDefiningSpecType(Usd_PrimDataConstPtr primData,
     bool curPathValid = false;
     while (res.IsValid()) {
         const SdfLayerRefPtr& layer = res.GetLayer();
-        if (layer->HasSpec(SdfAbstractDataSpecId(&res.GetLocalPath()))) {
+        if (layer->HasSpec(res.GetLocalPath())) {
             if (!curPathValid) {
                 curPath = res.GetLocalPath().AppendProperty(propName);
                 curPathValid = true;
             }
-            specType = layer->GetSpecType(SdfAbstractDataSpecId(&curPath));
+            specType = layer->GetSpecType(curPath);
             if (specType != SdfSpecTypeUnknown)
                 return specType;
         }
@@ -4959,7 +4954,7 @@ struct StrongestValueComposer
     bool IsDone() const { return _done; }
     bool ConsumeAuthored(const PcpNodeRef &node,
                          const SdfLayerRefPtr &layer,
-                         const SdfAbstractDataSpecId &specId,
+                         const SdfPath &specPath,
                          const TfToken &fieldName,
                          const TfToken &keyPath) {
 
@@ -4976,8 +4971,8 @@ struct StrongestValueComposer
 
         // Try to read value from scene description.
         _done = keyPath.IsEmpty() ?
-            layer->HasField(specId, fieldName, _value) :
-            layer->HasFieldDictKey(specId, fieldName, keyPath, _value);
+            layer->HasField(specPath, fieldName, _value) :
+            layer->HasFieldDictKey(specPath, fieldName, keyPath, _value);
 
         if (_done) {
             const ArResolverContext &context = 
@@ -5060,14 +5055,14 @@ struct ExistenceComposer
     bool IsDone() const { return _done; }
     bool ConsumeAuthored(const PcpNodeRef &node,
                          const SdfLayerRefPtr &layer,
-                         const SdfAbstractDataSpecId &specId,
+                         const SdfPath &specPath,
                          const TfToken &fieldName,
                          const TfToken &keyPath,
                          const SdfLayerOffset & = SdfLayerOffset()) {
         _done = keyPath.IsEmpty() ?
-            layer->HasField(specId, fieldName,
+            layer->HasField(specPath, fieldName,
                             static_cast<VtValue *>(nullptr)) :
-            layer->HasFieldDictKey(specId, fieldName, keyPath,
+            layer->HasFieldDictKey(specPath, fieldName, keyPath,
                                    static_cast<VtValue*>(nullptr));
         if (_done && _strongestLayer)
             *_strongestLayer = layer;
@@ -5151,10 +5146,10 @@ UsdStage::_IsCustom(const UsdProperty &prop) const
             continue;
         }
 
-        const SdfAbstractDataSpecId specId(&itr->GetPath(), &propName);
+        SdfPath specPath = itr->GetPath().AppendProperty(propName);
         TF_REVERSE_FOR_ALL(layerIt, itr->GetLayerStack()->GetLayers()) {
             bool result = false;
-            if ((*layerIt)->HasField(specId, SdfFieldKeys->Custom, &result)
+            if ((*layerIt)->HasField(specPath, SdfFieldKeys->Custom, &result)
                 && result) {
                 return true;
             }
@@ -5186,11 +5181,11 @@ UsdStage
             if (itr->IsInert() || !itr->HasSpecs())
                 continue;
 
-            const SdfAbstractDataSpecId specId(&itr->GetPath(), &attrName);
+            SdfPath specPath = itr->GetPath().AppendProperty(attrName);
             TF_REVERSE_FOR_ALL(layerIt, itr->GetLayerStack()->GetLayers()) {
                 SdfVariability result;
                 if ((*layerIt)->HasField(
-                        specId, SdfFieldKeys->Variability, &result)) {
+                        specPath, SdfFieldKeys->Variability, &result)) {
                     return result;
                 }
             }
@@ -5331,10 +5326,10 @@ UsdStage::_GetAttrVariabilityImpl(const UsdAttribute &attr, bool useFallbacks,
     TF_REVERSE_FOR_ALL(itr, attr.GetPrim().GetPrimIndex().GetNodeRange()) {
         if (itr->IsInert() || !itr->HasSpecs())
             continue;
-        const SdfAbstractDataSpecId specId(&itr->GetPath(), &attrName);
+        SdfPath specPath = itr->GetPath().AppendProperty(attrName);
         TF_REVERSE_FOR_ALL(layerIt, itr->GetLayerStack()->GetLayers()) {
             composer->ConsumeAuthored(
-                *itr, *layerIt, specId, SdfFieldKeys->Variability, TfToken());
+                *itr, *layerIt, specPath, SdfFieldKeys->Variability, TfToken());
             if (composer->IsDone())
                 return;
         }
@@ -5362,10 +5357,10 @@ UsdStage::_GetPropCustomImpl(const UsdProperty &prop, bool useFallbacks,
         if (itr->IsInert() || !itr->HasSpecs())
             continue;
 
-        const SdfAbstractDataSpecId specId(&itr->GetPath(), &propName);
+        SdfPath specPath = itr->GetPath().AppendProperty(propName);
         TF_REVERSE_FOR_ALL(layerIt, itr->GetLayerStack()->GetLayers()) {
             composer->ConsumeAuthored(
-                *itr, *layerIt, specId, SdfFieldKeys->Custom, TfToken());
+                *itr, *layerIt, specPath, SdfFieldKeys->Custom, TfToken());
             if (composer->IsDone())
                 return;
         }
@@ -5381,11 +5376,11 @@ UsdStage::_GetPrimTypeNameImpl(const UsdPrim &prim, bool useFallbacks,
     for (Usd_Resolver res(&prim.GetPrimIndex());
          res.IsValid(); res.NextLayer()) {
         TfToken tok;
-        SdfAbstractDataSpecId specId(&res.GetLocalPath());
-        if (res.GetLayer()->HasField(specId, SdfFieldKeys->TypeName, &tok)) {
+        if (res.GetLayer()->HasField(
+                res.GetLocalPath(), SdfFieldKeys->TypeName, &tok)) {
             if (!tok.IsEmpty() && tok != SdfTokens->AnyTypeToken) {
                 composer->ConsumeAuthored(
-                    res.GetNode(), res.GetLayer(), specId,
+                    res.GetNode(), res.GetLayer(), res.GetLocalPath(),
                     SdfFieldKeys->TypeName, TfToken());
                 if (composer->IsDone())
                     return;
@@ -5514,7 +5509,7 @@ UsdStage::_GetPrimSpecifierImpl(Usd_PrimDataConstPtr primData,
         // Let the composer see the deciding opinion.
         composer->ConsumeAuthored(
             specPos.GetNode(), specPos.GetLayer(), 
-            SdfAbstractDataSpecId(&specPos.GetLocalPath()),
+            specPos.GetLocalPath(),
             SdfFieldKeys->Specifier, TfToken());
     }
     return true;
@@ -5533,15 +5528,15 @@ UsdStage::_GetListOpMetadataImpl(const UsdObject &obj,
 
     static TfToken empty;
     const TfToken &propName = obj.Is<UsdProperty>() ? obj.GetName() : empty;
-    SdfAbstractDataSpecId specId(&res->GetLocalPath(), &propName);
+    SdfPath specPath = res->GetLocalPath(propName);
 
     for (bool isNewNode = false; res->IsValid(); isNewNode = res->NextLayer()) {
         if (isNewNode)
-            specId = SdfAbstractDataSpecId(&res->GetLocalPath(), &propName);
+            specPath = res->GetLocalPath(propName);
 
         // Consume an authored opinion here, if one exists.
         ListOpType op;
-        if (res->GetLayer()->HasField(specId, fieldName, &op)) {
+        if (res->GetLayer()->HasField(specPath, fieldName, &op)) {
             listOps.emplace_back(op);
         }
     }
@@ -5701,16 +5696,16 @@ UsdStage::_ComposeGeneralMetadataImpl(const UsdObject &obj,
     // Main resolution loop.
     static TfToken empty;
     const TfToken &propName = obj.Is<UsdProperty>() ? obj.GetName() : empty;
-    SdfAbstractDataSpecId specId(&res->GetLocalPath(), &propName);
+    SdfPath specPath = res->GetLocalPath(propName);
     bool gotOpinion = false;
 
     for (bool isNewNode = false; res->IsValid(); isNewNode = res->NextLayer()) {
         if (isNewNode) 
-            specId = SdfAbstractDataSpecId(&res->GetLocalPath(), &propName);
+            specPath = res->GetLocalPath(propName);
 
         // Consume an authored opinion here, if one exists.
         gotOpinion |= composer->ConsumeAuthored(
-            res->GetNode(), res->GetLayer(), specId, fieldName, keyPath);
+            res->GetNode(), res->GetLayer(), specPath, fieldName, keyPath);
         
         if (composer->IsDone()) 
             return true;
@@ -5742,7 +5737,7 @@ UsdStage::_ListMetadataFields(const UsdObject &obj, bool useFallbacks) const
     const TfToken &propName = obj.Is<UsdProperty>() ? obj.GetName() : empty;
 
     Usd_Resolver res(&obj.GetPrim().GetPrimIndex());
-    SdfAbstractDataSpecId specId(&res.GetLocalPath(), &propName);
+    SdfPath specPath = res.GetLocalPath(propName);
     PcpNodeRef lastNode = res.GetNode();
     SdfSpecType specType = SdfSpecTypeUnknown;
 
@@ -5759,13 +5754,13 @@ UsdStage::_ListMetadataFields(const UsdObject &obj, bool useFallbacks) const
     for (; res.IsValid(); res.NextLayer()) {
         if (res.GetNode() != lastNode) {
             lastNode = res.GetNode();
-            specId = SdfAbstractDataSpecId(&res.GetLocalPath(), &propName);
+            specPath = res.GetLocalPath(propName);
         }
         const SdfLayerRefPtr& layer = res.GetLayer();
         if (specType == SdfSpecTypeUnknown)
-            specType = layer->GetSpecType(specId);
+            specType = layer->GetSpecType(specPath);
 
-        for (const auto& fieldName : layer->ListFields(specId)) {
+        for (const auto& fieldName : layer->ListFields(specPath)) {
             if (!_IsPrivateFieldKey(fieldName))
                 result.push_back(fieldName);
         }
@@ -5843,7 +5838,7 @@ const std::vector<const Usd_ClipCache::Clips*>
 _GetClipsThatApplyToNode(
     const std::vector<Usd_ClipCache::Clips>& clipsAffectingPrim,
     const PcpNodeRef& node,
-    const SdfAbstractDataSpecId& specId)
+    const SdfPath& specPath)
 {
     std::vector<const Usd_ClipCache::Clips*> relevantClips;
 
@@ -5864,7 +5859,7 @@ _GetClipsThatApplyToNode(
             if (localClips.manifestClip) {
                 SdfVariability attrVariability = SdfVariabilityUniform;
                 if (!localClips.manifestClip->HasField(
-                        specId, SdfFieldKeys->Variability, &attrVariability)
+                        specPath, SdfFieldKeys->Variability, &attrVariability)
                     || attrVariability != SdfVariabilityVarying) {
                     continue;
                 }
@@ -6047,8 +6042,8 @@ public:
                              Usd_InterpolatorBase *interpolator,
                              T *result)
     {
-        const SdfAbstractDataSpecId specId(
-            &info._primPathInLayerStack, &attr.GetName());
+        const SdfPath specPath =
+            info._primPathInLayerStack.AppendProperty(attr.GetName());
         const SdfLayerRefPtr& layer = 
             info._layerStack->GetLayers()[info._layerIndex];
         const double localTime =
@@ -6063,12 +6058,12 @@ public:
         }
         else {
             if (!TF_VERIFY(layer->GetBracketingTimeSamplesForPath(
-                        specId, localTime, &lower, &upper),
-                        "No bracketing time samples for "
-                               "%s on <%s> for time %g between %g and %g",
-                               layer->GetIdentifier().c_str(),
-                               specId.GetFullSpecPath().GetText(),
-                               localTime, lower, upper)) {
+                               specPath, localTime, &lower, &upper),
+                           "No bracketing time samples for "
+                           "%s on <%s> for time %g between %g and %g",
+                           layer->GetIdentifier().c_str(),
+                           specPath.GetText(),
+                           localTime, lower, upper)) {
                 return false;
             }
         }
@@ -6077,7 +6072,7 @@ public:
             "RESOLVE: reading field %s:%s from @%s@, "
             "with requested time = %.3f (local time = %.3f) "
             "reading from sample %.3f \n",
-            specId.GetString().c_str(),
+            specPath.GetText(),
             SdfFieldKeys->TimeSamples.GetText(),
             layer->GetIdentifier().c_str(),
             time.GetValue(),
@@ -6085,7 +6080,7 @@ public:
             lower);
 
         return Usd_GetOrInterpolateValue(
-            layer, specId, localTime, lower, upper, interpolator, result);
+            layer, specPath, localTime, lower, upper, interpolator, result);
     } 
 
     template <class T>
@@ -6096,22 +6091,22 @@ public:
                               Usd_InterpolatorBase *interpolator,
                               T *result)
     {
-        const SdfAbstractDataSpecId specId(
-            &info._primPathInLayerStack, &attr.GetName());
+        const SdfPath specPath =
+            info._primPathInLayerStack.AppendProperty(attr.GetName());
         const double localTime = time.GetValue();
 
         TF_DEBUG(USD_VALUE_RESOLUTION).Msg(
             "RESOLVE: reading field %s:%s from clip %s, "
             "with requested time = %.3f "
             "reading from sample %.3f \n",
-            specId.GetString().c_str(),
+            specPath.GetText(),
             SdfFieldKeys->TimeSamples.GetText(),
             TfStringify(clip->assetPath).c_str(),
             localTime,
             lower);
 
         return Usd_GetOrInterpolateValue(
-            clip, specId, localTime, lower, upper, interpolator, result);
+            clip, specPath, localTime, lower, upper, interpolator, result);
     }
 };
 
@@ -6204,7 +6199,7 @@ namespace
 {
 bool
 _HasTimeSamples(const SdfLayerRefPtr& source, 
-                const SdfAbstractDataSpecId& specId, 
+                const SdfPath& specPath, 
                 const double* time = nullptr, 
                 double* lower = nullptr, double* upper = nullptr)
 {
@@ -6213,27 +6208,27 @@ _HasTimeSamples(const SdfLayerRefPtr& source,
         // GetBracketingTimeSamplesForPath. If no samples exist, this should
         // return false.
         return source->GetBracketingTimeSamplesForPath(
-            specId, *time, lower, upper);
+            specPath, *time, lower, upper);
     }
 
-    return source->GetNumTimeSamplesForPath(specId) > 0;
+    return source->GetNumTimeSamplesForPath(specPath) > 0;
 }
 
 bool
 _HasTimeSamples(const Usd_ClipRefPtr& source, 
-                const SdfAbstractDataSpecId& specId, 
+                const SdfPath& specPath, 
                 const double* time = nullptr, 
                 double* lower = nullptr, double* upper = nullptr)
 {
     if (time) {
         return source->GetBracketingTimeSamplesForPath(
-                    specId, *time, lower, upper) && 
-               source->_GetNumTimeSamplesForPathInLayerForClip(specId) != 0;
+                    specPath, *time, lower, upper) && 
+               source->_GetNumTimeSamplesForPathInLayerForClip(specPath) != 0;
     }
 
     // Use this method to directly access authored time samples,
     // disregarding 'fake' samples used by clips.
-    return source->_GetNumTimeSamplesForPathInLayerForClip(specId) > 0;
+    return source->_GetNumTimeSamplesForPathInLayerForClip(specPath) > 0;
 }
 
 enum _DefaultValueResult {
@@ -6244,18 +6239,17 @@ enum _DefaultValueResult {
 
 template <class T>    
 _DefaultValueResult 
-_HasDefault(const SdfLayerRefPtr& layer, const SdfAbstractDataSpecId& specId, 
-            T* value)
+_HasDefault(const SdfLayerRefPtr& layer, const SdfPath& specPath, T* value)
 {
     // We need to actually examine the default value in all cases to see
     // if a block was authored. So, if no value to fill in was specified,
     // we need to create a dummy one.
     if (!value) {
         VtValue dummy;
-        return _HasDefault(layer, specId, &dummy);
+        return _HasDefault(layer, specPath, &dummy);
     }
 
-    if (layer->HasField(specId, SdfFieldKeys->Default, value)) {
+    if (layer->HasField(specPath, SdfFieldKeys->Default, value)) {
         if (Usd_ClearValueIfBlocked(value)) {
             return _DefaultValueBlocked;
         }
@@ -6274,14 +6268,13 @@ struct UsdStage::_PropertyStackResolver {
 
     bool
     ProcessLayer(const size_t layerStackPosition,
-                 const SdfAbstractDataSpecId& specId,
+                 const SdfPath& specPath,
                  const PcpNodeRef& node,
                  const double *time) 
     {
-        const auto layer 
+        const auto layer
             = node.GetLayerStack()->GetLayers()[layerStackPosition];
-        const auto propertySpec 
-            = layer->GetPropertyAtPath(specId.GetFullSpecPath());
+        const auto propertySpec = layer->GetPropertyAtPath(specPath);
         if (propertySpec) {
             propertyStack.push_back(propertySpec); 
         }
@@ -6291,7 +6284,7 @@ struct UsdStage::_PropertyStackResolver {
 
     bool
     ProcessClip(const Usd_ClipRefPtr& clip,
-                const SdfAbstractDataSpecId& specId,
+                const SdfPath& specPath,
                 const PcpNodeRef& node,
                 const double* time) 
     {
@@ -6300,9 +6293,10 @@ struct UsdStage::_PropertyStackResolver {
             return false;
 
         double lowerSample = 0.0, upperSample = 0.0;
-        if (_HasTimeSamples(clip, specId, time, &lowerSample, &upperSample)) {
-            if (const auto propertySpec = clip->GetPropertyAtPath(specId)) 
-                propertyStack.push_back(propertySpec);    
+        if (_HasTimeSamples(clip, specPath, time, &lowerSample, &upperSample)) {
+            if (const auto propertySpec = clip->GetPropertyAtPath(specPath)) {
+                propertyStack.push_back(propertySpec);
+            }
         }
      
         return false;
@@ -6348,7 +6342,7 @@ struct UsdStage::_ResolveInfoResolver
 
     bool
     ProcessLayer(const size_t layerStackPosition,
-                 const SdfAbstractDataSpecId& specId,
+                 const SdfPath& specPath,
                  const PcpNodeRef& node,
                  const double *time) 
     {
@@ -6362,14 +6356,14 @@ struct UsdStage::_ResolveInfoResolver
             localTime = layerToStageOffset.GetInverse() * (*time);
         }
 
-        if (_HasTimeSamples(layer, specId, localTime.get_ptr(), 
+        if (_HasTimeSamples(layer, specPath, localTime.get_ptr(), 
                             &_extraInfo->lowerSample, 
                             &_extraInfo->upperSample)) {
             _resolveInfo->_source = UsdResolveInfoSourceTimeSamples;
         }
         else { 
-            _DefaultValueResult defValue = 
-                _HasDefault(layer, specId, _extraInfo->defaultOrFallbackValue);
+            _DefaultValueResult defValue = _HasDefault(
+                layer, specPath, _extraInfo->defaultOrFallbackValue);
             if (defValue == _DefaultValueFound) {
                 _resolveInfo->_source = UsdResolveInfoSourceDefault;
             }
@@ -6393,7 +6387,7 @@ struct UsdStage::_ResolveInfoResolver
 
     bool
     ProcessClip(const Usd_ClipRefPtr& clip,
-                const SdfAbstractDataSpecId& specId,
+                const SdfPath& specPath,
                 const PcpNodeRef& node,
                 const double* time)
     {
@@ -6401,7 +6395,7 @@ struct UsdStage::_ResolveInfoResolver
         if (time && (*time < clip->startTime || *time >= clip->endTime))
             return false;
 
-        if (_HasTimeSamples(clip, specId, time,
+        if (_HasTimeSamples(clip, specPath, time,
                             &_extraInfo->lowerSample, 
                             &_extraInfo->upperSample)){
     
@@ -6507,13 +6501,13 @@ UsdStage::_GetResolvedValueImpl(const UsdProperty &prop,
             continue;
         }
 
-        const SdfAbstractDataSpecId specId(&node.GetPath(), &prop.GetName());
+        const SdfPath specPath = node.GetPath().AppendProperty(prop.GetName());
         const SdfLayerRefPtrVector& layerStack 
             = node.GetLayerStack()->GetLayers();
         boost::optional<std::vector<const Usd_ClipCache::Clips*>> clips;
         for (size_t i = 0, e = layerStack.size(); i < e; ++i) {
             if (nodeHasSpecs) { 
-                if (resolver->ProcessLayer(i, specId, node, 
+                if (resolver->ProcessLayer(i, specPath, node, 
                                            localTime.get_ptr())) {
                     return;
                 }
@@ -6522,7 +6516,7 @@ UsdStage::_GetResolvedValueImpl(const UsdProperty &prop,
             if (clipsAffectingPrim){ 
                 if (!clips) {
                     clips = _GetClipsThatApplyToNode(*clipsAffectingPrim,
-                                                     node, specId);
+                                                     node, specPath);
                     // If we don't have specs on this node and clips don't
                     // apply we can mode onto the next node.
                     if (!nodeHasSpecs && clips->empty()) { 
@@ -6546,7 +6540,7 @@ UsdStage::_GetResolvedValueImpl(const UsdProperty &prop,
                     // this attribute. If a time is given, examine just the clips
                     // that are active at that time.
                     for (const Usd_ClipRefPtr& clip : clipSet->valueClips) {
-                        if (resolver->ProcessClip(clip, specId, node,
+                        if (resolver->ProcessClip(clip, specPath, node,
                                                   localTime.get_ptr())) {
                             return;
                         }
@@ -6581,25 +6575,25 @@ UsdStage::_GetValueFromResolveInfoImpl(const UsdResolveInfo &info,
             time, attr, info, nullptr, nullptr, interpolator, result);
     }
     else if (info._source == UsdResolveInfoSourceDefault) {
-        const SdfAbstractDataSpecId specId(
-            &info._primPathInLayerStack, &attr.GetName());
+        const SdfPath specPath =
+            info._primPathInLayerStack.AppendProperty(attr.GetName());
         const SdfLayerHandle& layer = 
             info._layerStack->GetLayers()[info._layerIndex];
 
         TF_DEBUG(USD_VALUE_RESOLUTION).Msg(
             "RESOLVE: reading field %s:%s from @%s@, with t = %.3f"
             " as default\n",
-            specId.GetString().c_str(),
+            specPath.GetText(),
             SdfFieldKeys->TimeSamples.GetText(),
             layer->GetIdentifier().c_str(),
             time.GetValue());
 
         return TF_VERIFY(
-            layer->HasField(specId, SdfFieldKeys->Default, result));
+            layer->HasField(specPath, SdfFieldKeys->Default, result));
     }
     else if (info._source == UsdResolveInfoSourceValueClips) {
-        const SdfAbstractDataSpecId specId(
-            &info._primPathInLayerStack, &attr.GetName());
+        const SdfPath specPath =
+            info._primPathInLayerStack.AppendProperty(attr.GetName());
 
         const UsdPrim prim = attr.GetPrim();
         const std::vector<Usd_ClipCache::Clips>& clipsAffectingPrim =
@@ -6626,7 +6620,7 @@ UsdStage::_GetValueFromResolveInfoImpl(const UsdResolveInfo &info,
                 double upper = 0.0;
                 double lower = 0.0;
                 if (clip->GetBracketingTimeSamplesForPath(
-                        specId, localTime, &lower, &upper)) {
+                        specPath, localTime, &lower, &upper)) {
                     return UsdStage_ResolveInfoAccess::_GetClipValue(
                         time, attr, info, clip, lower, upper, interpolator, 
                         result);
@@ -6745,12 +6739,13 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
     };
 
     if (info._source == UsdResolveInfoSourceTimeSamples) {
-        const SdfAbstractDataSpecId specId(
-            &info._primPathInLayerStack, &attr.GetName());
+        const SdfPath specPath =
+            info._primPathInLayerStack.AppendProperty(attr.GetName());
         const SdfLayerRefPtr& layer = 
             info._layerStack->GetLayers()[info._layerIndex];
 
-        const std::set<double> samples = layer->ListTimeSamplesForPath(specId);
+        const std::set<double> samples =
+            layer->ListTimeSamplesForPath(specPath);
         if (!samples.empty()) {
             if (info._layerToStageOffset.IsIdentity()) {
                 // The layer offset is identity, so we can use the interval
@@ -6781,8 +6776,8 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
         const std::vector<Usd_ClipCache::Clips>& clipsAffectingPrim =
             _clipCache->GetClipsForPrim(prim.GetPath());
 
-        const SdfAbstractDataSpecId specId(
-            &info._primPathInLayerStack, &attr.GetName());
+        const SdfPath specPath =
+            info._primPathInLayerStack.AppendProperty(attr.GetName());
 
         std::vector<double> timesFromAllClips;
 
@@ -6807,7 +6802,7 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
                 
                 // See comments in _GetValueImpl regarding layer
                 // offsets and why they're not applied here.
-                const auto samples = clip->ListTimeSamplesForPath(specId);
+                const auto samples = clip->ListTimeSamplesForPath(specPath);
                 if (!samples.empty()) {
                     copySamplesInInterval(samples, &timesFromAllClips, interval);
                 }
@@ -6859,12 +6854,12 @@ UsdStage::_GetNumTimeSamplesFromResolveInfo(const UsdResolveInfo &info,
                                             const UsdAttribute &attr) const
 {
     if (info._source == UsdResolveInfoSourceTimeSamples) {
-        const SdfAbstractDataSpecId specId(
-            &info._primPathInLayerStack, &attr.GetName());
+        const SdfPath specPath =
+            info._primPathInLayerStack.AppendProperty(attr.GetName());
         const SdfLayerRefPtr& layer = 
             info._layerStack->GetLayers()[info._layerIndex];
 
-        return layer->GetNumTimeSamplesForPath(specId);
+        return layer->GetNumTimeSamplesForPath(specPath);
     } 
     else if (info._source == UsdResolveInfoSourceValueClips ||
              info._source == UsdResolveInfoSourceIsTimeDependent) {
@@ -6953,15 +6948,15 @@ UsdStage::_GetBracketingTimeSamplesFromResolveInfo(const UsdResolveInfo &info,
                                                    bool* hasSamples) const
 {
     if (info._source == UsdResolveInfoSourceTimeSamples) {
-        const SdfAbstractDataSpecId specId(
-            &info._primPathInLayerStack, &attr.GetName());
+        const SdfPath specPath =
+            info._primPathInLayerStack.AppendProperty(attr.GetName());
         const SdfLayerRefPtr& layer = 
             info._layerStack->GetLayers()[info._layerIndex];
         const double layerTime =
             info._layerToStageOffset.GetInverse() * desiredTime;
         
         if (layer->GetBracketingTimeSamplesForPath(
-                specId, layerTime, lower, upper)) {
+                specPath, layerTime, lower, upper)) {
 
             if (!info._layerToStageOffset.IsIdentity()) {
                 *lower = info._layerToStageOffset * (*lower);
@@ -6978,8 +6973,8 @@ UsdStage::_GetBracketingTimeSamplesFromResolveInfo(const UsdResolveInfo &info,
     }
     else if (info._source == UsdResolveInfoSourceValueClips ||
              info._source == UsdResolveInfoSourceIsTimeDependent) {
-        const SdfAbstractDataSpecId specId(
-            &info._primPathInLayerStack, &attr.GetName());
+        const SdfPath specPath =
+            info._primPathInLayerStack.AppendProperty(attr.GetName());
 
         const UsdPrim prim = attr.GetPrim();
 
@@ -7014,7 +7009,7 @@ UsdStage::_GetBracketingTimeSamplesFromResolveInfo(const UsdResolveInfo &info,
                     foundLower = foundUpper = true;
                 }
                 else if (clip->GetBracketingTimeSamplesForPath(
-                         specId, desiredTime, lower, upper)) {
+                         specPath, desiredTime, lower, upper)) {
                     foundLower = foundUpper = true;
                     if (*lower == *upper) {
                         if (desiredTime < *lower) {
@@ -7079,7 +7074,7 @@ UsdStage::_GetBracketingTimeSamplesFromResolveInfo(const UsdResolveInfo &info,
 
 static bool
 _ValueFromClipsMightBeTimeVarying(const Usd_ClipRefPtr &firstClipWithSamples,
-                                  const SdfAbstractDataSpecId &attrSpecId)
+                                  const SdfPath &attrSpecPath)
 {
     // If the first clip is active over all time (i.e., it is the only 
     // clip that affects this attribute) and it has more than one time
@@ -7087,7 +7082,7 @@ _ValueFromClipsMightBeTimeVarying(const Usd_ClipRefPtr &firstClipWithSamples,
     // its value must be constant over all time.
     if (firstClipWithSamples->startTime == Usd_ClipTimesEarliest
         && firstClipWithSamples->endTime == Usd_ClipTimesLatest) {
-        return firstClipWithSamples->GetNumTimeSamplesForPath(attrSpecId) > 1;
+        return firstClipWithSamples->GetNumTimeSamplesForPath(attrSpecPath) > 1;
     }
 
     // Since this clip isn't active over all time, we must have more clips.
@@ -7109,9 +7104,9 @@ UsdStage::_ValueMightBeTimeVarying(const UsdAttribute &attr) const
         // See comment in _ValueMightBeTimeVaryingFromResolveInfo.
         // We can short-cut the work in that function because _GetResolveInfo
         // gives us the first clip that has time samples for this attribute.
-        const SdfAbstractDataSpecId specId(
-            &info._primPathInLayerStack, &attr.GetName());
-        return _ValueFromClipsMightBeTimeVarying(extraInfo.clip, specId);
+        const SdfPath specPath = 
+            info._primPathInLayerStack.AppendProperty(attr.GetName());
+        return _ValueFromClipsMightBeTimeVarying(extraInfo.clip, specPath);
     }
 
     return _ValueMightBeTimeVaryingFromResolveInfo(info, attr);
@@ -7131,8 +7126,8 @@ UsdStage::_ValueMightBeTimeVaryingFromResolveInfo(const UsdResolveInfo &info,
         //
         // Note that we still wind up checking every clip if none of them
         // have samples for this attribute.
-        const SdfAbstractDataSpecId specId(
-            &info._primPathInLayerStack, &attr.GetName());
+        const SdfPath specPath =
+            info._primPathInLayerStack.AppendProperty(attr.GetName());
 
         const std::vector<Usd_ClipCache::Clips>& clipsAffectingPrim =
             _clipCache->GetClipsForPrim(attr.GetPrim().GetPath());
@@ -7140,8 +7135,8 @@ UsdStage::_ValueMightBeTimeVaryingFromResolveInfo(const UsdResolveInfo &info,
             for (const auto& clip : clipAffectingPrim.valueClips) {
                 if (_ClipAppliesToLayerStackSite(
                         clip, info._layerStack, info._primPathInLayerStack)
-                    && _HasTimeSamples(clip, specId)) {
-                    return _ValueFromClipsMightBeTimeVarying(clip, specId);
+                    && _HasTimeSamples(clip, specPath)) {
+                    return _ValueFromClipsMightBeTimeVarying(clip, specPath);
                 }
             }
         }

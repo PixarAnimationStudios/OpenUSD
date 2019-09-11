@@ -375,8 +375,8 @@ _AttrWriter::Set(const T& value, UsdTimeCode time)
     TF_VERIFY(_spec);
 
     if (time.IsNumeric()) {
-        const SdfAbstractDataSpecId id(&_primPath, &_name);
-        _spec->GetLayer()->SetTimeSample(id, time.GetValue(), value);
+        const SdfPath path = _primPath.AppendProperty(_name);
+        _spec->GetLayer()->SetTimeSample(path, time.GetValue(), value);
     } else {
         _spec->SetDefaultValue(VtValue(value));
     }

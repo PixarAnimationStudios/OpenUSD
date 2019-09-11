@@ -155,11 +155,11 @@ private:
         const TfToken &name,
         bool usd)
     {
-        if (!layer->HasSpec(SdfAbstractDataSpecId(&owningPrimPath)))
+        if (!layer->HasSpec(owningPrimPath))
             return TfNullPtr;
 
         const SdfPath propPath = owningPrimPath.AppendProperty(name);
-        if (!layer->HasSpec(SdfAbstractDataSpecId(&propPath)))
+        if (!layer->HasSpec(propPath))
             return TfNullPtr;
 
         SdfPropertySpecHandle propSpec = layer->GetPropertyAtPath(propPath);

@@ -195,55 +195,54 @@ public:
         ExternalTime clipEndTime,
         const TimeMappings& timeMapping);
 
-    bool HasField(const SdfAbstractDataSpecId& id, const TfToken& field) const;
+    bool HasField(const SdfPath& path, const TfToken& field) const;
 
-    SdfPropertySpecHandle GetPropertyAtPath(
-            const SdfAbstractDataSpecId& id) const;
+    SdfPropertySpecHandle GetPropertyAtPath(const SdfPath& path) const;
 
     template <class T>
     bool HasField(
-        const SdfAbstractDataSpecId& id, const TfToken& field,
+        const SdfPath& path, const TfToken& field,
         T* value) const
     {
         return _GetLayerForClip()->HasField(
-            _TranslateIdToClip(id).id, field, value);
+            _TranslatePathToClip(path), field, value);
     }
 
-    size_t GetNumTimeSamplesForPath(const SdfAbstractDataSpecId& id) const;
+    size_t GetNumTimeSamplesForPath(const SdfPath& path) const;
 
     // Internal function used during value resolution. When determining
     // resolve info sources, value resolution needs to determine when clipTimes
     // are mapping into an empty clip with no samples, so it can continue
     // searching for value sources. 
     size_t _GetNumTimeSamplesForPathInLayerForClip(
-        const SdfAbstractDataSpecId& id) const 
+        const SdfPath& path) const 
     {
         return _GetLayerForClip()->GetNumTimeSamplesForPath(
-            _TranslateIdToClip(id).id);
+            _TranslatePathToClip(path));
     }
 
     std::set<ExternalTime>
-    ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const;
+    ListTimeSamplesForPath(const SdfPath& path) const;
 
     bool GetBracketingTimeSamplesForPath(
-        const SdfAbstractDataSpecId& id, ExternalTime time, 
+        const SdfPath& path, ExternalTime time, 
         ExternalTime* tLower, ExternalTime* tUpper) const;
 
     template <class T>
     bool QueryTimeSample(
-        const SdfAbstractDataSpecId& id, ExternalTime time, 
+        const SdfPath& path, ExternalTime time, 
         Usd_InterpolatorBase* interpolator, T* value) const
     {
-        const _TranslatedSpecId clipId = _TranslateIdToClip(id);
+        const SdfPath clipPath = _TranslatePathToClip(path);
         const InternalTime clipTime = _TranslateTimeToInternal(time);
         const SdfLayerRefPtr& clip = _GetLayerForClip();
 
-        if (clip->QueryTimeSample(clipId.id, clipTime, value)) {
+        if (clip->QueryTimeSample(clipPath, clipTime, value)) {
             return true;
         }
 
         // See comment in Usd_Clip::GetBracketingTimeSamples.
-        return _Interpolate(clip, clipId, clipTime, interpolator, value);
+        return _Interpolate(clip, clipPath, clipTime, interpolator, value);
     }
 
     /// Return the layer associated with this clip iff it has already been
@@ -275,35 +274,22 @@ public:
 private:
     friend class UsdStage;
 
-    struct _TranslatedSpecId {
-    public:
-        _TranslatedSpecId(const SdfPath& path, const TfToken& propName)
-            : id(&_path, &propName)
-            , _path(path)
-            { }
-
-        SdfAbstractDataSpecId id;
-
-    private:
-        SdfPath _path;
-    };
-
     std::set<InternalTime>
-    _GetMergedTimeSamplesForPath(const SdfAbstractDataSpecId& id) const;
+    _GetMergedTimeSamplesForPath(const SdfPath& path) const;
 
     bool 
-    _GetBracketingTimeSamplesForPathInternal(const SdfAbstractDataSpecId& id, 
+    _GetBracketingTimeSamplesForPathInternal(const SdfPath& path, 
                                              ExternalTime time, 
                                              ExternalTime* tLower, 
                                              ExternalTime* tUpper) const;
 
     template <class T>
     bool _Interpolate(
-        const SdfLayerRefPtr& clip, const _TranslatedSpecId& clipId,
+        const SdfLayerRefPtr& clip, const SdfPath &clipPath,
         InternalTime clipTime, Usd_InterpolatorBase* interpolator,
         T* value) const;
 
-    _TranslatedSpecId _TranslateIdToClip(const SdfAbstractDataSpecId& id) const;
+    SdfPath _TranslatePathToClip(const SdfPath &path) const;
 
     // Helpers to translate between internal and external time domains.
     InternalTime _TranslateTimeToInternal(
