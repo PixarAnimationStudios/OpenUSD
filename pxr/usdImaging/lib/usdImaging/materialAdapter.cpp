@@ -331,16 +331,16 @@ UsdImagingMaterialAdapter::_GetMaterialNetworkMap(UsdPrim const &usdPrim,
     }
     const TfToken context = _GetMaterialNetworkSelector();
     if (UsdShadeShader s = material.ComputeSurfaceSource(context)) {
-        _WalkGraph(s, &materialNetworkMap->map[UsdImagingTokens->bxdf],
-                  _GetShaderSourceTypes());
+        TfToken const& key = HdMaterialTerminalTokens->surface;
+        _WalkGraph(s, &materialNetworkMap->map[key], _GetShaderSourceTypes());
     }
     if (UsdShadeShader d = material.ComputeDisplacementSource(context)) {
-        _WalkGraph(d, &materialNetworkMap->map[UsdImagingTokens->displacement],
-                  _GetShaderSourceTypes());
+        TfToken const& key = HdMaterialTerminalTokens->displacement;
+        _WalkGraph(d, &materialNetworkMap->map[key], _GetShaderSourceTypes());
     }
     if (UsdShadeShader v = material.ComputeVolumeSource(context)) {
-        _WalkGraph(v, &materialNetworkMap->map[UsdImagingTokens->volume],
-                  _GetShaderSourceTypes());
+        TfToken const& key = HdMaterialTerminalTokens->volume;
+        _WalkGraph(v, &materialNetworkMap->map[key], _GetShaderSourceTypes());
     }
 }
 

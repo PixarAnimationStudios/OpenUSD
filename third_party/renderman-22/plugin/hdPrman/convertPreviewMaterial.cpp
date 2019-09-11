@@ -44,10 +44,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    // Network types
-    (bxdf)
-    (displacement)
-
     // Usd preview shading node types
     (UsdPreviewSurface)
     (UsdUVTexture)
@@ -95,13 +91,13 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 void HdPrman_ConvertUsdPreviewMaterial(HdMaterialNetworkMap *netMap)
 {
-    HdMaterialNetwork bxdfNet, dispNet;
-    TfMapLookup(netMap->map, _tokens->bxdf, &bxdfNet);
-    TfMapLookup(netMap->map, _tokens->displacement, &dispNet);
+    HdMaterialNetwork surfaceNet, dispNet;
+    TfMapLookup(netMap->map, HdMaterialTerminalTokens->surface, &surfaceNet);
+    TfMapLookup(netMap->map, HdMaterialTerminalTokens->displacement, &dispNet);
 
     bool previewMaterialFound = false;
     std::vector<HdMaterialNode> nodesToAdd;
-    for (HdMaterialNode &node: bxdfNet.nodes) {
+    for (HdMaterialNode &node: surfaceNet.nodes) {
         if (node.identifier == _tokens->UsdPreviewSurface) {
             previewMaterialFound = true;
 
@@ -140,7 +136,7 @@ void HdPrman_ConvertUsdPreviewMaterial(HdMaterialNetworkMap *netMap)
             };
 
             for (const auto &mapping : inputOutputMapping) {
-                bxdfNet.relationships.emplace_back( HdMaterialRelationship{
+                surfaceNet.relationships.emplace_back( HdMaterialRelationship{
                     node.path, mapping.first, pxrSurfacePath, mapping.second
                 });
             }
@@ -167,14 +163,14 @@ void HdPrman_ConvertUsdPreviewMaterial(HdMaterialNetworkMap *netMap)
         }
     }
 
-    bxdfNet.nodes.insert(bxdfNet.nodes.end(), nodesToAdd.begin(), 
+    surfaceNet.nodes.insert(surfaceNet.nodes.end(), nodesToAdd.begin(), 
             nodesToAdd.end());
 
     if (previewMaterialFound) {
         // Commit converted networks
-        netMap->map[_tokens->bxdf] = bxdfNet;
+        netMap->map[HdMaterialTerminalTokens->surface] = surfaceNet;
         // XXX: Support displacement.  For now, just eject it.
-        netMap->map.erase(_tokens->displacement);
+        netMap->map.erase(HdMaterialTerminalTokens->displacement);
     }
 }
 

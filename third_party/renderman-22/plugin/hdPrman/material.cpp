@@ -47,13 +47,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     (PxrDisplace)
     (MaterialLayer_1)
     (MaterialLayer_2)
-    (bxdf)
-    (displacement)
-    (volume)
     (pbsMaterialIn)
     (inputMaterial)
     (OSL)
     (RmanCpp)
+    (bxdf)
 
     // XXX(HdPrmanMaterialTemp) Temporary tokens for material upgrades:
     (vstructmemberaliases)
@@ -110,13 +108,13 @@ HdPrmanMaterial::_ResetMaterial(HdPrman_Context *context)
 static void
 _ApplyStudioFixes(HdMaterialNetworkMap *netMap)
 {
-    HdMaterialNetwork bxdfNet, dispNet;
-    TfMapLookup(netMap->map, _tokens->bxdf, &bxdfNet);
-    TfMapLookup(netMap->map, _tokens->displacement, &dispNet);
+    HdMaterialNetwork surfaceNet, dispNet;
+    TfMapLookup(netMap->map, HdMaterialTerminalTokens->surface, &surfaceNet);
+    TfMapLookup(netMap->map, HdMaterialTerminalTokens->displacement, &dispNet);
 
     // XXX(HdPrmanMaterialTemp) 
     // {globalattr:modelName} expansion.
-    for (HdMaterialNode &node: bxdfNet.nodes) {
+    for (HdMaterialNode &node: surfaceNet.nodes) {
         for (auto& param: node.parameters) {
             std::string s;
             if (param.second.IsHolding<std::string>()) {
@@ -157,14 +155,14 @@ _ApplyStudioFixes(HdMaterialNetworkMap *netMap)
     }
 
     // XXX(HdPrmanMaterialTemp) 
-    // If no displacement network was provided, try using the bxdf
+    // If no displacement network was provided, try using the surface
     // network, since it may provide a displacement signal.
-    if (dispNet.nodes.empty() && !bxdfNet.nodes.empty()) {
-        dispNet = bxdfNet;
+    if (dispNet.nodes.empty() && !surfaceNet.nodes.empty()) {
+        dispNet = surfaceNet;
     }
 
-    // bxdf
-    for (HdMaterialNode &node: bxdfNet.nodes) {
+    // surface
+    for (HdMaterialNode &node: surfaceNet.nodes) {
         if (node.identifier == _tokens->PbsNetworkMaterialStandIn_2) {
             node.identifier = _tokens->PxrSurface;
         }
@@ -192,7 +190,7 @@ _ApplyStudioFixes(HdMaterialNetworkMap *netMap)
             }
         }
     }
-    for (HdMaterialRelationship &rel: bxdfNet.relationships) {
+    for (HdMaterialRelationship &rel: surfaceNet.relationships) {
         if (rel.outputName == _tokens->pbsMaterialIn) {
             rel.outputName = _tokens->inputMaterial;
         }
@@ -213,8 +211,8 @@ _ApplyStudioFixes(HdMaterialNetworkMap *netMap)
     }
 
     // Commit fixed networks
-    netMap->map[_tokens->bxdf] = bxdfNet;
-    netMap->map[_tokens->displacement] = dispNet;
+    netMap->map[HdMaterialTerminalTokens->surface] = surfaceNet;
+    netMap->map[HdMaterialTerminalTokens->displacement] = dispNet;
 }
 
 static void
@@ -439,6 +437,7 @@ _MapHdNodesToRileyNodes(
         // Create equivalent Riley shading node.
         riley::ShadingNode sn;
         if (shaders[i]->GetContext() == _tokens->bxdf ||
+            shaders[i]->GetContext() == SdrNodeContext->Surface ||
             shaders[i]->GetContext() == SdrNodeContext->Volume) {
             sn.type = riley::ShadingNode::k_Bxdf;
         } else if (shaders[i]->GetContext() == SdrNodeContext->Pattern ||
@@ -794,14 +793,17 @@ HdPrmanMaterial::Sync(HdSceneDelegate *sceneDelegate,
             HdPrman_ConvertUsdPreviewMaterial(&networkMap);
             _ApplyStudioFixes(&networkMap);
 
-            HdMaterialNetwork bxdfNet, dispNet, volNet;
-            TfMapLookup(networkMap.map, _tokens->bxdf, &bxdfNet);
-            TfMapLookup(networkMap.map, _tokens->displacement, &dispNet);
-            TfMapLookup(networkMap.map, _tokens->volume, &volNet);
+            HdMaterialNetwork surfaceNet, dispNet, volNet;
+            TfMapLookup(networkMap.map,
+                        HdMaterialTerminalTokens->surface, &surfaceNet);
+            TfMapLookup(networkMap.map,
+                        HdMaterialTerminalTokens->displacement, &dispNet);
+            TfMapLookup(networkMap.map,
+                        HdMaterialTerminalTokens->volume, &volNet);
 
             if (TfDebug::IsEnabled(HDPRMAN_MATERIALS)) {
-                if (!bxdfNet.nodes.empty()) {
-                    HdPrman_DumpMat("BXDF", id, bxdfNet);
+                if (!surfaceNet.nodes.empty()) {
+                    HdPrman_DumpMat("Surface", id, surfaceNet);
                 }
                 if (!dispNet.nodes.empty()) {
                     HdPrman_DumpMat("Displacement", id, dispNet);
@@ -814,7 +816,7 @@ HdPrmanMaterial::Sync(HdSceneDelegate *sceneDelegate,
             std::vector<riley::ShadingNode> nodes;
 
             // Surface/Volume
-            if (_ConvertHdMaterialToRman(mgr, bxdfNet, &nodes) ||
+            if (_ConvertHdMaterialToRman(mgr, surfaceNet, &nodes) ||
                 _ConvertHdMaterialToRman(mgr, volNet, &nodes)) {
                 if (_materialId == riley::MaterialId::k_InvalidId) {
                     _materialId = riley->CreateMaterial(&nodes[0],
