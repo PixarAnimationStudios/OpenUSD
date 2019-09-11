@@ -260,6 +260,15 @@ vec2 convertSampleVec(vec3 sample3D)
     return coord;
 }
 
+mat4 GetDomeLightTransform(bool isZup)
+{
+    const mat4 alignUpAxis = mat4(1,0,0,0, 0,0,1,0, 0,-1,0,0, 0,0,0,1);
+    mat4 worldToViewInverse = GetWorldToViewInverseMatrix();
+    mat4 transformationMatrix = (isZup) ? worldToViewInverse 
+                                        : alignUpAxis * worldToViewInverse;
+    return transformationMatrix;
+}
+
 vec3 
 evaluateIndirectLighting(
         vec3 diffuseColor, 
@@ -272,7 +281,8 @@ evaluateIndirectLighting(
         float metallic, 
         float occlusion,
         float roughness,
-        bool useSpecularWorkflow)
+        bool useSpecularWorkflow, 
+        bool isZup)
 {
     vec3 F0 = specularColor;
     vec3 F90 = vec3(1.0);
@@ -294,15 +304,18 @@ evaluateIndirectLighting(
     vec3 ambient = vec3(0.0);
 
 #ifdef HD_HAS_domeLightIrradiance
+
+    mat4 transformationMatrix = GetDomeLightTransform(isZup);
+
     // Diffuse Component
-    vec3 dir = vec4(GetWorldToViewInverseMatrix() * vec4(Neye,0.0)).xyz;
+    vec3 dir = vec4(transformationMatrix * vec4(Neye,0.0)).xyz;
     vec2 coord = convertSampleVec(dir);
     vec3 diffuse = HdGet_domeLightIrradiance(coord).rgb;
 
     // Specular Component
     const float MAX_REFLECTION_LOD = 4.0;
     float lod = roughness * MAX_REFLECTION_LOD;
-    vec3 Rdir = vec4(GetWorldToViewInverseMatrix() * vec4(reflectVec,0.0)).xyz; 
+    vec3 Rdir = vec4(transformationMatrix * vec4(reflectVec,0.0)).xyz; 
     vec2 Rcoord = convertSampleVec(Rdir);
     vec3 prefilteredColor = textureLod(HdGetSampler_domeLightPrefilter(), 
                                     Rcoord, lod).rgb;
@@ -399,7 +412,8 @@ evaluateLights(
             indirectLight = evaluateIndirectLighting(diffuseColor,
                                     specularColor, Neye, reflectVec, NdotE,
                                     EdotH, ior, metallic, occlusion,
-                                    specularRoughness, useSpecularWorkflow);
+                                    specularRoughness, useSpecularWorkflow, 
+                                    lightSource[i].isZup);
         }
         // all other light sources contribute to the direct lighting
         else {

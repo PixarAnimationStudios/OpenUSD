@@ -1677,6 +1677,7 @@ class StageView(QtOpenGL.QGLWidget):
                         # testing for pseudo domeLight
                         l = Glf.SimpleLight()
                         l.isDomeLight = True
+                        l.isZup = self._stageIsZup
                         lights.append(l)
 
                     kA = self._dataModel.viewSettings.defaultMaterialAmbient

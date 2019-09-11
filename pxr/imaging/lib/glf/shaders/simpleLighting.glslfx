@@ -99,7 +99,7 @@ struct LightSource {
     bool hasShadow;
     int shadowIndex;
     bool isIndirectLight;
-    int padding0;
+    bool isZup;
 };
 
 struct ShadowMatrix {

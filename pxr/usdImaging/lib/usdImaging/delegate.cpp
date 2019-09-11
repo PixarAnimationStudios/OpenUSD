@@ -55,6 +55,7 @@
 
 #include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usdGeom/tokens.h"
+#include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdGeom/modelAPI.h"
 
 #include "pxr/usd/usdLux/domeLight.h"
@@ -88,6 +89,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (HydraPbsSurface)
     (DomeLight)
     (PreviewDomeLight)
+    (StageOrientation)
 );
 
 // This environment variable matches a set of similar ones in
@@ -2899,6 +2901,9 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
     } else if (paramName == HdTokens->shadowLink) {
         UsdCollectionAPI shadowLink = light.GetShadowLinkCollectionAPI();
         return VtValue(_collectionCache.GetIdForCollection(shadowLink));
+    } else if (paramName == _tokens->StageOrientation) {
+        // get the orientation of the stage 
+        return VtValue(UsdGeomGetStageUpAxis(_stage) == UsdGeomTokens->z);
     }
 
     // Fallback to USD attributes.

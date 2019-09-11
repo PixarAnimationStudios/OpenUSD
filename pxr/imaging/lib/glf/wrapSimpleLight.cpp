@@ -124,5 +124,10 @@ void wrapSimpleLight()
                           &This::IsDomeLight,
                           return_value_policy<return_by_value>()),
                       &This::SetIsDomeLight)
+        .add_property("isZup",
+                      make_function(
+                          &This::IsZup,
+                          return_value_policy<return_by_value>()),
+                      &This::SetIsZup)
         ;
 }

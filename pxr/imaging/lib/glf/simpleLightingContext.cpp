@@ -281,7 +281,8 @@ GlfSimpleLightingContext::BindUniformBlocks(GlfBindingMapPtr const &bindingMap)
             bool hasShadow;
             int32_t shadowIndex;
             bool isIndirectLight;
-            int32_t padding2;
+            bool padding2[3];
+            bool isZup;
         };
 
         struct Lighting {
@@ -340,6 +341,7 @@ GlfSimpleLightingContext::BindUniformBlocks(GlfBindingMapPtr const &bindingMap)
             lightingData->lightSource[i].spotFalloff = light.GetSpotFalloff();
             lightingData->lightSource[i].hasShadow = light.HasShadow();
             lightingData->lightSource[i].isIndirectLight = light.IsDomeLight();
+            lightingData->lightSource[i].isZup = light.IsZup();
 
             if (lightingData->lightSource[i].hasShadow) {
                 int shadowIndex = light.GetShadowIndex();

@@ -78,6 +78,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     // For the internal delegate...
     (renderBufferDescriptor)
     (renderTags)
+
+    // for the stage orientation
+    (StageOrientation)
 );
 
 // ---------------------------------------------------------------------------
@@ -771,10 +774,12 @@ HdxTaskController::_SetParameters(SdfPath const& pathName,
         light);
 
     // if we are setting the parameters for the dome light we need to add the 
-    // default texture resource as well
+    // default texture resource as well as the stage's up axisn
     if (light.IsDomeLight()) {
         _delegate.SetParameter(pathName, HdLightTokens->textureResource, 
             _defaultDomeLightTextureResource);
+        _delegate.SetParameter(pathName, _tokens->StageOrientation, 
+            light.IsZup());
     }
 }
 
