@@ -643,7 +643,7 @@ bool operator==(const HdxColorCorrectionTaskParams& lhs,
            lhs.colorspaceOCIO == rhs.colorspaceOCIO &&
            lhs.looksOCIO == rhs.looksOCIO &&
            lhs.lut3dSizeOCIO == rhs.lut3dSizeOCIO &&
-           lhs.aovName == rhs.aovName;
+           lhs.aovName == rhs.aovName &&
            lhs.aovBufferPath == rhs.aovBufferPath;
 }
 
