@@ -293,6 +293,7 @@ private:
     struct _SkelData {
 
         UsdSkelSkeletonQuery skelQuery;
+        SdfPathSet skelRootPaths;
 
         /// Compute bone mesh topology, and intiailize
         /// other rest-state data for imaging bones.
@@ -322,12 +323,13 @@ private:
     struct _SkinnedPrimData {
         _SkinnedPrimData() = default;
         _SkinnedPrimData(const UsdSkelSkeletonQuery& skelQuery,
-                         const UsdSkelSkinningQuery& skinningQuery);
+                         const UsdSkelSkinningQuery& skinningQuery,
+                         const SdfPath& skelRootPath);
 
         std::shared_ptr<UsdSkelBlendShapeQuery> blendShapeQuery;
         UsdSkelAnimMapper jointMapper;
         UsdSkelAnimMapper blendShapeMapper;
-        SdfPath skelPath;
+        SdfPath skelPath, skelRootPath;
         bool hasJointInfluences = false;
     };
 
@@ -341,6 +343,7 @@ private:
     /// Skeleton -> Skinned Prim(s) state
     /// (Populated via UsdSkelImagingSkelRootAdapter::Populate)
     // ---------------------------------------------------------------------- //
+
     using _SkelBindingMap =
         std::unordered_map<SdfPath, UsdSkelBinding, SdfPath::Hash>;
     _SkelBindingMap _skelBindingMap;
