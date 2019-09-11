@@ -18,7 +18,10 @@ pxr_plugin(${PXR_PACKAGE}
         usdSkel
         usdUtils
         vt
-        ${MAYA_LIBRARIES}
+        ${MAYA_Foundation_LIBRARY}
+        ${MAYA_OpenMaya_LIBRARY}
+        ${MAYA_OpenMayaAnim_LIBRARY}
+        ${MAYA_OpenMayaFX_LIBRARY}
 
     INCLUDE_DIRS
         ${MAYA_INCLUDE_DIRS}

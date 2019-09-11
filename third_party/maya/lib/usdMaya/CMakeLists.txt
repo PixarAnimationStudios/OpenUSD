@@ -17,14 +17,11 @@ pxr_shared_library(${PXR_PACKAGE}
         usdSkel
         usdUtils
         vt
-        ${Boost_LIBRARIES}
         ${Boost_PYTHON_LIBRARY}
         ${MAYA_Foundation_LIBRARY}
         ${MAYA_OpenMaya_LIBRARY}
         ${MAYA_OpenMayaAnim_LIBRARY}
-        ${MAYA_OpenMayaFX_LIBRARY}
         ${MAYA_OpenMayaRender_LIBRARY}
-        ${MAYA_OpenMayaUI_LIBRARY}
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}

@@ -10,7 +10,9 @@ pxr_plugin(${PXR_PACKAGE}
         usd
         usdGeom
         usdMaya
-        ${MAYA_LIBRARIES}
+        ${MAYA_Foundation_LIBRARY}
+        ${MAYA_OpenMaya_LIBRARY}
+        ${MAYA_OpenMayaRender_LIBRARY}
 
     INCLUDE_DIRS
         ${MAYA_INCLUDE_DIRS}
