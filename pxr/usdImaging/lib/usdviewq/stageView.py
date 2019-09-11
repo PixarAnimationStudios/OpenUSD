@@ -1671,52 +1671,13 @@ class StageView(QtOpenGL.QGLWidget):
                         l.ambient = (0, 0, 0, 0)
                         l.position = (cam_pos[0], cam_pos[1], cam_pos[2], 1)
                         lights.append(l)
-                    # three-point lighting
-                    else:
-                        if self._dataModel.viewSettings.keyLightEnabled:
-                            # 45 degree horizontal viewing angle, 20 degree vertical
-                            keyHorz = -1 / tan(rad(45)) * cam_right
-                            keyVert = 1 / tan(rad(70)) * cam_up
-                            keyPos = cam_pos + (keyVert + keyHorz) * cam_light_dist
-                            keyColor = (.8, .8, .8, 1.0)
 
-                            l = Glf.SimpleLight()
-                            l.ambient = (0, 0, 0, 0)
-                            l.diffuse = keyColor
-                            l.specular = keyColor
-                            l.position = (keyPos[0], keyPos[1], keyPos[2], 1)
-                            lights.append(l)
-
-                        if self._dataModel.viewSettings.fillLightEnabled:
-                            # 60 degree horizontal viewing angle, 45 degree vertical
-                            fillHorz = 1 / tan(rad(30)) * cam_right
-                            fillVert = 1 / tan(rad(45)) * cam_up
-                            fillPos = cam_pos + (fillVert + fillHorz) * cam_light_dist
-                            fillColor = (.6, .6, .6, 1.0)
-
-                            l = Glf.SimpleLight()
-                            l.ambient = (0, 0, 0, 0)
-                            l.diffuse = fillColor
-                            l.specular = fillColor
-                            l.position = (fillPos[0], fillPos[1], fillPos[2], 1)
-                            lights.append(l)
-
-                        if self._dataModel.viewSettings.backLightEnabled:
-                            # back light base is camera position reflected over origin
-                            # 30 degree horizontal viewing angle, 30 degree vertical
-                            origin = Gf.Vec3d(0.0)
-                            backPos = cam_pos + (origin - cam_pos) * 2
-                            backHorz = 1 / tan(rad(60)) * cam_right
-                            backVert = -1 / tan(rad(60)) * cam_up
-                            backPos += (backHorz + backVert) * cam_light_dist
-                            backColor = (.6, .6, .6, 1.0)
-
-                            l = Glf.SimpleLight()
-                            l.ambient = (0, 0, 0, 0)
-                            l.diffuse = backColor
-                            l.specular = backColor
-                            l.position = (backPos[0], backPos[1], backPos[2], 1)
-                            lights.append(l)
+                    # Default Dome Light
+                    if self._dataModel.viewSettings.domeLightEnabled:
+                        # testing for pseudo domeLight
+                        l = Glf.SimpleLight()
+                        l.isDomeLight = True
+                        lights.append(l)
 
                     kA = self._dataModel.viewSettings.defaultMaterialAmbient
                     kS = self._dataModel.viewSettings.defaultMaterialSpecular

@@ -554,15 +554,6 @@ class AppController(QtCore.QObject):
             for action in self._clearColorActions:
                 self._ui.colorGroup.addAction(action)
 
-            self._ui.threePointLights = QtWidgets.QActionGroup(self)
-            self._ui.threePointLights.setExclusive(False)
-            self._threePointLightsActions = (
-                self._ui.actionKey,
-                self._ui.actionFill,
-                self._ui.actionBack)
-            for action in self._threePointLightsActions:
-                self._ui.threePointLights.addAction(action)
-
             self._ui.renderModeActionGroup = QtWidgets.QActionGroup(self)
             self._ui.renderModeActionGroup.setExclusive(True)
             self._renderModeActions = (
@@ -880,11 +871,7 @@ class AppController(QtCore.QObject):
             self._ui.actionAmbient_Only.triggered[bool].connect(
                 self._ambientOnlyClicked)
 
-            self._ui.actionKey.triggered[bool].connect(self._onKeyLightClicked)
-
-            self._ui.actionFill.triggered[bool].connect(self._onFillLightClicked)
-
-            self._ui.actionBack.triggered[bool].connect(self._onBackLightClicked)
+            self._ui.actionDomeLight.triggered[bool].connect(self._onDomeLightClicked)
 
             self._ui.colorGroup.triggered.connect(self._changeBgColor)
 
@@ -2272,24 +2259,9 @@ class AppController(QtCore.QObject):
         if self._stageView and checked is not None:
             self._dataModel.viewSettings.ambientLightOnly = checked
 
-            # If all three lights are disabled, re-enable them all.
-            if (not self._dataModel.viewSettings.keyLightEnabled and not self._dataModel.viewSettings.fillLightEnabled and
-                    not self._dataModel.viewSettings.backLightEnabled):
-                self._dataModel.viewSettings.keyLightEnabled = True
-                self._dataModel.viewSettings.fillLightEnabled = True
-                self._dataModel.viewSettings.backLightEnabled = True
-
-    def _onKeyLightClicked(self, checked=None):
+    def _onDomeLightClicked(self, checked=None):
         if self._stageView and checked is not None:
-            self._dataModel.viewSettings.keyLightEnabled = checked
-
-    def _onFillLightClicked(self, checked=None):
-        if self._stageView and checked is not None:
-            self._dataModel.viewSettings.fillLightEnabled = checked
-
-    def _onBackLightClicked(self, checked=None):
-        if self._stageView and checked is not None:
-            self._dataModel.viewSettings.backLightEnabled = checked
+            self._dataModel.viewSettings.domeLightEnabled = checked
 
     def _changeBgColor(self, mode):
         self._dataModel.viewSettings.clearColorText = str(mode.text())
@@ -4755,20 +4727,13 @@ class AppController(QtCore.QObject):
 
     def _refreshLightsMenu(self):
         # lighting is not activated until a shaded mode is selected
-        self._ui.menuLights.setEnabled(self._dataModel.viewSettings.renderMode in ShadedRenderModes)
-
-        # three point lights not activated until ambient is deselected
-        self._ui.threePointLights.setEnabled(
-            not self._dataModel.viewSettings.ambientLightOnly)
+        self._ui.menuLights.setEnabled(
+            self._dataModel.viewSettings.renderMode in ShadedRenderModes)
 
         self._ui.actionAmbient_Only.setChecked(
             self._dataModel.viewSettings.ambientLightOnly)
-        self._ui.actionKey.setChecked(
-            self._dataModel.viewSettings.keyLightEnabled)
-        self._ui.actionFill.setChecked(
-            self._dataModel.viewSettings.fillLightEnabled)
-        self._ui.actionBack.setChecked(
-            self._dataModel.viewSettings.backLightEnabled)
+        self._ui.actionDomeLight.setChecked(
+            self._dataModel.viewSettings.domeLightEnabled)
 
     def _refreshClearColorsMenu(self):
         clearColorText = self._dataModel.viewSettings.clearColorText

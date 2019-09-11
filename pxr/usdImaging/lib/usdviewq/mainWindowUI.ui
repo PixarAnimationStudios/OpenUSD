@@ -226,7 +226,7 @@
              <string>Vis</string>
             </property>
             <property name="textAlignment">
-             <set>AlignLeading|AlignVCenter</set>
+             <set>AlignLeft|AlignVCenter</set>
             </property>
            </column>
            <column>
@@ -591,16 +591,7 @@
             <enum>QFrame::Plain</enum>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_3">
-            <property name="leftMargin">
-             <number>0</number>
-            </property>
-            <property name="topMargin">
-             <number>0</number>
-            </property>
-            <property name="rightMargin">
-             <number>0</number>
-            </property>
-            <property name="bottomMargin">
+            <property name="margin">
              <number>0</number>
             </property>
             <item>
@@ -613,16 +604,7 @@
                 <string>Value</string>
                </attribute>
                <layout class="QVBoxLayout" name="verticalLayout">
-                <property name="leftMargin">
-                 <number>6</number>
-                </property>
-                <property name="topMargin">
-                 <number>6</number>
-                </property>
-                <property name="rightMargin">
-                 <number>6</number>
-                </property>
-                <property name="bottomMargin">
+                <property name="margin">
                  <number>6</number>
                 </property>
                 <item>
@@ -1185,7 +1167,7 @@
      <x>0</x>
      <y>0</y>
      <width>1145</width>
-     <height>25</height>
+     <height>30</height>
     </rect>
    </property>
    <property name="minimumSize">
@@ -1234,7 +1216,7 @@
     <property name="title">
      <string>&amp;View</string>
     </property>
-    <property name="toolTipsVisible">
+    <property name="toolTipsVisible" stdset="0">
      <bool>true</bool>
     </property>
     <widget class="QMenu" name="menuHUD">
@@ -1281,10 +1263,7 @@
       <string>Lights</string>
      </property>
      <addaction name="actionAmbient_Only"/>
-     <addaction name="separator"/>
-     <addaction name="actionKey"/>
-     <addaction name="actionFill"/>
-     <addaction name="actionBack"/>
+     <addaction name="actionDomeLight"/>
     </widget>
     <widget class="QMenu" name="menuShading_Mode">
      <property name="title">
@@ -1487,7 +1466,7 @@
   </action>
   <action name="actionPause">
    <property name="text">
-       <string>Pause Render</string>
+    <string>Pause Render</string>
    </property>
    <property name="checkable">
     <bool>true</bool>
@@ -1657,39 +1636,6 @@
     <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
-  <action name="actionKey">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Key</string>
-   </property>
-  </action>
-  <action name="actionFill">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Fill</string>
-   </property>
-  </action>
-  <action name="actionBack">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Back</string>
-   </property>
-  </action>
   <action name="actionAmbient_Only">
    <property name="checkable">
     <bool>true</bool>
@@ -1699,6 +1645,17 @@
    </property>
    <property name="text">
     <string>Camera Light</string>
+   </property>
+  </action>
+  <action name="actionDomeLight">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Dome Light</string>
    </property>
   </action>
   <action name="actionLevel_6">
