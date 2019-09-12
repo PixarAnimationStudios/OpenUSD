@@ -577,6 +577,30 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             rangeInstance.SetValue(range);
         }
 
+        HdBufferArrayRangeSharedPtr orgRange = drawItem->GetTopologyRange();
+        HdBufferArrayRangeSharedPtr newRange = rangeInstance.GetValue();
+        if (newRange != orgRange) {
+            // If we're replacing the existing topology bar, we need to flag
+            // garbage collection on the previous bar. This bumps up the
+            // buffer array version number, triggering rebuild of the batch
+            // this curve's draw item belongs to.
+            // Note: This does not rebuild all the draw batches.
+            if (orgRange) {
+                sceneDelegate->GetRenderIndex().GetChangeTracker()
+                    .SetGarbageCollectionNeeded();
+            }
+
+            // If the new BAR is associated with a different buffer array,
+            // shallow validation (via garbage collection) isn't sufficient,
+            // since the wrong resource would be bound.
+            // In this case, we have to use the big hammer, and rebuild all
+            // draw batches.
+            if (!newRange->IsAggregatedWith(orgRange)) {
+                sceneDelegate->GetRenderIndex().GetChangeTracker()
+                    .MarkBatchesDirty();
+            }
+        }
+
         _sharedData.barContainer.Set(
             drawItem->GetDrawingCoord()->GetTopologyIndex(),
             rangeInstance.GetValue());
