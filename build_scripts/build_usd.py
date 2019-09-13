@@ -1179,6 +1179,9 @@ def InstallUSD(context, force, buildArgs):
 
         if context.buildDraco:
             extraArgs.append('-DPXR_BUILD_DRACO_PLUGIN=ON')
+            draco_root = (context.dracoLocation
+                          if context.dracoLocation else context.instDir)
+            extraArgs.append('-DDRACO_ROOT="{}"'.format(draco_root))
         else:
             extraArgs.append('-DPXR_BUILD_DRACO_PLUGIN=OFF')
 
@@ -1429,6 +1432,8 @@ subgroup.add_argument("--draco", dest="build_draco", action="store_true",
                       help="Build Draco plugin for USD")
 subgroup.add_argument("--no-draco", dest="build_draco", action="store_false",
                       help="Do not build Draco plugin for USD (default)")
+group.add_argument("--draco-location", type=str,
+                   help="Directory where Draco is installed.")
 
 group = parser.add_argument_group(title="MaterialX Plugin Options")
 subgroup = group.add_mutually_exclusive_group()
@@ -1569,6 +1574,8 @@ class InstallContext:
 
         # - Draco Plugin
         self.buildDraco = args.build_draco
+        self.dracoLocation = (os.path.abspath(args.draco_location)
+                                if args.draco_location else None)
 
         # - MaterialX Plugin
         self.buildMaterialX = args.build_materialx

@@ -22,7 +22,9 @@
 # language governing permissions and limitations under the Apache License.
 #
 # Find Draco Compression Library using DRACO_ROOT as a hint location and
-# provides the result by defining variable DRACO_LIBRARY.
+# provides the results by defining the variables DRACO_INCLUDES and
+# DRACO_LIBRARY.
 #
 
-find_library(DRACO_LIBRARY draco.lib libdraco.a ${DRACO_ROOT})
+find_library(DRACO_LIBRARY NAMES libdraco.so PATHS "${DRACO_ROOT}/lib")
+find_path(DRACO_INCLUDES draco/compression/decode.h PATHS "${DRACO_ROOT}/include")

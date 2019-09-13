@@ -17,6 +17,7 @@ pxr_plugin(${PXR_PACKAGE}
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}
+        ${DRACO_INCLUDES}
         ${PYTHON_INCLUDE_DIRS}
 
     CPPFILES
