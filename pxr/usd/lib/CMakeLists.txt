@@ -10,6 +10,7 @@ set(DIRS
     usdVol
     usdLux
     usdShade
+    usdRender
     usdHydra
     usdRi
     usdSkel
