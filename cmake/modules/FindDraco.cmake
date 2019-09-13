@@ -26,5 +26,5 @@
 # DRACO_LIBRARY.
 #
 
-find_library(DRACO_LIBRARY NAMES libdraco.so PATHS "${DRACO_ROOT}/lib")
+find_library(DRACO_LIBRARY NAMES draco PATHS "${DRACO_ROOT}/lib")
 find_path(DRACO_INCLUDES draco/compression/decode.h PATHS "${DRACO_ROOT}/include")
