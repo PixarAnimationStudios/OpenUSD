@@ -45,7 +45,7 @@ pxr_register_test(testPxrUsdAlembicChaser
     TESTENV testPxrUsdAlembicChaser
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
-        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
 )
