@@ -26,6 +26,8 @@
 # The module defines the following variables:
 #   RENDERMAN_INCLUDE_DIR - path to renderman header directory
 #   RENDERMAN_LIBRARY     - path to renderman library files
+#   RENDERMAN_EXECUTABLE  - path the prman executable
+#   RENDERMAN_BINARY_DIR  - path to the renderman binary directory
 #       RENDERMAN_FOUND   - true if renderman was found
 #   RENDERMAN_VERSION_MAJOR - major version of renderman found
 #   RENDERMAN_VERSION_MINOR - minor version of renderman found
@@ -102,6 +104,20 @@ find_path(RENDERMAN_INCLUDE_DIR
         "Renderman headers path"
 )
 
+find_program(RENDERMAN_EXECUTABLE
+    prman
+    HINTS
+        "${RENDERMAN_LOCATION}/bin"
+        "$ENV{RENDERMAN_LOCATION}/bin"
+        "$ENV{RMANTREE}/bin"
+    DOC
+        "Renderman prman executable path"
+)
+
+get_filename_component(RENDERMAN_BINARY_DIR
+    ${RENDERMAN_EXECUTABLE}
+    PATH)
+
 # Parse version
 if (RENDERMAN_INCLUDE_DIR AND EXISTS "${RENDERMAN_INCLUDE_DIR}/prmanapi.h" )
     file(STRINGS "${RENDERMAN_INCLUDE_DIR}/prmanapi.h" TMP REGEX "^#define _PRMANAPI_VERSION_MAJOR_.*$")
@@ -118,6 +134,8 @@ if("${RENDERMAN_VERSION_MAJOR}" EQUAL "22")
         REQUIRED_VARS
             RENDERMAN_INCLUDE_DIR
             LOADPRMAN_LIBRARY
+            RENDERMAN_EXECUTABLE
+            RENDERMAN_BINARY_DIR
             RENDERMAN_VERSION_MAJOR
     )
 elseif("${RENDERMAN_VERSION_MAJOR}" EQUAL "23")
@@ -126,6 +144,8 @@ elseif("${RENDERMAN_VERSION_MAJOR}" EQUAL "23")
             RENDERMAN_INCLUDE_DIR
             PRMAN_LIBRARY
             PXRCORE_LIBRARY
+            RENDERMAN_EXECUTABLE
+            RENDERMAN_BINARY_DIR
             RENDERMAN_VERSION_MAJOR
     )
 endif()
