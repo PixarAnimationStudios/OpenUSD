@@ -66,10 +66,12 @@ if(WIN32 AND NOT BUILD_SHARED_LIBS)
 else()
     pxr_build_test(testHdPrman
         LIBRARIES
+            cameraUtil
             hdPrman
             hd
             usd
             usdImaging
+            usdRender
             ${LOADPRMAN_LIBRARY}
         CPPFILES
             testenv/testHdPrman.cpp
