@@ -92,18 +92,18 @@ public:
     enum _ImmortalTag { Immortal };
 
     /// Create the empty token, containing the empty string.
-    TfToken() {}
+    constexpr TfToken() noexcept {}
 
     /// Copy constructor.
-    TfToken(TfToken const& rhs) : _rep(rhs._rep) { _AddRef(); }
+    TfToken(TfToken const& rhs) noexcept : _rep(rhs._rep) { _AddRef(); }
 
     /// Move constructor.
-    TfToken(TfToken && rhs) : _rep(rhs._rep) {
+    TfToken(TfToken && rhs) noexcept : _rep(rhs._rep) {
         rhs._rep = TfPointerAndBits<const _Rep>();
     }
     
     /// Copy assignment.
-    TfToken& operator= (TfToken const& rhs) {
+    TfToken& operator= (TfToken const& rhs) noexcept {
         if (&rhs != this) {
             rhs._AddRef();
             _RemoveRef();
@@ -113,7 +113,7 @@ public:
     }
 
     /// Move assignment.
-    TfToken& operator= (TfToken && rhs) {
+    TfToken& operator= (TfToken && rhs) noexcept {
         if (&rhs != this) {
             _RemoveRef();
             _rep = rhs._rep;
