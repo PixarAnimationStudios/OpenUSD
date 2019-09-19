@@ -265,6 +265,7 @@ HdxPrmanFramebuffer::~HdxPrmanFramebuffer()
     {
         std::lock_guard<std::mutex> lock(registry.mutex);
         registry.buffers.erase(id);
+        registry.nextID = 0;
     }
 }
 

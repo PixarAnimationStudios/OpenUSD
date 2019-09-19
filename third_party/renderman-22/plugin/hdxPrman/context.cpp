@@ -443,13 +443,13 @@ void HdxPrman_InteractiveContext::End()
     // Reset to initial state.
     if(riley) {
         riley->End();
-        riley = nullptr;
     }
     if (mgr) {
         mgr->DestroyRixParamList(_fallbackLightAttrs);
         mgr->DestroyRiley(riley);
         mgr = nullptr;
     }
+    riley = nullptr;
     if (ri) {
         ri->PRManEnd();
         ri = nullptr;
