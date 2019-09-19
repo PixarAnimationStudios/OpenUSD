@@ -1628,7 +1628,7 @@ HdSt_CodeGen::_GenerateDrawingCoord()
                << "  hd_instanceIndex r; r.indices[0] = 0; return r; }\n";
         if (_geometricShader->IsCullingPass()) {
             _genVS << "void SetCulledInstanceIndex(uint instance) "
-                      "{ /*no-op*/ };\n";
+                      "{ /*no-op*/ }\n";
         }
     }
 
