@@ -20,7 +20,6 @@ def Material "Material"
         token inputs:terminalInput6.connect = </Material.inputs:topLevelValue>
         token inputs:terminalInput7.connect = </Material/NodeGraph.outputs:nodeGraphOutUnused>
         token inputs:terminalInput8.connect = </Material/NodeGraph.outputs:nodeGraphOut6>
-
     }
 
     def NodeGraph "NodeGraph"
@@ -46,6 +45,12 @@ def Material "Material"
         token outputs:nodeGraphOut6
         token outputs:nodeGraphOut6.connect = </Material/NodeGraph.outputs:nodeGraphInUnconnected>
 
+        # connections with a cycle, which is very bad, but something we want to handle gracefully
+        token inputs:cycleA.connect = </Material/NodeGraph.outputs:cycleB>
+        token outputs:cycleB.connect = </Material/NodeGraph.inputs:cycleA>
+        token inputs:deepCycleA.connect = </Material/NodeGraph/NestedNodeGraph.outputs:deepCycleB>
+        token inputs:selfLoop.connect = </Material/NodeGraph.inputs:selfLoop>
+
         def Shader "NestedNode1"
         {
             token inputs:nestedIn1 = "__unusedValue__"
@@ -65,6 +70,9 @@ def Material "Material"
             token inputs:in = "__unusedValue__"
             token inputs:in.connect = </Material/NodeGraph.inputs:nodeGraphVal>
             token outputs:out.connect = </Material/NodeGraph/NestedNodeGraph/NestedNodeGraph2.outputs:out>
+
+            token outputs:deepCycleB.connect = </Material/NodeGraph/NestedNodeGraph.inputs:deepCycleC>
+            token inputs:deepCycleC.connect = </Material/NodeGraph.inputs:deepCycleA>
 
             def NodeGraph "NestedNodeGraph2"
             {

@@ -147,6 +147,30 @@ class TestUsdShadeGetValueProducingAttribute(unittest.TestCase):
         self.assertFalse(attr)
         self.assertEqual(attrType, UsdShade.AttributeType.Invalid)
 
+        # ----------------------------------------------------------------------
+        # resolve inputs with a cycle
+        # ----------------------------------------------------------------------
+        # This will issue a warning (TF_WARN):
+        # GetValueProducingAttribute:
+        #    Found cycle with attribute /Material/NodeGraph.inputs:cycleA
+        attr, attrType = \
+            nodeGraph.GetInput('cycleA').GetValueProducingAttribute()
+        self.assertFalse(attr)
+        self.assertEqual(attrType, UsdShade.AttributeType.Invalid)
+        # This will issue a warning (TF_WARN):
+        # GetValueProducingAttribute:
+        #    Found cycle with attribute /Material/NodeGraph.inputs:deepCycleA
+        attr, attrType = \
+            nodeGraph.GetInput('deepCycleA').GetValueProducingAttribute()
+        self.assertFalse(attr)
+        self.assertEqual(attrType, UsdShade.AttributeType.Invalid)
+        # This will issue a warning (TF_WARN):
+        # GetValueProducingAttribute:
+        #    Found cycle with attribute /Material/NodeGraph.inputs:selfLoop
+        attr, attrType = \
+            nodeGraph.GetInput('selfLoop').GetValueProducingAttribute()
+        self.assertFalse(attr)
+        self.assertEqual(attrType, UsdShade.AttributeType.Invalid)
 
 
 if __name__ == '__main__':

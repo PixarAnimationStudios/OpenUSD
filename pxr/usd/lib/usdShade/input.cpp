@@ -33,6 +33,8 @@
 
 #include "pxr/usd/usdShade/connectableAPI.h"
 
+#include "pxr/base/tf/smallVector.h"
+
 #include <stdlib.h>
 #include <algorithm>
 
@@ -414,15 +416,43 @@ UsdShadeInput::ClearConnectability() const
     return _attr.ClearMetadata(_tokens->connectability);
 }
 
+// Note: to avoid getting stuck in an infinite loop when following connections,
+// we need to check if we've visited an attribute before, so that we can break
+// the cycle and return an invalid result.
+// We expect most connections chains to be very small with most of them having
+// 0 or 1 connection in the chain. Few will include multiple hops. That is why
+// we are going with a vector and not a set to check for previous attributes.
+// To avoid the cost of allocating memory on the heap at each invocation, we
+// use a TfSmallVector to keep the first couple of entries on the stack.
+constexpr unsigned int N = 5;
+typedef TfSmallVector<SdfPath, N> _SmallSdfPathVector;
+
 template <typename UsdShadeInOutput>
 std::pair<UsdAttribute, UsdShadeAttributeType>
-_GetValueProducingAttributeRecursive(UsdShadeInOutput const & inoutput)
+_GetValueProducingAttributeRecursive(UsdShadeInOutput const & inoutput,
+                                     _SmallSdfPathVector& foundAttributes)
 {
     UsdAttribute attr;
     UsdShadeAttributeType attrType = UsdShadeAttributeType::Invalid;
     if (!inoutput) {
         return std::make_pair(attr, attrType);
     }
+
+    constexpr bool isInput =
+            std::is_same<UsdShadeInOutput, UsdShadeInput>::value;
+
+    // Check if we've visited this attribute before and if so abort with an
+    // error, since this means we have a loop in the chain
+    const SdfPath& thisAttrPath = inoutput.GetAttr().GetPath();
+    if (std::find(foundAttributes.begin(), foundAttributes.end(),
+                  thisAttrPath) != foundAttributes.end()) {
+        TF_WARN("GetValueProducingAttribute: Found cycle with attribute %s",
+                thisAttrPath.GetText());
+        return std::make_pair(attr, attrType);
+    }
+
+    // Remember the path of this attribute, so that we do not visit it again
+    foundAttributes.push_back(thisAttrPath);
 
     // Check if this input or output is connected to anything
     UsdShadeConnectableAPI source;
@@ -440,7 +470,8 @@ _GetValueProducingAttributeRecursive(UsdShadeInOutput const & inoutput)
                 attrType = UsdShadeAttributeType::Output;
             } else {
                 std::tie(attr, attrType) =
-                        _GetValueProducingAttributeRecursive(connectedOutput);
+                        _GetValueProducingAttributeRecursive(connectedOutput,
+                                                             foundAttributes);
             }
         } else if (sourceType == UsdShadeAttributeType::Input) {
             UsdShadeInput connectedInput = source.GetInput(sourceName);
@@ -450,17 +481,30 @@ _GetValueProducingAttributeRecursive(UsdShadeInOutput const & inoutput)
                 // NodeGraph we cannot legally connect to an input on a Shader.
             } else {
                 std::tie(attr, attrType) =
-                        _GetValueProducingAttributeRecursive(connectedInput);
+                        _GetValueProducingAttributeRecursive(connectedInput,
+                                                             foundAttributes);
             }
         }
 
+    } else {
+        // The attribute is not connected. If there is a value it is coming
+        // from either this attribute or a previously encountered one
+        attrType = isInput ? UsdShadeAttributeType::Input :
+                             UsdShadeAttributeType::Output;
     }
 
-    // If we haven't found a value yet and the current input has an authored
-    // value, then return this attribute
-    if (!attr && inoutput.GetAttr().HasAuthoredValue()) {
+    // If we haven't found a valid value yet and the current input has an
+    // authored value, then return this attribute.
+    // Note, we can get here after encountering an error in a deeper recursion
+    // which would return an invalid attribute with an invalid type. If no
+    // error was encountered the attribute might be invalid, but the type is
+    // legit.
+    if ((attrType != UsdShadeAttributeType::Invalid) &&
+        !attr &&
+        inoutput.GetAttr().HasAuthoredValue()) {
         attr = inoutput.GetAttr();
-        attrType = UsdShadeAttributeType::Input;
+        attrType = isInput ? UsdShadeAttributeType::Input :
+                             UsdShadeAttributeType::Output;
     }
 
     return std::make_pair(attr, attrType);
@@ -471,9 +515,19 @@ UsdShadeInput::GetValueProducingAttribute(UsdShadeAttributeType* attrType) const
 {
     TRACE_SCOPE("UsdShadeInput::GetValueProducingAttribute");
 
+    // We track which attributes we've visited so far to avoid getting caught
+    // in an infinite loop, if the network contains a cycle.
+    _SmallSdfPathVector foundAttributes;
+
     UsdAttribute attr;
     UsdShadeAttributeType aType;
-    std::tie(attr, aType) = _GetValueProducingAttributeRecursive(*this);
+    std::tie(attr, aType) =
+            _GetValueProducingAttributeRecursive(*this, foundAttributes);
+
+    // We track the type of attributes, even if they don't carry a value. But
+    // we do not want to return the type if no value was found
+    if (!attr)
+        aType = UsdShadeAttributeType::Invalid;
 
     if (attrType)
         *attrType = aType;
@@ -482,4 +536,3 @@ UsdShadeInput::GetValueProducingAttribute(UsdShadeAttributeType* attrType) const
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
