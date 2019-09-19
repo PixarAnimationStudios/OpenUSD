@@ -78,6 +78,14 @@ _GetRawConnectedSourcePaths(const UsdShadeInput &self)
     return sourcePaths;
 }
 
+static object
+_GetValueProducingAttribute(const UsdShadeInput &self)
+{
+    UsdShadeAttributeType attrType;
+    UsdAttribute attr = self.GetValueProducingAttribute(&attrType);
+    return boost::python::make_tuple(attr, attrType);
+}
+
 } // anonymous namespace 
 
 void wrapUsdShadeInput()
@@ -143,6 +151,8 @@ void wrapUsdShadeInput()
         .def("SetConnectability", &Input::SetConnectability)
         .def("GetConnectability", &Input::GetConnectability)
         .def("ClearConnectability", &Input::ClearConnectability)
+
+        .def("GetValueProducingAttribute", _GetValueProducingAttribute)
 
         .def("GetAttr", &Input::GetAttr,
              return_value_policy<return_by_value>())

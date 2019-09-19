@@ -59,6 +59,7 @@ pxr_test_scripts(
     testenv/testUsdShadeBinding.py
     testenv/testUsdShadeConnectability.py
     testenv/testUsdShadeCoordSysAPI.py
+    testenv/testUsdShadeGetValueProducingAttribute.py
     testenv/testUsdShadeInterfaceInputConsumers.py
     testenv/testUsdShadeMaterialBinding.py
     testenv/testUsdShadeMaterialOutputs.py
@@ -74,6 +75,11 @@ pxr_test_scripts(
 pxr_install_test_dir(
     SRC testenv/testUsdShadeCoordSysAPI
     DEST testUsdShadeCoordSysAPI
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdShadeGetValueProducingAttribute
+    DEST testUsdShadeGetValueProducingAttribute
 )
 
 pxr_install_test_dir(
@@ -119,6 +125,12 @@ pxr_register_test(testUsdShadeBinding
 pxr_register_test(testUsdShadeCoordSysAPI
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeCoordSysAPI"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdShadeGetValueProducingAttribute
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeGetValueProducingAttribute"
     EXPECTED_RETURN_CODE 0
 )
 

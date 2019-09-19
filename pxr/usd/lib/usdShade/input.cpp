@@ -414,5 +414,72 @@ UsdShadeInput::ClearConnectability() const
     return _attr.ClearMetadata(_tokens->connectability);
 }
 
+template <typename UsdShadeInOutput>
+std::pair<UsdAttribute, UsdShadeAttributeType>
+_GetValueProducingAttributeRecursive(UsdShadeInOutput const & inoutput)
+{
+    UsdAttribute attr;
+    UsdShadeAttributeType attrType = UsdShadeAttributeType::Invalid;
+    if (!inoutput) {
+        return std::make_pair(attr, attrType);
+    }
+
+    // Check if this input or output is connected to anything
+    UsdShadeConnectableAPI source;
+    TfToken sourceName;
+    UsdShadeAttributeType sourceType;
+    if (UsdShadeConnectableAPI::GetConnectedSource(inoutput,
+                &source, &sourceName, &sourceType)) {
+
+        // If it is connected follow it until we reach an attribute on an
+        // actual shader node
+        if (sourceType == UsdShadeAttributeType::Output) {
+            UsdShadeOutput connectedOutput = source.GetOutput(sourceName);
+            if (source.IsShader()) {
+                attr = connectedOutput.GetAttr();
+                attrType = UsdShadeAttributeType::Output;
+            } else {
+                std::tie(attr, attrType) =
+                        _GetValueProducingAttributeRecursive(connectedOutput);
+            }
+        } else if (sourceType == UsdShadeAttributeType::Input) {
+            UsdShadeInput connectedInput = source.GetInput(sourceName);
+            if (source.IsShader()) {
+                // Note, this is an invalid situation for a connected chain.
+                // Since we started on an input to either a Shader or a
+                // NodeGraph we cannot legally connect to an input on a Shader.
+            } else {
+                std::tie(attr, attrType) =
+                        _GetValueProducingAttributeRecursive(connectedInput);
+            }
+        }
+
+    }
+
+    // If we haven't found a value yet and the current input has an authored
+    // value, then return this attribute
+    if (!attr && inoutput.GetAttr().HasAuthoredValue()) {
+        attr = inoutput.GetAttr();
+        attrType = UsdShadeAttributeType::Input;
+    }
+
+    return std::make_pair(attr, attrType);
+}
+
+UsdAttribute
+UsdShadeInput::GetValueProducingAttribute(UsdShadeAttributeType* attrType) const
+{
+    TRACE_SCOPE("UsdShadeInput::GetValueProducingAttribute");
+
+    UsdAttribute attr;
+    UsdShadeAttributeType aType;
+    std::tie(attr, aType) = _GetValueProducingAttributeRecursive(*this);
+
+    if (attrType)
+        *attrType = aType;
+
+    return attr;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

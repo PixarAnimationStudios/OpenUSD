@@ -551,6 +551,8 @@ UsdShadeConnectableAPI::GetConnectedSource(
     TfToken *sourceName,
     UsdShadeAttributeType *sourceType)
 {
+    TRACE_SCOPE("UsdShadeConnectableAPI::GetConnectedSource");
+
     if (!(source && sourceName && sourceType)) {
         TF_CODING_ERROR("GetConnectedSource() requires non-NULL "
                         "output-parameters.");

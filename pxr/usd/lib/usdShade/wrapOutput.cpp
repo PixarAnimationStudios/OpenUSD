@@ -155,7 +155,9 @@ void wrapUsdShadeOutput()
              &Output::IsSourceConnectionFromBaseMaterial)
         .def("DisconnectSource", &Output::DisconnectSource)
         .def("ClearSource", &Output::ClearSource)
-        
+
+        .def("IsOutput", &Output::IsOutput)
+        .staticmethod("IsOutput")
         ;
 
     implicitly_convertible<Output, UsdAttribute>();
