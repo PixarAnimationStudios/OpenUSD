@@ -230,11 +230,17 @@ UsdAttribute::GetResolveInfo(UsdTimeCode time) const
     return resolveInfo;
 }
 
+template <typename T>
 bool 
-UsdAttribute::_UntypedSet(const SdfAbstractDataConstValue& value,
-                          UsdTimeCode time) const
+UsdAttribute::_Set(const T& value, UsdTimeCode time) const
 {
     return _GetStage()->_SetValue(time, *this, value);
+}
+
+bool 
+UsdAttribute::Set(const char* value, UsdTimeCode time) const {
+    std::string strVal(value);
+    return _Set(strVal, time);
 }
 
 bool 
@@ -339,16 +345,25 @@ UsdAttribute::_Create(const SdfValueTypeName& typeName, bool custom,
 ARCH_PRAGMA_PUSH
 ARCH_PRAGMA_INSTANTIATION_AFTER_SPECIALIZATION
 
-// Explicitly instantiate templated getters for all Sdf value
+// Explicitly instantiate templated getters and setters for all Sdf value
 // types.
 #define _INSTANTIATE_GET(r, unused, elem)                               \
     template USD_API bool UsdAttribute::_Get(                           \
         SDF_VALUE_CPP_TYPE(elem)*, UsdTimeCode) const;                  \
     template USD_API bool UsdAttribute::_Get(                           \
-        SDF_VALUE_CPP_ARRAY_TYPE(elem)*, UsdTimeCode) const;
+        SDF_VALUE_CPP_ARRAY_TYPE(elem)*, UsdTimeCode) const;            \
+    template USD_API bool UsdAttribute::_Set(                           \
+        const SDF_VALUE_CPP_TYPE(elem)&, UsdTimeCode) const;            \
+    template USD_API bool UsdAttribute::_Set(                           \
+        const SDF_VALUE_CPP_ARRAY_TYPE(elem)&, UsdTimeCode) const;
 
 BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)
 #undef _INSTANTIATE_GET
+
+// In addition to the Sdf value types, _Set can also be called with an 
+// SdfValueBlock.
+template USD_API bool UsdAttribute::_Set(
+    const SdfValueBlock &, UsdTimeCode) const;
 
 ARCH_PRAGMA_POP
 

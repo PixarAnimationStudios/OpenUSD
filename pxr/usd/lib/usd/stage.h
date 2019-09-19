@@ -1618,10 +1618,12 @@ private:
     // Value & Metadata Authoring
     // --------------------------------------------------------------------- //
 
+    template <class T>
+    bool _SetValue(UsdTimeCode time, const UsdAttribute &attr,
+                   const T &newValue);
+
     bool _SetValue(UsdTimeCode time, const UsdAttribute &attr,
                    const VtValue &newValue);
-    bool _SetValue(UsdTimeCode time, const UsdAttribute &attr,
-                   const SdfAbstractDataConstValue &newValue);
     template <class T>
     bool _SetValueImpl(UsdTimeCode time, const UsdAttribute &attr, const T& value);
 

@@ -1454,11 +1454,13 @@ UsdStage::_SetMetadataImpl(const UsdObject &obj,
     return true;
 }
 
-bool
+template <class T>
+bool 
 UsdStage::_SetValue(UsdTimeCode time, const UsdAttribute &attr,
-                    const SdfAbstractDataConstValue &newValue)
+                    const T &newValue)
 {
-    return _SetValueImpl(time, attr, newValue);
+    SdfAbstractDataConstTypedValue<T> in(&newValue);
+    return _SetValueImpl<SdfAbstractDataConstValue>(time, attr, in);
 }
 
 bool
@@ -7731,7 +7733,7 @@ std::string UsdDescribe(const UsdStageRefPtr &stage) {
     return UsdDescribe(get_pointer(stage));
 }
 
-// Explicitly instantiate templated getters for all Sdf value
+// Explicitly instantiate templated getters and setters for all Sdf value
 // types.
 #define _INSTANTIATE_GET(r, unused, elem)                               \
     template bool UsdStage::_GetValue(                                  \
@@ -7746,10 +7748,22 @@ std::string UsdDescribe(const UsdStageRefPtr &stage) {
         SDF_VALUE_CPP_TYPE(elem)*) const;                               \
     template bool UsdStage::_GetValueFromResolveInfo(                   \
         const UsdResolveInfo&, UsdTimeCode, const UsdAttribute&,        \
-        SDF_VALUE_CPP_ARRAY_TYPE(elem)*) const;                      
+        SDF_VALUE_CPP_ARRAY_TYPE(elem)*) const;                         \
+                                                                        \
+    template bool UsdStage::_SetValue(                                  \
+        UsdTimeCode, const UsdAttribute&,                               \
+        const SDF_VALUE_CPP_TYPE(elem)&);                               \
+    template bool UsdStage::_SetValue(                                  \
+        UsdTimeCode, const UsdAttribute&,                               \
+        const SDF_VALUE_CPP_ARRAY_TYPE(elem)&);
 
 BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)
 #undef _INSTANTIATE_GET
+
+// In addition to the Sdf value types, _SetValue can also be called with an 
+// SdfValueBlock.
+template bool UsdStage::_SetValue(
+    UsdTimeCode, const UsdAttribute&, const SdfValueBlock &);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
