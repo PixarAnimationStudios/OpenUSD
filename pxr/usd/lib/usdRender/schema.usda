@@ -143,7 +143,18 @@ class RenderSettings "RenderSettings" (
         resolving material bindings in the scene.  The empty string
         indicates the "allPurpose" binding."""
     )
- }
+}
+
+class "RenderSettingsAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        string className = "SettingsAPI"
+    }
+    doc = """UsdRenderSettingsAPI is a base class for API schemas
+    to encode renderer-specific settings."""
+) {
+}
  
 class RenderVar "RenderVar" (
     inherits = </Typed>

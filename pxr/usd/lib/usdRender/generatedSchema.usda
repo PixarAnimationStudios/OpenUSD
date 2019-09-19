@@ -1,6 +1,10 @@
 #usda 1.0
 (
     "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
+    customLayerData = {
+        string[] appliedAPISchemas = ["RenderSettingsAPI"]
+        string[] multipleApplyAPISchemas = []
+    }
 )
 
 class "RenderSettingsBase" (
@@ -191,6 +195,13 @@ class RenderSettings "RenderSettings" (
         doc = """The image pixel resolution, corresponding to the
         camera's screen window."""
     )
+}
+
+class "RenderSettingsAPI" (
+    doc = """UsdRenderSettingsAPI is a base class for API schemas
+    to encode renderer-specific settings."""
+)
+{
 }
 
 class RenderVar "RenderVar" (

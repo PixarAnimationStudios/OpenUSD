@@ -11,6 +11,7 @@ pxr_library(usdRender
     PUBLIC_CLASSES
         product
         settings
+        settingsAPI
         settingsBase
         spec
         tokens
@@ -25,6 +26,7 @@ pxr_library(usdRender
     PYMODULE_CPPFILES
         module.cpp
         wrapProduct.cpp
+        wrapSettingsAPI.cpp
         wrapSettingsBase.cpp
         wrapSettings.cpp
         wrapTokens.cpp

@@ -46,6 +46,10 @@ process follows.
 - UsdRenderSpec is a self-contained, evaluated specification
   of render settings, suitable for consumption by a backend.
 
+- UsdRenderSettingsAPI is a base class for renderer-specific
+  API schemas (provided by other schema libraries) that encode
+  renderer-specific settings.
+
 ## Reading settings {#UsdRenderReadingSettings}
 
 A UsdStage may contain multiple UsdRenderSettings prims representing
@@ -201,8 +205,11 @@ overlap or gaps.
 
 # Extensions {#UsdRenderExtensinos}
 
-TODO: Talk about plans for renderer- or pipeline-specific extensions
-via UsdRenderSettingsAPI schema.
+UsdRenderSettingsAPI is a base class API schema.  USD schema libraries
+for particular renderers can subclass it with their own specific API
+schemas to encode settings specific to that renderer.  Applications
+that import, inspect, or edit these can use the type hierarchy of
+API schemas to generically inspect the settings.
 
 # Example Usage {#UsdRenderExampleUsage}
 
