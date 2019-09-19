@@ -29,14 +29,18 @@
     "techniques": {
         "default": {
             "domeLightIrradiance": {
-                "source": [ "DomeLight.Common", "DomeLight.Irradiance"]
+                "source": [ "DomeLight.Common",
+                            "DomeLight.Irradiance" ]
             },
             "domeLightPrefilter": {
-                "source": [ "DomeLight.Common", "DomeLight.CommonSampling", 
-                            "DomeLight.Prefilter"]
+                "source": [ "DomeLight.Common",
+                            "DomeLight.CommonSampling",
+                            "DomeLight.Prefilter" ]
             },
             "domeLightBRDF": {
-                "source": [ "DomeLight.CommonSampling", "DomeLight.BRDF"]
+                "source": [ "DomeLight.Common",
+                            "DomeLight.CommonSampling",
+                            "DomeLight.BRDF" ]
             }
         }
     }
@@ -45,163 +49,29 @@
 --- --------------------------------------------------------------------------
 -- glsl DomeLight.Common
 
+const float PI = 3.1415926536;
+
+layout(binding = 0) uniform sampler2D inTexture;
 layout(rgba16f, binding = 1) uniform image2D outTexture;
 
-vec2 GetFragCoords(ivec2 pixelCoords) {
-    // get the dimensions of the calling texture (outTexture)
-    vec2 inDims = imageSize(outTexture);
-    vec2 fragCoords = (pixelCoords / inDims);
-    
-    // y axis is flipped between texture and pixel coordinates
-    fragCoords.y = 1.0 - fragCoords.y;    
-    return fragCoords;
-}
-ivec2 GetPixelCoords(vec2 fragCoords) {
-    ivec2 outDims = imageSize(outTexture);
-
-    // y axis is flipped between texture and pixel coordinates
-    fragCoords.y = 1.0 - fragCoords.y;
-
-    vec2 outCoords = fragCoords * outDims;
-    return ivec2(ceil(outCoords));
-}
-
---- --------------------------------------------------------------------------
--- glsl DomeLight.CommonSampling
-
-const float PI = 3.14159265359;
-
-float RadicalInverse_VdC(uint bits) {
-    bits = (bits << 16u) | (bits >> 16u);
-    bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
-    bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
-    bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
-    bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
-    return float(bits) * 2.3283064365386963e-10; // / 0x100000000
-}
-vec2 Hammersley(uint i, uint N) {
-    return vec2(float(i) / float(N), RadicalInverse_VdC(i));
-}
-vec3 ImportanceSampleGGX(vec2 Xi, vec3 N, float roughness) {
-    float a = roughness*roughness;
-    float phi = 2.0 * PI * Xi.x;
-    float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (a*a - 1.0) * Xi.y));
-    float sinTheta = sqrt(1.0 - cosTheta*cosTheta);
-
-    // from spherical coordinates to cartesian coordinates - halfway vector
-    vec3 H;
-    H.x = cos(phi) * sinTheta;
-    H.y = sin(phi) * sinTheta;
-    H.z = cosTheta;
-    
-    // from tangent-space H vector to world-space sample vector
-    vec3 up = abs(N.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
-    vec3 tangent = normalize(cross(up, N));
-    vec3 bitangent = cross(N, tangent);
-    vec3 sampleVec = tangent * H.x + bitangent * H.y + N * H.z;
-    return normalize(sampleVec);
-}
-
---- --------------------------------------------------------------------------
--- glsl DomeLight.Irradiance
-
-layout(local_size_x = 32, local_size_y = 32) in;
-layout(binding = 0) uniform sampler2D inTexture;
-
-const float PI = 3.14159265359;
-const float sampleDelta = 0.025;
-
-vec3 SampleMap(vec3 sampleVec) {
-    // transform sample vector into 2D coordinate (normalized)
-    vec2 fragCoord = vec2((atan(sampleVec.x, sampleVec.y) + PI) / (2.0*PI),
-                        acos(sampleVec.z) / PI);
-
-    // sample from a mipmap level of the environment map determined by the 
-    // size of the environment map and the number of samples we are taking
-    ivec2 inDims = textureSize(inTexture, 0);
-    int mipLevel = int(ceil(log2(inDims.x * sampleDelta/(2.0 * PI)) * 2.0f));
-    inDims = textureSize(inTexture, mipLevel);
-
-    return textureLod(inTexture, fragCoord, mipLevel).rgb;
-}
-vec3 GetWorldPos(vec2 textureCoord) {
-    // have theta range from [-PI, PI] so the origin is in the center
-    // of the image
-    float theta = (textureCoord.x * 2.0 * PI) - PI;
-    float phi = (textureCoord.y * PI);
-    float x = cos(theta) * sin(phi);
-    float y = sin(theta) * sin(phi);
-    float z = cos(phi);
-    // flipping to match the wrapping of the texture
-    return vec3(y, x, -z); 
-}
-
-void main(void) 
+// compute texture coords based on the size of the output image/texture
+vec2 GetTexCoords(ivec2 outCoords)
 {
-    // pixel coords needs to be transformed into fragment coords on the 
-    // environment map, and then into a 3D world position on the sphere 
-    // representation on the environment map. Then use that world position 
-    // as a normal to then sample the hemisphere centered about that normal 
-    ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
-    vec2 fragCoords = GetFragCoords(pixelCoords);
-    vec3 pos3D = GetWorldPos(fragCoords);
-    vec3 N = normalize(pos3D);
-
-    // Irradiance Convolution 
-    vec3 irradiance = vec3(0.0);
-    // create basis for transforming from tangent space to world space
-    vec3 up = vec3(0.0, 0.0, 1.0);
-    vec3 right = cross(up, N);
-    up = cross(N, right);
-
-    // sample the hemisphere centered at the normal N 
-    float nrSamples = 0.0;
-    for (float theta = 0; theta < 2.0*PI; theta += sampleDelta) {
-        for (float phi = 0.0; phi < 0.5 * PI; phi += sampleDelta) {
-
-            // transform sample into tangent space 
-            vec3 tangentSample = vec3( cos(theta) * sin(phi),
-                                       cos(phi),
-                                       sin(theta) * sin(phi) );
-            // use the basis to transform the tangentSample into World space
-            vec3 sampleVec = tangentSample.x * right +
-                             tangentSample.y * N +
-                             tangentSample.z * up; 
-
-            // use that world space coordinate to sample the environment map
-            irradiance += SampleMap(sampleVec) * cos(phi) * sin(phi);
-            nrSamples++;
-        }
-    }
-    irradiance = PI * irradiance * (1.0 / float(nrSamples));
-    vec4 newPixelColor = vec4(irradiance, 1.0);
-
-    // output new color to a specific pixel in the output image
-    ivec2 outPixels = GetPixelCoords(fragCoords);
-    imageStore(outTexture, outPixels, newPixelColor);
+    vec2 outDims = imageSize(outTexture);
+    vec2 texCoords = outCoords / outDims;
+    return texCoords;
 }
 
---- --------------------------------------------------------------------------
--- glsl DomeLight.Prefilter
-
-layout(local_size_x = 32, local_size_y = 32) in;
-layout(binding = 0) uniform sampler2D inTexture;
-uniform float roughness; 
-
-
-vec3 SampleMap(vec3 sampleVec, int sampleLevel) {
-    // translate the sampleVec into pixel coordinates
-    ivec2 inDims = textureSize(inTexture, sampleLevel);
-    vec2 coord = vec2(atan(sampleVec.z, sampleVec.x) / (2.0 * PI),
-                        asin(sampleVec.y) / PI);
-    coord += 0.5f;
-    ivec2 pixelCoord = ivec2(ceil(coord * inDims));
-
-    // return the color of the environment map at the calculated pixel
-    // location and the desired mip level 
-    return textureLod(inTexture, coord, sampleLevel).rgb;
+// sample lat/long env map input texture
+vec3 SampleEnvMapLod(vec3 sampleVec, float sampleLod) {
+    vec2 coord = vec2((atan(sampleVec.z, sampleVec.x) + PI) / (2.0 * PI),
+                      acos(sampleVec.y) / PI);
+    return textureLod(inTexture, coord, sampleLod).rgb;
 }
-vec3 GetWorldPos(vec2 textureCoord) {
+
+// compute world position from texture coords
+vec3 GetWorldPos(vec2 textureCoord)
+{
     // have theta range from [-PI, PI] so the origin is in the center
     // of the image
     float theta = (textureCoord.x * 2.0 * PI) - PI;
@@ -211,161 +81,205 @@ vec3 GetWorldPos(vec2 textureCoord) {
     float z = sin(theta) * sin(phi);
     return vec3(x, y, z);
 }
-float GetInTextureResolution() {
-    ivec2 inDims = textureSize(inTexture, 0);
-    return (inDims.x* inDims.y);
+
+--- --------------------------------------------------------------------------
+-- glsl DomeLight.CommonSampling
+
+float RadicalInverse(uint a)
+{
+    return float(bitfieldReverse(a)) * 2.3283064365386963e-10; // 0x1p-32
 }
 
-float DistributionGGX(vec3 N, vec3 H, float roughness) {
-    float a = roughness*roughness;
-    float a2 = a*a;
-    float NdotH = max(dot(N, H), 0.0);
-    float NdotH2 = NdotH*NdotH;
-    float nom = a2;
-    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
-    denom = PI * denom * denom;
-    return nom / denom;
+vec2 Hammersley2d(uint a, uint N)
+{
+    return vec2(float(a) / float(N), RadicalInverse(a));
+}
+
+vec3 ImportanceSample_GGX(vec2 Xi, float roughness, vec3 normal)
+{
+    // Maps a 2D point to a hemisphere with spread based on roughness
+    float alpha = roughness * roughness;
+    float phi = 2.0 * PI * Xi.x;
+    float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (alpha*alpha - 1.0) * Xi.y));
+    float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+    vec3 H = vec3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
+
+    // Tangent space
+    vec3 up = abs(normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    vec3 tangentX = normalize(cross(up, normal));
+    vec3 tangentY = normalize(cross(normal, tangentX));
+
+    // Convert to world Space
+    return normalize(tangentX * H.x + tangentY * H.y + normal * H.z);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl DomeLight.Irradiance
+
+layout(local_size_x = 32, local_size_y = 32) in;
+
+const float deltaPhi = (2.0f * float(PI)) / 180.0f;
+const float deltaTheta = (0.5f * float(PI)) / 64.0f;
+
+vec3 SampleEnvMap(vec3 sampleVec)
+{
+    // sample from a mipmap level of the environment map determined by the
+    // size of the environment map and the number of samples we are taking
+    ivec2 inDims = textureSize(inTexture, 0);
+    float mipLevel = ceil(log2(inDims.x * deltaPhi/(2.0 * PI)) * 2.0f);
+
+    return SampleEnvMapLod(sampleVec, mipLevel);
+}
+
+vec3 ComputeIrradiance(vec3 inPos)
+{
+    vec3 N = normalize(inPos);
+    vec3 up = vec3(0.0, 1.0, 0.0);
+    vec3 right = normalize(cross(up, N));
+    up = cross(N, right);
+
+    const float TWO_PI = PI * 2.0;
+    const float HALF_PI = PI * 0.5;
+
+    vec3 color = vec3(0.0);
+    uint sampleCount = 0u;
+    for (float phi = 0.0; phi < TWO_PI; phi += deltaPhi) {
+        for (float theta = 0.0; theta < HALF_PI; theta += deltaTheta) {
+            vec3 tempVec = cos(phi) * right + sin(phi) * up;
+            vec3 sampleVector = cos(theta) * N + sin(theta) * tempVec;
+            color += SampleEnvMap(sampleVector).rgb * cos(theta) * sin(theta);
+            sampleCount++;
+        }
+    }
+    return PI * color / float(sampleCount);
 }
 
 void main(void)
 {
-    // pixel coords needs to be transformed into fragment coords on the 
-    // environment map, and then into a 3D world position on the sphere 
-    // representation on the environment map. Then use that world position 
-    // as a normal to then sample the hemisphere centered about that normal 
-    ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
-    vec2 fragCoords = GetFragCoords(pixelCoords);
-    vec3 pos3D = GetWorldPos(fragCoords);
-    vec3 N = normalize(pos3D);
+    ivec2 outCoords = ivec2(gl_GlobalInvocationID.xy);
 
-    // make the simplyfying assumption that V equals R equals the normal 
-    vec3 R = N;
+    vec2 texCoords = GetTexCoords(outCoords);
+    vec3 pos3D = GetWorldPos(texCoords);
+    vec4 outColor = vec4(ComputeIrradiance(pos3D), 1.0);
+
+    imageStore(outTexture, outCoords, outColor);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl DomeLight.Prefilter
+
+layout(local_size_x = 32, local_size_y = 32) in;
+uniform float roughness;
+
+// Normal Distribution function
+float Distribution_GGX(float dotNH, float roughness)
+{
+    float alpha = roughness * roughness;
+    float alpha2 = alpha * alpha;
+    float denom = dotNH * dotNH * (alpha2 - 1.0) + 1.0;
+    return (alpha2)/(PI * denom*denom);
+}
+
+vec3 PrefilterEnvMap(vec3 R, float roughness)
+{
+    vec3 N = R;
     vec3 V = R;
-
-    // Importance Sampling 
-    const uint SAMPLE_COUNT = 1024u;
-    vec3 prefilteredColor = vec3(0.0);
+    vec3 color = vec3(0.0);
     float totalWeight = 0.0;
-    for (uint i = 0u; i < SAMPLE_COUNT; ++i) {
-        // generates a sample vector that's biased towards the preferred
-        // alignment direction ie. sampling about the specular lobe
-        vec2 Xi = Hammersley(i, SAMPLE_COUNT);
-        vec3 H = ImportanceSampleGGX(Xi, N, roughness);
-        vec3 L = normalize(2.0 * dot(V, H) * H - V);
-        float NdotL = max(dot(N, L), 0.0);
+    float envMapDim = float(textureSize(inTexture, 0).s);
+    const uint numSamples = 1024u;
+    for (uint i = 0u; i < numSamples; i++) {
+        vec2 Xi = Hammersley2d(i, numSamples);
+        vec3 H = ImportanceSample_GGX(Xi, roughness, N);
+        vec3 L = 2.0 * dot(V, H) * H - V;
+        float dotNL = clamp(dot(N, L), 0.0, 1.0);
+        if (dotNL > 0.0) {
 
-        if (NdotL > 0.0) {
-            // sample the environment map at a mip level based on the 
-            // roughness/pdf
-            float D = DistributionGGX(N, H, roughness);
-            float NdotH = max(dot(N, H), 0.0);
-            float HdotV = max(dot(H, V), 0.0);
-            float pdf = D * NdotH / (4.0 * HdotV) + 0.0001;
+            float dotNH = clamp(dot(N, H), 0.0, 1.0);
+            float dotVH = clamp(dot(V, H), 0.0, 1.0);
 
-            // calculate the mip-level
-            float resolution = GetInTextureResolution(); 
-            float saTexel = 4.0 * PI / resolution;
-            float saSample = 1.0 / (float(SAMPLE_COUNT) * pdf + 0.0001);
-            float mipLevel = roughness == 0.0 ? 0.0 :
-                                                0.5 * log2(saSample / saTexel);  
+            // Probability Distribution Function
+            float pdf = Distribution_GGX(dotNH, roughness) * dotNH
+                                                / (4.0 * dotVH) + 0.0001;
+            // Solid angle of current sample
+            float omegaS = 1.0 / (float(numSamples) * pdf);
+            // Solid angle of 1 pixel across all cube faces
+            float omegaP = 4.0 * PI / (6.0 * envMapDim * envMapDim);
+            // Biased (+1.0) mip level for better result
+            float mipLevel = roughness == 0.0
+                           ? 0.0 : max(0.5 * log2(omegaS / omegaP) + 1.0, 0.0f);
+            color += SampleEnvMapLod(L, mipLevel).rgb * dotNL;
+            totalWeight += dotNL;
 
-            // Sample the environment map at the calculated mip level
-            prefilteredColor += SampleMap(L, int(mipLevel)) * NdotL;
-            totalWeight += NdotL;
         }
     }
-    prefilteredColor = prefilteredColor / totalWeight;
-    vec4 newPixelColor = vec4(prefilteredColor, 1.0);
+    return (color / totalWeight);
+}
 
-    // output new color to a specific pixel in the output image 
-    ivec2 outPixels = GetPixelCoords(fragCoords);
-    imageStore(outTexture, outPixels, newPixelColor);	
+void main(void)
+{
+    ivec2 outCoords = ivec2(gl_GlobalInvocationID.xy);
+
+    vec2 texCoords = GetTexCoords(outCoords);
+    vec3 pos3D = GetWorldPos(texCoords);
+    vec3 R = normalize(pos3D);
+    vec4 outColor = vec4(PrefilterEnvMap(R, roughness), 1.0);
+
+    imageStore(outTexture, outCoords, outColor);
 }
 
 --- --------------------------------------------------------------------------
 -- glsl DomeLight.BRDF
 
 layout(local_size_x = 32, local_size_y = 32) in;
-layout(binding = 0) uniform sampler2D inTexture;
-layout(rgba16f, binding = 1) uniform image2D outTexture;
 uniform int sampleLevel = 0;
 
-
-vec2 GetFragCoords(ivec2 pixelCoords) {
-    // get the dimensions of the calling texture (outTexture)
-    vec2 inDims = imageSize(outTexture);
-    vec2 fragCoords = (pixelCoords / inDims);
-    return fragCoords;
-}
-ivec2 GetPixelCoords(vec2 fragCoords) {
-    ivec2 outDims = imageSize(outTexture);
-    vec2 outCoords = fragCoords * outDims;
-    return ivec2(ceil(outCoords));
+float Geometry_SchlicksmithGGX(float dotNL, float dotNV, float roughness)
+{
+    float k = (roughness * roughness) / 2.0;
+    float GL = dotNL / (dotNL * (1.0 - k) + k);
+    float GV = dotNV / (dotNV * (1.0 - k) + k);
+    return GL * GV;
 }
 
-float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
-    float NdotV = max(dot(N, V), 0.0);
-    float NdotL = max(dot(N, L), 0.0);
+vec2 ComputeBRDF(float NoV, float roughness)
+{
+    // make sure NoV doesn't go exactly to 0 to avoid NaN
+    NoV = max(NoV, 0.001);
 
-    float alpha = roughness * roughness;
-    float k = alpha * 0.5;
+    // Normal always points along z-axis for the 2D lookup
+    const vec3 N = vec3(0.0, 0.0, 1.0);
+    vec3 V = vec3(sqrt(1.0 - NoV*NoV), 0.0, NoV);
 
-    float ggx2 = NdotV / (NdotV * (1.0 - k) + k);
-    float ggx1 = NdotL / (NdotL * (1.0 - k) + k);
-    return ggx1 * ggx2;
-}
+    vec2 LUT = vec2(0.0);
+    const uint NUM_SAMPLES = 1024u;
+    for (uint i = 0u; i < NUM_SAMPLES; i++) {
+        vec2 Xi = Hammersley2d(i, NUM_SAMPLES);
+        vec3 H = ImportanceSample_GGX(Xi, roughness, N);
+        vec3 L = 2.0 * dot(V, H) * H - V;
 
-// using the Split-Sum approach to integrate the BRDF
-vec2 IntegrateBRDF(float NdotV, float roughness) {
-    // make sure NdotV doesn't go exactly to 0 to avoid NAN
-    NdotV = max(NdotV, 0.001);
-    vec3 V;
-    V.x = sqrt(1.0 - NdotV*NdotV);
-    V.y = 0.0;
-    V.z = NdotV;
+        float dotNL = max(dot(N, L), 0.0);
+        float dotNV = max(dot(N, V), 0.0);
+        float dotVH = max(dot(V, H), 0.0);
+        float dotNH = max(dot(H, N), 0.0);
 
-    // calculate the scale bias terms
-    float scale = 0.0;
-    float bias = 0.0; 
-    vec3 N = vec3(0.0, 0.0, 1.0);
-
-    const uint SAMPLE_COUNT = 1024u;
-    for(uint i = 0u; i < SAMPLE_COUNT; ++i) {
-        // generate a sample vector that's biased towards the preferred 
-        // alignment direction ie. the specular lobe
-        vec2 Xi = Hammersley(i, SAMPLE_COUNT);
-        vec3 H = ImportanceSampleGGX(Xi, N, roughness);
-        vec3 L = normalize(2.0 * dot(V, H) * H - V);
-        float NdotL = max(L.z, 0.0);
-        float NdotH = max(H.z, 0.0);
-        float VdotH = max(dot(V, H), 0.0);
-
-        if(NdotL > 0.0) {
-            float G = GeometrySmith(N, V, L, roughness);
-            float G_Vis = (G * VdotH) / (NdotH * NdotV);
-            float Fc = pow(1.0 - VdotH, 5.0);
-
-            scale += (1.0 - Fc) * G_Vis;
-            bias += Fc * G_Vis;
+        if (dotNL > 0.0) {
+            float G = Geometry_SchlicksmithGGX(dotNL, dotNV, roughness);
+            float G_Vis = (G * dotVH) / (dotNH * dotNV);
+            float Fc = pow(1.0 - dotVH, 5.0);
+            LUT += vec2((1.0 - Fc) * G_Vis, Fc * G_Vis);
         }
     }
-    scale /= float(SAMPLE_COUNT);
-    bias /= float(SAMPLE_COUNT);
-    return vec2(scale, bias);
+    return LUT / float(NUM_SAMPLES);
 }
 
-void main(void) 
+void main(void)
 {
-    // transfor pixel coords into fragment coords 
-    ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
-    vec2 fragCoords = GetFragCoords(pixelCoords);
+    ivec2 outCoords = ivec2(gl_GlobalInvocationID.xy);
 
-    // compute the BRDF based on the fragCoords
-    // fragCoords.x represents NdotE and fragCoords.y represents roughness
-    vec2 integratedBRDF = IntegrateBRDF(fragCoords.x, fragCoords.y);
-    vec4 newPixelColor = vec4(integratedBRDF, 0.0, 1.0);
+    vec2 texCoords = GetTexCoords(outCoords);
+    // texCoords.x represents N dot E and texCoords.y represents roughness
+    vec4 outColor = vec4(ComputeBRDF(texCoords.x, texCoords.y), 0.0, 1.0);
 
-    // output to a specific pixel in the image 
-    ivec2 outPixels = GetPixelCoords(fragCoords);
-    imageStore(outTexture, outPixels, newPixelColor);
+    imageStore(outTexture, outCoords, outColor);
 }

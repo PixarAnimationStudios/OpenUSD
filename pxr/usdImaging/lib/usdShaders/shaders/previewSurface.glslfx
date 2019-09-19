@@ -254,8 +254,8 @@ evaluateLight(
 
 vec2 convertSampleVec(vec3 sample3D)
 {
-    vec2 coord = vec2((atan(sample3D.y, sample3D.x)) / (2.0*PI), 
-                acos(sample3D.z) / PI);
+    vec2 coord = vec2((atan(sample3D.x, sample3D.y)) / (2.0 * PI),
+                      acos(sample3D.z) / PI);
 
     return coord;
 }
@@ -264,30 +264,30 @@ mat4 GetDomeLightTransform(bool isZup)
 {
     const mat4 alignUpAxis = mat4(1,0,0,0, 0,0,1,0, 0,-1,0,0, 0,0,0,1);
     mat4 worldToViewInverse = GetWorldToViewInverseMatrix();
-    mat4 transformationMatrix = (isZup) ? worldToViewInverse 
+    mat4 transformationMatrix = (isZup) ? worldToViewInverse
                                         : alignUpAxis * worldToViewInverse;
     return transformationMatrix;
 }
 
-vec3 
+vec3
 evaluateIndirectLighting(
-        vec3 diffuseColor, 
+        vec3 diffuseColor,
         vec3 specularColor,
         vec3 Neye,
-        vec3 reflectVec,
+        vec3 Reye,
         float NdotE,
         float EdotH,
-        float ior, 
-        float metallic, 
+        float ior,
+        float metallic,
         float occlusion,
         float roughness,
-        bool useSpecularWorkflow, 
+        bool useSpecularWorkflow,
         bool isZup)
 {
     vec3 F0 = specularColor;
     vec3 F90 = vec3(1.0);
     vec3 d = diffuseColor;
-    if (!useSpecularWorkflow){
+    if (!useSpecularWorkflow) {
         float R = (1.0 - ior) / (1.0 + ior);
         vec3 specColor = mix(vec3(1.0), diffuseColor, metallic);
         F0  = R * R * specColor;
@@ -315,13 +315,14 @@ evaluateIndirectLighting(
     // Specular Component
     const float MAX_REFLECTION_LOD = 4.0;
     float lod = roughness * MAX_REFLECTION_LOD;
-    vec3 Rdir = vec4(transformationMatrix * vec4(reflectVec,0.0)).xyz; 
+    vec3 Rdir = vec4(transformationMatrix * vec4(Reye,0.0)).xyz;
     vec2 Rcoord = convertSampleVec(Rdir);
-    vec3 prefilteredColor = textureLod(HdGetSampler_domeLightPrefilter(), 
-                                    Rcoord, lod).rgb;
+    vec3 prefilter = textureLod(HdGetSampler_domeLightPrefilter(),
+                                Rcoord, lod).rgb;
 
     vec2 brdf = HdGet_domeLightBRDF(vec2(NdotE, roughness)).rg;
-    vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+
+    vec3 specular = prefilter * (F * brdf.x + brdf.y);
 
     // Indirect Lighting
     ambient = (d * diffuse + specular) * occlusion;
@@ -351,7 +352,7 @@ evaluateLights(
     vec3 e = normalize(-Peye.xyz);
     float NdotE = max(0.0, dot(n, e));
 
-    vec3 reflectVec = reflect(-e, n); 
+    vec3 Reye = reflect(-e, n);
 
     vec3 directLight = vec3(0.0);
     vec3 indirectLight = vec3(0.0);
@@ -410,14 +411,14 @@ evaluateLights(
         if (lightSource[i].isIndirectLight) {
 
             indirectLight = evaluateIndirectLighting(diffuseColor,
-                                    specularColor, Neye, reflectVec, NdotE,
+                                    specularColor, Neye, Reye, NdotE,
                                     EdotH, ior, metallic, occlusion,
-                                    specularRoughness, useSpecularWorkflow, 
+                                    specularRoughness, useSpecularWorkflow,
                                     lightSource[i].isZup);
         }
         // all other light sources contribute to the direct lighting
         else {
-            directLight += (lightingContrib.diffuse + lightingContrib.specular);        
+            directLight += (lightingContrib.diffuse + lightingContrib.specular);
         }
     }
 #endif
