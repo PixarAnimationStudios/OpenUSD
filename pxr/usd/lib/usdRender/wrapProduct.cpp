@@ -57,13 +57,6 @@ _CreateProductTypeAttr(UsdRenderProduct &self,
 }
         
 static UsdAttribute
-_CreateProductFormatAttr(UsdRenderProduct &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateProductFormatAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
-}
-        
-static UsdAttribute
 _CreateProductNameAttr(UsdRenderProduct &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateProductNameAttr(
@@ -107,13 +100,6 @@ void wrapUsdRenderProduct()
              &This::GetProductTypeAttr)
         .def("CreateProductTypeAttr",
              &_CreateProductTypeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetProductFormatAttr",
-             &This::GetProductFormatAttr)
-        .def("CreateProductFormatAttr",
-             &_CreateProductFormatAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         

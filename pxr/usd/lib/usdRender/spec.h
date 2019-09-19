@@ -56,8 +56,6 @@ struct UsdRenderSpec {
     struct Product {
         /// The type of product, ex: "raster".
         TfToken type;
-        /// The format of the product, ex: "exr".
-        TfToken format;
         /// The name of the product, which uniquely identifies it.
         TfToken name;
         /// Path to the primary UsdGeomCamera camera to use for this product.

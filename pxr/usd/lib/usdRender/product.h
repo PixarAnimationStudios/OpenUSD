@@ -52,15 +52,17 @@ class SdfAssetPath;
 
 /// \class UsdRenderProduct
 ///
-/// A UsdRenderProduct describes an image produced by a render.
-/// A RenderProduct combines one or more RenderVars into a file or
-/// runtime image buffer.  It also provides all the controls established
-/// in UsdRenderSettingsBase as optional overrides to whatever the owning
-/// UsdRenderSettings prim dictates.
+/// A UsdRenderProduct describes an image or other
+/// file-like artifact produced by a render. A RenderProduct
+/// combines one or more RenderVars into a file or interactive
+/// buffer.  It also provides all the controls established in
+/// UsdRenderSettingsBase as optional overrides to whatever the
+/// owning UsdRenderSettings prim dictates.
 /// 
-/// The term "image" is defined loosely here, and could be any file
-/// format that can be created by the "output driver" specified in the
-/// _outputFormat_ member attribute.
+/// Specific renderers may support additional settings, such
+/// as a way to configure compression settings, filetype metadata,
+/// and so forth.  Such settings can be encoded using
+/// renderer-specific API schemas applied to the product prim.
 /// 
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
@@ -187,27 +189,6 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDRENDER_API
     UsdAttribute CreateProductTypeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // PRODUCTFORMAT 
-    // --------------------------------------------------------------------- //
-    /// Names the display/output driver/format.
-    ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: exr
-    USDRENDER_API
-    UsdAttribute GetProductFormatAttr() const;
-
-    /// See GetProductFormatAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDRENDER_API
-    UsdAttribute CreateProductFormatAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //

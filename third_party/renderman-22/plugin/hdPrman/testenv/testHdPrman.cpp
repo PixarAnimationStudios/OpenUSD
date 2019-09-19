@@ -244,7 +244,6 @@ int main(int argc, char *argv[])
             {
                 UsdRenderSpec::Product {
                     TfToken("raster"),
-                    TfToken(TfGetExtension(outputFilename).c_str()),
                     TfToken(outputFilename),
                     // camera path
                     SdfPath(),
@@ -600,7 +599,7 @@ int main(int argc, char *argv[])
             displayParams->SetString(RixStr.k_Ri_name,
                 RtUString(product.name.GetText()));
             displayParams->SetString(RixStr.k_Ri_type,
-                RtUString(product.format.GetText()));
+                RtUString(TfGetExtension(product.name).c_str()));
             displayParams->SetString(RixStr.k_mode,
                                      RtUString(displayMode.c_str()));
             rtid = riley->CreateRenderTarget(cameraId, dcids.size(), &dcids[0],

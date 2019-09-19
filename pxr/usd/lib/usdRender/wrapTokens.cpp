@@ -74,7 +74,6 @@ void wrapUsdRenderTokens()
     _AddToken(cls, "dataType", UsdRenderTokens->dataType);
     _AddToken(cls, "dataWindowNDC", UsdRenderTokens->dataWindowNDC);
     _AddToken(cls, "expandAperture", UsdRenderTokens->expandAperture);
-    _AddToken(cls, "exr", UsdRenderTokens->exr);
     _AddToken(cls, "full", UsdRenderTokens->full);
     _AddToken(cls, "includedPurposes", UsdRenderTokens->includedPurposes);
     _AddToken(cls, "instantaneousShutter", UsdRenderTokens->instantaneousShutter);
@@ -85,7 +84,6 @@ void wrapUsdRenderTokens()
     _AddToken(cls, "pixelAspectRatio", UsdRenderTokens->pixelAspectRatio);
     _AddToken(cls, "preview", UsdRenderTokens->preview);
     _AddToken(cls, "primvar", UsdRenderTokens->primvar);
-    _AddToken(cls, "productFormat", UsdRenderTokens->productFormat);
     _AddToken(cls, "productName", UsdRenderTokens->productName);
     _AddToken(cls, "products", UsdRenderTokens->products);
     _AddToken(cls, "productType", UsdRenderTokens->productType);

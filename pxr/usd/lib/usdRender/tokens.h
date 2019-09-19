@@ -102,10 +102,6 @@ struct UsdRenderTokensType {
     /// 
     /// Possible value for UsdRenderSettingsBase::GetAspectRatioConformPolicyAttr(), Default value for UsdRenderSettingsBase::GetAspectRatioConformPolicyAttr()
     const TfToken expandAperture;
-    /// \brief "exr"
-    /// 
-    /// Default value for UsdRenderProduct::GetProductFormatAttr()
-    const TfToken exr;
     /// \brief "full"
     /// 
     /// Possible value for UsdRenderSettings::GetMaterialBindingPurposesAttr()
@@ -146,10 +142,6 @@ struct UsdRenderTokensType {
     /// 
     /// Possible value for UsdRenderVar::GetSourceTypeAttr()
     const TfToken primvar;
-    /// \brief "productFormat"
-    /// 
-    /// UsdRenderProduct
-    const TfToken productFormat;
     /// \brief "productName"
     /// 
     /// UsdRenderProduct

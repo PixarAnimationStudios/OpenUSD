@@ -184,7 +184,6 @@ UsdRenderComputeSpec(
 
             // Read product-only settings.
             product.GetProductTypeAttr().Get(&pd.type);
-            product.GetProductFormatAttr().Get(&pd.format);
             product.GetProductNameAttr().Get(&pd.name);
 
             // Read render vars.

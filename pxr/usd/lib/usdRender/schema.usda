@@ -193,15 +193,17 @@ class RenderVar "RenderVar" (
  
 class RenderProduct "RenderProduct" (
     inherits = </RenderSettingsBase>
-    doc = """A UsdRenderProduct describes an image produced by a render.
-    A RenderProduct combines one or more RenderVars into a file or
-    runtime image buffer.  It also provides all the controls established
-    in UsdRenderSettingsBase as optional overrides to whatever the owning
-    UsdRenderSettings prim dictates.
-     
-    The term "image" is defined loosely here, and could be any file
-    format that can be created by the "output driver" specified in the
-    _outputFormat_ member attribute.
+    doc = """A UsdRenderProduct describes an image or other
+    file-like artifact produced by a render. A RenderProduct
+    combines one or more RenderVars into a file or interactive
+    buffer.  It also provides all the controls established in
+    UsdRenderSettingsBase as optional overrides to whatever the
+    owning UsdRenderSettings prim dictates.
+
+    Specific renderers may support additional settings, such
+    as a way to configure compression settings, filetype metadata,
+    and so forth.  Such settings can be encoded using
+    renderer-specific API schemas applied to the product prim.
     """
     customData = {
          string className = "Product"
@@ -219,9 +221,6 @@ class RenderProduct "RenderProduct" (
 
         \note In the future, UsdRender may define additional product
         types."""
-    )
-    uniform token productFormat = "exr" (
-        doc = """Names the display/output driver/format."""
     )
     uniform token productName = "" (
         doc = """Specifies the name that the output/display driver

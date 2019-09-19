@@ -120,23 +120,6 @@ UsdRenderProduct::CreateProductTypeAttr(VtValue const &defaultValue, bool writeS
 }
 
 UsdAttribute
-UsdRenderProduct::GetProductFormatAttr() const
-{
-    return GetPrim().GetAttribute(UsdRenderTokens->productFormat);
-}
-
-UsdAttribute
-UsdRenderProduct::CreateProductFormatAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(UsdRenderTokens->productFormat,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
-}
-
-UsdAttribute
 UsdRenderProduct::GetProductNameAttr() const
 {
     return GetPrim().GetAttribute(UsdRenderTokens->productName);
@@ -184,7 +167,6 @@ UsdRenderProduct::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         UsdRenderTokens->productType,
-        UsdRenderTokens->productFormat,
         UsdRenderTokens->productName,
     };
     static TfTokenVector allNames =
