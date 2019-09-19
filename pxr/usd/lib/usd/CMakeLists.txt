@@ -32,6 +32,7 @@ pxr_library(usd
         debugCodes
         editContext
         editTarget
+        flattenUtils
         inherits
         interpolation
         modelAPI
@@ -107,6 +108,7 @@ pxr_library(usd
         wrapCrateInfo.cpp
         wrapEditContext.cpp
         wrapEditTarget.cpp
+        wrapFlattenUtils.cpp
         wrapInherits.cpp
         wrapInterpolation.cpp
         wrapModelAPI.cpp
@@ -182,6 +184,7 @@ pxr_test_scripts(
     testenv/testUsdFileFormats.py
     testenv/testUsdFlatten.py
     testenv/testUsdFlatten2.py
+    testenv/testUsdFlattenLayerStack.py
     testenv/testUsdFlattenProperties.py
     testenv/testUsdInherits.py
     testenv/testUsdInstanceProxy.py
@@ -362,6 +365,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdFlatten2
     DEST testUsdFlatten4
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdFlattenLayerStack
+    DEST testUsdFlattenLayerStack
 )
 
 pxr_install_test_dir(
@@ -840,6 +848,12 @@ pxr_register_test(testUsdFlatten4
     EXPECTED_RETURN_CODE 0
     ENV
         USD_ASSIGN_MASTERS_DETERMINISTICALLY=1
+)
+
+pxr_register_test(testUsdFlattenLayerStack
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdFlattenLayerStack"
+    EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdNotices

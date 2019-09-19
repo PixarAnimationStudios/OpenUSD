@@ -79,4 +79,5 @@ TF_WRAP_MODULE
     TF_WRAP(UsdZipFile);
     TF_WRAP(UsdPrimCompositionQueryArc);
     TF_WRAP(UsdPrimCompositionQuery);
+    TF_WRAP(UsdFlattenUtils);
 }

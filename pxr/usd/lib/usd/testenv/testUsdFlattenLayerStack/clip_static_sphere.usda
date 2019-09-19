@@ -1,0 +1,10 @@
+#usda 1.0
+(
+    defaultPrim = "Sphere"
+)
+
+def Sphere "Sphere"
+{
+    float3 xformOp:translate
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
