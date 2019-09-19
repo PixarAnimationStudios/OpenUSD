@@ -17,7 +17,7 @@ function(prman_osl SHADER_NAME SHADER_DIR)
     )
 endfunction()
 
-set(shader_dir "${PROJECT_SOURCE_DIR}/pxr/usdImaging/lib/usdShaders/shaders")
+set(shader_dir "${PROJECT_SOURCE_DIR}/pxr/usdImaging/plugin/usdShaders/shaders")
 prman_osl(UsdPreviewSurfaceParameters ${CMAKE_CURRENT_SOURCE_DIR})
 prman_osl(UsdUVTexture ${shader_dir})
 prman_osl(UsdPrimvarReader_float ${shader_dir})

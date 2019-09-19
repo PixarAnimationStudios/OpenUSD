@@ -61,7 +61,7 @@ else()
         COMMAND
             ${PYTHON_EXECUTABLE}
                 ${CMAKE_CURRENT_SOURCE_DIR}/pxrUsdPreviewSurfaceGenFragments.py
-                ${CMAKE_SOURCE_DIR}/pxr/usdImaging/lib/usdShaders/shaders/previewSurface.glslfx
+                ${CMAKE_SOURCE_DIR}/pxr/usdImaging/plugin/usdShaders/shaders/previewSurface.glslfx
                 --srcDir ${CMAKE_CURRENT_SOURCE_DIR}
                 --schema ${MAYA_BASE_DIR}/bin/ShadeFragment/v2pFragment.xsd
                 --validate

@@ -11,9 +11,6 @@ pxr_library(usdShaders
     PRIVATE_CLASSES
         discoveryPlugin
 
-    PRIVATE_HEADERS
-        api.h
-
     PYTHON_CPPFILES
         moduleDeps.cpp
 

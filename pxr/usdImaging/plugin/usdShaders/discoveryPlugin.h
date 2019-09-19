@@ -25,7 +25,6 @@
 #define USDSHADERS_DISCOVERY_PLUGIN_H
 
 #include "pxr/pxr.h"
-#include "pxr/usdImaging/usdShaders/api.h"
 #include "pxr/base/tf/token.h"
 
 #include "pxr/usd/ndr/declare.h"
