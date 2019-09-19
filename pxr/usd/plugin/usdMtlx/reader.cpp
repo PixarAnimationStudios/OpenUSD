@@ -1,5 +1,5 @@
 //
-// Copyright 2018 Pixar
+// Copyright 2018-2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "pxr/usd/usdMtlx/debugCodes.h"
 #include "pxr/usd/usdMtlx/reader.h"
 #include "pxr/usd/usdMtlx/utils.h"
 
@@ -1066,9 +1067,14 @@ _NodeGraph::AddReference(const SdfPath& referencingPath) const
         }
 
         // Something other than a node graph already exists.
-        TF_WARN("Can't create node graph at <%s>; a '%s' already exists",
-                referencingPath.GetText(), prim.GetTypeName().GetText());
-        return _NodeGraph();
+        // If it has a type, ignore it. 
+        // Otherwise still add the reference for the implicit 
+        // node graph case
+        if (!prim.GetTypeName().IsEmpty()) {
+            TF_WARN("Can't create node graph at <%s>; a '%s' already exists",
+                    referencingPath.GetText(), prim.GetTypeName().GetText());
+            return _NodeGraph();
+        }
     }
 
     // Create a new prim referencing the node graph.
@@ -1247,10 +1253,15 @@ _Context::_AddNodeGraph(
         // getting nodes and outputs at the document scope and we
         // don't make a USD nodegraph.
         if (mtlxNodeGraph) {
+            TF_DEBUG(USDMTLX_READER).Msg("Add node graph: %s at path %s\n", 
+                                         mtlxNodeGraph->getName().c_str(),
+                                         _nodeGraphsPath.GetString().c_str());
             builder.SetContainer(mtlxNodeGraph);
             builder.SetTarget(_stage, _nodeGraphsPath, mtlxNodeGraph);
         }
         else {
+            TF_DEBUG(USDMTLX_READER).Msg("Add implicit node graph at path %s\n", 
+                    _nodeGraphsPath.GetString().c_str());
             builder.SetContainer(mtlxDocument);
             builder.SetTarget(_stage, _nodeGraphsPath);
         }
@@ -1266,6 +1277,8 @@ _Context::AddNodeGraphWithDef(const mx::ConstNodeGraphPtr& mtlxNodeGraph)
     auto& nodeGraph = _nodeGraphs[mtlxNodeGraph];
     if (!nodeGraph && mtlxNodeGraph) {
         if (auto mtlxNodeDef = mtlxNodeGraph->getNodeDef()) {
+            TF_DEBUG(USDMTLX_READER).Msg("Add mtlxNodeDef %s\n", 
+                                         mtlxNodeDef->getName().c_str());
             _NodeGraphBuilder builder;
             builder.SetInterface(mtlxNodeDef);
             builder.SetContainer(mtlxNodeGraph);
@@ -1366,6 +1379,9 @@ _Context::AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef)
         // Do nothing
     }
     else if ((usdShaderImpl = UsdShadeShader::Define(_stage, shaderImplPath))) {
+        TF_DEBUG(USDMTLX_READER).Msg("Created  shader mtlx %s, as usd %s\n",
+                                     mtlxNodeDef->getName().c_str(),
+                                     name.GetString().c_str());
         usdShaderImpl.CreateIdAttr(VtValue(TfToken(shaderId)));
         auto connectable = usdShaderImpl.ConnectableAPI();
         _SetCoreUIAttributes(usdShaderImpl.GetPrim(), mtlxShaderRef);
@@ -1772,6 +1788,9 @@ _Context::_BindNodeGraph(
     auto referencingPath =
         referencingPathParent.AppendChild(
             usdNodeGraph.GetOwnerPrim().GetPath().GetNameToken());
+    TF_DEBUG(USDMTLX_READER).Msg("_BindNodeGraph %s %s\n",
+                                 mtlxBindInput->getName().c_str(),
+                                 referencingPath.GetString().c_str());
     auto refNodeGraph = usdNodeGraph.AddReference(referencingPath);
     if (!refNodeGraph) {
         return;
@@ -1830,6 +1849,9 @@ _Context::_AddShaderOutput(
             }
         }
     }
+    TF_DEBUG(USDMTLX_READER).Msg("Add shader output %s of type %s\n",
+                                 mtlxTyped->getName().c_str(),
+                                 type.c_str());
     if (context == "surface" || type == mx::SURFACE_SHADER_TYPE_STRING) {
         return connectable.CreateOutput(UsdShadeTokens->surface,
                                         SdfValueTypeNames->Token);
@@ -2270,6 +2292,8 @@ ReadNodeGraphsWithDefs(mx::ConstDocumentPtr mtlx, _Context& context)
 {
     // Translate nodegraphs with nodedefs.
     for (auto& mtlxNodeGraph: mtlx->getNodeGraphs()) {
+        TF_DEBUG(USDMTLX_READER).Msg("Read node graph %s\n",
+                                     mtlxNodeGraph->getName().c_str() );
         context.AddNodeGraphWithDef(mtlxNodeGraph);
     }
 }
@@ -2307,10 +2331,14 @@ ReadMaterials(mx::ConstDocumentPtr mtlx, _Context& context)
 {
     for (auto& mtlxMaterial: mtlx->getMaterials()) {
         // Translate material.
+        TF_DEBUG(USDMTLX_READER).Msg("Adding mtlxMaterial '%s'\n",
+                                     _Name(mtlxMaterial).c_str());
         if (auto usdMaterial = context.BeginMaterial(mtlxMaterial)) {
             // Translate all shader references.
             for (auto mtlxShaderRef: mtlxMaterial->getShaderRefs()) {
                 // Translate shader reference.
+                TF_DEBUG(USDMTLX_READER).Msg("Adding shaderref '%s'\n",
+                                             _Name(mtlxShaderRef).c_str());
                 if (auto usdShader = context.AddShaderRef(mtlxShaderRef)) {
                     // Do nothing.
                 }
@@ -2348,6 +2376,10 @@ ReadMaterials(mx::ConstDocumentPtr mtlx, _Context& context)
                 if (auto usdInherited = context.GetMaterial(name)) {
                     usdMaterial.GetPrim().GetSpecializes()
                         .AddSpecialize(usdInherited.GetPath());
+                    TF_DEBUG(USDMTLX_READER).Msg("Material '%s' inherit from "
+                                                 " '%s'\n",
+                                                 _Name(mtlxMaterial).c_str(),
+                                                 name.c_str());
                 }
                 else {
                     TF_WARN("Material '%s' attempted to inherit from "
