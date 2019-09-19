@@ -23,6 +23,9 @@
 //
 #if !BOOST_PP_IS_ITERATING
 
+#ifndef VT_FUNCTIONS_H
+#define VT_FUNCTIONS_H
+
 /// \file vt/functions.h
 
 #include "pxr/pxr.h"
@@ -289,6 +292,8 @@ VTFUNCTION_BOOL(VtGreaterOrEqual,>=)
 VTFUNCTION_BOOL(VtLessOrEqual,<=)
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // VT_FUNCTIONS_H
 
 #else // BOOST_PP_IS_ITERATING
 
