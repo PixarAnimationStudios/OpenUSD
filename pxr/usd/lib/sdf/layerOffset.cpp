@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/layerOffset.h"
+#include "pxr/usd/sdf/timeCode.h"
 #include "pxr/base/gf/math.h"
 
 #include "pxr/base/tf/type.h"
@@ -95,6 +96,12 @@ double
 SdfLayerOffset::operator*(double rhs) const
 {
     return ( rhs * _scale + _offset );
+}
+
+SdfTimeCode
+SdfLayerOffset::operator*(const SdfTimeCode &rhs) const
+{
+    return SdfTimeCode( (*this) * double(rhs) );
 }
 
 bool
