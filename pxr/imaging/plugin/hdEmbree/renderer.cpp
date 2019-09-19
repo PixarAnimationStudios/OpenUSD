@@ -376,6 +376,14 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
     rtcCommit(_scene);
 
     if (!_ValidateAovBindings()) {
+        // We aren't going to render anything. Just mark all AOVs as converged
+        // so that we will stop rendering.
+        for (size_t i = 0; i < _aovBindings.size(); ++i) {
+            HdEmbreeRenderBuffer *rb = static_cast<HdEmbreeRenderBuffer*>(
+                _aovBindings[i].renderBuffer);
+            rb->SetConverged(true);
+        }
+        TF_RUNTIME_ERROR("Could not validate Aovs. Render will not complete");
         return;
     }
 
