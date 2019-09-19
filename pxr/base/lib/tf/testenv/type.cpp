@@ -394,9 +394,11 @@ Test_TfType()
     // Test Get{Base,Derived}Types()
 
     TF_AXIOM( tRoot.GetBaseTypes().empty() );
+    TF_AXIOM( tRoot.GetNBaseTypes(nullptr, 0) == 0 );
     TF_AXIOM( !tRoot.GetDirectlyDerivedTypes().empty() );
 
     TF_AXIOM( tUnknown.GetBaseTypes().empty() );
+    TF_AXIOM( tUnknown.GetNBaseTypes(nullptr, 0) == 0 );
     TF_AXIOM( tUnknown.GetDirectlyDerivedTypes().empty() );
 
     std::vector<TfType> rootDerivatives = tRoot.GetDirectlyDerivedTypes();
@@ -406,6 +408,24 @@ Test_TfType()
     std::vector<TfType> childDerivatives = tChild.GetDirectlyDerivedTypes();
     std::vector<TfType> grandchildParents = tGrandchild.GetBaseTypes();
     std::vector<TfType> grandchildDerivatives = tGrandchild.GetDirectlyDerivedTypes();
+
+    {
+        // Test GetNBaseTypes.
+        TfType types[3];
+        TF_AXIOM(tChild.GetNBaseTypes(types, 1) == 2);
+        TF_AXIOM(types[0] == tChild.GetBaseTypes()[0]);
+        TF_AXIOM(tChild.GetNBaseTypes(types, 2) == 2);
+        TF_AXIOM(types[0] == tChild.GetBaseTypes()[0]);
+        TF_AXIOM(types[1] == tChild.GetBaseTypes()[1]);
+        TF_AXIOM(tChild.GetNBaseTypes(types, 3) == 2);
+        TF_AXIOM(types[0] == tChild.GetBaseTypes()[0]);
+        TF_AXIOM(types[1] == tChild.GetBaseTypes()[1]);
+
+        TfType tChildCopy = tChild;
+        tChildCopy.GetNBaseTypes(&tChildCopy, 1);
+        TF_AXIOM(tChildCopy != tChild);
+        TF_AXIOM(tChildCopy == tChild.GetBaseTypes()[0]);
+    }
 
     // Test inheritance within our known hierarchy
     TF_AXIOM( childParents.size() == 2 && childDerivatives.size() == 2 );
