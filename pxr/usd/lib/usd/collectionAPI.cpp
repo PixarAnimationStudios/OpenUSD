@@ -312,41 +312,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 using PathExpansionRuleMap = UsdCollectionMembershipQuery::PathExpansionRuleMap;
 
-static void
-_AppendIncludedPath(
-    PathExpansionRuleMap *map,
-    const SdfPath &path,
-    const TfToken &expansionRule)
-{
-    if (TF_VERIFY(map)) {
-        (*map)[path] = expansionRule;
-    }
-}
-
-static void
-_AppendExcludedPath(
-    PathExpansionRuleMap *map,
-    const SdfPath &path)
-{
-    if (TF_VERIFY(map)) {
-        (*map)[path] = UsdTokens->exclude;
-    }
-}
-
-static void
- _MergeMembershipQuery(
-    PathExpansionRuleMap *map,
-    const PathExpansionRuleMap &otherMap)
-{
-    if (TF_VERIFY(map)) {
-        // We can't just do an insert here as we need to overwrite existing
-        // entries with new values of expansion rule from other map
-        for (const auto &pathAndExpansionRule : otherMap) {
-            (*map)[pathAndExpansionRule.first] = pathAndExpansionRule.second;
-        }
-    }
-}
-
 /* static */
 UsdCollectionAPI 
 UsdCollectionAPI::ApplyCollection(
@@ -686,15 +651,23 @@ UsdCollectionAPI::_ComputeMembershipQueryImpl(
 
             const PathExpansionRuleMap& includedMap =
                 includedQuery.GetAsPathExpansionRuleMap();
-            _MergeMembershipQuery(&map, includedMap);
+
+            // Merge path expansion rule maps
+            // We can't just do an insert here as we need to overwrite existing
+            // entries with new values of expansion rule from other map
+            for (const auto &pathAndExpansionRule : includedMap) {
+                map[pathAndExpansionRule.first] = pathAndExpansionRule.second;
+            }
         } else {
-            _AppendIncludedPath(&map, includedPath, expRule);
+            // Append included path
+            map[includedPath] = expRule;
         }
     }
 
     // Process the excludes after the includes.
     for (const auto &p: excludes) {
-        _AppendExcludedPath(&map, p);
+        // Append excluded path
+        map[p] = UsdTokens->exclude;
     }
 
     *query = UsdCollectionMembershipQuery(std::move(map));
