@@ -21,22 +21,27 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDPRMAN_DEBUGCODES_H
-#define HDPRMAN_DEBUGCODES_H
-
 #include "pxr/pxr.h"
-#include "pxr/base/tf/debug.h"
+#include "hdPrman/matfiltFilterChain.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEBUG_CODES(
-    HDPRMAN_PRIMVARS,
-    HDPRMAN_MATERIALS,
-    HDPRMAN_LIGHT_LINKING,
-    HDPRMAN_LIGHT_LIST,
-    HDPRMAN_VSTRUCTS
-);
+void
+MatfiltFilterChain::Exec(
+    const SdfPath & networkId,
+    MatfiltNetwork & network,
+    const std::map<TfToken, VtValue> & contextValues,
+    const NdrTokenVec & shaderTypePriority,
+    std::vector<std::string> * outputErrorMessages) const
+{
+    for (const FilterFnc & filter : _filters) {
+        (*filter)(networkId, network, contextValues, shaderTypePriority,
+                outputErrorMessages);
+    }
+}
+
+void MatfiltFilterChain::AppendFilter(FilterFnc fnc) {
+    _filters.push_back(fnc);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif // HDPRMAN_DEBUGCODES_H

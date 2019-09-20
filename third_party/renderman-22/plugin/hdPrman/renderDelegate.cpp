@@ -342,9 +342,7 @@ HdPrmanRenderDelegate::GetMaterialNetworkSelector() const
 TfTokenVector
 HdPrmanRenderDelegate::GetShaderSourceTypes() const
 {
-    static const TfToken OSL("OSL");
-    static const TfToken RmanCpp("RmanCpp");
-    return {OSL, RmanCpp};
+    return HdPrmanMaterial::GetShaderSourceTypes();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

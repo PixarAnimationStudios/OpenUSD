@@ -64,6 +64,9 @@ public:
 
     virtual void Finalize(HdRenderParam *renderParam) override;
 
+    /// Return the static list of tokens supported.
+    static TfTokenVector const& GetShaderSourceTypes();
+
 private:
     void _ResetMaterial(HdPrman_Context *context);
 

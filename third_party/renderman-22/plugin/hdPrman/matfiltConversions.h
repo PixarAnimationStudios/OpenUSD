@@ -21,22 +21,28 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDPRMAN_DEBUGCODES_H
-#define HDPRMAN_DEBUGCODES_H
+#ifndef HDPRMAN_MATFILT_CONVERSIONS_H
+#define HDPRMAN_MATFILT_CONVERSIONS_H
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/debug.h"
+#include "hdPrman/matfiltFilterChain.h"
+#include "pxr/imaging/hd/material.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEBUG_CODES(
-    HDPRMAN_PRIMVARS,
-    HDPRMAN_MATERIALS,
-    HDPRMAN_LIGHT_LINKING,
-    HDPRMAN_LIGHT_LIST,
-    HDPRMAN_VSTRUCTS
-);
+/// Converts a single terminal of an HdMaterialNetworkMap to a MatfiltNetwork
+/// NOTE: currently doesn't handle primvars field of HdMaterialNetwork
+bool MatfiltConvertFromHdMaterialNetworkMapTerminal(
+    const HdMaterialNetworkMap & hdNetworkMap,
+    const TfToken & terminalName,
+    MatfiltNetwork *result);
+
+/// Converts MatfiltNetwork from each terminal into HdMaterialNetwork entries
+/// within a HdMaterialNetworkMap
+bool MatfiltConvertToHdMaterialNetworkMap(
+    const MatfiltNetwork & matfiltNetwork,
+    HdMaterialNetworkMap *result);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDPRMAN_DEBUGCODES_H
+#endif

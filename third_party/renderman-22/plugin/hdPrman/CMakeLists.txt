@@ -36,6 +36,9 @@ pxr_shared_library(${PXR_PACKAGE}
         instancer
         light
         material
+        matfiltConversions
+        matfiltFilterChain
+        matfiltResolveVstructs
         mesh
         points
         renderDelegate
@@ -46,6 +49,13 @@ pxr_shared_library(${PXR_PACKAGE}
     PUBLIC_HEADERS
         api.h
         renderParam.h
+
+    PRIVATE_HEADERS
+        virtualStructConditionalGrammar.tab.h
+
+    CPPFILES
+        virtualStructConditionalGrammar.tab.cpp
+        virtualStructConditionalGrammar.lex.cpp
 
     DISABLE_PRECOMPILED_HEADERS
 )
