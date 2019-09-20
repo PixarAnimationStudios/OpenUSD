@@ -262,7 +262,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// \n  Fallback Value: 0.0
     USDLUX_API
     UsdAttribute GetShapingIesAngleScaleAttr() const;
 

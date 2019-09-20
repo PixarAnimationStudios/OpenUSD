@@ -297,7 +297,7 @@ class "ShapingAPI" (
         doc = """An IES (Illumination Engineering Society) light
         profile describing the angular distribution of light."""
     )
-    float shaping:ies:angleScale (
+    float shaping:ies:angleScale = 0 (
         displayGroup = "Shaping"
         doc = """Rescales the angular distribution of the IES profile.
         TODO: clarify semantics"""
@@ -333,15 +333,17 @@ class "ShadowAPI" (
         doc = """The color of shadows cast by the light.  This is a
         non-physical control.  The default is to cast black shadows."""
     )
-    float shadow:distance (
+    float shadow:distance = -1.0 (
         displayGroup = "Shadows"
         doc = """The maximum distance shadows are cast.
-        There is no limit unless this attribute value is overridden."""
+        The default value (-1) indicates no limit.
+        """
     )
-    float shadow:falloff (
+    float shadow:falloff = -1.0 (
         displayGroup = "Shadows"
-        doc = """The near distance at which shadow falloff beings.
-        There is no falloff unless this attribute value is overridden."""
+        doc = """The near distance at which shadow falloff begins.
+        The default value (-1) indicates no falloff.
+        """
     )
     float shadow:falloffGamma = 1.0 (
         displayGroup = "Shadows"
