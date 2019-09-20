@@ -775,6 +775,19 @@ public:
     SDF_API
     static TfToken StripNamespace(const TfToken &name);
 
+    /// Returns (\p name, \c true) where \p name is stripped of the prefix
+    /// specified by \p matchNamespace if \p name indeed starts with
+    /// \p matchNamespace. Returns (\p name, \c false) otherwise, with \p name 
+    /// unmodified.
+    ///
+    /// This function deals with both the case where \p matchNamespace contains
+    /// the trailing namespace delimiter ':' or not.
+    ///
+    SDF_API
+    static std::pair<std::string, bool> 
+    StripPrefixNamespace(const std::string &name, 
+                         const std::string &matchNamespace);
+
     /// Return true if \p pathString is a valid path string, meaning that
     /// passing the string to the \a SdfPath constructor will result in a valid,
     /// non-empty SdfPath.  Otherwise, return false and if \p errMsg is not NULL,

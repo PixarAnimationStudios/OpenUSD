@@ -1792,6 +1792,42 @@ SdfPath::StripNamespace(const TfToken &name)
     return TfToken(StripNamespace(name.GetString()));
 }
 
+std::pair<std::string, bool> 
+SdfPath::StripPrefixNamespace(const std::string &name, 
+                              const std::string &matchNamespace)
+{
+    static const char namespaceDelimiter =
+        SdfPathTokens->namespaceDelimiter.GetText()[0];
+
+    if (matchNamespace.empty()) {
+        return std::make_pair(name, false);
+    }
+
+    if (TfStringStartsWith(name, matchNamespace)) {
+
+        size_t matchNamespaceLen = matchNamespace.size();
+
+        // Now check to make sure the next character is the namespace delimiter
+        if (matchNamespace[matchNamespaceLen - 1] == namespaceDelimiter) {
+
+            // The matched namespace already contained the end delimiter,
+            // nothing more to do.
+            return std::make_pair(name.substr(matchNamespaceLen), true);
+
+        } else {
+
+            // The matched namespace needs an extra delimiter ':' so check for
+            // it now.
+            if (name[matchNamespaceLen] == namespaceDelimiter) {
+                return std::make_pair(name.substr(matchNamespaceLen + 1), true);
+            }
+
+        }
+    }
+
+    return std::make_pair(name, false);
+}
+
 bool
 SdfPath::IsValidPathString(const std::string &pathString,
                           std::string *errMsg)

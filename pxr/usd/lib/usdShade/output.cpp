@@ -67,11 +67,8 @@ UsdShadeOutput::UsdShadeOutput(const UsdProperty &prop)
 TfToken 
 UsdShadeOutput::GetBaseName() const
 {
-    string name = GetFullName();
-    if (TfStringStartsWith(name, UsdShadeTokens->outputs)) {
-        return TfToken(name.substr(UsdShadeTokens->outputs.GetString().size()));
-    }
-    return GetFullName();
+    return TfToken(SdfPath::StripPrefixNamespace(
+        GetFullName(), UsdShadeTokens->outputs).first);
 }
 
 SdfValueTypeName 

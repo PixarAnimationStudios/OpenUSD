@@ -261,10 +261,14 @@ void wrapPath() {
              (std::string (*)(const std::string&, const std::string&))
                  &This::JoinIdentifier)
             .staticmethod("JoinIdentifier")
+
         .def("StripNamespace",
              (std::string (*)(const std::string&))
                  &This::StripNamespace)
             .staticmethod("StripNamespace")
+        .def("StripPrefixNamespace", &This::StripPrefixNamespace, 
+                return_value_policy<TfPyPairToTuple>())
+            .staticmethod("StripPrefixNamespace")
 
         .def("IsValidPathString", &_IsValidPathString)
              .staticmethod("IsValidPathString")

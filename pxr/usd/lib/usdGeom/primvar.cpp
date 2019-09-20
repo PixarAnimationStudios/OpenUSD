@@ -547,12 +547,11 @@ TfToken
 UsdGeomPrimvar::GetPrimvarName() const 
 { 
     std::string const & fullName = _attr.GetName().GetString();
-    static const size_t primvarsPrefixLen = _tokens->primvarsPrefix.GetString().size();
-    
-    if (TfStringStartsWith(fullName, _tokens->primvarsPrefix))
-        return TfToken(fullName.substr(primvarsPrefixLen));
-    else
-        return TfToken(); 
+
+    std::pair<std::string, bool> res =
+        SdfPath::StripPrefixNamespace(fullName, _tokens->primvarsPrefix);
+
+    return res.second ? TfToken(res.first) : TfToken();
 }
 
 bool

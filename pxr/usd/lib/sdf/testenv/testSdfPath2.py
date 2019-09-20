@@ -507,7 +507,35 @@ class TestSdfPath2(unittest.TestCase):
         self.assertEqual(Sdf.Path.StripNamespace(Sdf.Path.JoinIdentifier([])), "")
         self.assertEqual(Sdf.Path.StripNamespace(Sdf.Path.JoinIdentifier(["foo"])), "foo")
         self.assertEqual(Sdf.Path.StripNamespace(Sdf.Path.JoinIdentifier(["foo","bar","baz"])), "baz")
-        
+
+        self.assertEqual(Sdf.Path.StripPrefixNamespace(
+              Sdf.Path.JoinIdentifier([]), ""), 
+              ("", False))
+        self.assertEqual(Sdf.Path.StripPrefixNamespace(
+              Sdf.Path.JoinIdentifier(["foo"]), "foo"), 
+              ("foo", False))
+        self.assertEqual(Sdf.Path.StripPrefixNamespace(
+              Sdf.Path.JoinIdentifier(["foo", "bar"]), "foo"),
+              ("bar", True))
+        self.assertEqual(Sdf.Path.StripPrefixNamespace(
+              Sdf.Path.JoinIdentifier(["foo", "bar"]), "foo:"), 
+              ("bar", True))
+        self.assertEqual(Sdf.Path.StripPrefixNamespace(
+              Sdf.Path.JoinIdentifier(["foo", "bar"]), "f"), 
+              ("foo:bar", False))
+        self.assertEqual(Sdf.Path.StripPrefixNamespace(
+              Sdf.Path.JoinIdentifier(["foo", "bar", "baz"]), "foo:"), 
+              ("bar:baz", True))
+        self.assertEqual(Sdf.Path.StripPrefixNamespace(
+              Sdf.Path.JoinIdentifier(["foo", "bar", "baz"]), "foo:bar"), 
+              ("baz", True))
+        self.assertEqual(Sdf.Path.StripPrefixNamespace(
+              Sdf.Path.JoinIdentifier(["foo", "bar", "baz"]), "foo:bar:"), 
+              ("baz", True))
+        self.assertEqual(Sdf.Path.StripPrefixNamespace(
+              Sdf.Path.JoinIdentifier(["foo", "bar", "baz"]), "nothere:"), 
+              ("foo:bar:baz", False))
+
         self.assertEqual(Sdf.Path.JoinIdentifier("", ""), "")
         self.assertEqual(Sdf.Path.JoinIdentifier("foo", ""), "foo")
         self.assertEqual(Sdf.Path.JoinIdentifier("", "foo"), "foo")
