@@ -588,6 +588,22 @@ public:
     bool ComputeFlattened(VtValue *value, 
                           UsdTimeCode time=UsdTimeCode::Default()) const;
 
+    /// Computes the flattened value of \p attrValue given \p indices.
+    ///
+    /// This method is a static convenience function that performs the main
+    /// work of ComputeFlattened above without needing an instance of a 
+    /// UsdGeomPrimvar.
+    ///
+    /// Returns \c false if the value contained in \p attrVal is not a supported
+    /// type for flattening. Otherwise returns \c true.  The output 
+    /// \p errString variable may be populated with an error string if an error
+    /// is encountered during flattening.
+    USDGEOM_API
+    static bool ComputeFlattened(VtValue *value, const VtValue &attrVal,
+                                 const VtIntArray &indices, 
+                                 std::string *errString);
+                          
+
     /// @}
 
     // ---------------------------------------------------------------
@@ -716,16 +732,18 @@ private:
 
     // Helper method for computing the flattened value of an indexed primvar.
     template<typename ScalarType>
-    bool _ComputeFlattenedHelper(const VtArray<ScalarType> &authored,
-                                 const VtIntArray &indices,
-                                 VtArray<ScalarType> *value) const;
+    static bool _ComputeFlattenedHelper(const VtArray<ScalarType> &authored,
+                                        const VtIntArray &indices,
+                                        VtArray<ScalarType> *value,
+                                        std::string *errString);
     
     // Helper function to evaluate the flattened array value of a primvar given
     // the attribute value and the indices array.
     template <typename ArrayType>
-    bool _ComputeFlattenedArray(const VtValue &attrVal,
-                                const VtIntArray &indices,
-                                VtValue *value) const;
+    static bool _ComputeFlattenedArray(const VtValue &attrVal,
+                                       const VtIntArray &indices,
+                                       VtValue *value, 
+                                       std::string *errString);
 
     // Should only be called if _idTargetRelName is set
     UsdRelationship _GetIdTargetRel(bool create) const;
@@ -767,14 +785,21 @@ UsdGeomPrimvar::ComputeFlattened(VtArray<ScalarType> *value, UsdTimeCode time) c
     if (authored.empty())
         return false;
 
-    return _ComputeFlattenedHelper(authored, indices, value);
+    std::string errString;
+    bool res = _ComputeFlattenedHelper(authored, indices, value, &errString);
+    if (!errString.empty()) {
+        TF_WARN("For primvar %s: %s", 
+                UsdDescribe(_attr).c_str(), errString.c_str());
+    }
+    return res;
 }
 
 template<typename ScalarType>
 bool
 UsdGeomPrimvar::_ComputeFlattenedHelper(const VtArray<ScalarType> &authored,
                                         const VtIntArray &indices,
-                                        VtArray<ScalarType> *value) const
+                                        VtArray<ScalarType> *value,
+                                        std::string *errString)
 {
     value->resize(indices.size());
     bool success = true;
@@ -801,11 +826,14 @@ UsdGeomPrimvar::_ComputeFlattenedHelper(const VtArray<ScalarType> &authored,
                     TfStringify(invalidIndexPositions[i]));
         }
 
-        TF_WARN("Found %ld invalid indices at positions [%s%s] that are out of "
-                "range [0,%ld) for primvar %s.", invalidIndexPositions.size(), 
+        if (errString) {
+            *errString = TfStringPrintf(
+                "Found %ld invalid indices at positions [%s%s] that are out of "
+                "range [0,%ld).", invalidIndexPositions.size(), 
                 TfStringJoin(invalidPositionsStrVec, ", ").c_str(), 
                 invalidIndexPositions.size() > 5 ? ", ..." : "",
-                authored.size(), UsdDescribe(_attr).c_str());
+                authored.size());
+        }
     }
 
     return success;
