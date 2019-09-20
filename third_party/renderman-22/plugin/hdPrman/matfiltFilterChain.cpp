@@ -27,21 +27,18 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 void
-MatfiltFilterChain::Exec(
+MatfiltExecFilterChain(
+    MatfiltFilterChain const& filterChain,
     const SdfPath & networkId,
     MatfiltNetwork & network,
     const std::map<TfToken, VtValue> & contextValues,
     const NdrTokenVec & shaderTypePriority,
-    std::vector<std::string> * outputErrorMessages) const
+    std::vector<std::string> * outputErrorMessages)
 {
-    for (const FilterFnc & filter : _filters) {
+    for (const MatfiltFilterFnc & filter : filterChain) {
         (*filter)(networkId, network, contextValues, shaderTypePriority,
                 outputErrorMessages);
     }
-}
-
-void MatfiltFilterChain::AppendFilter(FilterFnc fnc) {
-    _filters.push_back(fnc);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

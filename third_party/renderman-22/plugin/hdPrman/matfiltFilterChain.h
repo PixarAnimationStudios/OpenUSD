@@ -35,8 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \struct MatfiltConnection
 ///
 /// Describes a single connection to an upsream node and output port 
-struct MatfiltConnection
-{
+struct MatfiltConnection {
     SdfPath upstreamNode;
     TfToken upstreamOutputName;
 };
@@ -47,8 +46,7 @@ struct MatfiltConnection
 /// A node contains a (shader) type identifier, parameter values, and 
 /// connections to upstream nodes. A single input (mapped by TfToken) may have
 /// multiple upstream connections to describe connected array elements.
-struct MatfiltNode
-{
+struct MatfiltNode {
     TfToken nodeTypeId;
     std::map<TfToken, VtValue> parameters;
     std::map<TfToken, std::vector<MatfiltConnection>> inputConnections;
@@ -59,62 +57,49 @@ struct MatfiltNode
 /// Container of nodes and top-level terminal connections. This is the mutable
 /// representation of a shading network sent to filtering functions by a
 /// MatfiltFilterChain.
-struct MatfiltNetwork
-{
+struct MatfiltNetwork {
     std::map<SdfPath, MatfiltNode> nodes;
     std::map<TfToken, MatfiltConnection> terminals;
 };
 
-/// \class MatfiltFilterChain
-/// 
-/// Stores a sequence of functions designed to manipulate shading networks
-/// described by a MatfiltNetwork.
+/// A function which manipulates a shading network for a given context.
+typedef void (*MatfiltFilterFnc)
+    (const SdfPath & networkId,
+     MatfiltNetwork & network,
+     const std::map<TfToken, VtValue> & contextValues,
+     const NdrTokenVec & shaderTypePriority,
+     std::vector<std::string> * outputErrorMessages);
+
+/// A sequence of material filter functions.
+typedef std::vector<MatfiltFilterFnc> MatfiltFilterChain;
+
+/// Executes the sequence of material filtering functions.
 ///
-class MatfiltFilterChain
-{
-public:
-    /// A function which manipulates a shading network for a given context
-    typedef void (*FilterFnc)
-        (const SdfPath & networkId,
-         MatfiltNetwork & network,
-         const std::map<TfToken, VtValue> & contextValues,
-         const NdrTokenVec & shaderTypePriority,
-         std::vector<std::string> * outputErrorMessages);
-
-    /// Executes the sequence of filtering functions appended to this instance
-    /// of MatfiltFilterChain.
-    ///
-    /// \p networkId is an identifier representing the entire network. It is
-    /// useful as a parent scope for any newly-created nodes in the filtered
-    /// network.
-    ///
-    /// \p network is a reference to a mutable network on which the filtering
-    /// functions operate on in sequence.
-    ///
-    /// \p contextValues is a map of named values which is useful either as
-    /// configuration input to the filtering functions. One example might be
-    /// to provide values to a filtering function which does subsitutions on
-    /// string values like $MODEL.
-    ///
-    /// \p shaderTypePriority provides context to a filtering function which
-    /// may make use of ndr or sdr to query information about the shader of a
-    /// given node in the network. It is typically host/renderer-dependent.
-    ///
-    /// \p outputErrorMessages is an optional vector to which filter functions
-    /// may write error messages.
-    void Exec(const SdfPath & networkId,
-              MatfiltNetwork & network,
-              const std::map<TfToken, VtValue> & contextValues,
-              const NdrTokenVec & shaderTypePriority,
-              std::vector<std::string> * outputErrorMessages = nullptr) const;
-
-    /// Adds a filtering function to the end of the sequence which will be
-    /// executed by this instance of MatfiltFilterChain.
-    void AppendFilter(FilterFnc fnc);
-
-private:
-    std::vector<FilterFnc> _filters;
-};
+/// \p networkId is an identifier representing the entire network. It is
+/// useful as a parent scope for any newly-created nodes in the filtered
+/// network.
+///
+/// \p network is a reference to a mutable network on which the filtering
+/// functions operate on in sequence.
+///
+/// \p contextValues is a map of named values which is useful either as
+/// configuration input to the filtering functions. One example might be
+/// to provide values to a filtering function which does subsitutions on
+/// string values like $MODEL.
+///
+/// \p shaderTypePriority provides context to a filtering function which
+/// may make use of ndr or sdr to query information about the shader of a
+/// given node in the network. It is typically host/renderer-dependent.
+///
+/// \p outputErrorMessages is an optional vector to which filter functions
+/// may write error messages.
+void MatfiltExecFilterChain(
+    MatfiltFilterChain const& filterChain,
+    const SdfPath & networkId,
+    MatfiltNetwork & network,
+    const std::map<TfToken, VtValue> & contextValues,
+    const NdrTokenVec & shaderTypePriority,
+    std::vector<std::string> * outputErrorMessages = nullptr);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

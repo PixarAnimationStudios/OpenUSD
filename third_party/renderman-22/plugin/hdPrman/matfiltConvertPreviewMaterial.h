@@ -21,21 +21,23 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDPRMAN_CONVERT_PREVIEW_MATERIAL_H
-#define HDPRMAN_CONVERT_PREVIEW_MATERIAL_H
+#ifndef HDPRMAN_MATFILT_CONVERT_PREVIEW_MATERIAL_H
+#define HDPRMAN_MATFILT_CONVERT_PREVIEW_MATERIAL_H
 
 #include "pxr/pxr.h"
+#include "hdPrman/matfiltFilterChain.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMaterialNetworkMap;
-
-/// Convert any USD preview shading nodes to Renderman equivalents.
-/// Some caveats:
-/// - Ambient occlusion is discarded; the assuming is that Renderman
-///   will compute light transport, instead of using baked lighting.
-/// - Some features are not yet supported, such as texture repeat.
-void HdPrman_ConvertUsdPreviewMaterial(HdMaterialNetworkMap *networkMap);
+/// MatfiltFilterChain::FilterFnc implementation which converts
+/// USD preview shading nodes to Renderman equivalents.
+void
+MatfiltConvertPreviewMaterial(
+    const SdfPath & networkId,
+    MatfiltNetwork & network,
+    const std::map<TfToken, VtValue> & contextValues,
+    const NdrTokenVec & shaderTypePriority,
+    std::vector<std::string> * outputErrorMessages);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

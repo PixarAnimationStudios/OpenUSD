@@ -29,7 +29,6 @@ pxr_shared_library(${PXR_PACKAGE}
         basisCurves
         camera
         context
-        convertPreviewMaterial
         coordSys
         debugCodes
         gprim
@@ -37,6 +36,7 @@ pxr_shared_library(${PXR_PACKAGE}
         light
         material
         matfiltConversions
+        matfiltConvertPreviewMaterial
         matfiltFilterChain
         matfiltResolveVstructs
         mesh

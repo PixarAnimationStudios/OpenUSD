@@ -23,10 +23,10 @@
 //
 #include "hdPrman/material.h"
 #include "hdPrman/context.h"
-#include "hdPrman/convertPreviewMaterial.h"
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/renderParam.h"
 #include "hdPrman/matfiltConversions.h"
+#include "hdPrman/matfiltConvertPreviewMaterial.h"
 #include "hdPrman/matfiltFilterChain.h"
 #include "hdPrman/matfiltResolveVstructs.h"
 #include "pxr/base/gf/vec3f.h"
@@ -46,32 +46,38 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    (PbsNetworkMaterialStandIn_2)
-    (PxrSurface)
     (PxrDisplace)
-    (MaterialLayer_1)
-    (MaterialLayer_2)
-    (pbsMaterialIn)
-    (inputMaterial)
-    (OSL)
-    (RmanCpp)
     (bxdf)
-
-    // XXX(HdPrmanMaterialTemp) Temporary tokens for material upgrades:
-    ((globalAttrModelName, "{globalattr:modelName}"))
-    (Looks)
-    (singlescatterSubset)
-    (subsurfaceSubset)
+    (OSL)
 );
 
 TF_MAKE_STATIC_DATA(NdrTokenVec, _sourceTypes) {
-    *_sourceTypes = { _tokens->OSL, _tokens->RmanCpp };
+    *_sourceTypes = { TfToken("OSL"), TfToken("RmanCpp") };
 }
 
 TfTokenVector const&
 HdPrmanMaterial::GetShaderSourceTypes()
 {
     return *_sourceTypes;
+}
+
+TF_MAKE_STATIC_DATA(MatfiltFilterChain, _filterChain) {
+    *_filterChain = {
+        MatfiltConvertPreviewMaterial,
+        MatfiltResolveVstructs
+    };
+}
+
+MatfiltFilterChain
+HdPrmanMaterial::GetFilterChain()
+{
+    return *_filterChain;
+}
+
+void
+HdPrmanMaterial::SetFilterChain(MatfiltFilterChain const& chain)
+{
+    *_filterChain = chain;
 }
 
 HdPrmanMaterial::HdPrmanMaterial(SdfPath const& id)
@@ -106,126 +112,6 @@ HdPrmanMaterial::_ResetMaterial(HdPrman_Context *context)
         riley->DeleteDisplacement(_displacementId);
         _displacementId = riley::DisplacementId::k_InvalidId;
     }
-}
-
-// XXX(HdPrmanMaterialTemp) Temporary material hacks for testing.
-//
-// Part of our strategy for testing HdPrman is to try it on real
-// studio assets.  Currently, those rely on a series of features
-// which are not yet implemented by UsdShading, Hydra or UsdImaging.
-// To make progress with testing while discussion is underway
-// about the right future approach for those features, we provide
-// a limited, hacky form of support for them here, with the
-// disclaimer that real work should not rely on this behavior.
-//
-static void
-_ApplyStudioFixes(HdMaterialNetworkMap *netMap)
-{
-    HdMaterialNetwork surfaceNet, dispNet;
-    TfMapLookup(netMap->map, HdMaterialTerminalTokens->surface, &surfaceNet);
-    TfMapLookup(netMap->map, HdMaterialTerminalTokens->displacement, &dispNet);
-
-    // XXX(HdPrmanMaterialTemp) 
-    // {globalattr:modelName} expansion.
-    for (HdMaterialNode &node: surfaceNet.nodes) {
-        for (auto& param: node.parameters) {
-            std::string s;
-            if (param.second.IsHolding<std::string>()) {
-                s = param.second.UncheckedGet<std::string>();
-            } else if (param.second.IsHolding<TfToken>()) {
-                s = param.second.UncheckedGet<TfToken>().GetString();
-            } else if (param.second.IsHolding<SdfAssetPath>()) {
-                s = param.second.UncheckedGet<SdfAssetPath>().GetAssetPath();
-            }
-            if (TfStringContains(s, _tokens->globalAttrModelName)) {
-                // We do not have the modelName available.
-                // As a heuristic for testing, try to guess the
-                // modelName based on the id.
-                SdfPath modelRoot;
-                for (SdfPath p=node.path;
-                     !p.IsEmpty() && modelRoot.IsEmpty();
-                     p=p.GetParentPath()) {
-                    if (p.GetName() == _tokens->Looks) {
-                        // Found "Looks" scope; assume parent is name.
-                        modelRoot = p.GetParentPath();
-                    }
-                }
-                if (!modelRoot.IsEmpty())  {
-                    std::string modelName = modelRoot.GetName();
-                    modelName = TfStringGetBeforeSuffix(modelName, '_');
-                    s = TfStringReplace(s, _tokens->globalAttrModelName,
-                                        modelName);
-                    if (param.second.IsHolding<std::string>()) {
-                        param.second = VtValue(s);
-                    } else if (param.second.IsHolding<TfToken>()) {
-                        param.second = VtValue(TfToken(s));
-                    } else if (param.second.IsHolding<SdfAssetPath>()) {
-                        param.second = VtValue(SdfAssetPath(s));
-                    }
-                }
-            }
-        }
-    }
-
-    // XXX(HdPrmanMaterialTemp) 
-    // If no displacement network was provided, try using the surface
-    // network, since it may provide a displacement signal.
-    if (dispNet.nodes.empty() && !surfaceNet.nodes.empty()) {
-        dispNet = surfaceNet;
-    }
-
-    // surface
-    for (HdMaterialNode &node: surfaceNet.nodes) {
-        if (node.identifier == _tokens->PbsNetworkMaterialStandIn_2) {
-            node.identifier = _tokens->PxrSurface;
-        }
-        // XXX(HdPrmanMaterialTemp) 
-        // Hacky upgrade of older-style material layers.
-        if (node.identifier == _tokens->MaterialLayer_1) {
-            node.identifier = _tokens->MaterialLayer_2;
-        }
-        // XXX(HdPrmanMaterialTemp) 
-        // PxrSurface subsurface/singlescatter subset pruning.
-        // We do not yet support passthrough of the subset grouping
-        // assignments, so eject this.
-        if (node.identifier == _tokens->PxrSurface) {
-            for (auto& param: node.parameters) {
-                if (param.first == _tokens->subsurfaceSubset ||
-                    param.first == _tokens->singlescatterSubset) {
-                    static bool reported = false;
-                    if (!reported) {
-                        TF_WARN("HdPrman: PxrSurface %s is not yet supported; "
-                                "ignoring.", param.first.GetText());
-                        reported = true;
-                    }
-                    param.second = VtValue(std::string());
-                }
-            }
-        }
-    }
-    for (HdMaterialRelationship &rel: surfaceNet.relationships) {
-        if (rel.outputName == _tokens->pbsMaterialIn) {
-            rel.outputName = _tokens->inputMaterial;
-        }
-    }
-
-    // displacement
-    for (HdMaterialNode &node: dispNet.nodes) {
-        if (node.identifier == _tokens->PbsNetworkMaterialStandIn_2) {
-            node.identifier = _tokens->PxrDisplace;
-            // XXX Ideally, we could prune any non-displacement
-            // parameters, to avoid warnings from Renderman.
-        }
-    }
-    for (HdMaterialRelationship &rel: dispNet.relationships) {
-        if (rel.outputName == _tokens->pbsMaterialIn) {
-            rel.outputName = _tokens->inputMaterial;
-        }
-    }
-
-    // Commit fixed networks
-    netMap->map[HdMaterialTerminalTokens->surface] = surfaceNet;
-    netMap->map[HdMaterialTerminalTokens->displacement] = dispNet;
 }
 
 static void
@@ -640,30 +526,26 @@ HdPrmanMaterial::Sync(HdSceneDelegate *sceneDelegate,
                 vtMat.UncheckedGet<HdMaterialNetworkMap>();
 
             // Apply material filter chain to each terminal.
-            MatfiltFilterChain filterChain;
-            filterChain.AppendFilter(MatfiltResolveVstructs);
-             std::vector<std::string> errors;
-            for (auto& entry: networkMap.map) {
-                MatfiltNetwork network;
-                MatfiltConvertFromHdMaterialNetworkMapTerminal(
-                    networkMap, entry.first, &network);
-                // Run filter.
-                filterChain.Exec(id, network, {}, *_sourceTypes, &errors);
-                // Note that we count on the fact this won't modify
-                // anything but the original terminal here.
-                TfReset(entry.second.nodes);
-                TfReset(entry.second.relationships);
-                MatfiltConvertToHdMaterialNetworkMap(network, &networkMap);
+            if (!_filterChain->empty()) {
+                std::vector<std::string> errors;
+                for (auto& entry: networkMap.map) {
+                    MatfiltNetwork network;
+                    MatfiltConvertFromHdMaterialNetworkMapTerminal(
+                        networkMap, entry.first, &network);
+                    MatfiltExecFilterChain(*_filterChain, id, network, {},
+                                           *_sourceTypes, &errors);
+                    // Note that we count on the fact this won't modify
+                    // anything but the original terminal here.
+                    TfReset(entry.second.nodes);
+                    TfReset(entry.second.relationships);
+                    MatfiltConvertToHdMaterialNetworkMap(network, &networkMap);
+                }
+                if (!errors.empty()) {
+                    TF_RUNTIME_ERROR("HdPrmanMaterial: %s\n",
+                        TfStringJoin(errors).c_str());
+                    // Policy choice: Attempt to use the material, regardless.
+                }
             }
-            if (!errors.empty()) {
-                TF_RUNTIME_ERROR("HdPrmanMaterial: %s\n",
-                    TfStringJoin(errors).c_str());
-                // Policy choice: Attempt to use the material, regardless.
-            }
-
-            // TODO: Replace with material filters.
-            HdPrman_ConvertUsdPreviewMaterial(&networkMap);
-            _ApplyStudioFixes(&networkMap);
 
             HdMaterialNetwork surfaceNet, dispNet, volNet;
             TfMapLookup(networkMap.map,
