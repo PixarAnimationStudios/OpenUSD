@@ -1296,7 +1296,23 @@ function(_pxr_library NAME)
             )
         endif()
     else()
-        if(BUILD_SHARED_LIBS)
+        # Do not include plugins libs in externally linkable targets
+        if(isPlugin)
+            install(
+                TARGETS ${NAME}
+                LIBRARY DESTINATION ${libInstallPrefix}
+                ARCHIVE DESTINATION ${libInstallPrefix}
+                RUNTIME DESTINATION ${libInstallPrefix}
+                PUBLIC_HEADER DESTINATION ${headerInstallPrefix}
+            )
+            if(WIN32)
+                install(
+                    FILES $<TARGET_PDB_FILE:${NAME}>
+                    DESTINATION ${libInstallPrefix}
+                    OPTIONAL
+                )
+            endif()
+        elseif(BUILD_SHARED_LIBS)
             install(
                 TARGETS ${NAME}
                 EXPORT pxrTargets
@@ -1323,11 +1339,13 @@ function(_pxr_library NAME)
                 PUBLIC_HEADER DESTINATION ${headerInstallPrefix}
             )
         endif()
-
-        export(TARGETS ${NAME}
-            APPEND
-            FILE "${PROJECT_BINARY_DIR}/pxrTargets.cmake"
-        )
+        
+        if(NOT isPlugin)
+            export(TARGETS ${NAME}
+                APPEND
+                FILE "${PROJECT_BINARY_DIR}/pxrTargets.cmake"
+            )
+        endif()
 
     endif()
 
