@@ -483,7 +483,11 @@ class PrimTreeWidget(QtWidgets.QTreeWidget):
             for item in removed:
                 item.setSelected(False)
         self._refreshAncestorsOfSelected()
-        self.update()
+        # This is a big hammer... if we instead built up a list of the
+        # ModelIndices of all the changed ancestors, we could instead make
+        # our selectionModel emit selectionChanged for just those items,
+        # instead.  Does not currently seem to be impacting interactivity.
+        QtWidgets.QWidget.update(self)
 
     def _resetAncestorsOfSelected(self):
         for item in self._ancestorsOfSelected:
