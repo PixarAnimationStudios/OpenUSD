@@ -416,8 +416,8 @@ UsdMtlxGetUsdValue(
 
     // Get the value string.
     auto&& valueString =
-            getDefaultValue ? mtlx->getAttribute(defaultAttr)
-                            : mtlx->getAttribute(valueAttr);
+        getDefaultValue ? mtlx->getAttribute(defaultAttr)
+                        : mtlx->getAttribute(valueAttr);
 
     // Evaluate the absolute path if this is a filename to include
     // any active file prefixes.
@@ -427,15 +427,11 @@ UsdMtlxGetUsdValue(
         if (!filePath.isAbsolute()) {
             mx::FileSearchPath fileSearchPath = mx::FileSearchPath();
             mx::FilePath prefixPath = mx::FilePath(mtlx->getActiveFilePrefix());
-            mx::FilePath resolvedFilePath;
-            mx::FilePath combinedPath;
+            mx::FilePath combinedPath = filePath;
 
             if (!prefixPath.isEmpty()) {
                 // Combine paths with OS-appropriate directory separator
                 combinedPath = prefixPath / filePath;
-            }
-            else {
-                combinedPath = filePath;
             }
             
             // Return the absolute path based on the MaterialX search path
