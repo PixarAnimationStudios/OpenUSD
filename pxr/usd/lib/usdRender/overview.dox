@@ -98,6 +98,7 @@ that are not often tightly coupled.
 
 # How settings affect rendering {#UsdRenderHowSettingsAffectRendering}
 
+\anchor UsdRender_Camera
 ## Camera {#UsdRenderCamera}
 
 An image is rendered by viewing a scene from a particular camera.

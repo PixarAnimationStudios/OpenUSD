@@ -159,10 +159,13 @@ effect this transformation in Python, one would write:
 vt = (S * R * T).Transform(v)
 \endcode
 
-\section UsdGeom_WindingOrder Winding Order, Orientation, and Surface Normals
+\section UsdGeom_WindingOrder Coordinate System, Winding Order, Orientation, and Surface Normals
 
 Deriving from the mathematical assumptions in the preceding section, UsdGeom
-positions objects in a __right handed coordinate system__.  It also, by
+positions objects in a __right handed coordinate system__, and a UsdGeomCamera
+views the scene in a right-handed coordinate system where 
+__up is +Y, right is +X, and the forward viewing direction  is -Z__ - this
+is explained and diagrammed in \ref UsdRender_Camera "UsdRenderCamera".  It also, by
 default, applies the right hand rule to compute the "intrinsic", _surface
 normal_ (also sometimes referred to as the _geometric normal_) for all
 non-implicit surface and solid types.  That is, the normal computed from
