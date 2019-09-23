@@ -111,8 +111,8 @@ HdStCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range_,
         HD_PERF_COUNTER_INCR(HdPerfTokens->glCopyBufferSubData);
 
         if (caps.directStateAccessEnabled) {
-            glNamedCopyBufferSubDataEXT(srcId, dstId,
-                                        readOffset, writeOffset, copySize);
+            glCopyNamedBufferSubData(srcId, dstId,
+                                     readOffset, writeOffset, copySize);
         } else {
             glBindBuffer(GL_COPY_READ_BUFFER, srcId);
             glBindBuffer(GL_COPY_WRITE_BUFFER, dstId);

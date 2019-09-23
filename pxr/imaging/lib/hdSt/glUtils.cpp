@@ -153,7 +153,7 @@ HdStGLUtils::ReadBuffer(GLint vbo,
     // Read data from GL
     std::vector<unsigned char> tmp(vboSize);
     if (caps.directStateAccessEnabled) {
-        glGetNamedBufferSubDataEXT(vbo, vboOffset, vboSize, &tmp[0]);
+        glGetNamedBufferSubData(vbo, vboOffset, vboSize, &tmp[0]);
     } else {
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glGetBufferSubData(GL_ARRAY_BUFFER, vboOffset, vboSize, &tmp[0]);
@@ -273,11 +273,11 @@ HdStGLBufferRelocator::Commit()
 
         TF_FOR_ALL (it, _queue) {
             if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
-                glNamedCopyBufferSubDataEXT(_srcBuffer,
-                                            _dstBuffer,
-                                            it->readOffset,
-                                            it->writeOffset,
-                                            it->copySize);
+                glCopyNamedBufferSubData(_srcBuffer,
+                                         _dstBuffer,
+                                         it->readOffset,
+                                         it->writeOffset,
+                                         it->copySize);
             } else {
                 glCopyBufferSubData(GL_COPY_READ_BUFFER,
                                     GL_COPY_WRITE_BUFFER,

@@ -286,11 +286,12 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
             GLuint newId = 0;
             GLuint oldId = bres->GetId();
 
-            glGenBuffers(1, &newId);
             if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
-                glNamedBufferDataEXT(newId,
-                                     bufferSize, /*data=*/NULL, GL_STATIC_DRAW);
+                glCreateBuffers(1, &newId);
+                glNamedBufferData(newId,
+                                  bufferSize, /*data=*/NULL, GL_STATIC_DRAW);
             } else {
+                glGenBuffers(1, &newId);
                 glBindBuffer(GL_ARRAY_BUFFER, newId);
                 glBufferData(GL_ARRAY_BUFFER,
                              bufferSize, /*data=*/NULL, GL_STATIC_DRAW);
@@ -319,7 +320,7 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
 
                 if (caps.copyBufferEnabled) {
                     if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
-                        glNamedCopyBufferSubDataEXT(oldId, newId, 0, 0, copySize);
+                        glCopyNamedBufferSubData(oldId, newId, 0, 0, copySize);
                     } else {
                         glBindBuffer(GL_COPY_READ_BUFFER, oldId);
                         glBindBuffer(GL_COPY_WRITE_BUFFER, newId);
@@ -485,10 +486,10 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
         HD_PERF_COUNTER_INCR(HdPerfTokens->glBufferSubData);
 
         if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
-            glNamedBufferSubDataEXT(VBO->GetId(),
-                                    vboOffset,
-                                    srcSize,
-                                    bufferSource->GetData());
+            glNamedBufferSubData(VBO->GetId(),
+                                 vboOffset,
+                                 srcSize,
+                                 bufferSource->GetData());
         } else {
             glBindBuffer(GL_ARRAY_BUFFER, VBO->GetId());
             glBufferSubData(GL_ARRAY_BUFFER,

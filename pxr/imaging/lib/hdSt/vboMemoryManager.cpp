@@ -355,12 +355,13 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
         GLuint curId = curRes->GetId();
 
         if (glGenBuffers) {
-            glGenBuffers(1, &newId);
 
             if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
-                glNamedBufferDataEXT(newId,
-                                     bufferSize, /*data=*/NULL, GL_STATIC_DRAW);
+                glCreateBuffers(1, &newId);
+                glNamedBufferData(newId,
+                                  bufferSize, /*data=*/NULL, GL_STATIC_DRAW);
             } else {
+                glGenBuffers(1, &newId);
                 glBindBuffer(GL_ARRAY_BUFFER, newId);
                 glBufferData(GL_ARRAY_BUFFER,
                              bufferSize, /*data=*/NULL, GL_STATIC_DRAW);
@@ -683,10 +684,10 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::CopyData(
         HD_PERF_COUNTER_INCR(HdPerfTokens->glBufferSubData);
 
         if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
-            glNamedBufferSubDataEXT(VBO->GetId(),
-                                    vboOffset,
-                                    srcSize,
-                                    bufferSource->GetData());
+            glNamedBufferSubData(VBO->GetId(),
+                                 vboOffset,
+                                 srcSize,
+                                 bufferSource->GetData());
         } else {
             glBindBuffer(GL_ARRAY_BUFFER, VBO->GetId());
             glBufferSubData(GL_ARRAY_BUFFER,

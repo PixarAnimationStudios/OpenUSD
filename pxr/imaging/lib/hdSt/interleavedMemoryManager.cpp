@@ -437,12 +437,13 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
     GLuint curId = curRangeOwner_->GetResources().begin()->second->GetId();
 
     if (glGenBuffers) {
-        glGenBuffers(1, &newId);
 
         GlfContextCaps const &caps = GlfContextCaps::GetInstance();
         if (caps.directStateAccessEnabled) {
-            glNamedBufferDataEXT(newId, totalSize, /*data=*/NULL, GL_STATIC_DRAW);
+            glCreateBuffers(1, &newId);
+            glNamedBufferData(newId, totalSize, /*data=*/NULL, GL_STATIC_DRAW);
         } else {
+            glGenBuffers(1, &newId);
             glBindBuffer(GL_ARRAY_BUFFER, newId);
             glBufferData(GL_ARRAY_BUFFER, totalSize, /*data=*/NULL, GL_STATIC_DRAW);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -695,12 +696,8 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
             HD_PERF_COUNTER_INCR(HdPerfTokens->glBufferSubData);
 
             // XXX: MapBuffer?
-            // XXX
-            // using glNamedBuffer against UBO randomly triggers a crash at
-            // glXSwapBuffers on driver 319.32. It doesn't occur on 331.49.
-            // XXX: move this workaround into renderContextCaps.
-            if (false && caps.directStateAccessEnabled) {
-                glNamedBufferSubDataEXT(VBO->GetId(), vboOffset, dataSize, data);
+            if (caps.directStateAccessEnabled) {
+                glNamedBufferSubData(VBO->GetId(), vboOffset, dataSize, data);
             } else {
                 glBindBuffer(GL_ARRAY_BUFFER, VBO->GetId());
                 glBufferSubData(GL_ARRAY_BUFFER, vboOffset, dataSize, data);

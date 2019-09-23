@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/hio/glslfx.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -388,7 +389,12 @@ HdStGLSLProgram::Link()
     // create an uniform buffer
     GLuint uniformBuffer = _uniformBuffer.GetId();
     if (uniformBuffer == 0) {
-        glGenBuffers(1, &uniformBuffer);
+        GlfContextCaps const &caps = GlfContextCaps::GetInstance();
+        if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
+            glCreateBuffers(1, &uniformBuffer);
+        } else {
+            glGenBuffers(1, &uniformBuffer);
+        }
         _uniformBuffer.SetAllocation(uniformBuffer, 0);
     }
 
