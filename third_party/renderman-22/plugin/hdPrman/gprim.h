@@ -59,7 +59,7 @@ public:
 
     virtual ~HdPrman_Gprim() = default;
 
-    virtual void
+    void
     Finalize(HdRenderParam *renderParam) override
     {
         HdPrman_Context *context =
@@ -86,16 +86,15 @@ public:
         _masterIds.clear();
     }
 
-    virtual void
-    Sync(HdSceneDelegate* sceneDelegate,
+    void Sync(HdSceneDelegate* sceneDelegate,
          HdRenderParam*   renderParam,
          HdDirtyBits*     dirtyBits,
          TfToken const    &reprToken) override;
 
 protected:
-    virtual HdDirtyBits GetInitialDirtyBitsMask() const = 0;
+    HdDirtyBits GetInitialDirtyBitsMask() const override = 0;
 
-    virtual HdDirtyBits
+    HdDirtyBits
     _PropagateDirtyBits(HdDirtyBits bits) const override
     {
         // XXX This is not ideal. Currently Riley requires us to provide
@@ -106,7 +105,7 @@ protected:
         return bits ? (bits | GetInitialDirtyBitsMask()) : bits;
     }
 
-    virtual void
+    void
     _InitRepr(TfToken const &reprToken,
               HdDirtyBits *dirtyBits) override
     {

@@ -54,7 +54,7 @@ public:
         unsigned int width,
         unsigned int height, 
         const VtValue &storageData);
-
+    GLF_API
     int GetNumDimensions() const override;
 
 protected:
@@ -65,7 +65,7 @@ protected:
         const VtValue &storageData);
 
     GLF_API
-    virtual void _ReadTexture();
+    void _ReadTexture() override;
     GLF_API
     virtual bool _GenerateMipmap() const;
     

@@ -139,7 +139,7 @@ public:
         return 0;
     }
 
-    virtual size_t GetMemoryUsed() {
+    size_t GetMemoryUsed() override {
         return 0;
     }
 
