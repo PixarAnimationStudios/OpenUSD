@@ -63,14 +63,10 @@ public:
     int Close(TextureCtx& userData) override;
 
 private:
-    RixContext* m_rixContext;
-    const char* m_pluginName;
     RixMessages* m_msgHandler;
 };
 
 RtxGlfImagePlugin::RtxGlfImagePlugin(RixContext *rixCtx, const char *pluginName) :
-    m_rixContext(rixCtx),
-    m_pluginName(pluginName),
     m_msgHandler((RixMessages *)rixCtx->GetRixInterface(k_RixMessages))
 {
 }
