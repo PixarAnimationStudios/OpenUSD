@@ -327,7 +327,7 @@ class FreeCamera(QtCore.QObject):
         selRange = selBBox.ComputeAlignedRange()
         self._selSize = max(*selRange.GetSize())
         if self.orthographic:
-            self.fov = self._selSize * Gf.Camera.APERTURE_UNIT * frameFit
+            self.fov = self._selSize * frameFit
             self.dist = self._selSize + FreeCamera.defaultNear
         else:
             halfFov = self.fov*0.5 or 0.5 # don't divide by zero
@@ -356,8 +356,11 @@ class FreeCamera(QtCore.QObject):
         It treats the pixel distances as if they were projected to a plane going
         through the camera center.'''
         self._pushToCameraTransform()
-        frustumHeight = self._camera.frustum.window.GetSize()[1]
-        return frustumHeight * self._dist / viewportHeight
+        if self.orthographic:
+            return self.fov / viewportHeight
+        else:
+            frustumHeight = self._camera.frustum.window.GetSize()[1]
+            return frustumHeight * self._dist / viewportHeight
 
     def Tumble(self, dTheta, dPhi):
         ''' Tumbles the camera around the center point by (dTheta, dPhi) degrees. '''
@@ -510,6 +513,10 @@ class FreeCamera(QtCore.QObject):
 
     @property
     def fov(self):
+        """The vertical field of view, in degrees, for perspective cameras. 
+        For orthographic cameras fov is the height of the view frustum, in 
+        world units.
+        """
         if self._camera.projection == Gf.Camera.Perspective:
             return self._camera.GetFieldOfView(Gf.Camera.FOVVertical)
         else:

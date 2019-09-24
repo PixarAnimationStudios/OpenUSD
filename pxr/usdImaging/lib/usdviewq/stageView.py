@@ -1958,7 +1958,13 @@ class StageView(QtOpenGL.QGLWidget):
 
             elif self._cameraMode == "zoom":
                 zoomDelta = -.002 * (dx + dy)
-                freeCam.AdjustDistance(1 + zoomDelta)
+                if freeCam.orthographic:
+                    # orthographic cameras zoom by scaling fov
+                    # fov is the height of the view frustum in world units
+                    freeCam.fov *= (1 + zoomDelta)
+                else:
+                    # perspective cameras dolly forward or back
+                    freeCam.AdjustDistance(1 + zoomDelta)
 
             elif self._cameraMode == "truck":
                 height = float(self.size().height())
