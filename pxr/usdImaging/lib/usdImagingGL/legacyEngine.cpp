@@ -1485,7 +1485,6 @@ UsdImagingGLLegacyEngine::TestIntersection(
 
     if (didHit) {
         GLint viewport[4] = { 0, 0, width, height };
-        GfVec3d hitPoint;
 
         gluUnProject( xMin, yMin, zMin,
                       viewMatrix.GetArray(),
