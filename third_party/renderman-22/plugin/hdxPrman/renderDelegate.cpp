@@ -162,4 +162,22 @@ HdxPrmanRenderDelegate::GetDefaultAovDescriptor(
     return HdAovDescriptor();
 }
 
+bool
+HdxPrmanRenderDelegate::IsPauseSupported() const
+{
+    return true;
+}
+
+bool
+HdxPrmanRenderDelegate::Pause() { 
+    _interactiveContext->renderThread.PauseRender();
+    _interactiveContext->riley->Stop();
+    return true;
+}
+bool
+HdxPrmanRenderDelegate::Resume() {
+    _interactiveContext->renderThread.ResumeRender();
+    return true;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

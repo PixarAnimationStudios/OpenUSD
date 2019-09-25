@@ -120,12 +120,14 @@ HdRenderThread::IsRendering()
 void
 HdRenderThread::PauseRender()
 {
+    _pauseDirty.store(true);
     _pauseRender.store(true);
 }
 
 void
 HdRenderThread::ResumeRender()
 {
+    _pauseDirty.store(true);
     _pauseRender.store(false);
 }
 
@@ -143,6 +145,11 @@ bool
 HdRenderThread::IsPauseRequested()
 {
     return _pauseRender.load();
+}
+
+bool
+HdRenderThread::IsPauseDirty() {
+    return _pauseDirty.exchange(false);
 }
 
 std::unique_lock<std::mutex>

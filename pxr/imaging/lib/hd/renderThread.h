@@ -255,6 +255,11 @@ public:
     HD_API
     bool IsPauseRequested();
 
+    /// Query whether the pause/resume state has changed since the last time
+    /// we called IsPauseDirty.
+    HD_API
+    bool IsPauseDirty();
+
     /// @}
 
     /// \anchor CommonAPI
@@ -336,6 +341,11 @@ private:
     // current pause state of the thread. Toggled by calling PauseRender and
     // ResumeRender, tested by IsPauseRequested.
     std::atomic<bool> _pauseRender;
+
+    // _pauseDirty provides a properly locked boolean flag that holds the
+    // current dirtyness of the pause state of the thread. Toggled by
+    // calling PauseRender and ResumeRender, tested by IsPauseDirty.
+    std::atomic<bool> _pauseDirty;
 
     // _rendering records whether the render thread is currently inside the
     // render callback, or planning to be inside the render callback.

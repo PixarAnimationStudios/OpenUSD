@@ -52,7 +52,21 @@ static riley::RileyCallback nullRileyCallback([](void*){}, nullptr);
 
 void HdxPrman_RenderThreadCallback(HdxPrman_InteractiveContext *context)
 {
-    context->riley->Render();
+    bool renderComplete = false;
+    while (!renderComplete) {
+        while (context->renderThread.IsPauseRequested()) {
+            if (context->renderThread.IsStopRequested()) {
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        if (context->renderThread.IsStopRequested()) {
+            break;
+        }
+        context->riley->Render();
+        // If a pause was requested, we may have stopped early
+        renderComplete = !context->renderThread.IsPauseDirty();
+    }
 }
 
 HdxPrman_InteractiveContext::HdxPrman_InteractiveContext() :

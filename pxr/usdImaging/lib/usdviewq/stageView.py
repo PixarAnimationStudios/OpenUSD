@@ -994,11 +994,12 @@ class StageView(QtOpenGL.QGLWidget):
             self.updateGL()
 
     def SetRendererPaused(self, paused):
-        if self._renderer:
+        if self._renderer and (not self._renderer.IsConverged()):
             if paused:
                 self._renderPauseState = self._renderer.PauseRenderer()
             else:
                 self._renderPauseState = not self._renderer.ResumeRenderer()
+            self.updateGL()
 
     def IsPauseRendererSupported(self):
         if self._renderer:
@@ -1856,7 +1857,8 @@ class StageView(QtOpenGL.QGLWidget):
             rStats = renderer.GetRenderStats()
 
             toPrint["GL prims "] = self._glPrimitiveGeneratedQuery.GetResult()
-            toPrint["GPU time "] = "%.2f ms " % (self._glTimeElapsedQuery.GetResult() / 1000000.0)
+            if not self._renderPauseState:
+                toPrint["GPU time "] = "%.2f ms " % (self._glTimeElapsedQuery.GetResult() / 1000000.0)
             _addSizeMetric(toPrint, rStats, "GPU mem  ", "gpuMemoryUsed")
             _addSizeMetric(toPrint, rStats, " primvar ", "primvar")
             _addSizeMetric(toPrint, rStats, " topology", "topology")
@@ -1867,13 +1869,12 @@ class StageView(QtOpenGL.QGLWidget):
                 toPrint["Samples done "] = rStats["numCompletedSamples"]
 
         # Playback Rate
-        if self._dataModel.viewSettings.showHUD_Performance:
+        if (not self._renderPauseState) and self._dataModel.viewSettings.showHUD_Performance:
             for key in self.fpsHUDKeys:
                 toPrint[key] = self.fpsHUDInfo[key]
-        if len(toPrint) > 0:
-            self._hud.updateGroup("BottomLeft",
-                                  0, self.height()-len(toPrint)*self._hud._HUDLineSpacing,
-                                  col, toPrint, toPrint.keys())
+        self._hud.updateGroup("BottomLeft",
+                              0, self.height()-len(toPrint)*self._hud._HUDLineSpacing,
+                              col, toPrint, toPrint.keys())
 
         # draw HUD
         self._hud.draw(self)
