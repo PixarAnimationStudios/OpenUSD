@@ -199,7 +199,7 @@ class "CollectionAPI" (
         or of enumerating the objects belonging to the collection (see 
         UsdCollectionAPI::GetIncludedObjects).'''
     )
-    uniform token expansionRule (
+    uniform token expansionRule = "expandPrims" (
         allowedTokens = ["explicitOnly", "expandPrims", "expandPrimsAndProperties"]
         doc = """Specifies how the paths that are included in
         the collection must be expanded to determine its members."""

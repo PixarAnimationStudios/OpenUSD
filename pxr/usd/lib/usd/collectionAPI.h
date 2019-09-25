@@ -285,7 +285,7 @@ public:
     /// \n  C++ Type: TfToken
     /// \n  Usd Type: SdfValueTypeNames->Token
     /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
+    /// \n  Fallback Value: expandPrims
     /// \n  \ref UsdTokens "Allowed Values": [explicitOnly, expandPrims, expandPrimsAndProperties]
     USD_API
     UsdAttribute GetExpansionRuleAttr() const;

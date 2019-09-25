@@ -124,7 +124,7 @@ struct UsdTokensType {
     const TfToken excludes;
     /// \brief "expandPrims"
     /// 
-    /// Possible value for UsdCollectionAPI::GetExpansionRuleAttr()
+    /// Possible value for UsdCollectionAPI::GetExpansionRuleAttr(), Default value for UsdCollectionAPI::GetExpansionRuleAttr()
     const TfToken expandPrims;
     /// \brief "expandPrimsAndProperties"
     /// 
