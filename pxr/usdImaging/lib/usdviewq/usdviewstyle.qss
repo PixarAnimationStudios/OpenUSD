@@ -171,6 +171,16 @@ QSplitter::handle {
     background-color: rgb(32, 32, 32);
 }
 
+/* Balance between making the splitters easier to find/grab, and
+ * clean use of space. */
+QSplitter::handle:horizontal {
+    width: 4px;
+}
+
+QSplitter::handle:vertical {
+    height: 4px;
+}
+
 /* Override the backround for labels, make them transparent */
 QLabel {
     background: none;

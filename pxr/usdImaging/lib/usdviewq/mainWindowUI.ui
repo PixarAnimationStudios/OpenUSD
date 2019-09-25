@@ -76,15 +76,9 @@
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
-      <property name="handleWidth">
-       <number>2</number>
-      </property>
       <widget class="QSplitter" name="primStageSplitter">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="handleWidth">
-        <number>2</number>
        </property>
        <widget class="QFrame" name="primFrame">
         <property name="frameShape">
@@ -387,9 +381,6 @@
       <widget class="QSplitter" name="attribBrowserInspectorSplitter">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="handleWidth">
-        <number>2</number>
        </property>
        <widget class="QFrame" name="attributeBrowserFrame">
         <property name="frameShape">
