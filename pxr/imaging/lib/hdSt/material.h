@@ -130,21 +130,27 @@ private:
     bool
     _GetHasLimitSurfaceEvaluation(VtDictionary const & metadata) const;
 
-    TfToken _GetMaterialTag(VtDictionary const & metadata) const;
+    TfToken _GetMaterialTagDeprecated(VtDictionary const & metadata) const;
 
     void _InitFallbackShader();
 
-    static HioGlslfx                  *_fallbackSurfaceShader;
+    // Obtain the material network resources of this material.
+    HdMaterialNetworkMap const& _GetMaterialResource(
+        HdSceneDelegate* sceneDelegate) const;
 
-    HdStSurfaceShaderSharedPtr         _surfaceShader;
+    static HioGlslfx *_fallbackSurfaceShader;
+
+    HdStSurfaceShaderSharedPtr _surfaceShader;
     HdStTextureResourceHandleSharedPtrVector _fallbackTextureResourceHandles;
 
-    bool                               _isInitialized : 1;
-    bool                               _hasPtex : 1;
-    bool                               _hasLimitSurfaceEvaluation : 1;
-    bool                               _hasDisplacement : 1;
+    bool _isInitialized : 1;
+    bool _hasPtex : 1;
+    bool _hasLimitSurfaceEvaluation : 1;
+    bool _hasDisplacement : 1;
 
-    TfToken                            _materialTag;
+    TfToken _materialTag;
+
+    HdMaterialParamVector _materialParams;
 };
 
 inline std::string

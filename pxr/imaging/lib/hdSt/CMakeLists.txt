@@ -21,6 +21,7 @@ pxr_library(hdSt
         glf
         hd
         hgiGL
+        sdr
         tf
         trace
         ${GLEW_LIBRARY}

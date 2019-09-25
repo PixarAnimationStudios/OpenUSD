@@ -73,6 +73,9 @@
 #include <limits>
 #include <string>
 
+// XXX In progress of deprecating hydra material adapter
+#include "pxr/base/tf/getenv.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -100,6 +103,15 @@ static bool _IsEnabledDrawModeCache() {
     static bool _v = TfGetEnvSetting(USDIMAGING_ENABLE_DRAWMODE_CACHE) == 1;
     return _v;
 }
+
+// XXX In progress of deprecating hydra material adapter
+static bool _IsEnabledStormMaterialNetworks() {
+    static std::string _stormMatNet = 
+        TfGetenv("STORM_ENABLE_MATERIAL_NETWORKS");
+
+    return !_stormMatNet.empty() && std::stoi(_stormMatNet) > 0;
+}
+
 
 // -------------------------------------------------------------------------- //
 // Delegate Implementation.
@@ -248,10 +260,15 @@ UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
         // for backwards compatibility.
         TfToken bindingPurpose = GetRenderIndex().
             GetRenderDelegate()->GetMaterialBindingPurpose();
-        if (bindingPurpose == HdTokens->preview &&
-            adapterKey == _tokens->Material) {
-            adapterKey = _tokens->HydraPbsSurface;
-        } 
+
+        // XXX In progress of deprecating hydra material adapter
+        if (!_IsEnabledStormMaterialNetworks()) {
+            if (bindingPurpose == HdTokens->preview &&
+                adapterKey == _tokens->Material) {
+                adapterKey = _tokens->HydraPbsSurface;
+            } 
+        }
+
         if (bindingPurpose == HdTokens->preview &&
             adapterKey == _tokens->DomeLight) {
             adapterKey = _tokens->PreviewDomeLight;

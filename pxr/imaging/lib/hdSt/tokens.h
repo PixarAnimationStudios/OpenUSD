@@ -61,6 +61,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (volumeRaymarchingStepSizeLighting)
 
 #define HDST_MATERIAL_TAG_TOKENS                \
+    (defaultMaterialTag)                        \
+    (additive)                                  \
+    (translucent)                               \
     (volume)
 
 TF_DECLARE_PUBLIC_TOKENS(HdStGLSLProgramTokens, HDST_API,
