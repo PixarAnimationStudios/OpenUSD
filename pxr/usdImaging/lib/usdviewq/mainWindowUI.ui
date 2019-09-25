@@ -925,8 +925,8 @@
            <widget class="FrameSlider" name="frameSlider">
             <property name="minimumSize">
              <size>
-              <width>0</width>
-              <height>0</height>
+              <width>90</width>
+              <height>45</height>
              </size>
             </property>
             <property name="pageStep">
