@@ -543,25 +543,25 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
 
         HdMaterialParamVector params = (*shader)->GetParams();
         // for primvar and texture accessors
-        TF_FOR_ALL(it, params) {
+        for (HdMaterialParam const& param : params) {
             // renderpass texture should be bindfull (for now)
             bool bindless = useBindlessForTexture && 
                                 ((*shader) == drawItem->GetMaterialShader());
-            HdTupleType valueType = it->GetTupleType();
+            HdTupleType valueType = param.GetTupleType();
             TfToken glType =
                 HdStGLConversions::GetGLSLTypename(valueType.type);
-            TfToken const& name = it->GetName();
+            TfToken const& name = param.name;
             TfToken glName =  HdStGLConversions::GetGLSLIdentifier(name);
 
-            if (it->IsFallback()) {
+            if (param.IsFallback()) {
                 metaDataOut->shaderParameterBinding[
                             HdBinding(HdBinding::FALLBACK, 
                             shaderFallbackLocation++)]
                     = MetaData::ShaderParameterAccessor(glName, 
                                                         /*type=*/glType);
             }
-            else if (it->IsTexture()) {
-                if (it->GetTextureType() == HdTextureType::Ptex) {
+            else if (param.IsTexture()) {
+                if (param.textureType == HdTextureType::Ptex) {
                     // ptex texture
                     HdBinding texelBinding = bindless
                         ? HdBinding(HdBinding::BINDLESS_TEXTURE_PTEX_TEXEL,
@@ -595,7 +595,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                                                 name.GetText()) + "_layout");
                     // used for non-bindless
                     _bindingMap[layoutName] = layoutBinding; 
-                } else if (it->GetTextureType() == HdTextureType::Udim) {
+                } else if (param.textureType == HdTextureType::Udim) {
                     // Texture Array for UDIM
                     HdBinding textureBinding = bindless
                         ? HdBinding(HdBinding::BINDLESS_TEXTURE_UDIM_ARRAY,
@@ -606,15 +606,15 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
 
                     metaDataOut->shaderParameterBinding[textureBinding] =
                         MetaData::ShaderParameterAccessor(
-                            /*name=*/it->GetName(),
+                            /*name=*/param.name,
                             /*type=*/glType,
-                            /*inPrimvars=*/it->GetSamplerCoordinates());
+                            /*inPrimvars=*/param.samplerCoords);
                     // used for non-bindless
-                    _bindingMap[it->GetName()] = textureBinding;
+                    _bindingMap[param.name] = textureBinding;
 
                     // Layout for UDIM
                     TfToken layoutName =
-                        TfToken(std::string(it->GetName().GetText())
+                        TfToken(std::string(param.name.GetText())
                         + "_layout");
                     HdBinding layoutBinding = bindless
                         ? HdBinding(HdBinding::BINDLESS_TEXTURE_UDIM_LAYOUT,
@@ -631,7 +631,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
 
                     // used for non-bindless
                     _bindingMap[layoutName] = layoutBinding;
-                } else if (it->GetTextureType() == HdTextureType::Uv) {
+                } else if (param.textureType == HdTextureType::Uv) {
                     // 2d texture
                     HdBinding textureBinding = bindless
                         ? HdBinding(HdBinding::BINDLESS_TEXTURE_2D,
@@ -644,9 +644,9 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                         MetaData::ShaderParameterAccessor(
                             /*name=*/glName,
                             /*type=*/glType,
-                            /*inPrimvars=*/it->GetSamplerCoordinates());
+                            /*inPrimvars=*/param.samplerCoords);
                     _bindingMap[name] = textureBinding; // used for non-bindless
-                } else if (it->GetTextureType() == HdTextureType::Uvw) {
+                } else if (param.textureType == HdTextureType::Uvw) {
                     // 3d texture
                     HdBinding textureBinding = bindless
                         ? HdBinding(HdBinding::BINDLESS_TEXTURE_3D,
@@ -659,12 +659,11 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                         MetaData::ShaderParameterAccessor(
                             /*name=*/glName,
                             /*type=*/glType,
-                            /*inPrimvars=*/it->GetSamplerCoordinates());
+                            /*inPrimvars=*/param.samplerCoords);
                     _bindingMap[name] = textureBinding; // used for non-bindless
                 }
-            } else if (it->IsPrimvar()) {
-                TfTokenVector const& samplePrimvars
-                    = it->GetSamplerCoordinates();
+            } else if (param.IsPrimvar()) {
+                TfTokenVector const& samplePrimvars = param.samplerCoords;
                 TfTokenVector glNames;
                 glNames.reserve(samplePrimvars.size());
                 for (auto const& pv : samplePrimvars) {
@@ -678,12 +677,11 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                     /*name=*/glName,
                     /*type=*/glType,
                     /*inPrimvars=*/glNames);
-            } else if (it->IsFieldRedirect()) {
+            } else if (param.IsFieldRedirect()) {
                 TfToken glFieldName;
                 /* We store the field name in sampler coordinates.
                    There should only ever be one field name */
-                TfTokenVector const& fieldNames
-                    = it->GetSamplerCoordinates();
+                TfTokenVector const& fieldNames = param.samplerCoords;
                 if (!fieldNames.empty()) {
                     glFieldName = 
                         HdStGLConversions::GetGLSLIdentifier(fieldNames[0]);
@@ -696,7 +694,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                         /*name=*/glName,
                         /*fieldName=*/glFieldName);
             } else {
-                TF_CODING_ERROR("Can't resolve %s", it->GetName().GetText());
+                TF_CODING_ERROR("Can't resolve %s", param.name.GetText());
             }
         }
     }

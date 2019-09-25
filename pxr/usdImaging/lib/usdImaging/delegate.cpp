@@ -2797,17 +2797,9 @@ UsdImagingDelegate::GetMaterialParams(SdfPath const &materialId)
     TF_VERIFY(_valueCache.FindMaterialParams(cachePath, &params));
 
     // Connections need to be represented as index paths...
-    TF_FOR_ALL(paramIt, params) {
-        if (paramIt->IsTexture()) {
-            // Unfortunately, HdMaterialParam is immutable;
-            // fortunately, it has relatively lightweight members.
-            *paramIt = HdMaterialParam(
-                HdMaterialParam::ParamTypeTexture,
-                paramIt->GetName(),
-                paramIt->GetFallbackValue(),
-                ConvertCachePathToIndexPath(paramIt->GetConnection()),
-                paramIt->GetSamplerCoordinates(),
-                paramIt->GetTextureType());
+    for (HdMaterialParam& param : params) {
+        if (param.IsTexture()) {
+            param.connection = ConvertCachePathToIndexPath(param.connection);
         }
     }
 

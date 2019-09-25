@@ -752,9 +752,9 @@ HdUnitTestDelegate::GetMaterialParamValue(SdfPath const &materialId,
                                           TfToken const &paramName)
 {
     if (_MaterialHydra *material = TfMapLookupPtr(_materialsHydra, materialId)){
-        TF_FOR_ALL(paramIt, material->params) {
-            if (paramIt->GetName() == paramName)
-                return paramIt->GetFallbackValue();
+        for (HdMaterialParam const& param : material->params) {
+            if (param.name == paramName)
+                return param.fallbackValue;
         }
     }
     return VtValue();

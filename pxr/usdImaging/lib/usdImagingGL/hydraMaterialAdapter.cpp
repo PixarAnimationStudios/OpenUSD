@@ -472,16 +472,16 @@ UsdImagingGLHydraMaterialAdapter::UpdateForTime(
         // Hydra expects values in the value cache for any param that's
         // a "fallback" param (constant, as opposed to texture- or
         // primvar-based).
-        TF_FOR_ALL(paramIt, materialParams) {
-            if (paramIt->IsFallback()) {
+        for (HdMaterialParam const& p : materialParams) {
+            if (p.IsFallback()) {
                 VtValue& param = valueCache->GetMaterialParam(
-                    cachePath, paramIt->GetName());
+                    cachePath, p.name);
                 if (surfaceShaderPrim) {
                     param = _GetMaterialParamValue(surfaceShaderPrim,
-                                                   paramIt->GetName(), time);
+                                                   p.name, time);
                 } else {
                     param = _GetMaterialParamValue(volumeShaderPrim,
-                                                   paramIt->GetName(), time);
+                                                   p.name, time);
                 }
             }
         }

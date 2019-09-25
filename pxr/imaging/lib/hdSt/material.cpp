@@ -207,7 +207,7 @@ HdStMaterial::_GetTextureResourceHandle(
     HdStTextureResourceSharedPtr texResource;
     HdStTextureResourceHandleSharedPtr handle;
 
-    SdfPath const &connection = param.GetConnection();
+    SdfPath const &connection = param.connection;
     if (!connection.IsEmpty()) {
         HdTextureResource::ID texID =
             GetTextureResourceID(sceneDelegate, connection);
@@ -232,7 +232,7 @@ HdStMaterial::_GetTextureResourceHandle(
             // next param.
             if (!textureResourceFound) {
                 TF_WARN("No texture resource found with path %s",
-                    param.GetConnection().GetText());
+                    param.connection.GetText());
             } else {
                 texResource =
                     boost::dynamic_pointer_cast<HdStTextureResource>
@@ -257,7 +257,7 @@ HdStMaterial::_GetTextureResourceHandle(
         // next param.
         if (!handleFound) {
             TF_WARN("No texture resource handle found with path %s",
-                param.GetConnection().GetText());
+                param.connection.GetText());
         } else {
             handle = handleInstance.GetValue();
             handle->SetTextureResource(texResource);
@@ -275,11 +275,11 @@ HdStMaterial::_GetTextureResourceHandle(
     // XXX todo handle fallback Ptex textures
     if (!(handle && handle->GetTextureResource())) {
         // Fallback texture are only supported for UV textures.
-        if (param.GetTextureType() != HdTextureType::Uv) {
+        if (param.textureType != HdTextureType::Uv) {
             return {};
         }
         GlfUVTextureStorageRefPtr texPtr =
-            GlfUVTextureStorage::New(1,1, param.GetFallbackValue());
+            GlfUVTextureStorage::New(1,1, param.fallbackValue);
         GlfTextureHandleRefPtr texture =
             GlfTextureRegistry::GetInstance().GetTextureHandle(texPtr);
         HdStTextureResourceSharedPtr texResource(

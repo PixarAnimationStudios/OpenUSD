@@ -332,7 +332,7 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
 
             // Determine the field name the field reader requests
             TfTokenVector const &samplerCoordinates =
-                param.GetSamplerCoordinates();
+                param.samplerCoords;
             const TfToken fieldName =
                 samplerCoordinates.empty() ? TfToken() : samplerCoordinates[0];
 
@@ -341,7 +341,7 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
             const TfToken samplingTransformName(
                 fieldName.GetString() + "SamplingTransform");
             const TfToken fallbackName(
-                param.GetName().GetString() + "Fallback");
+                param.name.GetString() + "Fallback");
 
             // Get the field resource associated with the field name if
             // field name was not seen before (two field readers could
@@ -360,7 +360,7 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
                     const HdMaterialParam textureParam(
                         HdMaterialParam::ParamTypeTexture,
                         textureName,
-                        param.GetFallbackValue(),
+                        param.fallbackValue,
                         SdfPath(),
                         TfTokenVector(),
                         HdTextureType::Uvw);
@@ -413,10 +413,10 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
             const HdMaterialParam fallbackParam(
                 HdMaterialParam::ParamTypeFallback,
                 fallbackName,
-                param.GetFallbackValue());
+                param.fallbackValue);
 
             sourcesAndTextures.ProcessFallbackMaterialParam(
-                fallbackParam, param.GetFallbackValue());
+                fallbackParam, param.fallbackValue);
 
             materialParams.push_back(fallbackParam);
             
@@ -424,8 +424,8 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
             
             const HdMaterialParam fieldRedirectParam(
                 HdMaterialParam::ParamTypeFieldRedirect,
-                param.GetName(),
-                param.GetFallbackValue(),
+                param.name,
+                param.fallbackValue,
                 SdfPath(),
                 { fieldName });
                 
@@ -467,7 +467,7 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
             VtValue(localVolumeBBox->GetMatrix().GetInverse()));
         
         sourcesAndTextures.ProcessFallbackMaterialParam(
-            transformParam, transformParam.GetFallbackValue());
+            transformParam, transformParam.fallbackValue);
         
         materialParams.push_back(transformParam);
     }
@@ -481,7 +481,7 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
             VtValue(localVolumeBBox->GetRange().GetMin()));
         
         sourcesAndTextures.ProcessFallbackMaterialParam(
-            minParam, minParam.GetFallbackValue());
+            minParam, minParam.fallbackValue);
         
         materialParams.push_back(minParam);
     }
@@ -495,7 +495,7 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
             VtValue(localVolumeBBox->GetRange().GetMax()));
         
         sourcesAndTextures.ProcessFallbackMaterialParam(
-            maxParam, maxParam.GetFallbackValue());
+            maxParam, maxParam.fallbackValue);
         
         materialParams.push_back(maxParam);
     }

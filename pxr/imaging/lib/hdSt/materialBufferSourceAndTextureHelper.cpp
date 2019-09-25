@@ -41,7 +41,7 @@ HdSt_MaterialBufferSourceAndTextureHelper::ProcessPrimvarMaterialParam(
 {
     sources.push_back(
         boost::make_shared<HdVtBufferSource>(
-            param.GetName(), param.GetFallbackValue()));
+            param.name, param.fallbackValue));
 }
 
 void
@@ -53,7 +53,7 @@ HdSt_MaterialBufferSourceAndTextureHelper::ProcessFallbackMaterialParam(
     ProcessFallbackMaterialParam(
         param,
         sceneDelegate->GetMaterialParamValue(
-            materialId, param.GetName()));
+            materialId, param.name));
 }
 
 void
@@ -63,7 +63,7 @@ HdSt_MaterialBufferSourceAndTextureHelper::ProcessFallbackMaterialParam(
 {
     sources.push_back(
         boost::make_shared<HdVtBufferSource>(
-            param.GetName(), fallbackValue));
+            param.name, fallbackValue));
 }
 
 namespace {
@@ -140,7 +140,7 @@ HdSt_MaterialBufferSourceAndTextureHelper::ProcessTextureMaterialParam(
         .bindlessTextureEnabled;
 
     HdStShaderCode::TextureDescriptor tex;
-    tex.name = param.GetName();
+    tex.name = param.name;
     tex.handle = handle;
 
     const HdTextureType textureType = texResource->GetTextureType();
@@ -160,7 +160,7 @@ HdSt_MaterialBufferSourceAndTextureHelper::ProcessTextureMaterialParam(
         }
         
         tex.name =
-            TfToken(param.GetName().GetString() + "_layout");
+            TfToken(param.name.GetString() + "_layout");
         tex.type =
             HdStShaderCode::TextureDescriptor::TEXTURE_PTEX_LAYOUT;
         textures.push_back(tex);
@@ -183,7 +183,7 @@ HdSt_MaterialBufferSourceAndTextureHelper::ProcessTextureMaterialParam(
         }
         
         tex.name =
-            TfToken(param.GetName().GetString() + "_layout");
+            TfToken(param.name.GetString() + "_layout");
         tex.type =
             HdStShaderCode::TextureDescriptor::TEXTURE_UDIM_LAYOUT;
         textures.push_back(tex);

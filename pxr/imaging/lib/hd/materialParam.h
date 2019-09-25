@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -79,47 +79,31 @@ public:
     HD_API
     static ID ComputeHash(HdMaterialParamVector const &shaders);
 
-    TfToken const& GetName() const { return _name; }
-
-    ParamType GetParamType() const { return _paramType; }
-
     HD_API
     HdTupleType GetTupleType() const;
 
-    VtValue const& GetFallbackValue() const { return _fallbackValue; }
-
-    SdfPath const& GetConnection() const { return _connection; }
-
     bool IsField() const {
-        return GetParamType() == ParamTypeField;
+        return paramType == ParamTypeField;
     }
     bool IsTexture() const {
-        return GetParamType() == ParamTypeTexture;
+        return paramType == ParamTypeTexture;
     }
     bool IsPrimvar() const {
-        return GetParamType() == ParamTypePrimvar;
+        return paramType == ParamTypePrimvar;
     }
     bool IsFallback() const {
-        return GetParamType() == ParamTypeFallback;
+        return paramType == ParamTypeFallback;
     }
     bool IsFieldRedirect() const {
-        return GetParamType() == ParamTypeFieldRedirect;
+        return paramType == ParamTypeFieldRedirect;
     }
 
-    HdTextureType GetTextureType() const {
-        return _textureType;
-    }
-
-    HD_API
-    TfTokenVector const& GetSamplerCoordinates() const;
-
-private:
-    ParamType _paramType;
-    TfToken _name;
-    VtValue _fallbackValue;
-    SdfPath _connection;
-    TfTokenVector _samplerCoords;
-    HdTextureType _textureType;
+    ParamType paramType;
+    TfToken name;
+    VtValue fallbackValue;
+    SdfPath connection;
+    TfTokenVector samplerCoords;
+    HdTextureType textureType;
 };
 
 

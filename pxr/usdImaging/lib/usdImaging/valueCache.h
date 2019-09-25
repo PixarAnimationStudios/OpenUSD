@@ -352,8 +352,8 @@ public:
         _Erase<VtValue>(Key::MaterialMetadata(path));
         HdMaterialParamVector shaderVars;
         if (FindMaterialParams(path, &shaderVars)) {
-            TF_FOR_ALL(pvIt, shaderVars) {
-                _Erase<VtValue>(Key(path, pvIt->GetName()));
+            for (HdMaterialParam const& param : shaderVars) {
+                _Erase<VtValue>(Key(path, param.name));
             }
             _Erase<HdMaterialParamVector>(Key::MaterialParams(path));
         }
