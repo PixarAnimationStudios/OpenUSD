@@ -1,0 +1,175 @@
+#usda 1.0
+(
+    defaultPrim = "ComplexSet"
+    upAxis = "Z"
+)
+
+def Xform "ComplexSet" (
+    assetInfo = {
+        asset identifier = @./ComplexSet.usda@
+        string name = "ComplexSet"
+    }
+    kind = "assembly"
+)
+{
+    def Xform "Geom"
+    {
+        def Camera "PerspCamUnderGeom"
+        {
+            float2 clippingRange = (0.1, 10000)
+            float focalLength = 35
+            float focusDistance = 5
+            float fStop = 11
+            float horizontalAperture = 36
+            float horizontalApertureOffset = 25.4
+            token projection = "perspective"
+            float verticalAperture = 24
+            float verticalApertureOffset = 50.8
+            float xformOp:rotateX = 45
+            double3 xformOp:translate = (0, -5, 5)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX"]
+        }
+
+        def Xform "CubesHero"
+        {
+            def Camera "PerspCamUnderCubesHero"
+            {
+                float2 clippingRange = (0.1, 10000)
+                float focalLength = 35
+                float focusDistance = 5
+                float fStop = 11
+                float horizontalAperture = 36
+                float horizontalApertureOffset = 25.4
+                token projection = "perspective"
+                float verticalAperture = 24
+                float verticalApertureOffset = 50.8
+                float xformOp:rotateX = 45
+                double3 xformOp:translate = (0, -30, 30)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX"]
+            }
+
+            def Mesh "CubesHeroGeom101" (
+                kind = "subcomponent"
+                prepend references = @ComplexSetCompressed.usda.draco/ComplexSet_Geom_CubesHero_CubesHeroGeom101.drc@
+            )
+            {
+                color3f[] primvars:displayColor = [(0.217638, 0.217638, 0.217638)]
+                float3 xformOp:translate = (-5, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Mesh "CubesHeroGeom102" (
+                kind = "subcomponent"
+                prepend references = @ComplexSetCompressed.usda.draco/ComplexSet_Geom_CubesHero_CubesHeroGeom102.drc@
+            )
+            {
+                color3f[] primvars:displayColor = [(0.217638, 0.217638, 0.217638)]
+            }
+
+            def Mesh "CubesHeroGeom103" (
+                kind = "subcomponent"
+                prepend references = @ComplexSetCompressed.usda.draco/ComplexSet_Geom_CubesHero_CubesHeroGeom103.drc@
+            )
+            {
+                color3f[] primvars:displayColor = [(0.217638, 0.217638, 0.217638)]
+                float3 xformOp:translate = (5, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+
+        def Xform "CubesFill" (
+            kind = "subcomponent"
+        )
+        {
+            def Camera "PerspCamUnderCubesFill"
+            {
+                float2 clippingRange = (0.1, 10000)
+                float focalLength = 35
+                float focusDistance = 5
+                float fStop = 11
+                float horizontalAperture = 36
+                float horizontalApertureOffset = 25.4
+                token projection = "perspective"
+                float verticalAperture = 24
+                float verticalApertureOffset = 50.8
+                float xformOp:rotateX = 45
+                double3 xformOp:translate = (0, -15, 15)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX"]
+            }
+
+            def Mesh "CubesFillGeom101" (
+                prepend references = @ComplexSetCompressed.usda.draco/ComplexSet_Geom_CubesFill_CubesFillGeom101.drc@
+            )
+            {
+                color3f[] primvars:displayColor = [(0.217638, 0.217638, 0.217638)]
+                float3 xformOp:translate = (-5, 10, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Mesh "CubesFillGeom102" (
+                prepend references = @ComplexSetCompressed.usda.draco/ComplexSet_Geom_CubesFill_CubesFillGeom102.drc@
+            )
+            {
+                color3f[] primvars:displayColor = [(0.217638, 0.217638, 0.217638)]
+                float3 xformOp:translate = (0, 10, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Mesh "CubesFillGeom103" (
+                prepend references = @ComplexSetCompressed.usda.draco/ComplexSet_Geom_CubesFill_CubesFillGeom103.drc@
+            )
+            {
+                color3f[] primvars:displayColor = [(0.217638, 0.217638, 0.217638)]
+                float3 xformOp:translate = (5, 10, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+
+        def Xform "Ref" (
+            kind = "subcomponent"
+        )
+        {
+            float3 xformOp:translate = (0, 30, 5)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Mesh "RedCube" (
+                kind = "subcomponent"
+                prepend references = @ComplexSetCompressed.usda.draco/ComplexSet_Geom_Ref_RedCube.drc@
+            )
+            {
+                color3f[] primvars:displayColor = [(0.9, 0.1, 0.1)]
+                float3 xformOp:translate = (-20, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Mesh "GreenCube" (
+                kind = "subcomponent"
+                prepend references = @ComplexSetCompressed.usda.draco/ComplexSet_Geom_Ref_GreenCube.drc@
+            )
+            {
+                color3f[] primvars:displayColor = [(0.1, 0.9, 0.1)]
+            }
+
+            def Mesh "BlueCube" (
+                kind = "subcomponent"
+                prepend references = @ComplexSetCompressed.usda.draco/ComplexSet_Geom_Ref_BlueCube.drc@
+            )
+            {
+                color3f[] primvars:displayColor = [(0.1, 0.1, 0.9)]
+                float3 xformOp:translate = (20, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+
+        def Mesh "terrain" (
+            hidden = true
+            prepend references = @ComplexSetCompressed.usda.draco/ComplexSet_Geom_terrain.drc@
+        )
+        {
+            color3f[] primvars:displayColor = [(0.21763764, 0.21763764, 0.21763764)]
+            float3 xformOp:translate = (0, 0, -1)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+}
+

@@ -299,6 +299,15 @@ See [3rd Party Library and Application Versions](VERSIONS.md) for version inform
 
 For further information see our additional documentation on the MaterialX plugins [here](http://openusd.org/docs/MaterialX-USD-Plugins.html).
 
+##### Draco Plugin
+
+Enable the [Draco](https://github.com/google/draco) plugin in the build by specifying the cmake flag ```PXR_BUILD_DRACO_PLUGIN=TRUE```
+when invoking cmake. This plugin is compatible with Draco 1.3.4. The additional dependencies that must be supplied when invoking cmake are:
+
+| Dependency Name    | Description                              | Version |
+| ------------------ |----------------------------------------  | ------- |
+| DRACO_ROOT         | The root path to a Draco SDK install.    | 1.3.4   |
+
 ## Tests
 
 Disable unit testing and prevent tests from being built by specifying the cmake flag ```PXR_BUILD_TESTS=FALSE```
