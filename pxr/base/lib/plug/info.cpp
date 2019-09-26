@@ -733,7 +733,7 @@ Plug_ReadPlugInfo(
         // files must still explicitly append '/' to be handled as
         // directories.
         const bool hasslash = *pathname.rbegin() == '/';
-        if (hasslash || TfIsDir(pathname)) {
+        if (hasslash || TfIsDir(pathname, true)) {
             context.taskArena.Run([&context, pathname, hasslash] {
                 _ReadPlugInfoWithWildcards(&context,
                     hasslash ? pathname : pathname + "/");
