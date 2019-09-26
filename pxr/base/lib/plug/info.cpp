@@ -207,6 +207,8 @@ _ReadPlugInfo(_ReadContext* context, std::string pathname)
     if (*pathname.rbegin() == '/') {
         pathname = pathname + _Tokens->PlugInfoName.GetString();
     }
+    // Resolve real path to avoid collisions with symlinked files
+    pathname = TfRealPath(pathname);
 
     // Ignore redundant reads.  This also prevents infinite recursion.
     if (!context->addVisitedPath(pathname)) {
