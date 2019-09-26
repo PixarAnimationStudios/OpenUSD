@@ -122,9 +122,9 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
     SdfPath instancer = instancerContext ?
         instancerContext->instancerCachePath : SdfPath();
 
-    // The draw mode adapter only supports models. This is enforced in
-    // UsdImagingDelegate::_IsDrawModeApplied.
-    if (!TF_VERIFY(prim.IsModel(), "<%s>",
+    // The draw mode adapter only supports models or unloaded prims.
+    // This is enforced in UsdImagingDelegate::_IsDrawModeApplied.
+    if (!TF_VERIFY(prim.IsModel() || !prim.IsLoaded(), "<%s>",
                    prim.GetPath().GetText())) {
         return SdfPath();
     }
@@ -1092,11 +1092,23 @@ UsdImagingGLDrawModeAdapter::_ComputeExtent(UsdPrim const& prim) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-
-    TfTokenVector purposes = { UsdGeomTokens->default_, UsdGeomTokens->proxy,
-                               UsdGeomTokens->render };
-    UsdGeomBBoxCache bboxCache(UsdTimeCode::EarliestTime(), purposes, true);
-    return bboxCache.ComputeUntransformedBound(prim).ComputeAlignedBox();
+    if (prim.IsLoaded()) {
+        TfTokenVector purposes = { UsdGeomTokens->default_,
+            UsdGeomTokens->proxy, UsdGeomTokens->render };
+        UsdGeomBBoxCache bboxCache(
+            UsdTimeCode::EarliestTime(), purposes, true);
+        return bboxCache.ComputeUntransformedBound(prim).ComputeAlignedBox();
+    } else {
+        GfRange3d extent;
+        if (auto attr = UsdGeomModelAPI(prim).GetExtentsHintAttr()) {
+            VtVec3fArray extentHints;
+            if (attr.Get(&extentHints, UsdTimeCode::EarliestTime()) &&
+                extentHints.size() == 2) {
+                extent = GfRange3d(extentHints[0], extentHints[1]);
+            }
+        }
+        return extent;
+    }
 }
 
 HdTextureResource::ID

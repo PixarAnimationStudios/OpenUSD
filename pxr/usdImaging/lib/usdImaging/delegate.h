@@ -267,6 +267,15 @@ public:
     USDIMAGING_API
     void SetWindowPolicy(CameraUtilConformWindowPolicy policy);
 
+    /// Sets display of unloaded prims as bounding boxes.
+    /// Unloaded prims will need bounds definition in order to see them.
+    /// Effective only for delegates that support draw modes.
+    USDIMAGING_API
+    void SetDisplayUnloadedPrimsWithBounds(bool displayUnloaded);
+    bool GetDisplayUnloadedPrimsWithBounds() const {
+        return _displayUnloadedPrimsWithBounds;
+    }
+
     // ---------------------------------------------------------------------- //
     // See HdSceneDelegate for documentation of the following virtual methods.
     // ---------------------------------------------------------------------- //
@@ -769,6 +778,15 @@ private:
 
     // Enable HdCoordSys tracking
     const bool _coordSysEnabled;
+    // Display unloaded prims with Bounds adapter
+    bool _displayUnloadedPrimsWithBounds;
+
+    Usd_PrimFlagsConjunction _getDisplayPredicate() const
+    {
+        return _hasDrawModeAdapter && _displayUnloadedPrimsWithBounds ?
+            UsdPrimIsActive && UsdPrimIsDefined && !UsdPrimIsAbstract :
+            UsdPrimDefaultPredicate;
+    }
 
     UsdImagingDelegate() = delete;
     UsdImagingDelegate(UsdImagingDelegate const &) = delete;

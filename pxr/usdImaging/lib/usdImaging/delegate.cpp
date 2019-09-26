@@ -135,6 +135,7 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _appWindowPolicy(CameraUtilMatchVertically)
     , _coordSysEnabled(parentIndex
                        ->IsSprimTypeSupported(HdPrimTypeTokens->coordSys))
+    , _displayUnloadedPrimsWithBounds(false)
 {
     // Provide a callback to the _coordSysBindingCache so it can
     // convert USD paths to Hydra ID's.
@@ -188,7 +189,7 @@ UsdImagingDelegate::_IsDrawModeApplied(UsdPrim const& prim)
     // Draw mode is only applied on models that are components, or which have
     // applyDrawMode = true.
     UsdModelAPI model(prim);
-    bool applyDrawMode = false;
+    bool applyDrawMode = !prim.IsLoaded();
     TfToken kind;
     UsdAttribute attr;
     if (model.GetKind(&kind) && KindRegistry::IsA(kind, KindTokens->component))
@@ -207,6 +208,9 @@ TfToken
 UsdImagingDelegate::_GetModelDrawMode(UsdPrim const& prim)
 {
     HD_TRACE_FUNCTION();
+
+    // Draw unloaded prims as bounds.
+    if (!prim.IsLoaded()) { return UsdGeomTokens->bounds; }
 
     // Draw modes can only be applied to models.
     if (!prim.IsModel()) { return UsdGeomTokens->default_; }
@@ -234,7 +238,9 @@ UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
     //    threads.
 
     TfToken adapterKey;
-    if (!ignoreInstancing && prim.IsInstance()) {
+    if (_displayUnloadedPrimsWithBounds && !prim.IsLoaded()) {
+        adapterKey = UsdImagingAdapterKeyTokens->drawModeAdapterKey;
+    } else if (!ignoreInstancing && prim.IsInstance()) {
         adapterKey = UsdImagingAdapterKeyTokens->instanceAdapterKey;
     } else if (_hasDrawModeAdapter && _enableUsdDrawModes &&
                _IsDrawModeApplied(prim)) {
@@ -648,7 +654,7 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
         TF_DEBUG(USDIMAGING_CHANGES).Msg("[Repopulate] Root path: <%s>\n",
                             usdPath.GetText());
 
-        UsdPrimRange range(_GetUsdPrim(usdPath));
+        UsdPrimRange range(_GetUsdPrim(usdPath), _getDisplayPredicate());
         for (auto iter = range.begin(); iter != range.end(); ++iter) {
             if (!iter->GetPath().HasPrefix(_rootPrimPath)) {
                 iter.PruneChildren();
@@ -1116,7 +1122,7 @@ UsdImagingDelegate::_ResyncUsdPrim(SdfPath const& usdPath,
         // If this path was not pruned by a parent, discover all prims that were
         // newly added with this change.
         if (!prunedByParent) {
-            UsdPrimRange range(prim);
+            UsdPrimRange range(prim, _getDisplayPredicate());
 
             for (auto iter = range.begin(); iter != range.end(); ++iter) {
                 if (prunedByParent) {
@@ -1579,6 +1585,22 @@ UsdImagingDelegate::SetWindowPolicy(CameraUtilConformWindowPolicy policy)
                                                     cachePath, &indexProxy);
             }
         }
+    }
+}
+
+void
+UsdImagingDelegate::SetDisplayUnloadedPrimsWithBounds(bool displayUnloaded)
+{
+    if (_hdPrimInfoMap.size() > 0) {
+        TF_CODING_ERROR("SetDisplayUnloadedPrimsWithBounds() was "
+                        "called after population; this is currently "
+                        "unsupported...");
+    } else if (!_hasDrawModeAdapter) {
+        TF_CODING_ERROR("This delegate does not have draw mode "
+                        "adapter; unloaded prims cannot be displayed "
+                        "with bounds...");
+    } else {
+        _displayUnloadedPrimsWithBounds = displayUnloaded;
     }
 }
 
