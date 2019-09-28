@@ -31,6 +31,8 @@
 
 #include <maya/MGlobal.h>
 
+#include <iostream>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(PIXMAYA_DIAGNOSTICS_BATCH, true,
