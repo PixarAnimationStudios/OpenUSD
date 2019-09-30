@@ -178,7 +178,7 @@ pxr_test_scripts(
     testenv/testUsdChangeProcessing.py
     testenv/testUsdClasses.py
     testenv/testUsdCollectionAPI.py
-    testenv/testUsdCrate07To08Conversion.py
+    testenv/testUsdCratePayloadConversionFromVersion07.py
     testenv/testUsdCreateProperties.py
     testenv/testUsdDataFormats.py
     testenv/testUsdFileFormats.py
@@ -355,8 +355,8 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/testUsdCrate07To08Conversion.testenv
-    DEST testUsdCrate07To08Conversion
+    SRC testenv/testUsdCratePayloadConversionFromVersion07.testenv
+    DEST testUsdCratePayloadConversionFromVersion07
 )
 
 pxr_install_test_dir(
@@ -800,9 +800,9 @@ pxr_register_test(testUsdPayloads
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_register_test(testUsdCrate07To08Conversion
+pxr_register_test(testUsdCratePayloadConversionFromVersion07
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdCrate07To08Conversion"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdCratePayloadConversionFromVersion07"
     EXPECTED_RETURN_CODE 0
 )
 
