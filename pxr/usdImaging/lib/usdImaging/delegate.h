@@ -54,6 +54,7 @@
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/gf/range3d.h"
+#include "pxr/base/gf/interval.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/hashset.h"
@@ -267,6 +268,15 @@ public:
     USDIMAGING_API
     void SetWindowPolicy(CameraUtilConformWindowPolicy policy);
 
+    /// Setup for the shutter open and close to be used for motion sampling.
+    USDIMAGING_API
+    void SetCameraForSampling(SdfPath const& id);
+
+    /// Returns the current interval that will be used when using the 
+    /// sample* API in the scene delegate.
+    USDIMAGING_API
+    GfInterval GetCurrentTimeSamplingInterval();
+
     // ---------------------------------------------------------------------- //
     // See HdSceneDelegate for documentation of the following virtual methods.
     // ---------------------------------------------------------------------- //
@@ -275,11 +285,12 @@ public:
     USDIMAGING_API
     virtual HdMeshTopology GetMeshTopology(SdfPath const& id) override;
     USDIMAGING_API
-    virtual HdBasisCurvesTopology GetBasisCurvesTopology(SdfPath const& id) override;
+    virtual HdBasisCurvesTopology GetBasisCurvesTopology(SdfPath const& id) 
+        override;
     typedef PxOsdSubdivTags SubdivTags;
 
     // XXX: animated subdiv tags are not currently supported
-    // XXX: subdiv tags currently feteched on demand 
+    // XXX: subdiv tags currently fetched on-demand 
     USDIMAGING_API
     virtual SubdivTags GetSubdivTags(SdfPath const& id) override;
 
@@ -724,8 +735,8 @@ private:
     /// The current time from which the delegate will read data.
     UsdTimeCode _time;
 
-    /// The requested time offsets for time samples.
-    std::vector<float> _timeSampleOffsets;
+    /// Path to the camera that its shutter will be used for time samples.
+    SdfPath _cameraPathForSampling;
 
     int _refineLevelFallback;
     HdReprSelector _reprFallback;

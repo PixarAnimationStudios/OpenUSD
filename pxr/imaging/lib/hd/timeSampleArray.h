@@ -109,15 +109,61 @@ T HdResampleRawTimeSamples(float u, size_t numSamples,
 /// a limited ability to handle variable sampling without requiring
 /// heap allocation.
 template<typename TYPE, unsigned int CAPACITY>
-struct HdTimeSampleArray {
-    /// Static maximum capacity.
-    static const unsigned int capacity = CAPACITY;
-    /// Sample times, ordered by increasing time.
-    float times[CAPACITY];
-    /// Sample values, corresponding to the times[] array.
-    TYPE values[CAPACITY];
-    /// Count of how many samples are stored.  0 <= count <= CAPACITY.
-    unsigned int count;
+struct HdTimeSampleArray 
+{
+    HdTimeSampleArray() {
+        times = _fixedTimes;
+        values = _fixedValues;
+        _heapTimes = nullptr;
+        _heapValues = nullptr;
+    }
+
+    ~HdTimeSampleArray() {
+        if (_heapTimes) {
+            delete[] _heapTimes;
+        }
+        if (_heapValues) {
+            delete[] _heapValues;
+        }
+    }
+
+    HdTimeSampleArray(const HdTimeSampleArray& rhs) : HdTimeSampleArray() {
+        Resize(rhs.count);
+        for (size_t i=0; i < rhs.count; ++i) {
+            times[i] = rhs.times[i];
+            values[i] = rhs.values[i];
+        }
+    }
+
+    HdTimeSampleArray& operator=(const HdTimeSampleArray& rhs) {
+        Resize(rhs.count);
+        for (size_t i=0; i < rhs.count; ++i) {
+            times[i] = rhs.times[i];
+            values[i] = rhs.values[i];
+        }
+        return *this;
+    }
+
+    /// Resize the internal buffers if needed when count <= CAPACITY.
+    void Resize(unsigned int newCount) {
+        if (_heapTimes) {
+            delete[] _heapTimes;
+        } 
+        if (_heapValues) {
+            delete[] _heapValues;
+        }
+
+        if (newCount <= CAPACITY) {
+            times = _fixedTimes;
+            values = _fixedValues;
+        } else {
+            _heapTimes = new float[newCount];
+            _heapValues = new TYPE[newCount];
+            times = _heapTimes;
+            values = _heapValues;
+        }
+        count = newCount;
+    }  
 
     /// Convience method for invoking HdResampleRawTimeSamples
     /// on this HdTimeSampleArray.
@@ -132,7 +178,8 @@ struct HdTimeSampleArray {
     /// VtValue is not holding the expected type.
     ///
     /// \see VtValue::Get()
-    void UnboxFrom(HdTimeSampleArray<VtValue,CAPACITY> const& box) {
+    void UnboxFrom(HdTimeSampleArray<VtValue, CAPACITY> const& box) {
+        Resize(box.count);
         count = box.count;
         for (size_t i=0; i < box.count; ++i) {
             times[i] = box.times[i];
@@ -143,6 +190,26 @@ struct HdTimeSampleArray {
             }
         }
     }
+
+    /// Static maximum capacity.
+    static const unsigned int capacity = CAPACITY;
+
+    /// Count of how many samples are stored.
+    unsigned int count;
+
+    /// External accessors
+    float* times;
+    TYPE* values;
+
+private: 
+    /// Fixed-size time buffer to avoid heap allocation when 
+    /// returning numSamples <= CAPACITY
+    float _fixedTimes[CAPACITY];
+    TYPE _fixedValues[CAPACITY];
+
+    /// Variable size arrays when numSamples > CAPACITY
+    float* _heapTimes;
+    TYPE* _heapValues;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -409,44 +409,92 @@ public:
     /// \name Motion samples
     // -----------------------------------------------------------------------//
 
-    /// Store up to \a maxSampleCount transform samples in \a *samples.
-    /// Returns the number of samples returned.
+    /// Store up to \a maxSampleCount transform samples in \a *sampleValues.
+    /// Returns the union of the authored samples and the boundaries 
+    /// of the current camera shutter interval. If this number is greater
+    /// than maxSampleCount, you might want to call this function again 
+    /// to get all the authored data.
     /// Sample times are relative to the scene delegate's current time.
     /// \see GetTransform()
     HD_API
     virtual size_t
-    SampleTransform(SdfPath const & id, size_t maxSampleCount,
-                    float *times, GfMatrix4d *samples);
+    SampleTransform(SdfPath const & id, 
+                    size_t maxSampleCount,
+                    float *sampleTimes, 
+                    GfMatrix4d *sampleValues);
 
     /// Convenience form of SampleTransform() that takes an HdTimeSampleArray.
+    /// This function returns the union of the authored transform samples 
+    /// and the boundaries of the current camera shutter interval.
     template <unsigned int CAPACITY>
-    void SampleTransform(SdfPath const & id,
-                         HdTimeSampleArray<GfMatrix4d, CAPACITY> *out) {
-        out->count = SampleTransform(id, CAPACITY, out->times, out->values);
+    void 
+    SampleTransform(SdfPath const & id,
+                    HdTimeSampleArray<GfMatrix4d, CAPACITY> *sa) {
+        size_t authoredSamples = 
+            SampleTransform(id, CAPACITY, sa->times, sa->values);
+        if (authoredSamples > CAPACITY) {
+            sa->Resize(authoredSamples);
+            size_t authoredSamplesSecondAttempt = 
+                SampleTransform(
+                    id, 
+                    authoredSamples, 
+                    sa->times, 
+                    sa->values);
+            // Number of samples should be consisntent through multiple
+            // invokations of the sampling function.
+            TF_VERIFY(authoredSamples == authoredSamplesSecondAttempt);
+        }
+        sa->count = authoredSamples;
     }
 
-    /// Store up to \a maxSampleCount transform samples in \a *samples.
-    /// Returns the number of samples returned.
+    /// Store up to \a maxSampleCount transform samples in \a *sampleValues.
+    /// Returns the union of the authored samples and the boundaries 
+    /// of the current camera shutter interval. If this number is greater
+    /// than maxSampleCount, you might want to call this function again 
+    /// to get all the authored data.
     /// Sample times are relative to the scene delegate's current time.
     /// \see GetInstancerTransform()
     HD_API
     virtual size_t
     SampleInstancerTransform(SdfPath const &instancerId,
-                             size_t maxSampleCount, float *times,
-                             GfMatrix4d *samples);
+                             size_t maxSampleCount, 
+                             float *sampleTimes,
+                             GfMatrix4d *sampleValues);
 
     /// Convenience form of SampleInstancerTransform()
     /// that takes an HdTimeSampleArray.
+    /// This function returns the union of the authored samples 
+    /// and the boundaries of the current camera shutter interval.
     template <unsigned int CAPACITY>
     void
     SampleInstancerTransform(SdfPath const &instancerId,
-                             HdTimeSampleArray<GfMatrix4d, CAPACITY> *out) {
-        out->count = SampleInstancerTransform(
-            instancerId, CAPACITY, out->times, out->values);
+                             HdTimeSampleArray<GfMatrix4d, CAPACITY> *sa) {
+        size_t authoredSamples = 
+            SampleInstancerTransform(
+                instancerId, 
+                CAPACITY, 
+                sa->times, 
+                sa->values);
+        if (authoredSamples > CAPACITY) {
+            sa->Resize(authoredSamples);
+            size_t authoredSamplesSecondAttempt = 
+                SampleInstancerTransform(
+                    instancerId, 
+                    authoredSamples, 
+                    sa->times, 
+                    sa->values);
+            // Number of samples should be consisntent through multiple
+            // invokations of the sampling function.
+            TF_VERIFY(authoredSamples == authoredSamplesSecondAttempt);
+        }
+        sa->count = authoredSamples;
     }
 
-    /// Store up to \a maxSampleCount primvar samples in \a *samples.
-    /// Returns the number of samples returned.
+    /// Store up to \a maxSampleCount primvar samples in \a *samplesValues.
+    /// Returns the union of the authored samples and the boundaries 
+    /// of the current camera shutter interval. If this number is greater
+    /// than maxSampleCount, you might want to call this function again 
+    /// to get all the authored data.
     ///
     /// Sample values that are array-valued will have a size described
     /// by the HdPrimvarDescriptor as applied to the toplogy.
@@ -461,14 +509,36 @@ public:
     /// \see Get()
     HD_API
     virtual size_t
-    SamplePrimvar(SdfPath const& id, TfToken const& key,
-                  size_t maxSampleCount, float *times, VtValue *samples);
+    SamplePrimvar(SdfPath const& id, 
+                  TfToken const& key,
+                  size_t maxSampleCount, 
+                  float *sampleTimes, 
+                  VtValue *sampleValues);
 
     /// Convenience form of SamplePrimvar() that takes an HdTimeSampleArray.
+    /// This function returns the union of the authored samples 
+    /// and the boundaries of the current camera shutter interval.
     template <unsigned int CAPACITY>
-    void SamplePrimvar(SdfPath const &id, TfToken const& key,
-                       HdTimeSampleArray<VtValue, CAPACITY> *sa) {
-        sa->count = SamplePrimvar(id, key, CAPACITY, sa->times, sa->values);
+    void 
+    SamplePrimvar(SdfPath const &id, 
+                  TfToken const& key,
+                  HdTimeSampleArray<VtValue, CAPACITY> *sa) {
+        size_t authoredSamples = 
+            SamplePrimvar(id, key, CAPACITY, sa->times, sa->values);
+        if (authoredSamples > CAPACITY) {
+            sa->Resize(authoredSamples);
+            size_t authoredSamplesSecondAttempt = 
+                SamplePrimvar(
+                    id, 
+                    key, 
+                    authoredSamples, 
+                    sa->times, 
+                    sa->values);
+            // Number of samples should be consisntent through multiple
+            // invokations of the sampling function.
+            TF_VERIFY(authoredSamples == authoredSamplesSecondAttempt);
+        }
+        sa->count = authoredSamples;
     }
 
     // -----------------------------------------------------------------------//

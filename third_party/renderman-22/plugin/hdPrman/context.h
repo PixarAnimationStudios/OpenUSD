@@ -42,7 +42,7 @@
 // calls by using fixed-size stack arrays with configured capacity.
 // The capacity is indicated to the scene delegate when requesting
 // time samples.
-#define HDPRMAN_MAX_TIME_SAMPLES 2
+#define HDPRMAN_MAX_TIME_SAMPLES 8
 
 class RixRiCtl;
 class RixParamList;

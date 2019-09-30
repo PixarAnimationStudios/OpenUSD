@@ -834,7 +834,8 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                     _GetPrimAdapter(parentInstancerUsdPrim);
 
                 // parentInstancer doesn't necessarily be UsdGeomPointInstancer.
-                // lookup and delegate adapter to compute the instancer transform.
+                // lookup and delegate adapter to compute the instancer 
+                // transform.
                 _GetValueCache()->GetInstancerTransform(cachePath) =
                     adapter->GetRelativeInstancerTransform(
                         parentInstancerCachePath, cachePath, time);
@@ -1773,50 +1774,104 @@ UsdImagingPointInstancerAdapter::GetPathForInstanceIndex(
     return instancerCachePath;
 }
 
+static 
+size_t
+_GatherAuthoredTransformTimeSamples(
+    UsdPrim const& prim,
+    GfInterval interval,
+    std::vector<double>* timeSamples) 
+{
+    UsdPrim p = prim;
+    while (p) {
+        // XXX We could do some caching here
+        if (UsdGeomXformable xf = UsdGeomXformable(p)) {
+            std::vector<double> localTimeSamples;
+            xf.GetTimeSamplesInInterval(interval, &localTimeSamples);
+
+            // Join timesamples 
+            timeSamples->insert(
+                timeSamples->end(), 
+                localTimeSamples.begin(), 
+                localTimeSamples.end());
+        }
+        p = p.GetParent();
+    }
+
+    // Sort here
+    std::sort(timeSamples->begin(), timeSamples->end());
+    timeSamples->erase(
+        std::unique(timeSamples->begin(), 
+            timeSamples->end()), 
+            timeSamples->end());
+
+    return timeSamples->size();
+}
+
 /*virtual*/
 size_t
 UsdImagingPointInstancerAdapter::SampleInstancerTransform(
     UsdPrim const& instancerPrim,
     SdfPath const& instancerPath,
     UsdTimeCode time,
-    const std::vector<float>& configuredSampleTimes,
-    size_t maxSampleCount,
-    float *times,
-    GfMatrix4d *samples)
+    size_t maxNumSamples,
+    float *sampleTimes,
+    GfMatrix4d *sampleValues)
 {
+    HD_TRACE_FUNCTION();
+
+    if (maxNumSamples == 0) {
+        return 0;
+    }
+
     // This code must match how UpdateForTime() computes instancerTransform.
     _InstancerDataMap::iterator inst = _instancerData.find(instancerPath);
     if (!TF_VERIFY(inst != _instancerData.end(),
                    "Unknown instancer %s", instancerPath.GetText())) {
         return 0;
     }
-    size_t numSamples = std::min(maxSampleCount, configuredSampleTimes.size());
     SdfPath parentInstancerCachePath = inst->second.parentInstancerCachePath;
+    GfInterval interval = _GetCurrentTimeSamplingInterval();
+
+    // Add time samples at the boudary conditions
+    size_t numSamples = 0;
+    std::vector<double> timeSamples;
+    timeSamples.push_back(interval.GetMin());
+    timeSamples.push_back(interval.GetMax());
+
     if (!parentInstancerCachePath.IsEmpty()) {
         // if nested, double transformation should be avoided.
         SdfPath parentInstancerUsdPath =
             parentInstancerCachePath.GetAbsoluteRootOrPrimPath();
-        UsdPrim parentInstancerUsdPrim =
-            _GetPrim(parentInstancerUsdPath);
+        UsdPrim parentInstancerUsdPrim = _GetPrim(parentInstancerUsdPath);
         UsdImagingPrimAdapterSharedPtr adapter =
             _GetPrimAdapter(parentInstancerUsdPrim);
 
-        // parentInstancer doesn't necessarily be UsdGeomPointInstancer.
-        // lookup and delegate adapter to compute the instancer transform.
-        for (size_t i=0; i < numSamples; ++i) {
-            times[i] = configuredSampleTimes[i];
-            samples[i] = adapter->GetRelativeInstancerTransform(
-                parentInstancerCachePath, instancerPath,
-                configuredSampleTimes[i]);
+        numSamples = _GatherAuthoredTransformTimeSamples(
+            parentInstancerUsdPrim, 
+            interval, 
+            &timeSamples);
+
+        size_t numSamplesToEvaluate = std::min(maxNumSamples, numSamples);
+        for (size_t i=0; i < numSamplesToEvaluate; ++i) {
+            sampleTimes[i] = timeSamples[i] - time.GetValue();
+            sampleValues[i] = adapter->GetRelativeInstancerTransform(
+                parentInstancerCachePath, 
+                instancerPath,
+                timeSamples[i]);
         }
     } else {
-        // if not nested, simply put the transform of the instancer.
-        for (size_t i=0; i < numSamples; ++i) {
-            UsdTimeCode sceneTime = 
-                _GetTimeWithOffset(configuredSampleTimes[i]);
-            times[i] = configuredSampleTimes[i];
-            samples[i] = GetRelativeInstancerTransform(
-                parentInstancerCachePath, instancerPath, sceneTime);
+        numSamples = _GatherAuthoredTransformTimeSamples(
+            _GetPrim(instancerPath), 
+            interval, 
+            &timeSamples);
+
+        size_t numSamplesToEvaluate = std::min(maxNumSamples, numSamples);
+        for (size_t i=0; i < numSamplesToEvaluate; ++i) {
+            sampleTimes[i] = timeSamples[i] - time.GetValue();
+            sampleValues[i] = GetRelativeInstancerTransform(
+                parentInstancerCachePath, 
+                instancerPath,
+                timeSamples[i]);
         }
     }
     return numSamples;
@@ -1824,18 +1879,21 @@ UsdImagingPointInstancerAdapter::SampleInstancerTransform(
 
 size_t
 UsdImagingPointInstancerAdapter::SampleTransform(
-    UsdPrim const& usdPrim, SdfPath const& cachePath,
-    const std::vector<float>& configuredSampleTimes,
-    size_t maxNumSamples, float *sampleTimes,
+    UsdPrim const& usdPrim, 
+    SdfPath const& cachePath,
+    UsdTimeCode time,
+    size_t maxNumSamples,
+    float *sampleTimes,
     GfMatrix4d *sampleValues)
 {
     if (maxNumSamples == 0) {
         return 0;
     }
+
     // Pull a single sample from the value-cached transform.
     // This makes the (hopefully safe) assumption that we do not need
     // motion blur on the underlying prototypes.
-    sampleTimes[0] = configuredSampleTimes[0];
+    sampleTimes[0] = 0.0;
     sampleValues[0] = _GetValueCache()->GetTransform(cachePath);
     return 1;
 }
@@ -1845,17 +1903,25 @@ UsdImagingPointInstancerAdapter::SamplePrimvar(
     UsdPrim const& usdPrim,
     SdfPath const& cachePath,
     TfToken const& key,
-    UsdTimeCode time, const std::vector<float>& configuredSampleTimes,
-    size_t maxNumSamples, float *times, VtValue *samples)
+    UsdTimeCode time, 
+    size_t maxNumSamples, 
+    float *sampleTimes, 
+    VtValue *sampleValues)
 {
+    HD_TRACE_FUNCTION();
+
+    if (maxNumSamples == 0) {
+        return 0;
+    }
+
     if (IsChildPath(cachePath)) {
         // Delegate to prototype adapter and USD prim.
         _ProtoRprim const& rproto = _GetProtoRprim(usdPrim.GetPath(),
                                                    cachePath);
         UsdPrim protoPrim = _GetProtoUsdPrim(rproto);
         return rproto.adapter->SamplePrimvar(
-            protoPrim, cachePath, key, time, configuredSampleTimes,
-            maxNumSamples, times, samples);
+            protoPrim, cachePath, key, time,
+            maxNumSamples, sampleTimes, sampleValues);
     } else {
         // Map Hydra-PI transform keys to their USD equivalents.
         TfToken usdKey = key;
@@ -1867,8 +1933,8 @@ UsdImagingPointInstancerAdapter::SamplePrimvar(
             usdKey = UsdGeomTokens->orientations;
         }
         return UsdImagingPrimAdapter::SamplePrimvar(
-            usdPrim, cachePath, usdKey, time, configuredSampleTimes,
-            maxNumSamples, times, samples);
+            usdPrim, cachePath, usdKey, time,
+            maxNumSamples, sampleTimes, sampleValues);
     }
 }
 

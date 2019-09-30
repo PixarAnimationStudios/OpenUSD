@@ -126,6 +126,7 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _rootXf(1.0)
     , _rootIsVisible(true)
     , _time(std::numeric_limits<double>::infinity())
+    , _cameraPathForSampling()
     , _refineLevelFallback(0)
     , _reprFallback()
     , _cullStyleFallback(HdCullStyleDontCare)
@@ -153,12 +154,6 @@ UsdImagingDelegate::UsdImagingDelegate(
     _coordSysBindingImplData.usdToHydraPath =
         std::bind( &UsdImagingDelegate::ConvertCachePathToIndexPath, this,
                    std::placeholders::_1 );
-
-    // Default to 2 samples: this frame and the next frame.
-    // XXX In the future this should be configurable via negotation
-    // between frontend and backend, or be provided otherwise.
-    _timeSampleOffsets.push_back(0.0);
-    _timeSampleOffsets.push_back(1.0);
 }
 
 UsdImagingDelegate::~UsdImagingDelegate()
@@ -1599,6 +1594,41 @@ UsdImagingDelegate::SetWindowPolicy(CameraUtilConformWindowPolicy policy)
     }
 }
 
+GfInterval 
+UsdImagingDelegate::GetCurrentTimeSamplingInterval()
+{
+    float shutterOpen = 0.0f;
+    float shutterClose = 0.5f;
+
+    if (!_cameraPathForSampling.IsEmpty()) {
+        _UpdateSingleValue(_cameraPathForSampling, HdCamera::DirtyParams);
+
+        VtValue shutterOpen;
+        _valueCache.ExtractCameraParam(
+            _cameraPathForSampling, 
+            HdCameraTokens->shutterOpen, 
+            &shutterOpen);
+        shutterOpen = shutterOpen.Get<double>();
+
+        VtValue shutterClose;
+        _valueCache.ExtractCameraParam(
+            _cameraPathForSampling, 
+            HdCameraTokens->shutterClose, 
+            &shutterClose);
+        shutterClose = shutterClose.Get<double>();
+    } 
+
+    return GfInterval(
+        GetTimeWithOffset(shutterOpen).GetValue(), 
+        GetTimeWithOffset(shutterClose).GetValue());
+}
+
+void
+UsdImagingDelegate::SetCameraForSampling(SdfPath const& usdPath)
+{
+    _cameraPathForSampling = usdPath;
+}
+
 /*virtual*/
 TfToken
 UsdImagingDelegate::GetRenderTag(SdfPath const& id)
@@ -2142,8 +2172,9 @@ UsdImagingDelegate::_MarkSubtreeTransformDirty(SdfPath const &subtreeRoot)
 void
 UsdImagingDelegate::SetRootVisibility(bool isVisible)
 {
-    if (isVisible == _rootIsVisible)
+    if (isVisible == _rootIsVisible) {
         return;
+    }
     _rootIsVisible = isVisible;
 
     UsdImagingIndexProxy indexProxy(this, nullptr);
@@ -2351,16 +2382,18 @@ UsdImagingDelegate::GetTransform(SdfPath const& id)
 
 /*virtual*/
 size_t
-UsdImagingDelegate::SampleTransform(SdfPath const & id, size_t maxNumSamples,
-                                    float *times, GfMatrix4d *samples)
+UsdImagingDelegate::SampleTransform(SdfPath const & id, 
+                                    size_t maxNumSamples,
+                                    float *sampleTimes, 
+                                    GfMatrix4d *sampleValues)
 {
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
     _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
     if (TF_VERIFY(primInfo)) {
         return primInfo->adapter
-            ->SampleTransform(primInfo->usdPrim, cachePath,
-                              _timeSampleOffsets, maxNumSamples,
-                              times, samples);
+            ->SampleTransform(primInfo->usdPrim, cachePath, 
+                              _time, maxNumSamples,
+                              sampleTimes, sampleValues);
     }
     return 0;
 }
@@ -2509,17 +2542,18 @@ UsdImagingDelegate::GetCoordSysBindings(SdfPath const& id)
 
 /*virtual*/
 size_t
-UsdImagingDelegate::SamplePrimvar(SdfPath const& id, TfToken const& key,
+UsdImagingDelegate::SamplePrimvar(SdfPath const& id,
+                                  TfToken const& key,
                                   size_t maxNumSamples,
-                                  float *times, VtValue *samples)
+                                  float *sampleTimes, 
+                                  VtValue *sampleValues)
 {
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
     _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
     if (TF_VERIFY(primInfo)) {
         return primInfo->adapter
             ->SamplePrimvar(primInfo->usdPrim, cachePath, key,
-                            _time, _timeSampleOffsets,
-                            maxNumSamples, times, samples);
+                            _time, maxNumSamples, sampleTimes, sampleValues);
     }
     return 0;
 }
@@ -2658,16 +2692,16 @@ UsdImagingDelegate::GetInstancerTransform(SdfPath const &instancerId)
 size_t
 UsdImagingDelegate::SampleInstancerTransform(SdfPath const &instancerId,
                                              size_t maxSampleCount,
-                                             float *times,
-                                             GfMatrix4d *samples)
+                                             float *sampleTimes,
+                                             GfMatrix4d *sampleValues)
 {
     SdfPath cachePath = ConvertIndexPathToCachePath(instancerId);
     _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
     if (TF_VERIFY(primInfo)) {
         return primInfo->adapter
             ->SampleInstancerTransform(primInfo->usdPrim, cachePath,
-                                       _time, _timeSampleOffsets,
-                                       maxSampleCount, times, samples);
+                                       _time, maxSampleCount, 
+                                       sampleTimes, sampleValues);
     }
     return 0;
 }

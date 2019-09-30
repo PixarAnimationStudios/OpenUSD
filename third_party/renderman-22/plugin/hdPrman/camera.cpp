@@ -177,17 +177,21 @@ HdPrmanCamera::SetRileyCameraParams(RixParamList *camParams,
             camParams->SetFloat(RixStr.k_farClip, clippingRange->GetMax());
         }
 
-        double const *shutterOpen =
-            _GetDictItem<double>(_params, HdCameraTokens->shutterOpen);
-        if (shutterOpen) {
-            camParams->SetFloat(RixStr.k_shutterOpenTime, *shutterOpen);
-        }
+        // XXX : Ideally we would want to set the proper shutter open and close,
+        // however we can not fully change the shutter without restarting
+        // Riley.
 
-        double const *shutterClose =
-            _GetDictItem<double>(_params, HdCameraTokens->shutterClose);
-        if (shutterClose) {
-            camParams->SetFloat(RixStr.k_shutterCloseTime, *shutterClose);
-        }
+        // double const *shutterOpen =
+        //     _GetDictItem<double>(_params, HdCameraTokens->shutterOpen);
+        // if (shutterOpen) {
+        //     camParams->SetFloat(RixStr.k_shutterOpenTime, *shutterOpen);
+        // }
+
+        // double const *shutterClose =
+        //     _GetDictItem<double>(_params, HdCameraTokens->shutterClose);
+        // if (shutterClose) {
+        //     camParams->SetFloat(RixStr.k_shutterCloseTime, *shutterClose);
+        // }
     }
 }
 

@@ -385,6 +385,10 @@ UsdImagingGLEngine::SetCameraPath(SdfPath const& id)
 
     TF_VERIFY(_taskController);
     _taskController->SetCameraPath(id);
+
+    // The camera that is set for viewing will also be used for
+    // time sampling.
+    _delegate->SetCameraForSampling(id);
 }
 
 void 

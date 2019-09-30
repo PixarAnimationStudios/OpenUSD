@@ -204,10 +204,9 @@ static void
 _AccumulateSampleTimes(HdTimeSampleArray<T1,C> const& in,
                        HdTimeSampleArray<T2,C> *out)
 {
-    size_t cappedNumSamplesIn = std::min(in.count, C);
-    if (cappedNumSamplesIn > out->count) {
-        out->count = cappedNumSamplesIn;
-        for (size_t i=0; i < cappedNumSamplesIn; ++i) {
+    if (in.count > out->count) {
+        out->Resize(in.count);
+        for (size_t i=0; i < in.count; ++i) {
             out->times[i] = in.times[i];
         }
     }
@@ -251,13 +250,12 @@ HdPrmanInstancer::SampleInstanceTransforms(
     // As a simple resampling strategy, find the input with the max #
     // of samples and use its sample placement.  In practice we expect
     // them to all be the same, i.e. to not require resampling.
-    sa->count = 0;
+    sa->Resize(0);
     _AccumulateSampleTimes(instancerXform, sa);
     _AccumulateSampleTimes(instanceXforms, sa);
     _AccumulateSampleTimes(translates, sa);
     _AccumulateSampleTimes(scales, sa);
     _AccumulateSampleTimes(rotates, sa);
-    TF_VERIFY(sa->count <= sa->capacity);
 
     // Resample inputs and concatenate transformations.
     //
@@ -319,6 +317,7 @@ HdPrmanInstancer::SampleInstanceTransforms(
     if (GetParentId().IsEmpty()) {
         return;
     }
+
     HdInstancer *parentInstancer =
         GetDelegate()->GetRenderIndex().GetInstancer(GetParentId());
     if (!TF_VERIFY(parentInstancer)) {
@@ -344,7 +343,7 @@ HdPrmanInstancer::SampleInstanceTransforms(
     }
     // Move aside previously computed child xform samples to childXf.
     HdTimeSampleArray<VtMatrix4dArray, HDPRMAN_MAX_TIME_SAMPLES> childXf;
-    childXf.count = sa->count;
+    childXf.Resize(sa->count);
     for (size_t i=0; i < sa->count; ++i) {
         childXf.times[i] = sa->times[i];
         childXf.values[i] = sa->values[i];

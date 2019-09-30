@@ -103,8 +103,7 @@ public:
     USDIMAGING_API
     size_t SampleTransform(
         UsdPrim const& prim, SdfPath const& cachePath,
-        const std::vector<float>& configuredSampleTimes,
-        size_t maxNumSamples, float *sampleTimes,
+        UsdTimeCode time, size_t maxNumSamples, float *sampleTimes,
         GfMatrix4d *sampleValues) override;
 };
 

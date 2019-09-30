@@ -739,6 +739,54 @@ UsdImagingInstanceAdapter::_ComputeInstanceTransforms(
     return true;
 }
 
+struct UsdImagingInstanceAdapter::_GatherInstanceTransformTimeSamplesFn
+{
+    _GatherInstanceTransformTimeSamplesFn(
+        const UsdImagingInstanceAdapter* adapter_, const GfInterval& interval_) 
+        : adapter(adapter_), interval(interval_) 
+    { }
+
+    void Initialize(size_t numInstances)
+    { }
+
+    bool operator()(
+        const std::vector<UsdPrim>& instanceContext, size_t instanceIdx)
+    {
+        TF_FOR_ALL(primIt, instanceContext) {
+             if (UsdGeomXformable xf = UsdGeomXformable(*primIt)) {
+                std::vector<double> localTimeSamples;
+                xf.GetTimeSamplesInInterval(interval, &localTimeSamples);
+
+                // Join timesamples 
+                result.insert(
+                    result.end(), 
+                    localTimeSamples.begin(), 
+                    localTimeSamples.end());
+            }
+
+        }
+        return true;
+    }
+
+    const UsdImagingInstanceAdapter* adapter;
+    GfInterval interval;
+    std::vector<double> result;
+};
+
+bool
+UsdImagingInstanceAdapter::_GatherInstanceTransformsTimeSamples(
+    UsdPrim const& instancer,
+    GfInterval interval,
+    std::vector<double>* outTimes) const
+{
+    HD_TRACE_FUNCTION();
+
+    _GatherInstanceTransformTimeSamplesFn gatherSamples(this, interval);
+    _RunForAllInstancesToDraw(instancer, &gatherSamples);
+    outTimes->swap(gatherSamples.result);
+    return true;
+}
+
 struct UsdImagingInstanceAdapter::_IsInstanceTransformVaryingFn
 {
     _IsInstanceTransformVaryingFn(const UsdImagingInstanceAdapter* adapter_)
@@ -1406,16 +1454,15 @@ UsdImagingInstanceAdapter::SampleInstancerTransform(
     UsdPrim const& instancerPrim,
     SdfPath const& instancerPath,
     UsdTimeCode time,
-    const std::vector<float>& configuredSampleTimes,
     size_t maxSampleCount,
-    float *times,
-    GfMatrix4d *samples)
+    float *sampleTimes,
+    GfMatrix4d *sampleValues)
 {
     // This code must match UpdateForTime(), which says:
     // the instancer transform can only be the root transform.
     if (maxSampleCount > 0) {
-        times[0] = 0.0;
-        samples[0] = GetRootTransform();
+        sampleTimes[0] = 0.0f;
+        sampleValues[0] = GetRootTransform();
         return 1;
     }
     return 0;
@@ -1423,11 +1470,19 @@ UsdImagingInstanceAdapter::SampleInstancerTransform(
 
 size_t
 UsdImagingInstanceAdapter::SampleTransform(
-    UsdPrim const& usdPrim, SdfPath const& cachePath,
-    const std::vector<float>& configuredSampleTimes,
-    size_t maxNumSamples, float *sampleTimes,
+    UsdPrim const& usdPrim, 
+    SdfPath const& cachePath,
+    UsdTimeCode time, 
+    size_t maxNumSamples, 
+    float *sampleTimes,
     GfMatrix4d *sampleValues)
 {
+    HD_TRACE_FUNCTION();
+
+    if (maxNumSamples == 0) {
+        return 0;
+    }
+
     if (_IsChildPrim(usdPrim, cachePath)) {
         // Note that the proto group in this rproto has not yet been
         // updated with new instances at this point.
@@ -1440,10 +1495,10 @@ UsdImagingInstanceAdapter::SampleTransform(
         }
         return rproto.adapter->SampleTransform(
             _GetPrim(rproto.path), cachePath,
-            configuredSampleTimes, maxNumSamples, sampleTimes, sampleValues);
+            time, maxNumSamples, sampleTimes, sampleValues);
     } else {
         return UsdImagingPrimAdapter::SampleTransform(
-            usdPrim, cachePath, configuredSampleTimes, maxNumSamples,
+            usdPrim, cachePath, time, maxNumSamples,
             sampleTimes, sampleValues);
     }
 }
@@ -1453,9 +1508,17 @@ UsdImagingInstanceAdapter::SamplePrimvar(
     UsdPrim const& usdPrim,
     SdfPath const& cachePath,
     TfToken const& key,
-    UsdTimeCode time, const std::vector<float>& configuredSampleTimes,
-    size_t maxNumSamples, float *times, VtValue *samples)
+    UsdTimeCode time,
+    size_t maxNumSamples, 
+    float *sampleTimes, 
+    VtValue *sampleValues)
 {
+    HD_TRACE_FUNCTION();
+
+    if (maxNumSamples == 0) {
+        return 0;
+    }
+
     if (_IsChildPrim(usdPrim, cachePath)) {
         // Note that the proto group in this rproto has not yet been
         // updated with new instances at this point.
@@ -1467,25 +1530,37 @@ UsdImagingInstanceAdapter::SamplePrimvar(
             return 0;
         }
         return rproto.adapter->SamplePrimvar(
-            _GetPrim(rproto.path), cachePath,
-            key, time, configuredSampleTimes, maxNumSamples, times, samples);
+            _GetPrim(rproto.path), cachePath, key, time,  
+            maxNumSamples, sampleTimes, sampleValues);
     }
+
     if (key == HdTokens->instanceTransform) {
-        size_t numSamples = std::min(maxNumSamples,
-                                     configuredSampleTimes.size());
-        for (size_t i=0; i < numSamples; ++i) {
-            UsdTimeCode sceneTime =
-                _GetTimeWithOffset(configuredSampleTimes[i]);
-            times[i] = configuredSampleTimes[i];
+        GfInterval interval = _GetCurrentTimeSamplingInterval();
+        std::vector<double> timeSamples;
+        _GatherInstanceTransformsTimeSamples(usdPrim, interval, &timeSamples);
+        timeSamples.push_back(interval.GetMin());
+        timeSamples.push_back(interval.GetMax());
+
+        // Sort here
+        std::sort(timeSamples.begin(), timeSamples.end());
+        timeSamples.erase(
+            std::unique(timeSamples.begin(), 
+                timeSamples.end()), 
+                timeSamples.end());
+        size_t numSamples = timeSamples.size();
+
+        size_t numSamplesToEvaluate = std::min(maxNumSamples, numSamples);
+        for (size_t i=0; i < numSamplesToEvaluate; ++i) {
+            sampleTimes[i] = timeSamples[i] - time.GetValue();
             VtMatrix4dArray xf;
-            _ComputeInstanceTransforms(usdPrim, &xf, sceneTime);
-            samples[i] = xf;
+            _ComputeInstanceTransforms(usdPrim, &xf, timeSamples[i]);
+            sampleValues[i] = xf;
         }
         return numSamples;
     } else {
         return UsdImagingPrimAdapter::SamplePrimvar(
-            usdPrim, cachePath, key, time, configuredSampleTimes,
-            maxNumSamples, times, samples);
+            usdPrim, cachePath, key, time,
+            maxNumSamples, sampleTimes, sampleValues);
     }
 }
 

@@ -189,12 +189,11 @@ UsdImagingCylinderAdapter::GetMeshTransform(UsdPrim const& prim,
 size_t
 UsdImagingCylinderAdapter::SampleTransform(
     UsdPrim const& prim, SdfPath const& cachePath,
-    const std::vector<float>& configuredSampleTimes,
-    size_t maxNumSamples, float *sampleTimes,
+    UsdTimeCode time, size_t maxNumSamples, float *sampleTimes,
     GfMatrix4d *sampleValues)
 {
     const size_t numSamples = BaseAdapter::SampleTransform(
-        prim, cachePath, configuredSampleTimes, maxNumSamples,
+        prim, cachePath, time, maxNumSamples,
         sampleTimes, sampleValues);
 
     // Apply modeling transformation (which may be time-varying)

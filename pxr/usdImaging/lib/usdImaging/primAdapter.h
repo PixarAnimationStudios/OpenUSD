@@ -272,10 +272,9 @@ public:
     SampleInstancerTransform(UsdPrim const& instancerPrim,
                              SdfPath const& instancerPath,
                              UsdTimeCode time,
-                             const std::vector<float>& configuredSampleTimes,
-                             size_t maxSampleCount,
-                             float *times,
-                             GfMatrix4d *samples);
+                             size_t maxNumSamples,
+                             float *sampleTimes,
+                             GfMatrix4d *sampleValues);
 
     /// Sample the primvar for the given prim.
     /// \see HdSceneDelegate::SamplePrimvar()
@@ -285,9 +284,9 @@ public:
                   SdfPath const& cachePath,
                   TfToken const& key,
                   UsdTimeCode time,
-                  const std::vector<float>& configuredSampleTimes,
-                  size_t maxNumSamples, float *times,
-                  VtValue *samples);
+                  size_t maxNumSamples, 
+                  float *sampleTimes,
+                  VtValue *sampleValues);
 
     /// Get the subdiv tags for this prim.
     USDIMAGING_API
@@ -403,9 +402,11 @@ public:
     /// Samples the transform for the given prim.
     USDIMAGING_API
     virtual size_t
-    SampleTransform(UsdPrim const& prim, SdfPath const& cachePath,
-                    const std::vector<float>& configuredSampleTimes,
-                    size_t maxNumSamples, float *sampleTimes,
+    SampleTransform(UsdPrim const& prim,
+                    SdfPath const& cachePath,
+                    UsdTimeCode time,
+                    size_t maxNumSamples, 
+                    float *sampleTimes,
                     GfMatrix4d *sampleValues);
 
     /// Gets the material path for the given prim, walking up namespace if
@@ -579,6 +580,9 @@ protected:
     USDIMAGING_API
     UsdImaging_InheritedPrimvarStrategy::value_type
     _GetInheritedPrimvars(UsdPrim const& prim) const;
+
+    USDIMAGING_API
+    GfInterval _GetCurrentTimeSamplingInterval();
 
     USDIMAGING_API
     bool _DoesDelegateSupportCoordSys() const;
