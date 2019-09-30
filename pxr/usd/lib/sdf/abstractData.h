@@ -37,6 +37,7 @@
 #include "pxr/base/tf/declarePtrs.h"
 
 #include <vector>
+#include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -416,17 +417,20 @@ public:
 
     virtual bool StoreValue(const VtValue& v)
     {
+        if (ARCH_LIKELY(v.IsHolding<T>())) {
+            *static_cast<T*>(value) = v.UncheckedGet<T>();
+            if (std::is_same<T, SdfValueBlock>::value) {
+                isValueBlock = true;
+            }
+            return true;
+        }
+        
         if (v.IsHolding<SdfValueBlock>()) {
             isValueBlock = true;
             return true;
         }
 
-        if (!v.IsHolding<T>()) {
-            return false;
-        }
-
-        *static_cast<T*>(value) = v.UncheckedGet<T>();
-        return true;
+        return false;
     }
 };
 
