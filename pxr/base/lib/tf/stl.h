@@ -101,10 +101,10 @@ bool TfMapLookup(Container const &map, Key const &key, Result* valuePtr)
 ///    TfHashMap<string, int, TfHash> m;
 ///    m["foo"] = 1;
 ///
-///    int value = TfMapLookup(m, "someKey", -1);
+///    int value = TfMapLookupByValue(m, "someKey", -1);
 ///    TF_AXIOM(value == -1);
 ///
-///    int value = TfMapLookup(m, "foo", -1);
+///    int value = TfMapLookupByValue(m, "foo", -1);
 ///    TF_AXIOM(value == 1);
 ///
 /// \endcode
