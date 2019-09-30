@@ -78,14 +78,14 @@ SdfSpecType
 SdfSpec::GetSpecType() const
 {
     // We can't retrieve an object type for a dormant spec.
-    if (!_id || !_id->GetLayer()) {
-	return SdfSpecTypeUnknown;
+    Sdf_Identity const *idPtr = _id.get();
+    if (!idPtr) {
+        return SdfSpecTypeUnknown;
     }
-    const SdfPath & path = _id->GetPath();
-    if (path.IsEmpty()) {
-	return SdfSpecTypeUnknown;
-    }
-    return GetLayer()->GetSpecType(path);
+    SdfLayerHandle const &layer = idPtr->GetLayer();
+    SdfPath const &path = idPtr->GetPath();
+    SdfLayer const *layerPtr = get_pointer(layer);
+    return layerPtr ? layerPtr->GetSpecType(path) : SdfSpecTypeUnknown;
 }
 
 bool
@@ -137,7 +137,10 @@ SdfSpec::HasField(const TfToken &name) const
 VtValue
 SdfSpec::GetField(const TfToken &name) const
 {
-    return _id ? _id->GetLayer()->GetField(_id->GetPath(), name) : VtValue();
+    if (Sdf_Identity const *idPtr = _id.get()) {
+        return idPtr->GetLayer()->GetField(idPtr->GetPath(), name);
+    }
+    return VtValue();
 }
 
 bool
