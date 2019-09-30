@@ -131,6 +131,54 @@ SdfData::Has(const SdfPath &path, const TfToken & field,
     return false;
 }
 
+bool
+SdfData::HasSpecAndField(
+    const SdfPath &path, const TfToken &fieldName,
+    SdfAbstractDataValue *value, SdfSpecType *specType) const
+{
+    if (VtValue const *v =
+        _GetSpecTypeAndFieldValue(path, fieldName, specType)) {
+        return !value || value->StoreValue(*v);
+    }
+    return false;
+}
+
+bool
+SdfData::HasSpecAndField(
+    const SdfPath &path, const TfToken &fieldName,
+    VtValue *value, SdfSpecType *specType) const
+{
+    if (VtValue const *v =
+        _GetSpecTypeAndFieldValue(path, fieldName, specType)) {
+        if (value) {
+            *value = *v;
+        }
+        return true;
+    }
+    return false;
+}
+
+const VtValue*
+SdfData::_GetSpecTypeAndFieldValue(const SdfPath& path,
+                                   const TfToken& field,
+                                   SdfSpecType* specType) const
+{
+    _HashTable::const_iterator i = _data.find(path);
+    if (i == _data.end()) {
+        *specType = SdfSpecTypeUnknown;
+    }
+    else {
+        const _SpecData &spec = i->second;
+        *specType = spec.specType;
+        for (auto const &f: spec.fields) {
+            if (f.first == field) {
+                return &f.second;
+            }
+        }
+    }
+    return nullptr;
+}
+
 const VtValue* 
 SdfData::_GetFieldValue(const SdfPath &path,
                         const TfToken &field) const
@@ -138,13 +186,13 @@ SdfData::_GetFieldValue(const SdfPath &path,
     _HashTable::const_iterator i = _data.find(path);
     if (i != _data.end()) {
         const _SpecData & spec = i->second;
-        for (size_t j=0, jEnd = spec.fields.size(); j != jEnd; ++j) {
-            if (spec.fields[j].first == field) {
-                return &spec.fields[j].second;
+        for (auto const &f: spec.fields) {
+            if (f.first == field) {
+                return &f.second;
             }
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 VtValue*

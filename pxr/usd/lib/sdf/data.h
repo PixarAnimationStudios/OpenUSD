@@ -78,6 +78,16 @@ public:
     virtual bool Has(const SdfPath& path, const TfToken& fieldName,
                      VtValue *value = NULL) const;
     SDF_API
+    virtual bool
+    HasSpecAndField(const SdfPath &path, const TfToken &fieldName,
+                    SdfAbstractDataValue *value, SdfSpecType *specType) const;
+
+    SDF_API
+    virtual bool
+    HasSpecAndField(const SdfPath &path, const TfToken &fieldName,
+                    VtValue *value, SdfSpecType *specType) const;
+
+    SDF_API
     virtual VtValue Get(const SdfPath& path, 
                         const TfToken& fieldName) const;
     SDF_API
@@ -138,6 +148,10 @@ protected:
     virtual void _VisitSpecs(SdfAbstractDataSpecVisitor* visitor) const;
 
 private:
+    const VtValue* _GetSpecTypeAndFieldValue(const SdfPath& path,
+                                             const TfToken& field,
+                                             SdfSpecType* specType) const;
+
     const VtValue* _GetFieldValue(const SdfPath& path,
                                   const TfToken& field) const;
 
