@@ -371,6 +371,15 @@ public:
     /// Returns whether the path or any of its parent paths identifies
     /// a variant selection for a prim.
     SDF_API bool ContainsPrimVariantSelection() const;
+    
+    /// Return true if this path contains any property elements, false
+    /// otherwise.  A false return indicates a prim-like path, specifically a
+    /// root path, a prim path, or a prim variant selection path.  A true return
+    /// indicates a property-like path: a prim property path, a target path, a
+    /// relational attribute path, etc.
+    bool ContainsPropertyElements() const {
+        return static_cast<bool>(_propPart);
+    }
 
     /// Return true if this path is or has a prefix that's a target path or a
     /// mapper path.
@@ -1007,18 +1016,13 @@ SdfPathFindPrefixedRange(ForwardIterator begin, ForwardIterator end,
     return result;
 }
 
-/// Return an iterator to the element of [\a begin, \a end) that is the longest
-/// prefix of the given path, if there is such an element, otherwise \a end.
-/// The input range must be ordered according to SdfPath::operator<.  If your
-/// range's iterators' value_types are not SdfPath, but you can obtain SdfPaths
-/// from them (e.g. map<SdfPath, X>::iterator), you can pass a function to
-/// extract the path from the dereferenced iterator in \p getPath.
-template <class BidirectionalIterator, class GetPathFn = Sdf_PathIdentity>
+template <class BidirectionalIterator, class GetPathFn>
 BidirectionalIterator
-SdfPathFindLongestPrefix(BidirectionalIterator begin,
-                         BidirectionalIterator end,
-                         SdfPath const &path,
-                         GetPathFn const &getPath = GetPathFn())
+Sdf_PathFindLongestPrefixImpl(BidirectionalIterator begin,
+                              BidirectionalIterator end,
+                              SdfPath const &path,
+                              bool strictPrefix,
+                              GetPathFn const &getPath)
 {
     using IterRef = 
         typename std::iterator_traits<BidirectionalIterator>::reference;
@@ -1044,11 +1048,13 @@ SdfPathFindLongestPrefix(BidirectionalIterator begin,
     BidirectionalIterator result =
         std::lower_bound(begin, end, path, Compare(getPath));
 
-    // If we didn't get the end, check to see if we got the path exactly.
-    if (result != end && getPath(*result) == path)
+    // If we didn't get the end, check to see if we got the path exactly if
+    // we're not looking for a strict prefix.
+    if (!strictPrefix && result != end && getPath(*result) == path)
         return result;
 
-    // If we got begin and didn't match then there's no prefix.
+    // If we got begin (and didn't match in the case of a non-strict prefix)
+    // then there's no prefix.
     if (result == begin)
         return end;
 
@@ -1057,13 +1063,52 @@ SdfPathFindLongestPrefix(BidirectionalIterator begin,
         return result;
 
     // Otherwise, find the common prefix of the lexicographical predecessor and
-    // recurse looking for it or its longest prefix in the preceding range.
+    // recurse looking for it or its longest prefix in the preceding range.  We
+    // always pass strictPrefix=false, since now we're operating on prefixes of
+    // the original caller's path.
     BidirectionalIterator final =
-        SdfPathFindLongestPrefix(
-            begin, result, path.GetCommonPrefix(getPath(*result)), getPath);
+        Sdf_PathFindLongestPrefixImpl(
+            begin, result, path.GetCommonPrefix(getPath(*result)),
+            /*strictPrefix=*/ false, getPath);
 
     // If the recursion failed, promote the recursive call's end to our end.
     return final == result ? end : final;
+}
+
+/// Return an iterator to the element of [\a begin, \a end) that is the longest
+/// prefix of the given path (including the path itself), if there is such an
+/// element, otherwise \a end.  The input range must be ordered according to
+/// SdfPath::operator<.  If your range's iterators' value_types are not SdfPath,
+/// but you can obtain SdfPaths from them (e.g. map<SdfPath, X>::iterator), you
+/// can pass a function to extract the path from the dereferenced iterator in
+/// \p getPath.
+template <class BidirectionalIterator, class GetPathFn = Sdf_PathIdentity>
+BidirectionalIterator
+SdfPathFindLongestPrefix(BidirectionalIterator begin,
+                         BidirectionalIterator end,
+                         SdfPath const &path,
+                         GetPathFn const &getPath = GetPathFn())
+{
+    return Sdf_PathFindLongestPrefixImpl(
+        begin, end, path, /*strictPrefix=*/false, getPath);
+}
+
+/// Return an iterator to the element of [\a begin, \a end) that is the longest
+/// prefix of the given path (excluding the path itself), if there is such an
+/// element, otherwise \a end.  The input range must be ordered according to
+/// SdfPath::operator<.  If your range's iterators' value_types are not SdfPath,
+/// but you can obtain SdfPaths from them (e.g. map<SdfPath, X>::iterator), you
+/// can pass a function to extract the path from the dereferenced iterator in
+/// \p getPath.
+template <class BidirectionalIterator, class GetPathFn = Sdf_PathIdentity>
+BidirectionalIterator
+SdfPathFindLongestStrictPrefix(BidirectionalIterator begin,
+                               BidirectionalIterator end,
+                               SdfPath const &path,
+                               GetPathFn const &getPath = GetPathFn())
+{
+    return Sdf_PathFindLongestPrefixImpl(
+        begin, end, path, /*strictPrefix=*/true, getPath);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

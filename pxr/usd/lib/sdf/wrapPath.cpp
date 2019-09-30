@@ -38,6 +38,9 @@
 
 #include <boost/python.hpp>
 
+#include <thread>
+#include <atomic>
+
 using namespace boost::python;
 using std::pair;
 using std::string;
@@ -96,6 +99,16 @@ _FindLongestPrefix(SdfPathVector const &paths, SdfPath const &path)
     return object(*result);
 }
 
+static object
+_FindLongestStrictPrefix(SdfPathVector const &paths, SdfPath const &path)
+{
+    SdfPathVector::const_iterator result =
+        SdfPathFindLongestStrictPrefix(paths.begin(), paths.end(), path);
+    if (result == paths.end())
+        return object();
+    return object(*result);
+}
+
 struct Sdf_PathIsValidPathStringResult : public TfPyAnnotatedBoolResult<string>
 {
     Sdf_PathIsValidPathStringResult(bool val, string const &msg) :
@@ -126,11 +139,59 @@ __nonzero__(SdfPath const &self)
     return !self.IsEmpty();
 }
 
+constexpr size_t NumStressPaths = 1 << 28;
+constexpr size_t NumStressThreads = 16;
+constexpr size_t StressIters = 3;
+constexpr size_t MaxStressPathSize = 16;
+
+static void _PathStressTask(size_t index, std::vector<SdfPath> &paths)
+{
+    auto pathsPerThread = NumStressPaths / NumStressThreads;
+    auto begin = paths.begin() + pathsPerThread * index;
+    auto end = begin + pathsPerThread;
+    
+    for (size_t stressIter = 0; stressIter != StressIters; ++stressIter) {
+        for (auto i = begin; i != end; ++i) {
+            SdfPath p = SdfPath::AbsoluteRootPath();
+            //size_t offset = (i - begin) * index + stressIter;
+            for (size_t j = 0; j != (rand() % MaxStressPathSize); ++j) {
+                char name[2];
+                name[0] = 'a' + (rand() % 26);
+                name[1] = '\0';
+                p = p.AppendChild(TfToken(name));
+            }
+            //if ((i-begin) % 1000 == 0) {
+            //printf("%zu: storing path %zu: <%s>\n",
+            //       (i-begin), index, p.GetText());
+            //}
+            *i = p;
+        }
+        printf("%zu did iter %zu\n", index, stressIter);
+    }
+}
+
+static void _PathStress()
+{
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
+
+    std::vector<SdfPath> manyPaths(NumStressPaths);
+    std::vector<std::thread> threads(NumStressThreads);
+
+    size_t index = 0;
+    for (auto &t: threads) {
+        t = std::thread(_PathStressTask, index++, std::ref(manyPaths));
+    }
+    for (auto &t: threads) {
+        t.join();
+    }
+}
+
 } // anonymous namespace 
 
 void wrapPath() {    
     typedef SdfPath This;
 
+    def("_PathStress", &_PathStress);
     def("_DumpPathStats", &Sdf_DumpPathStats);
 
     scope s = class_<This> ( "Path", init< const string & >() )
@@ -186,6 +247,7 @@ void wrapPath() {
         .def("IsNamespacedPropertyPath", &This::IsNamespacedPropertyPath)
         .def("IsPrimVariantSelectionPath", &This::IsPrimVariantSelectionPath)
         .def("ContainsPrimVariantSelection", &This::ContainsPrimVariantSelection)
+        .def("ContainsPropertyElements", &This::ContainsPropertyElements)
         .def("IsRelationalAttributePath", &This::IsRelationalAttributePath)
         .def("IsTargetPath", &This::IsTargetPath)
         .def("ContainsTargetPath", &This::ContainsTargetPath)
@@ -278,6 +340,9 @@ void wrapPath() {
 
         .def("FindLongestPrefix", _FindLongestPrefix)
             .staticmethod("FindLongestPrefix")
+
+        .def("FindLongestStrictPrefix", _FindLongestStrictPrefix)
+            .staticmethod("FindLongestStrictPrefix")
 
         .def("__str__", 
             make_function(&This::GetString, 

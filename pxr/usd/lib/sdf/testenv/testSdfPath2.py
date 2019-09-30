@@ -50,21 +50,27 @@ def _CheckPath(path, path2, parentPath, pathStr, pathElems, pathFlags, name, tar
     # Check queries
     assert path.IsAbsolutePath() == pathStr.startswith("/")
     assert path.IsPrimPath() == (((pathFlags & PrimType) or (path == Sdf.Path.reflexiveRelativePath)) != 0 )
+    if path.IsPrimPath():
+        assert not path.ContainsPropertyElements()
     assert path.IsRootPrimPath() == ((pathFlags & PrimType) != 0 and (len(pathElems) is 1))
     assert path.IsPropertyPath() == ((pathFlags & PropertyType) != 0)
     if (pathFlags & NamespacedPropertyType) != 0:
         assert path.IsNamespacedPropertyPath() == ((pathFlags & NamespacedPropertyType) != 0)
+        assert path.ContainsPropertyElements()
     if (pathFlags & PrimPropertyType) != 0:
         assert path.IsPrimPropertyPath() == ((pathFlags & PrimPropertyType) != 0)
+        assert path.ContainsPropertyElements()
     if (pathFlags & RelationalAttributeType) != 0:
         assert path.IsRelationalAttributePath() == ((pathFlags & RelationalAttributeType) != 0)
         assert path.IsTargetPath() == ((pathFlags & TargetType) != 0)
         assert path.IsMapperPath() == ((pathFlags & MapperType) != 0)
         assert path.IsMapperArgPath() == ((pathFlags & MapperArgType) != 0)
         assert path.IsExpressionPath() == ((pathFlags & ExpressionType) != 0)
+        assert path.ContainsPropertyElements()
 
     if pathFlags & (TargetType | MapperType | MapperArgType):
         assert path.ContainsTargetPath()
+        assert path.ContainsPropertyElements()
 
     # Check path elements
     prefixes = Sdf._PathElemsToPrefixes(path.IsAbsolutePath(), pathElems)
@@ -473,8 +479,10 @@ class TestSdfPath2(unittest.TestCase):
         #      ContainsPrimVariantSelection
         #      StripAllVariantSelections
         
-        self.assertTrue(not Sdf.Path('/foo/bar').ContainsPrimVariantSelection())
+        self.assertFalse(Sdf.Path('/foo/bar').ContainsPrimVariantSelection())
+        self.assertFalse(Sdf.Path('/foo/bar').ContainsPropertyElements())
         self.assertTrue(Sdf.Path('/foo/bar{var=sel}').ContainsPrimVariantSelection())
+        self.assertFalse(Sdf.Path('/foo/bar{var=sel}').ContainsPropertyElements())
         self.assertTrue(Sdf.Path('/foo/bar{var=sel}').IsPrimVariantSelectionPath())
         self.assertTrue(Sdf.Path('/foo{var=sel}bar').ContainsPrimVariantSelection())
         self.assertTrue(not Sdf.Path('/foo{var=sel}bar').IsPrimVariantSelectionPath())

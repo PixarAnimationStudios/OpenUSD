@@ -878,7 +878,7 @@ class TestSdfPath(unittest.TestCase):
         # ========================================================================
         
         def testFindPrefixedRangeAndFindLongestPrefix():
-            print "Test FindPrefixedRange and FindLongestPrefix"
+            print "Test FindPrefixedRange and FindLongest(Strict)Prefix"
         
             import random, time
             rgen = random.Random()
@@ -933,9 +933,29 @@ class TestSdfPath(unittest.TestCase):
                 self.assertEqual(lp, bruteLongest, ('lp (%s) != bruteLongest (%s)' % 
                                             (lp, bruteLongest)))
         
+            def testFindLongestStrictPrefix(p, paths):
+                lp = Sdf.Path.FindLongestStrictPrefix(paths, p)
+                # should always have some prefix unless p is '/'.
+                if p == Sdf.Path('/'):
+                    return
+                self.assertTrue(p.HasPrefix(lp))
+                # manually find longest prefix of p's parent.
+                p = p.GetParentPath()
+                bruteLongest = Sdf.Path('/')
+                for x in paths:
+                    if (p.HasPrefix(x) and 
+                        x.pathElementCount > bruteLongest.pathElementCount):
+                        bruteLongest = x
+                # bruteLongest should match.
+                #print 'path:', p, 'lp:', lp, 'bruteLongest:', bruteLongest
+                self.assertEqual(lp, bruteLongest,
+                                 ('lp (%s) != bruteLongest (%s)' % 
+                                  (lp, bruteLongest)))
+
             for testp in tests:
                 testFindPrefixedRange(testp, paths)
                 testFindLongestPrefix(testp, paths)
+                testFindLongestStrictPrefix(testp, paths)
         
             # Do a few simple cases directly.
             paths = map(Sdf.Path, ['/a', '/a/b/c/d', '/b/a', '/b/c/d/e'])
