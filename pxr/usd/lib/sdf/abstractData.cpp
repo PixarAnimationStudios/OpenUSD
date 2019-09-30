@@ -253,6 +253,24 @@ SdfAbstractData::VisitSpecs(SdfAbstractDataSpecVisitor* visitor) const
     }
 }
 
+bool
+SdfAbstractData::HasSpecAndField(
+    const SdfPath &path, const TfToken &fieldName,
+    SdfAbstractDataValue *value, SdfSpecType *specType) const
+{
+    *specType = GetSpecType(path);
+    return *specType != SdfSpecTypeUnknown && Has(path, fieldName, value);
+}
+
+bool
+SdfAbstractData::HasSpecAndField(
+    const SdfPath &path, const TfToken &fieldName,
+    VtValue *value, SdfSpecType *specType) const
+{
+    *specType = GetSpecType(path);
+    return *specType != SdfSpecTypeUnknown && Has(path, fieldName, value);
+}
+
 std::type_info const &
 SdfAbstractData::GetTypeid(const SdfPath &path, const TfToken &fieldName) const
 {
