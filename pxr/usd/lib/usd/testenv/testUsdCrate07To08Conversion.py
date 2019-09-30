@@ -86,6 +86,12 @@ class TestUsdCrateForPayloadLists(unittest.TestCase):
         info = Usd.CrateInfo.Open(filename)
         self.assertEqual(info.GetFileVersion(), '0.8.0')
 
+    # Verifies a crate file is the 0.9.0 crate version that requires the payload
+    # list ops from 0.8.0 only because it came after
+    def _VerifyCrateVersion09(self, filename):
+        info = Usd.CrateInfo.Open(filename)
+        self.assertEqual(info.GetFileVersion(), '0.9.0')
+
     def test_ExportPayloadCrate(self):
         """Test exporting crate file from a layer with payloads"""
         usdaFilename = 'singlePayload.usda'
@@ -338,6 +344,44 @@ class TestUsdCrateForPayloadLists(unittest.TestCase):
         # and payloads we kept and updated.
         layer.Reload(force=True)
         _VerifySavedLayerPrims(layer)
+
+    def test_ReadAndSaveCrateFileVersion07And09(self):
+        """Test that the payload conversion necessary from 07 to 08 files still
+        happens correctly when a change requires a direct upgrade to 09"""
+
+        # Copy the test file so we don't pollute other tests.
+        filename = 'crate07SinglePayloadCopy_0709.usdc'
+        shutil.copyfile('crate07SinglePayload.usdc', filename)
+
+        # Assert the crate file we're going to open is an older version '0.7.0',
+        # before payload list op support was added.
+        self._VerifyCrateVersion07(filename)
+
+        # Open the crate file layer and verify it matches the single payload
+        # prims.
+        layer = Sdf.Layer.FindOrOpen(filename)
+        self._VerifyLayerPrims(layer)
+
+        # Add a timecode valued attribute and set its default value. This will
+        # require a crate version update.
+        payloadNoOpinion = layer.GetPrimAtPath('/PayloadNoOpinion')
+        attr = Sdf.AttributeSpec(payloadNoOpinion, "TimeCode",
+                                 Sdf.ValueTypeNames.TimeCode)
+        self.assertTrue(attr)
+        attr.default = Sdf.TimeCode(10)
+        self.assertEqual(attr.default, 10)
+
+        # Save the layer and verify the 0.9 version
+        self.assertTrue(layer.Save())
+        self._VerifyCrateVersion09(filename)
+
+        # Force reload the saved layer and verify that we have all the prims
+        # and all the same payloads exist and that we also have the timecode
+        # attribute with its default.
+        self.assertTrue(layer.Reload(force=True))
+        self._VerifyLayerPrims(layer)
+        self.assertEqual(
+            layer.GetPrimAtPath('/PayloadNoOpinion').attributes["TimeCode"].default, 10)
 
 if __name__ == "__main__":
     unittest.main()

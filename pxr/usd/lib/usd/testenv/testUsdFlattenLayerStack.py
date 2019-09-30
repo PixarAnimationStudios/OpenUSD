@@ -21,7 +21,7 @@
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
-from pxr import Sdf, Usd, Gf, Vt
+from pxr import Sdf, Usd, Gf, Vt, Plug
 import os, unittest
 
 class TestUsdFlattenLayerStack(unittest.TestCase):
@@ -104,6 +104,50 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
             a = p.GetAttribute('xformOp:translate')
             self.assertEqual( a.GetResolveInfo(5).GetSource(),
                     Usd.ResolveInfoSourceValueClips )
+
+            # Confirm time code values were resolve across the offset layer
+            p = stage.GetPrimAtPath('/TimeCodeTest')
+
+            # Prim metadata
+            self.assertEqual(p.GetMetadata("timeCodeTest"), 0.0)
+            self.assertEqual(p.GetMetadata("timeCodeArrayTest"), 
+                             Sdf.TimeCodeArray([0.0, 10.0]))
+            self.assertEqual(p.GetMetadata("doubleTest"), 10.0)
+
+            self.assertEqual(
+                p.GetMetadataByDictKey("customData", "timeCode"), 0.0)
+            self.assertEqual(
+                p.GetMetadataByDictKey("customData", "timeCodeArray"), 
+                Sdf.TimeCodeArray([0.0, 10.0]))
+            self.assertEqual(
+                p.GetMetadataByDictKey("customData", "doubleVal"), 10.0)
+            self.assertEqual(
+                p.GetMetadataByDictKey("customData", "subDict:timeCode"), 0.0)
+            self.assertEqual(
+                p.GetMetadataByDictKey("customData", "subDict:timeCodeArray"), 
+                Sdf.TimeCodeArray([0.0, 10.0]))
+            self.assertEqual(
+                p.GetMetadataByDictKey("customData", "subDict:doubleVal"), 10.0)
+
+            # Atribute defaults and time samples
+            a = p.GetAttribute("TimeCode")
+            self.assertEqual(a.Get(), 0.0)
+            self.assertEqual(a.GetTimeSamples(), [-10.0, -9.0])
+            self.assertEqual(a.Get(-10.0), 0.0)
+            self.assertEqual(a.Get(-9), 10.0)
+
+            a = p.GetAttribute("TimeCodeArray")
+            self.assertEqual(a.Get(), Sdf.TimeCodeArray([0.0, 10.0]))
+            self.assertEqual(a.GetTimeSamples(), [-10.0, -9.0])
+            self.assertEqual(a.Get(-10.0), Sdf.TimeCodeArray([0.0, 20.0]))
+            self.assertEqual(a.Get(-9), Sdf.TimeCodeArray([10.0, 30.0]))
+
+            a = p.GetAttribute("Double")
+            self.assertEqual(a.Get(), 10.0)
+            self.assertEqual(a.GetTimeSamples(), [-10.0, -9.0])
+            self.assertEqual(a.Get(-10.0), 10.0)
+            self.assertEqual(a.Get(-9), 20.0)
+
 
         # Confirm relative asset path handling in the output stage.
         p = result_stage.GetPrimAtPath('/Sphere')
@@ -198,4 +242,8 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
                          [Sdf.AssetPath('foo'), Sdf.AssetPath('foo')])
 
 if __name__=="__main__":
+    # Register test plugin defining timecode metadata fields.
+    testDir = os.path.abspath(os.getcwd())
+    assert len(Plug.Registry().RegisterPlugins(testDir)) == 1
+
     unittest.main()

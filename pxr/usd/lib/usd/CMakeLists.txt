@@ -209,6 +209,7 @@ pxr_test_scripts(
     testenv/testUsdTimeCodeRepr.py
     testenv/testUsdTimeOffsets.py
     testenv/testUsdTimeSamples.py
+    testenv/testUsdTimeValueAuthoring.py
     testenv/testUsdUsdzFileFormat.py
     testenv/testUsdValueClips.py
     testenv/testUsdVariantEditing.py
@@ -325,6 +326,17 @@ pxr_build_test(testUsdSchemaBase
         usd
     CPPFILES
         testenv/testUsdSchemaBase.cpp
+)
+
+pxr_build_test(testUsdTimeValueAuthoringCpp
+    LIBRARIES
+        arch
+        plug
+        sdf
+        tf
+        usd
+    CPPFILES
+        testenv/testUsdTimeValueAuthoring.cpp
 )
 
 pxr_build_test(testUsdUsdzResolver
@@ -450,6 +462,16 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdSchemaRegistry
     DEST testUsdSchemaRegistry
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdTimeValueAuthoring
+    DEST testUsdTimeValueAuthoring
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdTimeValueAuthoring
+    DEST testUsdTimeValueAuthoringCpp
 )
 
 pxr_install_test_dir(
@@ -882,6 +904,17 @@ pxr_register_test(testUsdSchemaBasePy
 pxr_register_test(testUsdSchemaRegistry
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSchemaRegistry"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdTimeValueAuthoring
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTimeValueAuthoring"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdTimeValueAuthoringCpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTimeValueAuthoringCpp"
     EXPECTED_RETURN_CODE 0
 )
 

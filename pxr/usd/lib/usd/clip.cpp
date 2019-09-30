@@ -1473,12 +1473,112 @@ Usd_Clip::GetLayerIfOpen() const
     return SdfLayerHandle();
 }
 
+namespace { // Anonymous namespace
+
+// SdfTimeCode values from clips need to be converted from internal time to
+// external time. We treat time code values as relative to the internal time
+// to convert to external.
+inline
+void 
+_ConvertValueForTime(const Usd_Clip::ExternalTime &extTime, 
+                     const Usd_Clip::InternalTime &intTime,
+                     SdfTimeCode *value)
+{
+    *value = *value + (extTime - intTime);
+}
+
+// Similarly we convert arrays of SdfTimeCodes.
+inline
+void 
+_ConvertValueForTime(const Usd_Clip::ExternalTime &extTime, 
+                     const Usd_Clip::InternalTime &intTime,
+                     VtArray<SdfTimeCode> *value)
+{
+    for (size_t i = 0; i < value->size(); ++i) {
+        _ConvertValueForTime(extTime, intTime, &(*value)[i]);
+    }
+}
+
+// Helpers for accessing the typed value from type erased values, needed for
+// converting SdfTimeCodes.
 template <class T>
-bool
-Usd_Clip::_Interpolate(
+inline
+void _UncheckedSwap(SdfAbstractDataValue *value, T& val) {
+    std::swap(*static_cast<T*>(value->value), val);
+}
+
+template <class T>
+inline
+void _UncheckedSwap(VtValue *value, T& val) {
+    value->UncheckedSwap(val);
+}
+
+template <class T>
+inline
+bool _IsHolding(const SdfAbstractDataValue &value) {
+    return TfSafeTypeCompare(typeid(T), value.valueType);
+}
+
+template <class T>
+inline
+bool _IsHolding(const VtValue &value) {
+    return value.IsHolding<T>();
+}
+
+// For type erased values, we need to convert them if they hold SdfTimeCode 
+// based types.
+template <class Storage>
+inline
+void
+_ConvertTypeErasedValueForTime(const Usd_Clip::ExternalTime &extTime, 
+                               const Usd_Clip::InternalTime &intTime,
+                               Storage *value)
+{
+    if (_IsHolding<SdfTimeCode>(*value)) {
+        SdfTimeCode rawVal;
+        _UncheckedSwap(value, rawVal);
+        _ConvertValueForTime(extTime, intTime, &rawVal);
+        _UncheckedSwap(value, rawVal);
+    } else if (_IsHolding<VtArray<SdfTimeCode>>(*value)) {
+        VtArray<SdfTimeCode> rawVal;
+        _UncheckedSwap(value, rawVal);
+        _ConvertValueForTime(extTime, intTime, &rawVal);
+        _UncheckedSwap(value, rawVal);
+    }
+}
+
+void 
+_ConvertValueForTime(const Usd_Clip::ExternalTime &extTime, 
+                     const Usd_Clip::InternalTime &intTime,
+                     VtValue *value)
+{
+    _ConvertTypeErasedValueForTime(extTime, intTime, value);
+}
+
+void 
+_ConvertValueForTime(const Usd_Clip::ExternalTime &extTime, 
+                     const Usd_Clip::InternalTime &intTime,
+                     SdfAbstractDataValue *value)
+{
+    _ConvertTypeErasedValueForTime(extTime, intTime, value);
+}
+
+// Fallback no-op default for the rest of the value types; there is no time 
+// conversion necessary for non-timecode types.
+template <class T>
+inline
+void _ConvertValueForTime(const Usd_Clip::ExternalTime &extTime, 
+                          const Usd_Clip::InternalTime &intTime,
+                          T *value)
+{
+}
+
+template <class T>
+static bool
+_Interpolate(
     const SdfLayerRefPtr& clip, const SdfPath &clipPath,
-    InternalTime clipTime, Usd_InterpolatorBase* interpolator,
-    T* value) const
+    Usd_Clip::InternalTime clipTime, Usd_InterpolatorBase* interpolator,
+    T* value)
 {
     double lowerInClip, upperInClip;
     if (clip->GetBracketingTimeSamplesForPath(
@@ -1492,27 +1592,51 @@ Usd_Clip::_Interpolate(
     return false;
 }
 
-#define _INSTANTIATE_INTERPOLATE(r, unused, elem)               \
-    template bool Usd_Clip::_Interpolate(                       \
-        const SdfLayerRefPtr&, const SdfPath &,                 \
-        InternalTime, Usd_InterpolatorBase*,                    \
+}; // End anonymous namespace
+
+template <class T>
+bool 
+Usd_Clip::QueryTimeSample(
+    const SdfPath& path, ExternalTime time, 
+    Usd_InterpolatorBase* interpolator, T* value) const
+{
+    const SdfPath clipPath = _TranslatePathToClip(path);
+    const InternalTime clipTime = _TranslateTimeToInternal(time);
+    const SdfLayerRefPtr& clip = _GetLayerForClip();
+
+    if (!clip->QueryTimeSample(clipPath, clipTime, value)) {
+        // See comment in Usd_Clip::GetBracketingTimeSamples.
+        if (!_Interpolate(clip, clipPath, clipTime, interpolator, value)) {
+            return false;
+        }
+    }
+
+    // Convert values containing SdfTimeCodes if necessary.
+    _ConvertValueForTime(time, clipTime, value);
+    return true;
+}
+
+#define _INSTANTIATE_QUERY_TIME_SAMPLE(r, unused, elem)         \
+    template bool Usd_Clip::QueryTimeSample(                    \
+        const SdfPath&, Usd_Clip::ExternalTime,                 \
+        Usd_InterpolatorBase*,                                  \
         SDF_VALUE_CPP_TYPE(elem)*) const;                       \
-    template bool Usd_Clip::_Interpolate(                       \
-        const SdfLayerRefPtr&, const SdfPath &,                 \
-        InternalTime, Usd_InterpolatorBase*,                    \
-        SDF_VALUE_CPP_ARRAY_TYPE(elem)*) const;                 \
+    template bool Usd_Clip::QueryTimeSample(                    \
+        const SdfPath&, Usd_Clip::ExternalTime,                 \
+        Usd_InterpolatorBase*,                                  \
+        SDF_VALUE_CPP_ARRAY_TYPE(elem)*) const;
 
-BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_INTERPOLATE, ~, SDF_VALUE_TYPES)
-#undef _INSTANTIATE_INTERPOLATE
+BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_QUERY_TIME_SAMPLE, ~, SDF_VALUE_TYPES)
+#undef _INSTANTIATE_QUERY_TIME_SAMPLE
 
-template bool Usd_Clip::_Interpolate(
-    const SdfLayerRefPtr&, const SdfPath&,
-    InternalTime, Usd_InterpolatorBase*,
+template bool Usd_Clip::QueryTimeSample(
+    const SdfPath&, Usd_Clip::ExternalTime,
+    Usd_InterpolatorBase*,
     SdfAbstractDataValue*) const;
 
-template bool Usd_Clip::_Interpolate(
-    const SdfLayerRefPtr&, const SdfPath&,
-    InternalTime, Usd_InterpolatorBase*,
+template bool Usd_Clip::QueryTimeSample(
+    const SdfPath&, Usd_Clip::ExternalTime,
+    Usd_InterpolatorBase*,
     VtValue*) const;
 
 PXR_NAMESPACE_CLOSE_SCOPE

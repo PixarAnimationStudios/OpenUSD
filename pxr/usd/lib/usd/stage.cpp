@@ -403,6 +403,42 @@ UsdStage::_MakeResolvedAssetPathsValue(UsdTimeCode time,
     }
 }
 
+void 
+UsdStage::_MakeResolvedTimeCodes(UsdTimeCode time, const UsdAttribute &attr,
+                                 SdfTimeCode *timeCodes,
+                                 size_t numTimeCodes) const
+{
+    UsdResolveInfo info;
+    _GetResolveInfo(attr, &info, &time);
+    if (!info._layerToStageOffset.IsIdentity()) {
+        for (size_t i = 0; i != numTimeCodes; ++i) {
+            Usd_ApplyLayerOffsetToValue(&timeCodes[i], info._layerToStageOffset);
+        }
+    }
+}
+
+void 
+UsdStage::_MakeResolvedAttributeValue(
+    UsdTimeCode time, const UsdAttribute &attr, VtValue *value) const
+{
+    if (value->IsHolding<SdfTimeCode>()) {
+        SdfTimeCode timeCode;
+        value->UncheckedSwap(timeCode);
+        _MakeResolvedTimeCodes(time, attr, &timeCode, 1);
+        value->UncheckedSwap(timeCode);
+
+    }
+    else if (value->IsHolding<VtArray<SdfTimeCode>>()) {
+        VtArray<SdfTimeCode> timeCodes;
+        value->UncheckedSwap(timeCodes);
+        _MakeResolvedTimeCodes(
+            time, attr, timeCodes.data(), timeCodes.size());
+        value->UncheckedSwap(timeCodes);
+    } else {
+        _MakeResolvedAssetPathsValue(time, attr, value);
+    }
+}
+
 static SdfLayerRefPtr
 _CreateAnonymousSessionLayer(const SdfLayerHandle &rootLayer)
 {
@@ -1376,20 +1412,46 @@ UsdStage::_CreatePropertySpecForEditing(const UsdProperty &prop)
     return _CreatePropertySpecForEditing<SdfPropertySpec>(prop);
 }
 
-bool
-UsdStage::_SetMetadata(
-    const UsdObject &obj, const TfToken& fieldName,
-    const TfToken &keyPath, const SdfAbstractDataConstValue &newValue)
+// This function handles the inverse mapping of values to an edit target's layer
+// for value types that get resolved by layer offsets. It's templated by a set 
+// value implementation function in order to abstract out this value mapping for
+// both attribute values and metadata. 
+// Fn type is equivalent to:
+//     bool setValueImpl(const SdfAbstractDataConstValue &)
+template <typename T, typename Fn>
+static bool
+_SetMappedValueForEditTarget(const T &newValue,
+                             const UsdEditTarget &editTarget,
+                             const Fn &setValueImpl)
 {
-    return _SetMetadataImpl(obj, fieldName, keyPath, newValue);
+    const SdfLayerOffset stageToLayerOffset =
+        UsdPrepLayerOffset(editTarget.GetMapFunction().GetTimeOffset())
+        .GetInverse();
+    if (!stageToLayerOffset.IsIdentity()) {
+        // Copy the value, apply the offset to the edit layer, and set it using
+        // the provided set function.
+        T targetValue = newValue;
+        Usd_ApplyLayerOffsetToValue(&targetValue, stageToLayerOffset);
+
+        SdfAbstractDataConstTypedValue<T> in(&targetValue);
+        return setValueImpl(in);
+    }
+
+    SdfAbstractDataConstTypedValue<T> in(&newValue);
+    return setValueImpl(in);
 }
 
-bool
-UsdStage::_SetMetadata(
+template <class T>
+bool UsdStage::_SetEditTargetMappedMetadata(
     const UsdObject &obj, const TfToken& fieldName,
-    const TfToken &keyPath, const VtValue &newValue)
+    const TfToken &keyPath, const T &newValue)
 {
-    return _SetMetadataImpl(obj, fieldName, keyPath, newValue);
+    return _SetMappedValueForEditTarget(
+        newValue, GetEditTarget(), 
+        [this, &obj, &fieldName, &keyPath](const SdfAbstractDataConstValue &in)
+        {
+            return this->_SetMetadataImpl(obj, fieldName, keyPath, in);
+        });
 }
 
 static const std::type_info &
@@ -1411,6 +1473,11 @@ UsdStage::_SetMetadataImpl(const UsdObject &obj,
                            const TfToken &keyPath,
                            const T &newValue)
 {
+    if (!SdfSchema::GetInstance().IsRegistered(fieldName)) {
+        TF_CODING_ERROR("Unregistered metadata field: %s", fieldName.GetText());
+        return false;
+    }
+
     TfAutoMallocTag2 tag("Usd", _mallocTagID);
 
     SdfSpecHandle spec;
@@ -1456,6 +1523,20 @@ UsdStage::_SetMetadataImpl(const UsdObject &obj,
 
 template <class T>
 bool 
+UsdStage::_SetEditTargetMappedValue(
+    UsdTimeCode time, const UsdAttribute &attr, const T &newValue)
+{
+    return _SetMappedValueForEditTarget(newValue, GetEditTarget(),
+        [this, &time, &attr](const SdfAbstractDataConstValue &in)
+        {
+            return this->_SetValueImpl(time, attr, in);
+        });
+}
+
+// Default _SetValue implementation for most attribute value types that never
+// need to be mapped for an edit target.
+template <class T>
+bool 
 UsdStage::_SetValue(UsdTimeCode time, const UsdAttribute &attr,
                     const T &newValue)
 {
@@ -1463,10 +1544,39 @@ UsdStage::_SetValue(UsdTimeCode time, const UsdAttribute &attr,
     return _SetValueImpl<SdfAbstractDataConstValue>(time, attr, in);
 }
 
+// Specializations for SdfTimeCode and its array type which may need to be
+// value mapped for edit targets. 
+// Note that VtDictionary and SdfTimeSampleMap are value types that are time
+// mapped when setting metadata, but we don't include them for _SetValue as
+// they're not valid attribute value types.
+template <>
+bool 
+UsdStage::_SetValue(UsdTimeCode time, const UsdAttribute &attr,
+                    const SdfTimeCode &newValue)
+{
+    return _SetEditTargetMappedValue(time, attr, newValue);
+}
+
+template <>
+bool 
+UsdStage::_SetValue(UsdTimeCode time, const UsdAttribute &attr,
+                    const VtArray<SdfTimeCode> &newValue)
+{
+    return _SetEditTargetMappedValue(time, attr, newValue);
+}
+
 bool
 UsdStage::_SetValue(
     UsdTimeCode time, const UsdAttribute &attr, const VtValue &newValue)
 {
+    // May need to map the value if it's holding a time code type.
+    if (newValue.IsHolding<SdfTimeCode>()) {
+        return _SetValue(time, attr, 
+                         newValue.UncheckedGet<SdfTimeCode>());
+    } else if (newValue.IsHolding<VtArray<SdfTimeCode>>()) {
+        return _SetValue(time, attr, 
+                         newValue.UncheckedGet<VtArray<SdfTimeCode>>());
+    }
     return _SetValueImpl(time, attr, newValue);
 }
 
@@ -4276,55 +4386,58 @@ UsdStage::_GetDefiningSpecType(Usd_PrimDataConstPtr primData,
 class Usd_FlattenAccess
 {
 public:
-    static void GetAllMetadata(
-        const UsdObject &obj, bool useFallbacks,
-        UsdMetadataValueMap* resultMap, bool anchorAssetPathsOnly)
+
+    static void GetAllMetadataForFlatten(
+        const UsdObject &obj, UsdMetadataValueMap* resultMap)
     {
+        // Get the resolved metadata with any asset paths anchored.
         obj.GetStage()->_GetAllMetadata(
-            obj, useFallbacks, resultMap, anchorAssetPathsOnly);
+            obj, /* useFallbacks = */ false, resultMap, 
+            /* anchorAssetPathsOnly = */ true);
     }
 
-    static void MakeAnchoredAssetPaths(
-        UsdTimeCode time, const UsdAttribute& attr, VtValue* value)
+    static void ResolveValueForFlatten(
+        UsdTimeCode time, const UsdAttribute& attr, 
+        const SdfLayerOffset &timeOffset, VtValue* value)
     {
+        // Asset path values are anchored for flatten operations
         attr.GetStage()->_MakeResolvedAssetPathsValue(
             time, attr, value, /* anchorAssetPathsOnly = */ true);
+        // Time based values are adjusted by layer offset when flattened to a
+        // layer affected by an offset.
+        if (!timeOffset.IsIdentity()) {
+            Usd_ApplyLayerOffsetToValue(value, timeOffset);
+        }
+
     }
+
+    static bool MakeTimeSampleMapForFlatten(
+        const UsdAttribute &attr, const SdfLayerOffset& offset, 
+        SdfTimeSampleMap *out)
+    {
+        UsdAttributeQuery attrQuery(attr);
+
+        std::vector<double> timeSamples;
+        if (attrQuery.GetTimeSamples(&timeSamples)) {
+            for (const auto& timeSample : timeSamples) {
+                VtValue value;
+                if (attrQuery.Get(&value, timeSample)) {
+                    Usd_FlattenAccess::ResolveValueForFlatten(
+                        timeSample, attr, offset, &value);
+                    (*out)[offset * timeSample].Swap(value);
+                }
+                else {
+                    (*out)[offset * timeSample] = VtValue(SdfValueBlock());
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
 };
 
 namespace {
-
-// Populates the time sample map with the resolved values for the given 
-// attribute and returns true if time samples exist, false otherwise.
-bool 
-_GetTimeSampleMap(const UsdAttribute &attr, SdfTimeSampleMap *out,
-                  const SdfLayerOffset& offset = SdfLayerOffset(),
-                  bool anchorAssetPathsOnly = false)
-{
-    UsdAttributeQuery attrQuery(attr);
-
-    std::vector<double> timeSamples;
-    if (attrQuery.GetTimeSamples(&timeSamples)) {
-        for (const auto& timeSample : timeSamples) {
-            VtValue value;
-            if (attrQuery.Get(&value, timeSample)) {
-                // The values from the attribute query will already be resolved,
-                // but if we're computing the time sample map for flattening,
-                // then we need to anchor any asset path values.
-                if (anchorAssetPathsOnly) {
-                    Usd_FlattenAccess::MakeAnchoredAssetPaths(
-                        timeSample, attr, &value);
-                }
-                (*out)[offset * timeSample].Swap(value);
-            }
-            else {
-                (*out)[offset * timeSample] = VtValue(SdfValueBlock());
-            }
-        }
-        return true;
-    }
-    return false;
-}
 
 // Map from path to replacement for remapping target paths during flattening.
 using _PathRemapping = std::map<SdfPath, SdfPath>;
@@ -4439,9 +4552,7 @@ _CopyAuthoredMetadata(const UsdObject &source, const SdfSpecHandle& dest)
     // GetAllMetadata returns all non-private metadata fields (it excludes
     // composition arcs and values), which is exactly what we want here.
     UsdMetadataValueMap metadata;
-    Usd_FlattenAccess::GetAllMetadata(
-        source, /* useFallbacks = */ false, &metadata,
-        /* anchorAssetPathsOnly = */ true);
+    Usd_FlattenAccess::GetAllMetadataForFlatten(source, &metadata);
 
     _CopyMetadata(dest, metadata);
 }
@@ -4479,16 +4590,16 @@ _CopyProperty(const UsdProperty &prop,
         if (attr.GetBracketingTimeSamples(
             0.0, &lower, &upper, &hasSamples) && hasSamples) {
             SdfTimeSampleMap ts;
-            if (_GetTimeSampleMap(attr, &ts, timeOffset, 
-                                  /* anchorAssetPathsOnly = */ true)) {
+            if (Usd_FlattenAccess::MakeTimeSampleMapForFlatten(
+                    attr, timeOffset, &ts)) {
                 sdfAttr->SetInfo(SdfFieldKeys->TimeSamples, VtValue::Take(ts));
             }
         }
         if (attr.HasAuthoredMetadata(SdfFieldKeys->Default)) {
             VtValue defaultValue;
             if (attr.Get(&defaultValue)) {
-                Usd_FlattenAccess::MakeAnchoredAssetPaths(
-                    UsdTimeCode::Default(), attr, &defaultValue);
+                Usd_FlattenAccess::ResolveValueForFlatten(
+                    UsdTimeCode::Default(), attr, timeOffset, &defaultValue);
             }
             else {
                 defaultValue = SdfValueBlock();
@@ -4868,7 +4979,7 @@ void _UncheckedSwap(SdfAbstractDataValue *dv, T& val) {
 }
 template <class T>
 void _UncheckedSwap(VtValue *value, T& val) {
-    value->Swap(val);
+    value->UncheckedSwap(val);
 }
 
 template <class T>
@@ -4877,28 +4988,47 @@ _Set(SdfAbstractDataValue *dv, T const &val) { dv->StoreValue(val); }
 template <class T>
 static void _Set(VtValue *value, T const &val) { *value = val; }
 
-template <class Storage>
-static void _ApplyLayerOffset(Storage storage,
-                              const PcpNodeRef &node,
-                              const SdfLayerRefPtr &layer)
-{
-    SdfLayerOffset offset = _GetLayerToStageOffset(node, layer);
-    if (!offset.IsIdentity()) {
-        const SdfTimeSampleMap &samples =
-            _UncheckedGet<SdfTimeSampleMap>(storage);
-        SdfTimeSampleMap transformed;
-        for (const auto& sample : samples) {
-            transformed[offset * sample.first] = sample.second;
-        }
-        _Set(storage, transformed);
-    }
-}
 
+namespace {
+
+// Helper for lazily computing and caching the layer to stage offset for the 
+// value resolution functions below. This allows to only resolve the layer 
+// offset once we've determined that a value is holding a type that can be 
+// resolved layer offsets while caching this computation for types that may
+// use it multiple times (e.g. SdfTimeCodeMap and VtDictionary)
+struct LayerOffsetAccess
+{
+public:
+    LayerOffsetAccess(const PcpNodeRef &node, const SdfLayerHandle &layer) 
+        : _node(node), _layer(layer), _hasLayerOffset(false) {}
+    
+    const SdfLayerOffset & Get() const {
+        // Compute once and cache.
+        if (!_hasLayerOffset){
+            _hasLayerOffset = true;
+            _layerOffset = _GetLayerToStageOffset(_node, _layer);
+        }
+        return _layerOffset;
+    }
+                                 
+private:
+    // Private helper meant to be transient so store references to inputs.
+    const PcpNodeRef _node;
+    const SdfLayerHandle _layer;
+
+    mutable SdfLayerOffset _layerOffset;
+    mutable bool _hasLayerOffset;
+};
+}; // end anonymous namespace
+
+// Tries to resolve the asset path in storage if it's holding an asset path
+// type. Returns true if the value is holding an asset path type.
 template <class Storage>
-static void _ResolveAssetPaths(Storage storage,
-                               const ArResolverContext &context,
-                               const SdfLayerRefPtr &layer,
-                               bool anchorAssetPathsOnly)
+static bool 
+_TryResolveAssetPaths(Storage storage,
+                      const ArResolverContext &context,
+                      const SdfLayerRefPtr &layer,
+                      bool anchorAssetPathsOnly)
 {
     if (_IsHolding<SdfAssetPath>(storage)) {
         SdfAssetPath assetPath;
@@ -4906,6 +5036,7 @@ static void _ResolveAssetPaths(Storage storage,
         _MakeResolvedAssetPathsImpl(
             layer, context, &assetPath, 1,  anchorAssetPathsOnly);
         _UncheckedSwap(storage, assetPath);
+        return true;
     } else if (_IsHolding<VtArray<SdfAssetPath>>(storage)) {
         VtArray<SdfAssetPath> assetPaths;
         _UncheckedSwap(storage, assetPaths);
@@ -4913,32 +5044,95 @@ static void _ResolveAssetPaths(Storage storage,
             layer, context, assetPaths.data(), assetPaths.size(), 
             anchorAssetPathsOnly);
         _UncheckedSwap(storage, assetPaths);
+        return true;
+    }
+    return false;
+}
+
+// Tries to apply the layer offset to the value in storage if its holding the
+// templated class type. Returns true if the value is holding the specified 
+// type.
+template <class T, class Storage>
+static bool
+_TryApplyLayerOffsetToValue(Storage storage, 
+                            const LayerOffsetAccess &offsetAccess)
+{
+    if (_IsHolding<T>(storage)) {
+        const SdfLayerOffset &offset = offsetAccess.Get();
+        if (!offset.IsIdentity()) {
+            T v;
+            _UncheckedSwap(storage, v);
+            Usd_ApplyLayerOffsetToValue(&v, offset);
+            _UncheckedSwap(storage, v);
+        }
+        return true;
+    }
+    return false;
+}
+
+// Tries to resolve the time code(s) in storage with the layer offset if it's 
+// holding an time code type. Returns true if the value is holding a time code 
+// type.
+template <class Storage>
+static bool 
+_TryResolveTimeCodes(Storage storage, const LayerOffsetAccess &offsetAccess)
+{
+    return 
+        _TryApplyLayerOffsetToValue<SdfTimeCode>(storage, offsetAccess) ||
+        _TryApplyLayerOffsetToValue<VtArray<SdfTimeCode>>(storage, offsetAccess);
+}
+
+// If the given dictionary contains any resolvable values, fills in those values
+// with their resolved paths.
+static void
+_ResolveValuesInDictionary(const SdfLayerRefPtr &anchor,
+                           const ArResolverContext &context,
+                           const LayerOffsetAccess *offsetAccess,
+                           VtDictionary *dict,
+                           bool anchorAssetPathsOnly)
+{
+    // If there is no layer offset, don't bother with resolving time codes and
+    // just resolve asset paths.
+    if (offsetAccess) {
+        Usd_ResolveValuesInDictionary(dict, 
+            [&anchor, &context, &offsetAccess, &anchorAssetPathsOnly]
+                (VtValue *value) 
+            {
+                _TryResolveAssetPaths(
+                    value, context, anchor, anchorAssetPathsOnly) ||
+                _TryResolveTimeCodes(value, *offsetAccess);
+            });
+    } else {
+        Usd_ResolveValuesInDictionary(dict, 
+            [&anchor, &context, &anchorAssetPathsOnly](VtValue *value) 
+            {
+                _TryResolveAssetPaths(
+                    value, context, anchor, anchorAssetPathsOnly);
+            });
     }
 }
 
-// If the given dictionary contains any SdfAssetPath or
-// VtArray<SdfAssetPath> as values, fills in those values
-// with their resolved paths.
-static void
-_ResolveAssetPathsInDictionary(const SdfLayerRefPtr &anchor,
-                               const ArResolverContext &context,
-                               VtDictionary *dict,
-                               bool anchorAssetPathsOnly)
+// Tries to resolve all the resolvable values contained within a VtDictionary in
+// storage. Returns true if the value is holding a VtDictionary.
+template <class Storage>
+static bool
+_TryResolveValuesInDictionary(Storage storage,
+                              const SdfLayerRefPtr &anchor,
+                              const ArResolverContext &context,
+                              const LayerOffsetAccess *offsetAccess,
+                              bool anchorAssetPathsOnly)
 {
-    for (auto& entry : *dict) {
-        VtValue& v = entry.second;
-        if (v.IsHolding<VtDictionary>()) {
-            VtDictionary resolvedDict;
-            v.UncheckedSwap(resolvedDict);
-            _ResolveAssetPathsInDictionary(
-                anchor, context, &resolvedDict, anchorAssetPathsOnly);
-            v.UncheckedSwap(resolvedDict);
-        }
-        else {
-            _ResolveAssetPaths(&v, context, anchor, anchorAssetPathsOnly);
-        }
+    if (_IsHolding<VtDictionary>(storage)) {
+        VtDictionary resolvedDict;
+        _UncheckedSwap(storage, resolvedDict);
+        _ResolveValuesInDictionary(
+            anchor, context, offsetAccess, &resolvedDict, anchorAssetPathsOnly);
+        _UncheckedSwap(storage, resolvedDict);
+        return true;
     }
+    return false;
 }
+
 
 namespace {
 
@@ -4979,13 +5173,14 @@ struct StrongestValueComposer
         if (_done) {
             const ArResolverContext &context = 
                 node.GetLayerStack()->GetIdentifier().pathResolverContext;
-            if (_IsHolding<VtDictionary>(_value)) {
-                VtDictionary resolvedDict;
-                _UncheckedSwap(_value, resolvedDict);
-                _ResolveAssetPathsInDictionary(
-                    layer, context, &resolvedDict, _anchorAssetPathsOnly);
-                _UncheckedSwap(_value, resolvedDict);                
+            // Create a layer offset accessor so we don't compute the layer
+            // offset unless one of the resolve functions actually needs it.
+            LayerOffsetAccess layerOffsetAccess(node, layer);
 
+            // Try resolving the value as a dictionary first.
+            if (_TryResolveValuesInDictionary(
+                    _value, layer, context, &layerOffsetAccess, 
+                    _anchorAssetPathsOnly)) {
                 // Continue composing if we got a dictionary.
                 _done = false;
                 if (isDict) {
@@ -4995,11 +5190,14 @@ struct StrongestValueComposer
                     _UncheckedSwap(_value, tmpDict);
                 }
                 return true;
-            } else if (_IsHolding<SdfTimeSampleMap>(_value)) {
-                _ApplyLayerOffset(_value, node, layer);
             } else {
-                _ResolveAssetPaths(
-                    _value, context, layer, _anchorAssetPathsOnly);
+                // Otherwise try resolving each of the the other resolvable 
+                // types.
+                _TryApplyLayerOffsetToValue<SdfTimeSampleMap>(
+                    _value, layerOffsetAccess) ||
+                _TryResolveAssetPaths(
+                    _value, context, layer, _anchorAssetPathsOnly) ||
+                _TryResolveTimeCodes(_value, layerOffsetAccess);
             }
         }
         return _done;
@@ -5202,6 +5400,28 @@ UsdStage
 // --------------------------------------------------------------------- //
 // Metadata Resolution
 // --------------------------------------------------------------------- //
+
+// Populates the time sample map with the resolved values for the given 
+// attribute and returns true if time samples exist, false otherwise.
+static bool 
+_GetTimeSampleMap(const UsdAttribute &attr, SdfTimeSampleMap *out)
+{
+    UsdAttributeQuery attrQuery(attr);
+
+    std::vector<double> timeSamples;
+    if (attrQuery.GetTimeSamples(&timeSamples)) {
+        for (const auto& timeSample : timeSamples) {
+            VtValue value;
+            if (attrQuery.Get(&value, timeSample)) {
+                (*out)[timeSample].Swap(value);
+            } else {
+                (*out)[timeSample] = VtValue(SdfValueBlock());
+            }
+        }
+        return true;
+    }
+    return false;
+}
 
 bool
 UsdStage::_GetMetadata(const UsdObject &obj, const TfToken &fieldName,
@@ -5913,7 +6133,7 @@ private:
 
     // Gets the attribute value from the implementation with appropriate 
     // interpolation. In the case of value types that can be further resolved
-    // by context (like SdfAssetPath), the value returned from
+    // by context (like SdfAssetPath and SdfTimeCode), the value returned from
     // from this is NOT fully resolved yet.
     template <class Fn>
     static bool _GetValueFromImpl(const UsdStage &stage,
@@ -5972,6 +6192,34 @@ bool Usd_AttrGetValueHelper<VtArray<SdfAssetPath>>::_GetResolvedValue(
     return false;
 }
 
+// Specializations for SdfTimeCode and VtArray<SdfTimeCode> types which need
+// to be resolved before returned.
+template <>
+template <class Fn>
+bool Usd_AttrGetValueHelper<SdfTimeCode>::_GetResolvedValue(
+    const UsdStage &stage, UsdTimeCode time, const UsdAttribute &attr,
+    SdfTimeCode* result, const Fn &getValueImpl)
+{
+    if (_GetValueFromImpl(stage, time, attr, result, getValueImpl)) {
+        stage._MakeResolvedTimeCodes(time, attr, result, 1);
+        return true;
+    }
+    return false;
+}
+
+template <>
+template <class Fn>
+bool Usd_AttrGetValueHelper<VtArray<SdfTimeCode>>::_GetResolvedValue(
+    const UsdStage &stage, UsdTimeCode time, const UsdAttribute &attr,
+    VtArray<SdfTimeCode>* result, const Fn &getValueImpl)
+{
+    if (_GetValueFromImpl(stage, time, attr, result, getValueImpl)) {
+        stage._MakeResolvedTimeCodes(time, attr, result->data(), result->size());
+        return true;
+    }
+    return false;
+}
+
 // Specialized attribute value getter for type erased VtValue.
 struct Usd_AttrGetUntypedValueHelper {
     template <class Fn>
@@ -5980,7 +6228,8 @@ struct Usd_AttrGetUntypedValueHelper {
                          const Fn &getValueImpl)
     {
         // Special case if time is default: we can grab the value from the
-        // metadata. This value will be fully resolved already.
+        // metadata. This value will be fully resolved already because 
+        // _GetMetadata returns fully resolved values.
         if (time.IsDefault()) {
             bool valueFound = stage._GetMetadata(
                 attr, SdfFieldKeys->Default, TfToken(), 
@@ -5993,7 +6242,7 @@ struct Usd_AttrGetUntypedValueHelper {
             if (result) {
                 // Always run the resolve functions for value types that need 
                 // it.
-                stage._MakeResolvedAssetPathsValue(time, attr, result);
+                stage._MakeResolvedAttributeValue(time, attr, result);
             }
             return true;
         }
@@ -7160,17 +7409,15 @@ _HasLayerFieldOrDictKey(const SdfLayerHandle &layer,
         layer->HasFieldDictKey(SdfPath::AbsoluteRootPath(), key, keyPath, val);
 
     if (hasVal && val){
-        if (val->IsHolding<VtDictionary>()){
-            VtDictionary dict;
-            val->UncheckedSwap<VtDictionary>(dict);
-            _ResolveAssetPathsInDictionary(layer, context, &dict,
-                                           /* anchorAssetPathsOnly = */ false);
-            val->UncheckedSwap<VtDictionary>(dict);
-        }
-        else {
-            _ResolveAssetPaths(val, context, layer,
-                               /* anchorAssetPathsOnly = */ false);
-        }
+        // Resolve asset paths. Note that we don't need to resolve time 
+        // codes as this function is only used to get layer level metadata
+        // on the stage's root or session layer. There is no mapping that
+        // applies to time codes in this context.
+        _TryResolveValuesInDictionary(val, layer, context, 
+            /* layerOffsetGetter = */ nullptr, 
+            /* anchorAssetPathsOnly = */ false) ||
+        _TryResolveAssetPaths(val, context, layer,
+                              /* anchorAssetPathsOnly = */ false);
     }
 
     return hasVal;
@@ -7764,6 +8011,28 @@ BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)
 // SdfValueBlock.
 template bool UsdStage::_SetValue(
     UsdTimeCode, const UsdAttribute&, const SdfValueBlock &);
+
+// Explicitly instantiate the templated _SetEditTargetMappedMetaData funtions 
+// for the types that support edit target mapping. The types instantiated here 
+// must match the types that are specialized for by UsdObject::_SetMetadata.
+#define INSTANTIATE_SET_MAPPED_METADATA(elem)                                  \
+    template bool UsdStage::_SetEditTargetMappedMetadata(                      \
+        const UsdObject &, const TfToken&, const TfToken &, const elem &);     
+
+INSTANTIATE_SET_MAPPED_METADATA(SdfTimeCode);
+INSTANTIATE_SET_MAPPED_METADATA(VtArray<SdfTimeCode>);
+INSTANTIATE_SET_MAPPED_METADATA(SdfTimeSampleMap);
+INSTANTIATE_SET_MAPPED_METADATA(VtDictionary);
+#undef INSTANTIATE_SET_MAPPED_METADATA
+
+// Make sure both versions of _SetMetadataImpl are instantiated as they are 
+// directly called from UsdObject.
+template bool UsdStage::_SetMetadataImpl(
+    const UsdObject &, const TfToken &, const TfToken &, 
+    const VtValue &);
+template bool UsdStage::_SetMetadataImpl(
+    const UsdObject &, const TfToken &, const TfToken &, 
+    const SdfAbstractDataConstValue &);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

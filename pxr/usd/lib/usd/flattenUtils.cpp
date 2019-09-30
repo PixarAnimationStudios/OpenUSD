@@ -41,6 +41,7 @@
 #include "pxr/usd/usd/clipsAPI.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/tokens.h"
+#include "pxr/usd/usd/valueUtils.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
 #include "pxr/base/tf/staticData.h"
 
@@ -217,40 +218,36 @@ _ApplyLayerOffsetToRefOrPayload(const SdfLayerOffset &offset,
 }
 
 // Apply layer offsets (time remapping) to time-keyed metadata.
-static VtValue
+static void
 _ApplyLayerOffset(const SdfLayerOffset &offset,
-                  const TfToken &field, VtValue val)
+                  const TfToken &field, 
+                  VtValue *val)
 {
-    SdfLayerOffset offsetToApply = UsdPrepLayerOffset(offset);
-    if (field == SdfFieldKeys->TimeSamples) {
-        if (val.IsHolding<SdfTimeSampleMap>()) {
-            SdfTimeSampleMap entries = val.UncheckedGet<SdfTimeSampleMap>();
-            SdfTimeSampleMap mappedEntries;
-            for (const auto &entry: entries) {
-                mappedEntries[offsetToApply * entry.first] = entry.second;
-            }
-            return VtValue(mappedEntries);
-        }
+    if (offset.IsIdentity()) {
+        return;
     }
-    else if (field == UsdTokens->clipActive ||
-             field == UsdTokens->clipTimes) {
-        if (val.IsHolding<VtVec2dArray>()) {
-            VtVec2dArray entries = val.UncheckedGet<VtVec2dArray>();
+
+    SdfLayerOffset offsetToApply = UsdPrepLayerOffset(offset);
+    if (field == UsdTokens->clipActive ||
+        field == UsdTokens->clipTimes) {
+        if (val->IsHolding<VtVec2dArray>()) {
+            VtVec2dArray entries = val->UncheckedGet<VtVec2dArray>();
             for (auto &entry: entries) {
                 entry[0] = offsetToApply * entry[0];
             }
-            return VtValue(entries);
+            val->Swap(entries);
         }
     }
     else if (field == UsdTokens->clipTemplateStartTime ||
              field == UsdTokens->clipTemplateEndTime) {
-        if (val.IsHolding<double>()) {
-            return VtValue(offsetToApply * val.UncheckedGet<double>());
+        if (val->IsHolding<double>()) {
+            double time = offsetToApply * val->UncheckedGet<double>();
+            val->Swap(time);
         }
     }
     else if (field == UsdTokens->clips) {
-        if (val.IsHolding<VtDictionary>()) {
-            VtDictionary clips = val.UncheckedGet<VtDictionary>();
+        if (val->IsHolding<VtDictionary>()) {
+            VtDictionary clips = val->UncheckedGet<VtDictionary>();
             for (auto &entry: clips) {
                 const std::string& clipSetName = entry.first;
                 VtValue& clipInfoVal = entry.second;
@@ -267,32 +264,33 @@ _ApplyLayerOffset(const SdfLayerOffset &offset,
                     offsetToApply, UsdClipsAPIInfoKeys->times, &clipInfo);
                 clipInfoVal = VtValue(clipInfo);
             }
-            return VtValue(clips);
+            val->Swap(clips);
         }
     }
     else if (field == SdfFieldKeys->References) {
-        if (val.IsHolding<SdfReferenceListOp>()) {
-            SdfReferenceListOp refs = val.UncheckedGet<SdfReferenceListOp>();
+        if (val->IsHolding<SdfReferenceListOp>()) {
+            SdfReferenceListOp refs = val->UncheckedGet<SdfReferenceListOp>();
             // We do not need to call UsdPrepLayerOffset() here since
             // we want to author a new offset, not apply one.
             refs.ModifyOperations(std::bind(
                 _ApplyLayerOffsetToRefOrPayload<SdfReference>, 
                 offset, std::placeholders::_1));
-            return VtValue(refs);
+            val->Swap(refs);
         }
     }
     else if (field == SdfFieldKeys->Payload) {
-        if (val.IsHolding<SdfPayloadListOp>()) {
-            SdfPayloadListOp pls = val.UncheckedGet<SdfPayloadListOp>();
+        if (val->IsHolding<SdfPayloadListOp>()) {
+            SdfPayloadListOp pls = val->UncheckedGet<SdfPayloadListOp>();
             // We do not need to call UsdPrepLayerOffset() here since
             // we want to author a new offset, not apply one.
             pls.ModifyOperations(std::bind(
                 _ApplyLayerOffsetToRefOrPayload<SdfPayload>, 
                 offset, std::placeholders::_1));
-            return VtValue(pls);
+            val->Swap(pls);
         }
+    } else {
+        Usd_ApplyLayerOffsetToValue(val, offsetToApply);
     }
-    return val;
 }
 
 template <class RefOrPayloadType>
@@ -413,7 +411,7 @@ _ReduceField(const PcpLayerStackRefPtr &layerStack,
         // Apply layer offsets.
         if (const SdfLayerOffset *offset =
             layerStack->GetLayerOffsetForLayer(i)) {
-            layerVal = _ApplyLayerOffset(*offset, field, layerVal);
+            _ApplyLayerOffset(*offset, field, &layerVal);
         }
         // Fix asset paths.
         _FixAssetPaths(layers[i], field, resolveAssetPathFn, &layerVal);

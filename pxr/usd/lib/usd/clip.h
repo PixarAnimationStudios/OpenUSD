@@ -231,19 +231,7 @@ public:
     template <class T>
     bool QueryTimeSample(
         const SdfPath& path, ExternalTime time, 
-        Usd_InterpolatorBase* interpolator, T* value) const
-    {
-        const SdfPath clipPath = _TranslatePathToClip(path);
-        const InternalTime clipTime = _TranslateTimeToInternal(time);
-        const SdfLayerRefPtr& clip = _GetLayerForClip();
-
-        if (clip->QueryTimeSample(clipPath, clipTime, value)) {
-            return true;
-        }
-
-        // See comment in Usd_Clip::GetBracketingTimeSamples.
-        return _Interpolate(clip, clipPath, clipTime, interpolator, value);
-    }
+        Usd_InterpolatorBase* interpolator, T* value) const;
 
     /// Return the layer associated with this clip iff it has already been
     /// opened successfully.
@@ -282,12 +270,6 @@ private:
                                              ExternalTime time, 
                                              ExternalTime* tLower, 
                                              ExternalTime* tUpper) const;
-
-    template <class T>
-    bool _Interpolate(
-        const SdfLayerRefPtr& clip, const SdfPath &clipPath,
-        InternalTime clipTime, Usd_InterpolatorBase* interpolator,
-        T* value) const;
 
     SdfPath _TranslatePathToClip(const SdfPath &path) const;
 

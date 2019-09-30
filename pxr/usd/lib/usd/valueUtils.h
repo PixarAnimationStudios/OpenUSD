@@ -187,6 +187,80 @@ Usd_InsertListItem(PROXY proxy, const typename PROXY::value_type &item,
     }
 }
 
+/// Resolves all the individual values in the given dictionary using the given
+/// resolve function.
+/// Fn type is equivalent to:
+///     void resolveFunc(VtValue *)
+template <typename Fn>
+void
+Usd_ResolveValuesInDictionary(VtDictionary *dict, const Fn &resolveFunc)
+{
+    for (auto& entry : *dict) {
+        VtValue& v = entry.second;
+        if (v.IsHolding<VtDictionary>()) {
+            VtDictionary resolvedDict;
+            v.UncheckedSwap(resolvedDict);
+            Usd_ResolveValuesInDictionary(&resolvedDict, resolveFunc);
+            v.UncheckedSwap(resolvedDict);
+        }
+        else {
+            resolveFunc(&v);
+        }
+    }
+}
+
+/// Apply the given layer \p offset to the given \p value if the value holds
+/// a type a that can be offset it time. Each supported type haa an overload 
+/// of this function defined.
+void
+Usd_ApplyLayerOffsetToValue(VtValue *value, const SdfLayerOffset &offset);
+
+/// \overload
+inline void
+Usd_ApplyLayerOffsetToValue(SdfTimeCode *value, const SdfLayerOffset &offset)
+{
+    *value = offset * (*value);
+}
+
+/// \overload
+inline void
+Usd_ApplyLayerOffsetToValue(VtArray<SdfTimeCode> *value, 
+                            const SdfLayerOffset &offset)
+{
+    for (SdfTimeCode &timeCode : *value) {
+        timeCode = offset * timeCode;
+    }
+}
+
+/// \overload
+inline void
+Usd_ApplyLayerOffsetToValue(SdfTimeSampleMap *value, 
+                            const SdfLayerOffset &offset)
+{
+    // Swap the original map so we can write new values back into the original
+    // value.
+    SdfTimeSampleMap origValue;
+    std::swap(origValue, *value);
+    for (const auto& sample : origValue) {
+        // Each time sample key must be mapped by the layer offset.
+        VtValue &newSample = (*value)[offset * sample.first];
+        newSample = std::move(sample.second);
+        // The value may also have be mapped if it is time mappable.
+        Usd_ApplyLayerOffsetToValue(&newSample, offset);
+    }
+}
+
+/// \overload
+inline void
+Usd_ApplyLayerOffsetToValue(VtDictionary *value, const SdfLayerOffset &offset)
+{
+    Usd_ResolveValuesInDictionary(value, 
+        [&offset](VtValue *v) 
+        {
+             Usd_ApplyLayerOffsetToValue(v, offset);
+        });
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_VALUE_UTILS_H

@@ -278,6 +278,7 @@ using std::unordered_map;
 using std::vector;
 
 // Version history:
+// 0.9.0: Added support for the timecode and timecode[] value types.
 // 0.8.0: Added support for SdfPayloadListOp values and SdfPayload values with
 //        layer offsets.
 // 0.7.0: Array sizes written as 64 bit ints.
@@ -291,7 +292,7 @@ using std::vector;
 //        See _PathItemHeader_0_0_1.
 // 0.0.1: Initial release.
 constexpr uint8_t USDC_MAJOR = 0;
-constexpr uint8_t USDC_MINOR = 8;
+constexpr uint8_t USDC_MINOR = 9;
 constexpr uint8_t USDC_PATCH = 0;
 
 struct CrateFile::Version
@@ -1073,6 +1074,7 @@ public:
     SdfAssetPath Read(SdfAssetPath *) {
         return SdfAssetPath(Read<string>());
     }
+    SdfTimeCode Read(SdfTimeCode *) { return SdfTimeCode(Read<double>()); }
     SdfUnregisteredValue Read(SdfUnregisteredValue *) {
         VtValue val = Read<VtValue>();
         if (val.IsHolding<string>())
@@ -1313,6 +1315,13 @@ public:
     void Write(SdfPath const &path) { Write(crate->_AddPath(path)); }
     void Write(VtDictionary const &dict) { WriteMap(dict); }
     void Write(SdfAssetPath const &ap) { Write(ap.GetAssetPath()); }
+    void Write(SdfTimeCode const &tc) { 
+        crate->_packCtx->RequestWriteVersionUpgrade(
+            Version(0, 9, 0),
+            "A timecode or timecode[] value type was detected, which requires "
+            "crate version 0.9.0.");
+        Write(tc.GetValue()); 
+    }
     void Write(SdfUnregisteredValue const &urv) { Write(urv.GetValue()); }
     void Write(SdfVariantSelectionMap const &vsmap) { WriteMap(vsmap); }
     void Write(SdfLayerOffset const &layerOffset) {

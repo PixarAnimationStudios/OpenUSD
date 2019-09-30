@@ -494,6 +494,62 @@ struct TestCase<VtArray<double> >
 };
 
 template <>
+struct TestCase<SdfTimeCode>
+{
+    static void AddTestCase(const UsdPrim& prim)
+    {
+        UsdAttribute attr = 
+            prim.CreateAttribute(TfToken("testTimeCode"), SdfValueTypeNames->TimeCode);
+        TF_VERIFY(attr.Set(SdfTimeCode(0.0), UsdTimeCode(0.0)));
+        TF_VERIFY(attr.Set(SdfTimeCode(2.0), UsdTimeCode(2.0)));
+    }
+
+    static void TestLinearInterpolation(const UsdPrim& prim)
+    {
+        UsdAttribute attr = prim.GetAttribute(TfToken("testTimeCode"));
+        VerifyAttributeValue(attr, UsdTimeCode(0.0), SdfTimeCode(0.0));
+        VerifyAttributeValue(attr, UsdTimeCode(1.0), SdfTimeCode(1.0));
+        VerifyAttributeValue(attr, UsdTimeCode(2.0), SdfTimeCode(2.0));
+    }
+
+    static void TestHeldInterpolation(const UsdPrim& prim)
+    {
+        UsdAttribute attr = prim.GetAttribute(TfToken("testTimeCode"));
+        VerifyAttributeValue(attr, UsdTimeCode(0.0), SdfTimeCode(0.0));
+        VerifyAttributeValue(attr, UsdTimeCode(1.0), SdfTimeCode(0.0));
+        VerifyAttributeValue(attr, UsdTimeCode(2.0), SdfTimeCode(2.0));
+    }
+};
+
+template <>
+struct TestCase<VtArray<SdfTimeCode> >
+{
+    static void AddTestCase(const UsdPrim& prim)
+    {
+        UsdAttribute attr = 
+            prim.CreateAttribute(TfToken("testTimeCodeArray"), SdfValueTypeNames->TimeCodeArray);
+        TF_VERIFY(attr.Set(CreateVtArray(SdfTimeCode(0.0)), UsdTimeCode(0.0)));
+        TF_VERIFY(attr.Set(CreateVtArray(SdfTimeCode(2.0)), UsdTimeCode(2.0)));
+    }
+
+    static void TestLinearInterpolation(const UsdPrim& prim)
+    {
+        UsdAttribute attr = prim.GetAttribute(TfToken("testTimeCodeArray"));
+        VerifyAttributeValue(attr, UsdTimeCode(0.0), CreateVtArray(SdfTimeCode(0.0)));
+        VerifyAttributeValue(attr, UsdTimeCode(1.0), CreateVtArray(SdfTimeCode(1.0)));
+        VerifyAttributeValue(attr, UsdTimeCode(2.0), CreateVtArray(SdfTimeCode(2.0)));
+    }
+
+    static void TestHeldInterpolation(const UsdPrim& prim)
+    {
+        UsdAttribute attr = prim.GetAttribute(TfToken("testTimeCodeArray"));
+        VerifyAttributeValue(attr, UsdTimeCode(0.0), CreateVtArray(SdfTimeCode(0.0)));
+        VerifyAttributeValue(attr, UsdTimeCode(1.0), CreateVtArray(SdfTimeCode(0.0)));
+        VerifyAttributeValue(attr, UsdTimeCode(2.0), CreateVtArray(SdfTimeCode(2.0)));
+    }
+};
+
+template <>
 struct TestCase<unsigned char>
 {
     static void AddTestCase(const UsdPrim& prim)
@@ -1816,29 +1872,6 @@ AddTestCasesToPrim(const UsdPrim& prim)
 }
 
 static void
-ApplyOffsetToSampleTimes(const UsdPrim& prim, SdfLayerOffset offset)
-{
-    std::vector<UsdAttribute> attributes = prim.GetAuthoredAttributes();
-    for (size_t i = 0; i < attributes.size(); ++i) {
-        std::vector<double> times;
-        attributes[i].GetTimeSamples(&times);
-        // Read, clear, and then re-write all samples afterward
-        // to avoid collisions from writing new samples over old.
-        std::map<double, VtValue> offsetSamples;
-        for (double currTime: times) {
-            VtValue attrVal;
-            attributes[i].Get(&attrVal, UsdTimeCode(currTime));
-            offsetSamples[offset * currTime] = attrVal;
-            attributes[i].ClearAtTime(currTime);
-        }
-        for (const auto entry: offsetSamples) {
-            attributes[i].Set(entry.second, UsdTimeCode(entry.first));
-        }
-    }
-
-}
-
-static void
 RunInterpolationTests(const UsdPrim& prim)
 {
     const UsdStageWeakPtr stage = prim.GetStage();
@@ -1889,7 +1922,7 @@ TestInterpolation(const string &layerIdent)
     // value type is added without a corresponding TestCase<T> added,
     // this test won't compile. If a value type is removed, this
     // check will fail at runtime.
-    static const size_t numTestCasesExpected = 30;
+    static const size_t numTestCasesExpected = 31;
     const size_t numTestCasesAdded = AddTestCasesToPrim(testPrim);
     TF_VERIFY(numTestCasesAdded == numTestCasesExpected,
               "Expected %zd cases, got %zu.",
@@ -1908,14 +1941,16 @@ TestInterpolationWithModelClips(const string &layerIdent)
     printf("TestInterpolationWithModelClips... %s\n", layerIdent.c_str());
 
     // Add test cases to the clip stage, then scale all of the time samples
-    // by half. This should result in time samples being authored at times
-    // 0.0 and 1.0.
-    const SdfLayerOffset testOffset(0.0, 0.5);
+    // by half. We use an edit target to scale the time samples added by the 
+    // test case. Using an edit target will scale by the inverse of the offset.
+    // This should result in time samples being authored at times 0.0 and 1.0.
     UsdStageRefPtr clipStage = UsdStage::CreateInMemory(layerIdent);
     UsdPrim testClipPrim(clipStage->OverridePrim(SdfPath("/TestPrim")));
     TF_VERIFY(testClipPrim);
+    const SdfLayerOffset testOffset(0.0, 2.0);
+    clipStage->SetEditTarget(UsdEditTarget(clipStage->GetRootLayer(), 
+                                           UsdPrepLayerOffset(testOffset)));
     AddTestCasesToPrim(testClipPrim);
-    ApplyOffsetToSampleTimes(testClipPrim, testOffset);
 
     // Create the primary stage and set up model clips on the test prim
     // to refer to the clip stage's root layer and scaling its time samples
@@ -1970,23 +2005,25 @@ TestInterpolationWithLayerOffsets(const string &layerIdent)
 {
     printf("TestInterpolationWithLayerOffsets... %s\n", layerIdent.c_str());
 
-    // Add test cases to the sub stage, then scale all of the time samples
-    // by half. This should result in time samples being authored at times
-    // 0.0 and 1.0.
-    const SdfLayerOffset testOffset(0.0, 0.5);
+    // Add test cases to the sub stage, using an edit target with the layer
+    // offset we'll use when we add it as a sublayer. This should result in time
+    // samples being authored at times 0.0 and 1.0 as the edit target will 
+    // invert the offset and apply it to the time samples. For SdfTimeCode
+    // value types this will also inverse scale the time sampled values 
+    // themselves.
+    const SdfLayerOffset testOffset(0.0, 2.0);
     UsdStageRefPtr subStage = UsdStage::CreateInMemory(layerIdent);
+    subStage->SetEditTarget(UsdEditTarget(subStage->GetRootLayer(), testOffset));
     UsdPrim testSubPrim(subStage->OverridePrim(SdfPath("/TestPrim")));
     TF_VERIFY(testSubPrim);
     AddTestCasesToPrim(testSubPrim);
-    ApplyOffsetToSampleTimes(testSubPrim, testOffset);
 
     // Create the primary stage and sublayer the sub stage's root layer,
     // specifying a layer offset that scales time by 2.
     UsdStageRefPtr mainStage = UsdStage::CreateInMemory(layerIdent);
     mainStage->GetRootLayer()->GetSubLayerPaths().push_back(
         subStage->GetRootLayer()->GetIdentifier());
-    mainStage->GetRootLayer()->SetSubLayerOffset(
-        UsdPrepLayerOffset(testOffset).GetInverse(), 0);
+    mainStage->GetRootLayer()->SetSubLayerOffset(testOffset, 0);
 
     // Uncomment to dump authored layers for debugging. Note that
     // the root layer will need to be manually fixed up to sublayer

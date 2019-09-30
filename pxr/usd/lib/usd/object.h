@@ -638,10 +638,46 @@ private:
     bool _GetMetadataImpl(const TfToken& key,
                           T* value,
                           const TfToken &keyPath=TfToken()) const;
+
+    // Templated implementation. Will be overridden for value types that need
+    // to be mapped across edit targets.
     template <class T>
-    bool _SetMetadataImpl(const TfToken& key,
-                          const T& value,
-                          const TfToken &keyPath=TfToken()) const;
+    bool _SetMetadata(const TfToken& key,
+                      const T& value,
+                      const TfToken &keyPath=TfToken()) const;
+
+    // Non templated _SetMetadata overrides for value types that need to be 
+    // mapped across edit targets. 
+    USD_API
+    bool _SetMetadata(const TfToken& key,
+                      const SdfTimeCode& value,
+                      const TfToken &keyPath=TfToken()) const;
+    USD_API
+    bool _SetMetadata(const TfToken& key,
+                      const VtArray<SdfTimeCode>& value,
+                      const TfToken &keyPath=TfToken()) const;
+    USD_API
+    bool _SetMetadata(const TfToken& key,
+                      const SdfTimeSampleMap& value,
+                      const TfToken &keyPath=TfToken()) const;
+    USD_API
+    bool _SetMetadata(const TfToken& key,
+                      const VtDictionary& value,
+                      const TfToken &keyPath=TfToken()) const;
+
+    // Type erased VtValue implementation. Will map the value across edit 
+    // targets if the held value type supports it.
+    USD_API
+    bool _SetMetadata(const TfToken& key,
+                      const VtValue& value,
+                      const TfToken &keyPath=TfToken()) const;
+
+    // This explicitly does not map values across edit targets for the 
+    // implementation of _SetMetadata for types that don't need to be mapped.
+    USD_API
+    bool _SetUnmappedMetadataImpl(const TfToken& key,
+                                  const SdfAbstractDataConstValue& value,
+                                  const TfToken &keyPath) const;
 
 protected:
     // Private constructor for UsdPrim.
@@ -714,8 +750,7 @@ inline
 bool 
 UsdObject::SetMetadata(const TfToken& key, const T& value) const
 {
-    SdfAbstractDataConstTypedValue<T> in(&value);
-    return _SetMetadataImpl<SdfAbstractDataConstValue>(key, in);
+    return _SetMetadata(key, value);
 }
 
 template <typename T>
@@ -736,10 +771,21 @@ UsdObject::SetMetadataByDictKey(const TfToken& key,
                                 const TfToken &keyPath, 
                                 const T& value) const
 {
-    SdfAbstractDataConstTypedValue<T> in(&value);
-    return _SetMetadataImpl<SdfAbstractDataConstValue>(key, in, keyPath);
+    return _SetMetadata(key, value, keyPath);
 }
 
+template <class T>
+bool 
+UsdObject::_SetMetadata(const TfToken& key,
+                        const T& value,
+                        const TfToken &keyPath) const
+{
+    // Default implementation for most types can just type erase the value and
+    // set the metadata as is. Value types that need to be mapped across edit
+    // targets will need to override this function to do the mapping.
+    SdfAbstractDataConstTypedValue<T> in(&value);
+    return _SetUnmappedMetadataImpl(key, in, keyPath);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
