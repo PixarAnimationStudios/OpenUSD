@@ -522,10 +522,10 @@ public:
     /// Optionally returns the value if it exists.
     SDF_API
     bool HasField(const SdfPath& path, const TfToken& fieldName,
-        VtValue *value=NULL) const;
+                  VtValue *value=NULL) const;
     SDF_API
     bool HasField(const SdfPath& path, const TfToken& fieldName,
-        SdfAbstractDataValue *value) const;
+                  SdfAbstractDataValue *value) const;
 
     /// Returns \c true if the object has a non-empty value with name
     /// \p name and type \p T.  If value ptr is provided, returns the
@@ -1522,21 +1522,8 @@ private:
     // required field for the spec type identified by \p path.
     inline SdfSchema::FieldDefinition const *
     _GetRequiredFieldDef(const SdfPath &path,
-                         const TfToken &fieldName) const {
-        SdfSchemaBase const &schema = GetSchema();
-        if (ARCH_UNLIKELY(schema.IsRequiredFieldName(fieldName))) {
-            // Get the spec definition.
-            if (SdfSchema::SpecDefinition const *specDef =
-                schema.GetSpecDefinition(GetSpecType(path))) {
-                // If this field is required for this spec type, look up the
-                // field definition.
-                if (specDef->IsRequiredField(fieldName)) {
-                    return schema.GetFieldDefinition(fieldName);
-                }
-            }
-        }
-        return NULL;
-    }
+                         const TfToken &fieldName,
+                         SdfSpecType specType = SdfSpecTypeUnknown) const;
 
     // Set a value.
     template <class T>

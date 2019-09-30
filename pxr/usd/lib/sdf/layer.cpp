@@ -1880,19 +1880,15 @@ SdfLayer::_CanGetSpecAtPath(
     // We need to always call MakeAbsolutePath, even if relativePath is
     // already absolute, because we also need to absolutize target paths
     // within the path.
-    const SdfPath &absPath =
-        path.IsAbsolutePath() && !path.ContainsTargetPath() ? path :
-        path.MakeAbsolutePath(SdfPath::AbsoluteRootPath());
-
+    SdfPath const *absPath = &path;
+    if (ARCH_UNLIKELY(!path.IsAbsolutePath() || path.ContainsTargetPath())) {
+        *canonicalPath = path.MakeAbsolutePath(SdfPath::AbsoluteRootPath());
+        absPath = canonicalPath;
+    }
     // Grab the object type stored in the SdfData hash table. If no type has
     // been set, this path doesn't point to a valid location.
-    if (!HasSpec(absPath)) {
-        return false;
-    }
-
-    *canonicalPath = absPath;
-    *specType = GetSpecType(absPath);
-    return true;
+    *specType = GetSpecType(*absPath);
+    return *specType != SdfSpecTypeUnknown;
 }
 
 template <class Spec>
@@ -1906,7 +1902,10 @@ SdfLayer::_GetSpecAtPath(const SdfPath& path)
         return TfNullPtr;
     }
 
-    return SdfHandle<Spec>(_idRegistry.Identify(canonicalPath));
+    if (ARCH_UNLIKELY(!canonicalPath.IsEmpty())) {
+        return SdfHandle<Spec>(_idRegistry.Identify(canonicalPath));
+    }
+    return SdfHandle<Spec>(_idRegistry.Identify(path));
 }
 
 SdfSpecHandle
@@ -1924,7 +1923,10 @@ SdfLayer::GetObjectAtPath(const SdfPath &path)
         return TfNullPtr;
     }
 
-    return SdfSpecHandle(_idRegistry.Identify(canonicalPath));
+    if (ARCH_UNLIKELY(!canonicalPath.IsEmpty())) {
+        return SdfSpecHandle(_idRegistry.Identify(canonicalPath));
+    }
+    return SdfSpecHandle(_idRegistry.Identify(path));
 }
 
 SdfPrimSpecHandle
@@ -3111,16 +3113,44 @@ SdfLayer::ListFields(const SdfPath& path) const
     return _data->List(path);
 }
 
+SdfSchema::FieldDefinition const *
+SdfLayer::_GetRequiredFieldDef(const SdfPath &path,
+                               const TfToken &fieldName,
+                               SdfSpecType specType) const
+{
+    SdfSchemaBase const &schema = GetSchema();
+    if (ARCH_UNLIKELY(schema.IsRequiredFieldName(fieldName))) {
+        // Get the spec definition.
+        if (specType == SdfSpecTypeUnknown) {
+            specType = GetSpecType(path);
+        }
+        if (SdfSchema::SpecDefinition const *
+            specDef = schema.GetSpecDefinition(specType)) {
+            // If this field is required for this spec type, look up the
+            // field definition.
+            if (specDef->IsRequiredField(fieldName)) {
+                return schema.GetFieldDefinition(fieldName);
+            }
+        }
+    }
+    return nullptr;
+}
+
 bool
 SdfLayer::HasField(const SdfPath& path, const TfToken& fieldName,
                    VtValue *value) const
 {
-    if (_data->Has(path, fieldName, value))
+    SdfSpecType specType;
+    if (_data->HasSpecAndField(path, fieldName, value, &specType)) {
         return true;
+    }
+    if (specType == SdfSpecTypeUnknown) {
+        return false;
+    }
     // Otherwise if this is a required field, and the data has a spec here,
     // return the fallback value.
     if (SdfSchema::FieldDefinition const *def =
-        _GetRequiredFieldDef(path, fieldName)) {
+        _GetRequiredFieldDef(path, fieldName, specType)) {
         if (value)
             *value = def->GetFallbackValue();
         return true;
@@ -3132,12 +3162,17 @@ bool
 SdfLayer::HasField(const SdfPath& path, const TfToken& fieldName,
                    SdfAbstractDataValue *value) const
 {
-    if (_data->Has(path, fieldName, value))
+    SdfSpecType specType;
+    if (_data->HasSpecAndField(path, fieldName, value, &specType)) {
         return true;
+    }
+    if (specType == SdfSpecTypeUnknown) {
+        return false;
+    }
     // Otherwise if this is a required field, and the data has a spec here,
     // return the fallback value.
     if (SdfSchema::FieldDefinition const *def =
-        _GetRequiredFieldDef(path, fieldName)) {
+        _GetRequiredFieldDef(path, fieldName, specType)) {
         if (value)
             return value->StoreValue(def->GetFallbackValue());
         return true;
