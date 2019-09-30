@@ -410,7 +410,6 @@ int main(int argc, char *argv[])
                 (int*) &product.resolution, 2);
             options->SetFloat(RixStr.k_Ri_FormatPixelAspectRatio,
                 product.pixelAspectRatio);
-            printf("pixel aspect ratio %g\n", product.pixelAspectRatio);
 
             // Compute screen window from product aperture.
             float screenWindow[4] = { -1.0f, 1.0f, -1.0f, 1.0f };
@@ -598,8 +597,12 @@ int main(int argc, char *argv[])
             RixParamList *displayParams = mgr->CreateRixParamList();
             displayParams->SetString(RixStr.k_Ri_name,
                 RtUString(product.name.GetText()));
+            std::string displayType = TfGetExtension(product.name);
+            if (displayType == "exr") {
+                displayType = "openexr";
+            }
             displayParams->SetString(RixStr.k_Ri_type,
-                RtUString(TfGetExtension(product.name).c_str()));
+                                     RtUString(displayType.c_str()));
             displayParams->SetString(RixStr.k_mode,
                                      RtUString(displayMode.c_str()));
             rtid = riley->CreateRenderTarget(cameraId, dcids.size(), &dcids[0],
