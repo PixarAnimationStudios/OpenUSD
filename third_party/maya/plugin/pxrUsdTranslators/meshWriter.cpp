@@ -220,7 +220,9 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(
     // and user-defined tagging (e.g. subdiv tags).
     MObject geomMeshObj = _skelInputMesh.isNull() ?
             finalMesh.object() : _skelInputMesh;
-    MFnMesh geomMesh(geomMeshObj, &status);
+    // do not pass these to functions that need access to geomMeshObj!
+    // geomMesh.object() returns nil for meshes of type kMeshData.
+    MFnMesh geomMesh(geomMeshObj, &status); 
     if (!status) {
         TF_RUNTIME_ERROR(
             "Failed to get geom mesh at DAG path: %s",
@@ -292,7 +294,7 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(
             TfToken normalInterp;
 
             if (UsdMayaMeshUtil::GetMeshNormals(
-                    geomMesh,
+                    geomMeshObj,
                     &meshNormals,
                     &normalInterp)) {
                 _SetAttribute(
@@ -343,7 +345,7 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(
         VtArray<int> assignmentIndices;
 
         if (!_GetMeshUVSetData(
-                finalMesh,
+                finalMesh.object(),
                 uvSetNames[i],
                 &uvValues,
                 &interpolation,
@@ -430,7 +432,7 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(
         bool clamped = false;
 
         if (!_GetMeshColorSetData(
-                finalMesh,
+                finalMesh.object(),
                 MString(colorSetName.c_str()),
                 isDisplayColor,
                 shadersRGBData,
