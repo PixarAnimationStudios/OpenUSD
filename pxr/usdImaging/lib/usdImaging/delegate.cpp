@@ -92,7 +92,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (HydraPbsSurface)
     (DomeLight)
     (PreviewDomeLight)
-    (StageOrientation)
 );
 
 // This environment variable matches a set of similar ones in
@@ -2938,15 +2937,18 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
             }
         } 
         return VtValue();
+    } else if (paramName == HdTokens->transform) {
+        _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+        if (TF_VERIFY(primInfo)) {
+            return VtValue(primInfo->adapter->GetTransform(primInfo->usdPrim, 
+                                                           _time));
+        }
     } else if (paramName == HdTokens->lightLink) {
         UsdCollectionAPI lightLink = light.GetLightLinkCollectionAPI();
         return VtValue(_collectionCache.GetIdForCollection(lightLink));
     } else if (paramName == HdTokens->shadowLink) {
         UsdCollectionAPI shadowLink = light.GetShadowLinkCollectionAPI();
         return VtValue(_collectionCache.GetIdForCollection(shadowLink));
-    } else if (paramName == _tokens->StageOrientation) {
-        // get the orientation of the stage 
-        return VtValue(UsdGeomGetStageUpAxis(_stage) == UsdGeomTokens->z);
     }
 
     // Fallback to USD attributes.

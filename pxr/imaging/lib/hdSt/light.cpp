@@ -46,7 +46,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (domeLightIrradiance)
     (domeLightPrefilter) 
     (domeLightBRDF)
-    (StageOrientation)
 );
 
 HdStLight::HdStLight(SdfPath const &id, TfToken const &lightType)
@@ -129,22 +128,20 @@ HdStLight::_PrepareDomeLight(SdfPath const &id,
         }
     } 
 
-    // get the orientation of the scene so can make sure the top of the texture
-    // is in the "up" direction
-    VtValue vIsZup = sceneDelegate->GetLightParamValue(id, 
-                                                _tokens->StageOrientation);
+    VtValue transform = sceneDelegate->GetLightParamValue(
+                                                id, HdTokens->transform);
     
     // Create the Glf Simple Light object that will be used by the rest
     // of the pipeline. No support for shadows for dome light.
     GlfSimpleLight l;
     l.SetHasShadow(false);
     l.SetIsDomeLight(true);
-    if (vIsZup.IsHolding<bool>()) {
-        l.SetIsZup(vIsZup.UncheckedGet<bool>());
-    }
     l.SetIrradianceId(_irradianceTexture);
     l.SetPrefilterId(_prefilterTexture);
     l.SetBrdfId(_brdfTexture);
+    if (transform.IsHolding<GfMatrix4d>()) {
+        l.SetTransform(transform.UncheckedGet<GfMatrix4d>());
+    }
     return l;
 }
 

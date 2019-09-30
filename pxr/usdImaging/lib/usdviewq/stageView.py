@@ -1675,10 +1675,11 @@ class StageView(QtOpenGL.QGLWidget):
 
                     # Default Dome Light
                     if self._dataModel.viewSettings.domeLightEnabled:
-                        # testing for pseudo domeLight
                         l = Glf.SimpleLight()
                         l.isDomeLight = True
-                        l.isZup = self._stageIsZup
+                        if self._stageIsZup:
+                            l.transform = Gf.Matrix4d().SetRotate(
+                                    Gf.Rotation(Gf.Vec3d.XAxis(), 90))
                         lights.append(l)
 
                     kA = self._dataModel.viewSettings.defaultMaterialAmbient

@@ -48,7 +48,6 @@ GlfSimpleLight::GlfSimpleLight(GfVec4f const & position) :
     _transform(GfMatrix4d().SetIdentity()),
     _shadowMatrix(GfMatrix4d().SetIdentity()),
     _isDomeLight(false),
-    _isZup(true),
     _irradianceId(0),
     _prefilterId(0),
     _brdfId(0),
@@ -277,18 +276,6 @@ GlfSimpleLight::SetIsDomeLight(bool isDomeLight)
     _isDomeLight = isDomeLight;
 }
 
-bool
-GlfSimpleLight::IsZup() const
-{
-    return _isZup;
-}
-
-void
-GlfSimpleLight::SetIsZup(bool isZup)
-{
-    _isZup = isZup;
-}
-
 uint32_t const & GlfSimpleLight::GetIrradianceId() const
 {
     return _irradianceId;
@@ -343,7 +330,6 @@ GlfSimpleLight::operator==(const GlfSimpleLight& other) const
         &&  _shadowMatrix == other._shadowMatrix
         &&  _isCameraSpaceLight == other._isCameraSpaceLight
         &&  _isDomeLight == other._isDomeLight
-        &&  _isZup == other._isZup
         &&  _irradianceId == other._irradianceId
         &&  _prefilterId == other._prefilterId
         &&  _brdfId == other._brdfId
@@ -375,7 +361,6 @@ std::ostream& operator<<(std::ostream& out, const GlfSimpleLight& v)
         << v._shadowMatrix
         << v._isCameraSpaceLight
         << v._isDomeLight
-        << v._isZup
         << v._irradianceId
         << v._prefilterId
         << v._brdfId

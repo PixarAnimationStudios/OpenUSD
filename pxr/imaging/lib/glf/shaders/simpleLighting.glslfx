@@ -96,10 +96,11 @@ struct LightSource {
     vec4 spotDirection;
     vec4 spotCutoffAndFalloff;
     vec4 attenuation;
+    mat4 worldToLightTransform;
     bool hasShadow;
     int shadowIndex;
     bool isIndirectLight;
-    bool isZup;
+    float padding0;
 };
 
 struct ShadowMatrix {

@@ -133,11 +133,6 @@ public:
     GLF_API
     void SetIsDomeLight(bool isDomeLight);
 
-    GLF_API
-    bool IsZup() const;
-    GLF_API
-    void SetIsZup(bool isZup);
-
     // the following Id's are GL resource handles for the precomputed textures
     // created by HdStLight 
     GLF_API
@@ -185,7 +180,6 @@ private:
 
     // domeLight specific parameters 
     bool _isDomeLight;
-    bool _isZup;
     // handles for the resource bindings from HdXSimpleLightingShader
     uint32_t _irradianceId; // pre-computed irradiance map
     uint32_t _prefilterId;  // pre-computed preFiltered map
