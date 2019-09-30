@@ -3019,20 +3019,6 @@ UsdImagingDelegate::GetMaterialResource(SdfPath const &materialId)
     return vtMatResource;
 }
 
-TfTokenVector 
-UsdImagingDelegate::GetMaterialPrimvars(SdfPath const &materialId)
-{
-    if (!TF_VERIFY(materialId != SdfPath())) {
-        return TfTokenVector();
-    }
-
-    SdfPath cachePath = ConvertIndexPathToCachePath(materialId);
-    TfTokenVector materialPrimvars;
-    _valueCache.FindMaterialPrimvars(cachePath, &materialPrimvars);
-
-    return materialPrimvars;
-}
-
 VtDictionary
 UsdImagingDelegate::GetMaterialMetadata(SdfPath const &materialId)
 {

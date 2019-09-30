@@ -312,13 +312,6 @@ HdSceneDelegate::GetMaterialResource(SdfPath const &materialId)
     return VtValue();
 }
 
-/*virtual*/
-TfTokenVector 
-HdSceneDelegate::GetMaterialPrimvars(SdfPath const &materialId)
-{
-    return TfTokenVector();
-}
-
 /* virtual */
 VtDictionary
 HdSceneDelegate::GetMaterialMetadata(SdfPath const &materialId)
