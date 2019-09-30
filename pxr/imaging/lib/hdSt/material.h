@@ -149,8 +149,6 @@ private:
     bool _hasDisplacement : 1;
 
     TfToken _materialTag;
-
-    HdMaterialParamVector _materialParams;
 };
 
 inline std::string
