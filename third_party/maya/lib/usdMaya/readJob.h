@@ -28,6 +28,7 @@
 
 #include "usdMaya/jobArgs.h"
 #include "usdMaya/primReaderContext.h"
+#include "usdMaya/primReaderRegistry.h"
 
 #include "pxr/pxr.h"
 
@@ -71,6 +72,10 @@ public:
     void SetMayaRootDagPath(const MDagPath &mayaRootDagPath);
 
 private:
+    // Types
+    using _PrimReaderMap =
+        std::unordered_map<SdfPath, UsdMayaPrimReaderSharedPtr, SdfPath::Hash>;
+
     // XXX: Activating the 'Expanded' representation of a USD reference
     // assembly node is very much like performing a regular UsdMaya_ReadJob but with
     // a few key differences (e.g. creating proxy shapes at collapse points).
@@ -78,8 +83,12 @@ private:
     // usdImport, and an 'Expanded' representation-style import, respectively.
     // It would be great if we could combine these into a single traversal at
     // some point.
-    bool _DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim);
+    bool _DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim,
+        const UsdStageRefPtr& stage);
     bool _DoImportWithProxies(UsdPrimRange& range);
+    void _DoImportPrimIt(
+        UsdPrimRange::iterator& primIt, const UsdPrim& usdRootPrim,
+        UsdMayaPrimReaderContext& readCtx, _PrimReaderMap& primReaders);
 
     // These are helper methods for the proxy import method.
     bool _ProcessProxyPrims(

@@ -70,6 +70,9 @@ UsdMayaImportCommand::createSyntax()
     syntax.addFlag("-ar",
                    UsdMayaJobImportArgsTokens->assemblyRep.GetText(),
                    MSyntax::kString);
+    syntax.addFlag("-im",
+                   UsdMayaJobImportArgsTokens->instanceMode.GetText(),
+                   MSyntax::kString);
     syntax.addFlag("-md",
                    UsdMayaJobImportArgsTokens->metadata.GetText(),
                    MSyntax::kString);

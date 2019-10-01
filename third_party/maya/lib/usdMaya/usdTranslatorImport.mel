@@ -68,7 +68,7 @@ global proc int usdTranslatorImport (string $parent,
 //  Parameters:
 //    $parent - the elf parent layout for this options layout. It is
 //            always a scrollLayout.
-//    $action - the action that is to be performed with this invokation of this proc.
+//    $action - the action that is to be performed with this invocation of this proc.
 //        Valid options are:
 //        "query" - construct the options string and pass it to the resultCallback.
 //        "post" - post all the elf controls.
@@ -77,7 +77,7 @@ global proc int usdTranslatorImport (string $parent,
 //            resultCallback ( string $optionsString )
 //
 //    Returns:
-//        1 if successfull.
+//        1 if successful.
 //        0 otherwise.
 //
 {
@@ -118,9 +118,13 @@ global proc int usdTranslatorImport (string $parent,
             menuItem -l "Collapsed" -ann "Collapsed";
             menuItem -l "Full" -ann "Full";
             menuItem -l "Import" -ann "Import";
-        
+
+        optionMenuGrp -l "Instance Mode:" instanceModePopup;
+            menuItem -l "Flatten" -ann "flatten";
+            menuItem -l "Build Instances" -ann "buildInstances";
+
         setParent $parent;
-        
+
         // Now set to current settings.
         $currentOptions = $initialSettings;
         if (size($currentOptions) > 0) {
@@ -143,14 +147,16 @@ global proc int usdTranslatorImport (string $parent,
                     intFieldGrp -e -v1 $endTime endTimeField;
                 } else if ($optionBreakDown[0] == "useCustomFrameRange") {
                     usdTranslatorImport_SetCheckbox($optionBreakDown[1], "customFrameRangeCheckBox");
+                } else if ($optionBreakDown[0] == "instanceMode") {
+                    usdTranslatorImport_SetOptionMenuByAnnotation($optionBreakDown[1], "instanceModePopup");
                 }
             }
         }
-                
+
         $bResult = 1;
-    
+
     } else if ($action == "query") {
-    
+
         $currentOptions = usdTranslatorImport_AppendFromPopup($currentOptions, "shadingMode", "shadingModePopup");
         $currentOptions = usdTranslatorImport_AppendFromCheckbox($currentOptions, "readAnimData", "readAnimDataCheckBox");
         $currentOptions = usdTranslatorImport_AppendFromCheckbox($currentOptions, "useAsAnimationCache", "useAsAnimationCacheCheckBox");
@@ -158,6 +164,7 @@ global proc int usdTranslatorImport (string $parent,
         $currentOptions = usdTranslatorImport_AppendFromIntField($currentOptions, "startTime", "startTimeField");
         $currentOptions = usdTranslatorImport_AppendFromIntField($currentOptions, "endTime", "endTimeField");
         $currentOptions = usdTranslatorImport_AppendFromCheckbox($currentOptions, "useCustomFrameRange", "customFrameRangeCheckBox");
+        $currentOptions = usdTranslatorImport_AppendFromPopup($currentOptions, "instanceMode", "instanceModePopup");
 
         eval($resultCallback+" \""+$currentOptions+"\"");
         $bResult = 1;
