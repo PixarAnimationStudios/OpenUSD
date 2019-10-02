@@ -416,11 +416,6 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
                 UsdGeom.Imageable(self.prim).MakeVisible()
             self.visChanged()
 
-    def removeVisibility(self):
-        if self.canChangeVis():
-            UsdGeom.Imageable(self.prim).GetVisibilityAttr().Clear()
-            self.visChanged()
-
     def visChanged(self):
         # called when user authors a new visibility value
         # we must re-determine if visibility is varying over time

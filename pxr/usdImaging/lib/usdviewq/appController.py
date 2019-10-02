@@ -4310,47 +4310,43 @@ class AppController(QtCore.QObject):
 
     def visSelectedPrims(self):
         with BusyContext():
-            for item in self.getSelectedItems():
-                item.makeVisible()
+            for p in self._dataModel.selection.getPrims():
+                imgbl = UsdGeom.Imageable(p)
+                if imgbl:
+                    imgbl.MakeVisible()
             self.editComplete('Made selected prims visible')
-            # makeVisible may cause aunt and uncle prims' authored vis
-            # to change, so we need to fix up the whole shebang
-            self._resetPrimViewVis(selItemsOnly=False)
 
     def visOnlySelectedPrims(self):
         with BusyContext():
             ResetSessionVisibility(self._dataModel.stage)
             InvisRootPrims(self._dataModel.stage)
-            for item in self.getSelectedItems():
-                item.makeVisible()
+            for p in self._dataModel.selection.getPrims():
+                imgbl = UsdGeom.Imageable(p)
+                if imgbl:
+                    imgbl.MakeVisible()
             self.editComplete('Made ONLY selected prims visible')
-            # QTreeWidget does not honor setUpdatesEnabled, and updating
-            # the Vis column for all widgets is pathologically slow.
-            # It is sadly much much faster to regenerate the entire view
-            self._resetPrimView()
 
     def invisSelectedPrims(self):
         with BusyContext():
-            for item in self.getSelectedItems():
-                item.setVisible(False)
+            for p in self._dataModel.selection.getPrims():
+                imgbl = UsdGeom.Imageable(p)
+                if imgbl:
+                    imgbl.MakeInvisible()
             self.editComplete('Made selected prims invisible')
-            self._resetPrimViewVis()
 
     def removeVisSelectedPrims(self):
         with BusyContext():
-            for item in self.getSelectedItems():
-                item.removeVisibility()
+            for p in self._dataModel.selection.getPrims():
+                imgbl = UsdGeom.Imageable(p)
+                if imgbl:
+                    imgbl.GetVisibilityAttr().Clear()
+
             self.editComplete("Removed selected prims' visibility opinions")
-            self._resetPrimViewVis()
 
     def resetSessionVisibility(self):
         with BusyContext():
             ResetSessionVisibility(self._dataModel.stage)
             self.editComplete('Removed ALL session visibility opinions.')
-            # QTreeWidget does not honor setUpdatesEnabled, and updating
-            # the Vis column for all widgets is pathologically slow.
-            # It is sadly much much faster to regenerate the entire view
-            self._resetPrimView()
 
     def _setSelectedPrimsActivation(self, active):
         """Activate or deactivate all selected prims."""
