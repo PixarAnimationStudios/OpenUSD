@@ -96,9 +96,9 @@ HdRenderDelegate::GetMaterialNetworkSelector() const
 }
 
 bool
-HdRenderDelegate::IsMaterialPrimvarFilteringNeeded() const
+HdRenderDelegate::IsPrimvarFilteringNeeded() const
 {
-    return (GetMaterialBindingPurpose() != HdTokens->full);
+    return false;
 }
 
 HdAovDescriptor

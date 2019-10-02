@@ -361,11 +361,15 @@ public:
     virtual TfToken GetMaterialNetworkSelector() const;
 
     ///
-    /// Return true to indicate that primvars in rprims need to be filtered 
-    /// using the currently bound material.
+    /// Return true to indicate that the render delegate wants rprim primvars
+    /// to be filtered by the scene delegate to reduce the amount of primvars
+    /// that are send to the render delegate. For example the scene delegate
+    /// may check the bound material primvar requirements and send only those
+    /// to the render delegate. Return false to not apply primvar filtering in
+    /// the scene delegate. Defaults to false.
     ///
     HD_API
-    virtual bool IsMaterialPrimvarFilteringNeeded() const;
+    virtual bool IsPrimvarFilteringNeeded() const;
 
     ///
     /// Returns the ordered list of shader source types that the render delegate 

@@ -589,10 +589,10 @@ UsdImagingPrimAdapter::_GetMaterialNetworkSelector() const
 }
 
 bool
-UsdImagingPrimAdapter::_IsMaterialPrimvarFilteringNeeded() const
+UsdImagingPrimAdapter::_IsPrimvarFilteringNeeded() const
 {
     return _delegate->GetRenderIndex().GetRenderDelegate()->
-        IsMaterialPrimvarFilteringNeeded();
+        IsPrimvarFilteringNeeded();
 }
 
 

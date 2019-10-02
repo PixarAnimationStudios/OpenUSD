@@ -376,7 +376,7 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         // Some backends may not want to load all primvars due to memory limits.
         // We filter the list of primvars based on what the material needs.
         TfTokenVector matPrimvarNames;
-        if (_IsMaterialPrimvarFilteringNeeded() && !materialUsdPath.IsEmpty()) {
+        if (_IsPrimvarFilteringNeeded() && !materialUsdPath.IsEmpty()) {
                 matPrimvarNames = _CollectMaterialPrimvars(
                     valueCache, materialUsdPath);
         }
@@ -385,7 +385,7 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
             if (_IsBuiltinPrimvar(pv.GetPrimvarName())) {
                 continue;
             }
-            if (_IsMaterialPrimvarFilteringNeeded() &&
+            if (_IsPrimvarFilteringNeeded() &&
                 std::find(matPrimvarNames.begin(),
                           matPrimvarNames.end(),
                           pv.GetPrimvarName()) == matPrimvarNames.end()) {

@@ -438,6 +438,12 @@ HdStRenderDelegate::GetShaderSourceTypes() const
     return {HioGlslfxTokens->glslfx};
 }
 
+bool
+HdStRenderDelegate::IsPrimvarFilteringNeeded() const
+{
+    return true;
+}
+
 TfToken 
 HdStRenderDelegate::GetMaterialNetworkSelector() const
 {

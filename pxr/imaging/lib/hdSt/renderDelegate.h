@@ -109,6 +109,9 @@ public:
     HDST_API
     virtual TfTokenVector GetShaderSourceTypes() const override;
 
+    HDST_API
+    virtual bool IsPrimvarFilteringNeeded() const override;
+
     // Returns whether or not HdStRenderDelegate can run on the current
     // hardware.
     HDST_API
