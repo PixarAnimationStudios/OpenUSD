@@ -232,7 +232,6 @@ GlfContextCaps::_LoadCaps()
     }
     if (glVersion >= 450) {
         multiDrawIndirectEnabled = true;
-        directStateAccessEnabled = true;
     }
     if (glVersion >= 460) {
         shaderDrawParametersEnabled = true;
@@ -255,7 +254,7 @@ GlfContextCaps::_LoadCaps()
         multiDrawIndirectEnabled = true;
     }
 #if defined(GLEW_VERSION_4_5)  // glew 1.11 or newer (usd requirement is 1.10)
-    if (GLEW_ARB_direct_state_access) {
+    if (GLEW_VERSION_4_5 || GLEW_ARB_direct_state_access) {
         directStateAccessEnabled = true;
     }
     if (GLEW_ARB_shader_draw_parameters) {
