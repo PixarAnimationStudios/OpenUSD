@@ -111,7 +111,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     std::string fragmentSource;
     std::string geometrySource;
     VtDictionary materialMetadata;
-    TfToken materialTag;
+    TfToken materialTag = _materialTag;
     HdMaterialParamVector params;
 
     if ((bits & DirtyResource) && _IsEnabledStormMaterialNetworks()) {
@@ -191,13 +191,13 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         bool markBatchesDirty = (bits & DirtySurfaceShader) ||
                                 (_materialTag != materialTag);
 
-        if (!markBatchesDirty) {
+        if (!markBatchesDirty && shaderIsDirty) {
             // XXX cheaper to compare network topology instead fo strings?
             std::string const& oldFragmentSource = 
                 _surfaceShader->GetSource(HdShaderTokens->fragmentShader);
             std::string const& oldGeometrySource = 
                 _surfaceShader->GetSource(HdShaderTokens->geometryShader);
-            
+
             markBatchesDirty |= (oldFragmentSource!=fragmentSource) || 
                                 (oldGeometrySource!=geometrySource);
         }
