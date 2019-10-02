@@ -4452,15 +4452,9 @@ _RemapTargetPaths(SdfPathVector* targetPaths,
     }
 
     for (SdfPath& p : *targetPaths) {
-        // XXX: This is not optimal; SdfPathFindLongestPrefix uses
-        // std::lower_bound, which is linear instead of std::map::lower_bound,
-        // which is logarithmic.
-        auto it = SdfPathFindLongestPrefix(
-            make_transform_iterator(pathRemapping.begin(), TfGet<0>()),
-            make_transform_iterator(pathRemapping.end(), TfGet<0>()),
-            p);
-        if (it.base() != pathRemapping.end()) {
-            p = p.ReplacePrefix(it.base()->first, it.base()->second);
+        auto it = SdfPathFindLongestPrefix(pathRemapping, p);
+        if (it != pathRemapping.end()) {
+            p = p.ReplacePrefix(it->first, it->second);
         }
     }
 }

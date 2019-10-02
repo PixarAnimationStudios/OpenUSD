@@ -2042,4 +2042,24 @@ SdfPath::RemoveAncestorPaths(SdfPathVector *paths)
                              }).base());
 }
 
+typename std::set<SdfPath>::const_iterator
+SdfPathFindLongestPrefix(std::set<SdfPath> const &set, SdfPath const &path)
+{
+    return Sdf_PathFindLongestPrefixImpl<
+        typename std::set<SdfPath>::const_iterator,
+        std::set<SdfPath> const &>(set, path, /*strictPrefix=*/false);
+}
+
+typename std::set<SdfPath>::const_iterator
+SdfPathFindLongestStrictPrefix(std::set<SdfPath> const &set,
+                               SdfPath const &path)
+{
+    return Sdf_PathFindLongestPrefixImpl<
+        typename std::set<SdfPath>::const_iterator,
+        std::set<SdfPath> const &>(set, path, /*strictPrefix=*/true);
+
+
+}
+
+
 PXR_NAMESPACE_CLOSE_SCOPE

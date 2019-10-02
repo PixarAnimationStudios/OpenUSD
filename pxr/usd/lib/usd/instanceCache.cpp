@@ -484,7 +484,7 @@ static
 typename PathMap::const_iterator
 _FindEntryForPathOrAncestor(const PathMap& map, SdfPath path)
 {
-    return SdfPathFindLongestPrefix(map.begin(), map.end(), path, TfGet<0>());
+    return SdfPathFindLongestPrefix(map, path);
 }
 
 template <class PathMap>
@@ -495,8 +495,7 @@ _FindEntryForAncestor(const PathMap& map, const SdfPath& path)
     if (path == SdfPath::AbsoluteRootPath()) {
         return map.end();
     }
-    return SdfPathFindLongestStrictPrefix(
-        map.begin(), map.end(), path, TfGet<0>());
+    return SdfPathFindLongestStrictPrefix(map, path);
 }
 
 bool 

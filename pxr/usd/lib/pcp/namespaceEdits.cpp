@@ -222,15 +222,8 @@ _TranslatePathsAndEditRelocates(
 
     // Find the relocation, which should be the entry whose key is the 
     // longest prefix of oldParentPath.
-    struct _Adapter {
-        const SdfPath& operator()(SdfRelocatesMap::const_reference v) const
-        { return v.first; }
-    };
-
-    SdfRelocatesMap::const_iterator i = SdfPathFindLongestPrefix(
-        boost::make_transform_iterator(relocates.begin(), _Adapter()),
-        boost::make_transform_iterator(relocates.end(), _Adapter()),
-        oldParentPath).base();
+    SdfRelocatesMap::const_iterator i =
+        SdfPathFindLongestPrefix(relocates, oldParentPath);
 
     if (i != relocates.end()) {
         const SdfPath & reloTargetPath = i->first;
