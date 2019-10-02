@@ -162,8 +162,12 @@ public:
     /// triangles (otherwise quads)
     bool RefinesToTriangles() const;
 
-    /// Returns true if the subdivision on this mesh produces patches
+    /// Returns true if the subdivision of this mesh produces bspline patches
     bool RefinesToBSplinePatches() const;
+
+    /// Returns true if the subdivision of this mesh produces box spline
+    /// triangle patches
+    bool RefinesToBoxSplineTrianglePatches() const;
 
     /// Returns the subdivision topology computation. It computes
     /// far mesh and produces refined quad-indices buffer.

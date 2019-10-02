@@ -26,6 +26,8 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
+#include <opensubdiv/version.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -51,6 +53,18 @@ HdSt_Subdivision::RefinesToBSplinePatches(TfToken const &scheme)
         scheme == PxOsdOpenSubdivTokens->catmullClark) {
         return true;
     }
+    return false;
+}
+
+bool
+HdSt_Subdivision::RefinesToBoxSplineTrianglePatches(TfToken const &scheme)
+{
+#if OPENSUBDIV_VERSION_NUMBER >= 30400
+    // v3.4.0 added support for limit surface patches for loop meshes
+    if (scheme == PxOsdOpenSubdivTokens->loop) {
+        return true;
+    }
+#endif
     return false;
 }
 
@@ -80,22 +94,31 @@ HdSt_OsdIndexComputation::HdSt_OsdIndexComputation(
 void
 HdSt_OsdIndexComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
-    if (HdSt_Subdivision::RefinesToTriangles(_topology->GetScheme())) {
-        // triangles (loop)
-        specs->emplace_back(HdTokens->indices,
-                            HdTupleType {HdTypeInt32Vec3, 1});
-        specs->emplace_back(HdTokens->primitiveParam,
-                            HdTupleType {HdTypeInt32Vec3, 1});
-        // vec3 will suffice, but this unifies it for all the cases
-        specs->emplace_back(HdTokens->edgeIndices,
-                            HdTupleType {HdTypeInt32Vec4, 1});
-    } else if (_topology->RefinesToBSplinePatches()) {
+    if (_topology->RefinesToBSplinePatches()) {
         // bi-cubic bspline patches
         specs->emplace_back(HdTokens->indices,
                             HdTupleType {HdTypeInt32, 16});
         // 3+1 (includes sharpness)
         specs->emplace_back(HdTokens->primitiveParam,
                             HdTupleType {HdTypeInt32Vec4, 1});
+        specs->emplace_back(HdTokens->edgeIndices,
+                            HdTupleType {HdTypeInt32Vec4, 1});
+    } else if (_topology->RefinesToBoxSplineTrianglePatches()) {
+        // quartic box spline triangle patches
+        specs->emplace_back(HdTokens->indices,
+                            HdTupleType {HdTypeInt32, 12});
+        // 3+1 (includes sharpness)
+        specs->emplace_back(HdTokens->primitiveParam,
+                            HdTupleType {HdTypeInt32Vec4, 1});
+        specs->emplace_back(HdTokens->edgeIndices,
+                            HdTupleType {HdTypeInt32Vec4, 1});
+    } else if (HdSt_Subdivision::RefinesToTriangles(_topology->GetScheme())) {
+        // triangles (loop)
+        specs->emplace_back(HdTokens->indices,
+                            HdTupleType {HdTypeInt32Vec3, 1});
+        specs->emplace_back(HdTokens->primitiveParam,
+                            HdTupleType {HdTypeInt32Vec3, 1});
+        // vec3 will suffice, but this unifies it for all the cases
         specs->emplace_back(HdTokens->edgeIndices,
                             HdTupleType {HdTypeInt32Vec4, 1});
     } else {

@@ -56,7 +56,8 @@ public:
         PRIM_MESH_REFINED_TRIANGLES, // e.g: loop subdiv
         PRIM_MESH_COARSE_QUADS,      // e.g: quadrangulation for ptex
         PRIM_MESH_REFINED_QUADS,     // e.g: catmark/bilinear subdiv
-        PRIM_MESH_PATCHES,
+        PRIM_MESH_BSPLINE,           // e.g. catmark limit surface patches
+        PRIM_MESH_BOXSPLINETRIANGLE, // e.g. loop limit surface patches
         PRIM_VOLUME                  // Simply draws triangles of bounding
                                      // box of a volume.
     };                                         
@@ -77,7 +78,8 @@ public:
                 primType == PrimitiveType::PRIM_MESH_REFINED_TRIANGLES ||
                 primType == PrimitiveType::PRIM_MESH_COARSE_QUADS      ||
                 primType == PrimitiveType::PRIM_MESH_REFINED_QUADS     ||
-                primType == PrimitiveType::PRIM_MESH_PATCHES);
+                primType == PrimitiveType::PRIM_MESH_BSPLINE   ||
+                primType == PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE);
     }
 
     static inline bool IsPrimTypeTriangles(PrimitiveType primType) {
@@ -92,7 +94,8 @@ public:
     }
 
     static inline bool IsPrimTypePatches(PrimitiveType primType) {
-        return primType == PrimitiveType::PRIM_MESH_PATCHES ||
+        return primType == PrimitiveType::PRIM_MESH_BSPLINE ||
+               primType == PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE ||
                primType == PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES ||
                primType == PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES;
     }

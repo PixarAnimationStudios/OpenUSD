@@ -84,6 +84,10 @@ public:
 
     /// Returns true if the subdivision for \a scheme generates bspline patches.
     static bool RefinesToBSplinePatches(TfToken const &scheme);
+
+    /// Returns true if the subdivision for \a scheme generates box spline
+    /// triangle patches.
+    static bool RefinesToBoxSplineTrianglePatches(TfToken const &scheme);
 };
 
 // ---------------------------------------------------------------------------
