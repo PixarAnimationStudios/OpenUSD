@@ -31,6 +31,7 @@
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/smallVector.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -67,13 +68,17 @@ inline VtArray<T> HdResampleNeighbors(float alpha,
 /// parametric position u.  The function is considered constant
 /// outside the supplied sample range.
 template <typename T>
-T HdResampleRawTimeSamples(float u, size_t numSamples,
-                           const float *us, const T *vs)
+T HdResampleRawTimeSamples(
+    float u, 
+    size_t numSamples,
+    const float *us, 
+    const T *vs)
 {
     if (numSamples == 0) {
         TF_CODING_ERROR("HdResample: Zero samples provided");
         return T();
     }
+
     size_t i=0;
     for (; i < numSamples; ++i) {
         if (us[i] == u) {
@@ -112,63 +117,35 @@ template<typename TYPE, unsigned int CAPACITY>
 struct HdTimeSampleArray 
 {
     HdTimeSampleArray() {
-        times = _fixedTimes;
-        values = _fixedValues;
-        _heapTimes = nullptr;
-        _heapValues = nullptr;
+        times.resize(CAPACITY);
+        values.resize(CAPACITY);
+        count = 0;
     }
 
-    ~HdTimeSampleArray() {
-        if (_heapTimes) {
-            delete[] _heapTimes;
-        }
-        if (_heapValues) {
-            delete[] _heapValues;
-        }
-    }
-
-    HdTimeSampleArray(const HdTimeSampleArray& rhs) : HdTimeSampleArray() {
-        Resize(rhs.count);
-        for (size_t i=0; i < rhs.count; ++i) {
-            times[i] = rhs.times[i];
-            values[i] = rhs.values[i];
-        }
+    HdTimeSampleArray(const HdTimeSampleArray& rhs) {
+        times = rhs.times;
+        values = rhs.values;
+        count = rhs.count;
     }
 
     HdTimeSampleArray& operator=(const HdTimeSampleArray& rhs) {
-        Resize(rhs.count);
-        for (size_t i=0; i < rhs.count; ++i) {
-            times[i] = rhs.times[i];
-            values[i] = rhs.values[i];
-        }
+        times = rhs.times;
+        values = rhs.values;
+        count = rhs.count;
         return *this;
     }
 
-    /// Resize the internal buffers if needed when count <= CAPACITY.
-    void Resize(unsigned int newCount) {
-        if (_heapTimes) {
-            delete[] _heapTimes;
-        } 
-        if (_heapValues) {
-            delete[] _heapValues;
-        }
-
-        if (newCount <= CAPACITY) {
-            times = _fixedTimes;
-            values = _fixedValues;
-        } else {
-            _heapTimes = new float[newCount];
-            _heapValues = new TYPE[newCount];
-            times = _heapTimes;
-            values = _heapValues;
-        }
-        count = newCount;
-    }  
+    /// Resize the internal buffers.
+    void Resize(unsigned int newSize) {
+        times.resize(newSize);
+        values.resize(newSize);
+        count = newSize;
+    }
 
     /// Convience method for invoking HdResampleRawTimeSamples
     /// on this HdTimeSampleArray.
     TYPE Resample(float u) const {
-        return HdResampleRawTimeSamples(u, count, times, values);
+        return HdResampleRawTimeSamples(u, count, times.data(), values.data());
     }
 
     /// Unbox an HdTimeSampleArray holding boxed VtValue<VtArray<T>>
@@ -180,9 +157,8 @@ struct HdTimeSampleArray
     /// \see VtValue::Get()
     void UnboxFrom(HdTimeSampleArray<VtValue, CAPACITY> const& box) {
         Resize(box.count);
-        count = box.count;
+        times = box.times;
         for (size_t i=0; i < box.count; ++i) {
-            times[i] = box.times[i];
             if (box.values[i].GetArraySize() > 0) {
                 values[i] = box.values[i].template Get<TYPE>();
             } else {
@@ -191,25 +167,9 @@ struct HdTimeSampleArray
         }
     }
 
-    /// Static maximum capacity.
-    static const unsigned int capacity = CAPACITY;
-
-    /// Count of how many samples are stored.
-    unsigned int count;
-
-    /// External accessors
-    float* times;
-    TYPE* values;
-
-private: 
-    /// Fixed-size time buffer to avoid heap allocation when 
-    /// returning numSamples <= CAPACITY
-    float _fixedTimes[CAPACITY];
-    TYPE _fixedValues[CAPACITY];
-
-    /// Variable size arrays when numSamples > CAPACITY
-    float* _heapTimes;
-    TYPE* _heapValues;
+    size_t count;
+    TfSmallVector<float, CAPACITY> times;
+    TfSmallVector<TYPE, CAPACITY> values;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

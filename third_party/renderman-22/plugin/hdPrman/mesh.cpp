@@ -145,34 +145,21 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_Context *context,
         sceneDelegate->SamplePrimvar(id, HdTokens->points, &boxedPoints);
         points.UnboxFrom(boxedPoints);
     }
-    // Assume 1 time sample until and unless we detect animated P.
-    if (points.count == 1) {
-        // Fast path: single sample.
-        if (points.values[0].size() == npoints) {
-            primvars->SetPointDetail(RixStr.k_P,
-                                     (RtPoint3*) points.values[0].cdata(),
-                                     RixDetailType::k_vertex);
+
+    primvars->SetTimeSamples(points.count, &points.times[0]);
+    for (size_t i=0; i < points.count; ++i) {
+        if (points.values[i].size() == npoints) {
+            primvars->SetPointDetail(
+                RixStr.k_P, 
+                (RtPoint3*) points.values[i].cdata(),
+                RixDetailType::k_vertex, 
+                i);
         } else {
-            TF_WARN("<%s> primvar 'points' size (%zu) did not match expected "
-                    "(%zu)", id.GetText(), points.values[0].size(), npoints);
-        }
-    } else if (points.count > 1) {
-        // P is animated, so promote the RixParamList to use the
-        // configured sample times.
-        const std::vector<float> &configuredSampleTimes =
-            context->GetTimeSamplesForId(id);
-        primvars->SetTimeSamples(configuredSampleTimes.size(),
-                                 &configuredSampleTimes[0]);
-        // Resample P at configured times.
-        for (size_t i=0; i < configuredSampleTimes.size(); ++i) {
-            VtVec3fArray p = points.Resample(configuredSampleTimes[i]);
-            if (p.size() == npoints) {
-                primvars->SetPointDetail(RixStr.k_P, (RtPoint3*) p.cdata(),
-                                         RixDetailType::k_vertex, i);
-            } else {
-                TF_WARN("<%s> primvar 'points' size (%zu) did not match "
-                        "expected (%zu)", id.GetText(), p.size(), npoints);
-            }
+            TF_WARN("<%s> primvar 'points' size (%zu) did not match "
+                    "expected (%zu)", 
+                    id.GetText(), 
+                    points.values[i].size(), 
+                    npoints);
         }
     }
 

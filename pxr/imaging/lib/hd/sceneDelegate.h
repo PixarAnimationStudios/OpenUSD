@@ -431,15 +431,15 @@ public:
     SampleTransform(SdfPath const & id,
                     HdTimeSampleArray<GfMatrix4d, CAPACITY> *sa) {
         size_t authoredSamples = 
-            SampleTransform(id, CAPACITY, sa->times, sa->values);
+            SampleTransform(id, CAPACITY, sa->times.data(), sa->values.data());
         if (authoredSamples > CAPACITY) {
             sa->Resize(authoredSamples);
             size_t authoredSamplesSecondAttempt = 
                 SampleTransform(
                     id, 
                     authoredSamples, 
-                    sa->times, 
-                    sa->values);
+                    sa->times.data(), 
+                    sa->values.data());
             // Number of samples should be consisntent through multiple
             // invokations of the sampling function.
             TF_VERIFY(authoredSamples == authoredSamplesSecondAttempt);
@@ -473,16 +473,16 @@ public:
             SampleInstancerTransform(
                 instancerId, 
                 CAPACITY, 
-                sa->times, 
-                sa->values);
+                sa->times.data(), 
+                sa->values.data());
         if (authoredSamples > CAPACITY) {
             sa->Resize(authoredSamples);
             size_t authoredSamplesSecondAttempt = 
                 SampleInstancerTransform(
                     instancerId, 
                     authoredSamples, 
-                    sa->times, 
-                    sa->values);
+                    sa->times.data(), 
+                    sa->values.data());
             // Number of samples should be consisntent through multiple
             // invokations of the sampling function.
             TF_VERIFY(authoredSamples == authoredSamplesSecondAttempt);
@@ -524,7 +524,12 @@ public:
                   TfToken const& key,
                   HdTimeSampleArray<VtValue, CAPACITY> *sa) {
         size_t authoredSamples = 
-            SamplePrimvar(id, key, CAPACITY, sa->times, sa->values);
+            SamplePrimvar(
+                id, 
+                key, 
+                CAPACITY, 
+                sa->times.data(), 
+                sa->values.data());
         if (authoredSamples > CAPACITY) {
             sa->Resize(authoredSamples);
             size_t authoredSamplesSecondAttempt = 
@@ -532,8 +537,8 @@ public:
                     id, 
                     key, 
                     authoredSamples, 
-                    sa->times, 
-                    sa->values);
+                    sa->times.data(), 
+                    sa->values.data());
             // Number of samples should be consisntent through multiple
             // invokations of the sampling function.
             TF_VERIFY(authoredSamples == authoredSamplesSecondAttempt);
