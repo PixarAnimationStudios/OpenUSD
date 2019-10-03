@@ -1938,10 +1938,6 @@ private:
                              const TfToken &keyPath,
                              Composer *composer) const;
 
-    template <class T>
-    bool _GetFallbackMetadata(const UsdObject &obj, const TfToken& fieldName,
-                              const TfToken &keyPath, T* result) const;
-
     // --------------------------------------------------------------------- //
     // Default & TimeSample Resolution
     // --------------------------------------------------------------------- //
