@@ -1600,22 +1600,35 @@ UsdImagingDelegate::GetCurrentTimeSamplingInterval()
     float shutterClose = 0.5f;
 
     if (!_cameraPathForSampling.IsEmpty()) {
-        _UpdateSingleValue(_cameraPathForSampling, HdCamera::DirtyParams);
+        VtValue vShutterOpen;
+        VtValue vShutterClose;
 
-        VtValue shutterOpen;
-        _valueCache.ExtractCameraParam(
-            _cameraPathForSampling, 
-            HdCameraTokens->shutterOpen, 
-            &shutterOpen);
-        shutterOpen = shutterOpen.Get<double>();
+        if (!_valueCache.FindCameraParam(
+                _cameraPathForSampling, 
+                HdCameraTokens->shutterOpen, 
+                &vShutterOpen)) {
+            _UpdateSingleValue(_cameraPathForSampling, HdCamera::DirtyParams);
 
-        VtValue shutterClose;
-        _valueCache.ExtractCameraParam(
-            _cameraPathForSampling, 
-            HdCameraTokens->shutterClose, 
-            &shutterClose);
-        shutterClose = shutterClose.Get<double>();
-    } 
+            _valueCache.FindCameraParam(
+                _cameraPathForSampling, 
+                HdCameraTokens->shutterOpen, 
+                &vShutterOpen);
+        }
+        shutterOpen = vShutterOpen.Get<double>();
+
+        if (!_valueCache.FindCameraParam(
+                _cameraPathForSampling, 
+                HdCameraTokens->shutterClose, 
+                &vShutterClose)) {
+            _UpdateSingleValue(_cameraPathForSampling, HdCamera::DirtyParams);
+
+            _valueCache.FindCameraParam(
+                _cameraPathForSampling, 
+                HdCameraTokens->shutterClose, 
+                &vShutterClose);
+        }
+        shutterClose = vShutterClose.Get<double>();
+    }
 
     return GfInterval(
         GetTimeWithOffset(shutterOpen).GetValue(), 
