@@ -233,7 +233,7 @@ class RenderProduct "RenderProduct" (
         \note In the future, UsdRender may define additional product
         types."""
     )
-    uniform token productName = "" (
+    token productName = "" (
         doc = """Specifies the name that the output/display driver
         should give the product.  This is provided as-authored to the
         driver, whose responsibility it is to situate the product on a

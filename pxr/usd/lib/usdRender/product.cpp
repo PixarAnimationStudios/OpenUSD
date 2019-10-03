@@ -131,7 +131,7 @@ UsdRenderProduct::CreateProductNameAttr(VtValue const &defaultValue, bool writeS
     return UsdSchemaBase::_CreateAttr(UsdRenderTokens->productName,
                        SdfValueTypeNames->Token,
                        /* custom = */ false,
-                       SdfVariabilityUniform,
+                       SdfVariabilityVarying,
                        defaultValue,
                        writeSparsely);
 }

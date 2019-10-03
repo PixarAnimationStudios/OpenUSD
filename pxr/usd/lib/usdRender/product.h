@@ -201,7 +201,7 @@ public:
     ///
     /// \n  C++ Type: TfToken
     /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: 
     USDRENDER_API
     UsdAttribute GetProductNameAttr() const;

@@ -342,7 +342,7 @@ class RenderProduct "RenderProduct" (
         doc = """The aspect ratio (width/height) of image pixels..
         The default ratio 1.0 indicates square pixels."""
     )
-    uniform token productName = "" (
+    token productName = "" (
         doc = """Specifies the name that the output/display driver
         should give the product.  This is provided as-authored to the
         driver, whose responsibility it is to situate the product on a
