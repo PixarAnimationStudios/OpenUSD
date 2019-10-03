@@ -29,16 +29,19 @@ import itertools, unittest
 # double values.
 class TestSdfTimeCode(unittest.TestCase):
     def test_ReprAndConversion(self):
-        # Verify that a time code is default constructable.
-        self.assertFalse(Sdf.TimeCode() is None)
+        # Verify that the default time code is 0.
+        self.assertEqual(Sdf.TimeCode(), Sdf.TimeCode(0))
 
         timeCode1 = Sdf.TimeCode(0)
         timeCode2 = Sdf.TimeCode(3.0)
         timeCode3 = Sdf.TimeCode(-2.5)
 
         self.assertEqual(repr(timeCode1), 'Sdf.TimeCode(0)')
+        self.assertEqual(eval(repr(timeCode1)), timeCode1)
         self.assertEqual(repr(timeCode2), 'Sdf.TimeCode(3)')
+        self.assertEqual(eval(repr(timeCode2)), timeCode2)
         self.assertEqual(repr(timeCode3), 'Sdf.TimeCode(-2.5)')
+        self.assertEqual(eval(repr(timeCode3)), timeCode3)
 
         self.assertEqual(str(timeCode1), '0')
         self.assertEqual(str(timeCode2), '3')

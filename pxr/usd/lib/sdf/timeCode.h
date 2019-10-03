@@ -48,42 +48,40 @@ public:
     /// @{
     ///
 
-    /// Construct an uninitialized time code value.
-    SDF_API SdfTimeCode() = default;
-
-    /// Construct a time code with the given time. A double value can implicitly 
-    /// cast to SdfTimeCode.
-    constexpr SdfTimeCode(double time) : _time(time) {};
+    /// Construct a time code with the given time. 
+    /// A default constructed SdfTimeCode has a time of 0.0.
+    /// A double value can implicitly cast to SdfTimeCode.
+    constexpr SdfTimeCode(double time = 0.0) noexcept : _time(time) {};
 
     /// @}
 
     ///\name Operators
     /// @{
 
-    bool operator==(const SdfTimeCode &rhs) const 
+    constexpr bool operator==(const SdfTimeCode &rhs) const noexcept
         { return _time == rhs._time; }
-    bool operator!=(const SdfTimeCode &rhs) const 
+    constexpr bool operator!=(const SdfTimeCode &rhs) const noexcept
         { return _time != rhs._time; }
-    bool operator<(const SdfTimeCode &rhs) const 
+    constexpr bool operator<(const SdfTimeCode &rhs) const noexcept
         { return _time < rhs._time; }
-    bool operator>(const SdfTimeCode &rhs) const 
+    constexpr bool operator>(const SdfTimeCode &rhs) const noexcept
         { return _time > rhs._time; }
-    bool operator<=(const SdfTimeCode &rhs) const 
+    constexpr bool operator<=(const SdfTimeCode &rhs) const noexcept
         { return _time <= rhs._time; }
-    bool operator>=(const SdfTimeCode &rhs) const 
+    constexpr bool operator>=(const SdfTimeCode &rhs) const noexcept
         { return _time >= rhs._time; }
 
-    SdfTimeCode operator*(const SdfTimeCode &rhs) const 
+    constexpr SdfTimeCode operator*(const SdfTimeCode &rhs) const noexcept
         { return SdfTimeCode(_time * rhs._time); }
-    SdfTimeCode operator/(const SdfTimeCode &rhs) const 
+    constexpr SdfTimeCode operator/(const SdfTimeCode &rhs) const noexcept
         { return SdfTimeCode(_time / rhs._time); }
-    SdfTimeCode operator+(const SdfTimeCode &rhs) const 
+    constexpr SdfTimeCode operator+(const SdfTimeCode &rhs) const noexcept
         { return SdfTimeCode(_time + rhs._time); } 
-    SdfTimeCode operator-(const SdfTimeCode &rhs) const 
-        { return SdfTimeCode(_time - rhs._time); };
+    constexpr SdfTimeCode operator-(const SdfTimeCode &rhs) const noexcept
+        { return SdfTimeCode(_time - rhs._time); }
 
     /// Explicit conversion to double
-    explicit operator double() const {return _time;}
+    explicit constexpr operator double() const noexcept {return _time;}
     
     /// Hash function
     size_t GetHash() const {
@@ -106,7 +104,7 @@ public:
     /// @{
 
     /// Return the time value.
-    double GetValue() const {
+    constexpr double GetValue() const noexcept {
         return _time;
     }
 
@@ -124,25 +122,45 @@ private:
 /// Binary arithmetic and comparison operators with double valued lefthand side.
 /// @{
 
-SDF_API SdfTimeCode operator*(double time, const SdfTimeCode &timeCode);
+inline constexpr 
+SdfTimeCode operator*(double time, const SdfTimeCode &timeCode) noexcept
+    { return SdfTimeCode(time) * timeCode; }
 
-SDF_API SdfTimeCode operator/(double time, const SdfTimeCode &timeCode);
+inline constexpr 
+SdfTimeCode operator/(double time, const SdfTimeCode &timeCode) noexcept
+    { return SdfTimeCode(time) / timeCode; }
 
-SDF_API SdfTimeCode operator+(double time, const SdfTimeCode &timeCode);
+inline constexpr 
+SdfTimeCode operator+(double time, const SdfTimeCode &timeCode) noexcept
+    { return SdfTimeCode(time) + timeCode; }
 
-SDF_API SdfTimeCode operator-(double time, const SdfTimeCode &timeCode);
+inline constexpr 
+SdfTimeCode operator-(double time, const SdfTimeCode &timeCode) noexcept
+    { return SdfTimeCode(time) - timeCode; }
 
-SDF_API bool operator==(double time, const SdfTimeCode &timeCode);
+inline constexpr 
+bool operator==(double time, const SdfTimeCode &timeCode) noexcept
+    { return SdfTimeCode(time) == timeCode; }
 
-SDF_API bool operator!=(double time, const SdfTimeCode &timeCode);
+inline constexpr 
+bool operator!=(double time, const SdfTimeCode &timeCode) noexcept
+    { return SdfTimeCode(time) != timeCode; }
 
-SDF_API bool operator<(double time, const SdfTimeCode &timeCode);
+inline constexpr 
+bool operator<(double time, const SdfTimeCode &timeCode) noexcept
+    { return SdfTimeCode(time) < timeCode; }
 
-SDF_API bool operator>(double time, const SdfTimeCode &timeCode);
+inline constexpr 
+bool operator>(double time, const SdfTimeCode &timeCode) noexcept
+    { return SdfTimeCode(time) > timeCode; }
 
-SDF_API bool operator<=(double time, const SdfTimeCode &timeCode);
+inline constexpr 
+bool operator<=(double time, const SdfTimeCode &timeCode) noexcept
+    { return SdfTimeCode(time) <= timeCode; }
 
-SDF_API bool operator>=(double time, const SdfTimeCode &timeCode);
+inline constexpr 
+bool operator>=(double time, const SdfTimeCode &timeCode) noexcept
+    { return SdfTimeCode(time) >= timeCode; }
 
 /// Stream insertion operator for the string representation of this time code.
 SDF_API std::ostream& operator<<(std::ostream& out, const SdfTimeCode& ap);
