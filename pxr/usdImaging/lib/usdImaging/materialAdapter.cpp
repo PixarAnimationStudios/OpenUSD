@@ -107,6 +107,16 @@ UsdImagingMaterialAdapter::Populate(UsdPrim const& prim,
                        cachePath,
                        prim, shared_from_this());
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
+
+    // Also register dependencies on behalf of any descendent
+    // UsdShadeShader prims, since they are consumed to
+    // create the material network.
+    for (UsdPrim const& child: prim.GetDescendants()) {
+        if (child.IsA<UsdShadeShader>()) {
+            index->AddDependency(cachePath, child);
+        }
+    }
+
     return prim.GetPath();
 }
 
@@ -196,7 +206,7 @@ UsdImagingMaterialAdapter::MarkMaterialDirty(UsdPrim const& prim,
 /* virtual */
 void
 UsdImagingMaterialAdapter::_RemovePrim(SdfPath const& cachePath,
-                                 UsdImagingIndexProxy* index)
+                                       UsdImagingIndexProxy* index)
 {
     index->RemoveSprim(HdPrimTypeTokens->material, cachePath);
 }

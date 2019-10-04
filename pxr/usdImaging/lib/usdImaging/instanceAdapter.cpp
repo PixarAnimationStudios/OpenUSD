@@ -58,6 +58,7 @@
 #include "pxr/base/tf/type.h"
 
 #include <limits>
+#include <queue>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -330,7 +331,7 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
             ++primCount;
 
             if (!isLeafInstancer) {
-                instancerData.childInstancers.insert(protoPath);
+                instancerData.childPointInstancers.insert(protoPath);
             }
 
             TF_DEBUG(USDIMAGING_INSTANCER).Msg(
@@ -381,12 +382,6 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
 
             _instanceToInstancerMap[instancePath] = instancerPath;
 
-            // Make sure we add a dependency for this instance on this adapter,
-            // so that changes to the instance are handled properly.
-            index->AddHdPrimInfo(instancePath,
-                               _GetPrim(instancePath),
-                               instancerAdapter);
-
             // If we're adding an instance to an instancer that had already
             // been drawn, we need to ensure it and its rprims are marked
             // dirty to ensure the new instance will be drawn.
@@ -409,6 +404,43 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
     TF_FOR_ALL(nestedInstanceIt, nestedInstances) {
         _Populate(*nestedInstanceIt, index, instancerContext,
                   instancerProxyPath);
+        instancerData.nestedInstances.push_back(nestedInstanceIt->GetPath());
+    }
+
+    // Add a dependency on any associated hydra instancers (instancerPath, if
+    // this instance wasn't added to hydra, and any nested instancers).
+    std::queue<SdfPath> depInstancePaths;
+    depInstancePaths.push(instancePath);
+    std::set<SdfPath> visited;
+    while (!depInstancePaths.empty()) {
+        SdfPath depInstancePath = depInstancePaths.front();
+        depInstancePaths.pop();
+
+        if (depInstancePath.IsEmpty()) {
+            continue;
+        }
+
+        SdfPath depInstancerPath = _instanceToInstancerMap[depInstancePath];
+
+        auto result = visited.insert(depInstancerPath);
+        if (!result.second) {
+            continue;
+        }
+
+        // If we've found a populated instancer, register a dependency,
+        // unless depInstancerPath == prim.GetPath, in which case the
+        // dependency was automatically added by InsertInstancer.
+        if (index->IsPopulated(depInstancerPath) &&
+            depInstancerPath != prim.GetPath()) {
+            index->AddDependency(depInstancerPath, prim);
+        }
+
+        _InstancerData& depInstancerData =
+            _instancerData[depInstancerPath];
+        for (SdfPath const& nestedInstance :
+                depInstancerData.nestedInstances) {
+            depInstancePaths.push(nestedInstance);
+        }
     }
 
     return instancerPath;
@@ -1193,7 +1225,30 @@ UsdImagingInstanceAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                       SdfPath const& cachePath, 
                                       TfToken const& propertyName)
 {
-    // Blast everything. This will trigger a prim resync; see ProcessPrimResync.
+    // If this is called on behalf of a prototype prim, pass the call through.
+    if (_IsChildPrim(prim, cachePath)) {
+        UsdImagingInstancerContext instancerContext;
+        _ProtoRprim const& rproto = _GetProtoRprim(prim.GetPath(),
+                                                    cachePath,
+                                                    &instancerContext);
+        if (!TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
+            return HdChangeTracker::AllDirty;
+        }
+        if (!TF_VERIFY(rproto.protoGroup, "%s", cachePath.GetText())) {
+            return HdChangeTracker::AllDirty;
+        }
+
+        UsdPrim protoPrim = _GetPrim(rproto.path);
+        HdDirtyBits dirtyBits = rproto.adapter->ProcessPropertyChange(
+            protoPrim, cachePath, propertyName);
+
+        return dirtyBits;
+    }
+
+    // If one of the attributes of the instance prim changed, blast everything.
+    // This will trigger a prim resync; see ProcessPrimResync.
+    // XXX: It would be great to turn this into a dirty bit change instead,
+    // but that requires refactoring instancer data ownership.
     return HdChangeTracker::AllDirty;
 }
 
@@ -1202,14 +1257,6 @@ UsdImagingInstanceAdapter::_ResyncPath(SdfPath const& cachePath,
                                        UsdImagingIndexProxy* index,
                                        bool reload)
 {
-    // If prim data exists at this path, we'll drop it now.
-    _InstancerDataMap::iterator instIt = _instancerData.find(cachePath);
-    if (instIt != _instancerData.end()) {
-        // Nuke the entire instancer.
-        _ResyncInstancer(cachePath, index, reload);
-        return;
-    }
-
     // Either the prim was fundamentally modified or removed.
     // Regenerate instancer data if an instancer depends on the
     // resync'd prim. 
@@ -1411,8 +1458,12 @@ UsdImagingInstanceAdapter::MarkVisibilityDirty(UsdPrim const& prim,
             rproto.adapter->MarkVisibilityDirty(prim, cachePath, index);
         }
     } else if (TfMapLookupPtr(_instancerData, prim.GetPath()) != nullptr) {
+        // For the instancer itself, the visibility of each instance affects
+        // whether or not it gets added to the instance indices array, so we
+        // need to return DirtyInstanceIndex.
         static const HdDirtyBits visibilityDirty =
-                                               HdChangeTracker::DirtyVisibility;
+                                            HdChangeTracker::DirtyVisibility |
+                                            HdChangeTracker::DirtyInstanceIndex;
 
         index->MarkInstancerDirty(cachePath, visibilityDirty);
     }
@@ -1602,13 +1653,6 @@ UsdImagingInstanceAdapter::_ResyncInstancer(SdfPath const& instancerPath,
         primIt->second.adapter->ProcessPrimRemoval(primIt->first, index);
     }
 
-    // Remove all dependencies on the instancer's instances, but keep a
-    // copy of them around so we can repopulate them below.
-    const SdfPathVector instancePaths = instIt->second.instancePaths;
-    TF_FOR_ALL(instanceIt, instancePaths) {
-        index->RemoveHdPrimInfo(*instanceIt);
-    }
-
     // Remove this instancer's entry from the master -> instancer map.
     auto range = _masterToInstancerMap.equal_range(instIt->second.masterPath);
     for (auto it = range.first; it != range.second; ++it) {
@@ -1618,9 +1662,16 @@ UsdImagingInstanceAdapter::_ResyncInstancer(SdfPath const& instancerPath,
         }
     }
 
-    // Blow away the instancer and the associated local data.
-    index->RemoveInstancer(instancerPath);
-    index->RemoveHdPrimInfo(instancerPath);
+    // Remove the instancer, if it's an actual hydra prim. In nested instancing
+    // cases, we might have an _instancerData entry but no hydra instancer.
+    if (index->IsPopulated(instancerPath)) {
+        index->RemoveInstancer(instancerPath);
+    }
+
+    // Keep a copy of the instancer's instances so we can repopulate them below.
+    const SdfPathVector instancePaths = instIt->second.instancePaths;
+
+    // Remove local instancer data.
     _instancerData.erase(instIt);
 
     // Repopulate the instancer's previous instances. Those that don't exist
@@ -1628,7 +1679,8 @@ UsdImagingInstanceAdapter::_ResyncInstancer(SdfPath const& instancerPath,
     // pushed back into this adapter and refreshed.
     if (repopulate) {
         TF_FOR_ALL(pathIt, instancePaths) {
-            if (_GetPrim(*pathIt) && _GetPrim(*pathIt).IsActive()) {
+            UsdPrim prim = _GetPrim(*pathIt);
+            if (prim && prim.IsActive() && !prim.IsInMaster()) {
                 index->Repopulate(*pathIt);
             }
         }
@@ -2030,8 +2082,8 @@ UsdImagingInstanceAdapter::GetPathForInstanceIndex(
         TF_FOR_ALL(instIt, _instancerData) {
             _InstancerData& inst = instIt->second;
 
-            if (inst.childInstancers.find(instancerPath) !=
-                inst.childInstancers.end()) {
+            if (inst.childPointInstancers.find(instancerPath) !=
+                inst.childPointInstancers.end()) {
                     return GetPathForInstanceIndex(instIt->first,
                                                    protoIndex,
                                                    instanceCount,

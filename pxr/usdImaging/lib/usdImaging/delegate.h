@@ -669,6 +669,7 @@ private:
         HdDirtyBits       timeVaryingBits;  // Dirty Bits to set when
                                             // time changes
         HdDirtyBits       dirtyBits;        // Current dirty state of the prim.
+        SdfPathVector     extraDependencies;// Dependencies that aren't usdPrim.
     };
 
     typedef TfHashMap<SdfPath, _HdPrimInfo, SdfPath::Hash> _HdPrimInfoMap;
@@ -676,16 +677,21 @@ private:
     // Map from cache path to Hydra prim info
     _HdPrimInfoMap _hdPrimInfoMap;
 
+    typedef std::multimap<SdfPath, SdfPath> _DependencyMap;
+
+    // Map from USD path to Hydra path, for tracking USD->hydra dependencies.
+    _DependencyMap _dependencyInfo;
+
+    void _GatherDependencies(SdfPath const& subtree,
+                             SdfPathVector *affectedCachePaths,
+                             SdfPathVector *affectedUsdPaths = nullptr);
+
     // SdfPath::ReplacePrefix() is used frequently to convert between
     // cache path and Hydra render index path and is a performance bottleneck.
     // These maps pre-computes these conversion.
     typedef TfHashMap<SdfPath, SdfPath, SdfPath::Hash> SdfPathMap;
     SdfPathMap _cache2indexPath;
     SdfPathMap _index2cachePath;
-
-    // List of all cache paths in use, corresponding to the keys
-    // in _hdPrimInfoMap.
-    Hd_SortedIds _cachePaths;
 
     // Only use this method when we think no existing adapter has been
     // established. For example, during initial Population.

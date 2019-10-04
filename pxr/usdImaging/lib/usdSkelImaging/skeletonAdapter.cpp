@@ -861,7 +861,6 @@ UsdSkelImagingSkeletonAdapter::_RemovePrim(const SdfPath& cachePath,
         
         // Remove bone mesh.
         index->RemoveRprim(cachePath);
-        index->RemoveHdPrimInfo(cachePath);
 
         // Remove all skinned prims that are targered by the skeleton, and their
         // computations.
@@ -1156,18 +1155,15 @@ UsdSkelImagingSkeletonAdapter::_RemoveSkinnedPrimAndComputations(
     
     // Remove skinned prim.
     index->RemoveRprim(cachePath);
-    index->RemoveHdPrimInfo(cachePath);
 
     // Remove the computations it participates in.
     SdfPath compPath = _GetSkinningComputationPath(cachePath);
     index->RemoveSprim(HdPrimTypeTokens->extComputation, compPath);
-    index->RemoveHdPrimInfo(compPath);
     
     if (_IsEnabledAggregatorComputation()) {
         SdfPath aggrCompPath =
             _GetSkinningInputAggregatorComputationPath(cachePath);
         index->RemoveSprim(HdPrimTypeTokens->extComputation, aggrCompPath);
-        index->RemoveHdPrimInfo(aggrCompPath);
     }
     
     // Clear cache entry.

@@ -28,9 +28,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 bool
-UsdImagingIndexProxy::AddHdPrimInfo(SdfPath const &cachePath,
-                                  UsdPrim const& usdPrim,
-                                  UsdImagingPrimAdapterSharedPtr const& adapter)
+UsdImagingIndexProxy::_AddHdPrimInfo(SdfPath const &cachePath,
+                                     UsdPrim const& usdPrim,
+                                     UsdImagingPrimAdapterSharedPtr const& adapter)
 {
     UsdImagingPrimAdapterSharedPtr adapterToInsert;
     if (adapter) {
@@ -64,33 +64,25 @@ UsdImagingIndexProxy::AddHdPrimInfo(SdfPath const &cachePath,
 
     UsdImagingDelegate::_HdPrimInfo &primInfo = it->second;
 
-    if (!inserted) { // Entry already exists.
-
-        if (primInfo.adapter) {
-            // For hijacking purposes, it is possible to have another adapter
-            // registered for a prim. If that's the case, we don't override
-            // the prim Info state, and simply return.
-            TF_DEBUG(USDIMAGING_CHANGES).Msg(
-                "[Add Prim Info] Prim Info entry already exists for "
-                " <%s> with adapter=%s \n",
-                cachePath.GetText(), TfType::GetCanonicalTypeName(
-                    typeid(*(primInfo.adapter.get()))).c_str());
-                
-        } else {
-            TF_CODING_ERROR("Found prim info entry for %s "
-                            "with unassigned adapter.", cachePath.GetText());
-        }
-
+    if (!inserted) {
+        // XXX: ideally, we'd TF_VERIFY(inserted) here, but usd resyncs can
+        // sometimes cause double-inserts, and de-duplicating the usd
+        // population list is potentially expensive...
         return false;
     }
-
 
     primInfo.adapter         = adapterToInsert;
     primInfo.timeVaryingBits = 0;
     primInfo.dirtyBits       = 0;
     primInfo.usdPrim         = usdPrim;
 
-    _delegate->_cachePaths.Insert(cachePath);
+    // Register the prim dependency; skip AddDependency so it doesn't get
+    // added to the extraDependencies list.
+    SdfPath usdPath = usdPrim.GetPath();
+    _delegate->_dependencyInfo.insert(
+        UsdImagingDelegate::_DependencyMap::value_type(usdPath, cachePath));
+    TF_DEBUG(USDIMAGING_CHANGES).Msg("[Add dependency] <%s> -> <%s>\n",
+        usdPath.GetText(), cachePath.GetText());
 
     // precache cache path to index path translations
     SdfPath indexPath = _delegate->ConvertCachePathToIndexPath(cachePath);
@@ -107,6 +99,53 @@ UsdImagingIndexProxy::_AddTask(SdfPath const& usdPath)
 }
 
 void
+UsdImagingIndexProxy::_RemovePrimInfoDependencies(SdfPath const& cachePath)
+{
+    UsdImagingDelegate::_HdPrimInfo *primInfo =
+        _delegate->_GetHdPrimInfo(cachePath);
+    if (!TF_VERIFY(primInfo != nullptr, "%s", cachePath.GetText())) {
+        return;
+    }
+    _dependenciesToRemove.push_back(
+        UsdImagingDelegate::_DependencyMap::value_type(
+            primInfo->usdPrim.GetPath(), cachePath));
+
+    for (SdfPath const& dep : primInfo->extraDependencies) {
+        _dependenciesToRemove.push_back(
+            UsdImagingDelegate::_DependencyMap::value_type(
+                dep, cachePath));
+    }
+}
+
+void
+UsdImagingIndexProxy::AddDependency(SdfPath const& cachePath,
+                                    UsdPrim const& usdPrim)
+{
+    UsdImagingDelegate::_HdPrimInfo *primInfo =
+        _delegate->_GetHdPrimInfo(cachePath);
+    if (!TF_VERIFY(primInfo != nullptr, "%s", cachePath.GetText())) {
+        return;
+    }
+
+    SdfPath usdPath = usdPrim.GetPath();
+    if (std::find(primInfo->extraDependencies.cbegin(),
+                  primInfo->extraDependencies.cend(),
+                  usdPath) != primInfo->extraDependencies.cend()) {
+        // XXX: Ideally, we'd TF_VERIFY here, but usd resyncs can
+        // sometimes cause double-inserts (see _AddHdPrimInfo), so we need to
+        // silently guard against this.
+        return;
+    }
+
+    _delegate->_dependencyInfo.insert(
+        UsdImagingDelegate::_DependencyMap::value_type(usdPath, cachePath));
+    primInfo->extraDependencies.push_back(usdPath);
+
+    TF_DEBUG(USDIMAGING_CHANGES).Msg("[Add dependency] <%s> -> <%s>\n",
+        usdPath.GetText(), cachePath.GetText());
+}
+
+void
 UsdImagingIndexProxy::InsertRprim(
                              TfToken const& primType,
                              SdfPath const& cachePath,
@@ -114,7 +153,7 @@ UsdImagingIndexProxy::InsertRprim(
                              UsdPrim const& usdPrim,
                              UsdImagingPrimAdapterSharedPtr adapter)
 {
-    if (AddHdPrimInfo(cachePath, usdPrim, adapter)) {
+    if (_AddHdPrimInfo(cachePath, usdPrim, adapter)) {
         _delegate->GetRenderIndex().InsertRprim(primType, _delegate,
             _delegate->ConvertCachePathToIndexPath(cachePath),
             _delegate->ConvertCachePathToIndexPath(parentPath));
@@ -130,7 +169,7 @@ UsdImagingIndexProxy::InsertSprim(
                              UsdPrim const& usdPrim,
                              UsdImagingPrimAdapterSharedPtr adapter)
 {
-    if (AddHdPrimInfo(cachePath, usdPrim, adapter)) {
+    if (_AddHdPrimInfo(cachePath, usdPrim, adapter)) {
         _delegate->GetRenderIndex().InsertSprim(primType, _delegate,
             _delegate->ConvertCachePathToIndexPath(cachePath));
 
@@ -145,13 +184,38 @@ UsdImagingIndexProxy::InsertBprim(
                              UsdPrim const& usdPrim,
                              UsdImagingPrimAdapterSharedPtr adapter)
 {
-    if (AddHdPrimInfo(cachePath, usdPrim, adapter)) {
+    if (_AddHdPrimInfo(cachePath, usdPrim, adapter)) {
         _delegate->GetRenderIndex().InsertBprim(primType, _delegate,
             _delegate->ConvertCachePathToIndexPath(cachePath));
 
         _AddTask(cachePath);
     }
 }
+
+void
+UsdImagingIndexProxy::InsertInstancer(
+                             SdfPath const& cachePath,
+                             SdfPath const& parentPath,
+                             UsdPrim const& usdPrim,
+                             UsdImagingPrimAdapterSharedPtr adapter)
+{
+    if (_AddHdPrimInfo(cachePath, usdPrim, adapter)) {
+        _delegate->GetRenderIndex().InsertInstancer(_delegate,
+            _delegate->ConvertCachePathToIndexPath(cachePath),
+            _delegate->ConvertCachePathToIndexPath(parentPath));
+
+        _delegate->_instancerPrimCachePaths.insert(cachePath);
+
+        TF_DEBUG(USDIMAGING_INSTANCER).Msg(
+            "[Instancer Inserted] %s, parent = %s, adapter = %s\n",
+            cachePath.GetText(), parentPath.GetText(),
+            adapter ? TfType::GetCanonicalTypeName(typeid(*adapter)).c_str()
+                    : "none");
+
+        _AddTask(cachePath);
+    }
+}
+
 void
 UsdImagingIndexProxy::Repopulate(SdfPath const& usdPath)
 { 
@@ -170,13 +234,6 @@ UsdImagingIndexProxy::RefreshInstancer(SdfPath const& instancerPath)
 {
     _AddTask(instancerPath);
     MarkInstancerDirty(instancerPath, HdChangeTracker::AllDirty);
-}
-
-bool
-UsdImagingIndexProxy::HasRprim(SdfPath const &cachePath)
-{
-    return _delegate->GetRenderIndex().HasRprim(
-        _delegate->ConvertCachePathToIndexPath(cachePath));
 }
 
 void
@@ -277,7 +334,6 @@ UsdImagingIndexProxy::_ProcessRemovals()
             index.RemoveRprim(_delegate->ConvertCachePathToIndexPath(*it));
         }
         _rprimsToRemove.clear();
-
     }
 
     {
@@ -337,7 +393,6 @@ UsdImagingIndexProxy::_ProcessRemovals()
             _delegate->_pickablesMap.erase(cachePath);
 
             _delegate->_hdPrimInfoMap.erase(cachePath);
-            _delegate->_cachePaths.Remove(cachePath);
 
             SdfPath indexPath = _delegate->ConvertCachePathToIndexPath(cachePath);
             _delegate->_cache2indexPath.erase(cachePath);
@@ -345,29 +400,24 @@ UsdImagingIndexProxy::_ProcessRemovals()
         }
         _hdPrimInfoToRemove.clear();
     }
-}
 
-void
-UsdImagingIndexProxy::InsertInstancer(
-                             SdfPath const& cachePath,
-                             SdfPath const& parentPath,
-                             UsdPrim const& usdPrim,
-                             UsdImagingPrimAdapterSharedPtr adapter)
-{
-    if (AddHdPrimInfo(cachePath, usdPrim, adapter)) {
-        _delegate->GetRenderIndex().InsertInstancer(_delegate,
-            _delegate->ConvertCachePathToIndexPath(cachePath),
-            _delegate->ConvertCachePathToIndexPath(parentPath));
+    {
+        TRACE_FUNCTION_SCOPE("dependency");
+        TF_FOR_ALL(it, _dependenciesToRemove) {
+            UsdImagingDelegate::_DependencyMap::value_type dep = *it;
 
-        _delegate->_instancerPrimCachePaths.insert(cachePath);
+            TF_DEBUG(USDIMAGING_CHANGES).Msg("[Remove dependency] <%s> -> <%s>\n",
+                dep.first.GetText(), dep.second.GetText());
 
-        TF_DEBUG(USDIMAGING_INSTANCER).Msg(
-            "[Instancer Inserted] %s, parent = %s, adapter = %s\n",
-            cachePath.GetText(), parentPath.GetText(),
-            adapter ? TfType::GetCanonicalTypeName(typeid(*adapter)).c_str()
-                    : "none");
-
-        _AddTask(cachePath);
+            auto range = _delegate->_dependencyInfo.equal_range(dep.first);
+            for (auto it = range.first; it != range.second; ++it) {
+                if (it->second == dep.second) {
+                    _delegate->_dependencyInfo.erase(it);
+                    break;
+                }
+            }
+        }
+        _dependenciesToRemove.clear();
     }
 }
 
