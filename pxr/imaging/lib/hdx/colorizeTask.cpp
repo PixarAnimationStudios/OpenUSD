@@ -216,8 +216,10 @@ HdxColorizeTask::Prepare(HdTaskContext* ctx, HdRenderIndex *renderIndex)
     if (_needsValidation) {
         _needsValidation = false;
 
-        if (_aovName == HdAovTokens->color &&
-            _aovBuffer->GetFormat() == HdFormatUNorm8Vec4) {
+        if (_aovName == HdAovTokens->color && (
+            _aovBuffer->GetFormat() == HdFormatUNorm8Vec4 ||
+            _aovBuffer->GetFormat() == HdFormatFloat16Vec4 ||
+            _aovBuffer->GetFormat() == HdFormatFloat32Vec4)) {
             return;
         }
         for (auto& colorizer : _colorizerTable) {
@@ -257,8 +259,10 @@ HdxColorizeTask::Execute(HdTaskContext* ctx)
     // Allocate the scratch space, if needed.  Don't allocate scratch space
     // if we're just passing along color data.
     size_t size = _aovBuffer->GetWidth() * _aovBuffer->GetHeight();
-    if (_aovName == HdAovTokens->color &&
-        _aovBuffer->GetFormat() == HdFormatUNorm8Vec4) {
+    if (_aovName == HdAovTokens->color && (
+        _aovBuffer->GetFormat() == HdFormatUNorm8Vec4 ||
+        _aovBuffer->GetFormat() == HdFormatFloat16Vec4 ||
+        _aovBuffer->GetFormat() == HdFormatFloat32Vec4)) {
         size = 0;
     }
 
@@ -297,14 +301,16 @@ HdxColorizeTask::Execute(HdTaskContext* ctx)
         _compositor.UpdateDepth(0, 0, nullptr);
     }
 
-    if (_aovName == HdAovTokens->color &&
-        _aovBuffer->GetFormat() == HdFormatUNorm8Vec4) {
+    if (_aovName == HdAovTokens->color && (
+        _aovBuffer->GetFormat() == HdFormatUNorm8Vec4 ||
+        _aovBuffer->GetFormat() == HdFormatFloat16Vec4 ||
+        _aovBuffer->GetFormat() == HdFormatFloat32Vec4)) {
         // Special handling for color: to avoid a copy, just read the data
         // from the render buffer.
-        uint8_t* ab = reinterpret_cast<uint8_t*>(_aovBuffer->Map());
         _compositor.UpdateColor(_aovBuffer->GetWidth(),
                                 _aovBuffer->GetHeight(),
-                                ab);
+                                _aovBuffer->GetFormat(),
+                                _aovBuffer->Map());
         _aovBuffer->Unmap();
     } else {
 
@@ -315,7 +321,7 @@ HdxColorizeTask::Execute(HdTaskContext* ctx)
         for (auto& colorizer : _colorizerTable) {
             if (_aovName == colorizer.aovName &&
                 _aovBuffer->GetFormat() == colorizer.aovFormat) {
-                uint8_t* ab = reinterpret_cast<uint8_t*>(_aovBuffer->Map());                    
+                uint8_t* ab = reinterpret_cast<uint8_t*>(_aovBuffer->Map());
                 colorizer.callback(_outputBuffer, ab, _outputBufferSize);
                 _aovBuffer->Unmap();
                 colorized = true;
@@ -337,9 +343,10 @@ HdxColorizeTask::Execute(HdTaskContext* ctx)
         if (colorized) {
             _compositor.UpdateColor(_aovBuffer->GetWidth(),
                                     _aovBuffer->GetHeight(),
+                                    HdFormatUNorm8Vec4,
                                     _outputBuffer);
         } else {
-            _compositor.UpdateColor(0, 0, nullptr);
+            _compositor.UpdateColor(0, 0, HdFormatInvalid, nullptr);
         }
     }
 

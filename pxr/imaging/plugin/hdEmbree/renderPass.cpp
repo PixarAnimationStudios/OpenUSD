@@ -195,7 +195,8 @@ HdEmbreeRenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
             _colorBuffer.Resolve();
             uint8_t *cdata = reinterpret_cast<uint8_t*>(_colorBuffer.Map());
             if (cdata) {
-                _compositor.UpdateColor(_width, _height, cdata);
+                _compositor.UpdateColor(_width, _height,
+                                        _colorBuffer.GetFormat(), cdata);
                 _colorBuffer.Unmap();
             }
             _depthBuffer.Resolve();

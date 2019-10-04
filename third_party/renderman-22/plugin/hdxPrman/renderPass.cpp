@@ -392,7 +392,7 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         rb->SetConverged(_converged);
 
         if (aovBindings[aov].aovName == HdAovTokens->color) {
-            rb->Blit(HdFormatUNorm8Vec4, width, height, offset, stride,
+            rb->Blit(HdFormatFloat32Vec4, width, height, offset, stride,
                 reinterpret_cast<uint8_t*>(
                     &_interactiveContext->framebuffer.color[0]));
         } else if (aovBindings[aov].aovName == HdAovTokens->depth) {

@@ -35,17 +35,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 //       We need to use the virtual API because we don't link to libprman
 static RixDspy* s_dspy = nullptr;
 
-inline static uint8_t f32_to_u8(float x)
-{
-    if (x < 0.0f) {
-        return 0;
-    } else if (x > 1.0f) {
-        return 255;
-    } else {
-        return uint8_t(x*255.0f);
-    }
-}
-
 ////////////////////////////////////////////////////////////////////////
 // PRMan Display Driver API entrypoints
 ////////////////////////////////////////////////////////////////////////
@@ -122,12 +111,12 @@ static PtDspyError HydraDspyImageData(
             depth[i] = clearDepth;
         }
 
-        uint32_t clearColor = 0;
-        memcpy(&clearColor, buf->clearColor, sizeof(uint32_t));
-
-        uint32_t *color = reinterpret_cast<uint32_t*>(&buf->color[0]);
-        for (int i = 0; i < size; ++i) {
-            color[i] = clearColor;
+        float *color = buf->color.data();
+        for (int i = 0; i < size; i+=4) {
+            color[i+0] = buf->clearColor[0];
+            color[i+1] = buf->clearColor[1];
+            color[i+2] = buf->clearColor[2];
+            color[i+3] = buf->clearColor[3];
         }
         int32_t clearId = buf->clearId;
         int32_t *id = &buf->primId[0];
@@ -144,16 +133,16 @@ static PtDspyError HydraDspyImageData(
     int32_t *data_i32 = (int32_t*) data;
     for (int y=ymin; y < ymax_plusone; y++) {
         // Flip y-axis
-        uint8_t* color = &buf->color[((buf->h-1-y)*buf->w+xmin)*4];
+        float* color = &buf->color[((buf->h-1-y)*buf->w+xmin)*4];
         float* depth = &buf->depth[((buf->h-1-y)*buf->w+xmin)];
         int32_t* primId = &buf->primId[((buf->h-1-y)*buf->w+xmin)];
         int32_t* instanceId = &buf->instanceId[((buf->h-1-y)*buf->w+xmin)];
         int32_t* elementId = &buf->elementId[((buf->h-1-y)*buf->w+xmin)];
         for (int x=xmin; x < xmax_plusone; x++) {
-            color[0] = f32_to_u8(data_f32[0]); // red
-            color[1] = f32_to_u8(data_f32[1]); // green
-            color[2] = f32_to_u8(data_f32[2]); // blue
-            color[3] = f32_to_u8(data_f32[3]); // alpha
+            color[0] = data_f32[0]; // red
+            color[1] = data_f32[1]; // green
+            color[2] = data_f32[2]; // blue
+            color[3] = data_f32[3]; // alpha
             if (std::isfinite(data_f32[4])) {
                 // XXX: We shouldn't be getting true inf from prman?
                 depth[0] = buf->proj.Transform(GfVec3f(0,0,-data_f32[4]))[2];

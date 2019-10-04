@@ -149,7 +149,7 @@ HdxPrmanRenderDelegate::GetDefaultAovDescriptor(
                             TfToken const& name) const
 {
     if (name == HdAovTokens->color) {
-        return HdAovDescriptor(HdFormatUNorm8Vec4, false,
+        return HdAovDescriptor(HdFormatFloat32Vec4, false,
                                VtValue(GfVec4f(0.0f)));
     } else if (name == HdAovTokens->depth) {
         return HdAovDescriptor(HdFormatFloat32, false, VtValue(1.0f));

@@ -164,8 +164,11 @@ HdxColorizeSelectionTask::Execute(HdTaskContext* ctx)
     _ColorizeSelection();
 
     // Blit!
-    _compositor.UpdateColor(_primId->GetWidth(), _primId->GetHeight(),
-                            _outputBuffer);
+    _compositor.UpdateColor(
+        _primId->GetWidth(), 
+        _primId->GetHeight(),
+        HdFormatUNorm8Vec4, 
+        _outputBuffer);
 
     // Blend the selection color on top.  ApplySelectionColor uses the
     // calculation:
