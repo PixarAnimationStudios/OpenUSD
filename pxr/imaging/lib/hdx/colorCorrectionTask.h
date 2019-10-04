@@ -83,7 +83,7 @@ private:
     bool _CreateBufferResources();
 
     // Utility function to setup the copy-framebuffer
-    bool _CreateFramebufferResources(GLuint *texture);
+    bool _CreateFramebufferResources();
 
     // Copies the client framebuffer texture into ours
     void _CopyTexture();
