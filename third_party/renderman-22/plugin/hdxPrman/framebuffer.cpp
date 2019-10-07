@@ -105,27 +105,20 @@ static PtDspyError HydraDspyImageData(
     if (buf->pendingClear) {
         buf->pendingClear = false;
         int size = buf->w * buf->h;
-        float clearDepth = buf->clearDepth;
         float *depth = &buf->depth[0];
-        for (int i = 0; i < size; ++i) {
-            depth[i] = clearDepth;
-        }
-
         float *color = buf->color.data();
-        for (int i = 0; i < size; i+=4) {
-            color[i+0] = buf->clearColor[0];
-            color[i+1] = buf->clearColor[1];
-            color[i+2] = buf->clearColor[2];
-            color[i+3] = buf->clearColor[3];
-        }
-        int32_t clearId = buf->clearId;
         int32_t *id = &buf->primId[0];
         int32_t *id2 = &buf->instanceId[0];
         int32_t *id3 = &buf->elementId[0];
-        for (int i = 0; i < size; ++i) {
-            id[i] = clearId;
-            id2[i] = clearId;
-            id3[i] = clearId;
+        for (int i = 0; i < size; i++) {
+            color[i*4+0] = buf->clearColor[0];
+            color[i*4+1] = buf->clearColor[1];
+            color[i*4+2] = buf->clearColor[2];
+            color[i*4+3] = buf->clearColor[3];
+            depth[i] = buf->clearDepth;
+            id[i] = buf->clearId;
+            id2[i] = buf->clearId;
+            id3[i] = buf->clearId;
         }
     }
 
@@ -147,9 +140,14 @@ static PtDspyError HydraDspyImageData(
                 // XXX: We shouldn't be getting true inf from prman?
                 depth[0] = buf->proj.Transform(GfVec3f(0,0,-data_f32[4]))[2];
             }
-            primId[0] = data_i32[5];
-            instanceId[0] = data_i32[6];
-            elementId[0] = data_i32[7];
+            primId[0] = (data_i32[5]-1);
+            if (primId[0] == -1) {
+                instanceId[0] = -1;
+                elementId[0] = -1;
+            } else {
+                instanceId[0] = data_i32[6];
+                elementId[0] = data_i32[7];
+            }
             color += 4;
             depth += 1;
             primId += 1;

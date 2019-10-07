@@ -159,7 +159,11 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     SdfPath const& id = BASE::GetId();
     SdfPath const& instancerId = BASE::GetInstancerId();
     const bool isHdInstance = !instancerId.IsEmpty();
-    const int32_t primId = BASE::GetPrimId();
+    // Prman has a default value for identifier:id of 0 (in case of ray miss),
+    // while Hydra treats id -1 as the clear value.  We map Prman primId as
+    // (Hydra primId + 1) to get around this, here and in
+    // hdxPrman/framebuffer.cpp.
+    const int32_t primId = BASE::GetPrimId() + 1;
 
     // Sample transform
     HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
