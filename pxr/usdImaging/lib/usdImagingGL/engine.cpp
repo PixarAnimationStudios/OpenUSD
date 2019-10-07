@@ -785,6 +785,12 @@ UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
         return false;
     }
 
+    HdRenderDelegate *renderDelegate = plugin->CreateRenderDelegate();
+    if(!renderDelegate) {
+        HdRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
+        return false;
+    }
+
     // Pull old delegate/task controller state.
     GfMatrix4d rootTransform = GfMatrix4d(1.0);
     bool isVisible = true;
@@ -804,7 +810,6 @@ UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
     _rendererPlugin = plugin;
     _rendererId = actualId;
 
-    HdRenderDelegate *renderDelegate = _rendererPlugin->CreateRenderDelegate();
     _renderIndex = HdRenderIndex::New(renderDelegate);
 
     // Create the new delegate & task controller.
