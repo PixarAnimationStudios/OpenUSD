@@ -1258,6 +1258,7 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
         SdfPath const& usdPrimPath = usdPath.GetPrimPath();
         TfToken const& attrName = usdPath.GetNameToken();
         UsdPrim usdPrim = _stage->GetPrimAtPath(usdPrimPath);
+        UsdAttribute attr = usdPrim.GetProperty(attrName).As<UsdAttribute>();
 
         // If either model:drawMode or model:applyDrawMode changes, we need to
         // repopulate the whole subtree starting at the owning prim.
@@ -1277,12 +1278,17 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
         
         // XXX: We must always scan for prefixed children, due to rprim fan-out 
         // from plugins (such as the PointInstancer).
-        if (attrName == UsdGeomTokens->visibility
-            || attrName == UsdGeomTokens->purpose
-            || UsdGeomXformable::IsTransformationAffectedByAttrNamed(attrName))
-        {
+        if (attrName == UsdGeomTokens->visibility ||
+            attrName == UsdGeomTokens->purpose ||
+            UsdGeomXformable::IsTransformationAffectedByAttrNamed(attrName)) {
             // Because these are inherited attributes, we must update all
             // children.
+            _GatherDependencies(usdPrimPath, &affectedCachePaths);
+        } else if (attr && UsdGeomPrimvar::IsPrimvar(attr) &&
+                   UsdGeomPrimvar(attr).GetInterpolation() ==
+                       UsdGeomTokens->constant) {
+            // Constant attributes in the "primvars:" namespace are considered
+            // inherited, so update all children.
             _GatherDependencies(usdPrimPath, &affectedCachePaths);
         } else if (TfStringStartsWith(attrName, UsdTokens->collection)) {
             // XXX Performance: Collections used for material bindings
