@@ -147,9 +147,14 @@ Hd_SortedIds::Remove(const SdfPath &id)
             if (idToRemove != lastElement) {
                 std::iter_swap(idToRemove, lastElement);
 
+                if (std::distance(idToRemove, lastElement) == 1) {
+                    // idToRemove points to the last element after pop_back()
+                    _afterLastDeletePoint = INVALID_DELETE_POINT;
+                } else {
+                    _afterLastDeletePoint = idToRemove - _ids.begin();
+                    ++_afterLastDeletePoint;
+                }
                 _ids.pop_back();
-                _afterLastDeletePoint = idToRemove - _ids.begin();
-                ++_afterLastDeletePoint;
 
                 // As we've moved an element from the end into the middle
                 // the list is now only sorted up to the place where the element
