@@ -44,6 +44,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+bool Sdf_BoolFromString(const std::string &, bool *parseOk);
+
 namespace Sdf_ParserHelpers {
 
 using boost::variant;
@@ -181,7 +183,7 @@ struct _GetImpl<SdfAssetPath>
 };
 
 // Get a bool.  Numbers are considered true if nonzero, false otherwise.
-// Strings and tokens get parsed via SdfBoolFromString.  Otherwise throw
+// Strings and tokens get parsed via Sdf_BoolFromString.  Otherwise throw
 // bad_get.
 template <>
 struct _GetImpl<bool> : public boost::static_visitor<bool>
@@ -192,10 +194,10 @@ struct _GetImpl<bool> : public boost::static_visitor<bool>
         return boost::apply_visitor(*this, variant);
     }
 
-    // Parse string via SdfBoolFromString.
+    // Parse string via Sdf_BoolFromString.
     bool operator()(const std::string &str) {
         bool parseOK = false;
-        bool result = SdfBoolFromString(str, &parseOK);
+        bool result = Sdf_BoolFromString(str, &parseOK);
         if (!parseOK)
             throw boost::bad_get();
         return result;
@@ -335,6 +337,14 @@ struct ValueFactory {
 ValueFactory const &GetValueFactoryForMenvaName(std::string const &name,
                                                 bool *found);
 };
+
+/// Converts a string to a bool.
+/// Accepts case insensitive "yes", "no", "false", true", "0", "1".
+/// Defaults to "true" if the string is not recognized.
+///
+/// If parseOK is supplied, the pointed-to bool will be set to indicate
+/// whether the parse was successful.
+bool Sdf_BoolFromString(const std::string &s, bool *parseOk = NULL);
 
 // Read the quoted string at [x..x+n], trimming 'trimBothSides' number
 // of chars from either side, and evaluating any embedded escaped characters.

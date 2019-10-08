@@ -298,14 +298,6 @@ SDF_API const std::string &SdfGetNameForUnit( const TfEnum &unit );
 /// Gets a unit for the given /a name
 SDF_API const TfEnum &SdfGetUnitFromName( const std::string &name );
 
-/// Converts a string to a bool.
-/// Accepts case insensitive "yes", "no", "false", true", "0", "1".
-/// Defaults to "true" if the string is not recognized.
-///
-/// If parseOK is supplied, the pointed-to bool will be set to indicate
-/// whether the parse was successful.
-SDF_API bool SdfBoolFromString( const std::string &, bool *parseOk = NULL );
-
 /// Given a value, returns if there is a valid corresponding valueType.
 SDF_API bool SdfValueHasValidType(VtValue const& value);
 

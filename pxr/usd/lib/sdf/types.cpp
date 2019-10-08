@@ -29,17 +29,13 @@
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/valueTypeName.h"
 
-#include "pxr/base/plug/plugin.h"
-#include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/enum.h"
-#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/ostreamMethods.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/type.h"
-#include <boost/lexical_cast.hpp>
 
 using std::map;
 using std::string;
@@ -323,33 +319,6 @@ SdfGetUnitFromName( const std::string &name )
     }
 
     return it->second;
-}
-
-bool SdfBoolFromString( const std::string &str, bool *parseOk )
-{
-    if (parseOk)
-        *parseOk = true;
-
-    std::string s = str;
-    std::transform(s.begin(), s.end(), s.begin(), ::tolower);
-
-    if (strcmp(s.c_str(), "false") == 0)
-        return false;
-    if (strcmp(s.c_str(), "true") == 0)
-        return true;
-    if (strcmp(s.c_str(), "no") == 0)
-        return false;
-    if (strcmp(s.c_str(), "yes") == 0)
-        return true;
-
-    if (strcmp(s.c_str(), "0") == 0)
-        return false;
-    if (strcmp(s.c_str(), "1") == 0)
-        return true;
-
-    if (parseOk)
-        *parseOk = false;
-    return true;
 }
 
 bool

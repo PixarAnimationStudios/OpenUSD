@@ -518,6 +518,33 @@ ValueFactory const &GetValueFactoryForMenvaName(std::string const &name,
 
 };
 
+bool
+Sdf_BoolFromString( const std::string &str, bool *parseOk )
+{
+    if (parseOk)
+        *parseOk = true;
+
+    std::string s = str;
+    std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+
+    if (strcmp(s.c_str(), "false") == 0)
+        return false;
+    if (strcmp(s.c_str(), "true") == 0)
+        return true;
+    if (strcmp(s.c_str(), "no") == 0)
+        return false;
+    if (strcmp(s.c_str(), "yes") == 0)
+        return true;
+
+    if (strcmp(s.c_str(), "0") == 0)
+        return false;
+    if (strcmp(s.c_str(), "1") == 0)
+        return true;
+
+    if (parseOk)
+        *parseOk = false;
+    return true;
+}
 
 std::string
 Sdf_EvalQuotedString(const char* x, size_t n, size_t trimBothSides, 
