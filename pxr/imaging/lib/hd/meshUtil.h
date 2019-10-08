@@ -232,8 +232,7 @@ public:
     // second being the vertex indices for the edge.
     HD_API
     static std::pair<bool, GfVec2i>
-    GetVertexIndicesForEdge(HdMeshTopology const* topology,
-                            int authoredEdgeId);
+    GetVertexIndicesForEdge(const EdgeMap &edgeMap, int authoredEdgeId);
 
     // Translates an edge to its authored edge id
     // Returns a pair, with first indicating success of the look up, and

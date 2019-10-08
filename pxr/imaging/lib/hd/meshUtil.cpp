@@ -1022,17 +1022,12 @@ HdMeshUtil::ComputeAuthoredEdgeMap(HdMeshTopology const* topology,
     return edges;
 }
 
-
-/*static*/std::pair<bool, GfVec2i>
-HdMeshUtil::GetVertexIndicesForEdge(HdMeshTopology const* topology,
-                                    int authoredEdgeId)
+/*static*/ std::pair<bool, GfVec2i>
+HdMeshUtil::GetVertexIndicesForEdge(const EdgeMap &edgeMap, int authoredEdgeId)
 {
-    // XXX: we should cache this in HdMeshTopology
-    EdgeMap authoredEdgeMap = ComputeAuthoredEdgeMap(topology);
-
     // XXX: ideally, we should use a bi-directional map, so we can do 
     // edge -> edgeId and edgeId -> edge look ups
-    for (const auto& pair : authoredEdgeMap) {
+    for (const auto& pair : edgeMap) {
         if (pair.second == authoredEdgeId) {
             return std::make_pair(true, pair.first);
         }
