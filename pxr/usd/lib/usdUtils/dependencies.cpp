@@ -481,7 +481,7 @@ _FileAnalyzer::_ProcessMetadata(const SdfPrimSpecHandle &primSpec)
                     // path, since Ar does not support directory-path 
                     // resolution. 
                     if (!TfIsDir(clipsDirAssetPath)) {
-                        TF_WARN("Clips directory '%s' is not a valid directory"
+                        TF_WARN("Clips directory '%s' is not a valid directory "
                             "on the filesystem.", clipsDirAssetPath.c_str());
                         continue;
                     }
