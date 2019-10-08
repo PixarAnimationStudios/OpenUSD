@@ -34,27 +34,6 @@ TF_DEFINE_ENV_SETTING(
     USD_SHADING_MODEL, "usdRi",
     "Set to usdRi when models can interchange UsdShade prims.");
 
-TF_DEFINE_ENV_SETTING(
-    USD_USE_INVERSE_LAYER_OFFSET, false,
-    "Set true if USD should take the inverse of SdfLayerOffset values when "
-    "applying them.  True matches historical behavior; false is the "
-    "intended future setting.");
-
-bool UsdUsesInverseLayerOffset()
-{
-    return TfGetEnvSetting(USD_USE_INVERSE_LAYER_OFFSET);
-}
-
-SdfLayerOffset
-UsdPrepLayerOffset(SdfLayerOffset offset)
-{
-    if (UsdUsesInverseLayerOffset()) {
-        return offset.GetInverse();
-    } else {
-        return offset;
-    }
-}
-
 TF_REGISTRY_FUNCTION(TfEnum)
 {
     TF_ADD_ENUM_NAME(UsdListPositionFrontOfPrependList,

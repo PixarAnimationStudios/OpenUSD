@@ -66,18 +66,12 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
 
             # Layer offsets affect time samples
             a = p.GetAttribute('timeSamplesAcrossLayerOffset')
-            if Usd.UsesInverseLayerOffset():
-                self.assertEqual( a.GetTimeSamples(),  [11.0, 20.0] )
-            else:
-                self.assertEqual( a.GetTimeSamples(),  [-9.0, 0.0] )
+            self.assertEqual( a.GetTimeSamples(),  [-9.0, 0.0] )
 
             # Layer offsets get folded into reference arcs
             p = stage.GetPrimAtPath('/Sphere/ChildFromReference')
             a = p.GetAttribute('timeSamplesAcrossRef')
-            if Usd.UsesInverseLayerOffset():
-                self.assertEqual( a.GetTimeSamples(),  [11.0, 20.0] )
-            else:
-                self.assertEqual( a.GetTimeSamples(),  [-9.0, 0.0] )
+            self.assertEqual( a.GetTimeSamples(),  [-9.0, 0.0] )
 
             # Confirm result of list-editing.
             p = stage.GetPrimAtPath('/ListOpTest')
@@ -172,24 +166,14 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
         # Confirm offsets have been folded into value clips.
         p1 = layer.GetPrimAtPath('/SphereUsingClip_LegacyForm')
         p2 = layer.GetPrimAtPath('/SphereUsingClip')
-        if Usd.UsesInverseLayerOffset():
-            self.assertEqual( p1.GetInfo('clipActive'),
-               Vt.Vec2dArray(1, [(11, 0)]) )
-            self.assertEqual( p1.GetInfo('clipTimes'),
-               Vt.Vec2dArray(2, [(11, 1), (20, 10)]) )
-            self.assertEqual( p2.GetInfo('clips')['default']['active'],
-               Vt.Vec2dArray(1, [(11, 0)]) )
-            self.assertEqual( p2.GetInfo('clips')['default']['times'],
-               Vt.Vec2dArray(2, [(11, 1), (20, 10)]) )
-        else:
-            self.assertEqual( p1.GetInfo('clipActive'),
-               Vt.Vec2dArray(1, [(-9.0, 0.0)]) )
-            self.assertEqual( p1.GetInfo('clipTimes'),
-               Vt.Vec2dArray(2, [(-9.0, 1), (0.0, 10)]) )
-            self.assertEqual( p2.GetInfo('clips')['default']['active'],
-               Vt.Vec2dArray(1, [(-9.0, 0)]) )
-            self.assertEqual( p2.GetInfo('clips')['default']['times'],
-               Vt.Vec2dArray(2, [(-9.0, 1), (0.0, 10)]) )
+        self.assertEqual( p1.GetInfo('clipActive'),
+           Vt.Vec2dArray(1, [(-9.0, 0.0)]) )
+        self.assertEqual( p1.GetInfo('clipTimes'),
+           Vt.Vec2dArray(2, [(-9.0, 1), (0.0, 10)]) )
+        self.assertEqual( p2.GetInfo('clips')['default']['active'],
+           Vt.Vec2dArray(1, [(-9.0, 0)]) )
+        self.assertEqual( p2.GetInfo('clips')['default']['times'],
+           Vt.Vec2dArray(2, [(-9.0, 1), (0.0, 10)]) )
 
         # Confirm nested variant sets still exist
         self.assertTrue(layer.GetObjectAtPath(

@@ -173,9 +173,8 @@ _ApplyLayerOffsetToExternalTimes(
         return;
     }
 
-    const SdfLayerOffset offset = UsdPrepLayerOffset(layerOffset);
     for (auto& time : *array) {
-        time[0] = offset * time[0]; 
+        time[0] = layerOffset * time[0]; 
     }
 }
 

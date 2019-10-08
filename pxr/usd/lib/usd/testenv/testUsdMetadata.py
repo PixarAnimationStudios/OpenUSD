@@ -936,10 +936,7 @@ class TestUsdMetadata(unittest.TestCase):
             stronger = s.OverridePrim('/stronger')
             # Use a layer offset on the reference arc to shift timeSamples
             # later in time by 10.
-            if Usd.UsesInverseLayerOffset():
-                refOffset = Sdf.LayerOffset(scale=1.0, offset=-10.0)
-            else:
-                refOffset = Sdf.LayerOffset(scale=1.0, offset=10.0)
+            refOffset = Sdf.LayerOffset(scale=1.0, offset=10.0)
             stronger.GetReferences().AddReference(
                 s.GetRootLayer().identifier, weaker.GetPath(), refOffset)
 

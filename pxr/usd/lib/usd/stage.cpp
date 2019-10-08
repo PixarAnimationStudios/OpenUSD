@@ -270,7 +270,7 @@ _GetLayerToStageOffset(const PcpNodeRef& pcpNode,
     // it is a validation error to compose mixed frame rates. This was done as a
     // performance optimization.
 
-    return UsdPrepLayerOffset(localOffset);
+    return localOffset;
 }
 
 char const *_dormantMallocTagID = "UsdStages in aggregate";
@@ -1424,14 +1424,13 @@ _SetMappedValueForEditTarget(const T &newValue,
                              const UsdEditTarget &editTarget,
                              const Fn &setValueImpl)
 {
-    const SdfLayerOffset stageToLayerOffset =
-        UsdPrepLayerOffset(editTarget.GetMapFunction().GetTimeOffset())
-        .GetInverse();
-    if (!stageToLayerOffset.IsIdentity()) {
+    const SdfLayerOffset &layerOffset = 
+        editTarget.GetMapFunction().GetTimeOffset();
+    if (!layerOffset.IsIdentity()) {
         // Copy the value, apply the offset to the edit layer, and set it using
         // the provided set function.
         T targetValue = newValue;
-        Usd_ApplyLayerOffsetToValue(&targetValue, stageToLayerOffset);
+        Usd_ApplyLayerOffsetToValue(&targetValue, layerOffset.GetInverse());
 
         SdfAbstractDataConstTypedValue<T> in(&targetValue);
         return setValueImpl(in);
@@ -1611,8 +1610,7 @@ UsdStage::_ClearValue(UsdTimeCode time, const UsdAttribute &attr)
     }
 
     const SdfLayerOffset stageToLayerOffset = 
-        UsdPrepLayerOffset(editTarget.GetMapFunction().GetTimeOffset())
-        .GetInverse();
+        editTarget.GetMapFunction().GetTimeOffset().GetInverse();
 
     const double layerTime = stageToLayerOffset * time.GetValue();
 
@@ -4825,8 +4823,7 @@ UsdStage::_FlattenProperty(const UsdProperty &srcProp,
         // Apply offsets that affect the edit target to flattened time 
         // samples to ensure they resolve to the expected value.
         const SdfLayerOffset stageToLayerOffset = 
-            UsdPrepLayerOffset(GetEditTarget().GetMapFunction().GetTimeOffset())
-            .GetInverse();
+            GetEditTarget().GetMapFunction().GetTimeOffset().GetInverse();
 
         // Copy authored property values and metadata.
         _CopyProperty(srcProp, primSpec, dstName, remapping, stageToLayerOffset);
@@ -5526,8 +5523,7 @@ UsdStage::_SetValueImpl(
         // different time offsets.  perhaps we need the map function
         // to track a time offset for each path?
         const SdfLayerOffset stageToLayerOffset = 
-            UsdPrepLayerOffset(GetEditTarget().GetMapFunction().GetTimeOffset())
-            .GetInverse();
+            GetEditTarget().GetMapFunction().GetTimeOffset().GetInverse();
 
         double localTime = stageToLayerOffset * time.GetValue();
 

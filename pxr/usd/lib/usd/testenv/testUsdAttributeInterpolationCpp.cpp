@@ -1949,7 +1949,7 @@ TestInterpolationWithModelClips(const string &layerIdent)
     TF_VERIFY(testClipPrim);
     const SdfLayerOffset testOffset(0.0, 2.0);
     clipStage->SetEditTarget(UsdEditTarget(clipStage->GetRootLayer(), 
-                                           UsdPrepLayerOffset(testOffset)));
+                                           testOffset));
     AddTestCasesToPrim(testClipPrim);
 
     // Create the primary stage and set up model clips on the test prim

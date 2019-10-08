@@ -227,13 +227,12 @@ _ApplyLayerOffset(const SdfLayerOffset &offset,
         return;
     }
 
-    SdfLayerOffset offsetToApply = UsdPrepLayerOffset(offset);
     if (field == UsdTokens->clipActive ||
         field == UsdTokens->clipTimes) {
         if (val->IsHolding<VtVec2dArray>()) {
             VtVec2dArray entries = val->UncheckedGet<VtVec2dArray>();
             for (auto &entry: entries) {
-                entry[0] = offsetToApply * entry[0];
+                entry[0] = offset * entry[0];
             }
             val->Swap(entries);
         }
@@ -241,7 +240,7 @@ _ApplyLayerOffset(const SdfLayerOffset &offset,
     else if (field == UsdTokens->clipTemplateStartTime ||
              field == UsdTokens->clipTemplateEndTime) {
         if (val->IsHolding<double>()) {
-            double time = offsetToApply * val->UncheckedGet<double>();
+            double time = offset * val->UncheckedGet<double>();
             val->Swap(time);
         }
     }
@@ -259,9 +258,9 @@ _ApplyLayerOffset(const SdfLayerOffset &offset,
                 VtDictionary clipInfo =
                     clipInfoVal.UncheckedGet<VtDictionary>();
                 _ApplyLayerOffsetToClipInfo(
-                    offsetToApply, UsdClipsAPIInfoKeys->active, &clipInfo);
+                    offset, UsdClipsAPIInfoKeys->active, &clipInfo);
                 _ApplyLayerOffsetToClipInfo(
-                    offsetToApply, UsdClipsAPIInfoKeys->times, &clipInfo);
+                    offset, UsdClipsAPIInfoKeys->times, &clipInfo);
                 clipInfoVal = VtValue(clipInfo);
             }
             val->Swap(clips);
@@ -270,8 +269,6 @@ _ApplyLayerOffset(const SdfLayerOffset &offset,
     else if (field == SdfFieldKeys->References) {
         if (val->IsHolding<SdfReferenceListOp>()) {
             SdfReferenceListOp refs = val->UncheckedGet<SdfReferenceListOp>();
-            // We do not need to call UsdPrepLayerOffset() here since
-            // we want to author a new offset, not apply one.
             refs.ModifyOperations(std::bind(
                 _ApplyLayerOffsetToRefOrPayload<SdfReference>, 
                 offset, std::placeholders::_1));
@@ -281,15 +278,13 @@ _ApplyLayerOffset(const SdfLayerOffset &offset,
     else if (field == SdfFieldKeys->Payload) {
         if (val->IsHolding<SdfPayloadListOp>()) {
             SdfPayloadListOp pls = val->UncheckedGet<SdfPayloadListOp>();
-            // We do not need to call UsdPrepLayerOffset() here since
-            // we want to author a new offset, not apply one.
             pls.ModifyOperations(std::bind(
                 _ApplyLayerOffsetToRefOrPayload<SdfPayload>, 
                 offset, std::placeholders::_1));
             val->Swap(pls);
         }
     } else {
-        Usd_ApplyLayerOffsetToValue(val, offsetToApply);
+        Usd_ApplyLayerOffsetToValue(val, offset);
     }
 }
 

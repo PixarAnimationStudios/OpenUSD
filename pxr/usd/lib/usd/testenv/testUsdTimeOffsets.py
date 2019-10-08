@@ -87,13 +87,10 @@ def GenTestLayer(testId, fmt):
 
 def VerifyOffset(adjPrim):
     prim = adjPrim.prim
-    offset = adjPrim.layerOffset.offset
-    scale = adjPrim.layerOffset.scale
+    offset = adjPrim.layerOffset
 
     print "Testing offset:", 
-    print offset, "scale:", scale, "prim:", adjPrim.prim.GetPath()
-
-    offset = Usd.PrepLayerOffset(adjPrim.layerOffset)
+    print offset.offset, "scale:", offset.scale, "prim:", adjPrim.prim.GetPath()
 
     # When offset=1.0:
     #
@@ -298,9 +295,7 @@ class TestUsdTimeOffsets(unittest.TestCase):
                 # transformed.
                 authoredTime = barRef.attributes[
                     'attr'].GetInfo('timeSamples').keys()[0]
-                self.assertEqual(
-                    Usd.PrepLayerOffset(refOffset).GetInverse() * 2.0,
-                    authoredTime)
+                self.assertEqual(refOffset.GetInverse() * 2.0, authoredTime)
 
             # Make an EditTarget to author into the payloaded Baz.
             payloadNode = foo.GetPrimIndex().rootNode.children[1]
@@ -316,9 +311,7 @@ class TestUsdTimeOffsets(unittest.TestCase):
                 # transformed.
                 authoredTime = bazPayload.attributes[
                     'attrFromBaz'].GetInfo('timeSamples').keys()[0]
-                self.assertEqual(
-                    Usd.PrepLayerOffset(payloadOffset).GetInverse() * 2.0,
-                    authoredTime)
+                self.assertEqual(payloadOffset.GetInverse() * 2.0, authoredTime)
 
             # Make an EditTarget to author into the sublayer.
             editTarget = stage.GetEditTargetForLocalLayer(subLayer)
@@ -332,9 +325,7 @@ class TestUsdTimeOffsets(unittest.TestCase):
                 # transformed.
                 authoredTime = subLayer.GetAttributeAtPath(
                     '/Foo.attr').GetInfo('timeSamples').keys()[0]
-                self.assertEqual(
-                    Usd.PrepLayerOffset(subOffset).GetInverse() * 2.0,
-                    authoredTime)
+                self.assertEqual(subOffset.GetInverse() * 2.0, authoredTime)
 
 if __name__ == '__main__':
     unittest.main()

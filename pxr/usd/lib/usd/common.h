@@ -80,28 +80,6 @@ typedef std::map<class TfToken, VtValue,
                  TfDictionaryLessThan
                  > UsdMetadataValueMap;
 
-/// Returns true if USD uses the historical behavior of applying
-/// the inverse of composed layer offsets to map layer time to
-/// stage time.  Respects the env setting USD_USE_INVERSE_LAYER_OFFSET.
-USD_API
-bool UsdUsesInverseLayerOffset();
-
-/// Prepare the given offset for application to map layer time to
-/// stage time, respecting the environment variable
-/// USD_USE_INVERSE_LAYER_OFFSET.
-///
-/// Typically, the supplied SdfLayerOffset will come from Pcp -- in
-/// a PcpNodeRef or PcpLayerStack -- and represent the cumulative offset
-/// to transform data from a layer to the Usd stage.
-///
-/// Historically, USD applied the inverse of that offset, flipping
-/// the intended semantics. To address this, this function provides a
-/// temporary measure to control whether to take the inverse or not.
-/// Under the new behavior this function will become a no-op,
-/// and can eventually be phased out.
-USD_API
-SdfLayerOffset UsdPrepLayerOffset(SdfLayerOffset offset);
-
 /// \enum UsdListPosition
 ///
 /// Specifies a position to add items to lists.  Used by some Add()

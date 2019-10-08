@@ -398,106 +398,55 @@ class TestUsdValueClips(unittest.TestCase):
         # Default value should be unaffected by layer offsets.
         _Check(self.assertEqual, attr1, expected=1.0)
 
-        if Usd.UsesInverseLayerOffset():
-            # The clip should be active starting from frame -10.0 due to the
-            # offset; before that, we get the held value of the clip's first 
-            # time sample,
-            _Check(self.assertEqual, attr1, time=-11, expected=-5.0)
+        # The clip should be active starting from frame +10.0 due to the
+        # offset; before that, we get the held value of the clip's first 
+        # time sample,
+        _Check(self.assertEqual, attr1, time=9, expected=-5.0)
 
-            # Sublayer offset of 10 frames is present, so attribute value at
-            # frame 0 should be from the clip at frame 10, etc.
-            _Check(self.assertEqual, attr1, time=0, expected=-10.0)
-            _Check(self.assertEqual, attr1, time=-5, expected=-5.0)
-            _Check(self.assertEqual, attr1, time=-10, expected=-5.0)
-            self.assertEqual(attr1.GetTimeSamples(), 
-               [-10.0, -5.0, 0.0, 5.0, 10.0])
-            self.assertEqual(attr1.GetTimeSamplesInInterval(
-                Gf.Interval(-10, 10)), 
-               [-10.0, -5.0, 0.0, 5.0, 10.0])
-     
-            # Test that layer offsets on layers where
-            # clipTimes/clipActive are authored are taken into
-            # account. The test case is similar to above, except
-            # clipTimes/clipActive have been authored in a sublayer that
-            # is offset by 20 frames instead of 10.
-            _Check(self.assertEqual, attr2, expected=1.0)
-            _Check(self.assertEqual, attr2, time=-21, expected=-5.0)
-            _Check(self.assertEqual, attr2, time=0, expected=-20.0)
-            _Check(self.assertEqual, attr2, time=-5, expected=-15.0)
-            _Check(self.assertEqual, attr2, time=-10, expected=-10.0)
-            self.assertEqual(attr2.GetTimeSamples(), 
-                [-20.0, -15.0, -10.0, -5.0, 0.0])
-            self.assertEqual(attr2.GetTimeSamplesInInterval(Gf.Interval(-3, 1)), 
-                [0.0])
+        # Sublayer offset of 10 frames is present, so attribute value at
+        # frame 20 should be from the clip at frame 10, etc.
+        _Check(self.assertEqual, attr1, time=20, expected=-10.0)
+        _Check(self.assertEqual, attr1, time=15, expected=-5.0)
+        _Check(self.assertEqual, attr1, time=10, expected=-5.0)
+        self.assertEqual(attr1.GetTimeSamples(), 
+           [10.0, 15.0, 20.0, 25.0, 30.0])
+        self.assertEqual(attr1.GetTimeSamplesInInterval(
+            Gf.Interval(-10, 10)), [10.0])
+ 
+        # Test that layer offsets on layers where
+        # clipTimes/clipActive are authored are taken into
+        # account. The test case is similar to above, except
+        # clipTimes/clipActive have been authored in a sublayer that
+        # is offset by 20 frames instead of 10.
+        _Check(self.assertEqual, attr2, expected=1.0)
+        _Check(self.assertEqual, attr2, time=19, expected=-5.0)
+        _Check(self.assertEqual, attr2, time=40, expected=-20.0)
+        _Check(self.assertEqual, attr2, time=35, expected=-15.0)
+        _Check(self.assertEqual, attr2, time=30, expected=-10.0)
+        self.assertEqual(attr2.GetTimeSamples(), 
+            [20.0, 25.0, 30.0, 35.0, 40.0])
+        self.assertEqual(attr2.GetTimeSamplesInInterval(
+            Gf.Interval(-17, 21)), 
+            [20.0])
 
-            # Test that reference offsets are taken into account. An offset
-            # of 10 frames is authored on the reference; this should be combined
-            # with the offset of 10 frames on the sublayer.
-            model3 = stage.GetPrimAtPath('/Model_3')
-            attr3 = model3.GetAttribute('size')
-
-            _Check(self.assertEqual, attr3, expected=1.0)
-            _Check(self.assertEqual, attr3, time=-21, expected=-5.0)
-            _Check(self.assertEqual, attr3, time=0, expected=-20.0)
-            _Check(self.assertEqual, attr3, time=-5, expected=-15.0)
-            _Check(self.assertEqual, attr3, time=-10, expected=-10.0)
-            self.assertEqual(attr3.GetTimeSamples(), 
-                [-20, -15, -10, -5, 0])
-            self.assertEqual(attr3.GetTimeSamplesInInterval(
-                Gf.Interval(-5, 5)), 
-                [-5, 0])
-        else:
-            # The clip should be active starting from frame +10.0 due to the
-            # offset; before that, we get the held value of the clip's first 
-            # time sample,
-            _Check(self.assertEqual, attr1, time=9, expected=-5.0)
-
-            # Sublayer offset of 10 frames is present, so attribute value at
-            # frame 20 should be from the clip at frame 10, etc.
-            _Check(self.assertEqual, attr1, time=20, expected=-10.0)
-            _Check(self.assertEqual, attr1, time=15, expected=-5.0)
-            _Check(self.assertEqual, attr1, time=10, expected=-5.0)
-            self.assertEqual(attr1.GetTimeSamples(), 
-               [10.0, 15.0, 20.0, 25.0, 30.0])
-            self.assertEqual(attr1.GetTimeSamplesInInterval(
-                Gf.Interval(-10, 10)), [10.0])
-     
-            # Test that layer offsets on layers where
-            # clipTimes/clipActive are authored are taken into
-            # account. The test case is similar to above, except
-            # clipTimes/clipActive have been authored in a sublayer that
-            # is offset by 20 frames instead of 10.
-            _Check(self.assertEqual, attr2, expected=1.0)
-            _Check(self.assertEqual, attr2, time=19, expected=-5.0)
-            _Check(self.assertEqual, attr2, time=40, expected=-20.0)
-            _Check(self.assertEqual, attr2, time=35, expected=-15.0)
-            _Check(self.assertEqual, attr2, time=30, expected=-10.0)
-            self.assertEqual(attr2.GetTimeSamples(), 
-                [20.0, 25.0, 30.0, 35.0, 40.0])
-            self.assertEqual(attr2.GetTimeSamplesInInterval(
-                Gf.Interval(-17, 21)), 
-                [20.0])
-
-            # Test that reference offsets are taken into account. An offset
-            # of 10 frames is authored on the reference; this should be combined
-            # with the offset of 10 frames on the sublayer.
-            _Check(self.assertEqual, attr3, expected=1.0)
-            _Check(self.assertEqual, attr3, time=19, expected=-5.0)
-            _Check(self.assertEqual, attr3, time=40, expected=-20.0)
-            _Check(self.assertEqual, attr3, time=35, expected=-15.0)
-            _Check(self.assertEqual, attr3, time=30, expected=-10.0)
-            self.assertEqual(attr3.GetTimeSamples(), 
-                [20.0, 25.0, 30.0, 35.0, 40.0])
-            self.assertEqual(attr3.GetTimeSamplesInInterval(
-                Gf.Interval(-5, 5)), 
-                [])
+        # Test that reference offsets are taken into account. An offset
+        # of 10 frames is authored on the reference; this should be combined
+        # with the offset of 10 frames on the sublayer.
+        _Check(self.assertEqual, attr3, expected=1.0)
+        _Check(self.assertEqual, attr3, time=19, expected=-5.0)
+        _Check(self.assertEqual, attr3, time=40, expected=-20.0)
+        _Check(self.assertEqual, attr3, time=35, expected=-15.0)
+        _Check(self.assertEqual, attr3, time=30, expected=-10.0)
+        self.assertEqual(attr3.GetTimeSamples(), 
+            [20.0, 25.0, 30.0, 35.0, 40.0])
+        self.assertEqual(attr3.GetTimeSamplesInInterval(
+            Gf.Interval(-5, 5)), 
+            [])
 
         ValidateAttributeTimeSamples(self.assertEqual, attr1)
         ValidateAttributeTimeSamples(self.assertEqual, attr2)
         ValidateAttributeTimeSamples(self.assertEqual, attr3)
 
-    @unittest.skipIf(Usd.UsesInverseLayerOffset(),
-                     "skipping test when using inverse layer offsets")
     def test_TimeCodeClipsWithLayerOffsets(self):
         """Tests behavior of clips when layer offsets are involved and the
         attributes are SdfTimeCode values. This test is almost identical to 
@@ -1296,28 +1245,16 @@ class TestUsdValueClips(unittest.TestCase):
         prim = stage.GetPrimAtPath('/Model')
         attr = prim.GetAttribute('a')
 
-        if Usd.UsesInverseLayerOffset():
-            # Times are offset by 2 via reference and layer offsets,
-            # so we expect the value at time 0 to read from clip 2, etc.
-            _Check(self.assertEqual, attr, time=-1.0, expected=1.0)
-            _Check(self.assertEqual, attr, time=0.0, expected=2.0)
-            _Check(self.assertEqual, attr, time=1.0, expected=3.0)
+        # Times are offset by 2 via reference and layer offsets,
+        # so we expect the value at time 4 to read from clip 2, etc.
+        _Check(self.assertEqual, attr, time=3.0, expected=1.0)
+        _Check(self.assertEqual, attr, time=4.0, expected=2.0)
+        _Check(self.assertEqual, attr, time=5.0, expected=3.0)
 
-            # Because of the time offset, this should try to read clip 4,
-            # but since we only have 3 clips we hold the value from the
-            # last one.
-            _Check(self.assertEqual, attr, time=2.0, expected=3.0)
-        else:
-            # Times are offset by 2 via reference and layer offsets,
-            # so we expect the value at time 4 to read from clip 2, etc.
-            _Check(self.assertEqual, attr, time=3.0, expected=1.0)
-            _Check(self.assertEqual, attr, time=4.0, expected=2.0)
-            _Check(self.assertEqual, attr, time=5.0, expected=3.0)
-
-            # Because of the time offset, this should try to read clip 4,
-            # but since we only have 3 clips we hold the value from the
-            # last one.
-            _Check(self.assertEqual, attr, time=6.0, expected=3.0)
+        # Because of the time offset, this should try to read clip 4,
+        # but since we only have 3 clips we hold the value from the
+        # last one.
+        _Check(self.assertEqual, attr, time=6.0, expected=3.0)
 
     def test_ClipsWithSparseOverrides(self):
         # This layer overrides the clipActive metadata to flip
