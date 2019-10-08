@@ -1,4 +1,4 @@
-#usda 1.0
+#usda 0.0
 (
     "This file describes the USD Shader schemata for code generation."
     subLayers = [
@@ -503,7 +503,7 @@ class "MaterialBindingAPI"
             dictionary strongerThanDescendants = {
                 string doc = """Possible value for 'bindMaterialAs' metadata on the 
                 collection-based material binding relationship. Indicates 
-                that the binding represented by the relationship is weaker than 
+                that the binding represented by the relationship is stronger than 
                 any bindings authored on the descendants."""
             }
             dictionary fallbackStrength = {

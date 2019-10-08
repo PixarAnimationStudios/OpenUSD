@@ -172,7 +172,7 @@ struct UsdShadeTokensType {
     const TfToken sourceCode;
     /// \brief "strongerThanDescendants"
     /// 
-    /// Possible value for 'bindMaterialAs' metadata on the  collection-based material binding relationship. Indicates  that the binding represented by the relationship is weaker than  any bindings authored on the descendants.
+    /// Possible value for 'bindMaterialAs' metadata on the  collection-based material binding relationship. Indicates  that the binding represented by the relationship is stronger than  any bindings authored on the descendants.
     const TfToken strongerThanDescendants;
     /// \brief "surface"
     /// 
