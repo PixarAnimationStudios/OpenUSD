@@ -27,11 +27,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// TF_TAGGED_ALLOCATION(Tf_Remnant, false);
-// TF_FIXEDSIZE_ALLOCATION(Tf_Remnant, true);
-// TF_INSTANTIATE_CLASS_ALLOCATOR(Tf_Remnant);
-
-
 Tf_Remnant::~Tf_Remnant()
 {
     if (ARCH_UNLIKELY(_notify)) {
