@@ -707,13 +707,6 @@ private:
     // Set of cache paths representing instancers
     _InstancerSet _instancerPrimCachePaths;
 
-    void _MarkSubtreeTransformDirty(SdfPath const &usdSubtreeRoot);
-    void _MarkSubtreeVisibilityDirty(SdfPath const &usdSubtreeRoot);
-
-    bool _IsChildPath(SdfPath const& path) const {
-        return path.IsPropertyPath();
-    }
-
     /// Refinement level per-USD-prim and fallback.
     typedef TfHashMap<SdfPath, int, SdfPath::Hash> _RefineLevelMap;
     /// Map from USD prim path to refine level.

@@ -198,12 +198,6 @@ public:
     GetVolumeFieldDescriptors(UsdPrim const& usdPrim, SdfPath const &id,
                               UsdTimeCode time) const override;
 
-    // ---------------------------------------------------------------------- //
-    /// \name Utilities 
-    // ---------------------------------------------------------------------- //
-
-    virtual SdfPathVector GetDependPaths(SdfPath const &path) const override;
-
 protected:
     virtual void _RemovePrim(SdfPath const& cachePath,
                              UsdImagingIndexProxy* index) override final;

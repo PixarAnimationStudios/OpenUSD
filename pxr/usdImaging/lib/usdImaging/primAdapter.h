@@ -414,16 +414,6 @@ public:
     USDIMAGING_API
     SdfPath GetMaterialUsdPath(UsdPrim const& prim) const; 
 
-    /// Gets the instancer cachePath for the given prim and instancerContext.
-    USDIMAGING_API
-    SdfPath GetInstancerCachePath(UsdPrim const& prim,
-                            UsdImagingInstancerContext const* instancerContext);
-
-    /// Returns the depending rprim paths which don't exist in descendants.
-    /// Used for change tracking over subtree boundary (e.g. instancing)
-    USDIMAGING_API
-    virtual SdfPathVector GetDependPaths(SdfPath const &path) const;
-
     /// Gets the model:drawMode attribute for the given prim, walking up
     /// the namespace if necessary.
     USDIMAGING_API
@@ -599,9 +589,7 @@ protected:
     static TfToken _UsdToHdRole(TfToken const& usdRole);
 
 private:
-
     UsdImagingDelegate* _delegate;
-
 };
 
 class UsdImagingPrimAdapterFactoryBase : public TfType::FactoryBase {

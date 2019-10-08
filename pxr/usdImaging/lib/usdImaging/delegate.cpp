@@ -1956,41 +1956,6 @@ UsdImagingDelegate::SetInvisedPrimPaths(SdfPathVector const &invisedPaths)
     ApplyPendingUpdates();
 }
 
-void
-UsdImagingDelegate::_MarkSubtreeVisibilityDirty(SdfPath const &usdSubtreeRoot)
-{
-    UsdImagingIndexProxy indexProxy(this, nullptr);
-
-    SdfPathVector affectedCachePaths, affectedUsdPaths;
-    _GatherDependencies(usdSubtreeRoot, &affectedCachePaths, &affectedUsdPaths);
-
-    // Propagate dirty bits to all descendents and outside dependent prims.
-    for (size_t i = 0; i < affectedCachePaths.size(); ++i) {
-        SdfPath const& cachePath = affectedCachePaths[i];
-        _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
-        if (primInfo == nullptr) {
-            TF_CODING_ERROR("Prim in id list is not in prim info: %s",
-                    cachePath.GetText());
-            continue;
-        }
-        if (!TF_VERIFY(primInfo->adapter, "%s", cachePath.GetText())) {
-            continue;
-        }
-
-        _AdapterSharedPtr const &adapter = primInfo->adapter;
-
-        // XXX: The instancer adapters precompute visibility and
-        // don't deal well with visibility changes. Until we fix that,
-        // resync the prim.
-        if (adapter->IsInstancerAdapter()) {
-            _usdPathsToResync.push_back(usdSubtreeRoot);
-        } else {
-            adapter->MarkVisibilityDirty(primInfo->usdPrim,
-                    cachePath, &indexProxy);
-        }
-    }
-}
-
 void 
 UsdImagingDelegate::SetRigidXformOverrides(
     RigidXformOverridesMap const &rigidXformOverrides)
@@ -2066,60 +2031,6 @@ UsdImagingDelegate::SetRigidXformOverrides(
     // this call is needed because we use _RefreshObject to repopulate
     // vis-ed/invis-ed instanced prims (accumulated in _usdPathsToUpdate)
     ApplyPendingUpdates();
-}
-
-void
-UsdImagingDelegate::_MarkSubtreeTransformDirty(SdfPath const &usdSubtreeRoot)
-{
-    UsdImagingIndexProxy indexProxy(this, nullptr);
-
-    SdfPathVector affectedCachePaths;
-    _GatherDependencies(usdSubtreeRoot, &affectedCachePaths);
-
-    // Propagate dirty bits to all descendents and outside dependent prims.
-    for (SdfPath const& cachePath: affectedCachePaths) {
-        _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
-        if (primInfo == nullptr) {
-            TF_CODING_ERROR("Prim in id list is not in prim info: %s",
-                            cachePath.GetText());
-            continue;
-        }
-        if (!TF_VERIFY(primInfo->adapter, "%s", cachePath.GetText())) {
-            continue;
-        }
-
-        _AdapterSharedPtr const &adapter = primInfo->adapter;
-
-        adapter->MarkTransformDirty(primInfo->usdPrim,
-                                    cachePath,
-                                    &indexProxy);
-
-        // XXX: Also make sure to mark dependencies (such as PI prototypes,
-        // parent instancers) dirty. This code is hopefully transitional;
-        // this should be handled in the PI adapter.
-        SdfPath instancerCachePath = adapter->GetInstancer(cachePath);
-        if (!instancerCachePath.IsEmpty()) {
-            _HdPrimInfo *instancerInfo = _GetHdPrimInfo(instancerCachePath);
-            if (!TF_VERIFY(instancerInfo, "%s", cachePath.GetText()) ||
-                !TF_VERIFY(instancerInfo->adapter, "%s", cachePath.GetText())) {
-                instancerInfo->adapter->MarkTransformDirty(
-                        instancerInfo->usdPrim,
-                        instancerCachePath,
-                        &indexProxy);
-            }
-        }
-
-        SdfPathVector const &paths = adapter->GetDependPaths(cachePath);
-        TF_FOR_ALL (instIt, paths) {
-            _HdPrimInfo *dependsInfo = _GetHdPrimInfo(*instIt);
-            if (!TF_VERIFY(dependsInfo, "%s", cachePath.GetText()) ||
-                !TF_VERIFY(dependsInfo->adapter, "%s", cachePath.GetText())) {
-                dependsInfo->adapter->MarkTransformDirty(dependsInfo->usdPrim,
-                        *instIt,
-                        &indexProxy);
-            }
-        }
-    }
 }
 
 void
