@@ -87,7 +87,6 @@ HdxPrman_InteractiveContext::~HdxPrman_InteractiveContext()
 
 TF_DEFINE_ENV_SETTING(HDX_PRMAN_ENABLE_MOTIONBLUR, true, "bool env setting to control hdPrman motion blur");
 TF_DEFINE_ENV_SETTING(HDX_PRMAN_NTHREADS, 0, "override number of threads used by hdPrman");
-TF_DEFINE_ENV_SETTING(HDX_PRMAN_MAX_SAMPLES, 0, "override max samples in hdPrman");
 TF_DEFINE_ENV_SETTING(HDX_PRMAN_OSL_VERBOSE, 0, "override osl verbose in hdPrman");
 
 void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
@@ -216,14 +215,19 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
         // Read the maxSamples out of settings (if it exists). Use a default
         // of 1024, so we don't cut the progressive render off early.
         // Setting a lower value here would be useful for unit tests.
-        const int defaultMaxSamples = 1024;
-        int maxSamples = renderDelegate->GetRenderSetting<int>(
-            HdRenderSettingsTokens->convergedSamplesPerPixel,
-            defaultMaxSamples);
-        int maxSamplesEnv = TfGetEnvSetting(HDX_PRMAN_MAX_SAMPLES);
-        if (maxSamplesEnv > 0)
-            maxSamples = maxSamplesEnv;
+        VtValue vtMaxSamples = renderDelegate->GetRenderSetting(
+            HdRenderSettingsTokens->convergedSamplesPerPixel).Cast<int>();
+        int maxSamples = TF_VERIFY(!vtMaxSamples.IsEmpty()) ?
+            vtMaxSamples.UncheckedGet<int>() : 1024;
         options->SetInteger(RixStr.k_hider_maxsamples, maxSamples);
+
+        // Read the variance threshold out of settings (if it exists). Use a
+        // default of 0.001.
+        VtValue vtPixelVariance = renderDelegate->GetRenderSetting(
+            HdRenderSettingsTokens->convergedVariance).Cast<float>();
+        float pixelVariance = TF_VERIFY(!vtPixelVariance.IsEmpty()) ?
+            vtPixelVariance.UncheckedGet<float>() : 0.001f;
+        options->SetFloat(RixStr.k_Ri_PixelVariance, pixelVariance);
 
         // Searchpaths (TEXTUREPATH, etc)
         HdPrman_UpdateSearchPathsFromEnvironment(options);
@@ -234,7 +238,6 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
         options->SetInteger(RixStr.k_hider_minsamples, 1);
         options->SetInteger(RixStr.k_trace_maxdepth, 10);
         options->SetFloat(RixStr.k_Ri_FormatPixelAspectRatio, 1.0f);
-        options->SetFloat(RixStr.k_Ri_PixelVariance, 0.001f);
         options->SetString(RixStr.k_bucket_order, us_circle);
 
         // Camera lens

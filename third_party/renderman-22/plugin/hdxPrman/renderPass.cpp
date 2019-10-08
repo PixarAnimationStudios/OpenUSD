@@ -289,6 +289,24 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
             HdPrmanRenderSettingsTokens->interactiveIntegratorTimeout,
             200) / 1000.f;
 
+        // Update convergence criteria.
+        RixParamList *options = mgr->CreateRixParamList();
+
+        VtValue vtMaxSamples = renderDelegate->GetRenderSetting(
+            HdRenderSettingsTokens->convergedSamplesPerPixel).Cast<int>();
+        int maxSamples = TF_VERIFY(!vtMaxSamples.IsEmpty()) ?
+            vtMaxSamples.UncheckedGet<int>() : 1024;
+        options->SetInteger(RixStr.k_hider_maxsamples, maxSamples);
+
+        VtValue vtPixelVariance = renderDelegate->GetRenderSetting(
+            HdRenderSettingsTokens->convergedVariance).Cast<float>();
+        float pixelVariance = TF_VERIFY(!vtPixelVariance.IsEmpty()) ?
+            vtPixelVariance.UncheckedGet<float>() : 0.001f;
+        options->SetFloat(RixStr.k_Ri_PixelVariance, pixelVariance);
+
+        _interactiveContext->riley->SetOptions(*options);
+        mgr->DestroyRixParamList(options);
+
         _lastSettingsVersion = currentSettingsVersion;
         needStartRender = true;
     }

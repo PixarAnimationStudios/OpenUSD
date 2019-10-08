@@ -111,8 +111,14 @@ HdPrmanRenderDelegate::_Initialize()
     if (!integratorEnv.empty())
         integrator = integratorEnv;
 
+    int maxSamples = 1024;
+    int maxSamplesEnv = TfGetenvInt("HDX_PRMAN_MAX_SAMPLES", 0);
+    if (maxSamplesEnv != 0)
+        maxSamples = maxSamplesEnv;
 
-    _settingDescriptors.resize(3);
+    float pixelVariance = 0.001f;
+
+    _settingDescriptors.resize(5);
 
     _settingDescriptors[0] = { 
         std::string("Integrator"),
@@ -133,6 +139,14 @@ HdPrmanRenderDelegate::_Initialize()
         HdPrmanRenderSettingsTokens->interactiveIntegratorTimeout,
         VtValue(200)
     };
+
+    _settingDescriptors[3] = { std::string("Max Samples"),
+        HdRenderSettingsTokens->convergedSamplesPerPixel,
+        VtValue(maxSamples) };
+
+    _settingDescriptors[4] = { std::string("Variance Threshold"),
+        HdRenderSettingsTokens->convergedVariance,
+        VtValue(pixelVariance) };
 
     _PopulateDefaultSettings(_settingDescriptors);
 }
