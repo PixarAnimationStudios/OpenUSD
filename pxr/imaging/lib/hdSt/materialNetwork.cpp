@@ -32,6 +32,8 @@
 #include "pxr/usd/sdr/shaderProperty.h"
 #include "pxr/usd/sdr/registry.h"
 
+#include "pxr/usd/sdf/types.h"
+
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -235,26 +237,181 @@ _GetTerminalNode(
     return &terminalIt->second;
 }
 
-static SdfPath const&
-_GetFirstConnectionToParameter(HdSt_MaterialNode const& node)
+static VtValue
+_GetParamFallbackValue(
+    SdrShaderNodeConstPtr const& sdrNode,
+    HdSt_MaterialNode const& node,
+    TfToken const& paramName)
 {
-    if (!node.inputConnections.empty()) {
-        HdSt_MaterialConnection const& connection = 
-            node.inputConnections.begin()->second.front();
-        return connection.upstreamNode;
+    // Find the value of the input. This 'fallback value' will be the 
+    // value of the material param if nothing is connected.
+
+    auto const& it = node.parameters.find(paramName);
+    if (it != node.parameters.end()) {
+        return it->second;
     }
 
-    static SdfPath _emptyPath;
-    return _emptyPath;
+    // Sdr node will be null for custom glslfx shaders.
+    if (sdrNode) {
+        if (SdrShaderPropertyConstPtr const& sdrInput = 
+                sdrNode->GetShaderInput(paramName)) {
+            return sdrInput->GetDefaultValue();
+        } else if (const auto &defaultInput = sdrNode->GetDefaultInput()) {
+            VtValue defaultValue = defaultInput->GetDefaultValue();
+            if (defaultValue.IsEmpty()) {
+                return defaultInput->GetTypeAsSdfType().first.GetDefaultValue();
+            } else {
+                return defaultValue;
+            }
+        }
+    }
+
+    // Returning an empty value will likely result in a shader compile error,
+    // because the buffer source will not be able to determine the HdTupleType.
+    TF_VERIFY(false, "Couldn't determine default value for: %s on nodeType: %s", 
+              paramName.GetText(), node.nodeTypeId.GetText());
+    return VtValue();
 }
 
-// XXX This function is missing a lot of details that HydraMaterialAdapeter had.
-// For example it needs to determine primvars connected to texture nodes, volume
-// fields etc. Currently it can only handle a single terminal node in network.
-// This instead needs to walk the network to gather the final result of each
-// parameter on the terminal.
+static HdMaterialParam
+_MakeMaterialParamForUnconnectedParam(
+    SdrShaderNodeConstPtr const& sdrNode,
+    HdSt_MaterialNode const& node,
+    TfToken const& paramName)
+{
+    HdMaterialParam matParam;
+    matParam.paramType = HdMaterialParam::ParamTypeFallback;
+    matParam.name = paramName;
+    matParam.fallbackValue = _GetParamFallbackValue(sdrNode, node, paramName);
+    matParam.connection = SdfPath();          /*No connection*/
+    matParam.samplerCoords = TfTokenVector(); /*No UV*/
+    matParam.textureType = HdTextureType::Uv  /*No Texture*/;
+    return matParam;
+}
+
+static TfToken
+_GetPrimvarNameAttributeValue(
+    SdrShaderNodeConstPtr const& sdrNode,
+    HdSt_MaterialNode const& node,
+    TfToken const& propName)
+{
+    VtValue vtName;
+
+    // If the name of the primvar was authored, the material adapter would have
+    // put that that authored value in the node's parameter list. 
+    // The authored value is the strongest opinion/
+
+    auto const& paramIt = node.parameters.find(propName);
+    if (paramIt != node.parameters.end()) {
+        vtName = paramIt->second;
+    }
+
+    // If we didn't find an authored value consult Sdr for the default value.
+    if (vtName.IsEmpty() && sdrNode) {
+        if (SdrShaderPropertyConstPtr sdrPrimvarInput = 
+                sdrNode->GetShaderInput(propName)) {
+            vtName = sdrPrimvarInput->GetDefaultValue();
+        }
+    }
+
+    if (vtName.IsHolding<TfToken>()) {
+        return vtName.UncheckedGet<TfToken>();
+    } else if (vtName.IsHolding<std::string>()) {
+        return TfToken(vtName.UncheckedGet<std::string>());
+    }
+
+    return TfToken();
+}
+
+static HdMaterialParam
+_MakeMaterialParamForPrimvarInput(
+    SdrShaderNodeConstPtr const& sdrNode,
+    HdSt_MaterialNode const& node,
+    SdfPath const& nodePath,
+    TfToken const& paramName)
+{
+    HdMaterialParam matParam;
+    matParam.paramType = HdMaterialParam::ParamTypePrimvar;
+    matParam.name = paramName;
+    matParam.fallbackValue = _GetParamFallbackValue(sdrNode, node, paramName);
+    matParam.connection = SdfPath("primvar." + nodePath.GetName());
+    matParam.textureType = HdTextureType::Uv  /*No Texture*/;
+
+    // A node may require 'additional primvars' to function correctly.
+
+    TfTokenVector varNames;
+    for (auto const& propName: sdrNode->GetAdditionalPrimvarProperties()) {
+        TfToken primvarName = 
+            _GetPrimvarNameAttributeValue(sdrNode, node, propName);
+
+        if (!primvarName.IsEmpty()) {
+            matParam.samplerCoords.push_back(primvarName);
+        }
+    }
+
+    return matParam;
+}
+
+//static HdMaterialParam
+//_MakeMaterialParamForTextureInput()
+//{
+//// todo see if it has a primvar connected for texCoords
+//}
+
+static HdMaterialParam
+_MakeParamForInputParameter(
+    SdrRegistry & shaderReg,
+    HdSt_MaterialNetwork const& network,
+    SdrShaderNodeConstPtr const& sdrNode,
+    HdSt_MaterialNode const& node,
+    TfToken const& paramName)
+{
+    // Resolve what is connected to this param (eg. primvar, texture, nothing)
+    // and then make the correct HdMaterialParam for it.
+    auto const& conIt = node.inputConnections.find(paramName);
+
+    if (conIt != node.inputConnections.end()) {
+
+        std::vector<HdSt_MaterialConnection> const& cons = conIt->second;
+        if (!cons.empty()) {
+
+            // Find the node that is connected to this input
+            HdSt_MaterialConnection const& con = cons.front();
+            auto upIt = network.nodes.find(con.upstreamNode);
+
+            if (upIt != network.nodes.end()) {
+
+                SdfPath const& upstreamPath = upIt->first;
+                HdSt_MaterialNode const& upstreamNode = upIt->second;
+
+                SdrShaderNodeConstPtr upstreamSdr = 
+                        shaderReg.GetShaderNodeByIdentifierAndType(
+                            upstreamNode.nodeTypeId,
+                            HioGlslfxTokens->glslfx);
+
+                if (upstreamSdr) {
+                    TfToken sdrFamily(upstreamSdr->GetFamily());
+                    TfToken sdrRole(upstreamSdr->GetRole());
+                    if (sdrRole == SdrNodeRole->Texture) {
+                        // todo
+                    } else if (sdrRole == SdrNodeRole->Primvar) {
+                        return _MakeMaterialParamForPrimvarInput(
+                            upstreamSdr, upstreamNode, upstreamPath, paramName);
+                    } else if (sdrRole == SdrNodeRole->Field) {
+                        // todo
+                    }
+                }
+            }
+        }
+    } 
+
+    // Nothing (supported) was connected, output a fallback material param    
+    return _MakeMaterialParamForUnconnectedParam(sdrNode, node, paramName);
+}
+
 static HdMaterialParamVector 
 _GatherMaterialParams(
+    HdSt_MaterialNetwork const& network,
     HdSt_MaterialNode const& node,
     HioGlslfxUniquePtr const& glslfx) 
 {
@@ -264,71 +421,25 @@ _GatherMaterialParams(
     SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifierAndType(
         node.nodeTypeId, HioGlslfxTokens->glslfx);
 
-    // XXX We won't have a valid sdrNode for shaders using custom glslfx.
-    // This is because we do not have a Sdr glslfx parser (yet).
+    // For custom glslfx, that have no schema, we pull the input parameter list 
+    // from the glslfx instead of Sdr, because we dont have a glslfx Sdr parser.
+    // The Sdr node will be null in those cases.
 
     if (sdrNode) {
-        NdrTokenVec const& inputNames = sdrNode->GetInputNames();
-        for (TfToken const& inputName : inputNames) {
-            VtValue fallbackValue;
-
-            // Find the value of the input. This 'fallback value' will be the 
-            // value of the material param if nothing is connected.
-
-            auto const& it = node.parameters.find(inputName);
-            if (it != node.parameters.end()) {
-                fallbackValue = it->second;
-            } else {
-                SdrShaderPropertyConstPtr const& sdrInput = 
-                    sdrNode->GetShaderInput(inputName);
-
-                if (sdrInput) {
-                    fallbackValue = sdrInput->GetDefaultValue();
-                } else {
-                    TF_WARN("%s not found in Sdr", inputName.GetText());
-                }
-            }
-
-            // Check if we have something connected to the input.
-            // This is a 'stronger opinion' than the fallback value.
-            SdfPath const& inputConn = 
-                _GetFirstConnectionToParameter(node);
-
-            // Add a material parameter for this material input.
-            HdMaterialParam matParam(
-                    HdMaterialParam::ParamTypeFallback,/*paramType*/
-                    inputName,/*name*/
-                    fallbackValue,/*fallbackValue*/
-                    inputConn,/*_connection*/
-                    TfTokenVector(), /*_samplerCoords*/
-                    HdTextureType::Uv /*_textureType*/);
+        for (TfToken const& inputName : sdrNode->GetInputNames()) {
+            HdMaterialParam matParam = _MakeParamForInputParameter(
+                shaderReg, network, sdrNode, node, inputName);
             params.emplace_back(std::move(matParam));
         }
     } else if (glslfx) {
-
-        // XXX Since we do not have a Sdr glslfx parser we directly consult
-        // glslfx for the parameters of the shader (custom glslfx case).
         for (HioGlslfxConfig::Parameter const& input: glslfx->GetParameters()) {
+            HdMaterialParam matParam = _MakeParamForInputParameter(
+                shaderReg, network, sdrNode, node, TfToken(input.name));
 
-            // Extract the fallback value for this glslfx param-input.
-            // This value is used if nothing is connected to the param.
+            if (matParam.fallbackValue.IsEmpty()) {
+                matParam.fallbackValue = input.defaultValue;
+            }
 
-            VtValue fallbackValue = input.defaultValue;
-            TfToken inputName = TfToken(input.name);
-
-            // Check if we have something connected to the input.
-            // This is a 'stronger opinion' than the fallback value.
-            SdfPath const& inputConn = 
-                _GetFirstConnectionToParameter(node);
-
-            // Add a material parameter for this material input.
-            HdMaterialParam matParam(
-                    HdMaterialParam::ParamTypeFallback,/*paramType*/
-                    inputName, /*name*/
-                    fallbackValue,/*fallbackValue*/
-                    inputConn,/*_connection*/
-                    TfTokenVector(), /*_samplerCoords*/
-                    HdTextureType::Uv /*_textureType*/);
             params.emplace_back(std::move(matParam));
         }
     } else {
@@ -387,7 +498,8 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
                 surfaceGfx->GetSurfaceSource();
             _materialMetadata = surfaceGfx->GetMetadata();
             _materialTag = _GetMaterialTag(_materialMetadata, *surfTerminal);
-            _materialParams = _GatherMaterialParams(*surfTerminal, surfaceGfx);
+            _materialParams = _GatherMaterialParams(
+                surfaceNetwork, *surfTerminal, surfaceGfx);
         }
     }
 

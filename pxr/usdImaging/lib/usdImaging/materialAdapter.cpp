@@ -211,24 +211,60 @@ UsdImagingMaterialAdapter::_RemovePrim(SdfPath const& cachePath,
     index->RemoveSprim(HdPrimTypeTokens->material, cachePath);
 }
 
+static TfToken
+_GetPrimvarNameAttributeValue(
+    SdrShaderNodeConstPtr const& sdrNode,
+    HdMaterialNode const& node,
+    TfToken const& propName)
+{
+    VtValue vtName;
+
+    // If the name of the primvar was authored in parameters list.
+    // The authored value is the strongest opinion
+
+    auto const& paramIt = node.parameters.find(propName);
+    if (paramIt != node.parameters.end()) {
+        vtName = paramIt->second;
+    }
+
+    // If we didn't find an authored value consult Sdr for the default value.
+
+    if (vtName.IsEmpty() && sdrNode) {
+        if (SdrShaderPropertyConstPtr sdrPrimvarInput = 
+                sdrNode->GetShaderInput(propName)) {
+            vtName = sdrPrimvarInput->GetDefaultValue();
+        }
+    }
+
+    if (vtName.IsHolding<TfToken>()) {
+        return vtName.UncheckedGet<TfToken>();
+    } else if (vtName.IsHolding<std::string>()) {
+        return TfToken(vtName.UncheckedGet<std::string>());
+    }
+
+    return TfToken();
+}
+
 static
 void _ExtractPrimvarsFromNode(UsdShadeShader const & shadeNode,
                               HdMaterialNode const & node,
-                              HdMaterialNetwork *materialNetwork)
+                              HdMaterialNetwork *materialNetwork,
+                              TfToken const& networkSelector)
 {
-    // Check if it is a node that reads primvars.
-    // XXX : We could be looking at more stuff here like manifolds..
-    if (node.identifier == TfToken("Primvar_3")) {
-        // Extract the primvar name from the usd shade node
-        // and store it in the list of primvars in the network
-        UsdShadeInput nameAttrib = shadeNode.GetInput(TfToken("varname"));
-        if (nameAttrib) {
-            VtValue value;
-            nameAttrib.Get(&value);
-            if (value.IsHolding<std::string>()) {
-                materialNetwork->primvars.push_back(
-                    TfToken(value.Get<std::string>()));
-            }
+    auto &shaderReg = SdrRegistry::GetInstance();
+    SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifierAndType(
+        node.identifier, networkSelector);
+
+    if (sdrNode) {
+        // GetPrimvars and GetAdditionalPrimvarProperties together give us the
+        // complete set of primvars needed by this shader node.
+        NdrTokenVec const& primvars = sdrNode->GetPrimvars();
+        materialNetwork->primvars.insert( 
+            materialNetwork->primvars.end(), primvars.begin(), primvars.end());
+
+        for (TfToken const& p : sdrNode->GetAdditionalPrimvarProperties()) {
+            TfToken name = _GetPrimvarNameAttributeValue(sdrNode, node, p);
+            materialNetwork->primvars.push_back(name);
         }
     }
 }
@@ -314,11 +350,13 @@ void _WalkGraph(
     if (!id.IsEmpty()) {
         node.identifier = id;
 
-        // If a node is recognizable, we will try to extract the primvar 
-        // names that is using since this can help render delegates 
-        // optimize what what is needed from a prim when making data 
-        // accessible for renderers.
-        _ExtractPrimvarsFromNode(shadeNode, node, materialNetwork);
+        // GprimAdapter can filter-out primvars not used by a material to reduce
+        // the number of primvars send to the render delegate. We extract the
+        // primvar names from the material node to ensure these primvars are
+        // not filtered-out by GprimAdapter.
+
+        _ExtractPrimvarsFromNode(
+            shadeNode, node, materialNetwork, networkSelector);
     } 
     
     materialNetwork->nodes.push_back(node);

@@ -64,6 +64,9 @@ public:
     };
 
     HD_API
+    HdMaterialParam();
+
+    HD_API
     HdMaterialParam(ParamType paramType,
                     TfToken const& name, 
                     VtValue const& fallbackValue,

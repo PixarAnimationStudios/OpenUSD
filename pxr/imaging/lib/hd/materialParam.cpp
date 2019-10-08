@@ -30,6 +30,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+HdMaterialParam::HdMaterialParam()
+{
+}
 
 HdMaterialParam::HdMaterialParam(ParamType paramType,
                                  TfToken const& name, 

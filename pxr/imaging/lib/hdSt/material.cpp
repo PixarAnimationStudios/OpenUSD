@@ -226,11 +226,14 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
                 sourcesAndTextures.ProcessPrimvarMaterialParam(
                     param);
             } else if (param.IsFallback()) {
-                // XXX Deprecate the use of sceneDelegate here.
-                // We can use Sdr or glslfx to get the fallback value once we
-                // switch over to only consume material networks.
-                sourcesAndTextures.ProcessFallbackMaterialParam(
-                    param, sceneDelegate, GetId());
+                if (_IsEnabledStormMaterialNetworks()) {
+                    sourcesAndTextures.ProcessFallbackMaterialParam(
+                        param, param.fallbackValue);
+                } else {
+                    // XXX Deprecate.
+                    sourcesAndTextures.ProcessFallbackMaterialParam(
+                        param, sceneDelegate, GetId());
+                }
             } else if (param.IsTexture()) {
                 sourcesAndTextures.ProcessTextureMaterialParam(
                     param, 
