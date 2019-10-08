@@ -225,6 +225,37 @@ UsdImagingBasisCurvesAdapter::UpdateForTime(UsdPrim const& prim,
     }
 }
 
+HdDirtyBits
+UsdImagingBasisCurvesAdapter::ProcessPropertyChange(UsdPrim const& prim,
+                                             SdfPath const& cachePath,
+                                             TfToken const& propertyName)
+{
+    if (propertyName == UsdGeomTokens->points)
+        return HdChangeTracker::DirtyPoints;
+
+    if (propertyName == UsdGeomTokens->widths ||
+        propertyName == UsdImagingTokens->primvarsWidths) {
+        if (_PrimvarChangeRequiresResync(
+                prim, cachePath, propertyName, HdTokens->widths)) {
+            return HdChangeTracker::AllDirty;
+        } else {
+            return HdChangeTracker::DirtyWidths;
+        }
+    }
+
+    if (propertyName == UsdGeomTokens->normals ||
+        propertyName == UsdImagingTokens->primvarsNormals) {
+        if (_PrimvarChangeRequiresResync(
+                prim, cachePath, propertyName, HdTokens->normals)) {
+            return HdChangeTracker::AllDirty;
+        } else {
+            return HdChangeTracker::DirtyNormals;
+        }
+    }
+
+    // Allow base class to handle change processing.
+    return BaseAdapter::ProcessPropertyChange(prim, cachePath, propertyName);
+}
 
 // -------------------------------------------------------------------------- //
 

@@ -463,7 +463,21 @@ UsdImagingGprimAdapter::ProcessPropertyChange(UsdPrim const& prim,
         return HdChangeTracker::DirtyMaterialId;
     }
     
-    // TODO: support sparse displayColor updates
+    // Is the property a primvar?
+    static std::string primvarsNS = "primvars:";
+    if (TfStringStartsWith(propertyName.GetString(), primvarsNS)) {
+        TfToken primvarName = TfToken(
+            propertyName.GetString().substr(primvarsNS.size()));
+
+        if (!_IsBuiltinPrimvar(primvarName)) {
+            if (_PrimvarChangeRequiresResync(
+                    prim, cachePath, propertyName, primvarName)) {
+                return HdChangeTracker::AllDirty;
+            } else {
+                return HdChangeTracker::DirtyPrimvar;
+            }
+        }
+    }
 
     return HdChangeTracker::AllDirty;
 }

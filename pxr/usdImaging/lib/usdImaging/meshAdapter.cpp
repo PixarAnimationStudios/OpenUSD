@@ -278,6 +278,16 @@ UsdImagingMeshAdapter::ProcessPropertyChange(UsdPrim const& prim,
     // (Note that a change in subdivision scheme means we need to re-track
     // the variability of the normals...)
 
+    if (propertyName == UsdGeomTokens->normals ||
+        propertyName == UsdImagingTokens->primvarsNormals) {
+        if (_PrimvarChangeRequiresResync(
+                prim, cachePath, propertyName, HdTokens->normals)) {
+            return HdChangeTracker::AllDirty;
+        } else {
+            return HdChangeTracker::DirtyNormals;
+        }
+    }
+
     // Allow base class to handle change processing.
     return BaseAdapter::ProcessPropertyChange(prim, cachePath, propertyName);
 }

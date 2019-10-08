@@ -80,6 +80,15 @@ public:
         UsdImagingInstancerContext const* instancerContext = nullptr) 
             const override;
 
+    // ---------------------------------------------------------------------- //
+    /// \name Change Processing
+    // ---------------------------------------------------------------------- //
+
+    USDIMAGING_API
+    HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      TfToken const& propertyName) override;
+
 protected:
     USDIMAGING_API
     bool _IsBuiltinPrimvar(TfToken const& primvarName) const override;
