@@ -27,6 +27,7 @@
 #include <pxr/pxr.h>
 #include "pxr/base/tf/refPtr.h"
 
+#include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
 #include <GA/GA_OffsetList.h>

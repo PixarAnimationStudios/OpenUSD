@@ -34,7 +34,7 @@
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/stageLoadRules.h"
 #include "pxr/usd/usd/stagePopulationMask.h"
-#include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/primFlags.h"
 
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/hashmap.h"
@@ -72,6 +72,7 @@ class Usd_InstanceChanges;
 class Usd_InterpolatorBase;
 class UsdResolveInfo;
 class Usd_Resolver;
+class UsdPrim;
 class UsdPrimRange;
 
 SDF_DECLARE_HANDLES(SdfLayer);
