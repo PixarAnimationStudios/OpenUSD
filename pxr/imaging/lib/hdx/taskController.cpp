@@ -301,18 +301,21 @@ HdxTaskController::_CreateRenderGraph()
         // SetRenderOutputs({HdAovTokens->color});
     } else {
         _renderTaskIds.push_back(_CreateRenderTask(TfToken()));
+
         if (_AovsSupported()) {
             _CreateColorizeTask();
             _CreateColorizeSelectionTask();
-
             _CreatePickFromRenderBufferTask();
+        }
 
-            // Initialize the AOV system to render color. Note:
-            // SetRenderOutputs special-cases color to include support for
-            // depth-compositing and selection highlighting/picking.
+        _CreateColorCorrectionTask();
+
+        // Initialize the AOV system to render color. Note:
+        // SetRenderOutputs special-cases color to include support for
+        // depth-compositing and selection highlighting/picking.
+        if (_AovsSupported()) {
             SetRenderOutputs({HdAovTokens->color});
         }
-        _CreateColorCorrectionTask();
     }
 }
 
@@ -647,6 +650,19 @@ HdxTaskController::_ColorCorrectionEnabled() const
 }
 
 bool
+HdxTaskController::_ColorizeQuantizationEnabled() const
+{
+    if (_colorizeTaskId.IsEmpty())
+        return false;
+
+    const HdxColorizeTaskParams& params =
+        _delegate.GetParameter<HdxColorizeTaskParams>(
+            _colorizeTaskId, HdTokens->params);
+
+    return params.applyColorQuantization;
+}
+
+bool
 HdxTaskController::_AovsSupported() const
 {
     return GetRenderIndex()->IsBprimTypeSupported(
@@ -706,15 +722,29 @@ HdxTaskController::GetRenderingTasks() const
         tasks.push_back(GetRenderIndex()->GetTask(_selectionTaskId));
 
     // Take path-tracer CPU pixels and render to screen
-    if (!_colorizeTaskId.IsEmpty())
+    if (!_colorizeTaskId.IsEmpty()) {
+        // XXX Colorize already applies color quantization since it renders
+        // directly to 8bit framebuffer. But it does not quantize the background
+        // since it alpha-blend the aov on top of the background.
+        // Therefor we must first color correct the background.
+        // Future work is to stop Colorize from rendering to the 8bit FB.
+        // Instead it should Colorize into a render target that color correction
+        // can then quantize.
+        if (_ColorizeQuantizationEnabled() && _ColorCorrectionEnabled()) {
+            tasks.push_back(GetRenderIndex()->GetTask(_colorCorrectionTaskId));
+        }
+
         tasks.push_back(GetRenderIndex()->GetTask(_colorizeTaskId));
+    }
 
     if (!_colorizeSelectionTaskId.IsEmpty() && _ColorizeSelectionEnabled())
         tasks.push_back(GetRenderIndex()->GetTask(_colorizeSelectionTaskId));
 
-    // Apply color correction / grading for presentation to screen
-    if (!_colorCorrectionTaskId.IsEmpty() && _ColorCorrectionEnabled())
+    // Apply color correction / grading (convert to display colors)
+    // XXX Skip is Colorize has already quantized the colors.
+    if (_ColorCorrectionEnabled() && !_ColorizeQuantizationEnabled()) {
         tasks.push_back(GetRenderIndex()->GetTask(_colorCorrectionTaskId));
+    }
 
     // Render pixels to screen
     if (!_presentTaskId.IsEmpty())
@@ -1005,7 +1035,10 @@ HdxTaskController::SetViewportRenderOutput(TfToken const& name)
     }
 
     if (!_colorizeTaskId.IsEmpty()) {
-        HdxColorizeTaskParams params;
+        HdxColorizeTaskParams params =
+            _delegate.GetParameter<HdxColorizeTaskParams>(
+                _colorizeTaskId, HdTokens->params);
+
         if (name.IsEmpty()) {
             // Empty token means don't colorize anything.
             params.aovName = name;
@@ -1744,7 +1777,32 @@ HdxTaskController::SetColorCorrectionParams(
 
         GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
             _colorCorrectionTaskId, HdChangeTracker::DirtyParams);
+
+        // XXX Disable Colorize 'color quantization' when ColorCorrection is
+        // disabled. We need to retire Colorize writing to the framebuffer so we
+        // can just rely on ColorCorrection.
+        _SetColorizeQuantizationEnabled(
+            !params.colorCorrectionMode.IsEmpty() &&
+            params.colorCorrectionMode != HdxColorCorrectionTokens->disabled);
     }
+}
+
+void 
+HdxTaskController::_SetColorizeQuantizationEnabled(bool enabled)
+{
+    if (_colorizeTaskId.IsEmpty()) return;
+
+    HdxColorizeTaskParams params = 
+        _delegate.GetParameter<HdxColorizeTaskParams>(
+            _colorizeTaskId, HdTokens->params);
+
+    params.applyColorQuantization = enabled;
+
+    _delegate.SetParameter(
+        _colorizeTaskId, HdTokens->params, params);
+
+    GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+        _colorizeTaskId, HdChangeTracker::DirtyParams);
 }
 
 void

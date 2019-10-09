@@ -233,11 +233,14 @@ private:
     void _SetBlendStateForMaterialTag(TfToken const& materialTag,
                                       HdxRenderTaskParams *renderParams) const;
 
+    void _SetColorizeQuantizationEnabled(bool enabled);
+
     // Render graph topology control.
     bool _ShadowsEnabled() const;
     bool _SelectionEnabled() const;
     bool _ColorizeSelectionEnabled() const;
     bool _ColorCorrectionEnabled() const;
+    bool _ColorizeQuantizationEnabled() const;
     bool _AovsSupported() const;
 
     // Helper function for renderbuffer management.

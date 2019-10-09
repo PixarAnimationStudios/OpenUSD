@@ -71,6 +71,7 @@ private:
     TfToken _aovName;
     SdfPath _aovBufferPath;
     SdfPath _depthBufferPath;
+    bool _applyColorQuantization;
 
     HdRenderBuffer *_aovBuffer;
     HdRenderBuffer *_depthBuffer;
@@ -98,6 +99,7 @@ struct HdxColorizeTaskParams
         : aovName()
         , aovBufferPath()
         , depthBufferPath()
+        , applyColorQuantization(true)
         {}
 
     // XXX: Right now the API is pretty basic: draw buffer X as aov Y
@@ -106,6 +108,7 @@ struct HdxColorizeTaskParams
     TfToken aovName;
     SdfPath aovBufferPath;
     SdfPath depthBufferPath;
+    bool applyColorQuantization;
 };
 
 // VtValue requirements
