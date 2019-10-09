@@ -131,7 +131,7 @@ public:
     void RemoveRprim(SdfPath const& cachePath) {
         _rprimsToRemove.push_back(cachePath);
         _hdPrimInfoToRemove.push_back(cachePath);
-        _RemovePrimInfoDependencies(cachePath);
+        _RemoveDependencies(cachePath);
     }
 
     // Removes the Sprim at the specified cache path.
@@ -139,7 +139,7 @@ public:
         _TypeAndPath primToRemove = {primType, cachePath};
         _sprimsToRemove.push_back(primToRemove);
         _hdPrimInfoToRemove.push_back(cachePath);
-        _RemovePrimInfoDependencies(cachePath);
+        _RemoveDependencies(cachePath);
     }
 
     // Removes the Bprim at the specified cache path.
@@ -147,14 +147,14 @@ public:
         _TypeAndPath primToRemove = {primType, cachePath};
         _bprimsToRemove.push_back(primToRemove);
         _hdPrimInfoToRemove.push_back(cachePath);
-        _RemovePrimInfoDependencies(cachePath);
+        _RemoveDependencies(cachePath);
     }
 
     // Removes the HdInstancer at the specified cache path.
     void RemoveInstancer(SdfPath const& cachePath) {
         _instancersToRemove.push_back(cachePath);
         _hdPrimInfoToRemove.push_back(cachePath);
-        _RemovePrimInfoDependencies(cachePath);
+        _RemoveDependencies(cachePath);
     }
 
     USDIMAGING_API
@@ -202,8 +202,14 @@ private:
                         UsdPrim const& usdPrim,
                         UsdImagingPrimAdapterSharedPtr const& adapter);
 
+    // XXX: Workaround for some bugs in USD edit processing, and weird uses
+    // of HdPrimInfo by instanced prims.  Remove the dependency between
+    // a hydra prim and whatever USD prim is in its primInfo.
+    friend class UsdImagingGprimAdapter;
+    void _RemovePrimInfoDependency(SdfPath const& cachePath);
+
     USDIMAGING_API
-    void _RemovePrimInfoDependencies(SdfPath const& cachePath);
+    void _RemoveDependencies(SdfPath const& cachePath);
 
     SdfPathVector const& _GetUsdPathsToRepopulate() {
         return _usdPathsToRepopulate;

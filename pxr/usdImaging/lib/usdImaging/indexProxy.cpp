@@ -99,7 +99,7 @@ UsdImagingIndexProxy::_AddTask(SdfPath const& usdPath)
 }
 
 void
-UsdImagingIndexProxy::_RemovePrimInfoDependencies(SdfPath const& cachePath)
+UsdImagingIndexProxy::_RemoveDependencies(SdfPath const& cachePath)
 {
     UsdImagingDelegate::_HdPrimInfo *primInfo =
         _delegate->_GetHdPrimInfo(cachePath);
@@ -114,6 +114,27 @@ UsdImagingIndexProxy::_RemovePrimInfoDependencies(SdfPath const& cachePath)
         _dependenciesToRemove.push_back(
             UsdImagingDelegate::_DependencyMap::value_type(
                 dep, cachePath));
+    }
+}
+
+void
+UsdImagingIndexProxy::_RemovePrimInfoDependency(SdfPath const& cachePath)
+{
+    // This one doesn't go through ProcessRemovals...  It's intended to be
+    // called right after _AddHdPrimInfo, to reverse the dependency that
+    // function adds.
+    UsdImagingDelegate::_HdPrimInfo *primInfo =
+        _delegate->_GetHdPrimInfo(cachePath);
+    if (!TF_VERIFY(primInfo != nullptr, "%s", cachePath.GetText())) {
+        return;
+    }
+    auto range = _delegate->_dependencyInfo.equal_range(
+        primInfo->usdPrim.GetPath());
+    for (auto it = range.first; it != range.second; ++it) {
+        if (it->second == cachePath) {
+            _delegate->_dependencyInfo.erase(it);
+            break;
+        }
     }
 }
 
