@@ -30,6 +30,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static HdxPrmanRenderDelegate* s_currentDelegate = nullptr;
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     HdRendererPluginRegistry::Define<HdxPrmanRendererPlugin>();
@@ -38,18 +40,30 @@ TF_REGISTRY_FUNCTION(TfType)
 HdRenderDelegate*
 HdxPrmanRendererPlugin::CreateRenderDelegate()
 {
+    // Prman only supports one delegate at a time
+    if (s_currentDelegate) {
+        return nullptr;
+    }
     std::shared_ptr<HdxPrman_InteractiveContext> context =
         std::make_shared<HdxPrman_InteractiveContext>();
-    return new HdxPrmanRenderDelegate(context);
+    s_currentDelegate = new HdxPrmanRenderDelegate(context);
+
+    return s_currentDelegate;
 }
 
 HdRenderDelegate*
 HdxPrmanRendererPlugin::CreateRenderDelegate(
     HdRenderSettingsMap const& settingsMap)
 {
+    // Prman only supports one delegate at a time
+    if (s_currentDelegate) {
+        return nullptr;
+    }
     std::shared_ptr<HdxPrman_InteractiveContext> context =
         std::make_shared<HdxPrman_InteractiveContext>();
-    return new HdxPrmanRenderDelegate(context, settingsMap);
+    s_currentDelegate = new HdxPrmanRenderDelegate(context, settingsMap);
+
+    return s_currentDelegate;
 }
 
 void
@@ -58,7 +72,10 @@ HdxPrmanRendererPlugin::DeleteRenderDelegate(HdRenderDelegate *renderDelegate)
     // The HdxPrman_InteractiveContext is owned the by delegate and
     // will be automatically destroyed by ref-counting, shutting
     // down the attached PRMan instance.
-    delete renderDelegate;
+    if (s_currentDelegate == renderDelegate) {
+        delete renderDelegate;
+        s_currentDelegate = nullptr;
+    }
 }
 
 bool
