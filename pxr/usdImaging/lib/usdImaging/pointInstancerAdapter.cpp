@@ -861,10 +861,14 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
 {
     if (IsChildPath(cachePath)) {
         _ProtoRprim const& rproto = _GetProtoRprim(prim.GetPath(), cachePath);
-        if (!TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
-            return HdChangeTracker::AllDirty;
-        }
-        if (!TF_VERIFY(rproto.paths.size() > 0, "%s", cachePath.GetText())) {
+        if (!rproto.adapter || (rproto.paths.size() <= 0)) {
+            // It's possible we'll get multiple USD edits for the same
+            // prototype, one of which will cause a resync.  On resync,
+            // we immediately remove the instancer data, but primInfo
+            // deletion is deferred until the end of the edit batch.
+            // That means, if GetProtoRprim fails we've already
+            // queued the prototype for resync and we can safely
+            // return AllDirty.
             return HdChangeTracker::AllDirty;
         }
 
