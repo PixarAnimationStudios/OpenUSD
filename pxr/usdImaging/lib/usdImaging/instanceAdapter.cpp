@@ -730,6 +730,7 @@ struct UsdImagingInstanceAdapter::_ComputeInstanceTransformFn
     void Initialize(size_t numInstances)
     { 
         result.resize(numInstances);
+        inverseRoot = adapter->GetRootTransform().GetInverse();
     }
 
     bool operator()(
@@ -750,6 +751,10 @@ struct UsdImagingInstanceAdapter::_ComputeInstanceTransformFn
                 * adapter->GetTransform(*instanceIt, time, ignoreRootTransform);
         }
 
+        // The prototype transform will have the root transform, so we need
+        // to negate that.
+        xform = inverseRoot * xform;
+
         result[instanceIdx] = xform;
         return true;
     }
@@ -757,6 +762,7 @@ struct UsdImagingInstanceAdapter::_ComputeInstanceTransformFn
     const UsdImagingInstanceAdapter* adapter;
     UsdTimeCode time;
     VtMatrix4dArray result;
+    GfMatrix4d inverseRoot;
 };
 
 bool
@@ -1166,23 +1172,6 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
         if (protoReqBits != HdChangeTracker::Clean) {
             rproto.adapter->UpdateForTime(protoPrim, cachePath, 
                 time, protoReqBits, &instancerContext);
-        }
-
-        if (requestedBits & HdChangeTracker::DirtyTransform) {
-            GfMatrix4d& childXf = _GetValueCache()->GetTransform(cachePath);
-            if (protoPrim.IsInstance()) {
-                // If the prototype we're processing is a master, protoPrim is
-                // a pointer to the instance for attribute lookup; but the
-                // instance transform for that instance is already part of the
-                // instanceTransform primvar.  Masters don't have any transform,
-                // aside from the root transform, so we can set the rprim
-                // transform to identity.
-                childXf.SetIdentity();
-            } else {
-                // Inverse out the root transform to avoid a double
-                // transformation when applying the instancer transform.
-                childXf = childXf * GetRootTransform().GetInverse();
-            }
         }
 
     } else if (_InstancerData *instrData =
@@ -2332,10 +2321,9 @@ UsdImagingInstanceAdapter::GetRelativeInstancerTransform(
     SdfPath const &parentInstancerPath,
     SdfPath const &instancerPath, UsdTimeCode time) const
 {
-    // regardless the parentInstancerPath is empty or not,
-    // we subtract the root transform.
+    // This API doesn't do anything for native instancers.
     UsdPrim prim = _GetPrim(instancerPath.GetPrimPath());
-    return GetTransform(prim, time) * GetRootTransform().GetInverse();
+    return GetTransform(prim, time);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
