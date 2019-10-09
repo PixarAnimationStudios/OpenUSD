@@ -218,7 +218,8 @@ public:
         }
     };
 
-    typedef std::unordered_map<GfVec2i, int, EdgeHash, EdgeEquality> EdgeMap;
+    using EdgeMap = std::unordered_map<GfVec2i, int, EdgeHash, EdgeEquality>;
+    using ReverseEdgeMap = std::unordered_map<int, GfVec2i>;
     
     // Enumerates all the edges of the authored mesh topology, and returns a map
     // of (vertex indices pair, edge id).
@@ -227,12 +228,18 @@ public:
     static EdgeMap ComputeAuthoredEdgeMap(HdMeshTopology const* topology,
                                           bool skipHoles = false);
 
+    // Given the map from (vertex indices pair, edge id) computed by
+    // ComputeAuthoredEdgeMap, returns the reverse map (edge id, vertex indices
+    // pair).
+    HD_API
+    static ReverseEdgeMap ComputeReverseEdgeMap(const EdgeMap &edgeMap);
+
     // Translates an authored edge id to its vertex indices
     // Returns a pair, with first indicating success of the look up, and
     // second being the vertex indices for the edge.
     HD_API
     static std::pair<bool, GfVec2i>
-    GetVertexIndicesForEdge(const EdgeMap &edgeMap, int authoredEdgeId);
+    GetVertexIndicesForEdge(const ReverseEdgeMap &rEdgeMap, int authoredEdgeId);
 
     // Translates an edge to its authored edge id
     // Returns a pair, with first indicating success of the look up, and

@@ -983,6 +983,7 @@ HdMeshUtil::ComputeQuadrangulatedFaceVaryingPrimvar(
 HdMeshUtil::ComputeAuthoredEdgeMap(HdMeshTopology const* topology,
                                    bool skipHoles/*=false*/)
 {
+    HD_TRACE_FUNCTION();
     int const * numVertsPtr  = topology->GetFaceVertexCounts().cdata();
     int const * vertsPtr     = topology->GetFaceVertexIndices().cdata();
     int const * holeFacesPtr = topology->GetHoleIndices().cdata();
@@ -1022,15 +1023,26 @@ HdMeshUtil::ComputeAuthoredEdgeMap(HdMeshTopology const* topology,
     return edges;
 }
 
-/*static*/ std::pair<bool, GfVec2i>
-HdMeshUtil::GetVertexIndicesForEdge(const EdgeMap &edgeMap, int authoredEdgeId)
+/*static*/HdMeshUtil::ReverseEdgeMap 
+HdMeshUtil::ComputeReverseEdgeMap(const EdgeMap &edgeMap)
 {
-    // XXX: ideally, we should use a bi-directional map, so we can do 
-    // edge -> edgeId and edgeId -> edge look ups
+    HD_TRACE_FUNCTION();
+    ReverseEdgeMap res;
     for (const auto& pair : edgeMap) {
-        if (pair.second == authoredEdgeId) {
-            return std::make_pair(true, pair.first);
-        }
+        res.insert(std::make_pair(pair.second, pair.first));
+    }
+    return res;
+}
+
+/*static*/ std::pair<bool, GfVec2i>
+HdMeshUtil::GetVertexIndicesForEdge(
+    const ReverseEdgeMap &rEdgeMap, 
+    int authoredEdgeId)
+{
+    const auto &it = rEdgeMap.find(authoredEdgeId);
+
+    if (it != rEdgeMap.end()) {
+        return std::make_pair(true, it->second);
     }
 
     return std::make_pair(false, GfVec2i(0,0));
