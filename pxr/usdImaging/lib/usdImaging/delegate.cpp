@@ -1063,15 +1063,6 @@ UsdImagingDelegate::_ResyncUsdPrim(SdfPath const& usdPath,
     TF_DEBUG(USDIMAGING_CHANGES).Msg("[Resync Prim]: <%s>\n",
             usdPath.GetText());
 
-    // XXX: This shouldn't be handled here, but we don't support resync for
-    // materials, so if we see a resync notice for a shader (material component)
-    // we drop it.  We'll typically get a paired refresh that will update the
-    // relevant material.
-    UsdPrim prim = _stage->GetPrimAtPath(usdPath);
-    if (prim && prim.IsA<UsdShadeShader>()) {
-        return;
-    }
-
     // This function is confusing, so an explainer:
     //
     // In general, the USD prims that get mapped to hydra prims are leaf prims.
