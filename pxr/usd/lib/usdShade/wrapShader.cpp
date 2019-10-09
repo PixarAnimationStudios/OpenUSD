@@ -160,6 +160,17 @@ _WrapGetSourceAsset(const UsdShadeShader &shader,
     return object();
 }
 
+static object
+_WrapGetSourceAssetSubIdentifier(const UsdShadeShader &shader,
+                    const TfToken &sourceType)
+{
+    TfToken subIdentifier;
+    if (shader.GetSourceAssetSubIdentifier(&subIdentifier, sourceType)) {
+        return object(subIdentifier);
+    }
+    return object();
+}
+
 static object 
 _WrapGetSourceCode(const UsdShadeShader &shader,
                    const TfToken &sourceType)
@@ -183,12 +194,18 @@ WRAP_CUSTOM {
         .def("SetSourceAsset", &UsdShadeShader::SetSourceAsset,
             (arg("sourceAsset"), 
              arg("sourceType")=UsdShadeTokens->universalSourceType))
+        .def("SetSourceAssetSubIdentifier",
+            &UsdShadeShader::SetSourceAssetSubIdentifier,
+            (arg("subIdentifier"),
+             arg("sourceType")=UsdShadeTokens->universalSourceType))
         .def("SetSourceCode", &UsdShadeShader::SetSourceCode,
             (arg("sourceCode"), 
              arg("sourceType")=UsdShadeTokens->universalSourceType))
 
         .def("GetShaderId", _WrapGetShaderId)
         .def("GetSourceAsset", _WrapGetSourceAsset, 
+             arg("sourceType")=UsdShadeTokens->universalSourceType)
+        .def("GetSourceAssetSubIdentifier", _WrapGetSourceAssetSubIdentifier,
              arg("sourceType")=UsdShadeTokens->universalSourceType)
         .def("GetSourceCode", _WrapGetSourceCode, 
              arg("sourceType")=UsdShadeTokens->universalSourceType)

@@ -330,5 +330,44 @@ class TestUsdShadeShaders(unittest.TestCase):
                         glslfxAssetPath)
         self.assertEqual(whiterPale.GetSourceAsset(), oslAssetPath)
 
+        # Test getting a sub identifier before it has been set
+        self.assertTrue(whiterPale.GetSourceAssetSubIdentifier() is None)
+        self.assertTrue(
+            whiterPale.GetSourceAssetSubIdentifier(sourceType="glslfx") is None)
+
+        # Reset implementation source to not be 'sourceAsset'
+        whiterPale.GetImplementationSourceAttr().Set(UsdShade.Tokens.id)
+        self.assertEqual(whiterPale.GetImplementationSource(),
+                         UsdShade.Tokens.id)
+
+        # Check that calling SetSourceAssetSubIdentifier updates
+        # implementationSource to 'asset;
+        subId = "mySubIdentifier"
+        self.assertTrue(whiterPale.SetSourceAssetSubIdentifier(
+            subIdentifier=subId,
+            sourceType=UsdShade.Tokens.universalSourceType))
+        self.assertEqual(whiterPale.GetSourceAssetSubIdentifier(
+            sourceType=UsdShade.Tokens.universalSourceType), subId)
+        self.assertEqual(whiterPale.GetImplementationSource(),
+                         UsdShade.Tokens.sourceAsset)
+
+        # Test that setting a source asset and sub identifier will update the
+        # correct attributes for a variety source types.
+        sourceAsset = Sdf.AssetPath("someSourceAsset")
+
+        sourceTypes = [UsdShade.Tokens.universalSourceType, "osl"]
+        subIds = ["myUniversalSubIdentifier", "myOSLSubIdentifier"]
+
+        for sourceType, subId in zip(sourceTypes, subIds):
+            self.assertTrue(whiterPale.SetSourceAsset(
+                sourceAsset=sourceAsset,
+                sourceType=sourceType))
+            self.assertTrue(whiterPale.SetSourceAssetSubIdentifier(
+                subIdentifier=subId,
+                sourceType=sourceType))
+            self.assertEqual(whiterPale.GetSourceAssetSubIdentifier(sourceType),
+                             subId)
+
+
 if __name__ == '__main__':
     unittest.main()

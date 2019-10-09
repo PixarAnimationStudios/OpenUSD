@@ -46,7 +46,10 @@ class RslShader "RslShader"
         determine the shader source from the shader registry.
         * If set to \"sourceAsset\", the resolved value of the \"info:sourceAsset\" 
         attribute corresponding to the desired implementation (or source-type)
-        is used to locate the shader source.
+        is used to locate the shader source.  A source asset file may also
+        specify multiple shader definitions, so there is an optional attribute
+        \"info:sourceAsset:subIdentifier\" whose value should be used to indicate
+        a particular shader definition from a source asset file.
         * If set to \"sourceCode\", the value of \"info:sourceCode\" attribute 
         corresponding to the desired implementation (or source type) is used as 
         the shader source.
@@ -82,7 +85,10 @@ class RisObject "RisObject" (
         determine the shader source from the shader registry.
         * If set to \"sourceAsset\", the resolved value of the \"info:sourceAsset\" 
         attribute corresponding to the desired implementation (or source-type)
-        is used to locate the shader source.
+        is used to locate the shader source.  A source asset file may also
+        specify multiple shader definitions, so there is an optional attribute
+        \"info:sourceAsset:subIdentifier\" whose value should be used to indicate
+        a particular shader definition from a source asset file.
         * If set to \"sourceCode\", the value of \"info:sourceCode\" attribute 
         corresponding to the desired implementation (or source type) is used as 
         the shader source.
@@ -117,7 +123,10 @@ class RisPattern "RisPattern" (
         determine the shader source from the shader registry.
         * If set to \"sourceAsset\", the resolved value of the \"info:sourceAsset\" 
         attribute corresponding to the desired implementation (or source-type)
-        is used to locate the shader source.
+        is used to locate the shader source.  A source asset file may also
+        specify multiple shader definitions, so there is an optional attribute
+        \"info:sourceAsset:subIdentifier\" whose value should be used to indicate
+        a particular shader definition from a source asset file.
         * If set to \"sourceCode\", the value of \"info:sourceCode\" attribute 
         corresponding to the desired implementation (or source type) is used as 
         the shader source.
@@ -154,7 +163,10 @@ class RisOslPattern "RisOslPattern" (
         determine the shader source from the shader registry.
         * If set to \"sourceAsset\", the resolved value of the \"info:sourceAsset\" 
         attribute corresponding to the desired implementation (or source-type)
-        is used to locate the shader source.
+        is used to locate the shader source.  A source asset file may also
+        specify multiple shader definitions, so there is an optional attribute
+        \"info:sourceAsset:subIdentifier\" whose value should be used to indicate
+        a particular shader definition from a source asset file.
         * If set to \"sourceCode\", the value of \"info:sourceCode\" attribute 
         corresponding to the desired implementation (or source type) is used as 
         the shader source.
@@ -190,7 +202,10 @@ class RisBxdf "RisBxdf" (
         determine the shader source from the shader registry.
         * If set to \"sourceAsset\", the resolved value of the \"info:sourceAsset\" 
         attribute corresponding to the desired implementation (or source-type)
-        is used to locate the shader source.
+        is used to locate the shader source.  A source asset file may also
+        specify multiple shader definitions, so there is an optional attribute
+        \"info:sourceAsset:subIdentifier\" whose value should be used to indicate
+        a particular shader definition from a source asset file.
         * If set to \"sourceCode\", the value of \"info:sourceCode\" attribute 
         corresponding to the desired implementation (or source type) is used as 
         the shader source.

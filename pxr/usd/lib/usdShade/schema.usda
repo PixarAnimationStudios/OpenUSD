@@ -275,6 +275,13 @@ class Shader "Shader" (
                 properties in a UsdShade-based shader definition file.
                 """
             }
+            dictionary subIdentifier = {
+                string doc = """This identifier is used in conjunction with a
+                specific source asset to indicate a particular definition within
+                the source asset, if the source asset specifies more than one
+                shader node definition.
+                """
+            }
         }
     }
 ) {
@@ -287,7 +294,10 @@ class Shader "Shader" (
         determine the shader source from the shader registry.
         * If set to "sourceAsset", the resolved value of the "info:sourceAsset" 
         attribute corresponding to the desired implementation (or source-type)
-        is used to locate the shader source.
+        is used to locate the shader source.  A source asset file may also
+        specify multiple shader definitions, so there is an optional attribute
+        "info:sourceAsset:subIdentifier" whose value should be used to indicate
+        a particular shader definition from a source asset file.
         * If set to "sourceCode", the value of "info:sourceCode" attribute 
         corresponding to the desired implementation (or source type) is used as 
         the shader source.

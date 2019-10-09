@@ -92,6 +92,7 @@ void wrapUsdShadeTokens()
     _AddToken(cls, "sourceAsset", UsdShadeTokens->sourceAsset);
     _AddToken(cls, "sourceCode", UsdShadeTokens->sourceCode);
     _AddToken(cls, "strongerThanDescendants", UsdShadeTokens->strongerThanDescendants);
+    _AddToken(cls, "subIdentifier", UsdShadeTokens->subIdentifier);
     _AddToken(cls, "surface", UsdShadeTokens->surface);
     _AddToken(cls, "universalRenderContext", UsdShadeTokens->universalRenderContext);
     _AddToken(cls, "universalSourceType", UsdShadeTokens->universalSourceType);

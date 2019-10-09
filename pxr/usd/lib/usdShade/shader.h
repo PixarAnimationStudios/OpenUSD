@@ -191,7 +191,10 @@ public:
     /// determine the shader source from the shader registry.
     /// * If set to "sourceAsset", the resolved value of the "info:sourceAsset" 
     /// attribute corresponding to the desired implementation (or source-type)
-    /// is used to locate the shader source.
+    /// is used to locate the shader source.  A source asset file may also
+    /// specify multiple shader definitions, so there is an optional attribute
+    /// "info:sourceAsset:subIdentifier" whose value should be used to indicate
+    /// a particular shader definition from a source asset file.
     /// * If set to "sourceCode", the value of "info:sourceCode" attribute 
     /// corresponding to the desired implementation (or source type) is used as 
     /// the shader source.
@@ -426,6 +429,36 @@ public:
     USDSHADE_API
     bool GetSourceAsset(
         SdfAssetPath *sourceAsset,
+        const TfToken &sourceType=UsdShadeTokens->universalSourceType) const;
+
+    /// Set a sub-identifier to be used with a source asset of the given source
+    /// type.  This sets the <b>info:<i>sourceType:</i>sourceAsset:subIdentifier
+    /// </b>.
+    ///
+    /// This also sets the <i>info:implementationSource</i> attribute on the
+    /// shader to <b>UsdShadeTokens->sourceAsset</b>
+    USDSHADE_API
+    bool SetSourceAssetSubIdentifier(
+        const TfToken &subIdentifier,
+        const TfToken &sourceType=UsdShadeTokens->universalSourceType) const;
+
+    /// Fetches the shader's sub-identifier for the source asset with the
+    /// specified \p sourceType value from the <b>info:<i>sourceType:</i>
+    /// sourceAsset:subIdentifier</b> attribute, if the shader's <i>info:
+    /// implementationSource</i> is <b>sourceAsset</b>.
+    ///
+    /// If the <i>subIdentifier</i> attribute corresponding to the requested
+    /// <i>sourceType</i> isn't present on the shader, then the <i>universal</i>
+    /// <i>fallback</i> sub-identifier attribute, i.e. <i>info:sourceAsset:
+    /// subIdentifier</i> is consulted, if present, to get the sub-identifier
+    /// name.
+    ///
+    /// Returns <b>true</b> if the shader's implementation source is
+    /// <b>sourceAsset</b> and the sub-identifier for the given source type was
+    /// fetched successfully into \p subIdentifier. Returns false otherwise.
+    USDSHADE_API
+    bool GetSourceAssetSubIdentifier(
+        TfToken *subIdentifier,
         const TfToken &sourceType=UsdShadeTokens->universalSourceType) const;
 
     /// Sets the shader's source-code value to \p sourceCode for the given 

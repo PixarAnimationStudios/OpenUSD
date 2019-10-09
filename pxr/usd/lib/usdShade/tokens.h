@@ -174,6 +174,10 @@ struct UsdShadeTokensType {
     /// 
     /// Possible value for 'bindMaterialAs' metadata on the  collection-based material binding relationship. Indicates  that the binding represented by the relationship is stronger than  any bindings authored on the descendants.
     const TfToken strongerThanDescendants;
+    /// \brief "subIdentifier"
+    /// 
+    /// This identifier is used in conjunction with a specific source asset to indicate a particular definition within the source asset, if the source asset specifies more than one shader node definition. 
+    const TfToken subIdentifier;
     /// \brief "surface"
     /// 
     /// Describes the <i>surface</i> output  terminal on a UsdShadeMaterial. It is used to define the  terminal UsdShadeShader describing the surface of a  UsdShadeMaterial. 

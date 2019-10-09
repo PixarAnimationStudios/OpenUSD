@@ -187,6 +187,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (info)
     ((infoSourceAsset, "info:sourceAsset"))
+    ((infoSubIdentifier, "info:sourceAsset:subIdentifier"))
     ((infoSourceCode, "info:sourceCode"))
 );
 
@@ -330,6 +331,66 @@ UsdShadeShader::GetSourceAsset(
     return false;
 }
 
+static
+TfToken
+_GetSourceAssetSubIdentifierAttrName(const TfToken &sourceType)
+{
+    if (sourceType == UsdShadeTokens->universalSourceType) {
+        return _tokens->infoSubIdentifier;
+    }
+    return TfToken(SdfPath::JoinIdentifier(TfTokenVector{
+                                    _tokens->info,
+                                    sourceType,
+                                    UsdShadeTokens->sourceAsset,
+                                    UsdShadeTokens->subIdentifier}));
+}
+
+bool
+UsdShadeShader::SetSourceAssetSubIdentifier(
+    const TfToken &subIdentifier,
+    const TfToken &sourceType) const
+{
+    TfToken subIdentifierAttrName =
+        _GetSourceAssetSubIdentifierAttrName(sourceType);
+    return CreateImplementationSourceAttr(VtValue(UsdShadeTokens->sourceAsset))
+        && UsdSchemaBase::_CreateAttr(subIdentifierAttrName,
+                                      SdfValueTypeNames->Token,
+                                      /* custom = */ false,
+                                      SdfVariabilityUniform,
+                                      VtValue(subIdentifier),
+                                      /* writeSparsely */ false);
+}
+
+bool
+UsdShadeShader::GetSourceAssetSubIdentifier(
+    TfToken *subIdentifier,
+    const TfToken &sourceType) const
+{
+    TfToken implSource = GetImplementationSource();
+    if (implSource != UsdShadeTokens->sourceAsset) {
+        return false;
+    }
+
+    TfToken subIdentifierAttrName =
+        _GetSourceAssetSubIdentifierAttrName(sourceType);
+    UsdAttribute subIdentifierAttr = GetPrim().GetAttribute(
+        subIdentifierAttrName);
+    if (subIdentifierAttr) {
+        return subIdentifierAttr.Get(subIdentifier);
+    }
+
+    if (sourceType != UsdShadeTokens->universalSourceType) {
+        UsdAttribute univSubIdentifierAttr = GetPrim().GetAttribute(
+            _GetSourceAssetSubIdentifierAttrName(
+                UsdShadeTokens->universalSourceType));
+        if (univSubIdentifierAttr) {
+            return univSubIdentifierAttr.Get(subIdentifier);
+        }
+    }
+
+    return false;
+}
+
 static 
 TfToken
 _GetSourceCodeAttrName(const TfToken &sourceType) 
@@ -398,8 +459,10 @@ UsdShadeShader::GetShaderNodeForSourceType(const TfToken &sourceType) const
     } else if (implSource == UsdShadeTokens->sourceAsset) {
         SdfAssetPath sourceAsset;
         if (GetSourceAsset(&sourceAsset, sourceType)) {
+            TfToken subIdentifier;
+            GetSourceAssetSubIdentifier(&subIdentifier, sourceType);
             return SdrRegistry::GetInstance().GetShaderNodeFromAsset(
-                sourceAsset, GetSdrMetadata());
+                sourceAsset, GetSdrMetadata(), subIdentifier);
         }
     } else if (implSource == UsdShadeTokens->sourceCode) {
         std::string sourceCode;
