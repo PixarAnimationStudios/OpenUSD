@@ -191,6 +191,29 @@ class UsdviewApi(object):
         """DEPRECATED Returns the old settings object."""
 
         return self.__appController._settings
+    
+    def CreateStageReplacedConnection(self, callback):
+        return SignalSlotConnection(self.__appController._dataModel
+                                    .signalStageReplaced, callback)
+    
+    def CreateSelectionChangedConnection(self, callback):
+        return SignalSlotConnection(self.__appController._dataModel
+                                    .selection.signalPrimSelectionChanged, 
+                                    callback)
+
+    def AddStageReplacedCallback(self, callback):
+        self.__appController._dataModel.signalStageReplaced.connect(callback)
+        
+    def RemoveStageReplacedCallback(self, callback):
+        self.__appController._dataModel.signalStageReplaced.disconnect(callback)
+
+    def AddPrimSelectionChangedCallback(self, callback):
+        self.__appController._dataModel.selection.\
+            signalPrimSelectionChanged.connect(callback)
+
+    def RemovePrimSelectionChangedCallback(self, callback):
+        self.__appController._dataModel.selection.\
+            signalPrimSelectionChanged.disconnect(callback)
 
     def ClearPrimSelection(self):
         self.__appController._dataModel.selection.clearPrims()
@@ -220,3 +243,21 @@ class UsdviewApi(object):
         if stageView is not None:
             stageView.ExportSession(stagePath, defcamName='usdviewCam',
                 imgWidth=None, imgHeight=None)
+
+
+class SignalSlotConnection(object):
+    """The SignalSlotConnection class encapsulates a Qt signal-slot
+    connection using an RAII pattern.
+    
+    When this object is destroyed, the Qt signal-slot connection is
+    disconnected.    
+    
+    """
+
+    def __init__(self, signal, slot):
+        self._signal = signal
+        self._slot = slot
+        self._signal.connect(self._slot)
+    
+    def __del__(self):
+        self._signal.disconnect(self._slot)
