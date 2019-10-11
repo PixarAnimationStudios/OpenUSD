@@ -59,15 +59,31 @@ class Launcher(object):
         parser = argparse.ArgumentParser(prog=sys.argv[0],
                                          description=self.GetHelpDescription())
 
+        traceCollector = None
+
         with Timer() as totalTimer:
             self.RegisterPositionals(parser)
             self.RegisterOptions(parser)
             arg_parse_result = self.ParseOptions(parser)
             self.ValidateOptions(arg_parse_result)
+
+            if arg_parse_result.traceToFile:
+                from pxr import Trace
+                traceCollector = Trace.Collector()
+                traceCollector.pythonTracingEnabled = True
+                traceCollector.enabled = True
+
             self.__LaunchProcess(arg_parse_result)
+
+        if traceCollector:
+            traceCollector.enabled = False
 
         if arg_parse_result.timing and arg_parse_result.quitAfterStartup:
             totalTimer.PrintTime('open and close usdview')
+
+        if traceCollector:
+            Trace.Reporter.globalReporter.ReportChromeTracingToFile(
+                arg_parse_result.traceToFile)
 
     def GetHelpDescription(self):
         '''return the help description'''
@@ -140,7 +156,13 @@ class Launcher(object):
 
         parser.add_argument('--timing', action='store_true',
                             dest='timing',
-                            help='echo timing stats to console. NOTE: timings will be unreliable when the --mallocTagStats option is also in use')
+                            help='Echo timing stats to console. NOTE: timings will be unreliable when the --mallocTagStats option is also in use')
+
+        parser.add_argument('--traceToFile', action='store',
+                            type=str,
+                            dest='traceToFile',
+                            default=None,
+                            help='Start tracing at application startup and write chrome-compatible output to the specified trace file when the application quits')
 
         parser.add_argument('--memstats', action='store', default='none',
                             dest='mallocTagStats', type=str,
