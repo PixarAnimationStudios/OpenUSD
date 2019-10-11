@@ -1249,7 +1249,9 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
         SdfPath const& usdPrimPath = usdPath.GetPrimPath();
         TfToken const& attrName = usdPath.GetNameToken();
         UsdPrim usdPrim = _stage->GetPrimAtPath(usdPrimPath);
-        UsdAttribute attr = usdPrim.GetProperty(attrName).As<UsdAttribute>();
+        UsdAttribute attr = usdPrim
+            ? usdPrim.GetAttribute(attrName)
+            : UsdAttribute();
 
         // If either model:drawMode or model:applyDrawMode changes, we need to
         // repopulate the whole subtree starting at the owning prim.
