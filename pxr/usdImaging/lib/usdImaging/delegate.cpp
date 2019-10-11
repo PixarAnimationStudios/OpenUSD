@@ -2921,7 +2921,7 @@ UsdImagingDelegate::GetCameraParamValue(SdfPath const &id,
 
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
     VtValue value;
-    if (!_valueCache.ExtractCameraParam(cachePath, paramName, &value)) {
+    if (!_valueCache.FindCameraParam(cachePath, paramName, &value)) {
         HdDirtyBits dirtyBit = HdCamera::Clean;
         if (paramName == HdCameraTokens->worldToViewMatrix) {
             dirtyBit = HdCamera::DirtyViewMatrix;
@@ -2934,7 +2934,7 @@ UsdImagingDelegate::GetCameraParamValue(SdfPath const &id,
         }
         
         _UpdateSingleValue(cachePath, dirtyBit);
-         if (!_valueCache.ExtractCameraParam(cachePath, paramName, &value)) {
+        if (!_valueCache.FindCameraParam(cachePath, paramName, &value)) {
             // Fallback to USD attributes.
             value = _GetUsdPrimAttribute(cachePath, paramName);
         }
