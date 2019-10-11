@@ -48,8 +48,10 @@
 #endif
 #if defined(ARCH_OS_DARWIN)
 #include <sys/sysctl.h>
-#endif
-#if defined(ARCH_OS_WINDOWS)
+#elif defined(ARCH_OS_LINUX)
+#include <sys/prctl.h>
+#include <semaphore.h>
+#elif defined(ARCH_OS_WINDOWS)
 #include <Windows.h>
 #endif
 #include <atomic>
@@ -347,6 +349,7 @@ bool
 Arch_DebuggerIsAttachedPosix()
 {
     // Check for a ptrace based debugger by trying to ptrace.
+    sem_t *yama = sem_open("usd_ptrace_enable", O_CREAT|O_EXCL);
     pid_t parent = getpid();
     pid_t pid = nonLockingFork();
     if (pid < 0) {
@@ -356,6 +359,8 @@ Arch_DebuggerIsAttachedPosix()
 
     // Child process.
     if (pid == 0) {
+        // Wait for the parent to allow attaching
+        sem_wait(yama);
         // Attach to the parent with ptrace() this will fail if the
         // parent is already being traced.
         if (ptrace(PTRACE_ATTACH, parent, NULL, NULL) == -1) {
@@ -374,6 +379,11 @@ Arch_DebuggerIsAttachedPosix()
 
         // A debugger was not attached.
         _exit(0);
+    } else {
+        // Allow forked child to ptrace the parent process on kernels with YAMA
+        prctl(PR_SET_PTRACER, pid, 0, 0, 0);
+        // Tell the child to continue.
+        sem_post(yama);
     }
 
     // Parent process
@@ -381,6 +391,10 @@ Arch_DebuggerIsAttachedPosix()
     while (waitpid(pid, &status, 0) == -1 && errno == EINTR) {
         // Do nothing
     }
+
+    // Disable ptracing from child 
+    prctl(PR_SET_PTRACER, 0, 0, 0, 0);
+
     if (WIFEXITED(status)) {
         return WEXITSTATUS(status) != 0;
     }
