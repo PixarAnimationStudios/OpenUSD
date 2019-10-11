@@ -1540,6 +1540,10 @@ UsdImagingDelegate::SetWindowPolicy(CameraUtilConformWindowPolicy policy)
 GfInterval 
 UsdImagingDelegate::GetCurrentTimeSamplingInterval()
 {
+    // XXX : Since the introduction of the sampling API in Hydra, we have
+    // had a shutter interval. Our next move will be to make this default
+    // shutter below have the same values as the UsdGeomCamera shutters
+    // which means a shutter open of 0.0 and a shutter close of 0.0.
     float shutterOpen = 0.0f;
     float shutterClose = 0.5f;
 
@@ -1558,7 +1562,10 @@ UsdImagingDelegate::GetCurrentTimeSamplingInterval()
                 HdCameraTokens->shutterOpen, 
                 &vShutterOpen);
         }
-        shutterOpen = vShutterOpen.Get<double>();
+
+        if (vShutterOpen.IsHolding<double>()) {
+            shutterOpen = vShutterOpen.Get<double>();
+        }
 
         if (!_valueCache.FindCameraParam(
                 _cameraPathForSampling, 
@@ -1571,7 +1578,10 @@ UsdImagingDelegate::GetCurrentTimeSamplingInterval()
                 HdCameraTokens->shutterClose, 
                 &vShutterClose);
         }
-        shutterClose = vShutterClose.Get<double>();
+
+        if (vShutterClose.IsHolding<double>()) {
+            shutterClose = vShutterClose.Get<double>();
+        }
     }
 
     return GfInterval(
