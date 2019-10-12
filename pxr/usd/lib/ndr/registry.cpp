@@ -422,7 +422,9 @@ NdrRegistry::GetNodeFromAsset(const SdfAssetPath &asset,
                               /* uri */ asset.GetAssetPath(),
                               resolvedUri, 
                               /* sourceCode */ "",
-                              metadata);
+                              metadata,
+                              /* blindData */ "",
+                              /* subIdentifier */ subIdentifier);
 
     NdrNodeUniquePtr newNode = parserIt->second->Parse(dr);
 
