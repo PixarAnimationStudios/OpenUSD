@@ -3598,7 +3598,7 @@ UsdStage::_HandleLayersDidChange(
 
     // Add dependent paths for any PrimSpecs whose fields have changed that may
     // affect cached prim information.
-    for(const auto& layerAndChangelist : n.GetChangeListMap()) {
+    for(const auto& layerAndChangelist : n.GetChangeListVec()) {
         // If this layer does not pertain to us, skip.
         if (_cache->FindAllLayerStacksUsingLayer(
                 layerAndChangelist.first).empty()) {
@@ -3706,7 +3706,7 @@ UsdStage::_HandleLayersDidChange(
 
     PcpChanges changes;
     changes.DidChange(std::vector<PcpCache*>(1, _cache.get()),
-                      n.GetChangeListMap());
+                      n.GetChangeListVec());
 
     // Pcp does not consider activation changes to be significant since
     // it doesn't look at activation during composition. However, UsdStage

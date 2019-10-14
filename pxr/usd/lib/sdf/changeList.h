@@ -30,6 +30,7 @@
 #include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
+#include "pxr/base/tf/smallVector.h"
 
 #include <set>
 #include <map>
@@ -39,7 +40,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfChangeList;
-typedef std::map<SdfLayerHandle, SdfChangeList> SdfLayerChangeListMap;
+typedef std::vector<
+    std::pair<SdfLayerHandle, SdfChangeList>
+    > SdfLayerChangeListVec;
 
 /// \class SdfChangeList
 ///
@@ -49,12 +52,18 @@ typedef std::map<SdfLayerHandle, SdfChangeList> SdfLayerChangeListMap;
 class SdfChangeList
 {
 public:
+
+    SdfChangeList() = default;
+    SDF_API SdfChangeList(SdfChangeList const &);
+    SdfChangeList(SdfChangeList &&) = default;
+    SDF_API SdfChangeList &operator=(SdfChangeList const &);
+    SdfChangeList &operator=(SdfChangeList &&) = default;
+
     enum SubLayerChangeType {
         SubLayerAdded,
         SubLayerRemoved,
         SubLayerOffset
     };
-
 
     void DidReplaceLayerContent();
     void DidReloadLayerContent();
@@ -107,9 +116,30 @@ public:
     struct Entry {
         // Map of info keys that have changed to (old, new) value pairs.
         typedef std::pair<VtValue, VtValue> InfoChange;
-        typedef std::map<TfToken, InfoChange, TfTokenFastArbitraryLessThan> 
-            InfoChangeMap;
-        InfoChangeMap infoChanged;
+        // We usually change just a few fields on a spec in one go, so we store
+        // up to three locally (e.g. typeName, variability, default).
+        typedef TfSmallVector<std::pair<TfToken, InfoChange>, 3> InfoChangeVec;
+        InfoChangeVec infoChanged;
+        
+        /// Return the iterator in infoChanged whose first element is \p key, or
+        /// infoChanged.end() if there is no such element.
+        InfoChangeVec::const_iterator
+        FindInfoChange(TfToken const &key) const {
+            InfoChangeVec::const_iterator iter = infoChanged.begin();
+            for (InfoChangeVec::const_iterator end = infoChanged.end();
+                 iter != end; ++iter) {
+                if (iter->first == key) {
+                    break;
+                }
+            }
+            return iter;
+        }
+
+        /// Return true if this entry has an info change for \p key, false
+        /// otherwise.
+        bool HasInfoChange(TfToken const &key) const {
+            return FindInfoChange(key) != infoChanged.end();
+        }
 
         typedef std::pair<std::string, SubLayerChangeType> SubLayerChange;
         std::vector<SubLayerChange> subLayerChanges;
@@ -168,19 +198,64 @@ public:
         _Flags flags;
     };
 
-    /// Map of change entries at various paths in a layer.
-    typedef std::unordered_map<SdfPath, Entry, SdfPath::Hash> EntryList;
+    /// Map of change entries at various paths in a layer.  We store one entry
+    /// in local space, since it's very common to edit just a single spec in a
+    /// single round of changes.
+    using EntryList = TfSmallVector<std::pair<SdfPath, Entry>, 1>;
 
 public:
     const EntryList & GetEntryList() const { return _entries; }
 
     // Change accessors/mutators
+    SDF_API
     Entry const &GetEntry( const SdfPath & ) const;
 
-private:
-    Entry &_GetEntry(SdfPath const &);
+    using const_iterator = EntryList::const_iterator;
+
+    SDF_API
+    const_iterator FindEntry(SdfPath const &) const;
     
+    const_iterator begin() const {
+        return _entries.begin();
+    }
+
+    const_iterator cbegin() const {
+        return _entries.cbegin();
+    }
+ 
+    const_iterator end() const {
+        return _entries.end();
+    }
+
+    const_iterator cend() const {
+        return _entries.cend();
+    }
+
+private:
+    friend void swap(SdfChangeList &a, SdfChangeList &b) {
+        a._entries.swap(b._entries);
+        a._entriesAccel.swap(b._entriesAccel);
+    }
+    
+    Entry &_GetEntry(SdfPath const &);
+
+    // If no entry with `newPath` exists, create one.  If an entry with
+    // `oldPath` exists, move its contents over `newPath`'s and erase it.
+    // Return a reference to `newPath`'s entry.
+    Entry &_MoveEntry(SdfPath const &oldPath, SdfPath const &newPath);
+    
+    EntryList::iterator _MakeNonConstIterator(EntryList::const_iterator i);
+
+    Entry &_AddNewEntry(SdfPath const &path);
+
+    void _EraseEntry(SdfPath const &);
+
+    void _RebuildAccel();
+
     EntryList _entries;
+    using _AccelTable = std::unordered_map<SdfPath, size_t, SdfPath::Hash>;
+    std::unique_ptr<_AccelTable> _entriesAccel;
+    static constexpr size_t _AccelThreshold = 64;
 };
 
 // Stream-output operator

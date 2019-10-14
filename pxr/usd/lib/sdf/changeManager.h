@@ -98,10 +98,13 @@ private:
 
     void _ProcessRemoveIfInert();
 
+    SdfChangeList &_GetListFor(SdfLayerChangeListVec &changeList,
+                               SdfLayerHandle const &layer);
+
 private:
     struct _Data {
         _Data();
-        SdfLayerChangeListMap changes;
+        SdfLayerChangeListVec changes;
         int changeBlockDepth;
         std::vector<SdfSpec> removeIfInert;
     };

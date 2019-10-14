@@ -62,8 +62,9 @@ Sdf_ChangeManager::_SendNoticesForChangeList( const SdfLayerHandle & layer,
     // Notice which is only sent if a layer changes it's 'dirtiness'
     // This is useful in cases where I am just interested if a layer
     // has been dirtied or un-dirtied (changes undone)
-    if (layer->_UpdateLastDirtinessState())
+    if (layer->_UpdateLastDirtinessState()) {
         SdfNotice::LayerDirtinessChanged().Send(layer);
+    }
 
     const SdfChangeList::EntryList & entryList = changeList.GetEntryList();
     TF_FOR_ALL(pathChanges, entryList) {
@@ -156,33 +157,31 @@ _InitChangeSerialNumber() {
 void
 Sdf_ChangeManager::_SendNotices()
 {
-    // Swap out the list of events to deliver so that notice listeners
-    // can safely queue up more changes. We also need to filter out any
-    // changes from layers that have since been destroyed, as the change
+    // Move aside the list of changes to deliver and clear the TLS so that
+    // notice listeners can safely queue up more changes. We also need to filter
+    // out any changes from layers that have since been destroyed, as the change
     // manager should only send notifications for existing layers.
-    SdfLayerChangeListMap changes;
-    changes.swap(_data.local().changes);
+    SdfLayerChangeListVec &tlsChanges = _data.local().changes;
+    SdfLayerChangeListVec changes = std::move(tlsChanges);
+    tlsChanges.clear();
 
-    SdfLayerChangeListMap::iterator mapIter = changes.begin();
-    while (mapIter != changes.end()) {
-        SdfLayerChangeListMap::iterator currIter = (mapIter++);
-        if (!currIter->first) {
-            changes.erase(currIter);
-        }
-    }
+    changes.erase(
+        std::remove_if(changes.begin(), changes.end(),
+                       [](SdfLayerChangeListVec::value_type const &p) {
+                           return !p.first;
+                       }),
+        changes.end());
 
     if (changes.empty())
         return;
 
-    TF_FOR_ALL(it, changes) {
-
+    for (auto const &lc: changes) {
         // Send layer-specific notices.
-        _SendNoticesForChangeList(it->first, it->second);
-
+        _SendNoticesForChangeList(lc.first, lc.second);
         if (TfDebug::IsEnabled(SDF_CHANGES)) {
             TF_DEBUG(SDF_CHANGES).Msg("Changes to layer %s:\n%s",
-                                     it->first->GetIdentifier().c_str(),
-                                     TfStringify(it->second).c_str());
+                                     lc.first->GetIdentifier().c_str(),
+                                     TfStringify(lc.second).c_str());
         }
     }
 
@@ -197,8 +196,18 @@ Sdf_ChangeManager::_SendNotices()
     // don't have to be invoked on every round of change processing if they are
     // only interested in a subset of layers.
     SdfNotice::LayersDidChangeSentPerLayer n(changes, serialNumber);
-    TF_FOR_ALL(it, changes)
-        n.Send(it->first);
+    for (auto const &lc: changes) {
+        n.Send(lc.first);
+    }
+
+    // If no new changes have been queued in the meantime then move the changes
+    // vector back and clear it.  This is a performance optimization: it lets us
+    // reuse the existing capacity in the changes vector, so we can potentially
+    // avoid reallocation on the next round of changes.
+    if (tlsChanges.empty()) {
+        tlsChanges = std::move(changes);
+        tlsChanges.clear();
+    }
 }
 
 void
@@ -206,7 +215,7 @@ Sdf_ChangeManager::DidReplaceLayerContent(const SdfLayerHandle &layer)
 {
     if (!layer->_ShouldNotify())
         return;
-    _data.local().changes[layer].DidReplaceLayerContent();
+    _GetListFor(_data.local().changes, layer).DidReplaceLayerContent();
 }
 
 void
@@ -214,7 +223,7 @@ Sdf_ChangeManager::DidReloadLayerContent(const SdfLayerHandle &layer)
 {
     if (!layer->_ShouldNotify())
         return;
-    _data.local().changes[layer].DidReloadLayerContent();
+    _GetListFor(_data.local().changes, layer).DidReloadLayerContent();
 }
 
 void 
@@ -223,7 +232,8 @@ Sdf_ChangeManager::DidChangeLayerIdentifier(const SdfLayerHandle &layer,
 {
     if (!layer->_ShouldNotify())
         return;
-    _data.local().changes[layer].DidChangeLayerIdentifier(oldIdentifier);
+    _GetListFor(_data.local().changes, layer)
+        .DidChangeLayerIdentifier(oldIdentifier);
 }
 
 void 
@@ -231,7 +241,7 @@ Sdf_ChangeManager::DidChangeLayerResolvedPath(const SdfLayerHandle &layer)
 {
     if (!layer->_ShouldNotify())
         return;
-    _data.local().changes[layer].DidChangeLayerResolvedPath();
+    _GetListFor(_data.local().changes, layer).DidChangeLayerResolvedPath();
 }
 
 static bool
@@ -264,15 +274,34 @@ Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
     if (!layer->_ShouldNotify())
         return;
 
-    SdfLayerChangeListMap &changes = _data.local().changes;
+
+    SdfLayerChangeListVec &changes = _data.local().changes;
 
     // Note:  We intend to change the SdfChangeList protocol to provide a
     // sequence of (layer, path, field, oldValue, newValue) tuples.
     // For now, this function adapts field-based changes into the
     // existing protocol.
 
-    if (field == SdfFieldKeys->PrimOrder) {
-        changes[layer].DidReorderPrims(path);
+    if (field == SdfFieldKeys->Default) {
+        // Special case default first, since it's a commonly set field.
+        _GetListFor(changes, layer).DidChangeInfo(path, field, oldVal, newVal);
+    }
+    else if (field == SdfFieldKeys->Variability ||
+             field == SdfFieldKeys->Custom ||
+             field == SdfFieldKeys->Specifier) {
+        
+        // These are all required fields. We only want to send notification
+        // that they are changing when both the old and new value are not
+        // empty. Otherwise, the change indicates that the spec is being
+        // created or removed, which will be handled through the Add/Remove
+        // change notification API.
+        if (!oldVal.IsEmpty() && !newVal.IsEmpty()) {
+            _GetListFor(changes, layer)
+                .DidChangeInfo(path, field, oldVal, newVal);
+        }
+    }
+    else if (field == SdfFieldKeys->PrimOrder) {
+        _GetListFor(changes, layer).DidReorderPrims(path);
     }
     else if (field == SdfChildrenKeys->PrimChildren) {
         // XXX:OrderNotification:
@@ -284,39 +313,39 @@ Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
         // and new children lists and only send an "order changed"
         // message if this is a pure order change.
         if (_IsOrderChangeOnly(oldVal, newVal)) {
-            changes[layer].DidReorderPrims(path);
+            _GetListFor(changes, layer).DidReorderPrims(path);
         }
     }
     else if (field == SdfFieldKeys->PropertyOrder) {
-        changes[layer].DidReorderProperties(path);
+        _GetListFor(changes, layer).DidReorderProperties(path);
     }
     else if (field == SdfChildrenKeys->PropertyChildren) {
         // XXX:OrderNotification: See above.
         if (_IsOrderChangeOnly(oldVal, newVal)) {
-            changes[layer].DidReorderProperties(path);
+            _GetListFor(changes, layer).DidReorderProperties(path);
         }
     }
     else if (field == SdfFieldKeys->VariantSetNames ||
              field == SdfChildrenKeys->VariantSetChildren) {
-        changes[layer].DidChangePrimVariantSets(path);
+        _GetListFor(changes, layer).DidChangePrimVariantSets(path);
     }
     else if (field == SdfFieldKeys->InheritPaths) {
-        changes[layer].DidChangePrimInheritPaths(path);
+        _GetListFor(changes, layer).DidChangePrimInheritPaths(path);
     }
     else if (field == SdfFieldKeys->Specializes) {
-        changes[layer].DidChangePrimSpecializes(path);
+        _GetListFor(changes, layer).DidChangePrimSpecializes(path);
     }
     else if (field == SdfFieldKeys->References) {
-        changes[layer].DidChangePrimReferences(path);
+        _GetListFor(changes, layer).DidChangePrimReferences(path);
     }
     else if (field == SdfFieldKeys->TimeSamples) {
-        changes[layer].DidChangeAttributeTimeSamples(path);
+        _GetListFor(changes, layer).DidChangeAttributeTimeSamples(path);
     }
     else if (field == SdfFieldKeys->ConnectionPaths) {
-        changes[layer].DidChangeAttributeConnection(path);
+        _GetListFor(changes, layer).DidChangeAttributeConnection(path);
     }
     else if (field == SdfFieldKeys->TargetPaths) {
-        changes[layer].DidChangeRelationshipTargets(path);
+        _GetListFor(changes, layer).DidChangeRelationshipTargets(path);
     }
     else if (field == SdfFieldKeys->SubLayers) {
         std::vector<std::string> addedLayers, removedLayers;
@@ -352,12 +381,12 @@ Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
         }
 
         TF_FOR_ALL(it, addedLayers) {
-            changes[layer]
+            _GetListFor(changes, layer)
                 .DidChangeSublayerPaths(*it, SdfChangeList::SubLayerAdded);
         }
 
         TF_FOR_ALL(it, removedLayers) {
-            changes[layer]
+            _GetListFor(changes, layer)
                 .DidChangeSublayerPaths(*it, SdfChangeList::SubLayerRemoved);
         }
     }
@@ -376,8 +405,9 @@ Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
             if (TF_VERIFY(newOffsets.size() == subLayers.size())) {
                 for (size_t i = 0; i < newOffsets.size(); ++i) {
                     if (oldOffsets[i] != newOffsets[i]) {
-                        changes[layer].DidChangeSublayerPaths(subLayers[i],
-                                               SdfChangeList::SubLayerOffset);
+                        _GetListFor(changes, layer)
+                            .DidChangeSublayerPaths(
+                                subLayers[i], SdfChangeList::SubLayerOffset);
                     }
                 }
             }
@@ -387,7 +417,8 @@ Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
         if (path.IsMapperPath() || path.IsExpressionPath()) {
             // Mapper and expression typename changes are treated as changes on
             // the owning attribute connection.
-            changes[layer].DidChangeAttributeConnection(path.GetParentPath());
+            _GetListFor(changes, layer)
+                .DidChangeAttributeConnection(path.GetParentPath());
         }
         else if (path.IsPrimPath()) {
             // Prim typename changes are tricky because typename isn't
@@ -399,9 +430,11 @@ Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
             //
             // If we're *not* in this case, we need to let the world know the
             // typename has changed.
-            const SdfChangeList::Entry& entry = changes[layer].GetEntry(path);
+            const SdfChangeList::Entry& entry =
+                _GetListFor(changes, layer).GetEntry(path);
             if (!entry.flags.didAddNonInertPrim) {
-                changes[layer].DidChangeInfo(path, field, oldVal, newVal);
+                _GetListFor(changes, layer)
+                    .DidChangeInfo(path, field, oldVal, newVal);
             }
         }
         else {
@@ -412,21 +445,9 @@ Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
             if (!oldVal.IsEmpty() && !newVal.IsEmpty() &&
                 !oldVal.Get<TfToken>().IsEmpty() &&
                 !newVal.Get<TfToken>().IsEmpty()) {
-                changes[layer].DidChangeInfo(path, field, oldVal, newVal);
+                _GetListFor(changes, layer)
+                    .DidChangeInfo(path, field, oldVal, newVal);
             }
-        }
-    }
-    else if (field == SdfFieldKeys->Variability ||
-             field == SdfFieldKeys->Custom ||
-             field == SdfFieldKeys->Specifier) {
-        
-        // These are all required fields. We only want to send notification
-        // that they are changing when both the old and new value are not
-        // empty. Otherwise, the change indicates that the spec is being
-        // created or removed, which will be handled through the Add/Remove
-        // change notification API.
-        if (!oldVal.IsEmpty() && !newVal.IsEmpty()) {
-            changes[layer].DidChangeInfo(path, field, oldVal, newVal);
         }
     } 
     else if (field == SdfChildrenKeys->ConnectionChildren       ||
@@ -446,7 +467,8 @@ Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
         // should be safe for now to simply report all field names as info keys.
         // If this is problematic, we'll need to filter them down to the known
         // set.
-        changes[layer].DidChangeInfo(path, field, oldVal, newVal);
+        _GetListFor(changes, layer)
+            .DidChangeInfo(path, field, oldVal, newVal);
     }
 }
 
@@ -454,7 +476,8 @@ void
 Sdf_ChangeManager::DidChangeAttributeTimeSamples(const SdfLayerHandle &layer,
                                                  const SdfPath &attrPath)
 {
-    _data.local().changes[layer].DidChangeAttributeTimeSamples(attrPath);
+    _GetListFor(_data.local().changes, layer)
+        .DidChangeAttributeTimeSamples(attrPath);
 }
 
 void
@@ -464,45 +487,53 @@ Sdf_ChangeManager::DidMoveSpec(const SdfLayerHandle &layer,
     if (!layer->_ShouldNotify())
         return;
 
-    SdfLayerChangeListMap &changes = _data.local().changes;
+    SdfLayerChangeListVec &changes = _data.local().changes;
 
     if (oldPath.GetParentPath() == newPath.GetParentPath()) {
         // Rename
         if (oldPath.IsPrimPath()) {
-            changes[layer].DidChangePrimName(oldPath, newPath);
+            _GetListFor(changes, layer).DidChangePrimName(oldPath, newPath);
         } else if (oldPath.IsPropertyPath()) {
-            changes[layer].DidChangePropertyName(oldPath, newPath);
+            _GetListFor(changes, layer).DidChangePropertyName(oldPath, newPath);
         } else if (oldPath.IsTargetPath()) {
             const SdfPath& parentPropPath = oldPath.GetParentPath();
             const SdfSpecType specType = layer->GetSpecType(parentPropPath);
             if (specType == SdfSpecTypeAttribute) {
-                changes[layer].DidChangeAttributeConnection(parentPropPath);
+                _GetListFor(changes, layer)
+                    .DidChangeAttributeConnection(parentPropPath);
             }
             else if (specType == SdfSpecTypeRelationship) {
-                changes[layer].DidChangeRelationshipTargets(parentPropPath);
+                _GetListFor(changes, layer)
+                    .DidChangeRelationshipTargets(parentPropPath);
             }
         }
     } else {
         // Reparent
         if (oldPath.IsPrimPath()) {
-            changes[layer].DidRemovePrim(oldPath, /* inert = */ false);
-            changes[layer].DidAddPrim(newPath, /* inert = */ false);
+            _GetListFor(changes, layer)
+                .DidRemovePrim(oldPath, /* inert = */ false);
+            _GetListFor(changes, layer)
+                .DidAddPrim(newPath, /* inert = */ false);
         } else if (oldPath.IsPropertyPath()) {
-            changes[layer].DidRemoveProperty(oldPath, 
+            _GetListFor(changes, layer).DidRemoveProperty(oldPath, 
                 /* hasOnlyRequiredFields = */ false);
-            changes[layer].DidAddProperty(newPath, 
+            _GetListFor(changes, layer).DidAddProperty(newPath, 
                 /* hasOnlyRequiredFields = */ false);
         } else if (oldPath.IsTargetPath()) {
             const SdfPath& oldParentPropPath = oldPath.GetParentPath();
             const SdfPath& newParentPropPath = newPath.GetParentPath();
             const SdfSpecType specType = layer->GetSpecType(oldParentPropPath);
             if (specType == SdfSpecTypeAttribute) {
-                changes[layer].DidChangeAttributeConnection(oldParentPropPath);
-                changes[layer].DidChangeAttributeConnection(newParentPropPath);
+                _GetListFor(changes, layer)
+                    .DidChangeAttributeConnection(oldParentPropPath);
+                _GetListFor(changes, layer)
+                    .DidChangeAttributeConnection(newParentPropPath);
             }
             else if (specType == SdfSpecTypeRelationship) {
-                changes[layer].DidChangeRelationshipTargets(oldParentPropPath);
-                changes[layer].DidChangeRelationshipTargets(newParentPropPath);
+                _GetListFor(changes, layer)
+                    .DidChangeRelationshipTargets(oldParentPropPath);
+                _GetListFor(changes, layer)
+                    .DidChangeRelationshipTargets(newParentPropPath);
             }
         }
     }
@@ -515,23 +546,24 @@ Sdf_ChangeManager::DidAddSpec(const SdfLayerHandle &layer, const SdfPath &path,
     if (!layer->_ShouldNotify())
         return;
 
-    SdfLayerChangeListMap &changes = _data.local().changes;
+    SdfLayerChangeListVec &changes = _data.local().changes;
 
     if (path.IsPrimPath() || path.IsPrimVariantSelectionPath()) {
-        changes[layer].DidAddPrim(path, /* inert = */ inert);
+        _GetListFor(changes, layer).DidAddPrim(path, /* inert = */ inert);
     } 
     else if (path.IsPropertyPath()) {
-        changes[layer].DidAddProperty(path, 
+        _GetListFor(changes, layer).DidAddProperty(path, 
                                        /* hasOnlyRequiredFields = */ inert);
     } 
     else if (path.IsTargetPath()) {
-        changes[layer].DidAddTarget(path);
+        _GetListFor(changes, layer).DidAddTarget(path);
     }
     else if (path.IsMapperPath() || path.IsMapperArgPath()) {
         // This is handled when the field on the parent changes
     } 
     else if (path.IsExpressionPath()) {
-        changes[layer].DidChangeAttributeConnection(path.GetParentPath());
+        _GetListFor(changes, layer)
+            .DidChangeAttributeConnection(path.GetParentPath());
     } 
     else {
         TF_CODING_ERROR("Unsupported Spec Type for <" + path.GetString() + ">");
@@ -545,27 +577,45 @@ Sdf_ChangeManager::DidRemoveSpec(const SdfLayerHandle &layer, const SdfPath &pat
     if (!layer->_ShouldNotify())
         return;
 
-    SdfLayerChangeListMap &changes = _data.local().changes;
+    SdfLayerChangeListVec &changes = _data.local().changes;
 
     if (path.IsPrimPath() || path.IsPrimVariantSelectionPath()) {
-        changes[layer].DidRemovePrim(path, /* inert = */ inert);
+        _GetListFor(changes, layer).DidRemovePrim(path, /* inert = */ inert);
     } 
     else if (path.IsPropertyPath()) {
-        changes[layer].DidRemoveProperty(path, 
+        _GetListFor(changes, layer).DidRemoveProperty(path, 
                                           /* hasOnlyRequiredFields = */ inert);
     } 
     else if (path.IsTargetPath()) {
-        changes[layer].DidRemoveTarget(path);
+        _GetListFor(changes, layer).DidRemoveTarget(path);
     }
     else if (path.IsMapperPath() || path.IsMapperArgPath()) {
         // This is handled when the field on the parent changes
     } 
     else if (path.IsExpressionPath()) {
-        changes[layer].DidChangeAttributeConnection(path.GetParentPath());
+        _GetListFor(changes, layer)
+            .DidChangeAttributeConnection(path.GetParentPath());
     } 
     else {
         TF_CODING_ERROR("Unsupported Spec Type for <" + path.GetString() + ">");
     }
+}
+
+SdfChangeList &
+Sdf_ChangeManager::_GetListFor(SdfLayerChangeListVec &theList,
+                               SdfLayerHandle const &layer)
+{
+    auto iter = std::find_if(
+        theList.begin(), theList.end(),
+        [&layer](SdfLayerChangeListVec::value_type const &p) {
+            return p.first == layer;
+        });
+    if (iter != theList.end()) {
+        return iter->second;
+    }
+    theList.emplace_back(std::piecewise_construct,
+                         std::tie(layer), std::tuple<>());
+    return theList.back().second;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

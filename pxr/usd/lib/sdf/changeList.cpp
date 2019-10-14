@@ -32,6 +32,16 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
+struct _PathFastLessThan {
+    inline bool
+    operator()(SdfChangeList::EntryList::value_type const &a,
+               SdfChangeList::EntryList::value_type const &b) const {
+        return SdfPath::FastLessThan()(a.first, b.first);
+    }
+};
+} // anon
+
 TF_INSTANTIATE_SINGLETON(SdfChangeList);
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -123,12 +133,30 @@ std::ostream& operator<<(std::ostream &os, const SdfChangeList &cl)
 }
 // CODE_COVERAGE_ON
 
+SdfChangeList::SdfChangeList(SdfChangeList const &o)
+    : _entries(o._entries)
+    , _entriesAccel(o._entriesAccel ?
+                    new _AccelTable(*o._entriesAccel) : nullptr)
+{
+}
+
+SdfChangeList &
+SdfChangeList::operator=(SdfChangeList const &o)
+{
+    if (this != std::addressof(o)) {
+        _entries = o._entries;
+        _entriesAccel.reset(
+            o._entriesAccel ?
+            new _AccelTable(*o._entriesAccel) : nullptr);
+    }
+    return *this;
+}
+
 SdfChangeList::Entry const &
 SdfChangeList::GetEntry( const SdfPath & path ) const
 {
-    TF_AXIOM(path != SdfPath::EmptyPath());
-
-    auto iter = _entries.find(path);
+    TF_AXIOM(!path.IsEmpty());
+    auto iter = FindEntry(path);
     if (iter != _entries.end()) {
         return iter->second;
     }
@@ -139,12 +167,116 @@ SdfChangeList::GetEntry( const SdfPath & path ) const
 SdfChangeList::Entry&
 SdfChangeList::_GetEntry( const SdfPath & path )
 {
-    TF_AXIOM(path != SdfPath::EmptyPath());
-
-    // Create as needed
-    return _entries[path];
+    TF_DEV_AXIOM(!path.IsEmpty());
+    auto iter = FindEntry(path);
+    return iter != _entries.end() ?
+        _MakeNonConstIterator(iter)->second : _AddNewEntry(path);
 }
 
+SdfChangeList::Entry&
+SdfChangeList::_MoveEntry(SdfPath const &oldPath, SdfPath const &newPath)
+{
+    TF_DEV_AXIOM(!oldPath.IsEmpty() && !newPath.IsEmpty());
+    Entry tmp;
+    auto constIter = FindEntry(oldPath);
+    if (constIter != _entries.end()) {
+        // Move the old entry to the tmp space, then erase.
+        auto iter = _MakeNonConstIterator(constIter);
+        tmp = std::move(iter->second);
+        // Erase the element and rebuild the accelerator if needed.
+        _entries.erase(iter);
+        _RebuildAccel();
+    }
+    // Find or create the new entry, and move tmp over it.  This either
+    // populates the new entry with the old entry (if one existed) or it clears
+    // out the new entry.
+    Entry &newEntry = _GetEntry(newPath);
+    newEntry = std::move(tmp);
+    return newEntry;
+}
+
+SdfChangeList::EntryList::iterator
+SdfChangeList::_MakeNonConstIterator(
+    SdfChangeList::EntryList::const_iterator i) {
+    // Invoking erase(i, i) is a noop, but returns i as non-const iterator.
+    return _entries.erase(i, i);
+}
+
+SdfChangeList::EntryList::const_iterator
+SdfChangeList::FindEntry(const SdfPath & path) const
+{
+    auto iter = _entries.end();
+    if (_entries.empty()) {
+        return iter;
+    }
+    // Check to see if the last entry is for this path (this is common).  If not
+    // search for it.
+    if (_entries.back().first == path) {
+        --iter;
+        return iter;
+    }
+    
+    if (_entriesAccel) {
+        // Use the unordered map.
+        auto tableIter = _entriesAccel->find(path);
+        if (tableIter != _entriesAccel->end()) {
+            return _entries.begin() + tableIter->second;
+        }
+    }
+    else {
+        // Linear search the unsorted range.
+        iter = std::find_if(_entries.begin(), _entries.end(),
+                            [&path](EntryList::value_type const &e) {
+                                return e.first == path;
+                            });
+    }
+    return iter;
+}
+
+SdfChangeList::Entry &
+SdfChangeList::_AddNewEntry(SdfPath const &path)
+{
+    _entries.emplace_back(std::piecewise_construct,
+                          std::tie(path), std::tuple<>());
+    if (_entriesAccel) {
+        _entriesAccel->emplace(path, _entries.size()-1);
+    }
+    else if (ARCH_UNLIKELY(_entries.size() >= _AccelThreshold)) {
+        _RebuildAccel();
+    }
+    return _entries.back().second;
+}
+
+void
+SdfChangeList::_RebuildAccel()
+{
+    if (_entries.size() >= _AccelThreshold) {
+        _entriesAccel.reset(new std::unordered_map<
+                            SdfPath, size_t, SdfPath::Hash>(_entries.size()));
+        size_t idx = 0;
+        for (auto const &p: _entries) {
+            _entriesAccel->emplace(p.first, idx++);
+        }
+    }
+    else {
+        _entriesAccel.reset();
+    }
+}
+
+void
+SdfChangeList::_EraseEntry(SdfPath const &path)
+{
+    if (_entries.empty()) {
+        return;
+    }
+    
+    auto iter = _MakeNonConstIterator(FindEntry(path));
+    if (iter != _entries.end()) {
+        // Erase the element and rebuild the accelerator if needed.
+        _entries.erase(iter);
+        _RebuildAccel();
+    }
+}
 
 void
 SdfChangeList::DidReplaceLayerContent()
@@ -187,18 +319,19 @@ void
 SdfChangeList::DidChangeInfo(const SdfPath & path, const TfToken & key,
                              const VtValue & oldVal, const VtValue & newVal)
 {
-    std::pair<Entry::InfoChangeMap::iterator, bool> insertStatus = 
-        _GetEntry(path).infoChanged.insert(
-            std::make_pair(key, Entry::InfoChange()));
+    Entry &entry = _GetEntry(path);
 
-    Entry::InfoChange& changeEntry = insertStatus.first->second;
-
-    // Avoid updating the stored old value if the info value has been
-    // previously changed.
-    if (insertStatus.second) {
-        changeEntry.first = oldVal;
+    auto iter = entry.FindInfoChange(key);
+    if (iter == entry.infoChanged.end()) {
+        entry.infoChanged.emplace_back(
+            key, std::pair<VtValue const &, VtValue const &>(oldVal, newVal));
     }
-    changeEntry.second = newVal;
+    else {
+        // Update new val, but retain old val from previous change.
+        // Produce a non-const iterator using the erase(i, i) trick.
+        auto nonConstIter = entry.infoChanged.erase(iter, iter);
+        nonConstIter->second.second = newVal;
+    }
 }
 
 void
@@ -209,33 +342,31 @@ SdfChangeList::DidChangePrimName(const SdfPath & oldPath,
 
     if (newEntry.flags.didRemoveNonInertPrim) {
         // We've already removed a spec at the target, so we can't simply
-        // overrwrite the newPath entries with the ones from oldPath.
+        // overwrite the newPath entries with the ones from oldPath.
         // Nor is it clear how to best merge the edits, while retaining
         // the didRename hints. Instead, we simply fall back to treating
         // this case as though newPath and oldPath were both removed,
         // and a new spec added at newPath.
-
-        Entry &oldEntry = _GetEntry(oldPath);
-
-        // Clear out existing edits.
-        oldEntry = Entry();
         newEntry = Entry();
-
-        oldEntry.flags.didRemoveNonInertPrim = true;
         newEntry.flags.didRemoveNonInertPrim = true;
         newEntry.flags.didAddNonInertPrim = true;
+
+        // Fetch oldEntry -- note that this can invalidate 'newEntry'!
+        Entry &oldEntry = _GetEntry(oldPath);
+        // Clear out existing edits.
+        oldEntry = Entry();
+        oldEntry.flags.didRemoveNonInertPrim = true;
     } else {
         // Transfer accumulated changes about oldPath to apply to newPath.
-        newEntry = _GetEntry(oldPath);
-        _entries.erase(oldPath);
+        Entry &moved = _MoveEntry(oldPath, newPath);
 
         // Indicate that a rename occurred.
-        newEntry.flags.didRename = true;
+        moved.flags.didRename = true;
 
         // Record the source path, but only if it has not already been set
         // by a prior rename during this round of change processing.
-        if (newEntry.oldPath == SdfPath())
-            newEntry.oldPath = oldPath;
+        if (moved.oldPath.IsEmpty())
+            moved.oldPath = oldPath;
     }
 }
 
@@ -300,28 +431,26 @@ SdfChangeList::DidChangePropertyName(const SdfPath & oldPath,
         // the didRename hints. Instead, we simply fall back to treating
         // this case as though newPath and oldPath were both removed,
         // and a new spec added at newPath.
-
-        Entry &oldEntry = _GetEntry(oldPath);
-
-        // Clear out existing edits.
-        oldEntry = Entry();
         newEntry = Entry();
-
-        oldEntry.flags.didRemoveProperty = true;
         newEntry.flags.didRemoveProperty = true;
         newEntry.flags.didAddProperty = true;
+
+        // Note that fetching oldEntry may create its entry and invalidate
+        // 'newEntry'!
+        Entry &oldEntry = _GetEntry(oldPath);
+        oldEntry = Entry();
+        _GetEntry(oldPath).flags.didRemoveProperty = true;
     } else {
         // Transfer accumulated changes about oldPath to apply to newPath.
-        newEntry = _GetEntry(oldPath);
-        _entries.erase(oldPath);
+        Entry &moved = _MoveEntry(oldPath, newPath);
 
-        // Indicate that a rename occurred.
-        newEntry.flags.didRename = true;
+        // Indicate that ac rename occurred.
+        moved.flags.didRename = true;
 
         // Record the source path, but only if it has not already been set
         // by a prior rename during this round of change processing.
-        if (newEntry.oldPath == SdfPath())
-            newEntry.oldPath = oldPath;
+        if (moved.oldPath.IsEmpty())
+            moved.oldPath = oldPath;
     }
 }
 

@@ -28,6 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/api.h"
+#include "pxr/usd/sdf/changeList.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
@@ -43,8 +44,6 @@ TF_DECLARE_WEAK_AND_REF_PTRS(PcpLayerStack);
 
 class PcpCache;
 class PcpSite;
-class SdfChangeList;
-typedef std::map<SdfLayerHandle, SdfChangeList> SdfLayerChangeListMap;
 
 /// \class PcpLayerStackChanges
 ///
@@ -182,7 +181,7 @@ public:
     /// \c GetCacheChanges().
     PCP_API 
     void DidChange(const std::vector<PcpCache*>& caches,
-                   const SdfLayerChangeListMap& changes);
+                   const SdfLayerChangeListVec& changes);
 
     /// Tries to load the sublayer of \p layer at \p sublayerPath.  If
     /// successful, any layer stack using \p layer is marked as having changed

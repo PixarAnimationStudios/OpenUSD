@@ -103,7 +103,7 @@ private:
     void _HandleLayerDidChange(const SdfNotice::LayersDidChange& n)
     {
         _changes.DidChange(
-            std::vector<PcpCache*>(1, _cache), n.GetChangeListMap());
+            std::vector<PcpCache*>(1, _cache), n.GetChangeListVec());
         _changes.Apply();
     }
 

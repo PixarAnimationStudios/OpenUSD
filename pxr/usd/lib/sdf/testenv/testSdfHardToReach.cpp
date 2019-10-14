@@ -130,10 +130,10 @@ _TestSdfLayerTransferContents()
 
         void OnChangeNotice(const SdfNotice::LayersDidChange& n)
         {
-            changeListMap = n.GetChangeListMap();
+            changeListVec = n.GetChangeListVec();
         }
 
-        SdfLayerChangeListMap changeListMap;
+        SdfLayerChangeListVec changeListVec;
     };
 
     const SdfPath fooPath("/Foo");
@@ -144,10 +144,17 @@ _TestSdfLayerTransferContents()
     SdfLayerRefPtr dstLayer = SdfLayer::CreateAnonymous();
     dstLayer->TransferContent(srcLayer);
 
-    TF_AXIOM(l.changeListMap.count(dstLayer));
-    TF_AXIOM(l.changeListMap[dstLayer].GetEntryList().count(fooPath));
-    TF_AXIOM(l.changeListMap[dstLayer].GetEntryList()
-             .find(fooPath)->second.flags.didAddInertPrim);
+    auto iter = std::find_if(
+        l.changeListVec.begin(),
+        l.changeListVec.end(),
+        [&dstLayer](SdfLayerChangeListVec::value_type const &p) {
+            return p.first == dstLayer;
+        });
+    TF_AXIOM(iter != l.changeListVec.end());
+   
+    auto entryIter = iter->second.FindEntry(fooPath);
+    TF_AXIOM(entryIter != iter->second.end());
+    TF_AXIOM(entryIter->second.flags.didAddInertPrim);
 }
 
 static void
