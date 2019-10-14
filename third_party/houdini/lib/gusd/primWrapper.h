@@ -218,8 +218,7 @@ public:
     /// Add a sample just before the current time that invises this prim.
     /// For points and instances this means writing a empty point attribute.
     /// Other prims set their visibility flag.
-    /// It might be possible to avoid this if we are on the first frame.
-    virtual void addLeadingBookend( double curFrame, double startFrame );
+    virtual void addLeadingBookend( double curFrame );
 
     /// Add a sample at the current frame, invising this from.
     virtual void addTrailingBookend( double curFrame );

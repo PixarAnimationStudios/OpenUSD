@@ -1733,7 +1733,7 @@ renderFrame(fpreal time,
                     // appearing on the start frame.
                     if ( m_granularity == ONE_FILE ) {
                         if ( !SYSisEqual(sampleFrame, m_startFrame + shutterOpen, 1e-6) ) {
-                            primPtr->addLeadingBookend( sampleFrame, m_startFrame );
+                            primPtr->addLeadingBookend( sampleFrame );
                         }
                     }
                     primPtr->markVisible( true );

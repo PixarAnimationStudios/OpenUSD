@@ -679,24 +679,22 @@ GusdPrimWrapper::clearCaches()
 }
 
 void
-GusdPrimWrapper::addLeadingBookend( double curFrame, double startFrame )
+GusdPrimWrapper::addLeadingBookend( double curFrame )
 {
-    if( curFrame != startFrame ) {
-        double bookendFrame = curFrame - TIME_SAMPLE_DELTA;
+    double bookendFrame = curFrame - TIME_SAMPLE_DELTA;
 
-        // Ensure the stage start frame <= bookendFrame
-        UsdStagePtr stage = getUsdPrim().GetPrim().GetStage();
-        if(stage) {
-            double startFrame = stage->GetStartTimeCode();
-            if( startFrame > bookendFrame) {
-                stage->SetStartTimeCode(bookendFrame);
-            }
+    // Ensure the stage start frame <= bookendFrame
+    UsdStagePtr stage = getUsdPrim().GetPrim().GetStage();
+    if(stage) {
+        double startFrame = stage->GetStartTimeCode();
+        if( startFrame > bookendFrame) {
+            stage->SetStartTimeCode(bookendFrame);
         }
-
-        const UsdAttribute attr = getUsdPrim().GetVisibilityAttr();
-        attr.Set(UsdGeomTokens->invisible, UsdTimeCode(bookendFrame));
-        attr.Set(UsdGeomTokens->inherited, UsdTimeCode(curFrame));
     }
+
+    const UsdAttribute attr = getUsdPrim().GetVisibilityAttr();
+    attr.Set(UsdGeomTokens->invisible, UsdTimeCode(bookendFrame));
+    attr.Set(UsdGeomTokens->inherited, UsdTimeCode(curFrame));
 }
 
 void
