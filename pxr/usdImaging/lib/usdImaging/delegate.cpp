@@ -2923,23 +2923,21 @@ UsdImagingDelegate::GetCameraParamValue(SdfPath const &id,
 
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
     VtValue value;
+    HdDirtyBits dirtyBit = HdCamera::Clean;
+    if (paramName == HdCameraTokens->worldToViewMatrix) {
+        dirtyBit = HdCamera::DirtyViewMatrix;
+    } else if (paramName == HdCameraTokens->projectionMatrix) {
+        dirtyBit = HdCamera::DirtyProjMatrix;
+    } else if (paramName == HdCameraTokens->clipPlanes) {
+        dirtyBit = HdCamera::DirtyClipPlanes;
+    } else {
+        dirtyBit = HdCamera::DirtyParams;
+    }
+    
+    _UpdateSingleValue(cachePath, dirtyBit);
     if (!_valueCache.FindCameraParam(cachePath, paramName, &value)) {
-        HdDirtyBits dirtyBit = HdCamera::Clean;
-        if (paramName == HdCameraTokens->worldToViewMatrix) {
-            dirtyBit = HdCamera::DirtyViewMatrix;
-        } else if (paramName == HdCameraTokens->projectionMatrix) {
-            dirtyBit = HdCamera::DirtyProjMatrix;
-        } else if (paramName == HdCameraTokens->clipPlanes) {
-            dirtyBit = HdCamera::DirtyClipPlanes;
-        } else {
-            dirtyBit = HdCamera::DirtyParams;
-        }
-        
-        _UpdateSingleValue(cachePath, dirtyBit);
-        if (!_valueCache.FindCameraParam(cachePath, paramName, &value)) {
-            // Fallback to USD attributes.
-            value = _GetUsdPrimAttribute(cachePath, paramName);
-        }
+        // Fallback to USD attributes.
+        value = _GetUsdPrimAttribute(cachePath, paramName);
     }
     return value;
 }
