@@ -155,15 +155,8 @@ PcpCache::~PcpCache()
     // prepared to handle concurrent expiry of layer stacks.
     wd.Wait();
 
-    wd.Run([this]() { _primDependencies.reset(); });
-
-    // Wait, since _layerStackCache cannot be destroyed until
-    // _primDependencies is cleaned up.
-    wd.Wait();
-
-    wd.Run([this]() { _layerStackCache.Reset(); });
-
-    wd.Wait();
+    _primDependencies.reset();
+    _layerStackCache.Reset();
 }
 
 ////////////////////////////////////////////////////////////////////////
