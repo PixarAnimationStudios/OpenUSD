@@ -218,8 +218,10 @@ public:
     
     /// Returns the spec definition for the given spec type.
     /// Returns NULL if no definition exists for the given spec type.
-    SDF_API 
-    const SpecDefinition* GetSpecDefinition(SdfSpecType type) const;
+    inline const SpecDefinition* GetSpecDefinition(SdfSpecType specType) const {
+        return _specDefinitions[specType].second ?
+            &_specDefinitions[specType].first : nullptr;
+    }
 
     /// Convenience functions for accessing specific field information.
     /// @{
@@ -444,7 +446,9 @@ protected:
     /// Registers the given spec \p type with this schema and return a 
     /// _SpecDefiner for specifying additional fields.
     _SpecDefiner _Define(SdfSpecType type) {
-        return _SpecDefiner(this, &_specDefinitions[type]);
+        // Mark the definition as valid and return a pointer to it.
+        _specDefinitions[type].second = true;
+        return _SpecDefiner(this, &_specDefinitions[type].first);
     }
 
     /// Returns a _SpecDefiner for the previously-defined spec \p type
@@ -515,10 +519,9 @@ private:
         _FieldDefinitionMap;
     _FieldDefinitionMap _fieldDefinitions;
     
-    typedef TfHashMap<SdfSpecType, SdfSchemaBase::SpecDefinition, 
-                                 TfHash> 
-        _SpecDefinitionMap;
-    _SpecDefinitionMap _specDefinitions;
+    // Pair of definition and flag indicating validity.
+    std::pair<SdfSchemaBase::SpecDefinition, bool>
+    _specDefinitions[SdfNumSpecTypes];
 
     std::unique_ptr<Sdf_ValueTypeRegistry> _valueTypeRegistry;
     TfTokenVector _requiredFieldNames;
