@@ -398,16 +398,29 @@ UsdGeomSubset::GetUnassignedIndices(
         subset.GetIndicesAttr().Get(&indices, time);
         assignedIndices.insert(indices.begin(), indices.end());
     }
-    std::vector<int> allIndices;
-    allIndices.reserve(elementCount);
-    for (size_t idx = 0 ; idx < elementCount ; ++idx) 
-        allIndices.push_back(idx);
 
     VtIntArray result;
-    result.reserve(elementCount - assignedIndices.size());
-    std::set_difference(allIndices.begin(), allIndices.end(), 
-        assignedIndices.begin(), assignedIndices.end(), 
-        std::back_inserter(result));
+    if (assignedIndices.empty()) {
+        result.reserve(elementCount);
+        for (size_t idx = 0 ; idx < elementCount ; ++idx) 
+            result.push_back(idx);
+    } else {
+        std::vector<int> allIndices;
+        allIndices.reserve(elementCount);
+        for (size_t idx = 0 ; idx < elementCount ; ++idx) 
+            allIndices.push_back(idx);
+
+        const unsigned int lastAssigned = *assignedIndices.rbegin();
+        if (elementCount > lastAssigned) {
+            result.reserve(elementCount - assignedIndices.size());
+        } else {
+            result.reserve(std::min(
+                elementCount, (lastAssigned + 1) - assignedIndices.size()));
+        }
+        std::set_difference(allIndices.begin(), allIndices.end(), 
+            assignedIndices.begin(), assignedIndices.end(), 
+            std::back_inserter(result));
+    }
 
     return result;
 }

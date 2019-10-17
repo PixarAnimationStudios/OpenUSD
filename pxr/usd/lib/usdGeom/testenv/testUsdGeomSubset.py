@@ -79,6 +79,8 @@ class testUsdGeomSubset(unittest.TestCase):
 
         # Indices are empty when unassigned.
         self.assertEqual(newSubset.GetIndicesAttr().Get(), Vt.IntArray())
+        self.assertEqual(UsdGeom.Subset.GetUnassignedIndices([newSubset], 16), 
+                         Vt.IntArray(range(0,16)))
         indices = [1, 2, 3, 4, 5]
         newSubset.GetIndicesAttr().Set(indices)
         self.assertEqual(list(newSubset.GetIndicesAttr().Get()), indices)
@@ -127,6 +129,7 @@ class testUsdGeomSubset(unittest.TestCase):
         
         # CreateUniqueGeomSubset will create a new subset always!
         unassignedIndices = UsdGeom.Subset.GetUnassignedIndices(testSubsets, 16)
+        self.assertEqual(unassignedIndices, Vt.IntArray(range(3, 16)))
         anotherSubset = UsdGeom.Subset.CreateUniqueGeomSubset(geom, "testSubset", 
             UsdGeom.Tokens.face, unassignedIndices, familyName='testFamily', 
             familyType=UsdGeom.Tokens.partition)
@@ -135,6 +138,13 @@ class testUsdGeomSubset(unittest.TestCase):
                             newSubset.GetPrim().GetName())
         self.assertEqual(unassignedIndices, 
                          anotherSubset.GetIndicesAttr().Get())
+        # Verify that GetAssignedIndices still works if the provided element 
+        # count is less than the number of assigned indices (as per bug USD-5599)
+        self.assertEqual(UsdGeom.Subset.GetUnassignedIndices([anotherSubset], 5), 
+                         Vt.IntArray([0,1,2]))
+        self.assertEqual(UsdGeom.Subset.GetUnassignedIndices([anotherSubset], 2), 
+                         Vt.IntArray([0,1]))
+
         testSubsets = UsdGeom.Subset.GetGeomSubsets(geom, UsdGeom.Tokens.face,
                                                     familyName='testFamily')
         # Count is now two after the call to CreateUniqueGeomSubset.
