@@ -608,14 +608,15 @@ def GetInstanceIndicesForIds(prim, instanceIds, time):
         return None
 
 def Drange(start, stop, step):
-    """Like builtin range() but allows decimals and is a closed interval
-        that is, it's inclusive of stop"""
-    r = start
-    lst = []
-    epsilon = 1e-3 * step
-    while r <= stop+epsilon:
-        lst.append(r)
-        r += step
+    '''Return a list whose first element is 'start' and the following elements
+    (if any) are 'start' plus increasing whole multiples of 'step', up to but
+    not greater than 'stop'.  For example:
+    Drange(1, 3, 0.3) -> [1, 1.3, 1.6, 1.9, 2.2, 2.5, 2.8]'''
+    lst = [start]
+    n = 1
+    while start + n * step <= stop:
+        lst.append(start + n * step)
+        n += 1
     return lst
 
 class PrimNotFoundException(Exception):
