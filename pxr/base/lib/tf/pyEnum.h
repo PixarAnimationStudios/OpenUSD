@@ -314,6 +314,13 @@ struct Tf_TypedPyEnumWrapper : Tf_PyEnumWrapper
 TF_API
 std::string Tf_PyCleanEnumName(std::string name);
 
+// Adds attribute of given name with given value to given scope.
+// Issues a coding error if attribute by that name already existed.
+TF_API
+void Tf_PyEnumAddAttribute(boost::python::scope &s,
+                           const std::string &name,
+                           const boost::python::object &value);
+
 /// \class TfPyWrapEnum
 ///
 /// Used to wrap enum types for script.
@@ -344,8 +351,21 @@ std::string Tf_PyCleanEnumName(std::string name);
 ///
 /// An enum may be given an explicit name by passing a string to
 /// TfPyWrapEnum's constructor.
-/// 
-template <typename T>
+///
+/// If the enum is a C++11 scoped enum (aka enum class), the values will appear
+/// as Foo.Choices.{First, Second, Third} in the following example:
+/// \code
+/// enum class FooChoices {
+///    First,
+///    Second,
+///    Third
+/// };
+/// \endcode
+///
+
+// Detect scoped enums by using that the C++ standard does not allow them to
+// be converted to int implicitly.
+template <typename T, bool IsScopedEnum = !std::is_convertible<T, int>::value>
 struct TfPyWrapEnum {
 
 private:
@@ -363,7 +383,7 @@ public:
     {
         using namespace boost::python;
 
-        bool explicitName = !name.empty();
+        const bool explicitName = !name.empty();
 
         // First, take either the given name, or the demangled type name.
         std::string enumName = explicitName ? name :
@@ -388,6 +408,15 @@ public:
                 enumName = Tf_PyCleanEnumName(enumName);
         }
         
+        if (IsScopedEnum) {
+            // Make the enumName appear in python representation
+            // for scoped enums.
+            if (!baseName.empty()) {
+                baseName += ".";
+            }
+            baseName += enumName;
+        }
+
         // Make a python type for T.
         _EnumPyClassType enumClass(enumName.c_str(), no_init);
         enumClass.setattr("_baseName", baseName);
@@ -435,18 +464,14 @@ public:
 
             // Take all the values and export them into the current scope.
             std::string valueName = wrappedValue.GetName();
-            boost::python::scope s;
-
-            // Skip exporting attr if the scope already has an attribute
-            // with that name, but do make sure to place it in .allValues
-            // for the class.
-            if (PyObject_HasAttrString(s.ptr(), valueName.c_str())) {
-                TF_CODING_ERROR(
-                    "Ignoring enum value '%s'; an attribute with that "
-                    "name already exists in that scope.", valueName.c_str());
-            }
-            else {
-                s.attr(valueName.c_str()) = pyValue;
+            if (IsScopedEnum) {
+                // If scoped enum, enum values appear on the enumClass ...
+                boost::python::scope s(enumClass);
+                Tf_PyEnumAddAttribute(s, valueName, pyValue);
+            } else {
+                // ... otherwise, enum values appear on the enclosing scope.
+                boost::python::scope s;
+                Tf_PyEnumAddAttribute(s, valueName, pyValue);
             }
 
             valueList.append(pyValue);

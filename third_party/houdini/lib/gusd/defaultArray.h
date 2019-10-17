@@ -24,7 +24,7 @@
 #ifndef _GUSD_DEFAULTARRAY_H_
 #define _GUSD_DEFAULTARRAY_H_
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 
 #include <UT/UT_Array.h>
 

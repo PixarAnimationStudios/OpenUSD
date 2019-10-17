@@ -11,7 +11,9 @@ pxr_plugin(${PXR_PACKAGE}
         tf
         usd
         usdGeom
+        usdLux
         usdMaya
+        usdRi
         usdShade
         usdSkel
         usdUtils
@@ -35,6 +37,8 @@ pxr_plugin(${PXR_PACKAGE}
 
     CPPFILES
         cameraReader.cpp
+        lightReader.cpp
+        lightWriter.cpp
         materialReader.cpp
         meshReader.cpp
         meshWriter_Primvars.cpp
@@ -62,7 +66,7 @@ pxr_test_scripts(
 )
 
 pxr_register_test(testPxrUsdTranslators
-    CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
+    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPxrUsdTranslators"
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
@@ -76,7 +80,7 @@ pxr_install_test_dir(
     DEST testPxrUsdTranslatorsScope
 )
 pxr_register_test(testPxrUsdTranslatorsScope
-    CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
+    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPxrUsdTranslatorsScope"
     TESTENV testPxrUsdTranslatorsScope
     ENV

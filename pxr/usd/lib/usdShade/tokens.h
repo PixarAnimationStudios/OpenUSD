@@ -74,6 +74,10 @@ struct UsdShadeTokensType {
     /// 
     /// The prefix on UsdShadeShader relationships associated with a Parameter.  This prefixed relationship has a suffix matching the associated attribute name, and denotes a logical shader connection between UsdShadeShaders. 
     const TfToken connectedSourceFor;
+    /// \brief "coordSys:"
+    /// 
+    /// Namespace prefix for relationships that bind coordinate systems.
+    const TfToken coordSys;
     /// \brief "derivesFrom"
     /// 
     /// A legacy relationship name specifying a specializes composition on a UsdShadeMaterial. 

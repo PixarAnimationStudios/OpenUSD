@@ -296,10 +296,10 @@ _NormPath(string const &inPath)
 }
 } // anon
 
+#if defined(ARCH_OS_WINDOWS)
 string
 ArchNormPath(const string& inPath, bool stripDriveSpecifier)
 {
-#if defined(ARCH_OS_WINDOWS)
     // Convert backslashes to forward slashes.
     string path = inPath;
     std::replace(path.begin(), path.end(), '\\', '/');
@@ -321,10 +321,14 @@ ArchNormPath(const string& inPath, bool stripDriveSpecifier)
 
     // Normalize and prepend drive specifier, if any.
     return prefix + _NormPath(path);
-#else
-    return _NormPath(inPath);
-#endif // defined(ARCH_OS_WINDOWS)
 }
+#else
+string
+ArchNormPath(const string& inPath, bool /*stripDriveSpecifier*/)
+{
+    return _NormPath(inPath);
+}
+#endif // defined(ARCH_OS_WINDOWS)
 
 string
 ArchAbsPath(const string& path)

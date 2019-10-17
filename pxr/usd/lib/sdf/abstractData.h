@@ -161,6 +161,16 @@ public:
     SDF_API
     virtual void CopyFrom(const SdfAbstractDataConstPtr& source);
 
+    /// Returns true if this data object streams its data to and from its
+    /// serialized data store on demand.
+    ///
+    /// Sdf will treat layers with streaming data differently to avoid pulling
+    /// in data unnecessarily. For example, reloading a streaming layer 
+    /// will not perform fine-grained change notification, since doing 
+    /// so would require the full contents of the layer to be loaded.
+    SDF_API
+    virtual bool StreamsData() const = 0;
+
     /// Returns true if this data object has no specs, false otherwise.
     ///
     /// The default implementation uses a visitor to check if any specs

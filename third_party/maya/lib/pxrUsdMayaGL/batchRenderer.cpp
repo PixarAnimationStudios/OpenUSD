@@ -44,7 +44,6 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/singleton.h"
@@ -54,11 +53,11 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hdx/intersector.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/usd/sdf/path.h"
@@ -91,15 +90,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-// XXX: Supporting area selections in depth (where an object that is occluded
-// by another object in the selection is also selected) currently comes with a
-// significant performance penalty if the number of objects grows large, so for
-// now we only expose that behavior with an env setting.
-TF_DEFINE_ENV_SETTING(PXRMAYAHD_ENABLE_DEPTH_SELECTION,
-                      false,
-                      "Enables area selection of objects occluded in depth");
-
-
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -117,6 +107,7 @@ void
 UsdMayaGLBatchRenderer::Init()
 {
     GlfGlewInit();
+    GlfContextCaps::InitInstance();
 
     GetInstance();
 }
@@ -328,9 +319,9 @@ UsdMayaGLBatchRenderer::Reset()
 }
 
 bool
-UsdMayaGLBatchRenderer::PopulateCustomCollection(
+UsdMayaGLBatchRenderer::PopulateCustomPrimFilter(
         const MDagPath& dagPath,
-        HdRprimCollection& collection)
+        PxrMayaHdPrimFilter& primFilter)
 {
     // We're drawing "out-of-band", so it doesn't matter if we grab the VP2
     // or the Legacy shape adapter. Prefer VP2, but fall back to Legacy if
@@ -344,6 +335,8 @@ UsdMayaGLBatchRenderer::PopulateCustomCollection(
         }
     }
 
+    HdRprimCollection &collection = primFilter.collection;
+
     // Doesn't really hurt to always add, and ensures that the collection is
     // tracked properly.
     HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
@@ -355,9 +348,10 @@ UsdMayaGLBatchRenderer::PopulateCustomCollection(
     const SdfPathVector& roots = adapter->GetRprimCollection().GetRootPaths();
     if (collection.GetRootPaths() != roots) {
         collection.SetRootPaths(roots);
-        collection.SetRenderTags(adapter->GetRprimCollection().GetRenderTags());
         changeTracker.MarkCollectionDirty(collection.GetName());
     }
+
+    primFilter.renderTags = adapter->GetRenderTags();
 
     return true;
 }
@@ -407,7 +401,9 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
         _isSelectionPending(false),
         _objectSoftSelectEnabled(false),
         _softSelectOptionsCallbackId(0),
-        _selectResultsKey(GfMatrix4d(0.0), GfMatrix4d(0.0), false)
+        _selectResultsKey(GfMatrix4d(0.0), GfMatrix4d(0.0), false),
+        _selectionResolution(256),
+        _enableDepthSelection(false)
 {
     _viewport2UsesLegacySelection = TfGetenvBool("MAYA_VP2_USE_VP1_SELECTION",
                                                  false);
@@ -425,8 +421,6 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
     _taskDelegate.reset(
         new PxrMayaHdSceneDelegate(_renderIndex.get(), _rootId));
 
-    const TfTokenVector renderTags({HdTokens->geometry, HdTokens->proxy});
-
     _legacyViewportRprimCollection.SetName(TfToken(
         TfStringPrintf("%s_%s",
                        _tokens->BatchRendererRootName.GetText(),
@@ -434,7 +428,6 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
     _legacyViewportRprimCollection.SetReprSelector(
         HdReprSelector(HdReprTokens->refined));
     _legacyViewportRprimCollection.SetRootPath(_legacyViewportPrefix);
-    _legacyViewportRprimCollection.SetRenderTags(renderTags);
     _renderIndex->GetChangeTracker().AddCollection(
         _legacyViewportRprimCollection.GetName());
 
@@ -445,11 +438,9 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
     _viewport2RprimCollection.SetReprSelector(
         HdReprSelector(HdReprTokens->refined));
     _viewport2RprimCollection.SetRootPath(_viewport2Prefix);
-    _viewport2RprimCollection.SetRenderTags(renderTags);
     _renderIndex->GetChangeTracker().AddCollection(
         _viewport2RprimCollection.GetName());
 
-    _intersector.reset(new HdxIntersector(_renderIndex.get()));
     _selectionTracker.reset(new HdxSelectionTracker());
 
     TfWeakPtr<UsdMayaGLBatchRenderer> me(this);
@@ -486,7 +477,6 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
 UsdMayaGLBatchRenderer::~UsdMayaGLBatchRenderer()
 {
     _selectionTracker.reset();
-    _intersector.reset();
     _taskDelegate.reset();
 
     // We remove the softSelectOptionsChanged callback because it's passed
@@ -704,26 +694,31 @@ UsdMayaGLBatchRenderer::Draw(
     }
 }
 
-void UsdMayaGLBatchRenderer::DrawCustomCollection(
-        const HdRprimCollection& collection,
-        const GfMatrix4d& viewMatrix,
-        const GfMatrix4d& projectionMatrix,
-        const GfVec4d& viewport,
-        const PxrMayaHdRenderParams& params)
+GfVec2i
+UsdMayaGLBatchRenderer::GetSelectionResolution() const
 {
-    // Custom collection implementation.
-
-    PxrMayaHdRenderParams paramsCopy = params;
-    paramsCopy.customBucketName = collection.GetName();
-    std::vector<_RenderItem> items = {
-        {paramsCopy, HdRprimCollectionVector({collection})}
-    };
-
-    // Currently, we're just using the existing lighting settings.
-    _Render(viewMatrix, projectionMatrix, viewport, items);
+    return _selectionResolution;
 }
 
-const HdxIntersector::HitSet*
+void
+UsdMayaGLBatchRenderer::SetSelectionResolution(const GfVec2i& widthHeight)
+{
+    _selectionResolution = widthHeight;
+}
+
+bool
+UsdMayaGLBatchRenderer::IsDepthSelectionEnabled() const
+{
+    return _enableDepthSelection;
+}
+
+void
+UsdMayaGLBatchRenderer::SetDepthSelectionEnabled(const bool enabled)
+{
+    _enableDepthSelection = enabled;
+}
+
+const HdxPickHitVector*
 UsdMayaGLBatchRenderer::TestIntersection(
         const PxrMayaHdShapeAdapter* shapeAdapter,
         MSelectInfo& selectInfo)
@@ -793,7 +788,7 @@ UsdMayaGLBatchRenderer::TestIntersection(
                           selectInfo.singleSelection());
     }
 
-    const HdxIntersector::HitSet* const hitSet =
+    const HdxPickHitVector* const hitSet =
         TfMapLookupPtr(_selectResults, shapeAdapterDelegateId);
     if (!hitSet || hitSet->empty()) {
         if (_selectResults.empty()) {
@@ -815,7 +810,7 @@ UsdMayaGLBatchRenderer::TestIntersection(
     TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION).Msg(
         "    FOUND %zu HIT(s)\n", hitSet->size());
     if (TfDebug::IsEnabled(PXRUSDMAYAGL_BATCHED_SELECTION)) {
-        for (const HdxIntersector::Hit& hit : *hitSet) {
+        for (const HdxPickHit& hit : *hitSet) {
             TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION).Msg(
                 "        HIT:\n"
                 "            delegateId: %s\n"
@@ -830,7 +825,7 @@ UsdMayaGLBatchRenderer::TestIntersection(
     return hitSet;
 }
 
-const HdxIntersector::HitSet*
+const HdxPickHitVector*
 UsdMayaGLBatchRenderer::TestIntersection(
         const PxrMayaHdShapeAdapter* shapeAdapter,
         const MHWRender::MSelectionInfo& selectionInfo,
@@ -899,7 +894,7 @@ UsdMayaGLBatchRenderer::TestIntersection(
         _selectResultsKey = key;
     }
 
-    const HdxIntersector::HitSet* const hitSet =
+    const HdxPickHitVector* const hitSet =
         TfMapLookupPtr(_selectResults, shapeAdapter->GetDelegateID());
     if (!hitSet || hitSet->empty()) {
         return nullptr;
@@ -908,7 +903,7 @@ UsdMayaGLBatchRenderer::TestIntersection(
     TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION).Msg(
         "    FOUND %zu HIT(s)\n", hitSet->size());
     if (TfDebug::IsEnabled(PXRUSDMAYAGL_BATCHED_SELECTION)) {
-        for (const HdxIntersector::Hit& hit : *hitSet) {
+        for (const HdxPickHit& hit : *hitSet) {
             TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION).Msg(
                 "        HIT:\n"
                 "            delegateId: %s\n"
@@ -924,30 +919,25 @@ UsdMayaGLBatchRenderer::TestIntersection(
 }
 
 bool
-UsdMayaGLBatchRenderer::TestIntersectionCustomCollection(
-        const HdRprimCollection& collection,
+UsdMayaGLBatchRenderer::TestIntersectionCustomPrimFilter(
+        const PxrMayaHdPrimFilter& primFilter,
         const GfMatrix4d& viewMatrix,
         const GfMatrix4d& projectionMatrix,
-        HdxIntersector::Result* outResult)
+        HdxPickHitVector* outResult)
 {
     // Custom collection implementation.
     // Differs from viewport implementations in that it doesn't rely on
     // _ComputeSelection being called first.
 
-    const unsigned int pickResolution = 256u;
-    _intersector->SetResolution(GfVec2i(pickResolution, pickResolution));
-
-    HdxIntersector::Params params;
-    params.viewMatrix = viewMatrix;
-    params.projectionMatrix = projectionMatrix;
-    params.alphaThreshold = 0.1f;
-
-    return _TestIntersection(collection, params, outResult);
+    return _TestIntersection(primFilter.collection,
+                             primFilter.renderTags,
+                             viewMatrix, projectionMatrix,
+                             true, outResult);
 }
 
 int
 UsdMayaGLBatchRenderer::GetAbsoluteInstanceIndexForHit(
-        const HdxIntersector::Hit& hit) const
+        const HdxPickHit& hit) const
 {
     int ret = -1;
     if (auto delegate = _renderIndex->GetSceneDelegateForRprim(hit.objectId)) {
@@ -960,15 +950,15 @@ UsdMayaGLBatchRenderer::GetAbsoluteInstanceIndexForHit(
 }
 
 /* static */
-const HdxIntersector::Hit*
+const HdxPickHit*
 UsdMayaGLBatchRenderer::GetNearestHit(
-        const HdxIntersector::HitSet* const hitSet)
+        const HdxPickHitVector* const hitSet)
 {
     if (!hitSet || hitSet->empty()) {
         return nullptr;
     }
 
-    const HdxIntersector::Hit* minHit = &(*hitSet->begin());
+    const HdxPickHit* minHit = &(*hitSet->begin());
 
     for (const auto& hit : *hitSet) {
         if (hit < *minHit) {
@@ -979,16 +969,16 @@ UsdMayaGLBatchRenderer::GetNearestHit(
     return minHit;
 }
 
-HdRprimCollectionVector
-UsdMayaGLBatchRenderer::_GetIntersectionRprimCollections(
+PxrMayaHdPrimFilterVector
+UsdMayaGLBatchRenderer::_GetIntersectionPrimFilters(
         _ShapeAdapterBucketsMap& bucketsMap,
         const M3dView* view,
         const bool useDepthSelection) const
 {
-    HdRprimCollectionVector rprimCollections;
+    PxrMayaHdPrimFilterVector primFilters;
 
     if (bucketsMap.empty()) {
-        return rprimCollections;
+        return primFilters;
     }
 
     // Assume the shape adapters are for Viewport 2.0 until we inspect the
@@ -1011,28 +1001,47 @@ UsdMayaGLBatchRenderer::_GetIntersectionRprimCollections(
                 continue;
             }
 
-            rprimCollections.push_back(shapeAdapter->GetRprimCollection());
+            const HdRprimCollection &rprimCollection =
+                    shapeAdapter->GetRprimCollection();
+
+            const TfTokenVector &renderTags = shapeAdapter->GetRenderTags();
+
+            primFilters.push_back(
+                    PxrMayaHdPrimFilter {
+                        rprimCollection,
+                        renderTags
+                    });
         }
     }
 
     if (!useDepthSelection) {
-        if (isViewport2) {
-            rprimCollections.push_back(_viewport2RprimCollection);
-        } else {
-            rprimCollections.push_back(_legacyViewportRprimCollection);
-        }
+        const HdRprimCollection &collection =
+                isViewport2 ? _viewport2RprimCollection :
+                             _legacyViewportRprimCollection;
+
+
+        primFilters.push_back(
+            PxrMayaHdPrimFilter {
+                collection,
+                TfTokenVector{HdTokens->geometry, HdTokens->proxy}
+        });
     }
 
-    return rprimCollections;
+    return primFilters;
 }
 
 bool
 UsdMayaGLBatchRenderer::_TestIntersection(
         const HdRprimCollection& rprimCollection,
-        HdxIntersector::Params queryParams,
-        HdxIntersector::Result* result)
+        const TfTokenVector& renderTags,
+        const GfMatrix4d& viewMatrix,
+        const GfMatrix4d& projectionMatrix,
+        const bool singleSelection,
+        HdxPickHitVector* result)
 {
-    queryParams.renderTags = rprimCollection.GetRenderTags();
+    if (!result) {
+        return false;
+    }
 
     glPushAttrib(GL_VIEWPORT_BIT |
                  GL_ENABLE_BIT |
@@ -1041,12 +1050,40 @@ UsdMayaGLBatchRenderer::_TestIntersection(
                  GL_STENCIL_BUFFER_BIT |
                  GL_TEXTURE_BIT |
                  GL_POLYGON_BIT);
-    const bool r = _intersector->Query(queryParams,
-                                       rprimCollection,
-                                       &_hdEngine,
-                                       result);
+
+    // hydra orients all geometry during topological processing so that
+    // front faces have ccw winding. We disable culling because culling
+    // is handled by fragment shader discard.
+    glFrontFace(GL_CCW); // < State is pushed via GL_POLYGON_BIT
+    glDisable(GL_CULL_FACE);
+
+    // note: to get benefit of alpha-to-coverage, the target framebuffer
+    // has to be a MSAA buffer.
+    glDisable(GL_BLEND);
+    glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    HdTaskSharedPtrVector tasks;
+    tasks = _taskDelegate->GetPickingTasks(renderTags);
+
+    HdxPickTaskContextParams pickParams;
+    pickParams.resolution = _selectionResolution;
+    pickParams.resolveMode = singleSelection ?
+        HdxPickTokens->resolveNearestToCenter :
+        HdxPickTokens->resolveUnique;
+    pickParams.viewMatrix = viewMatrix;
+    pickParams.projectionMatrix = projectionMatrix;
+    pickParams.collection = rprimCollection;
+    pickParams.outHits = result;
+
+    VtValue vtPickParams(pickParams);
+    _hdEngine.SetTaskContextData(HdxPickTokens->pickParams, vtPickParams);
+    _hdEngine.Execute(_renderIndex.get(), &tasks);
+
     glPopAttrib();
-    return r;
+
+    return (result->size() > 0);
 }
 
 void
@@ -1057,66 +1094,44 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
         const GfMatrix4d& projectionMatrix,
         const bool singleSelection)
 {
-    // If the enable depth selection env setting has not been turned on, then
-    // we can optimize area/marquee selections by handling collections
-    // similarly to a single selection, where we test intersections against the
-    // single, viewport renderer-based collection.
-    const bool useDepthSelection =
-        (!singleSelection && TfGetEnvSetting(PXRMAYAHD_ENABLE_DEPTH_SELECTION));
+    // If depth selection has not been turned on, then we can optimize
+    // area/marquee selections by handling collections similarly to a single
+    // selection, where we test intersections against the single, viewport
+    // renderer-based collection.
+    const bool useDepthSelection = (!singleSelection && _enableDepthSelection);
 
-    const HdRprimCollectionVector rprimCollections =
-        _GetIntersectionRprimCollections(bucketsMap, view3d, useDepthSelection);
+    const PxrMayaHdPrimFilterVector primFilters =
+        _GetIntersectionPrimFilters(bucketsMap, view3d, useDepthSelection);
 
     TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION).Msg(
         "    ____________ SELECTION STAGE START ______________ "
-        "(singleSelection = %s, %zu collection(s))\n",
+        "(singleSelection = %s, %zu prim filter(s))\n",
         singleSelection ? "true" : "false",
-        rprimCollections.size());
-
-    // We may miss very small objects with this setting, but it's faster.
-    const unsigned int pickResolution = 256u;
-
-    _intersector->SetResolution(GfVec2i(pickResolution, pickResolution));
-
-    HdxIntersector::Params qparams;
-    qparams.viewMatrix = viewMatrix;
-    qparams.projectionMatrix = projectionMatrix;
-    qparams.alphaThreshold = 0.1f;
+        primFilters.size());
 
     _selectResults.clear();
 
-    for (const HdRprimCollection& rprimCollection : rprimCollections) {
+    for (const PxrMayaHdPrimFilter& primFilter : primFilters) {
         TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION).Msg(
             "    --- Intersection Testing with collection: %s\n",
-            rprimCollection.GetName().GetText());
+            primFilter.collection.GetName().GetText());
 
-        HdxIntersector::Result result;
-        if (!_TestIntersection(rprimCollection, qparams, &result)) {
+        HdxPickHitVector hits;
+        if (!_TestIntersection(primFilter.collection, primFilter.renderTags,
+                               viewMatrix, projectionMatrix,
+                               singleSelection, &hits)) {
             continue;
         }
 
-        HdxIntersector::HitSet hits;
-        if (singleSelection) {
-            HdxIntersector::Hit hit;
-            if (!result.ResolveNearestToCenter(&hit)) {
-                continue;
-            }
-
-            hits.insert(hit);
-        }
-        else if (!result.ResolveUnique(&hits)) {
-            continue;
-        }
-
-        for (const HdxIntersector::Hit& hit : hits) {
+        for (const HdxPickHit& hit : hits) {
             const auto itIfExists =
                 _selectResults.emplace(
                     std::make_pair(hit.delegateId,
-                                   HdxIntersector::HitSet({hit})));
+                                   HdxPickHitVector({hit})));
 
             const bool& inserted = itIfExists.second;
             if (!inserted) {
-                _selectResults[hit.delegateId].insert(hit);
+                _selectResults[hit.delegateId].push_back(hit);
             }
         }
     }
@@ -1128,9 +1143,9 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
         HdSelection::HighlightModeSelect;
 
     for (const auto& delegateHits : _selectResults) {
-        const HdxIntersector::HitSet& hitSet = delegateHits.second;
+        const HdxPickHitVector& hitSet = delegateHits.second;
 
-        for (const HdxIntersector::Hit& hit : hitSet) {
+        for (const HdxPickHit& hit : hitSet) {
             TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION).Msg(
                 "    NEW HIT\n"
                 "        delegateId   : %s\n"
@@ -1226,15 +1241,15 @@ UsdMayaGLBatchRenderer::_Render(
         const PxrMayaHdRenderParams& params = iter.first;
         const size_t paramsHash = params.Hash();
 
-        const HdRprimCollectionVector& rprimCollections = iter.second;
+        const PxrMayaHdPrimFilterVector& primFilters = iter.second;
 
         TF_DEBUG(PXRUSDMAYAGL_BATCHED_DRAWING).Msg(
             "    *** renderBucket, parameters hash: %zu, bucket size %zu\n",
             paramsHash,
-            rprimCollections.size());
+            primFilters.size());
 
         HdTaskSharedPtrVector renderTasks =
-            _taskDelegate->GetRenderTasks(paramsHash, params, rprimCollections);
+            _taskDelegate->GetRenderTasks(paramsHash, params, primFilters);
         tasks.insert(tasks.end(), renderTasks.begin(), renderTasks.end());
     }
 
@@ -1242,7 +1257,7 @@ UsdMayaGLBatchRenderer::_Render(
     _hdEngine.SetTaskContextData(HdxTokens->selectionState,
                                  selectionTrackerValue);
 
-    _hdEngine.Execute(*_renderIndex, tasks);
+    _hdEngine.Execute(_renderIndex.get(), &tasks);
 
     glDisable(GL_FRAMEBUFFER_SRGB_EXT);
 
@@ -1311,15 +1326,18 @@ UsdMayaGLBatchRenderer::_RenderBatches(
         const PxrMayaHdRenderParams& params = iter.second.first;
         const _ShapeAdapterSet& shapeAdapters = iter.second.second;
 
-        HdRprimCollectionVector rprimCollections;
+        PxrMayaHdPrimFilterVector primFilters;
         for (PxrMayaHdShapeAdapter* shapeAdapter : shapeAdapters) {
             shapeAdapter->UpdateVisibility(view3d);
             itemsVisible |= shapeAdapter->IsVisible();
 
-            rprimCollections.push_back(shapeAdapter->GetRprimCollection());
+            primFilters.push_back(PxrMayaHdPrimFilter {
+                shapeAdapter->GetRprimCollection(),
+                shapeAdapter->GetRenderTags()
+            });
         }
 
-        items.push_back(std::make_pair(params, std::move(rprimCollections)));
+        items.push_back(std::make_pair(params, std::move(primFilters)));
     }
 
     if (!itemsVisible) {

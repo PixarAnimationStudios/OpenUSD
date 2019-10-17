@@ -104,13 +104,15 @@ _FixupStringNames(string* name)
 }
 
 #if PXR_USE_NAMESPACES
-#include <boost/preprocessor/stringize.hpp>
+
+#define ARCH_STRINGIZE_EXPAND(x) #x
+#define ARCH_STRINGIZE(x) ARCH_STRINGIZE_EXPAND(x)
 
 static void
 _StripPxrInternalNamespace(string* name)
 {
     // Note that this assumes PXR_INTERNAL_NS to be non-empty
-    constexpr const char nsQualifier[] = BOOST_PP_STRINGIZE(PXR_INTERNAL_NS) "::";
+    constexpr const char nsQualifier[] = ARCH_STRINGIZE(PXR_INTERNAL_NS) "::";
     constexpr const auto nsQualifierSize = sizeof(nsQualifier);
     size_t lastNsQualifierEndPos = name->find(nsQualifier);
     while (lastNsQualifierEndPos != std::string::npos) {
@@ -118,6 +120,10 @@ _StripPxrInternalNamespace(string* name)
         lastNsQualifierEndPos = name->find(nsQualifier);
     }
 }
+
+#undef ARCH_STRINGIZE_EXPAND
+#undef ARCH_STRINGIZE
+
 #endif
 
 #if defined(_AT_LEAST_GCC_THREE_ONE_OR_CLANG)
@@ -264,5 +270,26 @@ Arch_DemangleFunctionName(string* mangledFunctionName)
 }
 
 #endif // _AT_LEAST_GCC_THREE_ONE_OR_CLANG
+
+string
+ArchGetDemangled(const string& typeName)
+{
+    string r = typeName;
+    if (ArchDemangle(&r))
+        return r;
+    return string();
+}
+
+string
+ArchGetDemangled(const char *typeName)
+{
+    if (typeName) {
+        string r = typeName;
+        if (ArchDemangle(&r)) {
+            return r;
+        }
+    }
+    return string();
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

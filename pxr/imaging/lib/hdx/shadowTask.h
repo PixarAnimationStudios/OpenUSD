@@ -113,9 +113,19 @@ public:
                       HdTaskContext* ctx,
                       HdDirtyBits* dirtyBits) override;
 
+    /// Prepare the tasks resources
+    HDX_API
+    virtual void Prepare(HdTaskContext* ctx,
+                         HdRenderIndex* renderIndex) override;
+
     /// Execute render pass task
     HDX_API
     virtual void Execute(HdTaskContext* ctx) override;
+
+    /// Collect Render Tags used by the task.
+    HDX_API
+    virtual const TfTokenVector &GetRenderTags() const override;
+
 
 private:
     void _SetHdStRenderPassState(HdxShadowTaskParams const &params,
@@ -130,6 +140,8 @@ private:
     HdRenderPassSharedPtrVector _passes;
     HdRenderPassStateSharedPtrVector _renderPassStates;
     HdxShadowTaskParams _params;
+    TfTokenVector       _renderTags;
+
 
     HdxShadowTask() = delete;
     HdxShadowTask(const HdxShadowTask &) = delete;

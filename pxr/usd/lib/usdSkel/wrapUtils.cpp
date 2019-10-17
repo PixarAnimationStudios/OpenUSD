@@ -23,13 +23,15 @@
 //
 #include "pxr/usd/usdSkel/utils.h"
 
-#include "pxr/usd/usd/pyConversions.h"
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/matrix4f.h"
+#include "pxr/base/gf/range3f.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
+#include "pxr/usd/usd/pyConversions.h"
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/relationship.h"
 
@@ -49,66 +51,55 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 
+// deprecated
 VtMatrix4dArray
 _ComputeJointLocalTransforms(const UsdSkelTopology& topology,
                              const VtMatrix4dArray& xforms,
                              const VtMatrix4dArray& inverseXforms,
-                             const object& rootInverseXformObj)
+                             const GfMatrix4d* rootInverseXform=nullptr)
 {
     VtMatrix4dArray jointLocalXforms;
-    if(rootInverseXformObj) {
-        GfMatrix4d rootInverseXform = extract<GfMatrix4d>(rootInverseXformObj);
-        UsdSkelComputeJointLocalTransforms(topology, xforms, inverseXforms,
-                                           &jointLocalXforms, &rootInverseXform);
-    } else {
-        UsdSkelComputeJointLocalTransforms(topology, xforms, inverseXforms,
-                                           &jointLocalXforms);
-    }
+    UsdSkelComputeJointLocalTransforms(topology, xforms, inverseXforms,
+                                       &jointLocalXforms, rootInverseXform);
     return jointLocalXforms;
 }
 
 
+// deprecated
 VtMatrix4dArray
-_ComputeJointLocalTransforms_NoInvXforms(const UsdSkelTopology& topology,
-                                         const VtMatrix4dArray& xforms,
-                                         const object& rootInverseXformObj)
+_ComputeJointLocalTransforms_NoInvXforms(
+    const UsdSkelTopology& topology,
+    const VtMatrix4dArray& xforms,
+    const GfMatrix4d* rootInverseXform=nullptr)
 {
     VtMatrix4dArray jointLocalXforms;
-    if (rootInverseXformObj) {
-        GfMatrix4d rootInverseXform = extract<GfMatrix4d>(rootInverseXformObj);
-        UsdSkelComputeJointLocalTransforms(topology, xforms, &jointLocalXforms,
-                                           &rootInverseXform);
-    } else {
-        UsdSkelComputeJointLocalTransforms(topology, xforms, &jointLocalXforms);
-    }
+    UsdSkelComputeJointLocalTransforms(topology, xforms, &jointLocalXforms,
+                                       rootInverseXform);
     return jointLocalXforms;
 }
 
 
+// depreacted
 VtMatrix4dArray
 _ConcatJointTransforms(const UsdSkelTopology& topology,
                        const VtMatrix4dArray& jointLocalXforms,
-                       const object& rootXformObj)
+                       const GfMatrix4d* rootXform=nullptr)
 {
     VtMatrix4dArray xforms;
-    if(rootXformObj) {
-        GfMatrix4d rootXform = extract<GfMatrix4d>(rootXformObj);
-        UsdSkelConcatJointTransforms(topology, jointLocalXforms,
-                                     &xforms, &rootXform);
-    } else {
-        UsdSkelConcatJointTransforms(topology, jointLocalXforms, &xforms);
-    }
+    UsdSkelConcatJointTransforms(topology, jointLocalXforms,
+                                 &xforms, rootXform);
     return xforms;
 }
 
 
+template <typename Matrix4>
 tuple
-_DecomposeTransform(const GfMatrix4d& mx)
+_DecomposeTransform(const Matrix4& mx)
 {
     GfVec3f t;
     GfQuatf r;
     GfVec3h s;
-    if(!UsdSkelDecomposeTransform(mx, &t, &r, &s)) {
+    if (!UsdSkelDecomposeTransform(mx, &t, &r, &s)) {
         // XXX: Want this case to throw an exception.
         TF_CODING_ERROR("Failed decomposing transform. "
                         "The transform may be singular.");
@@ -117,13 +108,14 @@ _DecomposeTransform(const GfMatrix4d& mx)
 }
 
 
+template <typename Matrix4>
 tuple
-_DecomposeTransforms(const VtMatrix4dArray& xforms)
+_DecomposeTransforms(const TfSpan<Matrix4>& xforms)
 {
-    VtVec3fArray t;
-    VtQuatfArray r;
-    VtVec3hArray s;
-    if(!UsdSkelDecomposeTransforms(xforms, &t, &r, &s)) {
+    VtVec3fArray t(xforms.size());
+    VtQuatfArray r(xforms.size());
+    VtVec3hArray s(xforms.size());
+    if (!UsdSkelDecomposeTransforms(xforms, t, r, s)) {
         TF_CODING_ERROR("Failed decomposing transforms. "
                         "Some transforms may be singular.");
     }
@@ -136,112 +128,155 @@ _MakeTransform(const GfVec3f& translate,
                const GfQuatf& rotate,
                const GfVec3h& scale)
 {
-    return UsdSkelMakeTransform(translate, rotate, scale);
+    GfMatrix4d xform;
+    UsdSkelMakeTransform(translate, rotate, scale, &xform);
+    return xform;
 }
 
 
 VtMatrix4dArray
-_MakeTransforms(const VtVec3fArray& translations,
-                const VtQuatfArray& rotations,
-                const VtVec3hArray& scales)
+_MakeTransforms(TfSpan<const GfVec3f> translations,
+                TfSpan<const GfQuatf> rotations,
+                TfSpan<const GfVec3h> scales)
 {
-    VtMatrix4dArray xforms;
-    UsdSkelMakeTransforms(translations, rotations, scales, &xforms);
+    VtMatrix4dArray xforms(translations.size());
+    UsdSkelMakeTransforms(translations, rotations, scales, xforms);
     return xforms;
 }
-                
 
-VtVec3fArray
-_ComputeJointsExtent(const VtMatrix4dArray& xforms, float pad,
-                     const object& rootXformObj)
-{
-    VtVec3fArray extent;
 
-    extract<GfMatrix4d> x(rootXformObj);
-    if(x.check()) {
-        const GfMatrix4d& rootXform = x;
-        UsdSkelComputeJointsExtent(xforms, &extent, pad, &rootXform);
-    } else {
-        UsdSkelComputeJointsExtent(xforms, &extent, pad);
-    }
-    return extent;
+template <typename Matrix4>
+GfRange3f
+_ComputeJointsExtent(TfSpan<const Matrix4> xforms,
+                     float pad=0,
+                     const Matrix4* rootXform=nullptr)
+{   
+    GfRange3f range;
+    UsdSkelComputeJointsExtent(xforms, &range, pad, rootXform);
+    return range;
 }
 
 
+template <typename T>
 bool
-_NormalizeWeights(VtFloatArray& weights,
-                  int numInfluencesPerComponent)
+_ExpandConstantInfluencesToVarying(VtArray<T>& array, size_t size)
 {
-    return UsdSkelNormalizeWeights(&weights, numInfluencesPerComponent);
+    return UsdSkelExpandConstantInfluencesToVarying(&array, size);
 }
 
 
+template <typename T>
 bool
-_SortInfluences(VtIntArray& indices,
-                VtFloatArray& weights,
-                int numInfluencesPerComponent)
-{
-    return UsdSkelSortInfluences(&indices, &weights, numInfluencesPerComponent);
-}
-
-
-bool
-_ExpandConstantInfluencesToVarying(object& arrayObj, size_t size)
-{
-    extract<VtIntArray&> x(arrayObj);
-    if(x.check()) {
-        VtIntArray& array = x;
-        return UsdSkelExpandConstantInfluencesToVarying(&array, size);
-    } else {
-        VtFloatArray& array = extract<VtFloatArray&>(arrayObj);
-        return UsdSkelExpandConstantInfluencesToVarying(&array, size);
-    }
-}
-
-
-bool
-_ResizeInfluences(object& arrayObj,
+_ResizeInfluences(VtArray<T>& array,
                   int srcNumInfluencesPerPoint,
                   int newNumInfluencesPerPoint)
 {
-    extract<VtIntArray&> x(arrayObj);
-    if(x.check()) {
-        VtIntArray& array = x;   
-        return UsdSkelResizeInfluences(
-            &array, srcNumInfluencesPerPoint, newNumInfluencesPerPoint);
-    } else {
-        VtFloatArray& array = extract<VtFloatArray&>(arrayObj);
-        return UsdSkelResizeInfluences(
-            &array, srcNumInfluencesPerPoint, newNumInfluencesPerPoint);
-    }
+    return UsdSkelResizeInfluences(
+        &array, srcNumInfluencesPerPoint, newNumInfluencesPerPoint);
 }
 
 
-bool
-_SkinPointsLBS(const GfMatrix4d& geomBindTransform,
-               const VtMatrix4dArray& jointXforms,
-               const VtIntArray& jointIndices,
-               const VtFloatArray& jointWeights,
-               int numInfluencesPerPoint,
-               VtVec3fArray& points)
+template <typename Matrix4>
+Matrix4
+_InterleavedSkinTransformLBS(const Matrix4& geomBindTransform,
+                             TfSpan<const Matrix4> jointXforms,
+                             TfSpan<const GfVec2f> influences)
 {
-    return UsdSkelSkinPointsLBS(geomBindTransform, jointXforms, jointIndices,
-                                jointWeights, numInfluencesPerPoint, &points);
-}
-
-
-GfMatrix4d
-_SkinTransformLBS(const GfMatrix4d& geomBindTransform,
-                  const VtMatrix4dArray& jointXforms,
-                  const VtIntArray& jointIndices,
-                  const VtFloatArray& jointWeights)
-{
-    GfMatrix4d xform;
-    if(!UsdSkelSkinTransformLBS(geomBindTransform, jointXforms,
-                                jointIndices, jointWeights, &xform)) {
+    Matrix4 xform;
+    if (!UsdSkelSkinTransformLBS(geomBindTransform, jointXforms,
+                                 influences, &xform)) {
         xform = geomBindTransform;
     }
     return xform;
+}
+
+
+template <typename Matrix4>
+Matrix4
+_NonInterleavedSkinTransformLBS(const Matrix4& geomBindTransform,
+                                TfSpan<const Matrix4> jointXforms,
+                                TfSpan<const int> jointIndices,
+                                TfSpan<const float> jointWeights)
+{
+    Matrix4 xform;
+    if (!UsdSkelSkinTransformLBS(geomBindTransform, jointXforms,
+                                 jointIndices, jointWeights, &xform)) {
+        xform = geomBindTransform;
+    }
+    return xform;
+}
+
+
+template <typename Matrix4>
+void _WrapUtilsT()
+{
+    def("ComputeJointLocalTransforms",
+        static_cast<bool (*)(const UsdSkelTopology&, TfSpan<const Matrix4>,
+                             TfSpan<const Matrix4>, TfSpan<Matrix4>,
+                             const Matrix4*)>(
+                                 &UsdSkelComputeJointLocalTransforms),
+        (arg("topology"), arg("xforms"), arg("inverseXforms"),
+         arg("jointLocalXforms"), arg("rootInverseXform")=object()));
+
+    def("ComputeJointLocalTransforms",
+        static_cast<bool (*)(const UsdSkelTopology&, TfSpan<const Matrix4>,
+                             TfSpan<Matrix4>, const Matrix4*)>(
+                                 &UsdSkelComputeJointLocalTransforms),
+        (arg("topology"), arg("xforms"),
+         arg("jointLocalXforms"), arg("rootInverseXform")=object()));
+
+    def("ConcatJointTransforms",
+        static_cast<bool (*)(const UsdSkelTopology&, TfSpan<const Matrix4>,
+                             TfSpan<Matrix4>, const Matrix4*)>(
+                                 &UsdSkelConcatJointTransforms),
+        (arg("topology"), arg("jointLocalXforms"),
+         arg("rootXform")=object()));
+
+    def("DecomposeTransform", &_DecomposeTransform<Matrix4>,
+        "Decompose a transform into a (translate,rotate,scale) tuple.");
+
+    def("DecomposeTransforms", &_DecomposeTransforms<Matrix4>,
+        "Decompose a transform array into a "
+        "(translations,rotations,scales) tuple.");
+
+    def("ComputeJointsExtent", _ComputeJointsExtent<Matrix4>,
+        (arg("xforms"), arg("pad")=0.0f, arg("rootXform")=object()));
+
+    def("SkinPointsLBS",
+        static_cast<bool (*)(const Matrix4&, TfSpan<const Matrix4>,
+                             TfSpan<const int>, TfSpan<const float>,
+                             int, TfSpan<GfVec3f>, bool)>(
+                                 &UsdSkelSkinPointsLBS),
+        (arg("geomBindTransform"),
+         arg("jointXforms"),
+         arg("jointIndices"),
+         arg("jointWeights"),
+         arg("numInfluencesPerPoint"),
+         arg("points"),
+         arg("inSerial")=true));
+
+    def("SkinPointsLBS",
+        static_cast<bool (*)(const Matrix4&, TfSpan<const Matrix4>,
+                             TfSpan<const GfVec2f>, int,
+                             TfSpan<GfVec3f>, bool)>(
+                                 &UsdSkelSkinPointsLBS),
+        (arg("geomBindTransform"),
+         arg("jointXforms"),
+         arg("influences"),
+         arg("numInfluencesPerPoint"),
+         arg("points"),
+         arg("inSerial")=true));
+
+    def("SkinTransformLBS", &_InterleavedSkinTransformLBS<Matrix4>,
+        (arg("geomBindTransform"),
+         arg("jointXforms"),
+         arg("influences")));
+
+    def("SkinTransformLBS", &_NonInterleavedSkinTransformLBS<Matrix4>,
+        (arg("geomBindTransform"),
+         arg("jointXforms"),
+         arg("jointIndices"),
+         arg("jointWeights")));
 }
 
 
@@ -250,67 +285,74 @@ _SkinTransformLBS(const GfMatrix4d& geomBindTransform,
 
 void wrapUsdSkelUtils()
 {
+    // Wrap methods supporting different matrix precisions.
+    _WrapUtilsT<GfMatrix4d>();
+    _WrapUtilsT<GfMatrix4f>();
+
     def("IsSkelAnimationPrim", &UsdSkelIsSkelAnimationPrim, (arg("prim")));
 
     def("IsSkinnablePrim", &UsdSkelIsSkinnablePrim, (arg("prim")));
 
+    // deprecated
     def("ComputeJointLocalTransforms", &_ComputeJointLocalTransforms,
         (arg("topology"), arg("xforms"), arg("inverseXforms"),
          arg("rootInverseXform")=object()));
 
+    // deprecated
     def("ComputeJointLocalTransforms",
         &_ComputeJointLocalTransforms_NoInvXforms,
         (arg("topology"), arg("xforms"),
          arg("rootInverseXform")=object()));
 
+    // deprecated
     def("ConcatJointTransforms", &_ConcatJointTransforms,
         (arg("topology"), arg("jointLocalXforms"),
          arg("rootXform")=object()));
 
-    def("DecomposeTransform", &_DecomposeTransform,
-        "Decompose a transform into a (translate,rotate,scale) tuple.");
-
-    def("DecomposeTransforms", &_DecomposeTransforms,
-        "Decompose a transform array into a "
-        "(translations,rotations,scales) tuple.");
-
     def("MakeTransform", &_MakeTransform,
         (arg("translate"), arg("rotate"), arg("scale")));
 
+    // deprecated
     def("MakeTransforms", &_MakeTransforms,
         (arg("translations"), arg("rotations"), arg("scales")));
-        
-    def("ComputeJointsExtent", &_ComputeJointsExtent,
-        (arg("xforms"), arg("pad")=0.0f, arg("rootXform")=object()));
 
-    def("NormalizeWeights", &_NormalizeWeights,
+    def("NormalizeWeights",
+        static_cast<bool (*)(TfSpan<float>,int)>(
+            &UsdSkelNormalizeWeights),
         (arg("weights"), arg("numInfluencesPerComponent")));
 
-    def("SortInfluences", &_SortInfluences,
+    def("SortInfluences",
+        static_cast<bool (*)(TfSpan<int>, TfSpan<float>,int)>(
+            &UsdSkelSortInfluences),
         (arg("indices"), arg("weights"), arg("numInfluencesPerComponent")));
 
     def("ExpandConstantInfluencesToVarying",
-        &_ExpandConstantInfluencesToVarying,
+        &_ExpandConstantInfluencesToVarying<int>,
         (arg("array"), arg("size")));
 
-    def("ResizeInfluences", &_ResizeInfluences,
+    def("ExpandConstantInfluencesToVarying",
+        &_ExpandConstantInfluencesToVarying<float>,
+        (arg("array"), arg("size")));
+
+    def("ResizeInfluences", &_ResizeInfluences<int>,
         (arg("array"),
          arg("srcNumInfluencesPerComponent"),
          arg("newNumInfluencesPerComponent")));
 
-    def("SkinPointsLBS", &_SkinPointsLBS,
-        (arg("geomBindTransform"),
-         arg("jointXforms"),
-         arg("jointIndices"),
-         arg("jointWeights"),
-         arg("numInfluencesPerPoint"),
-         arg("points")));
+    def("ResizeInfluences", &_ResizeInfluences<float>,
+        (arg("array"),
+         arg("srcNumInfluencesPerComponent"),
+         arg("newNumInfluencesPerComponent")));
 
-    def("SkinTransformLBS", &_SkinTransformLBS,
-        (arg("geomBindTransform"),
-         arg("jointXforms"),
-         arg("jointIndices"),
-         arg("jointWeights")));
+    def("InterleaveInfluences", &UsdSkelInterleaveInfluences,
+        (arg("indices"), arg("weights"),
+         arg("interleavedInfluences")));
+
+    def("ApplyBlendShape", &UsdSkelApplyBlendShape,
+        (arg("weight"),
+         arg("offsets"),
+         arg("indices"),
+         arg("points")));
 
     def("BakeSkinning", ((bool (*)(const UsdSkelRoot&,
                                    const GfInterval&))&UsdSkelBakeSkinning),

@@ -207,10 +207,10 @@ ArchTestCrash(ArchTestCrashMode mode)
     ARCH_AXIOM(status > 1);
 }
 
+#if defined(ARCH_OS_WINDOWS)
 void
 ArchTestCrashArgParse(int argc, char** argv)
 {
-#if defined(ARCH_OS_WINDOWS)
     // Scan for crash argument.
     for (int i = 1; i != argc; ++i) {
         for (size_t j = 0, n = sizeof(crashArgument) / sizeof(crashArgument[0]);
@@ -221,9 +221,13 @@ ArchTestCrashArgParse(int argc, char** argv)
             }
         }
     }
-#else
-    // Non-windows platforms don't need this.
-#endif
 }
+#else
+void
+ArchTestCrashArgParse(int /*argc*/, char** /*argv*/)
+{
+    // Non-windows platforms don't need this.
+}
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE

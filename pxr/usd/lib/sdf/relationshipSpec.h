@@ -34,9 +34,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-template <class TypePolicy> class Sdf_ListEditor;
-template <class T> class Sdf_MarkerUtils;
-
 /// \class SdfRelationshipSpec
 ///
 /// A property that contains a reference to one or more SdfPrimSpec instances.
@@ -53,8 +50,7 @@ template <class T> class Sdf_MarkerUtils;
 ///
 class SdfRelationshipSpec : public SdfPropertySpec
 {
-    SDF_DECLARE_SPEC(SdfSchema, SdfSpecTypeRelationship,
-                     SdfRelationshipSpec, SdfPropertySpec);
+    SDF_DECLARE_SPEC(SdfRelationshipSpec, SdfPropertySpec);
 
 public:
     typedef SdfRelationshipSpec This;
@@ -112,119 +108,6 @@ public:
     void RemoveTargetPath(const SdfPath& path, bool preserveTargetOrder = false);
 
     /// @}
-    /// \name Relational attributes
-    /// @{
-
-    /// Gets the attributes for the given target path.
-    SDF_API
-    SdfRelationalAttributeSpecView
-    GetAttributesForTargetPath(const SdfPath& path) const;
-
-    /// Sets the attributes for the given target path as a vector.
-    SDF_API
-    void SetAttributesForTargetPath(const SdfPath& path,
-                                    const SdfAttributeSpecHandleVector& newAttrs);
-
-    /// Inserts the given attribute for the given target path.
-    SDF_API
-    bool InsertAttributeForTargetPath(const SdfPath& path,
-                                      const SdfAttributeSpecHandle& attr,
-                                      int index = -1);
-
-    /// Removes an attribute from the given target path.
-    SDF_API
-    void RemoveAttributeForTargetPath(const SdfPath& path,
-                                      const SdfAttributeSpecHandle& attr);
-
-    /// Returns all target paths for which there are relational attributes.
-    SDF_API
-    SdfPathVector GetAttributeTargetPaths() const;
-
-    /// Returns the target path for the given relational attribute.
-    SDF_API
-    SdfPath
-    GetTargetPathForAttribute(const SdfAttributeSpecConstHandle& attr) const;
-
-    /// @}
-    /// \name Relational attribute ordering
-    /// @{
-
-    // A simple type used for bulk replacement of all attribute orders.
-    typedef std::map< SdfPath, std::vector<TfToken> > AttributeOrderMap;
-
-    /// Returns list of all target paths for which an ordering of relational
-    /// attributes exists.
-    SDF_API
-    SdfPathVector GetAttributeOrderTargetPaths() const;
-
-    /// Returns true if a relational attribute ordering is authored for the
-    /// given target \p path.
-    SDF_API
-    bool HasAttributeOrderForTargetPath(const SdfPath& path) const;
-
-    /// Returns a list editor proxy for authoring relational attribute
-    /// orderings for the given target \p path. If no ordering exists for
-    /// \p path, an invalid proxy object is returned.
-    SDF_API
-    SdfNameOrderProxy GetAttributeOrderForTargetPath(const SdfPath& path) const;
-
-    /// Returns a list editor proxy for authoring relational attribute
-    /// orderings for the given target \p path. This may create a relationship
-    /// target spec for \p path if one does not already exist.
-    SDF_API
-    SdfNameOrderProxy GetOrCreateAttributeOrderForTargetPath(
-        const SdfPath& path);
-
-    /// Replaces all target attribute orders with the given map.
-    ///
-    /// The map's keys are the target paths whose attributes should be
-    /// ordered.  The values are vectors of strings specifying the
-    /// ordering for each path.
-    SDF_API
-    void SetTargetAttributeOrders(const AttributeOrderMap& orders);
-
-    /// Reorders the given list of attribute names according to the reorder
-    /// attributes statement for the given target path.
-    ///
-    /// This routine employs the standard list editing operation for ordered
-    /// items in a ListEditor.
-    SDF_API
-    void ApplyAttributeOrderForTargetPath(
-        const SdfPath& path, std::vector<TfToken>* vec) const;
-
-    /// @}
-    /// \name Markers
-    /// @{
-
-    // A simple type used for bulk replacement of all target markers.
-    typedef std::map<SdfPath, std::string, 
-                     SdfPath::FastLessThan> TargetMarkerMap;
-
-    /// Returns a copy of all the target markers for this relationship.
-    SDF_API
-    TargetMarkerMap GetTargetMarkers() const;
-
-    /// Sets the all the target markers for this relationship.
-    SDF_API
-    void SetTargetMarkers(const TargetMarkerMap& markers);
-
-    /// Returns the marker for this relationship for the given target path.
-    SDF_API
-    std::string GetTargetMarker(const SdfPath& path) const;
-
-    /// Sets the marker for this relationship for the given target path. 
-    /// 
-    /// If an empty string is specified, the target marker will be cleared.
-    SDF_API
-    void SetTargetMarker(const SdfPath& path, const std::string& marker);
-
-    /// Clears the marker for the given target path.
-    SDF_API
-    void ClearTargetMarker(const SdfPath& path);
-
-    /// Returns all target paths on which markers are specified.
-    SDF_API
-    SdfPathVector GetTargetMarkerPaths() const;
 
     /// Get whether loading the target of this relationship is necessary
     /// to load the prim we're attached to
@@ -236,24 +119,12 @@ public:
     SDF_API
     void SetNoLoadHint(bool noload);
 
-    /// @}
-
 private:
     SdfPath _CanonicalizeTargetPath(const SdfPath& path) const;
 
     SdfPath _MakeCompleteTargetSpecPath(const SdfPath& srcPath) const;
 
     SdfSpecHandle _GetTargetSpec(const SdfPath& path) const;
-
-    SdfSpecHandle _FindOrCreateTargetSpec(const SdfPath& path);
-
-    boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >
-    _GetTargetAttributeOrderEditor(const SdfPath& path) const;
-
-    SdfSpecHandle _FindOrCreateChildSpecForMarker(const SdfPath& key);
-
-    // Allow access to functions for creating child specs for markers.
-    friend class Sdf_MarkerUtils<SdfRelationshipSpec>;
 
     // Allow access to _GetTarget() for the  relational attribute c'tor
     friend class SdfAttributeSpec;

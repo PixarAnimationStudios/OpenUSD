@@ -32,7 +32,7 @@
 
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/renderPass.h"
-#include "pxr/imaging/glf/glslfx.h"
+#include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -62,18 +62,20 @@ public:
     void Draw(bool withGuides=false);
 
     /// Draw with external renderPass
-    void Draw(HdRenderPassSharedPtr const &renderPass);
+    void Draw(HdRenderPassSharedPtr const &renderPass, bool withGuides);
 
     /// Set camera to renderpass
     void SetCamera(GfMatrix4d const &modelViewMatrix,
                    GfMatrix4d const &projectionMatrix,
                    GfVec4d const &viewport);
+    
+    void SetCameraClipPlanes(std::vector<GfVec4d> const& clipPlanes);
 
     /// Set cull style
     void SetCullStyle(HdCullStyle cullStyle);
 
     /// Returns the renderpass
-    HdRenderPassSharedPtr const &GetRenderPass(bool withGuides=false);
+    HdRenderPassSharedPtr const &GetRenderPass();
 
     /// Returns the renderPassState
     HdStRenderPassStateSharedPtr const &GetRenderPassState() const {
@@ -94,10 +96,13 @@ private:
     HdStRenderDelegate   _renderDelegate;
     HdRenderIndex       *_renderIndex;
     HdSt_UnitTestDelegate *_sceneDelegate;
+
+    SdfPath _cameraId;
     HdReprSelector _reprToken;
-    HdRenderPassSharedPtr _geomPass;
-    HdRenderPassSharedPtr _geomAndGuidePass;
+
+    HdRenderPassSharedPtr _renderPass;
     HdStRenderPassStateSharedPtr _renderPassState;
+    HdRprimCollection          _collection;
 };
 
 /// \class HdSt_TestLightingShader
@@ -133,7 +138,7 @@ private:
     };
     Light _lights[2];
     GfVec3f _sceneAmbient;
-    boost::scoped_ptr<GlfGLSLFX> _glslfx;
+    boost::scoped_ptr<HioGlslfx> _glslfx;
 };
 
 

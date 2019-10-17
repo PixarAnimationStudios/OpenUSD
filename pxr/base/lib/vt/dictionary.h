@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef BOOST_PP_IS_ITERATING
-
 #ifndef VT_DICTIONARY_H
 #define VT_DICTIONARY_H
 
@@ -30,31 +28,19 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/vt/api.h"
-#include "pxr/base/vt/keyValue.h"
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/tf/hash.h"
-#include "pxr/base/tf/move.h"
 #include "pxr/base/tf/mallocTag.h"
 
 #include <boost/functional/hash.hpp>
-#include <boost/preprocessor.hpp>
-
 #include <boost/iterator/iterator_adaptor.hpp>
-#include <initializer_list>
 
+#include <initializer_list>
 #include <iosfwd>
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-// This constant will only be defined if not defined already. This is because
-// many files need a higher limit and define this constant themselves before
-// including anything else.
-
-#ifndef VT_DICTIONARY_MAX_ARITY
-#  define VT_DICTIONARY_MAX_ARITY 7
-#endif // VT_DICTIONARY_MAX_ARITY
 
 /// \defgroup group_vtdict_functions VtDictionary Functions
 /// Functions for manipulating VtDictionary objects.
@@ -576,49 +562,6 @@ struct VtDictionaryHash {
     }
 };
 
-#define BOOST_PP_ITERATION_LIMITS (1, VT_DICTIONARY_MAX_ARITY)
-#define BOOST_PP_FILENAME_1 "pxr/base/vt/dictionary.h"
-#include BOOST_PP_ITERATE()
-/* comment needed for scons dependency scanner
-#include "pxr/base/vt/dictionary.h"
-*/
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif /* VT_DICTIONARY_H */
-
-#else // BOOST_PP_IS_ITERATING
-
-#define N BOOST_PP_ITERATION()
-
-/// In-place creation of a VtDictionary.
-///
-/// Creates a VtDictionary from a set of VtKeyValue pairs.
-///
-/// \ingroup group_vtdict_functions
-inline VtDictionary VtMakeDictionary(
-    BOOST_PP_ENUM_PARAMS(N, const VtKeyValue &keyValue))
-{
-    // Note: It would be easy enough to move the implementations to the cpp
-    // file, but then we cannot provide a per-translation unit configurable
-    // maximum arity.
-
-    // Allocate as few buckets as possible to save memory.
-    VtDictionary dictionary(0);
-
-    #define _VT_PARAMS_TO_LIST() \
-        BOOST_PP_TUPLE_TO_LIST(N, (BOOST_PP_ENUM_PARAMS(N, keyValue)))
-    #define _VT_ADD_TO_DICTIONARY(r, unused, elem) \
-        dictionary[elem.GetKey()] = elem.GetValue();
-
-    BOOST_PP_LIST_FOR_EACH( _VT_ADD_TO_DICTIONARY, ~, _VT_PARAMS_TO_LIST())
-
-    #undef _VT_PARAMS_TO_LIST
-    #undef _VT_ADD_TO_DICTIONARY
-
-    return dictionary;
-}
-
-#undef N
-
-#endif // BOOST_PP_IS_ITERATING

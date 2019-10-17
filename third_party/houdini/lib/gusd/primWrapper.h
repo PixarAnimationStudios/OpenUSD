@@ -29,10 +29,12 @@
 
 #include "gusd/api.h"
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/imageable.h"
+
+#include <functional>
 
 #include "GT_Utils.h"
 #include "purpose.h"
@@ -88,25 +90,25 @@ class GUSD_API GusdPrimWrapper : public GT_Primitive
 {
 public:
 
-    typedef boost::function<GT_PrimitiveHandle
+    typedef std::function<GT_PrimitiveHandle
             (const GT_PrimitiveHandle&, /* sourcePrim */
              const UsdStagePtr&,
              const SdfPath&        /* path */,
              const GusdContext&)>
         DefinitionForWriteFunction;
 
-    typedef boost::function<GT_PrimitiveHandle
+    typedef std::function<GT_PrimitiveHandle
              (const UsdGeomImageable&,
               UsdTimeCode,
               GusdPurposeSet)>
         DefinitionForReadFunction;
 
-    typedef boost::function<bool
+    typedef std::function<bool
             (const GT_PrimitiveHandle&,
              std::string &primName)>
         GetPrimNameFunction;
 
-    typedef boost::function<GT_DataArrayHandle
+    typedef std::function<GT_DataArrayHandle
             ( const GT_DataArrayHandle & )>
         ResampleArrayFunction;
 
@@ -213,10 +215,10 @@ public:
         const GusdContext&        ctxt,
         GusdSimpleXformCache&     xformCache );
 
-    /// Add a sample just before the current time that invisies this prim.
-    // For points and instances this means writing a empty point attribute.
-    // Other prims set their visibility flag.
-    // It might be possible to avoid this if we are on the first frame.
+    /// Add a sample just before the current time that invises this prim.
+    /// For points and instances this means writing a empty point attribute.
+    /// Other prims set their visibility flag.
+    /// It might be possible to avoid this if we are on the first frame.
     virtual void addLeadingBookend( double curFrame, double startFrame );
 
     /// Add a sample at the current frame, invising this from.
@@ -232,9 +234,13 @@ public:
                     const UsdGeomPrimvar& primvar, 
                     UsdTimeCode time );
 
-    // Load primvars for prim from USD.
-    // remapIndicies is used to expand curve primvars into point attributes if
-    // needed.
+    static GT_DataArrayHandle convertPrimvarData( 
+                    const UsdGeomPrimvar& primvar, 
+                    const VtValue& val);
+
+    /// Load primvars for prim from USD.
+    /// remapIndicies is used to expand curve primvars into point attributes if
+    /// needed.
     void loadPrimvars( 
                     UsdTimeCode               time,
                     const GT_RefineParms*     rparms,
@@ -280,7 +286,7 @@ protected:
                 UsdTimeCode                 time,
                 const GT_DataArrayHandle&   data );
 
-    // Write primvar values from a GT attribute list to USD.
+    /// Write primvar values from a GT attribute list to USD.
     bool updatePrimvarFromGTPrim( const GT_AttributeListHandle& gtAttrs,
                                   const GusdGT_AttrFilter&      primvarFilter,
                                   const TfToken&                interpolation,
@@ -288,16 +294,15 @@ protected:
 
     void clearCaches();
 
-    // Compute a USD transform from a Houdini transform.
-    //
-    // \p houXform is the transform from world to the prim's space in Houdini.
-    // This includes the object node transformation and the transform of any
-    // containing packed prim.
-    //
-    // \p xformCache is a map of the transforms of any groups that have been 
-    // written on the current frame.
-    
-    static GfMatrix4d computeTransform( 
+    /// Compute a USD transform from a Houdini transform.
+    ///
+    /// \p houXform is the transform from world to the prim's space in Houdini.
+    /// This includes the object node transformation and the transform of any
+    /// containing packed prim.
+    ///
+    /// \p xformCache is a map of the transforms of any groups that have been
+    /// written on the current frame.
+    static GfMatrix4d computeTransform(
                 const UsdPrim&              prim,
                 UsdTimeCode                 time,
                 const UT_Matrix4D&          houXform,

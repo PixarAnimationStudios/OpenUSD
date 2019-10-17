@@ -1365,7 +1365,7 @@ _Context::AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef)
     if (auto usdShaderImpl = UsdShadeShader::Get(_stage, shaderImplPath)) {
         // Do nothing
     }
-    else if (usdShaderImpl = UsdShadeShader::Define(_stage, shaderImplPath)) {
+    else if ((usdShaderImpl = UsdShadeShader::Define(_stage, shaderImplPath))) {
         usdShaderImpl.CreateIdAttr(VtValue(TfToken(shaderId)));
         auto connectable = usdShaderImpl.ConnectableAPI();
         _SetCoreUIAttributes(usdShaderImpl.GetPrim(), mtlxShaderRef);

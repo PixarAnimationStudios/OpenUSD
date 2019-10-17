@@ -23,17 +23,13 @@
 //
 #include "instancerWrapper.h"
 
-#include "gusd/context.h"
-#include "gusd/GU_PackedUSD.h"
-#include "gusd/UT_Gf.h"
-#include "gusd/refiner.h"
+#include "context.h"
+#include "GT_PrimCache.h"
+#include "GU_PackedUSD.h"
+#include "refiner.h"
+#include "USD_XformCache.h"
+#include "UT_Gf.h"
 
-
-#include "gusd/GT_PrimCache.h"
-#include "gusd/USD_XformCache.h"
-
-#include <GT/GT_DAConstantValue.h>
-#include <GT/GT_DAIndexedString.h>
 #include <GT/GT_DANumeric.h>
 #include <GT/GT_GEODetail.h>
 #include <GT/GT_PrimInstance.h>
@@ -44,19 +40,15 @@
 #include <OBJ/OBJ_Node.h>
 #include <OP/OP_Director.h>
 #include <SOP/SOP_Node.h>
+#include <SYS/SYS_Version.h>
 #include <UT/UT_Assert.h>
 #include <UT/UT_Matrix3.h>
 #include <UT/UT_Matrix4.h>
 #include <UT/UT_Quaternion.h>
 #include <UT/UT_StringArray.h>
-#include <SYS/SYS_Version.h>
 
-#include "pxr/usd/usdGeom/xformCache.h"
-#include "pxr/usd/sdf/cleanupEnabler.h"
-
-#include <pxr/base/gf/quatf.h>
-#include <pxr/base/gf/transform.h>
-#include <pxr/base/tf/pathUtils.h>
+#include "pxr/base/gf/quatf.h"
+#include "pxr/base/tf/pathUtils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -372,7 +364,7 @@ void GusdInstancerWrapper::storePreOverlayData(bool justProtoIndices,
     
     // For time samples where we have prototype indices, store data.
     for (int i = 0; i < times.size(); i++) {
-        for (TfToken token : m_usdGeomTokens) {
+        for (const TfToken& token : m_usdGeomTokens) {
             if (!m_preOverlayDataMap.count(token))
                 continue;
             boost::apply_visitor(StoreAtTime(UsdTimeCode(times[i])), m_preOverlayDataMap[token]);
@@ -382,7 +374,7 @@ void GusdInstancerWrapper::storePreOverlayData(bool justProtoIndices,
 }
 void GusdInstancerWrapper::clearPreOverlayData() {
     // Clears original data so we don't have to store unnecessary information.
-    for (TfToken token : m_usdGeomTokens){
+    for (const TfToken& token : m_usdGeomTokens){
         if (!m_preOverlayDataMap.count(token))
             continue;
         boost::apply_visitor(ClearData{}, m_preOverlayDataMap[token]);
@@ -1171,13 +1163,13 @@ void GusdInstancerWrapper::setTransformAttrsFromMatrices(const UT_Matrix4D &worl
 {
     // Create a map from TfToken to UsdAttribute for each one we want to set.
     std::map<TfToken, UsdAttribute> usdAttrMap;
-    for (auto token : m_usdGeomTokens) {
+    for (const auto& token : m_usdGeomTokens) {
         if (token != UsdGeomTokens->protoIndices) {
             usdAttrMap[token] =
                 m_usdPointInstancer.GetPrim().GetAttribute(token);
             if(!usdAttrMap[token].IsValid()) {
                 TF_WARN( "Missing '%s' attribute from point instancer. "
-                    "Failed to update attributes.", token.GetString().c_str());
+                         "Failed to update attributes.", token.GetText() );
                 return;
             }
         }
@@ -1389,7 +1381,7 @@ void GusdInstancerWrapper::setTransformAttrsFromMatrices(const UT_Matrix4D &worl
     }
 
     // Set all the attributes' data.
-    for (auto pair : houHandlesMap)
+    for (const auto& pair : houHandlesMap)
         GusdGT_Utils::setUsdAttribute(usdAttrMap[pair.first], pair.second, time);
 }
 
@@ -1459,7 +1451,7 @@ refine( GT_Refine& refiner,
                 continue;
             }
 
-            UT_Matrix4D m = GusdUT_Gf::Cast( frames[i] );
+            const UT_Matrix4D& m = GusdUT_Gf::Cast( frames[i] );
             transforms->append( new GT_Transform( &m, 1 ) );
         }
         if( transforms->entries() > 0 ) {
@@ -1589,13 +1581,12 @@ GusdInstancerWrapper::unpack(
                 continue;
             }
 
-            if( storage == GT_STORE_REAL16 ||
-                storage == GT_STORE_REAL32 ||
-                storage == GT_STORE_REAL64 ) {
+            if(GTisFloat(storage)) {
 
                 GA_RWAttributeRef attr = 
-                    gdr.addFloatTuple( GA_ATTRIB_POINT, 
-                                       primvar.GetBaseName().GetString().c_str(), 
+                    gdr.addFloatTuple( GA_ATTRIB_POINT,
+                                       GusdUSD_Utils::TokenToStringHolder(
+                                           primvar.GetBaseName()),
                                        pvData->getTupleSize(),
                                        GA_Defaults(0.0),
                                        /* creation_args */0,
@@ -1624,13 +1615,12 @@ GusdInstancerWrapper::unpack(
                     }
                 }
             }
-            else if( storage == GT_STORE_UINT8 ||
-                     storage == GT_STORE_INT32 ||
-                     storage == GT_STORE_INT64 ) {
+            else if(GTisInteger(storage)) {
 
                 GA_RWAttributeRef attr = 
                     gdr.addIntTuple( GA_ATTRIB_POINT, 
-                                     primvar.GetBaseName().GetString().c_str(), 
+                                     GusdUSD_Utils::TokenToStringHolder(
+                                         primvar.GetBaseName()),
                                      pvData->getTupleSize(),
                                      GA_Defaults(0.0),
                                      /* creation_args */0,

@@ -39,7 +39,7 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
-#include "pxr/imaging/glf/glslfx.h"
+#include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -126,7 +126,7 @@ std::string
 _GetPtexTextureShaderSource()
 {
     static std::string source =
-        GlfGLSLFX(HdStPackagePtexTextureShader()).GetSource(
+        HioGlslfx(HdStPackagePtexTextureShader()).GetSource(
             _tokens->ptexTextureSampler);
     return source;
 }
@@ -664,7 +664,7 @@ HdSt_CodeGen::Compile()
     // prep interstage plumbing function
     _procVS  << "void ProcessPrimvars() {\n";
     _procTCS << "void ProcessPrimvars() {\n";
-    _procTES << "void ProcessPrimvars(float u, float v, int i0, int i1, int i2, int i3) {\n";
+    _procTES << "void ProcessPrimvars(vec4 basis, int i0, int i1, int i2, int i3) {\n";
     // geometry shader plumbing
     switch(_geometricShader->GetPrimitiveType())
     {
@@ -1404,7 +1404,7 @@ static void _EmitFVarGSAccessor(
 
             TF_CODING_ERROR("Face varing bindings for unexpected for" 
                             " HdSt_GeometricShader::PrimitiveType %d", 
-                            primType);
+                            (int)primType);
         }
     }
 
@@ -1695,7 +1695,7 @@ HdSt_CodeGen::_GenerateConstantPrimvar()
           mat4 transform;
           mat4 transformInverse;
           mat4 instancerTransform[2];
-          vec4 color;
+          vec3 displayColor;
           vec4 primID;
       };
       // bindless
@@ -1709,8 +1709,8 @@ HdSt_CodeGen::_GenerateConstantPrimvar()
       mat4 HdGet_transform(int localIndex) {
           return constantData0[GetConstantCoord()].transform;
       }
-      vec4 HdGet_color(int localIndex) {
-          return constantData0[GetConstantCoord()].color;
+      vec3 HdGet_displayColor(int localIndex) {
+          return constantData0[GetConstantCoord()].displayColor;
       }
 
     */
@@ -1831,6 +1831,35 @@ HdSt_CodeGen::_GenerateInstancePrimvar()
         accessors << "  return defaultValue;\n"
                   << "}\n";
     }
+    /*
+      common accessor, if the primvar is defined on the instancer but not
+      the rprim.
+
+      #if !defined(HD_HAS_translate)
+      #define HD_HAS_translate 1
+      vec3 HdGet_translate(int localIndex) {
+          // 0 is the lowest level for which this is defined
+          return HdGet_translate_0();
+      }
+      vec3 HdGet_translate() {
+          return HdGet_translate(0);
+      }
+      #endif
+    */
+    TF_FOR_ALL (it, nameAndLevels) {
+        accessors << "#if !defined(HD_HAS_" << it->first << ")\n"
+                  << "#define HD_HAS_" << it->first << " 1\n"
+                  << _GetUnpackedType(it->second.dataType, false)
+                  << " HdGet_" << it->first << "(int localIndex) {\n"
+                  << "  return HdGet_" << it->first << "_"
+                                       << it->second.levels.front() << "();\n"
+                  << "}\n"
+                  << _GetUnpackedType(it->second.dataType, false)
+                  << " HdGet_" << it->first << "() { return HdGet_"
+                  << it->first << "(0); }\n"
+                  << "#endif\n";
+    }
+        
 
     _genCommon << declarations.str()
                << accessors.str();
@@ -1886,15 +1915,15 @@ HdSt_CodeGen::_GenerateElementPrimvar()
 
       // --------- uniform primvar declaration ---------
       struct ElementData0 {
-          vec4 color;
+          vec3 displayColor;
       };
       layout (std430, binding=?) buffer buffer0 {
           ElementData0 elementData0[];
       };
 
       // ---------uniform primvar data accessor ---------
-      vec4 HdGet_color(int localIndex) {
-          return elementData0[GetAggregatedElementID()].color;
+      vec3 HdGet_displayColor(int localIndex) {
+          return elementData0[GetAggregatedElementID()].displayColor;
       }
 
     */
@@ -2071,7 +2100,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
                 {
                     TF_CODING_ERROR("HdSt_GeometricShader::PrimitiveType %d is "
                       "unexpected in _GenerateElementPrimvar().",
-                      _geometricShader->GetPrimitiveType());
+                      (int)_geometricShader->GetPrimitiveType());
                 }
             }
 
@@ -2112,7 +2141,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
         else {
             TF_CODING_ERROR("HdSt_GeometricShader::PrimitiveType %d is "
                   "unexpected in _GenerateElementPrimvar().",
-                  _geometricShader->GetPrimitiveType());
+                  (int)_geometricShader->GetPrimitiveType());
         }
     } else {
         // no primitiveParamBinding
@@ -2346,13 +2375,12 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS)
                 << " = " << name << ";\n";
         _procTCS << "  outPrimvars[gl_InvocationID]." << name
                  << " = inPrimvars[gl_InvocationID]." << name << ";\n";
-        // procTES linearly interpolate vertex/varying primvars here.
-        // XXX: needs smooth interpolation for vertex primvars?
-        _procTES << "  outPrimvars." << name
-                 << " = mix(mix(inPrimvars[i3]." << name
-                 << "         , inPrimvars[i2]." << name << ", u),"
-                 << "       mix(inPrimvars[i1]." << name
-                 << "         , inPrimvars[i0]." << name << ", u), v);\n";
+       _procTES << "  outPrimvars." << name
+                 << " = basis[0] * inPrimvars[i0]." << name
+                 << " + basis[1] * inPrimvars[i1]." << name
+                 << " + basis[2] * inPrimvars[i2]." << name
+                 << " + basis[3] * inPrimvars[i3]." << name << ";\n";
+
         _procGS  << "  outPrimvars." << name
                  << " = inPrimvars[index]." << name << ";\n";
     }
@@ -2431,43 +2459,45 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS)
         }
     }
 
-    _genVS  << vertexInputs.str()
-            << "out Primvars {\n"
-            << interstageVertexData.str()
-            << "} outPrimvars;\n"
-            << accessorsVS.str();
+    if (!interstageVertexData.str().empty()) {
+        _genVS  << vertexInputs.str()
+                << "out Primvars {\n"
+                << interstageVertexData.str()
+                << "} outPrimvars;\n"
+                << accessorsVS.str();
 
-    _genTCS << "in Primvars {\n"
-            << interstageVertexData.str()
-            << "} inPrimvars[gl_MaxPatchVertices];\n"
-            << "out Primvars {\n"
-            << interstageVertexData.str()
-            << "} outPrimvars[HD_NUM_PATCH_VERTS];\n"
-            << accessorsTCS.str();
+        _genTCS << "in Primvars {\n"
+                << interstageVertexData.str()
+                << "} inPrimvars[gl_MaxPatchVertices];\n"
+                << "out Primvars {\n"
+                << interstageVertexData.str()
+                << "} outPrimvars[HD_NUM_PATCH_VERTS];\n"
+                << accessorsTCS.str();
 
-    _genTES << "in Primvars {\n"
-            << interstageVertexData.str()
-            << "} inPrimvars[gl_MaxPatchVertices];\n"
-            << "out Primvars {\n"
-            << interstageVertexData.str()
-            << "} outPrimvars;\n"
-            << accessorsTES.str();
+        _genTES << "in Primvars {\n"
+                << interstageVertexData.str()
+                << "} inPrimvars[gl_MaxPatchVertices];\n"
+                << "out Primvars {\n"
+                << interstageVertexData.str()
+                << "} outPrimvars;\n"
+                << accessorsTES.str();
 
-    _genGS  << fvarDeclarations.str()
-            << "in Primvars {\n"
-            << interstageVertexData.str()
-            << "} inPrimvars[HD_NUM_PRIMITIVE_VERTS];\n"
-            << "out Primvars {\n"
-            << interstageVertexData.str()
-            << interstageFVarData.str()
-            << "} outPrimvars;\n"
-            << accessorsGS.str();
+        _genGS  << fvarDeclarations.str()
+                << "in Primvars {\n"
+                << interstageVertexData.str()
+                << "} inPrimvars[HD_NUM_PRIMITIVE_VERTS];\n"
+                << "out Primvars {\n"
+                << interstageVertexData.str()
+                << interstageFVarData.str()
+                << "} outPrimvars;\n"
+                << accessorsGS.str();
 
-    _genFS  << "in Primvars {\n"
-            << interstageVertexData.str()
-            << interstageFVarData.str()
-            << "} inPrimvars;\n"
-            << accessorsFS.str();
+        _genFS  << "in Primvars {\n"
+                << interstageVertexData.str()
+                << interstageFVarData.str()
+                << "} inPrimvars;\n"
+                << accessorsFS.str();
+    }
 
     // ---------
     _genFS << "vec4 GetPatchCoord(int index);\n";

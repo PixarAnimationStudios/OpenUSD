@@ -71,15 +71,7 @@ class TestSdfBatchNamespaceEdit(unittest.TestCase):
         #
         # Try things that work.
         #
-
-        # hasObject() must succeed when path is a target.  Sd does not have a
-        # relationship target object.
         def Has(layer, path):
-            if path.IsTargetPath():
-                x = layer.GetObjectAtPath(path.GetParentPath())
-                if x:
-                    return x.targetAttributes[path.targetPath].IsValid()
-                return False
             return bool(layer.GetObjectAtPath(path))
 
         # Try everything.
@@ -105,11 +97,7 @@ class TestSdfBatchNamespaceEdit(unittest.TestCase):
         edit.Add('/P.i', '/Q.h')            # Prim property reparent/rename
         edit.Add('/P.x', Sdf.Path.emptyPath)# Prim property remove
 
-        edit.Add('/P.j[/S.j].n', '/P.k[/P.j].n')    # Reparent relational attribute
         edit.Add('/S', '/T')                        # Rename prim used in targets
-        edit.Add('/P.j[/T.j].m', '/P.j[/T.j].o')    # Rename relational attribute
-        edit.Add('/P.k[/P.j].n', '/P.k[/P.j].o')    # Rename relational attribute
-        edit.Add('/P.j[/T.j].p', Sdf.Path.emptyPath)# Remove relational attribute
 
         edit.Add('/V{v=one}U', '/V{v=two}W/U')      # Variant prim reparent/rename
         edit.Add('/V{v=two}W', Sdf.Path.emptyPath)  # Variant prim remove
@@ -188,11 +176,6 @@ class TestSdfBatchNamespaceEdit(unittest.TestCase):
         CheckFail(edit.Process(hasObject, canEdit), "Path type mismatch")
 
         edit = Sdf.BatchNamespaceEdit()
-        edit.Add('/S', '/T')                    # Edit rel attr on edited target
-        edit.Add('/P.j[/T.j].m', '/P.j[/T.j].o')
-        CheckFail(edit.Process(hasObject, canEdit, False), "Using an edited target")
-
-        edit = Sdf.BatchNamespaceEdit()
         edit.Add('/C', '/D')                    # hasObject fails.
         CheckFail(edit.Process(lambda p: False, canEdit), "hasObject === False")
 
@@ -221,11 +204,6 @@ class TestSdfBatchNamespaceEdit(unittest.TestCase):
         edit.Add('/P.h', '/Q/R.h')
         edit.Add('/P.i', '/Q.h')            # Prim property reparent/rename
         edit.Add('/P.x', Sdf.Path.emptyPath)# Prim property remove
-
-        edit.Add('/P.j[/S.j].n', '/P.k[/P.j].n')    # Reparent relational attribute
-        edit.Add('/P.j[/S.j].m', '/P.j[/S.j].o')    # Rename relational attribute
-        edit.Add('/P.k[/P.j].n', '/P.k[/P.j].o')    # Rename relational attribute
-        edit.Add('/P.j[/S.j].p', Sdf.Path.emptyPath)# Remove relational attribute
 
         edit.Add('/V{v=one}U', '/V{v=two}W/U')      # Variant prim reparent/rename
         edit.Add('/V{v=two}W', Sdf.Path.emptyPath)  # Variant prim remove

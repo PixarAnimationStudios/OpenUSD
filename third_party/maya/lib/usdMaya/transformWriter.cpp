@@ -58,30 +58,6 @@ PXRUSDMAYA_REGISTER_WRITER(transform, UsdMayaTransformWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(transform, UsdGeomXform);
 
 
-template <typename GfVec3_T>
-static
-void
-_setXformOp(
-        const UsdGeomXformOp& op,
-        const GfVec3_T& value,
-        const UsdTimeCode& usdTime,
-        UsdUtilsSparseValueWriter* valueWriter)
-{
-    switch(op.GetOpType()) {
-        case UsdGeomXformOp::TypeRotateX:
-            valueWriter->SetAttribute(op.GetAttr(), VtValue(value[0]), usdTime);
-            break;
-        case UsdGeomXformOp::TypeRotateY:
-            valueWriter->SetAttribute(op.GetAttr(), VtValue(value[1]), usdTime);
-            break;
-        case UsdGeomXformOp::TypeRotateZ:
-            valueWriter->SetAttribute(op.GetAttr(), VtValue(value[2]), usdTime);
-            break;
-        default:
-            valueWriter->SetAttribute(op.GetAttr(), VtValue(value), usdTime);
-    }
-}
-
 // Given an Op, value and time, set the Op value based on op type and precision
 static
 void
@@ -105,13 +81,15 @@ setXformOp(
         return;
     }
 
+    VtValue vtValue;
     if (UsdGeomXformOp::GetPrecisionFromValueTypeName(op.GetAttr().GetTypeName())
             == UsdGeomXformOp::PrecisionDouble) {
-        _setXformOp<GfVec3d>(op, value, usdTime, valueWriter);
+        vtValue = VtValue(value);
     }
     else { // float precision
-        _setXformOp<GfVec3f>(op, GfVec3f(value), usdTime, valueWriter);
+        vtValue = VtValue(GfVec3f(value));
     }
+    valueWriter->SetAttribute(op.GetAttr(), vtValue, usdTime);
 }
 
 /* static */
@@ -220,7 +198,7 @@ UsdMayaTransformWriter::_GatherAnimChannel(
     // shear to double)
     chan.precision = UsdGeomXformOp::PrecisionFloat;
 
-    unsigned int validComponents = 0;
+    bool hasValidComponents = false;
 
     // this is to handle the case where there is a connection to the parent
     // plug but not to the child plugs, if the connection is there and you are
@@ -248,17 +226,16 @@ UsdMayaTransformWriter::_GatherAnimChannel(
         if ((parentSample != 0 || UsdMayaUtil::getSampledType(chan.plug[i], true) != 0) &&
              isWritingAnimation) {
             chan.sampleType[i] = _SampleType::Animated;
-            validComponents++;
+            hasValidComponents = true;
         }
         else if (!GfIsClose(chan.defValue[i], nullValue[i], 1e-7)) {
             chan.sampleType[i] = _SampleType::Static;
-            validComponents++;
+            hasValidComponents = true;
         }
     }
 
     // If there are valid component, then we will add the animation channel.
-    // Rotates with 1 component will be optimized to single axis rotation
-    if (validComponents>0) {
+    if (hasValidComponents) {
         if (opType == _XformType::Scale) {
             chan.usdOpType = UsdGeomXformOp::TypeScale;
         } else if (opType == _XformType::Translate) {
@@ -269,38 +246,26 @@ UsdMayaTransformWriter::_GatherAnimChannel(
             }
         } else if (opType == _XformType::Rotate) {
             chan.usdOpType = UsdGeomXformOp::TypeRotateXYZ;
-            if (validComponents == 1) {
-                if (chan.sampleType[0] != _SampleType::None) {
-                    chan.usdOpType = UsdGeomXformOp::TypeRotateX;
-                }
-                if (chan.sampleType[1] != _SampleType::None) {
-                    chan.usdOpType = UsdGeomXformOp::TypeRotateY;
-                }
-                if (chan.sampleType[2] != _SampleType::None) {
-                    chan.usdOpType = UsdGeomXformOp::TypeRotateZ;
-                }
-            }
-            else {
-                // Rotation Order ONLY applies to the "rotate" attribute
-                if (parentName == UsdMayaXformStackTokens->rotate) {
-                    switch (iTrans.rotationOrder()) {
-                        case MTransformationMatrix::kYZX:
-                            chan.usdOpType = UsdGeomXformOp::TypeRotateYZX;
+            // Rotation Order ONLY applies to the "rotate" attribute
+            if (parentName == UsdMayaXformStackTokens->rotate) {
+                switch (iTrans.rotationOrder()) {
+                    case MTransformationMatrix::kYZX:
+                        chan.usdOpType = UsdGeomXformOp::TypeRotateYZX;
                         break;
-                        case MTransformationMatrix::kZXY:
-                            chan.usdOpType = UsdGeomXformOp::TypeRotateZXY;
+                    case MTransformationMatrix::kZXY:
+                        chan.usdOpType = UsdGeomXformOp::TypeRotateZXY;
                         break;
-                        case MTransformationMatrix::kXZY:
-                            chan.usdOpType = UsdGeomXformOp::TypeRotateXZY;
+                    case MTransformationMatrix::kXZY:
+                        chan.usdOpType = UsdGeomXformOp::TypeRotateXZY;
                         break;
-                        case MTransformationMatrix::kYXZ:
-                            chan.usdOpType = UsdGeomXformOp::TypeRotateYXZ;
+                    case MTransformationMatrix::kYXZ:
+                        chan.usdOpType = UsdGeomXformOp::TypeRotateYXZ;
                         break;
-                        case MTransformationMatrix::kZYX:
-                            chan.usdOpType = UsdGeomXformOp::TypeRotateZYX;
+                    case MTransformationMatrix::kZYX:
+                        chan.usdOpType = UsdGeomXformOp::TypeRotateZYX;
                         break;
-                        default: break;
-                    }
+                    default:
+                        break;
                 }
             }
         }

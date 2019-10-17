@@ -60,18 +60,29 @@ public:
     USDSKEL_API
     UsdSkelSkinningQuery(const UsdPrim& prim,
                          const VtTokenArray& skelJointOrder,
+                         const VtTokenArray& blendShapeOrder,
                          const UsdAttribute& jointIndices,
                          const UsdAttribute& jointWeights,
                          const UsdAttribute& geomBindTransform,
-                         const UsdAttribute& joints);
+                         const UsdAttribute& joints,
+                         const UsdAttribute& blendShapes,
+                         const UsdRelationship& blendShapeTargets);
 
     /// Returns true if this query is valid.
-    bool IsValid() const { return _valid; }
+    bool IsValid() const { return bool(_prim); }
     
-    /// Boolena conversion operator. Equivalent to IsValid().
+    /// Boolean conversion operator. Equivalent to IsValid().
     explicit operator bool() const { return IsValid(); }
 
     const UsdPrim& GetPrim() const { return _prim; }
+
+    /// Returns true if there are blend shapes associated with this prim.    
+    USDSKEL_API
+    bool HasBlendShapes() const;
+
+    /// Returns true if joint influence data is associated with this prim.
+    USDSKEL_API
+    bool HasJointInfluences() const;
 
     /// Returns the number of influences encoded for each component.
     /// If the prim defines rigid joint influences, then this returns
@@ -101,15 +112,45 @@ public:
         return _jointWeightsPrimvar;
     }
 
-    /// Return the mapper for this target, if any.
-    /// This corresponds to the mapping of the joint order from
-    /// the ordering on the skeleton to the order of a custom
-    /// \em skel:joints relationships, set inside the hierarchy.
-    const UsdSkelAnimMapperRefPtr& GetMapper() const { return _mapper; }
+    const UsdAttribute& GetBlendShapesAttr() const {
+        return _blendShapes;
+    }
+
+    const UsdRelationship& GetBlendShapeTargetsRel() const {
+        return _blendShapeTargets;
+    }
+
+    /// Return a mapper for remapping from the joint order of the skeleton
+    /// to the local joint order of this prim, if any. Returns a null
+    /// pointer if the prim has no custom joint orer.
+    /// The mapper maps data from the order given by the \em joints order
+    /// on the Skeleton to the order given by the \em skel:joints property,
+    /// as optionally set through the UsdSkelBindingAPI.
+    const UsdSkelAnimMapperRefPtr& GetJointMapper() const {
+        return _jointMapper;
+    }
+
+    /// \deprecated Use GetJointMapper.
+    const UsdSkelAnimMapperRefPtr& GetMapper() const { return _jointMapper; }
+
+
+    /// Return the mapper for remapping blend shapes from the order of the
+    /// bound SkelAnimation to the local blend shape order of this prim.
+    /// Returns a null reference if the underlying prim has no blend shapes.
+    /// The mapper maps data from the order given by the \em blendShapes order
+    /// on the SkelAnimation to the order given by the \em skel:blendShapes
+    /// property, as set through the UsdSkelBindingAPI.
+    const UsdSkelAnimMapperRefPtr& GetBlendShapeMapper() const {
+        return _blendShapeMapper;
+    }
 
     /// Get the custom joint order for this skinning site, if any.
     USDSKEL_API
     bool GetJointOrder(VtTokenArray* jointOrder) const;
+
+    /// Get the blend shapes for this skinning site, if any.
+    USDSKEL_API
+    bool GetBlendShapeOrder(VtTokenArray* blendShapes) const;
 
     /// Populate \p times with the union of time samples for all properties
     /// that affect skinning, independent of joint transforms and any
@@ -156,8 +197,9 @@ public:
     /// at time \p time (which will typically be unvarying).
     ///
     /// \sa UsdSkelSkeletonQuery::ComputeSkinningTransforms
+    template <typename Matrix4>
     USDSKEL_API
-    bool ComputeSkinnedPoints(const VtMatrix4dArray& xforms,
+    bool ComputeSkinnedPoints(const VtArray<Matrix4>& xforms,
                               VtVec3fArray* points,
                               UsdTimeCode time=UsdTimeCode::Default()) const;
 
@@ -170,9 +212,10 @@ public:
     /// no transform will be computed, and the function will return false.
     ///
     /// \sa UsdSkelSkeletonQuery::ComputeSkinningTransforms
+    template <typename Matrix4>
     USDSKEL_API
-    bool ComputeSkinnedTransform(const VtMatrix4dArray& xforms,
-                                 GfMatrix4d* xform,
+    bool ComputeSkinnedTransform(const VtArray<Matrix4>& xforms,
+                                 Matrix4* xform,
                                  UsdTimeCode time=UsdTimeCode::Default()) const;
 
     /// Helper for computing an *approximate* padding for use in extents
@@ -181,8 +224,9 @@ public:
     /// at rest -- and the extents of the skinned primitive.
     /// This is intended to provide a suitable, constant metric for padding
     /// joint extents as computed by UsdSkelComputeJointsExtent.
+    template <typename Matrix4>
     USDSKEL_API
-    float ComputeExtentsPadding(const VtMatrix4dArray& skelRestXforms,
+    float ComputeExtentsPadding(const VtArray<Matrix4>& skelRestXforms,
                                 const UsdGeomBoundable& boundable) const;
 
     USDSKEL_API
@@ -193,16 +237,29 @@ public:
     std::string GetDescription() const;
 
 private:
+
+    void _InitializeJointInfluenceBindings(
+             const UsdAttribute& jointIndices,
+             const UsdAttribute& jointWeights);
+
+    void _InitializeBlendShapeBindings(
+             const UsdAttribute& blendShapes,
+             const UsdRelationship& blendShapeTargets);
+
     UsdPrim _prim;
-    bool _valid;
-    int _numInfluencesPerComponent;
+    int _numInfluencesPerComponent = 1;
+    int _flags = 0;
     TfToken _interpolation;
 
     UsdGeomPrimvar _jointIndicesPrimvar;
     UsdGeomPrimvar _jointWeightsPrimvar;
     UsdAttribute _geomBindTransformAttr;
-    UsdSkelAnimMapperRefPtr _mapper;
+    UsdAttribute _blendShapes;
+    UsdRelationship _blendShapeTargets;
+    UsdSkelAnimMapperRefPtr _jointMapper;
+    UsdSkelAnimMapperRefPtr _blendShapeMapper;
     boost::optional<VtTokenArray> _jointOrder;
+    boost::optional<VtTokenArray> _blendShapeOrder;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

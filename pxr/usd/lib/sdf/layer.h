@@ -31,7 +31,6 @@
 #include "pxr/usd/sdf/data.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/identity.h"
-#include "pxr/usd/sdf/layerBase.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/namespaceEdit.h"
 #include "pxr/usd/sdf/path.h"
@@ -44,6 +43,7 @@
 
 #include <boost/optional.hpp>
 
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <set>
@@ -90,20 +90,37 @@ struct Sdf_AssetInfo;
 /// \todo
 /// \li Should have validate... methods for rootPrims
 ///
-class SdfLayer : public SdfLayerBase
+class SdfLayer 
+    : public TfRefBase
+    , public TfWeakBase
 {
-    typedef SdfLayerBase Parent;
-    typedef SdfLayer This;
 public:
-    /// Destructor.
+    /// Destructor
     SDF_API
     virtual ~SdfLayer(); 
+
+    /// Noncopyable
+    SdfLayer(const SdfLayer&) = delete;
+    SdfLayer& operator=(const SdfLayer&) = delete;
 
     ///
     /// \name Primary API
     /// @{
 
-    using SdfLayerBase::FileFormatArguments;
+    /// Returns the schema this layer adheres to. This schema provides details
+    /// about the scene description that may be authored in this layer.
+    SDF_API const SdfSchemaBase& GetSchema() const;
+
+    /// Returns the file format used by this layer.
+    SDF_API const SdfFileFormatConstPtr& GetFileFormat() const;
+
+    /// Type for specifying additional file format-specific arguments to
+    /// layer API.
+    typedef std::map<std::string, std::string> FileFormatArguments;
+
+    /// Returns the file format-specific arguments used during the construction
+    /// of this layer.
+    SDF_API const FileFormatArguments& GetFileFormatArguments() const;
 
     /// Creates a new empty layer with the given identifier.
     ///
@@ -202,10 +219,6 @@ public:
         bool metadataOnly = false,
         const std::string& tag = std::string());
 
-    /// Returns the scene description schema for this layer.
-    SDF_API
-    virtual const SdfSchemaBase& GetSchema() const;
-
     /// Returns the data from the absolute root path of this layer.
     SDF_API
     SdfDataRefPtr GetMetadata() const;
@@ -226,20 +239,27 @@ public:
     /// Creates a new \e anonymous layer with an optional \p tag. An anonymous
     /// layer is a layer with a system assigned identifier, that cannot be
     /// saved to disk via Save(). Anonymous layers have an identifier, but no
-    /// repository, overlay, real path, or other asset information fields.
+    /// real path or other asset information fields.
+    ///
     /// Anonymous layers may be tagged, which can be done to aid debugging
     /// subsystems that make use of anonymous layers.  The tag becomes the
     /// display name of an anonymous layer, and is also included in the
     /// generated identifier. Untagged anonymous layers have an empty display
     /// name.
+    ///
+    /// Additional arguments may be supplied via the \p args parameter.
+    /// These arguments may control behavior specific to the layer's
+    /// file format.
     SDF_API
     static SdfLayerRefPtr CreateAnonymous(
-        const std::string& tag = std::string());
+        const std::string& tag = std::string(),
+        const FileFormatArguments& args = FileFormatArguments());
 
     /// Create an anonymous layer with a specific \p format.
     SDF_API
     static SdfLayerRefPtr CreateAnonymous(
-        const std::string &tag, const SdfFileFormatConstPtr &format);
+        const std::string &tag, const SdfFileFormatConstPtr &format,
+        const FileFormatArguments& args = FileFormatArguments());
 
     /// Returns true if this layer is an anonymous layer.
     SDF_API
@@ -718,7 +738,7 @@ public:
     /// Callback function for Traverse. This callback will be invoked with
     /// the path of each spec that is visited.
     /// \sa Traverse
-    typedef boost::function<void(const SdfPath&)> TraversalFunction;
+    typedef std::function<void(const SdfPath&)> TraversalFunction;
 
     // Traverse will perform a traversal of the scene description hierarchy
     // rooted at \a path, calling \a func on each spec that it finds.
@@ -1408,17 +1428,14 @@ public:
     // @}
 
 protected:
-    static SdfLayerRefPtr _CreateAnonymousWithFormat(
-        const SdfFileFormatConstPtr &fileFormat,
-        const std::string& tag = std::string());
-
     // Private constructor -- use New(), FindOrCreate(), etc.
     // Precondition: _layerRegistryMutex must be locked.
     SdfLayer(const SdfFileFormatConstPtr& fileFormat,
              const std::string &identifier,
              const std::string &realPath = std::string(),
              const ArAssetInfo& assetInfo = ArAssetInfo(),
-             const FileFormatArguments &args = FileFormatArguments());
+             const FileFormatArguments &args = FileFormatArguments(),
+             bool validateAuthoring = false);
 
 private:
     // Create a new layer.
@@ -1436,6 +1453,11 @@ private:
         const std::string& realPath,
         const ArAssetInfo& assetInfo = ArAssetInfo(),
         const FileFormatArguments& args = FileFormatArguments());
+
+    static SdfLayerRefPtr _CreateAnonymousWithFormat(
+        const SdfFileFormatConstPtr &fileFormat,
+        const std::string& tag,
+        const FileFormatArguments& args);
 
     // Finish initializing this layer (which may have succeeded or not)
     // and publish the results to other threads by unlocking the mutex.
@@ -1555,6 +1577,9 @@ private:
     /// If \p prim is inert (has no affect on the scene), removes prim, then 
     /// prunes inert parent prims back to the root.
     void _RemoveInertToRootmost(SdfPrimSpecHandle prim);
+
+    /// Returns whether this layer is validating authoring operations.
+    bool _ValidateAuthoring() const { return _validateAuthoring; }
 
     /// Returns the path used in the muted layers set.
     std::string _GetMutedPath() const;
@@ -1698,6 +1723,10 @@ private:
     void _TraverseChildren(const SdfPath &path, const TraversalFunction &func);
 
 private:
+    // File format and arguments for this layer.
+    SdfFileFormatConstPtr _fileFormat;
+    FileFormatArguments _fileFormatArgs;
+
     // Registry of Sdf Identities
     mutable Sdf_IdentityRegistry _idRegistry;
 
@@ -1740,9 +1769,13 @@ private:
     bool _permissionToEdit;
     bool _permissionToSave;
 
-    // Allow access to _FindLayerForData() and _IsInert().
+    // Whether layer edits are validated.
+    bool _validateAuthoring;
+
+    // Allow access to _ValidateAuthoring() and _IsInert().
     friend class SdfSpec;
     friend class SdfPropertySpec;
+    friend class SdfAttributeSpec;
 
     friend class Sdf_ChangeManager;
 
@@ -1757,9 +1790,6 @@ private:
     // Give layer state delegates access to our data as well as to
     // the various _Prim functions.
     friend class SdfLayerStateDelegateBase;
-
-    // Give SdSpec access to _MoveSpec
-    friend class SdSpec;
 };
 
 // Inlined implementations for convenience field and time sample API.

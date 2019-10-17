@@ -1,0 +1,62 @@
+#usda 1.0
+(
+    defaultPrim = "Cameras"
+    upAxis = "Z"
+)
+
+def Xform "Cameras" (
+    assetInfo = {
+        asset identifier = @./Cameras.usda@
+        string name = "Cameras"
+    }
+    kind = "component"
+)
+{
+    def Camera "MainCamera"
+    {
+        float2 clippingRange = (0.1, 10000)
+        float focalLength = 35
+        float focusDistance = 5
+        float fStop = 5.6
+        float horizontalAperture = 36
+        float verticalAperture = 24
+        float3 xformOp:rotateXYZ = (60, 0, 45)
+        double3 xformOp:translate = (5, -5, 5)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    def Xform "Deeply"
+    {
+        def Xform "Nested"
+        {
+            def Camera "CameraB"
+            {
+                float2 clippingRange = (0.1, 10000)
+                float focalLength = 35
+                float focusDistance = 5
+                float fStop = 5.6
+                float horizontalAperture = 36
+                float verticalAperture = 24
+                float3 xformOp:rotateXYZ = (60, 0, 45)
+                double3 xformOp:translate = (5, -5, 5)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+            }
+        }
+    }
+}
+
+def Xform "OtherScope"
+{
+    def Camera "OtherCamera"
+    {
+        float2 clippingRange = (0.1, 10000)
+        float focalLength = 35
+        float focusDistance = 5
+        float fStop = 5.6
+        float horizontalAperture = 36
+        float verticalAperture = 24
+        float3 xformOp:rotateXYZ = (60, 0, 45)
+        double3 xformOp:translate = (5, -5, 5)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+}

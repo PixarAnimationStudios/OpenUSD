@@ -35,6 +35,8 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/debug.h"
+#include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/usd/sdf/path.h"
@@ -45,10 +47,14 @@
 #include <maya/MDagPath.h>
 #include <maya/MDrawData.h>
 #include <maya/MDrawRequest.h>
+#include <maya/MFnDependencyNode.h>
 #include <maya/MFrameContext.h>
 #include <maya/MHWGeometryUtilities.h>
+#include <maya/MObject.h>
 #include <maya/MPxSurfaceShapeUI.h>
 #include <maya/MSelectionList.h>
+#include <maya/MStatus.h>
+#include <maya/MUuid.h>
 #include <maya/MUserData.h>
 
 
@@ -373,6 +379,14 @@ PxrMayaHdShapeAdapter::GetRprimCollection() const
 }
 
 /* virtual */
+const TfTokenVector&
+PxrMayaHdShapeAdapter::GetRenderTags() const
+{
+    return _renderTags;
+}
+
+
+/* virtual */
 const GfMatrix4d&
 PxrMayaHdShapeAdapter::GetRootXform() const
 {
@@ -405,6 +419,21 @@ bool
 PxrMayaHdShapeAdapter::IsViewport2() const
 {
     return _isViewport2;
+}
+
+/* virtual */
+TfToken
+PxrMayaHdShapeAdapter::_GetRprimCollectionName() const
+{
+    MStatus status;
+    const MObject shapeObj = _shapeDagPath.node(&status);
+    CHECK_MSTATUS_AND_RETURN(status, TfToken());
+    const MFnDependencyNode depNodeFn(shapeObj, &status);
+    CHECK_MSTATUS_AND_RETURN(status, TfToken());
+    const MUuid shapeUuid = depNodeFn.uuid(&status);
+    CHECK_MSTATUS_AND_RETURN(status, TfToken());
+
+    return TfToken(TfMakeValidIdentifier(shapeUuid.asString().asChar()));
 }
 
 /* static */

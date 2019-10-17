@@ -12,18 +12,18 @@
 /*!
 \mainpage Universal Scene Description (USD)
 
-\image html USDLogoLrgWithAlpha.png 
+\image html USDLogoLrgWithAlpha.png
 
 <b>USD is a system for authoring, composing, and reading hierarchically
-organized scene description.</b> 
+organized scene description.</b>
 
-USD comprises a set of modules that scalably encode and interchange static 
-and time-sampled 3D geometry and shading data between Digital Content Creation 
-applications.  Domain-specific schema modules define the geometry and shading 
+USD comprises a set of modules that scalably encode and interchange static
+and time-sampled 3D geometry and shading data between Digital Content Creation
+applications.  Domain-specific schema modules define the geometry and shading
 encoding atop USD's domain-agnostic core.
 
-Continue reading about 
-\ref Usd_OverviewAndPurpose "USD's purpose and overall architecture", 
+Continue reading about
+\ref Usd_OverviewAndPurpose "USD's purpose and overall architecture",
 or jump directly into the core of the \ref usd_page_front "Usd API."
 
 <HR>
@@ -38,25 +38,25 @@ USD is distributed under a <a href="https://github.com/PixarAnimationStudios/USD
 In addition to addressing the interchange problem, USD also provides powerful
 mechanisms for large-scale collaboration and context-dependent asset refinement
 anywhere in a production pipeline.  For example:
- \li <b>layers</b> enable artists in different departments to all work 
-simultaneously on the same "thing", whether that be a singular asset, an 
+ \li <b>layers</b> enable artists in different departments to all work
+simultaneously on the same "thing", whether that be a singular asset, an
 aggregate asset, a sequence, or a shot.
  \li <b>variants</b> enable asset creators to package up an enumerated set of
-variations, which can be selected and re-selected by downstream artists in 
-consuming contexts.  Using variants in combination with the <b>inherits</b> 
-composition operator, a downstream artist can introduce \em new variations for 
+variations, which can be selected and re-selected by downstream artists in
+consuming contexts.  Using variants in combination with the <b>inherits</b>
+composition operator, a downstream artist can introduce \em new variations for
 all instances of an asset, in a particular (set, sequence, shot, etc.)
-context.  Abilities like this can dramatically reduce the number of 
+context.  Abilities like this can dramatically reduce the number of
 pipeline-stalling "asset fix requests" needed to support downstream artists.
 
- 
-This set of documents describes the concrete Usd software package, its APIs, 
-and their effective use. In contrast, the forthcoming 
+
+This set of documents describes the concrete Usd software package, its APIs,
+and their effective use. In contrast, the forthcoming
 <em>Composition Compendium</em> centers on USD composition's detailed semantics.
 
 
 Following is an overview of the architecture, followed by information for
-\ref Usd_Quickstart "getting started with USD", and some 
+\ref Usd_Quickstart "getting started with USD", and some
 \ref Usd_Background "background on how the USD project came to be."
 
 
@@ -66,7 +66,7 @@ The USD repository is divided into four "core" packages, plus 3rd-party
 application plugins and extras:
 
 \li <b>base</b> - Contains application-agnostic, foundation modules, upon
-which most Pixar software builds, including possible future open-source 
+which most Pixar software builds, including possible future open-source
 projects.
 
 \li <b>usd</b> - Contains all the modules directly related to authoring,
@@ -79,7 +79,7 @@ as other low-level, imaging-related services.
 \li <b>usdImaging</b> - Ties usd and hydra together by providing an adapter
 to Hydra that reads data directly and efficiently from a UsdStage.  Defines
 a plugin interface by which the adapter can be extended, and provides
-\em usdview , the standalone graphical USD inspector tool. 
+\em usdview , the standalone graphical USD inspector tool.
 
 \li <b>third_party</b> - Contains USD plugins for DCC applications.
 
@@ -87,7 +87,7 @@ a plugin interface by which the adapter can be extended, and provides
 and small example USD assets.
 
 To author and consume USD, you need only the \em base and \em usd packages.
-Most of the open-source third-party plugins, however, do make use of 
+Most of the open-source third-party plugins, however, do make use of
 \em usdImaging for fast preview, and as part of the answer to the question of
 what application XXX should do when it is asked to import a USD prim type of
 which it has no corresponding native representation.  (Answer: it creates
@@ -108,7 +108,7 @@ Following is a deeper indexing of the four packages.
   tracking, error reporting and debugging, string utilities, boost python
   wrapping aids, threading/synchronization tools, registry and singleton
   management, smart pointers, and "observer pattern" support, which we call
-  "notification". 
+  "notification".
 
 - \ref gf_page_front module provides Pixar's equivalent to
   imath, and provides many of the types enumerated in Vt.  It also provides
@@ -117,9 +117,9 @@ Following is a deeper indexing of the four packages.
   linear algebra components in Gf with imath, but Gf's use in Pixar's
   code-base is substantial and its API's do not map one-to-one to imath.
 
-- \ref js_page_front module provides a thin API wrapper on top of the 
+- \ref js_page_front module provides a thin API wrapper on top of the
   <a href="http://rapidjson.org/">RapidJSON</a> package, which is what our
-  plugin system uses for multi-threaded plugin discovery. 
+  plugin system uses for multi-threaded plugin discovery.
 
 - \ref trac_page_front module provides an interface for embeddable
   performance-profiling tagging.
@@ -137,9 +137,9 @@ Following is a deeper indexing of the four packages.
   core and higher-level services for multi-threading.
 
 - \ref plug_page_front module provides the organization and access API for
-  all plugins.  It identifies plugins by the existence of a plugInfo.json 
-  manifest file, which enumerates the number and kinds of plugins provided 
-  by a module.  
+  all plugins.  It identifies plugins by the existence of a plugInfo.json
+  manifest file, which enumerates the number and kinds of plugins provided
+  by a module.
 
 
 \subsection Usd_Package_Usd The "usd" package
@@ -183,7 +183,7 @@ modules that layer on top of the core.  In low-to-high order, the modules are:
   allowing many different domain-specific schemas to be built over it, as the
   USD package does for geometry, shading, etc.  We make an exception for
   two particular concepts/schemas, "Model" and "AssetInfo", which are defined in
-  the core Usd module, because they extremely valuable for organizing
+  the core Usd module, because they are extremely valuable for organizing
   scene description, and other core behaviors are built on top of the concept
   of Model.
 
@@ -219,16 +219,20 @@ modules that layer on top of the core.  In low-to-high order, the modules are:
   architecture-specific functionality that may pull in imaging-related
   dependencies.
 
-- \b Glf : The Gl Foundations module provides access to textures, ptextures,
-  and glslfx files.  It also provides some basic glsl shaders upon which Hd
-  behaviors are built.
+- \b Glf : The GL Foundations module provides access to textures, ptextures
+  and GL resources (such as draw targets).
+  It also provides some basic glsl shaders used by hdSt.
 
-- \b CameraUtil The Camera Utilities module provides a small but important set of 
+- \b Hio : The Hydra Resource I/O module provides resource loaders used by
+  Hydra, such as Pixar's shader container format (glslfx). It will eventually
+  house the infrastructure for image loading that is currently parked in Glf.
+
+- \b CameraUtil The Camera Utilities module provides a small but important set of
   common camera-related computations that don't really belong in the core
   GfCamera class.
 
 - \b PxOsd : The Pixar OpenSubdiv module provides some higher-level utilities on
-  top of OpenSubdiv that may, one day make it into OpenSubdiv, but are still 
+  top of OpenSubdiv that may, one day make it into OpenSubdiv, but are still
   "cooking".  Hydra interacts with OpenSubdiv through pxOsd.
 
 - \b Hd : The Hydra module provides the Hydra renderer.  Hydra uses
@@ -241,6 +245,10 @@ modules that layer on top of the core.  In low-to-high order, the modules are:
 
 
 \subsection Usd_Package_UsdImaging The "usdImaging" package
+
+- \ref usdAppUtils_page_front : A library that provides a number of utilities
+  and common functionality for applications that view and/or record images of
+  UsdStages.
 
 - \b UsdImaging : An adapter to Pixar's modern, high-performance GL
   rendering engine \em Hydra (which in turn leverages OpenSubdiv) that
@@ -261,7 +269,7 @@ classes.  Each module described in the last section, plus the core Usd
 module, are independently importable.  Each module includes in-python
 help/documentation extracted from the doxygen docs for the module.  We have
 chosen, initially, to keep the python API as true to the C++ API as possible,
-with one notable exceptions.
+with one notable exception.
 
  - <b>Some underlying modules support more pythonic API's.</b> Some of the
    foundational modules shared with Presto, such as Sdf,  provide a more
@@ -273,16 +281,16 @@ with one notable exceptions.
    variables/properties other than those that serve as temporary caches.
 
 USD's central array type, used to hold all array-valued scene description types,
-is VtArray.  THe python wrapping for VtArray supports python's "buffer protocol",
+is VtArray.  The python wrapping for VtArray supports python's "buffer protocol",
 so VtArray 's returned by USD to python can be trivially accessed like and
-converted to native python containers, as well as numpy arrays.  Further, 
+converted to native python containers, as well as numpy arrays.  Further,
 USD methods that expect a VtArray input argument should always successfully
 convert native python containers and numpy arrays whose underlying element-type
 is compatible.
 
 \section Usd_Quickstart Quickstart!
 
-Please visit <a href="http://openusd.org">the USD Documentation Hub</a> where 
+Please visit <a href="http://openusd.org">the USD Documentation Hub</a> where
 you will find tutorials, FAQs, and other supporting material.
 
 
@@ -306,7 +314,7 @@ concepts that target:
  composition of arbitrary amounts of scene description without sacrificing
  the ability to perform robust dependency analysis between prims in a
  scene. (See the discussion of \ref Usd_Payloads "payloads" for more
- information). 
+ information).
 
 The USD project also developed under a high priority inward-facing mandate to
 simplify and unify Pixar's binary cache-based geometry package (TidScene)
@@ -318,11 +326,11 @@ necessity to not massively disrupt our in-use codebase, we chose to largely
 retain our existing data model, while looking to Alembic as a guide for many
 schema decisions along the way.  While it is unlikely Pixar will attempt to
 expand the Alembic API and core to encompass USD composition, asset resolution,
-and necessary plugin mechanisms, we are committed to providing a USD 
+and necessary plugin mechanisms, we are committed to providing a USD
 "file format" plugin that allows the USD core and toolset to consume and author
 Alembic files as if they were native USD files (obviously writing cannot always
 produce an equally meaningful Alembic file because composition operators cannot
-be represented in Alembic). 
+be represented in Alembic).
 
 
 \section Usd_Related Related Pages

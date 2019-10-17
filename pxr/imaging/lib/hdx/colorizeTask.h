@@ -29,12 +29,7 @@
 #include "pxr/imaging/hdx/compositor.h"
 #include "pxr/imaging/hdx/progressiveTask.h"
 
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
-
-
-typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 
 class HdRenderBuffer;
 
@@ -56,21 +51,29 @@ public:
     /// Hooks for progressive rendering.
     virtual bool IsConverged() const override;
 
-    /// Execute the colorize task
-    HDX_API
-    virtual void Execute(HdTaskContext* ctx) override;
-
     /// Sync the render pass resources
     HDX_API
     virtual void Sync(HdSceneDelegate* delegate,
                       HdTaskContext* ctx,
                       HdDirtyBits* dirtyBits) override;
 
+    /// Prepare the colorize task
+    HDX_API
+    virtual void Prepare(HdTaskContext* ctx,
+                         HdRenderIndex* renderIndex) override;
+
+    /// Execute the colorize task
+    HDX_API
+    virtual void Execute(HdTaskContext* ctx) override;
+
 private:
     // Incoming data
     TfToken _aovName;
-    SdfPath _renderBufferId;
-    HdRenderBuffer *_renderBuffer;
+    SdfPath _aovBufferPath;
+    SdfPath _depthBufferPath;
+
+    HdRenderBuffer *_aovBuffer;
+    HdRenderBuffer *_depthBuffer;
 
     // Ouptut data
     uint8_t *_outputBuffer;
@@ -78,6 +81,7 @@ private:
     bool _converged;
 
     HdxCompositor _compositor;
+    bool _needsValidation;
 
     HdxColorizeTask() = delete;
     HdxColorizeTask(const HdxColorizeTask &) = delete;
@@ -92,15 +96,16 @@ struct HdxColorizeTaskParams
 {
     HdxColorizeTaskParams()
         : aovName()
-        , renderBuffer()
+        , aovBufferPath()
+        , depthBufferPath()
         {}
 
     // XXX: Right now the API is pretty basic: draw buffer X as aov Y
     // (e.g., colorize this buffer as float3 normals).  Lots of room for
-    // cool improvements here! For example, adding a depth attachment for
-    // deep compositing.
+    // cool improvements here!
     TfToken aovName;
-    SdfPath renderBuffer;
+    SdfPath aovBufferPath;
+    SdfPath depthBufferPath;
 };
 
 // VtValue requirements
@@ -112,7 +117,6 @@ bool operator==(const HdxColorizeTaskParams& lhs,
 HDX_API
 bool operator!=(const HdxColorizeTaskParams& lhs,
                 const HdxColorizeTaskParams& rhs);
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

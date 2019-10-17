@@ -222,7 +222,6 @@ public:
 private:
     HdSt_MeshTopology *_topology;
     TfToken _name;
-    HdType _type;
 };
 
 // ---------------------------------------------------------------------------

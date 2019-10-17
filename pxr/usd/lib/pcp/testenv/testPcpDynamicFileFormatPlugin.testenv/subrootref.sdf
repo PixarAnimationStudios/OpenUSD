@@ -1,0 +1,17 @@
+#sdf 1.4.32
+
+# Tests a reference to a dynamic subroot prim of another dynamically generated
+# prim
+def "Root" (
+references = [@./root.sdf@</RootMulti/Xform_1_2_0>]
+)
+{
+}
+
+# Tests a reference to a subroot prim that is not itself dynamic but is 
+# created by a dynamically generated ancestor prim.
+def "SubrootGeomRef" (
+references = [@./root.sdf@</RootMulti/geom>]
+)
+{
+}

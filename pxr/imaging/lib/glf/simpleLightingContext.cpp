@@ -69,7 +69,7 @@ GlfSimpleLightingContext::New()
 }
 
 GlfSimpleLightingContext::GlfSimpleLightingContext() :
-    _shadows(new GlfSimpleShadowArray(GfVec2i(1024, 1024), 0)),
+    _shadows(TfCreateRefPtr(new GlfSimpleShadowArray(GfVec2i(1024, 1024), 0))),
     _worldToViewMatrix(1.0),
     _projectionMatrix(1.0),
     _sceneAmbient(0.01, 0.01, 0.01, 1.0),

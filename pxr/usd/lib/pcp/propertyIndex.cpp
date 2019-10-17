@@ -365,31 +365,26 @@ Pcp_PropertyIndexer::GatherPropertySpecs(const PcpPrimIndex& primIndex,
                     propSpec, curNode, &permissions, &propertyInfo);
             }
         }
+
+        // At this point, the specs have been accumulated in reverse order, 
+        // because we needed to do a weak-to-strong traversal for permissions. 
+        // Here, we reverse the results to give us the correct order.
+        std::reverse(propertyInfo.begin(), propertyInfo.end());
     } else {
-        // In USD mode, the prim index will not contain a prim
-        // stack, so we need to do a more expensive traversal to
-        // populate the property index.
-        TF_REVERSE_FOR_ALL(i, primIndex.GetNodeRange()) {
-            PcpNodeRef curNode = *i;
-            if (!curNode.CanContributeSpecs()) {
+        for (PcpNodeRef const& node: primIndex.GetNodeRange()) {
+            if (!node.CanContributeSpecs()) {
                 continue;
             }
-            const PcpLayerStackRefPtr& nodeLayerStack = curNode.GetLayerStack();
-            const SdfPath& nodePath = curNode.GetPath();
-            TF_REVERSE_FOR_ALL(j, nodeLayerStack->GetLayers()) {
+            SdfPath const& nodePath = node.GetPath();
+            for (SdfLayerRefPtr const& layer:
+                 node.GetLayerStack()->GetLayers()) {
                 if (SdfPropertySpecHandle propSpec = 
-                    _GetPrimProperty(*j, nodePath, name, usd)) {
-                    propertyInfo.push_back(
-                        Pcp_PropertyInfo(propSpec, curNode));
+                    _GetPrimProperty(layer, nodePath, name, usd)) {
+                    propertyInfo.emplace_back(propSpec, node);
                 }
             }
         }
     }
-
-    // At this point, the specs have been accumulated in reverse order, 
-    // because we needed to do a weak-to-strong traversal for permissions. 
-    // Here, we reverse the results to give us the correct order.
-    std::reverse(propertyInfo.begin(), propertyInfo.end());
 
     _propIndex->_propertyStack.swap(propertyInfo);
 }

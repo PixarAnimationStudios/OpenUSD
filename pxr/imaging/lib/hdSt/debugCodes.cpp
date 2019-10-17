@@ -31,6 +31,23 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfDebug)
 {
+     TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_DRAW_BATCH,
+        "Reports diagnostics for draw batches");
+
+     TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_DISABLE_FRUSTUM_CULLING,
+         "Disable view frustum culling");
+     TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_DISABLE_MULTITHREADED_CULLING,
+         "Force the use of the single threaded version of frustum culling");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_DUMP_GLSLFX_CONFIG,
+        "Print composed GLSLFX configuration");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_DUMP_SHADER_SOURCE,
+        "Print generated shader source code");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_DUMP_SHADER_SOURCEFILE,
+        "Write out generated shader source code to files");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_DUMP_SHADER_BINARY,
+        "Write out compiled GLSL shader binary to files");
+
     TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_MATERIAL_ADDED,
         "Report when a material is added");
 

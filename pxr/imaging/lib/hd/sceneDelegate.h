@@ -55,6 +55,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdExtComputationContext;
 
+/// A shared pointer to a vector of id's.
+typedef std::shared_ptr<SdfPathVector> HdIdVectorSharedPtr;
+
 /// \class HdSyncRequestVector
 ///
 /// The SceneDelegate is requested to synchronize prims as the result of
@@ -393,6 +396,15 @@ public:
     HD_API
     virtual VtArray<TfToken> GetCategories(SdfPath const& id);
 
+    /// Returns the categories for all instances in the instancer.
+    HD_API
+    virtual std::vector<VtArray<TfToken>>
+    GetInstanceCategories(SdfPath const &instancerId);
+
+    /// Returns the coordinate system bindings, or a nullptr if none are bound.
+    HD_API
+    virtual HdIdVectorSharedPtr GetCoordSysBindings(SdfPath const& id);
+
     // -----------------------------------------------------------------------//
     /// \name Motion samples
     // -----------------------------------------------------------------------//
@@ -420,7 +432,6 @@ public:
     HD_API
     virtual size_t
     SampleInstancerTransform(SdfPath const &instancerId,
-                             SdfPath const &prototypeId,
                              size_t maxSampleCount, float *times,
                              GfMatrix4d *samples);
 
@@ -429,10 +440,9 @@ public:
     template <unsigned int CAPACITY>
     void
     SampleInstancerTransform(SdfPath const &instancerId,
-                             SdfPath const &prototypeId,
                              HdTimeSampleArray<GfMatrix4d, CAPACITY> *out) {
         out->count = SampleInstancerTransform(
-            instancerId, prototypeId, CAPACITY, out->times, out->values);
+            instancerId, CAPACITY, out->times, out->values);
     }
 
     /// Store up to \a maxSampleCount primvar samples in \a *samples.
@@ -483,8 +493,7 @@ public:
 
     /// Returns the instancer transform.
     HD_API
-    virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerId,
-                                             SdfPath const &prototypeId);
+    virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerId);
 
 
     /// Resolves a pair of rprimPath and instanceIndex back to original
@@ -582,10 +591,11 @@ public:
     /// \name Camera Aspects
     // -----------------------------------------------------------------------//
 
-    /// Returns an array of clip plane equations in eye-space with y-up
-    /// orientation.
+    /// Returns a single value for a given camera and parameter.
+    /// See HdCameraTokens for the list of paramters.
     HD_API
-    virtual std::vector<GfVec4d> GetClipPlanes(SdfPath const& cameraId);
+    virtual VtValue GetCameraParamValue(SdfPath const& cameraId,
+                                        TfToken const& paramName);
 
     // -----------------------------------------------------------------------//
     /// \name Volume Aspects
@@ -674,6 +684,12 @@ public:
     HD_API
     virtual HdPrimvarDescriptorVector
     GetPrimvarDescriptors(SdfPath const& id, HdInterpolation interpolation);
+
+    // -----------------------------------------------------------------------//
+    /// \name Task Aspects
+    // -----------------------------------------------------------------------//
+    HD_API
+    virtual TfTokenVector GetTaskRenderTags(SdfPath const& taskId);
 
 private:
     HdRenderIndex *_index;

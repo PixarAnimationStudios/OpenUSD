@@ -62,6 +62,7 @@ public:
                       const std::string& comment);
 
     // SdfAbstractData overrides
+    virtual bool StreamsData() const;
     virtual void CreateSpec(const SdfAbstractDataSpecId&,
                             SdfSpecType specType);
     virtual bool HasSpec(const SdfAbstractDataSpecId&) const;

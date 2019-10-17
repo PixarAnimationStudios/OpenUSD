@@ -62,11 +62,10 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_COMPUTE, false,
 static void
 _InitializeGPUComputeEnabled(bool *gpuComputeEnabled)
 {
-    const GlfContextCaps &caps = GlfContextCaps::GetInstance();
-    
     // GPU Compute
     if (TfGetEnvSetting(HD_ENABLE_GPU_COMPUTE)) {
 #if OPENSUBDIV_HAS_GLSL_COMPUTE
+        const GlfContextCaps &caps = GlfContextCaps::GetInstance();
         if (caps.glslVersion >= 430 && caps.shaderStorageBufferEnabled) {
             *gpuComputeEnabled = true;
         } else {
@@ -105,7 +104,7 @@ _CreateVtArray(int numElements, int arraySize, int stride,
 
     TF_VERIFY(data.size() == stride*(numElements-1) + arraySize*sizeof(T));
 
-    if (stride == arraySize*sizeof(T)) {
+    if (stride == static_cast<int>(arraySize*sizeof(T))) {
         memcpy(dst, src, numElements*arraySize*sizeof(T));
     } else {
         // deinterleaving

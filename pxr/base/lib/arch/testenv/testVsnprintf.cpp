@@ -60,7 +60,7 @@ int main()
     }
     long_fmt[8191] = '\0';
 
-    ARCH_AXIOM(ArchStringPrintf(long_fmt).size() == 8191);
+    ARCH_AXIOM(ArchStringPrintf("%s", long_fmt).size() == 8191);
 
     return 0;
 }

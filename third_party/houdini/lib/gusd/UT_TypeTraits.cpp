@@ -33,18 +33,19 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/* Make sure that the HDK doesn't change out the UT types on us,
-   since we have hard-coded expectations of theses types.
-   
-   We don't do this in UT_TypeTraits.h because this level of validation
-   requires the full type definitions, whereas we only want forward
-   declarations in the header.*/
-#define _VERIFY_TYPE(TYPE)                                                  \
-    static_assert(std::is_same<GusdUT_TypeTraits::PODTuple<TYPE>::ValueType,\
-                  TYPE::value_type>::value &&                               \
-                  TYPE::tuple_size ==                                       \
-                  GusdUT_TypeTraits::PODTuple<TYPE>::tupleSize,             \
-                  "HDK type matches type/size registered in GusdUT_TypeTraits");
+// Make sure that the HDK doesn't change out the UT types on us,
+// since we have hard-coded expectations of theses types.
+//   
+// We don't do this in UT_TypeTraits.h because this level of validation
+// requires the full type definitions, whereas we only want forward
+// declarations in the header.
+#define _VERIFY_TYPE(TYPE)                                              \
+    static_assert(SYSisSame<GusdPodTupleTraits<TYPE>::ValueType,        \
+                  TYPE::value_type>(),                                  \
+                  "Type declared for POD tuple does not match HDK type"); \
+    static_assert(TYPE::tuple_size == GusdGetTupleSize<TYPE>(),         \
+                  "Tuple size declared for POD tuple does not match "   \
+                  "tuple size declared in HDK.");
 
 _VERIFY_TYPE(UT_Matrix2F);
 _VERIFY_TYPE(UT_Matrix3F);
@@ -56,6 +57,13 @@ _VERIFY_TYPE(UT_Matrix4D);
 
 _VERIFY_TYPE(UT_QuaternionF);
 _VERIFY_TYPE(UT_QuaternionD);
+#if SYS_VERSION_FULL_INT >= 0x11000000
+_VERIFY_TYPE(UT_QuaternionH);
+#endif
+
+_VERIFY_TYPE(UT_Vector2H);
+_VERIFY_TYPE(UT_Vector3H);
+_VERIFY_TYPE(UT_Vector4H);
 
 _VERIFY_TYPE(UT_Vector2F);
 _VERIFY_TYPE(UT_Vector3F);
@@ -68,6 +76,10 @@ _VERIFY_TYPE(UT_Vector4D);
 _VERIFY_TYPE(UT_Vector2i);
 _VERIFY_TYPE(UT_Vector3i);
 _VERIFY_TYPE(UT_Vector4i);
+
+_VERIFY_TYPE(UT_Vector2I);
+_VERIFY_TYPE(UT_Vector3I);
+_VERIFY_TYPE(UT_Vector4I);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

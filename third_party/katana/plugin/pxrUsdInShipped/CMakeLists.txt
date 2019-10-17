@@ -36,6 +36,7 @@ pxr_plugin(${PXR_PACKAGE}
         nurbsPatch.cpp
         pointInstancer.cpp
         points.cpp
+        resolveMaterialBindings.cpp
         scope.cpp
         uiUtils.cpp
         xform.cpp

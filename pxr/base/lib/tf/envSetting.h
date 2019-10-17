@@ -115,7 +115,6 @@
 /// if the file is malformed, errors are printed to stderr.
 
 #include "pxr/pxr.h"
-#include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/registryManager.h"
 

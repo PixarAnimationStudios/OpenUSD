@@ -9,6 +9,13 @@
                         ],
                         "isInternal": true,
                         "primTypeName": "Skeleton"
+                    },
+                    "UsdSkelImagingSkelRootAdapter": {
+                        "bases": [
+                            "UsdImagingPrimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "SkelRoot"
                     }
                 }
             },

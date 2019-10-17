@@ -24,12 +24,13 @@
 #ifndef __GUSD_XFORMWRAPPER_H__
 #define __GUSD_XFORMWRAPPER_H__
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 
 #include "gusd/api.h"
 
 #include "groupBaseWrapper.h"
-#include <pxr/usd/usdGeom/xform.h>
+
+#include "pxr/usd/usdGeom/xform.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

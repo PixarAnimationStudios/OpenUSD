@@ -89,11 +89,6 @@ public:
         return _dirtyList;
     }
 
-    /// Returns the most recent list of render tags that this render pass
-    /// has found in the render items included in the collection.
-    HD_API
-    TfTokenVector const &GetRenderTags();
-
     /// Return the render index
     HdRenderIndex* GetRenderIndex() const { return _renderIndex; }
 
@@ -109,17 +104,10 @@ public:
     /// \name Execution
     // ---------------------------------------------------------------------- //
 
-    /// Execute all of the buckets in this renderpass.
-    HD_API
-    void Execute(HdRenderPassStateSharedPtr const &renderPassState);
     /// Execute a subset of buckets of this renderpass.
     HD_API
     void Execute(HdRenderPassStateSharedPtr const &renderPassState,
                  TfTokenVector const &renderTags);
-    /// Execute a single bucket of this renderpass.
-    HD_API
-    void Execute(HdRenderPassStateSharedPtr const &renderPassState,
-                 TfToken const &renderTag);
 
     // ---------------------------------------------------------------------- //
     /// \name Optional API hooks for progressive rendering

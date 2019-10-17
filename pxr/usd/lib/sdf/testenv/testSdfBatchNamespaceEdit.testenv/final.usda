@@ -20,17 +20,9 @@ def Scope "L"
 def Scope "P"
 {
     custom rel j
-    add rel j = </S.j> {
-        custom double o (
-            "m"
-        )
-    }
+    add rel j = </S.j>
     custom rel k
-    add rel k = </P.j> {
-        custom double o (
-            "n"
-        )
-    }
+    add rel k = </P.j>
     custom double c (
         "b"
     )

@@ -16,6 +16,7 @@ pxr_library(usdImagingGL
         trace
         vt
         work
+        hio
         garch
         glf
         hd

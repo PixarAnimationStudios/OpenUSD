@@ -239,6 +239,20 @@ QTableView::item:selected {
     background: rgb(189, 155, 84);
 }
 
+/* hover items a bit lighter */
+QTreeView::item:hover:!pressed:!selected,
+QTreeView::branch:hover:!pressed:!selected,
+QTableView::item:hover:!pressed:!selected {
+    background: rgb(70, 70, 70);
+}
+
+QTreeView::item:hover:!pressed:selected,
+QTreeView::branch:hover:!pressed:selected,
+QTableView::item:hover:!pressed:selected {
+/*    background: rgb(132, 109, 59); */
+    background: rgb(227, 186, 101);
+}
+
 /* Set the branch triangle icons */
 QTreeView::branch:has-children:!has-siblings:closed,
 QTreeView::branch:closed:has-children:has-siblings {

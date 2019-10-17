@@ -234,6 +234,10 @@ struct UsdLuxTokensType {
     /// 
     /// UsdLuxShapingAPI
     const TfToken shapingIesFile;
+    /// \brief "shaping:ies:normalize"
+    /// 
+    /// UsdLuxShapingAPI
+    const TfToken shapingIesNormalize;
     /// \brief "specular"
     /// 
     /// UsdLuxLight

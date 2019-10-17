@@ -24,7 +24,7 @@
 #ifndef __GUSD_BOUNDSCACHE_H__
 #define __GUSD_BOUNDSCACHE_H__
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usdGeom/bboxCache.h"
 #include "pxr/base/tf/token.h"

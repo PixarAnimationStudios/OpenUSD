@@ -460,7 +460,7 @@ Vt_ArrayFromBuffer(TfPyObjWrapper const &obj,
             Py_ssize_t localIdx[8];
             std::unique_ptr<Py_ssize_t []> overflowIdx;
             Py_ssize_t *index = localIdx;
-            if (view.ndim > std::extent<decltype(localIdx)>::value) {
+            if ((size_t)view.ndim > std::extent<decltype(localIdx)>::value) {
                 overflowIdx.reset(new Py_ssize_t[view.ndim]);
                 index = overflowIdx.get();
             }

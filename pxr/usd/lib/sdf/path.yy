@@ -23,7 +23,7 @@
 //
 
 %{
-// sdf/path.ypp
+// sdf/path.yy
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/pathParser.h"
@@ -67,7 +67,7 @@ static void pathYyerror(Sdf_PathParserContext *context, const char *msg);
 
 start : 
     path {
-        context->node.swap($1.path);
+        swap(context->path, $1.path);
     };
 
 keyword:
@@ -90,10 +90,10 @@ namespaced_identifier:
 
 path :
     '.' {
-            $$.path = Sdf_PathNode::GetRelativeRootNode();
+            $$.path = SdfPath::ReflexiveRelativePath();
         }
     | '/' {
-            $$.path = Sdf_PathNode::GetAbsoluteRootNode();
+            $$.path = SdfPath::AbsoluteRootPath();
         }
     | prim_path
     | dotdot_path
@@ -102,13 +102,10 @@ path :
 
 dotdot_path : 
     TOK_DOTDOT {
-            $$.path = Sdf_PathNode::FindOrCreatePrim(
-                        Sdf_PathNode::GetRelativeRootNode(),
-                        SdfPathTokens->parentPathElement);
+            $$.path = SdfPath::ReflexiveRelativePath().GetParentPath();
         }
     | dotdot_path '/' TOK_DOTDOT {
-            $$.path = Sdf_PathNode::FindOrCreatePrim(
-                        ($1).path, SdfPathTokens->parentPathElement);
+            $$.path = ($1).path.GetParentPath();
         }
     ;
 
@@ -119,21 +116,19 @@ prim_path :
 
 prim_path_sans_variant_selection : 
     prim_name {
-            $$.path = Sdf_PathNode::FindOrCreatePrim(
-                        Sdf_PathNode::GetRelativeRootNode(), ($1).token );
+            $$.path = SdfPath::ReflexiveRelativePath().AppendChild(($1).token);
         }
     | '/' prim_name {
-            $$.path = Sdf_PathNode::FindOrCreatePrim(
-                        Sdf_PathNode::GetAbsoluteRootNode(), ($2).token );
+            $$.path = SdfPath::AbsoluteRootPath().AppendChild(($2).token);
         }
     | dotdot_path '/' prim_name {
-            $$.path = Sdf_PathNode::FindOrCreatePrim( ($1).path, ($3).token );
+            $$.path = ($1).path.AppendChild(($3).token);
         }
     | prim_path_sans_variant_selection '/' prim_name {
-            $$.path = Sdf_PathNode::FindOrCreatePrim( ($1).path, ($3).token );
+            $$.path = ($1).path.AppendChild(($3).token);
         }
     | prim_path_with_variant_selection prim_name {
-            $$.path = Sdf_PathNode::FindOrCreatePrim( ($1).path, ($2).token );
+            $$.path = ($1).path.AppendChild(($2).token);
         }
     ;
 
@@ -142,15 +137,15 @@ prim_path_with_variant_selection :
             context->variantSelectionStack.push_back(Sdf_PathVariantSelections());
         }
     whitespace_opt variant_selection_list whitespace_opt {
-            Sdf_PathNodeConstRefPtr node = $1.path;
+            SdfPath newPath = $1.path;
             const Sdf_PathVariantSelections& selections =
                 context->variantSelectionStack.back();
             for (size_t i = 0, n = selections.size(); i != n; ++i) {
-                node = Sdf_PathNode::FindOrCreatePrimVariantSelection(
-                            node, selections[i].first, selections[i].second);
+                newPath = newPath.AppendVariantSelection(selections[i].first,
+                                                         selections[i].second);
             }
             context->variantSelectionStack.pop_back();
-            $$.path.swap( node );
+            $$.path = std::move(newPath);
         }
     ;
 
@@ -204,18 +199,15 @@ property_path:
 
 prim_property_path : 
     '.' namespaced_identifier {
-            $$.path = Sdf_PathNode::FindOrCreatePrimProperty(
-                        Sdf_PathNode::GetRelativeRootNode(), $2.token );
+            $$.path = SdfPath::ReflexiveRelativePath().AppendProperty($2.token);
         }
     | prim_path '.' namespaced_identifier {
-            $$.path = Sdf_PathNode::FindOrCreatePrimProperty(
-                        $1.path, $3.token );
+            $$.path = $1.path.AppendProperty($3.token);
         }
     | dotdot_path '/' '.' namespaced_identifier {
-            $$.path = Sdf_PathNode::FindOrCreatePrimProperty(
-                        $1.path, $4.token );
+            $$.path = $1.path.AppendProperty($4.token);
         }
-    | '.' error { 
+    | '.' error {
             yyerror(context, "expected property name after '.'");
             YYABORT;
         }
@@ -223,7 +215,7 @@ prim_property_path :
     
 target_path:
     prim_property_path '[' path ']' {
-            $$.path = Sdf_PathNode::FindOrCreateTarget( $1.path, $3.path );
+            $$.path = $1.path.AppendTarget($3.path);
         }
     | prim_property_path '[' error ']' {
             yyerror(context, "expected a path within [ ]"); 
@@ -238,8 +230,7 @@ relational_attribute_path:
             // but SdfPath will detect this and return invalid path.
             // So we check for that here and make an error explicitly in that
             // case.
-            $$.path = Sdf_PathNode::FindOrCreateRelationalAttribute(
-                        $1.path, $3.token );
+            $$.path = $1.path.AppendRelationalAttribute($3.token);
         }
     | target_path error { 
             yyerror(context, "expected a property for relationship target"); 
@@ -249,7 +240,7 @@ relational_attribute_path:
 
 relational_attribute_target_path:
     relational_attribute_path '[' path ']' {
-            $$.path = Sdf_PathNode::FindOrCreateTarget( $1.path, $3.path );
+            $$.path = $1.path.AppendTarget($3.path);
         }
     | relational_attribute_path '[' error ']' { 
             yyerror(context, "expected a path within [ ]"); 
@@ -259,25 +250,25 @@ relational_attribute_target_path:
     
 mapper_path:
     prim_property_path '.' TOK_MAPPER '[' path ']' {
-            $$.path = Sdf_PathNode::FindOrCreateMapper($1.path, $5.path);
+            $$.path = $1.path.AppendMapper($5.path);
         }
     | relational_attribute_path '.' TOK_MAPPER '[' path ']' {
-            $$.path = Sdf_PathNode::FindOrCreateMapper($1.path, $5.path);
+            $$.path = $1.path.AppendMapper($5.path);
         }
     ;
 
 mapper_arg_path:
     mapper_path '.' identifier {
-            $$.path = Sdf_PathNode::FindOrCreateMapperArg( $1.path, $3.token );
+            $$.path = $1.path.AppendMapperArg($3.token);
         }
     ;
 
 expression_path:
     prim_property_path '.' TOK_EXPRESSION {
-            $$.path = Sdf_PathNode::FindOrCreateExpression( $1.path );
+            $$.path = $1.path.AppendExpression();
         }
     | relational_attribute_path '.' TOK_EXPRESSION {
-            $$.path = Sdf_PathNode::FindOrCreateExpression( $1.path );
+            $$.path = $1.path.AppendExpression();
         }
     ;
 
@@ -292,7 +283,7 @@ static void
 pathYyerror(Sdf_PathParserContext *context, const char *msg) 
 {
     TF_AXIOM(context);
-    context->node.reset();
+    context->path = SdfPath();
     TF_AXIOM(msg);
     context->errStr = msg;
     context->variantSelectionStack.clear();

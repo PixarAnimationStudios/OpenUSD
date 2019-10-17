@@ -137,5 +137,9 @@ class TestGfMath(unittest.TestCase):
         self.assertEqual(2, Modf(5, 3))
         self.assertEqual(1, Modf(-5, 3))
 
+    def test_Dot(self):
+        self.assertEqual(Dot(2.0, 3.0), 6.0)
+        self.assertEqual(Dot(-2.0, 3.0), -6.0)
+
 if __name__ == '__main__':
     unittest.main()

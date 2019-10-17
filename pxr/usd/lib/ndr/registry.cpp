@@ -33,6 +33,8 @@
 #include "pxr/usd/ndr/node.h"
 #include "pxr/usd/ndr/nodeDiscoveryResult.h"
 #include "pxr/usd/ndr/registry.h"
+
+#include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/envSetting.h"
 
 #include <boost/functional/hash.hpp>
@@ -637,6 +639,20 @@ NdrRegistry::GetNodesByFamily(const TfToken& family, NdrVersionFilter filter)
     return _GetNodeMapAsNodePtrVec(family, filter);
 }
 
+NdrTokenVec
+NdrRegistry::GetAllNodeSourceTypes() const 
+{
+    // We're using the _discoveryResultMutex because we populate the
+    // _availableSourceTypes while creating the _discoveryResults.
+    //
+    // We also have to return the source types by value instead of by const
+    // reference because we don't want a client holding onto the reference
+    // to read from it when _RunDiscoveryPlugins could potentially be running
+    // and modifying _availableSourceTypes
+    std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
+    return _availableSourceTypes;
+}
+
 NdrNodeConstPtrVec
 NdrRegistry::_ParseNodesMatchingPredicate(
     std::function<bool(const NdrNodeDiscoveryResult&)> shouldParsePredicate,
@@ -673,11 +689,10 @@ NdrRegistry::_FindAndInstantiateDiscoveryPlugins()
         return;
     }
 
-    std::set<TfType> discoveryPluginTypes;
-
     // Find all of the available discovery plugins
-    const TfType& discoveryPluginType = TfType::Find<NdrDiscoveryPlugin>();
-    discoveryPluginType.GetAllDerivedTypes(&discoveryPluginTypes);
+    std::set<TfType> discoveryPluginTypes;
+    PlugRegistry::GetInstance().GetAllDerivedTypes<NdrDiscoveryPlugin>(
+        &discoveryPluginTypes);
 
     // Instantiate any discovery plugins that were found
     for (const TfType& discoveryPluginType : discoveryPluginTypes) {
@@ -693,11 +708,10 @@ NdrRegistry::_FindAndInstantiateDiscoveryPlugins()
 void
 NdrRegistry::_FindAndInstantiateParserPlugins()
 {
-    std::set<TfType> parserPluginTypes;
-
     // Find all of the available parser plugins
-    const TfType& parserPluginType = TfType::Find<NdrParserPlugin>();
-    parserPluginType.GetAllDerivedTypes(&parserPluginTypes);
+    std::set<TfType> parserPluginTypes;
+    PlugRegistry::GetInstance().GetAllDerivedTypes<NdrParserPlugin>(
+        &parserPluginTypes);
 
     // Instantiate any parser plugins that were found
     for (const TfType& parserPluginType : parserPluginTypes) {
@@ -722,11 +736,6 @@ NdrRegistry::_FindAndInstantiateParserPlugins()
                                 otherType.GetTypeName().c_str());
             }
         }
-
-        auto sourceType = parserPlugin->GetSourceType();
-        if (!sourceType.IsEmpty()) {
-            _availableSourceTypes.push_back(sourceType);
-        }
     }
 }
 
@@ -738,6 +747,27 @@ NdrRegistry::_RunDiscoveryPlugins(const DiscoveryPluginRefPtrVec& discoveryPlugi
     for (const NdrDiscoveryPluginRefPtr& dp : discoveryPlugins) {
         NdrNodeDiscoveryResultVec results =
             dp->DiscoverNodes(_DiscoveryContext(*this));
+
+        for (const NdrNodeDiscoveryResult& result : results) {
+            if (!result.sourceType.IsEmpty()) {
+                // Populate the source types that the registry knows about from
+                // the source types we discover
+                NdrTokenVec::iterator it = std::lower_bound(
+                    _availableSourceTypes.begin(),
+                    _availableSourceTypes.end(),
+                    result.sourceType);
+                if (it == _availableSourceTypes.end() ||
+                    result.sourceType != *it) {
+                    // The vector will be sorted because we always insert the
+                    // current result's source type before the first item in the
+                    // vector that does not compare less than the current source
+                    // type.  We don't insert the source type if the iterator
+                    // we get back is pointing to a source type that is the
+                    // same, thus avoiding duplicates.
+                    _availableSourceTypes.insert(it, result.sourceType);
+                }
+            }
+        }
 
         _discoveryResults.insert(_discoveryResults.end(),
                                  std::make_move_iterator(results.begin()),

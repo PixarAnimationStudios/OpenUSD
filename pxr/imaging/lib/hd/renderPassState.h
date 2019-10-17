@@ -46,6 +46,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
+class HdCamera;
 
 /// \class HdRenderPassState
 ///
@@ -62,10 +63,10 @@ public:
 
     /// Schedule to update renderPassState parameters.
     /// e.g. camera matrix, override color, id blend factor.
-
-    // Sync, called once per frame after RenderPassState is filled in.
+    /// Prepare, called once per frame after the sync phase, but prior to
+    /// the commit phase.
     HD_API
-    virtual void Sync(HdResourceRegistrySharedPtr const &resourceRegistry);
+    virtual void Prepare(HdResourceRegistrySharedPtr const &resourceRegistry);
 
     // Bind, called once per frame before drawing.
     HD_API
@@ -75,29 +76,42 @@ public:
     HD_API
     virtual void Unbind();
 
-    /// Set camera framing of this render pass state.
+    // ---------------------------------------------------------------------- //
+    /// \name Camera and framing state
+    // ---------------------------------------------------------------------- //
+
+    typedef std::vector<GfVec4d> ClipPlanesVector;
+    /// Camera setter API
+    /// Option 1: Specify matrices, viewport and clipping planes (defined in
+    /// camera space) directly.
     HD_API
-    void SetCamera(GfMatrix4d const &worldToViewMatrix,
-                   GfMatrix4d const &projectionMatrix,
-                   GfVec4d const &viewport);
-    /// temp.
-    /// Get camera parameters.
-    GfMatrix4d const & GetWorldToViewMatrix() const { return _worldToViewMatrix; }
-    GfMatrix4d const & GetProjectionMatrix() const { return _projectionMatrix; }
+    void SetCameraFramingState(GfMatrix4d const &worldToViewMatrix,
+                               GfMatrix4d const &projectionMatrix,
+                               GfVec4d const &viewport,
+                               ClipPlanesVector const & clipPlanes);
+    
+    /// Option 2:  Set camera handle and viewport to use.
+    /// The view, projection and clipping plane info of the camera will be used.
+    HD_API
+    void SetCameraAndViewport(HdCamera const *camera,
+                              GfVec4d const& viewport);
+    /// Camera getter API
+    HD_API
+    GfMatrix4d const & GetWorldToViewMatrix() const;
+
+    HD_API
+    GfMatrix4d GetProjectionMatrix() const;
+
     GfVec4f const & GetViewport() const { return _viewport; }
 
-    /// Set additional clipping planes (defined in camera/view space).
-    typedef std::vector<GfVec4d> ClipPlanesVector;
-    HD_API
-    void SetClipPlanes(ClipPlanesVector const & clipPlanes);
     HD_API
     ClipPlanesVector const & GetClipPlanes() const;
 
-    // Set the attachments for this renderpass to render into.
-    HD_API
-    void SetAovBindings(HdRenderPassAovBindingVector const &aovBindings);
-    HD_API
-    HdRenderPassAovBindingVector const& GetAovBindings() const;
+    GfMatrix4d GetCullMatrix() const { return _cullMatrix; }
+
+    // ---------------------------------------------------------------------- //
+    /// \name Application rendering state
+    // ---------------------------------------------------------------------- //
 
     /// Set an override color for rendering where the R, G and B components
     /// are the color and the alpha component is the blend value
@@ -140,6 +154,16 @@ public:
     void SetLightingEnabled(bool enabled);
     bool GetLightingEnabled() const { return _lightingEnabled; }
 
+    // ---------------------------------------------------------------------- //
+    /// \name Render pipeline state
+    // ---------------------------------------------------------------------- //
+
+    /// Set the attachments for this renderpass to render into.
+    HD_API
+    void SetAovBindings(HdRenderPassAovBindingVector const &aovBindings);
+    HD_API
+    HdRenderPassAovBindingVector const& GetAovBindings() const;
+
     HD_API
     void SetCullStyle(HdCullStyle cullStyle);
     HD_API
@@ -161,10 +185,6 @@ public:
                        2*_drawRange[1]/_viewport[3]);
     }
 
-    GfMatrix4d const &GetCullMatrix() const {
-        return _cullMatrix;
-    }
-
     HD_API
     void SetDepthBiasUseDefault(bool useDefault);
     bool GetDepthBiasUseDefault() const { return _depthBiasUseDefault; }
@@ -179,6 +199,12 @@ public:
     HD_API
     void SetDepthFunc(HdCompareFunction depthFunc);
     HdCompareFunction GetDepthFunc() const { return _depthFunc; }
+
+    HD_API
+    void SetEnableDepthMask(bool state);
+
+    HD_API
+    bool GetEnableDepthMask();
 
     HD_API
     void SetStencil(HdCompareFunction func, int ref, int mask,
@@ -239,27 +265,32 @@ public:
 
 protected:
     // ---------------------------------------------------------------------- //
-    // Camera State 
+    // Camera and framing state 
     // ---------------------------------------------------------------------- //
-    GfMatrix4d _worldToViewMatrix;
-    GfMatrix4d _projectionMatrix;
+    HdCamera const *_camera;
     GfVec4f _viewport;
-
     // TODO: This is only used for CPU culling, should compute it on the fly.
     GfMatrix4d _cullMatrix; 
 
+    GfMatrix4d _worldToViewMatrix;
+    GfMatrix4d _projectionMatrix;
+    ClipPlanesVector _clipPlanes;
+
+    // ---------------------------------------------------------------------- //
+    // Application rendering state
+    // ---------------------------------------------------------------------- //
     GfVec4f _overrideColor;
     GfVec4f _wireframeColor;
-
-    // XXX: This is used for post-shading/lighting overriding via vertex
-    // weights. Ideally, we move this to application state.
     GfVec4f _maskColor;
     GfVec4f _indicatorColor;
-
     GfVec4f _pointColor;
     float _pointSize;
     float _pointSelectedSize;
     bool _lightingEnabled;
+
+    // ---------------------------------------------------------------------- //
+    // Render pipeline state
+    // ---------------------------------------------------------------------- //
     float _alphaThreshold;
     float _tessLevel;
     GfVec2f _drawRange;
@@ -274,6 +305,7 @@ protected:
     float _depthBiasConstantFactor;
     float _depthBiasSlopeFactor;
     HdCompareFunction _depthFunc;
+    bool _depthMaskEnabled;
     HdCullStyle _cullStyle;
 
     // Stencil RenderPassState
@@ -304,8 +336,6 @@ protected:
 
     bool _colorMaskUseDefault;
     ColorMask _colorMask;
-
-    ClipPlanesVector _clipPlanes;
 
     HdRenderPassAovBindingVector _aovBindings;
 };

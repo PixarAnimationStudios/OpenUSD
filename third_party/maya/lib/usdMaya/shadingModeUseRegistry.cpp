@@ -102,6 +102,10 @@ class UseRegistryShadingModeExporter : public UsdMayaShadingModeExporter
                 return nullptr;
             }
 
+            if (!UsdMayaUtil::isWritable(depNode)) {
+                return nullptr;
+            }
+
             const MObjectHandle nodeHandle(depNode);
             const auto iter = shaderWriterMap.find(nodeHandle);
             if (iter != shaderWriterMap.end()) {
@@ -247,90 +251,93 @@ class UseRegistryShadingModeExporter : public UsdMayaShadingModeExporter
 #endif
                 }
 
-                UsdMayaShaderWriterSharedPtr srcShaderWriter;
+                // Since we are traversing the shading graph in the upstream
+                // direction, we'll be visiting shading nodes from destinations
+                // to sources, beginning with the shadingEngine node. This
+                // means that if we don't have a source shader to work with,
+                // there's no need to consider any of the plug's destinations.
+                if (srcPlug.isNull()) {
+                    continue;
+                }
 
-                if (!srcPlug.isNull()) {
-                    srcShaderWriter =
-                        _GetShaderWriterForNode(
-                            srcPlug.node(),
-                            material.GetPath(),
-                            context,
-                            shaderWriterMap);
+                UsdMayaShaderWriterSharedPtr srcShaderWriter =
+                    _GetShaderWriterForNode(
+                        srcPlug.node(),
+                        material.GetPath(),
+                        context,
+                        shaderWriterMap);
+                if (!srcShaderWriter) {
+                    continue;
+                }
 
-                    if (srcShaderWriter) {
-                        srcShaderWriter->Write(UsdTimeCode::Default());
+                srcShaderWriter->Write(UsdTimeCode::Default());
 
-                        UsdPrim shaderPrim = srcShaderWriter->GetUsdPrim();
-                        if (shaderPrim && !topLevelShader) {
-                            topLevelShader = UsdShadeShader(shaderPrim);
-                        }
-                    }
+                UsdPrim shaderPrim = srcShaderWriter->GetUsdPrim();
+                if (shaderPrim && !topLevelShader) {
+                    topLevelShader = UsdShadeShader(shaderPrim);
                 }
 
                 for (unsigned int i = 0u; i < dstPlugs.length(); ++i) {
                     const MPlug dstPlug = dstPlugs[i];
-
-                    UsdMayaShaderWriterSharedPtr dstShaderWriter;
-
-                    if (!dstPlug.isNull()) {
-                        dstShaderWriter =
-                            _GetShaderWriterForNode(
-                                dstPlug.node(),
-                                material.GetPath(),
-                                context,
-                                shaderWriterMap);
-
-                        if (dstShaderWriter) {
-                            dstShaderWriter->Write(UsdTimeCode::Default());
-
-                            UsdPrim shaderPrim = dstShaderWriter->GetUsdPrim();
-                            if (shaderPrim && !topLevelShader) {
-                                topLevelShader = UsdShadeShader(shaderPrim);
-                            }
-                        }
+                    if (dstPlug.isNull()) {
+                        continue;
                     }
 
-                    if (srcShaderWriter && dstShaderWriter) {
-                        // If we have shader writers for both the source and
-                        // the destination, see if we can get the USD shading
-                        // properties that the Maya plugs represent so that we
-                        // can author the connection in USD.
+                    UsdMayaShaderWriterSharedPtr dstShaderWriter =
+                        _GetShaderWriterForNode(
+                            dstPlug.node(),
+                            material.GetPath(),
+                            context,
+                            shaderWriterMap);
+                    if (!dstShaderWriter) {
+                        continue;
+                    }
 
-                        const TfToken srcPlugName =
-                            TfToken(context.GetStandardAttrName(srcPlug, false));
-                        UsdProperty srcProperty =
-                            srcShaderWriter->GetShadingPropertyForMayaAttrName(
-                                srcPlugName);
+                    dstShaderWriter->Write(UsdTimeCode::Default());
 
-                        const TfToken dstPlugName =
-                            TfToken(context.GetStandardAttrName(dstPlug, false));
-                        UsdProperty dstProperty =
-                            dstShaderWriter->GetShadingPropertyForMayaAttrName(
-                                dstPlugName);
+                    UsdPrim shaderPrim = dstShaderWriter->GetUsdPrim();
+                    if (shaderPrim && !topLevelShader) {
+                        topLevelShader = UsdShadeShader(shaderPrim);
+                    }
 
-                        if (srcProperty && dstProperty) {
-                            UsdAttribute srcAttribute =
-                                srcProperty.As<UsdAttribute>();
-                            if (!srcAttribute) {
-                                // The source property is not a UsdAttribute,
-                                // or possibly the shader writer did not
-                                // author/create it, so we can't do anything
-                                // with it.
-                            }
-                            else if (UsdShadeInput::IsInput(srcAttribute)) {
-                                UsdShadeInput srcInput(srcAttribute);
+                    // See if we can get the USD shading properties that the
+                    // Maya plugs represent so that we can author the
+                    // connection in USD.
 
-                                UsdShadeConnectableAPI::ConnectToSource(
-                                    dstProperty,
-                                    srcInput);
-                            }
-                            else if (UsdShadeOutput::IsOutput(srcAttribute)) {
-                                UsdShadeOutput srcOutput(srcAttribute);
+                    const TfToken srcPlugName =
+                        TfToken(context.GetStandardAttrName(srcPlug, false));
+                    UsdProperty srcProperty =
+                        srcShaderWriter->GetShadingPropertyForMayaAttrName(
+                            srcPlugName);
 
-                                UsdShadeConnectableAPI::ConnectToSource(
-                                    dstProperty,
-                                    srcOutput);
-                            }
+                    const TfToken dstPlugName =
+                        TfToken(context.GetStandardAttrName(dstPlug, false));
+                    UsdProperty dstProperty =
+                        dstShaderWriter->GetShadingPropertyForMayaAttrName(
+                            dstPlugName);
+
+                    if (srcProperty && dstProperty) {
+                        UsdAttribute srcAttribute =
+                            srcProperty.As<UsdAttribute>();
+                        if (!srcAttribute) {
+                            // The source property is not a UsdAttribute,
+                            // or possibly the shader writer did not
+                            // author/create it, so we can't do anything
+                            // with it.
+                        }
+                        else if (UsdShadeInput::IsInput(srcAttribute)) {
+                            UsdShadeInput srcInput(srcAttribute);
+
+                            UsdShadeConnectableAPI::ConnectToSource(
+                                dstProperty,
+                                srcInput);
+                        }
+                        else if (UsdShadeOutput::IsOutput(srcAttribute)) {
+                            UsdShadeOutput srcOutput(srcAttribute);
+
+                            UsdShadeConnectableAPI::ConnectToSource(
+                                dstProperty,
+                                srcOutput);
                         }
                     }
                 }

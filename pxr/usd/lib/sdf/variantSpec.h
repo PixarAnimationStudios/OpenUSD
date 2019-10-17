@@ -54,8 +54,7 @@ class SdfPath;
 ///
 class SdfVariantSpec : public SdfSpec
 {
-    SDF_DECLARE_SPEC(SdfSchema, SdfSpecTypeVariant,
-                     SdfVariantSpec, SdfSpec);
+    SDF_DECLARE_SPEC(SdfVariantSpec, SdfSpec);
 
 public:
     ///

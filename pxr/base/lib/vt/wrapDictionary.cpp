@@ -27,7 +27,6 @@
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
 
-#include "pxr/base/vt/pyDictionaryUtils.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyUtils.h"

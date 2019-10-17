@@ -2127,7 +2127,7 @@ UsdStage::_LoadAndUnload(const SdfPathSet &loadSet,
 
     // Now get the current load set and find everything that's prefixed by
     // something in unloadPruneSet.  That's the finalUnloadSet.
-    SdfPathSet curLoadSet = _cache->GetIncludedPayloads(); //GetLoadSet();
+    PcpCache::PayloadSet const &curLoadSet = _cache->GetIncludedPayloads(); //GetLoadSet();
     SdfPathVector curLoadVec(curLoadSet.begin(), curLoadSet.end());
     curLoadVec.erase(
         std::remove_if(
@@ -4066,7 +4066,8 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
         // Walk the old and new, and if the old has payloads included strictly
         // descendent to the old path, find the equivalent relative path on the
         // new and include that payload.
-        SdfPathSet curLoadSet = _cache->GetIncludedPayloads();
+        PcpCache::PayloadSet const &curLoadHashSet = _cache->GetIncludedPayloads();
+        SdfPathSet curLoadSet(curLoadHashSet.begin(), curLoadHashSet.end());
         SdfPathSet newPayloads;
 
         for (size_t i = 0;
@@ -4078,11 +4079,15 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
                 if (*iter == oldPath)
                     continue;
                 SdfPath payloadPath = iter->ReplacePrefix(oldPath, newPath);
-                newPayloads.insert(payloadPath);
-                TF_DEBUG(USD_INSTANCING).Msg(
-                    "Including equivalent payload <%s> -> <%s> for instancing "
-                    "changes.\n",
-                    iter->GetText(), payloadPath.GetText());
+                // Only include the equivalent payload if we have a prim at the
+                // newPath.
+                if (GetPrimAtPath(newPath)) {
+                    newPayloads.insert(payloadPath);
+                    TF_DEBUG(USD_INSTANCING).Msg(
+                        "Including equivalent payload <%s> -> <%s> for "
+                        "instancing changes.\n",
+                        iter->GetText(), payloadPath.GetText());
+                }
             }
         }
         if (!newPayloads.empty()) {
@@ -5087,7 +5092,7 @@ static void _ApplyLayerOffset(Storage storage,
 
 template <class Storage>
 static void _MakeResolvedAssetPaths(Storage storage,
-                                    const PcpNodeRef &node,
+                                    const ArResolverContext &context,
                                     const SdfLayerRefPtr &layer,
                                     bool anchorAssetPathsOnly)
 {
@@ -5095,15 +5100,14 @@ static void _MakeResolvedAssetPaths(Storage storage,
         SdfAssetPath assetPath;
         _UncheckedSwap(storage, assetPath);
         _MakeResolvedAssetPathsImpl(
-            layer, node.GetLayerStack()->GetIdentifier().pathResolverContext,
-            &assetPath, 1,  anchorAssetPathsOnly);
+            layer, context, &assetPath, 1,  anchorAssetPathsOnly);
         _UncheckedSwap(storage, assetPath);
     } else if (_IsHolding<VtArray<SdfAssetPath>>(storage)) {
         VtArray<SdfAssetPath> assetPaths;
         _UncheckedSwap(storage, assetPaths);
         _MakeResolvedAssetPathsImpl(
-            layer, node.GetLayerStack()->GetIdentifier().pathResolverContext,
-            assetPaths.data(), assetPaths.size(), anchorAssetPathsOnly);
+            layer, context, assetPaths.data(), assetPaths.size(), 
+            anchorAssetPathsOnly);
         _UncheckedSwap(storage, assetPaths);
     }
 }
@@ -5113,7 +5117,7 @@ static void _MakeResolvedAssetPaths(Storage storage,
 // with their resolved paths.
 static void
 _ResolveAssetPathsInDictionary(const SdfLayerRefPtr &anchor,
-                               const PcpNodeRef &node,
+                               const ArResolverContext &context,
                                VtDictionary *dict,
                                bool anchorAssetPathsOnly)
 {
@@ -5123,11 +5127,11 @@ _ResolveAssetPathsInDictionary(const SdfLayerRefPtr &anchor,
             VtDictionary resolvedDict;
             v.UncheckedSwap(resolvedDict);
             _ResolveAssetPathsInDictionary(
-                anchor, node, &resolvedDict, anchorAssetPathsOnly);
+                anchor, context, &resolvedDict, anchorAssetPathsOnly);
             v.UncheckedSwap(resolvedDict);
         }
         else {
-            _MakeResolvedAssetPaths(&v, node, anchor, anchorAssetPathsOnly);
+            _MakeResolvedAssetPaths(&v, context, anchor, anchorAssetPathsOnly);
         }
     }
 }
@@ -5169,11 +5173,13 @@ struct StrongestValueComposer
             layer->HasFieldDictKey(specId, fieldName, keyPath, _value);
 
         if (_done) {
+            const ArResolverContext &context = 
+                node.GetLayerStack()->GetIdentifier().pathResolverContext;
             if (_IsHolding<VtDictionary>(_value)) {
                 VtDictionary resolvedDict;
                 _UncheckedSwap(_value, resolvedDict);
                 _ResolveAssetPathsInDictionary(
-                    layer, node, &resolvedDict, _anchorAssetPathsOnly);
+                    layer, context, &resolvedDict, _anchorAssetPathsOnly);
                 _UncheckedSwap(_value, resolvedDict);                
 
                 // Continue composing if we got a dictionary.
@@ -5189,7 +5195,7 @@ struct StrongestValueComposer
                 _ApplyLayerOffset(_value, node, layer);
             } else {
                 _MakeResolvedAssetPaths(
-                    _value, node, layer, _anchorAssetPathsOnly);
+                    _value, context, layer, _anchorAssetPathsOnly);
             }
         }
         return _done;
@@ -7220,12 +7226,29 @@ UsdStage::_ValueMightBeTimeVaryingFromResolveInfo(const UsdResolveInfo &info,
 
 static
 bool 
-_HasLayerFieldOrDictKey(const SdfLayerHandle &layer, const TfToken &key, 
-                        const TfToken &keyPath, VtValue *val)
+_HasLayerFieldOrDictKey(const SdfLayerHandle &layer, 
+                        const ArResolverContext &context,
+                        const TfToken &key, const TfToken &keyPath, VtValue *val)
 {
-    return keyPath.IsEmpty() ?
+    bool hasVal =  keyPath.IsEmpty() ?
         layer->HasField(SdfPath::AbsoluteRootPath(), key, val) :
         layer->HasFieldDictKey(SdfPath::AbsoluteRootPath(), key, keyPath, val);
+
+    if (hasVal && val){
+        if (val->IsHolding<VtDictionary>()){
+            VtDictionary dict;
+            val->UncheckedSwap<VtDictionary>(dict);
+            _ResolveAssetPathsInDictionary(layer, context, &dict,
+                                           /* anchorAssetPathsOnly = */ false);
+            val->UncheckedSwap<VtDictionary>(dict);
+        }
+        else {
+            _MakeResolvedAssetPaths(val, context, layer,
+                                    /* anchorAssetPathsOnly = */ false);
+        }
+    }
+
+    return hasVal;
 }
 
 static
@@ -7235,12 +7258,14 @@ _HasStageMetadataOrDictKey(const UsdStage &stage,
                            VtValue *value)
 {
     SdfLayerHandle sessionLayer = stage.GetSessionLayer();
+    const ArResolverContext &context = stage.GetPathResolverContext();
+    
     if (sessionLayer && 
-        _HasLayerFieldOrDictKey(sessionLayer, key, keyPath, value)){
+        _HasLayerFieldOrDictKey(sessionLayer, context, key, keyPath, value)){
         VtValue rootValue;
         if (value && 
             value->IsHolding<VtDictionary>() &&
-            _HasLayerFieldOrDictKey(stage.GetRootLayer(), key, keyPath, 
+            _HasLayerFieldOrDictKey(stage.GetRootLayer(), context, key, keyPath, 
                                     &rootValue) && 
             rootValue.IsHolding<VtDictionary>() ){
             const VtDictionary &rootDict = rootValue.UncheckedGet<VtDictionary>();
@@ -7253,7 +7278,8 @@ _HasStageMetadataOrDictKey(const UsdStage &stage,
         return true;
     }
      
-    return _HasLayerFieldOrDictKey(stage.GetRootLayer(), key, keyPath, value);
+    return _HasLayerFieldOrDictKey(stage.GetRootLayer(), context, 
+                                   key, keyPath, value);
 }
 
 bool
@@ -7787,17 +7813,17 @@ std::string UsdDescribe(const UsdStageRefPtr &stage) {
 #define _INSTANTIATE_GET(r, unused, elem)                               \
     template bool UsdStage::_GetValue(                                  \
         UsdTimeCode, const UsdAttribute&,                               \
-        SDF_VALUE_TRAITS_TYPE(elem)::Type*) const;                      \
+        SDF_VALUE_CPP_TYPE(elem)*) const;                               \
     template bool UsdStage::_GetValue(                                  \
         UsdTimeCode, const UsdAttribute&,                               \
-        SDF_VALUE_TRAITS_TYPE(elem)::ShapedType*) const;                \
+        SDF_VALUE_CPP_ARRAY_TYPE(elem)*) const;                         \
                                                                         \
     template bool UsdStage::_GetValueFromResolveInfo(                   \
         const UsdResolveInfo&, UsdTimeCode, const UsdAttribute&,        \
-        SDF_VALUE_TRAITS_TYPE(elem)::Type*) const;                      \
+        SDF_VALUE_CPP_TYPE(elem)*) const;                               \
     template bool UsdStage::_GetValueFromResolveInfo(                   \
         const UsdResolveInfo&, UsdTimeCode, const UsdAttribute&,        \
-        SDF_VALUE_TRAITS_TYPE(elem)::ShapedType*) const;                      
+        SDF_VALUE_CPP_ARRAY_TYPE(elem)*) const;                      
 
 BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)
 #undef _INSTANTIATE_GET

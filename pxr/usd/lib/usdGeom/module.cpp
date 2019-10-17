@@ -30,7 +30,6 @@ TF_WRAP_MODULE
 {
     TF_WRAP(UsdGeomBBoxCache); 
     TF_WRAP(UsdGeomConstraintTarget);
-    TF_WRAP(UsdGeomFaceSetAPI);
     TF_WRAP(UsdGeomModelAPI);
     TF_WRAP(UsdGeomPrimvar);
     TF_WRAP(UsdGeomPrimvarsAPI);

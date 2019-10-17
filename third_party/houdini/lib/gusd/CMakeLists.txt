@@ -40,14 +40,17 @@ pxr_shared_library(${PXR_PACKAGE}
         ${HOUDINI_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
+        agentUtils
+        boundsCache
+        curvesWrapper
         debugCodes
         error
-        GT_Utils
-        GU_PackedUSD
-        GU_USD
-        OP_ParmChangeMicroNode
+        groupBaseWrapper
+        instancerWrapper
+        meshWrapper
+        packedUsdWrapper
+        pointsWrapper
         primWrapper
-        PRM_Shared
         purpose
         refiner
         scopeWrapper
@@ -55,40 +58,44 @@ pxr_shared_library(${PXR_PACKAGE}
         stageCache
         stageEdit
         tokens
-        GT_PrimCache
-        GT_PointInstancer
+        writeCtrlFlags
+        xformWrapper
+        GEO_IOTranslator
         GT_OldPointInstancer
+        GT_PackedUSD
+        GT_PointInstancer
+        GT_PrimCache
+        GT_Utils
+        GU_PackedUSD
+        GU_USD
+        NURBSCurvesWrapper
+        OP_ParmChangeMicroNode
+        PRM_Shared
         USD_CustomTraverse
         USD_DataCache
         USD_StdTraverse
         USD_ThreadedTraverse
         USD_Traverse
         USD_Utils
-        USD_XformCache
         USD_VisCache
+        USD_XformCache
         UT_TypeTraits
-        visitor
-        groupBaseWrapper
-        xformWrapper
-        writeCtrlFlags
-        curvesWrapper
-        NURBSCurvesWrapper
 
     PUBLIC_HEADERS
-        context.h
         api.h
+        context.h
         defaultArray.h
         gusd.h
-        GU_USD.h
         stageOpts.h
+        GT_VtArray.h
+        GU_USD.h
         USD_PropertyMap.h
         USD_TraverseSimple.h
         UT_Assert.h
         UT_CappedCache.h
+        UT_Gf.h
         UT_StaticInit.h
         UT_Version.h
-        UT_Gf.h
-        GT_VtArray.h
 
     PRIVATE_HEADERS
         GT_VtStringArray.h
@@ -97,19 +104,10 @@ pxr_shared_library(${PXR_PACKAGE}
     CPPFILES
         plugin.cpp
 
-    PRIVATE_CLASSES
-        GEO_IOTranslator
-        GT_PackedUSD
-        boundsCache
-        meshWrapper
-        packedUsdWrapper
-        pointsWrapper
-        instancerWrapper
-
     PYMODULE_FILES
         __init__.py
-        treeview.py
         treemodel.py
+        treeview.py
 
     PYMODULE_CPPFILES
         module.cpp

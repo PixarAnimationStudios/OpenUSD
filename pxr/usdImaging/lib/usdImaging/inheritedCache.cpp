@@ -21,9 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "inheritedCache.h"
+#include "pxr/usdImaging/usdImaging/inheritedCache.h"
 
-#include <pxr/base/work/loops.h>
+#include "pxr/base/work/loops.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

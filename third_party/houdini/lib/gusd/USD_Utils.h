@@ -24,11 +24,12 @@
 #ifndef _GUSD_USD_UTILS_H_
 #define _GUSD_USD_UTILS_H_
 
-#include "gusd/api.h"
+#include "api.h"
 
-#include "gusd/error.h"
+#include "error.h"
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
+#include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdGeom/tokens.h"
@@ -50,6 +51,10 @@ namespace GusdUSD_Utils
 {
 
 
+/// Convert a TfToken to a UT_StringHolder.
+GUSD_API
+UT_StringHolder TokenToStringHolder(const TfToken& token);
+
 /// Extract the numeric time from a time code.
 /// If @a time is not numeric, returns the numeric value
 /// from UsdTimeCode::EarliestTime().
@@ -65,6 +70,11 @@ GUSD_API
 bool        CreateSdfPath(const UT_StringRef& pathStr,
                           SdfPath& path,
                           UT_ErrorSeverity sev=UT_ERROR_ABORT);
+
+
+/// Returns an SdfPath that can be used for identify the stage's defaultPrim.
+GUSD_API
+const SdfPath& GetDefaultPrimIdentifier();
 
 
 /// Get a prim from a stage.
@@ -266,7 +276,7 @@ GetNumericTime(UsdTimeCode time)
 inline UsdTimeCode
 ClampTimeCode(UsdTimeCode t, double start, double end, int digits)
 {
-    if(BOOST_UNLIKELY(t.IsDefault()))
+    if(ARCH_UNLIKELY(t.IsDefault()))
         return t;
     return UsdTimeCode(
         SYSniceNumber(SYSclamp(t.GetValue(), start, end), digits));

@@ -26,8 +26,6 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/listOp.h"
-#include "pxr/usd/sdf/mapperArgSpec.h"
-#include "pxr/usd/sdf/mapperSpec.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/usd/sdf/pyChildrenView.h"
@@ -360,8 +358,6 @@ void wrapTypes()
     SdfPyWrapListEditorProxy<SdfVariantSetNamesProxy>();
 
     SdfPyWrapChildrenView<SdfAttributeSpecView>();
-    SdfPyWrapChildrenView<SdfConnectionMappersView>();
-    SdfPyWrapChildrenView<SdfMapperArgSpecView>();
     SdfPyWrapChildrenView<SdfPrimSpecView>();
     SdfPyWrapChildrenView<SdfPropertySpecView>();
     SdfPyWrapChildrenView<SdfRelationalAttributeSpecView>();

@@ -1,0 +1,184 @@
+Loading @SubrootReferenceNonCycle/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </ImplNoCycle>
+
+Prim Stack:
+    root.sdf             /ImplNoCycle
+
+Child names:
+     ['A']
+
+------------------------------------------------------------------------
+Results for composing </ImplNoCycle/A>
+
+Prim Stack:
+    root.sdf             /ImplNoCycle/A
+
+Child names:
+     ['B', 'D']
+
+------------------------------------------------------------------------
+Results for composing </ImplNoCycle/A/B>
+
+Prim Stack:
+    root.sdf             /ImplNoCycle/A/B
+
+Child names:
+     ['C']
+
+------------------------------------------------------------------------
+Results for composing </ImplNoCycle/A/B/C>
+
+Prim Stack:
+    root.sdf             /ImplNoCycle/A/B/C
+
+------------------------------------------------------------------------
+Results for composing </ImplNoCycle/A/D>
+
+Prim Stack:
+    root.sdf             /ImplNoCycle/A/D
+    root.sdf             /ImplNoCycle/A/B
+
+Child names:
+     ['C']
+
+------------------------------------------------------------------------
+Results for composing </ImplNoCycle/A/D/C>
+
+Prim Stack:
+    root.sdf             /ImplNoCycle/A/B/C
+
+------------------------------------------------------------------------
+Results for composing </PrimNoCycle>
+
+Prim Stack:
+    root.sdf             /PrimNoCycle
+    root.sdf             /ImplNoCycle
+
+Child names:
+     ['A']
+
+------------------------------------------------------------------------
+Results for composing </PrimNoCycle/A>
+
+Prim Stack:
+    root.sdf             /ImplNoCycle/A
+
+Child names:
+     ['B', 'D']
+
+------------------------------------------------------------------------
+Results for composing </PrimNoCycle/A/B>
+
+Prim Stack:
+    root.sdf             /ImplNoCycle/A/B
+
+Child names:
+     ['C']
+
+------------------------------------------------------------------------
+Results for composing </PrimNoCycle/A/B/C>
+
+Prim Stack:
+    root.sdf             /ImplNoCycle/A/B/C
+
+------------------------------------------------------------------------
+Results for composing </PrimNoCycle/A/D>
+
+Prim Stack:
+    root.sdf             /ImplNoCycle/A/D
+    root.sdf             /ImplNoCycle/A/B
+
+Child names:
+     ['C']
+
+------------------------------------------------------------------------
+Results for composing </PrimNoCycle/A/D/C>
+
+Prim Stack:
+    root.sdf             /ImplNoCycle/A/B/C
+
+------------------------------------------------------------------------
+Results for composing </ImplCycle>
+
+Prim Stack:
+    root.sdf             /ImplCycle
+
+Child names:
+     ['A']
+
+------------------------------------------------------------------------
+Results for composing </ImplCycle/A>
+
+Prim Stack:
+    root.sdf             /ImplCycle/A
+
+Child names:
+     ['B', 'D']
+
+------------------------------------------------------------------------
+Results for composing </ImplCycle/A/B>
+
+Prim Stack:
+    root.sdf             /ImplCycle/A/B
+
+Child names:
+     ['C']
+
+------------------------------------------------------------------------
+Results for composing </ImplCycle/A/B/C>
+
+Prim Stack:
+    root.sdf             /ImplCycle/A/B/C
+
+------------------------------------------------------------------------
+Results for composing </ImplCycle/A/D>
+
+Prim Stack:
+    root.sdf             /ImplCycle/A/D
+
+------------------------------------------------------------------------
+Results for composing </PrimCycle>
+
+Prim Stack:
+    root.sdf             /PrimCycle
+    root.sdf             /ImplCycle
+
+Child names:
+     ['A']
+
+------------------------------------------------------------------------
+Results for composing </PrimCycle/A>
+
+Prim Stack:
+    root.sdf             /ImplCycle/A
+
+Child names:
+     ['B', 'D']
+
+------------------------------------------------------------------------
+Results for composing </PrimCycle/A/B>
+
+Prim Stack:
+    root.sdf             /ImplCycle/A/B
+
+Child names:
+     ['C']
+
+------------------------------------------------------------------------
+Results for composing </PrimCycle/A/B/C>
+
+Prim Stack:
+    root.sdf             /ImplCycle/A/B/C
+
+------------------------------------------------------------------------
+Results for composing </PrimCycle/A/D>
+
+Prim Stack:
+    root.sdf             /ImplCycle/A/D
+

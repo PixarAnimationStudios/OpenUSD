@@ -206,6 +206,7 @@ void wrapPath() {
 
         .def("GetParentPath", &This::GetParentPath)
         .def("GetPrimPath", &This::GetPrimPath)
+        .def("GetPrimOrPrimVariantSelectionPath", &This::GetPrimOrPrimVariantSelectionPath)
         .def("GetAbsoluteRootOrPrimPath", &This::GetAbsoluteRootOrPrimPath)
         .def("StripAllVariantSelections", &This::StripAllVariantSelections)
 
@@ -267,9 +268,6 @@ void wrapPath() {
 
         .def("IsValidPathString", &_IsValidPathString)
              .staticmethod("IsValidPathString")
-
-        .def("IsBuiltInMarker", &This::IsBuiltInMarker)
-            .staticmethod("IsBuiltInMarker")             
 
         .def("FindPrefixedRange", _FindPrefixedRange)
             .staticmethod("FindPrefixedRange")

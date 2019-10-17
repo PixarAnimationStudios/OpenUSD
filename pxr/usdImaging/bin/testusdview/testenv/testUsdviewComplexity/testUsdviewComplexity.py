@@ -23,8 +23,8 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-
-from pxr.Usdviewq.common import RenderModes, Complexities
+from pxr.UsdAppUtils.complexityArgs import RefinementComplexities
+from pxr.Usdviewq.common import RenderModes
 
 
 # Remove any unwanted visuals from the view.
@@ -47,22 +47,22 @@ def _takeShot(appController, fileName):
 
 # Test with low refinement.
 def _testLowRefinement(appController):
-    _setComplexity(appController, Complexities.LOW)
+    _setComplexity(appController, RefinementComplexities.LOW)
     _takeShot(appController, "low.png")
 
 # Test with medium refinement.
 def _testMediumRefinement(appController):
-    _setComplexity(appController, Complexities.MEDIUM)
+    _setComplexity(appController, RefinementComplexities.MEDIUM)
     _takeShot(appController, "medium.png")
 
 # Test with high refinement.
 def _testHighRefinement(appController):
-    _setComplexity(appController, Complexities.HIGH)
+    _setComplexity(appController, RefinementComplexities.HIGH)
     _takeShot(appController, "high.png")
 
 # Test with very high refinement.
 def _testVeryHighRefinement(appController):
-    _setComplexity(appController, Complexities.VERY_HIGH)
+    _setComplexity(appController, RefinementComplexities.VERY_HIGH)
     _takeShot(appController, "very_high.png")
 
 # Test that the complexity setting works properly in usdview.

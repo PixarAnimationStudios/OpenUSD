@@ -38,7 +38,7 @@ pxr_install_test_dir(
     DEST testPxrUsdAlembicChaser
 )
 pxr_register_test(testPxrUsdAlembicChaser
-    CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
+    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPxrUsdAlembicChaser"
     TESTENV testPxrUsdAlembicChaser
     ENV

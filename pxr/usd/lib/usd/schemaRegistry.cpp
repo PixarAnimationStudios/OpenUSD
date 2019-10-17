@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 
+#include "pxr/usd/usd/debugCodes.h"
 #include "pxr/usd/usd/clip.h"
 #include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/schemaBase.h"
@@ -124,7 +125,16 @@ _GetGeneratedSchema(const PlugPluginPtr &plugin)
     // Look for generatedSchema in Resources.
     const string fname = TfStringCatPaths(plugin->GetResourcePath(),
                                           "generatedSchema.usda");
-    return TfIsFile(fname) ? SdfLayer::OpenAsAnonymous(fname) : TfNullPtr;
+    SdfLayerRefPtr layer = SdfLayer::OpenAsAnonymous(fname);
+
+    TF_DEBUG(USD_SCHEMA_REGISTRATION).Msg(
+       "Looking up generated schema for plugin %s at path %s. "
+       "Generated schema %s.\n",
+       plugin->GetName().c_str(),
+       fname.c_str(),
+       (layer ? "valid" : "invalid") 
+    );
+    return layer;
 }
 
 void
@@ -437,7 +447,8 @@ UsdSchemaRegistry::IsAppliedAPISchema(const TfType& apiSchemaType)
 
 TfType
 UsdSchemaRegistry::GetTypeFromName(const TfToken& typeName){
-    return (*_schemaBaseType).FindDerivedByName(typeName);
+    return PlugRegistry::GetInstance().FindDerivedTypeByName(
+        *_schemaBaseType, typeName.GetString());
 }
 
 

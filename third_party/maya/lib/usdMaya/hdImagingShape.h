@@ -35,9 +35,11 @@
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
+#include <maya/MDataHandle.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MMessage.h>
 #include <maya/MObject.h>
+#include <maya/MPlug.h>
 #include <maya/MPxSurfaceShape.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
@@ -70,6 +72,12 @@ class PxrMayaHdImagingShape : public MPxSurfaceShape
         static const MTypeId typeId;
         PXRUSDMAYA_API
         static const MString typeName;
+
+        // Attributes
+        PXRUSDMAYA_API
+        static MObject selectionResolutionAttr;
+        PXRUSDMAYA_API
+        static MObject enableDepthSelectionAttr;
 
         PXRUSDMAYA_API
         static void* creator();
@@ -110,6 +118,16 @@ class PxrMayaHdImagingShape : public MPxSurfaceShape
 
         PXRUSDMAYA_API
         void postConstructor() override;
+
+        PXRUSDMAYA_API
+        bool getInternalValue(
+                const MPlug& plug,
+                MDataHandle& dataHandle) override;
+
+        PXRUSDMAYA_API
+        bool setInternalValue(
+                const MPlug& plug,
+                const MDataHandle& dataHandle) override;
 
     private:
         // The callback IDs and functions below are used to ensure that this

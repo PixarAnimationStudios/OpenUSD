@@ -29,29 +29,56 @@
 #include "usdMaya/util.h"
 
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include <maya/MBoundingBox.h>
-#include <maya/MDagPath.h>
 #include <maya/MDGMessage.h>
+#include <maya/MDagPath.h>
+#include <maya/MDataHandle.h>
 #include <maya/MFn.h>
 #include <maya/MFnDependencyNode.h>
+#include <maya/MFnEnumAttribute.h>
+#include <maya/MFnNumericAttribute.h>
+#include <maya/MFnNumericData.h>
 #include <maya/MFnSet.h>
 #include <maya/MNamespace.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MObject.h>
+#include <maya/MPlug.h>
 #include <maya/MPxSurfaceShape.h>
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 #include <maya/MTypeId.h>
 #include <maya/MUuid.h>
+#include <maya/MViewport2Renderer.h>
 
 #include <string>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+
+TF_DEFINE_ENV_SETTING(
+    PXRMAYAHD_DEFAULT_SELECTION_RESOLUTION,
+    256,
+    "Specifies the default resolution of the draw target used for computing "
+    "selections. Note that this must match one of the possible values for "
+    "pxrHdImagingShape's \"selectionResolution\" attribute (256, 512, 1024, "
+    "2048, or 4096).");
+
+// XXX: Supporting area selections in depth (where an object that is occluded
+// by another object in the selection is also selected) currently comes with a
+// significant performance penalty if the number of objects grows large, so for
+// now it is disabled by default. It can be enabled by default using this env
+// setting, and within a Maya session it can be toggled on and off with an
+// attribute on the pxrHdImagingShape.
+TF_DEFINE_ENV_SETTING(
+    PXRMAYAHD_ENABLE_DEPTH_SELECTION,
+    false,
+    "Enables area selection of objects occluded in depth");
 
 
 TF_DEFINE_PUBLIC_TOKENS(PxrMayaHdImagingShapeTokens,
@@ -60,6 +87,10 @@ TF_DEFINE_PUBLIC_TOKENS(PxrMayaHdImagingShapeTokens,
 const MTypeId PxrMayaHdImagingShape::typeId(0x00126402);
 const MString PxrMayaHdImagingShape::typeName(
     PxrMayaHdImagingShapeTokens->MayaTypeName.GetText());
+
+// Attributes
+MObject PxrMayaHdImagingShape::selectionResolutionAttr;
+MObject PxrMayaHdImagingShape::enableDepthSelectionAttr;
 
 namespace {
 
@@ -95,6 +126,61 @@ PxrMayaHdImagingShape::creator()
 MStatus
 PxrMayaHdImagingShape::initialize()
 {
+    MStatus status;
+
+    MFnEnumAttribute enumAttrFn;
+    MFnNumericAttribute numericAttrFn;
+
+    const int defaultSelectionResolution =
+        TfGetEnvSetting(PXRMAYAHD_DEFAULT_SELECTION_RESOLUTION);
+
+    selectionResolutionAttr =
+        enumAttrFn.create(
+            "selectionResolution",
+            "sr",
+            defaultSelectionResolution,
+            &status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    status = enumAttrFn.addField("256x256", 256);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    status = enumAttrFn.addField("512x512", 512);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    status = enumAttrFn.addField("1024x1024", 1024);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    status = enumAttrFn.addField("2048x2048", 2048);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    status = enumAttrFn.addField("4096x4096", 4096);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    status = enumAttrFn.setInternal(true);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    status = enumAttrFn.setStorable(false);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    status = enumAttrFn.setAffectsAppearance(true);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    status = addAttribute(selectionResolutionAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
+    const bool enableDepthSelection =
+        TfGetEnvSetting(PXRMAYAHD_ENABLE_DEPTH_SELECTION);
+
+    enableDepthSelectionAttr = numericAttrFn.create(
+        "enableDepthSelection",
+        "eds",
+        MFnNumericData::kBoolean,
+        0.0,
+        &status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    status = numericAttrFn.setDefault(enableDepthSelection);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    status = numericAttrFn.setInternal(true);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    status = numericAttrFn.setStorable(false);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    status = numericAttrFn.setAffectsAppearance(true);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    status = addAttribute(enableDepthSelectionAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
     return MS::kSuccess;
 }
 
@@ -248,6 +334,45 @@ PxrMayaHdImagingShape::postConstructor()
     CHECK_MSTATUS(status);
 
     UsdMayaUtil::SetHiddenInOutliner(depNodeFn, true);
+}
+
+/* virtual */
+bool
+PxrMayaHdImagingShape::getInternalValue(
+        const MPlug& plug,
+        MDataHandle& dataHandle)
+{
+    if (plug == selectionResolutionAttr ||
+            plug == enableDepthSelectionAttr) {
+        // We just want notification of attribute gets and sets. We return
+        // false here to tell Maya that it should still manage storage of the
+        // value in the data block.
+        return false;
+    }
+
+    return MPxSurfaceShape::getInternalValue(plug, dataHandle);
+}
+
+/* virtual */
+bool
+PxrMayaHdImagingShape::setInternalValue(
+        const MPlug& plug,
+        const MDataHandle& dataHandle)
+{
+    if (plug == selectionResolutionAttr ||
+            plug == enableDepthSelectionAttr) {
+        // If these attributes are changed, we mark the HdImagingShape as
+        // needing to be redrawn, which is when we'll pull the new values from
+        // the shape and pass them to the batch renderer.
+        MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
+
+        // We just want notification of attribute gets and sets. We return
+        // false here to tell Maya that it should still manage storage of the
+        // value in the data block.
+        return false;
+    }
+
+    return MPxSurfaceShape::setInternalValue(plug, dataHandle);
 }
 
 /* static */

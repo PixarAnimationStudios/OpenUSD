@@ -57,8 +57,6 @@
 
 #include "pxr/base/trace/trace.h"
 
-#include "pxr/imaging/hdx/intersector.h"
-
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/glContext.h"
@@ -66,6 +64,8 @@
 
 // Mesh Topology
 #include "pxr/imaging/hd/meshTopology.h"
+// Pick task, for DecodeIDRenderColor
+#include "pxr/imaging/hdx/pickTask.h"
 
 #include "pxr/base/gf/frustum.h"
 #include "pxr/base/gf/gamma.h"
@@ -724,14 +724,16 @@ UsdImagingGLLegacyEngine::_ProcessGprimColor(const UsdGeomGprim *gprimSchema,
     // Get DoubleSided Attribute
     gprimSchema->GetDoubleSidedAttr().Get(doubleSided);
 
-    // Get interpolation and color using UsdShadeMaterial
-    VtValue colorAsVt = UsdImagingGprimAdapter::GetColorAndOpacity(prim, 
-                                                _params.frame, interpolation);
-    VtVec4fArray temp = colorAsVt.Get<VtVec4fArray>();
-    GfVec4f rgba = temp[0];
-    GfVec3f rgb = GfVec3f(rgba[0], rgba[1], rgba[2]);
-
-    color->push_back(rgb);
+    // Get interpolation and color using UsdShadeMaterial'
+    VtValue colorAsVt;
+    if (UsdImagingGprimAdapter::GetColor(prim, 
+                _params.frame, interpolation, &colorAsVt)) {
+        VtVec3fArray temp = colorAsVt.Get<VtVec3fArray>();
+        color->push_back(temp[0]);
+    } else {
+        color->push_back(GfVec3f(0.5f, 0.5f, 0.5f));
+        *interpolation = UsdGeomTokens->constant;
+    }
 }
 
 void 
@@ -1393,13 +1395,13 @@ UsdImagingGLLegacyEngine::TestIntersection(
             int idIndex = zMinIndex*4;
 
             *outHitPrimPath = GetRprimPathFromPrimId(
-                    HdxIntersector::DecodeIDRenderColor(&primId[idIndex]));
+                    HdxPickTask::DecodeIDRenderColor(&primId[idIndex]));
             if (outHitInstanceIndex) {
-                *outHitInstanceIndex = HdxIntersector::DecodeIDRenderColor(
+                *outHitInstanceIndex = HdxPickTask::DecodeIDRenderColor(
                         &instanceId[idIndex]);
             }
             if (outHitElementIndex) {
-                *outHitElementIndex = HdxIntersector::DecodeIDRenderColor(
+                *outHitElementIndex = HdxPickTask::DecodeIDRenderColor(
                         &elementId[idIndex]);
             }
 

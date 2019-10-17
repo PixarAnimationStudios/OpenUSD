@@ -232,7 +232,9 @@ public:
     UsdZipFileWriter(const UsdZipFileWriter&) = delete;
     UsdZipFileWriter& operator=(const UsdZipFileWriter&) = delete;
 
+    USD_API
     UsdZipFileWriter(UsdZipFileWriter&& rhs);
+    USD_API
     UsdZipFileWriter& operator=(UsdZipFileWriter&& rhs);
 
     /// Returns true if this is a valid object, false otherwise.

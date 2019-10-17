@@ -125,7 +125,7 @@ protected:
     ///
     /// \sa UsdSchemaType
     USDLUX_API
-    virtual UsdSchemaType _GetSchemaType() const;
+    UsdSchemaType _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -137,7 +137,7 @@ private:
 
     // override SchemaBase virtuals.
     USDLUX_API
-    virtual const TfType &_GetTfType() const;
+    const TfType &_GetTfType() const override;
 
 public:
     // --------------------------------------------------------------------- //
@@ -273,6 +273,28 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDLUX_API
     UsdAttribute CreateShapingIesAngleScaleAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // SHAPINGIESNORMALIZE 
+    // --------------------------------------------------------------------- //
+    /// Normalizes the IES profile so that it affects the shaping
+    /// of the light while preserving the overall energy output.
+    ///
+    /// \n  C++ Type: bool
+    /// \n  Usd Type: SdfValueTypeNames->Bool
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: False
+    USDLUX_API
+    UsdAttribute GetShapingIesNormalizeAttr() const;
+
+    /// See GetShapingIesNormalizeAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDLUX_API
+    UsdAttribute CreateShapingIesNormalizeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //

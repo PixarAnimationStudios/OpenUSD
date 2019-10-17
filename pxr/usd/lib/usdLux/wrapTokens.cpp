@@ -107,6 +107,7 @@ void wrapUsdLuxTokens()
     _AddToken(cls, "shapingFocusTint", UsdLuxTokens->shapingFocusTint);
     _AddToken(cls, "shapingIesAngleScale", UsdLuxTokens->shapingIesAngleScale);
     _AddToken(cls, "shapingIesFile", UsdLuxTokens->shapingIesFile);
+    _AddToken(cls, "shapingIesNormalize", UsdLuxTokens->shapingIesNormalize);
     _AddToken(cls, "specular", UsdLuxTokens->specular);
     _AddToken(cls, "textureFile", UsdLuxTokens->textureFile);
     _AddToken(cls, "textureFormat", UsdLuxTokens->textureFormat);

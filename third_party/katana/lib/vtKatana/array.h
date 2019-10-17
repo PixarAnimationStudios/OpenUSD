@@ -32,7 +32,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// Maps a VtArray to a Katana attribute, minizing intermediate copies.
+/// Maps a VtArray to a Katana attribute, minimizing intermediate copies.
 ///
 /// The number of intermediate copies required to construct an attribute
 /// is determined by the type traits internal to this library. As a general,
@@ -54,7 +54,7 @@ template <typename T>
 typename VtKatana_GetKatanaAttrType<T>::type VtKatanaMapOrCopy(
     const VtArray<T>& value);
 
-/// Maps a series of \p times and \p values to a Katana attribute, minizing
+/// Maps a series of \p times and \p values to a Katana attribute, minimizing
 /// intermediate copies.
 ///
 /// The number of intermediate copies required to construct an attribute
@@ -80,13 +80,23 @@ typename VtKatana_GetKatanaAttrType<T>::type VtKatanaMapOrCopy(
     const std::vector<float>& times,
     const typename std::vector<VtArray<T>>& values);
 
-/// Copy a VtArray to a Katana attribute, minizing intermediate copies, but
+/// Maps \p timeToValueMap to a Katana attribute, minimizing
+/// intermediate copies.
+///
+/// Internally, the map will be flattened into two vectors, so
+/// \ref VtKatanaMapOrCopy(const std::vector<float>&,const std::vector<VtArray<T>>&)
+/// is preferable if you already have sorted vectors.
+template <typename T>
+typename VtKatana_GetKatanaAttrType<T>::type VtKatanaMapOrCopy(
+    const typename std::map<float, VtArray<T>>& timeToValueMap);
+
+/// Copy a VtArray to a Katana attribute, minimizing intermediate copies, but
 /// disallowing any Zero Copy features the type might support.
 template <typename T>
 typename VtKatana_GetKatanaAttrType<T>::type VtKatanaCopy(
     const VtArray<T>& value);
 
-/// Copy a series of VtArray time sampels to a Katana attribute, minizing
+/// Copy a series of VtArray time samples to a Katana attribute, minimizing
 /// intermediate copies, but disallowing any Zero Copy features the type
 /// might support.
 ///
@@ -95,6 +105,17 @@ template <typename T>
 typename VtKatana_GetKatanaAttrType<T>::type VtKatanaCopy(
     const std::vector<float>& times,
     const typename std::vector<VtArray<T>>& values);
+
+/// Copy \p timeToValueMap to a Katana attribute, minimizing
+/// intermediate copies, but disallowing any Zero Copy features the type
+/// might support.
+///
+/// Internally, the map will be flattened into two vectors, so
+/// \ref VtKatanaCopy(const std::vector<float>&,const std::vector<VtArray<T>>&)
+/// is preferable if you already have sorted vectors.
+template <typename T>
+typename VtKatana_GetKatanaAttrType<T>::type VtKatanaCopy(
+    const typename std::map<float, VtArray<T>>& timeToValueMap);
 
 /// Create a VtArray from the \p attribute array nearest to \sample
 ///

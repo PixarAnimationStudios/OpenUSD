@@ -120,10 +120,6 @@ def "GLOBAL" (
               See \\ref UsdClipsAPI::GetClipSets.
               """
             }
-            dictionary collection = {
-                string doc = """This is the namespace prefix used by 
-                UsdCollectionAPI for authoring collections."""
-            }
             dictionary includeRoot = {
                 string doc = """
                 Name of a boolean collection-scoped attribute that,

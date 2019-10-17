@@ -68,6 +68,14 @@ static bool _IsEnabledVisCache() {
     return _v;
 }
 
+TF_DEFINE_ENV_SETTING(USDIMAGING_ENABLE_PURPOSE_CACHE, 1, 
+                      "Enable a cache for purpose.");
+static bool _IsEnabledPurposeCache() {
+    static bool _v = TfGetEnvSetting(USDIMAGING_ENABLE_PURPOSE_CACHE) == 1;
+    return _v;
+}
+
+
 UsdImagingPrimAdapter::~UsdImagingPrimAdapter() 
 {
 }
@@ -125,15 +133,16 @@ UsdImagingPrimAdapter::ProcessPrimChange(UsdPrim const& prim,
 
 /*virtual*/
 void
-UsdImagingPrimAdapter::ProcessPrimResync(SdfPath const& usdPath, 
+UsdImagingPrimAdapter::ProcessPrimResync(SdfPath const& cachePath, 
                                          UsdImagingIndexProxy* index) 
 {
-    // In the simple case, the usdPath and cachePath are the same, so here we
-    // remove the adapter dependency and the prim and repopulate as the default
-    // behavior.
-    _RemovePrim(/*cachePath*/usdPath, index);
-    index->RemovePrimInfo(/*usdPrimPath*/usdPath);
+    _RemovePrim(cachePath, index);
+    index->RemoveHdPrimInfo(cachePath);
 
+    /// XXX(UsdImagingPaths): We use the cachePath directly as the
+    // usdPath here, but should do the proper transformation.
+    // Maybe we could check the primInfo before its removal.
+    SdfPath const& usdPath = cachePath;
     if (_GetPrim(usdPath)) {
         // The prim still exists, so repopulate it.
         index->Repopulate(/*cachePath*/usdPath);
@@ -142,19 +151,17 @@ UsdImagingPrimAdapter::ProcessPrimResync(SdfPath const& usdPath,
 
 /*virtual*/
 void
-UsdImagingPrimAdapter::ProcessPrimRemoval(SdfPath const& primPath,
+UsdImagingPrimAdapter::ProcessPrimRemoval(SdfPath const& cachePath,
                                           UsdImagingIndexProxy* index)
 {
-    // In the simple case, the usdPath and cachePath are the same, so here we
-    // remove the adapter dependency and the prim. We don't repopulate.
-    _RemovePrim(/*cachePath*/primPath, index);
-    index->RemovePrimInfo(/*usdPrimPath*/primPath);
+    _RemovePrim(cachePath, index);
+    index->RemoveHdPrimInfo(cachePath);
 }
 
 /*virtual*/
 void
 UsdImagingPrimAdapter::MarkRefineLevelDirty(UsdPrim const& prim,
-                                            SdfPath const& usdPath,
+                                            SdfPath const& cachePath,
                                             UsdImagingIndexProxy* index)
 {
 }
@@ -162,7 +169,7 @@ UsdImagingPrimAdapter::MarkRefineLevelDirty(UsdPrim const& prim,
 /*virtual*/
 void
 UsdImagingPrimAdapter::MarkReprDirty(UsdPrim const& prim,
-                                     SdfPath const& usdPath,
+                                     SdfPath const& cachePath,
                                      UsdImagingIndexProxy* index)
 {
 }
@@ -170,7 +177,15 @@ UsdImagingPrimAdapter::MarkReprDirty(UsdPrim const& prim,
 /*virtual*/
 void
 UsdImagingPrimAdapter::MarkCullStyleDirty(UsdPrim const& prim,
-                                          SdfPath const& usdPath,
+                                          SdfPath const& cachePath,
+                                          UsdImagingIndexProxy* index)
+{
+}
+
+/*virtual*/
+void
+UsdImagingPrimAdapter::MarkRenderTagDirty(UsdPrim const& prim,
+                                          SdfPath const& cachePath,
                                           UsdImagingIndexProxy* index)
 {
 }
@@ -178,7 +193,7 @@ UsdImagingPrimAdapter::MarkCullStyleDirty(UsdPrim const& prim,
 /*virtual*/
 void
 UsdImagingPrimAdapter::MarkTransformDirty(UsdPrim const& prim,
-                                          SdfPath const& usdPath,
+                                          SdfPath const& cachePath,
                                           UsdImagingIndexProxy* index)
 {
 }
@@ -186,7 +201,7 @@ UsdImagingPrimAdapter::MarkTransformDirty(UsdPrim const& prim,
 /*virtual*/
 void
 UsdImagingPrimAdapter::MarkVisibilityDirty(UsdPrim const& prim,
-                                           SdfPath const& usdPath,
+                                           SdfPath const& cachePath,
                                            UsdImagingIndexProxy* index)
 {
 }
@@ -194,7 +209,7 @@ UsdImagingPrimAdapter::MarkVisibilityDirty(UsdPrim const& prim,
 /*virtual*/
 void
 UsdImagingPrimAdapter::MarkMaterialDirty(UsdPrim const& prim,
-                                         SdfPath const& usdPath,
+                                         SdfPath const& cachePath,
                                          UsdImagingIndexProxy* index)
 {
 }
@@ -211,6 +226,13 @@ SdfPath
 UsdImagingPrimAdapter::GetInstancer(SdfPath const &cachePath)
 {
     return SdfPath();
+}
+
+/*virtual*/
+std::vector<VtArray<TfToken>>
+UsdImagingPrimAdapter::GetInstanceCategories(UsdPrim const& prim)
+{
+    return std::vector<VtArray<TfToken>>();
 }
 
 /*virtual*/
@@ -330,7 +352,11 @@ UsdImagingPrimAdapter::PopulateSelection(HdSelection::HighlightMode const& mode,
                                          VtIntArray const &instanceIndices,
                                          HdSelectionSharedPtr const &result)
 {
-    const SdfPath indexPath = _delegate->GetPathForIndex(usdPath);
+    // XXX(UsdImagingPaths): Is this a Hydra ID? Cache Path? Or UsdPath?
+    // primAdapter.h calls it a usdPath, but clients pass in an rprimPath.
+    //
+    SdfPath const& cachePath = usdPath;
+    const SdfPath indexPath = _delegate->ConvertCachePathToIndexPath(cachePath);
 
     // insert itself into the selection map.
     // XXX: should check the existence of the path
@@ -410,6 +436,12 @@ UsdImagingPrimAdapter::_GetPrimAdapter(UsdPrim const& prim,
     return _delegate->_AdapterLookup(prim, ignoreInstancing);
 }
 
+const UsdImagingPrimAdapterSharedPtr& 
+UsdImagingPrimAdapter::_GetAdapter(TfToken const& adapterKey) const
+{
+    return _delegate->_AdapterLookup(adapterKey);
+}
+
 SdfPath
 UsdImagingPrimAdapter::_GetPrimPathFromInstancerChain(
                                             SdfPathVector const& instancerChain)
@@ -462,9 +494,15 @@ UsdImagingPrimAdapter::_GetTimeWithOffset(float offset) const
 }
 
 SdfPath 
-UsdImagingPrimAdapter::_GetPathForIndex(const SdfPath &usdPath) const
+UsdImagingPrimAdapter::_ConvertCachePathToIndexPath(const SdfPath &usdPath) const
 {
-    return _delegate->GetPathForIndex(usdPath);
+    return _delegate->ConvertCachePathToIndexPath(usdPath);
+}
+
+SdfPath 
+UsdImagingPrimAdapter::_ConvertIndexPathToCachePath(const SdfPath &indexPath) const
+{
+    return _delegate->ConvertIndexPathToCachePath(indexPath);
 }
 
 SdfPathVector
@@ -593,6 +631,24 @@ UsdImagingPrimAdapter::_GetCollectionCache() const
     return _delegate->_collectionCache;
 }
 
+UsdImaging_CoordSysBindingStrategy::value_type
+UsdImagingPrimAdapter::_GetCoordSysBindings(UsdPrim const& prim) const
+{
+    return _delegate->_coordSysBindingCache.GetValue(prim);
+}
+
+UsdImaging_InheritedPrimvarStrategy::value_type
+UsdImagingPrimAdapter::_GetInheritedPrimvars(UsdPrim const& prim) const
+{
+    return _delegate->_inheritedPrimvarCache.GetValue(prim);
+}
+
+bool
+UsdImagingPrimAdapter::_DoesDelegateSupportCoordSys() const
+{
+    return _delegate->_coordSysEnabled;
+}
+
 bool 
 UsdImagingPrimAdapter::_IsVarying(UsdPrim prim,
                                   TfToken const& attrName, 
@@ -694,6 +750,55 @@ UsdImagingPrimAdapter::GetTransform(UsdPrim const& prim, UsdTimeCode time,
     return ignoreRootTransform ? ctm : ctm * GetRootTransform();
 }
 
+size_t
+UsdImagingPrimAdapter::SampleTransform(
+    UsdPrim const& prim, SdfPath const& cachePath,
+    const std::vector<float>& configuredSampleTimes,
+    size_t maxNumSamples, float *times, GfMatrix4d *samples)
+{
+    if (maxNumSamples < 1 || configuredSampleTimes.empty()) {
+        return 0;
+    }
+    if (!prim) {
+        // If this is not a literal USD prim, it is an instance of
+        // other object synthesized by UsdImaging.  Just return
+        // the single transform sample from the ValueCache.
+        samples[0] = GetTransform(prim, configuredSampleTimes[0]);
+        return 1;
+    }
+
+    // Provide the number of time samples configured in _timeSampleOffsets,
+    // but limited to the caller's declared capacity.
+    size_t numSamples = std::min(maxNumSamples, configuredSampleTimes.size());
+
+    UsdImaging_XformCache &xfCache = _delegate->_xformCache;
+
+    // XXX: We should add caching to the transform computation if this shows
+    // up in profiling, but all of our current caches are cleared on time change
+    // so we'd need to write a new structure.
+    for (size_t i=0; i < numSamples; ++i) {
+        times[i] = configuredSampleTimes[i];
+        UsdTimeCode sceneTime =
+            _delegate->GetTimeWithOffset(configuredSampleTimes[i]);
+        samples[i] = UsdImaging_XfStrategy::ComputeTransform(
+            prim, xfCache.GetRootPath(), sceneTime, 
+            _delegate->_rigidXformOverrides) * _delegate->_rootXf;
+    }
+
+    // Some backends benefit if they can avoid time sample animation
+    // for fixed transforms.  This is difficult to compute explicitly
+    // due to the hierarchial nature of concated transforms, so we
+    // do a post-pass sweep to detect static transforms here.
+    for (size_t i=1; i < numSamples; ++i) {
+        if (samples[i] != samples[0]) {
+            // At least 1 sample is different, so return them all.
+            return numSamples;
+        }
+    }
+    // All samples are the same, so just return 1.
+    return 1;
+}
+
 bool
 UsdImagingPrimAdapter::GetVisible(UsdPrim const& prim, UsdTimeCode time) const
 {
@@ -712,8 +817,21 @@ UsdImagingPrimAdapter::GetVisible(UsdPrim const& prim, UsdTimeCode time) const
     }
 }
 
+TfToken 
+UsdImagingPrimAdapter::GetPurpose(UsdPrim const& prim) const
+{
+    HD_TRACE_FUNCTION();
+
+    if (_IsEnabledPurposeCache()) {
+        return _delegate->_purposeCache.GetValue(prim);
+
+    } else {
+        return UsdImaging_PurposeStrategy::ComputePurpose(prim);
+    }
+}
+
 SdfPath
-UsdImagingPrimAdapter::GetMaterialId(UsdPrim const& prim) const
+UsdImagingPrimAdapter::GetMaterialUsdPath(UsdPrim const& prim) const
 {
     HD_TRACE_FUNCTION();
 
@@ -734,10 +852,10 @@ UsdImagingPrimAdapter::GetModelDrawMode(UsdPrim const& prim)
 }
 
 SdfPath
-UsdImagingPrimAdapter::GetInstancerBinding(UsdPrim const& prim,
+UsdImagingPrimAdapter::GetInstancerCachePath(UsdPrim const& prim,
                         UsdImagingInstancerContext const* instancerContext)
 {
-    return instancerContext ? instancerContext->instancerId
+    return instancerContext ? instancerContext->instancerCachePath
                             : SdfPath();
     
 }

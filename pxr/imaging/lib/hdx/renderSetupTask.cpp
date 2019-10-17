@@ -53,7 +53,6 @@ HdxRenderSetupTask::HdxRenderSetupTask(HdSceneDelegate* delegate, SdfPath const&
     , _idRenderPassShader()
     , _viewport()
     , _cameraId()
-    , _renderTags()
     , _aovBindings()
 {
     _colorRenderPassShader.reset(
@@ -84,11 +83,21 @@ HdxRenderSetupTask::Sync(HdSceneDelegate* delegate,
         SyncParams(delegate, params);
     }
 
-    SyncAovBindings(delegate);
-    SyncCamera(delegate);
-    SyncRenderPassState(delegate);
-
     *dirtyBits = HdChangeTracker::Clean;
+}
+
+void
+HdxRenderSetupTask::Prepare(HdTaskContext* ctx,
+                            HdRenderIndex* renderIndex)
+{
+
+    PrepareAovBindings(renderIndex);
+    PrepareCamera(renderIndex);
+
+    HdRenderPassStateSharedPtr &renderPassState =
+            _GetRenderPassState(renderIndex);
+
+    renderPassState->Prepare(renderIndex->GetResourceRegistry());
 }
 
 void
@@ -99,17 +108,6 @@ HdxRenderSetupTask::Execute(HdTaskContext* ctx)
 
     // set raster state to TaskContext
     (*ctx)[HdxTokens->renderPassState] = VtValue(_renderPassState);
-    (*ctx)[HdxTokens->renderTags] = VtValue(_renderTags);
-}
-
-
-void
-HdxRenderSetupTask::SyncRenderPassState(HdSceneDelegate* delegate)
-{
-    HdRenderPassStateSharedPtr &renderPassState = _GetRenderPassState(delegate);
-
-    renderPassState->Sync(
-        delegate->GetRenderIndex().GetResourceRegistry());
 }
 
 void
@@ -135,7 +133,9 @@ void
 HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
                                HdxRenderTaskParams const &params)
 {
-    HdRenderPassStateSharedPtr &renderPassState = _GetRenderPassState(delegate);
+    HdRenderIndex &renderIndex = delegate->GetRenderIndex();
+    HdRenderPassStateSharedPtr &renderPassState =
+            _GetRenderPassState(&renderIndex);
 
     renderPassState->SetOverrideColor(params.overrideColor);
     renderPassState->SetWireframeColor(params.wireframeColor);
@@ -154,6 +154,7 @@ HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
     renderPassState->SetDepthBias(params.depthBiasConstantFactor,
                                   params.depthBiasSlopeFactor);
     renderPassState->SetDepthFunc(params.depthFunc);
+    renderPassState->SetEnableDepthMask(params.depthMaskEnable);
 
     // stencil
     renderPassState->SetStencilEnabled(params.stencilEnable);
@@ -177,10 +178,10 @@ HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
     renderPassState->SetAlphaToCoverageUseDefault(
         delegate->IsEnabled(HdxOptionTokens->taskSetAlphaToCoverage));
     renderPassState->SetAlphaToCoverageEnabled(
+        params.enableAlphaToCoverage &&
         !TfDebug::IsEnabled(HDX_DISABLE_ALPHA_TO_COVERAGE));
 
     _viewport = params.viewport;
-    _renderTags = params.renderTags;
     _cameraId = params.camera;
     _aovBindings = params.aovBindings;
 
@@ -191,57 +192,36 @@ HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
 }
 
 void
-HdxRenderSetupTask::SyncAovBindings(HdSceneDelegate* delegate)
+HdxRenderSetupTask::PrepareAovBindings(HdRenderIndex* renderIndex)
 {
     // Walk the aov bindings, resolving the render index references as they're
     // encountered.
-    const HdRenderIndex &renderIndex = delegate->GetRenderIndex();
     HdRenderPassAovBindingVector aovBindings = _aovBindings;
     for (size_t i = 0; i < aovBindings.size(); ++i)
     {
         if (aovBindings[i].renderBuffer == nullptr) {
             aovBindings[i].renderBuffer = static_cast<HdRenderBuffer*>(
-                renderIndex.GetBprim(HdPrimTypeTokens->renderBuffer,
+                renderIndex->GetBprim(HdPrimTypeTokens->renderBuffer,
                 aovBindings[i].renderBufferId));
         }
     }
 
-    HdRenderPassStateSharedPtr &renderPassState = _GetRenderPassState(delegate);
+    HdRenderPassStateSharedPtr &renderPassState =
+            _GetRenderPassState(renderIndex);
     renderPassState->SetAovBindings(aovBindings);
 }
 
 void
-HdxRenderSetupTask::SyncCamera(HdSceneDelegate* delegate)
+HdxRenderSetupTask::PrepareCamera(HdRenderIndex* renderIndex)
 {
-    const HdRenderIndex &renderIndex = delegate->GetRenderIndex();
     const HdCamera *camera = static_cast<const HdCamera *>(
-        renderIndex.GetSprim(HdPrimTypeTokens->camera, _cameraId));
+        renderIndex->GetSprim(HdPrimTypeTokens->camera, _cameraId));
 
     if (camera) {
-        VtValue modelViewVt  = camera->Get(HdCameraTokens->worldToViewMatrix);
-        VtValue projectionVt = camera->Get(HdCameraTokens->projectionMatrix);
-        GfMatrix4d modelView = modelViewVt.Get<GfMatrix4d>();
-        GfMatrix4d projection= projectionVt.Get<GfMatrix4d>();
-
-        // If there is a window policy available in this camera
-        // we will extract it and adjust the projection accordingly.
-        VtValue windowPolicy = camera->Get(HdCameraTokens->windowPolicy);
-        if (windowPolicy.IsHolding<CameraUtilConformWindowPolicy>()) {
-            const CameraUtilConformWindowPolicy policy = 
-                windowPolicy.Get<CameraUtilConformWindowPolicy>();
-
-            projection = CameraUtilConformedWindow(projection, policy,
-                _viewport[3] != 0.0 ? _viewport[2] / _viewport[3] : 1.0);
-        }
-
-        const VtValue &vClipPlanes = camera->Get(HdCameraTokens->clipPlanes);
-        const HdRenderPassState::ClipPlanesVector &clipPlanes =
-            vClipPlanes.Get<HdRenderPassState::ClipPlanesVector>();
-
         // sync render pass state
-        HdRenderPassStateSharedPtr &renderPassState = _GetRenderPassState(delegate);
-        renderPassState->SetCamera(modelView, projection, _viewport);
-        renderPassState->SetClipPlanes(clipPlanes);
+        HdRenderPassStateSharedPtr &renderPassState =
+                _GetRenderPassState(renderIndex);
+        renderPassState->SetCameraAndViewport(camera, _viewport);
     }
 }
 
@@ -254,7 +234,7 @@ HdxRenderSetupTask::_CreateOverrideShader()
         std::lock_guard<std::mutex> lock(shaderCreateLock);
         if (!_overrideShader) {
             _overrideShader = HdStShaderCodeSharedPtr(new HdStGLSLFXShader(
-                GlfGLSLFXSharedPtr(new GlfGLSLFX(
+                HioGlslfxSharedPtr(new HioGlslfx(
                     HdStPackageFallbackSurfaceShader()))));
         }
     }
@@ -262,11 +242,11 @@ HdxRenderSetupTask::_CreateOverrideShader()
 
 
 HdRenderPassStateSharedPtr &
-HdxRenderSetupTask::_GetRenderPassState(HdSceneDelegate* delegate)
+HdxRenderSetupTask::_GetRenderPassState(HdRenderIndex* renderIndex)
 {
     if (!_renderPassState) {
-        HdRenderIndex &index = delegate->GetRenderIndex();
-        _renderPassState = index.GetRenderDelegate()->CreateRenderPassState();
+        HdRenderDelegate *renderDelegate = renderIndex->GetRenderDelegate();
+        _renderPassState = renderDelegate->CreateRenderPassState();
     }
 
     return _renderPassState;
@@ -310,14 +290,12 @@ std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv)
         << pv.blendAlphaDstFactor << " "
         << pv.blendConstantColor << " "
         << pv.blendEnable << " "
+        << pv.enableAlphaToCoverage << ""
         << pv.cullStyle << " "
         << pv.camera << " "
         << pv.viewport << " ";
         for (auto const& a : pv.aovBindings) {
             out << a << " ";
-        }
-        for (auto const& rt : pv.renderTags) {
-            out << rt << " ";
         }
     return out;
 }
@@ -355,11 +333,11 @@ bool operator==(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs)
            lhs.blendAlphaDstFactor     == rhs.blendAlphaDstFactor     &&
            lhs.blendConstantColor      == rhs.blendConstantColor      &&
            lhs.blendEnable             == rhs.blendEnable             &&
+           lhs.enableAlphaToCoverage   == rhs.enableAlphaToCoverage   &&
            lhs.cullStyle               == rhs.cullStyle               &&
            lhs.aovBindings             == rhs.aovBindings             &&
            lhs.camera                  == rhs.camera                  &&
-           lhs.viewport                == rhs.viewport                &&
-           lhs.renderTags              == rhs.renderTags;
+           lhs.viewport                == rhs.viewport;
 }
 
 bool operator!=(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs) 

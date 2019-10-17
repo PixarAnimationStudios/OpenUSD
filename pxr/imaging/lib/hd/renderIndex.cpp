@@ -71,6 +71,8 @@ HdRenderIndex::HdRenderIndex(HdRenderDelegate *renderDelegate)
     , _instancerMap()
     , _syncQueue()
     , _renderDelegate(renderDelegate)
+    , _activeRenderTags()
+    , _renderTagVersion(_tracker.GetRenderTagVersion() - 1)
 {
     // Note: HdRenderIndex::New(...) guarantees renderDelegate is non-null.
 
@@ -313,10 +315,6 @@ HdRenderIndex::Clear()
         _tracker.TaskRemoved(it->first);
     }
     _taskMap.clear();
-
-    // After clearing the index, all collections must be invalidated to force
-    // any dependent state to be updated.
-    _tracker.MarkAllCollectionsDirty();
 }
 
 // -------------------------------------------------------------------------- //
@@ -331,7 +329,7 @@ HdRenderIndex::_TrackDelegateTask(HdSceneDelegate* delegate,
     if (taskId == SdfPath()) {
         return;
     }
-    _tracker.TaskInserted(taskId);
+    _tracker.TaskInserted(taskId, task->GetInitialDirtyBitsMask());
     _taskMap.emplace(taskId, _TaskInfo{delegate, task});
 }
 
@@ -609,6 +607,7 @@ HdRenderIndex::_ConfigureReprs()
 
 struct _FilterParam {
     const HdRprimCollection &collection;
+    const TfTokenVector     &renderTags;
     const HdRenderIndex     *renderIndex;
 };
 
@@ -618,18 +617,55 @@ _DrawItemFilterPredicate(const SdfPath &rprimID, const void *predicateParam)
     const _FilterParam *filterParam =
                               static_cast<const _FilterParam *>(predicateParam);
 
-    const HdRprimCollection &collection = filterParam->collection;
-    const HdRenderIndex *renderIndex    = filterParam->renderIndex;
+    const HdRprimCollection &collection  = filterParam->collection;
+    const TfTokenVector     &renderTags  = filterParam->renderTags;
+    const HdRenderIndex     *renderIndex = filterParam->renderIndex;
 
-   if (collection.HasRenderTag(renderIndex->GetRenderTag(rprimID))) {
-       return true;
-   }
+    //
+    // Render Tag Filter
+    //
+    bool passedRenderTagFilter = false;
+    if (renderTags.empty()) {
+        // An empty render tag set means everything passes the filter
+        // Primary user is tests, but some single task render delegates
+        // that don't support render tags yet also use it.
+        passedRenderTagFilter = true;
+    } else {
+        // As the number of tags is expected to be low (<10)
+        // use a simple linear search.
+        TfToken primRenderTag = renderIndex->GetRenderTag(rprimID);
+        size_t numRenderTags = renderTags.size();
+        size_t tagNum = 0;
+        while (!passedRenderTagFilter && tagNum < numRenderTags) {
+            if (renderTags[tagNum] == primRenderTag) {
+                passedRenderTagFilter = true;
+            }
+            ++tagNum;
+        }
+    }
 
-   return false;
+    //
+    // Material Tag Filter
+    //
+    bool passedMaterialTagFilter = false;
+
+    // Filter out rprims that do not match the collection's materialTag.
+    // E.g. We may want to gather only opaque or translucent prims.
+    // An empty materialTag on collection means: ignore material-tags.
+    // This is important for tasks such as the selection-task which wants
+    // to ignore materialTags and receive all prims in its collection.
+    TfToken const& collectionMatTag = collection.GetMaterialTag();
+    if (collectionMatTag.IsEmpty() ||
+        renderIndex->GetMaterialTag(rprimID) == collectionMatTag) {
+        passedMaterialTagFilter = true;
+    }
+
+   return (passedRenderTagFilter && passedMaterialTagFilter);
 }
 
-HdRenderIndex::HdDrawItemView
-HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
+HdRenderIndex::HdDrawItemPtrVector
+HdRenderIndex::GetDrawItems(HdRprimCollection const& collection,
+                            TfTokenVector const& renderTags)
 {
     HD_TRACE_FUNCTION();
 
@@ -639,7 +675,7 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
     const SdfPathVector &includePaths = collection.GetRootPaths();
     const SdfPathVector &excludePaths = collection.GetExcludePaths();
 
-    _FilterParam filterParam = {collection, this};
+    _FilterParam filterParam = {collection, renderTags, this};
 
     HdPrimGather gather;
 
@@ -668,19 +704,10 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection)
     _FlattenDrawItems result = tbb::flatten2d(concurrentDrawItems);
 
     // Merge thread results to the output data structure
-    HdDrawItemView finalResult;
-    for (_FlattenDrawItems::iterator it  = result.begin();
-                                     it != result.end();
-                                   ++it) {
-        const TfToken &rprimTag = it->first;
-        HdDrawItemPtrVector &threadDrawItems = it->second;
-
-        HdDrawItemPtrVector &finalDrawItems = finalResult[rprimTag];
-
-        finalDrawItems.insert(finalDrawItems.end(),
-                              threadDrawItems.begin(),
-                              threadDrawItems.end());
-    }
+    HdDrawItemPtrVector finalResult;
+    finalResult.insert(finalResult.end(),
+                       result.begin(),
+                       result.end());
 
     return finalResult;
 }
@@ -694,6 +721,17 @@ HdRenderIndex::GetRenderTag(SdfPath const& id) const
     }
 
     return info->rprim->GetRenderTag(info->sceneDelegate);
+}
+
+TfToken
+HdRenderIndex::GetMaterialTag(SdfPath const& id) const
+{
+    _RprimInfo const* info = TfMapLookupPtr(_rprimMap, id);
+    if (info == nullptr) {
+        return HdMaterialTagTokens->defaultMaterialTag;
+    }
+
+    return info->rprim->GetMaterialTag();
 }
 
 SdfPathVector
@@ -1000,13 +1038,14 @@ namespace {
 };
 
 void
-HdRenderIndex::Sync(HdDirtyListSharedPtr const &dirtyList)
+HdRenderIndex::Sync(HdDirtyListSharedPtr const &dirtyList,
+                    HdRprimCollection const &collection)
 {
-    _syncQueue.push_back(dirtyList);
+    _syncQueue.emplace_back(_SyncQueueEntry{dirtyList, collection});
 }
 
 void
-HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
+HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
                        HdTaskContext *taskContext)
 {
     HD_TRACE_FUNCTION();
@@ -1036,17 +1075,25 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
 
     _sprimIndex.SyncPrims(_tracker, _renderDelegate->GetRenderParam());
 
-    // could be in parallel... but how?
-    // may be just gathering dirtyLists at first, and then index->sync()?
-
+    ////////////////////////////////////////////////////////////////////////////
+    //
+    // Task Sync
+    //
+    // could be in parallel...
+    //
     // These tasks will call Sync() adding dirty lists to _syncQueue for
     // processing below.
-    TF_FOR_ALL(it, tasks) {
-        if (!TF_VERIFY(*it)) {
+    //
+    size_t numTasks = tasks->size();
+    for (size_t taskNum = 0; taskNum < numTasks; ++taskNum) {
+        HdTaskSharedPtr &task = (*tasks)[taskNum];
+
+        if (!TF_VERIFY(task)) {
+            TF_CODING_ERROR("Null Task in task list.  Entry Num: %zu", taskNum);
             continue;
         }
 
-        SdfPath taskId = (*it)->GetId();
+        SdfPath taskId = task->GetId();
 
         // Is this a tracked task?
         _TaskMap::iterator taskMapIt = _taskMap.find(taskId);
@@ -1064,7 +1111,7 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
             //
             // However, this is still a weird situation, so report the
             // issue as a verify so it can be addressed.
-            TF_VERIFY(taskInfo.task == (*it));
+            TF_VERIFY(taskInfo.task == task);
 
             HdDirtyBits taskDirtyBits = _tracker.GetTaskDirtyBits(taskId);
 
@@ -1079,11 +1126,21 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
             HdDirtyBits taskDirtyBits = 0;
 
             // This is an untracked task, never added to the render index.
-            (*it)->Sync(nullptr,
-                        taskContext,
-                        &taskDirtyBits);
+            task->Sync(nullptr,
+                       taskContext,
+                       &taskDirtyBits);
         }
     }
+
+    ////////////////////////////////////////////////////////////////////////////
+    //
+    // Render Tag Gather
+    //
+    // Because the task list is not state tracked and can vary from
+    // Sync to Sync as different views use different task lists.
+    // Therefore, the render tags cannot be cached and need to be gathered
+    // every Sync.
+    _GatherRenderTags(tasks);
 
     // Merge IDs using the slow SdfPath less-than so that all delegate IDs group
     // together. Unfortunately, FastLessThan makes the optimization below less
@@ -1095,8 +1152,11 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
         HF_TRACE_FUNCTION_SCOPE("Merge Dirty Lists");
         // If dirty list prims are all sorted, we could do something more
         // efficient here.
-        for (auto const& hdDirtyList : _syncQueue) {
-            HdRprimCollection const& collection = hdDirtyList->GetCollection();
+        size_t numSyncQueueEntries = _syncQueue.size();
+        for (size_t entryNum = 0; entryNum < numSyncQueueEntries; ++entryNum) {
+            _SyncQueueEntry &entry = _syncQueue[entryNum];
+            HdDirtyListSharedPtr &hdDirtyList = entry.dirtyList;
+            HdRprimCollection const& collection = entry.collection;
 
             _ReprSpec reprSpec(collection.GetReprSelector(),
                                collection.IsForcedRepr());
@@ -1125,8 +1185,13 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
             }
 
             // PERFORMANCE: this loop can be expensive.
-            for (auto const& sdfPath : hdDirtyList->GetDirtyRprims()) {
-                dirtyIds[sdfPath] |= (1ULL << reprIndex);
+            SdfPathVector const &dirtyPrims
+                               = hdDirtyList->GetDirtyRprims(_activeRenderTags);
+
+            size_t numDirtyPrims = dirtyPrims.size();
+            for (size_t primNum = 0; primNum < numDirtyPrims; ++primNum) {
+                SdfPath const &primPath = dirtyPrims[primNum];
+                dirtyIds[primPath] |= (1ULL << reprIndex);
             }
         }
     }
@@ -1292,10 +1357,10 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
             HdSceneDelegate *delegate = dlgIt->first;
             delegate->PostSyncCleanup();
         }
-
-        // Clear out the dirty list for future consumers.
-        for (auto const& hdDirtyList : _syncQueue) {
-            hdDirtyList->Clear();
+        const HdSceneDelegatePtrVector& sprimDelegates =
+            _sprimIndex.GetSceneDelegatesForDirtyPrims();
+        for (HdSceneDelegate* delegate : sprimDelegates) {
+            delegate->PostSyncCleanup();
         }
 
         if (resetVaryingState) {
@@ -1307,6 +1372,62 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
         _syncQueue.clear();
     }
 }
+
+void HdRenderIndex::_GatherRenderTags(const HdTaskSharedPtrVector *tasks)
+{
+    TfTokenVector currentRenderTags;
+    size_t numTasks = tasks->size();
+    for (size_t taskNum = 0; taskNum < numTasks; ++taskNum) {
+        const HdTaskSharedPtr &task = (*tasks)[taskNum];
+
+        const TfTokenVector &taskRenderTags = task->GetRenderTags();
+
+        // Append this tasks render tags with those in the set.
+        currentRenderTags.insert(currentRenderTags.end(),
+                                 taskRenderTags.begin(),
+                                 taskRenderTags.end());
+    }
+
+    // Deduplicate the render tag set
+    std::sort(currentRenderTags.begin(), currentRenderTags.end());
+
+    TfTokenVector::iterator newEnd =
+            std::unique(currentRenderTags.begin(), currentRenderTags.end());
+
+    currentRenderTags.erase(newEnd, currentRenderTags.end());
+
+    unsigned int currentRenderTagVersion = _tracker.GetRenderTagVersion();
+    if (currentRenderTagVersion != _renderTagVersion) {
+        // If the render tag version has changed, we reset tracking of the
+        // current set of render tags, the the new set built by this sync.
+        _activeRenderTags.swap(currentRenderTags);
+    } else {
+        // As the tasks list is not consistent between runs of Sync and there
+        // is no tracking of the when the task list changes.
+        // The set of active render tags needs to build up over time.
+        // This is an additive only aproach, with the list reset when something
+        // marks render tags dirty in the change tracker.
+
+        TfTokenVector combinedRenderTags;
+        std::set_union(_activeRenderTags.cbegin(),
+                       _activeRenderTags.cend(),
+                       currentRenderTags.cbegin(),
+                       currentRenderTags.cend(),
+                       std::back_inserter(combinedRenderTags));
+
+        if (_activeRenderTags != combinedRenderTags) {
+            _activeRenderTags.swap(combinedRenderTags);
+
+            // Mark render tags dirty to cause dirty list to rebuild with the
+            // new active set
+            _tracker.MarkRenderTagsDirty();
+        }
+    }
+
+    // Active Render Tags have been updated, so update the version
+    _renderTagVersion = currentRenderTagVersion;
+}
+
 
 void
 HdRenderIndex::_CompactPrimIds()
@@ -1371,6 +1492,10 @@ HdRenderIndex::InsertInstancer(HdSceneDelegate* delegate,
 
     HdInstancer *instancer =
         _renderDelegate->CreateInstancer(delegate, id, parentId);
+
+    if (instancer == nullptr) {
+        return;
+    }
 
     _instancerMap[id] = instancer;
     _tracker.InstancerInserted(id);
@@ -1526,8 +1651,8 @@ HdRenderIndex::_AppendDrawItems(
     HdReprSelector const& colReprSelector = collection.GetReprSelector();
     bool forceColRepr = collection.IsForcedRepr();
 
-    // Get draw item view for this thread.
-    HdDrawItemView &drawItemView = result->local();
+    // Get draw items for this thread.
+    HdDrawItemPtrVector &drawItems = result->local();
 
     for (size_t idNum = begin; idNum < end; ++idNum)
     {
@@ -1539,13 +1664,7 @@ HdRenderIndex::_AppendDrawItems(
             HdRprim *rprim = rprimInfo.rprim;
 
             // Append the draw items for each valid repr in the resolved
-            // composite representation to the right command buffer
-            // based on the tag.
-            const TfToken &rprimTag = rprim->GetRenderTag(
-                                               rprimInfo.sceneDelegate);
-
-            HdDrawItemPtrVector &resultDrawItems = drawItemView[rprimTag];
-
+            // composite representation to the command buffer.
             HdReprSelector reprSelector = _GetResolvedReprSelector(
                                                 rprim->GetReprSelector(),
                                                 colReprSelector,
@@ -1555,14 +1674,14 @@ HdRenderIndex::_AppendDrawItems(
                 if (reprSelector.IsActiveRepr(i)) {
                     TfToken const& reprToken = reprSelector[i];
 
-                    const HdRprim::HdDrawItemPtrVector* drawItems =
+                    const HdRprim::HdDrawItemPtrVector* rprimDrawItems =
                         rprim->GetDrawItems(reprToken);
 
-                    TF_VERIFY(drawItems);
-
-                    resultDrawItems.insert( resultDrawItems.end(),
-                                            drawItems->begin(),
-                                            drawItems->end() );
+                    if (TF_VERIFY(rprimDrawItems)) {
+                        drawItems.insert(drawItems.end(),
+                                         rprimDrawItems->begin(),
+                                         rprimDrawItems->end() );
+                    }
                 }
             }
         }

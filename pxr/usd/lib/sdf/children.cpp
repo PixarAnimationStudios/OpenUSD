@@ -28,8 +28,6 @@
 #include "pxr/usd/sdf/childrenPolicies.h"
 #include "pxr/usd/sdf/childrenUtils.h"
 #include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/mapperSpec.h"
-#include "pxr/usd/sdf/mapperArgSpec.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/usd/sdf/relationshipSpec.h"

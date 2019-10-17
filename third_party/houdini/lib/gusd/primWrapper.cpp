@@ -22,25 +22,29 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "primWrapper.h"
-#include "context.h"
 
-#include "UT_Gf.h"
+#include "context.h"
 #include "GT_VtArray.h"
-#include "USD_XformCache.h"
 #include "GU_USD.h"
 #include "tokens.h"
+#include "USD_XformCache.h"
+#include "UT_Gf.h"
 
 #include "pxr/base/gf/half.h"
 
-#include <GT/GT_PrimInstance.h>
 #include <GT/GT_DAIndexedString.h>
-#include <GT/GT_RefineParms.h>
 #include <GT/GT_DAIndirect.h>
-#include <GT/GT_DABool.h>
+#include <GT/GT_PrimInstance.h>
+#include <GT/GT_RefineParms.h>
 #include <SYS/SYS_Version.h>
+#include <UT/UT_ParallelUtil.h>
 #include <UT/UT_StringMMPattern.h>
 
 #include <iostream>
+
+#if SYS_VERSION_FULL_INT >= 0x11050000
+#include <UT/UT_VarEncode.h>
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -362,7 +366,7 @@ GusdPrimWrapper::setVisibility(const TfToken& visibility, UsdTimeCode time)
         m_visible = true;
     }
 
-    UsdAttribute visAttr = getUsdPrim().GetVisibilityAttr();
+    const UsdAttribute visAttr = getUsdPrim().GetVisibilityAttr();
     if( visAttr.IsValid() ) {
         TfToken oldVal;
         if( !visAttr.Get( &oldVal, 
@@ -426,18 +430,6 @@ GusdPrimWrapper::updateActiveFromGTPrim(
     }
 }
 
-namespace {
-bool
-isClose( const GfMatrix4d &m1, const GfMatrix4d &m2, double tol = 1e-10 ) {
-
-    for(int i = 0; i < 16; ++i) {
-        if(!GfIsClose(m1.GetArray()[i], m2.GetArray()[i], tol))
-            return false;
-    }
-    return true;
-}
-}
-
 void
 GusdPrimWrapper::updateTransformFromGTPrim( const GfMatrix4d &xform, 
                                             UsdTimeCode time, bool force )
@@ -461,7 +453,7 @@ GusdPrimWrapper::updateTransformFromGTPrim( const GfMatrix4d &xform,
         // The xformOps attribute is static so we only check if we haven't
         // changed anything yet. In addition nothing needs to be cleared if it
         // was previously empty.
-        if (m_lastXformSet.IsDefault() && (int)xformVec.size() > 0) {
+        if (m_lastXformSet.IsDefault() && !xformVec.empty()) {
             // Load the root layer for temp, stronger opinion changes.
             stage->GetRootLayer()->SetPermissionToSave(false);
             stage->SetEditTarget(stage->GetRootLayer());
@@ -487,7 +479,7 @@ GusdPrimWrapper::updateTransformFromGTPrim( const GfMatrix4d &xform,
         if( !m_lastXformSet.IsDefault() ) {
 
             // Is the transform at this frame the same as the last frame
-            if( isClose(xform,m_xformCache) ) {
+            if( GfIsClose(xform, m_xformCache, 1e-10) ) {
                 setKnot = false;
                 m_lastXformCompared = time;
             }
@@ -501,8 +493,7 @@ GusdPrimWrapper::updateTransformFromGTPrim( const GfMatrix4d &xform,
         }
         else {
             // If the transform is an identity, don't set it
-            if( isClose(xform,GfMatrix4d( 1.0 ))) {
-
+            if( GfIsClose(xform, GfMatrix4d(1), 1e-10) ) {
                 setKnot = false;
                 m_lastXformCompared = time;
             }
@@ -544,9 +535,8 @@ GusdPrimWrapper::updateAttributeFromGTPrim(
     if( it == m_lastAttrValueDict.end()) { 
 
         // Set the value for the first time
-        m_lastAttrValueDict.insert(
-                std::make_pair(key, 
-                               AttrLastValueEntry( time, houAttr->harden())));
+        m_lastAttrValueDict.emplace(
+            key, AttrLastValueEntry( time, houAttr->harden()));
 
         GusdGT_Utils::setUsdAttribute(usdAttr, houAttr, time);
         return true;
@@ -606,9 +596,8 @@ GusdPrimWrapper::updatePrimvarFromGTPrim(
             }
         }
 
-        m_lastAttrValueDict.insert(
-            std::make_pair(key, 
-                       AttrLastValueEntry( time, data->harden())));
+        m_lastAttrValueDict.emplace(
+            key, AttrLastValueEntry( time, data->harden()));
 
         GusdGT_Utils::setPrimvarSample( prim, name, data, interpolation, time );
     }
@@ -664,10 +653,17 @@ GusdPrimWrapper::updatePrimvarFromGTPrim(
         const GT_Owner owner = attrMapHandle->getOriginalOwner(attrIndex);
         GT_DataArrayHandle attrData = gtAttrs->get(attrIndex);
 
-        TfToken name( attrname );
+#if SYS_VERSION_FULL_INT >= 0x11050000
+        // Decode Houdini geometry attribute names to get back the original
+        // USD primvar name. This allows round tripping of namespaced
+        // primvars from USD -> Houdini -> USD.
+        UT_StringHolder name = UT_VarEncode::decode(attrname);
+#else
+        UT_StringHolder name = attrname;
+#endif
 
         updatePrimvarFromGTPrim( 
-                    TfToken( name ),
+                    TfToken( name.toStdString() ),
                     owner, 
                     interpolation, 
                     time, 
@@ -697,10 +693,9 @@ GusdPrimWrapper::addLeadingBookend( double curFrame, double startFrame )
             }
         }
 
-        getUsdPrim().GetVisibilityAttr().Set(UsdGeomTokens->invisible,
-                                       UsdTimeCode(bookendFrame));
-        getUsdPrim().GetVisibilityAttr().Set(UsdGeomTokens->inherited,
-                                       UsdTimeCode(curFrame));   
+        const UsdAttribute attr = getUsdPrim().GetVisibilityAttr();
+        attr.Set(UsdGeomTokens->invisible, UsdTimeCode(bookendFrame));
+        attr.Set(UsdGeomTokens->inherited, UsdTimeCode(curFrame));
     }
 }
 
@@ -709,36 +704,13 @@ GusdPrimWrapper::addTrailingBookend( double curFrame )
 {
     double bookendFrame = curFrame - TIME_SAMPLE_DELTA;
 
-    getUsdPrim().GetVisibilityAttr().Set(UsdGeomTokens->inherited,
-                                   UsdTimeCode(bookendFrame));
-    getUsdPrim().GetVisibilityAttr().Set(UsdGeomTokens->invisible,
-                                   UsdTimeCode(curFrame));     
+    const UsdAttribute attr = getUsdPrim().GetVisibilityAttr();
+    attr.Set(UsdGeomTokens->inherited, UsdTimeCode(bookendFrame));
+    attr.Set(UsdGeomTokens->invisible, UsdTimeCode(curFrame));
 }
 
 
 namespace {
-
-
-/// Returns a GT_Type as interpreted from the role pulled from
-/// an SdfValueTypeName.
-GT_Type
-Gusd_GetTypeFromRole(const TfToken& role)
-{
-    if (role == SdfValueRoleNames->Point) {
-        return GT_TYPE_POINT;
-    } else if (role == SdfValueRoleNames->Normal) {
-        return GT_TYPE_NORMAL;
-    } else if (role == SdfValueRoleNames->Vector) {
-        return GT_TYPE_VECTOR;
-    } else if (role == SdfValueRoleNames->Color) {
-        return GT_TYPE_COLOR;
-    } else if (role == SdfValueRoleNames->TextureCoordinate) {
-#if SYS_VERSION_FULL_INT >= 0x10050000
-        return GT_TYPE_TEXTURE;
-#endif // SYS_VERSION_FULL_INT >= 0x10050000
-    }
-    return GT_TYPE_NONE;
-}
 
 
 const char*
@@ -753,8 +725,7 @@ Gusd_GetCStr(const SdfAssetPath& o) { return o.GetAssetPath().c_str(); }
 
 /// Convert a value to a GT_DataArray.
 /// The value is either a POD type or a tuple of PODs.
-template <typename ELEMTYPE, typename GTARRAY,
-          int TUPLESIZE=1, GT_Type GT_TYPE=GT_TYPE_NONE>
+template <class ELEMTYPE, class GTARRAY, GT_Type GT_TYPE=GT_TYPE_NONE>
 GT_DataArray*
 Gusd_ConvertTupleToGt(const VtValue& val)
 {
@@ -763,18 +734,19 @@ Gusd_ConvertTupleToGt(const VtValue& val)
     const auto& heldVal = val.UncheckedGet<ELEMTYPE>();
 
     return new GTARRAY((const typename GTARRAY::data_type*)&heldVal,
-                       1, TUPLESIZE, GT_TYPE);
+                       1, GusdGetTupleSize<ELEMTYPE>(), GT_TYPE);
 }
 
 
 /// Convert a VtArray to a GT_DataArray.
 /// The elements of the array are either PODs, or tuples of PODs (eg., vectors).
-template <typename ELEMTYPE, typename GTARRAY,
-          int TUPLESIZE=1, GT_Type GT_TYPE=GT_TYPE_NONE>
+template <class ELEMTYPE, class GTARRAY, GT_Type GT_TYPE=GT_TYPE_NONE>
 GT_DataArray*    
 Gusd_ConvertTupleArrayToGt(const UsdGeomPrimvar& primvar, const VtValue& val)
 {
     TF_DEV_AXIOM(val.IsHolding<VtArray<ELEMTYPE> >());
+
+    const int tupleSize = GusdGetTupleSize<ELEMTYPE>();
 
     const auto& array = val.UncheckedGet<VtArray<ELEMTYPE> >();
     if (array.size() > 0) {
@@ -789,23 +761,22 @@ Gusd_ConvertTupleArrayToGt(const UsdGeomPrimvar& primvar, const VtValue& val)
                 // A GT_Type has not been specified using template args.
                 // We can try to derive a type from the role on the primvar's 
                 // type name, but only worth doing for types that can
-                // actually have roles (eg., not PODs)
-                if (!SYSisPOD<ELEMTYPE>()) {
-                    type = Gusd_GetTypeFromRole(
-                        primvar.GetTypeName().GetRole());
+                // actually have roles (eg., not scalars)
+                if (tupleSize > 1) {
+                    type = GusdGT_Utils::getType(primvar.GetTypeName());
                 }
             }
-            
+
             if (elementSize == 1) {
                 return new GusdGT_VtArray<ELEMTYPE>(array, type);
             } else {
                 const size_t numTuples = array.size()/elementSize;
-                const int tupleSize = elementSize*TUPLESIZE;
+                const int gtTupleSize = elementSize*tupleSize;
 
                 if (numTuples*elementSize == array.size()) {
                     return new GTARRAY(
                         (const typename GTARRAY::data_type*)array.cdata(),
-                        numTuples, tupleSize);
+                        numTuples, gtTupleSize);
                 } else {
                     GUSD_WARN().Msg(
                         "Invalid primvar <%s>: array size [%zu] is not a "
@@ -890,55 +861,63 @@ GusdPrimWrapper::convertPrimvarData( const UsdGeomPrimvar& primvar, UsdTimeCode 
     if (!primvar.ComputeFlattened(&val, time)) {
         return nullptr;
     }
+    return convertPrimvarData(primvar, val);
+}
 
-#define _CONVERT_TUPLE(elemType, gtArray, tupleSize, gtType)            \
+
+/* static */
+GT_DataArrayHandle
+GusdPrimWrapper::convertPrimvarData( const UsdGeomPrimvar& primvar,
+                                     const VtValue& val )
+{
+#define _CONVERT_TUPLE(elemType, gtArray, gtType)                       \
     if (val.IsHolding<elemType>()) {                                    \
-        return Gusd_ConvertTupleToGt<elemType, gtArray, tupleSize>(val); \
+        return Gusd_ConvertTupleToGt<elemType, gtArray, gtType>(val);   \
     } else if (val.IsHolding<VtArray<elemType> >()) {                   \
-        return Gusd_ConvertTupleArrayToGt<elemType, gtArray, tupleSize>( \
+        return Gusd_ConvertTupleArrayToGt<elemType, gtArray, gtType>(   \
             primvar, val);                                              \
     }
 
     // Check for most common value types first.
-    _CONVERT_TUPLE(GfVec3f, GT_Real32Array, 3, GT_TYPE_NONE);
-    _CONVERT_TUPLE(GfVec2f, GT_Real32Array, 2, GT_TYPE_NONE);
-    _CONVERT_TUPLE(float, GT_Real32Array, 1, GT_TYPE_NONE);
-    _CONVERT_TUPLE(int, GT_Int32Array, 1, GT_TYPE_NONE);
+    _CONVERT_TUPLE(GfVec3f, GT_Real32Array, GT_TYPE_NONE);
+    _CONVERT_TUPLE(GfVec2f, GT_Real32Array, GT_TYPE_NONE);
+    _CONVERT_TUPLE(float,   GT_Real32Array, GT_TYPE_NONE);
+    _CONVERT_TUPLE(int,     GT_Int32Array,  GT_TYPE_NONE);
 
     // Scalars
-    _CONVERT_TUPLE(double, GT_Real64Array, 1, GT_TYPE_NONE);
-    _CONVERT_TUPLE(GfHalf, GT_Real16Array, 1, GT_TYPE_NONE);
-    _CONVERT_TUPLE(int64, GT_Int64Array, 1, GT_TYPE_NONE);
-    _CONVERT_TUPLE(unsigned char, GT_UInt8Array, 1, GT_TYPE_NONE);
+    _CONVERT_TUPLE(double,  GT_Real64Array, GT_TYPE_NONE);
+    _CONVERT_TUPLE(GfHalf,  GT_Real16Array, GT_TYPE_NONE);
+    _CONVERT_TUPLE(int64,   GT_Int64Array,  GT_TYPE_NONE);
+    _CONVERT_TUPLE(unsigned char, GT_UInt8Array, GT_TYPE_NONE);
 
     // TODO: UInt, UInt64 (convert to int32/int64?)
     
     // Vec2
-    _CONVERT_TUPLE(GfVec2d, GT_Real64Array, 2, GT_TYPE_NONE);
-    _CONVERT_TUPLE(GfVec2h, GT_Real16Array, 2, GT_TYPE_NONE);
-    _CONVERT_TUPLE(GfVec2i, GT_Int32Array, 2, GT_TYPE_NONE);
+    _CONVERT_TUPLE(GfVec2d, GT_Real64Array, GT_TYPE_NONE);
+    _CONVERT_TUPLE(GfVec2h, GT_Real16Array, GT_TYPE_NONE);
+    _CONVERT_TUPLE(GfVec2i, GT_Int32Array, GT_TYPE_NONE);
 
     // Vec3
-    _CONVERT_TUPLE(GfVec3d, GT_Real64Array, 3, GT_TYPE_NONE);
-    _CONVERT_TUPLE(GfVec3h, GT_Real16Array, 3, GT_TYPE_NONE);
-    _CONVERT_TUPLE(GfVec3i, GT_Int32Array, 3, GT_TYPE_NONE);
+    _CONVERT_TUPLE(GfVec3d, GT_Real64Array, GT_TYPE_NONE);
+    _CONVERT_TUPLE(GfVec3h, GT_Real16Array, GT_TYPE_NONE);
+    _CONVERT_TUPLE(GfVec3i, GT_Int32Array,  GT_TYPE_NONE);
 
     // Vec4
-    _CONVERT_TUPLE(GfVec4d, GT_Real64Array, 4, GT_TYPE_NONE);
-    _CONVERT_TUPLE(GfVec4f, GT_Real32Array, 4, GT_TYPE_NONE);
-    _CONVERT_TUPLE(GfVec4h, GT_Real16Array, 4, GT_TYPE_NONE);
-    _CONVERT_TUPLE(GfVec4i, GT_Int32Array, 4, GT_TYPE_NONE);
+    _CONVERT_TUPLE(GfVec4d, GT_Real64Array, GT_TYPE_NONE);
+    _CONVERT_TUPLE(GfVec4f, GT_Real32Array, GT_TYPE_NONE);
+    _CONVERT_TUPLE(GfVec4h, GT_Real16Array, GT_TYPE_NONE);
+    _CONVERT_TUPLE(GfVec4i, GT_Int32Array,  GT_TYPE_NONE);
 
     // Quat
-    _CONVERT_TUPLE(GfQuatd, GT_Real64Array, 4, GT_TYPE_QUATERNION);
-    _CONVERT_TUPLE(GfQuatf, GT_Real32Array, 4, GT_TYPE_QUATERNION);
-    _CONVERT_TUPLE(GfQuath, GT_Real16Array, 4, GT_TYPE_QUATERNION);
+    _CONVERT_TUPLE(GfQuatd, GT_Real64Array, GT_TYPE_QUATERNION);
+    _CONVERT_TUPLE(GfQuatf, GT_Real32Array, GT_TYPE_QUATERNION);
+    _CONVERT_TUPLE(GfQuath, GT_Real16Array, GT_TYPE_QUATERNION);
 
     // Matrices
-    _CONVERT_TUPLE(GfMatrix3d, GT_Real64Array, 9, GT_TYPE_MATRIX3);
-    _CONVERT_TUPLE(GfMatrix4d, GT_Real64Array, 16, GT_TYPE_MATRIX);
+    _CONVERT_TUPLE(GfMatrix3d, GT_Real64Array, GT_TYPE_MATRIX3);
+    _CONVERT_TUPLE(GfMatrix4d, GT_Real64Array, GT_TYPE_MATRIX);
     // TODO: Correct GT_Type for GfMatrix2d?
-    _CONVERT_TUPLE(GfMatrix2d, GT_Real64Array, 4, GT_TYPE_NONE);
+    _CONVERT_TUPLE(GfMatrix2d, GT_Real64Array, GT_TYPE_NONE);
 
 #undef _CONVERT_TUPLE
 
@@ -1039,8 +1018,17 @@ GusdPrimWrapper::loadPrimvars(
             continue;
         }
 
-        GT_DataArrayHandle gtData = convertPrimvarData( primvar, time );
+        // Compute the value before calling convertPrimvarData, so that
+        // we can distinguish between primvars with no authored value
+        // and primvars whose authored value can't be converted.
+        // Note that the 'authored' primvars above are only known to have
+        // scene description, and still may have no value!
+        VtValue val;
+        if (!primvar.ComputeFlattened(&val, time)) {
+            continue;
+        }
 
+        GT_DataArrayHandle gtData = convertPrimvarData(primvar, val);
         if( !gtData )
         {
             TF_WARN( "Failed to convert primvar %s:%s %s.", 
@@ -1050,8 +1038,19 @@ GusdPrimWrapper::loadPrimvars(
             continue;
         }
 
-        // usd vertex primvars are assigned to points
-        if( primvar.GetInterpolation() == UsdGeomTokens->vertex )
+#if SYS_VERSION_FULL_INT >= 0x11050000
+        // Encode the USD primvar names into something safe for the Houdini
+        // geometry attribute name. This allows round tripping of namespaced
+        // primvars from USD -> Houdini -> USD.
+        UT_StringHolder attrname = UT_VarEncode::encode(name);
+#else
+        UT_StringHolder attrname = name;
+#endif
+
+        const TfToken interpolation = primvar.GetInterpolation();
+
+        if( interpolation == UsdGeomTokens->vertex ||
+            interpolation == UsdGeomTokens->varying )
         {
             if( gtData->entries() < minPoint ) {
                 TF_WARN( "Not enough values found for primvar: %s:%s. "
@@ -1059,30 +1058,28 @@ GusdPrimWrapper::loadPrimvars(
                          primPath.c_str(),
                          primvar.GetPrimvarName().GetText(),
                          gtData->entries(), minPoint );
-            }
-            else {
+            } else {
                 if (remapIndicies) {
                     gtData = new GT_DAIndirect( remapIndicies, gtData );
                 }
                 if( point ) {
-                    *point = (*point)->addAttribute( name.c_str(), gtData, true );
+                    *point = (*point)->addAttribute( attrname.c_str(), gtData, true );
                 }
             }
         }
-        else if( primvar.GetInterpolation() == UsdGeomTokens->faceVarying )
+        else if( interpolation == UsdGeomTokens->faceVarying )
         {
             if( gtData->entries() < minVertex ) {
                 TF_WARN( "Not enough values found for primvar: %s:%s. "
-                         "%zd values given for %d verticies.", 
+                         "%zd values given for %d vertices.", 
                          primPath.c_str(),
                          primvar.GetPrimvarName().GetText(), 
                          gtData->entries(), minVertex );
-            }
-            else if( vertex ) {           
-                *vertex = (*vertex)->addAttribute( name.c_str(), gtData, true );
+            } else if( vertex ) {
+                *vertex = (*vertex)->addAttribute( attrname.c_str(), gtData, true );
             }
         }
-        else if( primvar.GetInterpolation() == UsdGeomTokens->uniform )
+        else if( interpolation == UsdGeomTokens->uniform )
         {
             if( gtData->entries() < minUniform ) {
                 TF_WARN( "Not enough values found for primvar: %s:%s. "
@@ -1090,15 +1087,14 @@ GusdPrimWrapper::loadPrimvars(
                          primPath.c_str(),
                          primvar.GetPrimvarName().GetText(),
                          gtData->entries(), minUniform );
-            }
-            else if( primitive ) {
-                *primitive = (*primitive)->addAttribute( name.c_str(), gtData, true );
+            } else if( primitive ) {
+                *primitive = (*primitive)->addAttribute( attrname.c_str(), gtData, true );
             }
         }
-        else if( primvar.GetInterpolation() == UsdGeomTokens->constant )
+        else if( interpolation == UsdGeomTokens->constant )
         {
             if( constant ) {
-                *constant = (*constant)->addAttribute( name.c_str(), gtData, true );
+                *constant = (*constant)->addAttribute( attrname.c_str(), gtData, true );
             }
         }
     }

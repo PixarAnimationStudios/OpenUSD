@@ -32,21 +32,25 @@
 
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyEnum.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/prim.h"
 
 #include <maya/MFnAssembly.h>
 #include <maya/MObject.h>
 #include <maya/MStatus.h>
-#include <maya/MString.h>
 
 #include <string>
+#include <vector>
 
-using namespace std;
 using namespace boost::python;
 using namespace boost;
 
+
 #define BOOST_PYTHON_NONE boost::python::object()
 
+
 PXR_NAMESPACE_USING_DIRECTIVE
+
 
 namespace {
 
@@ -57,216 +61,206 @@ _GetEditFromString(
         const std::string& editString)
 {
     MObject assemblyObj;
-    MStatus status = UsdMayaUtil::GetMObjectByName(assemblyPath,
-                                                      assemblyObj);
+    MStatus status = UsdMayaUtil::GetMObjectByName(assemblyPath, assemblyObj);
     if (status != MS::kSuccess) {
-        TF_CODING_ERROR("EditUtil.GetEditFromString: "
-                        "assembly dag path expected, not found!");
+        TF_CODING_ERROR(
+            "EditUtil.GetEditFromString: assembly dag path expected, not "
+            "found!");
         return BOOST_PYTHON_NONE;
     }
 
-    MFnAssembly assemblyFn(assemblyObj, &status);
+    const MFnAssembly assemblyFn(assemblyObj, &status);
     if (status != MS::kSuccess) {
-        TF_CODING_ERROR("EditUtil.GetEditFromString: "
-                        "assembly dag path expected, not found!");
+        TF_CODING_ERROR(
+            "EditUtil.GetEditFromString: assembly dag path expected, not "
+            "found!");
         return BOOST_PYTHON_NONE;
     }
 
     SdfPath editPath;
-    UsdMayaEditUtil::RefEdit refEdit;
-    if (!UsdMayaEditUtil::GetEditFromString(assemblyFn,
-                                               editString,
-                                               &editPath,
-                                               &refEdit)) {
+    UsdMayaEditUtil::AssemblyEdit assemEdit;
+    if (!UsdMayaEditUtil::GetEditFromString(
+            assemblyFn,
+            editString,
+            &editPath,
+            &assemEdit)) {
         TF_CODING_ERROR("EditUtil.GetEditFromString: invalid edit");
         return BOOST_PYTHON_NONE;
     }
 
-    return boost::python::make_tuple(editPath, refEdit);
+    return boost::python::make_tuple(editPath, assemEdit);
 }
 
 static
 boost::python::object
-_GetEditsForAssembly(
-        const std::string& assemblyPath)
+_GetEditsForAssembly(const std::string& assemblyPath)
 {
-    UsdMayaEditUtil::PathEditMap refEdits;
-    std::vector< std::string > invalidEdits;
-
     MObject assemblyObj;
-    MStatus status = UsdMayaUtil::GetMObjectByName(assemblyPath,
-                                                      assemblyObj);
+    MStatus status = UsdMayaUtil::GetMObjectByName(assemblyPath, assemblyObj);
     if (status != MS::kSuccess) {
-        TF_CODING_ERROR("EditUtil.GetEditsForAssembly: "
-                        "assembly dag path expected, not found!");
+        TF_CODING_ERROR(
+            "EditUtil.GetEditsForAssembly: assembly dag path expected, not "
+            "found!");
         return BOOST_PYTHON_NONE;
     }
 
-    UsdMayaEditUtil::GetEditsForAssembly(assemblyObj,
-                                            &refEdits,
-                                            &invalidEdits);
+    UsdMayaEditUtil::PathEditMap assemEdits;
+    std::vector<std::string> invalidEdits;
+    UsdMayaEditUtil::GetEditsForAssembly(
+        assemblyObj,
+        &assemEdits,
+        &invalidEdits);
 
     boost::python::dict editDict;
-    TF_FOR_ALL( pathEdits, refEdits )
-    {
+    TF_FOR_ALL (pathEdits, assemEdits) {
         boost::python::list editList;
-        TF_FOR_ALL( edit, pathEdits->second )
-        {
-            editList.append( *edit );
+        TF_FOR_ALL (edit, pathEdits->second) {
+            editList.append(*edit);
         }
 
-        editDict[ pathEdits->first ] = editList;
+        editDict[pathEdits->first] = editList;
     }
 
-    return boost::python::make_tuple(editDict,invalidEdits);
+    return boost::python::make_tuple(editDict, invalidEdits);
 }
 
-static bool
-_GetRefEditsFromDict(
-    boost::python::dict &refEditDict,
-    UsdMayaEditUtil::PathEditMap *refEdits )
+static
+bool
+_GetAssemblyEditsFromDict(
+        boost::python::dict& assemEditDict,
+        UsdMayaEditUtil::PathEditMap* assemEdits)
 {
-    boost::python::list keys = refEditDict.keys();  
-    for( int i=0; i<len(keys); i++ )
-    {
+    boost::python::list keys = assemEditDict.keys();
+    for (int i = 0; i < len(keys); ++i) {
         boost::python::extract<SdfPath> extractedKey(keys[i]);
-        if( !extractedKey.check() )
-        {
-            TF_CODING_ERROR( "EditUtil.ApplyEditsToProxy:"
-                             " SdfPath key expected, not found!" );
+        if (!extractedKey.check()) {
+            TF_CODING_ERROR(
+                "EditUtil.ApplyEditsToProxy: SdfPath key expected, not "
+                "found!");
             return false;
         }
-        else
-        {
-            SdfPath path = extractedKey;
-            
-            UsdMayaEditUtil::RefEditVec pathEdits;
-            
-            boost::python::extract<boost::python::list>
-                    extractedList( refEditDict[path] );
-            
-            if( !extractedList.check() )
-            {
-                TF_CODING_ERROR( "EditUtil.ApplyEditsToProxy:"
-                                 " list value expected, not found!" );
+
+        SdfPath path = extractedKey;
+
+        UsdMayaEditUtil::AssemblyEditVec pathEdits;
+
+        boost::python::extract<boost::python::list>
+            extractedList(assemEditDict[path]);
+
+        if (!extractedList.check()) {
+            TF_CODING_ERROR(
+                "EditUtil.ApplyEditsToProxy: list value expected, not "
+                "found!");
+            return false;
+        }
+
+        boost::python::list editList = extractedList;
+        for (int j = 0; j < len(extractedList); ++j) {
+            boost::python::extract<UsdMayaEditUtil::AssemblyEdit>
+                extractedEdit(editList[j]);
+
+            if (!extractedEdit.check()) {
+                TF_CODING_ERROR(
+                    "EditUtil.ApplyEditsToProxy: AssemblyEdit expected in "
+                    "list, not found!");
                 return false;
             }
-            else
-            {
-                boost::python::list editList = extractedList;
-                for( int j=0; j<len(extractedList); j++ )
-                {
-                    boost::python::extract<UsdMayaEditUtil::RefEdit>
-                            extractedEdit(editList[j]);
-                    
-                    if( !extractedEdit.check() )
-                    {
-                        TF_CODING_ERROR( "EditUtil.ApplyEditsToProxy:"
-                                         " RefEdit expected in list, not found!");
-                        return false;
-                    }
-                    else
-                    {
-                        pathEdits.push_back( extractedEdit );
-                    }
-                }
-            }
             
-            (*refEdits)[path] = pathEdits;
+            pathEdits.push_back(extractedEdit);
         }
+
+        (*assemEdits)[path] = pathEdits;
     }
-    
+
     return true;
 }
 
-static boost::python::object
+static
+boost::python::object
 _ApplyEditsToProxy(
-    boost::python::dict &refEditDict,
-    const UsdStagePtr &stage,
-    const UsdPrim &proxyRootPrim )
+        boost::python::dict& assemEditDict,
+        const UsdPrim& proxyRootPrim)
 {
-    UsdMayaEditUtil::PathEditMap refEdits;
-    if( !_GetRefEditsFromDict( refEditDict, &refEdits ) )
+    UsdMayaEditUtil::PathEditMap assemEdits;
+    if (!_GetAssemblyEditsFromDict(assemEditDict, &assemEdits)) {
         return BOOST_PYTHON_NONE;
-   
-    std::vector< std::string > failedEdits;
-    
-    UsdMayaEditUtil::ApplyEditsToProxy(
-            refEdits,stage,proxyRootPrim,&failedEdits);
-    
-    return boost::python::make_tuple(failedEdits.empty(),failedEdits);
+    }
+
+    std::vector<std::string> failedEdits;
+    UsdMayaEditUtil::ApplyEditsToProxy(assemEdits, proxyRootPrim, &failedEdits);
+
+    return boost::python::make_tuple(failedEdits.empty(), failedEdits);
 }
 
-static boost::python::object
-_GetAvarEdits(
-    boost::python::dict &refEditDict )
+static
+boost::python::object
+_GetAvarEdits(boost::python::dict& assemEditDict)
 {
-    UsdMayaEditUtil::PathEditMap refEdits;
-    if( !_GetRefEditsFromDict( refEditDict, &refEdits ) )
+    UsdMayaEditUtil::PathEditMap assemEdits;
+    if (!_GetAssemblyEditsFromDict(assemEditDict, &assemEdits)) {
         return BOOST_PYTHON_NONE;
-    
+    }
+
     UsdMayaEditUtil::PathAvarMap avarMap;
-    UsdMayaEditUtil::GetAvarEdits( refEdits, &avarMap );
-    
+    UsdMayaEditUtil::GetAvarEdits(assemEdits, &avarMap);
+
     boost::python::dict pathDict;
-    TF_FOR_ALL( pathEdits, avarMap )
-    {
+    TF_FOR_ALL (pathEdits, avarMap) {
         boost::python::dict valueMap;
-        TF_FOR_ALL( avarEdit, pathEdits->second )
-        {
+        TF_FOR_ALL (avarEdit, pathEdits->second) {
             valueMap[avarEdit->first] = avarEdit->second;
         }
-        
-        pathDict[ pathEdits->first ] = valueMap;
+
+        pathDict[pathEdits->first] = valueMap;
     }
 
     return pathDict;
 }
 
-} // anonymous namespace 
+
+} // anonymous namespace
+
 
 void wrapEditUtil()
 {
-    {
-        scope EditUtil =
-            class_< UsdMayaEditUtil,
-                    boost::noncopyable>("EditUtil", "UsdMaya edit utilities")
-            .def("GetEditFromString",
-                 &_GetEditFromString)
-            .staticmethod("GetEditFromString")
-            .def("GetEditsForAssembly",
-                 &_GetEditsForAssembly)
-            .staticmethod("GetEditsForAssembly")
-            .def("ApplyEditsToProxy",
-                 &_ApplyEditsToProxy)
-            .staticmethod("ApplyEditsToProxy")
-            .def("GetAvarEdits",
-                 &_GetAvarEdits)
-            .staticmethod("GetAvarEdits")
-        ;
-        
-        enum_<UsdMayaEditUtil::EditOp>("EditOp")
-            .value("OP_TRANSLATE", UsdMayaEditUtil::OP_TRANSLATE)
-            .value("OP_ROTATE", UsdMayaEditUtil::OP_ROTATE)
-            .value("OP_SCALE", UsdMayaEditUtil::OP_SCALE)
-        ;
-        
-        enum_<UsdMayaEditUtil::EditSet>("EditSet")
-            .value("SET_ALL", UsdMayaEditUtil::SET_ALL)
-            .value("SET_X", UsdMayaEditUtil::SET_X)
-            .value("SET_Y", UsdMayaEditUtil::SET_Y)
-            .value("SET_Z", UsdMayaEditUtil::SET_Z)
-        ;
-        
-        typedef UsdMayaEditUtil::RefEdit RefEdit;
-        class_<RefEdit>("RefEdit", "Assembly edit")
-            .def_readwrite("editString", &RefEdit::editString)
-            .def_readwrite("op", &RefEdit::op)
-            .def_readwrite("set", &RefEdit::set)
-            .add_property("value",
-                make_getter(&RefEdit::value,
-                    return_value_policy<return_by_value>()),
-                make_setter(&RefEdit::value))
-        ;
-    }
+    scope EditUtil =
+        class_<UsdMayaEditUtil, boost::noncopyable>(
+            "EditUtil", "UsdMaya edit utilities")
+        .def("GetEditFromString",
+            &_GetEditFromString)
+        .staticmethod("GetEditFromString")
+        .def("GetEditsForAssembly",
+            &_GetEditsForAssembly)
+        .staticmethod("GetEditsForAssembly")
+        .def("ApplyEditsToProxy",
+            &_ApplyEditsToProxy)
+        .staticmethod("ApplyEditsToProxy")
+        .def("GetAvarEdits",
+            &_GetAvarEdits)
+        .staticmethod("GetAvarEdits")
+    ;
+
+    enum_<UsdMayaEditUtil::EditOp>("EditOp")
+        .value("OP_TRANSLATE", UsdMayaEditUtil::OP_TRANSLATE)
+        .value("OP_ROTATE", UsdMayaEditUtil::OP_ROTATE)
+        .value("OP_SCALE", UsdMayaEditUtil::OP_SCALE)
+    ;
+
+    enum_<UsdMayaEditUtil::EditSet>("EditSet")
+        .value("SET_ALL", UsdMayaEditUtil::SET_ALL)
+        .value("SET_X", UsdMayaEditUtil::SET_X)
+        .value("SET_Y", UsdMayaEditUtil::SET_Y)
+        .value("SET_Z", UsdMayaEditUtil::SET_Z)
+    ;
+
+    using AssemblyEdit = UsdMayaEditUtil::AssemblyEdit;
+    class_<AssemblyEdit>("AssemblyEdit", "Assembly edit")
+        .def_readwrite("editString", &AssemblyEdit::editString)
+        .def_readwrite("op", &AssemblyEdit::op)
+        .def_readwrite("set", &AssemblyEdit::set)
+        .add_property("value",
+            make_getter(&AssemblyEdit::value,
+                return_value_policy<return_by_value>()),
+            make_setter(&AssemblyEdit::value))
+    ;
 }

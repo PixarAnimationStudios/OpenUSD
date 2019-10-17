@@ -96,7 +96,6 @@ HdStMesh::HdStMesh(SdfPath const& id,
     , _limitNormals(false)
     , _sceneNormals(false)
     , _flatNormals(false)
-    , _pointsVisibilityAuthored(false)
     , _hasVaryingTopology(false)
 {
     /*NOTHING*/
@@ -118,6 +117,8 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         _SetMaterialId(delegate->GetRenderIndex().GetChangeTracker(),
                        delegate->GetMaterialId(GetId()));
+
+        _sharedData.materialTag = _GetMaterialTag(delegate->GetRenderIndex());
     }
 
     // Check if either the material or geometric shaders need updating for
@@ -1017,6 +1018,11 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     HdBufferSpec::GetBufferSpecs(reserveOnlySources, &bufferSpecs);
     HdBufferSpec::GetBufferSpecs(computations, &bufferSpecs);
 
+    HdBufferSourceVector allSources(sources);
+    for (HdBufferSourceSharedPtr& src : reserveOnlySources) {
+        allSources.emplace_back(src);
+    }
+
     HdBufferArrayRangeSharedPtr const &bar = drawItem->GetVertexPrimvarRange();
     if ((!bar) || (!bar->IsValid())) {
         // allocate new range
@@ -1027,7 +1033,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             // in the sharing id so that we can take into account
             // sharing of computed primvar data.
             _vertexPrimvarId = _ComputeSharedPrimvarId(_topologyId,
-                                                       sources,
+                                                       allSources,
                                                        computations);
 
             bool isFirstInstance = true;
@@ -1093,7 +1099,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                 // into account previously committed sources along
                 // with our new sources and computations.
                 _vertexPrimvarId = _ComputeSharedPrimvarId(_vertexPrimvarId,
-                                                           sources,
+                                                           allSources,
                                                            computations);
 
                 bool isFirstInstance = true;
@@ -1526,6 +1532,22 @@ HdStMesh::_UseFlatNormals(const HdMeshReprDesc &desc) const
     return true;
 }
 
+const TfToken&
+HdStMesh::_GetMaterialTag(const HdRenderIndex &renderIndex) const
+{
+    const HdStMaterial *material =
+        static_cast<const HdStMaterial *>(
+                renderIndex.GetSprim(HdPrimTypeTokens->material,
+                                     GetMaterialId()));
+
+    if (material) {
+        return material->GetMaterialTag();
+    }
+
+    // A material may have been unbound, we should clear the old tag
+    return HdMaterialTagTokens->defaultMaterialTag;
+}
+
 static std::string
 _GetMixinShaderSource(TfToken const &shaderStageKey)
 {
@@ -1536,11 +1558,11 @@ _GetMixinShaderSource(TfToken const &shaderStageKey)
     // TODO: each delegate should provide their own package of mixin shaders
     // the lighting mixins are fallback only.
     static std::once_flag firstUse;
-    static std::unique_ptr<GlfGLSLFX> mixinFX;
+    static std::unique_ptr<HioGlslfx> mixinFX;
    
     std::call_once(firstUse, [](){
         std::string filePath = HdStPackageLightingIntegrationShader();
-        mixinFX.reset(new GlfGLSLFX(filePath));
+        mixinFX.reset(new HioGlslfx(filePath));
     });
 
     return mixinFX->GetSource(shaderStageKey);

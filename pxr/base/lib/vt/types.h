@@ -34,7 +34,9 @@
 #include "pxr/base/gf/half.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/preprocessor.hpp>
+#include <boost/preprocessor/cat.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
+#include <boost/preprocessor/tuple/elem.hpp>
 
 #include <cstddef>
 #include <cstring>

@@ -34,7 +34,6 @@ pxr_library(sdf
         fileFormat
         identity
         layer
-        layerBase
         layerOffset
         layerStateDelegate
         layerTree
@@ -43,8 +42,6 @@ pxr_library(sdf
         listEditor
         listEditorProxy
         listOp
-        mapperArgSpec
-        mapperSpec
         mapEditProxy
         mapEditor
         namespaceEdit
@@ -53,6 +50,7 @@ pxr_library(sdf
         pathNode
         pathTable
         payload
+        pool
         primSpec
         propertySpec
         proxyPolicies
@@ -83,7 +81,6 @@ pxr_library(sdf
         pyListOp
         pyListProxy
         pyMapEditProxy
-        pyMarkerProxy
         pySpec
         pyUtils
 
@@ -104,7 +101,6 @@ pxr_library(sdf
         fileIO_Common
         layerRegistry
         listOpListEditor
-        markerUtils
         parserHelpers
         parserValueContext
         pathParser
@@ -114,6 +110,7 @@ pxr_library(sdf
         vectorListEditor
 
     PRIVATE_HEADERS
+        instantiatePool.h
         valueTypePrivate.h
 
     CPPFILES
@@ -134,11 +131,8 @@ pxr_library(sdf
         wrapCopyUtils.cpp
         wrapFileFormat.cpp
         wrapLayer.cpp
-        wrapLayerBase.cpp
         wrapLayerOffset.cpp
         wrapLayerTree.cpp
-        wrapMapperSpec.cpp
-        wrapMapperArgSpec.cpp
         wrapNamespaceEdit.cpp
         wrapNotice.cpp
         wrapPath.cpp
@@ -268,12 +262,7 @@ pxr_install_test_dir(
 
 pxr_install_test_dir(
     SRC testenv/testSdfParsingOld.testenv
-    DEST testSdfParsingOld/testSdfParsingOld.testenv
-)
-
-pxr_install_test_dir(
-    SRC testenv/testSdfParsingOld.testenv
-    DEST testSdfParsingNew/testSdfParsingNew.testenv
+    DEST testSdfParsingOld/testSdfParsing.testenv
 )
 
 pxr_install_test_dir(
@@ -333,13 +322,6 @@ pxr_register_test(testSdfMetaDataPlugInfo
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfMetaDataPlugInfo"
 )
 
-pxr_register_test(testSdfParsingNew
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfParsing"
-    ENV
-        SDF_CONVERT_TO_NEW_TYPENAMES=1
-)
-
 pxr_register_test(testSdfParsing
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfParsing"
@@ -348,8 +330,6 @@ pxr_register_test(testSdfParsing
 pxr_register_test(testSdfParsingOld
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfParsing"
-    ENV
-        SDF_WRITE_OLD_TYPENAMES=1
 )
 
 pxr_register_test(testSdfPath

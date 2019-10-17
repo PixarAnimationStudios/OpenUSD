@@ -57,6 +57,7 @@ HdxShadowTask::HdxShadowTask(HdSceneDelegate* delegate, SdfPath const& id)
     , _passes()
     , _renderPassStates()
     , _params()
+    , _renderTags()
 {
 }
 
@@ -73,6 +74,13 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
     HF_MALLOC_TAG_FUNCTION();
     GLF_GROUP_FUNCTION();
 
+    HdRenderIndex &renderIndex = delegate->GetRenderIndex();
+    if (!renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)) {
+        // Clean to prevent repeated calling.
+        *dirtyBits = HdChangeTracker::Clean;
+        return;
+    }
+
     // Extract the lighting context information from the task context
     GlfSimpleLightingContextRefPtr lightingContext;
     if (!_GetTaskContextData(ctx, 
@@ -83,18 +91,18 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
 
     GlfSimpleLightVector const glfLights = lightingContext->GetLights();
     GlfSimpleShadowArrayRefPtr const shadows = lightingContext->GetShadows();
-    HdRenderIndex &renderIndex = delegate->GetRenderIndex();
 
     const bool dirtyParams = (*dirtyBits) & HdChangeTracker::DirtyParams;
     if (dirtyParams) {
-        // Extract the new shadow task params from exec
+        // Extract the new shadow task params from scene delegate
         if (!_GetTaskParams(delegate, &_params)) {
             return;
         }
     }
 
-    if (!renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)) {
-        return;
+    if ((*dirtyBits) & HdChangeTracker::DirtyRenderTags) {
+        // Update render tags from scene delegate
+        _renderTags = _GetTaskRenderTags(delegate);
     }
 
     // Iterate through all lights and for those that have shadows enabled
@@ -193,13 +201,12 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
         std::min(shadows->GetNumLayers(), _passes.size());
     for(size_t passId = 0; passId < shadowCount; passId++) {
         // Move the camera to the correct position to take the shadow map
-        _renderPassStates[passId]->SetCamera( 
+        _renderPassStates[passId]->SetCameraFramingState( 
             shadows->GetViewMatrix(passId), 
             shadows->GetProjectionMatrix(passId),
-            GfVec4d(0,0,shadows->GetSize()[0],shadows->GetSize()[1]));
+            GfVec4d(0,0,shadows->GetSize()[0],shadows->GetSize()[1]),
+            HdRenderPassState::ClipPlanesVector());
 
-        _renderPassStates[passId]->Sync(
-            renderIndex.GetResourceRegistry());
         _passes[passId]->Sync();
     }
 
@@ -207,14 +214,20 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
 }
 
 void
+HdxShadowTask::Prepare(HdTaskContext* ctx,
+                       HdRenderIndex* renderIndex)
+{
+    HdResourceRegistrySharedPtr resourceRegistry =
+        renderIndex->GetResourceRegistry();
+
+    for(size_t passId = 0; passId < _passes.size(); passId++) {
+        _renderPassStates[passId]->Prepare(resourceRegistry);
+    }
+}
+
+void
 HdxShadowTask::Execute(HdTaskContext* ctx)
 {
-    static const TfTokenVector SHADOW_RENDER_TAGS =
-    {
-        HdTokens->geometry,
-        HdxRenderTagsTokens->interactiveOnlyGeom
-    };
-
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
     GLF_GROUP_FUNCTION();
@@ -253,7 +266,7 @@ HdxShadowTask::Execute(HdTaskContext* ctx)
         // Render the actual geometry in the collection
         _passes[shadowId]->Execute(
             _renderPassStates[shadowId],
-            SHADOW_RENDER_TAGS);
+            GetRenderTags());
 
         // Unbind the buffer and move on to the next shadow map
         shadows->EndCapture(shadowId);
@@ -262,6 +275,12 @@ HdxShadowTask::Execute(HdTaskContext* ctx)
     // restore GL states to default
     glDisable(GL_PROGRAM_POINT_SIZE);
     glDisable(GL_POLYGON_OFFSET_FILL);
+}
+
+const TfTokenVector &
+HdxShadowTask::GetRenderTags() const
+{
+    return _renderTags;
 }
 
 void
@@ -273,7 +292,7 @@ HdxShadowTask::_CreateOverrideShader()
         std::lock_guard<std::mutex> lock(shaderCreateLock);
         if (!_overrideShader) {
             _overrideShader = HdStShaderCodeSharedPtr(new HdStGLSLFXShader(
-                GlfGLSLFXSharedPtr(new GlfGLSLFX(
+                HioGlslfxSharedPtr(new HioGlslfx(
                     HdStPackageFallbackSurfaceShader()))));
         }
     }

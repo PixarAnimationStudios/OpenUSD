@@ -19,7 +19,6 @@ pxr_library(vt
         dictionary
         functions
         hash
-        keyValue
         streamOut
         types
         value
@@ -27,7 +26,6 @@ pxr_library(vt
     PYTHON_PUBLIC_CLASSES
         arrayPyBuffer
         valueFromPython
-        pyDictionaryUtils
         wrapArray
 
     PUBLIC_HEADERS

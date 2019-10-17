@@ -79,6 +79,46 @@ CreateUseOuterTestEvents() {
     return events;
 }
 
+static std::shared_ptr<TraceEventList>
+CreateAppendedList()
+{
+    const TraceEvent::TimeStamp ms = 1;
+    std::shared_ptr<TraceEventList> events(new TraceEventList);
+
+    int numEvents = 200;
+
+    for (int i = 0; i < numEvents; i++) {
+        events->EmplaceBack(
+            TraceEvent::Timespan,
+            events->CacheKey("Timespan " + std::to_string(i)),
+            i*ms,
+            (i+1)*ms,
+            TraceCategory::Default
+        );
+    }
+
+    int numAppends = 7;
+
+    for (int j = 0; j < numAppends; ++j) {
+        TraceEventList otherEvents;
+
+        for (int i = 0; i < numEvents; i++) {
+            otherEvents.EmplaceBack(
+                TraceEvent::Timespan,
+                otherEvents.CacheKey("Timespan " + std::to_string(j) +
+                                     ", " + std::to_string(i)),
+                i*ms,
+                (i+1)*ms,
+                TraceCategory::Default
+                );
+        }
+
+        events->Append(std::move(otherEvents));
+    }
+
+    return events;
+}
+
 static void
 _TestForwardIteration(
     const std::shared_ptr<TraceEventList>& eventList)
@@ -132,6 +172,12 @@ main(int argc, char *argv[])
         CreateUseOuterTestEvents();
     _TestForwardIteration(useOuterEventList);
     _TestReverseIteration(useOuterEventList);
+
+    std::cout << "Appended list:" << std::endl;
+    std::shared_ptr<TraceEventList> appendedEventList = 
+        CreateAppendedList();
+    _TestForwardIteration(appendedEventList);
+    _TestReverseIteration(appendedEventList);
 
     std::cout << " PASSED\n";
 }

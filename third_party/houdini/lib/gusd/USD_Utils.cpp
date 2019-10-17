@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "gusd/USD_Utils.h"
+#include "USD_Utils.h"
 
 #include <UT/UT_ConcurrentHashMap.h>
 #include <UT/UT_Interrupt.h>
@@ -34,8 +34,8 @@
 #include <UT/UT_WorkBuffer.h>
 
 #include "pxr/base/tf/type.h"
-#include "pxr/usd/sdf/path.h"
 #include "pxr/usd/kind/registry.h"
+#include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/usdGeom/imageable.h"
@@ -44,6 +44,15 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace GusdUSD_Utils {
+
+
+UT_StringHolder
+TokenToStringHolder(const TfToken& token)
+{
+    return token.IsImmortal() ?
+        UT_StringHolder(UT_StringHolder::REFERENCE, token.GetString()) :
+        UT_StringHolder(token.GetString());
+}
 
 
 bool
@@ -96,6 +105,14 @@ CreateSdfPath(const UT_StringRef& pathStr,
 }
 
 
+const SdfPath&
+GetDefaultPrimIdentifier()
+{
+    static const SdfPath path("defaultPrim");
+    return path;
+}
+
+
 UsdPrim
 GetPrimFromStage(const UsdStagePtr& stage,
                  const SdfPath& path,
@@ -103,13 +120,24 @@ GetPrimFromStage(const UsdStagePtr& stage,
 {
     UT_ASSERT_P(stage);
 
-    if(!path.IsEmpty()) {
+    if (!path.IsEmpty()) {
         UsdPrim prim = stage->GetPrimAtPath(path);
-        if(!prim) {
-            GUSD_GENERIC_ERR(sev).Msg(
-                "Prim '%s' not found in stage @%s@.",
-                path.GetText(),
-                stage->GetRootLayer()->GetIdentifier().c_str());
+        if (!prim) {
+            // Check if we wanted the default prim.
+            if (path == GetDefaultPrimIdentifier()) {
+                prim = stage->GetDefaultPrim();
+                if (!prim) {
+                    GUSD_GENERIC_ERR(sev).Msg(
+                        "Could not retrieve a valid defaultPrim from "
+                        "stage @%s@.",
+                        stage->GetRootLayer()->GetIdentifier().c_str());
+                }
+            } else {
+                GUSD_GENERIC_ERR(sev).Msg(
+                    "Prim '%s' not found in stage @%s@.",
+                    path.GetText(),
+                    stage->GetRootLayer()->GetIdentifier().c_str());
+            }
         }
         return prim;
     }
@@ -172,7 +200,12 @@ ExtractPrimPathAndVariants(const SdfPath& path,
             variants = SdfPath();
         }
     } else {
-        primPath = variants = SdfPath();
+        if (path == GetDefaultPrimIdentifier()) {
+            primPath = path;
+        } else {
+            primPath = SdfPath();
+        }
+        variants = SdfPath();
     }
 }
 

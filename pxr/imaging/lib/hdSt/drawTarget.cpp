@@ -50,7 +50,7 @@ HdStDrawTarget::HdStDrawTarget(SdfPath const &id)
     , _enabled(true)
     , _cameraId()
     , _resolution(512, 512)
-    , _collections()
+    , _collection()
     , _renderPassState()
     , _drawTargetContext()
     , _drawTarget()
@@ -122,7 +122,7 @@ HdStDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
 
     if (bits & DirtyDTDepthClearValue) {
         VtValue vtValue =
-                   sceneDelegate->Get(id, HdStDrawTargetTokens->depthClearValue);
+                  sceneDelegate->Get(id, HdStDrawTargetTokens->depthClearValue);
 
         float depthClearValue = vtValue.GetWithDefault<float>(1.0f);
 
@@ -131,37 +131,26 @@ HdStDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
 
     if (bits & DirtyDTCollection) {
         VtValue vtValue =
-                        sceneDelegate->Get(id, HdStDrawTargetTokens->collection);
+                       sceneDelegate->Get(id, HdStDrawTargetTokens->collection);
 
-        const HdRprimCollectionVector &collections =
-                vtValue.GetWithDefault<HdRprimCollectionVector>(
-                                                     HdRprimCollectionVector());
+        HdRprimCollection collection = vtValue.Get<HdRprimCollection>();
 
-        _collections = collections;
-        size_t newColSize     = collections.size();
-        for (size_t colNum = 0; colNum < newColSize; ++colNum) {
-            TfToken const &currentName = _collections[colNum].GetName();
+        TfToken const &collectionName = collection.GetName();
 
-            HdChangeTracker& changeTracker =
-                             sceneDelegate->GetRenderIndex().GetChangeTracker();
+        HdChangeTracker& changeTracker =
+                         sceneDelegate->GetRenderIndex().GetChangeTracker();
 
-            changeTracker.MarkCollectionDirty(currentName);
+        if (_collection.GetName() != collectionName) {
+            // Make sure collection has been added to change tracker
+            changeTracker.AddCollection(collectionName);
         }
 
-        if (newColSize > 0)
-        {
-            // XXX:  Draw Targets currently only support a single collection right
-            // now as each collect requires it's own render pass and then
-            // it becomes a complex matrix of values as we have race needing to
-            // know the number of attachments and number of render passes to
-            // handle clear color and keeping that all in sync
-            if (_collections.size() != 1) {
-                TF_CODING_ERROR("Draw targets currently supports only a "
-                                "single collection");
-            }
+        // Always mark collection dirty even if added - as we don't
+        // know if this is a re-add.
+        changeTracker.MarkCollectionDirty(collectionName);
 
-            _renderPassState.SetRprimCollection(_collections[0]);
-        }
+        _renderPassState.SetRprimCollection(collection);
+        _collection = collection;
     }
 
     *dirtyBits = Clean;
@@ -205,10 +194,8 @@ HdStDrawTarget::WriteToFile(const HdRenderIndex &renderIndex,
 
 
     // embed camera matrices into metadata
-    VtValue viewMatrixVt  = camera->Get(HdShaderTokens->worldToViewMatrix);
-    VtValue projMatrixVt  = camera->Get(HdShaderTokens->projectionMatrix);
-    const GfMatrix4d &viewMatrix = viewMatrixVt.Get<GfMatrix4d>();
-    const GfMatrix4d &projMatrix = projMatrixVt.Get<GfMatrix4d>();
+    const GfMatrix4d &viewMatrix = camera->GetViewMatrix();
+    const GfMatrix4d &projMatrix = camera->GetProjectionMatrix();
 
     // Make sure all draw target operations happen on the same
     // context.
@@ -414,23 +401,21 @@ HdStDrawTarget::_RegisterTextureResource(
 
 /*static*/
 void
-HdStDrawTarget::GetDrawTargets(HdSceneDelegate *sceneDelegate,
+HdStDrawTarget::GetDrawTargets(HdRenderIndex* renderIndex,
                                HdStDrawTargetPtrConstVector *drawTargets)
 {
     HF_MALLOC_TAG_FUNCTION();
 
-    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
-
     SdfPathVector sprimPaths;
 
-    if (renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->drawTarget)) {
-        sprimPaths = renderIndex.GetSprimSubtree(HdPrimTypeTokens->drawTarget,
+    if (renderIndex->IsSprimTypeSupported(HdPrimTypeTokens->drawTarget)) {
+        sprimPaths = renderIndex->GetSprimSubtree(HdPrimTypeTokens->drawTarget,
             SdfPath::AbsoluteRootPath());
     }
 
     TF_FOR_ALL (it, sprimPaths) {
         HdSprim const *drawTarget =
-                        renderIndex.GetSprim(HdPrimTypeTokens->drawTarget, *it);
+                        renderIndex->GetSprim(HdPrimTypeTokens->drawTarget, *it);
 
         if (drawTarget != nullptr)
         {

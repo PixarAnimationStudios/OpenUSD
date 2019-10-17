@@ -520,7 +520,7 @@ _FindOrCreateDefaultValue(std::type_info const &type,
     // created that isn't used.
     tbb::spin_mutex::scoped_lock lock(defaultValuesMutex);
     DefaultValuesMap::iterator i =
-        defaultValues.insert(make_pair(key, newValue)).first;
+        defaultValues.emplace(std::move(key), std::move(newValue)).first;
     return i->second.GetPointer();
 }
 

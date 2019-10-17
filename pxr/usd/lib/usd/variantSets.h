@@ -74,7 +74,7 @@ public:
     /// \endcode
     USD_API
     bool AddVariant(const std::string& variantName,
-                    UsdListPosition position=UsdListPositionTempDefault);
+                    UsdListPosition position=UsdListPositionBackOfPrependList);
 
     /// Return the composed variant names for this VariantSet, ordered
     /// lexicographically.
@@ -224,7 +224,7 @@ public:
     /// without necessarily populating it with variants.
     USD_API
     UsdVariantSet AddVariantSet(const std::string& variantSetName,
-                                UsdListPosition position=UsdListPositionTempDefault);
+                UsdListPosition position=UsdListPositionBackOfPrependList);
 
     // TODO: don't we want remove and reorder, clear, etc. also?
 

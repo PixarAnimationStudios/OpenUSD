@@ -182,145 +182,145 @@ class TestSdfPath2(unittest.TestCase):
         rootProp = rootPrim.AppendProperty("prop1")
         
         CheckPrimPropertyPath(rootProp, rootPrim.AppendProperty("prop1"), rootPrim, "/Foo.prop1", ["Foo", ".prop1"], "prop1")
-        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, childPrim, childPrim2, rootProp, relRoot)
+        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, rootProp, childPrim, childPrim2, relRoot)
         
         # --- Make another property of the root prim path
         rootProp2 = rootPrim.AppendProperty("prop2")
         
         CheckPrimPropertyPath(rootProp2, rootPrim.AppendProperty("prop2"), rootPrim, "/Foo.prop2", ["Foo", ".prop2"], "prop2")
-        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, childPrim, childPrim2, rootProp, rootProp2, relRoot)
+        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, rootProp, rootProp2, childPrim, childPrim2, relRoot)
         
         # --- Make a namespaced property of the root prim path
         rootProp3 = rootPrim.AppendProperty("prop3:bar:baz")
         
         CheckPrimNamespacedPropertyPath(rootProp3, rootPrim.AppendProperty("prop3:bar:baz"), rootPrim, "/Foo.prop3:bar:baz", ["Foo", ".prop3:bar:baz"], "prop3:bar:baz")
-        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, childPrim, childPrim2, rootProp, rootProp3, relRoot)
+        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, rootProp, rootProp3, childPrim, childPrim2, relRoot)
         
         # --- Make a property of the child prim path
         childProp = childPrim.AppendProperty("foo")
         
         CheckPrimPropertyPath(childProp, childPrim.AppendProperty("foo"), childPrim, "/Foo/Bar.foo", ["Foo", "Bar", ".foo"], "foo")
-        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, childPrim, childProp, childPrim2, rootProp, relRoot)
+        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, rootProp, childPrim, childProp, childPrim2, relRoot)
         
         # --- Make another property of the child prim path
         childProp2 = childPrim.AppendProperty("bar")
         
         CheckPrimPropertyPath(childProp2, childPrim.AppendProperty("bar"), childPrim, "/Foo/Bar.bar", ["Foo", "Bar", ".bar"], "bar")
-        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, childPrim, childProp2, childProp, childPrim2, rootProp, relRoot)
+        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, rootProp, childPrim, childProp2, childProp, childPrim2, relRoot)
         
         # --- Make a target of the root property path
         rootPropTarg = rootProp.AppendTarget("/Target1")
         
         CheckTargetPath(rootPropTarg, rootProp.AppendTarget("/Target1"), rootProp, "/Foo.prop1[/Target1]", ["Foo", ".prop1", "[/Target1]"], "/Target1")
-        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, childPrim, childPrim2, rootProp, rootPropTarg, relRoot)
+        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, rootProp, rootPropTarg, childPrim, childPrim2, relRoot)
         
         # --- Make another target of the root property path
         rootPropTarg2 = rootProp.AppendTarget("/FooTarget.bar")
         
         CheckTargetPath(rootPropTarg2, rootProp.AppendTarget("/FooTarget.bar"), rootProp, "/Foo.prop1[/FooTarget.bar]", ["Foo", ".prop1", "[/FooTarget.bar]"], "/FooTarget.bar")
-        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, childPrim, childPrim2, rootProp, rootPropTarg2, rootPropTarg, relRoot)
+        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, rootProp, rootPropTarg2, rootPropTarg, childPrim, childPrim2, relRoot)
         
         # --- Make a rel attr of the root property target path
         rootPropRelAttr = rootPropTarg.AppendRelationalAttribute("fooAttr")
         
         CheckRelationalAttributePath(rootPropRelAttr, rootPropTarg.AppendRelationalAttribute("fooAttr"), rootPropTarg, "/Foo.prop1[/Target1].fooAttr", ["Foo", ".prop1", "[/Target1]", ".fooAttr"], "fooAttr")
-        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, childPrim, childPrim2, rootProp, rootPropTarg2, rootPropTarg, rootPropRelAttr, relRoot)
+        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, rootProp, rootPropTarg2, rootPropTarg, rootPropRelAttr, childPrim, childPrim2, relRoot)
         
         # --- Make another rel attr of the root property path, same target
         rootPropRelAttr2 = rootPropTarg.AppendRelationalAttribute("barAttr")
         
         CheckRelationalAttributePath(rootPropRelAttr2, rootPropTarg.AppendRelationalAttribute("barAttr"), rootPropTarg, "/Foo.prop1[/Target1].barAttr", ["Foo", ".prop1", "[/Target1]", ".barAttr"], "barAttr")
-        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, childPrim, childPrim2, rootProp, rootPropTarg2, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, relRoot)
+        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, rootProp, rootPropTarg2, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, childPrim, childPrim2, relRoot)
         
         # --- Make another rel attr of the root property path, 2nd target
         rootPropRelAttr3 = rootPropTarg2.AppendRelationalAttribute("barAttr")
         
         CheckRelationalAttributePath(rootPropRelAttr3, rootPropTarg2.AppendRelationalAttribute("barAttr"), rootPropTarg2, "/Foo.prop1[/FooTarget.bar].barAttr", ["Foo", ".prop1", "[/FooTarget.bar]", ".barAttr"], "barAttr")
-        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, childPrim, childPrim2, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, relRoot)
+        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, childPrim, childPrim2, relRoot)
         
         # --- Make yet another rel attr of the root property path, 2nd target
         rootPropRelAttr4 = rootPropTarg2.AppendRelationalAttribute("fooAttr")
         
         CheckRelationalAttributePath(rootPropRelAttr4, rootPropTarg2.AppendRelationalAttribute("fooAttr"), rootPropTarg2, "/Foo.prop1[/FooTarget.bar].fooAttr", ["Foo", ".prop1", "[/FooTarget.bar]", ".fooAttr"], "fooAttr")
-        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, childPrim, childPrim2, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, relRoot)
+        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, childPrim, childPrim2, relRoot)
         
         # --- Make a namespaced rel attr of the root property path, 2nd target
         rootPropRelAttr5 = rootPropTarg2.AppendRelationalAttribute("fooAttr:bar:baz")
         
         CheckRelationalAttributePath(rootPropRelAttr5, rootPropTarg2.AppendRelationalAttribute("fooAttr:bar:baz"), rootPropTarg2, "/Foo.prop1[/FooTarget.bar].fooAttr:bar:baz", ["Foo", ".prop1", "[/FooTarget.bar]", ".fooAttr:bar:baz"], "fooAttr:bar:baz")
-        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, childPrim, childPrim2, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr5, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, relRoot)
+        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr5, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, childPrim, childPrim2, relRoot)
         
         # --- Make a target of a rel attr path
         rootPropRelAttrTarget = rootPropRelAttr.AppendTarget("/ConnTarget1.attr")
         
         CheckTargetPath(rootPropRelAttrTarget, rootPropRelAttr.AppendTarget("/ConnTarget1.attr"), rootPropRelAttr, "/Foo.prop1[/Target1].fooAttr[/ConnTarget1.attr]", ["Foo", ".prop1", "[/Target1]", ".fooAttr", "[/ConnTarget1.attr]"], "/ConnTarget1.attr")
-        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, childPrim, childPrim2, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, rootPropRelAttrTarget, relRoot)
+        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, rootPropRelAttrTarget, childPrim, childPrim2, relRoot)
         
         # --- Make another target of a rel attr path
         rootPropRelAttrTarget2 = rootPropRelAttr.AppendTarget("/ConnTarget2.attr")
         
         CheckTargetPath(rootPropRelAttrTarget2, rootPropRelAttr.AppendTarget("/ConnTarget2.attr"), rootPropRelAttr, "/Foo.prop1[/Target1].fooAttr[/ConnTarget2.attr]", ["Foo", ".prop1", "[/Target1]", ".fooAttr", "[/ConnTarget2.attr]"], "/ConnTarget2.attr")
-        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, childPrim, childPrim2, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, rootPropRelAttrTarget, rootPropRelAttrTarget2, relRoot)
+        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, rootPropRelAttrTarget, rootPropRelAttrTarget2, childPrim, childPrim2, relRoot)
         
         # --- Make a mapper path on a prim property
         rootPropMapper1 = rootProp.AppendMapper("/ConnTarget1.attr")
         
         CheckMapperPath(rootPropMapper1, rootProp.AppendMapper("/ConnTarget1.attr"), rootProp, "/Foo.prop1.mapper[/ConnTarget1.attr]", ["Foo", ".prop1", ".mapper[/ConnTarget1.attr]"], "/ConnTarget1.attr")
-        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, childPrim, childPrim2, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, rootPropRelAttrTarget, rootPropRelAttrTarget2, rootPropMapper1, relRoot)
+        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, rootPropRelAttrTarget, rootPropRelAttrTarget2, rootPropMapper1, childPrim, childPrim2, relRoot)
         
         # --- Make another mapper path on a prim property
         rootPropMapper2 = rootProp.AppendMapper("/ConnTarget2.attr")
         
         CheckMapperPath(rootPropMapper2, rootProp.AppendMapper("/ConnTarget2.attr"), rootProp, "/Foo.prop1.mapper[/ConnTarget2.attr]", ["Foo", ".prop1", ".mapper[/ConnTarget2.attr]"], "/ConnTarget2.attr")
-        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, childPrim, childPrim2, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, rootPropRelAttrTarget, rootPropRelAttrTarget2, rootPropMapper1, rootPropMapper2, relRoot)
+        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, rootPropRelAttrTarget, rootPropRelAttrTarget2, rootPropMapper1, rootPropMapper2, childPrim, childPrim2, relRoot)
         
         # --- Make an expression path on a prim property
         rootPropExpression = rootProp.AppendExpression()
         
         CheckExpressionPath(rootPropExpression, rootProp.AppendExpression(), rootProp, "/Foo.prop1.expression", ["Foo", ".prop1", ".expression"])
-        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, childPrim, childPrim2, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, rootPropRelAttrTarget, rootPropRelAttrTarget2, rootPropMapper1, rootPropMapper2, rootPropExpression, relRoot)
+        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, rootPropRelAttrTarget, rootPropRelAttrTarget2, rootPropMapper1, rootPropMapper2, rootPropExpression, childPrim, childPrim2, relRoot)
         
         # --- Make a mapper arg path on a prim property
         rootPropMapperArg1 = rootPropMapper1.AppendMapperArg("fooArg")
         
         CheckMapperArgPath(rootPropMapperArg1, rootPropMapper1.AppendMapperArg("fooArg"), rootPropMapper1, "/Foo.prop1.mapper[/ConnTarget1.attr].fooArg", ["Foo", ".prop1", ".mapper[/ConnTarget1.attr]", ".fooArg"], "fooArg")
-        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, childPrim, childPrim2, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, rootPropRelAttrTarget, rootPropRelAttrTarget2, rootPropMapper1, rootPropMapperArg1, rootPropMapper2, rootPropExpression, relRoot)
+        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, rootPropRelAttrTarget, rootPropRelAttrTarget2, rootPropMapper1, rootPropMapperArg1, rootPropMapper2, rootPropExpression, childPrim, childPrim2, relRoot)
         
         # --- Make another mapper arg path on a prim property
         rootPropMapperArg2 = rootPropMapper1.AppendMapperArg("barArg")
         
         CheckMapperArgPath(rootPropMapperArg2, rootPropMapper1.AppendMapperArg("barArg"), rootPropMapper1, "/Foo.prop1.mapper[/ConnTarget1.attr].barArg", ["Foo", ".prop1", ".mapper[/ConnTarget1.attr]", ".barArg"], "barArg")
-        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, childPrim, childPrim2, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, rootPropRelAttrTarget, rootPropRelAttrTarget2, rootPropMapper1, rootPropMapperArg2, rootPropMapperArg1, rootPropMapper2, rootPropExpression, relRoot)
+        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, rootPropRelAttrTarget, rootPropRelAttrTarget2, rootPropMapper1, rootPropMapperArg2, rootPropMapperArg1, rootPropMapper2, rootPropExpression, childPrim, childPrim2, relRoot)
         
         # --- Make a mapper path on a rel attr
         rootPropRelAttrMapper1 = rootPropRelAttr.AppendMapper("/ConnTarget1.attr")
         
         CheckMapperPath(rootPropRelAttrMapper1, rootPropRelAttr.AppendMapper("/ConnTarget1.attr"), rootPropRelAttr, "/Foo.prop1[/Target1].fooAttr.mapper[/ConnTarget1.attr]", ["Foo", ".prop1", "[/Target1]", ".fooAttr", ".mapper[/ConnTarget1.attr]"], "/ConnTarget1.attr")
-        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, childPrim, childPrim2, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, rootPropRelAttrTarget, rootPropRelAttrTarget2, rootPropRelAttrMapper1, rootPropMapper1, rootPropMapperArg2, rootPropMapperArg1, rootPropMapper2, rootPropExpression, relRoot)
+        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, rootPropRelAttrTarget, rootPropRelAttrTarget2, rootPropRelAttrMapper1, rootPropMapper1, rootPropMapperArg2, rootPropMapperArg1, rootPropMapper2, rootPropExpression, childPrim, childPrim2, relRoot)
         
         # --- Make another mapper path on a rel attr
         rootPropRelAttrMapper2 = rootPropRelAttr.AppendMapper("/ConnTarget2.attr")
         
         CheckMapperPath(rootPropRelAttrMapper2, rootPropRelAttr.AppendMapper("/ConnTarget2.attr"), rootPropRelAttr, "/Foo.prop1[/Target1].fooAttr.mapper[/ConnTarget2.attr]", ["Foo", ".prop1", "[/Target1]", ".fooAttr", ".mapper[/ConnTarget2.attr]"], "/ConnTarget2.attr")
-        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, childPrim, childPrim2, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, rootPropRelAttrTarget, rootPropRelAttrTarget2, rootPropRelAttrMapper1, rootPropRelAttrMapper2, rootPropMapper1, rootPropMapperArg2, rootPropMapperArg1, rootPropMapper2, rootPropExpression, relRoot)
+        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, rootPropRelAttrTarget, rootPropRelAttrTarget2, rootPropRelAttrMapper1, rootPropRelAttrMapper2, rootPropMapper1, rootPropMapperArg2, rootPropMapperArg1, rootPropMapper2, rootPropExpression, childPrim, childPrim2, relRoot)
         
         # --- Make a expression path on a rel attr
         rootPropRelAttrExpression = rootPropRelAttr.AppendExpression()
         
         CheckExpressionPath(rootPropRelAttrExpression, rootPropRelAttr.AppendExpression(), rootPropRelAttr, "/Foo.prop1[/Target1].fooAttr.expression", ["Foo", ".prop1", "[/Target1]", ".fooAttr", ".expression"])
-        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, childPrim, childPrim2, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, rootPropRelAttrTarget, rootPropRelAttrTarget2, rootPropRelAttrMapper1, rootPropRelAttrMapper2, rootPropRelAttrExpression, rootPropMapper1, rootPropMapperArg2, rootPropMapperArg1, rootPropMapper2, rootPropExpression, relRoot)
+        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, rootPropRelAttrTarget, rootPropRelAttrTarget2, rootPropRelAttrMapper1, rootPropRelAttrMapper2, rootPropRelAttrExpression, rootPropMapper1, rootPropMapperArg2, rootPropMapperArg1, rootPropMapper2, rootPropExpression, childPrim, childPrim2, relRoot)
         
         # --- Make a mapper arg path on a rel attr
         rootPropRelAttrMapperArg1 = rootPropRelAttrMapper1.AppendMapperArg("fooArg")
         
         CheckMapperArgPath(rootPropRelAttrMapperArg1, rootPropRelAttrMapper1.AppendMapperArg("fooArg"), rootPropRelAttrMapper1, "/Foo.prop1[/Target1].fooAttr.mapper[/ConnTarget1.attr].fooArg", ["Foo", ".prop1", "[/Target1]", ".fooAttr", ".mapper[/ConnTarget1.attr]", ".fooArg"], "fooArg")
-        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, childPrim, childPrim2, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, rootPropRelAttrTarget, rootPropRelAttrTarget2, rootPropRelAttrMapper1, rootPropRelAttrMapperArg1, rootPropRelAttrMapper2, rootPropRelAttrExpression, rootPropMapper1, rootPropMapperArg2, rootPropMapperArg1, rootPropMapper2, rootPropExpression, relRoot)
+        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, rootPropRelAttrTarget, rootPropRelAttrTarget2, rootPropRelAttrMapper1, rootPropRelAttrMapperArg1, rootPropRelAttrMapper2, rootPropRelAttrExpression, rootPropMapper1, rootPropMapperArg2, rootPropMapperArg1, rootPropMapper2, rootPropExpression, childPrim, childPrim2, relRoot)
         
         # --- Make another mapper arg path on a rel attr
         rootPropRelAttrMapperArg2 = rootPropRelAttrMapper1.AppendMapperArg("barArg")
         
         CheckMapperArgPath(rootPropRelAttrMapperArg2, rootPropRelAttrMapper1.AppendMapperArg("barArg"), rootPropRelAttrMapper1, "/Foo.prop1[/Target1].fooAttr.mapper[/ConnTarget1.attr].barArg", ["Foo", ".prop1", "[/Target1]", ".fooAttr", ".mapper[/ConnTarget1.attr]", ".barArg"], "barArg")
-        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, childPrim, childPrim2, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, rootPropRelAttrTarget, rootPropRelAttrTarget2, rootPropRelAttrMapper1, rootPropRelAttrMapperArg2, rootPropRelAttrMapperArg1, rootPropRelAttrMapper2, rootPropRelAttrExpression, rootPropMapper1, rootPropMapperArg2, rootPropMapperArg1, rootPropMapper2, rootPropExpression, relRoot)
+        CheckOrdering(empty, absRoot, rootPrim2, rootPrim, rootProp, rootPropTarg2, rootPropRelAttr3, rootPropRelAttr4, rootPropTarg, rootPropRelAttr2, rootPropRelAttr, rootPropRelAttrTarget, rootPropRelAttrTarget2, rootPropRelAttrMapper1, rootPropRelAttrMapperArg2, rootPropRelAttrMapperArg1, rootPropRelAttrMapper2, rootPropRelAttrExpression, rootPropMapper1, rootPropMapperArg2, rootPropMapperArg1, rootPropMapper2, rootPropExpression, childPrim, childPrim2, relRoot)
         
         # test GetPrimPath
         
@@ -467,14 +467,6 @@ class TestSdfPath2(unittest.TestCase):
         
         
         self.assertEqual(Sdf.Path("/foo").targetPath, empty)
-        
-        # IsBuiltinMarker
-        
-        self.assertTrue(all([Sdf.Path.IsBuiltInMarker(x) 
-                    for x in ['', 'current', 'authored', 'final', 'initial']]))
-        
-        self.assertTrue(not any([Sdf.Path.IsBuiltInMarker(x) 
-                          for x in ['XXX', 'YYY', 'ZZZ']]))
         
         # test GetVariantSelection, 
         #      IsPrimVariantSelectionPath,

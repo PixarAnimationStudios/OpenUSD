@@ -36,7 +36,15 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+enum class UsdMayaShadingNodeType {
+    NonShading,
+    Light,
+    PostProcess,
+    Rendering,
+    Shader,
+    Texture,
+    Utility
+};
 
 /// \brief Provides helper functions for other readers to use.
 struct UsdMayaTranslatorUtil
@@ -113,6 +121,28 @@ struct UsdMayaTranslatorUtil
             MObject& parentNode,
             MStatus* status,
             MObject* mayaNodeObj);
+
+    /// \brief Helper to create shadingNodes. Wrapper around mel "shadingNode".
+    ///
+    /// This does several things beyond just creating the node, including but
+    /// not limited to:
+    ///     - hook up the node to appropriate default groups (ie,
+    ///       defaultShadingList1 for shaders, defaultLightSet for lights)
+    ///     - handle basic color management setup for textures
+    ///     - make sure nodes show up in the hypershade
+    ///
+    /// TODO: add a ShadingNodeType::Unspecified, which will make this function
+    /// determine the type of node automatically using it's classification
+    /// string
+    PXRUSDMAYA_API
+    static bool
+    CreateShaderNode(
+            const MString& nodeName,
+            const MString& nodeTypeName,
+            const UsdMayaShadingNodeType shadingNodeType,
+            MStatus* status,
+            MObject* shaderObj,
+            const MObject parentNode=MObject::kNullObj);
 
     /// Gets an API schema of the requested type for the given \p usdPrim.
     ///

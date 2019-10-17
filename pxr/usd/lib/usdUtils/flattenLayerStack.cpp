@@ -206,22 +206,14 @@ _ApplyLayerOffsetToClipInfo(
     }
 }
 
-static boost::optional<SdfReference>
-_ApplyLayerOffsetToReference(const SdfLayerOffset &offset,
-                             const SdfReference &ref)
+template <class RefOrPayloadType>
+static boost::optional<RefOrPayloadType>
+_ApplyLayerOffsetToRefOrPayload(const SdfLayerOffset &offset,
+                                const RefOrPayloadType &refOrPayload)
 {
-    SdfReference result = ref;
-    result.SetLayerOffset(offset * ref.GetLayerOffset());
-    return boost::optional<SdfReference>(result);
-}
-
-static boost::optional<SdfPayload>
-_ApplyLayerOffsetToPayload(const SdfLayerOffset &offset,
-                           const SdfPayload &pl)
-{
-    SdfPayload result = pl;
-    result.SetLayerOffset(offset * pl.GetLayerOffset());
-    return boost::optional<SdfPayload>(result);
+    RefOrPayloadType result = refOrPayload;
+    result.SetLayerOffset(offset * refOrPayload.GetLayerOffset());
+    return boost::optional<RefOrPayloadType>(result);
 }
 
 // Apply layer offsets (time remapping) to time-keyed metadata.
@@ -284,7 +276,8 @@ _ApplyLayerOffset(const SdfLayerOffset &offset,
             // We do not need to call UsdPrepLayerOffset() here since
             // we want to author a new offset, not apply one.
             refs.ModifyOperations(std::bind(
-                _ApplyLayerOffsetToReference, offset, std::placeholders::_1));
+                _ApplyLayerOffsetToRefOrPayload<SdfReference>, 
+                offset, std::placeholders::_1));
             return VtValue(refs);
         }
     }
@@ -294,31 +287,24 @@ _ApplyLayerOffset(const SdfLayerOffset &offset,
             // We do not need to call UsdPrepLayerOffset() here since
             // we want to author a new offset, not apply one.
             pls.ModifyOperations(std::bind(
-                _ApplyLayerOffsetToPayload, offset, std::placeholders::_1));
+                _ApplyLayerOffsetToRefOrPayload<SdfPayload>, 
+                offset, std::placeholders::_1));
             return VtValue(pls);
         }
     }
     return val;
 }
 
-static boost::optional<SdfReference>
-_FixReference(const UsdUtilsResolveAssetPathFn& resolveAssetPathFn,
-              const SdfLayerHandle &sourceLayer,
-              const SdfReference &ref)
+template <class RefOrPayloadType>
+static boost::optional<RefOrPayloadType>
+_FixReferenceOrPayload(const UsdUtilsResolveAssetPathFn& resolveAssetPathFn,
+                       const SdfLayerHandle &sourceLayer,
+                       const RefOrPayloadType &refOrPayload)
 {
-    SdfReference result = ref;
-    result.SetAssetPath(resolveAssetPathFn(sourceLayer, ref.GetAssetPath()));
-    return boost::optional<SdfReference>(result);
-}
-
-static boost::optional<SdfPayload>
-_FixPayload(const UsdUtilsResolveAssetPathFn& resolveAssetPathFn,
-            const SdfLayerHandle &sourceLayer,
-            const SdfPayload &pl)
-{
-    SdfPayload result = pl;
-    result.SetAssetPath(resolveAssetPathFn(sourceLayer, pl.GetAssetPath()));
-    return boost::optional<SdfPayload>(result);
+    RefOrPayloadType result = refOrPayload;
+    result.SetAssetPath(
+        resolveAssetPathFn(sourceLayer, refOrPayload.GetAssetPath()));
+    return boost::optional<RefOrPayloadType>(result);
 }
 
 static void
@@ -347,14 +333,14 @@ _FixAssetPaths(const SdfLayerHandle &sourceLayer,
     else if (val->IsHolding<SdfReference>()) {
         SdfReference ref;
         val->Swap(ref);
-        ref = *_FixReference(resolveAssetPathFn, sourceLayer, ref);
+        ref = *_FixReferenceOrPayload(resolveAssetPathFn, sourceLayer, ref);
         val->Swap(ref);
         return;
     }
     else if (val->IsHolding<SdfReferenceListOp>()) {
         SdfReferenceListOp refs;
         val->Swap(refs);
-        refs.ModifyOperations(std::bind(_FixReference, 
+        refs.ModifyOperations(std::bind(_FixReferenceOrPayload<SdfReference>,
                     resolveAssetPathFn, sourceLayer, std::placeholders::_1));
         val->Swap(refs);
         return;
@@ -362,14 +348,14 @@ _FixAssetPaths(const SdfLayerHandle &sourceLayer,
     else if (val->IsHolding<SdfPayload>()) {
         SdfPayload pl;
         val->Swap(pl);
-        pl = *_FixPayload(resolveAssetPathFn, sourceLayer, pl);
+        pl = *_FixReferenceOrPayload(resolveAssetPathFn, sourceLayer, pl);
         val->Swap(pl);
         return;
     }
     else if (val->IsHolding<SdfPayloadListOp>()) {
         SdfPayloadListOp pls;
         val->Swap(pls);
-        pls.ModifyOperations(std::bind(_FixPayload, 
+        pls.ModifyOperations(std::bind(_FixReferenceOrPayload<SdfPayload>,
                     resolveAssetPathFn, sourceLayer, std::placeholders::_1));
         val->Swap(pls);
         return;

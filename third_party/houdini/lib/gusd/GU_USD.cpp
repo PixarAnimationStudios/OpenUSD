@@ -21,17 +21,17 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "gusd/GU_USD.h"
-#include "gusd/GU_PackedUSD.h"
+#include "GU_USD.h"
 
-#include "gusd/error.h"
-#include "gusd/USD_Utils.h"
-#include "gusd/UT_Assert.h"
+#include "error.h"
+#include "GU_PackedUSD.h"
+#include "USD_Utils.h"
+#include "UT_Assert.h"
 
 #include "pxr/base/arch/hints.h"
 
-#include <GA/GA_AIFSharedStringTuple.h>
 #include <GA/GA_AIFCopyData.h>
+#include <GA/GA_AIFSharedStringTuple.h>
 #include <GA/GA_AIFTuple.h>
 #include <GA/GA_ATIGroupBool.h>
 #include <GA/GA_AttributeFilter.h>
@@ -43,9 +43,9 @@
 #include <GA/GA_SplittableRange.h>
 #include <GU/GU_Detail.h>
 #include <GU/GU_PrimPacked.h>
+#include <SYS/SYS_Version.h>
 #include <UT/UT_Interrupt.h>
 #include <UT/UT_ParallelUtil.h>
-#include <SYS/SYS_Version.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -1688,7 +1688,8 @@ GusdGU_USD::ImportPrimUnpacked(GU_Detail& gd,
                                const char* lod,
                                GusdPurposeSet purpose,
                                const char* primvarPattern,
-                               const UT_Matrix4D* xform)
+                               const UT_Matrix4D* xform,
+                               const GT_RefineParms* refineParms)
 {
     if (prim) {
 
@@ -1710,9 +1711,9 @@ GusdGU_USD::ImportPrimUnpacked(GU_Detail& gd,
             UT_Matrix4D xform;
             packedPrim->getFullTransform4(xform);
 
-            return impl->unpackGeometry(gd, primvarPattern, &xform);
+            return impl->unpackGeometry(gd, primvarPattern, &xform, refineParms);
 #else
-            return impl->unpackGeometry(gd, primvarPattern);
+            return impl->unpackGeometry(gd, primvarPattern, refineParms);
 #endif
         }
     }

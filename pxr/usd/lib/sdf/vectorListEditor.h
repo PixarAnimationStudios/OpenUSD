@@ -108,7 +108,8 @@ public:
     virtual void ModifyItemEdits(const ModifyCallback& cb);
 
     typedef typename Parent::ApplyCallback ApplyCallback;
-    virtual void ApplyEdits(value_vector_type* vec, const ApplyCallback& cb);
+    virtual void ApplyEditsToList(
+        value_vector_type* vec, const ApplyCallback& cb);
 
     virtual bool ReplaceEdits(
         SdfListOpType op, size_t index, size_t n, const value_vector_type& elems);
@@ -279,7 +280,7 @@ Sdf_VectorListEditor<TP, FST>::ModifyItemEdits(const ModifyCallback& cb)
 
 template <class TP, class FST>
 void 
-Sdf_VectorListEditor<TP, FST>::ApplyEdits(
+Sdf_VectorListEditor<TP, FST>::ApplyEditsToList(
     value_vector_type* vec, const ApplyCallback& cb)
 {
     if (_data.empty()) {

@@ -26,7 +26,7 @@
 
 #include <UT/UT_Assert.h>
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -46,6 +46,7 @@
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
 #include <maya/MDataHandle.h>
+#include <maya/MDistance.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnMesh.h>
@@ -170,6 +171,18 @@ ConvertCMToMM(const double cm)
     return cm * MillimetersPerCentimeter;
 }
 
+/// Converts the given value \p mdistance in Maya's MDistance units to the 
+/// equivalent value in USD's metersPerUnit.
+PXRUSDMAYA_API
+double ConvertMDistanceUnitToUsdGeomLinearUnit(
+    const MDistance::Unit mdistanceUnit);
+
+/// Coverts the given value \p linearUnit in USD's metersPerUnit to the 
+/// equivalent value in Maya's MDistance units.
+PXRUSDMAYA_API
+MDistance::Unit ConvertUsdGeomLinearUnitToMDistanceUnit(
+    const double linearUnit);
+
 /// Get the full name of the Maya node \p mayaNode.
 ///
 /// If \p mayaNode refers to a DAG node (i.e. supports the MFnDagNode function
@@ -212,6 +225,18 @@ MStatus GetPlugByName(const std::string& attrPath, MPlug& plug);
 PXRUSDMAYA_API
 MPlug GetMayaTimePlug();
 
+/// Get the MPlug for the shaders attribute of Maya's defaultShaderList
+///
+/// This is an accessor for the "defaultShaderList1.shaders" plug.  Similar to
+/// GetMayaTimePlug(), it will traverse through MFn::kShaderList objects.
+PXRUSDMAYA_API
+MPlug GetMayaShaderListPlug();
+
+/// Get the MObject for the DefaultLightSet, which should add any light nodes
+/// as members for them to take effect in the scene
+PXRUSDMAYA_API
+MObject GetDefaultLightSetObject();
+
 PXRUSDMAYA_API
 bool isAncestorDescendentRelationship(
         const MDagPath& path1,
@@ -244,15 +269,28 @@ bool isRenderable(const MObject& object);
 /// Determine whether a Maya object can be saved to or exported from the Maya
 /// scene.
 ///
-/// Objects whose "do not write" status cannot be determined using the
-/// MFnDependencyNode function set are assumed to be writable.
+/// Objects whose "default node" or "do not write" status cannot be determined
+/// using the MFnDependencyNode function set are assumed to be writable.
 PXRUSDMAYA_API
 bool isWritable(const MObject& object);
 
-// strip iDepth namespaces from the node name or string path, go from
-// taco:foo:bar to bar for iDepth > 1. If iDepth is -1, strips all namespaces.
+/// This is the delimiter that Maya uses to identify levels of hierarchy in the
+/// Maya DAG.
+const std::string MayaDagDelimiter("|");
+
+/// This is the delimiter that Maya uses to separate levels of namespace in
+/// Maya node names.
+const std::string MayaNamespaceDelimiter(":");
+
+/// Strip \p nsDepth namespaces from \p nodeName.
+///
+/// This will turn "taco:foo:bar" into "foo:bar" for \p nsDepth == 1, or
+/// "taco:foo:bar" into "bar" for \p nsDepth > 1.
+/// If \p nsDepth is -1, all namespaces are stripped.
 PXRUSDMAYA_API
-MString stripNamespaces(const MString& iNodeName, const int iDepth = -1);
+std::string stripNamespaces(
+        const std::string& nodeName,
+        const int nsDepth = -1);
 
 PXRUSDMAYA_API
 std::string SanitizeName(const std::string& name);
@@ -356,13 +394,25 @@ void Connect(
 PXRUSDMAYA_API
 MPlug FindChildPlugByName(const MPlug& plug, const MString& name);
 
-/// For \p dagPath, returns a UsdPath corresponding to it.
+/// Converts the given Maya node name \p nodeName into an SdfPath.
+///
+/// Elements of the path will be sanitized such that it is a valid SdfPath.
+/// This means it will replace Maya's namespace delimiter (':') with
+/// underscores ('_').
+PXRUSDMAYA_API
+PXR_NS::SdfPath MayaNodeNameToSdfPath(
+        const std::string& nodeName,
+        const bool stripNamespaces);
+
+/// Converts the given Maya MDagPath \p dagPath into an SdfPath.
+///
 /// If \p mergeTransformAndShape and the dagPath is a shapeNode, it will return
 /// the same value as MDagPathToUsdPath(transformPath) where transformPath is
 /// the MDagPath for \p dagPath's transform node.
 ///
 /// Elements of the path will be sanitized such that it is a valid SdfPath.
-/// This means it will replace ':' with '_'.
+/// This means it will replace Maya's namespace delimiter (':') with
+/// underscores ('_').
 PXRUSDMAYA_API
 PXR_NS::SdfPath MDagPathToUsdPath(
         const MDagPath& dagPath,

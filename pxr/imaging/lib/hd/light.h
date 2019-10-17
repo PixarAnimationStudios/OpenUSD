@@ -48,6 +48,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (height)                                                \
     (intensity)                                             \
     (radius)                                                \
+    (length)                                                \
     ((textureFile, "texture:file"))                         \
     (width)                                                 \
     (diffuse)                                               \
@@ -59,6 +60,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((shapingConeSoftness, "shaping:cone:softness"))        \
     ((shapingIesFile, "shaping:ies:file"))                  \
     ((shapingIesAngleScale, "shaping:ies:angleScale"))      \
+    ((shapingIesNormalize, "shaping:ies:normalize"))        \
     ((shadowEnable, "shadow:enable"))                       \
     ((shadowColor, "shadow:color"))                         \
     ((shadowDistance, "shadow:distance"))                   \

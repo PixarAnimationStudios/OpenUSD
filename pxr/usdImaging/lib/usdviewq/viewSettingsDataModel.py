@@ -24,9 +24,10 @@
 
 from qt import QtCore
 from pxr import UsdGeom, Sdf
+from pxr.UsdAppUtils.complexityArgs import RefinementComplexities
 
 from common import (RenderModes, ColorCorrectionModes, PickModes, 
-                    SelectionHighlightModes, CameraMaskModes, Complexities, 
+                    SelectionHighlightModes, CameraMaskModes, 
                     PrintWarning)
 
 import settings2
@@ -115,6 +116,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         self._fillLightEnabled = self.stateProperty("fillLightEnabled", default=True)
         self._backLightEnabled = self.stateProperty("backLightEnabled", default=True)
         self._clearColorText = self.stateProperty("backgroundColor", default="Grey (Dark)")
+        self._autoComputeClippingPlanes = self.stateProperty("autoComputeClippingPlanes", default=False)
         self._showBBoxPlayback = self.stateProperty("showBBoxesDuringPlayback", default=False)
         self._showBBoxes = self.stateProperty("showBBoxes", default=True)
         self._showAABBox = self.stateProperty("showAABBox", default=True)
@@ -146,7 +148,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         self._showHUD_Performance = self.stateProperty("showHUDPerformance", default=True)
         self._showHUD_GPUstats = self.stateProperty("showHUDGPUStats", default=False)
 
-        self._complexity = Complexities.LOW
+        self._complexity = RefinementComplexities.LOW
         self._freeCamera = None
         self._cameraPath = None
 
@@ -166,6 +168,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         state["fillLightEnabled"] = self._fillLightEnabled
         state["backLightEnabled"] = self._backLightEnabled
         state["backgroundColor"] = self._clearColorText
+        state["autoComputeClippingPlanes"] = self._autoComputeClippingPlanes
         state["showBBoxesDuringPlayback"] = self._showBBoxPlayback
         state["showBBoxes"] = self._showBBoxes
         state["showAABBox"] = self._showAABBox
@@ -250,7 +253,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
     @complexity.setter
     @visibleViewSetting
     def complexity(self, value):
-        if value not in Complexities:
+        if value not in RefinementComplexities.ordered():
             raise ValueError("Expected Complexity, got: '{}'.".format(value))
         self._complexity = value
 
@@ -307,6 +310,15 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
     @visibleViewSetting
     def showBBoxes(self, value):
         self._showBBoxes = value
+
+    @property
+    def autoComputeClippingPlanes(self):
+        return self._autoComputeClippingPlanes
+
+    @autoComputeClippingPlanes.setter
+    @visibleViewSetting
+    def autoComputeClippingPlanes(self, value):
+        self._autoComputeClippingPlanes = value
 
     @property
     def showBBoxPlayback(self):

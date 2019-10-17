@@ -74,7 +74,7 @@ void wrapUsdVariantSets()
     class_<UsdVariantSet>("VariantSet", no_init)
         .def("AddVariant", &UsdVariantSet::AddVariant,
              (arg("variantName"),
-              arg("position")=UsdListPositionTempDefault))
+              arg("position")=UsdListPositionBackOfPrependList))
         .def("GetVariantNames", &UsdVariantSet::GetVariantNames,
              return_value_policy<TfPySequenceToList>())
         .def("HasAuthoredVariant", &UsdVariantSet::HasAuthoredVariant)
@@ -98,7 +98,7 @@ void wrapUsdVariantSets()
     class_<UsdVariantSets>("VariantSets", no_init)
         .def("AddVariantSet", &UsdVariantSets::AddVariantSet,
              (arg("variantSetName"),
-              arg("position")=UsdListPositionTempDefault))
+              arg("position")=UsdListPositionBackOfPrependList))
         .def("GetNames", _GetNames, return_value_policy<TfPySequenceToList>())
         .def("GetVariantSet", &UsdVariantSets::GetVariantSet,
              arg("variantSetName"))

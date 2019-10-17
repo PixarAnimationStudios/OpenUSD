@@ -27,7 +27,7 @@
 #include <UT/UT_StringArray.h>
 #include <UT/UT_StringHolder.h>
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
 #include "gusd/api.h"
@@ -65,7 +65,15 @@ GUSD_API
 inline GusdPurposeSet
 GusdPurposeSetFromName(const TfToken& name)
 {
-    return GusdPurposeSetFromName(UTmakeUnsafeRef(name.GetString()));
+    if(name == UsdGeomTokens->default_)
+        return GUSD_PURPOSE_DEFAULT;
+    else if(name == UsdGeomTokens->proxy)
+        return GUSD_PURPOSE_PROXY;
+    else if(name == UsdGeomTokens->render)
+        return GUSD_PURPOSE_RENDER;
+    else if(name == UsdGeomTokens->guide)
+        return GUSD_PURPOSE_GUIDE;
+    return GUSD_PURPOSE_NONE;
 }
 
 
@@ -73,7 +81,7 @@ GUSD_API
 inline bool 
 GusdPurposeInSet( const TfToken& name, GusdPurposeSet set ) 
 {
-    return set&GusdPurposeSetFromName(UTmakeUnsafeRef(name.GetString()));
+    return set&GusdPurposeSetFromName(name);
 }
 
 

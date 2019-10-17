@@ -29,7 +29,7 @@
 #include "pxr/imaging/hf/perfLog.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/glf/diagnostic.h"
-#include "pxr/imaging/glf/glslfx.h"
+#include "pxr/imaging/hio/glslfx.h"
 #include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -80,7 +80,7 @@ void
 HdxCompositor::_CreateShaderResources(bool useDepthProgram)
 {
     _compositorProgram.reset(new HdStGLSLProgram(_tokens->fullscreenShader));
-    GlfGLSLFX glslfx(HdxPackageFullscreenShader());
+    HioGlslfx glslfx(HdxPackageFullscreenShader());
     TfToken fsToken = useDepthProgram ? _tokens->compositeFragmentWithDepth
                                       : _tokens->compositeFragmentNoDepth;
     if (!_compositorProgram->CompileShader(GL_VERTEX_SHADER,

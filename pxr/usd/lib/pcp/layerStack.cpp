@@ -144,8 +144,8 @@ _ApplyOwnedSublayerOrder(
             if (std::distance(first, last) > 1) {
                 PcpErrorInvalidSublayerOwnershipPtr error =
                     PcpErrorInvalidSublayerOwnership::New();
-                error->rootSite = PcpSite(identifier,
-                                          SdfPath::AbsoluteRootPath());
+                error->rootSite = PcpSiteStr(identifier,
+                                             SdfPath::AbsoluteRootPath());
                 error->owner = sessionOwner;
                 error->layer = layer;
                 for (; first != last; ++first) {
@@ -333,7 +333,7 @@ Pcp_NeedToRecomputeDueToAssetPathChange(const PcpLayerStackPtr& layerStack)
 
 PcpLayerStack::PcpLayerStack(
     const PcpLayerStackIdentifier& identifier,
-    const std::string &targetSchema,
+    const std::string &fileFormatTarget,
     const Pcp_MutedLayers &mutedLayers,
     bool isUsd) :
     _identifier(identifier),
@@ -346,7 +346,7 @@ PcpLayerStack::PcpLayerStack(
         return;
     }
 
-    _Compute(targetSchema, mutedLayers);
+    _Compute(fileFormatTarget, mutedLayers);
 
     if (!_isUsd) {
         Pcp_ComputeRelocationsForLayerStack(_layers, 
@@ -388,7 +388,7 @@ PcpLayerStack::Apply(const PcpLayerStackChanges& changes, PcpLifeboat* lifeboat)
             lifeboat->Retain(*i);
         }
         _BlowLayers();
-        _Compute(_registry->_GetTargetSchema(), _registry->_GetMutedLayers());
+        _Compute(_registry->_GetFileFormatTarget(), _registry->_GetMutedLayers());
     }
 
     // Update relocations if necessary.
@@ -612,7 +612,7 @@ PcpLayerStack::_BlowRelocations()
 }
 
 void
-PcpLayerStack::_Compute(const std::string &targetSchema,
+PcpLayerStack::_Compute(const std::string &fileFormatTarget,
                         const Pcp_MutedLayers &mutedLayers)
 {
     // Builds the composed layer stack for \p result by recursively
@@ -634,7 +634,7 @@ PcpLayerStack::_Compute(const std::string &targetSchema,
     // Get any special file format arguments we need to use when finding
     // or opening sublayers.
     const SdfLayer::FileFormatArguments layerArgs =
-        Pcp_GetArgumentsForTargetSchema(targetSchema);
+        Pcp_GetArgumentsForFileFormatTarget(fileFormatTarget);
 
     // Do a parallel pre-fetch request of the shot layer stack. This
     // resolves and parses the layers, retaining them until we do a
@@ -728,7 +728,7 @@ PcpLayerStack::_BuildLayerStack(
     const SdfLayerHandle & layer,
     const SdfLayerOffset & offset,
     const ArResolverContext & pathResolverContext,
-    const SdfLayer::FileFormatArguments & layerArgs,
+    const SdfLayer::FileFormatArguments & defaultLayerArgs,
     const std::string & sessionOwner,
     const Pcp_MutedLayers & mutedLayers, 
     SdfLayerHandleSet *seenLayers,
@@ -760,6 +760,12 @@ PcpLayerStack::_BuildLayerStack(
         // Resolve and open sublayer.
         string sublayerPath(sublayers[i]);
         TfErrorMark m;
+
+        SdfLayer::FileFormatArguments localArgs;
+        const SdfLayer::FileFormatArguments& layerArgs = 
+            Pcp_GetArgumentsForFileFormatTarget(
+                sublayerPath, &defaultLayerArgs, &localArgs);
+
         SdfLayerRefPtr sublayer = SdfFindOrOpenRelativeToLayer(
             layer, &sublayerPath, layerArgs);
 
@@ -832,7 +838,7 @@ PcpLayerStack::_BuildLayerStack(
     TF_FOR_ALL(i, sublayerInfo) {
         if (SdfLayerTreeHandle subtree =
             _BuildLayerStack(i->layer, i->offset, pathResolverContext,
-                             layerArgs, sessionOwner, 
+                             defaultLayerArgs, sessionOwner, 
                              mutedLayers, seenLayers, errors)) {
             subtrees.push_back(subtree);
         }
