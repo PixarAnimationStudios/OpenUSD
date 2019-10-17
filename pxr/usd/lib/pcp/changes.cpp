@@ -432,7 +432,7 @@ Pcp_DidChangeDependents(
 }
 
 void
-PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
+PcpChanges::DidChange(const TfSpan<PcpCache*>& caches,
                       const SdfLayerChangeListVec& changes)
 {
     // LayerStack changes
@@ -1832,7 +1832,7 @@ _DeterminePathsAffectedByRelocationChanges( const SdfRelocatesMap & oldMap,
 // 3. rebuilding MapFunction values that consumed those relocations
 void
 PcpChanges::_DidChangeLayerStackRelocations(
-    const std::vector<PcpCache*>& caches,
+    const TfSpan<PcpCache*>& caches,
     const PcpLayerStackPtr & layerStack,
     std::string* debugSummary)
 {
@@ -1907,7 +1907,7 @@ PcpChanges::_DidChangeLayerStackRelocations(
 
 void 
 PcpChanges::_DidChangeLayerStackResolvedPath(
-    const std::vector<PcpCache*>& caches,
+    const TfSpan<PcpCache*>& caches,
     const PcpLayerStackPtr& layerStack,
     std::string* debugSummary)
 {

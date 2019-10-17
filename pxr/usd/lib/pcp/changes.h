@@ -33,6 +33,7 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/tf/declarePtrs.h"
+#include "pxr/base/tf/span.h"
 
 #include <map>
 #include <set>
@@ -180,7 +181,7 @@ public:
     /// get the changes using \c GetLayerStackChanges() and
     /// \c GetCacheChanges().
     PCP_API 
-    void DidChange(const std::vector<PcpCache*>& caches,
+    void DidChange(const TfSpan<PcpCache*> &caches,
                    const SdfLayerChangeListVec& changes);
 
     /// Tries to load the sublayer of \p layer at \p sublayerPath.  If
@@ -375,15 +376,17 @@ private:
     // Recompute the new relocations, storing the result in the Changes,
     // so that change-processing can determine which other caches it
     // needs to invalidate.
-    void _DidChangeLayerStackRelocations( const std::vector<PcpCache*>& caches,
-                                          const PcpLayerStackPtr & layerStack,
-                                          std::string* debugSummary );
+    void _DidChangeLayerStackRelocations(
+        const TfSpan<PcpCache*>& caches,
+        const PcpLayerStackPtr & layerStack,
+        std::string* debugSummary);
 
     // Register changes to any prim indexes in \p caches that are affected
     // by a change to a layer's resolved path used by \p layerStack.
-    void _DidChangeLayerStackResolvedPath(const std::vector<PcpCache*>& caches,
-                                          const PcpLayerStackPtr& layerStack,
-                                          std::string* debugSummary);
+    void _DidChangeLayerStackResolvedPath(
+        const TfSpan<PcpCache*>& caches,
+        const PcpLayerStackPtr& layerStack,
+        std::string* debugSummary);
 
     // The spec stack for the prim or property index at \p path must be
     // recomputed due to a change that affects only the internal representation
