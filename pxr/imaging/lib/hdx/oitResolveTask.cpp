@@ -265,9 +265,7 @@ HdxOitResolveTask::Prepare(HdTaskContext* ctx,
     } else {
         // Without AOVs we don't know the window / screen size.
         const int oitScreenSizeFallback = 2048;
-        if (screenSize[0] != oitScreenSizeFallback) {
-            TF_WARN("Invalid AOVs for Oit Resolve Task");
-        }
+        TF_WARN("Invalid AOVs for Oit Resolve Task");
         screenSize[0] = oitScreenSizeFallback;
         screenSize[1] = oitScreenSizeFallback;
     }
