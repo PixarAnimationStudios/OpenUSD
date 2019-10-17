@@ -218,10 +218,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 TF_DEFINE_ENV_SETTING(
-    USD_USE_LEGACY_BASE_MATERIAL, false,
-    "If on, store base material as derivesFrom relationship.");
-
-TF_DEFINE_ENV_SETTING(
     USD_HONOR_LEGACY_BASE_MATERIAL, true,
     "If on, read base material as derivesFrom relationship when available.");
 
@@ -405,8 +401,6 @@ UsdShadeMaterial::CreateMasterMaterialVariant(const UsdPrim &masterPrim,
 }
 
 // --------------------------------------------------------------------- //
-// old vs new style controlled by env var:
-// USD_USE_LEGACY_BASE_MATERIAL
 
 static
 UsdShadeMaterial
@@ -500,29 +494,14 @@ UsdShadeMaterial::FindBaseMaterialPathInPrimIndex(
 void
 UsdShadeMaterial::SetBaseMaterialPath(const SdfPath& baseMaterialPath) const 
 {
-    if (TfGetEnvSetting(USD_USE_LEGACY_BASE_MATERIAL)) {
-        UsdRelationship baseRel = GetPrim().CreateRelationship(
-            UsdShadeTokens->derivesFrom, /* custom = */ false);
-
-        if (!baseMaterialPath.IsEmpty()) {
-            SdfPathVector targets(1, baseMaterialPath);
-            baseRel.SetTargets(targets);
-        } else {
-            baseRel.ClearTargets(false);
-        }
+    UsdSpecializes specializes = GetPrim().GetSpecializes();
+    if (baseMaterialPath.IsEmpty()) {
+        specializes.ClearSpecializes();
+        return;
     }
-    else {
-        // Only one specialize is allowed
-        UsdSpecializes specializes = GetPrim().GetSpecializes();
-        if (!baseMaterialPath.IsEmpty()) {
-            SdfPathVector v;
-            v.push_back(baseMaterialPath);
-            specializes.SetSpecializes(v);
-        }
-        else {
-            specializes.ClearSpecializes();
-        }
-    }
+    // Only one specialize is allowed
+    SdfPathVector v = { baseMaterialPath };
+    specializes.SetSpecializes(v);
 }
 
 void

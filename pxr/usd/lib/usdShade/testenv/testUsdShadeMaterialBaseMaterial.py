@@ -25,8 +25,6 @@
 from pxr import Sdf, Usd, UsdShade
 import os, unittest
 
-USE_SPECIALIZES = os.getenv('USD_USE_LEGACY_BASE_MATERIAL', '1') == '0'
-
 class TestUsdShadeMaterialBaseMaterial(unittest.TestCase):
     def _SetupShading(self, stage):
         # Create this prim first, since it's the "entrypoint" to the layer, and
@@ -88,27 +86,17 @@ class TestUsdShadeMaterialBaseMaterial(unittest.TestCase):
                 "Shader_1")
             childShaderPrim = stage.GetPrimAtPath(childShaderPath)
 
-            if USE_SPECIALIZES:
-                # NEW encoding
-                # verify that inheritance is found and resolved
-                self.assertEqual(bool(childShaderPrim), True)
-                childShader = UsdShade.Shader(childShaderPrim)
-                self.assertTrue(childShader)
-                childShaderInput = childShader.GetInput('floatInput')
-                self.assertEqual(childShaderInput.GetAttr().Get(), 1.0)
-                self.assertTrue(ConnAPI.IsSourceConnectionFromBaseMaterial(
-                        childShaderInput))
-            else:
-                # OLD encoding
-                # verify that child shader is not found by default 
-                # (that's for the new encoding)
-                self.assertEqual(bool(childShaderPrim), False)
+            # verify that inheritance is found and resolved
+            self.assertEqual(bool(childShaderPrim), True)
+            childShader = UsdShade.Shader(childShaderPrim)
+            self.assertTrue(childShader)
+            childShaderInput = childShader.GetInput('floatInput')
+            self.assertEqual(childShaderInput.GetAttr().Get(), 1.0)
+            self.assertTrue(ConnAPI.IsSourceConnectionFromBaseMaterial(
+                    childShaderInput))
 
     def test_Basic(self):
-        if USE_SPECIALIZES:
-            fileName = "test_base_material_specializes.usda"
-        else:
-            fileName = "test_base_material.usda"
+        fileName = "test_base_material_specializes.usda"
         stage = Usd.Stage.CreateNew(fileName)
         materialsPath = self._SetupShading(stage)
         self._TestShading(stage, materialsPath)

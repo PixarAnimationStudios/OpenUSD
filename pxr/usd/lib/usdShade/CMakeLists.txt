@@ -98,12 +98,7 @@ pxr_install_test_dir(
 
 pxr_install_test_dir(
     SRC testenv/testUsdShadeMaterialBaseMaterial
-    DEST testUsdShadeMaterialBaseMaterial_derives
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdShadeMaterialBaseMaterial
-    DEST testUsdShadeMaterialBaseMaterial_specializes
+    DEST testUsdShadeMaterialBaseMaterial
 )
 
 pxr_install_test_dir(
@@ -178,22 +173,11 @@ pxr_register_test(testUsdShadeNodeGraphs
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_register_test(testUsdShadeMaterialBaseMaterial_derives
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeMaterialBaseMaterial"
-    EXPECTED_RETURN_CODE 0
-    DIFF_COMPARE test_base_material.usda
-    ENV
-        USD_USE_LEGACY_BASE_MATERIAL=1
-)
-
-pxr_register_test(testUsdShadeMaterialBaseMaterial_specializes
+pxr_register_test(testUsdShadeMaterialBaseMaterial
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeMaterialBaseMaterial"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE test_base_material_specializes.usda
-    ENV
-        USD_USE_LEGACY_BASE_MATERIAL=0
 )
 
 pxr_register_test(testUsdShadeMaterialSpecializesBaseComposition

@@ -122,7 +122,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/work/loops.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -135,14 +134,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((materialBindingCollectionFull, "material:binding:collection:full"))
     ((materialBindingCollectionPreview, "material:binding:collection:preview"))
 );
-
-TF_DEFINE_ENV_SETTING(USD_SHADE_WARN_ON_LOOK_BINDING, true, 
-    "When set to true, it causes a warning to be issued if we find an a prim "
-    "with the deprecated\"look:binding\" relationship when computing resolved "
-    "material bindings. Although a warning is issued, these relationships are "
-    "no longer considered in the binding resolution. The warning exists solely "
-    "for the purpose of assisting clients in identifying deprecated assets and "
-    "debugging missing bindings.");
 
 static 
 TfToken
@@ -582,19 +573,6 @@ UsdShadeMaterialBindingAPI::BindingsAtPrim::BindingsAtPrim(
                     UsdShadeTokens->materialBinding);
             });
 
-    static const bool warnOnLookBinding = TfGetEnvSetting(
-            USD_SHADE_WARN_ON_LOOK_BINDING);
-    if (warnOnLookBinding) {
-        static const TfToken lookBinding("look:binding");
-        if (UsdRelationship lookBindingRel = prim.GetRelationship(lookBinding)) 
-        {
-            TF_WARN("Found prim <%s> with deprecated 'look:binding' "
-                "relationship targeting path <%s>.", prim.GetPath().GetText(),
-                UsdShadeMaterialBindingAPI::DirectBinding(lookBindingRel)
-                    .GetMaterialPath().GetText());
-        }
-    }
-   
     if (matBindingPropNames.empty())
         return;
 
