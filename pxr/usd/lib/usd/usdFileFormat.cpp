@@ -49,12 +49,7 @@ TF_DEFINE_PUBLIC_TOKENS(UsdUsdFileFormatTokens, USD_USD_FILE_FORMAT_TOKENS);
 
 TF_DEFINE_ENV_SETTING(
     USD_DEFAULT_FILE_FORMAT, "usdc",
-    "Default file format for new .usd files; one of 'usda', 'usdb', 'usdc'.");
-
-namespace {
-// XXX -- Magic knowledge of non-local format.
-TF_DEFINE_PRIVATE_TOKENS(UsdUsdbFileFormatTokens, ((Id, "usdb")));
-}
+    "Default file format for new .usd files; either 'usda' or 'usdc'.");
 
 // ------------------------------------------------------------
 
@@ -63,15 +58,13 @@ SdfFileFormatConstPtr
 _GetFileFormat(const TfToken& formatId)
 {
     const SdfFileFormatConstPtr fileFormat = SdfFileFormat::FindById(formatId);
-    // XXX: Usdb does not exist in open source builds so we can't
-    // verify in that case.
-    TF_VERIFY(fileFormat || formatId == UsdUsdbFileFormatTokens->Id);
+    TF_VERIFY(fileFormat);
     return fileFormat;
 }
 
-// A .usd file may actually be either a text .usda file or a binary database
-// .usdb file or a binary crate .usdc file. These functions returns the
-// appropriate file format for a given file or data object.
+// A .usd file may actually be either a text .usda file or a binary crate 
+// .usdc file. These functions returns the appropriate file format for a
+// given file or data object.
 static
 SdfFileFormatConstPtr
 _GetUnderlyingFileFormat(const string& filePath)
@@ -86,29 +79,7 @@ _GetUnderlyingFileFormat(const string& filePath)
         return usdaFormat;
     }
 
-    // XXX: Usdb has to come last because it unconditionally returns 'true' for
-    // all CanRead() calls!
-    // XXX: Explicitly check if the Usdb format exists because it may not
-    // in open source builds.
-    auto usdbFormat = _GetFileFormat(UsdUsdbFileFormatTokens->Id);
-    if (usdbFormat && usdbFormat->CanRead(filePath)) {
-        return usdbFormat;
-    }
-
     return SdfFileFormatConstPtr();
-}
-
-// XXX -- Temporary hack to support an obsolete internal binary format.
-static
-SdfAbstractDataRefPtr
-_NewUsdbData()
-{
-    auto usdbFormat = _GetFileFormat(UsdUsdbFileFormatTokens->Id);
-    if (usdbFormat) {
-        auto args = usdbFormat->GetDefaultFileFormatArguments();
-        return usdbFormat->InitData(args);
-    }
-    return SdfAbstractDataRefPtr();
 }
 
 static
@@ -117,14 +88,6 @@ _GetUnderlyingFileFormat(const SdfAbstractDataConstPtr& data)
 {
     // A .usd file can only be backed by one of these formats,
     // so check each one individually.
-
-    // XXX -- Magic knowledge of non-local format.
-    static SdfAbstractDataRefPtr usdbData = _NewUsdbData();
-    if (usdbData && 
-        typeid(*get_pointer(data)) == typeid(*get_pointer(usdbData))) {
-        return _GetFileFormat(UsdUsdbFileFormatTokens->Id);
-    }
-
     if (TfDynamic_cast<const Usd_CrateDataConstPtr>(data)) {
         return _GetFileFormat(UsdUsdcFileFormatTokens->Id);
     }
@@ -143,26 +106,14 @@ _GetDefaultFileFormat()
 {
     TfToken defaultFormatId(TfGetEnvSetting(USD_DEFAULT_FILE_FORMAT));
     if (defaultFormatId != UsdUsdaFileFormatTokens->Id
-        && defaultFormatId != UsdUsdbFileFormatTokens->Id
         && defaultFormatId != UsdUsdcFileFormatTokens->Id) {
         TF_WARN("Default file format '%s' set in USD_DEFAULT_FILE_FORMAT "
-                "must be one of 'usda', 'usdb', or 'usdc'. "
-                "Falling back to 'usdc'", defaultFormatId.GetText());
+                "must be either 'usda' or 'usdc'. Falling back to 'usdc'", 
+                defaultFormatId.GetText());
         defaultFormatId = UsdUsdcFileFormatTokens->Id;
     }
 
     SdfFileFormatConstPtr defaultFormat = _GetFileFormat(defaultFormatId);
-    if (!defaultFormat) {
-        // Fallback to the built-in .usdc binary file format if we can't
-        // find the format specified in the env setting. This protects
-        // against the case where the deprecated .usdb format is specified
-        // as the default but is unavailable (e.g., in the binary release)
-        TF_WARN("Default file format '%s' set in USD_DEFAULT_FILE_FORMAT "
-                "could not be found. Falling back to 'usdc'",
-                defaultFormatId.GetText());
-        defaultFormat = _GetFileFormat(UsdUsdcFileFormatTokens->Id);
-    }
-
     TF_VERIFY(defaultFormat);
     return defaultFormat;
 }
@@ -175,7 +126,6 @@ _GetFormatArgumentForFileFormat(const SdfFileFormatConstPtr& fileFormat)
 {
     TfToken formatArg = fileFormat ? fileFormat->GetFormatId() : TfToken();
     TF_VERIFY(formatArg == UsdUsdaFileFormatTokens->Id ||
-              formatArg == UsdUsdbFileFormatTokens->Id ||
               formatArg == UsdUsdcFileFormatTokens->Id,
               "Unhandled file format '%s'",
               fileFormat ? formatArg.GetText() : "<null>");
@@ -193,18 +143,14 @@ _GetFileFormatForArguments(const SdfFileFormat::FileFormatArguments& args)
         if (format == UsdUsdaFileFormatTokens->Id) {
             return _GetFileFormat(UsdUsdaFileFormatTokens->Id);
         }
-        else if (format == UsdUsdbFileFormatTokens->Id) {
-            return _GetFileFormat(UsdUsdbFileFormatTokens->Id);
-        }
         else if (format == UsdUsdcFileFormatTokens->Id) {
             return _GetFileFormat(UsdUsdcFileFormatTokens->Id);
         }
-        TF_CODING_ERROR("'%s' argument was '%s', must be '%s', '%s', or '%s'. "
+        TF_CODING_ERROR("'%s' argument was '%s', must be '%s' or '%s'. "
                         "Defaulting to '%s'.", 
                         UsdUsdFileFormatTokens->FormatArg.GetText(),
                         format.c_str(),
                         UsdUsdaFileFormatTokens->Id.GetText(),
-                        UsdUsdbFileFormatTokens->Id.GetText(),
                         UsdUsdcFileFormatTokens->Id.GetText(),
                         _GetFormatArgumentForFileFormat(
                             _GetDefaultFileFormat()).GetText());
@@ -257,8 +203,6 @@ UsdUsdFileFormat::Read(
     TRACE_FUNCTION();
 
     // Try binary usdc format first, since that's most common, then usda text.
-    // The deprecated usdb format will be tried later if necessary, via the call
-    // to _GetUnderlyingFileFormat().
     static auto formats = {
         _GetFileFormat(UsdUsdcFileFormatTokens->Id),
         _GetFileFormat(UsdUsdaFileFormatTokens->Id),

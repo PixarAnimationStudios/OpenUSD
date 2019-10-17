@@ -50,8 +50,8 @@ TF_DECLARE_PUBLIC_TOKENS(UsdUsdFileFormatTokens, USD_API, USD_USD_FILE_FORMAT_TO
 /// When creating a file through the SdfLayer::CreateNew() interface, the
 /// meaningful SdfFileFormat::FileFormatArguments are as follows:
 /// \li UsdUsdFileFormatTokens->FormatArg , which must be a supported format's
-///     'Id'.  The possible values are UsdUsdaFileFormatTokens->Id,
-///     UsdUsdbFileFormatTokens->Id, or UsdUsdcFileFormatTokens->Id.
+///     'Id'.  The possible values are UsdUsdaFileFormatTokens->Id
+///     or UsdUsdcFileFormatTokens->Id.
 ///
 /// If no UsdUsdFileFormatTokens->FormatArg is supplied, the default is
 /// UsdUsdcFileFormatTokens->Id.
