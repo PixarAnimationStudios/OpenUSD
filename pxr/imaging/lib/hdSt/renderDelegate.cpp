@@ -215,26 +215,8 @@ HdStRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
             GlfContextCaps::GetInstance().floatingPointBuffersEnabled ?
             HdFormatFloat16Vec4 : HdFormatUNorm8Vec4;
         return HdAovDescriptor(colorFormat,colorDepthMSAA, VtValue(GfVec4f(0)));
-    } else if (name == HdAovTokens->normal) {
-        return HdAovDescriptor(HdFormatFloat32Vec3, /*msaa*/ false,
-                               VtValue(GfVec3f(0.0f)));
-    } else if (name == HdAovTokens->Neye) {
-        return HdAovDescriptor(HdFormatFloat32Vec3, /*msaa*/ false,
-                               VtValue(GfVec3f(-1.0f)));
     } else if (name == HdAovTokens->depth) {
         return HdAovDescriptor(HdFormatFloat32, colorDepthMSAA, VtValue(1.0f));
-    } else if (name == HdAovTokens->linearDepth) {
-        return HdAovDescriptor(HdFormatFloat32, /*msaa*/ false, VtValue(0.0f));
-    } else if (name == HdAovTokens->primId ||
-               name == HdAovTokens->instanceId ||
-               name == HdAovTokens->elementId) {
-        return HdAovDescriptor(HdFormatInt32, /*msaa*/ false, VtValue(-1));
-    } else {
-        HdParsedAovToken aovId(name);
-        if (aovId.isPrimvar) {
-            return HdAovDescriptor(HdFormatFloat32Vec3, /*msaa*/ false,
-                                   VtValue(GfVec3f(0.0f)));
-        }
     }
 
     return HdAovDescriptor();
