@@ -326,8 +326,10 @@ SdfAttributeSpecHandle
 UsdSchemaRegistry::GetAttributeDefinition(const TfToken& primType, 
                                           const TfToken& attrName)
 {
-    return TfDynamic_cast<SdfAttributeSpecHandle>(
-        GetPropertyDefinition(primType, attrName));
+    auto const &self = GetInstance();
+    SdfPath const &path = self._GetPath(primType, attrName);
+    return path.IsEmpty() ? TfNullPtr :
+        self._schematics->GetAttributeAtPath(path);
 }
 
 /*static*/
@@ -335,8 +337,10 @@ SdfRelationshipSpecHandle
 UsdSchemaRegistry::GetRelationshipDefinition(const TfToken& primType, 
                                              const TfToken& relName)
 {
-    return TfDynamic_cast<SdfRelationshipSpecHandle>(
-        GetPropertyDefinition(primType, relName));
+    auto const &self = GetInstance();
+    SdfPath const &path = self._GetPath(primType, relName);
+    return path.IsEmpty() ? TfNullPtr :
+        self._schematics->GetRelationshipAtPath(path);
 }
 
 // Helper function invoked by generated Schema classes, used to avoid dynamic
