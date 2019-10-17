@@ -200,8 +200,8 @@ pxr_test_scripts(
         testenv/testUsdImportUVSets.py
         testenv/testUsdImportXforms.py
         testenv/testUsdMayaAdaptor.py
-        testenv/testUsdMayaAdaptorMetadata.py
         testenv/testUsdMayaAdaptorGeom.py
+        testenv/testUsdMayaAdaptorMetadata.py
         testenv/testUsdMayaAppDir.py
         testenv/testUsdMayaBlockSceneModificationContext.py
         testenv/testUsdMayaDiagnosticDelegate.py
@@ -950,6 +950,47 @@ pxr_register_test(testUsdImportXforms
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
 )
 
+pxr_register_test(testUsdMayaAdaptor
+    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMayaAdaptor"
+    TESTENV testUsdMayaAdaptor
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/lib/usd/usdMaya/resources
+        MAYA_DISABLE_CIP=1
+        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdMayaAdaptorGeomTest
+    DEST testUsdMayaAdaptorGeom
+)
+pxr_register_test(testUsdMayaAdaptorGeom
+    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMayaAdaptorGeom"
+    TESTENV testUsdMayaAdaptorGeom
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/lib/usd/usdMaya/resources
+        MAYA_DISABLE_CIP=1
+        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdMayaAdaptorMetadataTest
+    DEST testUsdMayaAdaptorMetadata
+)
+pxr_register_test(testUsdMayaAdaptorMetadata
+    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMayaAdaptorMetadata"
+    TESTENV testUsdMayaAdaptorMetadata
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/lib/usd/usdMaya/resources
+        MAYA_DISABLE_CIP=1
+        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
+)
+
 pxr_install_test_dir(
     SRC testenv/UsdMayaAppDirTest
     DEST testUsdMayaAppDir
@@ -1030,6 +1071,17 @@ pxr_register_test(testUsdMayaProxyShape
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
 )
 
+pxr_register_test(testUsdMayaReadWriteUtils
+    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMayaReadWriteUtils"
+    TESTENV testUsdMayaReadWriteUtils
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/lib/usd/usdMaya/resources
+        MAYA_DISABLE_CIP=1
+        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
+)
+
 pxr_install_test_dir(
     SRC testenv/UsdMayaReferenceAssemblyEdits
     DEST testUsdMayaReferenceAssemblyEdits
@@ -1053,36 +1105,6 @@ pxr_register_test(testUsdMayaUserExportedAttributes
     CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMayaUserExportedAttributes"
     TESTENV testUsdMayaUserExportedAttributes
-    ENV
-        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
-        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/lib/usd/usdMaya/resources
-        MAYA_DISABLE_CIP=1
-        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
-)
-
-pxr_install_test_dir(
-    SRC testenv/UsdMayaAdaptorGeomTest
-    DEST testUsdMayaAdaptorGeom
-)
-pxr_register_test(testUsdMayaAdaptorGeom
-    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMayaAdaptorGeom"
-    TESTENV testUsdMayaAdaptorGeom
-    ENV
-        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
-        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/lib/usd/usdMaya/resources
-        MAYA_DISABLE_CIP=1
-        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
-)
-
-pxr_install_test_dir(
-    SRC testenv/UsdMayaAdaptorMetadataTest
-    DEST testUsdMayaAdaptorMetadata
-)
-pxr_register_test(testUsdMayaAdaptorMetadata
-    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMayaAdaptorMetadata"
-    TESTENV testUsdMayaAdaptorMetadata
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/lib/usd/usdMaya/resources
