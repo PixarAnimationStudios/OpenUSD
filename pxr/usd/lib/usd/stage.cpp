@@ -84,6 +84,7 @@
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/scoped.h"
+#include "pxr/base/tf/span.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/work/arenaDispatcher.h"
@@ -1175,32 +1176,48 @@ UsdStage::OpenMasked(const SdfLayerHandle& rootLayer,
                              load);
 }
 
-SdfPropertySpecHandle
-UsdStage::_GetPropertyDefinition(const UsdPrim &prim,
-                                 const TfToken &propName) const
+static inline SdfAttributeSpecHandle
+_GetPropDef(SdfAttributeSpec *,
+            TfToken const &typeName, TfToken const &attrName)
 {
-    if (!prim)
-        return TfNullPtr;
-
-    const TfToken &typeName = prim.GetTypeName();
-    if (typeName.IsEmpty())
-        return TfNullPtr;
-
-    // Consult the registry.
-    return UsdSchemaRegistry::GetPropertyDefinition(typeName, propName);
+    return UsdSchemaRegistry::GetAttributeDefinition(typeName, attrName);
 }
 
-SdfPropertySpecHandle
-UsdStage::_GetPropertyDefinition(const UsdProperty &prop) const
+static inline SdfRelationshipSpecHandle
+_GetPropDef(SdfRelationshipSpec *,
+            TfToken const &typeName, TfToken const &attrName)
 {
-    return _GetPropertyDefinition(prop.GetPrim(), prop.GetName());
+    return UsdSchemaRegistry::GetRelationshipDefinition(typeName, attrName);
+}
+
+static inline SdfPropertySpecHandle
+_GetPropDef(SdfPropertySpec *,
+            TfToken const &typeName, TfToken const &attrName)
+{
+    return UsdSchemaRegistry::GetPropertyDefinition(typeName, attrName);
 }
 
 template <class PropType>
 SdfHandle<PropType>
 UsdStage::_GetPropertyDefinition(const UsdProperty &prop) const
 {
-    return TfDynamic_cast<SdfHandle<PropType> >(_GetPropertyDefinition(prop));
+    Usd_PrimDataHandle const &primData = prop._Prim();
+    if (!primData)
+        return TfNullPtr;
+
+    const TfToken &typeName = primData->GetTypeName();
+    if (typeName.IsEmpty())
+        return TfNullPtr;
+
+    // Consult the registry.
+    return _GetPropDef(static_cast<PropType *>(nullptr),
+                       typeName, prop.GetName());
+}
+
+SdfPropertySpecHandle
+UsdStage::_GetPropertyDefinition(const UsdProperty &prop) const
+{
+    return _GetPropertyDefinition<SdfPropertySpec>(prop);
 }
 
 SdfAttributeSpecHandle
@@ -4780,6 +4797,7 @@ UsdStage::_FlattenProperty(const UsdProperty &srcProp,
         dstPropStack = dstProp.GetPropertyStack();
     }
 
+    UsdProperty dstProp;
     {
         SdfChangeBlock block;
 
@@ -4827,21 +4845,22 @@ UsdStage::_FlattenProperty(const UsdProperty &srcProp,
 
         // Copy authored property values and metadata.
         _CopyProperty(srcProp, primSpec, dstName, remapping, stageToLayerOffset);
-
         SdfPropertySpecHandle dstPropSpec = 
             primSpec->GetProperties().get(dstName);
         if (!dstPropSpec) {
             return UsdProperty();
         }
 
+        dstProp = dstParent.GetProperty(dstName);
+
         // Copy fallback property values and metadata if needed.
         _CopyFallbacks(
-            _GetPropertyDefinition(srcProp.GetPrim(), srcProp.GetName()),
-            _GetPropertyDefinition(dstParent, dstName),
+            _GetPropertyDefinition(srcProp),
+            _GetPropertyDefinition(dstProp),
             dstPropSpec, dstPropStack);
     }
 
-    return dstParent.GetProperty(dstName);
+    return dstProp;
 }
 
 const PcpPrimIndex*
