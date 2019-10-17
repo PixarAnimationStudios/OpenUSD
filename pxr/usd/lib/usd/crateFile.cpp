@@ -101,7 +101,7 @@ _GetPageShift(unsigned int mask)
 }
 
 static unsigned int PAGESIZE = ArchGetPageSize();
-static uint64_t PAGEMASK = ~(PAGESIZE-1);
+static uint64_t PAGEMASK = ~(static_cast<uint64_t>(PAGESIZE-1));
 static unsigned int PAGESHIFT = _GetPageShift(PAGEMASK);
 
 TF_REGISTRY_FUNCTION(TfType) {
