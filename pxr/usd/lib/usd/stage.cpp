@@ -3157,13 +3157,6 @@ UsdStage::_DefinePrim(const SdfPath &path, const TfToken &typeName)
 UsdPrim
 UsdStage::CreateClassPrim(const SdfPath &path)
 {
-    // Classes must be root prims.
-    if (!path.IsRootPrimPath()) {
-        TF_CODING_ERROR("Classes must be root prims.  <%s> is not a root prim "
-                        "path", path.GetText());
-        return UsdPrim();
-    }
-
     // Classes must be created in local layers.
     if (_editTarget.GetMapFunction().IsIdentity() &&
         !HasLocalLayer(_editTarget.GetLayer())) {
