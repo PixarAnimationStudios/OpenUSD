@@ -577,9 +577,13 @@ PcpCache::FindSiteDependencies(
     // To service dependency queries about those children, we must
     // examine structure at the enclosing prim/root level where deps
     // are expresed. Find the containing path.
-    const SdfPath sitePrimPath =
-        (sitePath == SdfPath::AbsoluteRootPath()) ? sitePath :
-        sitePath.GetPrimOrPrimVariantSelectionPath();
+    SdfPath tmpPath;
+    const SdfPath *sitePrimPath = &sitePath;
+    if (ARCH_UNLIKELY(!sitePath.IsPrimOrPrimVariantSelectionPath())) {
+        tmpPath = (sitePath == SdfPath::AbsoluteRootPath()) ? sitePath :
+            sitePath.GetPrimOrPrimVariantSelectionPath();
+        sitePrimPath = &tmpPath;
+    }
 
     // Handle the root dependency.
     // Sites containing variant selections are never root dependencies.
@@ -599,8 +603,8 @@ PcpCache::FindSiteDependencies(
         // if we are querying deps for a property, and recurseOnSite
         // is true, we must guard against recursing into paths
         // that are siblings of the property and filter them out.
-        if (depPrimSitePath != sitePrimPath &&
-            depPrimSitePath.HasPrefix(sitePrimPath) &&
+        if (depPrimSitePath != *sitePrimPath &&
+            depPrimSitePath.HasPrefix(*sitePrimPath) &&
             !depPrimSitePath.HasPrefix(sitePath)) {
             return;
         }
@@ -608,15 +612,15 @@ PcpCache::FindSiteDependencies(
         // If we have recursed above to an ancestor, include its direct
         // dependencies, since they are considered ancestral by descendants.
         const PcpDependencyFlags localMask =
-            (depPrimSitePath != sitePrimPath &&
-             sitePrimPath.HasPrefix(depPrimSitePath))
+            (depPrimSitePath != *sitePrimPath &&
+             sitePrimPath->HasPrefix(depPrimSitePath))
             ? (depMask | PcpDependencyTypeDirect) : depMask;
 
         // If we have recursed below sitePath, use that site;
         // otherwise use the site the caller requested.
         const SdfPath localSitePath =
-            (depPrimSitePath != sitePrimPath &&
-             depPrimSitePath.HasPrefix(sitePrimPath))
+            (depPrimSitePath != *sitePrimPath &&
+             depPrimSitePath.HasPrefix(*sitePrimPath))
             ? depPrimSitePath : sitePath;
 
         auto visitNodeFn = [&](const SdfPath &depPrimIndexPath,
@@ -662,7 +666,7 @@ PcpCache::FindSiteDependencies(
                                  depPrimIndexPath, *this, visitNodeFn);
     };
     _primDependencies->ForEachDependencyOnSite(
-        siteLayerStack, sitePrimPath,
+        siteLayerStack, *sitePrimPath,
         /* includeAncestral = */ depMask & PcpDependencyTypeAncestral,
         recurseOnSite, visitSiteFn);
 
