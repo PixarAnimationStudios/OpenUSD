@@ -320,21 +320,21 @@ public:
 
         // Both this vector and rhs are stored locally.
         if (_IsLocal() && rhs._IsLocal()) {
-            TfSmallVector<T, N> *small = size() < rhs.size() ? this : &rhs;
-            TfSmallVector<T, N> *large = size() < rhs.size() ? &rhs : this;
+            TfSmallVector<T, N> *smaller = size() < rhs.size() ? this : &rhs;
+            TfSmallVector<T, N> *larger = size() < rhs.size() ? &rhs : this;
 
             // Swap all the entries up to the size of the smaller vector.
-            std::swap_ranges(small->begin(), small->end(), large->begin());
+            std::swap_ranges(smaller->begin(), smaller->end(), larger->begin());
 
             // Move the tail end of the entries, and destruct them at the
             // source vector.
-            for (size_type i = small->size(); i < large->size(); ++i) {
-                _MoveConstruct(small->data() + i, &(*large)[i]);
-                (*large)[i].~value_type();
+            for (size_type i = smaller->size(); i < larger->size(); ++i) {
+                _MoveConstruct(smaller->data() + i, &(*larger)[i]);
+                (*larger)[i].~value_type();
             }
 
             // Swap sizes. Capacities are already equal in this case.
-            swap(small->_size, large->_size);
+            swap(smaller->_size, larger->_size);
         }
 
         // Both this vector and rhs are stored remotely. Simply swap the
