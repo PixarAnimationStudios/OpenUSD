@@ -98,8 +98,8 @@ public:
                        UT_Array<UsdPrim>& prims,
                        const GA_Range& rng,
                        const GA_Attribute& pathAttr,
-                       const GA_Attribute& primPathAttr,
-                       const GA_Attribute* variantsAttr,
+                       const GA_Attribute* primPathAttr=nullptr,
+                       const GA_Attribute* variantsAttr=nullptr,
                        UT_Array<SdfPath>* variants=nullptr,
                        UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
