@@ -751,6 +751,9 @@ int main(int argc, char *argv[])
             hdUsdFrontend.Populate(stage->GetPseudoRoot());
             hdUsdFrontend.SetTime(frameNum);
             hdUsdFrontend.SetRefineLevelFallback(8); // max refinement
+            if (!product.cameraPath.IsEmpty()) {
+                hdUsdFrontend.SetCameraForSampling(product.cameraPath);
+            }
 
             TfTokenVector renderTags(1, HdRenderTagTokens->geometry);
             // The collection of scene contents to render
