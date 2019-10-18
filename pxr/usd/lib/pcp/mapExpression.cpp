@@ -273,13 +273,14 @@ PcpMapExpression::_Node::_Node( const Key & key_ )
     : key(key_)
     , expressionTreeAlwaysHasIdentity(_ExpressionTreeAlwaysHasIdentity(key))
 {
+    _hasCachedValue = false;
     _refCount = 0;
     if (key.arg1) {
-        tbb::spin_rw_mutex::scoped_lock lock(key.arg1->_mutex);
+        tbb::spin_mutex::scoped_lock lock(key.arg1->_mutex);
         key.arg1->_dependentExpressions.insert(this);
     }
     if (key.arg2) {
-        tbb::spin_rw_mutex::scoped_lock lock(key.arg2->_mutex);
+        tbb::spin_mutex::scoped_lock lock(key.arg2->_mutex);
         key.arg2->_dependentExpressions.insert(this);
     }
 }
@@ -287,11 +288,11 @@ PcpMapExpression::_Node::_Node( const Key & key_ )
 PcpMapExpression::_Node::~_Node()
 {
     if (key.arg1) {
-        tbb::spin_rw_mutex::scoped_lock lock(key.arg1->_mutex);
+        tbb::spin_mutex::scoped_lock lock(key.arg1->_mutex);
         key.arg1->_dependentExpressions.erase(this);
     }
     if (key.arg2) {
-        tbb::spin_rw_mutex::scoped_lock lock(key.arg2->_mutex);
+        tbb::spin_mutex::scoped_lock lock(key.arg2->_mutex);
         key.arg2->_dependentExpressions.erase(this);
     }
 
@@ -308,17 +309,18 @@ PcpMapExpression::_Node::~_Node()
 const PcpMapExpression::Value &
 PcpMapExpression::_Node::EvaluateAndCache() const
 {
-    tbb::spin_rw_mutex::scoped_lock lock(_mutex, /*write=*/false);
-    if (_cachedValue)
-        return _cachedValue.get();
-    TRACE_SCOPE("PcpMapExpression::_Node::EvaluateAndCache - cache miss");
-    Value val = _EvaluateUncached();
-    if (!lock.upgrade_to_writer()) {
-        if (_cachedValue)
-            return _cachedValue.get();
+    if (_hasCachedValue) {
+        return _cachedValue;
     }
-    _cachedValue.reset(val);
-    return _cachedValue.get();
+
+    TRACE_SCOPE("PcpMapExpression::_Node::EvaluateAndCache - cache miss"); 
+    Value val = _EvaluateUncached();
+    tbb::spin_mutex::scoped_lock lock(_mutex);
+    if (!_hasCachedValue) {
+        _cachedValue = val;
+        _hasCachedValue = true;
+    }
+    return _cachedValue;
 }
 
 PcpMapExpression::Value
@@ -346,10 +348,11 @@ void
 PcpMapExpression::_Node::_Invalidate()
 {
     // Caller must hold a lock on _mutex.
-    if (_cachedValue) {
-        _cachedValue.reset();
+    if (_hasCachedValue) {
+        _hasCachedValue = false;
+        _cachedValue = Value();
         for (auto dep: _dependentExpressions) {
-            tbb::spin_rw_mutex::scoped_lock lock(dep->_mutex);
+            tbb::spin_mutex::scoped_lock lock(dep->_mutex);
             dep->_Invalidate();
         }
     } else {
@@ -364,7 +367,7 @@ PcpMapExpression::_Node::SetValueForVariable(const Value & value)
         TF_CODING_ERROR("Cannot set value for non-variable");
         return;
     }
-    tbb::spin_rw_mutex::scoped_lock lock(_mutex);
+    tbb::spin_mutex::scoped_lock lock(_mutex);
     if (_valueForVariable != value) {
         _valueForVariable = value;
         _Invalidate();
