@@ -51,21 +51,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-const std::vector<float>&
-HdPrman_Context::GetTimeSamplesForId(SdfPath const& id)
-{
-    if (!timeSampleMap.empty()) {
-        // Walk up namespace, looking for nearest enclosing entry.
-        for (SdfPath p = id; !p.IsEmpty(); p = p.GetParentPath()) {
-            HdPrman_TimeSampleMap::const_iterator i = timeSampleMap.find(p);
-            if (i != timeSampleMap.end()) {
-                return i->second;
-            }
-        }
-    }
-    return defaultTimeSamples;
-}
-
 void
 HdPrman_Context::IncrementLightLinkCount(TfToken const& name)
 {

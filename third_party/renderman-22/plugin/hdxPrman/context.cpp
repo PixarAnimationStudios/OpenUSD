@@ -176,12 +176,6 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
 
     riley::ScopedCoordinateSystem const k_NoCoordsys = { 0, nullptr };
 
-    // Configure default time samples.
-    defaultTimeSamples.push_back(0.0);
-    defaultTimeSamples.push_back(1.0);
-    // XXX In the future, we'll want a way for clients to configure this map.
-    timeSampleMap[SdfPath::AbsoluteRootPath()] = defaultTimeSamples;
-
     // XXX Shutter settings from studio katana defaults:
     // - /root.renderSettings.shutter{Open,Close}
     float shutterInterval[2] = { 0.0f, 0.5f };

@@ -52,9 +52,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfPath;
 class HdSceneDelegate;
 
-/// Hierarchical map of scene ids to sample times.
-typedef std::map<SdfPath, std::vector<float>> HdPrman_TimeSampleMap;
-
 // Context for HdPrman to communicate with an instance of PRMan.
 struct HdPrman_Context
 {
@@ -72,16 +69,6 @@ struct HdPrman_Context
     // does not have a bound material.
     riley::MaterialId fallbackMaterial;
     riley::MaterialId fallbackVolumeMaterial;
-    // The fallback set of time samples to evalate,
-    // if there is not a relevant entry in timeSampleMap.
-    std::vector<float> defaultTimeSamples;
-    // Per-scope configuration of time samples to evaluate.
-    HdPrman_TimeSampleMap timeSampleMap;
-
-    // A helper to look up the set of time samples to evalutae
-    // for the given Hydra id.
-    HDPRMAN_API
-    const std::vector<float>& GetTimeSamplesForId(SdfPath const&);
 
     // Convert any Hydra primvars that should be Riley instance attributes.
     HDPRMAN_API
