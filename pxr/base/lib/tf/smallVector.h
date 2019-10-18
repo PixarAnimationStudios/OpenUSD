@@ -316,12 +316,10 @@ public:
     /// Swap two vector instances.
     ///
     void swap(TfSmallVector &rhs) {
-        using std::swap;
-
         // Both this vector and rhs are stored locally.
         if (_IsLocal() && rhs._IsLocal()) {
-            TfSmallVector<T, N> *smaller = size() < rhs.size() ? this : &rhs;
-            TfSmallVector<T, N> *larger = size() < rhs.size() ? &rhs : this;
+            TfSmallVector *smaller = size() < rhs.size() ? this : &rhs;
+            TfSmallVector *larger = size() < rhs.size() ? &rhs : this;
 
             // Swap all the entries up to the size of the smaller vector.
             std::swap_ranges(smaller->begin(), smaller->end(), larger->begin());
@@ -334,7 +332,7 @@ public:
             }
 
             // Swap sizes. Capacities are already equal in this case.
-            swap(smaller->_size, larger->_size);
+            std::swap(smaller->_size, larger->_size);
         }
 
         // Both this vector and rhs are stored remotely. Simply swap the
@@ -344,15 +342,15 @@ public:
             _data.SetRemoteStorage(rhs._data.GetRemoteStorage());
             rhs._data.SetRemoteStorage(tmp);
 
-            swap(_size, rhs._size);
-            swap(_capacity, rhs._capacity);
+            std::swap(_size, rhs._size);
+            std::swap(_capacity, rhs._capacity);
         }
 
         // Either this vector or rhs is stored remotely, whereas the other
         // one is stored locally.
         else {
-            TfSmallVector<T, N> *remote = _IsLocal() ? &rhs : this;
-            TfSmallVector<T, N> *local =  _IsLocal() ? this : &rhs;
+            TfSmallVector *remote = _IsLocal() ? &rhs : this;
+            TfSmallVector *local =  _IsLocal() ? this : &rhs;
 
             // Get a pointer to the remote storage. We'll be overwriting the
             // pointer value below, so gotta retain it first.
@@ -375,8 +373,8 @@ public:
             local->_data.SetRemoteStorage(remoteStorage);
 
             // Swap sizes and capacities. Easy peasy. 
-            swap(remote->_size, local->_size);
-            swap(remote->_capacity, local->_capacity);
+            std::swap(remote->_size, local->_size);
+            std::swap(remote->_capacity, local->_capacity);
         }
 
     }
