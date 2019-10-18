@@ -41,8 +41,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class TfToken;
-
 /// \class HdChangeTracker
 ///
 /// Tracks changes from the HdSceneDelegate, providing invalidation cues to the
