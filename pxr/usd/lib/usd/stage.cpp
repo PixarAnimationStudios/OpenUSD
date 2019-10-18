@@ -4984,6 +4984,19 @@ _ResolveAssetPath(VtArray<SdfAssetPath> *v,
 }
 
 template <class T, class Storage>
+static void
+_UncheckedResolveAssetPath(Storage storage,
+                           const ArResolverContext &context,
+                           const SdfLayerRefPtr &layer,
+                           bool anchorAssetPathsOnly)
+{
+    T v;
+    _UncheckedSwap(storage, v);
+    _ResolveAssetPath(&v, context, layer, anchorAssetPathsOnly);
+    _UncheckedSwap(storage, v);
+}
+
+template <class T, class Storage>
 static bool 
 _TryResolveAssetPath(Storage storage,
                      const ArResolverContext &context,
@@ -4991,10 +5004,8 @@ _TryResolveAssetPath(Storage storage,
                      bool anchorAssetPathsOnly)
 {
     if (_IsHolding<T>(storage)) {
-        T v;
-        _UncheckedSwap(storage, v);
-        _ResolveAssetPath(&v, context, layer, anchorAssetPathsOnly);
-        _UncheckedSwap(storage, v);
+        _UncheckedResolveAssetPath<T>(
+            storage, context, layer, anchorAssetPathsOnly);
         return true;
     }
     return false;
@@ -5016,6 +5027,19 @@ _TryResolveAssetPaths(Storage storage,
             storage, context, layer, anchorAssetPathsOnly);
 }
 
+template <class T, class Storage>
+static void
+_UncheckedApplyLayerOffsetToValue(Storage storage, 
+                                  const SdfLayerOffset &offset)
+{
+    if (!offset.IsIdentity()) {
+        T v;
+        _UncheckedSwap(storage, v);
+        Usd_ApplyLayerOffsetToValue(&v, offset);
+        _UncheckedSwap(storage, v);
+    }
+}
+
 // Tries to apply the layer offset to the value in storage if its holding the
 // templated class type. Returns true if the value is holding the specified 
 // type.
@@ -5026,12 +5050,7 @@ _TryApplyLayerOffsetToValue(Storage storage,
 {
     if (_IsHolding<T>(storage)) {
         const SdfLayerOffset &offset = offsetAccess.Get();
-        if (!offset.IsIdentity()) {
-            T v;
-            _UncheckedSwap(storage, v);
-            Usd_ApplyLayerOffsetToValue(&v, offset);
-            _UncheckedSwap(storage, v);
-        }
+        _UncheckedApplyLayerOffsetToValue<T>(storage, offset);
         return true;
     }
     return false;
@@ -5343,9 +5362,8 @@ struct TypedStrongestValueComposer :
                                         TypedStrongestValueComposer<T>>;
     friend Base;
 
-    explicit TypedStrongestValueComposer(SdfAbstractDataTypedValue<T> *s, 
-                                         bool anchorAssetPathsOnly = false)
-        : Base(s, anchorAssetPathsOnly) {}
+    explicit TypedStrongestValueComposer(SdfAbstractDataTypedValue<T> *s)
+        : Base(s, /*anchorAssetPathsOnly = */ false) {}
 
 protected:
     // Implementation for the base class.
@@ -5374,10 +5392,10 @@ protected:
     }
 };
 
-// Specializations of _ResolveValue for resolvable types. Note that we can
-// assume that _value always holds the template value type so the value checking
-// in the _Try functions are technically rendundant here. We may also want to
-// skip these resolves when _value.isValueBlock.
+// Specializations of _ResolveValueImpl for resolvable types. Note that we can
+// assume that _value always holds the template value type so there is no value
+// type checking. We may, however, want to skip these resolves when 
+// _value.isValueBlock is true.
 template <>
 void TypedStrongestValueComposer<SdfAssetPath>::_ResolveValueImpl(
     const PcpNodeRef &node,
@@ -5385,8 +5403,8 @@ void TypedStrongestValueComposer<SdfAssetPath>::_ResolveValueImpl(
 {
     const ArResolverContext &context = 
         node.GetLayerStack()->GetIdentifier().pathResolverContext;
-    _TryResolveAssetPath<SdfAssetPath>(
-        _value, context, layer, _anchorAssetPathsOnly);
+    _UncheckedResolveAssetPath<SdfAssetPath>(
+        _value, context, layer, /*anchorAssetPathsOnly = */ false);
 }
 
 template <>
@@ -5396,8 +5414,8 @@ void TypedStrongestValueComposer<VtArray<SdfAssetPath>>::_ResolveValueImpl(
 {
     const ArResolverContext &context = 
         node.GetLayerStack()->GetIdentifier().pathResolverContext;
-    _TryResolveAssetPath<VtArray<SdfAssetPath>>(
-        _value, context, layer, _anchorAssetPathsOnly);
+    _UncheckedResolveAssetPath<VtArray<SdfAssetPath>>(
+        _value, context, layer, /*anchorAssetPathsOnly = */ false);
 }
 
 template <>
@@ -5405,10 +5423,8 @@ void TypedStrongestValueComposer<SdfTimeCode>::_ResolveValueImpl(
     const PcpNodeRef &node,
     const SdfLayerRefPtr &layer)
 {
-    // Create a layer offset accessor so we don't compute the layer
-    // offset unless one of the resolve functions actually needs it.
-    LayerOffsetAccess layerOffsetAccess(node, layer);
-    _TryApplyLayerOffsetToValue<SdfTimeCode>(_value, layerOffsetAccess);
+    SdfLayerOffset offset = _GetLayerToStageOffset(node, layer);
+    _UncheckedApplyLayerOffsetToValue<SdfTimeCode>(_value, offset);
 }
 
 template <>
@@ -5416,11 +5432,8 @@ void TypedStrongestValueComposer<VtArray<SdfTimeCode>>::_ResolveValueImpl(
     const PcpNodeRef &node,
     const SdfLayerRefPtr &layer)
 {
-    // Create a layer offset accessor so we don't compute the layer
-    // offset unless one of the resolve functions actually needs it.
-    LayerOffsetAccess layerOffsetAccess(node, layer);
-    _TryApplyLayerOffsetToValue<VtArray<SdfTimeCode>>(
-        _value, layerOffsetAccess);
+    SdfLayerOffset offset = _GetLayerToStageOffset(node, layer);
+    _UncheckedApplyLayerOffsetToValue<VtArray<SdfTimeCode>>(_value, offset);
 }
 
 template <>
@@ -5428,12 +5441,18 @@ void TypedStrongestValueComposer<SdfTimeSampleMap>::_ResolveValueImpl(
     const PcpNodeRef &node,
     const SdfLayerRefPtr &layer)
 {
-    // Create a layer offset accessor so we don't compute the layer
-    // offset unless one of the resolve functions actually needs it.
-    LayerOffsetAccess layerOffsetAccess(node, layer);
-    _TryApplyLayerOffsetToValue<SdfTimeSampleMap>(
-        _value, layerOffsetAccess);
+    SdfLayerOffset offset = _GetLayerToStageOffset(node, layer);
+    _UncheckedApplyLayerOffsetToValue<SdfTimeSampleMap>(_value, offset);
 }
+
+// We don't expect that a specialization for VtDictionary is needed
+// even though it is a resolvable value type as VtDictionaries will 
+// always go through the ConsumeAndMerge code. Force this assumption by 
+// deleting the specialization for VtDictionary.
+template <>
+void TypedStrongestValueComposer<VtDictionary>::_ResolveValueImpl(
+    const PcpNodeRef &, const SdfLayerRefPtr &) = delete;
+
 
 struct ExistenceComposer
 {
