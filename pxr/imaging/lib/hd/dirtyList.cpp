@@ -29,14 +29,12 @@
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/tokens.h"
 
-#include <iostream>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct _FilterParam {
-    const HdRenderIndex     &renderIndex;
-    const TfTokenVector     &renderTags;
-    HdDirtyBits              mask;
+    const HdRenderIndex &renderIndex;
+    const TfTokenVector &renderTags;
+    HdDirtyBits mask;
 };
 
 static bool
@@ -260,7 +258,7 @@ HdDirtyList::GetDirtyRprims(const TfTokenVector &renderTags)
 
         // Need to invalidate the cache varying state
         _varyingStateVersion = currentVaryingStateVersion - 1;
-    }else if (_varyingStateVersion != currentVaryingStateVersion) {
+    } else if (_varyingStateVersion != currentVaryingStateVersion) {
         TF_DEBUG(HD_DIRTY_LIST).Msg("DirtyList(%p): varying state changed "
                 "(%d -> %d)\n",
                 (void*)this,
@@ -275,9 +273,9 @@ HdDirtyList::GetDirtyRprims(const TfTokenVector &renderTags)
     // If not either of the above, we can used the cached results.
 
     if (TfDebug::IsEnabled(HD_DIRTY_LIST)) {
-        std::cout << "  _dirtyIds: " << std::endl;
-        for (auto const& i : _dirtyIds) {
-            std::cout << "    " << i << std::endl;
+        TF_DEBUG(HD_DIRTY_LIST).Msg("  _dirtyIds: \n");
+        for (SdfPath const& id : _dirtyIds) {
+            TF_DEBUG(HD_DIRTY_LIST).Msg("    %s\n", id.GetText());
         }
     }
 
