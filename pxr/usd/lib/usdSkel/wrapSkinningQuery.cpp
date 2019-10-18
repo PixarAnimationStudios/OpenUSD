@@ -133,7 +133,7 @@ void wrapUsdSkelSkinningQuery()
 {
     using This = UsdSkelSkinningQuery;
 
-    class_<This>("UsdSkelSkinningQuery")
+    class_<This>("SkinningQuery")
 
         .def(!self)
 
