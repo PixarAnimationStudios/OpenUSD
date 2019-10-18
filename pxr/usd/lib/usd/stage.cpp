@@ -242,9 +242,10 @@ UsdStage::SetGlobalVariantFallbacks(const PcpVariantFallbackMap &fallbacks)
 // Returns the SdfLayerOffset that maps times in \a layer in the local layer
 // stack of \a node up to the root of the pcp node tree.  Use
 // SdfLayerOffset::GetInverse() to go the other direction.
+template <class LayerPtr>
 static SdfLayerOffset
 _GetLayerToStageOffset(const PcpNodeRef& pcpNode,
-                       const SdfLayerHandle& layer)
+                       const LayerPtr& layer)
 {
     // PERFORMANCE: This is cached in the PcpNode and should be cheap.
     // Get the node-local path and layer offset.
@@ -6864,7 +6865,7 @@ struct UsdStage::_ResolveInfoResolver
                  const PcpNodeRef& node,
                  const double *time) 
     {
-        const PcpLayerStackPtr& nodeLayers = node.GetLayerStack();
+        const PcpLayerStackRefPtr& nodeLayers = node.GetLayerStack();
         const SdfLayerRefPtrVector& layerStack = nodeLayers->GetLayers();
         const SdfLayerOffset layerToStageOffset =
             _GetLayerToStageOffset(node, layerStack[layerStackPosition]);
