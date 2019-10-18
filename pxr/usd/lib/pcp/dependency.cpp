@@ -106,6 +106,9 @@ PcpClassifyNodeDependency(const PcpNodeRef &node)
         } else {
             anyDirect = true;
         }
+        if (anyAncestral && anyDirect) {
+            break;
+        }
     }
     if (anyDirect) {
         if (anyAncestral) {
