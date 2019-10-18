@@ -37,6 +37,7 @@ generated that will compile and work with USD Core successfully:
 """
 
 import sys, os, re, inspect
+import keyword
 from argparse import ArgumentParser
 from collections import namedtuple
 
@@ -753,12 +754,30 @@ def _ExtractCustomCode(filePath, default=None):
 
 
 def _AddToken(tokenDict, tokenId, val, desc):
+    cppReservedKeywords = [
+        "alignas", "alignof", "and", "and_eq", "asm", "atomic_cancel",
+        "atomic_commit", "atomic_noexcept", "auto", "bitand", "bitor", "bool",
+        "break", "case", "catch", "char", "char8_t", "char16_t", "char32_t",
+        "class", "compl", "concept", "const", "consteval", "constexpr",
+        "constinit", "const_cast", "continue", "co_await", "co_return",
+        "co_yield", "decltype", "default", "delete", "do", "double",
+        "dynamic_cast", "else", "enum", "explicit", "export", "extern", "false",
+        "float", "for", "friend", "goto", "if", "inline", "int", "long",
+        "mutable", "namespace", "new", "noexcept", "not", "not_eq", "nullptr",
+        "operator", "or", "or_eq", "private", "protected", "public", "reflexpr",
+        "register", "reinterpret_cast", "requires", "return", "short", "signed",
+        "sizeof", "static", "static_assert", "static_cast", "struct", "switch",
+        "synchronized", "template", "this", "thread_local", "throw", "true",
+        "try", "typedef", "typeid", "typename", "union", "unsigned", "using",
+        "virtual", "void", "volatile", "wchar_t", "while", "xor", "xor_eq",
+    ]
+    pythonReservedKeywords = keyword.kwlist
     # If token is a reserved word in either language, append with underscore.
     # 'interface' is not a reserved word but is a macro on Windows when using
     # COM so we treat it as reserved.
-    reserved = set(['class', 'default', 'def', 'case', 'switch', 'break',
-                    'if', 'else', 'struct', 'template', 'interface',
-                    'float', 'double', 'int', 'char', 'long', 'short'])
+    reserved = set(cppReservedKeywords + keyword.kwlist + [
+        'interface',
+    ])
     if tokenId in reserved:
         tokenId = tokenId + '_'
     if tokenId in tokenDict:

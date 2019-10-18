@@ -68,7 +68,7 @@ void wrapUsdContrivedTokens()
     _AddToken(cls, "assetArray", UsdContrivedTokens->assetArray);
     _AddToken(cls, "attrWithoutGeneratedAccessorAPI", UsdContrivedTokens->attrWithoutGeneratedAccessorAPI);
     _AddToken(cls, "binding", UsdContrivedTokens->binding);
-    _AddToken(cls, "bool", UsdContrivedTokens->bool);
+    _AddToken(cls, "bool_", UsdContrivedTokens->bool_);
     _AddToken(cls, "boolArray", UsdContrivedTokens->boolArray);
     _AddToken(cls, "color3d", UsdContrivedTokens->color3d);
     _AddToken(cls, "color3dArray", UsdContrivedTokens->color3dArray);

@@ -81,7 +81,7 @@ struct UsdContrivedTokensType {
     /// \brief "bool"
     /// 
     /// UsdContrivedBase
-    const TfToken bool;
+    const TfToken bool_;
     /// \brief "boolArray"
     /// 
     /// UsdContrivedBase
