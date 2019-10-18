@@ -73,6 +73,7 @@
 #include <fstream>
 #include <iostream>
 #include <set>
+#include <thread>
 #include <vector>
 
 using std::map;
@@ -154,11 +155,11 @@ SdfLayer::SdfLayer(
     string layerIdentifier = Sdf_IsAnonLayerIdentifier(identifier) ?
         Sdf_ComputeAnonLayerIdentifier(identifier, this) : identifier;
 
-    // Lock the initialization mutex before we publish this object
-    // (i.e. add it to the registry in _InitializeFromIdentifier).
-    // This ensures that other threads looking for this layer will
-    // block until it is fully initialized.
-    _initializationMutex.lock();
+    // Indicate that this layer's initialization is not yet complete before we
+    // publish this object (i.e. add it to the registry in
+    // _InitializeFromIdentifier).  This ensures that other threads looking for
+    // this layer will block until it is fully initialized.
+    _initializationComplete = false;
 
     // Initialize layer asset information.
     _InitializeFromIdentifier(
@@ -222,7 +223,7 @@ SdfLayer::_CreateNewWithFormat(
 
     // This method should be called with the layerRegistryMutex already held.
 
-    // Create and return a new layer with _initializationMutex locked.
+    // Create and return a new layer with _initializationComplete set false.
     return fileFormat->NewLayer(
         fileFormat, identifier, realPathFinal, assetInfo, args);
 }
@@ -231,7 +232,7 @@ void
 SdfLayer::_FinishInitialization(bool success)
 {
     _initializationWasSuccessful = success;
-    _initializationMutex.unlock();
+    _initializationComplete = true; // unblock waiters.
 }
 
 bool
@@ -245,11 +246,12 @@ SdfLayer::_WaitForInitializationAndCheckIfSuccessful()
     // another thread needs the GIL, we'd deadlock here.
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 
-    // Try to acquire and then release _initializationMutex.  If the
-    // layer is still being initialized, this will be locked, blocking
-    // progress until initialization completes and the mutex unlocks.
-    _initializationMutex.lock();
-    _initializationMutex.unlock();
+    // Wait until _initializationComplete is set to true.  If the layer is still
+    // being initialized, this will be false, blocking progress until
+    // initialization completes.
+    while (!_initializationComplete) {
+        std::this_thread::yield();
+    }
 
     // For various reasons, initialization may have failed.
     // For example, the menva parser may have hit a syntax error,
@@ -3018,11 +3020,11 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
         info.fileFormat, info.identifier, info.resolvedLayerPath, 
         info.assetInfo, info.fileFormatArgs);
 
-    // The layer constructor locks _initializationMutex, which will
+    // The layer constructor sets _initializationComplete to false, which will
     // block any other threads trying to use the layer until we complete
-    // initialization here.  But now that the layer is in the registry,
-    // we release the registry lock to avoid blocking progress of
-    // threads working with other layers.
+    // initialization.  But now that the layer is in the registry, we release
+    // the registry lock to avoid blocking progress of threads working with
+    // other layers.
     TF_VERIFY(_layerRegistry->
               FindByIdentifier(layer->GetIdentifier()) == layer,
               "Could not find %s", layer->GetIdentifier().c_str());

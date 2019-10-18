@@ -43,9 +43,9 @@
 
 #include <boost/optional.hpp>
 
+#include <atomic>
 #include <functional>
 #include <memory>
-#include <mutex>
 #include <set>
 #include <string>
 #include <vector>
@@ -1648,13 +1648,13 @@ private:
     // The state delegate for this layer.
     SdfLayerStateDelegateBaseRefPtr _stateDelegate;
 
-    // Mutex protecting layer initialization -- the interval between
-    // adding a layer to the layer registry, and finishing the process
-    // of initialization its contents, at which point we can truly publish
-    // the layer. We add the layer to the registry before initialization
-    // completes so that other threads can discover and block on the
-    // same layer while it is being initialized.
-    std::mutex _initializationMutex;
+    // Atomic variable protecting layer initialization -- the interval between
+    // adding a layer to the layer registry and finishing the process of
+    // initializing its contents, at which point we can truly publish the layer
+    // for consumption by concurrent threads. We add the layer to the registry
+    // before initialization completes so that other threads can discover and
+    // wait for it to finish initializing.
+    std::atomic<bool> _initializationComplete;
 
     // This is an optional<bool> that is only set once initialization
     // is complete, while _initializationMutex is locked.  If the
