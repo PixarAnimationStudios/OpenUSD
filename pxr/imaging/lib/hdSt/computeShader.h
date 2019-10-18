@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDST_COMPUTEHADER_H
-#define HDST_COMPUTEHADER_H
+#ifndef HDST_COMPUTE_SHADER_H
+#define HDST_COMPUTE_SHADER_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
@@ -97,18 +97,18 @@ private:
     std::string _computeSource;
 
     // Shader Parameters
-    HdMaterialParamVector       _params;
-    HdBufferSpecVector          _paramSpec;
+    HdMaterialParamVector _params;
+    HdBufferSpecVector _paramSpec;
     HdBufferArrayRangeSharedPtr _paramArray;
 
     TextureDescriptorVector _textureDescriptors;
     
     // No copying
-    HdStComputeShader(const HdStComputeShader &)                     = delete;
-    HdStComputeShader &operator =(const HdStComputeShader &)         = delete;
+    HdStComputeShader(const HdStComputeShader &) = delete;
+    HdStComputeShader &operator =(const HdStComputeShader &) = delete;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDST_SURFACESHADER_H
+#endif // HDST_COMPUTE_SHADER_H
