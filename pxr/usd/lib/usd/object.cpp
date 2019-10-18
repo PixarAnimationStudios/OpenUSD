@@ -54,109 +54,33 @@ UsdObject::GetMetadataByDictKey(
     return _GetMetadataImpl(key, value, keyPath);
 }
 
-template <class T>
 bool
 UsdObject::_GetMetadataImpl(
-    const TfToken& key, T* value, const TfToken &keyPath) const
+    const TfToken& key, VtValue* value, const TfToken &keyPath) const
 {
     return _GetStage()->_GetMetadata(
         *this, key, keyPath, /*useFallbacks=*/true, value);
 }
 
-template
-USD_API
-bool
-UsdObject::_GetMetadataImpl(
-    const TfToken&, VtValue*, const TfToken &) const;
-template
-USD_API
-bool
-UsdObject::_GetMetadataImpl(
-    const TfToken&, SdfAbstractDataValue*, const TfToken &) const;
-
 bool 
 UsdObject::SetMetadata(const TfToken& key, const VtValue& value) const
 {
-    return _SetMetadata(key, value);
+    return _SetMetadataImpl(key, value);
 }
 
 bool
 UsdObject::SetMetadataByDictKey(
         const TfToken& key, const TfToken &keyPath, const VtValue& value) const
 {
-    return _SetMetadata(key, value, keyPath);
-}
-
-// Overrides of the templated _SetMetadata function for value types that 
-// need to be mapped across edit targets. These will all just call into the 
-// same templated function on UsdStage which takes care of the specialized 
-// edit target mapping for each type.
-bool 
-UsdObject::_SetMetadata(const TfToken& key,
-                        const SdfTimeCode& value,
-                        const TfToken &keyPath) const
-{
-    return _GetStage()->_SetEditTargetMappedMetadata(
-        *this, key, keyPath, value);
+    return _SetMetadataImpl(key, value, keyPath);
 }
 
 bool 
-UsdObject::_SetMetadata(const TfToken& key,
-                        const VtArray<SdfTimeCode>& value,
-                        const TfToken &keyPath) const
+UsdObject::_SetMetadataImpl(const TfToken& key,
+                            const VtValue& value,
+                            const TfToken &keyPath) const
 {
-    return _GetStage()->_SetEditTargetMappedMetadata(
-        *this, key, keyPath, value);
-}
-
-bool 
-UsdObject::_SetMetadata(const TfToken& key,
-                        const SdfTimeSampleMap& value,
-                        const TfToken &keyPath) const
-{
-    return _GetStage()->_SetEditTargetMappedMetadata(
-        *this, key, keyPath, value);
-}
-
-bool 
-UsdObject::_SetMetadata(const TfToken& key,
-                        const VtDictionary& value,
-                        const TfToken &keyPath) const
-{
-    return _GetStage()->_SetEditTargetMappedMetadata(
-        *this, key, keyPath, value);
-}
-
-bool 
-UsdObject::_SetMetadata(const TfToken& key,
-                        const VtValue& value,
-                        const TfToken &keyPath) const
-{
-    // The VtValue may be holding a type that needs to be mapped across edit
-    // targets.
-    if (value.IsHolding<SdfTimeCode>()) {
-        return _SetMetadata(key, value.UncheckedGet<SdfTimeCode>(), 
-                            keyPath);
-    } else if (value.IsHolding<VtArray<SdfTimeCode>>()) {
-        return _SetMetadata(key, value.UncheckedGet<VtArray<SdfTimeCode>>(), 
-                            keyPath);
-    } else if (value.IsHolding<VtDictionary>()) {
-        return _SetMetadata(key, value.UncheckedGet<VtDictionary>(), 
-                            keyPath);
-    } else if (value.IsHolding<SdfTimeSampleMap>()) {
-        return _SetMetadata(key, value.UncheckedGet<SdfTimeSampleMap>(), 
-                            keyPath);
-    }
-
-    return _GetStage()->_SetMetadataImpl(*this, key, keyPath, value);
-}
-
-bool
-UsdObject::_SetUnmappedMetadataImpl(const TfToken& key, 
-                                    const SdfAbstractDataConstValue& value,
-                                    const TfToken &keyPath) const
-{
-    return _GetStage()->_SetMetadataImpl(*this, key, keyPath, value);
+    return _GetStage()->_SetMetadata(*this, key, keyPath, value);
 }
 
 bool

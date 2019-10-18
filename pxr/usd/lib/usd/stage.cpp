@@ -1429,6 +1429,31 @@ UsdStage::_CreatePropertySpecForEditing(const UsdProperty &prop)
     return _CreatePropertySpecForEditing<SdfPropertySpec>(prop);
 }
 
+bool 
+UsdStage::_SetMetadata(const UsdObject &object,
+                       const TfToken &key,
+                       const TfToken &keyPath,
+                       const VtValue &value)
+{
+    // The VtValue may be holding a type that needs to be mapped across edit
+    // targets.
+    if (value.IsHolding<SdfTimeCode>()) {
+        return _SetMetadata(object, key, keyPath, 
+                            value.UncheckedGet<SdfTimeCode>());
+    } else if (value.IsHolding<VtArray<SdfTimeCode>>()) {
+        return _SetMetadata(object, key, keyPath, 
+                            value.UncheckedGet<VtArray<SdfTimeCode>>());
+    } else if (value.IsHolding<VtDictionary>()) {
+        return _SetMetadata(object, key, keyPath, 
+                            value.UncheckedGet<VtDictionary>());
+    } else if (value.IsHolding<SdfTimeSampleMap>()) {
+        return _SetMetadata(object, key, keyPath, 
+                            value.UncheckedGet<SdfTimeSampleMap>());
+    }
+
+    return _SetMetadataImpl(object, key, keyPath, value);
+}
+
 // This function handles the inverse mapping of values to an edit target's layer
 // for value types that get resolved by layer offsets. It's templated by a set 
 // value implementation function in order to abstract out this value mapping for
@@ -1462,6 +1487,9 @@ bool UsdStage::_SetEditTargetMappedMetadata(
     const UsdObject &obj, const TfToken& fieldName,
     const TfToken &keyPath, const T &newValue)
 {
+    static_assert(_IsEditTargetMappable<T>::value, 
+                  "_SetEditTargetMappedMetadata can only be instantiated for "
+                  "types that are edit target mappable.");
     return _SetMappedValueForEditTarget(
         newValue, GetEditTarget(), 
         [this, &obj, &fieldName, &keyPath](const SdfAbstractDataConstValue &in)
@@ -1542,6 +1570,9 @@ bool
 UsdStage::_SetEditTargetMappedValue(
     UsdTimeCode time, const UsdAttribute &attr, const T &newValue)
 {
+    static_assert(_IsEditTargetMappable<T>::value, 
+                  "_SetEditTargetMappedValue can only be instantiated for "
+                  "types that are edit target mappable.");
     return _SetMappedValueForEditTarget(newValue, GetEditTarget(),
         [this, &time, &attr](const SdfAbstractDataConstValue &in)
         {
@@ -1552,7 +1583,7 @@ UsdStage::_SetEditTargetMappedValue(
 // Default _SetValue implementation for most attribute value types that never
 // need to be mapped for an edit target.
 template <class T>
-bool 
+typename std::enable_if<!UsdStage::_IsEditTargetMappable<T>::value, bool>::type
 UsdStage::_SetValue(UsdTimeCode time, const UsdAttribute &attr,
                     const T &newValue)
 {
@@ -1565,18 +1596,10 @@ UsdStage::_SetValue(UsdTimeCode time, const UsdAttribute &attr,
 // Note that VtDictionary and SdfTimeSampleMap are value types that are time
 // mapped when setting metadata, but we don't include them for _SetValue as
 // they're not valid attribute value types.
-template <>
-bool 
+template <class T>
+typename std::enable_if<UsdStage::_IsEditTargetMappable<T>::value, bool>::type
 UsdStage::_SetValue(UsdTimeCode time, const UsdAttribute &attr,
-                    const SdfTimeCode &newValue)
-{
-    return _SetEditTargetMappedValue(time, attr, newValue);
-}
-
-template <>
-bool 
-UsdStage::_SetValue(UsdTimeCode time, const UsdAttribute &attr,
-                    const VtArray<SdfTimeCode> &newValue)
+                    const T &newValue)
 {
     return _SetEditTargetMappedValue(time, attr, newValue);
 }
@@ -8264,9 +8287,9 @@ template bool UsdStage::_SetValue(
 
 // Explicitly instantiate the templated _SetEditTargetMappedMetaData funtions 
 // for the types that support edit target mapping. The types instantiated here 
-// must match the types that are specialized for by UsdObject::_SetMetadata.
-#define INSTANTIATE_SET_MAPPED_METADATA(elem)                                  \
-    template bool UsdStage::_SetEditTargetMappedMetadata(                      \
+// must match the types whose value is true for _IsEditTargetMappable<T>.
+#define INSTANTIATE_SET_MAPPED_METADATA(elem)                           \
+    template USD_API bool UsdStage::_SetEditTargetMappedMetadata(       \
         const UsdObject &, const TfToken&, const TfToken &, const elem &);     
 
 INSTANTIATE_SET_MAPPED_METADATA(SdfTimeCode);
@@ -8277,10 +8300,10 @@ INSTANTIATE_SET_MAPPED_METADATA(VtDictionary);
 
 // Make sure both versions of _SetMetadataImpl are instantiated as they are 
 // directly called from UsdObject.
-template bool UsdStage::_SetMetadataImpl(
+template USD_API bool UsdStage::_SetMetadataImpl(
     const UsdObject &, const TfToken &, const TfToken &, 
     const VtValue &);
-template bool UsdStage::_SetMetadataImpl(
+template USD_API bool UsdStage::_SetMetadataImpl(
     const UsdObject &, const TfToken &, const TfToken &, 
     const SdfAbstractDataConstValue &);
 

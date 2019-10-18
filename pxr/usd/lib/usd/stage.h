@@ -1619,9 +1619,32 @@ private:
     // Value & Metadata Authoring
     // --------------------------------------------------------------------- //
 
+    // Trait that allows us to call the correct versions of _SetValue and 
+    // _SetMetadata for types whose values need to be mapped when written to
+    // different edit targets.
     template <class T>
-    bool _SetValue(
+    struct _IsEditTargetMappable {
+        static const bool value =
+            std::is_same<T, SdfTimeCode>::value ||
+            std::is_same<T, VtArray<SdfTimeCode>>::value ||
+            std::is_same<T, SdfTimeSampleMap>::value ||
+            std::is_same<T, VtDictionary>::value;
+    };
+
+    // Set value for types that don't need to be mapped for edit targets.
+    template <class T>
+    typename std::enable_if<!_IsEditTargetMappable<T>::value, bool>::type
+    _SetValue(
         UsdTimeCode time, const UsdAttribute &attr, const T &newValue);
+
+    // Set value for types that do need to be mapped for edit targets.
+    template <class T>
+    typename std::enable_if<_IsEditTargetMappable<T>::value, bool>::type
+    _SetValue(
+        UsdTimeCode time, const UsdAttribute &attr, const T &newValue);
+
+    // Set value for dynamically typed VtValue. Will map the value across edit
+    // targets if the held value type supports it.
     bool _SetValue(
         UsdTimeCode time, const UsdAttribute &attr, const VtValue &newValue);
 
@@ -1634,6 +1657,26 @@ private:
         UsdTimeCode time, const UsdAttribute &attr, const T& value);
 
     bool _ClearValue(UsdTimeCode time, const UsdAttribute &attr);
+
+    // Set metadata for types that don't need to be mapped across edit targets.
+    template <class T>
+    typename std::enable_if<!_IsEditTargetMappable<T>::value, bool>::type
+    _SetMetadata(const UsdObject &object, const TfToken& key,
+                 const TfToken &keyPath, const T& value);
+
+    // Set metadata for types that do need to be mapped for edit targets.
+    template <class T>
+    typename std::enable_if<_IsEditTargetMappable<T>::value, bool>::type
+    _SetMetadata(const UsdObject &object, const TfToken& key,
+                 const TfToken &keyPath, const T& value);
+
+    // Set metadata for dynamically typed VtValue. Will map the value across 
+    // edit targets if the held value type supports it.
+    USD_API
+    bool _SetMetadata(const UsdObject &object,
+                      const TfToken& key,
+                      const TfToken &keyPath,
+                      const VtValue& value);
 
     template <class T>
     bool _SetEditTargetMappedMetadata(
@@ -1842,12 +1885,20 @@ private:
     // --------------------------------------------------------------------- //
     // Metadata Resolution
     // --------------------------------------------------------------------- //
+    template <class T>
+    bool _GetMetadata(const UsdObject &obj,
+                      const TfToken& fieldName,
+                      const TfToken &keyPath,
+                      bool useFallbacks,
+                      T* result) const;
+
     bool _GetMetadata(const UsdObject &obj,
                       const TfToken& fieldName,
                       const TfToken &keyPath,
                       bool useFallbacks,
                       VtValue* result) const;
 
+    USD_API
     bool _GetMetadata(const UsdObject &obj,
                       const TfToken& fieldName,
                       const TfToken &keyPath,
@@ -2183,6 +2234,40 @@ UsdStage::SetMetadataByDictKey(const TfToken& key, const TfToken &keyPath,
     return SetMetadataByDictKey(key, keyPath, in);
 }
 
+template <class T>
+bool 
+UsdStage::_GetMetadata(const UsdObject &obj,
+                       const TfToken& fieldName,
+                       const TfToken &keyPath,
+                       bool useFallbacks,
+                       T* result) const
+{
+    SdfAbstractDataTypedValue<T> out(result);
+    return _GetMetadata(obj, fieldName, keyPath, useFallbacks, 
+                        static_cast<SdfAbstractDataValue*>(&out));
+}
+
+// Set metadata for types that don't need to be mapped across edit targets.
+template <class T>
+typename std::enable_if<!UsdStage::_IsEditTargetMappable<T>::value, bool>::type
+UsdStage::_SetMetadata(const UsdObject &object, const TfToken& key,
+                       const TfToken &keyPath, const T& value)
+{
+    // Since we know that we don't need to map the value for edit targets, 
+    // we can just type erase the value and set the metadata as is.
+    SdfAbstractDataConstTypedValue<T> in(&value);
+    return _SetMetadataImpl<SdfAbstractDataConstValue>(
+        object, key, keyPath, in);
+}
+
+// Set metadata for types that do need to be mapped for edit targets.
+template <class T>
+typename std::enable_if<UsdStage::_IsEditTargetMappable<T>::value, bool>::type
+UsdStage::_SetMetadata(const UsdObject &object, const TfToken& key,
+                       const TfToken &keyPath, const T& value)
+{
+    return _SetEditTargetMappedMetadata(object, key, keyPath, value);
+}
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
