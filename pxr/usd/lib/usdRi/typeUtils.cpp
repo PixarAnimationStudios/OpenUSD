@@ -56,7 +56,7 @@ UsdRi_GetUsdType(const string &riType)
             return map[i].usdType;
     }
     // XXX -- Really?
-    return SdfSchema::GetInstance().FindOrCreateType(riType);
+    return SdfSchema::GetInstance().FindOrCreateType(TfToken(riType));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

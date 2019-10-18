@@ -96,7 +96,7 @@ public:
     ~Registry();
 
     // Add a type.
-    void AddType(const std::string& name,
+    void AddType(const TfToken& name,
                  const VtValue& defaultValue,
                  const VtValue& defaultArrayValue,
                  const std::string& cppTypeName, 
@@ -106,7 +106,7 @@ public:
                  const SdfTupleDimensions& dimensions);
 
     // Add a type with a C++ implementation that may not yet be available.
-    void AddType(const std::string& name,
+    void AddType(const TfToken& name,
                  const TfType& type, const TfType& arrayType,
                  const std::string& cppTypeName, 
                  const std::string& arrayCppTypeName,
@@ -114,13 +114,21 @@ public:
                  const SdfTupleDimensions& dimensions);
 
     // Find a type by name.  Returns the empty type if not found.
-    const Sdf_ValueTypeImpl* FindType(const std::string& name) const;
+    inline const Sdf_ValueTypeImpl*
+    FindType(const TfToken& name) const {
+        tbb::spin_rw_mutex::scoped_lock lock(_mutex, /*write=*/false);
+        return _FindType(name);
+    }
 
     // Find a type by TfType and role.  Returns the empty type if not found.
-    const Sdf_ValueTypeImpl* FindType(const TfType&, const TfToken& role) const;
+    inline const Sdf_ValueTypeImpl*
+    FindType(const TfType& type, const TfToken& role) const {
+        tbb::spin_rw_mutex::scoped_lock lock(_mutex, /*write=*/false);
+        return _FindType(type, role);
+    }
 
     // Find a type name by name.  Creates a new type name if not found.
-    const Sdf_ValueTypeImpl* FindOrCreateTypeName(const std::string& name);
+    const Sdf_ValueTypeImpl* FindOrCreateTypeName(const TfToken& name);
 
     // Returns all registered types.
     std::vector<SdfValueTypeName> GetAllTypes() const;
@@ -130,18 +138,29 @@ public:
 
 private:
     // Find a type by name.  Returns the empty type if not found.
-    const Sdf_ValueTypeImpl* _FindType(const std::string& name) const;
+    inline const Sdf_ValueTypeImpl*
+    _FindType(const TfToken& name) const {
+        TypeMap::const_iterator i = _types.find(name);
+        return i != _types.end() ? &i->second :
+            Sdf_ValueTypePrivate::GetEmptyTypeName();
+    }
 
     // Find a type by TfType and role.  Returns the empty type if not found.
-    const Sdf_ValueTypeImpl* _FindType(const TfType&, const TfToken& role)const;
+    inline const Sdf_ValueTypeImpl*
+    _FindType(const TfType& type, const TfToken& role) const {
+        const CoreTypeKey key(type, role);
+        CoreTypeMap::const_iterator i = _coreTypes.find(key);
+        return i != _coreTypes.end() ? _FindType(i->second.aliases.front())
+            : Sdf_ValueTypePrivate::GetEmptyTypeName();
+    }
 
     // Find a type name by name.  Creates a new type name if not found.
-    const Sdf_ValueTypeImpl* _FindOrCreateTypeName(const std::string& name);
+    const Sdf_ValueTypeImpl* _FindOrCreateTypeName(const TfToken& name);
 
     // Add a type.
     bool _AddType(Sdf_ValueTypeImpl** scalar,
                   Sdf_ValueTypeImpl** array,
-                  const std::string& name,
+                  const TfToken& name,
                   const TfType& defaultValueType,
                   const TfType& defaultArrayValueType,
                   const std::string& cppTypeName, 
@@ -151,7 +170,7 @@ private:
                   const VtValue& defaultValue,
                   const VtValue& defaultArrayValue,
                   TfEnum defaultUnit);
-    const CoreType* _AddCoreType(const std::string& name,
+    const CoreType* _AddCoreType(const TfToken& name,
                                  const TfType& tfType,
                                  const std::string& cppTypeName,
                                  const TfToken& role,
@@ -175,9 +194,9 @@ private:
     };
 
     typedef TfHashMap<CoreTypeKey, CoreType, CoreTypeKeyHash> CoreTypeMap;
-    typedef TfHashMap<std::string, Sdf_ValueTypeImpl, TfHash> TypeMap;
-    typedef TfHashMap<std::string, CoreType, TfHash> TemporaryCoreTypeMap;
-    typedef TfHashMap<std::string, Sdf_ValueTypeImpl, TfHash> TemporaryNameMap;
+    typedef TfHashMap<TfToken, Sdf_ValueTypeImpl, TfHash> TypeMap;
+    typedef TfHashMap<TfToken, CoreType, TfHash> TemporaryCoreTypeMap;
+    typedef TfHashMap<TfToken, Sdf_ValueTypeImpl, TfHash> TemporaryNameMap;
 
     mutable tbb::spin_rw_mutex _mutex;
 
@@ -215,7 +234,7 @@ Registry::Clear()
 
 void
 Registry::AddType(
-    const std::string& name,
+    const TfToken& name,
     const VtValue& defaultValue,
     const VtValue& defaultArrayValue,
     const std::string& cppTypeName, 
@@ -243,7 +262,7 @@ Registry::AddType(
 
 void
 Registry::AddType(
-    const std::string& name,
+    const TfToken& name,
     const TfType& type,
     const TfType& arrayType,
     const std::string& cppTypeName, 
@@ -266,7 +285,7 @@ bool
 Registry::_AddType(
     Sdf_ValueTypeImpl** scalar,
     Sdf_ValueTypeImpl** array,
-    const std::string& name,
+    const TfToken& name,
     const TfType& type,
     const TfType& arrayType,
     const std::string& cppTypeName, 
@@ -277,30 +296,37 @@ Registry::_AddType(
     const VtValue& defaultArrayValue,
     TfEnum defaultUnit)
 {
-    // Construct the array name.
-    const std::string arrayName = name + "[]";
-
     // Preconditions.
-    if (!TF_VERIFY(!name.empty(), "Types must have names")) {
+    if (!TF_VERIFY(!name.IsEmpty(), "Types must have names")) {
         return false;
     }
     if (!TF_VERIFY(!cppTypeName.empty() || !arrayCppTypeName.empty(),
-                   "Type '%s' must have C++ names", name.c_str())) {
+                   "Type '%s' must have C++ names", name.GetText())) {
         return false;
     }
     if (!TF_VERIFY(!type.IsUnknown() || !arrayType.IsUnknown(),
-                   "Type '%s' must have a C++ type", name.c_str())) {
+                   "Type '%s' must have a C++ type", name.GetText())) {
         return false;
     }
     const Sdf_ValueTypeImpl* existing = _FindType(name);
     if (!TF_VERIFY(existing == Sdf_ValueTypePrivate::GetEmptyTypeName(),
-                   "Type '%s' already exists", name.c_str())) {
+                   "Type '%s' already exists", name.GetText())) {
         return false;
     }
+    // Construct the array name.
+    const TfToken arrayName(name.GetString() + "[]");
     existing = _FindType(arrayName);
     if (!TF_VERIFY(existing == Sdf_ValueTypePrivate::GetEmptyTypeName(),
-                   "Type '%s' already exists", arrayName.c_str())) {
+                   "Type '%s' already exists", arrayName.GetText())) {
         return false;
+    }
+
+    // Make the name and array name tokens immortal -- they will always persist
+    // in the registry, so no need to reference count them.
+    {
+        TfToken immortal;
+        immortal = TfToken(name.GetString(), TfToken::Immortal);
+        immortal = TfToken(arrayName.GetString(), TfToken::Immortal);
     }
 
     // Use the default dimensionless unit if the given default unit is
@@ -366,21 +392,7 @@ Registry::_AddType(
 }
 
 const Sdf_ValueTypeImpl*
-Registry::FindType(const std::string& name) const
-{
-    tbb::spin_rw_mutex::scoped_lock lock(_mutex, /*write=*/false);
-    return _FindType(name);
-}
-
-const Sdf_ValueTypeImpl*
-Registry::FindType(const TfType& type, const TfToken& role) const
-{
-    tbb::spin_rw_mutex::scoped_lock lock(_mutex, /*write=*/false);
-    return _FindType(type, role);
-}
-
-const Sdf_ValueTypeImpl*
-Registry::FindOrCreateTypeName(const std::string& name)
+Registry::FindOrCreateTypeName(const TfToken& name)
 {
     tbb::spin_rw_mutex::scoped_lock lock(_mutex);
 
@@ -402,23 +414,7 @@ Registry::GetAllTypes() const
 }
 
 const Sdf_ValueTypeImpl*
-Registry::_FindType(const std::string& name) const
-{
-    TypeMap::const_iterator i = _types.find(name);
-    return i != _types.end() ? &i->second : Sdf_ValueTypePrivate::GetEmptyTypeName();
-}
-
-const Sdf_ValueTypeImpl*
-Registry::_FindType(const TfType& type, const TfToken& role) const
-{
-    const CoreTypeKey key(type, role);
-    CoreTypeMap::const_iterator i = _coreTypes.find(key);
-    return i != _coreTypes.end() ? _FindType(i->second.aliases.front())
-                                 : Sdf_ValueTypePrivate::GetEmptyTypeName();
-}
-
-const Sdf_ValueTypeImpl*
-Registry::_FindOrCreateTypeName(const std::string& name)
+Registry::_FindOrCreateTypeName(const TfToken& name)
 {
     // Return any already saved temporary name.
     TemporaryNameMap::const_iterator i = _temporaryNames.find(name);
@@ -437,7 +433,7 @@ Registry::_FindOrCreateTypeName(const std::string& name)
 
 const Registry::CoreType*
 Registry::_AddCoreType(
-    const std::string& name,
+    const TfToken& name,
     const TfType& tfType,
     const std::string& cppTypeName,
     const TfToken& role,
@@ -447,12 +443,12 @@ Registry::_AddCoreType(
 {
     if (!TF_VERIFY(!tfType.IsUnknown(),
                    "Internal error: unknown TfType for '%s'",
-                   name.c_str())) {
+                   name.GetText())) {
         return NULL;
     }
     if (!TF_VERIFY(tfType != TfType::Find<void>(),
                    "Internal error: TfType<void> for '%s'",
-                   name.c_str())) {
+                   name.GetText())) {
         return NULL;
     }
 
@@ -472,11 +468,11 @@ Registry::_AddCoreType(
         // Found.  Preconditions.
         if (!TF_VERIFY(coreType.type == tfType,
                        "Internal error: unexpected core type for '%s'",
-                       name.c_str())) {
+                       name.GetText())) {
             return NULL;
         }
         if (!TF_VERIFY(coreType.cppTypeName == cppTypeName,
-                       "Mismatched C++ name for core type '%s'", name.c_str())) {
+                       "Mismatched C++ name for core type '%s'", name.GetText())) {
             return NULL;
         }
         if (!TF_VERIFY(coreType.role == role,
@@ -535,9 +531,19 @@ Sdf_ValueTypeRegistry::GetAllTypes() const
 }
 
 SdfValueTypeName
-Sdf_ValueTypeRegistry::FindType(const std::string& name) const
+Sdf_ValueTypeRegistry::FindType(const TfToken& name) const
 {
     return SdfValueTypeName(_impl->FindType(name));
+}
+SdfValueTypeName
+Sdf_ValueTypeRegistry::FindType(const char *name) const
+{
+    return SdfValueTypeName(_impl->FindType(TfToken(name)));
+}
+SdfValueTypeName
+Sdf_ValueTypeRegistry::FindType(const std::string &name) const
+{
+    return SdfValueTypeName(_impl->FindType(TfToken(name)));
 }
 
 SdfValueTypeName
@@ -553,7 +559,7 @@ Sdf_ValueTypeRegistry::FindType(const VtValue& value, const TfToken& role) const
 }
 
 SdfValueTypeName
-Sdf_ValueTypeRegistry::FindOrCreateTypeName(const std::string& name) const
+Sdf_ValueTypeRegistry::FindOrCreateTypeName(const TfToken& name) const
 {
     return SdfValueTypeName(_impl->FindOrCreateTypeName(name));
 }
@@ -586,7 +592,7 @@ Sdf_ValueTypeRegistry::AddType(const Type& type)
 
 void
 Sdf_ValueTypeRegistry::AddType(
-    const std::string& name,
+    const TfToken& name,
     const VtValue& defaultValue,
     const VtValue& defaultArrayValue,
     const std::string& cppTypeName, 
@@ -602,7 +608,7 @@ Sdf_ValueTypeRegistry::AddType(
 
 void
 Sdf_ValueTypeRegistry::AddType(
-    const std::string& name,
+    const TfToken& name,
     const TfType& type,
     const TfType& arrayType,
     const std::string& cppTypeName, 

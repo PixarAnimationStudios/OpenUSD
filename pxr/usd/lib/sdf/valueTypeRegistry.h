@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/valueTypeName.h"
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
 #include <boost/noncopyable.hpp>
@@ -50,7 +51,9 @@ public:
     std::vector<SdfValueTypeName> GetAllTypes() const;
 
     /// Returns a value type name by name.
-    SdfValueTypeName FindType(const std::string& name) const;
+    SdfValueTypeName FindType(const TfToken& name) const;
+    SdfValueTypeName FindType(const char *name) const;
+    SdfValueTypeName FindType(const std::string &name) const;
 
     /// Returns the value type name for the type and role if any, otherwise
     /// returns the invalid value type name.  This returns the first
@@ -73,7 +76,7 @@ public:
     /// this function when you need to ensure that the name isn't lost even
     /// if the type isn't registered, typically when writing the name to a
     /// file or log.
-    SdfValueTypeName FindOrCreateTypeName(const std::string& name) const;
+    SdfValueTypeName FindOrCreateTypeName(const TfToken& name) const;
 
     /// \class Type
     /// Named parameter object for specifying an SdfValueTypeName to
@@ -83,7 +86,7 @@ public:
     public:
         // Specify a type with the given name, default value, and default
         // array value.
-        Type(const std::string& name, 
+        Type(const TfToken& name, 
              const VtValue& defaultValue, 
              const VtValue& defaultArrayValue)
             : _name(name)
@@ -94,13 +97,13 @@ public:
         // Specify a type with the given name, default value, and default
         // array value of VtArray<T>.
         template <class T>
-        Type(const std::string& name, const T& defaultValue)
-            : Type(name, VtValue(defaultValue), VtValue(VtArray<T>()))
+        Type(char const *name, const T& defaultValue)
+            : Type(TfToken(name), VtValue(defaultValue), VtValue(VtArray<T>()))
         { }
 
         // Specify a type with the given name and underlying C++ type.
         // No default value or array value will be registered.
-        Type(const std::string& name, const TfType& type)
+        Type(const TfToken& name, const TfType& type)
             : _name(name)
             , _type(type)
         { }
@@ -137,7 +140,7 @@ public:
     private:
         friend class Sdf_ValueTypeRegistry;
 
-        std::string _name;
+        TfToken _name;
         TfType _type;
         VtValue _defaultValue, _defaultArrayValue;
         std::string _cppTypeName, _arrayCppTypeName;
@@ -151,7 +154,7 @@ public:
     void AddType(const Type& type);
 
     /// Register a value type and it's corresponding array value type.
-    void AddType(const std::string& name,
+    void AddType(const TfToken& name,
                  const VtValue& defaultValue,
                  const VtValue& defaultArrayValue,
                  const std::string& cppName, const std::string& cppArrayName,
@@ -162,7 +165,7 @@ public:
     /// In this case the default values are empty.  This is useful for types 
     /// provided by plugins;  you don't need to load the plugin just to 
     /// register the type.  However, there is no default value.
-    void AddType(const std::string& name,
+    void AddType(const TfToken& name,
                  const TfType& type, const TfType& arrayType,
                  const std::string& cppName, const std::string& cppArrayName,
                  TfEnum defaultUnit, const TfToken& role,
