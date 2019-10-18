@@ -69,7 +69,7 @@ pxr_library(hdSt
         lightingShader
         material
         mesh
-        mixinShaderCode
+        mixinShader
         package
         persistentBuffer
         points

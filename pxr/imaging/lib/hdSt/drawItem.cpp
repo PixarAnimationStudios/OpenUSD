@@ -24,7 +24,7 @@
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/material.h"
-#include "pxr/imaging/hdSt/mixinShaderCode.h"
+#include "pxr/imaging/hdSt/mixinShader.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hd/renderIndex.h"
 
@@ -55,7 +55,7 @@ HdStDrawItem::SetMaterialShaderFromRenderIndex(
     }
     HdStShaderCodeSharedPtr shaderCode = material->GetShaderCode();
     if (!mixinSource.empty()) {
-        shaderCode.reset(new HdStMixinShaderCode(mixinSource, shaderCode));
+        shaderCode.reset(new HdStMixinShader(mixinSource, shaderCode));
     }
     SetMaterialShader(shaderCode);
 }

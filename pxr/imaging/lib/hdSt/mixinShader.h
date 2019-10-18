@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDST_MIXIN_SHADER_CODE_H
-#define HDST_MIXIN_SHADER_CODE_H
+#ifndef HDST_MIXIN_SHADER_H
+#define HDST_MIXIN_SHADER_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
@@ -30,22 +30,23 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class HdSt_MixinShaderCode
+/// \class HdSt_MixinShader
 ///
 /// A final shader code class representing a mixin of a shader with a 
 /// base shader.
 /// 
 /// This interface provides a simple way for clients to extend a given
 /// shader without mutating the original shader.
-class HdStMixinShaderCode final : public HdStShaderCode {
+class HdStMixinShader final : public HdStShaderCode {
 public:
 
     HDST_API
-    HdStMixinShaderCode(std::string mixinSource,
-                        HdStShaderCodeSharedPtr baseShader);
+    HdStMixinShader(
+        std::string mixinSource,
+        HdStShaderCodeSharedPtr baseShader);
 
     HDST_API
-    virtual ~HdStMixinShaderCode();
+    virtual ~HdStMixinShader();
 
     /// Returns the hash value of this shader.
     virtual HdStShaderCode::ID ComputeHash() const override;
@@ -81,13 +82,13 @@ private:
     std::string _mixinSource;
     HdStShaderCodeSharedPtr _baseShader;
     
-    HdStMixinShaderCode()                                        = delete;
-    HdStMixinShaderCode(const HdStMixinShaderCode &)             = delete;
-    HdStMixinShaderCode &operator =(const HdStMixinShaderCode &) = delete;
+    HdStMixinShader() = delete;
+    HdStMixinShader(const HdStMixinShader &) = delete;
+    HdStMixinShader &operator =(const HdStMixinShader &) = delete;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDST_SHADER_H
+#endif // HDST_MIXIN_SHADER_H
 
