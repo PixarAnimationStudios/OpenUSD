@@ -54,7 +54,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 class HdRprim;
 class HdSprim;
 class HdBprim;
@@ -65,7 +64,6 @@ class HdRenderDelegate;
 class HdExtComputation;
 class VtValue;
 class HdInstancer;
-
 
 typedef boost::shared_ptr<class HdDirtyList> HdDirtyListSharedPtr;
 typedef boost::shared_ptr<class HdTask> HdTaskSharedPtr;
@@ -156,8 +154,9 @@ public:
     /// call chain ties it to SyncAll, i.e.
     /// HdRenderIndex::SyncAll > .... > HdRenderPass::Sync > HdRenderIndex::Sync
     HD_API
-    void Sync(HdDirtyListSharedPtr const &dirtyList,
-              HdRprimCollection const &collection);
+    void EnqueuePrimsToSync(
+        HdDirtyListSharedPtr const &dirtyList,
+        HdRprimCollection const &collection);
 
     /// Syncs input tasks, B & S prims, (external) computations and processes 
     /// all pending dirty lists (which syncs the R prims). At the end of this
@@ -397,7 +396,6 @@ private:
     template <typename T>
     static inline const TfToken & _GetTypeId();
 
-
     void _RemoveRprimSubtree(const SdfPath &root,
                              HdSceneDelegate* sceneDelegate);
     void _RemoveInstancerSubtree(const SdfPath &root,
@@ -407,18 +405,17 @@ private:
     void _RemoveTaskSubtree(const SdfPath &root,
                             HdSceneDelegate* sceneDelegate);
 
-
     // ---------------------------------------------------------------------- //
     // Index State
     // ---------------------------------------------------------------------- //
     struct _RprimInfo {
         HdSceneDelegate *sceneDelegate;
-        HdRprim         *rprim;
+        HdRprim *rprim;
     };
 
     struct _TaskInfo {
         HdSceneDelegate *sceneDelegate;
-        HdTaskSharedPtr  task;
+        HdTaskSharedPtr task;
     };
 
     typedef std::unordered_map<SdfPath, _TaskInfo, SdfPath::Hash> _TaskMap;
@@ -428,15 +425,15 @@ private:
     typedef Hd_PrimTypeIndex<HdSprim> _SprimIndex;
     typedef Hd_PrimTypeIndex<HdBprim> _BprimIndex;
 
-    _RprimMap     _rprimMap;
-    Hd_SortedIds  _rprimIds;
+    _RprimMap _rprimMap;
+    Hd_SortedIds _rprimIds;
 
     _RprimPrimIDVector _rprimPrimIdMap;
 
     _TaskMap _taskMap;
 
-    _SprimIndex     _sprimIndex;
-    _BprimIndex     _bprimIndex;
+    _SprimIndex _sprimIndex;
+    _BprimIndex _bprimIndex;
 
     HdChangeTracker _tracker;
 
@@ -445,7 +442,7 @@ private:
 
     struct _SyncQueueEntry {
         HdDirtyListSharedPtr dirtyList;
-        HdRprimCollection    collection;
+        HdRprimCollection collection;
 
     };
     typedef std::vector<_SyncQueueEntry> _SyncQueue;
@@ -471,7 +468,7 @@ private:
     void _GatherRenderTags(const HdTaskSharedPtrVector *tasks);
 
     typedef tbb::enumerable_thread_specific<HdDrawItemPtrVector>
-                                                           _ConcurrentDrawItems;
+        _ConcurrentDrawItems;
 
     void _AppendDrawItems(const SdfPathVector &rprimIds,
                           size_t begin,

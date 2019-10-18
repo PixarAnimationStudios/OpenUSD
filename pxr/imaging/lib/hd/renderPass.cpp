@@ -102,8 +102,8 @@ HdRenderPass::Sync()
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    // Sync the dirty list of prims
-    _renderIndex->Sync(_dirtyList, _collection);
+    // Enqueue the dirty list of prims to be synced during Hydra Sync.
+    _renderIndex->EnqueuePrimsToSync(_dirtyList, _collection);
 
     // Give derived classes a chance to sync.
     _Sync();

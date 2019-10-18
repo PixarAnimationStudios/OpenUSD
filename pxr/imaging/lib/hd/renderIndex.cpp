@@ -1038,8 +1038,9 @@ namespace {
 };
 
 void
-HdRenderIndex::Sync(HdDirtyListSharedPtr const &dirtyList,
-                    HdRprimCollection const &collection)
+HdRenderIndex::EnqueuePrimsToSync(
+    HdDirtyListSharedPtr const &dirtyList,
+    HdRprimCollection const &collection)
 {
     _syncQueue.emplace_back(_SyncQueueEntry{dirtyList, collection});
 }
