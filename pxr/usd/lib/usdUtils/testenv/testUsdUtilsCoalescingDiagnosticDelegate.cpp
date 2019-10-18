@@ -57,31 +57,31 @@ int main() {
 
     EmitWarnings();
     auto coalesced = delegate.TakeCoalescedDiagnostics();
-    assert(coalesced.size() == 4);
+    TF_AXIOM(coalesced.size() == 4);
     
     EmitWarnings();
     EmitStatuses();
     coalesced = delegate.TakeCoalescedDiagnostics();
-    assert(coalesced.size() == 8);
+    TF_AXIOM(coalesced.size() == 8);
 
     // ensure that the line numbers are unique
     std::set<size_t> sourceLineNumbers;
     for (const auto& p : coalesced) {
         sourceLineNumbers.insert(p.sharedItem.sourceLineNumber); 
     }
-    assert(sourceLineNumbers.size() == 8); 
+    TF_AXIOM(sourceLineNumbers.size() == 8); 
 
     EmitWarnings();
     EmitWarnings();
     auto unfiltered = delegate.TakeUncoalescedDiagnostics();
-    assert(unfiltered.size() == 12);
+    TF_AXIOM(unfiltered.size() == 12);
 
     // ensure that the line numbers are not unique
     sourceLineNumbers.clear();
     for (const auto& i : unfiltered) {
         sourceLineNumbers.insert(i->GetSourceLineNumber());
     }
-    assert(sourceLineNumbers.size() == 4); 
+    TF_AXIOM(sourceLineNumbers.size() == 4); 
 
     std::cout << "-------------------------------------------\n";
     EmitWarnings();

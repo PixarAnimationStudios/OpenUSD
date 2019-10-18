@@ -25,12 +25,10 @@
 #include "pxr/base/arch/export.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/staticTokens.h"
-#include <assert.h>
 
 #include <map>
 #include <string>
 
-#include <assert.h>
 
 using std::map;
 using std::string;

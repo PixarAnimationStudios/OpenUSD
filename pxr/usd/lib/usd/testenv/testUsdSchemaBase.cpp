@@ -128,17 +128,17 @@ TestPrimQueries()
     auto prim = stage->DefinePrim(path);
     
     printf("--------Ensuring no schemas are applied -------\n");
-    assert(!prim.HasAPI<UsdCollectionAPI>());
+    TF_AXIOM(!prim.HasAPI<UsdCollectionAPI>());
 
     printf("--------Applying UsdCollectionAPI -------\n");
 
     UsdCollectionAPI coll = UsdCollectionAPI::ApplyCollection(prim, 
             TfToken("testColl"));
-    assert(prim.HasAPI<UsdCollectionAPI>());
+    TF_AXIOM(prim.HasAPI<UsdCollectionAPI>());
 
-    assert(prim.HasAPI<UsdCollectionAPI>(/*instanceName*/ TfToken("testColl")));
+    TF_AXIOM(prim.HasAPI<UsdCollectionAPI>(/*instanceName*/ TfToken("testColl")));
 
-    assert(!prim.HasAPI<UsdCollectionAPI>(
+    TF_AXIOM(!prim.HasAPI<UsdCollectionAPI>(
             /*instanceName*/ TfToken("nonExistentColl")));
 }
 

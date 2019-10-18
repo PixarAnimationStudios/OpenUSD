@@ -86,23 +86,23 @@ bool ApplyCollections(UsdPrim const &prim)
     UsdCollectionAPI::MembershipQuery query = vehicles.ComputeMembershipQuery();
 
     // CarA is included in the 'vehicles' collection through the 'cars' collection.
-    assert(query.IsPathIncluded("/Vehicles/FourWheelers/CarA"))
+    TF_AXIOM(query.IsPathIncluded("/Vehicles/FourWheelers/CarA"))
 
     // BikeB is included in the 'vehicles' collection through the 'cars' collection.
-    assert(query.IsPathIncluded("/Vehicles/TwoWheelers/BikeB"))
+    TF_AXIOM(query.IsPathIncluded("/Vehicles/TwoWheelers/BikeB"))
 
     // BikeB is included directly in the 'vehicles' collection 
-    assert(query.IsPathIncluded("/Vehicles/FourWheelers/TruckA"))
+    TF_AXIOM(query.IsPathIncluded("/Vehicles/FourWheelers/TruckA"))
 
     // BicycleA is included, but it's descendants are not, since it is part of 
     // an "explicitOnly" collection.
-    assert(query.IsPathIncluded("/Vehicles/TwoWheelers/BicycleA"))
-    assert(!query.IsPathIncluded("/Vehicles/TwoWheelers/BicycleA/FrontWheel"))
+    TF_AXIOM(query.IsPathIncluded("/Vehicles/TwoWheelers/BicycleA"))
+    TF_AXIOM(!query.IsPathIncluded("/Vehicles/TwoWheelers/BicycleA/FrontWheel"))
 
     // TricycleA is included, but it's descendants are not, since it is part of 
     // an "explicitOnly" collection.
-    assert(query.IsPathIncluded("/Vehicles/Other/TricycleA"))
-    assert(!query.IsPathIncluded("/Vehicles/Other/TricycleA/BackWheels"))
+    TF_AXIOM(query.IsPathIncluded("/Vehicles/Other/TricycleA"))
+    TF_AXIOM(!query.IsPathIncluded("/Vehicles/Other/TricycleA/BackWheels"))
 
     SdfPathSet includedPaths;
     UsdCollectionAPI::ComputeIncludedPaths(query, prim.GetStage(), 

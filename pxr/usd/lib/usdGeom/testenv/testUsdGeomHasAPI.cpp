@@ -41,26 +41,26 @@ TestHasAPI()
     auto prim = stage->DefinePrim(path);
     
     // Valid cases
-    assert(!prim.HasAPI<UsdGeomMotionAPI>());
+    TF_AXIOM(!prim.HasAPI<UsdGeomMotionAPI>());
     UsdGeomMotionAPI::Apply(prim);
-    assert(prim.HasAPI<UsdGeomMotionAPI>());
+    TF_AXIOM(prim.HasAPI<UsdGeomMotionAPI>());
 
-    assert(!prim.HasAPI<UsdGeomModelAPI>());
+    TF_AXIOM(!prim.HasAPI<UsdGeomModelAPI>());
     UsdGeomModelAPI::Apply(prim);
-    assert(prim.HasAPI<UsdGeomModelAPI>());
+    TF_AXIOM(prim.HasAPI<UsdGeomModelAPI>());
 
     std::cerr << "--- BEGIN EXPECTED ERROR --" << std::endl;
     TfErrorMark mark;
     // Passing in a non-empty instance name with a single-apply API schema like
     // UsdGeomMotionAPI results in a coding error
-    assert(!prim.HasAPI<UsdGeomMotionAPI>(/*instanceName*/ TfToken("instance")));
+    TF_AXIOM(!prim.HasAPI<UsdGeomMotionAPI>(/*instanceName*/ TfToken("instance")));
     TF_VERIFY(!mark.IsClean());
     std::cerr << "--- END EXPECTED ERROR --" << std::endl;
 
     // The following cases won't compile, uncomment them to confirm
-    // assert(prim.HasAPI<UsdGeomImageable>()); // can't be typed
-    // assert(prim.HasAPI<UsdGeomXform>());     // can't be concrete
-    // assert(!prim.HasAPI<UsdGeomModelAPI>()); // can't be non-applied API schema
+    // TF_AXIOM(prim.HasAPI<UsdGeomImageable>()); // can't be typed
+    // TF_AXIOM(prim.HasAPI<UsdGeomXform>());     // can't be concrete
+    // TF_AXIOM(!prim.HasAPI<UsdGeomModelAPI>()); // can't be non-applied API schema
 
 }
  

@@ -49,44 +49,44 @@ main(int argc, char** argv)
     // Null
     PcpMapExpression nullExpr;
     testExprs.push_back(nullExpr);
-    assert(nullExpr.IsNull());
-    assert(nullExpr.Evaluate() == PcpMapFunction());
+    TF_AXIOM(nullExpr.IsNull());
+    TF_AXIOM(nullExpr.Evaluate() == PcpMapFunction());
 
     // Identity
     const PcpMapExpression identityExpr = PcpMapExpression::Identity();
     testExprs.push_back(identityExpr);
-    assert(!identityExpr.IsNull());
-    assert(identityExpr.Evaluate() == PcpMapFunction::Identity());
+    TF_AXIOM(!identityExpr.IsNull());
+    TF_AXIOM(identityExpr.Evaluate() == PcpMapFunction::Identity());
 
     // Swap
     PcpMapExpression a;
     PcpMapExpression b = PcpMapExpression::Identity();
-    assert(a.IsNull());
-    assert(!b.IsNull());
+    TF_AXIOM(a.IsNull());
+    TF_AXIOM(!b.IsNull());
     a.Swap(b);
-    assert(!a.IsNull());
-    assert(b.IsNull());
+    TF_AXIOM(!a.IsNull());
+    TF_AXIOM(b.IsNull());
     a.Swap(a);
-    assert(!a.IsNull());
+    TF_AXIOM(!a.IsNull());
     
     // Constant (a typical model reference)
     const PcpMapFunction refFunc =
         _GetArcFunction("/Model", "/World/anim/Model_1");
     const PcpMapExpression refExpr = PcpMapExpression::Constant(refFunc);
     testExprs.push_back(refExpr);
-    assert(refExpr.Evaluate() == refFunc);
+    TF_AXIOM(refExpr.Evaluate() == refFunc);
 
     // Operation: Inverse
     const PcpMapExpression refExprInverse = refExpr.Inverse();
     testExprs.push_back(refExprInverse);
-    assert(!refExprInverse.IsNull());
-    assert(refExprInverse.Evaluate() == refFunc.GetInverse());
+    TF_AXIOM(!refExprInverse.IsNull());
+    TF_AXIOM(refExprInverse.Evaluate() == refFunc.GetInverse());
 
     // Operation: AddRootIdentity
     const PcpMapExpression rootIdentityExpr = refExpr.AddRootIdentity();
     testExprs.push_back(rootIdentityExpr);
-    assert(refExpr.MapSourceToTarget(SdfPath("/Foo")) == SdfPath());
-    assert(rootIdentityExpr.MapSourceToTarget(SdfPath("/Foo"))
+    TF_AXIOM(refExpr.MapSourceToTarget(SdfPath("/Foo")) == SdfPath());
+    TF_AXIOM(rootIdentityExpr.MapSourceToTarget(SdfPath("/Foo"))
            == SdfPath("/Foo"));
 
     // Operation: Compose
@@ -94,11 +94,11 @@ main(int argc, char** argv)
         _GetArcFunction("/Rig", "/Model/Rig"));
     const PcpMapExpression composedExpr = refExpr.Compose(rigExpr);
     testExprs.push_back(composedExpr);
-    assert(composedExpr.Evaluate() ==
+    TF_AXIOM(composedExpr.Evaluate() ==
            _GetArcFunction("/Rig", "/World/anim/Model_1/Rig"));
 
     // Operation: Compose + Inverse
-    assert(composedExpr.Inverse().Evaluate() ==
+    TF_AXIOM(composedExpr.Inverse().Evaluate() ==
         _GetArcFunction("/World/anim/Model_1/Rig", "/Rig"));
 
     // Variable
@@ -108,27 +108,27 @@ main(int argc, char** argv)
             PcpMapExpression::NewVariable( PcpMapFunction() );
         const PcpMapExpression varExpr = var->GetExpression();
         testExprs.push_back(varExpr);
-        assert(!varExpr.IsNull());
-        assert(varExpr.Evaluate() == var->GetValue());
-        assert(varExpr.Evaluate() == PcpMapFunction());
+        TF_AXIOM(!varExpr.IsNull());
+        TF_AXIOM(varExpr.Evaluate() == var->GetValue());
+        TF_AXIOM(varExpr.Evaluate() == PcpMapFunction());
 
         // Test changing value
         const PcpMapFunction testValue =
             _GetArcFunction("/A", "/B");
         var->SetValue(testValue);
-        assert(varExpr.Evaluate() == var->GetValue());
-        assert(varExpr.Evaluate() == testValue);
+        TF_AXIOM(varExpr.Evaluate() == var->GetValue());
+        TF_AXIOM(varExpr.Evaluate() == testValue);
 
         // Test using a variable in a derived expression
         const PcpMapExpression invVarExpr = var->GetExpression().Inverse();
-        assert(invVarExpr.Evaluate() == testValue.GetInverse());
+        TF_AXIOM(invVarExpr.Evaluate() == testValue.GetInverse());
 
         // Test invalidation on changing a variable
         const PcpMapFunction testValue2 =
             _GetArcFunction("/A2", "/B2");
         var->SetValue(testValue2);
-        assert(varExpr.Evaluate() == testValue2);
-        assert(invVarExpr.Evaluate() == testValue2.GetInverse());
+        TF_AXIOM(varExpr.Evaluate() == testValue2);
+        TF_AXIOM(invVarExpr.Evaluate() == testValue2.GetInverse());
 
         // Test variable lifetime.
         // Change the variable value, discard it, and then
@@ -137,8 +137,8 @@ main(int argc, char** argv)
             _GetArcFunction("/A3", "/B3");
         var->SetValue(testValue3);
         var.reset();
-        assert(varExpr.Evaluate() == testValue3);
-        assert(invVarExpr.Evaluate() == testValue3.GetInverse());
+        TF_AXIOM(varExpr.Evaluate() == testValue3);
+        TF_AXIOM(invVarExpr.Evaluate() == testValue3.GetInverse());
     }
 
     // Semi-tricky AddRootIdentity scenario:
@@ -153,14 +153,14 @@ main(int argc, char** argv)
         const PcpMapExpression exp =
             PcpMapExpression::Constant(b_to_c)
             .Compose( PcpMapExpression::Constant(a_to_b).AddRootIdentity() );
-        assert(exp.Evaluate() == a_to_c);
+        TF_AXIOM(exp.Evaluate() == a_to_c);
 
 
         const PcpMapExpression a_to_c_with_id = 
             PcpMapExpression::Constant(a_to_c).AddRootIdentity();
         const PcpMapExpression exp_with_id = 
             exp.AddRootIdentity();
-        assert(exp_with_id.Evaluate() == a_to_c_with_id.Evaluate());
+        TF_AXIOM(exp_with_id.Evaluate() == a_to_c_with_id.Evaluate());
     }
 
     // TODO: test equality/inequality for testExprs
