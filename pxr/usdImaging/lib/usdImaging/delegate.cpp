@@ -654,12 +654,18 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
     leafPaths.reserve(usdPathsToRepopulate.size());
 
     for (SdfPath const& usdPath: usdPathsToRepopulate) {
+
+        // _Populate should never be called on master prims or prims in master.
+        UsdPrim prim = _GetUsdPrim(usdPath);
+        if (prim.IsMaster() || prim.IsInMaster()) {
+            continue;
+        }
+
         // Discover and insert all renderable prims into the worker for later
         // execution.
         TF_DEBUG(USDIMAGING_CHANGES).Msg("[Repopulate] Root path: <%s>\n",
                             usdPath.GetText());
-
-        UsdPrimRange range(_GetUsdPrim(usdPath));
+        UsdPrimRange range(prim);
         for (auto iter = range.begin(); iter != range.end(); ++iter) {
             if (!iter->GetPath().HasPrefix(_rootPrimPath)) {
                 iter.PruneChildren();
