@@ -141,7 +141,8 @@ void wrapRegistry()
         .def("GetNodeFromAsset", &This::GetNodeFromAsset,
              (arg("asset"), 
               arg("metadata")=NdrTokenMap(),
-              arg("subIdentifier")=TfToken()),
+              arg("subIdentifier")=TfToken(),
+              arg("sourceType")=TfToken()),
              return_internal_reference<>())
         .def("GetNodeFromSourceCode", &This::GetNodeFromSourceCode,
              (arg("sourceCode"), 

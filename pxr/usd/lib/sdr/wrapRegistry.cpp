@@ -62,7 +62,8 @@ void wrapRegistry()
         .def("GetShaderNodeFromAsset", &This::GetShaderNodeFromAsset,
              (arg("shaderAsset"),
               arg("metadata")=NdrTokenMap(),
-              arg("subIdentifier")=TfToken()),
+              arg("subIdentifier")=TfToken(),
+              arg("sourceType")=TfToken()),
              return_internal_reference<>())
         .def("GetShaderNodeFromSourceCode", &This::GetShaderNodeFromSourceCode,
              (arg("sourceCode"), arg("sourceType"), 

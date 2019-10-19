@@ -172,7 +172,8 @@ _MatchesFamilyAndFilter(
 static NdrIdentifier
 _GetIdentifierForAsset(const SdfAssetPath &asset,
                        const NdrTokenMap &metadata,
-                       const TfToken &subIdentifier)
+                       const TfToken &subIdentifier,
+                       const TfToken &sourceType)
 {
     size_t h = 0;
     boost::hash_combine(h, asset);
@@ -181,12 +182,11 @@ _GetIdentifierForAsset(const SdfAssetPath &asset,
         boost::hash_combine(h, i.second);
     }
 
-    if (subIdentifier.IsEmpty()) {
-        return NdrIdentifier(std::to_string(h));
-    }
-
-    return NdrIdentifier(TfStringPrintf("%s<%s>",
-        std::to_string(h).c_str(), subIdentifier.GetString().c_str()));
+    return NdrIdentifier(TfStringPrintf(
+        "%s<%s><%s>",
+        std::to_string(h).c_str(),
+        subIdentifier.GetText(),
+        sourceType.GetText()));
 }
 
 static NdrIdentifier 
@@ -371,7 +371,8 @@ NdrRegistry::SetExtraDiscoveryPlugins(const std::vector<TfType>& pluginTypes)
 NdrNodeConstPtr 
 NdrRegistry::GetNodeFromAsset(const SdfAssetPath &asset,
                               const NdrTokenMap &metadata,
-                              const TfToken &subIdentifier)
+                              const TfToken &subIdentifier,
+                              const TfToken &sourceType)
 {
     // Ensure there is a parser plugin that can handle this asset.
     TfToken discoveryType(ArGetResolver().GetExtension(asset.GetAssetPath()));
@@ -388,11 +389,13 @@ NdrRegistry::GetNodeFromAsset(const SdfAssetPath &asset,
     }
 
     NdrIdentifier identifier =
-        _GetIdentifierForAsset(asset, metadata, subIdentifier);
+        _GetIdentifierForAsset(asset, metadata, subIdentifier, sourceType);
 
-    // Get the sourceType from the parser plugin.
-    const TfToken &sourceType = parserIt->second->GetSourceType();
-    NodeMapKey key{identifier, sourceType};
+    // Use given sourceType if there is one, else use sourceType from the parser
+    // plugin.
+    const TfToken &thisSourceType = (!sourceType.IsEmpty()) ? sourceType :
+        parserIt->second->GetSourceType();
+    NodeMapKey key{identifier, thisSourceType};
 
     // Return the existing node in the map if an entry for the constructed node 
     // key already exists. 
@@ -418,7 +421,7 @@ NdrRegistry::GetNodeFromAsset(const SdfAssetPath &asset,
                               /* name */ identifier, 
                               /*family*/ TfToken(), 
                               discoveryType, 
-                              sourceType, 
+                              /* sourceType */ thisSourceType,
                               /* uri */ asset.GetAssetPath(),
                               resolvedUri, 
                               /* sourceCode */ "",

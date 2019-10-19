@@ -164,5 +164,23 @@ class TestUsdShadeShaderDef(unittest.TestCase):
 
         utils.TestShaderPropertiesNode(node)
 
+    def test_GetShaderNodeFromAsset(self):
+        """
+        Test that invoking the parser to identify shader definitions from an
+        asset file works when specifying a subIdentifier and sourceType
+        """
+        reg = Sdr.Registry()
+
+        node = reg.GetShaderNodeFromAsset(
+            "shaderDefs.usda",              # shaderAsset
+            {},                             # metadata
+            "TestShaderPropertiesNodeUSD",  # subIdentifier
+            "glslfx"                        # sourceType
+        )
+
+        assert node is not None
+        assert node.GetIdentifier().endswith(
+            "<TestShaderPropertiesNodeUSD><glslfx>")
+
 if __name__ == '__main__':
     unittest.main()

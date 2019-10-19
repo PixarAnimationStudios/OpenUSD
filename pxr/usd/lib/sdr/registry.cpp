@@ -90,10 +90,14 @@ SdrShaderNodeConstPtr
 SdrRegistry::GetShaderNodeFromAsset(
     const SdfAssetPath &shaderAsset,
     const NdrTokenMap &metadata,
-    const TfToken &subIdentifier)
+    const TfToken &subIdentifier,
+    const TfToken &sourceType)
 {
     return NdrNodeToShaderNode(
-        GetInstance().GetNodeFromAsset(shaderAsset, metadata, subIdentifier));
+        GetInstance().GetNodeFromAsset(shaderAsset,
+                                       metadata,
+                                       subIdentifier,
+                                       sourceType));
 }
 
 SdrShaderNodeConstPtr 

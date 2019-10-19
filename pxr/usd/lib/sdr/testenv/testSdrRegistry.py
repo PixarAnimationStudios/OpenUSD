@@ -144,8 +144,20 @@ class TestShaderNode(unittest.TestCase):
         # Test GetShaderNodeFromAsset to check that a subidentifier is part of
         # the node's identifier if one is specified
         node = reg.GetShaderNodeFromAsset(
-            Sdf.AssetPath('TestNodeSourceAsset.oso'), {}, "mySubIdentifier")
-        assert node.GetIdentifier().endswith("<mySubIdentifier>")
+            Sdf.AssetPath('TestNodeSourceAsset.oso'),   # shaderAsset
+            {},                                         # metadata
+            "mySubIdentifier")                          # subIdentifier
+        assert node.GetIdentifier().endswith("<mySubIdentifier><>")
+
+        # Test GetShaderNodeFromAsset to check that a sourceType is part of
+        # the node's identifier if one is specified
+        node = reg.GetShaderNodeFromAsset(
+            Sdf.AssetPath('TestNodeSourceAsset.oso'),   # shaderAsset
+            {},                                         # metadata
+            "mySubIdentifier",                          # subIdentifier
+            "OSL")                                      # sourceType
+        assert node.GetIdentifier().endswith("<mySubIdentifier><OSL>")
+
 
 if __name__ == '__main__':
     unittest.main()

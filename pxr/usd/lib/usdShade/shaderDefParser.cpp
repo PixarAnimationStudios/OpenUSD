@@ -319,10 +319,21 @@ UsdShadeShaderDefParserPlugin::Parse(
         return NdrParserPlugin::GetInvalidNode(discoveryResult);;
     }
 
-    SdfPath shaderDefPath = SdfPath::AbsoluteRootPath().AppendChild(
-            discoveryResult.identifier);
+    UsdPrim shaderDefPrim;
+    // Fallback to looking for the subidentifier if the identifier does not
+    // produce a valid shader def prim
+    TfTokenVector identifiers =
+        { discoveryResult.identifier, discoveryResult.subIdentifier };
+    for (const TfToken& identifier : identifiers) {
+        SdfPath shaderDefPath =
+            SdfPath::AbsoluteRootPath().AppendChild(identifier);
+        shaderDefPrim = stage->GetPrimAtPath(shaderDefPath);
 
-    auto shaderDefPrim = stage->GetPrimAtPath(shaderDefPath);
+        if (shaderDefPrim) {
+            break;
+        }
+    }
+
     if (!shaderDefPrim) {
         return NdrParserPlugin::GetInvalidNode(discoveryResult);;
     }
@@ -333,7 +344,7 @@ UsdShadeShaderDefParserPlugin::Parse(
     }
 
     SdfAssetPath nodeUriAssetPath;
-    if (!shaderDef.GetSourceAsset(&nodeUriAssetPath, 
+    if (!shaderDef.GetSourceAsset(&nodeUriAssetPath,
                                   discoveryResult.sourceType)) {
         return NdrParserPlugin::GetInvalidNode(discoveryResult);
     }

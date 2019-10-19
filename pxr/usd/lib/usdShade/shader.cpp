@@ -462,7 +462,7 @@ UsdShadeShader::GetShaderNodeForSourceType(const TfToken &sourceType) const
             TfToken subIdentifier;
             GetSourceAssetSubIdentifier(&subIdentifier, sourceType);
             return SdrRegistry::GetInstance().GetShaderNodeFromAsset(
-                sourceAsset, GetSdrMetadata(), subIdentifier);
+                sourceAsset, GetSdrMetadata(), subIdentifier, sourceType);
         }
     } else if (implSource == UsdShadeTokens->sourceCode) {
         std::string sourceCode;
