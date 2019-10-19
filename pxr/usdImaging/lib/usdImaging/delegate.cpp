@@ -1255,9 +1255,7 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
         SdfPath const& usdPrimPath = usdPath.GetPrimPath();
         TfToken const& attrName = usdPath.GetNameToken();
         UsdPrim usdPrim = _stage->GetPrimAtPath(usdPrimPath);
-        UsdAttribute attr = usdPrim
-            ? usdPrim.GetAttribute(attrName)
-            : UsdAttribute();
+        static std::string primvarsNS = "primvars:";
 
         // If either model:drawMode or model:applyDrawMode changes, we need to
         // repopulate the whole subtree starting at the owning prim.
@@ -1283,11 +1281,13 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
             // Because these are inherited attributes, we must update all
             // children.
             _GatherDependencies(usdPrimPath, &affectedCachePaths);
-        } else if (attr && UsdGeomPrimvar::IsPrimvar(attr) &&
-                   UsdGeomPrimvar(attr).GetInterpolation() ==
-                       UsdGeomTokens->constant) {
-            // Constant attributes in the "primvars:" namespace are considered
-            // inherited, so update all children.
+        } else if (TfStringStartsWith(attrName.GetString(), primvarsNS)) {
+            // Primvars can be inherited, so we need to invalidate everything
+            // downstream.  Technically, only constant primvars on non-leaf
+            // prims are inherited, but we can't check the interpolation mode
+            // if (e.g.) the primvar has been blocked, and calling
+            // _GatherDependencies on a leaf prim won't invoke any extra work
+            // vs the equal_range below...
             _GatherDependencies(usdPrimPath, &affectedCachePaths);
         } else if (TfStringStartsWith(attrName, UsdTokens->collection)) {
             // XXX Performance: Collections used for material bindings
