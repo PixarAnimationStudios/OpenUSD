@@ -76,7 +76,8 @@ class SdfAssetPath;
 /// (i.e. UsdGeomGetStageUpAxis()).</b>  This means that the inverse of 
 /// 'camXform' (the VIEW half of the <A HREF="http://www.glprogramming.com/red/chapter03.html#name2">MODELVIEW transform in OpenGL parlance</A>) 
 /// will transform the world such that the camera is at the origin, looking 
-/// down the -Z axis, with Y as the up axis.
+/// down the -Z axis, with +Y as the up axis, and +X pointing to the right.
+/// This describes a __right handed coordinate system__. 
 /// 
 /// \sa \ref UsdGeom_LinAlgBasics
 /// 
