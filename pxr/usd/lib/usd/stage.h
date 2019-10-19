@@ -1885,25 +1885,70 @@ private:
     // --------------------------------------------------------------------- //
     // Metadata Resolution
     // --------------------------------------------------------------------- //
-    template <class T>
-    bool _GetMetadata(const UsdObject &obj,
-                      const TfToken& fieldName,
-                      const TfToken &keyPath,
-                      bool useFallbacks,
-                      T* result) const;
 
+public:
+    // Trait that allows us to call the correct version of _GetMetadata for 
+    // types that require type specific value resolution as opposed to just
+    // strongest opinion. These types also use type specific resolution 
+    // in _GetValue.
+    template <class T>
+    struct _HasTypeSpecificResolution {
+        static const bool value =
+            std::is_same<T, SdfAssetPath>::value ||
+            std::is_same<T, VtArray<SdfAssetPath>>::value ||
+            std::is_same<T, SdfTimeCode>::value ||
+            std::is_same<T, VtArray<SdfTimeCode>>::value ||
+            std::is_same<T, SdfTimeSampleMap>::value ||
+            std::is_same<T, VtDictionary>::value;
+    };
+
+private:
+    // Get metadata for types that do not have type specific value resolution.
+    template <class T>
+    typename std::enable_if<!_HasTypeSpecificResolution<T>::value, bool>::type
+    _GetMetadata(const UsdObject &obj,
+                 const TfToken& fieldName,
+                 const TfToken &keyPath,
+                 bool useFallbacks,
+                 T* result) const;
+
+    // Get metadata for types that do have type specific value resolution.
+    template <class T>
+    typename std::enable_if<_HasTypeSpecificResolution<T>::value, bool>::type
+    _GetMetadata(const UsdObject &obj,
+                 const TfToken& fieldName,
+                 const TfToken &keyPath,
+                 bool useFallbacks,
+                 T* result) const;
+
+    // Get metadata as a dynamically typed VtValue. Will perform type specific
+    // value resolution if the returned held type requires it.
     bool _GetMetadata(const UsdObject &obj,
                       const TfToken& fieldName,
                       const TfToken &keyPath,
                       bool useFallbacks,
                       VtValue* result) const;
 
+    // Gets a metadata value using only strongest value resolution. It is 
+    // assumed that result is holding a value that does not require type 
+    // specific value resolution.
     USD_API
-    bool _GetMetadata(const UsdObject &obj,
-                      const TfToken& fieldName,
-                      const TfToken &keyPath,
-                      bool useFallbacks,
-                      SdfAbstractDataValue* result) const;
+    bool _GetStrongestResolvedMetadata(const UsdObject &obj,
+                                       const TfToken& fieldName,
+                                       const TfToken &keyPath,
+                                       bool useFallbacks,
+                                       SdfAbstractDataValue* result) const;
+
+    // Gets a metadata value with the type specific value resolution for the 
+    // type applied. This is only implemented for types that 
+    // _HasTypeSpecificResolution.
+    template <class T>
+    USD_API
+    bool _GetTypeSpecificResolvedMetadata(const UsdObject &obj,
+                                          const TfToken& fieldName,
+                                          const TfToken &keyPath,
+                                          bool useFallbacks,
+                                          T* result) const;
 
     template <class T>
     bool _GetMetadataImpl(const UsdObject &obj, const TfToken& fieldName, 
@@ -2234,18 +2279,39 @@ UsdStage::SetMetadataByDictKey(const TfToken& key, const TfToken &keyPath,
     return SetMetadataByDictKey(key, keyPath, in);
 }
 
+// Get metadata for types that do not have type specific value resolution.
 template <class T>
-bool 
+typename std::enable_if<
+    !UsdStage::_HasTypeSpecificResolution<T>::value, bool>::type
 UsdStage::_GetMetadata(const UsdObject &obj,
                        const TfToken& fieldName,
                        const TfToken &keyPath,
                        bool useFallbacks,
                        T* result) const
 {
+    // Since these types don't have type specific value resolution, we can just 
+    // get the strongest metadata value and be done.
     SdfAbstractDataTypedValue<T> out(result);
-    return _GetMetadata(obj, fieldName, keyPath, useFallbacks, 
-                        static_cast<SdfAbstractDataValue*>(&out));
+    return _GetStrongestResolvedMetadata(
+        obj, fieldName, keyPath, useFallbacks, &out);
 }
+
+// Get metadata for types that do have type specific value resolution.
+template <class T>
+typename std::enable_if<
+    UsdStage::_HasTypeSpecificResolution<T>::value, bool>::type
+UsdStage::_GetMetadata(const UsdObject &obj,
+                       const TfToken& fieldName,
+                       const TfToken &keyPath,
+                       bool useFallbacks,
+                       T* result) const
+{
+    // Call the templated type specifice resolved metadata implementation that 
+    // will only be implemented for types that support it.
+    return _GetTypeSpecificResolvedMetadata(
+        obj, fieldName, keyPath, useFallbacks, result);
+}
+
 
 // Set metadata for types that don't need to be mapped across edit targets.
 template <class T>

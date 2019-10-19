@@ -5122,60 +5122,16 @@ _TryResolveValuesInDictionary(Storage storage,
 
 namespace {
 
-// Strongest value composer CRTP base class. Allow derived classes to override
-// how they resolve values and determine if there contained value is a 
-// dictionary.
-template <class Storage, class Derived>
-struct StrongestValueComposer
+// Non-virtual value composer base class. Helps provide shared functionality 
+// amongst the different derived value composer classed. The derived classes
+// must all implement a ConsumeAuthored and ConsumeUsdFallback function.
+template <class Storage>
+struct ValueComposerBase
 {
     static const bool ProducesValue = true;
 
     const std::type_info& GetHeldTypeid() const { return _GetTypeid(_value); }
     bool IsDone() const { return _done; }
-
-    bool ConsumeAuthored(const PcpNodeRef &node,
-                         const SdfLayerRefPtr &layer,
-                         const SdfPath &specPath,
-                         const TfToken &fieldName,
-                         const TfToken &keyPath) 
-    {
-        if (_IsHoldingDictionary()) {
-            // Handle special value-type composition: dictionaries merge atop 
-            // each other.
-            return _ConsumeAndMergeAuthoredDictionary(
-                node, layer, specPath, fieldName, keyPath);
-        } else {
-            // Try to read value from scene description and resolve it if needed
-            // if the value is found.
-            if (_GetValue(layer, specPath, fieldName, keyPath)) {
-                // We're done if we got value and it's not a dictionary. For 
-                // dictionaries we'll continue to merge in weaker dictionaries.
-                if (!_IsHoldingDictionary()) {
-                    _done = true;
-                }
-                _ResolveValue(node, layer);
-                return true;
-            }
-            return false;
-        }
-    }
-
-    void ConsumeUsdFallback(const TfToken &primTypeName,
-                            const TfToken &propName,
-                            const TfToken &fieldName,
-                            const TfToken &keyPath) 
-    {
-        if (_IsHoldingDictionary()) {
-            // Handle special value-type composition: fallback dictionaries 
-            // are merged into the current dictionary value..
-            _ConsumeAndMergeFallbackDictionary(
-                primTypeName, propName, fieldName, keyPath);
-        } else {
-            // Try to read fallback value. Fallbacks are not resolved.
-            _done = _GetFallbackValue(
-                primTypeName, propName, fieldName, keyPath);
-        }
-    }
 
     template <class ValueType>
     void ConsumeExplicitValue(ValueType type) 
@@ -5186,23 +5142,9 @@ struct StrongestValueComposer
 
 protected:
     // Protected constructor.
-    explicit StrongestValueComposer(Storage s, 
-                                    bool anchorAssetPathsOnly = false)
+    explicit ValueComposerBase(Storage s, bool anchorAssetPathsOnly = false)
         : _value(s), _done(false), _anchorAssetPathsOnly(anchorAssetPathsOnly) 
         {}
-
-    // Rely on derived classes to implement.
-    bool _IsHoldingDictionary() const 
-    {
-        return static_cast<const Derived *>(this)->_IsHoldingDictionaryImpl();
-    }
-
-    // Rely on derived classes to implement.
-    void _ResolveValue(const PcpNodeRef &node,
-                       const SdfLayerRefPtr &layer)
-    {
-        static_cast<Derived *>(this)->_ResolveValueImpl(node, layer);
-    }
 
     // Gets the value from the layer spec.
     bool _GetValue(const SdfLayerRefPtr &layer,
@@ -5278,7 +5220,7 @@ protected:
         if(_GetFallbackValue(primTypeName, propName, fieldName, keyPath)) {
             // Always done after reading the fallback value.
             _done = true;
-            if (_IsHoldingDictionary()) {
+            if (_IsHolding<VtDictionary>(_value)) {
                 // Merge dictionaries: _value is weaker, tmpDict stronger.
                 VtDictionaryOverRecursive(&tmpDict, 
                                           _UncheckedGet<VtDictionary>(_value));
@@ -5292,33 +5234,67 @@ protected:
     bool _anchorAssetPathsOnly;
 };
 
-// Strongest value composer for a type erased storage container. Currently 
-// Storage can either be a VtValue* or an SdfAbstractDataValue*. In the future
-// we expect this composer will only be used for VtValue as all cases where
-// we use a type-erase SdfAbstractDataValue should be able to be converted to
-// using the TypedStrongestValueComposer instead.
+// Value composer for a type erased storage container. This will check the type
+// of the stored value and do the appropriate value composition for the type.
 template <class Storage>
-struct UntypedStrongestValueComposer : 
-    public StrongestValueComposer<Storage, 
-                                  UntypedStrongestValueComposer<Storage>>
+struct UntypedValueComposer : public ValueComposerBase<Storage>
 {
-    using Base = StrongestValueComposer<Storage, 
-                                        UntypedStrongestValueComposer<Storage>>;
-    friend Base;
+    using Base = ValueComposerBase<Storage>;
 
-    explicit UntypedStrongestValueComposer(Storage s, 
+    explicit UntypedValueComposer(Storage s, 
                                     bool anchorAssetPathsOnly = false)
         : Base(s, anchorAssetPathsOnly) {}
 
+    bool ConsumeAuthored(const PcpNodeRef &node,
+                         const SdfLayerRefPtr &layer,
+                         const SdfPath &specPath,
+                         const TfToken &fieldName,
+                         const TfToken &keyPath) 
+    {
+        if (_IsHoldingDictionary()) {
+            // Handle special value-type composition: dictionaries merge atop 
+            // each other.
+            return this->_ConsumeAndMergeAuthoredDictionary(
+                node, layer, specPath, fieldName, keyPath);
+        } else {
+            // Try to read value from scene description and resolve it if needed
+            // if the value is found.
+            if (this->_GetValue(layer, specPath, fieldName, keyPath)) {
+                // We're done if we got value and it's not a dictionary. For 
+                // dictionaries we'll continue to merge in weaker dictionaries.
+                if (!_IsHoldingDictionary()) {
+                    this->_done = true;
+                }
+                _ResolveValue(node, layer);
+                return true;
+            }
+            return false;
+        }
+    }
+
+    void ConsumeUsdFallback(const TfToken &primTypeName,
+                            const TfToken &propName,
+                            const TfToken &fieldName,
+                            const TfToken &keyPath) 
+    {
+        if (_IsHoldingDictionary()) {
+            // Handle special value-type composition: fallback dictionaries 
+            // are merged into the current dictionary value..
+            this->_ConsumeAndMergeFallbackDictionary(
+                primTypeName, propName, fieldName, keyPath);
+        } else {
+            // Try to read fallback value. Fallbacks are not resolved.
+            this->_done = this->_GetFallbackValue(
+                primTypeName, propName, fieldName, keyPath);
+        }
+    }
+
 protected:
-    // Implementation for the base class.
-    bool _IsHoldingDictionaryImpl() const {
+    bool _IsHoldingDictionary() const {
         return _IsHolding<VtDictionary>(this->_value);
     }
 
-    // Implementation for the base class.
-    void _ResolveValueImpl(const PcpNodeRef &node,
-                           const SdfLayerRefPtr &layer)
+    void _ResolveValue(const PcpNodeRef &node, const SdfLayerRefPtr &layer)
     {
         const ArResolverContext &context = 
             node.GetLayerStack()->GetIdentifier().pathResolverContext;
@@ -5350,45 +5326,98 @@ protected:
     }
 };
 
-// Strongest value composer for a storage container whose type we know. This 
-// composer is more efficient than the untyped especially for types that don't
-// require extra value resolution.
-template <class T>
-struct TypedStrongestValueComposer : 
-    public StrongestValueComposer<SdfAbstractDataValue *, 
-                                  TypedStrongestValueComposer<T>>
+// Strongest value composer for a SdfAbstractDataValue holding a type we know 
+// does not need type specific value resolution. The data value is type erased 
+// since this composer only needs to get the strongest value. For value types 
+// with, type specific value resolution, the TypeSpecficValueComposer must be 
+// used instead to get a correctly resolved value.
+struct StrongestValueComposer : public ValueComposerBase<SdfAbstractDataValue *>
 {
-    using Base = StrongestValueComposer<SdfAbstractDataValue *, 
-                                        TypedStrongestValueComposer<T>>;
+    using Base = ValueComposerBase<SdfAbstractDataValue *>;
+
+    explicit StrongestValueComposer(SdfAbstractDataValue *s)
+        : Base(s, /* anchorAssetPathsOnly = */ false) {}
+
+
+    bool ConsumeAuthored(const PcpNodeRef &node,
+                         const SdfLayerRefPtr &layer,
+                         const SdfPath &specPath,
+                         const TfToken &fieldName,
+                         const TfToken &keyPath) 
+    {
+        // Try to read value from scene description, we're done if the value 
+        // is found.
+        if (this->_GetValue(layer, specPath, fieldName, keyPath)) {
+            this->_done = true;
+            return true;
+        }
+        return false;
+    }
+
+    void ConsumeUsdFallback(const TfToken &primTypeName,
+                            const TfToken &propName,
+                            const TfToken &fieldName,
+                            const TfToken &keyPath) 
+    {
+        this->_done = this->_GetFallbackValue(
+            primTypeName, propName, fieldName, keyPath);
+    }
+};
+
+// Value composer for a storage container whose type requires type specific
+// value resolution. If this composer is used for a type that does not have 
+// type specific value resolution then this is equivalent to using a 
+// StrongestValueComposer. For types that have type specific value resolution,
+// this is specialized to perform the appropriate resolution.
+template <class T>
+struct TypeSpecificValueComposer : 
+    public ValueComposerBase<SdfAbstractDataValue *>
+{
+    using Base = ValueComposerBase<SdfAbstractDataValue *>;
     friend Base;
 
-    explicit TypedStrongestValueComposer(SdfAbstractDataTypedValue<T> *s)
+    explicit TypeSpecificValueComposer(SdfAbstractDataTypedValue<T> *s)
         : Base(s, /*anchorAssetPathsOnly = */ false) {}
+
+    bool ConsumeAuthored(const PcpNodeRef &node,
+                         const SdfLayerRefPtr &layer,
+                         const SdfPath &specPath,
+                         const TfToken &fieldName,
+                         const TfToken &keyPath) 
+    {
+        // Try to read value from scene description and resolve it if needed
+        // if the value is found.
+        if (this->_GetValue(layer, specPath, fieldName, keyPath)) {
+            // We're done if we got value and it's not a dictionary. For 
+            // dictionaries we'll continue to merge in weaker dictionaries.
+            this->_done = true;
+            _ResolveValue(node, layer);
+            return true;
+        }
+        return false;
+    }
+
+    void ConsumeUsdFallback(const TfToken &primTypeName,
+                            const TfToken &propName,
+                            const TfToken &fieldName,
+                            const TfToken &keyPath) 
+    {
+        this->_done = this->_GetFallbackValue(
+            primTypeName, propName, fieldName, keyPath);
+    }
 
 protected:
     // Implementation for the base class.
-    bool _IsHoldingDictionaryImpl() const {
-        // The stored value will always be be templated type so we know this
-        // at compile time.
-        return std::is_same<T, VtDictionary>::value;
-    }
-
-    // Implementation for the base class.
-    void _ResolveValueImpl(const PcpNodeRef &node,
-                           const SdfLayerRefPtr &layer)
+    void _ResolveValue(const PcpNodeRef &node,
+                       const SdfLayerRefPtr &layer)
     {
         // The default for almost all types is to do no extra value resolution.
-        // The few types that require resolution will have specialized this 
-        // method.
-
-        // We don't expect that a specialization for VtDictionary is needed
-        // even though it is a resolvable value type as VtDictionaries will 
-        // always go through the ConsumeAndMerge code path which doesn't call 
-        // _ResolveValue. Protect against this assumption being violated in the
-        // future.
-        static_assert(!std::is_same<T, VtDictionary>::value, 
-                      "_ResolveValue cannot be called for VtDictionary types "
-                      "without a specialization.");
+        // The few types that require resolution must either specialize this 
+        // method or reimplement ConsumeAuthored and delete this method.
+        static_assert(!UsdStage::_HasTypeSpecificResolution<T>::value,
+                      "Value types that have type specific value resolution "
+                      "must either specialize _ResolveValue or delete it and "
+                      "reimplement ConsumeAuthored");
     }
 };
 
@@ -5397,7 +5426,8 @@ protected:
 // type checking. We may, however, want to skip these resolves when 
 // _value.isValueBlock is true.
 template <>
-void TypedStrongestValueComposer<SdfAssetPath>::_ResolveValueImpl(
+void 
+TypeSpecificValueComposer<SdfAssetPath>::_ResolveValue(
     const PcpNodeRef &node,
     const SdfLayerRefPtr &layer)
 {
@@ -5408,7 +5438,8 @@ void TypedStrongestValueComposer<SdfAssetPath>::_ResolveValueImpl(
 }
 
 template <>
-void TypedStrongestValueComposer<VtArray<SdfAssetPath>>::_ResolveValueImpl(
+void 
+TypeSpecificValueComposer<VtArray<SdfAssetPath>>::_ResolveValue(
     const PcpNodeRef &node,
     const SdfLayerRefPtr &layer)
 {
@@ -5419,7 +5450,8 @@ void TypedStrongestValueComposer<VtArray<SdfAssetPath>>::_ResolveValueImpl(
 }
 
 template <>
-void TypedStrongestValueComposer<SdfTimeCode>::_ResolveValueImpl(
+void 
+TypeSpecificValueComposer<SdfTimeCode>::_ResolveValue(
     const PcpNodeRef &node,
     const SdfLayerRefPtr &layer)
 {
@@ -5428,7 +5460,8 @@ void TypedStrongestValueComposer<SdfTimeCode>::_ResolveValueImpl(
 }
 
 template <>
-void TypedStrongestValueComposer<VtArray<SdfTimeCode>>::_ResolveValueImpl(
+void 
+TypeSpecificValueComposer<VtArray<SdfTimeCode>>::_ResolveValue(
     const PcpNodeRef &node,
     const SdfLayerRefPtr &layer)
 {
@@ -5437,7 +5470,8 @@ void TypedStrongestValueComposer<VtArray<SdfTimeCode>>::_ResolveValueImpl(
 }
 
 template <>
-void TypedStrongestValueComposer<SdfTimeSampleMap>::_ResolveValueImpl(
+void 
+TypeSpecificValueComposer<SdfTimeSampleMap>::_ResolveValue(
     const PcpNodeRef &node,
     const SdfLayerRefPtr &layer)
 {
@@ -5445,12 +5479,41 @@ void TypedStrongestValueComposer<SdfTimeSampleMap>::_ResolveValueImpl(
     _UncheckedApplyLayerOffsetToValue<SdfTimeSampleMap>(_value, offset);
 }
 
-// We don't expect that a specialization for VtDictionary is needed
-// even though it is a resolvable value type as VtDictionaries will 
-// always go through the ConsumeAndMerge code. Force this assumption by 
-// deleting the specialization for VtDictionary.
+// The TypeSpecificValueComposer for VtDictionary has additional specialization
+// for consuming values as it merges in weaker values unlike most types that
+// only consume the strongest value.
 template <>
-void TypedStrongestValueComposer<VtDictionary>::_ResolveValueImpl(
+bool 
+TypeSpecificValueComposer<VtDictionary>::ConsumeAuthored(
+    const PcpNodeRef &node,
+    const SdfLayerRefPtr &layer,
+    const SdfPath &specPath,
+    const TfToken &fieldName,
+    const TfToken &keyPath) 
+{
+    // Handle special value-type composition: dictionaries merge atop 
+    // each other.
+    return this->_ConsumeAndMergeAuthoredDictionary(
+        node, layer, specPath, fieldName, keyPath);
+}
+
+template <>
+void 
+TypeSpecificValueComposer<VtDictionary>::ConsumeUsdFallback(
+    const TfToken &primTypeName,
+    const TfToken &propName,
+    const TfToken &fieldName,
+    const TfToken &keyPath) 
+{
+    // Handle special value-type composition: fallback dictionaries 
+    // are merged into the current dictionary value..
+    _ConsumeAndMergeFallbackDictionary(
+        primTypeName, propName, fieldName, keyPath);
+}
+
+template <>
+void 
+TypeSpecificValueComposer<VtDictionary>::_ResolveValue(
     const PcpNodeRef &, const SdfLayerRefPtr &) = delete;
 
 
@@ -5515,7 +5578,7 @@ UsdStage::_SetValueImpl(
         // Do a type check.  Obtain typeName.
         TfToken typeName;
         SdfAbstractDataTypedValue<TfToken> abstrToken(&typeName);
-        TypedStrongestValueComposer<TfToken> composer(&abstrToken);
+        TypeSpecificValueComposer<TfToken> composer(&abstrToken);
         _GetMetadataImpl(attr, SdfFieldKeys->TypeName, TfToken(), 
                          /*useFallbacks=*/true, &composer);
 
@@ -5615,7 +5678,7 @@ UsdStage::_GetSpecifier(Usd_PrimDataConstPtr primData) const
 {
     SdfSpecifier result = SdfSpecifierOver;
     SdfAbstractDataTypedValue<SdfSpecifier> resultVal(&result);
-    TypedStrongestValueComposer<SdfSpecifier> composer(&resultVal);
+    TypeSpecificValueComposer<SdfSpecifier> composer(&resultVal);
     _GetPrimSpecifierImpl(primData, /*useFallbacks=*/true, &composer);
     return result;
 }
@@ -5744,15 +5807,43 @@ UsdStage::_GetMetadata(const UsdObject &obj, const TfToken &fieldName,
         }
     }
 
-    UntypedStrongestValueComposer<VtValue *> composer(result);
+    UntypedValueComposer<VtValue *> composer(result);
     return _GetMetadataImpl(obj, fieldName, keyPath, useFallbacks, &composer);
 }
 
-bool
-UsdStage::_GetMetadata(const UsdObject &obj,
-                       const TfToken& fieldName,
-                       const TfToken &keyPath, bool useFallbacks,
-                       SdfAbstractDataValue* result) const
+bool 
+UsdStage::_GetStrongestResolvedMetadata(const UsdObject &obj,
+                                        const TfToken& fieldName,
+                                        const TfToken &keyPath,
+                                        bool useFallbacks,
+                                        SdfAbstractDataValue* result) const
+{
+    StrongestValueComposer composer(result);
+    return _GetMetadataImpl(obj, fieldName, keyPath, useFallbacks, &composer);
+}
+
+template <class T>
+bool 
+UsdStage::_GetTypeSpecificResolvedMetadata(const UsdObject &obj,
+                                           const TfToken& fieldName,
+                                           const TfToken &keyPath,
+                                           bool useFallbacks,
+                                           T* result) const
+{
+    SdfAbstractDataTypedValue<T> out(result);
+    TypeSpecificValueComposer<T> composer(&out);
+    return _GetMetadataImpl(obj, fieldName, keyPath, useFallbacks, &composer);
+}
+
+// This specialization for SdfTimeSampleMap is still required because of the
+// attribute time samples hack.
+template <>
+bool 
+UsdStage::_GetTypeSpecificResolvedMetadata(const UsdObject &obj,
+                                           const TfToken& fieldName,
+                                           const TfToken &keyPath,
+                                           bool useFallbacks,
+                                           SdfTimeSampleMap* result) const
 {
     TRACE_FUNCTION();
 
@@ -5764,19 +5855,14 @@ UsdStage::_GetMetadata(const UsdObject &obj,
     // that Usd considers to be "metadata", in which case we can remove this.
     if (obj.Is<UsdAttribute>()) {
         if (fieldName == SdfFieldKeys->TimeSamples) {
-            SdfTimeSampleMap timeSamples;
-            if (_GetTimeSampleMap(obj.As<UsdAttribute>(), &timeSamples)) {
-                _Set(result, timeSamples);
-                return true;
-            }
-            return false;
+            return _GetTimeSampleMap(obj.As<UsdAttribute>(), result);
         }
     }
 
-    UntypedStrongestValueComposer<SdfAbstractDataValue *> composer(result);
+    SdfAbstractDataTypedValue<SdfTimeSampleMap> out(result);
+    TypeSpecificValueComposer<SdfTimeSampleMap> composer(&out);
     return _GetMetadataImpl(obj, fieldName, keyPath, useFallbacks, &composer);
 }
-
 
 template <class Composer>
 bool
@@ -6054,7 +6140,7 @@ UsdStage::_GetListOpMetadataImpl(const UsdObject &obj,
     if (useFallbacks) {
         ListOpType fallbackListOp;
         SdfAbstractDataTypedValue<ListOpType> out(&fallbackListOp);
-        TypedStrongestValueComposer<ListOpType> composer(&out);
+        TypeSpecificValueComposer<ListOpType> composer(&out);
         if (_GetFallbackMetadataImpl(obj, fieldName, empty, &composer)) {
             listOps.emplace_back(fallbackListOp);
         }
@@ -6315,7 +6401,7 @@ UsdStage::_GetAllMetadata(const UsdObject &obj,
     TfTokenVector fieldNames = _ListMetadataFields(obj, useFallbacks);
     for (const auto& fieldName : fieldNames) {
         VtValue val;
-        UntypedStrongestValueComposer<VtValue *> composer(
+        UntypedValueComposer<VtValue *> composer(
             &val, anchorAssetPathsOnly);
         _GetMetadataImpl(obj, fieldName, TfToken(), useFallbacks, &composer);
         result[fieldName] = val;
@@ -6401,7 +6487,7 @@ public:
         // metadata. This value will be fully resolved already.
         if (time.IsDefault()) {
             SdfAbstractDataTypedValue<T> out(result);
-            TypedStrongestValueComposer<T> composer(&out);
+            TypeSpecificValueComposer<T> composer(&out);
             bool valueFound = stage._GetMetadataImpl(
                 attr, SdfFieldKeys->Default, TfToken(), 
                 /*useFallbacks=*/true, &composer);
@@ -7178,7 +7264,7 @@ UsdStage::_GetValueFromResolveInfoImpl(const UsdResolveInfo &info,
         // untyped value composer still needs to check if the value is 
         // VtDictionary typed. This may want to be changed to get the fallback
         // directly from UsdSchemaRegistry::HasField.
-        UntypedStrongestValueComposer<T *> composer(result);
+        UntypedValueComposer<T *> composer(result);
         return _GetFallbackMetadataImpl(
             attr, SdfFieldKeys->Default, TfToken(), &composer);
     }
@@ -8305,17 +8391,31 @@ BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)
 template bool UsdStage::_SetValue(
     UsdTimeCode, const UsdAttribute&, const SdfValueBlock &);
 
-// Explicitly instantiate the templated _SetEditTargetMappedMetaData funtions 
-// for the types that support edit target mapping. The types instantiated here 
-// must match the types whose value is true for _IsEditTargetMappable<T>.
-#define INSTANTIATE_SET_MAPPED_METADATA(elem)                           \
-    template USD_API bool UsdStage::_SetEditTargetMappedMetadata(       \
+// Explicitly instantiate the templated _SetEditTargetMappedMetadata and
+// _GetTypeSpecificResolvedMetadata functions for the types that support each. 
+// The types instantiated here must match the types whose value is true for 
+// _HasTypeSpecificResolution<T> and _IsEditTargetMappable<T>.
+#define INSTANTIATE_SET_MAPPED_METADATA(elem)                               \
+    template USD_API bool UsdStage::_SetEditTargetMappedMetadata(           \
         const UsdObject &, const TfToken&, const TfToken &, const elem &);     
 
-INSTANTIATE_SET_MAPPED_METADATA(SdfTimeCode);
-INSTANTIATE_SET_MAPPED_METADATA(VtArray<SdfTimeCode>);
-INSTANTIATE_SET_MAPPED_METADATA(SdfTimeSampleMap);
-INSTANTIATE_SET_MAPPED_METADATA(VtDictionary);
+#define INSTANTIATE_GET_TYPE_RESOLVED_METADATA(elem)                                 \
+    template USD_API bool UsdStage::_GetTypeSpecificResolvedMetadata(                       \
+        const UsdObject &, const TfToken&, const TfToken &, bool, elem *) const;
+
+#define INSTANTIATE_GET_TYPE_RESOLVED_AND_SET_MAPPED_METADATA(elem)  \
+    INSTANTIATE_GET_TYPE_RESOLVED_METADATA(elem);                    \
+    INSTANTIATE_SET_MAPPED_METADATA(elem);      
+
+INSTANTIATE_GET_TYPE_RESOLVED_METADATA(SdfAssetPath);
+INSTANTIATE_GET_TYPE_RESOLVED_METADATA(VtArray<SdfAssetPath>);
+INSTANTIATE_GET_TYPE_RESOLVED_AND_SET_MAPPED_METADATA(SdfTimeCode);
+INSTANTIATE_GET_TYPE_RESOLVED_AND_SET_MAPPED_METADATA(VtArray<SdfTimeCode>);
+INSTANTIATE_GET_TYPE_RESOLVED_AND_SET_MAPPED_METADATA(SdfTimeSampleMap);
+INSTANTIATE_GET_TYPE_RESOLVED_AND_SET_MAPPED_METADATA(VtDictionary);
+
+#undef INSTANTIATE_GET_TYPE_RESOLVED_AND_SET_MAPPED_METADATA
+#undef INSTANTIATE_GET_TYPE_RESOLVED_METADATA
 #undef INSTANTIATE_SET_MAPPED_METADATA
 
 // Make sure both versions of _SetMetadataImpl are instantiated as they are 
