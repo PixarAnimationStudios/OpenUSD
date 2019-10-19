@@ -5234,15 +5234,14 @@ protected:
     bool _anchorAssetPathsOnly;
 };
 
-// Value composer for a type erased storage container. This will check the type
+// Value composer for a type erased VtValue. This will check the type
 // of the stored value and do the appropriate value composition for the type.
-template <class Storage>
-struct UntypedValueComposer : public ValueComposerBase<Storage>
+struct UntypedValueComposer : public ValueComposerBase<VtValue *>
 {
-    using Base = ValueComposerBase<Storage>;
+    using Base = ValueComposerBase<VtValue *>;
 
-    explicit UntypedValueComposer(Storage s, 
-                                    bool anchorAssetPathsOnly = false)
+    explicit UntypedValueComposer(
+        VtValue *s, bool anchorAssetPathsOnly = false)
         : Base(s, anchorAssetPathsOnly) {}
 
     bool ConsumeAuthored(const PcpNodeRef &node,
@@ -5421,10 +5420,10 @@ protected:
     }
 };
 
-// Specializations of _ResolveValueImpl for resolvable types. Note that we can
-// assume that _value always holds the template value type so there is no value
-// type checking. We may, however, want to skip these resolves when 
-// _value.isValueBlock is true.
+// Specializations of _ResolveValue for type specific value resolution types. 
+// Note that we can assume that _value always holds the template value type so 
+// there is no value type checking. 
+// We may, however, want to skip these resolves when _value.isValueBlock is true
 template <>
 void 
 TypeSpecificValueComposer<SdfAssetPath>::_ResolveValue(
@@ -5807,7 +5806,7 @@ UsdStage::_GetMetadata(const UsdObject &obj, const TfToken &fieldName,
         }
     }
 
-    UntypedValueComposer<VtValue *> composer(result);
+    UntypedValueComposer composer(result);
     return _GetMetadataImpl(obj, fieldName, keyPath, useFallbacks, &composer);
 }
 
@@ -6401,8 +6400,7 @@ UsdStage::_GetAllMetadata(const UsdObject &obj,
     TfTokenVector fieldNames = _ListMetadataFields(obj, useFallbacks);
     for (const auto& fieldName : fieldNames) {
         VtValue val;
-        UntypedValueComposer<VtValue *> composer(
-            &val, anchorAssetPathsOnly);
+        UntypedValueComposer composer(&val, anchorAssetPathsOnly);
         _GetMetadataImpl(obj, fieldName, TfToken(), useFallbacks, &composer);
         result[fieldName] = val;
     }
@@ -7259,14 +7257,10 @@ UsdStage::_GetValueFromResolveInfoImpl(const UsdResolveInfo &info,
         return _GetValueImpl(time, attr, interpolator, result);
     }
     else if (info._source == UsdResolveInfoSourceFallback) {
-        // Get the fallback value from metadata.
-        // XXX: This could technically be more efficient as the type erase 
-        // untyped value composer still needs to check if the value is 
-        // VtDictionary typed. This may want to be changed to get the fallback
-        // directly from UsdSchemaRegistry::HasField.
-        UntypedValueComposer<T *> composer(result);
-        return _GetFallbackMetadataImpl(
-            attr, SdfFieldKeys->Default, TfToken(), &composer);
+        // Get the fallback value.
+        return UsdSchemaRegistry::HasField(
+            attr._Prim()->GetTypeName(), attr.GetName(), 
+            SdfFieldKeys->Default, result);
     }
 
     return false;
