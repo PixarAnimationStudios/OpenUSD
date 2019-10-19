@@ -572,8 +572,7 @@ private:
     friend class PcpChanges;
     friend class Pcp_Statistics;
 
-    template <class ChildPredicate>
-    friend struct Pcp_ParallelIndexer;
+    struct _ParallelIndexer;
 
     // Helper struct to type-erase a children predicate for the duration of
     // ComputePrimIndexesInParallel.
@@ -589,6 +588,7 @@ private:
     // the implementation.  There is no heap allocation, no predicate copy, no
     // argument marshalling, etc.
     struct _UntypedIndexingChildrenPredicate {
+        _UntypedIndexingChildrenPredicate() : pred(nullptr), invoke(nullptr) {}
         template <class Pred>
         explicit _UntypedIndexingChildrenPredicate(const Pred *pred)
             : pred(pred), invoke(_Invoke<Pred>) {}
@@ -703,6 +703,9 @@ private:
     _PrimIndexCache  _primIndexCache;
     _PropertyIndexCache  _propertyIndexCache;
     std::unique_ptr<Pcp_Dependencies> _primDependencies;
+
+    // Parallel indexer state.
+    std::unique_ptr<_ParallelIndexer> _parallelIndexer;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -1180,52 +1180,35 @@ PcpCache::_GetPrimIndex(const SdfPath& path) const
     return NULL;
 }
 
-template <class ChildrenPredicate>
-struct Pcp_ParallelIndexer
+struct PcpCache::_ParallelIndexer
 {
-    typedef Pcp_ParallelIndexer This;
+    using This = _ParallelIndexer;
 
-    Pcp_ParallelIndexer(PcpCache *cache,
-                        ChildrenPredicate childrenPred,
-                        const PcpLayerStackPtr &layerStack,
-                        PcpPrimIndexInputs baseInputs,
-                        PcpErrorVector *allErrors,
-                        const ArResolverScopedCache* parentCache,
-                        const char *mallocTag1,
-                        const char *mallocTag2)
+    explicit _ParallelIndexer(PcpCache *cache,
+                              const PcpLayerStackPtr &layerStack)
         : _cache(cache)
-        , _allErrors(allErrors)
-        , _childrenPredicate(childrenPred)
         , _layerStack(layerStack)
-        , _baseInputs(baseInputs)
         , _resolver(ArGetResolver())
         , _consumer(_dispatcher, &This::_ConsumeIndexes, this, /*flush=*/false)
-        , _parentCache(parentCache)
-        , _mallocTag1(mallocTag1)
-        , _mallocTag2(mallocTag2)
-    {
-        // Set the payload predicate in the base inputs, as well as the
-        // includedPayloadsMutex.
-        _baseInputs
-            .IncludedPayloadsMutex(&_includedPayloadsMutex)
-            ;
-    }
+        {}
 
-    ~Pcp_ParallelIndexer() {
-        // Tear down async.
-        WorkSwapDestroyAsync(_toCompute);
-        WorkMoveDestroyAsync(_finishedOutputs);
-        WorkSwapDestroyAsync(_consumerScratch);
-        WorkSwapDestroyAsync(_consumerScratchPayloadsIncluded);
-        WorkSwapDestroyAsync(_consumerScratchPayloadsExcluded);
+    void Prepare(_UntypedIndexingChildrenPredicate childrenPred,
+                 PcpPrimIndexInputs baseInputs,
+                 PcpErrorVector *allErrors,
+                 const ArResolverScopedCache* parentCache,
+                 const char *mallocTag1,
+                 const char *mallocTag2) {
+        _childrenPredicate = childrenPred;
+        _baseInputs = baseInputs;
+        // Set the includedPayloadsMutex in _baseInputs.
+        _baseInputs.IncludedPayloadsMutex(&_includedPayloadsMutex);
+        _allErrors = allErrors;
+        _parentCache = parentCache;
+        _mallocTag1 = mallocTag1;
+        _mallocTag2 = mallocTag2;
 
-        // We need to tear down the _results synchronously because doing so may
-        // drop layers, and that's something that clients rely on, but we can
-        // tear down the elements in parallel.
-        WorkParallelForEach(_results.begin(), _results.end(),
-                            [](PcpPrimIndexOutputs &out) {
-                                PcpPrimIndexOutputs().swap(out);
-                            });
+        // Clear the roots to compute.
+        _toCompute.clear();
     }
 
     // Run the added work and wait for it to complete.
@@ -1238,6 +1221,28 @@ struct Pcp_ParallelIndexer
 
         // Flush any left-over results.
         _ConsumeIndexes(/*flush=*/true);
+
+        // Clear out results & working space.  If stuff is huge, dump it
+        // asynchronously, otherwise clear in place to possibly reuse heap for
+        // future calls.
+        constexpr size_t MaxSize = 1024;
+        _ClearMaybeAsync(_toCompute, _toCompute.size() >= MaxSize);
+        _ClearMaybeAsync(_finishedOutputs,
+                         _finishedOutputs.unsafe_size() >= MaxSize);
+        _ClearMaybeAsync(_consumerScratch, _consumerScratch.size() >= MaxSize);
+        _ClearMaybeAsync(_consumerScratchPayloadsIncluded,
+                         _consumerScratchPayloadsIncluded.size() >= MaxSize);
+        _ClearMaybeAsync(_consumerScratchPayloadsExcluded,
+                         _consumerScratchPayloadsExcluded.size() >= MaxSize);
+
+        // We need to tear down the _results synchronously because doing so may
+        // drop layers, and that's something that clients rely on, but we can
+        // tear down the elements in parallel.
+        WorkParallelForEach(_results.begin(), _results.end(),
+                            [](PcpPrimIndexOutputs &out) {
+                                PcpPrimIndexOutputs().swap(out);
+                            });
+        _ClearMaybeAsync(_results, _results.size() >= MaxSize);
     }
 
     // Add an index to compute.
@@ -1247,6 +1252,16 @@ struct Pcp_ParallelIndexer
     }
 
   private:
+
+    template <class Container>
+    void _ClearMaybeAsync(Container &c, bool async) {
+        if (async) {
+            WorkMoveDestroyAsync(c);
+        }
+        else {
+            c.clear();
+        }
+    }        
 
     // This function is run in parallel by the _dispatcher.  It computes prim
     // indexes and publishes them to _finishedOutputs, which are then consumed
@@ -1447,26 +1462,33 @@ struct Pcp_ParallelIndexer
         }
     }
 
-    PcpCache *_cache;
-    PcpErrorVector *_allErrors;
-    ChildrenPredicate _childrenPredicate;
-    vector<pair<const PcpPrimIndex *, SdfPath> > _toCompute;
-    PcpLayerStackPtr _layerStack;
-    PcpPrimIndexInputs _baseInputs;
-    tbb::concurrent_vector<PcpPrimIndexOutputs> _results;
+    // Fixed inputs.
+    PcpCache * const _cache;
+    const PcpLayerStackPtr _layerStack;
+    ArResolver& _resolver;
+
+    // Utils.
     tbb::spin_rw_mutex _primIndexCacheMutex;
     tbb::spin_rw_mutex _includedPayloadsMutex;
+    WorkArenaDispatcher _dispatcher;
+    WorkSingularTask _consumer;
+
+    // Varying inputs.
+    _UntypedIndexingChildrenPredicate _childrenPredicate;
+    PcpPrimIndexInputs _baseInputs;
+    PcpErrorVector *_allErrors;
+    const ArResolverScopedCache* _parentCache;
+    char const *_mallocTag1;
+    char const *_mallocTag2;
+    vector<pair<const PcpPrimIndex *, SdfPath> > _toCompute;
+
+    // Working space & outputs.
+    tbb::concurrent_vector<PcpPrimIndexOutputs> _results;
     tbb::concurrent_queue<PcpPrimIndexOutputs *> _finishedOutputs;
     vector<std::pair<PcpPrimIndex, 
                      PcpDynamicFileFormatDependencyData>> _consumerScratch;
     vector<SdfPath> _consumerScratchPayloadsIncluded;
     vector<SdfPath> _consumerScratchPayloadsExcluded;
-    ArResolver& _resolver;
-    WorkArenaDispatcher _dispatcher;
-    WorkSingularTask _consumer;
-    const ArResolverScopedCache* _parentCache;
-    char const * const _mallocTag1;
-    char const * const _mallocTag2;
 };
 
 void
@@ -1488,11 +1510,15 @@ PcpCache::_ComputePrimIndexesInParallel(
 
     ArResolverScopedCache parentCache;
     TfAutoMallocTag2 tag(mallocTag1, mallocTag2);
-    
-    using Indexer = Pcp_ParallelIndexer<_UntypedIndexingChildrenPredicate>;
 
     if (!_layerStack)
         ComputeLayerStack(GetLayerStackIdentifier(), allErrors);
+
+    if (!_parallelIndexer) {
+        _parallelIndexer.reset(new _ParallelIndexer(this, _layerStack));
+    }
+    
+    _ParallelIndexer * const indexer = _parallelIndexer.get();
 
     // General strategy: Compute indexes recursively starting from roots, in
     // parallel.  When we've computed an index, ask the children predicate if we
@@ -1506,10 +1532,10 @@ PcpCache::_ComputePrimIndexesInParallel(
         .USD(_usd)
         .IncludePayloadPredicate(payloadPred)
         ;
-    
-    Indexer indexer(this, childrenPred, _layerStack, inputs,
-                    allErrors, &parentCache, mallocTag1, mallocTag2);
 
+    indexer->Prepare(childrenPred, inputs, allErrors, &parentCache,
+                     mallocTag1, mallocTag2);
+    
     for (const auto& rootPath : roots) {
         // Obtain the parent index, if this is not the absolute root.  Note that
         // the call to ComputePrimIndex below is not concurrency safe.
@@ -1517,11 +1543,11 @@ PcpCache::_ComputePrimIndexesInParallel(
             rootPath == SdfPath::AbsoluteRootPath() ? nullptr :
             &_ComputePrimIndexWithCompatibleInputs(
                 rootPath.GetParentPath(), inputs, allErrors);
-        indexer.ComputeIndex(parentIndex, rootPath);
+        indexer->ComputeIndex(parentIndex, rootPath);
     }
 
     // Do the indexing and wait for it to complete.
-    indexer.RunAndWait();
+    indexer->RunAndWait();
 }
 
 const PcpPrimIndex &
