@@ -142,6 +142,9 @@ void wrapUsdLuxDomeLight()
 namespace {
 
 WRAP_CUSTOM {
+    _class
+        .def("OrientToStageUpAxis", &UsdLuxDomeLight::OrientToStageUpAxis)
+        ;
 }
 
 }

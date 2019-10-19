@@ -258,6 +258,18 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Adds a transformation op, if neeeded, to orient the dome to align with
+    /// the stage's up axis.  Uses UsdLuxTokens->orientToStageUpAxis as the op
+    /// suffix.  If an op with this suffix already exists, this method assumes
+    /// it is already applying the proper correction and does nothing further.
+    /// If no op is required to match the stage's up axis, no op will be
+    /// created.
+    ///
+    /// \see UsdGeomXformOp
+    /// \see UsdGeomGetStageUpAxis
+    USDLUX_API
+    void OrientToStageUpAxis() const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

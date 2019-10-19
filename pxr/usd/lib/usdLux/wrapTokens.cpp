@@ -91,6 +91,7 @@ void wrapUsdLuxTokens()
     _AddToken(cls, "lightListCacheBehavior", UsdLuxTokens->lightListCacheBehavior);
     _AddToken(cls, "mirroredBall", UsdLuxTokens->mirroredBall);
     _AddToken(cls, "normalize", UsdLuxTokens->normalize);
+    _AddToken(cls, "orientToStageUpAxis", UsdLuxTokens->orientToStageUpAxis);
     _AddToken(cls, "portals", UsdLuxTokens->portals);
     _AddToken(cls, "radius", UsdLuxTokens->radius);
     _AddToken(cls, "shadowColor", UsdLuxTokens->shadowColor);

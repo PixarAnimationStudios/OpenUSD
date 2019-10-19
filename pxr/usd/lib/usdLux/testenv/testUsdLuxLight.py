@@ -74,5 +74,30 @@ class TestUsdLuxLight(unittest.TestCase):
         e3 = light.ComputeBaseEmission()
         self.assertTrue( Gf.IsClose(e0, e3, 0.1))
 
+    def test_DomeLight_OrientToStageUpAxis(self):
+        from pxr import UsdGeom
+        stage = Usd.Stage.CreateInMemory()
+        # Try Y-up first.  Explicitly set this to override any site-level
+        # override.
+        UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.y)
+        # Create a dome.
+        light = UsdLux.DomeLight.Define(stage, '/dome')
+        # No Xform ops to begin with.
+        self.assertEqual(light.GetOrderedXformOps(), [])
+        # Align to up axis.
+        light.OrientToStageUpAxis()
+        # Since the stage is already Y-up, no additional xform op was required.
+        self.assertEqual(light.GetOrderedXformOps(), [])
+        # Now change the stage to Z-up and re-align the dome.
+        UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.z)
+        light.OrientToStageUpAxis()
+        # That should require a +90 deg rotate on X.
+        ops = light.GetOrderedXformOps()
+        self.assertEqual(len(ops), 1)
+        self.assertEqual(ops[0].GetBaseName(),
+            UsdLux.Tokens.orientToStageUpAxis)
+        self.assertEqual(ops[0].GetOpType(), UsdGeom.XformOp.TypeRotateX)
+        self.assertEqual(ops[0].GetAttr().Get(), 90.0)
+
 if __name__ == '__main__':
     unittest.main()

@@ -190,3 +190,29 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/usd/usdGeom/metrics.h"
+#include "pxr/usd/usdGeom/tokens.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+void
+UsdLuxDomeLight::OrientToStageUpAxis() const
+{
+    if (UsdGeomGetStageUpAxis(GetPrim().GetStage()) == UsdGeomTokens->z) {
+        UsdGeomXformOp::Type const opType = UsdGeomXformOp::TypeRotateX;
+        TfToken const& opSuffix = UsdLuxTokens->orientToStageUpAxis;
+        TfToken const opName = UsdGeomXformOp::GetOpName(opType, opSuffix);
+        bool resetsXformStack;
+        for (UsdGeomXformOp const& op: GetOrderedXformOps(&resetsXformStack)) {
+            if (op.GetName() == opName) {
+                // Op already exists.
+                return;
+            }
+        }
+        AddXformOp(opType, UsdGeomXformOp::PrecisionFloat, opSuffix)
+            .Set(90.0f);
+    }
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

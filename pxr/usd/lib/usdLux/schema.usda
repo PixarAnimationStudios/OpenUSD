@@ -32,6 +32,12 @@ over "GLOBAL" (
                 of a UsdLuxLightFilter prim.
                 """
             }
+            dictionary orientToStageUpAxis = {
+                string doc = """
+                This token represents the suffix for a UsdGeomXformOp
+                used to orient a light with the stage's up axis.
+                """
+            }
         }
     }
 )
