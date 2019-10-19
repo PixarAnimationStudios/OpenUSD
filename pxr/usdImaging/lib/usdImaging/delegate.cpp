@@ -1066,6 +1066,9 @@ UsdImagingDelegate::_ResyncUsdPrim(SdfPath const& usdPath,
                                    UsdImagingIndexProxy* proxy,
                                    bool repopulateFromRoot) 
 {
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
     TF_DEBUG(USDIMAGING_CHANGES).Msg("[Resync Prim]: <%s>\n",
             usdPath.GetText());
 
@@ -1238,6 +1241,9 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
                                       TfTokenVector const& changedInfoFields,
                                       UsdImagingIndexProxy* proxy) 
 {
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
     TF_DEBUG(USDIMAGING_CHANGES).Msg("[Refresh Object]: %s %s\n",
             usdPath.GetText(), TfStringify(changedInfoFields).c_str());
 
