@@ -6507,8 +6507,8 @@ private:
               Usd_HeldInterpolator<T> > { };
 
     // Gets the attribute value from the implementation with appropriate 
-    // interpolation. In the case of value types that can be further resolved
-    // by context (like SdfAssetPath and SdfTimeCode), the value returned from
+    // interpolation. In the case of value types that have type specific value
+    // resolution (like SdfAssetPath and SdfTimeCode), the value returned from
     // from this is NOT fully resolved yet.
     template <class Fn>
     static bool _GetValueFromImpl(const UsdStage &stage,
@@ -6527,75 +6527,68 @@ private:
         return getValueImpl(stage, time, attr, &interpolator, &out);
     }
 
-    // Default implementation for most types: there is no extra resolve step
-    // necessary. This implementation is specialized for types that need to
-    // be further resolved in context.
+    // Gets the fully resolved value for the attribute.
     template <class Fn>
     static bool _GetResolvedValue(const UsdStage &stage,
                                   UsdTimeCode time, const UsdAttribute &attr,
                                   T* result, const Fn &getValueImpl)
     {
-        return _GetValueFromImpl(stage, time, attr, result, getValueImpl);
+        if (_GetValueFromImpl(stage, time, attr, result, getValueImpl)) {
+            // Do the the type specific value resolution on the result. For 
+            // most types _ResolveValue does nothing. 
+            _ResolveValue(stage, time, attr, result);
+            return true;
+        }
+        return false;
+    }
+
+    // Performs type specific value resolution.
+    static void _ResolveValue(
+        const UsdStage &stage, UsdTimeCode time, const UsdAttribute &attr,
+        T* result)
+    {
+        // Do nothing for types without type specific value resolution.
+        static_assert(!UsdStage::_HasTypeSpecificResolution<T>::value, 
+                      "Value types with type specific value resolution must "
+                      "specialize Usd_AttrGetValueHelper::_ResolveValue");
     }
 };
 
-// Specializations for SdfAssetPath and VtArray<SdfAssetPath> types which need
-// to be resolved before returned.
+// Specializations implementing _ResolveValue for types with type specific
+// value resolution.
 template <>
-template <class Fn>
-bool Usd_AttrGetValueHelper<SdfAssetPath>::_GetResolvedValue(
+void Usd_AttrGetValueHelper<SdfAssetPath>::_ResolveValue(
     const UsdStage &stage, UsdTimeCode time, const UsdAttribute &attr,
-    SdfAssetPath* result, const Fn &getValueImpl)
+    SdfAssetPath* result)
 {
-    if (_GetValueFromImpl(stage, time, attr, result, getValueImpl)) {
-        stage._MakeResolvedAssetPaths(time, attr, result, 1);
-        return true;
-    }
-    return false;
+    stage._MakeResolvedAssetPaths(time, attr, result, 1);
 }
 
 template <>
-template <class Fn>
-bool Usd_AttrGetValueHelper<VtArray<SdfAssetPath>>::_GetResolvedValue(
+void Usd_AttrGetValueHelper<VtArray<SdfAssetPath>>::_ResolveValue(
     const UsdStage &stage, UsdTimeCode time, const UsdAttribute &attr,
-    VtArray<SdfAssetPath>* result, const Fn &getValueImpl)
+    VtArray<SdfAssetPath>* result)
 {
-    if (_GetValueFromImpl(stage, time, attr, result, getValueImpl)) {
-        stage._MakeResolvedAssetPaths(time, attr, result->data(), result->size());
-        return true;
-    }
-    return false;
-}
-
-// Specializations for SdfTimeCode and VtArray<SdfTimeCode> types which need
-// to be resolved before returned.
-template <>
-template <class Fn>
-bool Usd_AttrGetValueHelper<SdfTimeCode>::_GetResolvedValue(
-    const UsdStage &stage, UsdTimeCode time, const UsdAttribute &attr,
-    SdfTimeCode* result, const Fn &getValueImpl)
-{
-    if (_GetValueFromImpl(stage, time, attr, result, getValueImpl)) {
-        stage._MakeResolvedTimeCodes(time, attr, result, 1);
-        return true;
-    }
-    return false;
+    stage._MakeResolvedAssetPaths(time, attr, result->data(), result->size());
 }
 
 template <>
-template <class Fn>
-bool Usd_AttrGetValueHelper<VtArray<SdfTimeCode>>::_GetResolvedValue(
+void Usd_AttrGetValueHelper<SdfTimeCode>::_ResolveValue(
     const UsdStage &stage, UsdTimeCode time, const UsdAttribute &attr,
-    VtArray<SdfTimeCode>* result, const Fn &getValueImpl)
+    SdfTimeCode* result)
 {
-    if (_GetValueFromImpl(stage, time, attr, result, getValueImpl)) {
-        stage._MakeResolvedTimeCodes(time, attr, result->data(), result->size());
-        return true;
-    }
-    return false;
+    stage._MakeResolvedTimeCodes(time, attr, result, 1);
 }
 
-// Specialized attribute value getter for type erased VtValue.
+template <>
+void Usd_AttrGetValueHelper<VtArray<SdfTimeCode>>::_ResolveValue(
+    const UsdStage &stage, UsdTimeCode time, const UsdAttribute &attr,
+    VtArray<SdfTimeCode>* result)
+{
+    stage._MakeResolvedTimeCodes(time, attr, result->data(), result->size());
+}
+
+// Attribute value getter for type erased VtValue.
 struct Usd_AttrGetUntypedValueHelper {
     template <class Fn>
     static bool GetValue(const UsdStage &stage, UsdTimeCode time, 
