@@ -46,7 +46,8 @@ HdChangeTracker::HdChangeTracker()
     , _collectionState()
     , _needsGarbageCollection(false)
     , _needsBprimGarbageCollection(false)
-    , _instancerRprimMap()
+    , _instancerRprimDependencies()
+    , _instancerInstancerDependencies()
     // Note: Version numbers start at 1, with observers resetting theirs to 0.
     // This is to cause a version mismatch during first-time processing.
     , _varyingStateVersion(1)
@@ -232,27 +233,60 @@ HdChangeTracker::InstancerRemoved(SdfPath const& id)
     ++_instancerIndexVersion;
 }
 
+
+// -------------------------------------------------------------------------- //
+/// \name Dependency Tracking
+// -------------------------------------------------------------------------- //
+
 void
-HdChangeTracker::InstancerRPrimInserted(SdfPath const& instancerId,
-                                        SdfPath const& rprimId)
+HdChangeTracker::AddInstancerRprimDependency(SdfPath const& instancerId,
+                                             SdfPath const& rprimId)
 {
-    _instancerRprimMap[instancerId].insert(rprimId);
+    _AddDependency(_instancerRprimDependencies, instancerId, rprimId);
 }
 
 void
-HdChangeTracker::InstancerRPrimRemoved(SdfPath const& instancerId, SdfPath const& rprimId)
+HdChangeTracker::RemoveInstancerRprimDependency(SdfPath const& instancerId,
+                                                SdfPath const& rprimId)
 {
-    _InstancerRprimMap::iterator it = _instancerRprimMap.find(instancerId);
-    if (!TF_VERIFY(it != _instancerRprimMap.end()))
+    _RemoveDependency(_instancerRprimDependencies, instancerId, rprimId);
+}
+
+void
+HdChangeTracker::AddInstancerInstancerDependency(SdfPath const& parentId,
+                                                 SdfPath const& instancerId)
+{
+    _AddDependency(_instancerInstancerDependencies, parentId, instancerId);
+}
+
+void
+HdChangeTracker::RemoveInstancerInstancerDependency(SdfPath const& parentId,
+                                                    SdfPath const& instancerId)
+{
+    _RemoveDependency(_instancerInstancerDependencies, parentId, instancerId);
+}
+
+void
+HdChangeTracker::_AddDependency(HdChangeTracker::_DependencyMap &depMap,
+        SdfPath const& parent, SdfPath const& child)
+{
+    depMap[parent].insert(child);
+}
+
+void
+HdChangeTracker::_RemoveDependency(HdChangeTracker::_DependencyMap &depMap,
+        SdfPath const& parent, SdfPath const& child)
+{
+    _DependencyMap::iterator it = depMap.find(parent);
+    if (!TF_VERIFY(it != depMap.end()))
         return;
 
-    SdfPathSet &rprimSet = it->second;
+    SdfPathSet &childSet = it->second;
+    TF_VERIFY(childSet.erase(child) != 0);
 
-    TF_VERIFY(rprimSet.erase(rprimId) != 0);
-
-    if (rprimSet.empty())
+    if (childSet.empty())
     {
-        _instancerRprimMap.erase(it);
+        depMap.erase(it);
     }
 }
 
@@ -358,18 +392,33 @@ HdChangeTracker::MarkInstancerDirty(SdfPath const& id, HdDirtyBits bits)
     // not calling _PropagateDirtyBits here. Currenly instancer uses
     // scale, translate, rotate primvars and there's no dependency between them
     // unlike points and normals on rprim.
+
+#if 0
+    // Early out if no new bits are being set.
+    // XXX: First, we need to get rid of the usage of DirtyInstancer
+    // in usdImaging.
+    if ((bits & (~it->second)) == 0) {
+        return;
+    }
+#endif
+
     it->second = it->second | bits;
     ++_sceneStateVersion;
 
-    // Now mark any associated rprims dirty.
-    _InstancerRprimMap::iterator mapIt = _instancerRprimMap.find(id);
-    if (mapIt != _instancerRprimMap.end()) {
-        SdfPathSet &rprimSet = mapIt->second;
+    // Now mark any associated rprims or instancers dirty.
+    _DependencyMap::iterator instancerDepIt =
+        _instancerInstancerDependencies.find(id);
+    if (instancerDepIt != _instancerInstancerDependencies.end()) {
+        for (SdfPath const& dep : instancerDepIt->second) {
+            MarkInstancerDirty(dep, DirtyInstancer);
+        }
+    }
 
-        for (SdfPathSet::iterator rprimIt =  rprimSet.begin();
-                                  rprimIt != rprimSet.end();
-                                  ++rprimIt) {
-            MarkRprimDirty(*rprimIt, DirtyInstancer);
+    _DependencyMap::iterator rprimDepIt =
+        _instancerRprimDependencies.find(id);
+    if (rprimDepIt != _instancerRprimDependencies.end()) {
+        for (SdfPath const& dep : rprimDepIt->second) {
+            MarkRprimDirty(dep, DirtyInstancer);
         }
     }
 }

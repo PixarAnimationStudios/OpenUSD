@@ -53,6 +53,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdChangeTracker : public boost::noncopyable {
 public:
 
+    // Common dirty bits for Rprims
+    // XXX: Move this to HdRprim
     enum RprimDirtyBits : HdDirtyBits {
         Clean                       = 0,
         InitRepr                    = 1 << 0,
@@ -86,8 +88,12 @@ public:
         CustomBitsEnd               = 1 << 30,
     };
 
+    // InstancerDirtybits are a subset of rprim dirty bits right now:
+    // DirtyPrimvar, DirtyTransform, DirtyInstanceIndex, DirtyInstancer.
+
     // Dirty bits for Tasks
-    enum NonRprimDirtyBits : HdDirtyBits {
+    // XXX: Move this to HdTask
+    enum TaskDirtyBits : HdDirtyBits {
         //Varying               = 1 << 0,
         DirtyType             = 1 << 1,
         DirtyParams           = 1 << 2,
@@ -305,15 +311,31 @@ public:
     HD_API
     void InstancerRemoved(SdfPath const& id);
 
-    /// Add the gived \p rprimId to the list of rprims associated with the
-    /// instancer \p instancerId
+    /// Insert a dependency between \p rprimId and parent instancer
+    /// \p instancerId.  Changes to the latter mark the former with
+    /// DirtyInstancer.
     HD_API
-    void InstancerRPrimInserted(SdfPath const& instancerId, SdfPath const& rprimId);
+    void AddInstancerRprimDependency(SdfPath const& instancerId,
+                                     SdfPath const& rprimId);
 
-    /// Remove the gived \p rprimId to the list of rprims associated with the
-    /// instancer \p instancerId
+    /// Remove a dependency between \p rprimId and parent instancer
+    /// \p instancerId.
     HD_API
-    void InstancerRPrimRemoved(SdfPath const& instancerId, SdfPath const& rprimId);
+    void RemoveInstancerRprimDependency(SdfPath const& instancerId,
+                                        SdfPath const& rprimId);
+
+    /// Insert a dependency between \p instancerId and parent instancer
+    /// \p parentInstancerId.  Changes to the latter mark the former with
+    /// DirtyInstancer.
+    HD_API
+    void AddInstancerInstancerDependency(SdfPath const& parentInstancerId,
+                                         SdfPath const& instancerId);
+
+    /// Remove a dependency between \p instancerId and parent instancer
+    /// \p parentInstancerId.
+    HD_API
+    void RemoveInstancerInstancerDependency(SdfPath const& parentInstancerId,
+                                            SdfPath const& instancerId);
 
     // ---------------------------------------------------------------------- //
     /// @}
@@ -585,7 +607,7 @@ private:
 
     typedef TfHashMap<SdfPath, HdDirtyBits, SdfPath::Hash> _IDStateMap;
     typedef TfHashMap<TfToken, int, TfToken::HashFunctor> _CollectionStateMap;
-    typedef TfHashMap<SdfPath, SdfPathSet, SdfPath::Hash> _InstancerRprimMap;
+    typedef TfHashMap<SdfPath, SdfPathSet, SdfPath::Hash> _DependencyMap;
     typedef TfHashMap<TfToken, unsigned, TfToken::HashFunctor> _GeneralStateMap;
 
     // Core dirty state.
@@ -601,9 +623,16 @@ private:
     bool _needsGarbageCollection;
     bool _needsBprimGarbageCollection;
 
-    // Provides reverse-association between instancers and the rprims that use
-    // them.
-    _InstancerRprimMap _instancerRprimMap;
+    // Provides reverse-association between instancers and the child
+    // instancers/rprims that use them.
+    _DependencyMap _instancerRprimDependencies;
+    _DependencyMap _instancerInstancerDependencies;
+
+    // Dependency map helpers
+    void _AddDependency(_DependencyMap &depMap,
+        SdfPath const& parent, SdfPath const& child);
+    void _RemoveDependency(_DependencyMap &depMap,
+        SdfPath const& parent, SdfPath const& child);
 
     // Typically the Rprims that get marked dirty per update iteration end up
     // being a stable set of objects; to leverage this fact, we require the

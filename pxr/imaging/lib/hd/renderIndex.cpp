@@ -166,7 +166,7 @@ HdRenderIndex::InsertRprim(TfToken const& typeId,
     SdfPath instanceId = rprim->GetInstancerId();
 
     if (!instanceId.IsEmpty()) {
-        _tracker.InstancerRPrimInserted(instanceId, rprimId);
+        _tracker.AddInstancerRprimDependency(instanceId, rprimId);
     }
 }
 
@@ -186,7 +186,7 @@ HdRenderIndex::RemoveRprim(SdfPath const& id)
     _rprimIds.Remove(id);
 
     if (!instancerId.IsEmpty()) {
-        _tracker.InstancerRPrimRemoved(instancerId, id);
+        _tracker.RemoveInstancerRprimDependency(instancerId, id);
     }
 
     _tracker.RprimRemoved(id);
@@ -247,7 +247,7 @@ HdRenderIndex::_RemoveRprimSubtree(const SdfPath &root,
             if (rprimInfo.sceneDelegate == sceneDelegate) {
                 SdfPath instancerId = rprimInfo.rprim->GetInstancerId();
                 if (!instancerId.IsEmpty()) {
-                    _tracker.InstancerRPrimRemoved(instancerId, id);
+                    _tracker.RemoveInstancerRprimDependency(instancerId, id);
                 }
 
                 _tracker.RprimRemoved(id);
@@ -1496,6 +1496,12 @@ HdRenderIndex::InsertInstancer(HdSceneDelegate* delegate,
 
     _instancerMap[id] = instancer;
     _tracker.InstancerInserted(id);
+
+    SdfPath instanceId = instancer->GetParentId();
+
+    if (!instanceId.IsEmpty()) {
+        _tracker.AddInstancerInstancerDependency(instanceId, id);
+    }
 }
 
 void
@@ -1508,8 +1514,14 @@ HdRenderIndex::RemoveInstancer(SdfPath const& id)
     if (it == _instancerMap.end())
         return;
 
-    _renderDelegate->DestroyInstancer(it->second);
+    HdInstancer *instancer = it->second;
 
+    SdfPath const& instancerId = instancer->GetParentId();
+    if (!instancerId.IsEmpty()) {
+        _tracker.RemoveInstancerInstancerDependency(instancerId, id);
+    }
+
+    _renderDelegate->DestroyInstancer(instancer);
     _tracker.InstancerRemoved(id);
     _instancerMap.erase(it);
 }
@@ -1528,7 +1540,14 @@ HdRenderIndex::_RemoveInstancerSubtree(const SdfPath &root,
 
         if ((instancer->GetDelegate() == sceneDelegate) &&
             (id.HasPrefix(root))) {
-            _renderDelegate->DestroyInstancer(it->second);
+
+            HdInstancer *instancer = it->second;
+            SdfPath const& instancerId = instancer->GetParentId();
+            if (!instancerId.IsEmpty()) {
+                _tracker.RemoveInstancerInstancerDependency(instancerId, id);
+            }
+
+            _renderDelegate->DestroyInstancer(instancer);
 
             _tracker.InstancerRemoved(id);
 
