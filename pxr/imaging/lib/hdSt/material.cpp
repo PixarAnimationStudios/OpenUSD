@@ -145,16 +145,13 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     if (shaderIsDirty) {
         if (fragmentSource.empty() && geometrySource.empty()) {
             _InitFallbackShader();
-            _surfaceShader->SetFragmentSource(
-                                   _fallbackSurfaceShader->GetFragmentSource());
-            _surfaceShader->SetGeometrySource(
-                                   _fallbackSurfaceShader->GetGeometrySource());
-
+            fragmentSource = _fallbackSurfaceShader->GetSurfaceSource();
+            geometrySource = _fallbackSurfaceShader->GetGeometrySource();
             materialMetadata = _fallbackSurfaceShader->GetMetadata();
-        } else {
-            _surfaceShader->SetFragmentSource(fragmentSource);
-            _surfaceShader->SetGeometrySource(geometrySource);
         }
+
+        _surfaceShader->SetFragmentSource(fragmentSource);
+        _surfaceShader->SetGeometrySource(geometrySource);
 
         bool hasDisplacement = !(geometrySource.empty());
 
