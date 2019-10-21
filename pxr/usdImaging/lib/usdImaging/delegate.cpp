@@ -657,7 +657,7 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
 
         // _Populate should never be called on master prims or prims in master.
         UsdPrim prim = _GetUsdPrim(usdPath);
-        if (prim.IsMaster() || prim.IsInMaster()) {
+        if (prim && (prim.IsMaster() || prim.IsInMaster())) {
             continue;
         }
 
