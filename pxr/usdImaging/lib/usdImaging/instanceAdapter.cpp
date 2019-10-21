@@ -1234,10 +1234,18 @@ UsdImagingInstanceAdapter::ProcessPropertyChange(UsdPrim const& prim,
         return dirtyBits;
     }
 
-    // If one of the attributes of the instance prim changed, blast everything.
-    // This will trigger a prim resync; see ProcessPrimResync.
-    // XXX: It would be great to turn this into a dirty bit change instead,
-    // but that requires refactoring instancer data ownership.
+    // Transform changes to instance prims end up getting folded into the
+    // "instanceTransform" instance-rate primvar.
+    if (UsdGeomXformable::IsTransformationAffectedByAttrNamed(propertyName)) {
+        return HdChangeTracker::DirtyPrimvar;
+    }
+
+    // For other property changes, blast everything.  This will trigger a
+    // prim resync.
+    // XXX: It would be way better to handle visibility changes here,
+    // but vis changes affect instance indices, and we don't really have
+    // a good way to set DirtyInstanceIndex on the right prim.  We should
+    // fix that!
     return HdChangeTracker::AllDirty;
 }
 
