@@ -49,6 +49,20 @@ public:
     Usd_ClipCache();
     ~Usd_ClipCache();
 
+    /// \struct ConcurrentPopulationContext
+    ///
+    /// Structure for enabling cache population via concurrent calls to
+    /// PopulateClipsForPrim.  Protects member data reads/writes with a mutex
+    /// during its lifetime.
+    /// \sa PopulateClipsForPrim.
+    struct ConcurrentPopulationContext
+    {
+        explicit ConcurrentPopulationContext(Usd_ClipCache &cache);
+        ~ConcurrentPopulationContext();
+        Usd_ClipCache &_cache;
+        tbb::mutex _mutex;
+    };
+
     /// Populate the cache with clips for \p prim. Returns true if clips
     /// that may contribute opinions to attributes on \p prim are found,
     /// false otherwise.
@@ -112,10 +126,13 @@ public:
     /// of being disposed immediately. This potentially allows the underlying
     /// clip layer to be reused if the clip cache is repopulated while
     /// the lifeboat is still active.
+    ///
+    /// NOTE: This function must not be invoked concurrently with any other
+    /// function on this object.
     void InvalidateClipsForPrim(const SdfPath& path, Lifeboat* lifeboat);
 
 private:
-    const std::vector<Clips>& 
+    inline const std::vector<Clips>& 
     _GetClipsForPrim_NoLock(const SdfPath& path) const;
 
     // Map from prim path to all clips that apply to that prim, including
@@ -123,7 +140,7 @@ private:
     // authored will have entries.
     typedef SdfPathTable<std::vector<Clips> >_ClipTable;
     _ClipTable _table;
-    mutable tbb::mutex _mutex;
+    ConcurrentPopulationContext *_concurrentPopulationContext;
 };
 
 

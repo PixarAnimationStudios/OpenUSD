@@ -2767,6 +2767,10 @@ UsdStage::_ComposeSubtreesInParallel(
     // Begin a subtree composition in parallel.
     _primMapMutex = boost::in_place();
     _dispatcher = boost::in_place();
+    // We populate the clip cache concurrently during composition, so we need to
+    // enable concurrent population here.
+    Usd_ClipCache::ConcurrentPopulationContext
+        clipConcurrentPopContext(*_clipCache);
     try {
         for (size_t i = 0; i != prims.size(); ++i) {
             Usd_PrimDataPtr p = prims[i];
@@ -3991,6 +3995,9 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
         _RemoveDescendentEntries(pathsToRecompose);
     }
 
+    // XXX: If the call chain here ever starts composing prims in parallel,
+    // we'll have to add a Usd_ClipCache::ConcurrentPopulationContext object
+    // around this.
     std::vector<Usd_PrimDataPtr> subtreesToRecompose;
     _ComputeSubtreesToRecompose(
         make_transform_iterator(pathsToRecompose->begin(), TfGet<0>()),
@@ -4091,6 +4098,10 @@ UsdStage::_ComputeSubtreesToRecompose(
     Iter i, Iter end,
     std::vector<Usd_PrimDataPtr>* subtreesToRecompose)
 {
+    // XXX: If this function ever winds up composing prims in parallel, callers
+    // will have to ensure that a Usd_ClipCache::ConcurrentPopulationContext
+    // object is alive during the call.
+    
     subtreesToRecompose->reserve(
         subtreesToRecompose->size() + std::distance(i, end));
 

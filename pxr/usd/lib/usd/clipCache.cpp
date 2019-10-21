@@ -37,6 +37,7 @@
 
 #include "pxr/base/vt/array.h"
 #include "pxr/base/gf/vec2d.h"
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/ostreamMethods.h"
 
@@ -44,8 +45,21 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+Usd_ClipCache::
+ConcurrentPopulationContext::ConcurrentPopulationContext(Usd_ClipCache &cache)
+    : _cache(cache)
+{
+    TF_AXIOM(!_cache._concurrentPopulationContext);
+    _cache._concurrentPopulationContext = this;
+}
+
+Usd_ClipCache::ConcurrentPopulationContext::~ConcurrentPopulationContext()
+{
+    _cache._concurrentPopulationContext = nullptr;
+}
 
 Usd_ClipCache::Usd_ClipCache()
+    : _concurrentPopulationContext(nullptr)
 {
 }
 
@@ -287,7 +301,10 @@ Usd_ClipCache::PopulateClipsForPrim(
 
     const bool primHasClips = !allClips.empty();
     if (primHasClips) {
-        tbb::mutex::scoped_lock lock(_mutex);
+        tbb::mutex::scoped_lock lock;
+        if (_concurrentPopulationContext) {
+            lock.acquire(_concurrentPopulationContext->_mutex);
+        }
 
         const std::vector<Clips>& ancestralClips = 
             _GetClipsForPrim_NoLock(path.GetParentPath());
@@ -307,10 +324,11 @@ Usd_ClipCache::PopulateClipsForPrim(
 SdfLayerHandleSet
 Usd_ClipCache::GetUsedLayers() const
 {
+    tbb::mutex::scoped_lock lock;
+    if (_concurrentPopulationContext) {
+        lock.acquire(_concurrentPopulationContext->_mutex);
+    }
     SdfLayerHandleSet layers;
-
-    tbb::mutex::scoped_lock lock(_mutex);
-
     for (_ClipTable::iterator::value_type const &clipsListIter : _table){
         for (Clips const &clipSet : clipsListIter.second){
             if (SdfLayerHandle layer = clipSet.manifestClip ?
@@ -332,7 +350,10 @@ const std::vector<Usd_ClipCache::Clips>&
 Usd_ClipCache::GetClipsForPrim(const SdfPath& path) const
 {
     TRACE_FUNCTION();
-    tbb::mutex::scoped_lock lock(_mutex);
+    tbb::mutex::scoped_lock lock;
+    if (_concurrentPopulationContext) {
+        lock.acquire(_concurrentPopulationContext->_mutex);
+    }
     return _GetClipsForPrim_NoLock(path);
 }
 
@@ -354,8 +375,8 @@ Usd_ClipCache::_GetClipsForPrim_NoLock(const SdfPath& path) const
 void 
 Usd_ClipCache::InvalidateClipsForPrim(const SdfPath& path, Lifeboat* lifeboat)
 {
-    tbb::mutex::scoped_lock lock(_mutex);
-
+    // We do not have to take the lock here -- this function must be invoked
+    // exclusive to any other member function.
     auto range = _table.FindSubtreeRange(path);
     for (auto entryIter = range.first; entryIter != range.second; ++entryIter) {
         const auto& entry = *entryIter;
