@@ -1771,7 +1771,7 @@ HdxTaskController::SetColorCorrectionParams(
     newParams.aovName = oldParams.aovName;
     newParams.aovBufferPath = oldParams.aovBufferPath;
 
-    if (params != oldParams) {
+    if (newParams != oldParams) {
         _delegate.SetParameter(
             _colorCorrectionTaskId, HdTokens->params, newParams);
 
