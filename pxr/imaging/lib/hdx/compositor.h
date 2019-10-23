@@ -96,6 +96,7 @@ private:
 
     HdStGLSLProgramSharedPtr _compositorProgram;
     GLint _locations[5];
+    GLuint _vao;
     GLuint _vertexBuffer;
     bool _useDepthProgram;
 };
