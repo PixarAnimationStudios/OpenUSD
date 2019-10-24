@@ -38,6 +38,23 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    // tokens for RenderMan-specific light parameters
+    ((cheapCaustics,                "ri:light:cheapCaustics"))
+    ((cheapCausticsExcludeGroup,    "ri:light:cheapCausticsExcludeGroup"))
+    ((fixedSampleCount,             "ri:light:fixedSampleCount"))
+    ((importanceMultiplier,         "ri:light:importanceMultiplier"))
+    ((intensityNearDist,            "ri:light:intensityNearDist"))
+    ((thinShadow,                   "ri:light:thinShadow"))
+    ((traceLightPaths,              "ri:light:traceLightPaths"))
+    ((visibleInRefractionPath,      "ri:light:visibleInRefractionPath"))
+    ((lightGroup,                   "ri:light:lightGroup"))
+    ((colorMapGamma,                "ri:light:colorMapGamma"))
+    ((colorMapSaturation,           "ri:light:colorMapSaturation"))
+);
+
 HdPrmanLight::HdPrmanLight(SdfPath const& id, TfToken const& lightType)
     : HdLight(id)
     , _hdLightType(lightType)
@@ -129,6 +146,19 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     static const RtUString us_angleExtent("angleExtent");
     static const RtUString us_lightColorMap("lightColorMap");
     static const RtUString us_default("default");
+    static const RtUString us_cheapCaustics("cheapCaustics");
+    static const RtUString us_cheapCausticsExcludeGroup(
+                                "cheapCausticsExcludeGroup");
+    static const RtUString us_fixedSampleCount("fixedSampleCount");
+    static const RtUString us_importanceMultiplier("importanceMultiplier");
+    static const RtUString us_intensityNearDist("intensityNearDist");
+    static const RtUString us_thinShadow("thinShadow");
+    static const RtUString us_traceLightPaths("traceLightPaths");
+    static const RtUString us_visibleInRefractionPath(
+                                "visibleInRefractionPath");
+    static const RtUString us_lightGroup("lightGroup");
+    static const RtUString us_colorMapGamma("colorMapGamma");
+    static const RtUString us_colorMapSaturation("colorMapSaturation");
 
     HdPrman_Context *context =
         static_cast<HdPrman_RenderParam*>(renderParam)->AcquireContext();
@@ -139,16 +169,14 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     riley::Riley *riley = context->riley;
 
     // Some lights have parameters that scale the size of the light.
-    // Scale lights by negative -y and -z to account for RenderMan vs USD
-    // light orientation.
-    GfVec3d geomScale(1.0f, -1.0f, -1.0);
+    GfVec3d geomScale(1.0f);
 
     // For simplicity just re-create the light.  In the future we may
     // want to consider adding a path to use the Modify() API in Riley.
     _ResetLight(context);
 
     // Attributes.
-    RixParamList *attrs = mgr->CreateRixParamList();
+    RixParamList *attrs = context->ConvertAttributes(sceneDelegate, id);
 
     // Light shader.
     RixParamList *params = mgr->CreateRixParamList();
@@ -255,6 +283,8 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
                              shapingConeSoftness.UncheckedGet<float>());
         }
 
+        // TODO - ies is only supported on rect, disk, and sphere light. Update 
+        // to not set these parameters for other light types.
         VtValue shapingIesFile =
             sceneDelegate->GetLightParamValue(id, 
                 HdLightTokens->shapingIesFile);
@@ -333,6 +363,86 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
         }
     }
 
+    // extra RenderMan parameters - "ri:light"
+    {
+        VtValue cheapCaustics =
+            sceneDelegate->GetLightParamValue(id, _tokens->cheapCaustics);
+        if (cheapCaustics.IsHolding<int>()) {
+            params->SetInteger(us_cheapCaustics,
+                               cheapCaustics.UncheckedGet<int>());
+        }
+
+        VtValue cheapCausticsExcludeGroupVal =
+            sceneDelegate->GetLightParamValue(id, 
+                _tokens->cheapCausticsExcludeGroup);
+        if (cheapCausticsExcludeGroupVal.IsHolding<TfToken>()) {
+            TfToken cheapCausticsExcludeGroup = 
+                cheapCausticsExcludeGroupVal.UncheckedGet<TfToken>();
+            if (!cheapCausticsExcludeGroup.IsEmpty()) {
+                params->SetString(us_cheapCausticsExcludeGroup,
+                                RtUString(cheapCausticsExcludeGroup.GetText()));
+            }
+        }
+
+        VtValue fixedSampleCount =
+            sceneDelegate->GetLightParamValue(id, _tokens->fixedSampleCount);
+        if (fixedSampleCount.IsHolding<int>()) {
+            params->SetInteger(us_fixedSampleCount,
+                               fixedSampleCount.UncheckedGet<int>());
+        }
+
+        VtValue importanceMultiplier =
+            sceneDelegate->GetLightParamValue(id, 
+                _tokens->importanceMultiplier);
+        if (importanceMultiplier.IsHolding<float>()) {
+            params->SetFloat(us_importanceMultiplier,
+                               importanceMultiplier.UncheckedGet<float>());
+        }
+
+        VtValue intensityNearDist =
+            sceneDelegate->GetLightParamValue(id, _tokens->intensityNearDist);
+        if (intensityNearDist.IsHolding<float>()) {
+            params->SetFloat(us_intensityNearDist,
+                               intensityNearDist.UncheckedGet<float>());
+        }
+
+        VtValue thinShadow =
+            sceneDelegate->GetLightParamValue(id, _tokens->thinShadow);
+        if (thinShadow.IsHolding<int>()) {
+            params->SetInteger(us_thinShadow, thinShadow.UncheckedGet<int>());
+        }
+
+        VtValue traceLightPaths =
+            sceneDelegate->GetLightParamValue(id, _tokens->traceLightPaths);
+        if (traceLightPaths.IsHolding<int>()) {
+            params->SetInteger(us_traceLightPaths,
+                               traceLightPaths.UncheckedGet<int>());
+        }
+
+        VtValue visibleInRefractionPath =
+            sceneDelegate->GetLightParamValue(id, 
+                _tokens->visibleInRefractionPath);
+        if (visibleInRefractionPath.IsHolding<int>()) {
+            params->SetInteger(us_visibleInRefractionPath,
+                               visibleInRefractionPath.UncheckedGet<int>());
+        }
+
+        VtValue lightGroupVal =
+            sceneDelegate->GetLightParamValue(id, _tokens->lightGroup);
+        if (lightGroupVal.IsHolding<TfToken>()) {
+            TfToken lightGroup = lightGroupVal.UncheckedGet<TfToken>();
+            if (!lightGroup.IsEmpty()) {
+                params->SetString(us_lightGroup,
+                                  RtUString(lightGroup.GetText()));
+            }
+        }
+    }
+
+
+    TF_DEBUG(HDPRMAN_LIGHT_LIST)
+        .Msg("HdPrman: Light <%s> lightType \"%s\"\n",
+             id.GetText(), _hdLightType.GetText());
+
     // Type-specific parameters
     bool supportsLightColorMap = false;
     if (_hdLightType == HdPrimTypeTokens->domeLight) {
@@ -407,6 +517,20 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
             SdfAssetPath ap = textureFile.UncheckedGet<SdfAssetPath>();
             params->SetString(us_lightColorMap, _RtStringFromSdfAssetPath(ap));
         }
+
+        VtValue colorMapGamma =
+            sceneDelegate->GetLightParamValue(id, _tokens->colorMapGamma);
+        if (colorMapGamma.IsHolding<GfVec3f>()) {
+            GfVec3f v = colorMapGamma.UncheckedGet<GfVec3f>();
+            params->SetVector(us_colorMapGamma, RtVector3(v[0], v[1], v[2]));
+        }
+
+        VtValue colorMapSaturation =
+            sceneDelegate->GetLightParamValue(id, _tokens->colorMapSaturation);
+        if (colorMapSaturation.IsHolding<float>()) {
+            params->SetFloat(us_colorMapSaturation,
+                               colorMapSaturation.UncheckedGet<float>());
+        }
     }
 
     // Light linking
@@ -415,17 +539,24 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
             sceneDelegate->GetLightParamValue(id, HdTokens->lightLink);
         if (val.IsHolding<TfToken>()) {
             _lightLink = val.UncheckedGet<TfToken>();
+        }
+        
+        if (!_lightLink.IsEmpty()) {
             context->IncrementLightLinkCount(_lightLink);
-            if (!_lightLink.IsEmpty()) {
-                // For lights to link geometry, the lights must
-                // be assigned a grouping membership, and the
-                // geometry must subscribe to that grouping.
-                attrs->SetString(RixStr.k_grouping_membership,
-                                 RtUString(_lightLink.GetText()));
-            } else {
-                // Default light group
-                attrs->SetString(RixStr.k_grouping_membership, us_default);
-            }
+            // For lights to link geometry, the lights must
+            // be assigned a grouping membership, and the
+            // geometry must subscribe to that grouping.
+            attrs->SetString(RixStr.k_grouping_membership,
+                                RtUString(_lightLink.GetText()));
+            TF_DEBUG(HDPRMAN_LIGHT_LINKING)
+                .Msg("HdPrman: Light <%s> grouping membership \"%s\"\n",
+                        id.GetText(), _lightLink.GetText());
+        } else {
+            // Default light group
+            attrs->SetString(RixStr.k_grouping_membership, us_default);
+            TF_DEBUG(HDPRMAN_LIGHT_LINKING)
+                .Msg("HdPrman: Light <%s> grouping membership \"default\"\n",
+                     id.GetText());
         }
     }
 
@@ -444,14 +575,42 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     // Sample transform
     HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
     sceneDelegate->SampleTransform(id, &xf);
-    RtMatrix4x4 xf_rt_values[HDPRMAN_MAX_TIME_SAMPLES];
+    
+    TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES> 
+        xf_rt_values(xf.count);
+
     GfMatrix4d geomMat(1.0);
     geomMat.SetScale(geomScale);
+
+    // adjust orientation to make prman match the USD spec
+    // TODO: Add another orientMat for PxrEnvDayLight when supported
+    GfMatrix4d orientMat(1.0);
+    if (rileyTypeName == us_PxrDomeLight)
+    {
+        // Transform Dome to match OpenEXR spec for environment maps
+        // Rotate -90 X, Rotate 90 Y
+        orientMat = GfMatrix4d(0.0, 0.0, -1.0, 0.0, 
+                               -1.0, 0.0, 0.0, 0.0, 
+                               0.0, 1.0, 0.0, 0.0, 
+                               0.0, 0.0, 0.0, 1.0);
+    }
+    else
+    {
+        // Transform lights to match correct orientation
+        // Scale -1 Z, Rotate 180 Z
+        orientMat = GfMatrix4d(-1.0, 0.0, 0.0, 0.0, 
+                               0.0, -1.0, 0.0, 0.0, 
+                               0.0, 0.0, -1.0, 0.0, 
+                               0.0, 0.0, 0.0, 1.0);
+    }
+
+    geomMat = orientMat * geomMat;
+
     for (size_t i=0; i < xf.count; ++i) {
         xf_rt_values[i] = HdPrman_GfMatrixToRtMatrix(geomMat * xf.values[i]);
     }
     const riley::Transform xform = {
-        unsigned(xf.count), xf_rt_values, xf.times};
+        unsigned(xf.count), xf_rt_values.data(), xf.times.data()};
 
     // Instance attributes.
     attrs->SetInteger(RixStr.k_lighting_mute, !sceneDelegate->GetVisible(id));

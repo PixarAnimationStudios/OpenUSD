@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/imaging/hdx/api.h"
+#include "pxr/imaging/hd/types.h"
 #include "pxr/imaging/garch/gl.h"
 #include "pxr/base/gf/vec2i.h"
 
@@ -58,10 +59,11 @@ public:
     /// GL_RGBA/GL_UNSIGNED_BYTE.
     ///   \param width The width of the image.
     ///   \param height The height of the image.
-    ///   \param data The color data to use while compositing, in GL_RGBA and
-    ///               GL_UNSIGNED_BYTE format.
+    ///   \param format The data format in GL_UNSIGNED_BYTE, GL_HALF_FLOAT,
+    ///                 or GL_FLOAT.
+    ///   \param data The color data to use while compositing, in GL_RGBA.
     HDX_API
-    void UpdateColor(int width, int height, uint8_t *data);
+    void UpdateColor(int width, int height, HdFormat format, void *data);
 
     /// Upload a new depth texture for compositing. The data is expected to be
     /// GL_R32F.

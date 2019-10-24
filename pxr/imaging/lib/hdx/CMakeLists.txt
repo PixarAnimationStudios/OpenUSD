@@ -25,6 +25,7 @@ pxr_library(hdx
         pxOsd
         hd
         hdSt
+        hgi
         cameraUtil
         sdf
         ${GLEW_LIBRARY}
@@ -35,6 +36,7 @@ pxr_library(hdx
         ${optionalIncludeDirs}
 
     PUBLIC_CLASSES
+        aovResolveTask
         colorizeTask
         colorizeSelectionTask
         colorCorrectionTask
@@ -42,14 +44,15 @@ pxr_library(hdx
         drawTargetRenderPass
         drawTargetTask
         drawTargetResolveTask
+        oitBufferAccessor
         oitRenderTask
         oitResolveTask
+        oitVolumeRenderTask
         package
         pickTask
         pickFromRenderBufferTask
+        presentTask
         progressiveTask
-        rendererPlugin
-        rendererPluginRegistry
         renderTask
         renderSetupTask
         selectionTask
@@ -86,7 +89,9 @@ pxr_library(hdx
         shaders/selection.glslfx
         shaders/simpleLightingShader.glslfx
         shaders/renderPassOitShader.glslfx
+        shaders/renderPassOitOpaqueShader.glslfx
         shaders/oitResolveImageShader.glslfx
+        textures/StinsonBeach.exr
 )
 
 if (X11_FOUND)

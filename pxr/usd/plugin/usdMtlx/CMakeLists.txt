@@ -24,6 +24,7 @@ pxr_plugin(usdMtlx
         ${MATERIALX_INCLUDE_DIRS}
 
     CPPFILES
+        debugCodes.cpp
         discovery.cpp
         parser.cpp
 
@@ -35,6 +36,7 @@ pxr_plugin(usdMtlx
 
     PRIVATE_HEADERS
         api.h
+	debugCodes.h
 
     PYTHON_CPPFILES
         moduleDeps.cpp

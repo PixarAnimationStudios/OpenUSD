@@ -92,10 +92,15 @@ FrustumCullIsTinyPrim(vec4 bboxMin, vec4 bboxMax)
 bool
 FrustumCullIsVisible(MAT4 toClip, vec4 localMin, vec4 localMax)
 {
-    // Disable culling when bbox is empty
-    if (localMin.x > localMax.x || localMin.y > localMax.y || localMin.z > localMax.z)
+    // Disable culling when:
+    // (a) BBox is empty. An empty bbox defaults to [FLT_MAX, -FLT_MAX]), so
+    //     min > max.
+    // (b) Bounds are infinite.
+    if (any(greaterThan(localMin, localMax)) || 
+        any(isinf(localMin)) || any(isinf(localMax))) {
         return true;
-
+    }
+    
     // Transform the corners of the bounding box to clipping space.
     vec4 p[8];
     p[0] = vec4(toClip * vec4(localMin.x, localMin.y, localMin.z, 1));
@@ -117,12 +122,16 @@ FrustumCullIsVisible(MAT4 toClip, vec4 localMin, vec4 localMax)
     p[6] = vec4(toClip * vec4(localMax.x, localMax.y, localMin.z, 1));
 
     // Test the corners of the bounding box against the clipping volume.
+    // clipFlags is effectively a 6-bit field, holding one bit of information
+    // per frustum plane. Each component of the vector holds 2 bits.
+    // If the bounding box overlaps the clip volume, then clipFlags will be
+    // (0b11, 0b11, 0b11).
     ivec3 clipFlags = ivec3(0);
     for (int i=0; i<8; ++i) {
         vec4 clipPos = p[i];
         bvec3 clip0 = lessThan(clipPos.xyz, vec3(clipPos.w));
         bvec3 clip1 = greaterThan(clipPos.xyz, -vec3(clipPos.w));
-        clipFlags |= ivec3(clip0) + 2*ivec3(clip1);
+        clipFlags |= ivec3(clip0) /* bit 0 */ + 2*ivec3(clip1) /*bit 1*/;
     }
 
     return clipFlags == ivec3(3);

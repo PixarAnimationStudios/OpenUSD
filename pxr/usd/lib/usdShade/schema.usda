@@ -11,102 +11,16 @@ over "GLOBAL" (
         string libraryName      = "usdShade"
         string libraryPath      = "pxr/usd/usdShade"
         dictionary libraryTokens = {
-            dictionary materialBinding = {
-                string value = "material:binding"
-                string doc = """
-                The relationship name on non-shading prims to
-                denote a binding to a UsdShadeMaterial.
-                """
-            }
-            dictionary materialBindingCollection = {
-                string value = "material:binding:collection"
-                string doc = """ 
-                The relationship name on non-shading prims to
-                denote a collection-based binding to a UsdShadeMaterial.
-                """
-            }
-            dictionary materialVariant = {
-                string doc = """The variant name of material variation
-                described on a UsdShadeMaterial.
-                """
-            }
             dictionary materialBind = {
                 string doc = """The name of the GeomSubset family used to 
                 identify face subsets defined for the purpose of binding 
                 materials to facesets.
                 """
             }
-            dictionary derivesFrom  = {
-                string doc = """A legacy relationship name specifying a
-                specializes composition on a UsdShadeMaterial.
-                """
-            }
-            dictionary surface = {
-                string doc = """Describes the <i>surface</i> output 
-                terminal on a UsdShadeMaterial. It is used to define the 
-                terminal UsdShadeShader describing the surface of a 
-                UsdShadeMaterial.
-                """
-            }
-            dictionary displacement = {
-                string doc = """Describes the <i>displacement</i> output 
-                terminal on a UsdShadeMaterial. It is used to define the 
-                terminal UsdShadeShader describing the displacement of a 
-                UsdShadeMaterial.
-                """
-            }
-            dictionary volume = {
-                string doc = """Describes the <i>volume</i> output 
-                terminal on a UsdShadeMaterial. It is used to define the 
-                terminal UsdShadeShader describing the volume of a 
-                UsdShadeMaterial.
-                """
-            }
-            dictionary universalSourceType = {
-                string value = ""
-                string doc = """Possible value for the "sourceType" parameter 
-                in \\ref UsdShadeShader_ImplementationSource API. Represents 
-                the universal or fallback source type.
-                """
-            }
-            dictionary universalRenderContext = {
-                string value = ""
-                string doc = """Possible value for the "renderContext" parameter
-                in \\ref UsdShadeMaterial_Outputs API. Represents the universal
-                renderContext. An output with a universal renderContext is 
-                applicable to all possible rendering contexts.
-                """
-            }
-            dictionary allPurpose = {
-                string value = ""
-                string doc = """Possible value for the 'materialPurpose' parameter
-                in the various methods available in UsdShadeMaterialBindingAPI.
-                Its value is empty and its purpose is to represent a general 
-                purpose material-binding that applies in the absence of a 
-                specific-purpose binding.
-                """
-            }
-            dictionary preview = {
-                string doc = """Possible value for the 'materialPurpose' 
-                parameter in UsdShadeMaterialBindingAPI, to be used when the 
-                render is in service of a goal other than a high fidelity "full"
-                render (such as scene manipulation, modeling, or realtime 
-                playback). Latency and speed are generally of greater concern 
-                for preview renders, therefore preview materials are generally 
-                designed to be "lighterweight" compared to full materials.
-                """
-            }
-
             dictionary full = {
-                string doc= """Possible value for the 'materialPurpose' 
-                parameter in UsdShadeMaterialBindingAPI, to be used when the 
-                purpose of the render is entirely about visualizing the truest
-                representation of a scene, considering all lighting and material
-                information, at highest fidelity.
-
-                Also a possible value for 'connectability' metadata on 
-                a UsdShadeInput. When connectability of an input is set to 
-                "full", it implies that it can be connected to any input or 
+                string doc= """Possible value for 'connectability' metadata on
+                a UsdShadeInput. When connectability of an input is set to
+                "full", it implies that it can be connected to any input or
                 output.
                 """
             }
@@ -152,45 +66,6 @@ over "GLOBAL" (
                 relationships denoting the target of an interface attribute.
                 """
             }
-            dictionary bindMaterialAs = {
-                string doc = """Token valued metadata key authored on a material 
-                binding relationship to indicate the strength of the binding 
-                relative to bindings authored on descendants.
-                """
-            }
-            dictionary weakerThanDescendants = {
-                string doc = """Possible value for 'bindMaterialAs' metadata on the 
-                collection-based material binding relationship. Indicates 
-                that the binding represented by the relationship is weaker than 
-                any bindings authored on the descendants."""
-            }
-            dictionary strongerThanDescendants = {
-                string doc = """Possible value for 'bindMaterialAs' metadata on the 
-                collection-based material binding relationship. Indicates 
-                that the binding represented by the relationship is weaker than 
-                any bindings authored on the descendants."""
-            }
-            dictionary fallbackStrength = {
-                string doc = """Sentinal value to be used for 'bindMaterialAs' 
-                metadata's default value. Clients should pass this in for the 
-                'bindingStrength' argument to UsdShadeMaterialBindingAPI::Bind(),
-                if they want to author the default value (weakerThanDescendants)
-                sparsely. The value "fallbackStrength" never gets authored 
-                into scene description."""
-            }
-            dictionary sdrMetadata = {
-                string doc = """Dictionary valued metadata key authored on
-                Shader prims with implementationSource value of sourceAsset or 
-                sourceCode to pass along metadata to the shader parser or 
-                compiler. It is also used to author metadata on shader 
-                properties in a UsdShade-based shader definition file.
-                """
-            }
-            dictionary coordSys = {
-                string value = "coordSys:"
-                string doc = """Namespace prefix for relationships that
-                bind coordinate systems."""
-            }
         }
     }
 )
@@ -217,14 +92,13 @@ class NodeGraph "NodeGraph" (
     output on a shader inside the node-graph.
     """
     customData = {
-        string extraIncludes = """
+        string extraIncludes = '''
 #include <utility>
 #include "pxr/usd/usd/editTarget.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
-#include "pxr/usd/usdShade/shader.h"
-"""
+#include "pxr/usd/usdShade/shader.h"'''
     }
 ) {
 
@@ -280,12 +154,51 @@ class Material "Material" (
     
     """
     customData = {
-        string extraIncludes = """
+        string extraIncludes = '''
 #include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/usdGeom/subset.h"
-#include "pxr/usd/usdShade/connectableAPI.h"
-#include "pxr/usd/usdShade/tokens.h"
-"""
+#include "pxr/usd/usdShade/connectableAPI.h"'''
+        dictionary schemaTokens = {
+            dictionary materialVariant = {
+                string doc = """The variant name of material variation
+                described on a UsdShadeMaterial.
+                """
+            }
+            dictionary derivesFrom  = {
+                string doc = """A legacy relationship name specifying a
+                specializes composition on a UsdShadeMaterial.
+                """
+            }
+            dictionary surface = {
+                string doc = """Describes the <i>surface</i> output 
+                terminal on a UsdShadeMaterial. It is used to define the 
+                terminal UsdShadeShader describing the surface of a 
+                UsdShadeMaterial.
+                """
+            }
+            dictionary displacement = {
+                string doc = """Describes the <i>displacement</i> output 
+                terminal on a UsdShadeMaterial. It is used to define the 
+                terminal UsdShadeShader describing the displacement of a 
+                UsdShadeMaterial.
+                """
+            }
+            dictionary volume = {
+                string doc = """Describes the <i>volume</i> output 
+                terminal on a UsdShadeMaterial. It is used to define the 
+                terminal UsdShadeShader describing the volume of a 
+                UsdShadeMaterial.
+                """
+            }
+            dictionary universalRenderContext = {
+                string value = ""
+                string doc = """Possible value for the "renderContext" parameter
+                in \\ref UsdShadeMaterial_Outputs API. Represents the universal
+                renderContext. An output with a universal renderContext is 
+                applicable to all possible rendering contexts.
+                """
+            }
+        }
     }
 ) 
 {
@@ -341,12 +254,28 @@ class Shader "Shader" (
     input parameters are encapsulated in the property schema UsdShadeInput.
     """ 
     customData = {
-        string extraIncludes = """
+        string extraIncludes = '''
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
 #include "pxr/usd/ndr/declare.h"
-#include "pxr/usd/sdr/shaderNode.h"
-    """
+#include "pxr/usd/sdr/shaderNode.h"'''
+        dictionary schemaTokens = {
+            dictionary universalSourceType = {
+                string value = ""
+                string doc = """Possible value for the "sourceType" parameter 
+                in \\ref UsdShadeShader_ImplementationSource API. Represents 
+                the universal or fallback source type.
+                """
+            }
+            dictionary sdrMetadata = {
+                string doc = """Dictionary valued metadata key authored on
+                Shader prims with implementationSource value of sourceAsset or 
+                sourceCode to pass along metadata to the shader parser or 
+                compiler. It is also used to author metadata on shader 
+                properties in a UsdShade-based shader definition file.
+                """
+            }
+        }
     }
 ) {
     uniform token info:implementationSource = "id" (
@@ -515,8 +444,77 @@ class "MaterialBindingAPI"
 #include "pxr/usd/usd/collectionAPI.h"
 #include "pxr/usd/usdGeom/subset.h"
 #include "pxr/usd/usdShade/material.h"
-#include "pxr/usd/usdShade/tokens.h"
 #include <tbb/concurrent_unordered_map.h>"""
+         dictionary schemaTokens = {
+            dictionary materialBinding = {
+                string value = "material:binding"
+                string doc = """
+                The relationship name on non-shading prims to
+                denote a binding to a UsdShadeMaterial.
+                """
+            }
+            dictionary materialBindingCollection = {
+                string value = "material:binding:collection"
+                string doc = """ 
+                The relationship name on non-shading prims to
+                denote a collection-based binding to a UsdShadeMaterial.
+                """
+            }
+            dictionary allPurpose = {
+                string value = ""
+                string doc = """Possible value for the 'materialPurpose' parameter
+                in the various methods available in UsdShadeMaterialBindingAPI.
+                Its value is empty and its purpose is to represent a general 
+                purpose material-binding that applies in the absence of a 
+                specific-purpose binding.
+                """
+            }
+            dictionary preview = {
+                string doc = """Possible value for the 'materialPurpose' 
+                parameter in UsdShadeMaterialBindingAPI, to be used when the 
+                render is in service of a goal other than a high fidelity "full"
+                render (such as scene manipulation, modeling, or realtime 
+                playback). Latency and speed are generally of greater concern 
+                for preview renders, therefore preview materials are generally 
+                designed to be "lighterweight" compared to full materials.
+                """
+            }
+
+            dictionary full = {
+                string doc= """Possible value for the 'materialPurpose'
+                parameter in UsdShadeMaterialBindingAPI, to be used when the
+                purpose of the render is entirely about visualizing the truest
+                representation of a scene, considering all lighting and material
+                information, at highest fidelity.
+                """
+            }
+            dictionary bindMaterialAs = {
+                string doc = """Token valued metadata key authored on a material 
+                binding relationship to indicate the strength of the binding 
+                relative to bindings authored on descendants.
+                """
+            }
+            dictionary weakerThanDescendants = {
+                string doc = """Possible value for 'bindMaterialAs' metadata on the 
+                collection-based material binding relationship. Indicates 
+                that the binding represented by the relationship is weaker than 
+                any bindings authored on the descendants."""
+            }
+            dictionary strongerThanDescendants = {
+                string doc = """Possible value for 'bindMaterialAs' metadata on the 
+                collection-based material binding relationship. Indicates 
+                that the binding represented by the relationship is weaker than 
+                any bindings authored on the descendants."""
+            }
+            dictionary fallbackStrength = {
+                string doc = """Sentinal value to be used for 'bindMaterialAs' 
+                metadata's default value. Clients should pass this in for the 
+                'bindingStrength' argument to UsdShadeMaterialBindingAPI::Bind(),
+                if they want to author the default value (weakerThanDescendants)
+                sparsely. The value "fallbackStrength" never gets authored 
+                into scene description."""
+            }
+        }
     }
 )
 {
@@ -549,8 +547,15 @@ class "CoordSysAPI"
     """
     customData = {
         token apiSchemaType = "nonApplied"
-        string extraIncludes = """
-#include "pxr/usd/usdGeom/xformable.h" """
+        string extraIncludes = '''
+#include "pxr/usd/usdGeom/xformable.h"'''
+        dictionary schemaTokens = {
+            dictionary coordSys = {
+                string value = "coordSys:"
+                string doc = """Namespace prefix for relationships that
+                bind coordinate systems."""
+            }
+        }
     }
 )
 {

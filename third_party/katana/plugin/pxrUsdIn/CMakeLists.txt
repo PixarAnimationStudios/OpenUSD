@@ -6,6 +6,7 @@ pxr_plugin(${PXR_PACKAGE}
         usdKatana
         katanaOpApi
         katanaPluginApi
+        katanaAttrfncApi
         usd
         usdLux
         usdUtils

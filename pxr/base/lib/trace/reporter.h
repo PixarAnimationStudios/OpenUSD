@@ -152,14 +152,16 @@ public:
 
     /// @}
 
+    /// This fully re-builds the event and aggregate trees from whatever the 
+    /// current collection holds.  It is ok to call this multiple times in case 
+    /// the collection gets appended on inbetween. 
+    ///
     /// If we want to have multiple reporters per collector, this will need to
     /// be changed so that all reporters reporting on a collector update their
-    /// respective trees
+    /// respective trees. 
     TRACE_API void UpdateAggregateTree();
 
-    /// Like UpdateAggregateTree() but also builds the event tree.  This
-    /// takes extra time and most clients don't need it so it's a separate
-    /// method.
+    /// Placeholder for UpdateAggregateTree().
     TRACE_API void UpdateEventTree();
     
     /// Clears event tree and counters.
@@ -200,7 +202,7 @@ protected:
 
 private:
     void _ProcessCollection(const TraceReporterBase::CollectionPtr&) override;
-    void _UpdateTree(bool buildEventTree);
+    void _RebuildEventAndAggregateTrees();
     void _PrintRecursionMarker(std::ostream &s, const std::string &label, 
                                int indent);
     void _PrintLineTimes(std::ostream &s, double inclusive, double exclusive,

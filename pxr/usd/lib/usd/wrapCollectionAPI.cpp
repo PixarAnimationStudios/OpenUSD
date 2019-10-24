@@ -161,6 +161,8 @@ void wrapUsdCollectionAPI()
 
 #include <boost/python/tuple.hpp>
 
+#include "pxr/usd/usd/collectionMembershipQuery.h"
+
 namespace {
 
 static object _WrapValidate(const UsdCollectionAPI &coll) {
@@ -169,41 +171,11 @@ static object _WrapValidate(const UsdCollectionAPI &coll) {
     return boost::python::make_tuple(valid, reason);
 }
 
-static bool _WrapIsPathIncluded_1(
-    const UsdCollectionAPI::MembershipQuery &query, 
-    const SdfPath &path)
-{
-    return query.IsPathIncluded(path);
-}
-
-static bool _WrapIsPathIncluded_2(
-    const UsdCollectionAPI::MembershipQuery &query, 
-    const SdfPath &path,
-    const TfToken &parentExpansionRule)
-{
-    return query.IsPathIncluded(path, parentExpansionRule);
-}
-
 WRAP_CUSTOM {
 
     scope s_query = _class;
 
-    using MQuery = UsdCollectionAPI::MembershipQuery;
-
-    scope scope_mQuery = class_<MQuery>("MembershipQuery")
-        .def(init<>())
-        .def("IsPathIncluded", _WrapIsPathIncluded_1, arg("path"))
-        .def("IsPathIncluded", _WrapIsPathIncluded_2, 
-             (arg("path"), arg("parentExpansionRule")))
-        .def("HasExcludes", &MQuery::HasExcludes)
-        .def("GetAsPathExpansionRuleMap",
-             &MQuery::GetAsPathExpansionRuleMap,
-             return_value_policy<TfPyMapToDictionary>())
-        .def("__hash__", &MQuery::GetHash)
-        .def(self == self)
-        .def(self != self)
-        ;
-
+    using MQuery = UsdCollectionMembershipQuery;
     using This = UsdCollectionAPI;
 
     MQuery (This::*_ComputeMembershipQuery)() const = 

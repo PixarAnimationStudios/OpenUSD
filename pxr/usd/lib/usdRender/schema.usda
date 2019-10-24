@@ -1,0 +1,248 @@
+#usda 1.0
+(
+    "This file describes the USD Render schemata for code generation."
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName      = "usdRender"
+        string libraryPath      = "pxr/usd/usdRender"
+        dictionary libraryTokens = {
+            dictionary renderSettingsPrimPath = {
+                string doc = """Stage-level metadata that encodes the
+                path to UsdRenderSettingsPrim to use for rendering."""
+            }
+        }
+    }
+)
+{
+}
+
+class "RenderSettingsBase" (
+    inherits = </Typed>
+    doc = """Abstract base class that defines render settings that
+    can be specified on either a RenderSettings prim or a RenderProduct 
+    prim."""
+    customData = {
+         string className = "SettingsBase"
+    }
+)
+{
+    rel camera (
+        doc = """The _camera_ relationship specifies the primary
+        camera to use in a render.  It must target a UsdGeomCamera."""
+    )
+    uniform int2 resolution = (2048, 1080) (
+        doc = """The image pixel resolution, corresponding to the
+        camera's screen window."""
+    )
+    uniform float pixelAspectRatio = 1.0 (
+        doc = """The aspect ratio (width/height) of image pixels..
+        The default ratio 1.0 indicates square pixels."""
+    )
+    uniform token aspectRatioConformPolicy = "expandAperture" (
+        doc = """Indicates the policy to use to resolve an aspect
+        ratio mismatch between the camera aperture and image settings.
+
+        This policy allows a standard render setting to do something
+        reasonable given varying camera inputs.
+
+        The camera aperture aspect ratio is determined by the
+        aperture atributes on the UsdGeomCamera.
+
+        The image aspect ratio is determined by the resolution and
+        pixelAspectRatio attributes in the render settings.
+
+        - "expandAperture": if necessary, expand the aperture to
+          fit the image, exposing additional scene content
+        - "cropAperture": if necessary, crop the aperture to fit
+          the image, cropping scene content
+        - "adjustApertureWidth": if necessary, adjust aperture width
+          to make its aspect ratio match the image
+        - "adjustApertureHeight": if necessary, adjust aperture height
+          to make its aspect ratio match the image
+        - "adjustPixelAspectRatio": compute pixelAspectRatio to
+          make the image exactly cover the aperture; disregards
+          existing attribute value of pixelAspectRatio
+        """
+        allowedTokens = ["expandAperture", "cropAperture", "adjustApertureWidth", "adjustApertureHeight", "adjustPixelAspectRatio"]
+    )
+    uniform float4 dataWindowNDC = (0.0, 0.0, 1.0, 1.0) (
+        doc = """dataWindowNDC specifies the axis-aligned rectangular
+        region in the adjusted aperture window within which the renderer
+        should produce data.
+
+        It is specified as (xmin, ymin, xmax, ymax) in normalized
+        device coordinates, where the range 0 to 1 corresponds to the
+        aperture.  (0,0) corresponds to the bottom-left
+        corner and (1,1) corresponds to the upper-right corner.
+
+        Specifying a window outside the unit square will produce
+        overscan data. Specifying a window that does not cover the unit
+        square will produce a cropped render.
+
+        A pixel is included in the rendered result if the pixel
+        center is contained by the data window.  This is consistent
+        with standard rules used by polygon rasterization engines.
+        \\ref UsdRenderRasterization
+
+        The data window is expressed in NDC so that cropping and
+        overscan may be resolution independent.  In interactive
+        workflows, incremental cropping and resolution adjustment
+        may be intermixed to isolate and examine parts of the scene.
+        In compositing workflows, overscan may be used to support
+        image post-processing kernels, and reduced-resolution proxy
+        renders may be used for faster iteration.
+
+        The dataWindow:ndc coordinate system references the
+        aperture after any adjustments required by
+        aspectRatioConformPolicy.
+        """
+    )
+    uniform bool instantaneousShutter = false (
+        doc = """Override the targeted _camera_'s _shutterClose_ to be
+        equal to the value of its _shutterOpen_, to produce a zero-width
+        shutter interval.  This gives us a convenient way to disable
+        motion blur."""
+    )
+}
+ 
+class RenderSettings "RenderSettings" (
+    inherits = </RenderSettingsBase>
+    doc = """A UsdRenderSettings prim specifies global settings for
+    a render process, including an enumeration of the RenderProducts
+    that should result, and the UsdGeomImageable purposes that should
+    be rendered.  \\ref UsdRenderHowSettingsAffectRendering"""
+    customData = {
+         string className = "Settings"
+         string extraIncludes = """
+#include "pxr/base/gf/frustum.h"
+"""
+    }
+)
+{
+    rel products (
+        doc = """The set of RenderProducts the render should produce.
+        This relationship should target UsdRenderProduct prims.
+        If no _products_ are specified, an application should produce
+        an rgb image according to the RenderSettings configuration,
+        to a default display or image name."""
+    )
+    uniform token[] includedPurposes = ["default", "render"] (
+        doc = """The list of UsdGeomImageable _purpose_ values that
+        should be included in the render.  Note this cannot be
+        specified per-RenderProduct because it is a statement of
+        which geometry is present."""
+    )
+    uniform token[] materialBindingPurposes = ["full", ""] (
+        allowedTokens = ["full", "preview", ""]
+        doc = """Ordered list of material purposes to consider when
+        resolving material bindings in the scene.  The empty string
+        indicates the "allPurpose" binding."""
+    )
+}
+
+class "RenderSettingsAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        string className = "SettingsAPI"
+    }
+    doc = """UsdRenderSettingsAPI is a base class for API schemas
+    to encode renderer-specific settings."""
+) {
+}
+ 
+class RenderVar "RenderVar" (
+    inherits = </Typed>
+    doc = """A UsdRenderVar describes a custom data variable for
+    a render to produce.  The prim describes the source of the data, which
+    can be a shader output or an LPE (Light Path Expression), and also
+    allows encoding of (generally renderer-specific) parameters that
+    configure the renderer for computing the variable.
+ 
+    \note In the future, UsdRender may standardize RenderVar representation
+    for well-known variables under the sourceType `intrinsic`,
+    such as _r_, _g_, _b_, _a_, _z_, or _id_.
+    """
+    customData = {
+         string className = "Var"
+    }
+) {
+    uniform token dataType = "color3f" (
+        doc = """The type of this channel, as a USD attribute type."""
+    )
+    uniform string sourceName = "" (
+        doc = """The renderer should look for an output of this name
+        as the computed value for the RenderVar."""
+    )
+    uniform token sourceType = "raw" (
+        doc = """Indicates the type of the source.
+
+        - "raw": The name should be passed directly to the
+          renderer.  This is the default behavior.
+        - "primvar":  This source represents the name of a primvar.
+          Some renderers may use this to ensure that the primvar
+          is provided; other renderers may require that a suitable
+          material network be provided, in which case this is simply
+          an advisory setting.
+        - "lpe":  Specifies a Light Path Expression in the
+          [OSL Light Path Expressions language](https://github.com/imageworks/OpenShadingLanguage/wiki/OSL-Light-Path-Expressions) as the source for
+          this RenderVar.  Some renderers may use extensions to
+          that syntax, which will necessarily be non-portable.
+        - "intrinsic":  This setting is currently unimplemented,
+          but represents a future namespace for UsdRender to provide
+          portable baseline RenderVars, such as camera depth, that
+          may have varying implementations for each renderer.
+        """
+        allowedTokens = ["raw", "primvar", "lpe", "intrinsic"]
+    )
+}
+ 
+class RenderProduct "RenderProduct" (
+    inherits = </RenderSettingsBase>
+    doc = """A UsdRenderProduct describes an image or other
+    file-like artifact produced by a render. A RenderProduct
+    combines one or more RenderVars into a file or interactive
+    buffer.  It also provides all the controls established in
+    UsdRenderSettingsBase as optional overrides to whatever the
+    owning UsdRenderSettings prim dictates.
+
+    Specific renderers may support additional settings, such
+    as a way to configure compression settings, filetype metadata,
+    and so forth.  Such settings can be encoded using
+    renderer-specific API schemas applied to the product prim.
+    """
+    customData = {
+         string className = "Product"
+         dictionary schemaTokens = {
+            dictionary raster = {
+                string doc = """RenderProduct productType value that
+                indicates a 2D raster image of pixels."""
+            }
+         }
+    }
+) {
+    uniform token productType = "raster" (
+        doc = """The type of output to produce.
+        The default, "raster", indicates a 2D image.
+
+        \note In the future, UsdRender may define additional product
+        types."""
+    )
+    token productName = "" (
+        doc = """Specifies the name that the output/display driver
+        should give the product.  This is provided as-authored to the
+        driver, whose responsibility it is to situate the product on a
+        filesystem or other storage, in the desired location."""
+    )
+    rel orderedVars (
+        doc = """Specifies the RenderVars that should be consumed and
+        combined into the final product.  If ordering is relevant to the
+        output driver, then the ordering of targets in this relationship
+        provides the order to use."""
+    )
+}

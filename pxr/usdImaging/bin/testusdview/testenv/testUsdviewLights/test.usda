@@ -15,11 +15,30 @@ def Xform "Implicits" (
 
 def Sphere "frontSphere" {
     double3 xformOp:translate = (2, 2, 2)
-     uniform token[] xformOpOrder = ["xformOp:translate"]
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    rel material:binding = </Looks/Material_0>
 }
 
 def Sphere "backSphere" {
     double3 xformOp:translate = (3, 4, 3)
-     uniform token[] xformOpOrder = ["xformOp:translate"]
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    rel material:binding = </Looks/Material_0>
 }
 
+def Scope "Looks"
+{
+    def Material "Material_0"
+    {
+        token outputs:surface.connect = </Looks/Material_0/PbrPreview.outputs:surface>
+
+        def Shader "PbrPreview"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (1,1,1)
+            float inputs:roughness = 0
+            color3f inputs:specularColor = (0.5, 0.5, 0.5)
+            int inputs:useSpecularWorkflow = 1
+            token outputs:surface
+        }
+    }
+}

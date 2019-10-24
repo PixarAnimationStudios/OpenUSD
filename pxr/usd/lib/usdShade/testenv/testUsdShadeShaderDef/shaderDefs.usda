@@ -1,0 +1,60 @@
+#usda 1.0
+
+def Shader "TestShaderPropertiesNodeUSD" (
+    doc = "This node is used for testing shader property type correctness"
+)
+{
+    uniform asset info:glslfx:sourceAsset = @./TestShaderPropertiesNode.glslfx@
+    uniform token info:id = "TestShaderPropertiesNodeUSD"
+    uniform token info:implementationSource = "sourceAsset"
+    int inputs:inputInt = 1
+    string inputs:inputString = "foo"
+    float inputs:inputFloat = 1.0
+    color3f inputs:inputColor = (1.0, 1.0, 1.0)
+    point3f inputs:inputPoint = (0.0, 0.0, 0.0)
+    normal3f inputs:inputNormal = (1.0, 1.0, 1.0)
+    vector3f inputs:inputVector = (0.0, 0.0, 0.0)
+    matrix4d inputs:inputMatrix = (
+        (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0) )
+    int[] inputs:inputIntArray = [1, 2, 3]
+    string[] inputs:inputStringArray = [ "foo", "bar", "baz", "moo" ]
+    float[] inputs:inputFloatArray = [ 1.0, 2.0, 3.0, 4.0, 5.0 ]
+    color3f[] inputs:inputColorArray = [ (1.0, 1.0, 1.0), (1.0, 1.0, 1.0) ]
+    point3f[] inputs:inputPointArray = [ (0.0, 0.0, 0.0), (0.0, 0.0, 0.0) ]
+    normal3f[] inputs:inputNormalArray = [ (1.0, 1.0, 1.0), (1.0, 1.0, 1.0) ]
+    vector3f[] inputs:inputVectorArray = [ (0.0, 0.0, 0.0), (0.0, 0.0, 0.0) ]
+    matrix4d[] inputs:inputMatrixArray = [
+        ( (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0) ),
+        ( (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0) ) ]
+    float2 inputs:inputFloat2 = ( 1.0, 2.0 )
+    float3 inputs:inputFloat3 = ( 1.0, 2.0, 3.0 )
+    float4 inputs:inputFloat4 = ( 1.0, 2.0, 3.0, 4.0 )
+    asset inputs:inputAsset = @filename@
+    asset[] inputs:inputAssetArray = [@test@, @files@ ]
+    color3f inputs:inputColorRoleNone = (1.0, 2.0, 3.0) (
+        sdrMetadata = {
+            string role = "none"
+        }
+    )
+    point3f inputs:inputPointRoleNone = (1.0, 2.0, 3.0) (
+        sdrMetadata = {
+            string role = "none"
+        }
+    )
+    normal3f inputs:inputNormalRoleNone = (1.0, 2.0, 3.0) (
+        sdrMetadata = {
+            string role = "none"
+        }
+    )
+    vector3f inputs:inputVectorRoleNone = (1.0, 2.0, 3.0) (
+        sdrMetadata = {
+            string role = "none"
+        }
+    )
+
+    token outputs:outputSurface (
+        sdrMetadata = {
+            string renderType = "terminal surface"
+        }
+    )
+}

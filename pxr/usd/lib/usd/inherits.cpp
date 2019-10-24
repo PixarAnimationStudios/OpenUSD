@@ -25,13 +25,7 @@
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/inherits.h"
 #include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/valueUtils.h"
-
-#include "pxr/usd/sdf/changeBlock.h"
-#include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/primSpec.h"
-#include "pxr/usd/sdf/schema.h"
+#include "pxr/usd/usd/listEditImpl.h"
 
 #include <unordered_set>
 
@@ -41,130 +35,41 @@ PXR_NAMESPACE_OPEN_SCOPE
 // UsdInherits
 // ------------------------------------------------------------------------- //
 
-namespace
+using _ListEditImpl = 
+    Usd_ListEditImpl<UsdInherits, SdfInheritsProxy>;
+
+// The implementation doesn't define this function as it needs to be specialized
+// so we implement it here.
+template <>
+SdfInheritsProxy 
+_ListEditImpl::_GetListEditorForSpec(const SdfPrimSpecHandle &spec)
 {
-
-SdfPath 
-_TranslatePath(const SdfPath& path, const UsdEditTarget& editTarget)
-{
-    if (path.IsEmpty()) {
-        TF_CODING_ERROR("Invalid empty path");
-        return SdfPath();
-    }
-
-    // Global inherits aren't expected to be mappable across non-local 
-    // edit targets, so we can just use the given path as-is.
-    if (path.IsRootPrimPath()) {
-        return path;
-    }
-
-    const SdfPath mappedPath = editTarget.MapToSpecPath(path);
-    if (mappedPath.IsEmpty()) {
-        TF_CODING_ERROR(
-            "Cannot map <%s> to current edit target.", path.GetText());
-    }
-
-    // If the edit target points inside a variant, the mapped path may 
-    // contain a variant selection. We need to strip this out, since
-    // inherit paths may not contain variant selections.
-    return mappedPath.StripAllVariantSelections();
-}
-
+    return spec->GetInheritPathList();
 }
 
 bool
 UsdInherits::AddInherit(const SdfPath &primPathIn, UsdListPosition position)
 {
-    if (!_prim) {
-        TF_CODING_ERROR("Invalid prim: %s", UsdDescribe(_prim).c_str());
-        return false;
-    }
-
-    const SdfPath primPath = 
-        _TranslatePath(primPathIn, _prim.GetStage()->GetEditTarget());
-    if (primPath.IsEmpty()) {
-        return false;
-    }
-
-    SdfChangeBlock block;
-    if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
-        Usd_InsertListItem( spec->GetInheritPathList(), primPath, position );
-        return true;
-    }
-    return false;
+    return _ListEditImpl::Add(*this, primPathIn, position);
 }
 
 bool
 UsdInherits::RemoveInherit(const SdfPath &primPathIn)
 {
-    if (!_prim) {
-        TF_CODING_ERROR("Invalid prim: %s", UsdDescribe(_prim).c_str());
-        return false;
-    }
-
-    const SdfPath primPath = 
-        _TranslatePath(primPathIn, _prim.GetStage()->GetEditTarget());
-    if (primPath.IsEmpty()) {
-        return false;
-    }
-
-    SdfChangeBlock block;
-    if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
-        SdfInheritsProxy inhs = spec->GetInheritPathList();
-        inhs.Remove(primPath);
-        return true;
-    }
-    return false;
+    return _ListEditImpl::Remove(*this, primPathIn);
 }
 
 bool
 UsdInherits::ClearInherits()
 {
-    if (!_prim) {
-        TF_CODING_ERROR("Invalid prim: %s", UsdDescribe(_prim).c_str());
-        return false;
-    }
-
-    SdfChangeBlock block;
-    if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
-        SdfInheritsProxy inhs = spec->GetInheritPathList();
-        return inhs.ClearEdits();
-    }
-    return false;
+    return _ListEditImpl::Clear(*this);
 }
 
 bool 
 UsdInherits::SetInherits(const SdfPathVector& itemsIn)
 {
-    if (!_prim) {
-        TF_CODING_ERROR("Invalid prim: %s", UsdDescribe(_prim).c_str());
-        return false;
-    }
-
-    const UsdEditTarget& editTarget = _prim.GetStage()->GetEditTarget();
-
-    TfErrorMark m;
-
-    SdfPathVector items(itemsIn.size());
-    std::transform(
-        itemsIn.begin(), itemsIn.end(), items.begin(),
-        [&editTarget](const SdfPath& path) {
-            return _TranslatePath(path, editTarget);
-        });
-
-    if (!m.IsClean()) {
-        return false;
-    }
-
-    SdfChangeBlock block;
-    if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
-        SdfInheritsProxy paths = spec->GetInheritPathList();
-        paths.GetExplicitItems() = items;
-    }
-
-    return m.IsClean();
+    return _ListEditImpl::Set(*this, itemsIn);
 }
-
 
 SdfPathVector
 UsdInherits::GetAllDirectInherits() const
@@ -177,26 +82,12 @@ UsdInherits::GetAllDirectInherits() const
 
     std::unordered_set<SdfPath, SdfPath::Hash> seen;
     for (auto const &node:
-             _prim.GetPrimIndex().GetNodeRange(PcpRangeTypeAllInherits)) {
+             _prim.GetPrimIndex().GetNodeRange(PcpRangeTypeInherit)) {
         if (!node.IsDueToAncestor() && seen.insert(node.GetPath()).second) {
             ret.push_back(node.GetPath());
         }
     }
     return ret;
-}
-
-// ---------------------------------------------------------------------- //
-// UsdInherits: Private Methods and Members 
-// ---------------------------------------------------------------------- //
-
-SdfPrimSpecHandle
-UsdInherits::_CreatePrimSpecForEditing()
-{
-    if (!TF_VERIFY(_prim)) {
-        return SdfPrimSpecHandle();
-    }
-
-    return _prim.GetStage()->_CreatePrimSpecForEditing(_prim);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

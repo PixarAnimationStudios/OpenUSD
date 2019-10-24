@@ -108,7 +108,7 @@ public:
     TRACE_API void Merge(const TraceEventTreeRefPtr& tree);
 
     /// Adds the data from \p collection to this tree.
-    TRACE_API void Add(const TraceCollection& collection);
+    TRACE_API TraceEventTreeRefPtr Add(const TraceCollection& collection);
 
 private:
     TraceEventTree(TraceEventNodeRefPtr root)

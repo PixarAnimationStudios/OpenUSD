@@ -26,6 +26,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdGeomTokensType::UsdGeomTokensType() :
+    accelerations("accelerations", TfToken::Immortal),
     all("all", TfToken::Immortal),
     angularVelocities("angularVelocities", TfToken::Immortal),
     axis("axis", TfToken::Immortal),
@@ -177,6 +178,7 @@ UsdGeomTokensType::UsdGeomTokensType() :
     y("Y", TfToken::Immortal),
     z("Z", TfToken::Immortal),
     allTokens({
+        accelerations,
         all,
         angularVelocities,
         axis,

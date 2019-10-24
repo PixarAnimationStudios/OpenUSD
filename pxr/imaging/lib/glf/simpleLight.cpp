@@ -47,6 +47,10 @@ GlfSimpleLight::GlfSimpleLight(GfVec4f const & position) :
     _shadowIndex(0),
     _transform(GfMatrix4d().SetIdentity()),
     _shadowMatrix(GfMatrix4d().SetIdentity()),
+    _isDomeLight(false),
+    _irradianceId(0),
+    _prefilterId(0),
+    _brdfId(0),
     _id()
 {
 }
@@ -260,6 +264,48 @@ void GlfSimpleLight::SetID(SdfPath const & id)
     _id = id;
 }
 
+bool
+GlfSimpleLight::IsDomeLight() const
+{
+    return _isDomeLight;
+}
+
+void
+GlfSimpleLight::SetIsDomeLight(bool isDomeLight)
+{
+    _isDomeLight = isDomeLight;
+}
+
+uint32_t const & GlfSimpleLight::GetIrradianceId() const
+{
+    return _irradianceId;
+}
+
+void GlfSimpleLight::SetIrradianceId(uint32_t const & irradianceId)
+{
+    _irradianceId = irradianceId;
+}
+
+uint32_t const & GlfSimpleLight::GetPrefilterId() const
+{
+    return _prefilterId;
+}
+
+void GlfSimpleLight::SetPrefilterId(uint32_t const & prefilterId)
+{
+    _prefilterId = prefilterId;
+}
+
+uint32_t const & GlfSimpleLight::GetBrdfId() const
+{
+    return _brdfId;
+}
+
+void GlfSimpleLight::SetBrdfId(uint32_t const & brdfId)
+{
+    _brdfId = brdfId;
+}
+
 // -------------------------------------------------------------------------- //
 // VtValue requirements
 // -------------------------------------------------------------------------- //
@@ -283,6 +329,10 @@ GlfSimpleLight::operator==(const GlfSimpleLight& other) const
         &&  _transform == other._transform
         &&  _shadowMatrix == other._shadowMatrix
         &&  _isCameraSpaceLight == other._isCameraSpaceLight
+        &&  _isDomeLight == other._isDomeLight
+        &&  _irradianceId == other._irradianceId
+        &&  _prefilterId == other._prefilterId
+        &&  _brdfId == other._brdfId
         &&  _id == other._id;
 }
 
@@ -310,6 +360,10 @@ std::ostream& operator<<(std::ostream& out, const GlfSimpleLight& v)
         << v._transform
         << v._shadowMatrix
         << v._isCameraSpaceLight
+        << v._isDomeLight
+        << v._irradianceId
+        << v._prefilterId
+        << v._brdfId
         << v._id;
     return out;
 }

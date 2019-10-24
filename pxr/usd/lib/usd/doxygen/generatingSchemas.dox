@@ -203,7 +203,7 @@ over "GLOBAL" (
             dictionary libraryToken1 = {}
             dictionary libraryToken2 = {
                 string value = "/non-identifier-tokenValue!"
-                string doc = """doc for libraryTokens2"""
+                string doc = """doc for libraryToken2"""
             }
         }
     }
@@ -227,8 +227,8 @@ Here's a short description of each datum in the global customData dictionary:
   - \b tokensPrefix - The prefix to use for the tokens class, if it needs to be 
     different from libraryPrefix 
 
-  - \b libraryTokens - a place to declare tokens meaningful to some schema's in the 
-    module, which will be included in the static tokens for the module. If 
+  - \b libraryTokens - a place to declare tokens meaningful to the module.
+    These tokens will be included in the module's static tokens. If 
     provided, the "doc" string will be included in the tokens documentation.
     If provided, the "value" string will be assigned as the token's value; 
     otherwise, the token's value will be its identifier (as a TfToken).
@@ -249,6 +249,13 @@ class PxHairman "PxHairman" (
             int customInt = 0
             dictionary customDict = {
                 string customNestedString = "nested"
+            }
+        }
+        dictionary schemaTokens = {
+            dictionary schemaToken1 = {}
+            dictionary schemaToken2 = {
+                string value = "/non-identifier-tokenValue!"
+                string doc = """doc for schemaToken2"""
             }
         }
     }
@@ -277,6 +284,11 @@ Here's a short description of each datum in the per-class customData dictionary:
     will be added as additional metadata for this class in the library's 
     plugInfo.json file. The values in this dictionary must be numeric types,
     strings, booleans, or dictionaries containing these types.
+
+  - \b schemaTokens - a place to declare tokens meaningful to the schema.
+    These tokens will be included in the module's static tokens. See docs
+    above for the libraryTokens entry in the global customData dictionary
+    for details about the contents of this dictionary.
 
   - \b apiSchemaType - must only be specified for an API schema. Defaults to 
     the token 'singleApply', to indicate a single-apply API schema. 

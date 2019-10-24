@@ -1709,8 +1709,9 @@ PcpChanges::_DidChangeSublayer(
                      sublayerPath.c_str(),
                      sublayerChange == _SublayerAdded ? "added" : "removed");
 
-    if (!sublayer) {
-        // If the added or removed sublayer is invalid, it has no effect on
+    if (!sublayer || (!*significant && cache->IsUsd())) {
+        // If the added or removed sublayer is invalid, or if it is
+        // insignificant and this cache is a USD cache, then it has no effect on
         // composed results so we don't need to register any changes.
         return;
     }

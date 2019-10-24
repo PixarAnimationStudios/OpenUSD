@@ -40,13 +40,14 @@
 vec4 imageShader(vec2 uv)
 {
 #if defined(HD_HAS_hdxOitDataBuffer)
-    int screenWidth = HdGet_oitWidth();
-    int screenHeight = HdGet_oitHeight();
-    int numSamples = HdGet_oitSamples();
-    int bufferSize = screenWidth * screenHeight * numSamples;
+    int screenWidth = int(HdGet_oitScreenSize().x);
 
+    // +1 because index 0 of counter buffer is reserved as atomic counter in
+    // WriteOitLayersToBuffer
     int screenIndex = int(gl_FragCoord.x) + int(gl_FragCoord.y) * screenWidth;
-    int nodeIndex = hdxOitCounterBuffer[screenIndex+1];
+    screenIndex += 1;
+
+    int nodeIndex = hdxOitCounterBuffer[screenIndex];
     int numDepths = 0;
 
     // XXX renderPass.WriteOitLayersToBuffer does not clamp the number of
@@ -57,10 +58,14 @@ vec4 imageShader(vec2 uv)
     vec4 sortedColor[maxSamples];
     float sortedDepth[maxSamples];
 
-    while (nodeIndex != -1 && numDepths < maxSamples && nodeIndex < bufferSize){
+    while (nodeIndex != -1 && 
+           numDepths < maxSamples && 
+           nodeIndex < hdxOitDataBuffer.length()) 
+    {
         float currentDepth = hdxOitDepthBuffer[nodeIndex]; 
         int insertIndex = numDepths; 
-        while (insertIndex > 0 && sortedDepth[insertIndex - 1] > currentDepth) {
+        // Recall that depths are in eye space, so inequality is flipped.
+        while (insertIndex > 0 && sortedDepth[insertIndex - 1] < currentDepth) {
             sortedDepth[insertIndex] = sortedDepth[insertIndex - 1];
             sortedColor[insertIndex] = sortedColor[insertIndex - 1]; 
             insertIndex -= 1; 
@@ -70,19 +75,21 @@ vec4 imageShader(vec2 uv)
         numDepths += 1; 
         nodeIndex = hdxOitIndexBuffer[nodeIndex]; 
     } 
-    int depth = 0;
-    vec4 colorAccum = vec4(0,0,0,0);
-    while (depth < numDepths) {
-        vec3 cb = sortedColor[depth].rgb * sortedColor[depth].a; 
-        colorAccum.rgb = colorAccum.rgb + cb * (1 - colorAccum.a);
-        colorAccum.a = colorAccum.a + sortedColor[depth].a; 
 
-        colorAccum = clamp(colorAccum, vec4(0), vec4(1));
+    int depth = 0;
+    vec4 colorAccum = vec4(0);
+    while (depth < numDepths) {
+        float ca = sortedColor[depth].a * (1 - colorAccum.a);
+        vec3 cb = sortedColor[depth].rgb;
+        colorAccum.rgb = colorAccum.rgb + cb * ca;
+        colorAccum.a = colorAccum.a + ca;
+
         if (colorAccum.a >= 1.0) break;
 
         depth += 1; 
     }
 
+    colorAccum = clamp(colorAccum, vec4(0), vec4(1));
     return colorAccum;
 #else
     return vec4(0);

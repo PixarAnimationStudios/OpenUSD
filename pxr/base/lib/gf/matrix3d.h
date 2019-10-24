@@ -88,7 +88,7 @@ public:
     static const size_t numColumns = 3;
 
     /// Default constructor. Leaves the matrix component values undefined.
-    GfMatrix3d() {}
+    GfMatrix3d() = default;
 
     /// Constructor. Initializes the matrix from 9 independent
     /// \c double values, specified in row-major order. For example,

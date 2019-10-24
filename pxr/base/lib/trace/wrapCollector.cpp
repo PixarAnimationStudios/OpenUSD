@@ -49,6 +49,10 @@ using PythonKey = std::string;
 static double
 GetElapsedSeconds(TraceEvent::TimeStamp begin, TraceEvent::TimeStamp end)
 {
+    if (begin > end) {
+        TF_CODING_ERROR("Invalid interval: begin=%zu, end=%zu", begin, end);
+        return 0.0;
+    }
     return ArchTicksToSeconds(end-begin);
 }
 

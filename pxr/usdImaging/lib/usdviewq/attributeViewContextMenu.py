@@ -139,23 +139,24 @@ class CopyAttributeValueMenuItem(AttributeViewContextMenuItem):
         return "Copy Property Value"
 
     def RunCommand(self):
-        if self._value == "":
-            return
-
         # We display relationships targets as:
         #    /f, /g/a ...
         # But when we ask to copy the value, we'd like to get back:
         #    [Sdf.Path('/f'), Sdf.Path('/g/a')]
         # Which is useful for pasting into a python interpreter.
         if self._role == PropertyViewDataRoles.RELATIONSHIP_WITH_TARGETS:
-            value = str([Sdf.Path("".join(p.split())) \
+            valueStr = str([Sdf.Path("".join(p.split())) \
                           for p in self._value.split(",")])
         else:
-            value = self._value
+            valueStr = self._value
+            if self._item:
+                rawVal = self._item.rawValue
+                if rawVal is not None:
+                    valueStr = str(rawVal)
 
         cb = QtWidgets.QApplication.clipboard()
-        cb.setText(value, QtGui.QClipboard.Selection)
-        cb.setText(value, QtGui.QClipboard.Clipboard)
+        cb.setText(valueStr, QtGui.QClipboard.Selection)
+        cb.setText(valueStr, QtGui.QClipboard.Clipboard)
 
 # --------------------------------------------------------------------
 # Individual target selection menus

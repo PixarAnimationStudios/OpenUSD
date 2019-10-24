@@ -25,7 +25,7 @@
 Module that provides the StageView class.
 '''
 
-from math import tan, floor, ceil, radians as rad
+from math import tan, floor, ceil, radians as rad, isinf
 import os, sys
 from time import time
 
@@ -853,6 +853,7 @@ class StageView(QtOpenGL.QGLWidget):
         self._lastY = 0
 
         self._renderer = None
+        self._renderPauseState = False
         self._reportedContextError = False
         self._renderModeDict = {
             RenderModes.WIREFRAME: UsdImagingGL.DrawMode.DRAW_WIREFRAME,
@@ -918,6 +919,11 @@ class StageView(QtOpenGL.QGLWidget):
     def _handleRendererChanged(self, rendererId):
         self._rendererDisplayName = self.GetRendererDisplayName(rendererId)
         self._rendererAovName = "color"
+        self._renderPauseState = False
+        # XXX For HdSt we explicitely enable AOV via SetRendererAov
+        # This is because ImagingGL / TaskController are spawned via prims in
+        # Presto, so we default AOVs OFF until everything is AOV ready.
+        self.SetRendererAov(self.rendererAovName)
 
     def closeRenderer(self):
         '''Close the current renderer.'''
@@ -986,6 +992,21 @@ class StageView(QtOpenGL.QGLWidget):
         if self._renderer:
             self._renderer.SetRendererSetting(name, value)
             self.updateGL()
+
+    def SetRendererPaused(self, paused):
+        if self._renderer and (not self._renderer.IsConverged()):
+            if paused:
+                self._renderPauseState = self._renderer.PauseRenderer()
+            else:
+                self._renderPauseState = not self._renderer.ResumeRenderer()
+            self.updateGL()
+
+    def IsPauseRendererSupported(self):
+        if self._renderer:
+            if self._renderer.IsPauseRendererSupported():
+                return True
+
+        return False
 
     def _stageReplaced(self):
         '''Set the USD Stage this widget will be displaying. To decommission
@@ -1292,15 +1313,20 @@ class StageView(QtOpenGL.QGLWidget):
             renderer = None
 
     def _getEmptyBBox(self):
+        # This returns the default empty bbox [FLT_MAX,-FLT_MAX]
         return Gf.BBox3d()
 
     def _getDefaultBBox(self):
         return Gf.BBox3d(Gf.Range3d((-10,-10,-10), (10,10,10)))
 
+    def _isInfiniteBBox(self, bbox):
+        return isinf(bbox.GetRange().GetMin().GetLength()) or \
+               isinf(bbox.GetRange().GetMax().GetLength())
+
     def getStageBBox(self):
         bbox = self._dataModel.computeWorldBound(
             self._dataModel.stage.GetPseudoRoot())
-        if bbox.GetRange().IsEmpty():
+        if bbox.GetRange().IsEmpty() or self._isInfiniteBBox(bbox):
             bbox = self._getEmptyBBox()
         return bbox
 
@@ -1346,9 +1372,6 @@ class StageView(QtOpenGL.QGLWidget):
 
         renderer.SetSelectionColor(self._dataModel.viewSettings.highlightColor)
 
-        # Enable floating point framebuffer (for color correction)
-        renderer.SetEnableFloatPointDrawTarget(True)
-
         try:
             renderer.Render(pseudoRoot, self._renderParams)
         except Tf.ErrorException as e:
@@ -1382,15 +1405,33 @@ class StageView(QtOpenGL.QGLWidget):
         if self._dataModel.playing:
             super(StageView, self).updateGL()
 
-    def computeGfCameraForCurrentCameraPrim(self):
+    def getActiveSceneCamera(self):
         cameraPrim = self._dataModel.viewSettings.cameraPrim
         if cameraPrim and cameraPrim.IsActive():
-            gfCamera = UsdGeom.Camera(cameraPrim).GetCamera(
-                self._dataModel.currentFrame)
-            return gfCamera
-        else:
-            return None
+            return cameraPrim
+        return None
+    
+    # XXX: Consolidate window/frustum conformance code that is littered in
+    # several places.
+    def computeWindowPolicy(self, cameraAspectRatio):
+        # The freeCam always uses 'MatchVertically'.
+        # When using a scene cam, we factor in the masking setting and window
+        # size to compute it.
+        windowPolicy = CameraUtil.MatchVertically
+        
+        if self.getActiveSceneCamera():
+            if self._cropImageToCameraViewport:
+                targetAspect = (
+                    float(self.size().width()) / max(1.0, self.size().height()))
 
+                if targetAspect < cameraAspectRatio:
+                    windowPolicy =  CameraUtil.MatchHorizontally
+            else:
+                if self._fitCameraInViewport:
+                    windowPolicy =  CameraUtil.Fit
+        
+        return windowPolicy
+    
     def computeWindowSize(self):
          size = self.size() * QtWidgets.QApplication.instance().devicePixelRatio()
          return (int(size.width()), int(size.height()))
@@ -1406,28 +1447,32 @@ class StageView(QtOpenGL.QGLWidget):
         camera frustum has changed since the last time resolveCamera was called."""
 
         # If 'camera' is None, make sure we have a valid freeCamera
-        camera = self.computeGfCameraForCurrentCameraPrim()
-        if not camera:
+        sceneCam = self.getActiveSceneCamera()
+        if sceneCam:
+            gfCam = UsdGeom.Camera(sceneCam).GetCamera(
+                                                self._dataModel.currentFrame)
+        else:
             self.switchToFreeCamera()
-            camera = self._dataModel.viewSettings.freeCamera.computeGfCamera(self._bbox, autoClip=self.autoClip)
+            gfCam = self._dataModel.viewSettings.freeCamera.computeGfCamera(
+                            self._bbox, autoClip=self.autoClip)
 
-        cameraAspectRatio = camera.aspectRatio
+        cameraAspectRatio = gfCam.aspectRatio
 
         # Conform the camera's frustum to the window viewport, if necessary.
         if not self._cropImageToCameraViewport:
             targetAspect = float(self.size().width()) / max(1.0, self.size().height())
             if self._fitCameraInViewport:
-                CameraUtil.ConformWindow(camera, CameraUtil.Fit, targetAspect)
+                CameraUtil.ConformWindow(gfCam, CameraUtil.Fit, targetAspect)
             else:
-                CameraUtil.ConformWindow(camera, CameraUtil.MatchVertically, targetAspect)
+                CameraUtil.ConformWindow(gfCam, CameraUtil.MatchVertically, targetAspect)
 
         frustumChanged = ((not self._lastComputedGfCamera) or
-                          self._lastComputedGfCamera.frustum != camera.frustum)
+                          self._lastComputedGfCamera.frustum != gfCam.frustum)
         # We need to COPY the camera, not assign it...
-        self._lastComputedGfCamera = Gf.Camera(camera)
+        self._lastComputedGfCamera = Gf.Camera(gfCam)
         if frustumChanged:
             self.signalFrustumChanged.emit()
-        return (camera, cameraAspectRatio)
+        return (gfCam, cameraAspectRatio)
 
     def computeCameraViewport(self, cameraAspectRatio):
         # Conform the camera viewport to the camera's aspect ratio,
@@ -1567,6 +1612,9 @@ class StageView(QtOpenGL.QGLWidget):
             GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
             GL.glEnable(GL.GL_BLEND)
 
+            # Note: camera lights and camera guides require the
+            # resolved (adjusted) camera viewProjection matrix, which is
+            # why we resolve the camera above always.
             (gfCamera, cameraAspect) = self.resolveCamera()
             frustum = gfCamera.frustum
             cameraViewport = self.computeCameraViewport(cameraAspect)
@@ -1582,11 +1630,20 @@ class StageView(QtOpenGL.QGLWidget):
 
             # not using the actual camera dist ...
             cam_light_dist = self._dist
+            
+            sceneCam = self.getActiveSceneCamera()
+            renderer.SetRenderViewport(viewport)
+            renderer.SetWindowPolicy(self.computeWindowPolicy(cameraAspect))
 
-            renderer.SetCameraState(
-                frustum.ComputeViewMatrix(),
-                frustum.ComputeProjectionMatrix(),
-                Gf.Vec4d(*viewport))
+            if sceneCam:
+                # When using a USD camera, simply set it as the active camera.
+                # Window policy conformance is handled in the engine/hydra.
+                renderer.SetCameraPath(sceneCam.GetPath())
+            else:
+            # When using the free cam (which isn't currently backed on the
+            # USD stage), we send the camera matrices to the engine.
+                renderer.SetCameraState(frustum.ComputeViewMatrix(),
+                                        frustum.ComputeProjectionMatrix())
 
             viewProjectionMatrix = Gf.Matrix4f(frustum.ComputeViewMatrix()
                                             * frustum.ComputeProjectionMatrix())
@@ -1615,52 +1672,15 @@ class StageView(QtOpenGL.QGLWidget):
                         l.ambient = (0, 0, 0, 0)
                         l.position = (cam_pos[0], cam_pos[1], cam_pos[2], 1)
                         lights.append(l)
-                    # three-point lighting
-                    else:
-                        if self._dataModel.viewSettings.keyLightEnabled:
-                            # 45 degree horizontal viewing angle, 20 degree vertical
-                            keyHorz = -1 / tan(rad(45)) * cam_right
-                            keyVert = 1 / tan(rad(70)) * cam_up
-                            keyPos = cam_pos + (keyVert + keyHorz) * cam_light_dist
-                            keyColor = (.8, .8, .8, 1.0)
 
-                            l = Glf.SimpleLight()
-                            l.ambient = (0, 0, 0, 0)
-                            l.diffuse = keyColor
-                            l.specular = keyColor
-                            l.position = (keyPos[0], keyPos[1], keyPos[2], 1)
-                            lights.append(l)
-
-                        if self._dataModel.viewSettings.fillLightEnabled:
-                            # 60 degree horizontal viewing angle, 45 degree vertical
-                            fillHorz = 1 / tan(rad(30)) * cam_right
-                            fillVert = 1 / tan(rad(45)) * cam_up
-                            fillPos = cam_pos + (fillVert + fillHorz) * cam_light_dist
-                            fillColor = (.6, .6, .6, 1.0)
-
-                            l = Glf.SimpleLight()
-                            l.ambient = (0, 0, 0, 0)
-                            l.diffuse = fillColor
-                            l.specular = fillColor
-                            l.position = (fillPos[0], fillPos[1], fillPos[2], 1)
-                            lights.append(l)
-
-                        if self._dataModel.viewSettings.backLightEnabled:
-                            # back light base is camera position reflected over origin
-                            # 30 degree horizontal viewing angle, 30 degree vertical
-                            origin = Gf.Vec3d(0.0)
-                            backPos = cam_pos + (origin - cam_pos) * 2
-                            backHorz = 1 / tan(rad(60)) * cam_right
-                            backVert = -1 / tan(rad(60)) * cam_up
-                            backPos += (backHorz + backVert) * cam_light_dist
-                            backColor = (.6, .6, .6, 1.0)
-
-                            l = Glf.SimpleLight()
-                            l.ambient = (0, 0, 0, 0)
-                            l.diffuse = backColor
-                            l.specular = backColor
-                            l.position = (backPos[0], backPos[1], backPos[2], 1)
-                            lights.append(l)
+                    # Default Dome Light
+                    if self._dataModel.viewSettings.domeLightEnabled:
+                        l = Glf.SimpleLight()
+                        l.isDomeLight = True
+                        if self._stageIsZup:
+                            l.transform = Gf.Matrix4d().SetRotate(
+                                    Gf.Rotation(Gf.Vec3d.XAxis(), 90))
+                        lights.append(l)
 
                     kA = self._dataModel.viewSettings.defaultMaterialAmbient
                     kS = self._dataModel.viewSettings.defaultMaterialSpecular
@@ -1814,7 +1834,11 @@ class StageView(QtOpenGL.QGLWidget):
             if not hydraMode:
                 hydraMode = "Enabled"
 
-        toPrint = {"Hydra": hydraMode}
+        if self._renderPauseState:
+            toPrint = {"Hydra": "(paused)"}
+        else:
+            toPrint = {"Hydra": hydraMode}
+            
         if self._rendererAovName != "color":
             toPrint["  AOV"] = self._rendererAovName
         self._hud.updateGroup("TopRight", self.width()-160, 14, col,
@@ -1826,31 +1850,32 @@ class StageView(QtOpenGL.QGLWidget):
 
         # GPU stats (TimeElapsed is in nano seconds)
         if self._dataModel.viewSettings.showHUD_GPUstats:
-            allocInfo = renderer.GetResourceAllocation()
-            gpuMemTotal = 0
-            texMem = 0
-            if "gpuMemoryUsed" in allocInfo:
-                gpuMemTotal = allocInfo["gpuMemoryUsed"]
-            if "textureMemory" in allocInfo:
-                texMem = allocInfo["textureMemory"]
-                gpuMemTotal += texMem
+
+            def _addSizeMetric(toPrint, stats, label, key):
+                if key in stats:
+                    toPrint[label] = ReportMetricSize(stats[key])
+
+            rStats = renderer.GetRenderStats()
 
             toPrint["GL prims "] = self._glPrimitiveGeneratedQuery.GetResult()
-            toPrint["GPU time "] = "%.2f ms " % (self._glTimeElapsedQuery.GetResult() / 1000000.0)
-            toPrint["GPU mem  "] = ReportMetricSize(gpuMemTotal)
-            toPrint[" primvar "] = ReportMetricSize(allocInfo["primvar"]) if "primvar" in allocInfo else "N/A"
-            toPrint[" topology"] = ReportMetricSize(allocInfo["topology"]) if "topology" in allocInfo else "N/A"
-            toPrint[" shader  "] = ReportMetricSize(allocInfo["drawingShader"]) if "drawingShader" in allocInfo else "N/A"
-            toPrint[" texture "] = ReportMetricSize(texMem)
+            if not self._renderPauseState:
+                toPrint["GPU time "] = "%.2f ms " % (self._glTimeElapsedQuery.GetResult() / 1000000.0)
+            _addSizeMetric(toPrint, rStats, "GPU mem  ", "gpuMemoryUsed")
+            _addSizeMetric(toPrint, rStats, " primvar ", "primvar")
+            _addSizeMetric(toPrint, rStats, " topology", "topology")
+            _addSizeMetric(toPrint, rStats, " shader  ", "drawingShader")
+            _addSizeMetric(toPrint, rStats, " texture ", "textureMemory")
+            
+            if "numCompletedSamples" in rStats:
+                toPrint["Samples done "] = rStats["numCompletedSamples"]
 
         # Playback Rate
-        if self._dataModel.viewSettings.showHUD_Performance:
+        if (not self._renderPauseState) and self._dataModel.viewSettings.showHUD_Performance:
             for key in self.fpsHUDKeys:
                 toPrint[key] = self.fpsHUDInfo[key]
-        if len(toPrint) > 0:
-            self._hud.updateGroup("BottomLeft",
-                                  0, self.height()-len(toPrint)*self._hud._HUDLineSpacing,
-                                  col, toPrint, toPrint.keys())
+        self._hud.updateGroup("BottomLeft",
+                              0, self.height()-len(toPrint)*self._hud._HUDLineSpacing,
+                              col, toPrint, toPrint.keys())
 
         # draw HUD
         self._hud.draw(self)
@@ -1935,7 +1960,13 @@ class StageView(QtOpenGL.QGLWidget):
 
             elif self._cameraMode == "zoom":
                 zoomDelta = -.002 * (dx + dy)
-                freeCam.AdjustDistance(1 + zoomDelta)
+                if freeCam.orthographic:
+                    # orthographic cameras zoom by scaling fov
+                    # fov is the height of the view frustum in world units
+                    freeCam.fov *= (1 + zoomDelta)
+                else:
+                    # perspective cameras dolly forward or back
+                    freeCam.AdjustDistance(1 + zoomDelta)
 
             elif self._cameraMode == "truck":
                 height = float(self.size().height())

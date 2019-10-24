@@ -40,6 +40,8 @@ typedef boost::shared_ptr<class HdSt_ImageShaderRenderPass>
 typedef boost::shared_ptr<class HdSt_DrawBatch> 
     HdSt_DrawBatchSharedPtr;
 
+class Hgi;
+
 /// \class HdSt_ImageShaderRenderPass
 ///
 /// A single, full-screen triangle render pass.
@@ -58,6 +60,8 @@ public:
     virtual ~HdSt_ImageShaderRenderPass();
 
 protected:
+    virtual void _Prepare(TfTokenVector const &renderTags) override;
+
     virtual void _Execute(HdRenderPassStateSharedPtr const &renderPassState,
                           TfTokenVector const &renderTags) override;
 
@@ -72,6 +76,7 @@ private:
     HdStDrawItem _drawItem;
     HdStDrawItemInstance _drawItemInstance;
     HdSt_DrawBatchSharedPtr _immediateBatch;
+    Hgi* _hgi;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

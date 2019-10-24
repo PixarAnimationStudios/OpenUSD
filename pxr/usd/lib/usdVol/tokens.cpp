@@ -29,11 +29,13 @@ UsdVolTokensType::UsdVolTokensType() :
     field("field", TfToken::Immortal),
     fieldIndex("fieldIndex", TfToken::Immortal),
     fieldName("fieldName", TfToken::Immortal),
+    fieldPurpose("fieldPurpose", TfToken::Immortal),
     filePath("filePath", TfToken::Immortal),
     allTokens({
         field,
         fieldIndex,
         fieldName,
+        fieldPurpose,
         filePath
     })
 {

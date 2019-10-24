@@ -84,8 +84,11 @@ TraceAggregateTree::AddCounter(const TfToken &key, int index, double totalValue)
 }
 
 void
-TraceAggregateTree::Append(const TraceCollection& collection) {
-    Trace_AggregateTreeBuilder::AddCollectionDataToTree(this, collection);
+TraceAggregateTree::Append(
+    const TraceEventTreeRefPtr& eventTree, const TraceCollection& collection)
+{
+    Trace_AggregateTreeBuilder::AddEventTreeToAggregate(
+        this, eventTree, collection);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

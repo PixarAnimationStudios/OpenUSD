@@ -156,32 +156,32 @@ UsdDancingCubesExample_Data::IsEmpty() const
 }
 
 bool
-UsdDancingCubesExample_Data::HasSpec(const SdfAbstractDataSpecId& id) const
+UsdDancingCubesExample_Data::HasSpec(const SdfPath& path) const
 {
-    return GetSpecType(id) != SdfSpecTypeUnknown;
+    return GetSpecType(path) != SdfSpecTypeUnknown;
 }
 
 void
-UsdDancingCubesExample_Data::EraseSpec(const SdfAbstractDataSpecId& id)
+UsdDancingCubesExample_Data::EraseSpec(const SdfPath& path)
 {
     TF_RUNTIME_ERROR("UsdDancingCubesExample file EraseSpec() not supported");
 }
 
 void
-UsdDancingCubesExample_Data::MoveSpec(const SdfAbstractDataSpecId& oldId, 
-                                      const SdfAbstractDataSpecId& newId)
+UsdDancingCubesExample_Data::MoveSpec(const SdfPath& oldPath, 
+                                      const SdfPath& newPath)
 {
     TF_RUNTIME_ERROR("UsdDancingCubesExample file MoveSpec() not supported");
 }
 
 SdfSpecType
-UsdDancingCubesExample_Data::GetSpecType(const SdfAbstractDataSpecId& id) const
+UsdDancingCubesExample_Data::GetSpecType(const SdfPath& path) const
 {
-    return _impl->GetSpecType(id);
+    return _impl->GetSpecType(path);
 }
 
 void
-UsdDancingCubesExample_Data::CreateSpec(const SdfAbstractDataSpecId& id,
+UsdDancingCubesExample_Data::CreateSpec(const SdfPath& path,
                                         SdfSpecType specType)
 {
     TF_RUNTIME_ERROR("UsdDancingCubesExample file CreateSpec() not supported");
@@ -194,48 +194,48 @@ UsdDancingCubesExample_Data::_VisitSpecs(SdfAbstractDataSpecVisitor* visitor) co
 }
 
 bool 
-UsdDancingCubesExample_Data::Has(const SdfAbstractDataSpecId& id, 
+UsdDancingCubesExample_Data::Has(const SdfPath& path, 
                                  const TfToken &field,
                                  SdfAbstractDataValue* value) const
 {
     if (value) {
         VtValue val;
-        if (_impl->Has(id, field, &val)) {
+        if (_impl->Has(path, field, &val)) {
             return value->StoreValue(val);
         }
         return false;
     } else {
-        return _impl->Has(id, field, nullptr);
+        return _impl->Has(path, field, nullptr);
     }
     return false;
 }
 
 bool 
-UsdDancingCubesExample_Data::Has(const SdfAbstractDataSpecId& id, 
+UsdDancingCubesExample_Data::Has(const SdfPath& path, 
                                  const TfToken & field, 
                                  VtValue *value) const
 {
-    return _impl->Has(id, field, value);
+    return _impl->Has(path, field, value);
 }
  
 VtValue
-UsdDancingCubesExample_Data::Get(const SdfAbstractDataSpecId& id, 
+UsdDancingCubesExample_Data::Get(const SdfPath& path, 
                                  const TfToken & field) const
 {
     VtValue value;
-    _impl->Has(id, field, &value);
+    _impl->Has(path, field, &value);
     return value;
 }
 
 void 
-UsdDancingCubesExample_Data::Set(const SdfAbstractDataSpecId& id, 
+UsdDancingCubesExample_Data::Set(const SdfPath& path, 
                                  const TfToken & field, const VtValue& value)
 {
     TF_RUNTIME_ERROR("UsdDancingCubesExample file Set() not supported");
 }
 
 void 
-UsdDancingCubesExample_Data::Set(const SdfAbstractDataSpecId& id, 
+UsdDancingCubesExample_Data::Set(const SdfPath& path, 
                                  const TfToken & field, 
                                  const SdfAbstractDataConstValue& value)
 {
@@ -243,16 +243,16 @@ UsdDancingCubesExample_Data::Set(const SdfAbstractDataSpecId& id,
 }
 
 void 
-UsdDancingCubesExample_Data::Erase(const SdfAbstractDataSpecId& id, 
+UsdDancingCubesExample_Data::Erase(const SdfPath& path, 
                                    const TfToken & field)
 {
     TF_RUNTIME_ERROR("UsdDancingCubesExample file Erase() not supported");
 }
 
 std::vector<TfToken>
-UsdDancingCubesExample_Data::List(const SdfAbstractDataSpecId& id) const
+UsdDancingCubesExample_Data::List(const SdfPath& path) const
 {
-    return _impl->List(id);
+    return _impl->List(path);
 }
 
 std::set<double>
@@ -262,9 +262,9 @@ UsdDancingCubesExample_Data::ListAllTimeSamples() const
 }
 
 std::set<double>
-UsdDancingCubesExample_Data::ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
+UsdDancingCubesExample_Data::ListTimeSamplesForPath(const SdfPath& path) const
 {
-    return _impl->ListTimeSamplesForPath(id);
+    return _impl->ListTimeSamplesForPath(path);
 }
 
 bool
@@ -276,52 +276,51 @@ UsdDancingCubesExample_Data::GetBracketingTimeSamples(
 
 size_t
 UsdDancingCubesExample_Data::GetNumTimeSamplesForPath(
-    const SdfAbstractDataSpecId& id) const
+    const SdfPath& path) const
 {
-    return _impl->GetNumTimeSamplesForPath(id);
+    return _impl->GetNumTimeSamplesForPath(path);
 }
 
 bool
 UsdDancingCubesExample_Data::GetBracketingTimeSamplesForPath(
-    const SdfAbstractDataSpecId& id, double time,
+    const SdfPath& path, double time,
     double* tLower, double* tUpper) const
 {
-    return _impl->GetBracketingTimeSamplesForPath(id, time, tLower, tUpper);
+    return _impl->GetBracketingTimeSamplesForPath(path, time, tLower, tUpper);
 }
 
 bool
-UsdDancingCubesExample_Data::QueryTimeSample(const SdfAbstractDataSpecId& id, 
+UsdDancingCubesExample_Data::QueryTimeSample(const SdfPath& path, 
                                              double time, VtValue *value) const
 {
-    return _impl->QueryTimeSample(id, time, value);
+    return _impl->QueryTimeSample(path, time, value);
 }
 
 bool 
-UsdDancingCubesExample_Data::QueryTimeSample(const SdfAbstractDataSpecId& id, 
+UsdDancingCubesExample_Data::QueryTimeSample(const SdfPath& path, 
                                              double time, 
                                              SdfAbstractDataValue* value) const
 { 
     if (value) {
         VtValue val;
-        if (_impl->QueryTimeSample(id, time, &val)) {
+        if (_impl->QueryTimeSample(path, time, &val)) {
             return value->StoreValue(val);
         }
         return false;
     } else {
-        return _impl->QueryTimeSample(id, time, nullptr);
+        return _impl->QueryTimeSample(path, time, nullptr);
     }
 }
 
 void
-UsdDancingCubesExample_Data::SetTimeSample(const SdfAbstractDataSpecId& id, 
+UsdDancingCubesExample_Data::SetTimeSample(const SdfPath& path, 
                                            double time, const VtValue& value)
 {
     TF_RUNTIME_ERROR("UsdDancingCubesExample file SetTimeSample() not supported");
 }
 
 void
-UsdDancingCubesExample_Data::EraseTimeSample(const SdfAbstractDataSpecId& id, 
-                                             double time)
+UsdDancingCubesExample_Data::EraseTimeSample(const SdfPath& path, double time)
 {
     TF_RUNTIME_ERROR("UsdDancingCubesExample file EraseTimeSample() not supported");
 }

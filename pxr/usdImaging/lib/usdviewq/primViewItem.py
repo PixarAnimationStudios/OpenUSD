@@ -54,6 +54,9 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
         self.imageable = False
         self.active = False
 
+        # True if this item is an ancestor of a selected item.
+        self.ancestorOfSelected = False
+
         # If we know we'll have children show a norgie, otherwise don't.
         if primHasChildren:
             self.setChildIndicatorPolicy(
@@ -411,11 +414,6 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
             from pxr import Sdf
             with Sdf.ChangeBlock():
                 UsdGeom.Imageable(self.prim).MakeVisible()
-            self.visChanged()
-
-    def removeVisibility(self):
-        if self.canChangeVis():
-            UsdGeom.Imageable(self.prim).GetVisibilityAttr().Clear()
             self.visChanged()
 
     def visChanged(self):

@@ -152,7 +152,7 @@ HdxCompositor::_CreateTextureResources(GLuint *texture)
 }
 
 void
-HdxCompositor::UpdateColor(int width, int height, uint8_t *data)
+HdxCompositor::UpdateColor(int width, int height, HdFormat format, void* data)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -169,8 +169,16 @@ HdxCompositor::UpdateColor(int width, int height, uint8_t *data)
         _CreateTextureResources(&_colorTexture);
     }
     glBindTexture(GL_TEXTURE_2D, _colorTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA,
-                 GL_UNSIGNED_BYTE, data);
+    if (format == HdFormatFloat32Vec4) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA,
+                     GL_FLOAT, data);
+    } else if (format == HdFormatFloat16Vec4) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA,
+                     GL_HALF_FLOAT, data);
+    } else if (format == HdFormatUNorm8Vec4) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA,
+                     GL_UNSIGNED_BYTE, data);
+    }
     glBindTexture(GL_TEXTURE_2D, 0);
 
     GLF_POST_PENDING_GL_ERRORS();

@@ -1,0 +1,21 @@
+{
+    "Plugins": [
+        {
+            "Type": "resource",
+            "Name": "testUsdTimeValueAuthoring",
+            "Info": {
+                "SdfMetadata": {
+                    "doubleTest": {
+                        "type": "double"
+                    },
+                    "timeCodeTest": {
+                        "type": "timecode"
+                    },
+                    "timeCodeArrayTest": {
+                        "type": "timecode[]"
+                    }
+                }
+            }
+        }
+    ]
+}

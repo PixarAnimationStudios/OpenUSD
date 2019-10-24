@@ -105,7 +105,7 @@ private:
     // invocation executes a single render task, which draws the scene to
     // the framebuffer.
     //
-    // HdxRendererPlugin (or derived classes like HdEmbreeRendererPlugin)
+    // HdRendererPlugin (or derived classes like HdEmbreeRendererPlugin)
     // are a discoverable way to create render delegates.
 
     HdEngine _engine;

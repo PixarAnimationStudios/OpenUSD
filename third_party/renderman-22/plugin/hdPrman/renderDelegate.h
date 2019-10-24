@@ -36,10 +36,20 @@ class HdPrman_RenderPass;
 struct HdPrman_Context;
 
 #define HDPRMAN_RENDER_SETTINGS_TOKENS \
-    (integrator)
+    (integrator)                       \
+    (interactiveIntegrator)            \
+    (interactiveIntegratorTimeout)
 
 TF_DECLARE_PUBLIC_TOKENS(HdPrmanRenderSettingsTokens, HDPRMAN_API,
     HDPRMAN_RENDER_SETTINGS_TOKENS);
+
+#define HDPRMAN_INTEGRATOR_TOKENS \
+    (PxrPathTracer)               \
+    (PbsPathTracer)               \
+    (PxrDirectLighting)
+
+TF_DECLARE_PUBLIC_TOKENS(HdPrmanIntegratorTokens, HDPRMAN_API,
+    HDPRMAN_INTEGRATOR_TOKENS);
 
 class HdPrmanRenderDelegate : public HdRenderDelegate {
 public:

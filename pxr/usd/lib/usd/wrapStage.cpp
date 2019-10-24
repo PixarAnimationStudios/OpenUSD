@@ -421,6 +421,10 @@ void wrapUsdStage()
              arg("rootPath")=SdfPath::AbsoluteRootPath(),
              return_value_policy<TfPySequenceToList>())
 
+        .def("GetLoadRules", &UsdStage::GetLoadRules,
+             return_value_policy<return_by_value>())
+        .def("SetLoadRules", &UsdStage::SetLoadRules, arg("rules"))
+
         .def("GetPopulationMask", &UsdStage::GetPopulationMask)
         .def("SetPopulationMask", &UsdStage::SetPopulationMask, arg("mask"))
         .def("ExpandPopulationMask", &_ExpandPopulationMask,

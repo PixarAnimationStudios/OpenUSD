@@ -314,25 +314,26 @@ public:
     // See HdSceneDelegate for documentation of virtual methods.
     // ---------------------------------------------------------------------- //
     HD_API
-    virtual HdMeshTopology GetMeshTopology(SdfPath const& id);
+    virtual HdMeshTopology GetMeshTopology(SdfPath const& id) override;
     HD_API
-    virtual HdBasisCurvesTopology GetBasisCurvesTopology(SdfPath const& id);
+    virtual HdBasisCurvesTopology GetBasisCurvesTopology(SdfPath const& id) 
+        override;
     HD_API
     virtual TfToken GetRenderTag(SdfPath const& id) override;
     HD_API
-    virtual PxOsdSubdivTags GetSubdivTags(SdfPath const& id);
+    virtual PxOsdSubdivTags GetSubdivTags(SdfPath const& id) override;
     HD_API
-    virtual GfRange3d GetExtent(SdfPath const & id);
+    virtual GfRange3d GetExtent(SdfPath const & id) override;
     HD_API
-    virtual GfMatrix4d GetTransform(SdfPath const & id);
+    virtual GfMatrix4d GetTransform(SdfPath const & id) override;
     HD_API
-    virtual bool GetVisible(SdfPath const & id);
+    virtual bool GetVisible(SdfPath const & id) override;
     HD_API
-    virtual bool GetDoubleSided(SdfPath const & id);
+    virtual bool GetDoubleSided(SdfPath const & id) override;
     HD_API
     virtual HdDisplayStyle GetDisplayStyle(SdfPath const & id) override;
     HD_API
-    virtual VtValue Get(SdfPath const& id, TfToken const& key);
+    virtual VtValue Get(SdfPath const& id, TfToken const& key) override;
     HD_API
     virtual HdReprSelector GetReprSelector(SdfPath const &id) override;
     HD_API
@@ -349,27 +350,33 @@ public:
         override;
 
     HD_API
-    virtual SdfPath GetMaterialId(SdfPath const& rprimId);
+    virtual SdfPath GetMaterialId(SdfPath const& rprimId) override;
     HD_API
-    virtual std::string GetSurfaceShaderSource(SdfPath const &materialId);
+    virtual std::string GetSurfaceShaderSource(SdfPath const &materialId)
+        override;
     HD_API
-    virtual std::string GetDisplacementShaderSource(SdfPath const &materialId);    
+    virtual std::string GetDisplacementShaderSource(SdfPath const &materialId)
+        override;    
     HD_API
-    virtual HdMaterialParamVector GetMaterialParams(SdfPath const &materialId);
+    virtual HdMaterialParamVector GetMaterialParams(SdfPath const &materialId)
+        override;
     HD_API
     virtual VtValue GetMaterialParamValue(SdfPath const &materialId, 
-                                          TfToken const &paramName);
+                                          TfToken const &paramName) override;
     HD_API
     virtual VtValue GetCameraParamValue(SdfPath const &cameraId, 
-                                        TfToken const &paramName);
+                                        TfToken const &paramName) override;
     HD_API
-    virtual HdTextureResource::ID GetTextureResourceID(SdfPath const& textureId);
+    virtual HdTextureResource::ID GetTextureResourceID(
+        SdfPath const& textureId) override;
     HD_API
-    virtual HdTextureResourceSharedPtr GetTextureResource(SdfPath const& textureId);
+    virtual HdTextureResourceSharedPtr GetTextureResource(
+        SdfPath const& textureId) override;
     HD_API 
-    virtual VtValue GetMaterialResource(SdfPath const &materialId);
+    virtual VtValue GetMaterialResource(SdfPath const &materialId) override;
     HD_API
-    virtual HdRenderBufferDescriptor GetRenderBufferDescriptor(SdfPath const& id);
+    virtual HdRenderBufferDescriptor GetRenderBufferDescriptor(
+        SdfPath const& id) override;
 
 private:
     struct _Mesh {

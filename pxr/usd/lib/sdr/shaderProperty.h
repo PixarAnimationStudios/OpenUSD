@@ -50,6 +50,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((Vector,   "vector"))       \
     ((Matrix,   "matrix"))       \
     ((Struct,   "struct"))       \
+    ((Terminal, "terminal"))     \
     ((Vstruct,  "vstruct"))      \
     ((Unknown,  "unknown"))
 
@@ -60,6 +61,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((Label, "label"))                               \
     ((Help, "help"))                                 \
     ((Page, "page"))                                 \
+    ((RenderType, "renderType"))                     \
+    ((Role, "role"))                                 \
     ((Widget, "widget"))                             \
     ((Hints, "hints"))                               \
     ((Options, "options"))                           \
@@ -68,16 +71,23 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((ValidConnectionTypes, "validConnectionTypes")) \
     ((VstructMemberOf, "vstructMemberOf"))           \
     ((VstructMemberName, "vstructMemberName"))       \
+    ((VstructConditionalExpr, "vstructConditionalExpr"))\
     ((IsAssetIdentifier, "__SDR__isAssetIdentifier"))\
     ((ImplementationName, "__SDR__implementationName"))\
     ((DefaultInput, "__SDR__defaultinput"))          \
     ((Target, "__SDR__target"))                      \
     ((Colorspace, "__SDR__colorspace"))
 
+
+// The following tokens are valid values for the metadata "role"
+#define SDR_PROPERTY_ROLE_TOKENS \
+    ((None, "none"))
+
 TF_DECLARE_PUBLIC_TOKENS(SdrPropertyTypes, SDR_API, SDR_PROPERTY_TYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(SdrPropertyMetadata, SDR_API, 
                          SDR_PROPERTY_METADATA_TOKENS);
-
+TF_DECLARE_PUBLIC_TOKENS(SdrPropertyRole, SDR_API,
+                         SDR_PROPERTY_ROLE_TOKENS);
 
 /// \class SdrShaderProperty
 ///
@@ -173,6 +183,13 @@ public:
     SDR_API
     bool IsVStruct() const;
 
+
+    /// If this field is part of a vstruct, this is the conditional expression
+    SDR_API
+    const TfToken& GetVStructConditionalExpr() const {
+        return _vstructConditionalExpr;
+    }
+
     /// @}
 
 
@@ -251,6 +268,7 @@ protected:
     TfToken _widget;
     TfToken _vstructMemberOf;
     TfToken _vstructMemberName;
+    TfToken _vstructConditionalExpr;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

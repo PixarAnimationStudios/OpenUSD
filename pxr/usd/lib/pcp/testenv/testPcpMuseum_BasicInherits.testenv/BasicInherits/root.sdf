@@ -41,3 +41,30 @@ def "NonExistentInherit" (
 )
 {
 }
+
+# The following are to verify simple strength ordering for lists of inherits,
+# making sure that a behavior that used to exist where inherits to root classes
+# would always be stronger than inherits to subroot classes is no longer the 
+# case.
+class "RootClass"
+{
+}
+
+def "ParentClass"
+{
+    class "SubrootClass" 
+    {
+    }
+}
+
+def "InheritsOrder1" (
+    inherits = [</RootClass>, </ParentClass/SubrootClass>]
+)
+{
+}
+
+def "InheritsOrder2" (
+    inherits = [</ParentClass/SubrootClass>, </RootClass>]
+)
+{
+}

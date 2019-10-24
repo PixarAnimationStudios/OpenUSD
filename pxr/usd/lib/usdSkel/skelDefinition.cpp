@@ -442,4 +442,17 @@ UsdSkel_SkelDefinition::_ComputeJointLocalInverseRestTransforms()
 }
 
 
+bool 
+UsdSkel_SkelDefinition::HasBindPose()
+{
+    return _flags&_HaveBindPose;
+}
+
+bool
+UsdSkel_SkelDefinition::HasRestPose()
+{
+    return _flags&_HaveRestPose;
+}
+
+
 PXR_NAMESPACE_CLOSE_SCOPE

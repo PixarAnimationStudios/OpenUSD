@@ -139,9 +139,10 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
 
     // Extract all light paths for each type of light
     static const TfTokenVector lightTypes = 
-        {HdPrimTypeTokens->simpleLight,
-            HdPrimTypeTokens->rectLight,
-            HdPrimTypeTokens->sphereLight};
+        {HdPrimTypeTokens->domeLight,
+            HdPrimTypeTokens->simpleLight,
+            HdPrimTypeTokens->sphereLight,
+            HdPrimTypeTokens->rectLight};
     _lightIds.clear();
     _numLights = _AppendLightsOfType(renderIndex, lightTypes,
                         _lightIncludePaths,

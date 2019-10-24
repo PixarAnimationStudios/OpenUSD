@@ -106,6 +106,7 @@ The "type" entry for a metadata field must be one of the types listed below.
                 <tr><td>int</td><td>int</td></tr>
                 <tr><td>int64</td><td>int64_t</td></tr>
                 <tr><td>string</td><td>std::string</td></tr>
+                <tr><td>timecode</td><td>SdfTimeCode</td></tr>
                 <tr><td>token</td><td>TfToken</td></tr>
                 <tr><td>uchar</td><td>unsigned char</td></tr>
                 <tr><td>uint</td><td>unsigned int</td></tr>

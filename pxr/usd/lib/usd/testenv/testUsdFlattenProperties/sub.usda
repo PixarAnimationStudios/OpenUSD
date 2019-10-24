@@ -8,6 +8,15 @@ def "OffsetTimeSamples"
     }
 }
 
+def "OffsetTimeCodeTimeSamples"
+{
+    timecode a = 0
+    timecode a.timeSamples = {
+        0: 100,
+        10: 1000
+    }
+}
+
 def "WeakerTimeSamples"
 {
     double a.timeSamples = {

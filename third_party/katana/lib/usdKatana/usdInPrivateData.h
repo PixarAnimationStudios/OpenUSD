@@ -108,8 +108,26 @@ public:
     /// and the first specified sample is later than the last sample.
     const bool IsMotionBackward() const;
 
+    /// \brief Return frame-relative sample times based on how the given
+    ///        attribute is sampled with respect to the shutter range.
+    ///        If an attribute is not provided, the motion sample times
+    ///        specified at a parent location or the default motion sample
+    ///        times as specified via the usdInArgs will be used.
+    ///
+    /// If motion is desired and the given attribute does not have samples
+    /// authored within the shutter range, the closest samples to the shutter
+    /// boundary will be used for determining the result. If no closest samples
+    /// could be found, a single sample time (no motion) will be returned,
+    /// unless \p fallBackToShutterBoundary is true, in which case the shutter
+    /// start time and/or end time will be used.
+    ///
+    /// This utility respects the notion of motion sample times overrides
+    /// as specified in the usdInArgs' session data. Motion sample times
+    /// overrides take precedence over any of the aforementioned logic.
+    ///
     const std::vector<double> GetMotionSampleTimes(
-        const UsdAttribute& attr = UsdAttribute()) const;
+        const UsdAttribute& attr = UsdAttribute(),
+        bool fallBackToShutterBoundary = false) const;
 
     /// \brief Returns a list of <usd, katana> times for use in clients that
     ///        wish to multi-sample USD data and build corresponding Katana 

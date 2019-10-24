@@ -182,7 +182,7 @@ _GetFormatArgumentForFileFormat(const SdfFileFormatConstPtr& fileFormat)
     return formatArg;
 }
 
-// Returns the file format associated with the given arguments, or NULL.
+// Returns the file format associated with the given arguments, or nullptr.
 static
 SdfFileFormatConstPtr
 _GetFileFormatForArguments(const SdfFileFormat::FileFormatArguments& args)

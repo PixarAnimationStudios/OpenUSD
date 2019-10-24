@@ -1,0 +1,63 @@
+Loading @ImpliedAndAncestralInherits/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </World>
+
+Prim Stack:
+    root.sdf             /World
+
+Child names:
+     ['CharGroup']
+
+------------------------------------------------------------------------
+Results for composing </World/CharGroup>
+
+Prim Stack:
+    root.sdf             /World/CharGroup
+    Group.sdf            /CharGroup
+    CharGroupRig.sdf     /CHARGROUP
+    CharGroupRig.sdf     /_class_CharGroupRig
+
+Child names:
+     ['Sim']
+
+------------------------------------------------------------------------
+Results for composing </World/CharGroup/Sim>
+
+Prim Stack:
+    CharGroupRig.sdf     /CHARGROUP/Sim
+    CharGroupRig.sdf     /_class_CharGroupRig/Sim
+
+Child names:
+     ['includes']
+
+------------------------------------------------------------------------
+Results for composing </World/CharGroup/Sim/includes>
+
+Prim Stack:
+    CharGroupRig.sdf     /CHARGROUP/Sim/includes
+    CharGroupRig.sdf     /_class_CharGroupRig/Sim/includes
+
+Child names:
+     ['Hand']
+
+------------------------------------------------------------------------
+Results for composing </World/CharGroup/Sim/includes/Hand>
+
+Prim Stack:
+    CharGroupRig.sdf     /CHARGROUP/Sim/includes/Hand
+    CharGroupRig.sdf     /_class_SimHand
+
+Child names:
+     ['Geom']
+
+------------------------------------------------------------------------
+Results for composing </World/CharGroup/Sim/includes/Hand/Geom>
+
+Prim Stack:
+    CharGroupRig.sdf     /_class_SimHand/Geom
+

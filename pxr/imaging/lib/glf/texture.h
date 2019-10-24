@@ -96,6 +96,9 @@ public:
     virtual BindingVector GetBindings(TfToken const & identifier,
                                       GLuint samplerId = 0) = 0;
 
+    /// Returns the OpenGl texture name for the texture. 
+    virtual GLuint GetGlTextureName() = 0;
+
     /// Amount of memory used to store the texture
     GLF_API
     size_t GetMemoryUsed() const;

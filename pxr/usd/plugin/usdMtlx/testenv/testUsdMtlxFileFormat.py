@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-from pxr import Tf, Usd, UsdMtlx
+from pxr import Tf, Sdf, Usd, UsdMtlx, UsdShade
 import unittest
 
 def _EmptyLayer():
@@ -116,6 +116,33 @@ class TestFileFormat(unittest.TestCase):
         stage = UsdMtlx._TestFile('NodeGraphs.mtlx', nodeGraphs=True)
         with open('NodeGraphs.usda', 'w') as f:
             print >>f, stage.GetRootLayer().ExportToString()
+
+    def test_MultiBindInputs(self):
+        """
+        Test MaterialX conversion with mutliple bind inputs.
+        """
+
+        stage = UsdMtlx._TestFile('MultiBindInputs.mtlx')
+        
+        # Get the node graph and make sure there are exactly 3 inputs
+        nodeGraph = UsdShade.NodeGraph.Get(stage,
+                        Sdf.Path('/MaterialX/Materials/layered/ND_layerShader'))
+        inputs = nodeGraph.GetInputs()
+        self.assertEqual(len(inputs), 3)
+
+        # Make sure each input is connected as expected
+        inputToSource = {
+            'weight_1':
+            '/MaterialX/Materials/layered/NodeGraphs/layered_layer1_gradient',
+            'weight_2':
+            '/MaterialX/Materials/layered/NodeGraphs/layered_layer2_gradient',
+            'weight_3':
+            '/MaterialX/Materials/layered/NodeGraphs/layered_layer3_gradient'
+        }
+        for inputName, source in inputToSource.iteritems():
+            input = nodeGraph.GetInput(inputName)
+            self.assertEqual(input.HasConnectedSource(), True)
+            self.assertEqual(input.GetConnectedSource()[0].GetPath(), source)
 
     def test_Looks(self):
         """

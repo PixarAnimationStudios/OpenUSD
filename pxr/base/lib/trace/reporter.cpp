@@ -72,8 +72,7 @@ TraceReporter::TraceReporter(const string& label,
     TraceReporterBase(std::move(dataSource)),
     _label(label),
     _groupByFunction(true),
-    _foldRecursiveCalls(false),
-    _buildEventTree(false)
+    _foldRecursiveCalls(false)
 {
     _aggregateTree = TraceAggregateTree::New();
     _eventTree = TraceEventTree::New();
@@ -295,13 +294,10 @@ TraceReporter::ReportChromeTracing(std::ostream &s)
 
 
 void 
-TraceReporter::_UpdateTree(bool buildEventTree)
+TraceReporter::_RebuildEventAndAggregateTrees()
 {
     // Get the latest from the collector and process the events.
-    {
-        TfScopedVar<bool> scope(_buildEventTree, buildEventTree);
-        _Update();
-    }
+    _Update();
 
     // If MallocTags were enabled for the capture of this trace, add a dummy
     // warning node as an indicator that the trace may have been slowed down
@@ -323,15 +319,13 @@ TraceReporter::_UpdateTree(bool buildEventTree)
 void
 TraceReporter::UpdateAggregateTree()
 {
-    static const bool buildEventTree = true;
-    _UpdateTree(!buildEventTree);
+    _RebuildEventAndAggregateTrees();
 }
 
 void
 TraceReporter::UpdateEventTree()
 {
-    static const bool buildEventTree = true;
-    _UpdateTree(buildEventTree);
+    _RebuildEventAndAggregateTrees();
 }
 
 
@@ -416,10 +410,15 @@ TraceReporter::_ProcessCollection(
     const TraceReporterBase::CollectionPtr& collection)
 {
     if (collection) {
-        _aggregateTree->Append(*collection);
-        if (_buildEventTree) {
-            _eventTree->Add(*collection);
-        }
+
+        // We just always build the single (additional) event tree for the 
+        // (additional) new collection given and pass it on to the aggregate 
+        // tree. Note that the call to Add() merges in the newGraph to 
+        // _eventTree which thus represents the merged sum of all collections 
+        // seen here whereas newGraph is just the graph for the new collection. 
+
+        TraceEventTreeRefPtr newGraph = _eventTree->Add(*collection);
+        _aggregateTree->Append(newGraph, *collection);
     }
 }
 

@@ -364,6 +364,10 @@ class TestSdfPath(unittest.TestCase):
         self.assertEqual(p.ReplacePrefix('/A', '/_', fixTargetPaths=True),
                          Sdf.Path('/_/B.a[/C/D.a[/_/F.a]].a'))
 
+        self.assertEqual(Sdf.Path('/Model/Sym/B.r[/Model/Sym/B.x]').
+                         ReplacePrefix('/Model/Sym/B.x', '/Model/Sym/B.x2'),
+                         Sdf.Path('/Model/Sym/B.r[/Model/Sym/B.x2]'))
+
         # ReplacePrefix with an empty old or new prefix returns an empty path.
         self.assertEqual(Sdf.Path("/A/B").ReplacePrefix(Sdf.Path.emptyPath, "/C"),
                          Sdf.Path.emptyPath)
@@ -373,6 +377,8 @@ class TestSdfPath(unittest.TestCase):
         self.assertEqual(Sdf.Path.emptyPath.ReplacePrefix(Sdf.Path.emptyPath, "/C"),
                          Sdf.Path.emptyPath)
         self.assertEqual(Sdf.Path.emptyPath.ReplacePrefix("/A", Sdf.Path.emptyPath),
+                         Sdf.Path.emptyPath)
+        self.assertEqual(Sdf.Path.emptyPath.ReplacePrefix("/A", "/B"),
                          Sdf.Path.emptyPath)
         
         # ========================================================================
@@ -872,7 +878,7 @@ class TestSdfPath(unittest.TestCase):
         # ========================================================================
         
         def testFindPrefixedRangeAndFindLongestPrefix():
-            print "Test FindPrefixedRange and FindLongestPrefix"
+            print "Test FindPrefixedRange and FindLongest(Strict)Prefix"
         
             import random, time
             rgen = random.Random()
@@ -927,9 +933,29 @@ class TestSdfPath(unittest.TestCase):
                 self.assertEqual(lp, bruteLongest, ('lp (%s) != bruteLongest (%s)' % 
                                             (lp, bruteLongest)))
         
+            def testFindLongestStrictPrefix(p, paths):
+                lp = Sdf.Path.FindLongestStrictPrefix(paths, p)
+                # should always have some prefix unless p is '/'.
+                if p == Sdf.Path('/'):
+                    return
+                self.assertTrue(p.HasPrefix(lp))
+                # manually find longest prefix of p's parent.
+                p = p.GetParentPath()
+                bruteLongest = Sdf.Path('/')
+                for x in paths:
+                    if (p.HasPrefix(x) and 
+                        x.pathElementCount > bruteLongest.pathElementCount):
+                        bruteLongest = x
+                # bruteLongest should match.
+                #print 'path:', p, 'lp:', lp, 'bruteLongest:', bruteLongest
+                self.assertEqual(lp, bruteLongest,
+                                 ('lp (%s) != bruteLongest (%s)' % 
+                                  (lp, bruteLongest)))
+
             for testp in tests:
                 testFindPrefixedRange(testp, paths)
                 testFindLongestPrefix(testp, paths)
+                testFindLongestStrictPrefix(testp, paths)
         
             # Do a few simple cases directly.
             paths = map(Sdf.Path, ['/a', '/a/b/c/d', '/b/a', '/b/c/d/e'])

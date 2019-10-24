@@ -142,14 +142,17 @@ private:
     /// shader.
     UsdPrim _GetDisplacementShaderPrim(const UsdShadeMaterial &material) const;
 
+    UsdPrim _GetVolumeShaderPrim(const UsdShadeMaterial &material) const;
+
     /// \brief Populates the information in the material graph
     /// (identified by \c SdfPath objects) that this \p materialPrim uses.
     /// 
     /// Returns false if the material prim has an invalid material graph.
     bool _GatherMaterialData(
         UsdPrim const& materialPrim,
-        UsdPrim *shaderPrim,
+        UsdPrim *surfaceShaderPrim,
         UsdPrim *displacementShaderPrim,
+        UsdPrim *volumeShaderPrim,
         SdfPathVector *textureIDs,
         TfTokenVector *primvars,
         HdMaterialParamVector *materialParams,

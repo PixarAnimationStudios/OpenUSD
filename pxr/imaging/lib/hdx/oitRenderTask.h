@@ -35,14 +35,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-class HdSceneDelegate;
-
-typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
-typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
-typedef boost::shared_ptr<class HdxOitRenderSetupTask> HdxOitRenderSetupTaskSharedPtr;
-typedef std::vector<HdRenderPassSharedPtr> HdRenderPassSharedPtrVector;
-
 /// \class HdxOitRenderTask
 ///
 /// A task for rendering transparent geometry into OIT buffers.
@@ -77,17 +69,9 @@ private:
     HdxOitRenderTask(const HdxOitRenderTask &) = delete;
     HdxOitRenderTask &operator =(const HdxOitRenderTask &) = delete;
 
-    void _PrepareOitBuffers(HdTaskContext* ctx, HdRenderIndex* renderIndex);
-    void _ClearOitGpuBuffers(HdTaskContext* ctx);
-
-    HdStRenderPassShaderSharedPtr _oitRenderPassShader;
-
-    GfVec4i _viewport;
-    HdBufferArrayRangeSharedPtr _counterBar;
-    HdBufferArrayRangeSharedPtr _dataBar;
-    HdBufferArrayRangeSharedPtr _depthBar;
-    HdBufferArrayRangeSharedPtr _indexBar;
-    HdBufferArrayRangeSharedPtr _uniformBar;
+    HdStRenderPassShaderSharedPtr _oitTranslucentRenderPassShader;
+    HdStRenderPassShaderSharedPtr _oitOpaqueRenderPassShader;
+    const bool _isOitEnabled;
 };
 
 

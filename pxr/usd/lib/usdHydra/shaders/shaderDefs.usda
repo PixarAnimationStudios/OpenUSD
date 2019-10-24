@@ -104,6 +104,37 @@ def Shader "HwUvTexture_1" (
     )
 }
 
+def Shader "HwFieldReader" (
+    sdrMetadata = {
+        token role = "field"
+    }
+    doc = """Samples from a UsdVolFieldAsset.
+
+             Note that the output is always a float3.
+             If the field asset (e.g., OpenVDB file) contains a FloatGrid, the float will be padded with zeros to give a float3."""
+)
+{
+    uniform asset info:glslfx:sourceAsset = @./empty.glslfx@
+    uniform token info:implementationSource = "sourceAsset"
+    token inputs:fieldname = "" (
+        connectability = "interfaceOnly"
+        doc = """Name of the field to be fetched from volume
+                 (e.g., FOO if the relationship from the volume to field is called field::FOO)."""
+        sdrMetadata = {
+            token fieldProperty = "1"
+        }
+    )
+
+    float3 inputs:fallback = (0.0, 0.0, 0.0) (
+        doc = """Fallback value to be returned when fetch failed."""
+        sdrMetadata = {
+            token defaultInput = "1"
+        }
+    )
+
+    float3 outputs:result
+}
+
 def Shader "HwPrimvar_1" (
     sdrMetadata = {
         token role = "primvar"

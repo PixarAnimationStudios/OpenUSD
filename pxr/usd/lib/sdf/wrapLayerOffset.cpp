@@ -24,6 +24,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/layerOffset.h"
+#include "pxr/usd/sdf/timeCode.h"
 #include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -86,6 +87,10 @@ void wrapLayerOffset()
         .def( self == self )
         .def( self != self )
         .def( self * self )
+
+        // This order is required to prevent doubles from implicitly converting
+        // to SdfTimeCode when calling SdfLayerOffset * double.
+        .def( self * SdfTimeCode() )
         .def( self * double() )
 
         .def("__repr__", _Repr)

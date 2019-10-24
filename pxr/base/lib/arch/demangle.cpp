@@ -78,6 +78,17 @@ _FixupStringNames(string* name)
     while ((pos = name->find(*from, pos)) != string::npos) {
         name->replace(pos, from->size(), *to);
         pos += to->size();
+
+        // Erase trailing whitespace after for consistent results
+        // across compilers for templated types where the last
+        // template parameter is a std::string. For example, on
+        // gcc the type Foo<std::string> comes in as Foo<std::string>,
+        // but on clang this comes in as Foo<std::__1::basic_string<...> >.
+        // In both cases, we want to end the outer loop with Foo<std::string>.
+        string::size_type numSpaces = 0;
+        for (string::size_type i = pos, e = name->size();
+             i != e && (*name)[i] == ' '; ++i, ++numSpaces) { }
+        name->erase(pos, numSpaces);
     }
 
     pos = 0;

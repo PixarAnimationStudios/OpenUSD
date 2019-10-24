@@ -125,3 +125,5 @@ class AttributeValueEditor(QtWidgets.QWidget):
         # set the value editor to 'no attribute selected' mode
         self._isSet = False
         self._ui.valueViewer.setText("")
+        # make sure we're showing the default view
+        self._ui.stackedWidget.setCurrentWidget(self._defaultView)

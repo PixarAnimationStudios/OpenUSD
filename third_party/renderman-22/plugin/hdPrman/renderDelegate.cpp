@@ -21,25 +21,29 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "hdPrman/basisCurves.h"
+#include "hdPrman/camera.h"
 #include "hdPrman/context.h"
-#include "hdPrman/instancer.h"
 #include "hdPrman/coordSys.h"
+#include "hdPrman/instancer.h"
 #include "hdPrman/light.h"
 #include "hdPrman/material.h"
+#include "hdPrman/mesh.h"
+#include "hdPrman/points.h"
 #include "hdPrman/renderDelegate.h"
 #include "hdPrman/renderParam.h"
 #include "hdPrman/renderPass.h"
-#include "pxr/imaging/hd/tokens.h"
-#include "hdPrman/basisCurves.h"
-#include "hdPrman/mesh.h"
-#include "hdPrman/points.h"
 #include "hdPrman/volume.h"
-#include "pxr/imaging/hd/camera.h"
+
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/bprim.h"
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/extComputation.h"
-#include "pxr/imaging/hd/sprim.h"
-#include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
+#include "pxr/imaging/hd/rprim.h"
+#include "pxr/imaging/hd/sprim.h"
+
+#include "pxr/base/tf/getenv.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
  
@@ -49,6 +53,9 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 TF_DEFINE_PUBLIC_TOKENS(HdPrmanRenderSettingsTokens,
     HDPRMAN_RENDER_SETTINGS_TOKENS);
+
+TF_DEFINE_PUBLIC_TOKENS(HdPrmanIntegratorTokens,
+    HDPRMAN_INTEGRATOR_TOKENS);
 
 const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
@@ -97,10 +104,36 @@ HdPrmanRenderDelegate::_Initialize()
     _renderParam = std::make_shared<HdPrman_RenderParam>(_context);
     _resourceRegistry.reset(new HdResourceRegistry());
 
-    _settingDescriptors.resize(1);
-    _settingDescriptors[0] = { std::string("Integrator"),
+    std::string integrator = HdPrmanIntegratorTokens->PxrPathTracer;
+    const std::string interactiveIntegrator = 
+        HdPrmanIntegratorTokens->PxrDirectLighting;
+    std::string integratorEnv = TfGetenv("HDX_PRMAN_INTEGRATOR");
+    if (!integratorEnv.empty())
+        integrator = integratorEnv;
+
+
+    _settingDescriptors.resize(3);
+
+    _settingDescriptors[0] = { 
+        std::string("Integrator"),
         HdPrmanRenderSettingsTokens->integrator,
-        VtValue("PxrPathTracer") };
+        VtValue(integrator) 
+    };
+
+    _settingDescriptors[1] = {
+        std::string("Interactive Integrator"),
+        HdPrmanRenderSettingsTokens->interactiveIntegrator,
+        VtValue(interactiveIntegrator)
+    };
+
+    // If >0, the time in ms that we'll render quick output before switching
+    // to path tracing
+    _settingDescriptors[2] = {
+        std::string("Interactive Integrator Timeout (ms)"),
+        HdPrmanRenderSettingsTokens->interactiveIntegratorTimeout,
+        VtValue(200)
+    };
+
     _PopulateDefaultSettings(_settingDescriptors);
 }
 
@@ -210,7 +243,7 @@ HdPrmanRenderDelegate::CreateSprim(TfToken const& typeId,
                                     SdfPath const& sprimId)
 {
     if (typeId == HdPrimTypeTokens->camera) {
-        return new HdCamera(sprimId);
+        return new HdPrmanCamera(sprimId);
     } else if (typeId == HdPrimTypeTokens->material) {
         return new HdPrmanMaterial(sprimId);
     } else if (typeId == HdPrimTypeTokens->coordSys) {
@@ -237,7 +270,7 @@ HdPrmanRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
     // For fallback sprims, create objects with an empty scene path.
     // They'll use default values and won't be updated by a scene delegate.
     if (typeId == HdPrimTypeTokens->camera) {
-        return new HdCamera(SdfPath::EmptyPath());
+        return new HdPrmanCamera(SdfPath::EmptyPath());
     } else if (typeId == HdPrimTypeTokens->material) {
         return new HdPrmanMaterial(SdfPath::EmptyPath());
     } else if (typeId == HdPrimTypeTokens->coordSys) {
@@ -309,9 +342,7 @@ HdPrmanRenderDelegate::GetMaterialNetworkSelector() const
 TfTokenVector
 HdPrmanRenderDelegate::GetShaderSourceTypes() const
 {
-    static const TfToken OSL("OSL");
-    static const TfToken RmanCpp("RmanCpp");
-    return {OSL, RmanCpp};
+    return HdPrmanMaterial::GetShaderSourceTypes();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

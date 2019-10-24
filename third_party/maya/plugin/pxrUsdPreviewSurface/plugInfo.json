@@ -14,7 +14,7 @@
             "Name": "pxrUsdPreviewSurface",
             "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
             "Root": "@PLUG_INFO_ROOT@",
-            "Type": "python"
+            "Type": "resource"
         }
     ]
 }

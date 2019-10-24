@@ -41,34 +41,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdPrman_BasisCurves::HdPrman_BasisCurves(SdfPath const& id,
-                           SdfPath const& instancerId)
-    : HdBasisCurves(id, instancerId)
-    , _masterId(riley::GeometryMasterId::k_InvalidId)
-    , _instanceId(riley::GeometryInstanceId::k_InvalidId)
+                                         SdfPath const& instancerId)
+    : BASE(id, instancerId)
 {
-}
-
-void
-HdPrman_BasisCurves::Finalize(HdRenderParam *renderParam)
-{
-    HdPrman_Context *context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->AcquireContext();
-
-    riley::Riley *riley = context->riley;
-
-    // Release retained conversions of coordSys bindings.
-    context->ReleaseCoordSysBindings(GetId());
-
-    if (_masterId != riley::GeometryMasterId::k_InvalidId) {
-        riley->DeleteGeometryMaster(_masterId);
-        _masterId = riley::GeometryMasterId::k_InvalidId;
-    }
-    if (_instanceId != riley::GeometryInstanceId::k_InvalidId) {
-        riley->DeleteGeometryInstance(
-            riley::GeometryMasterId::k_InvalidId, // no group
-            _instanceId);
-        _instanceId = riley::GeometryInstanceId::k_InvalidId;
-    }
 }
 
 HdDirtyBits
@@ -92,36 +67,17 @@ HdPrman_BasisCurves::GetInitialDirtyBitsMask() const
     return (HdDirtyBits)mask;
 }
 
-HdDirtyBits
-HdPrman_BasisCurves::_PropagateDirtyBits(HdDirtyBits bits) const
-{
-    // XXX This is not ideal. Currently Riley requires us to provide
-    // all the values anytime we edit a mesh. To make sure the values
-    // exist in the value cache, we propagte the dirty bits.value cache,
-    // we propagte the dirty bits.value cache, we propagte the dirty
-    // bits.value cache, we propagte the dirty bits.
-    return bits ? (bits | GetInitialDirtyBitsMask()) : bits;
-}
-
 void
-HdPrman_BasisCurves::_InitRepr(TfToken const &reprToken,
-                               HdDirtyBits *dirtyBits)
-{
-    TF_UNUSED(reprToken);
-    TF_UNUSED(dirtyBits);
-
-    // No-op
-}
-
-static RixParamList *
-_PopulatePrimvars(const HdPrman_BasisCurves &curves,
-                  RixRileyManager *mgr,
-                  HdSceneDelegate *sceneDelegate,
-                  const SdfPath &id,
-                  RtUString *primType)
+HdPrman_BasisCurves::_ConvertGeometry(HdPrman_Context *context,
+                                       RixRileyManager *mgr,
+                                       HdSceneDelegate *sceneDelegate,
+                                       const SdfPath &id,
+                                       RtUString *primType,
+                                       std::vector<HdGeomSubset> *geomSubsets,
+                                       RixParamList* &primvars)
 {
     HdBasisCurvesTopology topology =
-        curves.GetBasisCurvesTopology(sceneDelegate);
+        GetBasisCurvesTopology(sceneDelegate);
     VtValue pointsVal = sceneDelegate->Get(id, HdTokens->points);
     VtVec3fArray points;
     if (pointsVal.IsHolding<VtVec3fArray>()) {
@@ -160,7 +116,7 @@ _PopulatePrimvars(const HdPrman_BasisCurves &curves,
         TF_CODING_ERROR("Unknown curveType %s\n", curveType.GetText());
     }
 
-    RixParamList *primvars = mgr->CreateRixParamList(
+    primvars = mgr->CreateRixParamList(
          numCurves, /* uniform */
          vertexPrimvarCount, /* vertex */
          varyingPrimvarCount, /* varying */
@@ -216,124 +172,6 @@ _PopulatePrimvars(const HdPrman_BasisCurves &curves,
 
     HdPrman_ConvertPrimvars(sceneDelegate, id, primvars, numCurves,
         vertexPrimvarCount, varyingPrimvarCount, facevaryingPrimvarCount);
-
-    return primvars;
-}
-
-void
-HdPrman_BasisCurves::Sync(HdSceneDelegate *sceneDelegate,
-                          HdRenderParam   *renderParam,
-                          HdDirtyBits     *dirtyBits,
-                          TfToken const   &reprToken)
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    TF_UNUSED(reprToken);
-
-    HdPrman_Context *context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->AcquireContext();
-
-    if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
-        _SetMaterialId(sceneDelegate->GetRenderIndex().GetChangeTracker(),
-                       sceneDelegate->GetMaterialId(GetId()));
-    }
-
-    SdfPath const& id = GetId();
-
-    float const zerotime = 0.0f;
-    RtMatrix4x4 matrix =
-        HdPrman_GfMatrixToRtMatrix(sceneDelegate->GetTransform(id));
-    riley::Transform xform = { 1, &matrix, &zerotime };
-
-    RixRileyManager *mgr = context->mgr;
-    riley::Riley *riley = context->riley;
-
-    RixParamList *primvars = nullptr;
-    RixParamList *attrs = nullptr;
-    RtUString primType;
-
-    // Look up material binding.  Default to fallbackMaterial.
-    riley::MaterialId materialId = context->fallbackMaterial;
-    riley::DisplacementId dispId = riley::DisplacementId::k_InvalidId;
-    const SdfPath & hdMaterialId = GetMaterialId();
-    HdPrman_ResolveMaterial(sceneDelegate, hdMaterialId, &materialId, &dispId);
-
-    // Convert (and cache) coordinate systems.
-    riley::ScopedCoordinateSystem coordSys = {0, nullptr};
-    if (HdPrman_Context::RileyCoordSysIdVecRefPtr convertedCoordSys =
-        context->ConvertAndRetainCoordSysBindings(sceneDelegate, id)) {
-        coordSys.count = convertedCoordSys->size();
-        coordSys.coordsysIds = &(*convertedCoordSys)[0];
-    }
-
-    // Hydra dirty bits corresponding to PRMan master primvars
-    // and instance attributes.
-    const int prmanPrimvarBits =
-        HdChangeTracker::DirtyPoints |
-        HdChangeTracker::DirtyPrimvar |
-        HdChangeTracker::DirtyTopology |
-        HdChangeTracker::DirtyNormals;
-    const int prmanAttrBits =
-        HdChangeTracker::DirtyVisibility |
-        HdChangeTracker::DirtyTransform;
-
-    // Lazily initialize _primType.
-    if (_masterId == riley::GeometryMasterId::k_InvalidId) {
-        // Lazily initialize _masterId.
-        primvars = _PopulatePrimvars(*this, mgr, sceneDelegate, id, &primType);
-        _masterId = riley->CreateGeometryMaster(
-            primType,
-            dispId,
-            *primvars);
-    } else if (*dirtyBits & prmanPrimvarBits) {
-        // Modify existing master.
-        primvars = _PopulatePrimvars(*this, mgr, sceneDelegate, id, &primType);
-        riley->ModifyGeometryMaster(
-            primType,
-            _masterId,
-            &dispId,
-            primvars);
-    }
-
-    if (_instanceId == riley::GeometryInstanceId::k_InvalidId) {
-        // Lazily initialize _instanceId.
-        attrs = context->ConvertAttributes(sceneDelegate, id);
-        // Add "identifier:id" with the hydra prim id, and "identifier:id2"
-        // with the instance number.
-        attrs->SetInteger(RixStr.k_identifier_id, GetPrimId());
-        attrs->SetInteger(RixStr.k_identifier_id2, 0);
-        _instanceId = riley->CreateGeometryInstance(
-            riley::GeometryMasterId::k_InvalidId, // no group
-            _masterId,
-            materialId,
-            coordSys, xform, *attrs);
-    } else if (*dirtyBits & prmanAttrBits) {
-        // Modify existing instance.
-        attrs = context->ConvertAttributes(sceneDelegate, id);
-        // Add "identifier:id" with the hydra prim id, and "identifier:id2"
-        // with the instance number.
-        attrs->SetInteger(RixStr.k_identifier_id, GetPrimId());
-        attrs->SetInteger(RixStr.k_identifier_id2, 0);
-        riley->ModifyGeometryInstance(
-            riley::GeometryMasterId::k_InvalidId, // no group
-            _instanceId,
-            &materialId,
-            &coordSys,
-            &xform,
-            attrs);
-    }
-
-    if (primvars) {
-        mgr->DestroyRixParamList(primvars);
-        primvars = nullptr;
-    }
-    if (attrs) {
-        mgr->DestroyRixParamList(attrs);
-        attrs = nullptr;
-    }
-
-    *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

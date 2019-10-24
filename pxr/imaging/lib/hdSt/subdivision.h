@@ -84,6 +84,10 @@ public:
 
     /// Returns true if the subdivision for \a scheme generates bspline patches.
     static bool RefinesToBSplinePatches(TfToken const &scheme);
+
+    /// Returns true if the subdivision for \a scheme generates box spline
+    /// triangle patches.
+    static bool RefinesToBoxSplineTrianglePatches(TfToken const &scheme);
 };
 
 // ---------------------------------------------------------------------------
@@ -137,7 +141,7 @@ protected:
     HdSt_OsdIndexComputation(HdSt_MeshTopology *topology,
                            HdBufferSourceSharedPtr const &osdTopology);
 
-    virtual bool _CheckValid() const;
+    virtual bool _CheckValid() const override;
 
     HdSt_MeshTopology *_topology;
     HdBufferSourceSharedPtr _osdTopology;
@@ -208,8 +212,8 @@ public:
                 boost::static_pointer_cast<HdStBufferResourceGL> (resource);
         }
 
-        // bit confusing, osd expects 'GetNumElements()' returns the num components,
-        // in hydra sense
+        // bit confusing, osd expects 'GetNumElements()' returns the num 
+        // components, in Storm sense
         size_t GetNumElements() const {
             return HdGetComponentCount(_resource->GetTupleType().type);
         }

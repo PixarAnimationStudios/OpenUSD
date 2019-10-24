@@ -83,12 +83,13 @@ HdPrmanCoordSys::Sync(HdSceneDelegate *sceneDelegate,
         // Sample transform
         HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
         sceneDelegate->SampleTransform(id, &xf);
-        RtMatrix4x4 xf_rt_values[HDPRMAN_MAX_TIME_SAMPLES];
+        TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES> 
+            xf_rt_values(xf.count);
         for (size_t i=0; i < xf.count; ++i) {
             xf_rt_values[i] = HdPrman_GfMatrixToRtMatrix(xf.values[i]);
         }
         const riley::Transform xform = {
-            unsigned(xf.count), xf_rt_values, xf.times};
+            unsigned(xf.count), xf_rt_values.data(), xf.times.data()};
 
         RixParamList *attrs = mgr->CreateRixParamList();
         // The coordSys name is the final component of the id,

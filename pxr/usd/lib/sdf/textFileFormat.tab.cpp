@@ -257,12 +257,10 @@ _SetListOpItems(const TfToken &key, SdfListOpType type,
             key.GetText(), context->path.GetText());
     }
 
-    const SdfAbstractDataSpecId specId(&context->path);
-
-    ListOpType op = context->data->GetAs<ListOpType>(specId, key);
+    ListOpType op = context->data->GetAs<ListOpType>(context->path, key);
     op.SetItems(items, type);
 
-    context->data->Set(specId, key, VtValue::Take(op));
+    context->data->Set(context->path, key, VtValue::Take(op));
 }
 
 // Append a single item to the vector for the current path and specified key.
@@ -271,12 +269,11 @@ static void
 _AppendVectorItem(const TfToken& key, const T& item,
                   Sdf_TextParserContext *context)
 {
-    const SdfAbstractDataSpecId specId(&context->path);
-
-    std::vector<T> vec = context->data->GetAs<std::vector<T> >(specId, key);
+    std::vector<T> vec =
+        context->data->GetAs<std::vector<T> >(context->path, key);
     vec.push_back(item);
 
-    context->data->Set(specId, key, VtValue(vec));
+    context->data->Set(context->path, key, VtValue(vec));
 }
 
 template <class T>
@@ -284,27 +281,27 @@ inline static void
 _SetField(const SdfPath& path, const TfToken& key, const T& item,
           Sdf_TextParserContext *context)
 {
-    context->data->Set(SdfAbstractDataSpecId(&path), key, VtValue(item));
+    context->data->Set(path, key, VtValue(item));
 }
 
 inline static bool
 _HasField(const SdfPath& path, const TfToken& key, VtValue* value, 
           Sdf_TextParserContext *context)
 {
-    return context->data->Has(SdfAbstractDataSpecId(&path), key, value);
+    return context->data->Has(path, key, value);
 }
 
 inline static bool
 _HasSpec(const SdfPath& path, Sdf_TextParserContext *context)
 {
-    return context->data->HasSpec(SdfAbstractDataSpecId(&path));
+    return context->data->HasSpec(path);
 }
 
 inline static void
 _CreateSpec(const SdfPath& path, SdfSpecType specType, 
             Sdf_TextParserContext *context)
 {
-    context->data->CreateSpec(SdfAbstractDataSpecId(&path), specType);
+    context->data->CreateSpec(path, specType);
 }
 
 static void
@@ -950,8 +947,7 @@ _PrimEndRelationship(Sdf_TextParserContext *context)
     if (!context->relParsingNewTargetChildren.empty()) {
         std::vector<SdfPath> children = 
             context->data->GetAs<std::vector<SdfPath> >(
-                SdfAbstractDataSpecId(&context->path), 
-                SdfChildrenKeys->RelationshipTargetChildren);
+                context->path, SdfChildrenKeys->RelationshipTargetChildren);
 
         children.insert(children.end(), 
                         context->relParsingNewTargetChildren.begin(),
@@ -1252,7 +1248,7 @@ _GenericMetadataEnd(SdfSpecType specType, Sdf_TextParserContext *context)
 
 
 /* Line 189 of yacc.c  */
-#line 1233 "pxr/usd/sdf/textFileFormat.tab.cpp"
+#line 1229 "pxr/usd/sdf/textFileFormat.tab.cpp"
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
@@ -1349,7 +1345,7 @@ typedef int YYSTYPE;
 
 
 /* Line 264 of yacc.c  */
-#line 1330 "pxr/usd/sdf/textFileFormat.tab.cpp"
+#line 1326 "pxr/usd/sdf/textFileFormat.tab.cpp"
 
 #ifdef short
 # undef short
@@ -1825,53 +1821,53 @@ static const yytype_int16 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,  1250,  1250,  1253,  1254,  1255,  1256,  1257,  1258,  1259,
-    1260,  1261,  1262,  1263,  1264,  1265,  1266,  1267,  1268,  1269,
-    1270,  1271,  1272,  1273,  1274,  1275,  1276,  1277,  1278,  1279,
-    1280,  1281,  1282,  1283,  1284,  1285,  1286,  1287,  1288,  1289,
-    1290,  1291,  1292,  1293,  1294,  1295,  1303,  1304,  1315,  1315,
-    1327,  1328,  1340,  1341,  1345,  1346,  1350,  1354,  1359,  1359,
-    1368,  1368,  1374,  1374,  1380,  1380,  1386,  1386,  1392,  1392,
-    1400,  1407,  1411,  1412,  1426,  1427,  1431,  1439,  1446,  1448,
-    1452,  1453,  1457,  1461,  1468,  1469,  1477,  1477,  1481,  1481,
-    1485,  1485,  1489,  1489,  1493,  1493,  1497,  1497,  1501,  1511,
-    1512,  1519,  1519,  1579,  1580,  1584,  1585,  1589,  1590,  1594,
-    1595,  1596,  1600,  1605,  1605,  1614,  1614,  1620,  1620,  1626,
-    1626,  1632,  1632,  1638,  1638,  1646,  1653,  1660,  1667,  1667,
-    1674,  1674,  1681,  1681,  1688,  1688,  1695,  1695,  1702,  1702,
-    1710,  1710,  1715,  1715,  1720,  1720,  1725,  1725,  1730,  1730,
-    1735,  1735,  1741,  1741,  1746,  1746,  1751,  1751,  1756,  1756,
-    1761,  1761,  1766,  1766,  1772,  1772,  1779,  1779,  1786,  1786,
-    1793,  1793,  1800,  1800,  1807,  1807,  1816,  1824,  1828,  1832,
-    1836,  1840,  1844,  1848,  1854,  1859,  1866,  1874,  1883,  1884,
-    1885,  1886,  1890,  1891,  1895,  1907,  1907,  1930,  1932,  1933,
-    1937,  1938,  1942,  1946,  1947,  1948,  1949,  1953,  1954,  1958,
-    1971,  1971,  1995,  1997,  1998,  2002,  2003,  2007,  2008,  2012,
-    2013,  2014,  2015,  2019,  2020,  2024,  2030,  2031,  2032,  2033,
-    2037,  2038,  2042,  2048,  2051,  2053,  2057,  2058,  2062,  2068,
-    2069,  2073,  2074,  2078,  2086,  2087,  2091,  2092,  2096,  2097,
-    2098,  2099,  2100,  2104,  2104,  2138,  2139,  2143,  2143,  2186,
-    2195,  2208,  2209,  2217,  2220,  2226,  2232,  2235,  2241,  2245,
-    2251,  2258,  2251,  2269,  2277,  2269,  2288,  2288,  2296,  2296,
-    2304,  2304,  2312,  2312,  2320,  2320,  2328,  2328,  2339,  2339,
-    2351,  2352,  2353,  2354,  2362,  2363,  2364,  2365,  2369,  2370,
-    2374,  2384,  2384,  2389,  2391,  2395,  2396,  2400,  2400,  2407,
-    2419,  2421,  2422,  2426,  2427,  2431,  2432,  2433,  2437,  2442,
-    2442,  2451,  2451,  2457,  2457,  2463,  2463,  2469,  2469,  2475,
-    2475,  2483,  2490,  2497,  2505,  2510,  2517,  2519,  2523,  2528,
-    2540,  2540,  2548,  2550,  2554,  2555,  2559,  2562,  2570,  2571,
-    2575,  2576,  2580,  2586,  2596,  2596,  2604,  2606,  2610,  2611,
-    2615,  2628,  2634,  2644,  2648,  2649,  2662,  2665,  2668,  2671,
-    2682,  2688,  2691,  2694,  2699,  2712,  2712,  2721,  2725,  2726,
-    2730,  2731,  2732,  2740,  2740,  2747,  2751,  2752,  2756,  2757,
-    2765,  2769,  2773,  2777,  2784,  2784,  2796,  2811,  2811,  2821,
-    2821,  2829,  2829,  2837,  2837,  2845,  2845,  2854,  2854,  2862,
-    2869,  2870,  2873,  2875,  2876,  2880,  2881,  2885,  2886,  2887,
-    2891,  2896,  2896,  2905,  2905,  2911,  2911,  2917,  2917,  2923,
-    2923,  2929,  2929,  2937,  2944,  2952,  2957,  2964,  2966,  2970,
-    2971,  2974,  2977,  2981,  2982,  2986,  2996,  2999,  3003,  3009,
-    3020,  3021,  3027,  3028,  3029,  3034,  3035,  3040,  3041,  3044,
-    3046,  3050,  3051,  3055,  3056,  3060,  3063,  3065,  3069,  3070
+       0,  1246,  1246,  1249,  1250,  1251,  1252,  1253,  1254,  1255,
+    1256,  1257,  1258,  1259,  1260,  1261,  1262,  1263,  1264,  1265,
+    1266,  1267,  1268,  1269,  1270,  1271,  1272,  1273,  1274,  1275,
+    1276,  1277,  1278,  1279,  1280,  1281,  1282,  1283,  1284,  1285,
+    1286,  1287,  1288,  1289,  1290,  1291,  1299,  1300,  1311,  1311,
+    1323,  1324,  1336,  1337,  1341,  1342,  1346,  1350,  1355,  1355,
+    1364,  1364,  1370,  1370,  1376,  1376,  1382,  1382,  1388,  1388,
+    1396,  1403,  1407,  1408,  1422,  1423,  1427,  1435,  1442,  1444,
+    1448,  1449,  1453,  1457,  1464,  1465,  1473,  1473,  1477,  1477,
+    1481,  1481,  1485,  1485,  1489,  1489,  1493,  1493,  1497,  1507,
+    1508,  1515,  1515,  1575,  1576,  1580,  1581,  1585,  1586,  1590,
+    1591,  1592,  1596,  1601,  1601,  1610,  1610,  1616,  1616,  1622,
+    1622,  1628,  1628,  1634,  1634,  1642,  1649,  1656,  1663,  1663,
+    1670,  1670,  1677,  1677,  1684,  1684,  1691,  1691,  1698,  1698,
+    1706,  1706,  1711,  1711,  1716,  1716,  1721,  1721,  1726,  1726,
+    1731,  1731,  1737,  1737,  1742,  1742,  1747,  1747,  1752,  1752,
+    1757,  1757,  1762,  1762,  1768,  1768,  1775,  1775,  1782,  1782,
+    1789,  1789,  1796,  1796,  1803,  1803,  1812,  1820,  1824,  1828,
+    1832,  1836,  1840,  1844,  1850,  1855,  1862,  1870,  1879,  1880,
+    1881,  1882,  1886,  1887,  1891,  1903,  1903,  1926,  1928,  1929,
+    1933,  1934,  1938,  1942,  1943,  1944,  1945,  1949,  1950,  1954,
+    1967,  1967,  1991,  1993,  1994,  1998,  1999,  2003,  2004,  2008,
+    2009,  2010,  2011,  2015,  2016,  2020,  2026,  2027,  2028,  2029,
+    2033,  2034,  2038,  2044,  2047,  2049,  2053,  2054,  2058,  2064,
+    2065,  2069,  2070,  2074,  2082,  2083,  2087,  2088,  2092,  2093,
+    2094,  2095,  2096,  2100,  2100,  2134,  2135,  2139,  2139,  2182,
+    2191,  2204,  2205,  2213,  2216,  2222,  2228,  2231,  2237,  2241,
+    2247,  2254,  2247,  2265,  2273,  2265,  2284,  2284,  2292,  2292,
+    2300,  2300,  2308,  2308,  2316,  2316,  2324,  2324,  2335,  2335,
+    2347,  2348,  2349,  2350,  2358,  2359,  2360,  2361,  2365,  2366,
+    2370,  2380,  2380,  2385,  2387,  2391,  2392,  2396,  2396,  2403,
+    2415,  2417,  2418,  2422,  2423,  2427,  2428,  2429,  2433,  2438,
+    2438,  2447,  2447,  2453,  2453,  2459,  2459,  2465,  2465,  2471,
+    2471,  2479,  2486,  2493,  2501,  2506,  2513,  2515,  2519,  2524,
+    2536,  2536,  2544,  2546,  2550,  2551,  2555,  2558,  2566,  2567,
+    2571,  2572,  2576,  2582,  2592,  2592,  2600,  2602,  2606,  2607,
+    2611,  2624,  2630,  2640,  2644,  2645,  2658,  2661,  2664,  2667,
+    2678,  2684,  2687,  2690,  2695,  2708,  2708,  2717,  2721,  2722,
+    2726,  2727,  2728,  2736,  2736,  2743,  2747,  2748,  2752,  2753,
+    2761,  2765,  2769,  2773,  2780,  2780,  2792,  2807,  2807,  2817,
+    2817,  2825,  2825,  2833,  2833,  2841,  2841,  2850,  2850,  2858,
+    2865,  2866,  2869,  2871,  2872,  2876,  2877,  2881,  2882,  2883,
+    2887,  2892,  2892,  2901,  2901,  2907,  2907,  2913,  2913,  2919,
+    2919,  2925,  2925,  2933,  2940,  2948,  2953,  2960,  2962,  2966,
+    2967,  2970,  2973,  2977,  2978,  2982,  2992,  2995,  2999,  3005,
+    3016,  3017,  3023,  3024,  3025,  3030,  3031,  3036,  3037,  3040,
+    3042,  3046,  3047,  3051,  3052,  3056,  3059,  3061,  3065,  3066
 };
 #endif
 
@@ -3430,7 +3426,7 @@ yyreduce:
         case 47:
 
 /* Line 1455 of yacc.c  */
-#line 1304 "pxr/usd/sdf/textFileFormat.yy"
+#line 1300 "pxr/usd/sdf/textFileFormat.yy"
     {
 
         // Store the names of the root prims.
@@ -3444,7 +3440,7 @@ yyreduce:
   case 48:
 
 /* Line 1455 of yacc.c  */
-#line 1315 "pxr/usd/sdf/textFileFormat.yy"
+#line 1311 "pxr/usd/sdf/textFileFormat.yy"
     {
             _MatchMagicIdentifier((yyvsp[(1) - (1)]), context);
             context->nameChildrenStack.push_back(std::vector<TfToken>());
@@ -3459,7 +3455,7 @@ yyreduce:
   case 51:
 
 /* Line 1455 of yacc.c  */
-#line 1328 "pxr/usd/sdf/textFileFormat.yy"
+#line 1324 "pxr/usd/sdf/textFileFormat.yy"
     {
             // Abort if error after layer metadata.
             ABORT_IF_ERROR(context->seenError);
@@ -3474,7 +3470,7 @@ yyreduce:
   case 57:
 
 /* Line 1455 of yacc.c  */
-#line 1354 "pxr/usd/sdf/textFileFormat.yy"
+#line 1350 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Comment, 
@@ -3485,7 +3481,7 @@ yyreduce:
   case 58:
 
 /* Line 1455 of yacc.c  */
-#line 1359 "pxr/usd/sdf/textFileFormat.yy"
+#line 1355 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(1) - (1)]), SdfSpecTypePseudoRoot, context);
         ;}
@@ -3494,7 +3490,7 @@ yyreduce:
   case 59:
 
 /* Line 1455 of yacc.c  */
-#line 1361 "pxr/usd/sdf/textFileFormat.yy"
+#line 1357 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypePseudoRoot, context);
         ;}
@@ -3503,7 +3499,7 @@ yyreduce:
   case 60:
 
 /* Line 1455 of yacc.c  */
-#line 1368 "pxr/usd/sdf/textFileFormat.yy"
+#line 1364 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypePseudoRoot, context);
             context->listOpType = SdfListOpTypeDeleted;
@@ -3513,7 +3509,7 @@ yyreduce:
   case 61:
 
 /* Line 1455 of yacc.c  */
-#line 1371 "pxr/usd/sdf/textFileFormat.yy"
+#line 1367 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypePseudoRoot, context);
         ;}
@@ -3522,7 +3518,7 @@ yyreduce:
   case 62:
 
 /* Line 1455 of yacc.c  */
-#line 1374 "pxr/usd/sdf/textFileFormat.yy"
+#line 1370 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypePseudoRoot, context);
             context->listOpType = SdfListOpTypeAdded;
@@ -3532,7 +3528,7 @@ yyreduce:
   case 63:
 
 /* Line 1455 of yacc.c  */
-#line 1377 "pxr/usd/sdf/textFileFormat.yy"
+#line 1373 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypePseudoRoot, context);
         ;}
@@ -3541,7 +3537,7 @@ yyreduce:
   case 64:
 
 /* Line 1455 of yacc.c  */
-#line 1380 "pxr/usd/sdf/textFileFormat.yy"
+#line 1376 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypePseudoRoot, context);
             context->listOpType = SdfListOpTypePrepended;
@@ -3551,7 +3547,7 @@ yyreduce:
   case 65:
 
 /* Line 1455 of yacc.c  */
-#line 1383 "pxr/usd/sdf/textFileFormat.yy"
+#line 1379 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypePseudoRoot, context);
         ;}
@@ -3560,7 +3556,7 @@ yyreduce:
   case 66:
 
 /* Line 1455 of yacc.c  */
-#line 1386 "pxr/usd/sdf/textFileFormat.yy"
+#line 1382 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypePseudoRoot, context);
             context->listOpType = SdfListOpTypeAppended;
@@ -3570,7 +3566,7 @@ yyreduce:
   case 67:
 
 /* Line 1455 of yacc.c  */
-#line 1389 "pxr/usd/sdf/textFileFormat.yy"
+#line 1385 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypePseudoRoot, context);
         ;}
@@ -3579,7 +3575,7 @@ yyreduce:
   case 68:
 
 /* Line 1455 of yacc.c  */
-#line 1392 "pxr/usd/sdf/textFileFormat.yy"
+#line 1388 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypePseudoRoot, context);
             context->listOpType = SdfListOpTypeOrdered;
@@ -3589,7 +3585,7 @@ yyreduce:
   case 69:
 
 /* Line 1455 of yacc.c  */
-#line 1395 "pxr/usd/sdf/textFileFormat.yy"
+#line 1391 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypePseudoRoot, context);
         ;}
@@ -3598,7 +3594,7 @@ yyreduce:
   case 70:
 
 /* Line 1455 of yacc.c  */
-#line 1400 "pxr/usd/sdf/textFileFormat.yy"
+#line 1396 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Documentation, 
@@ -3609,7 +3605,7 @@ yyreduce:
   case 73:
 
 /* Line 1455 of yacc.c  */
-#line 1412 "pxr/usd/sdf/textFileFormat.yy"
+#line 1408 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 SdfPath::AbsoluteRootPath(), SdfFieldKeys->SubLayers, 
@@ -3626,7 +3622,7 @@ yyreduce:
   case 76:
 
 /* Line 1455 of yacc.c  */
-#line 1431 "pxr/usd/sdf/textFileFormat.yy"
+#line 1427 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->subLayerPaths.push_back(context->layerRefPath);
             context->subLayerOffsets.push_back(context->layerRefOffset);
@@ -3637,7 +3633,7 @@ yyreduce:
   case 77:
 
 /* Line 1455 of yacc.c  */
-#line 1439 "pxr/usd/sdf/textFileFormat.yy"
+#line 1435 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->layerRefPath = (yyvsp[(1) - (1)]).Get<std::string>();
             context->layerRefOffset = SdfLayerOffset();
@@ -3648,7 +3644,7 @@ yyreduce:
   case 82:
 
 /* Line 1455 of yacc.c  */
-#line 1457 "pxr/usd/sdf/textFileFormat.yy"
+#line 1453 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->layerRefOffset.SetOffset( (yyvsp[(3) - (3)]).Get<double>() );
             ABORT_IF_ERROR(context->seenError);
@@ -3658,7 +3654,7 @@ yyreduce:
   case 83:
 
 /* Line 1455 of yacc.c  */
-#line 1461 "pxr/usd/sdf/textFileFormat.yy"
+#line 1457 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->layerRefOffset.SetScale( (yyvsp[(3) - (3)]).Get<double>() );
             ABORT_IF_ERROR(context->seenError);
@@ -3668,7 +3664,7 @@ yyreduce:
   case 86:
 
 /* Line 1455 of yacc.c  */
-#line 1477 "pxr/usd/sdf/textFileFormat.yy"
+#line 1473 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->specifier = SdfSpecifierDef;
             context->typeName = TfToken();
@@ -3678,7 +3674,7 @@ yyreduce:
   case 88:
 
 /* Line 1455 of yacc.c  */
-#line 1481 "pxr/usd/sdf/textFileFormat.yy"
+#line 1477 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->specifier = SdfSpecifierDef;
             context->typeName = TfToken((yyvsp[(2) - (2)]).Get<std::string>());
@@ -3688,7 +3684,7 @@ yyreduce:
   case 90:
 
 /* Line 1455 of yacc.c  */
-#line 1485 "pxr/usd/sdf/textFileFormat.yy"
+#line 1481 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->specifier = SdfSpecifierClass;
             context->typeName = TfToken();
@@ -3698,7 +3694,7 @@ yyreduce:
   case 92:
 
 /* Line 1455 of yacc.c  */
-#line 1489 "pxr/usd/sdf/textFileFormat.yy"
+#line 1485 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->specifier = SdfSpecifierClass;
             context->typeName = TfToken((yyvsp[(2) - (2)]).Get<std::string>());
@@ -3708,7 +3704,7 @@ yyreduce:
   case 94:
 
 /* Line 1455 of yacc.c  */
-#line 1493 "pxr/usd/sdf/textFileFormat.yy"
+#line 1489 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->specifier = SdfSpecifierOver;
             context->typeName = TfToken();
@@ -3718,7 +3714,7 @@ yyreduce:
   case 96:
 
 /* Line 1455 of yacc.c  */
-#line 1497 "pxr/usd/sdf/textFileFormat.yy"
+#line 1493 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->specifier = SdfSpecifierOver;
             context->typeName = TfToken((yyvsp[(2) - (2)]).Get<std::string>());
@@ -3728,7 +3724,7 @@ yyreduce:
   case 98:
 
 /* Line 1455 of yacc.c  */
-#line 1501 "pxr/usd/sdf/textFileFormat.yy"
+#line 1497 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->PrimOrder, 
@@ -3740,14 +3736,14 @@ yyreduce:
   case 99:
 
 /* Line 1455 of yacc.c  */
-#line 1511 "pxr/usd/sdf/textFileFormat.yy"
+#line 1507 "pxr/usd/sdf/textFileFormat.yy"
     { (yyval) = (yyvsp[(1) - (1)]); ;}
     break;
 
   case 100:
 
 /* Line 1455 of yacc.c  */
-#line 1512 "pxr/usd/sdf/textFileFormat.yy"
+#line 1508 "pxr/usd/sdf/textFileFormat.yy"
     { 
             (yyval) = std::string( (yyvsp[(1) - (3)]).Get<std::string>() + '.'
                     + (yyvsp[(3) - (3)]).Get<std::string>() ); 
@@ -3757,7 +3753,7 @@ yyreduce:
   case 101:
 
 /* Line 1455 of yacc.c  */
-#line 1519 "pxr/usd/sdf/textFileFormat.yy"
+#line 1515 "pxr/usd/sdf/textFileFormat.yy"
     {
             TfToken name((yyvsp[(1) - (1)]).Get<std::string>());
             if (!SdfPath::IsValidIdentifier(name)) {
@@ -3793,7 +3789,7 @@ yyreduce:
   case 102:
 
 /* Line 1455 of yacc.c  */
-#line 1552 "pxr/usd/sdf/textFileFormat.yy"
+#line 1548 "pxr/usd/sdf/textFileFormat.yy"
     {
             // Store the names of our children
             if (!context->nameChildrenStack.back().empty()) {
@@ -3821,7 +3817,7 @@ yyreduce:
   case 112:
 
 /* Line 1455 of yacc.c  */
-#line 1600 "pxr/usd/sdf/textFileFormat.yy"
+#line 1596 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Comment, 
@@ -3832,7 +3828,7 @@ yyreduce:
   case 113:
 
 /* Line 1455 of yacc.c  */
-#line 1605 "pxr/usd/sdf/textFileFormat.yy"
+#line 1601 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(1) - (1)]), SdfSpecTypePrim, context);
         ;}
@@ -3841,7 +3837,7 @@ yyreduce:
   case 114:
 
 /* Line 1455 of yacc.c  */
-#line 1607 "pxr/usd/sdf/textFileFormat.yy"
+#line 1603 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypePrim, context);
         ;}
@@ -3850,7 +3846,7 @@ yyreduce:
   case 115:
 
 /* Line 1455 of yacc.c  */
-#line 1614 "pxr/usd/sdf/textFileFormat.yy"
+#line 1610 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypePrim, context);
             context->listOpType = SdfListOpTypeDeleted;
@@ -3860,7 +3856,7 @@ yyreduce:
   case 116:
 
 /* Line 1455 of yacc.c  */
-#line 1617 "pxr/usd/sdf/textFileFormat.yy"
+#line 1613 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypePrim, context);
         ;}
@@ -3869,7 +3865,7 @@ yyreduce:
   case 117:
 
 /* Line 1455 of yacc.c  */
-#line 1620 "pxr/usd/sdf/textFileFormat.yy"
+#line 1616 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypePrim, context);
             context->listOpType = SdfListOpTypeAdded;
@@ -3879,7 +3875,7 @@ yyreduce:
   case 118:
 
 /* Line 1455 of yacc.c  */
-#line 1623 "pxr/usd/sdf/textFileFormat.yy"
+#line 1619 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypePrim, context);
         ;}
@@ -3888,7 +3884,7 @@ yyreduce:
   case 119:
 
 /* Line 1455 of yacc.c  */
-#line 1626 "pxr/usd/sdf/textFileFormat.yy"
+#line 1622 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypePrim, context);
             context->listOpType = SdfListOpTypePrepended;
@@ -3898,7 +3894,7 @@ yyreduce:
   case 120:
 
 /* Line 1455 of yacc.c  */
-#line 1629 "pxr/usd/sdf/textFileFormat.yy"
+#line 1625 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypePrim, context);
         ;}
@@ -3907,7 +3903,7 @@ yyreduce:
   case 121:
 
 /* Line 1455 of yacc.c  */
-#line 1632 "pxr/usd/sdf/textFileFormat.yy"
+#line 1628 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypePrim, context);
             context->listOpType = SdfListOpTypeAppended;
@@ -3917,7 +3913,7 @@ yyreduce:
   case 122:
 
 /* Line 1455 of yacc.c  */
-#line 1635 "pxr/usd/sdf/textFileFormat.yy"
+#line 1631 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypePrim, context);
         ;}
@@ -3926,7 +3922,7 @@ yyreduce:
   case 123:
 
 /* Line 1455 of yacc.c  */
-#line 1638 "pxr/usd/sdf/textFileFormat.yy"
+#line 1634 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypePrim, context);
             context->listOpType = SdfListOpTypeOrdered;
@@ -3936,7 +3932,7 @@ yyreduce:
   case 124:
 
 /* Line 1455 of yacc.c  */
-#line 1641 "pxr/usd/sdf/textFileFormat.yy"
+#line 1637 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypePrim, context);
         ;}
@@ -3945,7 +3941,7 @@ yyreduce:
   case 125:
 
 /* Line 1455 of yacc.c  */
-#line 1646 "pxr/usd/sdf/textFileFormat.yy"
+#line 1642 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Documentation, 
@@ -3956,7 +3952,7 @@ yyreduce:
   case 126:
 
 /* Line 1455 of yacc.c  */
-#line 1653 "pxr/usd/sdf/textFileFormat.yy"
+#line 1649 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Kind, 
@@ -3967,7 +3963,7 @@ yyreduce:
   case 127:
 
 /* Line 1455 of yacc.c  */
-#line 1660 "pxr/usd/sdf/textFileFormat.yy"
+#line 1656 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Permission, 
@@ -3979,7 +3975,7 @@ yyreduce:
   case 128:
 
 /* Line 1455 of yacc.c  */
-#line 1667 "pxr/usd/sdf/textFileFormat.yy"
+#line 1663 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
@@ -3990,7 +3986,7 @@ yyreduce:
   case 129:
 
 /* Line 1455 of yacc.c  */
-#line 1671 "pxr/usd/sdf/textFileFormat.yy"
+#line 1667 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetPayloadListItems(SdfListOpTypeExplicit, context);
         ;}
@@ -3999,7 +3995,7 @@ yyreduce:
   case 130:
 
 /* Line 1455 of yacc.c  */
-#line 1674 "pxr/usd/sdf/textFileFormat.yy"
+#line 1670 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
@@ -4010,7 +4006,7 @@ yyreduce:
   case 131:
 
 /* Line 1455 of yacc.c  */
-#line 1678 "pxr/usd/sdf/textFileFormat.yy"
+#line 1674 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetPayloadListItems(SdfListOpTypeDeleted, context);
         ;}
@@ -4019,7 +4015,7 @@ yyreduce:
   case 132:
 
 /* Line 1455 of yacc.c  */
-#line 1681 "pxr/usd/sdf/textFileFormat.yy"
+#line 1677 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
@@ -4030,7 +4026,7 @@ yyreduce:
   case 133:
 
 /* Line 1455 of yacc.c  */
-#line 1685 "pxr/usd/sdf/textFileFormat.yy"
+#line 1681 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetPayloadListItems(SdfListOpTypeAdded, context);
         ;}
@@ -4039,7 +4035,7 @@ yyreduce:
   case 134:
 
 /* Line 1455 of yacc.c  */
-#line 1688 "pxr/usd/sdf/textFileFormat.yy"
+#line 1684 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
@@ -4050,7 +4046,7 @@ yyreduce:
   case 135:
 
 /* Line 1455 of yacc.c  */
-#line 1692 "pxr/usd/sdf/textFileFormat.yy"
+#line 1688 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetPayloadListItems(SdfListOpTypePrepended, context);
         ;}
@@ -4059,7 +4055,7 @@ yyreduce:
   case 136:
 
 /* Line 1455 of yacc.c  */
-#line 1695 "pxr/usd/sdf/textFileFormat.yy"
+#line 1691 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
@@ -4070,7 +4066,7 @@ yyreduce:
   case 137:
 
 /* Line 1455 of yacc.c  */
-#line 1699 "pxr/usd/sdf/textFileFormat.yy"
+#line 1695 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetPayloadListItems(SdfListOpTypeAppended, context);
         ;}
@@ -4079,7 +4075,7 @@ yyreduce:
   case 138:
 
 /* Line 1455 of yacc.c  */
-#line 1702 "pxr/usd/sdf/textFileFormat.yy"
+#line 1698 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
@@ -4090,7 +4086,7 @@ yyreduce:
   case 139:
 
 /* Line 1455 of yacc.c  */
-#line 1706 "pxr/usd/sdf/textFileFormat.yy"
+#line 1702 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetPayloadListItems(SdfListOpTypeOrdered, context);
         ;}
@@ -4099,7 +4095,7 @@ yyreduce:
   case 140:
 
 /* Line 1455 of yacc.c  */
-#line 1710 "pxr/usd/sdf/textFileFormat.yy"
+#line 1706 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->inheritParsingTargetPaths.clear();
         ;}
@@ -4108,7 +4104,7 @@ yyreduce:
   case 141:
 
 /* Line 1455 of yacc.c  */
-#line 1712 "pxr/usd/sdf/textFileFormat.yy"
+#line 1708 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetInheritListItems(SdfListOpTypeExplicit, context);
         ;}
@@ -4117,7 +4113,7 @@ yyreduce:
   case 142:
 
 /* Line 1455 of yacc.c  */
-#line 1715 "pxr/usd/sdf/textFileFormat.yy"
+#line 1711 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->inheritParsingTargetPaths.clear();
         ;}
@@ -4126,7 +4122,7 @@ yyreduce:
   case 143:
 
 /* Line 1455 of yacc.c  */
-#line 1717 "pxr/usd/sdf/textFileFormat.yy"
+#line 1713 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetInheritListItems(SdfListOpTypeDeleted, context);
         ;}
@@ -4135,7 +4131,7 @@ yyreduce:
   case 144:
 
 /* Line 1455 of yacc.c  */
-#line 1720 "pxr/usd/sdf/textFileFormat.yy"
+#line 1716 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->inheritParsingTargetPaths.clear();
         ;}
@@ -4144,7 +4140,7 @@ yyreduce:
   case 145:
 
 /* Line 1455 of yacc.c  */
-#line 1722 "pxr/usd/sdf/textFileFormat.yy"
+#line 1718 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetInheritListItems(SdfListOpTypeAdded, context);
         ;}
@@ -4153,7 +4149,7 @@ yyreduce:
   case 146:
 
 /* Line 1455 of yacc.c  */
-#line 1725 "pxr/usd/sdf/textFileFormat.yy"
+#line 1721 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->inheritParsingTargetPaths.clear();
         ;}
@@ -4162,7 +4158,7 @@ yyreduce:
   case 147:
 
 /* Line 1455 of yacc.c  */
-#line 1727 "pxr/usd/sdf/textFileFormat.yy"
+#line 1723 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetInheritListItems(SdfListOpTypePrepended, context);
         ;}
@@ -4171,7 +4167,7 @@ yyreduce:
   case 148:
 
 /* Line 1455 of yacc.c  */
-#line 1730 "pxr/usd/sdf/textFileFormat.yy"
+#line 1726 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->inheritParsingTargetPaths.clear();
         ;}
@@ -4180,7 +4176,7 @@ yyreduce:
   case 149:
 
 /* Line 1455 of yacc.c  */
-#line 1732 "pxr/usd/sdf/textFileFormat.yy"
+#line 1728 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetInheritListItems(SdfListOpTypeAppended, context);
         ;}
@@ -4189,7 +4185,7 @@ yyreduce:
   case 150:
 
 /* Line 1455 of yacc.c  */
-#line 1735 "pxr/usd/sdf/textFileFormat.yy"
+#line 1731 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->inheritParsingTargetPaths.clear();
         ;}
@@ -4198,7 +4194,7 @@ yyreduce:
   case 151:
 
 /* Line 1455 of yacc.c  */
-#line 1737 "pxr/usd/sdf/textFileFormat.yy"
+#line 1733 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetInheritListItems(SdfListOpTypeOrdered, context);
         ;}
@@ -4207,7 +4203,7 @@ yyreduce:
   case 152:
 
 /* Line 1455 of yacc.c  */
-#line 1741 "pxr/usd/sdf/textFileFormat.yy"
+#line 1737 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->specializesParsingTargetPaths.clear();
         ;}
@@ -4216,7 +4212,7 @@ yyreduce:
   case 153:
 
 /* Line 1455 of yacc.c  */
-#line 1743 "pxr/usd/sdf/textFileFormat.yy"
+#line 1739 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetSpecializesListItems(SdfListOpTypeExplicit, context);
         ;}
@@ -4225,7 +4221,7 @@ yyreduce:
   case 154:
 
 /* Line 1455 of yacc.c  */
-#line 1746 "pxr/usd/sdf/textFileFormat.yy"
+#line 1742 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->specializesParsingTargetPaths.clear();
         ;}
@@ -4234,7 +4230,7 @@ yyreduce:
   case 155:
 
 /* Line 1455 of yacc.c  */
-#line 1748 "pxr/usd/sdf/textFileFormat.yy"
+#line 1744 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetSpecializesListItems(SdfListOpTypeDeleted, context);
         ;}
@@ -4243,7 +4239,7 @@ yyreduce:
   case 156:
 
 /* Line 1455 of yacc.c  */
-#line 1751 "pxr/usd/sdf/textFileFormat.yy"
+#line 1747 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->specializesParsingTargetPaths.clear();
         ;}
@@ -4252,7 +4248,7 @@ yyreduce:
   case 157:
 
 /* Line 1455 of yacc.c  */
-#line 1753 "pxr/usd/sdf/textFileFormat.yy"
+#line 1749 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetSpecializesListItems(SdfListOpTypeAdded, context);
         ;}
@@ -4261,7 +4257,7 @@ yyreduce:
   case 158:
 
 /* Line 1455 of yacc.c  */
-#line 1756 "pxr/usd/sdf/textFileFormat.yy"
+#line 1752 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->specializesParsingTargetPaths.clear();
         ;}
@@ -4270,7 +4266,7 @@ yyreduce:
   case 159:
 
 /* Line 1455 of yacc.c  */
-#line 1758 "pxr/usd/sdf/textFileFormat.yy"
+#line 1754 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetSpecializesListItems(SdfListOpTypePrepended, context);
         ;}
@@ -4279,7 +4275,7 @@ yyreduce:
   case 160:
 
 /* Line 1455 of yacc.c  */
-#line 1761 "pxr/usd/sdf/textFileFormat.yy"
+#line 1757 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->specializesParsingTargetPaths.clear();
         ;}
@@ -4288,7 +4284,7 @@ yyreduce:
   case 161:
 
 /* Line 1455 of yacc.c  */
-#line 1763 "pxr/usd/sdf/textFileFormat.yy"
+#line 1759 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetSpecializesListItems(SdfListOpTypeAppended, context);
         ;}
@@ -4297,7 +4293,7 @@ yyreduce:
   case 162:
 
 /* Line 1455 of yacc.c  */
-#line 1766 "pxr/usd/sdf/textFileFormat.yy"
+#line 1762 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->specializesParsingTargetPaths.clear();
         ;}
@@ -4306,7 +4302,7 @@ yyreduce:
   case 163:
 
 /* Line 1455 of yacc.c  */
-#line 1768 "pxr/usd/sdf/textFileFormat.yy"
+#line 1764 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetSpecializesListItems(SdfListOpTypeOrdered, context);
         ;}
@@ -4315,7 +4311,7 @@ yyreduce:
   case 164:
 
 /* Line 1455 of yacc.c  */
-#line 1772 "pxr/usd/sdf/textFileFormat.yy"
+#line 1768 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
@@ -4326,7 +4322,7 @@ yyreduce:
   case 165:
 
 /* Line 1455 of yacc.c  */
-#line 1776 "pxr/usd/sdf/textFileFormat.yy"
+#line 1772 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetReferenceListItems(SdfListOpTypeExplicit, context);
         ;}
@@ -4335,7 +4331,7 @@ yyreduce:
   case 166:
 
 /* Line 1455 of yacc.c  */
-#line 1779 "pxr/usd/sdf/textFileFormat.yy"
+#line 1775 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
@@ -4346,7 +4342,7 @@ yyreduce:
   case 167:
 
 /* Line 1455 of yacc.c  */
-#line 1783 "pxr/usd/sdf/textFileFormat.yy"
+#line 1779 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetReferenceListItems(SdfListOpTypeDeleted, context);
         ;}
@@ -4355,7 +4351,7 @@ yyreduce:
   case 168:
 
 /* Line 1455 of yacc.c  */
-#line 1786 "pxr/usd/sdf/textFileFormat.yy"
+#line 1782 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
@@ -4366,7 +4362,7 @@ yyreduce:
   case 169:
 
 /* Line 1455 of yacc.c  */
-#line 1790 "pxr/usd/sdf/textFileFormat.yy"
+#line 1786 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetReferenceListItems(SdfListOpTypeAdded, context);
         ;}
@@ -4375,7 +4371,7 @@ yyreduce:
   case 170:
 
 /* Line 1455 of yacc.c  */
-#line 1793 "pxr/usd/sdf/textFileFormat.yy"
+#line 1789 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
@@ -4386,7 +4382,7 @@ yyreduce:
   case 171:
 
 /* Line 1455 of yacc.c  */
-#line 1797 "pxr/usd/sdf/textFileFormat.yy"
+#line 1793 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetReferenceListItems(SdfListOpTypePrepended, context);
         ;}
@@ -4395,7 +4391,7 @@ yyreduce:
   case 172:
 
 /* Line 1455 of yacc.c  */
-#line 1800 "pxr/usd/sdf/textFileFormat.yy"
+#line 1796 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
@@ -4406,7 +4402,7 @@ yyreduce:
   case 173:
 
 /* Line 1455 of yacc.c  */
-#line 1804 "pxr/usd/sdf/textFileFormat.yy"
+#line 1800 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetReferenceListItems(SdfListOpTypeAppended, context);
         ;}
@@ -4415,7 +4411,7 @@ yyreduce:
   case 174:
 
 /* Line 1455 of yacc.c  */
-#line 1807 "pxr/usd/sdf/textFileFormat.yy"
+#line 1803 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
@@ -4426,7 +4422,7 @@ yyreduce:
   case 175:
 
 /* Line 1455 of yacc.c  */
-#line 1811 "pxr/usd/sdf/textFileFormat.yy"
+#line 1807 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetReferenceListItems(SdfListOpTypeOrdered, context);
         ;}
@@ -4435,7 +4431,7 @@ yyreduce:
   case 176:
 
 /* Line 1455 of yacc.c  */
-#line 1816 "pxr/usd/sdf/textFileFormat.yy"
+#line 1812 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Relocates, 
@@ -4447,7 +4443,7 @@ yyreduce:
   case 177:
 
 /* Line 1455 of yacc.c  */
-#line 1824 "pxr/usd/sdf/textFileFormat.yy"
+#line 1820 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetVariantSelection(context);
         ;}
@@ -4456,7 +4452,7 @@ yyreduce:
   case 178:
 
 /* Line 1455 of yacc.c  */
-#line 1828 "pxr/usd/sdf/textFileFormat.yy"
+#line 1824 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetVariantSetNamesListItems(SdfListOpTypeExplicit, context); 
             context->nameVector.clear();
@@ -4466,7 +4462,7 @@ yyreduce:
   case 179:
 
 /* Line 1455 of yacc.c  */
-#line 1832 "pxr/usd/sdf/textFileFormat.yy"
+#line 1828 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetVariantSetNamesListItems(SdfListOpTypeDeleted, context);
             context->nameVector.clear();
@@ -4476,7 +4472,7 @@ yyreduce:
   case 180:
 
 /* Line 1455 of yacc.c  */
-#line 1836 "pxr/usd/sdf/textFileFormat.yy"
+#line 1832 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetVariantSetNamesListItems(SdfListOpTypeAdded, context);
             context->nameVector.clear();
@@ -4486,7 +4482,7 @@ yyreduce:
   case 181:
 
 /* Line 1455 of yacc.c  */
-#line 1840 "pxr/usd/sdf/textFileFormat.yy"
+#line 1836 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetVariantSetNamesListItems(SdfListOpTypePrepended, context);
             context->nameVector.clear();
@@ -4496,7 +4492,7 @@ yyreduce:
   case 182:
 
 /* Line 1455 of yacc.c  */
-#line 1844 "pxr/usd/sdf/textFileFormat.yy"
+#line 1840 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetVariantSetNamesListItems(SdfListOpTypeAppended, context);
             context->nameVector.clear();
@@ -4506,7 +4502,7 @@ yyreduce:
   case 183:
 
 /* Line 1455 of yacc.c  */
-#line 1848 "pxr/usd/sdf/textFileFormat.yy"
+#line 1844 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimSetVariantSetNamesListItems(SdfListOpTypeOrdered, context);
             context->nameVector.clear();
@@ -4516,7 +4512,7 @@ yyreduce:
   case 184:
 
 /* Line 1455 of yacc.c  */
-#line 1854 "pxr/usd/sdf/textFileFormat.yy"
+#line 1850 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->SymmetryFunction, 
@@ -4527,7 +4523,7 @@ yyreduce:
   case 185:
 
 /* Line 1455 of yacc.c  */
-#line 1859 "pxr/usd/sdf/textFileFormat.yy"
+#line 1855 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->SymmetryFunction, 
@@ -4538,7 +4534,7 @@ yyreduce:
   case 186:
 
 /* Line 1455 of yacc.c  */
-#line 1866 "pxr/usd/sdf/textFileFormat.yy"
+#line 1862 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->PrefixSubstitutions, 
@@ -4550,7 +4546,7 @@ yyreduce:
   case 187:
 
 /* Line 1455 of yacc.c  */
-#line 1874 "pxr/usd/sdf/textFileFormat.yy"
+#line 1870 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->SuffixSubstitutions, 
@@ -4562,7 +4558,7 @@ yyreduce:
   case 194:
 
 /* Line 1455 of yacc.c  */
-#line 1895 "pxr/usd/sdf/textFileFormat.yy"
+#line 1891 "pxr/usd/sdf/textFileFormat.yy"
     {
         if (context->layerRefPath.empty()) {
             Err(context, "Payload asset path must not be empty. If this "
@@ -4580,7 +4576,7 @@ yyreduce:
   case 195:
 
 /* Line 1455 of yacc.c  */
-#line 1907 "pxr/usd/sdf/textFileFormat.yy"
+#line 1903 "pxr/usd/sdf/textFileFormat.yy"
     {
         // Internal payloads do not begin with an asset path so there's
         // no layer_ref rule, but we need to make sure we reset state the
@@ -4594,7 +4590,7 @@ yyreduce:
   case 196:
 
 /* Line 1455 of yacc.c  */
-#line 1915 "pxr/usd/sdf/textFileFormat.yy"
+#line 1911 "pxr/usd/sdf/textFileFormat.yy"
     {
         if (!(yyvsp[(1) - (3)]).Get<std::string>().empty()) {
            _PathSetPrim((yyvsp[(1) - (3)]), context);
@@ -4613,7 +4609,7 @@ yyreduce:
   case 209:
 
 /* Line 1455 of yacc.c  */
-#line 1958 "pxr/usd/sdf/textFileFormat.yy"
+#line 1954 "pxr/usd/sdf/textFileFormat.yy"
     {
         if (context->layerRefPath.empty()) {
             Err(context, "Reference asset path must not be empty. If this "
@@ -4632,7 +4628,7 @@ yyreduce:
   case 210:
 
 /* Line 1455 of yacc.c  */
-#line 1971 "pxr/usd/sdf/textFileFormat.yy"
+#line 1967 "pxr/usd/sdf/textFileFormat.yy"
     {
         // Internal references do not begin with an asset path so there's
         // no layer_ref rule, but we need to make sure we reset state the
@@ -4646,7 +4642,7 @@ yyreduce:
   case 211:
 
 /* Line 1455 of yacc.c  */
-#line 1979 "pxr/usd/sdf/textFileFormat.yy"
+#line 1975 "pxr/usd/sdf/textFileFormat.yy"
     {
         if (!(yyvsp[(1) - (3)]).Get<std::string>().empty()) {
            _PathSetPrim((yyvsp[(1) - (3)]), context);
@@ -4666,7 +4662,7 @@ yyreduce:
   case 225:
 
 /* Line 1455 of yacc.c  */
-#line 2024 "pxr/usd/sdf/textFileFormat.yy"
+#line 2020 "pxr/usd/sdf/textFileFormat.yy"
     {
         _InheritAppendPath(context);
         ;}
@@ -4675,7 +4671,7 @@ yyreduce:
   case 232:
 
 /* Line 1455 of yacc.c  */
-#line 2042 "pxr/usd/sdf/textFileFormat.yy"
+#line 2038 "pxr/usd/sdf/textFileFormat.yy"
     {
         _SpecializesAppendPath(context);
         ;}
@@ -4684,7 +4680,7 @@ yyreduce:
   case 238:
 
 /* Line 1455 of yacc.c  */
-#line 2062 "pxr/usd/sdf/textFileFormat.yy"
+#line 2058 "pxr/usd/sdf/textFileFormat.yy"
     {
             _RelocatesAdd((yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]), context);
         ;}
@@ -4693,7 +4689,7 @@ yyreduce:
   case 243:
 
 /* Line 1455 of yacc.c  */
-#line 2078 "pxr/usd/sdf/textFileFormat.yy"
+#line 2074 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->nameVector.push_back(TfToken((yyvsp[(1) - (1)]).Get<std::string>()));
         ;}
@@ -4702,28 +4698,28 @@ yyreduce:
   case 248:
 
 /* Line 1455 of yacc.c  */
-#line 2096 "pxr/usd/sdf/textFileFormat.yy"
+#line 2092 "pxr/usd/sdf/textFileFormat.yy"
     {;}
     break;
 
   case 249:
 
 /* Line 1455 of yacc.c  */
-#line 2097 "pxr/usd/sdf/textFileFormat.yy"
+#line 2093 "pxr/usd/sdf/textFileFormat.yy"
     {;}
     break;
 
   case 250:
 
 /* Line 1455 of yacc.c  */
-#line 2098 "pxr/usd/sdf/textFileFormat.yy"
+#line 2094 "pxr/usd/sdf/textFileFormat.yy"
     {;}
     break;
 
   case 253:
 
 /* Line 1455 of yacc.c  */
-#line 2104 "pxr/usd/sdf/textFileFormat.yy"
+#line 2100 "pxr/usd/sdf/textFileFormat.yy"
     {
         const std::string name = (yyvsp[(2) - (2)]).Get<std::string>();
         ERROR_IF_NOT_ALLOWED(context, SdfSchema::IsValidVariantIdentifier(name));
@@ -4738,7 +4734,7 @@ yyreduce:
   case 254:
 
 /* Line 1455 of yacc.c  */
-#line 2112 "pxr/usd/sdf/textFileFormat.yy"
+#line 2108 "pxr/usd/sdf/textFileFormat.yy"
     {
 
         SdfPath variantSetPath = context->path;
@@ -4767,7 +4763,7 @@ yyreduce:
   case 257:
 
 /* Line 1455 of yacc.c  */
-#line 2143 "pxr/usd/sdf/textFileFormat.yy"
+#line 2139 "pxr/usd/sdf/textFileFormat.yy"
     {
         const std::string variantName = (yyvsp[(1) - (1)]).Get<std::string>();
         ERROR_IF_NOT_ALLOWED(
@@ -4794,7 +4790,7 @@ yyreduce:
   case 258:
 
 /* Line 1455 of yacc.c  */
-#line 2163 "pxr/usd/sdf/textFileFormat.yy"
+#line 2159 "pxr/usd/sdf/textFileFormat.yy"
     {
         // Store the names of the prims and properties defined in this variant.
         if (!context->nameChildrenStack.back().empty()) {
@@ -4820,7 +4816,7 @@ yyreduce:
   case 259:
 
 /* Line 1455 of yacc.c  */
-#line 2186 "pxr/usd/sdf/textFileFormat.yy"
+#line 2182 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->PrimOrder, 
@@ -4832,7 +4828,7 @@ yyreduce:
   case 260:
 
 /* Line 1455 of yacc.c  */
-#line 2195 "pxr/usd/sdf/textFileFormat.yy"
+#line 2191 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->PropertyOrder, 
@@ -4844,7 +4840,7 @@ yyreduce:
   case 263:
 
 /* Line 1455 of yacc.c  */
-#line 2217 "pxr/usd/sdf/textFileFormat.yy"
+#line 2213 "pxr/usd/sdf/textFileFormat.yy"
     {
         context->variability = VtValue(SdfVariabilityUniform);
     ;}
@@ -4853,7 +4849,7 @@ yyreduce:
   case 264:
 
 /* Line 1455 of yacc.c  */
-#line 2220 "pxr/usd/sdf/textFileFormat.yy"
+#line 2216 "pxr/usd/sdf/textFileFormat.yy"
     {
         context->variability = VtValue(SdfVariabilityConfig);
     ;}
@@ -4862,7 +4858,7 @@ yyreduce:
   case 265:
 
 /* Line 1455 of yacc.c  */
-#line 2226 "pxr/usd/sdf/textFileFormat.yy"
+#line 2222 "pxr/usd/sdf/textFileFormat.yy"
     {
         context->assoc = VtValue();
     ;}
@@ -4871,7 +4867,7 @@ yyreduce:
   case 266:
 
 /* Line 1455 of yacc.c  */
-#line 2232 "pxr/usd/sdf/textFileFormat.yy"
+#line 2228 "pxr/usd/sdf/textFileFormat.yy"
     {
         _SetupValue((yyvsp[(1) - (1)]).Get<std::string>(), context);
     ;}
@@ -4880,7 +4876,7 @@ yyreduce:
   case 267:
 
 /* Line 1455 of yacc.c  */
-#line 2235 "pxr/usd/sdf/textFileFormat.yy"
+#line 2231 "pxr/usd/sdf/textFileFormat.yy"
     {
         _SetupValue(std::string((yyvsp[(1) - (3)]).Get<std::string>() + "[]"), context);
     ;}
@@ -4889,7 +4885,7 @@ yyreduce:
   case 268:
 
 /* Line 1455 of yacc.c  */
-#line 2241 "pxr/usd/sdf/textFileFormat.yy"
+#line 2237 "pxr/usd/sdf/textFileFormat.yy"
     {
         context->variability = VtValue();
         context->custom = false;
@@ -4899,7 +4895,7 @@ yyreduce:
   case 269:
 
 /* Line 1455 of yacc.c  */
-#line 2245 "pxr/usd/sdf/textFileFormat.yy"
+#line 2241 "pxr/usd/sdf/textFileFormat.yy"
     {
         context->custom = false;
     ;}
@@ -4908,7 +4904,7 @@ yyreduce:
   case 270:
 
 /* Line 1455 of yacc.c  */
-#line 2251 "pxr/usd/sdf/textFileFormat.yy"
+#line 2247 "pxr/usd/sdf/textFileFormat.yy"
     {
         _PrimInitAttribute((yyvsp[(2) - (2)]), context);
 
@@ -4921,7 +4917,7 @@ yyreduce:
   case 271:
 
 /* Line 1455 of yacc.c  */
-#line 2258 "pxr/usd/sdf/textFileFormat.yy"
+#line 2254 "pxr/usd/sdf/textFileFormat.yy"
     {
         if (!context->values.valueTypeIsValid) {
             context->values.StopRecordingString();
@@ -4932,7 +4928,7 @@ yyreduce:
   case 272:
 
 /* Line 1455 of yacc.c  */
-#line 2263 "pxr/usd/sdf/textFileFormat.yy"
+#line 2259 "pxr/usd/sdf/textFileFormat.yy"
     {
         context->path = context->path.GetParentPath();
     ;}
@@ -4941,7 +4937,7 @@ yyreduce:
   case 273:
 
 /* Line 1455 of yacc.c  */
-#line 2269 "pxr/usd/sdf/textFileFormat.yy"
+#line 2265 "pxr/usd/sdf/textFileFormat.yy"
     {
         context->custom = true;
         _PrimInitAttribute((yyvsp[(3) - (3)]), context);
@@ -4955,7 +4951,7 @@ yyreduce:
   case 274:
 
 /* Line 1455 of yacc.c  */
-#line 2277 "pxr/usd/sdf/textFileFormat.yy"
+#line 2273 "pxr/usd/sdf/textFileFormat.yy"
     {
         if (!context->values.valueTypeIsValid) {
             context->values.StopRecordingString();
@@ -4966,7 +4962,7 @@ yyreduce:
   case 275:
 
 /* Line 1455 of yacc.c  */
-#line 2282 "pxr/usd/sdf/textFileFormat.yy"
+#line 2278 "pxr/usd/sdf/textFileFormat.yy"
     {
         context->path = context->path.GetParentPath();
     ;}
@@ -4975,7 +4971,7 @@ yyreduce:
   case 276:
 
 /* Line 1455 of yacc.c  */
-#line 2288 "pxr/usd/sdf/textFileFormat.yy"
+#line 2284 "pxr/usd/sdf/textFileFormat.yy"
     {
         _PrimInitAttribute((yyvsp[(2) - (5)]), context);
         context->connParsingTargetPaths.clear();
@@ -4986,7 +4982,7 @@ yyreduce:
   case 277:
 
 /* Line 1455 of yacc.c  */
-#line 2292 "pxr/usd/sdf/textFileFormat.yy"
+#line 2288 "pxr/usd/sdf/textFileFormat.yy"
     {
         _AttributeSetConnectionTargetsList(SdfListOpTypeExplicit, context);
         context->path = context->path.GetParentPath();
@@ -4996,7 +4992,7 @@ yyreduce:
   case 278:
 
 /* Line 1455 of yacc.c  */
-#line 2296 "pxr/usd/sdf/textFileFormat.yy"
+#line 2292 "pxr/usd/sdf/textFileFormat.yy"
     {
         _PrimInitAttribute((yyvsp[(3) - (6)]), context);
         context->connParsingTargetPaths.clear();
@@ -5007,7 +5003,7 @@ yyreduce:
   case 279:
 
 /* Line 1455 of yacc.c  */
-#line 2300 "pxr/usd/sdf/textFileFormat.yy"
+#line 2296 "pxr/usd/sdf/textFileFormat.yy"
     {
         _AttributeSetConnectionTargetsList(SdfListOpTypeAdded, context);
         context->path = context->path.GetParentPath();
@@ -5017,7 +5013,7 @@ yyreduce:
   case 280:
 
 /* Line 1455 of yacc.c  */
-#line 2304 "pxr/usd/sdf/textFileFormat.yy"
+#line 2300 "pxr/usd/sdf/textFileFormat.yy"
     {
         _PrimInitAttribute((yyvsp[(3) - (6)]), context);
         context->connParsingTargetPaths.clear();
@@ -5028,7 +5024,7 @@ yyreduce:
   case 281:
 
 /* Line 1455 of yacc.c  */
-#line 2308 "pxr/usd/sdf/textFileFormat.yy"
+#line 2304 "pxr/usd/sdf/textFileFormat.yy"
     {
         _AttributeSetConnectionTargetsList(SdfListOpTypePrepended, context);
         context->path = context->path.GetParentPath();
@@ -5038,7 +5034,7 @@ yyreduce:
   case 282:
 
 /* Line 1455 of yacc.c  */
-#line 2312 "pxr/usd/sdf/textFileFormat.yy"
+#line 2308 "pxr/usd/sdf/textFileFormat.yy"
     {
         _PrimInitAttribute((yyvsp[(3) - (6)]), context);
         context->connParsingTargetPaths.clear();
@@ -5049,7 +5045,7 @@ yyreduce:
   case 283:
 
 /* Line 1455 of yacc.c  */
-#line 2316 "pxr/usd/sdf/textFileFormat.yy"
+#line 2312 "pxr/usd/sdf/textFileFormat.yy"
     {
         _AttributeSetConnectionTargetsList(SdfListOpTypeAppended, context);
         context->path = context->path.GetParentPath();
@@ -5059,7 +5055,7 @@ yyreduce:
   case 284:
 
 /* Line 1455 of yacc.c  */
-#line 2320 "pxr/usd/sdf/textFileFormat.yy"
+#line 2316 "pxr/usd/sdf/textFileFormat.yy"
     {
         _PrimInitAttribute((yyvsp[(3) - (6)]), context);
         context->connParsingTargetPaths.clear();
@@ -5070,7 +5066,7 @@ yyreduce:
   case 285:
 
 /* Line 1455 of yacc.c  */
-#line 2324 "pxr/usd/sdf/textFileFormat.yy"
+#line 2320 "pxr/usd/sdf/textFileFormat.yy"
     {
         _AttributeSetConnectionTargetsList(SdfListOpTypeDeleted, context);
         context->path = context->path.GetParentPath();
@@ -5080,7 +5076,7 @@ yyreduce:
   case 286:
 
 /* Line 1455 of yacc.c  */
-#line 2328 "pxr/usd/sdf/textFileFormat.yy"
+#line 2324 "pxr/usd/sdf/textFileFormat.yy"
     {
         _PrimInitAttribute((yyvsp[(3) - (6)]), context);
         context->connParsingTargetPaths.clear();
@@ -5091,7 +5087,7 @@ yyreduce:
   case 287:
 
 /* Line 1455 of yacc.c  */
-#line 2332 "pxr/usd/sdf/textFileFormat.yy"
+#line 2328 "pxr/usd/sdf/textFileFormat.yy"
     {
         _AttributeSetConnectionTargetsList(SdfListOpTypeOrdered, context);
         context->path = context->path.GetParentPath();
@@ -5101,7 +5097,7 @@ yyreduce:
   case 288:
 
 /* Line 1455 of yacc.c  */
-#line 2339 "pxr/usd/sdf/textFileFormat.yy"
+#line 2335 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimInitAttribute((yyvsp[(2) - (5)]), context);
         ;}
@@ -5110,7 +5106,7 @@ yyreduce:
   case 289:
 
 /* Line 1455 of yacc.c  */
-#line 2342 "pxr/usd/sdf/textFileFormat.yy"
+#line 2338 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->TimeSamples,
@@ -5122,7 +5118,7 @@ yyreduce:
   case 300:
 
 /* Line 1455 of yacc.c  */
-#line 2374 "pxr/usd/sdf/textFileFormat.yy"
+#line 2370 "pxr/usd/sdf/textFileFormat.yy"
     {
             _AttributeAppendConnectionPath(context);
         ;}
@@ -5131,7 +5127,7 @@ yyreduce:
   case 301:
 
 /* Line 1455 of yacc.c  */
-#line 2384 "pxr/usd/sdf/textFileFormat.yy"
+#line 2380 "pxr/usd/sdf/textFileFormat.yy"
     {
         context->timeSamples = SdfTimeSampleMap();
     ;}
@@ -5140,7 +5136,7 @@ yyreduce:
   case 307:
 
 /* Line 1455 of yacc.c  */
-#line 2400 "pxr/usd/sdf/textFileFormat.yy"
+#line 2396 "pxr/usd/sdf/textFileFormat.yy"
     {
         context->timeSampleTime = (yyvsp[(1) - (2)]).Get<double>();
     ;}
@@ -5149,7 +5145,7 @@ yyreduce:
   case 308:
 
 /* Line 1455 of yacc.c  */
-#line 2403 "pxr/usd/sdf/textFileFormat.yy"
+#line 2399 "pxr/usd/sdf/textFileFormat.yy"
     {
         context->timeSamples[ context->timeSampleTime ] = context->currentValue;
     ;}
@@ -5158,7 +5154,7 @@ yyreduce:
   case 309:
 
 /* Line 1455 of yacc.c  */
-#line 2407 "pxr/usd/sdf/textFileFormat.yy"
+#line 2403 "pxr/usd/sdf/textFileFormat.yy"
     {
         context->timeSampleTime = (yyvsp[(1) - (3)]).Get<double>();
         context->timeSamples[ context->timeSampleTime ] 
@@ -5169,7 +5165,7 @@ yyreduce:
   case 318:
 
 /* Line 1455 of yacc.c  */
-#line 2437 "pxr/usd/sdf/textFileFormat.yy"
+#line 2433 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Comment,
@@ -5180,7 +5176,7 @@ yyreduce:
   case 319:
 
 /* Line 1455 of yacc.c  */
-#line 2442 "pxr/usd/sdf/textFileFormat.yy"
+#line 2438 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(1) - (1)]), SdfSpecTypeAttribute, context);
         ;}
@@ -5189,7 +5185,7 @@ yyreduce:
   case 320:
 
 /* Line 1455 of yacc.c  */
-#line 2444 "pxr/usd/sdf/textFileFormat.yy"
+#line 2440 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypeAttribute, context);
         ;}
@@ -5198,7 +5194,7 @@ yyreduce:
   case 321:
 
 /* Line 1455 of yacc.c  */
-#line 2451 "pxr/usd/sdf/textFileFormat.yy"
+#line 2447 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypeAttribute, context);
             context->listOpType = SdfListOpTypeDeleted;
@@ -5208,7 +5204,7 @@ yyreduce:
   case 322:
 
 /* Line 1455 of yacc.c  */
-#line 2454 "pxr/usd/sdf/textFileFormat.yy"
+#line 2450 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypeAttribute, context);
         ;}
@@ -5217,7 +5213,7 @@ yyreduce:
   case 323:
 
 /* Line 1455 of yacc.c  */
-#line 2457 "pxr/usd/sdf/textFileFormat.yy"
+#line 2453 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypeAttribute, context);
             context->listOpType = SdfListOpTypeAdded;
@@ -5227,7 +5223,7 @@ yyreduce:
   case 324:
 
 /* Line 1455 of yacc.c  */
-#line 2460 "pxr/usd/sdf/textFileFormat.yy"
+#line 2456 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypeAttribute, context);
         ;}
@@ -5236,7 +5232,7 @@ yyreduce:
   case 325:
 
 /* Line 1455 of yacc.c  */
-#line 2463 "pxr/usd/sdf/textFileFormat.yy"
+#line 2459 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypeAttribute, context);
             context->listOpType = SdfListOpTypePrepended;
@@ -5246,7 +5242,7 @@ yyreduce:
   case 326:
 
 /* Line 1455 of yacc.c  */
-#line 2466 "pxr/usd/sdf/textFileFormat.yy"
+#line 2462 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypeAttribute, context);
         ;}
@@ -5255,7 +5251,7 @@ yyreduce:
   case 327:
 
 /* Line 1455 of yacc.c  */
-#line 2469 "pxr/usd/sdf/textFileFormat.yy"
+#line 2465 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypeAttribute, context);
             context->listOpType = SdfListOpTypeAppended;
@@ -5265,7 +5261,7 @@ yyreduce:
   case 328:
 
 /* Line 1455 of yacc.c  */
-#line 2472 "pxr/usd/sdf/textFileFormat.yy"
+#line 2468 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypeAttribute, context);
         ;}
@@ -5274,7 +5270,7 @@ yyreduce:
   case 329:
 
 /* Line 1455 of yacc.c  */
-#line 2475 "pxr/usd/sdf/textFileFormat.yy"
+#line 2471 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypeAttribute, context);
             context->listOpType = SdfListOpTypeOrdered;
@@ -5284,7 +5280,7 @@ yyreduce:
   case 330:
 
 /* Line 1455 of yacc.c  */
-#line 2478 "pxr/usd/sdf/textFileFormat.yy"
+#line 2474 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypeAttribute, context);
         ;}
@@ -5293,7 +5289,7 @@ yyreduce:
   case 331:
 
 /* Line 1455 of yacc.c  */
-#line 2483 "pxr/usd/sdf/textFileFormat.yy"
+#line 2479 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Documentation,
@@ -5304,7 +5300,7 @@ yyreduce:
   case 332:
 
 /* Line 1455 of yacc.c  */
-#line 2490 "pxr/usd/sdf/textFileFormat.yy"
+#line 2486 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Permission,
@@ -5316,7 +5312,7 @@ yyreduce:
   case 333:
 
 /* Line 1455 of yacc.c  */
-#line 2497 "pxr/usd/sdf/textFileFormat.yy"
+#line 2493 "pxr/usd/sdf/textFileFormat.yy"
     {
              _SetField(
                  context->path, SdfFieldKeys->DisplayUnit,
@@ -5328,7 +5324,7 @@ yyreduce:
   case 334:
 
 /* Line 1455 of yacc.c  */
-#line 2505 "pxr/usd/sdf/textFileFormat.yy"
+#line 2501 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->SymmetryFunction,
@@ -5339,7 +5335,7 @@ yyreduce:
   case 335:
 
 /* Line 1455 of yacc.c  */
-#line 2510 "pxr/usd/sdf/textFileFormat.yy"
+#line 2506 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->SymmetryFunction,
@@ -5350,7 +5346,7 @@ yyreduce:
   case 338:
 
 /* Line 1455 of yacc.c  */
-#line 2523 "pxr/usd/sdf/textFileFormat.yy"
+#line 2519 "pxr/usd/sdf/textFileFormat.yy"
     {
         _SetField(
             context->path, SdfFieldKeys->Default,
@@ -5361,7 +5357,7 @@ yyreduce:
   case 339:
 
 /* Line 1455 of yacc.c  */
-#line 2528 "pxr/usd/sdf/textFileFormat.yy"
+#line 2524 "pxr/usd/sdf/textFileFormat.yy"
     {
         _SetField(
             context->path, SdfFieldKeys->Default,
@@ -5372,7 +5368,7 @@ yyreduce:
   case 340:
 
 /* Line 1455 of yacc.c  */
-#line 2540 "pxr/usd/sdf/textFileFormat.yy"
+#line 2536 "pxr/usd/sdf/textFileFormat.yy"
     {
             _DictionaryBegin(context);
         ;}
@@ -5381,7 +5377,7 @@ yyreduce:
   case 341:
 
 /* Line 1455 of yacc.c  */
-#line 2543 "pxr/usd/sdf/textFileFormat.yy"
+#line 2539 "pxr/usd/sdf/textFileFormat.yy"
     {
             _DictionaryEnd(context);
         ;}
@@ -5390,7 +5386,7 @@ yyreduce:
   case 346:
 
 /* Line 1455 of yacc.c  */
-#line 2559 "pxr/usd/sdf/textFileFormat.yy"
+#line 2555 "pxr/usd/sdf/textFileFormat.yy"
     {
             _DictionaryInsertValue((yyvsp[(2) - (4)]), context);
         ;}
@@ -5399,7 +5395,7 @@ yyreduce:
   case 347:
 
 /* Line 1455 of yacc.c  */
-#line 2562 "pxr/usd/sdf/textFileFormat.yy"
+#line 2558 "pxr/usd/sdf/textFileFormat.yy"
     {
             _DictionaryInsertDictionary((yyvsp[(2) - (4)]), context);
         ;}
@@ -5408,7 +5404,7 @@ yyreduce:
   case 352:
 
 /* Line 1455 of yacc.c  */
-#line 2580 "pxr/usd/sdf/textFileFormat.yy"
+#line 2576 "pxr/usd/sdf/textFileFormat.yy"
     {
             _DictionaryInitScalarFactory((yyvsp[(1) - (1)]), context);
     ;}
@@ -5417,7 +5413,7 @@ yyreduce:
   case 353:
 
 /* Line 1455 of yacc.c  */
-#line 2586 "pxr/usd/sdf/textFileFormat.yy"
+#line 2582 "pxr/usd/sdf/textFileFormat.yy"
     {
             _DictionaryInitShapedFactory((yyvsp[(1) - (3)]), context);
     ;}
@@ -5426,7 +5422,7 @@ yyreduce:
   case 354:
 
 /* Line 1455 of yacc.c  */
-#line 2596 "pxr/usd/sdf/textFileFormat.yy"
+#line 2592 "pxr/usd/sdf/textFileFormat.yy"
     {
             _DictionaryBegin(context);
         ;}
@@ -5435,7 +5431,7 @@ yyreduce:
   case 355:
 
 /* Line 1455 of yacc.c  */
-#line 2599 "pxr/usd/sdf/textFileFormat.yy"
+#line 2595 "pxr/usd/sdf/textFileFormat.yy"
     {
             _DictionaryEnd(context);
         ;}
@@ -5444,7 +5440,7 @@ yyreduce:
   case 360:
 
 /* Line 1455 of yacc.c  */
-#line 2615 "pxr/usd/sdf/textFileFormat.yy"
+#line 2611 "pxr/usd/sdf/textFileFormat.yy"
     {
             _DictionaryInitScalarFactory(Value(std::string("string")), context);
             _ValueAppendAtomic((yyvsp[(3) - (3)]), context);
@@ -5456,7 +5452,7 @@ yyreduce:
   case 361:
 
 /* Line 1455 of yacc.c  */
-#line 2628 "pxr/usd/sdf/textFileFormat.yy"
+#line 2624 "pxr/usd/sdf/textFileFormat.yy"
     {
         context->currentValue = VtValue();
         if (context->values.IsRecordingString()) {
@@ -5468,7 +5464,7 @@ yyreduce:
   case 362:
 
 /* Line 1455 of yacc.c  */
-#line 2634 "pxr/usd/sdf/textFileFormat.yy"
+#line 2630 "pxr/usd/sdf/textFileFormat.yy"
     {
         _ValueSetList(context);
     ;}
@@ -5477,7 +5473,7 @@ yyreduce:
   case 363:
 
 /* Line 1455 of yacc.c  */
-#line 2644 "pxr/usd/sdf/textFileFormat.yy"
+#line 2640 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->currentValue.Swap(context->currentDictionaries[0]);
             context->currentDictionaries[0].clear();
@@ -5487,7 +5483,7 @@ yyreduce:
   case 365:
 
 /* Line 1455 of yacc.c  */
-#line 2649 "pxr/usd/sdf/textFileFormat.yy"
+#line 2645 "pxr/usd/sdf/textFileFormat.yy"
     {
             // This is only here to allow 'None' metadata values for
             // an explicit list operation on an SdfListOp-valued field.
@@ -5503,7 +5499,7 @@ yyreduce:
   case 366:
 
 /* Line 1455 of yacc.c  */
-#line 2662 "pxr/usd/sdf/textFileFormat.yy"
+#line 2658 "pxr/usd/sdf/textFileFormat.yy"
     {
             _ValueSetAtomic(context);
         ;}
@@ -5512,7 +5508,7 @@ yyreduce:
   case 367:
 
 /* Line 1455 of yacc.c  */
-#line 2665 "pxr/usd/sdf/textFileFormat.yy"
+#line 2661 "pxr/usd/sdf/textFileFormat.yy"
     {
             _ValueSetTuple(context);
         ;}
@@ -5521,7 +5517,7 @@ yyreduce:
   case 368:
 
 /* Line 1455 of yacc.c  */
-#line 2668 "pxr/usd/sdf/textFileFormat.yy"
+#line 2664 "pxr/usd/sdf/textFileFormat.yy"
     {
             _ValueSetList(context);
         ;}
@@ -5530,7 +5526,7 @@ yyreduce:
   case 369:
 
 /* Line 1455 of yacc.c  */
-#line 2671 "pxr/usd/sdf/textFileFormat.yy"
+#line 2667 "pxr/usd/sdf/textFileFormat.yy"
     {
             // Set the recorded string on the ParserValueContext. Normally
             // 'values' is able to keep track of the parsed string, but in this
@@ -5547,7 +5543,7 @@ yyreduce:
   case 370:
 
 /* Line 1455 of yacc.c  */
-#line 2682 "pxr/usd/sdf/textFileFormat.yy"
+#line 2678 "pxr/usd/sdf/textFileFormat.yy"
     {
             _ValueSetCurrentToSdfPath((yyvsp[(1) - (1)]), context);
         ;}
@@ -5556,7 +5552,7 @@ yyreduce:
   case 371:
 
 /* Line 1455 of yacc.c  */
-#line 2688 "pxr/usd/sdf/textFileFormat.yy"
+#line 2684 "pxr/usd/sdf/textFileFormat.yy"
     {
             _ValueAppendAtomic((yyvsp[(1) - (1)]), context);
         ;}
@@ -5565,7 +5561,7 @@ yyreduce:
   case 372:
 
 /* Line 1455 of yacc.c  */
-#line 2691 "pxr/usd/sdf/textFileFormat.yy"
+#line 2687 "pxr/usd/sdf/textFileFormat.yy"
     {
             _ValueAppendAtomic((yyvsp[(1) - (1)]), context);
         ;}
@@ -5574,7 +5570,7 @@ yyreduce:
   case 373:
 
 /* Line 1455 of yacc.c  */
-#line 2694 "pxr/usd/sdf/textFileFormat.yy"
+#line 2690 "pxr/usd/sdf/textFileFormat.yy"
     {
             // The ParserValueContext needs identifiers to be stored as TfToken
             // instead of std::string to be able to distinguish between them.
@@ -5585,7 +5581,7 @@ yyreduce:
   case 374:
 
 /* Line 1455 of yacc.c  */
-#line 2699 "pxr/usd/sdf/textFileFormat.yy"
+#line 2695 "pxr/usd/sdf/textFileFormat.yy"
     {
             // The ParserValueContext needs asset paths to be stored as
             // SdfAssetPath instead of std::string to be able to distinguish
@@ -5597,7 +5593,7 @@ yyreduce:
   case 375:
 
 /* Line 1455 of yacc.c  */
-#line 2712 "pxr/usd/sdf/textFileFormat.yy"
+#line 2708 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->values.BeginList();
         ;}
@@ -5606,7 +5602,7 @@ yyreduce:
   case 376:
 
 /* Line 1455 of yacc.c  */
-#line 2715 "pxr/usd/sdf/textFileFormat.yy"
+#line 2711 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->values.EndList();
         ;}
@@ -5615,7 +5611,7 @@ yyreduce:
   case 383:
 
 /* Line 1455 of yacc.c  */
-#line 2740 "pxr/usd/sdf/textFileFormat.yy"
+#line 2736 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->values.BeginTuple();
         ;}
@@ -5624,7 +5620,7 @@ yyreduce:
   case 384:
 
 /* Line 1455 of yacc.c  */
-#line 2742 "pxr/usd/sdf/textFileFormat.yy"
+#line 2738 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->values.EndTuple();
         ;}
@@ -5633,7 +5629,7 @@ yyreduce:
   case 390:
 
 /* Line 1455 of yacc.c  */
-#line 2765 "pxr/usd/sdf/textFileFormat.yy"
+#line 2761 "pxr/usd/sdf/textFileFormat.yy"
     {
         context->custom = false;
         context->variability = VtValue(SdfVariabilityUniform);
@@ -5643,7 +5639,7 @@ yyreduce:
   case 391:
 
 /* Line 1455 of yacc.c  */
-#line 2769 "pxr/usd/sdf/textFileFormat.yy"
+#line 2765 "pxr/usd/sdf/textFileFormat.yy"
     {
         context->custom = true;
         context->variability = VtValue(SdfVariabilityUniform);
@@ -5653,7 +5649,7 @@ yyreduce:
   case 392:
 
 /* Line 1455 of yacc.c  */
-#line 2773 "pxr/usd/sdf/textFileFormat.yy"
+#line 2769 "pxr/usd/sdf/textFileFormat.yy"
     {
         context->custom = true;
         context->variability = VtValue(SdfVariabilityVarying);
@@ -5663,7 +5659,7 @@ yyreduce:
   case 393:
 
 /* Line 1455 of yacc.c  */
-#line 2777 "pxr/usd/sdf/textFileFormat.yy"
+#line 2773 "pxr/usd/sdf/textFileFormat.yy"
     {
         context->custom = false;
         context->variability = VtValue(SdfVariabilityVarying);
@@ -5673,7 +5669,7 @@ yyreduce:
   case 394:
 
 /* Line 1455 of yacc.c  */
-#line 2784 "pxr/usd/sdf/textFileFormat.yy"
+#line 2780 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimInitRelationship((yyvsp[(2) - (5)]), context); 
         ;}
@@ -5682,7 +5678,7 @@ yyreduce:
   case 395:
 
 /* Line 1455 of yacc.c  */
-#line 2787 "pxr/usd/sdf/textFileFormat.yy"
+#line 2783 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->TimeSamples,
@@ -5694,7 +5690,7 @@ yyreduce:
   case 396:
 
 /* Line 1455 of yacc.c  */
-#line 2796 "pxr/usd/sdf/textFileFormat.yy"
+#line 2792 "pxr/usd/sdf/textFileFormat.yy"
     { 
             _PrimInitRelationship((yyvsp[(2) - (6)]), context);
 
@@ -5712,7 +5708,7 @@ yyreduce:
   case 397:
 
 /* Line 1455 of yacc.c  */
-#line 2811 "pxr/usd/sdf/textFileFormat.yy"
+#line 2807 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimInitRelationship((yyvsp[(2) - (2)]), context);
             context->relParsingAllowTargetData = true;
@@ -5722,7 +5718,7 @@ yyreduce:
   case 398:
 
 /* Line 1455 of yacc.c  */
-#line 2816 "pxr/usd/sdf/textFileFormat.yy"
+#line 2812 "pxr/usd/sdf/textFileFormat.yy"
     {
             _RelationshipSetTargetsList(SdfListOpTypeExplicit, context);
             _PrimEndRelationship(context);
@@ -5732,7 +5728,7 @@ yyreduce:
   case 399:
 
 /* Line 1455 of yacc.c  */
-#line 2821 "pxr/usd/sdf/textFileFormat.yy"
+#line 2817 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimInitRelationship((yyvsp[(3) - (3)]), context);
         ;}
@@ -5741,7 +5737,7 @@ yyreduce:
   case 400:
 
 /* Line 1455 of yacc.c  */
-#line 2824 "pxr/usd/sdf/textFileFormat.yy"
+#line 2820 "pxr/usd/sdf/textFileFormat.yy"
     {
             _RelationshipSetTargetsList(SdfListOpTypeDeleted, context); 
             _PrimEndRelationship(context);
@@ -5751,7 +5747,7 @@ yyreduce:
   case 401:
 
 /* Line 1455 of yacc.c  */
-#line 2829 "pxr/usd/sdf/textFileFormat.yy"
+#line 2825 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimInitRelationship((yyvsp[(3) - (3)]), context);
             context->relParsingAllowTargetData = true;
@@ -5761,7 +5757,7 @@ yyreduce:
   case 402:
 
 /* Line 1455 of yacc.c  */
-#line 2833 "pxr/usd/sdf/textFileFormat.yy"
+#line 2829 "pxr/usd/sdf/textFileFormat.yy"
     {
             _RelationshipSetTargetsList(SdfListOpTypeAdded, context);
             _PrimEndRelationship(context);
@@ -5771,7 +5767,7 @@ yyreduce:
   case 403:
 
 /* Line 1455 of yacc.c  */
-#line 2837 "pxr/usd/sdf/textFileFormat.yy"
+#line 2833 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimInitRelationship((yyvsp[(3) - (3)]), context);
             context->relParsingAllowTargetData = true;
@@ -5781,7 +5777,7 @@ yyreduce:
   case 404:
 
 /* Line 1455 of yacc.c  */
-#line 2841 "pxr/usd/sdf/textFileFormat.yy"
+#line 2837 "pxr/usd/sdf/textFileFormat.yy"
     {
             _RelationshipSetTargetsList(SdfListOpTypePrepended, context);
             _PrimEndRelationship(context);
@@ -5791,7 +5787,7 @@ yyreduce:
   case 405:
 
 /* Line 1455 of yacc.c  */
-#line 2845 "pxr/usd/sdf/textFileFormat.yy"
+#line 2841 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimInitRelationship((yyvsp[(3) - (3)]), context);
             context->relParsingAllowTargetData = true;
@@ -5801,7 +5797,7 @@ yyreduce:
   case 406:
 
 /* Line 1455 of yacc.c  */
-#line 2849 "pxr/usd/sdf/textFileFormat.yy"
+#line 2845 "pxr/usd/sdf/textFileFormat.yy"
     {
             _RelationshipSetTargetsList(SdfListOpTypeAppended, context);
             _PrimEndRelationship(context);
@@ -5811,7 +5807,7 @@ yyreduce:
   case 407:
 
 /* Line 1455 of yacc.c  */
-#line 2854 "pxr/usd/sdf/textFileFormat.yy"
+#line 2850 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimInitRelationship((yyvsp[(3) - (3)]), context);
         ;}
@@ -5820,7 +5816,7 @@ yyreduce:
   case 408:
 
 /* Line 1455 of yacc.c  */
-#line 2857 "pxr/usd/sdf/textFileFormat.yy"
+#line 2853 "pxr/usd/sdf/textFileFormat.yy"
     {
             _RelationshipSetTargetsList(SdfListOpTypeOrdered, context);
             _PrimEndRelationship(context);
@@ -5830,7 +5826,7 @@ yyreduce:
   case 409:
 
 /* Line 1455 of yacc.c  */
-#line 2862 "pxr/usd/sdf/textFileFormat.yy"
+#line 2858 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PrimInitRelationship((yyvsp[(2) - (5)]), context);
             context->relParsingAllowTargetData = true;
@@ -5843,7 +5839,7 @@ yyreduce:
   case 420:
 
 /* Line 1455 of yacc.c  */
-#line 2891 "pxr/usd/sdf/textFileFormat.yy"
+#line 2887 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Comment,
@@ -5854,7 +5850,7 @@ yyreduce:
   case 421:
 
 /* Line 1455 of yacc.c  */
-#line 2896 "pxr/usd/sdf/textFileFormat.yy"
+#line 2892 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(1) - (1)]), SdfSpecTypeRelationship, context);
         ;}
@@ -5863,7 +5859,7 @@ yyreduce:
   case 422:
 
 /* Line 1455 of yacc.c  */
-#line 2898 "pxr/usd/sdf/textFileFormat.yy"
+#line 2894 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypeRelationship, context);
         ;}
@@ -5872,7 +5868,7 @@ yyreduce:
   case 423:
 
 /* Line 1455 of yacc.c  */
-#line 2905 "pxr/usd/sdf/textFileFormat.yy"
+#line 2901 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypeRelationship, context);
             context->listOpType = SdfListOpTypeDeleted;
@@ -5882,7 +5878,7 @@ yyreduce:
   case 424:
 
 /* Line 1455 of yacc.c  */
-#line 2908 "pxr/usd/sdf/textFileFormat.yy"
+#line 2904 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypeRelationship, context);
         ;}
@@ -5891,7 +5887,7 @@ yyreduce:
   case 425:
 
 /* Line 1455 of yacc.c  */
-#line 2911 "pxr/usd/sdf/textFileFormat.yy"
+#line 2907 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypeRelationship, context);
             context->listOpType = SdfListOpTypeAdded;
@@ -5901,7 +5897,7 @@ yyreduce:
   case 426:
 
 /* Line 1455 of yacc.c  */
-#line 2914 "pxr/usd/sdf/textFileFormat.yy"
+#line 2910 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypeRelationship, context);
         ;}
@@ -5910,7 +5906,7 @@ yyreduce:
   case 427:
 
 /* Line 1455 of yacc.c  */
-#line 2917 "pxr/usd/sdf/textFileFormat.yy"
+#line 2913 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypeRelationship, context);
             context->listOpType = SdfListOpTypePrepended;
@@ -5920,7 +5916,7 @@ yyreduce:
   case 428:
 
 /* Line 1455 of yacc.c  */
-#line 2920 "pxr/usd/sdf/textFileFormat.yy"
+#line 2916 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypeRelationship, context);
         ;}
@@ -5929,7 +5925,7 @@ yyreduce:
   case 429:
 
 /* Line 1455 of yacc.c  */
-#line 2923 "pxr/usd/sdf/textFileFormat.yy"
+#line 2919 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypeRelationship, context);
             context->listOpType = SdfListOpTypeAppended;
@@ -5939,7 +5935,7 @@ yyreduce:
   case 430:
 
 /* Line 1455 of yacc.c  */
-#line 2926 "pxr/usd/sdf/textFileFormat.yy"
+#line 2922 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypeRelationship, context);
         ;}
@@ -5948,7 +5944,7 @@ yyreduce:
   case 431:
 
 /* Line 1455 of yacc.c  */
-#line 2929 "pxr/usd/sdf/textFileFormat.yy"
+#line 2925 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypeRelationship, context);
             context->listOpType = SdfListOpTypeOrdered;
@@ -5958,7 +5954,7 @@ yyreduce:
   case 432:
 
 /* Line 1455 of yacc.c  */
-#line 2932 "pxr/usd/sdf/textFileFormat.yy"
+#line 2928 "pxr/usd/sdf/textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypeRelationship, context);
         ;}
@@ -5967,7 +5963,7 @@ yyreduce:
   case 433:
 
 /* Line 1455 of yacc.c  */
-#line 2937 "pxr/usd/sdf/textFileFormat.yy"
+#line 2933 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Documentation,
@@ -5978,7 +5974,7 @@ yyreduce:
   case 434:
 
 /* Line 1455 of yacc.c  */
-#line 2944 "pxr/usd/sdf/textFileFormat.yy"
+#line 2940 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Permission,
@@ -5990,7 +5986,7 @@ yyreduce:
   case 435:
 
 /* Line 1455 of yacc.c  */
-#line 2952 "pxr/usd/sdf/textFileFormat.yy"
+#line 2948 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->SymmetryFunction,
@@ -6001,7 +5997,7 @@ yyreduce:
   case 436:
 
 /* Line 1455 of yacc.c  */
-#line 2957 "pxr/usd/sdf/textFileFormat.yy"
+#line 2953 "pxr/usd/sdf/textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->SymmetryFunction, 
@@ -6012,7 +6008,7 @@ yyreduce:
   case 440:
 
 /* Line 1455 of yacc.c  */
-#line 2971 "pxr/usd/sdf/textFileFormat.yy"
+#line 2967 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->relParsingTargetPaths = SdfPathVector();
         ;}
@@ -6021,7 +6017,7 @@ yyreduce:
   case 441:
 
 /* Line 1455 of yacc.c  */
-#line 2974 "pxr/usd/sdf/textFileFormat.yy"
+#line 2970 "pxr/usd/sdf/textFileFormat.yy"
     {
             context->relParsingTargetPaths = SdfPathVector();
         ;}
@@ -6030,7 +6026,7 @@ yyreduce:
   case 445:
 
 /* Line 1455 of yacc.c  */
-#line 2986 "pxr/usd/sdf/textFileFormat.yy"
+#line 2982 "pxr/usd/sdf/textFileFormat.yy"
     {
             _RelationshipAppendTargetPath((yyvsp[(1) - (1)]), context);
         ;}
@@ -6039,7 +6035,7 @@ yyreduce:
   case 446:
 
 /* Line 1455 of yacc.c  */
-#line 2996 "pxr/usd/sdf/textFileFormat.yy"
+#line 2992 "pxr/usd/sdf/textFileFormat.yy"
     {
         context->savedPath = SdfPath();
     ;}
@@ -6048,7 +6044,7 @@ yyreduce:
   case 448:
 
 /* Line 1455 of yacc.c  */
-#line 3003 "pxr/usd/sdf/textFileFormat.yy"
+#line 2999 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PathSetPrim((yyvsp[(1) - (1)]), context);
         ;}
@@ -6057,7 +6053,7 @@ yyreduce:
   case 449:
 
 /* Line 1455 of yacc.c  */
-#line 3009 "pxr/usd/sdf/textFileFormat.yy"
+#line 3005 "pxr/usd/sdf/textFileFormat.yy"
     {
             _PathSetPrimOrPropertyScenePath((yyvsp[(1) - (1)]), context);
         ;}
@@ -6066,14 +6062,14 @@ yyreduce:
   case 458:
 
 /* Line 1455 of yacc.c  */
-#line 3041 "pxr/usd/sdf/textFileFormat.yy"
+#line 3037 "pxr/usd/sdf/textFileFormat.yy"
     { (yyval) = (yyvsp[(1) - (1)]); ;}
     break;
 
 
 
 /* Line 1455 of yacc.c  */
-#line 6054 "pxr/usd/sdf/textFileFormat.tab.cpp"
+#line 6050 "pxr/usd/sdf/textFileFormat.tab.cpp"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -6285,7 +6281,7 @@ yyreturn:
 
 
 /* Line 1675 of yacc.c  */
-#line 3073 "pxr/usd/sdf/textFileFormat.yy"
+#line 3069 "pxr/usd/sdf/textFileFormat.yy"
 
 
 //--------------------------------------------------------------------

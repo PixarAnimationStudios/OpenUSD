@@ -53,12 +53,12 @@ public:
     /// Returns true if the parameters produce no specs
     bool IsEmpty() const;
 
-    /// Generates the spec type for the id.
-    SdfSpecType GetSpecType(const SdfAbstractDataSpecId &id) const;
+    /// Generates the spec type for the path.
+    SdfSpecType GetSpecType(const SdfPath &path) const;
 
-    /// Returns whether a value should exist for the given \a id and 
+    /// Returns whether a value should exist for the given \a path and 
     /// \a fieldName. Optionally returns the value if it exists.
-    bool Has(const SdfAbstractDataSpecId &id, const TfToken &field,
+    bool Has(const SdfPath &path, const TfToken &field,
              VtValue *value = NULL) const;
 
     /// Visits every spec generated from our params with the given 
@@ -66,21 +66,22 @@ public:
     void VisitSpecs(const SdfAbstractData &data,
                     SdfAbstractDataSpecVisitor *visitor) const;
 
-    /// Returns the list of all fields generated for spec id.
-    const std::vector<TfToken> &List(const SdfAbstractDataSpecId &id) const;
+    /// Returns the list of all fields generated for spec path.
+    const std::vector<TfToken> &List(const SdfPath &path) const;
 
     /// Returns a set that enumerates all integer frame values from 0 to the 
     /// total number of animation frames specified in the params object.
     const std::set<double> &ListAllTimeSamples() const;
 
-    /// Returns the same set as ListAllTimeSamples if the spec id is for one of 
-    /// the animated properties. Returns an empty set for all other spec ids.
+    /// Returns the same set as ListAllTimeSamples if the spec path is for one
+    /// of the animated properties. Returns an empty set for all other spec
+    /// paths.
     const std::set<double> &ListTimeSamplesForPath(
-        const SdfAbstractDataSpecId &id) const;
+        const SdfPath &path) const;
 
-    /// Returns the total number of animation frames iif the spec id is for one
-    /// of the animated properties. Returns 0 for all other spec ids.
-    size_t GetNumTimeSamplesForPath(const SdfAbstractDataSpecId &id) const;
+    /// Returns the total number of animation frames iif the spec path is for
+    /// one of the animated properties. Returns 0 for all other spec paths.
+    size_t GetNumTimeSamplesForPath(const SdfPath &path) const;
 
     /// Sets the upper and lower bound time samples of the value time and 
     /// returns true as long as there are any animated frames for this data.
@@ -88,26 +89,24 @@ public:
         double time, double *tLower, double *tUpper) const;
 
     /// Sets the upper and lower bound time samples of the value time and 
-    /// returns true if the spec id is for one of the animated properties.
-    /// Returns false for all other spec ids.
+    /// returns true if the spec path is for one of the animated properties.
+    /// Returns false for all other spec paths.
     bool GetBracketingTimeSamplesForPath(
-        const SdfAbstractDataSpecId &id, double time, 
+        const SdfPath &path, double time, 
         double *tLower, double *tUpper) const;
 
-    /// Computes the value for the time sample if the spec id is one of the 
+    /// Computes the value for the time sample if the spec path is one of the 
     /// animated properties.
-    bool QueryTimeSample(const SdfAbstractDataSpecId &id, double time, 
+    bool QueryTimeSample(const SdfPath &path, double time,
                          VtValue *value) const;
 private:
     // Initializes the cached data from the params object.
     void _InitFromParams();
 
     // Helper functions for queries about property specs.
-    bool _IsAnimatedProperty(const SdfAbstractDataSpecId &id) const;
-    bool _HasPropertyDefaultValue(const SdfAbstractDataSpecId &id, 
-                                  VtValue *value) const;
-    bool _HasPropertyTypeNameValue(const SdfAbstractDataSpecId &id, 
-                                   VtValue *value) const;
+    bool _IsAnimatedProperty(const SdfPath &path) const;
+    bool _HasPropertyDefaultValue(const SdfPath &path, VtValue *value) const;
+    bool _HasPropertyTypeNameValue(const SdfPath &path, VtValue *value) const;
 
     // Helper for computing the animated property values at an arbitrary time.
     double _GetTranslateOffset(double time) const;

@@ -33,7 +33,6 @@
 #include "pxr/imaging/hd/materialParam.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/pxOsd/subdivTags.h"
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/value.h"
@@ -58,8 +57,6 @@ class UsdImagingValueCache {
 public:
     UsdImagingValueCache(const UsdImagingValueCache&) = delete;
     UsdImagingValueCache& operator=(const UsdImagingValueCache&) = delete;
-
-    typedef PxOsdSubdivTags SubdivTags;
 
     class Key {
         friend class UsdImagingValueCache;
@@ -128,10 +125,6 @@ public:
             static TfToken attr("primvars");
             return Key(path, attr);
         }
-        static Key SubdivTags(SdfPath const& path) {
-            static TfToken attr("subdivTags");
-            return Key(path, attr);
-        }
         static Key Topology(SdfPath const& path) {
             static TfToken attr("topology");
             return Key(path, attr);
@@ -154,10 +147,6 @@ public:
         }
         static Key MaterialId(SdfPath const& path) {
             static TfToken attr("materialId");
-            return Key(path, attr);
-        }
-        static Key MaterialPrimvars(SdfPath const& path) {
-            static TfToken attr("materialPrimvars");
             return Key(path, attr);
         }
         static Key MaterialResource(SdfPath const& path) {
@@ -199,6 +188,10 @@ public:
         }
         static Key ExtComputationKernel(SdfPath const& path) {
             const TfToken attr("extComputationKernel");
+            return Key(path, attr);
+        }
+        static Key CameraParamNames(SdfPath const& path) {
+            static TfToken attr("CameraParamNames");
             return Key(path, attr);
         }
     };
@@ -329,7 +322,6 @@ public:
         _Erase<GfRange3d>(Key::Extent(path));
         _Erase<VtValue>(Key::InstanceIndices(path));
         _Erase<TfToken>(Key::Purpose(path));
-        _Erase<SubdivTags>(Key::SubdivTags(path));
         _Erase<VtValue>(Key::Topology(path));
         _Erase<GfMatrix4d>(Key::Transform(path));
         _Erase<bool>(Key::Visible(path));
@@ -337,7 +329,6 @@ public:
         _Erase<VtValue>(Key::Widths(path));
         _Erase<VtValue>(Key::Normals(path));
         _Erase<VtValue>(Key::MaterialId(path));
-        _Erase<VtValue>(Key::MaterialPrimvars(path));
         _Erase<VtValue>(Key::MaterialResource(path));
 
         // PERFORMANCE: We're copying the primvar vector here, but we could
@@ -356,41 +347,54 @@ public:
         _Erase<VtValue>(Key::MaterialMetadata(path));
         HdMaterialParamVector shaderVars;
         if (FindMaterialParams(path, &shaderVars)) {
-            TF_FOR_ALL(pvIt, shaderVars) {
-                _Erase<VtValue>(Key(path, pvIt->GetName()));
+            for (HdMaterialParam const& param : shaderVars) {
+                _Erase<VtValue>(Key(path, param.name));
             }
             _Erase<HdMaterialParamVector>(Key::MaterialParams(path));
         }
 
-        TfTokenVector sceneInputNames;
-        if (FindExtComputationSceneInputNames(path, &sceneInputNames)) {
-            // Add computation "config" params to the list of inputs
-            sceneInputNames.emplace_back(HdTokens->dispatchCount);
-            sceneInputNames.emplace_back(HdTokens->elementCount);
-            for (TfToken const& input : sceneInputNames) {
-                _Erase<VtValue>(Key(path, input));
+        {
+            // ExtComputation related state
+            TfTokenVector sceneInputNames;
+            if (FindExtComputationSceneInputNames(path, &sceneInputNames)) {
+                // Add computation "config" params to the list of inputs
+                sceneInputNames.emplace_back(HdTokens->dispatchCount);
+                sceneInputNames.emplace_back(HdTokens->elementCount);
+                for (TfToken const& input : sceneInputNames) {
+                    _Erase<VtValue>(Key(path, input));
+                }
+
+                _Erase<TfTokenVector>(Key::ExtComputationSceneInputNames(path));
+            }
+            
+            // Computed inputs are tied to the computation that computes them.
+            // We don't walk the dependency chain to clear them.
+            _Erase<HdExtComputationInputDescriptorVector>(
+                Key::ExtComputationInputs(path));
+
+            HdExtComputationOutputDescriptorVector outputDescs;
+            if (FindExtComputationOutputs(path, &outputDescs)) {
+                for (auto const& desc : outputDescs) {
+                    _Erase<VtValue>(Key(path, desc.name));
+                }
+                _Erase<HdExtComputationOutputDescriptorVector>(
+                    Key::ExtComputationOutputs(path));
             }
 
-            _Erase<TfTokenVector>(Key::ExtComputationSceneInputNames(path));
+            _Erase<HdExtComputationPrimvarDescriptorVector>(
+                Key::ExtComputationPrimvars(path));
+            _Erase<std::string>(Key::ExtComputationKernel(path));
         }
-        
-        // Computed inputs are tied to the computation that computes them.
-        // We don't walk the dependency chain to clear them.
-        _Erase<HdExtComputationInputDescriptorVector>(
-            Key::ExtComputationInputs(path));
 
-        HdExtComputationOutputDescriptorVector outputDescs;
-        if (FindExtComputationOutputs(path, &outputDescs)) {
-            for (auto const& desc : outputDescs) {
-                _Erase<VtValue>(Key(path, desc.name));
+        // Camera state
+        TfTokenVector CameraParamNames;
+        if (FindCameraParamNames(path, &CameraParamNames)) {
+            for (const TfToken& paramName : CameraParamNames) {
+                _Erase<VtValue>(Key(path, paramName));
             }
-            _Erase<HdExtComputationOutputDescriptorVector>(
-                Key::ExtComputationOutputs(path));
-        }
 
-        _Erase<HdExtComputationPrimvarDescriptorVector>(
-            Key::ExtComputationPrimvars(path));
-        _Erase<std::string>(Key::ExtComputationKernel(path));
+            _Erase<TfTokenVector>(Key::CameraParamNames(path));
+        }
     }
 
     VtValue& GetColor(SdfPath const& path) const {
@@ -423,9 +427,6 @@ public:
     HdPrimvarDescriptorVector& GetPrimvars(SdfPath const& path) const {
         return _Get<HdPrimvarDescriptorVector>(Key::Primvars(path));
     }
-    SubdivTags& GetSubdivTags(SdfPath const& path) const {
-        return _Get<SubdivTags>(Key::SubdivTags(path));
-    }
     VtValue& GetTopology(SdfPath const& path) const {
         return _Get<VtValue>(Key::Topology(path));
     }
@@ -446,9 +447,6 @@ public:
     }
     SdfPath& GetMaterialId(SdfPath const& path) const {
         return _Get<SdfPath>(Key::MaterialId(path));
-    }
-    TfTokenVector& GetMaterialPrimvars(SdfPath const& path) const {
-        return _Get<TfTokenVector>(Key::MaterialPrimvars(path));
     }
     VtValue& GetMaterialResource(SdfPath const& path) const {
         return _Get<VtValue>(Key::MaterialResource(path));
@@ -494,6 +492,12 @@ public:
     std::string& GetExtComputationKernel(SdfPath const& path) const {
         return _Get<std::string>(Key::ExtComputationKernel(path));
     }
+    VtValue& GetCameraParam(SdfPath const& path, TfToken const& name) const {
+        return _Get<VtValue>(Key(path, name));
+    }
+    TfTokenVector& GetCameraParamNames(SdfPath const& path) const {
+        return _Get<TfTokenVector>(Key::CameraParamNames(path));
+    }
 
     bool FindPrimvar(SdfPath const& path, TfToken const& name, VtValue* value) const {
         return _Find(Key(path, name), value);
@@ -528,9 +532,6 @@ public:
     bool FindPrimvars(SdfPath const& path, HdPrimvarDescriptorVector* value) const {
         return _Find(Key::Primvars(path), value);
     }
-    bool FindSubdivTags(SdfPath const& path, SubdivTags* value) const {
-        return _Find(Key::SubdivTags(path), value);
-    }
     bool FindTopology(SdfPath const& path, VtValue* value) const {
         return _Find(Key::Topology(path), value);
     }
@@ -548,10 +549,6 @@ public:
     }
     bool FindMaterialId(SdfPath const& path, SdfPath* value) const {
         return _Find(Key::MaterialId(path), value);
-    }
-    bool FindMaterialPrimvars(SdfPath const& path,
-                              TfTokenVector* value) const {
-        return _Find(Key::MaterialPrimvars(path), value);
     }
     bool FindMaterialResource(SdfPath const& path, VtValue* value) const {
         return _Find(Key::MaterialResource(path), value);
@@ -598,6 +595,13 @@ public:
     bool FindExtComputationKernel(SdfPath const& path, std::string* value) const {
         return _Find(Key::ExtComputationKernel(path), value);
     }
+    bool FindCameraParam(SdfPath const& path, TfToken const& name,
+                         VtValue* value) const {
+        return _Find(Key(path, name), value);
+    }
+    bool FindCameraParamNames(SdfPath const& path, TfTokenVector* value) const {
+        return _Find(Key::CameraParamNames(path), value);
+    }
 
     bool ExtractColor(SdfPath const& path, VtValue* value) {
         return _Extract(Key::Color(path), value);
@@ -629,9 +633,6 @@ public:
     bool ExtractPrimvars(SdfPath const& path, HdPrimvarDescriptorVector* value) {
         return _Extract(Key::Primvars(path), value);
     }
-    bool ExtractSubdivTags(SdfPath const& path, SubdivTags* value) {
-        return _Extract(Key::SubdivTags(path), value);
-    }
     bool ExtractTopology(SdfPath const& path, VtValue* value) {
         return _Extract(Key::Topology(path), value);
     }
@@ -649,9 +650,6 @@ public:
     }
     bool ExtractMaterialId(SdfPath const& path, SdfPath* value) {
         return _Extract(Key::MaterialId(path), value);
-    }
-    bool ExtractMaterialPrimvars(SdfPath const& path, TfTokenVector* value) {
-        return _Extract(Key::MaterialPrimvars(path), value);
     }
     bool ExtractMaterialResource(SdfPath const& path, VtValue* value) {
         return _Extract(Key::MaterialResource(path), value);
@@ -701,6 +699,12 @@ public:
     bool ExtractExtComputationKernel(SdfPath const& path, std::string* value) {
         return _Extract(Key::ExtComputationKernel(path), value);
     }
+    bool ExtractCameraParam(SdfPath const& path, TfToken const& name,
+                            VtValue* value) {
+        return _Extract(Key(path, name), value);
+    }
+    // Skip adding ExtractCameraParamNames as we don't expose scene delegate
+    // functionality to query all available parameters on a camera.
 
     /// Remove any items from the cache that are marked for defered deletion.
     void GarbageCollect()
@@ -714,7 +718,6 @@ public:
         _GarbageCollect(_vec4Cache);
         _GarbageCollect(_valueCache);
         _GarbageCollect(_pviCache);
-        _GarbageCollect(_subdivTagsCache);
         _GarbageCollect(_sdfPathCache);
         // XXX: shader type caches, shader API will be deprecated soon
         _GarbageCollect(_stringCache);
@@ -735,7 +738,7 @@ private:
     typedef _TypedCache<TfToken> _TokenCache;
     mutable _TokenCache _tokenCache;
 
-    // materialPrimvars (names), extComputationSceneInputNames
+    // extComputationSceneInputNames
     typedef _TypedCache<TfTokenVector> _TokenVectorCache;
     mutable _TokenVectorCache _tokenVectorCache;
 
@@ -759,15 +762,12 @@ private:
     typedef _TypedCache<SdfPath> _SdfPathCache;
     mutable _SdfPathCache _sdfPathCache;
 
-    // primvars, topology, materialResources, materialPrimvars, extCompInputs
+    // primvars, topology, materialResources, extCompInputs
     typedef _TypedCache<VtValue> _ValueCache;
     mutable _ValueCache _valueCache;
 
     typedef _TypedCache<HdPrimvarDescriptorVector> _PviCache;
     mutable _PviCache _pviCache;
-
-    typedef _TypedCache<SubdivTags> _SubdivTagsCache;
-    mutable _SubdivTagsCache _subdivTagsCache;
 
     // XXX: shader type caches, shader API will be deprecated soon
     typedef _TypedCache<std::string> _StringCache;
@@ -814,9 +814,6 @@ private:
     }
     void _GetCache(_PviCache **cache) const {
         *cache = &_pviCache;
-    }
-    void _GetCache(_SubdivTagsCache **cache) const {
-        *cache = &_subdivTagsCache;
     }
     void _GetCache(_SdfPathCache **cache) const {
         *cache = &_sdfPathCache;

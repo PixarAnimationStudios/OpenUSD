@@ -1,0 +1,9 @@
+#usda 1.0
+(
+)
+
+def "TimeCodeTest" (
+    references = @./ref.usda@</TimeCodeTest> (offset = -6.0; scale = 4.0)
+)
+{
+}

@@ -29,18 +29,12 @@ def _modifySettings(appController):
     appController._dataModel.viewSettings.showHUD = False
 
 # Set all light settings and refresh the view.
-def _setLights(appController, ambientChecked, keyChecked, fillChecked, backChecked):
+def _setLights(appController, ambientChecked, domeChecked):
     appController._ui.actionAmbient_Only.setChecked(ambientChecked)
     appController._ambientOnlyClicked(ambientChecked)
 
-    appController._ui.actionKey.setChecked(keyChecked)
-    appController._onKeyLightClicked(keyChecked)
-
-    appController._ui.actionFill.setChecked(fillChecked)
-    appController._onFillLightClicked(fillChecked)
-
-    appController._ui.actionBack.setChecked(backChecked)
-    appController._onBackLightClicked(backChecked)
+    appController._ui.actionDomeLight.setChecked(domeChecked)
+    appController._onDomeLightClicked(domeChecked)
 
     appController._stageView.updateGL()
 
@@ -50,48 +44,29 @@ def _takeShot(appController, fileName):
     viewportShot.save(fileName, "PNG")
 
 # Test the ambient light with key/fill/back lights off.
-def _testAmbientLightThreeOff(appController):
-    _setLights(appController, True, False, False, False)
-    _takeShot(appController, "ambient_only_three_off.png")
-
-# Test the ambient light with key/fill/back lights on.
-def _testAmbientLightThreeOn(appController):
-    _setLights(appController, True, False, False, False)
-    _takeShot(appController, "ambient_only_three_on.png")
+def _testCameraLight(appController):
+    _setLights(appController, True, False)
+    _takeShot(appController, "camera.png")
 
 # Test with all lights off.
 def _testNoLights(appController):
-    _setLights(appController, False, False, False, False)
-    _takeShot(appController, "none.png")
+    _setLights(appController, False, False)
+    _takeShot(appController, "noLights.png")
 
-# Test with only the key light.
-def _testKeyLights(appController):
-    _setLights(appController, False, True, False, False)
-    _takeShot(appController, "key.png")
+# Test with only the dome light.
+def _testDomeLight(appController):
+    _setLights(appController, False, True)
+    _takeShot(appController, "dome.png")
 
-# Test with only the fill light.
-def _testFillLights(appController):
-    _setLights(appController, False, False, True, False)
-    _takeShot(appController, "fill.png")
-
-# Test with only the back light.
-def _testBackLights(appController):
-    _setLights(appController, False, False, False, True)
-    _takeShot(appController, "back.png")
-
-# Test with only the three non-ambient lights.
-def _testThreeLights(appController):
-    _setLights(appController, False, True, True, True)
-    _takeShot(appController, "three.png")
+# Test with only the dome and camera lights.
+def _testBothLights(appController):
+    _setLights(appController, True, True)
+    _takeShot(appController, "bothLights.png")
 
 # Test that lights work properly in usdview.
 def testUsdviewInputFunction(appController):
     _modifySettings(appController)
-    _testAmbientLightThreeOff(appController)
-    _testAmbientLightThreeOn(appController)
+    _testCameraLight(appController)
     _testNoLights(appController)
-    _testKeyLights(appController)
-    _testFillLights(appController)
-    _testBackLights(appController)
-    _testThreeLights(appController)
-
+    _testDomeLight(appController)
+    _testBothLights(appController)

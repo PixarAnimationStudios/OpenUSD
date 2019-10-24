@@ -140,13 +140,15 @@ private:
 
     // Gets a common type + array size (if array) from the OSL parameter
     std::tuple<TfToken, size_t> _getTypeName(
-        const RixShaderParameter* param) const;
+        const RixShaderParameter* param,
+        const NdrTokenMap& metadata) const;
 
     // Gets the default value of the specified param.
     VtValue _getDefaultValue(
         const RixShaderParameter* param,
         const std::string& oslType,
-        bool isArray
+        size_t arraySize,
+        const NdrTokenMap& metadata
     ) const;
 
 private:

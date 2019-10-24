@@ -505,6 +505,35 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
         self.assertEqual(s4p.FindPrimvarWithInheritance(UsdGeom.Tokens.primvarsDisplayColor).GetAttr().GetPrim(),
                 s1.GetPrim())
 
+    def test_InvalidPrimvar(self):
+        p = UsdGeom.Primvar()
+        # We can always call GetAttr, but it will return a null attribute
+        # if we don't have a prim.
+        self.assertEqual(p.GetAttr(), Usd.Attribute())
+        # This used to crash before the Primvar __getattribute__ method
+        # was overridden to test the validity of the underlying prim.
+        with self.assertRaises(RuntimeError):
+            p.BlockIndices()
+        # We can't even call GetName, because there is no attribute.
+        with self.assertRaises(RuntimeError):
+            p.BlockIndices()
+
+        # Now do some tests with a valid prim, but invalid attribute.
+        stage = Usd.Stage.CreateInMemory('myTest.usda')
+        gp = UsdGeom.Mesh.Define(stage, '/myMesh').GetPrim()
+        u1 = UsdGeom.Primvar(gp.GetAttribute('primvars:u1'))
+        # The attribute isn't valid, and the primvar isn't defined.
+        self.assertFalse(u1.GetAttr().IsValid())
+        self.assertFalse(u1.IsDefined())
+        # But we can still get back to the source primitive.
+        self.assertEqual(u1.GetAttr().GetPrim(), gp)
+        # And we can still access name information.
+        self.assertEqual(u1.GetName(), 'primvars:u1')
+        self.assertEqual(u1.GetBaseName(), 'u1')
+        # But attempting to access any real primvar information will raise
+        # a RuntimeError exception.
+        with self.assertRaises(RuntimeError):
+            u1.GetElementSize()
 
 if __name__ == "__main__":
     unittest.main()

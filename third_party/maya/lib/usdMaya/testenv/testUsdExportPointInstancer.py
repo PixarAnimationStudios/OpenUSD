@@ -361,5 +361,19 @@ class testUsdExportPointInstancer(unittest.TestCase):
         if self.hasMash:
             self._TestInstancePaths("MASH1_Instancer")
 
+    def testMashVisibility(self):
+        """
+        Checks that invisibleIds is properly authored based on the visibility
+        channel of the MASH instancer.
+        """
+        if self.hasMash:
+            invisibleIds = UsdGeom.PointInstancer.Get(self.stage,
+                    "/InstancerTest/MASH3_Instancer").GetInvisibleIdsAttr()
+            self.assertItemsEqual(invisibleIds.Get(0.0), [4, 5, 6, 7, 8, 9])
+            self.assertItemsEqual(invisibleIds.Get(140.0), [7, 8, 9])
+            self.assertItemsEqual(invisibleIds.Get(270.0), [0, 1, 2, 3, 4])
+            self.assertItemsEqual(invisibleIds.Get(400.0),
+                    [0, 1, 2, 3, 4, 5, 6])
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -83,7 +83,8 @@ SdrShaderNode::_PostProcessProperties()
 {
     const NdrTokenVec vsNames = GetAllVstructNames();
 
-    // Declare the input type to be vstruct if it's a vstruct head
+    // Declare the input type to be vstruct if it's a vstruct head, and update
+    // the default value
     for (const TfToken& inputName : _inputNames) {
         NdrTokenVec::const_iterator it =
             std::find(vsNames.begin(), vsNames.end(), inputName);
@@ -93,10 +94,14 @@ SdrShaderNode::_PostProcessProperties()
 
             const_cast<SdrShaderProperty*>(input)->_type =
                 SdrPropertyTypes->Vstruct;
+
+            const_cast<SdrShaderProperty*>(input)->_defaultValue =
+                VtValue(TfToken());
         }
     }
 
-    // Declare the output type to be vstruct if it's a vstruct head
+    // Declare the output type to be vstruct if it's a vstruct head, and update
+    // the default value
     for (const TfToken& outputName : _outputNames) {
         NdrTokenVec::const_iterator it =
             std::find(vsNames.begin(), vsNames.end(), outputName);
@@ -106,6 +111,9 @@ SdrShaderNode::_PostProcessProperties()
 
             const_cast<SdrShaderProperty*>(output)->_type =
                 SdrPropertyTypes->Vstruct;
+
+            const_cast<SdrShaderProperty*>(output)->_defaultValue =
+                VtValue(TfToken());
         }
     }
 }
@@ -264,19 +272,9 @@ SdrShaderNode::_ComputePages() const
 {
     NdrTokenVec pages;
 
-    for (const SdrPropertyMap::value_type& input : _shaderInputs) {
-        const TfToken page = TfToken(input.second->GetPage());
-
-        // Exclude duplicate pages
-        if (std::find(pages.begin(), pages.end(), page) != pages.end()) {
-            continue;
-        }
-
-        pages.emplace_back(std::move(page));
-    }
-
-    for (const SdrPropertyMap::value_type& output : _shaderOutputs) {
-        const TfToken page = TfToken(output.second->GetPage());
+    for (const NdrPropertyUniquePtr& property : _properties) {
+        auto sdrProperty = static_cast<SdrShaderPropertyPtr>(property.get());
+        const TfToken& page = sdrProperty->GetPage();
 
         // Exclude duplicate pages
         if (std::find(pages.begin(), pages.end(), page) != pages.end()) {

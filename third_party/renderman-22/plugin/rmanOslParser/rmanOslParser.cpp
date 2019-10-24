@@ -22,7 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/weakPtr.h"
@@ -31,6 +33,7 @@
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ndr/debugCodes.h"
 #include "pxr/usd/ndr/nodeDiscoveryResult.h"
+#include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdr/shaderMetadataHelpers.h"
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderProperty.h"
@@ -41,6 +44,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 using ShaderMetadataHelpers::IsPropertyAnAssetIdentifier;
+using ShaderMetadataHelpers::IsPropertyATerminal;
 using ShaderMetadataHelpers::IsTruthy;
 using ShaderMetadataHelpers::OptionVecVal;
 
@@ -176,26 +180,22 @@ RmanOslParserPlugin::_getNodeProperties(
             continue;
         }
 
+        // Extract metadata
+        NdrTokenMap metadata = _getPropertyMetadata(param, discoveryResult);
+
         // Get type name, and determine the size of the array (if an array)
         TfToken typeName;
         size_t arraySize;
-        std::tie(typeName, arraySize) = _getTypeName(param);
+        std::tie(typeName, arraySize) = _getTypeName(param, metadata);
 
-        // Extract metadata
-        NdrTokenMap metadata = _getPropertyMetadata(param, discoveryResult);
         _injectParserMetadata(metadata, typeName);
 
         // Non-standard properties in the metadata are considered hints
         NdrTokenMap hints;
         for (const auto& meta : metadata) {
-            if ((meta.first == SdrPropertyMetadata->Connectable)       ||
-                (meta.first == SdrPropertyMetadata->Page)              ||
-                (meta.first == SdrPropertyMetadata->Help)              ||
-                (meta.first == SdrPropertyMetadata->Label)             ||
-                (meta.first == SdrPropertyMetadata->IsDynamicArray)    ||
-                (meta.first == SdrPropertyMetadata->Options)           ||
-                (meta.first == SdrPropertyMetadata->VstructMemberName) ||
-                (meta.first == SdrPropertyMetadata->VstructMemberOf)) {
+            if (std::find(SdrPropertyMetadata->allTokens.begin(),
+                          SdrPropertyMetadata->allTokens.end(),
+                          meta.first) != SdrPropertyMetadata->allTokens.end()){
                 continue;
             }
 
@@ -218,17 +218,16 @@ RmanOslParserPlugin::_getNodeProperties(
             options = OptionVecVal(metadata.at(SdrPropertyMetadata->Options));
         }
 
-        // Determine array-ness
-        bool isDynamicArray =
-            IsTruthy(SdrPropertyMetadata->IsDynamicArray, metadata);
-        bool isArray = (arraySize > 0) || isDynamicArray;
-
         properties.emplace_back(
             SdrShaderPropertyUniquePtr(
                 new SdrShaderProperty(
                     TfToken(propName),
                     typeName,
-                    _getDefaultValue(param, typeName, isArray),
+                    _getDefaultValue(
+                        param,
+                        typeName,
+                        arraySize,
+                        metadata),
                     param->IsOutput(),
                     arraySize,
                     metadata,
@@ -256,7 +255,7 @@ RmanOslParserPlugin::_getPropertyMetadata(const RixShaderParameter* param,
         // Vstruct metadata needs to be specially parsed; otherwise, just stuff
         // the value into the map
         if (entryName == _tokens->vstructMember) {
-            std::string vstruct(metaParam->Name()); 
+            std::string vstruct(*metaParam->DefaultS()); 
 
             if (!vstruct.empty()) {
                 // A dot splits struct from member name
@@ -275,8 +274,8 @@ RmanOslParserPlugin::_getPropertyMetadata(const RixShaderParameter* param,
                     vstruct.c_str());
                 }
             }
-        } else {
-            metadata[entryName] = std::string(metaParam->Name());
+        } else if (metaParam->Type() == RixShaderParameter::k_String) {
+            metadata[entryName] = std::string(*metaParam->DefaultS());
         }
     }
 
@@ -314,11 +313,19 @@ RmanOslParserPlugin::_getNodeMetadata(
 }
 
 std::tuple<TfToken, size_t>
-RmanOslParserPlugin::_getTypeName(const RixShaderParameter* param) const
+RmanOslParserPlugin::_getTypeName(
+    const RixShaderParameter* param,
+    const NdrTokenMap& metadata) const
 {
     // Exit early if this param is known to be a struct
     if (param->IsStruct()) {
         return std::make_tuple(SdrPropertyTypes->Struct, /* array size = */ 0);
+    }
+
+    // Exit early if the param's metadata indicates the param is a terminal type
+    if (IsPropertyATerminal(metadata)) {
+        return std::make_tuple(
+            SdrPropertyTypes->Terminal, /* array size = */ 0);
     }
 
     // Otherwise, continue on to determine the type (and possibly array size)
@@ -367,8 +374,14 @@ VtValue
 RmanOslParserPlugin::_getDefaultValue(
     const RixShaderParameter* param, 
     const std::string& oslType,
-    bool isArray) const
+    size_t arraySize,
+    const NdrTokenMap& metadata) const
 {
+    // Determine array-ness
+    bool isDynamicArray =
+        IsTruthy(SdrPropertyMetadata->IsDynamicArray, metadata);
+    bool isArray = (arraySize > 0) || isDynamicArray;
+
     // INT and INT ARRAY
     // -------------------------------------------------------------------------
     if (oslType == SdrPropertyTypes->Int) {
@@ -392,17 +405,18 @@ RmanOslParserPlugin::_getDefaultValue(
     else if (oslType == SdrPropertyTypes->String) {
         const char** dflts = param->DefaultS();
 
+        // Handle non-array
         if (!isArray && param->DefaultSize() == 1) {
             return VtValue( std::string( *dflts) );
         }
 
+        // Handle array
         VtStringArray array;
         array.reserve( (size_t) param->ArrayLength() );
         for (int i = 0; i <  param->ArrayLength(); ++i)
         {
             array.push_back( std::string( dflts[i] ) );
         }
-
         return VtValue::Take(array);
     }
 
@@ -438,16 +452,16 @@ RmanOslParserPlugin::_getDefaultValue(
 
         if (!isArray && dflt_size == 3) {
             return VtValue(
-                GfVec3d(dflts[0],
+                GfVec3f(dflts[0],
                         dflts[1],
                         dflts[2])
             );
         } else if (isArray && dflt_size % 3 == 0) {
             int numElements = dflt_size / 3;
-            VtVec3dArray array(numElements);
+            VtVec3fArray array(numElements);
 
             for (int i = 0; i < numElements; ++i) {
-                array[i] = GfVec3d(dflts[3*i + 0],
+                array[i] = GfVec3f(dflts[3*i + 0],
                                    dflts[3*i + 1],
                                    dflts[3*i + 2]);
             }
@@ -472,6 +486,19 @@ RmanOslParserPlugin::_getDefaultValue(
             return VtValue::Take(mat);
         }
     }
+
+    // STRUCT, TERMINAL, VSTRUCT
+    // -------------------------------------------------------------------------
+    else if (oslType == SdrPropertyTypes->Struct ||
+             oslType == SdrPropertyTypes->Terminal ||
+             oslType == SdrPropertyTypes->Vstruct) {
+        // We return an empty VtValue for Struct, Terminal, and Vstruct
+        // properties because their value may rely on being computed within the
+        // renderer, or we might not have a reasonable way to represent their
+        // value within Sdr
+        return VtValue();
+    }
+
 
     // Didn't find a supported type
     return VtValue();

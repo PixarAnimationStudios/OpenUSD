@@ -39,7 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// The array should not contain a depth buffer - that is managed
 /// separately.
 ///
-/// \note This is a temporary API to aid transition to hydra, and is subject
+/// \note This is a temporary API to aid transition to Storm, and is subject
 /// to major changes.
 ///
 /// class is derivable for TfAny support.

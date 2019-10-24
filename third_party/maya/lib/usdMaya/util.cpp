@@ -75,6 +75,8 @@
 #include <maya/MStringArray.h>
 #include <maya/MTime.h>
 
+#include <boost/functional/hash.hpp>
+
 #include <sstream>
 #include <string>
 #include <unordered_map>

@@ -5,7 +5,8 @@
 # PXR_foo_LIBRARY   - Absolute path to individual libraries.
 # The preprocessor definition PXR_STATIC will be defined if appropriate
 
-set(PXR_CMAKE_DIR "@CMAKE_INSTALL_PREFIX@")
+get_filename_component(PXR_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+
 include("${PXR_CMAKE_DIR}/cmake/pxrTargets.cmake")
 set(libs "@PXR_ALL_LIBS@")
 set(PXR_LIBRARIES "")

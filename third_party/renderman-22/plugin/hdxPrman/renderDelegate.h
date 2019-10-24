@@ -56,6 +56,15 @@ public:
     virtual HdAovDescriptor GetDefaultAovDescriptor(
                                 TfToken const& name) const override;
 
+    /// Return true to indicate that pausing and resuming are supported.
+    virtual bool IsPauseSupported() const override;
+
+    /// Pause background rendering threads.
+    virtual bool Pause() override;
+
+    /// Resume background rendering threads.
+    virtual bool Resume() override;
+
 private:
     // This class does not support copying.
     HdxPrmanRenderDelegate(const HdxPrmanRenderDelegate &)             = delete;

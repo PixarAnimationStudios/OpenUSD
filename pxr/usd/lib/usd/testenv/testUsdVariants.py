@@ -49,6 +49,19 @@ class TestUsdVariants(unittest.TestCase):
                          ['ALL_VARIANTS', 'Carton_Opened', 'Carton_Sealed'])
         self.assertEqual(prim.GetVariantSet('modelingVariant').GetName(),
                          'modelingVariant')
+        # GetAllVariantSelections returns the union of all strongest variant
+        # selection opinions, even if the variant set doesn't exist.
+        self.assertEqual(prim.GetVariantSets().GetAllVariantSelections(),
+                         {"modelingVariant" : "Carton_Opened", 
+                          "shadingComplexity" : "full",
+                          "localDanglingVariant" : "local",
+                          "referencedDanglingVariant" : "ref"})
+        self.assertTrue(prim.GetVariantSets().HasVariantSet(
+                        "shadingComplexity"))
+        self.assertFalse(prim.GetVariantSets().HasVariantSet(
+                         "localDanglingVariant"))
+        self.assertFalse(prim.GetVariantSets().HasVariantSet(
+                         "referencedDanglingVariant"))
 
     def test_VariantSelectionPathAbstraction(self):
         for fmt in allFormats:
