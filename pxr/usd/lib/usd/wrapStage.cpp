@@ -86,6 +86,10 @@ _ExportToString(const UsdStagePtr &self, bool addSourceFileComment=true)
 static string
 __repr__(const UsdStagePtr &self)
 {
+    if (self.IsExpired()) {
+        return "";
+    }
+    
     string result = TF_PY_REPR_PREFIX + TfStringPrintf(
         "Stage.Open(rootLayer=%s, sessionLayer=%s",
         TfPyRepr(self->GetRootLayer()).c_str(),
