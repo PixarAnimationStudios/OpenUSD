@@ -242,21 +242,16 @@ WRAP_CUSTOM {
 
         .def("CreateMaterialBindSubset", 
              &This::CreateMaterialBindSubset,
-             (arg("geom"), arg("subsetName"), 
+             (arg("subsetName"), 
               arg("indices"), arg("elementType")=UsdGeomTokens->face))
-            .staticmethod("CreateMaterialBindSubset")
         .def("GetMaterialBindSubsets", 
              &This::GetMaterialBindSubsets, 
-             arg("geom"), return_value_policy<TfPySequenceToList>())
-             .staticmethod("GetMaterialBindSubsets")
+             return_value_policy<TfPySequenceToList>())
         .def("SetMaterialBindSubsetsFamilyType", 
              &This::SetMaterialBindSubsetsFamilyType,
-             (arg("geom"), arg("familyType")))
-             .staticmethod("SetMaterialBindSubsetsFamilyType")
+             (arg("familyType")))
         .def("GetMaterialBindSubsetsFamilyType",
-             &This::GetMaterialBindSubsetsFamilyType,
-             arg("geom"))
-             .staticmethod("GetMaterialBindSubsetsFamilyType")
+             &This::GetMaterialBindSubsetsFamilyType)
     ;
 }
 
