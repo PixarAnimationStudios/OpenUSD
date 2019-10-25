@@ -1296,35 +1296,61 @@ SdfPath::ReplacePrefix(const SdfPath &oldPrefix, const SdfPath &newPrefix,
 }
 
 SdfPath
-SdfPath::GetCommonPrefix(const SdfPath &path) const {
+SdfPath::GetCommonPrefix(const SdfPath &path2) const {
 
-    if (path == SdfPath()) {
+    if (path2.IsEmpty()) {
         TF_WARN("GetCommonPrefix(): invalid path.");
         return SdfPath();
     }
 
-    SdfPath path1 = *this;
-    SdfPath path2 = path;
+    SdfPath const &path1 = *this;
+    
+    // Skip as much as we can based on whether or not the paths have property
+    // elements, etc.  We either start in the prim area (if one or both paths
+    // have no property elements, or if they both do but the leafmost prim
+    // elements differ) or we stay fully in the property area (up to the
+    // leafmost prim element).
+    Sdf_PathNode const *path1Node;
+    Sdf_PathNode const *path2Node;
 
-    size_t count1 = path1.GetPathElementCount();
-    size_t count2 = path2.GetPathElementCount();
+    bool isPrimLike = true;
+    if (ARCH_LIKELY(!path1._propPart || !path2._propPart ||
+                    (path1._primPart != path2._primPart))) {
+        path1Node = path1._primPart.get();
+        path2Node = path2._primPart.get();
+    }
+    else {
+        isPrimLike = false;
+        path1Node = path1._propPart.get();
+        path2Node = path2._propPart.get();
+    }        
 
-    if (count1 > count2) {
-        for (size_t i=0; i < (count1-count2); ++i) {
-            path1 = path1.GetParentPath();
-        }
-    } else {
-        for (size_t i=0; i < (count2-count1); ++i) {
-            path2 = path2.GetParentPath();
-        }
+    size_t count1 = path1Node->GetElementCount();
+    size_t count2 = path2Node->GetElementCount();
+
+    while (count1 > count2) {
+        path1Node = path1Node->GetParentNode();
+        --count1;
+    }
+    while (count2 > count1) {
+        path2Node = path2Node->GetParentNode();
+        --count2;
     }
 
-    while (path1 != path2) {
-        path1 = path1.GetParentPath();
-        path2 = path2.GetParentPath();
+    while (path1Node != path2Node) {
+        path1Node = path1Node->GetParentNode();
+        path2Node = path2Node->GetParentNode();
     }
-
-    return path1;
+    
+    SdfPath ret;
+    if (ARCH_LIKELY(isPrimLike)) {
+        ret._primPart = path1Node;
+    }
+    else {
+        ret._primPart = path1._primPart;
+        ret._propPart = path1Node;
+    }
+    return ret;
 }
 
 namespace {
