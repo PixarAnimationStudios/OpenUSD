@@ -48,6 +48,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <memory>
+#include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -556,7 +557,8 @@ class VtArray : public Vt_ArrayBase {
     /// std::copy(first, last, array.begin());
     /// \endcode
     template <class ForwardIter>
-    void assign(ForwardIter first, ForwardIter last) {
+    typename std::enable_if<!std::is_integral<ForwardIter>::value>::type
+    assign(ForwardIter first, ForwardIter last) {
         resize(std::distance(first, last));
         std::copy(first, last, begin());
     }

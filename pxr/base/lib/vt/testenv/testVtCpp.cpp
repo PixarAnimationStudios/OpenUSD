@@ -308,6 +308,19 @@ static void testArray() {
                      span.data() != constData.cdata());
             TF_AXIOM(span.size() == copy.size());
         }
+
+        // Array assign, ensure that we distinguish assign(size_t, int) from
+        // assign(iterator, iterator) for integral-valued arrays.
+        VtIntArray ia;
+        ia.assign(123, 456);
+        TF_AXIOM(ia.size() == 123);
+        TF_AXIOM(ia[0] == 456);
+        TF_AXIOM(ia[122] == 456);
+        TF_AXIOM(ia[61] == 456);
+        std::vector<int> ints { 3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8 };
+        ia.assign(ints.begin(), ints.end());
+        TF_AXIOM(ia.size() == ints.size());
+        TF_AXIOM(std::equal(ia.begin(), ia.end(), ints.begin()));
     }
 }
 
@@ -468,9 +481,12 @@ static void testDictionary() {
     }
 
     // Call Over with a NULL pointer.
-    fprintf(stderr, "expected error:\n");
-    VtDictionaryOver(dictionary2, NULL);
-    fprintf(stderr, "end expected error:\n");
+    {
+        TfErrorMark m;
+        VtDictionaryOver(dictionary2, NULL);
+        TF_AXIOM(!m.IsClean());
+        m.Clear();
+    }
 
     // Look up a value that was there before the composite.
     if ( !VtDictionaryIsHolding<double>(dictionary, "key1") ) {
@@ -504,9 +520,12 @@ static void testDictionary() {
         die("VtDictionaryOver");
     }
     // Call Over with a NULL pointer.
-    fprintf(stderr, "expected error:\n");
-    VtDictionaryOver(NULL, dictionary2);
-    fprintf(stderr, "end expected error:\n");
+    {
+        TfErrorMark m;
+        VtDictionaryOver(NULL, dictionary2);
+        TF_AXIOM(!m.IsClean());
+        m.Clear();
+    }
 
     // Look up a value that was there before the composite.
     if ( !VtDictionaryIsHolding<double>(dictionary, "key1") ) {
@@ -579,9 +598,13 @@ static void testDictionaryOverRecursive() {
 
     // Check methods that pointer for strong, reference for weak
     //
-    fprintf(stderr, "expected error:\n");
-    VtDictionaryOverRecursive(NULL, dictionaryB);
-    fprintf(stderr, "end expected error:\n");
+    {
+        TfErrorMark m;
+        VtDictionaryOverRecursive(NULL, dictionaryB);
+        TF_AXIOM(!m.IsClean());
+        m.Clear();
+    }
+
     VtDictionary aCopy = dictionaryA;
     VtDictionaryOver(&aCopy, dictionaryB);
     if ( aCopy != aOverBResult ) {
@@ -595,9 +618,13 @@ static void testDictionaryOverRecursive() {
 
     // Check methods that use reference for strong, pointer for weak
     //
-    fprintf(stderr, "expected error:\n");
-    VtDictionaryOverRecursive(dictionaryA, NULL);
-    fprintf(stderr, "end expected error:\n");
+    {
+        TfErrorMark m;
+        VtDictionaryOverRecursive(dictionaryA, NULL);
+        TF_AXIOM(!m.IsClean());
+        m.Clear();
+    }
+
     VtDictionary bCopy = dictionaryB;
     VtDictionaryOver(dictionaryA, &bCopy);
     if ( bCopy != aOverBResult ) {
@@ -1258,6 +1285,7 @@ static void testValue() {
         TfErrorMark m;
         TF_AXIOM(empty.Get<bool>() == false);
         TF_AXIOM(!m.IsClean());
+        m.Clear();
     }
 
     {
@@ -1273,8 +1301,8 @@ static void testValue() {
         m.SetMark();
         TF_AXIOM(d.Get<string>() == string());
         TF_AXIOM(!m.IsClean());
+        m.Clear();
     }
-
 }
 
 struct _Unhashable {};
