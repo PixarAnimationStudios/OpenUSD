@@ -58,7 +58,7 @@
 #include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdGeom/modelAPI.h"
 
-#include "pxr/usd/usdLux/domeLight.h"
+#include "pxr/usd/usdLux/light.h"
 
 #include "pxr/base/work/loops.h"
 
@@ -78,10 +78,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-// TODO: 
-// reduce material traversals to a single pass; currently usdImaging will traverse
-// a single material network multiple times during sync.
 
 // XXX: Perhaps all interpolation tokens for Hydra should come from Hd and
 // UsdGeom tokens should be passed through a mapping function.
