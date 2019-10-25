@@ -28,7 +28,6 @@
 #include "pxr/usdImaging/usdImaging/textureUtils.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
-#include "pxr/imaging/hio/glslfx.h"
 #include "pxr/imaging/glf/ptexTexture.h"
 #include "pxr/imaging/glf/udimTexture.h"
 #include "pxr/imaging/glf/textureHandle.h"
@@ -38,6 +37,7 @@
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdSt/textureResource.h"
+#include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/vt/value.h"
@@ -139,42 +139,52 @@ _GetWrapT(UsdPrim const &usdPrim, HdTextureType textureType)
 }
 
 HdMinFilter
-_GetMinFilter(UsdPrim const &usdPrim)
+_GetMinFilter(UsdPrim const &usdPrim, HdTextureType textureType)
 {
+    // A Udim always uses linear mip filtering
+    if (textureType == HdTextureType::Udim) {
+        return HdMinFilterLinear;
+    }
+
     // XXX: This default value should come from the registry
-    TfToken minFilter("linear");
+    TfToken minFilter = UsdHydraTokens->linearMipmapLinear;
     UsdShadeShader shader(usdPrim);
     if (shader) {
         UsdAttribute attr = shader.GetInput(UsdHydraTokens->minFilter);
         if (attr) attr.Get(&minFilter);
     }
     HdMinFilter minFilterHd = 
-                 (minFilter == UsdHydraTokens->nearest) ? HdMinFilterNearest
-                 : (minFilter == UsdHydraTokens->nearestMipmapNearest) 
-                                ? HdMinFilterNearestMipmapNearest
-                 : (minFilter == UsdHydraTokens->nearestMipmapLinear) 
-                                ? HdMinFilterNearestMipmapLinear
-                 : (minFilter == UsdHydraTokens->linearMipmapNearest) 
-                                ? HdMinFilterLinearMipmapNearest
-                 : (minFilter == UsdHydraTokens->linearMipmapLinear) 
-                                ? HdMinFilterLinearMipmapLinear
-                 : HdMinFilterLinear; 
+        (minFilter == UsdHydraTokens->nearest) ? HdMinFilterNearest 
+        : (minFilter == UsdHydraTokens->nearestMipmapNearest) 
+                    ? HdMinFilterNearestMipmapNearest
+        : (minFilter == UsdHydraTokens->nearestMipmapLinear) 
+                    ? HdMinFilterNearestMipmapLinear
+        : (minFilter == UsdHydraTokens->linearMipmapNearest) 
+                    ? HdMinFilterLinearMipmapNearest
+        : (minFilter == UsdHydraTokens->linearMipmapLinear) 
+                    ? HdMinFilterLinearMipmapLinear
+        : HdMinFilterLinear;
     return minFilterHd;
 }
 
 HdMagFilter
-_GetMagFilter(UsdPrim const &usdPrim)
+_GetMagFilter(UsdPrim const &usdPrim, HdTextureType textureType)
 {
+    // A Udim always uses a linear mag filter
+    if (textureType == HdTextureType::Udim) {
+        return HdMagFilterLinear;
+    }
+
     // XXX: This default value should come from the registry
-    TfToken magFilter("linear");
+    TfToken magFilter = UsdHydraTokens->linear;
     UsdShadeShader shader(usdPrim);
     if (shader) {
         UsdAttribute attr = shader.GetInput(UsdHydraTokens->magFilter);
         if (attr) attr.Get(&magFilter);
     }
     HdMagFilter magFilterHd = 
-                 (magFilter == UsdHydraTokens->nearest) ? HdMagFilterNearest
-                 : HdMagFilterLinear; 
+        (magFilter == UsdHydraTokens->nearest) ? HdMagFilterNearest
+        : HdMagFilterLinear; 
     return magFilterHd;
 }
 
@@ -362,8 +372,8 @@ UsdImagingGL_GetTextureResourceID(UsdPrim const& usdPrim,
     // Hash in wrapping and filtering metadata.
     HdWrap wrapS = _GetWrapS(usdPrim, textureType);
     HdWrap wrapT = _GetWrapT(usdPrim, textureType);
-    HdMinFilter minFilter = _GetMinFilter(usdPrim);
-    HdMagFilter magFilter = _GetMagFilter(usdPrim);
+    HdMinFilter minFilter = _GetMinFilter(usdPrim, textureType);
+    HdMagFilter magFilter = _GetMagFilter(usdPrim, textureType);
     float memoryLimit = _GetMemoryLimit(usdPrim);
 
     boost::hash_combine(hash, origin);
@@ -425,8 +435,8 @@ UsdImagingGL_GetTextureResource(UsdPrim const& usdPrim,
     HdWrap wrapT = _GetWrapT(usdPrim, textureType);
     // wrapR value does not matter since ignored for anything but Uvw textures.
     HdWrap wrapR = HdWrapUseMetadata;
-    HdMinFilter minFilter = _GetMinFilter(usdPrim);
-    HdMagFilter magFilter = _GetMagFilter(usdPrim);
+    HdMinFilter minFilter = _GetMinFilter(usdPrim, textureType);
+    HdMagFilter magFilter = _GetMagFilter(usdPrim, textureType);
     float memoryLimit = _GetMemoryLimit(usdPrim);
 
     TF_DEBUG(USDIMAGING_TEXTURES).Msg(
