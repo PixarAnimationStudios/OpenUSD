@@ -614,7 +614,8 @@ UsdImagingGprimAdapter::GetColor(UsdPrim const& prim,
         // the Rprim data, it should live as part of the shader so it can be 
         // shared, though that poses some interesting questions for vertex & 
         // varying rate shader provided primvars.
-        UsdRelationship mat = UsdShadeMaterial::GetBindingRel(prim);
+        UsdRelationship mat = 
+            UsdShadeMaterialBindingAPI(prim).GetDirectBindingRel();
         SdfPathVector matTargets;
         if (mat.GetForwardedTargets(&matTargets)) {
             if (!matTargets.empty()) {
@@ -691,7 +692,8 @@ UsdImagingGprimAdapter::GetOpacity(UsdPrim const& prim,
         // the Rprim data, it should live as part of the shader so it can be 
         // shared, though that poses some interesting questions for vertex & 
         // varying rate shader provided primvars.
-        UsdRelationship mat = UsdShadeMaterial::GetBindingRel(prim);
+        UsdRelationship mat = 
+            UsdShadeMaterialBindingAPI(prim).GetDirectBindingRel();
         SdfPathVector matTargets;
         if (mat.GetForwardedTargets(&matTargets)) {
             if (!matTargets.empty()) {

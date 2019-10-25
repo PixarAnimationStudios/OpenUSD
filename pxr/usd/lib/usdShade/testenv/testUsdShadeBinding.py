@@ -36,7 +36,7 @@ class TestUsdShadeBinding(unittest.TestCase):
         lw1 = UsdShade.Material.Define(s, "/weaker/look1")
         lw2 = UsdShade.Material.Define(s, "/weaker/look2")
         gpw = s.OverridePrim("/weaker/gprim")
-        lw1.Bind(gpw)
+        UsdShade.MaterialBindingAPI(gpw).Bind(lw1)
         self.assertEqual(
             UsdShade.MaterialBindingAPI(gpw).GetDirectBindingRel().GetTargets(),
             [Sdf.Path("/weaker/look1")])
@@ -44,7 +44,7 @@ class TestUsdShadeBinding(unittest.TestCase):
         ls1 = UsdShade.Material.Define(s, "/stronger/look1")
         ls2 = UsdShade.Material.Define(s, "/stronger/look2")
         gps = s.OverridePrim("/stronger/gprim")
-        ls2.Bind(gps)
+        UsdShade.MaterialBindingAPI(gps).Bind(ls2)
         self.assertEqual(
             UsdShade.MaterialBindingAPI(gps).GetDirectBindingRel().GetTargets(), 
             [Sdf.Path("/stronger/look2")])

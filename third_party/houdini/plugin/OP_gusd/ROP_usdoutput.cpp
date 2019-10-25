@@ -42,6 +42,7 @@
 #include "pxr/usd/usdGeom/scope.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformCache.h"
+#include "pxr/usd/usdShade/materialBindingAPI.h"
 #include "pxr/usd/usdUtils/pipeline.h"
 #include "pxr/usd/kind/registry.h"
 #include "pxr/usd/sdf/fileFormat.h"
@@ -2068,7 +2069,7 @@ bindAndWriteShaders(UsdRefShaderMap& usdRefShaderMap,
             for (auto primPathIt = primPaths.begin();
                  primPathIt != primPaths.end(); ++primPathIt) {
                 UsdPrim prim = m_usdStage->GetPrimAtPath(*primPathIt);
-                usdMaterial.Bind(prim);
+                UsdShadeMaterialBindingAPI(prim).Bind(usdMaterial);
             }
         }
     }

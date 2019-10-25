@@ -199,13 +199,6 @@ _WrapComputeVolumeSource(const UsdShadeMaterial &self,
 
 WRAP_CUSTOM {
     _class
-        .def("Bind", &UsdShadeMaterial::Bind)
-        .def("Unbind", &UsdShadeMaterial::Unbind)
-        .staticmethod("Unbind")
-        .def("GetBindingRel", &UsdShadeMaterial::GetBindingRel)
-        .staticmethod("GetBindingRel")
-        .def("GetBoundMaterial", &UsdShadeMaterial::GetBoundMaterial)
-        .staticmethod("GetBoundMaterial")
         .def("GetMaterialVariant", &UsdShadeMaterial::GetMaterialVariant)
         .def("CreateMasterMaterialVariant",
              &UsdShadeMaterial::CreateMasterMaterialVariant,
@@ -231,24 +224,6 @@ WRAP_CUSTOM {
              &UsdShadeMaterial::HasBaseMaterial)
 
 
-        .def("CreateMaterialBindSubset", 
-             &UsdShadeMaterial::CreateMaterialBindSubset,
-             (arg("geom"), arg("subsetName"), 
-              arg("indices"), arg("elementType")=UsdGeomTokens->face))
-            .staticmethod("CreateMaterialBindSubset")
-        .def("GetMaterialBindSubsets", 
-             &UsdShadeMaterial::GetMaterialBindSubsets, 
-             arg("geom"), return_value_policy<TfPySequenceToList>())
-             .staticmethod("GetMaterialBindSubsets")
-        .def("SetMaterialBindSubsetsFamilyType", 
-             &UsdShadeMaterial::SetMaterialBindSubsetsFamilyType,
-             (arg("geom"), arg("familyType")))
-             .staticmethod("SetMaterialBindSubsetsFamilyType")
-        .def("GetMaterialBindSubsetsFamilyType",
-             &UsdShadeMaterial::GetMaterialBindSubsetsFamilyType,
-             arg("geom"))
-             .staticmethod("GetMaterialBindSubsetsFamilyType")
-        
         .def("CreateSurfaceOutput", &UsdShadeMaterial::CreateSurfaceOutput, 
             (arg("renderContext")=UsdShadeTokens->universalRenderContext))
         .def("GetSurfaceOutput", &UsdShadeMaterial::GetSurfaceOutput, 

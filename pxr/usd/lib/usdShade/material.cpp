@@ -221,30 +221,6 @@ TF_DEFINE_ENV_SETTING(
     USD_HONOR_LEGACY_BASE_MATERIAL, true,
     "If on, read base material as derivesFrom relationship when available.");
 
-bool 
-UsdShadeMaterial::Bind(const UsdPrim& prim) const
-{
-    return UsdShadeMaterialBindingAPI(prim).Bind(*this);
-}
-
-bool 
-UsdShadeMaterial::Unbind(const UsdPrim& prim)
-{
-    return UsdShadeMaterialBindingAPI(prim).UnbindDirectBinding();
-}
-
-UsdRelationship
-UsdShadeMaterial::GetBindingRel(const UsdPrim& prim)
-{
-    return UsdShadeMaterialBindingAPI(prim).GetDirectBindingRel();
-}
-
-UsdShadeMaterial
-UsdShadeMaterial::GetBoundMaterial(const UsdPrim &prim)
-{
-    return UsdShadeMaterialBindingAPI(prim).ComputeBoundMaterial();
-}
-
 std::pair<UsdStagePtr, UsdEditTarget >
 UsdShadeMaterial::GetEditContextForVariant(const TfToken &materialVariation,
                                        const SdfLayerHandle &layer) const
@@ -666,56 +642,5 @@ UsdShadeMaterial::ComputeVolumeSource(
             sourceName, sourceType);
 }
 
-// --------------------------------------------------------------------- //
-
-/* static */
-UsdGeomSubset 
-UsdShadeMaterial::CreateMaterialBindSubset(
-    const UsdGeomImageable &geom,
-    const TfToken &subsetName,
-    const VtIntArray &indices,
-    const TfToken &elementType)
-{
-    UsdGeomSubset result = UsdGeomSubset::CreateGeomSubset(geom, subsetName, 
-        elementType, indices, UsdShadeTokens->materialBind);
-
-    TfToken familyType = UsdGeomSubset::GetFamilyType(geom, 
-        UsdShadeTokens->materialBind);
-    // Subsets that have materials bound to them should have 
-    // mutually exclusive sets of indices. Hence, set the familyType 
-    // to "nonOverlapping" if it's unset (or explicitly set to unrestricted).
-    if (familyType == UsdGeomTokens->unrestricted) {
-        SetMaterialBindSubsetsFamilyType(geom, UsdGeomTokens->nonOverlapping);
-    }
-
-    return result;
-}
-
-
-/* static */
-std::vector<UsdGeomSubset> 
-UsdShadeMaterial::GetMaterialBindSubsets(
-    const UsdGeomImageable &geom)
-{
-    return UsdGeomSubset::GetGeomSubsets(geom, /* elementType */ TfToken(), 
-        UsdShadeTokens->materialBind);
-}
-
-/* static */
-bool UsdShadeMaterial::SetMaterialBindSubsetsFamilyType(
-        const UsdGeomImageable &geom,
-        const TfToken &familyType)
-{
-    return UsdGeomSubset::SetFamilyType(geom, UsdShadeTokens->materialBind,
-        familyType);
-}
-
-/* static */
-TfToken
-UsdShadeMaterial::GetMaterialBindSubsetsFamilyType(
-        const UsdGeomImageable &geom)
-{
-    return UsdGeomSubset::GetFamilyType(geom, UsdShadeTokens->materialBind);
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -506,7 +506,8 @@ UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
                             /* elementType */ UsdGeomTokens->face);
 
                 if (!GetExportArgs().exportCollectionBasedBindings) {
-                    material.Bind(faceSubset.GetPrim());
+                    UsdShadeMaterialBindingAPI(faceSubset.GetPrim()).
+                        Bind(material);
                 }
 
                 if (boundPrimPaths) {

@@ -409,7 +409,7 @@ PxrUsdKatanaReadPointInstancer(
                    prim != data.GetUsdInArgs()->GetRootPrim())
             {
                 UsdRelationship materialBindingsRel =
-                        UsdShadeMaterial::GetBindingRel(prim);
+                        UsdShadeMaterialBindingAPI(prim).GetDirectBindingRel();
                 SdfPathVector materialPaths;
                 bool hasMaterialBindings = (materialBindingsRel and
                         materialBindingsRel.GetForwardedTargets(

@@ -33,16 +33,17 @@ class TestUsdShadeMaterialBindFaceSubset(unittest.TestCase):
         self.assertTrue(stage)
 
         sphere = stage.GetPrimAtPath('/Sphere/Mesh')
-        mat1 = stage.GetPrimAtPath('/Sphere/Materials/initialShadingGroup')
-        mat2= stage.GetPrimAtPath('/Sphere/Materials/lambert2SG')
-        mat3= stage.GetPrimAtPath('/Sphere/Materials/lambert3SG')
+        mat1 = UsdShade.Material.Get(stage, 
+                                     '/Sphere/Materials/initialShadingGroup')
+        mat2 = UsdShade.Material.Get(stage, '/Sphere/Materials/lambert2SG')
+        mat3 = UsdShade.Material.Get(stage, '/Sphere/Materials/lambert3SG')
 
         self.assertTrue(sphere and mat1 and mat2 and mat3)
 
         # Verify that the sphere mesh does not have an existing material face-set.
         geomSphere = UsdGeom.Imageable(sphere)
-        materialBindSubsets = UsdShade.Material.GetMaterialBindSubsets(
-            geomSphere)
+        materialBindSubsets = UsdShade.MaterialBindingAPI(sphere) \
+                .GetMaterialBindSubsets()
         self.assertEqual(len(materialBindSubsets), 0)
 
         faceIndices1 = Vt.IntArray((0, 1, 2, 3))
@@ -50,10 +51,10 @@ class TestUsdShadeMaterialBindFaceSubset(unittest.TestCase):
         faceIndices3 = Vt.IntArray((12, 13, 14, 15))
 
         # Create a new family of subsets with familyName="materialBind" .
-        subset1 = UsdShade.Material.CreateMaterialBindSubset(geomSphere, 
+        subset1 = UsdShade.MaterialBindingAPI(sphere).CreateMaterialBindSubset(
             'subset1', faceIndices1, UsdGeom.Tokens.face)
         # Default elementType is 'face'
-        subset2 = UsdShade.Material.CreateMaterialBindSubset(geomSphere, 
+        subset2 = UsdShade.MaterialBindingAPI(sphere).CreateMaterialBindSubset(
             'subset2', faceIndices2)
         self.assertEqual(subset2.GetElementTypeAttr().Get(), UsdGeom.Tokens.face)
 
@@ -76,7 +77,7 @@ class TestUsdShadeMaterialBindFaceSubset(unittest.TestCase):
         self.assertFalse(valid)
 
         # Add a subset that makes the family a partition.
-        subset3 = UsdShade.Material.CreateMaterialBindSubset(geomSphere, 
+        subset3 = UsdShade.MaterialBindingAPI(sphere).CreateMaterialBindSubset(
             'subset3', faceIndices3)
         (valid, reason) = UsdGeom.Subset.ValidateSubsets(
                             [subset1, subset2, subset3], 
@@ -85,20 +86,20 @@ class TestUsdShadeMaterialBindFaceSubset(unittest.TestCase):
         self.assertTrue(valid)
 
         self.assertEqual(
-            UsdShade.Material.GetMaterialBindSubsetsFamilyType(geomSphere),
-            UsdGeom.Tokens.nonOverlapping)
+            UsdShade.MaterialBindingAPI(sphere) \
+            .GetMaterialBindSubsetsFamilyType(),UsdGeom.Tokens.nonOverlapping)
 
-        UsdShade.Material.SetMaterialBindSubsetsFamilyType(geomSphere, 
-            UsdGeom.Tokens.partition)
+        UsdShade.MaterialBindingAPI(sphere).SetMaterialBindSubsetsFamilyType(
+                UsdGeom.Tokens.partition)
 
         (valid, reason) = UsdGeom.Subset.ValidateFamily(geomSphere, 
                             UsdGeom.Tokens.face, 
                             UsdShade.Tokens.materialBind)
         self.assertTrue(valid)
         
-        UsdShade.Material(mat1).Bind(subset1.GetPrim())
-        UsdShade.Material(mat2).Bind(subset2.GetPrim())
-        UsdShade.Material(mat3).Bind(subset3.GetPrim())
+        UsdShade.MaterialBindingAPI(subset1.GetPrim()).Bind(mat1)
+        UsdShade.MaterialBindingAPI(subset2.GetPrim()).Bind(mat2)
+        UsdShade.MaterialBindingAPI(subset3.GetPrim()).Bind(mat3)
 
         # Don't save the modified source stage. Export it into a 
         # new layer for baseline diffing.

@@ -69,7 +69,7 @@ class TestUsdRiSchemata(unittest.TestCase):
         material = UsdShade.Material.Define(stage, "/World/Group/Model/Material")
         assert material
         assert material.GetPrim()
-        material.Bind(p)
+        UsdShade.MaterialBindingAPI(p).Bind(material)
 
         print ("Test shader")
         shader = UsdRi.RslShader.Define(stage, '/World/Group/Model/Shader')

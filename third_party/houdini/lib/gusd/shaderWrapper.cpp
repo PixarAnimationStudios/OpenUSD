@@ -27,6 +27,7 @@
 
 #include "pxr/usd/usdRi/materialAPI.h"
 #include "pxr/usd/usdShade/connectableAPI.h"
+#include "pxr/usd/usdShade/materialBindingAPI.h"
 
 #include <DEP/DEP_MicroNode.h>
 #include <PRM/PRM_ParmList.h>
@@ -576,7 +577,7 @@ bind(UsdPrim& prim) const
     if(!isValid())
         return false;
 
-    return m_usdMaterial.Bind(prim);
+    return UsdShadeMaterialBindingAPI(prim).Bind(m_usdMaterial);
 }
 
 

@@ -166,7 +166,8 @@ _GetMaterialAssignAttr(
         return FnKat::Attribute();
     }
 
-    UsdRelationship usdRel = UsdShadeMaterial::GetBindingRel(prim);
+    UsdRelationship usdRel = 
+        UsdShadeMaterialBindingAPI(prim).GetDirectBindingRel();
     if (usdRel) {
         // USD shading binding
         SdfPathVector targetPaths;
