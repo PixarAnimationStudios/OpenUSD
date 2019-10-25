@@ -78,6 +78,14 @@ _GetRawConnectedSourcePaths(const UsdShadeInput &self)
     return sourcePaths;
 }
 
+static object
+_GetValueProducingAttribute(const UsdShadeInput &self)
+{
+    UsdShadeAttributeType attrType;
+    UsdAttribute attr = self.GetValueProducingAttribute(&attrType);
+    return boost::python::make_tuple(attr, attrType);
+}
+
 } // anonymous namespace 
 
 void wrapUsdShadeInput()
@@ -118,6 +126,23 @@ void wrapUsdShadeInput()
         .def("GetRenderType", &Input::GetRenderType)
         .def("HasRenderType", &Input::HasRenderType)
 
+        .def("GetSdrMetadata", &Input::GetSdrMetadata)
+        .def("GetSdrMetadataByKey", &Input::GetSdrMetadataByKey,
+             (arg("key")))
+
+        .def("SetSdrMetadata", &Input::SetSdrMetadata,
+             (arg("sdrMetadata")))
+        .def("SetSdrMetadataByKey", &Input::SetSdrMetadataByKey,
+             (arg("key"), arg("value")))
+
+        .def("HasSdrMetadata", &Input::HasSdrMetadata)
+        .def("HasSdrMetadataByKey", &Input::HasSdrMetadataByKey,
+             (arg("key")))
+
+        .def("ClearSdrMetadata", &Input::ClearSdrMetadata)
+        .def("ClearSdrMetadataByKey", 
+             &Input::ClearSdrMetadataByKey, (arg("key")))
+
         .def("SetDocumentation", &Input::SetDocumentation)
         .def("GetDocumentation", &Input::GetDocumentation)
         .def("SetDisplayGroup", &Input::SetDisplayGroup)
@@ -126,6 +151,8 @@ void wrapUsdShadeInput()
         .def("SetConnectability", &Input::SetConnectability)
         .def("GetConnectability", &Input::GetConnectability)
         .def("ClearConnectability", &Input::ClearConnectability)
+
+        .def("GetValueProducingAttribute", _GetValueProducingAttribute)
 
         .def("GetAttr", &Input::GetAttr,
              return_value_policy<return_by_value>())

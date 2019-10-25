@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2016-2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -38,7 +38,6 @@
 #include <Alembic/Abc/ICompoundProperty.h>
 #include <Alembic/Abc/ISampleSelector.h>
 #include <boost/call_traits.hpp>
-#include <boost/function.hpp>
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_array.hpp>
@@ -47,6 +46,8 @@
 #include <boost/type_traits/remove_const.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/variant.hpp>
+
+#include <functional>
 #include <algorithm>
 #include <iosfwd>
 #include <map>
@@ -82,20 +83,6 @@ namespace UsdAbc_AlembicUtil {
 
 using namespace ::Alembic::Abc;
 
-// Supported Usd data types in conversions.  We simply take every Sdf
-// value type and create tokens for the scalar and shaped (i.e. array)
-// versions.  For example, we get the tokens named Bool with value "bool"
-// and BoolArray with value "bool[]" for the bool type.
-#define USD_MAKE_USD_TYPE(r, unused, elem) \
-    ((SDF_VALUE_TAG(elem), SDF_VALUE_TRAITS_TYPE(elem)::Name())) \
-    ((BOOST_PP_CAT(SDF_VALUE_TAG(elem), Array), SDF_VALUE_TRAITS_TYPE(elem)::ShapedName()))
-TF_DECLARE_PUBLIC_TOKENS(UsdAbc_UsdDataTypes,
-    BOOST_PP_SEQ_FOR_EACH(USD_MAKE_USD_TYPE, ~, SDF_VALUE_TYPES)
-    _SDF_VALUE_TYPE_NAME_TOKENS
-);
-#undef USD_MAKE_USD_TYPE
-
-
 // Prim type names in the UsdGeom schema except we create new names for
 // types that don't map directly to Alembic.
 #define USD_ABC_PRIM_TYPE_NAMES \
@@ -108,6 +95,7 @@ TF_DECLARE_PUBLIC_TOKENS(UsdAbc_UsdDataTypes,
     (PseudoRoot) \
     (Scope) \
     (Xform) \
+    (GeomSubset)\
     /* end */
 TF_DECLARE_PUBLIC_TOKENS(UsdAbcPrimTypeNames, USD_ABC_PRIM_TYPE_NAMES);
 
@@ -115,9 +103,14 @@ TF_DECLARE_PUBLIC_TOKENS(UsdAbcPrimTypeNames, USD_ABC_PRIM_TYPE_NAMES);
 #define USD_ABC_GPRIM_NAMES \
     (primvars) \
     (userProperties) \
+    ((defaultFamilyName, "materialBind")) \
+    ((defaultFamilyTypeAttributeName, "subsetFamily:materialBind:familyType")) \
     /* end */
 #define USD_ABC_POINTBASED_NAMES \
-    ((uv, "primvars:uv"))
+    ((uv, "primvars:uv")) \
+    ((uvIndices, "primvars:uv:indices")) \
+    ((st, "primvars:st")) \
+    ((stIndices, "primvars:st:indices")) \
     /* end */
 #define USD_ABC_PROPERTY_NAMES \
     USD_ABC_GPRIM_NAMES \
@@ -203,10 +196,6 @@ struct UsdAbc_AlembicType : boost::totally_ordered<UsdAbc_AlembicType> {
 /// templatizing them.
 class UsdAbc_AlembicDataAny {
 public:
-#if !defined(doxygen)
-    typedef bool (UsdAbc_AlembicDataAny::*_UnspecifiedBoolType)() const;
-#endif
-
     /// Construct an empty any.
     UsdAbc_AlembicDataAny() { }
 
@@ -241,17 +230,11 @@ public:
         return _valuePtr.which() == 0;
     }
 
-    /// Returns \c true iff constructed with a NULL pointer.
-    bool operator!() const
-    {
-        return _valuePtr.which() == 0;
-    }
-
-    /// Returns value convertable to \c true in a boolean expression iff
+    /// Explicit bool conversion operator. Converts to true iff this object was 
     /// constructed with a non-NULL pointer.
-    operator _UnspecifiedBoolType() const
+    explicit operator bool() const
     {
-        return IsEmpty() ? 0 : &UsdAbc_AlembicDataAny::IsEmpty;
+        return !IsEmpty();
     }
 
 private:
@@ -347,10 +330,6 @@ struct _ExtractSampleForAlembic<VtArray<T> > {
 /// providing a common interface to several forms of data.
 class _SampleForAlembic {
 public:
-#if !defined(doxygen)
-    typedef bool (_SampleForAlembic::*_UnspecifiedBoolType)() const;
-#endif
-
     typedef std::vector<uint32_t> IndexArray;
     typedef boost::shared_ptr<IndexArray> IndexArrayPtr;
 
@@ -430,16 +409,11 @@ public:
         return _value.IsError(message);
     }
 
-    /// Returns a value evaluating to \c true iff the data is valid.
-    operator _UnspecifiedBoolType() const
+    /// Explicit bool conversion operator. Converts to \c true iff the data is 
+    /// valid.
+    explicit operator bool() const
     {
-        return _IsValid() ? &_SampleForAlembic::_IsValid : 0;
-    }
-
-    /// Returns \c false iff the data is valid.
-    bool operator!() const
-    {
-        return !_IsValid();
+        return _IsValid();
     }
 
     /// Returns the raw data.
@@ -921,15 +895,15 @@ public:
     /// value from the named property in the compound property at the given
     /// sample selector to the \c UsdAbc_AlembicDataAny value.  The converter
     /// can assume the property has the type that the converter was keyed by.
-    typedef boost::function<bool (const ICompoundProperty&,
-                                  const std::string&,
-                                  const ISampleSelector&,
-                                  const UsdAbc_AlembicDataAny&)> ToUsdConverter;
+    typedef std::function<bool (const ICompoundProperty&,
+                                const std::string&,
+                                const ISampleSelector&,
+                                const UsdAbc_AlembicDataAny&)> ToUsdConverter;
 
     /// A reverse conversion function (Usd -> Alembic).  Returns the value
     /// as a \c _SampleForAlembic.  The converter can assume the VtValue
     /// is holding the expected type.
-    typedef boost::function<_SampleForAlembic(const VtValue&)> FromUsdConverter;
+    typedef std::function<_SampleForAlembic(const VtValue&)> FromUsdConverter;
 
     UsdAbc_AlembicDataConversion();
 

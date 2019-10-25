@@ -74,6 +74,11 @@ UsdRiPxrIntMultLightFilter::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdRiPxrIntMultLightFilter::_GetSchemaType() const {
+    return UsdRiPxrIntMultLightFilter::schemaType;
+}
+
 /* static */
 const TfType &
 UsdRiPxrIntMultLightFilter::_GetStaticTfType()

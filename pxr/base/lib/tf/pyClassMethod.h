@@ -39,7 +39,7 @@ using namespace boost::python;
 
 // Visitor for wrapping functions as Python class methods.
 // See typedef below for docs.
-// This is very simliar to the staticmethod() method on boost::python::class,
+// This is very similar to the staticmethod() method on boost::python::class,
 // except it uses PyClassMethod_New() instead of PyStaticMethod_New().
 struct _TfPyClassMethod : def_visitor<_TfPyClassMethod>
 {

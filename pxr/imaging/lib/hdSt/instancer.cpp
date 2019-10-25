@@ -37,13 +37,13 @@ HdStInstancer::HdStInstancer(HdSceneDelegate* delegate,
                              SdfPath const &id,
                              SdfPath const &parentId)
     : HdInstancer(delegate, id, parentId)
-    , _numInstancePrimVars(0)
+    , _numInstancePrimvars(0)
 {
 }
 
 void
 HdStInstancer::PopulateDrawItem(HdDrawItem *drawItem, HdRprimSharedData *sharedData,
-                                HdDirtyBits *dirtyBits, int instancePrimVarSlot)
+                                HdDirtyBits dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -53,18 +53,16 @@ HdStInstancer::PopulateDrawItem(HdDrawItem *drawItem, HdRprimSharedData *sharedD
 
     /* INSTANCE PRIMVARS */
     // Populate all instance primvars by backtracing hierarachy.
-    // GetInstancePrimVars() will update instance primvars if necessary.
+    // GetInstancePrimvars() will update instance primvars if necessary.
     // Update INSTANCE PRIMVARS first so that GetInstanceIndices() can
     // detect inconsistency between indices and the size of primvar arrays.
     int level = 0;
     HdStInstancer *currentInstancer = this;
     while (currentInstancer) {
         // allocate instance primvar slot in the drawing coordinate.
-        drawingCoord->SetInstancePrimVarIndex(level,
-                                              instancePrimVarSlot + level);
         sharedData->barContainer.Set(
-            drawingCoord->GetInstancePrimVarIndex(level),
-            currentInstancer->GetInstancePrimVars());
+            drawingCoord->GetInstancePrimvarIndex(level),
+            currentInstancer->GetInstancePrimvars());
 
         // next
         currentInstancer = static_cast<HdStInstancer*>(
@@ -73,7 +71,7 @@ HdStInstancer::PopulateDrawItem(HdDrawItem *drawItem, HdRprimSharedData *sharedD
     }
 
     /* INSTANCE INDICES */
-    if (HdChangeTracker::IsInstanceIndexDirty(*dirtyBits, sharedData->rprimID)) {
+    if (HdChangeTracker::IsInstanceIndexDirty(dirtyBits, sharedData->rprimID)) {
         sharedData->barContainer.Set(
             drawingCoord->GetInstanceIndexIndex(),
             GetInstanceIndices(sharedData->rprimID));
@@ -83,19 +81,21 @@ HdStInstancer::PopulateDrawItem(HdDrawItem *drawItem, HdRprimSharedData *sharedD
 }
 
 HdBufferArrayRangeSharedPtr
-HdStInstancer::GetInstancePrimVars()
+HdStInstancer::GetInstancePrimvars()
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
+    HdSceneDelegate *delegate = GetDelegate();
+
     HdChangeTracker &changeTracker = 
-        GetDelegate()->GetRenderIndex().GetChangeTracker();
+        delegate->GetRenderIndex().GetChangeTracker();
     SdfPath const& instancerId = GetId();
 
     // Two RPrim's might be trying to update the same instancer at once.
     // do a quick unguarded check to see if it is dirty.
-    int dirtyBits = changeTracker.GetInstancerDirtyBits(instancerId);
-    if (HdChangeTracker::IsAnyPrimVarDirty(dirtyBits, instancerId)) {
+    HdDirtyBits dirtyBits = changeTracker.GetInstancerDirtyBits(instancerId);
+    if (HdChangeTracker::IsAnyPrimvarDirty(dirtyBits, instancerId)) {
         std::lock_guard<std::mutex> lock(_instanceLock);
   
         // Now we have the lock, we need to check again, as another thread might
@@ -104,40 +104,43 @@ HdStInstancer::GetInstancePrimVars()
 
         // check the dirtyBits of this instancer so that the instance primvar will
         // be updated just once even if there're multiple prototypes.
-        if (HdChangeTracker::IsAnyPrimVarDirty(dirtyBits, instancerId)) {
+        if (HdChangeTracker::IsAnyPrimvarDirty(dirtyBits, instancerId)) {
             HdStResourceRegistrySharedPtr const& resourceRegistry = 
                 boost::static_pointer_cast<HdStResourceRegistry>(
-                GetDelegate()->GetRenderIndex().GetResourceRegistry());
+                delegate->GetRenderIndex().GetResourceRegistry());
 
-            TfTokenVector primVarNames;
-            primVarNames = GetDelegate()->GetPrimVarInstanceNames(instancerId);
+            HdPrimvarDescriptorVector primvars =
+                delegate->GetPrimvarDescriptors(instancerId,
+                                                HdInterpolationInstance);
 
             // for all instance primvars
             HdBufferSourceVector sources;
-            sources.reserve(primVarNames.size());
+            sources.reserve(primvars.size());
 
-            // Always reset numInstancePrimVars, for the case the number of
+            // Always reset numInstancePrimvars, for the case the number of
             // instances are varying.
             // XXX: This might overlook the error that only a subset of
             // instance primvars are varying.
-            _numInstancePrimVars = 0;
+            _numInstancePrimvars = 0;
 
-            TF_FOR_ALL(nameIt, primVarNames) {
-                if (HdChangeTracker::IsPrimVarDirty(dirtyBits, instancerId, 
-                                                    *nameIt)) {
-                    VtValue value = GetDelegate()->Get(instancerId, *nameIt);
+            for (HdPrimvarDescriptor const& primvar: primvars) {
+                if (HdChangeTracker::IsPrimvarDirty(dirtyBits, instancerId, 
+                                                    primvar.name)) {
+                    VtValue value = delegate->Get(instancerId, primvar.name);
                     if (!value.IsEmpty()) {
                         HdBufferSourceSharedPtr source;
-                        if (*nameIt == HdTokens->instanceTransform &&
+                        if (primvar.name == HdTokens->instanceTransform &&
                             TF_VERIFY(value.IsHolding<VtArray<GfMatrix4d> >())) {
                             // Explicitly invoke the c'tor taking a
                             // VtArray<GfMatrix4d> to ensure we properly convert to
                             // the appropriate floating-point matrix type.
-                            source.reset(new HdVtBufferSource(*nameIt,
-                                                              value.UncheckedGet<VtArray<GfMatrix4d> >()));
+                            source.reset(new HdVtBufferSource(
+                                primvar.name,
+                                value.UncheckedGet<VtArray<GfMatrix4d> >()));
                         }
                         else {
-                            source.reset(new HdVtBufferSource(*nameIt, value));
+                            source.reset(new HdVtBufferSource(
+                                primvar.name, value));
                         }
 
                         // This is a defensive check, but ideally we would not be sent
@@ -148,25 +151,25 @@ HdStInstancer::GetInstancePrimVars()
                             continue;
 
                         // Latch onto the first numElements we see.
-                        int numElements = source->GetNumElements();
-                        if (_numInstancePrimVars == 0) {
-                            _numInstancePrimVars = numElements;
+                        size_t numElements = source->GetNumElements();
+                        if (_numInstancePrimvars == 0) {
+                            _numInstancePrimvars = numElements;
                         }
 
-                        if (numElements != _numInstancePrimVars) {
+                        if (numElements != _numInstancePrimvars) {
                             // This Rprim is now potentially in a bad state.
-                            // to prevent crashes, trim down _numInstancePrimVars.
+                            // to prevent crashes, trim down _numInstancePrimvars.
                             //
                             // Also note that this will not catch time-varying update
                             // errors.
                             TF_WARN("Inconsistent number of '%s' values "
-                                    "(%d vs %d) for <%s>.",
-                                    nameIt->GetText(),
+                                    "(%zu vs %zu) for <%s>.",
+                                    primvar.name.GetText(),
                                     source->GetNumElements(),
-                                    _numInstancePrimVars,
+                                    _numInstancePrimvars,
                                     instancerId.GetText());
-                            _numInstancePrimVars
-                                = std::min(numElements, _numInstancePrimVars);
+                            _numInstancePrimvars
+                                = std::min(numElements, _numInstancePrimvars);
                         }
 
                         sources.push_back(source);
@@ -176,18 +179,20 @@ HdStInstancer::GetInstancePrimVars()
 
             if (!sources.empty()) {
                 // if the instance BAR has not been allocated, create new one
-                if (!_instancePrimVarRange) {
+                if (!_instancePrimvarRange) {
                     HdBufferSpecVector bufferSpecs;
-                    HdBufferSpec::AddBufferSpecs(&bufferSpecs, sources);
+                    HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 
-                    _instancePrimVarRange =
+                    _instancePrimvarRange =
                         resourceRegistry->AllocateNonUniformBufferArrayRange(
-                            HdTokens->primVar, bufferSpecs);
+                            HdTokens->primvar,
+                            bufferSpecs,
+                            HdBufferArrayUsageHint());
                 }
-                TF_VERIFY(_instancePrimVarRange->IsValid());
+                TF_VERIFY(_instancePrimvarRange->IsValid());
 
                 // schedule to sync gpu
-                resourceRegistry->AddSources(_instancePrimVarRange, sources);
+                resourceRegistry->AddSources(_instancePrimvarRange, sources);
             }
 
             // Clear the dirtyBits of this instancer since we just scheduled to
@@ -201,7 +206,7 @@ HdStInstancer::GetInstancePrimVars()
         }
     }
 
-    return _instancePrimVarRange;
+    return _instancePrimvarRange;
 }
 
 void
@@ -214,11 +219,12 @@ HdStInstancer::_GetInstanceIndices(SdfPath const &prototypeId,
 
     // quick sanity check
     // instance indices should not exceed the size of instance primvars.
-    TF_FOR_ALL (it, instanceIndices) {
-        if (*it >= _numInstancePrimVars) {
+    for (auto it = instanceIndices.cbegin();
+         it != instanceIndices.cend(); ++it) {
+        if (*it >= (int)_numInstancePrimvars) {
             TF_WARN("Instance index exceeds the number of instance primvars"
                     " (%d >= %d) for <%s>",
-                    *it, _numInstancePrimVars, instancerId.GetText());
+                    *it, (int)_numInstancePrimvars, instancerId.GetText());
             instanceIndices.clear();
             // insert 0-th index as placeholder (0th should always exist, since
             // we don't populate instance primvars with numElements == 0).
@@ -292,7 +298,7 @@ HdStInstancer::GetInstanceIndices(SdfPath const &prototypeId)
 
             // allocate new one
             indexRange = resourceRegistry->AllocateNonUniformBufferArrayRange(
-                HdTokens->topology, bufferSpecs);
+                HdTokens->topology, bufferSpecs, HdBufferArrayUsageHint());
             _instanceIndexRangeMap[prototypeId] = indexRange;
 
             // XXX: reconsider the lifetime of instanceIndexRangeMap entities.
@@ -336,7 +342,7 @@ HdStInstancer::GetInstanceIndices(SdfPath const &prototypeId)
         instanceIndices[j*instanceIndexWidth] = j; // global idx
         for (int i = 0; i < instancerNumLevels; ++i) {
             instanceIndices[j*instanceIndexWidth + i + 1] =
-                instanceIndicesArray[i][currents[i]];
+                instanceIndicesArray[i].cdata()[currents[i]];
         }
         ++currents[0];
         for (int i = 0; i < instancerNumLevels-1; ++i) {

@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USD_MAYA_USDPRIMPROVIDER_H
-#define USD_MAYA_USDPRIMPROVIDER_H
+#ifndef PXRUSDMAYA_USD_PRIM_PROVIDER_H
+#define PXRUSDMAYA_USD_PRIM_PROVIDER_H
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
@@ -32,17 +32,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 // interface class 
-class PxrUsdMayaUsdPrimProvider
+class UsdMayaUsdPrimProvider
 {
 public:
     // returns the prim that this node is holding
     virtual UsdPrim usdPrim() const = 0;
 
     PXRUSDMAYA_API
-    virtual ~PxrUsdMayaUsdPrimProvider();
+    virtual ~UsdMayaUsdPrimProvider();
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USD_MAYA_USDPRIMPROVIDER_H
+#endif

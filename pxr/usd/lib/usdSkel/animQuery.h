@@ -57,9 +57,6 @@ public:
     USDSKEL_API
     UsdSkelAnimQuery() {}
 
-    UsdSkelAnimQuery(const UsdSkel_AnimQueryImplRefPtr& impl)
-        :  _impl(impl) {}
-
     /// Return true if this query is valid.
     bool IsValid() const { return (bool)_impl; }
 
@@ -89,17 +86,29 @@ public:
     USDSKEL_API
     UsdPrim GetPrim() const;
 
-    /// Compute a root transform of the entire animation at \p time.
-    USDSKEL_API
-    bool ComputeTransform(GfMatrix4d* xform,
-                          UsdTimeCode time=UsdTimeCode::Default()) const;
-
     /// Compute joint transforms in joint-local space.
     /// Transforms are returned in the order specified by the joint ordering
     /// of the animation primitive itself.
+    template <typename Matrix4>
     USDSKEL_API
     bool ComputeJointLocalTransforms(
-             VtMatrix4dArray* xforms,
+             VtArray<Matrix4>* xforms,
+             UsdTimeCode time=UsdTimeCode::Default()) const;
+
+    /// Compute translation,rotation,scale components of the joint transforms
+    /// in joint-local space. This is provided to facilitate direct streaming
+    /// of animation data in a form that can efficiently be processed for
+    /// animation blending.
+    USDSKEL_API
+    bool ComputeJointLocalTransformComponents(
+             VtVec3fArray* translations,    
+             VtQuatfArray* rotations,
+             VtVec3hArray* scales,
+             UsdTimeCode time=UsdTimeCode::Default()) const;
+
+    USDSKEL_API
+    bool ComputeBlendShapeWeights(
+             VtFloatArray* weights,
              UsdTimeCode time=UsdTimeCode::Default()) const;
     
     /// Get the time samples at which values contributing to joint transforms
@@ -132,12 +141,32 @@ public:
     USDSKEL_API
     bool JointTransformsMightBeTimeVarying() const;
 
-    /// Return true if it possible, but not certain, that the root transform
-    /// of the animation query changes over time, false otherwise.
+    /// Get the time samples at which values contributing to blend shape weights
+    /// have been set.
+    ///
+    /// \sa UsdAttribute::GetTimeSamples
+    USDSKEL_API
+    bool GetBlendShapeWeightTimeSamples(std::vector<double>* attrs) const;
+
+    /// Get the time samples at which values contributing to blend shape weights
+    /// are set, over \p interval.
+    ///
+    /// \sa UsdAttribute::GetTimeSamplesInInterval
+    USDSKEL_API
+    bool GetBlendShapeWeightTimeSamplesInInterval(const GfInterval& interval,
+                                                  std::vector<double>* times) const;
+
+    /// Get the attributes contributing to blendshape weight computations.
+    USDSKEL_API
+    bool GetBlendShapeWeightAttributes(std::vector<UsdAttribute>* attrs) const;
+
+    /// Return true if it possible, but not certain, that the blend shape
+    /// weights computed through this animation query change over time,
+    /// false otherwise.
     ///
     /// \sa UsdAttribute::ValueMightBeTimeVayring
     USDSKEL_API
-    bool TransformMightBeTimeVarying() const;
+    bool BlendShapeWeightsMightBeTimeVarying() const;
 
     /// Returns an array of tokens describing the ordering of joints in the
     /// animation.
@@ -146,11 +175,21 @@ public:
     USDSKEL_API
     VtTokenArray GetJointOrder() const;
 
+    /// Returns an array of tokens describing the ordering of blend shape
+    /// channels in the animation.
+    USDSKEL_API
+    VtTokenArray GetBlendShapeOrder() const;
+
     USDSKEL_API
     std::string GetDescription() const;
 
 private:
+    UsdSkelAnimQuery(const UsdSkel_AnimQueryImplRefPtr& impl)
+        :  _impl(impl) {}
+
     UsdSkel_AnimQueryImplRefPtr _impl;
+
+    friend class UsdSkel_CacheImpl;
 };
 
 

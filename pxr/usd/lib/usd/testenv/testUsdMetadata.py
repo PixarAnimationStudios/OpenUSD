@@ -229,22 +229,22 @@ class TestUsdMetadata(unittest.TestCase):
 
             for obj in [foo, attr, rel]:
                 self.assertEqual(obj.GetDocumentation(), "")
-                self.assertFalse(obj.HasAuthoredDocumentation());
+                self.assertFalse(obj.HasAuthoredDocumentation())
                 self.assertEqual(obj.GetMetadata("documentation"), None)
 
                 self.assertEqual(obj.SetDocumentation("foo"), True)
                 self.assertEqual(obj.GetDocumentation(), "foo")
-                self.assertTrue(obj.HasAuthoredDocumentation());
+                self.assertTrue(obj.HasAuthoredDocumentation())
                 self.assertEqual(obj.GetMetadata("documentation"), "foo")
 
                 self.assertEqual(obj.SetDocumentation(""), True)
                 self.assertEqual(obj.GetDocumentation(), "")
-                self.assertTrue(obj.HasAuthoredDocumentation());
+                self.assertTrue(obj.HasAuthoredDocumentation())
                 self.assertEqual(obj.GetMetadata("documentation"), "")
 
                 self.assertEqual(obj.ClearDocumentation(), True)
                 self.assertEqual(obj.GetDocumentation(), "")
-                self.assertFalse(obj.HasAuthoredDocumentation());
+                self.assertFalse(obj.HasAuthoredDocumentation())
                 self.assertEqual(obj.GetMetadata("documentation"), None)
 
     def test_DisplayName(self):
@@ -258,22 +258,22 @@ class TestUsdMetadata(unittest.TestCase):
 
             for prop in [attr, rel]:
                 self.assertEqual(prop.GetDisplayName(), "")
-                self.assertFalse(prop.HasAuthoredDisplayName());
+                self.assertFalse(prop.HasAuthoredDisplayName())
                 self.assertEqual(prop.GetMetadata("displayName"), None)
 
                 self.assertEqual(prop.SetDisplayName("foo"), True)
                 self.assertEqual(prop.GetDisplayName(), "foo")
-                self.assertTrue(prop.HasAuthoredDisplayName());
+                self.assertTrue(prop.HasAuthoredDisplayName())
                 self.assertEqual(prop.GetMetadata("displayName"), "foo")
 
                 self.assertEqual(prop.SetDisplayName(""), True)
                 self.assertEqual(prop.GetDisplayName(), "")
-                self.assertTrue(prop.HasAuthoredDisplayName());
+                self.assertTrue(prop.HasAuthoredDisplayName())
                 self.assertEqual(prop.GetMetadata("displayName"), "")
 
                 self.assertEqual(prop.ClearDisplayName(), True)
                 self.assertEqual(prop.GetDisplayName(), "")
-                self.assertFalse(prop.HasAuthoredDisplayName());
+                self.assertFalse(prop.HasAuthoredDisplayName())
                 self.assertEqual(prop.GetMetadata("displayName"), None)
 
     def test_DisplayGroup(self):
@@ -287,17 +287,17 @@ class TestUsdMetadata(unittest.TestCase):
 
             for prop in [attr, rel]:
                 self.assertEqual(prop.GetDisplayGroup(), "")
-                self.assertFalse(prop.HasAuthoredDisplayGroup());
+                self.assertFalse(prop.HasAuthoredDisplayGroup())
                 self.assertEqual(prop.GetMetadata("displayGroup"), None)
 
                 self.assertEqual(prop.SetDisplayGroup("foo"), True)
                 self.assertEqual(prop.GetDisplayGroup(), "foo")
-                self.assertTrue(prop.HasAuthoredDisplayGroup());
+                self.assertTrue(prop.HasAuthoredDisplayGroup())
                 self.assertEqual(prop.GetMetadata("displayGroup"), "foo")
 
                 self.assertEqual(prop.SetDisplayGroup(""), True)
                 self.assertEqual(prop.GetDisplayGroup(), "")
-                self.assertTrue(prop.HasAuthoredDisplayGroup());
+                self.assertTrue(prop.HasAuthoredDisplayGroup())
                 self.assertEqual(prop.GetMetadata("displayGroup"), "")
 
                 self.assertEqual(prop.SetNestedDisplayGroups(
@@ -309,7 +309,7 @@ class TestUsdMetadata(unittest.TestCase):
 
                 self.assertEqual(prop.ClearDisplayGroup(), True)
                 self.assertEqual(prop.GetDisplayGroup(), "")
-                self.assertFalse(prop.HasAuthoredDisplayGroup());
+                self.assertFalse(prop.HasAuthoredDisplayGroup())
                 self.assertEqual(prop.GetMetadata("displayGroup"), None)
 
     def test_BasicCustomData(self):
@@ -373,6 +373,10 @@ class TestUsdMetadata(unittest.TestCase):
 
             p.ClearCustomDataByKey('a')
             self.assertEqual(p.GetCustomData(), { 'newKey':'value' })
+
+            # Setting customData keys with bad types should error.
+            with self.assertRaises(ValueError):
+                p.SetCustomDataByKey('testBadValue', [1,2,3])
 
     def test_ComposedNestedDictionaries(self):
         '''Test to ensure dictionaries are properly merged.
@@ -859,6 +863,8 @@ class TestUsdMetadata(unittest.TestCase):
         '''Test path resolution for asset path-valued metadata'''
         s = Usd.Stage.Open("assetPaths/root.usda")
         prim = s.GetPrimAtPath("/AssetPathTest")
+
+        # Test attribute timeSample resolution
         attr = prim.GetAttribute("assetPath")
         
         timeSamples = attr.GetMetadata("timeSamples")
@@ -877,6 +883,7 @@ class TestUsdMetadata(unittest.TestCase):
                   for p in attr.GetMetadata("default")]),
             [os.path.abspath("assetPaths/asset.usda")])
 
+        # Test prim metadata resolution
         metadataDict = prim.GetMetadata("customData")
         self.assertEqual(
             os.path.normpath(metadataDict["assetPath"].resolvedPath),
@@ -894,6 +901,28 @@ class TestUsdMetadata(unittest.TestCase):
             list([os.path.normpath(p.resolvedPath) 
                   for p in metadataDict["assetPathArray"]]),
             [os.path.abspath("assetPaths/asset.usda")])
+
+        # Test stage metadata resolution
+        metadataDict = s.GetMetadata("customLayerData")
+        self.assertEqual(
+            os.path.normpath(metadataDict["assetPath"].resolvedPath),
+            os.path.abspath("assetPaths/asset.usda"))
+        self.assertEqual(
+            list([os.path.normpath(p.resolvedPath) 
+                  for p in metadataDict["assetPathArray"]]),
+            [os.path.abspath("assetPaths/asset.usda")])
+            
+        metadataDict = metadataDict["subDict"]
+        self.assertEqual(
+            os.path.normpath(metadataDict["assetPath"].resolvedPath),
+            os.path.abspath("assetPaths/asset.usda"))
+        self.assertEqual(
+            list([os.path.normpath(p.resolvedPath) 
+                  for p in metadataDict["assetPathArray"]]),
+            [os.path.abspath("assetPaths/asset.usda")])
+        
+        
+
 
     def test_TimeSamplesMetadata(self):
         '''Test timeSamples composition, with layer offsets'''

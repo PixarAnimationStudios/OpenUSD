@@ -32,6 +32,7 @@
 #include "pxr/imaging/glf/glContext.h"
 
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/stackTrace.h"
 #include "pxr/base/tf/stringUtils.h"
 
@@ -39,6 +40,20 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
+TF_DEFINE_ENV_SETTING(GLF_ENABLE_DIAGNOSTIC_TRACE, 0,
+                      "Enable glDebug* diagnostic tracing in Glf.");
+
+static bool
+GlfTraceEnabled()
+{
+#if defined(GL_KHR_debug)
+    static bool _v = TfGetEnvSetting(GLF_ENABLE_DIAGNOSTIC_TRACE) == 1;
+    return _v;
+#else
+    return false;
+#endif
+}
 
 void
 GlfPostPendingGLErrors(std::string const & where)
@@ -54,7 +69,12 @@ GlfPostPendingGLErrors(std::string const & where)
         const GLubyte *errorString = gluErrorString(error);
 
         std::ostringstream errorMessage;
-        errorMessage << "GL error: " << errorString;
+        if (!errorString) {
+            errorMessage << "GL error code: 0x" << std::hex << error 
+                         << std::dec;
+        } else {
+            errorMessage << "GL error: " << errorString;
+        }
 
         if (!where.empty()) {
             errorMessage << ", reported from " << where;
@@ -74,10 +94,18 @@ GlfPostPendingGLErrors(std::string const & where)
 void
 GlfRegisterDefaultDebugOutputMessageCallback()
 {
+#if defined(GL_KHR_debug)
     if (glDebugMessageCallbackARB) {
-        glDebugMessageCallbackARB((GLDEBUGPROCARB)GlfDefaultDebugOutputMessageCallback, 0);
+        glDebugMessageCallbackARB(
+            (GLDEBUGPROCARB)GlfDefaultDebugOutputMessageCallback, 0);
+        // Disable push/pop group messages; we don't want to print these.
+        glDebugMessageControlARB(GL_DONT_CARE, GL_DEBUG_TYPE_PUSH_GROUP,
+            GL_DONT_CARE, 0, nullptr, GL_FALSE);
+        glDebugMessageControlARB(GL_DONT_CARE, GL_DEBUG_TYPE_POP_GROUP,
+            GL_DONT_CARE, 0, nullptr, GL_FALSE);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
     }
+#endif
 }
 
 void
@@ -159,7 +187,8 @@ GlfDebugEnumToString(GLenum debugEnum)
     return "unknown";
 }
 
-static void _GlfPushDebugGroup(char const * message)
+static void
+_GlfPushDebugGroup(char const * message)
 {
 #if defined(GL_KHR_debug)
     if (GLEW_KHR_debug) {
@@ -168,7 +197,8 @@ static void _GlfPushDebugGroup(char const * message)
 #endif
 }
 
-static void _GlfPopDebugGroup()
+static void
+_GlfPopDebugGroup()
 {
 #if defined(GL_KHR_debug)
     if (GLEW_KHR_debug) {
@@ -179,12 +209,52 @@ static void _GlfPopDebugGroup()
 
 GlfDebugGroup::GlfDebugGroup(char const *message)
 {
-    _GlfPushDebugGroup(message);
+    if (GlfTraceEnabled()) {
+        _GlfPushDebugGroup(message);
+    }
 }
 
 GlfDebugGroup::~GlfDebugGroup()
 {
-    _GlfPopDebugGroup();
+    if (GlfTraceEnabled()) {
+        _GlfPopDebugGroup();
+    }
+}
+
+void
+GlfDebugLabelBuffer(GLuint id, char const *label)
+{
+#if defined(GL_KHR_debug)
+    if (GlfTraceEnabled()) {
+        if (GLEW_KHR_debug) {
+            glObjectLabel(GL_BUFFER, id, -1, label);
+        }
+    }
+#endif
+}
+
+void
+GlfDebugLabelShader(GLuint id, char const *label)
+{
+#if defined(GL_KHR_debug)
+    if (GlfTraceEnabled()) {
+        if (GLEW_KHR_debug) {
+            glObjectLabel(GL_SHADER, id, -1, label);
+        }
+    }
+#endif
+}
+
+void
+GlfDebugLabelProgram(GLuint id, char const *label)
+{
+#if defined(GL_KHR_debug)
+    if (GlfTraceEnabled()) {
+        if (GLEW_KHR_debug) {
+            glObjectLabel(GL_PROGRAM, id, -1, label);
+        }
+    }
+#endif
 }
 
 GlfGLQueryObject::GlfGLQueryObject()

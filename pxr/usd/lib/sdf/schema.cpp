@@ -38,7 +38,7 @@
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/instantiateSingleton.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/vt/dictionary.h"
 
 #include <deque>
@@ -53,6 +53,15 @@ using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    ((Default, "default"))
+    ((DisplayGroup,"displayGroup"))
+    ((Type,"type"))
+    ((AppliesTo,"appliesTo"))
+);
+
 //
 // SdfSchemaBase::FieldDefinition
 //
@@ -66,7 +75,11 @@ SdfSchemaBase::FieldDefinition::FieldDefinition(
       _fallbackValue(fallbackValue),
       _isPlugin(false),
       _isReadOnly(false),
-      _holdsChildren(false)
+      _holdsChildren(false),
+      _valueValidator(nullptr),
+      _listValueValidator(nullptr),
+      _mapKeyValidator(nullptr),
+      _mapValueValidator(nullptr)
 {
 }
 
@@ -80,6 +93,11 @@ const VtValue&
 SdfSchemaBase::FieldDefinition::GetFallbackValue() const
 {
     return _fallbackValue;
+}
+
+const SdfSchemaBase::FieldDefinition::InfoVec&
+SdfSchemaBase::FieldDefinition::GetInfo() const {
+    return _info;
 }
 
 bool
@@ -130,28 +148,34 @@ SdfSchemaBase::FieldDefinition::Children()
 }
 
 SdfSchemaBase::FieldDefinition& 
-SdfSchemaBase::FieldDefinition::ValueValidator(const Validator& v)
+SdfSchemaBase::FieldDefinition::AddInfo(const TfToken& tok, const JsValue& val) {
+    _info.push_back(std::make_pair(tok, val));
+    return *this;
+}
+
+SdfSchemaBase::FieldDefinition& 
+SdfSchemaBase::FieldDefinition::ValueValidator(Validator v)
 {
     _valueValidator = v;
     return *this;
 }
 
 SdfSchemaBase::FieldDefinition& 
-SdfSchemaBase::FieldDefinition::ListValueValidator(const Validator& v)
+SdfSchemaBase::FieldDefinition::ListValueValidator(Validator v)
 {
     _listValueValidator = v;
     return *this;
 }
 
 SdfSchemaBase::FieldDefinition& 
-SdfSchemaBase::FieldDefinition::MapKeyValidator(const Validator& v)
+SdfSchemaBase::FieldDefinition::MapKeyValidator(Validator v)
 {
     _mapKeyValidator = v;
     return *this;
 }
 
 SdfSchemaBase::FieldDefinition& 
-SdfSchemaBase::FieldDefinition::MapValueValidator(const Validator& v)
+SdfSchemaBase::FieldDefinition::MapValueValidator(Validator v)
 {
     _mapValueValidator = v;
     return *this;
@@ -395,33 +419,236 @@ private:
     SdfSchemaBase* _schema;
 };
 
+//
+// Registration for built-in attribute value types.
+//
+
+static void
+_AddStandardTypesToRegistry(Sdf_ValueTypeRegistry* r)
+{
+    using T = Sdf_ValueTypeRegistry::Type;
+    const TfEnum& length  = SdfDefaultUnit(TfEnum(SdfLengthUnit(0)));
+    const TfToken& point  = SdfValueRoleNames->Point;
+    const TfToken& vector = SdfValueRoleNames->Vector;
+    const TfToken& normal = SdfValueRoleNames->Normal;
+    const TfToken& color  = SdfValueRoleNames->Color;
+    const TfToken& texCoord = SdfValueRoleNames->TextureCoordinate;
+
+    // Make sure TfTypes are registered.
+    TfRegistryManager::GetInstance().SubscribeTo<TfType>();
+
+    // Simple types.
+    r->AddType(T("bool",   bool()));
+    // XXX: We also need to fix the VT_INTEGRAL_BUILTIN_VALUE_TYPES
+    //       macro to use 'int8_t' if we add 'char'.
+    //r->AddType(T("char",   int8_t());
+    r->AddType(T("uchar",  uint8_t()).CPPTypeName("unsigned char"));
+    //r->AddType(T("short",  int16_t());
+    //r->AddType(T("ushort", uint16_t());
+    r->AddType(T("int",    int32_t()).CPPTypeName("int"));
+    r->AddType(T("uint",   uint32_t()).CPPTypeName("unsigned int"));
+    r->AddType(T("int64",  int64_t()).CPPTypeName("int64_t"));
+    r->AddType(T("uint64", uint64_t()).CPPTypeName("uint64_t"));
+    r->AddType(T("half",   GfHalf(0.0)).CPPTypeName("GfHalf"));
+    r->AddType(T("float",  float()));
+    r->AddType(T("double", double()));
+    r->AddType(T("timecode", SdfTimeCode()));
+    // TfType reports "string" as the typename for "std::string", but we want
+    // the fully-qualified name for documentation purposes.
+    r->AddType(T("string", std::string()).CPPTypeName("std::string"));
+    r->AddType(T("token",  TfToken()));
+    r->AddType(T("asset",  SdfAssetPath()));
+
+    // Compound types.
+    r->AddType(T("double2",  GfVec2d(0.0)).Dimensions(2));
+    r->AddType(T("double3",  GfVec3d(0.0)).Dimensions(3));
+    r->AddType(T("double4",  GfVec4d(0.0)).Dimensions(4));
+    r->AddType(T("float2",   GfVec2f(0.0)).Dimensions(2));
+    r->AddType(T("float3",   GfVec3f(0.0)).Dimensions(3));
+    r->AddType(T("float4",   GfVec4f(0.0)).Dimensions(4));
+    r->AddType(T("half2",    GfVec2h(0.0)).Dimensions(2));
+    r->AddType(T("half3",    GfVec3h(0.0)).Dimensions(3));
+    r->AddType(T("half4",    GfVec4h(0.0)).Dimensions(4));
+    r->AddType(T("int2",     GfVec2i(0.0)).Dimensions(2));
+    r->AddType(T("int3",     GfVec3i(0.0)).Dimensions(3));
+    r->AddType(T("int4",     GfVec4i(0.0)).Dimensions(4));
+    r->AddType(T("point3h",  GfVec3h(0.0)).DefaultUnit(length).Role(point)
+                                         .Dimensions(3));
+    r->AddType(T("point3f",  GfVec3f(0.0)).DefaultUnit(length).Role(point)
+                                         .Dimensions(3));
+    r->AddType(T("point3d",  GfVec3d(0.0)).DefaultUnit(length).Role(point)
+                                         .Dimensions(3));
+    r->AddType(T("vector3h", GfVec3h(0.0)).DefaultUnit(length).Role(vector)
+                                         .Dimensions(3));
+    r->AddType(T("vector3f", GfVec3f(0.0)).DefaultUnit(length).Role(vector)
+                                         .Dimensions(3));
+    r->AddType(T("vector3d", GfVec3d(0.0)).DefaultUnit(length).Role(vector)
+                                         .Dimensions(3));
+    r->AddType(T("normal3h", GfVec3h(0.0)).DefaultUnit(length).Role(normal)
+                                         .Dimensions(3));
+    r->AddType(T("normal3f", GfVec3f(0.0)).DefaultUnit(length).Role(normal)
+                                         .Dimensions(3));
+    r->AddType(T("normal3d", GfVec3d(0.0)).DefaultUnit(length).Role(normal)
+                                         .Dimensions(3));
+    r->AddType(T("color3h",  GfVec3h(0.0)).Role(color).Dimensions(3));
+    r->AddType(T("color3f",  GfVec3f(0.0)).Role(color).Dimensions(3));
+    r->AddType(T("color3d",  GfVec3d(0.0)).Role(color).Dimensions(3));
+    r->AddType(T("color4h",  GfVec4h(0.0)).Role(color).Dimensions(4));
+    r->AddType(T("color4f",  GfVec4f(0.0)).Role(color).Dimensions(4));
+    r->AddType(T("color4d",  GfVec4d(0.0)).Role(color).Dimensions(4));
+    r->AddType(T("quath",    GfQuath(1.0)).Dimensions(4));
+    r->AddType(T("quatf",    GfQuatf(1.0)).Dimensions(4));
+    r->AddType(T("quatd",    GfQuatd(1.0)).Dimensions(4));
+    r->AddType(T("matrix2d", GfMatrix2d(1.0)).Dimensions({2, 2}));
+    r->AddType(T("matrix3d", GfMatrix3d(1.0)).Dimensions({3, 3}));
+    r->AddType(T("matrix4d", GfMatrix4d(1.0)).Dimensions({4, 4}));
+    r->AddType(T("frame4d",  GfMatrix4d(1.0)).Role(SdfValueRoleNames->Frame)
+                                            .Dimensions({4, 4}));
+    r->AddType(T("texCoord2f", GfVec2f(0.0)).Role(texCoord).Dimensions(2));
+    r->AddType(T("texCoord2d", GfVec2d(0.0)).Role(texCoord).Dimensions(2));
+    r->AddType(T("texCoord2h", GfVec2h(0.0)).Role(texCoord).Dimensions(2));
+    r->AddType(T("texCoord3f", GfVec3f(0.0)).Role(texCoord).Dimensions(3));
+    r->AddType(T("texCoord3d", GfVec3d(0.0)).Role(texCoord).Dimensions(3));
+    r->AddType(T("texCoord3h", GfVec3h(0.0)).Role(texCoord).Dimensions(3));
+}
+
+static void
+_AddLegacyTypesToRegistry(Sdf_ValueTypeRegistry* r)
+{
+    using T = Sdf_ValueTypeRegistry::Type;
+    const TfEnum& length  = SdfDefaultUnit(TfEnum(SdfLengthUnit(0)));
+    const TfToken& point  = SdfValueRoleNames->Point;
+    const TfToken& vector = SdfValueRoleNames->Vector;
+    const TfToken& normal = SdfValueRoleNames->Normal;
+    const TfToken& color  = SdfValueRoleNames->Color;
+
+    // XXX: Legacy types.  We can remove these when assets are
+    //      updated.  parserHelpers.cpp adds support for reading
+    //      old text Usd files but we also need support for binary
+    //      files.  We also need these for places we confuse Sdf
+    //      and Sd.
+    r->AddType(T("Vec2i",      GfVec2i(0.0)).Dimensions(2));
+    r->AddType(T("Vec2h",      GfVec2h(0.0)).Dimensions(2));
+    r->AddType(T("Vec2f",      GfVec2f(0.0)).Dimensions(2));
+    r->AddType(T("Vec2d",      GfVec2d(0.0)).Dimensions(2));
+    r->AddType(T("Vec3i",      GfVec3i(0.0)).Dimensions(3));
+    r->AddType(T("Vec3h",      GfVec3h(0.0)).Dimensions(3));
+    r->AddType(T("Vec3f",      GfVec3f(0.0)).Dimensions(3));
+    r->AddType(T("Vec3d",      GfVec3d(0.0)).Dimensions(3));
+    r->AddType(T("Vec4i",      GfVec4i(0.0)).Dimensions(4));
+    r->AddType(T("Vec4h",      GfVec4h(0.0)).Dimensions(4));
+    r->AddType(T("Vec4f",      GfVec4f(0.0)).Dimensions(4));
+    r->AddType(T("Vec4d",      GfVec4d(0.0)).Dimensions(4));
+    r->AddType(T("Point",      GfVec3d(0.0)).DefaultUnit(length).Role(point)
+                                           .Dimensions(3));
+    r->AddType(T("PointFloat", GfVec3f(0.0)).DefaultUnit(length).Role(point)
+                                           .Dimensions(3));
+    r->AddType(T("Normal",     GfVec3d(0.0)).DefaultUnit(length).Role(normal)
+                                           .Dimensions(3));
+    r->AddType(T("NormalFloat",GfVec3f(0.0)).DefaultUnit(length).Role(normal)
+                                           .Dimensions(3));
+    r->AddType(T("Vector",     GfVec3d(0.0)).DefaultUnit(length).Role(vector)
+                                           .Dimensions(3));
+    r->AddType(T("VectorFloat",GfVec3f(0.0)).DefaultUnit(length).Role(vector)
+                                           .Dimensions(3));
+    r->AddType(T("Color",      GfVec3d(0.0)).Role(color).Dimensions(3));
+    r->AddType(T("ColorFloat", GfVec3f(0.0)).Role(color).Dimensions(3));
+    r->AddType(T("Quath",      GfQuath(1.0)).Dimensions(4));
+    r->AddType(T("Quatf",      GfQuatf(1.0)).Dimensions(4));
+    r->AddType(T("Quatd",      GfQuatd(1.0)).Dimensions(4));
+    r->AddType(T("Matrix2d",   GfMatrix2d(1.0)).Dimensions({2, 2}));
+    r->AddType(T("Matrix3d",   GfMatrix3d(1.0)).Dimensions({3, 3}));
+    r->AddType(T("Matrix4d",   GfMatrix4d(1.0)).Dimensions({4, 4}));
+    r->AddType(T("Frame",      GfMatrix4d(1.0)).Role(SdfValueRoleNames->Frame)
+                                              .Dimensions({4, 4}));
+    r->AddType(T("Transform",  GfMatrix4d(1.0)).Role(SdfValueRoleNames->Transform)
+                                              .Dimensions({4, 4}));
+    r->AddType(T("PointIndex", int()).Role(SdfValueRoleNames->PointIndex));
+    r->AddType(T("EdgeIndex",  int()).Role(SdfValueRoleNames->EdgeIndex));
+    r->AddType(T("FaceIndex",  int()).Role(SdfValueRoleNames->FaceIndex));
+}
+
+class SdfSchemaBase::_ValueTypeRegistrar::Type::_Impl
+{
+public:
+    _Impl(const std::string& name, 
+          const VtValue& defaultValue, 
+          const VtValue& defaultArrayValue)
+        : type(name, defaultValue, defaultArrayValue)
+    { }
+
+    _Impl(const std::string& name, const TfType& type_)
+        : type(name, type_)
+    { }
+
+    Sdf_ValueTypeRegistry::Type type;
+};
+
+SdfSchemaBase::_ValueTypeRegistrar::Type::Type(
+    const std::string& name, 
+    const VtValue& defaultValue, 
+    const VtValue& defaultArrayValue)
+    : _impl(new _Impl(name, defaultValue, defaultArrayValue))
+{
+}
+
+SdfSchemaBase::_ValueTypeRegistrar::Type::Type(
+    const std::string& name, 
+    const TfType& type)
+    : _impl(new _Impl(name, type))
+{ 
+}
+
+SdfSchemaBase::_ValueTypeRegistrar::Type::~Type() = default;
+
+SdfSchemaBase::_ValueTypeRegistrar::Type& 
+SdfSchemaBase::_ValueTypeRegistrar::Type::CPPTypeName(
+    const std::string& cppTypeName)
+{
+    _impl->type.CPPTypeName(cppTypeName);
+    return *this;
+}
+
+SdfSchemaBase::_ValueTypeRegistrar::Type&
+SdfSchemaBase::_ValueTypeRegistrar::Type::Dimensions(
+    const SdfTupleDimensions& dims)
+{
+    _impl->type.Dimensions(dims);
+    return *this;
+}
+
+SdfSchemaBase::_ValueTypeRegistrar::Type&
+SdfSchemaBase::_ValueTypeRegistrar::Type::DefaultUnit(TfEnum unit)
+{
+    _impl->type.DefaultUnit(unit);
+    return *this;
+}
+
+SdfSchemaBase::_ValueTypeRegistrar::Type&
+SdfSchemaBase::_ValueTypeRegistrar::Type::Role(const TfToken& role)
+{
+    _impl->type.Role(role);
+    return *this;
+}
+
+SdfSchemaBase::_ValueTypeRegistrar::Type&
+SdfSchemaBase::_ValueTypeRegistrar::Type::NoArrays() 
+{
+    _impl->type.NoArrays();
+    return *this;
+}
+
 SdfSchemaBase::_ValueTypeRegistrar::_ValueTypeRegistrar(
-    Sdf_ValueTypeRegistry* registry) :
+    Sdf_ValueTypeRegistry* registry) : 
     _registry(registry)
 {
     // Do nothing
 }
 
 void
-SdfSchemaBase::_ValueTypeRegistrar::AddType(
-    const std::string& name,
-    const VtValue& defaultValue,
-    const VtValue& defaultArrayValue,
-    TfEnum defaultUnit, const TfToken& role,
-    const SdfTupleDimensions& dimensions)
+SdfSchemaBase::_ValueTypeRegistrar::AddType(const Type& type)
 {
-    _registry->AddType(name, defaultValue, defaultArrayValue,
-                       defaultUnit, role, dimensions);
-}
-
-void
-SdfSchemaBase::_ValueTypeRegistrar::AddType(
-    const std::string& name,
-    const TfType& type, const TfType& arrayType,
-    TfEnum defaultUnit, const TfToken& role,
-    const SdfTupleDimensions& dimensions)
-{
-    _registry->AddType(name, type, arrayType, defaultUnit, role, dimensions);
+    _registry->AddType(type._impl->type);
 }
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -429,14 +656,36 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<SdfSchemaBase>();
 }
 
-SdfSchemaBase::SdfSchemaBase() : _valueTypeRegistry(new Sdf_ValueTypeRegistry)
+SdfSchemaBase::SdfSchemaBase() 
+    : _valueTypeRegistry(new Sdf_ValueTypeRegistry)
 {
-    // Do nothing
+    _RegisterStandardTypes();
+    _RegisterLegacyTypes();
+
+    _RegisterStandardFields();
+    _RegisterPluginFields();
+}
+
+SdfSchemaBase::SdfSchemaBase(EmptyTag)
+    : _valueTypeRegistry(new Sdf_ValueTypeRegistry)
+{
 }
 
 SdfSchemaBase::~SdfSchemaBase()
 {
     // Do nothing
+}
+
+void
+SdfSchemaBase::_RegisterStandardTypes()
+{
+    _AddStandardTypesToRegistry(_valueTypeRegistry.get());
+}
+
+void
+SdfSchemaBase::_RegisterLegacyTypes()
+{
+    _AddLegacyTypesToRegistry(_valueTypeRegistry.get());
 }
 
 void
@@ -498,14 +747,11 @@ SdfSchemaBase::_RegisterStandardFields()
     _DoRegisterField(SdfFieldKeys->InheritPaths, SdfPathListOp())
         .ListValueValidator(&_ValidateInheritPath);
     _DoRegisterField(SdfFieldKeys->Kind, TfToken());
-    _DoRegisterField(SdfFieldKeys->Marker, "");
-    _DoRegisterField(SdfFieldKeys->MapperArgValue, VtValue())
-        .ValueValidator(&_ValidateIsSceneDescriptionValue);
     _DoRegisterField(SdfFieldKeys->Owner, "");
     _DoRegisterField(SdfFieldKeys->PrimOrder, std::vector<TfToken>())
         .ListValueValidator(&_ValidateIdentifierToken);
     _DoRegisterField(SdfFieldKeys->NoLoadHint, false);
-    _DoRegisterField(SdfFieldKeys->Payload, SdfPayload())
+    _DoRegisterField(SdfFieldKeys->Payload, SdfPayloadListOp())
         .ListValueValidator(&_ValidatePayload);
     _DoRegisterField(SdfFieldKeys->Permission, SdfPermissionPublic);
     _DoRegisterField(SdfFieldKeys->Prefix, "");
@@ -532,7 +778,6 @@ SdfSchemaBase::_RegisterStandardFields()
     _DoRegisterField(SdfFieldKeys->Relocates, SdfRelocatesMap())
         .MapKeyValidator(&_ValidateRelocatesPath)
         .MapValueValidator(&_ValidateRelocatesPath);
-    _DoRegisterField(SdfFieldKeys->Script, "");
     _DoRegisterField(SdfFieldKeys->Specifier, SdfSpecifierOver);
     _DoRegisterField(SdfFieldKeys->StartFrame, 0.0);
     _DoRegisterField(SdfFieldKeys->StartTimeCode, 0.0);
@@ -705,7 +950,6 @@ SdfSchemaBase::_RegisterStandardFields()
         .Field(SdfFieldKeys->TypeName,                /* required = */ true)
 
         .Field(SdfChildrenKeys->ConnectionChildren)
-        .Field(SdfChildrenKeys->MapperChildren)
         .Field(SdfFieldKeys->ConnectionPaths)
         .Field(SdfFieldKeys->DisplayUnit)
         .MetadataField(SdfFieldKeys->AllowedTokens,
@@ -714,19 +958,7 @@ SdfSchemaBase::_RegisterStandardFields()
                        SdfMetadataDisplayGroupTokens->core)
         ;
 
-    _Define(SdfSpecTypeConnection)
-        .Field(SdfFieldKeys->Marker);
-
-    _Define(SdfSpecTypeMapper)
-        .Field(SdfFieldKeys->TypeName, /* required = */ true)
-        .Field(SdfChildrenKeys->MapperArgChildren)
-        .MetadataField(SdfFieldKeys->SymmetryArguments,
-                       SdfMetadataDisplayGroupTokens->symmetry);
-
-    _Define(SdfSpecTypeMapperArg)
-        .Field(SdfFieldKeys->MapperArgValue);
-
-    _Define(SdfSpecTypeExpression);
+    _Define(SdfSpecTypeConnection);
 
     _Define(SdfSpecTypeRelationship)
         .CopyFrom(property)
@@ -736,10 +968,7 @@ SdfSchemaBase::_RegisterStandardFields()
         .MetadataField(SdfFieldKeys->NoLoadHint,
                        SdfMetadataDisplayGroupTokens->core);
 
-    _Define(SdfSpecTypeRelationshipTarget)
-        .Field(SdfChildrenKeys->PropertyChildren)
-        .Field(SdfFieldKeys->PropertyOrder)
-        .Field(SdfFieldKeys->Marker);
+    _Define(SdfSpecTypeRelationshipTarget);
 
     _Define(SdfSpecTypeVariantSet)
         .Field(SdfChildrenKeys->VariantChildren);
@@ -747,6 +976,23 @@ SdfSchemaBase::_RegisterStandardFields()
     _Define(SdfSpecTypeVariant)
         .CopyFrom(*GetSpecDefinition(SdfSpecTypePrim));
 
+}
+
+void
+SdfSchemaBase::_RegisterPluginFields()
+{
+    // Update generic metadata fields from all currently-registered plugins.
+    // Set up notice handling so we'll check for new generic metadata as more
+    // plugins are registered.
+    _UpdateMetadataFromPlugins(PlugRegistry::GetInstance().GetAllPlugins());
+    TfNotice::Register(
+        TfCreateWeakPtr(this), &SdfSchemaBase::_OnDidRegisterPlugins);
+}
+
+void 
+SdfSchemaBase::_OnDidRegisterPlugins(const PlugNotice::DidRegisterPlugins& n)
+{
+    _UpdateMetadataFromPlugins(n.GetNewPlugins());
 }
 
 SdfSchemaBase::FieldDefinition& 
@@ -1102,9 +1348,8 @@ SdfSchemaBase::IsValidReference(const SdfReference& ref)
     const SdfPath& path = ref.GetPrimPath();
     if (!path.IsEmpty() &&
         !(path.IsAbsolutePath() && path.IsPrimPath())) {
-        return SdfAllowed("Reference prim path <" +
-                          ref.GetPrimPath().GetString() + "> must be either "
-                          "empty or an absolute prim path");
+        return SdfAllowed("Reference prim path <" + path.GetString() + 
+                          "> must be either empty or an absolute prim path");
     }
 
     return true;
@@ -1116,14 +1361,8 @@ SdfSchemaBase::IsValidPayload(const SdfPayload& p)
     const SdfPath& path = p.GetPrimPath();
     if (!path.IsEmpty() &&
         !(path.IsAbsolutePath() && path.IsPrimPath())) {
-        return SdfAllowed("Payload prim path <" + 
-                          p.GetPrimPath().GetString() + "> must be either "
-                          "empty or an absolute prim path");
-    }
-
-    if (p.GetAssetPath().empty() && !p.GetPrimPath().IsEmpty()) {
-        return SdfAllowed("Payload must specify an asset path and an optional "
-                          "additional prim path, or nothing");
+        return SdfAllowed("Payload prim path <" + path.GetString() + 
+                          "> must be either empty or an absolute prim path");
     }
 
     return true;
@@ -1239,6 +1478,20 @@ _GetKey(const JsObject &dict, const std::string &key, T *value)
     return false;
 }
 
+// Helper function to read and extract from dictionaries
+template <typename T>
+static bool
+_ExtractKey(JsObject &dict, const std::string &key, T *value)
+{
+    JsObject::const_iterator i = dict.find(key);
+    if (i != dict.end() && i->second.Is<T>()) {
+        *value = i->second.Get<T>();
+        dict.erase(i);
+        return true;
+    }
+    return false;
+}
+
 static VtValue
 _GetDefaultValueForListOp(const std::string& valueTypeName)
 {
@@ -1264,7 +1517,8 @@ _GetDefaultValueForListOp(const std::string& valueTypeName)
 }
 
 static VtValue
-_GetDefaultMetadataValue(const std::string& valueTypeName,
+_GetDefaultMetadataValue(const SdfSchemaBase& schema, 
+                         const std::string& valueTypeName,
                          const JsValue& defaultValue)
 {
     if (valueTypeName == "dictionary") {
@@ -1293,13 +1547,7 @@ _GetDefaultMetadataValue(const std::string& valueTypeName,
         return listOpValue;
     }
 
-    // XXX: This is bogus but currently necessary.  When looking
-    //      up types for metadata use the SdfSchema instead of
-    //      this schema.  SdSchema wants to pull in sdf metadata
-    //      but doesn't register all usd types.
-    if (const SdfValueTypeName valueType = 
-        SdfSchema::GetInstance().FindType(valueTypeName)) {
-
+    if (const SdfValueTypeName valueType = schema.FindType(valueTypeName)) {
         if (defaultValue.IsNull()) {
             return valueType.GetDefaultValue();
         }
@@ -1321,7 +1569,7 @@ _GetDefaultMetadataValue(const std::string& valueTypeName,
 }
 
 // Reads and registers new fields from plugInfo.json files
-void
+const std::vector<const SdfSchemaBase::FieldDefinition *>
 SdfSchemaBase::_UpdateMetadataFromPlugins(
     const PlugPluginPtrVector& plugins,
     const std::string& tag,
@@ -1329,19 +1577,20 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
 {
     static const std::string sdfMetadataTag = "SdfMetadata";
     const std::string& metadataTag = (tag.empty() ? sdfMetadataTag : tag);
+    std::vector<const SdfSchemaBase::FieldDefinition *> metadataFieldsParsed;
 
     // Update the schema with new metadata fields from each plugin, if they 
     // contain any
-    TF_FOR_ALL(plug, plugins) {
+    for (const PlugPluginPtr & plug : plugins) {
         // Get the top-level dictionary key specified by the metadata tag.
         JsObject fields;
-        const JsObject &metadata = (*plug)->GetMetadata();
+        const JsObject &metadata = plug->GetMetadata();
         if (!_GetKey(metadata, metadataTag, &fields))
             continue;
         
         // Register new fields
-        TF_FOR_ALL(field, fields) {
-            const TfToken fieldName(field->first);
+        for (const std::pair<std::string, JsValue>& field : fields) {
+            const TfToken fieldName(field.first);
 
             // Validate field
             JsObject fieldInfo;
@@ -1349,15 +1598,16 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
                 TF_CODING_ERROR("Value must be a dictionary (at \"%s\" in "
                                 "plugin \"%s\")", 
                                 fieldName.GetText(),
-                                (*plug)->GetPath().c_str());
+                                plug->GetPath().c_str());
                 continue;
             }
 
             std::string valueTypeName;
-            if (!_GetKey(fieldInfo, "type", &valueTypeName)) {
+            if (!_ExtractKey(
+                fieldInfo, _tokens->Type.GetString(), &valueTypeName)) {
                 TF_CODING_ERROR("Could not read a string for \"type\" "
                                 "(at \"%s\" in plugin \"%s\")",
-                                fieldName.GetText(), (*plug)->GetPath().c_str());
+                                fieldName.GetText(), plug->GetPath().c_str());
                 continue;
             }
 
@@ -1365,7 +1615,7 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
                 TF_CODING_ERROR("\"%s\" is already a registered field "
                                 "(in plugin \"%s\")",
                                 fieldName.GetText(), 
-                                (*plug)->GetPath().c_str());
+                                plug->GetPath().c_str());
                 continue;
             }
 
@@ -1373,12 +1623,13 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
             VtValue defaultValue;
             {
                 const JsValue pluginDefault = 
-                    TfMapLookupByValue(fieldInfo, "default", JsValue());
+                    TfMapLookupByValue(fieldInfo,
+                    _tokens->Default.GetString(), JsValue());
 
                 TfErrorMark m;
 
                 defaultValue = _GetDefaultMetadataValue(
-                    valueTypeName, pluginDefault);
+                    *this, valueTypeName, pluginDefault);
                 if (defaultValue.IsEmpty() && defFactory) {
                     defaultValue = defFactory(valueTypeName, pluginDefault);
                 }
@@ -1395,13 +1646,13 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
                         TF_CODING_ERROR("No default value for metadata "
                                         "(at \"%s\" in plugin \"%s\")",
                                         fieldName.GetText(), 
-                                        (*plug)->GetPath().c_str());
+                                        plug->GetPath().c_str());
                     }
                     else {
                         TF_CODING_ERROR("Error parsing default value for "
                                         "metadata (at \"%s\" in plugin \"%s\")",
                                         fieldName.GetText(), 
-                                        (*plug)->GetPath().c_str());
+                                        plug->GetPath().c_str());
                     }
                     continue;
                 }
@@ -1418,9 +1669,13 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
             TfToken displayGroup;
             {
                 std::string displayGroupString;
-                if (_GetKey(fieldInfo, "displayGroup", &displayGroupString))
+                if (_ExtractKey(fieldInfo,
+                    _tokens->DisplayGroup.GetString(), &displayGroupString))
                     displayGroup = TfToken(displayGroupString);
             }
+
+            FieldDefinition& fieldDef = 
+                _RegisterField(fieldName, defaultValue, /* plugin = */ true);
 
             // Look for 'appliesTo', either a single string or a list of strings
             // specifying which spec types this metadatum should be registered
@@ -1428,19 +1683,18 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
             set<string> appliesTo;
             {
                 const JsValue val = 
-                    TfMapLookupByValue(fieldInfo, "appliesTo", JsValue());
+                    TfMapLookupByValue(fieldInfo,
+                    _tokens->AppliesTo.GetString(), JsValue());
                 if (val.IsArrayOf<string>()) {
                     const vector<string> vec = val.GetArrayOf<string>();
                     appliesTo.insert(vec.begin(), vec.end());
                 } else if (val.Is<string>()) {
                     appliesTo.insert(val.Get<string>());
                 }
+
+                // this is so appliesTo does not show up in fieldDef's info
+                fieldInfo.erase(_tokens->AppliesTo.GetString());
             }
-
-            // Register the field on all spec definitions that support generic
-            // metadata
-            _RegisterField(fieldName, defaultValue, /* plugin = */ true);
-
             if (appliesTo.empty() || appliesTo.count("layers")) {
                 _ExtendSpecDefinition(SdfSpecTypePseudoRoot)
                     .MetadataField(fieldName, displayGroup);
@@ -1471,8 +1725,21 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
                 _ExtendSpecDefinition(SdfSpecTypeVariant)
                     .MetadataField(fieldName, displayGroup);
             }
+
+            // All remaining values in the fieldInfo will are unknown to sdf,
+            // so store them off in our field definitions for other libraries
+            // to use.
+            for (const std::pair<const std::string, JsValue>& it : fieldInfo) {
+                const std::string& metadataInfoName = it.first;
+                const JsValue& metadataInfoValue = it.second;
+
+                TfToken metadataInfo (metadataInfoName);
+                fieldDef.AddInfo(metadataInfo, metadataInfoValue);
+            }
+            metadataFieldsParsed.push_back(&fieldDef);
         }
     }
+    return metadataFieldsParsed;
 }
 
 void
@@ -1496,21 +1763,6 @@ TF_REGISTRY_FUNCTION(TfType)
 
 SdfSchema::SdfSchema()
 {
-    typedef SdfSchema This;
-
-    _RegisterTypes(_GetTypeRegistrar());
-
-    _RegisterStandardFields();
-
-    // _UpdateMetadataFromPlugins may reenter schema ctor, so tell TfSingleton
-    // that the instance is constructed.
-    TfSingleton<This>::SetInstanceConstructed(*this);
-
-    // Update generic metadata fields from all currently-registered plugins.
-    // Set up notice handling so we'll check for new generic metadata as more
-    // plugins are registered.
-    _UpdateMetadataFromPlugins(PlugRegistry::GetInstance().GetAllPlugins());
-    TfNotice::Register(TfCreateWeakPtr(this), &This::_OnDidRegisterPlugins);
 }
 
 SdfSchema::~SdfSchema()
@@ -1518,217 +1770,136 @@ SdfSchema::~SdfSchema()
     // Do nothing
 }
 
-void
-SdfSchema::_RegisterTypes(_ValueTypeRegistrar r)
-{
-    typedef SdfTupleDimensions Dim;
-    const TfEnum& length  = SdfDefaultUnit(TfEnum(SdfLengthUnit(0)));
-    const TfToken& point  = SdfValueRoleNames->Point;
-    const TfToken& vector = SdfValueRoleNames->Vector;
-    const TfToken& normal = SdfValueRoleNames->Normal;
-    const TfToken& color  = SdfValueRoleNames->Color;
-
-    // Make sure TfTypes are registered.
-    TfRegistryManager::GetInstance().SubscribeTo<TfType>();
-
-    // Simple types.
-    r.AddType("bool",   bool());
-    // XXX: We also need to fix the VT_INTEGRAL_BUILTIN_VALUE_TYPES
-    //       macro to use 'int8_t' if we add 'char'.
-    //r.AddType("char",   int8_t());
-    r.AddType("uchar",  uint8_t());
-    //r.AddType("short",  int16_t());
-    //r.AddType("ushort", uint16_t());
-    r.AddType("int",    int32_t());
-    r.AddType("uint",   uint32_t());
-    r.AddType("int64",  int64_t());
-    r.AddType("uint64", uint64_t());
-    r.AddType("half",   GfHalf(0.0));
-    r.AddType("float",  float());
-    r.AddType("double", double());
-    r.AddType("string", std::string());
-    r.AddType("token",  TfToken());
-    r.AddType("asset",  SdfAssetPath());
-
-    // Compound types.
-    r.AddType("double2",    GfVec2d(0.0), Dim(2));
-    r.AddType("double3",    GfVec3d(0.0), Dim(3));
-    r.AddType("double4",    GfVec4d(0.0), Dim(4));
-    r.AddType("float2",     GfVec2f(0.0), Dim(2));
-    r.AddType("float3",     GfVec3f(0.0), Dim(3));
-    r.AddType("float4",     GfVec4f(0.0), Dim(4));
-    r.AddType("half2",      GfVec2h(0.0), Dim(2));
-    r.AddType("half3",      GfVec3h(0.0), Dim(3));
-    r.AddType("half4",      GfVec4h(0.0), Dim(4));
-    r.AddType("int2",       GfVec2i(0.0), Dim(2));
-    r.AddType("int3",       GfVec3i(0.0), Dim(3));
-    r.AddType("int4",       GfVec4i(0.0), Dim(4));
-    r.AddType("point3h",    GfVec3h(0.0), length, point, Dim(3));
-    r.AddType("point3f",    GfVec3f(0.0), length, point, Dim(3));
-    r.AddType("point3d",    GfVec3d(0.0), length, point, Dim(3));
-    r.AddType("vector3h",   GfVec3h(0.0), length, vector, Dim(3));
-    r.AddType("vector3f",   GfVec3f(0.0), length, vector, Dim(3));
-    r.AddType("vector3d",   GfVec3d(0.0), length, vector, Dim(3));
-    r.AddType("normal3h",   GfVec3h(0.0), length, normal, Dim(3));
-    r.AddType("normal3f",   GfVec3f(0.0), length, normal, Dim(3));
-    r.AddType("normal3d",   GfVec3d(0.0), length, normal, Dim(3));
-    r.AddType("color3h",    GfVec3h(0.0), color, Dim(3));
-    r.AddType("color3f",    GfVec3f(0.0), color, Dim(3));
-    r.AddType("color3d",    GfVec3d(0.0), color, Dim(3));
-    r.AddType("color4h",    GfVec4h(0.0), color, Dim(4));
-    r.AddType("color4f",    GfVec4f(0.0), color, Dim(4));
-    r.AddType("color4d",    GfVec4d(0.0), color, Dim(4));
-    r.AddType("quath",      GfQuath(1.0), Dim(4));
-    r.AddType("quatf",      GfQuatf(1.0), Dim(4));
-    r.AddType("quatd",      GfQuatd(1.0), Dim(4));
-    r.AddType("matrix2d",   GfMatrix2d(1.0), Dim(2, 2));
-    r.AddType("matrix3d",   GfMatrix3d(1.0), Dim(3, 3));
-    r.AddType("matrix4d",   GfMatrix4d(1.0), Dim(4, 4));
-    r.AddType("frame4d",    GfMatrix4d(1.0), SdfValueRoleNames->Frame, Dim(4, 4));
-
-    // XXX: Legacy types.  We can remove these when assets are
-    //      updated.  parserHelpers.cpp adds support for reading
-    //      old text Usd files but we also need support for binary
-    //      files.  We also need these for places we confuse Sdf
-    //      and Sd.
-    r.AddType("Vec2i",      GfVec2i(0.0), Dim(2));
-    r.AddType("Vec2h",      GfVec2h(0.0), Dim(2));
-    r.AddType("Vec2f",      GfVec2f(0.0), Dim(2));
-    r.AddType("Vec2d",      GfVec2d(0.0), Dim(2));
-    r.AddType("Vec3i",      GfVec3i(0.0), Dim(3));
-    r.AddType("Vec3h",      GfVec3h(0.0), Dim(3));
-    r.AddType("Vec3f",      GfVec3f(0.0), Dim(3));
-    r.AddType("Vec3d",      GfVec3d(0.0), Dim(3));
-    r.AddType("Vec4i",      GfVec4i(0.0), Dim(4));
-    r.AddType("Vec4h",      GfVec4h(0.0), Dim(4));
-    r.AddType("Vec4f",      GfVec4f(0.0), Dim(4));
-    r.AddType("Vec4d",      GfVec4d(0.0), Dim(4));
-    r.AddType("Point",      GfVec3d(0.0), length, point, Dim(3));
-    r.AddType("PointFloat", GfVec3f(0.0), length, point, Dim(3));
-    r.AddType("Normal",     GfVec3d(0.0), length, normal, Dim(3));
-    r.AddType("NormalFloat",GfVec3f(0.0), length, normal, Dim(3));
-    r.AddType("Vector",     GfVec3d(0.0), length, vector, Dim(3));
-    r.AddType("VectorFloat",GfVec3f(0.0), length, vector, Dim(3));
-    r.AddType("Color",      GfVec3d(0.0), color, Dim(3));
-    r.AddType("ColorFloat", GfVec3f(0.0), color, Dim(3));
-    r.AddType("Quath",      GfQuath(1.0), Dim(4));
-    r.AddType("Quatf",      GfQuatf(1.0), Dim(4));
-    r.AddType("Quatd",      GfQuatd(1.0), Dim(4));
-    r.AddType("Matrix2d",   GfMatrix2d(1.0), Dim(2, 2));
-    r.AddType("Matrix3d",   GfMatrix3d(1.0), Dim(3, 3));
-    r.AddType("Matrix4d",   GfMatrix4d(1.0), Dim(4, 4));
-    r.AddType("Frame",      GfMatrix4d(1.0), SdfValueRoleNames->Frame, Dim(4, 4));
-    r.AddType("Transform",  GfMatrix4d(1.0), SdfValueRoleNames->Transform, Dim(4, 4));
-    r.AddType("PointIndex", int(),     SdfValueRoleNames->PointIndex);
-    r.AddType("EdgeIndex",  int(),     SdfValueRoleNames->EdgeIndex);
-    r.AddType("FaceIndex",  int(),     SdfValueRoleNames->FaceIndex);
-    r.AddType("Schema",     TfToken(), SdfValueRoleNames->Schema);
-}
-
-void 
-SdfSchema::_OnDidRegisterPlugins(const PlugNotice::DidRegisterPlugins& n)
-{
-    _UpdateMetadataFromPlugins(n.GetNewPlugins());
-}
-
+//
+// Sdf_InitializeValueTypeNames
+//
+// This function is used in types.cpp to initialize the SdfValueTypeNames
+// static data object. This is defined here so that we can share code and
+// co-locate the typename strings with _AddStandardTypesToRegistry.
+//
 const Sdf_ValueTypeNamesType*
-SdfSchema::_NewValueTypeNames() const
+Sdf_InitializeValueTypeNames()
 {
+    struct _Registry {
+        _Registry() 
+        { 
+            _AddStandardTypesToRegistry(&registry); 
+            _AddLegacyTypesToRegistry(&registry); 
+        }
+        Sdf_ValueTypeRegistry registry;
+    };
+    static const _Registry registry;
+    
+    const Sdf_ValueTypeRegistry& r = registry.registry;
     Sdf_ValueTypeNamesType* n = new Sdf_ValueTypeNamesType;
 
-    n->Bool          = FindType("bool");
-    n->UChar         = FindType("uchar");
-    n->Int           = FindType("int");
-    n->UInt          = FindType("uint");
-    n->Int64         = FindType("int64");
-    n->UInt64        = FindType("uint64");
-    n->Half          = FindType("half");
-    n->Float         = FindType("float");
-    n->Double        = FindType("double");
-    n->String        = FindType("string");
-    n->Token         = FindType("token");
-    n->Asset         = FindType("asset");
-    n->Int2          = FindType("int2");
-    n->Int3          = FindType("int3");
-    n->Int4          = FindType("int4");
-    n->Half2         = FindType("half2");
-    n->Half3         = FindType("half3");
-    n->Half4         = FindType("half4");
-    n->Float2        = FindType("float2");
-    n->Float3        = FindType("float3");
-    n->Float4        = FindType("float4");
-    n->Double2       = FindType("double2");
-    n->Double3       = FindType("double3");
-    n->Double4       = FindType("double4");
-    n->Point3h       = FindType("point3h");
-    n->Point3f       = FindType("point3f");
-    n->Point3d       = FindType("point3d");
-    n->Vector3h      = FindType("vector3h");
-    n->Vector3f      = FindType("vector3f");
-    n->Vector3d      = FindType("vector3d");
-    n->Normal3h      = FindType("normal3h");
-    n->Normal3f      = FindType("normal3f");
-    n->Normal3d      = FindType("normal3d");
-    n->Color3h       = FindType("color3h");
-    n->Color3f       = FindType("color3f");
-    n->Color3d       = FindType("color3d");
-    n->Color4h       = FindType("color4h");
-    n->Color4f       = FindType("color4f");
-    n->Color4d       = FindType("color4d");
-    n->Quath         = FindType("quath");
-    n->Quatf         = FindType("quatf");
-    n->Quatd         = FindType("quatd");
-    n->Matrix2d      = FindType("matrix2d");
-    n->Matrix3d      = FindType("matrix3d");
-    n->Matrix4d      = FindType("matrix4d");
-    n->Frame4d       = FindType("frame4d");
+    n->Bool          = r.FindType("bool");
+    n->UChar         = r.FindType("uchar");
+    n->Int           = r.FindType("int");
+    n->UInt          = r.FindType("uint");
+    n->Int64         = r.FindType("int64");
+    n->UInt64        = r.FindType("uint64");
+    n->Half          = r.FindType("half");
+    n->Float         = r.FindType("float");
+    n->Double        = r.FindType("double");
+    n->TimeCode      = r.FindType("timecode");
+    n->String        = r.FindType("string");
+    n->Token         = r.FindType("token");
+    n->Asset         = r.FindType("asset");
+    n->Int2          = r.FindType("int2");
+    n->Int3          = r.FindType("int3");
+    n->Int4          = r.FindType("int4");
+    n->Half2         = r.FindType("half2");
+    n->Half3         = r.FindType("half3");
+    n->Half4         = r.FindType("half4");
+    n->Float2        = r.FindType("float2");
+    n->Float3        = r.FindType("float3");
+    n->Float4        = r.FindType("float4");
+    n->Double2       = r.FindType("double2");
+    n->Double3       = r.FindType("double3");
+    n->Double4       = r.FindType("double4");
+    n->Point3h       = r.FindType("point3h");
+    n->Point3f       = r.FindType("point3f");
+    n->Point3d       = r.FindType("point3d");
+    n->Vector3h      = r.FindType("vector3h");
+    n->Vector3f      = r.FindType("vector3f");
+    n->Vector3d      = r.FindType("vector3d");
+    n->Normal3h      = r.FindType("normal3h");
+    n->Normal3f      = r.FindType("normal3f");
+    n->Normal3d      = r.FindType("normal3d");
+    n->Color3h       = r.FindType("color3h");
+    n->Color3f       = r.FindType("color3f");
+    n->Color3d       = r.FindType("color3d");
+    n->Color4h       = r.FindType("color4h");
+    n->Color4f       = r.FindType("color4f");
+    n->Color4d       = r.FindType("color4d");
+    n->Quath         = r.FindType("quath");
+    n->Quatf         = r.FindType("quatf");
+    n->Quatd         = r.FindType("quatd");
+    n->Matrix2d      = r.FindType("matrix2d");
+    n->Matrix3d      = r.FindType("matrix3d");
+    n->Matrix4d      = r.FindType("matrix4d");
+    n->Frame4d       = r.FindType("frame4d");
+    n->TexCoord2f    = r.FindType("texCoord2f");
+    n->TexCoord2d    = r.FindType("texCoord2d");
+    n->TexCoord2h    = r.FindType("texCoord2h");
+    n->TexCoord3f    = r.FindType("texCoord3f");
+    n->TexCoord3d    = r.FindType("texCoord3d");
+    n->TexCoord3h    = r.FindType("texCoord3h");
 
-    n->BoolArray     = FindType("bool[]");
-    n->UCharArray    = FindType("uchar[]");
-    n->IntArray      = FindType("int[]");
-    n->UIntArray     = FindType("uint[]");
-    n->Int64Array    = FindType("int64[]");
-    n->UInt64Array   = FindType("uint64[]");
-    n->HalfArray     = FindType("half[]");
-    n->FloatArray    = FindType("float[]");
-    n->DoubleArray   = FindType("double[]");
-    n->StringArray   = FindType("string[]");
-    n->TokenArray    = FindType("token[]");
-    n->AssetArray    = FindType("asset[]");
-    n->Int2Array     = FindType("int2[]");
-    n->Int3Array     = FindType("int3[]");
-    n->Int4Array     = FindType("int4[]");
-    n->Half2Array    = FindType("half2[]");
-    n->Half3Array    = FindType("half3[]");
-    n->Half4Array    = FindType("half4[]");
-    n->Float2Array   = FindType("float2[]");
-    n->Float3Array   = FindType("float3[]");
-    n->Float4Array   = FindType("float4[]");
-    n->Double2Array  = FindType("double2[]");
-    n->Double3Array  = FindType("double3[]");
-    n->Double4Array  = FindType("double4[]");
-    n->Point3hArray  = FindType("point3h[]");
-    n->Point3fArray  = FindType("point3f[]");
-    n->Point3dArray  = FindType("point3d[]");
-    n->Vector3hArray = FindType("vector3h[]");
-    n->Vector3fArray = FindType("vector3f[]");
-    n->Vector3dArray = FindType("vector3d[]");
-    n->Normal3hArray = FindType("normal3h[]");
-    n->Normal3fArray = FindType("normal3f[]");
-    n->Normal3dArray = FindType("normal3d[]");
-    n->Color3hArray  = FindType("color3h[]");
-    n->Color3fArray  = FindType("color3f[]");
-    n->Color3dArray  = FindType("color3d[]");
-    n->Color4hArray  = FindType("color4h[]");
-    n->Color4fArray  = FindType("color4f[]");
-    n->Color4dArray  = FindType("color4d[]");
-    n->QuathArray    = FindType("quath[]");
-    n->QuatfArray    = FindType("quatf[]");
-    n->QuatdArray    = FindType("quatd[]");
-    n->Matrix2dArray = FindType("matrix2d[]");
-    n->Matrix3dArray = FindType("matrix3d[]");
-    n->Matrix4dArray = FindType("matrix4d[]");
-    n->Frame4dArray  = FindType("frame4d[]");
+    n->BoolArray     = r.FindType("bool[]");
+    n->UCharArray    = r.FindType("uchar[]");
+    n->IntArray      = r.FindType("int[]");
+    n->UIntArray     = r.FindType("uint[]");
+    n->Int64Array    = r.FindType("int64[]");
+    n->UInt64Array   = r.FindType("uint64[]");
+    n->HalfArray     = r.FindType("half[]");
+    n->FloatArray    = r.FindType("float[]");
+    n->DoubleArray   = r.FindType("double[]");
+    n->TimeCodeArray = r.FindType("timecode[]");
+    n->StringArray   = r.FindType("string[]");
+    n->TokenArray    = r.FindType("token[]");
+    n->AssetArray    = r.FindType("asset[]");
+    n->Int2Array     = r.FindType("int2[]");
+    n->Int3Array     = r.FindType("int3[]");
+    n->Int4Array     = r.FindType("int4[]");
+    n->Half2Array    = r.FindType("half2[]");
+    n->Half3Array    = r.FindType("half3[]");
+    n->Half4Array    = r.FindType("half4[]");
+    n->Float2Array   = r.FindType("float2[]");
+    n->Float3Array   = r.FindType("float3[]");
+    n->Float4Array   = r.FindType("float4[]");
+    n->Double2Array  = r.FindType("double2[]");
+    n->Double3Array  = r.FindType("double3[]");
+    n->Double4Array  = r.FindType("double4[]");
+    n->Point3hArray  = r.FindType("point3h[]");
+    n->Point3fArray  = r.FindType("point3f[]");
+    n->Point3dArray  = r.FindType("point3d[]");
+    n->Vector3hArray = r.FindType("vector3h[]");
+    n->Vector3fArray = r.FindType("vector3f[]");
+    n->Vector3dArray = r.FindType("vector3d[]");
+    n->Normal3hArray = r.FindType("normal3h[]");
+    n->Normal3fArray = r.FindType("normal3f[]");
+    n->Normal3dArray = r.FindType("normal3d[]");
+    n->Color3hArray  = r.FindType("color3h[]");
+    n->Color3fArray  = r.FindType("color3f[]");
+    n->Color3dArray  = r.FindType("color3d[]");
+    n->Color4hArray  = r.FindType("color4h[]");
+    n->Color4fArray  = r.FindType("color4f[]");
+    n->Color4dArray  = r.FindType("color4d[]");
+    n->QuathArray    = r.FindType("quath[]");
+    n->QuatfArray    = r.FindType("quatf[]");
+    n->QuatdArray    = r.FindType("quatd[]");
+    n->Matrix2dArray = r.FindType("matrix2d[]");
+    n->Matrix3dArray = r.FindType("matrix3d[]");
+    n->Matrix4dArray = r.FindType("matrix4d[]");
+    n->Frame4dArray  = r.FindType("frame4d[]");
+    n->TexCoord2fArray = r.FindType("texCoord2f[]");
+    n->TexCoord2dArray = r.FindType("texCoord2d[]");
+    n->TexCoord2hArray = r.FindType("texCoord2h[]");
+    n->TexCoord3fArray = r.FindType("texCoord3f[]");
+    n->TexCoord3dArray = r.FindType("texCoord3d[]");
+    n->TexCoord3hArray = r.FindType("texCoord3h[]");
 
     return n;
 }

@@ -48,9 +48,7 @@
 #include "pxr/usdImaging/usdImaging/unitTestHelper.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
-#include "pxr/usdImaging/usdImagingGL/gl.h"
-#include "pxr/usdImaging/usdImagingGL/hdEngine.h"
-#include "pxr/usdImaging/usdImagingGL/refEngine.h"
+#include "pxr/usdImaging/usdImagingGL/engine.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -100,10 +98,9 @@ My_TestGLDrawing::InitTest()
     _stage = UsdStage::Open(GetStageFilePath());
     SdfPathVector excludedPaths;
 
-    bool isEnabledHydra = (TfGetenv("HD_ENABLED", "1") == "1");
-    if (isEnabledHydra) {
+    if (UsdImagingGLEngine::IsHydraEnabled()) {
         std::cout << "Using HD Renderer.\n";
-        _engine.reset(new UsdImagingGLHdEngine(
+        _engine.reset(new UsdImagingGLEngine(
             _stage->GetPseudoRoot().GetPath(), excludedPaths));
         if (!_GetRenderer().IsEmpty()) {
             if (!_engine->SetRendererPlugin(_GetRenderer())) {
@@ -117,7 +114,14 @@ My_TestGLDrawing::InitTest()
         }
     } else{
         std::cout << "Using Reference Renderer.\n"; 
-        _engine.reset(new UsdImagingGLRefEngine(excludedPaths));
+        _engine.reset(
+            new UsdImagingGLEngine(_stage->GetPseudoRoot().GetPath(), 
+                    excludedPaths));
+    }
+
+    for (const auto &renderSetting : GetRenderSettings()) {
+        _engine->SetRendererSetting(TfToken(renderSetting.first),
+                                    renderSetting.second);
     }
 
     std::cout << glGetString(GL_VENDOR) << "\n";
@@ -160,22 +164,24 @@ My_TestGLDrawing::InitTest()
     }
 
     if(IsEnabledTestLighting()) {
-        if(UsdImagingGL::IsEnabledHydra()) {
+        if(UsdImagingGLEngine::IsHydraEnabled()) {
             // set same parameter as GlfSimpleLightingContext::SetStateFromOpenGL
             // OpenGL defaults
             _lightingContext = GlfSimpleLightingContext::New();
-            GlfSimpleLight light;
-            if (IsEnabledCameraLight()) {
-                light.SetPosition(GfVec4f(_translate[0], _translate[2], _translate[1], 0));
-            } else {
-                light.SetPosition(GfVec4f(0, -.5, .5, 0));
+            if (!IsEnabledSceneLights()) {
+                GlfSimpleLight light;
+                if (IsEnabledCameraLight()) {
+                    light.SetPosition(GfVec4f(_translate[0], _translate[2], _translate[1], 0));
+                } else {
+                    light.SetPosition(GfVec4f(0, -.5, .5, 0));
+                }
+                light.SetDiffuse(GfVec4f(1,1,1,1));
+                light.SetAmbient(GfVec4f(0,0,0,1));
+                light.SetSpecular(GfVec4f(1,1,1,1));
+                GlfSimpleLightVector lights;
+                lights.push_back(light);
+                _lightingContext->SetLights(lights);
             }
-            light.SetDiffuse(GfVec4f(1,1,1,1));
-            light.SetAmbient(GfVec4f(0,0,0,1));
-            light.SetSpecular(GfVec4f(1,1,1,1));
-            GlfSimpleLightVector lights;
-            lights.push_back(light);
-            _lightingContext->SetLights(lights);
 
             GlfSimpleMaterial material;
             material.SetAmbient(GfVec4f(0.2, 0.2, 0.2, 1.0));
@@ -212,35 +218,40 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     perfLog.ResetCache(HdTokens->topology);
     perfLog.ResetCache(HdTokens->transform);
     perfLog.SetCounter(UsdImagingTokens->usdVaryingExtent, 0);
-    perfLog.SetCounter(UsdImagingTokens->usdVaryingPrimVar, 0);
+    perfLog.SetCounter(UsdImagingTokens->usdVaryingPrimvar, 0);
     perfLog.SetCounter(UsdImagingTokens->usdVaryingTopology, 0);
     perfLog.SetCounter(UsdImagingTokens->usdVaryingVisibility, 0);
     perfLog.SetCounter(UsdImagingTokens->usdVaryingXform, 0);
 
-    int width = GetWidth(), height = GetHeight();
-
-    double aspectRatio = double(width)/height;
-    GfFrustum frustum;
-    frustum.SetPerspective(60.0, aspectRatio, 1, 100000.0);
-
-    GfMatrix4d viewMatrix;
-    viewMatrix.SetIdentity();
-    viewMatrix *= GfMatrix4d().SetRotate(GfRotation(GfVec3d(0, 1, 0), _rotate[0]));
-    viewMatrix *= GfMatrix4d().SetRotate(GfRotation(GfVec3d(1, 0, 0), _rotate[1]));
-    viewMatrix *= GfMatrix4d().SetTranslate(GfVec3d(_translate[0], _translate[1], _translate[2]));
-
-    GfMatrix4d projMatrix = frustum.ComputeProjectionMatrix();
-
-    GfMatrix4d modelViewMatrix = viewMatrix; 
-    if (UsdGeomGetStageUpAxis(_stage) == UsdGeomTokens->z) {
-        // rotate from z-up to y-up
-        modelViewMatrix = 
-            GfMatrix4d().SetRotate(GfRotation(GfVec3d(1.0,0.0,0.0), -90.0)) *
-            modelViewMatrix;
-    }
+    const int width = GetWidth();
+    const int height = GetHeight();
 
     GfVec4d viewport(0, 0, width, height);
-    _engine->SetCameraState(modelViewMatrix, projMatrix, viewport);
+
+    if (GetCameraPath().empty()) {
+        GfMatrix4d viewMatrix(1.0);
+        viewMatrix *= GfMatrix4d().SetRotate(GfRotation(GfVec3d(0, 1, 0), _rotate[0]));
+        viewMatrix *= GfMatrix4d().SetRotate(GfRotation(GfVec3d(1, 0, 0), _rotate[1]));
+        viewMatrix *= GfMatrix4d().SetTranslate(GfVec3d(_translate[0], _translate[1], _translate[2]));
+
+        GfMatrix4d modelViewMatrix = viewMatrix; 
+        if (UsdGeomGetStageUpAxis(_stage) == UsdGeomTokens->z) {
+            // rotate from z-up to y-up
+            modelViewMatrix = 
+                GfMatrix4d().SetRotate(GfRotation(GfVec3d(1.0,0.0,0.0), -90.0)) *
+                modelViewMatrix;
+        }
+
+        const double aspectRatio = double(width)/height;
+        GfFrustum frustum;
+        frustum.SetPerspective(60.0, aspectRatio, 1, 100000.0);
+        const GfMatrix4d projMatrix = frustum.ComputeProjectionMatrix();
+
+        _engine->SetCameraState(modelViewMatrix, projMatrix);
+    } else {
+        _engine->SetCameraPath(SdfPath(GetCameraPath()));
+    }
+    _engine->SetRenderViewport(viewport);
 
     size_t i = 0;
     TF_FOR_ALL(timeIt, GetTimes()) {
@@ -248,29 +259,22 @@ My_TestGLDrawing::DrawTest(bool offscreen)
         if (*timeIt == -999) {
             time = UsdTimeCode::Default();
         }
-        UsdImagingGLEngine::RenderParams params;
+        UsdImagingGLRenderParams params;
         params.drawMode = GetDrawMode();
         params.enableLighting = IsEnabledTestLighting();
         params.enableIdRender = IsEnabledIdRender();
         params.frame = time;
         params.complexity = _GetComplexity();
         params.cullStyle = IsEnabledCullBackfaces() ?
-                            UsdImagingGLEngine::CULL_STYLE_BACK :
-                            UsdImagingGLEngine::CULL_STYLE_NOTHING;
+                            UsdImagingGLCullStyle::CULL_STYLE_BACK :
+                            UsdImagingGLCullStyle::CULL_STYLE_NOTHING;
 
         glViewport(0, 0, width, height);
 
-        GfVec4f const &clearColor = GetClearColor();
-        glClearBufferfv(GL_COLOR, 0, clearColor.data());
-
-        GLfloat clearDepth[1] = { 1.0f };
-        glClearBufferfv(GL_DEPTH, 0, clearDepth);
-
         glEnable(GL_DEPTH_TEST);
 
-
         if(IsEnabledTestLighting()) {
-            if(UsdImagingGL::IsEnabledHydra()) {
+            if(UsdImagingGLEngine::IsHydraEnabled()) {
                 _engine->SetLightingState(_lightingContext);
             } else {
                 _engine->SetLightingStateFromOpenGL();
@@ -284,7 +288,18 @@ My_TestGLDrawing::DrawTest(bool offscreen)
             }
         }
 
-        _engine->Render(_stage->GetPseudoRoot(), params);
+        GfVec4f const &clearColor = GetClearColor();
+        GLfloat clearDepth[1] = { 1.0f };
+
+        // Make sure we render to convergence.
+        TfErrorMark mark;
+        do {
+            glClearBufferfv(GL_COLOR, 0, clearColor.data());
+            glClearBufferfv(GL_DEPTH, 0, clearDepth);
+            _engine->Render(_stage->GetPseudoRoot(), params);
+        } while (!_engine->IsConverged());
+        TF_VERIFY(mark.IsClean(), "Errors occurred while rendering!");
+
         std::cout << "itemsDrawn " << perfLog.GetCounter(HdTokens->itemsDrawn) << std::endl;
         std::cout << "totalItemCount " << perfLog.GetCounter(HdTokens->totalItemCount) << std::endl;
 

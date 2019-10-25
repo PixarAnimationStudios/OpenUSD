@@ -10,6 +10,29 @@ over "GLOBAL" (
     customData = {
         string libraryName      = "usdLux"
         string libraryPath      = "pxr/usd/usdLux"
+        dictionary libraryTokens = {
+            dictionary lightLink = {
+                string doc = """
+                This token represents the collection name to use
+                with UsdCollectionAPI to represent light-linking
+                of a UsdLuxLight prim.
+                """
+            }
+            dictionary shadowLink = {
+                string doc = """
+                This token represents the collection name to use
+                with UsdCollectionAPI to represent shadow-linking
+                of a UsdLuxLight prim.
+                """
+            }
+            dictionary filterLink = {
+                string doc = """
+                This token represents the collection name to use
+                with UsdCollectionAPI to represent filter-linking
+                of a UsdLuxLightFilter prim.
+                """
+            }
+        }
     }
 )
 {
@@ -17,12 +40,41 @@ over "GLOBAL" (
 
 class "Light" (
     inherits = </Xformable>
-    doc = """Base class for all lights."""
+    doc = """Base class for all lights.
+
+    <b>Linking</b>
+
+    Lights can be linked to geometry.  Linking controls which geometry
+    a light illuminates, and which geometry casts shadows from the light.
+
+    Linking is specified as collections (UsdCollectionAPI) which can
+    be accessed via GetLightLinkCollection() and GetShadowLinkCollection().
+    Note that these collections have their includeRoot set to true,
+    so that lights will illuminate and cast shadows from all objects
+    by default.  To illuminate only a specific set of objects, there
+    are two options.  One option is to modify the collection paths
+    to explicitly exclude everything else, assuming it is known;
+    the other option is to set includeRoot to false and explicitly
+    include the desired objects.  These are complementary approaches
+    that may each be preferable depending on the scenario and how
+    to best express the intent of the light setup.
+    """
     customData = {
         string extraIncludes = """
-#include "pxr/usd/usdLux/linkingAPI.h" """
+#include "pxr/usd/usd/collectionAPI.h" """
     }
+    prepend apiSchemas = ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
 ) {
+    uniform bool collection:lightLink:includeRoot = 1 (
+        customData = {
+            token apiName = ""
+        }
+    )
+    uniform bool collection:shadowLink:includeRoot = 1 (
+        customData = {
+            token apiName = ""
+        }
+    )
     float intensity = 1 (
         doc = """Scales the power of the light linearly."""
     )
@@ -71,6 +123,7 @@ class "Light" (
 }
 
 class "ListAPI" (
+    inherits = </APISchemaBase>
     doc = """API schema to support discovery and publishing of lights in a scene.
 
     \\section UsdLuxListAPI_Discovery Discovering Lights via Traversal
@@ -213,6 +266,7 @@ class "ListAPI" (
 }
 
 class "ShapingAPI" (
+    inherits = </APISchemaBase>
     doc = """Controls for shaping a light's emission."""
 ) {
     float shaping:focus = 0 (
@@ -243,14 +297,20 @@ class "ShapingAPI" (
         doc = """An IES (Illumination Engineering Society) light
         profile describing the angular distribution of light."""
     )
-    float shaping:ies:angleScale (
+    float shaping:ies:angleScale = 0 (
         displayGroup = "Shaping"
         doc = """Rescales the angular distribution of the IES profile.
         TODO: clarify semantics"""
     )
+    bool shaping:ies:normalize = false (
+        displayGroup = "Shaping"
+        doc = """Normalizes the IES profile so that it affects the shaping
+        of the light while preserving the overall energy output."""
+    )
 }
 
 class "ShadowAPI" (
+    inherits = </APISchemaBase>
     doc = """Controls to refine a light's shadow behavior.  These are
     non-physical controls that are valuable for visual lighting work."""
 ) {
@@ -273,15 +333,17 @@ class "ShadowAPI" (
         doc = """The color of shadows cast by the light.  This is a
         non-physical control.  The default is to cast black shadows."""
     )
-    float shadow:distance (
+    float shadow:distance = -1.0 (
         displayGroup = "Shadows"
         doc = """The maximum distance shadows are cast.
-        There is no limit unless this attribute value is overridden."""
+        The default value (-1) indicates no limit.
+        """
     )
-    float shadow:falloff (
+    float shadow:falloff = -1.0 (
         displayGroup = "Shadows"
-        doc = """The near distance at which shadow falloff beings.
-        There is no falloff unless this attribute value is overridden."""
+        doc = """The near distance at which shadow falloff begins.
+        The default value (-1) indicates no falloff.
+        """
     )
     float shadow:falloffGamma = 1.0 (
         displayGroup = "Shadows"
@@ -295,12 +357,33 @@ class LightFilter "LightFilter" (
     inherits = </Xformable>
     doc = """A light filter modifies the effect of a light.
     Lights refer to filters via relationships so that filters may be
-    shared."""
+    shared.
+
+    <b>Linking</b>
+
+    Filters can be linked to geometry.  Linking controls which geometry
+    a light-filter affects, when considering the light filters attached
+    to a light illuminating the geometry.
+
+    Linking is specified as a collection (UsdCollectionAPI) which can
+    be accessed via GetFilterLinkCollection().
+    Note however that there are extra semantics in how UsdLuxLightFilter
+    uses its collection: if a collection is empty, the filter is treated
+    as linked to <i>all</i> geometry for the respective purpose.
+    UsdCollectionAPI and UsdCollectionAPI::MembershipQuery are unaware
+    of this filter-specific interpretation.
+    """
     customData = {
         string extraIncludes = """
-#include "pxr/usd/usdLux/linkingAPI.h" """
+#include "pxr/usd/usd/collectionAPI.h" """
     }
+    prepend apiSchemas = ["CollectionAPI:filterLink"]
 ) {
+    uniform bool collection:filterLink:includeRoot = 1 (
+        customData = {
+            token apiName = ""
+        }
+    )
 }
 
 class DistantLight "DistantLight" (
@@ -325,7 +408,7 @@ class DiskLight "DiskLight" (
     doc = """Light emitted from one side of a circular disk.
     The disk is centered in the XY plane and emits light along the -Z axis."""
 ) {
-    float radius = 1 (
+    float radius = 0.5 (
         doc = "Radius of the disk."
     )
 }
@@ -334,13 +417,15 @@ class RectLight "RectLight" (
     inherits = </Light>
     doc = """Light emitted from one side of a rectangle.
     The rectangle is centered in the XY plane and emits light along the -Z axis.
-    The rectangle is 1 unit long in local space."""
+    The rectangle is 1 unit in length in the X and Y axis.  In the default 
+    position, a texture file's min coordinates should be at (+X, +Y) and 
+    max coordinates at (-X, -Y)."""
 ) {
     float width = 1 (
-        doc = "Width of the rectangle."
+        doc = "Width of the rectangle, in the local X axis."
     )
     float height = 1 (
-        doc = "Height of the rectangle."
+        doc = "Height of the rectangle, in the local Y axis."
     )
     asset texture:file (
         doc = """A color texture to use on the rectangle."""
@@ -351,17 +436,35 @@ class SphereLight "SphereLight" (
     inherits = </Light>
     doc = """Light emitted outward from a sphere."""
 ) {
-    float radius = 1 (
+    float radius = 0.5 (
         doc = "Radius of the sphere."
+    )
+    bool treatAsPoint = false (
+        doc = """A hint that this light can be treated as a 'point'
+        light (effectively, a zero-radius sphere) by renderers that
+        benefit from non-area lighting. Renderers that only support
+        area lights can disregard this."""
     )
 }
 
 class CylinderLight "CylinderLight" (
     inherits = </Light>
-    doc = """Light emitted outward from a cylinder."""
+    doc = """Light emitted outward from a cylinder.
+    The cylinder is centered at the origin and has its major axis on the X axis.
+    The cylinder does not emit light from the flat end-caps.
+    """
 ) {
-    float radius = 1 (
+    float length = 1 (
+        doc = "Width of the rectangle, in the local X axis."
+    )
+    float radius = 0.5 (
         doc = "Radius of the cylinder."
+    )
+    bool treatAsLine = false (
+        doc = """A hint that this light can be treated as a 'line'
+        light (effectively, a zero-radius cylinder) by renderers that
+        benefit from non-area lighting. Renderers that only support
+        area lights can disregard this."""
     )
 }
 
@@ -378,7 +481,29 @@ class GeometryLight "GeometryLight" (
 class DomeLight "DomeLight" (
     inherits = </Light>
     doc = """Light emitted inward from a distant external environment,
-    such as a sky or IBL light probe."""
+    such as a sky or IBL light probe.  The orientation of a dome light with a
+    latlong texture is expected to match the OpenEXR specification for latlong 
+    environment maps.  From the OpenEXR documentation:
+    
+    -------------------------------------------------------------------------
+    Latitude-Longitude Map:
+    
+    The environment is projected onto the image using polar coordinates
+    (latitude and longitude).  A pixel's x coordinate corresponds to
+    its longitude, and the y coordinate corresponds to its latitude.
+    Pixel (dataWindow.min.x, dataWindow.min.y) has latitude +pi/2 and
+    longitude +pi; pixel (dataWindow.max.x, dataWindow.max.y) has
+    latitude -pi/2 and longitude -pi.
+    
+    In 3D space, latitudes -pi/2 and +pi/2 correspond to the negative and
+    positive y direction.  Latitude 0, longitude 0 points into positive
+    z direction; and latitude 0, longitude pi/2 points into positive x
+    direction.
+    
+    The size of the data window should be 2*N by N pixels (width by height),
+    where N can be any integer greater than 0.
+    -------------------------------------------------------------------------
+"""
 ) {
     asset texture:file (
         doc = """A color texture to use on the dome, such as an HDR (high

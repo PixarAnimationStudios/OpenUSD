@@ -42,11 +42,12 @@
 #include <tbb/spin_mutex.h>
 #include <tbb/concurrent_unordered_map.h>
 
-#include <iostream>
 #include <map>
+#include <ostream>
 #include <string>
 #include <typeindex>
 #include <typeinfo>
+#include <type_traits>
 #include <vector>
 #include <cmath>
 #include <limits>
@@ -57,6 +58,9 @@ using std::type_info;
 using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+static_assert(std::is_nothrow_move_constructible<VtValue>::value &&
+              std::is_nothrow_move_assignable<VtValue>::value, "");
 
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<VtValue>();
@@ -335,40 +339,44 @@ ARCH_CONSTRUCTOR(Vt_CastRegistryInit, 255)
 bool
 VtValue::IsArrayValued() const {
     VtValue const *v = _ResolveProxy();
-    return v->_info && v->_info->isArray;
+    return v->_info.GetLiteral() && v->_info.Get()->isArray;
 }
 
 const Vt_ShapeData*
 VtValue::_GetShapeData() const
 {
     VtValue const *v = _ResolveProxy();
-    return v->_info ? v->_info->GetShapeData(v->_storage) : NULL;
+    return v->_info.GetLiteral() ?
+        v->_info.Get()->GetShapeData(v->_storage) : nullptr;
 }
 
 size_t
 VtValue::_GetNumElements() const
 {
     VtValue const *v = _ResolveProxy();
-    return v->_info ? v->_info->GetNumElements(v->_storage) : 0;
+    return v->_info.GetLiteral() ?
+        v->_info.Get()->GetNumElements(v->_storage) : 0;
 }
 
 std::type_info const &
 VtValue::GetTypeid() const {
     VtValue const *v = _ResolveProxy();
-    return v->_info ? v->_info->typeInfo : typeid(void);
+    return v->_info.GetLiteral() ?
+        v->_info.Get()->typeInfo : typeid(void);
 }
 
 std::type_info const &
 VtValue::GetElementTypeid() const {
     VtValue const *v = _ResolveProxy();
-    return v->_info ? v->_info->elementTypeInfo : typeid(void);
+    return v->_info.GetLiteral() ?
+        v->_info.Get()->elementTypeInfo : typeid(void);
 }
 
 TfType
 VtValue::GetType() const
 {
     if (ARCH_UNLIKELY(_IsProxy()))
-        return _info->GetProxiedType(_storage);
+        return _info.Get()->GetProxiedType(_storage);
 
     TfType t = TfType::Find(GetTypeid());
     if (t.IsUnknown()) {
@@ -391,7 +399,7 @@ bool
 VtValue::CanHash() const
 {
     VtValue const *v = _ResolveProxy();
-    return v->_info && v->_info->isHashable;
+    return v->_info.GetLiteral() && v->_info.Get()->isHashable;
 }
 
 size_t
@@ -471,7 +479,8 @@ TfPyObjWrapper
 VtValue::_GetPythonObject() const
 {
     VtValue const *v = _ResolveProxy();
-    return v->_info ? v->_info->GetPyObj(v->_storage) : TfPyObjWrapper();
+    return v->_info.GetLiteral() ?
+        v->_info.Get()->GetPyObj(v->_storage) : TfPyObjWrapper();
 }
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
@@ -515,7 +524,7 @@ _FindOrCreateDefaultValue(std::type_info const &type,
     // created that isn't used.
     tbb::spin_mutex::scoped_lock lock(defaultValuesMutex);
     DefaultValuesMap::iterator i =
-        defaultValues.insert(make_pair(key, newValue)).first;
+        defaultValues.emplace(std::move(key), std::move(newValue)).first;
     return i->second.GetPointer();
 }
 

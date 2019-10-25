@@ -32,7 +32,7 @@ HdEmbreeBufferSampler::Sample(int index, void* value,
     // Sanity checks: index is within the bounds of buffer,
     // and the sample type and buffer type (defined by the dataType)
     // are the same.
-    if (_buffer.GetNumElements() <= index ||
+    if (_buffer.GetNumElements() <= (size_t)index ||
         _buffer.GetTupleType() != dataType) {
         return false;
     }

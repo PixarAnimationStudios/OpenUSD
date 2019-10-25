@@ -112,28 +112,40 @@ struct UsdTokensType {
     const TfToken clipTimes;
     /// \brief "collection"
     /// 
-    /// This is the namespace prefix used by  UsdCollectionAPI for authoring collections.
+    /// Property namespace prefix for the UsdCollectionAPI schema.
     const TfToken collection;
     /// \brief "exclude"
     /// 
-    ///  This is the token used to exclude a path from a collection.  Although it is not a possible value for the "expansonRule" attribute, it is used as the expansionRule for excluded paths  in UsdCollectionAPI::MembershipQuery::IsPathIncluded. 
+    ///  This is the token used to exclude a path from a collection.  Although it is not a possible value for the "expansionRule" attribute, it is used as the expansionRule for excluded paths  in UsdCollectionAPI::MembershipQuery::IsPathIncluded. 
     const TfToken exclude;
+    /// \brief "excludes"
+    /// 
+    /// UsdCollectionAPI
+    const TfToken excludes;
     /// \brief "expandPrims"
     /// 
-    ///  Possible value for the "expansionRule" attribute of a  collection. 
+    /// Possible value for UsdCollectionAPI::GetExpansionRuleAttr(), Default value for UsdCollectionAPI::GetExpansionRuleAttr()
     const TfToken expandPrims;
     /// \brief "expandPrimsAndProperties"
     /// 
-    ///  Possible value for the "expansionRule" attribute of a  collection. 
+    /// Possible value for UsdCollectionAPI::GetExpansionRuleAttr()
     const TfToken expandPrimsAndProperties;
     /// \brief "expansionRule"
     /// 
-    /// Base name of the attribute used to encode  how the paths included in a collection must be expanded.
+    /// UsdCollectionAPI
     const TfToken expansionRule;
     /// \brief "explicitOnly"
     /// 
-    ///  Possible value for the "expansionRule" attribute of a  collection. 
+    /// Possible value for UsdCollectionAPI::GetExpansionRuleAttr()
     const TfToken explicitOnly;
+    /// \brief "includeRoot"
+    /// 
+    /// UsdCollectionAPI
+    const TfToken includeRoot;
+    /// \brief "includes"
+    /// 
+    /// UsdCollectionAPI
+    const TfToken includes;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

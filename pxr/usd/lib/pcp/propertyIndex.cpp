@@ -40,7 +40,7 @@
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
 #include "pxr/usd/sdf/types.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -79,13 +79,13 @@ PcpPropertyIndex::GetPropertyRange(bool localOnly) const
     if (localOnly) {
         size_t startIdx = 0;
         for (; startIdx < _propertyStack.size(); ++startIdx) {
-            if (_propertyStack[startIdx].originatingNode.IsDirect())
+            if (_propertyStack[startIdx].originatingNode.IsRootNode())
                 break;
         }
 
         size_t endIdx = startIdx;
         for (; endIdx < _propertyStack.size(); ++endIdx) {
-            if (!_propertyStack[endIdx].originatingNode.IsDirect())
+            if (!_propertyStack[endIdx].originatingNode.IsRootNode())
                 break;
         }
 
@@ -107,7 +107,7 @@ PcpPropertyIndex::GetNumLocalSpecs() const
 {
     size_t numLocalSpecs = 0;
     for (size_t i = 0; i < _propertyStack.size(); ++i) {
-        if (_propertyStack[i].originatingNode.IsDirect()) {
+        if (_propertyStack[i].originatingNode.IsRootNode()) {
             ++numLocalSpecs;
         }
     }
@@ -152,13 +152,14 @@ private:
     SdfPropertySpecHandle _GetPrimProperty(
         const SdfLayerRefPtr &layer,
         const SdfPath &owningPrimPath,
-        const TfToken &name)
+        const TfToken &name,
+        bool usd)
     {
-        if (!layer->HasSpec(SdfAbstractDataSpecId(&owningPrimPath)))
+        if (!layer->HasSpec(owningPrimPath))
             return TfNullPtr;
 
         const SdfPath propPath = owningPrimPath.AppendProperty(name);
-        if (!layer->HasSpec(SdfAbstractDataSpecId(&propPath)))
+        if (!layer->HasSpec(propPath))
             return TfNullPtr;
 
         SdfPropertySpecHandle propSpec = layer->GetPropertyAtPath(propPath);
@@ -191,7 +192,9 @@ private:
         }
 
         // For an attribute, check that its type and variability are consistent.
-        if (propType == SdfSpecTypeAttribute &&
+        // We don't care about these mismatches in USD mode.
+        if (!usd && 
+            propType == SdfSpecTypeAttribute &&
             !_IsConsistentAttribute(propSpec)) {
             return TfNullPtr;
         }
@@ -357,36 +360,31 @@ Pcp_PropertyIndexer::GatherPropertySpecs(const PcpPrimIndex& primIndex,
 
             const Pcp_SdSiteRef primSite = i.base()._GetSiteRef();
             if (SdfPropertySpecHandle propSpec = 
-                _GetPrimProperty(primSite.layer, primSite.path, name)) {
+                _GetPrimProperty(primSite.layer, primSite.path, name, usd)) {
                 _AddPropertySpecIfPermitted(
                     propSpec, curNode, &permissions, &propertyInfo);
             }
         }
+
+        // At this point, the specs have been accumulated in reverse order, 
+        // because we needed to do a weak-to-strong traversal for permissions. 
+        // Here, we reverse the results to give us the correct order.
+        std::reverse(propertyInfo.begin(), propertyInfo.end());
     } else {
-        // In USD mode, the prim index will not contain a prim
-        // stack, so we need to do a more expensive traversal to
-        // populate the property index.
-        TF_REVERSE_FOR_ALL(i, primIndex.GetNodeRange()) {
-            PcpNodeRef curNode = *i;
-            if (!curNode.CanContributeSpecs()) {
+        for (PcpNodeRef const& node: primIndex.GetNodeRange()) {
+            if (!node.CanContributeSpecs()) {
                 continue;
             }
-            const PcpLayerStackRefPtr& nodeLayerStack = curNode.GetLayerStack();
-            const SdfPath& nodePath = curNode.GetPath();
-            TF_REVERSE_FOR_ALL(j, nodeLayerStack->GetLayers()) {
+            SdfPath const& nodePath = node.GetPath();
+            for (SdfLayerRefPtr const& layer:
+                 node.GetLayerStack()->GetLayers()) {
                 if (SdfPropertySpecHandle propSpec = 
-                    _GetPrimProperty(*j, nodePath, name)) {
-                    propertyInfo.push_back(
-                        Pcp_PropertyInfo(propSpec, curNode));
+                    _GetPrimProperty(layer, nodePath, name, usd)) {
+                    propertyInfo.emplace_back(propSpec, node);
                 }
             }
         }
     }
-
-    // At this point, the specs have been accumulated in reverse order, 
-    // because we needed to do a weak-to-strong traversal for permissions. 
-    // Here, we reverse the results to give us the correct order.
-    std::reverse(propertyInfo.begin(), propertyInfo.end());
 
     _propIndex->_propertyStack.swap(propertyInfo);
 }

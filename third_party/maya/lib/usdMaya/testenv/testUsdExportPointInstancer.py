@@ -78,7 +78,10 @@ class testUsdExportPointInstancer(unittest.TestCase):
         # particles have the same positions for all test cases.
         # It doesn't look like doCreateNclothCache is Python-wrapped.
         cmds.select("nParticle1")
-        cacheLocation = os.path.abspath("nCache")
+        # Note: this MEL command expects paths to be in the Maya-normalized
+        # format with the '/' dir separator; using the Windows-style separator
+        # will cause MEL script errors because it's treated as an escape.
+        cacheLocation = os.path.abspath("nCache").replace(os.path.sep, "/")
         mel.eval('doCreateNclothCache 5 { "2", "1", "10", "OneFile", "1", "%s","0","","0", "add", "0", "1", "1","0","1","mcx" }'
                 % cacheLocation)
 
@@ -89,7 +92,8 @@ class testUsdExportPointInstancer(unittest.TestCase):
         cmds.usdExport(mergeTransformAndShape=True,
             file=usdFilePath,
             shadingMode='none',
-            frameRange=(cls.START_TIMECODE, cls.END_TIMECODE))
+            frameRange=(cls.START_TIMECODE, cls.END_TIMECODE),
+            kind='component')
 
         cls.stage = Usd.Stage.Open(usdFilePath)
 
@@ -142,18 +146,26 @@ class testUsdExportPointInstancer(unittest.TestCase):
 
         # Check that the USD prims have correct type name, references, kinds,
         # kinds, instancerTranslate xformOps.
-        prototypesPrim = self.stage.GetPrimAtPath(
-                "/InstancerTest/%s/Prototypes" % instancerName)
-        self.assertEqual(len(prototypesPrim.GetChildren()), 3)
+        instancerPrim = self.stage.GetPrimAtPath(
+                "/InstancerTest/%s" % instancerName)
+        self.assertEqual(Usd.ModelAPI(instancerPrim).GetKind(),
+                Kind.Tokens.subcomponent)
 
-        prototype0 = prototypesPrim.GetChild("prototype_0")
+        prototypesPrim = instancerPrim.GetChild("Prototypes")
+        self.assertEqual(len(prototypesPrim.GetChildren()), 3)
+        self.assertEqual(Usd.ModelAPI(prototypesPrim).GetKind(),
+                Kind.Tokens.subcomponent)
+
+        # Note that pCube1_0 is a special case where instancerTranslate
+        # isn't the opposite of translate, so both have to be left in.
+        prototype0 = prototypesPrim.GetChild("pCube1_0")
         self._AssertPrototype(prototype0, "Xform", 2, True)
 
-        prototype1 = prototypesPrim.GetChild("prototype_1")
+        prototype1 = prototypesPrim.GetChild("prototypeUnderInstancer_1")
         self._AssertPrototype(prototype1, "Mesh", 0, False)
 
-        prototype2 = prototypesPrim.GetChild("prototype_2")
-        self._AssertPrototype(prototype2, "Xform", 1, True)
+        prototype2 = prototypesPrim.GetChild("referencePrototype_2")
+        self._AssertPrototype(prototype2, "Xform", 1, False)
         self.assertEqual(
                 Usd.ModelAPI(prototype2).GetAssetName(),
                 "ConeAssetName")
@@ -170,6 +182,22 @@ class testUsdExportPointInstancer(unittest.TestCase):
         """
         if self.hasMash:
             self._TestPrototypes("MASH1_Instancer")
+
+    def testMashPrototypes_NoIdsArray(self):
+        """
+        MASH instancers might not have an ids array if using dynamics.
+        Make sure they still export OK.
+        """
+        if not self.hasMash:
+            return
+
+        instancerPrim = self.stage.GetPrimAtPath(
+                "/InstancerTest/MASH2_Instancer")
+        self.assertTrue(instancerPrim)
+
+        instancer = UsdGeom.PointInstancer(instancerPrim)
+        protoIndices = instancer.GetProtoIndicesAttr().Get()
+        self.assertEqual(len(protoIndices), 10)
 
     def _MayaToGfMatrix(self, mayaMatrix):
         scriptUtil = OM.MScriptUtil()
@@ -332,6 +360,20 @@ class testUsdExportPointInstancer(unittest.TestCase):
         """
         if self.hasMash:
             self._TestInstancePaths("MASH1_Instancer")
+
+    def testMashVisibility(self):
+        """
+        Checks that invisibleIds is properly authored based on the visibility
+        channel of the MASH instancer.
+        """
+        if self.hasMash:
+            invisibleIds = UsdGeom.PointInstancer.Get(self.stage,
+                    "/InstancerTest/MASH3_Instancer").GetInvisibleIdsAttr()
+            self.assertItemsEqual(invisibleIds.Get(0.0), [4, 5, 6, 7, 8, 9])
+            self.assertItemsEqual(invisibleIds.Get(140.0), [7, 8, 9])
+            self.assertItemsEqual(invisibleIds.Get(270.0), [0, 1, 2, 3, 4])
+            self.assertItemsEqual(invisibleIds.Get(400.0),
+                    [0, 1, 2, 3, 4, 5, 6])
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

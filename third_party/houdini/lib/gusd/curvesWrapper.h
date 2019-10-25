@@ -26,8 +26,8 @@
 
 #include "primWrapper.h"
 
-#include <pxr/pxr.h>
-#include <pxr/usd/usdGeom/basisCurves.h>
+#include "pxr/pxr.h"
+#include "pxr/usd/usdGeom/basisCurves.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -54,8 +54,6 @@ public:
            const SdfPath& path,
            const GusdContext& ctxt,
            const GT_PrimitiveHandle& sourcePrim ) override;
-    
-    virtual bool getUniqueID(int64& id) const override;
     
     virtual const char* className() const override;
 

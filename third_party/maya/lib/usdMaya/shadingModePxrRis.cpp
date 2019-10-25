@@ -21,22 +21,28 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
-
 #include "usdMaya/roundTripUtil.h"
 #include "usdMaya/shadingModeExporter.h"
 #include "usdMaya/shadingModeExporterContext.h"
+#include "usdMaya/shadingModeImporter.h"
+// Defines the RenderMan for Maya mapping between Pxr objects and Maya internal nodes
+#include "usdMaya/shadingModePxrRis_rfm_map.h"
 #include "usdMaya/shadingModeRegistry.h"
+#include "usdMaya/translatorUtil.h"
 #include "usdMaya/util.h"
 #include "usdMaya/writeUtil.h"
 
-// Defines the RenderMan for Maya mapping between Pxr objects and Maya internal nodes
-#include "usdMaya/shadingModePxrRis_rfm_map.h"
+#include "pxr/pxr.h"
 
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/token.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/base/vt/value.h"
+
+#include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/valueTypeName.h"
+#include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usdRi/materialAPI.h"
@@ -47,13 +53,20 @@
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/tokens.h"
 
+#include <maya/MFnAttribute.h>
 #include <maya/MFnDependencyNode.h>
-#include <maya/MFnNumericAttribute.h>
-#include <maya/MGlobal.h>
+#include <maya/MFnSet.h>
+#include <maya/MObject.h>
 #include <maya/MPlug.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
+#include <maya/MGlobal.h>
+
+#include <vector>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
+
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -61,14 +74,58 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((PxrShaderPrefix, "Pxr"))
     ((DefaultShaderOutputName, "out"))
     ((MayaShaderOutputName, "outColor"))
+
+    ((RmanPlugPreferenceName, "rfmShadingEngineUseRmanPlugs"))
+
+    ((RmanVolumeShaderPlugName, "volumeShader"))
 );
 
 
 namespace {
-class PxrRisShadingModeExporter : public PxrUsdMayaShadingModeExporter {
+
+struct _ShadingPlugs {
+    const TfToken surface;
+    const TfToken displacement;
+};
+
+static const _ShadingPlugs _RmanPlugs { 
+    TfToken("rman__surface"), 
+    TfToken("rman__displacement") 
+};
+
+static const _ShadingPlugs _MayaPlugs { 
+    TfToken("surfaceShader"), 
+    TfToken("displacementShader") 
+};
+
+static 
+_ShadingPlugs
+_GetShadingPlugs()
+{
+    // Check for rfmShadingEngineUseRmanPlugs preference
+    // If set to 1, use rman__surface and rman__displacement plug names
+    // Otherwise, fallback to Maya's surfaceShader and displacementShader
+    bool exists = false;
+    int useRmanPlugs = MGlobal::optionVarIntValue(
+            _tokens->RmanPlugPreferenceName.GetText(), &exists);
+    return (exists && useRmanPlugs) ? _RmanPlugs : _MayaPlugs;
+}
+
+class PxrRisShadingModeExporter : public UsdMayaShadingModeExporter {
 public:
     PxrRisShadingModeExporter() {}
 private:
+
+    void
+    PreExport(UsdMayaShadingModeExportContext* context) override
+    {
+        context->SetVolumeShaderPlugName(_tokens->RmanVolumeShaderPlugName);
+
+        const auto shadingPlugs = _GetShadingPlugs();
+        context->SetSurfaceShaderPlugName(shadingPlugs.surface);
+        context->SetDisplacementShaderPlugName(shadingPlugs.displacement);
+    }
+
     TfToken
     _GetShaderTypeName(const MFnDependencyNode& depNode)
     {
@@ -76,9 +133,9 @@ private:
 
         // Now look into the RIS TABLE if the typeName doesn't starts with Pxr.
         if (!TfStringStartsWith(mayaTypeName, _tokens->PxrShaderPrefix)) {
-            for (size_t i = 0u; i < _RFM_RISNODE_TABLE.size(); ++i) {
-                if (_RFM_RISNODE_TABLE[i].first == mayaTypeName) {
-                    return _RFM_RISNODE_TABLE[i].second;
+            for (const auto& i : _RFM_RISNODE_TABLE) {
+                if (i.first == mayaTypeName) {
+                    return i.second;
                 }
             }
         }
@@ -87,10 +144,11 @@ private:
     }
 
     UsdPrim
-    _ExportShadingNodeHelper(const UsdPrim& materialPrim,
-                             const MFnDependencyNode& depNode,
-                             const PxrUsdMayaShadingModeExportContext& context,
-                             SdfPathSet* processedPaths)
+    _ExportShadingNodeHelper(
+            const UsdPrim& materialPrim,
+            const MFnDependencyNode& depNode,
+            const UsdMayaShadingModeExportContext& context,
+            SdfPathSet* processedPaths)
     {
         UsdStagePtr stage = materialPrim.GetStage();
 
@@ -99,7 +157,7 @@ private:
         // it shows up as black.
 
         const TfToken shaderPrimName(
-            PxrUsdMayaUtil::SanitizeName(depNode.name().asChar()));
+            UsdMayaUtil::SanitizeName(depNode.name().asChar()));
         const SdfPath shaderPath = materialPrim.GetPath().AppendChild(shaderPrimName);
         if (processedPaths->count(shaderPath) == 1u) {
             return stage->GetPrimAtPath(shaderPath);
@@ -111,10 +169,10 @@ private:
         const TfToken risShaderType = _GetShaderTypeName(depNode);
 
         if (!TfStringStartsWith(risShaderType, _tokens->PxrShaderPrefix)) {
-            MGlobal::displayError(TfStringPrintf(
-                "_ExportShadingNodeHelper: skipping '%s' because it's type '%s' is not Pxr.\n",
-                depNode.name().asChar(),
-                risShaderType.GetText()).c_str());
+            TF_RUNTIME_ERROR(
+                    "Skipping '%s' because its type '%s' is not Pxr-prefixed.",
+                    depNode.name().asChar(),
+                    risShaderType.GetText());
             return UsdPrim();
         }
 
@@ -123,9 +181,9 @@ private:
 
         MStatus status = MS::kFailure;
 
-        std::vector<MPlug> attrPlugs;
+        std::vector<MPlug> inputAttrPlugs;
 
-        // gather all the attrPlugs we want to process.
+        // gather all the inputAttrPlugs we want to process.
         for (unsigned int i = 0u; i < depNode.attributeCount(); ++i) {
             MPlug attrPlug = depNode.findPlug(depNode.attribute(i), true);
             if (attrPlug.isProcedural()) {
@@ -134,11 +192,19 @@ private:
                 continue;
             }
 
+            // We can identify "output" parameters for Pxr* by checking if they
+            // are writable.  
+            if (!MFnAttribute(attrPlug.attribute()).isWritable()) {
+                // If needed, we could author these as outputs, but
+                // currently don't have an immediate need to bake these out.
+                continue;
+            }
+
             if (attrPlug.isChild()) {
                 continue;
             }
 
-            if (!PxrUsdMayaUtil::IsAuthored(attrPlug)) {
+            if (!UsdMayaUtil::IsAuthored(attrPlug)) {
                 continue;
             }
 
@@ -147,21 +213,22 @@ private:
             if (attrPlug.isArray()) {
                 const unsigned int numElements = attrPlug.evaluateNumElements();
                 if (numElements > 0u) {
-                    attrPlugs.push_back(attrPlug[0]);
+                    inputAttrPlugs.push_back(attrPlug[0]);
                     if (numElements > 1u) {
-                        MGlobal::displayWarning(TfStringPrintf(
+                        TF_WARN(
                             "Array with multiple elements encountered at '%s'. "
-                            "Currently, only arrays with a single element are supported.",
-                            attrPlug.name().asChar()).c_str());
+                            "Currently, only arrays with a single element are "
+                            "supported.",
+                            attrPlug.name().asChar());
                     }
                 }
             }
             else {
-                attrPlugs.push_back(attrPlug);
+                inputAttrPlugs.push_back(attrPlug);
             }
         }
 
-        for (const auto& attrPlug : attrPlugs) {
+        for (const auto& attrPlug : inputAttrPlugs) {
             // this is writing out things that live on the MFnDependencyNode.
             // maybe that's OK?  nothing downstream cares about it.
 
@@ -172,7 +239,7 @@ private:
             }
 
             const SdfValueTypeName attrTypeName =
-                PxrUsdMayaWriteUtil::GetUsdTypeName(attrPlug);
+                UsdMayaWriteUtil::GetUsdTypeName(attrPlug);
             if (!attrTypeName) {
                 continue;
             }
@@ -184,11 +251,11 @@ private:
             }
 
             if (attrPlug.isElement()) {
-                PxrUsdMayaRoundTripUtil::MarkAttributeAsArray(input.GetAttr(),
+                UsdMayaRoundTripUtil::MarkAttributeAsArray(input.GetAttr(),
                                                               0u);
             }
 
-            PxrUsdMayaWriteUtil::SetUsdAttr(attrPlug,
+            UsdMayaWriteUtil::SetUsdAttr(attrPlug,
                                             input.GetAttr(),
                                             UsdTimeCode::Default());
 
@@ -197,7 +264,7 @@ private:
                 continue;
             }
 
-            const MPlug connectedPlug(PxrUsdMayaUtil::GetConnected(attrPlug));
+            const MPlug connectedPlug(UsdMayaUtil::GetConnected(attrPlug));
             const MFnDependencyNode connectedDepFn(connectedPlug.node(),
                                                    &status);
             if (status != MS::kSuccess) {
@@ -219,9 +286,10 @@ private:
     }
 
     UsdPrim
-    _ExportShadingNode(const UsdPrim& materialPrim,
-                       const MFnDependencyNode& depNode,
-                       const PxrUsdMayaShadingModeExportContext& context)
+    _ExportShadingNode(
+            const UsdPrim& materialPrim,
+            const MFnDependencyNode& depNode,
+            const UsdMayaShadingModeExportContext& context)
     {
         SdfPathSet processedNodes;
         return _ExportShadingNodeHelper(materialPrim,
@@ -230,11 +298,13 @@ private:
                                         &processedNodes);
     }
 
-    void Export(const PxrUsdMayaShadingModeExportContext& context,
-                UsdShadeMaterial* const mat,
-                SdfPathSet* const boundPrimPaths) override
+    void
+    Export(
+            const UsdMayaShadingModeExportContext& context,
+            UsdShadeMaterial* const mat,
+            SdfPathSet* const boundPrimPaths) override
     {
-        const PxrUsdMayaShadingModeExportContext::AssignmentVector& assignments =
+        const UsdMayaShadingModeExportContext::AssignmentVector& assignments =
             context.GetAssignments();
         if (assignments.empty()) {
             return;
@@ -252,77 +322,111 @@ private:
             *mat = material;
         }
 
+        UsdRiMaterialAPI riMaterialAPI(materialPrim);
+
         MStatus status;
-        const MFnDependencyNode ssDepNode(context.GetSurfaceShader(), &status);
-        if (status != MS::kSuccess) {
-            return;
+
+        const MFnDependencyNode surfaceDepNodeFn(
+            context.GetSurfaceShader(),
+            &status);
+        if (status == MS::kSuccess) {
+            UsdPrim surfaceShaderPrim =
+                _ExportShadingNode(materialPrim,
+                                   surfaceDepNodeFn,
+                                   context);
+            UsdShadeShader surfaceShaderSchema(surfaceShaderPrim);
+            if (surfaceShaderSchema) {
+                UsdShadeOutput surfaceShaderOutput =
+                    surfaceShaderSchema.CreateOutput(
+                        _tokens->DefaultShaderOutputName,
+                        SdfValueTypeNames->Token);
+
+                riMaterialAPI.SetSurfaceSource(
+                    surfaceShaderOutput.GetAttr().GetPath());
+            }
         }
 
-        UsdPrim shaderPrim = _ExportShadingNode(materialPrim,
-                                                ssDepNode,
-                                                context);
-        UsdShadeShader shaderSchema(shaderPrim);
-        if (!shaderSchema) {
-            return;
+        const MFnDependencyNode volumeDepNodeFn(
+            context.GetVolumeShader(),
+            &status);
+        if (status == MS::kSuccess) {
+            UsdPrim volumeShaderPrim =
+                _ExportShadingNode(materialPrim,
+                                   volumeDepNodeFn,
+                                   context);
+            UsdShadeShader volumeShaderSchema(volumeShaderPrim);
+            if (volumeShaderSchema) {
+                UsdShadeOutput volumeShaderOutput =
+                    volumeShaderSchema.CreateOutput(
+                        _tokens->DefaultShaderOutputName,
+                        SdfValueTypeNames->Token);
+
+                riMaterialAPI.SetVolumeSource(
+                    volumeShaderOutput.GetAttr().GetPath());
+            }
         }
 
-        UsdShadeOutput shaderDefaultOutput =
-            shaderSchema.CreateOutput(_tokens->DefaultShaderOutputName,
-                                      SdfValueTypeNames->Token);
-        if (!shaderDefaultOutput) {
-            return;
+        const MFnDependencyNode displacementDepNodeFn(
+            context.GetDisplacementShader(),
+            &status);
+        if (status == MS::kSuccess) {
+            UsdPrim displacementShaderPrim =
+                _ExportShadingNode(materialPrim,
+                                   displacementDepNodeFn,
+                                   context);
+            UsdShadeShader displacementShaderSchema(displacementShaderPrim);
+            if (displacementShaderSchema) {
+                UsdShadeOutput displacementShaderOutput =
+                    displacementShaderSchema.CreateOutput(
+                        _tokens->DefaultShaderOutputName,
+                        SdfValueTypeNames->Token);
+
+                riMaterialAPI.SetDisplacementSource(
+                    displacementShaderOutput.GetAttr().GetPath());
+            }
         }
-
-        UsdShadeOutput materialSurfaceOutput =
-            material.CreateOutput(UsdShadeTokens->surface,
-                                  shaderDefaultOutput.GetTypeName());
-        if (!materialSurfaceOutput) {
-            return;
-        }
-
-        materialSurfaceOutput.ConnectToSource(shaderDefaultOutput);
-
-        // XXX: For backwards compatibility, we continue to author the UsdRi
-        // Bxdf source until consumers (e.g. PxrUsdIn) are updated to look at
-        // the outputs:surface terminal.
-        UsdRiMaterialAPI(materialPrim).SetBxdfSource(
-            shaderDefaultOutput.GetAttr().GetPath());
     }
 };
 }
 
-TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaShadingModeExportContext, pxrRis)
+TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeExportContext, pxrRis)
 {
-    PxrUsdMayaShadingModeRegistry::GetInstance().RegisterExporter(
+    UsdMayaShadingModeRegistry::GetInstance().RegisterExporter(
         "pxrRis",
-        []() -> PxrUsdMayaShadingModeExporterPtr {
-            return PxrUsdMayaShadingModeExporterPtr(
-                static_cast<PxrUsdMayaShadingModeExporter*>(
+        []() -> UsdMayaShadingModeExporterPtr {
+            return UsdMayaShadingModeExporterPtr(
+                static_cast<UsdMayaShadingModeExporter*>(
                     new PxrRisShadingModeExporter()));
         }
     );
 }
 
-namespace _importer {
+namespace {
 
 static
 MObject
-_CreateShaderObject(
+_CreateAndPopulateShaderObject(
         const UsdShadeShader& shaderSchema,
-        PxrUsdMayaShadingModeImportContext* context);
+        const UsdMayaShadingNodeType shadingNodeType,
+        UsdMayaShadingModeImportContext* context);
 
 static
 MObject
 _GetOrCreateShaderObject(
         const UsdShadeShader& shaderSchema,
-        PxrUsdMayaShadingModeImportContext* context)
+        const UsdMayaShadingNodeType shadingNodeType,
+        UsdMayaShadingModeImportContext* context)
 {
     MObject shaderObj;
+    if (!shaderSchema) {
+        return shaderObj;
+    }
+
     if (context->GetCreatedObject(shaderSchema.GetPrim(), &shaderObj)) {
         return shaderObj;
     }
 
-    shaderObj = _CreateShaderObject(shaderSchema, context);
+    shaderObj = _CreateAndPopulateShaderObject(shaderSchema, shadingNodeType, context);
     return context->AddCreatedObject(shaderSchema.GetPrim(), shaderObj);
 }
 
@@ -339,51 +443,135 @@ _ImportAttr(const UsdAttribute& usdAttr, const MFnDependencyNode& fnDep)
     }
 
     unsigned int index = 0u;
-    if (PxrUsdMayaRoundTripUtil::GetAttributeArray(usdAttr, &index)) {
+    if (UsdMayaRoundTripUtil::GetAttributeArray(usdAttr, &index)) {
         mayaAttrPlug = mayaAttrPlug.elementByLogicalIndex(index, &status);
         if (status != MS::kSuccess) {
             return MPlug();
         }
     }
 
-    PxrUsdMayaUtil::setPlugValue(usdAttr, mayaAttrPlug);
+    UsdMayaUtil::setPlugValue(usdAttr, mayaAttrPlug);
 
     return mayaAttrPlug;
 }
 
-// Should only be called by _GetOrCreateShaderObject, no one else.
-MObject
-_CreateShaderObject(
-        const UsdShadeShader& shaderSchema,
-        PxrUsdMayaShadingModeImportContext* context)
+static
+TfToken
+_GetMayaTypeNameForShaderId(
+        const TfToken& shaderId)
+{
+    // Remap the mayaTypeName if found in the RIS table.
+    for (const auto & i : _RFM_RISNODE_TABLE) {
+        if (i.second == shaderId) {
+            return i.first;
+        }
+    }
+
+    // Otherwise, just return shaderId
+    return shaderId;
+}
+
+static 
+UsdMayaShadingNodeType
+_ComputeShadingNodeTypeForShaderId(
+        const TfToken& shaderId, 
+        const UsdMayaShadingNodeType& fallback)
+{
+    MString mayaType(_GetMayaTypeNameForShaderId(shaderId).GetText());
+    MStatus status;
+    MString cmd;
+    status = cmd.format("getClassification ^1s", mayaType);
+    CHECK_MSTATUS_AND_RETURN(status, fallback);
+
+    MStringArray compoundClassifications;
+    status = MGlobal::executeCommand(cmd, compoundClassifications, false, false);
+    CHECK_MSTATUS_AND_RETURN(status, fallback);
+
+    static const std::vector<std::pair<std::string, UsdMayaShadingNodeType> >
+        _classificationsToTypes = {
+            { "texture/", UsdMayaShadingNodeType::Texture },
+            { "utility/", UsdMayaShadingNodeType::Utility },
+            { "shader/", UsdMayaShadingNodeType::Shader },
+        };
+
+    // The docs for getClassification are pretty confusing.  You'd think that
+    // the string array returned would give you each "classification", but
+    // instead, it's a list of "single compound classification string by joining
+    // the individual classifications with ':'".  
+
+    // Loop over the compoundClassifications, though I believe
+    // compoundClassifications will always have size 0 or 1.
+#if MAYA_API_VERSION >= 20190000
+    for (const MString& compoundClassification : compoundClassifications) {
+#else
+    for (unsigned int i = 0; i < compoundClassifications.length(); ++i) {
+        const MString& compoundClassification = compoundClassifications[i];
+#endif
+        const std::string compoundClassificationStr(compoundClassification.asChar());
+        for (const std::string& classification :
+             TfStringSplit(compoundClassificationStr, ":")) {
+            for (const auto& classPrefixAndType : _classificationsToTypes) {
+                if (TfStringStartsWith(
+                        classification, classPrefixAndType.first)) {
+                    return classPrefixAndType.second;
+                }
+            }
+        }
+    }
+
+    return fallback;
+}
+
+static 
+UsdMayaShadingNodeType
+_GetShadingNodeTypeForNestedNode(
+        const UsdShadeShader& shaderSchema)
 {
     TfToken shaderId;
     shaderSchema.GetIdAttr().Get(&shaderId);
 
-    TfToken mayaTypeName = shaderId;
-
-    // Now remap the mayaTypeName if found in the RIS table.
-    for (size_t i = 0u; i < _RFM_RISNODE_TABLE.size(); ++i) {
-        if (_RFM_RISNODE_TABLE[i].second == mayaTypeName) {
-            mayaTypeName = _RFM_RISNODE_TABLE[i].first;
-            break;
-        }
+    static std::map<TfToken, UsdMayaShadingNodeType> _cache;
+    const auto iter = _cache.find(shaderId);
+    if (iter != _cache.end()) {
+        return iter->second;
     }
 
+    return _cache[shaderId] = _ComputeShadingNodeTypeForShaderId(
+               shaderId, 
+               // any "nested" shader objects that we can't classify should
+               // fallback to NonShading.
+               UsdMayaShadingNodeType::NonShading);
+}
+
+
+// Should only be called by _GetOrCreateShaderObject, no one else.
+MObject
+_CreateAndPopulateShaderObject(
+        const UsdShadeShader& shaderSchema,
+        const UsdMayaShadingNodeType shadingNodeType,
+        UsdMayaShadingModeImportContext* context)
+{
+    TfToken shaderId;
+    shaderSchema.GetIdAttr().Get(&shaderId);
+
+    TfToken mayaTypeName = _GetMayaTypeNameForShaderId(shaderId);
+
     MStatus status;
+    MObject shaderObj;
     MFnDependencyNode depFn;
-    MObject shaderObj =
-        depFn.create(MString(mayaTypeName.GetText()),
-                     MString(shaderSchema.GetPrim().GetName().GetText()),
-                     &status);
-    if (status != MS::kSuccess) {
+    if (!(UsdMayaTranslatorUtil::CreateShaderNode(
+                MString(shaderSchema.GetPrim().GetName().GetText()),
+                mayaTypeName.GetText(),
+                shadingNodeType,
+                &status,
+                &shaderObj) 
+            && depFn.setObject(shaderObj))) {
         // we need to make sure assumes those types are loaded..
-        MGlobal::displayError(
-            TfStringPrintf(
+        TF_RUNTIME_ERROR(
                 "Could not create node of type '%s' for shader '%s'. "
                 "Probably missing a loadPlugin.\n",
                 mayaTypeName.GetText(),
-                shaderSchema.GetPrim().GetName().GetText()).c_str());
+                shaderSchema.GetPrim().GetName().GetText());
         return MObject();
     }
 
@@ -411,8 +599,11 @@ _CreateShaderObject(
             continue;
         }
 
-        MObject sourceObj = _GetOrCreateShaderObject(sourceShaderSchema,
-                                                     context);
+        MObject sourceObj = _GetOrCreateShaderObject(
+            sourceShaderSchema,
+            _GetShadingNodeTypeForNestedNode(sourceShaderSchema),
+            context);
+
         MFnDependencyNode sourceDepFn(sourceObj, &status);
         if (status != MS::kSuccess) {
             continue;
@@ -423,11 +614,11 @@ _CreateShaderObject(
             const unsigned int numElements = srcAttr.evaluateNumElements();
             if (numElements > 0u) {
                 if (numElements > 1u) {
-                    MGlobal::displayWarning(TfStringPrintf(
+                    TF_WARN(
                         "Array with multiple elements encountered at '%s'. "
-                        "Currently, only arrays with a single element are supported. "
-                        "Not connecting attribute.",
-                        srcAttr.name().asChar()).c_str());
+                        "Currently, only arrays with a single element are "
+                        "supported. Not connecting attribute.",
+                        srcAttr.name().asChar());
                     continue;
                 }
 
@@ -435,61 +626,140 @@ _CreateShaderObject(
             }
         }
 
-        PxrUsdMayaUtil::Connect(srcAttr, mayaAttr, false);
+        UsdMayaUtil::Connect(srcAttr, mayaAttr, false);
     }
 
     return shaderObj;
 }
 
-}; // namespace _importer
+}; // anonymous namespace
 
 DEFINE_SHADING_MODE_IMPORTER(pxrRis, context)
 {
+    // RenderMan for Maya wants the shader nodes to get hooked into the shading
+    // group via its own plugs.
+    context->SetVolumeShaderPlugName(_tokens->RmanVolumeShaderPlugName);
+
+    const auto shadingPlugs = _GetShadingPlugs();
+    context->SetSurfaceShaderPlugName(shadingPlugs.surface);
+    context->SetDisplacementShaderPlugName(shadingPlugs.displacement);
+
     // This expects the renderman for maya plugin is loaded.
     // How do we ensure that it is?
     const UsdShadeMaterial& shadeMaterial = context->GetShadeMaterial();
-
-    UsdShadeShader surfaceShader;
-
-    // First try the "surface" output of the material.
-    UsdShadeOutput surfaceShaderOuptut =
-        shadeMaterial.GetOutput(UsdShadeTokens->surface);
-    if (surfaceShaderOuptut) {
-        UsdShadeConnectableAPI source;
-        TfToken sourceOutputName;
-        UsdShadeAttributeType sourceType;
-
-        if (UsdShadeConnectableAPI::GetConnectedSource(surfaceShaderOuptut,
-                                                       &source,
-                                                       &sourceOutputName,
-                                                       &sourceType)) {
-            surfaceShader = source;
-        }
+    if (!shadeMaterial) {
+        return MObject();
     }
 
-    // Otherwise fall back to trying the Bxdf of the UsdRi schema.
+    // Get the surface, volume, and/or displacement shaders of the material.
+    // First we try computing the sources via the material, and otherwise we
+    // fall back to querying the UsdRiMaterialAPI.
+    UsdShadeShader surfaceShader = shadeMaterial.ComputeSurfaceSource();
     if (!surfaceShader) {
-        surfaceShader = UsdRiMaterialAPI(shadeMaterial).GetBxdf();
-        if (!surfaceShader) {
-            return MPlug();
-        }
+        surfaceShader = UsdRiMaterialAPI(shadeMaterial).GetSurface();
     }
 
+    UsdShadeShader volumeShader = shadeMaterial.ComputeVolumeSource();
+    if (!volumeShader) {
+        volumeShader = UsdRiMaterialAPI(shadeMaterial).GetVolume();
+    }
+
+    UsdShadeShader displacementShader = shadeMaterial.ComputeDisplacementSource();
+    if (!displacementShader) {
+        displacementShader = UsdRiMaterialAPI(shadeMaterial).GetDisplacement();
+    }
+
+    MObject surfaceShaderObj = _GetOrCreateShaderObject(
+        surfaceShader, UsdMayaShadingNodeType::Shader, context);
+    MObject volumeShaderObj = _GetOrCreateShaderObject(
+        volumeShader, UsdMayaShadingNodeType::Shader, context);
+    MObject displacementShaderObj = _GetOrCreateShaderObject(
+        displacementShader, UsdMayaShadingNodeType::Shader, context);
+
+    if (surfaceShaderObj.isNull() &&
+            volumeShaderObj.isNull() &&
+            displacementShaderObj.isNull()) {
+        return MObject();
+    }
+
+    // Create the shading engine.
+    MObject shadingEngine = context->CreateShadingEngine();
+    if (shadingEngine.isNull()) {
+        return MObject();
+    }
     MStatus status;
-    MObject shaderObj = _importer::_GetOrCreateShaderObject(surfaceShader,
-                                                            context);
-    MFnDependencyNode shaderDepFn(shaderObj, &status);
+    MFnSet fnSet(shadingEngine, &status);
     if (status != MS::kSuccess) {
-        return MPlug();
+        return MObject();
     }
 
-    MPlug outputPlug =
-        shaderDepFn.findPlug(_tokens->MayaShaderOutputName.GetText(), &status);
-    if (status != MS::kSuccess) {
-        return MPlug();
+    const TfToken surfaceShaderPlugName = context->GetSurfaceShaderPlugName();
+    if (!surfaceShaderPlugName.IsEmpty() && !surfaceShaderObj.isNull()) {
+        MFnDependencyNode depNodeFn(surfaceShaderObj, &status);
+        if (status != MS::kSuccess) {
+            return MObject();
+        }
+
+        MPlug shaderOutputPlug =
+            depNodeFn.findPlug(_tokens->MayaShaderOutputName.GetText(), &status);
+        if (status != MS::kSuccess || shaderOutputPlug.isNull()) {
+            return MObject();
+        }
+
+        MPlug seInputPlug =
+            fnSet.findPlug(surfaceShaderPlugName.GetText(), &status);
+        CHECK_MSTATUS_AND_RETURN(status, MObject());
+
+        UsdMayaUtil::Connect(shaderOutputPlug,
+                                seInputPlug,
+                                /* clearDstPlug = */ true);
     }
 
-    return outputPlug;
+    const TfToken volumeShaderPlugName = context->GetVolumeShaderPlugName();
+    if (!volumeShaderPlugName.IsEmpty() && !volumeShaderObj.isNull()) {
+        MFnDependencyNode depNodeFn(volumeShaderObj, &status);
+        if (status != MS::kSuccess) {
+            return MObject();
+        }
+
+        MPlug shaderOutputPlug =
+            depNodeFn.findPlug(_tokens->MayaShaderOutputName.GetText(), &status);
+        if (status != MS::kSuccess || shaderOutputPlug.isNull()) {
+            return MObject();
+        }
+
+        MPlug seInputPlug =
+            fnSet.findPlug(volumeShaderPlugName.GetText(), &status);
+        CHECK_MSTATUS_AND_RETURN(status, MObject());
+
+        UsdMayaUtil::Connect(shaderOutputPlug,
+                                seInputPlug,
+                                /* clearDstPlug = */ true);
+    }
+
+    const TfToken displacementShaderPlugName = context->GetDisplacementShaderPlugName();
+    if (!displacementShaderPlugName.IsEmpty() && !displacementShaderObj.isNull()) {
+        MFnDependencyNode depNodeFn(displacementShaderObj, &status);
+        if (status != MS::kSuccess) {
+            return MObject();
+        }
+
+        MPlug shaderOutputPlug =
+            depNodeFn.findPlug(_tokens->MayaShaderOutputName.GetText(), &status);
+        if (status != MS::kSuccess || shaderOutputPlug.isNull()) {
+            return MObject();
+        }
+
+        MPlug seInputPlug =
+            fnSet.findPlug(displacementShaderPlugName.GetText(), &status);
+        CHECK_MSTATUS_AND_RETURN(status, MObject());
+
+        UsdMayaUtil::Connect(shaderOutputPlug,
+                                seInputPlug,
+                                /* clearDstPlug = */ true);
+    }
+
+    return shadingEngine;
 }
 
 

@@ -36,7 +36,7 @@
 {% endblock customIncludes -%}
 
 #include <float.h>
-#include <iostream>
+#include <ostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -237,5 +237,19 @@ operator *(const {{ MAT }}& m, const GfVec{{ DIM }}f &vec)
 
 {% block customXformFunctions %}
 {% endblock customXformFunctions %}
+
+
+bool
+GfIsClose({{ MAT }} const &m1, {{ MAT }} const &m2, double tolerance)
+{
+    for(size_t row = 0; row < {{ DIM }}; ++row) {
+        for(size_t col = 0; col < {{ DIM }}; ++col) {
+            if(!GfIsClose(m1[row][col], m2[row][col], tolerance))
+                return false;
+        }
+    }
+    return true;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

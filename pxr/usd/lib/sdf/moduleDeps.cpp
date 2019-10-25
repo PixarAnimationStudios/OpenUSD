@@ -39,7 +39,7 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
         TfToken("arch"),
         TfToken("gf"),
         TfToken("tf"),
-        TfToken("tracelite"),
+        TfToken("trace"),
         TfToken("vt"),
         TfToken("work")
     };

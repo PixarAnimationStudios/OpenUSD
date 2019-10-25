@@ -32,8 +32,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapBaseTexture()
 {    
-    typedef GlfBaseTexture This;
-    typedef GlfBaseTexturePtr ThisPtr;
+    using This    = GlfBaseTexture;
+    using ThisPtr = GlfBaseTexturePtr;
 
     class_<This, bases<GlfTexture>, ThisPtr, boost::noncopyable>(
         "BaseTexture", no_init)
@@ -56,7 +56,8 @@ void wrapBaseTexture()
 
         .add_property( "textureInfo", make_function(
             &This::GetTextureInfo,
-            return_value_policy<return_by_value>()))
+            return_value_policy<return_by_value>(),
+            (arg("forceLoad") = true)))
         ;
 }
 

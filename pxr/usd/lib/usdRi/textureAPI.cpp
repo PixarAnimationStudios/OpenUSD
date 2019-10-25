@@ -61,6 +61,11 @@ UsdRiTextureAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 }
 
 
+/* virtual */
+UsdSchemaType UsdRiTextureAPI::_GetSchemaType() const {
+    return UsdRiTextureAPI::schemaType;
+}
+
 /* static */
 UsdRiTextureAPI
 UsdRiTextureAPI::Apply(const UsdPrim &prim)

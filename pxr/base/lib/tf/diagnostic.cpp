@@ -52,32 +52,29 @@ TF_REGISTRY_FUNCTION(TfEnum) {
     TF_ADD_ENUM_NAME(TF_APPLICATION_EXIT_TYPE, "Application Exit");
 };
 
-std::string
-Tf_DiagnosticStringPrintf()
-{
-    return std::string();
-}
-
-std::string
-Tf_DiagnosticStringPrintf(const char *format, ...)
+char const *
+Tf_VerifyStringFormat(const char *format, ...)
 {
     va_list ap;
     va_start(ap, format);
     string s = TfVStringPrintf(format, ap);
     va_end(ap);
-    return s;
+    return strdup(s.c_str());
 }
 
 bool
 Tf_FailedVerifyHelper(const TfCallContext &context,
                       char const *condition,
-                      const std::string &msg)
+                      char const *msg)
 {
     std::string errorMsg =
         std::string("Failed verification: ' ") + condition + " '";
 
-    if (!msg.empty())
-        errorMsg += " -- " + msg;
+    if (msg) {
+        errorMsg += " -- ";
+        errorMsg += msg;
+        free(const_cast<char *>(msg));
+    }
 
     if (TfGetenvBool("TF_FATAL_VERIFY", false)) {
         Tf_DiagnosticHelper(context, TF_DIAGNOSTIC_FATAL_ERROR_TYPE).

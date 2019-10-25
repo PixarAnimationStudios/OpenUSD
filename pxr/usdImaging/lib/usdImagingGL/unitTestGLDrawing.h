@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec4d.h"
+#include "pxr/base/vt/dictionary.h"
 
 #include "pxr/base/tf/declarePtrs.h"
 
@@ -52,19 +53,22 @@ public:
     int GetHeight() const;
 
     bool IsEnabledTestLighting() const { return _testLighting; }
+    bool IsEnabledSceneLights() const { return _sceneLights; }
     bool IsEnabledCameraLight() const { return _cameraLight; }
     bool IsEnabledCullBackfaces() const { return _cullBackfaces; }
     bool IsEnabledIdRender() const { return _testIdRender; }
 
-    UsdImagingGLEngine::DrawMode GetDrawMode() const { return _drawMode; }
+    UsdImagingGLDrawMode GetDrawMode() const { return _drawMode; }
 
     std::string const & GetStageFilePath() const { return _stageFilePath; }
     std::string const & GetOutputFilePath() const { return _outputFilePath; }
 
+    std::string const & GetCameraPath() const { return _cameraPath; }
     std::vector<GfVec4d> const & GetClipPlanes() const { return _clipPlanes; }
     std::vector<double> const& GetTimes() const { return _times; }
     GfVec4f const & GetClearColor() const { return _clearColor; }
     GfVec3f const & GetTranslate() const { return _translate; }
+    VtDictionary const &GetRenderSettings() const { return _renderSettings; }
 
     void RunTest(int argc, char *argv[]);
 
@@ -84,6 +88,16 @@ protected:
     bool _ShouldFrameAll() const { return _shouldFrameAll; }
     TfToken _GetRenderer() const { return _renderer; }
 
+    HdRenderIndex *_GetRenderIndex(UsdImagingGLEngine *engine) {
+        return engine->_GetRenderIndex();
+    }
+    
+    void _Render(UsdImagingGLEngine *engine, 
+                 const UsdImagingGLRenderParams &params) {
+        SdfPathVector roots(1, SdfPath::AbsoluteRootPath());
+        engine->RenderBatch(roots, params);
+    }
+
 private:
     struct _Args;
     void _Parse(int argc, char *argv[], _Args* args);
@@ -91,7 +105,9 @@ private:
 private:
     UsdImagingGL_UnitTestWindow *_widget;
     bool _testLighting;
+    bool _sceneLights;
     bool _cameraLight;
+    std::string _cameraPath;
     bool _testIdRender;
 
     std::string _stageFilePath;
@@ -104,11 +120,12 @@ private:
 
     std::vector<GfVec4d> _clipPlanes;
 
-    UsdImagingGLEngine::DrawMode _drawMode;
+    UsdImagingGLDrawMode _drawMode;
     bool _shouldFrameAll;
     bool _cullBackfaces;
     GfVec4f _clearColor;
     GfVec3f _translate;
+    VtDictionary _renderSettings;
 };
 
 

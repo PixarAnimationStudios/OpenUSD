@@ -3,6 +3,13 @@
         {
             "Info": {
                 "Types": {
+                    "UsdSkelImagingSkeletonAdapter": {
+                        "bases": [
+                            "UsdImagingPrimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "Skeleton"
+                    },
                     "UsdSkelImagingSkelRootAdapter": {
                         "bases": [
                             "UsdImagingPrimAdapter"

@@ -139,23 +139,24 @@ class CopyAttributeValueMenuItem(AttributeViewContextMenuItem):
         return "Copy Property Value"
 
     def RunCommand(self):
-        if self._value == "":
-            return
-
         # We display relationships targets as:
         #    /f, /g/a ...
         # But when we ask to copy the value, we'd like to get back:
         #    [Sdf.Path('/f'), Sdf.Path('/g/a')]
         # Which is useful for pasting into a python interpreter.
         if self._role == PropertyViewDataRoles.RELATIONSHIP_WITH_TARGETS:
-            value = str([Sdf.Path("".join(p.split())) \
+            valueStr = str([Sdf.Path("".join(p.split())) \
                           for p in self._value.split(",")])
         else:
-            value = self._value
+            valueStr = self._value
+            if self._item:
+                rawVal = self._item.rawValue
+                if rawVal is not None:
+                    valueStr = str(rawVal)
 
         cb = QtWidgets.QApplication.clipboard()
-        cb.setText(value, QtGui.QClipboard.Selection)
-        cb.setText(value, QtGui.QClipboard.Clipboard)
+        cb.setText(valueStr, QtGui.QClipboard.Selection)
+        cb.setText(valueStr, QtGui.QClipboard.Clipboard)
 
 # --------------------------------------------------------------------
 # Individual target selection menus
@@ -203,8 +204,19 @@ class SelectTargetPathMenuItem(CopyTargetPathMenuItem):
 # Target owning property selection menus
 # --------------------------------------------------------------------
 
+def _GetTargetPathsForItem(item):
+    paths = [Sdf.Path(item.child(i).text(PropertyViewIndex.NAME)) for 
+                 i in range (0, item.childCount())]
+    # If there are no children, the value column must hold a valid path
+    # (since the command is enabled).
+    if len(paths) == 0:
+        itemText = item.text(PropertyViewIndex.VALUE)
+        if len(itemText) > 0:
+            paths.append(Sdf.Path(itemText))
+    return paths
+
 #
-# Jump to all target paths under the selected attribute
+# Select all target paths under the selected attribute
 #
 class SelectAllTargetPathsMenuItem(AttributeViewContextMenuItem):
     def ShouldDisplay(self):
@@ -214,10 +226,15 @@ class SelectAllTargetPathsMenuItem(AttributeViewContextMenuItem):
     def IsEnabled(self):
         if not self._item:
             return False
+        
+        # Enable the menu item if there are one or more targets for this 
+        # rel/attribute connection
+        if self._item.childCount() > 0:
+            return True
 
-        # Disable the menu if there are no targets
-        # for this rel/attribute connection
-        return self._item.childCount() != 0
+        # Enable the menu if the item holds a valid SdfPath.
+        itemText = self._item.text(2)
+        return Sdf.Path.IsValidPathString(itemText)
 
     def GetText(self):
         return "Select Target Path(s)"
@@ -226,9 +243,8 @@ class SelectAllTargetPathsMenuItem(AttributeViewContextMenuItem):
         if not self._item:
             return
 
-        paths = [Sdf.Path(self._item.child(i).text(PropertyViewIndex.NAME))
-            for i in range(0, self._item.childCount())]
-        _selectPrimsAndProps(self._dataModel, paths)
+        _selectPrimsAndProps(self._dataModel, 
+                _GetTargetPathsForItem(self._item))
 
 #
 # Copy all target paths under the currently selected relationship to the clipboard
@@ -241,8 +257,8 @@ class CopyAllTargetPathsMenuItem(SelectAllTargetPathsMenuItem):
         if not self._item:
             return
 
-        value = ", ".join([self._item.child(i).text(PropertyViewIndex.NAME) \
-                            for i in range(0, self._item.childCount())])
+        value = ", ".join(_GetTargetPathsForItem(self._item))
+        
         cb = QtWidgets.QApplication.clipboard()
         cb.setText(value, QtGui.QClipboard.Selection)
         cb.setText(value, QtGui.QClipboard.Clipboard)

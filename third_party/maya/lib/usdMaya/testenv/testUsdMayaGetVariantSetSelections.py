@@ -23,18 +23,13 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-import os
-import unittest
-
-# XXX: The try/except here is temporary until we change the Pixar-internal
-# package name to match the external package name.
-try:
-    from pxr import UsdMaya
-except ImportError:
-    from pixar import UsdMaya
+from pxr import UsdMaya
 
 from maya import cmds
 from maya import standalone
+
+import os
+import unittest
 
 
 class testUsdMayaGetVariantSetSelections(unittest.TestCase):
@@ -87,6 +82,15 @@ class testUsdMayaGetVariantSetSelections(unittest.TestCase):
             {'fooVariant': 'FooVariantC',
              'modelingVariant': 'ModVariantB',
              'shadingVariant': 'ShadVariantA'})
+
+        # Verify that selecting a non-registered variant set affects the
+        # stage's composition.
+        prim = UsdMaya.GetPrim(self.assemblyNodeName)
+        geomPrim = prim.GetChild('Geom')
+        cubePrim = geomPrim.GetChild('Cube')
+
+        attrValue = cubePrim.GetAttribute('variantAttribute').Get()
+        self.assertEqual(attrValue, 'C')
 
     def testBogusVariantName(self):
         self._SetSelection('bogusVariant', 'NotARealVariantSet')

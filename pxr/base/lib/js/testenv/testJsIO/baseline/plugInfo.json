@@ -17,7 +17,7 @@
             "displayName": "Bend"
         },
         "MoverBend::MultiMode": {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverBow": {
             "addGroup": "Movers",
@@ -29,7 +29,7 @@
             "bases": ["MfMover"]
         },
         "MoverConstraintBase::LocalSpaceMode": {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverCopySubdivPoints": {
             "addGroup": "Movers",
@@ -64,7 +64,7 @@
             "displayName": "Frame"
         },
         "MoverFrameDeform::RotationFrame": {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverJointMover": {
             "addGroup": "Movers",
@@ -77,7 +77,7 @@
             "displayName": "Lattice"
         },
         "MoverLatticeDeform::Version": {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverMacroDriver": {
             "addGroup": "Other",
@@ -96,7 +96,7 @@
             "displayName": "MultiSculpt"
         },
         "MoverMultiSculpt::Basis": {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverPtMultBaker": {
             "bases": ["MfMover"]
@@ -117,7 +117,7 @@
             "displayName": "RadialSquetch"
         },
         "MoverRadialSquetch::Mode": {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverRelax": {
             "addGroup": "Movers",
@@ -136,10 +136,10 @@
             "displayName": "Rotate"
         },
         "MoverRotate::Mode": {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverRotate::RotationDirection": {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverScale": {
             "addGroup": "Movers",
@@ -147,7 +147,7 @@
             "displayName": "Scale"
         },
         "MoverScale::Mode": {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverSculptDeform": {
             "addGroup": "Movers",
@@ -170,10 +170,10 @@
             "displayName": "SubdivWarp"
         },
         "MoverSubdivWarp::Complexity": {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverSubdivWarp::Version": {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverSurfaceDeform": {
             "addGroup": "Movers",
@@ -182,7 +182,7 @@
             "displayName": "Surface"
         },
         "MoverSurfaceDeform::Version": {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverTransformBase": {
             "bases": ["MfMover"]
@@ -194,16 +194,16 @@
             "displayName": "Transform"
         },
         "MoverTransformDeform::FramePivotMethod": {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverTransformDeform::Mode": {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverTransformDeform::MultiMode": {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverTransformDeform::TransformOrder": {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         },
         "MoverTranslate": {
             "addGroup": "Movers",
@@ -211,7 +211,7 @@
             "displayName": "Translate"
         },
         "MoverTranslate::Mode": {
-            "isSdValueType": true
+            "isMenvaPluginType": true
         }
     }
 }

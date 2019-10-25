@@ -211,9 +211,27 @@ static void Run()
     TF_AXIOM(_map.empty());
     TF_AXIOM(_map.size() == 0);
 
+    printf("exerise initialize_list ctor / assignment.\n");
+    _Map init {
+        { 100, "this" },
+        { 110, "can" },
+        { 120, "be" },
+        { 130, "const" }
+    };
+    TF_AXIOM(init.size() == 4);
+    TF_AXIOM(init[100] == "this");
+    TF_AXIOM(init[110] == "can");
+    TF_AXIOM(init[120] == "be");
+    TF_AXIOM(init[130] == "const");
 
+    init = {
+        { 2717, "dl" },
+        { 2129, "eg" },
+    };
 
-
+    TF_AXIOM(init.size() == 2);
+    TF_AXIOM(init[2717] == "dl");
+    TF_AXIOM(init[2129] == "eg");
 
     printf("\nTesting TfDenseHashMap using an EqualKey.\n");
 

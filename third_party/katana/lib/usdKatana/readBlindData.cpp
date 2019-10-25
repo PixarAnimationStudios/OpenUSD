@@ -70,14 +70,11 @@ PxrUsdKatanaReadBlindData(
                 // generated "as is", we *do not* want the prmanStatement style
                 // "type"/"value" declaration to be created.
                 attrs.set(attrName, 
-                    PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
-                        vtValue, 
-                        /* asShaderParam */ true));
+                    PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue));
             }
-            else if (blindAttr.HasAuthoredValueOpinion())
+            else if (blindAttr.GetResolveInfo().ValueIsBlocked())
             {
                 // The attr has a block, so set a null attr
-                // (see bug 136179 for a better detection api)
                 attrs.set(attrName, FnKat::NullAttribute());
             }
         }

@@ -90,6 +90,13 @@ _CreateShapingIesAngleScaleAttr(UsdLuxShapingAPI &self,
     return self.CreateShapingIesAngleScaleAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
+        
+static UsdAttribute
+_CreateShapingIesNormalizeAttr(UsdLuxShapingAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateShapingIesNormalizeAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
+}
 
 } // anonymous namespace
 
@@ -110,18 +117,6 @@ void wrapUsdLuxShapingAPI()
 
         .def("Apply", &This::Apply, (arg("prim")))
         .staticmethod("Apply")
-
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
-
-        .def("IsMultipleApply", 
-            static_cast<bool (*)(void)>( [](){ return This::IsMultipleApply; } ))
-        .staticmethod("IsMultipleApply")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
@@ -175,6 +170,13 @@ void wrapUsdLuxShapingAPI()
              &This::GetShapingIesAngleScaleAttr)
         .def("CreateShapingIesAngleScaleAttr",
              &_CreateShapingIesAngleScaleAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetShapingIesNormalizeAttr",
+             &This::GetShapingIesNormalizeAttr)
+        .def("CreateShapingIesNormalizeAttr",
+             &_CreateShapingIesNormalizeAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

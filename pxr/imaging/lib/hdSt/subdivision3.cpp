@@ -32,7 +32,6 @@
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferResource.h"
 #include "pxr/imaging/hd/meshUtil.h"
-#include "pxr/imaging/hd/patchIndex.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -181,7 +180,7 @@ public:
 private:
     void _PopulateUniformPrimitiveBuffer(
         OpenSubdiv::Far::PatchTable const *patchTable);
-    void _PopulateBSplinePrimitiveBuffer(
+    void _PopulatePatchPrimitiveBuffer(
         OpenSubdiv::Far::PatchTable const *patchTable);
     void _CreatePtexFaceToCoarseFaceInfoMapping(
         std::vector<PtexFaceInfo> *result);
@@ -273,24 +272,24 @@ HdSt_Osd3Subdivision::RefineCPU(HdBufferSourceSharedPtr const &source,
     OpenSubdiv::Osd::CpuVertexBuffer *osdVertexBuffer =
         static_cast<OpenSubdiv::Osd::CpuVertexBuffer*>(vertexBuffer);
 
-    int numElements = source->GetNumElements();
+    size_t numElements = source->GetNumElements();
 
     // Stride is measured here in components, not bytes.
-    int stride = HdGetComponentCount(source->GetTupleType().type);
+    size_t stride = HdGetComponentCount(source->GetTupleType().type);
 
     // NOTE: in osd, GetNumElements() returns how many fields in a vertex
     //          (i.e.  3 for XYZ, and 4 for RGBA)
-    //       in hydra, GetNumElements() returns how many vertices
-    //       (or faces, etc) in a buffer. We basically follow the hydra
+    //       in Storm, GetNumElements() returns how many vertices
+    //       (or faces, etc) in a buffer. We basically follow the Storm
     //       convention in this file.
-    TF_VERIFY(stride == osdVertexBuffer->GetNumElements(),
-              "%i vs %i", stride, osdVertexBuffer->GetNumElements());
+    TF_VERIFY(stride == (size_t)osdVertexBuffer->GetNumElements(),
+              "%zu vs %i", stride, osdVertexBuffer->GetNumElements());
 
     // if the mesh has more vertices than that in use in topology (faceIndices),
     // we need to trim the buffer so that they won't overrun the coarse
     // vertex buffer which we allocated using the stencil table.
     // see HdSt_Osd3Subdivision::GetNumVertices()
-    if (numElements > stencilTable->GetNumControlVertices()) {
+    if (numElements > (size_t)stencilTable->GetNumControlVertices()) {
         numElements = stencilTable->GetNumControlVertices();
     }
 
@@ -304,7 +303,8 @@ HdSt_Osd3Subdivision::RefineCPU(HdBufferSourceSharedPtr const &source,
 
     // apply opensubdiv with CPU evaluator.
     OpenSubdiv::Osd::BufferDescriptor srcDesc(0, stride, stride);
-    OpenSubdiv::Osd::BufferDescriptor dstDesc(numElements*stride, stride, stride);
+    OpenSubdiv::Osd::BufferDescriptor dstDesc(numElements*stride, 
+        stride, stride);
 
     OpenSubdiv::Osd::CpuEvaluator::EvalStencils(
         osdVertexBuffer, srcDesc,
@@ -331,7 +331,7 @@ HdSt_Osd3Subdivision::RefineGPU(HdBufferArrayRangeSharedPtr const &range,
 
     // vertex buffer is not interleaved, but aggregated.
     // we need an offset to locate the current range.
-    int stride = vertexBuffer.GetNumElements();
+    size_t stride = vertexBuffer.GetNumElements();
     int numCoarseVertices = _vertexStencils->GetNumControlVertices();
 
     OpenSubdiv::Osd::BufferDescriptor srcDesc(
@@ -469,11 +469,27 @@ HdSt_Osd3TopologyComputation::Resolve()
     Far::PatchTable const *patchTable = NULL;
 
     if (refiner) {
+        Far::PatchTableFactory::Options patchOptions(_level);
+        if (_adaptive) {
+            patchOptions.endCapType =
+                Far::PatchTableFactory::Options::ENDCAP_BSPLINE_BASIS;
+#if OPENSUBDIV_VERSION_NUMBER >= 30400
+            // Improve fidelity when refining to limit surface patches
+            // These options supported since v3.1.0 and v3.2.0 respectively.
+            patchOptions.useInfSharpPatch = true;
+            patchOptions.generateLegacySharpCornerPatches = false;
+#endif
+        }
+
         // split trace scopes.
         {
             HD_TRACE_SCOPE("refine");
             if (_adaptive) {
-                refiner->RefineAdaptive(_level);
+                Far::TopologyRefiner::AdaptiveOptions adaptiveOptions(_level);
+#if OPENSUBDIV_VERSION_NUMBER >= 30400
+                adaptiveOptions =  patchOptions.GetRefineAdaptiveOptions();
+#endif
+                refiner->RefineAdaptive(adaptiveOptions);
             } else {
                 refiner->RefineUniform(_level);
             }
@@ -493,13 +509,7 @@ HdSt_Osd3TopologyComputation::Resolve()
         }
         {
             HD_TRACE_SCOPE("patch factory");
-            Far::PatchTableFactory::Options options;
-            if (_adaptive) {
-                options.endCapType =
-                    Far::PatchTableFactory::Options::ENDCAP_BSPLINE_BASIS;
-            }
-
-            patchTable = Far::PatchTableFactory::Create(*refiner, options);
+            patchTable = Far::PatchTableFactory::Create(*refiner, patchOptions);
         }
     }
 
@@ -578,7 +588,26 @@ HdSt_Osd3IndexComputation::Resolve()
 
     TfToken const& scheme = _topology->GetScheme();
 
-    if (HdSt_Subdivision::RefinesToTriangles(scheme)) {
+    if (_subdivision->IsAdaptive() &&
+               (HdSt_Subdivision::RefinesToBSplinePatches(scheme) ||
+                HdSt_Subdivision::RefinesToBoxSplineTrianglePatches(scheme))) {
+
+        // Bundle groups of 12 or 16 patch control vertices.
+        int arraySize = patchTable
+            ? patchTable->GetPatchArrayDescriptor(0).GetNumControlVertices()
+            : 0;
+
+        VtArray<int> indices(ptableSize);
+        memcpy(indices.data(), firstIndex, ptableSize * sizeof(int));
+
+        HdBufferSourceSharedPtr patchIndices(
+            new HdVtBufferSource(HdTokens->indices, VtValue(indices),
+                                 arraySize));
+
+        _SetResult(patchIndices);
+
+        _PopulatePatchPrimitiveBuffer(patchTable);
+    } else if (HdSt_Subdivision::RefinesToTriangles(scheme)) {
         // populate refined triangle indices.
         VtArray<GfVec3i> indices(ptableSize/3);
         memcpy(indices.data(), firstIndex, ptableSize * sizeof(int));
@@ -588,20 +617,6 @@ HdSt_Osd3IndexComputation::Resolve()
         _SetResult(triIndices);
 
         _PopulateUniformPrimitiveBuffer(patchTable);
-    } else if (_subdivision->IsAdaptive() &&
-               HdSt_Subdivision::RefinesToBSplinePatches(scheme)) {
-
-        // Bundle groups of 16 patch control vertices.
-        VtArray<int> indices(ptableSize);
-        memcpy(indices.data(), firstIndex, ptableSize * sizeof(int));
-
-        HdBufferSourceSharedPtr patchIndices(
-            new HdVtBufferSource(HdTokens->indices, VtValue(indices),
-                                 /* arraySize */ 16));
-
-        _SetResult(patchIndices);
-
-        _PopulateBSplinePrimitiveBuffer(patchTable);
     } else {
         // populate refined quad indices.
         VtArray<GfVec4i> indices(ptableSize/4);
@@ -781,7 +796,7 @@ HdSt_Osd3IndexComputation::_PopulateUniformPrimitiveBuffer(
 }
 
 void
-HdSt_Osd3IndexComputation::_PopulateBSplinePrimitiveBuffer(
+HdSt_Osd3IndexComputation::_PopulatePatchPrimitiveBuffer(
     OpenSubdiv::Far::PatchTable const *patchTable)
 {
     HD_TRACE_FUNCTION();

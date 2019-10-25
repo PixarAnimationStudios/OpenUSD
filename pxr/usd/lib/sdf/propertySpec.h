@@ -58,7 +58,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class SdfPropertySpec : public SdfSpec
 {
-    SDF_DECLARE_ABSTRACT_SPEC(SdfSchema, SdfPropertySpec, SdfSpec);
+    SDF_DECLARE_ABSTRACT_SPEC(SdfPropertySpec, SdfSpec);
 
 public:
     ///
@@ -370,7 +370,7 @@ public:
     bool HasOnlyRequiredFields() const;
 
 private:
-    TfToken _GetAttributeValueTypeName() const;
+    inline TfToken _GetAttributeValueTypeName() const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

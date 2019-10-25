@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
-#include "pxr/imaging/hd/task.h"
+#include "pxr/imaging/hdx/progressiveTask.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"  // for short-term compatibility.
 #include "pxr/imaging/hdSt/renderPassState.h"
 
@@ -41,44 +41,81 @@ class HdSceneDelegate;
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 typedef boost::shared_ptr<class HdxRenderSetupTask> HdxRenderSetupTaskSharedPtr;
-typedef std::vector<HdRenderPassSharedPtr> HdRenderPassSharedPtrVector;
 
 /// \class HdxRenderTask
 ///
 /// A task for rendering geometry to pixels.
 ///
-class HdxRenderTask : public HdSceneTask 
+/// Rendering state management can be handled two ways:
+/// 1.) An application can create an HdxRenderTask and pass it the
+///     HdxRenderTaskParams struct as "params".
+/// 2.) An application can create an HdxRenderSetupTask and an
+///     HdxRenderTask, and pass params to the setup task. In this case
+///     the setup task must run first.
+///
+/// Parameter unpacking is handled by HdxRenderSetupTask; in case #1,
+/// HdxRenderTask creates a dummy setup task internally to manage the sync
+/// process.
+///
+/// Case #2 introduces complexity; the benefit is that by changing which
+/// setup task you run before the render task, you can change the render
+/// parameters without incurring a hydra sync or rebuilding any resources.
+///
+class HdxRenderTask : public HdxProgressiveTask
 {
 public:
     HDX_API
     HdxRenderTask(HdSceneDelegate* delegate, SdfPath const& id);
 
-    /// Hooks for progressive rendering (delegated to renderpasses).
-
-    // XXX: If the render task collection param will change in the next Sync(),
-    // IsConverged() should be ignored since the renderpasses will be rebuilt.
-    void ResetImage();
-    bool IsConverged() const;
-
-protected:
-    /// Execute render pass task
     HDX_API
-    virtual void _Execute(HdTaskContext* ctx);
+    virtual ~HdxRenderTask();
+
+    /// Hooks for progressive rendering (delegated to renderpasses).
+    virtual bool IsConverged() const override;
 
     /// Sync the render pass resources
     HDX_API
-    virtual void _Sync(HdTaskContext* ctx);
+    virtual void Sync(HdSceneDelegate* delegate,
+                      HdTaskContext* ctx,
+                      HdDirtyBits* dirtyBits) override;
+
+    /// Prepare the tasks resources
+    HDX_API
+    virtual void Prepare(HdTaskContext* ctx,
+                         HdRenderIndex* renderIndex) override;
+
+    /// Execute render pass task
+    HDX_API
+    virtual void Execute(HdTaskContext* ctx) override;
+
+    /// Collect Render Tags used by the task.
+    HDX_API
+    virtual const TfTokenVector &GetRenderTags() const override;
+
+protected:
+    HDX_API
+    HdRenderPassStateSharedPtr _GetRenderPassState(HdTaskContext *ctx) const;
+
+    // Returns the number of draw items used for rendering. This will only 
+    // return the correct result after HdxRenderTask::Prepare() has been called.
+    HDX_API
+    size_t _GetDrawItemCount() const;
 
 private:
-    HdRenderPassSharedPtrVector _passes;
+    HdRenderPassSharedPtr _pass;
+    TfTokenVector _renderTags;
 
-    // XXX: temp members to keep compatibility (optional)
+    // Optional internal render setup task, for params unpacking.
     HdxRenderSetupTaskSharedPtr _setupTask;
 
-    // XXX: Setup additional state that HdStRenderPassState requires.
-    // This should be moved to hdSt!
+    // Setup additional state that HdStRenderPassState requires.
+    // XXX: This should be moved to hdSt!
     void _SetHdStRenderPassState(HdTaskContext *ctx,
                                  HdStRenderPassState *renderPassState);
+
+    HdxRenderTask() = delete;
+    HdxRenderTask(const HdxRenderTask &) = delete;
+    HdxRenderTask &operator =(const HdxRenderTask &) = delete;
 };
 
 

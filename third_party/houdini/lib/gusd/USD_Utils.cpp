@@ -21,9 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "gusd/USD_Utils.h"
-
-#include "gusd/UT_Error.h"
+#include "USD_Utils.h"
 
 #include <UT/UT_ConcurrentHashMap.h>
 #include <UT/UT_Interrupt.h>
@@ -36,8 +34,8 @@
 #include <UT/UT_WorkBuffer.h>
 
 #include "pxr/base/tf/type.h"
-#include "pxr/usd/sdf/path.h"
 #include "pxr/usd/kind/registry.h"
+#include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/usdGeom/imageable.h"
@@ -48,9 +46,22 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace GusdUSD_Utils {
 
 
+UT_StringHolder
+TokenToStringHolder(const TfToken& token)
+{
+    if (token.IsImmortal()) {
+        return !token.IsEmpty() ?
+            UT_StringHolder(UT_StringHolder::REFERENCE, token.GetString())  
+            : UT_StringHolder();
+    } else {
+        return UT_StringHolder(token.GetString());
+    }
+}
+
+
 bool
 CreateSdfPath(const UT_StringRef& pathStr,
-              SdfPath& path, GusdUT_ErrorContext* err)
+              SdfPath& path, UT_ErrorSeverity sev)
 {
     if(!pathStr)
         return true;
@@ -71,7 +82,7 @@ CreateSdfPath(const UT_StringRef& pathStr,
             return true;
         }
     }
-    
+
     std::string str(pathStr.toStdString());
 
     /* TODO: using 'IsValidPathString()' requires us to parse the
@@ -79,13 +90,11 @@ CreateSdfPath(const UT_StringRef& pathStr,
        time, and capture any warnings produced while parsing.
        This is not currently possible because Tf warnings can't
        be captured with TfMark. See BUG: 127366 */
-    if(err) {
+    if(sev > UT_ERROR_NONE) {
         std::string errStr;
         if(!SdfPath::IsValidPathString(str, &errStr)) {
-            UT_WorkBuffer buf;
-            buf.sprintf("Failed parsing path <%s>: %s",
-                        pathStr.c_str(), errStr.c_str());
-            err->AddError(buf.buffer());
+            GUSD_GENERIC_ERR(sev).Msg("Failed parsing path '%s': %s",
+                                      pathStr.c_str(), errStr.c_str());
         }
     } else {
         if(!SdfPath::IsValidPathString(str))
@@ -100,25 +109,43 @@ CreateSdfPath(const UT_StringRef& pathStr,
 }
 
 
+const SdfPath&
+GetDefaultPrimIdentifier()
+{
+    static const SdfPath path("defaultPrim");
+    return path;
+}
+
+
 UsdPrim
 GetPrimFromStage(const UsdStagePtr& stage,
                  const SdfPath& path,
-                 GusdUT_ErrorContext* err)
+                 UT_ErrorSeverity sev)
 {
     UT_ASSERT_P(stage);
 
-    if(!path.IsEmpty()) {
+    if (!path.IsEmpty()) {
         UsdPrim prim = stage->GetPrimAtPath(path);
-        if(!prim && err) {
-            UT_WorkBuffer buf;
-            buf.sprintf("Prim <%s> not found in stage @%s@.",
-                        path.GetText(),
+        if (!prim) {
+            // Check if we wanted the default prim.
+            if (path == GetDefaultPrimIdentifier()) {
+                prim = stage->GetDefaultPrim();
+                if (!prim) {
+                    GUSD_GENERIC_ERR(sev).Msg(
+                        "Could not retrieve a valid defaultPrim from "
+                        "stage @%s@.",
                         stage->GetRootLayer()->GetIdentifier().c_str());
-            err->AddError(buf.buffer());
+                }
+            } else {
+                GUSD_GENERIC_ERR(sev).Msg(
+                    "Prim '%s' not found in stage @%s@.",
+                    path.GetText(),
+                    stage->GetRootLayer()->GetIdentifier().c_str());
+            }
         }
         return prim;
     }
-    // Get an emptry prim for an empty path (not an error!)
+    // Get an empty prim for an empty path (not an error!)
     return UsdPrim();
 }
 
@@ -128,7 +155,7 @@ GetPrimAndVariantPathsFromPathList(
     const char* str,
     UT_Array<SdfPath>& primPaths,
     UT_Array<SdfPath>& variants,
-    GusdUT_ErrorContext* err)
+    UT_ErrorSeverity sev)
 {
     UT_WorkArgs args;
     UT_String tokenStr(str);
@@ -140,7 +167,7 @@ GetPrimAndVariantPathsFromPathList(
         UT_String arg(args(i));
         if(arg.isstring()) {
             SdfPath path;
-            if(CreateSdfPath(arg, path, err)) {
+            if(CreateSdfPath(arg, path, sev)) {
                 SdfPath primPath, variantsPath;
                 ExtractPrimPathAndVariants(path, primPath, variantsPath);
                 primPaths.append(primPath);
@@ -177,10 +204,47 @@ ExtractPrimPathAndVariants(const SdfPath& path,
             variants = SdfPath();
         }
     } else {
-        primPath = variants = SdfPath();
+        if (path == GetDefaultPrimIdentifier()) {
+            primPath = path;
+        } else {
+            primPath = SdfPath();
+        }
+        variants = SdfPath();
     }
 }
 
+void
+SetModelingVariant(
+    const UsdStageRefPtr& stage,
+    const UsdPrim& prim,
+    const TfToken& variant)
+{
+    if (prim) {
+        UsdVariantSets variantSets = prim.GetVariantSets();
+        if (variantSets.HasVariantSet(kModelingVariantToken)) {
+            UsdVariantSet modelingVariantSet =
+                prim.GetVariantSet(kModelingVariantToken);
+            if (modelingVariantSet.HasAuthoredVariant(variant)) {
+                modelingVariantSet.SetVariantSelection(variant);
+            }
+        }
+    }
+}
+
+void
+ClearModelingVariant(const UsdStageRefPtr& stage, const UsdPrim& prim)
+{
+    if (prim) {
+        UsdVariantSets variantSets = prim.GetVariantSets();
+        if (variantSets.HasVariantSet(kModelingVariantToken)) {
+            UsdVariantSet modelingVariantSet =
+                prim.GetVariantSet(kModelingVariantToken);
+            if (modelingVariantSet.HasAuthoredVariantSelection()) {
+                modelingVariantSet.ClearVariantSelection();
+            }
+        }
+    }
+}
 
 bool
 SortPrims(UT_Array<UsdPrim>& prims)

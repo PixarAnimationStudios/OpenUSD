@@ -61,6 +61,11 @@ UsdLuxListAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 }
 
 
+/* virtual */
+UsdSchemaType UsdLuxListAPI::_GetSchemaType() const {
+    return UsdLuxListAPI::schemaType;
+}
+
 /* static */
 UsdLuxListAPI
 UsdLuxListAPI::Apply(const UsdPrim &prim)

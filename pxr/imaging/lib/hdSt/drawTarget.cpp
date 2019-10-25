@@ -25,10 +25,10 @@
 #include "pxr/imaging/hdSt/drawTarget.h"
 #include "pxr/imaging/hdSt/drawTargetAttachmentDescArray.h"
 #include "pxr/imaging/hdSt/drawTargetTextureResource.h"
-#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
-#include "pxr/imaging/hdSt/glConversions.h"
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/sprim.h"
@@ -50,7 +50,7 @@ HdStDrawTarget::HdStDrawTarget(SdfPath const &id)
     , _enabled(true)
     , _cameraId()
     , _resolution(512, 512)
-    , _collections()
+    , _collection()
     , _renderPassState()
     , _drawTargetContext()
     , _drawTarget()
@@ -73,7 +73,7 @@ HdStDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
 
     TF_UNUSED(renderParam);
 
-    SdfPath const &id = GetID();
+    SdfPath const &id = GetId();
     if (!TF_VERIFY(sceneDelegate != nullptr)) {
         return;
     }
@@ -122,7 +122,7 @@ HdStDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
 
     if (bits & DirtyDTDepthClearValue) {
         VtValue vtValue =
-                   sceneDelegate->Get(id, HdStDrawTargetTokens->depthClearValue);
+                  sceneDelegate->Get(id, HdStDrawTargetTokens->depthClearValue);
 
         float depthClearValue = vtValue.GetWithDefault<float>(1.0f);
 
@@ -131,50 +131,29 @@ HdStDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
 
     if (bits & DirtyDTCollection) {
         VtValue vtValue =
-                        sceneDelegate->Get(id, HdStDrawTargetTokens->collection);
+                       sceneDelegate->Get(id, HdStDrawTargetTokens->collection);
 
-        const HdRprimCollectionVector &collections =
-                vtValue.GetWithDefault<HdRprimCollectionVector>(
-                                                     HdRprimCollectionVector());
+        HdRprimCollection collection = vtValue.Get<HdRprimCollection>();
 
-        _collections = collections;
-        size_t newColSize     = collections.size();
-        for (size_t colNum = 0; colNum < newColSize; ++colNum) {
-            TfToken const &currentName = _collections[colNum].GetName();
+        TfToken const &collectionName = collection.GetName();
 
-            HdChangeTracker& changeTracker =
-                             sceneDelegate->GetRenderIndex().GetChangeTracker();
+        HdChangeTracker& changeTracker =
+                         sceneDelegate->GetRenderIndex().GetChangeTracker();
 
-            changeTracker.MarkCollectionDirty(currentName);
+        if (_collection.GetName() != collectionName) {
+            // Make sure collection has been added to change tracker
+            changeTracker.AddCollection(collectionName);
         }
 
-        if (newColSize > 0)
-        {
-            // XXX:  Draw Targets currently only support a single collection right
-            // now as each collect requires it's own render pass and then
-            // it becomes a complex matrix of values as we have race needing to
-            // know the number of attachments and number of render passes to
-            // handle clear color and keeping that all in sync
-            if (_collections.size() != 1) {
-                TF_CODING_ERROR("Draw targets currently supports only a "
-                                "single collection");
-            }
+        // Always mark collection dirty even if added - as we don't
+        // know if this is a re-add.
+        changeTracker.MarkCollectionDirty(collectionName);
 
-            _renderPassState.SetRprimCollection(_collections[0]);
-        }
+        _renderPassState.SetRprimCollection(collection);
+        _collection = collection;
     }
 
     *dirtyBits = Clean;
-}
-
-// virtual
-VtValue
-HdStDrawTarget::Get(TfToken const &token) const
-{
-    // nothing here, since right now all draw target tasks accessing
-    // HdStDrawTarget perform downcast from Sprim To HdStDrawTarget
-    // and use the C++ interface (e.g. IsEnabled(), GetRenderPassState()).
-    return VtValue();
 }
 
 // virtual
@@ -207,7 +186,7 @@ HdStDrawTarget::WriteToFile(const HdRenderIndex &renderIndex,
         return false;
     }
 
-    const HdStCamera *camera = _GetCamera(renderIndex);
+    const HdCamera *camera = _GetCamera(renderIndex);
     if (camera == nullptr) {
         TF_WARN("Missing camera\n");
         return false;
@@ -215,10 +194,8 @@ HdStDrawTarget::WriteToFile(const HdRenderIndex &renderIndex,
 
 
     // embed camera matrices into metadata
-    VtValue viewMatrixVt  = camera->Get(HdShaderTokens->worldToViewMatrix);
-    VtValue projMatrixVt  = camera->Get(HdShaderTokens->projectionMatrix);
-    const GfMatrix4d &viewMatrix = viewMatrixVt.Get<GfMatrix4d>();
-    const GfMatrix4d &projMatrix = projMatrixVt.Get<GfMatrix4d>();
+    const GfMatrix4d &viewMatrix = camera->GetViewMatrix();
+    const GfMatrix4d &projMatrix = camera->GetProjectionMatrix();
 
     // Make sure all draw target operations happen on the same
     // context.
@@ -246,8 +223,8 @@ HdStDrawTarget::_SetAttachments(
     }
 
     // Clear out old texture resources for the attachments.
-    _colorTextureResources.clear();
-    _depthTextureResource.reset();
+    _colorTextureResourceHandles.clear();
+    _depthTextureResourceHandle.reset();
 
 
     // Make sure all draw target operations happen on the same
@@ -269,7 +246,7 @@ HdStDrawTarget::_SetAttachments(
     // XXX: Discard old draw target and create a new one
     // This is necessary because a we have to clone the draw target into each
     // gl context.
-    // XXX : All draw targets in Hydra are currently trying to create MSAA
+    // XXX : All draw targets in Storm are currently trying to create MSAA
     // buffers (as long as they are allowed by the environment variables) 
     // because we need alpha to coverage for transparent object.
     _drawTarget = GlfDrawTarget::New(_resolution, /* MSAA */ true);
@@ -279,7 +256,7 @@ HdStDrawTarget::_SetAttachments(
 
     _drawTarget->Bind();
 
-    _colorTextureResources.resize(numAttachments);
+    _colorTextureResourceHandles.resize(numAttachments);
 
     for (size_t attachmentNum = 0; attachmentNum < numAttachments;
                                                               ++attachmentNum) {
@@ -300,13 +277,14 @@ HdStDrawTarget::_SetAttachments(
 
         _renderPassState.SetColorClearValue(attachmentNum, desc.GetClearColor());
 
-        _RegisterTextureResource(sceneDelegate,
+        _RegisterTextureResourceHandle(sceneDelegate,
                                  name,
-                                 &_colorTextureResources[attachmentNum]);
+                                 &_colorTextureResourceHandles[attachmentNum]);
 
         HdSt_DrawTargetTextureResource *resource =
                 static_cast<HdSt_DrawTargetTextureResource *>(
-                                 _colorTextureResources[attachmentNum].get());
+                    _colorTextureResourceHandles[attachmentNum]->
+                        GetTextureResource().get());
 
         resource->SetAttachment(_drawTarget->GetAttachment(name));
         resource->SetSampler(desc.GetWrapS(),
@@ -324,14 +302,14 @@ HdStDrawTarget::_SetAttachments(
                                GL_FLOAT,
                                GL_DEPTH_COMPONENT32F);
 
-    _RegisterTextureResource(sceneDelegate,
+    _RegisterTextureResourceHandle(sceneDelegate,
                              DEPTH_ATTACHMENT_NAME,
-                             &_depthTextureResource);
+                             &_depthTextureResourceHandle);
 
 
     HdSt_DrawTargetTextureResource *depthResource =
-                    static_cast<HdSt_DrawTargetTextureResource *>(
-                                                  _depthTextureResource.get());
+                static_cast<HdSt_DrawTargetTextureResource *>(
+                    _depthTextureResourceHandle->GetTextureResource().get());
 
     depthResource->SetAttachment(_drawTarget->GetAttachment(DEPTH_ATTACHMENT_NAME));
     depthResource->SetSampler(attachments.GetDepthWrapS(),
@@ -340,6 +318,8 @@ HdStDrawTarget::_SetAttachments(
                               attachments.GetDepthMagFilter());
    _drawTarget->Unbind();
 
+   _renderPassState.SetDepthPriority(attachments.GetDepthPriority());
+
    GlfGLContext::MakeCurrent(oldContext);
 
    // The texture bindings have changed so increment the version
@@ -347,10 +327,10 @@ HdStDrawTarget::_SetAttachments(
 }
 
 
-const HdStCamera *
+const HdCamera *
 HdStDrawTarget::_GetCamera(const HdRenderIndex &renderIndex) const
 {
-    return static_cast<const HdStCamera *>(
+    return static_cast<const HdCamera *>(
             renderIndex.GetSprim(HdPrimTypeTokens->camera, _cameraId));
 }
 
@@ -376,56 +356,86 @@ HdStDrawTarget::_ResizeDrawTarget()
 }
 
 void
-HdStDrawTarget::_RegisterTextureResource(
-                                        HdSceneDelegate *sceneDelegate,
-                                        const std::string &name,
-                                        HdTextureResourceSharedPtr *resourcePtr)
+HdStDrawTarget::_RegisterTextureResourceHandle(
+        HdSceneDelegate *sceneDelegate,
+        const std::string &name,
+        HdStTextureResourceHandleSharedPtr *handlePtr)
 {
     HF_MALLOC_TAG_FUNCTION();
 
-    HdResourceRegistrySharedPtr const& resourceRegistry =
-        sceneDelegate->GetRenderIndex().GetResourceRegistry();
+    HdStResourceRegistrySharedPtr const& resourceRegistry =
+         boost::static_pointer_cast<HdStResourceRegistry>(
+             sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
     // Create Path for the texture resource
-    SdfPath resourcePath = GetID().AppendProperty(TfToken(name));
+    SdfPath resourcePath = GetId().AppendProperty(TfToken(name));
 
     // Ask delegate for an ID for this tex
     HdTextureResource::ID texID =
                               sceneDelegate->GetTextureResourceID(resourcePath);
 
+    // Use render index to convert local texture id into global
+    // texture key.  This is because the instance registry is shared by
+    // multiple render indexes, but the scene delegate generated
+    // texture id's are only unique to the scene.  (i.e. two draw
+    // targets at the same path in the scene are likely to produce the
+    // same texture id, even though they refer to textures on different
+    // render indexes).
+    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+    HdResourceRegistry::TextureKey texKey = renderIndex.GetTextureKey(texID);
+
+
     // Add to resource registry
-    HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> texInstance;
+    HdInstance<HdResourceRegistry::TextureKey,
+               HdTextureResourceSharedPtr> texInstance;
     std::unique_lock<std::mutex> regLock =
-                  resourceRegistry->RegisterTextureResource(texID, &texInstance);
+                  resourceRegistry->RegisterTextureResource(texKey,
+                                                            &texInstance);
 
     if (texInstance.IsFirstInstance()) {
         texInstance.SetValue(HdTextureResourceSharedPtr(
                                          new HdSt_DrawTargetTextureResource()));
     }
 
-    *resourcePtr =  texInstance.GetValue();
+    HdStTextureResourceSharedPtr texResource =
+        boost::static_pointer_cast<HdStTextureResource>(texInstance.GetValue());
+
+    HdResourceRegistry::TextureKey handleKey =
+        HdStTextureResourceHandle::GetHandleKey(&renderIndex, resourcePath);
+    HdInstance<HdResourceRegistry::TextureKey,
+               HdStTextureResourceHandleSharedPtr> handleInstance;
+
+    std::unique_lock<std::mutex> regLock2 =
+    resourceRegistry->RegisterTextureResourceHandle(handleKey,
+                                                    &handleInstance);
+    if (handleInstance.IsFirstInstance()) {
+        handleInstance.SetValue(HdStTextureResourceHandleSharedPtr(   
+                                          new HdStTextureResourceHandle(
+                                              texResource)));
+    } else {
+        handleInstance.GetValue()->SetTextureResource(texResource);
+    }
+    *handlePtr = handleInstance.GetValue();
 }
 
 
 /*static*/
 void
-HdStDrawTarget::GetDrawTargets(HdSceneDelegate *sceneDelegate,
+HdStDrawTarget::GetDrawTargets(HdRenderIndex* renderIndex,
                                HdStDrawTargetPtrConstVector *drawTargets)
 {
     HF_MALLOC_TAG_FUNCTION();
 
-    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
-
     SdfPathVector sprimPaths;
 
-    if (renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->drawTarget)) {
-        sprimPaths = renderIndex.GetSprimSubtree(HdPrimTypeTokens->drawTarget,
+    if (renderIndex->IsSprimTypeSupported(HdPrimTypeTokens->drawTarget)) {
+        sprimPaths = renderIndex->GetSprimSubtree(HdPrimTypeTokens->drawTarget,
             SdfPath::AbsoluteRootPath());
     }
 
     TF_FOR_ALL (it, sprimPaths) {
         HdSprim const *drawTarget =
-                        renderIndex.GetSprim(HdPrimTypeTokens->drawTarget, *it);
+                        renderIndex->GetSprim(HdPrimTypeTokens->drawTarget, *it);
 
         if (drawTarget != nullptr)
         {

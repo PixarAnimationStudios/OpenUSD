@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/lightingShader.h"
-#include "pxr/imaging/glf/glslfx.h"
+#include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/base/gf/vec4d.h"
 
@@ -71,7 +71,7 @@ public:
                            GfMatrix4d const &projectionMatrix);
 
 private:
-    boost::scoped_ptr<GlfGLSLFX> _glslfx;
+    boost::scoped_ptr<HioGlslfx> _glslfx;
 };
 
 

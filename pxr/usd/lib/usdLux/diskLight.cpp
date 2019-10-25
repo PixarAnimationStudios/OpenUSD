@@ -74,6 +74,11 @@ UsdLuxDiskLight::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdLuxDiskLight::_GetSchemaType() const {
+    return UsdLuxDiskLight::schemaType;
+}
+
 /* static */
 const TfType &
 UsdLuxDiskLight::_GetStaticTfType()

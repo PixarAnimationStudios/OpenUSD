@@ -49,6 +49,8 @@ public:
     SdfTupleDimensions() : size(0) {}
     SdfTupleDimensions(size_t m) : size(1) { d[0] = m; }
     SdfTupleDimensions(size_t m, size_t n) : size(2) { d[0] = m; d[1] = n; }
+    SdfTupleDimensions(const size_t (&s)[2])
+        : size(2) { d[0] = s[0]; d[1] = s[1]; }
 
     bool operator==(const SdfTupleDimensions& rhs) const;
 
@@ -96,6 +98,13 @@ public:
     /// Returns the \c TfType of the type.
     SDF_API
     const TfType& GetType() const;
+
+    /// Returns the C++ type name for this type.  This may not be the same
+    /// as the type name returned by GetType().GetTypeName(), since that
+    /// method may have had additional transformations applied for
+    /// readability.
+    SDF_API
+    const std::string& GetCPPTypeName() const;
 
     /// Returns the type's role.
     SDF_API
@@ -154,19 +163,11 @@ public:
     SDF_API
     size_t GetHash() const;
 
-#if !defined(doxygen)
-    class _Untyped;
-    typedef Sdf_ValueTypeImpl const* const (SdfValueTypeName::*_UnspecifiedBoolType);
-#endif
-
-    /// Returns \c false iff this is a valid type.
-    SDF_API
-    bool operator!() const;
-
-    /// Returns \c true iff this is a valid type.
-    operator _UnspecifiedBoolType() const
+    /// Explicit bool conversion operator. Converts to \c true if this is a 
+    /// valid, non-empty type, \c false otherwise.
+    explicit operator bool() const
     {
-        return (!*this) ? 0 : &SdfValueTypeName::_impl;
+        return !_IsEmpty();
     }
 
     /// Returns all aliases of the type name as tokens.  These should not
@@ -180,6 +181,9 @@ private:
 
     SDF_API
     explicit SdfValueTypeName(const Sdf_ValueTypeImpl*);
+
+    SDF_API
+    bool _IsEmpty() const;
 
 private:
     const Sdf_ValueTypeImpl* _impl;

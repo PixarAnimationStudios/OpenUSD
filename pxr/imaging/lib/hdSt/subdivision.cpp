@@ -26,6 +26,8 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
+#include <opensubdiv/version.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -54,6 +56,18 @@ HdSt_Subdivision::RefinesToBSplinePatches(TfToken const &scheme)
     return false;
 }
 
+bool
+HdSt_Subdivision::RefinesToBoxSplineTrianglePatches(TfToken const &scheme)
+{
+#if OPENSUBDIV_VERSION_NUMBER >= 30400
+    // v3.4.0 added support for limit surface patches for loop meshes
+    if (scheme == PxOsdOpenSubdivTokens->loop) {
+        return true;
+    }
+#endif
+    return false;
+}
+
 // ---------------------------------------------------------------------------
 HdSt_OsdTopologyComputation::HdSt_OsdTopologyComputation(
     HdSt_MeshTopology *topology, int level, SdfPath const &id)
@@ -63,7 +77,7 @@ HdSt_OsdTopologyComputation::HdSt_OsdTopologyComputation(
 
 /*virtual*/
 void
-HdSt_OsdTopologyComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_OsdTopologyComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     // nothing
 }
@@ -78,27 +92,33 @@ HdSt_OsdIndexComputation::HdSt_OsdIndexComputation(
 
 /*virtual*/
 void
-HdSt_OsdIndexComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_OsdIndexComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
-    if (HdSt_Subdivision::RefinesToTriangles(_topology->GetScheme())) {
+    if (_topology->RefinesToBSplinePatches()) {
+        // bi-cubic bspline patches
+        specs->emplace_back(HdTokens->indices,
+                            HdTupleType {HdTypeInt32, 16});
+        // 3+1 (includes sharpness)
+        specs->emplace_back(HdTokens->primitiveParam,
+                            HdTupleType {HdTypeInt32Vec4, 1});
+        specs->emplace_back(HdTokens->edgeIndices,
+                            HdTupleType {HdTypeInt32Vec4, 1});
+    } else if (_topology->RefinesToBoxSplineTrianglePatches()) {
+        // quartic box spline triangle patches
+        specs->emplace_back(HdTokens->indices,
+                            HdTupleType {HdTypeInt32, 12});
+        // 3+1 (includes sharpness)
+        specs->emplace_back(HdTokens->primitiveParam,
+                            HdTupleType {HdTypeInt32Vec4, 1});
+        specs->emplace_back(HdTokens->edgeIndices,
+                            HdTupleType {HdTypeInt32Vec4, 1});
+    } else if (HdSt_Subdivision::RefinesToTriangles(_topology->GetScheme())) {
         // triangles (loop)
         specs->emplace_back(HdTokens->indices,
                             HdTupleType {HdTypeInt32Vec3, 1});
         specs->emplace_back(HdTokens->primitiveParam,
                             HdTupleType {HdTypeInt32Vec3, 1});
         // vec3 will suffice, but this unifies it for all the cases
-        specs->emplace_back(HdTokens->edgeIndices,
-                            HdTupleType {HdTypeInt32Vec4, 1});
-    } else if (_topology->RefinesToBSplinePatches()) {
-        // bi-cubic bspline patches
-        // Note that we don't have an HdType corresponding to
-        // Hd_BSplinePatchIndex; instead, we use its underlying
-        // in-memory representation as an array of 16 int32 values.
-        specs->emplace_back(HdTokens->indices,
-                            HdTupleType {HdTypeInt32, 16});
-        // 3+1 (includes sharpness)
-        specs->emplace_back(HdTokens->primitiveParam,
-                            HdTupleType {HdTypeInt32Vec4, 1});
         specs->emplace_back(HdTokens->edgeIndices,
                             HdTupleType {HdTypeInt32Vec4, 1});
     } else {
@@ -142,12 +162,12 @@ HdSt_OsdRefineComputationGPU::HdSt_OsdRefineComputationGPU(
                                                     HdSt_MeshTopology *topology,
                                                     TfToken const &name,
                                                     HdType type)
-    : _topology(topology), _name(name), _type(type)
+    : _topology(topology), _name(name)
 {
 }
 
 void
-HdSt_OsdRefineComputationGPU::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_OsdRefineComputationGPU::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     // nothing
     //

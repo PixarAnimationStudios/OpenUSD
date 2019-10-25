@@ -164,7 +164,8 @@ class TestUsdPrimRange(unittest.TestCase):
 
             stage = Usd.Stage.CreateInMemory("scene."+fmt)
             foo = stage.DefinePrim("/Foo")
-            foo.SetPayload(payloadStage.GetRootLayer(), "/Payload")
+            foo.GetPayloads().AddPayload(
+                payloadStage.GetRootLayer().identifier, "/Payload")
 
             self.assertEqual(stage.GetLoadSet(), ["/Foo"])
 
@@ -250,8 +251,7 @@ class TestUsdPrimRange(unittest.TestCase):
             # Traverse all.
             x = list(s.TraverseAll())
             self.assertEqual(x, [foo, faz, bar, baz])
-            x = list(Usd.PrimRange.Stage(
-                s, predicate=Usd._PrimFlagsPredicate.Tautology()))
+            x = list(Usd.PrimRange.Stage(s, predicate=Usd.PrimAllPrimsPredicate))
             self.assertEqual(x, [foo, faz, bar, baz])
 
             # Traverse undefined prims.

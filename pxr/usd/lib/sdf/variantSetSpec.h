@@ -61,8 +61,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class SdfVariantSetSpec : public SdfSpec
 {
-    SDF_DECLARE_SPEC(SdfSchema, SdfSpecTypeVariantSet,
-                     SdfVariantSetSpec, SdfSpec);
+    SDF_DECLARE_SPEC(SdfVariantSetSpec, SdfSpec);
 
 public:
     ///

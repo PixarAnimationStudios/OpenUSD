@@ -1,0 +1,6 @@
+#usda 1.0
+
+def "Ref_1"
+{
+    string attr_in_subdir = "attr_in_subdir"
+}

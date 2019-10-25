@@ -1,0 +1,3 @@
+combined.usdc
+0/simpleMesh.usdz
+0/simpleMaterial.usdz

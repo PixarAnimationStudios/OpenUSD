@@ -62,11 +62,16 @@ pxr_plugin(usdAbc
 )
 
 pxr_test_scripts(
-    testenv/testUsdAbcAlembicData.py       
-    testenv/testUsdAbcBugs.py              
-    testenv/testUsdAbcCamera.py  
-    testenv/testUsdAbcConversionSubdiv.py 
-    testenv/testUsdAbcInstancing.py 
+    testenv/testUsdAbcAlembicData.py
+    testenv/testUsdAbcBugs.py
+    testenv/testUsdAbcCamera.py
+    testenv/testUsdAbcConversionBasisCurves.py
+    testenv/testUsdAbcConversionSubdiv.py
+    testenv/testUsdAbcFaceset.py
+    testenv/testUsdAbcIndexedProperties.py
+    testenv/testUsdAbcInstancing.py
+    testenv/testUsdAbcUvReadWrite.py
+    testenv/testUsdAbcUvReadWrite_OldEncoding.py
 )
 
 pxr_install_test_dir(
@@ -85,8 +90,23 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdAbcConversionBasisCurves
+    DEST testUsdAbcConversionBasisCurves
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdAbcConversionSubdiv
     DEST testUsdAbcConversionSubdiv
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdAbcFaceset
+    DEST testUsdAbcFaceset
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdAbcIndexedProperties
+    DEST testUsdAbcIndexedProperties
 )
 
 pxr_install_test_dir(
@@ -107,6 +127,16 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdAbcInstancingPinst
     DEST testUsdAbcInstancingPinst
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdAbcUvReadWrite
+    DEST testUsdAbcUvReadWrite
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdAbcUvReadWrite_OldEncoding
+    DEST testUsdAbcUvReadWrite_OldEncoding
 )
 
 pxr_register_test(testUsdAbcAlembicData
@@ -133,6 +163,27 @@ pxr_register_test(testUsdAbcConversionSubdiv
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcConversionSubdiv"
     EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdAbcConversionBasisCurves
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcConversionBasisCurves"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdAbcFaceset
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcFaceset"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdAbcIndexedProperties
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcIndexedProperties"
+    DIFF_COMPARE indexedTextureCoordinates.def.usda
+    EXPECTED_RETURN_CODE 0
+    ENV
+        USD_ABC_TESTSUFFIX=def
 )
 
 pxr_register_test(testUsdAbcInstancing
@@ -172,4 +223,22 @@ pxr_register_test(testUsdAbcInstancingNinst
     ENV
         USD_ABC_TESTSUFFIX=ninst
         USD_ABC_DISABLE_INSTANCING=1
+)
+
+pxr_register_test(testUsdAbcUvReadWrite
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcUvReadWrite"
+    EXPECTED_RETURN_CODE 0
+    ENV
+        USD_ABC_WRITE_UV_AS_ST_TEXCOORD2FARRAY=1
+        USD_ABC_READ_FLOAT2ARRAY_ST_PRIMVARS=0
+)
+
+pxr_register_test(testUsdAbcUvReadWrite_OldEncoding
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcUvReadWrite_OldEncoding"
+    EXPECTED_RETURN_CODE 0
+    ENV
+        USD_ABC_WRITE_UV_AS_ST_TEXCOORD2FARRAY=0
+        USD_ABC_READ_FLOAT2ARRAY_ST_PRIMVARS=1
 )

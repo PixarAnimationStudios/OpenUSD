@@ -29,7 +29,7 @@ if (shouldExecKindOp) {
 }
 
 // either of the ops above can choose to not have children traversed.
-// they can also have specific childen skipped.
+// they can also have specific children skipped.
 if (traverseChildren) {
     for (child in children) {
         if (shouldVisit(child)) {

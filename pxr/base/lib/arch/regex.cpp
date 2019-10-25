@@ -44,7 +44,7 @@ _Replace(std::string&& s, const std::string& from, const std::string& to)
         s.replace(pos, from.size(), to);
         pos += to.size();
     }
-    return s;
+    return std::move(s);
 }
 
 std::string

@@ -14,15 +14,21 @@ pxr_library(ar
 
     PUBLIC_HEADERS
         api.h
+        asset.h
         assetInfo.h
         defaultResolver.h
         defaultResolverContext.h
+        filesystemAsset.h
+        definePackageResolver.h
+        defineResolver.h
+        defineResolverContext.h
+        packageResolver.h
+        packageUtils.h
         resolver.h
         resolverContext.h
         resolverContextBinder.h
         resolverScopedCache.h
-        defineResolver.h
-        defineResolverContext.h
+        threadLocalScopedCache.h
 
     PYTHON_PUBLIC_HEADERS
         pyResolverContext.h
@@ -31,7 +37,11 @@ pxr_library(ar
         debugCodes.h
 
     CPPFILES
+        asset.cpp
         assetInfo.cpp
+        filesystemAsset.cpp
+        packageResolver.cpp
+        packageUtils.cpp
         resolver.cpp
         resolverContext.cpp
         resolverContextBinder.cpp
@@ -48,6 +58,7 @@ pxr_library(ar
         module.cpp
         wrapDefaultResolver.cpp
         wrapDefaultResolverContext.cpp
+        wrapPackageUtils.cpp
         wrapResolver.cpp
         wrapResolverContext.cpp
         wrapResolverContextBinder.cpp
@@ -61,10 +72,45 @@ pxr_library(ar
 )
 
 pxr_test_scripts(
+    testenv/testArAdvancedAPI.py
     testenv/testArDefaultResolver.py
+    testenv/testArPackageUtils.py
+)
+
+pxr_build_test_shared_lib(TestArAdvancedAPI
+    CREATE_FRAMEWORK
+    INSTALL_PREFIX ArPlugins
+    LIBRARIES
+        tf
+        ar
+    CPPFILES
+        testenv/TestArAdvancedAPI_plugin.cpp
+) 
+
+pxr_build_test(testArDefaultResolver_CPP
+    LIBRARIES
+        arch
+        tf
+        ar
+    CPPFILES
+        testenv/testArDefaultResolver.cpp
+) 
+
+pxr_register_test(testArAdvancedAPI
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArAdvancedAPI"
 )
 
 pxr_register_test(testArDefaultResolver
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArDefaultResolver"
+)
+
+pxr_register_test(testArDefaultResolver_CPP
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArDefaultResolver_CPP"
+)
+
+pxr_register_test(testArPackageUtils
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArPackageUtils"
 )

@@ -44,6 +44,24 @@ _GetShaderPath(char const * shader)
     return TfToken(path);
 }
 
+static TfToken
+_GetTexturePath(char const * texture)
+{
+    static PlugPluginPtr plugin = PLUG_THIS_PLUGIN;
+    const std::string path =
+        PlugFindPluginResource(plugin, TfStringCatPaths("textures", texture));
+    TF_VERIFY(!path.empty(), "Could not find texture: %s\n", texture);
+
+    return TfToken(path);
+}
+
+TfToken
+HdxPackageFullscreenShader()
+{
+    static TfToken shader = _GetShaderPath("fullscreen.glslfx");
+    return shader;
+}
+
 TfToken
 HdxPackageRenderPassShader()
 {
@@ -55,6 +73,13 @@ TfToken
 HdxPackageRenderPassIdShader()
 {
     static TfToken shader = _GetShaderPath("renderPassIdShader.glslfx");
+    return shader;
+}
+
+TfToken
+HdxPackageRenderPassPickingShader()
+{
+    static TfToken shader = _GetShaderPath("renderPassPickingShader.glslfx");
     return shader;
 }
 
@@ -73,5 +98,39 @@ HdxPackageSimpleLightingShader()
     return simpleLightingShader;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+TfToken
+HdxPackageColorCorrectionShader()
+{
+    static TfToken shader = _GetShaderPath("colorCorrection.glslfx");
+    return shader;
+}
 
+TfToken
+HdxPackageRenderPassOitShader()
+{
+    static TfToken shader = _GetShaderPath("renderPassOitShader.glslfx");
+    return shader;
+}
+
+TfToken
+HdxPackageRenderPassOitOpaqueShader()
+{
+    static TfToken shader = _GetShaderPath("renderPassOitOpaqueShader.glslfx");
+    return shader;
+}
+
+TfToken
+HdxPackageOitResolveImageShader()
+{
+    static TfToken shader = _GetShaderPath("oitResolveImageShader.glslfx");
+    return shader;
+}
+
+TfToken
+HdxPackageDefaultDomeLightTexture()
+{
+    static TfToken domeLightTexture = _GetTexturePath("StinsonBeach.exr");
+    return domeLightTexture;
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

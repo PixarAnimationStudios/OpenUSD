@@ -26,6 +26,7 @@
 
 #include "pxr/base/tf/stopwatch.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/stringUtils.h"
 
 #include <atomic>
 #include <ctime>

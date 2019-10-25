@@ -74,6 +74,11 @@ UsdLuxCylinderLight::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdLuxCylinderLight::_GetSchemaType() const {
+    return UsdLuxCylinderLight::schemaType;
+}
+
 /* static */
 const TfType &
 UsdLuxCylinderLight::_GetStaticTfType()
@@ -98,6 +103,23 @@ UsdLuxCylinderLight::_GetTfType() const
 }
 
 UsdAttribute
+UsdLuxCylinderLight::GetLengthAttr() const
+{
+    return GetPrim().GetAttribute(UsdLuxTokens->length);
+}
+
+UsdAttribute
+UsdLuxCylinderLight::CreateLengthAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->length,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdLuxCylinderLight::GetRadiusAttr() const
 {
     return GetPrim().GetAttribute(UsdLuxTokens->radius);
@@ -108,6 +130,23 @@ UsdLuxCylinderLight::CreateRadiusAttr(VtValue const &defaultValue, bool writeSpa
 {
     return UsdSchemaBase::_CreateAttr(UsdLuxTokens->radius,
                        SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdLuxCylinderLight::GetTreatAsLineAttr() const
+{
+    return GetPrim().GetAttribute(UsdLuxTokens->treatAsLine);
+}
+
+UsdAttribute
+UsdLuxCylinderLight::CreateTreatAsLineAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->treatAsLine,
+                       SdfValueTypeNames->Bool,
                        /* custom = */ false,
                        SdfVariabilityVarying,
                        defaultValue,
@@ -131,7 +170,9 @@ const TfTokenVector&
 UsdLuxCylinderLight::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
+        UsdLuxTokens->length,
         UsdLuxTokens->radius,
+        UsdLuxTokens->treatAsLine,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

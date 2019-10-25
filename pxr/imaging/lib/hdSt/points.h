@@ -54,33 +54,37 @@ public:
     virtual ~HdStPoints();
 
     HDST_API
-    virtual void Sync(HdSceneDelegate* delegate,
-                      HdRenderParam*   renderParam,
-                      HdDirtyBits*     dirtyBits,
-                      TfToken const&   reprName,
-                      bool             forcedRepr) override;
+    virtual void Sync(HdSceneDelegate *delegate,
+                      HdRenderParam   *renderParam,
+                      HdDirtyBits     *dirtyBits,
+                      TfToken const   &reprToken) override;
+    HDST_API
+    virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
 
 protected:
-    virtual void _UpdateRepr(HdSceneDelegate *sceneDelegate,
-                             TfToken const &reprName,
-                             HdDirtyBits *dirtyBitsState) override;
-
-    void _PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
-                                 HdStDrawItem *drawItem,
-                                 HdDirtyBits *dirtyBitsState);
-
-    virtual HdDirtyBits _GetInitialDirtyBits() const override;
-    virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
-    virtual void _InitRepr(TfToken const &reprName,
+    HDST_API
+    virtual void _InitRepr(TfToken const &reprToken,
                            HdDirtyBits *dirtyBits) override;
 
+    HDST_API
+    virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
+
+    void _UpdateRepr(HdSceneDelegate *sceneDelegate,
+                     TfToken const &reprToken,
+                     HdDirtyBits *dirtyBitsState);
+
+    void _PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
+                                 HdStDrawItem *drawItem,
+                                 HdDirtyBits *dirtyBitsState);
 
 private:
     HdReprSharedPtr _smoothHullRepr;
 
     enum DrawingCoord {
-        InstancePrimVar = HdDrawingCoord::CustomSlotsBegin
+        InstancePrimvar = HdDrawingCoord::CustomSlotsBegin
     };
+
+    const TfToken& _GetMaterialTag(const HdRenderIndex &renderIndex) const;
 
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                          HdStDrawItem *drawItem,

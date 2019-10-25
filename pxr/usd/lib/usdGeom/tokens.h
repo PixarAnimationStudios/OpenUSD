@@ -58,10 +58,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Use UsdGeomTokens like so:
 ///
 /// \code
-///     gprim.GetMyTokenValuedAttr().Set(UsdGeomTokens->all);
+///     gprim.GetMyTokenValuedAttr().Set(UsdGeomTokens->accelerations);
 /// \endcode
 struct UsdGeomTokensType {
     USDGEOM_API UsdGeomTokensType();
+    /// \brief "accelerations"
+    /// 
+    /// UsdGeomPointInstancer, UsdGeomPointBased
+    const TfToken accelerations;
     /// \brief "all"
     /// 
     /// Possible value for UsdGeomMesh::GetFaceVaryingLinearInterpolationAttr()
@@ -126,10 +130,6 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomNurbsPatch::GetVFormAttr(), Possible value for UsdGeomNurbsPatch::GetUFormAttr()
     const TfToken closed;
-    /// \brief "collection"
-    /// 
-    /// This is the namespace prefix used by  UsdGeomCollectionAPI for authoring collections.
-    const TfToken collection;
     /// \brief "constant"
     /// 
     /// Possible value for UsdGeomPrimvar::SetInterpolation. Default value for UsdGeomPrimvar::GetInterpolation. One value remains constant over the entire surface primitive.
@@ -214,13 +214,9 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomSubset::GetElementTypeAttr(), Default value for UsdGeomSubset::GetElementTypeAttr()
     const TfToken face;
-    /// \brief "faceSet"
-    /// 
-    /// <Deprecated> This is the namespace prefix used by  UsdGeomFaceSetAPI for authoring faceSet attributes.
-    const TfToken faceSet;
     /// \brief "faceVarying"
     /// 
-    /// Possible value for UsdGeomPrimVar::SetInterpolation. For polygons and subdivision surfaces, four values are interpolated over each face of the mesh. Bilinear interpolation  is used for interpolation between the four values.
+    /// Possible value for UsdGeomPrimvar::SetInterpolation. For polygons and subdivision surfaces, four values are interpolated over each face of the mesh. Bilinear interpolation  is used for interpolation between the four values.
     const TfToken faceVarying;
     /// \brief "faceVaryingLinearInterpolation"
     /// 
@@ -330,6 +326,10 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomMesh::GetSubdivisionSchemeAttr()
     const TfToken loop;
+    /// \brief "metersPerUnit"
+    /// 
+    /// Stage-level metadata that encodes a scene's linear unit of measure as meters per encoded unit.
+    const TfToken metersPerUnit;
     /// \brief "model:applyDrawMode"
     /// 
     /// UsdGeomModelAPI
@@ -430,6 +430,10 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomCamera::GetProjectionAttr(), Default value for UsdGeomCamera::GetProjectionAttr()
     const TfToken perspective;
+    /// \brief "pinned"
+    /// 
+    /// Possible value for UsdGeomBasisCurves::GetWrapAttr()
+    const TfToken pinned;
     /// \brief "points"
     /// 
     /// UsdGeomPointBased

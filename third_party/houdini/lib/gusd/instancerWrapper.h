@@ -25,12 +25,13 @@
 #define __GUSD_INSTANCERWRAPPER_H__
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usdGeom/pointInstancer.h"
+
 #include "primWrapper.h"
 
 #include <UT/UT_Map.h>
 #include <UT/UT_StringHolder.h>
 
-#include <pxr/usd/usdGeom/pointInstancer.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -58,8 +59,6 @@ public:
            const GusdContext& ctxt,
            const GT_PrimitiveHandle& sourcePrim ) override;
 
-    virtual bool getUniqueID(int64& id) const override;
-    
     virtual const char* className() const override;
 
     virtual void enlargeBounds(UT_BoundingBox boxes[], int nsegments) const override;

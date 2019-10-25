@@ -21,13 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/primWriterContext.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-PxrUsdMayaPrimWriterContext::PxrUsdMayaPrimWriterContext(
+UsdMayaPrimWriterContext::UsdMayaPrimWriterContext(
         const UsdTimeCode& timeCode,
         const SdfPath& authorPath, 
         const UsdStageRefPtr& stage) : 
@@ -35,63 +34,70 @@ PxrUsdMayaPrimWriterContext::PxrUsdMayaPrimWriterContext(
     _authorPath(authorPath),
     _stage(stage),
     _exportsGprims(false),
-    _exportsReferences(false),
     _pruneChildren(false)
 {
 }
 
 const UsdTimeCode&
-PxrUsdMayaPrimWriterContext::GetTimeCode() const 
+UsdMayaPrimWriterContext::GetTimeCode() const 
 {
     return _timeCode;
 }
 
 const SdfPath&
-PxrUsdMayaPrimWriterContext::GetAuthorPath() const
+UsdMayaPrimWriterContext::GetAuthorPath() const
 {
     return _authorPath;
 }
 
 UsdStageRefPtr
-PxrUsdMayaPrimWriterContext::GetUsdStage() const 
+UsdMayaPrimWriterContext::GetUsdStage() const 
 {
     return _stage;
 }
 
 bool 
-PxrUsdMayaPrimWriterContext::GetExportsGprims() const
+UsdMayaPrimWriterContext::GetExportsGprims() const
 {
     return _exportsGprims;
 }
-    
-bool
-PxrUsdMayaPrimWriterContext::GetExportsReferences() const
-{
-    return _exportsReferences;
-}
-    
+
 void
-PxrUsdMayaPrimWriterContext::SetExportsGprims(bool exportsGprims)
+UsdMayaPrimWriterContext::SetExportsGprims(bool exportsGprims)
 {
     _exportsGprims = exportsGprims;
 }
 
 void
-PxrUsdMayaPrimWriterContext::SetExportsReferences(bool exportsReferences)
-{
-    _exportsReferences = exportsReferences;
-}
-
-void
-PxrUsdMayaPrimWriterContext::SetPruneChildren(bool pruneChildren)
+UsdMayaPrimWriterContext::SetPruneChildren(bool pruneChildren)
 {
     _pruneChildren = pruneChildren;
 }
 
 bool
-PxrUsdMayaPrimWriterContext::GetPruneChildren() const
+UsdMayaPrimWriterContext::GetPruneChildren() const
 {
     return _pruneChildren;
+}
+
+const SdfPathVector&
+UsdMayaPrimWriterContext::GetModelPaths() const
+{
+    return _modelPaths;
+}
+
+void
+UsdMayaPrimWriterContext::SetModelPaths(
+    const SdfPathVector& modelPaths)
+{
+    _modelPaths = modelPaths;
+}
+
+void
+UsdMayaPrimWriterContext::SetModelPaths(
+    SdfPathVector&& modelPaths)
+{
+    _modelPaths = std::move(modelPaths);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "usdMaya/UserTaggedAttribute.h"
+#include "usdMaya/userTaggedAttribute.h"
 
 #include "usdMaya/util.h"
 
@@ -32,57 +32,62 @@
 #include "pxr/base/tf/token.h"
 
 #include <maya/MDagPath.h>
+#include <maya/MObject.h>
+#include <maya/MStatus.h>
 #include <maya/MString.h>
 
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 
 #include <string>
+#include <vector>
+
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+
 namespace {
 
-static std::vector<PxrUsdMayaUserTaggedAttribute>
-_GetUserTaggedAttributesForNode(
-        const std::string& dagString)
+static
+std::vector<UsdMayaUserTaggedAttribute>
+_GetUserTaggedAttributesForNode(const std::string& nodeName)
 {
-    std::vector<PxrUsdMayaUserTaggedAttribute> wrappedAttrs;
+    MObject mayaNode;
+    MStatus status = UsdMayaUtil::GetMObjectByName(nodeName, mayaNode);
+    CHECK_MSTATUS_AND_RETURN(
+        status,
+        std::vector<UsdMayaUserTaggedAttribute>());
 
-    MDagPath dagPath;
-    MStatus status = PxrUsdMayaUtil::GetDagPathByName(dagString,
-                                                      dagPath);
-    CHECK_MSTATUS_AND_RETURN(status, wrappedAttrs);
-
-    return PxrUsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
-            dagPath);
+    return UsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(mayaNode);
 }
 
-} // anonymous namespace 
+} // anonymous namespace
 
-void wrapUserTaggedAttribute() {
+
+void wrapUserTaggedAttribute()
+{
     using namespace boost::python;
 
     TF_PY_WRAP_PUBLIC_TOKENS("UserTaggedAttributeTokens",
-            PxrUsdMayaUserTaggedAttributeTokens,
+            UsdMayaUserTaggedAttributeTokens,
             PXRUSDMAYA_ATTR_TOKENS);
 
     TfPyContainerConversions::from_python_sequence<
             std::set<unsigned int>,
             TfPyContainerConversions::set_policy >();
 
-    class_<PxrUsdMayaUserTaggedAttribute>("UserTaggedAttribute",
+    class_<UsdMayaUserTaggedAttribute>("UserTaggedAttribute",
                 "Attribute tagged for USD export",
                 no_init)
-            .def("GetMayaName", &PxrUsdMayaUserTaggedAttribute::GetMayaName)
-            .def("GetUsdName", &PxrUsdMayaUserTaggedAttribute::GetUsdName)
-            .def("GetUsdType", &PxrUsdMayaUserTaggedAttribute::GetUsdType)
+            .def("GetMayaName", &UsdMayaUserTaggedAttribute::GetMayaName)
+            .def("GetUsdName", &UsdMayaUserTaggedAttribute::GetUsdName)
+            .def("GetUsdType", &UsdMayaUserTaggedAttribute::GetUsdType)
             .def("GetUsdInterpolation",
-                 &PxrUsdMayaUserTaggedAttribute::GetUsdInterpolation)
+                 &UsdMayaUserTaggedAttribute::GetUsdInterpolation)
             .def("GetTranslateMayaDoubleToUsdSinglePrecision",
-                 &PxrUsdMayaUserTaggedAttribute::GetTranslateMayaDoubleToUsdSinglePrecision)
+                 &UsdMayaUserTaggedAttribute::GetTranslateMayaDoubleToUsdSinglePrecision)
             .def("GetFallbackTranslateMayaDoubleToUsdSinglePrecision",
-                 &PxrUsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision)
+                 &UsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision)
             .staticmethod("GetFallbackTranslateMayaDoubleToUsdSinglePrecision")
             .def("GetUserTaggedAttributesForNode",
                  _GetUserTaggedAttributesForNode,

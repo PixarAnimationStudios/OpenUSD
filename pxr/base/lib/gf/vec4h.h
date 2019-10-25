@@ -69,30 +69,26 @@ public:
     static const size_t dimension = 4;
 
     /// Default constructor does no initialization.
-    GfVec4h() {}
-
-    // Copy constructor.
-    // TODO Remove this, use compiler-generated.
-    GfVec4h(const GfVec4h &other) {
-        *this = other;
-    }
+    GfVec4h() = default;
 
     /// Initialize all elements to a single value.
-    explicit GfVec4h(GfHalf value) {
-        _data[0] = value;
-        _data[1] = value;
-        _data[2] = value;
-        _data[3] = value;
+    constexpr explicit GfVec4h(GfHalf value)
+        : _data{ value, value, value, value }
+    {
     }
 
     /// Initialize all elements with explicit arguments.
-    GfVec4h(GfHalf s0, GfHalf s1, GfHalf s2, GfHalf s3) {
-        Set(s0, s1, s2, s3);
+    constexpr GfVec4h(GfHalf s0, GfHalf s1, GfHalf s2, GfHalf s3)
+        : _data{ s0, s1, s2, s3 }
+    {
     }
 
     /// Construct with pointer to values.
     template <class Scl>
-    explicit GfVec4h(Scl const *p) { Set(p); }
+    constexpr explicit GfVec4h(Scl const *p)
+        : _data{ p[0], p[1], p[2], p[3] }
+    {
+    }
 
     /// Construct from GfVec4d.
     explicit GfVec4h(class GfVec4d const &other);
@@ -388,7 +384,7 @@ GfGetLength(GfVec4h const &v)
 inline GfHalf
 GfNormalize(GfVec4h *v, GfHalf eps = 0.001)
 {
-    return v->Normalize();
+    return v->Normalize(eps);
 }
 
 /// Returns a normalized (unit-length) vector with the same direction as \p v.

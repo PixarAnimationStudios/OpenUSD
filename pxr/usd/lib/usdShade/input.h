@@ -27,6 +27,8 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdShade/api.h"
 #include "pxr/usd/usd/attribute.h"
+
+#include "pxr/usd/ndr/declare.h"
 #include "pxr/usd/usdShade/utils.h"
 
 #include <vector>
@@ -137,18 +139,75 @@ public:
 
     /// @}
 
+    /// \name API to author and query an Input's sdrMetadata
+    /// 
+    /// This section provides API for authoring and querying shader registry
+    /// metadata on an Input. When the owning shader prim is providing a shader 
+    /// definition, the authored "sdrMetadata" dictionary value provides 
+    /// metadata needed to populate the Input correctly in the shader registry. 
+    /// 
+    /// We expect the keys in sdrMetadata to correspond to the keys 
+    /// in \ref SdrPropertyMetadata. However, this is not strictly enforced by
+    /// the API. The only allowed value type in the "sdrMetadata" dictionary is 
+    /// a std::string since it needs to be converted into a NdrTokenMap, which 
+    /// Sdr will parse using the utilities available in \ref SdrMetadataHelpers.
+    /// 
+    /// @{
+
+    /// Returns this Input's composed "sdrMetadata" dictionary as a 
+    /// NdrTokenMap.
+    USDSHADE_API
+    NdrTokenMap GetSdrMetadata() const;
+    
+    /// Returns the value corresponding to \p key in the composed 
+    /// <b>sdrMetadata</b> dictionary.
+    USDSHADE_API
+    std::string GetSdrMetadataByKey(const TfToken &key) const;
+        
+    /// Authors the given \p sdrMetadata value on this Input at the current 
+    /// EditTarget.
+    USDSHADE_API
+    void SetSdrMetadata(const NdrTokenMap &sdrMetadata) const;
+
+    /// Sets the value corresponding to \p key to the given string \p value, in 
+    /// the Input's "sdrMetadata" dictionary at the current EditTarget.
+    USDSHADE_API
+    void SetSdrMetadataByKey(
+        const TfToken &key, 
+        const std::string &value) const;
+
+    /// Returns true if the Input has a non-empty composed "sdrMetadata" 
+    /// dictionary value.
+    USDSHADE_API
+    bool HasSdrMetadata() const;
+
+    /// Returns true if there is a value corresponding to the given \p key in 
+    /// the composed "sdrMetadata" dictionary.
+    USDSHADE_API
+    bool HasSdrMetadataByKey(const TfToken &key) const;
+
+    /// Clears any "sdrMetadata" value authored on the Input in the current 
+    /// EditTarget.
+    USDSHADE_API
+    void ClearSdrMetadata() const;
+
+    /// Clears the entry corresponding to the given \p key in the 
+    /// "sdrMetadata" dictionary authored in the current EditTarget.
+    USDSHADE_API
+    void ClearSdrMetadataByKey(const TfToken &key) const;
+
+    /// @}
+
     // ---------------------------------------------------------------
     /// \name UsdAttribute API
     // ---------------------------------------------------------------
 
     /// @{
 
-    typedef const UsdAttribute UsdShadeInput::*_UnspecifiedBoolType;
-
     /// Speculative constructor that will produce a valid UsdShadeInput when
     /// \p attr already represents a shade Input, and produces an \em invalid 
-    /// UsdShadeInput otherwise (i.e. \ref UsdShadeInput_bool_type 
-    /// "unspecified-bool-type()" will return false).
+    /// UsdShadeInput otherwise (i.e. the explicit bool conversion operator will 
+    /// return false).
     USDSHADE_API
     explicit UsdShadeInput(const UsdAttribute &attr);
 
@@ -204,7 +263,7 @@ public:
 
     /// Return true if this Input is valid for querying and authoring
     /// values and metadata, which is identically equivalent to IsDefined().
-    explicit operator bool() { 
+    explicit operator bool() const { 
         return IsDefined(); 
     }
 
@@ -278,15 +337,16 @@ public:
     /// 
     /// \p source is an output parameter which will be set to the source 
     /// connectable prim.
-    /// \p sourceName will be set to the name of the source shading property, 
-    /// which could be the parameter name, output name or the interface 
-    /// attribute name. This does not include the namespace prefix associated 
-    /// with the source type. 
-    /// \p sourceType will have the value type of the source shading property.
+    /// \p sourceName will be set to the name of the source shading attribute, 
+    /// which may be an input or an output, as specified by \p sourceType
+    /// \p sourceType will have the type of the source shading property, i.e.
+    /// whether it is an \c Input or \c Output
     ///
     /// \return 
-    /// \c true if this Input is connected to a valid, defined source.
-    /// \c false if this Input is not connected to a single, valid source.
+    /// \c true if the shading property is connected to a valid, defined source
+    /// attribute.
+    /// \c false if the shading property is not connected to a single, defined 
+    /// source attribute. 
     /// 
     /// \note The python wrapping for this method returns a 
     /// (source, sourceName, sourceType) tuple if the parameter is connected, 
@@ -381,6 +441,40 @@ public:
     /// 
     USDSHADE_API
     bool ClearConnectability() const;
+
+    /// @}
+
+    // -------------------------------------------------------------------------
+    /// \name Connected Value API
+    // -------------------------------------------------------------------------
+    /// @{
+
+    /// \brief Find what is connected to an Input recursively
+    ///
+    /// When tracing connections within networks that contain UsdShadeNodeGraph
+    /// nodes, the actual output or value at the end of an input might be
+    /// multiple connections removed. The method below resolves this across
+    /// multiple physical connections.
+    ///
+    /// An UsdInput is getting its value from one of these sources:
+    /// \li If the input is not connected the UsdAttribute for this input is
+    /// returned, but only if it has an authored value. The input attribute
+    /// itself carries the value for this input.
+    /// \li If the input is connected we follow the connection(s) until we reach
+    /// a valid output of a UsdShadeShader node or if we reach a valid
+    /// UsdShadeInput attribute of a UsdShadeNodeGraph or UsdShadeMaterial.
+    /// Note that we return the last attribute along the connection chain that
+    /// has an authored value, which might not be the last attribute in the
+    /// chain itself.
+    ///
+    /// This function returns a valid UsdAttribute if a valid output was
+    /// encountered or an input with an authored value. Otherwise an invalid
+    /// UsdAttribute is returned. If a valid \p attrType pointer is provided,
+    /// the method also returns what type of attribute it found, which is
+    /// <b>Invalid</b>, <b>Input</b> or <b>Output</b>.
+    USDSHADE_API
+    UsdAttribute GetValueProducingAttribute(
+        UsdShadeAttributeType* attrType) const;
 
     /// @}
 

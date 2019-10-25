@@ -61,7 +61,7 @@ IsClose(double a, double b, double epsilon=1e-3)
 // XXX: We use a rather large epsilon to account for
 // systems with very large sleep times. We still expect
 // variance to be within 10% (see IsClose above) for details.
-constexpr double EPSILON = 1e-1;
+static constexpr double EPSILON = 1e-1;
 
 static bool
 Test_TfStopwatch()

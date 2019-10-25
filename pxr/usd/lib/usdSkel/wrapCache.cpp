@@ -31,7 +31,9 @@
 
 #include "pxr/usd/usd/prim.h"
 
+#include "pxr/usd/usdSkel/animation.h"
 #include "pxr/usd/usdSkel/root.h"
+#include "pxr/usd/usdSkel/skeleton.h"
 #include "pxr/usd/usdSkel/skeletonQuery.h"
 #include "pxr/usd/usdSkel/skinningQuery.h"
 
@@ -47,17 +49,24 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 
-list
-_ComputeSkinnedPrims(const UsdSkelCache& self, const UsdPrim& prim)
-{
-    std::vector<std::pair<UsdPrim,UsdSkelSkinningQuery> > skinnedPrims;
-    self.ComputeSkinnedPrims(prim, &skinnedPrims);
+std::vector<UsdSkelBinding>
+_ComputeSkelBindings(const UsdSkelCache& self,  
+                     const UsdSkelRoot& skelRoot)
+{   
+    std::vector<UsdSkelBinding> bindings;
+    self.ComputeSkelBindings(skelRoot, &bindings);
+    return bindings;
+}
 
-    list res;
-    for(const auto& pair : skinnedPrims) {
-        res.append(boost::python::make_tuple(pair.first, pair.second));
-    }
-    return res;
+
+UsdSkelBinding
+_ComputeSkelBinding(const UsdSkelCache& self,
+                    const UsdSkelRoot& skelRoot,
+                    const UsdSkelSkeleton& skel)
+{
+    UsdSkelBinding binding;
+    self.ComputeSkelBinding(skelRoot, skel, &binding);
+    return binding;
 }
 
 
@@ -75,12 +84,21 @@ void wrapUsdSkelCache()
 
         .def("GetSkelQuery", &This::GetSkelQuery)
         
-        .def("GetInheritedSkelQuery", &This::GetInheritedSkelQuery)
-
         .def("GetSkinningQuery", &This::GetSkinningQuery)
 
-        .def("GetAnimQuery", &This::GetAnimQuery, (arg("prim")))
+        .def("GetAnimQuery",
+             (UsdSkelAnimQuery (UsdSkelCache::*)(const UsdPrim&) const)
+             &This::GetAnimQuery,
+             (arg("prim")))
 
-        .def("ComputeSkinnedPrims", &_ComputeSkinnedPrims)
+        .def("GetAnimQuery",
+             (UsdSkelAnimQuery (UsdSkelCache::*)(const UsdSkelAnimation&) const)
+             &This::GetAnimQuery,
+             (arg("anim")))
+
+        .def("ComputeSkelBindings", &_ComputeSkelBindings,
+             return_value_policy<TfPySequenceToList>())
+
+        .def("ComputeSkelBinding", &_ComputeSkelBinding)
         ;
 }            

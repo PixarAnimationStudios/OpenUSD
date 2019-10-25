@@ -27,14 +27,13 @@
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
 
-#include "pxr/base/vt/pyDictionaryUtils.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyUtils.h"
 
 #include "pxr/base/tf/iterator.h"
 
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include <boost/python/dict.hpp>
 #include <boost/python/def.hpp>

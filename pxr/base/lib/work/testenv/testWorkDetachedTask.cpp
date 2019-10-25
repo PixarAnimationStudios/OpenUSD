@@ -47,6 +47,24 @@ struct _Tester {
 
 void swap(_Tester &l, _Tester &r) { std::swap(l.dtor, r.dtor); }
 
+// This type provides a swap overload along with copy operations that cause
+// test failure.  We want to ensure that we are able to perform swap-based
+// async destruction without accidental copies.
+struct _SwapOnlyTester {
+    _SwapOnlyTester() = default;
+    _SwapOnlyTester(_SwapOnlyTester const &) {
+        TF_FATAL_ERROR("Unexpectedly invoked copy constructor");
+    }
+    _SwapOnlyTester &operator=(_SwapOnlyTester const &) {
+        TF_FATAL_ERROR("Unexpectedly invoked copy assignment");
+        return *this;
+    }
+    ~_SwapOnlyTester() { if (dtor) { *dtor = true; } }
+    std::atomic_bool *dtor = nullptr;
+};
+
+void swap(_SwapOnlyTester &l, _SwapOnlyTester &r) { std::swap(l.dtor, r.dtor); }
+
 int
 main()
 {
@@ -75,6 +93,15 @@ main()
     ranDtor = false;
     t.dtor = &ranDtor;
     WorkMoveDestroyAsync(t);
+    while (!ranDtor) { /* spin */ std::this_thread::yield(); }
+    printf("OK\n");
+
+    _SwapOnlyTester s;
+
+    printf("Test WorkSwapDestroyAsync (swap-only type)... ");
+    ranDtor = false;
+    s.dtor = &ranDtor;
+    WorkSwapDestroyAsync(s);
     while (!ranDtor) { /* spin */ std::this_thread::yield(); }
     printf("OK\n");
 

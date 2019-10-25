@@ -211,6 +211,18 @@ UsdGeomPrimvar::_GetIndicesAttr(bool create) const
     }
 }
 
+UsdAttribute 
+UsdGeomPrimvar::GetIndicesAttr() const
+{
+    return _GetIndicesAttr(/*create*/ false);
+}
+
+UsdAttribute
+UsdGeomPrimvar::CreateIndicesAttr() const
+{
+    return _GetIndicesAttr(/*create*/ true);
+}
+
 bool 
 UsdGeomPrimvar::SetIndices(const VtIntArray &indices, 
                            UsdTimeCode time) const
@@ -255,11 +267,7 @@ UsdGeomPrimvar::GetIndices(VtIntArray *indices,
 bool 
 UsdGeomPrimvar::IsIndexed() const
 {
-    UsdResolveInfo valueSource = _GetIndicesAttr(/*create*/ false).
-        GetResolveInfo(UsdTimeCode::EarliestTime());
-
-    return (valueSource.HasAuthoredValueOpinion() && 
-            !valueSource.ValueIsBlocked());
+    return _GetIndicesAttr(/*create*/ false).HasAuthoredValue();
 }
 
 bool 
@@ -279,18 +287,21 @@ UsdGeomPrimvar::GetUnauthoredValuesIndex() const
     return unauthoredValuesIndex;    
 }
 
+// Helper function to evaluate the flattened array value of a primvar given
+// the attribute value and the indices array.
 template <typename ArrayType>
 bool 
 UsdGeomPrimvar::_ComputeFlattenedArray(const VtValue &attrVal,
-                                        const VtIntArray &indices,
-                                        VtValue *value) const
+                       const VtIntArray &indices,
+                       VtValue *value, 
+                       std::string *errorString)
 {
     if (!attrVal.IsHolding<ArrayType>())
         return false;
 
     ArrayType result;
     if (_ComputeFlattenedHelper(attrVal.UncheckedGet<ArrayType>(), indices, 
-                                &result)) {
+                                &result, errorString)) {
         *value = VtValue::Take(result);
     }
 
@@ -319,31 +330,59 @@ UsdGeomPrimvar::ComputeFlattened(VtValue *value, UsdTimeCode time) const
         return false;
     }
 
+    std::string errStr;
+    bool res = ComputeFlattened(value, attrVal, indices, &errStr);
+    if (!errStr.empty()) {
+        TF_WARN("For primvar %s: %s", 
+                UsdDescribe(_attr).c_str(), errStr.c_str());
+    }
+    return res;
+}
+
+bool 
+UsdGeomPrimvar::ComputeFlattened(
+    VtValue *value, 
+    const VtValue &attrVal,
+    const VtIntArray &indices,
+    std::string *errStr)
+{
+    // If the primvar attr value is not an array simply return the 
+    // attribute value.
+    if (!attrVal.IsArrayValued()) {
+        *value = attrVal;
+        return true;
+    }
+
     // Handle all known supported array value types.
     bool foundSupportedType =
-        _ComputeFlattenedArray<VtVec2fArray>(attrVal, indices, value)       || 
-        _ComputeFlattenedArray<VtVec2dArray>(attrVal, indices, value)       || 
-        _ComputeFlattenedArray<VtVec2iArray>(attrVal, indices, value)       || 
-        _ComputeFlattenedArray<VtVec2hArray>(attrVal, indices, value)       || 
-        _ComputeFlattenedArray<VtVec3fArray>(attrVal, indices, value)       || 
-        _ComputeFlattenedArray<VtVec3dArray>(attrVal, indices, value)       || 
-        _ComputeFlattenedArray<VtVec3iArray>(attrVal, indices, value)       || 
-        _ComputeFlattenedArray<VtVec3hArray>(attrVal, indices, value)       || 
-        _ComputeFlattenedArray<VtVec4fArray>(attrVal, indices, value)       || 
-        _ComputeFlattenedArray<VtVec4dArray>(attrVal, indices, value)       || 
-        _ComputeFlattenedArray<VtVec4iArray>(attrVal, indices, value)       || 
-        _ComputeFlattenedArray<VtVec4hArray>(attrVal, indices, value)       ||
-        _ComputeFlattenedArray<VtMatrix3dArray>(attrVal, indices, value)    || 
-        _ComputeFlattenedArray<VtMatrix4dArray>(attrVal, indices, value)    ||
-        _ComputeFlattenedArray<VtStringArray>(attrVal, indices, value)      ||
-        _ComputeFlattenedArray<VtDoubleArray>(attrVal, indices, value)      ||
-        _ComputeFlattenedArray<VtIntArray>(attrVal, indices, value)         ||
-        _ComputeFlattenedArray<VtFloatArray>(attrVal, indices, value)       ||
-        _ComputeFlattenedArray<VtHalfArray>(attrVal, indices, value);
+        _ComputeFlattenedArray<VtVec2fArray>(attrVal, indices, value, errStr) ||
+        _ComputeFlattenedArray<VtVec2dArray>(attrVal, indices, value, errStr) ||
+        _ComputeFlattenedArray<VtVec2iArray>(attrVal, indices, value, errStr) ||
+        _ComputeFlattenedArray<VtVec2hArray>(attrVal, indices, value, errStr) ||
+        _ComputeFlattenedArray<VtVec3fArray>(attrVal, indices, value, errStr) ||
+        _ComputeFlattenedArray<VtVec3dArray>(attrVal, indices, value, errStr) ||
+        _ComputeFlattenedArray<VtVec3iArray>(attrVal, indices, value, errStr) ||
+        _ComputeFlattenedArray<VtVec3hArray>(attrVal, indices, value, errStr) ||
+        _ComputeFlattenedArray<VtVec4fArray>(attrVal, indices, value, errStr) ||
+        _ComputeFlattenedArray<VtVec4dArray>(attrVal, indices, value, errStr) ||
+        _ComputeFlattenedArray<VtVec4iArray>(attrVal, indices, value, errStr) ||
+        _ComputeFlattenedArray<VtVec4hArray>(attrVal, indices, value, errStr) ||
+        _ComputeFlattenedArray<VtMatrix3dArray>(attrVal, indices, value, 
+                errStr)    ||
+        _ComputeFlattenedArray<VtMatrix4dArray>(attrVal, indices, value, 
+                errStr)    ||
+        _ComputeFlattenedArray<VtStringArray>(attrVal, indices, value, errStr)||
+        _ComputeFlattenedArray<VtDoubleArray>(attrVal, indices, value, errStr)||
+        _ComputeFlattenedArray<VtIntArray>(attrVal, indices, value, errStr)   ||
+        _ComputeFlattenedArray<VtUIntArray>(attrVal, indices, value, errStr)  ||
+        _ComputeFlattenedArray<VtFloatArray>(attrVal, indices, value, errStr) ||
+        _ComputeFlattenedArray<VtHalfArray>(attrVal, indices, value, errStr);
 
-    if (!foundSupportedType) {
-        TF_WARN("Unsupported indexed primvar value type %s.", 
-                attrVal.GetTypeName().c_str());
+    if (!foundSupportedType && errStr) {
+        std::string thisErr = TfStringPrintf(
+            "Unsupported indexed primvar value type %s.", 
+            attrVal.GetTypeName().c_str());
+        *errStr = errStr->empty() ? thisErr : *errStr + "\n" + thisErr;
     }
 
     return !value->IsEmpty();
@@ -538,12 +577,11 @@ TfToken
 UsdGeomPrimvar::GetPrimvarName() const 
 { 
     std::string const & fullName = _attr.GetName().GetString();
-    static const size_t primvarsPrefixLen = _tokens->primvarsPrefix.GetString().size();
-    
-    if (TfStringStartsWith(fullName, _tokens->primvarsPrefix))
-        return TfToken(fullName.substr(primvarsPrefixLen));
-    else
-        return TfToken(); 
+
+    std::pair<std::string, bool> res =
+        SdfPath::StripPrefixNamespace(fullName, _tokens->primvarsPrefix);
+
+    return res.second ? TfToken(res.first) : TfToken();
 }
 
 bool

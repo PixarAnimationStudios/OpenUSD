@@ -60,5 +60,19 @@ HdStDrawItem::SetMaterialShaderFromRenderIndex(
     SetMaterialShader(shaderCode);
 }
 
+/*virtual*/
+size_t
+HdStDrawItem::_GetBufferArraysHash() const
+{
+    if (const HdStShaderCodeSharedPtr& shader = GetMaterialShader()) {
+        if (const HdBufferArrayRangeSharedPtr& shaderBAR =
+            shader->GetShaderData()) {
+            return shaderBAR->GetVersion();
+        }
+    }
+    
+    return 0;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

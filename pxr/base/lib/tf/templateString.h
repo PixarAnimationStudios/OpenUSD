@@ -75,7 +75,7 @@ public:
     /// Returns the template source string supplied to the constructor.
     const std::string& GetTemplate() const { return _data->template_; }
 
-    /// Performs the template subsitution, returning a new string. The mapping
+    /// Performs the template substitution, returning a new string. The mapping
     /// contains keys which match the placeholders in the template. If a
     /// placeholder is found for which no mapping is present, a coding error is
     /// raised.

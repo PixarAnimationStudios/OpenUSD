@@ -58,7 +58,7 @@ ArchGetEnv(const std::string &name)
 {
 #if defined(ARCH_OS_WINDOWS)
     const DWORD size = GetEnvironmentVariable(name.c_str(), nullptr, 0);
-    if (size != 0 && size != ERROR_ENVVAR_NOT_FOUND) {
+    if (size != 0) {
         std::unique_ptr<char[]> buffer(new char[size]);
         GetEnvironmentVariable(name.c_str(), buffer.get(), size);
         return std::string(buffer.get());

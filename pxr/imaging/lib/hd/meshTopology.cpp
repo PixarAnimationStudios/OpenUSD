@@ -36,6 +36,8 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_OPENSUBDIV3_ADAPTIVE, 0,
 HdMeshTopology::HdMeshTopology()
  : HdTopology()
  , _topology()
+ , _invisiblePoints()
+ , _invisibleFaces()
  , _refineLevel(0)
  , _numPoints()
 {
@@ -47,6 +49,8 @@ HdMeshTopology::HdMeshTopology(const HdMeshTopology &src,
  : HdTopology(src)
  , _topology(src.GetPxOsdMeshTopology())
  , _geomSubsets(src._geomSubsets)
+ , _invisiblePoints(src._invisiblePoints)
+ , _invisibleFaces(src._invisibleFaces)
  , _refineLevel(refineLevel)
  , _numPoints(src._numPoints)
 {
@@ -57,6 +61,8 @@ HdMeshTopology::HdMeshTopology(const PxOsdMeshTopology &topo,
                                int refineLevel /* = 0 */)
  : HdTopology()
  , _topology(topo)
+ , _invisiblePoints()
+ , _invisibleFaces()
  , _refineLevel(refineLevel)
  , _numPoints()
 {
@@ -75,6 +81,8 @@ HdMeshTopology::HdMeshTopology(const TfToken &scheme,
              orientation,
              faceVertexCounts,
              faceVertexIndices)
+ , _invisiblePoints()
+ , _invisibleFaces()
  , _refineLevel(refineLevel)
  , _numPoints()
 {
@@ -95,6 +103,8 @@ HdMeshTopology::HdMeshTopology(const TfToken &scheme,
              faceVertexCounts,
              faceVertexIndices,
              holeIndices)
+ , _invisiblePoints()
+ , _invisibleFaces()
  , _refineLevel(refineLevel)
  , _numPoints()
 {
@@ -113,10 +123,12 @@ HdMeshTopology::operator =(const HdMeshTopology &copy)
 {
     HdTopology::operator =(copy);
 
-    _topology    = copy.GetPxOsdMeshTopology();
-    _geomSubsets = copy._geomSubsets;
-    _refineLevel = copy._refineLevel;
-    _numPoints = copy._numPoints;
+    _topology        = copy.GetPxOsdMeshTopology();
+    _geomSubsets     = copy._geomSubsets;
+    _refineLevel     = copy._refineLevel;
+    _numPoints       = copy._numPoints;
+    _invisiblePoints = copy._invisiblePoints;
+    _invisibleFaces  = copy._invisibleFaces;
 
     return *this;
 }
@@ -133,7 +145,11 @@ HdMeshTopology::operator==(HdMeshTopology const &other) const {
     HD_TRACE_FUNCTION();
 
     return (_topology == other._topology)
-        && (_geomSubsets == other._geomSubsets);
+        && (_geomSubsets == other._geomSubsets)
+        && (_invisiblePoints == other._invisiblePoints)
+        && (_invisibleFaces == other._invisibleFaces)
+        && (_refineLevel == other._refineLevel);
+    // Don't compare _numPoints, since it is derived from _topology.
 }
 
 int
@@ -188,6 +204,9 @@ HdMeshTopology::ComputeHash() const
         hash = ArchHash64((const char*)subset.indices.cdata(),
                           sizeof(int)*subset.indices.size(), hash);
     }
+    // Note: We don't hash topological visibility, because it is treated as a
+    // per-mesh opinion, and hence, shouldn't break topology sharing.
+
     // Do not hash _numPoints since it is derived from _topology.
     return hash;
 }

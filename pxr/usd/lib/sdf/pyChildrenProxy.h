@@ -245,9 +245,7 @@ private:
 
     mapped_type _GetItemByIndex(int index) const
     {
-        if (index >= _proxy.size()) {
-            TfPyThrowIndexError("list index out of range");
-        }
+        index = TfPyNormalizeIndex(index, _proxy.size(), true /*throwError*/);
         return _GetView()[index];
     }
 
@@ -295,9 +293,11 @@ private:
 
     void _InsertItemByIndex(int index, const mapped_type& value)
     {
-        if (index < -1 || index > static_cast<int>(_proxy.size())) {
-            TfPyThrowIndexError("list index out of range");
-        }
+        // Note that -1 below means to insert at end for the _proxy._Insert API.
+        index = index < (int)_proxy.size() 
+            ? TfPyNormalizeIndex(index, _proxy.size(), false /*throwError*/)
+            : -1;
+
         _proxy._Insert(value, index);
     }
 

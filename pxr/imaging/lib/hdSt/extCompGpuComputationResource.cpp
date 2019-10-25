@@ -48,16 +48,16 @@ static size_t _Hash(HdBufferSpecVector const &specs) {
 HdStExtCompGpuComputationResource::HdStExtCompGpuComputationResource(
         HdBufferSpecVector const &outputBufferSpecs,
         HdStComputeShaderSharedPtr const &kernel,
+        HdBufferArrayRangeSharedPtrVector const &inputs,
         HdStResourceRegistrySharedPtr const &registry)
  : _outputBufferSpecs(outputBufferSpecs)
  , _kernel(kernel)
  , _registry(registry)
  , _shaderSourceHash()
- , _internalRange()
+ , _inputs(inputs)
  , _computeProgram()
  , _resourceBinder()
 {
-    
 }
 
 bool
@@ -67,8 +67,10 @@ HdStExtCompGpuComputationResource::Resolve()
     // sources already and Resolved. They go to an internal buffer range that
     // was allocated in AllocateInternalRange
     HdBufferSpecVector inputBufferSpecs;
-    if (_internalRange) {
-        _internalRange->AddBufferSpecs(&inputBufferSpecs);
+    for (HdBufferArrayRangeSharedPtr const & input: _inputs) {
+        if (TF_VERIFY(input)) {
+            input->GetBufferSpecs(&inputBufferSpecs);
+        }
     }
     // Once we know the names and sizes of all outputs and inputs and the kernel
     // to use we can codeGen the compute shader to use.
@@ -144,50 +146,6 @@ HdStExtCompGpuComputationResource::Resolve()
         _shaderSourceHash = shaderSourceHash;
     }
     return true;
-}
-
-void
-HdStExtCompGpuComputationResource::AllocateInternalRange(
-    HdBufferSourceVector const &inputs,
-    HdBufferSourceVector *internalSources,
-    HdResourceRegistrySharedPtr const &resourceRegistry)
-{
-    TF_VERIFY(internalSources);
-
-    for (HdBufferSourceSharedPtr const &source: inputs) {
-        bool inPlace = false;
-        TF_FOR_ALL(it, _outputBufferSpecs) {
-            if (it->name == source->GetName()) {
-                // XXX upload in-place to not waste buffer space
-                //resourceRegistry->AddSource(prim's range, source);
-                inPlace = true;
-                break;
-            }
-        }
-        if (!inPlace) {
-            // upload to SSBO allocated input range.
-            internalSources->push_back(source);
-        }
-    }
-
-    if (!_internalRange && internalSources->size() > 0) {
-        HdBufferSpecVector bufferSpecs;
-        for (HdBufferSourceSharedPtr const &source: *internalSources) {
-            // This currently needs the element count as the array size as the
-            // SSBO allocator needs all data in one stripe.
-            //
-            // XXX:Arrays: Should this support array-valued types?  If
-            // yes, we should multiply numElements onto the count.
-            //
-            HdTupleType tupleType = source->GetTupleType();
-            tupleType.count = source->GetNumElements();
-            bufferSpecs.emplace_back(source->GetName(), tupleType);
-        }
-
-        _internalRange = boost::static_pointer_cast<HdStBufferArrayRangeGL>(
-            resourceRegistry->AllocateShaderStorageBufferArrayRange(
-                HdTokens->primVar, bufferSpecs));
-    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

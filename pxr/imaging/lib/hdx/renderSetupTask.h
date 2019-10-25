@@ -28,7 +28,9 @@
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hd/task.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hd/renderPassState.h"
 
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec4f.h"
@@ -52,32 +54,46 @@ class HdStRenderPassState;
 /// A task for setting up render pass state (camera, renderpass shader, GL
 /// states).
 ///
-class HdxRenderSetupTask : public HdSceneTask {
+/// HdxRenderTask depends on the output of this task.  Applications can choose
+/// to create a render setup task, and pass it the HdxRenderTaskParams; or they
+/// can pass the HdxRenderTaskParams directly to the render task, which will
+/// create a render setup task internally.  See the HdxRenderTask documentation
+/// for details.
+///
+class HdxRenderSetupTask : public HdTask {
 public:
     HDX_API
     HdxRenderSetupTask(HdSceneDelegate* delegate, SdfPath const& id);
 
-    // compatibility APIs used from HdxRenderTask
     HDX_API
-    void SyncParams(HdxRenderTaskParams const &params);
+    virtual ~HdxRenderSetupTask();
+
+
+    // APIs used from HdxRenderTask to manage the sync/prepare process.
     HDX_API
-    void SyncCamera();
+    void SyncParams(HdSceneDelegate* delegate,
+                    HdxRenderTaskParams const &params);
+    HDX_API
+    void PrepareCamera(HdRenderIndex* renderIndex);
 
     HdRenderPassStateSharedPtr const &GetRenderPassState() const {
         return _renderPassState;
     }
-    TfTokenVector const &GetRenderTags() const {
-        return _renderTags;
-    }
-
-protected:
-    /// Execute render pass task
-    HDX_API
-    virtual void _Execute(HdTaskContext* ctx);
 
     /// Sync the render pass resources
     HDX_API
-    virtual void _Sync(HdTaskContext* ctx);
+    virtual void Sync(HdSceneDelegate* delegate,
+                      HdTaskContext* ctx,
+                      HdDirtyBits* dirtyBits) override;
+
+    /// Prepare the tasks resources
+    HDX_API
+    virtual void Prepare(HdTaskContext* ctx,
+                         HdRenderIndex* renderIndex) override;
+
+    /// Execute render pass task
+    HDX_API
+    virtual void Execute(HdTaskContext* ctx) override;
 
 private:
     HdRenderPassStateSharedPtr _renderPassState;
@@ -85,7 +101,7 @@ private:
     HdStRenderPassShaderSharedPtr _idRenderPassShader;
     GfVec4d _viewport;
     SdfPath _cameraId;
-    TfTokenVector _renderTags;
+    HdRenderPassAovBindingVector _aovBindings;
 
     static HdStShaderCodeSharedPtr _overrideShader;
 
@@ -93,60 +109,75 @@ private:
 
     void _SetHdStRenderPassState(HdxRenderTaskParams const& params,
                                  HdStRenderPassState *renderPassState);
+
+    HdRenderPassStateSharedPtr &_GetRenderPassState(HdRenderIndex* renderIndex);
+
+    void _PrepareAovBindings(HdTaskContext* ctx, HdRenderIndex* renderIndex);
+
+
+    HdxRenderSetupTask() = delete;
+    HdxRenderSetupTask(const HdxRenderSetupTask &) = delete;
+    HdxRenderSetupTask &operator =(const HdxRenderSetupTask &) = delete;
 };
 
 /// \class HdxRenderTaskParams
 ///
 /// RenderTask parameters (renderpass state).
 ///
-struct HdxRenderTaskParams : public HdTaskParams
+struct HdxRenderTaskParams
 {
     HdxRenderTaskParams()
         : overrideColor(0.0)
         , wireframeColor(0.0)
+        , maskColor(1.0f, 0.0f, 0.0f, 1.0f)
+        , indicatorColor(0.0f, 1.0f, 0.0f, 1.0f)
         , pointColor(GfVec4f(0,0,0,1))
         , pointSize(3.0)
         , pointSelectedSize(3.0)
         , enableLighting(false)
         , enableIdRender(false)
         , alphaThreshold(0.0)
-        , tessLevel(1.0)
-        , drawingRange(0.0, -1.0)
-        , enableHardwareShading(true)
-        , renderTags()
+        , enableSceneMaterials(true)
         , depthBiasUseDefault(true)
         , depthBiasEnable(false)
         , depthBiasConstantFactor(0.0f)
         , depthBiasSlopeFactor(1.0f)
         , depthFunc(HdCmpFuncLEqual)
+        , depthMaskEnable(true)
         , stencilFunc(HdCmpFuncAlways)
         , stencilRef(0)
         , stencilMask(~0)
         , stencilFailOp(HdStencilOpKeep)
         , stencilZFailOp(HdStencilOpKeep)
         , stencilZPassOp(HdStencilOpKeep)
+        , stencilEnable(false)
+        , blendColorOp(HdBlendOpAdd)
+        , blendColorSrcFactor(HdBlendFactorOne)
+        , blendColorDstFactor(HdBlendFactorZero)
+        , blendAlphaOp(HdBlendOpAdd)
+        , blendAlphaSrcFactor(HdBlendFactorOne)
+        , blendAlphaDstFactor(HdBlendFactorZero)
+        , blendConstantColor(0.0f, 0.0f, 0.0f, 0.0f)
+        , blendEnable(false)
+        , enableAlphaToCoverage(true)
         , cullStyle(HdCullStyleBackUnlessDoubleSided)
-        , geomStyle(HdGeomStylePolygons)
-        , complexity(HdComplexityLow)
-        , hullVisibility(false)
-        , surfaceVisibility(true)
+        , aovBindings()
         , camera()
         , viewport(0.0)
         {}
 
-    // RasterState
+    // XXX: Several of the params below should move to global application state.
     GfVec4f overrideColor;
     GfVec4f wireframeColor;
+    GfVec4f maskColor;
+    GfVec4f indicatorColor;
     GfVec4f pointColor;
     float pointSize;
     float pointSelectedSize;
     bool enableLighting;
     bool enableIdRender;
     float alphaThreshold;
-    float tessLevel;
-    GfVec2f drawingRange;
-    bool enableHardwareShading;
-    TfTokenVector renderTags;
+    bool enableSceneMaterials;
 
     // Depth Bias Raster State
     // When use default is true - state
@@ -159,6 +190,7 @@ struct HdxRenderTaskParams : public HdTaskParams
     float depthBiasSlopeFactor;
 
     HdCompareFunction depthFunc;
+    bool depthMaskEnable;
 
     // Stencil
     HdCompareFunction stencilFunc;
@@ -169,12 +201,26 @@ struct HdxRenderTaskParams : public HdTaskParams
     HdStencilOp stencilZPassOp;
     bool stencilEnable;
 
+    // Blending
+    HdBlendOp blendColorOp;
+    HdBlendFactor blendColorSrcFactor;
+    HdBlendFactor blendColorDstFactor;
+    HdBlendOp blendAlphaOp;
+    HdBlendFactor blendAlphaSrcFactor;
+    HdBlendFactor blendAlphaDstFactor;
+    GfVec4f blendConstantColor;
+    bool blendEnable;
+
+    // AlphaToCoverage
+    bool enableAlphaToCoverage;
+
     // Viewer's Render Style
     HdCullStyle cullStyle;
-    HdGeomStyle geomStyle;
-    HdComplexity complexity;
-    bool hullVisibility;
-    bool surfaceVisibility;
+
+    // AOV bindings.
+    // XXX: As a transitional API, if this is empty it indicates the renderer
+    // should write color and depth to the GL framebuffer.
+    HdRenderPassAovBindingVector aovBindings;
 
     // RasterState index objects
     SdfPath camera;

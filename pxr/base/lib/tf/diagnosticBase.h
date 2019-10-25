@@ -28,7 +28,6 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/callContext.h"
-#include "pxr/base/tf/copyOnWritePtr.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -63,7 +62,6 @@ class TfDiagnosticMgr;
 /// \c TF_ERROR(), \c TF_WARN and \c TF_STATUS also in the C++ API reference.
 ///
 class TfDiagnosticBase {
-
 public:
 
     /// Return the call context where the message was issued.
@@ -76,14 +74,15 @@ public:
         return _context.GetFile();
     }
 
-    /// Return the source line number that the diagnostic message was posted from.
+    /// Return the source line number that the diagnostic message was posted
+    /// from.
     size_t GetSourceLineNumber() const {
         return _context.GetLine();
     }
 
     /// Return the commentary string describing this diagnostic message.
     std::string const &GetCommentary() const {
-        return _data->_commentary;
+        return _commentary;
     }
 
     /// Return the source function that the diagnostic message was posted from.
@@ -102,18 +101,18 @@ public:
     /// \endcode
     /// always prints the entire commentary string as a newline
     /// separated sequence of messages.
-    void AugmentCommentary(const std::string& s) const {
-        if (_data->_commentary.empty())
-            _data->_commentary = s;
+    void AugmentCommentary(const std::string& s) {
+        if (_commentary.empty())
+            _commentary = s;
         else {
-            _data->_commentary += "\n";
-            _data->_commentary += s;
+            _commentary += "\n";
+            _commentary += s;
         }
     }
 
     /// Return the diagnostic code posted.
     TfEnum GetDiagnosticCode() const {
-        return _data->_code;
+        return _code;
     }
     
 
@@ -136,7 +135,7 @@ public:
     /// will result in \c GetDiagnosticCodeAsString() returning the
     /// (uninformative) string "c".
     const std::string& GetDiagnosticCodeAsString() const {
-        return _data->_codeString;
+        return _codeString;
     }
     
     /// Return a (possibly NULL) const pointer to the info object associated
@@ -160,13 +159,13 @@ public:
     /// then GetInfo() returns NULL.
     template <typename T>
     const T* GetInfo() const {
-        return boost::any_cast<T>(&_data->_info);
+        return boost::any_cast<T>(&_info);
     }
 
     /// Set the info object associated with this diagnostic message.
     /// \see GetInfo()
     void SetInfo(TfDiagnosticInfo any) {
-        _data->_info = any;
+        _info = any;
     }
 
     /// Return true if the message was posted via \c PostQuietly().
@@ -176,34 +175,34 @@ public:
     /// the stack may actually handle this error. This is rare, but it does
     /// happen on occasion.
     bool GetQuiet() const {
-        return _data->_quiet;
+        return _quiet;
     }
 
+    /// Return the commentary string.
     std::string GetPrettyPrintString() const;
 
+    /// Return true if this diagnostic's code is a fatal code.
     bool IsFatal() const;
 
+    /// Return true if this diagnostic's code is either a fatal or nonfatal
+    /// coding error.
     bool IsCodingError() const;
     
+    /// Construct an instance.
     TfDiagnosticBase(TfEnum code, char const *codeString,
-            TfCallContext const &context, const std::string& commentary,
-            TfDiagnosticInfo info, bool quiet);
+                     TfCallContext const &context,
+                     const std::string& commentary,
+                     TfDiagnosticInfo info, bool quiet);
 
 protected:
     TfCallContext _context;
 
-    // Deriving this class from TfRefBase lets TfCopyOnWritePtr make a space
-    // optimization.
-    struct _Data : public TfSimpleRefBase {
-        _Data() : _serial(0), _quiet(false) {}
-        mutable std::string _commentary;
-        TfEnum _code;
-        std::string _codeString;
-        TfDiagnosticInfo _info;
-        size_t _serial;
-        bool _quiet;
-    };
-    TfCopyOnWritePtr<_Data> _data;
+    std::string _commentary;
+    TfEnum _code;
+    std::string _codeString;
+    TfDiagnosticInfo _info;
+    size_t _serial = 0;
+    bool _quiet = false;
 
     friend class TfDiagnosticMgr;
     friend class TfErrorTransport;

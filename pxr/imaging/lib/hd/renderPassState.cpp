@@ -23,8 +23,9 @@
 //
 #include "pxr/imaging/hd/renderPassState.h"
 
-#include "pxr/imaging/hd/debugCodes.h"
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/changeTracker.h"
+#include "pxr/imaging/hd/debugCodes.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/gf/frustum.h"
@@ -35,16 +36,21 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdRenderPassState::HdRenderPassState()
-    : _worldToViewMatrix(1)
-    , _projectionMatrix(1)
+    : _camera(nullptr)
     , _viewport(0, 0, 1, 1)
     , _cullMatrix(1)
+    , _worldToViewMatrix(1)
+    , _projectionMatrix(1)
+
     , _overrideColor(0.0f, 0.0f, 0.0f, 0.0f)
     , _wireframeColor(0.0f, 0.0f, 0.0f, 0.0f)
+    , _maskColor(1.0f, 0.0f, 0.0f, 1.0f)
+    , _indicatorColor(0.0f, 1.0f, 0.0f, 1.0f)
     , _pointColor(0.0f, 0.0f, 0.0f, 1.0f)
     , _pointSize(3.0)
     , _pointSelectedSize(3.0)
     , _lightingEnabled(true)
+
     , _alphaThreshold(0.5f)
     , _tessLevel(32.0)
     , _drawRange(0.9, -1.0)
@@ -53,6 +59,7 @@ HdRenderPassState::HdRenderPassState()
     , _depthBiasConstantFactor(0.0f)
     , _depthBiasSlopeFactor(1.0f)
     , _depthFunc(HdCmpFuncLEqual)
+    , _depthMaskEnabled(true)
     , _cullStyle(HdCullStyleNothing)
     , _stencilFunc(HdCmpFuncAlways)
     , _stencilRef(0)
@@ -62,6 +69,14 @@ HdRenderPassState::HdRenderPassState()
     , _stencilZPassOp(HdStencilOpKeep)
     , _stencilEnabled(false)
     , _lineWidth(1.0f)
+    , _blendColorOp(HdBlendOpAdd)
+    , _blendColorSrcFactor(HdBlendFactorOne)
+    , _blendColorDstFactor(HdBlendFactorZero)
+    , _blendAlphaOp(HdBlendOpAdd)
+    , _blendAlphaSrcFactor(HdBlendFactorOne)
+    , _blendAlphaDstFactor(HdBlendFactorZero)
+    , _blendConstantColor(0.0f, 0.0f, 0.0f, 0.0f)
+    , _blendEnabled(false)
     , _alphaToCoverageUseDefault(true)
     , _alphaToCoverageEnabled(true)
     , _colorMaskUseDefault(true)
@@ -76,8 +91,11 @@ HdRenderPassState::~HdRenderPassState()
 
 /* virtual */
 void
-HdRenderPassState::Sync(HdResourceRegistrySharedPtr const &resourceRegistry)
+HdRenderPassState::Prepare(HdResourceRegistrySharedPtr const &resourceRegistry)
 {
+    if(!TfDebug::IsEnabled(HD_FREEZE_CULL_FRUSTUM)) {
+        _cullMatrix = GetWorldToViewMatrix() * GetProjectionMatrix();
+    }
 }
 
 /* virtual */
@@ -93,17 +111,68 @@ HdRenderPassState::Unbind()
 }
 
 void
-HdRenderPassState::SetCamera(GfMatrix4d const &worldToViewMatrix,
-                        GfMatrix4d const &projectionMatrix,
-                        GfVec4d const &viewport) {
+HdRenderPassState::SetCameraFramingState(GfMatrix4d const &worldToViewMatrix,
+                                         GfMatrix4d const &projectionMatrix,
+                                         GfVec4d const &viewport,
+                                         ClipPlanesVector const & clipPlanes)
+{
+    if (_camera) {
+        // If a camera handle was set, reset it.
+        _camera = nullptr;
+    }
+
     _worldToViewMatrix = worldToViewMatrix;
     _projectionMatrix = projectionMatrix;
     _viewport = GfVec4f((float)viewport[0], (float)viewport[1],
                         (float)viewport[2], (float)viewport[3]);
+    _clipPlanes = clipPlanes;
+}
 
-    if(!TfDebug::IsEnabled(HD_FREEZE_CULL_FRUSTUM)) {
-        _cullMatrix = _worldToViewMatrix * _projectionMatrix;
+void
+HdRenderPassState::SetCameraAndViewport(HdCamera const *camera,
+                                        GfVec4d const &viewport)
+{
+    if (!camera) {
+        TF_CODING_ERROR("Received null camera\n");
     }
+    _camera = camera;
+    _viewport = GfVec4f((float)viewport[0], (float)viewport[1],
+                        (float)viewport[2], (float)viewport[3]);
+}
+
+GfMatrix4d const&
+HdRenderPassState::GetWorldToViewMatrix() const
+{
+    if (!_camera) {
+        return _worldToViewMatrix;
+    }
+    return _camera->GetViewMatrix();
+}
+
+GfMatrix4d
+HdRenderPassState::GetProjectionMatrix() const
+{
+    if (!_camera) {
+        return _projectionMatrix;
+    }
+
+    // Adjust the camera frustum based on the window policy.
+    GfMatrix4d projection = _camera->GetProjectionMatrix(); 
+    CameraUtilConformWindowPolicy const& policy =
+        _camera->GetWindowPolicy();
+    projection = CameraUtilConformedWindow(projection, policy,
+        _viewport[3] != 0.0 ? _viewport[2] / _viewport[3] : 1.0);
+
+    return projection;
+}
+
+HdRenderPassState::ClipPlanesVector const &
+HdRenderPassState::GetClipPlanes() const
+{
+    if (!_camera) {
+        return _clipPlanes;
+    }
+    return _camera->GetClipPlanes();
 }
 
 void
@@ -116,6 +185,18 @@ void
 HdRenderPassState::SetWireframeColor(GfVec4f const &color)
 {
     _wireframeColor = color;
+}
+
+void
+HdRenderPassState::SetMaskColor(GfVec4f const &color)
+{
+    _maskColor = color;
+}
+
+void
+HdRenderPassState::SetIndicatorColor(GfVec4f const &color)
+{
+    _indicatorColor = color;
 }
 
 void
@@ -167,15 +248,16 @@ HdRenderPassState::SetLightingEnabled(bool enabled)
 }
 
 void
-HdRenderPassState::SetClipPlanes(ClipPlanesVector const & clipPlanes)
+HdRenderPassState::SetAovBindings(
+        HdRenderPassAovBindingVector const& aovBindings)
 {
-    _clipPlanes = clipPlanes;
+    _aovBindings= aovBindings;
 }
 
-HdRenderPassState::ClipPlanesVector const &
-HdRenderPassState::GetClipPlanes() const
+HdRenderPassAovBindingVector const&
+HdRenderPassState::GetAovBindings() const
 {
-    return _clipPlanes;
+    return _aovBindings;
 }
 
 void
@@ -204,6 +286,18 @@ HdRenderPassState::SetDepthFunc(HdCompareFunction depthFunc)
 }
 
 void
+HdRenderPassState::SetEnableDepthMask(bool state)
+{
+    _depthMaskEnabled = state;
+}
+
+bool
+HdRenderPassState::GetEnableDepthMask()
+{
+    return _depthMaskEnabled;
+}
+
+void
 HdRenderPassState::SetStencil(HdCompareFunction func,
         int ref, int mask,
         HdStencilOp fail, HdStencilOp zfail, HdStencilOp zpass)
@@ -226,6 +320,34 @@ void
 HdRenderPassState::SetLineWidth(float width)
 {
     _lineWidth = width;
+}
+
+void
+HdRenderPassState::SetBlend(HdBlendOp colorOp,
+                            HdBlendFactor colorSrcFactor,
+                            HdBlendFactor colorDstFactor,
+                            HdBlendOp alphaOp,
+                            HdBlendFactor alphaSrcFactor,
+                            HdBlendFactor alphaDstFactor)
+{
+    _blendColorOp = colorOp;
+    _blendColorSrcFactor = colorSrcFactor;
+    _blendColorDstFactor = colorDstFactor;
+    _blendAlphaOp = alphaOp;
+    _blendAlphaSrcFactor = alphaSrcFactor;
+    _blendAlphaDstFactor = alphaDstFactor;
+}
+
+void
+HdRenderPassState::SetBlendConstantColor(GfVec4f const & color)
+{
+    _blendConstantColor = color;
+}
+
+void
+HdRenderPassState::SetBlendEnabled(bool enabled)
+{
+    _blendEnabled = enabled;
 }
 
 void

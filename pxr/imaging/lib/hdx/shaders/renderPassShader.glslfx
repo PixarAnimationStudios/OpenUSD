@@ -1,7 +1,7 @@
 -- glslfx version 0.1
 
 //
-// Copyright 2016 Pixar
+// Copyright 2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -29,6 +29,7 @@
 
 #import $TOOLS/hdSt/shaders/renderPass.glslfx
 #import $TOOLS/hdx/shaders/renderPass.glslfx
+#import $TOOLS/hdx/shaders/selection.glslfx
 
 -- configuration
 {
@@ -53,7 +54,10 @@
             "fragmentShader" : {
                 "source": [ "RenderPass.Camera",
                             "RenderPass.ShouldCullFace",
-                            "HdxRenderPass.RenderColorOutputWithSelection" ]
+                            "Selection.DecodeUtils",
+                            "Selection.ComputeColor",
+                            "RenderPass.ApplyColorOverrides",
+                            "RenderPass.RenderColor" ]
             }
         }
     }

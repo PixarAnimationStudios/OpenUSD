@@ -25,6 +25,7 @@
 /// \file testenv/testJsConverter.cpp
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/demangle.h"
 #include "pxr/base/js/converter.h"
 #include "pxr/base/js/json.h"
 #include "pxr/base/tf/diagnosticLite.h"

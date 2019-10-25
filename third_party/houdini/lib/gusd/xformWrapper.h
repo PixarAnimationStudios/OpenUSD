@@ -24,10 +24,13 @@
 #ifndef __GUSD_XFORMWRAPPER_H__
 #define __GUSD_XFORMWRAPPER_H__
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
+
+#include "gusd/api.h"
 
 #include "groupBaseWrapper.h"
-#include <pxr/usd/usdGeom/xform.h>
+
+#include "pxr/usd/usdGeom/xform.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -35,15 +38,22 @@ PXR_NAMESPACE_OPEN_SCOPE
 class GusdXformWrapper : public GusdGroupBaseWrapper
 {
 public:
+
+    GUSD_API
     GusdXformWrapper( 
             const UsdStagePtr& stage,
             const SdfPath& path,
             bool isOverride = false );
+
+    GUSD_API
     GusdXformWrapper( const GusdXformWrapper& in );
+
+    GUSD_API
     GusdXformWrapper( 
             const UsdGeomXform& usdXform, 
             UsdTimeCode         t,
             GusdPurposeSet      purposes );
+
     virtual ~GusdXformWrapper();
 
     // GusdPrimWrapper interface -----------------------------------------------
@@ -57,8 +67,6 @@ public:
            const SdfPath& path,
            const GusdContext& ctxt,
            const GT_PrimitiveHandle& sourcePrim ) override;
-    
-    virtual bool getUniqueID(int64& id) const override;
     
     virtual const char* className() const override;
 

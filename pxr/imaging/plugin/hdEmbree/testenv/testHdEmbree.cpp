@@ -25,14 +25,17 @@
 
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/glf/drawTarget.h"
+#include "pxr/imaging/glf/image.h"
 
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hdSt/unitTestGLDrawing.h"
 #include "pxr/imaging/hd/unitTestDelegate.h"
+#include "pxr/imaging/hdSt/glConversions.h"
 
 #include "pxr/imaging/hdx/renderTask.h"
 
-#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hd/camera.h"
+#include "pxr/imaging/hd/renderBuffer.h"
 
 #include "pxr/imaging/hdEmbree/rendererPlugin.h"
 #include "pxr/imaging/hdEmbree/renderDelegate.h"
@@ -102,7 +105,7 @@ private:
     // invocation executes a single render task, which draws the scene to
     // the framebuffer.
     //
-    // HdxRendererPlugin (or derived classes like HdEmbreeRendererPlugin)
+    // HdRendererPlugin (or derived classes like HdEmbreeRendererPlugin)
     // are a discoverable way to create render delegates.
 
     HdEngine _engine;
@@ -119,6 +122,18 @@ private:
     bool _smooth;
     bool _instance;
     bool _refined;
+
+    // For offscreen tests, which AOV should we output?
+    // (empty string means we should read color from the framebuffer).
+    std::string _aov;
+
+    // For depth AOV rendering, we need to rescale the final image to
+    // [0, 1] in order to write it to an image.
+    void _RescaleDepth(float *buffer, int size);
+
+    // For primId AOV rendering, we need to colorize the ids in order to
+    // write it to an image.
+    void _ColorizeId(int32_t *buffer, int size);
 
     // For offscreen tests, what file do we write to?
     std::string _outputName;
@@ -152,12 +167,42 @@ void HdEmbree_TestGLDrawing::InitTest()
     SdfPath renderTask("/renderTask");
     _sceneDelegate->AddTask<HdxRenderTask>(renderTask);
 
+    // We can optionally supply output buffer bindings to hydra (triggered
+    // by the --aov flag), so create a buffer and aov binding if necessary.
+    HdRenderPassAovBinding aovBinding;
+    SdfPath renderBuffer("/renderBuffer");
+    if (_aov.size() > 0) {
+        HdFormat format = HdFormatInvalid;
+        if (_aov == "color") {
+            format = HdFormatUNorm8Vec4;
+            aovBinding.aovName = HdAovTokens->color;
+            aovBinding.clearValue = VtValue(GfVec4f(0.0f, 0.0f, 0.0f, 1.0f));
+        } else if (_aov == "linearDepth") {
+            format = HdFormatFloat32;
+            aovBinding.aovName = HdAovTokens->linearDepth;
+            aovBinding.clearValue = VtValue(0.0f);
+        } else if (_aov == "primId") {
+            format = HdFormatInt32;
+            aovBinding.aovName = HdAovTokens->primId;
+            aovBinding.clearValue = VtValue(-1);
+        }
+        aovBinding.renderBufferId = renderBuffer;
+        _sceneDelegate->AddRenderBuffer(renderBuffer,
+            GfVec3i(GetWidth(), GetHeight(), 1),
+            format, false);
+    }
+
     // Params is a general argument structure to the render task.
     // - Specify the camera to render from.
     // - Specify the viewport size.
+    // - If we are using the AOV API, specify aov bindings. (Otherwise, the
+    //   default is to blit color to the GL framebuffer).
     HdxRenderTaskParams params;
     params.camera = camera;
     params.viewport = GfVec4f(0, 0, GetWidth(), GetHeight());
+    if (_aov.size() > 0) {
+        params.aovBindings.push_back(aovBinding);
+    }
     _sceneDelegate->UpdateTask(renderTask, HdTokens->params, VtValue(params));
 
     // Collection specifies which HdRprimCollection we want to render,
@@ -168,24 +213,20 @@ void HdEmbree_TestGLDrawing::InitTest()
     // include/exclude paths, so all geometry is included.
 
     // There are several pre-defined repr tokens. Some that we make use of:
-    // - HdTokens->hull is the flat-shaded, unrefined mesh.
-    // - HdTokens->smoothHull is the smooth-shaded, unrefined mesh.
-    // - HdTokens->refined is the smooth-shaded, refined mesh.
+    // - HdReprTokens->hull is the flat-shaded, unrefined mesh.
+    // - HdReprTokens->smoothHull is the smooth-shaded, unrefined mesh.
+    // - HdReprTokens->refined is the smooth-shaded, refined mesh.
 
     if (_refined) {
         _sceneDelegate->UpdateTask(renderTask, HdTokens->collection,
                 VtValue(HdRprimCollection(HdTokens->geometry, 
-                HdTokens->refined)));
+                HdReprSelector(HdReprTokens->refined))));
     } else {
         _sceneDelegate->UpdateTask(renderTask, HdTokens->collection,
                 VtValue(HdRprimCollection(HdTokens->geometry, 
-                _smooth ? HdTokens->smoothHull : HdTokens->hull)));
+                HdReprSelector(_smooth ? HdReprTokens->smoothHull 
+                                       : HdReprTokens->hull))));
     }
-
-    // Tasks can have child tasks that get scheduled together.
-    // We don't use this here.
-    _sceneDelegate->UpdateTask(renderTask, HdTokens->children,
-            VtValue(SdfPathVector()));
 
     if (_instance) {
         // Instanced scene. Add test geometry:
@@ -245,11 +286,14 @@ void HdEmbree_TestGLDrawing::InitTest()
     frustum.SetRotation(GfRotation(GfVec3d(1, 0, 0), 45));
 
     _sceneDelegate->UpdateCamera(camera,
-        HdStCameraTokens->worldToViewMatrix,
+        HdCameraTokens->worldToViewMatrix,
         VtValue(frustum.ComputeViewMatrix()));
     _sceneDelegate->UpdateCamera(camera,
-        HdStCameraTokens->projectionMatrix,
+        HdCameraTokens->projectionMatrix,
         VtValue(frustum.ComputeProjectionMatrix()));
+    _sceneDelegate->UpdateCamera(camera,
+        HdCameraTokens->windowPolicy,
+        VtValue(CameraUtilCrop));
 };
 
 void HdEmbree_TestGLDrawing::DrawTest()
@@ -257,17 +301,124 @@ void HdEmbree_TestGLDrawing::DrawTest()
     // The GL viewport needs to be set before calling execute.
     glViewport(0, 0, GetWidth(), GetHeight());
 
+    // XXX: We don't plumb changes to window size to the task.
+
     // Ask hydra to execute our render task (producing an image).
-    HdTaskSharedPtrVector tasks;
-    tasks.push_back(_renderIndex->GetTask(SdfPath("/renderTask")));
-    _engine.Execute(*_renderIndex, tasks);
+    HdTaskSharedPtr renderTask = _renderIndex->GetTask(SdfPath("/renderTask"));
+    HdTaskSharedPtrVector tasks = { renderTask };
+    _engine.Execute(_renderIndex, &tasks);
+
+    // We don't support live-rendering of AOV output in this test...
+}
+
+void HdEmbree_TestGLDrawing::_RescaleDepth(float *buffer, int size)
+{
+    // Normalize everything in the buffer to be in the range [0,1].
+    float maxDepth = 0.0f;
+    for (int i = 0; i < size; ++i) {
+        maxDepth = std::max(buffer[i], maxDepth);
+    }
+    if (maxDepth == 0.0f) {
+        return;
+    }
+    for (int i = 0; i < size; ++i) {
+        buffer[i] /= maxDepth;
+    }
+}
+
+void HdEmbree_TestGLDrawing::_ColorizeId(int32_t *buffer, int size)
+{
+    // As we come across unique primId values, map them to a color in our list.
+    uint32_t colors[] = {
+        0xff00ff00,
+        0xffd0e040,
+        0xff3c14dc,
+        0xffff00ff,
+        0xff2a2aa5,
+        0xff83004b,
+        0xff808000
+    };
+    int nextColor = 0;
+    std::map<int32_t, int32_t> primToColorMap;
+
+    for (int i = 0; i < size; ++i) {
+        if (buffer[i] == -1) {
+            continue;
+        }
+        auto it = primToColorMap.find(buffer[i]);
+        if (it == primToColorMap.end()) {
+            primToColorMap[buffer[i]] =
+                *reinterpret_cast<int32_t*>(&colors[nextColor]);
+            it = primToColorMap.find(buffer[i]);
+            nextColor = (nextColor+1) % (sizeof(colors)/sizeof(colors[0]));
+        }
+        buffer[i] = it->second;
+    }
 }
 
 void HdEmbree_TestGLDrawing::OffscreenTest()
 {
     // Render and write out to a file.
-    DrawTest();
-    WriteToFile("color", _outputName.c_str());
+    glViewport(0, 0, GetWidth(), GetHeight());
+
+    // Ask hydra to execute our render task (producing an image).
+    boost::shared_ptr<HdxRenderTask> renderTask =
+        boost::static_pointer_cast<HdxRenderTask>(
+            _renderIndex->GetTask(SdfPath("/renderTask")));
+
+    // For offline rendering, make sure we render to convergence.
+    HdTaskSharedPtrVector tasks = { renderTask };
+    do {
+        _engine.Execute(_renderIndex, &tasks);
+    } while (!renderTask->IsConverged());
+   
+    if (_aov.size() > 0) {
+        // For AOVs, write them out as the appropriate type of image.
+        HdRenderBuffer *rb = static_cast<HdRenderBuffer*>(
+            _renderIndex->GetBprim(HdPrimTypeTokens->renderBuffer,
+                                   SdfPath("/renderBuffer")));
+
+        // We need to resolve the buffer before we read it, to process
+        // multisampled color, etc.
+        rb->Resolve();
+
+        GLenum unused;
+        GlfImage::StorageSpec storage;
+        storage.width = rb->GetWidth();
+        storage.height = rb->GetHeight();
+        HdStGLConversions::GetGlFormat(rb->GetFormat(),
+            &storage.format, &storage.type, &unused);
+        storage.flipped = true;
+        storage.data = rb->Map();
+
+        // For depth and prim ID aovs, we post-process the output before
+        // writing it to a file.  Additionally, we write prim ID as RGBA u8,
+        // instead of single-channel int32, since the former has better file
+        // support.
+        if (_aov == "linearDepth") {
+            _RescaleDepth(reinterpret_cast<float*>(storage.data),
+                storage.width*storage.height);
+        } else if (_aov == "primId") {
+            storage.format = GL_RGBA;
+            storage.type = GL_UNSIGNED_BYTE;
+            _ColorizeId(reinterpret_cast<int32_t*>(storage.data),
+                storage.width*storage.height);
+        }
+
+        VtDictionary metadata;
+
+        GlfImageSharedPtr image = GlfImage::OpenForWriting(_outputName);
+        if (image) {
+            image->Write(storage, metadata);
+        }
+
+        rb->Unmap();
+    } else {
+        // If this test isn't using the AOV API, we want to write out the
+        // color data in the GL framebuffer, using the base class's
+        // helper function.
+        WriteToFile("color", _outputName);
+    }
 }
 
 void HdEmbree_TestGLDrawing::UninitTest()
@@ -285,6 +436,7 @@ void HdEmbree_TestGLDrawing::ParseArgs(int argc, char *argv[])
     // - Flat/smooth shading (default = flat)
     // - Whether to test instancing (default = no)
     // - Whether to refine (default = no)
+    // - whether to use AOVs for output, and if so which aov?
     // - Where to write offscreen test output.
     for (int i=0; i<argc; ++i) {
         if (std::string(argv[i]) == "--flat") {
@@ -295,10 +447,22 @@ void HdEmbree_TestGLDrawing::ParseArgs(int argc, char *argv[])
             _instance = true;
         } else if (std::string(argv[i]) == "--refined") {
             _refined = true;
+        } else if (std::string(argv[i]) == "--aov" &&
+                   (i+1) < argc) {
+            _aov = std::string(argv[i+1]);
+            ++i;
         } else if (std::string(argv[i]) == "--write" &&
                    (i+1) < argc) {
             _outputName = std::string(argv[i+1]);
+            ++i;
         }
+    }
+
+    // AOV only supports "color", "linearDepth", and "primId" currently.
+    if (_aov.size() > 0 &&
+        _aov != "color" && _aov != "linearDepth" && _aov != "primId") {
+        TF_WARN("Unrecognized AOV token '%s'", _aov.c_str());
+        exit(EXIT_FAILURE);
     }
 }
 

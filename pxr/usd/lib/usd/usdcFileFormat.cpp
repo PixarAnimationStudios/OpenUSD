@@ -31,7 +31,7 @@
 #include "pxr/usd/sdf/textFileFormat.h"
 #include "pxr/usd/sdf/layer.h"
 
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include "pxr/base/tf/registryManager.h"
 
@@ -72,9 +72,7 @@ UsdUsdcFileFormat::InitData(const FileFormatArguments& args) const
 
     // The pseudo-root spec must always exist in a layer's SdfData, so
     // add it here.
-    newData->CreateSpec(SdfAbstractDataSpecId(&SdfPath::AbsoluteRootPath()),
-                        SdfSpecTypePseudoRoot);
-
+    newData->CreateSpec(SdfPath::AbsoluteRootPath(), SdfSpecTypePseudoRoot);
     return TfCreateRefPtr(newData);
 }
 
@@ -85,52 +83,29 @@ UsdUsdcFileFormat::CanRead(const string& filePath) const
 }
 
 bool
-UsdUsdcFileFormat::Read(const SdfLayerBasePtr& layerBase,
+UsdUsdcFileFormat::Read(SdfLayer* layer,
                         const string& resolvedPath,
                         bool metadataOnly) const
 {
     TRACE_FUNCTION();
 
-    auto layer = TfDynamic_cast<SdfLayerHandle>(layerBase);
-    if (!TF_VERIFY(layer))
-        return false;
-
-    SdfAbstractDataRefPtr data = InitData(layerBase->GetFileFormatArguments());
+    SdfAbstractDataRefPtr data = InitData(layer->GetFileFormatArguments());
     auto crateData = TfDynamic_cast<Usd_CrateDataRefPtr>(data);
 
     if (!crateData || !crateData->Open(resolvedPath))
         return false;
 
-    // Just swap out the data - unlike text layers fully populated into memory,
-    // we have no way of tracking change state for undo and inverses.
-
-    // XXX  Is this right?
-    if (_LayerIsLoadingAsNew(layer)) {
-        // New layer, so we don't need undo inverses or notification.
-        // Just swap out the data.
-        _SwapLayerData(layer, data);
-    } else {
-        // Layer has pre-existing data.  Use _SetData() to provide
-        // fine-grained inverses and undo registration.
-        _SetLayerData(layer, data);
-    }
-
+    _SetLayerData(layer, data);
     return true;
 }
 
 bool
-UsdUsdcFileFormat::WriteToFile(const SdfLayerBase* layerBase,
+UsdUsdcFileFormat::WriteToFile(const SdfLayer& layer,
                                const std::string& filePath,
                                const std::string& comment,
                                const FileFormatArguments& args) const
 {
-    auto layer = dynamic_cast<const SdfLayer*>(layerBase);
-
-    if (!TF_VERIFY(layer))
-        return false;
-
-    SdfAbstractDataConstPtr dataSource =
-        _GetLayerData(SdfCreateNonConstHandle(layer));
+    SdfAbstractDataConstPtr dataSource = _GetLayerData(layer);
 
     // XXX: WBN to avoid const-cast -- saving can't be non-mutating in general.
     if (auto const *constCrateData =
@@ -150,20 +125,20 @@ UsdUsdcFileFormat::WriteToFile(const SdfLayerBase* layerBase,
 }
 
 bool 
-UsdUsdcFileFormat::ReadFromString(const SdfLayerBasePtr& layerBase,
+UsdUsdcFileFormat::ReadFromString(SdfLayer* layer,
                                   const std::string& str) const
 {
     return SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id)->
-        ReadFromString(layerBase, str);
+        ReadFromString(layer, str);
 }
 
 bool 
-UsdUsdcFileFormat::WriteToString(const SdfLayerBase* layerBase,
+UsdUsdcFileFormat::WriteToString(const SdfLayer& layer,
                                  std::string* str,
                                  const std::string& comment) const
 {
     return SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id)->
-        WriteToString(layerBase, str, comment);
+        WriteToString(layer, str, comment);
 }
 
 bool 
@@ -173,12 +148,6 @@ UsdUsdcFileFormat::WriteToStream(const SdfSpecHandle &spec,
 {
     return SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id)->
         WriteToStream(spec, out, indent);
-}
-
-bool 
-UsdUsdcFileFormat::_IsStreamingLayer(const SdfLayerBase& layer) const
-{
-    return true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

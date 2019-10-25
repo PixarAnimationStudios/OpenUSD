@@ -23,11 +23,13 @@
 //
 #include "pxr/usdImaging/usdImaging/lightAdapter.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
+#include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hd/light.h"
+#include "pxr/usd/usdLux/light.h"
 
 #include "pxr/base/tf/envSetting.h"
 
@@ -41,7 +43,7 @@ TF_REGISTRY_FUNCTION(TfType)
     // No factory here, UsdImagingLightAdapter is abstract.
 }
 
-TF_DEFINE_ENV_SETTING(USDIMAGING_ENABLE_SCENE_LIGHTS, 0, 
+TF_DEFINE_ENV_SETTING(USDIMAGING_ENABLE_SCENE_LIGHTS, 1, 
                       "Enable loading scene lights.");
 bool _IsEnabledSceneLights() {
     static bool _v = TfGetEnvSetting(USDIMAGING_ENABLE_SCENE_LIGHTS) == 1;
@@ -57,7 +59,7 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
                                         SdfPath const& cachePath,
                                         HdDirtyBits* timeVaryingBits,
                                         UsdImagingInstancerContext const* 
-                                            instancerContext)
+                                            instancerContext) const
 {
     // Discover time-varying transforms.
     _IsTransformVarying(prim,
@@ -72,6 +74,46 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
         const UsdAttribute& attr = *attrIter;
         if (attr.GetNumTimeSamples()>1){
             *timeVaryingBits |= HdLight::DirtyBits::DirtyParams;
+            break;
+        }
+    }
+
+    UsdImagingValueCache* valueCache = _GetValueCache();
+
+    // XXX: The usage of _GetTimeWithOffset here is super-sketch, but avoids
+    // blowing up the inherited visibility cache. This belongs in
+    // UpdateForTime, except that we don't currently call UpdateForTime on
+    // lights...
+    valueCache->GetVisible(cachePath) = GetVisible(prim,
+        _GetTimeWithOffset(0.0));
+
+    UsdLuxLight light(prim);
+    if (TF_VERIFY(light)) {
+        UsdImaging_CollectionCache &collectionCache = _GetCollectionCache();
+        collectionCache.UpdateCollection(light.GetLightLinkCollectionAPI());
+        collectionCache.UpdateCollection(light.GetShadowLinkCollectionAPI());
+        // TODO: When collections change we need to invalidate affected
+        // prims with the DirtyCollections flag.
+    }
+
+    // XXX Cache primvars for lights.  Note that this does not yet support
+    // animated lights, since we do not call UpdateForTime() for sprims.
+    {
+        // Establish a valueCache entry.
+        valueCache->GetPrimvars(cachePath);
+        // Compile a list of primvars to check.
+        std::vector<UsdGeomPrimvar> primvars;
+        UsdImaging_InheritedPrimvarStrategy::value_type inheritedPrimvarRecord =
+            _GetInheritedPrimvars(prim.GetParent());
+        if (inheritedPrimvarRecord) {
+            primvars = inheritedPrimvarRecord->primvars;
+        }
+        UsdGeomPrimvarsAPI primvarsAPI(prim);
+        std::vector<UsdGeomPrimvar> local = primvarsAPI.GetPrimvarsWithValues();
+        primvars.insert(primvars.end(), local.begin(), local.end());
+        for (auto const &pv : primvars) {
+            _ComputeAndMergePrimvar(prim, cachePath, pv, UsdTimeCode(),
+                                    valueCache);
         }
     }
 }
@@ -84,7 +126,7 @@ UsdImagingLightAdapter::UpdateForTime(UsdPrim const& prim,
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext)
+                                   instancerContext) const
 {
 }
 

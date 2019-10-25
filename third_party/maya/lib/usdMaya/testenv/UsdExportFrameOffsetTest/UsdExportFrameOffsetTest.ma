@@ -287,7 +287,6 @@ select -ne :initialShadingGroup;
 select -ne :initialParticleSE;
 	setAttr ".ro" yes;
 select -ne :defaultRenderGlobals;
-	setAttr ".ren" -type "string" "px_render";
 	setAttr ".outf" 3;
 select -ne :defaultResolution;
 	setAttr ".pa" 1;

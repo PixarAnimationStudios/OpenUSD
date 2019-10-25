@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hd/types.h"
 
 #include "pxr/base/vt/value.h"
 
@@ -40,7 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Represents an render to texture render pass.
 ///
-/// \note This is a temporary API to aid transition to hydra, and is subject
+/// \note This is a temporary API to aid transition to Storm, and is subject
 /// to major changes.
 ///
 class HdStDrawTargetAttachmentDesc final

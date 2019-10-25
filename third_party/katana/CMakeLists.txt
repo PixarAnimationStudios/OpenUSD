@@ -1,7 +1,5 @@
 set(PXR_INSTALL_SUBDIR "third_party/katana")
 
-pxr_setup_plugins()
-
 # Transform the KATANA_API versions into defines to be used by this code
 add_definitions(
     -DPX_KATANA_ASSET_API_VER=${KATANA_API_ASSET_API_VERSION}

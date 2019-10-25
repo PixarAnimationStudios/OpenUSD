@@ -1,0 +1,59 @@
+#sdf 1.4.32
+
+def "ImplNoCycle" (
+)
+{
+    def "A"
+    {
+        def "B" (
+        )
+        {
+            def "C"
+            {
+            }
+        }
+
+        # No cycle as this references a sibling of us in the prim
+        # that reference us.
+        def "D" (
+            add references = </PrimNoCycle/A/B>
+        )
+        {
+        }
+    }
+}
+
+def "PrimNoCycle" (
+    prepend references = </ImplNoCycle>
+)
+{
+}
+
+def "ImplCycle" (
+)
+{
+    def "A"
+    {
+        def "B" (
+        )
+        {
+            def "C"
+            {
+            }
+        }
+
+        # This is a cycle as this references our parent in the prim that
+        # references us.
+        def "D" (
+            add references = </PrimCycle/A>
+        )
+        {
+        }
+    }
+}
+
+def "PrimCycle" (
+    prepend references = </ImplCycle>
+)
+{
+}

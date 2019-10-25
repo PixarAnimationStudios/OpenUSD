@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
+#include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/glf/utils.h"
 #include "pxr/imaging/garch/gl.h"
 #include "pxr/base/tf/declarePtrs.h"
@@ -49,18 +50,25 @@ public:
 
     struct WrapInfo {
         WrapInfo() :
-          hasWrapModeS(false), hasWrapModeT(false),
-          wrapModeS(GL_REPEAT), wrapModeT(GL_REPEAT) {};
+          hasWrapModeS(false), hasWrapModeT(false), hasWrapModeR(false),
+          wrapModeS(GL_REPEAT), wrapModeT(GL_REPEAT), wrapModeR(GL_REPEAT) {};
 
         bool    hasWrapModeS;
         bool    hasWrapModeT;
+        bool    hasWrapModeR;
         GLenum  wrapModeS;
         GLenum  wrapModeT;
+        GLenum  wrapModeR;
     };
+
+    /// Is this a 1-, 2- or 3-dimensional texture.
+    virtual int NumDimensions() const = 0;
 
     virtual int ResizedWidth(int mipLevel = 0) const = 0;
 
     virtual int ResizedHeight(int mipLevel = 0) const = 0;
+
+    virtual int ResizedDepth(int mipLevel = 0) const = 0;
 
     virtual GLenum GLInternalFormat() const = 0;
 
@@ -76,8 +84,11 @@ public:
 
     virtual size_t ComputeBytesUsedByMip(int mipLevel = 0) const = 0;
 
-    virtual bool Read(int degradeLevel, bool generateMipmap) = 0;
-
+    virtual bool Read(int degradeLevel, 
+                      bool generateMipmap, 
+                      GlfImage::ImageOriginLocation originLocation = 
+                                                 GlfImage::OriginUpperLeft) = 0;
+    
     virtual bool HasRawBuffer(int mipLevel = 0) const = 0;
 
     virtual unsigned char * GetRawBuffer(int mipLevel = 0) const = 0;   

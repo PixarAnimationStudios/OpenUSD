@@ -25,6 +25,8 @@
 
 #include "pxr/imaging/hdSt/surfaceShader.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/textureResource.h"
+#include "pxr/imaging/hdSt/textureResourceHandle.h"
 
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/bufferArrayRange.h"
@@ -46,6 +48,7 @@ HdStSurfaceShader::HdStSurfaceShader()
  , _paramSpec()
  , _paramArray()
  , _textureDescriptors()
+ , _materialTag()
 {
 }
 
@@ -101,30 +104,54 @@ HdStSurfaceShader::GetTextures() const
 void
 HdStSurfaceShader::BindResources(HdSt_ResourceBinder const &binder, int program)
 {
-    // XXX: there's an issue where other shaders try to use textures.
-    int samplerUnit = binder.GetNumReservedTextureUnits();
-    TF_FOR_ALL(it, _textureDescriptors) {
-        HdBinding binding = binder.GetBinding(it->name);
+    for (auto const & it : _textureDescriptors) {
+        HdBinding binding = binder.GetBinding(it.name);
+
+        if (!TF_VERIFY(it.handle)) {
+            continue;
+        }
+        HdStTextureResourceSharedPtr resource = it.handle->GetTextureResource();
+
         // XXX: put this into resource binder.
         if (binding.GetType() == HdBinding::TEXTURE_2D) {
+            int samplerUnit = binding.GetTextureUnit();
             glActiveTexture(GL_TEXTURE0 + samplerUnit);
-            glBindTexture(GL_TEXTURE_2D, (GLuint)it->handle);
-            glBindSampler(samplerUnit, it->sampler);
+            glBindTexture(GL_TEXTURE_2D, resource->GetTexelsTextureId());
+            glBindSampler(samplerUnit, resource->GetTexelsSamplerId());
             
             glProgramUniform1i(program, binding.GetLocation(), samplerUnit);
-            samplerUnit++;
+        } else if (binding.GetType() == HdBinding::TEXTURE_3D) {
+            int samplerUnit = binding.GetTextureUnit();
+            glActiveTexture(GL_TEXTURE0 + samplerUnit);
+            glBindTexture(GL_TEXTURE_3D, resource->GetTexelsTextureId());
+            glBindSampler(samplerUnit, resource->GetTexelsSamplerId());
+            
+            glProgramUniform1i(program, binding.GetLocation(), samplerUnit);
+        } else if (binding.GetType() == HdBinding::TEXTURE_UDIM_ARRAY) {
+            int samplerUnit = binding.GetTextureUnit();
+            glActiveTexture(GL_TEXTURE0 + samplerUnit);
+            glBindTexture(GL_TEXTURE_2D_ARRAY, resource->GetTexelsTextureId());
+            glBindSampler(samplerUnit, resource->GetTexelsSamplerId());
+
+            glProgramUniform1i(program, binding.GetLocation(), samplerUnit);
+        } else if (binding.GetType() == HdBinding::TEXTURE_UDIM_LAYOUT) {
+            int samplerUnit = binding.GetTextureUnit();
+            glActiveTexture(GL_TEXTURE0 + samplerUnit);
+            glBindTexture(GL_TEXTURE_1D, resource->GetLayoutTextureId());
+
+            glProgramUniform1i(program, binding.GetLocation(), samplerUnit);
         } else if (binding.GetType() == HdBinding::TEXTURE_PTEX_TEXEL) {
+            int samplerUnit = binding.GetTextureUnit();
             glActiveTexture(GL_TEXTURE0 + samplerUnit);
-            glBindTexture(GL_TEXTURE_2D_ARRAY, (GLuint)it->handle);
+            glBindTexture(GL_TEXTURE_2D_ARRAY, resource->GetTexelsTextureId());
 
             glProgramUniform1i(program, binding.GetLocation(), samplerUnit);
-            samplerUnit++;
         } else if (binding.GetType() == HdBinding::TEXTURE_PTEX_LAYOUT) {
+            int samplerUnit = binding.GetTextureUnit();
             glActiveTexture(GL_TEXTURE0 + samplerUnit);
-            glBindTexture(GL_TEXTURE_BUFFER, (GLuint)it->handle);
+            glBindTexture(GL_TEXTURE_BUFFER, resource->GetLayoutTextureId());
 
             glProgramUniform1i(program, binding.GetLocation(), samplerUnit);
-            samplerUnit++;
         }
     }
     glActiveTexture(GL_TEXTURE0);
@@ -136,23 +163,36 @@ HdStSurfaceShader::UnbindResources(HdSt_ResourceBinder const &binder, int progra
 {
     binder.UnbindShaderResources(this);
 
-    int samplerUnit = binder.GetNumReservedTextureUnits();
-    TF_FOR_ALL(it, _textureDescriptors) {
-        HdBinding binding = binder.GetBinding(it->name);
+    for (auto const & it : _textureDescriptors) {
+        HdBinding binding = binder.GetBinding(it.name);
         // XXX: put this into resource binder.
         if (binding.GetType() == HdBinding::TEXTURE_2D) {
+            int samplerUnit = binding.GetTextureUnit();
             glActiveTexture(GL_TEXTURE0 + samplerUnit);
             glBindTexture(GL_TEXTURE_2D, 0);
             glBindSampler(samplerUnit, 0);
-            samplerUnit++;
-        } else if (binding.GetType() == HdBinding::TEXTURE_PTEX_TEXEL) {
+        } else if (binding.GetType() == HdBinding::TEXTURE_3D) {
+            int samplerUnit = binding.GetTextureUnit();
+            glActiveTexture(GL_TEXTURE0 + samplerUnit);
+            glBindTexture(GL_TEXTURE_3D, 0);
+            glBindSampler(samplerUnit, 0);
+        } else if (binding.GetType() == HdBinding::TEXTURE_UDIM_ARRAY) {
+            int samplerUnit = binding.GetTextureUnit();
             glActiveTexture(GL_TEXTURE0 + samplerUnit);
             glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-            samplerUnit++;
+            glBindSampler(samplerUnit, 0);
+        } else if (binding.GetType() == HdBinding::TEXTURE_UDIM_LAYOUT) {
+            int samplerUnit = binding.GetTextureUnit();
+            glActiveTexture(GL_TEXTURE0 + samplerUnit);
+            glBindTexture(GL_TEXTURE_1D, 0);
+        } else if (binding.GetType() == HdBinding::TEXTURE_PTEX_TEXEL) {
+            int samplerUnit = binding.GetTextureUnit();
+            glActiveTexture(GL_TEXTURE0 + samplerUnit);
+            glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
         } else if (binding.GetType() == HdBinding::TEXTURE_PTEX_LAYOUT) {
+            int samplerUnit = binding.GetTextureUnit();
             glActiveTexture(GL_TEXTURE0 + samplerUnit);
             glBindTexture(GL_TEXTURE_BUFFER, 0);
-            samplerUnit++;
         }
     }
     glActiveTexture(GL_TEXTURE0);
@@ -170,9 +210,9 @@ HdStSurfaceShader::ComputeHash() const
 {
     size_t hash = 0;
     
-    TF_FOR_ALL(it, _params) {
-        if (it->IsFallback())
-            boost::hash_combine(hash, it->GetName().Hash());
+    for (HdMaterialParam const& param : _params) {
+        if (param.IsFallback())
+            boost::hash_combine(hash, param.name.Hash());
     }
     boost::hash_combine(hash, 
         ArchHash(_fragmentSource.c_str(), _fragmentSource.size()));
@@ -191,6 +231,8 @@ HdStSurfaceShader::ComputeHash() const
         boost::hash_combine(hash, texDesc.name);
         boost::hash_combine(hash, texDesc.type);
     }
+
+    boost::hash_combine(hash, _materialTag.Hash());
 
     return hash;
 }
@@ -228,9 +270,7 @@ HdStSurfaceShader::SetBufferSources(HdBufferSourceVector &bufferSources,
     } else {
         // Build the buffer Spec to see if its changed.
         HdBufferSpecVector bufferSpecs;
-        TF_FOR_ALL(srcIt, bufferSources) {
-            (*srcIt)->AddBufferSpecs(&bufferSpecs);
-        }
+        HdBufferSpec::GetBufferSpecs(bufferSources, &bufferSpecs);
 
         if (!_paramArray || _paramSpec != bufferSpecs) {
             _paramSpec = bufferSpecs;
@@ -239,7 +279,8 @@ HdStSurfaceShader::SetBufferSources(HdBufferSourceVector &bufferSources,
             HdBufferArrayRangeSharedPtr range =
                     resourceRegistry->AllocateShaderStorageBufferArrayRange(
                                                   HdTokens->materialParams,
-                                                  bufferSpecs);
+                                                  bufferSpecs,
+                                                  HdBufferArrayUsageHint());
 
             if (!TF_VERIFY(range->IsValid())) {
                 _paramArray.reset();
@@ -252,6 +293,18 @@ HdStSurfaceShader::SetBufferSources(HdBufferSourceVector &bufferSources,
             resourceRegistry->AddSources(_paramArray, bufferSources);
         }
     }
+}
+
+TfToken
+HdStSurfaceShader::GetMaterialTag() const
+{
+    return _materialTag;
+}
+
+void
+HdStSurfaceShader::SetMaterialTag(TfToken const &tag)
+{
+    _materialTag = tag;
 }
 
 /// If the prim is based on asset, reload that asset.

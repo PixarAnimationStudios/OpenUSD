@@ -28,10 +28,16 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
+    TF_WRAP(UsdSkelAnimation);
     TF_WRAP(UsdSkelAnimMapper);
     TF_WRAP(UsdSkelAnimQuery);
+    TF_WRAP(UsdSkelBakeSkinning);
+    TF_WRAP(UsdSkelBinding);
     TF_WRAP(UsdSkelBindingAPI);
+    TF_WRAP(UsdSkelBlendShape);
+    TF_WRAP(UsdSkelBlendShapeQuery);
     TF_WRAP(UsdSkelCache);
+    TF_WRAP(UsdSkelInbetweenShape);
     TF_WRAP(UsdSkelPackedJointAnimation);
     TF_WRAP(UsdSkelSkeleton);
     TF_WRAP(UsdSkelSkeletonQuery);

@@ -43,14 +43,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (rotate)
-    (scale)
-    (translate)
-);
-
 template <typename T>
 static VtArray<T>
 _BuildArray(T values[], int numValues)
@@ -87,17 +79,24 @@ HdSt_UnitTestDelegate::GetTextureResource(SdfPath const& textureId)
         GlfTextureRegistry::GetInstance().GetTextureHandle(_textures[textureId].texture);
 
     // Simple way to detect if the glf texture is ptex or not
-    bool isPtex = false;
+    HdTextureType textureType = HdTextureType::Uv;
 #ifdef PXR_PTEX_SUPPORT_ENABLED
     GlfPtexTextureRefPtr pTex = 
         TfDynamic_cast<GlfPtexTextureRefPtr>(_textures[textureId].texture);
     if (pTex) {
-        isPtex = true;
+        textureType = HdTextureType::Ptex;
     }
 #endif
 
     return HdTextureResourceSharedPtr(
-        new HdStSimpleTextureResource(texture, isPtex));
+        new HdStSimpleTextureResource(texture,
+                                      textureType,
+                                      HdWrapUseMetadata,
+                                      HdWrapUseMetadata,
+                                      HdWrapUseMetadata,
+                                      HdMinFilterNearestMipmapLinear,
+                                      HdMagFilterLinear,
+                                      0));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

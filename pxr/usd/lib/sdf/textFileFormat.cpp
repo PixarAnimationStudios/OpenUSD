@@ -29,9 +29,12 @@
 #include "pxr/usd/sdf/fileIO.h"
 #include "pxr/usd/sdf/fileIO_Common.h"
 #include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/resolver.h"
 
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/atomicOfstreamWrapper.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/staticData.h"
@@ -46,12 +49,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(SdfTextFileFormatTokens, SDF_TEXT_FILE_FORMAT_TOKENS);
 
+TF_DEFINE_ENV_SETTING(
+    SDF_TEXTFILE_SIZE_WARNING_MB, 0,
+    "Warn when reading a text file larger than this number of MB "
+    "(no warnings if set to 0)");
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 // Our interface to the YACC menva parser for parsing to SdfData.
 extern bool Sdf_ParseMenva(
     const string& context, 
-    FILE *f,
+    const std::shared_ptr<PXR_NS::ArAsset>& asset,
     const string& token,
     const string& version,
     bool metadataOnly,
@@ -99,94 +107,79 @@ SdfTextFileFormat::~SdfTextFileFormat()
     // Do Nothing.
 }
 
+namespace
+{
+
+bool
+_CanReadImpl(const std::shared_ptr<ArAsset>& asset,
+             const std::string& cookie)
+{
+    TfErrorMark mark;
+
+    char aLine[512];
+
+    size_t numToRead = std::min(sizeof(aLine), cookie.length());
+    if (asset->Read(aLine, numToRead, /* offset = */ 0) != numToRead) {
+        return false;
+    }
+
+    aLine[numToRead] = '\0';
+
+    // Don't allow errors to escape this function, since this function is
+    // just trying to answer whether the asset can be read.
+    return !mark.Clear() && TfStringStartsWith(aLine, cookie);
+}
+
+} // end anonymous namespace
+
 bool
 SdfTextFileFormat::CanRead(const string& filePath) const
 {
     TRACE_FUNCTION();
 
-    bool canRead = false;
-    if (FILE *f = ArchOpenFile(filePath.c_str(), "rb")) {
-        canRead = _CanReadImpl(f);
-        fclose(f);
-    }
-
-    return canRead;
+    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(filePath);
+    return asset && _CanReadImpl(asset, GetFileCookie());
 }
-
-bool
-SdfTextFileFormat::_CanReadImpl(FILE *fp) const
-{
-    const string &cookie = GetFileCookie();
-    char aLine[512];
-    return fgets(aLine, sizeof(aLine), fp) && TfStringStartsWith(aLine, cookie);
-}
-
-class Sdf_ScopedFilePointer : boost::noncopyable
-{
-public:
-    explicit Sdf_ScopedFilePointer(const string& filePath)
-        : _fp(ArchOpenFile(filePath.c_str(), "rb"))
-    { }
-
-    ~Sdf_ScopedFilePointer() {
-        if (_fp)
-            fclose(_fp);
-    }
-
-    FILE* operator *() const {
-        return _fp;
-    }
-
-private:
-    FILE* _fp;
-};
 
 bool
 SdfTextFileFormat::Read(
-    const SdfLayerBasePtr& layerBase,
+    SdfLayer* layer,
     const string& resolvedPath,
     bool metadataOnly) const
 {
     TRACE_FUNCTION();
 
-    Sdf_ScopedFilePointer fp(resolvedPath);
-    if (!*fp)
-        return false;
-
-    SdfLayerHandle layer = TfDynamic_cast<SdfLayerHandle>(layerBase);
-    if (!TF_VERIFY(layer)) {
+    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(resolvedPath);
+    if (!asset) {
         return false;
     }
 
     // Quick check to see if the file has the magic cookie before spinning up
     // the parser.
-    if (!_CanReadImpl(*fp)) {
-        TF_RUNTIME_ERROR("File <%s> is not a valid %s file",
+    if (!_CanReadImpl(asset, GetFileCookie())) {
+        TF_RUNTIME_ERROR("<%s> is not a valid %s layer",
                          resolvedPath.c_str(),
                          GetFormatId().GetText());
         return false;
     }
-    fseek(*fp, 0, SEEK_SET);
 
-    SdfAbstractDataRefPtr data = InitData(layerBase->GetFileFormatArguments());
-    if (!Sdf_ParseMenva(resolvedPath, *fp, 
-                           GetFormatId(),
-                           GetVersionString(),
-                           metadataOnly,
-                           TfDynamic_cast<SdfDataRefPtr>(data))) {
+    const int fileSizeWarning = TfGetEnvSetting(SDF_TEXTFILE_SIZE_WARNING_MB);
+    const size_t toMB = 1048576;
+
+    if (fileSizeWarning > 0 && asset->GetSize() > (fileSizeWarning * toMB)) {
+        TF_WARN("Performance warning: reading %lu MB text-based layer <%s>.",
+                asset->GetSize() / toMB,
+                resolvedPath.c_str());
+    }
+
+    SdfAbstractDataRefPtr data = InitData(layer->GetFileFormatArguments());
+    if (!Sdf_ParseMenva(
+            resolvedPath, asset, GetFormatId(), GetVersionString(), 
+            metadataOnly, TfDynamic_cast<SdfDataRefPtr>(data))) {
         return false;
     }
 
-    if (_LayerIsLoadingAsNew(layer)) {
-        // New layer, so we don't need undo inverses or notification.
-        // Just swap out the data.
-        _SwapLayerData(layer, data);
-    } else {
-        // Layer has pre-existing data.  Use _SetData() to provide
-        // fine-grained inverses and undo registration.
-        _SetLayerData(layer, data);
-    }
-
+    _SetLayerData(layer, data);
     return true;
 }
 
@@ -286,7 +279,7 @@ _WriteLayerToMenva(
     string headerStr = header.str();
     if (!headerStr.empty()) {
         _Write(out, 0, "(\n");
-        _Write(out, 0, headerStr.c_str());
+        _Write(out, 0, "%s", headerStr.c_str());
         _Write(out, 0, ")\n");
     }
 
@@ -315,7 +308,7 @@ _WriteLayerToMenva(
 
 bool
 SdfTextFileFormat::WriteToFile(
-    const SdfLayerBase* layerBase,
+    const SdfLayer& layer,
     const std::string& filePath,
     const std::string& comment,
     const FileFormatArguments& args) const
@@ -328,7 +321,7 @@ SdfTextFileFormat::WriteToFile(
         return false;
     }
 
-    bool ok = Write(layerBase, wrapper.GetStream(), comment);
+    bool ok = Write(layer, wrapper.GetStream(), comment);
 
     if (ok && !wrapper.Commit(&reason)) {
         TF_RUNTIME_ERROR(reason);
@@ -340,15 +333,10 @@ SdfTextFileFormat::WriteToFile(
 
 bool 
 SdfTextFileFormat::ReadFromString(
-    const SdfLayerBasePtr& layerBase,
+    SdfLayer* layer,
     const std::string& str) const
 {
-    SdfLayerHandle layer = TfDynamic_cast<SdfLayerHandle>(layerBase);
-    if (!TF_VERIFY(layer)) {
-        return false;
-    }
-
-    SdfAbstractDataRefPtr data = InitData(layerBase->GetFileFormatArguments());
+    SdfAbstractDataRefPtr data = InitData(layer->GetFileFormatArguments());
     if (!Sdf_ParseMenvaFromString(str, 
                                   GetFormatId(),
                                   GetVersionString(),
@@ -356,27 +344,18 @@ SdfTextFileFormat::ReadFromString(
         return false;
     }
 
-    if (_LayerIsLoadingAsNew(layer)) {
-        // New layer, so we don't need undo inverses or notification.
-        // Just swap out the data.
-        _SwapLayerData(layer, data);
-    } else {
-        // Layer has pre-existing data.  Use _SetData() to provide
-        // fine-grained inverses and undo registration.
-        _SetLayerData(layer, data);
-    }
-
+    _SetLayerData(layer, data);
     return true;
 }
 
 bool 
 SdfTextFileFormat::WriteToString(
-    const SdfLayerBase* layerBase,
+    const SdfLayer& layer,
     std::string* str,
     const std::string& comment) const
 {
     std::stringstream ostr;
-    if (!Write(layerBase, ostr, comment)) {
+    if (!Write(layer, ostr, comment)) {
         return false;
     }
 
@@ -386,29 +365,24 @@ SdfTextFileFormat::WriteToString(
 
 bool
 SdfTextFileFormat::WriteToStream(
-    const SdfLayerBase* layerBase,
+    const SdfLayer& layer,
     std::ostream& ostr) const
 {
-    return Write(layerBase, ostr);
+    return Write(layer, ostr);
 }
 
 bool
 SdfTextFileFormat::Write(
-    const SdfLayerBase* layerBase,
+    const SdfLayer& layer,
     std::ostream& ostr,
     const string& commentOverride) const
 {
     TRACE_FUNCTION();
 
-    const SdfLayer *layer = dynamic_cast<const SdfLayer *>(layerBase);
-    if (!TF_VERIFY(layer)) {
-        return false;
-    }
-
     string comment = commentOverride.empty() ?
-        layer->GetComment() : commentOverride;
+        layer.GetComment() : commentOverride;
 
-    return _WriteLayerToMenva(layer, ostr, GetFileCookie(),
+    return _WriteLayerToMenva(&layer, ostr, GetFileCookie(),
                               GetVersionString(), comment);
 
     return false;
@@ -425,12 +399,6 @@ SdfTextFileFormat::WriteToStream(
 
 bool
 SdfTextFileFormat::_ShouldSkipAnonymousReload() const
-{
-    return false;
-}
-
-bool 
-SdfTextFileFormat::_IsStreamingLayer(const SdfLayerBase& layer) const
 {
     return false;
 }

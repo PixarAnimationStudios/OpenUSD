@@ -68,7 +68,7 @@ public:
     static const size_t numColumns = 2;
 
     /// Default constructor. Leaves the matrix component values undefined.
-    GfMatrix2d() {}
+    GfMatrix2d() = default;
 
     /// Constructor. Initializes the matrix from 4 independent
     /// \c double values, specified in row-major order. For example,
@@ -189,6 +189,18 @@ public:
     /// the matrix, specified in row-major order.
     GF_API
     double* Get(double m[2][2]) const;
+
+    /// Returns raw access to components of matrix as an array of
+    /// \c double values.  Components are in row-major order.
+    double* data() {
+        return _mtx.GetData();
+    }
+
+    /// Returns const raw access to components of matrix as an array of
+    /// \c double values.  Components are in row-major order.
+    const double* data() const {
+        return _mtx.GetData();
+    }
 
     /// Returns vector components as an array of \c double values.
     double* GetArray()  {
@@ -353,6 +365,13 @@ private:
     // Friend declarations
     friend class GfMatrix2f;
 };
+
+
+/// Tests for equality within a given tolerance, returning \c true if the
+/// difference between each component of the matrix is less than or equal
+/// to \p tolerance, or false otherwise.
+GF_API 
+bool GfIsClose(GfMatrix2d const &m1, GfMatrix2d const &m2, double tolerance);
 
 /// Output a GfMatrix2d
 /// \ingroup group_gf_DebuggingOutput

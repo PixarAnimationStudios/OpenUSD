@@ -90,6 +90,7 @@ public:
     /// Returns true if this node is 'less' than \p rhs. 
     /// The ordering of nodes is arbitrary and does not indicate the relative
     /// strength of the nodes.
+    PCP_API
     bool operator<(const PcpNodeRef& rhs) const;
 
     /// Hash functor.
@@ -102,6 +103,7 @@ public:
     PcpPrimIndex_GraphPtr GetOwningGraph() const;
 
     /// Returns a value that uniquely identifies this node.
+    PCP_API
     void* GetUniqueIdentifier() const;
 
     /// @}
@@ -210,10 +212,9 @@ public:
     PCP_API
     const PcpLayerStackRefPtr& GetLayerStack() const;
 
-    /// Returns true if this node is a source of direct opinions.
-    /// There should only be one direct node per prim index.
+    /// Returns true if this node is the root node of the prim index graph.
     PCP_API
-    bool IsDirect() const;
+    bool IsRootNode() const;
 
     /// Returns true if this node is due to an ancestral opinion.
     PCP_API

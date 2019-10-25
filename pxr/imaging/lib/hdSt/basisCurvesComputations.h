@@ -44,7 +44,7 @@ class HdSt_BasisCurvesIndexBuilderComputation : public HdComputedBufferSource {
 public:
     HdSt_BasisCurvesIndexBuilderComputation(HdBasisCurvesTopology *topology,
                                             bool forceLines);
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
     virtual bool Resolve() override;
 
     virtual bool HasChainedBuffer() const override;
@@ -85,7 +85,7 @@ public:
     HdSt_BasisCurvesWidthsInterpolaterComputation(HdBasisCurvesTopology *topology,
                                                 VtFloatArray authoredWidths);
     virtual bool Resolve() override;
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
 
 protected:
     virtual bool _CheckValid() const override;
@@ -104,7 +104,7 @@ public:
     HdSt_BasisCurvesNormalsInterpolaterComputation(HdBasisCurvesTopology *topology,
                                                 VtVec3fArray authoredNormals);
     virtual bool Resolve() override;
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
 
 protected:
     virtual bool _CheckValid() const override;

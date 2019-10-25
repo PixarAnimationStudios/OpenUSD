@@ -61,12 +61,9 @@ UsdModelAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 }
 
 
-/* static */
-UsdModelAPI
-UsdModelAPI::Apply(const UsdPrim &prim)
-{
-    return UsdAPISchemaBase::_ApplyAPISchema<UsdModelAPI>(
-            prim, _schemaTokens->ModelAPI);
+/* virtual */
+UsdSchemaType UsdModelAPI::_GetSchemaType() const {
+    return UsdModelAPI::schemaType;
 }
 
 /* static */
@@ -116,6 +113,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+#include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/registryManager.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/usd/clip.h"
 #include "pxr/usd/kind/registry.h"
@@ -126,6 +125,13 @@ using std::string;
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(UsdModelAPIAssetInfoKeys, USDMODEL_ASSET_INFO_KEYS);
+
+TF_REGISTRY_FUNCTION(TfEnum)
+{
+    TF_ADD_ENUM_NAME(UsdModelAPI::KindValidationNone);
+    TF_ADD_ENUM_NAME(UsdModelAPI::KindValidationModelHierarchy);
+}
+
 
 bool
 UsdModelAPI::GetKind(TfToken* retValue) const
@@ -146,6 +152,19 @@ UsdModelAPI::SetKind(const TfToken& value)
     }
 
     return GetPrim().SetMetadata(SdfFieldKeys->Kind, value);
+}
+
+bool
+UsdModelAPI::IsKind(const TfToken& baseKind,
+                    UsdModelAPI::KindValidation validation) const{
+    if (validation == UsdModelAPI::KindValidationModelHierarchy){
+        if (KindRegistry::IsA(baseKind, KindTokens->model) && !IsModel())
+            return false;
+    }
+    TfToken primKind;
+    if (!GetKind(&primKind))
+        return false;
+    return KindRegistry::IsA(primKind, baseKind);
 }
 
 bool

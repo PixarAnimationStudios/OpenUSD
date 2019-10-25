@@ -56,8 +56,14 @@ GlfUVTextureStorage::GlfUVTextureStorage(
     /* nothing */
 }
 
+int
+GlfUVTextureStorage::GetNumDimensions() const
+{
+    return 2;
+}
+
 void 
-GlfUVTextureStorage::_OnSetMemoryRequested(size_t targetMemory)
+GlfUVTextureStorage::_ReadTexture()
 {
     GlfUVTextureStorageDataRefPtr texData =
         GlfUVTextureStorageData::New(
@@ -67,6 +73,8 @@ GlfUVTextureStorage::_OnSetMemoryRequested(size_t targetMemory)
     texData->Read(0, false); 
     _UpdateTexture(texData);
     _CreateTexture(texData, _GenerateMipmap()); 
+
+    _SetLoaded();
 }
 
 bool

@@ -45,6 +45,7 @@ TF_WRAP_MODULE
     TF_WRAP(UsdEditTarget);
     TF_WRAP(UsdEditContext);
     TF_WRAP(UsdInherits);
+    TF_WRAP(UsdPayloads);
     TF_WRAP(UsdPrimFlags);
     TF_WRAP(UsdReferences);
     TF_WRAP(UsdSchemaRegistry);
@@ -61,6 +62,7 @@ TF_WRAP_MODULE
     TF_WRAP(UsdStage);
     TF_WRAP(UsdStageCache);
     TF_WRAP(UsdStageCacheContext);
+    TF_WRAP(UsdStageLoadRules);
     TF_WRAP(UsdStagePopulationMask);
 
     // Generated schema.
@@ -70,7 +72,12 @@ TF_WRAP_MODULE
 
     // Miscellaenous classes
     TF_WRAP(UsdAttributeQuery);
+    TF_WRAP(UsdCollectionMembershipQuery);
     TF_WRAP(UsdCrateInfo);
     TF_WRAP(UsdResolveInfo);
     TF_WRAP(Version);
+    TF_WRAP(UsdZipFile);
+    TF_WRAP(UsdPrimCompositionQueryArc);
+    TF_WRAP(UsdPrimCompositionQuery);
+    TF_WRAP(UsdFlattenUtils);
 }

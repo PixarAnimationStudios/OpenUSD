@@ -26,12 +26,10 @@
 #include "context.h"
 #include "UT_Gf.h"
 
-#include <GT/GT_PrimInstance.h>
 #include <GT/GT_GEOPrimPacked.h>
 #include <GT/GT_Refine.h>
-#include <GT/GT_PrimCollect.h>
 
-#include <boost/foreach.hpp>
+#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -138,13 +136,6 @@ redefine( const UsdStagePtr& stage,
     return true;
 }
 
-bool GusdScopeWrapper::
-getUniqueID(int64& id) const
-{
-    static const int s_id = GT_Primitive::createPrimitiveTypeId();
-    id = s_id;
-    return true;
-}
 
 const char* GusdScopeWrapper::
 className() const
@@ -186,7 +177,7 @@ doSoftCopy() const
 bool GusdScopeWrapper::
 isValid() const
 {
-    return m_usdScope;
+    return static_cast<bool>(m_usdScope);
 }
 
 bool GusdScopeWrapper::

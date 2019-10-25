@@ -86,11 +86,11 @@ public:
     /// all draw items. Culling state is reset, with no items visible.
     HDST_API
     void SwapDrawItems(std::vector<HdStDrawItem const*>* items,
-                       unsigned currentShaderBindingsVersion);
+                       unsigned currentBatchVersion);
 
     /// Rebuild all draw batches if any underlying buffer array is invalidated.
     HDST_API
-    void RebuildDrawBatchesIfNeeded(unsigned currentShaderBindingsVersion);
+    void RebuildDrawBatchesIfNeeded(unsigned currentBatchVersion);
 
     /// Returns the total number of draw items, including culled items.
     size_t GetTotalSize() const { return _drawItems.size(); }
@@ -103,6 +103,9 @@ public:
         return _drawItems.size() - _visibleSize; 
     }
 
+    HDST_API
+    void SetEnableTinyPrimCulling(bool tinyPrimCulling);
+
 private:
     void _RebuildDrawBatches();
 
@@ -111,7 +114,7 @@ private:
     HdSt_DrawBatchSharedPtrVector _drawBatches;
     size_t _visibleSize;
     unsigned _visChangeCount;
-    unsigned _shaderBindingsVersion;
+    unsigned _batchVersion;
 };
 
 

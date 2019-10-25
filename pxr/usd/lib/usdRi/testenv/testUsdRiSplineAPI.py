@@ -40,7 +40,8 @@ class TestUsdRiSplineAPI(unittest.TestCase):
 
         # can't use these if not properly initialized
         bogusSpline = UsdRi.SplineAPI()
-        assert not bogusSpline.Validate()[0]
+        with self.assertRaises(RuntimeError):
+            bogusSpline.Validate()[0]
 
         light = UsdLux.SphereLight.Define(stage, '/Light')
         rod = UsdRi.PxrRodLightFilter.Define(stage, '/Light/Rod')

@@ -62,6 +62,27 @@ class TestUsdSpecializes(unittest.TestCase):
             self.assertEqual(len(concrete.GetMetadata("specializes").deletedItems), 0)
             self.assertEqual(len(concrete.GetMetadata("specializes").explicitItems), 1)
 
+            # Set the list of added items to explicitly empty. The metadata will
+            # still exist as an explicitly empty list op.
+            assert concrete.GetSpecializes().SetSpecializes([])
+            assert concrete.HasAuthoredSpecializes()
+            self.assertEqual(len(concrete.GetMetadata("specializes").prependedItems), 0)
+            self.assertEqual(len(concrete.GetMetadata("specializes").deletedItems), 0)
+            self.assertEqual(len(concrete.GetMetadata("specializes").explicitItems), 0)
+
+            # Clear the specializes. Still empty but no longer explicit.
+            assert concrete.GetSpecializes().ClearSpecializes()
+            assert not concrete.HasAuthoredSpecializes()
+            assert not concrete.GetMetadata("specializes")
+
+            # Set the list of added items to explicitly empty again from cleared
+            # verifying that it is indeed set to explicit.
+            assert concrete.GetSpecializes().SetSpecializes([])
+            assert concrete.HasAuthoredSpecializes()
+            self.assertEqual(len(concrete.GetMetadata("specializes").prependedItems), 0)
+            self.assertEqual(len(concrete.GetMetadata("specializes").deletedItems), 0)
+            self.assertEqual(len(concrete.GetMetadata("specializes").explicitItems), 0)
+
     def test_SpecializedPrim(self):
         for fmt in allFormats:
             stage = Usd.Stage.CreateInMemory("x."+fmt)

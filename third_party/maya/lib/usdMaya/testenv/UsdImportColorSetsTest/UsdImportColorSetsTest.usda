@@ -57,6 +57,12 @@ def Xform "UsdImportColorSetsTest" (
                 float[] primvars:FaceColor_Full_kAlpha = [1, 0.9, 0.8, 0.7, 0.6, 0.5] (
                     interpolation = "uniform"
                 )
+                float[] primvars:ExcludeMe = [.5] (
+                    interpolation = "constant"
+                )
+                float[] primvars:ExcludeMeNot = [.5] (
+                    interpolation = "constant"
+                )
                 int[] primvars:FaceColor_Full_kAlpha:indices = [0, 1, 2, 3, 4, 5]
                 color3f[] primvars:FaceColor_Full_kRGB = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0), (1, 0, 1), (0, 1, 1)] (
                     interpolation = "uniform"

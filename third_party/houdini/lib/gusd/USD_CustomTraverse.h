@@ -24,9 +24,9 @@
 #ifndef _GUSD_USD_CUSTOMTRAVERSE_H_
 #define _GUSD_USD_CUSTOMTRAVERSE_H_
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 
-#include "gusd/USD_Traverse.h"
+#include "USD_Traverse.h"
 
 #include <UT/UT_StringMMPattern.h>
 
@@ -103,6 +103,8 @@ public:
                               UT_Array<PrimIndexPair>& prims,
                               bool skipRoot=true,
                               const GusdUSD_Traverse::Opts* opts=nullptr) const;
+
+    static void     Initialize();
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

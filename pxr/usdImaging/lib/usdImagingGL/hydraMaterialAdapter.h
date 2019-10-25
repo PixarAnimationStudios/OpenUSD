@@ -46,15 +46,13 @@ public:
     virtual ~UsdImagingGLHydraMaterialAdapter();
 
     USDIMAGINGGL_API
-    virtual SdfPath Populate(UsdPrim const& prim,
-                     UsdImagingIndexProxy* index,
-                     UsdImagingInstancerContext const* instancerContext = NULL);
+    virtual SdfPath Populate(
+            UsdPrim const& prim,
+            UsdImagingIndexProxy* index,
+            UsdImagingInstancerContext const* instancerContext = NULL) override;
 
     USDIMAGINGGL_API
-    virtual bool IsSupported(UsdImagingIndexProxy const* index) const;
-
-    USDIMAGINGGL_API
-    virtual bool IsPopulatedIndirectly();
+    virtual bool IsSupported(UsdImagingIndexProxy const* index) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
@@ -66,7 +64,7 @@ public:
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
-                                      instancerContext = NULL);
+                                      instancerContext = NULL) const override;
 
 
     /// Thread Safe.
@@ -76,7 +74,7 @@ public:
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext = NULL);
+                                   instancerContext = NULL) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Change Processing 
@@ -85,25 +83,37 @@ public:
     /// Returns a bit mask of attributes to be udpated, or
     /// HdChangeTracker::AllDirty if the entire prim must be resynchronized.
     USDIMAGINGGL_API
-    virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
-                                              SdfPath const& cachePath,
-                                              TfToken const& propertyName);
+    virtual HdDirtyBits ProcessPropertyChange(
+            UsdPrim const& prim,
+            SdfPath const& cachePath,
+            TfToken const& propertyName) override;
 
     USDIMAGINGGL_API
     virtual void MarkDirty(UsdPrim const& prim,
                            SdfPath const& cachePath,
                            HdDirtyBits dirty,
-                           UsdImagingIndexProxy* index);
+                           UsdImagingIndexProxy* index) override;
+
+    USDIMAGING_API
+    virtual void MarkMaterialDirty(UsdPrim const& prim,
+                                   SdfPath const& cachePath,
+                                   UsdImagingIndexProxy* index) override;
+
 
     // ---------------------------------------------------------------------- //
     /// \name Texture resources
     // ---------------------------------------------------------------------- //
 
     virtual HdTextureResource::ID
-    GetTextureResourceID(UsdPrim const& usdPrim, SdfPath const &id, UsdTimeCode time, size_t salt) const override;
+    GetTextureResourceID(UsdPrim const& usdPrim, 
+                         SdfPath const &id, 
+                         UsdTimeCode time, 
+                         size_t salt) const override;
 
     virtual HdTextureResourceSharedPtr
-    GetTextureResource(UsdPrim const& usdPrim, SdfPath const &id, UsdTimeCode time) const override;
+    GetTextureResource(UsdPrim const& usdPrim, 
+                       SdfPath const &id, 
+                       UsdTimeCode time) const override;
 
 protected:
     USDIMAGINGGL_API
@@ -114,35 +124,62 @@ private:
     /// \brief Returns the source string for the specified shader
     /// terminal for the shader \p prim.
     /// 
-    /// This obtains the shading source via the \c UsdHydraShader schema.
+    /// This obtains the shading source.
     std::string _GetShaderSource(UsdPrim const& prim,
-                                 TfToken const& shaderType) const;
+                                 TfToken const& shaderType,
+                                 VtDictionary * metadataOut = nullptr) const;
 
-    /// \brief Returns the textures (identified by \c SdfPath objects) that \p
-    /// prim uses.
-    SdfPathVector _GetSurfaceShaderTextures(UsdPrim const& prim) const;
+    /// \brief Returns the root "surface" shader prim for the material, by 
+    /// traversing which the entire hydra shading network can be discovered.
+    /// 
+    /// Returns an invalid prim if the material does not have a 'surface' 
+    /// shader.
+    UsdPrim _GetSurfaceShaderPrim(const UsdShadeMaterial &material) const;
 
-    /// \brief Returns the parameters that \p prim uses.  Hydra will build
-    /// the appropriate internal data structures so that these values are
-    /// available in the material.
-    ///
-    /// \sa HdMaterialParam
-    HdMaterialParamVector _GetMaterialParams(UsdPrim const& prim) const;
+    /// \brief Returns the root displacement shader prim for the material.
+    /// 
+    /// Returns an invalid prim if the material does not have a 'displacement' 
+    /// shader.
+    UsdPrim _GetDisplacementShaderPrim(const UsdShadeMaterial &material) const;
 
-    /// \brief Returns the value of param \p paramName for \p prim.
-    VtValue _GetMaterialParamValue(UsdPrim const& prim,
+    UsdPrim _GetVolumeShaderPrim(const UsdShadeMaterial &material) const;
+
+    /// \brief Populates the information in the material graph
+    /// (identified by \c SdfPath objects) that this \p materialPrim uses.
+    /// 
+    /// Returns false if the material prim has an invalid material graph.
+    bool _GatherMaterialData(
+        UsdPrim const& materialPrim,
+        UsdPrim *surfaceShaderPrim,
+        UsdPrim *displacementShaderPrim,
+        UsdPrim *volumeShaderPrim,
+        SdfPathVector *textureIDs,
+        TfTokenVector *primvars,
+        HdMaterialParamVector *materialParams,
+        TfToken *materialTag) const;
+
+    /// \brief Returns the information in the material graph
+    /// (identified by \c SdfPath objects) that this \p shaderPrim uses.
+    void _WalkShaderNetwork(
+        UsdPrim const& shaderPrim,
+        SdfPathVector *textureIDs,
+        TfTokenVector *primvars,
+        HdMaterialParamVector *materialParams,
+        TfToken *materialTag) const;
+
+    /// \brief Returns the information in a legacy material graph
+    /// (identified by \c SdfPath objects) that this \p shaderPrim uses.
+    void _WalkShaderNetworkDeprecated(
+        UsdPrim const &shaderPrim,
+        SdfPathVector *textureIDs,
+        TfTokenVector *primvars,
+        HdMaterialParamVector *materialParams,
+        TfToken *materialTag) const;
+
+    /// \brief Returns the value of param \p paramName for \p shaderPrim.
+    VtValue _GetMaterialParamValue(UsdPrim const& shaderPrim,
                                    TfToken const& paramName,
                                    UsdTimeCode time) const;
-
-    /// Entry point for primvar discovery.
-    TfTokenVector _DiscoverPrimvars(SdfPath const& shaderPath) const;
-
-    /// Discover required primvars by searching for primvar inputs connected to
-    /// the shader network.
-    TfTokenVector _DiscoverPrimvarsFromShaderNetwork(UsdShadeShader const& shader) const;
-
-    // Deprecated shader discovery.
-    TfTokenVector _DiscoverPrimvarsDeprecated(UsdPrim const& shaderPrim) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

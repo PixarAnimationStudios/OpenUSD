@@ -60,6 +60,29 @@ class TestPcpChanges(unittest.TestCase):
         self.assertTrue(pi)
         self.assertEqual(pi.primStack, [primSpec])
 
+    def test_InvalidSublayerAdd(self):
+        invalidSublayerId = "/tmp/testPcpChanges_invalidSublayer.sdf"
+
+        layer = Sdf.Layer.CreateAnonymous()
+        layerStackId = Pcp.LayerStackIdentifier(layer)
+        pcp = Pcp.Cache(layerStackId)
+
+        (layerStack, errs) = pcp.ComputeLayerStack(layerStackId)
+        self.assertEqual(len(errs), 0)
+        self.assertEqual(len(layerStack.localErrors), 0)
+
+        with Pcp._TestChangeProcessor(pcp):
+            layer.subLayerPaths.append(invalidSublayerId)
+
+        (layerStack, errs) = pcp.ComputeLayerStack(layerStackId)
+        # This is potentially surprising. Layer stacks are recomputed
+        # immediately during change processing, so any composition
+        # errors generated during that process won't be reported 
+        # during the call to ComputeLayerStack. The errors will be
+        # stored in the layer stack's localErrors field, however.
+        self.assertEqual(len(errs), 0)
+        self.assertEqual(len(layerStack.localErrors), 1)
+
     def test_InvalidSublayerRemoval(self):
         invalidSublayerId = "/tmp/testPcpChanges_invalidSublayer.sdf"
 
@@ -69,13 +92,17 @@ class TestPcpChanges(unittest.TestCase):
         layerStackId = Pcp.LayerStackIdentifier(layer)
         pcp = Pcp.Cache(layerStackId)
 
-        self.assertEqual(len(pcp.ComputeLayerStack(layerStackId)[1]), 1)
+        (layerStack, errs) = pcp.ComputeLayerStack(layerStackId)
+        self.assertEqual(len(errs), 1)
+        self.assertEqual(len(layerStack.localErrors), 1)
         self.assertTrue(pcp.IsInvalidSublayerIdentifier(invalidSublayerId))
 
         with Pcp._TestChangeProcessor(pcp):
             layer.subLayerPaths.remove(invalidSublayerId)
 
-        self.assertEqual(len(pcp.ComputeLayerStack(layerStackId)[1]), 0)
+        (layerStack, errs) = pcp.ComputeLayerStack(layerStackId)
+        self.assertEqual(len(errs), 0)
+        self.assertEqual(len(layerStack.localErrors), 0)
         self.assertFalse(pcp.IsInvalidSublayerIdentifier(invalidSublayerId))
 
     def test_UnusedVariantChanges(self):
@@ -149,13 +176,16 @@ class TestPcpChanges(unittest.TestCase):
         with Pcp._TestChangeProcessor(pcp):
             refLayer.subLayerOffsets[0] = Sdf.LayerOffset(200.0)
 
-        self.assertFalse(pcp.FindPrimIndex('/A'))
-        (pi, err) = pcp.ComputePrimIndex('/A')
-        refNode = pi.rootNode.children[0]
-        ref2Node = refNode.children[0]
+            self.assertFalse(pcp.FindPrimIndex('/A'))
+            # Compute the prim index in the change processing block as the 
+            # changed refLayer is only being held onto by the changes' lifeboat
+            # as its referencing prim index has been invalidated.
+            (pi, err) = pcp.ComputePrimIndex('/A')
+            refNode = pi.rootNode.children[0]
+            ref2Node = refNode.children[0]
 
-        self.assertEqual(refNode.mapToRoot.timeOffset, Sdf.LayerOffset(200.0))
-        self.assertEqual(ref2Node.mapToRoot.timeOffset, Sdf.LayerOffset(400.0))
+            self.assertEqual(refNode.mapToRoot.timeOffset, Sdf.LayerOffset(200.0))
+            self.assertEqual(ref2Node.mapToRoot.timeOffset, Sdf.LayerOffset(400.0))
 
     def test_DefaultReferenceTargetChanges(self):
         # create a layer, set DefaultPrim, then reference it.
@@ -357,6 +387,95 @@ class TestPcpChanges(unittest.TestCase):
         self.assertEqual(len(err), 0)
         self.assertFalse(pi.IsInstanceable())
         self.assertEqual(pi.ComputePrimChildNames(), (['RefChild', 'DirectChild'], []))
-    
+
+    def test_InertPrimChanges(self):
+        refLayer = Sdf.Layer.CreateAnonymous()
+        refParentSpec = Sdf.PrimSpec(refLayer, 'Parent', Sdf.SpecifierDef)
+        refChildSpec = Sdf.PrimSpec(refParentSpec, 'Child', Sdf.SpecifierDef)
+
+        rootLayer = Sdf.Layer.CreateAnonymous()
+        parentSpec = Sdf.PrimSpec(rootLayer, 'Parent', Sdf.SpecifierOver)
+        parentSpec.referenceList.Add(
+            Sdf.Reference(refLayer.identifier, '/Parent'))
+
+        pcp = Pcp.Cache(Pcp.LayerStackIdentifier(rootLayer))
+
+        # Adding an empty over to a prim that already exists (has specs)
+        # is an insignificant change.
+        (pi, err) = pcp.ComputePrimIndex('/Parent/Child')
+        self.assertEqual(err, [])
+        with Pcp._TestChangeProcessor(pcp) as cp:
+            Sdf.CreatePrimInLayer(rootLayer, '/Parent/Child')
+            self.assertEqual(cp.GetSignificantChanges(), [])
+            self.assertEqual(cp.GetSpecChanges(), ['/Parent/Child'])
+            self.assertEqual(cp.GetPrimChanges(), [])
+
+        # Adding an empty over as the first spec for a prim is a
+        # a significant change, even if we haven't computed a prim index
+        # for that path yet.
+        with Pcp._TestChangeProcessor(pcp) as cp:
+            Sdf.CreatePrimInLayer(rootLayer, '/Parent/NewChild')
+            self.assertEqual(cp.GetSignificantChanges(), ['/Parent/NewChild'])
+            self.assertEqual(cp.GetSpecChanges(), [])
+            self.assertEqual(cp.GetPrimChanges(), [])
+
+        (pi, err) = pcp.ComputePrimIndex('/Parent/NewChild2')
+        self.assertEqual(err, [])
+        with Pcp._TestChangeProcessor(pcp) as cp:
+            Sdf.CreatePrimInLayer(rootLayer, '/Parent/NewChild2')
+            self.assertEqual(cp.GetSignificantChanges(), ['/Parent/NewChild2'])
+            self.assertEqual(cp.GetSpecChanges(), [])
+            self.assertEqual(cp.GetPrimChanges(), [])
+
+    def test_InertPrimRemovalChanges(self):
+        subLayer = Sdf.Layer.CreateAnonymous()
+        subParentSpec = Sdf.PrimSpec(subLayer, 'Parent', Sdf.SpecifierDef)
+        subChildSpec = Sdf.PrimSpec(subParentSpec, 'Child', Sdf.SpecifierDef)
+        subAttrSpec = Sdf.AttributeSpec(subChildSpec, 'attr', Sdf.ValueTypeNames.Double)
+        subAttrSpec.default = 1.0
+
+        rootLayer = Sdf.Layer.CreateAnonymous()
+        rootParentSpec = Sdf.PrimSpec(rootLayer, 'Parent', Sdf.SpecifierOver)
+        rootChildSpec = Sdf.PrimSpec(rootParentSpec, 'Child', Sdf.SpecifierOver)
+        rootAttrSpec = Sdf.AttributeSpec(rootChildSpec, 'attr', Sdf.ValueTypeNames.Double)
+        rootLayer.subLayerPaths.append(subLayer.identifier)
+
+        pcp = Pcp.Cache(Pcp.LayerStackIdentifier(rootLayer))
+
+        (pi, err) = pcp.ComputePrimIndex('/Parent')
+        self.assertEqual(err, [])
+        self.assertEqual(pi.primStack, [rootParentSpec, subParentSpec])
+
+        (pi, err) = pcp.ComputePrimIndex('/Parent/Child')
+        self.assertEqual(err, [])
+        self.assertEqual(pi.primStack, [rootChildSpec, subChildSpec])
+
+        (pi, err) = pcp.ComputePropertyIndex('/Parent/Child.attr')
+        self.assertEqual(err, [])
+        self.assertEqual(pi.propertyStack, [rootAttrSpec, subAttrSpec])
+
+        with Pcp._TestChangeProcessor(pcp) as cp:
+            del rootLayer.pseudoRoot.nameChildren['Parent']
+            self.assertFalse(rootParentSpec)
+            self.assertFalse(rootChildSpec)
+            self.assertFalse(rootAttrSpec)
+
+            self.assertEqual(cp.GetSignificantChanges(), [])
+            self.assertEqual(cp.GetSpecChanges(), 
+                             ['/Parent', '/Parent/Child', '/Parent/Child.attr'])
+            self.assertEqual(cp.GetPrimChanges(), [])
+
+        (pi, err) = pcp.ComputePrimIndex('/Parent')
+        self.assertEqual(err, [])
+        self.assertEqual(pi.primStack, [subParentSpec])
+
+        (pi, err) = pcp.ComputePrimIndex('/Parent/Child')
+        self.assertEqual(err, [])
+        self.assertEqual(pi.primStack, [subChildSpec])
+        
+        (pi, err) = pcp.ComputePropertyIndex('/Parent/Child.attr')
+        self.assertEqual(err, [])
+        self.assertEqual(pi.propertyStack, [subAttrSpec])
+
 if __name__ == "__main__":
     unittest.main()

@@ -74,6 +74,11 @@ UsdGeomPointInstancer::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdGeomPointInstancer::_GetSchemaType() const {
+    return UsdGeomPointInstancer::schemaType;
+}
+
 /* static */
 const TfType &
 UsdGeomPointInstancer::_GetStaticTfType()
@@ -200,6 +205,23 @@ UsdGeomPointInstancer::CreateVelocitiesAttr(VtValue const &defaultValue, bool wr
 }
 
 UsdAttribute
+UsdGeomPointInstancer::GetAccelerationsAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->accelerations);
+}
+
+UsdAttribute
+UsdGeomPointInstancer::CreateAccelerationsAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->accelerations,
+                       SdfValueTypeNames->Vector3fArray,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdGeomPointInstancer::GetAngularVelocitiesAttr() const
 {
     return GetPrim().GetAttribute(UsdGeomTokens->angularVelocities);
@@ -269,6 +291,7 @@ UsdGeomPointInstancer::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->orientations,
         UsdGeomTokens->scales,
         UsdGeomTokens->velocities,
+        UsdGeomTokens->accelerations,
         UsdGeomTokens->angularVelocities,
         UsdGeomTokens->invisibleIds,
     };
@@ -297,10 +320,15 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/gf/transform.h"
+#include "pxr/usd/usdGeom/samplingUtils.h"
 #include "pxr/usd/usdGeom/bboxCache.h"
+#include "pxr/usd/usdGeom/debugCodes.h"
 #include "pxr/usd/usdGeom/xformCache.h"
+#include "pxr/usd/usdGeom/motionAPI.h"
 
 #include "pxr/usd/usdGeom/boundableComputeExtent.h"
+#include "pxr/base/work/loops.h"
+#include "pxr/base/work/reduce.h"
 #include "pxr/base/tf/registryManager.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -308,7 +336,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // XXX Bug 139215: When we enable this, we can remove
 // SdfListOp::ComposeOperations().
 TF_DEFINE_ENV_SETTING(
-    USDGEOM_POINTINSTANCER_NEW_APPLYOPS, false,
+    USDGEOM_POINTINSTANCER_NEW_APPLYOPS, true,
     "Set to true to use SdfListOp::ApplyOperations() instead of "
     "ComposeOperations().");
 
@@ -504,7 +532,8 @@ UsdGeomPointInstancer::VisAllIds(UsdTimeCode const &time) const
 {
     VtInt64Array invised(0);
 
-    if (GetInvisibleIdsAttr().HasAuthoredValueOpinion())
+    if (GetInvisibleIdsAttr().HasAuthoredValue())
+        // We _could_ just block the attr instead. Better?
         return CreateInvisibleIdsAttr().Set(invised, time);
 
     return true;
@@ -589,6 +618,110 @@ UsdGeomPointInstancer::ComputeMaskAtTime(UsdTimeCode time,
 }
 
 bool
+UsdGeomPointInstancer::_GetProtoIndicesForInstanceTransforms(
+    UsdTimeCode baseTime,
+    VtIntArray* protoIndices) const
+{
+    if (baseTime.IsNumeric()) {
+        double sampleTimeValue = 0.0;
+        double upperTimeValue = 0.0;
+        bool hasSamples;
+        if (!GetProtoIndicesAttr().GetBracketingTimeSamples(
+                baseTime.GetValue(),
+                &sampleTimeValue,
+                &upperTimeValue,
+                &hasSamples)) {
+            return false;
+        }
+
+        UsdTimeCode sampleTime = UsdTimeCode::Default();
+        if (hasSamples) {
+            sampleTime = UsdTimeCode(sampleTimeValue);
+        }
+
+        if (!GetProtoIndicesAttr().Get(protoIndices, sampleTime)) {
+            return false;
+        }
+
+    } else {
+        // baseTime is UsdTimeCode.Default()
+        if (!GetProtoIndicesAttr().Get(protoIndices, baseTime)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool
+UsdGeomPointInstancer::_GetPrototypePathsForInstanceTransforms(
+    const VtIntArray& protoIndices,
+    SdfPathVector* protoPaths) const
+{
+    SdfPathVector protoPathData;
+    if (!GetPrototypesRel().GetTargets(&protoPathData) || protoPathData.empty()) {
+        TF_WARN("%s -- no prototypes",
+                GetPrim().GetPath().GetText());
+        return false;
+    }
+
+    for (const auto& protoIndex : protoIndices) {
+        if (protoIndex < 0
+                || static_cast<size_t>(protoIndex) >= protoPathData.size()) {
+            TF_WARN("%s -- invalid prototype index: %d. Should be in [0, %zu)",
+                    GetPrim().GetPath().GetText(),
+                    protoIndex,
+                    protoPathData.size());
+            return false;
+        }
+    }
+
+    *protoPaths = protoPathData;
+    return true;
+}
+
+bool
+UsdGeomPointInstancer::_ComputePointInstancerAttributesPreamble(
+    const UsdTimeCode baseTime,
+    const ProtoXformInclusion doProtoXforms,
+    const MaskApplication applyMask,
+    VtIntArray* protoIndices,
+    SdfPathVector* protoPaths,
+    std::vector<bool>* mask) const
+{
+    TRACE_FUNCTION();
+
+    if (!_GetProtoIndicesForInstanceTransforms(
+            baseTime,
+            protoIndices)) {
+        return false;
+    }
+
+    size_t numInstances = protoIndices->size();
+
+    if (doProtoXforms == IncludeProtoXform) {
+        if (!_GetPrototypePathsForInstanceTransforms(
+                *protoIndices,
+                protoPaths)) {
+            return false;
+        }
+    }
+
+    if (applyMask == ApplyMask) {
+        *mask = ComputeMaskAtTime(baseTime);
+        if (!(mask->empty() || mask->size() == numInstances)) {
+            TF_WARN(
+                "%s -- found mask of size [%zu], but expected size [%zu]",
+                GetPrim().GetPath().GetText(),
+                mask->size(),
+                numInstances);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool
 UsdGeomPointInstancer::ComputeInstanceTransformsAtTime(
     VtArray<GfMatrix4d>* xforms,
     const UsdTimeCode time,
@@ -596,137 +729,407 @@ UsdGeomPointInstancer::ComputeInstanceTransformsAtTime(
     const ProtoXformInclusion doProtoXforms,
     const MaskApplication applyMask) const
 {
-    // XXX: Need to add handling of velocities/angularVelocities and baseTime.
-    (void)baseTime;
+    TRACE_FUNCTION();
 
-    if (!xforms) {
-        TF_WARN("%s -- null container passed to ComputeInstanceTransformsAtTime()",
-                GetPrim().GetPath().GetText());
+    std::vector<VtArray<GfMatrix4d>> xformsArray;
+    std::vector<UsdTimeCode> times({time});
+    if (!ComputeInstanceTransformsAtTimes(&xformsArray,
+                            times,
+                            baseTime,
+                            doProtoXforms,
+                            applyMask)) {
         return false;
+    }
+    *xforms = xformsArray.at(0);
+
+    return true;
+}
+
+bool
+UsdGeomPointInstancer::ComputeInstanceTransformsAtTimes(
+    std::vector<VtArray<GfMatrix4d>>* xformsArray,
+    const std::vector<UsdTimeCode>& times,
+    const UsdTimeCode baseTime,
+    const ProtoXformInclusion doProtoXforms,
+    const MaskApplication applyMask) const
+{
+    size_t numSamples = times.size();
+    for (auto time : times) {
+        if (time.IsNumeric() != baseTime.IsNumeric()) {
+            TF_CODING_ERROR(
+                "%s -- all sample times in times and baseTime must either all "
+                "be numeric or all be default",
+                GetPrim().GetPath().GetText());
+        }
     }
 
     VtIntArray protoIndices;
-    if (!GetProtoIndicesAttr().Get(&protoIndices, time)) {
+    VtVec3fArray positions;
+    VtVec3fArray velocities;
+    UsdTimeCode velocitiesSampleTime;
+    VtVec3fArray accelerations;
+    VtVec3fArray scales;
+    VtQuathArray orientations;
+    VtVec3fArray angularVelocities;
+    UsdTimeCode angularVelocitiesSampleTime;
+    SdfPathVector protoPaths;
+    std::vector<bool> mask;
+    float velocityScale;
+
+    if (!_ComputePointInstancerAttributesPreamble(
+            baseTime,
+            doProtoXforms,
+            applyMask,
+            &protoIndices,
+            &protoPaths,
+            &mask)) {
+        return false;
+    }
+
+    size_t numInstances = protoIndices.size();
+
+    if (!UsdGeom_GetPositionsVelocitiesAndAccelerations(
+            GetPositionsAttr(),
+            GetVelocitiesAttr(),
+            GetAccelerationsAttr(),
+            baseTime,
+            numInstances,
+            &positions,
+            &velocities,
+            &velocitiesSampleTime,
+            &accelerations,
+            &velocityScale,
+            GetPrim())) {
+        return false;
+    }
+
+    UsdGeom_GetScales(
+            GetScalesAttr(),
+            baseTime,
+            numInstances,
+            &scales,
+            GetPrim());
+
+    UsdGeom_GetOrientationsAndAngularVelocities(
+            GetOrientationsAttr(),
+            GetAngularVelocitiesAttr(),
+            baseTime,
+            numInstances,
+            &orientations,
+            &angularVelocities,
+            &angularVelocitiesSampleTime,
+            GetPrim());
+  
+    if (numInstances == 0) {
+        xformsArray->clear();
+        xformsArray->resize(numSamples);
+        return true;
+    }
+
+    UsdStageWeakPtr stage = GetPrim().GetStage();
+
+    std::vector<VtArray<GfMatrix4d>> xformsArrayData;
+    xformsArrayData.resize(numSamples);
+    bool useInterpolated = (velocities.empty() && angularVelocities.empty());
+    for (size_t i = 0; i < numSamples; i++) {
+
+        UsdTimeCode time = times[i];
+        VtArray<GfMatrix4d>* xforms = &(xformsArrayData[i]);
+
+        // If there are no valid velocities or angular velocities, we fallback to
+        // "standard" computation logic (linear interpolation between samples).
+        if (useInterpolated) {
+
+            // Try to fetch the positions, scales, and orientations at the sample
+            // time. If this fails or the fetched data don't have the correct
+            // topology, we fallback to the data from the base time.
+
+            VtVec3fArray interpolatedPositions;
+            if (GetPositionsAttr().Get(&interpolatedPositions, time)
+                    && interpolatedPositions.size() == numInstances) {
+                positions = interpolatedPositions;
+            }
+
+            VtVec3fArray interpolatedScales;
+            if (GetScalesAttr().Get(&interpolatedScales, time)
+                    && interpolatedScales.size() == numInstances) {
+                scales = interpolatedScales;
+            }
+
+            VtQuathArray interpolatedOrientations;
+            if (GetOrientationsAttr().Get(&interpolatedOrientations, time)
+                    && interpolatedOrientations.size() == numInstances) {
+                orientations = interpolatedOrientations;
+            }
+
+        }
+
+        if (!UsdGeomPointInstancer::ComputeInstanceTransformsAtTime(
+                xforms,
+                stage,
+                time,
+                protoIndices,
+                positions,
+                velocities,
+                velocitiesSampleTime,
+                accelerations,
+                scales,
+                orientations,
+                angularVelocities,
+                angularVelocitiesSampleTime,
+                protoPaths,
+                mask,
+                velocityScale)) {
+            return false;
+        }
+    }
+
+    *xformsArray = xformsArrayData;
+    return true;
+}
+
+bool
+UsdGeomPointInstancer::ComputeInstanceTransformsAtTime(
+    VtArray<GfMatrix4d>* xforms,
+    UsdStageWeakPtr& stage,
+    UsdTimeCode time,
+    const VtIntArray& protoIndices,
+    const VtVec3fArray& positions,
+    const VtVec3fArray& velocities,
+    UsdTimeCode velocitiesSampleTime,
+    const VtVec3fArray& accelerations,
+    const VtVec3fArray& scales,
+    const VtQuathArray& orientations,
+    const VtVec3fArray& angularVelocities,
+    UsdTimeCode angularVelocitiesSampleTime,
+    const SdfPathVector& protoPaths,
+    const std::vector<bool>& mask,
+    float velocityScale)
+{
+    TRACE_FUNCTION();
+
+    size_t numInstances = protoIndices.size();
+
+    const double timeCodesPerSecond = stage->GetTimeCodesPerSecond();
+    const float velocityTimeDelta = UsdGeom_CalculateTimeDelta(
+                                      velocityScale,
+                                      time,
+                                      velocitiesSampleTime,
+                                      timeCodesPerSecond);
+    const float angularVelocityTimeDelta = UsdGeom_CalculateTimeDelta(
+                                      velocityScale,
+                                      time,
+                                      angularVelocitiesSampleTime,
+                                      timeCodesPerSecond);\
+
+    xforms->resize(numInstances);
+
+    const GfMatrix4d identity(1.0);
+    std::vector<GfMatrix4d> protoXforms(protoPaths.size(), identity);
+    UsdGeomXformCache xformCache(time);
+    if (protoPaths.size() != 0) {
+        for (size_t protoIndex = 0 ; protoIndex < protoPaths.size() ; 
+                ++protoIndex) {
+            const SdfPath& protoPath = protoPaths[protoIndex];
+            if (const UsdPrim& protoPrim = stage->GetPrimAtPath(protoPath)) {
+                // Get the prototype's local transformation.
+                bool resetsXformStack;
+                protoXforms[protoIndex] = xformCache.GetLocalTransformation(
+                    protoPrim, &resetsXformStack);
+            }
+        }
+    }
+
+    const auto computeInstanceXforms = [&mask, &velocityTimeDelta, 
+        &angularVelocityTimeDelta, &scales, 
+        &orientations, &positions, &velocities, &accelerations, 
+        &angularVelocities, &identity, &protoXforms, &protoIndices, 
+        &protoPaths, &xforms] (size_t start, size_t end) {
+        for (size_t instanceId = start ; instanceId < end ; ++instanceId) {
+            if (!mask.empty() && !mask[instanceId]) {
+                continue;
+            }
+
+            GfTransform instanceTransform;
+
+            if (!scales.empty()) {
+                instanceTransform.SetScale(scales[instanceId]);
+            }
+
+            if (!orientations.empty()) {
+                GfRotation rotation = GfRotation(orientations[instanceId]);
+                if (angularVelocities.size() != 0) {
+                    GfVec3f angularVelocity = angularVelocities[instanceId];
+                    rotation *= GfRotation(
+                        angularVelocity,
+                        angularVelocityTimeDelta * 
+                            angularVelocity.GetLength());
+                }
+                instanceTransform.SetRotation(rotation);
+            }
+
+            GfVec3f translation = positions[instanceId];
+            if (velocities.size() != 0) {
+                GfVec3f velocity = velocities[instanceId];
+                if (accelerations.size() != 0) {
+                    velocity += velocityTimeDelta * accelerations[instanceId] * 0.5;
+                }
+                translation += velocityTimeDelta * velocity;
+            }
+            instanceTransform.SetTranslation(translation);
+
+            const int protoIndex = protoIndices[instanceId];
+            const GfMatrix4d &protoXform = (protoPaths.size() != 0) ? 
+                protoXforms[protoIndex] : identity;
+
+            (*xforms)[instanceId] = protoXform * 
+                                    instanceTransform.GetMatrix();
+        }
+    };
+
+    {
+        TRACE_SCOPE("UsdGeomPointInstancer::ComputeInstanceTransformsAtTime (Parallel)");
+        WorkParallelForN(numInstances, computeInstanceXforms);
+    }
+
+    return ApplyMaskToArray(mask, xforms);
+}
+
+bool
+UsdGeomPointInstancer::_ComputeExtentAtTimePreamble(
+    UsdTimeCode baseTime,
+    VtIntArray* protoIndices,
+    std::vector<bool>* mask,
+    UsdRelationship* prototypes,
+    SdfPathVector* protoPaths) const
+{
+    if (!GetProtoIndicesAttr().Get(protoIndices, baseTime)) {
         TF_WARN("%s -- no prototype indices",
                 GetPrim().GetPath().GetText());
         return false;
     }
 
-    if (protoIndices.empty()) {
-        xforms->clear();
-        return true;
+    *mask = ComputeMaskAtTime(baseTime);
+    if (!mask->empty() && mask->size() != protoIndices->size()) {
+        TF_WARN("%s -- mask.size() [%zu] != protoIndices.size() [%zu]",
+                GetPrim().GetPath().GetText(),
+                mask->size(),
+                protoIndices->size());
+        return false;
     }
 
-    VtVec3fArray positions;
-    if (!GetPositionsAttr().Get(&positions, time)) {
-        TF_WARN("%s -- no positions",
+    *prototypes = GetPrototypesRel();
+    if (!prototypes->GetTargets(protoPaths) || protoPaths->empty()) {
+        TF_WARN("%s -- no prototypes",
                 GetPrim().GetPath().GetText());
         return false;
     }
 
-    if (positions.size() != protoIndices.size()) {
-        TF_WARN("%s -- positions.size() [%zu] != protoIndices.size() [%zu]",
-                GetPrim().GetPath().GetText(),
-                positions.size(),
-                protoIndices.size());
-        return false;
-    }
-
-    VtVec3fArray scales;
-    GetScalesAttr().Get(&scales, time);
-    if (!scales.empty() && scales.size() != protoIndices.size()) {
-        TF_WARN("%s -- scales.size() [%zu] != protoIndices.size() [%zu]",
-                GetPrim().GetPath().GetText(),
-                scales.size(),
-                protoIndices.size());
-        return false;
-    }
-
-    VtQuathArray orientations;
-    GetOrientationsAttr().Get(&orientations, time);
-    if (!orientations.empty() && orientations.size() != protoIndices.size()) {
-        TF_WARN("%s -- orientations.size() [%zu] != protoIndices.size() [%zu]",
-                GetPrim().GetPath().GetText(),
-                orientations.size(),
-                protoIndices.size());
-        return false;
-    }
-
-    // If we're going to include the prototype transforms, verify that we have
-    // prototypes and that all of the protoIndices are in bounds.
-    SdfPathVector protoPaths;
-    if (doProtoXforms == IncludeProtoXform) {
-        const UsdRelationship prototypes = GetPrototypesRel();
-        if (!prototypes.GetTargets(&protoPaths) || protoPaths.empty()) {
-            TF_WARN("%s -- no prototypes",
-                    GetPrim().GetPath().GetText());
-            return false;
-        }
-
-        TF_FOR_ALL(iter, protoIndices) {
-            const int protoIndex = *iter;
-            if (protoIndex < 0 || static_cast<size_t>(protoIndex) >= protoPaths.size()) {
-                TF_WARN("%s -- invalid prototype index: %d. Should be in [0, %zu)",
-                        GetPrim().GetPath().GetText(),
-                        protoIndex,
-                        protoPaths.size());
-                return false;
-            }
-        }
-    }
-
-    // Compute the mask only if applyMask says we should, otherwise we leave
-    // mask empty so that its application below is a no-op.
-    std::vector<bool> mask;
-    if (applyMask == ApplyMask) {
-        mask = ComputeMaskAtTime(time);
-        if (!mask.empty() && mask.size() != protoIndices.size()) {
-            TF_WARN("%s -- mask.size() [%zu] != protoIndices.size() [%zu]",
+    // verify that all the protoIndices are in bounds.
+    TF_FOR_ALL(iter, *protoIndices) {
+        const int protoIndex = *iter;
+        if (protoIndex < 0 || 
+            static_cast<size_t>(protoIndex) >= protoPaths->size()) {
+            TF_WARN("%s -- invalid prototype index: %d. Should be in [0, %zu)",
                     GetPrim().GetPath().GetText(),
-                    mask.size(),
-                    protoIndices.size());
+                    protoIndex,
+                    protoPaths->size());
             return false;
         }
     }
+
+    return true;
+}
+
+bool
+UsdGeomPointInstancer::_ComputeExtentFromTransforms(
+    VtVec3fArray* extent,
+    const VtIntArray& protoIndices,
+    const std::vector<bool>& mask,
+    const UsdRelationship& prototypes,
+    const SdfPathVector& protoPaths,
+    const VtMatrix4dArray& instanceTransforms,
+    UsdTimeCode time,
+    const GfMatrix4d* transform) const
+{
+    TRACE_FUNCTION();
 
     UsdStageWeakPtr stage = GetPrim().GetStage();
-    UsdGeomXformCache xformCache(time);
-
-    xforms->assign(protoIndices.size(), GfMatrix4d(1.0));
-    for (size_t instanceId = 0; instanceId < protoIndices.size(); ++instanceId) {
-        if (!mask.empty() && !mask[instanceId]) {
-            continue;
-        }
-
-        GfTransform instanceTransform;
-
-        if (!scales.empty()) {
-            instanceTransform.SetScale(scales[instanceId]);
-        }
-
-        if (!orientations.empty()) {
-            instanceTransform.SetRotation(GfRotation(orientations[instanceId]));
-        }
-
-        instanceTransform.SetTranslation(positions[instanceId]);
-
-        GfMatrix4d protoXform(1.0);
-        if (doProtoXforms == IncludeProtoXform) {
-            const int protoIndex = protoIndices[instanceId];
-            const SdfPath& protoPath = protoPaths[protoIndex];
-            const UsdPrim& protoPrim = stage->GetPrimAtPath(protoPath);
-            if (protoPrim) {
-                // Get the prototype's local transformation.
-                bool resetsXformStack;
-                protoXform = xformCache.GetLocalTransformation(protoPrim,
-                                                               &resetsXformStack);
-            }
-        }
-
-        (*xforms)[instanceId] = protoXform * instanceTransform.GetMatrix();
+    
+    if (protoIndices.size() <= protoPaths.size()) {
+        TF_DEBUG(USDGEOM_BBOX).Msg("Number of prototypes (%zu) is >= number"
+            "of instances (%zu). May be inefficient.", protoPaths.size(), 
+            protoIndices.size());
     }
 
-    return ApplyMaskToArray(mask, xforms);
+    // We might want to precompute prototype bounds only when the number of 
+    // instances is greater than the number of prototypes.
+    std::vector<GfBBox3d> protoUntransformedBounds;
+    protoUntransformedBounds.reserve(protoPaths.size());
+
+    UsdGeomBBoxCache bboxCache(time, 
+        /*purposes*/ {UsdGeomTokens->default_, 
+                      UsdGeomTokens->proxy, 
+                      UsdGeomTokens->render });
+    for (size_t protoId = 0 ; protoId < protoPaths.size() ; ++protoId) {
+        const SdfPath& protoPath = protoPaths[protoId];
+        const UsdPrim& protoPrim = stage->GetPrimAtPath(protoPath);
+        const GfBBox3d protoBounds = 
+                bboxCache.ComputeUntransformedBound(protoPrim);
+        protoUntransformedBounds.push_back(protoBounds);
+    }
+
+    // Compute all the instance aligned ranges.
+    std::vector<GfRange3d> instanceAlignedRanges(protoIndices.size());
+    const auto computeInstanceAlignedRange = 
+        [&mask, &protoIndices, &transform, &protoUntransformedBounds, 
+         &instanceTransforms, &instanceAlignedRanges] 
+        (size_t start, size_t end) {
+            for (size_t instanceId = start ; instanceId < end ; ++instanceId) {
+                if (!mask.empty() && !mask[instanceId]) {
+                    continue;
+                }
+
+                // Get the prototype bounding box.
+                const int protoIndex = protoIndices[instanceId];
+                GfBBox3d thisBounds = protoUntransformedBounds[protoIndex];
+
+                // Apply the instance transform.
+                thisBounds.Transform(instanceTransforms[instanceId]);
+
+                // Apply the optional transform.
+                if (transform) {
+                    thisBounds.Transform(*transform);
+                }
+                instanceAlignedRanges[instanceId] = 
+                        thisBounds.ComputeAlignedRange();
+            }
+        };
+
+    WorkParallelForN(protoIndices.size(), computeInstanceAlignedRange);
+
+    GfRange3d extentRange = WorkParallelReduceN(
+            GfRange3d(),
+            instanceAlignedRanges.size(), 
+            [&instanceAlignedRanges](size_t b, size_t e, GfRange3d init){
+                for (auto i = b; i < e ; ++i) {
+                    init.UnionWith(instanceAlignedRanges[i]);
+                }
+                return init;
+            },
+            [](GfRange3d lhs, GfRange3d rhs) {
+                return GfRange3d::GetUnion(lhs, rhs);
+            },
+            /* grainSize */ 500);
+
+    const GfVec3d &extentMin = extentRange.GetMin();
+    const GfVec3d &extentMax = extentRange.GetMax();
+
+    *extent = VtVec3fArray(2);
+    (*extent)[0] = GfVec3f(extentMin[0], extentMin[1], extentMin[2]);
+    (*extent)[1] = GfVec3f(extentMax[0], extentMax[1], extentMax[2]);
+
+    return true;
 }
 
 bool
@@ -737,46 +1140,22 @@ UsdGeomPointInstancer::_ComputeExtentAtTime(
     const GfMatrix4d* transform) const
 {
     if (!extent) {
-        TF_WARN("%s -- null container passed to ComputeExtentAtTime()",
+        TF_CODING_ERROR("%s -- null container passed to ComputeExtentAtTime()",
                 GetPrim().GetPath().GetText());
         return false;
     }
 
     VtIntArray protoIndices;
-    if (!GetProtoIndicesAttr().Get(&protoIndices, time)) {
-        TF_WARN("%s -- no prototype indices",
-                GetPrim().GetPath().GetText());
-        return false;
-    }
-
-    const std::vector<bool> mask = ComputeMaskAtTime(time);
-    if (!mask.empty() && mask.size() != protoIndices.size()) {
-        TF_WARN("%s -- mask.size() [%zu] != protoIndices.size() [%zu]",
-                GetPrim().GetPath().GetText(),
-                mask.size(),
-                protoIndices.size());
-        return false;
-    }
-
-    const UsdRelationship prototypes = GetPrototypesRel();
+    std::vector<bool> mask;
+    UsdRelationship prototypes;
     SdfPathVector protoPaths;
-    if (!prototypes.GetTargets(&protoPaths) || protoPaths.empty()) {
-        TF_WARN("%s -- no prototypes",
-                GetPrim().GetPath().GetText());
+    if (!_ComputeExtentAtTimePreamble(
+            baseTime,
+            &protoIndices,
+            &mask,
+            &prototypes,
+            &protoPaths)) {
         return false;
-    }
-
-    // verify that all the protoIndices are in bounds.
-    TF_FOR_ALL(iter, protoIndices) {
-        const int protoIndex = *iter;
-        if (protoIndex < 0 || 
-            static_cast<size_t>(protoIndex) >= protoPaths.size()) {
-            TF_WARN("%s -- invalid prototype index: %d. Should be in [0, %zu)",
-                    GetPrim().GetPath().GetText(),
-                    protoIndex,
-                    protoPaths.size());
-            return false;
-        }
     }
 
     // Note that we do NOT apply any masking when computing the instance
@@ -796,45 +1175,83 @@ UsdGeomPointInstancer::_ComputeExtentAtTime(
         return false;
     }
 
-    UsdStageWeakPtr stage = GetPrim().GetStage();
-    const TfTokenVector purposes {
-        UsdGeomTokens->default_,
-        UsdGeomTokens->proxy,
-        UsdGeomTokens->render
-    };
-    UsdGeomBBoxCache bboxCache(time, purposes);
-    bboxCache.SetTime(time);
+    return _ComputeExtentFromTransforms(
+        extent,
+        protoIndices,
+        mask,
+        prototypes,
+        protoPaths,
+        instanceTransforms,
+        time,
+        transform);
+}
 
-    GfRange3d extentRange;
-
-    for (size_t instanceId = 0; instanceId < protoIndices.size(); ++instanceId) {
-        if (!mask.empty() && !mask[instanceId]) {
-            continue;
-        }
-
-        const int protoIndex = protoIndices[instanceId];
-        const SdfPath& protoPath = protoPaths[protoIndex];
-        const UsdPrim& protoPrim = stage->GetPrimAtPath(protoPath);
-
-        // Get the prototype bounding box.
-        GfBBox3d thisBounds = bboxCache.ComputeUntransformedBound(protoPrim);
-
-        // Apply the instance transform.
-        thisBounds.Transform(instanceTransforms[instanceId]);
-        // Apply the optional transform.
-        if (transform) {
-            thisBounds.Transform(*transform);
-        }
-        extentRange.UnionWith(thisBounds.ComputeAlignedRange());
+bool
+UsdGeomPointInstancer::_ComputeExtentAtTimes(
+    std::vector<VtVec3fArray>* extents,
+    const std::vector<UsdTimeCode>& times,
+    const UsdTimeCode baseTime,
+    const GfMatrix4d* transform) const
+{
+    if (!extents) {
+        TF_CODING_ERROR("%s -- null container passed to ComputeExtentAtTimes()",
+                GetPrim().GetPath().GetText());
+        return false;
     }
 
-    const GfVec3d extentMin = extentRange.GetMin();
-    const GfVec3d extentMax = extentRange.GetMax();
+    VtIntArray protoIndices;
+    std::vector<bool> mask;
+    UsdRelationship prototypes;
+    SdfPathVector protoPaths;
+    if (!_ComputeExtentAtTimePreamble(
+            baseTime,
+            &protoIndices,
+            &mask,
+            &prototypes,
+            &protoPaths)) {
+        return false;
+    }
 
-    *extent = VtVec3fArray(2);
-    (*extent)[0] = GfVec3f(extentMin[0], extentMin[1], extentMin[2]);
-    (*extent)[1] = GfVec3f(extentMax[0], extentMax[1], extentMax[2]);
+    // Note that we do NOT apply any masking when computing the instance
+    // transforms. This is so that for a particular instance we can determine
+    // both its transform and its prototype. Otherwise, the instanceTransforms
+    // array would have masked instances culled out and we would lose the
+    // mapping to the prototypes.
+    // Masked instances will be culled before being applied to the extent below.
+    std::vector<VtMatrix4dArray> instanceTransformsArray;
+    if (!ComputeInstanceTransformsAtTimes(
+            &instanceTransformsArray,
+            times,
+            baseTime,
+            IncludeProtoXform,
+            IgnoreMask)) {
+        TF_WARN("%s -- could not compute instance transforms",
+                GetPrim().GetPath().GetText());
+        return false;
+    }
 
+    std::vector<VtVec3fArray> computedExtents;
+    computedExtents.resize(times.size());
+
+    for (size_t i = 0; i < times.size(); i++) {
+
+        const UsdTimeCode& time = times[i];
+        const VtMatrix4dArray& instanceTransforms = instanceTransformsArray[i];
+
+        if (!_ComputeExtentFromTransforms(
+                &(computedExtents[i]),
+                protoIndices,
+                mask,
+                prototypes,
+                protoPaths,
+                instanceTransforms,
+                time,
+                transform)) {
+            return false;
+        }
+    }
+
+    extents->swap(computedExtents);
     return true;
 }
 
@@ -857,6 +1274,25 @@ UsdGeomPointInstancer::ComputeExtentAtTime(
     return _ComputeExtentAtTime(extent, time, baseTime, &transform);
 }
 
+bool
+UsdGeomPointInstancer::ComputeExtentAtTimes(
+    std::vector<VtVec3fArray>* extents,
+    const std::vector<UsdTimeCode>& times,
+    const UsdTimeCode baseTime) const
+{
+    return _ComputeExtentAtTimes(extents, times, baseTime, nullptr);
+}
+
+bool
+UsdGeomPointInstancer::ComputeExtentAtTimes(
+    std::vector<VtVec3fArray>* extents,
+    const std::vector<UsdTimeCode>& times,
+    const UsdTimeCode baseTime,
+    const GfMatrix4d& transform) const
+{
+    return _ComputeExtentAtTimes(extents, times, baseTime, &transform);
+}
+
 static bool
 _ComputeExtentForPointInstancer(
     const UsdGeomBoundable& boundable,
@@ -864,6 +1300,8 @@ _ComputeExtentForPointInstancer(
     const GfMatrix4d* transform,
     VtVec3fArray* extent)
 {
+    TRACE_FUNCTION();
+
     const UsdGeomPointInstancer pointInstancerSchema(boundable);
     if (!TF_VERIFY(pointInstancerSchema)) {
         return false;

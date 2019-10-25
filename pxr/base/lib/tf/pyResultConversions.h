@@ -35,9 +35,12 @@
 #include <boost/type_traits/add_reference.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 
+#include <type_traits>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 template <typename T> struct Tf_PySequenceToListConverter;
+template <typename T> struct Tf_PySequenceToSetConverter;
 template <typename T> struct Tf_PyMapToDictionaryConverter;
 template <typename T> struct Tf_PySequenceToTupleConverter;
 template <typename First, typename Second> struct Tf_PyPairToTupleConverter;
@@ -68,6 +71,35 @@ struct TfPySequenceToList {
     template <typename T>
     struct apply {
         typedef Tf_PySequenceToListConverter<T> type;
+    };
+};
+
+/// \class TfPySequenceToSet
+///
+/// A \c boost::python result converter generator which converts standard
+/// library sequences to sets.
+///
+/// The way to use this is as a return value policy for a function which
+/// returns a sequence or a const reference to a sequence.  For example this
+/// function:
+/// \code
+/// unordered_set<double> getDoubles() {
+///     unordered_set<double> ret;
+///     ret.insert(1.0);
+///     ret.insert(2.0);
+///     ret.insert(3.0);
+///     return ret;
+/// }
+/// \endcode
+///
+/// May be wrapped as:
+/// \code
+/// def("getDoubles", &getDoubles, return_value_policy<TfPySequenceToSet>())
+/// \endcode
+struct TfPySequenceToSet {
+    template <typename T>
+    struct apply {
+        typedef Tf_PySequenceToSetConverter<T> type;
     };
 };
 
@@ -115,6 +147,20 @@ struct Tf_PySequenceToListConverter {
     }
     PyTypeObject *get_pytype() {
         return &PyList_Type;
+    }
+};
+
+template <typename T>
+struct Tf_PySequenceToSetConverter {
+    typedef typename std::remove_reference<T>::type SeqType;
+    bool convertible() const {
+        return true;
+    }
+    PyObject *operator()(T seq) const {
+        return boost::python::incref(TfPyCopySequenceToSet(seq).ptr());
+    }
+    PyTypeObject *get_pytype() {
+        return &PySet_Type;
     }
 };
 

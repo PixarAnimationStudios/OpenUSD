@@ -27,17 +27,26 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
 
+#include "pxr/base/gf/matrix3d.h"
+#include "pxr/base/gf/matrix3f.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec2i.h"
+#include "pxr/base/gf/vec2h.h"
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec3i.h"
+#include "pxr/base/gf/vec3h.h"
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/vec4i.h"
+#include "pxr/base/gf/vec4h.h"
+
+#include <unordered_map>
+#include <typeinfo>
+#include <typeindex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -61,89 +70,150 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(HdTypeFloatVec2);
     TF_ADD_ENUM_NAME(HdTypeFloatVec3);
     TF_ADD_ENUM_NAME(HdTypeFloatVec4);
+    TF_ADD_ENUM_NAME(HdTypeFloatMat3);
     TF_ADD_ENUM_NAME(HdTypeFloatMat4);
+    TF_ADD_ENUM_NAME(HdTypeHalfFloat);
+    TF_ADD_ENUM_NAME(HdTypeHalfFloatVec2);
+    TF_ADD_ENUM_NAME(HdTypeHalfFloatVec3);
+    TF_ADD_ENUM_NAME(HdTypeHalfFloatVec4);
     TF_ADD_ENUM_NAME(HdTypeDouble);
     TF_ADD_ENUM_NAME(HdTypeDoubleVec2);
     TF_ADD_ENUM_NAME(HdTypeDoubleVec3);
     TF_ADD_ENUM_NAME(HdTypeDoubleVec4);
+    TF_ADD_ENUM_NAME(HdTypeDoubleMat3);
     TF_ADD_ENUM_NAME(HdTypeDoubleMat4);
     TF_ADD_ENUM_NAME(HdTypeInt32_2_10_10_10_REV);
+
+    TF_ADD_ENUM_NAME(HdFormatInvalid);
+    TF_ADD_ENUM_NAME(HdFormatUNorm8);
+    TF_ADD_ENUM_NAME(HdFormatUNorm8Vec2);
+    TF_ADD_ENUM_NAME(HdFormatUNorm8Vec3);
+    TF_ADD_ENUM_NAME(HdFormatUNorm8Vec4);
+    TF_ADD_ENUM_NAME(HdFormatSNorm8);
+    TF_ADD_ENUM_NAME(HdFormatSNorm8Vec2);
+    TF_ADD_ENUM_NAME(HdFormatSNorm8Vec3);
+    TF_ADD_ENUM_NAME(HdFormatSNorm8Vec4);
+    TF_ADD_ENUM_NAME(HdFormatFloat16);
+    TF_ADD_ENUM_NAME(HdFormatFloat16Vec2);
+    TF_ADD_ENUM_NAME(HdFormatFloat16Vec3);
+    TF_ADD_ENUM_NAME(HdFormatFloat16Vec4);
+    TF_ADD_ENUM_NAME(HdFormatFloat32);
+    TF_ADD_ENUM_NAME(HdFormatFloat32Vec2);
+    TF_ADD_ENUM_NAME(HdFormatFloat32Vec3);
+    TF_ADD_ENUM_NAME(HdFormatFloat32Vec4);
+    TF_ADD_ENUM_NAME(HdFormatInt32);
+    TF_ADD_ENUM_NAME(HdFormatInt32Vec2);
+    TF_ADD_ENUM_NAME(HdFormatInt32Vec3);
+    TF_ADD_ENUM_NAME(HdFormatInt32Vec4);
 }
+
+
+template <class T>
+static void const *_GetArrayData(VtValue const &v) {
+    return v.UncheckedGet<VtArray<T>>().cdata();
+}
+template <class T>
+static void const *_GetSingleData(VtValue const &v) {
+    return &v.UncheckedGet<T>();
+}
+using GetDataFunc = void const *(*)(VtValue const &);
+using ValueDataGetterMap = std::unordered_map<std::type_index, GetDataFunc>;
+static inline ValueDataGetterMap _MakeValueDataGetterMap() {
+#define ELEM(T)                                          \
+    { typeid(T), &_GetSingleData<T> },                   \
+    { typeid(VtArray<T>), &_GetArrayData<T> }
+
+    return ValueDataGetterMap {
+        ELEM(GfHalf),
+        ELEM(GfMatrix3d),
+        ELEM(GfMatrix3f),
+        ELEM(GfMatrix4d),
+        ELEM(GfMatrix4f),
+        ELEM(GfVec2d),
+        ELEM(GfVec2f),
+        ELEM(GfVec2h),
+        ELEM(GfVec2i),
+        ELEM(GfVec3d),
+        ELEM(GfVec3f),
+        ELEM(GfVec3h),
+        ELEM(GfVec3i),
+        ELEM(GfVec4d),
+        ELEM(GfVec4f),
+        ELEM(GfVec4h),
+        ELEM(GfVec4i),
+        ELEM(HdVec4f_2_10_10_10_REV),
+        ELEM(bool),
+        ELEM(char),
+        ELEM(double),
+        ELEM(float),
+        ELEM(int16_t),
+        ELEM(int32_t),
+        ELEM(uint16_t),
+        ELEM(uint32_t),
+        ELEM(unsigned char),
+    };
+#undef ELEM
+}        
 
 const void* HdGetValueData(const VtValue &value)
 {
-#define TRY(T) \
-    if (value.IsHolding<T>()) { \
-        return &value.UncheckedGet<T>(); \
-    } \
-    if (value.IsHolding<VtArray<T>>()) { \
-        return value.UncheckedGet<VtArray<T>>().cdata(); \
+    static ValueDataGetterMap const getterMap = _MakeValueDataGetterMap();
+    auto const iter = getterMap.find(value.GetTypeid());
+    if (ARCH_UNLIKELY(iter == getterMap.end())) {
+        return nullptr;
     }
+    return iter->second(value);
+}
 
-    // Cases are roughly ordered by assumed frequency.
-    TRY(float);
-    TRY(GfVec2f);
-    TRY(GfVec3f);
-    TRY(GfVec4f);
-    TRY(HdVec4f_2_10_10_10_REV);
-    TRY(GfMatrix4f);
-    TRY(double);
-    TRY(GfVec2d);
-    TRY(GfVec3d);
-    TRY(GfVec4d);
-    TRY(GfMatrix4d);
-    TRY(bool);
-    TRY(char);
-    TRY(unsigned char);
-    TRY(int16_t);
-    TRY(uint16_t);
-    TRY(uint32_t);
-    TRY(int32_t);
-    TRY(GfVec2i);
-    TRY(GfVec3i);
-    TRY(GfVec4i);
-
-#undef TRY
-
-    return nullptr;
+using TupleTypeMap = std::unordered_map<std::type_index, HdType>;
+static inline TupleTypeMap _MakeTupleTypeMap() {
+    return TupleTypeMap {
+        { typeid(GfHalf), HdTypeHalfFloat },
+        { typeid(GfMatrix3d), HdTypeDoubleMat3 },
+        { typeid(GfMatrix3f), HdTypeFloatMat3 },
+        { typeid(GfMatrix4d), HdTypeDoubleMat4 },
+        { typeid(GfMatrix4f), HdTypeFloatMat4 },
+        { typeid(GfVec2d), HdTypeDoubleVec2 },
+        { typeid(GfVec2f), HdTypeFloatVec2 },
+        { typeid(GfVec2h), HdTypeHalfFloatVec2 },
+        { typeid(GfVec2i), HdTypeInt32Vec2 },
+        { typeid(GfVec3d), HdTypeDoubleVec3 },
+        { typeid(GfVec3f), HdTypeFloatVec3 },
+        { typeid(GfVec3h), HdTypeHalfFloatVec3 },
+        { typeid(GfVec3i), HdTypeInt32Vec3 },
+        { typeid(GfVec4d), HdTypeDoubleVec4 },
+        { typeid(GfVec4f), HdTypeFloatVec4 },
+        { typeid(GfVec4h), HdTypeHalfFloatVec4 },
+        { typeid(GfVec4i), HdTypeInt32Vec4 },
+        { typeid(HdVec4f_2_10_10_10_REV), HdTypeInt32_2_10_10_10_REV },
+        { typeid(bool), HdTypeBool },
+        { typeid(char), HdTypeInt8 },
+        { typeid(double), HdTypeDouble },
+        { typeid(float), HdTypeFloat },
+        { typeid(int16_t), HdTypeInt16 },
+        { typeid(int32_t), HdTypeInt32 },
+        { typeid(uint16_t), HdTypeUInt16 },
+        { typeid(uint32_t), HdTypeUInt32 },
+        { typeid(unsigned char), HdTypeUInt8 },
+    };
 }
 
 HdTupleType HdGetValueTupleType(const VtValue &value)
 {
-#define TRY(T, V) \
-    if (value.IsHolding<VtArray<T>>()) { \
-        return HdTupleType { V, value.GetArraySize() }; \
-    } \
-    if (value.IsHolding<T>()) { \
-        return HdTupleType { V, 1 }; \
+    static const TupleTypeMap tupleTypeMap = _MakeTupleTypeMap();
+    
+    if (value.IsArrayValued()) {
+        auto const iter = tupleTypeMap.find(value.GetElementTypeid());
+        if (ARCH_UNLIKELY(iter == tupleTypeMap.end())) {
+            return HdTupleType { HdTypeInvalid, 0 };
+        }
+        return HdTupleType { iter->second, value.GetArraySize() };
     }
-
-    // Cases are roughly ordered by assumed frequency.
-    TRY(float, HdTypeFloat);
-    TRY(GfVec2f, HdTypeFloatVec2);
-    TRY(GfVec3f, HdTypeFloatVec3);
-    TRY(GfVec4f, HdTypeFloatVec4);
-    TRY(HdVec4f_2_10_10_10_REV, HdTypeInt32_2_10_10_10_REV);
-    TRY(GfMatrix4f, HdTypeFloatMat4);
-    TRY(double, HdTypeDouble);
-    TRY(GfVec2d, HdTypeDoubleVec2);
-    TRY(GfVec3d, HdTypeDoubleVec3);
-    TRY(GfVec4d, HdTypeDoubleVec4);
-    TRY(GfMatrix4d, HdTypeDoubleMat4);
-    TRY(bool, HdTypeBool);
-    TRY(char, HdTypeInt8);
-    TRY(unsigned char, HdTypeUInt8);
-    TRY(int16_t, HdTypeInt16);
-    TRY(uint16_t, HdTypeUInt16);
-    TRY(uint32_t, HdTypeUInt32);
-    TRY(int32_t, HdTypeInt32);
-    TRY(GfVec2i, HdTypeInt32Vec2);
-    TRY(GfVec3i, HdTypeInt32Vec3);
-    TRY(GfVec4i, HdTypeInt32Vec4);
-
-#undef TRY
-
-    return HdTupleType { HdTypeInvalid, 0 };
+    auto const iter = tupleTypeMap.find(value.GetTypeid());
+    if (ARCH_UNLIKELY(iter == tupleTypeMap.end())) {
+        return HdTupleType { HdTypeInvalid, 0 };
+    }
+    return HdTupleType { iter->second, 1 };
 }
 
 HdType HdGetComponentType(HdType t)
@@ -160,13 +230,19 @@ HdType HdGetComponentType(HdType t)
     case HdTypeFloatVec2:
     case HdTypeFloatVec3:
     case HdTypeFloatVec4:
+    case HdTypeFloatMat3:
     case HdTypeFloatMat4:
         return HdTypeFloat;
     case HdTypeDoubleVec2:
     case HdTypeDoubleVec3:
     case HdTypeDoubleVec4:
+    case HdTypeDoubleMat3:
     case HdTypeDoubleMat4:
         return HdTypeDouble;
+    case HdTypeHalfFloatVec2:
+    case HdTypeHalfFloatVec3:
+    case HdTypeHalfFloatVec4:
+        return HdTypeHalfFloat;
     default:
         return t;
     }
@@ -179,17 +255,23 @@ size_t HdGetComponentCount(HdType t)
     case HdTypeUInt32Vec2:
     case HdTypeFloatVec2:
     case HdTypeDoubleVec2:
+    case HdTypeHalfFloatVec2:
         return 2;
     case HdTypeInt32Vec3:
     case HdTypeUInt32Vec3:
     case HdTypeFloatVec3:
     case HdTypeDoubleVec3:
+    case HdTypeHalfFloatVec3:
         return 3;
     case HdTypeInt32Vec4:
     case HdTypeUInt32Vec4:
     case HdTypeFloatVec4:
     case HdTypeDoubleVec4:
+    case HdTypeHalfFloatVec4:
         return 4;
+    case HdTypeFloatMat3:
+    case HdTypeDoubleMat3:
+        return 3*3;
     case HdTypeFloatMat4:
     case HdTypeDoubleMat4:
         return 4*4;
@@ -242,6 +324,8 @@ size_t HdDataSizeOfType(HdType t)
         return sizeof(float)*3;
     case HdTypeFloatVec4:
         return sizeof(float)*4;
+    case HdTypeFloatMat3:
+        return sizeof(float)*3*3;
     case HdTypeFloatMat4:
         return sizeof(float)*4*4;
     case HdTypeDouble:
@@ -252,8 +336,18 @@ size_t HdDataSizeOfType(HdType t)
         return sizeof(double)*3;
     case HdTypeDoubleVec4:
         return sizeof(double)*4;
+    case HdTypeDoubleMat3:
+        return sizeof(double)*3*3;
     case HdTypeDoubleMat4:
         return sizeof(double)*4*4;
+    case HdTypeHalfFloat:
+        return sizeof(GfHalf);
+    case HdTypeHalfFloatVec2:
+        return sizeof(GfHalf)*2;
+    case HdTypeHalfFloatVec3:
+        return sizeof(GfHalf)*3;
+    case HdTypeHalfFloatVec4:
+        return sizeof(GfHalf)*4;
     case HdTypeInt32_2_10_10_10_REV:
         return sizeof(HdVec4f_2_10_10_10_REV);
     };
@@ -262,6 +356,105 @@ size_t HdDataSizeOfType(HdType t)
 size_t HdDataSizeOfTupleType(HdTupleType tupleType)
 {
     return HdDataSizeOfType(tupleType.type) * tupleType.count;
+}
+
+HdFormat HdGetComponentFormat(HdFormat f)
+{
+    switch(f) {
+    case HdFormatUNorm8:
+    case HdFormatUNorm8Vec2:
+    case HdFormatUNorm8Vec3:
+    case HdFormatUNorm8Vec4:
+        return HdFormatUNorm8;
+    case HdFormatSNorm8:
+    case HdFormatSNorm8Vec2:
+    case HdFormatSNorm8Vec3:
+    case HdFormatSNorm8Vec4:
+        return HdFormatSNorm8;
+    case HdFormatFloat16:
+    case HdFormatFloat16Vec2:
+    case HdFormatFloat16Vec3:
+    case HdFormatFloat16Vec4:
+        return HdFormatFloat16;
+    case HdFormatFloat32:
+    case HdFormatFloat32Vec2:
+    case HdFormatFloat32Vec3:
+    case HdFormatFloat32Vec4:
+        return HdFormatFloat32;
+    case HdFormatInt32:
+    case HdFormatInt32Vec2:
+    case HdFormatInt32Vec3:
+    case HdFormatInt32Vec4:
+        return HdFormatInt32;
+    default:
+        return HdFormatInvalid;
+    }
+}
+
+size_t HdGetComponentCount(HdFormat f)
+{
+    switch (f) {
+    case HdFormatUNorm8Vec2:
+    case HdFormatSNorm8Vec2:
+    case HdFormatFloat16Vec2:
+    case HdFormatFloat32Vec2:
+    case HdFormatInt32Vec2:
+        return 2;
+    case HdFormatUNorm8Vec3:
+    case HdFormatSNorm8Vec3:
+    case HdFormatFloat16Vec3:
+    case HdFormatFloat32Vec3:
+    case HdFormatInt32Vec3:
+        return 3;
+    case HdFormatUNorm8Vec4:
+    case HdFormatSNorm8Vec4:
+    case HdFormatFloat16Vec4:
+    case HdFormatFloat32Vec4:
+    case HdFormatInt32Vec4:
+        return 4;
+    default:
+        return 1;
+    }
+}
+
+size_t HdDataSizeOfFormat(HdFormat f)
+{
+    switch(f) {
+    case HdFormatUNorm8:
+    case HdFormatSNorm8:
+        return 1;
+    case HdFormatUNorm8Vec2:
+    case HdFormatSNorm8Vec2:
+        return 2;
+    case HdFormatUNorm8Vec3:
+    case HdFormatSNorm8Vec3:
+        return 3;
+    case HdFormatUNorm8Vec4:
+    case HdFormatSNorm8Vec4:
+        return 4;
+    case HdFormatFloat16:
+        return 2;
+    case HdFormatFloat16Vec2:
+        return 4;
+    case HdFormatFloat16Vec3:
+        return 6;
+    case HdFormatFloat16Vec4:
+        return 8;
+    case HdFormatFloat32:
+    case HdFormatInt32:
+        return 4;
+    case HdFormatFloat32Vec2:
+    case HdFormatInt32Vec2:
+        return 8;
+    case HdFormatFloat32Vec3:
+    case HdFormatInt32Vec3:
+        return 12;
+    case HdFormatFloat32Vec4:
+    case HdFormatInt32Vec4:
+        return 16;
+    default:
+        return 0;
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

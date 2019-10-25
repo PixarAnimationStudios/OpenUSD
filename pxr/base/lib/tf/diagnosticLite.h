@@ -54,7 +54,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \enum TfDiagnosticType
 /// Enum describing various diagnostic conditions.
-enum TfDiagnosticType {
+enum TfDiagnosticType : int {
     TF_DIAGNOSTIC_INVALID_TYPE = 0,
     TF_DIAGNOSTIC_CODING_ERROR_TYPE,
     TF_DIAGNOSTIC_FATAL_CODING_ERROR_TYPE,

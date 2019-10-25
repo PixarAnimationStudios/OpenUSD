@@ -21,7 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/hdSt/glUtils.h"
+
+#include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/vec2f.h"
@@ -34,16 +36,58 @@
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
-#include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hdSt/renderContextCaps.h"
-#include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/base/vt/array.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/iterator.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// To enable GPU compute features, OpenSubdiv must be configured to support
+// GLSL compute kernel.
+//
+#if OPENSUBDIV_HAS_GLSL_COMPUTE
+// default to GPU
+TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_COMPUTE, true,
+                      "Enable GPU smooth, quadrangulation and refinement");
+#else
+// default to CPU
+TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_COMPUTE, false,
+                      "Enable GPU smooth, quadrangulation and refinement");
+#endif
+
+
+static void
+_InitializeGPUComputeEnabled(bool *gpuComputeEnabled)
+{
+    // GPU Compute
+    if (TfGetEnvSetting(HD_ENABLE_GPU_COMPUTE)) {
+#if OPENSUBDIV_HAS_GLSL_COMPUTE
+        const GlfContextCaps &caps = GlfContextCaps::GetInstance();
+        if (caps.glslVersion >= 430 && caps.shaderStorageBufferEnabled) {
+            *gpuComputeEnabled = true;
+        } else {
+            TF_WARN("HD_ENABLE_GPU_COMPUTE can't be enabled "
+                    "(OpenGL 4.3 required).\n");
+        }
+#else
+        TF_WARN("HD_ENABLE_GPU_COMPUTE can't be enabled "
+                "(OpenSubdiv hasn't been configured with GLSL compute).\n");
+#endif
+    }
+}
+
+bool 
+HdStGLUtils::IsGpuComputeEnabled()
+{
+    static bool gpuComputeEnabled = false;
+    static std::once_flag gpuComputeEnabledFlag;
+    std::call_once(gpuComputeEnabledFlag, [](){
+        _InitializeGPUComputeEnabled(&gpuComputeEnabled); 
+    });
+    return gpuComputeEnabled;
+}
 
 template <typename T>
 VtValue
@@ -59,7 +103,7 @@ _CreateVtArray(int numElements, int arraySize, int stride,
 
     TF_VERIFY(data.size() == stride*(numElements-1) + arraySize*sizeof(T));
 
-    if (stride == arraySize*sizeof(T)) {
+    if (stride == static_cast<int>(arraySize*sizeof(T))) {
         memcpy(dst, src, numElements*arraySize*sizeof(T));
     } else {
         // deinterleaving
@@ -104,12 +148,12 @@ HdStGLUtils::ReadBuffer(GLint vbo,
     //
     const GLsizeiptr vboSize = stride * (numElems-1) + bytesPerElement;
 
-    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
+    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
 
     // Read data from GL
     std::vector<unsigned char> tmp(vboSize);
     if (caps.directStateAccessEnabled) {
-        glGetNamedBufferSubDataEXT(vbo, vboOffset, vboSize, &tmp[0]);
+        glGetNamedBufferSubData(vbo, vboOffset, vboSize, &tmp[0]);
     } else {
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glGetBufferSubData(GL_ARRAY_BUFFER, vboOffset, vboSize, &tmp[0]);
@@ -218,7 +262,7 @@ HdStGLBufferRelocator::AddRange(GLintptr readOffset,
 void
 HdStGLBufferRelocator::Commit()
 {
-    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
+    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
 
     if (caps.copyBufferEnabled) {
         // glCopyBuffer
@@ -229,11 +273,11 @@ HdStGLBufferRelocator::Commit()
 
         TF_FOR_ALL (it, _queue) {
             if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
-                glNamedCopyBufferSubDataEXT(_srcBuffer,
-                                            _dstBuffer,
-                                            it->readOffset,
-                                            it->writeOffset,
-                                            it->copySize);
+                glCopyNamedBufferSubData(_srcBuffer,
+                                         _dstBuffer,
+                                         it->readOffset,
+                                         it->writeOffset,
+                                         it->copySize);
             } else {
                 glCopyBufferSubData(GL_COPY_READ_BUFFER,
                                     GL_COPY_WRITE_BUFFER,

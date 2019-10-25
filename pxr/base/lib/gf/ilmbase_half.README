@@ -1,7 +1,7 @@
 Instructions for bringing in a new version of half
 ---------------------------------------------------------------
 
-Current version: ilmbase-2.2.0
+Current version: ilmbase-2.3.0
 Source can be found at: https://github.com/openexr/openexr/tree/master/IlmBase/Half
 
 1. Build IlmBase from source. We don't actually need to built libraries, but the 

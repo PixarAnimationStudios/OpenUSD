@@ -28,7 +28,7 @@
 #ifndef _GUSD_UT_VERSION_H_
 #define _GUSD_UT_VERSION_H_
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 
 #include <UT/UT_Version.h>
 

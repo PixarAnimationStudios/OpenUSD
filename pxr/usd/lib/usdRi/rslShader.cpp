@@ -74,6 +74,11 @@ UsdRiRslShader::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdRiRslShader::_GetSchemaType() const {
+    return UsdRiRslShader::schemaType;
+}
+
 /* static */
 const TfType &
 UsdRiRslShader::_GetStaticTfType()

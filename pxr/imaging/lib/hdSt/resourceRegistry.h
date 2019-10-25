@@ -38,6 +38,8 @@ typedef boost::shared_ptr<class HdStPersistentBuffer>
     HdStPersistentBufferSharedPtr;
 typedef boost::shared_ptr<class HdStResourceRegistry>
     HdStResourceRegistrySharedPtr;
+typedef boost::shared_ptr<class HdStTextureResourceHandle>
+    HdStTextureResourceHandleSharedPtr;
 typedef boost::shared_ptr<class HdSt_GeometricShader>
     HdSt_GeometricShaderSharedPtr;
 typedef boost::shared_ptr<class HdStGLSLProgram> HdStGLSLProgramSharedPtr;
@@ -86,6 +88,7 @@ public:
         HdBufferArrayRegistry &bufferArrayRegistry,
         TfToken const &role,
         HdBufferSpecVector const &newBufferSpecs,
+        HdBufferArrayUsageHint newUsageHint,
         HdBufferArrayRangeSharedPtr const &range);
 
     /// MergeBufferArrayRange of non uniform buffer.
@@ -93,6 +96,7 @@ public:
     HdBufferArrayRangeSharedPtr MergeNonUniformBufferArrayRange(
         TfToken const &role,
         HdBufferSpecVector const &newBufferSpecs,
+        HdBufferArrayUsageHint newUsageHint,
         HdBufferArrayRangeSharedPtr const &range);
 
     /// MergeBufferArrayRange of non uniform immutable buffer.
@@ -100,6 +104,7 @@ public:
     HdBufferArrayRangeSharedPtr MergeNonUniformImmutableBufferArrayRange(
         TfToken const &role,
         HdBufferSpecVector const &newBufferSpecs,
+        HdBufferArrayUsageHint newUsageHint,
         HdBufferArrayRangeSharedPtr const &range);
 
     /// MergeBufferArrayRange of uniform buffer.
@@ -107,6 +112,7 @@ public:
     HdBufferArrayRangeSharedPtr MergeUniformBufferArrayRange(
         TfToken const &role,
         HdBufferSpecVector const &newBufferSpecs,
+        HdBufferArrayUsageHint newUsageHint,
         HdBufferArrayRangeSharedPtr const &range);
 
     /// MergeBufferArrayRange of shader storage buffer.
@@ -114,6 +120,7 @@ public:
     HdBufferArrayRangeSharedPtr MergeShaderStorageBufferArrayRange(
         TfToken const &role,
         HdBufferSpecVector const &newBufferSpecs,
+        HdBufferArrayUsageHint newUsageHint,
         HdBufferArrayRangeSharedPtr const &range);
 
     /// Register a geometric shader.
@@ -126,6 +133,18 @@ public:
     HDST_API
     std::unique_lock<std::mutex> RegisterGLSLProgram(HdStGLSLProgram::ID id,
         HdInstance<HdStGLSLProgram::ID, HdStGLSLProgramSharedPtr> *pInstance);
+
+    /// Register a texture resource handle.
+    HDST_API
+    std::unique_lock<std::mutex> RegisterTextureResourceHandle(
+        HdStShaderKey::ID id,
+        HdInstance<HdStShaderKey::ID, HdStTextureResourceHandleSharedPtr> *pInstance);
+
+    HDST_API
+    std::unique_lock<std::mutex> FindTextureResourceHandle(
+        TextureKey id,
+        HdInstance<TextureKey, HdStTextureResourceHandleSharedPtr>
+        *instance, bool *found);
 
     void InvalidateShaderRegistry() override;
 
@@ -152,6 +171,11 @@ private:
     typedef HdInstance<HdStGLSLProgram::ID, HdStGLSLProgramSharedPtr>
         _GLSLProgramInstance;
     HdInstanceRegistry<_GLSLProgramInstance> _glslProgramRegistry;
+
+    typedef HdInstance<TextureKey, HdStTextureResourceHandleSharedPtr>
+         _TextureResourceHandleInstance;
+    HdInstanceRegistry<_TextureResourceHandleInstance> _textureResourceHandleRegistry;
+
 };
 
 

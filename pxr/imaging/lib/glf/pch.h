@@ -98,10 +98,14 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+
+#ifdef PXR_OIIO_PLUGIN_ENABLED 
 #include <OpenImageIO/imagebuf.h>
 #include <OpenImageIO/imagebufalgo.h>
 #include <OpenImageIO/imageio.h>
 #include <OpenImageIO/typedesc.h>
+#endif
+
 #include <boost/aligned_storage.hpp>
 #include <boost/any.hpp>
 #include <boost/call_traits.hpp>

@@ -34,7 +34,7 @@ static std::atomic_size_t _uniqueVersion(0);
 
 HdBufferArray::HdBufferArray(TfToken const &role,
                              TfToken const garbageCollectionPerfToken,
-                             bool isImmutable)
+                             HdBufferArrayUsageHint usageHint)
     : _needsReallocation(false),
       _rangeList(),
       _rangeCount(0),
@@ -43,7 +43,7 @@ HdBufferArray::HdBufferArray(TfToken const &role,
       _garbageCollectionPerfToken(garbageCollectionPerfToken),
       _version(_uniqueVersion++),   // Atomic
       _maxNumRanges(1),
-      _isImmutable(isImmutable)
+      _usageHint(usageHint)
 {
     /*NOTHING*/
 }

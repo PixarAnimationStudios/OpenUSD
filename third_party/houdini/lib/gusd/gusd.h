@@ -27,7 +27,7 @@
 #include "pxr/usd/usd/prim.h"
 #include "gusd/api.h"
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 #include <string>
 #include <functional>
 

@@ -78,8 +78,11 @@ void wrapUsdTokens()
     _AddToken(cls, "clipTimes", UsdTokens->clipTimes);
     _AddToken(cls, "collection", UsdTokens->collection);
     _AddToken(cls, "exclude", UsdTokens->exclude);
+    _AddToken(cls, "excludes", UsdTokens->excludes);
     _AddToken(cls, "expandPrims", UsdTokens->expandPrims);
     _AddToken(cls, "expandPrimsAndProperties", UsdTokens->expandPrimsAndProperties);
     _AddToken(cls, "expansionRule", UsdTokens->expansionRule);
     _AddToken(cls, "explicitOnly", UsdTokens->explicitOnly);
+    _AddToken(cls, "includeRoot", UsdTokens->includeRoot);
+    _AddToken(cls, "includes", UsdTokens->includes);
 }

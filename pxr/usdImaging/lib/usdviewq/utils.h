@@ -44,6 +44,8 @@ class UsdviewqUtils {
 public:
 
     struct PrimInfo {
+        PrimInfo(const UsdPrim &prim, const UsdTimeCode time);
+
         bool hasCompositionArcs;  
         bool isActive;  
         bool isImageable;
@@ -51,6 +53,7 @@ public:
         bool isAbstract;
         bool isInMaster;
         bool isInstance;
+        bool supportsDrawMode;
         bool isVisibilityInherited;
         bool visVaries;
         std::string name;
@@ -72,7 +75,8 @@ public:
     /// population.  Takes a time argument so that we can evaluate the prim's
     /// visibiity if it is imageable.
     USDVIEWQ_API
-    static UsdviewqUtils::PrimInfo GetPrimInfo(UsdPrim prim, UsdTimeCode time);
+    static UsdviewqUtils::PrimInfo GetPrimInfo(const UsdPrim &prim, 
+                                               const UsdTimeCode time);
 };
 
 

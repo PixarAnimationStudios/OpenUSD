@@ -49,7 +49,7 @@ _GetVariantSetSelections(const std::string& assemblyName) {
     std::map<std::string, std::string> emptyResult;
 
     MObject assemblyObj;
-    MStatus status = PxrUsdMayaUtil::GetMObjectByName(assemblyName,
+    MStatus status = UsdMayaUtil::GetMObjectByName(assemblyName,
                                                       assemblyObj);
     CHECK_MSTATUS_AND_RETURN(status, emptyResult);
 

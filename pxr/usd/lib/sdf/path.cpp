@@ -32,24 +32,18 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/type.h"
 
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include <algorithm>
-#include <iostream>
-#include <sstream>
-
-#include <boost/functional/hash.hpp>
+#include <ostream>
 
 using std::pair;
 using std::string;
 using std::vector;
-
-using namespace std::placeholders;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -83,11 +77,8 @@ TF_REGISTRY_FUNCTION(VtValue)
     VtValue::RegisterCast<SdfPath, TfToken>(&_CastFromSdfPathToTfToken);
 }
 
-void
-SdfPath::_InitWithString(const std::string &path) {
-
-    TfAutoMallocTag2 tag("Sdf", "SdfPath");
-    TfAutoMallocTag tag2("SdfPath::_InitWithString");
+SdfPath::SdfPath(const std::string &path) {
+    TfAutoMallocTag2 tag("Sdf", "SdfPath::SdfPath(string)");
     TRACE_FUNCTION();
 
     Sdf_PathParserContext context;
@@ -105,9 +96,8 @@ SdfPath::_InitWithString(const std::string &path) {
         TF_WARN("Ill-formed SdfPath <%s>: %s",
                 path.c_str(), context.errStr.c_str());
 #endif
-        _pathNode.reset();
     } else {
-        _pathNode.swap(context.node);
+        *this = std::move(context.path);
     }
 
     // Clean up.
@@ -115,171 +105,194 @@ SdfPath::_InitWithString(const std::string &path) {
     pathYylex_destroy(context.scanner);
 }
 
-SdfPath::SdfPath() {}
-
-SdfPath::SdfPath(const std::string &path) {
-    _InitWithString(path);
-}
-
-SdfPath::SdfPath(const Sdf_PathNodeConstRefPtr &pathNode) : _pathNode(pathNode) {}
-
-TF_MAKE_STATIC_DATA(SdfPath, _emptyPath) {
-    *_emptyPath = SdfPath();
-}
-TF_MAKE_STATIC_DATA(SdfPath, _absoluteRootPath) {
-    *_absoluteRootPath = SdfPath("/");
-}
-TF_MAKE_STATIC_DATA(SdfPath, _relativeRootPath) {
-    *_relativeRootPath = SdfPath(".");
-}
-
-const SdfPath & SdfPath::EmptyPath()
+const SdfPath &
+SdfPath::EmptyPath()
 {
-    return *_emptyPath;
+    static SdfPath theEmptyPath;
+    return theEmptyPath;
 }
 
-const SdfPath & SdfPath::AbsoluteRootPath()
+const SdfPath &
+SdfPath::AbsoluteRootPath()
 {
-    return *_absoluteRootPath;
+    static SdfPath *theAbsoluteRootPath =
+        new SdfPath(Sdf_PathNode::GetAbsoluteRootNode(), nullptr);
+    return *theAbsoluteRootPath;
 }
 
-const SdfPath & SdfPath::ReflexiveRelativePath()
+const SdfPath &
+SdfPath::ReflexiveRelativePath()
 {
-    return *_relativeRootPath;
+    static SdfPath *theReflexiveRelativePath =
+        new SdfPath(Sdf_PathNode::GetRelativeRootNode(), nullptr);
+    return *theReflexiveRelativePath;
 }
 
 size_t
-SdfPath::GetPathElementCount() const {
-    if (Sdf_PathNode const *node = boost::get_pointer(_pathNode))
-        return node->GetElementCount();
-    return 0;
+SdfPath::GetPathElementCount() const
+{
+    size_t primElems = _primPart ? _primPart->GetElementCount() : 0;
+    size_t propElems = _propPart ? _propPart->GetElementCount() : 0;
+    return primElems + propElems;
 }
 
 bool
-SdfPath::IsAbsolutePath() const {
-    Sdf_PathNode const *node = boost::get_pointer(_pathNode);
-    return node && node->IsAbsolutePath();
+SdfPath::IsAbsolutePath() const
+{
+    return _primPart && _primPart->IsAbsolutePath();
 }
 
 bool
-SdfPath::IsPrimPath() const {
-    Sdf_PathNode const *node = boost::get_pointer(_pathNode);
-    return node &&
-        ((node->GetNodeType() == Sdf_PathNode::PrimNode) ||
-         (_pathNode == ReflexiveRelativePath()._pathNode));
+SdfPath::IsPrimPath() const
+{
+    return !_propPart && _primPart &&
+        (_primPart->GetNodeType() == Sdf_PathNode::PrimNode ||
+         *this == ReflexiveRelativePath());
 }
 
 bool
-SdfPath::IsAbsoluteRootOrPrimPath() const {
-    Sdf_PathNode const *node = boost::get_pointer(_pathNode);
-    return node &&
-        ((node->GetNodeType() == Sdf_PathNode::PrimNode) ||
-         (_pathNode == AbsoluteRootPath()._pathNode)     || 
-         (_pathNode == ReflexiveRelativePath()._pathNode));
+SdfPath::IsAbsoluteRootOrPrimPath() const
+{
+    return !_propPart && _primPart &&
+        (_primPart->GetNodeType() == Sdf_PathNode::PrimNode ||
+         *this == AbsoluteRootPath() ||
+         *this == ReflexiveRelativePath());
 }
 
 bool
 SdfPath::IsRootPrimPath() const {
-    Sdf_PathNode const *node = boost::get_pointer(_pathNode);
-    return node && node->IsAbsolutePath() && node->GetElementCount() == 1;
+    if (_propPart)
+        return false;
+    Sdf_PathNode const *primNode = _primPart.get();
+    return primNode && primNode->IsAbsolutePath() &&
+        primNode->GetElementCount() == 1;
 }
 
 bool
-SdfPath::IsPropertyPath() const {
-    Sdf_PathNode const *node = boost::get_pointer(_pathNode);
-    return node &&
-        ((node->GetNodeType() == Sdf_PathNode::PrimPropertyNode) ||
-         (node->GetNodeType() == Sdf_PathNode::RelationalAttributeNode));
+SdfPath::IsPropertyPath() const
+{
+    if (Sdf_PathNode const *propNode = _propPart.get()) {
+        auto nodeType = propNode->GetNodeType();
+        return nodeType == Sdf_PathNode::PrimPropertyNode ||
+            nodeType == Sdf_PathNode::RelationalAttributeNode;
+    }
+    return false;
 }
 
 bool
-SdfPath::IsPrimPropertyPath() const {
-    Sdf_PathNode const *node = boost::get_pointer(_pathNode);
-    return node && node->GetNodeType() ==  Sdf_PathNode::PrimPropertyNode;
+SdfPath::IsPrimPropertyPath() const
+{
+    if (Sdf_PathNode const *propNode = _propPart.get()) {
+        return propNode->GetNodeType() ==  Sdf_PathNode::PrimPropertyNode;
+    }
+    return false;
 }
 
 bool
-SdfPath::IsNamespacedPropertyPath() const {
-    Sdf_PathNode const *node = boost::get_pointer(_pathNode);
-    return node && node->IsNamespaced() && 
-        // Currently this subexpression is always true is IsNamespaced() is.
-        ((node->GetNodeType() == Sdf_PathNode::PrimPropertyNode) || 
-         (node->GetNodeType() == Sdf_PathNode::RelationalAttributeNode));
+SdfPath::IsNamespacedPropertyPath() const
+{
+    if (Sdf_PathNode const *propNode = _propPart.get()) {
+        return propNode->IsNamespaced() &&
+            // Currently this subexpression is always true if IsNamespaced() is.
+            ((propNode->GetNodeType() ==
+              Sdf_PathNode::PrimPropertyNode) ||
+             (propNode->GetNodeType() ==
+              Sdf_PathNode::RelationalAttributeNode));
+    }
+    return false;
 }
 
 bool
 SdfPath::IsPrimVariantSelectionPath() const
 {
-    Sdf_PathNode const *node = boost::get_pointer(_pathNode);
-    return node && 
-        node->GetNodeType() == Sdf_PathNode::PrimVariantSelectionNode;
+    if (_propPart)
+        return false;
+    if (Sdf_PathNode const *primNode = _primPart.get()) {
+        return primNode->GetNodeType() ==
+            Sdf_PathNode::PrimVariantSelectionNode;
+    }
+    return false;
 }
 
 bool
 SdfPath::IsPrimOrPrimVariantSelectionPath() const
 {
-    Sdf_PathNode const *node = boost::get_pointer(_pathNode);
-    return node && 
-        ((node->GetNodeType() == Sdf_PathNode::PrimNode) || 
-         (node->GetNodeType() == Sdf_PathNode::PrimVariantSelectionNode) || 
-         (_pathNode == ReflexiveRelativePath()._pathNode));
+    if (_propPart)
+        return false;
+    if (Sdf_PathNode const *primNode = _primPart.get()) {
+        auto nodeType = primNode->GetNodeType();
+        return
+            nodeType == Sdf_PathNode::PrimNode ||
+            nodeType == Sdf_PathNode::PrimVariantSelectionNode || 
+            *this == ReflexiveRelativePath();
+    }
+    return false;
 }
 
 bool
 SdfPath::ContainsPrimVariantSelection() const
 {
-    Sdf_PathNode const *node = boost::get_pointer(_pathNode);
-    return node && node->ContainsPrimVariantSelection();
+    if (Sdf_PathNode const *primNode = _primPart.get()) {
+        return primNode->ContainsPrimVariantSelection();
+    }
+    return false;
 }
 
 bool
 SdfPath::ContainsTargetPath() const
 {
-    Sdf_PathNode const *node = boost::get_pointer(_pathNode);
-    return node && node->ContainsTargetPath();
+    if (Sdf_PathNode const *propNode = _propPart.get()) {
+        return propNode->ContainsTargetPath();
+    }
+    return false;
 }
 
 bool
 SdfPath::IsRelationalAttributePath() const {
-    Sdf_PathNode const *node = boost::get_pointer(_pathNode);
-    return node && 
-        node->GetNodeType() ==  Sdf_PathNode::RelationalAttributeNode;
+    if (Sdf_PathNode const *propNode = _propPart.get()) {
+        return propNode->GetNodeType() == Sdf_PathNode::RelationalAttributeNode;
+    }
+    return false;
 }
 
 bool
 SdfPath::IsTargetPath() const {
-    Sdf_PathNode const *node = boost::get_pointer(_pathNode);
-    return node && node->GetNodeType() == Sdf_PathNode::TargetNode;
+    if (Sdf_PathNode const *propNode = _propPart.get()) {
+        return propNode->GetNodeType() == Sdf_PathNode::TargetNode;
+    }
+    return false;
 }
 
 bool
 SdfPath::IsMapperPath() const {
-    Sdf_PathNode const *node = boost::get_pointer(_pathNode);
-    return node && node->GetNodeType() == Sdf_PathNode::MapperNode;
+    if (Sdf_PathNode const *propNode = _propPart.get()) {
+        return propNode->GetNodeType() == Sdf_PathNode::MapperNode;
+    }
+    return false;
 }
 
 bool
 SdfPath::IsMapperArgPath() const {
-    Sdf_PathNode const *node = boost::get_pointer(_pathNode);
-    return node && node->GetNodeType() == Sdf_PathNode::MapperArgNode;
+    if (Sdf_PathNode const *propNode = _propPart.get()) {
+        return propNode->GetNodeType() == Sdf_PathNode::MapperArgNode;
+    }
+    return false;
 }
 
 bool
 SdfPath::IsExpressionPath() const {
-    Sdf_PathNode const *node = boost::get_pointer(_pathNode);
-    return node && node->GetNodeType() == Sdf_PathNode::ExpressionNode;
-}
-
-bool
-SdfPath::IsEmpty() const {
-    return !_pathNode;
+    if (Sdf_PathNode const *propNode = _propPart.get()) {
+        return propNode->GetNodeType() == Sdf_PathNode::ExpressionNode;
+    }
+    return false;
 }
 
 TfToken const &
 SdfPath::GetToken() const
 {
-    if (Sdf_PathNode const *node = boost::get_pointer(_pathNode))
-        return node->GetPathToken();
+    if (_primPart) {
+        return Sdf_PathNode::GetPathToken(_primPart.get(), _propPart.get());
+    }
     return SdfPathTokens->empty;
 }
 
@@ -305,8 +318,21 @@ SdfPath::GetPrefixes() const {
 void
 SdfPath::GetPrefixes(SdfPathVector *prefixes) const
 {
-    if (Sdf_PathNode const *node = boost::get_pointer(_pathNode))
-        node->GetPrefixes(prefixes);
+    Sdf_PathNode const *prop = _propPart.get();
+    Sdf_PathNode const *prim = _primPart.get();
+
+    size_t elemCount = GetPathElementCount();
+    prefixes->resize(elemCount);
+    
+    SdfPathVector::reverse_iterator iter = prefixes->rbegin();
+    while (prop && elemCount--) {
+        *iter++ = SdfPath(prim, prop);
+        prop = prop->GetParentNode();
+    }
+    while (prim && elemCount--) {
+        *iter++ = SdfPath(prim, prop);
+        prim = prim->GetParentNode();
+    }
 }
 
 const std::string &
@@ -318,21 +344,24 @@ SdfPath::GetName() const
 const TfToken &
 SdfPath::GetNameToken() const
 {
-    if (Sdf_PathNode const *node = boost::get_pointer(_pathNode))
-        return node->GetName();
-    return SdfPathTokens->empty;
+    if (_propPart) {
+        return _propPart.get()->GetName();
+    }
+    return _primPart ? _primPart.get()->GetName() : SdfPathTokens->empty;
 }
 
 string
 SdfPath::GetElementString() const
 {
     return GetElementToken().GetString();
-}    
+}
 
 TfToken
 SdfPath::GetElementToken() const
 {
-    return ARCH_LIKELY(_pathNode) ? _pathNode->GetElement() : TfToken();
+    if (_propPart)
+        return _propPart.get()->GetElement();
+    return _primPart ? _primPart.get()->GetElement() : TfToken();
 }    
 
 SdfPath
@@ -350,11 +379,11 @@ SdfPath::ReplaceName(TfToken const &newName) const
     return SdfPath();
 }
 
-static Sdf_PathNodeConstRefPtr
-_GetNextTargetNode(Sdf_PathNodeConstRefPtr curNode)
+static Sdf_PathNode const *
+_GetNextTargetNode(Sdf_PathNode const *curNode)
 {
     if (!curNode || !curNode->ContainsTargetPath())
-        return Sdf_PathNodeConstRefPtr();
+        return nullptr;
 
     // Find nearest target or mapper node.
     while (curNode
@@ -366,16 +395,23 @@ _GetNextTargetNode(Sdf_PathNodeConstRefPtr curNode)
 }
 
 const SdfPath &
-SdfPath::GetTargetPath() const {
-    Sdf_PathNodeConstRefPtr targetNode = _GetNextTargetNode(_pathNode);
+SdfPath::GetTargetPath() const
+{
+    if (!_propPart)
+        return EmptyPath();
+    Sdf_PathNode const *targetNode = _GetNextTargetNode(_propPart.get());
     return targetNode ? targetNode->GetTargetPath() : EmptyPath();
 }
 
 void
-SdfPath::GetAllTargetPathsRecursively(SdfPathVector *result) const {
-    for (Sdf_PathNodeConstRefPtr curNode = _GetNextTargetNode(_pathNode);
-         curNode; curNode = _GetNextTargetNode(curNode->GetParentNode())) {
-        SdfPath targetPath = curNode->GetTargetPath();
+SdfPath::GetAllTargetPathsRecursively(SdfPathVector *result) const
+{
+    if (!_propPart)
+        return;
+    for (Sdf_PathNode const *targetNode = _GetNextTargetNode(_propPart.get());
+         targetNode;
+         targetNode = _GetNextTargetNode(targetNode->GetParentNode())) {
+        SdfPath const &targetPath = targetNode->GetTargetPath();
         result->push_back(targetPath);
         targetPath.GetAllTargetPathsRecursively(result);
     }
@@ -387,7 +423,7 @@ SdfPath::GetVariantSelection() const
     pair<string, string> result;
     if (IsPrimVariantSelectionPath()) {
         const Sdf_PathNode::VariantSelectionType& sel =
-            _pathNode->GetVariantSelection();
+            _primPart.get()->GetVariantSelection();
         result.first = sel.first.GetString();
         result.second = sel.second.GetString();
     }
@@ -400,76 +436,101 @@ SdfPath::HasPrefix(const SdfPath &prefix) const
     if (prefix.IsEmpty() || IsEmpty())
         return false;
 
-    if (IsAbsolutePath() && prefix == SdfPath::AbsoluteRootPath())
-        return true;
+    if (prefix._propPart) {
+        // The prefix is a property-like path, in order for it to be a prefix of
+        // this path, we must also have a property part, and our prim part must
+        // be the same as the prefix's prim part.
+        if (_primPart != prefix._primPart || !_propPart) {
+            return false;
+        }
 
-    const Sdf_PathNodeConstRefPtr &prefixNode = prefix._pathNode;
-    const size_t prefixDepth = prefixNode->GetElementCount();
-
-    const Sdf_PathNodeConstRefPtr *curNode = &_pathNode;
-    size_t curDepth = (*curNode)->GetElementCount();
-
-    if (curDepth < prefixDepth)
-        return false;
-
-    while (curDepth > prefixDepth) {
-        curNode = &((*curNode)->GetParentNode());
-        --curDepth;
+        // Now walk up property parts until we hit prefix._propPart or we
+        // recurse above its depth.
+        Sdf_PathNode const *propNode = _propPart.get();
+        Sdf_PathNode const *prefixPropNode = prefix._propPart.get();
+        while (propNode && propNode != prefixPropNode) {
+            propNode = propNode->GetParentNode();
+        }
+        return propNode == prefixPropNode;
     }
+    else {
+        // The prefix is a prim-like path.  Walk up nodes until we achieve the
+        // same depth as the prefix, then just check for equality.
+        Sdf_PathNode const *primNode = _primPart.get();
 
-    return *curNode == prefixNode;
+        if (primNode->IsAbsolutePath() &&
+            prefix == SdfPath::AbsoluteRootPath()) {
+            return true;
+        }
+
+        Sdf_PathNode const *prefixPrimNode = prefix._primPart.get();
+        
+        int prefixDepth = prefixPrimNode->GetElementCount();
+        int curDepth = primNode->GetElementCount();
+
+        if (curDepth < prefixDepth) {
+            return false;
+        }
+        while (curDepth > prefixDepth) {
+            primNode = primNode->GetParentNode();
+            --curDepth;
+        }
+        return primNode == prefixPrimNode;
+    }
 }
 
 SdfPath
 SdfPath::GetParentPath() const {
-    if (!_pathNode) {
-        return EmptyPath();
+    if (IsEmpty()) {
+        return *this;
     }
+
+    // If this is a property-like path, trim that first.
+    if (Sdf_PathNode const *propNode = _propPart.get()) {
+        propNode = propNode->GetParentNode();
+        return SdfPath(_primPart, Sdf_PathPropNodeHandle(propNode));
+    }
+    
+    // This is a prim-like path.  If this prim path is '.' or ends with '..',
+    // the "parent" path is made by appending a '..' component.
+    //
+    // XXX: NOTE that this is NOT the way that that Sdf_PathNode::GetParentNode
+    // works, and note that most of the code in SdfPath uses GetParentNode
+    // intentionally.
+    Sdf_PathNode const *primNode = _primPart.get();
     if (ARCH_UNLIKELY(
-            (_pathNode == Sdf_PathNode::GetRelativeRootNode()) || 
-            (_pathNode->GetName() == SdfPathTokens->parentPathElement))) {
-        // If this is the relative root ("." or the last path component
-        // is "..", then the "parent" path is actually a new path with
-        // and extra ".." appended.
-        //
-        // XXX: NOTE that this is NOT the way that
-        // that Sdf_PathNode::GetParentNode works, and note that most of the
-        // code in SdfPath uses GetParentNode intentionally.
-        return SdfPath(Sdf_PathNode::
-                      FindOrCreatePrim(_pathNode,
-                                       SdfPathTokens->parentPathElement));
+            primNode == Sdf_PathNode::GetRelativeRootNode() || 
+            primNode->GetName() == SdfPathTokens->parentPathElement)) {
+        return SdfPath(Sdf_PathNode::FindOrCreatePrim(
+                           primNode, SdfPathTokens->parentPathElement),
+                       Sdf_PathPropNodeHandle());
     } else {
-        Sdf_PathNodeConstRefPtr const &parent = _pathNode->GetParentNode();
-        return (parent ? SdfPath(parent) : EmptyPath());
+        return SdfPath(primNode->GetParentNode(), nullptr);
     }
 }
 
 SdfPath
 SdfPath::GetPrimPath() const {
-    Sdf_PathNodeConstRefPtr curNode = _pathNode;
+    
+    Sdf_PathNode const *primNode = _primPart.get();
     // Walk up looking for a prim node.
-    while (curNode) {
-        if (curNode->GetNodeType() == Sdf_PathNode::PrimNode) {
-            return SdfPath(curNode);
-        }
-        curNode = curNode->GetParentNode();
+    while (primNode && primNode->GetNodeType() != Sdf_PathNode::PrimNode) {
+        primNode = primNode->GetParentNode();
     }
-    return EmptyPath();
+    return SdfPath(primNode, nullptr);
 }
 
 SdfPath
 SdfPath::GetPrimOrPrimVariantSelectionPath() const
 {
-    Sdf_PathNodeConstRefPtr curNode = _pathNode;
+    Sdf_PathNode const *primNode = _primPart.get();
     // Walk up looking for a prim or prim variant selection node.
-    while (curNode) {
-        if (curNode->GetNodeType() == Sdf_PathNode::PrimNode || 
-            curNode->GetNodeType() == Sdf_PathNode::PrimVariantSelectionNode) {
-            return SdfPath(curNode);
-        }
-        curNode = curNode->GetParentNode();
+    while (primNode &&
+           (primNode->GetNodeType() != Sdf_PathNode::PrimNode &&
+            primNode->GetNodeType() != Sdf_PathNode::PrimVariantSelectionNode)){
+        primNode = primNode->GetParentNode();
     }
-    return EmptyPath();
+    return SdfPath(primNode, nullptr);
 }
 
 SdfPath
@@ -477,8 +538,8 @@ SdfPath::GetAbsoluteRootOrPrimPath() const {
     return (*this == AbsoluteRootPath()) ? *this : GetPrimPath();
 }
 
-static SdfPath
-_AppendNode(const SdfPath &path, const Sdf_PathNodeConstRefPtr &node) {
+static inline SdfPath
+_AppendNode(const SdfPath &path, Sdf_PathNode const *node) {
 
     switch (node->GetNodeType()) {
         case Sdf_PathNode::PrimNode:
@@ -517,19 +578,21 @@ SdfPath::StripAllVariantSelections() const {
     if (!ContainsPrimVariantSelection())
         return *this;
     TRACE_FUNCTION();
-    std::vector<Sdf_PathNodeConstRefPtr> nodes;
-    Sdf_PathNodeConstRefPtr curNode = _pathNode;
-    while(curNode) {
+    std::vector<Sdf_PathNode const *> primNodes;
+    Sdf_PathNode const *curNode = _primPart.get();
+    while (curNode) {
         if (curNode->GetNodeType() != Sdf_PathNode::PrimVariantSelectionNode)
-            nodes.push_back(curNode);
+            primNodes.push_back(curNode);
         curNode = curNode->GetParentNode();
     }
 
-    vector<Sdf_PathNodeConstRefPtr>::reverse_iterator it;
-    SdfPath stripPath(*(nodes.rbegin()));    
-    // Step through all nodes except the last (which is the root node):
-    for (it = ++(nodes.rbegin()); it != nodes.rend(); ++it) 
+    SdfPath stripPath(*(primNodes.rbegin()), nullptr);
+    // Step through all primNodes except the last (which is the root node):
+    for (auto it = ++(primNodes.rbegin()); it != primNodes.rend(); ++it) {
         stripPath = _AppendNode(stripPath, *it);
+    }
+    // Tack on any property portion.
+    stripPath._propPart = _propPart;
     return stripPath;
 }
 
@@ -553,25 +616,33 @@ SdfPath::AppendPath(const SdfPath &newSuffix) const {
     if (newSuffix == ReflexiveRelativePath()) {
         return *this;
     }
-    if ((_pathNode->GetNodeType() != Sdf_PathNode::RootNode) && 
-        (_pathNode->GetNodeType() != Sdf_PathNode::PrimNode) && 
-        (_pathNode->GetNodeType() != Sdf_PathNode::PrimVariantSelectionNode)) {
+
+    Sdf_PathNode::NodeType primNodeType = _primPart->GetNodeType();
+    if (_propPart || (primNodeType != Sdf_PathNode::RootNode &&
+                      primNodeType != Sdf_PathNode::PrimNode &&
+                      primNodeType != Sdf_PathNode::PrimVariantSelectionNode)) {
         TF_WARN("Cannot append a path to another path that is not "
                     "a root or a prim path.");
         return EmptyPath();
     }
 
     // This list winds up in reverse order to what one might at first expect.
-    vector<Sdf_PathNodeConstRefPtr> tailNodes;
+    vector<Sdf_PathNode const *> tailNodes;
 
-    Sdf_PathNodeConstRefPtr curNode = newSuffix._pathNode;
     // Walk up to top of newSuffix.
+    Sdf_PathNode const *curNode = newSuffix._propPart.get();
+    while (curNode) {
+        tailNodes.push_back(curNode);
+        curNode = curNode->GetParentNode();
+    }
+    curNode = newSuffix._primPart.get();
     while (curNode != Sdf_PathNode::GetRelativeRootNode()) {
         tailNodes.push_back(curNode);
         curNode = curNode->GetParentNode();
     }
+
     if ((tailNodes.back()->GetNodeType() == Sdf_PathNode::PrimPropertyNode) && 
-                (_pathNode == Sdf_PathNode::GetAbsoluteRootNode())) {
+        *this == AbsoluteRootPath()) {
         TF_WARN("Cannot append a property path to the absolute root path.");
         return EmptyPath();
     }
@@ -579,16 +650,103 @@ SdfPath::AppendPath(const SdfPath &newSuffix) const {
     SdfPath result = *this;
 
     // We have a list of new nodes (in reverse order) to append to our node.
-    vector<Sdf_PathNodeConstRefPtr>::reverse_iterator it = tailNodes.rbegin();
-    while ((it != tailNodes.rend()) && (result != EmptyPath())) {
+    for (auto it = tailNodes.rbegin();
+         (it != tailNodes.rend()) && (result != EmptyPath()); ++it) {
         result = _AppendNode(result, *it);
-        ++it;
     }
     return result;
 }
 
+// Use a simple per-thread cache for appending children to prim paths.  This
+// lets us avoid hitting the global table, reducing thread contention, for
+// appending children repeatedly to a node.
+namespace {
+struct _PerThreadPrimPathCache
+{
+    static constexpr unsigned Shift = 14;
+    static constexpr unsigned Size = 1 << Shift;
+    static constexpr unsigned ProbeShift = 1;
+    static constexpr unsigned Probes = 1 << ProbeShift;
+
+    struct _Entry {
+        Sdf_PathPrimNodeHandle parent;
+        Sdf_PathPrimNodeHandle primPart;
+        TfToken childName;
+    };
+
+    inline Sdf_PathPrimNodeHandle
+    Find(Sdf_PathPrimNodeHandle const &parent, TfToken const &childName,
+         int *outIndex) const {
+        // Hash and shift to find table index.
+        size_t h = childName.Hash();
+        uint32_t parentAsInt;
+        memcpy(&parentAsInt, &parent, sizeof(uint32_t));
+        boost::hash_combine(h, parentAsInt >> 8);
+        unsigned index = (h & (Size-1));
+
+        for (unsigned probe = 0; probe != Probes; ++probe) {
+            _Entry const &e = cache[(index + probe) & (Size - 1)];
+            if (e.parent == parent && e.childName == childName) {
+                // Cache hit.
+                return e.primPart;
+            }
+            if (!e.parent)
+                break;
+        }
+        
+        // Not found -- arrange to replace original hash index.
+        *outIndex = index;
+        return Sdf_PathPrimNodeHandle();
+    }
+
+    inline void
+    Store(Sdf_PathPrimNodeHandle const &parent, TfToken const &childName,
+          Sdf_PathPrimNodeHandle primPart, int index) {
+        cache[index] = { parent, primPart, childName };
+    }
+
+    _Entry cache[Size];
+};
+}
+
+namespace {
+// XXX: Workaround for Windows issue USD-5306 -- this avoids destroying the
+// per-thread caches to deal with static destruction order problems.
+template <class T>
+struct _FastThreadLocalBase
+{
+    static T &Get() {
+        static thread_local T *theTPtr = nullptr;
+        if (ARCH_LIKELY(theTPtr)) {
+            return *theTPtr;
+        }
+        static thread_local
+            typename std::aligned_storage<sizeof(T)>::type storage;
+        void *addr = &storage;
+        T *p = new (addr) T;
+        theTPtr = p;
+        return *p;
+    }
+};
+}
+using _PrimPathCache = _FastThreadLocalBase<_PerThreadPrimPathCache>;
+static _PrimPathCache _primPathCache;
+
 SdfPath
 SdfPath::AppendChild(TfToken const &childName) const {
+    if (ARCH_UNLIKELY(_propPart)) {
+        TF_WARN("Cannot append child '%s' to path '%s'.",
+                childName.GetText(), GetText());
+        return EmptyPath();
+    }
+    auto &cache = _primPathCache.Get();
+    int storeIndex = 0;
+    Sdf_PathPrimNodeHandle primPart =
+        cache.Find(_primPart, childName, &storeIndex);
+    SdfPath ret { primPart, {} };
+    if (primPart) {
+        return ret;
+    }
     if (!IsAbsoluteRootOrPrimPath()
         && !IsPrimVariantSelectionPath()
         && (*this != ReflexiveRelativePath())) {
@@ -603,32 +761,100 @@ SdfPath::AppendChild(TfToken const &childName) const {
             TF_WARN("Invalid prim name '%s'", childName.GetText());
             return EmptyPath();
         }
-        return SdfPath(Sdf_PathNode::FindOrCreatePrim(_pathNode, childName));
+        ret._primPart =
+            Sdf_PathNode::FindOrCreatePrim(_primPart.get(), childName);
+        cache.Store(_primPart, childName, ret._primPart, storeIndex);
+        return ret;
     }
 }
 
+
+// Use a simple per-thread cache for appending prim properties.  This lets us
+// avoid hitting the global table, reducing thread contention and increasing
+// speed.  We don't do this for the other property-type paths, like target paths
+// or relational attribute paths because those operations are done much less
+// frequently than appending properties to prim paths.
+namespace {
+struct _PerThreadPropertyPathCache
+{
+    static constexpr unsigned Shift = 10;
+    static constexpr unsigned Size = 1 << Shift;
+    static constexpr unsigned ProbeShift = 1;
+    static constexpr unsigned Probes = 1 << ProbeShift;
+
+    struct _Entry {
+        TfToken propName;
+        Sdf_PathPropNodeHandle propPart;
+    };
+
+    inline Sdf_PathPropNodeHandle
+    Find(TfToken const &propName, int *outIndex) const {
+        // Hash and shift to find table index.
+        size_t h = propName.Hash();
+        unsigned index = (h >> (8*sizeof(h) - Shift));
+
+        for (unsigned probe = 0; probe != Probes; ++probe) {
+            _Entry const &e = cache[(index + probe) & (Size - 1)];
+            if (e.propName == propName) {
+                // Cache hit.
+                return e.propPart;
+            }
+            if (e.propName.IsEmpty())
+                break;
+        }
+        
+        // Not found -- arrange to replace original hash index.
+        *outIndex = index;
+        return Sdf_PathPropNodeHandle();
+    }
+
+    inline void
+    Store(TfToken const &propName, Sdf_PathPropNodeHandle propPart, int index) {
+        cache[index] = { propName, propPart };
+    }
+
+    _Entry cache[Size];
+};
+}
+
+using _PropPathCache = Sdf_FastThreadLocalBase<_PerThreadPropertyPathCache>;
+static _PropPathCache _propPathCache;
+
 SdfPath
 SdfPath::AppendProperty(TfToken const &propName) const {
+    if (ARCH_UNLIKELY(_propPart)) {
+        TF_WARN("Can only append a property '%s' to a prim path (%s)",
+                propName.GetText(), GetText());
+        return EmptyPath();
+    }
+    auto &cache = _propPathCache.Get();
+    int storeIndex = 0;
+    Sdf_PathPropNodeHandle propPart = cache.Find(propName, &storeIndex);
+    SdfPath ret { _primPart, propPart };
+    if (propPart) {
+        return ret;
+    }
     if (!IsValidNamespacedIdentifier(propName.GetString())) {
         //TF_WARN("Invalid property name.");
         return EmptyPath();
     }
     if (!IsPrimVariantSelectionPath() && 
-        !IsPrimPath() && 
-                (_pathNode != Sdf_PathNode::GetRelativeRootNode())) {
+        !IsPrimPath() && (*this != ReflexiveRelativePath())) {
         TF_WARN("Can only append a property '%s' to a prim path (%s)",
                 propName.GetText(), GetText());
         return EmptyPath();
     }
-    return SdfPath(Sdf_PathNode::FindOrCreatePrimProperty(_pathNode, propName));
+    ret._propPart =
+        Sdf_PathNode::FindOrCreatePrimProperty(_primPart.get(), propName);
+    cache.Store(propName, ret._propPart, storeIndex);
+    return ret;
 }
 
 SdfPath
 SdfPath::AppendVariantSelection(const string &variantSet,
-                               const string &variant) const
+                                const string &variant) const
 {
-    if (!IsPrimOrPrimVariantSelectionPath() && 
-        (_pathNode != Sdf_PathNode::GetRelativeRootNode())) {
+    if (!IsPrimOrPrimVariantSelectionPath()) {
         TF_CODING_ERROR("Cannot append variant selection %s = %s to <%s>; "
                         "can only append a variant selection to a prim or "
                         "prim variant selection path.",
@@ -637,9 +863,9 @@ SdfPath::AppendVariantSelection(const string &variantSet,
         return EmptyPath();
     }
     return SdfPath(Sdf_PathNode::
-                  FindOrCreatePrimVariantSelection(_pathNode,
-                                                   TfToken(variantSet),
-                                                   TfToken(variant)));
+                   FindOrCreatePrimVariantSelection(_primPart.get(),
+                                                    TfToken(variantSet),
+                                                    TfToken(variant)));
 }
 
 SdfPath
@@ -652,8 +878,8 @@ SdfPath::AppendTarget(const SdfPath &targetPath) const {
         TF_WARN("Target path cannot be invalid.");
         return EmptyPath();
     }
-    return SdfPath(Sdf_PathNode::FindOrCreateTarget(_pathNode,
-                                                  targetPath._pathNode));
+    return SdfPath(_primPart, Sdf_PathNode::
+                   FindOrCreateTarget(_propPart.get(), targetPath));
 }
 
 SdfPath
@@ -666,8 +892,9 @@ SdfPath::AppendRelationalAttribute(TfToken const &attrName) const {
         TF_WARN("Can only append a relational attribute to a target path.");
         return EmptyPath();
     }
-    return SdfPath(Sdf_PathNode::
-                  FindOrCreateRelationalAttribute(_pathNode, attrName));
+    return SdfPath(_primPart,
+                   Sdf_PathNode::FindOrCreateRelationalAttribute(
+                       _propPart.get(), attrName));
 }
 
 SdfPath
@@ -682,8 +909,8 @@ SdfPath::AppendMapper(const SdfPath &targetPath) const {
                 GetString().c_str());
         return EmptyPath();
     }
-    return SdfPath(Sdf_PathNode::FindOrCreateMapper(_pathNode,
-                                                  targetPath._pathNode));
+    return SdfPath { _primPart, 
+            Sdf_PathNode::FindOrCreateMapper(_propPart.get(), targetPath) };
 }
 
 SdfPath
@@ -696,7 +923,8 @@ SdfPath::AppendMapperArg(TfToken const &argName) const {
         TF_WARN("Can only append a mapper arg to a mapper path.");
         return EmptyPath();
     }
-    return SdfPath(Sdf_PathNode::FindOrCreateMapperArg(_pathNode, argName));
+    return SdfPath { _primPart,
+            Sdf_PathNode::FindOrCreateMapperArg(_propPart.get(), argName) };
 }
 
 SdfPath
@@ -705,7 +933,8 @@ SdfPath::AppendExpression() const {
         TF_WARN("Can only append an expression to a property path.");
         return EmptyPath();
     }
-    return SdfPath(Sdf_PathNode::FindOrCreateExpression(_pathNode));
+    return SdfPath { _primPart,
+            Sdf_PathNode::FindOrCreateExpression(_propPart.get()) };
 }
 
 SdfPath
@@ -719,8 +948,8 @@ SdfPath::AppendElementToken(const TfToken &elementTok) const
 {
     std::string const &element = elementTok.GetString();
 
-    if (ARCH_UNLIKELY((!_pathNode) || element.empty())){
-        if (!_pathNode){
+    if (ARCH_UNLIKELY(IsEmpty() || element.empty())) {
+        if (IsEmpty()) {
             TF_CODING_ERROR("Cannot append element \'%s\' to the EmptyPath.",
                             element.c_str());
         }
@@ -795,83 +1024,275 @@ SdfPath::AppendElementToken(const TfToken &elementTok) const
         
 }
 
+SdfPath
+SdfPath::_ReplacePrimPrefix(SdfPath const &oldPrefix,
+                            SdfPath const &newPrefix) const
+{
+    using Sdf_PathNodeConstPtr = Sdf_PathNode const *;
+
+    // Walk up the prim part of this path until we have the same depth as
+    // oldPrefix, recording tail elements along the way.  If we find oldPrefix
+    // is in fact a prefix, then tack the tail elements onto newPrefix and
+    // return the resulting path with our property element (if any).  Otherwise
+    // return this path unchanged.
+    
+    Sdf_PathNodeConstPtr primNode = _primPart.get();
+    Sdf_PathNodeConstPtr prefixPrimNode = oldPrefix._primPart.get();
+        
+    int prefixDepth = prefixPrimNode->GetElementCount();
+    int curDepth = primNode->GetElementCount();
+
+    if (curDepth < prefixDepth) {
+        return *this;
+    }
+
+    // Make space for temporary tail nodes.  Use stack if small enough.
+    constexpr size_t MaxLocalNodes = 16;
+    Sdf_PathNodeConstPtr localNodes[MaxLocalNodes];
+    std::unique_ptr<Sdf_PathNodeConstPtr []> remoteNodes;
+    Sdf_PathNodeConstPtr *tmpNodes = localNodes;
+    size_t requiredTmpNodes = curDepth - prefixDepth;
+    if (requiredTmpNodes > MaxLocalNodes) {
+        remoteNodes.reset(new Sdf_PathNodeConstPtr[requiredTmpNodes]);
+        tmpNodes = remoteNodes.get();
+    }
+
+    size_t i = 0;
+    while (curDepth > prefixDepth) {
+        tmpNodes[i++] = primNode;
+        primNode = primNode->GetParentNode();
+        --curDepth;
+    }
+    
+    if (primNode != prefixPrimNode) {
+        return *this;
+    }
+
+    // Tack the prim elements onto newPrefix.
+    SdfPath newPath = newPrefix;
+    while (i--) {
+        switch (tmpNodes[i]->GetNodeType()) {
+        case Sdf_PathNode::PrimNode:
+            newPath._primPart = Sdf_PathNode::FindOrCreatePrim(
+                newPath._primPart.get(), tmpNodes[i]->GetName());
+            break;
+        default:
+            newPath = _AppendNode(newPath, tmpNodes[i]);
+        }
+    }
+
+    // Add our property element.
+    newPath._propPart = _propPart;
+
+    return newPath;
+}
+
+SdfPath
+SdfPath::_ReplaceTargetPathPrefixes(SdfPath const &oldPrefix,
+                                    SdfPath const &newPrefix) const
+{
+    using Sdf_PathNodeConstPtr = Sdf_PathNode const *;
+
+    // Go through all the target paths in this path, and replace their prefixes.
+    Sdf_PathNode const *propNode = _propPart.get();
+    if (!propNode->ContainsTargetPath()) {
+        return *this;
+    }
+
+    // Make space for temporary tail nodes.  Use stack if small enough.
+    constexpr size_t MaxLocalNodes = 16;
+    Sdf_PathNodeConstPtr localNodes[MaxLocalNodes];
+    std::unique_ptr<Sdf_PathNodeConstPtr []> remoteNodes;
+    Sdf_PathNodeConstPtr *tmpNodes = localNodes;
+    size_t requiredTmpNodes = propNode->GetElementCount();
+    if (requiredTmpNodes > MaxLocalNodes) {
+        remoteNodes.reset(new Sdf_PathNodeConstPtr[requiredTmpNodes]);
+        tmpNodes = remoteNodes.get();
+    }
+
+    size_t i = 0;
+    while (propNode && propNode->ContainsTargetPath()) {
+        tmpNodes[i++] = propNode;
+        propNode = propNode->GetParentNode();
+    }
+    
+    // Tack the prop elements onto newPrefix's prop part.
+    SdfPath newPath(_primPart.get(), propNode);
+    while (i--) {
+        switch (tmpNodes[i]->GetNodeType()) {
+        case Sdf_PathNode::PrimPropertyNode:
+            newPath._propPart = Sdf_PathNode::FindOrCreatePrimProperty(
+                nullptr, tmpNodes[i]->GetName());
+            break;
+        case Sdf_PathNode::TargetNode:
+            newPath = newPath.AppendTarget(
+                tmpNodes[i]->GetTargetPath().ReplacePrefix(
+                    oldPrefix, newPrefix, /*fixTargetPaths=*/true));
+            break;
+        case Sdf_PathNode::MapperNode:
+            newPath = newPath.AppendMapper(
+                tmpNodes[i]->GetTargetPath().ReplacePrefix(
+                    oldPrefix, newPrefix, /*fixTargetPaths=*/true));
+            break;
+        default:
+            newPath = _AppendNode(newPath, tmpNodes[i]);
+        }
+    }
+
+    return newPath;
+}
+
+SdfPath
+SdfPath::_ReplacePropPrefix(SdfPath const &oldPrefix,
+                            SdfPath const &newPrefix,
+                            bool fixTargetPaths) const
+{ 
+    using Sdf_PathNodeConstPtr = Sdf_PathNode const *;
+
+    // Walk up the prop part of this path until we have the same depth as
+    // oldPrefix's prop part, recording tail elements along the way.  If we find
+    // oldPrefix is in fact a prefix, then tack the tail elements onto newPrefix
+    // (replacing prefixes in target paths if \p fixTargetPaths is true).  If
+    // oldPrefix is not found, then just replace target paths in all the
+    // elements.
+    
+    Sdf_PathNodeConstPtr propNode = _propPart.get();
+    Sdf_PathNodeConstPtr prefixPropNode = oldPrefix._propPart.get();
+        
+    int prefixDepth = prefixPropNode->GetElementCount();
+    int curDepth = propNode->GetElementCount();
+
+    if (curDepth < prefixDepth) {
+        return (fixTargetPaths && propNode->ContainsTargetPath()) ? 
+            _ReplaceTargetPathPrefixes(oldPrefix, newPrefix) : *this;
+    }
+
+    // Make space for temporary tail nodes.  Use stack if small enough.
+    constexpr size_t MaxLocalNodes = 16;
+    Sdf_PathNodeConstPtr localNodes[MaxLocalNodes];
+    std::unique_ptr<Sdf_PathNodeConstPtr []> remoteNodes;
+    Sdf_PathNodeConstPtr *tmpNodes = localNodes;
+    size_t requiredTmpNodes = curDepth - prefixDepth;
+    if (requiredTmpNodes > MaxLocalNodes) {
+        remoteNodes.reset(new Sdf_PathNodeConstPtr[requiredTmpNodes]);
+        tmpNodes = remoteNodes.get();
+    }
+
+    size_t i = 0;
+    while (curDepth > prefixDepth) {
+        tmpNodes[i++] = propNode;
+        propNode = propNode->GetParentNode();
+        --curDepth;
+    }
+    
+    if (propNode != prefixPropNode) {
+        return (fixTargetPaths && ContainsTargetPath()) ?
+            _ReplaceTargetPathPrefixes(oldPrefix, newPrefix) : *this;
+    }
+
+    // Tack the prop elements onto newPrefix's prop part.
+    SdfPath newPath = newPrefix;
+    while (i--) {
+        switch (tmpNodes[i]->GetNodeType()) {
+        case Sdf_PathNode::PrimPropertyNode:
+            newPath._propPart = Sdf_PathNode::FindOrCreatePrimProperty(
+                nullptr, tmpNodes[i]->GetName());
+            break;
+        case Sdf_PathNode::TargetNode:
+            if (fixTargetPaths) {
+                newPath = newPath.AppendTarget(
+                    tmpNodes[i]->GetTargetPath().ReplacePrefix(
+                        oldPrefix, newPrefix, fixTargetPaths));
+            } else {
+                newPath = _AppendNode(newPath, tmpNodes[i]);
+            }
+            break;
+        case Sdf_PathNode::MapperNode:
+            if (fixTargetPaths) {
+                newPath = newPath.AppendMapper(
+                    tmpNodes[i]->GetTargetPath().ReplacePrefix(
+                        oldPrefix, newPrefix, fixTargetPaths));
+            } else {
+                newPath = _AppendNode(newPath, tmpNodes[i]);
+            }
+            break;
+        default:
+            newPath = _AppendNode(newPath, tmpNodes[i]);
+        }
+    }
+
+    return newPath;
+}
+
 
 SdfPath
 SdfPath::ReplacePrefix(const SdfPath &oldPrefix, const SdfPath &newPrefix,
-                      bool fixTargetPaths) const
+                       bool fixTargetPaths) const
 {
+    // Perhaps surprisingly, this path need not have oldPrefix as a prefix.  For
+    // example, '/a.rel[/target]'.ReplacePrefix('/target', '/other/target') ->
+    // '/a.rel[/other/target]' when fixTargetPaths == true.
+
     TRACE_FUNCTION();
 
-    if (oldPrefix == newPrefix) {
+    if (IsEmpty() || oldPrefix == newPrefix) {
         return *this;
     }
     if (oldPrefix.IsEmpty() || newPrefix.IsEmpty()) {
         return EmptyPath();
     }
-
-    return _ReplacePrefix(oldPrefix, newPrefix, fixTargetPaths);
-}
-
-SdfPath
-SdfPath::_ReplacePrefix(const SdfPath &oldPrefix, const SdfPath &newPrefix,
-                       bool fixTargetPaths) const
-{
     if (*this == oldPrefix) {
-        // Base case: we've reached oldPrefix.
         return newPrefix;
     }
 
-    if (GetPathElementCount() == 0) {
-        // Empty paths have nothing to replace.
-        return *this;
-    }
+    using Sdf_PathNodeConstPtr = Sdf_PathNode const *;
 
-    // If we've recursed above the oldPrefix, we can bail as long as there
-    // are no target paths we need to fix.
-    if (GetPathElementCount() <= oldPrefix.GetPathElementCount() &&
-        (!fixTargetPaths || !_pathNode->ContainsTargetPath())) {
-        // We'll never see oldPrefix beyond here, so return.
-        return *this;
-    }
+    Sdf_PathNodeConstPtr primNode = _primPart.get();
+    Sdf_PathNodeConstPtr propNode = _propPart.get();
 
-    // Recursively translate the parent.
-    SdfPath parent =
-        GetParentPath()._ReplacePrefix(oldPrefix, newPrefix, fixTargetPaths);
+    SdfPath newPath;
+    
+    if (!oldPrefix._propPart) {
+        // oldPrefix is a prim-like path.  Replace the prefix in the prim part,
+        // if it has oldPrefix as a prefix.
+        newPath = _ReplacePrimPrefix(oldPrefix, newPrefix);
 
-    // Translation of the parent may fail; it will have emitted an error.
-    // Return here so we don't deref an invalid _pathNode below.
-    if (parent.IsEmpty())
-        return SdfPath();
-
-    // Append the tail component.  Use _AppendNode() except in these cases:
-    // - For prims and properties, we construct child nodes directly
-    //   so as to not expand out ".." components and to avoid the cost
-    //   of unnecessarily re-validating identifiers.
-    // - For embedded target paths, translate the target path.
-    switch (_pathNode->GetNodeType()) {
-    case Sdf_PathNode::PrimNode:
-        return SdfPath(Sdf_PathNode::FindOrCreatePrim(parent._pathNode,
-                                                    _pathNode->GetName()));
-    case Sdf_PathNode::PrimPropertyNode:
-        return SdfPath(Sdf_PathNode::FindOrCreatePrimProperty(
-                                parent._pathNode, _pathNode->GetName()));
-    case Sdf_PathNode::TargetNode:
-        if (fixTargetPaths) {
-            return parent.AppendTarget( _pathNode->GetTargetPath()
-                ._ReplacePrefix(oldPrefix, newPrefix, fixTargetPaths));
-        } else {
-            return _AppendNode(parent, _pathNode);
+        if (fixTargetPaths && propNode && propNode->ContainsTargetPath()) {
+            // This path is property-like and contains targets that we need to
+            // fix, so fix them up.
+            newPath = newPath._ReplaceTargetPathPrefixes(oldPrefix, newPrefix);
         }
-    case Sdf_PathNode::MapperNode:
-        if (fixTargetPaths) {
-            return parent.AppendMapper( _pathNode->GetTargetPath()
-                ._ReplacePrefix(oldPrefix, newPrefix, fixTargetPaths));
-        } else {
-            return _AppendNode(parent, _pathNode);
-        }
-    default:
-        return _AppendNode(parent, _pathNode);
     }
+    else {
+        // oldPrefix is a property-like path.  If this path is a prim-like path
+        // then oldPrefix cannot be a prefix of this path and we do not have
+        // targets to fix.
+        if (!propNode) {
+            return *this;
+        }
+
+        // Both oldPrefix and this are property-like paths.  If the prim parts
+        // do not match, then we just replace targets (or do nothing).  If they
+        // do match, then we walk up prop nodes to same depth (or as long as we
+        // need to fix targets) and replace.  But crucially, we have to search
+        // for the property part of oldPrefix as a prefix of this path's
+        // property part.  If we find it then the resulting path has newPrefix's
+        // prim part, otherwise it has this path's prim part.
+        
+        if (primNode != oldPrefix._primPart.get()) {
+            if (fixTargetPaths && propNode->ContainsTargetPath()) {
+                newPath = _ReplaceTargetPathPrefixes(oldPrefix, newPrefix);
+            }
+            else {
+                return *this;
+            }
+        }
+        else {
+            newPath = _ReplacePropPrefix(oldPrefix, newPrefix, fixTargetPaths);
+        }
+    }
+
+    return newPath;
 }
 
 SdfPath
@@ -906,18 +1327,82 @@ SdfPath::GetCommonPrefix(const SdfPath &path) const {
     return path1;
 }
 
+namespace {
+struct _NodeEqual
+{
+    template <class T>
+    inline bool operator()(T const &a, T const &b) const {
+        return a == b;
+    }
+};
+}
+
 std::pair<SdfPath, SdfPath>
-SdfPath::RemoveCommonSuffix(const SdfPath& otherPath, bool stopAtRootPrim) const {
-    std::pair<Sdf_PathNodeConstRefPtr, Sdf_PathNodeConstRefPtr> result =
-        Sdf_PathNode::RemoveCommonSuffix(_pathNode, otherPath._pathNode,
-                                        stopAtRootPrim);
-    return std::make_pair(SdfPath(result.first), SdfPath(result.second));
+SdfPath::RemoveCommonSuffix(const SdfPath& otherPath,
+                            bool stopAtRootPrim) const {
+
+    if (IsEmpty() || otherPath.IsEmpty() ||
+        (static_cast<bool>(_propPart) ^
+         static_cast<bool>(otherPath._propPart))) {
+        return std::make_pair(*this, otherPath);
+    }
+
+    // Scan upwards until we find a difference or a root node or child of
+    // a root node.  Root nodes have element counts of 0 and their children
+    // elements counts of 1.
+
+    if (_propPart) {
+        Sdf_PathNode const *thisProp = _propPart.get();
+        Sdf_PathNode const *otherProp = otherPath._propPart.get();
+        while (thisProp && otherProp) {
+            if (!thisProp->Compare<_NodeEqual>(*otherProp)) {
+                return std::make_pair(
+                    SdfPath(_primPart,
+                            Sdf_PathPropNodeHandle(thisProp)),
+                    SdfPath(otherPath._primPart,
+                            Sdf_PathPropNodeHandle(otherProp)));
+            }
+            thisProp = thisProp->GetParentNode();
+            otherProp = otherProp->GetParentNode();
+        }
+        if (thisProp || otherProp) {
+            return std::make_pair(
+                SdfPath(_primPart, Sdf_PathPropNodeHandle(thisProp)),
+                SdfPath(otherPath._primPart,
+                        Sdf_PathPropNodeHandle(otherProp)));
+        }
+    }
+
+    Sdf_PathNode const *thisPrim = _primPart.get();
+    Sdf_PathNode const *otherPrim = otherPath._primPart.get();
+    
+    while (thisPrim->GetElementCount() > 1 &&
+           otherPrim->GetElementCount() > 1) {
+        if (!thisPrim->Compare<_NodeEqual>(*otherPrim)) {
+            return std::make_pair(SdfPath(thisPrim, nullptr),
+                                  SdfPath(otherPrim, nullptr));
+        }
+        thisPrim = thisPrim->GetParentNode();
+        otherPrim = otherPrim->GetParentNode();
+    }
+
+    // If stopAtRootPrim is not true and neither path is a root then we
+    // can scan upwards one more level.
+    if (!stopAtRootPrim &&
+        thisPrim->GetElementCount() >= 1 &&
+        otherPrim->GetElementCount() >= 1 &&
+        thisPrim->Compare<_NodeEqual>(*otherPrim)) {
+        thisPrim = thisPrim->GetParentNode();
+        otherPrim = otherPrim->GetParentNode();
+    }
+    return std::make_pair(SdfPath(thisPrim, nullptr),
+                          SdfPath(otherPrim, nullptr));
 }
 
 SdfPath
 SdfPath::ReplaceTargetPath(const SdfPath &newTargetPath) const {
 
-    if (!_pathNode) {
+    if (IsEmpty()) {
         return SdfPath();
     }
 
@@ -926,20 +1411,23 @@ SdfPath::ReplaceTargetPath(const SdfPath &newTargetPath) const {
         return SdfPath();
     }
 
-    Sdf_PathNode::NodeType type = _pathNode->GetNodeType();
-    if (type == Sdf_PathNode::TargetNode) {
-        return GetParentPath().AppendTarget(newTargetPath);
-    } else if (type == Sdf_PathNode::RelationalAttributeNode) {
-        return GetParentPath().ReplaceTargetPath(newTargetPath).
-                    AppendRelationalAttribute(_pathNode->GetName());
-    } else if (type == Sdf_PathNode::MapperNode) {
-        return GetParentPath().AppendMapper(newTargetPath);
-    } else if (type == Sdf_PathNode::MapperArgNode) {
-        return GetParentPath().ReplaceTargetPath(newTargetPath).
-                    AppendMapperArg(_pathNode->GetName());
-    } else if (type == Sdf_PathNode::ExpressionNode) {
-        return GetParentPath().ReplaceTargetPath(newTargetPath).
-                    AppendExpression();
+    if (_propPart) {
+        Sdf_PathNode const *propNode = _propPart.get();
+        Sdf_PathNode::NodeType type = _propPart->GetNodeType();
+        if (type == Sdf_PathNode::TargetNode) {
+            return GetParentPath().AppendTarget(newTargetPath);
+        } else if (type == Sdf_PathNode::RelationalAttributeNode) {
+            return GetParentPath().ReplaceTargetPath(newTargetPath).
+                AppendRelationalAttribute(propNode->GetName());
+        } else if (type == Sdf_PathNode::MapperNode) {
+            return GetParentPath().AppendMapper(newTargetPath);
+        } else if (type == Sdf_PathNode::MapperArgNode) {
+            return GetParentPath().ReplaceTargetPath(newTargetPath).
+                AppendMapperArg(propNode->GetName());
+        } else if (type == Sdf_PathNode::ExpressionNode) {
+            return GetParentPath().ReplaceTargetPath(newTargetPath).
+                AppendExpression();
+        }
     }
 
     // no target to replace
@@ -961,7 +1449,7 @@ SdfPath::MakeAbsolutePath(const SdfPath & anchor) const {
         return SdfPath();
     }
 
-    // Check that anchor is a component path
+    // Check that anchor is a prim-like path
     if (!anchor.IsAbsoluteRootOrPrimPath() && 
         !anchor.IsPrimVariantSelectionPath()) {
         TF_WARN("MakeAbsolutePath() requires a prim path as an argument.");
@@ -979,10 +1467,10 @@ SdfPath::MakeAbsolutePath(const SdfPath & anchor) const {
     if (!IsAbsolutePath()) {
         // This list winds up in reverse order to what one might at
         // first expect.
-        vector<Sdf_PathNodeConstRefPtr> relNodes;
+        vector<Sdf_PathNode const *> relNodes;
 
-        Sdf_PathNodeConstRefPtr relRoot = Sdf_PathNode::GetRelativeRootNode();
-        Sdf_PathNodeConstRefPtr curNode = _pathNode;
+        Sdf_PathNode const *relRoot = Sdf_PathNode::GetRelativeRootNode();
+        Sdf_PathNode const *curNode = _primPart.get();
         // Walk up looking for oldPrefix node.
         while (curNode) {
             if (curNode == relRoot) {
@@ -1006,14 +1494,15 @@ SdfPath::MakeAbsolutePath(const SdfPath & anchor) const {
         // Got the list, now add nodes similar to relNodes to anchor
         // relNodes needs to be iterated in reverse since the closest ancestor
         // node was pushed on last.
-        vector<Sdf_PathNodeConstRefPtr>::reverse_iterator it = relNodes.rbegin();
-        while (it != relNodes.rend()) {
+        for (auto it = relNodes.rbegin(); it != relNodes.rend(); ++it) {
             result = _AppendNode(result, *it);
-            ++it;
         }
     }
 
-    // Now make target path absolute (recursively) if we need to.
+    // Tack on any property path.
+    result._propPart = _propPart;
+
+    // Now make target paths absolute (recursively) if we need to.
     // We need to use result's prim path as the anchor for the target path.
     SdfPath const &targetPath = result.GetTargetPath();
     if (!targetPath.IsEmpty()) {
@@ -1042,15 +1531,17 @@ SdfPath::MakeRelativePath(const SdfPath & anchor) const
         return SdfPath();
     }
 
-    // Check that anchor is a component path
-    if (!anchor.IsAbsoluteRootOrPrimPath() && !anchor.IsPrimVariantSelectionPath()) {
-        TF_WARN("MakeRelativePath() requires a component path as an argument (got '%s').",
+    // Check that anchor is a prim-like path
+    if (!anchor.IsAbsoluteRootOrPrimPath() &&
+        !anchor.IsPrimVariantSelectionPath()) {
+        TF_WARN("MakeRelativePath() requires a prim, prim variant selection, "
+                "or absolute root path as an anchor (got '%s').",
                  anchor.GetString().c_str());
         return SdfPath();
     }
 
     // If we're invalid, just return a copy of ourselves.
-    if (!_pathNode) {
+    if (IsEmpty()) {
         return SdfPath();
     }
 
@@ -1058,26 +1549,23 @@ SdfPath::MakeRelativePath(const SdfPath & anchor) const
         // Canonicalize... make sure the relative path has the
         // fewest possible dot-dots.
         SdfPath absPath = MakeAbsolutePath(anchor);
-
         return absPath.MakeRelativePath(anchor);
     }
 
     // We are absolute, we want to be relative
 
     // This list winds up in reverse order to what one might at first expect.
-    vector<Sdf_PathNodeConstRefPtr> relNodes;
+    vector<Sdf_PathNode const *> relNodes;
 
     // We need to crawl up the this path until we are the same length as
     // the anchor.
     // Then we crawl up both till we find the matching nodes.
     // As we crawl, we build the relNodes vector.
-    size_t thisCount = _pathNode->GetElementCount();
-    size_t anchorCount = anchor._pathNode->GetElementCount();
+    size_t thisCount = _primPart->GetElementCount();
+    size_t anchorCount = anchor._primPart->GetElementCount();
 
-    // these pointers avoid construction/destruction
-    // of ref pointers
-    Sdf_PathNodeConstRefPtr curThisNode = _pathNode;
-    Sdf_PathNodeConstRefPtr curAnchorNode = anchor._pathNode;
+    Sdf_PathNode const *curThisNode = _primPart.get();
+    Sdf_PathNode const *curAnchorNode = anchor._primPart.get();
 
     // walk to the same depth
     size_t dotdotCount = 0;
@@ -1117,11 +1605,12 @@ SdfPath::MakeRelativePath(const SdfPath & anchor) const
     // Now add nodes similar to relNodes to the ReflexiveRelativePath()
     // relNodes needs to be iterated in reverse since the closest ancestor
     // node was pushed on last.
-    vector<Sdf_PathNodeConstRefPtr>::reverse_iterator it = relNodes.rbegin();
-    while (it != relNodes.rend()) {
+    for (auto it = relNodes.rbegin(); it != relNodes.rend(); ++it) {
         result = _AppendNode(result, *it);
-        ++it;
     }
+
+    // Tack on any property part.
+    result._propPart = _propPart;
 
     return result;
 }
@@ -1137,6 +1626,17 @@ SdfPath::IsValidIdentifier(const std::string &name)
     return TfIsValidIdentifier(name);
 }
 
+// We use our own _IsAlpha and _IsAlnum here for two reasons.  One, we want to
+// ensure that they follow C/Python identifier rules and are not subject to
+// various locale differences.  And two, since we are not consulting a locale,
+// it is faster.
+static constexpr bool _IsAlpha(int x) {
+    return ('a' <= (x|32)) && ((x|32) <= 'z');
+}
+static constexpr bool _IsAlnum(int x) {
+    return _IsAlpha(x) || (('0' <= x) && (x <= '9'));
+}
+
 bool
 SdfPath::IsValidNamespacedIdentifier(const std::string &name)
 {
@@ -1144,41 +1644,19 @@ SdfPath::IsValidNamespacedIdentifier(const std::string &name)
     // and if we tokenize on that delimiter then all tokens are valid C/Python
     // identifiers.  That means following a delimiter there must be an '_' or
     // alphabetic character.
-
-    // This code currently assumes the namespace delimiter is one character.
-    const char namespaceDelimiter =
-        SdfPathTokens->namespaceDelimiter.GetText()[0];
-
-    std::string::const_iterator first = name.begin();
-    std::string::const_iterator last = name.end();
-
-    // Not empty and first character is alpha or '_'.
-    if (first == last || !(isalpha(*first) || (*first == '_')))
-        return false;
-    // Last character is not the namespace delimiter.
-    if (*(last - 1) == namespaceDelimiter)
-        return false;
-
-    for (++first; first != last; ++first) {
-        // Allow a namespace delimiter.
-        if (*first == namespaceDelimiter) {
-            // Skip delimiter.  We know we will not go beyond the end of
-            // the string because we checked before the loop that the
-            // last character was not the delimiter.
-            ++first;
-
-            // First character.
-            if (!(isalpha(*first) || (*first == '_')))
-                return false;
+    constexpr char delim = SDF_PATH_NS_DELIMITER_CHAR;
+    for (char const *p = name.c_str(); *p; ++p) {
+        if (!_IsAlpha(*p) && *p != '_') {
+            return false;
         }
-        else {
-            // Next character 
-            if (!(isalnum(*first) || (*first == '_')))
-                return false;
+        for (++p; _IsAlnum(*p) ||*p == '_'; ++p) {
+            /* consume identifier */
+        }
+        if (*p != delim) {
+            return !*p;
         }
     }
-
-    return true;
+    return false;
 }
 
 std::vector<std::string>
@@ -1314,6 +1792,42 @@ SdfPath::StripNamespace(const TfToken &name)
     return TfToken(StripNamespace(name.GetString()));
 }
 
+std::pair<std::string, bool> 
+SdfPath::StripPrefixNamespace(const std::string &name, 
+                              const std::string &matchNamespace)
+{
+    static const char namespaceDelimiter =
+        SdfPathTokens->namespaceDelimiter.GetText()[0];
+
+    if (matchNamespace.empty()) {
+        return std::make_pair(name, false);
+    }
+
+    if (TfStringStartsWith(name, matchNamespace)) {
+
+        size_t matchNamespaceLen = matchNamespace.size();
+
+        // Now check to make sure the next character is the namespace delimiter
+        if (matchNamespace[matchNamespaceLen - 1] == namespaceDelimiter) {
+
+            // The matched namespace already contained the end delimiter,
+            // nothing more to do.
+            return std::make_pair(name.substr(matchNamespaceLen), true);
+
+        } else {
+
+            // The matched namespace needs an extra delimiter ':' so check for
+            // it now.
+            if (name[matchNamespaceLen] == namespaceDelimiter) {
+                return std::make_pair(name.substr(matchNamespaceLen + 1), true);
+            }
+
+        }
+    }
+
+    return std::make_pair(name, false);
+}
+
 bool
 SdfPath::IsValidPathString(const std::string &pathString,
                           std::string *errMsg)
@@ -1340,79 +1854,64 @@ SdfPath::IsValidPathString(const std::string &pathString,
 }
 
 bool
-SdfPath::IsBuiltInMarker(const std::string &marker)
+SdfPath::_LessThanInternal(SdfPath const &lhs, SdfPath const &rhs)
 {
-    // XXX seems a little strange that this knowledge would live
-    // in SdfPath, which knows nothing else about "markers"
-    return (marker == ""         || 
-            marker == "current"  || 
-            marker == "authored" || 
-            marker == "final"    || 
-            marker == "initial");
-}
-
-bool
-SdfPath::_LessThanInternal(Sdf_PathNodeConstRefPtr const &lhsRefPtr,
-                          Sdf_PathNodeConstRefPtr const &rhsRefPtr)
-{
-    // Note that it's the caller's responsibility to make sure lhsRefPtr and
-    // rhsRefPtr are not NULL, so we don't check here.
-
-    // Use raw pointers in this function because it's rather performance
-    // sensitive, and we don't want to pay for the null check on every deref.
-    Sdf_PathNode const *lhs = boost::get_pointer(lhsRefPtr);
-    Sdf_PathNode const *rhs = boost::get_pointer(rhsRefPtr);
-
     SdfPath const &absRoot = SdfPath::AbsoluteRootPath();
 
-    if (lhs->IsAbsolutePath() != rhs->IsAbsolutePath()) {
-        return lhs->IsAbsolutePath();
-    } else if (lhsRefPtr == absRoot._pathNode) {
+    Sdf_PathNode const *lNode = lhs._primPart.get();
+    Sdf_PathNode const *rNode = rhs._primPart.get();
+
+    if (lNode->IsAbsolutePath() != rNode->IsAbsolutePath()) {
+        return lNode->IsAbsolutePath();
+    } else if (lhs == absRoot) {
         return true;
-    } else if (rhsRefPtr == absRoot._pathNode) {
+    } else if (rhs == absRoot) {
         return false;
     }
 
-    // Both absolute or both relative
-    // We need to crawl up the longer path until both are the same length.
-    // The we crawl up both till we find the nodes whose parents match.
-    // Then we can compare those nodes.
-    size_t thisCount = lhs->GetElementCount();
-    size_t rhsCount = rhs->GetElementCount();
+    // Both absolute or both relative.  We need to crawl up the longer path
+    // until both are the same length.  Then we crawl up both till we find the
+    // nodes whose parents match.  Then we can compare those nodes.
+    auto compareNodes = [](Sdf_PathNode const *l, Sdf_PathNode const *r) {
+        size_t lCount = l->GetElementCount();
+        size_t rCount = r->GetElementCount();
 
-    Sdf_PathNode const *curThisNode = lhs;
-    Sdf_PathNode const *curRhsNode = rhs;
+        // walk up to the same depth
+        size_t upSteps = lCount > rCount ? lCount - rCount : 0;
+        while (upSteps--) {
+            l = l->GetParentNode();
+        }
+        upSteps = rCount > lCount ? rCount - lCount : 0;
+        while (upSteps--) {
+            r = r->GetParentNode();
+        }
+        
+        // Now the cur nodes are at the same depth in the node tree
+        if (l == r) {
+            // They differ only in the tail.  If r has the tail, then this is
+            // less, otherwise r is less.
+            return lCount < rCount;
+        }
 
-    // walk up to the same depth
-    size_t curCount = thisCount;
+        while (l->GetParentNode() != r->GetParentNode()) {
+            l = l->GetParentNode(), r = r->GetParentNode();
+        }
 
-    while (curCount > rhsCount) {
-        curThisNode = boost::get_pointer(curThisNode->GetParentNode());
-        --curCount;
+        // Now parents are equal, compare the current child nodes.
+        return l->Compare<Sdf_PathNode::LessThan>(*r);
+    };
+
+    // If there is a difference in prim part, it's more significant than the
+    // property part.
+    if (ARCH_LIKELY(lNode != rNode)) {
+        return compareNodes(lNode, rNode);
     }
 
-    curCount = rhsCount;
-
-    while (curCount > thisCount) {
-        curRhsNode = boost::get_pointer(curRhsNode->GetParentNode());
-        --curCount;
+    lNode = lhs._propPart.get(), rNode = rhs._propPart.get();
+    if (!lNode || !rNode) {
+        return !lNode;
     }
-
-    // Now the cur nodes are at the same depth in the node tree
-    if (curThisNode == curRhsNode) {
-        // They differ only in the tail.  If there's no tail, they are equal.
-        // If rhs has the tail, then this is less, otherwise rhs is less.
-        return thisCount < rhsCount;
-    }
-
-    // Crawl up both chains till we find an equal parent
-    while ( curThisNode->GetParentNode() != curRhsNode->GetParentNode() ) {
-        curThisNode = boost::get_pointer(curThisNode->GetParentNode());
-        curRhsNode = boost::get_pointer(curRhsNode->GetParentNode());
-    }
-
-    // Now parents are equal, compare the current child nodes.
-    return curThisNode->Compare<Sdf_PathNode::LessThan>(*curRhsNode);
+    return compareNodes(lNode, rNode);
 }
 
 std::ostream & operator<<( std::ostream &out, const SdfPath &path ) {
@@ -1543,9 +2042,24 @@ SdfPath::RemoveAncestorPaths(SdfPathVector *paths)
                              }).base());
 }
 
-// Overload hash_value for SdfPath.
-size_t hash_value(SdfPath const &path) {
-    return path.GetHash();
+typename std::set<SdfPath>::const_iterator
+SdfPathFindLongestPrefix(std::set<SdfPath> const &set, SdfPath const &path)
+{
+    return Sdf_PathFindLongestPrefixImpl<
+        typename std::set<SdfPath>::const_iterator,
+        std::set<SdfPath> const &>(set, path, /*strictPrefix=*/false);
 }
+
+typename std::set<SdfPath>::const_iterator
+SdfPathFindLongestStrictPrefix(std::set<SdfPath> const &set,
+                               SdfPath const &path)
+{
+    return Sdf_PathFindLongestPrefixImpl<
+        typename std::set<SdfPath>::const_iterator,
+        std::set<SdfPath> const &>(set, path, /*strictPrefix=*/true);
+
+
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

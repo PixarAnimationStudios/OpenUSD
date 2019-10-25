@@ -38,9 +38,11 @@ class PropertyLegend(QtWidgets.QWidget):
         self._ui = Ui_PropertyLegend()
         self._ui.setupUi(self)
 
+        # The property legend always starts off collapsed.
+        self.setMaximumHeight(0)
         self._isMinimized = True
         self._iconDisplaySize = (16, 16)
-
+        
         graphicsScene = QtWidgets.QGraphicsScene()
 
         self._ui.propertyLegendColorFallback.setScene(graphicsScene)
@@ -126,4 +128,4 @@ class PropertyLegend(QtWidgets.QWidget):
     def GetResetHeight(self):
         # This predefined height is determined by the elements that exist in
         # the propertyLegend. For more information see propertyLegendUI.ui
-        return 120
+        return 134

@@ -48,14 +48,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class HdStVBOMemoryManager : public HdAggregationStrategy {
 public:
-    HdStVBOMemoryManager(bool isImmutable) : _isImmutable(isImmutable) {}
+    HdStVBOMemoryManager() : HdAggregationStrategy() {}
 
     /// Factory for creating HdBufferArray managed by
     /// HdStVBOMemoryManager aggregation.
     HDST_API
     virtual HdBufferArraySharedPtr CreateBufferArray(
         TfToken const &role,
-        HdBufferSpecVector const &bufferSpecs);
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint);
 
     /// Factory for creating HdBufferArrayRange managed by
     /// HdStVBOMemoryManager aggregation.
@@ -65,7 +66,8 @@ public:
     /// Returns id for given bufferSpecs to be used for aggregation
     HDST_API
     virtual AggregationId ComputeAggregationId(
-        HdBufferSpecVector const &bufferSpecs) const;
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint) const;
 
     /// Returns the buffer specs from a given buffer array
     virtual HdBufferSpecVector GetBufferSpecs(
@@ -75,9 +77,6 @@ public:
     virtual size_t GetResourceAllocation(
         HdBufferArraySharedPtr const &bufferArray, 
         VtDictionary &result) const;
-
-private:
-    bool _isImmutable;
 
 protected:
     class _StripedBufferArray;
@@ -138,7 +137,7 @@ protected:
         }
 
         /// Returns the number of elements
-        virtual int GetNumElements() const {
+        virtual size_t GetNumElements() const {
             return _numElements;
         }
 
@@ -155,6 +154,10 @@ protected:
         /// Returns the max number of elements
         HDST_API
         virtual size_t GetMaxNumElements() const;
+
+        /// Returns the usage hint from the underlying buffer array
+        HDST_API
+        virtual HdBufferArrayUsageHint GetUsageHint() const override;
 
         /// Returns the GPU resource. If the buffer array contains more than one
         /// resource, this method raises a coding error.
@@ -213,7 +216,7 @@ protected:
         // in case if any drawItem still holds this bufferRange.
         _StripedBufferArray *_stripedBufferArray;
         int _offset;
-        int _numElements;
+        size_t _numElements;
         int _capacity;
     };
 
@@ -231,7 +234,7 @@ protected:
         HDST_API
         _StripedBufferArray(TfToken const &role,
                             HdBufferSpecVector const &bufferSpecs,
-                            bool isImmutable);
+                            HdBufferArrayUsageHint usageHint);
 
         /// Destructor. It invalidates _rangeList
         HDST_API

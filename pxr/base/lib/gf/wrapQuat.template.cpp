@@ -83,6 +83,10 @@ void wrapQuat{{ SUFFIX }}()
     def("Slerp",
         ({{ QUAT }} (*)(double, const {{ QUAT }}&, const {{ QUAT }}&))
         GfSlerp);
+
+    def("Dot",
+        ({{ SCL }} (*)(const {{ QUAT }}&, const {{ QUAT }}&))
+        GfDot);
     
     class_<{{ QUAT }}>("Quat{{ SUFFIX }}", no_init)
         .def("__init__", make_constructor(__init__))

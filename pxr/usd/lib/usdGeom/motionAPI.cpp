@@ -61,6 +61,11 @@ UsdGeomMotionAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 }
 
 
+/* virtual */
+UsdSchemaType UsdGeomMotionAPI::_GetSchemaType() const {
+    return UsdGeomMotionAPI::schemaType;
+}
+
 /* static */
 UsdGeomMotionAPI
 UsdGeomMotionAPI::Apply(const UsdPrim &prim)
@@ -161,7 +166,7 @@ float UsdGeomMotionAPI::ComputeVelocityScale(UsdTimeCode time) const
     while (prim != pseudoRoot){
         UsdAttribute vsAttr = 
             prim.GetAttribute(UsdGeomTokens->motionVelocityScale);
-        if (vsAttr.HasAuthoredValueOpinion() && 
+        if (vsAttr.HasAuthoredValue() && 
             vsAttr.Get(&velocityScale, time)){
             return velocityScale;
         }

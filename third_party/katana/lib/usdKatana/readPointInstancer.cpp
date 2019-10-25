@@ -28,6 +28,7 @@
 #include "usdKatana/utils.h"
 
 #include "pxr/usd/usdGeom/pointInstancer.h"
+#include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/kind/registry.h"
@@ -35,6 +36,7 @@
 #include "pxr/base/gf/transform.h"
 #include "pxr/base/gf/matrix4d.h"
 
+#include <FnAPI/FnAPI.h>
 #include <FnGeolibServices/FnBuiltInOpArgsUtil.h>
 #include <FnGeolib/util/Path.h>
 #include <FnLogging/FnLogging.h>
@@ -42,6 +44,10 @@
 #include <boost/unordered_set.hpp>
 
 #include <pystring/pystring.h>
+
+#if KATANA_VERSION_MAJOR >= 3
+#include "vtKatana/array.h"
+#endif // KATANA_VERSION_MAJOR >= 3
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -60,7 +66,7 @@ namespace
     void
     _LogAndSetError(
         PxrUsdKatanaAttrMap& attrs,
-        const std::string message)
+        const std::string& message)
     {
         FnLogError(message);
         attrs.set("errorMessage",
@@ -72,231 +78,12 @@ namespace
     void
     _LogAndSetWarning(
         PxrUsdKatanaAttrMap &attrs,
-        const std::string message)
+        const std::string& message)
     {
         FnLogWarn(message);
         attrs.set("warningMessage",
                   FnKat::StringAttribute(
                       "[WARNING PxrUsdKatanaReadPointInstancer]: " + message));
-    }
-
-    // XXX This is based on
-    // UsdGeomPointInstancer::ComputeInstanceTransformsAtTime. Ideally, we would
-    // just use UsdGeomPointInstancer, but it does not currently support
-    // multi-sampled transforms or velocity.
-    //
-    size_t
-    _ComputeInstanceTransformsAtTime(
-        std::vector<std::vector<GfMatrix4d>>& xforms,
-        const UsdGeomPointInstancer& instancer,
-        const std::vector<UsdTimeCode>& sampleTimes,
-        const UsdTimeCode baseTime,
-        const double timeCodesPerSecond,
-        const size_t numInstances,
-        const UsdAttribute& positionsAttr,
-        const float velocityScale = 1.0f)
-    {
-        constexpr double epsilonTest = 1e-5;
-        const auto sampleCount = sampleTimes.size();
-        if (sampleCount == 0 || xforms.size() < sampleCount ||
-            baseTime.IsDefault()) {
-            return 0;
-        }
-
-        double upperTimeSample = 0.0;
-
-        bool positionsHasSamples = false;
-        double positionsLowerTimeSample = 0.0;
-        if (!positionsAttr.GetBracketingTimeSamples(
-                baseTime.GetValue(), &positionsLowerTimeSample,
-                &upperTimeSample, &positionsHasSamples)) {
-            return 0;
-        }
-
-        const auto velocitiesAttr = instancer.GetVelocitiesAttr();
-        const auto scalesAttr = instancer.GetScalesAttr();
-        const auto orientationsAttr = instancer.GetOrientationsAttr();
-        const auto angularVelocitiesAttr = instancer.GetAngularVelocitiesAttr();
-
-        VtVec3fArray positions;
-        VtVec3fArray velocities;
-        VtVec3fArray scales;
-        VtQuathArray orientations;
-        VtVec3fArray angularVelocities;
-
-        // Use velocity if it has almost the same lower time sample as positions
-        // and the array lengths are equal to the number of instances.
-        //
-        bool useVelocity = false;
-
-        if (positionsHasSamples and
-            positionsAttr.Get(&positions, positionsLowerTimeSample)) {
-            bool velocitiesHasSamples = false;
-            double velocitiesLowerTimeSample = 0.0;
-            if (velocitiesAttr.HasValue() and
-                velocitiesAttr.GetBracketingTimeSamples(
-                    baseTime.GetValue(), &velocitiesLowerTimeSample,
-                    &upperTimeSample, &velocitiesHasSamples) and
-                velocitiesHasSamples and
-                GfIsClose(velocitiesLowerTimeSample, positionsLowerTimeSample,
-                          epsilonTest)) {
-                if (velocitiesAttr.Get(&velocities,
-                                       positionsLowerTimeSample) and
-                    positions.size() == numInstances and
-                    velocities.size() == numInstances) {
-                    useVelocity = true;
-                }
-            }
-        }
-
-        // Use angular velocity if it has almost the same lower time sample as
-        // orientations and the array lengths are equal to the number of
-        // instances.
-        //
-        bool useAngularVelocity = false;
-
-        bool orientationsHasSamples = false;
-        double orientationsLowerTimeSample = 0.0;
-        if (orientationsAttr.GetBracketingTimeSamples(
-                baseTime.GetValue(), &orientationsLowerTimeSample,
-                &upperTimeSample, &orientationsHasSamples)) {
-
-            if (orientationsHasSamples and
-                orientationsAttr.Get(&orientations,
-                                     orientationsLowerTimeSample)) {
-                bool angularVelocitiesHasSamples = false;
-                double angularVelocitiesLowerTimeSample = 0.0;
-                if (angularVelocitiesAttr.HasValue() and
-                    angularVelocitiesAttr.GetBracketingTimeSamples(
-                        baseTime.GetValue(), &angularVelocitiesLowerTimeSample,
-                        &upperTimeSample, &angularVelocitiesHasSamples) and
-                    angularVelocitiesHasSamples and
-                    GfIsClose(angularVelocitiesLowerTimeSample,
-                              orientationsLowerTimeSample, epsilonTest)) {
-                    if (angularVelocitiesAttr.Get(
-                            &angularVelocities, orientationsLowerTimeSample) and
-                        orientations.size() == numInstances and
-                        angularVelocities.size() == numInstances) {
-                        useAngularVelocity = true;
-                    }
-                }
-            }
-        }
-
-        // If we encounter a topology mismatch while sampling, we'll try falling
-        // back on the value for the current (base) time. We'll also continue to
-        // use this fallback value for the remainder of our sampling loop.
-        //
-        bool usePreviousPositions = false;
-        VtVec3fArray basePositions;
-        if (!useVelocity) {
-            positionsAttr.Get(&basePositions, baseTime);
-        }
-        bool usePreviousOrientations = false;
-        VtQuathArray baseOrientations;
-        if (!useAngularVelocity) {
-            orientationsAttr.Get(&baseOrientations, baseTime);
-        }
-        bool usePreviousScales = false;
-        VtVec3fArray baseScales;
-        scalesAttr.Get(&baseScales, baseTime);
-
-        size_t validSamples = 0;
-
-        for (auto a = decltype(sampleCount){0}; a < sampleCount; ++a) {
-            std::vector<GfMatrix4d> &curr = xforms[a];
-            curr.reserve(numInstances);
-
-            float velocityMultiplier = 1.0f;
-            if (useVelocity) {
-                velocityMultiplier =
-                    static_cast<float>(
-                        (sampleTimes[a].GetValue() - positionsLowerTimeSample) /
-                        timeCodesPerSecond) *
-                    velocityScale;
-            } else if (!usePreviousPositions) {
-                positionsAttr.Get(&positions, sampleTimes[a]);
-                if (positions.size() != numInstances) {
-                    positions = basePositions;
-                    usePreviousPositions = true;
-                }
-            }
-
-            float angularVelocityMultiplier = 1.0f;
-            if (useAngularVelocity) {
-                angularVelocityMultiplier =
-                    static_cast<float>((sampleTimes[a].GetValue() -
-                                        orientationsLowerTimeSample) /
-                                       timeCodesPerSecond) *
-                    velocityScale;
-            } else if (!usePreviousOrientations) {
-                orientationsAttr.Get(&orientations, sampleTimes[a]);
-                if (!orientations.empty() and
-                    orientations.size() != numInstances) {
-                    orientations = baseOrientations;
-                    usePreviousOrientations = true;
-                }
-            }
-
-            if (useVelocity or useAngularVelocity) {
-                scales = baseScales;
-            } else if (!usePreviousScales) {
-                scalesAttr.Get(&scales, sampleTimes[a]);
-                if (!scales.empty() and scales.size() != numInstances) {
-                    scales = baseScales;
-                    usePreviousScales = true;
-                }
-            }
-
-            // Abort if topology still differs despite our resampling attempt.
-            //
-            if (positions.size() != numInstances) {
-                break;
-            }
-            if (!scales.empty() and scales.size() != numInstances) {
-                break;
-            }
-            if (!orientations.empty() and orientations.size() != numInstances) {
-                break;
-            }
-
-            for (auto i = decltype(numInstances){0}; i < numInstances; ++i) {
-                GfTransform transform;
-
-                // Apply positions.
-                //
-                if (useVelocity) {
-                    transform.SetTranslation(
-                        positions[i] + velocities[i] * velocityMultiplier);
-                } else {
-                    transform.SetTranslation(positions[i]);
-                }
-
-                // Apply scales and orientations. Note that these can be
-                // unspecified.
-                //
-                if (!scales.empty()) {
-                    transform.SetScale(scales[i]);
-                }
-                if (!orientations.empty()) {
-                    if (useAngularVelocity) {
-                        transform.SetRotation(
-                            GfRotation(orientations[i]) *
-                            GfRotation(angularVelocities[i],
-                                       (angularVelocityMultiplier *
-                                        angularVelocities[i].GetLength())));
-                    } else {
-                        transform.SetRotation(GfRotation(orientations[i]));
-                    }
-                }
-
-                curr.push_back(transform.GetMatrix());
-            }
-
-            ++validSamples;
-        }
-
-        return validSamples;
     }
 
     // XXX This is based on UsdGeomPointInstancer::ComputeExtentAtTime. Ideally,
@@ -307,12 +94,12 @@ namespace
     _ComputeExtentAtTime(
         VtVec3fArray& extent,
         PxrUsdKatanaUsdInArgsRefPtr usdInArgs,
-        const std::vector<std::vector<GfMatrix4d>>& xforms,
+        const std::vector<VtArray<GfMatrix4d>>& xforms,
         const std::vector<double>& motionSampleTimes,
         const VtIntArray& protoIndices,
         const SdfPathVector& protoPaths,
         const _PathToPrimMap& primCache,
-        const std::vector<bool> mask)
+        const std::vector<bool>& mask)
     {
         GfRange3d extentRange;
 
@@ -482,32 +269,45 @@ PxrUsdKatanaReadPointInstancer(
     // Compute instance transform matrices.
     //
 
-    const double timeCodesPerSecond = stage->GetTimeCodesPerSecond();
+    // Special case: Ensure that there is more than one sample if velocity is
+    // authored. This will accommodate cases where positions is not sufficiently
+    // sampled to produce motion, but motion can be inferred via velocities.
+    //
+    // XXX Mere presence of the velocities attr does not guarantee that it will
+    // be used in the final instance transforms computation (the velocities attr
+    // must pass additional checks made inside usdGeom's samplingUtils). We are
+    // not currently performing these additional checks.
+    //
+    bool ensureMotion = false;
+    if (UsdAttribute velocitiesAttr = instancer.GetVelocitiesAttr())
+    {
+        if (velocitiesAttr.HasValue())
+        {
+            ensureMotion = true;
+        }
+    }
 
     // Gather frame-relative sample times and add them to the current time to
     // generate absolute sample times.
     //
     const std::vector<double> &motionSampleTimes =
-        data.GetMotionSampleTimes(positionsAttr);
+        data.GetMotionSampleTimes(positionsAttr, ensureMotion);
     const size_t sampleCount = motionSampleTimes.size();
     std::vector<UsdTimeCode> sampleTimes(sampleCount);
-    for (size_t a = 0; a < sampleCount; ++a)
-    {
-        sampleTimes[a] = UsdTimeCode(currentTime + motionSampleTimes[a]);
-    }
+    std::transform(motionSampleTimes.begin(), motionSampleTimes.end(), 
+                   sampleTimes.begin(), [currentTime](double motionSampleTime){
+                        return UsdTimeCode(currentTime + motionSampleTime);});
 
-    // Get velocityScale from the opArgs.
-    //
-    float velocityScale = FnKat::FloatAttribute(
-        inputAttrs.getChildByName("opArgs.velocityScale")).getValue(1.0f, false);
+    std::vector<VtArray<GfMatrix4d>> xformSamples(sampleCount);
 
-    // XXX Replace with UsdGeomPointInstancer::ComputeInstanceTransformsAtTime.
-    //
-    std::vector<std::vector<GfMatrix4d>> xformSamples(sampleCount);
-    const size_t numXformSamples =
-        _ComputeInstanceTransformsAtTime(xformSamples, instancer, sampleTimes,
-            UsdTimeCode(currentTime), timeCodesPerSecond, numInstances,
-            positionsAttr, velocityScale);
+    instancer.ComputeInstanceTransformsAtTimes(
+            &xformSamples,
+            sampleTimes,
+            UsdTimeCode(currentTime),
+            UsdGeomPointInstancer::IncludeProtoXform,
+            UsdGeomPointInstancer::IgnoreMask);
+    const size_t numXformSamples = xformSamples.size();
+
     if (numXformSamples == 0) {
         _LogAndSetError(instancerAttrMap, "Could not compute "
                                           "sample/topology-invarying instance "
@@ -540,7 +340,7 @@ PxrUsdKatanaReadPointInstancer(
     }
 
     //
-    // Build sources. Keep track of which instances use them.
+    // Build sources (prototypes). Keep track of which instances use them.
     //
 
     FnGeolibServices::StaticSceneCreateOpArgsBuilder sourcesBldr(false);
@@ -557,6 +357,9 @@ PxrUsdKatanaReadPointInstancer(
     omitList.reserve(numInstances);
 
     std::map<SdfPath, std::string> protoPathsToKatPaths;
+    std::map<std::string, std::vector<std::string>> usdPrimPathsTracker;
+
+    
 
     for (size_t i = 0; i < numInstances; ++i)
     {
@@ -573,14 +376,14 @@ PxrUsdKatanaReadPointInstancer(
 
         const SdfPath &protoPath = protoPaths[index];
 
-        // Compute the full (Katana) path to this prototype.
+        // Compute the Katana path to this prototype.
         //
-        std::string fullProtoPath;
+        std::string katProtoPath;
         std::map<SdfPath, std::string>::const_iterator pptkpIt =
                 protoPathsToKatPaths.find(protoPath);
         if (pptkpIt != protoPathsToKatPaths.end())
         {
-            fullProtoPath = pptkpIt->second;
+            katProtoPath = pptkpIt->second;
         }
         else
         {
@@ -591,8 +394,8 @@ PxrUsdKatanaReadPointInstancer(
             }
 
             // Determine where (what path) to start building the prototype prim
-            // such that its material bindings will be preserved. This could be
-            // the prototype path itself or an ancestor path.
+            // such that the Look prims that it depends on will also get built.
+            // This could be the prototype path itself or an ancestor path.
             //
             SdfPathVector commonPrefixes;
 
@@ -663,6 +466,7 @@ PxrUsdKatanaReadPointInstancer(
             }
 
             // Fail-safe in case no common prefixes were found.
+            //
             if (commonPrefixes.empty())
             {
                 commonPrefixes.push_back(protoPath);
@@ -670,7 +474,7 @@ PxrUsdKatanaReadPointInstancer(
 
             // XXX Unhandled case.
             // We'll use the first common ancestor even if there is more than
-            // one (which shouldn't appen if the prototype prim and its bindings
+            // one (which shouldn't happen if the prototype prim and its bindings
             // are under the same parent).
             //
             SdfPath::RemoveDescendentPaths(&commonPrefixes);
@@ -692,50 +496,116 @@ PxrUsdKatanaReadPointInstancer(
                         FnGeolibUtil::Path::GetLeafName(buildPath);
             }
 
-            // Start generating the full path to the prototype.
+            // Start generating the Katana path to the prototype.
             //
-            fullProtoPath = katOutputPath + "/" + relBuildPath;
-
-            // Make the common ancestor our instance source.
-            //
-            sourcesBldr.setAttrAtLocation(relBuildPath,
-                    "type", FnKat::StringAttribute("instance source"));
-
-            // Author a tracking attr.
-            //
-            sourcesBldr.setAttrAtLocation(relBuildPath,
-                    "info.usd.sourceUsdPath",
-                    FnKat::StringAttribute(buildPath));
+            katProtoPath = katOutputPath + "/" + relBuildPath;
 
             // Tell the BuildIntermediate op to start building at the common
-            // ancestor.
+            // ancestor, but don't clobber the paths of any other prims that
+            // need to be built out too.
             //
-            sourcesBldr.setAttrAtLocation(relBuildPath,
-                    "usdPrimPath", FnKat::StringAttribute(buildPath));
-            sourcesBldr.setAttrAtLocation(relBuildPath,
-                    "usdPrimName", FnKat::StringAttribute("geo"));
+            const std::string relBuildPathUpOne =
+                    FnGeolibUtil::Path::GetLocationParent(relBuildPath);
+            if (usdPrimPathsTracker.find(relBuildPathUpOne) ==
+                    usdPrimPathsTracker.end())
+            {
+                usdPrimPathsTracker[relBuildPathUpOne].push_back(buildPath);
+            }
+            else
+            {
+                auto& primPaths = usdPrimPathsTracker[relBuildPathUpOne];
+                if (std::find(primPaths.begin(), primPaths.end(), buildPath) ==
+                        primPaths.end())
+                {
+                    primPaths.push_back(buildPath);
+                }
+            }
+            sourcesBldr.setAttrAtLocation(relBuildPathUpOne,
+                    "usdPrimPath", FnKat::StringAttribute(
+                            usdPrimPathsTracker[relBuildPathUpOne]));
 
+            // Build an AttributeSet op that will delete the prototype's
+            // transform, since we've already folded it into the instance
+            // transforms via IncludeProtoXform.
+            //
+            FnGeolibServices::AttributeSetOpArgsBuilder delXformBldr;
+            delXformBldr.deleteAttr("xform");
+
+            std::string relProtoPath = relBuildPath;
             if (protoPath.GetString() != buildPath)
             {
-                // Finish generating the full path to the prototype.
+                // Finish generating the Katana path to the prototype.
                 //
-                fullProtoPath = fullProtoPath + "/geo" + pystring::replace(
+                katProtoPath = katProtoPath + pystring::replace(
+                        protoPath.GetString(), buildPath, "");
+                relProtoPath = relProtoPath + pystring::replace(
                         protoPath.GetString(), buildPath, "");
             }
 
-            // Create a mapping that will link the instance's index to its
-            // prototype's full path.
+            // Dermine whether or not we can use the prototype prim itself as
+            // the instance source or if we should insert an empty group into
+            // the hierarchy to hold the instance source type. The latter will
+            // be true if the prototype's native Katana type needs to be
+            // preserved, for example, if the prototype is a gprim.
             //
-            instanceSourceIndexMap[fullProtoPath] = instanceSources.size();
-            instanceSources.push_back(fullProtoPath);
+            // XXX Since we can't make an assumption about what Katana type the
+            // PxrUsdIn ops will author, we'll have to make a best guess. For
+            // now, consider Xform prims without an authored kind to be usable
+            // as instance sources.
+            //
+            TfToken kind;
+            const bool useProtoAsInstanceSource =
+                    protoPrim.IsA<UsdGeomXform>() &&
+                    !UsdModelAPI(protoPrim).GetKind(&kind);
+            if (useProtoAsInstanceSource)
+            {
+                delXformBldr.setLocationPaths(katProtoPath);
+                sourcesBldr.addSubOpAtLocation(
+                        relProtoPath,
+                        "AttributeSet", delXformBldr.build());
+            }
+            else
+            {
+                // Tell PxrUsdIn to create an empty group when it gets to the
+                // prototype's location.
+                //
+                sourcesBldr.setAttrAtLocation(relProtoPath,
+                        "insertEmptyGroup", FnKat::IntAttribute(1));
 
-            // Finally, store the full path in the map so we won't have to do
+                // Since the empty group will have the same name as the
+                // prototype, we can add the prototype's name to its original
+                // Katana path to get its post-insertion Katana path.
+                //
+                const std::string protoName = protoPrim.GetName();
+                delXformBldr.setLocationPaths(katProtoPath + "/" + protoName);
+                sourcesBldr.addSubOpAtLocation(
+                        relProtoPath + "/" + protoName,
+                        "AttributeSet", delXformBldr.build());
+            }
+
+            // Build an AttributeSet op that will set the instance source type
+            // on the prototype or the empty group (if we inserted one).
+            //
+            FnGeolibServices::AttributeSetOpArgsBuilder setTypeBldr;
+            setTypeBldr.setAttr("type",
+                    FnKat::StringAttribute("instance source"));
+            setTypeBldr.setLocationPaths(katProtoPath);
+            sourcesBldr.addSubOpAtLocation(relProtoPath,
+                    "AttributeSet", setTypeBldr.build());
+
+            // Create a mapping that will link the instance's index to its
+            // prototype's Katana path.
+            //
+            instanceSourceIndexMap[katProtoPath] = instanceSources.size();
+            instanceSources.push_back(katProtoPath);
+
+            // Finally, store the Katana path in the map so we won't have to do
             // this work again.
             //
-            protoPathsToKatPaths[protoPath] = fullProtoPath;
+            protoPathsToKatPaths[protoPath] = katProtoPath;
         }
 
-        instanceIndices.push_back(instanceSourceIndexMap[fullProtoPath]);
+        instanceIndices.push_back(instanceSourceIndexMap[katProtoPath]);
     }
 
     //
@@ -755,6 +625,21 @@ PxrUsdKatanaReadPointInstancer(
                     FnKat::IntAttribute(&instanceIndices[0],
                             instanceIndices.size(), 1));
 
+#if KATANA_VERSION_MAJOR >= 3
+    // If motion is backwards, make sure to reverse time samples.
+    std::map<float, VtArray<GfMatrix4d>> timeToSampleMap;
+    for (size_t a = 0; a < numXformSamples; ++a) {
+        double relSampleTime = motionSampleTimes[a];
+        timeToSampleMap.insert(
+            {data.IsMotionBackward()
+                 ? PxrUsdKatanaUtils::ReverseTimeSample(relSampleTime)
+                 : relSampleTime,
+             xformSamples[a]});
+    }
+    auto instanceMatrixAttr = VtKatanaMapOrCopy(timeToSampleMap);
+    instancesBldr.setAttrAtLocation("instances", "geometry.instanceMatrix",
+                                    instanceMatrixAttr);
+#else
     FnKat::DoubleBuilder instanceMatrixBldr(16);
     for (size_t a = 0; a < numXformSamples; ++a) {
 
@@ -780,6 +665,7 @@ PxrUsdKatanaReadPointInstancer(
     }
     instancesBldr.setAttrAtLocation("instances",
             "geometry.instanceMatrix", instanceMatrixBldr.build());
+#endif // KATANA_VERSION_MAJOR > 3
 
     if (!omitList.empty())
     {
@@ -801,16 +687,25 @@ PxrUsdKatanaReadPointInstancer(
     for (int64_t i = 0; i < primvarAttrs.getNumberOfChildren(); ++i)
     {
         const std::string primvarName = primvarAttrs.getChildName(i);
+        FnKat::GroupAttribute primvarAttr = primvarAttrs.getChildByIndex(i);
 
-        // Use "point" scope for the instancer.
-        instancerPrimvarsBldr.set(primvarName, primvarAttrs.getChildByIndex(i));
-        instancerPrimvarsBldr.set(primvarName + ".scope",
-                FnKat::StringAttribute("point"));
-
-        // User "primitive" scope for the instances.
-        instancesPrimvarsBldr.set(primvarName, primvarAttrs.getChildByIndex(i));
-        instancesPrimvarsBldr.set(primvarName + ".scope",
-                FnKat::StringAttribute("primitive"));
+        if (FnKat::StringAttribute(primvarAttr.getChildByName("scope")
+                ).getValue("", false) == "primitive")
+        {
+            // If this primvar is constant, leave it on the instancer.
+            //
+            instancerPrimvarsBldr.set(primvarName, primvarAttr);
+        }
+        else
+        {
+            // If this primvar is non-constant, move it down to the instances,
+            // but make it constant so that it can be sliced and used by each
+            // instance.
+            //
+            instancesPrimvarsBldr.set(primvarName, primvarAttr);
+            instancesPrimvarsBldr.set(primvarName + ".scope",
+                    FnKat::StringAttribute("primitive"));
+        }
     }
     instancerAttrMap.set("geometry.arbitrary", instancerPrimvarsBldr.build());
     instancesBldr.setAttrAtLocation("instances",

@@ -2,6 +2,8 @@ set(DIRS
     usdImaging
     usdImagingGL
     usdSkelImaging
+    usdVolImaging
+    usdAppUtils
     usdviewq
 )
 

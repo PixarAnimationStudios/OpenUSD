@@ -17,18 +17,21 @@ pxr_library(usdUtils
     PUBLIC_CLASSES
         authoring
         coalescingDiagnosticDelegate
+        debugCodes
         dependencies
         flattenLayerStack
         introspection
         pipeline
         registeredVariantSet
+        sparseValueWriter
         stageCache
         stitch
         stitchClips
+        timeCodeRange
 
     PUBLIC_HEADERS
         api.h
-        
+
     PYTHON_CPPFILES
         moduleDeps.cpp
 
@@ -41,25 +44,32 @@ pxr_library(usdUtils
         wrapIntrospection.cpp
         wrapPipeline.cpp
         wrapRegisteredVariantSet.cpp
+        wrapSparseValueWriter.cpp
         wrapStageCache.cpp
         wrapStitch.cpp
         wrapStitchClips.cpp
+        wrapTimeCodeRange.cpp
 
     PYMODULE_FILES
         __init__.py
+        complianceChecker.py
 )
 
 pxr_test_scripts(
-    testenv/testUsdUtilsAuthoring.py 
+    testenv/testUsdUtilsAuthoring.py
     testenv/testUsdUtilsCoalescingDiagnosticDelegate.py
-    testenv/testUsdUtilsDependencyExtractor.py 
+    testenv/testUsdUtilsCreateNewUsdzPackage.py
+    testenv/testUsdUtilsDependencyExtractor.py
     testenv/testUsdUtilsFlattenLayerStack.py
-    testenv/testUsdUtilsIntrospection.py 
-    testenv/testUsdUtilsPipeline.py 
-    testenv/testUsdUtilsStageCache.py 
-    testenv/testUsdUtilsStitchClips.py 
-    testenv/testUsdUtilsStitch.py 
-    testenv/testUsdUtilsVarSelsSessionLayer.py 
+    testenv/testUsdUtilsIntrospection.py
+    testenv/testUsdUtilsModifyAssetPaths.py
+    testenv/testUsdUtilsPipeline.py
+    testenv/testUsdUtilsSparseValueWriter.py
+    testenv/testUsdUtilsStageCache.py
+    testenv/testUsdUtilsStitch.py
+    testenv/testUsdUtilsStitchClips.py
+    testenv/testUsdUtilsTimeCodeRange.py
+    testenv/testUsdUtilsVarSelsSessionLayer.py
 )
 
 pxr_build_test(testUsdUtilsCoalescingDiagnosticDelegateCpp
@@ -71,9 +81,39 @@ pxr_build_test(testUsdUtilsCoalescingDiagnosticDelegateCpp
         testenv/testUsdUtilsCoalescingDiagnosticDelegate.cpp
 )
 
+pxr_build_test(testUsdUtilsStitchCpp
+    LIBRARIES
+        sdf
+        tf
+        usd
+        usdUtils
+    CPPFILES
+        testenv/testUsdUtilsStitch.cpp
+)
+
+pxr_build_test(testUsdUtilsTimeCodeRangeCpp
+    LIBRARIES
+        gf
+        tf
+        usd
+        usdUtils
+    CPPFILES
+        testenv/testUsdUtilsTimeCodeRange.cpp
+)
+
 pxr_install_test_dir(
     SRC testenv/testUsdUtilsAuthoring
     DEST testUsdUtilsAuthoring
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsCreateNewUsdzPackage
+    DEST testUsdUtilsCreateNewARKitUsdzPackage
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsCreateNewUsdzPackage
+    DEST testUsdUtilsCreateNewUsdzPackage
 )
 
 pxr_install_test_dir(
@@ -107,13 +147,18 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/testUsdUtilsPipeline
-    DEST testUsdUtilsPipeline
+    SRC testenv/testUsdUtilsIntrospection
+    DEST testUsdUtilsIntrospection
 )
 
 pxr_install_test_dir(
-    SRC testenv/testUsdUtilsIntrospection
-    DEST testUsdUtilsIntrospection
+    SRC testenv/testUsdUtilsModifyAssetPaths
+    DEST testUsdUtilsModifyAssetPaths
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsPipeline
+    DEST testUsdUtilsPipeline
 )
 
 pxr_install_test_dir(
@@ -143,6 +188,19 @@ pxr_register_test(testUsdUtilsCoalescingDiagnosticDelegateCpp
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdUtilsCreateNewARKitUsdzPackage
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check --arkit -l contents_arkit.txt package.usdz root.usd"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsCreateNewUsdzPackage
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check -l contents.txt package.usdz root.usd"
+    DIFF_COMPARE contents.txt
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdUtilsDependencyExtractor1
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencyExtractor ascii.usda ascii-usda.txt"
@@ -160,14 +218,14 @@ pxr_register_test(testUsdUtilsDependencyExtractor2
 pxr_register_test(testUsdUtilsDependencyExtractor3
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencyExtractor crate.usdc crate-usdc.txt"
-    DIFF_COMPARE crate-usdc.txt 
+    DIFF_COMPARE crate-usdc.txt
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsDependencyExtractor4
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencyExtractor crate.usd crate-usd.txt"
-    DIFF_COMPARE crate-usd.txt 
+    DIFF_COMPARE crate-usd.txt
     EXPECTED_RETURN_CODE 0
 )
 
@@ -187,27 +245,34 @@ pxr_register_test(testUsdUtilsFlattenLayerStack_OldOffsets
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_register_test(testUsdUtilsPipeline
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsPipeline"
-    EXPECTED_RETURN_CODE 0
-)
-
 pxr_register_test(testUsdUtilsIntrospection
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsIntrospection"
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_register_test(testUsdUtilsStageCache
+pxr_register_test(testUsdUtilsModifyAssetPaths
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsStageCache"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsModifyAssetPaths layer.usda modified.usda"
+    DIFF_COMPARE modified.usda
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_register_test(testUsdUtilsVarSelsSessionLayer
+pxr_register_test(testUsdUtilsPipeline
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsVarSelsSessionLayer"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsPipeline"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsSparseValueWriter
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsSparseValueWriter"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsStageCache
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsStageCache"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -223,3 +288,24 @@ pxr_register_test(testUsdUtilsStitchClips
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdUtilsStitchCpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsStitchCpp"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsTimeCodeRange
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsTimeCodeRange"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsTimeCodeRangeCpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsTimeCodeRangeCpp"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsVarSelsSessionLayer
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsVarSelsSessionLayer"
+    EXPECTED_RETURN_CODE 0
+)

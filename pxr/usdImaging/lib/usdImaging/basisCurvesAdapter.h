@@ -49,12 +49,13 @@ public:
     virtual ~UsdImagingBasisCurvesAdapter();
 
     USDIMAGING_API
-    virtual SdfPath Populate(UsdPrim const& prim,
-                     UsdImagingIndexProxy* index,
-                     UsdImagingInstancerContext const* instancerContext = NULL);
+    SdfPath Populate(
+        UsdPrim const& prim,
+        UsdImagingIndexProxy* index,
+        UsdImagingInstancerContext const* instancerContext = nullptr) override;
 
     USDIMAGING_API
-    virtual bool IsSupported(UsdImagingIndexProxy const* index) const;
+    bool IsSupported(UsdImagingIndexProxy const* index) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
@@ -62,26 +63,31 @@ public:
 
     /// Thread Safe.
     USDIMAGING_API
-    virtual void TrackVariability(UsdPrim const& prim,
-                                  SdfPath const& cachePath,
-                                  HdDirtyBits* timeVaryingBits,
-                                  UsdImagingInstancerContext const* 
-                                      instancerContext = NULL);
+    void TrackVariability(
+        UsdPrim const& prim,
+        SdfPath const& cachePath,
+        HdDirtyBits* timeVaryingBits,
+        UsdImagingInstancerContext const* instancerContext = nullptr) 
+            const override;
 
     /// Thread Safe.
     USDIMAGING_API
-    virtual void UpdateForTime(UsdPrim const& prim,
-                               SdfPath const& cachePath, 
-                               UsdTimeCode time,
-                               HdDirtyBits requestedBits,
-                               UsdImagingInstancerContext const* 
-                                   instancerContext = NULL);
+    void UpdateForTime(
+        UsdPrim const& prim,
+        SdfPath const& cachePath, 
+        UsdTimeCode time,
+        HdDirtyBits requestedBits,
+        UsdImagingInstancerContext const* instancerContext = nullptr) 
+            const override;
+
+protected:
+    USDIMAGING_API
+    bool _IsBuiltinPrimvar(TfToken const& primvarName) const override;
 
 private:
-    void _GetPoints(UsdPrim const&, VtValue* value, UsdTimeCode time);
     void _GetBasisCurvesTopology(UsdPrim const& prim, 
                                  VtValue* topoHolder, 
-                                 UsdTimeCode time);
+                                 UsdTimeCode time) const;
 };
 
 

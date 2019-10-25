@@ -33,13 +33,13 @@
 #include "pxr/usd/sdf/variantSetSpec.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/type.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-SDF_DEFINE_SPEC(SdfVariantSpec, SdfSpec);
+SDF_DEFINE_SPEC(SdfSchema, SdfSpecTypeVariant, SdfVariantSpec, SdfSpec);
 
 SdfVariantSpecHandle
 SdfVariantSpec::New(

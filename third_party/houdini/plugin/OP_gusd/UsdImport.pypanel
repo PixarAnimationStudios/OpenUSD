@@ -9,7 +9,13 @@
     <script><![CDATA[
 import hou
 import sys
-from gusd import TreeView
+
+# XXX: The try-except block here is a workaround for
+# Pixar-internal build system issues.
+try:
+    from pxr.Gusd.treeview import TreeView
+except ImportError:
+    from Gusd.treeview import TreeView
 
 def createInterface():
 

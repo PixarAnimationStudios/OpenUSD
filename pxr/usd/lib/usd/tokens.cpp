@@ -40,10 +40,13 @@ UsdTokensType::UsdTokensType() :
     clipTimes("clipTimes", TfToken::Immortal),
     collection("collection", TfToken::Immortal),
     exclude("exclude", TfToken::Immortal),
+    excludes("excludes", TfToken::Immortal),
     expandPrims("expandPrims", TfToken::Immortal),
     expandPrimsAndProperties("expandPrimsAndProperties", TfToken::Immortal),
     expansionRule("expansionRule", TfToken::Immortal),
     explicitOnly("explicitOnly", TfToken::Immortal),
+    includeRoot("includeRoot", TfToken::Immortal),
+    includes("includes", TfToken::Immortal),
     allTokens({
         apiSchemas,
         clipActive,
@@ -59,10 +62,13 @@ UsdTokensType::UsdTokensType() :
         clipTimes,
         collection,
         exclude,
+        excludes,
         expandPrims,
         expandPrimsAndProperties,
         expansionRule,
-        explicitOnly
+        explicitOnly,
+        includeRoot,
+        includes
     })
 {
 }

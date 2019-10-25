@@ -24,22 +24,33 @@
 
 #include "GT_PrimCache.h"
 
-#include "USD_StdTraverse.h"
+#include "GT_PackedUSD.h"
 #include "primWrapper.h"
-#include "UT_Gf.h"
 #include "USD_PropertyMap.h"
+#include "USD_StdTraverse.h"
 #include "USD_XformCache.h"
+#include "UT_Gf.h"
 
-#include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdGeom/boundable.h"
+#include "pxr/usd/usdGeom/xformable.h"
 
+#include <GT/GT_CatPolygonMesh.h>
 #include <GT/GT_PrimCollect.h>
-#include <GT/GT_PrimPolygonMesh.h>
-#include <GT/GT_TransformArray.h>
 #include <GT/GT_PrimInstance.h>
+#include <GT/GT_PrimPolygonMesh.h>
 #include <GT/GT_RefineCollect.h>
 #include <GT/GT_RefineParms.h>
-#include <GT/GT_CatPolygonMesh.h>
+#include <GT/GT_TransformArray.h>
+#include <SYS/SYS_Hash.h>
+#include <SYS/SYS_Version.h>
+#include <UT/UT_HDKVersion.h>
+
+#include <iostream>
+
+// 0x100501BE corresponds to 16.5.446.
+#if SYS_VERSION_FULL_INT >= 0x100501BE
+#include <GT/GT_PackedAlembic.h>
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -52,7 +63,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 using std::vector;
 using std::cerr;
 using std::endl;
-
 
 typedef UT_IntrusivePtr<GT_PrimPolygonMesh> GT_PrimPolygonMeshHandle;
 
@@ -121,7 +131,7 @@ namespace {
         GT_PrimitiveHandle prim;
     };
 
-#if HDK_API_VERSION < 16050000
+#if SYS_VERSION_FULL_INT < 0x10050000
     static inline void intrusive_ptr_add_ref(const CacheEntry *o) { const_cast<CacheEntry *>(o)->incref(); }
     static inline void intrusive_ptr_release(const CacheEntry *o) { const_cast<CacheEntry *>(o)->decref(); }
 #endif
@@ -142,22 +152,30 @@ namespace {
     // Override the refiner to recurse on subdivs and collections
     struct Refiner : public GT_RefineCollect {
 
-        vector<GT_CatPolygonMesh> coalescedMeshes;
+        UT_Array<GT_CatPolygonMesh> coalescedMeshes;
+        UT_Array<SYS_HashType>      coalescedIds;
+        UT_Array<UT_Array<GT_PrimitiveHandle> > sourceMeshes;
         
         virtual void addPrimitive( const GT_PrimitiveHandle &prim )
         {
-            if( prim->getPrimitiveType() == GT_PRIM_SUBDIVISION_MESH ||
-                prim->getPrimitiveType() == GT_PRIM_COLLECT) {
+            const int primTypeId = prim->getPrimitiveType();
+
+            if( primTypeId == GT_PRIM_SUBDIVISION_MESH ||
+                primTypeId == GT_PRIM_COLLECT ||
+                primTypeId == GusdGT_PackedUSDMesh::getStaticPrimitiveType() ) {
+
                 prim->refine( *this );
             }
 
-            else if( prim->getPrimitiveType() == GT_PRIM_POLYGON_MESH ) {  
+            else if( primTypeId == GT_PRIM_POLYGON_MESH ) {  
 
 
                 // There are significant performace advantages to combining as 
                 // many meshes as possible. 
 
                 GT_PrimPolygonMeshHandle mesh = UTverify_cast<GT_PrimPolygonMesh*>(prim.get());
+                int64 meshId = 0;
+                mesh->getUniqueID( meshId );
 
                 // Flatten transforms on the mesh
                 UT_Matrix4D m;
@@ -180,14 +198,19 @@ namespace {
                 // concatenated meshs, just create a new one. 
                 bool appended = false;
                 for( size_t i = 0; i < coalescedMeshes.size(); ++i ) {
-                    if( coalescedMeshes[i].append( mesh )) {
+                    if( coalescedMeshes(i).append( mesh )) {
+                        SYShashCombine<int64>( coalescedIds(i), meshId );
+                        sourceMeshes(i).append( mesh );
                         appended = true;
                         break;
                     }
                 }
                 if( !appended ) {
-                    coalescedMeshes.push_back( GT_CatPolygonMesh() );
-                    coalescedMeshes.back().append( mesh );
+                    coalescedMeshes.append( GT_CatPolygonMesh() );
+                    coalescedMeshes.last().append( mesh );
+                    coalescedIds.append( meshId );
+                    sourceMeshes.append();
+                    sourceMeshes.last().append( mesh );
                 }
             }
             else {
@@ -350,15 +373,17 @@ CreateEntryFn::operator()(
             // into the groups space.
 
             UT_Matrix4D invGroupXform;
-            GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
-                    prim, time, invGroupXform ); 
-            invGroupXform.invert();
-
+            if (GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
+                    prim, time, invGroupXform )) {
+                invGroupXform.invert();
+            } else {
+                invGroupXform.identity();
+            }
 
             // Iterate though all the prims and find matching instances.
             for( auto it = gprims.begin(); it != gprims.end(); ++it ) 
             {
-                UsdPrim p = *it;
+                const UsdPrim& p = *it;
 
                 GT_PrimitiveHandle gtPrim = 
                     m_cache.GetPrim( p,
@@ -387,8 +412,10 @@ CreateEntryFn::operator()(
 
                     UsdPrim p = usdPrims[0];
                     UT_Matrix4D gprimXform;
-                    GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
-                            p, time, gprimXform ); 
+                    if (!GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
+                            p, time, gprimXform )) {
+                        gprimXform.identity();
+                    }
 
                     UT_Matrix4D m = gprimXform * invGroupXform;
 
@@ -403,8 +430,10 @@ CreateEntryFn::operator()(
                     for( auto const &p : usdPrims ) {
 
                         UT_Matrix4D gprimXform;
-                        GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
-                                p, time, gprimXform ); 
+                        if (!GusdUSD_XformCache::GetInstance()
+                            .GetLocalToWorldTransform(p, time, gprimXform )) {
+                            gprimXform.identity();
+                        }
 
                         UT_Matrix4D m = gprimXform * invGroupXform;
 
@@ -427,14 +456,29 @@ CreateEntryFn::operator()(
             return new CacheEntry( refiner.getPrimCollect()->getPrim( 0 ) );
         }
         else {
-            return new CacheEntry( refiner.coalescedMeshes[0].result() );
+#if SYS_VERSION_FULL_INT >= 0x100501BE
+            return new CacheEntry( new GusdGT_PackedUSDMesh( 
+                        refiner.coalescedMeshes(0).result(),
+                        refiner.coalescedIds(0),
+                        refiner.sourceMeshes(0)));
+#else
+            return new CacheEntry( refiner.coalescedMeshes(0).result() );
+#endif
         }
     }
     GT_PrimCollect* collect = new GT_PrimCollect( *refiner.getPrimCollect() );
-    for( auto& catMesh : refiner.coalescedMeshes ) {
+    for( size_t i = 0; i < refiner.coalescedMeshes.size(); ++i ) {
+        auto& catMesh = refiner.coalescedMeshes(i);
         GT_PrimitiveHandle meshPrim = catMesh.result();
-        // meshPrim->dumpAttributeLists( "coalescedMesh", false );
+#if SYS_VERSION_FULL_INT >= 0x100501BE
+        collect->appendPrimitive(
+                new GusdGT_PackedUSDMesh(
+                    meshPrim,
+                    refiner.coalescedIds(i),
+                    refiner.sourceMeshes(i)) );
+#else
         collect->appendPrimitive( meshPrim );
+#endif
     }
     return new CacheEntry( collect );
 }

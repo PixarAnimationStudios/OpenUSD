@@ -68,30 +68,26 @@ public:
     static const size_t dimension = 4;
 
     /// Default constructor does no initialization.
-    GfVec4d() {}
-
-    // Copy constructor.
-    // TODO Remove this, use compiler-generated.
-    GfVec4d(const GfVec4d &other) {
-        *this = other;
-    }
+    GfVec4d() = default;
 
     /// Initialize all elements to a single value.
-    explicit GfVec4d(double value) {
-        _data[0] = value;
-        _data[1] = value;
-        _data[2] = value;
-        _data[3] = value;
+    constexpr explicit GfVec4d(double value)
+        : _data{ value, value, value, value }
+    {
     }
 
     /// Initialize all elements with explicit arguments.
-    GfVec4d(double s0, double s1, double s2, double s3) {
-        Set(s0, s1, s2, s3);
+    constexpr GfVec4d(double s0, double s1, double s2, double s3)
+        : _data{ s0, s1, s2, s3 }
+    {
     }
 
     /// Construct with pointer to values.
     template <class Scl>
-    explicit GfVec4d(Scl const *p) { Set(p); }
+    constexpr explicit GfVec4d(Scl const *p)
+        : _data{ p[0], p[1], p[2], p[3] }
+    {
+    }
 
     /// Implicitly convert from GfVec4f.
     GfVec4d(class GfVec4f const &other);
@@ -387,7 +383,7 @@ GfGetLength(GfVec4d const &v)
 inline double
 GfNormalize(GfVec4d *v, double eps = GF_MIN_VECTOR_LENGTH)
 {
-    return v->Normalize();
+    return v->Normalize(eps);
 }
 
 /// Returns a normalized (unit-length) vector with the same direction as \p v.

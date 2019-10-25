@@ -35,7 +35,8 @@
 #include "gusd/USD_Traverse.h"
 #include "gusd/USD_Utils.h"
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
+#include "pxr/base/arch/hints.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usdGeom/imageable.h"
 
@@ -91,7 +92,7 @@ DefaultImageablePrimVisitorT<Visitor,Recursive>::AcceptPrim(
         TfToken purpose;
         ip.GetPurposeAttr().Get(&purpose);
         if( GusdPurposeInSet( purpose, purposes )) {
-            if(BOOST_UNLIKELY(Visitor()(prim, time, ctl))) {
+            if(ARCH_UNLIKELY(Visitor()(prim, time, ctl))) {
                 if(!Recursive)
                     ctl.PruneChildren();
                 return true;
@@ -139,7 +140,8 @@ struct TraverseTaskT : public UT_Task
     TraverseTaskT(const UsdPrim& prim,  exint idx, UsdTimeCode time,
                   GusdPurposeSet purposes,
                   TaskData& data, const Visitor& visitor, bool skipPrim)
-        :  UT_Task(), _prim(prim), _idx(idx), _time(time), _purposes(purposes), _data(data),
+        :  UT_Task(), _prim(prim), _idx(idx), _time(time),
+           _purposes(purposes), _data(data),
            _visited(false), _visitor(visitor), _skipPrim(skipPrim) {}
 
     virtual UT_Task*    run();
@@ -151,7 +153,7 @@ private:
     GusdPurposeSet  _purposes;
     TaskData&       _data;
     bool            _visited;
-    const Visitor&  _visitor;
+    Visitor         _visitor;
     bool            _skipPrim;
 };
 
@@ -165,7 +167,7 @@ TraverseTaskT<Visitor>::run()
 {
     /* XXX: Ended up needing this check at some point.
             Find out if it's still necessary.*/
-    if(BOOST_UNLIKELY(_visited)) return NULL;
+    if(ARCH_UNLIKELY(_visited)) return NULL;
     _visited = true;
 
     UT_ASSERT_P(_prim);
@@ -173,7 +175,7 @@ TraverseTaskT<Visitor>::run()
     if(!_skipPrim) {
 
         GusdUSD_TraverseControl ctl;
-        if(BOOST_UNLIKELY(_visitor.AcceptPrim(_prim, _time, _purposes, ctl))) {
+        if(ARCH_UNLIKELY(_visitor.AcceptPrim(_prim, _time, _purposes, ctl))) {
             /* Matched. Add it to the thread-specific list.*/
             auto*& threadData = _data.threadData.get();
             if(!threadData)
@@ -181,7 +183,7 @@ TraverseTaskT<Visitor>::run()
             threadData->prims.append(
                 GusdUSD_Traverse::PrimIndexPair(_prim, _idx));
         }
-        if(BOOST_UNLIKELY(!ctl.GetVisitChildren())) {
+        if(ARCH_UNLIKELY(!ctl.GetVisitChildren())) {
             return NULL;
         }
     }
@@ -228,7 +230,8 @@ ParallelFindPrims(const UsdPrim& root,
     bool skipPrim = skipRoot || root.GetPath() == SdfPath::AbsoluteRootPath();
     auto& task =
         *new(UT_Task::allocate_root())
-        TraverseTaskT<Visitor>(root, -1, time, purposes, data, visitor, skipPrim);
+        TraverseTaskT<Visitor>(root, -1, time, purposes,
+                               data, visitor, skipPrim);
     UT_Task::spawnRootAndWait(task);
     
     if(UTgetInterrupt()->opInterrupt())

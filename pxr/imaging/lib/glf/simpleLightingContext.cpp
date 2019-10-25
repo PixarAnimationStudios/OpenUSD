@@ -69,7 +69,7 @@ GlfSimpleLightingContext::New()
 }
 
 GlfSimpleLightingContext::GlfSimpleLightingContext() :
-    _shadows(new GlfSimpleShadowArray(GfVec2i(1024, 1024), 0)),
+    _shadows(TfCreateRefPtr(new GlfSimpleShadowArray(GfVec2i(1024, 1024), 0))),
     _worldToViewMatrix(1.0),
     _projectionMatrix(1.0),
     _sceneAmbient(0.01, 0.01, 0.01, 1.0),
@@ -253,12 +253,14 @@ setMatrix(float *dst, GfMatrix4d const & mat)
 void
 GlfSimpleLightingContext::BindUniformBlocks(GlfBindingMapPtr const &bindingMap)
 {
+    GLF_GROUP_FUNCTION();
+    
     if (!_lightingUniformBlock)
-        _lightingUniformBlock = GlfUniformBlock::New();
+        _lightingUniformBlock = GlfUniformBlock::New("_lightingUniformBlock");
     if (!_shadowUniformBlock)
-        _shadowUniformBlock = GlfUniformBlock::New();
+        _shadowUniformBlock = GlfUniformBlock::New("_shadowUniformBlock");
     if (!_materialUniformBlock)
-        _materialUniformBlock = GlfUniformBlock::New();
+        _materialUniformBlock = GlfUniformBlock::New("_materialUniformBlock");
 
     bool shadowExists = false;
     if ((!_lightingUniformBlockValid ||
@@ -276,9 +278,11 @@ GlfSimpleLightingContext::BindUniformBlocks(GlfBindingMapPtr const &bindingMap)
             float spotFalloff;
             float padding[2];
             float attenuation[4];
+            float worldToLightTransform[16];
             bool hasShadow;
             int32_t shadowIndex;
-            int32_t padding2[2];
+            bool isIndirectLight;
+            float padding0;
         };
 
         struct Lighting {
@@ -335,7 +339,10 @@ GlfSimpleLightingContext::BindUniformBlocks(GlfBindingMapPtr const &bindingMap)
                     light.GetAttenuation());
             lightingData->lightSource[i].spotCutoff = light.GetSpotCutoff();
             lightingData->lightSource[i].spotFalloff = light.GetSpotFalloff();
+            setMatrix(lightingData->lightSource[i].worldToLightTransform,
+                      light.GetTransform().GetInverse());
             lightingData->lightSource[i].hasShadow = light.HasShadow();
+            lightingData->lightSource[i].isIndirectLight = light.IsDomeLight();
 
             if (lightingData->lightSource[i].hasShadow) {
                 int shadowIndex = light.GetShadowIndex();

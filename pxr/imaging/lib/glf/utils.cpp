@@ -28,6 +28,8 @@
 #include "pxr/imaging/glf/utils.h"
 #include "pxr/imaging/glf/diagnostic.h"
 
+#include "pxr/base/tf/stringUtils.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -67,6 +69,8 @@ GlfGetElementSize(GLenum type)
             return sizeof(GLfloat);
         case GL_DOUBLE:
             return sizeof(GLdouble);
+        case GL_HALF_FLOAT:
+            return sizeof(GLhalf);
         default:
             TF_CODING_ERROR("Unsupported type");
             return sizeof(GLfloat);

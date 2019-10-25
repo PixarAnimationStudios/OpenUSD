@@ -31,7 +31,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMaterialNetworkMap;
+struct HdMaterialNetworkMap;
 
 
 /// \class UsdImagingMaterialAdapter
@@ -55,9 +55,6 @@ public:
     USDIMAGING_API
     virtual bool IsSupported(UsdImagingIndexProxy const* index) const;
 
-    USDIMAGING_API
-    virtual bool IsPopulatedIndirectly();
-
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
     // ---------------------------------------------------------------------- //
@@ -68,7 +65,7 @@ public:
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
-                                      instancerContext = NULL);
+                                      instancerContext = NULL) const;
 
 
     /// Thread Safe.
@@ -78,7 +75,7 @@ public:
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext = NULL);
+                                   instancerContext = NULL) const;
 
     // ---------------------------------------------------------------------- //
     /// \name Change Processing 
@@ -97,6 +94,12 @@ public:
                            HdDirtyBits dirty,
                            UsdImagingIndexProxy* index);
 
+    USDIMAGING_API
+    virtual void MarkMaterialDirty(UsdPrim const& prim,
+                                   SdfPath const& cachePath,
+                                   UsdImagingIndexProxy* index);
+
+
 protected:
     USDIMAGING_API
     virtual void _RemovePrim(SdfPath const& cachePath,
@@ -104,7 +107,8 @@ protected:
 
 private:
     void _GetMaterialNetworkMap(UsdPrim const &prim, 
-                                HdMaterialNetworkMap *materialNetworkMap);
+                                TfToken const& materialNetworkSelector,
+                                HdMaterialNetworkMap *materialNetworkMap) const;
 };
 
 

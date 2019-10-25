@@ -214,50 +214,64 @@ class TestUsdInstanceProxy(unittest.TestCase):
                       Usd.Stage.LoadNone)
 
         master = s.GetPrimAtPath('/World/sets/Set_1').GetMaster()
-        loadableProps = [s.GetPrimAtPath(p) for p in
+
+        # Note that FindLoadable never returns paths to prims in masters.
+        self.assertEqual(
+            s.FindLoadable(),
             ['/World/sets/Set_1/props/Prop_1',
              '/World/sets/Set_1/props/Prop_2',
              '/World/sets/Set_2/props/Prop_1',
-             '/World/sets/Set_2/props/Prop_2']
-        ]
-
-        # Note that FindLoadable always returns paths to prims in
-        # masters, even if the given root path is a path to a prim
-        # beneath an instance (i.e., GetPrimAtPath would return an
-        # instance proxy).
-        self.assertEqual(
-            s.FindLoadable(),
-            [master.GetPath().AppendPath('props/Prop_1'),
-             master.GetPath().AppendPath('props/Prop_2')])
-
+             '/World/sets/Set_2/props/Prop_2'])
+        
         self.assertEqual(
             s.FindLoadable('/World/sets/Set_1/props'),
-            [master.GetPath().AppendPath('props/Prop_1'),
-             master.GetPath().AppendPath('props/Prop_2')])
+            ['/World/sets/Set_1/props/Prop_1',
+             '/World/sets/Set_1/props/Prop_2'])
 
         self.assertEqual(
             s.FindLoadable('/World/sets/Set_2/props'),
-            [master.GetPath().AppendPath('props/Prop_1'),
-             master.GetPath().AppendPath('props/Prop_2')])
+            ['/World/sets/Set_2/props/Prop_1',
+             '/World/sets/Set_2/props/Prop_2'])
 
         # Load and unload models through instance proxies.
-        self.assertFalse(all([p.IsLoaded() for p in loadableProps]))
+        self.assertFalse(
+            s.GetPrimAtPath('/World/sets/Set_1/props/Prop_1').IsLoaded())
+        self.assertFalse(
+            s.GetPrimAtPath('/World/sets/Set_1/props/Prop_2').IsLoaded())
+        self.assertFalse(
+            s.GetPrimAtPath('/World/sets/Set_2/props/Prop_1').IsLoaded())
+        self.assertFalse(
+            s.GetPrimAtPath('/World/sets/Set_2/props/Prop_2').IsLoaded())
 
         s.GetPrimAtPath('/World/sets/Set_1/props/Prop_1').Load()
         self.assertTrue(
             s.GetPrimAtPath('/World/sets/Set_1/props/Prop_1').IsLoaded())
         self.assertFalse(
             s.GetPrimAtPath('/World/sets/Set_1/props/Prop_2').IsLoaded())
-        self.assertTrue(
+        self.assertFalse(
             s.GetPrimAtPath('/World/sets/Set_2/props/Prop_1').IsLoaded())
         self.assertFalse(
             s.GetPrimAtPath('/World/sets/Set_2/props/Prop_2').IsLoaded())
 
         s.GetPrimAtPath('/World/sets/Set_2/props/Prop_2').Load()
-        self.assertTrue(all([p.IsLoaded() for p in loadableProps]))
+        self.assertTrue(
+            s.GetPrimAtPath('/World/sets/Set_1/props/Prop_1').IsLoaded())
+        self.assertFalse(
+            s.GetPrimAtPath('/World/sets/Set_1/props/Prop_2').IsLoaded())
+        self.assertFalse(
+            s.GetPrimAtPath('/World/sets/Set_2/props/Prop_1').IsLoaded())
+        self.assertTrue(
+            s.GetPrimAtPath('/World/sets/Set_2/props/Prop_2').IsLoaded())
 
         s.LoadAndUnload([], ['/World/sets/Set_1/props'])
-        self.assertFalse(all([p.IsLoaded() for p in loadableProps]))
+        self.assertFalse(
+            s.GetPrimAtPath('/World/sets/Set_1/props/Prop_1').IsLoaded())
+        self.assertFalse(
+            s.GetPrimAtPath('/World/sets/Set_1/props/Prop_2').IsLoaded())
+        self.assertFalse(
+            s.GetPrimAtPath('/World/sets/Set_2/props/Prop_1').IsLoaded())
+        self.assertTrue(
+            s.GetPrimAtPath('/World/sets/Set_2/props/Prop_2').IsLoaded())
 
     def test_PrimRange(self):
         s = Usd.Stage.Open('nested/root.usda')

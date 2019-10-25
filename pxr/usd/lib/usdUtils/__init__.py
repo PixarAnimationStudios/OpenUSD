@@ -32,3 +32,6 @@ try:
     del __DOC
 except Exception:
     pass
+
+
+from complianceChecker import ComplianceChecker

@@ -25,6 +25,7 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/usdImaging/usdImagingGL/unitTestGLDrawing.h"
+#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/garch/glDebugWindow.h"
@@ -100,6 +101,8 @@ UsdImagingGL_UnitTestWindow::OnInitializeGL()
 {
     GlfGlewInit();
     GlfRegisterDefaultDebugOutputMessageCallback();
+    GlfContextCaps::InitInstance();
+
 
     //
     // Create an offscreen draw target which is the same size as this
@@ -226,10 +229,11 @@ UsdImagingGL_UnitTestWindow::OnMouseMove(int x, int y, int modKeys)
 UsdImagingGL_UnitTestGLDrawing::UsdImagingGL_UnitTestGLDrawing()
     : _widget(NULL)
     , _testLighting(false)
+    , _sceneLights(false)
     , _cameraLight(false)
     , _testIdRender(false)
     , _complexity(1.0f)
-    , _drawMode(UsdImagingGLEngine::DRAW_SHADED_SMOOTH)
+    , _drawMode(UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH)
     , _shouldFrameAll(false)
     , _cullBackfaces(false)
 {
@@ -310,6 +314,7 @@ static void Usage(int argc, char *argv[])
     static const char usage[] =
 "%s [-stage filePath] [-write filePath]\n"
 "                           [-offscreen] [-lighting] [-idRender]\n"
+"                           [-camera pathToCamera]\n"
 "                           [-complexity complexity]\n"
 "                           [-renderer rendererName]\n"
 "                           [-shading [flat|smooth|wire|wireOnSurface]]\n"
@@ -318,6 +323,7 @@ static void Usage(int argc, char *argv[])
 "                           [-complexities complexities1 complexities2 ...]\n"
 "                           [-times times1 times2 ...] [-cullBackfaces]\n"
 "                           [-clear r g b a] [-translate x y z]\n"
+"                           [-renderSetting name type value] [...]\n"
 "\n"
 "  usdImaging basic drawing test\n"
 "\n"
@@ -326,6 +332,9 @@ static void Usage(int argc, char *argv[])
 "  -write filePath     name of image file to write (suffix determines type) []\n"
 "  -offscreen          execute without mapping a window\n"
 "  -lighting           use simple lighting override shader\n"
+"  -sceneLights        use in combination with -lighting to utilize the lights \n"
+"                      defined in the scene\n"
+"  -camLight           use a single camera light\n"
 "  -idRender           ID rendering\n"
 "  -complexity complexity\n"
 "                      Set the fallback complexity [1]\n"
@@ -345,7 +354,13 @@ static void Usage(int argc, char *argv[])
 "                      an image [()]\n"
 "  -cullBackfaces      enable backface culling\n"
 "  -clear r g b a      clear color\n"
-"  -translate x y z    default camera translation\n";
+"  -translate x y z    default camera translation\n"
+"  -renderSetting name type value\n"
+"                      Specifies a setting with given name, type (such as\n"
+"                      float) and value passed to renderer. -renderSetting\n"
+"                      can be given multiple times to specify different\n"
+"                      settings\n"
+;
 
     Die(usage, TfGetBaseName(argv[0]).c_str());
 }
@@ -362,7 +377,8 @@ static void CheckForMissingArguments(int i, int n, int argc, char *argv[])
     }
 }
 
-static double ParseDouble(int& i, int argc, char *argv[], bool* invalid=0)
+static double ParseDouble(int& i, int argc, char *argv[],
+                          bool* invalid = nullptr)
 {
     if (i + 1 == argc) {
         if (invalid) {
@@ -388,6 +404,24 @@ static double ParseDouble(int& i, int argc, char *argv[], bool* invalid=0)
     return result;
 }
 
+static const char * ParseString(int &i, int argc, char *argv[],
+                                bool* invalid = nullptr)
+{
+    if (i + 1 == argc) {
+        if (invalid) {
+            *invalid = true;
+            return nullptr;
+        }
+        ParseError(argv[0], "missing parameter for '%s'", argv[i]);
+    }
+    const char * const result = argv[i + 1];
+    ++i;
+    if (invalid) {
+        *invalid = false;
+    }
+    return result;
+}
+
 static void
 ParseDoubleVector(
     int& i, int argc, char *argv[],
@@ -400,6 +434,19 @@ ParseDoubleVector(
             break;
         }
         result->push_back(value);
+    }
+}
+
+static VtValue ParseVtValue(int &i, int argc, char *argv[])
+{
+    const char * const typeString = ParseString(i, argc, argv);
+
+    if (strcmp(typeString, "float") == 0) {
+        CheckForMissingArguments(i, 1, argc, argv);
+        return VtValue(float(ParseDouble(i, argc, argv)));
+    } else {
+        ParseError(argv[0], "unknown type '%s'", typeString);
+        return VtValue();
     }
 }
 
@@ -422,8 +469,15 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
         else if (strcmp(argv[i], "-lighting") == 0) {
             _testLighting = true;
         }
+        else if (strcmp(argv[i], "-sceneLights") == 0) {
+            _sceneLights = true;
+        }
         else if (strcmp(argv[i], "-camlight") == 0) {
             _cameraLight = true;
+        }
+        else if (strcmp(argv[i], "-camera") == 0) {
+            CheckForMissingArguments(i, 1, argc, argv);
+            _cameraPath = argv[++i];
         }
         else if (strcmp(argv[i], "-idRender") == 0) {
             _testIdRender = true;
@@ -474,6 +528,11 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
             args->translate[1] = (float)ParseDouble(i, argc, argv);
             args->translate[2] = (float)ParseDouble(i, argc, argv);
         }
+        else if (strcmp(argv[i], "-renderSetting") == 0) {
+            CheckForMissingArguments(i, 2, argc, argv);
+            const char * const key = ParseString(i, argc, argv);
+            _renderSettings[key] = ParseVtValue(i, argc, argv);
+        }
         else {
             ParseError(argv[0], "unknown argument %s", argv[i]);
         }
@@ -517,14 +576,14 @@ UsdImagingGL_UnitTestGLDrawing::RunTest(int argc, char *argv[])
     _clearColor = GfVec4f(args.clearColor);
     _translate = GfVec3f(args.translate);
 
-    _drawMode = UsdImagingGLEngine::DRAW_SHADED_SMOOTH;
+    _drawMode = UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH;
 
     if (args.shading.compare("wireOnSurface") == 0) {
-        _drawMode = UsdImagingGLEngine::DRAW_WIREFRAME_ON_SURFACE;
+        _drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME_ON_SURFACE;
     } else if (args.shading.compare("flat") == 0 ) {
-        _drawMode = UsdImagingGLEngine::DRAW_SHADED_FLAT;
+        _drawMode = UsdImagingGLDrawMode::DRAW_SHADED_FLAT;
     }else if (args.shading.compare("wire") == 0 ) {
-        _drawMode = UsdImagingGLEngine::DRAW_WIREFRAME;
+        _drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME;
     } 
 
     if (!args.unresolvedStageFilePath.empty()) {

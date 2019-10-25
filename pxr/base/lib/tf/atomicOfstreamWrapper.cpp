@@ -76,7 +76,7 @@ TfAtomicOfstreamWrapper::Open(
     std::string localError, *err = reason ? reason : &localError;
     int tmpFd = Tf_CreateSiblingTempFile(
         _filePath, &_filePath, &_tmpFilePath, err);
-    if (!tmpFd) {
+    if (tmpFd == -1) {
         return false;
     }
     

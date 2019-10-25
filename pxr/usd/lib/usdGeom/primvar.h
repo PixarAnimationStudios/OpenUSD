@@ -58,7 +58,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// \section Usd_What_Is_Primvar What is the Purpose of a Primvar?
 ///
-/// There are two key aspects of Primvar identity:
+/// There are three key aspects of Primvar identity:
 /// \li Primvars define a value that can vary across the primitive on which
 ///     they are defined, via prescribed interpolation rules
 /// \li Taken collectively on a prim, its Primvars describe the "per-primitive
@@ -70,16 +70,28 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///     UsdShadeShader objects, \em not 
 ///     \ref UsdShadeNodeGraph_Interfaces "Interface Attributes" on UsdShadeMaterial
 ///     prims.
+/// \li *Primvars inherit down scene namespace.*  Regular USD attributes only
+///     apply to the prim on which they are specified, but primvars implicitly
+///     also apply to any child prims, unless those child prims have their
+///     own opinions about those primvars.  This capability necessarily
+///     entails added cost to check for inherited values, but the benefit
+///     is that it allows concise encoding of certain opinions that broadly
+///     affect large amounts of geometry.  See
+///     UsdGeomImageable::FindInheritedPrimvars().
 ///
 /// \section Usd_Creating_and_Accessing_Primvars Creating and Accessing Primvars
 /// 
+/// The UsdGeomPrimvarsAPI schema provides a complete interface for creating
+/// and querying prims for primvars.
+///
 /// The <b>only</b> way to create a new Primvar in scene description is by
-/// calling UsdGeomImageable::CreatePrimvar().  One cannot "enhance" or
+/// calling UsdGeomPrimvarsAPI::CreatePrimvar().  One cannot "enhance" or
 /// "promote" an already existing attribute into a Primvar, because doing so
 /// may require a namespace edit to rename the attribute, which cannot, in
 /// general, be done within a single UsdEditContext.  Instead, create a new
-/// UsdGeomPrimvar using UsdGeomImageable::CreatePrimvar(), and then copy the
-/// existing attribute onto the new UsdGeomPrimvar.
+/// UsdGeomPrimvar of the desired name using
+/// UsdGeomPrimvarsAPI::CreatePrimvar(), and then copy the existing attribute
+/// onto the new UsdGeomPrimvar.
 ///
 /// Primvar names can contain arbitrary sub-namespaces. The behavior of
 /// UsdGeomImageable::GetPrimvar(TfToken const &name) is to prepend "primvars:"
@@ -95,31 +107,28 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \anchor UsdGeomPrimvar_Using_Primvar
 /// If a client wishes to access an already-extant attribute as a Primvar,
 /// (which may or may not actually be valid Primvar), they can use the
-/// speculative constructor like so:
+/// speculative constructor; typically, a primvar is only "interesting" if it
+/// additionally provides a value.  This might look like:
 /// \code
-/// if (UsdGeomPrimvar primvar = UsdGeomPrimvar(usdAttr)){
+/// UsdGeomPrimvar primvar = UsdGeomPrimvar(usdAttr);
+/// if (primvar.HasValue()) {
+///     VtValue values;
+///     primvar.Get(&values, timeCode);
 ///     TfToken interpolation = primvar.GetInterpolation();
 ///     int     elementSize = primvar.GetElementSize();
 ///     ...
 /// }
 /// \endcode
 ///
-/// (or if you possess UsdProperty objects instead, as the result of
-/// a UsdPrim::GetProperties() call...)
+/// or, because Get() returns `true` if and only if it found a value:
 /// \code
-/// if (UsdGeomPrimvar primvar = UsdGeomPrimvar(usdProp.As<UsdAttribute>())){
-/// }
-/// \endcode
-///
-/// Python does not permit the 'assignment in conditional" pattern, so
-/// the above example in python would be:
-///
-/// \code{.py}
-/// primvar = Usd.Primvar(usdAttr)
-/// if primvar:
-///     interpolation = primvar.GetInterpolation()
-///     elementSize = primvar.GetElementSize()
+/// UsdGeomPrimvar primvar = UsdGeomPrimvar(usdAttr);
+/// VtValue values;
+/// if (primvar.Get(&values, timeCode)) {
+///     TfToken interpolation = primvar.GetInterpolation();
+///     int     elementSize = primvar.GetElementSize();
 ///     ...
+/// }
 /// \endcode
 ///
 /// \subsection Usd_Handling_Indexed_Primvars Proper Client Handling of "Indexed" Primvars
@@ -194,7 +203,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// \section Usd_UsdGeomPrimvar_Lifetime Lifetime Management and Primvar Validity
 ///
-/// UsdGeomPrimvar has an unspecified-bool-type operator that validates that
+/// UsdGeomPrimvar has an explicit bool operator that validates that
 /// the attribute IsDefined() and thus valid for querying and authoring
 /// values and metadata.  This is a fairly expensive query that we do 
 /// <b>not</b> cache, so if client code retains UsdGeomPrimvar objects, it should 
@@ -238,12 +247,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// example of how to layer schema onto a generic UsdAttribute object.  In both
 /// cases, the schema object wraps and contains the UsdObject.
 ///
+/// \section Usd_UsdGeomPrimvar_Inheritance Primvar Namespace Inheritance
+///
+/// Constant interpolation primvar values can be inherited down namespace.
+/// That is, a primvar value set on a prim will also apply to any child
+/// prims, unless those children have their own opinions about those named
+/// primvars. For complete details on how primvars inherit, see
+/// \ref usdGeom_PrimvarInheritance .
+///
+/// \sa UsdGeomImageable::FindInheritablePrimvars().
+///
 class UsdGeomPrimvar
 {
-    typedef const UsdAttribute UsdGeomPrimvar::*_UnspecifiedBoolType;
+public:
 
- public:
-  
     // Default constructor returns an invalid Primvar.  Exists for 
     // container classes
     UsdGeomPrimvar()
@@ -254,7 +271,7 @@ class UsdGeomPrimvar
     /// Speculative constructor that will produce a valid UsdGeomPrimvar when
     /// \p attr already represents an attribute that is Primvar, and
     /// produces an \em invalid Primvar otherwise (i.e. 
-    /// \ref UsdGeomPrimvar_bool_type "unspecified-bool-type()" will return false).
+    /// \ref UsdGeomPrimvar_bool "operator bool()" will return false).
     ///
     /// Calling \c UsdGeomPrimvar::IsPrimvar(attr) will return the same truth
     /// value as this constructor, but if you plan to subsequently use the
@@ -360,20 +377,25 @@ class UsdGeomPrimvar
     /// Explicit UsdAttribute extractor
     UsdAttribute const &GetAttr() const { return _attr; }
     
-    /// Return true if the wrapped UsdAttribute::IsDefined(), and in
-    /// addition the attribute is identified as a Primvar.
+    /// Return true if the underlying UsdAttribute::IsDefined(), and in
+    /// addition the attribute is identified as a Primvar.  Does not imply
+    /// that the primvar provides a value
     bool IsDefined() const { return IsPrimvar(_attr); }
 
-    /// \anchor UsdGeomPrimvar_bool_type
+    /// Return true if the underlying attribute has a value, either from
+    /// authored scene description or a fallback.
+    bool HasValue() const { return _attr.HasValue(); }
+
+    /// Return true if the underlying attribute has an unblocked, authored
+    /// value.
+    bool HasAuthoredValue() const { return _attr.HasAuthoredValue(); }
+
+    /// \anchor UsdGeomPrimvar_bool
     /// Return true if this Primvar is valid for querying and authoring
     /// values and metadata, which is identically equivalent to IsDefined().
-#ifdef doxygen
-    operator unspecified-bool-type() const();
-#else
-    operator _UnspecifiedBoolType() const {
+    explicit operator bool() const {
         return IsDefined() ? &UsdGeomPrimvar::_attr : 0;
     }
-#endif // doxygen
 
     /// \sa UsdAttribute::GetName()
     TfToken const &GetName() const { return _attr.GetName(); }
@@ -514,7 +536,16 @@ class UsdGeomPrimvar
     USDGEOM_API
     bool IsIndexed() const;
 
+    /// Returns a valid indices attribute if the primvar is indexed. Returns 
+    /// an invalid attribute otherwise.
+    USDGEOM_API
+    UsdAttribute GetIndicesAttr() const;
 
+    /// Returns the existing indices attribute if the primvar is indexed
+    /// or creates a new one.
+    USDGEOM_API
+    UsdAttribute CreateIndicesAttr() const;
+    
     /// Set the index that represents unauthored values in the indices array.
     /// 
     /// Some apps (like Maya) allow you to author primvars sparsely over a 
@@ -556,6 +587,22 @@ class UsdGeomPrimvar
     USDGEOM_API
     bool ComputeFlattened(VtValue *value, 
                           UsdTimeCode time=UsdTimeCode::Default()) const;
+
+    /// Computes the flattened value of \p attrValue given \p indices.
+    ///
+    /// This method is a static convenience function that performs the main
+    /// work of ComputeFlattened above without needing an instance of a 
+    /// UsdGeomPrimvar.
+    ///
+    /// Returns \c false if the value contained in \p attrVal is not a supported
+    /// type for flattening. Otherwise returns \c true.  The output 
+    /// \p errString variable may be populated with an error string if an error
+    /// is encountered during flattening.
+    USDGEOM_API
+    static bool ComputeFlattened(VtValue *value, const VtValue &attrVal,
+                                 const VtIntArray &indices, 
+                                 std::string *errString);
+                          
 
     /// @}
 
@@ -605,8 +652,36 @@ class UsdGeomPrimvar
     bool SetIdTarget(const SdfPath& path) const;
     
     /// @}
+
+    /// Equality comparison.  Return true if \a lhs and \a rhs represent the
+    /// same UsdGeomPrimvar, false otherwise.
+    friend bool operator==(const UsdGeomPrimvar &lhs, const UsdGeomPrimvar &rhs) {
+        return lhs.GetAttr() == rhs.GetAttr();
+    }
+
+    /// Inequality comparison. Return false if \a lhs and \a rhs represent the
+    /// same UsdPrimvar, true otherwise.
+    friend bool operator!=(const UsdGeomPrimvar &lhs, const UsdGeomPrimvar &rhs) {
+        return !(lhs == rhs);
+    }
+
+    /// Less-than operator. Returns true if \a lhs < \a rhs. 
+    /// 
+    /// This simply compares the paths of the underlyingattributes. 
+    friend bool operator<(const UsdGeomPrimvar &lhs, const UsdGeomPrimvar &rhs) {
+        return lhs.GetAttr().GetPath() < rhs.GetAttr().GetPath();
+    }
+
+    // hash_value overload for std/boost hash.
+    USDGEOM_API
+    friend size_t hash_value(const UsdGeomPrimvar &obj) {
+        return hash_value(obj.GetAttr());
+    }
+
+
 private:
     friend class UsdGeomImageable;
+    friend class UsdGeomPrimvarsAPI;
     
     /// Validate that the given \p name contains the primvars namespace.
     /// Does not validate name as a legal property identifier
@@ -657,16 +732,18 @@ private:
 
     // Helper method for computing the flattened value of an indexed primvar.
     template<typename ScalarType>
-    bool _ComputeFlattenedHelper(const VtArray<ScalarType> &authored,
-                                 const VtIntArray &indices,
-                                 VtArray<ScalarType> *value) const;
+    static bool _ComputeFlattenedHelper(const VtArray<ScalarType> &authored,
+                                        const VtIntArray &indices,
+                                        VtArray<ScalarType> *value,
+                                        std::string *errString);
     
     // Helper function to evaluate the flattened array value of a primvar given
     // the attribute value and the indices array.
     template <typename ArrayType>
-    bool _ComputeFlattenedArray(const VtValue &attrVal,
-                                const VtIntArray &indices,
-                                VtValue *value) const;
+    static bool _ComputeFlattenedArray(const VtValue &attrVal,
+                                       const VtIntArray &indices,
+                                       VtValue *value, 
+                                       std::string *errString);
 
     // Should only be called if _idTargetRelName is set
     UsdRelationship _GetIdTargetRel(bool create) const;
@@ -708,28 +785,57 @@ UsdGeomPrimvar::ComputeFlattened(VtArray<ScalarType> *value, UsdTimeCode time) c
     if (authored.empty())
         return false;
 
-    return _ComputeFlattenedHelper(authored, indices, value);
+    std::string errString;
+    bool res = _ComputeFlattenedHelper(authored, indices, value, &errString);
+    if (!errString.empty()) {
+        TF_WARN("For primvar %s: %s", 
+                UsdDescribe(_attr).c_str(), errString.c_str());
+    }
+    return res;
 }
 
 template<typename ScalarType>
 bool
 UsdGeomPrimvar::_ComputeFlattenedHelper(const VtArray<ScalarType> &authored,
                                         const VtIntArray &indices,
-                                        VtArray<ScalarType> *value) const
+                                        VtArray<ScalarType> *value,
+                                        std::string *errString)
 {
     value->resize(indices.size());
     bool success = true;
+
+    std::vector<size_t> invalidIndexPositions;
     for (size_t i=0; i < indices.size(); i++) {
         int index = indices[i];
-        if (index >= 0 && index < authored.size()) {
+        if (index >= 0 && (size_t)index < authored.size()) {
             (*value)[i] = authored[index];
         } else {
-            TF_WARN("Index %d at element %zu is out of range [0,%ld) for "
-                "primvar <%s>.", index, i, authored.size(),
-                _attr.GetPath().GetText());
+            invalidIndexPositions.push_back(i);
             success = false;
         }
     }
+
+    if (!invalidIndexPositions.empty()) {
+        std::vector<std::string> invalidPositionsStrVec;
+        // Print a maximum of 5 invalid index positions.
+        size_t numElementsToPrint = std::min(invalidIndexPositions.size(), 
+                                             size_t(5));
+        invalidPositionsStrVec.reserve(numElementsToPrint);
+        for (size_t i = 0; i < numElementsToPrint ; ++i) {
+            invalidPositionsStrVec.push_back(
+                    TfStringify(invalidIndexPositions[i]));
+        }
+
+        if (errString) {
+            *errString = TfStringPrintf(
+                "Found %ld invalid indices at positions [%s%s] that are out of "
+                "range [0,%ld).", invalidIndexPositions.size(), 
+                TfStringJoin(invalidPositionsStrVec, ", ").c_str(), 
+                invalidIndexPositions.size() > 5 ? ", ..." : "",
+                authored.size());
+        }
+    }
+
     return success;
 }
 

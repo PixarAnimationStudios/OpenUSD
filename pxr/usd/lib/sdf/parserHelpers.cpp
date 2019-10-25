@@ -105,6 +105,13 @@ MakeScalarValueImpl(GfHalf *out, vector<Value> const &vars, size_t &index) {
     *out = GfHalf(vars[index++].Get<float>());
 }
 
+inline void
+MakeScalarValueImpl(
+    SdfTimeCode *out, vector<Value> const &vars, size_t &index) {
+    CHECK_BOUNDS(1, "timecode");
+    *out = SdfTimeCode(vars[index++].Get<double>());
+}
+
 template <class Int>
 inline typename boost::enable_if<boost::is_integral<Int> >::type
 MakeScalarValueImpl(Int *out, vector<Value> const &vars, size_t &index) {
@@ -402,6 +409,7 @@ TF_MAKE_STATIC_DATA(_ValueFactoryMap, _valueFactories) {
     builder.add<GfHalf>(SdfValueTypeNames->Half);
     builder.add<float>(SdfValueTypeNames->Float);
     builder.add<double>(SdfValueTypeNames->Double);
+    builder.add<SdfTimeCode>(SdfValueTypeNames->TimeCode);
     builder.add<std::string>(SdfValueTypeNames->String);
     builder.add<TfToken>(SdfValueTypeNames->Token);
     builder.add<SdfAssetPath>(SdfValueTypeNames->Asset);
@@ -439,6 +447,12 @@ TF_MAKE_STATIC_DATA(_ValueFactoryMap, _valueFactories) {
     builder.add<GfMatrix3d>(SdfValueTypeNames->Matrix3d);
     builder.add<GfMatrix4d>(SdfValueTypeNames->Matrix4d);
     builder.add<GfMatrix4d>(SdfValueTypeNames->Frame4d);
+    builder.add<GfVec2f>(SdfValueTypeNames->TexCoord2f);
+    builder.add<GfVec2d>(SdfValueTypeNames->TexCoord2d);
+    builder.add<GfVec2h>(SdfValueTypeNames->TexCoord2h);
+    builder.add<GfVec3f>(SdfValueTypeNames->TexCoord3f);
+    builder.add<GfVec3d>(SdfValueTypeNames->TexCoord3d);
+    builder.add<GfVec3h>(SdfValueTypeNames->TexCoord3h);
 
     // XXX: Backwards compatibility.  These should be removed when
     //      all assets are updated.  At the time of this writing
@@ -490,11 +504,6 @@ TF_MAKE_STATIC_DATA(_ValueFactoryMap, _valueFactories) {
 ValueFactory const &GetValueFactoryForMenvaName(std::string const &name,
                                                 bool *found)
 {
-    // XXX: This call is probably not needed anymore; constructing the
-    // schema doesn't affect the value factories we register here.
-    // I'm leaving this here for now to clean up in a separate change.
-    SdfSchema::GetInstance();
-
     _ValueFactoryMap::const_iterator it = _valueFactories->find(name);
     if (it != _valueFactories->end()) {
         *found = true;

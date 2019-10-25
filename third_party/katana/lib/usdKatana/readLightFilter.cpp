@@ -39,7 +39,6 @@
 #include "pxr/usd/usdLux/rectLight.h"
 #include "pxr/usd/usdLux/shapingAPI.h"
 #include "pxr/usd/usdLux/shadowAPI.h"
-#include "pxr/usd/usdLux/linkingAPI.h"
 #include "pxr/usd/usdRi/lightFilterAPI.h"
 #include "pxr/usd/usdRi/pxrIntMultLightFilter.h"
 #include "pxr/usd/usdRi/pxrBarnLightFilter.h"
@@ -69,19 +68,16 @@ struct _UsdBuilder {
 
     _UsdBuilder& Set(std::string kat_name, UsdAttribute attr) {
         VtValue val;
-        if (attr.IsValid() && attr.HasAuthoredValueOpinion()
+        if (attr.HasAuthoredValueOpinion()
             && attr.Get(&val, _time)) {
             FnKat::Attribute kat_attr =
-                PxrUsdKatanaUtils::ConvertVtValueToKatAttr( val,
-                                        /* asShaderParam */ true,
-                                        /* pathAsModel */ false,
-                                        /* resolvePath */ false);
+                PxrUsdKatanaUtils::ConvertVtValueToKatAttr(val);
             _builder.set(kat_name.c_str(), kat_attr);
         }
         return *this;
     }
 
-    _UsdBuilder& SetSpline(std::string kat_prefix, std::string valueSuffix,
+    _UsdBuilder& SetSpline(std::string kat_prefix, const std::string& valueSuffix,
                            UsdRiSplineAPI spline) {
         // Knot count
         VtFloatArray posVec;
@@ -99,7 +95,7 @@ struct _UsdBuilder {
         {
             VtValue val;
             UsdAttribute attr = spline.GetInterpolationAttr();
-            if (attr.IsValid() && attr.HasAuthoredValueOpinion()
+            if (attr.HasAuthoredValue()
                 && attr.Get(&val, _time) && val.IsHolding<TfToken>()) {
                 TfToken t = val.UncheckedGet<TfToken>();
                 if (t == UsdRiTokens->linear) {
@@ -147,7 +143,8 @@ PxrUsdKatanaReadLightFilter(
     GroupBuilder filterBuilder;
     _UsdBuilder usdBuilder = {filterBuilder, currentTime};
     
-    if (UsdRiLightFilterAPI f = UsdRiLightFilterAPI(filterPrim)) {
+    if (filterPrim) {
+        UsdRiLightFilterAPI f(filterPrim);
         usdBuilder
             .Set("density", f.GetRiDensityAttr())
             .Set("intensity", f.GetRiIntensityAttr())
@@ -161,7 +158,7 @@ PxrUsdKatanaReadLightFilter(
         {
             VtValue val;
             UsdAttribute attr = f.GetRiCombineModeAttr();
-            if (attr.IsValid() && attr.HasAuthoredValueOpinion()
+            if (attr.HasAuthoredValue()
                 && attr.Get(&val, currentTime) && val.IsHolding<TfToken>()) {
                 TfToken t = val.Get<TfToken>();
                 if (t == UsdRiTokens->multiply) {
@@ -218,7 +215,7 @@ PxrUsdKatanaReadLightFilter(
         {
             VtValue val;
             UsdAttribute attr = f.GetBarnModeAttr();
-            if (attr.IsValid() && attr.HasAuthoredValueOpinion()
+            if (attr.HasAuthoredValue()
                 && attr.Get(&val, currentTime) && val.IsHolding<TfToken>()) {
                 TfToken t = val.Get<TfToken>();
                 if (t == UsdRiTokens->analytic) {
@@ -232,7 +229,7 @@ PxrUsdKatanaReadLightFilter(
         {
             VtValue val;
             UsdAttribute attr = f.GetPreBarnEffectAttr();
-            if (attr.IsValid() && attr.HasAuthoredValueOpinion()
+            if (attr.HasAuthoredValue()
                 && attr.Get(&val, currentTime) && val.IsHolding<TfToken>()) {
                 TfToken t = val.Get<TfToken>();
                 if (t == UsdRiTokens->noEffect) {
@@ -252,7 +249,7 @@ PxrUsdKatanaReadLightFilter(
         {
             VtValue val;
             UsdAttribute attr = f.GetCookieModeAttr();
-            if (attr.IsValid() && attr.HasAuthoredValueOpinion()
+            if (attr.HasAuthoredValue()
                 && attr.Get(&val, currentTime) && val.IsHolding<TfToken>()) {
                 TfToken t = val.Get<TfToken>();
                 if (t == UsdRiTokens->analytic) {
@@ -266,7 +263,7 @@ PxrUsdKatanaReadLightFilter(
         {
             VtValue val;
             UsdAttribute attr = f.GetTextureWrapModeAttr();
-            if (attr.IsValid() && attr.HasAuthoredValueOpinion()
+            if (attr.HasAuthoredValue()
                 && attr.Get(&val, currentTime) && val.IsHolding<TfToken>()) {
                 TfToken t = val.Get<TfToken>();
                 if (t == UsdRiTokens->off) {
@@ -331,7 +328,7 @@ PxrUsdKatanaReadLightFilter(
         {
             VtValue val;
             UsdAttribute attr = f.GetRampModeAttr();
-            if (attr.IsValid() && attr.HasAuthoredValueOpinion()
+            if (attr.HasAuthoredValue()
                 && attr.Get(&val, currentTime) && val.IsHolding<TfToken>()) {
                 TfToken t = val.Get<TfToken>();
                 if (t == UsdRiTokens->distanceToLight) {

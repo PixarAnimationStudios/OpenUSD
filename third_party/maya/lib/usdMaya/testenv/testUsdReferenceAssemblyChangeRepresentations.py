@@ -23,12 +23,15 @@
 # language governing permissions and limitations under the Apache License.
 #
 
+from pxr import UsdMaya
 
-import os
-import unittest
+from pxr import UsdGeom
 
 from maya import cmds
 from maya import standalone
+
+import os
+import unittest
 
 
 class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
@@ -66,22 +69,29 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         childNodes = self._GetChildren(nodeName)
         self.assertEqual(childNodes, [])
 
-    def _ValidateNodeWithSingleChild(self, nodeName, nodeTypeName,
-            childNodeSuffix, childTypeName):
+    def _ValidateNodeWithChildren(self, nodeName, nodeTypeName,
+            childNodeSuffixes, childTypeName):
         """
-        Tests that the given node is of type nodeTypeName with exactly one
-        child node underneath it with the string in childNodeSuffix at the end
-        of its name and of type childTypeName.
-        The name of the child node is returned.
+        Tests that the given node is of type nodeTypeName and has a child node
+        underneath it for each of the strings in childNodeSuffixes. The child
+        nodes must have the corresponding suffix at the end of their name and
+        be of type childTypeName.
+        The names of the child nodes are returned.
         """
+        if isinstance(childNodeSuffixes, str):
+            childNodeSuffixes = [childNodeSuffixes]
+
         self.assertEqual(cmds.nodeType(nodeName), nodeTypeName)
         childNodes = self._GetChildren(nodeName)
-        self.assertEqual(len(childNodes), 1)
-        childNode = childNodes[0]
-        self.assertTrue(childNode.endswith(childNodeSuffix))
-        self.assertEqual(cmds.nodeType(childNode), childTypeName)
+        self.assertEqual(len(childNodes), len(childNodeSuffixes))
 
-        return childNode
+        for i in range(len(childNodes)):
+            childNode = childNodes[i]
+
+            self.assertTrue(childNode.endswith(childNodeSuffixes[i]))
+            self.assertEqual(cmds.nodeType(childNode), childTypeName)
+
+        return childNodes
 
     def _ValidateCollapsed(self, nodeName):
         """
@@ -89,8 +99,8 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         There should be one child which is the proxy node. Note that this is
         the same for both the nested and non-nested cases.
         """
-        proxyNode = self._ValidateNodeWithSingleChild(nodeName,
-            self.ASSEMBLY_TYPE_NAME, 'CollapsedProxy', self.PROXY_TYPE_NAME)
+        proxyNode = self._ValidateNodeWithChildren(nodeName,
+            self.ASSEMBLY_TYPE_NAME, 'CollapsedProxy', self.PROXY_TYPE_NAME)[0]
 
         # Validate the attribute connections between the assembly node and its
         # proxy node.
@@ -98,8 +108,6 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
             'filePath',
             'primPath',
             'complexity',
-            'tint',
-            'tintColor',
             'outStageData']
 
         for attr in connectedAttrNames:
@@ -115,17 +123,28 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
                 destAttr = '%s.%s' % (proxyNode, 'inStageData')
             self.assertEqual(connections[0], destAttr)
 
+    def _ValidateCards(self, nodeName):
+        """
+        Checks that the root prim on the stage has its drawmode properly set.
+        """
+        drawModeAttr = cmds.getAttr('%s.drawMode' % nodeName)
+        self.assertEqual(drawModeAttr, 'cards')
+
+        prim = UsdMaya.GetPrim(nodeName)
+        primModelAPI = UsdGeom.ModelAPI(prim)
+        self.assertEqual(primModelAPI.ComputeModelDrawMode(), 'cards')
+
     def _ValidateModelExpanded(self, nodeName):
         """
         Test that the model assembly hierarchy is correct in Expanded.
         There should be one immediate child under the assembly which is a
         transform, and then one immediate child under that which is a proxy.
         """
-        transformNode = self._ValidateNodeWithSingleChild(nodeName,
-            self.ASSEMBLY_TYPE_NAME, 'Geom', self.TRANSFORM_TYPE_NAME)
+        transformNode = self._ValidateNodeWithChildren(nodeName,
+            self.ASSEMBLY_TYPE_NAME, 'Geom', self.TRANSFORM_TYPE_NAME)[0]
 
-        proxyNode = self._ValidateNodeWithSingleChild(transformNode,
-            self.TRANSFORM_TYPE_NAME, 'GeomProxy', self.PROXY_TYPE_NAME)
+        proxyNode = self._ValidateNodeWithChildren(transformNode,
+            self.TRANSFORM_TYPE_NAME, 'GeomProxy', self.PROXY_TYPE_NAME)[0]
 
     def _ValidateModelFull(self, nodeName, nodeType=None):
         """
@@ -141,14 +160,14 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         if nodeType is None:
             nodeType = self.ASSEMBLY_TYPE_NAME
 
-        transformNode = self._ValidateNodeWithSingleChild(nodeName,
-            nodeType, 'Geom', self.TRANSFORM_TYPE_NAME)
+        transformNode = self._ValidateNodeWithChildren(nodeName,
+            nodeType, 'Geom', self.TRANSFORM_TYPE_NAME)[0]
 
-        transformNode = self._ValidateNodeWithSingleChild(transformNode,
-            self.TRANSFORM_TYPE_NAME, 'Cube', self.TRANSFORM_TYPE_NAME)
+        transformNode = self._ValidateNodeWithChildren(transformNode,
+            self.TRANSFORM_TYPE_NAME, 'Cube', self.TRANSFORM_TYPE_NAME)[0]
 
-        meshNode = self._ValidateNodeWithSingleChild(transformNode,
-            self.TRANSFORM_TYPE_NAME, 'CubeShape', self.MESH_TYPE_NAME)
+        meshNode = self._ValidateNodeWithChildren(transformNode,
+            self.TRANSFORM_TYPE_NAME, 'CubeShape', self.MESH_TYPE_NAME)[0]
 
     def _ValidateAllModelRepresentations(self, nodeName):
         """
@@ -165,6 +184,10 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         cmds.assembly(nodeName, edit=True, active='Collapsed')
         self._ValidateCollapsed(nodeName)
 
+        # Change representations to 'Cards' and validate.
+        cmds.assembly(nodeName, edit=True, active='Cards')
+        self._ValidateCards(nodeName)
+
         # Change representations to 'Expanded' and validate.
         cmds.assembly(nodeName, edit=True, active='Expanded')
         self._ValidateModelExpanded(nodeName)
@@ -177,6 +200,10 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         cmds.undo()
         self._ValidateModelExpanded(nodeName)
 
+        # Undo and the node should be back to Cards.
+        cmds.undo()
+        self._ValidateCards(nodeName)
+
         # Undo and the node should be back to Collapsed.
         cmds.undo()
         self._ValidateCollapsed(nodeName)
@@ -188,6 +215,10 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         # Redo and it's back to Collapsed.
         cmds.redo()
         self._ValidateCollapsed(nodeName)
+
+        # Redo and it's back to Cards.
+        cmds.redo()
+        self._ValidateCards(nodeName)
 
         # Redo again and it's back to Expanded.
         cmds.redo()
@@ -203,8 +234,8 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         assembly node is in Expanded. There should only be another unloaded
         assembly node under the top-level assembly node.
         """
-        nestedAssemblyNode = self._ValidateNodeWithSingleChild(nodeName,
-            self.ASSEMBLY_TYPE_NAME, 'Cube_1', self.ASSEMBLY_TYPE_NAME)
+        nestedAssemblyNode = self._ValidateNodeWithChildren(nodeName,
+            self.ASSEMBLY_TYPE_NAME, 'Cube_1', self.ASSEMBLY_TYPE_NAME)[0]
         self._ValidateUnloaded(nestedAssemblyNode)
 
     def _ValidateNestedFullTopLevel(self, nodeName):
@@ -213,8 +244,8 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         There should be one nested assembly node in the Collapsed
         representation underneath the top-level assembly node.
         """
-        nestedAssemblyNode = self._ValidateNodeWithSingleChild(nodeName,
-            self.ASSEMBLY_TYPE_NAME, 'Cube_1', self.ASSEMBLY_TYPE_NAME)
+        nestedAssemblyNode = self._ValidateNodeWithChildren(nodeName,
+            self.ASSEMBLY_TYPE_NAME, 'Cube_1', self.ASSEMBLY_TYPE_NAME)[0]
         self._ValidateCollapsed(nestedAssemblyNode)
 
     def _SetupScene(self, usdFilePath, primPath=None):
@@ -333,6 +364,94 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         # testing a standalone model reference node.
         self._ValidateAllModelRepresentations(nestedAssemblyNode)
 
+    def _ValidateInstancingNestedExpandedTopLevel(self, nodeName):
+        """
+        Test that the nested assembly hierarchy is correct when the top-level
+        assembly node is in Expanded. There should be three unloaded assembly
+        nodes under the top-level assembly node.
+        """
+        nestedAssemblyNodes = self._ValidateNodeWithChildren(nodeName,
+            self.ASSEMBLY_TYPE_NAME, ['Cube_1', 'Cube_2', 'Cube_3'],
+            self.ASSEMBLY_TYPE_NAME)
+        
+        for nestedAssemblyNode in nestedAssemblyNodes:
+            self._ValidateUnloaded(nestedAssemblyNode)
+
+    def _ValidateInstancingNestedFullTopLevel(self, nodeName):
+        """
+        Test that the nested assembly hierarchy is correct in Full.
+        There should be three nested assembly nodes in the Collapsed
+        representation underneath the top-level assembly node.
+        """
+        nestedAssemblyNodes = self._ValidateNodeWithChildren(nodeName,
+            self.ASSEMBLY_TYPE_NAME, ['Cube_1', 'Cube_2', 'Cube_3'],
+            self.ASSEMBLY_TYPE_NAME)
+
+        for nestedAssemblyNode in nestedAssemblyNodes:
+            self._ValidateCollapsed(nestedAssemblyNode)
+
+    def testNestedAssemblyWithInstancingChangeReps(self):
+        """
+        This tests that changing representations of a USD reference assembly
+        node in Maya that references a hierarchy of assemblies works as
+        expected, including undo'ing and redo'ing representation changes.
+
+        In this test, the top-level set USD identifies the component models as
+        instanceable.
+        """
+        assemblyNode = self._SetupScene('ThreeCubes_set.usda', '/ThreeCubes_set')
+
+        # No representation has been activated yet, so ensure the assembly node
+        # has no children.
+        self._ValidateUnloaded(assemblyNode)
+
+        # Change representations to 'Collapsed' and validate.
+        cmds.assembly(assemblyNode, edit=True, active='Collapsed')
+        self._ValidateCollapsed(assemblyNode)
+
+        # Change representations to 'Expanded' and validate.
+        cmds.assembly(assemblyNode, edit=True, active='Expanded')
+        self._ValidateInstancingNestedExpandedTopLevel(assemblyNode)
+
+        # Change representations to 'Full' and validate.
+        cmds.assembly(assemblyNode, edit=True, active='Full')
+        self._ValidateInstancingNestedFullTopLevel(assemblyNode)
+
+        # Undo and the node should be back to Expanded.
+        cmds.undo()
+        self._ValidateInstancingNestedExpandedTopLevel(assemblyNode)
+
+        # Undo and the node should be back to Collapsed.
+        cmds.undo()
+        self._ValidateCollapsed(assemblyNode)
+
+        # Undo once more and no representation should be active.
+        cmds.undo()
+        self._ValidateUnloaded(assemblyNode)
+
+        # Redo and it's back to Collapsed.
+        cmds.redo()
+        self._ValidateCollapsed(assemblyNode)
+
+        # Redo again and it's back to Expanded.
+        cmds.redo()
+        self._ValidateInstancingNestedExpandedTopLevel(assemblyNode)
+
+        # Redo once more and it's back to Full.
+        cmds.redo()
+        self._ValidateInstancingNestedFullTopLevel(assemblyNode)
+
+
+        # Now test changing representations of one of the sub-assemblies.
+        # Start by unloading the sub-assembly.
+        childNodes = self._GetChildren(assemblyNode)
+        nestedAssemblyNode = childNodes[0]
+        cmds.assembly(nestedAssemblyNode, edit=True, active='')
+
+        # From here, testing the nested assembly node should be the same as
+        # testing a standalone model reference node.
+        self._ValidateAllModelRepresentations(nestedAssemblyNode)
+
     def testNestedAssembliesWithVariantSetsChangeReps(self):
         """
         This tests that changing representations of a hierarchy of USD
@@ -357,6 +476,10 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         # Change representations to 'Collapsed' and validate.
         cmds.assembly(assemblyNode, edit=True, active='Collapsed')
         self._ValidateCollapsed(assemblyNode)
+
+        # Change representations to 'Cards' and validate.
+        cmds.assembly(assemblyNode, edit=True, active='Cards')
+        self._ValidateCards(assemblyNode)
 
         # Change representations to 'Expanded' and validate.
         cmds.assembly(assemblyNode, edit=True, active='Expanded')
@@ -385,8 +508,8 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         """
 
         # The top-level assembly should have only a 'Geom' transform below it.
-        geomTransformNode = self._ValidateNodeWithSingleChild(nodeName,
-            self.ASSEMBLY_TYPE_NAME, 'Geom', self.TRANSFORM_TYPE_NAME)
+        geomTransformNode = self._ValidateNodeWithChildren(nodeName,
+            self.ASSEMBLY_TYPE_NAME, 'Geom', self.TRANSFORM_TYPE_NAME)[0]
 
         # The Geom transform should have six children, one proxy shape, four
         # transform nodes, and one camera.
@@ -410,36 +533,36 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         for cubeNum in ['101', '102', '103']:
             cubeHeroNode = '%s:CubesHeroGeom%s' % (self.assemNamespace, cubeNum)
             self.assertIn(cubeHeroNode, cubesHeroChildNodes)
-            cubeHeroProxyNode = self._ValidateNodeWithSingleChild(cubeHeroNode,
-                self.TRANSFORM_TYPE_NAME, 'CubesHeroGeom%sProxy' % cubeNum, self.PROXY_TYPE_NAME)
+            cubeHeroProxyNode = self._ValidateNodeWithChildren(cubeHeroNode,
+                self.TRANSFORM_TYPE_NAME, 'CubesHeroGeom%sProxy' % cubeNum, self.PROXY_TYPE_NAME)[0]
 
         cubesHeroCameraNode = '%s:PerspCamUnderCubesHero' % self.assemNamespace
         self.assertIn(cubesHeroCameraNode, cubesHeroChildNodes)
-        cameraShapeNode = self._ValidateNodeWithSingleChild(cubesHeroCameraNode,
-            self.TRANSFORM_TYPE_NAME, 'PerspCamUnderCubesHeroShape', self.CAMERA_TYPE_NAME)
+        cameraShapeNode = self._ValidateNodeWithChildren(cubesHeroCameraNode,
+            self.TRANSFORM_TYPE_NAME, 'PerspCamUnderCubesHeroShape', self.CAMERA_TYPE_NAME)[0]
 
         # Validate the CubesFill and Ref proxies.
         cubesFillTransformNode = '%s:CubesFill' % self.assemNamespace
         self.assertIn(cubesFillTransformNode, geomChildNodes)
-        cubesFillProxyNode = self._ValidateNodeWithSingleChild(cubesFillTransformNode,
-            self.TRANSFORM_TYPE_NAME, 'CubesFillProxy', self.PROXY_TYPE_NAME)
+        cubesFillProxyNode = self._ValidateNodeWithChildren(cubesFillTransformNode,
+            self.TRANSFORM_TYPE_NAME, 'CubesFillProxy', self.PROXY_TYPE_NAME)[0]
 
         refTransformNode = '%s:Ref' % self.assemNamespace
         self.assertIn(refTransformNode, geomChildNodes)
-        refProxyNode = self._ValidateNodeWithSingleChild(refTransformNode,
-            self.TRANSFORM_TYPE_NAME, 'RefProxy', self.PROXY_TYPE_NAME)
+        refProxyNode = self._ValidateNodeWithChildren(refTransformNode,
+            self.TRANSFORM_TYPE_NAME, 'RefProxy', self.PROXY_TYPE_NAME)[0]
 
         # Validate the ReferencedModels transform and the Cube_1 assembly.
         refModelsTransformNode = '%s:ReferencedModels' % self.assemNamespace
         self.assertIn(refModelsTransformNode, geomChildNodes)
-        cubeAssemblyNode = self._ValidateNodeWithSingleChild(refModelsTransformNode,
-            self.TRANSFORM_TYPE_NAME, 'Cube_1', self.ASSEMBLY_TYPE_NAME)
+        cubeAssemblyNode = self._ValidateNodeWithChildren(refModelsTransformNode,
+            self.TRANSFORM_TYPE_NAME, 'Cube_1', self.ASSEMBLY_TYPE_NAME)[0]
 
         # Validate the camera under Geom.
         geomCameraNode = '%s:PerspCamUnderGeom' % self.assemNamespace
         self.assertIn(geomCameraNode, geomChildNodes)
-        cameraShapeNode = self._ValidateNodeWithSingleChild(geomCameraNode,
-            self.TRANSFORM_TYPE_NAME, 'PerspCamUnderGeomShape', self.CAMERA_TYPE_NAME)
+        cameraShapeNode = self._ValidateNodeWithChildren(geomCameraNode,
+            self.TRANSFORM_TYPE_NAME, 'PerspCamUnderGeomShape', self.CAMERA_TYPE_NAME)[0]
 
     def _ValidateComplexSetFullTopLevel(self, nodeName):
         """
@@ -448,8 +571,8 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         """
 
         # The top-level assembly should have only a 'Geom' transform below it.
-        geomTransformNode = self._ValidateNodeWithSingleChild(nodeName,
-            self.ASSEMBLY_TYPE_NAME, 'Geom', self.TRANSFORM_TYPE_NAME)
+        geomTransformNode = self._ValidateNodeWithChildren(nodeName,
+            self.ASSEMBLY_TYPE_NAME, 'Geom', self.TRANSFORM_TYPE_NAME)[0]
 
         # The Geom transform should have six transform node children.
         geomChildNodes = self._GetChildren(geomTransformNode)
@@ -458,8 +581,8 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         # Validate the camera under Geom.
         geomCameraNode = '%s:PerspCamUnderGeom' % self.assemNamespace
         self.assertIn(geomCameraNode, geomChildNodes)
-        cameraShapeNode = self._ValidateNodeWithSingleChild(geomCameraNode,
-            self.TRANSFORM_TYPE_NAME, 'PerspCamUnderGeomShape', self.CAMERA_TYPE_NAME)
+        cameraShapeNode = self._ValidateNodeWithChildren(geomCameraNode,
+            self.TRANSFORM_TYPE_NAME, 'PerspCamUnderGeomShape', self.CAMERA_TYPE_NAME)[0]
 
         # Validate CubesHero and CubesFill. They should be structured the same.
         for cubeType in ['CubesHero', 'CubesFill']:
@@ -474,20 +597,20 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
             for cubeNum in ['101', '102', '103']:
                 cubeNode = '%s:%sGeom%s' % (self.assemNamespace, cubeType, cubeNum)
                 self.assertIn(cubeNode, cubesChildNodes)
-                cubeShapeNode = self._ValidateNodeWithSingleChild(cubeNode,
-                    self.TRANSFORM_TYPE_NAME, '%sGeom%sShape' % (cubeType, cubeNum), self.MESH_TYPE_NAME)
+                cubeShapeNode = self._ValidateNodeWithChildren(cubeNode,
+                    self.TRANSFORM_TYPE_NAME, '%sGeom%sShape' % (cubeType, cubeNum), self.MESH_TYPE_NAME)[0]
 
             cubesCameraNode = '%s:PerspCamUnder%s' % (self.assemNamespace, cubeType)
             self.assertIn(cubesCameraNode, cubesChildNodes)
-            cameraShapeNode = self._ValidateNodeWithSingleChild(cubesCameraNode,
-                self.TRANSFORM_TYPE_NAME, 'PerspCamUnder%sShape' % cubeType, self.CAMERA_TYPE_NAME)
+            cameraShapeNode = self._ValidateNodeWithChildren(cubesCameraNode,
+                self.TRANSFORM_TYPE_NAME, 'PerspCamUnder%sShape' % cubeType, self.CAMERA_TYPE_NAME)[0]
 
         # Validate the ReferencedModels transform and the fully unrolled Cube_1
         # model reference assembly.
         refModelsTransformNode = '%s:ReferencedModels' % self.assemNamespace
         self.assertIn(refModelsTransformNode, geomChildNodes)
-        cubeModelTransformNode = self._ValidateNodeWithSingleChild(refModelsTransformNode,
-            self.TRANSFORM_TYPE_NAME, 'Cube_1', self.TRANSFORM_TYPE_NAME)
+        cubeModelTransformNode = self._ValidateNodeWithChildren(refModelsTransformNode,
+            self.TRANSFORM_TYPE_NAME, 'Cube_1', self.TRANSFORM_TYPE_NAME)[0]
         self._ValidateModelFull(cubeModelTransformNode, nodeType=self.TRANSFORM_TYPE_NAME)
 
         # Validate the Ref node.
@@ -502,14 +625,14 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         for cubeName in ['RedCube', 'GreenCube', 'BlueCube']:
             cubeTransformNode = '%s:%s' % (self.assemNamespace, cubeName)
             self.assertIn(cubeTransformNode, refChildNodes)
-            cubeShapeNode = self._ValidateNodeWithSingleChild(cubeTransformNode,
-                self.TRANSFORM_TYPE_NAME, '%sShape' % cubeName, self.MESH_TYPE_NAME)
+            cubeShapeNode = self._ValidateNodeWithChildren(cubeTransformNode,
+                self.TRANSFORM_TYPE_NAME, '%sShape' % cubeName, self.MESH_TYPE_NAME)[0]
 
         # Validate the terrain mesh.
         terrainTransformNode = '%s:terrain' % self.assemNamespace
         self.assertIn(terrainTransformNode, geomChildNodes)
-        terrainShapeNode = self._ValidateNodeWithSingleChild(terrainTransformNode,
-            self.TRANSFORM_TYPE_NAME, 'terrainShape', self.MESH_TYPE_NAME)
+        terrainShapeNode = self._ValidateNodeWithChildren(terrainTransformNode,
+            self.TRANSFORM_TYPE_NAME, 'terrainShape', self.MESH_TYPE_NAME)[0]
 
     def testComplexSetAssemblyChangeReps(self):
         """
@@ -528,6 +651,10 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         cmds.assembly(assemblyNode, edit=True, active='Collapsed')
         self._ValidateCollapsed(assemblyNode)
 
+        # Change representations to 'Cards' and validate.
+        cmds.assembly(assemblyNode, edit=True, active='Cards')
+        self._ValidateCards(assemblyNode)
+
         # Change representations to 'Expanded' and validate.
         cmds.assembly(assemblyNode, edit=True, active='Expanded')
         self._ValidateComplexSetExpandedTopLevel(assemblyNode)
@@ -540,6 +667,10 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         cmds.undo()
         self._ValidateComplexSetExpandedTopLevel(assemblyNode)
 
+        # Undo and the node should be back to Cards.
+        cmds.undo()
+        self._ValidateCards(assemblyNode)
+
         # Undo and the node should be back to Collapsed.
         cmds.undo()
         self._ValidateCollapsed(assemblyNode)
@@ -551,6 +682,10 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         # Redo and it's back to Collapsed.
         cmds.redo()
         self._ValidateCollapsed(assemblyNode)
+
+        # Redo and it's back to Cards.
+        cmds.redo()
+        self._ValidateCards(assemblyNode)
 
         # Redo again and it's back to Expanded.
         cmds.redo()
@@ -595,6 +730,10 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         cmds.assembly(assemblyNode, edit=True, active='Collapsed')
         self._AssertTimeIsNotConnected(assemblyNode)
 
+        # Change representations to "Cards' and validate.
+        cmds.assembly(assemblyNode, edit=True, active='Cards')
+        self._AssertTimeIsNotConnected(assemblyNode)
+
         # Change representations to 'Expanded' and validate.
         cmds.assembly(assemblyNode, edit=True, active='Expanded')
         self._AssertTimeIsNotConnected(assemblyNode)
@@ -610,6 +749,45 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         # Change representations to 'Collapsed' once more and validate.
         cmds.assembly(assemblyNode, edit=True, active='Collapsed')
         self._AssertTimeIsNotConnected(assemblyNode)
+
+    def testDisjointAssembliesVariantSetsChange(self):
+        """
+        Tests that changing a variant set in a nested assembly |A1|B does not
+        affect the variant sets on a different nested assembly |A2|B where
+        A1 and A2 reference the same model.
+        """
+        cmds.file(new=True, force=True)
+
+        usdFile = os.path.abspath("OneCube_set.usda")
+        primPath = "/set"
+
+        assemblyNodes = []
+        for name in ["assembly1", "assembly2"]:
+            assemblyNode = cmds.assembly(
+                    name=name, type=self.ASSEMBLY_TYPE_NAME)
+            cmds.setAttr("%s.filePath" % assemblyNode, usdFile, type='string')
+            cmds.setAttr("%s.primPath" % assemblyNode, primPath, type='string')
+            cmds.assembly(assemblyNode, edit=True, active='Expanded')
+            assemblyNodes.append(assemblyNode)
+
+        cube1 = 'NS_%s:Cube_1' % assemblyNodes[0]
+        self.assertTrue(cmds.objExists(cube1))
+
+        cube2 = 'NS_%s:Cube_1' % assemblyNodes[1]
+        self.assertTrue(cmds.objExists(cube2))
+
+        cmds.setAttr('%s.usdVariantSet_shadingVariant' % cube1,
+                'Blue', type='string')
+
+        prim1 = UsdMaya.GetPrim(cube1)
+        self.assertEqual(
+                prim1.GetVariantSet('shadingVariant').GetVariantSelection(),
+                'Blue')
+
+        prim2 = UsdMaya.GetPrim(cube2)
+        self.assertEqual(
+                prim2.GetVariantSet('shadingVariant').GetVariantSelection(),
+                'Default')
 
 
 if __name__ == '__main__':

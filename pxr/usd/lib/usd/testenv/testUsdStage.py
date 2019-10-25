@@ -218,7 +218,8 @@ class TestUsdStage(unittest.TestCase):
             assert not stage.IsLayerMuted(rootLayer.identifier)
 
     def test_UsdStageIsSupportedFile(self):
-        validFileNames = ['foo.usda', '/baz/bar/foo.usd', 'foo.usd', 'xxx.usdc']
+        validFileNames = ['foo.usda', '/baz/bar/foo.usd', 'foo.usd', 'xxx.usdc',
+                          'foo.usda:SDF_FORMAT_ARGS:documentation=doc string']
         invalidFileNames = ['hello.alembic', 'hello.usdx', 'ill.never.work']
         assert all([Usd.Stage.IsSupportedFile(fl) for fl in validFileNames]) 
         assert not all([Usd.Stage.IsSupportedFile(fl) for fl in invalidFileNames])

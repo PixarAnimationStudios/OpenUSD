@@ -74,6 +74,11 @@ UsdGeomCone::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdGeomCone::_GetSchemaType() const {
+    return UsdGeomCone::schemaType;
+}
+
 /* static */
 const TfType &
 UsdGeomCone::_GetStaticTfType()

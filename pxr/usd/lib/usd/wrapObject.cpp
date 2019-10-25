@@ -154,7 +154,6 @@ __getattribute__(object selfObj, const char *name) {
     if ((name[0] == '_' && name[1] == '_') ||
         extract<UsdObject &>(selfObj)().GetPrim().IsValid() ||
         strcmp(name, "IsValid") == 0 ||
-        strcmp(name, "IsDefined") == 0 ||
         strcmp(name, "GetDescription") == 0 ||
         strcmp(name, "GetPrim") == 0 ||
         strcmp(name, "GetPath") == 0 ||

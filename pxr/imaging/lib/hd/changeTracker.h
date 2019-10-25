@@ -42,8 +42,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class TfToken;
-class HdRprimCollection;
-class HdRenderIndex;
 
 /// \class HdChangeTracker
 ///
@@ -64,9 +62,9 @@ public:
         AllDirty                    = ~Varying,
         DirtyPrimID                 = 1 << 2,
         DirtyExtent                 = 1 << 3,
-        DirtyRefineLevel            = 1 << 4,
+        DirtyDisplayStyle           = 1 << 4,
         DirtyPoints                 = 1 << 5,
-        DirtyPrimVar                = 1 << 6,
+        DirtyPrimvar                = 1 << 6,
         DirtyMaterialId             = 1 << 7,
         DirtyTopology               = 1 << 8,
         DirtyTransform              = 1 << 9,
@@ -79,13 +77,14 @@ public:
         DirtyInstancer              = 1 << 16,
         DirtyInstanceIndex          = 1 << 17,
         DirtyRepr                   = 1 << 18,
-        DirtyPurpose                = 1 << 19,
+        DirtyRenderTag              = 1 << 19,
         DirtyComputationPrimvarDesc = 1 << 20,
-        AllSceneDirtyBits           = ((1<<21) - 1),
+        DirtyCategories             = 1 << 21,
+        AllSceneDirtyBits           = ((1<<22) - 1),
 
-        NewRepr                     = 1 << 21,
+        NewRepr                     = 1 << 22,
 
-        CustomBitsBegin             = 1 << 22,
+        CustomBitsBegin             = 1 << 23,
         CustomBitsEnd               = 1 << 30,
     };
 
@@ -93,9 +92,9 @@ public:
     enum NonRprimDirtyBits : HdDirtyBits {
         //Varying               = 1 << 0,
         DirtyType             = 1 << 1,
-        DirtyChildren         = 1 << 2,
-        DirtyParams           = 1 << 3,
-        DirtyCollection       = 1 << 4,
+        DirtyParams           = 1 << 2,
+        DirtyCollection       = 1 << 3,
+        DirtyRenderTags       = 1 << 4,
     };
 
     HD_API
@@ -139,7 +138,7 @@ public:
 
     /// Mark the primvar for the rprim with \p id as being dirty.
     HD_API
-    void MarkPrimVarDirty(SdfPath const& id, TfToken const& name);
+    void MarkPrimvarDirty(SdfPath const& id, TfToken const& name);
 
     /// Flag all the Rprim with the given \p id as being dirty. Multiple calls
     /// with different dirty bits accumulate.
@@ -147,7 +146,7 @@ public:
     HD_API
     void MarkAllRprimsDirty(HdDirtyBits bits);
 
-    // Clear Varying bit of all prims.
+    ///  Clear Varying bit of all prims.
     ///
     /// The idea is that from frame to frame (update iteration), the set of
     /// dirty rprims and their dirty bits do not change; that is, the same
@@ -156,6 +155,13 @@ public:
     /// overall cost of an update iteration.
     HD_API
     void ResetVaryingState();
+
+    /// Reset the varying state on one Rprim
+    /// This is done for Rprims, where we choose not to clean them
+    /// (due to state like invisibility).
+    HD_API
+    void ResetRprimVaryingState(SdfPath const& id);
+
 
     // ---------------------------------------------------------------------- //
 
@@ -167,18 +173,18 @@ public:
     HD_API
     bool IsExtentDirty(SdfPath const& id);
 
-    /// Returns true if the rprim identified by \p id has a dirty refine level.
+    /// Returns true if the rprim identified by \p id has a dirty display style.
     HD_API
-    bool IsRefineLevelDirty(SdfPath const& id);
+    bool IsDisplayStyleDirty(SdfPath const& id);
 
     /// Returns true if the rprim identified by \p id with primvar \p name is
     /// dirty.
     HD_API
-    bool IsPrimVarDirty(SdfPath const& id, TfToken const& name);
+    bool IsPrimvarDirty(SdfPath const& id, TfToken const& name);
 
     /// Returns true if the rprim identified by \p id has any dirty primvars.
     HD_API
-    bool IsAnyPrimVarDirty(SdfPath const& id);
+    bool IsAnyPrimvarDirty(SdfPath const& id);
 
     /// Returns true if the rprim identified by \p id has a dirty topology.
     HD_API
@@ -218,13 +224,18 @@ public:
         return (dirtyBits & AllDirty) == 0;
     }
 
+    /// Returns true if the dirtyBits has no flags set except the varying flag.
+    static bool IsVarying(HdDirtyBits dirtyBits) {
+        return (dirtyBits & Varying) != 0;
+    }
+
     /// Returns true if the dirtyBits has a dirty extent. id is for perflog.
     HD_API
     static bool IsExtentDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
-    /// Returns true if the dirtyBits has a dirty refine level. id is for perflog.
+    /// Returns true if the dirtyBits has a dirty display style. id is for perflog.
     HD_API
-    static bool IsRefineLevelDirty(HdDirtyBits dirtyBits, SdfPath const& id);
+    static bool IsDisplayStyleDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty subdiv tags. id is for perflog.
     HD_API
@@ -233,13 +244,13 @@ public:
     /// Returns true if the dirtyBits has a dirty primvar \p name.
     /// id is for perflog.
     HD_API
-    static bool IsPrimVarDirty(HdDirtyBits dirtyBits, SdfPath const& id,
+    static bool IsPrimvarDirty(HdDirtyBits dirtyBits, SdfPath const& id,
                                TfToken const& name);
 
     /// Returns true if the dirtyBits has any dirty primvars.
     /// id is for perflog.
     HD_API
-    static bool IsAnyPrimVarDirty(HdDirtyBits dirtyBits, SdfPath const& id);
+    static bool IsAnyPrimvarDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty topology. id is for perflog.
     HD_API
@@ -280,7 +291,7 @@ public:
 
     /// Set the primvar dirty flag to \p dirtyBits.
     HD_API
-    static void MarkPrimVarDirty(HdDirtyBits *dirtyBits, TfToken const &name);
+    static void MarkPrimvarDirty(HdDirtyBits *dirtyBits, TfToken const &name);
 
     // ---------------------------------------------------------------------- //
     /// @}
@@ -314,7 +325,7 @@ public:
 
     /// Start tracking Task with the given \p id.
     HD_API
-    void TaskInserted(SdfPath const& id);
+    void TaskInserted(SdfPath const& id, HdDirtyBits initialDirtyState);
 
     /// Stop tracking Task with the given \p id.
     HD_API
@@ -331,6 +342,19 @@ public:
     /// Set the dirty flags to \p newBits.
     HD_API
     void MarkTaskClean(SdfPath const& id, HdDirtyBits newBits=Clean);
+
+    /// Called to flag when the set of active render tags have changed.
+    /// This can either be because either the Task's opinion (which
+    /// resolves both view and render pass opinions) and a Prims opinion.
+    ///
+    /// Calling this means that any cached prim gathers that filter by render
+    /// tag need to invalidated.
+    HD_API
+    void MarkRenderTagsDirty();
+
+    /// Retrieve the current version number of the render tag set
+    HD_API
+    unsigned GetRenderTagVersion() const;
 
     // ---------------------------------------------------------------------- //
     /// @}
@@ -405,34 +429,6 @@ public:
 
     // ---------------------------------------------------------------------- //
     /// @}
-    /// \name ExtComputation Object Tracking
-    /// @{
-    // ---------------------------------------------------------------------- //
-
-    /// Start tracking ExtComputation with the given \p id.
-    HD_API
-    void ExtComputationInserted(SdfPath const& id,
-                                HdDirtyBits initialDirtyState);
-
-    /// Stop tracking ExtComputation with the given \p id.
-    HD_API
-    void ExtComputationRemoved(SdfPath const& id);
-
-    /// Set the dirty flags to \p bits.
-    HD_API
-    void MarkExtComputationDirty(SdfPath const& id, HdDirtyBits bits=AllDirty);
-
-    /// Get the dirty bits for ExtComputation with the given \p id.
-    HD_API
-    HdDirtyBits GetExtComputationDirtyBits(SdfPath const& id) const;
-
-    /// Set the dirty flags to \p newBits.
-    HD_API
-    void MarkExtComputationClean(SdfPath const& id, HdDirtyBits newBits=Clean);
-
-
-    // ---------------------------------------------------------------------- //
-    /// @}
     /// \name GarbageCollection Tracking
     /// @{
     // ---------------------------------------------------------------------- //
@@ -453,6 +449,22 @@ public:
         return _needsGarbageCollection;
     }
 
+    void ClearBprimGarbageCollectionNeeded() {
+        _needsBprimGarbageCollection = false;
+    }
+
+    /// Sets the garbageCollectionNeeded flag.
+    void SetBprimGarbageCollectionNeeded() {
+        _needsBprimGarbageCollection = true;
+    }
+
+    /// Returns true if garbage collection was flagged to be run.
+    /// Currently, this flag only gets set internally when Rprims are removed.
+    bool IsBprimGarbageCollectionNeeded() const {
+        return _needsBprimGarbageCollection;
+    }
+
+
     // ---------------------------------------------------------------------- //
     /// @}
     /// \name RprimCollection Tracking
@@ -467,10 +479,6 @@ public:
     /// collection.
     HD_API
     void MarkCollectionDirty(TfToken const& collectionName);
-
-    /// Invalidates all collections by bumping a global version number.
-    HD_API
-    void MarkAllCollectionsDirty();
 
     /// Returns the current version of the named collection.
     HD_API
@@ -487,22 +495,58 @@ public:
         return _varyingStateVersion;
     }
 
-    /// Returns the change count 
-    unsigned GetChangeCount() const {
-        return _changeCount;
-    }
-
-    /// Marks all shader bindings dirty (draw batches need to be validated).
+    /// Marks all batches dirty, meaning they need to be validated and
+    /// potentially rebuilt.
     HD_API
-    void MarkShaderBindingsDirty();
+    void MarkBatchesDirty();
 
-    /// Returns the current shader binding version.
+    /// Returns the current batch version.
     HD_API
-    unsigned GetShaderBindingsVersion() const;
+    unsigned GetBatchVersion() const;
+
+    // ---------------------------------------------------------------------- //
+    /// @}
+    /// \name Render Index Versioning
+    /// @{
+    // ---------------------------------------------------------------------- //
 
     /// Returns the current version of the Render Index's RPrim set.
-    HD_API
-    unsigned GetRenderIndexVersion() const;
+    /// This version number changes when Rprims are inserted or removed
+    /// from the render index.  Invalidating any cached gather operations.
+    unsigned GetRprimIndexVersion() const {
+        return _rprimIndexVersion;
+    }
+
+    /// Returns the current version of the Render Index's SPrim set.
+    /// This version number changes when Sprims are inserted or removed
+    /// from the render index.  Invalidating any cached gather operations.
+    unsigned GetSprimIndexVersion() const {
+        return _sprimIndexVersion;
+    }
+
+    /// Returns the current version of the Render Index's BPrim set.
+    /// This version number changes when Bprims are inserted or removed
+    /// from the render index.  Invalidating any cached gather operations.
+    unsigned GetBprimIndexVersion() const {
+        return _bprimIndexVersion;
+    }
+
+    /// Returns the current version of the Render Index's Instancer set.
+    /// This version number changes when Instancers are inserted or removed
+    /// from the render index.  Invalidating any cached gather operations.
+    unsigned GetInstancerIndexVersion() const {
+        return _instancerIndexVersion;
+    }
+
+
+    /// Returns the current version of the scene state.
+    /// This version number changes whenever any prims are inserted, removed
+    /// or marked dirty.
+    /// The use case is to detect that nothing has changed, so the Sync
+    /// phase can be avoided.
+    unsigned GetSceneStateVersion() const {
+        return _sceneStateVersion;
+    }
 
     // ---------------------------------------------------------------------- //
     /// @}
@@ -552,12 +596,12 @@ private:
     _IDStateMap _taskState;
     _IDStateMap _sprimState;
     _IDStateMap _bprimState;
-    _IDStateMap _extComputationState;
     _GeneralStateMap _generalState;
 
     // Collection versions / state.
     _CollectionStateMap _collectionState;
     bool _needsGarbageCollection;
+    bool _needsBprimGarbageCollection;
 
     // Provides reverse-association between instancers and the rprims that use
     // them.
@@ -569,17 +613,27 @@ private:
     // the varyingStateVersion, which triggers downstream invalidation.
     unsigned _varyingStateVersion;
  
-    // Used for coarse grain invalidation of all RprimCollections.
-    unsigned _indexVersion;
+    // Tracks changes (insertions/removals) of prims in the render index.
+    // This is used to indicating that cached gather operations need to be
+    // re-evaluated, such as dirty lists or batch building.
+    unsigned _rprimIndexVersion;
+    unsigned _sprimIndexVersion;
+    unsigned _bprimIndexVersion;
+    unsigned _instancerIndexVersion;
 
-    // Used to detect that no changes have occurred when building dirty lists.
-    unsigned _changeCount;
+    // The following tracks any changes of state.  As a result it is very broad.
+    // The use case to detect, when no changes have been made, as to
+    // avoid the need to sync or reset progressive renderers.
+    unsigned _sceneStateVersion;
 
     // Used to detect that visibility changed somewhere in the render index.
     unsigned _visChangeCount;
 
-    // Used to validate shader bindings (to validate draw batches)
-    std::atomic_uint _shaderBindingsVersion;
+    // Used to detect changes to the set of active render tags
+    unsigned _renderTagVersion;
+
+    // Used to validate draw batches.
+    std::atomic_uint _batchVersion;
 };
 
 

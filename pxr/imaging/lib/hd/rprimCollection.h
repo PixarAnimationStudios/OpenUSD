@@ -27,11 +27,11 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hd/repr.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/token.h"
 
 #include <string>
-#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -56,21 +56,33 @@ public:
     HD_API
     HdRprimCollection();
 
-    /// Constructs an rprim collection with \p reprName. \p if forcedRepr is
+    /// Constructs an rprim collection with \p reprSelector. \p if forcedRepr is
     /// set to true, prims authored repr will be ignored.
+    /// If \p materialTag is provided, only prims who's material have 
+    /// a matching tag will end up in the collection. This can be used to make 
+    /// seperate collections for e.g. opaque vs translucent prims.
+    /// An empty materialTag opts-out of using material tags entirely and will
+    /// return all prims in the collection, regardless of their material tags.
     HD_API
     HdRprimCollection(TfToken const& name,
-                      TfToken const& reprName,
-                      bool forcedRepr=false);
+                      HdReprSelector const& reprSelector,
+                      bool forcedRepr=false,
+                      TfToken const& materialTag = TfToken());
 
     /// Constructs an rprim collection, excluding all Rprims not prefixed by \p
     /// rootPath. \p if forcedRepr is set to true, prims authored repr will be
     /// ignored.
+    /// If \p materialTag is provided, only prims who's material have 
+    /// a matching tag will end up in the collection. This can be used to make 
+    /// seperate collections for e.g. opaque vs translucent prims.
+    /// An empty materialTag opts-out of using material tags entirely and will
+    /// return all prims in the collection, regardless of their material tags.
     HD_API
     HdRprimCollection(TfToken const& name,
-                      TfToken const& reprName,
+                      HdReprSelector const& reprSelector,
                       SdfPath const& rootPath,
-                      bool forcedRepr=false);
+                      bool forcedRepr=false,
+                      TfToken const& materialTag = TfToken());
 
     /// Copy constructor.
     HD_API
@@ -100,16 +112,16 @@ public:
 
     /// Returns the representation name.
     ///
-    /// The repr name corresponds to specific aspects of the requested set of 
-    /// Rprims, for example one can request "hullAndPoints" repr which
+    /// The repr selector corresponds to specific aspects of the requested set
+    /// of Rprims, for example one can request "hullAndPoints" repr which
     /// would cause both the hull and points representations of all prims named
     /// by the collection to be included.
-    TfToken const& GetReprName() const {
-        return _reprName;
+    HdReprSelector const& GetReprSelector() const {
+        return _reprSelector;
     }
 
-    void SetReprName(TfToken const &reprName) {
-        _reprName = reprName;
+    void SetReprSelector(HdReprSelector const& reprSelector) {
+        _reprSelector = reprSelector;
     }
 
     bool IsForcedRepr() const {
@@ -151,17 +163,22 @@ public:
     HD_API
     SdfPathVector const& GetExcludePaths() const;
 
-    /// Sets the render tags that this collection will render.
+    /// A MaterialTag can be used to ensure only prims whos material have
+    /// a matching tag will end up in the collection. Different rendering 
+    /// backends can control what material properties are useful for splitting 
+    /// up collections. For example, when Stream finds the 'translucent'
+    /// MaterialTag in a material it will transfer this tag onto the
+    /// prim's DrawItem. This ensures that opaque and translucent prims end up
+    /// in different collections so they can be rendered seperately.
+    /// A path-tracer backend may find the translucent MaterialTag on a material
+    /// and choose NOT to transfer the tag onto the DrawItem because the
+    /// backend wants to render opaque and translucent prims in the same
+    /// collection.
     HD_API
-    void SetRenderTags(TfTokenVector const& renderTags);
+    void SetMaterialTag(TfToken const& tag);
 
-    /// Returns the render tags.
     HD_API
-    TfTokenVector const& GetRenderTags() const;
-
-    /// Returns if a tag is used by this collection
-    HD_API
-    bool HasRenderTag(TfToken const & renderTag) const;
+    TfToken const& GetMaterialTag() const;
 
     HD_API
     size_t ComputeHash() const;
@@ -183,14 +200,12 @@ private:
         HdRprimCollection const & v);
 
     TfToken _name;
-    TfToken _reprName;
+    HdReprSelector _reprSelector;
     bool _forcedRepr;
+    TfToken _materialTag;
     SdfPathVector _rootPaths;
     SdfPathVector _excludePaths;
-    TfTokenVector _renderTags;
 };
-
-typedef std::vector<HdRprimCollection> HdRprimCollectionVector;
 
 // VtValue requirements
 HD_API

@@ -1,0 +1,72 @@
+ocio_profile_version: 1
+
+# needs to be false to support RV with our file naming conventions
+strictparsing: false
+
+roles:
+  color_picking: Gamma2.2
+  color_timing: linear
+  compositing_linear: linear
+  compositing_log: lgf
+  data: raw_data
+  default: linear
+  matte_paint: Gamma2.2
+  reference: linear
+  scene_linear: linear
+  texture_paint: Gamma2.2
+
+displays:
+  rec709g22:
+    - !<View> {name: Gamma 2.2,      colorspace: Gamma2.2}
+
+# by default all displays are active
+# active_displays: [rec709g22]
+
+# by default all views are active
+# active_views: [Gamma2.2]
+
+colorspaces:
+  - !<ColorSpace>
+    name: linear
+    family: ""
+    equalitygroup: ""
+    bitdepth: 32f
+    description: |
+      Scene-linear, high dynamic range. Used for rendering and compositing.
+    isdata: false
+    allocation: lg2
+    allocationvars: [-18, 6]
+
+  - !<ColorSpace>
+    name: Gamma2.2
+    family: ""
+    equalitygroup: ""
+    bitdepth: 32f
+    description: |
+      Emulates a idealized Gamma 2.2 display device.
+    isdata: false
+    allocation: uniform
+    allocationvars: [0, 1]
+    to_reference: !<ExponentTransform> {value: [2.2, 2.2, 2.2, 1]}
+
+  - !<ColorSpace>
+    name: lgf
+    family: log
+    equalitygroup: ""
+    bitdepth: 32f
+    description: |
+      lgf : conversion from film log
+    isdata: false
+    allocation: uniform
+    allocationvars: [-0.25, 1.5]
+    to_reference: !<FileTransform> {src: lgf.spi1d, interpolation: linear}
+
+  - !<ColorSpace>
+    name: raw_data
+    family: ""
+    equalitygroup: ""
+    bitdepth: 32f
+    description: |
+      Raw Data. Used for normals, points, etc.
+    isdata: true
+    allocation: uniform

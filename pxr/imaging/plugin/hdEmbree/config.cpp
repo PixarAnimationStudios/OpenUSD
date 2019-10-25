@@ -36,14 +36,11 @@ TF_INSTANTIATE_SINGLETON(HdEmbreeConfig);
 // Each configuration variable has an associated environment variable.
 // The environment variable macro takes the variable name, a default value,
 // and a description...
-TF_DEFINE_ENV_SETTING(HDEMBREE_SAMPLES_PER_FRAME, 1,
-        "Raytraced samples per pixel per frame (must be >= 1)");
-
 TF_DEFINE_ENV_SETTING(HDEMBREE_SAMPLES_TO_CONVERGENCE, 100,
         "Samples per pixel before we stop rendering (must be >= 1)");
 
 TF_DEFINE_ENV_SETTING(HDEMBREE_TILE_SIZE, 8,
-        "Squared size of threading work units (must be >= 1)");
+        "Size (per axis) of threading work units (must be >= 1)");
 
 TF_DEFINE_ENV_SETTING(HDEMBREE_AMBIENT_OCCLUSION_SAMPLES, 16,
         "Ambient occlusion samples per camera ray (must be >= 0; a value of 0 disables ambient occlusion)");
@@ -51,11 +48,11 @@ TF_DEFINE_ENV_SETTING(HDEMBREE_AMBIENT_OCCLUSION_SAMPLES, 16,
 TF_DEFINE_ENV_SETTING(HDEMBREE_SUBDIVISION_CACHE, 128*1024*1024,
         "Number of bytes to allocate for the embree subdivision surface cache (must be >= 128MB)");
 
-TF_DEFINE_ENV_SETTING(HDEMBREE_FIX_RANDOM_SEED, 0,
-        "Should HdEmbree sampling use a fixed random seed? (values > 0 are true)");
+TF_DEFINE_ENV_SETTING(HDEMBREE_JITTER_CAMERA, 1,
+        "Should HdEmbree jitter camera rays while rendering? (values >0 are true)");
 
 TF_DEFINE_ENV_SETTING(HDEMBREE_USE_FACE_COLORS, 1,
-        "Should HdEmbree use face colors while rendering?");
+        "Should HdEmbree use face colors while rendering? (values > 0 are true)");
 
 TF_DEFINE_ENV_SETTING(HDEMBREE_CAMERA_LIGHT_INTENSITY, 300,
         "Intensity of the camera light, specified as a percentage of <1,1,1>.");
@@ -66,8 +63,6 @@ TF_DEFINE_ENV_SETTING(HDEMBREE_PRINT_CONFIGURATION, 0,
 HdEmbreeConfig::HdEmbreeConfig()
 {
     // Read in values from the environment, clamping them to valid ranges.
-    samplesPerFrame = std::max(1,
-            TfGetEnvSetting(HDEMBREE_SAMPLES_PER_FRAME));
     samplesToConvergence = std::max(1,
             TfGetEnvSetting(HDEMBREE_SAMPLES_TO_CONVERGENCE));
     tileSize = std::max(1,
@@ -76,7 +71,7 @@ HdEmbreeConfig::HdEmbreeConfig()
             TfGetEnvSetting(HDEMBREE_AMBIENT_OCCLUSION_SAMPLES));
     subdivisionCache = std::max(128*1024*1024,
             TfGetEnvSetting(HDEMBREE_SUBDIVISION_CACHE));
-    fixRandomSeed = (TfGetEnvSetting(HDEMBREE_FIX_RANDOM_SEED) > 0);
+    jitterCamera = (TfGetEnvSetting(HDEMBREE_JITTER_CAMERA) > 0);
     useFaceColors = (TfGetEnvSetting(HDEMBREE_USE_FACE_COLORS) > 0);
     cameraLightIntensity = (std::max(100,
             TfGetEnvSetting(HDEMBREE_CAMERA_LIGHT_INTENSITY)) / 100.0f);
@@ -84,8 +79,6 @@ HdEmbreeConfig::HdEmbreeConfig()
     if (TfGetEnvSetting(HDEMBREE_PRINT_CONFIGURATION) > 0) {
         std::cout
             << "HdEmbree Configuration: \n"
-            << "  samplesPerFrame            = "
-            <<    samplesPerFrame         << "\n"
             << "  samplesToConvergence       = "
             <<    samplesToConvergence    << "\n"
             << "  tileSize                   = "
@@ -94,12 +87,12 @@ HdEmbreeConfig::HdEmbreeConfig()
             <<    ambientOcclusionSamples << "\n"
             << "  subdivisionCache           = "
             <<    subdivisionCache        << "\n"
-            << "  fixRandomSeed              = "
-            <<    fixRandomSeed           << "\n"
+            << "  jitterCamera               = "
+            <<    jitterCamera            << "\n"
             << "  useFaceColors              = "
             <<    useFaceColors           << "\n"
             << "  cameraLightIntensity      = "
-            <<    cameraLightIntensity   << "\n"
+            <<    cameraLightIntensity    << "\n"
             ;
     }
 }

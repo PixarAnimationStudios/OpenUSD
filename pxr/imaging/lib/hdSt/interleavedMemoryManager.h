@@ -102,7 +102,7 @@ protected:
         }
 
         /// Returns the number of elements
-        virtual int GetNumElements() const {
+        virtual size_t GetNumElements() const {
             return _numElements;
         }
 
@@ -119,6 +119,10 @@ protected:
         /// Returns the max number of elements
         HDST_API
         virtual size_t GetMaxNumElements() const;
+
+        /// Returns the usage hint from the underlying buffer array
+        HDST_API
+        virtual HdBufferArrayUsageHint GetUsageHint() const override;
 
         /// Returns the GPU resource. If the buffer array contains more than one
         /// resource, this method raises a coding error.
@@ -160,7 +164,7 @@ protected:
         enum { NOT_ALLOCATED = -1 };
         _StripedInterleavedBuffer *_stripedBuffer;
         int _index;
-        int _numElements;
+        size_t _numElements;
     };
 
     typedef boost::shared_ptr<_StripedInterleavedBuffer>
@@ -177,6 +181,7 @@ protected:
         HDST_API
         _StripedInterleavedBuffer(TfToken const &role,
                                   HdBufferSpecVector const &bufferSpecs,
+                                  HdBufferArrayUsageHint usageHint,
                                   int bufferOffsetAlignment,
                                   int structAlignment,
                                   size_t maxSize,
@@ -285,12 +290,14 @@ public:
     HDST_API
     virtual HdBufferArraySharedPtr CreateBufferArray(
         TfToken const &role,
-        HdBufferSpecVector const &bufferSpecs);
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint);
 
     /// Returns id for given bufferSpecs to be used for aggregation
     HDST_API
     virtual AggregationId ComputeAggregationId(
-        HdBufferSpecVector const &bufferSpecs) const;
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint) const;
 };
 
 class HdStInterleavedSSBOMemoryManager : public HdStInterleavedMemoryManager {
@@ -300,12 +307,14 @@ public:
     HDST_API
     virtual HdBufferArraySharedPtr CreateBufferArray(
         TfToken const &role,
-        HdBufferSpecVector const &bufferSpecs);
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint);
 
     /// Returns id for given bufferSpecs to be used for aggregation
     HDST_API
     virtual AggregationId ComputeAggregationId(
-        HdBufferSpecVector const &bufferSpecs) const;
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

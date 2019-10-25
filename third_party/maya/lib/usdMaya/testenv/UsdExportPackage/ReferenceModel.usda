@@ -1,0 +1,15 @@
+#usda 1.0
+
+def Xform "ReferenceModel"
+{
+    def "BaseModel1" (
+        add references = @./BaseModel.usda@
+    ) {
+    }
+    def "BaseModel2" (
+        add references = @./BaseModel.usda@
+    ) {
+        double3 xformOp:translate = (3, 4, 5)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+}

@@ -37,7 +37,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/envSetting.h"
 
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -359,6 +359,9 @@ GlfDrawTarget::_BindAttachment( GlfDrawTarget::AttachmentRefPtr const & a )
         attachment += attach;
     }
 
+    GLint restoreFramebuffer = 0;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &restoreFramebuffer);
+
     // Multisampled framebuffer
     if (HasMSAA()) {
         glBindFramebuffer(GL_FRAMEBUFFER, _framebufferMS);
@@ -370,6 +373,8 @@ GlfDrawTarget::_BindAttachment( GlfDrawTarget::AttachmentRefPtr const & a )
     glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
     glFramebufferTexture2D(GL_FRAMEBUFFER,
         attachment, GL_TEXTURE_2D, id, /*level*/ 0);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, restoreFramebuffer);
 
     GLF_POST_PENDING_GL_ERRORS();
 }
@@ -398,6 +403,8 @@ GlfDrawTarget::Bind()
     if (++_bindDepth != 1) {
         return;
     }
+    
+    GLF_GROUP_FUNCTION();
 
     _SaveBindingState();
 
@@ -432,6 +439,7 @@ GlfDrawTarget::Unbind()
     if (--_bindDepth != 0) {
         return;
     }
+    GLF_GROUP_FUNCTION();
 
     _RestoreBindingState();
 
@@ -457,6 +465,8 @@ GlfDrawTarget::_Resolve()
 void
 GlfDrawTarget::Resolve()
 {
+    GLF_GROUP_FUNCTION();
+    
     if (HasMSAA()) {
         _SaveBindingState();
         _Resolve();
@@ -468,6 +478,8 @@ GlfDrawTarget::Resolve()
 void
 GlfDrawTarget::Resolve(const std::vector<GlfDrawTarget*>& drawTargets)
 {
+    GLF_GROUP_FUNCTION();
+    
     bool anyResolved = false;
 
     for(GlfDrawTarget* dt : drawTargets) {
@@ -564,8 +576,6 @@ GlfDrawTarget::WriteToFile(std::string const & name,
         glBindTexture( GL_TEXTURE_2D, restoreBinding );
 
         glPopClientAttrib();
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     VtDictionary metadata;
@@ -767,20 +777,26 @@ GlfDrawTarget::Attachment::ResizeTexture(const GfVec2i &size)
 /* virtual */
 GlfTexture::BindingVector
 GlfDrawTarget::Attachment::GetBindings(TfToken const & identifier,
-                                       GLuint samplerName) const
+                                       GLuint samplerName)
 {
     return BindingVector(1,
                 Binding(identifier, GlfTextureTokens->texels,
                         GL_TEXTURE_2D, GetGlTextureName(), samplerName));
 }
 
+GLuint
+GlfDrawTarget::Attachment::GetGlTextureName()
+{
+    return _textureName;
+}
+
 /* virtual */
 VtDictionary
-GlfDrawTarget::Attachment::GetTextureInfo() const
+GlfDrawTarget::Attachment::GetTextureInfo(bool forceLoad)
 {
+    TF_UNUSED(forceLoad);
+
     VtDictionary info;
-
-
 
     info["width"] = (int)_size[0];
     info["height"] = (int)_size[1];
@@ -788,7 +804,7 @@ GlfDrawTarget::Attachment::GetTextureInfo() const
     info["depth"] = 1;
     info["format"] = (int)_internalFormat;
     info["imageFilePath"] = TfToken("DrawTarget");
-    info["referenceCount"] = GetRefCount().Get();
+    info["referenceCount"] = GetCurrentCount();
     info["numSamples"] = _numSamples;
 
     return info;

@@ -26,6 +26,9 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/renderDelegate.h"
+#include "pxr/imaging/hd/renderThread.h"
+#include "pxr/imaging/hdEmbree/renderer.h"
+#include "pxr/base/tf/staticTokens.h"
 
 #include <mutex>
 #include <embree2/rtcore.h>
@@ -33,6 +36,15 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdEmbreeRenderParam;
+
+#define HDEMBREE_RENDER_SETTINGS_TOKENS \
+    (enableAmbientOcclusion)            \
+    (enableSceneColors)                 \
+    (ambientOcclusionSamples)
+
+// Also: HdRenderSettingsTokens->convergedSamplesPerPixel
+
+TF_DECLARE_PUBLIC_TOKENS(HdEmbreeRenderSettingsTokens, HDEMBREE_RENDER_SETTINGS_TOKENS);
 
 ///
 /// \class HdEmbreeRenderDelegate
@@ -73,6 +85,10 @@ public:
     /// Render delegate constructor. This method creates the RTC device and
     /// scene, and links embree error handling to hydra error handling.
     HdEmbreeRenderDelegate();
+    /// Render delegate constructor. This method creates the RTC device and
+    /// scene, and links embree error ahndling to hydra error handling.
+    /// It also populates initial render settings.
+    HdEmbreeRenderDelegate(HdRenderSettingsMap const& settingsMap);
     /// Render delegate destructor. This method destroys the RTC device and
     /// scene.
     virtual ~HdEmbreeRenderDelegate();
@@ -93,6 +109,22 @@ public:
 
     /// Returns the HdResourceRegistry instance used by this render delegate.
     virtual HdResourceRegistrySharedPtr GetResourceRegistry() const override;
+
+    /// Returns a list of user-configurable render settings.
+    /// This is a reflection API for the render settings dictionary; it need
+    /// not be exhaustive, but can be used for populating application settings
+    /// UI.
+    virtual HdRenderSettingDescriptorList
+        GetRenderSettingDescriptors() const override;
+
+    /// Return true to indicate that pausing and resuming are supported.
+    virtual bool IsPauseSupported() const override;
+
+    /// Pause background rendering threads.
+    virtual bool Pause() override;
+
+    /// Resume background rendering threads.
+    virtual bool Resume() override;
 
     /// Create a renderpass. Hydra renderpasses are responsible for drawing
     /// a subset of the scene (specified by the "collection" parameter) to the
@@ -184,10 +216,31 @@ public:
     /// This function is called after new scene data is pulled during prim
     /// Sync(), but before any tasks (such as draw tasks) are run, and gives the
     /// render delegate a chance to transfer any invalidated resources to the
-    /// rendering kernel. This class takes the  opportunity to update embree's
-    /// scene acceleration datastructures.
+    /// rendering kernel.
     ///   \param tracker The change tracker passed to prim Sync().
     virtual void CommitResources(HdChangeTracker *tracker) override;
+
+    /// This function tells the scene which material variant to reference.
+    /// Embree doesn't currently use materials but raytraced backends generally
+    /// specify "full".
+    ///   \return A token specifying which material variant this renderer
+    ///           prefers.
+    virtual TfToken GetMaterialBindingPurpose() const override {
+        return HdTokens->full;
+    }
+
+    /// This function returns the default AOV descriptor for a given named AOV.
+    /// This mechanism lets the renderer decide things like what format
+    /// a given AOV will be written as.
+    ///   \param name The name of the AOV whose descriptor we want.
+    ///   \return A descriptor specifying things like what format the AOV
+    ///           output buffer should be.
+    virtual HdAovDescriptor
+        GetDefaultAovDescriptor(TfToken const& name) const override;
+
+    /// This function allows the renderer to report back some useful statistics
+    /// that the application can display to the user.
+    virtual VtDictionary GetRenderStats() const override;
 
 private:
     static const TfTokenVector SUPPORTED_RPRIM_TYPES;
@@ -203,15 +256,32 @@ private:
     HdEmbreeRenderDelegate(const HdEmbreeRenderDelegate &)             = delete;
     HdEmbreeRenderDelegate &operator =(const HdEmbreeRenderDelegate &) = delete;
 
+    // Embree initialization routine.
+    void _Initialize();
+
     // Handle for an embree "device", or library state.
     RTCDevice _rtcDevice;
 
     // Handle for the top-level embree scene, mirroring the Hydra scene.
     RTCScene _rtcScene;
 
+    // A version counter for edits to _scene.
+    std::atomic<int> _sceneVersion;
+
     // A shared HdEmbreeRenderParam object that stores top-level embree state;
     // passed to prims during Sync().
     std::shared_ptr<HdEmbreeRenderParam> _renderParam;
+
+    // A background render thread for running the actual renders in. The
+    // render thread object manages synchronization between the scene data
+    // and the background-threaded renderer.
+    HdRenderThread _renderThread;
+
+    // An embree renderer object, to perform the actual raytracing.
+    HdEmbreeRenderer _renderer;
+
+    // A list of render setting exports.
+    HdRenderSettingDescriptorList _settingDescriptors;
 
     // A callback that interprets embree error codes and injects them into
     // the hydra logging system.

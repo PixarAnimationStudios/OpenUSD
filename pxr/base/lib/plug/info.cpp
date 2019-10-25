@@ -34,7 +34,6 @@
 #include "pxr/base/work/threadLimits.h"
 #include <tbb/task_arena.h>
 #include <tbb/task_group.h>
-#include <functional>
 #include <fstream>
 #include <regex>
 #include <set>
@@ -629,6 +628,9 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
     }
 
     // Parse library path (relative to pluginPath).
+    // LibraryPath may be an empty string in the case where the "plugin"
+    // isn't separately loadable, e.g. monolithic libraries or static 
+    // libraries.
     key = &_Tokens->LibraryPathKey;
     i = topInfo.find(*key);
     if (i != topInfo.end()) {
@@ -636,7 +638,7 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
             errorMessage = "doesn't hold a string";
             goto error;
         }
-        else {
+        else if (!i->second.GetString().empty()) {
             libraryPath = _AppendToRootPath(pluginPath, i->second.GetString());
             if (libraryPath.empty()) {
                 errorMessage = "doesn't hold a valid path";
@@ -720,20 +722,28 @@ Plug_ReadPlugInfo(
     TF_DEBUG(PLUG_INFO_SEARCH).Msg("Will check plugin info paths\n");
     _ReadContext context(*taskArena, addVisitedPath, addPlugin);
     for (const auto& pathname : pathnames) {
-        // For convenience we allow given paths that are directories but
-        // don't end in "/" to be handled as directories.  Includes in
-        // plugInfo files must still explicitly append '/' to be handled
-        // as directories.
-        if (!pathname.empty() && *pathname.rbegin() != '/') {
-            context.taskArena.Run(
-                std::bind(_ReadPlugInfoWithWildcards,
-                          &context, pathname + "/"));
+        if (pathname.empty()) {
+            continue;
+        }
+
+        // For convenience we allow given paths that are directories but don't
+        // end in "/" to be handled as directories.  Includes in plugInfo
+        // files must still explicitly append '/' to be handled as
+        // directories.
+        const bool hasslash = *pathname.rbegin() == '/';
+        if (hasslash || TfIsDir(pathname)) {
+            context.taskArena.Run([&context, pathname, hasslash] {
+                _ReadPlugInfoWithWildcards(&context,
+                    hasslash ? pathname : pathname + "/");
+            });
         }
         else {
-            context.taskArena.Run(
-                std::bind(_ReadPlugInfoWithWildcards, &context, pathname));
+            context.taskArena.Run([&context, pathname] {
+                _ReadPlugInfoWithWildcards(&context, pathname);
+            });
         }
     }
+
     context.taskArena.Wait();
     TF_DEBUG(PLUG_INFO_SEARCH).Msg("Did check plugin info paths\n");
 }

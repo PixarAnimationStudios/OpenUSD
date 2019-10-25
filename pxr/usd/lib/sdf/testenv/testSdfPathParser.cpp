@@ -27,6 +27,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/sdf/pathParser.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -57,7 +58,7 @@ void testPaths(char const *paths[], int expect) {
         // representation of the parsed path.  We allow whitespace to
         // be different.
         if (result == 0) {
-            std::string s = context.node->GetPathToken().GetString();
+            std::string s = context.path.GetToken().GetString();
             if (s != TfStringReplace(*paths, " ", "")) {
                 fprintf(stderr, "mismatch: %s -> %s\n", *paths, s.c_str());
                 TF_AXIOM(s == *paths);

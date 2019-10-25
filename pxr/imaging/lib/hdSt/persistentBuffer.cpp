@@ -22,9 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/imaging/hdSt/persistentBuffer.h"
-#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hd/perfLog.h"
 
 #include "pxr/imaging/hf/perfLog.h"
@@ -40,10 +40,9 @@ HdStPersistentBuffer::HdStPersistentBuffer(
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
+    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
 
     GLuint newId = 0;
-    glGenBuffers(1, &newId);
 
     if (caps.bufferStorageEnabled) {
         GLbitfield access = 
@@ -51,9 +50,11 @@ HdStPersistentBuffer::HdStPersistentBuffer(
             GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
 
         if (caps.directStateAccessEnabled) {
-            glNamedBufferStorageEXT(newId, dataSize, data, access);
-            _mappedAddress = glMapNamedBufferRangeEXT(newId, 0, dataSize, access);
+            glCreateBuffers(1, &newId);
+            glNamedBufferStorage(newId, dataSize, data, access);
+            _mappedAddress = glMapNamedBufferRange(newId, 0, dataSize, access);
         } else {
+            glGenBuffers(1, &newId);
             glBindBuffer(GL_ARRAY_BUFFER, newId);
             glBufferStorage(GL_ARRAY_BUFFER, dataSize, data, access);
             _mappedAddress = glMapBufferRange(GL_ARRAY_BUFFER, 0, dataSize, access);
@@ -61,8 +62,10 @@ HdStPersistentBuffer::HdStPersistentBuffer(
         }
     } else {
         if (caps.directStateAccessEnabled) {
-            glNamedBufferDataEXT(newId, dataSize, data, GL_DYNAMIC_DRAW);
+            glCreateBuffers(1, &newId);
+            glNamedBufferData(newId, dataSize, data, GL_DYNAMIC_DRAW);
         } else {
+            glGenBuffers(1, &newId);
             glBindBuffer(GL_ARRAY_BUFFER, newId);
             glBufferData(GL_ARRAY_BUFFER, dataSize, data, GL_DYNAMIC_DRAW);
             glBindBuffer(GL_ARRAY_BUFFER, 0);

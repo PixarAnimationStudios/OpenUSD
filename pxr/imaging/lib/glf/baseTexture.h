@@ -28,6 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
+#include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/glf/texture.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -51,31 +52,35 @@ TF_DECLARE_WEAK_AND_REF_PTRS(GlfBaseTextureData);
 class GlfBaseTexture : public GlfTexture {
 public:
     GLF_API
-    virtual ~GlfBaseTexture();
+    ~GlfBaseTexture() override;
 
     /// Returns the OpenGl texture name for the texture. 
-    GLuint GetGlTextureName() const {
-        return _textureName;
-    }
+    GLF_API
+    GLuint GetGlTextureName() override;
 
-    int	GetWidth() const {
-        return _currentWidth;
-    }
+    /// Is this a 1-, 2- or 3-dimensional texture.
+    GLF_API
+    virtual int GetNumDimensions() const = 0;
 
-    int GetHeight() const {
-        return _currentHeight;
-    }
+    GLF_API
+    int	GetWidth();
 
-    int GetFormat() const {
-        return _format;
-    }
+    GLF_API
+    int GetHeight();
+
+    GLF_API
+    int GetDepth();
+
+    GLF_API
+    int GetFormat();
 
     // GlfTexture overrides
     GLF_API
-    virtual BindingVector GetBindings(TfToken const & identifier,
-                                      GLuint samplerName) const;
+    BindingVector GetBindings(TfToken const & identifier,
+                              GLuint samplerName) override;
     GLF_API
-    virtual VtDictionary GetTextureInfo() const;
+    VtDictionary GetTextureInfo(bool forceLoad) override;
+
 
 protected:
     
@@ -83,14 +88,30 @@ protected:
     GlfBaseTexture();
 
     GLF_API
+    GlfBaseTexture(GlfImage::ImageOriginLocation originLocation);
+
+    GLF_API
+    void _OnMemoryRequestedDirty() override final;
+
+    GLF_API
+    virtual void _ReadTexture() = 0;
+
+    void _ReadTextureIfNotLoaded();
+
+    GLF_API
     void _UpdateTexture(GlfBaseTextureDataConstPtr texData);
     GLF_API
     void _CreateTexture(GlfBaseTextureDataConstPtr texData,
-                        bool const useMipmaps,
-                        int const unpackCropTop = 0,
-                        int const unpackCropBottom = 0,
-                        int const unpackCropLeft = 0,
-                        int const unpackCropRight = 0);
+                        bool useMipmaps,
+                        int unpackCropTop = 0,
+                        int unpackCropBottom = 0,
+                        int unpackCropLeft = 0,
+                        int unpackCropRight = 0,
+                        int unpackCropFront = 0,
+                        int unpackCropBack = 0);
+
+    GLF_API
+    void _SetLoaded();
 
 private:
 
@@ -98,12 +119,15 @@ private:
     const GLuint _textureName;
 
     // required for stats/tracking
-    int     _currentWidth, _currentHeight;
+    bool    _loaded;
+    int     _currentWidth, _currentHeight, _currentDepth;
     int     _format;
     bool    _hasWrapModeS;
     bool    _hasWrapModeT;
+    bool    _hasWrapModeR;
     GLenum	_wrapModeS;
     GLenum	_wrapModeT;
+    GLenum      _wrapModeR;
 };
 
 

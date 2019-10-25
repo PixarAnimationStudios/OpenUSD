@@ -72,21 +72,10 @@ class SdfAssetPath;
 class UsdModelAPI : public UsdAPISchemaBase
 {
 public:
-    /// Compile-time constant indicating whether or not this class corresponds
-    /// to a concrete instantiable prim type in scene description.  If this is
-    /// true, GetStaticPrimDefinition() will return a valid prim definition with
-    /// a non-empty typeName.
-    static const bool IsConcrete = false;
-
-    /// Compile-time constant indicating whether or not this class inherits from
-    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
-    /// UsdPrim.
-    static const bool IsTyped = false;
-
-    /// Compile-time constant indicating whether or not this class represents a 
-    /// multiple-apply API schema. Mutiple-apply API schemas can be applied 
-    /// to the same prim multiple times with different instance names. 
-    static const bool IsMultipleApply = false;
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaType
+    static const UsdSchemaType schemaType = UsdSchemaType::NonAppliedAPI;
 
     /// Construct a UsdModelAPI on UsdPrim \p prim .
     /// Equivalent to UsdModelAPI::Get(prim.GetStage(), prim.GetPath())
@@ -130,21 +119,12 @@ public:
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
-    /// Applies this <b>single-apply</b> API schema to the given \p prim.
-    /// This information is stored by adding "ModelAPI" to the 
-    /// token-valued, listOp metadata \em apiSchemas on the prim.
-    /// 
-    /// \return A valid UsdModelAPI object is returned upon success. 
-    /// An invalid (or empty) UsdModelAPI object is returned upon 
-    /// failure. See \ref UsdAPISchemaBase::_ApplyAPISchema() for conditions 
-    /// resulting in failure. 
-    /// 
-    /// \sa UsdPrim::GetAppliedSchemas()
-    /// \sa UsdPrim::HasAPI()
+protected:
+    /// Returns the type of schema this class belongs to.
     ///
+    /// \sa UsdSchemaType
     USD_API
-    static UsdModelAPI 
-    Apply(const UsdPrim &prim);
+    UsdSchemaType _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -156,7 +136,7 @@ private:
 
     // override SchemaBase virtuals.
     USD_API
-    virtual const TfType &_GetTfType() const;
+    const TfType &_GetTfType() const override;
 
 public:
     // ===================================================================== //
@@ -173,6 +153,15 @@ public:
     /// \anchor Usd_ModelKind
     /// \name Kind and Model-ness
     /// @{
+    
+    /// \enum KindValidation
+    ///
+    /// Option for validating queries to a prim's kind metadata.
+    /// \sa IsKind()
+    enum KindValidation{
+        KindValidationNone,
+        KindValidationModelHierarchy
+    };
 
     /// Retrieve the authored \p kind for this prim.
     /// 
@@ -197,6 +186,25 @@ public:
     /// \return true if \p kind was successully authored, otherwise false.
     USD_API
     bool SetKind(const TfToken& kind);
+
+    /// Return true if the prim's kind metadata is or inherits from
+    /// \p baseKind as defined by the Kind Registry.
+    /// 
+    /// If \p validation is KindValidationModelHierarchy (the default), then
+    /// this also ensures that if baseKind is a model, the prim conforms to
+    /// the rules of model hierarchy, as defined by IsModel. If set to
+    /// KindValidationNone, no additional validation is done.
+    ///
+    /// IsModel and IsGroup are preferrable to IsKind("model") as they are
+    /// optimized for fast traversal.
+    ///
+    /// \note If a prim's model hierarchy is not valid, it is possible that
+    /// that prim.IsModel() and 
+    /// prim.IsKind("model", Usd.ModelAPI.KindValidationNone) return different
+    /// answers. (As a corallary, this is also true for for prim.IsGroup())
+    USD_API
+    bool IsKind(const TfToken& baseKind,
+                KindValidation validation=KindValidationModelHierarchy) const;
 
     /// Return true if this prim represents a model, based on its kind
     /// metadata.

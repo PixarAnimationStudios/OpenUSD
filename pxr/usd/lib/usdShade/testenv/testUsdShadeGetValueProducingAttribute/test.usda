@@ -1,0 +1,97 @@
+#usda 1.0
+
+def Material "Material"
+{
+    token inputs:topLevelValue = "TopLevelValue"
+
+    def Shader "Terminal"
+    {
+        token inputs:terminalInput1 = "__unusedValue__"
+        token inputs:terminalInput1.connect = </Material/NodeGraph.outputs:nodeGraphOut1>
+        token inputs:terminalInput2 = "__unusedValue__"
+        token inputs:terminalInput2.connect = </Material/NodeGraph.outputs:nodeGraphOut2>
+        token inputs:terminalInput3 = "__unusedValue__"
+        token inputs:terminalInput3.connect = </Material/NodeGraph.outputs:nodeGraphOut3>
+        token inputs:terminalInput4 = "__unusedValue__"
+        token inputs:terminalInput4.connect = </Material/NodeGraph.outputs:nodeGraphOut4>
+        token inputs:terminalInput5 = "__unusedValue__"
+        token inputs:terminalInput5.connect = </Material/NodeGraph.outputs:nodeGraphOut5>
+        token inputs:terminalInput6 = "__unusedValue__"
+        token inputs:terminalInput6.connect = </Material.inputs:topLevelValue>
+        token inputs:terminalInput7.connect = </Material/NodeGraph.outputs:nodeGraphOutUnused>
+        token inputs:terminalInput8.connect = </Material/NodeGraph.outputs:nodeGraphOut6>
+    }
+
+    def NodeGraph "NodeGraph"
+    {
+        token inputs:nodeGraphVal = "NodeGraphValue"
+        token inputs:nodeGraphIn1 = "__unusedValue__"
+        token inputs:nodeGraphIn1.connect = </Material/RegularNode.outputs:nodeOutput>
+        token inputs:nodeGraphIn2 = "__unusedValue__"
+        token inputs:nodeGraphIn2.connect = </Material.inputs:topLevelValue>
+        token inputs:nodeGraphInUnconnected
+
+        token outputs:nodeGraphOut1
+        token outputs:nodeGraphOut1.connect = </Material/NodeGraph/NestedNode1.outputs:nestedOut1>
+        token outputs:nodeGraphOut2
+        token outputs:nodeGraphOut2.connect = </Material/NodeGraph.inputs:nodeGraphVal>
+        token outputs:nodeGraphOut3
+        token outputs:nodeGraphOut3.connect = </Material/NodeGraph.inputs:nodeGraphIn1>
+        token outputs:nodeGraphOut4
+        token outputs:nodeGraphOut4.connect = </Material/NodeGraph.inputs:nodeGraphIn2>
+        token outputs:nodeGraphOut5
+        token outputs:nodeGraphOut5.connect = </Material/NodeGraph/NestedNodeGraph.outputs:out>
+        token outputs:nodeGraphOutUnused
+        token outputs:nodeGraphOut6
+        token outputs:nodeGraphOut6.connect = </Material/NodeGraph.outputs:nodeGraphInUnconnected>
+
+        # connections with a cycle, which is very bad, but something we want to handle gracefully
+        token inputs:cycleA.connect = </Material/NodeGraph.outputs:cycleB>
+        token outputs:cycleB.connect = </Material/NodeGraph.inputs:cycleA>
+        token inputs:deepCycleA.connect = </Material/NodeGraph/NestedNodeGraph.outputs:deepCycleB>
+        token inputs:selfLoop.connect = </Material/NodeGraph.inputs:selfLoop>
+
+        def Shader "NestedNode1"
+        {
+            token inputs:nestedIn1 = "__unusedValue__"
+            token inputs:nestedIn1.connect = </Material/NodeGraph.inputs:nodeGraphVal>
+            token outputs:nestedOut1
+        }
+
+        def Shader "NestedNode2"
+        {
+            token inputs:nestedIn2 = "__unusedValue__"
+            token inputs:nestedIn2.connect = </Material/NodeGraph.inputs:nodeGraphIn1>
+            token outputs:nestedOut2
+        }
+
+        def NodeGraph "NestedNodeGraph"
+        {
+            token inputs:in = "__unusedValue__"
+            token inputs:in.connect = </Material/NodeGraph.inputs:nodeGraphVal>
+            token outputs:out.connect = </Material/NodeGraph/NestedNodeGraph/NestedNodeGraph2.outputs:out>
+
+            token outputs:deepCycleB.connect = </Material/NodeGraph/NestedNodeGraph.inputs:deepCycleC>
+            token inputs:deepCycleC.connect = </Material/NodeGraph.inputs:deepCycleA>
+
+            def NodeGraph "NestedNodeGraph2"
+            {
+                token inputs:in = "__unusedValue__"
+                token inputs:in.connect = </Material/NodeGraph/NestedNodeGraph.inputs:in>
+                token outputs:out.connect = </Material/NodeGraph/NestedNodeGraph/NestedNodeGraph2/SuperNestedNode.outputs:superNestedOut>
+
+                def Shader "SuperNestedNode"
+                {
+                    token inputs:superNestedIn = "__unusedValue__"
+                    token inputs:superNestedIn.connect = </Material/NodeGraph/NestedNodeGraph/NestedNodeGraph2.inputs:in>
+                    token outputs:superNestedOut
+                }
+            }
+        }
+    }
+
+    def Shader "RegularNode"
+    {
+        token outputs:nodeOutput
+    }
+}

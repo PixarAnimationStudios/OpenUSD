@@ -1,0 +1,10 @@
+#usda 1.0
+
+def "Model"
+{
+    double size.timeSamples = {
+        100.5: 100.5,
+        100.75: 100.75,
+        101: 101
+    }
+}

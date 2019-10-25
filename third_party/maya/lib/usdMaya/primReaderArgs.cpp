@@ -21,65 +21,59 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/primReaderArgs.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-PxrUsdMayaPrimReaderArgs::PxrUsdMayaPrimReaderArgs(
+UsdMayaPrimReaderArgs::UsdMayaPrimReaderArgs(
         const UsdPrim& prim,
-        const TfToken& shadingMode,
-        const TfToken& defaultMeshScheme,
-        const bool readAnimData,
-        const bool useCustomFrameRange,
-        const double startTime,
-        const double endTime)
+        const UsdMayaJobImportArgs& jobArgs)
     : 
         _prim(prim),
-        _shadingMode(shadingMode),
-        _defaultMeshScheme(defaultMeshScheme),
-        _readAnimData(readAnimData),
-        _useCustomFrameRange(useCustomFrameRange),
-        _startTime(startTime),
-        _endTime(endTime)
+        _jobArgs(jobArgs)
 {
 }
 const UsdPrim&
-PxrUsdMayaPrimReaderArgs::GetUsdPrim() const
+UsdMayaPrimReaderArgs::GetUsdPrim() const
 {
     return _prim;
 }
 const TfToken&
-PxrUsdMayaPrimReaderArgs::GetShadingMode() const
+UsdMayaPrimReaderArgs::GetShadingMode() const
 {
-    return _shadingMode;
+    return _jobArgs.shadingMode;
 }
-const TfToken&
-PxrUsdMayaPrimReaderArgs::GetDefaultMeshScheme() const
+
+GfInterval
+UsdMayaPrimReaderArgs::GetTimeInterval() const
 {
-    return _defaultMeshScheme;
+    return _jobArgs.timeInterval;
 }
-const bool&
-PxrUsdMayaPrimReaderArgs::GetReadAnimData() const
+
+const TfToken::Set&
+UsdMayaPrimReaderArgs::GetIncludeMetadataKeys() const
 {
-    return _readAnimData;
+    return _jobArgs.includeMetadataKeys;
 }
-bool 
-PxrUsdMayaPrimReaderArgs::HasCustomFrameRange() const
+
+const TfToken::Set&
+UsdMayaPrimReaderArgs::GetIncludeAPINames() const
 {
-    return _useCustomFrameRange;
+    return _jobArgs.includeAPINames;
 }
-double 
-PxrUsdMayaPrimReaderArgs::GetStartTime() const
+
+const TfToken::Set&
+UsdMayaPrimReaderArgs::GetExcludePrimvarNames() const
 {
-    return _startTime;
+    return _jobArgs.excludePrimvarNames;
 }
-double 
-PxrUsdMayaPrimReaderArgs::GetEndTime() const
+
+bool
+UsdMayaPrimReaderArgs::GetUseAsAnimationCache() const
 {
-    return _endTime;
+    return _jobArgs.useAsAnimationCache;
 }
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

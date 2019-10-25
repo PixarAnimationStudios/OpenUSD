@@ -55,6 +55,14 @@ nb.setHintsForParameter('isolatePath', {
     'help' : 'Load only the USD contents below the specified USD prim path.',
 })
 
+
+_offForArchiveCondVis = {
+    'conditionalVisOp' : 'equalTo',
+    'conditionalVisPath' : '../asArchive',
+    'conditionalVisValue' : '0',
+}
+
+
 gb.set('variants', '')
 nb.setHintsForParameter('variants', {
     # 'conditionalVisOp': 'notEqualTo',
@@ -65,16 +73,21 @@ nb.setHintsForParameter('variants', {
         ' Specify variant '\
         'selections. Variant selections are specified via whitespace-separated'\
         ' variant selection paths. Example: /Foo{X=Y} /Bar{Z=w}',
+        
+    'conditionalVisOps' : _offForArchiveCondVis,
+    
 })
 
 gb.set('ignoreLayerRegex', '')
 nb.setHintsForParameter('ignoreLayerRegex', {
     'help' : 'Ignore matching USD layers during USD scene composition.',
+    'conditionalVisOps' : _offForArchiveCondVis,
 })
 
 gb.set('motionSampleTimes', '')
 nb.setHintsForParameter('motionSampleTimes', {
     'help' : 'Specify motion sample times to load. The default behavior is no motion samples (only load current time 0).',
+    'conditionalVisOps' : _offForArchiveCondVis,
 })
 
 gb.set('instanceMode', 'expanded')
@@ -89,24 +102,77 @@ nb.setHintsForParameter('instanceMode', {
       under a sibling of World named /Masters. Instanced USD prims will
       be of type "instance" and have no children.
     """,
+    'conditionalVisOps' : _offForArchiveCondVis,
 })
+
+
+
+
+gb.set('usePurposeBasedMaterialBinding', 0)
+nb.setHintsForParameter('usePurposeBasedMaterialBinding', {
+    'widget' : 'boolean',
+})
+
+gb.set('additionalBindingPurposeNames', FnAttribute.StringAttribute([], 1))
+
+nb.setHintsForParameter('additionalBindingPurposeNames', {
+    'widget' : 'sortableArray',
+    'conditionalVisOp' : 'notEqualTo',
+    'conditionalVisPath' : '../usePurposeBasedMaterialBinding',
+    'conditionalVisValue' : '',
+})
+
+
 
 gb.set('prePopulate', FnAttribute.IntAttribute(1))
 nb.setHintsForParameter('prePopulate', {
-    'widget' : 'boolean',
+    'widget' : 'checkBox',
     'help' : """
       Controls USD pre-population.  Pre-population loads all payloads
       and pre-populates the stage.  Assuming the entire stage will be
       needed, this is more efficient since USD can use its internal
       multithreading.
     """,
+    'conditionalVisOps' : _offForArchiveCondVis,
+    'constant' : True,
+    
 })
 
 gb.set('verbose', 0)
 nb.setHintsForParameter('verbose', {
     'widget' : 'checkBox',
     'help' : 'Output info during USD scene composition and scenegraph generation.',
+    'conditionalVisOps' : _offForArchiveCondVis,
+    'constant' : True,
 })
+
+
+
+gb.set('asArchive', 0)
+nb.setHintsForParameter('asArchive', {
+    'widget' : 'checkBox',
+    'help' : """
+        If enabled, the specified location will be of type "usd archive" rather
+        than loaded directly into the katana scene -- optionally with a proxy.
+    """,
+    'constant' : True,
+})
+
+gb.set('includeProxyForArchive', 1)
+nb.setHintsForParameter('includeProxyForArchive', {
+    'widget' : 'checkBox',
+    'help' : """
+        If enabled, the specified location will be of type "usd archive" rather
+        than loaded directly into the katana scene -- optionally with a proxy.
+    """,
+    
+    'conditionalVisOp' : 'notEqualTo',
+    'conditionalVisPath' : '../asArchive',
+    'conditionalVisValue' : '0',
+
+})
+
+
 
 nb.setParametersTemplateAttr(gb.build())
 
@@ -146,6 +212,17 @@ def buildPxrUsdInOpArgsAtGraphState(self, graphState):
     gb.set('prePopulate',
             int(self.getParameter('prePopulate').getValue(frameTime)))
     
+
+    if self.getParameter('usePurposeBasedMaterialBinding').getValue(frameTime):
+        purposes = ["",]
+
+        for p in self.getParameter('additionalBindingPurposeNames').getChildren():
+            v = p.getValue(frameTime).strip()
+            if v:
+                purposes.append(v)
+
+        gb.set('materialBindingPurposes', FnAttribute.StringAttribute(purposes, 1))
+
 
     sessionValues = (
             graphState.getDynamicEntry("var:pxrUsdInSession"))
@@ -238,6 +315,38 @@ nb.setCustomMethod('flushStage', flushStage)
 def buildOpChain(self, interface):
     interface.setMinRequiredInputs(0)
     
+    frameTime = interface.getGraphState().getTime()
+    
+    
+    # simpler case for the archive
+    if self.getParameter('asArchive').getValue(frameTime):
+        sscb = FnGeolibServices.OpArgsBuilders.StaticSceneCreate(True)
+        location = self.getScenegraphLocation(frameTime)
+        sscb.createEmptyLocation(location, 'usd archive')
+        
+        
+        gb = FnAttribute.GroupBuilder()
+        
+        
+        for name in ('fileName', 'isolatePath'):
+            gb.set(name, interface.buildAttrFromParam(
+                    self.getParameter(name)))
+        
+        gb.set('currentTime', FnAttribute.DoubleAttribute(frameTime))
+        
+        attrs = gb.build()
+        
+        sscb.setAttrAtLocation(location, 'geometry', attrs)
+        
+        if self.getParameter('includeProxyForArchive').getValue(frameTime):
+            sscb.addSubOpAtLocation(location,
+                    'PxrUsdIn.AddViewerProxy', attrs)
+        
+        
+        interface.appendOp('StaticSceneCreate', sscb.build())
+        return
+    
+    
     graphState = interface.getGraphState()
     pxrUsdInArgs = self.buildPxrUsdInOpArgsAtGraphState(graphState)
     
@@ -297,10 +406,15 @@ nb.setParametersTemplateAttr(FnAttribute.GroupBuilder()
     .set('location', '')
     .set('args.variantSetName', '')
     .set('args.variantSelection', '')
+    .set('additionalLocations', FnAttribute.StringAttribute([]))
     .build())
 
 nb.setHintsForParameter('location', {
     'widget' : 'scenegraphLocation',
+})
+
+nb.setHintsForParameter('additionalLocations', {
+    'widget' : 'scenegraphLocationArray',
 })
 
 nb.setGenericAssignRoots('args', '__variantUI')
@@ -329,8 +443,18 @@ def buildOpChain(self, interface):
         entryName = FnAttribute.DelimiterEncode(location)
         entryPath = "variants." + entryName + "." + variantSetName
         
+        valueAttr = FnAttribute.StringAttribute(variantSelection)
         gb = FnAttribute.GroupBuilder()
-        gb.set(entryPath, FnAttribute.StringAttribute(variantSelection))
+        gb.set(entryPath, valueAttr)
+        
+        for addLocParam in self.getParameter(
+                'additionalLocations').getChildren():
+            location = addLocParam.getValue(frameTime)
+            if location:
+                entryName = FnAttribute.DelimiterEncode(location)
+                entryPath = "variants." + entryName + "." + variantSetName
+                gb.set(entryPath, valueAttr)
+        
         
         existingValue = (
                 interface.getGraphState().getDynamicEntry("var:pxrUsdInSession"))
@@ -614,8 +738,14 @@ nb.setParametersTemplateAttr(FnAttribute.GroupBuilder()
     .set('attrName', 'attr')
     .set('type', 'float')
     
+    .set('asMetadata', 0)
+    .set('listOpType', 'explicit')
+    
     .set('numberValue', 1.0)
     .set('stringValue', '')
+
+    .set('forceArrayForSingleValue', 0)
+
     .build(),
         forceArrayNames=(
             'locations',
@@ -629,7 +759,29 @@ nb.setHintsForParameter('locations', {
 
 nb.setHintsForParameter('type', {
     'widget' : 'popup',
-    'options' : ['int', 'float', 'double', 'string'],
+    'options' : ['int', 'float', 'double', 'string', 'listOp',],
+})
+
+nb.setHintsForParameter('asMetadata', {
+    'widget' : 'boolean',
+})
+
+nb.setHintsForParameter('forceArrayForSingleValue', {
+    'widget' : 'boolean',
+})
+
+nb.setHintsForParameter('listOpType', {
+    'widget' : 'popup',
+    'options' : [
+        'explicit',
+        'added',
+        'deleted',
+        'ordered',
+        'prepended',
+        'appended'],
+    'conditionalVisOp' : 'equalTo',
+    'conditionalVisPath' : '../type',
+    'conditionalVisValue' : 'listOp',
 })
 
 nb.setHintsForParameter('numberValue', {
@@ -650,6 +802,7 @@ __numberAttrTypes = {
     'int' : FnAttribute.IntAttribute,
     'float' : FnAttribute.FloatAttribute,
     'double': FnAttribute.DoubleAttribute,
+    'listOp': FnAttribute.IntAttribute,
 }
 
 def buildOpChain(self, interface):
@@ -677,15 +830,47 @@ def buildOpChain(self, interface):
                                 FnAttribute.FloatAttribute))
         
         
-        entryGroup = (FnAttribute.GroupBuilder()
-            .set('value', valueAttr)
-            .build())
         
+        
+        if typeValue == 'listOp':
+            entryGb = FnAttribute.GroupBuilder()
+            entryGb.set('type', 'SdfInt64ListOp')
+            entryGb.set('listOp.%s' % self.getParameter(
+                    'listOpType').getValue(frameTime), valueAttr)
+            
+            entryGroup = entryGb.build()
+        else:
+            entryGb = FnAttribute.GroupBuilder()
+            entryGb.set('value', valueAttr)
+            
+            if valueAttr.getNumberOfValues() == 1:
+                if self.getParameter('forceArrayForSingleValue'
+                        ).getValue(frameTime):
+                    entryGb.set('forceArray', 1)
+
+            entryGroup = entryGb.build()
+            
         gb = FnAttribute.GroupBuilder()
 
+        asMetadata = (typeValue == 'listOp'
+                or self.getParameter('asMetadata').getValue(frameTime) != 0)
+
         for loc in locations:
-            gb.set("attrs.%s.%s" % (
-                    FnAttribute.DelimiterEncode(loc), attrName,), entryGroup)
+            
+            if asMetadata:
+                
+                if typeValue == 'listOp':
+                    gb.set("metadata.%s.prim.%s" % (
+                        FnAttribute.DelimiterEncode(loc), attrName,),
+                        entryGroup)
+
+                    
+                # TODO, only listOps are supported at the moment.
+                
+            else:
+                gb.set("attrs.%s.%s" % (
+                        FnAttribute.DelimiterEncode(loc), attrName,),
+                        entryGroup)
 
         existingValue = (
                 interface.getGraphState().getDynamicEntry("var:pxrUsdInSession"))
@@ -771,4 +956,46 @@ def buildOpChain(self, interface):
 
 nb.setBuildOpChainFnc(buildOpChain)
 
+nb.build()
+
+#-----------------------------------------------------------------------------
+
+nb = Nodes3DAPI.NodeTypeBuilder('PxrUsdInResolveMaterialBindings')
+
+nb.setInputPortNames(("in",))
+
+nb.setParametersTemplateAttr(FnAttribute.GroupBuilder()
+    .set('purpose', '')
+    .set('omitIfParentValueMatches', 0)
+    .build())
+
+nb.setHintsForParameter('purpose', {
+    'help' : """
+    The name of the purpose from which to tranfer material bindings to the 
+    "materialAssign" attribute. An empty value is treated as "allPurpose". The
+    sources of these values are within the "usd.materialBindings.*" attribute
+    -- which will be present if "usePurposeBasedMaterialBinding" is enabled
+    on the upstream PxrUsdIn.
+    """,
+})
+
+nb.setHintsForParameter('omitIfParentValueMatches', {
+    'widget' : 'boolean',
+    'help' : """If enabled, bindings will be omitted if they are identical
+    to that of their parent. This is useful because collection-based bindings
+    in USD default to apply to all prims at and under the specified paths" 
+    """,
+})
+
+def buildOpChain(self, interface):
+    interface.appendOp("PxrUsdInResolveMaterialBindings",
+            FnAttribute.GroupBuilder()
+            .set("purpose", interface.buildAttrFromParam(
+                    self.getParameter('purpose')))
+            .set("omitIfParentValueMatches", interface.buildAttrFromParam(
+                    self.getParameter('omitIfParentValueMatches'),
+                            numberType=FnAttribute.IntAttribute))
+            .build())
+
+nb.setBuildOpChainFnc(buildOpChain)
 nb.build()

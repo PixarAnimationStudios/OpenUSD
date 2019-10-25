@@ -32,12 +32,12 @@
 #include "pxr/usd/sdf/variantSpec.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/type.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 #include <ostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-SDF_DEFINE_SPEC(SdfVariantSetSpec, SdfSpec);
+SDF_DEFINE_SPEC(SdfSchema, SdfSpecTypeVariantSet, SdfVariantSetSpec, SdfSpec);
 
 SdfVariantSetSpecHandle 
 SdfVariantSetSpec::New(const SdfPrimSpecHandle& owner, const std::string& name)

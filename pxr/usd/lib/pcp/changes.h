@@ -262,16 +262,6 @@ public:
     void DidChangePaths(PcpCache* cache,
                         const SdfPath& oldPath, const SdfPath& newPath);
 
-    /// The changes in \p changes to the prim spec at \p changePath in 
-    /// \p changedLayer may affect the payload decoration for the composed
-    /// prim at \p path in \p cache.  If this is the case, register a
-    /// significant change for that composed prim.
-    PCP_API 
-    void DidChangeFieldsForDecorator(PcpCache* cache, const SdfPath& path,
-                                     const SdfLayerHandle& changedLayer,
-                                     const SdfPath& changedPath,
-                                     const SdfChangeList& changes);
-
     /// Remove any changes for \p cache.
     PCP_API
     void DidDestroyCache(PcpCache* cache);
@@ -337,27 +327,6 @@ private:
     void _OptimizePathChanges(const PcpCache* cache, PcpCacheChanges* changes,
                               PcpCacheChanges::PathEditMap* pathChanges);
 
-    // Bitmask for change type passed to _DidChangeDependents.
-    enum _ChangeType {
-        _ChangeTypeSignificant = 1 << 0,
-        _ChangeTypeSpecs       = 1 << 1,
-        _ChangeTypeTargets     = 1 << 2,
-        _ChangeTypeConnections = 1 << 3,
-        _ChangeTypeDecorator   = 1 << 4
-    };
-
-    // Propagate changes of the type indicated by \p changeType to all 
-    // dependents of the Sd site (\p path, \p layer) in \p layerStacks.
-    // If \p fallbackToParent is \c true then, if necessary, use the parent's 
-    // dependencies to find paths that use the Sd site.
-    void _DidChangeDependents(int changeType,
-                              PcpCache* cache,
-                              const SdfLayerHandle& layer,
-                              const SdfPath& path,
-                              const SdfChangeList& layerChangeList,
-                              bool onlyExistingDependentPaths,
-                              std::string* debugSummary);
-
     // Sublayer change type for _DidChangeSublayer.
     enum _SublayerChangeType {
         _SublayerAdded,
@@ -382,15 +351,16 @@ private:
     // that include the sublayer.
     void _DidChangeSublayerAndLayerStacks(PcpCache* cache,
                                           const PcpLayerStackPtrVector& stacks,
+                                          const std::string& sublayerPath,
                                           const SdfLayerHandle& sublayer,
                                           _SublayerChangeType sublayerChange,
                                           std::string* debugSummary);
 
     // Propagates changes to \p sublayer specified by \p sublayerChange to 
     // the dependents of that sublayer.
-    // Returns true if the sublayer being changed is valid, false otherwise.
-    bool _DidChangeSublayer(PcpCache* cache,
+    void _DidChangeSublayer(PcpCache* cache,
                             const PcpLayerStackPtrVector& layerStacks,
+                            const std::string& sublayerPath,
                             const SdfLayerHandle& sublayer,
                             _SublayerChangeType sublayerChange,
                             std::string* debugSummary,

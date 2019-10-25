@@ -30,6 +30,7 @@
 #include "gusd/USD_ThreadedTraverse.h"
 #include "gusd/USD_Utils.h"
 
+#include "pxr/base/arch/hints.h"
 #include "pxr/base/plug/registry.h"
 #include "pxr/usd/kind/registry.h"
 #include "pxr/usd/usd/modelAPI.h"
@@ -273,16 +274,18 @@ struct _Visitor
     bool                    AcceptPrim(const UsdPrim& prim,
                                        UsdTimeCode time,
                                        GusdPurposeSet purposes,
-                                       GusdUSD_TraverseControl& ctl) const;
+                                       GusdUSD_TraverseControl& ctl);
     
     bool                    AcceptType(const UsdPrim& prim) const;
 
-    bool                    AcceptPurpose(const UsdGeomImageable& prim) const;
+    bool                    AcceptPurpose(const UsdGeomImageable& prim,
+                                          GusdUSD_TraverseControl& ctl);
 
     bool                    AcceptKind(const UsdPrim& prim) const;
 
     bool                    AcceptVis(const UsdGeomImageable& prim,
-                                      UsdTimeCode time) const;
+                                      UsdTimeCode time,
+                                      GusdUSD_TraverseControl& ctl);
 
     bool                    AcceptNamePattern(const UsdPrim& prim) const;
 
@@ -291,6 +294,7 @@ struct _Visitor
 private:
     const GusdUSD_CustomTraverse::Opts& _opts;
     const Usd_PrimFlagsPredicate        _predicate;
+    TfToken _vis, _purpose;
 };
 
 
@@ -298,13 +302,13 @@ bool
 _Visitor::AcceptPrim(const UsdPrim& prim,
                      UsdTimeCode time,
                      GusdPurposeSet purposes,
-                     GusdUSD_TraverseControl& ctl) const
+                     GusdUSD_TraverseControl& ctl)
 {
     UsdGeomImageable ip(prim);
 
     bool visit = true;
 
-    if(BOOST_UNLIKELY(!(bool)ip)) {
+    if(ARCH_UNLIKELY(!(bool)ip)) {
         // Prim is not imageable
         if(_opts.imageable == GusdUSD_CustomTraverse::TRUE_STATE) {
             visit = false;
@@ -318,14 +322,16 @@ _Visitor::AcceptPrim(const UsdPrim& prim,
             visit = false;
         }
     }
+    // Always test purpose and visibility; that may allow us to prune traversal
+    // early, and is also necessary for propagation of inherited state.
+    visit = AcceptPurpose(ip, ctl) && visit;
+    visit = AcceptVis(ip, time, ctl) && visit;
             
     /* These tests are based on cached data;
        check them before anything that requires attribute reads.*/
     visit = visit && _predicate(prim) && AcceptType(prim);
-    
-    visit = visit && AcceptVis(ip, time)
-                  && AcceptPurpose(ip)
-                  && AcceptKind(prim)
+
+    visit = visit && AcceptKind(prim)
                   && AcceptNamePattern(prim)
                   && AcceptPathPattern(prim);
 
@@ -360,16 +366,34 @@ _Visitor::AcceptType(const UsdPrim& prim) const
 
 
 bool
-_Visitor::AcceptPurpose(const UsdGeomImageable& prim)const
+_Visitor::AcceptPurpose(const UsdGeomImageable& prim,
+                        GusdUSD_TraverseControl& ctl)
 {
     if(_opts.purposes.size() == 0)
         return true;
 
-    TfToken purpose;
-    prim.GetPurposeAttr().Get(&purpose);
+    if (!_purpose.IsEmpty()) {
+        // The root-most non-default purpose wins, so only query a new purpose
+        // if we haven't already found a non-default purpose during traversal.
+        if (_purpose == UsdGeomTokens->default_) {
+            TfToken purpose;
+            prim.GetPurposeAttr().Get(&purpose);
+            if (!purpose.IsEmpty()) {
+                _purpose = purpose;
+            }
+        }
+    } else {
+        _purpose = prim.ComputePurpose();
+    }
     for(auto& p : _opts.purposes) {
-        if(p == purpose)
+        if(p == _purpose) {
             return true;
+        }
+    }
+    if (_purpose != UsdGeomTokens->default_) {
+        // Purpose is a pruning operation; if a non-default purpose
+        // is found that doesn't match, we should not traverse further.
+        ctl.PruneChildren();
     }
     return false;
 }
@@ -393,15 +417,34 @@ _Visitor::AcceptKind(const UsdPrim& prim) const
 
 
 bool
-_Visitor::AcceptVis(const UsdGeomImageable& prim, UsdTimeCode time) const
+_Visitor::AcceptVis(const UsdGeomImageable& prim,
+                    UsdTimeCode time,
+                    GusdUSD_TraverseControl& ctl)
 {
     if(_opts.visible == GusdUSD_CustomTraverse::ANY_STATE)
         return true;
 
-    bool vis = GusdUSD_Utils::ImageablePrimIsVisible(prim, time);
-    if(_opts.visible == GusdUSD_CustomTraverse::TRUE_STATE)
-        return vis;
-    return !vis;
+    if (!_vis.IsEmpty()) {
+        TfToken vis;
+        prim.GetVisibilityAttr().Get(&vis, time);
+        if (vis == UsdGeomTokens->invisible) {
+            _vis = vis;
+        }
+    } else {
+        _vis = prim.ComputeVisibility(time);
+    }
+
+    if(_opts.visible == GusdUSD_CustomTraverse::TRUE_STATE) {
+        if (_vis == UsdGeomTokens->inherited) {
+            return true;
+        }
+        // Not visible. None of the children will be either,
+        // so no need to traverse any further.
+        ctl.PruneChildren();
+        return false;
+    } else { // FALSE_STATE
+        return _vis == UsdGeomTokens->invisible;
+    }
 }
 
 
@@ -530,12 +573,18 @@ const PRM_Template* _CreateTemplates()
     return templates;
 }
 
-GusdUSD_TraverseType _type(new GusdUSD_CustomTraverse,
+} /* namespace */
+
+void
+GusdUSD_CustomTraverse::Initialize()
+{
+    // Simply creating this object will register it with our traversal
+    // table.
+    static GusdUSD_TraverseType _type(new GusdUSD_CustomTraverse,
                            "std:custom", "Custom Traversal", _CreateTemplates(),
                            "Configurable traversal, allowing complex "
                            "discovery patterns.");
-
-} /*namespace*/
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -37,6 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class GfRange3d;
 class GfMatrix4d;
+class GfVec4d;
 
 /// \class GfPlane
 /// \ingroup group_gf_BasicGeometry
@@ -78,6 +79,12 @@ class GfPlane
         Set(p0, p1, p2);
     }
 
+    /// This constructor creates a plane given by the equation 
+    /// \p eqn[0] * x + \p eqn[1] * y + \p eqn[2] * z + \p eqn[3] = 0.
+    GfPlane(const GfVec4d &eqn) {
+        Set(eqn);
+    }
+
     /// Sets this to the plane perpendicular to \p normal and at \p distance
     /// units from the origin. The passed-in normal is normalized to unit
     /// length first.
@@ -101,6 +108,11 @@ class GfPlane
                             const GfVec3d &p1,
                             const GfVec3d &p2);
 
+    /// This method sets this to the plane given by the equation 
+    /// \p eqn[0] * x + \p eqn[1] * y + \p eqn[2] * z + \p eqn[3] = 0.
+    GF_API
+    void                Set(const GfVec4d &eqn);
+
     /// Returns the unit-length normal vector of the plane.
     const GfVec3d &     GetNormal() const {
         return _normal;
@@ -110,6 +122,11 @@ class GfPlane
     double              GetDistanceFromOrigin() const {
         return _distance;
     }
+
+    /// Give the coefficients of the equation of the plane. Suitable
+    /// to OpenGL calls to set the clipping plane.
+    GF_API
+    GfVec4d             GetEquation() const;
 
     /// Component-wise equality test. The normals and distances must match
     /// exactly for planes to be considered equal.
@@ -168,6 +185,26 @@ class GfPlane
     /// Distance from the plane to the origin.
     double              _distance;
 };
+
+/// Fits a plane to the given \p points. There must be at least three points in
+/// order to fit the plane; if the size of \p points is less than three, this
+/// issues a coding error.
+///
+/// If the \p points are all collinear, then no plane can be determined, and
+/// this function returns \c false. Otherwise, if the fitting is successful,
+/// it returns \c true and sets \p *fitPlane to the fitted plane. If \p points
+/// contains exactly three points, then the resulting plane is the exact plane
+/// defined by the three points. If \p points contains more than three points,
+/// then this function determines the best-fitting plane for the given points.
+/// The orientation of the plane normal is arbitrary with regards to the
+/// plane's positive and negative half-spaces; you can use GfPlane::Reorient()
+/// to flip the plane if necessary.
+///
+/// The current implementation uses linear least squares and thus defines
+/// "best-fitting" as minimizing the sum of the squares of the vertical
+/// distances between points and the plane surface.
+GF_API
+bool GfFitPlaneToPoints(const std::vector<GfVec3d>& points, GfPlane* fitPlane);
 
 /// Output a GfPlane using the format [(nx ny nz) distance].
 /// \ingroup group_gf_DebuggingOutput

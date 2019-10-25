@@ -28,6 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
+#include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/glf/uvTexture.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -65,7 +66,9 @@ public:
         unsigned int cropTop    = 0,
         unsigned int cropBottom = 0,
         unsigned int cropLeft   = 0,
-        unsigned int cropRight  = 0);
+        unsigned int cropRight  = 0,
+        GlfImage::ImageOriginLocation originLocation = 
+                           GlfImage::OriginUpperLeft); 
 
     GLF_API
     static GlfArrayTextureRefPtr New(
@@ -74,7 +77,9 @@ public:
         unsigned int cropTop    = 0,
         unsigned int cropBottom = 0,
         unsigned int cropLeft   = 0,
-        unsigned int cropRight  = 0);
+        unsigned int cropRight  = 0,
+        GlfImage::ImageOriginLocation originLocation = 
+                           GlfImage::OriginUpperLeft);
 
     GLF_API
     static bool IsSupportedImageFile(TfToken const &imageFilePath);
@@ -82,7 +87,7 @@ public:
     // GlfBaseTexture overrides
     GLF_API
     virtual BindingVector GetBindings(TfToken const & identifier,
-                                      GLuint samplerName) const;
+                                      GLuint samplerName);
 
 protected:
     GLF_API
@@ -92,10 +97,12 @@ protected:
         unsigned int cropTop,
         unsigned int cropBottom,
         unsigned int cropLeft,
-        unsigned int cropRight);
+        unsigned int cropRight,
+        GlfImage::ImageOriginLocation originLocation = 
+                           GlfImage::OriginUpperLeft);
 
     GLF_API
-    virtual void _OnSetMemoryRequested(size_t targetMemory);
+    virtual void _ReadTexture();
     GLF_API
     const TfToken& _GetImageFilePath(size_t index) const;
     using GlfUVTexture::_GetImageFilePath;

@@ -39,6 +39,12 @@ using namespace boost::python;
 PXR_NAMESPACE_USING_DIRECTIVE
 
 static bool
+_WrapIsAppliedAPISchema(const TfType &schemaType)
+{
+    return UsdSchemaRegistry::GetInstance().IsAppliedAPISchema(schemaType);
+}
+
+static bool
 _WrapIsMultipleApplyAPISchema(const TfType &schemaType)
 {
     return UsdSchemaRegistry::GetInstance().IsMultipleApplyAPISchema(
@@ -90,9 +96,16 @@ void wrapUsdSchemaRegistry()
              (arg("primType")))
         .staticmethod("IsConcrete")
 
+        .def("IsAppliedAPISchema", &_WrapIsAppliedAPISchema,
+             (arg("apiSchemaType")))
+        .staticmethod("IsAppliedAPISchema")
+
         .def("IsMultipleApplyAPISchema", &_WrapIsMultipleApplyAPISchema,
              (arg("apiSchemaType")))
         .staticmethod("IsMultipleApplyAPISchema")
 
+        .def("GetTypeFromName", &UsdSchemaRegistry::GetTypeFromName, 
+            (arg("typeName")))
+        .staticmethod("GetTypeFromName")
         ;
 }

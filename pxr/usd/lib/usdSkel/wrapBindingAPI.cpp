@@ -76,6 +76,13 @@ _CreateJointWeightsAttr(UsdSkelBindingAPI &self,
     return self.CreateJointWeightsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
 }
+        
+static UsdAttribute
+_CreateBlendShapesAttr(UsdSkelBindingAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateBlendShapesAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
+}
 
 } // anonymous namespace
 
@@ -96,18 +103,6 @@ void wrapUsdSkelBindingAPI()
 
         .def("Apply", &This::Apply, (arg("prim")))
         .staticmethod("Apply")
-
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
-
-        .def("IsMultipleApply", 
-            static_cast<bool (*)(void)>( [](){ return This::IsMultipleApply; } ))
-        .staticmethod("IsMultipleApply")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
@@ -149,6 +144,13 @@ void wrapUsdSkelBindingAPI()
              &_CreateJointWeightsAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
+        
+        .def("GetBlendShapesAttr",
+             &This::GetBlendShapesAttr)
+        .def("CreateBlendShapesAttr",
+             &_CreateBlendShapesAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
 
         
         .def("GetAnimationSourceRel",
@@ -160,6 +162,11 @@ void wrapUsdSkelBindingAPI()
              &This::GetSkeletonRel)
         .def("CreateSkeletonRel",
              &This::CreateSkeletonRel)
+        
+        .def("GetBlendShapeTargetsRel",
+             &This::GetBlendShapeTargetsRel)
+        .def("CreateBlendShapeTargetsRel",
+             &This::CreateBlendShapeTargetsRel)
     ;
 
     _CustomWrapCode(cls);
@@ -187,6 +194,33 @@ void wrapUsdSkelBindingAPI()
 namespace {
 
 
+object
+_GetSkeleton(const UsdSkelBindingAPI& binding)
+{
+    UsdSkelSkeleton skel;
+    return binding.GetSkeleton(&skel) ? object(skel) : object();
+}
+
+
+object
+_GetAnimationSource(const UsdSkelBindingAPI& binding)
+{
+    UsdPrim prim;
+    return binding.GetAnimationSource(&prim) ? object(prim) : object();
+}
+
+
+tuple
+_ValidateJointIndices(TfSpan<const int> jointIndices,
+                      size_t numJoints)
+{
+    std::string reason;
+    bool valid = UsdSkelBindingAPI::ValidateJointIndices(
+        jointIndices, numJoints, &reason);
+    return boost::python::make_tuple(valid, reason);
+}
+
+
 WRAP_CUSTOM {
     using This = UsdSkelBindingAPI;
 
@@ -203,6 +237,18 @@ WRAP_CUSTOM {
 
         .def("SetRigidJointInfluence", &This::SetRigidJointInfluence,
              (arg("jointIndex"), arg("weight")=1.0f))
+
+        .def("GetSkeleton", &_GetSkeleton)
+
+        .def("GetAnimationSource", &_GetAnimationSource)
+        
+        .def("GetInheritedSkeleton", &This::GetInheritedSkeleton)
+        
+        .def("GetInheritedAnimationSource", &This::GetInheritedAnimationSource)
+
+        .def("ValidateJointIndices", &_ValidateJointIndices,
+             (arg("jointIndices"), arg("numJoints")))
+        .staticmethod("ValidateJointIndices")
         ;
 }
 

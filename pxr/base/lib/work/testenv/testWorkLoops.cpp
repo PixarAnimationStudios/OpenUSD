@@ -36,6 +36,7 @@
 #include <functional>
 
 #include <cstdio>
+#include <numeric>
 #include <iostream>
 
 using namespace std::placeholders;
@@ -70,13 +71,10 @@ _VerifyDoubled(const std::vector<int> &v)
 }
 
 static void
-_PopulateVector(size_t arraySize, std::vector<int> &v)
+_PopulateVector(size_t arraySize, std::vector<int> *v)
 {
-    v.clear();
-    v.reserve(arraySize);
-    for (size_t i = 0; i < arraySize; ++i) {
-        v.push_back(i);
-    }
+    v->resize(arraySize);
+    std::iota(v->begin(), v->end(), 0);
 }
 
 // Returns the number of seconds it took to complete this operation.
@@ -84,7 +82,7 @@ double
 _DoTBBTest(bool verify, const size_t arraySize, const size_t numIterations)
 {
     std::vector<int> v;
-    _PopulateVector(arraySize, v);
+    _PopulateVector(arraySize, &v);
 
     TfStopwatch sw;
     sw.Start();
@@ -111,8 +109,8 @@ _DoTBBTestForEach(
 {
     static const size_t partitionSize = 20;
     std::vector< std::vector<int> > vs(partitionSize);
-    for (auto& v : vs) {
-        _PopulateVector(arraySize / partitionSize, v);
+    for (std::vector<int> &v : vs) {
+        _PopulateVector(arraySize / partitionSize, &v);
     }
 
     TfStopwatch sw;
@@ -139,7 +137,7 @@ _DoSerialTest()
 {
     const size_t N = 200;
     std::vector<int> v;
-    _PopulateVector(N, v);
+    _PopulateVector(N, &v);
     WorkSerialForN(N, std::bind(&_Double, _1, _2, &v));
     _VerifyDoubled(v);
 }

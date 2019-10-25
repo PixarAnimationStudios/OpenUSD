@@ -1,14 +1,7 @@
 set(PXR_PREFIX pxr/usdImaging)
 set(PXR_PACKAGE usdviewq)
 
-if (NOT PXR_ENABLE_PYTHON_SUPPORT)    
-    message(STATUS "Not building ${PXR_PACKAGE} because PXR_ENABLE_PYTHON_SUPPORT=OFF")   
-    return()
-elseif (NOT PYSIDE_FOUND)
-    message(WARNING "Not building ${PXR_PACKAGE} because of missing dependency: PySide")
-    return()
-elseif(NOT PYOPENGL_FOUND)
-    message(WARNING "Not building ${PXR_PACKAGE} because of missing dependency: PyOpenGL")
+if (NOT PXR_BUILD_USDVIEW)
     return()
 endif()
 
@@ -40,6 +33,7 @@ pxr_library(usdviewq
         appEventFilter.py
         arrayAttributeView.py
         customAttributes.py
+        frameSlider.py
         appController.py
         usdviewApi.py
         plugin.py
@@ -61,6 +55,7 @@ pxr_library(usdviewq
         common.py
         legendUtil.py
         primLegend.py
+        primTreeWidget.py
         propertyLegend.py
         attributeValueEditor.py
         overridableLineEdit.py
@@ -70,6 +65,8 @@ pxr_library(usdviewq
         rootDataModel.py
         selectionDataModel.py
         viewSettingsDataModel.py
+        freeCamera.py
+        debugFlagsWidget.py
         usdviewstyle.qss
 
     PYSIDE_UI_FILES

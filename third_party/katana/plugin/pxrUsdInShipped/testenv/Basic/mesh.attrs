@@ -15,6 +15,13 @@
             <str value="color3"/>
           </sample>
         </attr>
+        <attr name="usd" type="GroupAttr">
+          <attr name="role" tupleSize="1" type="StringAttr">
+            <sample size="1" time="0">
+              <str value="Color"/>
+            </sample>
+          </attr>
+        </attr>
         <attr name="value" tupleSize="3" type="FloatAttr">
           <sample size="3" time="0" value="1 0 0 "/>
         </attr>

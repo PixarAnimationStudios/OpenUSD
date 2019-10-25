@@ -24,7 +24,7 @@
 #ifndef PXRUSDMAYAGL_SCENE_DELEGATE_H
 #define PXRUSDMAYAGL_SCENE_DELEGATE_H
 
-/// \file sceneDelegate.h
+/// \file pxrUsdMayaGL/sceneDelegate.h
 
 #include "pxr/pxr.h"
 
@@ -52,6 +52,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+struct PxrMayaHdPrimFilter {
+    HdRprimCollection collection;
+    TfTokenVector     renderTags;
+};
+
+using PxrMayaHdPrimFilterVector = std::vector<PxrMayaHdPrimFilter>;
 
 class PxrMayaHdSceneDelegate : public HdSceneDelegate
 {
@@ -63,7 +69,15 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
 
         // HdSceneDelegate interface
         PXRUSDMAYAGL_API
-        virtual VtValue Get(const SdfPath& id, const TfToken& key) override;
+        VtValue Get(const SdfPath& id, const TfToken& key) override;
+
+        PXRUSDMAYAGL_API
+        VtValue GetCameraParamValue(
+                SdfPath const& cameraId,
+                TfToken const& paramName) override;
+
+        PXRUSDMAYAGL_API
+        TfTokenVector GetTaskRenderTags(SdfPath const& taskId) override;
 
         PXRUSDMAYAGL_API
         void SetCameraState(
@@ -89,7 +103,11 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
         HdTaskSharedPtrVector GetRenderTasks(
                 const size_t hash,
                 const PxrMayaHdRenderParams& renderParams,
-                const HdRprimCollectionVector& rprimCollections);
+                const PxrMayaHdPrimFilterVector& primFilters);
+
+        PXRUSDMAYAGL_API
+        HdTaskSharedPtrVector GetPickingTasks(
+                const TfTokenVector& renderTags);
 
     protected:
         PXRUSDMAYAGL_API
@@ -98,8 +116,13 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
         template <typename T>
         const T& _GetValue(const SdfPath& id, const TfToken& key) {
             VtValue vParams = _valueCacheMap[id][key];
-            TF_VERIFY(vParams.IsHolding<T>());
-            return vParams.Get<T>();
+            if (!TF_VERIFY(vParams.IsHolding<T>(),
+                           "For Id = %s, Key = %s",
+                           id.GetText(), key.GetText())) {
+                static T ERROR_VALUE;
+                return ERROR_VALUE;
+            }
+            return vParams.UncheckedGet<T>();
         }
 
         template <typename T>
@@ -117,10 +140,39 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
         SdfPathVector _lightIds;
         GlfSimpleLightingContextRefPtr _lightingContext;
 
-        typedef std::unordered_map<size_t, SdfPath> _RenderTaskIdMap;
-        _RenderTaskIdMap _renderSetupTaskIdMap;
-        _RenderTaskIdMap _renderTaskIdMap;
-        _RenderTaskIdMap _selectionTaskIdMap;
+        SdfPath _shadowTaskId;
+
+        // XXX: While this is correct, that we are using
+        // hash in forming the task id, so the map is valid.
+        // It is possible for the hash to collide, so the id
+        // formed from the combination of hash and collection name is not
+        // necessarily unique.
+        struct _RenderTaskIdMapKey
+        {
+            size_t                hash;
+            TfToken               collectionName;
+
+            struct HashFunctor {
+                size_t operator()(const  _RenderTaskIdMapKey& value) const;
+            };
+
+            bool operator==(const  _RenderTaskIdMapKey& other) const;
+        };
+
+        typedef std::unordered_map<
+                _RenderTaskIdMapKey,
+                SdfPath,
+                _RenderTaskIdMapKey::HashFunctor> _RenderTaskIdMap;
+
+        typedef std::unordered_map<size_t, SdfPath> _RenderParamTaskIdMap;
+
+
+       
+        _RenderParamTaskIdMap _renderSetupTaskIdMap;
+        _RenderTaskIdMap      _renderTaskIdMap;
+        _RenderParamTaskIdMap _selectionTaskIdMap;
+
+		SdfPath _pickingTaskId;
 
         typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _ValueCache;
         typedef TfHashMap<SdfPath, _ValueCache, SdfPath::Hash> _ValueCacheMap;
@@ -133,4 +185,4 @@ typedef std::shared_ptr<PxrMayaHdSceneDelegate> PxrMayaHdSceneDelegateSharedPtr;
 PXR_NAMESPACE_CLOSE_SCOPE
 
 
-#endif // PXRUSDMAYAGL_SCENE_DELEGATE_H
+#endif

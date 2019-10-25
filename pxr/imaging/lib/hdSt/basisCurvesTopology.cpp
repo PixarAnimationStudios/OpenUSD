@@ -24,6 +24,9 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/basisCurvesTopology.h"
 #include "pxr/imaging/hdSt/basisCurvesComputations.h"
+
+#include "pxr/imaging/hd/vtBufferSource.h"
+
 #include <boost/make_shared.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -46,6 +49,41 @@ HdSt_BasisCurvesTopology::HdSt_BasisCurvesTopology(const HdBasisCurvesTopology& 
 
 HdSt_BasisCurvesTopology::~HdSt_BasisCurvesTopology()
 {
+}
+
+HdBufferSourceSharedPtr
+HdSt_BasisCurvesTopology::GetPointsIndexBuilderComputation()
+{
+    // This is simple enough to return the result right away, instead of
+    // using a computed buffer source.
+    const VtIntArray& vertexCounts = GetCurveVertexCounts();
+    int numVerts = 0;
+    std::vector<int> indices;
+    for (int count : vertexCounts) {
+        numVerts += count;
+    }
+
+    int vi = 0;
+    while (vi < numVerts) {
+        indices.emplace_back(vi++);
+    }
+
+    VtIntArray finalIndices(indices.size());
+    const VtIntArray& curveIndices = GetCurveIndices();
+    if (curveIndices.empty()) {
+        std::copy(indices.begin(), indices.end(), finalIndices.begin());
+    } else {
+        // If have topology has indices set, map the generated indices
+        // with the given indices.
+        int maxIndex = curveIndices.size() - 1;
+        for (const int& index : indices) {
+            finalIndices[index] = std::min(curveIndices[index], maxIndex);
+        }
+    }
+
+    // Note: The primitive param buffer isn't bound.
+    return HdBufferSourceSharedPtr(
+        new HdVtBufferSource(HdTokens->indices, VtValue(finalIndices)));
 }
 
 HdBufferSourceSharedPtr

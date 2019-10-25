@@ -25,6 +25,7 @@
 #include "pxr/imaging/glf/glContext.h"
 
 #include "pxr/imaging/hdx/drawTargetRenderPass.h"
+#include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdSt/drawTargetRenderPassState.h"
 #include "pxr/imaging/hd/renderPassState.h"
 
@@ -108,17 +109,22 @@ HdxDrawTargetRenderPass::Sync()
         _collectionObjectVersion = newCollectionVersion;
     }
 
-    // Check the draw target is still valid on the context.
-    if (!TF_VERIFY(_drawTargetContext == GlfGLContext::GetCurrentGLContext())) {
-        SetDrawTarget(_drawTarget);
-    }
-
     _renderPass.Sync();
 }
 
 void
+HdxDrawTargetRenderPass::Prepare()
+{
+    // Check the draw target is still valid on the context.
+    if (!TF_VERIFY(_drawTargetContext == GlfGLContext::GetCurrentGLContext())) {
+        SetDrawTarget(_drawTarget);
+    }
+}
+
+void
 HdxDrawTargetRenderPass::Execute(
-    HdRenderPassStateSharedPtr const &renderPassState)
+    HdRenderPassStateSharedPtr const &renderPassState,
+    TfTokenVector const &renderTags)
 {
     if (!_drawTarget) {
         return;
@@ -137,7 +143,7 @@ HdxDrawTargetRenderPass::Execute(
     glViewport(0, 0, resolution[0], resolution[1]);
 
     // Perform actual draw
-    _renderPass.Execute(renderPassState, HdTokens->geometry);
+    _renderPass.Execute(renderPassState, renderTags);
 
     // restore viewport
     glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);

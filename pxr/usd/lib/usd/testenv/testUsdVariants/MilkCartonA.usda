@@ -8,8 +8,10 @@ def Xform "MilkCartonA" (
     variants = {
         string modelingVariant = "Carton_Opened"
         string shadingComplexity = "full"
+        string localDanglingVariant = "local"
     }
     add variantSets = ["modelingVariant", "shadingComplexity"]
+    references = </VariantSelRef>
 )
 {
     variantSet "modelingVariant" = {
@@ -42,3 +44,14 @@ def Xform "MilkCartonA" (
     }
 }
 
+# Referenced prim with variant selection opinions to test
+# GetAllVariantSelections API
+def "VariantSelRef" (
+    variants = {
+        string modelingVariant = "Carton_Sealed"
+        string shadingComplexity = "none"
+        string referencedDanglingVariant = "ref"
+    }
+)
+{
+}

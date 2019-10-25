@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
+#include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/glf/baseTextureData.h"
 
 #include <boost/shared_ptr.hpp>
@@ -82,52 +83,61 @@ public:
     static GlfUVTextureDataRefPtr
     New(std::string const &filePath, Params const &params);
 
+    int NumDimensions() const override;
+
     const Params& GetParams() const { return _params; }
 
     // GlfBaseTextureData overrides
     GLF_API
-    virtual int ResizedWidth(int mipLevel = 0) const;
+    int ResizedWidth(int mipLevel = 0) const override;
 
     GLF_API
-    virtual int ResizedHeight(int mipLevel = 0) const;
+    int ResizedHeight(int mipLevel = 0) const override;
 
-    virtual GLenum GLInternalFormat() const {
+    GLF_API
+    int ResizedDepth(int mipLevel = 0) const override;
+
+    GLenum GLInternalFormat() const override {
         return _glInternalFormat;
     };
 
-    virtual GLenum GLFormat() const {
+    GLenum GLFormat() const override {
         return _glFormat;
     };
 
-    virtual GLenum GLType() const {
+    GLenum GLType() const override {
         return _glType;
     };
 
-    virtual size_t TargetMemory() const {
+    size_t TargetMemory() const override {
         return _targetMemory;
     };
 
-    virtual WrapInfo GetWrapInfo() const {
+    WrapInfo GetWrapInfo() const override {
         return _wrapInfo;
     };
 
     GLF_API
-    virtual size_t ComputeBytesUsed() const;
+    size_t ComputeBytesUsed() const override;
 
     GLF_API
-    virtual size_t ComputeBytesUsedByMip(int mipLevel = 0) const;
+    size_t ComputeBytesUsedByMip(int mipLevel = 0) const override;
 
     GLF_API
-    virtual bool HasRawBuffer(int mipLevel = 0) const;
+    bool HasRawBuffer(int mipLevel = 0) const override;
 
     GLF_API
-    virtual unsigned char * GetRawBuffer(int mipLevel = 0) const;
+    unsigned char * GetRawBuffer(int mipLevel = 0) const override;
 
     GLF_API
-    virtual bool Read(int degradeLevel, bool generateMipmap);
-
+    bool Read(
+        int degradeLevel, 
+        bool generateMipmap,
+        GlfImage::ImageOriginLocation originLocation = 
+            GlfImage::OriginUpperLeft) override;
+    
     GLF_API
-    virtual int GetNumMipLevels() const;
+    int GetNumMipLevels() const override;
 
 private:
     // A structure that keeps the mips loaded from disk in the format

@@ -105,32 +105,37 @@ PcpCompareSiblingNodeStrength(
         return 1;
 
     // Specializes arcs need special handling because of how specializes
-    // nodes throughout the graph are propagated to the root.
-    if (PcpIsSpecializesArc(a.GetArcType())) {
+    // nodes throughout the graph are copied to the root.
+    if (PcpIsSpecializeArc(a.GetArcType())) {
         const PcpNodeRef aOrigin = a.GetOriginNode();
         const PcpNodeRef bOrigin = b.GetOriginNode();
 
-        // Special case: We should only have two implied specializes nodes
+        // Special case: We should only have two specializes nodes
         // with the same origin and that are siblings when one has been 
         // implied across a composition arc to the root node and the other 
-        // has been propagated (i.e., copied) to the root node. In this
-        // case, the implied arc -- the one whose opinions come from the
-        // root layer stack -- is more local, and thus stronger
-        if (aOrigin == bOrigin           &&
+        // has been copied to the root node for strength ordering. In this
+        // case, the implied arc expresses the opinions local to the root layer
+        // stack, and is meant to be stronger than the copied specialize. The 
+        // implied node will be the one whose site is *not* the same as its 
+        // origin; the copied node is the one whose site is the same as its 
+        // origin.
+        if (aOrigin == bOrigin &&
             aOrigin != a.GetParentNode() &&
             bOrigin != b.GetParentNode()) {
 
             TF_VERIFY(a.GetParentNode() == a.GetRootNode() &&
                       b.GetParentNode() == b.GetRootNode());
 
-            if (a.GetLayerStack() == a.GetRootNode().GetLayerStack()) {
-                return -1;
-            }
-            else if (b.GetLayerStack() == b.GetRootNode().GetLayerStack()) {
+            if (a.GetSite() == aOrigin.GetSite()) {
+                // a was copied from its origin, so it's weaker than b.
                 return 1;
             }
+            else if (b.GetSite() == bOrigin.GetSite()) {
+                // b was copied from its origin, so it's weaker than a.
+                return -1;
+            }
             
-            TF_VERIFY(false, "Did not find node with root layer stack.");
+            TF_VERIFY(false, "Did not find copied specialize node.");
             return 0;
         }
 

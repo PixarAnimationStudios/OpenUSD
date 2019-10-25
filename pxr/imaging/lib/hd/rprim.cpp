@@ -50,11 +50,9 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_SHARED_VERTEX_PRIMVAR, 1,
 
 HdRprim::HdRprim(SdfPath const& id,
                  SdfPath const& instancerId)
-    : _id(id)
-    , _instancerId(instancerId)
+    : _instancerId(instancerId)
     , _materialId()
     , _sharedData(HdDrawingCoord::DefaultNumSlots,
-                  /*hasInstancer=*/(!instancerId.IsEmpty()),
                   /*visible=*/true)
 {
     _sharedData.rprimID = id;
@@ -65,88 +63,9 @@ HdRprim::~HdRprim()
     /*NOTHING*/
 }
 
-void
-HdRprim::Finalize(HdRenderParam *renderParam)
-{
-}
-
-const std::vector<HdDrawItem*>*
-HdRprim::GetDrawItems(TfToken const &defaultReprName, bool forced) const
-{
-    // note: GetDrawItems is called at execute phase.
-    // All required dirtyBits should have cleaned at this point.
-    TfToken reprName = _GetReprName(defaultReprName, forced);
-    HdReprSharedPtr repr = _GetRepr(reprName);
-
-    if (repr) {
-        return &repr->GetDrawItems();
-    } else {
-        return nullptr;
-    }
-}
-
-
-void
-HdRprim::_Sync(HdSceneDelegate* delegate,
-              TfToken const &defaultReprName,
-              bool forced,
-              HdDirtyBits *dirtyBits)
-{
-    HdRenderIndex   &renderIndex   = delegate->GetRenderIndex();
-    HdChangeTracker &changeTracker = renderIndex.GetChangeTracker();
-
-    // Check if the rprim has a new material binding associated to it,
-    // if so, we will request the binding from the delegate and set it up in
-    // this rprim.
-    if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
-        VtValue materialId = 
-            delegate->Get(GetId(), HdShaderTokens->material);
-
-        if (materialId.IsHolding<SdfPath>()){
-            _SetMaterialId(changeTracker, materialId.Get<SdfPath>());
-        } else {
-            _SetMaterialId(changeTracker, SdfPath());
-        }
-
-        *dirtyBits &= ~HdChangeTracker::DirtyMaterialId;
-    }
-}
-
-void
-HdRprim::_UpdateReprName(HdSceneDelegate* delegate,
-                         HdDirtyBits *dirtyBits)
-{
-    SdfPath const& id = GetId();
-    if (HdChangeTracker::IsReprDirty(*dirtyBits, id)) {
-        _authoredReprName = delegate->GetReprName(id);
-        *dirtyBits &= ~HdChangeTracker::DirtyRepr;
-    }
-}
-
-TfToken
-HdRprim::_GetReprName(TfToken const &defaultReprName, bool forced) const
-{
-    // if not forced, the prim's authored reprname wins.
-    // otherewise we respect defaultReprName (used for shadowmap drawing etc)
-    if (!forced && !_authoredReprName.IsEmpty()) {
-        return _authoredReprName;
-    }
-    return defaultReprName;
-}
-
-HdReprSharedPtr const &
-HdRprim::_GetRepr(TfToken const &reprName) const
-{
-    _ReprVector::const_iterator reprIt =
-        std::find_if(_reprs.begin(), _reprs.end(), _ReprComparator(reprName));
-    if (reprIt == _reprs.end()) {
-        TF_CODING_ERROR("_InitRepr() should be called for repr %s on prim %s.",
-                        reprName.GetText(), GetId().GetText());
-        static const HdReprSharedPtr ERROR_RETURN;
-        return ERROR_RETURN;
-    }
-    return reprIt->second;
-}
+// -------------------------------------------------------------------------- //
+///                 Rprim Hydra Engine API : Pre-Sync & Sync-Phase
+// -------------------------------------------------------------------------- //
 
 bool
 HdRprim::CanSkipDirtyBitPropagationAndSync(HdDirtyBits bits) const
@@ -195,16 +114,12 @@ HdRprim::PropagateRprimDirtyBits(HdDirtyBits bits)
         bits |= (HdChangeTracker::DirtyPoints  |
                  HdChangeTracker::DirtyNormals |
                  HdChangeTracker::DirtyWidths  |
-                 HdChangeTracker::DirtyPrimVar);
+                 HdChangeTracker::DirtyPrimvar);
     }
 
-    // propagate point dirtiness to normal
-    bits |= (bits & HdChangeTracker::DirtyPoints) ?
-                                              HdChangeTracker::DirtyNormals : 0;
-
     // when refine level changes, topology becomes dirty.
-    // XXX: can we remove DirtyRefineLevel then?
-    if (bits & HdChangeTracker::DirtyRefineLevel) {
+    // XXX: can we remove DirtyDisplayStyle then?
+    if (bits & HdChangeTracker::DirtyDisplayStyle) {
         bits |=  HdChangeTracker::DirtyTopology;
     }
 
@@ -212,7 +127,7 @@ HdRprim::PropagateRprimDirtyBits(HdDirtyBits bits)
     if (bits & HdChangeTracker::DirtyTopology) {
         bits |= (HdChangeTracker::DirtyPoints  |
                  HdChangeTracker::DirtyNormals |
-                 HdChangeTracker::DirtyPrimVar);
+                 HdChangeTracker::DirtyPrimvar);
     }
 
     // Let subclasses propagate bits
@@ -221,14 +136,83 @@ HdRprim::PropagateRprimDirtyBits(HdDirtyBits bits)
 
 void
 HdRprim::InitRepr(HdSceneDelegate* delegate,
-                  TfToken const &defaultReprName,
-                  bool forced,
+                  TfToken const &reprToken,
                   HdDirtyBits *dirtyBits)
 {
-    _UpdateReprName(delegate, dirtyBits);
-    TfToken reprName = _GetReprName(defaultReprName, forced);
-    _InitRepr(reprName, dirtyBits);
+    // If _sharedData.instancerLevels == -1, it's uninitialized and we should
+    // compute it now.
+    if (_sharedData.instancerLevels == -1) {
+        _sharedData.instancerLevels = HdInstancer::GetInstancerNumLevels(
+            delegate->GetRenderIndex(), *this);
+    }
 
+    _InitRepr(reprToken, dirtyBits);
+}
+
+// -------------------------------------------------------------------------- //
+///                 Rprim Hydra Engine API : Execute-Phase
+// -------------------------------------------------------------------------- //
+const HdRprim::HdDrawItemPtrVector*
+HdRprim::GetDrawItems(TfToken const& reprToken) const
+{
+    HdReprSharedPtr repr = _GetRepr(reprToken);
+    if (repr) {
+        return &(repr->GetDrawItems());
+    }
+    return nullptr;
+}
+
+// -------------------------------------------------------------------------- //
+///                     Rprim Hydra Engine API : Cleanup
+// -------------------------------------------------------------------------- //
+void
+HdRprim::Finalize(HdRenderParam *renderParam)
+{
+}
+
+// -------------------------------------------------------------------------- //
+///                              Rprim Data API
+// -------------------------------------------------------------------------- //
+void
+HdRprim::SetPrimId(int32_t primId)
+{
+    _primId = primId;
+    // Don't set DirtyPrimID here, to avoid undesired variability tracking.
+}
+
+bool
+HdRprim::IsDirty(HdChangeTracker &changeTracker) const
+{
+    return changeTracker.IsRprimDirty(GetId());
+}
+
+void
+HdRprim::UpdateReprSelector(HdSceneDelegate* delegate,
+                            HdDirtyBits *dirtyBits)
+{
+    SdfPath const& id = GetId();
+    if (HdChangeTracker::IsReprDirty(*dirtyBits, id)) {
+        _authoredReprSelector = delegate->GetReprSelector(id);
+        *dirtyBits &= ~HdChangeTracker::DirtyRepr;
+    }
+}
+
+// -------------------------------------------------------------------------- //
+///                             Rprim Shared API
+// -------------------------------------------------------------------------- //
+HdReprSharedPtr const &
+HdRprim::_GetRepr(TfToken const &reprToken) const
+{
+    _ReprVector::const_iterator reprIt =
+        std::find_if(_reprs.begin(), _reprs.end(),
+                     _ReprComparator(reprToken));
+    if (reprIt == _reprs.end()) {
+        TF_CODING_ERROR("_InitRepr() should be called for repr %s on prim %s.",
+                        reprToken.GetText(), GetId().GetText());
+        static const HdReprSharedPtr ERROR_RETURN;
+        return ERROR_RETURN;
+    }
+    return reprIt->second;
 }
 
 void
@@ -240,13 +224,6 @@ HdRprim::_UpdateVisibility(HdSceneDelegate* delegate,
     }
 }
 
-
-TfToken
-HdRprim::GetRenderTag(HdSceneDelegate* delegate, TfToken const& reprName) const
-{
-    return delegate->GetRenderTag(_id, reprName);
-}
-
 void 
 HdRprim::_SetMaterialId(HdChangeTracker &changeTracker,
                         SdfPath const& materialId)
@@ -254,190 +231,22 @@ HdRprim::_SetMaterialId(HdChangeTracker &changeTracker,
     if (_materialId != materialId) {
         _materialId = materialId;
 
-        // The batches need to be verified and rebuilt if necessary.
-        changeTracker.MarkShaderBindingsDirty();
+        // The batches need to be verified and rebuilt, since a changed shader
+        // may change aggregation.
+        changeTracker.MarkBatchesDirty();
     }
-}
-
-bool
-HdRprim::IsDirty(HdChangeTracker &changeTracker) const
-{
-    return changeTracker.IsRprimDirty(GetId());
-}
-
-void
-HdRprim::SetPrimId(int32_t primId)
-{
-    _primId = primId;
-    // Don't set DirtyPrimID here, to avoid undesired variability tracking.
-}
-
-HdDirtyBits
-HdRprim::GetInitialDirtyBitsMask() const
-{
-    return _GetInitialDirtyBits();
-}
-
-void
-HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
-                                   HdDrawItem *drawItem,
-                                   HdDirtyBits *dirtyBits)
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    SdfPath const& id = GetId();
-    HdRenderIndex &renderIndex = delegate->GetRenderIndex();
-    HdResourceRegistrySharedPtr const &resourceRegistry = 
-        renderIndex.GetResourceRegistry();
-
-    // update uniforms
-    HdBufferSourceVector sources;
-    if (HdChangeTracker::IsTransformDirty(*dirtyBits, id)) {
-        GfMatrix4d transform = delegate->GetTransform(id);
-        _sharedData.bounds.SetMatrix(transform); // for CPU frustum culling
-
-        HdBufferSourceSharedPtr source(new HdVtBufferSource(
-                                           HdTokens->transform,
-                                           transform));
-        sources.push_back(source);
-        source.reset(new HdVtBufferSource(HdTokens->transformInverse,
-                                          transform.GetInverse()));
-        sources.push_back(source);
-
-        // if this is a prototype (has instancer),
-        // also push the instancer transform separately.
-        if (!_instancerId.IsEmpty()) {
-            // gather all instancer transforms in the instancing hierarchy
-            VtMatrix4dArray rootTransforms = _GetInstancerTransforms(delegate);
-            VtMatrix4dArray rootInverseTransforms(rootTransforms.size());
-            bool leftHanded = transform.IsLeftHanded();
-            for (size_t i = 0; i < rootTransforms.size(); ++i) {
-                rootInverseTransforms[i] = rootTransforms[i].GetInverse();
-                // flip the handedness if necessary
-                leftHanded ^= rootTransforms[i].IsLeftHanded();
-            }
-
-            source.reset(new HdVtBufferSource(
-                             HdTokens->instancerTransform,
-                             rootTransforms,
-                             rootTransforms.size()));
-            sources.push_back(source);
-            source.reset(new HdVtBufferSource(
-                             HdTokens->instancerTransformInverse,
-                             rootInverseTransforms,
-                             rootInverseTransforms.size()));
-            sources.push_back(source);
-
-            // XXX: It might be worth to consider to have isFlipped
-            // for non-instanced prims as well. It can improve
-            // the drawing performance on older-GPUs by reducing
-            // fragment shader cost, although it needs more GPU memory.
-
-            // set as int (GLSL needs 32-bit align for bool)
-            source.reset(new HdVtBufferSource(
-                             HdTokens->isFlipped, VtValue(int(leftHanded))));
-            sources.push_back(source);
-        }
-    }
-    if (HdChangeTracker::IsExtentDirty(*dirtyBits, id)) {
-        _sharedData.bounds.SetRange(GetExtent(delegate));
-
-        GfVec3d const & localMin = drawItem->GetBounds().GetBox().GetMin();
-        HdBufferSourceSharedPtr sourceMin(new HdVtBufferSource(
-                                           HdTokens->bboxLocalMin,
-                                           VtValue(GfVec4f(
-                                               localMin[0],
-                                               localMin[1],
-                                               localMin[2], 0))));
-        sources.push_back(sourceMin);
-
-        GfVec3d const & localMax = drawItem->GetBounds().GetBox().GetMax();
-        HdBufferSourceSharedPtr sourceMax(new HdVtBufferSource(
-                                           HdTokens->bboxLocalMax,
-                                           VtValue(GfVec4f(
-                                               localMax[0],
-                                               localMax[1],
-                                               localMax[2], 0))));
-        sources.push_back(sourceMax);
-    }
-
-    if (HdChangeTracker::IsPrimIdDirty(*dirtyBits, id)) {
-        int32_t primId = GetPrimId();
-        HdBufferSourceSharedPtr source(new HdVtBufferSource(
-                                           HdTokens->primID,
-                                           VtValue(primId)));
-        sources.push_back(source);
-    }
-
-    if (HdChangeTracker::IsAnyPrimVarDirty(*dirtyBits, id)) {
-        TfTokenVector primVarNames = delegate->GetPrimVarConstantNames(id);
-        sources.reserve(sources.size()+primVarNames.size());
-        for (const TfToken& name: primVarNames) {
-            if (HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, name)) {
-                VtValue value = delegate->Get(id, name);
-
-                // XXX Hydra doesn't support string primvar yet
-                if (value.IsHolding<std::string>()) continue;
-
-                if (value.IsArrayValued() && value.GetArraySize() == 0) {
-                    // A value holding an empty array does not count as an
-                    // empty value. Catch that case here.
-                    TF_WARN("Empty array value for constant primvar %s "
-                            "on Rprim %s", name.GetText(), id.GetText());
-                } else if (!value.IsEmpty()) {
-                    // Given that this is a constant primvar, if it is
-                    // holding VtArray then use that as a single array
-                    // value rather than as one value per element.
-                    HdBufferSourceSharedPtr source(
-                        new HdVtBufferSource(name, value,
-                            value.IsArrayValued() ? value.GetArraySize() : 1));
-
-                    TF_VERIFY(source->GetTupleType().type != HdTypeInvalid);
-                    TF_VERIFY(source->GetTupleType().count > 0);
-                    sources.push_back(source);
-                }
-            }
-        }
-    }
-
-    // return before allocation if it's empty.
-    if (sources.empty())
-        return;
-
-    // Allocate a new uniform buffer if not exists.
-    if (!drawItem->GetConstantPrimVarRange()) {
-        // establish a buffer range
-        HdBufferSpecVector bufferSpecs;
-        TF_FOR_ALL(srcIt, sources) {
-            (*srcIt)->AddBufferSpecs(&bufferSpecs);
-        }
-
-        HdBufferArrayRangeSharedPtr range =
-            resourceRegistry->AllocateShaderStorageBufferArrayRange(
-                HdTokens->primVar, bufferSpecs);
-        TF_VERIFY(range->IsValid());
-
-        _sharedData.barContainer.Set(
-            drawItem->GetDrawingCoord()->GetConstantPrimVarIndex(), range);
-    }
-    TF_VERIFY(drawItem->GetConstantPrimVarRange()->IsValid());
-
-    resourceRegistry->AddSources(
-        drawItem->GetConstantPrimVarRange(), sources);
 }
 
 VtMatrix4dArray
-HdRprim::_GetInstancerTransforms(HdSceneDelegate* delegate)
+HdRprim::GetInstancerTransforms(HdSceneDelegate* delegate)
 {
-    SdfPath const& id = GetId();
     SdfPath instancerId = _instancerId;
     VtMatrix4dArray transforms;
 
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
 
     while (!instancerId.IsEmpty()) {
-        transforms.push_back(delegate->GetInstancerTransform(instancerId, id));
+        transforms.push_back(delegate->GetInstancerTransform(instancerId));
         HdInstancer *instancer = renderIndex.GetInstancer(instancerId);
         if (instancer) {
             instancerId = instancer->GetParentId();
@@ -519,7 +328,7 @@ HdRprim::_ComputeSharedPrimvarId(uint64_t baseId,
     }
 
     HdBufferSpecVector bufferSpecs;
-    HdBufferSpec::AddBufferSpecs(&bufferSpecs, computations);
+    HdBufferSpec::GetBufferSpecs(computations, &bufferSpecs);
     for (HdBufferSpec const &bufferSpec : bufferSpecs) {
         boost::hash_combine(primvarId, bufferSpec.name);
         boost::hash_combine(primvarId, bufferSpec.tupleType.type);

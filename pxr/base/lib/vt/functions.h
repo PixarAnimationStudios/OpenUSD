@@ -23,11 +23,17 @@
 //
 #if !BOOST_PP_IS_ITERATING
 
+#ifndef VT_FUNCTIONS_H
+#define VT_FUNCTIONS_H
+
 /// \file vt/functions.h
 
 #include "pxr/pxr.h"
 #include "pxr/base/vt/api.h"
 #include "pxr/base/vt/array.h"
+#include <boost/preprocessor/enum_params.hpp>
+#include <boost/preprocessor/iterate.hpp>
+#include <boost/preprocessor/repeat.hpp>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -240,16 +246,18 @@ template<typename T>                                                \
 VtArray<bool>                                                       \
 funcname(T const &scalar, VtArray<T> const &vec) {                  \
     VtArray<bool> ret(vec.size());                                  \
-    for (size_t i = 0, n = vec.size(); i != n; ++i)                 \
+    for (size_t i = 0, n = vec.size(); i != n; ++i) {               \
         ret[i] = (scalar op vec[i]);                                \
+    }                                                               \
     return ret;                                                     \
 }                                                                   \
 template<typename T>                                                \
 VtArray<bool>                                                       \
 funcname(VtArray<T> const &vec, T const &scalar) {                  \
     VtArray<bool> ret(vec.size());                                  \
-    for (size_t i = 0, n = vec.size(); i != n; ++i)                 \
+    for (size_t i = 0, n = vec.size(); i != n; ++i) {               \
         ret[i] = (vec[i] op scalar);                                \
+    }                                                               \
     return ret;                                                     \
 }                                                                   \
 template<typename T>                                                \
@@ -284,6 +292,8 @@ VTFUNCTION_BOOL(VtGreaterOrEqual,>=)
 VTFUNCTION_BOOL(VtLessOrEqual,<=)
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // VT_FUNCTIONS_H
 
 #else // BOOST_PP_IS_ITERATING
 

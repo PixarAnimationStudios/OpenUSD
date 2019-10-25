@@ -59,7 +59,9 @@ public:
         unsigned int cropTop    = 0,
         unsigned int cropBottom = 0,
         unsigned int cropLeft   = 0,
-        unsigned int cropRight  = 0);
+        unsigned int cropRight  = 0,
+        GlfImage::ImageOriginLocation originLocation = 
+                           GlfImage::OriginUpperLeft); 
 
     GLF_API
     static GlfUVTextureRefPtr New(
@@ -67,7 +69,11 @@ public:
         unsigned int cropTop    = 0,
         unsigned int cropBottom = 0,
         unsigned int cropLeft   = 0,
-        unsigned int cropRight  = 0);
+        unsigned int cropRight  = 0,
+        GlfImage::ImageOriginLocation originLocation = 
+                           GlfImage::OriginUpperLeft); 
+
+    int GetNumDimensions() const override;
     
     /// Returns true if the file at \p imageFilePath is an image that
     /// can be used with this texture object.
@@ -77,10 +83,10 @@ public:
     static bool IsSupportedImageFile(std::string const &imageFilePath);
 
     GLF_API
-    virtual VtDictionary GetTextureInfo() const;
+    VtDictionary GetTextureInfo(bool forceLoad) override;
 
     GLF_API
-    virtual bool IsMinFilterSupported(GLenum filter);
+    bool IsMinFilterSupported(GLenum filter) override;
 
 protected:
     GLF_API
@@ -89,10 +95,13 @@ protected:
         unsigned int cropTop,
         unsigned int cropBottom,
         unsigned int cropLeft,
-        unsigned int cropRight);
+        unsigned int cropRight,
+        GlfImage::ImageOriginLocation originLocation = 
+                           GlfImage::OriginUpperLeft);
 
     GLF_API
-    virtual void _OnSetMemoryRequested(size_t targetMemory);
+    void _ReadTexture() override;
+
     GLF_API
     virtual bool _GenerateMipmap() const;
     GLF_API

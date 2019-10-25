@@ -48,34 +48,6 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
-        
-static UsdAttribute
-_CreateJointsAttr(UsdSkelPackedJointAnimation &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateJointsAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateTranslationsAttr(UsdSkelPackedJointAnimation &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateTranslationsAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float3Array), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateRotationsAttr(UsdSkelPackedJointAnimation &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateRotationsAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->QuatfArray), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateScalesAttr(UsdSkelPackedJointAnimation &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateScalesAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Half3Array), writeSparsely);
-}
 
 } // anonymous namespace
 
@@ -83,7 +55,7 @@ void wrapUsdSkelPackedJointAnimation()
 {
     typedef UsdSkelPackedJointAnimation This;
 
-    class_<This, bases<UsdGeomXformable> >
+    class_<This, bases<UsdSkelAnimation> >
         cls("PackedJointAnimation");
 
     cls
@@ -97,14 +69,6 @@ void wrapUsdSkelPackedJointAnimation()
         .def("Define", &This::Define, (arg("stage"), arg("path")))
         .staticmethod("Define")
 
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
-
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
              arg("includeInherited")=true,
@@ -117,34 +81,6 @@ void wrapUsdSkelPackedJointAnimation()
 
         .def(!self)
 
-        
-        .def("GetJointsAttr",
-             &This::GetJointsAttr)
-        .def("CreateJointsAttr",
-             &_CreateJointsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetTranslationsAttr",
-             &This::GetTranslationsAttr)
-        .def("CreateTranslationsAttr",
-             &_CreateTranslationsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetRotationsAttr",
-             &This::GetRotationsAttr)
-        .def("CreateRotationsAttr",
-             &_CreateRotationsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetScalesAttr",
-             &This::GetScalesAttr)
-        .def("CreateScalesAttr",
-             &_CreateScalesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
 
     ;
 

@@ -32,8 +32,6 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/listOp.h"
 
-#include <boost/array.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class Sdf_ListOpListEditor
@@ -71,7 +69,8 @@ public:
     virtual void ModifyItemEdits(const ModifyCallback& cb);
 
     typedef typename Parent::ApplyCallback ApplyCallback;
-    virtual void ApplyEdits(value_vector_type* vec, const ApplyCallback& cb);
+    virtual void ApplyEditsToList(
+        value_vector_type* vec, const ApplyCallback& cb);
 
     virtual bool ReplaceEdits(
         SdfListOpType op, size_t index, size_t n, const value_vector_type& elems);
@@ -120,34 +119,33 @@ private:
             return;
         }
 
-        const boost::array<SdfListOpType, 6> opTypes = {
-            SdfListOpTypeExplicit,
-            SdfListOpTypeAdded,
-            SdfListOpTypeDeleted,
-            SdfListOpTypeOrdered,
-            SdfListOpTypePrepended,
-            SdfListOpTypeAppended
-        };
-
         // Check if any of the list operation vectors have changed and validate
         // their new contents.
-        bool anyChanged = false;
-        boost::array<bool, 6> opListChanged = { 
-            false, false, false, false, false, false 
+        std::pair<const SdfListOpType, bool> opTypesAndChanged[] = {
+            { SdfListOpTypeExplicit, false },
+            { SdfListOpTypeAdded, false },
+            { SdfListOpTypeDeleted, false },
+            { SdfListOpTypeOrdered, false },
+            { SdfListOpTypePrepended, false },
+            { SdfListOpTypeAppended, false }
         };
+        bool anyChanged = false;
 
-        for (int i = 0; i < opTypes.size(); ++i) {
+        for (auto& opTypeAndChanged : opTypesAndChanged) {
             // If the consumer has specified that only a single op type has
             // changed, ignore all others.
-            if (updatedListOpType && *updatedListOpType != opTypes[i]) {
+            if (updatedListOpType && 
+                *updatedListOpType != opTypeAndChanged.first) {
                 continue;
             }
 
-            opListChanged[i] = _ListDiffers(opTypes[i], newListOp, _listOp);
-            if (opListChanged[i]) {
-                if (!_ValidateEdit(opTypes[i], 
-                                      _listOp.GetItems(opTypes[i]), 
-                                      newListOp.GetItems(opTypes[i]))) {
+            opTypeAndChanged.second =
+                _ListDiffers(opTypeAndChanged.first, newListOp, _listOp);
+            if (opTypeAndChanged.second) {
+                if (!_ValidateEdit(
+                        opTypeAndChanged.first,
+                        _listOp.GetItems(opTypeAndChanged.first), 
+                        newListOp.GetItems(opTypeAndChanged.first))) {
                     return;
                 }
                 anyChanged = true;
@@ -173,11 +171,11 @@ private:
 
         // For each operation list that changed, call helper function to allow
         // subclasses to execute additional behavior in response to changes.
-        for (int i = 0; i < opTypes.size(); ++i) {
-            if (opListChanged[i]) {
-                this->_OnEdit(opTypes[i], 
-                        oldListOp.GetItems(opTypes[i]),
-                        newListOp.GetItems(opTypes[i]));
+        for (auto& opTypeAndChanged : opTypesAndChanged) {
+            if (opTypeAndChanged.second) {
+                this->_OnEdit(opTypeAndChanged.first, 
+                        oldListOp.GetItems(opTypeAndChanged.first),
+                        newListOp.GetItems(opTypeAndChanged.first));
             }
         }
     }
@@ -264,7 +262,7 @@ Sdf_ListOpListEditor<TP>::ModifyItemEdits(const ModifyCallback& cb)
 
 template <class TP>
 void 
-Sdf_ListOpListEditor<TP>::ApplyEdits(
+Sdf_ListOpListEditor<TP>::ApplyEditsToList(
     value_vector_type* vec, const ApplyCallback& cb)
 {
     _listOp.ApplyOperations(vec, cb);

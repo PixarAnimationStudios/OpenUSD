@@ -202,7 +202,7 @@ public:
     typedef boost::reverse_iterator<const_iterator> const_reverse_iterator;
 
     /// Creates a default list proxy object for list operation vector specified
-    /// \p op. This object evalutes to false in a boolean context and all
+    /// \p op. This object evaluates to false in a boolean context and all
     /// operations on this object have no effect.
     SdfListProxy(SdfListOpType op) :
         _op(op)
@@ -424,24 +424,11 @@ public:
         return value_vector_type(*this) > y;
     }
 
-#if !defined(doxygen)
-    typedef boost::shared_ptr<Sdf_ListEditor<TypePolicy> >
-        This::*UnspecifiedBoolType;
-#endif
-
-    /// Returns \c true in a boolean context if the list editor is valid,
-    /// \c false otherwise.
-    operator UnspecifiedBoolType() const
+    /// Explicit bool conversion operator. The list proxy object converts to 
+    /// \c true if the list editor is valid, \c false otherwise.
+    explicit operator bool() const
     {
-        return _listEditor && _listEditor->IsValid() && _IsRelevant() ? 
-            &This::_listEditor : NULL;
-    }
-
-    /// Returns \c false in a boolean context if the list editor is valid,
-    /// \c true otherwise.
-    bool operator!() const 
-    { 
-        return !_listEditor || !_listEditor->IsValid();
+        return _listEditor && _listEditor->IsValid() && _IsRelevant();
     }
 
     // Extensions
@@ -518,6 +505,14 @@ public:
     {
         if (_Validate() && list._Validate()) {
             _listEditor->ApplyList(_op, *list._listEditor);
+        }
+    }
+
+    /// Apply the edits in this list to the given \p vec.
+    void ApplyEditsToList(value_vector_type* vec)
+    {
+        if (_Validate()) {
+            _listEditor->ApplyEditsToList(vec);
         }
     }
 

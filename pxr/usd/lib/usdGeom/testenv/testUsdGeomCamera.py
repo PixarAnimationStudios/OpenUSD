@@ -94,7 +94,7 @@ class TestUsdGeomCamera(unittest.TestCase):
         # test fall-back values
         self._CheckValues(camera, usdCamera, 1.0)
         self.assertEqual(usdCameraProj.GetResolveInfo().GetSource(),
-                         Usd.ResolveInfoSourceFallback);
+                         Usd.ResolveInfoSourceFallback)
 
         camera.transform = (
             Gf.Matrix4d().SetRotate(Gf.Rotation(Gf.Vec3d(1.0,2.0,3.0),10.0)) *

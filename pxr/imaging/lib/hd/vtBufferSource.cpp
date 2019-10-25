@@ -23,7 +23,6 @@
 //
 #include "pxr/imaging/hd/vtBufferSource.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/patchIndex.h"
 
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/types.h"
@@ -42,7 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // ------------------------------------------------------------------------- //
 
 void
-HdVtBufferSource::_SetValue(const VtValue &v, size_t arraySize)
+HdVtBufferSource::_SetValue(const VtValue &v, int arraySize)
 {
     _value = v;
     _tupleType = HdGetValueTupleType(_value);
@@ -81,7 +80,7 @@ HdVtBufferSource::_SetValue(const VtValue &v, size_t arraySize)
 }
 
 HdVtBufferSource::HdVtBufferSource(TfToken const& name, VtValue const& value,
-                                   size_t arraySize)
+                                   int arraySize)
     : _name(name)
 {
     _SetValue(value, arraySize);
@@ -105,7 +104,7 @@ HdVtBufferSource::HdVtBufferSource(TfToken const &name,
 
 HdVtBufferSource::HdVtBufferSource(TfToken const &name,
                                    VtArray<GfMatrix4d> const &matrices,
-                                   size_t arraySize)
+                                   int arraySize)
     : _name(name)
 {
     if (GetDefaultMatrixType() == HdTypeDoubleMat4) {
@@ -129,6 +128,19 @@ HdVtBufferSource::~HdVtBufferSource()
 {
 }
 
+void
+HdVtBufferSource::Truncate(size_t numElements)
+{
+    if (numElements > _numElements) {
+        TF_CODING_ERROR(
+            "Buffer '%s', cannot truncate from length %zu to length %zu",
+            _name.GetText(), _numElements, numElements);
+        return;
+    }
+
+    _numElements = numElements;
+}
+
 /*static*/
 HdType
 HdVtBufferSource::GetDefaultMatrixType()
@@ -140,7 +152,7 @@ HdVtBufferSource::GetDefaultMatrixType()
 }
 
 /*virtual*/
-int
+size_t
 HdVtBufferSource::GetNumElements() const
 {
     return _numElements;

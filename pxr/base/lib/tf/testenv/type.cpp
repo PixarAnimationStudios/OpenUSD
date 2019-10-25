@@ -394,9 +394,11 @@ Test_TfType()
     // Test Get{Base,Derived}Types()
 
     TF_AXIOM( tRoot.GetBaseTypes().empty() );
+    TF_AXIOM( tRoot.GetNBaseTypes(nullptr, 0) == 0 );
     TF_AXIOM( !tRoot.GetDirectlyDerivedTypes().empty() );
 
     TF_AXIOM( tUnknown.GetBaseTypes().empty() );
+    TF_AXIOM( tUnknown.GetNBaseTypes(nullptr, 0) == 0 );
     TF_AXIOM( tUnknown.GetDirectlyDerivedTypes().empty() );
 
     std::vector<TfType> rootDerivatives = tRoot.GetDirectlyDerivedTypes();
@@ -406,6 +408,24 @@ Test_TfType()
     std::vector<TfType> childDerivatives = tChild.GetDirectlyDerivedTypes();
     std::vector<TfType> grandchildParents = tGrandchild.GetBaseTypes();
     std::vector<TfType> grandchildDerivatives = tGrandchild.GetDirectlyDerivedTypes();
+
+    {
+        // Test GetNBaseTypes.
+        TfType types[3];
+        TF_AXIOM(tChild.GetNBaseTypes(types, 1) == 2);
+        TF_AXIOM(types[0] == tChild.GetBaseTypes()[0]);
+        TF_AXIOM(tChild.GetNBaseTypes(types, 2) == 2);
+        TF_AXIOM(types[0] == tChild.GetBaseTypes()[0]);
+        TF_AXIOM(types[1] == tChild.GetBaseTypes()[1]);
+        TF_AXIOM(tChild.GetNBaseTypes(types, 3) == 2);
+        TF_AXIOM(types[0] == tChild.GetBaseTypes()[0]);
+        TF_AXIOM(types[1] == tChild.GetBaseTypes()[1]);
+
+        TfType tChildCopy = tChild;
+        tChildCopy.GetNBaseTypes(&tChildCopy, 1);
+        TF_AXIOM(tChildCopy != tChild);
+        TF_AXIOM(tChildCopy == tChild.GetBaseTypes()[0]);
+    }
 
     // Test inheritance within our known hierarchy
     TF_AXIOM( childParents.size() == 2 && childDerivatives.size() == 2 );
@@ -577,6 +597,49 @@ Test_TfType()
     TF_AXIOM(tClassB);
     TfType found = tConcrete.FindDerivedByName("SomeClassB");
     TF_AXIOM(found == tClassA);
+
+    ////////////////////////////////////////////////////////////////////////
+    // Test that bases are registered with the correct order and that errors
+    // are posted as needed.
+
+    TfType someBaseA = TfType::Declare("SomeBaseA");
+    TfType someBaseB = TfType::Declare("SomeBaseB");
+    TF_AXIOM(someBaseA && someBaseB);
+    
+    {
+        using TypeVector = std::vector<TfType>;    
+
+        // Define SomeDerivedClass with base SomeBaseB: No error expected. 
+        TfErrorMark m;
+        TfType t = TfType::Declare("SomeDerivedClass", { someBaseB });
+        TF_AXIOM(t.GetBaseTypes() == TypeVector({ someBaseB }));
+        TF_AXIOM(m.IsClean());
+
+        // Now redeclare with more bases and an order change: No error expected,
+        // but someBaseA needs to be first base now.
+        t = TfType::Declare("SomeDerivedClass", { someBaseA, someBaseB });
+        TF_AXIOM(t.GetBaseTypes() == TypeVector({ someBaseA, someBaseB }));
+        TF_AXIOM(m.IsClean());
+    
+        // Redefine with flipped order: error expected.
+        TfType::Declare("SomeDerivedClass", { someBaseB, someBaseA });
+        TF_AXIOM(!m.IsClean() && m.begin()->GetCommentary() ==
+            "Specified base type order differs for SomeDerivedClass: had "
+            "(SomeBaseA, SomeBaseB), now (SomeBaseB, SomeBaseA).  If this is "
+            "a type declared in a plugin, check that the plugin metadata is "
+            "correct.");
+        TF_AXIOM(m.Clear());
+
+        // Redefine with one base missing: error expected.
+        TfType::Declare("SomeDerivedClass", { someBaseA });
+        TF_AXIOM(!m.IsClean() && m.begin()->GetCommentary() ==
+            "TfType 'SomeDerivedClass' was previously declared to have "
+            "'SomeBaseB' as a base, but a subsequent declaration does not "
+            "include this as a base.  The newly given bases were: (SomeBaseA).  "
+            "If this is a type declared in a plugin, check that the plugin "
+            "metadata is correct.");
+        TF_AXIOM(m.Clear());
+    }
 
     return true;
 }

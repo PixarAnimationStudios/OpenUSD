@@ -25,9 +25,8 @@
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 
 #include "pxr/base/gf/rotation.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
-#include <boost/assign/list_of.hpp>
 #include <map>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -59,22 +58,22 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 // List of valid rotate op types.
 TF_MAKE_STATIC_DATA(std::set<UsdGeomXformOp::Type>, _validRotateTypes) {
-    *_validRotateTypes = boost::assign::list_of
-        (UsdGeomXformOp::TypeRotateXYZ)
-        (UsdGeomXformOp::TypeRotateXZY)
-        (UsdGeomXformOp::TypeRotateYXZ)
-        (UsdGeomXformOp::TypeRotateYZX)
-        (UsdGeomXformOp::TypeRotateZXY)
-        (UsdGeomXformOp::TypeRotateZYX)
-        .convert_to_container< std::set<UsdGeomXformOp::Type> >();
+    *_validRotateTypes = {
+        UsdGeomXformOp::TypeRotateXYZ,
+        UsdGeomXformOp::TypeRotateXZY,
+        UsdGeomXformOp::TypeRotateYXZ,
+        UsdGeomXformOp::TypeRotateYZX,
+        UsdGeomXformOp::TypeRotateZXY,
+        UsdGeomXformOp::TypeRotateZYX
+    };
 }
 
 TF_MAKE_STATIC_DATA(std::set<UsdGeomXformOp::Type>, _validSingleAxisRotateTypes) {
-    *_validSingleAxisRotateTypes = boost::assign::list_of
-        (UsdGeomXformOp::TypeRotateX)
-        (UsdGeomXformOp::TypeRotateY)
-        (UsdGeomXformOp::TypeRotateZ)
-        .convert_to_container< std::set<UsdGeomXformOp::Type> >();
+    *_validSingleAxisRotateTypes = {
+        UsdGeomXformOp::TypeRotateX,
+        UsdGeomXformOp::TypeRotateY,
+        UsdGeomXformOp::TypeRotateZ
+    };
 }
 
 
@@ -99,14 +98,11 @@ UsdGeomXformCommonAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 /* virtual */
 bool 
-UsdGeomXformCommonAPI::_IsCompatible(const UsdPrim &prim) const
-{
-    return _IsCompatible();
-}
-
-bool
 UsdGeomXformCommonAPI::_IsCompatible() const
 {
+    if (!UsdSchemaBase::_IsCompatible())
+        return false;
+
     if (!_xformable)
         return false;
 
@@ -601,12 +597,13 @@ UsdGeomXformCommonAPI::_ValidateAndComputeXformOpIndices(
 
     // The expected order is:
     // {Translate, TranslatePivot, Rotate, Scale, InvTranslatePivot}
-    TfTokenVector opNameTokens = boost::assign::list_of
-            (_tokens->xformOpTranslate)
-            (_tokens->xformOpTranslatePivot)
-            (_GetRotateOpNameToken(_xformOps))
-            (_tokens->xformOpScale)
-            (_tokens->xformOpInvTranslatePivot);
+    TfTokenVector opNameTokens = {
+        _tokens->xformOpTranslate,
+        _tokens->xformOpTranslatePivot,
+        _GetRotateOpNameToken(_xformOps),
+        _tokens->xformOpScale,
+        _tokens->xformOpInvTranslatePivot
+    };
 
     typedef std::map<TfToken, int> XformOpToIndexMap;
     XformOpToIndexMap xformOpToIndexMap;
@@ -871,6 +868,17 @@ UsdGeomXformCommonAPI::SetScale(
     _xformOps.insert(_xformOps.begin() + _scaleOpIndex, scaleOp);
 
     return _xformable.SetXformOpOrder(_xformOps, GetResetXformStack());
+}
+
+/* static */
+GfMatrix4d
+UsdGeomXformCommonAPI::GetRotationTransform(
+    const GfVec3f &rotation,
+    const UsdGeomXformCommonAPI::RotationOrder rotationOrder)
+{
+    const UsdGeomXformOp::Type rotateOpType =
+        _GetXformOpTypeForRotationOrder(rotationOrder);
+    return UsdGeomXformOp::GetOpTransform(rotateOpType, VtValue(rotation));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -1,11 +1,7 @@
 set(PXR_PREFIX pxr/usdImaging)
 set(PXR_PACKAGE usdviewq)
 
-if (NOT PXR_ENABLE_PYTHON_SUPPORT)
-    message(STATUS "Not building testUsdview because PXR_ENABLE_PYTHON_SUPPORT=OFF")
-    return()
-elseif (NOT TARGET usdviewq)
-    message(WARNING "Not building testUsdview because of missing dependency: usdviewq")
+if (NOT PXR_BUILD_USDVIEW)
     return()
 endif()
 
@@ -165,6 +161,21 @@ if (NOT PXR_HEADLESS_TEST_MODE)
         DEST testusdviewDeactivate
     )
 
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewSkinning
+        DEST testusdviewSkinning
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewPrimTreeExpansion
+        DEST testusdviewPrimTreeExpansion
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewInfGeom
+        DEST testusdviewInfGeom
+    )
+
     pxr_register_test(testusdviewAlive                                               
         PRE_COMMAND "${PYTHON_EXECUTABLE} testUsdviewAliveSetup.py"
         PYTHON
@@ -201,7 +212,7 @@ if (NOT PXR_HEADLESS_TEST_MODE)
     pxr_register_test(testusdviewFileArguments5
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testInvalidFileArg.py invalidSyntax.usda" 
-        CLEAN_OUTPUT "\\/(?!refSphere2).*\\/"
+        CLEAN_OUTPUT "(?:[A-Za-z]:)?/(?!refSphere2).*/"
         STDERR_REDIRECT invalidSyntax_test_out
         DIFF_COMPARE invalidSyntax_test_out 
         EXPECTED_RETURN_CODE 1 
@@ -353,6 +364,24 @@ if (NOT PXR_HEADLESS_TEST_MODE)
     pxr_register_test(testusdviewDeactivate
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewDeactivate.py test.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+    
+    pxr_register_test(testusdviewSkinning
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewSkinning.py arm.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+    
+    pxr_register_test(testusdviewPrimTreeExpansion
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewPrimTreeExpansion.py test.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+    
+    pxr_register_test(testusdviewInfGeom
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewInfGeom.py infGeom.usda"
         EXPECTED_RETURN_CODE 0
     )
 

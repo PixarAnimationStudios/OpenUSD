@@ -27,9 +27,6 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/api.h"
 
-#include <boost/noncopyable.hpp>
-#include <boost/optional.hpp>
-
 #include <cstdlib>
 #include <iosfwd>
 #include <stdint.h>
@@ -80,7 +77,7 @@ public:
         /// node (\c siteName) corresponds to the tag name of the final tag in
         /// the path.
         struct PathNode {
-            size_t nBytes,          ///< Allocated bytes by this or descendent nodes.
+            size_t nBytes,          ///< Allocated bytes by this or descendant nodes.
                    nBytesDirect;    ///< Allocated bytes (only for this node).
             size_t nAllocations;    ///< The number of allocations for this node.
             std::string siteName;   ///< Tag name.
@@ -137,13 +134,17 @@ public:
         /// Generates a report to the ostream \p out.
         ///
         /// This report is printed in a way that is intended to be used by
-        /// xxtracediff.  If \p rootName is provided and is non-empty it will
-        /// replace the name of the tree root in the report.
+        /// xxtracediff.  If \p rootName is non-empty it will replace the name
+        /// of the tree root in the report.
         TF_API
         void Report(
             std::ostream &out,
-            const boost::optional<std::string> &rootName =
-                boost::optional<std::string>()) const;
+            const std::string &rootName) const;
+
+        /// \overload
+        TF_API
+        void Report(
+            std::ostream &out) const;
 
         /// All call sites.
         std::vector<CallSite> callSites;
@@ -258,8 +259,14 @@ public:
     /// simply locking a mutex; typically, pushing or popping the call stack
     /// does not actually cause any memory allocation unless this is the first
     /// time that the given named tag has been encountered.
-    class Auto : public boost::noncopyable {
+    class Auto {
     public:
+        Auto(const Auto &) = delete;
+        Auto& operator=(const Auto &) = delete;
+
+        Auto(Auto &&) = delete;
+        Auto& operator=(Auto &&) = delete;
+
         /// Push a memory tag onto the local-call stack with name \p name.
         ///
         /// If \c TfMallocTag::Initialize() has not been called, this
@@ -459,10 +466,16 @@ public:
 private:
     friend struct Tf_MallocGlobalData;
     
-    class _TemporaryTaggingState : public boost::noncopyable {
+    class _TemporaryTaggingState {
     public:
         explicit _TemporaryTaggingState(_Tagging state);
         ~_TemporaryTaggingState();
+
+        _TemporaryTaggingState(const _TemporaryTaggingState &);
+        _TemporaryTaggingState& operator=(const _TemporaryTaggingState &);
+
+        _TemporaryTaggingState(_TemporaryTaggingState &&);
+        _TemporaryTaggingState& operator=(_TemporaryTaggingState &&);
 
     private:
         _Tagging _oldState;

@@ -22,6 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/contextCaps.h"
+#include "pxr/imaging/glf/diagnostic.h"
 
 #include <boost/make_shared.hpp>
 #include <vector>
@@ -34,9 +36,7 @@
 
 #include "pxr/imaging/hdSt/bufferResourceGL.h"
 #include "pxr/imaging/hdSt/glUtils.h"
-#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hdSt/vboMemoryManager.h"
-#include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -54,10 +54,11 @@ TF_DEFINE_ENV_SETTING(HD_MAX_VBO_SIZE, (1*1024*1024*1024),
 HdBufferArraySharedPtr
 HdStVBOMemoryManager::CreateBufferArray(
     TfToken const &role,
-    HdBufferSpecVector const &bufferSpecs)
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayUsageHint usageHint)
 {
     return boost::make_shared<HdStVBOMemoryManager::_StripedBufferArray>(
-        role, bufferSpecs, _isImmutable);
+        role, bufferSpecs, usageHint);
 }
 
 
@@ -69,7 +70,9 @@ HdStVBOMemoryManager::CreateBufferArrayRange()
 
 
 HdAggregationStrategy::AggregationId
-HdStVBOMemoryManager::ComputeAggregationId(HdBufferSpecVector const &bufferSpecs) const
+HdStVBOMemoryManager::ComputeAggregationId(
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayUsageHint usageHint) const
 {
     static size_t salt = ArchHash(__FUNCTION__, sizeof(__FUNCTION__));
     size_t result = salt;
@@ -82,6 +85,9 @@ HdStVBOMemoryManager::ComputeAggregationId(HdBufferSpecVector const &bufferSpecs
         boost::hash_combine(result,
                 ArchHash((char const*)params, sizeof(size_t) * 3));
     }
+
+    boost::hash_combine(result, usageHint.value);
+
     // promote to size_t
     return (AggregationId)result;
 }
@@ -142,8 +148,8 @@ HdStVBOMemoryManager::GetResourceAllocation(
 HdStVBOMemoryManager::_StripedBufferArray::_StripedBufferArray(
     TfToken const &role,
     HdBufferSpecVector const &bufferSpecs,
-    bool isImmutable)
-    : HdBufferArray(role, HdPerfTokens->garbageCollectedVbo, isImmutable),
+    HdBufferArrayUsageHint usageHint)
+    : HdBufferArray(role, HdPerfTokens->garbageCollectedVbo, usageHint),
       _needsCompaction(false),
       _totalCapacity(0),
       _maxBytesPerElement(0)
@@ -273,7 +279,7 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
     HF_MALLOC_TAG_FUNCTION();
 
     // XXX: make sure glcontext
-    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
+    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->vboRelocated);
 
@@ -293,6 +299,8 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
                       curRangeOwner_->GetResource(bresIt->first));
         }
     }
+
+    GLF_GROUP_FUNCTION();
 
     // count up total elements and update new offsets
     size_t totalNumElements = 0;
@@ -347,12 +355,13 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
         GLuint curId = curRes->GetId();
 
         if (glGenBuffers) {
-            glGenBuffers(1, &newId);
 
             if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
-                glNamedBufferDataEXT(newId,
-                                     bufferSize, /*data=*/NULL, GL_STATIC_DRAW);
+                glCreateBuffers(1, &newId);
+                glNamedBufferData(newId,
+                                  bufferSize, /*data=*/NULL, GL_STATIC_DRAW);
             } else {
+                glGenBuffers(1, &newId);
                 glBindBuffer(GL_ARRAY_BUFFER, newId);
                 glBufferData(GL_ARRAY_BUFFER,
                              bufferSize, /*data=*/NULL, GL_STATIC_DRAW);
@@ -653,8 +662,9 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::CopyData(
                    VBO->GetTupleType().count)) {
         return;
     }
-
-    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
+    GLF_GROUP_FUNCTION();
+    
+    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
     if (glBufferSubData) {
         int bytesPerElement = HdDataSizeOfTupleType(VBO->GetTupleType());
 
@@ -674,10 +684,10 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::CopyData(
         HD_PERF_COUNTER_INCR(HdPerfTokens->glBufferSubData);
 
         if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
-            glNamedBufferSubDataEXT(VBO->GetId(),
-                                    vboOffset,
-                                    srcSize,
-                                    bufferSource->GetData());
+            glNamedBufferSubData(VBO->GetId(),
+                                 vboOffset,
+                                 srcSize,
+                                 bufferSource->GetData());
         } else {
             glBindBuffer(GL_ARRAY_BUFFER, VBO->GetId());
             glBufferSubData(GL_ARRAY_BUFFER,
@@ -721,6 +731,17 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::GetMaxNumElements() const
 {
     return _stripedBufferArray->GetMaxNumElements();
 }
+
+HdBufferArrayUsageHint
+HdStVBOMemoryManager::_StripedBufferArrayRange::GetUsageHint() const
+{
+    if (!TF_VERIFY(_stripedBufferArray)) {
+        return HdBufferArrayUsageHint();
+    }
+
+    return _stripedBufferArray->GetUsageHint();
+}
+
 
 HdStBufferResourceGLSharedPtr
 HdStVBOMemoryManager::_StripedBufferArrayRange::GetResource() const

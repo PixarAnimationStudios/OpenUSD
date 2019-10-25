@@ -23,7 +23,9 @@
 //
 #include "pxr/usd/usdSkel/topology.h"
 
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
+
+#include <unordered_map>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -31,25 +33,38 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace {
 
 
-using _PathIndexMap = std::map<SdfPath,int,SdfPath::FastLessThan>;
+using _PathIndexMap = std::unordered_map<SdfPath,int,SdfPath::Hash>;
 
 
 int
 _GetParentIndex(const _PathIndexMap& pathMap, const SdfPath& path)
 {
-    if(path.IsPrimPath()) {
+    if (path.IsPrimPath()) {
+
+        const bool isAbsPath = path.IsAbsolutePath();
 
         // XXX: A topology is typically constructed using relative
         // paths, but we make this work regardless.
-        const SdfPath& end = !path.IsAbsolutePath() ? 
+        const SdfPath& end = !isAbsPath ?
             SdfPath::ReflexiveRelativePath() : SdfPath::AbsoluteRootPath();
+
+
+        // Avoid infinite loops if given paths like '.', '..', etc.
+        // TODO: SdfPath should provide a method that allows safe ancestor
+        // traversal without risk of introducing infinite loops.
+        if (path == end ||
+            (!isAbsPath && path.GetName() == SdfPathTokens->parentPathElement)) {
+            return -1;
+        }
 
         // Recurse over all parent paths, not just the direct parent.
         // For instance, if the map includes only paths 'a' and 'a/b/c',
         // 'a' will be treated as the parent of 'a/b/c'.
-        for(SdfPath p = path.GetParentPath(); p != end; p = p.GetParentPath()) {
-            auto it = pathMap.find(p);
-            if(it != pathMap.end()) {
+        for (SdfPath p = path.GetParentPath();
+             p != end; p = p.GetParentPath()) {
+
+            const auto it = pathMap.find(p);
+            if (it != pathMap.end()) {
                 return it->second;
             }
         }
@@ -59,63 +74,56 @@ _GetParentIndex(const _PathIndexMap& pathMap, const SdfPath& path)
 
 
 VtIntArray
-_ComputeParentIndices(const SdfPathVector& paths)
+_ComputeParentIndicesFromPaths(TfSpan<const SdfPath> paths)
 {
     TRACE_FUNCTION();
 
     _PathIndexMap pathMap;
-    for(size_t i = 0; i < paths.size(); ++i) {
+    for (size_t i = 0; i < paths.size(); ++i) {
         pathMap[paths[i]] = static_cast<int>(i);
     }
 
     VtIntArray parentIndices;
     parentIndices.assign(paths.size(), -1);
     
-    int* parentIndicesData = parentIndices.data();
-    for(size_t i = 0; i < paths.size(); ++i) {
-        parentIndicesData[i] = _GetParentIndex(pathMap, paths[i]);
+    const auto parentIndicesSpan = TfMakeSpan(parentIndices);
+    for (size_t i = 0; i < paths.size(); ++i) {
+        parentIndicesSpan[i] = _GetParentIndex(pathMap, paths[i]);
     }
     return parentIndices;
 }
 
 
-SdfPathVector
-_GetJointPathsFromTokens(const VtTokenArray& tokens)
+VtIntArray
+_ComputeParentIndicesFromTokens(TfSpan<const TfToken> tokens)
 {
-    const TfToken* tokensData = tokens.cdata();
-
+    // Convert tokens to paths.
     SdfPathVector paths(tokens.size());
-    for(size_t i = 0; i < tokens.size(); ++i) {
-        paths[i] = SdfPath(tokensData[i].GetString());
+    for (size_t i = 0; i < tokens.size(); ++i) {
+        paths[i] = SdfPath(tokens[i].GetString());
     }
-    return paths;
+    return _ComputeParentIndicesFromPaths(paths);
 }
 
 
 } // namespace
 
 
-UsdSkelTopology::UsdSkelTopology()
-    : _parentIndicesData(nullptr)
-{}
-
-
 /// TODO: It's convenient to provide this constructor, but
 /// do we require any common methods to handle the token->path
 /// conversion?
-UsdSkelTopology::UsdSkelTopology(const VtTokenArray& paths)
-    : UsdSkelTopology(_GetJointPathsFromTokens(paths))
+UsdSkelTopology::UsdSkelTopology(TfSpan<const TfToken> paths)
+    : UsdSkelTopology(_ComputeParentIndicesFromTokens(paths))
 {}
 
 
-UsdSkelTopology::UsdSkelTopology(const SdfPathVector& paths)
-    : UsdSkelTopology(_ComputeParentIndices(paths))
+UsdSkelTopology::UsdSkelTopology(TfSpan<const SdfPath> paths)
+    : UsdSkelTopology(_ComputeParentIndicesFromPaths(paths))
 {}
 
 
 UsdSkelTopology::UsdSkelTopology(const VtIntArray& parentIndices)
-    : _parentIndices(parentIndices),
-      _parentIndicesData(parentIndices.cdata())
+    : _parentIndices(parentIndices)
 {}
 
 
@@ -124,22 +132,19 @@ UsdSkelTopology::Validate(std::string* reason) const
 {
     TRACE_FUNCTION();
 
-    if(!TF_VERIFY(GetNumJoints() == 0 || _parentIndicesData))
-        return false;
-
-    for(size_t i = 0; i < GetNumJoints(); ++i) {
-        int parent = _parentIndicesData[i];
-        if(parent >= 0) {   
-            if(ARCH_UNLIKELY(static_cast<size_t>(parent) >= i)) {
-                if(static_cast<size_t>(parent) == i) {
-                    if(reason) {
+    for (size_t i = 0; i < size(); ++i) {
+        const int parent = _parentIndices[i];
+        if (parent >= 0) {   
+            if (ARCH_UNLIKELY(static_cast<size_t>(parent) >= i)) {
+                if (static_cast<size_t>(parent) == i) {
+                    if (reason) {
                         *reason = TfStringPrintf(
                             "Joint %zu has itself as its parent.", i);
                     }
                     return false;
                 }
 
-                if(reason) {
+                if (reason) {
                     *reason = TfStringPrintf(
                         "Joint %zu has mis-ordered parent %d. Joints are "
                         "expected to be ordered with parent joints always "

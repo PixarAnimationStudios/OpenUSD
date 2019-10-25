@@ -55,6 +55,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct HdSt_BasisCurvesShaderKey
 {
     enum DrawStyle{
+        POINTS,       // Draws only the control vertices.
         WIRE,         // Draws as lines or isolines, tessellated along length
         RIBBON,       // Draws as patch, tessellated along length only
         HALFTUBE      // Draws as patch, displaced into a half tube shape
@@ -80,6 +81,7 @@ struct HdSt_BasisCurvesShaderKey
     TfToken const *GetTES() const { return TES; }
     TfToken const *GetGS() const  { return NULL; }
     TfToken const *GetFS() const  { return FS; }
+
     bool IsCullingPass() const { return false; }
     HdCullStyle GetCullStyle() const { return HdCullStyleDontCare; }
     HdPolygonMode GetPolygonMode() const { return HdPolygonModeFill; }
@@ -87,14 +89,13 @@ struct HdSt_BasisCurvesShaderKey
     HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const { 
         return primType; 
     }
-    bool IsFaceVarying() const { return false; }
 
     HdSt_GeometricShader::PrimitiveType primType;
     TfToken glslfx;
-    TfToken VS[5];
+    TfToken VS[7];
     TfToken TCS[4];
     TfToken TES[8];
-    TfToken FS[6];
+    TfToken FS[7];
 };
 
 

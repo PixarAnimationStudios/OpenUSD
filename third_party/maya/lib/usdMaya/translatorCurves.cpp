@@ -21,7 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/translatorCurves.h"
 
 #include "usdMaya/translatorUtil.h"
@@ -34,7 +33,6 @@
 #include <maya/MFnBlendShapeDeformer.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnNurbsCurve.h>
-#include <maya/MGlobal.h>
 #include <maya/MIntArray.h>
 #include <maya/MPlug.h>
 #include <maya/MPointArray.h>
@@ -47,11 +45,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /* static */
 bool
-PxrUsdMayaTranslatorCurves::Create(
+UsdMayaTranslatorCurves::Create(
         const UsdGeomCurves& curves,
         MObject parentNode,
-        const PxrUsdMayaPrimReaderArgs& args,
-        PxrUsdMayaPrimReaderContext* context)
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext* context)
 {
     if (!curves) {
         return false;
@@ -63,7 +61,7 @@ PxrUsdMayaTranslatorCurves::Create(
 
     // Create node (transform)
     MObject mayaNodeTransformObj;
-    if (!PxrUsdMayaTranslatorUtil::CreateTransformNode(prim,
+    if (!UsdMayaTranslatorUtil::CreateTransformNode(prim,
                                                           parentNode,
                                                           args,
                                                           context,
@@ -89,28 +87,27 @@ PxrUsdMayaTranslatorCurves::Create(
     // XXX:
     // Only supporting single curve for now.
     // Sanity Checks
-    if (curveVertexCounts.size() == 0) {
-        MGlobal::displayError(
-            TfStringPrintf("VertexCount arrays is empty on NURBS curves <%s>. Skipping...", 
-                            prim.GetPath().GetText()).c_str());
+    if (curveVertexCounts.empty()) {
+        TF_RUNTIME_ERROR(
+                "vertexCount array is empty on NurbsCurves <%s>. Skipping...",
+                prim.GetPath().GetText());
         return false; // No verts for the curve, so exit
     } else if (curveVertexCounts.size() > 1) {
-        MGlobal::displayWarning(
-            TfStringPrintf("Multiple curves in <%s>. Reading first one...", 
-                            prim.GetPath().GetText()).c_str());
+        TF_WARN("Multiple curves in <%s>. Only reading the first one...", 
+                prim.GetPath().GetText());
     }
 
     int curveIndex = 0;
     curves.GetWidthsAttr().Get(&curveWidths); // not animatable
 
-    // Gather points. If args.GetReadAnimData() is TRUE,
-    // pick the first avaiable sample or default
+    // Gather points. If timeInterval is non-empty, pick the first available
+    // sample in the timeInterval or default.
     UsdTimeCode pointsTimeSample=UsdTimeCode::EarliestTime();
     std::vector<double> pointsTimeSamples;
     size_t numTimeSamples = 0;
-    if (args.GetReadAnimData()) {
-        PxrUsdMayaTranslatorUtil::GetTimeSamples(curves.GetPointsAttr(), args,
-                &pointsTimeSamples);
+    if (!args.GetTimeInterval().IsEmpty()) {
+        curves.GetPointsAttr().GetTimeSamplesInInterval(
+                args.GetTimeInterval(), &pointsTimeSamples);
         numTimeSamples = pointsTimeSamples.size();
         if (numTimeSamples>0) {
             pointsTimeSample = pointsTimeSamples[0];
@@ -118,10 +115,10 @@ PxrUsdMayaTranslatorCurves::Create(
     }
     curves.GetPointsAttr().Get(&points, pointsTimeSample);
     
-    if (points.size() == 0) {
-        MGlobal::displayError(
-            TfStringPrintf("Points arrays is empty on NURBS curves <%s>. Skipping...", 
-                            prim.GetPath().GetText()).c_str());
+    if (points.empty()) {
+        TF_RUNTIME_ERROR(
+                "points array is empty on NurbsCurves <%s>. Skipping...",
+                prim.GetPath().GetText());
         return false; // invalid nurbscurves, so exit
     }
 
@@ -276,7 +273,7 @@ PxrUsdMayaTranslatorCurves::Create(
                 MPlug plg = plgAry.elementByLogicalIndex(ti, &status);
                 MDoubleArray valueArray(numTimeSamples, 0.0);
                 valueArray[ti] = 1.0; // Set the time value where this curve's weight should be 1.0
-                MObject animObj = animFn.create(plg, NULL, &status);
+                MObject animObj = animFn.create(plg, nullptr, &status);
                 animFn.addKeys(&timeArray, &valueArray);
                 if (context) {
                     context->RegisterNewMayaNode(animFn.name().asChar(), animObj ); // used for undo/redo

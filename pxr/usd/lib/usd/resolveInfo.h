@@ -82,7 +82,10 @@ public:
     }
     
     /// Return true if this UsdResolveInfo represents an attribute that has an
-    /// authored value opinion.
+    /// authored value opinion.  This will return `true` if there is *any*
+    /// authored value opinion, including a \ref Usd_AttributeBlocking "block"
+    ///
+    /// This is equivalent to `HasAuthoredValue() || ValueIsBlocked()`
     bool HasAuthoredValueOpinion() const {
         return
             _source == UsdResolveInfoSourceDefault ||
@@ -90,6 +93,16 @@ public:
             _source == UsdResolveInfoSourceValueClips ||
             _source == UsdResolveInfoSourceIsTimeDependent ||
             _valueIsBlocked;
+    }
+
+    /// Return true if this UsdResolveInfo represents an attribute that has an
+    /// authored value that is not \ref Usd_AttributeBlocking "blocked"
+    bool HasAuthoredValue() const {
+        return
+            _source == UsdResolveInfoSourceDefault ||
+            _source == UsdResolveInfoSourceTimeSamples ||
+            _source == UsdResolveInfoSourceValueClips ||
+            _source == UsdResolveInfoSourceIsTimeDependent;
     }
 
     /// Return the node within the containing PcpPrimIndex that provided

@@ -1,5 +1,11 @@
 set(PXR_PACKAGE pxrUsdMayaGL)
 
+if (NOT ${PXR_ENABLE_GL_SUPPORT})
+    message(STATUS
+        "Skipping ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
+    return()
+endif()
+
 pxr_shared_library(${PXR_PACKAGE}
     LIBRARIES
         arch
@@ -12,12 +18,15 @@ pxr_shared_library(${PXR_PACKAGE}
         sdf
         tf
         usd
+        usdGeom
         usdImaging
         usdImagingGL
         usdMaya
         vt
-        ${Boost_LIBRARIES}
-        ${MAYA_LIBRARIES}
+        ${MAYA_Foundation_LIBRARY}
+        ${MAYA_OpenMaya_LIBRARY}
+        ${MAYA_OpenMayaRender_LIBRARY}
+        ${MAYA_OpenMayaUI_LIBRARY}
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}
@@ -29,12 +38,24 @@ pxr_shared_library(${PXR_PACKAGE}
 
     PUBLIC_CLASSES
         batchRenderer
+        debugCodes
+        hdImagingShapeDrawOverride
+        hdImagingShapeUI
         hdRenderer
         proxyDrawOverride
         proxyShapeUI
         sceneDelegate
         shapeAdapter
         softSelectHelper
+        usdProxyShapeAdapter
+        userData
+
+    PRIVATE_CLASSES
+        instancerImager
+        instancerShapeAdapter
+
+    CPPFILES
+        proxyShapeDelegate
 
     DISABLE_PRECOMPILED_HEADERS
 )

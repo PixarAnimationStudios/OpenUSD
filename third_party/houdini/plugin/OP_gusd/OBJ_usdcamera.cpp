@@ -31,15 +31,16 @@
 #include <OP/OP_Value.h>
 #include <PRM/PRM_Include.h>
 #include <PRM/PRM_Parm.h>
+#include <UT/UT_Error.h>
 #include <UT/UT_ThreadSpecificValue.h>
 #include <UT/UT_Version.h>
 
 #include "gusd/PRM_Shared.h"
 #include "gusd/stageCache.h"
 #include "gusd/UT_Assert.h"
-#include "gusd/UT_Error.h"
 #include "gusd/UT_Gf.h"
 
+#include "pxr/base/arch/hints.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usdGeom/xform.h"
@@ -240,7 +241,7 @@ GusdOBJ_usdcamera::GetTemplates()
     for(std::size_t i = 1; i < numObjTemplates; ++i) 
     {
         templates.push_back( objTemplates[i] );
-        if(UT_String(objTemplates[i].getNamePtr()->getToken()) == "display")
+        if(UT_String(objTemplates[i].getNamePtr()->getToken()) == "caching")
             templates.push_back(displayFrustum);
     }
     templates.insert(templates.end(), camTemplates,
@@ -428,7 +429,7 @@ GusdOBJ_usdcamera::evalVariableValue(fpreal& val, int idx, int thread)
        variable, which requires evaluation of the frame parm...and we're
        stuck in a loop.*/
     _VarEvalStack*& stack = _varEvalStack.getValueForThread(thread);
-    if(BOOST_UNLIKELY(!stack)) stack = new _VarEvalStack;
+    if(ARCH_UNLIKELY(!stack)) stack = new _VarEvalStack;
     
     if(stack->Last() != idx) {
         stack->Push(idx);
@@ -584,7 +585,7 @@ GusdOBJ_usdcamera::_EvalCamVariable(fpreal& val, int idx, int thread)
     case VAR_FAR:                   val = 10000; break;
     case VAR_FOCUS:                 val = 5; break;
     case VAR_FSTOP:                 val = 5.6; break;
-    case VAR_HAPERTUREOFFSET:       val = 41.2136;
+    case VAR_HAPERTUREOFFSET:       val = 41.2136; break;
     // for backwards compatibility with old stereo attributes
     case VAR_ISSTEREO:              val = 0; break;
     case VAR_CONVERGENCEDISTANCE:   val = 1000; break;
@@ -701,8 +702,10 @@ GusdOBJ_usdcamera::_LoadCamera(fpreal t, int thread)
     /* Other thread may already have loaded the cam, so only update if needed.*/
     if(_camParmsMicroNode.updateIfNeeded(t, thread))
     {
-        _errors.clearAndDestroyErrors();
         _cam = UsdGeomCamera();
+
+        _errors.clearAndDestroyErrors();
+        UT_ErrorManager::Scope errorScope(_errors);
 
         GusdPRM_Shared prmShared;
         UT_String usdPath, primPath;
@@ -710,12 +713,9 @@ GusdOBJ_usdcamera::_LoadCamera(fpreal t, int thread)
         evalStringT(usdPath, prmShared->filePathName.getToken(), 0, t, thread);
         evalStringT(primPath, prmShared->primPathName.getToken(), 0, t, thread);
 
-        GusdUT_ErrorManager errMgr(_errors);
-        GusdUT_ErrorContext err(errMgr);
-
         GusdStageCacheReader cache;
         if(UsdPrim prim = cache.GetPrimWithVariants(
-               usdPath, primPath, GusdStageOpts::LoadAll(), &err).first) {
+               usdPath, primPath, GusdStageOpts::LoadAll()).first) {
 
             // Track changes to the stage (eg., reloads)
             DEP_MicroNode* stageMicroNode =
@@ -723,7 +723,7 @@ GusdOBJ_usdcamera::_LoadCamera(fpreal t, int thread)
             UT_ASSERT_P(stageMicroNode);
             _camParmsMicroNode.addExplicitInput(*stageMicroNode);
 
-            _cam = GusdUSD_Utils::MakeSchemaObj<UsdGeomCamera>(prim, &err);
+            _cam = GusdUSD_Utils::MakeSchemaObj<UsdGeomCamera>(prim);
             return _cam;
         }
     }

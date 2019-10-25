@@ -58,14 +58,25 @@ UsdTyped::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 bool
-UsdTyped::_IsCompatible(const UsdPrim &prim) const
+UsdTyped::_IsCompatible() const
 {
+    if (!UsdSchemaBase::_IsCompatible())
+        return false;
+
+    // A typed prim must have a non-empty typeName for it to be compatible.
+    const std::string &typeName = GetPrim().GetTypeName().GetString();
+    if (typeName.empty()) {
+        return false;
+    }
+
     // Typed schemas are compatible if the prim's type is a subtype of this
     // schema object's type.
-    return _schemaBaseTfType->FindDerivedByName(
-        prim.GetTypeName().GetString()).IsA(_GetType());
-}
+    if (!_schemaBaseTfType->FindDerivedByName(typeName).IsA(_GetType())) {
+        return false;
+    }
 
+    return true;
+}
 
 TF_MAKE_STATIC_DATA(TfType, _tfType) {
     *_tfType = TfType::Find<UsdTyped>();

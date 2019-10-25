@@ -35,13 +35,13 @@
 
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/plug/plugin.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include <ostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-SDF_DEFINE_ABSTRACT_SPEC(SdfPropertySpec, SdfSpec);
+SDF_DEFINE_ABSTRACT_SPEC(SdfSchema, SdfPropertySpec, SdfSpec);
 
 //
 // Name
@@ -167,12 +167,12 @@ SdfPropertySpec::SetDefaultValue(const VtValue &defaultValue)
         return true;
     }
 
-    if (defaultValue.IsHolding<SdfValueBlock>()) {
-        return SetField(SdfFieldKeys->Default, defaultValue);
-    }
-
     TfType valueType = GetValueType();
     if (valueType.IsUnknown()) {
+        if (defaultValue.IsHolding<SdfValueBlock>()) {
+            // Allow blocking unknown types.
+            return SetField(SdfFieldKeys->Default, defaultValue);
+        }
         TF_CODING_ERROR("Can't set value on attribute <%s> with "
                         "unknown type \"%s\"",
                         GetPath().GetText(),
@@ -180,26 +180,38 @@ SdfPropertySpec::SetDefaultValue(const VtValue &defaultValue)
         return false;
     }
 
-    if (ARCH_UNLIKELY(valueType.GetTypeid() == typeid(void))) {
-        // valueType may be provided by a plugin that has not been loaded.
-        // In that case, we cannot get the type info, which is required to cast.
-        // So we load the plugin in that case.
-        if (PlugPluginPtr p = 
-                PlugRegistry::GetInstance().GetPluginForType(valueType)) {
-            p->Load();
+    // valueType may be an enum type provided by a plugin which has not been
+    // loaded.
+    if (valueType.GetTypeid() == typeid(void) || valueType.IsEnumType()) {
+        // If we are dealing with an enum then we just make sure the TfTypes
+        // match up. Authoring integral values to enum typed properties is
+        // disallowed.
+        if (valueType == defaultValue.GetType()) {
+            return SetField(SdfFieldKeys->Default, defaultValue);
+        }
+
+    }
+    else {
+        // Otherwise check if defaultValue is castable to valueType
+        VtValue value =
+            VtValue::CastToTypeid(defaultValue, valueType.GetTypeid());
+        if (!value.IsEmpty()) {
+            return SetField(SdfFieldKeys->Default, value);
+        }
+        else if (defaultValue.IsHolding<SdfValueBlock>()) {
+            // If we're setting a value block, always allow that.
+            return SetField(SdfFieldKeys->Default, defaultValue);
         }
     }
 
-    VtValue value = VtValue::CastToTypeid(defaultValue, valueType.GetTypeid());
-    if (value.IsEmpty()) {
-        TF_CODING_ERROR("Can't set value on <%s> to %s: "
-                        "expected a value of type \"%s\"",
-                        GetPath().GetText(),
-                        TfStringify(defaultValue).c_str(),
-                        valueType.GetTypeName().c_str());
-        return false;
-    }
-    return SetField(SdfFieldKeys->Default, value);
+    // If we reach here, we are either assigning invalid values to enum types
+    // or defaultValue can't cast to valueType.
+    TF_CODING_ERROR("Can't set value on <%s> to %s: "
+                    "expected a value of type \"%s\"",
+                    GetPath().GetText(),
+                    TfStringify(defaultValue).c_str(),
+                    valueType.GetTypeName().c_str());
+    return false;
 }
 
 SdfTimeSampleMap

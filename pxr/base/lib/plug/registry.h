@@ -37,9 +37,6 @@
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/base/tf/weakPtr.h"
 
-#include <boost/noncopyable.hpp>
-#include <boost/scoped_ptr.hpp>
-
 #include <mutex>
 #include <string>
 #include <vector>
@@ -47,7 +44,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_PTRS(PlugPlugin);
-struct Plug_RegistrationMetadata;
+class Plug_RegistrationMetadata;
 
 /// \class PlugRegistry
 ///
@@ -169,8 +166,8 @@ struct Plug_RegistrationMetadata;
 ///
 /// \section plug_Advertising Advertising a Plug-in's Contents
 ///
-/// Once the the plug-ins are registered, the plug-in facility must also be 
-/// able to tell what they contain.  Specifically, it must be able to find 
+/// Once the plug-ins are registered, the plug-in facility must also be
+/// able to tell what they contain.  Specifically, it must be able to find
 /// out what subclasses of what plug-in base classes each plug-in contains.
 /// Plug-ins must advertise this information through their plugInfo.json file
 /// in the "Info" key.  In the "Info" object there should be a key "Types"
@@ -184,7 +181,7 @@ struct Plug_RegistrationMetadata;
 /// called "bases" whose value should be an array of base class type names.
 ///
 /// For example, a bundle that contains a subclass of ImageFilter might have
-/// a plugInfo.json that looks like the the following example.
+/// a plugInfo.json that looks like the following example.
 ///
 /// \code
 /// {
@@ -336,7 +333,9 @@ struct Plug_RegistrationMetadata;
 /// \endcode
 ///
 
-class PlugRegistry : public TfWeakBase, boost::noncopyable {
+class PlugRegistry : public TfWeakBase {
+    PlugRegistry(PlugRegistry const &) = delete;
+    PlugRegistry &operator=(PlugRegistry const &) = delete;
 public:
     typedef PlugRegistry This;
     typedef std::vector<TfType> TypeVector;
@@ -345,11 +344,13 @@ public:
     PLUG_API
     static PlugRegistry & GetInstance();
 
-    /// Registers all plug-ins discovered at \a pathToPlugInfo.
+    /// Registers all plug-ins discovered at \a pathToPlugInfo.  Sends
+    /// PlugNotice::DidRegisterPlugins with any newly registered plugins.
     PLUG_API
     PlugPluginPtrVector RegisterPlugins(const std::string & pathToPlugInfo);
 
-    /// Registers all plug-ins discovered in any of \a pathsToPlugInfo.
+    /// Registers all plug-ins discovered in any of \a pathsToPlugInfo.  Sends
+    /// PlugNotice::DidRegisterPlugins with any newly registered plugins.
     PLUG_API
     PlugPluginPtrVector
     RegisterPlugins(const std::vector<std::string> & pathsToPlugInfo);
@@ -359,6 +360,9 @@ public:
     /// function if you expect that \c name may name a type provided by a
     /// plugin.  Calling this function will incur plugin discovery (but not
     /// loading) if plugin discovery has not yet occurred.
+    ///
+    /// Note that additional plugins may be registered during program runtime.
+    /// \sa \ref Plug_Discovery
     PLUG_API
     static TfType FindTypeByName(std::string const &typeName);
 
@@ -368,6 +372,9 @@ public:
     /// you expect that the derived type may be provided by a plugin.  Calling
     /// this function will incur plugin discovery (but not loading) if plugin
     /// discovery has not yet occurred.
+    ///
+    /// Note that additional plugins may be registered during program runtime.
+    /// \sa \ref Plug_Discovery
     PLUG_API
     static TfType
     FindDerivedTypeByName(TfType base, std::string const &typeName);
@@ -378,6 +385,9 @@ public:
     /// you expect that the derived type may be provided by a plugin.  Calling
     /// this function will incur plugin discovery (but not loading) if plugin
     /// discovery has not yet occurred.
+    ///
+    /// Note that additional plugins may be registered during program runtime.
+    /// \sa \ref Plug_Discovery
     template <class Base>
     static TfType
     FindDerivedTypeByName(std::string const &typeName) {
@@ -396,6 +406,8 @@ public:
     /// \a base.  Use this function if you expect that plugins may provide types
     /// derived from \a base.  Otherwise, use \a TfType::GetAllDerivedTypes.
     ///
+    /// Note that additional plugins may be registered during program runtime.
+    /// \sa \ref Plug_Discovery
     PLUG_API
     static void
     GetAllDerivedTypes(TfType base, std::set<TfType> *result);
@@ -404,22 +416,27 @@ public:
     /// \a Base.  Use this function if you expect that plugins may provide types
     /// derived from \a base.  Otherwise, use \a TfType::GetAllDerivedTypes.
     ///
+    /// Note that additional plugins may be registered during program runtime.
+    /// \sa \ref Plug_Discovery
     template <class Base>
     static void
     GetAllDerivedTypes(std::set<TfType> *result) {
         return GetAllDerivedTypes(TfType::Find<Base>(), result);
     }
 
-    /// Returns the plug-in for the given type, or a
-    /// null pointer if the is no registered plug-in.
+    /// Returns the plug-in for the given type, or a null pointer if there is no
+    /// registered plug-in.
     PLUG_API
     PlugPluginPtr GetPluginForType(TfType t) const;
 
-    /// Returns all registered plug-ins.
+    /// Returns all registered plug-ins.  Note that additional plugins may be
+    /// registered during program runtime.  \sa \ref Plug_Discovery
     PLUG_API
     PlugPluginPtrVector GetAllPlugins() const;
 
-    /// Returns a plugin with the specified library name.
+    /// Returns a plugin with the specified library name.  Note that additional
+    /// plugins may be registered during program runtime.
+    /// \sa \ref Plug_Discovery
     PLUG_API
     PlugPluginPtr GetPluginWithName(const std::string& name) const;
 
@@ -458,8 +475,6 @@ private:
 
 private:
     TfHashSet<std::string, TfHash> _registeredPluginPaths;
-
-    boost::scoped_ptr<class Plug_TaskArena> _dispatcher;
 
     std::mutex _mutex;
 };

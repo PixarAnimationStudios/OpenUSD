@@ -1,0 +1,34 @@
+#usda 1.0 
+(
+    subLayers = [ 
+        @baseSchema.usda@
+    ]  
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName      = "schemaFail11"
+        string libraryPath      = "pxr/usd/fakelib"
+    }
+)
+{
+}
+
+class "MultipleApplyAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "multipleApply"
+    }
+)
+{
+}
+
+# A single apply API schema can't inherit from a multiple-apply API schema
+class "SingleApplyAPI" (
+    inherits = </MultipleApplyAPI>
+    customData = {
+        token apiSchemaType = "singleApply"
+    }
+)
+{
+}

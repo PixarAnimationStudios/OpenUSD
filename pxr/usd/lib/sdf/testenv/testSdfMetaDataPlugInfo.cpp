@@ -40,9 +40,6 @@
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stringUtils.h"
-
-#include <boost/mpl/for_each.hpp>
-#include <boost/mpl/vector.hpp>
 #include <iostream>
 #include <string>
 
@@ -104,61 +101,57 @@ template <typename T>
 void GetInfo(VtArray<T> *array, string *name);
 
 // Checks all test fields involving a plugin metadata type.
-struct CheckField {
-    template <typename SdfValueType>
-    void operator () (const SdfValueType &) {
-        typedef typename SdfValueType::Type T;
+template <typename T>
+void CheckField () {
+    // Get the test case info
+    VtArray<T> array;
+    string name;
+    GetInfo<T>(&array, &name);
+    TfToken single(name + "_single");
+    TfToken shaped(name + "_shaped");
+    TfToken single_default(name + "_single_default");
+    TfToken shaped_default(name + "_shaped_default");
 
-        // Get the test case info
-        VtArray<T> array;
-        string name;
-        GetInfo<T>(&array, &name);
-        TfToken single(name + "_single");
-        TfToken shaped(name + "_shaped");
-        TfToken single_default(name + "_single_default");
-        TfToken shaped_default(name + "_shaped_default");
+    // Check that the fields are there only when they should be
+    cout << "Checking presence of " << single << endl;
+    CheckPresent(single);
+    cout << "Checking presence of " << shaped << endl;
+    CheckPresent(shaped);
+    cout << "Checking presence of " << single_default << endl;
+    CheckPresent(single_default);
+    cout << "Checking presence of " << shaped_default << endl;
+    CheckPresent(shaped_default);
 
-        // Check that the fields are there only when they should be
-        cout << "Checking presence of " << single << endl;
-        CheckPresent(single);
-        cout << "Checking presence of " << shaped << endl;
-        CheckPresent(shaped);
-        cout << "Checking presence of " << single_default << endl;
-        CheckPresent(single_default);
-        cout << "Checking presence of " << shaped_default << endl;
-        CheckPresent(shaped_default);
+    // Check that the default values have the correct types
+    const SdfSchema& schema = SdfSchema::GetInstance();
+    cout << "Checking type of " << single << endl;
+    TF_AXIOM(TfType::Find<T>() == schema.GetFallback(single).GetType());
+    cout << "Checking type of " << shaped << endl;
+    TF_AXIOM(TfType::Find<VtArray<T> >() == 
+             schema.GetFallback(shaped).GetType());
+    cout << "Checking type of " << single_default << endl;
+    TF_AXIOM(TfType::Find<T>() == 
+             schema.GetFallback(single_default).GetType());
+    cout << "Checking type of " << shaped_default << endl;
+    TF_AXIOM(TfType::Find<VtArray<T> >() == 
+             schema.GetFallback(shaped_default).GetType());
 
-        // Check that the default values have the correct types
-        const SdfSchema& schema = SdfSchema::GetInstance();
-        cout << "Checking type of " << single << endl;
-        TF_AXIOM(TfType::Find<T>() == schema.GetFallback(single).GetType());
-        cout << "Checking type of " << shaped << endl;
-        TF_AXIOM(TfType::Find<VtArray<T> >() == 
-                 schema.GetFallback(shaped).GetType());
-        cout << "Checking type of " << single_default << endl;
-        TF_AXIOM(TfType::Find<T>() == 
-                 schema.GetFallback(single_default).GetType());
-        cout << "Checking type of " << shaped_default << endl;
-        TF_AXIOM(TfType::Find<VtArray<T> >() == 
-                 schema.GetFallback(shaped_default).GetType());
+    // Check that the default values have the correct contents
+    auto getDefaultValueForType = [](const TfType& type) {
+        return SdfSchema::GetInstance().FindType(type).GetDefaultValue();
+    };
 
-        // Check that the default values have the correct contents
-        auto getDefaultValueForType = [](const TfType& type) {
-            return SdfSchema::GetInstance().FindType(type).GetDefaultValue();
-        };
-
-        cout << "Checking default value of " << single << endl;
-        TF_AXIOM(getDefaultValueForType(TfType::Find<T>()) == 
-                 schema.GetFallback(single).Get<T>());
-        cout << "Checking default value of " << shaped << endl;
-        TF_AXIOM(getDefaultValueForType(TfType::Find<VtArray<T> >()) == 
-                 schema.GetFallback(shaped).Get<VtArray<T> >());
-        cout << "Checking default value of " << single_default << endl;
-        TF_AXIOM(array[0] == schema.GetFallback(single_default).Get<T>());
-        cout << "Checking default value of " << shaped_default << endl;
-        TF_AXIOM(array == schema.GetFallback(shaped_default).Get<VtArray<T> >());
-    }
-};
+    cout << "Checking default value of " << single << endl;
+    TF_AXIOM(getDefaultValueForType(TfType::Find<T>()) == 
+             schema.GetFallback(single).Get<T>());
+    cout << "Checking default value of " << shaped << endl;
+    TF_AXIOM(getDefaultValueForType(TfType::Find<VtArray<T> >()) == 
+             schema.GetFallback(shaped).Get<VtArray<T> >());
+    cout << "Checking default value of " << single_default << endl;
+    TF_AXIOM(array[0] == schema.GetFallback(single_default).Get<T>());
+    cout << "Checking default value of " << shaped_default << endl;
+    TF_AXIOM(array == schema.GetFallback(shaped_default).Get<VtArray<T> >());
+}
 
 void CheckDictionary()
 {
@@ -190,6 +183,21 @@ void CheckListOp(const TfToken& key)
     TF_AXIOM(ListOp() == schema.GetFallback(key).Get<ListOp>());
 }
 
+void CheckExtraInfo(
+    const TfToken& fieldName,
+    const std::vector< std::pair<TfToken, JsValue> >& expectedInfos) {
+    const SdfSchema& instance = SdfSchema::GetInstance();
+    const SdfSchemaBase::FieldDefinition* field =
+        instance.GetFieldDefinition(fieldName);
+    const SdfSchemaBase::FieldDefinition::InfoVec& infoVec = field->GetInfo();
+    for (const std::pair<TfToken, JsValue>& expectedInfo : expectedInfos) {
+        TF_AXIOM(
+            std::find(
+                infoVec.begin(), infoVec.end(), expectedInfo)
+            != infoVec.end());
+    }
+}
+
 int main()
 {
     // Load a plugin that defines the test fields
@@ -205,7 +213,12 @@ int main()
     TfRegistryManager::GetInstance().SubscribeTo<SdfSchema>();
 
     // Check all the fields
-    boost::mpl::for_each<SdfValueTraitsTypesVector>(CheckField());
+    #define _CHECK_FIELD(r, unused, elem)        \
+    {                                            \
+        CheckField<SDF_VALUE_CPP_TYPE(elem)>();  \
+    }
+    BOOST_PP_SEQ_FOR_EACH(_CHECK_FIELD, ~, SDF_VALUE_TYPES)
+    #undef _CHECK_FIELD
 
     // Check the dictionary field separately
     CheckDictionary();
@@ -251,6 +264,30 @@ int main()
     CheckPresent(TfToken("applies_to_prims_and_properties"), 
                  { SdfSpecTypePrim, SdfSpecTypeVariant,
                    SdfSpecTypeAttribute, SdfSpecTypeRelationship });
+
+    cout << "Checking \"extrainfo1\"\n";
+    CheckExtraInfo(
+        TfToken("extrainfo1"),
+        {
+            std::make_pair(TfToken("config"), JsValue(true))
+        });
+
+    cout << "Checking \"extrainfo2\"\n";
+    const std::vector<JsValue> expectedAuthors = {
+        JsValue("johndoe"), JsValue("marysue") };
+    CheckExtraInfo(
+        TfToken("extrainfo2"), 
+        {
+            std::make_pair(TfToken("config"), JsValue(false)),
+            std::make_pair(TfToken("authors"), JsValue(expectedAuthors))
+        });
+
+    cout << "Checking \"extrainfo3\"\n";
+    CheckExtraInfo(
+        TfToken("extrainfo3"),
+        {
+            std::make_pair(TfToken("version"), JsValue(uint64_t(1)))
+        });
 
     cout << "Passed!" << endl;
 
@@ -381,6 +418,16 @@ void GetInfo<double>(VtArray<double> *array, string *name)
     (*array)[0] = double(0.5);
     (*array)[1] = double(1.5);
     (*array)[2] = double(2.5);
+}
+
+template <>
+void GetInfo<SdfTimeCode>(VtArray<SdfTimeCode> *array, string *name)
+{
+    *name = "timecode";
+    *array = VtArray<SdfTimeCode>(3);
+    (*array)[0] = SdfTimeCode(1.0);
+    (*array)[1] = SdfTimeCode(1.5);
+    (*array)[2] = SdfTimeCode(2.0);
 }
 
 template <>

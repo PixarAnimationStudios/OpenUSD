@@ -74,6 +74,11 @@ UsdRiPxrEnvDayLight::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdRiPxrEnvDayLight::_GetSchemaType() const {
+    return UsdRiPxrEnvDayLight::schemaType;
+}
+
 /* static */
 const TfType &
 UsdRiPxrEnvDayLight::_GetStaticTfType()

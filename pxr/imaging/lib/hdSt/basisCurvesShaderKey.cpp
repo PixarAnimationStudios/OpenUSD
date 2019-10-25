@@ -59,10 +59,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((curvesCatmullRom,                "Curves.CatmullRomBasis"))
     ((curvesFallback,                  "Curves.LinearBasis"))
 
-    // point id fallback mixin
-    ((pointIdVS,                       "PointId.Vertex"))
-    ((pointIdFS,                       "PointId.Fragment.Points"))
+    // point id mixins (for point picking & selection)
+    ((pointIdNoneVS,                   "PointId.Vertex.None"))
+    ((pointIdVS,                       "PointId.Vertex.PointParam"))
+    ((pointIdSelDecodeUtilsVS,         "Selection.DecodeUtils"))
+    ((pointIdSelPointSelVS,            "Selection.Vertex.PointSel"))
     ((pointIdFallbackFS,               "PointId.Fragment.Fallback"))
+    ((pointIdFS,                       "PointId.Fragment.PointParam"))
 
     // helper mixins
     ((curveCubicWidthsBasis,           "Curves.Cubic.Widths.Basis"))
@@ -103,6 +106,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     // terminals
     ((surfaceFS,                       "Fragment.Surface"))
     ((commonFS,                        "Fragment.CommonTerminals"))
+    ((scalarOverrideFS,                "Fragment.ScalarOverride"))
 );
 
 static TfToken HdSt_BasisToShaderKey(const TfToken& basis){
@@ -125,160 +129,207 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
 {
     bool drawThick = (drawStyle == HdSt_BasisCurvesShaderKey::HALFTUBE) || 
                      (drawStyle == HdSt_BasisCurvesShaderKey::RIBBON);
-    bool cubic = type == HdTokens->cubic;
+    bool cubic  = (type == HdTokens->cubic);
+    bool linear = (type == HdTokens->linear);
+    TF_VERIFY(cubic || linear);
 
-    if (cubic) {
+    // The order of the clauses below matters!
+    if (drawStyle == HdSt_BasisCurvesShaderKey::POINTS) {
+        primType = HdSt_GeometricShader::PrimitiveType::PRIM_POINTS;
+    } else if (cubic) {
         // cubic curves get drawn via isolines in a tessellation shader
         // even in wire mode.
-        primType = HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES;
-    } 
-    else if (!cubic && drawThick){
-        primType = HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES;
-    }
-    else {
+        primType =
+        HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES;
+    } else if (drawThick){
+        primType =
+        HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES;
+    } else {
         primType = HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_LINES;
     }
 
+    bool isPrimTypePoints = HdSt_GeometricShader::IsPrimTypePoints(primType);
+
     bool oriented = normalStyle == HdSt_BasisCurvesShaderKey::ORIENTED;
 
-    VS[0]  = _tokens->instancing;
-    VS[1]  = drawThick ? _tokens->curvesVertexPatch 
+    uint8_t vsIndex = 0;
+    VS[vsIndex++]  = _tokens->instancing;
+    VS[vsIndex++]  = drawThick ? _tokens->curvesVertexPatch 
                        : _tokens->curvesVertexWire;
-    VS[2]  = oriented ? _tokens->curvesVertexNormalOriented 
+    VS[vsIndex++]  = oriented ? _tokens->curvesVertexNormalOriented 
                       : _tokens->curvesVertexNormalImplicit;
-    VS[3]  = _tokens->pointIdVS;
-    VS[4]  = TfToken();
+    if (isPrimTypePoints) {
+        // Add mixins that allow for picking and sel highlighting of points.
+        // Even though these are more "render pass-ish", we do this here to
+        // reduce the shader code generated when the points repr isn't used.
+        VS[vsIndex++] = _tokens->pointIdVS;
+        VS[vsIndex++] = _tokens->pointIdSelDecodeUtilsVS;
+        VS[vsIndex++] = _tokens->pointIdSelPointSelVS;
+    } else {
+        VS[vsIndex++] = _tokens->pointIdNoneVS;
+    }
+    VS[vsIndex]  = TfToken();
 
     // Setup Tessellation
+    if (linear) {
+        switch(drawStyle) {
+        case HdSt_BasisCurvesShaderKey::POINTS:
+        case HdSt_BasisCurvesShaderKey::WIRE:
+        {
+            TCS[0] = TfToken();
+            TES[0] = TfToken();
+            break;
+        }
+        case HdSt_BasisCurvesShaderKey::RIBBON:
+        {
+            TCS[0] = _tokens->curvesTessControlShared;
+            TCS[1] = _tokens->curvesTessControlLinearPatch; 
+            TCS[2] = _tokens->curvesTessControlLinearRibbon;
+            TCS[3] = TfToken();  
 
-    if (!cubic && drawStyle == HdSt_BasisCurvesShaderKey::WIRE){
-        TCS[0] = TfToken();
-        TES[0] = TfToken();
-    }
-    else if (!cubic && drawStyle == HdSt_BasisCurvesShaderKey::RIBBON){
-        TCS[0] = _tokens->curvesTessControlShared;
-        TCS[1] = _tokens->curvesTessControlLinearPatch; 
-        TCS[2] = _tokens->curvesTessControlLinearRibbon;
-        TCS[3] = TfToken();  
+            TES[0] = _tokens->instancing;
+            TES[1] = _tokens->curvesTessEvalPatch;
+            TES[2] = _tokens->curvesFallback;
+            TES[3] = _tokens->curvesTessEvalLinearPatch;
+            TES[4] = oriented ? _tokens->curvesTessEvalRibbonOriented
+                            : _tokens->curvesTessEvalRibbonImplicit;
+            TES[5] = TfToken();
+            break;
+        }
+        case HdSt_BasisCurvesShaderKey::HALFTUBE:
+        {
+            TCS[0] = _tokens->curvesTessControlShared;
+            TCS[1] = _tokens->curvesTessControlLinearPatch; 
+            TCS[2] = _tokens->curvesTessControlLinearHalfTube;
+            TCS[3] = TfToken();  
 
-        TES[0] = _tokens->instancing;
-        TES[1] = _tokens->curvesTessEvalPatch;
-        TES[2] = _tokens->curvesTessEvalLinearPatch;
-        TES[3] = oriented ? _tokens->curvesTessEvalRibbonOriented
-                          : _tokens->curvesTessEvalRibbonImplicit;
-        TES[4] = TfToken();
-    }
-    else if (!cubic && drawStyle == HdSt_BasisCurvesShaderKey::HALFTUBE){
-        TCS[0] = _tokens->curvesTessControlShared;
-        TCS[1] = _tokens->curvesTessControlLinearPatch; 
-        TCS[2] = _tokens->curvesTessControlLinearHalfTube;
-        TCS[3] = TfToken();  
+            TES[0] = _tokens->instancing;
+            TES[1] = _tokens->curvesTessEvalPatch;
+            TES[2] = _tokens->curvesFallback;
+            TES[3] = _tokens->curvesTessEvalLinearPatch;
+            TES[4] = _tokens->curvesTessEvalHalfTube;
+            TES[5] = TfToken();
+            break;
+        }
+        default:
+            TF_CODING_ERROR("Unhandled drawstyle for basis curves");
+        }
+    } else { // cubic
+        switch(drawStyle) {
+        case HdSt_BasisCurvesShaderKey::POINTS:
+        {
+            TCS[0] = TfToken();
+            TES[0] = TfToken();
+            break;
+        }
+        case HdSt_BasisCurvesShaderKey::WIRE:
+        {
+            TCS[0] = _tokens->curvesTessControlShared;
+            TCS[1] = _tokens->curvesTessControlCubicWire;
+            TCS[2] = TfToken();
 
-        TES[0] = _tokens->instancing;
-        TES[1] = _tokens->curvesTessEvalPatch;
-        TES[2] = _tokens->curvesTessEvalLinearPatch;
-        TES[3] = _tokens->curvesTessEvalHalfTube;
-        TES[4] = TfToken(); 
-    }
-    else if (cubic && drawStyle == HdSt_BasisCurvesShaderKey::WIRE){
-        TCS[0] = _tokens->curvesTessControlShared;
-        TCS[1] = _tokens->curvesTessControlCubicWire;
-        TCS[2] = TfToken();
-
-        TES[0] = _tokens->instancing;
-        TES[1] = _tokens->curvesTessEvalCubicWire;
-        TES[2] = HdSt_BasisToShaderKey(basis);
-        TES[3] = TfToken();
-    }
-    else if (cubic && drawStyle == HdSt_BasisCurvesShaderKey::RIBBON){
-        TCS[0] = _tokens->curvesTessControlShared;
-        TCS[1] = _tokens->curvesTessControlCubicPatch;
-        TCS[2] = _tokens->curvesTessControlCubicRibbon;
-        TCS[3] = TfToken();
+            TES[0] = _tokens->instancing;
+            TES[1] = _tokens->curvesTessEvalCubicWire;
+            TES[2] = HdSt_BasisToShaderKey(basis);
+            TES[3] = TfToken();
+            break;
+        }
+        case HdSt_BasisCurvesShaderKey::RIBBON:
+        {
+            TCS[0] = _tokens->curvesTessControlShared;
+            TCS[1] = _tokens->curvesTessControlCubicPatch;
+            TCS[2] = _tokens->curvesTessControlCubicRibbon;
+            TCS[3] = TfToken();
 
 
-        TES[0] = _tokens->instancing;
-        TES[1] = _tokens->curvesTessEvalPatch;
-        TES[2] = _tokens->curvesTessEvalCubicPatch;
-        TES[3] = HdSt_BasisToShaderKey(basis);
-        TES[4] = oriented ? _tokens->curvesTessEvalRibbonOriented
-                          : _tokens->curvesTessEvalRibbonImplicit;
-        TES[5] = basisWidthInterpolation ? 
-                    _tokens->curveCubicWidthsBasis 
-                  : _tokens->curveCubicWidthsLinear;
-        TES[6] = basisNormalInterpolation ? _tokens->curveCubicNormalsBasis :
-                 _tokens->curveCubicNormalsLinear;
-        TES[7] = TfToken();
-    }
-    else if (cubic && drawStyle == HdSt_BasisCurvesShaderKey::HALFTUBE){
-        TCS[0] = _tokens->curvesTessControlShared;
-        TCS[1] = _tokens->curvesTessControlCubicPatch;
-        TCS[2] = _tokens->curvesTessControlCubicHalfTube;
-        TCS[3] = TfToken();
+            TES[0] = _tokens->instancing;
+            TES[1] = _tokens->curvesTessEvalPatch;
+            TES[2] = _tokens->curvesTessEvalCubicPatch;
+            TES[3] = HdSt_BasisToShaderKey(basis);
+            TES[4] = oriented ? _tokens->curvesTessEvalRibbonOriented
+                            : _tokens->curvesTessEvalRibbonImplicit;
+            TES[5] = basisWidthInterpolation ? 
+                        _tokens->curveCubicWidthsBasis 
+                    : _tokens->curveCubicWidthsLinear;
+            TES[6] = basisNormalInterpolation ?
+                        _tokens->curveCubicNormalsBasis :
+                        _tokens->curveCubicNormalsLinear;
+            TES[7] = TfToken();
+            break;
+        }
+        case HdSt_BasisCurvesShaderKey::HALFTUBE:
+        {
+            TCS[0] = _tokens->curvesTessControlShared;
+            TCS[1] = _tokens->curvesTessControlCubicPatch;
+            TCS[2] = _tokens->curvesTessControlCubicHalfTube;
+            TCS[3] = TfToken();
 
-        TES[0] = _tokens->instancing;
-        TES[1] = _tokens->curvesTessEvalPatch;
-        TES[2] = _tokens->curvesTessEvalCubicPatch;
-        TES[3] = HdSt_BasisToShaderKey(basis);
-        TES[4] = _tokens->curvesTessEvalHalfTube;
-        TES[5] = basisWidthInterpolation ? 
-                    _tokens->curveCubicWidthsBasis 
-                  : _tokens->curveCubicWidthsLinear;
-        TES[6] = basisNormalInterpolation ? _tokens->curveCubicNormalsBasis :
-                 _tokens->curveCubicNormalsLinear;
-        TES[7] = TfToken();
-    }
-    else{
-        TF_WARN("Cannot setup tessellation shaders for invalid combination of \
-                 basis curves shader key settings.");
-        TCS[0] = TfToken();
-        TES[0] = TfToken();
+            TES[0] = _tokens->instancing;
+            TES[1] = _tokens->curvesTessEvalPatch;
+            TES[2] = _tokens->curvesTessEvalCubicPatch;
+            TES[3] = HdSt_BasisToShaderKey(basis);
+            TES[4] = _tokens->curvesTessEvalHalfTube;
+            TES[5] = basisWidthInterpolation ? 
+                        _tokens->curveCubicWidthsBasis 
+                    : _tokens->curveCubicWidthsLinear;
+            TES[6] = basisNormalInterpolation ?
+                        _tokens->curveCubicNormalsBasis :
+                        _tokens->curveCubicNormalsLinear;
+            TES[7] = TfToken();
+            break;
+        }
+        default:
+            TF_CODING_ERROR("Unhandled drawstyle for basis curves");
+        }
     }
 
     // setup fragment shaders
-    FS[0] = _tokens->surfaceFS;
-    FS[1] = _tokens->commonFS;
+    // Common must be first as it defines terminal interfaces
+    uint8_t fsIndex = 0;
+    FS[fsIndex++] = _tokens->commonFS;
+    FS[fsIndex++] = _tokens->surfaceFS;
+    FS[fsIndex++] = _tokens->scalarOverrideFS;
 
     // we don't currently ever set primType to PRIM_POINTS for curves, but
     // if we ever want to view them as just points, this allows point picking to
     // work.
-    FS[2] = (primType == HdSt_GeometricShader::PrimitiveType::PRIM_POINTS)?
-            _tokens->pointIdFS : _tokens->pointIdFallbackFS;
+    FS[fsIndex++] = isPrimTypePoints?
+                        _tokens->pointIdFS : _tokens->pointIdFallbackFS;
 
-    size_t fsIndex = 3;
-    if (drawStyle == HdSt_BasisCurvesShaderKey::WIRE){
+    if (drawStyle == HdSt_BasisCurvesShaderKey::WIRE || 
+        drawStyle == HdSt_BasisCurvesShaderKey::POINTS) {
         FS[fsIndex++] = _tokens->curvesFragmentWire;
-        FS[fsIndex] = TfToken();  
+        FS[fsIndex++] = TfToken();
     }
     else if (drawStyle == HdSt_BasisCurvesShaderKey::RIBBON &&
              normalStyle == HdSt_BasisCurvesShaderKey::ORIENTED){
         FS[fsIndex++] = _tokens->curvesFragmentPatch;
         FS[fsIndex++] = _tokens->curvesFragmentRibbonOriented;
-        FS[fsIndex++] = TfToken();  
+        FS[fsIndex++] = TfToken();
     }
     else if (drawStyle == HdSt_BasisCurvesShaderKey::RIBBON &&
              normalStyle == HdSt_BasisCurvesShaderKey::ROUND){
         FS[fsIndex++] = _tokens->curvesFragmentPatch;
         FS[fsIndex++] = _tokens->curvesFragmentRibbonRound;
-        FS[fsIndex++] = TfToken();  
+        FS[fsIndex++] = TfToken();
     }
     else if (drawStyle == HdSt_BasisCurvesShaderKey::RIBBON &&
              normalStyle == HdSt_BasisCurvesShaderKey::HAIR){
         FS[fsIndex++] = _tokens->curvesFragmentPatch;
         FS[fsIndex++] = _tokens->curvesFragmentHair;
-        FS[fsIndex++] = TfToken();  
+        FS[fsIndex++] = TfToken();
     }
     else if (drawStyle == HdSt_BasisCurvesShaderKey::HALFTUBE &&
              normalStyle == HdSt_BasisCurvesShaderKey::ROUND){
         FS[fsIndex++] = _tokens->curvesFragmentPatch;
         FS[fsIndex++] = _tokens->curvesFragmentHalfTube;
-        FS[fsIndex++] = TfToken();  
+        FS[fsIndex++] = TfToken();
     }
     else if (drawStyle == HdSt_BasisCurvesShaderKey::HALFTUBE &&
              normalStyle == HdSt_BasisCurvesShaderKey::HAIR){
         FS[fsIndex++] = _tokens->curvesFragmentPatch;
         FS[fsIndex++] = _tokens->curvesFragmentHair;
-        FS[fsIndex++] = TfToken();  
+        FS[fsIndex++] = TfToken();
     }
     else{
         TF_WARN("Cannot setup fragment shaders for invalid combination of \

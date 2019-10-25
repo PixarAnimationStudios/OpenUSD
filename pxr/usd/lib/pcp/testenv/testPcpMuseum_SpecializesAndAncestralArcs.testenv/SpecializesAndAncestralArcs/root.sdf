@@ -1,0 +1,30 @@
+#sdf 1.4.32
+(
+    """
+    These test cases exercise the interactions between ancestral
+    arcs and specializes arcs.
+    """
+)
+
+over "Specializes"
+{
+    over "Child"
+    {
+    }
+}
+
+over "Class"
+{
+}
+
+def "AncestralReference" (
+    """
+    Tests ancestral references and specializes.
+    """
+    references = @./ref.sdf@</Ref>
+)
+{
+    over "Child"
+    {
+    }
+}

@@ -30,6 +30,7 @@
 #include "pxr/imaging/hd/bprim.h"
 #include "pxr/imaging/hd/textureResource.h"
 #include "pxr/imaging/hd/types.h"
+#include "pxr/imaging/hd/enums.h"
 
 #include "pxr/usd/sdf/path.h"
 
@@ -41,6 +42,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+class HdRenderIndex;
 class HdSceneDelegate;
 
 typedef boost::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
@@ -85,10 +87,10 @@ public:
     // ---------------------------------------------------------------------- //
     /// \name Texture API
     // ---------------------------------------------------------------------- //
-    
-    /// Returns true if the texture should be interpreted as a PTex texture.
+
+    /// Returns the type of the texture.
     HD_API
-    bool IsPtex() const;
+    virtual HdTextureType GetTextureType() const;
 
     /// Returns true if mipmaps should be generated when loading.
     HD_API
@@ -100,6 +102,12 @@ protected:
         HdSceneDelegate *sceneDelegate,
         const SdfPath &sceneId,
         HdTextureResource::ID texID) const;
+
+    HD_API
+    virtual void _RegisterTextureResource(
+        HdRenderIndex *renderIndex,
+        const SdfPath &textureHandleId,
+        const HdTextureResourceSharedPtr &textureResource);
 
 private:
     // Make sure we have a reference to the texture resource, so its

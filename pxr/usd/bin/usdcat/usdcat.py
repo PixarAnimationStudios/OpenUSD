@@ -24,12 +24,25 @@
 #
 import argparse, sys, os
 
+def _Msg(msg):
+    sys.stdout.write(msg + '\n')
+
 def _Err(msg):
     sys.stderr.write(msg + '\n')
 
 def GetUsdData(filePath):
     from pxr import Sdf
     return Sdf.Layer.FindOrOpen(filePath)
+
+def GetUsdLayerMetaData(filePath):
+    """Return an SdfLayer holding just the layer metadata of the given layer."""
+    from pxr import Sdf, UsdUtils
+    srcLayer = Sdf.Layer.OpenAsAnonymous(filePath, metadataOnly=True)
+    # Not all file format plugins support metadata-only parsing.
+    # Create a new anonymous layer and copy just the layer metadata.
+    layer = Sdf.Layer.CreateAnonymous(filePath, Sdf.FileFormat.FindById('usda'))
+    UsdUtils.CopyLayerMetadata(srcLayer, layer)
+    return layer
 
 def GetFlattenedUsdData(filePath, populationMaskPaths):
     from pxr import Ar, Usd
@@ -66,6 +79,11 @@ def main():
         "file.  The USD_DEFAULT_FILE_FORMAT environment variable is another "
         "way to achieve this.")
     parser.add_argument(
+        '-l', '--loadOnly', action='store_true', 
+        help="Attempt to load the specified input files and report 'OK' or "
+        "'ERR' for each one. After all files are processed, this script will "
+        "exit with a non-zero exit code if any files failed to load.")
+    parser.add_argument(
         '-f', '--flatten', action='store_true', help='Compose stages with the '
         'input files as root layers and write their flattened content.')
     parser.add_argument(
@@ -73,6 +91,11 @@ def main():
         help='Flatten the layer stack with the given root layer, and write '
         'out the result.  Unlike --flatten, this does not flatten composition '
         'arcs (such as references).')
+    parser.add_argument(
+        '--skipSourceFileComment', action='store_true',
+        help='If --flatten is specified, skip adding a comment regarding the '
+        'source of the flattened layer in the documentation field of the '
+        'output layer.')
     parser.add_argument('--mask', action='store',
                         dest='populationMask',
                         metavar='PRIMPATH[,PRIMPATH...]',
@@ -81,7 +104,10 @@ def main():
                         'multiple paths, either use commas with no spaces '
                         'or quote the argument and separate paths by '
                         'commas and/or spaces.  Requires --flatten.')
-
+    parser.add_argument('--layerMetadata', action='store_true',
+                        help='Load only layer metadata in the USD file. '
+                        'This option cannot be combined with either '
+                        '--flatten or --flattenStack')
 
     args = parser.parse_args()
 
@@ -126,6 +152,16 @@ def main():
             return 1
         args.populationMask = args.populationMask.replace(',', ' ').split()
 
+    if args.layerMetadata:
+        if args.flatten:
+            # Cannot parse only metadata when flattening.
+            _Err("%s: error: --layerMetadata cannot be used "
+                 "together with --flatten" % parser.prog)
+        if args.flattenLayerStack:
+            # Cannot parse only metadata when flattening.
+            _Err("%s: error: --layerMetadata cannot be used "
+                  "together with --flattenLayerStack" % parser.prog)
+
     from pxr import Usd
 
     exitCode = 0
@@ -139,19 +175,35 @@ def main():
                 usdData = GetFlattenedUsdData(inputFile, args.populationMask)
             elif args.flattenLayerStack:
                 usdData = GetFlattenedLayerStack(inputFile)
+            elif args.layerMetadata:
+                usdData = GetUsdLayerMetaData(inputFile)
             else:
                 usdData = GetUsdData(inputFile)
             if not usdData:
-                raise Exception("Unknown error")
+                raise Exception("Could not open layer")
+
+            if args.loadOnly:
+                _Msg("{:3} {}".format("OK", inputFile))
+                continue
+
         except Exception as e:
-            _Err("Failed to open '%s' - %s" % (inputFile, e))
+            if args.loadOnly:
+                _Msg("{:3} {}".format("ERR", inputFile))
+                _Msg("{}".format(e))
+            else:
+                _Err("Failed to open '%s' - %s" % (inputFile, e))
             exitCode = 1
             continue
 
         # Write to either stdout or the specified output file
         if args.out:
             try:
-                usdData.Export(args.out, args=formatArgsDict)
+                if args.flatten:
+                    usdData.Export(args.out, 
+                            addSourceFileComment=not args.skipSourceFileComment,
+                            args=formatArgsDict)
+                else:
+                    usdData.Export(args.out, args=formatArgsDict)
             except Exception as e:
                 # Let the user know an error occurred.
                 _Err("Error exporting '%s' to '%s' - %s" %

@@ -115,7 +115,7 @@ _StringToNegative(const char *p, bool *outOfRange)
     const Int M = std::numeric_limits<Int>::min();
     Int result = 0;
     while (*p >= '0' && *p <= '9') {
-        int digit = (*p++ - '0');
+        Int digit = (*p++ - '0');
         // If the new digit would exceed the range, bail.  The expression below
         // is equivalent to 'result < (M + digit) / 10', but it avoids division.
         if (ARCH_UNLIKELY(result < ((M / 10) + (-digit < (M % 10))))) {
@@ -139,13 +139,14 @@ template <class Int>
 static Int
 _StringToPositive(const char *p, bool *outOfRange)
 {
+    const Int R = 10;
     const Int M = std::numeric_limits<Int>::max();
     Int result = 0;
     while (*p >= '0' && *p <= '9') {
-        int digit = (*p++ - '0');
+        Int digit = (*p++ - '0');
         // If the new digit would exceed the range, bail.  The expression below
         // is equivalent to 'result > (M - digit) / 10', but it avoids division.
-        if (ARCH_UNLIKELY(result > ((M / 10) - (digit > (M % 10))))) {
+        if (ARCH_UNLIKELY(result > ((M / R) - (digit > (M % R))))) {
             if (outOfRange)
                 *outOfRange = true;
             return M;
@@ -829,6 +830,33 @@ TfStringify(float val)
     char buffer[bufferSize];
     Tf_ApplyDoubleToStringConverter(val, buffer, bufferSize);
     return std::string(buffer);
+}
+
+bool
+TfDoubleToString(
+    double val, char* buffer, int bufferSize, bool emitTrailingZero)
+{
+    if (bufferSize < 25) {
+        return false;
+    }
+    using DSC = pxr_double_conversion::DoubleToStringConverter;
+    int flags = DSC::NO_FLAGS;
+    if (emitTrailingZero) {
+        flags = DSC::EMIT_TRAILING_DECIMAL_POINT
+            | DSC::EMIT_TRAILING_ZERO_AFTER_POINT;
+    }
+    const DSC conv(
+        flags,
+        "inf", 
+        "nan",
+        'e',
+        /* decimal_in_shortest_low */ -6,
+        /* decimal_in_shortest_high */ 15,
+        /* max_leading_padding_zeroes_in_precision_mode */ 0,
+        /* max_trailing_padding_zeroes_in_precision_mode */ 0);
+    pxr_double_conversion::StringBuilder builder(buffer, bufferSize);
+    // This should only fail if we provide an insufficient buffer.
+    return conv.ToShortest(val, &builder);
 }
 
 std::string

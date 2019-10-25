@@ -36,7 +36,7 @@ class TestUsdUISceneGraphPrim(unittest.TestCase):
         rootPrim = stage.DefinePrim("/ANode")
        
         # Test Node
-        sceneGraphPrim = UsdUI.SceneGraphPrimAPI(rootPrim)
+        sceneGraphPrim = UsdUI.SceneGraphPrimAPI.Apply(rootPrim)
         assert(sceneGraphPrim)
        
         # Test displayName

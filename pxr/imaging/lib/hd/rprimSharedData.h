@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferArrayRange.h"
+#include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/usd/sdf/path.h"
 
@@ -52,19 +53,20 @@ struct HdRprimSharedData {
     HdRprimSharedData(int barContainerSize)
         : barContainer(barContainerSize)
         , bounds()
-        , hasInstancer(false)
+        , instancerLevels(-1)
         , visible(true)
         , rprimID()
+        , materialTag(HdMaterialTagTokens->defaultMaterialTag)
     { }
 
     HdRprimSharedData(int barContainerSize,
-                      bool hasInstancer,
                       bool visible)
         : barContainer(barContainerSize)
         , bounds()
-        , hasInstancer(hasInstancer)
+        , instancerLevels(-1)
         , visible(visible)
         , rprimID()
+        , materialTag(HdMaterialTagTokens->defaultMaterialTag)
     { }
 
     // BufferArrayRange array
@@ -73,14 +75,17 @@ struct HdRprimSharedData {
     // Used for CPU frustum culling.
     GfBBox3d bounds;
 
-    // True if the rprim is an instance prototype.
-    bool hasInstancer;
+    // The number of levels of instancing applied to this rprim.
+    int instancerLevels;
 
     // Used for authored/delegate visibility.
     bool visible;
 
     // The owning Rprim's identifier.
     SdfPath rprimID;
+
+    // Used to organize drawItems into collections based on material properties.
+    TfToken materialTag;
 };
 
 

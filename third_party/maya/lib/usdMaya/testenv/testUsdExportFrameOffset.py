@@ -44,14 +44,16 @@ class testUsdExportFrameOffset(unittest.TestCase):
         cmds.file(os.path.abspath('UsdExportFrameOffsetTest.ma'), open=True,
                   force=True)
 
-    def _ExportWithFrameSamples(self, frameSamples):
+    def _ExportWithFrameSamplesAndStride(
+            self, frameSamples=[], frameStride=1.0):
         # Export to USD.
         usdFilePath = os.path.abspath('UsdExportFrameOffsetTest.usda')
         cmds.loadPlugin('pxrUsd')
         cmds.usdExport(mergeTransformAndShape=True,
             file=usdFilePath,
             frameRange=(1, 10),
-            frameSample=frameSamples)
+            frameSample=frameSamples,
+            frameStride=frameStride)
 
         stage = Usd.Stage.Open(usdFilePath)
         self.assertTrue(stage)
@@ -64,7 +66,7 @@ class testUsdExportFrameOffset(unittest.TestCase):
         self.assertEqual(timeSamples, expectedSamples)
 
     def testBasicFrameOffset(self):
-        stage = self._ExportWithFrameSamples([-0.1, 0.2])
+        stage = self._ExportWithFrameSamplesAndStride([-0.1, 0.2])
         self._AssertTimeSamples(stage, [
             0.9, 1.2,
             1.9, 2.2,
@@ -79,7 +81,7 @@ class testUsdExportFrameOffset(unittest.TestCase):
         ])
 
     def testReallyBigFrameOffset(self):
-        stage = self._ExportWithFrameSamples([0.0, 1.2])
+        stage = self._ExportWithFrameSamplesAndStride([0.0, 1.2])
         self._AssertTimeSamples(stage, sorted([
             1.0, 2.2,
             2.0, 3.2,
@@ -94,7 +96,8 @@ class testUsdExportFrameOffset(unittest.TestCase):
         ]))
 
     def testRepeatedFrameOffset(self):
-        stage = self._ExportWithFrameSamples([-0.1, 0.0, 0.1, 0.0, -0.1])
+        stage = self._ExportWithFrameSamplesAndStride(
+                [-0.1, 0.0, 0.1, 0.0, -0.1])
         self._AssertTimeSamples(stage, [
             0.9, 1.0, 1.1,
             1.9, 2.0, 2.1,
@@ -109,7 +112,7 @@ class testUsdExportFrameOffset(unittest.TestCase):
         ])
 
     def testNoFrameOffset(self):
-        stage = self._ExportWithFrameSamples([])
+        stage = self._ExportWithFrameSamplesAndStride([])
         self._AssertTimeSamples(stage, [
             1.0, 
             2.0, 
@@ -123,6 +126,57 @@ class testUsdExportFrameOffset(unittest.TestCase):
             10.0
         ])
 
+    def testFrameStrideSkips(self):
+        """Tests frame stride > 1.0"""
+        stage = self._ExportWithFrameSamplesAndStride(frameStride=3.0)
+        self._AssertTimeSamples(stage, [1.0, 4.0, 7.0, 10.0])
+
+    def testFrameStrideSkipsNonInteger(self):
+        """Tests non-integer frame stride > 1.0"""
+        stage = self._ExportWithFrameSamplesAndStride(frameStride=1.5)
+        self._AssertTimeSamples(stage, [1.0, 2.5, 4.0, 5.5, 7.0, 8.5, 10.0])
+
+    def testFrameStrideSubframes(self):
+        """Tests frame stride < 1.0"""
+        stage = self._ExportWithFrameSamplesAndStride(frameStride=0.25)
+        self._AssertTimeSamples(stage, [
+            1.0, 1.25, 1.5, 1.75,
+            2.0, 2.25, 2.5, 2.75,
+            3.0, 3.25, 3.5, 3.75,
+            4.0, 4.25, 4.5, 4.75,
+            5.0, 5.25, 5.5, 5.75,
+            6.0, 6.25, 6.5, 6.75,
+            7.0, 7.25, 7.5, 7.75,
+            8.0, 8.25, 8.5, 8.75,
+            9.0, 9.25, 9.5, 9.75,
+            10.0,
+        ])
+
+    def testFrameSamplesAndStride(self):
+        """Tests using both frameSample and frameStride."""
+        stage = self._ExportWithFrameSamplesAndStride(
+                frameSamples=[-0.1, 0.2], frameStride=0.5)
+        self._AssertTimeSamples(stage, [
+            0.9, 1.2,
+            1.4, 1.7,
+            1.9, 2.2,
+            2.4, 2.7,
+            2.9, 3.2,
+            3.4, 3.7,
+            3.9, 4.2,
+            4.4, 4.7,
+            4.9, 5.2,
+            5.4, 5.7,
+            5.9, 6.2,
+            6.4, 6.7,
+            6.9, 7.2,
+            7.4, 7.7,
+            7.9, 8.2,
+            8.4, 8.7,
+            8.9, 9.2,
+            9.4, 9.7,
+            9.9, 10.2,
+        ])
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

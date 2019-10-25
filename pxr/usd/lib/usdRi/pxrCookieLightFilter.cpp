@@ -74,6 +74,11 @@ UsdRiPxrCookieLightFilter::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdRiPxrCookieLightFilter::_GetSchemaType() const {
+    return UsdRiPxrCookieLightFilter::schemaType;
+}
+
 /* static */
 const TfType &
 UsdRiPxrCookieLightFilter::_GetStaticTfType()

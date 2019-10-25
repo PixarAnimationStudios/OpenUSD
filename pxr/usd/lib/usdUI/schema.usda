@@ -17,6 +17,7 @@ over "GLOBAL" (
 }
 
 class "NodeGraphNodeAPI"(
+    inherits = </APISchemaBase>
     doc = """
     This api helps storing information about nodes in node graphs.
     """
@@ -106,6 +107,7 @@ class "NodeGraphNodeAPI"(
 
 
 class "SceneGraphPrimAPI"(
+    inherits = </APISchemaBase>
     doc = """
     Utility schema for display properties of a prim
     """

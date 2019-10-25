@@ -74,6 +74,11 @@ UsdGeomCube::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdGeomCube::_GetSchemaType() const {
+    return UsdGeomCube::schemaType;
+}
+
 /* static */
 const TfType &
 UsdGeomCube::_GetStaticTfType()

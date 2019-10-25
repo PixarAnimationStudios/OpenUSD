@@ -50,10 +50,24 @@ WRAP_CUSTOM;
 
         
 static UsdAttribute
+_CreateLengthAttr(UsdLuxCylinderLight &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateLengthAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateRadiusAttr(UsdLuxCylinderLight &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateRadiusAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateTreatAsLineAttr(UsdLuxCylinderLight &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateTreatAsLineAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
 
 } // anonymous namespace
@@ -76,14 +90,6 @@ void wrapUsdLuxCylinderLight()
         .def("Define", &This::Define, (arg("stage"), arg("path")))
         .staticmethod("Define")
 
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
-
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
              arg("includeInherited")=true,
@@ -97,10 +103,24 @@ void wrapUsdLuxCylinderLight()
         .def(!self)
 
         
+        .def("GetLengthAttr",
+             &This::GetLengthAttr)
+        .def("CreateLengthAttr",
+             &_CreateLengthAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
         .def("GetRadiusAttr",
              &This::GetRadiusAttr)
         .def("CreateRadiusAttr",
              &_CreateRadiusAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetTreatAsLineAttr",
+             &This::GetTreatAsLineAttr)
+        .def("CreateTreatAsLineAttr",
+             &_CreateTreatAsLineAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

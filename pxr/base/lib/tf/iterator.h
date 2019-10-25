@@ -32,6 +32,7 @@
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/diagnosticLite.h"
 
+#include <iterator>
 #include <type_traits>
 #include <utility>
 
@@ -185,21 +186,13 @@ class TfIterator {
         _IteratorPairAndCopy, _IteratorPair
         >::type _Data;
 
-    // Use a pointer-to-member safe bool idiom so that TfIterator instances can
-    // be converted to bool, but won't implicitly convert to integral types.
-    typedef const _Data (TfIterator::*_UnspecifiedBoolType);
-
 public:
     // Choose either iterator or const_iterator for Iterator depending on
     // whether T is const.
     typedef Tf_IteratorInterface<T, Reverse> IterInterface;
     typedef typename IterInterface::IteratorType Iterator;
 
-    typedef typename Iterator::reference Reference;
-    typedef typename std::result_of<decltype(&Iterator::operator*)(Iterator)>
-        ::type StarReturnType;
-    typedef typename std::result_of<decltype(&Iterator::operator->)(Iterator)>
-        ::type ArrowReturnType;
+    typedef typename std::iterator_traits<Iterator>::reference Reference;
 
     /// Default constructor.  This iterator is uninitialized.
     TfIterator() { }
@@ -207,22 +200,16 @@ public:
     /// Constructs an iterator to traverse each element of the specified
     /// \c STL container object.
     /// \param container  container object
-    TfIterator(T& container) 
-        : _data(container) 
-    {
-    }
+    TfIterator(T &container) : _data(container) {}
 
-    // Single argument constructor that takes a const reference so that it may
-    // accept temporaries.  It is available only when the container type T
-    // should be copied by the TfIterator.  It needs to be a template so
-    // enable_if can work.
-    template <typename X = T, 
-              typename std::enable_if<
-                  Tf_ShouldIterateOverCopy<T>::value 
-                  && std::is_same<X, T>::value>::type* = nullptr>
-    TfIterator(X const &container)
+    /// Allow rvalues only if the container type T should be copied by TfIterator.
+    TfIterator(T &&container)
         : _data(container)
     {
+        static_assert(
+            Tf_ShouldIterateOverCopy<typename std::decay<T>::type>::value,
+            "TfIterator only allows rvalues that it has been told to copy "
+            "via Tf_ShouldIterateOverCopy");
     }
 
     /// Constructs an iterator to traverse a subset of the elements in a
@@ -279,7 +266,7 @@ public:
 
     /// Returns the element referenced by this iterator.
     /// \return element
-    StarReturnType operator*() {
+    Reference operator*() {
         if (ARCH_UNLIKELY(!*this))
             TF_FATAL_ERROR("iterator exhausted");
         return *_data.current;
@@ -287,7 +274,7 @@ public:
 
     /// Returns the element referenced by this iterator.
     /// \return element
-    StarReturnType operator*() const {
+    Reference operator*() const {
         if (ARCH_UNLIKELY(!*this))
             TF_FATAL_ERROR("iterator exhausted");
         return *_data.current;
@@ -295,16 +282,16 @@ public:
 
     /// Returns a pointer to the element referenced by this iterator.
     /// \return pointer to element
-    ArrowReturnType operator->() {
+    Iterator& operator->() {
         if (ARCH_UNLIKELY(!*this))
             TF_FATAL_ERROR("iterator exhausted");
-        return _data.current.operator->();
+        return _data.current;
     }   
 
-    /// Returns true if this Iterator has not been exhausted.
-    /// \return true if this Iterator has not been exhausted
-    operator _UnspecifiedBoolType() const {
-        return _data.current == _data.end ? 0 : &TfIterator::_data;
+    /// Explicit bool conversion operator.
+    /// The Iterator object converts to true if it has not been exhausted.
+    explicit operator bool() const {
+        return !(_data.current == _data.end);
     }
 
     /// Returns an \c STL iterator that has the same position as this

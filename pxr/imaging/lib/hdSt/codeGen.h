@@ -113,11 +113,12 @@ public:
 
 private:
     void _GenerateDrawingCoord();
-    void _GenerateConstantPrimVar();
-    void _GenerateInstancePrimVar();
-    void _GenerateElementPrimVar();
-    void _GenerateVertexPrimVar();
+    void _GenerateConstantPrimvar();
+    void _GenerateInstancePrimvar();
+    void _GenerateElementPrimvar();
+    void _GenerateVertexAndFaceVaryingPrimvar(bool hasGS);
     void _GenerateShaderParameters();
+    void _GenerateTopologyVisibilityParameters();
 
     HdSt_ResourceBinder::MetaData _metaData;
     HdSt_GeometricShaderPtr _geometricShader;

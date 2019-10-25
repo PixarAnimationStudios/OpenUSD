@@ -55,7 +55,7 @@ typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 /// A scene-based SurfaceShader object.
 ///
 /// When surface shaders are expresed in the scene graph, the HdSceneDelegate
-/// can use this object to express these surface shaders in Hydra. In addition
+/// can use this object to express these surface shaders in Storm. In addition
 /// to the shader itself, a binding from the Rprim to the SurfaceShader must be
 /// expressed as well.
 class HdStSurfaceShader : public HdStShaderCode {
@@ -70,21 +70,27 @@ public:
     /// \name HdShader Virtual Interface                                      //
     // ---------------------------------------------------------------------- //
     HDST_API
-    virtual std::string GetSource(TfToken const &shaderStageKey) const;
+    virtual std::string GetSource(TfToken const &shaderStageKey) const override;
     HDST_API
-    virtual HdMaterialParamVector const& GetParams() const;
+    virtual HdMaterialParamVector const& GetParams() const override;
     HDST_API
-    virtual HdBufferArrayRangeSharedPtr const& GetShaderData() const;
+    virtual HdBufferArrayRangeSharedPtr const& GetShaderData() const override;
     HDST_API
-    virtual TextureDescriptorVector GetTextures() const;
+    virtual TextureDescriptorVector GetTextures() const override;
     HDST_API
-    virtual void BindResources(HdSt_ResourceBinder const &binder, int program);
+    virtual void BindResources(HdSt_ResourceBinder const &binder, int program) 
+        override;
     HDST_API
-    virtual void UnbindResources(HdSt_ResourceBinder const &binder, int program);
+    virtual void UnbindResources(HdSt_ResourceBinder const &binder, int program)
+        override;
     HDST_API
-    virtual void AddBindings(HdBindingRequestVector *customBindings);
+    virtual void AddBindings(HdBindingRequestVector *customBindings) override;
     HDST_API
-    virtual ID ComputeHash() const;
+    virtual ID ComputeHash() const override;
+
+    HDST_API
+    virtual TfToken GetMaterialTag() const override;
+
 
     /// Setter method for prim
     HDST_API
@@ -98,6 +104,9 @@ public:
     HDST_API
     void SetBufferSources(HdBufferSourceVector &bufferSources, 
                           HdResourceRegistrySharedPtr const &resourceRegistry);
+
+    HDST_API
+    void SetMaterialTag(TfToken const &materialTag);
 
     /// If the prim is based on asset, reload that asset.
     HDST_API
@@ -117,6 +126,8 @@ private:
     HdBufferArrayRangeSharedPtr _paramArray;
 
     TextureDescriptorVector _textureDescriptors;
+
+    TfToken _materialTag;
 
     // No copying
     HdStSurfaceShader(const HdStSurfaceShader &)                     = delete;

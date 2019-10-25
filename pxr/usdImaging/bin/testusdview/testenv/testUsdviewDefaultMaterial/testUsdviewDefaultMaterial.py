@@ -24,18 +24,12 @@
 #
 
 # Set all light settings and refresh the view.
-def _setLights(appController, ambientChecked, keyChecked, fillChecked, backChecked):
+def _setLights(appController, ambientChecked, domeChecked):
     appController._ui.actionAmbient_Only.setChecked(ambientChecked)
     appController._ambientOnlyClicked(ambientChecked)
 
-    appController._ui.actionKey.setChecked(keyChecked)
-    appController._onKeyLightClicked(keyChecked)
-
-    appController._ui.actionFill.setChecked(fillChecked)
-    appController._onFillLightClicked(fillChecked)
-
-    appController._ui.actionBack.setChecked(backChecked)
-    appController._onBackLightClicked(backChecked)
+    appController._ui.actionDomeLight.setChecked(domeChecked)
+    appController._onDomeLightClicked(domeChecked)
 
     appController._stageView.updateGL()
 
@@ -44,10 +38,7 @@ def _modifySettings(appController):
     appController._dataModel.viewSettings.showBBoxes = False
     appController._dataModel.viewSettings.showHUD = False
 
-    # Ambient isn't visible to perceptual diff with direct camera lighting, so
-    # use the key light instead. This makes ambient visible in one half of the
-    # sphere and specular visible in the other half.
-    _setLights(appController, False, True, False, False)
+    _setLights(appController, True, True)
 
 # Set the default material and update the view.
 def _setDefaultMaterial(appController, ambient, specular):

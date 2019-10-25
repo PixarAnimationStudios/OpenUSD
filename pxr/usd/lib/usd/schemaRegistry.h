@@ -112,11 +112,9 @@ public:
     static SdfSpecType GetSpecType(const TfToken &primType,
                                    const TfToken &propName) {
         const UsdSchemaRegistry &self = GetInstance();
-        if (const SdfAbstractDataSpecId *specId =
-            self._GetSpecId(primType, propName)) {
-            return self._schematics->GetSpecType(*specId);
-        }
-        return SdfSpecTypeUnknown;
+        const SdfPath &path = self._GetPath(primType, propName);
+        return path.IsEmpty() ? SdfSpecTypeUnknown :
+            self._schematics->GetSpecType(path);
     }
 
     /// Return in \p value the field for the property named \p propName
@@ -131,12 +129,9 @@ public:
                          const TfToken& fieldName, T* value)
     {
         const UsdSchemaRegistry &self = GetInstance();
-        if (const SdfAbstractDataSpecId *specId =
-            self._GetSpecId(primType, propName)) {
-            if (self._schematics->HasField(*specId, fieldName, value))
-                return true;
-        }
-        return false;
+        const SdfPath &path = self._GetPath(primType, propName);
+        return !path.IsEmpty() &&
+            self._schematics->HasField(path, fieldName, value);
     }
 
     template <class T>
@@ -147,14 +142,9 @@ public:
                                 T* value)
     {
         const UsdSchemaRegistry &self = GetInstance();
-        if (const SdfAbstractDataSpecId *specId =
-            self._GetSpecId(primType, propName)) {
-            if (self._schematics->HasFieldDictKey(
-                    *specId, fieldName, keyPath, value)) {
-                return true;
-            }
-        }
-        return false;
+        const SdfPath &path = self._GetPath(primType, propName);
+        return !path.IsEmpty() &&
+            self._schematics->HasFieldDictKey(path, fieldName, keyPath, value);
     }
 
     /// Returns list of fields that cannot have fallback values
@@ -176,9 +166,39 @@ public:
     USD_API
     static bool IsConcrete(const TfType& primType);
 
+    /// Returns true if \p apiSchemaType is an applied API schema type.
+    USD_API
+    bool IsAppliedAPISchema(const TfType& apiSchemaType);
+
     /// Returns true if \p apiSchemaType is a multiple-apply API schema type.
     USD_API
     bool IsMultipleApplyAPISchema(const TfType& apiSchemaType);
+    
+
+    /// Finds the TfType of a schema with \p typeName
+    ///
+    /// This is primarily for when you have been provided Schema typeName
+    /// (perhaps from a User Interface or Script) and need to identify
+    /// if a prim's type inherits/is that typeName. If the type name IS known,
+    /// then using the schema class is preferred.
+    ///
+    /// \code{.py}
+    /// # This code attempts to match all prims on a stage to a given
+    /// # user specified type, making the traditional schema based idioms not
+    /// # applicable.
+    /// data = parser.parse_args()
+    /// tfType = UsdSchemaRegistry.GetTypeFromName(data.type)
+    /// matchedPrims = [p for p in stage.Traverse() if p.IsA(tfType)] 
+    /// \endcode
+    ///
+    /// \note It's worth noting that
+    /// GetTypeFromName("Sphere") == GetTypeFromName("UsdGeomSphere"), as
+    /// this function resolves both the Schema's C++ class name and any
+    /// registered aliases from a libraries plugInfo.json file. However,
+    /// GetTypeFromName("Boundable") != GetTypeFromName("UsdGeomBoundable")
+    /// because type aliases don't get registered for abstract schema types.
+    USD_API
+    static TfType GetTypeFromName(const TfToken& typeName);
 
 private:
     friend class TfSingleton<UsdSchemaRegistry>;
@@ -196,13 +216,13 @@ private:
     const SdfPath& _GetSchemaPrimPath(const TfType &primType) const;
 
     USD_API
-    const SdfAbstractDataSpecId *_GetSpecId(const TfToken &primType,
-                                            const TfToken &propName) const;
+    const SdfPath &_GetPath(const TfToken &primType,
+                            const TfToken &propName) const;
 
     void _FindAndAddPluginSchema();
 
-    void _BuildPrimTypePropNameToSpecIdMap(const TfToken &typeName,
-                                           const SdfPath &primPath);
+    void _BuildPrimTypePropNameToPathMap(const TfToken &typeName,
+                                         const SdfPath &primPath);
 
     SdfLayerRefPtr _schematics;
 
@@ -226,12 +246,11 @@ private:
     };
 
     // Cache of primType/propName to specId.
-    typedef TfHashMap<
-        std::pair<TfToken, TfToken>,
-        const SdfAbstractDataSpecId *,
-        _TokenPairHash> _PrimTypePropNameToSpecIdMap;
-    _PrimTypePropNameToSpecIdMap _primTypePropNameToSpecIdMap;
+    typedef TfHashMap<std::pair<TfToken, TfToken>, SdfPath,
+                      _TokenPairHash> _PrimTypePropNameToPathMap;
+    _PrimTypePropNameToPathMap _primTypePropNameToPathMap;
 
+    TfToken::HashSet _appliedAPISchemaNames;
     TfToken::HashSet _multipleApplyAPISchemaNames;
 };
 

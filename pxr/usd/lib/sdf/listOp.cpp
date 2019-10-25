@@ -25,6 +25,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/listOp.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/payload.h"
 #include "pxr/usd/sdf/reference.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -32,9 +33,11 @@
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/token.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
-#include <iostream>
+#include <boost/optional.hpp>
+
+#include <ostream>
 
 using std::string;
 using std::vector;
@@ -51,6 +54,8 @@ TF_REGISTRY_FUNCTION(TfType)
         .Alias(TfType::GetRoot(), "SdfStringListOp");
     TfType::Define<SdfReferenceListOp>()
         .Alias(TfType::GetRoot(), "SdfReferenceListOp");
+    TfType::Define<SdfPayloadListOp>()
+        .Alias(TfType::GetRoot(), "SdfPayloadListOp");
     TfType::Define<SdfIntListOp>()
         .Alias(TfType::GetRoot(), "SdfIntListOp");
     TfType::Define<SdfUIntListOp>()
@@ -77,9 +82,33 @@ TF_REGISTRY_FUNCTION(TfEnum)
 
 
 template <typename T>
-SdfListOp<T>::SdfListOp() :
-    _isExplicit(false)
+SdfListOp<T>::SdfListOp()
+    : _isExplicit(false)
 {
+}
+
+template <typename T>
+SdfListOp<T>
+SdfListOp<T>::CreateExplicit(
+    const ItemVector& explicitItems)
+{
+    SdfListOp<T> listOp;
+    listOp.SetExplicitItems(explicitItems);
+    return listOp;
+}
+
+template <typename T>
+SdfListOp<T>
+SdfListOp<T>::Create(
+    const ItemVector& prependedItems,
+    const ItemVector& appendedItems,
+    const ItemVector& deletedItems)
+{
+    SdfListOp<T> listOp;
+    listOp.SetPrependedItems(prependedItems);
+    listOp.SetAppendedItems(appendedItems);
+    listOp.SetDeletedItems(deletedItems);
+    return listOp;
 }
 
 template <typename T>
@@ -93,6 +122,28 @@ SdfListOp<T>::Swap(SdfListOp<T>& rhs)
     _appendedItems.swap(rhs._appendedItems);
     _deletedItems.swap(rhs._deletedItems);
     _orderedItems.swap(rhs._orderedItems);
+}
+
+template <typename T>
+bool
+SdfListOp<T>::HasItem(const T& item) const
+{
+    if (IsExplicit()) {
+        return std::find(_explicitItems.begin(), _explicitItems.end(), item)
+            != _explicitItems.end();
+    }
+
+    return 
+        (std::find(_addedItems.begin(), _addedItems.end(), item)
+            != _addedItems.end()) ||
+        (std::find(_prependedItems.begin(), _prependedItems.end(), item)
+            != _prependedItems.end()) ||
+        (std::find(_appendedItems.begin(), _appendedItems.end(), item)
+            != _appendedItems.end()) ||
+        (std::find(_deletedItems.begin(), _deletedItems.end(), item)
+            != _deletedItems.end()) ||
+        (std::find(_orderedItems.begin(), _orderedItems.end(), item)
+            != _orderedItems.end());
 }
 
 template <typename T>
@@ -709,9 +760,10 @@ _StreamOutItems(
     std::ostream &out,
     const string &itemsName,
     const std::vector<T> &items,
-    bool *firstItems)
+    bool *firstItems,
+    bool isExplicitList = false)
 {
-    if (!items.empty()) {
+    if (isExplicitList || !items.empty()) {
         out << (*firstItems ? "" : ", ") << itemsName << " Items: [";
         *firstItems = false;
         TF_FOR_ALL(it, items) {
@@ -725,14 +777,24 @@ template <typename T>
 static std::ostream &
 _StreamOut(std::ostream &out, const SdfListOp<T> &op)
 {
-    out << "SdfListOp" << "(";
+    const std::vector<std::string>& listOpAliases = 
+        TfType::GetRoot().GetAliases(TfType::Find<SdfListOp<T>>());
+    TF_VERIFY(!listOpAliases.empty());
+
+    out << listOpAliases.front() << "(";
     bool firstItems = true;
-    _StreamOutItems(out, "Explicit", op.GetExplicitItems(), &firstItems);
-    _StreamOutItems(out, "Deleted", op.GetDeletedItems(), &firstItems);
-    _StreamOutItems(out, "Added", op.GetAddedItems(), &firstItems);
-    _StreamOutItems(out, "Prepended", op.GetPrependedItems(), &firstItems);
-    _StreamOutItems(out, "Appended", op.GetAppendedItems(), &firstItems);
-    _StreamOutItems(out, "Ordered", op.GetOrderedItems(), &firstItems);
+    if (op.IsExplicit()) {
+        _StreamOutItems(
+            out, "Explicit", op.GetExplicitItems(), &firstItems,
+            /* isExplicitList = */ true);
+    }
+    else {
+        _StreamOutItems(out, "Deleted", op.GetDeletedItems(), &firstItems);
+        _StreamOutItems(out, "Added", op.GetAddedItems(), &firstItems);
+        _StreamOutItems(out, "Prepended", op.GetPrependedItems(), &firstItems);
+        _StreamOutItems(out, "Appended", op.GetAppendedItems(), &firstItems);
+        _StreamOutItems(out, "Ordered", op.GetOrderedItems(), &firstItems);
+    }
     out << ")";
     return out;
 }
@@ -799,6 +861,7 @@ SDF_INSTANTIATE_LIST_OP(TfToken);
 SDF_INSTANTIATE_LIST_OP(SdfUnregisteredValue);
 SDF_INSTANTIATE_LIST_OP(SdfPath);
 SDF_INSTANTIATE_LIST_OP(SdfReference);
+SDF_INSTANTIATE_LIST_OP(SdfPayload);
 
 template
 SDF_API void SdfApplyListOrdering(std::vector<string>* v, 

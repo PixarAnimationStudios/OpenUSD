@@ -48,17 +48,25 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // static
 HdSt_MeshTopologySharedPtr
-HdSt_MeshTopology::New(const HdMeshTopology &src, int refineLevel)
+HdSt_MeshTopology::New(
+        const HdMeshTopology &src,
+        int refineLevel,
+        RefineMode refineMode)
 {
-    return HdSt_MeshTopologySharedPtr(new HdSt_MeshTopology(src, refineLevel));
+    return HdSt_MeshTopologySharedPtr(
+        new HdSt_MeshTopology(src, refineLevel, refineMode));
 }
 
 // explicit
-HdSt_MeshTopology::HdSt_MeshTopology(const HdMeshTopology& src, int refineLevel)
+HdSt_MeshTopology::HdSt_MeshTopology(
+        const HdMeshTopology& src,
+        int refineLevel,
+        RefineMode refineMode)
  : HdMeshTopology(src, refineLevel)
  , _quadInfo(nullptr)
  , _quadrangulateTableRange()
  , _quadInfoBuilder()
+ , _refineMode(refineMode)
  , _subdivision(nullptr)
  , _osdTopologyBuilder()
 {
@@ -128,11 +136,11 @@ HdSt_MeshTopology::GetQuadInfoBuilderComputation(
 
         // allocate quadrangulation table on GPU
         HdBufferSpecVector bufferSpecs;
-        quadrangulateTable->AddBufferSpecs(&bufferSpecs);
+        quadrangulateTable->GetBufferSpecs(&bufferSpecs);
 
         _quadrangulateTableRange =
             resourceRegistry->AllocateNonUniformBufferArrayRange(
-                HdTokens->topology, bufferSpecs);
+                HdTokens->topology, bufferSpecs, HdBufferArrayUsageHint());
 
         resourceRegistry->AddSource(_quadrangulateTableRange, quadrangulateTable);
     }
@@ -206,8 +214,15 @@ HdSt_MeshTopology::RefinesToTriangles() const
 bool
 HdSt_MeshTopology::RefinesToBSplinePatches() const
 {
-    return (IsEnabledAdaptive() &&
+    return ((IsEnabledAdaptive() || (_refineMode == RefineModePatches)) &&
             HdSt_Subdivision::RefinesToBSplinePatches(_topology.GetScheme()));
+}
+
+bool
+HdSt_MeshTopology::RefinesToBoxSplineTrianglePatches() const
+{
+    return ((IsEnabledAdaptive() || (_refineMode == RefineModePatches)) &&
+    HdSt_Subdivision::RefinesToBoxSplineTrianglePatches(_topology.GetScheme()));
 }
 
 HdBufferSourceSharedPtr
@@ -225,7 +240,8 @@ HdSt_MeshTopology::GetOsdTopologyComputation(SdfPath const &id)
 
     if (!TF_VERIFY(_subdivision)) return HdBufferSourceSharedPtr();
 
-    bool adaptive = RefinesToBSplinePatches();
+    bool adaptive = RefinesToBSplinePatches() ||
+                    RefinesToBoxSplineTrianglePatches();
 
     // create a topology computation for HdSt_Subdivision
     HdBufferSourceSharedPtr builder =

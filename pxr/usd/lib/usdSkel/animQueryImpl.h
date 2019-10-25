@@ -58,15 +58,21 @@ public:
     /// Create an anim query for \p prim, if the prim is a valid type.
     static UsdSkel_AnimQueryImplRefPtr New(const UsdPrim& prim);
 
-    /// Returns true if \p prim is a valid animation primitive.
-    static bool IsAnimPrim(const UsdPrim& prim);
-
     virtual ~UsdSkel_AnimQueryImpl() {}
 
     virtual UsdPrim GetPrim() const = 0;
 
     virtual bool ComputeJointLocalTransforms(VtMatrix4dArray* xforms,
                                              UsdTimeCode time) const = 0;
+
+    virtual bool ComputeJointLocalTransforms(VtMatrix4fArray* xforms,
+                                             UsdTimeCode time) const = 0;
+
+    virtual bool ComputeJointLocalTransformComponents(
+                     VtVec3fArray* translations,
+                     VtQuatfArray* rotations,
+                     VtVec3hArray* scales,
+                     UsdTimeCode time) const = 0;
 
     virtual bool
     GetJointTransformTimeSamples(const GfInterval& interval,
@@ -77,16 +83,26 @@ public:
    
     virtual bool JointTransformsMightBeTimeVarying() const = 0;
 
-    virtual bool TransformMightBeTimeVarying() const = 0;
+    virtual bool
+    ComputeBlendShapeWeights(VtFloatArray* weights,
+                             UsdTimeCode time=UsdTimeCode::Default()) const = 0;
 
     virtual bool
-    ComputeTransform(GfMatrix4d* xform,
-                     UsdTimeCode time=UsdTimeCode::Default()) const = 0;
+    GetBlendShapeWeightTimeSamples(const GfInterval& interval,
+                                   std::vector<double>* times) const = 0;
+
+    virtual bool
+    GetBlendShapeWeightAttributes(std::vector<UsdAttribute>* attrs) const = 0;
+
+    virtual bool
+    BlendShapeWeightsMightBeTimeVarying() const = 0;
 
     const VtTokenArray& GetJointOrder() const { return _jointOrder; }
 
+    const VtTokenArray& GetBlendShapeOrder() const { return _blendShapeOrder; }
+
 protected:
-    VtTokenArray _jointOrder;
+    VtTokenArray _jointOrder, _blendShapeOrder;
 };
 
 

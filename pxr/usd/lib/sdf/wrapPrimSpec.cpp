@@ -449,11 +449,6 @@ void wrapPrimSpec()
             "Get/set the list of property names for this prim's 'reorder "
             "properties' statement.")
 
-        .add_property("payload",
-            &This::GetPayload,
-            &This::SetPayload,
-            "The payload for this prim")
-
         .add_property("inheritPathList",
             &This::GetInheritPathList,
             "A PathListEditor for the prim's inherit paths.\n\n"
@@ -481,9 +476,22 @@ void wrapPrimSpec()
             "value or as a set of list editing operations.  See "
             "ReferenceListEditor for more information.")
 
+        .add_property("payloadList",
+            &This::GetPayloadList,
+            "A PayloadListEditor for the prim's payloads.\n\n"
+            "The list of the payloads for this prim may be "
+            "modified with this PayloadListEditor.\n\n"
+            "A PayloadListEditor may express a list either as an explicit "
+            "value or as a set of list editing operations.  See "
+            "PayloadListEditor for more information.")
+
         .add_property("hasReferences",
             &This::HasReferences,
             "Returns true if this prim has references set.")
+
+        .add_property("hasPayloads",
+            &This::HasPayloads,
+            "Returns true if this prim has payloads set.")
 
         .add_property("relocates",
             &This::GetRelocates,
@@ -496,6 +504,10 @@ void wrapPrimSpec()
         .def("ClearReferenceList",
             &This::ClearReferenceList,
             "Clears the references for this prim.")
+
+        .def("ClearPayloadList",
+            &This::ClearPayloadList,
+            "Clears the payloads for this prim.")
 
         .def("CanSetName", &_WrapCanSetName)
 

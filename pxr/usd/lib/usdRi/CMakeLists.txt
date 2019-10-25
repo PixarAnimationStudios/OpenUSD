@@ -45,7 +45,7 @@ pxr_library(usdRi
     PYTHON_CPPFILES
         moduleDeps.cpp
 
-    CPPFILES
+    PRIVATE_CLASSES
         typeUtils
 
     PYMODULE_CPPFILES
@@ -92,6 +92,8 @@ pxr_register_test(testUsdRiSchemata
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdRiSchemata"  
     EXPECTED_RETURN_CODE 0
+    ENV
+        USD_RI_WRITE_BXDF_OUTPUT=0
 )
 
 pxr_register_test(testUsdRiSplineAPI

@@ -55,6 +55,11 @@ UsdGeomXformable::Get(const UsdStagePtr &stage, const SdfPath &path)
 }
 
 
+/* virtual */
+UsdSchemaType UsdGeomXformable::_GetSchemaType() const {
+    return UsdGeomXformable::schemaType;
+}
+
 /* static */
 const TfType &
 UsdGeomXformable::_GetStaticTfType()
@@ -148,10 +153,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((invertPrefix, "!invert!"))
 );
 
-TF_DEFINE_ENV_SETTING(
-    USD_READ_OLD_STYLE_TRANSFORM, false, "Whether xform reading code should "
-        "consider old-style transform attribute values if they're available.");
-
 using std::vector;
 
 TF_MAKE_STATIC_DATA(GfMatrix4d, _IDENTITY) {
@@ -159,16 +160,11 @@ TF_MAKE_STATIC_DATA(GfMatrix4d, _IDENTITY) {
 }
 
 bool 
-UsdGeomXformable::_GetXformOpOrderValue(
-    VtTokenArray *xformOpOrder,
-    bool *hasAuthoredValue) const
+UsdGeomXformable::_GetXformOpOrderValue(VtTokenArray *xformOpOrder) const
 {
     UsdAttribute xformOpOrderAttr = GetXformOpOrderAttr();
     if (!xformOpOrderAttr)
         return false;
-
-    if (hasAuthoredValue)
-        *hasAuthoredValue = xformOpOrderAttr.HasAuthoredValueOpinion();
 
     xformOpOrderAttr.Get(xformOpOrder, UsdTimeCode::Default());
     return true;
@@ -435,7 +431,15 @@ UsdGeomXformable::MakeMatrixXform() const
 }
 
 vector<UsdGeomXformOp>
-UsdGeomXformable::GetOrderedXformOps(bool *resetsXformStack) const
+UsdGeomXformable::GetOrderedXformOps(bool *resetXformStack) const
+{
+    return _GetOrderedXformOps(
+        resetXformStack, /*withAttributeQueries=*/false);
+}
+
+vector<UsdGeomXformOp>
+UsdGeomXformable::_GetOrderedXformOps(bool *resetsXformStack,
+                                      bool withAttributeQueries) const
 {
     vector<UsdGeomXformOp> result;
 
@@ -445,25 +449,9 @@ UsdGeomXformable::GetOrderedXformOps(bool *resetsXformStack) const
         TF_CODING_ERROR("resetsXformStack is NULL.");
     }
 
-    bool xformOpOrderIsAuthored = false;
     VtTokenArray opOrderVec;
-    if (!_GetXformOpOrderValue(&opOrderVec, &xformOpOrderIsAuthored)) {
+    if (!_GetXformOpOrderValue(&opOrderVec)) {
         return result;
-    }
-
-    if (!xformOpOrderIsAuthored && 
-        TfGetEnvSetting(USD_READ_OLD_STYLE_TRANSFORM)) 
-    {
-        // If a transform attribute exists, wrap it in a UsdGeomXformOp and 
-        // return it.
-        if (UsdAttribute transformAttr = _GetTransformAttr()) {
-            UsdGeomXformOp xformOp;
-            xformOp._attr = transformAttr;
-            xformOp._opType = UsdGeomXformOp::TypeTransform;
-            xformOp._isInverseOp = false;
-            result.push_back(xformOp);
-            return result;
-        }
     }
 
     if (opOrderVec.size() == 0) {
@@ -473,6 +461,7 @@ UsdGeomXformable::GetOrderedXformOps(bool *resetsXformStack) const
     // Reserve space for the xform ops.
     result.reserve(opOrderVec.size());
 
+    UsdPrim thisPrim = GetPrim();
     for (VtTokenArray::iterator it = opOrderVec.begin() ; 
          it != opOrderVec.end(); ++it) {
 
@@ -487,17 +476,43 @@ UsdGeomXformable::GetOrderedXformOps(bool *resetsXformStack) const
             result.clear();
         } else {
             bool isInverseOp = false;
-            if (UsdAttribute attr = UsdGeomXformOp::_GetXformOpAttr(
-                    GetPrim(), opName, &isInverseOp)) {
-                // Only add valid xform ops.                
-                result.emplace_back(attr, isInverseOp);
-            } else {
-                // Skip invalid xform ops that appear in xformOpOrder, but issue
-                // a warning.
-                TF_WARN("Unable to get attribute associated with the xformOp "
-                    "'%s', on the prim at path <%s>. Skipping xformOp in the "
-                    "computation of the local transformation at prim.", 
-                    opName.GetText(), GetPrim().GetPath().GetText());
+            UsdAttribute attr = UsdGeomXformOp::_GetXformOpAttr(
+                thisPrim, opName, &isInverseOp);
+            if (withAttributeQueries) {
+                TfErrorMark m;
+                UsdAttributeQuery query(attr);
+                if (m.IsClean()) {
+                    result.emplace_back(
+                        std::move(query), isInverseOp,
+                        UsdGeomXformOp::_ValidAttributeTagType {});
+                }
+                else {
+                    // Skip invalid xform ops that appear in xformOpOrder, but
+                    // issue a warning.
+                    TF_WARN("Unable to get attribute associated with the "
+                            "xformOp '%s', on the prim at path <%s>. Skipping "
+                            "xformOp in the computation of the local "
+                            "transformation at prim.",
+                            opName.GetText(), GetPrim().GetPath().GetText());
+                }                    
+            }
+            else {
+                if (attr) {
+                    // Only add valid xform ops.  We pass _ValidAttributeTag here
+                    // since we've pre-checked the validity of attr above.
+                    result.emplace_back(
+                        attr, isInverseOp,
+                        UsdGeomXformOp::_ValidAttributeTagType {});
+                }
+                else {
+                    // Skip invalid xform ops that appear in xformOpOrder, but
+                    // issue a warning.
+                    TF_WARN("Unable to get attribute associated with the "
+                            "xformOp '%s', on the prim at path <%s>. Skipping "
+                            "xformOp in the computation of the local "
+                            "transformation at prim.",
+                            opName.GetText(), GetPrim().GetPath().GetText());
+                }
             }
         }
     }
@@ -508,17 +523,8 @@ UsdGeomXformable::GetOrderedXformOps(bool *resetsXformStack) const
 UsdGeomXformable::XformQuery::XformQuery(const UsdGeomXformable &xformable):
     _resetsXformStack(false)
 {
-    vector<UsdGeomXformOp> orderedXformOps = 
-        xformable.GetOrderedXformOps(&_resetsXformStack);
-
-    if (!orderedXformOps.empty()) {
-        _xformOps = orderedXformOps;
-
-        // Create attribute queries for all the xform ops.
-        TF_FOR_ALL(it, _xformOps) {
-            it->_CreateAttributeQuery();
-        }
-    }
+    _xformOps = xformable._GetOrderedXformOps(
+        &_resetsXformStack, /*withAttributeQueries=*/true);
 }
 
 bool 
@@ -556,11 +562,6 @@ UsdGeomXformable::TransformMightBeTimeVarying() const
         return false;
 
     if (opOrderVec.size() == 0) {
-        // XXX: backwards compatibility
-        if (TfGetEnvSetting(USD_READ_OLD_STYLE_TRANSFORM)) {
-            if (UsdAttribute transformAttr = _GetTransformAttr())
-                return transformAttr.ValueMightBeTimeVarying();
-        }
         return false;
     }
 
@@ -645,14 +646,6 @@ UsdGeomXformable::GetTimeSamplesInInterval(
     const vector<UsdGeomXformOp> &orderedXformOps= GetOrderedXformOps(
         &resetsXformStack);
 
-    // XXX: backwards compatibility
-    if (orderedXformOps.empty() && 
-        TfGetEnvSetting(USD_READ_OLD_STYLE_TRANSFORM)) {
-                
-        if (UsdAttribute transformAttr = _GetTransformAttr())
-            return transformAttr.GetTimeSamplesInInterval(interval, times);
-    }
-
     return UsdGeomXformable::GetTimeSamplesInInterval(orderedXformOps, interval, 
             times);
 }
@@ -692,14 +685,6 @@ UsdGeomXformable::GetTimeSamples(vector<double> *times) const
     bool resetsXformStack=false;
     const vector<UsdGeomXformOp> &orderedXformOps= GetOrderedXformOps(
         &resetsXformStack);
-
-    // XXX: backwards compatibility
-    if (orderedXformOps.empty() && 
-        TfGetEnvSetting(USD_READ_OLD_STYLE_TRANSFORM)) {
-                
-        if (UsdAttribute transformAttr = _GetTransformAttr())
-            return transformAttr.GetTimeSamples(times);
-    }
 
     return GetTimeSamples(orderedXformOps, times);
 }
@@ -762,12 +747,6 @@ UsdGeomXformable::GetLocalTransformation(
         return false;
 
     if (opOrderVec.size() == 0) {
-        // XXX: backwards compatibility
-        if (TfGetEnvSetting(USD_READ_OLD_STYLE_TRANSFORM)) {
-            if (UsdAttribute transformAttr = _GetTransformAttr()) {
-                return transformAttr.Get(transform, time);
-            }
-        }
         return true;
     }
     
@@ -881,17 +860,8 @@ UsdGeomXformable::GetLocalTransformation(
 bool 
 UsdGeomXformable::IsTransformationAffectedByAttrNamed(const TfToken &attrName)
 {
-    // XXX: backwards compatibility
-    return (TfGetEnvSetting(USD_READ_OLD_STYLE_TRANSFORM) && 
-            attrName == _tokens->transform)        ||
-           attrName == UsdGeomTokens->xformOpOrder ||
+    return attrName == UsdGeomTokens->xformOpOrder ||
            UsdGeomXformOp::IsXformOp(attrName);
-}
-
-UsdAttribute
-UsdGeomXformable::_GetTransformAttr() const
-{
-    return GetPrim().GetAttribute(_tokens->transform);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

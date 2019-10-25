@@ -1,0 +1,39 @@
+#usda 1.0
+(
+)
+
+def "TimeCodeTest" (
+    customData = {
+        timecode timeCode = 10.0
+        timecode[] timeCodeArray = [10.0, 20.0]
+        double doubleVal = 10.0
+        dictionary subDict = {
+            timecode timeCode = 10.0
+            timecode[] timeCodeArray = [10.0, 20.0]
+            double doubleVal = 10.0
+        }    
+    }
+    doubleTest = 10.0
+    timeCodeTest = 10.0
+    timeCodeArrayTest = [10.0, 20.0]
+)
+{
+    timecode TimeCode = 10.0
+    timecode TimeCode.timeSamples = {
+        0: 10.0,
+        1: 20.0,
+    }
+
+    timecode[] TimeCodeArray = [10.0, 20.0]
+    timecode[] TimeCodeArray.timeSamples = {
+        0: [10.0, 30.0],
+        1: [20.0, 40.0]
+    }
+
+    double Double = 10.0
+    double Double.timeSamples = {
+        0: 10.0,
+        1: 20.0,
+    }
+
+}

@@ -25,10 +25,11 @@
 
 from pxr.Usdviewq.qt import QtWidgets
 
-# Remove any unwanted visuals from the view.
+# Remove any unwanted visuals from the view, and enable autoClip
 def _modifySettings(appController):
     appController._dataModel.viewSettings.showBBoxes = False
     appController._dataModel.viewSettings.showHUD = False
+    appController._dataModel.viewSettings.autoComputeClippingPlanes = True
     appController._stageView.updateGL()
 
 # Take a shot of the viewport and save it to a file.

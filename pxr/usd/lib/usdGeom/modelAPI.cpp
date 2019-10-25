@@ -35,7 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdGeomModelAPI,
-        TfType::Bases< UsdModelAPI > >();
+        TfType::Bases< UsdAPISchemaBase > >();
     
 }
 
@@ -60,6 +60,11 @@ UsdGeomModelAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdGeomModelAPI(stage->GetPrimAtPath(path));
 }
 
+
+/* virtual */
+UsdSchemaType UsdGeomModelAPI::_GetSchemaType() const {
+    return UsdGeomModelAPI::schemaType;
+}
 
 /* static */
 UsdGeomModelAPI
@@ -292,7 +297,7 @@ UsdGeomModelAPI::GetSchemaAttributeNames(bool includeInherited)
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
-            UsdModelAPI::GetSchemaAttributeNames(true),
+            UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 
     if (includeInherited)
@@ -319,7 +324,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 bool
 UsdGeomModelAPI::GetExtentsHint(VtVec3fArray *extents, 
-                             const UsdTimeCode &time) const
+                                const UsdTimeCode &time) const
 {
     UsdAttribute extentsHintAttr = 
         GetPrim().GetAttribute(UsdGeomTokens->extentsHint);
@@ -332,7 +337,7 @@ UsdGeomModelAPI::GetExtentsHint(VtVec3fArray *extents,
 
 bool
 UsdGeomModelAPI::SetExtentsHint(VtVec3fArray const &extents, 
-                             const UsdTimeCode &time)
+                                const UsdTimeCode &time) const
 {
     if (!TF_VERIFY(extents.size() >= 2 &&
                       extents.size() <= (2 *
@@ -347,14 +352,11 @@ UsdGeomModelAPI::SetExtentsHint(VtVec3fArray const &extents,
     if (!extentsHintAttr)
         return false;
 
-    VtVec3fArray currentExtentsHint;
-    extentsHintAttr.Get(&currentExtentsHint, time);
-   
     return extentsHintAttr.Set(extents, time);
 }
 
 UsdAttribute 
-UsdGeomModelAPI::GetExtentsHintAttr()
+UsdGeomModelAPI::GetExtentsHintAttr() const
 {
     return GetPrim().GetAttribute(UsdGeomTokens->extentsHint);
 }
@@ -458,24 +460,41 @@ UsdGeomModelAPI::GetConstraintTargets() const
     return constraintTargets;
 }
 
-TfToken
-UsdGeomModelAPI::ComputeModelDrawMode() const
+namespace {
+static 
+bool
+_GetAuthoredDrawMode(const UsdPrim &prim, TfToken *drawMode)
 {
+    // Only check for the attribute on models; don't check the pseudo-root.
+    if (!prim.IsModel() || !prim.GetParent()) {
+        return false;
+    }
+
+    UsdGeomModelAPI modelAPI(prim);
+    UsdAttribute attr = modelAPI.GetModelDrawModeAttr();
+    return attr && attr.Get(drawMode);
+}
+}
+
+TfToken
+UsdGeomModelAPI::ComputeModelDrawMode(const TfToken &parentDrawMode) const
+{
+    TfToken drawMode;
+
+    if (_GetAuthoredDrawMode(GetPrim(), &drawMode)) {
+        return drawMode;
+    }
+
+    if (!parentDrawMode.IsEmpty()) {
+        return parentDrawMode;
+    }
+
     // Find the closest applicable model:drawMode among this prim's ancestors.
-    for (UsdPrim curPrim = GetPrim(); curPrim; curPrim = curPrim.GetParent()) {
-        // Only check for the attribute on models; don't check the pseudo-root.
-        if (!curPrim.IsModel() || !curPrim.GetParent()) {
-            continue;
-        }
+    for (UsdPrim curPrim = GetPrim().GetParent(); 
+         curPrim; 
+         curPrim = curPrim.GetParent()) {
 
-        // If model:drawMode is set, use its value; we want the first attribute
-        // we find.
-        UsdGeomModelAPI curModel(curPrim);
-        UsdAttribute attr;
-        TfToken drawMode;
-
-        if ((attr = curModel.GetModelDrawModeAttr()) && attr &&
-            attr.Get(&drawMode)) {
+        if (_GetAuthoredDrawMode(curPrim, &drawMode)) {
             return drawMode;
         }
     }
@@ -483,6 +502,7 @@ UsdGeomModelAPI::ComputeModelDrawMode() const
     // If the attribute isn't set on any ancestors, return "default".
     return UsdGeomTokens->default_;
 }
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

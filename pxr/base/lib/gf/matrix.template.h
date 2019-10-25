@@ -72,7 +72,7 @@ public:
     static const size_t numColumns = {{ DIM }};
 
     /// Default constructor. Leaves the matrix component values undefined.
-    {{ MAT }}() {}
+    {{ MAT }}() = default;
 
     /// Constructor. Initializes the matrix from {{ DIM*DIM }} independent
     /// \c {{ SCL }} values, specified in row-major order. For example,
@@ -183,6 +183,18 @@ public:
     /// the matrix, specified in row-major order.
     GF_API
     {{ SCL }}* Get({{ SCL }} m[{{ DIM }}][{{ DIM }}]) const;
+
+    /// Returns raw access to components of matrix as an array of
+    /// \c {{ SCL }} values.  Components are in row-major order.
+    {{ SCL }}* data() {
+        return _mtx.GetData();
+    }
+
+    /// Returns const raw access to components of matrix as an array of
+    /// \c {{ SCL }} values.  Components are in row-major order.
+    const {{ SCL }}* data() const {
+        return _mtx.GetData();
+    }
 
     /// Returns vector components as an array of \c {{ SCL }} values.
     {{ SCL }}* GetArray()  {
@@ -364,6 +376,13 @@ private:
     friend class GfMatrix{{ DIM }}f;
 {% endif %}
 };
+
+
+/// Tests for equality within a given tolerance, returning \c true if the
+/// difference between each component of the matrix is less than or equal
+/// to \p tolerance, or false otherwise.
+GF_API 
+bool GfIsClose({{ MAT }} const &m1, {{ MAT }} const &m2, double tolerance);
 
 /// Output a {{ MAT }}
 /// \ingroup group_gf_DebuggingOutput

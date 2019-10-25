@@ -23,22 +23,22 @@
 //
 #include "refiner.h"
 
-#include "primWrapper.h"
+#include "GT_OldPointInstancer.h"
 #include "GT_PackedUSD.h"
 #include "GT_PointInstancer.h"
-#include "GT_OldPointInstancer.h"
 #include "GU_USD.h"
+#include "primWrapper.h"
 #include "stageCache.h"
 
 #include <GEO/GEO_Primitive.h>
-#include <GT/GT_PrimInstance.h>
-#include <GT/GT_GEOPrimPacked.h>
-#include <GT/GT_DANumeric.h>
 #include <GT/GT_DAIndexedString.h>
-#include <GT/GT_PrimPointMesh.h>
+#include <GT/GT_DANumeric.h>
 #include <GT/GT_GEODetail.h>
-#include <GT/GT_PrimFragments.h>
-#include <GT/GT_PrimPackedDetail.h>
+#include <GT/GT_GEOPrimPacked.h>
+#include <GT/GT_PrimInstance.h>
+#include <SYS/SYS_Types.h>
+
+#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -219,7 +219,7 @@ void
 GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
 {
     if(!gtPrimIn) {
-        std::cout << "Attempting to add invalid prim" << std::endl;
+        TF_WARN("Attempted to add invalid prim");
         return;
     }
     GT_PrimitiveHandle gtPrim = gtPrimIn;     // copy to a non-const handle
@@ -424,7 +424,7 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
 
     if( primType == GT_PRIM_INSTANCE ) {
  
-       auto inst = UTverify_cast<const GT_PrimInstance*>(gtPrim.get());
+        auto inst = UTverify_cast<const GT_PrimInstance*>(gtPrim.get());
         const GT_PrimitiveHandle geometry = inst->geometry();
 
         if ( geometry->getPrimitiveType() == GT_GEO_PACKED ) {
@@ -532,7 +532,7 @@ GusdRefinerCollector::add(
 
     // If addNumericSuffix is true, use the name directly unless there
     // is a conflict. Otherwise add a numeric suffix to keep names unique.
-    int64_t count = 0;
+    int64 count = 0;
     auto it = m_names.find( path );
     if( it == m_names.end() ) {
         // Name has not been used before
@@ -561,7 +561,7 @@ GusdRefinerCollector::add(
     }
 
     // Add a numeric suffix to get a unique name
-    SdfPath newPath( TfStringPrintf( "%s_%ld", path.GetText(), count ));
+    SdfPath newPath( TfStringPrintf("%s_%" SYS_PRId64, path.GetText(), count));
 
     m_gprims.push_back(GprimArrayEntry(newPath,prim,xform,purpose,writeCtrlFlags));
     return newPath;
@@ -800,9 +800,23 @@ newDataArray( GT_Storage storage, GT_Size size, int tupleSize,
     if( storage == GT_STORE_REAL32 ) {
         return new GT_Real32Array( size, tupleSize, typeInfo );
     }
+    else if( storage == GT_STORE_REAL16 ) {
+        return new GT_Real16Array( size, tupleSize, typeInfo );
+    }
     else if( storage == GT_STORE_REAL64 ) {
         return new GT_Real64Array( size, tupleSize, typeInfo );
     }
+    else if( storage == GT_STORE_UINT8 ) {
+        return new GT_UInt8Array( size, tupleSize, typeInfo );
+    }
+#if SYS_VERSION_FULL_INT >= 0x11000000
+    else if( storage == GT_STORE_INT8) {
+        return new GT_Int8Array( size, tupleSize, typeInfo );
+    }
+    else if( storage == GT_STORE_INT16) {
+        return new GT_Int16Array( size, tupleSize, typeInfo );
+    }
+#endif
     else if( storage == GT_STORE_INT32 ) {
         return new GT_Int32Array( size, tupleSize, typeInfo );
     }

@@ -1,0 +1,28 @@
+#sdf 1.4.32
+
+def Scope "InternalSublayerPayload"
+{
+    def Scope "InternalSublayerPayload_Child"
+    {
+    }
+}
+
+def Scope "PrimInSublayerWithInternalPayload" (
+    """Internal payloads target the root layer of the layer stack
+    containing the referencing layer, so this prim should pick up 
+    the InternalSublayerPayload overs in root.sdf as well as in
+    this layer."""
+    references = </InternalSublayerPayload>
+)
+{
+}
+
+def Scope "SublayerPrim"
+{
+}
+
+def Scope "PrimInSublayerWithInternalPayload2" (
+    payload = </SublayerPrim>
+)
+{
+}

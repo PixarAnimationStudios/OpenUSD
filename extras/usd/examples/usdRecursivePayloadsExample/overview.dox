@@ -1,0 +1,12 @@
+/*!
+\mainpage
+
+This is an example library that provides a dynamic file format plugin for Usd
+that can recursively generate prims with payloads to multiple copies of itself.
+
+The plugin is structured by functional component:
+
+- \b fileFormat contains the SdfFileFormat/PcpDynamicFileFormatInterface 
+     plugin interface implementation.
+
+*/

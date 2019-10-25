@@ -53,20 +53,17 @@ class SdfAssetPath;
 /// \class UsdLuxCylinderLight
 ///
 /// Light emitted outward from a cylinder.
+/// The cylinder is centered at the origin and has its major axis on the X axis.
+/// The cylinder does not emit light from the flat end-caps.
+/// 
 ///
 class UsdLuxCylinderLight : public UsdLuxLight
 {
 public:
-    /// Compile-time constant indicating whether or not this class corresponds
-    /// to a concrete instantiable prim type in scene description.  If this is
-    /// true, GetStaticPrimDefinition() will return a valid prim definition with
-    /// a non-empty typeName.
-    static const bool IsConcrete = true;
-
-    /// Compile-time constant indicating whether or not this class inherits from
-    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
-    /// UsdPrim.
-    static const bool IsTyped = true;
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaType
+    static const UsdSchemaType schemaType = UsdSchemaType::ConcreteTyped;
 
     /// Construct a UsdLuxCylinderLight on UsdPrim \p prim .
     /// Equivalent to UsdLuxCylinderLight::Get(prim.GetStage(), prim.GetPath())
@@ -135,6 +132,13 @@ public:
     static UsdLuxCylinderLight
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
+protected:
+    /// Returns the type of schema this class belongs to.
+    ///
+    /// \sa UsdSchemaType
+    USDLUX_API
+    UsdSchemaType _GetSchemaType() const override;
+
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
@@ -145,7 +149,28 @@ private:
 
     // override SchemaBase virtuals.
     USDLUX_API
-    virtual const TfType &_GetTfType() const;
+    const TfType &_GetTfType() const override;
+
+public:
+    // --------------------------------------------------------------------- //
+    // LENGTH 
+    // --------------------------------------------------------------------- //
+    /// Width of the rectangle, in the local X axis.
+    ///
+    /// \n  C++ Type: float
+    /// \n  Usd Type: SdfValueTypeNames->Float
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: 1.0
+    USDLUX_API
+    UsdAttribute GetLengthAttr() const;
+
+    /// See GetLengthAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDLUX_API
+    UsdAttribute CreateLengthAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
@@ -156,7 +181,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// \n  Fallback Value: 0.5
     USDLUX_API
     UsdAttribute GetRadiusAttr() const;
 
@@ -167,6 +192,30 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDLUX_API
     UsdAttribute CreateRadiusAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // TREATASLINE 
+    // --------------------------------------------------------------------- //
+    /// A hint that this light can be treated as a 'line'
+    /// light (effectively, a zero-radius cylinder) by renderers that
+    /// benefit from non-area lighting. Renderers that only support
+    /// area lights can disregard this.
+    ///
+    /// \n  C++ Type: bool
+    /// \n  Usd Type: SdfValueTypeNames->Bool
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: False
+    USDLUX_API
+    UsdAttribute GetTreatAsLineAttr() const;
+
+    /// See GetTreatAsLineAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDLUX_API
+    UsdAttribute CreateTreatAsLineAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //

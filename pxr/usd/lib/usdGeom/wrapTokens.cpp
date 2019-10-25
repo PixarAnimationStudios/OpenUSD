@@ -64,6 +64,7 @@ void wrapUsdGeomTokens()
 {
     boost::python::class_<UsdGeomTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
+    _AddToken(cls, "accelerations", UsdGeomTokens->accelerations);
     _AddToken(cls, "all", UsdGeomTokens->all);
     _AddToken(cls, "angularVelocities", UsdGeomTokens->angularVelocities);
     _AddToken(cls, "axis", UsdGeomTokens->axis);
@@ -80,7 +81,6 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "clippingPlanes", UsdGeomTokens->clippingPlanes);
     _AddToken(cls, "clippingRange", UsdGeomTokens->clippingRange);
     _AddToken(cls, "closed", UsdGeomTokens->closed);
-    _AddToken(cls, "collection", UsdGeomTokens->collection);
     _AddToken(cls, "constant", UsdGeomTokens->constant);
     _AddToken(cls, "cornerIndices", UsdGeomTokens->cornerIndices);
     _AddToken(cls, "cornerSharpnesses", UsdGeomTokens->cornerSharpnesses);
@@ -102,7 +102,6 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "extent", UsdGeomTokens->extent);
     _AddToken(cls, "extentsHint", UsdGeomTokens->extentsHint);
     _AddToken(cls, "face", UsdGeomTokens->face);
-    _AddToken(cls, "faceSet", UsdGeomTokens->faceSet);
     _AddToken(cls, "faceVarying", UsdGeomTokens->faceVarying);
     _AddToken(cls, "faceVaryingLinearInterpolation", UsdGeomTokens->faceVaryingLinearInterpolation);
     _AddToken(cls, "faceVertexCounts", UsdGeomTokens->faceVertexCounts);
@@ -131,6 +130,7 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "leftHanded", UsdGeomTokens->leftHanded);
     _AddToken(cls, "linear", UsdGeomTokens->linear);
     _AddToken(cls, "loop", UsdGeomTokens->loop);
+    _AddToken(cls, "metersPerUnit", UsdGeomTokens->metersPerUnit);
     _AddToken(cls, "modelApplyDrawMode", UsdGeomTokens->modelApplyDrawMode);
     _AddToken(cls, "modelCardGeometry", UsdGeomTokens->modelCardGeometry);
     _AddToken(cls, "modelCardTextureXNeg", UsdGeomTokens->modelCardTextureXNeg);
@@ -156,6 +156,7 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "partition", UsdGeomTokens->partition);
     _AddToken(cls, "periodic", UsdGeomTokens->periodic);
     _AddToken(cls, "perspective", UsdGeomTokens->perspective);
+    _AddToken(cls, "pinned", UsdGeomTokens->pinned);
     _AddToken(cls, "points", UsdGeomTokens->points);
     _AddToken(cls, "pointWeights", UsdGeomTokens->pointWeights);
     _AddToken(cls, "positions", UsdGeomTokens->positions);

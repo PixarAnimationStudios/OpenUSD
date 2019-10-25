@@ -42,7 +42,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdStDrawItem;
 class HdSceneDelegate;
-class HdStMaterial;
 
 typedef boost::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
 typedef boost::shared_ptr<class HdSt_MeshTopology> HdSt_MeshTopologySharedPtr;
@@ -70,8 +69,10 @@ public:
     virtual void Sync(HdSceneDelegate *delegate,
                       HdRenderParam   *renderParam,
                       HdDirtyBits     *dirtyBits,
-                      TfToken const   &reprName,
-                      bool             forcedRepr) override;
+                      TfToken const   &reprToken) override;
+
+    HDST_API
+    virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
 
     /// Topology (member) getter
     HDST_API
@@ -82,9 +83,16 @@ public:
     static bool IsEnabledPackedNormals();
 
 protected:
-    virtual void _UpdateRepr(HdSceneDelegate *sceneDelegate,
-                             TfToken const &reprName,
-                             HdDirtyBits *dirtyBitsState) override;
+    HDST_API
+    virtual void _InitRepr(TfToken const &reprToken,
+                           HdDirtyBits *dirtyBits) override;
+
+    HDST_API
+    virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
+
+    void _UpdateRepr(HdSceneDelegate *sceneDelegate,
+                     TfToken const &reprToken,
+                     HdDirtyBits *dirtyBitsState);
 
     HdBufferArrayRangeSharedPtr
     _GetSharedPrimvarRange(uint64_t primvarId,
@@ -96,56 +104,75 @@ protected:
     bool _UseQuadIndices(const HdRenderIndex &renderIndex,
                          HdSt_MeshTopologySharedPtr const & topology) const;
 
+    bool _UseLimitRefinement(const HdRenderIndex &renderIndex) const;
+
+    bool _UseSmoothNormals(HdSt_MeshTopologySharedPtr const& topology) const;
+
+    bool _UseFlatNormals(const HdMeshReprDesc &desc) const;
+
+    const TfToken& _GetMaterialTag(const HdRenderIndex &renderIndex) const;
+
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                          HdStDrawItem *drawItem,
                          HdDirtyBits *dirtyBits,
-                         HdMeshReprDesc desc,
-                         bool requireSmoothNormals);
+                         const HdMeshReprDesc &desc,
+                         bool requireSmoothNormals,
+                         bool requireFlatNormals);
 
     void _UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                         HdStDrawItem *drawItem,
-                                        const HdMeshReprDesc &desc);
+                                        const HdMeshReprDesc &desc,
+                                        size_t drawItemIdForDesc);
+
+    void _UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
+                                   bool updateMaterialShader,
+                                   bool updateGeometricShader);
 
     void _PopulateTopology(HdSceneDelegate *sceneDelegate,
                            HdStDrawItem *drawItem,
                            HdDirtyBits *dirtyBits,
-                           HdMeshReprDesc desc);
+                           const HdMeshReprDesc &desc);
+
+    void _PopulateTopologyVisibility(
+            HdStDrawItem *drawItem,
+            HdStResourceRegistrySharedPtr const &resourceRegistry,
+            HdChangeTracker *changeTracker,
+            HdMeshTopology const& meshTopology);
 
     void _PopulateAdjacency(HdStResourceRegistrySharedPtr const &resourceRegistry);
 
-    void _PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
+    void _PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                                  HdStDrawItem *drawItem,
                                  HdDirtyBits *dirtyBits,
-                                 bool requireSmoothNormals);
+                                 bool requireSmoothNormals,
+                                 HdBufferSourceSharedPtr *outPoints);
 
-    void _PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
+    void _PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
                                       HdStDrawItem *drawItem,
                                       HdDirtyBits *dirtyBits,
-                                      HdMeshReprDesc desc);
+                                      const HdMeshReprDesc &desc);
 
-    void _PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
+    void _PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
                                   HdStDrawItem *drawItem,
                                   HdDirtyBits *dirtyBits,
-                                  TfTokenVector const &primVarNames);
+                                  bool requireFlatNormals,
+                                  HdBufferSourceSharedPtr const &points);
 
-    int _GetRefineLevelForDesc(HdMeshReprDesc desc) const;
+    int _GetRefineLevelForDesc(const HdMeshReprDesc &desc) const;
 
-    virtual HdDirtyBits _GetInitialDirtyBits() const override;
-    virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
-
-    virtual void _InitRepr(TfToken const &reprName,
-                           HdDirtyBits *dirtyBits) override;
+    HdType _GetPointsDataTypeFromBar(HdStDrawItem *drawItem) const;
 
 private:
     enum DrawingCoord {
         HullTopology = HdDrawingCoord::CustomSlotsBegin,
         PointsTopology,
-        InstancePrimVar // has to be at the very end
+        InstancePrimvar // has to be at the very end
     };
 
     enum DirtyBits : HdDirtyBits {
         DirtySmoothNormals  = HdChangeTracker::CustomBitsBegin,
-        DirtyIndices        = (DirtySmoothNormals << 1),
+        DirtyFlatNormals    = (DirtySmoothNormals << 1),
+        DirtyIndices        = (DirtyFlatNormals   << 1),
         DirtyHullIndices    = (DirtyIndices       << 1),
         DirtyPointsIndices  = (DirtyHullIndices   << 1)
     };
@@ -156,9 +183,20 @@ private:
     HdTopology::ID _topologyId;
     HdTopology::ID _vertexPrimvarId;
     HdDirtyBits _customDirtyBitsInUse;
-    bool _doubleSided;
-    bool _packedNormals;
+
+    HdInterpolation _sceneNormalsInterpolation;
     HdCullStyle _cullStyle;
+
+    bool _doubleSided : 1;
+    bool _flatShadingEnabled : 1;
+    bool _displacementEnabled : 1;
+    bool _smoothNormals : 1;
+    bool _packedSmoothNormals : 1;
+    bool _limitNormals : 1;
+    bool _sceneNormals : 1;
+    bool _flatNormals : 1;
+    bool _hasVaryingTopology : 1;  // The prim's topology has changed since
+                                   // the prim was created
 };
 
 

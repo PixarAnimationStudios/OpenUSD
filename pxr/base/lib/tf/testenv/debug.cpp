@@ -65,67 +65,6 @@ TestOff()
     return retVal;
 }
 
-static void
-DebugFamilyMsg()
-{
-    TF_DEBUG(GRANDPA).Msg("grandpa\n");
-    TF_DEBUG(AUNT).Msg("aunt\n");
-    TF_DEBUG(FATHER).Msg("father\n");
-    TF_DEBUG(DAUGHTER).Msg("daughter\n");
-    TF_DEBUG(SON).Msg("son\n");
-    printf("-\n");
-}
-
-static bool
-TestFamily()
-{
-    bool retVal = true;
-    TfDebug::DefineParentChild<DebugFamily>(GRANDPA, AUNT);
-    TfDebug::DefineParentChild<DebugFamily>(GRANDPA, FATHER);
-    TfDebug::DefineParentChild<DebugFamily>(FATHER, DAUGHTER);
-    TfDebug::DefineParentChild<DebugFamily>(FATHER, SON);
-
-    TfDebug::EnableAll<DebugFamily>();
-    retVal &= TfDebug::IsEnabled(GRANDPA) && TfDebug::IsEnabled(AUNT) &&
-        TfDebug::IsEnabled(FATHER) && TfDebug::IsEnabled(DAUGHTER) &&
-        TfDebug::IsEnabled(SON);
-    DebugFamilyMsg();
-
-    TfDebug::DisableAll<DebugFamily>();
-    retVal &= !TfDebug::IsEnabled(GRANDPA) && !TfDebug::IsEnabled(AUNT) &&
-        !TfDebug::IsEnabled(FATHER) && !TfDebug::IsEnabled(DAUGHTER) &&
-        !TfDebug::IsEnabled(SON);
-    DebugFamilyMsg();
-
-    TfDebug::Enable(GRANDPA);
-    retVal &= TfDebug::IsEnabled(GRANDPA) && TfDebug::IsEnabled(AUNT) &&
-        TfDebug::IsEnabled(FATHER) && TfDebug::IsEnabled(DAUGHTER) &&
-        TfDebug::IsEnabled(SON);
-    DebugFamilyMsg();
-
-    TfDebug::Disable(GRANDPA);
-    retVal &= !TfDebug::IsEnabled(GRANDPA) && !TfDebug::IsEnabled(AUNT) &&
-        !TfDebug::IsEnabled(FATHER) && !TfDebug::IsEnabled(DAUGHTER) &&
-        !TfDebug::IsEnabled(SON);
-    DebugFamilyMsg();
-
-    TfDebug::Enable(FATHER);
-    retVal &= !TfDebug::IsEnabled(GRANDPA) && !TfDebug::IsEnabled(AUNT) &&
-        TfDebug::IsEnabled(FATHER) && TfDebug::IsEnabled(DAUGHTER) &&
-        TfDebug::IsEnabled(SON);
-    DebugFamilyMsg();
-
-    TfDebug::Disable(SON);
-    retVal &= !TfDebug::IsEnabled(GRANDPA) && !TfDebug::IsEnabled(AUNT) &&
-        TfDebug::IsEnabled(FATHER) && TfDebug::IsEnabled(DAUGHTER) &&
-        !TfDebug::IsEnabled(SON);
-    DebugFamilyMsg();
-
-    if(retVal) printf("ok\n\n");
-    else printf("error\n\n");
-    return retVal;
-}
-
 static bool
 Test_TfDebug()
 {
@@ -133,7 +72,6 @@ Test_TfDebug()
 
     TfRegistryManager::RunUnloadersAtExit();
     retVal &= TestOff();
-    retVal &= TestFamily();
 
     return retVal;
 }

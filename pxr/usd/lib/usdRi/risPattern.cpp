@@ -74,6 +74,11 @@ UsdRiRisPattern::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdRiRisPattern::_GetSchemaType() const {
+    return UsdRiRisPattern::schemaType;
+}
+
 /* static */
 const TfType &
 UsdRiRisPattern::_GetStaticTfType()

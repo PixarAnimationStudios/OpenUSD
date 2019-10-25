@@ -125,7 +125,7 @@ void wrapUsdGeomModelAPI()
 {
     typedef UsdGeomModelAPI This;
 
-    class_<This, bases<UsdModelAPI> >
+    class_<This, bases<UsdAPISchemaBase> >
         cls("ModelAPI");
 
     cls
@@ -138,18 +138,6 @@ void wrapUsdGeomModelAPI()
 
         .def("Apply", &This::Apply, (arg("prim")))
         .staticmethod("Apply")
-
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
-
-        .def("IsMultipleApply", 
-            static_cast<bool (*)(void)>( [](){ return This::IsMultipleApply; } ))
-        .staticmethod("IsMultipleApply")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
@@ -306,7 +294,8 @@ WRAP_CUSTOM {
         .def("GetConstraintTargets", &UsdGeomModelAPI::GetConstraintTargets,
             return_value_policy<TfPySequenceToList>())
 
-        .def("ComputeModelDrawMode", &UsdGeomModelAPI::ComputeModelDrawMode)
+        .def("ComputeModelDrawMode", &UsdGeomModelAPI::ComputeModelDrawMode,
+            (arg("parentDrawMode")=TfToken()))
     ;
 }
 

@@ -57,7 +57,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Currently, each list has a mutex which is used for getting/setting the
 /// head of the list.  When an item on the list needs to be removed (either
-/// from a TfNotice::Revoke() call or because the listenening object has
+/// from a TfNotice::Revoke() call or because the listening object has
 /// expired), the item is removed from the list IF nobody else is using the
 /// registry.
 ///

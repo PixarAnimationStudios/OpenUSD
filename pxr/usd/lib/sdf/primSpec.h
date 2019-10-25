@@ -43,14 +43,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-template <class TypePolicy> class Sdf_ListEditor;
-
 /// \class SdfPrimSpec
 ///
 /// Represents a prim description in an SdfLayer object.
 ///
 /// Every SdfPrimSpec object is defined in a layer.  It is identified by its
-/// path (SdfPath class) in the namespace hierarchy of its layer.
+/// path (SdfPath class) in the namespace hierarchy of its layer.  SdfPrimSpecs
+/// can be created using the New() method as children of either the containing
+/// SdfLayer itself (for "root level" prims), or as children of other 
+/// SdfPrimSpec objects to extend a hierarchy.  The helper function 
+/// SdfCreatePrimInLayer() can be used to quickly create a hierarchy of
+/// primSpecs.
 ///
 /// SdfPrimSpec objects have properties of two general types: attributes
 /// (containing values) and relationships (different types of connections to
@@ -64,15 +67,13 @@ template <class TypePolicy> class Sdf_ListEditor;
 /// other layers may refer to, or express opinions about a prim. See the
 /// SdfPermission class for more information.
 ///
-/// Compared with Menv2x, prims are most closely analogous to hooks and cues.
-///
 /// \todo
 /// \li Insert doc about references and inherits here.
 /// \li Should have validate... methods for name, children, properties
 ///
 class SdfPrimSpec : public SdfSpec
 {
-    SDF_DECLARE_SPEC(SdfSchema, SdfSpecTypePrim, SdfPrimSpec, SdfSpec);
+    SDF_DECLARE_SPEC(SdfPrimSpec, SdfSpec);
 
 public:
     typedef SdfPrimSpecView NameChildrenView;
@@ -98,6 +99,9 @@ public:
     ///
     /// Creates a prim spec with a \p name, \p specifier and \p typeName as
     /// a namespace child of the given prim.
+    ///
+    /// \sa SdfCreatePrimInLayer() to create a PrimSpec with all required
+    /// ancestor specs as SdfSpecifierOver.
     SDF_API
     static SdfPrimSpecHandle
     New(const SdfPrimSpecHandle& parentPrim,
@@ -576,26 +580,22 @@ public:
     void ClearInstanceable();
 
     /// @}
-    /// \name Payload
+    /// \name Payloads
     /// @{
 
-    /// Returns this prim spec's payload.
+    /// Returns a proxy for the prim's payloads.
     ///
-    /// The default value for payload is an empty \c SdfPayload.
+    /// Payloads for this prim may be modified through the proxy.
     SDF_API
-    SdfPayload GetPayload() const;
+    SdfPayloadsProxy GetPayloadList() const;
 
-    /// Sets this prim spec's payload.
+    /// Returns true if this prim has payloads set.
     SDF_API
-    void SetPayload(const SdfPayload& value);
+    bool HasPayloads() const;
 
-    /// Returns true if this prim spec has an opinion about payload.
+    /// Clears the payloads for this prim.
     SDF_API
-    bool HasPayload() const;
-
-    /// Remove the payload opinion from this prim spec if there is one.
-    SDF_API
-    void ClearPayload();
+    void ClearPayloadList();
 
     /// @}
     /// \name Inherits
@@ -742,14 +742,6 @@ private:
     // algorithm programming.  Mutating methods on SdfPrimSpec use
     // this function as write access validation.
     bool _ValidateEdit(const TfToken& key) const;
-
-    // Returns a list editor object for name children order list edits.
-    boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >
-    _GetNameChildrenOrderEditor() const;
-
-    // Returns a list editor object for property order list edits.
-    boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >
-    _GetPropertyOrderEditor() const;
 
 private:
     static SdfPrimSpecHandle

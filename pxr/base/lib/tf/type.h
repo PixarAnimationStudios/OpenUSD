@@ -33,10 +33,7 @@
 #include "pxr/base/tf/traits.h"
 #include "pxr/base/tf/typeFunctions.h"
 
-#include <boost/function.hpp>
-#include <boost/mpl/vector.hpp>
 #include <boost/operators.hpp>
-#include <boost/scoped_ptr.hpp>
 
 #include <iosfwd>
 #include <memory>
@@ -76,51 +73,13 @@ class TfType : boost::totally_ordered<TfType>
 
 public:
     /// Callback invoked when a declared type needs to be defined.
-    typedef boost::function<void (TfType)> DefinitionCallback;
+    using DefinitionCallback = void (*)(TfType);
 
     /// Base class of all factory types.
     class FactoryBase {
     public:
         TF_API virtual ~FactoryBase();
     };
-
-private:
-    /// Helper object used for defining an TfType with the C++ type T.
-    ///
-    template <typename T>
-    class _TypeDefiner {
-    public:
-        typedef _TypeDefiner<T> This;
-
-        /// Return the type just created.
-        TfType GetType();
-
-    private:
-        _TypeDefiner(TfType const& type);
-
-        // For each of the C++ base types in TypeVector,
-        // add a cast function for casting raw pointers to/from the type BASE.
-        template < typename TypeVector >
-        This& _AddBaseCppTypes();
-
-        // Add a cast function for casting raw pointers to/from the type BASE.
-        template <typename BASE>
-        This& _AddBaseCppType();
-
-        // Type being defined.
-        // We'd prefer to just hold a TfType, but we can't because this
-        // is a nested type and so TfType's definition is not complete.
-        // Instead, we store a pointer to an owned TfType.
-        TfType const* _type;
-
-        template <typename DERIVED, typename TypeVector, bool empty>
-        friend struct Tf_AddBases;
-
-        friend class TfType;
-    };
-
-    template <typename DERIVED, typename TypeVector, bool empty>
-    friend struct Tf_AddBases;
 
 public:
     
@@ -140,15 +99,11 @@ public:
     };
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
-private:
-    // Sentinel placeholder for Bases<> typelist.
-    class Unspecified;
-
 public:
     /// A type-list of C++ base types.
     /// \see TfType::Define()
     template <class ... Args>
-    struct Bases : boost::mpl::vector<Args ...> {};
+    struct Bases {};
 
 public:
     /// Construct an TfType representing an unknown type.
@@ -358,6 +313,19 @@ public:
     ///
     TF_API
     std::vector<TfType> GetBaseTypes() const;
+    
+    /// Copy the first \p maxBases base types of \p this type to \p out, or all
+    /// the base types if this type has \p maxBases or fewer base types.  Return
+    /// \p this type's number of base types.
+    ///
+    /// Note that it is supported to change a TfType to its first base type by
+    /// calling this function.  For example:
+    /// \code
+    ///     TfType t = ...;
+    ///     t.GetNBaseTypes(&t, 1);
+    /// \endcode
+    TF_API
+    size_t GetNBaseTypes(TfType *out, size_t maxBases) const;
 
     /// Return a vector of types derived directly from this type.
     ///
@@ -490,7 +458,7 @@ public:
     static TfType const&
     Declare( const std::string & typeName,
              const std::vector<TfType> & bases,
-             DefinitionCallback definitionCallback=0 );
+             DefinitionCallback definitionCallback=nullptr );
 
     /// Define a TfType with the given C++ type T and C++ base types
     /// B.  Each of the base types will be declared (but not defined)
@@ -718,7 +686,9 @@ private:
     bool _IsAImpl(TfType queryType) const;
 
     typedef void *(*_CastFunction)(void *, bool derivedToBase);
-    
+
+    template <typename TypeVector>
+    friend struct Tf_AddBases;
     friend struct _TypeInfo;
     friend class Tf_TypeRegistry;
     friend class TfHash;
@@ -726,8 +696,10 @@ private:
     // Construct a TfType with the given _TypeInfo.
     explicit TfType(_TypeInfo *info) : _info(info) {}
 
-    // Add a base type, and link as a derived type of that base.
-    void _AddBase( TfType base ) const;
+    // Adds base type(s), and link as a derived type of that bases.
+    void _AddBases(
+        const std::vector<TfType> &bases,
+        std::vector<std::string> *errorToEmit) const;
 
     // Add the given function for casting to/from the given baseType.
     TF_API
@@ -779,18 +751,6 @@ template <>
 struct TfSizeofType<const volatile void> {
     static const size_t value = 0;
 };
-
-template <typename T>
-TfType::_TypeDefiner<T>::_TypeDefiner(TfType const& type)
-{
-    // Record traits information about T.
-    const bool isPodType = std::is_pod<T>::value;
-    const bool isEnumType = std::is_enum<T>::value;
-    const size_t sizeofType = TfSizeofType<T>::value;
-
-    _type = &type;
-    _type->_DefineCppType(typeid(T), sizeofType, isPodType, isEnumType);
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

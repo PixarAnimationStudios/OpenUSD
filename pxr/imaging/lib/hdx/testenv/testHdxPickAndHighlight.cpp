@@ -29,12 +29,14 @@
 
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/renderPassState.h"
+#include "pxr/imaging/hd/selection.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hdSt/renderDelegate.h"
 
 #include "pxr/imaging/hdx/selectionTask.h"
+#include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/unitTestDelegate.h"
@@ -49,6 +51,7 @@
 #include "pxr/base/tf/errorMark.h"
 
 #include <iostream>
+#include <unordered_map>
 #include <unordered_set>
 #include <memory>
 
@@ -60,12 +63,40 @@ TF_DEFINE_PRIVATE_TOKENS(
     (pickables)
 );
 
+namespace {
+
+typedef std::unordered_map<SdfPath, std::vector<VtIntArray>, SdfPath::Hash>
+    InstanceMap;
+
+// helper function that returns prims with selected instances in a map.
+static InstanceMap
+_GetSelectedInstances(HdSelectionSharedPtr const& sel,
+                      HdSelection::HighlightMode const &mode)
+{
+    InstanceMap selInstances;
+    SdfPathVector selPrimPaths = sel->GetSelectedPrimPaths(mode);
+
+    for (const auto& path : selPrimPaths) {
+        HdSelection::PrimSelectionState const* primSelState =
+            sel->GetPrimSelectionState(mode, path);
+
+        TF_VERIFY(primSelState);
+        if (!primSelState->instanceIndices.empty()) {
+            selInstances[path] = primSelState->instanceIndices;
+        }
+    }
+
+    return selInstances;
+}
+
+}
+
 class My_TestGLDrawing : public Hdx_UnitTestGLDrawing {
 public:
     My_TestGLDrawing() {
         SetCameraRotate(0, 0);
         SetCameraTranslate(GfVec3f(0));
-        _reprName = HdTokens->hull;
+        _reprName = HdReprTokens->hull;
         _refineLevel = 0;
     }
     ~My_TestGLDrawing();
@@ -86,8 +117,10 @@ public:
 protected:
     virtual void ParseArgs(int argc, char *argv[]);
     void _InitScene();
-    void _SetPickParams();
     void _Clear();
+    HdSelectionSharedPtr _Pick(
+        GfVec2i const& startPos, GfVec2i const& endPos,
+        HdSelection::HighlightMode mode);
 
 private:
     HdEngine _engine;
@@ -96,8 +129,8 @@ private:
     std::unique_ptr<Hdx_UnitTestDelegate> _delegate;
     
     HdRprimCollection _pickablesCol;
-    HdxUnitTestUtils::Picker _picker;
     HdxUnitTestUtils::Marquee _marquee;
+    HdxSelectionTrackerSharedPtr _selTracker;
 
     TfToken _reprName;
     int _refineLevel;
@@ -128,14 +161,17 @@ My_TestGLDrawing::InitTest()
     TF_VERIFY(_renderIndex != nullptr);
     _delegate.reset(new Hdx_UnitTestDelegate(_renderIndex));
     _delegate->SetRefineLevel(_refineLevel);
+    _selTracker.reset(new HdxSelectionTracker);
 
     // prepare render task
     SdfPath renderSetupTask("/renderSetupTask");
     SdfPath renderTask("/renderTask");
     SdfPath selectionTask("/selectionTask");
+    SdfPath pickTask("/pickTask");
     _delegate->AddRenderSetupTask(renderSetupTask);
     _delegate->AddRenderTask(renderTask);
     _delegate->AddSelectionTask(selectionTask);
+    _delegate->AddPickTask(pickTask);
 
     // render task parameters.
     VtValue vParam = _delegate->GetTaskParam(renderSetupTask, HdTokens->params);
@@ -144,12 +180,12 @@ My_TestGLDrawing::InitTest()
     _delegate->SetTaskParam(renderSetupTask, HdTokens->params,
                             VtValue(param));
     _delegate->SetTaskParam(renderTask, HdTokens->collection,
-                            VtValue(HdRprimCollection(HdTokens->geometry, _reprName)));
+                            VtValue(HdRprimCollection(HdTokens->geometry, 
+                            HdReprSelector(_reprName))));
     HdxSelectionTaskParams selParam;
     selParam.enableSelection = true;
     selParam.selectionColor = GfVec4f(1, 1, 0, 1);
     selParam.locateColor = GfVec4f(1, 0, 1, 1);
-    selParam.maskColor = GfVec4f(0, 1, 1, 1);
     _delegate->SetTaskParam(selectionTask, HdTokens->params,
                             VtValue(selParam));
 
@@ -158,10 +194,9 @@ My_TestGLDrawing::InitTest()
     SetCameraTranslate(GfVec3f(0, 0, -20));
 
     // picking related init
-    _pickablesCol = HdRprimCollection(_tokens->pickables, HdTokens->refined);
+    _pickablesCol = HdRprimCollection(_tokens->pickables, 
+        HdReprSelector(HdReprTokens->refined));
     _marquee.InitGLResources();
-    _picker.InitIntersector(_renderIndex);
-    _SetPickParams();
     // We have to unfortunately explictly add collections besides 'geometry'
     // See HdRenderIndex constructor.
     _delegate->GetRenderIndex().GetChangeTracker().AddCollection(_tokens->pickables);
@@ -254,21 +289,29 @@ My_TestGLDrawing::_InitScene()
     }
 }
 
-void
-My_TestGLDrawing::_SetPickParams()
+HdSelectionSharedPtr
+My_TestGLDrawing::_Pick(GfVec2i const& startPos, GfVec2i const& endPos,
+                        HdSelection::HighlightMode mode)
 {
-    HdxUnitTestUtils::PickParams pParams;
+    HdxPickHitVector allHits;
+    HdxPickTaskContextParams p;
+    p.resolution = HdxUnitTestUtils::CalculatePickResolution(
+        startPos, endPos, GfVec2i(4,4));
+    p.resolveMode = HdxPickTokens->resolveUnique;
+    p.viewMatrix = GetViewMatrix();
+    p.projectionMatrix = HdxUnitTestUtils::ComputePickingProjectionMatrix(
+        startPos, endPos, GfVec2i(GetWidth(), GetHeight()), GetFrustum());
+    p.collection = _pickablesCol;
+    p.outHits = &allHits;
 
-    pParams.pickRadius     = GfVec2i(4,4);
-    pParams.screenWidth    = GetWidth();
-    pParams.screenHeight   = GetHeight();
-    pParams.viewFrustum    = GetFrustum();
-    pParams.viewMatrix     = GetViewMatrix();
-    pParams.engine         = &_engine;
-    pParams.pickablesCol   = &_pickablesCol;
-    pParams.highlightMode  = HdxSelectionHighlightModeSelect;
+    HdTaskSharedPtrVector tasks;
+    tasks.push_back(_renderIndex->GetTask(SdfPath("/pickTask")));
+    VtValue pickParams(p);
+    _engine.SetTaskContextData(HdxPickTokens->pickParams, pickParams);
+    _engine.Execute(_renderIndex, &tasks);
 
-    _picker.SetPickParams(pParams);
+    return HdxUnitTestUtils::TranslateHitsToSelection(
+        p.pickTarget, mode, allHits);
 }
 
 void
@@ -303,99 +346,82 @@ My_TestGLDrawing::OffscreenTest()
     DrawScene();
     WriteToFile("color", "color1_unselected.png");
 
-    // --------------------- (active) selection high ---------------------------
+    // --------------------- (active) selection --------------------------------
     // select cube2
-    HdxSelectionHighlightMode mode = HdxSelectionHighlightModeSelect;
-    _picker.SetHighlightMode(mode);
-    _picker.Pick(GfVec2i(180, 390), GfVec2i(181, 391));
+    HdSelection::HighlightMode mode = HdSelection::HighlightModeSelect;
+    HdSelectionSharedPtr selection = _Pick(
+        GfVec2i(180, 390), GfVec2i(181, 391), mode);
 
+    _selTracker->SetSelection(selection);
     DrawScene();
     WriteToFile("color", "color2_select.png");
-    HdxSelectionSharedPtr selection = _picker.GetSelection();
-    TF_VERIFY(selection->GetSelectedPrims(mode).size() == 1);
-    TF_VERIFY(selection->GetSelectedPrims(mode)[0] == SdfPath("/cube2"));
+    TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1);
+    TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube2"));
 
     // select cube1, /protoTop:1, /protoTop:2, /protoBottom:1, /protoBottom:2
-    _picker.Pick(GfVec2i(105,62), GfVec2i(328,288));
+    selection = _Pick(GfVec2i(105,62), GfVec2i(328,288), mode);
+    _selTracker->SetSelection(selection);
     DrawScene();
     WriteToFile("color", "color3_select.png");
-    selection = _picker.GetSelection();
-
-    TF_VERIFY(selection->GetSelectedPrims(mode).size() == 5);
-    TF_VERIFY(selection->GetSelectedInstances(mode).size() == 2);
+    // primPaths expected: {cube1, protoTop, protoBottom}
+    TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 3);
+    // prims with non-empty instance indices {protoTop, protoBottom}
+    InstanceMap selInstances = _GetSelectedInstances(selection, mode);
+    TF_VERIFY(selInstances.size() == 2);
     {
         std::vector<VtIntArray> const& indices
-            = *TfMapLookupPtr(selection->GetSelectedInstances(mode),
-                             SdfPath("/protoTop"));
+            = selInstances[SdfPath("/protoTop")];
         TF_VERIFY(indices.size() == 2);
         TF_VERIFY(indices[0][0] == 1 || indices[0][0] == 2);
         TF_VERIFY(indices[1][0] == 1 || indices[1][0] == 2);
     }
     {
         std::vector<VtIntArray> const& indices
-            = *TfMapLookupPtr(selection->GetSelectedInstances(mode),
-                              SdfPath("/protoBottom"));
+            = selInstances[SdfPath("/protoBottom")];
         TF_VERIFY(indices.size() == 2);
         TF_VERIFY(indices[0][0] == 1 || indices[0][0] == 2);
         TF_VERIFY(indices[1][0] == 1 || indices[1][0] == 2);
     }
 
     // --------------------- locate (rollover) selection -----------------------
-    mode = HdxSelectionHighlightModeLocate;
-    _picker.SetHighlightMode(mode);
+    mode = HdSelection::HighlightModeLocate;
     // select cube0
-    _picker.Pick(GfVec2i(472, 97), GfVec2i(473, 98));
+    selection = _Pick(GfVec2i(472, 97), GfVec2i(473, 98), mode);
+    _selTracker->SetSelection(selection);
     DrawScene();
     WriteToFile("color", "color4_locate.png");
-    selection = _picker.GetSelection();
-    TF_VERIFY(selection->GetSelectedPrims(mode).size() == 1);
-    TF_VERIFY(selection->GetSelectedPrims(mode)[0] == SdfPath("/cube0"));
+    TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1);
+    TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube0"));
 
     // select cube3, /protoBottom:0
-    _picker.Pick(GfVec2i(408,246), GfVec2i(546,420));
+    selection = _Pick(GfVec2i(408,246), GfVec2i(546,420), mode);
+    _selTracker->SetSelection(selection);
     DrawScene();
     WriteToFile("color", "color5_locate.png");
-    selection = _picker.GetSelection();
-
-    TF_VERIFY(selection->GetSelectedPrims(mode).size() == 2);
-    TF_VERIFY(selection->GetSelectedInstances(mode).size() == 1);
+    TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 2);
+    selInstances = _GetSelectedInstances(selection, mode);
+    TF_VERIFY(selInstances.size() == 1);
     {
         std::vector<VtIntArray> const& indices
-            = *TfMapLookupPtr(selection->GetSelectedInstances(mode),
-                             SdfPath("/protoBottom"));
+            = selInstances[SdfPath("/protoBottom")];
         TF_VERIFY(indices.size() == 1);
         TF_VERIFY(indices[0][0] == 0);
     }
 
-    // ------------------------- mask  selection -------------------------------
-    mode = HdxSelectionHighlightModeMask;
-    _picker.SetHighlightMode(mode);
-
-    // select cube2
-    _picker.Pick(GfVec2i(180, 390), GfVec2i(181, 391));
+    // deselect
+    mode = HdSelection::HighlightModeSelect;
+    selection = _Pick(GfVec2i(0,0), GfVec2i(0,0), mode);
+    _selTracker->SetSelection(selection);
     DrawScene();
-    WriteToFile("color", "color6_mask.png");
 
-     // select cube3, /protoBottom:0
-    _picker.Pick(GfVec2i(408,246), GfVec2i(546,420));
+    // select all instances of protoTop without picking
+    // This is to test whether HdSelection::AddInstance allows an empty indices
+    // array to encode "all instances".
+    selection->AddInstance(mode, SdfPath("/protoTop"), VtIntArray());
+    _selTracker->SetSelection(selection);
     DrawScene();
-    WriteToFile("color", "color7_mask.png");
-    selection = _picker.GetSelection();
-
-    TF_VERIFY(selection->GetSelectedPrims(mode).size() == 2);
-    TF_VERIFY(selection->GetSelectedInstances(mode).size() == 1);
-    {
-        std::vector<VtIntArray> const& indices
-            = *TfMapLookupPtr(selection->GetSelectedInstances(mode),
-                             SdfPath("/protoBottom"));
-        TF_VERIFY(indices.size() == 1);
-        TF_VERIFY(indices[0][0] == 0);
-    }
-
-    // deselect    
-    _picker.Pick(GfVec2i(0,0), GfVec2i(0,0));
-    DrawScene();
-    WriteToFile("color", "color8_unselected.png");
+    // Expect to see earlier selection as well as all instances of protoTop
+    WriteToFile("color", "color6_select_all_instances.png");
 }
 
 void
@@ -427,17 +453,16 @@ My_TestGLDrawing::DrawScene()
     _delegate->SetTaskParam(renderSetupTask, HdTokens->params, VtValue(param));
 
     HdTaskSharedPtrVector tasks;
-    tasks.push_back(_delegate->GetRenderIndex().GetTask(renderSetupTask));
-    tasks.push_back(_delegate->GetRenderIndex().GetTask(renderTask));
-    tasks.push_back(_delegate->GetRenderIndex().GetTask(selectionTask));
+    tasks.push_back(_renderIndex->GetTask(renderSetupTask));
+    tasks.push_back(_renderIndex->GetTask(renderTask));
+    tasks.push_back(_renderIndex->GetTask(selectionTask));
 
     glEnable(GL_DEPTH_TEST);
     glBindVertexArray(vao);
 
-    VtValue v(_picker.GetSelectionTracker());
-    _engine.SetTaskContextData(HdxTokens->selectionState, v);
-
-    _engine.Execute(_delegate->GetRenderIndex(), tasks);
+    VtValue selTracker(_selTracker);
+    _engine.SetTaskContextData(HdxTokens->selectionState, selTracker);
+    _engine.Execute(&_delegate->GetRenderIndex(), &tasks);
 
     glBindVertexArray(0);
 }
@@ -461,7 +486,9 @@ My_TestGLDrawing::MouseRelease(int button, int x, int y, int modKeys)
     Hdx_UnitTestGLDrawing::MouseRelease(button, x, y, modKeys);
 
     if (!(modKeys & GarchGLDebugWindow::Alt)) {
-        _picker.Pick(_startPos, _endPos);
+        HdSelectionSharedPtr selection = _Pick(_startPos, _endPos,
+            HdSelection::HighlightModeSelect);
+        _selTracker->SetSelection(selection);
     }
     _startPos = _endPos = GfVec2i(0);
 }

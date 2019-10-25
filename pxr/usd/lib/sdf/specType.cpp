@@ -85,16 +85,17 @@ struct Sdf_SpecTypeInfo
         SchemaTypeToSpecTypes;
     SchemaTypeToSpecTypes schemaTypeToSpecTypes;
 
-    // Mapping from spec class to schema class. In other words, what schema
-    // is associated with a given C++ spec class.
-    typedef TfHashMap<TfType, TfType, TfHash> SpecTypeToSchemaType;
-    SpecTypeToSchemaType specTypeToSchemaType;
+    // Mapping from spec class to schema classes. In other words, what schemas
+    // are associated with a given C++ spec class.
+    typedef std::vector<TfType> SchemaTypes;
+    typedef TfHashMap<TfType, SchemaTypes, TfHash> SpecTypeToSchemaTypes;
+    SpecTypeToSchemaTypes specTypeToSchemaTypes;
 
     std::atomic<bool> registrationsCompleted;
 
     // Helper function for creating an entry in the specTypeToBitmask table.
     SpecTypeToBitmask::iterator
-    CreateSpecTypeEntry(const std::type_info& specCPPType)
+    FindOrCreateSpecTypeEntry(const std::type_info& specCPPType)
     {
         const TfType& specTfType = TfType::Find(specCPPType);
         if (specTfType.IsUnknown()) {
@@ -106,15 +107,9 @@ struct Sdf_SpecTypeInfo
 
         const std::pair<SpecTypeToBitmask::iterator, bool> mapStatus =
             specTypeToBitmask.insert(std::make_pair(specTfType, 0));
-        if (!mapStatus.second) {
-            TF_CODING_ERROR(
-                "Duplicate registration for spec type %s.",
-                specTfType.GetTypeName().c_str());
-            return specTypeToBitmask.end();
+        if (mapStatus.second) {
+            specTypeInfoToTfType.push_back(make_pair(&specCPPType, specTfType));
         }
-
-        // Add an entry into the specTypeInfoToTfType.
-        specTypeInfoToTfType.push_back(make_pair(&specCPPType, specTfType));
 
         return mapStatus.first;
     }
@@ -164,7 +159,7 @@ SdfSpecTypeRegistration::_RegisterSpecType(
     }
 
     Sdf_SpecTypeInfo::SpecTypeToBitmask::iterator specEntry = 
-        specTypeInfo.CreateSpecTypeEntry(specCPPType);
+        specTypeInfo.FindOrCreateSpecTypeEntry(specCPPType);
     if (specEntry == specTypeInfo.specTypeToBitmask.end()) {
         // Error already emitted, bail out.
         return;
@@ -195,7 +190,19 @@ SdfSpecTypeRegistration::_RegisterSpecType(
     }
     specTypeToTfType[specEnumType] = specTfType;
 
-    specTypeInfo.specTypeToSchemaType[specTfType] = schemaTfType;
+    Sdf_SpecTypeInfo::SchemaTypes& schemaTypesForSpecType = 
+        specTypeInfo.specTypeToSchemaTypes[specTfType];
+    if (std::find(schemaTypesForSpecType.begin(),
+                  schemaTypesForSpecType.end(), schemaTfType) 
+            == schemaTypesForSpecType.end()) {
+        schemaTypesForSpecType.push_back(schemaTfType);
+    }
+    else {
+        TF_CODING_ERROR(
+            "Spec type %s already registered for schema type %s",
+            specTfType.GetTypeName().c_str(), 
+            schemaTfType.GetTypeName().c_str());
+    }        
 }
 
 void
@@ -213,7 +220,7 @@ SdfSpecTypeRegistration::_RegisterAbstractSpecType(
     }
 
     Sdf_SpecTypeInfo::SpecTypeToBitmask::iterator specEntry = 
-        specTypeInfo.CreateSpecTypeEntry(specCPPType);
+        specTypeInfo.FindOrCreateSpecTypeEntry(specCPPType);
     if (specEntry == specTypeInfo.specTypeToBitmask.end()) {
         // Error already emitted, bail out.
         return;
@@ -230,7 +237,19 @@ SdfSpecTypeRegistration::_RegisterAbstractSpecType(
             specAllowedBitmask |= it->second;
     }
 
-    specTypeInfo.specTypeToSchemaType[specTfType] = schemaTfType;
+    Sdf_SpecTypeInfo::SchemaTypes& schemaTypesForSpecType = 
+        specTypeInfo.specTypeToSchemaTypes[specTfType];
+    if (std::find(schemaTypesForSpecType.begin(),
+                  schemaTypesForSpecType.end(), schemaTfType) 
+            == schemaTypesForSpecType.end()) {
+        schemaTypesForSpecType.push_back(schemaTfType);
+    }
+    else {
+        TF_CODING_ERROR(
+            "Spec type %s already registered for schema type %s",
+            specTfType.GetTypeName().c_str(), 
+            schemaTfType.GetTypeName().c_str());
+    }        
 }
 
 // XXX: Note, this function must be invoked by all public API in order to wait
@@ -308,13 +327,19 @@ Sdf_SpecType::CanCast(const SdfSpec& from, const std::type_info& to)
     }
 
     const TfType& fromSchemaType = TfType::Find(typeid(from.GetSchema()));
-    const TfType* toSchemaType = 
-        TfMapLookupPtr(specTypeInfo.specTypeToSchemaType, toType);
-    if (!toSchemaType || !fromSchemaType.IsA(*toSchemaType)) {
+    const Sdf_SpecTypeInfo::SchemaTypes* toSchemaTypes = 
+        TfMapLookupPtr(specTypeInfo.specTypeToSchemaTypes, toType);
+    if (!toSchemaTypes) {
         return false;
     }
 
-    return true;
+    for (const TfType& toSchemaType : *toSchemaTypes) {
+        if (fromSchemaType.IsA(toSchemaType)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

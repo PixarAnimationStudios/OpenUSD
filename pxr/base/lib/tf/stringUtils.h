@@ -35,15 +35,13 @@
 #include "pxr/base/tf/api.h"
 #include "pxr/base/tf/enum.h"
 
-#include <boost/type_traits/is_enum.hpp>
-#include <boost/utility/enable_if.hpp>
-
 #include <cstdarg>
 #include <cstring>
 #include <list>
 #include <set>
 #include <sstream>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -521,7 +519,7 @@ struct TfDictionaryLessThan {
 /// free to use the stream operators in ostreamMethods.h, but are not required
 /// to do so.
 template <typename T>
-typename boost::disable_if<boost::is_enum<T>, std::string>::type
+typename std::enable_if<!std::is_enum<T>::value, std::string>::type
 TfStringify(const T& v)
 {
     std::ostringstream stream;
@@ -531,7 +529,7 @@ TfStringify(const T& v)
 
 /// \overload
 template <typename T>
-typename boost::enable_if_c<boost::is_enum<T>::value, std::string>::type
+typename std::enable_if<std::is_enum<T>::value, std::string>::type
 TfStringify(const T& v)
 {
     return TfEnum::GetName(v);
@@ -545,6 +543,15 @@ TF_API std::string TfStringify(std::string const&);
 TF_API std::string TfStringify(float);
 /// \overload
 TF_API std::string TfStringify(double);
+
+/// Writes the string representation of \c d to \c buffer of length \c len. 
+/// If \c emitTrailingZero is true, the string representation will end with .0 
+/// in the case where d is an integer otherwise it will be omitted.
+/// The buffer length must be at least 25 in order to ensure that all doubles 
+/// values can be represented.
+/// Returns whether the conversion was successful.
+TF_API bool TfDoubleToString(
+    double d, char* buffer, int len, bool emitTrailingZero);
 
 /// \struct TfStreamFloat
 /// 
@@ -649,23 +656,20 @@ std::string TfStringCatPaths( const std::string &prefix,
 /// that is, it must be at least one character long, must start with a letter
 /// or underscore, and must contain only letters, underscores, and numerals.
 inline bool
-TfIsValidIdentifier(const std::string &identifier)
+TfIsValidIdentifier(std::string const &identifier)
 {
     char const *p = identifier.c_str();
-    if (!*p || (!(('a' <= *p && *p <= 'z') || 
-                  ('A' <= *p && *p <= 'Z') || 
-                  *p == '_')))
+    auto letter = [](unsigned c) { return ((c-'A') < 26) || ((c-'a') < 26); };
+    auto number = [](unsigned c) { return (c-'0') < 10; };
+    auto under = [](unsigned c) { return c == '_'; };
+    unsigned x = *p;
+    if (!x || number(x)) {
         return false;
-
-    for (++p; *p; ++p) {
-        if (!(('a' <= *p && *p <= 'z') || 
-              ('A' <= *p && *p <= 'Z') || 
-              ('0' <= *p && *p <= '9') || 
-              *p == '_')) {
-            return false;
-        }
     }
-    return true;
+    while (letter(x) || number(x) || under(x)) {
+        x = *p++;
+    };
+    return x == 0;
 }
 
 /// Produce a valid identifier (see TfIsValidIdentifier) from \p in by

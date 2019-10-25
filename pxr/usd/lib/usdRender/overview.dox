@@ -1,0 +1,260 @@
+/*!
+\page usdRender_page_front UsdRender : USD Render Schema
+\if ( PIXAR_MFB_BUILD )
+\publicLib
+\mainpage UsdRender : USD Render Schema
+\endif
+
+UsdRender provides schemas and behaviors for describing renders.
+
+\tableofcontents
+
+_Rendering_ refers to the process of generating images of a scene.
+In addition to images, rendering can also produce related byproducts
+such as depth maps, light probes, or point clouds. UsdRender provides
+primitives for configuring high-level aspects of the rendering process
+referred to collectively as _render settings_. An overview of the
+process follows.
+
+# Structure and Organization {#UsdRenderStructureAndOrganization}
+
+## Concepts {#UsdRenderConcepts}
+
+- UsdRenderSettings describes top-level settings required to
+  invoke a renderer.  It specifies one or more _products_, representing
+  artifacts for the renderer to produce.
+
+- UsdRenderProduct describes a single product. It often corresponds
+  to an image, but may instead be a point cloud or other artifact produced
+  using techniques related to image rendering.  Each product inherits
+  the top-level settings, but may additionally specify
+  product-specific settings or overrides.
+
+- UsdRenderSettingsBase represents the common settings shared by
+  top-level settings and particular products.
+
+- UsdRenderVar describes a channel of computed output data, sometimes
+  referred to as an _arbitrary output variable_ or AOV. A product
+  may contain multiple channels of data representing related values or
+  variables sampled by a render process. The render var prim specifies
+  details for how the renderer should produce the value.
+  Examples of render variables include geometric
+  measurements such as camera-space depth; quantities emitted by
+  material shaders; light path expressions (LPE's); and quantities
+  intrinsic to the renderer such as computation time per pixel.
+
+- UsdRenderSpec is a self-contained, evaluated specification
+  of render settings, suitable for consumption by a backend.
+
+- UsdRenderSettingsAPI is a base class for renderer-specific
+  API schemas (provided by other schema libraries) that encode
+  renderer-specific settings.
+
+## Reading settings {#UsdRenderReadingSettings}
+
+A UsdStage may contain multiple UsdRenderSettings prims representing
+distinct groups of settings. A settings prim may be nominated as a useful
+default in layer metadata using the `renderSettingsPrimPath` field.
+Like all stage metadata, `renderSettingsPrimPath` can be authoredin a
+stage's root layer or session layer, but no other subLayers of the root
+layer. UsdRenderSettings::GetStageRenderSettings() will consult this
+metadata and return the associated prim.
+
+UsdRenderComputeSpec() will collect and evaluate UsdRenderSettings
+as a self-contained specification, UsdRenderSpec.
+
+## Conventions {#UsdRenderConventions}
+
+Production toolsets may want to efficiently identify and operate on
+render settings without paying costs proportional to the size of the
+scene.  To facilitate this, UsdRender follows a naming convention
+that all render settings in the scene must live under the path `</Render>`.
+By requiring all render-related specification to be located under a
+unique root-level prim, we gain several advantages:
+
+- We can leverage UsdStage::OpenMasked() to compose just the
+  rendering-related prims under `</Render>`, making isolated
+  access to this data fast, regardless of scene complexity.
+
+- This constrained organization facilitates sharing of rendering data
+  within a production pipeline, as every "shot" can sublayer in sequence,
+  production, and facility-level layers that each contain rendering data,
+  and we are ensured consistent composition (and ease of discovery) of
+  all the data.
+
+This does, in one sense, divorce a scene from its rendering specification,
+necessitating further management if you need to combine scenes.
+For example, should you want to reference one scene into another, you
+will need to reference in the root of the scene's geometry (`</World>`
+in Pixar's pipeline), but then the scene's render specification gets
+left behind.  The settings can be recaptured by separately referencing
+the scene's `</Render>` prim onto the referencing scene's `</Render>` prim,
+although some path corrections may be required.  We think these situations
+arise infrequently enough that they do not outweigh the benefits of
+Render data always being in a known location.  In practice, while we do
+organize and compose together scene geometry, and we also organize and
+compose together render settings, these are usually independent concerns
+that are not often tightly coupled.
+
+# How settings affect rendering {#UsdRenderHowSettingsAffectRendering}
+
+\anchor UsdRender_Camera
+## Camera {#UsdRenderCamera}
+
+An image is rendered by viewing a scene from a particular camera.
+UsdRenderSettingsBase designates the camera via a relationship to a
+UsdGeomCamera prim.
+
+UsdGeomCamera attributes describe its _transform_ and _projection_.
+The transform maps world coordinates to camera-relative view
+coordinates.  The projection maps view coordinates to screen coordinates.
+The render settings for a UsdRenderProduct map screen coordinates
+to its pixel coordinates.
+
+The camera has additional attributes to bound the _frustum_,
+the volume of space viewed in the image.
+These attributes include the near and far clipping range,
+as well as optional additional clipping planes.
+The camera also specifies an _aperture_, which bounds the x and
+y axes of screen space.  The aperture is specified in view coordinates
+using the same units as focal length (typically, millimeters).
+For a perspective projection, the aperture describes an axis-aligned
+rectangle in the plane sitting at the focal length in front of the
+camera origin:
+
+\image html images/aperture.svg
+
+For an orthographic projection, no reference plane is needed, and
+so the aperture simply bounds the x/y axes of view space.
+The aperture is still expresed in the same units as focal length
+in this case, although the focal length does not itself pertain
+to orthographic projection.
+
+The projection of the aperture bounds to screen coordiantes
+is known as the _screen window_.
+UsdRenderSettings::ComputeDescription() computes screen window bounds.
+
+The camera attributes determine the visual composition of the scene
+as an image, and as such represent creative choices distinct from the
+technical render settings used to configure image generation.
+This is why some attributes originate from the camera and others
+(such as pixel resolution) are expressed separately as render settings,
+and may vary per render product.
+
+## Pixels {#UsdRenderPixels}
+
+The screen aperture is sampled in a rectangular array of pixels known as
+the _raster image_.  Typically, the full aperture is sampled.
+Render settings specify the `resolution` and `pixelAspectRatio` of
+the image pixel grid, which determines density and placement of pixel
+samples in the aperture.
+
+\image html images/pixelAspectRatio.svg
+
+The resolution and pixel aspect ratio together determine the total
+aspect ratio of the image. The pixelAspectRatio defaults to 1.0,
+indicating square pixels, however it is possible to use a different
+aspect ratio. The following is an example of a non-square pixel aspect
+ratio compensating for a non-square resolution, yielding a square image:
+
+\image html images/nonSquarePixels.svg
+
+### Aspect Ratio Policy {#UsdRenderAspectRatioPolicy}
+
+Because the camera aperture and image dimensions are specified
+independently, there may be a mismatch in their aspect ratio.
+For example, an interactive viewport may be resized to a
+ratio that does not match the camera, or a pipeline may be
+configured with a standard resolution that may not match a
+particular camera.
+
+If the aspect ratio of the image does not match that of the
+aperture, an `aspectRatioConformPolicy` resolves the mismatch. The
+default policy expands the aperture as needed to fill the image ---
+guaranteeing that the camera composition remains visible, but
+potentially revealing additonal areas of the scene. Other policy
+options allow for reducing the aperture, computing the effective
+pixelAspectRatio to exactly cover the aperture, or maintaining other
+constraints.
+
+### Cropping, Tiling, Overscan {#UsdRenderCroppingTilingOverscan}
+
+It can be useful to crop a render to isolate part of the scene, to
+render a large image as separate tiles, or to sample extra pixels
+beyond the aperture boundary to support post-processing kernels.
+This is controlled by the _data window_, which specifies the
+axis-aligned rectangular region in which to render data.
+
+The data window is expressed in normalized device coordinates (NDC)
+using the `dataWindowNDC` attribute.  It is normalized to the range of
+the policy-adjusted aperture.  NDC coordinates allow the data window to
+be expressed in a resolution-independent form.  (0,0) corresponds to
+the lower-left corner of the aperture, and (1,1) corresponds to the
+upper-right corner.  The default data window matches the full aperture.
+
+### Rasterization Rule {#UsdRenderRasterizationRule}
+
+A pixel is included in the rendered image if its pixel center is
+contained within the requested data window. Pixel centers that fall
+exactly on the left or bottom (i.e. minimum coordinate) edge of the data
+window are included; pixel centers on the top or right edge (i.e.
+maximum coordinate) are excluded. This ensures that contiguous
+data window intervals produce contiguous pixel intervals, without
+overlap or gaps.
+
+\image html images/dataWindow.svg
+
+# Extensions {#UsdRenderExtensinos}
+
+UsdRenderSettingsAPI is a base class API schema.  USD schema libraries
+for particular renderers can subclass it with their own specific API
+schemas to encode settings specific to that renderer.  Applications
+that import, inspect, or edit these can use the type hierarchy of
+API schemas to generically inspect the settings.
+
+# Example Usage {#UsdRenderExampleUsage}
+
+The following example is provided to illustrate the above concepts.
+
+    #usda1.0
+    (
+        renderSettingsPrimPath = "/Render/PrimarySettings"
+    )
+
+    def Scope "Render"
+    {
+        def RenderSettings "PrimarySettings" {
+            rel products = </Render/PrimaryProduct>
+            int2 resolution = (512, 512)
+        }
+        def RenderProduct "PrimaryProduct" {
+            rel camera = </World/main_cam>
+            token productName = "/scratch/tmp/render000009.exr"
+            rel orderedVars = [
+                </Render/Vars/color>,
+                </Render/Vars/alpha>,
+                </Render/Vars/directDiffuse>,
+                </Render/Vars/id>
+            ]
+        }
+        def Scope "Vars"
+        {
+            def RenderVar "color" {
+                string sourceName = "Ci"
+            }
+            def RenderVar "alpha" {
+                token dataType = "float"
+                string sourceName = "a"
+            }
+            def RenderVar "directDiffuse" {
+                string sourceName = "C<RD>[<L.>O]"
+                token sourceType = lpe"
+            }
+            def RenderVar "id" {
+                token dataType = "int"
+                string sourceName = "id"
+            }
+        }
+    }
+
+*/

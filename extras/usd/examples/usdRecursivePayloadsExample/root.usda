@@ -1,0 +1,13 @@
+#usda 1.0
+
+# Prim that demonstrates how dynamic file formate arguments can be composed from fields
+# that have been composed. The params reference brings in opinions about the metadata fields
+# the affect our dynamic payloads. The payload refence brings in a list of payloads that 
+# refer to dynamic file format types. The fields composed from the params reference will 
+# affect the layer content in the payloads.
+def "RootMulti" (
+    references = [@./params.usda@</Params>, 
+                  @./payload.usda@</PayloadRoot>]
+)
+{
+}

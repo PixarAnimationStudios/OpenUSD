@@ -47,8 +47,8 @@ for i in range(0,3):
 unfiltered = delegate.TakeUncoalescedDiagnostics()
 assert len(unfiltered) == 3
 for i in range(0,3):
-    assert unfiltered[0].sourceLineNumber == EXPECTED_LINE_NO 
-    assert unfiltered[0].sourceFunction == EXPECTED_FUNC_NAME
+    assert unfiltered[i].sourceLineNumber == EXPECTED_LINE_NO 
+    assert unfiltered[i].sourceFunction == EXPECTED_FUNC_NAME
 
 # Test collection of filtered diagnostics
 for i in range(0,8):

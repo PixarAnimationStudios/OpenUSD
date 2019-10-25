@@ -99,8 +99,7 @@ PcpErrorArcCycle::ToString() const
         if (i > 0) {
             if (i + 1 < cycle.size()) {
                 switch(segment.arcType) {
-                case PcpArcTypeLocalInherit:
-                case PcpArcTypeGlobalInherit:
+                case PcpArcTypeInherit:
                     msg += "inherits from:\n";
                     break;
                 case PcpArcTypeRelocate:
@@ -123,8 +122,7 @@ PcpErrorArcCycle::ToString() const
             else {
                 msg += "CANNOT ";
                 switch(segment.arcType) {
-                case PcpArcTypeLocalInherit:
-                case PcpArcTypeGlobalInherit:
+                case PcpArcTypeInherit:
                     msg += "inherit from:\n";
                     break;
                 case PcpArcTypeRelocate:
@@ -175,8 +173,7 @@ PcpErrorArcPermissionDenied::ToString() const
 {
     std::string msg = TfStringPrintf("%s\nCANNOT ", TfStringify(site).c_str());
     switch(arcType) {
-    case PcpArcTypeLocalInherit:
-    case PcpArcTypeGlobalInherit:
+    case PcpArcTypeInherit:
         msg += "inherit from:\n";
         break;
     case PcpArcTypeRelocate:
@@ -682,7 +679,8 @@ PcpErrorInvalidSublayerPath::ToString() const
     return TfStringPrintf("Could not load sublayer @%s@ of layer @%s@%s%s; "
                           "skipping.", 
                           sublayerPath.c_str(), 
-                          layer->GetIdentifier().c_str(),
+                          layer ? layer->GetIdentifier().c_str()
+                                : "<NULL>",
                           messages.empty() ? "" : " -- ",
                           messages.c_str());
 }

@@ -44,7 +44,6 @@ class PxOsdSubdivTags;
 class UsdImagingMeshAdapter : public UsdImagingGprimAdapter {
 public:
     typedef UsdImagingGprimAdapter BaseAdapter;
-    typedef PxOsdSubdivTags SubdivTags;
 
     UsdImagingMeshAdapter()
         : UsdImagingGprimAdapter()
@@ -55,10 +54,10 @@ public:
     USDIMAGING_API
     virtual SdfPath Populate(UsdPrim const& prim,
                      UsdImagingIndexProxy* index,
-                     UsdImagingInstancerContext const* instancerContext = NULL);
+                     UsdImagingInstancerContext const* instancerContext = NULL) override;
 
     USDIMAGING_API
-    virtual bool IsSupported(UsdImagingIndexProxy const* index) const;
+    virtual bool IsSupported(UsdImagingIndexProxy const* index) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
@@ -71,7 +70,7 @@ public:
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
-                                      instancerContext = NULL);
+                                      instancerContext = NULL) const override;
 
 
     /// Thread Safe.
@@ -81,7 +80,7 @@ public:
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext = NULL);
+                                   instancerContext = NULL) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Change Processing
@@ -90,23 +89,24 @@ public:
     USDIMAGING_API
     virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
                                               SdfPath const& cachePath,
-                                              TfToken const& propertyName);
+                                              TfToken const& propertyName) override;
+
+    // ---------------------------------------------------------------------- //
+    /// \name Data access
+    // ---------------------------------------------------------------------- //
 
     USDIMAGING_API
-    virtual void MarkDirty(UsdPrim const& prim,
-                           SdfPath const& cachePath,
-                           HdDirtyBits dirty,
-                           UsdImagingIndexProxy* index) override;
+    virtual PxOsdSubdivTags GetSubdivTags(UsdPrim const& usdPrim,
+                                          SdfPath const& cachePath,
+                                          UsdTimeCode time) const override;
 
 protected:
     USDIMAGING_API
-    virtual void _RemovePrim(SdfPath const& cachePath,
-                             UsdImagingIndexProxy* index) override;
+    virtual bool _IsBuiltinPrimvar(TfToken const& primvarName) const override;
 
 private:
-    void _GetPoints(UsdPrim const&, VtValue* value, UsdTimeCode time);
-    void _GetMeshTopology(UsdPrim const& prim, VtValue* topoHolder, UsdTimeCode time);
-    void _GetSubdivTags(UsdPrim const& prim, SubdivTags* tags, UsdTimeCode time);
+    void _GetMeshTopology(UsdPrim const& prim, VtValue* topoHolder, 
+            UsdTimeCode time) const;
 };
 
 

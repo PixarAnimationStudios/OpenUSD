@@ -53,6 +53,7 @@ class TestSdfParsing(unittest.TestCase):
         # This will mean that your new test runs first and you can spot
         # failures much quicker.
         testFiles = '''
+        201_format_specifiers_in_strings.sdf
         200_bad_emptyFile.sdf
         199_bad_colorSpace_metadata.sdf
         198_colorSpace_metadata.sdf
@@ -80,7 +81,6 @@ class TestSdfParsing(unittest.TestCase):
         177_bad_empty_lists.sdf
         176_empty_lists.sdf
         175_asset_path_with_colons.sdf
-        164_attr_mappers_and_markers.sdf
         163_bad_variant_selection2.sdf
         162_bad_variant_selection1.sdf
         161_bad_variant_name2.sdf
@@ -115,10 +115,8 @@ class TestSdfParsing(unittest.TestCase):
         112_nested_dictionaries.sdf
         111_string_arrays.sdf
         108_bad_inheritPath.sdf
-        105_mapperMetadata.sdf
         104_uniformAttributes.sdf
         103_bad_attributeVariability.sdf
-        101_relationalAttrOverrides.sdf
         100_bad_roleNameChange.sdf
         99_bad_typeNameChange.sdf
         98_bad_valueType.sdf
@@ -139,7 +137,6 @@ class TestSdfParsing(unittest.TestCase):
         82_bad_tuple_dimensions1.sdf
         81_namespace_reorder.sdf
         80_bad_hidden.sdf
-        77_connections_at_markers.sdf
         76_relationship_customData.sdf
         75_attribute_customData.sdf
         74_prim_customData.sdf
@@ -219,18 +216,9 @@ class TestSdfParsing(unittest.TestCase):
 
         # Create a temporary file for diffs and choose where to get test data.
         import tempfile
-        if os.environ.get('SDF_WRITE_OLD_TYPENAMES') == '1':
-            layerFileOut = tempfile.NamedTemporaryFile(suffix='testSdfParsingOld1.sdf', delete=False)
-            layerDir = os.path.join(os.getcwd(), 'testSdfParsingOld.testenv')
-            baselineDir = os.path.join(layerDir, 'baseline')
-        elif os.environ.get('SDF_CONVERT_TO_NEW_TYPENAMES') == "1":
-            layerFileOut = tempfile.NamedTemporaryFile(suffix='testSdfParsingNew1.sdf', delete=False)
-            layerDir = os.path.join(os.getcwd(), 'testSdfParsingNew.testenv')
-            baselineDir = os.path.join(layerDir, 'baseline_newtypes')
-        else:
-            layerFileOut = tempfile.NamedTemporaryFile(suffix='testSdfParsing1.sdf', delete=False)
-            layerDir = os.path.join(os.getcwd(), 'testSdfParsing.testenv')
-            baselineDir = os.path.join(layerDir, 'baseline')
+        layerFileOut = tempfile.NamedTemporaryFile(suffix='testSdfParsing1.sdf', delete=False)
+        layerDir = os.path.join(os.getcwd(), 'testSdfParsing.testenv')
+        baselineDir = os.path.join(layerDir, 'baseline')
 
         # Close the temporary file.  We only wanted a temporary file name
         # and we'll open/close/remove this file once per test file.  On
@@ -303,8 +291,9 @@ class TestSdfParsing(unittest.TestCase):
             print '\nTest %s' % layerFile
 
             print '\tReading...'
-            layer = Sdf.Layer.FindOrOpen( layerFile )
-            self.assertTrue(layer is not None)
+            layer = Sdf.Layer.FindOrOpen(layerFile)
+            self.assertTrue(layer is not None,
+                            "failed to open @%s@" % layerFile)
             print '\tWriting...'
             try:
                 self.assertTrue(layer.Export( layerFileOut.name ))

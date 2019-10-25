@@ -44,6 +44,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \param fileName The name of the file that \c Arch_Error was called from.
 ///
 /// \private
+[[noreturn]]
 ARCH_API
 void Arch_Error(const char* msg, const char* funcName,
                 size_t lineNo, const char* fileName);

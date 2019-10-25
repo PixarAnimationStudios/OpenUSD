@@ -76,7 +76,7 @@ public:
 
     /// Sets the bufferSpecs for all resources.
     HDST_API
-    virtual void AddBufferSpecs(HdBufferSpecVector *bufferSpecs) const;
+    virtual void GetBufferSpecs(HdBufferSpecVector *bufferSpecs) const override;
 };
 
 HDST_API

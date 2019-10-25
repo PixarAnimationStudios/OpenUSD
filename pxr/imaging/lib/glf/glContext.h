@@ -97,6 +97,19 @@ public:
     /// Returns \c true if this context is valid.
     virtual bool IsValid() const = 0;
 
+    /// Creates a new GlfContext that shares GL resources with this context.
+    /// The purpose of this function is to be able to create a new GL context
+    /// on a second thread that shares with the context on the main-thread.
+    /// If the GlfContext implementation does not support sharing contexts
+    /// null is returned. Example usage:
+    /// Main-thread:
+    ///     RegisterGLContextCallbacks();
+    ///     GlfGLContext::MakeCurrent(...);
+    /// Second-thread:
+    ///     s = GetCurrentGLContext();
+    ///     c = s->CreateSharingContext();
+    virtual GlfGLContextSharedPtr CreateSharingContext() {return nullptr;}
+
 protected:
     GLF_API
     GlfGLContext();

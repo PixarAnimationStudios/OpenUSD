@@ -32,7 +32,7 @@
 
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyUtils.h"
-#include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
 // Include headers for other vec types to support wrapping conversions and

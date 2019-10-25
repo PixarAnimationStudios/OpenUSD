@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 
+#include "pxr/usd/usd/debugCodes.h"
 #include "pxr/usd/usd/clip.h"
 #include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/schemaBase.h"
@@ -68,6 +69,7 @@ TF_MAKE_STATIC_DATA(TfType, _apiSchemaBaseType) {
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    (appliedAPISchemas)
     (multipleApplyAPISchemas)
 );
 
@@ -123,36 +125,43 @@ _GetGeneratedSchema(const PlugPluginPtr &plugin)
     // Look for generatedSchema in Resources.
     const string fname = TfStringCatPaths(plugin->GetResourcePath(),
                                           "generatedSchema.usda");
-    return TfIsFile(fname) ? SdfLayer::OpenAsAnonymous(fname) : TfNullPtr;
+    SdfLayerRefPtr layer = SdfLayer::OpenAsAnonymous(fname);
+
+    TF_DEBUG(USD_SCHEMA_REGISTRATION).Msg(
+       "Looking up generated schema for plugin %s at path %s. "
+       "Generated schema %s.\n",
+       plugin->GetName().c_str(),
+       fname.c_str(),
+       (layer ? "valid" : "invalid") 
+    );
+    return layer;
 }
 
 void
-UsdSchemaRegistry::_BuildPrimTypePropNameToSpecIdMap(
+UsdSchemaRegistry::_BuildPrimTypePropNameToPathMap(
     const TfToken &typeName, const SdfPath &primPath)
 {
-    // Add this prim and its properties.  Note that the spec path and
-    // propertyName are intentionally leaked.  It's okay, since there's a fixed
-    // set that we'd like to persist forever.
+    // Add this prim and its properties.
     SdfPrimSpecHandle prim = _schematics->GetPrimAtPath(primPath);
     if (!prim || prim->GetTypeName().IsEmpty())
         return;
 
-    _primTypePropNameToSpecIdMap[make_pair(typeName, TfToken())] = 
-        new SdfAbstractDataSpecId(new SdfPath(prim->GetPath()));
+    _primTypePropNameToPathMap[
+        make_pair(typeName, TfToken())] = prim->GetPath();
 
     for (SdfPropertySpecHandle prop: prim->GetProperties()) {
-        _primTypePropNameToSpecIdMap[make_pair(typeName, prop->GetNameToken())] =
-            new SdfAbstractDataSpecId(new SdfPath(prop->GetPath()));
+        _primTypePropNameToPathMap[
+            make_pair(typeName, prop->GetNameToken())] = prop->GetPath();
     }
 }
 
-const SdfAbstractDataSpecId *
-UsdSchemaRegistry::_GetSpecId(const TfToken &primType,
-                              const TfToken &propName) const
+const SdfPath &
+UsdSchemaRegistry::_GetPath(const TfToken &primType,
+                            const TfToken &propName) const
 {
-    return TfMapLookupByValue(_primTypePropNameToSpecIdMap,
-                              make_pair(primType, propName),
-                              static_cast<const SdfAbstractDataSpecId *>(NULL));
+    auto iter = _primTypePropNameToPathMap.find(make_pair(primType, propName));
+    return iter != _primTypePropNameToPathMap.end() ?
+        iter->second : SdfPath::EmptyPath();
 }
 
 void
@@ -202,6 +211,18 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
     for (const SdfLayerRefPtr& generatedSchema : generatedSchemas) {
         if (generatedSchema) {
             VtDictionary customDataDict = generatedSchema->GetCustomLayerData();
+
+            if (VtDictionaryIsHolding<VtStringArray>(customDataDict, 
+                    _tokens->appliedAPISchemas)) {
+                        
+                const VtStringArray &appliedAPISchemas = 
+                        VtDictionaryGet<VtStringArray>(customDataDict, 
+                            _tokens->appliedAPISchemas);
+                for (const auto &apiSchemaName : appliedAPISchemas) {
+                    _appliedAPISchemaNames.insert(TfToken(apiSchemaName));
+                }
+            }
+
             if (VtDictionaryIsHolding<VtStringArray>(customDataDict, 
                     _tokens->multipleApplyAPISchemas)) {
                 const VtStringArray &multipleApplyAPISchemas = 
@@ -216,8 +237,8 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
         }
     }
 
-    // Add them to the type -> path and typeName -> path maps, and the type ->
-    // SpecId and typeName -> SpecId maps.
+    // Add them to the type -> path and typeName -> path maps, and the prim type
+    // & prop name -> path maps.
     for (const TfType &type: types) {
         // The path in the schema is the type's alias under UsdSchemaBase.
         vector<string> aliases = _schemaBaseType->GetAliases(type);
@@ -239,9 +260,8 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
             _typeNameToPathMap[typeNameToken] = primPath;
             _typeNameToPathMap[primPath.GetNameToken()] = primPath;
 
-            _BuildPrimTypePropNameToSpecIdMap(typeNameToken, primPath);
-            _BuildPrimTypePropNameToSpecIdMap(
-                primPath.GetNameToken(), primPath);
+            _BuildPrimTypePropNameToPathMap(typeNameToken, primPath);
+            _BuildPrimTypePropNameToPathMap(primPath.GetNameToken(), primPath);
         }
     }
 }
@@ -296,10 +316,9 @@ UsdSchemaRegistry::GetPropertyDefinition(const TfToken& primType,
                                          const TfToken& propName)
 {
     auto const &self = GetInstance();
-    if (auto specId = self._GetSpecId(primType, propName)) {
-        return self._schematics->GetPropertyAtPath(specId->GetFullSpecPath());
-    }
-    return TfNullPtr;
+    SdfPath const &path = self._GetPath(primType, propName);
+    return path.IsEmpty() ? TfNullPtr :
+        self._schematics->GetPropertyAtPath(path);
 }
 
 /*static*/
@@ -403,6 +422,31 @@ UsdSchemaRegistry::IsMultipleApplyAPISchema(const TfType& apiSchemaType)
 
     return false;
 }
+
+bool 
+UsdSchemaRegistry::IsAppliedAPISchema(const TfType& apiSchemaType)
+{
+    // Return false if apiSchemaType is not an API schema.
+    if (!apiSchemaType.IsA(*_apiSchemaBaseType)) {
+        return false;
+    }
+
+    for (const auto& alias : _schemaBaseType->GetAliases(apiSchemaType)) {
+        if (_appliedAPISchemaNames.find(TfToken(alias)) !=  
+                _appliedAPISchemaNames.end()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+TfType
+UsdSchemaRegistry::GetTypeFromName(const TfToken& typeName){
+    return PlugRegistry::GetInstance().FindDerivedTypeByName(
+        *_schemaBaseType, typeName.GetString());
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

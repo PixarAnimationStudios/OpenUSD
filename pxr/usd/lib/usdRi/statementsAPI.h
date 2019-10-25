@@ -31,7 +31,9 @@
 #include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usdRi/tokens.h"
+
+#include "pxr/usd/usdGeom/primvarsAPI.h"
+
 
 #include "pxr/base/vt/value.h"
 
@@ -52,26 +54,27 @@ class SdfAssetPath;
 
 /// \class UsdRiStatementsAPI
 ///
-/// Container namespace schema for all renderman statements
+/// Container namespace schema for all renderman statements.
+/// 
+/// \note The longer term goal is for clients to go directly to primvar
+/// or render-attribute API's, instead of using UsdRi StatementsAPI
+/// for inherited attributes.  Anticpating this, StatementsAPI
+/// can smooth the way via a few environment variables:
+/// 
+/// * USDRI_STATEMENTS_WRITE_NEW_ENCODING: Causes StatementsAPI to write
+/// attributes to primvars in the "ri:" namespace.
+/// * USDRI_STATEMENTS_READ_OLD_ENCODING: Causes StatementsAPI to read
+/// old-style attributes instead of primvars in the "ri:"
+/// namespace.
+/// 
 ///
 class UsdRiStatementsAPI : public UsdAPISchemaBase
 {
 public:
-    /// Compile-time constant indicating whether or not this class corresponds
-    /// to a concrete instantiable prim type in scene description.  If this is
-    /// true, GetStaticPrimDefinition() will return a valid prim definition with
-    /// a non-empty typeName.
-    static const bool IsConcrete = false;
-
-    /// Compile-time constant indicating whether or not this class inherits from
-    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
-    /// UsdPrim.
-    static const bool IsTyped = false;
-
-    /// Compile-time constant indicating whether or not this class represents a 
-    /// multiple-apply API schema. Mutiple-apply API schemas can be applied 
-    /// to the same prim multiple times with different instance names. 
-    static const bool IsMultipleApply = false;
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaType
+    static const UsdSchemaType schemaType = UsdSchemaType::SingleApplyAPI;
 
     /// Construct a UsdRiStatementsAPI on UsdPrim \p prim .
     /// Equivalent to UsdRiStatementsAPI::Get(prim.GetStage(), prim.GetPath())
@@ -131,6 +134,13 @@ public:
     static UsdRiStatementsAPI 
     Apply(const UsdPrim &prim);
 
+protected:
+    /// Returns the type of schema this class belongs to.
+    ///
+    /// \sa UsdSchemaType
+    USDRI_API
+    UsdSchemaType _GetSchemaType() const override;
+
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
@@ -141,33 +151,7 @@ private:
 
     // override SchemaBase virtuals.
     USDRI_API
-    virtual const TfType &_GetTfType() const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // FOCUSREGION 
-    // --------------------------------------------------------------------- //
-    /// Represents the value of the 'focusregion' option to RiCamera 
-    /// in centimeters. Specifies the stretch of space along the camera view 
-    /// axis surrounding the focus plane that contains everything that will 
-    /// be rendered in perfect focus.  If unauthored, a value of zero should
-    /// be assumed. <b>Note:</b> this parameter may not be supportable in
-    /// RIS renders in RenderMan 19 and above.
-    ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
-    USDRI_API
-    UsdAttribute GetFocusRegionAttr() const;
-
-    /// See GetFocusRegionAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDRI_API
-    UsdAttribute CreateFocusRegionAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    const TfType &_GetTfType() const override;
 
 public:
     // ===================================================================== //
@@ -213,19 +197,13 @@ public:
         const TfType &tfType,
         const std::string &nameSpace = "user");
 
-    // --------------------------------------------------------------------- //
-    // CreateRiAttributeAsRel
-    // --------------------------------------------------------------------- //
-    /// The purpose of this type of rib attribute is to emit an identifier for 
-    /// an object in the scenegraph, which might be a prim or a property.  
-    /// We identify objects by targetting them with a relationship, which is 
-    /// why this method creates a UsdRelationship.  In RenderMan, strings make 
-    /// the best identifiers, so clients will likely want to transform the 
-    /// target's identity into a string for RenderMan, although it is up to 
-    /// your pipeline to choose.
+    /// Return a UsdAttribute representing the Ri attribute with the
+    /// name \a name, in the namespace \a nameSpace.  The attribute
+    /// returned may or may not \b actually exist so it must be
+    /// checked for validity.
     USDRI_API
-    UsdRelationship
-    CreateRiAttributeAsRel(
+    UsdAttribute
+    GetRiAttribute(
         const TfToken &name, 
         const std::string &nameSpace = "user");
 
@@ -241,11 +219,6 @@ public:
     USDRI_API
     std::vector<UsdProperty>
     GetRiAttributes(const std::string &nameSpace = "") const;
-
-    USDRI_API
-    bool 
-    _IsCompatible(const UsdPrim &prim) const;
-
     // --------------------------------------------------------------------- //
     // GetRiAttributeName 
     // --------------------------------------------------------------------- //

@@ -61,6 +61,11 @@ UsdLuxShapingAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 }
 
 
+/* virtual */
+UsdSchemaType UsdLuxShapingAPI::_GetSchemaType() const {
+    return UsdLuxShapingAPI::schemaType;
+}
+
 /* static */
 UsdLuxShapingAPI
 UsdLuxShapingAPI::Apply(const UsdPrim &prim)
@@ -194,6 +199,23 @@ UsdLuxShapingAPI::CreateShapingIesAngleScaleAttr(VtValue const &defaultValue, bo
                        writeSparsely);
 }
 
+UsdAttribute
+UsdLuxShapingAPI::GetShapingIesNormalizeAttr() const
+{
+    return GetPrim().GetAttribute(UsdLuxTokens->shapingIesNormalize);
+}
+
+UsdAttribute
+UsdLuxShapingAPI::CreateShapingIesNormalizeAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->shapingIesNormalize,
+                       SdfValueTypeNames->Bool,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -217,6 +239,7 @@ UsdLuxShapingAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdLuxTokens->shapingConeSoftness,
         UsdLuxTokens->shapingIesFile,
         UsdLuxTokens->shapingIesAngleScale,
+        UsdLuxTokens->shapingIesNormalize,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

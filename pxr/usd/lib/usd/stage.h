@@ -32,6 +32,7 @@
 #include "pxr/usd/usd/editTarget.h"
 #include "pxr/usd/usd/interpolation.h"
 #include "pxr/usd/usd/schemaRegistry.h"
+#include "pxr/usd/usd/stageLoadRules.h"
 #include "pxr/usd/usd/stagePopulationMask.h"
 #include "pxr/usd/usd/prim.h"
 
@@ -146,6 +147,16 @@ public:
     /// \name Lifetime Management
     /// @{
     // --------------------------------------------------------------------- //
+    
+    /// \enum InitialLoadSet
+    ///
+    /// Specifies the initial set of prims to load when opening a UsdStage.
+    ///
+    enum InitialLoadSet
+    {
+        LoadAll, ///< Load all loadable prims
+        LoadNone ///< Load no loadable prims
+    };
 
     /// Create a new stage with root layer \p identifier, destroying
     /// potentially existing files with that identifier; it is considered an
@@ -157,6 +168,9 @@ public:
     /// create a stage with an anonymous in-memory session layer.  To create a
     /// stage without a session layer, pass TfNullPtr (or None in python) as the
     /// \p sessionLayer argument.
+    //
+    /// The initial set of prims to load on the stage can be specified
+    /// using the \p load parameter. \sa UsdStage::InitialLoadSet.
     ///
     /// Note that the \p pathResolverContext passed here will apply to all path
     /// resolutions for this stage, regardless of what other context may be
@@ -166,23 +180,27 @@ public:
     /// path.
     USD_API
     static UsdStageRefPtr
-    CreateNew(const std::string& identifier);
-    /// \overload
-    USD_API
-    static UsdStageRefPtr
-    CreateNew(const std::string& identifier,
-              const SdfLayerHandle& sessionLayer);
+    CreateNew(const std::string& identifier, 
+              InitialLoadSet load = LoadAll);
     /// \overload
     USD_API
     static UsdStageRefPtr
     CreateNew(const std::string& identifier,
               const SdfLayerHandle& sessionLayer,
-              const ArResolverContext& pathResolverContext);
+              InitialLoadSet load = LoadAll);
     /// \overload
     USD_API
     static UsdStageRefPtr
     CreateNew(const std::string& identifier,
-              const ArResolverContext& pathResolverContext);
+              const SdfLayerHandle& sessionLayer,
+              const ArResolverContext& pathResolverContext,
+              InitialLoadSet load = LoadAll);
+    /// \overload
+    USD_API
+    static UsdStageRefPtr
+    CreateNew(const std::string& identifier,
+              const ArResolverContext& pathResolverContext,
+              InitialLoadSet load = LoadAll);
 
     /// Creates a new stage only in memory, analogous to creating an
     /// anonymous SdfLayer.
@@ -192,43 +210,41 @@ public:
     /// bound at resolve time. If no context is passed in here, Usd will create
     /// one by calling \sa ArResolver::CreateDefaultContext.
     ///
+    /// The initial set of prims to load on the stage can be specified
+    /// using the \p load parameter. \sa UsdStage::InitialLoadSet.
+    ///
     /// Invoking an overload that does not take a \p sessionLayer argument will
     /// create a stage with an anonymous in-memory session layer.  To create a
     /// stage without a session layer, pass TfNullPtr (or None in python) as the
     /// \p sessionLayer argument.
     USD_API
     static UsdStageRefPtr
-    CreateInMemory();
-    /// \overload
-    USD_API
-    static UsdStageRefPtr
-    CreateInMemory(const std::string& identifier);
+    CreateInMemory(InitialLoadSet load = LoadAll);
     /// \overload
     USD_API
     static UsdStageRefPtr
     CreateInMemory(const std::string& identifier,
-                   const ArResolverContext& pathResolverContext);
+                   InitialLoadSet load = LoadAll);
     /// \overload
     USD_API
     static UsdStageRefPtr
     CreateInMemory(const std::string& identifier,
-                   const SdfLayerHandle &sessionLayer);
+                   const ArResolverContext& pathResolverContext,
+                   InitialLoadSet load = LoadAll);
     /// \overload
     USD_API
     static UsdStageRefPtr
     CreateInMemory(const std::string& identifier,
                    const SdfLayerHandle &sessionLayer,
-                   const ArResolverContext& pathResolverContext);
+                   InitialLoadSet load = LoadAll);
+    /// \overload
+    USD_API
+    static UsdStageRefPtr
+    CreateInMemory(const std::string& identifier,
+                   const SdfLayerHandle &sessionLayer,
+                   const ArResolverContext& pathResolverContext,
+                   InitialLoadSet load = LoadAll);
 
-    /// \enum InitialLoadSet
-    ///
-    /// Specifies the initial set of prims to load when opening a UsdStage.
-    ///
-    enum InitialLoadSet
-    {
-        LoadAll, ///< Load all loadable prims
-        LoadNone ///< Load no loadable prims
-    };
 
     /// Attempt to find a matching existing stage in a cache if
     /// UsdStageCacheContext objects exist on the stack. Failing that, create a
@@ -393,6 +409,16 @@ public:
     /// Note that reloading anonymous layers clears their content, so
     /// invoking Reload() on a stage constructed via CreateInMemory()
     /// will clear its root layer.
+    ///
+    /// \note This method is considered a mutation, which has potentially
+    /// global effect!  Unlike the various Load() methods whose actions
+    /// affect only **this stage**, Reload() may cause layers to change their
+    /// contents, and because layers are global resources shared by
+    /// potentially many Stages, calling Reload() on one stage may result in
+    /// a mutation to any number of stages.  In general, unless you are
+    /// highly confident your stage is the only consumer of its layers, you
+    /// should only call Reload() when you are assured no other threads may
+    /// be reading from any Stages.
     USD_API
     void Reload();
 
@@ -514,50 +540,48 @@ public:
     ///       some recomposition cost. Similarly, unloading an unloaded prim
     ///       is legal.
     ///     - Specifying a path that does not target a prim is legal as long it
-    ///       has at least one ancestor in the scene graph (!including the
-    ///       absolute root). If the given path has no ancestors, it is an
+    ///       has an ancestor present in the scene graph (other than the
+    ///       absolute root). If the given path has no such ancestor, it is an
     ///       error.
-    ///     - Loading an inactive prim is an error.
-    ///     - Loading a master prim is an error. However, note that loading
-    ///       a prim in a master is legal.
+    ///     - Specifying a path to an inactive prim is an error.
+    ///     - Specifying a path to a master prim or a prim within a master is an
+    ///       error.
+    ///
+    /// If an instance prim (or a path identifying a prim descendant to an
+    /// instance) is encountered during a Load/Unload operation, these functions
+    /// may cause instancing to change on the stage in order to ensure that no
+    /// other instances are affected.  The load/unload rules that affect a given
+    /// prim hierarchy are considered when determining which prims can be
+    /// instanced together.  Instance sharing occurs when different instances
+    /// have equivalent load rules.
+    ///
+    /// The GetLoadRules() and SetLoadRules() provide direct low-level access to
+    /// the UsdStageLoadRules that govern payload inclusion on a stage.
+    ///
     /// @{
     // --------------------------------------------------------------------- //
 
-    /// Load the prim at \p path, its ancestors, and all of its descendants if
-    /// \p policy is UsdLoadWithDescendants.  If \p policy is
-    /// UsdLoadWithoutDescendants, then descendants are not loaded.
+    /// Modify this stage's load rules to load the prim at \p path, its
+    /// ancestors, and all of its descendants if \p policy is
+    /// UsdLoadWithDescendants.  If \p policy is UsdLoadWithoutDescendants, then
+    /// payloads on descendant prims are not loaded.
     ///
-    /// If an instance prim is encountered during this operation, this
-    /// function will also load prims in the instance's master. In other
-    /// words, loading a single instance may affect other instances because
-    /// it changes the load state of prims in the shared master. However, 
-    /// loading a single instance will never cause other instances to be
-    /// loaded as well.
-    ///
-    /// See the rules under
-    /// \ref Usd_workingSetManagement "Working Set Management" for a discussion
-    /// of what paths are considered valid.
+    /// See \ref Usd_workingSetManagement "Working Set Management" for more
+    /// information.
     USD_API
     UsdPrim Load(const SdfPath& path=SdfPath::AbsoluteRootPath(),
                  UsdLoadPolicy policy=UsdLoadWithDescendants);
 
-    /// Unload the prim and its descendants specified by \p path.
+    /// Modify this stage's load rules to unload the prim and its descendants
+    /// specified by \p path.
     ///
-    /// If an instance prim is encountered during this operation, this
-    /// function will also unload prims in the instance's master. In other
-    /// words, unloading a single instance may affect other instances because
-    /// it changes the load state of prims in the shared master. However, 
-    /// unloading a single instance will never cause other instances to be
-    /// unloaded as well.
-    ///
-    /// See the rules under
-    /// \ref Usd_workingSetManagement "Working Set Management" for a discussion
-    /// of what paths are considered valid.
+    /// See \ref Usd_workingSetManagement "Working Set Management" for more
+    /// information.
     USD_API
     void Unload(const SdfPath& path=SdfPath::AbsoluteRootPath());
 
-    /// Unloads and loads the given path sets; the effect is as if the
-    /// unload set were processed first followed by the load set.
+    /// Unload and load the given path sets.  The effect is as if the unload set
+    /// were processed first followed by the load set.
     ///
     /// This is equivalent to calling UsdStage::Unload for each item in the
     /// unloadSet followed by UsdStage::Load for each item in the loadSet,
@@ -565,9 +589,8 @@ public:
     /// a single batch.  The \p policy argument is described in the
     /// documentation for Load().
     ///
-    /// See the rules under
-    /// \ref Usd_workingSetManagement "Working Set Management" for a discussion
-    /// of what paths are considered valid.
+    /// See \ref Usd_workingSetManagement "Working Set Management" for more
+    /// information.
     USD_API
     void LoadAndUnload(const SdfPathSet &loadSet, const SdfPathSet &unloadSet,
                        UsdLoadPolicy policy=UsdLoadWithDescendants);
@@ -579,6 +602,9 @@ public:
     /// descendants of explicitly loaded paths.
     ///
     /// This method does not return paths to inactive prims.
+    ///
+    /// See \ref Usd_workingSetManagement "Working Set Management" for more
+    /// information.
     USD_API
     SdfPathSet GetLoadSet();
 
@@ -598,9 +624,33 @@ public:
     ///                     all.begin(), all.end(),
     ///                     std::inserter(result, result.end()));
     /// \endcode
+    ///
+    /// See \ref Usd_workingSetManagement "Working Set Management" for more
+    /// information.
     USD_API
     SdfPathSet FindLoadable(
         const SdfPath& rootPath = SdfPath::AbsoluteRootPath());
+
+    /// Return the stage's current UsdStageLoadRules governing payload
+    /// inclusion.
+    ///
+    /// See \ref Usd_workingSetManagement "Working Set Management" for more
+    /// information.
+    UsdStageLoadRules const &GetLoadRules() const {
+        return _loadRules;
+    }
+
+    /// Set the UsdStageLoadRules to govern payload inclusion on this stage.
+    /// This rebuilds the stage's entire prim hierarchy to follow \p rules.
+    ///
+    /// Note that subsequent calls to Load(), Unload(), LoadAndUnload() will
+    /// modify this stages load rules as described in the documentation for
+    /// those member functions.
+    ///
+    /// See \ref Usd_workingSetManagement "Working Set Management" for more
+    /// information.
+    USD_API
+    void SetLoadRules(UsdStageLoadRules const &rules);
 
     /// Return this stage's population mask.
     UsdStagePopulationMask GetPopulationMask() const {
@@ -612,17 +662,20 @@ public:
     void SetPopulationMask(UsdStagePopulationMask const &mask);
 
     /// Expand this stage's population mask to include the targets of all
-    /// relationships that pass \p pred, recursively.  If \p pred is null,
-    /// include all relationship targets.
+    /// relationships that pass \p relPred and connections to all attributes
+    /// that pass \p attrPred recursively.  If \p relPred is null, include all
+    /// relationship targets; if \p attrPred is null, include all connections.
     ///
     /// This function can be used, for example, to expand a population mask for
     /// a given prim to include bound materials, if those bound materials are
-    /// expressed as relationships.
+    /// expressed as relationships or attribute connections.
     ///
-    /// See also UsdPrim::FindAllRelationshipTargetPaths().
+    /// See also UsdPrim::FindAllRelationshipTargetPaths() and
+    /// UsdPrim::FindAllAttributeConnectionPaths().
     USD_API
     void ExpandPopulationMask(
-        std::function<bool (UsdRelationship const &)> const &pred = nullptr);
+        std::function<bool (UsdRelationship const &)> const &relPred = nullptr,
+        std::function<bool (UsdAttribute const &)> const &attrPred = nullptr);
     
     /// @}
 
@@ -700,6 +753,32 @@ public:
     USD_API
     UsdPrim GetPrimAtPath(const SdfPath &path) const;
 
+    /// Return the UsdObject at \p path, or an invalid UsdObject if none exists.
+    ///
+    /// If \p path indicates a prim beneath an instance, returns an instance
+    /// proxy prim if a prim exists at the corresponding path in that instance's 
+    /// master. If \p path indicates a property beneath a child of an instance, 
+    /// returns a property whose parent prim is an instance proxy prim.
+    ///
+    /// Example:
+    ///
+    /// \code
+    ///if (UsdObject obj = stage->GetObjectAtPath(path)) {
+    ///    if (UsdPrim prim = obj.As<UsdPrim>()) {
+    ///        // Do things with prim
+    ///    }
+    ///    else if (UsdProperty prop = obj.As<UsdProperty>()) {
+    ///        // Do things with property. We can also cast to
+    ///        // UsdRelationship or UsdAttribute using this same pattern.
+    ///    }
+    ///}
+    ///else {
+    ///    // No object at specified path
+    ///}
+    /// \endcode
+    USD_API
+    UsdObject GetObjectAtPath(const SdfPath &path) const;
+
 private:
     // Return the primData object at \p path.
     Usd_PrimDataConstPtr _GetPrimDataAtPath(const SdfPath &path) const;
@@ -710,11 +789,6 @@ private:
     // prim in the instance's master.
     Usd_PrimDataConstPtr 
     _GetPrimDataAtPathOrInMaster(const SdfPath &path) const;
-
-    // A helper function for LoadAndUnload to aggregate notification data
-    void _LoadAndUnload(const SdfPathSet&, const SdfPathSet&, 
-                        SdfPathSet*, SdfPathSet*,
-                        UsdLoadPolicy policy);
 
 public:
 
@@ -1342,7 +1416,7 @@ public:
     /// }
     /// \endcode
     ///
-    /// \sa \ref Usd_AttributeColorSpaceAPI
+    /// \sa \ref Usd_AttributeColorSpaceAPI "UsdAttribute ColorSpace API"
     /// 
     /// 
     /// @{
@@ -1352,28 +1426,28 @@ public:
     /// per-attribute color-spaces in the composed USD stage. This is specified
     /// as asset path which can be resolved to the color spec file.
     /// 
-    /// \ref Usd_ColorConfigurationAPI
+    /// \ref Usd_ColorConfigurationAPI "Color Configuration API"
     USD_API
     void SetColorConfiguration(const SdfAssetPath &colorConfig) const;
 
     /// Returns the default color configuration used to interpret the per-
     /// attribute color-spaces in the composed USD stage.
     /// 
-    /// \ref Usd_ColorConfigurationAPI
+    /// \ref Usd_ColorConfigurationAPI "Color Configuration API"
     USD_API
     SdfAssetPath GetColorConfiguration() const;
 
     /// Sets the name of the color management system used to interpret the 
     /// color configuration file pointed at by the colorConfiguration metadata.
     /// 
-    /// \ref Usd_ColorConfigurationAPI
+    /// \ref Usd_ColorConfigurationAPI "Color Configuration API"
     USD_API
     void SetColorManagementSystem(const TfToken &cms) const;
 
     /// Sets the name of the color management system to be used for loading 
     /// and interpreting the color configuration file.
     /// 
-    /// \ref Usd_ColorConfigurationAPI
+    /// \ref Usd_ColorConfigurationAPI "Color Configuration API"
     USD_API
     TfToken GetColorManagementSystem() const;
 
@@ -1385,8 +1459,9 @@ public:
     /// The python wrapping of this method returns a tuple containing 
     /// (colorConfiguration, colorManagementSystem).
     /// 
-    /// \ref Usd_ColorConfigurationAPI
-    /// \sa SetColorConfigFallbacks.
+    /// 
+    /// \sa SetColorConfigFallbacks,
+    /// \ref Usd_ColorConfigurationAPI "Color Configuration API"
     USD_API
     static void GetColorConfigFallbacks(SdfAssetPath *colorConfiguration,
                                         TfToken *colorManagementSystem);
@@ -1402,8 +1477,8 @@ public:
     /// at least one value must be non-empty. Additionally, these can't be
     /// reset to empty values.
     ///
-    /// \ref Usd_ColorConfigurationAPI
     /// \sa GetColorConfigFallbacks()
+    /// \ref Usd_ColorConfigurationAPI "Color Configuration API"
     USD_API
     static void
     SetColorConfigFallbacks(const SdfAssetPath &colorConfiguration, 
@@ -1448,13 +1523,7 @@ public:
     /// @}
 
 private:
-    struct _IncludeNewlyDiscoveredPayloadsPredicate;
-
-    enum _IncludePayloadsRule {
-        _IncludeAllDiscoveredPayloads,
-        _IncludeNoDiscoveredPayloads,
-        _IncludeNewPayloadsIfAncestorWasIncluded
-    };
+    struct _IncludePayloadsPredicate;
 
     // --------------------------------------------------------------------- //
     // Stage Construction & Initialization
@@ -1549,23 +1618,31 @@ private:
     // Value & Metadata Authoring
     // --------------------------------------------------------------------- //
 
-    bool _SetValue(UsdTimeCode time, const UsdAttribute &attr,
-                   const VtValue &newValue);
-    bool _SetValue(UsdTimeCode time, const UsdAttribute &attr,
-                   const SdfAbstractDataConstValue &newValue);
     template <class T>
-    bool _SetValueImpl(UsdTimeCode time, const UsdAttribute &attr, const T& value);
+    bool _SetValue(
+        UsdTimeCode time, const UsdAttribute &attr, const T &newValue);
+    bool _SetValue(
+        UsdTimeCode time, const UsdAttribute &attr, const VtValue &newValue);
+
+    template <class T>
+    bool _SetEditTargetMappedValue(
+        UsdTimeCode time, const UsdAttribute &attr, const T &newValue);
+
+    template <class T>
+    bool _SetValueImpl(
+        UsdTimeCode time, const UsdAttribute &attr, const T& value);
 
     bool _ClearValue(UsdTimeCode time, const UsdAttribute &attr);
 
-    bool _SetMetadata(const UsdObject &obj, const TfToken& fieldName,
-                      const TfToken &keyPath, const VtValue &newValue);
-    bool _SetMetadata(const UsdObject &obj, const TfToken& fieldName,
-                      const TfToken &keyPath,
-                      const SdfAbstractDataConstValue &newValue);
     template <class T>
-    bool _SetMetadataImpl(const UsdObject &obj, const TfToken& fieldName,
-                          const TfToken &keyPath, const T &value);
+    bool _SetEditTargetMappedMetadata(
+        const UsdObject &obj, const TfToken& fieldName,
+        const TfToken &keyPath, const T &newValue);
+
+    template <class T>
+    bool _SetMetadataImpl(
+        const UsdObject &obj, const TfToken& fieldName,
+        const TfToken &keyPath, const T &value);
 
     bool _ClearMetadata(const UsdObject &obj, const TfToken& fieldName,
                         const TfToken &keyPath=TfToken());
@@ -1600,9 +1677,8 @@ private:
     // during composition.
     void _ComposePrimIndexesInParallel(
         const std::vector<SdfPath>& primIndexPaths,
-        _IncludePayloadsRule includeRule,
         const std::string& context,
-        Usd_InstanceChanges* instanceChanges = NULL);
+        Usd_InstanceChanges* instanceChanges = nullptr);
 
     // Recompose the subtree rooted at \p prim: compose its type, flags, and
     // list of children, then invoke _ComposeSubtree on all its children.
@@ -1617,7 +1693,7 @@ private:
     void _ComposeSubtreeInParallel(Usd_PrimDataPtr prim);
     void _ComposeSubtreesInParallel(
         const std::vector<Usd_PrimDataPtr> &prims,
-        const std::vector<SdfPath> *primIndexPaths = NULL);
+        const std::vector<SdfPath> *primIndexPaths = nullptr);
 
     // Compose subtree rooted at \p prim under \p parent.  This function
     // ensures that the appropriate prim index is specified for \p prim if
@@ -1680,7 +1756,7 @@ private:
     // either the builtin definition's spec type, if the indicated property is
     // builtin, otherwise it's the strongest authored spec's type if one exists,
     // otherwise it's SdfSpecTypeUnknown.
-    SdfSpecType _GetDefiningSpecType(const UsdPrim &prim,
+    SdfSpecType _GetDefiningSpecType(Usd_PrimDataConstPtr primData,
                                      const TfToken &propName) const;
 
     // Helper to apply Pcp changes and recompose the scenegraph accordingly,
@@ -1712,16 +1788,6 @@ private:
     bool _IsValidForLoad(const SdfPath& path) const;
     bool _IsValidForUnload(const SdfPath& path) const;
 
-    template <class Callback>
-    void _WalkPrimsWithMasters(const SdfPath &, Callback const &) const;
-
-    template <class Callback>
-    void _WalkPrimsWithMastersImpl(
-        UsdPrim const &prim,
-        Callback const &cb,
-        tbb::concurrent_unordered_set<SdfPath, SdfPath::Hash>
-        *seenMasterPrimPaths) const;
-
     // Discover all payloads in a given subtree, adding the path of each
     // discovered prim index to the \p primIndexPaths set. If specified,
     // the corresponding UsdPrim path will be added to the \p usdPrimPaths
@@ -1735,13 +1801,6 @@ private:
                            SdfPathSet* primIndexPaths,
                            bool unloadedOnly = false,
                            SdfPathSet* usdPrimPaths = nullptr) const;
-
-    // Discover all ancestral payloads above a given root, adding the path
-    // of each discovered prim index to the \p result set. The root path
-    // itself will not be included in the result.
-    void _DiscoverAncestorPayloads(const SdfPath& rootPath,
-                                   SdfPathSet* result,
-                                   bool unloadedOnly = false) const;
 
     // ===================================================================== //
     //                          VALUE RESOLUTION                             //
@@ -1765,10 +1824,19 @@ private:
     // Helper functions for resolving asset paths during value resolution.
     void _MakeResolvedAssetPaths(UsdTimeCode time, const UsdAttribute &attr,
                                  SdfAssetPath *assetPaths,
-                                 size_t numAssetPaths) const;
+                                 size_t numAssetPaths,
+                                 bool anchorAssetPathsOnly = false) const;
 
-    void _MakeResolvedAssetPaths(UsdTimeCode time, const UsdAttribute &attr,
-                                 VtValue *value) const;
+    void _MakeResolvedAssetPathsValue(UsdTimeCode time, const UsdAttribute &attr,
+                                      VtValue *value,
+                                      bool anchorAssetPathsOnly = false) const;
+
+    void _MakeResolvedTimeCodes(UsdTimeCode time, const UsdAttribute &attr,
+                                SdfTimeCode *timeCodes,
+                                size_t numTimeCodes) const;
+
+    void _MakeResolvedAttributeValue(UsdTimeCode time, const UsdAttribute &attr,
+                                     VtValue *value) const;
 
     // --------------------------------------------------------------------- //
     // Metadata Resolution
@@ -1860,7 +1928,8 @@ private:
 
     void _GetAllMetadata(const UsdObject &obj,
                          bool useFallbacks,
-                         UsdMetadataValueMap* result) const;
+                         UsdMetadataValueMap* result,
+                         bool anchorAssetPathsOnly = false) const;
 
     template <class Composer>
     bool
@@ -1868,10 +1937,6 @@ private:
                              const TfToken &fieldName,
                              const TfToken &keyPath,
                              Composer *composer) const;
-
-    template <class T>
-    bool _GetFallbackMetadata(const UsdObject &obj, const TfToken& fieldName,
-                              const TfToken &keyPath, T* result) const;
 
     // --------------------------------------------------------------------- //
     // Default & TimeSample Resolution
@@ -2027,6 +2092,9 @@ private:
     // The population mask that applies to this stage.
     UsdStagePopulationMask _populationMask;
     
+    // The load rules that apply to this stage.
+    UsdStageLoadRules _loadRules;
+    
     bool _isClosingStage;
 
     friend class UsdAPISchemaBase;
@@ -2037,14 +2105,18 @@ private:
     friend class UsdObject;
     friend class UsdPrim;
     friend class UsdProperty;
-    friend class UsdReferences;
     friend class UsdRelationship;
     friend class UsdSpecializes;
     friend class UsdVariantSet;
     friend class UsdVariantSets;
+    friend class Usd_FlattenAccess;
     friend class Usd_PcpCacheAccess;
     friend class Usd_PrimData;
     friend class Usd_StageOpenRequest;
+    template <class T> friend struct Usd_AttrGetValueHelper;
+    friend struct Usd_AttrGetUntypedValueHelper;
+    template <class RefsOrPayloadsEditorType, class RefsOrPayloadsProxyType> 
+        friend struct Usd_ListEditImpl;
 };
 
 template<typename T>

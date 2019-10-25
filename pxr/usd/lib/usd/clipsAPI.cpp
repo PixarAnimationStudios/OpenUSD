@@ -61,12 +61,9 @@ UsdClipsAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 }
 
 
-/* static */
-UsdClipsAPI
-UsdClipsAPI::Apply(const UsdPrim &prim)
-{
-    return UsdAPISchemaBase::_ApplyAPISchema<UsdClipsAPI>(
-            prim, _schemaTokens->ClipsAPI);
+/* virtual */
+UsdSchemaType UsdClipsAPI::_GetSchemaType() const {
+    return UsdClipsAPI::schemaType;
 }
 
 /* static */

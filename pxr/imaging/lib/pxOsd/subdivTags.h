@@ -42,6 +42,28 @@ class PxOsdSubdivTags {
 
 public:
 
+    PxOsdSubdivTags() = default;
+
+    PxOsdSubdivTags(
+        const TfToken& vertexInterpolationRule,
+        const TfToken& faceVaryingInterpolationRule,
+        const TfToken& creaseMethod,
+        const TfToken& triangleSubdivision,
+        const VtIntArray& creaseIndices,
+        const VtIntArray& creaseLengths,
+        const VtFloatArray& creaseWeights,
+        const VtIntArray& cornerIndices,
+        const VtFloatArray& cornerWeights)
+        : _vtxInterpolationRule(vertexInterpolationRule)
+        , _fvarInterpolationRule(faceVaryingInterpolationRule)
+        , _creaseMethod(creaseMethod)
+        , _trianglesSubdivision(triangleSubdivision)
+        , _creaseIndices(creaseIndices)
+        , _creaseLengths(creaseLengths)
+        , _creaseWeights(creaseWeights)
+        , _cornerIndices(cornerIndices)
+        , _cornerWeights(cornerWeights) {}
+
     /// Returns the vertex boundary interpolation rule
     TfToken GetVertexInterpolationRule() const {
         return _vtxInterpolationRule;
@@ -144,24 +166,6 @@ public:
     }
     /// @}
 
-
-    /// @}
-
-    ///
-    /// \name Holes
-    /// @{
-
-    /// Returns the edge corner indices
-    VtIntArray const &GetHoleIndices() const {
-        return _holeIndices;
-    }
-
-    /// Returns faces indices for holes
-    void SetHoleIndices(VtIntArray const &holeIndices) {
-        _holeIndices = holeIndices;
-    }
-    /// @}
-
     typedef size_t ID;
 
     /// Returns the hash value of this topology to be used for instancing.
@@ -184,8 +188,6 @@ private:
 
     VtIntArray   _cornerIndices;
     VtFloatArray _cornerWeights;
-
-    VtIntArray   _holeIndices;
 };
 
 PXOSD_API

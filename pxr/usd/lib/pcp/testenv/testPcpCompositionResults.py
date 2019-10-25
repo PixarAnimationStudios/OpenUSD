@@ -1,5 +1,27 @@
 #!/pxrpythonsubst
 #
+# Copyright 2017 Pixar
+#
+# Licensed under the Apache License, Version 2.0 (the "Apache License")
+# with the following modification; you may not use this file except in
+# compliance with the Apache License and the following modification to it:
+# Section 6. Trademarks. is deleted and replaced with:
+#
+# 6. Trademarks. This License does not grant permission to use the trade
+#    names, trademarks, service marks, or product names of the Licensor
+#    and its affiliates, except as required to comply with Section 4(c) of
+#    the License and to reproduce the content of the NOTICE file.
+#
+# You may obtain a copy of the Apache License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the Apache License with the above modification is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the Apache License for the specific
+# language governing permissions and limitations under the Apache License.
+
 # This script is a simple driver for the PCP level of the composition
 # algorithm.  Given the inputs (currently just a root layer), it
 # walks namespace and dumps out the results for every prim.
@@ -200,28 +222,6 @@ for layerPath in args.layer:
                 errors += targetErrors
                 if len(targets) > 0:
                     targetsMap[propPath] = targets
-
-                # Pcp doesn't provide any methods for composing relational
-                # attribute names, so fake it ourselves. Walk the property
-                # stack and find all relational attribute names, then add
-                # every possible composed relational attribute path to
-                # the list of properties to iterate over.
-                #
-                # XXX: This is really, really hacky.
-                relAttrsNames = set()
-                for relSpec in propIndex.propertyStack:
-                    for path, relAttrSpecs in relSpec.targetAttributes.items():
-                        for relAttrSpec in relAttrSpecs:
-                            relAttrsNames.add(relAttrSpec.name)
-                    
-                relAttrNames = sorted(list(relAttrsNames))
-                relAttrs = []
-
-                for name in relAttrsNames:
-                    for target in targets:
-                        relAttrs.append(propPath.AppendTarget(target)
-                                        .AppendRelationalAttribute(name))
-                properties = relAttrs + properties
             elif isinstance(propIndex.propertyStack[0], Sdf.AttributeSpec):
                 (conns, connErrors) = \
                     pcpCache.ComputeAttributeConnectionPaths(propPath)

@@ -66,6 +66,10 @@ public:
         const std::string& s,
         const std::string& target = std::string());
 
+    /// Returns a set containing the extension(s) corresponding to 
+    /// all registered file formats.
+    std::set<std::string> FindAllFileFormatExtensions();
+
     /// Returns the id of the file format plugin that is registered as
     /// the primary format for the given file extension.
     TfToken GetPrimaryFormatForExtension(const std::string& ext);

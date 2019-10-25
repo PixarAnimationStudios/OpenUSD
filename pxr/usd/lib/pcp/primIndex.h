@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/composeSite.h"
+#include "pxr/usd/pcp/dynamicFileFormatDependencyData.h"
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/pcp/iterator.h"
 #include "pxr/usd/pcp/node.h"
@@ -44,6 +45,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <unordered_set>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -58,7 +60,6 @@ class PcpCache;
 class PcpPrimIndex;
 class PcpPrimIndexInputs;
 class PcpPrimIndexOutputs;
-class PcpPayloadDecorator;
 class SdfPath;
 
 /// \class PcpPrimIndex
@@ -120,12 +121,12 @@ public:
     PCP_API
     bool HasSpecs() const;
 
-    /// Returns true if the prim has an authored payload arc.
+    /// Returns true if the prim has any authored payload arcs.
     /// The payload contents are only resolved and included
     /// if this prim's path is in the payload inclusion set
-    /// provided in PcpPrimIndexInputs.
+    /// provided in PcpPrimIndexInputs. 
     PCP_API
-    bool HasPayload() const;
+    bool HasAnyPayloads() const;
 
     /// Returns true if this prim index was composed in USD mode.
     /// \see PcpCache::IsUsd().
@@ -143,7 +144,7 @@ public:
     /// \name Iteration
     /// @{
 
-    /// Returns range of iterators that encompass all direct children
+    /// Returns range of iterators that encompass all children of the root node
     /// with the given arc type as well as their descendants, in 
     /// strong-to-weak order.
     /// 
@@ -239,7 +240,7 @@ public:
     PCP_API
     SdfVariantSelectionMap ComposeAuthoredVariantSelections() const;
 
-    /// Return the variant selecion applied for the named variant set.
+    /// Return the variant selection applied for the named variant set.
     /// If none was applied, this returns an empty string.
     /// This can be different from the authored variant selection;
     /// for example, if the authored selection is invalid.
@@ -277,6 +278,14 @@ inline void swap(PcpPrimIndex &l, PcpPrimIndex &r) { l.swap(r); }
 class PcpPrimIndexOutputs 
 {
 public:
+    /// Enumerator whose enumerants describe the payload state of this prim
+    /// index.  NoPayload if the index has no payload arcs, otherwise whether
+    /// payloads were included or excluded, and if done so by consulting either
+    /// the cache's payload include set, or determined by a payload predicate.
+    enum PayloadState { NoPayload,
+                        IncludedByIncludeSet, ExcludedByIncludeSet,
+                        IncludedByPredicate, ExcludedByPredicate };
+
     /// Prim index describing the composition structure for the associated
     /// prim.
     PcpPrimIndex primIndex;
@@ -284,16 +293,32 @@ public:
     /// List of all errors encountered during indexing.
     PcpErrorVector allErrors;
 
-    /// True if this prim index has a payload that we included during indexing
-    /// that wasn't previously in the cache's payload include set.
-    bool includedDiscoveredPayload = false;
+    /// Indicates the payload state of this index.  See documentation for
+    /// PayloadState enum for more information.
+    PayloadState payloadState = NoPayload;
     
+    /// A list of names of fields that were composed to generate dynamic file 
+    /// format arguments for a node in primIndex. These are not necessarily 
+    /// fields that had values, but is the list of all fields that a  composed 
+    /// value was requested for. 
+    PcpDynamicFileFormatDependencyData dynamicFileFormatDependency;
+
     /// Swap content with \p r.
     inline void swap(PcpPrimIndexOutputs &r) {
         primIndex.swap(r.primIndex);
         allErrors.swap(r.allErrors);
-        std::swap(includedDiscoveredPayload, r.includedDiscoveredPayload);
+        std::swap(payloadState, r.payloadState);
+        dynamicFileFormatDependency.swap(r.dynamicFileFormatDependency);
     }
+
+    /// Appends the outputs from \p childOutputs to this object, using 
+    /// \p arcToParent to connect \p childOutputs' prim index to this object's
+    /// prim index. 
+    /// 
+    /// Returns the node in this object's prim index corresponding to the root
+    /// node of \p childOutputs' prim index.
+    PcpNodeRef Append(PcpPrimIndexOutputs&& childOutputs,
+                      const PcpArc& arcToParent);
 };
 
 /// Free function version for generic code and ADL.
@@ -311,7 +336,6 @@ public:
         , includedPayloads(nullptr)
         , includedPayloadsMutex(nullptr)
         , parentIndex(nullptr)
-        , payloadDecorator(nullptr)
         , cull(true)
         , usd(false) 
     { }
@@ -325,11 +349,6 @@ public:
     PcpPrimIndexInputs& Cache(PcpCache* cache_)
     { cache = cache_; return *this; }
 
-    /// If supplied, the given PcpPayloadDecorator will be invoked when
-    /// processing a payload arc.
-    PcpPrimIndexInputs& PayloadDecorator(PcpPayloadDecorator* decorator)
-    { payloadDecorator = decorator; return *this; }
-
     /// Ordered list of variant names to use for the "standin" variant set
     /// if there is no authored opinion in scene description.
     PcpPrimIndexInputs& VariantFallbacks(const PcpVariantFallbackMap* map)
@@ -337,7 +356,7 @@ public:
 
     /// Set of paths to prims that should have their payloads included
     /// during composition.
-    typedef TfHashSet<SdfPath, SdfPath::Hash> PayloadSet;
+    using PayloadSet = std::unordered_set<SdfPath, SdfPath::Hash>;
     PcpPrimIndexInputs& IncludedPayloads(const PayloadSet* payloadSet)
     { includedPayloads = payloadSet; return *this; }
 
@@ -364,10 +383,10 @@ public:
     PcpPrimIndexInputs& USD(bool doUSD = true)
     { usd = doUSD; return *this; }
 
-    /// The target schema for scene description layers encountered during
+    /// The file format target for scene description layers encountered during
     /// prim index computation.
-    PcpPrimIndexInputs& TargetSchema(const std::string& schema)
-    { targetSchema = schema; return *this; }
+    PcpPrimIndexInputs& FileFormatTarget(const std::string& target)
+    { fileFormatTarget = target; return *this; }
 
 // private:
     PcpCache* cache;
@@ -376,8 +395,7 @@ public:
     tbb::spin_rw_mutex *includedPayloadsMutex;
     std::function<bool (const SdfPath &)> includePayloadPredicate;
     const PcpPrimIndex *parentIndex;
-    std::string targetSchema;
-    PcpPayloadDecorator* payloadDecorator;
+    std::string fileFormatTarget;
     bool cull;
     bool usd;
 };

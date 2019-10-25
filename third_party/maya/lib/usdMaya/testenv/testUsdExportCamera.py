@@ -97,7 +97,7 @@ class testUsdExportCamera(unittest.TestCase):
             self.assertTrue(usdAttr)
 
             if expectedValue is None:
-                self.assertFalse(usdAttr.HasAuthoredValueOpinion())
+                self.assertFalse(usdAttr.HasAuthoredValue())
                 continue
 
             # Validate the attribute value at usdTime
@@ -109,11 +109,11 @@ class testUsdExportCamera(unittest.TestCase):
                 self.assertEqual(value, expectedValue)
 
             # Validate the number of time samples on the attribute.
-            expectedAttrNumTimeSamples = 0.0
+            expectedMaxAttrNumTimeSamples = 0.0
             if isAnimated:
-                expectedAttrNumTimeSamples = self.TIMECODE_STEPS
+                expectedMaxAttrNumTimeSamples = self.TIMECODE_STEPS
             numTimeSamples = usdAttr.GetNumTimeSamples()
-            self.assertTrue(Gf.IsClose(numTimeSamples, expectedAttrNumTimeSamples, 1e-6))
+            self.assertTrue(numTimeSamples <= expectedMaxAttrNumTimeSamples)
 
         # Validate the number of time samples on the camera's xformOp(s).
         expectedTransformNumTimeSamples = 0.0
@@ -166,7 +166,7 @@ class testUsdExportCamera(unittest.TestCase):
             ('verticalAperture', 24.0, False),
             ('verticalApertureOffset', 0.0, False),
 
-            ('xformOpOrder', Vt.TokenArray(['xformOp:translate', 'xformOp:rotateX']), False),
+            ('xformOpOrder', Vt.TokenArray(['xformOp:translate', 'xformOp:rotateXYZ']), False),
         ]
 
         # There should be no animation on the transform either.
@@ -175,10 +175,12 @@ class testUsdExportCamera(unittest.TestCase):
         # Validate the camera's xformOps at the default time.
         (translateOp, rotateOp) = usdCamera.GetOrderedXformOps()
         self.assertEqual(translateOp.GetOpType(), UsdGeom.XformOp.TypeTranslate)
-        self.assertEqual(rotateOp.GetOpType(), UsdGeom.XformOp.TypeRotateX)
+        self.assertEqual(rotateOp.GetOpType(), UsdGeom.XformOp.TypeRotateXYZ)
+        self.assertTrue(UsdGeom.XformCommonAPI(usdCamera))
 
         self.assertTrue(Gf.IsClose(translateOp.Get(), Gf.Vec3d(0.0, -5.0, 5.0), 1e-6))
-        self.assertTrue(Gf.IsClose(rotateOp.Get(), 45.0, 1e-6))
+        self.assertTrue(
+                Gf.IsClose(rotateOp.Get(), Gf.Vec3f(45.0, 0.0, 0.0), 1e-6))
 
     def testExportPerspectiveCameraAnimatedTransform(self):
         usdCamera = self._GetUsdCamera('PerspCamAnimTransform')
@@ -205,6 +207,7 @@ class testUsdExportCamera(unittest.TestCase):
         (translateOp, rotateOp) = usdCamera.GetOrderedXformOps()
         self.assertEqual(translateOp.GetOpType(), UsdGeom.XformOp.TypeTranslate)
         self.assertEqual(rotateOp.GetOpType(), UsdGeom.XformOp.TypeRotateXYZ)
+        self.assertTrue(UsdGeom.XformCommonAPI(usdCamera))
 
         # The xformOps should NOT have values at the default time.
         self.assertEqual(translateOp.Get(), None)
@@ -237,7 +240,7 @@ class testUsdExportCamera(unittest.TestCase):
             ('verticalAperture', 15.2908, True),
             ('verticalApertureOffset', 0.0, True),
 
-            ('xformOpOrder', Vt.TokenArray(['xformOp:translate', 'xformOp:rotateX']), False),
+            ('xformOpOrder', Vt.TokenArray(['xformOp:translate', 'xformOp:rotateXYZ']), False),
         ]
 
         # There should be no animation on the transform.
@@ -256,7 +259,7 @@ class testUsdExportCamera(unittest.TestCase):
             ('verticalAperture', 24.0, True),
             ('verticalApertureOffset', 0.0, True),
 
-            ('xformOpOrder', Vt.TokenArray(['xformOp:translate', 'xformOp:rotateX']), False),
+            ('xformOpOrder', Vt.TokenArray(['xformOp:translate', 'xformOp:rotateXYZ']), False),
         ]
 
         # There should be no animation on the transform.
@@ -288,7 +291,7 @@ class testUsdExportCamera(unittest.TestCase):
             ('verticalAperture', 500, False),
             ('verticalApertureOffset', None, False),
 
-            ('xformOpOrder', Vt.TokenArray(['xformOp:translate', 'xformOp:rotateX']), False),
+            ('xformOpOrder', Vt.TokenArray(['xformOp:translate', 'xformOp:rotateXYZ']), False),
         ]
 
         # There should be no animation on the transform either.
@@ -297,10 +300,12 @@ class testUsdExportCamera(unittest.TestCase):
         # Validate the camera's xformOps at the default time.
         (translateOp, rotateOp) = usdCamera.GetOrderedXformOps()
         self.assertEqual(translateOp.GetOpType(), UsdGeom.XformOp.TypeTranslate)
-        self.assertEqual(rotateOp.GetOpType(), UsdGeom.XformOp.TypeRotateX)
+        self.assertEqual(rotateOp.GetOpType(), UsdGeom.XformOp.TypeRotateXYZ)
+        self.assertTrue(UsdGeom.XformCommonAPI(usdCamera))
 
         self.assertTrue(Gf.IsClose(translateOp.Get(), Gf.Vec3d(0.0, -20.0, 0.0), 1e-6))
-        self.assertTrue(Gf.IsClose(rotateOp.Get(), 90, 1e-6))
+        self.assertTrue(
+                Gf.IsClose(rotateOp.Get(), Gf.Vec3f(90.0, 0.0, 0.0), 1e-6))
 
     def testExportPerspectiveViewCheckCamera(self):
         """

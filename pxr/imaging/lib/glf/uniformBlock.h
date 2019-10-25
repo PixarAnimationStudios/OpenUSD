@@ -32,6 +32,7 @@
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/weakBase.h"
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -48,7 +49,7 @@ public:
 
     /// Returns a new instance.
     GLF_API
-    static GlfUniformBlockRefPtr New();
+    static GlfUniformBlockRefPtr New(char const *label = nullptr);
 
     GLF_API
     virtual ~GlfUniformBlock();
@@ -62,14 +63,15 @@ public:
     /// is different, the buffer will be reallocated.
     GLF_API
     void Update(const void *data, int size);
-
+    
 protected:
     GLF_API
-    GlfUniformBlock();
+    GlfUniformBlock(char const *label);
 
 private:
     GLuint _buffer;
     int _size;
+    std::string _debugLabel;
 };
 
 

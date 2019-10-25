@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/primWriterArgs.h"
+
 #include "usdMaya/writeUtil.h"
 
 #include <maya/MFnDependencyNode.h>
@@ -30,7 +30,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-PxrUsdMayaPrimWriterArgs::PxrUsdMayaPrimWriterArgs(
+UsdMayaPrimWriterArgs::UsdMayaPrimWriterArgs(
         const MDagPath& dagPath,
         const bool exportRefsAsInstanceable) :
     _dagPath(dagPath),
@@ -39,59 +39,59 @@ PxrUsdMayaPrimWriterArgs::PxrUsdMayaPrimWriterArgs(
 }
 
 MObject
-PxrUsdMayaPrimWriterArgs::GetMObject() const
+UsdMayaPrimWriterArgs::GetMObject() const
 {
     return _dagPath.node();
 }
 
 const MDagPath&
-PxrUsdMayaPrimWriterArgs::GetMDagPath() const
+UsdMayaPrimWriterArgs::GetMDagPath() const
 {
     return _dagPath;
 }
 
 bool
-PxrUsdMayaPrimWriterArgs::GetExportRefsAsInstanceable() const
+UsdMayaPrimWriterArgs::GetExportRefsAsInstanceable() const
 {
     return _exportRefsAsInstanceable;
 }
 
 bool
-PxrUsdMayaPrimWriterArgs::ReadAttribute(
+UsdMayaPrimWriterArgs::ReadAttribute(
         const std::string& name,
         std::string* val) const
 {
-    return PxrUsdMayaWriteUtil::ReadMayaAttribute(
+    return UsdMayaWriteUtil::ReadMayaAttribute(
             MFnDependencyNode(GetMObject()), 
             MString(name.c_str()), val);
 }
 
 bool
-PxrUsdMayaPrimWriterArgs::ReadAttribute(
+UsdMayaPrimWriterArgs::ReadAttribute(
         const std::string& name,
         VtIntArray* val) const
 {
-    return PxrUsdMayaWriteUtil::ReadMayaAttribute(
+    return UsdMayaWriteUtil::ReadMayaAttribute(
             MFnDependencyNode(GetMObject()), 
             MString(name.c_str()), val);
 }
 
 bool
-PxrUsdMayaPrimWriterArgs::ReadAttribute(
+UsdMayaPrimWriterArgs::ReadAttribute(
         const std::string& name,
         VtFloatArray* val) const
 {
-    return PxrUsdMayaWriteUtil::ReadMayaAttribute(
+    return UsdMayaWriteUtil::ReadMayaAttribute(
             MFnDependencyNode(GetMObject()), 
             MString(name.c_str()), val);
 }
 
 bool
-PxrUsdMayaPrimWriterArgs::ReadAttribute(
+UsdMayaPrimWriterArgs::ReadAttribute(
         const std::string& name,
         VtVec3fArray* val) const
 {
-    return PxrUsdMayaWriteUtil::ReadMayaAttribute(
+    return UsdMayaWriteUtil::ReadMayaAttribute(
             MFnDependencyNode(GetMObject()), 
             MString(name.c_str()), val);
 }

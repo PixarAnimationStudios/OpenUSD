@@ -69,8 +69,6 @@ class Tf_DebugSymbolRegistry;
 ///       at runtime (assuming the enum group of the message has not been
 ///       compile-time disabled) is a single inline array lookup,
 ///       with a compile-time  index into a global array.
-///   \li Parent/child relationships can be defined so that groups of messages
-///       can be hierarchically enabled or disabled.
 ///
 /// The use of the facility is simple:
 /// \code
@@ -149,8 +147,7 @@ class Tf_DebugSymbolRegistry;
 ///
 class TfDebug {
 public:
-    /// Mark debugging as enabled for enum value \c val, and any descendents
-    /// of \c val as defined by \c DefineParentChild().
+    /// Mark debugging as enabled for enum value \c val.
     ///
     /// The default state for all debugging symbols is disabled. Note that the
     /// template parameter is deduced from \c val:
@@ -162,8 +159,7 @@ public:
         _SetNodes(&_GetNode(val), 1, true);
     }
 
-    /// Mark debugging as disabled for enum value \c val, and any descendents
-    /// of \c val as defined by \c DefineParentChild().
+    /// Mark debugging as disabled for enum value \c val.
     template <class T>
     static void Disable(T val) {
         _SetNodes(&_GetNode(val), 1, false);
@@ -184,19 +180,6 @@ public:
     template <class T>
     static void DisableAll() {
         _SetNodes(&_Data<T>::nodes[0], _Traits<T>::n, false);
-    }
-
-    /// Define a parent/child relationship.
-    ///
-    /// Enum value \c child is marked as a child of \c parent; this means that
-    /// enabling or disabling \c parent enable or disables not only parent,
-    /// but, recursively, all descendents of \c parent as well.
-    ///
-    /// To avoid cycles, \c child cannot have been made a parent at the time
-    /// of this call.
-    template <class T1, class T2>
-    static void DefineParentChild(T1 parent, T2 child) {
-        _SetParentChild(&_GetNode(parent), &_GetNode(child));
     }
 
     /// True if debugging is enabled for the enum value \c val.
@@ -364,12 +347,7 @@ public:
     // Note: this is a POD (plain old data structure) so it is initialized
     // to zero statically.
     struct _Node {
-        std::vector<_Node*>* children;
         bool enabled;
-        bool hasParent;
-        ~_Node() {
-            delete children;
-        }
     };
 
 private:
@@ -390,8 +368,6 @@ private:
     static void _ComplainAboutInvalidSymbol(const char*);
     TF_API
     static void _SetNodes(_Node* ptr, size_t nNodes, bool state);
-    TF_API
-    static void _SetParentChild(_Node* parent, _Node* child);
     TF_API
     static void _ScopedOutput(bool start, const char* str);
 };
@@ -448,7 +424,7 @@ struct TfDebug::TimedScopeHelper<false> {
 /// all debugging symbols for enumerated type \c enumType are treated as
 /// disabled, regardless of any calls to \c TfDebug::Enable() or
 /// \c TfDebug::EnableAll().  Furthermore, this mode of disabling is
-/// discernable at compile time, rendering the \c TF_DEBUG() macro a literal
+/// discernible at compile time, rendering the \c TF_DEBUG() macro a literal
 /// no-op in terms of code-generation for this enumeration class.
 ///
 /// \hideinitializer

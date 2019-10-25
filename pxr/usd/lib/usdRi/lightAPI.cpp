@@ -61,6 +61,11 @@ UsdRiLightAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 }
 
 
+/* virtual */
+UsdSchemaType UsdRiLightAPI::_GetSchemaType() const {
+    return UsdRiLightAPI::schemaType;
+}
+
 /* static */
 UsdRiLightAPI
 UsdRiLightAPI::Apply(const UsdPrim &prim)

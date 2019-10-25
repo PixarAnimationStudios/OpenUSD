@@ -53,7 +53,29 @@ class SdfAssetPath;
 /// \class UsdLuxDomeLight
 ///
 /// Light emitted inward from a distant external environment,
-/// such as a sky or IBL light probe.
+/// such as a sky or IBL light probe.  The orientation of a dome light with a
+/// latlong texture is expected to match the OpenEXR specification for latlong 
+/// environment maps.  From the OpenEXR documentation:
+/// 
+/// -------------------------------------------------------------------------
+/// Latitude-Longitude Map:
+/// 
+/// The environment is projected onto the image using polar coordinates
+/// (latitude and longitude).  A pixel's x coordinate corresponds to
+/// its longitude, and the y coordinate corresponds to its latitude.
+/// Pixel (dataWindow.min.x, dataWindow.min.y) has latitude +pi/2 and
+/// longitude +pi; pixel (dataWindow.max.x, dataWindow.max.y) has
+/// latitude -pi/2 and longitude -pi.
+/// 
+/// In 3D space, latitudes -pi/2 and +pi/2 correspond to the negative and
+/// positive y direction.  Latitude 0, longitude 0 points into positive
+/// z direction; and latitude 0, longitude pi/2 points into positive x
+/// direction.
+/// 
+/// The size of the data window should be 2*N by N pixels (width by height),
+/// where N can be any integer greater than 0.
+/// -------------------------------------------------------------------------
+/// 
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
 /// that are text/tokens, the actual token is published and defined in \ref UsdLuxTokens.
@@ -63,16 +85,10 @@ class SdfAssetPath;
 class UsdLuxDomeLight : public UsdLuxLight
 {
 public:
-    /// Compile-time constant indicating whether or not this class corresponds
-    /// to a concrete instantiable prim type in scene description.  If this is
-    /// true, GetStaticPrimDefinition() will return a valid prim definition with
-    /// a non-empty typeName.
-    static const bool IsConcrete = true;
-
-    /// Compile-time constant indicating whether or not this class inherits from
-    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
-    /// UsdPrim.
-    static const bool IsTyped = true;
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaType
+    static const UsdSchemaType schemaType = UsdSchemaType::ConcreteTyped;
 
     /// Construct a UsdLuxDomeLight on UsdPrim \p prim .
     /// Equivalent to UsdLuxDomeLight::Get(prim.GetStage(), prim.GetPath())
@@ -141,6 +157,13 @@ public:
     static UsdLuxDomeLight
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
+protected:
+    /// Returns the type of schema this class belongs to.
+    ///
+    /// \sa UsdSchemaType
+    USDLUX_API
+    UsdSchemaType _GetSchemaType() const override;
+
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
@@ -151,7 +174,7 @@ private:
 
     // override SchemaBase virtuals.
     USDLUX_API
-    virtual const TfType &_GetTfType() const;
+    const TfType &_GetTfType() const override;
 
 public:
     // --------------------------------------------------------------------- //

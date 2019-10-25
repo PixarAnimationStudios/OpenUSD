@@ -31,7 +31,7 @@
 #include <boost/optional.hpp>
 
 #include <tbb/atomic.h>
-#include <tbb/spin_mutex.h>
+#include <tbb/spin_rw_mutex.h>
 
 #include <memory>
 
@@ -267,7 +267,7 @@ private: // data
         mutable boost::optional<Value> _cachedValue;
         mutable std::set<_Node*> _dependentExpressions;
         Value _valueForVariable;
-        mutable tbb::spin_mutex _mutex;
+        mutable tbb::spin_rw_mutex _mutex;
     };
 
     // Need to friend them here to have visibility to private class _Node.

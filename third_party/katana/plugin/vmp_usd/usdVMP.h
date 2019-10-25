@@ -40,12 +40,12 @@
 #include "pxr/base/tf/stopwatch.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
-#include "pxr/usdImaging/usdImagingGL/gl.h"
+#include "pxr/usdImaging/usdImagingGL/engine.h"
 
-#include "katanaPluginApi/FnViewerModifier.h"
+#include <FnViewerModifier/plugin/FnViewerModifier.h>
 #include <FnAttribute/FnGroupBuilder.h>
 #include <FnAttribute/FnAttribute.h>
-#include "katanaPluginApi/FnViewerModifierInput.h"
+#include <FnViewerModifier/plugin/FnViewerModifierInput.h>
 #include <FnLogging/FnLogging.h>
 
 #include "debugCodes.h"
@@ -55,7 +55,8 @@ FnLogSetup("USDVMP")
 namespace FnKat = Foundry::Katana;
 
 
-typedef boost::shared_ptr<PXR_NS::UsdImagingGL> UsdImagingGLSharedPtr;
+typedef boost::shared_ptr<PXR_NS::UsdImagingGLEngine> 
+    UsdImagingGLEngineSharedPtr;
 
 //--------------------------------------------------------------------------------
 // USDVMP
@@ -98,8 +99,8 @@ private:
     void _loadSubtreeForCurrentPrim();
 
     PXR_NS::UsdStageRefPtr _stage;
-    UsdImagingGLSharedPtr _renderer;
-    PXR_NS::UsdImagingGL::RenderParams _params;
+    UsdImagingGLEngineSharedPtr _renderer;
+    PXR_NS::UsdImagingGLRenderParams _params;
     PXR_NS::UsdPrim _prim;
 
     PXR_NS::GfMatrix4d _viewMatrix;

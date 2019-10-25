@@ -39,7 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// The array should not contain a depth buffer - that is managed
 /// separately.
 ///
-/// \note This is a temporary API to aid transition to hydra, and is subject
+/// \note This is a temporary API to aid transition to Storm, and is subject
 /// to major changes.
 ///
 /// class is derivable for TfAny support.
@@ -89,6 +89,12 @@ public:
     HdMinFilter GetDepthMinFilter() const { return _depthMinFilter; }
     HdMagFilter GetDepthMagFilter() const { return _depthMagFilter; }
 
+    // Depth display properties
+    HDST_API
+    void SetDepthPriority(HdDepthPriority depthPriority);
+
+    HdDepthPriority GetDepthPriority() const { return _depthPriority; }
+
 
     // VtValue requirements
     HDST_API
@@ -110,6 +116,9 @@ private:
     HdWrap      _depthWrapT;
     HdMinFilter _depthMinFilter;
     HdMagFilter _depthMagFilter;
+
+    // Depth display properties
+    HdDepthPriority _depthPriority;
 };
 
 HDST_API

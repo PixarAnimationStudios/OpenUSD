@@ -61,6 +61,11 @@ UsdKatanaLookAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 }
 
 
+/* virtual */
+UsdSchemaType UsdKatanaLookAPI::_GetSchemaType() const {
+    return UsdKatanaLookAPI::schemaType;
+}
+
 /* static */
 UsdKatanaLookAPI
 UsdKatanaLookAPI::Apply(const UsdPrim &prim)

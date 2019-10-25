@@ -129,7 +129,7 @@ _ParallelForN(size_t count, Fn&& callback)
 {
     // XXX: Profiling shows that most of our loops only benefit
     // from parallelism past this threshold.
-    int threshold = 1000;
+    size_t threshold = 1000;
 
     if(count < threshold) {
         WorkSerialForN(count, callback);

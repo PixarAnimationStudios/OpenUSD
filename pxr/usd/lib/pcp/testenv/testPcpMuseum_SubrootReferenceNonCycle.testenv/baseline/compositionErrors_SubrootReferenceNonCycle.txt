@@ -1,0 +1,23 @@
+------------------------------------------------------------------------
+Errors while composing </ImplCycle/A/D>
+
+Cycle detected:
+@SubrootReferenceNonCycle/root.sdf@</ImplCycle/A/D>
+references:
+@SubrootReferenceNonCycle/root.sdf@</PrimCycle>
+which CANNOT reference:
+@SubrootReferenceNonCycle/root.sdf@</ImplCycle>
+
+Unresolved reference path </PrimCycle/A> on prim @SubrootReferenceNonCycle/root.sdf@</ImplCycle/A/D>.
+
+------------------------------------------------------------------------
+Errors while composing </PrimCycle/A/D>
+
+Cycle detected:
+@SubrootReferenceNonCycle/root.sdf@</PrimCycle/A/D>
+references:
+@SubrootReferenceNonCycle/root.sdf@</ImplCycle/A/D>
+which CANNOT reference:
+@SubrootReferenceNonCycle/root.sdf@</PrimCycle/A>
+
+

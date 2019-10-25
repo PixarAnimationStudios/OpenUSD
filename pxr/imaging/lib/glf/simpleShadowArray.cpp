@@ -26,11 +26,20 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/glf/simpleShadowArray.h"
+#include "pxr/imaging/glf/debugCodes.h"
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/glContext.h"
+#include "pxr/imaging/glf/image.h"
 
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/base/gf/vec4d.h"
+#include "pxr/base/tf/debug.h"
+#include "pxr/base/tf/stringUtils.h"
+
+#include <string>
+#include <vector>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -177,11 +186,65 @@ GlfSimpleShadowArray::BeginCapture(size_t index, bool clear)
 }
 
 void
-GlfSimpleShadowArray::EndCapture(size_t)
+GlfSimpleShadowArray::EndCapture(size_t index)
 {
     // reset to GL default, except viewport
     glDepthRange(0, 1.0);
     glDisable(GL_DEPTH_CLAMP);
+
+    if (TfDebug::IsEnabled(GLF_DEBUG_SHADOW_TEXTURES)) {
+        GlfImage::StorageSpec storage;
+        storage.width = GetSize()[0];
+        storage.height = GetSize()[1];
+        storage.format = GL_DEPTH_COMPONENT;
+        storage.type = GL_FLOAT;
+
+        // In OpenGL, (0, 0) is the lower left corner.
+        storage.flipped = true;
+
+        const int numPixels = storage.width * storage.height;
+        std::vector<GLfloat> pixelData(static_cast<size_t>(numPixels));
+        storage.data = static_cast<void*>(pixelData.data());
+
+        glReadPixels(0,
+                     0,
+                     storage.width,
+                     storage.height,
+                     storage.format,
+                     storage.type,
+                     storage.data);
+
+        GLfloat minValue = std::numeric_limits<float>::max();
+        GLfloat maxValue = -std::numeric_limits<float>::max();
+        for (int i = 0; i < numPixels; ++i) {
+            const GLfloat pixelValue = pixelData[i];
+            if (pixelValue < minValue) {
+                minValue = pixelValue;
+            }
+            if (pixelValue > maxValue) {
+                maxValue = pixelValue;
+            }
+        }
+
+        // Remap the pixel data so that the furthest depth sample is white and
+        // the nearest depth sample is black.
+        for (int i = 0; i < numPixels; ++i) {
+            pixelData[i] = (pixelData[i] - minValue) / (maxValue - minValue);
+        }
+
+        const std::string outputImageFile = ArchNormPath(
+            TfStringPrintf("%s/GlfSimpleShadowArray.index_%zu.tif",
+                           ArchGetTmpDir(),
+                           index));
+        GlfImageSharedPtr image = GlfImage::OpenForWriting(outputImageFile);
+        if (image->Write(storage)) {
+            TF_DEBUG(GLF_DEBUG_SHADOW_TEXTURES).Msg(
+                "Wrote shadow texture: %s\n", outputImageFile.c_str());
+        } else {
+            TF_DEBUG(GLF_DEBUG_SHADOW_TEXTURES).Msg(
+                "Failed to write shadow texture: %s\n", outputImageFile.c_str());
+        }
+    }
 
     _UnbindFramebuffer();
 

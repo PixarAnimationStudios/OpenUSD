@@ -116,7 +116,7 @@ class TestUsdCreateProperties(unittest.TestCase):
             weakLayer = _CreateLayer("SpecCreationTest_weak."+fmt)
             strongLayer = _CreateLayer("SpecCreationTest_strong."+fmt)
 
-            stage = Usd.Stage.Open(weakLayer.identifier);
+            stage = Usd.Stage.Open(weakLayer.identifier)
             p = stage.OverridePrim("/Parent/Nested/Child")
             stage.OverridePrim("/Parent/Sibling1")
             stage.OverridePrim("/Parent/Sibling2")
@@ -142,7 +142,7 @@ class TestUsdCreateProperties(unittest.TestCase):
             rel.SetCustom(False)
             assert not rel.IsCustom()
 
-            stage = Usd.Stage.Open(strongLayer.identifier);
+            stage = Usd.Stage.Open(strongLayer.identifier)
             p = stage.OverridePrim("/Parent")
             p.GetReferences().AddReference(Sdf.Reference(weakLayer.identifier, "/Parent"))
 
@@ -225,7 +225,7 @@ class TestUsdCreateProperties(unittest.TestCase):
             weakLayer = _CreateLayer("IsDefined_weak."+fmt)
             strongLayer = _CreateLayer("IsDefined_strong."+fmt)
 
-            stage = Usd.Stage.Open(weakLayer.identifier);
+            stage = Usd.Stage.Open(weakLayer.identifier)
             p = stage.OverridePrim("/Parent")
 
             assert not p.GetAttribute("attr1").IsDefined()
@@ -238,7 +238,7 @@ class TestUsdCreateProperties(unittest.TestCase):
             assert p.GetProperty("attr1") and p.GetProperty("attr1").IsDefined()
             assert p.GetProperty("attr1") == p.GetAttribute("attr1")
 
-            stage = Usd.Stage.Open(strongLayer.identifier);
+            stage = Usd.Stage.Open(strongLayer.identifier)
             p = stage.OverridePrim("/Parent")
             p.GetReferences().AddReference(Sdf.Reference(weakLayer.identifier, "/Parent"))
             assert p.GetAttribute("attr1").IsDefined()
@@ -260,31 +260,31 @@ class TestUsdCreateProperties(unittest.TestCase):
             
             attr = p.GetAttribute("myAttr")
             assert not attr.HasValue()
-            assert not attr.HasAuthoredValueOpinion()
+            assert not attr.HasAuthoredValue()
 
             attr.Set("val")
             assert attr.HasValue()
-            assert attr.HasAuthoredValueOpinion()
+            assert attr.HasAuthoredValue()
 
             attr.Clear()
             assert not attr.HasValue()
-            assert not attr.HasAuthoredValueOpinion()
+            assert not attr.HasAuthoredValue()
 
             attr.Set("val", 1.0)
             assert attr.HasValue()
-            assert attr.HasAuthoredValueOpinion()
+            assert attr.HasAuthoredValue()
 
             attr.ClearAtTime(1.0)
             assert not attr.HasValue()
-            assert not attr.HasAuthoredValueOpinion()
+            assert not attr.HasAuthoredValue()
             
             attr.Set("val", 1.0)
             assert attr.HasValue()
-            assert attr.HasAuthoredValueOpinion()
+            assert attr.HasAuthoredValue()
 
             attr.Clear()
             assert not attr.HasValue()
-            assert not attr.HasAuthoredValueOpinion()
+            assert not attr.HasAuthoredValue()
 
             # Verify that an invalid layer in the EditTarget will be caught when
             # calling Clear() through Usd.Attributes

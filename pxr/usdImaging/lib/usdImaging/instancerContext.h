@@ -45,15 +45,18 @@ typedef boost::shared_ptr<class UsdImagingPrimAdapter> UsdImagingPrimAdapterShar
 class UsdImagingInstancerContext
 {
 public:
-    /// The id of the instancer.
-    SdfPath instancerId;
+    /// The cachePath of the instancer.
+    SdfPath instancerCachePath;
 
     /// The name of the child prim, typically used for prototypes.
     TfToken childName;
 
-    /// The path to the material bound to the instance prim
+    /// The USD path to the material bound to the instance prim
     /// being processed.
-    SdfPath instanceMaterialId;
+    SdfPath instancerMaterialUsdPath;
+
+    /// The draw mode bound to the instance prim being processed.
+    TfToken instanceDrawMode;
 
     /// The instancer's prim Adapter. Useful when an adapter is needed, but the
     /// default adapter may be overridden for the sake of instancing.

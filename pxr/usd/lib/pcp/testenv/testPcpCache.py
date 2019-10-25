@@ -39,17 +39,16 @@ class TestPcpCache(unittest.TestCase):
         self.assertTrue(pcpCache)
         pcpCache.GetUsedLayers()
 
-        # Create a PcpCache with a target schema, ensuring that layers
+        # Create a PcpCache with a file format target, ensuring that layers
         # without the correct target will be marked invalid during composition.
-        pcpCache = Pcp.Cache(lsi, targetSchema='sdf')
+        pcpCache = Pcp.Cache(lsi, fileFormatTarget='sdf')
         (pi, _) = pcpCache.ComputePrimIndex('/PrimWithReferences')
         self.assertTrue(pi.IsValid())
         self.assertEqual(len(pi.localErrors), 0)
 
         # Should be two local errors corresponding to invalid asset paths,
-        # since this prim has two references to layers with a different target
-        # schema.
-        pcpCache = Pcp.Cache(lsi, targetSchema='Presto')
+        # since this prim has two references to layers with a different target.
+        pcpCache = Pcp.Cache(lsi, fileFormatTarget='Presto')
         (pi, _) = pcpCache.ComputePrimIndex('/PrimWithReferences')
         self.assertTrue(pi.IsValid())
         self.assertEqual(len(pi.localErrors), 2)

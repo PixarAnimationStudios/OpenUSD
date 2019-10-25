@@ -24,15 +24,18 @@
 #ifndef HDX_SIMPLE_LIGHTING_SHADER_H
 #define HDX_SIMPLE_LIGHTING_SHADER_H
 
+#include "pxr/imaging/glf/glew.h"
+
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hd/materialParam.h"
 #include "pxr/imaging/hd/resource.h"
 #include "pxr/imaging/hdSt/lightingShader.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
 
 #include "pxr/imaging/glf/bindingMap.h"
-#include "pxr/imaging/glf/glslfx.h"
+#include "pxr/imaging/hio/glslfx.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 
 #include "pxr/base/gf/matrix4d.h"
@@ -49,7 +52,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 typedef boost::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShaderSharedPtr;
-
+typedef boost::shared_ptr<class HdStTextureResource> 
+                                                HdStTextureResourceSharedPtr;
 /// \class HdxSimpleLightingShader
 ///
 /// A shader that supports simple lighting functionality.
@@ -63,20 +67,25 @@ public:
 
     /// HdShader overrides
     HDX_API
-    virtual ID ComputeHash() const;
+    ID ComputeHash() const override;
     HDX_API
-    virtual std::string GetSource(TfToken const &shaderStageKey) const;
+    std::string GetSource(TfToken const &shaderStageKey) const override;
     HDX_API
-    virtual void BindResources(HdSt_ResourceBinder const &binder, int program);
+    void BindResources(HdSt_ResourceBinder const &binder, int program) override;
     HDX_API
-    virtual void UnbindResources(HdSt_ResourceBinder const &binder, int program);
+    void UnbindResources(HdSt_ResourceBinder const &binder, int program) override;
     HDX_API
-    virtual void AddBindings(HdBindingRequestVector *customBindings);
+    void AddBindings(HdBindingRequestVector *customBindings) override;
+
+    /// HdStShaderCode overrides
+    HDST_API
+    HdMaterialParamVector const& GetParams() const override;
 
     /// HdStLightingShader overrides
     HDX_API
-    virtual void SetCamera(GfMatrix4d const &worldToViewMatrix,
-                           GfMatrix4d const &projectionMatrix);
+    void SetCamera(
+        GfMatrix4d const &worldToViewMatrix,
+        GfMatrix4d const &projectionMatrix) override;
 
     HDX_API
     void SetLightingStateFromOpenGL();
@@ -91,7 +100,9 @@ private:
     GlfSimpleLightingContextRefPtr _lightingContext; 
     GlfBindingMapRefPtr _bindingMap;
     bool _useLighting;
-    boost::scoped_ptr<GlfGLSLFX> _glslfx;
+    boost::scoped_ptr<HioGlslfx> _glslfx;
+
+    HdMaterialParamVector _lightTextureParams;
 };
 
 

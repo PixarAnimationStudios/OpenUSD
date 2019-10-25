@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdShade/utils.h"
 #include "pxr/usd/usdShade/tokens.h"
+#include "pxr/usd/sdf/path.h"
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -68,27 +69,24 @@ UsdShadeUtils::GetPrefixForAttributeType(UsdShadeAttributeType sourceType)
 std::pair<TfToken, UsdShadeAttributeType> 
 UsdShadeUtils::GetBaseNameAndType(const TfToken &fullName)
 {
-    static const size_t inputsPrefixLen = 
-        UsdShadeTokens->inputs.GetString().size();
-    static const size_t outputsPrefixLen = 
-        UsdShadeTokens->outputs.GetString().size();
-    static const size_t interfaceAttrPrefixLen = 
-        UsdShadeTokens->interface_.GetString().size();
-
-    if (TfStringStartsWith(fullName, UsdShadeTokens->inputs)) {
-        TfToken sourceName(fullName.GetString().substr(inputsPrefixLen));
-        return std::make_pair(sourceName, UsdShadeAttributeType::Input);
-    } else if (TfStringStartsWith(fullName, UsdShadeTokens->outputs)) {
-        TfToken sourceName(fullName.GetString().substr(outputsPrefixLen));
-        return std::make_pair(sourceName, UsdShadeAttributeType::Output);
-    } else if (TfStringStartsWith(fullName, UsdShadeTokens->interface_)) {
-        TfToken sourceName(fullName.GetString().substr(interfaceAttrPrefixLen));
-        return std::make_pair(sourceName, 
-                              UsdShadeAttributeType::InterfaceAttribute);
-    } else {
-        return std::make_pair(fullName, 
-                              UsdShadeAttributeType::Parameter);
+    std::pair<std::string, bool> res = 
+        SdfPath::StripPrefixNamespace(fullName, UsdShadeTokens->inputs);
+    if (res.second) {
+        return std::make_pair(TfToken(res.first), UsdShadeAttributeType::Input);
     }
+
+    res = SdfPath::StripPrefixNamespace(fullName, UsdShadeTokens->outputs);
+    if (res.second) {
+        return std::make_pair(TfToken(res.first),UsdShadeAttributeType::Output);
+    }
+
+    res = SdfPath::StripPrefixNamespace(fullName, UsdShadeTokens->interface_);
+    if (res.second) {
+        return std::make_pair(TfToken(res.first), 
+                              UsdShadeAttributeType::InterfaceAttribute);
+    }
+
+    return std::make_pair(fullName, UsdShadeAttributeType::Parameter);
 }
 
 /* static */

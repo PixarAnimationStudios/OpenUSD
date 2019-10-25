@@ -83,18 +83,6 @@ void wrapUsdRiLightPortalAPI()
         .def("Apply", &This::Apply, (arg("prim")))
         .staticmethod("Apply")
 
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
-
-        .def("IsMultipleApply", 
-            static_cast<bool (*)(void)>( [](){ return This::IsMultipleApply; } ))
-        .staticmethod("IsMultipleApply")
-
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
              arg("includeInherited")=true,

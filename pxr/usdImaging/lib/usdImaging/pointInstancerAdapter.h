@@ -52,42 +52,28 @@ public:
     virtual SdfPath Populate(
         UsdPrim const& prim,
         UsdImagingIndexProxy* index,
-        UsdImagingInstancerContext const* instancerContext = NULL);
+        UsdImagingInstancerContext const* instancerContext = NULL) override;
 
-    virtual bool ShouldCullChildren(UsdPrim const& prim) { return true; }
+    virtual bool ShouldCullChildren() const override;
 
-    virtual bool IsInstancerAdapter() { return true; }
+    virtual bool IsInstancerAdapter() const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
     // ---------------------------------------------------------------------- //
     
-    virtual void TrackVariabilityPrep(UsdPrim const& prim,
-                                      SdfPath const& cachePath,
-                                      UsdImagingInstancerContext const* 
-                                          instancerContext = NULL);
-
-    /// Thread Safe.
     virtual void TrackVariability(UsdPrim const& prim,
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
-                                      instancerContext = NULL);
+                                      instancerContext = NULL) const override;
 
-    virtual void UpdateForTimePrep(UsdPrim const& prim,
-                                   SdfPath const& cachePath, 
-                                   UsdTimeCode time,
-                                   HdDirtyBits requestedBits,
-                                   UsdImagingInstancerContext const* 
-                                       instancerContext = NULL);
-
-    /// Thread Safe.
     virtual void UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath, 
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext = NULL);
+                                   instancerContext = NULL) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Change Processing 
@@ -95,38 +81,42 @@ public:
 
     virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
                                               SdfPath const& cachePath,
-                                              TfToken const& propertyName);
+                                              TfToken const& propertyName) override;
 
-    virtual void ProcessPrimResync(SdfPath const& usdPath,
-                                   UsdImagingIndexProxy* index);
+    virtual void ProcessPrimResync(SdfPath const& cachePath,
+                                   UsdImagingIndexProxy* index) override;
 
-    virtual void ProcessPrimRemoval(SdfPath const& usdPath,
-                                    UsdImagingIndexProxy* index);
+    virtual void ProcessPrimRemoval(SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index) override;
 
     virtual void MarkDirty(UsdPrim const& prim,
                            SdfPath const& cachePath,
                            HdDirtyBits dirty,
-                           UsdImagingIndexProxy* index);
+                           UsdImagingIndexProxy* index) override;
 
     virtual void MarkRefineLevelDirty(UsdPrim const& prim,
                                       SdfPath const& cachePath,
-                                      UsdImagingIndexProxy* index);
+                                      UsdImagingIndexProxy* index) override;
 
     virtual void MarkReprDirty(UsdPrim const& prim,
                                SdfPath const& cachePath,
-                               UsdImagingIndexProxy* index);
+                               UsdImagingIndexProxy* index) override;
 
     virtual void MarkCullStyleDirty(UsdPrim const& prim,
                                     SdfPath const& cachePath,
-                                    UsdImagingIndexProxy* index);
+                                    UsdImagingIndexProxy* index) override;
+
+    virtual void MarkRenderTagDirty(UsdPrim const& prim,
+                                    SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index) override;
 
     virtual void MarkTransformDirty(UsdPrim const& prim,
                                     SdfPath const& cachePath,
-                                    UsdImagingIndexProxy* index);
+                                    UsdImagingIndexProxy* index) override;
 
     virtual void MarkVisibilityDirty(UsdPrim const& prim,
                                      SdfPath const& cachePath,
-                                     UsdImagingIndexProxy* index);
+                                     UsdImagingIndexProxy* index) override;
 
 
 
@@ -134,50 +124,89 @@ public:
     /// \name Instancing
     // ---------------------------------------------------------------------- //
 
-    virtual SdfPath GetPathForInstanceIndex(SdfPath const &path,
-                                            int instanceIndex,
+    virtual SdfPath GetPathForInstanceIndex(SdfPath const &protoCachePath,
+                                            int protoIndex,
                                             int *instanceCountForThisLevel,
-                                            int *absoluteInstanceIndex,
-                                            SdfPath *rprimPath=NULL,
-                                            SdfPathVector *instanceContext=NULL);
+                                            int *instancerIndex,
+                                            SdfPath *masterCachePath = NULL,
+                                            SdfPathVector *
+                                                instanceContext = NULL) override;
+
+    virtual size_t
+    SampleInstancerTransform(UsdPrim const& instancerPrim,
+                             SdfPath const& instancerPath,
+                             UsdTimeCode time,
+                             size_t maxNumSamples,
+                             float *sampleTimes,
+                             GfMatrix4d *sampleValues) override;
+
+    virtual size_t
+    SampleTransform(UsdPrim const& prim, 
+                    SdfPath const& cachePath,
+                    UsdTimeCode time, 
+                    size_t maxNumSamples, 
+                    float *sampleTimes,
+                    GfMatrix4d *sampleValues) override;
+
+    virtual size_t
+    SamplePrimvar(UsdPrim const& usdPrim,
+                  SdfPath const& cachePath,
+                  TfToken const& key,
+                  UsdTimeCode time,
+                  size_t maxNumSamples, 
+                  float *sampleTimes,
+                  VtValue *sampleValues) override;
+
+    virtual PxOsdSubdivTags GetSubdivTags(UsdPrim const& usdPrim,
+                                          SdfPath const& cachePath,
+                                          UsdTimeCode time) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Nested instancing support
     // ---------------------------------------------------------------------- //
-    virtual SdfPath GetPathForInstanceIndex(SdfPath const &instancerPath,
-                                            SdfPath const &protoPath,
-                                            int instanceIndex,
+    virtual SdfPath GetPathForInstanceIndex(SdfPath const &instancerCachePath,
+                                            SdfPath const &protoCachePath,
+                                            int protoIndex,
                                             int *instanceCountForThisLevel,
-                                            int *absoluteInstanceIndex,
-                                            SdfPath *rprimPath,
-                                            SdfPathVector *instanceContext);
+                                            int *instancerIndex,
+                                            SdfPath *masterCachePath,
+                                            SdfPathVector *instanceContext) override;
 
     virtual VtIntArray GetInstanceIndices(SdfPath const &instancerPath,
-                                          SdfPath const &protoRprimPath);
+                                          SdfPath const &protoRprimPath,
+                                          UsdTimeCode time) override;
 
     virtual GfMatrix4d GetRelativeInstancerTransform(
         SdfPath const &instancerPath,
         SdfPath const &protoInstancerPath,
-        UsdTimeCode time);
+        UsdTimeCode time) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Selection
     // ---------------------------------------------------------------------- //
     virtual bool PopulateSelection(
-                                HdxSelectionHighlightMode const& highlightMode,
+                                HdSelection::HighlightMode const& highlightMode,
                                 SdfPath const &path,
                                 VtIntArray const &instanceIndices,
-                                HdxSelectionSharedPtr const &result);
+                                HdSelectionSharedPtr const &result) override;
+
+    // ---------------------------------------------------------------------- //
+    /// \name Volume field information
+    // ---------------------------------------------------------------------- //
+
+    virtual HdVolumeFieldDescriptorVector
+    GetVolumeFieldDescriptors(UsdPrim const& usdPrim, SdfPath const &id,
+                              UsdTimeCode time) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Utilities 
     // ---------------------------------------------------------------------- //
 
-    virtual SdfPathVector GetDependPaths(SdfPath const &path) const;
+    virtual SdfPathVector GetDependPaths(SdfPath const &path) const override;
 
 protected:
     virtual void _RemovePrim(SdfPath const& cachePath,
-                             UsdImagingIndexProxy* index) final;
+                             UsdImagingIndexProxy* index) override final;
 
 private:
     struct _ProtoRprim;
@@ -195,7 +224,7 @@ private:
 
     // Process prim removal and output a set of affected instancer paths is
     // provided.
-    void _ProcessPrimRemoval(SdfPath const& usdPath,
+    void _ProcessPrimRemoval(SdfPath const& cachePath,
                              UsdImagingIndexProxy* index,
                              SdfPathVector* instancersToReload);
 
@@ -203,23 +232,31 @@ private:
     void _UnloadInstancer(SdfPath const& instancerPath,
                           UsdImagingIndexProxy* index);
 
-    // Updates per-frame data in the instancer map. This is primarily used
-    // during update to send new instance indices out to Hydra.
-    void _UpdateInstanceMap(SdfPath const &instancerPath, UsdTimeCode time);
+    // Updates per-frame instance indices.
+    void _UpdateInstanceMap(SdfPath const &instancerPath,
+                            UsdTimeCode time) const;
+
+    // Updates per-frame instancer visibility.
+    void _UpdateInstancerVisibility(SdfPath const& instancerPath,
+                                    UsdTimeCode time) const;
 
     // Returns true if the instancer is visible, taking into account all
     // parent instancers visibilities.
-    bool _GetInstancerVisible(SdfPath const &instancerPath, UsdTimeCode time);
+    bool _GetInstancerVisible(SdfPath const &instancerPath, UsdTimeCode time) 
+        const;
 
     // Update the dirty bits per-instancer. This is only executed once per
     // instancer, this method uses the instancer mutex to avoid redundant work.
     //
     // Returns the instancer's dirty bits.
-    int _UpdateDirtyBits(UsdPrim const& instancerPrim);
+    int _UpdateDirtyBits(UsdPrim const& instancerPrim) const;
 
     // Gets the associated _ProtoRprim for the given instancer and cache path.
     _ProtoRprim const& _GetProtoRprim(SdfPath const& instancerPath, 
                                       SdfPath const& cachePath) const;
+
+    // Gets the UsdPrim to use from the given _ProtoRprim.
+    const UsdPrim _GetProtoUsdPrim(_ProtoRprim const& proto) const;
 
     // Takes the transform in the value cache (this must exist before calling
     // this method) and applies a corrective transform to 1) remove any
@@ -229,7 +266,7 @@ private:
                            UsdPrim const& proto,
                            SdfPath const& cachePath,
                            SdfPathVector const& protoPathChain,
-                           UsdTimeCode time);
+                           UsdTimeCode time) const;
 
     // Similar to CorrectTransform, requires a visibility value exist in the
     // ValueCache, removes any visibility opinions above the model root (proto
@@ -237,12 +274,12 @@ private:
     void _ComputeProtoVisibility(UsdPrim const& protoRoot,
                                  UsdPrim const& protoGprim,
                                  UsdTimeCode time,
-                                 bool* vis);
+                                 bool* vis) const;
 
     // Computes the Purpose for the prototype, stopping at the proto root.
     void _ComputeProtoPurpose(UsdPrim const& protoRoot,
                               UsdPrim const& protoGprim,
-                              TfToken* purpose);
+                              TfToken* purpose) const;
 
     /*
       PointInstancer (InstancerData)
@@ -282,7 +319,7 @@ private:
     // prototypes relationship, which will have many meshes, each mesh is
     // represented as a proto rprim.
     struct _ProtoRprim {
-        _ProtoRprim() : variabilityBits(0), visible(true), initialized(false) {}
+        _ProtoRprim() : variabilityBits(0), visible(true) {}
         // Each rprim will become a prototype "child" under the instancer.
         // paths is a list of paths we had to hop across when resolving native
         // USD instances.
@@ -302,10 +339,6 @@ private:
         // When variabilityBits does not include HdChangeTracker::DirtyVisibility
         // the visible field is the unvarying value for visibility.
         bool visible;
-        // We need to ensure that all prims have their topology (e.g.)
-        // initialized because even if they are invisible, they need to be
-        // scheduled into a command buffer.
-        bool initialized;
     };
 
     // Indexed by cachePath (each rprim has one entry)
@@ -321,23 +354,28 @@ private:
     // technically be split out to avoid two lookups, however it seems cleaner
     // to keep everything bundled up under the instancer path.
     struct _InstancerData {
-        _InstancerData() : initialized(false) {}
-        SdfPath parentInstancerPath;
+        _InstancerData() {}
+        SdfPath parentInstancerCachePath;
         _ProtoRPrimMap protoRprimMap;
         _UsdToCacheMap usdToCacheMap;
         std::vector<_PrototypeSharedPtr> prototypes;
         std::mutex mutex;
         HdDirtyBits dirtyBits;
         bool visible;
-        bool initialized;
+
+        // _InstancerData::visible and _Prototype::indices are both caches,
+        // so we want to record what usd timecode they correspond to.
+        UsdTimeCode visibleTime;
+        UsdTimeCode indicesTime;
     };
 
     // A map of instancer data, one entry per instancer prim that has been
     // populated.
+    // Note: this is accessed in multithreaded code paths and must be protected
     typedef boost::unordered_map<SdfPath /*instancerPath*/, 
                                  _InstancerData, 
                                  SdfPath::Hash> _InstancerDataMap;
-    _InstancerDataMap _instancerData;
+    mutable _InstancerDataMap _instancerData;
 };
 
 

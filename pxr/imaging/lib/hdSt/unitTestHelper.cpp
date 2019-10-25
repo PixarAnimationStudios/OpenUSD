@@ -24,6 +24,7 @@
 #include "pxr/imaging/hdSt/unitTestHelper.h"
 #include "pxr/imaging/hdSt/renderPass.h"
 
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -50,37 +51,64 @@ TF_DEFINE_PRIVATE_TOKENS(
     (l1color)
     (sceneAmbient)
     (vec3)
+
+    // Collection names
+    (testCollection)
 );
 
 class HdSt_DrawTask final : public HdTask
 {
 public:
     HdSt_DrawTask(HdRenderPassSharedPtr const &renderPass,
-                  HdStRenderPassStateSharedPtr const &renderPassState)
-    : HdTask()
+                  HdStRenderPassStateSharedPtr const &renderPassState,
+                  bool withGuides)
+    : HdTask(SdfPath::EmptyPath())
     , _renderPass(renderPass)
     , _renderPassState(renderPassState)
+    , _renderTags()
     {
-    }
+        _renderTags.reserve(2);
+        _renderTags.push_back(HdRenderTagTokens->geometry);
 
-protected:
-    virtual void _Sync(HdTaskContext* ctx) override
+        if (withGuides) {
+            _renderTags.push_back(HdRenderTagTokens->guide);
+        }
+    }
+    
+    void Sync(HdSceneDelegate*,
+                      HdTaskContext*,
+                      HdDirtyBits*) override
     {
         _renderPass->Sync();
-        _renderPassState->Sync(
-            _renderPass->GetRenderIndex()->GetResourceRegistry());
     }
 
-    virtual void _Execute(HdTaskContext* ctx) override
+    void Prepare(HdTaskContext* ctx,
+                 HdRenderIndex* renderIndex) override
+    {
+        _renderPassState->Prepare(
+            renderIndex->GetResourceRegistry());
+    }
+
+    void Execute(HdTaskContext* ctx) override
     {
         _renderPassState->Bind();
-        _renderPass->Execute(_renderPassState);
+        _renderPass->Execute(_renderPassState, GetRenderTags());
         _renderPassState->Unbind();
+    }
+
+    const TfTokenVector &GetRenderTags() const override
+    {
+        return _renderTags;
     }
 
 private:
     HdRenderPassSharedPtr _renderPass;
     HdStRenderPassStateSharedPtr _renderPassState;
+    TfTokenVector _renderTags;
+
+    HdSt_DrawTask() = delete;
+    HdSt_DrawTask(const HdSt_DrawTask &) = delete;
+    HdSt_DrawTask &operator =(const HdSt_DrawTask &) = delete;
 };
 
 template <typename T>
@@ -97,19 +125,18 @@ HdSt_TestDriver::HdSt_TestDriver()
  , _renderDelegate()
  , _renderIndex(nullptr)
  , _sceneDelegate(nullptr)
- , _reprName()
- , _geomPass()
- , _geomAndGuidePass()
+ , _renderPass()
  , _renderPassState(
     boost::dynamic_pointer_cast<HdStRenderPassState>(
         _renderDelegate.CreateRenderPassState()))
+ , _collection(_tokens->testCollection, HdReprSelector())
 {
-    TfToken reprName = HdTokens->hull;
     if (TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "CPU" ||
         TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "GPU") {
-        reprName = HdTokens->smoothHull;
+        _Init(HdReprSelector(HdReprTokens->smoothHull));
+    } else {
+        _Init(HdReprSelector(HdReprTokens->hull));
     }
-    _Init(reprName);
 }
 
 HdSt_TestDriver::HdSt_TestDriver(TfToken const &reprName)
@@ -117,14 +144,27 @@ HdSt_TestDriver::HdSt_TestDriver(TfToken const &reprName)
  , _renderDelegate()
  , _renderIndex(nullptr)
  , _sceneDelegate(nullptr)
- , _reprName()
- , _geomPass()
- , _geomAndGuidePass()
+ , _renderPass()
  , _renderPassState(
     boost::dynamic_pointer_cast<HdStRenderPassState>(
         _renderDelegate.CreateRenderPassState()))
+ , _collection(_tokens->testCollection, HdReprSelector())
 {
-    _Init(reprName);
+    _Init(HdReprSelector(reprName));
+}
+
+HdSt_TestDriver::HdSt_TestDriver(HdReprSelector const &reprToken)
+ : _engine()
+ , _renderDelegate()
+ , _renderIndex(nullptr)
+ , _sceneDelegate(nullptr)
+ , _renderPass()
+ , _renderPassState(
+    boost::dynamic_pointer_cast<HdStRenderPassState>(
+        _renderDelegate.CreateRenderPassState()))
+, _collection(_tokens->testCollection, HdReprSelector())
+{
+    _Init(reprToken);
 }
 
 HdSt_TestDriver::~HdSt_TestDriver()
@@ -134,7 +174,7 @@ HdSt_TestDriver::~HdSt_TestDriver()
 }
 
 void
-HdSt_TestDriver::_Init(TfToken const &reprName)
+HdSt_TestDriver::_Init(HdReprSelector const &reprToken)
 {
     _renderIndex = HdRenderIndex::New(&_renderDelegate);
     TF_VERIFY(_renderIndex != nullptr);
@@ -142,7 +182,9 @@ HdSt_TestDriver::_Init(TfToken const &reprName)
     _sceneDelegate = new HdSt_UnitTestDelegate(_renderIndex,
                                              SdfPath::AbsoluteRootPath());
 
-    _reprName = reprName;
+    _cameraId = SdfPath("/testCam");
+    _sceneDelegate->AddCamera(_cameraId);
+    _reprToken = reprToken;
 
     GfMatrix4d viewMatrix = GfMatrix4d().SetIdentity();
     viewMatrix *= GfMatrix4d().SetTranslate(GfVec3d(0.0, 1000.0, 0.0));
@@ -156,33 +198,56 @@ HdSt_TestDriver::_Init(TfToken const &reprName)
 
     // set depthfunc to GL default
     _renderPassState->SetDepthFunc(HdCmpFuncLess);
-}
+
+    // Update collection with repr and add collection to change tracker.
+    _collection.SetReprSelector(reprToken);
+    HdChangeTracker &tracker = _renderIndex->GetChangeTracker();
+    tracker.AddCollection(_collection.GetName());}
 
 void
 HdSt_TestDriver::Draw(bool withGuides)
 {
-    Draw(GetRenderPass(withGuides));
+    Draw(GetRenderPass(), withGuides);
 }
 
 void
-HdSt_TestDriver::Draw(HdRenderPassSharedPtr const &renderPass)
+HdSt_TestDriver::Draw(HdRenderPassSharedPtr const &renderPass, bool withGuides)
 {
     HdTaskSharedPtrVector tasks = {
-        boost::make_shared<HdSt_DrawTask>(renderPass, _renderPassState)
+        boost::make_shared<HdSt_DrawTask>(renderPass, _renderPassState, withGuides)
     };
-    _engine.Execute(_sceneDelegate->GetRenderIndex(), tasks);
+    _engine.Execute(&_sceneDelegate->GetRenderIndex(), &tasks);
 
     GLF_POST_PENDING_GL_ERRORS();
 }
 
 void
 HdSt_TestDriver::SetCamera(GfMatrix4d const &modelViewMatrix,
-                         GfMatrix4d const &projectionMatrix,
-                         GfVec4d const &viewport)
+                           GfMatrix4d const &projectionMatrix,
+                           GfVec4d const &viewport)
 {
-    _renderPassState->SetCamera(modelViewMatrix,
-                                projectionMatrix,
-                                viewport);
+    _sceneDelegate->UpdateCamera(
+        _cameraId, HdCameraTokens->worldToViewMatrix, VtValue(modelViewMatrix));
+    _sceneDelegate->UpdateCamera(
+        _cameraId, HdCameraTokens->projectionMatrix, VtValue(projectionMatrix));
+    // Baselines for tests were generated without constraining the view
+    // frustum based on the viewport aspect ratio.
+    _sceneDelegate->UpdateCamera(
+        _cameraId, HdCameraTokens->windowPolicy,
+        VtValue(CameraUtilDontConform));
+    
+    HdSprim const *cam = _renderIndex->GetSprim(HdPrimTypeTokens->camera,
+                                                 _cameraId);
+    TF_VERIFY(cam);
+    _renderPassState->SetCameraAndViewport(
+        dynamic_cast<HdCamera const *>(cam), viewport);
+}
+
+void
+HdSt_TestDriver::SetCameraClipPlanes(std::vector<GfVec4d> const& clipPlanes)
+{
+    _sceneDelegate->UpdateCamera(
+        _cameraId, HdCameraTokens->clipPlanes, VtValue(clipPlanes));
 }
 
 void
@@ -192,64 +257,28 @@ HdSt_TestDriver::SetCullStyle(HdCullStyle cullStyle)
 }
 
 HdRenderPassSharedPtr const &
-HdSt_TestDriver::GetRenderPass(bool withGuides)
+HdSt_TestDriver::GetRenderPass()
 {
-    if (withGuides) {
-        if (!_geomAndGuidePass){
-            TfTokenVector renderTags;
-            renderTags.push_back(HdTokens->geometry);
-            renderTags.push_back(HdTokens->guide);
-            
-            HdRprimCollection col = HdRprimCollection(
-                                     HdTokens->geometry,
-                                     _reprName);
-            col.SetRenderTags(renderTags);
-            _geomAndGuidePass = HdRenderPassSharedPtr(
-                new HdSt_RenderPass(&_sceneDelegate->GetRenderIndex(), col));
-        }
-        return _geomAndGuidePass;
-    } else {
-        if (!_geomPass){
-            TfTokenVector renderTags;
-            renderTags.push_back(HdTokens->geometry);
-
-            HdRprimCollection col = HdRprimCollection(
-                                        HdTokens->geometry,
-                                        _reprName);
-            col.SetRenderTags(renderTags);
-            _geomPass = HdRenderPassSharedPtr(
-                new HdSt_RenderPass(&_sceneDelegate->GetRenderIndex(), col));
-        }
-        return _geomPass;
+    if (!_renderPass) {
+        _renderPass = HdRenderPassSharedPtr(
+            new HdSt_RenderPass(&_sceneDelegate->GetRenderIndex(),
+                                _collection));
     }
+    return _renderPass;
 }
 
 void
-HdSt_TestDriver::SetRepr(TfToken const &reprName)
+HdSt_TestDriver::SetRepr(HdReprSelector const &reprToken)
 {
-    _reprName = reprName;
+    _collection.SetReprSelector(reprToken);
 
-    if (_geomAndGuidePass) {
-        TfTokenVector renderTags;
-        renderTags.push_back(HdTokens->geometry);
-        renderTags.push_back(HdTokens->guide);
-        
-        HdRprimCollection col = HdRprimCollection(
-                                 HdTokens->geometry,
-                                 _reprName);
-        col.SetRenderTags(renderTags);
-        _geomAndGuidePass->SetRprimCollection(col);
-    }
-    if (_geomPass) {
-        TfTokenVector renderTags;
-        renderTags.push_back(HdTokens->geometry);
-        
-        HdRprimCollection col = HdRprimCollection(
-                                 HdTokens->geometry,
-                                 _reprName);
-        col.SetRenderTags(renderTags);
-        _geomPass->SetRprimCollection(col);
-    }
+    // Mark changes.
+    HdChangeTracker &tracker = _renderIndex->GetChangeTracker();
+    tracker.MarkCollectionDirty(_collection.GetName());
+
+    // Update render pass with updated collection
+    _renderPass->SetRprimCollection(_collection);
+
 }
 
 // --------------------------------------------------------------------------
@@ -277,7 +306,7 @@ HdSt_TestLightingShader::HdSt_TestLightingShader()
     _sceneAmbient    = GfVec3f(0.04, 0.04, 0.04);
 
     std::stringstream ss(lightingShader);
-    _glslfx.reset(new GlfGLSLFX(ss));
+    _glslfx.reset(new HioGlslfx(ss));
 }
 
 HdSt_TestLightingShader::~HdSt_TestLightingShader()

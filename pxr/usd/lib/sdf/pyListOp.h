@@ -71,11 +71,25 @@ private:
     {
         using namespace boost::python;
 
+        using ItemVector = typename T::ItemVector;
+
         class_<T>(name.c_str())
             .def("__str__", &This::_GetStr)
 
+            .def("Create", &T::Create,
+                 (arg("prependedItems") = ItemVector(),
+                  arg("appendedItems") = ItemVector(),
+                  arg("deletedItems") = ItemVector()))
+            .staticmethod("Create")
+
+            .def("CreateExplicit", &T::CreateExplicit,
+                 (arg("explicitItems") = ItemVector()))
+            .staticmethod("CreateExplicit")
+
             .def(self == self)
             .def(self != self)
+
+            .def("HasItem", &T::HasItem)
 
             .def("Clear", &T::Clear)
             .def("ClearAndMakeExplicit", &T::ClearAndMakeExplicit)
@@ -117,7 +131,7 @@ private:
 
     static std::string _GetStr(const T& listOp)
     {
-        return boost::lexical_cast<std::string>(listOp);
+        return TfStringify(listOp);
     }
     
     static 

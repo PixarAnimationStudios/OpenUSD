@@ -22,9 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/imaging/hdSt/dispatchBuffer.h"
-#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hd/perfLog.h"
 
 #include "pxr/imaging/hf/perfLog.h"
@@ -85,7 +85,7 @@ public:
     }
 
     /// Returns the number of elements allocated
-    virtual int GetNumElements() const {
+    virtual size_t GetNumElements() const {
         TF_CODING_ERROR("Hd_DispatchBufferArrayRange doesn't support this operation");
         return 0;
     }
@@ -111,6 +111,11 @@ public:
     virtual size_t GetMaxNumElements() const {
         TF_CODING_ERROR("Hd_DispatchBufferArrayRange doesn't support this operation");
         return 1;
+    }
+
+    /// Returns the usage hint from the underlying buffer array
+    virtual HdBufferArrayUsageHint GetUsageHint() const override {
+        return _buffer->GetUsageHint();
     }
 
     /// Returns the GPU resource. If the buffer array contains more than one
@@ -156,21 +161,24 @@ private:
 
 HdStDispatchBuffer::HdStDispatchBuffer(TfToken const &role, int count,
                                    unsigned int commandNumUints)
-    : HdBufferArray(role, TfToken()), _count(count), _commandNumUints(commandNumUints)
+ : HdBufferArray(role, TfToken(), HdBufferArrayUsageHint())
+ , _count(count)
+ , _commandNumUints(commandNumUints)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
+    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
 
     GLuint newId = 0;
     size_t stride = commandNumUints * sizeof(GLuint);
     size_t dataSize = count * stride;
-    glGenBuffers(1, &newId);
     // just allocate uninitialized
     if (caps.directStateAccessEnabled) {
-        glNamedBufferDataEXT(newId, dataSize, NULL, GL_STATIC_DRAW);
+        glCreateBuffers(1, &newId);
+        glNamedBufferData(newId, dataSize, NULL, GL_STATIC_DRAW);
     } else {
+        glGenBuffers(1, &newId);
         glBindBuffer(GL_ARRAY_BUFFER, newId);
         glBufferData(GL_ARRAY_BUFFER, dataSize, NULL, GL_STATIC_DRAW);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -201,13 +209,13 @@ HdStDispatchBuffer::CopyData(std::vector<GLuint> const &data)
     if (!TF_VERIFY(data.size()*sizeof(GLuint) == static_cast<size_t>(_entireResource->GetSize())))
         return;
 
-    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
+    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
 
     if (caps.directStateAccessEnabled) {
-        glNamedBufferSubDataEXT(_entireResource->GetId(),
-                                0,
-                                _entireResource->GetSize(),
-                                &data[0]);
+        glNamedBufferSubData(_entireResource->GetId(),
+                             0,
+                             _entireResource->GetSize(),
+                             &data[0]);
     } else {
         glBindBuffer(GL_ARRAY_BUFFER, _entireResource->GetId());
         glBufferSubData(GL_ARRAY_BUFFER, 0,

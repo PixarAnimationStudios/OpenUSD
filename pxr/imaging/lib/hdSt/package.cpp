@@ -46,8 +46,15 @@ _GetShaderPath(char const * shader)
 TfToken
 HdStPackageComputeShader()
 {
-    static TfToken computeShader = _GetShaderPath("compute.glslfx");
-    return computeShader;
+    static TfToken s = _GetShaderPath("compute.glslfx");
+    return s;
+}
+
+TfToken
+HdStPackageDomeLightShader()
+{
+    static TfToken s = _GetShaderPath("domeLight.glslfx");
+    return s;
 }
 
 TfToken
@@ -60,17 +67,15 @@ HdStPackagePtexTextureShader()
 TfToken
 HdStPackageRenderPassShader()
 {
-    static TfToken renderPassShader =
-        _GetShaderPath("renderPassShader.glslfx");
-    return renderPassShader;
+    static TfToken s = _GetShaderPath("renderPassShader.glslfx");
+    return s;
 }
 
 TfToken
 HdStPackageFallbackLightingShader()
 {
-    static TfToken fallbackLightingShader =
-        _GetShaderPath("fallbackLightingShader.glslfx");
-    return fallbackLightingShader;
+    static TfToken s = _GetShaderPath("fallbackLightingShader.glslfx");
+    return s;
 }
 
 TfToken
@@ -81,9 +86,23 @@ HdStPackageFallbackSurfaceShader()
 }
 
 TfToken
+HdStPackageFallbackVolumeShader()
+{
+    static TfToken s = _GetShaderPath("fallbackVolume.glslfx");
+    return s;
+}
+
+TfToken
 HdStPackageLightingIntegrationShader()
 {
     static TfToken s = _GetShaderPath("lightingIntegrationShader.glslfx");
+    return s;
+}
+
+TfToken
+HdStPackageImageShader()
+{
+    static TfToken s = _GetShaderPath("imageShader.glslfx");
     return s;
 }
 

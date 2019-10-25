@@ -51,14 +51,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 class Hd_TestDriver final {
 public:
     Hd_TestDriver();
-    Hd_TestDriver(TfToken const &reprName);
+    Hd_TestDriver(HdReprSelector const &reprToken);
     ~Hd_TestDriver();
 
     /// Draw
     void Draw(bool withGuides=false);
 
     /// Draw with external renderPass
-    void Draw(HdRenderPassSharedPtr const &renderPass);
+    void Draw(HdRenderPassSharedPtr const &renderPass, bool withGuides);
 
     /// Set camera to renderpass
     void SetCamera(GfMatrix4d const &modelViewMatrix,
@@ -69,7 +69,7 @@ public:
     void SetCullStyle(HdCullStyle cullStyle);
 
     /// Returns the renderpass
-    HdRenderPassSharedPtr const &GetRenderPass(bool withGuides=false);
+    HdRenderPassSharedPtr const &GetRenderPass();
 
     /// Returns the renderPassState
     HdRenderPassStateSharedPtr const &GetRenderPassState() const {
@@ -80,20 +80,20 @@ public:
     HdUnitTestDelegate& GetDelegate() { return *_sceneDelegate; }
 
     /// Switch repr
-    void SetRepr(TfToken const &reprName);
+    void SetRepr(HdReprSelector const &reprSelector);
 
 private:
 
-    void _Init(TfToken const &reprName);
+    void _Init(HdReprSelector const &reprSelector);
 
     HdEngine _engine;
     Hd_UnitTestNullRenderDelegate _renderDelegate;
     HdRenderIndex       *_renderIndex;
     HdUnitTestDelegate *_sceneDelegate;
-    TfToken _reprName;
-    HdRenderPassSharedPtr _geomPass;
-    HdRenderPassSharedPtr _geomAndGuidePass;
+	SdfPath _cameraId;
+    HdRenderPassSharedPtr _renderPass;
     HdRenderPassStateSharedPtr _renderPassState;
+    HdRprimCollection          _collection;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

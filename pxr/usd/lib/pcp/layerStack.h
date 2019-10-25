@@ -93,6 +93,11 @@ public:
     PCP_API
     const SdfLayerOffset* GetLayerOffsetForLayer(const SdfLayerHandle&) const;
 
+    /// Return the layer offset for the given layer, or NULL if the layer
+    /// can't be found or is the identity.
+    PCP_API
+    const SdfLayerOffset* GetLayerOffsetForLayer(const SdfLayerRefPtr&) const;
+    
     /// Returns the layer offset for the layer at the given index in this
     /// layer stack. Returns NULL if the offset is the identity.
     PCP_API
@@ -200,13 +205,13 @@ private:
 
     // It's a coding error to construct a layer stack with a NULL root layer.
     PcpLayerStack(const PcpLayerStackIdentifier &identifier,
-                  const std::string &targetSchema,
+                  const std::string &fileFormatTarget,
                   const Pcp_MutedLayers &mutedLayers,
                   bool isUsd);
 
     void _BlowLayers();
     void _BlowRelocations();
-    void _Compute(const std::string &targetSchema,
+    void _Compute(const std::string &fileFormatTarget,
                   const Pcp_MutedLayers &mutedLayers);
 
     SdfLayerTreeHandle _BuildLayerStack(
@@ -246,7 +251,7 @@ private:
     std::vector<PcpMapFunction> _mapFunctions;
 
     /// The tree structure of the layer stack.
-    /// Stored separately because this is needed only ocassionally.
+    /// Stored separately because this is needed only occasionally.
     SdfLayerTreeHandle _layerTree;
 
     /// Tracks information used to compute sublayer asset paths.

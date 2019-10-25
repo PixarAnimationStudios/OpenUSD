@@ -29,10 +29,12 @@
 
 #include "gusd/api.h"
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/imageable.h"
+
+#include <functional>
 
 #include "GT_Utils.h"
 #include "purpose.h"
@@ -84,29 +86,29 @@ class GusdContext;
 
 typedef std::map<SdfPath,UT_Matrix4D> GusdSimpleXformCache;
 
-class GusdPrimWrapper : public GT_Primitive
+class GUSD_API GusdPrimWrapper : public GT_Primitive
 {
 public:
 
-    typedef boost::function<GT_PrimitiveHandle
+    typedef std::function<GT_PrimitiveHandle
             (const GT_PrimitiveHandle&, /* sourcePrim */
              const UsdStagePtr&,
              const SdfPath&        /* path */,
              const GusdContext&)>
         DefinitionForWriteFunction;
 
-    typedef boost::function<GT_PrimitiveHandle
+    typedef std::function<GT_PrimitiveHandle
              (const UsdGeomImageable&,
               UsdTimeCode,
               GusdPurposeSet)>
         DefinitionForReadFunction;
 
-    typedef boost::function<bool
+    typedef std::function<bool
             (const GT_PrimitiveHandle&,
              std::string &primName)>
         GetPrimNameFunction;
 
-    typedef boost::function<GT_DataArrayHandle
+    typedef std::function<GT_DataArrayHandle
             ( const GT_DataArrayHandle & )>
         ResampleArrayFunction;
 
@@ -114,7 +116,6 @@ public:
     /// 
     /// When writing a USD file, we refine the geometry to a set of prims that we
     /// can deal with then we call this method on each of those prims.
-    GUSD_API
     static GT_PrimitiveHandle
     defineForWrite( const GT_PrimitiveHandle& sourcePrim,
                     const UsdStagePtr& stage,
@@ -125,20 +126,17 @@ public:
     /// and returns true.
     /// So far only F3D volumes do this. They can derive a name from meta
     /// data stored in the f3d file.
-    GUSD_API
     static bool 
     getPrimName( const GT_PrimitiveHandle &sourcePrim,
                  std::string &primName );
 
     // When we write USD for the given type, we will use a name like $USDNAME_0.
     // where USDNAME is the name registered for this type
-    GUSD_API
     static const char*
     getUsdName( int gtPrimId );
 
     // When we USD for an object that is marked as a group type, we write 
     // the object and then all its children.
-    GUSD_API
     static bool
     isGroupType( int gtPrimId );
 
@@ -147,7 +145,6 @@ public:
     /// When reading a USD file, we call this function to create a Gusd_GTPrimitive
     /// for each USD prim, we then refine that to something that can be 
     /// used in a detail.
-    GUSD_API
     static GT_PrimitiveHandle
     defineForRead( const UsdGeomImageable&  sourcePrim, 
                    UsdTimeCode              time,
@@ -156,14 +153,12 @@ public:
     /// \brief Is this gt prim a point instancer?
     ///
     /// This is used to know if we need to write the instance prototypes.
-    GUSD_API
     static bool 
     isPointInstancerPrim(const GT_PrimitiveHandle& prim,
                          const GusdContext& ctxt);
 
     /// Register function for creating new USD prims from GT_Primitives and, optionally,
     /// a function for giving these prims a name.
-    GUSD_API
     static bool registerPrimDefinitionFuncForWrite(int gtPrimId,
                                                    DefinitionForWriteFunction function,
                                                    GetPrimNameFunction getNameFunction = NULL,
@@ -171,30 +166,23 @@ public:
                                                    const char* usdName = NULL );
 
     /// Register function for creating new GusdPrimWrappers from USD prim.
-    GUSD_API
     static bool registerPrimDefinitionFuncForRead(const TfToken& usdTypeName,
                                                   DefinitionForReadFunction function);
 
     /// Return true is the give prim can be supported directly in USD. This
     /// is used by the refiner to know when to stop refining.
-    GUSD_API
     static bool isGTPrimSupported(const GT_PrimitiveHandle& prim);
 
-    GUSD_API
     GusdPrimWrapper();
-    GUSD_API
     GusdPrimWrapper( const UsdTimeCode &time, const GusdPurposeSet &purposes );
-    GUSD_API
     GusdPrimWrapper( const GusdPrimWrapper &in );
-    GUSD_API
     virtual ~GusdPrimWrapper();
 
     /// Return true if the underlying USD prim is valid
-    GUSD_API
     virtual bool isValid() const;
 
     virtual const UsdGeomImageable getUsdPrim() const = 0;
-    GUSD_API
+
     virtual bool unpack(
         GU_Detail&          gdr,
         const UT_StringRef& fileName,
@@ -210,7 +198,6 @@ public:
     /// and all the primitives on it each frame. However, there is some
     /// data we want to persist across frames. So we keep the GusdPrimWrappers
     /// and ask them to redefine their USD prims on each frame.
-    GUSD_API
     virtual bool redefine( 
            const UsdStagePtr& stage,
            const SdfPath& path, 
@@ -222,17 +209,16 @@ public:
     ///
     /// If \p sourcePrim is an instance, \p localXform is the instance transform
     /// otherwise it is the primitive transform from the prim.
-    GUSD_API
     virtual bool updateFromGTPrim(
         const GT_PrimitiveHandle& sourcePrim,
         const UT_Matrix4D&        houXform,
         const GusdContext&        ctxt,
         GusdSimpleXformCache&     xformCache );
 
-    /// Add a sample just before the current time that invisies this prim.
-    // For points and instances this means writing a empty point attribute.
-    // Other prims set their visibility flag.
-    // It might be possible to avoid this if we are on the first frame.
+    /// Add a sample just before the current time that invises this prim.
+    /// For points and instances this means writing a empty point attribute.
+    /// Other prims set their visibility flag.
+    /// It might be possible to avoid this if we are on the first frame.
     virtual void addLeadingBookend( double curFrame, double startFrame );
 
     /// Add a sample at the current frame, invising this from.
@@ -242,18 +228,19 @@ public:
     void markVisible( bool in ) { m_visible = in; }
     bool isVisible() const { return  m_visible; }
 
-    GUSD_API
     virtual void setVisibility(const TfToken& visibility, UsdTimeCode time);
     
-    GUSD_API
     static GT_DataArrayHandle convertPrimvarData( 
                     const UsdGeomPrimvar& primvar, 
                     UsdTimeCode time );
 
-    // Load primvars for prim from USD.
-    // remapIndicies is used to expand curve primvars into point attributes if
-    // needed.
-    GUSD_API
+    static GT_DataArrayHandle convertPrimvarData( 
+                    const UsdGeomPrimvar& primvar, 
+                    const VtValue& val);
+
+    /// Load primvars for prim from USD.
+    /// remapIndicies is used to expand curve primvars into point attributes if
+    /// needed.
     void loadPrimvars( 
                     UsdTimeCode               time,
                     const GT_RefineParms*     rparms,
@@ -299,7 +286,7 @@ protected:
                 UsdTimeCode                 time,
                 const GT_DataArrayHandle&   data );
 
-    // Write primvar values from a GT attribute list to USD.
+    /// Write primvar values from a GT attribute list to USD.
     bool updatePrimvarFromGTPrim( const GT_AttributeListHandle& gtAttrs,
                                   const GusdGT_AttrFilter&      primvarFilter,
                                   const TfToken&                interpolation,
@@ -307,16 +294,15 @@ protected:
 
     void clearCaches();
 
-    // Compute a USD transform from a Houdini transform.
-    //
-    // \p houXform is the transform from world to the prim's space in Houdini.
-    // This includes the object node transformation and the transform of any
-    // containing packed prim.
-    //
-    // \p xformCache is a map of the transforms of any groups that have been 
-    // written on the current frame.
-    
-    static GfMatrix4d computeTransform( 
+    /// Compute a USD transform from a Houdini transform.
+    ///
+    /// \p houXform is the transform from world to the prim's space in Houdini.
+    /// This includes the object node transformation and the transform of any
+    /// containing packed prim.
+    ///
+    /// \p xformCache is a map of the transforms of any groups that have been
+    /// written on the current frame.
+    static GfMatrix4d computeTransform(
                 const UsdPrim&              prim,
                 UsdTimeCode                 time,
                 const UT_Matrix4D&          houXform,

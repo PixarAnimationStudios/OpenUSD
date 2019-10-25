@@ -46,27 +46,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 
-GfMatrix4d
-_ComputeAnimTransform(UsdSkelSkeletonQuery& self, UsdTimeCode time)
-{
-    GfMatrix4d xform;
-    if(!self.ComputeAnimTransform(&xform, time))
-        xform.SetIdentity();
-    return xform;
-}
-
-
-GfMatrix4d
-_ComputeLocalToWorldTransform(UsdSkelSkeletonQuery& self,
-                              UsdGeomXformCache& xfCache)
-{
-    GfMatrix4d xform;
-    if(!self.ComputeLocalToWorldTransform(&xform, &xfCache))
-        xform.SetIdentity();
-    return xform;
-}
-
-
 VtMatrix4dArray
 _ComputeJointLocalTransforms(UsdSkelSkeletonQuery& self,
                              UsdTimeCode time, bool atRest)
@@ -88,13 +67,43 @@ _ComputeJointSkelTransforms(UsdSkelSkeletonQuery& self,
 
 
 VtMatrix4dArray
+_ComputeJointWorldTransforms(UsdSkelSkeletonQuery& self,
+                             UsdGeomXformCache& xfCache,
+                             bool atRest)
+{
+    VtMatrix4dArray xforms;
+    self.ComputeJointWorldTransforms(&xforms, &xfCache, atRest);
+    return xforms;
+}
+
+
+VtMatrix4dArray
 _ComputeSkinningTransforms(UsdSkelSkeletonQuery& self, UsdTimeCode time)
 {
     VtMatrix4dArray xforms;
     self.ComputeSkinningTransforms(&xforms, time);
     return xforms;
 }
- 
+
+
+VtMatrix4dArray
+_GetJointWorldBindTransforms(UsdSkelSkeletonQuery& self)
+{
+    VtMatrix4dArray xforms;
+    self.GetJointWorldBindTransforms(&xforms);
+    return xforms;
+}
+
+
+VtMatrix4dArray
+_ComputeJointRestRelativeTransforms(UsdSkelSkeletonQuery& self,
+                                    UsdTimeCode time)
+{
+    VtMatrix4dArray xforms;
+    self.ComputeJointRestRelativeTransforms(&xforms, time);
+    return xforms;
+}
+
 
 } // namespace
 
@@ -106,6 +115,8 @@ void wrapUsdSkelSkeletonQuery()
     class_<This>("SkeletonQuery", no_init)
 
         .def(!self)
+        .def(self == self)
+        .def(self != self)
         
         .def("__str__", &This::GetDescription)
 
@@ -121,13 +132,12 @@ void wrapUsdSkelSkeletonQuery()
         .def("GetTopology", &This::GetTopology,
              return_value_policy<return_by_value>())
 
+        .def("GetMapper", &This::GetMapper,
+             return_value_policy<return_by_value>())
+
         .def("GetJointOrder", &This::GetJointOrder)
         
-        .def("ComputeAnimTransform", &_ComputeAnimTransform,
-             (arg("time")=UsdTimeCode::Default()))
-
-        .def("ComputeLocalToWorldTransform", &_ComputeLocalToWorldTransform,
-             (arg("xfCache")))
+        .def("GetJointWorldBindTransforms", &_GetJointWorldBindTransforms)
         
         .def("ComputeJointLocalTransforms", &_ComputeJointLocalTransforms,
              (arg("time")=UsdTimeCode::Default(), arg("atRest")=false))
@@ -135,8 +145,19 @@ void wrapUsdSkelSkeletonQuery()
         .def("ComputeJointSkelTransforms", &_ComputeJointSkelTransforms,
              (arg("time")=UsdTimeCode::Default(), arg("atRest")=false))
 
+        .def("ComputeJointWorldTransforms", &_ComputeJointWorldTransforms,
+             (arg("time")=UsdTimeCode::Default(), arg("atRest")=false))
+
         .def("ComputeSkinningTransforms", &_ComputeSkinningTransforms,
              (arg("time")=UsdTimeCode::Default()))
+
+        .def("ComputeJointRestRelativeTransforms",
+             &_ComputeJointRestRelativeTransforms,
+             (arg("time")=UsdTimeCode::Default()))
+
+        .def("HasBindPose", &This::HasBindPose)
+
+        .def("HasRestPose", &This::HasRestPose)
         
         ;
 }            

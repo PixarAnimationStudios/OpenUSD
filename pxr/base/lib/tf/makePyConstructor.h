@@ -47,9 +47,15 @@
 
 #include "pxr/base/arch/demangle.h"
 
-#include <boost/mpl/assert.hpp>
-#include <boost/mpl/if.hpp>
-#include <boost/preprocessor.hpp>
+#include <boost/preprocessor/iterate.hpp>
+#include <boost/preprocessor/punctuation/comma_if.hpp>
+#include <boost/preprocessor/repetition/enum.hpp>
+#include <boost/preprocessor/repetition/enum_binary_params.hpp>
+#include <boost/preprocessor/repetition/enum_params.hpp>
+#include <boost/preprocessor/repetition/enum_trailing_binary_params.hpp>
+#include <boost/preprocessor/repetition/enum_trailing_params.hpp>
+#include <boost/preprocessor/repetition/repeat.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/python/def_visitor.hpp>
 #include <boost/python/dict.hpp>
 #include <boost/python/errors.hpp>
@@ -198,9 +204,8 @@ struct InstallPolicy {
 // Specialize install policy for refptrs.
 template <typename T>
 struct InstallPolicy<TfRefPtr<T> > {
-    BOOST_MPL_ASSERT_MSG(Tf_SupportsUniqueChanged<T>::Value,
-                         Type_must_support_refcount_unique_changed_notification,
-                         (types<T>));
+    static_assert(Tf_SupportsUniqueChanged<T>::Value,
+                  "Type T must support refcount unique changed notification.");
     static void PostInstall(object const &self, TfRefPtr<T> const &ptr,
                             const void *uniqueId) {
         // Stash a self-reference ref ptr into the python object that will

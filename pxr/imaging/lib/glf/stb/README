@@ -1,0 +1,9 @@
+stb_image_write 
+
+Current version : 1.09
+Source: https://github.com/nothings/stb
+
+Patch file:
+- Download original source code from github
+- diff -ruN <path to original source> stb_image_write.h > stb_image_write.patch
+- diff -ruN <path to original source> stb_image.h > stb_image.patch

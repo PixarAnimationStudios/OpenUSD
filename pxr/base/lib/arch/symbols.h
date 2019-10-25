@@ -37,8 +37,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Returns information about the address \p address in the running program.
 ///
 /// Returns \c false if no information can be found, otherwise returns \c true
-/// and modifies the other arguments: \p objectPath is set to the path to the
-/// executable or library the address is found in, \p baseAddress is the
+/// and modifies the other arguments: \p objectPath is set to the absolute path 
+/// to the executable or library the address is found in, \p baseAddress is the
 /// address where that object is loaded, \p symbolName is the symbolic name of
 /// the thing containing the address, and \p symbolAddress is the starting
 /// address of that thing.  If no thing is found to contain the address then

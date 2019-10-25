@@ -1,0 +1,13 @@
+#sdf 1.4.32
+(
+    defaultPrim = "hello"
+)
+
+def Xform "hello"
+{
+    def Sphere "sphere"
+    {
+        color3f[] primvars:displayColor = [(0, 0, 1)]
+    }
+}
+

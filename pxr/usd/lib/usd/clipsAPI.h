@@ -31,6 +31,7 @@
 #include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/tokens.h"
 
 #include "pxr/base/vt/value.h"
 
@@ -86,7 +87,7 @@ class SdfAssetPath;
 /// 
 /// Important facts about clips:            
 /// \li Within the layerstack in which clips are established, the           
-/// opinions within the clips will be em weaker than any direct opinions
+/// opinions within the clips will be \em weaker than any local opinions
 /// in the layerstack, but em stronger than varying opinions coming across
 /// references and variants.            
 /// \li We will never look for metadata or default opinions in clips            
@@ -104,21 +105,10 @@ class SdfAssetPath;
 class UsdClipsAPI : public UsdAPISchemaBase
 {
 public:
-    /// Compile-time constant indicating whether or not this class corresponds
-    /// to a concrete instantiable prim type in scene description.  If this is
-    /// true, GetStaticPrimDefinition() will return a valid prim definition with
-    /// a non-empty typeName.
-    static const bool IsConcrete = false;
-
-    /// Compile-time constant indicating whether or not this class inherits from
-    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
-    /// UsdPrim.
-    static const bool IsTyped = false;
-
-    /// Compile-time constant indicating whether or not this class represents a 
-    /// multiple-apply API schema. Mutiple-apply API schemas can be applied 
-    /// to the same prim multiple times with different instance names. 
-    static const bool IsMultipleApply = false;
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaType
+    static const UsdSchemaType schemaType = UsdSchemaType::NonAppliedAPI;
 
     /// Construct a UsdClipsAPI on UsdPrim \p prim .
     /// Equivalent to UsdClipsAPI::Get(prim.GetStage(), prim.GetPath())
@@ -162,21 +152,12 @@ public:
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
-    /// Applies this <b>single-apply</b> API schema to the given \p prim.
-    /// This information is stored by adding "ClipsAPI" to the 
-    /// token-valued, listOp metadata \em apiSchemas on the prim.
-    /// 
-    /// \return A valid UsdClipsAPI object is returned upon success. 
-    /// An invalid (or empty) UsdClipsAPI object is returned upon 
-    /// failure. See \ref UsdAPISchemaBase::_ApplyAPISchema() for conditions 
-    /// resulting in failure. 
-    /// 
-    /// \sa UsdPrim::GetAppliedSchemas()
-    /// \sa UsdPrim::HasAPI()
+protected:
+    /// Returns the type of schema this class belongs to.
     ///
+    /// \sa UsdSchemaType
     USD_API
-    static UsdClipsAPI 
-    Apply(const UsdPrim &prim);
+    UsdSchemaType _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -188,7 +169,7 @@ private:
 
     // override SchemaBase virtuals.
     USD_API
-    virtual const TfType &_GetTfType() const;
+    const TfType &_GetTfType() const override;
 
 public:
     // ===================================================================== //

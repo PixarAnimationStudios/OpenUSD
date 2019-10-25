@@ -42,6 +42,7 @@ class HdRenderDelegate;
 class HdRenderParam;
 class HdSceneDelegate;
 class SdfPath;
+using HdSceneDelegatePtrVector = std::vector<HdSceneDelegate*>;
 
 /// This class is only used by the render index.
 /// It provides functionality to manage and store one class of prim
@@ -143,7 +144,7 @@ public:
     ///
     /// Clean-up function for the index.  Uses the delegate to deallocate
     /// the memory used by the fallback prims.  The index is returned to
-    /// an uninitialized state and shouldn't be used, unless reinintialized.
+    /// an uninitialized state and shouldn't be used, unless reinitialized.
     ///
     void DestroyFallbackPrims(HdRenderDelegate *renderDelegate);
 
@@ -152,10 +153,14 @@ public:
     ///
     /// Will call the Sync function on all prims in the index that
     /// are marked dirty in the specified change tracker.
+    /// Also updates an internal list of scene delegates for the dirty prims.
     ///
     void SyncPrims(HdChangeTracker &tracker,
                    HdRenderParam *renderParam);
-
+    
+    /// Returns a vector of unique scene delegates corresponding to the dirty
+    /// prims that were sync'd in SyncPrims.
+   const HdSceneDelegatePtrVector& GetSceneDelegatesForDirtyPrims();
 
 private:
     struct _PrimInfo {
@@ -185,6 +190,7 @@ private:
 
     _PrimTypeList _entries;
     _TypeIndex    _index;
+    HdSceneDelegatePtrVector _dirtyPrimDelegates;
 
 
     // Template methods that are expected to be specialized on PrimType.

@@ -52,9 +52,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 #define HF_TRACE_FUNCTION_SCOPE(tag)                                  \
-  TRACE_SCOPE(ArchGetPrettierFunctionName(__ARCH_FUNCTION__,          \
-                                          __ARCH_PRETTY_FUNCTION__) + \
-              std::string (" (" tag ")"))
+  TRACE_FUNCTION_SCOPE(tag)
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

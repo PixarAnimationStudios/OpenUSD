@@ -25,7 +25,8 @@
 #ifndef __GUSD_WRITECTRLFLAGS_H__
 #define __GUSD_WRITECTRLFLAGS_H__
 
-#include <pxr/pxr.h>
+#include "gusd/api.h"
+#include "pxr/pxr.h"
 
 #include <GT/GT_Primitive.h>
 
@@ -61,6 +62,7 @@ struct GusdWriteCtrlFlags {
     {}
 
     // Update flags with values read from prims attributes.
+    GUSD_API
     void update( const GT_PrimitiveHandle &prim );
 
     static bool getBoolAttr( 

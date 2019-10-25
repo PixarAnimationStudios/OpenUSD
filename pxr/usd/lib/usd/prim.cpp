@@ -23,8 +23,12 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
+
+#include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/inherits.h"
 #include "pxr/usd/usd/instanceCache.h"
+#include "pxr/usd/usd/payloads.h"
+#include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/references.h"
 #include "pxr/usd/usd/resolver.h"
@@ -33,7 +37,6 @@
 #include "pxr/usd/usd/specializes.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/tokens.h"
-#include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/variantSets.h"
 
 #include "pxr/usd/pcp/primIndex.h"
@@ -47,6 +50,10 @@
 #include "pxr/base/tf/ostreamMethods.h"
 
 #include <boost/functional/hash.hpp>
+
+#include <tbb/concurrent_queue.h>
+#include <tbb/concurrent_unordered_set.h>
+#include <tbb/parallel_sort.h>
 
 #include <algorithm>
 #include <functional>
@@ -100,6 +107,12 @@ UsdPrim::_IsA(const TfType& schemaType, bool validateSchemaType) const
 }
 
 bool
+UsdPrim::IsA(const TfType& schemaType) const
+{
+    return _IsA(schemaType, true);
+}
+
+bool
 UsdPrim::_HasAPI(
     const TfType& schemaType, 
     bool validateSchemaType, 
@@ -107,9 +120,15 @@ UsdPrim::_HasAPI(
 {
     TRACE_FUNCTION();
 
+    static const auto apiSchemaBaseType = 
+            TfType::Find<UsdAPISchemaBase>();
+
     const bool isMultipleApplyAPISchema = 
         UsdSchemaRegistry::GetInstance().IsMultipleApplyAPISchema(schemaType);
 
+    // Note that this block of code is only hit in python code paths,
+    // C++ clients would hit the static_asserts defined inline in 
+    // UsdPrim::HasAPI().
     if (validateSchemaType) {
         if (schemaType.IsUnknown()) {
             TF_CODING_ERROR("HasAPI: Invalid unknown schema type (%s) ",
@@ -117,13 +136,23 @@ UsdPrim::_HasAPI(
             return false;
         }
 
-        // Note that this is only hit in python code paths,
-        // C++ clients would hit the static_asserts defined in prim.h
-        auto schemaRegistry = UsdSchemaRegistry::GetInstance();
-
-        if (schemaRegistry.IsTyped(schemaType)) {
+        if (UsdSchemaRegistry::GetInstance().IsTyped(schemaType)) {
             TF_CODING_ERROR("HasAPI: provided schema type ( %s ) is typed.",
                             schemaType.GetTypeName().c_str());
+            return false;
+        }
+
+        if (!UsdSchemaRegistry::GetInstance().IsAppliedAPISchema(schemaType)) {
+            TF_CODING_ERROR("HasAPI: provided schema type ( %s ) is not an "
+                "applied API schema type.", schemaType.GetTypeName().c_str());
+            return false;
+        }
+
+        if (!schemaType.IsA(apiSchemaBaseType) || 
+            schemaType == apiSchemaBaseType) {
+            TF_CODING_ERROR("HasAPI: provided schema type ( %s ) does not "
+                "derive from UsdAPISchemaBase.", 
+                schemaType.GetTypeName().c_str());
             return false;
         }
 
@@ -135,10 +164,7 @@ UsdPrim::_HasAPI(
         }
     }
 
-    // Get our composed set of applied schemas
-    static const auto schemaBaseType = 
-            TfType::FindByName("UsdSchemaBase");
-
+    // Get our composed set of all applied schemas.
     auto appliedSchemas = GetAppliedSchemas();
     if (appliedSchemas.empty()) {
         return false;
@@ -171,6 +197,7 @@ UsdPrim::_HasAPI(
     };
 
     // See if our schema is directly authored
+    static const auto schemaBaseType = TfType::Find<UsdSchemaBase>();
     for (const auto& alias : schemaBaseType.GetAliases(schemaType)) {
         if (foundMatch(alias)) {
             return true; 
@@ -194,6 +221,11 @@ UsdPrim::_HasAPI(
     return false;
 }
 
+bool
+UsdPrim::HasAPI(const TfType& schemaType, const TfToken& instanceName) const{
+    return _HasAPI(schemaType, true, instanceName);
+}
+
 std::vector<UsdProperty>
 UsdPrim::_MakeProperties(const TfTokenVector &names) const
 {
@@ -201,7 +233,8 @@ UsdPrim::_MakeProperties(const TfTokenVector &names) const
     UsdStage *stage = _GetStage();
     props.reserve(names.size());
     for (auto const &propName : names) {
-        SdfSpecType specType = stage->_GetDefiningSpecType(*this, propName);
+        SdfSpecType specType =
+            stage->_GetDefiningSpecType(get_pointer(_Prim()), propName);
         if (specType == SdfSpecTypeAttribute) {
             props.push_back(GetAttribute(propName));
         } else if (TF_VERIFY(specType == SdfSpecTypeRelationship)) {
@@ -255,7 +288,8 @@ UsdPrim::RemoveProperty(const TfToken &propName)
 UsdProperty
 UsdPrim::GetProperty(const TfToken &propName) const
 {
-    SdfSpecType specType = _GetStage()->_GetDefiningSpecType(*this, propName);
+    SdfSpecType specType =
+        _GetStage()->_GetDefiningSpecType(get_pointer(_Prim()), propName);
     if (specType == SdfSpecTypeAttribute) {
         return GetAttribute(propName);
     }
@@ -268,7 +302,7 @@ UsdPrim::GetProperty(const TfToken &propName) const
 bool
 UsdPrim::HasProperty(const TfToken &propName) const 
 {
-    return GetProperty(propName);
+    return static_cast<bool>(GetProperty(propName));
 }
 
 TfTokenVector
@@ -568,7 +602,7 @@ UsdPrim::GetAttribute(const TfToken& attrName) const
 bool
 UsdPrim::HasAttribute(const TfToken& attrName) const
 {
-    return GetAttribute(attrName);
+    return static_cast<bool>(GetAttribute(attrName));
 }
 
 UsdRelationship
@@ -627,7 +661,7 @@ UsdPrim::GetRelationship(const TfToken& relName) const
 bool
 UsdPrim::HasRelationship(const TfToken& relName) const
 {
-    return GetRelationship(relName);
+    return static_cast<bool>(GetRelationship(relName));
 } 
 
 template <class PropertyType, class Derived>
@@ -835,43 +869,71 @@ UsdPrim::HasAuthoredReferences() const
 bool
 UsdPrim::HasPayload() const
 {
-    return _Prim()->HasPayload();
+    return HasAuthoredPayloads();
 }
 
 bool
 UsdPrim::SetPayload(const SdfPayload& payload) const
 {
-    return SetMetadata(SdfFieldKeys->Payload, payload);
+    UsdPayloads payloads = GetPayloads();
+    payloads.ClearPayloads();
+    return payloads.SetPayloads(SdfPayloadVector{payload});
 }
 
 bool
 UsdPrim::SetPayload(const std::string& assetPath, const SdfPath& primPath) const
 {
-    return SetMetadata(SdfFieldKeys->Payload, SdfPayload(assetPath, primPath));
+    return SetPayload(SdfPayload(assetPath, primPath));
 }
 
 bool
 UsdPrim::SetPayload(const SdfLayerHandle& layer, const SdfPath& primPath) const
 {
-    return SetMetadata(SdfFieldKeys->Payload,
-                       SdfPayload(layer->GetIdentifier(), primPath));
+    return SetPayload(SdfPayload(layer->GetIdentifier(), primPath));
 }
 
 bool
 UsdPrim::ClearPayload() const
 {
-    return ClearMetadata(SdfFieldKeys->Payload);
+    return GetPayloads().ClearPayloads();
+}
+
+UsdPayloads
+UsdPrim::GetPayloads() const
+{
+    return UsdPayloads(*this);
+}
+
+bool
+UsdPrim::HasAuthoredPayloads() const
+{
+    // Unlike the equivalent function for references, we query the prim data
+    // for the cached value of HasPayload computed by Pcp instead of querying
+    // the composed metadata. This is necessary as this function is called by 
+    // _IncludeNewlyDiscoveredPayloadsPredicate in UsdStage which can't safely
+    // call back into the querying the composed metatdata.
+    return _Prim()->HasPayload();
 }
 
 void
 UsdPrim::Load(UsdLoadPolicy policy) const
 {
+    if (IsInMaster()) {
+        TF_CODING_ERROR("Attempted to load a prim in a master <%s>",
+                        GetPath().GetText());
+        return;
+    }
     _GetStage()->Load(GetPath(), policy);
 }
 
 void
 UsdPrim::Unload() const
 {
+    if (IsInMaster()) {
+        TF_CODING_ERROR("Attempted to unload a prim in a master <%s>",
+                        GetPath().GetText());
+        return;
+    }
     _GetStage()->Unload(GetPath());
 }
 
@@ -957,7 +1019,7 @@ UsdPrim::ComputeExpandedPrimIndex() const
     _GetStage()->_ReportPcpErrors(
         outputs.allErrors, 
         TfStringPrintf(
-            "Computing expanded prim index for <%s>", GetPath().GetText()));
+            "computing expanded prim index for <%s>", GetPath().GetText()));
     
     return outputs.primIndex;
 }

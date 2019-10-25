@@ -31,37 +31,37 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdMaterialParam::HdMaterialParam(TfToken const& name, 
+HdMaterialParam::HdMaterialParam(ParamType paramType,
+                                 TfToken const& name, 
                                  VtValue const& fallbackValue,
                                  SdfPath const& connection,
                                  TfTokenVector const& samplerCoords,
-                                 bool isPtex)
-    : _name(name)
-    , _fallbackValue(fallbackValue)
-    , _connection(connection)
-    , _samplerCoords(samplerCoords)
-    , _isPtex(isPtex)
+                                 HdTextureType textureType)
+    : paramType(paramType)
+    , name(name)
+    , fallbackValue(fallbackValue)
+    , connection(connection)
+    , samplerCoords(samplerCoords)
+    , textureType(textureType)
 {
-    /*NOTHING*/
 }
 
 HdMaterialParam::~HdMaterialParam()
 {
-    /*NOTHING*/
 }
 
-/* static */
 size_t
 HdMaterialParam::ComputeHash(HdMaterialParamVector const &params)
 {
     size_t hash = 0;
-    TF_FOR_ALL(paramIt, params) {
-        boost::hash_combine(hash, paramIt->GetName().Hash());
-        boost::hash_combine(hash, paramIt->GetConnection().GetHash());
-        TF_FOR_ALL(coordIt, paramIt->GetSamplerCoordinates()) {
-            boost::hash_combine(hash, coordIt->Hash());
+    for (HdMaterialParam const& param : params) {
+        boost::hash_combine(hash, param.paramType);
+        boost::hash_combine(hash, param.name.Hash());
+        boost::hash_combine(hash, param.connection.GetHash());
+        for (TfToken const& coord : param.samplerCoords) {
+            boost::hash_combine(hash, coord.Hash());
         }
-        boost::hash_combine(hash, paramIt->IsPtex());
+        boost::hash_combine(hash, param.textureType);
     }
     return hash;
 }
@@ -69,20 +69,7 @@ HdMaterialParam::ComputeHash(HdMaterialParamVector const &params)
 HdTupleType
 HdMaterialParam::GetTupleType() const
 {
-    return HdGetValueTupleType(GetFallbackValue());
-}
-
-TfTokenVector const&
-HdMaterialParam::GetSamplerCoordinates() const
-{
-    // NOTE: could discover from texture connection.
-    return _samplerCoords;
-}
-
-bool
-HdMaterialParam::IsPtex() const
-{
-    return _isPtex;
+    return HdGetValueTupleType(fallbackValue);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

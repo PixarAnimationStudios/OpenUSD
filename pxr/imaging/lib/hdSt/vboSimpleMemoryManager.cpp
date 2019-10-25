@@ -22,15 +22,15 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/diagnostic.h"
+#include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/iterator.h"
 
 #include "pxr/imaging/hdSt/bufferResourceGL.h"
-#include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hdSt/glUtils.h"
-#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hdSt/vboSimpleMemoryManager.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
@@ -58,10 +58,11 @@ extern TfEnvSetting<int> HD_MAX_VBO_SIZE;
 HdBufferArraySharedPtr
 HdStVBOSimpleMemoryManager::CreateBufferArray(
     TfToken const &role,
-    HdBufferSpecVector const &bufferSpecs)
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayUsageHint usageHint)
 {
     return boost::make_shared<HdStVBOSimpleMemoryManager::_SimpleBufferArray>(
-        role, bufferSpecs);
+        role, bufferSpecs, usageHint);
 }
 
 HdBufferArrayRangeSharedPtr
@@ -72,7 +73,8 @@ HdStVBOSimpleMemoryManager::CreateBufferArrayRange()
 
 HdAggregationStrategy::AggregationId
 HdStVBOSimpleMemoryManager::ComputeAggregationId(
-    HdBufferSpecVector const &bufferSpecs) const
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayUsageHint usageHint) const
 {
     // Always returns different value
     static std::atomic_uint id(0);
@@ -134,8 +136,11 @@ HdStVBOSimpleMemoryManager::GetResourceAllocation(
 // ---------------------------------------------------------------------------
 HdStVBOSimpleMemoryManager::_SimpleBufferArray::_SimpleBufferArray(
     TfToken const &role,
-    HdBufferSpecVector const &bufferSpecs)
-    : HdBufferArray(role, TfToken()), _capacity(0), _maxBytesPerElement(0)
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayUsageHint usageHint)
+ : HdBufferArray(role, TfToken(), usageHint)
+ , _capacity(0)
+ , _maxBytesPerElement(0)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -242,7 +247,7 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
     HF_MALLOC_TAG_FUNCTION();
 
     // XXX: make sure glcontext
-    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
+    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->vboRelocated);
 
@@ -263,6 +268,9 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
         TF_CODING_ERROR("_SimpleBufferArrayRange expired unexpectedly.");
         return;
     }
+
+    GLF_GROUP_FUNCTION();
+
     int numElements = range->GetNumElements();
 
     TF_FOR_ALL (bresIt, GetResources()) {
@@ -278,11 +286,12 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
             GLuint newId = 0;
             GLuint oldId = bres->GetId();
 
-            glGenBuffers(1, &newId);
             if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
-                glNamedBufferDataEXT(newId,
-                                     bufferSize, /*data=*/NULL, GL_STATIC_DRAW);
+                glCreateBuffers(1, &newId);
+                glNamedBufferData(newId,
+                                  bufferSize, /*data=*/NULL, GL_STATIC_DRAW);
             } else {
+                glGenBuffers(1, &newId);
                 glBindBuffer(GL_ARRAY_BUFFER, newId);
                 glBufferData(GL_ARRAY_BUFFER,
                              bufferSize, /*data=*/NULL, GL_STATIC_DRAW);
@@ -311,7 +320,7 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
 
                 if (caps.copyBufferEnabled) {
                     if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
-                        glNamedCopyBufferSubDataEXT(oldId, newId, 0, 0, copySize);
+                        glCopyNamedBufferSubData(oldId, newId, 0, 0, copySize);
                     } else {
                         glBindBuffer(GL_COPY_READ_BUFFER, oldId);
                         glBindBuffer(GL_COPY_WRITE_BUFFER, newId);
@@ -454,7 +463,9 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
                         bufferSource->GetName().GetText());
         return;
     }
-    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
+    GLF_GROUP_FUNCTION();
+
+    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
 
     if (glBufferSubData != NULL) {
         int bytesPerElement = HdDataSizeOfTupleType(VBO->GetTupleType());
@@ -475,10 +486,10 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
         HD_PERF_COUNTER_INCR(HdPerfTokens->glBufferSubData);
 
         if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
-            glNamedBufferSubDataEXT(VBO->GetId(),
-                                    vboOffset,
-                                    srcSize,
-                                    bufferSource->GetData());
+            glNamedBufferSubData(VBO->GetId(),
+                                 vboOffset,
+                                 srcSize,
+                                 bufferSource->GetData());
         } else {
             glBindBuffer(GL_ARRAY_BUFFER, VBO->GetId());
             glBufferSubData(GL_ARRAY_BUFFER,
@@ -516,6 +527,16 @@ size_t
 HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::GetMaxNumElements() const
 {
     return _bufferArray->GetMaxNumElements();
+}
+
+HdBufferArrayUsageHint
+HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::GetUsageHint() const
+{
+    if (!TF_VERIFY(_bufferArray)) {
+        return HdBufferArrayUsageHint();
+    }
+
+    return _bufferArray->GetUsageHint();
 }
 
 HdStBufferResourceGLSharedPtr

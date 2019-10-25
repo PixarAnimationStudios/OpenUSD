@@ -77,10 +77,6 @@ void wrapUsdGeomXformCache()
         .def("SetTime", &XformCache::SetTime, arg("time"))
         .def("GetTime", &XformCache::GetTime)
 
-        .def("SetWorldPath", &XformCache::SetWorldPath, arg("path"))
-        .def("GetWorldPath", &XformCache::GetWorldPath,
-                return_value_policy<return_by_value>())
-
         .def("Swap", &XformCache::Swap, arg("other"))
         ;
 }

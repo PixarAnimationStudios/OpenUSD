@@ -65,7 +65,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Calls to Run() and Cancel() may be made concurrently.  However, once Wait()
 /// is called, calls to Run() and Cancel() must only be made by tasks already
-/// added by Run().  Additionaly, Wait() must never be called by a task added by
+/// added by Run().  Additionally, Wait() must never be called by a task added by
 /// Run(), since that task could never complete.
 ///
 class WorkDispatcher

@@ -1,0 +1,8 @@
+#usda 1.0
+
+def Xform "root"{
+    def Cube "subchild1a"{
+    }
+    def Cube "subchild1b"{
+    }
+}

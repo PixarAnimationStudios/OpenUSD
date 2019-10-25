@@ -36,6 +36,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 typedef boost::shared_ptr<class HdSt_RenderPass> HdSt_RenderPassSharedPtr;
 
+class Hgi;
+
 /// \class HdSt_RenderPass
 ///
 /// A single draw pass to a render target/buffer. Stream implementation.
@@ -47,7 +49,16 @@ public:
     HDST_API
     virtual ~HdSt_RenderPass();
 
+    /// Returns the number of draw items used by this render pass.
+    /// Will only return the correct value after Prepare() has been called on
+    /// HdRenderPass. Calling this during Sync() will return last frame's
+    /// drawItem count.
+    HDST_API
+    size_t GetDrawItemCount() const;
+
 protected:
+    virtual void _Prepare(TfTokenVector const &renderTags) override;
+
     /// Execute the buckets corresponding to renderTags
     virtual void _Execute(HdRenderPassStateSharedPtr const &renderPassState,
                           TfTokenVector const &renderTags) override;
@@ -55,24 +66,27 @@ protected:
     virtual void _MarkCollectionDirty() override;
 
 private:
-    void _PrepareCommandBuffer(
-            HdStRenderPassStateSharedPtr const &renderPasssState);
+    void _PrepareDrawItems(TfTokenVector const& renderTags);
+    void _PrepareCommandBuffer(TfTokenVector const& renderTags);
+
+    // XXX: This should really be in HdSt_DrawBatch::PrepareDraw.
+    void _Cull(HdStRenderPassStateSharedPtr const &renderPasssState);
 
     // -----------------------------------------------------------------------
     // Drawing state
+    HdStCommandBuffer _cmdBuffer;
 
-    typedef std::unordered_map<TfToken, 
-                               HdStCommandBuffer,
-                               boost::hash<TfToken> > _HdStCommandBufferMap;
-    _HdStCommandBufferMap _cmdBuffers;
-
-    bool _lastCullingDisabledState;
+    int _lastSettingsVersion;
+    bool _useTinyPrimCulling;
 
     // -----------------------------------------------------------------------
     // Change tracking state.
 
     // The version number of the currently held collection.
     int _collectionVersion;
+
+    // The version number of the currently active render tags
+    int _renderTagVersion;
 
     // A flag indicating that the held collection changed since this renderPass
     // was last drawn.
@@ -82,6 +96,12 @@ private:
     // previously held collection.
     bool _collectionChanged;
 
+    // DrawItems that are used to build the draw batches.
+    HdRenderIndex::HdDrawItemPtrVector _drawItems;
+    size_t _drawItemCount;
+    bool _drawItemsChanged;
+
+    Hgi* _hgi;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

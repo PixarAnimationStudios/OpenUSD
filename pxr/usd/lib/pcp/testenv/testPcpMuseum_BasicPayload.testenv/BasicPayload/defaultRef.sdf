@@ -1,0 +1,18 @@
+#sdf 1.4.32
+(
+    defaultPrim = "Default"
+)
+
+def Scope "Default"
+{
+    def Scope "Default_Child"
+    {
+    }
+}
+
+def Scope "NotDefault"
+{
+    def Scope "NotDefault_Child"
+    {
+    }
+}

@@ -31,10 +31,23 @@
 #include "pxr/usdImaging/usdImagingGL/api.h"
 #include "pxr/usdImaging/usdImaging/version.h"
 
+#include "pxr/usdImaging/usdImagingGL/renderParams.h"
+#include "pxr/usdImaging/usdImagingGL/rendererSettings.h"
+
+#include "pxr/imaging/cameraUtil/conformWindow.h"
+
+#include "pxr/imaging/hd/engine.h"
+#include "pxr/imaging/hd/rprimCollection.h"
+
+#include "pxr/imaging/hdx/compositor.h"
+#include "pxr/imaging/hdx/selectionTracker.h"
+#include "pxr/imaging/hdx/renderSetupTask.h"
+#include "pxr/imaging/hdx/pickTask.h"
+
+#include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
 
-#include "pxr/base/tf/declarePtrs.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/timeCode.h"
 
@@ -43,266 +56,226 @@
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/vec4i.h"
+
 #include "pxr/base/vt/dictionary.h"
 
-#include <boost/noncopyable.hpp>
-#include <boost/unordered_map.hpp>
+#include "pxr/base/tf/declarePtrs.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 class UsdPrim;
+class HdRenderIndex;
+class HdRendererPlugin;
+class HdxTaskController;
+class UsdImagingDelegate;
+class UsdImagingGLLegacyEngine;
 
 typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
-TF_DECLARE_WEAK_PTRS(GlfSimpleLightingContext);
+TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleLightingContext);
 
 /// \class UsdImagingGLEngine
 ///
-/// Interface class for render engines.
+/// The UsdImagingGLEngine is the main entry point API for rendering USD scenes.
 ///
-class UsdImagingGLEngine : private boost::noncopyable {
+class UsdImagingGLEngine
+{
 public:
+
+    // ---------------------------------------------------------------------
+    /// \name Global State
+    /// @{
+    // ---------------------------------------------------------------------
+
+    /// Returns true if Hydra is enabled for GL drawing.
     USDIMAGINGGL_API
-    virtual ~UsdImagingGLEngine();
+    static bool IsHydraEnabled();
 
-    enum DrawMode {
-        DRAW_POINTS,
-        DRAW_WIREFRAME,
-        DRAW_WIREFRAME_ON_SURFACE,
-        DRAW_SHADED_FLAT,
-        DRAW_SHADED_SMOOTH,
-        DRAW_GEOM_ONLY,
-        DRAW_GEOM_FLAT,
-        DRAW_GEOM_SMOOTH
-    };
+    /// @}
 
-    enum CullStyle {
-        CULL_STYLE_NO_OPINION,
-        CULL_STYLE_NOTHING,
-        CULL_STYLE_BACK,
-        CULL_STYLE_FRONT,
-        CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED,
+    // ---------------------------------------------------------------------
+    /// \name Construction
+    /// @{
+    // ---------------------------------------------------------------------
+    USDIMAGINGGL_API
+    UsdImagingGLEngine();
 
-        CULL_STYLE_COUNT
-    };
+    USDIMAGINGGL_API
+    UsdImagingGLEngine(const SdfPath& rootPath,
+                       const SdfPathVector& excludedPaths,
+                       const SdfPathVector& invisedPaths=SdfPathVector(),
+                       const SdfPath& delegateID = SdfPath::AbsoluteRootPath());
 
-    typedef std::vector<GfVec4d> ClipPlanesVector;
+    // Disallow copies
+    UsdImagingGLEngine(const UsdImagingGLEngine&) = delete;
+    UsdImagingGLEngine& operator=(const UsdImagingGLEngine&) = delete;
 
-    struct RenderParams {
-        UsdTimeCode frame;
-        float complexity;
-        DrawMode drawMode;
-        bool showGuides;
-        bool showProxy;
-        bool showRender;
-        bool forceRefresh;
-        bool flipFrontFacing;
-        CullStyle cullStyle;
-        bool enableIdRender;
-        bool enableLighting;
-        bool enableSampleAlphaToCoverage;
-        bool applyRenderState;
-        bool gammaCorrectColors;
-        bool highlight;
-        GfVec4f overrideColor;
-        GfVec4f wireframeColor;
-        float alphaThreshold; // threshold < 0 implies automatic
-        ClipPlanesVector clipPlanes;
-        bool enableHardwareShading;
+    USDIMAGINGGL_API
+    ~UsdImagingGLEngine();
 
-        RenderParams() : 
-            frame(UsdTimeCode::Default()),
-            complexity(1.0),
-            drawMode(DRAW_SHADED_SMOOTH),
-            showGuides(false),
-            showProxy(true),
-            showRender(false),
-            forceRefresh(false),
-            flipFrontFacing(false),
-            cullStyle(CULL_STYLE_NOTHING),
-            enableIdRender(false),
-            enableLighting(true),
-            enableSampleAlphaToCoverage(false),
-            applyRenderState(true),
-            gammaCorrectColors(true),
-            highlight(false),
-            overrideColor(.0f, .0f, .0f, .0f),
-            wireframeColor(.0f, .0f, .0f, .0f),
-            alphaThreshold(-1),
-            clipPlanes(),
-            enableHardwareShading(true)
-        {
-        }
+    /// @}
 
-        bool operator==(const RenderParams &other) const {
-            return frame                        == other.frame
-                && complexity                  == other.complexity
-                && drawMode                    == other.drawMode
-                && showGuides                  == other.showGuides
-                && showProxy                   == other.showProxy
-                && showRender                  == other.showRender
-                && forceRefresh                == other.forceRefresh
-                && flipFrontFacing             == other.flipFrontFacing
-                && cullStyle                   == other.cullStyle
-                && enableIdRender              == other.enableIdRender
-                && enableLighting              == other.enableLighting
-                && enableSampleAlphaToCoverage == other.enableSampleAlphaToCoverage
-                && applyRenderState            == other.applyRenderState
-                && gammaCorrectColors          == other.gammaCorrectColors
-                && highlight                   == other.highlight
-                && overrideColor               == other.overrideColor
-                && wireframeColor              == other.wireframeColor
-                && alphaThreshold              == other.alphaThreshold
-                && clipPlanes                  == other.clipPlanes
-                && enableHardwareShading       == other.enableHardwareShading;
-        }
-        bool operator!=(const RenderParams &other) const {
-            return !(*this == other);
-        }
-    };
-
-    struct HitInfo {
-        GfVec3d worldSpaceHitPoint;
-        int hitInstanceIndex;
-    };
-    typedef TfHashMap<SdfPath, HitInfo, SdfPath::Hash> HitBatch;
+    // ---------------------------------------------------------------------
+    /// \name Rendering
+    /// @{
+    // ---------------------------------------------------------------------
 
     /// Support for batched drawing
     USDIMAGINGGL_API
-    virtual void PrepareBatch(const UsdPrim& root, RenderParams params);
+    void PrepareBatch(const UsdPrim& root, 
+                      const UsdImagingGLRenderParams& params);
     USDIMAGINGGL_API
-    virtual void RenderBatch(const SdfPathVector& paths, RenderParams params);
+    void RenderBatch(const SdfPathVector& paths, 
+                     const UsdImagingGLRenderParams& params);
 
     /// Entry point for kicking off a render
-    virtual void Render(const UsdPrim& root, RenderParams params) = 0;
-
-    virtual void InvalidateBuffers() = 0;
+    USDIMAGINGGL_API
+    void Render(const UsdPrim& root, 
+                const UsdImagingGLRenderParams &params);
 
     USDIMAGINGGL_API
-    virtual void SetCameraState(const GfMatrix4d& viewMatrix,
-                                const GfMatrix4d& projectionMatrix,
-                                const GfVec4d& viewport);
+    void InvalidateBuffers();
 
-    /// Helper function to extract camera state from opengl and then
-    /// call SetCameraState.
+    /// Returns true if the resulting image is fully converged.
+    /// (otherwise, caller may need to call Render() again to refine the result)
+    USDIMAGINGGL_API
+    bool IsConverged() const;
+
+    /// @}
+    
+    // ---------------------------------------------------------------------
+    /// \name Root Transform and Visibility
+    /// @{
+    // ---------------------------------------------------------------------
+
+    /// Sets the root transform.
+    USDIMAGINGGL_API
+    void SetRootTransform(GfMatrix4d const& xf);
+
+    /// Sets the root visibility.
+    USDIMAGINGGL_API
+    void SetRootVisibility(bool isVisible);
+
+    /// @}
+
+    // ---------------------------------------------------------------------
+    /// \name Camera State
+    /// @{
+    // ---------------------------------------------------------------------
+    
+    /// Set the viewport to use for rendering as (x,y,w,h), where (x,y)
+    /// represents the lower left corner of the viewport rectangle, and (w,h)
+    /// is the width and height of the viewport in pixels.
+    USDIMAGINGGL_API
+    void SetRenderViewport(GfVec4d const& viewport);
+
+    /// Set the window policy to use.
+    /// XXX: This is currently used for scene cameras set via SetCameraPath.
+    /// See comment in SetCameraState for the free cam.
+    USDIMAGINGGL_API
+    void SetWindowPolicy(CameraUtilConformWindowPolicy policy);
+    
+    /// Scene camera API
+    /// Set the scene camera path to use for rendering.
+    USDIMAGINGGL_API
+    void SetCameraPath(SdfPath const& id);
+
+    /// Free camera API
+    /// Set camera framing state directly (without pointing to a camera on the 
+    /// USD stage). The projection matrix is expected to be pre-adjusted for the
+    /// window policy.
+    USDIMAGINGGL_API
+    void SetCameraState(const GfMatrix4d& viewMatrix,
+                        const GfMatrix4d& projectionMatrix);
+
+    /// Helper function to extract camera and viewport state from opengl and
+    /// then call SetCameraState and SetRenderViewport
     USDIMAGINGGL_API
     void SetCameraStateFromOpenGL();
 
+    /// @}
+
+    // ---------------------------------------------------------------------
+    /// \name Light State
+    /// @{
+    // ---------------------------------------------------------------------
+    
     /// Helper function to extract lighting state from opengl and then
     /// call SetLights.
     USDIMAGINGGL_API
-    virtual void SetLightingStateFromOpenGL();
+    void SetLightingStateFromOpenGL();
 
     /// Copy lighting state from another lighting context.
     USDIMAGINGGL_API
-    virtual void SetLightingState(GlfSimpleLightingContextPtr const &src);
+    void SetLightingState(GlfSimpleLightingContextPtr const &src);
 
     /// Set lighting state
     /// Derived classes should ensure that passing an empty lights
     /// vector disables lighting.
     /// \param lights is the set of lights to use, or empty to disable lighting.
     USDIMAGINGGL_API
-    virtual void SetLightingState(GlfSimpleLightVector const &lights,
+    void SetLightingState(GlfSimpleLightVector const &lights,
                                   GlfSimpleMaterial const &material,
                                   GfVec4f const &sceneAmbient);
 
-    /// Sets the root transform.
-    USDIMAGINGGL_API
-    virtual void SetRootTransform(GfMatrix4d const& xf);
+    /// @}
 
-    /// Sets the root visibility.
-    USDIMAGINGGL_API
-    virtual void SetRootVisibility(bool isVisible);
+    // ---------------------------------------------------------------------
+    /// \name Selection Highlighting
+    /// @{
+    // ---------------------------------------------------------------------
 
-    // selection highlighting
-
-    /// Sets (replaces) the list of prim paths that should be included in selection
-    /// highlighting. These paths may include root paths which will be expanded
-    /// internally.
+    /// Sets (replaces) the list of prim paths that should be included in 
+    /// selection highlighting. These paths may include root paths which will 
+    /// be expanded internally.
     USDIMAGINGGL_API
-    virtual void SetSelected(SdfPathVector const& paths);
+    void SetSelected(SdfPathVector const& paths);
 
     /// Clear the list of prim paths that should be included in selection
     /// highlighting.
     USDIMAGINGGL_API
-    virtual void ClearSelected();
+    void ClearSelected();
 
     /// Add a path with instanceIndex to the list of prim paths that should be
     /// included in selection highlighting. UsdImagingDelegate::ALL_INSTANCES
     /// can be used for highlighting all instances if path is an instancer.
     USDIMAGINGGL_API
-    virtual void AddSelected(SdfPath const &path, int instanceIndex);
+    void AddSelected(SdfPath const &path, int instanceIndex);
 
     /// Sets the selection highlighting color.
     USDIMAGINGGL_API
-    virtual void SetSelectionColor(GfVec4f const& color);
+    void SetSelectionColor(GfVec4f const& color);
 
+    /// @}
+    
+    // ---------------------------------------------------------------------
+    /// \name Picking
+    /// @{
+    // ---------------------------------------------------------------------
+    
     /// Finds closest point of intersection with a frustum by rendering.
     ///	
     /// This method uses a PickRender and a customized depth buffer to find an
     /// approximate point of intersection by rendering. This is less accurate
-    /// than implicit methods or rendering with GL_SELECT, but leverages any data
-    /// already cached in the renderer.
+    /// than implicit methods or rendering with GL_SELECT, but leverages any 
+    /// data already cached in the renderer.
     ///
-    /// Returns whether a hit occurred and if so, \p outHitPoint will contain the
-    /// intersection point in world space (i.e. \p projectionMatrix and
+    /// Returns whether a hit occurred and if so, \p outHitPoint will contain
+    /// the intersection point in world space (i.e. \p projectionMatrix and
     /// \p viewMatrix factored back out of the result).
     ///
     USDIMAGINGGL_API
-    virtual bool TestIntersection(
+    bool TestIntersection(
         const GfMatrix4d &viewMatrix,
         const GfMatrix4d &projectionMatrix,
         const GfMatrix4d &worldToLocalSpace,
         const UsdPrim& root,
-        RenderParams params,
+        const UsdImagingGLRenderParams& params,
         GfVec3d *outHitPoint,
         SdfPath *outHitPrimPath = NULL,
-        SdfPath *outInstancerPath = NULL,
+        SdfPath *outHitInstancerPath = NULL,
         int *outHitInstanceIndex = NULL,
         int *outHitElementIndex = NULL);
-
-    /// A callback function to control collating intersection test hits.
-    /// See the documentation for TestIntersectionBatch() below for more detail.
-    typedef std::function< SdfPath(const SdfPath&, const SdfPath&, const int) > PathTranslatorCallback;
-
-    /// Finds closest point of intersection with a frustum by rendering a batch.
-    ///
-    /// This method uses a PickRender and a customized depth buffer to find an
-    /// approximate point of intersection by rendering. This is less accurate
-    /// than implicit methods or rendering with GL_SELECT, but leverages any data
-    /// already cached in the renderer. The resolution of the pick renderer is
-    /// controlled through \p pickResolution.
-    ///
-    /// In batched selection scenarios, the path desired may not be as granular as
-    /// the leaf-level prim. For example, one might want to find the closest hit
-    /// for all prims underneath a certain path scope, or ignore others altogether.
-    /// The \p pathTranslator receives an \c SdfPath pointing to the hit prim
-    /// as well as an \c SdfPath pointing to the instancer prim and an integer
-    /// instance index in the case where the hit is an instanced object. It may
-    /// return an empty path (signifying an ignored hit), or a different
-    /// simplified path altogether.
-    ///
-    /// Returned hits are collated by the translated \c SdfPath above, and placed
-    /// in the structure pointed to by \p outHit. For each \c SdfPath in the
-    /// \c HitBatch, the closest found hit point and instance id is given. The
-    /// intersection point returned is in world space (i.e. \p projectionMatrix
-    /// and \p viewMatrix factored back out of the result).
-    ///
-    /// \c outHit is not cleared between consecutive runs -- this allows
-    /// hits to be accumulated across multiple calls to \cTestIntersection. Hits
-    /// to any single SdfPath will be overwritten on successive calls.
-    ///
-    USDIMAGINGGL_API
-    virtual bool TestIntersectionBatch(
-        const GfMatrix4d &viewMatrix,
-        const GfMatrix4d &projectionMatrix,
-        const GfMatrix4d &worldToLocalSpace,
-        const SdfPathVector& paths, 
-        RenderParams params,
-        unsigned int pickResolution,
-        PathTranslatorCallback pathTranslator,
-        HitBatch *outHit);
 
     /// Using an Id extracted from an Id render, returns the associated
     /// rprim path.
@@ -313,8 +286,7 @@ public:
     /// index by GetPrimPathFromInstanceIndex().
     ///
     USDIMAGINGGL_API
-    virtual SdfPath GetRprimPathFromPrimId(int primId) const;
-
+    SdfPath GetRprimPathFromPrimId(int primId) const;
 
     /// Using colors extracted from an Id render, returns the associated
     /// prim path and optional instance index.
@@ -327,60 +299,235 @@ public:
     /// XXX: consider renaming to GetRprimPathFromPrimIdColor
     ///
     USDIMAGINGGL_API
-    virtual SdfPath GetPrimPathFromPrimIdColor(
+    SdfPath GetPrimPathFromPrimIdColor(
         GfVec4i const & primIdColor,
         GfVec4i const & instanceIdColor,
         int * instanceIndexOut = NULL);
 
-    /// Returns the path of the instance prim on the UsdStage being rendered
-    /// by this engine that corresponds to the instance index generated by
-    /// the specified prototype rprim.
+    /// Returns the rprim id path of the instancer being rendered by this
+    /// engine that corresponds to the instance index generated by the
+    /// specified instanced prototype rprim id.
     /// Returns an empty path if no such instance prim exists.
     ///
-    /// absoluteInstanceIndex is also returned, which is an instance index
-    /// of all instances in the instancer. Note that if the instancer instances
-    /// heterogeneously, instanceIndex of the prototype rprim doesn't match
-    /// the absoluteInstanceIndex in the instancer (see hd/sceneDelegate.h)
+    /// \p instancerIndex is also returned, which is an instance index
+    /// of all instances in the top-level instancer. Note that if the instancer
+    /// instances heterogeneously, or there are multiple levels of hierarchy,
+    /// \p protoIndex of the prototype rprim doesn't match the
+    /// \p instancerIndex in the instancer (see usdImaging/delegate.h)
     /// 
+    /// If \p masterCachePath is not NULL, and the input rprim is an instance
+    /// resulting from an instanceable reference (and not from a
+    /// PointInstancer), then it will be set to the cache path of the
+    /// corresponding instance master prim. Otherwise, it will be set to null.
+    ///
     /// If \p instanceContext is not NULL, it is populated with the list of 
-    /// instance roots that must be traversed to get to the rprim. The last prim
-    /// in this vector is always the resolved (or forwarded) rprim.
+    /// instance roots that must be traversed to get to the rprim. If this
+    /// list is non-empty, the last prim is always the forwarded rprim.
     /// 
     USDIMAGINGGL_API
-    virtual SdfPath GetPrimPathFromInstanceIndex(
-        SdfPath const& protoRprimPath,
-        int instanceIndex,
-        int *absoluteInstanceIndex=NULL,
-        SdfPath * rprimPath=NULL,
+    SdfPath GetPrimPathFromInstanceIndex(
+        const SdfPath &protoRprimId,
+        int protoIndex,
+        int *instancerIndex=NULL,
+        SdfPath *masterCachePath=NULL,
         SdfPathVector *instanceContext=NULL);
 
-    /// Returns true if the resulting image is fully converged.
-    /// (otherwise, caller may need to call Render() again to refine the result)
-    USDIMAGINGGL_API
-    virtual bool IsConverged() const;
+    /// Resolves a 4-byte pixel from an id render to an int32 prim ID.
+    static inline int DecodeIDRenderColor(unsigned char const idColor[4]) {
+        return HdxPickTask::DecodeIDRenderColor(idColor);
+    }
+
+    /// @}
+    
+    // ---------------------------------------------------------------------
+    /// \name Renderer Plugin Management
+    /// @{
+    // ---------------------------------------------------------------------
 
     /// Return the vector of available render-graph delegate plugins.
     USDIMAGINGGL_API
-    virtual TfTokenVector GetRendererPlugins() const;
+    static TfTokenVector GetRendererPlugins();
 
     /// Return the user-friendly description of a renderer plugin.
     USDIMAGINGGL_API
-    virtual std::string GetRendererPluginDesc(TfToken const &id) const;
+    static std::string GetRendererDisplayName(TfToken const &id);
+
+    /// Return the id of the currently used renderer plugin.
+    USDIMAGINGGL_API
+    TfToken GetCurrentRendererId() const;
 
     /// Set the current render-graph delegate to \p id.
     /// the plugin will be loaded if it's not yet.
     USDIMAGINGGL_API
-    virtual bool SetRendererPlugin(TfToken const &id);
+    bool SetRendererPlugin(TfToken const &id);
 
-    /// Returns GPU resource allocation info
+    /// @}
+    
+    // ---------------------------------------------------------------------
+    /// \name AOVs and Renderer Settings
+    /// @{
+    // ---------------------------------------------------------------------
+
+    /// Return the vector of available renderer AOV settings.
     USDIMAGINGGL_API
-    virtual VtDictionary GetResourceAllocation() const;
+    TfTokenVector GetRendererAovs() const;
+
+    /// Set the current renderer AOV to \p id.
+    USDIMAGINGGL_API
+    bool SetRendererAov(TfToken const& id);
+
+    /// Returns the list of renderer settings.
+    USDIMAGINGGL_API
+    UsdImagingGLRendererSettingsList GetRendererSettingsList() const;
+
+    /// Gets a renderer setting's current value.
+    USDIMAGINGGL_API
+    VtValue GetRendererSetting(TfToken const& id) const;
+
+    /// Sets a renderer setting's value.
+    USDIMAGINGGL_API
+    void SetRendererSetting(TfToken const& id,
+                                    VtValue const& value);
+
+    /// @}
+
+    // ---------------------------------------------------------------------
+    /// \name Control of background rendering threads.
+    /// @{
+    // ---------------------------------------------------------------------
+
+    /// Query the renderer as to whether it supports pausing and resuming.
+    USDIMAGINGGL_API
+    bool IsPauseRendererSupported() const;
+
+    /// Pause the renderer.
+    ///
+    /// Returns \c true if successful.
+    USDIMAGINGGL_API
+    bool PauseRenderer();
+
+    /// Resume the renderer.
+    ///
+    /// Returns \c true if successful.
+    USDIMAGINGGL_API
+    bool ResumeRenderer();
+
+    /// @}
+
+    // ---------------------------------------------------------------------
+    /// \name Color Correction
+    /// @{
+    // ---------------------------------------------------------------------
+
+    /// Set \p id to one of the HdxColorCorrectionTokens.
+    /// \p framebufferResolution should be the size of the bound framebuffer
+    /// that will be color corrected. It is recommended that a 16F or higher
+    /// AOV is bound for color correction.
+    USDIMAGINGGL_API
+    void SetColorCorrectionSettings(
+        TfToken const& id, 
+        GfVec2i const& framebufferResolution);
+
+    /// @}
+
+    /// Returns true if the platform is color correction capable.
+    USDIMAGINGGL_API
+    static bool IsColorCorrectionCapable();
+
+    // ---------------------------------------------------------------------
+    /// \name Render Statistics
+    /// @{
+    // ---------------------------------------------------------------------
+
+    /// Returns render statistics.
+    ///
+    /// The contents of the dictionary will depend on the current render 
+    /// delegate.
+    ///
+    USDIMAGINGGL_API
+    VtDictionary GetRenderStats() const;
+
+    /// @}
+
 
 protected:
-    // Intentionally putting these under protected so that subclasses can share the usage of draw targets.
-    // Once refEngine goes away and we only have hdEngine, it may be best to move this to private
-    typedef boost::unordered_map<GlfGLContextSharedPtr, GlfDrawTargetRefPtr> _DrawTargetPerContextMap;
-    _DrawTargetPerContextMap _drawTargets;
+
+    /// Open some protected methods for whitebox testing.
+    friend class UsdImagingGL_UnitTestGLDrawing;
+
+    /// Returns the render index of the engine, if any.  This is only used for
+    /// whitebox testing.
+    USDIMAGINGGL_API
+    HdRenderIndex *_GetRenderIndex() const;
+
+    USDIMAGINGGL_API
+    void _Execute(const UsdImagingGLRenderParams &params,
+                  HdTaskSharedPtrVector tasks);
+
+    // These functions factor batch preparation into separate steps so they
+    // can be reused by both the vectorized and non-vectorized API.
+    USDIMAGINGGL_API
+    bool _CanPrepareBatch(const UsdPrim& root, 
+        const UsdImagingGLRenderParams& params);
+    USDIMAGINGGL_API
+    void _PreSetTime(const UsdPrim& root, 
+        const UsdImagingGLRenderParams& params);
+    USDIMAGINGGL_API
+    void _PostSetTime(const UsdPrim& root, 
+        const UsdImagingGLRenderParams& params);
+
+    // Create a hydra collection given root paths and render params.
+    // Returns true if the collection was updated.
+    USDIMAGINGGL_API
+    static bool _UpdateHydraCollection(HdRprimCollection *collection,
+                          SdfPathVector const& roots,
+                          UsdImagingGLRenderParams const& params);
+    USDIMAGINGGL_API
+    static HdxRenderTaskParams _MakeHydraUsdImagingGLRenderParams(
+                          UsdImagingGLRenderParams const& params);
+    USDIMAGINGGL_API
+    static void _ComputeRenderTags(UsdImagingGLRenderParams const& params,
+                          TfTokenVector *renderTags);
+
+    // This function disposes of: the render index, the render plugin,
+    // the task controller, and the usd imaging delegate.
+    USDIMAGINGGL_API
+    void _DeleteHydraResources();
+
+    USDIMAGINGGL_API
+    static TfToken _GetDefaultRendererPluginId();
+
+    HdEngine _engine;
+
+    HdRenderIndex *_renderIndex;
+
+    HdxSelectionTrackerSharedPtr _selTracker;
+    HdRprimCollection _renderCollection;
+    HdRprimCollection _intersectCollection;
+
+    SdfPath const _delegateID;
+    UsdImagingDelegate *_delegate;
+
+    HdRendererPlugin *_rendererPlugin;
+    TfToken _rendererId;
+    HdxTaskController *_taskController;
+
+    GlfSimpleLightingContextRefPtr _lightingContextForOpenGLState;
+
+    // Data we want to live across render plugin switches:
+    GfVec4f _selectionColor;
+
+    SdfPath _rootPath;
+    SdfPathVector _excludedPrimPaths;
+    SdfPathVector _invisedPrimPaths;
+    bool _isPopulated;
+
+    // An implementation of much of the engine functionality that doesn't
+    // invoke any of the advanced Hydra features.  It is kept around for 
+    // backwards compatibility and may one day be deprecated.  Most of the 
+    // time we expect this to be null.  When it is not null, none of the other
+    // member variables of this class are used.
+    std::unique_ptr<UsdImagingGLLegacyEngine> _legacyImpl;
 };
 
 

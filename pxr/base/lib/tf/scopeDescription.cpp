@@ -87,7 +87,7 @@ struct _StackRegistry
     // Lock class used by clients that read stacks.
     friend class StackLock;
     class StackLock {
-        friend class _StackRegistry;
+        friend struct _StackRegistry;
         StackLock(StackLock const &) = delete;
         StackLock &operator=(StackLock const &) = delete;
         inline StackLock(_Stack *stack, _StackRegistry *reg)
@@ -312,6 +312,7 @@ TfScopeDescription::_Push()
     // safely here.
     _Stack &stack = _GetLocalStack();
     _prev = stack.head;
+    _localStack = &stack;
     tbb::spin_mutex::scoped_lock lock(stack.mutex);
     stack.head = this;
 }
@@ -321,7 +322,7 @@ TfScopeDescription::_Pop() const
 {
     // No other thread can modify head, so we can read it without the lock
     // safely here.
-    _Stack &stack = _GetLocalStack();
+    _Stack &stack = *static_cast<_Stack *>(_localStack);
     TF_AXIOM(stack.head == this);
     tbb::spin_mutex::scoped_lock lock(stack.mutex);
     stack.head = _prev;
@@ -360,7 +361,7 @@ TfScopeDescription::~TfScopeDescription()
 void
 TfScopeDescription::SetDescription(std::string const &msg)
 {
-    _Stack &stack = _GetLocalStack();
+    _Stack &stack = *static_cast<_Stack *>(_localStack);
     {
         tbb::spin_mutex::scoped_lock lock(stack.mutex);
         _description = msg.c_str();
@@ -371,7 +372,7 @@ TfScopeDescription::SetDescription(std::string const &msg)
 void
 TfScopeDescription::SetDescription(std::string &&msg)
 {
-    _Stack &stack = _GetLocalStack();
+    _Stack &stack = *static_cast<_Stack *>(_localStack);
     tbb::spin_mutex::scoped_lock lock(stack.mutex);
     _ownedString = std::move(msg);
     _description = _ownedString->c_str();
@@ -380,7 +381,7 @@ TfScopeDescription::SetDescription(std::string &&msg)
 void
 TfScopeDescription::SetDescription(char const *msg)
 {
-    _Stack &stack = _GetLocalStack();
+    _Stack &stack = *static_cast<_Stack *>(_localStack);
     {
         tbb::spin_mutex::scoped_lock lock(stack.mutex);
         _description = msg;

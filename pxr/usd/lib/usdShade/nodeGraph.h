@@ -37,7 +37,7 @@
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
-
+#include "pxr/usd/usdShade/shader.h"
 
 #include "pxr/base/vt/value.h"
 
@@ -79,16 +79,10 @@ class SdfAssetPath;
 class UsdShadeNodeGraph : public UsdTyped
 {
 public:
-    /// Compile-time constant indicating whether or not this class corresponds
-    /// to a concrete instantiable prim type in scene description.  If this is
-    /// true, GetStaticPrimDefinition() will return a valid prim definition with
-    /// a non-empty typeName.
-    static const bool IsConcrete = true;
-
-    /// Compile-time constant indicating whether or not this class inherits from
-    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
-    /// UsdPrim.
-    static const bool IsTyped = true;
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaType
+    static const UsdSchemaType schemaType = UsdSchemaType::ConcreteTyped;
 
     /// Construct a UsdShadeNodeGraph on UsdPrim \p prim .
     /// Equivalent to UsdShadeNodeGraph::Get(prim.GetStage(), prim.GetPath())
@@ -157,6 +151,13 @@ public:
     static UsdShadeNodeGraph
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
+protected:
+    /// Returns the type of schema this class belongs to.
+    ///
+    /// \sa UsdSchemaType
+    USDSHADE_API
+    UsdSchemaType _GetSchemaType() const override;
+
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
@@ -167,7 +168,7 @@ private:
 
     // override SchemaBase virtuals.
     USDSHADE_API
-    virtual const TfType &_GetTfType() const;
+    const TfType &_GetTfType() const override;
 
 public:
     // ===================================================================== //
@@ -181,11 +182,12 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
-    /// Allow UsdShadeNodeGraph to auto-convert to UsdShadeConnectableAPI, so 
-    /// you can pass in a UsdShadeNodeGraph to any function that accepts 
-    /// a UsdShadeConnectableAPI.
+    /// Constructor that takes a ConnectableAPI object.
+    /// Allow implicit (auto) conversion of UsdShadeNodeGraph to 
+    /// UsdShadeConnectableAPI, so that a NodeGraph can be passed into any 
+    /// function that accepts a ConnectableAPI.
     USDSHADE_API
-    operator UsdShadeConnectableAPI () const;
+    UsdShadeNodeGraph(const UsdShadeConnectableAPI &connectable);
 
     /// Contructs and returns a UsdShadeConnectableAPI object with this 
     /// node-graph.
@@ -211,7 +213,7 @@ public:
     /// 
     USDSHADE_API
     UsdShadeOutput CreateOutput(const TfToken& name,
-                                const SdfValueTypeName& typeName);
+                                const SdfValueTypeName& typeName) const;
 
     /// Return the requested output if it exists.
     /// 
@@ -222,7 +224,28 @@ public:
     /// 
     USDSHADE_API
     std::vector<UsdShadeOutput> GetOutputs() const;
-    
+
+    /// Resolves the connection source of the requested output, identified by
+    /// \p outputName to a shader output.
+    /// 
+    /// \p sourceName is an output parameter that is set to the name of the 
+    /// resolved output, if the node-graph output is connected to a valid 
+    /// shader source.
+    ///
+    /// \p sourceType is an output parameter that is set to the type of the 
+    /// resolved output, if the node-graph output is connected to a valid 
+    /// shader source.
+    /// 
+    /// \return Returns a valid shader object if the specified output exists and 
+    /// is connected to one. Return an empty shader object otherwise.
+    /// The python version of this method returns a tuple containing three 
+    /// elements (the source shader, sourceName, sourceType).
+    USDSHADE_API
+    UsdShadeShader ComputeOutputSource(
+        const TfToken &outputName, 
+        TfToken *sourceName, 
+        UsdShadeAttributeType *sourceType) const;
+
     /// @}
 
     /// \anchor UsdShadeNodeGraph_Interfaces
@@ -267,7 +290,7 @@ public:
     ///
     USDSHADE_API
     UsdShadeInput CreateInput(const TfToken& name,
-                              const SdfValueTypeName& typeName);
+                              const SdfValueTypeName& typeName) const;
 
     /// Return the requested input if it exists.
     /// 

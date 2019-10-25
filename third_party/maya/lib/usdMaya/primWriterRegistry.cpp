@@ -23,13 +23,22 @@
 //
 #include "pxr/pxr.h"
 #include "usdMaya/primWriterRegistry.h"
+
 #include "usdMaya/debugCodes.h"
+#include "usdMaya/functorPrimWriter.h"
 #include "usdMaya/registryHelper.h"
 
+#include "pxr/base/tf/debug.h"
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stl.h"
+#include "pxr/base/tf/token.h"
 
-#include <boost/assign.hpp>
+#include <map>
+#include <string>
+#include <utility>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -39,55 +48,71 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens,
         (PrimWriter)
 );
 
-typedef std::map<std::string, PxrUsdMayaPrimWriterRegistry::WriterFactoryFn> _Registry;
+typedef std::map<std::string, UsdMayaPrimWriterRegistry::WriterFactoryFn> _Registry;
 static _Registry _reg;
 
+
 /* static */
-void 
-PxrUsdMayaPrimWriterRegistry::Register(
+void
+UsdMayaPrimWriterRegistry::Register(
         const std::string& mayaTypeName,
-        PxrUsdMayaPrimWriterRegistry::WriterFactoryFn fn)
+        UsdMayaPrimWriterRegistry::WriterFactoryFn fn)
 {
     TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg(
-            "Registering UsdMayaPrimWriter for maya type %s.\n", mayaTypeName.c_str());
+        "Registering UsdMayaPrimWriter for maya type %s.\n",
+        mayaTypeName.c_str());
 
-    std::pair< _Registry::iterator, bool> insertStatus = 
+    std::pair< _Registry::iterator, bool> insertStatus =
         _reg.insert(std::make_pair(mayaTypeName, fn));
-    if (!insertStatus.second) {
-        TF_CODING_ERROR("Multiple writer for type %s", mayaTypeName.c_str());
-        insertStatus.first->second = fn;
+    if (insertStatus.second) {
+        UsdMaya_RegistryHelper::AddUnloader([mayaTypeName]() {
+            _reg.erase(mayaTypeName);
+        });
+    }
+    else {
+        TF_CODING_ERROR("Multiple writers for type %s", mayaTypeName.c_str());
     }
 }
 
 /* static */
-PxrUsdMayaPrimWriterRegistry::WriterFactoryFn
-PxrUsdMayaPrimWriterRegistry::Find(
-        const std::string& mayaTypeName)
+void
+UsdMayaPrimWriterRegistry::RegisterRaw(
+        const std::string& mayaTypeName,
+        UsdMayaPrimWriterRegistry::WriterFn fn)
 {
-    TfRegistryManager::GetInstance().SubscribeTo<PxrUsdMayaPrimWriterRegistry>();
+    Register(mayaTypeName, UsdMaya_FunctorPrimWriter::CreateFactory(fn));
+}
+
+/* static */
+UsdMayaPrimWriterRegistry::WriterFactoryFn
+UsdMayaPrimWriterRegistry::Find(const std::string& mayaTypeName)
+{
+    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaPrimWriterRegistry>();
 
     // unfortunately, usdTypeName is diff from the tfTypeName which we use to
     // register.  do the conversion here.
-    WriterFactoryFn ret = NULL;
+    WriterFactoryFn ret = nullptr;
     if (TfMapLookup(_reg, mayaTypeName, &ret)) {
         return ret;
     }
 
-    static std::vector<TfToken> SCOPE = boost::assign::list_of
-        (_tokens->UsdMaya)(_tokens->PrimWriter);
-    PxrUsdMaya_RegistryHelper::FindAndLoadMayaPlug(SCOPE, mayaTypeName);
+    static const TfTokenVector SCOPE = {
+        _tokens->UsdMaya,
+        _tokens->PrimWriter
+    };
+    UsdMaya_RegistryHelper::FindAndLoadMayaPlug(SCOPE, mayaTypeName);
 
     // ideally something just registered itself.  if not, we at least put it in
     // the registry in case we encounter it again.
     if (!TfMapLookup(_reg, mayaTypeName, &ret)) {
         TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg(
-                "No usdMaya writer plugin for maya type %s.  No maya plugin found.\n", 
-                mayaTypeName.c_str());
-        _reg[mayaTypeName] = NULL;
+            "No usdMaya writer plugin for maya type %s. No maya plugin found.\n",
+            mayaTypeName.c_str());
+        _reg[mayaTypeName] = nullptr;
     }
+
     return ret;
 }
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

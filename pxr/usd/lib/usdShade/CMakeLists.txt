@@ -6,17 +6,21 @@ pxr_library(usdShade
         tf
         vt
         sdf
+        ndr
+        sdr
         usd
         usdGeom
 
     PUBLIC_CLASSES
         connectableAPI
-        debugCodes
+        coordSysAPI
         input
         material
         materialBindingAPI
         output
         shader
+        shaderDefParser
+        shaderDefUtils
         nodeGraph
         tokens
         utils
@@ -30,11 +34,14 @@ pxr_library(usdShade
     PYMODULE_CPPFILES
         module.cpp
         wrapConnectableAPI.cpp
+        wrapCoordSysAPI.cpp
         wrapInput.cpp
         wrapMaterial.cpp
         wrapMaterialBindingAPI.cpp
         wrapOutput.cpp
         wrapShader.cpp
+        wrapShaderDefParser.cpp
+        wrapShaderDefUtils.cpp
         wrapNodeGraph.cpp
         wrapTokens.cpp
         wrapUtils.cpp
@@ -51,20 +58,28 @@ pxr_library(usdShade
 pxr_test_scripts(
     testenv/testUsdShadeBinding.py
     testenv/testUsdShadeConnectability.py
+    testenv/testUsdShadeCoordSysAPI.py
+    testenv/testUsdShadeGetValueProducingAttribute.py
     testenv/testUsdShadeInterfaceInputConsumers.py
     testenv/testUsdShadeMaterialBinding.py
-    testenv/testUsdShadeMaterialFaceSet.py
+    testenv/testUsdShadeMaterialOutputs.py
     testenv/testUsdShadeMaterialBindFaceSubset.py
     testenv/testUsdShadeMaterialAuthoring.py
     testenv/testUsdShadeMaterialBaseMaterial.py
     testenv/testUsdShadeMaterialSpecializesBaseComposition.py
     testenv/testUsdShadeNodeGraphs.py
     testenv/testUsdShadeShaders.py
+    testenv/testUsdShadeShaderDef.py
 )
 
 pxr_install_test_dir(
-    SRC testenv/testUsdShadeMaterialFaceSet
-    DEST testUsdShadeMaterialFaceSet
+    SRC testenv/testUsdShadeCoordSysAPI
+    DEST testUsdShadeCoordSysAPI
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdShadeGetValueProducingAttribute
+    DEST testUsdShadeGetValueProducingAttribute
 )
 
 pxr_install_test_dir(
@@ -95,9 +110,27 @@ pxr_install_test_dir(
     SRC testenv/testUsdShadeMaterialSpecializesBaseComposition
     DEST testUsdShadeMaterialSpecializesBaseComposition
 )
+
+pxr_install_test_dir(
+    SRC testenv/testUsdShadeShaderDef
+    DEST testUsdShadeShaderDef
+)
+
 pxr_register_test(testUsdShadeBinding
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeBinding"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdShadeCoordSysAPI
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeCoordSysAPI"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdShadeGetValueProducingAttribute
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeGetValueProducingAttribute"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -114,10 +147,9 @@ pxr_register_test(testUsdShadeMaterialBinding
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_register_test(testUsdShadeMaterialFaceSet
+pxr_register_test(testUsdShadeMaterialOutputs
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeMaterialFaceSet"
-    DIFF_COMPARE SphereWithFaceSets.usda
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeMaterialOutputs"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -131,6 +163,12 @@ pxr_register_test(testUsdShadeMaterialBindFaceSubset
 pxr_register_test(testUsdShadeShaders
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeShaders"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdShadeShaderDef
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeShaderDef"
     EXPECTED_RETURN_CODE 0
 )
 

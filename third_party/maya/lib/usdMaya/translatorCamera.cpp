@@ -21,10 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/translatorCamera.h"
 
-#include "usdMaya/JobArgs.h"
+#include "usdMaya/jobArgs.h"
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 #include "usdMaya/translatorUtil.h"
@@ -33,6 +32,7 @@
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
+
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/timeCode.h"
@@ -54,8 +54,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 static bool _ReadToCamera(
         const UsdGeomCamera& usdCamera,
         MFnCamera& cameraObject,
-        const PxrUsdMayaPrimReaderArgs& args,
-        PxrUsdMayaPrimReaderContext* context);
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext* context);
 
 TF_DEFINE_PRIVATE_TOKENS(_tokens,
     ((MayaCameraTypeName, "camera"))
@@ -79,7 +79,7 @@ bool
 _CheckUsdTypeAndResizeArrays(
         const UsdAttribute& usdAttr,
         const TfType& expectedType,
-        const PxrUsdMayaPrimReaderArgs& args,
+        const GfInterval& timeInterval,
         std::vector<double>* timeSamples,
         MTimeArray* timeArray,
         MDoubleArray* valueArray)
@@ -92,7 +92,7 @@ _CheckUsdTypeAndResizeArrays(
         return false;
     }
 
-    if (!PxrUsdMayaTranslatorUtil::GetTimeSamples(usdAttr, args, timeSamples)) {
+    if (!usdAttr.GetTimeSamplesInInterval(timeInterval, timeSamples)) {
         return false;
     }
 
@@ -111,7 +111,7 @@ static
 bool
 _GetTimeAndValueArrayForUsdAttribute(
         const UsdAttribute& usdAttr,
-        const PxrUsdMayaPrimReaderArgs& args,
+        const GfInterval& timeInterval,
         MTimeArray* timeArray,
         MDoubleArray* valueArray,
         const MDistance::Unit convertToUnit = MDistance::kMillimeters)
@@ -121,7 +121,7 @@ _GetTimeAndValueArrayForUsdAttribute(
 
     if (!_CheckUsdTypeAndResizeArrays(usdAttr,
                                       floatType,
-                                      args,
+                                      timeInterval,
                                       &timeSamples,
                                       timeArray,
                                       valueArray)) {
@@ -139,10 +139,10 @@ _GetTimeAndValueArrayForUsdAttribute(
 
         switch (convertToUnit) {
             case MDistance::kInches:
-                attrValue = PxrUsdMayaUtil::ConvertMMToInches(attrValue);
+                attrValue = UsdMayaUtil::ConvertMMToInches(attrValue);
                 break;
             case MDistance::kCentimeters:
-                attrValue = PxrUsdMayaUtil::ConvertMMToCM(attrValue);
+                attrValue = UsdMayaUtil::ConvertMMToCM(attrValue);
                 break;
             default:
                 // The input is expected to be in millimeters.
@@ -163,7 +163,7 @@ static
 bool
 _GetTimeAndValueArraysForUsdAttribute(
         const UsdAttribute& usdAttr,
-        const PxrUsdMayaPrimReaderArgs& args,
+        const GfInterval& timeInterval,
         MTimeArray* timeArray,
         MDoubleArray* valueArray1,
         MDoubleArray* valueArray2)
@@ -173,7 +173,7 @@ _GetTimeAndValueArraysForUsdAttribute(
 
     if (!_CheckUsdTypeAndResizeArrays(usdAttr,
                                       vec2fType,
-                                      args,
+                                      timeInterval,
                                       &timeSamples,
                                       timeArray,
                                       valueArray1)) {
@@ -203,11 +203,11 @@ _CreateAnimCurveForPlug(
         MPlug& plug,
         MTimeArray& timeArray,
         MDoubleArray& valueArray,
-        PxrUsdMayaPrimReaderContext* context)
+        UsdMayaPrimReaderContext* context)
 {
     MFnAnimCurve animFn;
     MStatus status;
-    MObject animObj = animFn.create(plug, NULL, &status);
+    MObject animObj = animFn.create(plug, nullptr, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     status = animFn.addKeys(&timeArray, &valueArray);
@@ -226,18 +226,18 @@ bool
 _TranslateAnimatedUsdAttributeToPlug(
         const UsdAttribute& usdAttr,
         MPlug& plug,
-        const PxrUsdMayaPrimReaderArgs& args,
-        PxrUsdMayaPrimReaderContext* context,
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext* context,
         const MDistance::Unit convertToUnit = MDistance::kMillimeters)
 {
-    if (!args.GetReadAnimData()) {
+    if (args.GetTimeInterval().IsEmpty()) {
         return false;
     }
 
     MTimeArray timeArray;
     MDoubleArray valueArray;
     if (!_GetTimeAndValueArrayForUsdAttribute(usdAttr,
-                                              args,
+                                              args.GetTimeInterval(),
                                               &timeArray,
                                               &valueArray,
                                               convertToUnit)) {
@@ -257,10 +257,10 @@ _TranslateAnimatedUsdAttributeToPlugs(
         const UsdAttribute& usdAttr,
         MPlug& plug1,
         MPlug& plug2,
-        const PxrUsdMayaPrimReaderArgs& args,
-        PxrUsdMayaPrimReaderContext* context)
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext* context)
 {
-    if (!args.GetReadAnimData()) {
+    if (args.GetTimeInterval().IsEmpty()) {
         return false;
     }
 
@@ -268,7 +268,7 @@ _TranslateAnimatedUsdAttributeToPlugs(
     MDoubleArray valueArray1;
     MDoubleArray valueArray2;
     if (!_GetTimeAndValueArraysForUsdAttribute(usdAttr,
-                                               args,
+                                               args.GetTimeInterval(),
                                                &timeArray,
                                                &valueArray1,
                                                &valueArray2)) {
@@ -291,9 +291,9 @@ bool
 _TranslateUsdAttributeToPlug(
         const UsdAttribute& usdAttr,
         const MFnCamera& cameraFn,
-        TfToken plugName,
-        const PxrUsdMayaPrimReaderArgs& args,
-        PxrUsdMayaPrimReaderContext* context,
+        const TfToken& plugName,
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext* context,
         const MDistance::Unit convertToUnit = MDistance::kMillimeters)
 {
     MStatus status;
@@ -314,10 +314,10 @@ _TranslateUsdAttributeToPlug(
 
         switch (convertToUnit) {
             case MDistance::kInches:
-                attrValue = PxrUsdMayaUtil::ConvertMMToInches(attrValue);
+                attrValue = UsdMayaUtil::ConvertMMToInches(attrValue);
                 break;
             case MDistance::kCentimeters:
-                attrValue = PxrUsdMayaUtil::ConvertMMToCM(attrValue);
+                attrValue = UsdMayaUtil::ConvertMMToCM(attrValue);
                 break;
             default:
                 // The input is expected to be in millimeters.
@@ -333,11 +333,11 @@ _TranslateUsdAttributeToPlug(
 
 /* static */
 bool
-PxrUsdMayaTranslatorCamera::Read(
+UsdMayaTranslatorCamera::Read(
         const UsdGeomCamera& usdCamera,
         MObject parentNode,
-        const PxrUsdMayaPrimReaderArgs& args,
-        PxrUsdMayaPrimReaderContext* context)
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext* context)
 {
     if (!usdCamera) {
         return false;
@@ -350,7 +350,7 @@ PxrUsdMayaTranslatorCamera::Read(
 
     // Create the transform node for the camera.
     MObject transformObj;
-    if (!PxrUsdMayaTranslatorUtil::CreateTransformNode(prim,
+    if (!UsdMayaTranslatorUtil::CreateTransformNode(prim,
                                                        parentNode,
                                                        args,
                                                        context,
@@ -385,29 +385,23 @@ PxrUsdMayaTranslatorCamera::Read(
 
 /* static */
 bool
-PxrUsdMayaTranslatorCamera::ReadToCamera(
+UsdMayaTranslatorCamera::ReadToCamera(
         const UsdGeomCamera& usdCamera,
         MFnCamera& cameraObject)
 {
-    JobImportArgs defaultJobArgs;
-    PxrUsdMayaPrimReaderArgs args(
-            usdCamera.GetPrim(),
-            defaultJobArgs.shadingMode,
-            defaultJobArgs.defaultMeshScheme,
-            defaultJobArgs.readAnimData,
-            defaultJobArgs.useCustomFrameRange,
-            defaultJobArgs.startTime,
-            defaultJobArgs.endTime);
-
-    return _ReadToCamera(usdCamera, cameraObject, args, NULL);
+    UsdMayaJobImportArgs defaultJobArgs =
+            UsdMayaJobImportArgs::CreateFromDictionary(
+                UsdMayaJobImportArgs::GetDefaultDictionary());
+    UsdMayaPrimReaderArgs args(usdCamera.GetPrim(), defaultJobArgs);
+    return _ReadToCamera(usdCamera, cameraObject, args, nullptr);
 }
 
 bool
 _ReadToCamera(
         const UsdGeomCamera& usdCamera,
         MFnCamera& cameraFn,
-        const PxrUsdMayaPrimReaderArgs& args,
-        PxrUsdMayaPrimReaderContext* context)
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext* context)
 {
     MStatus status;
 

@@ -40,6 +40,10 @@ struct HdPointsReprDesc {
         HdPointsGeomStyle geomStyle = HdPointsGeomStyleInvalid)
         : geomStyle(geomStyle)
         {}
+    
+    bool IsEmpty() const {
+        return geomStyle == HdPointsGeomStyleInvalid;
+    }
 
     HdPointsGeomStyle geomStyle;
 };

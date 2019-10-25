@@ -45,16 +45,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static std::auto_ptr<PcpCache>
-_New(const PcpLayerStackIdentifier& identifier,
-     const std::string& targetSchema,
-     bool usd,
-     const PcpPayloadDecoratorRefPtr& payloadDecorator)
-{
-    return std::auto_ptr<PcpCache>(
-        new PcpCache(identifier, targetSchema, usd, payloadDecorator));
-}
-
 static boost::python::tuple
 _ComputeLayerStack( PcpCache &cache, 
                     const PcpLayerStackIdentifier &identifier ) 
@@ -235,15 +225,14 @@ _Reload( PcpCache & cache )
 void 
 wrapCache()
 {
-    class_<PcpCache, std::auto_ptr<PcpCache>, boost::noncopyable> 
-        ("Cache", no_init)
-
-        .def("__init__", 
-             make_constructor(_New, default_call_policies(),
-                 (arg("layerStackIdentifier"),
-                  arg("targetSchema") = std::string(),
-                  arg("usd") = false,
-                  arg("payloadDecorator") = PcpPayloadDecoratorRefPtr())))
+    class_<PcpCache, boost::noncopyable> 
+        ("Cache", 
+         init<const PcpLayerStackIdentifier&,
+              const std::string&, 
+              bool>(
+              (arg("layerStackIdentifier"),
+               arg("fileFormatTarget") = std::string(),
+               arg("usd") = false)))
 
         // Note: The following parameters are not wrapped as a properties
         // because setting them may require returning additional out-
@@ -267,8 +256,8 @@ wrapCache()
              (args("layerIdentifier")))
 
         .add_property("layerStack", &PcpCache::GetLayerStack)
-        .add_property("targetSchema", 
-                      make_function(&PcpCache::GetTargetSchema,
+        .add_property("fileFormatTarget", 
+                      make_function(&PcpCache::GetFileFormatTarget,
                                     return_value_policy<return_by_value>()))
 
         .def("ComputeLayerStack", &_ComputeLayerStack)
@@ -306,6 +295,14 @@ wrapCache()
         .def("IsInvalidAssetPath", &PcpCache::IsInvalidAssetPath)
         .def("IsInvalidSublayerIdentifier", 
              &PcpCache::IsInvalidSublayerIdentifier)
+
+        .def("HasAnyDynamicFileFormatArgumentDependencies", 
+             &PcpCache::HasAnyDynamicFileFormatArgumentDependencies)
+        .def("IsPossibleDynamicFileFormatArgumentField", 
+             &PcpCache::IsPossibleDynamicFileFormatArgumentField)
+        .def("GetDynamicFileFormatArgumentDependencyData", 
+             &PcpCache::GetDynamicFileFormatArgumentDependencyData,
+             return_value_policy<reference_existing_object>())
 
         .def("PrintStatistics", &PcpCache::PrintStatistics)
         .def("Reload", &_Reload)

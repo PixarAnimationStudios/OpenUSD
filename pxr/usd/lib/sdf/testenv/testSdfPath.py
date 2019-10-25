@@ -124,17 +124,18 @@ class TestSdfPath(unittest.TestCase):
         
         # Test IsAbsolutePath and IsPropertyPath
         def BasicTest(path, elements):
-            assert path.IsAbsolutePath() == testAbsolute[testIndex]
-            assert path.IsPropertyPath() == testProperty[testIndex]
+            self.assertEqual(path.IsAbsolutePath(), testAbsolute[testIndex])
+            self.assertEqual(path.IsPropertyPath(), testProperty[testIndex])
             prefixes = Sdf._PathElemsToPrefixes(path.IsAbsolutePath(), elements)
-            assert path.GetPrefixes() == prefixes
-            assert path == eval(repr(path))
+            self.assertEqual(path.GetPrefixes(), prefixes)
+            self.assertEqual(path, eval(repr(path)))
             assert Sdf.Path.IsValidPathString(str(path))
         
         testPaths = list()
         for testIndex in range(len(testPathStrings)):
             string = testPathStrings[testIndex]
-        
+            self.assertEqual(string, str(Sdf.Path(string)))
+
             # Test path
             testPaths.append(Sdf.Path(string))
             BasicTest(testPaths[-1], testElements[testIndex])
@@ -259,6 +260,12 @@ class TestSdfPath(unittest.TestCase):
         primPath = Sdf.Path("/A/B/C").GetPrimPath()
         self.assertEqual(primPath, Sdf.Path("/A/B/C"))
         
+        primPath = Sdf.Path("/A/B/C{set=sel}").GetPrimPath()
+        self.assertEqual(primPath, Sdf.Path("/A/B/C"))
+
+        primPath = Sdf.Path("/A/B{set=sel}C").GetPrimPath()
+        self.assertEqual(primPath, Sdf.Path("/A/B{set=sel}C"))
+
         primPath = Sdf.Path("/A/B/C.foo").GetPrimPath()
         self.assertEqual(primPath, Sdf.Path("/A/B/C"))
         primPath = Sdf.Path("/A/B/C.foo:bar:baz").GetPrimPath()
@@ -286,6 +293,36 @@ class TestSdfPath(unittest.TestCase):
         
         print '\tPassed'
         
+        # ========================================================================
+        # Test GetPrimOrPrimVariantSelectionPath
+        # ========================================================================
+        print "Test GetPrimOrPrimVariantSelectionPath"
+        
+        primPath = Sdf.Path("/A/B/C{set=sel}").GetPrimOrPrimVariantSelectionPath()
+        self.assertEqual(primPath, Sdf.Path("/A/B/C{set=sel}"))
+        
+        primPath = Sdf.Path("/A/B/C{set=sel}.foo").GetPrimOrPrimVariantSelectionPath()
+        self.assertEqual(primPath, Sdf.Path("/A/B/C{set=sel}"))
+        primPath = Sdf.Path("/A/B/C{set=sel}.foo:bar:baz").GetPrimOrPrimVariantSelectionPath()
+        self.assertEqual(primPath, Sdf.Path("/A/B/C{set=sel}"))
+        
+        primPath = Sdf.Path("/A/B/C{set=sel}.foo[target].bar").GetPrimOrPrimVariantSelectionPath()
+        self.assertEqual(primPath, Sdf.Path("/A/B/C{set=sel}"))
+        primPath = Sdf.Path("/A/B/C{set=sel}.foo[target].bar:baz").GetPrimOrPrimVariantSelectionPath()
+        self.assertEqual(primPath, Sdf.Path("/A/B/C{set=sel}"))
+        
+        primPath = Sdf.Path("A/B/C{set=sel}.foo[target].bar").GetPrimOrPrimVariantSelectionPath()
+        self.assertEqual(primPath, Sdf.Path("A/B/C{set=sel}"))
+        primPath = Sdf.Path("A/B/C{set=sel}.foo[target].bar:baz").GetPrimOrPrimVariantSelectionPath()
+        self.assertEqual(primPath, Sdf.Path("A/B/C{set=sel}"))
+        
+        primPath = Sdf.Path("../C{set=sel}.foo").GetPrimOrPrimVariantSelectionPath()
+        self.assertEqual(primPath, Sdf.Path("../C{set=sel}"))
+        primPath = Sdf.Path("../C{set=sel}.foo:bar:baz").GetPrimOrPrimVariantSelectionPath()
+        self.assertEqual(primPath, Sdf.Path("../C{set=sel}"))
+        
+        print '\tPassed'
+
         # ========================================================================
         # Test HasPrefix and ReplacePrefix
         # ========================================================================
@@ -322,10 +359,27 @@ class TestSdfPath(unittest.TestCase):
         
         # Test replacing target paths.
         p = Sdf.Path('/A/B.a[/C/D.a[/A/F.a]].a')
-        assert (p.ReplacePrefix('/A', '/_', fixTargetPaths=False)
-                == Sdf.Path('/_/B.a[/C/D.a[/A/F.a]].a'))
-        assert (p.ReplacePrefix('/A', '/_', fixTargetPaths=True)
-                == Sdf.Path('/_/B.a[/C/D.a[/_/F.a]].a'))
+        self.assertEqual(p.ReplacePrefix('/A', '/_', fixTargetPaths=False),
+                         Sdf.Path('/_/B.a[/C/D.a[/A/F.a]].a'))
+        self.assertEqual(p.ReplacePrefix('/A', '/_', fixTargetPaths=True),
+                         Sdf.Path('/_/B.a[/C/D.a[/_/F.a]].a'))
+
+        self.assertEqual(Sdf.Path('/Model/Sym/B.r[/Model/Sym/B.x]').
+                         ReplacePrefix('/Model/Sym/B.x', '/Model/Sym/B.x2'),
+                         Sdf.Path('/Model/Sym/B.r[/Model/Sym/B.x2]'))
+
+        # ReplacePrefix with an empty old or new prefix returns an empty path.
+        self.assertEqual(Sdf.Path("/A/B").ReplacePrefix(Sdf.Path.emptyPath, "/C"),
+                         Sdf.Path.emptyPath)
+        self.assertEqual(Sdf.Path("/A/B").ReplacePrefix("/A", Sdf.Path.emptyPath),
+                         Sdf.Path.emptyPath)
+
+        self.assertEqual(Sdf.Path.emptyPath.ReplacePrefix(Sdf.Path.emptyPath, "/C"),
+                         Sdf.Path.emptyPath)
+        self.assertEqual(Sdf.Path.emptyPath.ReplacePrefix("/A", Sdf.Path.emptyPath),
+                         Sdf.Path.emptyPath)
+        self.assertEqual(Sdf.Path.emptyPath.ReplacePrefix("/A", "/B"),
+                         Sdf.Path.emptyPath)
         
         # ========================================================================
         # Test RemoveCommonSuffix
@@ -625,8 +679,8 @@ class TestSdfPath(unittest.TestCase):
             Sdf.Path().AppendPath( Sdf.Path('A') )
         
         # append to root/prim path
-        assert Sdf.Path('/').AppendPath( Sdf.Path('A') ) == Sdf.Path('/A')
-        assert Sdf.Path('/A').AppendPath( Sdf.Path('B') ) == Sdf.Path('/A/B')
+        self.assertEqual(Sdf.Path('/').AppendPath( Sdf.Path('A') ), Sdf.Path('/A'))
+        self.assertEqual(Sdf.Path('/A').AppendPath( Sdf.Path('B') ), Sdf.Path('/A/B'))
         
         # append empty to root/prim path -> no change
         with self.assertRaises(Tf.ErrorException):
@@ -824,7 +878,7 @@ class TestSdfPath(unittest.TestCase):
         # ========================================================================
         
         def testFindPrefixedRangeAndFindLongestPrefix():
-            print "Test FindPrefixedRange and FindLongestPrefix"
+            print "Test FindPrefixedRange and FindLongest(Strict)Prefix"
         
             import random, time
             rgen = random.Random()
@@ -879,25 +933,45 @@ class TestSdfPath(unittest.TestCase):
                 self.assertEqual(lp, bruteLongest, ('lp (%s) != bruteLongest (%s)' % 
                                             (lp, bruteLongest)))
         
+            def testFindLongestStrictPrefix(p, paths):
+                lp = Sdf.Path.FindLongestStrictPrefix(paths, p)
+                # should always have some prefix unless p is '/'.
+                if p == Sdf.Path('/'):
+                    return
+                self.assertTrue(p.HasPrefix(lp))
+                # manually find longest prefix of p's parent.
+                p = p.GetParentPath()
+                bruteLongest = Sdf.Path('/')
+                for x in paths:
+                    if (p.HasPrefix(x) and 
+                        x.pathElementCount > bruteLongest.pathElementCount):
+                        bruteLongest = x
+                # bruteLongest should match.
+                #print 'path:', p, 'lp:', lp, 'bruteLongest:', bruteLongest
+                self.assertEqual(lp, bruteLongest,
+                                 ('lp (%s) != bruteLongest (%s)' % 
+                                  (lp, bruteLongest)))
+
             for testp in tests:
                 testFindPrefixedRange(testp, paths)
                 testFindLongestPrefix(testp, paths)
+                testFindLongestStrictPrefix(testp, paths)
         
             # Do a few simple cases directly.
             paths = map(Sdf.Path, ['/a', '/a/b/c/d', '/b/a', '/b/c/d/e'])
             flp = Sdf.Path.FindLongestPrefix
-            assert flp(paths, '/x') == None
-            assert flp(paths, '/a') == Sdf.Path('/a')
-            assert flp(paths, '/a/a/a') == Sdf.Path('/a')
-            assert flp(paths, '/a/c/d/e/f') == Sdf.Path('/a')
-            assert flp(paths, '/a/b/c/d') == Sdf.Path('/a/b/c/d')
-            assert flp(paths, '/a/b/c/d/a/b/c/d') == Sdf.Path('/a/b/c/d')
-            assert flp(paths, '/a/b/c/e/f/g') == Sdf.Path('/a')
-            assert flp(paths, '/b') == None
-            assert flp(paths, '/b/a/b/c/d/e') == Sdf.Path('/b/a')
-            assert flp(paths, '/b/c/d/e/f/g') == Sdf.Path('/b/c/d/e')
-            assert flp(paths, '/b/c/d/e') == Sdf.Path('/b/c/d/e')
-            assert flp(paths, '/b/c/x/y/z') == None
+            self.assertEqual(flp(paths, '/x'), None)
+            self.assertEqual(flp(paths, '/a'), Sdf.Path('/a'))
+            self.assertEqual(flp(paths, '/a/a/a'), Sdf.Path('/a'))
+            self.assertEqual(flp(paths, '/a/c/d/e/f'), Sdf.Path('/a'))
+            self.assertEqual(flp(paths, '/a/b/c/d'), Sdf.Path('/a/b/c/d'))
+            self.assertEqual(flp(paths, '/a/b/c/d/a/b/c/d'), Sdf.Path('/a/b/c/d'))
+            self.assertEqual(flp(paths, '/a/b/c/e/f/g'), Sdf.Path('/a'))
+            self.assertEqual(flp(paths, '/b'), None)
+            self.assertEqual(flp(paths, '/b/a/b/c/d/e'), Sdf.Path('/b/a'))
+            self.assertEqual(flp(paths, '/b/c/d/e/f/g'), Sdf.Path('/b/c/d/e'))
+            self.assertEqual(flp(paths, '/b/c/d/e'), Sdf.Path('/b/c/d/e'))
+            self.assertEqual(flp(paths, '/b/c/x/y/z'), None)
         
         testFindPrefixedRangeAndFindLongestPrefix()
         

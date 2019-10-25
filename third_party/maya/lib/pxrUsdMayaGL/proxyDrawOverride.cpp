@@ -26,12 +26,17 @@
 
 #include "pxrUsdMayaGL/batchRenderer.h"
 #include "pxrUsdMayaGL/renderParams.h"
-#include "pxrUsdMayaGL/shapeAdapter.h"
+#include "pxrUsdMayaGL/usdProxyShapeAdapter.h"
+
+#include "px_vp20/utils.h"
+
 #include "usdMaya/proxyShape.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3f.h"
+#include "pxr/base/tf/stringUtils.h"
 
+#include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
 #include <maya/MDrawContext.h>
@@ -51,8 +56,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-MString UsdMayaProxyDrawOverride::sm_drawDbClassification("drawdb/geometry/usdMaya");
-MString UsdMayaProxyDrawOverride::sm_drawRegistrantId("pxrUsdPlugin");
+const MString UsdMayaProxyDrawOverride::drawDbClassification(
+    TfStringPrintf("drawdb/geometry/pxrUsdMayaGL/%s",
+                   UsdMayaProxyShapeTokens->MayaTypeName.GetText()).c_str());
 
 /* static */
 MHWRender::MPxDrawOverride*
@@ -103,7 +109,7 @@ UsdMayaProxyDrawOverride::transform(
     MStatus status;
     const MMatrix transform = objPath.inclusiveMatrix(&status);
     if (status == MS::kSuccess) {
-        const_cast<PxrMayaHdShapeAdapter&>(_shapeAdapter).SetRootXform(
+        const_cast<PxrMayaHdUsdProxyShapeAdapter&>(_shapeAdapter).SetRootXform(
             GfMatrix4d(transform.matrix));
     }
 
@@ -116,6 +122,14 @@ UsdMayaProxyDrawOverride::boundingBox(
         const MDagPath& objPath,
         const MDagPath& /* cameraPath */) const
 {
+    // If a proxy shape is connected to a Maya instancer, a draw override will
+    // be generated for the proxy shape, but callbacks will get the instancer
+    // DAG path instead. Since we properly handle instancers using the
+    // UsdMayaGL_InstancerImager, silently ignore this weird case.
+    if (objPath.apiType() == MFn::kInstancer) {
+        return MBoundingBox();
+    }
+
     UsdMayaProxyShape* pShape = UsdMayaProxyShape::GetShapeAtDagPath(objPath);
     if (!pShape) {
         return MBoundingBox();
@@ -130,7 +144,42 @@ UsdMayaProxyDrawOverride::isBounded(
         const MDagPath& objPath,
         const MDagPath& /* cameraPath */) const
 {
-    return UsdMayaIsBoundingBoxModeEnabled();
+    // XXX: Ideally, we'd be querying the shape itself using the code below to
+    // determine whether the object is bounded or not. Unfortunately, the
+    // shape's bounded-ness is based on the PIXMAYA_ENABLE_BOUNDING_BOX_MODE
+    // environment variable, which is almost never enabled. This is because we
+    // want Maya to bypass its own costly CPU-based frustum culling in favor
+    // of Hydra's higher performance implementation.
+    // However, this causes problems for features in Viewport 2.0 such as
+    // automatic computation of width focus for directional lights since it
+    // cannot get a bounding box for the shape.
+    // It would be preferable to just remove the use of
+    // PIXMAYA_ENABLE_BOUNDING_BOX_MODE in the shape's isBounded() method,
+    // especially since we instruct Maya not to draw bounding boxes in
+    // disableInternalBoundingBoxDraw() below, but trying to do that caused
+    // performance degradation in selection.
+    // So rather than ask the shape whether it is bounded or not, the draw
+    // override simply *always* considers the shape bounded. Hopefully at some
+    // point we can get Maya to fully bypass all of its frustum culling and
+    // remove PIXMAYA_ENABLE_BOUNDING_BOX_MODE.
+    return true;
+
+    // UsdMayaProxyShape* pShape = UsdMayaProxyShape::GetShapeAtDagPath(objPath);
+    // if (!pShape) {
+    //     return false;
+    // }
+
+    // return pShape->isBounded();
+}
+
+/* virtual */
+bool
+UsdMayaProxyDrawOverride::disableInternalBoundingBoxDraw() const
+{
+    // Hydra performs its own high-performance frustum culling, so we don't
+    // want to rely on Maya to do it on the CPU. As such, the best performance
+    // comes from telling Maya *not* to draw bounding boxes.
+    return true;
 }
 
 /* virtual */
@@ -141,13 +190,21 @@ UsdMayaProxyDrawOverride::prepareForDraw(
         const MHWRender::MFrameContext& frameContext,
         MUserData* oldData)
 {
+    // If a proxy shape is connected to a Maya instancer, a draw override will
+    // be generated for the proxy shape, but callbacks will get the instancer
+    // DAG path instead. Since we properly handle instancer drawing in this
+    // library (using the pxrHdImagingShape), we can safely ignore this case.
+    if (objPath.apiType() == MFn::kInstancer) {
+        return nullptr;
+    }
+
     UsdMayaProxyShape* shape = UsdMayaProxyShape::GetShapeAtDagPath(objPath);
     if (!shape) {
         return nullptr;
     }
 
     if (!_shapeAdapter.Sync(
-            shape,
+            objPath,
             frameContext.getDisplayStyle(),
             MHWRender::MGeometryUtilities::displayStatus(objPath))) {
         return nullptr;
@@ -157,30 +214,25 @@ UsdMayaProxyDrawOverride::prepareForDraw(
 
     bool drawShape;
     bool drawBoundingBox;
-    PxrMayaHdRenderParams params =
-        _shapeAdapter.GetRenderParams(&drawShape, &drawBoundingBox);
+    _shapeAdapter.GetRenderParams(&drawShape, &drawBoundingBox);
 
     if (!drawBoundingBox && !drawShape) {
         // We weren't asked to do anything.
         return nullptr;
     }
 
-    MBoundingBox bounds;
-    MBoundingBox* boundsPtr = nullptr;
+    MBoundingBox boundingBox;
+    MBoundingBox* boundingBoxPtr = nullptr;
     if (drawBoundingBox) {
         // Only query for the bounding box if we're drawing it.
-        bounds = shape->boundingBox();
-        boundsPtr = &bounds;
+        boundingBox = shape->boundingBox();
+        boundingBoxPtr = &boundingBox;
     }
 
-    return UsdMayaGLBatchRenderer::GetInstance().CreateBatchDrawData(
-        oldData,
-        params,
-        drawShape,
-        boundsPtr);
+    return _shapeAdapter.GetMayaUserData(oldData, boundingBoxPtr);
 }
 
-#if MAYA_API_VERSION >= 201800
+#if MAYA_API_VERSION >= 20180000
 
 /* virtual */
 bool
@@ -197,19 +249,20 @@ UsdMayaProxyDrawOverride::wantUserSelection() const
 /* virtual */
 bool
 UsdMayaProxyDrawOverride::userSelect(
-        MHWRender::MSelectionInfo& selectInfo,
+        MHWRender::MSelectionInfo& selectionInfo,
         const MHWRender::MDrawContext& context,
         MPoint& hitPoint,
         const MUserData* data)
 {
-    MSelectionMask objectsMask(MSelectionMask::kSelectObjectsMask);
-    if (!selectInfo.selectable(objectsMask)) {
+    M3dView view;
+    const bool hasView = px_vp20Utils::GetViewFromDrawContext(context, view);
+    if (hasView &&
+            !view.pluginObjectDisplay(UsdMayaProxyShape::displayFilterName)) {
         return false;
     }
 
-    UsdMayaProxyShape* shape =
-        UsdMayaProxyShape::GetShapeAtDagPath(_shapeAdapter._shapeDagPath);
-    if (!shape) {
+    MSelectionMask objectsMask(MSelectionMask::kSelectObjectsMask);
+    if (!selectionInfo.selectable(objectsMask)) {
         return false;
     }
 
@@ -223,27 +276,31 @@ UsdMayaProxyDrawOverride::userSelect(
     // first time. We do not add it to the batch renderer though, since that
     // must have already been done to have caused the shape to be drawn and
     // become eligible for selection.
-    if (!_shapeAdapter.Sync(shape, displayStyle, displayStatus)) {
+    if (!_shapeAdapter.Sync(
+            _shapeAdapter._shapeDagPath, displayStyle, displayStatus)) {
         return false;
     }
 
-    GfVec3f batchHitPoint;
-    const bool didHit =
+    const HdxPickHitVector* hitSet =
         UsdMayaGLBatchRenderer::GetInstance().TestIntersection(
             &_shapeAdapter,
-            selectInfo,
-            context,
-            selectInfo.singleSelection(),
-            &batchHitPoint);
+            selectionInfo,
+            context);
 
-    if (didHit) {
-        hitPoint = MPoint(batchHitPoint[0], batchHitPoint[1], batchHitPoint[2]);
+    const HdxPickHit* nearestHit =
+        UsdMayaGLBatchRenderer::GetNearestHit(hitSet);
+
+    if (!nearestHit) {
+        return false;
     }
 
-    return didHit;
+    const GfVec3f& gfHitPoint = nearestHit->worldSpaceHitPoint;
+    hitPoint = MPoint(gfHitPoint[0], gfHitPoint[1], gfHitPoint[2]);
+
+    return true;
 }
 
-#endif // MAYA_API_VERSION >= 201800
+#endif // MAYA_API_VERSION >= 20180000
 
 /* static */
 void
@@ -251,6 +308,10 @@ UsdMayaProxyDrawOverride::draw(
         const MHWRender::MDrawContext& context,
         const MUserData* data)
 {
+    // Note that this Draw() call is only necessary when we're drawing the
+    // bounding box, since that is not yet handled by Hydra and is instead done
+    // internally by the batch renderer on a per-shape basis. Otherwise, the
+    // pxrHdImagingShape is what will invoke Hydra to draw the shape.
     UsdMayaGLBatchRenderer::GetInstance().Draw(context, data);
 }
 

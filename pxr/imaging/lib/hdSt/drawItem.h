@@ -53,7 +53,7 @@ public:
         return _geometricShader;
     }
 
-    HdStShaderCodeSharedPtr GetMaterialShader() const {
+    HdStShaderCodeSharedPtr const &GetMaterialShader() const {
         return _materialShader;
     }
 
@@ -68,6 +68,9 @@ public:
         const HdRenderIndex &renderIndex,
         const SdfPath &materialId,
         std::string mixinSource = std::string());
+
+protected:
+    size_t _GetBufferArraysHash() const override;
 
 private:
     HdSt_GeometricShaderSharedPtr _geometricShader;

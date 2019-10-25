@@ -53,15 +53,16 @@ _BuildArray(T values[], int numValues)
 class Hdx_UnitTestDelegate : public HdSceneDelegate
 {
 public:
-    enum Interpolation { VERTEX, UNIFORM, CONSTANT, FACEVARYING, VARYING };
-
     Hdx_UnitTestDelegate(HdRenderIndex *renderIndex);
 
     void SetRefineLevel(int level);
 
     // camera
     void SetCamera(GfMatrix4d const &viewMatrix, GfMatrix4d const &projMatrix);
-    void SetCamera(SdfPath const &id, GfMatrix4d const &viewMatrix, GfMatrix4d const &projMatrix);
+    void SetCamera(
+        SdfPath const &id, 
+        GfMatrix4d const &viewMatrix, 
+        GfMatrix4d const &projMatrix);
     void AddCamera(SdfPath const &id);
 
     // light
@@ -80,6 +81,7 @@ public:
     void AddSelectionTask(SdfPath const &id);
     void AddDrawTargetTask(SdfPath const &id);
     void AddDrawTargetResolveTask(SdfPath const &id);
+    void AddPickTask(SdfPath const &id);
 
     void SetTaskParam(SdfPath const &id, TfToken const &name, VtValue val);
     VtValue GetTaskParam(SdfPath const &id, TfToken const &name);
@@ -121,18 +123,23 @@ public:
                  VtIntArray const &verts,
                  PxOsdSubdivTags const &subdivTags,
                  VtValue const &color,
-                 Interpolation colorInterpolation,
+                 HdInterpolation colorInterpolation,
+                 VtValue const &opacity,
+                 HdInterpolation opacityInterpolation,
                  bool guide=false,
                  SdfPath const &instancerId=SdfPath(),
                  TfToken const &scheme=PxOsdOpenSubdivTokens->catmark,
                  TfToken const &orientation=HdTokens->rightHanded,
                  bool doubleSided=false);
 
-    void AddCube(SdfPath const &id, GfMatrix4d const &transform, bool guide=false,
+    void AddCube(SdfPath const &id, GfMatrix4d const &transform, 
+                 bool guide=false,
                  SdfPath const &instancerId=SdfPath(),
                  TfToken const &scheme=PxOsdOpenSubdivTokens->catmark,
-                 VtValue const &color = VtValue(GfVec4f(1,1,1,1)),
-                 Interpolation colorInterpolation = CONSTANT);
+                 VtValue const &color = VtValue(GfVec3f(1,1,1)),
+                 HdInterpolation colorInterpolation = HdInterpolationConstant,
+                 VtValue const &opacity = VtValue(1.0f),
+                 HdInterpolation opacityInterpolation = HdInterpolationConstant);
 
     void AddGrid(SdfPath const &id, GfMatrix4d const &transform,
                  bool guide=false, SdfPath const &instancerId=SdfPath());
@@ -146,32 +153,38 @@ public:
     void SetReprName(SdfPath const &id, TfToken const &reprName);
 
     // delegate methods
-    virtual GfRange3d GetExtent(SdfPath const & id);
-    virtual GfMatrix4d GetTransform(SdfPath const & id);
-    virtual bool GetVisible(SdfPath const& id);
-    virtual HdMeshTopology GetMeshTopology(SdfPath const& id);
-    virtual VtValue Get(SdfPath const& id, TfToken const& key);
-    virtual TfTokenVector GetPrimVarVertexNames(SdfPath const& id);
-    virtual TfTokenVector GetPrimVarConstantNames(SdfPath const& id);
-    virtual TfTokenVector GetPrimVarInstanceNames(SdfPath const &id);
-    virtual TfTokenVector GetPrimVarUniformNames(SdfPath const& id);
-    virtual TfTokenVector GetPrimVarFacevaryingNames(SdfPath const& id);
-    virtual VtIntArray GetInstanceIndices(SdfPath const& instancerId,
-                                          SdfPath const& prototypeId);
+    GfRange3d GetExtent(SdfPath const & id) override;
+    GfMatrix4d GetTransform(SdfPath const & id) override;
+    bool GetVisible(SdfPath const& id) override;
+    HdMeshTopology GetMeshTopology(SdfPath const& id) override;
+    VtValue Get(SdfPath const& id, TfToken const& key) override;
+    HdPrimvarDescriptorVector GetPrimvarDescriptors(
+        SdfPath const& id, 
+        HdInterpolation interpolation) override;
+    VtIntArray GetInstanceIndices(
+        SdfPath const& instancerId,
+        SdfPath const& prototypeId) override;
 
-    virtual GfMatrix4d GetInstancerTransform(SdfPath const& instancerId,
-                                             SdfPath const& prototypeId);
-    virtual int GetRefineLevel(SdfPath const& id);
-    virtual TfToken GetReprName(SdfPath const &id);
+    GfMatrix4d GetInstancerTransform(SdfPath const& instancerId) override;
+    HdDisplayStyle GetDisplayStyle(SdfPath const& id) override;
+    HdReprSelector GetReprSelector(SdfPath const &id) override;
 
+    SdfPath GetMaterialId(SdfPath const &rprimId) override;
+    std::string GetSurfaceShaderSource(SdfPath const &shaderId) override;
+    std::string GetDisplacementShaderSource(SdfPath const &shaderId) override;
+    HdMaterialParamVector GetMaterialParams(SdfPath const &shaderId) override;
+    VtValue GetMaterialParamValue(
+        SdfPath const &shaderId,
+        TfToken const &paramName) override;
+    VtValue GetCameraParamValue(
+        SdfPath const &cameraId,
+        TfToken const &paramName) override;
+    HdTextureResource::ID GetTextureResourceID(SdfPath const& textureId) 
+        override;
+    HdTextureResourceSharedPtr GetTextureResource(SdfPath const& textureId) 
+        override;
 
-    virtual std::string GetSurfaceShaderSource(SdfPath const &shaderId);
-    virtual std::string GetDisplacementShaderSource(SdfPath const &shaderId);
-    virtual HdMaterialParamVector GetMaterialParams(SdfPath const &shaderId);
-    virtual VtValue GetMaterialParamValue(SdfPath const &shaderId,
-                                          TfToken const &paramName);
-    virtual HdTextureResource::ID GetTextureResourceID(SdfPath const& textureId);
-    virtual HdTextureResourceSharedPtr GetTextureResource(SdfPath const& textureId);
+    TfTokenVector GetTaskRenderTags(SdfPath const& taskId) override;
 
 private:
     struct _Mesh {
@@ -184,14 +197,17 @@ private:
               VtIntArray const &verts,
               PxOsdSubdivTags const &subdivTags,
               VtValue const &color,
-              Interpolation colorInterpolation,
+              HdInterpolation colorInterpolation,
+              VtValue const &opacity,
+              HdInterpolation opacityInterpolation,
               bool guide,
               bool doubleSided) :
             scheme(scheme), orientation(orientation),
             transform(transform),
             points(points), numVerts(numVerts), verts(verts),
             subdivTags(subdivTags), color(color),
-            colorInterpolation(colorInterpolation), guide(guide),
+            colorInterpolation(colorInterpolation), opacity(opacity),
+            opacityInterpolation(opacityInterpolation), guide(guide),
             doubleSided(doubleSided) { }
 
         TfToken scheme;
@@ -202,7 +218,9 @@ private:
         VtIntArray verts;
         PxOsdSubdivTags subdivTags;
         VtValue color;
-        Interpolation colorInterpolation;
+        HdInterpolation colorInterpolation;
+        VtValue opacity;
+        HdInterpolation opacityInterpolation;
         bool guide;
         bool doubleSided;
         TfToken reprName;

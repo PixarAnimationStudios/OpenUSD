@@ -79,7 +79,7 @@ class TfErrorMark : boost::noncopyable
     ///
     /// If this is the last ErrorMark on this thread of execution and there
     /// are pending errors, this will report them via the diagnostic delegate
-    /// (if one is instanlled) otherwise by printing to stderr.
+    /// (if one is installed) otherwise by printing to stderr.
     TF_API ~TfErrorMark();
 
     /// Record future errors.
@@ -160,7 +160,7 @@ class TfErrorMark : boost::noncopyable
 
     /// Return an iterator past the last error in the error system.
     ///
-    /// This iterator is always equivalend to the iterator returned by \c
+    /// This iterator is always equivalent to the iterator returned by \c
     /// TfDiagnosticMgr::GetErrorEnd().
     Iterator GetEnd() const {
         return TfDiagnosticMgr::GetInstance().GetErrorEnd();

@@ -21,19 +21,25 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
 #include "usdMaya/primReaderRegistry.h"
+
 #include "usdMaya/debugCodes.h"
+#include "usdMaya/fallbackPrimReader.h"
+#include "usdMaya/functorPrimReader.h"
 #include "usdMaya/registryHelper.h"
 
 #include "pxr/base/plug/registry.h"
-
+#include "pxr/base/tf/registryManager.h"
+#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/stl.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/base/tf/type.h"
 #include "pxr/usd/usd/schemaBase.h"
 
-#include "pxr/base/tf/registryManager.h"
-#include "pxr/base/tf/type.h"
+#include <map>
+#include <string>
+#include <utility>
 
-#include <boost/assign.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -43,57 +49,83 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens,
         (PrimReader)
 );
 
-typedef std::map<TfToken, PxrUsdMayaPrimReaderRegistry::ReaderFn> _Registry;
+typedef std::map<TfToken, UsdMayaPrimReaderRegistry::ReaderFactoryFn> _Registry;
 static _Registry _reg;
 
+
 /* static */
-void 
-PxrUsdMayaPrimReaderRegistry::Register(
+void
+UsdMayaPrimReaderRegistry::Register(
         const TfType& t,
-        PxrUsdMayaPrimReaderRegistry::ReaderFn fn)
+        UsdMayaPrimReaderRegistry::ReaderFactoryFn fn)
 {
     TfToken tfTypeName(t.GetTypeName());
     TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg(
             "Registering UsdMayaPrimReader for TfType %s.\n", tfTypeName.GetText());
-    std::pair< _Registry::iterator, bool> insertStatus = 
+    std::pair< _Registry::iterator, bool> insertStatus =
         _reg.insert(std::make_pair(tfTypeName, fn));
-    if (!insertStatus.second) {
+    if (insertStatus.second) {
+        UsdMaya_RegistryHelper::AddUnloader([tfTypeName]() {
+            _reg.erase(tfTypeName);
+        });
+    }
+    else {
         TF_CODING_ERROR("Multiple readers for type %s", tfTypeName.GetText());
-        insertStatus.first->second = fn;
     }
 }
 
 /* static */
-PxrUsdMayaPrimReaderRegistry::ReaderFn
-PxrUsdMayaPrimReaderRegistry::Find(
-        const TfToken& usdTypeName)
+void
+UsdMayaPrimReaderRegistry::RegisterRaw(
+        const TfType& t,
+        UsdMayaPrimReaderRegistry::ReaderFn fn)
 {
-    TfRegistryManager::GetInstance().SubscribeTo<PxrUsdMayaPrimReaderRegistry>();
+    Register(t, UsdMaya_FunctorPrimReader::CreateFactory(fn));
+}
+
+/* static */
+UsdMayaPrimReaderRegistry::ReaderFactoryFn
+UsdMayaPrimReaderRegistry::Find(const TfToken& usdTypeName)
+{
+    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaPrimReaderRegistry>();
 
     // unfortunately, usdTypeName is diff from the tfTypeName which we use to
     // register.  do the conversion here.
     TfType tfType = PlugRegistry::FindDerivedTypeByName<UsdSchemaBase>(usdTypeName);
     std::string typeNameStr = tfType.GetTypeName();
     TfToken typeName(typeNameStr);
-    ReaderFn ret = NULL;
+    ReaderFactoryFn ret = nullptr;
     if (TfMapLookup(_reg, typeName, &ret)) {
         return ret;
     }
 
-    static std::vector<TfToken> SCOPE = boost::assign::list_of
-        (_tokens->UsdMaya)(_tokens->PrimReader);
-    PxrUsdMaya_RegistryHelper::FindAndLoadMayaPlug(SCOPE, typeNameStr);
+    static const TfTokenVector SCOPE = {
+        _tokens->UsdMaya,
+        _tokens->PrimReader
+    };
+    UsdMaya_RegistryHelper::FindAndLoadMayaPlug(SCOPE, typeNameStr);
 
     // ideally something just registered itself.  if not, we at least put it in
     // the registry in case we encounter it again.
     if (!TfMapLookup(_reg, typeName, &ret)) {
         TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg(
-                "No usdMaya reader plugin for TfType %s.  No maya plugin.\n", 
+                "No usdMaya reader plugin for TfType %s. No maya plugin.\n",
                 typeName.GetText());
-        _reg[typeName] = NULL;
+        _reg[typeName] = nullptr;
     }
     return ret;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+/* static */
+UsdMayaPrimReaderRegistry::ReaderFactoryFn
+UsdMayaPrimReaderRegistry::FindOrFallback(const TfToken& usdTypeName)
+{
+    if (ReaderFactoryFn fn = Find(usdTypeName)) {
+        return fn;
+    }
 
+    return UsdMaya_FallbackPrimReader::CreateFactory();
+}
+
+
+PXR_NAMESPACE_CLOSE_SCOPE

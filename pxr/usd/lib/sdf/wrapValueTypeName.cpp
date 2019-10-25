@@ -49,6 +49,9 @@ wrapValueType()
         .add_property("type",
             make_function(&SdfValueTypeName::GetType,
                           return_value_policy<return_by_value>()))
+        .add_property("cppTypeName",
+            make_function(&SdfValueTypeName::GetCPPTypeName,
+                          return_value_policy<return_by_value>()))
         .add_property("role",
             make_function(&SdfValueTypeName::GetRole,
                           return_value_policy<return_by_value>()))

@@ -1,0 +1,32 @@
+#usda 1.0 
+(
+    subLayers = [ 
+        @baseSchema.usda@
+    ]  
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "usdContrived"
+        string libraryPath = "pxr/usd/usdContrived"
+        dictionary libraryTokens = {
+            dictionary libraryToken1 = {}
+            dictionary libraryToken2 = {
+                string doc = """libraryToken2 doc"""
+            }
+        }
+    }
+)
+{
+}
+
+# A single apply API schema can't use the propertyNamespacePrefix metadata field
+class "SingleApplyAPI" (
+    customData = {
+        token apiSchemaType = "singleApply"
+        token propertyNamespacePrefix = "error"
+    }
+)
+{
+}
+

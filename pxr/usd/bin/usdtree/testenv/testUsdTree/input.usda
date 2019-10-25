@@ -1,0 +1,28 @@
+#usda 1.0
+
+def "root"{
+    def Xform "child1"(
+        upAxis = "Y"
+    ){
+        def "subchild1a"{
+            custom string foo = "bar"
+            custom string hello = "world"
+        }
+        def "subchild1b"{
+        }
+    }
+    def "child2"{
+        custom string foo = "bar"
+        def "subchild2a"{
+            def "subgrandchild2a1"{
+            }
+        }
+        def "subchild2b"{
+        }
+    }
+    over "child3"(
+        active = true
+    ){
+        custom string whatisthis = "this is an over"
+    }
+}

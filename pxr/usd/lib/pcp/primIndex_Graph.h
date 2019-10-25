@@ -72,8 +72,8 @@ public:
     /// Get/set whether this prim index has an authored payload.
     /// Note that it does not necessarily mean that the payload has been
     /// loaded if this is set to true.
-    void SetHasPayload(bool hasPayload);
-    bool HasPayload() const;
+    void SetHasPayloads(bool hasPayloads);
+    bool HasPayloads() const;
 
     /// Get/set whether this prim index is instanceable.
     void SetIsInstanceable(bool isInstanceable);
@@ -173,7 +173,7 @@ private:
     // node where p(node) is false. Returns the indexes of the resulting 
     // nodes.
     template <class Predicate>
-    std::pair<size_t, size_t> _FindDirectChildRange(const Predicate& p) const;
+    std::pair<size_t, size_t> _FindRootChildRange(const Predicate& p) const;
 
     // Helper functions to compute a mapping between node indexes and 
     // the strength order of the corresponding node. 
@@ -301,7 +301,7 @@ private:
         PcpMapExpression mapToParent;
         // Pack the non-byte sized integers into an unnamed structure.
         // This allows us to initialize them all at once.  g++ will,
-        // suprisingly, initialize each individually in the default
+        // surprisingly, initialize each individually in the default
         // copy constructor if they're direct members of _Node.
         struct _SmallInts {
             // The permissions for this node (whether specs on this node 
@@ -376,7 +376,7 @@ private:
         _SharedData(bool usd_) 
             : finalized(false)
             , usd(usd_)
-            , hasPayload(false)
+            , hasPayloads(false)
             , instanceable(false)
         { }
 
@@ -387,8 +387,8 @@ private:
         bool finalized:1;
         // Whether this prim index is composed in USD mode.
         bool usd:1;
-        // Whether this prim index has an authored payload.
-        bool hasPayload:1;
+        // Whether this prim index has authored payloads.
+        bool hasPayloads:1;
         // Whether this prim index is instanceable.
         bool instanceable:1;
     };

@@ -52,8 +52,9 @@ public:
     const SdfLayerHandle &GetLayer() const;
 
     /// Returns the path that this identity refers to.
-    SDF_API
-    const SdfPath &GetPath() const;
+    const SdfPath &GetPath() const {
+        return _path;
+    }
 
 private:
     // Ref-counting ops manage _refCount.
@@ -90,7 +91,9 @@ public:
     ~Sdf_IdentityRegistry();
 
     /// Returns the layer that owns this registry.
-    const SdfLayerHandle &GetLayer() const;
+    const SdfLayerHandle &GetLayer() const {
+        return _layer;
+    }
 
     /// Return the identity associated with \a path, issuing a new
     /// one if necessary. The registry will track the identity
@@ -110,12 +113,15 @@ private:
     void _Remove(const SdfPath &path, Sdf_Identity *id);
 
     /// The layer that owns this registry, and on behalf of which
-    /// this registry tracks identites.
+    /// this registry tracks identities.
     const SdfLayerHandle _layer;
     
     /// The identities being managed by this registry
     typedef TfHashMap<SdfPath, Sdf_Identity*, SdfPath::Hash> _IdMap;
     _IdMap _ids;
+
+    /// Cache the last fetched identity, it's commonly re-fetched.
+    Sdf_IdentityRefPtr _lastId;
 
     // This mutex synchronizes access to _ids.
     tbb::spin_mutex _idsMutex;

@@ -121,7 +121,7 @@ TestReverseTranslation_1()
 
     PcpNodeRange nodeRange = index.GetNodeRange();
 
-    // First node is the direct node, which requires no path translation.
+    // First node is the root node, which requires no path translation.
     TF_AXIOM(_IsExpectedNode(
             *nodeRange.first, PcpArcTypeRoot, SdfPath("/M_1/B")));
     _TestReverseTranslation(index, *nodeRange.first, 
@@ -228,7 +228,7 @@ TestReverseTranslation_2()
 
     PcpNodeRange nodeRange = index.GetNodeRange();
 
-    // First node is the direct node, which requires no path translation.
+    // First node is the root node, which requires no path translation.
     TF_AXIOM(_IsExpectedNode(
             *nodeRange.first, PcpArcTypeRoot, SdfPath("/M_1/C")));
     _TestReverseTranslation(index, *nodeRange.first, 
@@ -288,18 +288,18 @@ TestReverseTranslation_3()
 
     PcpNodeRange nodeRange = index.GetNodeRange();
 
-    // First node is the direct node, which requires no path translation.
+    // First node is the root node, which requires no path translation.
     TF_AXIOM(_IsExpectedNode(
             *nodeRange.first, PcpArcTypeRoot, primPath));
     _TestReverseTranslation(index, *nodeRange.first, 
         /* target */ targetPath, 
         /* expected */ targetPath);
 
-    // Next is an implied local inherit node to the symmetric arm rig
+    // Next is an implied subroot inherit node to the symmetric arm rig
     // that originates from within the referenced HumanRig below.
     ++nodeRange.first;
     TF_AXIOM(_IsExpectedNode(
-            *nodeRange.first, PcpArcTypeLocalInherit, 
+            *nodeRange.first, PcpArcTypeInherit, 
             SdfPath("/CharRig/Rig/SymArm/Rig/Some_Internal_Rig_Prim")));
     _TestReverseTranslation(index, *nodeRange.first, 
         /* target */ targetPath, 
@@ -314,10 +314,10 @@ TestReverseTranslation_3()
         /* target */ targetPath, 
         /* expected */ SdfPath("/HumanRig/Anim/LArm.bendAmount"));
 
-    // Next is the local inherit to the symmetric arm class.
+    // Next is the subroot inherit to the symmetric arm class.
     ++nodeRange.first;
     TF_AXIOM(_IsExpectedNode(
-            *nodeRange.first, PcpArcTypeLocalInherit, 
+            *nodeRange.first, PcpArcTypeInherit, 
             SdfPath("/HumanRig/Rig/SymArm/Rig/Some_Internal_Rig_Prim")));
     _TestReverseTranslation(index, *nodeRange.first, 
         /* target */ targetPath, 

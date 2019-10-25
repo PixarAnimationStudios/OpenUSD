@@ -53,24 +53,36 @@ HdTexture::Sync(HdSceneDelegate *sceneDelegate,
 
     TF_UNUSED(renderParam);
 
-    SdfPath const& id = GetID();
+    SdfPath const& id = GetId();
     HdDirtyBits bits = *dirtyBits;
 
     // XXX : DirtyParams and DirtyTexture are currently the same but they
     //       can be separated functionally and have different 
     //       delegate methods.
     if ((bits & (DirtyParams | DirtyTexture)) != 0) {
+       HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
         HdResourceRegistrySharedPtr const &resourceRegistry = 
-            sceneDelegate->GetRenderIndex().GetResourceRegistry();
+                                              renderIndex.GetResourceRegistry();
 
         HdTextureResource::ID texID = sceneDelegate->GetTextureResourceID(id);
-        {
-            HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> 
-                texInstance;
+
+        // Has the texture really changed.
+        // The safest thing to do is assume it has, so that's the default used
+        bool isNewTexture = true;
+
+        if (texID != HdTextureResource::ID(-1)) {
+            HdInstance<HdResourceRegistry::TextureKey,
+                       HdTextureResourceSharedPtr> texInstance;
+
+            // Use render index to convert local texture id into global
+            // texture key
+            HdResourceRegistry::TextureKey texKey =
+                                               renderIndex.GetTextureKey(texID);
 
             std::unique_lock<std::mutex> regLock =
-                resourceRegistry->RegisterTextureResource(texID, &texInstance);
+                resourceRegistry->RegisterTextureResource(texKey,
+                                                          &texInstance);
 
             if (texInstance.IsFirstInstance()) {
                 _textureResource = _GetTextureResource(sceneDelegate,
@@ -79,8 +91,30 @@ HdTexture::Sync(HdSceneDelegate *sceneDelegate,
             } else {
                 // Take a reference to the texture to ensure it lives as long
                 // as this class.
-                _textureResource = texInstance.GetValue();
+                HdTextureResourceSharedPtr textureResource
+                                                       = texInstance.GetValue();
+
+                if (_textureResource == textureResource) {
+                    isNewTexture = false;
+                } else {
+                    _textureResource = textureResource;
+                }
             }
+        } else {
+            _textureResource.reset();
+        }
+
+        _RegisterTextureResource(&renderIndex, id, _textureResource);
+
+        // The texture resource may have been cleared, so we need to release the
+        // old one.
+        //
+        // This is particularly important if the update is on the memory
+        // request.
+        // As the cache may be still holding on to the resource with a larger
+        // memory request.
+        if (isNewTexture) {
+            renderIndex.GetChangeTracker().SetBprimGarbageCollectionNeeded();
         }
     }
 
@@ -93,10 +127,10 @@ HdTexture::GetInitialDirtyBitsMask() const
     return AllDirty;
 }
 
-bool
-HdTexture::IsPtex() const
+HdTextureType
+HdTexture::GetTextureType() const
 {
-    return false;
+    return HdTextureType::Uv;
 }
 
 bool
@@ -111,6 +145,15 @@ HdTexture::_GetTextureResource( HdSceneDelegate *sceneDelegate,
                                 HdTextureResource::ID texID) const
 {
     return nullptr;
+}
+
+void
+HdTexture::_RegisterTextureResource(
+        HdRenderIndex *renderIndex,
+        const SdfPath &textureConnectionId,
+        const HdTextureResourceSharedPtr &textureResource)
+{
+    // default implementation does nothing
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

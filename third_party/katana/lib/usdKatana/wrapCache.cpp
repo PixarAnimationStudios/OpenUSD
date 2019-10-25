@@ -37,9 +37,16 @@ void wrapUsdKatanaCache() {
     typedef UsdKatanaCache This;
     SdfLayerRefPtr (This::*ThisFindSessionLayer)(const std::string& cacheKey)=
             &This::FindSessionLayer;
+    
+    SdfLayerRefPtr (This::*ThisFindOrCreateSessionLayer)(
+        const std::string& sessionAttrXML, const std::string & rootLocation)=
+            &This::FindOrCreateSessionLayer;
+    
     class_<This>("Cache", no_init)
         .def("GetInstance", &UsdKatanaCache::GetInstance,
              return_value_policy<reference_existing_object>())
         .staticmethod("GetInstance")
-        .def("FindSessionLayer", ThisFindSessionLayer);
+        .def("FindSessionLayer", ThisFindSessionLayer)
+        .def("FindOrCreateSessionLayer", ThisFindOrCreateSessionLayer);
+        
 }

@@ -50,6 +50,9 @@ struct GfIsGfMatrix<class GfMatrix3f> { static const bool value = true; };
 
 class GfMatrix3d;
 class GfMatrix3f;
+class GfRotation;
+class GfQuaternion;
+class GfQuatf;
 
 /// \class GfMatrix3f
 /// \ingroup group_gf_LinearAlgebra
@@ -85,7 +88,7 @@ public:
     static const size_t numColumns = 3;
 
     /// Default constructor. Leaves the matrix component values undefined.
-    GfMatrix3f() {}
+    GfMatrix3f() = default;
 
     /// Constructor. Initializes the matrix from 9 independent
     /// \c float values, specified in row-major order. For example,
@@ -143,6 +146,10 @@ public:
     /// Constructor. Initialize matrix from rotation.
     GF_API
     GfMatrix3f(const GfRotation& rot);
+
+    /// Constructor. Initialize matrix from a quaternion.
+    GF_API
+    explicit GfMatrix3f(const GfQuatf& rot);
 
     /// This explicit constructor converts a "double" matrix to a "float" matrix.
     GF_API
@@ -221,6 +228,18 @@ public:
     /// the matrix, specified in row-major order.
     GF_API
     float* Get(float m[3][3]) const;
+
+    /// Returns raw access to components of matrix as an array of
+    /// \c float values.  Components are in row-major order.
+    float* data() {
+        return _mtx.GetData();
+    }
+
+    /// Returns const raw access to components of matrix as an array of
+    /// \c float values.  Components are in row-major order.
+    const float* data() const {
+        return _mtx.GetData();
+    }
 
     /// Returns vector components as an array of \c float values.
     float* GetArray()  {
@@ -410,6 +429,10 @@ public:
 
     /// Sets the matrix to specify a rotation equivalent to \e rot.
     GF_API
+    GfMatrix3f& SetRotate(const GfQuatf &rot);
+
+    /// Sets the matrix to specify a rotation equivalent to \e rot.
+    GF_API
     GfMatrix3f& SetRotate(const GfRotation &rot);
 
     /// Sets the matrix to specify a nonuniform scaling in x, y, and z by
@@ -447,12 +470,25 @@ public:
     /// @}
 
 private:
+    /// Set the matrix to the rotation given by a quaternion,
+    /// defined by the real component \p r and imaginary components \p i.
+    void _SetRotateFromQuat(float r, const GfVec3f& i);
+
+
+private:
     /// Matrix storage, in row-major order.
     GfMatrixData<float, 3, 3> _mtx;
 
     // Friend declarations
     friend class GfMatrix3d;
 };
+
+
+/// Tests for equality within a given tolerance, returning \c true if the
+/// difference between each component of the matrix is less than or equal
+/// to \p tolerance, or false otherwise.
+GF_API 
+bool GfIsClose(GfMatrix3f const &m1, GfMatrix3f const &m2, double tolerance);
 
 /// Output a GfMatrix3f
 /// \ingroup group_gf_DebuggingOutput

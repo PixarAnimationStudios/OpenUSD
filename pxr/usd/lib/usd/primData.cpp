@@ -25,6 +25,7 @@
 #include "pxr/usd/usd/prim.h"
 
 #include "pxr/usd/usd/debugCodes.h"
+#include "pxr/usd/usd/instanceCache.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/stage.h"
@@ -47,9 +48,9 @@ static_assert(sizeof(Usd_PrimData) == 64,
 
 Usd_PrimData::Usd_PrimData(UsdStage *stage, const SdfPath& path)
     : _stage(stage)
-    , _primIndex(NULL)
+    , _primIndex(nullptr)
     , _path(path)
-    , _firstChild(NULL)
+    , _firstChild(nullptr)
     , _refCount(0)
 {
     if (!stage)
@@ -77,7 +78,7 @@ Usd_PrimData::GetParent() const
 
     SdfPath parent = _path.GetParentPath();
     return parent == SdfPath::EmptyPath() ?
-        NULL : _stage->_GetPrimDataAtPath(parent);
+        nullptr : _stage->_GetPrimDataAtPath(parent);
 }
 
 const PcpPrimIndex &
@@ -126,7 +127,7 @@ Usd_PrimData::_ComposeAndCacheFlags(Usd_PrimDataConstPtr parent,
         _flags[Usd_PrimActiveFlag] = active;
 
         // Cache whether or not this prim has a payload.
-        bool hasPayload = _primIndex->HasPayload();
+        bool hasPayload = _primIndex->HasAnyPayloads();
         _flags[Usd_PrimHasPayloadFlag] = hasPayload;
 
         // An active prim is loaded if it's loadable and in the load set, or
@@ -202,26 +203,44 @@ Usd_PrimData::_ComposePrimChildNames(TfTokenVector* nameOrder)
 }
 
 std::string
-Usd_DescribePrimData(const Usd_PrimData *p)
+Usd_DescribePrimData(const Usd_PrimData *p, SdfPath const &proxyPrimPath)
 {
     if (!p)
         return "null prim";
 
+    bool isInstance = p->IsInstance();
+    bool isInstanceProxy = Usd_IsInstanceProxy(p, proxyPrimPath);
+    bool isInMaster = isInstanceProxy ?
+        Usd_InstanceCache::IsPathInMaster(proxyPrimPath) : p->IsInMaster();
+    bool isMaster = p->IsMaster();
+    Usd_PrimDataConstPtr masterForInstance =
+        isInstance && p->_stage ? p->GetMaster() : nullptr;
+
     return TfStringPrintf(
-        "%s%sprim <%s> %s",
+        "%s%s%sprim %s<%s> %s%s%s",
         Usd_IsDead(p) ? "expired " : (p->_flags[Usd_PrimActiveFlag] ?
                                       "" : "inactive "),
         p->_typeName.IsEmpty() ? "" :
             TfStringPrintf("'%s' ", p->_typeName.GetText()).c_str(),
-        p->_path.GetText(),
+        isInstance ? "instance " : isInstanceProxy ? "instance proxy " : "",
+        isInMaster ? "in master " : "",
+        isInstanceProxy ? proxyPrimPath.GetText() : p->_path.GetText(),
+        (isInstanceProxy || isInstance) ? TfStringPrintf(
+            "with master <%s> ", isInstance ?
+            masterForInstance->GetPath().GetText() :
+            p->_path.GetText()).c_str() : "",
+        (isInstanceProxy || isMaster || isInMaster) ? TfStringPrintf(
+            "using prim index <%s> ",
+            p->GetSourcePrimIndex().GetPath().GetText()).c_str() : "",
         p->_stage ? TfStringPrintf(
-            "on stage %s", UsdDescribe(p->_stage).c_str()).c_str() : "");
+            "on %s", UsdDescribe(p->_stage).c_str()).c_str() : ""
+        );
 }
 
 void
 Usd_IssueFatalPrimAccessError(const Usd_PrimData *p)
 {
-    TF_FATAL_ERROR("Used %s", Usd_DescribePrimData(p).c_str());
+    TF_FATAL_ERROR("Used %s", Usd_DescribePrimData(p, SdfPath()).c_str());
 }
 
 

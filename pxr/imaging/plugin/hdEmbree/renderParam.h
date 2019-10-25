@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/renderDelegate.h"
+#include "pxr/imaging/hd/renderThread.h"
 
 #include <embree2/rtcore.h>
 
@@ -40,13 +41,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// 
 class HdEmbreeRenderParam final : public HdRenderParam {
 public:
-    HdEmbreeRenderParam(RTCDevice device, RTCScene scene)
+    HdEmbreeRenderParam(RTCDevice device, RTCScene scene,
+                        HdRenderThread *renderThread,
+                        std::atomic<int> *sceneVersion)
         : _scene(scene), _device(device)
+        , _renderThread(renderThread), _sceneVersion(sceneVersion)
         {}
     virtual ~HdEmbreeRenderParam() = default;
 
     /// Accessor for the top-level embree scene.
-    RTCScene GetEmbreeScene() { return _scene; }
+    RTCScene AcquireSceneForEdit() {
+        _renderThread->StopRender();
+        (*_sceneVersion)++;
+        return _scene;
+    }
     /// Accessor for the top-level embree device (library handle).
     RTCDevice GetEmbreeDevice() { return _device; }
 
@@ -55,6 +63,10 @@ private:
     RTCScene _scene;
     /// A handle to the top-level embree device (library handle).
     RTCDevice _device;
+    /// A handle to the global render thread.
+    HdRenderThread *_renderThread;
+    /// A version counter for edits to _scene.
+    std::atomic<int> *_sceneVersion;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

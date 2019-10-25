@@ -26,167 +26,40 @@
 #include "pxr/pxr.h"
 #include "pxrUsdMayaGL/api.h"
 #include "pxrUsdMayaGL/batchRenderer.h"
+#include "pxrUsdMayaGL/debugCodes.h"
 #include "pxrUsdMayaGL/renderParams.h"
 #include "pxrUsdMayaGL/softSelectHelper.h"
-#include "usdMaya/proxyShape.h"
+#include "pxrUsdMayaGL/userData.h"
 
 #include "pxr/base/gf/gamma.h"
-#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/debug.h"
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/registryManager.h"
-#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
-#include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usdImaging/usdImaging/delegate.h"
 
 #include <maya/M3dView.h>
+#include <maya/MBoundingBox.h>
 #include <maya/MColor.h>
 #include <maya/MDagPath.h>
-#include <maya/MFnDagNode.h>
+#include <maya/MDrawData.h>
+#include <maya/MDrawRequest.h>
+#include <maya/MFnDependencyNode.h>
 #include <maya/MFrameContext.h>
 #include <maya/MHWGeometryUtilities.h>
-#include <maya/MMatrix.h>
-#include <maya/MObjectHandle.h>
-#include <maya/MPxSurfaceShape.h>
+#include <maya/MObject.h>
+#include <maya/MPxSurfaceShapeUI.h>
+#include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
-#include <maya/MString.h>
-
-#include <boost/functional/hash.hpp>
-
-#include <string>
+#include <maya/MUuid.h>
+#include <maya/MUserData.h>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    ((RenderGuidesTag, "render"))
-);
-
-
-TF_REGISTRY_FUNCTION(TfDebug)
-{
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
-        PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE,
-        "Report Maya Hydra shape adapter lifecycle events.");
-}
-
-
-PxrMayaHdShapeAdapter::PxrMayaHdShapeAdapter()
-{
-    TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-        "Constructing PxrMayaHdShapeAdapter: %p\n",
-        this);
-}
-
-/* virtual */
-PxrMayaHdShapeAdapter::~PxrMayaHdShapeAdapter()
-{
-    TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-        "Destructing PxrMayaHdShapeAdapter: %p\n",
-        this);
-}
-
-bool
-PxrMayaHdShapeAdapter::_Init(HdRenderIndex* renderIndex)
-{
-    if (!TF_VERIFY(renderIndex,
-                   "Cannot initialize shape adapter with invalid HdRenderIndex")) {
-        return false;
-    }
-
-    const SdfPath delegatePrefix =
-        UsdMayaGLBatchRenderer::GetInstance().GetDelegatePrefix(_isViewport2);
-
-    // Create a simple "name" for this shape adapter to insert into the batch
-    // renderer's SdfPath hierarchy.
-    //
-    // XXX: For as long as we're using the MAYA_VP2_USE_VP1_SELECTION
-    // environment variable, we need to be able to pass responsibility back and
-    // forth between the MPxDrawOverride's shape adapter for drawing and the
-    // MPxSurfaceShapeUI's shape adapter for selection. This requires both
-    // shape adapters to have the same "name", which forces us to build it
-    // from data on the shape that will be common to both classes, as we do
-    // below. When we remove MAYA_VP2_USE_VP1_SELECTION and can trust that a
-    // single shape adapter handles both drawing and selection, we can do
-    // something even simpler instead like using the shape adapter's memory
-    // address as the "name".
-    size_t shapeHash(MObjectHandle(_shapeDagPath.transform()).hashCode());
-    boost::hash_combine(shapeHash, _rootPrim);
-    boost::hash_combine(shapeHash, _excludedPrimPaths);
-
-    // We prepend the Maya type name to the beginning of the delegate name to
-    // ensure that there are no name collisions between shape adapters of
-    // shapes with different Maya types.
-    const TfToken delegateName(
-        TfStringPrintf("%s_%zx",
-                       PxrUsdMayaProxyShapeTokens->MayaTypeName.GetText(),
-                       shapeHash));
-
-    const SdfPath delegateId = delegatePrefix.AppendChild(delegateName);
-
-    if (_delegate &&
-            delegateId == GetDelegateID() &&
-            renderIndex == &_delegate->GetRenderIndex()) {
-        // The delegate's current ID matches the delegate ID we computed and
-        // the render index matches, so it must be up to date already.
-        return true;
-    }
-
-    const TfToken collectionName(_shapeDagPath.fullPathName().asChar());
-
-    TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-        "Initializing PxrMayaHdShapeAdapter: %p\n"
-        "    collection name: %s\n"
-        "    delegateId     : %s\n",
-        this,
-        collectionName.GetText(),
-        delegateId.GetText());
-
-    _delegate.reset(new UsdImagingDelegate(renderIndex, delegateId));
-    if (!TF_VERIFY(_delegate,
-                  "Failed to create shape adapter delegate for shape %s",
-                  _shapeDagPath.fullPathName().asChar())) {
-        return false;
-    }
-
-    if (TfDebug::IsEnabled(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE)) {
-        TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-            "    Populating delegate:\n"
-            "        rootPrim         : %s\n"
-            "        excludedPrimPaths: ",
-            _rootPrim.GetPath().GetText());
-        for (const SdfPath& primPath : _excludedPrimPaths) {
-            TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-                "%s ",
-                primPath.GetText());
-        }
-        TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg("\n");
-    }
-
-    _delegate->Populate(_rootPrim, _excludedPrimPaths, SdfPathVector());
-
-    if (collectionName != _rprimCollection.GetName()) {
-        _rprimCollection.SetName(collectionName);
-        renderIndex->GetChangeTracker().AddCollection(_rprimCollection.GetName());
-    }
-
-    _rprimCollection.SetReprName(HdTokens->refined);
-    _rprimCollection.SetRootPath(delegateId);
-
-    return true;
-}
 
 // Helper function that converts M3dView::DisplayStyle (legacy viewport) into
 // MHWRender::MFrameContext::DisplayStyle (Viewport 2.0).
@@ -251,38 +124,17 @@ _ToMHWRenderDisplayStatus(const M3dView::DisplayStatus legacyDisplayStatus)
     return MHWRender::DisplayStatus((int)legacyDisplayStatus);
 }
 
-/* static */
-bool
-PxrMayaHdShapeAdapter::_GetWireframeColor(
-        const MHWRender::DisplayStatus displayStatus,
-        const MDagPath& shapeDagPath,
-        MColor* mayaWireColor)
-{
-    // Dormant objects may be included in a soft selection.
-    if (displayStatus == MHWRender::kDormant) {
-        const UsdMayaGLSoftSelectHelper& softSelectHelper =
-            UsdMayaGLBatchRenderer::GetInstance().GetSoftSelectHelper();
-        return softSelectHelper.GetFalloffColor(shapeDagPath, mayaWireColor);
-    }
-    else if ((displayStatus == MHWRender::kActive) ||
-             (displayStatus == MHWRender::kLead) ||
-             (displayStatus == MHWRender::kHilite)) {
-        *mayaWireColor =
-            MHWRender::MGeometryUtilities::wireframeColor(shapeDagPath);
-        return true;
-    }
-
-    return false;
-}
-
+/* virtual */
 bool
 PxrMayaHdShapeAdapter::Sync(
-        MPxSurfaceShape* surfaceShape,
+        const MDagPath& shapeDagPath,
         const M3dView::DisplayStyle legacyDisplayStyle,
         const M3dView::DisplayStatus legacyDisplayStatus)
 {
     // Legacy viewport implementation.
     _isViewport2 = false;
+
+    UsdMayaGLBatchRenderer::GetInstance().StartBatchingFrameDiagnostics();
 
     const unsigned int displayStyle =
         _ToMFrameContextDisplayStyle(legacyDisplayStyle);
@@ -293,7 +145,7 @@ PxrMayaHdShapeAdapter::Sync(
         "Synchronizing PxrMayaHdShapeAdapter for legacy viewport: %p\n",
         this);
 
-    const bool success = _Sync(surfaceShape, displayStyle, displayStatus);
+    const bool success = _Sync(shapeDagPath, displayStyle, displayStatus);
 
     if (success) {
         // The legacy viewport does not support color management, so we roll
@@ -315,234 +167,201 @@ PxrMayaHdShapeAdapter::Sync(
     return success;
 }
 
+/* virtual */
 bool
 PxrMayaHdShapeAdapter::Sync(
-        MPxSurfaceShape* surfaceShape,
+        const MDagPath& shapeDagPath,
         const unsigned int displayStyle,
         const MHWRender::DisplayStatus displayStatus)
 {
     // Viewport 2.0 implementation.
     _isViewport2 = true;
 
+    UsdMayaGLBatchRenderer::GetInstance().StartBatchingFrameDiagnostics();
+
     TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
         "Synchronizing PxrMayaHdShapeAdapter for Viewport 2.0: %p\n",
         this);
 
-    return _Sync(surfaceShape, displayStyle, displayStatus);
+    return _Sync(shapeDagPath, displayStyle, displayStatus);
 }
 
 /* virtual */
 bool
-PxrMayaHdShapeAdapter::_Sync(
-        MPxSurfaceShape* surfaceShape,
-        const unsigned int displayStyle,
-        const MHWRender::DisplayStatus displayStatus)
+PxrMayaHdShapeAdapter::UpdateVisibility(const M3dView* view)
 {
-    UsdMayaProxyShape* usdProxyShape =
-        dynamic_cast<UsdMayaProxyShape*>(surfaceShape);
-    if (!usdProxyShape) {
-        TF_WARN("Failed to get UsdMayaProxyShape.");
-        return false;
+    return false;
+}
+
+/* virtual */
+bool
+PxrMayaHdShapeAdapter::IsVisible() const
+{
+    return false;
+}
+
+/* virtual */
+void
+PxrMayaHdShapeAdapter::GetMayaUserData(
+        MPxSurfaceShapeUI* shapeUI,
+        MDrawRequest& drawRequest,
+        const MBoundingBox* boundingBox)
+{
+    // Legacy viewport implementation.
+
+    // The legacy viewport never has an old MUserData we can reuse.
+    MUserData* userData = GetMayaUserData(nullptr, boundingBox);
+
+    // Note that the legacy viewport does not manage the data allocated in the
+    // MDrawData object, so the batch renderer deletes the MUserData object at
+    // the end of a legacy viewport Draw() call.
+    MDrawData drawData;
+    shapeUI->getDrawData(userData, drawData);
+
+    drawRequest.setDrawData(drawData);
+}
+
+/* virtual */
+PxrMayaHdUserData*
+PxrMayaHdShapeAdapter::GetMayaUserData(
+        MUserData* oldData,
+        const MBoundingBox* boundingBox)
+{
+    // Viewport 2.0 implementation (also called by legacy viewport
+    // implementation).
+    //
+    // Our PxrMayaHdUserData can be used to signify whether we are requesting a
+    // shape to be rendered, a bounding box, both, or neither.
+    //
+    // In the Viewport 2.0 prepareForDraw() usage, any MUserData object passed
+    // into the function will be deleted by Maya. In the legacy viewport usage,
+    // the object gets deleted at the end of a legacy viewport Draw() call.
+
+    if (!_drawShape && !boundingBox) {
+        return nullptr;
     }
 
-    UsdPrim usdPrim;
-    SdfPathVector excludedPrimPaths;
-    int refineLevel;
-    UsdTimeCode timeCode;
-    bool showGuides;
-    bool showRenderGuides;
-    bool tint;
-    GfVec4f tintColor;
-    if (!usdProxyShape->GetAllRenderAttributes(&usdPrim,
-                                               &excludedPrimPaths,
-                                               &refineLevel,
-                                               &timeCode,
-                                               &showGuides,
-                                               &showRenderGuides,
-                                               &tint,
-                                               &tintColor)) {
-        TF_WARN("Failed to get render attributes for UsdMayaProxyShape.");
-        return false;
+    PxrMayaHdUserData* newData = dynamic_cast<PxrMayaHdUserData*>(oldData);
+    if (!newData) {
+        newData = new PxrMayaHdUserData();
     }
 
-    // Check for updates to the shape or changes in the batch renderer that
-    // require us to re-initialize the shape adapter.
-    MStatus status;
-    const MFnDagNode dagNodeFn(usdProxyShape->thisMObject(), &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-    MDagPath shapeDagPath;
-    status = dagNodeFn.getPath(shapeDagPath);
-    CHECK_MSTATUS_AND_RETURN(status, false);
+    // Internally, the shape adapter keeps track of whether its shape is being
+    // drawn for managing visibility, but otherwise most Hydra-imaged shapes
+    // should not be drawing themselves. The pxrHdImagingShape will take care
+    // of batching up the drawing of all of the shapes, so we specify in the
+    // Maya user data that the shape should *not* draw by default. The
+    // pxrHdImagingShape bypasses this and sets drawShape to true.
+    // We handle this similarly in GetRenderParams() below.
+    newData->drawShape = false;
 
-    HdRenderIndex* renderIndex =
-        UsdMayaGLBatchRenderer::GetInstance().GetRenderIndex();
-    if (!(shapeDagPath == _shapeDagPath) ||
-            usdPrim != _rootPrim ||
-            excludedPrimPaths != _excludedPrimPaths ||
-            !_delegate ||
-            renderIndex != &_delegate->GetRenderIndex()) {
-        _shapeDagPath = shapeDagPath;
-        _rootPrim = usdPrim;
-        _excludedPrimPaths = excludedPrimPaths;
-
-        if (!_Init(renderIndex)) {
-            return false;
-        }
+    if (boundingBox) {
+        newData->boundingBox.reset(new MBoundingBox(*boundingBox));
+        newData->wireframeColor.reset(new GfVec4f(_renderParams.wireframeColor));
+    } else {
+        newData->boundingBox.reset();
+        newData->wireframeColor.reset();
     }
 
-    // Reset _renderParams to the defaults.
-    PxrMayaHdRenderParams renderParams;
-    _renderParams = renderParams;
+    return newData;
+}
 
-    if (tint) {
-        _renderParams.overrideColor = tintColor;
+/* virtual */
+HdReprSelector
+PxrMayaHdShapeAdapter::GetReprSelectorForDisplayState(
+        const unsigned int displayStyle,
+        const MHWRender::DisplayStatus displayStatus) const
+{
+    HdReprSelector reprSelector;
+
+    const bool boundingBoxStyle =
+        displayStyle & MHWRender::MFrameContext::DisplayStyle::kBoundingBox;
+
+    if (boundingBoxStyle) {
+        // We don't currently use Hydra to draw bounding boxes, so we return an
+        // empty repr selector here. Also, Maya seems to ignore most other
+        // DisplayStyle bits when the viewport is in the kBoundingBox display
+        // style anyway, and it just changes the color of the bounding box on
+        // selection rather than adding in the wireframe like it does for
+        // shaded display styles. So if we eventually do end up using Hydra for
+        // bounding boxes, we could just return the appropriate repr here.
+        return reprSelector;
     }
 
-    // XXX Not yet adding ability to turn off display of proxy geometry, but
-    // we should at some point, as in usdview.
-    TfTokenVector renderTags;
-    renderTags.push_back(HdTokens->geometry);
-    renderTags.push_back(HdTokens->proxy);
-    if (showGuides) {
-        renderTags.push_back(HdTokens->guide);
-    }
-    if (showRenderGuides) {
-        renderTags.push_back(_tokens->RenderGuidesTag);
-    }
+    const bool shadeActiveOnlyStyle =
+        displayStyle & MHWRender::MFrameContext::DisplayStyle::kShadeActiveOnly;
 
-    if (_rprimCollection.GetRenderTags() != renderTags) {
-        _rprimCollection.SetRenderTags(renderTags);
+    const bool isActive =
+        (displayStatus == MHWRender::DisplayStatus::kActive) ||
+        (displayStatus == MHWRender::DisplayStatus::kHilite) ||
+        (displayStatus == MHWRender::DisplayStatus::kActiveTemplate) ||
+        (displayStatus == MHWRender::DisplayStatus::kActiveComponent) ||
+        (displayStatus == MHWRender::DisplayStatus::kLead);
 
-        TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-            "    Render tags changed: %s\n"
-            "        Marking collection dirty: %s\n",
-            TfStringJoin(renderTags.begin(), renderTags.end()).c_str(),
-            _rprimCollection.GetName().GetText());
+    const bool wireframeStyle =
+        displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame;
 
-        _delegate->GetRenderIndex().GetChangeTracker().MarkCollectionDirty(
-            _rprimCollection.GetName());
-    }
-
-    const MMatrix transform = _shapeDagPath.inclusiveMatrix(&status);
-    if (status == MS::kSuccess) {
-        _rootXform = GfMatrix4d(transform.matrix);
-        _delegate->SetRootTransform(_rootXform);
-    }
-
-    _delegate->SetRefineLevelFallback(refineLevel);
-
-    // Will only react if time actually changes.
-    _delegate->SetTime(timeCode);
-
-    _delegate->SetRootCompensation(_rootPrim.GetPath());
-
-    _drawShape = true;
-    _drawBoundingBox =
-        (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBoundingBox);
-
-    MColor mayaWireframeColor;
-    const bool needsWire = _GetWireframeColor(displayStatus,
-                                              _shapeDagPath,
-                                              &mayaWireframeColor);
-    if (needsWire) {
-        _renderParams.wireframeColor = GfVec4f(mayaWireframeColor.r,
-                                               mayaWireframeColor.g,
-                                               mayaWireframeColor.b,
-                                               1.0f);
-    }
-
-    TfToken reprName;
-
-    // Maya 2015 lacks MHWRender::MFrameContext::DisplayStyle::kFlatShaded for
-    // whatever reason...
-    const bool flatShaded =
+    // The kFlatShaded display style was introduced in Maya 2016.
+    const bool flatShadedStyle =
 #if MAYA_API_VERSION >= 201600
         displayStyle & MHWRender::MFrameContext::DisplayStyle::kFlatShaded;
 #else
         false;
 #endif
 
-    if (flatShaded) {
-        if (needsWire) {
-            reprName = HdTokens->wireOnSurf;
+    if (flatShadedStyle) {
+        if (!shadeActiveOnlyStyle || isActive) {
+            if (wireframeStyle) {
+                reprSelector = HdReprSelector(HdReprTokens->wireOnSurf);
+            } else {
+                reprSelector = HdReprSelector(HdReprTokens->hull);
+            }
         } else {
-            reprName = HdTokens->hull;
+            // We're in shadeActiveOnly mode but this shape is not active.
+            reprSelector = HdReprSelector(HdReprTokens->wire);
         }
     }
-    else if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kGouraudShaded)
-    {
-        if (needsWire || (displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame)) {
-            reprName = HdTokens->refinedWireOnSurf;
+    else if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kGouraudShaded) {
+        if (!shadeActiveOnlyStyle || isActive) {
+            if (wireframeStyle) {
+                reprSelector = HdReprSelector(HdReprTokens->refinedWireOnSurf);
+            } else {
+                reprSelector = HdReprSelector(HdReprTokens->refined);
+            }
         } else {
-            reprName = HdTokens->refined;
+            // We're in shadeActiveOnly mode but this shape is not active.
+            reprSelector = HdReprSelector(HdReprTokens->refinedWire);
         }
     }
-    else if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame)
-    {
-        reprName = HdTokens->refinedWire;
-        _renderParams.enableLighting = false;
+    else if (wireframeStyle) {
+        reprSelector = HdReprSelector(HdReprTokens->refinedWire);
     }
-    else
-    {
-        _drawShape = false;
-    }
-
-    if (_delegate->GetRootVisibility() != _drawShape) {
-        _delegate->SetRootVisibility(_drawShape);
+    else if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kTwoSidedLighting) {
+        // The UV editor uses the kTwoSidedLighting displayStyle.
+        //
+        // For now, to prevent objects from completely disappearing, we just
+        // treat it similarly to kGouraudShaded.
+        reprSelector = HdReprSelector(HdReprTokens->refined);
     }
 
-    if (_rprimCollection.GetReprName() != reprName) {
-        _rprimCollection.SetReprName(reprName);
-
-        TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-                "    Repr name changed: %s\n"
-                "        Marking collection dirty: %s\n",
-                reprName.GetText(),
-                _rprimCollection.GetName().GetText());
-
-        _delegate->GetRenderIndex().GetChangeTracker().MarkCollectionDirty(
-            _rprimCollection.GetName());
-    }
-
-    // Maya 2016 SP2 lacks MHWRender::MFrameContext::DisplayStyle::kBackfaceCulling
-    // for whatever reason...
-    _renderParams.cullStyle = HdCullStyleNothing;
-#if MAYA_API_VERSION >= 201603
-    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBackfaceCulling) {
-        _renderParams.cullStyle = HdCullStyleBackUnlessDoubleSided;
-    }
-#endif
-
-    return true;
+    return reprSelector;
 }
 
-bool
-PxrMayaHdShapeAdapter::UpdateVisibility()
-{
-    MStatus status;
-    const MHWRender::DisplayStatus displayStatus =
-        MHWRender::MGeometryUtilities::displayStatus(_shapeDagPath, &status);
-    if (status != MS::kSuccess) {
-        return false;
-    }
-
-    const bool isVisible = (displayStatus != MHWRender::kInvisible);
-
-    if (_delegate && _delegate->GetRootVisibility() != isVisible) {
-        _delegate->SetRootVisibility(isVisible);
-        return true;
-    }
-
-    return false;
-}
-
+/* virtual */
 PxrMayaHdRenderParams
 PxrMayaHdShapeAdapter::GetRenderParams(
         bool* drawShape,
         bool* drawBoundingBox) const
 {
     if (drawShape) {
-        *drawShape = _drawShape;
+        // Internally, the shape adapter keeps track of whether its shape is
+        // being drawn for managing visibility, but otherwise most Hydra-imaged
+        // shapes should not be drawing themselves. The pxrHdImagingShape will
+        // take care of batching up the drawing of all of the shapes, so for
+        // the purposes of render params, we set drawShape to false by default.
+        // The pxrHdImagingShape bypasses this and sets drawShape to true.
+        // We handle this similarly in GetMayaUserData() above.
+        *drawShape = false;
     }
 
     if (drawBoundingBox) {
@@ -552,30 +371,205 @@ PxrMayaHdShapeAdapter::GetRenderParams(
     return _renderParams;
 }
 
+/* virtual */
+const HdRprimCollection&
+PxrMayaHdShapeAdapter::GetRprimCollection() const
+{
+    return _rprimCollection;
+}
+
+/* virtual */
+const TfTokenVector&
+PxrMayaHdShapeAdapter::GetRenderTags() const
+{
+    return _renderTags;
+}
+
+
+/* virtual */
+const GfMatrix4d&
+PxrMayaHdShapeAdapter::GetRootXform() const
+{
+    return _rootXform;
+}
+
+/* virtual */
 void
 PxrMayaHdShapeAdapter::SetRootXform(const GfMatrix4d& transform)
 {
     _rootXform = transform;
-
-    if (_delegate) {
-        _delegate->SetRootTransform(_rootXform);
-    }
 }
 
+/* virtual */
 const SdfPath&
 PxrMayaHdShapeAdapter::GetDelegateID() const
 {
-    if (_delegate) {
-        return _delegate->GetDelegateID();
-    }
-
     return SdfPath::EmptyPath();
 }
 
+/* virtual */
+const MDagPath&
+PxrMayaHdShapeAdapter::GetDagPath() const
+{
+    return _shapeDagPath;
+}
+
+/* virtual */
 bool
 PxrMayaHdShapeAdapter::IsViewport2() const
 {
     return _isViewport2;
+}
+
+/* virtual */
+TfToken
+PxrMayaHdShapeAdapter::_GetRprimCollectionName() const
+{
+    MStatus status;
+    const MObject shapeObj = _shapeDagPath.node(&status);
+    CHECK_MSTATUS_AND_RETURN(status, TfToken());
+    const MFnDependencyNode depNodeFn(shapeObj, &status);
+    CHECK_MSTATUS_AND_RETURN(status, TfToken());
+    const MUuid shapeUuid = depNodeFn.uuid(&status);
+    CHECK_MSTATUS_AND_RETURN(status, TfToken());
+
+    return TfToken(TfMakeValidIdentifier(shapeUuid.asString().asChar()));
+}
+
+/* static */
+bool
+PxrMayaHdShapeAdapter::_GetWireframeColor(
+        const unsigned int displayStyle,
+        const MHWRender::DisplayStatus displayStatus,
+        const MDagPath& shapeDagPath,
+        MColor* mayaWireColor)
+{
+    bool useWireframeColor = false;
+
+    // Dormant objects may be included in a soft selection.
+    if (displayStatus == MHWRender::kDormant) {
+        auto& batchRenderer = UsdMayaGLBatchRenderer::GetInstance();
+        if (batchRenderer.GetObjectSoftSelectEnabled()) {
+            const UsdMayaGLSoftSelectHelper& softSelectHelper =
+                UsdMayaGLBatchRenderer::GetInstance().GetSoftSelectHelper();
+            useWireframeColor = softSelectHelper.GetFalloffColor(shapeDagPath,
+                                                                 mayaWireColor);
+        }
+    }
+
+    // If the object isn't included in a soft selection, just ask Maya for the
+    // wireframe color.
+    if (!useWireframeColor && mayaWireColor != nullptr) {
+        *mayaWireColor =
+            MHWRender::MGeometryUtilities::wireframeColor(shapeDagPath);
+    }
+
+    constexpr unsigned int wireframeDisplayStyles = (
+        MHWRender::MFrameContext::DisplayStyle::kWireFrame |
+        MHWRender::MFrameContext::DisplayStyle::kBoundingBox);
+
+    const bool wireframeStyle = (displayStyle & wireframeDisplayStyles);
+
+    const bool isActive =
+        (displayStatus == MHWRender::DisplayStatus::kActive) ||
+        (displayStatus == MHWRender::DisplayStatus::kHilite) ||
+        (displayStatus == MHWRender::DisplayStatus::kActiveTemplate) ||
+        (displayStatus == MHWRender::DisplayStatus::kActiveComponent) ||
+        (displayStatus == MHWRender::DisplayStatus::kLead);
+
+    if (wireframeStyle || isActive) {
+        useWireframeColor = true;
+    }
+
+    return useWireframeColor;
+}
+
+/* static */
+bool
+PxrMayaHdShapeAdapter::_GetVisibility(
+        const MDagPath& dagPath,
+        const M3dView* view,
+        bool* visibility)
+{
+    MStatus status;
+    const MHWRender::DisplayStatus displayStatus =
+        MHWRender::MGeometryUtilities::displayStatus(dagPath, &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+    if (displayStatus == MHWRender::kInvisible) {
+        *visibility = false;
+        return true;
+    }
+
+    // The displayStatus() method above does not account for things like
+    // display layers, so we also check the shape's dag path for its visibility
+    // state.
+    const bool dagPathIsVisible = dagPath.isVisible(&status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+    if (!dagPathIsVisible) {
+        *visibility = false;
+        return true;
+    }
+
+    // If a view was provided, check to see whether it is being filtered, and
+    // get its isolated objects if so.
+    MSelectionList isolatedObjects;
+#if MAYA_API_VERSION >= 201700
+    if (view && view->viewIsFiltered()) {
+        view->filteredObjectList(isolatedObjects);
+    }
+#endif
+
+    // If non-empty, isolatedObjects contains the "root" isolated objects, so
+    // we'll need to check to see if one of our ancestors was isolated. (The
+    // ancestor check is potentially slow if you're isolating selection in
+    // a very large scene.)
+    // If empty, nothing is being isolated. (You don't pay the cost of any
+    // ancestor checking in this case.)
+    const bool somethingIsolated = !isolatedObjects.isEmpty(&status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+    if (somethingIsolated) {
+        bool isIsolateVisible = false;
+        MDagPath curPath(dagPath);
+        while (curPath.length()) {
+            const bool hasItem = isolatedObjects.hasItem(
+                    curPath, MObject::kNullObj, &status);
+            if (status != MS::kSuccess) {
+                return false;
+            }
+            if (hasItem) {
+                isIsolateVisible = true;
+                break;
+            }
+            curPath.pop();
+        }
+        *visibility = isIsolateVisible;
+        return true;
+    }
+
+    // Passed all visibility checks.
+    *visibility = true;
+    return true;
+}
+
+PxrMayaHdShapeAdapter::PxrMayaHdShapeAdapter()
+{
+    TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
+        "Constructing PxrMayaHdShapeAdapter: %p\n",
+        this);
+}
+
+/* virtual */
+PxrMayaHdShapeAdapter::~PxrMayaHdShapeAdapter()
+{
+    TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
+        "Destructing PxrMayaHdShapeAdapter: %p\n",
+        this);
 }
 
 

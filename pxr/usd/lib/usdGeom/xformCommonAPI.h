@@ -132,9 +132,10 @@ public:
     static UsdGeomXformCommonAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-private:
+protected:
+    /// Returns whether the underlying xformable is compatible with the API.
     USDGEOM_API
-    virtual bool _IsCompatible(const UsdPrim &prim) const;
+    bool _IsCompatible() const override;
 
 public:
 
@@ -248,10 +249,19 @@ public:
 
     /// @}
 
-private:
+    /// \name Computing transforms
+    /// @{
 
-    // Returns whether the underlying xformable is compatible with the API.
-    bool _IsCompatible() const;
+    /// Return the 4x4 matrix that applies the rotation encoded by rotation
+    /// vector \p rotation using the rotation order \p rotationOrder.
+    USDGEOM_API
+    static GfMatrix4d GetRotationTransform(
+            const GfVec3f &rotation,
+            const UsdGeomXformCommonAPI::RotationOrder rotationOrder);
+
+    /// @}
+
+private:
 
     // Computes and stores op indices in the data members.
     bool _ComputeOpIndices();

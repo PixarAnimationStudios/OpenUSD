@@ -58,14 +58,14 @@ class HdSt_TriangleIndexBuilderComputation : public HdComputedBufferSource {
 public:
     HdSt_TriangleIndexBuilderComputation(HdSt_MeshTopology *topology,
                                          SdfPath const &id);
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
     virtual bool Resolve() override;
 
     virtual bool HasChainedBuffer() const override;
     virtual HdBufferSourceVector GetChainedBuffers() const override;
 
 protected:
-    virtual bool _CheckValid() const;
+    virtual bool _CheckValid() const override;
 
 private:
     SdfPath const _id;
@@ -86,7 +86,7 @@ public:
                                          HdBufferSourceSharedPtr const &source,
                                          SdfPath const &id);
 
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
     virtual bool Resolve() override;
 
 protected:

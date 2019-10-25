@@ -22,15 +22,7 @@ def Scope "Prim"
         1: 2,
         2: 4,
     }
-    double bar:argle.mapper[ </Prim.bar:baz> ] = TestMapper
-    rel argle:bargle = </Prim/Child> {
-        double x:x:x = 1.234
-        double x:x:y = 1.234
-        double x:y:y = 1.234
-    }
-    rel a:b:c[</Prim>] {
-        double x:y:z = 1.234
-    }
+    rel argle:bargle = </Prim/Child>
     rel a:b:c.timeSamples = {
         1: </Prim>,
         2: </Prim/Child>,

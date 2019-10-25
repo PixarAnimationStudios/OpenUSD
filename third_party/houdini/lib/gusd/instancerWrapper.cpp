@@ -23,17 +23,13 @@
 //
 #include "instancerWrapper.h"
 
-#include "gusd/context.h"
-#include "gusd/GU_PackedUSD.h"
-#include "gusd/UT_Gf.h"
-#include "gusd/refiner.h"
+#include "context.h"
+#include "GT_PrimCache.h"
+#include "GU_PackedUSD.h"
+#include "refiner.h"
+#include "USD_XformCache.h"
+#include "UT_Gf.h"
 
-
-#include "gusd/GT_PrimCache.h"
-#include "gusd/USD_XformCache.h"
-
-#include <GT/GT_DAConstantValue.h>
-#include <GT/GT_DAIndexedString.h>
 #include <GT/GT_DANumeric.h>
 #include <GT/GT_GEODetail.h>
 #include <GT/GT_PrimInstance.h>
@@ -44,18 +40,15 @@
 #include <OBJ/OBJ_Node.h>
 #include <OP/OP_Director.h>
 #include <SOP/SOP_Node.h>
+#include <SYS/SYS_Version.h>
 #include <UT/UT_Assert.h>
 #include <UT/UT_Matrix3.h>
 #include <UT/UT_Matrix4.h>
 #include <UT/UT_Quaternion.h>
 #include <UT/UT_StringArray.h>
 
-#include "pxr/usd/usdGeom/xformCache.h"
-#include "pxr/usd/sdf/cleanupEnabler.h"
-
-#include <pxr/base/gf/quatf.h>
-#include <pxr/base/gf/transform.h>
-#include <pxr/base/tf/pathUtils.h>
+#include "pxr/base/gf/quatf.h"
+#include "pxr/base/tf/pathUtils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -74,7 +67,6 @@ using std::map;
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((prunable, "pruning:prunable"))
-    (ReferencedPath)
     (Xform)
 );     
 
@@ -372,7 +364,7 @@ void GusdInstancerWrapper::storePreOverlayData(bool justProtoIndices,
     
     // For time samples where we have prototype indices, store data.
     for (int i = 0; i < times.size(); i++) {
-        for (TfToken token : m_usdGeomTokens) {
+        for (const TfToken& token : m_usdGeomTokens) {
             if (!m_preOverlayDataMap.count(token))
                 continue;
             boost::apply_visitor(StoreAtTime(UsdTimeCode(times[i])), m_preOverlayDataMap[token]);
@@ -382,7 +374,7 @@ void GusdInstancerWrapper::storePreOverlayData(bool justProtoIndices,
 }
 void GusdInstancerWrapper::clearPreOverlayData() {
     // Clears original data so we don't have to store unnecessary information.
-    for (TfToken token : m_usdGeomTokens){
+    for (const TfToken& token : m_usdGeomTokens){
         if (!m_preOverlayDataMap.count(token))
             continue;
         boost::apply_visitor(ClearData{}, m_preOverlayDataMap[token]);
@@ -512,14 +504,6 @@ redefine( const UsdStagePtr& stage,
     return true;
 }
 
-bool GusdInstancerWrapper::
-getUniqueID(int64& id) const
-{
-    static const int s_id = GT_Primitive::createPrimitiveTypeId();
-    id = s_id;
-    return true;
-}
-
 
 const char* GusdInstancerWrapper::
 className() const
@@ -561,7 +545,7 @@ doSoftCopy() const
 
 bool GusdInstancerWrapper::isValid() const
 {
-    return m_usdPointInstancer;
+    return static_cast<bool>(m_usdPointInstancer);
 }
 
 void GusdInstancerWrapper::
@@ -712,7 +696,7 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
                 // Use the context's usdinstancepath as default if no attributes
                 std::tuple<string, bool> usdInstancePath(ctxt.usdInstancePath, generateProtoNames);
                 if (instancePathAttr.isValid()) {
-#if HDK_API_VERSION < 16050000
+#if SYS_VERSION_FULL_INT < 0x10050000
                     string instancePathAttrVal = instancePathAttr.get(offsetIt.getOffset());
 #else
                     string instancePathAttrVal = instancePathAttr.get(offsetIt.getOffset()).toStdString();
@@ -846,6 +830,10 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
                                           newContext,
                                           xformCache );
 
+                // TODO: Grab material bindings for prims brought in with
+                // subroot references and copy them here so we don't lose
+                // shading
+
                 // Create an array of prototype transforms for subtracting from
                 // instance transforms later
                 m_prototypeTransforms.push_back(gtPrim.xform);
@@ -880,63 +868,6 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
         string mapKey = pair.first;
         SdfPath relationshipPath = pair.second;
 
-        // USD doesn't allow references to non-root prims. If we want to build
-        // a point instancer with non-root prims, we reference the root prim
-        // but point the relationship to point to a descendant. When we wrote
-        // the prototype file, we added an attribute to tell us what descendant
-        // to use.
-        UsdPrim protoRootPrim( stage->DefinePrim( pair.second, _tokens->Xform ));
-        protoRootPrim.Load();
-        // TODO Enable cleanup to remove empty tokens left after moving
-        // transforms in the case of prototype transforms where the prototype
-        // is not the referenced root.
-        //SdfCleanupEnabler();
-        for(auto protoPrim : protoRootPrim.GetAllChildren()) {
-            UsdAttribute pathAttr
-                = protoPrim.GetAttribute(_tokens->ReferencedPath);
-            if( pathAttr ) {
-                string subPath;
-                pathAttr.Get(&subPath);
-                relationshipPath = protoPrim.GetPath().AppendPath(SdfPath(subPath));
-
-                // Get the prototype scope referenced by the relationship array
-                UsdPrim protoTarget = stage->GetPrimAtPath(relationshipPath);
-                if (!protoTarget.IsValid()) {
-                    TF_WARN( "Prototype does not exist at '%s'",
-                                relationshipPath.GetString().c_str() );
-                    continue;
-                }
-
-                // Get the Xformables at the prototype scope and the referenced
-                // prototype scope (where we actually retrieve geometry)
-                UsdGeomXformable protoXformable( protoPrim );
-                UsdGeomXformable protoTargetXformable( protoTarget );
-
-                // Get the xforms we wrote out on the prototype scope
-                bool resetXformStack = false;
-                std::vector<UsdGeomXformOp> xformOps = protoXformable.GetOrderedXformOps(&resetXformStack);
-                if (xformOps.size()==0)
-                    continue;
-
-                // Set the transform on the referenced scope to be the same
-                // we wrote onto the prototype scope. First clear previous
-                // xformOps.
-                protoTargetXformable.SetXformOpOrder(std::vector<UsdGeomXformOp>());
-                for (auto xformOp : xformOps) {
-                    // Add an equivalent xformOp to the target prototype scope
-                    // that was in the original protoype scope.
-                    const UsdGeomXformOp xformOpTarget =
-                        protoTargetXformable.AddXformOp(xformOp.GetOpType(),
-                                                        xformOp.GetPrecision());
-                    xformOpTarget.Set( xformOp.GetOpTransform(ctxt.time),
-                                       ctxt.time);
-
-                    // Clear each xformOp from the original scope.
-                    xformOp.GetAttr().Clear();
-                }
-                protoXformable.GetXformOpOrderAttr().Clear();
-            }
-        }
         if(ctxt.overlayAll) {
             relationshipPaths.push_back(relationshipPath);
         } else {
@@ -1232,13 +1163,13 @@ void GusdInstancerWrapper::setTransformAttrsFromMatrices(const UT_Matrix4D &worl
 {
     // Create a map from TfToken to UsdAttribute for each one we want to set.
     std::map<TfToken, UsdAttribute> usdAttrMap;
-    for (auto token : m_usdGeomTokens) {
+    for (const auto& token : m_usdGeomTokens) {
         if (token != UsdGeomTokens->protoIndices) {
             usdAttrMap[token] =
                 m_usdPointInstancer.GetPrim().GetAttribute(token);
             if(!usdAttrMap[token].IsValid()) {
                 TF_WARN( "Missing '%s' attribute from point instancer. "
-                    "Failed to update attributes.", token.GetString().c_str());
+                         "Failed to update attributes.", token.GetText() );
                 return;
             }
         }
@@ -1450,7 +1381,7 @@ void GusdInstancerWrapper::setTransformAttrsFromMatrices(const UT_Matrix4D &worl
     }
 
     // Set all the attributes' data.
-    for (auto pair : houHandlesMap)
+    for (const auto& pair : houHandlesMap)
         GusdGT_Utils::setUsdAttribute(usdAttrMap[pair.first], pair.second, time);
 }
 
@@ -1520,7 +1451,7 @@ refine( GT_Refine& refiner,
                 continue;
             }
 
-            UT_Matrix4D m = GusdUT_Gf::Cast( frames[i] );
+            const UT_Matrix4D& m = GusdUT_Gf::Cast( frames[i] );
             transforms->append( new GT_Transform( &m, 1 ) );
         }
         if( transforms->entries() > 0 ) {
@@ -1589,7 +1520,7 @@ GusdInstancerWrapper::unpack(
     }
 
 
-    GA_Offset start = -1;
+    GA_Offset start = GA_INVALID_OFFSET;
 
     for( size_t i = 0; i < indices.size(); ++i )
     {
@@ -1650,13 +1581,12 @@ GusdInstancerWrapper::unpack(
                 continue;
             }
 
-            if( storage == GT_STORE_REAL16 ||
-                storage == GT_STORE_REAL32 ||
-                storage == GT_STORE_REAL64 ) {
+            if(GTisFloat(storage)) {
 
                 GA_RWAttributeRef attr = 
-                    gdr.addFloatTuple( GA_ATTRIB_POINT, 
-                                       primvar.GetBaseName().GetString().c_str(), 
+                    gdr.addFloatTuple( GA_ATTRIB_POINT,
+                                       GusdUSD_Utils::TokenToStringHolder(
+                                           primvar.GetBaseName()),
                                        pvData->getTupleSize(),
                                        GA_Defaults(0.0),
                                        /* creation_args */0,
@@ -1685,13 +1615,12 @@ GusdInstancerWrapper::unpack(
                     }
                 }
             }
-            else if( storage == GT_STORE_UINT8 ||
-                     storage == GT_STORE_INT32 ||
-                     storage == GT_STORE_INT64 ) {
+            else if(GTisInteger(storage)) {
 
                 GA_RWAttributeRef attr = 
                     gdr.addIntTuple( GA_ATTRIB_POINT, 
-                                     primvar.GetBaseName().GetString().c_str(), 
+                                     GusdUSD_Utils::TokenToStringHolder(
+                                         primvar.GetBaseName()),
                                      pvData->getTupleSize(),
                                      GA_Defaults(0.0),
                                      /* creation_args */0,

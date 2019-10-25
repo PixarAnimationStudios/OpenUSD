@@ -180,6 +180,87 @@ class TestUsdFlattenProperties(unittest.TestCase):
                         self.subLayer, "/OffsetTimeSamplesSublayer.a"),
                     { 0: 100, 10: 1000 })
 
+    def test_FlattenTimeCodeWithOffsets(self):
+        """Tests that layer offsets are taken into account when flattening
+        attribute time samples and defaults of time code value attributes."""
+
+        propName = "a"
+        srcAttr = self.stage.GetPrimAtPath("/OffsetTimeCodeTimeSamples") \
+                            .GetAttribute(propName)
+
+        if Usd.UsesInverseLayerOffset():
+            self.assertEqual(self._GetDefault(srcAttr), Sdf.TimeCode(-10))
+            self.assertEqual(self._GetTimeSamples(srcAttr), 
+                             { -10: Sdf.TimeCode(90), 0: Sdf.TimeCode(990) })
+        else:
+            self.assertEqual(self._GetDefault(srcAttr), Sdf.TimeCode(10))
+            self.assertEqual(self._GetTimeSamples(srcAttr), 
+                             { 10: Sdf.TimeCode(110), 20: Sdf.TimeCode(1010) })
+
+        rootPrimPath = Sdf.Path("/OffsetTimeCodeTimeSamplesRoot")
+        dstAttr = srcAttr.FlattenTo(
+            self.stage.OverridePrim(rootPrimPath))
+
+        if Usd.UsesInverseLayerOffset():
+            self.assertEqual(self._GetDefault(dstAttr), Sdf.TimeCode(-10))
+            self.assertEqual(
+                self._GetTimeSamples(dstAttr), { -10: Sdf.TimeCode(90), 
+                                                 0: Sdf.TimeCode(990) })
+            self.assertEqual(
+                self._GetDefaultInLayer(
+                    self.rootLayer, rootPrimPath.AppendProperty(propName)), 
+                Sdf.TimeCode(-10))
+            self.assertEqual(
+                self._GetTimeSamplesInLayer(
+                    self.rootLayer, rootPrimPath.AppendProperty(propName)),
+                { -10: Sdf.TimeCode(90), 0: Sdf.TimeCode(990) })
+        else:
+            self.assertEqual(self._GetDefault(dstAttr), Sdf.TimeCode(10))
+            self.assertEqual(
+                self._GetTimeSamples(dstAttr), { 10: Sdf.TimeCode(110), 
+                                                 20: Sdf.TimeCode(1010) })
+            self.assertEqual(
+                self._GetDefaultInLayer(
+                    self.rootLayer, rootPrimPath.AppendProperty(propName)), 
+                Sdf.TimeCode(10))
+            self.assertEqual(
+                self._GetTimeSamplesInLayer(
+                    self.rootLayer, rootPrimPath.AppendProperty(propName)),
+                { 10: Sdf.TimeCode(110), 20: Sdf.TimeCode(1010) })
+
+        subPrimPath = Sdf.Path("/OffsetTimeCodeTimeSamplesSublayer")
+        with Usd.EditContext(
+            self.stage, self.stage.GetEditTargetForLocalLayer(self.subLayer)):
+            dstAttr = srcAttr.FlattenTo(
+                self.stage.OverridePrim(subPrimPath))
+
+            if Usd.UsesInverseLayerOffset():
+                self.assertEqual(self._GetDefault(dstAttr), Sdf.TimeCode(-10))
+                self.assertEqual(
+                    self._GetTimeSamples(dstAttr), { -10: Sdf.TimeCode(90), 
+                                                     0: Sdf.TimeCode(990) })
+                self.assertEqual(
+                    self._GetDefaultInLayer(
+                        self.subLayer, subPrimPath.AppendProperty(propName)), 
+                    Sdf.TimeCode(0))
+                self.assertEqual(
+                    self._GetTimeSamplesInLayer(
+                        self.subLayer, subPrimPath.AppendProperty(propName)),
+                    { 0: Sdf.TimeCode(100), 10: Sdf.TimeCode(1000) })
+            else:
+                self.assertEqual(self._GetDefault(dstAttr), Sdf.TimeCode(10))
+                self.assertEqual(
+                    self._GetTimeSamples(dstAttr), { 10: Sdf.TimeCode(110), 
+                                                     20: Sdf.TimeCode(1010) })
+                self.assertEqual(
+                    self._GetDefaultInLayer(
+                        self.subLayer, subPrimPath.AppendProperty(propName)), 
+                    Sdf.TimeCode(0))
+                self.assertEqual(
+                    self._GetTimeSamplesInLayer(
+                        self.subLayer, subPrimPath.AppendProperty(propName)),
+                    { 0: Sdf.TimeCode(100), 10: Sdf.TimeCode(1000) })
+
     def test_DefaultAndTimeSamples(self):
         """Tests that properties with both a default value and time samples
         in different sublayers are flattened so that the result has the
@@ -361,8 +442,8 @@ class TestUsdFlattenProperties(unittest.TestCase):
               "variability": Sdf.VariabilityVarying })
 
         # Using an instance proxy avoids this problem.
-        srcAttr = self.stage.GetPrimAtPath("/FlattenInstanceProperty/Instance2") \
-                            .GetAttribute("builtinAttr")
+        srcAttr = self.stage.GetPrimAtPath(
+            "/FlattenInstanceProperty/Instance2").GetAttribute("builtinAttr")
         dstPrim = self.stage.DefinePrim("/FlattenInstanceProperty_3",
                                         "FlattenPropertyTest")
         dstAttr = srcAttr.FlattenTo(dstPrim)
@@ -374,7 +455,7 @@ class TestUsdFlattenProperties(unittest.TestCase):
         self._VerifyExpectedFields(
             dstAttrSpec,
             { "connectionPaths": ExplicitPathListOp([
-                "/FlattenInstanceProperty_3/Instance.builtinAttr"]),
+                "/FlattenInstanceProperty/Instance.builtinAttr"]),
               "custom": False,
               "default": "instance authored value 2",
               "typeName": "string",

@@ -4,20 +4,21 @@
 
 \section UsdSkel_OM_Overview Overview
 
-In UsdSkel, skeletons are bound over a geometry hierarchy to describe
-how a skeleton is animated, and what primitives those animated skeletons
-affect.
+In UsdSkel, skeletons are encoded as independent entities, which
+are 'bound' to the primitives that they affect -- similar to material
+bindings.
 
 For example:
 
 \code
-def PackedJointAnimation "Anim" {}
+def Skeleton "Skel" {
+    rel skel:animationSource = </Anim>
 
-def Skeleton "Skel" {}
+    def SkelAnimation "Anim" {}
+}
 
 def SkelRoot "Character" {
     rel skel:skeleton = </Skel>
-    rel skel:animationSource = </Anim>
 
     def Mesh "Mesh" {
         int[] primvars:skel:jointIndices = ...
@@ -25,56 +26,34 @@ def SkelRoot "Character" {
 }
 \endcode
 
-In UsdSkel's object model, we say that each _skel:skeleton_ binding relationship
-defines a new \ref UsdSkel_Term_SkeletonInstance "Skeleton Instance".
-So for the example case above, we would say that there is a skeleton instance
-bound to `</Charactor>`, that affects the child primitives beneath it.
+Above, there is a single _skeleton_ at `</Skel>`, which is animated according
+to the _animation_ at `</Anim>`. That skeleton is bound to `</Character>`,
+and so affects every _skinnable primitive_ beneath `</Character>`, such as
+`</Character/Mesh>`.
 
-The _skeleton instance_ identified at `</Character>` describes an instantation
-of the skeleton at `</Skel>`, animated using the animation defined at `</Anim>`.
+UsdSkel provides various "query" objects, which provide convenient API
+to assist extraction of data related to the above components: For Skeleton
+primitives, a \ref UsdSkel_OM_SkeletonQuery "skeleton query" can be created
+to extra resolved data for the skeleton. Similarly, a
+\ref UsdSkel_OM_AnimationQuery "animation query" provides can be created
+to extract data from an animation. Finally, a
+\ref UsdSkel_OM_SkinningQuery "skinning query" can be used to introspect
+bindings on skinnable primitives, or to compute the effect of skinning.
 
-Since `</Character/Mesh>` has fully specified
-\ref UsdSkel_Term_JointInfluences "Joint Influences", we would additionally
-say that it is a skinnable primitive, and will be skinned by the nearest
-ancestor _skeleton instance_ -- I.e, the instance bound at `</Character>`.
-
-In UsdSkel, these concepts are modeled as 'query' objects, which are populated
-on a \ref UsdSkel_OM_Cache "Skel Cache". These objects map to
-the above concepts as follows:
-
-- **Skeleton Instance**:
-
-  At each primitive that defines a _skeleton instance_,
-  a \ref UsdSkel_OM_SkeletonQuery "skeleton query" is produced,
-  which can be used to query properites of the instance.
-
-- **Skinnable Prims**:
-  
-  At each primitve that has fully defined _joint influences_, a
-  \ref UsdSkel_OM_SkinningQuery "skinning query" is produced, which can be used
-  to query those influences, and other properties that affect skinning.
-
-- **Animations**:
-
-  For each valid animation primitive, an \ref UsdSkel_OM_AnimQuery "anim query"
-  is produced, which provides a common interface to querying data from that
-  animation.
+All of these query objects are created through a
+\ref UsdSkel_OM_Cache "skel cache".
 
 \section UsdSkel_OM_Cache UsdSkelCache: Persistent Skeleton Cache
 
 Bindings in UsdSkel are based on a set of inherited binding properties,
 set through the UsdSkelBindingAPI schema. The UsdSkelCache provides a cache
-with an explicit population stage, which provides an efficient and simplified
-way for clients to reason about resolved skeletal data.
+with an explicit population step, which provides an efficient and simplified
+way for clients to reason about resolved properties.
 
-\sa \ref UsdSkel_CE_PopulateCache "Populating a UsdSkelCache"
+\section UsdSkel_OM_SkeletonQuery UsdSkelSkeletonQuery: Skeleton Resolver
 
-\section UsdSkel_OM_SkeletonQuery UsdSkelSkeletonQuery: Skeleton Instance Resolver
-
-A UsdSkelSkeletonQuery may be thought of as providing a way to query data
-for a \ref UsdSkel_Term_SkeletonInstance "Skeleton Instance" -- that is,
-computations related to a skeleton, as bound into a geometry hierarchy, which
-may have an associated animation. 
+A UsdSkelSkeletonQuery provides a simplified API for querying resolved
+data related to a UsdSkelSKeleton.
 
 A UsdSkelSkeletonQuery is created through a UsdSkelCache instance. Internally,
 constructing a query through a cache presents opportunities for sharing work
@@ -86,28 +65,20 @@ same animation, as well as information about the definition of the skeleton,
 corresponding to a resolved UsdSkelSkeleton primitive. Both of these properties
 are shared across Usd_ScenegraphInstancing_Overview "instance primitives."
 
-When \ref UsdSkel_CE_PopulateCache
-"populating a skel cache", UsdSkelSkeletonQuery will be defined anywhere
-that a _skel:skeleton_ binding relationship is found, provided that the target 
-of that relationship is a valid UsdSkelSkeleton primitive.
-
-\sa \ref UsdSkel_BindingAPI_Skeletons
-
 \section UsdSkel_OM_AnimQuery UsdSkelAnimQuery: Animation Resolver
 
 A UsdSkelAnimQuery provides an interface to computing resolved animation
 for an \ref UsdSkel_Schemas_AnimationSources "animation source".
 
 A UsdSkelAnimQuery is created through a UsdSkelCache instance. This is because
-we anticipate adding _compound_ animation sources like animation blenders,
-eventually, and expect that different instances of blenders may reference many
-of the same animations, so requiring a UsdSkelAnimQuery to be constructed
+we anticipate adding _compound_ animation sources like animation blenders
+in the future, and expect that different instances of blenders may reference
+many of the same animations, so requiring a UsdSkelAnimQuery to be constructed
 through a UsdSkelCache presents an opportunity to share references to queries
 internally.
 
-Data computed through a UsdSkelAnimQuery includes root transformations for
-a Skeleton, as well joint transformations. Later, this may be extended to
-include blend shape and auxiliary animation channels.
+Data computed through a UsdSkelAnimQuery includes joint transformations, as
+well as blend shapes.
 
 It is important to note that per-joint data computations, like joint
 transformations, provide animation data in the
@@ -118,7 +89,7 @@ and must be mapped into skeleton-order by an
 
 It is expected that clients should rarely need to interact with a
 UsdSkelAnimQuery. Instead, clients will typically work through a
-\ref UsdSkel_OM_SkeletonQuery "skeleton query".
+\ref UsdSkel_OM_SkeletonQuery "skeleton query" when querying joint transforms.
 
 \section UsdSkel_OM_SkinningQuery UsdSkelSkinningQuery: Resolving Joint Influences and Skinning
 
@@ -128,24 +99,21 @@ primitive is to be skinned. This includes
 \ref UsdSkel_Term_JointInfluences "joint influences" and a
 \ref UsdSkel_Transform_GeomBindTransform "geom bind transform".
 
-\section UsdSkel_OM_AnimMapper UsdSkelAnimMapper: Remapping Data Between Different Joint Orders
+\section UsdSkel_OM_AnimMapper UsdSkelAnimMapper: Remapping Data Between Different Orders
 
-A helper for mapping vectorized joint data from one
-\ref UsdSkel_JointOrder "joint order" to another.
+A helper for mapping vectorized data from one ordering to another.
 
-Vectorized joint data in UsdSkel may be required to adhere to a variety of
-different orderings. An animation source provides data in its own order,
-which may need to be remapped into the order defined for a skeleton.
-The skeleton order itself may need to be remapped into an order declared at a
-binding site via a _skel:joints_ binding relationship -- which may be set either
-at the same primitive that the skeleton is bound to, or at one of its
-descendants. Clients may also want to remap joint animation into their own
-order, defined externally.
+Vectorized data in UsdSkel may be required to adhere to a variety of different
+orderings. For example, an animation source provides joint data in its own order,
+which may need to be remapped into the joint order defined for a skeleton.
+The skeleton order itself may also need to be remapped into an order declared at
+a binding site via a _skel:joints_ binding relationship. Clients may also want
+to remap vectorized animation data into their own, externally-defined order.
 
-A UsdSkelAnimMapper provides remapping of ordered data to simplify these
-tasks. Based on two joint orderings -- as defined by two SdfPathVector
-constructor arguments -- a mapper provides a reusable structure for remapping
-data between different orderings.
+A UsdSkelAnimMapper provides a mapping of vectorized data from one ordering to
+another to simplify these tasks. Based on two token orderings -- as defined by
+two VtTokenArray constructor arguments -- a mapper provides a reusable structure
+for remapping data between different orderings.
 
 For joint orderings defined as part of the core schemas, clients should not
 generally need to manually construct UsdSkelAnimMapper objects. Rather,
@@ -156,8 +124,9 @@ objects may be shared across different query objects, if possible.
 An effort is made in mappers to provide additional information about a remapping
 task, to facilitate optimizations while remapping data. For instance, the result
 of UsdSkelAnimMapper::IsIdentity can be used to decide whether or not any
-remapping work is required. Similarly, UsdSkelAnimMapper::IsNull indicates
-that no source values can be remapped (and so maybe we need not bother computing
-the source data to begin with).
+remapping work is required -- possibly allowing some array copies to be
+bypassed. Similarly, UsdSkelAnimMapper::IsNull indicates that no source values
+can be remapped (and so maybe we need not bother computing the source data to
+begin with).
 
 */

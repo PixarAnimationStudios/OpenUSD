@@ -37,7 +37,7 @@ typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
 
 // HdSt_BasisCurvesTopology
 //
-// Hydra Stream implementation for basisCurves topology.
+// Storm implementation for basisCurves topology.
 //
 class HdSt_BasisCurvesTopology final : public HdBasisCurvesTopology {
 public:
@@ -45,6 +45,7 @@ public:
 
     virtual ~HdSt_BasisCurvesTopology();
 
+    HdBufferSourceSharedPtr GetPointsIndexBuilderComputation();
     HdBufferSourceSharedPtr GetIndexBuilderComputation(bool forceLines);
 
 private:

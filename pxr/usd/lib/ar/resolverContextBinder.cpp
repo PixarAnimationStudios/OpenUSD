@@ -35,7 +35,7 @@ ArResolverContextBinder::ArResolverContextBinder(
     , _context(context)
 {
     if (_resolver) {
-        _resolver->_BindContext(_context, &_bindingData);
+        _resolver->BindContext(_context, &_bindingData);
     }
 }
 
@@ -45,14 +45,14 @@ ArResolverContextBinder::ArResolverContextBinder(
     , _context(context)
 {
     if (_resolver) {
-        _resolver->_BindContext(_context, &_bindingData);
+        _resolver->BindContext(_context, &_bindingData);
     }
 }
 
 ArResolverContextBinder::~ArResolverContextBinder()
 {
     if (_resolver) {
-        _resolver->_UnbindContext(_context, &_bindingData);
+        _resolver->UnbindContext(_context, &_bindingData);
     }
 }
 

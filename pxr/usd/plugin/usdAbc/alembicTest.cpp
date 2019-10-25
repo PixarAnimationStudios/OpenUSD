@@ -35,7 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 template <class T>
-static bool _Truncate(VtValue& v, int max = 5)
+static bool _Truncate(VtValue& v, size_t max = 5)
 {
     if (v.IsHolding<VtArray<T> >()) {
         const VtArray<T> array = v.UncheckedGet<VtArray<T> >();
@@ -56,23 +56,23 @@ public:
         : _visitor(wrapped) {}
     virtual ~UsdAbc_SortedDataSpecVisitor() {}
 
-    // SdfAbstractDataSpecVisitor overrides
+    // SdfAbstractDataSpecVisitor overrids
     virtual bool VisitSpec(const SdfAbstractData& data,
-                           const SdfAbstractDataSpecId& id) {
+                           const SdfPath& path) {
         if (_visitor)
-            _ids.push_back(_SpecId(id));
+            _paths.push_back(path);
         return true;
     }
 
     virtual void Done(const SdfAbstractData& data) {
         if (_visitor) {
             // Sort ids.
-            std::sort(_ids.begin(), _ids.end());
+            std::sort(_paths.begin(), _paths.end());
             
             // Pass ids to the wrapped visitor.
-            for (const auto& id : _ids) {
-                if (_Pass(data, id)) {
-                    if (!_visitor->VisitSpec(data, id)) {
+            for (const auto& path : _paths) {
+                if (_Pass(data, path)) {
+                    if (!_visitor->VisitSpec(data, path)) {
                         break;
                     }
                 }
@@ -80,7 +80,7 @@ public:
             
             // Finish up.
             _visitor->Done(data);
-            _ids.clear();
+            _paths.clear();
         }
     }
 
@@ -88,51 +88,15 @@ protected:
     /// Iff this returns \c true, \p id is passed to the wrapped visitor.
     /// The default returns \c true.
     virtual bool _Pass(const SdfAbstractData& data,
-                       const SdfAbstractDataSpecId& id) {
+                       const SdfPath& id) {
         return true;
     }        
 
 private:
-    struct _SpecId {
-        SdfPath propertyOwningSpecPath;
-        TfToken propertyName;
-
-        _SpecId(const SdfAbstractDataSpecId& id) :
-            propertyOwningSpecPath(id.GetPropertyOwningSpecPath()),
-            propertyName(id.GetPropertyName())
-        {
-            // Do nothing
-        }
-
-        operator SdfAbstractDataSpecId() const
-        {
-            return SdfAbstractDataSpecId(&propertyOwningSpecPath,&propertyName);
-        }
-
-        bool operator<(const _SpecId& rhs) const
-        {
-            // Sort by propertyOwningSpecPath then propertyName.  Note
-            // that this is different than sorting on the full path:
-            // that may sort a spec's properties after the spec's
-            // namespace descendants.  This will sort properties before
-            // namespace descendants.
-            if (propertyOwningSpecPath < rhs.propertyOwningSpecPath) {
-                return true;
-            }
-            if (rhs.propertyOwningSpecPath < propertyOwningSpecPath) {
-                return false;
-            }
-            // NOTE: We could sort arbitrarily here if property order
-            //       is unimportant.
-            return propertyName < rhs.propertyName;
-        }
-    };
-
-private:
     SdfAbstractDataSpecVisitor* _visitor;
 
-    typedef std::vector<_SpecId> _SpecIds;
-    _SpecIds _ids;
+    typedef std::vector<SdfPath> _Paths;
+    _Paths _paths;
 };
 
 
@@ -140,16 +104,15 @@ private:
 // Note that this works because the Alembic data visits in hierarchy order.
 struct UsdAbc_AlembicWriteVisitor : public SdfAbstractDataSpecVisitor {
     virtual bool VisitSpec(const SdfAbstractData& data, 
-                           const SdfAbstractDataSpecId& id)
+                           const SdfPath& path)
     {
-        const SdfPath& path = id.GetFullSpecPath();
         if (path == SdfPath::AbsoluteRootPath()) {
             // Ignore.
         }
         else {
             fprintf(stdout, "%*s", 2*int(path.GetPathElementCount()-1), "");
-            if (id.IsProperty()) {
-                VtValue custom = data.Get(id, SdfFieldKeys->Custom);
+            if (path.IsPropertyPath()) {
+                VtValue custom = data.Get(path, SdfFieldKeys->Custom);
                 if (custom.IsHolding<bool>()) {
                     fprintf(stdout, "%s",
                             custom.UncheckedGet<bool>() ? "custom " : "");
@@ -158,7 +121,7 @@ struct UsdAbc_AlembicWriteVisitor : public SdfAbstractDataSpecVisitor {
                     fprintf(stdout, "!BAD_CUSTOM ");
                 }
 
-                VtValue typeName = data.Get(id, SdfFieldKeys->TypeName);
+                VtValue typeName = data.Get(path, SdfFieldKeys->TypeName);
                 if (typeName.IsHolding<TfToken>()) {
                     fprintf(stdout, "%s ", TfStringify(typeName).c_str());
                 }
@@ -168,7 +131,7 @@ struct UsdAbc_AlembicWriteVisitor : public SdfAbstractDataSpecVisitor {
 
                 fprintf(stdout, "%s", path.GetName().c_str());
 
-                VtValue value = data.Get(id, SdfFieldKeys->Default);
+                VtValue value = data.Get(path, SdfFieldKeys->Default);
                 if (!value.IsEmpty()) {
                     // Truncate shaped types to not dump too much data.
                     const char* trailing = NULL;
@@ -205,8 +168,8 @@ struct UsdAbc_AlembicWriteVisitor : public SdfAbstractDataSpecVisitor {
                     fprintf(stdout, " = %s\n", s.c_str());
                 }
 
-                VtValue samples = data.Get(id, SdfFieldKeys->TimeSamples);
-                std::set<double> times = data.ListTimeSamplesForPath(id);
+                VtValue samples = data.Get(path, SdfFieldKeys->TimeSamples);
+                std::set<double> times = data.ListTimeSamplesForPath(path);
                 if (samples.IsEmpty()) {
                     if (times.size() <= 1) {
                         // Expected.
@@ -247,7 +210,7 @@ struct UsdAbc_AlembicWriteVisitor : public SdfAbstractDataSpecVisitor {
                 }
 
                 // Write other fields.
-                TfTokenVector tmp = data.List(id);
+                TfTokenVector tmp = data.List(path);
                 std::set<TfToken> tokens(tmp.begin(), tmp.end());
                 tokens.erase(SdfFieldKeys->Custom);
                 tokens.erase(SdfFieldKeys->TypeName);
@@ -255,7 +218,7 @@ struct UsdAbc_AlembicWriteVisitor : public SdfAbstractDataSpecVisitor {
                 tokens.erase(SdfFieldKeys->TimeSamples);
                 const SdfSchema& schema = SdfSchema::GetInstance();
                 for (const auto& field : tokens) {
-                    const VtValue value = data.Get(id, field);
+                    const VtValue value = data.Get(path, field);
                     if (value != schema.GetFallback(field)) {
                         fprintf(stdout, "%*s# %s = %s\n",
                                 2*int(path.GetPathElementCount()-1), "",
@@ -265,7 +228,7 @@ struct UsdAbc_AlembicWriteVisitor : public SdfAbstractDataSpecVisitor {
                 }
             }
             else {
-                VtValue specifier = data.Get(id, SdfFieldKeys->Specifier);
+                VtValue specifier = data.Get(path, SdfFieldKeys->Specifier);
                 if (specifier.IsHolding<SdfSpecifier>()) {
                     static const char* spec[] = { "def", "over", "class" };
                     fprintf(stdout, "%s ",
@@ -275,7 +238,7 @@ struct UsdAbc_AlembicWriteVisitor : public SdfAbstractDataSpecVisitor {
                     fprintf(stdout, "!BAD_SPEC ");
                 }
 
-                VtValue typeName = data.Get(id, SdfFieldKeys->TypeName);
+                VtValue typeName = data.Get(path, SdfFieldKeys->TypeName);
                 if (typeName.IsHolding<TfToken>()) {
                     fprintf(stdout, "%s ", TfStringify(typeName).c_str());
                 }
@@ -306,11 +269,11 @@ static void UsdAbc_PrintTimes(const char* msg, const std::set<double>& times)
 
 struct UsdAbc_AlembicTimeVisitor : public SdfAbstractDataSpecVisitor {
     virtual bool VisitSpec(const SdfAbstractData& data, 
-                           const SdfAbstractDataSpecId& id)
+                           const SdfPath& path)
     {
-        if (id.IsProperty()) {
-            UsdAbc_PrintTimes(id.GetString().c_str(),
-                           data.ListTimeSamplesForPath(id));
+        if (path.IsPropertyPath()) {
+            UsdAbc_PrintTimes(path.GetText(),
+                              data.ListTimeSamplesForPath(path));
         }
         return true;
     }
@@ -344,13 +307,12 @@ UsdAbc_TestAlembic(const std::string& pathname)
             // Dump all time samples of a particular property.  This is
             // intended for the standard Alembic octopus file.
             SdfPath path("/octopus_low/octopus_lowShape.extent");
-            SdfAbstractDataSpecId id(&path);
-            std::set<double> times = data->ListTimeSamplesForPath(id);
+            std::set<double> times = data->ListTimeSamplesForPath(path);
             if (!times.empty()) {
                 fprintf(stdout, "\nExtent samples:\n");
                 for (double t : times) {
                     VtValue value;
-                    if (data->QueryTimeSample(id, t, &value)) {
+                    if (data->QueryTimeSample(path, t, &value)) {
                         fprintf(stdout, "  %f: %s\n",
                                 t, TfStringify(value).c_str());
                     }
@@ -365,7 +327,7 @@ UsdAbc_TestAlembic(const std::string& pathname)
                     double tUpper = ceil(*times.rbegin());
                     for (; t <= tUpper; t += 1.0) {
                         if (times.find(t) == times.end()) {
-                            if (data->QueryTimeSample(id, t, (VtValue*)NULL)) {
+                            if (data->QueryTimeSample(path, t, (VtValue*)NULL)) {
                                 fprintf(stdout, "  %f: <expected sample>\n", t);
                             }
                         }
@@ -397,7 +359,7 @@ UsdAbc_WriteAlembic(const std::string& srcPathname, const std::string& dstPathna
     // Write the file back out in the cwd.
     return
         SdfFileFormat::FindByExtension(".abc")->
-            WriteToFile(boost::get_pointer(layer), dstPathname);
+            WriteToFile(*get_pointer(layer), dstPathname);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

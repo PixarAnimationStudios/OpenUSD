@@ -22,8 +22,14 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "pxr/base/arch/pragmas.h"
+
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_PLACEMENT_NEW  // because of pyFunction.h and boost::function
+
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usd/payloads.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/references.h"
 #include "pxr/usd/usd/inherits.h"
@@ -51,19 +57,6 @@ using std::vector;
 using namespace boost::python;
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-bool 
-Usd_PrimIsA(const UsdPrim& prim, const TfType& schemaType)
-{
-    return prim._IsA(schemaType, /*validateSchema=*/true);
-}
-
-bool 
-Usd_PrimHasAPI(const UsdPrim& prim, const TfType& schemaType, 
-               const TfToken &instanceName)
-{
-    return prim._HasAPI(schemaType, /*validateSchema=*/true, instanceName);
-}
 
 const PcpPrimIndex &
 Usd_PrimGetSourcePrimIndex(const UsdPrim& prim)
@@ -241,9 +234,13 @@ void wrapUsdPrim()
 
         .def("SetPropertyOrder", &UsdPrim::SetPropertyOrder, arg("order"))
 
-        .def("IsA", &Usd_PrimIsA, arg("schemaType"))
-        .def("HasAPI", &Usd_PrimHasAPI, 
-             (arg("schemaType"), arg("instanceName")=TfToken()))
+        .def("IsA",
+            (bool (UsdPrim::*)(const TfType&) const)&UsdPrim::IsA, 
+            arg("schemaType"))
+        .def("HasAPI", 
+            (bool (UsdPrim::*)(const TfType&, const TfToken&) const)
+            &UsdPrim::HasAPI,
+            (arg("schemaType"), arg("instanceName")=TfToken()))
 
         .def("GetChild", &UsdPrim::GetChild, arg("name"))
 
@@ -333,6 +330,9 @@ void wrapUsdPrim()
              &UsdPrim::SetPayload, (arg("layer"), arg("primPath")))
         .def("ClearPayload", &UsdPrim::ClearPayload)
 
+        .def("GetPayloads", &UsdPrim::GetPayloads)
+        .def("HasAuthoredPayloads", &UsdPrim::HasAuthoredPayloads)
+
         .def("Load", &UsdPrim::Load, (arg("policy")=UsdLoadWithDescendants))
         .def("Unload", &UsdPrim::Unload)
 
@@ -366,6 +366,11 @@ void wrapUsdPrim()
         .def("_GetSourcePrimIndex", &Usd_PrimGetSourcePrimIndex,
              return_value_policy<return_by_value>())
         ;
+    
+    to_python_converter<std::vector<UsdPrim>, 
+                        TfPySequenceToPython<std::vector<UsdPrim>>>();
 
     TfPyRegisterStlSequencesFromPython<UsdPrim>();
 }
+
+ARCH_PRAGMA_POP

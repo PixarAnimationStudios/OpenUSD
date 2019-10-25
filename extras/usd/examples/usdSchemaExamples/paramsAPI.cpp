@@ -61,6 +61,11 @@ UsdSchemaExamplesParamsAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 }
 
 
+/* virtual */
+UsdSchemaType UsdSchemaExamplesParamsAPI::_GetSchemaType() const {
+    return UsdSchemaExamplesParamsAPI::schemaType;
+}
+
 /* static */
 UsdSchemaExamplesParamsAPI
 UsdSchemaExamplesParamsAPI::Apply(const UsdPrim &prim)

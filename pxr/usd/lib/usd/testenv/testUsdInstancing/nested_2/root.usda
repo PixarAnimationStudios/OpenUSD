@@ -1,0 +1,26 @@
+#usda 1.0
+
+def "Asset" (
+    instanceable = true
+    payload = @./payload.usda@</Payload>
+)
+{
+}
+
+def "A_1" (
+    references = </Asset>
+)
+{
+}
+
+def "A_2" (
+    references = </Asset>
+)
+{
+}
+
+def "A_3" (
+    references = </Asset>
+)
+{
+}

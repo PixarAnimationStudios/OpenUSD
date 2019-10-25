@@ -1,0 +1,28 @@
+#usda 1.0
+(
+    defaultPrim = "Cube"
+    upAxis = "Z"
+)
+
+def Xform "Cube" (
+    assetInfo = {
+        asset identifier = @./Cube.usda@
+        string name = "Cube"
+    }
+    kind = "component"
+    variants = {
+        string shadingVariant = "Default"
+    }
+    add variantSets = "shadingVariant"
+)
+{
+    def Xform "Geom"
+    {
+        def Mesh "Cube" (
+            prepend references = @CubeWithVertexColorCompressed.usda.draco/Cube_Geom_Cube.drc@
+        )
+        {
+        }
+    }
+}
+

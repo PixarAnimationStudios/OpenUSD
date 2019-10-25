@@ -116,16 +116,22 @@ Hd_PrimTypeIndex<PrimType>::InsertPrim(const TfToken    &typeId,
         return;
     }
 
-
     HdDirtyBits initialDirtyState = prim->GetInitialDirtyBitsMask();
-
     _TrackerInsertPrim(tracker, primId, initialDirtyState);
 
     _PrimTypeEntry &typeEntry = _entries[typeIt->second];
 
-    typeEntry.primMap.emplace(primId, _PrimInfo{sceneDelegate, prim});
-
-    typeEntry.primIds.Insert(primId);
+    const bool emplaced = typeEntry.primMap.emplace(primId,
+            _PrimInfo{sceneDelegate, prim}).second;
+        
+    if (emplaced) {
+        // Only add the primId if this is the first instance in the map.
+        typeEntry.primIds.Insert(primId);
+        
+    } else {
+        // The emplace failed so we should destroy the render prim.
+        _RenderDelegateDestroyPrim(renderDelegate, prim);
+    }
 }
 
 
@@ -355,6 +361,9 @@ Hd_PrimTypeIndex<PrimType>::SyncPrims(HdChangeTracker  &tracker,
 {
     size_t numTypes = _entries.size();
 
+    _dirtyPrimDelegates.clear();
+    HdSceneDelegate *prevDelegate = nullptr;
+
     for (size_t typeIdx = 0; typeIdx < numTypes; ++typeIdx) {
         _PrimTypeEntry &typeEntry =  _entries[typeIdx];
 
@@ -374,10 +383,30 @@ Hd_PrimTypeIndex<PrimType>::SyncPrims(HdChangeTracker  &tracker,
                                     &dirtyBits);
 
                 _TrackerMarkPrimClean(tracker, primPath, dirtyBits);
+
+                if (prevDelegate != primInfo.sceneDelegate) {
+                    _dirtyPrimDelegates.push_back(primInfo.sceneDelegate);
+                    prevDelegate = primInfo.sceneDelegate;
+                }
             }
         }
     }
 }
+
+template <class PrimType>
+const HdSceneDelegatePtrVector&
+Hd_PrimTypeIndex<PrimType>::GetSceneDelegatesForDirtyPrims()
+{
+    // For readability
+    HdSceneDelegatePtrVector& delegates = _dirtyPrimDelegates;
+
+    std::sort(delegates.begin(), delegates.end());
+    HdSceneDelegatePtrVector::iterator last =
+        std::unique(delegates.begin(), delegates.end());
+    delegates.erase(last, delegates.end());
+    return delegates;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -447,6 +476,9 @@ void
 Hd_PrimTypeIndex<HdSprim>::_RenderDelegateDestroyPrim(HdRenderDelegate *renderDelegate,
                                                       HdSprim *prim)
 {
+  if (prim != nullptr) {
+    prim->Finalize(renderDelegate->GetRenderParam());
+  }
   renderDelegate->DestroySprim(prim);
 }
 
@@ -519,6 +551,9 @@ void
 Hd_PrimTypeIndex<HdBprim>::_RenderDelegateDestroyPrim(HdRenderDelegate *renderDelegate,
                                                       HdBprim *prim)
 {
+  if (prim != nullptr) {
+    prim->Finalize(renderDelegate->GetRenderParam());
+  }
   renderDelegate->DestroyBprim(prim);
 }
 

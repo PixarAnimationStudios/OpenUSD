@@ -74,6 +74,11 @@ UsdGeomCapsule::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdGeomCapsule::_GetSchemaType() const {
+    return UsdGeomCapsule::schemaType;
+}
+
 /* static */
 const TfType &
 UsdGeomCapsule::_GetStaticTfType()

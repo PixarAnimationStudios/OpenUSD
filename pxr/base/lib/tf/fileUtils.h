@@ -33,7 +33,7 @@
 
 #include <string>
 #include <vector>
-#include <boost/function.hpp>
+#include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -113,20 +113,20 @@ bool TfMakeDirs(std::string const& path, int mode=-1);
 /// path. This parameter is a pointer, allowing the subdirectory list to be
 /// modified, thus controlling which directories are visited.  Note that
 /// modifying the subdirectory vector has no effect when TfWalkDirs is called
-/// with \c topDown set to \c false. The final paramter is a vector of file
+/// with \c topDown set to \c false. The final parameter is a vector of file
 /// names found in the directory path. The returned value determines whether
 /// the walk should be terminated (\c false), or continue (\c true).
-typedef boost::function<bool (std::string const&,
-                              std::vector<std::string> *,
-                              std::vector<std::string> const&)> TfWalkFunction;
+typedef std::function<bool (std::string const&,
+                            std::vector<std::string> *,
+                            std::vector<std::string> const&)> TfWalkFunction;
 
 /// TfRmTree error handler function.
 ///
 /// The first parameter is the path which caused the error (file or directory),
 /// and the second parameter is an error message indicating why the error
 /// occurred.
-typedef boost::function<void (std::string const&,
-                              std::string const&)> TfWalkErrorHandler;
+typedef std::function<void (std::string const&,
+                            std::string const&)> TfWalkErrorHandler;
 
 /// error handler to use when you want to ignore errors
 ///
@@ -142,7 +142,7 @@ void TfWalkIgnoreErrorHandler(std::string const& path, std::string const& msg);
 /// os.walk() function.
 ///
 /// For each directory in the tree rooted at \p top (including \p top itself,
-/// but excluding '.' and '..'), the boost::function \p fn is called with
+/// but excluding '.' and '..'), the std::function \p fn is called with
 /// three arguments: \c dirpath, \c dirnames, and \c filenames.
 ///
 /// \c dirpath is a string, the path to the directory.  \c dirnames is a list
@@ -183,7 +183,7 @@ void TfWalkDirs(std::string const& top,
 
 /// Recursively delete a directory tree rooted at \p path.
 ///
-/// Tf runtime errors are raised if any errors are encountered while chmod'ing
+/// Tf runtime errors are raised if any errors are encountered while deleting
 /// the specified \p path.  Pass in TfWalkIgnoreErrorHandler() to ignore errors.
 /// Alternately, sending in a custom TfWalkErrorHandler will
 /// call this handler when errors occur.  This handler receives the path which

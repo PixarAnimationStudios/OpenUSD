@@ -35,6 +35,9 @@ HDST_API
 TfToken HdStPackageComputeShader();
 
 HDST_API
+TfToken HdStPackageDomeLightShader();
+
+HDST_API
 TfToken HdStPackagePtexTextureShader();
 
 HDST_API
@@ -49,6 +52,11 @@ TfToken HdStPackageLightingIntegrationShader();
 HDST_API
 TfToken HdStPackageFallbackSurfaceShader();
 
+HDST_API
+TfToken HdStPackageFallbackVolumeShader();
+
+HDST_API
+TfToken HdStPackageImageShader();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

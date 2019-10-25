@@ -47,6 +47,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 template <>
 struct GfIsGfQuat<class GfQuath> { static const bool value = true; };
 
+
+/// Return the dot (inner) product of two quaternions.
+GfHalf GfDot(const GfQuath& q1, const GfQuath& q2);
+
+
 /// \class GfQuath
 /// \ingroup group_gf_LinearAlgebra
 ///
@@ -246,7 +251,7 @@ class GfQuath
     /// Returns the square of the length
     GfHalf
     _GetLengthSquared() const {
-        return _real * _real + GfDot(_imaginary, _imaginary);
+        return GfDot(*this, *this);
     }
 };
 
@@ -259,6 +264,12 @@ GfSlerp(double alpha, const GfQuath& q0, const GfQuath& q1);
 
 GF_API GfQuath
 GfSlerp(const GfQuath& q0, const GfQuath& q1, double alpha);
+
+inline GfHalf
+GfDot(GfQuath const &q1, GfQuath const &q2) {
+    return GfDot(q1.GetImaginary(), q2.GetImaginary()) +
+                 q1.GetReal()*q2.GetReal();
+}
 
 /// Output a GfQuatd using the format (re, i, j, k)
 /// \ingroup group_gf_DebuggingOutput

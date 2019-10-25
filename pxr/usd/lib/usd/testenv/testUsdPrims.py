@@ -52,6 +52,8 @@ class TestUsdPrim(unittest.TestCase):
             assert a is not b
             assert a == b
             assert hash(a) == hash(b)
+            assert not a.HasFallbackValue()
+            assert not b.HasFallbackValue()
 
             p.CreateRelationship('relationship')
             a = p.GetRelationship('relationship')
@@ -60,6 +62,33 @@ class TestUsdPrim(unittest.TestCase):
             assert a is not b
             assert a == b
             assert hash(a) == hash(b)
+
+            # check for prims/props that exist
+            p = s.GetObjectAtPath(u'/foo')
+            assert p
+            assert type(p) is Usd.Prim
+
+            a = s.GetObjectAtPath(u'/foo.attr')
+            assert a
+            assert type(a) is Usd.Attribute
+
+            r = s.GetObjectAtPath(u'/foo.relationship')
+            assert r 
+            assert type(r) is Usd.Relationship
+
+            # check for prims/props that dont exist
+            p = s.GetObjectAtPath(u'/nonexistent')
+            assert not p
+            assert type(p) is Usd.Prim
+
+            a = s.GetObjectAtPath(u'/foo.nonexistentattr')
+            assert not a
+            assert type(a) is Usd.Property
+
+            r = s.GetObjectAtPath(u'/foo.nonexistentrelationship')
+            assert not r 
+            assert type(r) is Usd.Property
+
 
     def test_OverrideMetadata(self):
         for fmt in allFormats:
@@ -103,7 +132,7 @@ class TestUsdPrim(unittest.TestCase):
 
         stage = Usd.Stage.Open(base)
         prim = stage.DefinePrim(primPath)
-        prim.SetPayload(payload, primPath)
+        prim.GetPayloads().AddPayload(payload.identifier, primPath)
         stage.GetRootLayer().subLayerPaths.append(sublayer.identifier) 
 
         expectedPrimStack = [layer.GetPrimAtPath(primPath) for layer in layers]
@@ -446,6 +475,29 @@ class TestUsdPrim(unittest.TestCase):
             baz = s2.GetPrimAtPath("/Foo/Baz")
             assert baz.HasAuthoredReferences()
 
+            # Explicitly set references to the empty list. The metadata will
+            # still exist as an explicitly empty list op.
+            assert foo.GetReferences().SetReferences([])
+            assert foo.HasAuthoredReferences()
+            # Child should be gone.
+            baz = s2.GetPrimAtPath("/Foo/Baz")
+            assert not baz
+
+            # Clear references out. Still empty but no longer explicit.
+            assert foo.GetReferences().ClearReferences()
+            assert not foo.HasAuthoredReferences()
+            # Child still gone.
+            baz = s2.GetPrimAtPath("/Foo/Baz")
+            assert not baz
+
+            # Explicitly set references to the empty again from cleared
+            # verifying that it is indeed set to explicit.
+            assert foo.GetReferences().SetReferences([])
+            assert foo.HasAuthoredReferences()
+            # Child is not back.
+            baz = s2.GetPrimAtPath("/Foo/Baz")
+            assert not baz
+
     def test_GoodAndBadReferences(self):
         for fmt in allFormats:
             # Sub-root references are allowed
@@ -767,46 +819,94 @@ class TestUsdPrim(unittest.TestCase):
                 s._GetPcpCache().FindPrimIndex('/Root/Group/Child'))
 
     def test_AppliedSchemas(self):
+        self.assertTrue(Usd.ModelAPI().IsAPISchema())
+        self.assertTrue(Usd.ClipsAPI().IsAPISchema())
+        self.assertTrue(Usd.CollectionAPI().IsAPISchema())
+
+        self.assertFalse(Usd.ModelAPI().IsAppliedAPISchema())
+        self.assertFalse(Usd.ClipsAPI().IsAppliedAPISchema())
+        self.assertTrue(Usd.CollectionAPI().IsAppliedAPISchema())
+
+        self.assertTrue(Usd.CollectionAPI().IsMultipleApplyAPISchema())
+
+        self.assertTrue(
+            Usd.CollectionAPI().GetSchemaType() == Usd.SchemaType.MultipleApplyAPI)
+        self.assertTrue(
+            Usd.CollectionAPI().GetSchemaType() != Usd.SchemaType.SingleApplyAPI)
+        self.assertTrue(
+            Usd.ModelAPI().GetSchemaType() == Usd.SchemaType.NonAppliedAPI)
+        self.assertTrue(
+            Usd.ClipsAPI().GetSchemaType() == Usd.SchemaType.NonAppliedAPI)
+
         for fmt in allFormats:
             sessionLayer = Sdf.Layer.CreateNew("SessionLayer.%s" % fmt)
             s = Usd.Stage.CreateInMemory('AppliedSchemas.%s' % fmt, sessionLayer)
 
             s.SetEditTarget(Usd.EditTarget(s.GetRootLayer()))
 
-            root = s.OverridePrim('/hello')
-            self.assertEqual([], root.GetAppliedSchemas())
+            world= s.OverridePrim('/world')
+            self.assertEqual([], world.GetAppliedSchemas())
 
-            rootModelAPI = Usd.ModelAPI.Apply(root)
-            self.assertTrue(rootModelAPI)
+            rootCollAPI = Usd.CollectionAPI.ApplyCollection(world, "root")
+            self.assertTrue(rootCollAPI)
 
-            root = rootModelAPI.GetPrim()
-            self.assertTrue(root)
+            world = rootCollAPI.GetPrim()
+            self.assertTrue(world)
 
-            self.assertTrue(root.HasAPI(Usd.ModelAPI))
+            self.assertTrue(world.HasAPI(Usd.CollectionAPI))
 
-            self.assertEqual(['ModelAPI'], root.GetAppliedSchemas())
+            # The schemaType that's passed into HasAPI must derive from 
+            # UsdAPISchemaBase and must not be UsdAPISchemaBase.
+            with self.assertRaises(RuntimeError):
+                world.HasAPI(Usd.Typed)
+            with self.assertRaises(RuntimeError):
+                world.HasAPI(Usd.APISchemaBase)
+            with self.assertRaises(RuntimeError):
+                world.HasAPI(Usd.ModelAPI)
+
+            # Try calling HasAPI a random TfType that isn't a derivative of 
+            # SchemaBase.
+            with self.assertRaises(RuntimeError):
+                world.HasAPI(Sdf.ListOpType)
+
+            self.assertEqual(['CollectionAPI:root'], world.GetAppliedSchemas())
 
             # Switch the edit target to the session layer and test bug 156929
             s.SetEditTarget(Usd.EditTarget(s.GetSessionLayer()))
-            sessionClipsAPI = Usd.ClipsAPI.Apply(root)
-            self.assertTrue(sessionClipsAPI)
-            self.assertEqual(['ClipsAPI', 'ModelAPI'], root.GetAppliedSchemas())
+            sessionCollAPI = Usd.CollectionAPI.ApplyCollection(world, "session")
+            self.assertTrue(sessionCollAPI)
+            self.assertEqual(['CollectionAPI:session', 'CollectionAPI:root'],
+                             world.GetAppliedSchemas())
 
-            self.assertTrue(root.HasAPI(Usd.ClipsAPI))
+            self.assertTrue(world.HasAPI(Usd.CollectionAPI))
 
             # Ensure duplicates aren't picked up
-            anotherSessionClipsAPI = Usd.ClipsAPI.Apply(root)
-            self.assertTrue(anotherSessionClipsAPI)
-            self.assertEqual(['ClipsAPI', 'ModelAPI'], root.GetAppliedSchemas())
+            anotherSessionCollAPI = Usd.CollectionAPI.ApplyCollection(world, 
+                                                                       "session")
+            self.assertTrue(anotherSessionCollAPI)
+            self.assertEqual(['CollectionAPI:session', 'CollectionAPI:root'],
+                             world.GetAppliedSchemas())
 
             # Add a duplicate in the root layer and ensure that there are no 
             # duplicates in the composed result.
             s.SetEditTarget(Usd.EditTarget(s.GetRootLayer()))
-            rootClipsAPI = Usd.ClipsAPI.Apply(root)
-            self.assertTrue(rootClipsAPI)
-            self.assertEqual(['ClipsAPI', 'ModelAPI'], 
-                             root.GetAppliedSchemas())
+            rootLayerSessionCollAPI = Usd.CollectionAPI.ApplyCollection(world,
+                    "session")
+            self.assertTrue(rootLayerSessionCollAPI)
+            self.assertEqual(['CollectionAPI:session', 'CollectionAPI:root'],
+                             world.GetAppliedSchemas())
 
+    def test_Bug160615(self):
+        for fmt in allFormats:
+            s = Usd.Stage.CreateInMemory('Bug160615.%s' % fmt)
+            p = s.OverridePrim('/Foo/Bar')
+            self.assertTrue(p)
+
+            s.RemovePrim(p.GetPath())
+            self.assertFalse(p)
+
+            p = s.OverridePrim('/Foo/Bar')
+            self.assertTrue(p)
 
 if __name__ == "__main__":
     unittest.main()

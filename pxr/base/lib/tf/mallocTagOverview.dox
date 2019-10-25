@@ -13,7 +13,7 @@
 
 \section MallocTagOverview Overview
 
-Accounting for memory use in a program is often difficult.  The TfMallocTag system is designed to track memory use in a hierachical fashion.  Memory use in this context refers specifically to allocations that you make using malloc() (and its variants) and free().  Note that this includes the C++ new and delete operators, since they (in general) simply call through to malloc() and free() (but see \ref tf_MallocTag_BestResults "Best Profiling Results" as well).
+Accounting for memory use in a program is often difficult.  The TfMallocTag system is designed to track memory use in a hierarchical fashion.  Memory use in this context refers specifically to allocations that you make using malloc() (and its variants) and free().  Note that this includes the C++ new and delete operators, since they (in general) simply call through to malloc() and free() (but see \ref tf_MallocTag_BestResults "Best Profiling Results" as well).
 
 The basic idea is that at any point during program execution, you can push a memory "tag" onto the local call stack.  Allocations made while that tag is active are "billed" to that tag; at any point, you can query and see how much outstanding memory is due to that particular tag.  If additional tags are pushed onto the stack, memory allocations are billed to these "children" tags but are also included in the bill to the parent tags.
 

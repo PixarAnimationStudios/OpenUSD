@@ -24,8 +24,10 @@
 import sys, argparse, os
 
 from qt import QtWidgets
-from common import Timer, Complexities
+from common import Timer
 from appController import AppController
+
+from pxr import UsdAppUtils
 
 
 class InvalidUsdviewOption(Exception):
@@ -37,20 +39,21 @@ class InvalidUsdviewOption(Exception):
 
 class Launcher(object):
     '''
-    Base class for argument parsing and validation for UsdView
+    Base class for argument parsing, validation, and initialization for UsdView
 
     Subclasses can choose to override
       -- GetHelpDescription()
       -- RegisterOptions()
       -- ParseOptions()
       -- ValidateOptions()
+      -- GetResolverContext()
     '''
     def __init__(self):
         pass
 
     def Run(self):
         '''
-        the main entry point to launch a process using UsdView.
+        The main entry point to launch a process using UsdView.
         '''
 
         parser = argparse.ArgumentParser(prog=sys.argv[0],
@@ -82,22 +85,29 @@ class Launcher(object):
         '''
         register optional arguments on the ArgParser
         '''
-        parser.add_argument('--renderer', action='store',
-                            type=str, choices=['opt', 'simple'], dest='renderer',
-                            help='Which renderer to use', default='opt')
+        from pxr import UsdUtils
 
+        parser.add_argument('--renderer', action='store',
+                            type=str, dest='renderer',
+                            choices=AppController.GetRendererOptionChoices(),
+                            help="Which render backend to use (named as it "
+                            "appears in the menu).  Use '%s' to "
+                            "turn off Hydra renderers." %
+                            AppController.HYDRA_DISABLED_OPTION_STRING,
+                            default='')
+        
         parser.add_argument('--select', action='store', default='/',
                             dest='primPath', type=str,
                             help='A prim path to initially select and frame')
 
-        parser.add_argument('--camera', action='store', default="main_cam",
-                            type=str, help="Which camera to set the view to on "
-                            "open - may be given as either just the camera's "
-                            "prim name (ie, just the last element in the prim "
-                            "path), or as a full prim path.  Note that if only "
-                            "the prim name is used, and more than one camera "
-                            "exists with the name, which is used will be "
-                            "effectively random")
+        UsdAppUtils.cameraArgs.AddCmdlineArgs(parser,
+            altHelpText=(
+                "Which camera to set the view to on open - may be given as "
+                "either just the camera's prim name (ie, just the last "
+                "element in the prim path), or as a full prim path.  Note "
+                "that if only the prim name is used, and more than one camera "
+                "exists with the name, which is used will be effectively "
+                "random (default=%(default)s)"))
 
         parser.add_argument('--mask', action='store',
                             dest='populationMask',
@@ -143,21 +153,33 @@ class Launcher(object):
                                  '(0 is max, negative numbers imply max - N)')
 
         parser.add_argument('--ff', action='store',
-                            dest='firstframe', type=int)
+                            dest='firstframe', type=int,
+                            help='Set the first frame of the viewer')
 
         parser.add_argument('--lf', action='store',
-                            dest='lastframe', type=int)
+                            dest='lastframe', type=int,
+                            help='Set the last frame of the viewer')
 
-        parser.add_argument('--complexity', action='store',
-                            type=str, default="low", dest='complexity',
-                            choices=[c.id for c in Complexities.ordered()],
-                            help='Set the initial mesh refinement complexity '
-                                 '(%(default)s).')
+        parser.add_argument('--cf', action='store',
+                            dest='currentframe', type=int,
+                            help='Set the current frame of the viewer')
+
+        UsdAppUtils.complexityArgs.AddCmdlineArgs(parser,
+            altHelpText=(
+                'Set the initial mesh refinement complexity (%(default)s).'))
 
         parser.add_argument('--quitAfterStartup', action='store_true',
                             dest='quitAfterStartup',
                             help='quit immediately after start up')
-
+                            
+        parser.add_argument('--sessionLayer', default=None, type=str,
+                            help= "If specified, the stage will be opened "
+                            "with the 'sessionLayer' in place of the default "
+                            "anonymous layer. As this changes the session "
+                            "layer from anonymous to persistent, be "
+                            "aware that layers saved from Export Overrides "
+                            "will include the opinions in the persistent "
+                            "session layer.")
 
     def ParseOptions(self, parser):
         '''
@@ -167,9 +189,12 @@ class Launcher(object):
 
     def ValidateOptions(self, arg_parse_result):
         '''
-        Validate and potentially modifies the parsed arguments. Raises
-        InvalidUsdviewOption if an invalid option is found. If a child has
-        overridden ParseOptions, ValidateOptions is an opportunity to move
+        Called by Run(), after ParseOptions() is called. Validates and 
+        potentially modifies the parsed arguments. Raises InvalidUsdviewOption 
+        if an invalid option is found. If a derived class has overridden 
+        ParseOptions(), ValidateOptions() is an opportunity to process the
+        options and transmute other "core" options in response.  If 
+        overridden, derived classes should likely first call the base method.
         '''
 
         # split arg_parse_result.populationMask into paths.
@@ -177,38 +202,56 @@ class Launcher(object):
             arg_parse_result.populationMask = (
                 arg_parse_result.populationMask.replace(',', ' ').split())
 
-        # convert the camera result to an sdf path, if possible, and verify
-        # that it is "just" a prim path
+        # Verify that the camera path is either an absolute path, or is just
+        # the name of a camera.
         if arg_parse_result.camera:
-            from pxr import Sdf
-            camPath = Sdf.Path(arg_parse_result.camera)
+            camPath = arg_parse_result.camera
             if camPath.isEmpty:
-                raise InvalidUsdviewOption("invalid camera path - %r" % \
-                                           (arg_parse_result.camera,))
+                raise InvalidUsdviewOption(
+                    "invalid camera path - %r" % camPath)
             if not camPath.IsPrimPath():
-                raise InvalidUsdviewOption("invalid camera path - must be a " \
-                                     "raw prim path, without variant " \
-                                     "selections, relational attributes, etc " \
-                                     "- got: %r" % \
-                                     (arg_parse_result.camera,))
+                raise InvalidUsdviewOption(
+                    "invalid camera path - must be a raw prim path with no "
+                    "variant selections or properties - got: %r" % camPath)
 
-            # check if it's a path, or just a name...
-            if camPath.name != arg_parse_result.camera:
-                # it's a "real" path, store the SdfPath version
+            # If it's a multi-element path, make sure it is absolute.
+            if camPath.pathElementCount > 1:
                 if not camPath.IsAbsolutePath():
                     # perhaps we should error here? For now just pre-pending
                     # root, and printing warning...
-                    print >> sys.stderr, "WARNING: camera path %r was not " \
-                                         "absolute, prepending %r to make " \
-                                         "it absolute" % \
-                                         (str(camPath),
-                                          str(Sdf.Path.absoluteRootPath))
-                    camPath = camPath.MakeAbsolutePath(Sdf.Path.absoluteRootPath)
-                arg_parse_result.camera = camPath
+                    from pxr import Sdf
+                    print >> sys.stderr, (
+                        "WARNING: camera path %r was not absolute, prepending "
+                        "%r to make it absolute" % (str(camPath),
+                            str(Sdf.Path.absoluteRootPath)))
+                    arg_parse_result.camera = camPath.MakeAbsolutePath(
+                        Sdf.Path.absoluteRootPath)
 
         if arg_parse_result.clearSettings and arg_parse_result.defaultSettings:
-            raise InvalidUsdviewOption("cannot supply both --clearsettings " \
-                                       "and --defaultsettings.")
+            raise InvalidUsdviewOption(
+                "cannot supply both --clearsettings and --defaultsettings.")
+
+    def GetResolverContext(self, usdFile):
+        """
+        Create and return the ArResolverContext that will be used to Open
+        the Stage for the given usdFile.  Base implementation
+        creates a default asset context for the usdFile asset, but derived
+        classes can do more sophisticated resolver and context configuration.
+        
+        Will be called each time a new stage is opened.
+
+        It is not necessary to create an ArResolverContext for every UsdStage
+        one opens, as the Stage will use reasonable fallback behavior if no
+        context is provided.  For usdview, configuring an asset context by
+        default is reasonable, and allows clients that embed usdview to 
+        achieve different behavior when needed.
+        """
+        from pxr import Ar
+        
+        r = Ar.GetResolver()
+        r.ConfigureResolverForAsset(usdFile)
+        return r.CreateDefaultContextForAsset(usdFile)
+
 
     def LaunchPreamble(self, arg_parse_result):
         # Initialize concurrency limit as early as possible so that it is
@@ -233,7 +276,8 @@ class Launcher(object):
                                            resourceDir.replace("\\", "/"))
         app.setStyleSheet(sheetString)
 
-        appController = AppController(arg_parse_result)
+        contextCreator = lambda usdFile: self.GetResolverContext(usdFile)
+        appController = AppController(arg_parse_result, contextCreator)
 
         return (app, appController)
 

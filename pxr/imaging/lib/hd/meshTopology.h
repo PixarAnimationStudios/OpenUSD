@@ -187,9 +187,36 @@ public:
 
     /// @}
 
+    ///
+    /// \name Topological invisibility
+    /// @{
+    ///
+    HD_API
+    void SetInvisiblePoints(VtIntArray const &invisiblePoints) {
+        _invisiblePoints = invisiblePoints;
+    }
+
+    HD_API
+    VtIntArray const & GetInvisiblePoints() const {
+        return _invisiblePoints;
+    }
+
+    HD_API
+    void SetInvisibleFaces(VtIntArray const &invisibleFaces) {
+        _invisibleFaces = invisibleFaces;
+    }
+
+    HD_API
+    VtIntArray const & GetInvisibleFaces() const {
+        return _invisibleFaces;
+    }
+    /// @}
+
 protected:
     PxOsdMeshTopology _topology;
     HdGeomSubsets _geomSubsets;
+    VtIntArray _invisiblePoints;
+    VtIntArray _invisibleFaces;
     int _refineLevel;
     int _numPoints;
 };

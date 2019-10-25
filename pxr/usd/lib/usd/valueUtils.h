@@ -72,8 +72,7 @@ Usd_ValueContainsBlock(const SdfAbstractDataValue* value)
 inline bool
 Usd_ValueContainsBlock(const SdfAbstractDataConstValue* value)
 {
-    const std::type_info& valueBlockTypeId(typeid(SdfValueBlock));
-    return value && value->valueType == valueBlockTypeId;
+    return value && value->valueType == typeid(SdfValueBlock);
 }
 
 /// If \p value contains an SdfValueBlock, clear the value and
@@ -104,19 +103,19 @@ Usd_ClearValueIfBlocked(VtValue* value)
 template <class T>
 inline bool
 Usd_QueryTimeSample(
-    const SdfLayerRefPtr& layer, const SdfAbstractDataSpecId& specId,
+    const SdfLayerRefPtr& layer, const SdfPath& path,
     double time, Usd_InterpolatorBase* interpolator, T* result)
 {
-    return layer->QueryTimeSample(specId, time, result);
+    return layer->QueryTimeSample(path, time, result);
 }
 
 template <class T>
 inline bool
 Usd_QueryTimeSample(
-    const Usd_ClipRefPtr& clip, const SdfAbstractDataSpecId& specId,
+    const Usd_ClipRefPtr& clip, const SdfPath& path,
     double time, Usd_InterpolatorBase* interpolator, T* result)
 {
-    return clip->QueryTimeSample(specId, time, interpolator, result);
+    return clip->QueryTimeSample(path, time, interpolator, result);
 }
 
 /// Merges sample times in \p additionalTimeSamples into the vector pointed to 
@@ -146,13 +145,6 @@ Usd_InsertListItem(PROXY proxy, const typename PROXY::value_type &item,
     typename PROXY::ListProxy list(/* unused */ SdfListOpTypeExplicit);
     bool atFront = false;
     switch (position) {
-    case UsdListPositionTempDefault:
-        if (UsdAuthorOldStyleAdd()) {
-            proxy.Add(item);
-            return;
-        } else {
-            // Fall through to UsdListPositionBackOfPrependList case.
-        }
     case UsdListPositionBackOfPrependList:
         list = proxy.GetPrependedItems();
         atFront = false;
@@ -183,7 +175,7 @@ Usd_InsertListItem(PROXY proxy, const typename PROXY::value_type &item,
         list.Insert(-1, item);
     } else {
         const size_t pos = list.Find(item);
-        if (pos != -1) {
+        if (pos != size_t(-1)) {
             const size_t targetPos = atFront ? 0 : list.size()-1;
             if (pos == targetPos) {
                 // Item already exists in the right position.
@@ -193,6 +185,80 @@ Usd_InsertListItem(PROXY proxy, const typename PROXY::value_type &item,
         }
         list.Insert(atFront ? 0 : -1, item);
     }
+}
+
+/// Resolves all the individual values in the given dictionary using the given
+/// resolve function.
+/// Fn type is equivalent to:
+///     void resolveFunc(VtValue *)
+template <typename Fn>
+void
+Usd_ResolveValuesInDictionary(VtDictionary *dict, const Fn &resolveFunc)
+{
+    for (auto& entry : *dict) {
+        VtValue& v = entry.second;
+        if (v.IsHolding<VtDictionary>()) {
+            VtDictionary resolvedDict;
+            v.UncheckedSwap(resolvedDict);
+            Usd_ResolveValuesInDictionary(&resolvedDict, resolveFunc);
+            v.UncheckedSwap(resolvedDict);
+        }
+        else {
+            resolveFunc(&v);
+        }
+    }
+}
+
+/// Apply the given layer \p offset to the given \p value if the value holds
+/// a type a that can be offset it time. Each supported type haa an overload 
+/// of this function defined.
+void
+Usd_ApplyLayerOffsetToValue(VtValue *value, const SdfLayerOffset &offset);
+
+/// \overload
+inline void
+Usd_ApplyLayerOffsetToValue(SdfTimeCode *value, const SdfLayerOffset &offset)
+{
+    *value = offset * (*value);
+}
+
+/// \overload
+inline void
+Usd_ApplyLayerOffsetToValue(VtArray<SdfTimeCode> *value, 
+                            const SdfLayerOffset &offset)
+{
+    for (SdfTimeCode &timeCode : *value) {
+        timeCode = offset * timeCode;
+    }
+}
+
+/// \overload
+inline void
+Usd_ApplyLayerOffsetToValue(SdfTimeSampleMap *value, 
+                            const SdfLayerOffset &offset)
+{
+    // Swap the original map so we can write new values back into the original
+    // value.
+    SdfTimeSampleMap origValue;
+    std::swap(origValue, *value);
+    for (const auto& sample : origValue) {
+        // Each time sample key must be mapped by the layer offset.
+        VtValue &newSample = (*value)[offset * sample.first];
+        newSample = std::move(sample.second);
+        // The value may also have be mapped if it is time mappable.
+        Usd_ApplyLayerOffsetToValue(&newSample, offset);
+    }
+}
+
+/// \overload
+inline void
+Usd_ApplyLayerOffsetToValue(VtDictionary *value, const SdfLayerOffset &offset)
+{
+    Usd_ResolveValuesInDictionary(value, 
+        [&offset](VtValue *v) 
+        {
+             Usd_ApplyLayerOffsetToValue(v, offset);
+        });
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

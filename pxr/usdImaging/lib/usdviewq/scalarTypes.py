@@ -107,14 +107,6 @@ def ToString(v, typeName=None):
     # Pretty-print a GfVec*
     elif typeName.startswith("GfVec"):
         fn = lambda v: str(v)
-
-    # Pretty-print a TfTimeStamp
-    elif isinstance(v, Tf.TimeStamp):
-        def timeStampToString(v):
-            from datetime import datetime
-            dt = datetime.fromtimestamp(v.Get())
-            return dt.isoformat(' ')
-        fn = lambda t: timeStampToString(t)
         
     # pretty print an int
     elif isinstance(v, int):

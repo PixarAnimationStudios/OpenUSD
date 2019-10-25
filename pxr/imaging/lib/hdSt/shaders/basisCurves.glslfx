@@ -44,6 +44,10 @@
 // * We might want to explore using fractional_even_spacing to better preserve
 // the shape of cubic curves.
 //
+// * We've realized that u appears to be 'backwards' in many cases, and so we
+//   have updated many of the functions to use
+//   mix(endPointValue, startPointValue, u) when intuitively it should be
+//   the other way around.
 
 --- --------------------------------------------------------------------------
 -- glsl Curves.Vertex.Patch
@@ -56,7 +60,10 @@ out CurveVertexData
 
 // We will either generate a camera facing normal or use the authored normal.
 vec3 getNormal(MAT4 transform);
-void ProcessPointId(); // pointId.glslfx
+// Fwd declare methods defined in pointId.glslfx, that are used below.
+int GetPointId();
+float GetPointRasterSize(int);
+void ProcessPointId(int);
 
 void main(void)
 {
@@ -67,9 +74,11 @@ void main(void)
     outData.Neye = getNormal(transpose(transformInv *
                                   GetWorldToViewInverseMatrix()));
 
-    ProcessPrimVars();
+    ProcessPrimvars();
 
-    ProcessPointId();
+    int pointId = GetPointId();
+    gl_PointSize = GetPointRasterSize(pointId);
+    ProcessPointId(pointId);
 }
 
 --- --------------------------------------------------------------------------
@@ -98,7 +107,10 @@ out CurveVertexData
     vec4 Peye;
 } outData;
 
-void ProcessPointId(); // pointId.glslfx
+// Fwd declare methods defined in pointId.glslfx, that are used below.
+int GetPointId();
+float GetPointRasterSize(int);
+void ProcessPointId(int);
 
 void main(void)
 {
@@ -107,13 +119,14 @@ void main(void)
 
     outData.Peye = vec4(GetWorldToViewMatrix() * transform * point);
 
-    ProcessPrimVars();
+    ProcessPrimvars();
 
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
 
-    ProcessPointId();
-}
+    int pointId = GetPointId();
+    gl_PointSize = GetPointRasterSize(pointId);
+    ProcessPointId(pointId);}
 
 --- --------------------------------------------------------------------------
 -- glsl Curves.TessControl.Shared
@@ -164,7 +177,7 @@ void main(void)
     outData[gl_InvocationID].Peye = inData[gl_InvocationID].Peye;
     outData[gl_InvocationID].Neye = inData[gl_InvocationID].Neye;
 
-    ProcessPrimVars();
+    ProcessPrimvars();
 }
 
 
@@ -248,7 +261,7 @@ void main(void)
 
     outData[gl_InvocationID].Peye = inData[gl_InvocationID].Peye;
 
-    ProcessPrimVars();
+    ProcessPrimvars();
 }
 
 // Use the length of the control points in screen space to determine how many 
@@ -301,7 +314,7 @@ void main(void)
     outData[gl_InvocationID].Peye = inData[gl_InvocationID].Peye;
     outData[gl_InvocationID].Neye = inData[gl_InvocationID].Neye;
 
-    ProcessPrimVars();
+    ProcessPrimvars();
 }
 
 --- --------------------------------------------------------------------------
@@ -429,16 +442,22 @@ void main()
 
     outData.Peye = pos;
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+
     ApplyClipPlanes(outData.Peye);
 
-    // XXX: needs more work.
-    ProcessPrimVars(u, v, 0, 1, 0, 1); // interpolate varying primvars
+    ProcessPrimvars(basis, 0, 1, 2, 3); // interpolate varying primvars
 }
 
 --- --------------------------------------------------------------------------
 -- glsl Curves.TessEval.Patch
 
 layout(quads, fractional_odd_spacing, ccw) in;
+
+struct Coeffs
+{
+  vec4 basis;
+  vec4 tangent_basis;
+};
 
 in CurveVertexData
 {
@@ -460,6 +479,9 @@ out float v;
 
 void evaluate(float u, float v, out vec4 position, out vec4 tangent, 
               out float width, out vec3 normal);
+
+Coeffs evaluateBasis(float u, float u2, float u3);
+
 // it's the responsibility of orient to store Neye, usually with either
 // the computed normal or the tangent (from which the normal will be computed
 // in the fragment shader.)
@@ -468,6 +490,9 @@ void main()
 {
     u = gl_TessCoord.y;
     v = gl_TessCoord.x;
+
+    Coeffs coeffs = evaluateBasis(u, u*u, u*u*u);
+    vec4 basis = coeffs.basis;
 
     vec4 position;
     vec4 tangent;
@@ -488,8 +513,7 @@ void main()
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
 
-    // XXX: needs more work.
-    ProcessPrimVars(u, v, 0, 1, 0, 1); // interpolate varying primvars
+    ProcessPrimvars(basis, 0, 1, 2, 3); // interpolate varying primvars
 }
 
 --- --------------------------------------------------------------------------
@@ -499,7 +523,7 @@ vec3 evaluateNormal(float u)
 {
     // XXX: This clamp is a hack to mask some odd orientation flipping issues 
     u = clamp(u, 1e-3, 1.0 - 1e-3);
-    return mix(inData[0].Neye, inData[1].Neye, u);
+    return mix(inData[1].Neye, inData[0].Neye, u);
 }
 
 void evaluate(float u, float v, out vec4 position, out vec4 tangent, 
@@ -510,9 +534,9 @@ void evaluate(float u, float v, out vec4 position, out vec4 tangent,
     float w0 = HdGet_widths(0);
     float w1 = HdGet_widths(1);
 
-    position = p0 * (1.0 - u) + p1 * u;
+    position = mix(p1, p0, u);
     tangent = normalize(p1 - p0);
-    width = w0 * (1.0 - u) + w1 * u;
+    width = mix(w1, w0, u);
     normal = normalize(evaluateNormal(u));
 }
 
@@ -615,11 +639,8 @@ vec3 evaluateNormal(vec4 basis, float u)
     // XXX: This clamp is a hack to mask some odd orientation flipping issues 
     // for oriented bezier curves.
     u = clamp(u, 1e-3, 1.0 - 1e-3);
-    return mix(inData[1].Neye, inData[2].Neye, u);
+    return mix(inData[2].Neye, inData[1].Neye, u);
 }
-
-#endif
-
 
 --- --------------------------------------------------------------------------
 -- glsl Curves.Cubic.Widths.Basis
@@ -648,7 +669,7 @@ float evaluateWidths(vec4 basis, float u)
 {
     float w0 = HdGet_widths(1);
     float w1 = HdGet_widths(2);
-    return mix(w0, w1, u);
+    return mix(w1, w0, u);
 }
 
 --- --------------------------------------------------------------------------
@@ -676,14 +697,14 @@ Coeffs evaluateBasis(float u, float u2, float u3)
 {
   vec4 basis; vec4 tangent_basis;
   basis[0] = u;
-  basis[1] = 0;
+  basis[1] = 1.0 - u;
   basis[2] = 0;
-  basis[3] = 1.0 - u;
+  basis[3] = 0.0;
 
   tangent_basis[0] = 1;
-  tangent_basis[1] = 0;
+  tangent_basis[1] = -1;
   tangent_basis[2] = 0;
-  tangent_basis[3] = -1;
+  tangent_basis[3] = 0;
   return Coeffs(basis, tangent_basis);
 }
 
@@ -733,10 +754,12 @@ in CurveVertexData
 
 void main(void)
 {
-#ifdef HD_HAS_color
-    vec4 color = HdGet_color();
-#else
-    vec4 color = vec4(1);
+    vec4 color = vec4(0.5, 0.5, 0.5, 1);
+#ifdef HD_HAS_displayColor
+    color.rgb = HdGet_displayColor().rgb;
+#endif
+#ifdef HD_HAS_displayOpacity
+    color.a = HdGet_displayOpacity().r;
 #endif
 
     vec3 Peye = inData.Peye.xyz / inData.Peye.w;
@@ -753,7 +776,7 @@ void main(void)
         discard;
     }
 
-    RenderColor(color);
+    RenderOutput(vec4(Peye, 1), Neye, color, patchCoord);
 }
 
 --- --------------------------------------------------------------------------
@@ -773,10 +796,12 @@ centroid in float v;
 vec3 fragmentNormal(vec3 position, vec3 normal, float v);
 void main(void)
 {
-#ifdef HD_HAS_color
-    vec4 color = HdGet_color();
-#else
-    vec4 color = vec4(1);
+    vec4 color = vec4(0.5, 0.5, 0.5, 1);
+#ifdef HD_HAS_displayColor
+    color.rgb = HdGet_displayColor().rgb;
+#endif
+#ifdef HD_HAS_displayOpacity
+    color.a = HdGet_displayOpacity().r;
 #endif
     color.rgb = ApplyColorOverrides(color).rgb;
 
@@ -793,7 +818,7 @@ void main(void)
         discard;
     }
 
-    RenderColor(color);
+    RenderOutput(vec4(Peye, 1), Neye, color, patchCoord);
 }
 
 --- --------------------------------------------------------------------------

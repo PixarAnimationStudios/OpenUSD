@@ -31,9 +31,11 @@
 
 
 #include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/inherits.h"
 
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/stringUtils.h"
 
 #include "pxr/usd/usdUtils/pipeline.h"
 
@@ -44,9 +46,9 @@
 #include "pxr/usd/usdGeom/curves.h"
 #include "pxr/usd/usdGeom/scope.h"
 #include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdGeom/collectionAPI.h"
 
 #include "pxr/usd/usdShade/material.h"
+#include "pxr/usd/usdShade/materialBindingAPI.h"
 
 #include "pxr/usd/usdRi/statementsAPI.h"
 
@@ -61,11 +63,98 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_ENV_SETTING(USD_KATANA_IMPORT_OLD_STYLE_COLLECTIONS, true, 
-        "Whether old-style collections encoded using UsdGeomCollectionAPI "
-        "must be imported by katana.");
+TF_DEFINE_ENV_SETTING(USD_KATANA_ALLOW_CUSTOM_MATERIAL_SCOPES, false,
+        "Set to true to enable custom names for the parent scope "
+        "of materials. Otherwise only scopes named Looks are allowed.");
+
+TF_DEFINE_ENV_SETTING(USD_KATANA_API_SCHEMAS_AS_GROUP_ATTR, false,
+        "If true, API schemas will be imported as group attributes instead "
+        "of an array of strings. This provides easier support for CEL "
+        "matching based on API schemas and an easier way to access the. "
+        "instance name of Multiple Apply Schemas.");
+
 
 FnLogSetup("PxrUsdKatanaReadPrim");
+
+
+static FnKat::Attribute
+_GetMaterialAssignAttrFromPath(
+        const SdfPath& inputTargetPath,
+        const PxrUsdKatanaUsdInPrivateData& data,
+        const SdfPath& errorContextPath
+        )
+{
+    SdfPath targetPath = inputTargetPath;
+    UsdPrim targetPrim = data.GetUsdInArgs()->GetStage()->GetPrimAtPath(targetPath);
+    // If the target is inside a master, then it needs to be re-targeted 
+    // to the instance.
+    // 
+    // XXX remove this special awareness once GetMasterWithContext is
+    //     is available as the provided prim will automatically
+    //     retarget (or provide enough context to retarget without
+    //     tracking manually).
+    if (targetPrim && targetPrim.IsInMaster()) {
+        if (!data.GetInstancePath().IsEmpty() &&
+            !data.GetMasterPath().IsEmpty()) {
+
+            // Check if the source and the target of the relationship 
+            // belong to the same master.
+            // If they do, we have the context necessary to do the 
+            // re-mapping.
+            if (data.GetMasterPath().GetCommonPrefix(targetPath).
+                    GetPathElementCount() > 0) {
+                targetPath = data.GetInstancePath().AppendPath(
+                    targetPath.ReplacePrefix(targetPath.GetPrefixes()[0],
+                        SdfPath::ReflexiveRelativePath()));
+            } else {
+                // Warn saying the target of relationship isn't within 
+                // the same master as the source.
+                FnLogWarn("Target path " << errorContextPath.GetString() 
+                    << " isn't within the master " << data.GetMasterPath());
+                return FnKat::Attribute();
+            }
+        } else {
+            // XXX
+            // When loading beneath a master via an isolatePath
+            // opArg, we can encounter targets which are within masters
+            // but not within the context of a material.
+            // While that would be an error according to the below
+            // warning, it produces the expected results.
+            // This case can occur when expanding pointinstancers as
+            // the sources are made via execution of PxrUsdIn again
+            // at the sub-trees.
+            
+            
+            // Warn saying target of relationship is in a master, 
+            // but the associated instance path is unknown!
+            // FnLogWarn("Target path " << prim.GetPath().GetString() 
+            //         << " is within a master, but the associated "
+            //         "instancePath is unknown.");
+            // return FnKat::Attribute();
+        }
+    }
+
+    // Convert the target path to the equivalent katana location.
+    // XXX: Materials may have an atypical USD->Katana 
+    // path mapping
+    std::string location =
+        PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(targetPath, data);
+
+    static const bool allowCustomScopes = 
+        TfGetEnvSetting(USD_KATANA_ALLOW_CUSTOM_MATERIAL_SCOPES);
+        
+    // XXX Materials containing only display terminals are causing issues
+    //     with katana material manipulation workflows.
+    //     For now: exclude any material assign which doesn't include
+    //     /Looks/ in the path
+    if (!allowCustomScopes && location.find(UsdKatanaTokens->katanaLooksScopePathSubstring)
+            == std::string::npos)
+    {
+        return FnKat::Attribute();
+    }
+
+    return FnKat::StringAttribute(location);
+}
 
 static FnKat::Attribute
 _GetMaterialAssignAttr(
@@ -89,79 +178,53 @@ _GetMaterialAssignAttr(
                 return FnKat::Attribute();
             }
 
-            // This is a copy as it could be modified below.
-            SdfPath targetPath = targetPaths[0];
-            UsdPrim targetPrim = data.GetUsdInArgs()->GetStage()->GetPrimAtPath(targetPath);
-            // If the target is inside a master, then it needs to be re-targeted 
-            // to the instance.
-            // 
-            // XXX remove this special awareness once GetMasterWithContext is
-            //     is available as the provided prim will automatically
-            //     retarget (or provide enough context to retarget without
-            //     tracking manually).
-            if (targetPrim && targetPrim.IsInMaster()) {
-                if (!data.GetInstancePath().IsEmpty() &&
-                    !data.GetMasterPath().IsEmpty()) {
-
-                    // Check if the source and the target of the relationship 
-                    // belong to the same master.
-                    // If they do, we have the context necessary to do the 
-                    // re-mapping.
-                    if (data.GetMasterPath().GetCommonPrefix(targetPath).
-                            GetPathElementCount() > 0) {
-                        targetPath = data.GetInstancePath().AppendPath(
-                            targetPath.ReplacePrefix(targetPath.GetPrefixes()[0],
-                                SdfPath::ReflexiveRelativePath()));
-                    } else {
-                        // Warn saying the target of relationship isn't within 
-                        // the same master as the source.
-                        FnLogWarn("Target path " << prim.GetPath().GetString() 
-                            << " isn't within the master " << data.GetMasterPath());
-                        return FnKat::Attribute();
-                    }
-                } else {
-                    // XXX
-                    // When loading beneath a master via an isolatePath
-                    // opArg, we can encounter targets which are within masters
-                    // but not within the context of a material.
-                    // While that would be an error according to the below
-                    // warning, it produces the expected results.
-                    // This case can occur when expanding pointinstancers as
-                    // the sources are made via execution of PxrUsdIn again
-                    // at the sub-trees.
-                    
-                    
-                    // Warn saying target of relationship is in a master, 
-                    // but the associated instance path is unknown!
-                    // FnLogWarn("Target path " << prim.GetPath().GetString() 
-                    //         << " is within a master, but the associated "
-                    //         "instancePath is unknown.");
-                    // return FnKat::Attribute();
-                }
-            }
-
-            // Convert the target path to the equivalent katana location.
-            // XXX: Materials may have an atypical USD->Katana 
-            // path mapping
-            std::string location =
-                PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(targetPath, data);
-                
-            // XXX Materials containing only display terminals are causing issues
-            //     with katana material manipulation workflows.
-            //     For now: exclude any material assign which doesn't include
-            //     /Looks/ in the path
-            if (location.find(UsdKatanaTokens->katanaLooksScopePathSubstring)
-                    == std::string::npos)
-            {
-                return FnKat::Attribute();
-            }
-                
-                
-            // location = TfStringReplace(location, "/Looks/", "/Materials/");
-            // XXX handle multiple assignments
-            return FnKat::StringAttribute(location);
+            return _GetMaterialAssignAttrFromPath(
+                    targetPaths[0], data, prim.GetPath());
         }
     }
+
+    return FnKat::Attribute();
+}
+
+
+static FnKat::Attribute
+_GetCollectionBasedMaterialAssignments(
+        const UsdPrim& prim,
+        const PxrUsdKatanaUsdInPrivateData& data)
+{
+    UsdShadeMaterialBindingAPI bindingAPI(prim);
+
+    const auto & purposes = data.GetUsdInArgs()->GetMaterialBindingPurposes();
+    if (purposes.empty())
+    {
+        return FnKat::Attribute();    
+    }
+
+
+    FnAttribute::GroupBuilder gb(FnAttribute::GroupBuilder::BuilderModeStrict);
+
+    int bindingCount = 0;
+
+
+    for (const auto & purpose : purposes)
+    {
+        if (auto boundMaterial = bindingAPI.ComputeBoundMaterial(
+                data.GetBindingsCache(),
+                data.GetCollectionQueryCache(),
+                purpose))
+        {
+            ++bindingCount;
+            gb.set(purpose == UsdShadeTokens->allPurpose ? "allPurpose" : purpose.GetText(),
+                    _GetMaterialAssignAttrFromPath(
+                            boundMaterial.GetPrim().GetPath(), data, prim.GetPath()));
+        }
+    }
+
+    if (bindingCount)
+    {
+        return gb.build();
+    }
+
 
     return FnKat::Attribute();
 }
@@ -175,8 +238,8 @@ _GatherRibAttributes(
     bool hasAttrs = false;
 
     // USD SHADING STYLE ATTRIBUTES
-    UsdRiStatementsAPI riStatements(prim);
-    if (riStatements) {
+    if (prim) {
+        UsdRiStatementsAPI riStatements(prim);
         const std::vector<UsdProperty> props = 
             riStatements.GetRiAttributes();
         std::string attrName;
@@ -191,35 +254,29 @@ _GatherRibAttributes(
             attrName = nameSpace +
                 riStatements.GetRiAttributeName(prop).GetString();
 
+            // XXX asShaderParam really means:
+            // "For arrays, as a single attr vs a type/value pair group"
+            // The type/value pair group is meaningful for attrs who don't
+            // have a formal type definition -- like a "user" RiAttribute.
+            //
+            // However, other array values (such as two-element shadingrate)
+            // are not expecting the type/value pair form and will not
+            // generate rib correctly. As such, we'll handle the "user"
+            // attribute as a special case.
+            const bool asShaderParam = (nameSpace != "user.");
+
             VtValue vtValue;
             UsdAttribute usdAttr = prim.GetAttribute(prop.GetName());
             if (usdAttr) {
                 if (!usdAttr.Get(&vtValue, currentTime)) 
                     continue;
-
-                // XXX asShaderParam really means:
-                // "For arrays, as a single attr vs a type/value pair group"
-                // The type/value pair group is meaningful for attrs who don't
-                // have a formal type definition -- like a "user" RiAttribute.
-                // 
-                // However, other array values (such as two-element shadingrate)
-                // are not expecting the type/value pair form and will not
-                // generate rib correctly. As such, we'll handle the "user"
-                // attribute as a special case.
-                bool asShaderParam = true;
-                
-                if (nameSpace == "user.")
-                {
-                    asShaderParam = false;
-                }
-
                 attrsBuilder.set(attrName, PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue,
                     asShaderParam) );
             }
             else {
                 UsdRelationship usdRel = prim.GetRelationship(prop.GetName());
                 attrsBuilder.set(attrName, PxrUsdKatanaUtils::ConvertRelTargetsToKatAttr(usdRel,
-                    /* asShaderParam */ false) );
+                    asShaderParam) );
             }
             hasAttrs = true;
         }
@@ -277,7 +334,7 @@ PxrUsdKatanaReadPrimPrmanStatements(
     }
 
     // XXX:
-    // Should we have subclasses (e.g., PxrUsdKatanaUtils::HairmanContext), add to or modify
+    // Should we have subclasses add to or modify
     // this builder instead of setting attributes.NAMESPACE.ATTRNAME for each
     // new attr?  Are there performance implications?
     FnKat::GroupAttribute attributesGroup = attrsBuilder.build();
@@ -373,6 +430,15 @@ _AppendPathToIncludeExcludeStr(
     }
 }
 
+
+// CEL cannot use collections whose name contain ":" so we have to do something
+// with those within namespaces (specifically the material-binding ones)
+static
+std::string _GetKatanaCollectionName(const TfToken &collectionName)
+{
+    return pystring::replace(collectionName.GetString(), ":", "__");
+}
+
 static 
 std::string
 _GetKatanaCollectionPath(
@@ -382,6 +448,8 @@ _GetKatanaCollectionPath(
     const TfToken &srcCollectionName,
     const PxrUsdKatanaUsdInPrivateData& data)
 {
+    std::string katanaCollectionName(_GetKatanaCollectionName(collectionName));
+
     if (collPrimPath.HasPrefix(prim.GetPath())) {
         const size_t prefixLength = prim.GetPath().GetString().length();
         std::string relativePath = collPrimPath.GetString().substr(prefixLength);
@@ -393,7 +461,7 @@ _GetKatanaCollectionPath(
             relativePath = "/";
 
         return TfStringPrintf("(%s/$%s)", relativePath.c_str(), 
-                              collectionName.GetText());
+                              katanaCollectionName.c_str());
     } else {
         FnLogWarn("Collection " << srcCollectionName   
             << " includes collection " << collPrimPath << ".collection:" << 
@@ -410,7 +478,7 @@ _GetKatanaCollectionPath(
                 PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
                     collPrimPath, data);
         return TfStringPrintf("(%s/$%s)", katPrimPath.c_str(), 
-                              collectionName.GetText());
+                              katanaCollectionName.c_str());
     }
 }
 
@@ -448,7 +516,7 @@ _BuildCollections(
             incExcStr << "((";
             for (const SdfPath &p : includes) {
                 TfToken collectionName;
-                if (UsdCollectionAPI::IsCollectionPath(p, &collectionName)) {
+                if (UsdCollectionAPI::IsCollectionAPIPath(p, &collectionName)) {
                     SdfPath collPrimPath= p.GetPrimPath();
                     std::string katCollStr = _GetKatanaCollectionPath(collPrimPath, 
                         collectionName, prim, collection.GetName(), data);
@@ -479,7 +547,8 @@ _BuildCollections(
             FnKat::StringAttribute collectionAttr = collectionBuilder.build();
             if (collectionAttr.getNearestSample(0).size() > 0) {
                 collectionsBuilder.set(
-                        collection.GetName().GetString() + ".cel",
+                        _GetKatanaCollectionName(collection.GetName())
+                                + ".cel",
                         collectionAttr);
             }
         } else {
@@ -510,61 +579,14 @@ _BuildCollections(
             // If empty, no point creating collection
             FnKat::StringAttribute collectionAttr = collectionBuilder.build();
             if (collectionAttr.getNearestSample(0).size() > 0) {
-                collectionsBuilder.set(collection.GetName().GetString() + ".baked",
+                collectionsBuilder.set(_GetKatanaCollectionName(
+                        collection.GetName()) + ".baked",
                                     collectionAttr);
             }
         }
     }
 
-
-    // Import old-style collections
-    if (!TfGetEnvSetting(USD_KATANA_IMPORT_OLD_STYLE_COLLECTIONS))
-        return collections.size() > 0;
-
-    std::vector<UsdGeomCollectionAPI> oldCollections = 
-        UsdGeomCollectionAPI::GetCollections(prim);
-    for (const auto &collection : oldCollections) {
-        TfToken name = collection.GetCollectionName();
-        // Skip if this is a property belonging to the new-style collection
-        // schema.
-        TfTokenVector nameTokens = SdfPath::TokenizeIdentifierAsTokens(name);
-        TfToken baseName = *nameTokens.rbegin();
-        if (nameTokens.size() > 2 &&
-            UsdCollectionAPI::IsSchemaPropertyBaseName(baseName)) {
-            continue; 
-        }
-
-        SdfPathVector targets;
-        FnKat::StringBuilder collectionBuilder;
-        // XXX: This code probably needs some work to be made
-        // instancing-aware.
-        collection.GetTargets(&targets);
-        for (size_t iTarget = 0; iTarget < targets.size(); ++iTarget)
-        {
-            std::string targetPath = targets[iTarget].GetString();
-            
-            if (targetPath.size() >= prefixLength)
-            {
-                std::string relativePath = targetPath.substr(prefixLength);
-                // follow katana convention for collections
-                // the "self" location relative path is "/". 
-                // Absolute paths start with "/root/"
-                // relative paths start without the "/" though.
-                if (relativePath == "")
-                    relativePath = "/";
-                collectionBuilder.push_back(relativePath);
-            }
-        }
-
-        // if empty, no point creating collection
-        FnKat::StringAttribute collectionAttr = collectionBuilder.build();
-        if (collectionAttr.getNearestSample(0).size() > 0) {
-            collectionsBuilder.set(name.GetString() + ".baked",
-                collectionAttr);
-        }
-    }
-
-    return (collections.size() + oldCollections.size()) > 0;
+    return collections.size() > 0;
 }
 
 
@@ -642,7 +664,7 @@ _AddExtraAttributesOrNamespaces(
                 }
                 
                 FnKat::Attribute attr = 
-                    PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue, true);
+                    PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue);
                 
                 if (!attr.isValid())
                 {
@@ -660,8 +682,7 @@ _AddExtraAttributesOrNamespaces(
                 UsdRelationship & usdRelationship = (*I);
                 
                 FnKat::StringAttribute attr = 
-                    PxrUsdKatanaUtils::ConvertRelTargetsToKatAttr(
-                        usdRelationship, true);
+                    PxrUsdKatanaUtils::ConvertRelTargetsToKatAttr(usdRelationship);
                 if (!attr.isValid())
                 {
                     continue;
@@ -733,7 +754,7 @@ _AddCustomProperties(
         }
         
         FnKat::Attribute attr =
-            PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue, true);
+            PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue);
 
         if (!attr.isValid())
         {
@@ -775,11 +796,9 @@ PxrUsdKatanaGeomGetPrimvarGroup(
         // to translate namespaced names...
         UsdAttribute blindAttr = kbd.GetKbdAttribute("geometry.arbitrary." + 
                                         primvar->GetPrimvarName().GetString());
-        if (blindAttr) {
-            VtValue vtValue;
-            if (!blindAttr.Get(&vtValue) && blindAttr.HasAuthoredValueOpinion()) {
-                continue;
-            }
+
+        if (blindAttr.GetResolveInfo().ValueIsBlocked()) {
+            continue;
         }
         
         TfToken          name, interpolation;
@@ -827,10 +846,17 @@ PxrUsdKatanaGeomGetPrimvarGroup(
         FnKat::GroupBuilder attrBuilder;
         attrBuilder.set("scope", scopeAttr);
         attrBuilder.set("inputType", inputTypeAttr);
+        
+        if (!typeName.GetRole().GetString().empty()) {
+            attrBuilder.set("usd.role", 
+                        FnKat::StringAttribute(typeName.GetRole().GetString()));
+        }
+
         if (elementSizeAttr.isValid()) {
             attrBuilder.set("elementSize", elementSizeAttr);
         }
         attrBuilder.set("value", valueAttr);
+
         // Note that 'varying' vs 'vertex' require special handling, as in
         // Katana they are both expressed as 'point' scope above. To get
         // 'vertex' interpolation we must set an additional
@@ -870,6 +896,20 @@ PxrUsdKatanaReadPrim(
     //
 
     attrs.set("materialAssign", _GetMaterialAssignAttr(prim, data));
+
+
+    //
+    // Set the 'usd.materialBindings' attribute from collection-based material
+    // bindings.
+    //
+
+    FnKat::Attribute bindingsAttr =
+            _GetCollectionBasedMaterialAssignments(prim, data);
+    if (bindingsAttr.isValid())
+    {
+        attrs.set("usd.materialBindings", bindingsAttr);
+    }
+
 
     //
     // Set the 'prmanStatements' attribute.
@@ -972,6 +1012,68 @@ PxrUsdKatanaReadPrim(
     }
 
     _AddExtraAttributesOrNamespaces(prim, data, attrs);
+
+    // 
+    // Store the applied apiSchemas metadata a either a list of
+    // strings or a group of int attributes whose name will be
+    // the name of the schema (or schema.instanceName) and whose
+    // value will be 1 if the schema is active.
+    //
+    // In a future release, we'll retire the list of strings
+    // representation.
+    //
+    TfTokenVector appliedSchemaTokens = prim.GetAppliedSchemas();
+    if (!appliedSchemaTokens.empty()){
+        static const bool apiSchemasAsGroupAttr = 
+                TfGetEnvSetting(USD_KATANA_API_SCHEMAS_AS_GROUP_ATTR);
+        if (apiSchemasAsGroupAttr){
+            for (const TfToken& schema : appliedSchemaTokens){
+                std::vector<std::string> tokenizedSchema = 
+                    TfStringTokenize(schema.GetString(), ":");
+                if (tokenizedSchema.size() == 1){                
+                    // single apply schemas
+                    std::string attrName = 
+                        TfStringPrintf("info.usd.apiSchemas.%s",
+                                       tokenizedSchema[0].c_str());
+                    attrs.set(attrName, FnKat::IntAttribute(1));
+                } 
+                else if (tokenizedSchema.size() > 1){
+                    // multi apply schemas
+                    std::string instanceName = TfStringJoin(
+                        tokenizedSchema.begin() + 1, tokenizedSchema.end());
+                    std::string attrName = 
+                        TfStringPrintf("info.usd.apiSchemas.%s.%s",
+                                       tokenizedSchema[0].c_str(),
+                                       instanceName.c_str());
+                    attrs.set(attrName, FnKat::IntAttribute(1));
+                }
+                else{
+                    TF_WARN("apiSchema token '%s' cannot be decomposed into "
+                            "a schema name and an (optional) instance name.",
+                            schema.GetText());
+                }
+            }
+        } else{
+            std::vector<std::string> appliedSchemas(appliedSchemaTokens.size());
+            std::transform(appliedSchemaTokens.begin(), appliedSchemaTokens.end(), 
+                           appliedSchemas.begin(), [](const TfToken& token){ 
+                return token.GetString();
+            });
+            attrs.set("info.usd.apiSchemas", FnKat::StringAttribute(appliedSchemas));
+        }
+    }
+
+    // 
+    // Store the composed inherits metadata as a group attribute
+    //
+    SdfPathVector inheritPaths = prim.GetInherits().GetAllDirectInherits();
+    if (!inheritPaths.empty()){
+        FnKat::GroupBuilder inheritPathsBuilder;
+        for (const auto& path : inheritPaths){
+            inheritPathsBuilder.set(path.GetName(), FnKat::IntAttribute(1));
+        }
+        attrs.set("info.usd.inheritPaths", inheritPathsBuilder.build());
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

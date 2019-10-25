@@ -26,6 +26,8 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/ostreamMethods.h"
 
+#include <boost/functional/hash.hpp>
+
 #include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -183,7 +185,7 @@ _IncludesSubtree(std::vector<SdfPath> const& paths, SdfPath const& path)
     SdfPath const *prev = iter == paths.begin() ? nullptr : &iter[-1];
     SdfPath const *cur = iter == paths.end() ? nullptr : &iter[0];
 
-    return { (prev && path.HasPrefix(*prev)) || (cur && *cur == path), iter };
+    return { (cur && *cur == path) || (prev && path.HasPrefix(*prev)), iter };
 }
 }
 
@@ -265,6 +267,13 @@ std::ostream &
 operator<<(std::ostream &os, UsdStagePopulationMask const &mask)
 {
     return os << "UsdStagePopulationMask(" << mask.GetPaths() << ')';
+}
+
+size_t
+hash_value(UsdStagePopulationMask const &mask)
+{
+    boost::hash<std::vector<SdfPath> > h;
+    return h(mask._paths);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

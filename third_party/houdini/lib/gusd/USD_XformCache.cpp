@@ -27,9 +27,12 @@
 #include "gusd/UT_Gf.h"
 #include "gusd/UT_CappedCache.h"
 
+#include "pxr/base/arch/hints.h"
+
 #include <UT/UT_Interrupt.h>
 #include <UT/UT_Matrix4.h>
 #include <UT/UT_ParallelUtil.h>
+#include <SYS/SYS_Version.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -57,14 +60,14 @@ struct _CappedXformItem : public UT_CappedItem
 
 typedef UT_IntrusivePtr<const _CappedXformItem> _CappedXformItemHandle;
 
-#if HDK_API_VERSION < 16050000
+#if SYS_VERSION_FULL_INT < 0x10050000
 static inline void intrusive_ptr_add_ref(const _CappedXformItem *o) { const_cast<_CappedXformItem *>(o)->incref(); }
 static inline void intrusive_ptr_release(const _CappedXformItem *o) { const_cast<_CappedXformItem *>(o)->decref(); }
 #endif
 
 } /*namespace*/
 
-#if HDK_API_VERSION < 16050000
+#if SYS_VERSION_FULL_INT < 0x10050000
 static inline void intrusive_ptr_add_ref(const GusdUSD_XformCache::XformInfo *o) { const_cast<GusdUSD_XformCache::XformInfo *>(o)->incref(); }
 static inline void intrusive_ptr_release(const GusdUSD_XformCache::XformInfo *o) { const_cast<GusdUSD_XformCache::XformInfo *>(o)->decref(); }
 #endif
@@ -79,19 +82,21 @@ GusdUSD_XformCache::XformInfo::ComputeFlags(const UsdPrim& prim,
     } else {
         /* Local transform isn't time-varying, but maybe the parent is.*/
         if(!query.GetResetXformStack()) {
-            UsdPrim parent = prim.GetParent();
-            if(parent && parent.GetPath() != SdfPath::AbsoluteRootPath()) {
+            const UsdPrim parent = prim.GetParent();
+            if(parent && !parent.IsPseudoRoot()) {
                 auto info = cache.GetXformInfo(parent);
-                if(info && info->WorldXformIsMaybeTimeVarying())
+                if(info && info->WorldXformIsMaybeTimeVarying()) {
                     _flags = FLAGS_WORLD_MAYBE_TIMEVARYING;
+                }
             }
         }
     }
     
     if(!query.GetResetXformStack()) {
-        UsdPrim parent = prim.GetParent();
-        if(parent && parent.GetPath() != SdfPath::AbsoluteRootPath())
+        const UsdPrim parent = prim.GetParent();
+        if(parent && !parent.IsPseudoRoot()) {
             _flags |= FLAGS_HAS_PARENT_XFORM;
+        }
     }
 }
 
@@ -107,6 +112,10 @@ GusdUSD_XformCache::GetInstance()
 GusdUSD_XformCache::XformInfoHandle
 GusdUSD_XformCache::GetXformInfo(const UsdPrim& prim)
 {
+    if (ARCH_UNLIKELY(prim.IsPseudoRoot())) {
+        return nullptr;
+    }
+
     _UnvaryingKey key((GusdUSD_UnvaryingPropertyKey(prim)));
 
     if(auto item = _xformInfos.findItem(key))
@@ -125,10 +134,10 @@ GusdUSD_XformCache::GetLocalTransformation(const UsdPrim& prim,
                                            UsdTimeCode time,
                                            UT_Matrix4D& xform)
 {
-    const auto info = GetXformInfo(prim);
-    if(BOOST_UNLIKELY(!info))
-        return false;
-    return _GetLocalTransformation(prim, time, xform, info);
+    if (const auto info = GetXformInfo(prim)) {
+        return _GetLocalTransformation(prim, time, xform, info);
+    }
+    return false;
 }
 
 
@@ -169,8 +178,9 @@ GusdUSD_XformCache::GetLocalToWorldTransform(const UsdPrim& prim,
                                              UT_Matrix4D& xform)
 {
     const auto info = GetXformInfo(prim);
-    if(BOOST_UNLIKELY(!info))
+    if(ARCH_UNLIKELY(!info)) {
         return false;
+    }
 
     // See if we can remap the time to for unvarying xforms.
     if(!time.IsDefault() && !info->WorldXformIsMaybeTimeVarying()) {
@@ -190,12 +200,12 @@ GusdUSD_XformCache::GetLocalToWorldTransform(const UsdPrim& prim,
        but it's preferable to have multiple threads compute the
        same thing than to cause lock contention.*/
     if(_GetLocalTransformation(prim, time, xform, info)) {
-        if(BOOST_UNLIKELY(!info->HasParentXform())) {
+        if(ARCH_UNLIKELY(!info->HasParentXform())) {
             _worldXforms.addItem(key, UT_CappedItemHandle(
                                      new _CappedXformItem(xform)));
             return true;
         }
-        UsdPrim parent = prim.GetParent();
+        const UsdPrim parent = prim.GetParent();
         UT_ASSERT_P(parent);
 
         UT_Matrix4D parentXf;

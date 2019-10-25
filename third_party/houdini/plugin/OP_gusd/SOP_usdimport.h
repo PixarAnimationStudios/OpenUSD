@@ -32,7 +32,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class GusdUSD_Traverse;
-class GusdUT_ErrorContext;
 
 
 class GusdSOP_usdimport : public SOP_Node
@@ -61,11 +60,11 @@ protected:
 
     OP_ERROR            _CreateNewPrims(OP_Context& ctx,
                                         const GusdUSD_Traverse* traverse,
-                                        GusdUT_ErrorContext& err);
+                                        UT_ErrorSeverity sev);
 
     OP_ERROR            _ExpandPrims(OP_Context& ctx,
                                      const GusdUSD_Traverse* traverse,
-                                     GusdUT_ErrorContext& err);
+                                     UT_ErrorSeverity sev);
 
 
     /** Add micro nodes of all traversal parms as dependencies

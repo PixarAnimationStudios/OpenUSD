@@ -68,29 +68,26 @@ public:
     static const size_t dimension = 3;
 
     /// Default constructor does no initialization.
-    GfVec3d() {}
-
-    // Copy constructor.
-    // TODO Remove this, use compiler-generated.
-    GfVec3d(const GfVec3d &other) {
-        *this = other;
-    }
+    GfVec3d() = default;
 
     /// Initialize all elements to a single value.
-    explicit GfVec3d(double value) {
-        _data[0] = value;
-        _data[1] = value;
-        _data[2] = value;
+    constexpr explicit GfVec3d(double value)
+        : _data{ value, value, value }
+    {
     }
 
     /// Initialize all elements with explicit arguments.
-    GfVec3d(double s0, double s1, double s2) {
-        Set(s0, s1, s2);
+    constexpr GfVec3d(double s0, double s1, double s2)
+        : _data{ s0, s1, s2 }
+    {
     }
 
     /// Construct with pointer to values.
     template <class Scl>
-    explicit GfVec3d(Scl const *p) { Set(p); }
+    constexpr explicit GfVec3d(Scl const *p)
+        : _data{ p[0], p[1], p[2] }
+    {
+    }
 
     /// Implicitly convert from GfVec3f.
     GfVec3d(class GfVec3f const &other);
@@ -392,7 +389,7 @@ GfGetLength(GfVec3d const &v)
 inline double
 GfNormalize(GfVec3d *v, double eps = GF_MIN_VECTOR_LENGTH)
 {
-    return v->Normalize();
+    return v->Normalize(eps);
 }
 
 /// Returns a normalized (unit-length) vector with the same direction as \p v.

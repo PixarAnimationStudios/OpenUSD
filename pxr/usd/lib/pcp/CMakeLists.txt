@@ -4,7 +4,7 @@ set(PXR_PACKAGE pcp)
 pxr_library(pcp
     LIBRARIES
         tf
-        tracelite
+        trace
         vt
         sdf
         work
@@ -18,6 +18,7 @@ pxr_library(pcp
         
     PUBLIC_HEADERS
         api.h
+        dynamicFileFormatInterface.h
 
     PUBLIC_CLASSES
         arc
@@ -25,6 +26,8 @@ pxr_library(pcp
         changes
         composeSite
         dependency
+        dynamicFileFormatContext
+        dynamicFileFormatDependencyData
         errors
         instanceKey
         iterator
@@ -36,8 +39,6 @@ pxr_library(pcp
         namespaceEdits
         node
         pathTranslation
-        payloadContext
-        payloadDecorator
         primIndex
         propertyIndex
         site
@@ -67,6 +68,7 @@ pxr_library(pcp
         module.cpp
         wrapCache.cpp
         wrapDependency.cpp
+        wrapDynamicFileFormatDependencyData.cpp
         wrapErrors.cpp
         wrapInstanceKey.cpp
         wrapPrimIndex.cpp
@@ -77,8 +79,6 @@ pxr_library(pcp
         wrapNode.cpp
         wrapPathTranslation.cpp
         wrapPropertyIndex.cpp
-        wrapPayloadContext.cpp
-        wrapPayloadDecorator.cpp
         wrapSite.cpp
         wrapTestChangeProcessor.cpp
         wrapTypes.cpp
@@ -93,8 +93,8 @@ pxr_test_scripts(
     testenv/testPcpInstanceKey.py
     testenv/testPcpLayerMuting.py
     testenv/testPcpDependencies.py
-    testenv/testPcpPayloadDecorator.py
     testenv/testPcpPathTranslation.py
+    testenv/testPcpDynamicFileFormatPlugin.py
     testenv/testPcpMapFunction.py
     testenv/testPcpOwner.py
     testenv/testPcpRegressionBugs_bug70951.py
@@ -104,6 +104,28 @@ pxr_test_scripts(
     testenv/testPcpRegressionBugs_bug92955.py
     testenv/testPcpRegressionBugs_bug101300.py
     testenv/testPcpCompositionResults.py
+)
+
+pxr_build_test_shared_lib(TestPcpDynamicFileFormatPlugin
+    CREATE_FRAMEWORK
+    INSTALL_PREFIX PcpPlugins
+    LIBRARIES
+        tf
+        pcp
+        sdf
+        
+    CPPFILES
+        testenv/TestPcpDynamicFileFormatPlugin.cpp
+)
+
+pxr_build_test(testPcpHardToReach
+    LIBRARIES
+        tf 
+        pcp 
+        sdf
+
+    CPPFILES
+        testenv/testPcpHardToReach.cpp
 )
 
 pxr_build_test(testPcpIterator
@@ -202,8 +224,8 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/testPcpPayloadDecorator.testenv
-    DEST testPcpPayloadDecorator
+    SRC testenv/testPcpDynamicFileFormatPlugin.testenv
+    DEST testPcpDynamicFileFormatPlugin
 )
 
 pxr_install_test_dir(
@@ -269,6 +291,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testPcpMuseum_BasicInstancingAndVariants.testenv
     DEST testPcpMuseum_BasicInstancingAndVariants
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_BasicPayloadDiamond.testenv
+    DEST testPcpMuseum_BasicPayloadDiamond
 )
 
 pxr_install_test_dir(
@@ -382,8 +409,18 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_ImpliedAndAncestralInherits.testenv
+    DEST testPcpMuseum_ImpliedAndAncestralInherits
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_PayloadsAndAncestralArcs.testenv
     DEST testPcpMuseum_PayloadsAndAncestralArcs
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_RelativePathPayloads.testenv
+    DEST testPcpMuseum_RelativePathPayloads
 )
 
 pxr_install_test_dir(
@@ -394,6 +431,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testPcpMuseum_RelocatePrimsWithSameName.testenv
     DEST testPcpMuseum_RelocatePrimsWithSameName
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_SpecializesAndAncestralArcs.testenv
+    DEST testPcpMuseum_SpecializesAndAncestralArcs
 )
 
 pxr_install_test_dir(
@@ -474,6 +516,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testPcpMuseum_TrickyInheritsInVariants2.testenv
     DEST testPcpMuseum_TrickyInheritsInVariants2
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_SubrootReferenceNonCycle.testenv
+    DEST testPcpMuseum_SubrootReferenceNonCycle
 )
 
 pxr_install_test_dir(
@@ -589,11 +636,6 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testPcpMuseum_TrickySpookyVariantSelectionInClass.testenv
     DEST testPcpMuseum_TrickySpookyVariantSelectionInClass
-)
-
-pxr_install_test_dir(
-    SRC testenv/testPcpMuseum_TrickyRelationalAttributeOnRelocatedTarget.testenv
-    DEST testPcpMuseum_TrickyRelationalAttributeOnRelocatedTarget
 )
 
 pxr_install_test_dir(
@@ -748,6 +790,15 @@ pxr_register_test(testPcpMuseum_BasicInstancingAndVariants
         PCP_OVERRIDE_INSTANCEABLE=1
 )
 
+pxr_register_test(testPcpMuseum_BasicPayloadDiamond
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --payloads ^(?!/RootUnloaded) BasicPayloadDiamond/root.sdf" 
+    STDOUT_REDIRECT compositionResults_BasicPayloadDiamond.txt
+    DIFF_COMPARE compositionResults_BasicPayloadDiamond.txt 
+    ENV 
+        PCP_OVERRIDE_INSTANCEABLE=1
+)
+
 pxr_register_test(testPcpMuseum_BasicReference
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicReference/root.sdf --session BasicReference/session.sdf" 
@@ -869,9 +920,9 @@ pxr_register_test(testPcpMuseum_BasicOwner
 
 pxr_register_test(testPcpMuseum_BasicPayload
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicPayload/root.sdf" 
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --session BasicPayload/session.sdf --errorFile compositionErrors_BasicPayload_pcp.txt BasicPayload/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicPayload_pcp.txt
-    DIFF_COMPARE compositionResults_BasicPayload_pcp.txt 
+    DIFF_COMPARE compositionResults_BasicPayload_pcp.txt compositionErrors_BasicPayload_pcp.txt
 )
 
 pxr_register_test(testPcpMuseum_BasicSpecializes
@@ -902,11 +953,34 @@ pxr_register_test(testPcpMuseum_BasicSpecializesAndVariants
     DIFF_COMPARE compositionResults_BasicSpecializesAndVariants.txt 
 )
 
+pxr_register_test(testPcpMuseum_ImpliedAndAncestralInherits
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_TrickyMultipleRelocations4.txt ImpliedAndAncestralInherits/root.sdf" 
+    STDOUT_REDIRECT compositionResults_ImpliedAndAncestralInherits.txt
+    DIFF_COMPARE compositionResults_ImpliedAndAncestralInherits.txt
+)
+
+pxr_register_test(testPcpMuseum_ImpliedAndAncestralInherits_graph
+    PYTHON
+    TESTENV testPcpMuseum_ImpliedAndAncestralInherits
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --dumpPath /World/CharGroup/Sim/includes/Hand/Geom --dumpMaps ImpliedAndAncestralInherits/root.sdf" 
+    STDOUT_REDIRECT compositionResults_ImpliedAndAncestralInherits_graph.txt
+    CLEAN_OUTPUT "[^@]*/ImpliedAndAncestralInherits/"
+    DIFF_COMPARE compositionResults_ImpliedAndAncestralInherits_graph.txt 
+)
+
 pxr_register_test(testPcpMuseum_PayloadsAndAncestralArcs
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --payloads ^(?!/Root/UnloadedInheritedPayload) PayloadsAndAncestralArcs/root.sdf" 
     STDOUT_REDIRECT compositionResults_PayloadsAndAncestralArcs.txt
     DIFF_COMPARE compositionResults_PayloadsAndAncestralArcs.txt 
+)
+
+pxr_register_test(testPcpMuseum_RelativePathPayloads
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults RelativePathPayloads/root.sdf" 
+    STDOUT_REDIRECT compositionResults_RelativePathPayloads.txt
+    DIFF_COMPARE compositionResults_RelativePathPayloads.txt 
 )
 
 pxr_register_test(testPcpMuseum_RelativePathReferences
@@ -921,6 +995,13 @@ pxr_register_test(testPcpMuseum_RelocatePrimsWithSameName
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults RelocatePrimsWithSameName/root.sdf" 
     STDOUT_REDIRECT compositionResults_RelocatePrimsWithSameName.txt
     DIFF_COMPARE compositionResults_RelocatePrimsWithSameName.txt 
+)
+
+pxr_register_test(testPcpMuseum_SpecializesAndAncestralArcs
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults SpecializesAndAncestralArcs/root.sdf" 
+    STDOUT_REDIRECT compositionResults_SpecializesAndAncestralArcs.txt
+    DIFF_COMPARE compositionResults_SpecializesAndAncestralArcs.txt 
 )
 
 pxr_register_test(testPcpMuseum_SubrootReferenceAndClasses
@@ -1026,6 +1107,13 @@ pxr_register_test(testPcpMuseum_TrickyInheritsInVariants2
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyInheritsInVariants2/root.sdf" 
     STDOUT_REDIRECT compositionResults_TrickyInheritsInVariants2.txt
     DIFF_COMPARE compositionResults_TrickyInheritsInVariants2.txt 
+)
+
+pxr_register_test(testPcpMuseum_SubrootReferenceNonCycle
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_SubrootReferenceNonCycle.txt SubrootReferenceNonCycle/root.sdf" 
+    STDOUT_REDIRECT compositionResults_SubrootReferenceNonCycle.txt
+    DIFF_COMPARE compositionResults_SubrootReferenceNonCycle.txt compositionErrors_SubrootReferenceNonCycle.txt 
 )
 
 pxr_register_test(testPcpMuseum_TrickyVariantAncestralSelection
@@ -1182,13 +1270,6 @@ pxr_register_test(testPcpMuseum_TrickySpookyVariantSelection
     DIFF_COMPARE compositionResults_TrickySpookyVariantSelection_pcp.txt 
 )
 
-pxr_register_test(testPcpMuseum_TrickyRelationalAttributeOnRelocatedTarget
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyRelationalAttributeOnRelocatedTarget/root.sdf" 
-    STDOUT_REDIRECT compositionResults_TrickyRelationalAttributeOnRelocatedTarget.txt
-    DIFF_COMPARE compositionResults_TrickyRelationalAttributeOnRelocatedTarget.txt 
-)
-
 pxr_register_test(testPcpMuseum_TrickyConnectionToRelocatedAttribute
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults TrickyConnectionToRelocatedAttribute/root.sdf" 
@@ -1322,6 +1403,11 @@ pxr_register_test(testPcpDependencies
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testPcpHardToReach
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpHardToReach"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testPcpInstanceKey
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpInstanceKey"
@@ -1414,9 +1500,9 @@ pxr_register_test(testPcpPathTranslation
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_register_test(testPcpPayloadDecorator
+pxr_register_test(testPcpDynamicFileFormatPlugin
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpPayloadDecorator"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpDynamicFileFormatPlugin"
     EXPECTED_RETURN_CODE 0  
 )
 

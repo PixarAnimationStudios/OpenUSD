@@ -24,7 +24,7 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_RFM_LIGHT_H
 #define PXRUSDMAYA_TRANSLATOR_RFM_LIGHT_H
 
-/// \file translatorRfMLight.h
+/// \file usdMaya/translatorRfMLight.h
 
 #include "pxr/pxr.h"
 
@@ -38,7 +38,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-struct PxrUsdMayaTranslatorRfMLight
+struct UsdMayaTranslatorRfMLight
 {
     /// Exports a UsdLux schema prim when provided args and a context that
     /// identify a RenderMan for Maya light.
@@ -46,20 +46,20 @@ struct PxrUsdMayaTranslatorRfMLight
     /// Returns true if this succeeds in creating a UsdLux schema prim.
     PXRUSDMAYA_API
     static bool Write(
-            const PxrUsdMayaPrimWriterArgs& args,
-            PxrUsdMayaPrimWriterContext* context);
+            const UsdMayaPrimWriterArgs& args,
+            UsdMayaPrimWriterContext* context);
 
     /// Imports a UsdLux schema prim as a RenderMan for Maya light.
     ///
     /// Returns true if this succeeds in creating a RenderMan for Maya light.
     PXRUSDMAYA_API
     static bool Read(
-            const PxrUsdMayaPrimReaderArgs& args,
-            PxrUsdMayaPrimReaderContext* context);
+            const UsdMayaPrimReaderArgs& args,
+            UsdMayaPrimReaderContext* context);
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
 
-#endif // PXRUSDMAYA_TRANSLATOR_RFM_LIGHT_H
+#endif

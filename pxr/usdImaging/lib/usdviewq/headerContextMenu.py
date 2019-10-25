@@ -31,18 +31,26 @@ from usdviewContextMenuItem import UsdviewContextMenuItem
 class HeaderContextMenu(QtWidgets.QMenu):
 
     def __init__(self, parent):
-        QtWidgets.QMenu.__init__(self, parent)
+        QtWidgets.QMenu.__init__(self, "Columns", parent)
         self._menuItems = _GetContextMenuItems(parent)
 
         for menuItem in self._menuItems:
             if menuItem.isValid():
-                # create menu actions
+                # create menu actions.  Associate them with each Item, so that
+                # we can update them when we show, since column visibility can
+                # change.
                 action = self.addAction(menuItem.GetText(), menuItem.RunCommand)
-
-                # set the proper checkmarks
                 action.setCheckable(True)
-                action.setChecked(menuItem.IsChecked())
-                action.setEnabled(menuItem.IsEnabled())
+                menuItem.action = action
+
+        self.aboutToShow.connect(self._prepForShow)
+
+    def _prepForShow(self):
+        for menuItem in self._menuItems:
+            if menuItem.action:
+                menuItem.action.setChecked(menuItem.IsChecked())
+                menuItem.action.setEnabled(menuItem.IsEnabled())
+
 
 def _GetContextMenuItems(parent):
     # create a list of HeaderContextMenuItem classes
@@ -58,8 +66,9 @@ class HeaderContextMenuItem(UsdviewContextMenuItem):
     def __init__(self, parent, column):
         self._parent = parent
         self._column = column
+        self._action = None
 
-        if parent.__class__ == QtWidgets.QTreeWidget:
+        if isinstance(parent, QtWidgets.QTreeWidget):
             self._text = parent.headerItem().text(column)
         else:
             self._text = parent.horizontalHeaderItem(column).text()
@@ -69,16 +78,22 @@ class HeaderContextMenuItem(UsdviewContextMenuItem):
         return self._text
 
     def IsEnabled(self):
-        return self._column > 0
+        # Enable context menu item for columns except the "Name" column.
+        return 'Name' not in self.GetText()
 
     def IsChecked(self):
         # true if the column is visible, false otherwise
         return not self._parent.isColumnHidden(self._column)
 
     def RunCommand(self):
-        if self._column <= 0 :
-            return
-
         # show or hide the column depending on its previous state
         self._parent.setColumnHidden(self._column, self.IsChecked())
+
+    @property
+    def action(self):
+        return self._action
+
+    @action.setter
+    def action(self, action):
+        self._action = action
 

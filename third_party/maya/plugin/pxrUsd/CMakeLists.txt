@@ -10,7 +10,9 @@ pxr_plugin(${PXR_PACKAGE}
         usd
         usdGeom
         usdMaya
-        ${MAYA_LIBRARIES}
+        ${MAYA_Foundation_LIBRARY}
+        ${MAYA_OpenMaya_LIBRARY}
+        ${MAYA_OpenMayaRender_LIBRARY}
 
     INCLUDE_DIRS
         ${MAYA_INCLUDE_DIRS}
@@ -38,11 +40,12 @@ pxr_install_test_dir(
     DEST testPxrUsdAlembicChaser
 )
 pxr_register_test(testPxrUsdAlembicChaser
-    CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
+    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPxrUsdAlembicChaser"
     TESTENV testPxrUsdAlembicChaser
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
-        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
+        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
 )

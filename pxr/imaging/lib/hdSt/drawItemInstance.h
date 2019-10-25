@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/drawItem.h"
-#include "boost/shared_ptr.hpp"
+#include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -37,7 +37,7 @@ typedef boost::shared_ptr<class HdSt_DrawBatch> HdDrawBatchSharedPtr;
 ///
 /// A container to store instance state for a drawitem.
 ///
-/// During culling, the visiblity state will be set. If the instance
+/// During culling, the visibility state will be set. If the instance
 /// has a batch, the batch will get a DrawItemInstanceChanged
 /// callback.
 ///

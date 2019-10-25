@@ -55,28 +55,11 @@ void wrapUsdAPISchemaBase()
 {
     typedef UsdAPISchemaBase This;
 
-    class_<This, bases<UsdSchemaBase> >
-        cls("APISchemaBase");
+    class_< This , bases<UsdSchemaBase>, boost::noncopyable> cls ("APISchemaBase", "", no_init);
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
-
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
-
-        .def("IsMultipleApply", 
-            static_cast<bool (*)(void)>( [](){ return This::IsMultipleApply; } ))
-        .staticmethod("IsMultipleApply")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,

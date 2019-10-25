@@ -26,7 +26,7 @@
 
 #include "pxr/base/tf/staticTokens.h"
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -36,7 +36,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     (Alpha)                                     \
     (Cd)                                        \
     (displayColor)                              \
-    (displayOpacity)
+    (displayOpacity)                            \
+    ((usdOutPrimPath, "name"))                  \
+    ((usdAgentPath, "usdagentpath"))            \
+    ((usdAgentPrimPath, "usdagentprimpath"))
 
 TF_DECLARE_PUBLIC_TOKENS(GusdTokens, GUSD_TOKENS);
 

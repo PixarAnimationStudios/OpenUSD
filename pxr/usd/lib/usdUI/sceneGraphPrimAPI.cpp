@@ -61,6 +61,11 @@ UsdUISceneGraphPrimAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 }
 
 
+/* virtual */
+UsdSchemaType UsdUISceneGraphPrimAPI::_GetSchemaType() const {
+    return UsdUISceneGraphPrimAPI::schemaType;
+}
+
 /* static */
 UsdUISceneGraphPrimAPI
 UsdUISceneGraphPrimAPI::Apply(const UsdPrim &prim)

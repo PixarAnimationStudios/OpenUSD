@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/types.h"
 #include "pxr/usd/sdf/path.h"
@@ -46,12 +47,29 @@ class HdMaterialParam {
 public:
     typedef size_t ID;
 
+    // Indicates the kind of material parameter.
+    enum ParamType {
+        // This is a shader specified fallback value that is
+        // not connected to either a primvar or texture.
+        ParamTypeFallback,
+        // This is a parameter that is connected to a primvar.
+        ParamTypePrimvar,
+        // This is a parameter that is connected to a texture.
+        ParamTypeTexture,
+        // This is a parameter that is connected to a field reader.
+        ParamTypeField,
+        // Accesses 3d texture with potential transform and fallback under
+        // different name
+        ParamTypeFieldRedirect
+    };
+
     HD_API
-    HdMaterialParam(TfToken const& name, 
-                  VtValue const& fallbackValue,
-                  SdfPath const& connection=SdfPath(),
-                  TfTokenVector const& samplerCoords=TfTokenVector(),
-                  bool isPtex = false);
+    HdMaterialParam(ParamType paramType,
+                    TfToken const& name, 
+                    VtValue const& fallbackValue,
+                    SdfPath const& connection=SdfPath(),
+                    TfTokenVector const& samplerCoords=TfTokenVector(),
+                    HdTextureType textureType = HdTextureType::Uv);
 
     HD_API
     ~HdMaterialParam();
@@ -61,38 +79,31 @@ public:
     HD_API
     static ID ComputeHash(HdMaterialParamVector const &shaders);
 
-    TfToken const& GetName() const { return _name; }
-
     HD_API
     HdTupleType GetTupleType() const;
 
-    VtValue const& GetFallbackValue() const { return _fallbackValue; }
-
-    SdfPath const& GetConnection() const { return _connection; }
-
+    bool IsField() const {
+        return paramType == ParamTypeField;
+    }
     bool IsTexture() const {
-        return !IsFallback() && _connection.IsAbsolutePath();
+        return paramType == ParamTypeTexture;
     }
     bool IsPrimvar() const {
-        return !IsFallback() && !IsTexture();
+        return paramType == ParamTypePrimvar;
     }
     bool IsFallback() const {
-        return _connection.IsEmpty();
+        return paramType == ParamTypeFallback;
+    }
+    bool IsFieldRedirect() const {
+        return paramType == ParamTypeFieldRedirect;
     }
 
-    // XXX: we don't want this, we need a better way of supplying this answer.
-    HD_API
-    bool IsPtex() const;
-
-    HD_API
-    TfTokenVector const& GetSamplerCoordinates() const;
-
-private:
-    TfToken _name;
-    VtValue _fallbackValue;
-    SdfPath _connection;
-    TfTokenVector _samplerCoords;
-    bool _isPtex;
+    ParamType paramType;
+    TfToken name;
+    VtValue fallbackValue;
+    SdfPath connection;
+    TfTokenVector samplerCoords;
+    HdTextureType textureType;
 };
 
 

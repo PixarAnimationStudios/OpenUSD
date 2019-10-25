@@ -32,8 +32,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 bool
-GusdStageBasicEdit::Apply(const SdfLayerHandle& layer,
-                          GusdUT_ErrorContext* err) const
+GusdStageEdit::Apply(const SdfLayerHandle& layer,
+                          UT_ErrorSeverity sev) const
 {
     SdfChangeBlock changeBlock;
 
@@ -45,8 +45,8 @@ GusdStageBasicEdit::Apply(const SdfLayerHandle& layer,
 
 
 bool
-GusdStageBasicEdit::Apply(const UsdStagePtr& stage,
-                          GusdUT_ErrorContext* err) const
+GusdStageEdit::Apply(const UsdStagePtr& stage,
+                          UT_ErrorSeverity sev) const
 {
     UT_ASSERT_P(stage);
 
@@ -57,7 +57,7 @@ GusdStageBasicEdit::Apply(const UsdStagePtr& stage,
 
 
 size_t
-GusdStageBasicEdit::GetHash() const
+GusdStageEdit::GetHash() const
 {
     size_t hash = SYShashRange(_variants.begin(), _variants.end());
     SYShashCombine(hash, SYShashRange(_layersToMute.begin(),
@@ -67,28 +67,24 @@ GusdStageBasicEdit::GetHash() const
 
 
 bool
-GusdStageBasicEdit::operator==(const GusdStageEdit& o) const
+GusdStageEdit::operator==(const GusdStageEdit& o) const
 {
-    if(const auto* oPtr = dynamic_cast<const GusdStageBasicEdit*>(&o)) {
-        return _variants == oPtr->_variants &&
-               _layersToMute == oPtr->_layersToMute;
-    }
-    return false;
+    return _variants == o._variants && _layersToMute == o._layersToMute;
 }
 
 
 void
-GusdStageBasicEdit::GetPrimPathAndEditFromVariantsPath(
+GusdStageEdit::GetPrimPathAndEditFromVariantsPath(
     const SdfPath& pathWithVariants,
     SdfPath& primPath,
-    GusdStageBasicEditPtr& edit)
+    GusdStageEditPtr& edit)
 {
     SdfPath variants;
     GusdUSD_Utils::ExtractPrimPathAndVariants(pathWithVariants,
                                               primPath, variants);
     if(!variants.IsEmpty()) {
         if(!edit)
-            edit.reset(new GusdStageBasicEdit);
+            edit.reset(new GusdStageEdit);
         edit->GetVariants().append(variants);
     }
 }

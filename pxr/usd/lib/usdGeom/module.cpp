@@ -29,11 +29,10 @@ PXR_NAMESPACE_USING_DIRECTIVE
 TF_WRAP_MODULE
 {
     TF_WRAP(UsdGeomBBoxCache); 
-    TF_WRAP(UsdGeomCollectionAPI);
     TF_WRAP(UsdGeomConstraintTarget);
-    TF_WRAP(UsdGeomFaceSetAPI);
     TF_WRAP(UsdGeomModelAPI);
     TF_WRAP(UsdGeomPrimvar);
+    TF_WRAP(UsdGeomPrimvarsAPI);
     TF_WRAP(UsdGeomTokens);
     TF_WRAP(UsdGeomXformOp);
     TF_WRAP(UsdGeomXformCommonAPI);

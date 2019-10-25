@@ -3,7 +3,7 @@ set(DIRS
     tf
     gf
     js
-    tracelite
+    trace
     work
     plug
     vt

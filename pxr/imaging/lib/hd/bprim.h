@@ -63,7 +63,7 @@ public:
     /// Returns the identifier by which this buffer is known. This
     /// identifier is a common associative key used by the SceneDelegate,
     /// RenderIndex, and for binding to the buffer
-    SdfPath const& GetID() const { return _id; }
+    SdfPath const& GetId() const { return _id; }
 
     /// Synchronizes state from the delegate to this object.
     /// @param[in, out]  dirtyBits: On input specifies which state is
@@ -75,6 +75,12 @@ public:
     virtual void Sync(HdSceneDelegate *sceneDelegate,
                       HdRenderParam   *renderParam,
                       HdDirtyBits     *dirtyBits) = 0;
+
+    /// Finalizes object resources. This function might not delete resources,
+    /// but it should deal with resource ownership so that the sprim is
+    /// deletable.
+    HD_API
+    virtual void Finalize(HdRenderParam *renderParam);
 
     /// Returns the minimal set of dirty bits to place in the
     /// change tracker for use in the first sync of this prim.

@@ -39,7 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 /// \brief Provides helper functions for reading UsdGeomXformable.  
-struct PxrUsdMayaTranslatorXformable
+struct UsdMayaTranslatorXformable
 {
     /// \brief reads xform attributes from \p xformable and converts them into
     /// maya transform values.
@@ -47,8 +47,8 @@ struct PxrUsdMayaTranslatorXformable
     static void Read(
             const UsdGeomXformable& xformable, 
             MObject mayaNode,
-            const PxrUsdMayaPrimReaderArgs& args,
-            PxrUsdMayaPrimReaderContext* context);
+            const UsdMayaPrimReaderArgs& args,
+            UsdMayaPrimReaderContext* context);
 
     /// \brief Convenince function for decomposing \p usdMatrix.
     PXRUSDMAYA_API
@@ -62,4 +62,4 @@ struct PxrUsdMayaTranslatorXformable
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSD_TRANSLATOR_XFORMABLE_H
+#endif

@@ -182,7 +182,7 @@ class GfBBox3d {
         _SetMatrices(_matrix * matrix);
     }
 
-    /// Returns the axis-aligned range (as a \c GfRange3d) that wesults from
+    /// Returns the axis-aligned range (as a \c GfRange3d) that results from
     /// applying the transformation matrix to the wxis-aligned box and
     /// aligning the result.
     GF_API
@@ -208,6 +208,14 @@ class GfBBox3d {
     GF_API
     GfVec3d             ComputeCentroid() const;
 
+    /// Hash.
+    friend inline size_t hash_value(const GfBBox3d &b) {
+        size_t h = 0;
+        boost::hash_combine(h, b._box);
+        boost::hash_combine(h, b._matrix);
+        return h;
+    }
+    
     /// Component-wise equality test. The axis-aligned boxes and
     /// transformation matrices match exactly for bboxes to be considered
     /// equal. (To compare equality of the actual boxes, you can compute both

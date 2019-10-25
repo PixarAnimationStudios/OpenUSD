@@ -26,8 +26,6 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/listOp.h"
-#include "pxr/usd/sdf/mapperArgSpec.h"
-#include "pxr/usd/sdf/mapperSpec.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/usd/sdf/pyChildrenView.h"
@@ -42,12 +40,9 @@
 #include "pxr/usd/sdf/variantSetSpec.h"
 #include "pxr/usd/sdf/variantSpec.h"
 
+#include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyStaticTokens.h"
-/*
-#include "pxr/base/tf/pyResultConversions.h"
-#include "pxr/base/tf/stringUtils.h"
-*/
 
 #include "pxr/base/vt/valueFromPython.h"
 
@@ -332,6 +327,14 @@ void wrapTypes()
     def( "GetNameForUnit", &SdfGetNameForUnit,
          return_value_policy<return_by_value>() );
 
+    // Register Python conversions for std::vector<SdfUnregisteredValue>
+    using _UnregisteredValueVector = std::vector<SdfUnregisteredValue>;
+    to_python_converter<_UnregisteredValueVector,
+                        TfPySequenceToPython<_UnregisteredValueVector> >();
+    TfPyContainerConversions::from_python_sequence<
+        _UnregisteredValueVector,
+        TfPyContainerConversions::variable_capacity_policy >();
+
     TfPyWrapEnum<SdfListOpType>();
     TfPyWrapEnum<SdfPermission>();
     TfPyWrapEnum<SdfSpecifier>();
@@ -355,12 +358,11 @@ void wrapTypes()
     SdfPyWrapListProxy<SdfSubLayerProxy>();
     SdfPyWrapListEditorProxy<SdfConnectionsProxy>();
     SdfPyWrapListEditorProxy<SdfInheritsProxy>();
+    SdfPyWrapListEditorProxy<SdfPayloadsProxy>();
     SdfPyWrapListEditorProxy<SdfReferencesProxy>();
     SdfPyWrapListEditorProxy<SdfVariantSetNamesProxy>();
 
     SdfPyWrapChildrenView<SdfAttributeSpecView>();
-    SdfPyWrapChildrenView<SdfConnectionMappersView>();
-    SdfPyWrapChildrenView<SdfMapperArgSpecView>();
     SdfPyWrapChildrenView<SdfPrimSpecView>();
     SdfPyWrapChildrenView<SdfPropertySpecView>();
     SdfPyWrapChildrenView<SdfRelationalAttributeSpecView>();
@@ -373,6 +375,7 @@ void wrapTypes()
     SdfPyWrapMapEditProxy<SdfRelocatesMapProxy>();
 
     SdfPyWrapListOp<SdfPathListOp>("PathListOp");
+    SdfPyWrapListOp<SdfPayloadListOp>("PayloadListOp");
     SdfPyWrapListOp<SdfReferenceListOp>("ReferenceListOp");
     SdfPyWrapListOp<SdfStringListOp>("StringListOp");
     SdfPyWrapListOp<SdfTokenListOp>("TokenListOp");
@@ -383,6 +386,7 @@ void wrapTypes()
     SdfPyWrapListOp<SdfUnregisteredValueListOp>("UnregisteredValueListOp");
 
     VtValueFromPython<SdfPathListOp>();
+    VtValueFromPython<SdfPayloadListOp>();
     VtValueFromPython<SdfReferenceListOp>();
     VtValueFromPython<SdfStringListOp>();
     VtValueFromPython<SdfTokenListOp>();
@@ -436,6 +440,7 @@ void wrapTypes()
         .def_readonly("Half"    , SdfValueTypeNames->Half)
         .def_readonly("Float"   , SdfValueTypeNames->Float)
         .def_readonly("Double"  , SdfValueTypeNames->Double)
+        .def_readonly("TimeCode", SdfValueTypeNames->TimeCode)
         .def_readonly("String"  , SdfValueTypeNames->String)
         .def_readonly("Token"   , SdfValueTypeNames->Token)
         .def_readonly("Asset"   , SdfValueTypeNames->Asset)
@@ -473,6 +478,12 @@ void wrapTypes()
         .def_readonly("Matrix3d", SdfValueTypeNames->Matrix3d)
         .def_readonly("Matrix4d", SdfValueTypeNames->Matrix4d)
         .def_readonly("Frame4d" , SdfValueTypeNames->Frame4d)
+        .def_readonly("TexCoord2h", SdfValueTypeNames->TexCoord2h)
+        .def_readonly("TexCoord2f", SdfValueTypeNames->TexCoord2f)
+        .def_readonly("TexCoord2d", SdfValueTypeNames->TexCoord2d)
+        .def_readonly("TexCoord3h", SdfValueTypeNames->TexCoord3h)
+        .def_readonly("TexCoord3f", SdfValueTypeNames->TexCoord3f)
+        .def_readonly("TexCoord3d", SdfValueTypeNames->TexCoord3d)
 
         .def_readonly("BoolArray"    , SdfValueTypeNames->BoolArray)
         .def_readonly("UCharArray"   , SdfValueTypeNames->UCharArray)
@@ -483,6 +494,7 @@ void wrapTypes()
         .def_readonly("HalfArray"    , SdfValueTypeNames->HalfArray)
         .def_readonly("FloatArray"   , SdfValueTypeNames->FloatArray)
         .def_readonly("DoubleArray"  , SdfValueTypeNames->DoubleArray)
+        .def_readonly("TimeCodeArray", SdfValueTypeNames->TimeCodeArray)
         .def_readonly("StringArray"  , SdfValueTypeNames->StringArray)
         .def_readonly("TokenArray"   , SdfValueTypeNames->TokenArray)
         .def_readonly("AssetArray"   , SdfValueTypeNames->AssetArray)
@@ -520,6 +532,12 @@ void wrapTypes()
         .def_readonly("Matrix3dArray", SdfValueTypeNames->Matrix3dArray)
         .def_readonly("Matrix4dArray", SdfValueTypeNames->Matrix4dArray)
         .def_readonly("Frame4dArray" , SdfValueTypeNames->Frame4dArray)
+        .def_readonly("TexCoord2hArray", SdfValueTypeNames->TexCoord2hArray)
+        .def_readonly("TexCoord2fArray", SdfValueTypeNames->TexCoord2fArray)
+        .def_readonly("TexCoord2dArray", SdfValueTypeNames->TexCoord2dArray)
+        .def_readonly("TexCoord3hArray", SdfValueTypeNames->TexCoord3hArray)
+        .def_readonly("TexCoord3fArray", SdfValueTypeNames->TexCoord3fArray)
+        .def_readonly("TexCoord3dArray", SdfValueTypeNames->TexCoord3dArray)
         ;
 
     class_<SdfValueBlock>("ValueBlock")

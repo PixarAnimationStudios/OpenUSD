@@ -27,7 +27,7 @@
 
 #include <GT/GT_DataArray.h>
 
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/array.h"
@@ -61,7 +61,7 @@ public:
     const T&            operator()(GT_Offset o) const
                         {
                             UT_ASSERT_P(o >= 0 && o <= _size);
-                            return _data[0];
+                            return _data[o];
                         }
 
     const ArrayType&    operator*() const   { return _array; }

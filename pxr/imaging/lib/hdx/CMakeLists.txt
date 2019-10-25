@@ -1,6 +1,18 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE hdx)
 
+if (NOT ${PXR_ENABLE_GL_SUPPORT})
+    message(STATUS
+        "Skipping ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
+    return()
+endif()
+
+set (optionalCppFiles "")
+if (PXR_BUILD_OPENCOLORIO_PLUGIN)
+    list(APPEND optionalLibs ${OCIO_LIBRARIES})
+    list(APPEND optionalIncludeDirs ${OCIO_INCLUDE_DIRS})
+endif()
+
 pxr_library(hdx
     LIBRARIES
         plug
@@ -13,21 +25,34 @@ pxr_library(hdx
         pxOsd
         hd
         hdSt
+        hgi
         cameraUtil
         sdf
         ${GLEW_LIBRARY}
+        ${optionalLibs}
 
     INCLUDE_DIRS
         ${GLEW_INCLUDE_DIR}
+        ${optionalIncludeDirs}
 
     PUBLIC_CLASSES
+        aovResolveTask
+        colorizeTask
+        colorizeSelectionTask
+        colorCorrectionTask
+        compositor
         drawTargetRenderPass
         drawTargetTask
         drawTargetResolveTask
-        intersector
+        oitBufferAccessor
+        oitRenderTask
+        oitResolveTask
+        oitVolumeRenderTask
         package
-        rendererPlugin
-        rendererPluginRegistry
+        pickTask
+        pickFromRenderBufferTask
+        presentTask
+        progressiveTask
         renderTask
         renderSetupTask
         selectionTask
@@ -35,7 +60,6 @@ pxr_library(hdx
         shadowTask
         simpleLightingShader
         simpleLightTask
-        simpleLightBypassTask
         taskController
         tokens
         types
@@ -55,14 +79,22 @@ pxr_library(hdx
 
     RESOURCE_FILES
         plugInfo.json
-        shaders/simpleLightingShader.glslfx
+        shaders/colorCorrection.glslfx
+        shaders/fullscreen.glslfx
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx
         shaders/renderPassIdShader.glslfx
+        shaders/renderPassPickingShader.glslfx
         shaders/renderPassShadowShader.glslfx
+        shaders/selection.glslfx
+        shaders/simpleLightingShader.glslfx
+        shaders/renderPassOitShader.glslfx
+        shaders/renderPassOitOpaqueShader.glslfx
+        shaders/oitResolveImageShader.glslfx
+        textures/StinsonBeach.exr
 )
 
-if (X11_FOUND OR APPLE)
+if (X11_FOUND)
 pxr_build_test(testHdxRenderTask
     LIBRARIES
         hdx

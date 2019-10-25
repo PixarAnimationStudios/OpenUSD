@@ -9,13 +9,8 @@ pxr_library(usdHydra
         usdShade
 
     PUBLIC_CLASSES
-        lookAPI
-        primvar
-        shader
-        texture
-        uvTexture
-        ptexTexture
         tokens
+        discoveryPlugin
 
     PUBLIC_HEADERS
         api.h
@@ -25,20 +20,15 @@ pxr_library(usdHydra
 
     PYMODULE_CPPFILES
         module.cpp
-        wrapLookAPI.cpp
-        wrapPrimvar.cpp
-        wrapShader.cpp
-        wrapTexture.cpp
-        wrapUvTexture.cpp
-        wrapPtexTexture.cpp
         wrapTokens.cpp
 
     PYMODULE_FILES
         __init__.py
 
     RESOURCE_FILES
-        generatedSchema.usda
         plugInfo.json
-        schema.usda:usdHydra/schema.usda
+        shaders/shaderDefs.usda
+        shaders/empty.glslfx
+
 )
 

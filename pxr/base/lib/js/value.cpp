@@ -29,7 +29,6 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stringUtils.h"
-#include <boost/noncopyable.hpp>
 #include <boost/variant.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -50,7 +49,7 @@ struct Js_Null
 /// \struct JsValue::_Holder
 /// Private holder class used to abstract away how a value is stored
 /// internally in JsValue objects.
-struct JsValue::_Holder : private boost::noncopyable
+struct JsValue::_Holder
 {
     // The order these types are defined in the variant is important. See the
     // comments in the implementation of IsUInt64 for details.
@@ -64,12 +63,18 @@ struct JsValue::_Holder : private boost::noncopyable
         : value(Js_Null()), type(JsValue::NullType) { }
     _Holder(const JsObject& value)
         : value(value), type(JsValue::ObjectType) { }
+    _Holder(JsObject&& value)
+        : value(std::move(value)), type(JsValue::ObjectType) { }
     _Holder(const JsArray& value)
         : value(value), type(JsValue::ArrayType) { }
+    _Holder(JsArray&& value)
+        : value(std::move(value)), type(JsValue::ArrayType) { }
     _Holder(const char* value)
         : value(std::string(value)), type(JsValue::StringType) { }
     _Holder(const std::string& value)
         : value(value), type(JsValue::StringType) { }
+    _Holder(std::string&& value)
+        : value(std::move(value)), type(JsValue::StringType) { }
     _Holder(bool value)
         : value(value), type(JsValue::BoolType) { }
     _Holder(int value)
@@ -80,6 +85,10 @@ struct JsValue::_Holder : private boost::noncopyable
         : value(value), type(JsValue::IntType) { }
     _Holder(double value)
         : value(value), type(JsValue::RealType) { }
+
+    // _Holder is not copyable
+    _Holder(const _Holder&) = delete;
+    _Holder& operator=(const _Holder&) = delete;
 
     Variant value;
     JsValue::Type type;
@@ -112,8 +121,20 @@ JsValue::JsValue(const JsObject& value)
     // Do Nothing.
 }
 
+JsValue::JsValue(JsObject&& value)
+    : _holder(new _Holder(std::move(value)))
+{
+    // Do Nothing.
+}
+
 JsValue::JsValue(const JsArray& value)
     : _holder(new _Holder(value))
+{
+    // Do Nothing.
+}
+
+JsValue::JsValue(JsArray&& value)
+    : _holder(new _Holder(std::move(value)))
 {
     // Do Nothing.
 }
@@ -126,6 +147,12 @@ JsValue::JsValue(const char* value)
 
 JsValue::JsValue(const std::string& value)
     : _holder(new _Holder(value))
+{
+    // Do Nothing.
+}
+
+JsValue::JsValue(std::string&& value)
+    : _holder(new _Holder(std::move(value)))
 {
     // Do Nothing.
 }

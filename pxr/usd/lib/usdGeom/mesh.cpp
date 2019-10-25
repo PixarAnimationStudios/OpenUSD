@@ -74,6 +74,11 @@ UsdGeomMesh::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdGeomMesh::_GetSchemaType() const {
+    return UsdGeomMesh::schemaType;
+}
+
 /* static */
 const TfType &
 UsdGeomMesh::_GetStaticTfType()
@@ -353,7 +358,46 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/base/arch/hints.h"
+#include "pxr/base/tf/stringUtils.h"
+
+#include <numeric>
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+bool
+UsdGeomMesh::ValidateTopology(const VtIntArray& faceVertexIndices,
+                              const VtIntArray& faceVertexCounts,
+                              size_t numPoints,
+                              std::string* reason)
+{
+    // Sum of the vertex counts should be equal to the number of vertex indices.
+    size_t vertCountsSum = std::accumulate(faceVertexCounts.cbegin(),
+                                           faceVertexCounts.cend(), 0);
+    
+    if(vertCountsSum != faceVertexIndices.size()) {
+        if(reason) {
+            *reason = TfStringPrintf("Sum of faceVertexCounts [%zu] != "
+                                     "size of faceVertexIndices [%zu].",
+                                     vertCountsSum, faceVertexIndices.size());
+        }
+        return false;
+    }
+
+    // Make sure all verts are within the range of the point count.
+    for(int vertexIndex : faceVertexIndices) {
+        if(ARCH_UNLIKELY(vertexIndex < 0 || (size_t)vertexIndex >= numPoints)) {
+            if(reason) {
+                *reason = TfStringPrintf("Out of range face vertex index %d: "
+                                         "Vertex must be in the range [0,%zu).",
+                                         vertexIndex, numPoints);
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
 
 const float UsdGeomMesh::SHARPNESS_INFINITE = 1e38;
 

@@ -23,7 +23,6 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-from pxr import UsdImagingGL
 from pxr.Usdviewq.qt import QtWidgets
 from pxr.Usdviewq.selectionDataModel import ALL_INSTANCES
 from pxr.Usdviewq.common import SelectionHighlightModes
@@ -41,8 +40,7 @@ def _takeShot(appController, fileName):
     viewportShot.save(fileName, "PNG")
 
 def _emitFrameAction(appController):
-    appController._ui.actionFrame_Selection.triggered.emit() 
-    QtWidgets.QApplication.processEvents()
+    appController._frameSelection()
 
 def _emitToggleFrameAction(appController):
     appController._ui.actionToggle_Framed_View.triggered.emit() 

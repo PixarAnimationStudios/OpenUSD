@@ -159,18 +159,18 @@ _IterateAndPrintPropertyIndex(
     std::ostream& out,
     PcpCache* cache,
     const SdfPath& propPath,
-    bool directOnly)
+    bool localOnly)
 {
     PcpErrorVector errors;
     const PcpPropertyIndex& propIndex = 
         cache->ComputePropertyIndex(propPath, &errors);
     PcpRaiseErrors(errors);
 
-    out << "Iterating over " << (directOnly ? "local" : "all") 
+    out << "Iterating over " << (localOnly ? "local" : "all") 
         << " property specs for " << TfStringPrintf("<%s>:", propPath.GetText())
         << std::endl;
 
-    TF_FOR_ALL(it, propIndex.GetPropertyRange(directOnly)) {
+    TF_FOR_ALL(it, propIndex.GetPropertyRange(localOnly)) {
         out << " "
             << Pcp_FormatSite(PcpSite((*it)->GetLayer(), (*it)->GetPath()))
             << " from node ";
@@ -180,11 +180,11 @@ _IterateAndPrintPropertyIndex(
 
     out << std::endl;
 
-    out << "Reverse iterating over " << (directOnly ? "local" : "all") 
+    out << "Reverse iterating over " << (localOnly ? "local" : "all") 
         << " property specs for " << TfStringPrintf("<%s>:", propPath.GetText())
         << std::endl;
 
-    TF_REVERSE_FOR_ALL(it, propIndex.GetPropertyRange(directOnly)) {
+    TF_REVERSE_FOR_ALL(it, propIndex.GetPropertyRange(localOnly)) {
         out << " "
             << Pcp_FormatSite(PcpSite((*it)->GetLayer(), (*it)->GetPath()))
             << " from node ";
@@ -215,7 +215,7 @@ _TestRandomAccessOperations(IteratorType first, IteratorType last)
 {
     TF_AXIOM(first != last);
 
-    size_t idx = 0;
+    typename std::iterator_traits<IteratorType>::difference_type idx = 0;
     for (IteratorType it = first; it != last; ++it, ++idx) {
         TF_AXIOM(it - first == idx);
         TF_AXIOM(it - idx == first);
@@ -340,14 +340,14 @@ main(int argc, char** argv)
         }
 
         _IterateAndPrintPropertyIndex(
-            outfile, cache.get(), SdfPath("/Model.a"), /* directOnly */ true);
+            outfile, cache.get(), SdfPath("/Model.a"), /* localOnly */ true);
 
         outfile << std::endl 
                 << "====================" << std::endl 
                 << std::endl;
 
         _IterateAndPrintPropertyIndex(
-            outfile, cache.get(), SdfPath("/Model.a"), /* directOnly */ false);
+            outfile, cache.get(), SdfPath("/Model.a"), /* localOnly */ false);
     }
     
     return EXIT_SUCCESS;

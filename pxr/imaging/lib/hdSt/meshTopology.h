@@ -52,12 +52,20 @@ typedef boost::shared_ptr<class HdSt_MeshTopology> HdSt_MeshTopologySharedPtr;
 
 /// \class HdSt_MeshTopology
 ///
-/// Hydra Stream implementation for mesh topology.
+/// Storm implementation for mesh topology.
 ///
 class HdSt_MeshTopology final : public HdMeshTopology {
 public:
-    static HdSt_MeshTopologySharedPtr New(const HdMeshTopology &src,
-                                          int refineLevel);
+    /// Specifies how subdivision mesh topology is refined.
+    enum RefineMode {
+        RefineModeUniform = 0,
+        RefineModePatches
+    };
+
+    static HdSt_MeshTopologySharedPtr New(
+        const HdMeshTopology &src,
+        int refineLevel,
+        RefineMode refineMode = RefineModeUniform);
 
     virtual ~HdSt_MeshTopology();
 
@@ -154,8 +162,12 @@ public:
     /// triangles (otherwise quads)
     bool RefinesToTriangles() const;
 
-    /// Returns true if the subdivision on this mesh produces patches
+    /// Returns true if the subdivision of this mesh produces bspline patches
     bool RefinesToBSplinePatches() const;
+
+    /// Returns true if the subdivision of this mesh produces box spline
+    /// triangle patches
+    bool RefinesToBoxSplineTrianglePatches() const;
 
     /// Returns the subdivision topology computation. It computes
     /// far mesh and produces refined quad-indices buffer.
@@ -186,11 +198,15 @@ private:
     HdSt_QuadInfoBuilderComputationPtr _quadInfoBuilder;
 
     // OpenSubdiv
+    RefineMode _refineMode;
     HdSt_Subdivision *_subdivision;
     HdBufferSourceWeakPtr _osdTopologyBuilder;
 
     // Must be created through factory
-    explicit HdSt_MeshTopology(const HdMeshTopology &src, int refineLevel);
+    explicit HdSt_MeshTopology(
+        const HdMeshTopology &src,
+        int refineLevel,
+        RefineMode refineMode);
 
     // No default construction or copying.
     HdSt_MeshTopology()                                      = delete;

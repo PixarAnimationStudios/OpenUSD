@@ -92,6 +92,13 @@ _CreateVelocitiesAttr(UsdGeomPointInstancer &self,
 }
         
 static UsdAttribute
+_CreateAccelerationsAttr(UsdGeomPointInstancer &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateAccelerationsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Vector3fArray), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateAngularVelocitiesAttr(UsdGeomPointInstancer &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateAngularVelocitiesAttr(
@@ -124,14 +131,6 @@ void wrapUsdGeomPointInstancer()
 
         .def("Define", &This::Define, (arg("stage"), arg("path")))
         .staticmethod("Define")
-
-        .def("IsConcrete",
-            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
-        .staticmethod("IsConcrete")
-
-        .def("IsTyped",
-            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
-        .staticmethod("IsTyped")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
@@ -185,6 +184,13 @@ void wrapUsdGeomPointInstancer()
              &This::GetVelocitiesAttr)
         .def("CreateVelocitiesAttr",
              &_CreateVelocitiesAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetAccelerationsAttr",
+             &This::GetAccelerationsAttr)
+        .def("CreateAccelerationsAttr",
+             &_CreateAccelerationsAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
@@ -267,6 +273,24 @@ _ComputeInstanceTransformsAtTime(
 }
 
 static
+std::vector<VtMatrix4dArray>
+_ComputeInstanceTransformsAtTimes(
+    const UsdGeomPointInstancer& self,
+    const std::vector<UsdTimeCode>& times,
+    const UsdTimeCode baseTime,
+    const UsdGeomPointInstancer::ProtoXformInclusion doProtoXforms,
+    const UsdGeomPointInstancer::MaskApplication applyMask)
+{
+    std::vector<VtMatrix4dArray> xforms;
+
+    // On error we'll be returning an empty array.
+    self.ComputeInstanceTransformsAtTimes(&xforms, times, baseTime,
+                                         doProtoXforms, applyMask);
+
+    return xforms;
+}
+
+static
 VtVec3fArray
 _ComputeExtentAtTime(
     const UsdGeomPointInstancer& self,
@@ -281,9 +305,27 @@ _ComputeExtentAtTime(
     return extent;
 }
 
+static
+std::vector<VtVec3fArray>
+_ComputeExtentAtTimes(
+    const UsdGeomPointInstancer& self,
+    const std::vector<UsdTimeCode>& times,
+    const UsdTimeCode baseTime)
+{
+    std::vector<VtVec3fArray> extents;
+
+    // On error we'll be returning an empty array.
+    self.ComputeExtentAtTimes(&extents, times, baseTime);
+
+    return extents;
+}
+
 WRAP_CUSTOM {
 
     typedef UsdGeomPointInstancer This;
+
+    // class needs to be in-scope for enums to get wrapped properly
+    scope obj = _class;
 
     TfPyWrapEnum<This::MaskApplication>();
 
@@ -332,13 +374,25 @@ WRAP_CUSTOM {
              (arg("time"), arg("baseTime"),
               arg("doProtoXforms")=This::IncludeProtoXform,
               arg("applyMask")=This::ApplyMask))
+        .def("ComputeInstanceTransformsAtTimes",
+             &_ComputeInstanceTransformsAtTimes,
+             (arg("times"), arg("baseTime"),
+              arg("doProtoXforms")=This::IncludeProtoXform,
+              arg("applyMask")=This::ApplyMask))
 
         .def("ComputeExtentAtTime",
              &_ComputeExtentAtTime,
              (arg("time"), arg("baseTime")))
+        .def("ComputeExtentAtTimes",
+             &_ComputeExtentAtTimes,
+             (arg("times"), arg("baseTime")))
 
         ;
-
+    TfPyRegisterStlSequencesFromPython<UsdTimeCode>();
+    to_python_converter<std::vector<VtArray<GfMatrix4d>>,
+        TfPySequenceToPython<std::vector<VtArray<GfMatrix4d>>>>();
+    to_python_converter<std::vector<VtVec3fArray>,
+        TfPySequenceToPython<std::vector<VtVec3fArray>>>();
 }
 
 } // anonymous namespace

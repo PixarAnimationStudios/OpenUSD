@@ -54,6 +54,7 @@ struct GfIsGfMatrix<class GfMatrix4f> { static const bool value = true; };
 
 class GfMatrix4d;
 class GfMatrix4f;
+class GfQuatf;
 class GfRotation;
 class GfMatrix3f;
 
@@ -93,7 +94,7 @@ public:
     static const size_t numColumns = 4;
 
     /// Default constructor. Leaves the matrix component values undefined.
-    GfMatrix4f() {}
+    GfMatrix4f() = default;
 
     /// Constructor. Initializes the matrix from 16 independent
     /// \c float values, specified in row-major order. For example,
@@ -267,6 +268,18 @@ public:
     /// the matrix, specified in row-major order.
     GF_API
     float* Get(float m[4][4]) const;
+
+    /// Returns raw access to components of matrix as an array of
+    /// \c float values.  Components are in row-major order.
+    float* data() {
+        return _mtx.GetData();
+    }
+
+    /// Returns const raw access to components of matrix as an array of
+    /// \c float values.  Components are in row-major order.
+    const float* data() const {
+        return _mtx.GetData();
+    }
 
     /// Returns vector components as an array of \c float values.
     float* GetArray()  {
@@ -497,6 +510,16 @@ public:
     /// Sets the matrix to specify a rotation equivalent to \e rot,
     /// and clears the translation.
     GF_API
+    GfMatrix4f& SetRotate(const GfQuatf &rot);
+
+    /// Sets the matrix to specify a rotation equivalent to \e rot,
+    /// without clearing the translation.
+    GF_API
+    GfMatrix4f& SetRotateOnly(const GfQuatf &rot);
+
+    /// Sets the matrix to specify a rotation equivalent to \e rot,
+    /// and clears the translation.
+    GF_API
     GfMatrix4f& SetRotate(const GfRotation &rot);
 
     /// Sets the matrix to specify a rotation equivalent to \e rot,
@@ -691,6 +714,11 @@ private:
     /// Diagonalizes the upper 3x3 matrix of a matrix known to be symmetric.
     void _Jacobi3(GfVec3d *eigenvalues, GfVec3d eigenvectors[3]) const;
 
+    /// Set the 3x3 submatrix to the rotation given by a quaternion,
+    /// defined by the real component \p r and imaginary components \p i.
+    void _SetRotateFromQuat(float r, const GfVec3f& i);
+
+
 private:
     /// Matrix storage, in row-major order.
     GfMatrixData<float, 4, 4> _mtx;
@@ -698,6 +726,13 @@ private:
     // Friend declarations
     friend class GfMatrix4d;
 };
+
+
+/// Tests for equality within a given tolerance, returning \c true if the
+/// difference between each component of the matrix is less than or equal
+/// to \p tolerance, or false otherwise.
+GF_API 
+bool GfIsClose(GfMatrix4f const &m1, GfMatrix4f const &m2, double tolerance);
 
 /// Output a GfMatrix4f
 /// \ingroup group_gf_DebuggingOutput

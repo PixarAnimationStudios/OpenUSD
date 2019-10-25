@@ -24,23 +24,27 @@
 #ifndef PXRUSDMAYA_PRIMWRITERCONTEXT_H
 #define PXRUSDMAYA_PRIMWRITERCONTEXT_H
 
-#include "pxr/pxr.h"
+/// \file usdMaya/primWriterContext.h
+
 #include "usdMaya/api.h"
+
+#include "pxr/pxr.h"
+
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/timeCode.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class PxrUsdMayaPrimReaderContext
+/// \class UsdMayaPrimReaderContext
 /// \brief This class provides an interface for writer plugins to communicate
 /// state back to the core usd maya logic.
-class PxrUsdMayaPrimWriterContext
+class UsdMayaPrimWriterContext
 {
 public:
 
     PXRUSDMAYA_API
-    PxrUsdMayaPrimWriterContext(
+    UsdMayaPrimWriterContext(
             const UsdTimeCode& timeCode,
             const SdfPath& authorPath,
             const UsdStageRefPtr& stage);
@@ -66,14 +70,6 @@ public:
     PXRUSDMAYA_API
     bool GetExportsGprims() const;
     
-    /// \brief Returns the value provided by SetExportsReferences(), or \c false
-    /// if SetExportsReferences() is not called.  
-    ///
-    /// May be used by export processes to reason about what kind of asset we
-    /// are creating.
-    PXRUSDMAYA_API
-    bool GetExportsReferences() const;
-    
     /// Set the value that will be returned by GetExportsGprims().
     ///
     /// A plugin should set this to \c true if it directly creates any
@@ -83,16 +79,6 @@ public:
     /// \sa GetExportsGprims()
     PXRUSDMAYA_API
     void SetExportsGprims(bool exportsGprims);
-
-    /// Set the value that will be returned by GetExportsReferences().
-    ///
-    /// A plugin should set this to \c true if it adds any references,
-    /// and should return the same value each time its write() 
-    /// function is invoked.
-    ///
-    /// \sa GetExportsReferences
-    PXRUSDMAYA_API
-    void SetExportsReferences(bool exportsReferences);
 
     /// Set the value that will be returned by GetPruneChildren().
     ///
@@ -114,17 +100,37 @@ public:
     PXRUSDMAYA_API
     bool GetPruneChildren() const;
 
+    /// Gets the value provided by SetModelPaths().
+    /// The default value is an empty vector if SetModelPaths() was
+    /// never called.
+    PXRUSDMAYA_API
+    const SdfPathVector& GetModelPaths() const;
+
+    /// Sets the vector of prim paths that the prim writer declares as
+    /// potentially being models. These are prims on which this prim writer has
+    /// authored kind metadata or otherwise expects kind metadata to exist
+    /// (e.g. via reference).
+    ///
+    /// The USD export process will attempt to "fix-up" kind metadata to ensure
+    /// contiguous model hierarchy.
+    PXRUSDMAYA_API
+    void SetModelPaths(const SdfPathVector& modelPaths);
+
+    /// Overload of SetModelPaths() that moves the input vector.
+    PXRUSDMAYA_API
+    void SetModelPaths(SdfPathVector&& modelPaths);
+
 private:
     const UsdTimeCode& _timeCode;
     const SdfPath& _authorPath;
     UsdStageRefPtr _stage;
     bool _exportsGprims;
-    bool _exportsReferences;
     bool _pruneChildren;
+    SdfPathVector _modelPaths;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYA_PRIMWRITERCONTEXT_H
+#endif
 

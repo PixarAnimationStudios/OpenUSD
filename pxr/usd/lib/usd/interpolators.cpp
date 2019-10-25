@@ -34,29 +34,29 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 bool 
 Usd_UntypedInterpolator::Interpolate(
-    const SdfLayerRefPtr& layer, const SdfAbstractDataSpecId& specId,
+    const SdfLayerRefPtr& layer, const SdfPath& path,
     double time, double lower, double upper)
 {
-    return _Interpolate(layer, specId, time, lower, upper);
+    return _Interpolate(layer, path, time, lower, upper);
 }
 
 bool 
 Usd_UntypedInterpolator::Interpolate(
-    const Usd_ClipRefPtr& clip, const SdfAbstractDataSpecId& specId,
+    const Usd_ClipRefPtr& clip, const SdfPath& path,
     double time, double lower, double upper)
 {
-    return _Interpolate(clip, specId, time, lower, upper);
+    return _Interpolate(clip, path, time, lower, upper);
 }
 
 template <class Src>
 bool 
 Usd_UntypedInterpolator::_Interpolate(
-    const Src& src, const SdfAbstractDataSpecId& specId,
+    const Src& src, const SdfPath& path,
     double time, double lower, double upper)
 {
     if (_attr.GetStage()->GetInterpolationType() == UsdInterpolationTypeHeld) {
         return Usd_HeldInterpolator<VtValue>(_result).Interpolate(
-            src, specId, time, lower, upper);
+            src, path, time, lower, upper);
     }
 
     // Since we're working with type-erased objects, we have no
@@ -79,7 +79,7 @@ Usd_UntypedInterpolator::_Interpolate(
         if (attrValueType == valueType) {                               \
             type result;                                                \
             if (Usd_LinearInterpolator<type>(&result).Interpolate(      \
-                    src, specId, time, lower, upper)) {                 \
+                    src, path, time, lower, upper)) {                 \
                 *_result = result;                                      \
                 return true;                                            \
             }                                                           \
@@ -91,7 +91,7 @@ Usd_UntypedInterpolator::_Interpolate(
 #undef _MAKE_CLAUSE
 
     return Usd_HeldInterpolator<VtValue>(_result).Interpolate(
-        src, specId, time, lower, upper);
+        src, path, time, lower, upper);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

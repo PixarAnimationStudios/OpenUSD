@@ -74,6 +74,11 @@ UsdRiPxrBarnLightFilter::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType UsdRiPxrBarnLightFilter::_GetSchemaType() const {
+    return UsdRiPxrBarnLightFilter::schemaType;
+}
+
 /* static */
 const TfType &
 UsdRiPxrBarnLightFilter::_GetStaticTfType()

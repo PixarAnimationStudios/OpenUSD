@@ -1,0 +1,15 @@
+#usda 1.0 
+(
+    upAxis = "Y"
+    subLayers = [@./geom.usdc@]
+)
+
+def "World" (prepend references = [@./shading.usda@</World>])
+{
+    def Scope "scope" {
+        
+    }   
+
+    def Camera "camera" {
+    }
+}

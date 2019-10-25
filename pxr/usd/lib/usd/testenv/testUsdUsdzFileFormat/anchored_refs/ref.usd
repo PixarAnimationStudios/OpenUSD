@@ -1,0 +1,11 @@
+#usda 1.0
+
+def "RefUsd" (
+    references = [
+        @./sub/ref.usda@</RefUsda>,
+        @./sub/ref.usdc@</RefUsdc>
+    ]
+)
+{
+    string attr_usd = "usd"
+}

@@ -4,7 +4,7 @@ set(PXR_PACKAGE work)
 pxr_library(work
     LIBRARIES
         tf
-        tracelite
+        trace
         ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS
@@ -15,6 +15,7 @@ pxr_library(work
         detachedTask
         dispatcher
         loops
+        reduce
         singularTask
         threadLimits
         utils
@@ -44,6 +45,12 @@ pxr_build_test(testWorkLoops
         work
     CPPFILES
         testenv/testWorkLoops.cpp
+)
+pxr_build_test(testWorkReduce
+    LIBRARIES
+        work
+    CPPFILES
+        testenv/testWorkReduce.cpp
 ) 
 pxr_build_test(testWorkThreadLimits
     LIBRARIES
@@ -56,6 +63,9 @@ pxr_register_test(testWorkDispatcher
 )
 pxr_register_test(testWorkLoops
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testWorkLoops"
+)
+pxr_register_test(testWorkReduce
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testWorkReduce"
 )
 pxr_register_test(testWorkThreadLimitsDefault
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testWorkThreadLimits"

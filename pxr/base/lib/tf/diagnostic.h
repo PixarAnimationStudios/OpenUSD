@@ -75,7 +75,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// This macro is a convenience.  It produces a TF_ERROR() with an error code
 /// indicating a coding error.  It takes a printf-like format specification or a
-/// std::string.  Generally, an error handilng delegate will take action to turn
+/// std::string.  Generally, an error handling delegate will take action to turn
 /// this error into a python exception, and if it remains unhandled at the end of
 /// an application iteration will roll-back the undo stack to a last-known-good
 /// state.
@@ -92,7 +92,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// indicating a generic runtime error.  It is preferred over TF_ERROR(0),
 /// but using a specific error code is preferred over this.  It takes a
 /// printf-like format specification or a std::string.  Generally, an error
-/// handilng delegate will take action to turn this error into a python
+/// handling delegate will take action to turn this error into a python
 /// exception, and if it remains unhandled at the end of an application iteration
 /// will roll-back the undo stack to a last-known-good state.
 ///
@@ -416,19 +416,18 @@ void Tf_TerminateHandler();
 #define TF_VERIFY(cond, ...)                                                   \
     (ARCH_LIKELY(cond) ? true :                                                \
      Tf_FailedVerifyHelper(TF_CALL_CONTEXT, # cond,                            \
-                           Tf_DiagnosticStringPrintf(__VA_ARGS__)))
-
-// Helpers for TF_VERIFY
-TF_API  bool
-Tf_FailedVerifyHelper(TfCallContext const &context,
-                      char const *condition,
-                      std::string const &msg);
+                           Tf_VerifyStringFormat(__VA_ARGS__)))
 
 // Helpers for TF_VERIFY.
-TF_API std::string Tf_DiagnosticStringPrintf();
-TF_API std::string Tf_DiagnosticStringPrintf(const char *format, ...)
-    ARCH_PRINTF_FUNCTION(1, 2)
-    ;
+TF_API  bool
+Tf_FailedVerifyHelper(TfCallContext const &context,
+                      char const *condition, char const *msg);
+
+// Helpers for TF_VERIFY.
+inline char const *
+Tf_VerifyStringFormat() { return nullptr; }
+TF_API char const *
+Tf_VerifyStringFormat(const char *format, ...) ARCH_PRINTF_FUNCTION(1, 2);
 
 #endif // !doxygen
 

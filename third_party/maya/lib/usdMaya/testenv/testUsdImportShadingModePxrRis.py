@@ -77,6 +77,8 @@ class testUsdImportShadingModePxrRis(unittest.TestCase):
         """
         meshFn = self._GetMayaMesh('|MarbleCube|Geom|Cube|CubeShape')
 
+        self.assertTrue('MarbleShader' in cmds.listConnections('defaultShaderList1.s'))
+
         # Validate the shadingEngine connected to the mesh.
         objectArray = OpenMaya.MObjectArray()
         indexArray = OpenMaya.MIntArray()
@@ -111,6 +113,7 @@ class testUsdImportShadingModePxrRis(unittest.TestCase):
         self.assertTrue(placement3dObj.hasFn(OpenMaya.MFn.kPlace3dTexture))
         placement3dDepFn = OpenMaya.MFnDependencyNode(placement3dObj)
         self.assertEqual(placement3dDepFn.name(), 'MarbleCubePlace3dTexture')
+        self.assertTrue('MarbleCubePlace3dTexture' in cmds.listConnections('defaultRenderUtilityList1.u'))
 
 
 if __name__ == '__main__':

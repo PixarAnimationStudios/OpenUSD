@@ -1,0 +1,21 @@
+/*!
+\page usdShaders_page_front UsdShaders :  Definitions and Implementations of Usd* Shader Nodes
+\if ( PIXAR_MFB_BUILD )
+\mainpage UsdShaders : Definitions and Implementations of Usd* Shader Nodes
+\publicLib
+\endif
+
+\section usdShaders_overview Overview
+This library houses the definitions and implementations for all the current 
+(and future) "Usd*" shader nodes, eg. UsdPreviewSurface, UsdUVTexture etc.
+
+The definitions are represented by a UsdShade-based shader definition file. 
+See \ref UsdShadeShaderDefinition. It currently only contains "glslfx" 
+implementations for the hydra GL backend. In the (not-too-distant) future, it 
+will contain "oso" files that provide OSL implementations of the Usd* shaders.
+
+In addition to shader definitions and implementations, this library may also 
+provide Usd schemas for robust authoring and querying of shader properties in
+the future.
+
+*/

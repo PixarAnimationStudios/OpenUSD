@@ -258,10 +258,10 @@ Tf_NoticeRegistry::_Send(const TfNotice &n, const TfType & noticeType,
         }
 
         // Chain up base types to find listeners interested in them
-        const vector<TfType> & parents = t.GetBaseTypes();
-        if (parents.size() != 1)
+        size_t numParents = t.GetNBaseTypes(&t, 1);
+        if (numParents != 1) {
             _BadTypeFatalMsg(t, typeid(n));
-        t = parents[0];
+        }
     } while (t != TfType::GetRoot());
 
     if (doProbing) {

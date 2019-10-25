@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/usd/sdf/path.h"
 
@@ -39,7 +40,7 @@ class VtValue;
 /// Represents common non-gl context specific render pass state for a draw
 /// target.
 ///
-/// \note This is a temporary API to aid transition to Hydra, and is subject
+/// \note This is a temporary API to aid transition to Storm, and is subject
 /// to major changes.  It is likely this functionality will be absorbed into
 /// the base class.
 ///
@@ -69,6 +70,11 @@ public:
     HDST_API
     void SetDepthClearValue(float clearValue);
 
+    /// Sets the priority of values in the depth buffer.
+    /// i.e. should pixels closer or further from the camera win.
+    HDST_API
+    void SetDepthPriority(HdDepthPriority priority);
+
     /// Set the path to the camera to use to draw this render path from.
     HDST_API
     void SetCamera(const SdfPath &cameraId);
@@ -91,6 +97,10 @@ public:
     /// Returns the clear value for the z-buffer.
     float GetDepthClearValue() const { return _depthClearValue; }
 
+
+    HdDepthPriority GetDepthPriority() const { return _depthPriority; }
+
+
     /// Returns the path to the camera to render from.
     const SdfPath &GetCamera() const { return _cameraId; }
 
@@ -112,6 +122,8 @@ public:
 private:
     std::vector<VtValue> _colorClearValues;
     float                _depthClearValue;
+    HdDepthPriority      _depthPriority;
+
     SdfPath              _cameraId;
 
     HdRprimCollection    _rprimCollection;

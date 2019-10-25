@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/hd/unitTestNullRenderDelegate.h"
 #include "pxr/imaging/hd/bufferArray.h"
+#include "pxr/imaging/hd/coordSys.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/basisCurves.h"
@@ -45,8 +46,11 @@ public:
     {
     public:
         _BufferArray(TfToken const &role,
-                     HdBufferSpecVector const &bufferSpecs) 
-            : HdBufferArray(role, TfToken("perfToken")),
+                     HdBufferSpecVector const &bufferSpecs,
+                     HdBufferArrayUsageHint usageHint)
+            : HdBufferArray(role,
+                            TfToken("perfToken"),
+                            usageHint),
             _bufferSpecs(bufferSpecs)
         {}
 
@@ -114,7 +118,7 @@ public:
             return 0;
         }
 
-        virtual int GetNumElements() const {
+        virtual size_t GetNumElements() const {
             return _numElements;
         }
 
@@ -143,8 +147,14 @@ public:
             out << "Hd_NullStrategy::_BufferArray\n";
         }
 
-        virtual void AddBufferSpecs(HdBufferSpecVector *bufferSpecs) const {
+        virtual void GetBufferSpecs(HdBufferSpecVector *bufferSpecs) const {
         }
+
+        virtual HdBufferArrayUsageHint GetUsageHint() const {
+            return _bufferArray->GetUsageHint();
+        }
+
+    protected:
 
         virtual const void *_GetAggregation() const {
             return _bufferArray;
@@ -152,17 +162,18 @@ public:
 
     private:
         _BufferArray * _bufferArray;
-        int _numElements;
+        size_t _numElements;
     };
 
 
     
     virtual HdBufferArraySharedPtr CreateBufferArray(
         TfToken const &role,
-        HdBufferSpecVector const &bufferSpecs) override
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint) override
     {
         return boost::make_shared<Hd_NullStrategy::_BufferArray>(
-                role, bufferSpecs);
+                role, bufferSpecs, usageHint);
     }
 
     virtual HdBufferArrayRangeSharedPtr CreateBufferArrayRange() override
@@ -171,7 +182,8 @@ public:
     }
 
     virtual AggregationId ComputeAggregationId(
-        HdBufferSpecVector const &bufferSpecs) const override
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint) const override
     {
         // Always returns different value
         static std::atomic_uint id(0);
@@ -200,25 +212,106 @@ public:
 
 class Hd_NullRprim final : public HdRprim {
 public:
-    Hd_NullRprim(SdfPath const& id, SdfPath const& instancerId)
+    Hd_NullRprim(TfToken const& typeId,
+                 SdfPath const& id,
+                 SdfPath const& instancerId)
      : HdRprim(id, instancerId)
+     , _typeId(typeId)
     {
 
     }
 
     virtual ~Hd_NullRprim() = default;
 
-    virtual void Sync(HdSceneDelegate* delegate,
-                      HdRenderParam*   renderParam,
-                      HdDirtyBits*     dirtyBits,
-                      TfToken const&   reprName,
-                      bool             forcedRepr) override
+    virtual void Sync(HdSceneDelegate *delegate,
+                      HdRenderParam   *renderParam,
+                      HdDirtyBits     *dirtyBits,
+                      TfToken const   &reprToken) override
     {
+        // A render delegate would typically pull values for each
+        // dirty bit.  Some tests depend on this behaviour to either
+        // update perf counters or test scene delegate getter workflow.
+        SdfPath const& id = GetId();
+
+        // PrimId dirty bit is internal to Hydra.
+
+        if (HdChangeTracker::IsExtentDirty(*dirtyBits, id)) {
+            GetExtent(delegate);
+        }
+
+        if (HdChangeTracker::IsDisplayStyleDirty(*dirtyBits, id)) {
+            delegate->GetDisplayStyle(id);
+        }
+
+        // Points is a primvar
+
+        if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
+            _SyncPrimvars(delegate, *dirtyBits);
+        }
+
+        // Material Id doesn't have a change tracker test
+        if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
+            delegate->GetMaterialId(id);
+        }
+
+        if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)) {
+            // The topology getter depends on prim type
+            if (_typeId == HdPrimTypeTokens->mesh) {
+                delegate->GetMeshTopology(id);
+            } else if (_typeId == HdPrimTypeTokens->basisCurves) {
+                delegate->GetBasisCurvesTopology(id);
+            }
+            // Other prim types don't have a topology
+        }
+
+        if (HdChangeTracker::IsTransformDirty(*dirtyBits, id)) {
+            delegate->GetTransform(id);
+        }
+
+        if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, id)) {
+            delegate->GetVisible(id);
+        }
+
+        // Normals is a primvar
+
+        if (HdChangeTracker::IsDoubleSidedDirty(*dirtyBits, id)) {
+            delegate->GetDoubleSided(id);
+        }
+
+        if (HdChangeTracker::IsCullStyleDirty(*dirtyBits, id)) {
+            delegate->GetCullStyle(id);
+        }
+
+        // Subddiv tags only apply to refined geom
+        // if (HdChangeTracker::IsSubdivTagsDirty(*dirtyBits, id)) {
+        //    delegate->GetSubdivTags(id);
+        //}
+
+        // Widths is a primvar
+
+        if (HdChangeTracker::IsInstancerDirty(*dirtyBits, id)) {
+            // Instancer Dirty doesn't have a corrispoinding scene delegate pull
+        }
+
+        // InstanceIndex applies to Instancer's not Rprim
+
+        if (HdChangeTracker::IsReprDirty(*dirtyBits, id)) {
+            delegate->GetReprSelector(id);
+        }
+
+        // RenderTag doesn't have a change tracker test
+        if (*dirtyBits & HdChangeTracker::DirtyRenderTag) {
+            delegate->GetRenderTag(id);
+        }
+
+        // DirtyComputationPrimvarDesc not used
+        // DirtyCategories not used
+
         *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
     }
 
 
-    virtual HdDirtyBits _GetInitialDirtyBits() const override
+    virtual HdDirtyBits GetInitialDirtyBitsMask() const override
     {
         // Set all bits except the varying flag
         return  (HdChangeTracker::AllSceneDirtyBits) &
@@ -230,23 +323,47 @@ public:
         return bits;
     }
 
-    virtual void _InitRepr(TfToken const &reprName,
+
+protected:
+    virtual void _InitRepr(TfToken const &reprToken,
                            HdDirtyBits *dirtyBits) override
     {
         _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
-                                                _ReprComparator(reprName));
+                                                _ReprComparator(reprToken));
         if (it == _reprs.end()) {
-            _reprs.emplace_back(reprName, HdReprSharedPtr());
+            _reprs.emplace_back(reprToken, HdReprSharedPtr());
         }
     }
 
-protected:
-    virtual void _UpdateRepr(HdSceneDelegate *sceneDelegate,
-                             TfToken const &reprName,
-                             HdDirtyBits *dirtyBits) override  {
+private:
+    TfToken _typeId;
+
+    void _SyncPrimvars(HdSceneDelegate *delegate,
+                       HdDirtyBits      dirtyBits)
+    {
+        SdfPath const &id = GetId();
+        for (size_t interpolation = HdInterpolationConstant;
+                    interpolation < HdInterpolationCount;
+                  ++interpolation) {
+            HdPrimvarDescriptorVector primvars =
+                    GetPrimvarDescriptors(delegate,
+                            static_cast<HdInterpolation>(interpolation));
+
+            size_t numPrimVars = primvars.size();
+            for (size_t primVarNum = 0;
+                        primVarNum < numPrimVars;
+                      ++primVarNum) {
+                HdPrimvarDescriptor const &primvar = primvars[primVarNum];
+
+                if (HdChangeTracker::IsPrimvarDirty(dirtyBits,
+                                                    id,
+                                                    primvar.name)) {
+                    GetPrimvar(delegate, primvar.name);
+                }
+            }
+        }
     }
 
-private:
     Hd_NullRprim()                                 = delete;
     Hd_NullRprim(const Hd_NullRprim &)             = delete;
     Hd_NullRprim &operator =(const Hd_NullRprim &) = delete;
@@ -264,10 +381,6 @@ public:
         *dirtyBits = HdMaterial::Clean;
     };
 
-    virtual VtValue Get(TfToken const &token) const override {
-        return VtValue();
-    }
-
     virtual HdDirtyBits GetInitialDirtyBitsMask() const override {
         return HdMaterial::AllDirty;
     }
@@ -280,6 +393,29 @@ private:
     Hd_NullMaterial &operator =(const Hd_NullMaterial &) = delete;
 };
 
+class Hd_NullCoordSys final : public HdCoordSys {
+public:
+    Hd_NullCoordSys(SdfPath const& id) : HdCoordSys(id) {}
+    virtual ~Hd_NullCoordSys() = default;
+
+    virtual void Sync(HdSceneDelegate *sceneDelegate,
+                      HdRenderParam   *renderParam,
+                      HdDirtyBits     *dirtyBits) override
+    {
+        *dirtyBits = HdCoordSys::Clean;
+    };
+
+    virtual HdDirtyBits GetInitialDirtyBitsMask() const override {
+        return HdCoordSys::AllDirty;
+    }
+
+private:
+    Hd_NullCoordSys()                                  = delete;
+    Hd_NullCoordSys(const Hd_NullCoordSys &)             = delete;
+    Hd_NullCoordSys &operator =(const Hd_NullCoordSys &) = delete;
+};
+
+
 const TfTokenVector Hd_UnitTestNullRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
     HdPrimTypeTokens->mesh,
@@ -289,6 +425,7 @@ const TfTokenVector Hd_UnitTestNullRenderDelegate::SUPPORTED_RPRIM_TYPES =
 
 const TfTokenVector Hd_UnitTestNullRenderDelegate::SUPPORTED_SPRIM_TYPES =
 {
+    HdPrimTypeTokens->coordSys,
     HdPrimTypeTokens->material
 };
 
@@ -346,12 +483,27 @@ Hd_UnitTestNullRenderDelegate::CreateRenderPass(HdRenderIndex *index,
         new Hd_UnitTestNullRenderPass(index, collection));
 }
 
+HdInstancer *
+Hd_UnitTestNullRenderDelegate::CreateInstancer(HdSceneDelegate *delegate,
+                                               SdfPath const& id,
+                                               SdfPath const& instancerId)
+{
+    return new HdInstancer(delegate, id, instancerId);
+}
+
+void
+Hd_UnitTestNullRenderDelegate::DestroyInstancer(HdInstancer *instancer)
+{
+    delete instancer;
+}
+
+
 HdRprim *
 Hd_UnitTestNullRenderDelegate::CreateRprim(TfToken const& typeId,
                                     SdfPath const& rprimId,
                                     SdfPath const& instancerId)
 {
-    return new Hd_NullRprim(rprimId, instancerId);
+    return new Hd_NullRprim(typeId, rprimId, instancerId);
 }
 
 void
@@ -366,6 +518,8 @@ Hd_UnitTestNullRenderDelegate::CreateSprim(TfToken const& typeId,
 {
     if (typeId == HdPrimTypeTokens->material) {
         return new Hd_NullMaterial(sprimId);
+    } else if (typeId == HdPrimTypeTokens->coordSys) {
+        return new Hd_NullCoordSys(sprimId);
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
@@ -378,6 +532,8 @@ Hd_UnitTestNullRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
 {
     if (typeId == HdPrimTypeTokens->material) {
         return new Hd_NullMaterial(SdfPath::EmptyPath());
+    } else if (typeId == HdPrimTypeTokens->coordSys) {
+        return new Hd_NullCoordSys(SdfPath::EmptyPath());
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }

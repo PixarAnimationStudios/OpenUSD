@@ -28,7 +28,7 @@
 #include "pxr/usd/pcp/primIndex.h"
 
 #include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include <utility>
 
@@ -51,7 +51,10 @@ Usd_InstanceCache::Usd_InstanceCache()
 }
 
 bool
-Usd_InstanceCache::RegisterInstancePrimIndex(const PcpPrimIndex& index)
+Usd_InstanceCache::RegisterInstancePrimIndex(
+    const PcpPrimIndex& index,
+    UsdStagePopulationMask const *mask,
+    UsdStageLoadRules const &loadRules)
 {
     TfAutoMallocTag tag("InstanceCache::RegisterIndex");
 
@@ -61,7 +64,7 @@ Usd_InstanceCache::RegisterInstancePrimIndex(const PcpPrimIndex& index)
 
     // Make sure we compute the key for this index before we grab
     // the mutex to minimize the time we hold the lock.
-    const Usd_InstanceKey key(index);
+    const Usd_InstanceKey key(index, mask, loadRules);
 
     // Check whether a master for this prim index already exists
     // or if this prim index is already being used as the source for
@@ -71,17 +74,32 @@ Usd_InstanceCache::RegisterInstancePrimIndex(const PcpPrimIndex& index)
     const bool masterAlreadyExists = 
         (keyToMasterIt != _instanceKeyToMasterMap.end());
 
-    tbb::spin_mutex::scoped_lock lock(_mutex);
+    {
+        tbb::spin_mutex::scoped_lock lock(_mutex);
 
-    _PrimIndexPaths& pendingIndexes = _pendingAddedPrimIndexes[key];
-    pendingIndexes.push_back(index.GetPath());
+        _PrimIndexPaths& pendingIndexes = _pendingAddedPrimIndexes[key];
+        pendingIndexes.push_back(index.GetPath());
 
-    // A new master must be created for this instance if one doesn't
-    // already exist and this instance is the first one registered for
-    // this key.
-    const bool needsNewMaster = 
-        (!masterAlreadyExists && pendingIndexes.size() == 1);
-    return needsNewMaster;
+        // A new master must be created for this instance if one doesn't
+        // already exist and this instance is the first one registered for
+        // this key.
+        const bool needsNewMaster = 
+            (!masterAlreadyExists && pendingIndexes.size() == 1);
+        if (needsNewMaster) {
+            return true;
+        }
+    }
+
+    if (masterAlreadyExists) {
+        _MasterToSourcePrimIndexMap::const_iterator masterToSourceIndexIt = 
+            _masterToSourcePrimIndexMap.find(keyToMasterIt->second);
+        const bool existingMasterUsesIndexAsSource = 
+            (masterToSourceIndexIt != _masterToSourcePrimIndexMap.end() &&
+             masterToSourceIndexIt->second == index.GetPath());
+        return existingMasterUsesIndexAsSource;
+    }
+
+    return false;
 }
 
 void
@@ -220,9 +238,11 @@ Usd_InstanceCache::_CreateOrUpdateMasterForInstances(
         changes->newMasterPrimIndexes.push_back(sourcePrimIndexPath);
 
         TF_DEBUG(USD_INSTANCING).Msg(
-            "Instancing: Creating master <%s> with source prim index <%s>\n", 
+            "Instancing: Creating master <%s> with source prim index <%s> "
+            "for instancing key: %s\n", 
             newMasterPath.GetString().c_str(),
-            sourcePrimIndexPath.GetString().c_str());
+            sourcePrimIndexPath.GetString().c_str(),
+            TfStringify(key).c_str());
     }
     else {
         // Otherwise, if a master prim for this instance already exists
@@ -243,8 +263,6 @@ Usd_InstanceCache::_CreateOrUpdateMasterForInstances(
             changes->changedMasterPrimIndexes.push_back(sourcePrimIndexPath);
             SdfPath const &oldSourcePath =
                 masterToOldSourceIndexPath.find(masterPath)->second;
-            changes->associatedIndexOld.push_back(oldSourcePath);
-            changes->associatedIndexNew.push_back(sourcePrimIndexPath);
 
             TF_DEBUG(USD_INSTANCING).Msg(
                 "Instancing: Changing source <%s> -> <%s> for <%s>\n",
@@ -256,17 +274,12 @@ Usd_InstanceCache::_CreateOrUpdateMasterForInstances(
     // Assign the newly-registered prim indexes to their master.
     const SdfPath& masterPath = result.first->second;
     for (const SdfPath& primIndexPath: *primIndexPaths) {
+        TF_DEBUG(USD_INSTANCING).Msg(
+            "Instancing: Added instance prim index <%s> for master "
+            "<%s>\n", primIndexPath.GetText(), masterPath.GetText());
+
         _primIndexToMasterMap[primIndexPath] = masterPath;
     }
-
-    // Record mappings from all of primIndexPaths to the new master
-    // sourcePrimIndexPath.
-    changes->associatedIndexOld.insert(
-        changes->associatedIndexOld.end(),
-        primIndexPaths->begin(), primIndexPaths->end());
-    changes->associatedIndexNew.insert(
-        changes->associatedIndexNew.end(),
-        primIndexPaths->size(), _masterToSourcePrimIndexMap[masterPath]);
 
     _PrimIndexPaths& primIndexesForMaster = _masterToPrimIndexesMap[masterPath];
     std::sort(primIndexPaths->begin(), primIndexPaths->end());
@@ -319,6 +332,10 @@ Usd_InstanceCache::_RemoveInstances(
         _PrimIndexPaths::iterator it = std::find(
             primIndexesForMaster.begin(), primIndexesForMaster.end(), path);
         if (it != primIndexesForMaster.end()) {
+            TF_DEBUG(USD_INSTANCING).Msg(
+                "Instancing: Removed instance prim index <%s> for master "
+                "<%s>\n", path.GetText(), masterPath.GetText());
+
             primIndexesForMaster.erase(it);
             _primIndexToMasterMap.erase(path);
         }
@@ -333,9 +350,6 @@ Usd_InstanceCache::_RemoveInstances(
         if (!oldSourcePrimIndexPath) {
             oldSourcePrimIndexPath = &removedMasterPrimIndexPath;
         }
-
-        changes->associatedIndexOld.push_back(*oldSourcePrimIndexPath);
-        changes->associatedIndexNew.push_back(path);
 
         if (_sourcePrimIndexToMasterMap.erase(path)) {
             TF_VERIFY(_masterToSourcePrimIndexMap.erase(masterPath));
@@ -365,9 +379,6 @@ Usd_InstanceCache::_RemoveInstances(
             changes->changedMasterPrims.push_back(masterPath);
             changes->changedMasterPrimIndexes.push_back(newSourceIndexPath);
             
-            // This master changed source indexes.
-            changes->associatedIndexOld.push_back(removedMasterPrimIndexPath);
-            changes->associatedIndexNew.push_back(newSourceIndexPath);
         } else {
             // Fill a data structure with the removedMasterPrimIndexPath for the
             // master so that we can fill in the right "before" path in
@@ -473,16 +484,7 @@ static
 typename PathMap::const_iterator
 _FindEntryForPathOrAncestor(const PathMap& map, SdfPath path)
 {
-    for (; path != SdfPath::AbsoluteRootPath(); path = path.GetParentPath()) {
-        typename PathMap::const_iterator it = map.upper_bound(path);
-        if (it != map.begin()) {
-            --it;
-            if (path.HasPrefix(it->first)) {
-                return it;
-            }
-        }
-    }
-    return map.end();
+    return SdfPathFindLongestPrefix(map, path);
 }
 
 template <class PathMap>
@@ -493,8 +495,7 @@ _FindEntryForAncestor(const PathMap& map, const SdfPath& path)
     if (path == SdfPath::AbsoluteRootPath()) {
         return map.end();
     }
-
-    return _FindEntryForPathOrAncestor(map, path.GetParentPath());
+    return SdfPathFindLongestStrictPrefix(map, path);
 }
 
 bool 
@@ -600,6 +601,23 @@ Usd_InstanceCache::IsPathDescendantToAnInstance(
     // a descendent of an instance.
     return _FindEntryForAncestor(
         _primIndexToMasterMap, usdPrimPath) != _primIndexToMasterMap.end();
+}
+
+SdfPath
+Usd_InstanceCache::GetMostAncestralInstancePath(
+    const SdfPath &usdPrimPath) const
+{
+    SdfPath path = usdPrimPath;
+    SdfPath result;
+    SdfPath const &absRoot = SdfPath::AbsoluteRootPath();
+    while (path != absRoot) {
+        auto it = _FindEntryForAncestor(_primIndexToMasterMap, path);
+        if (it == _primIndexToMasterMap.end())
+            break;
+        result = it->first;
+        path = it->first.GetParentPath();
+    }
+    return result;
 }
 
 SdfPath 
