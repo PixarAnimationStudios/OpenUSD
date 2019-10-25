@@ -208,12 +208,12 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     //
     // Update material parameters
     //
-    bool paramsAreDirty = (bits & DirtyResource || bits & DirtyParams);
+    bool paramsAreDirty = ((bits & DirtyResource) || (bits & DirtyParams));
     if (paramsAreDirty) {
         _surfaceShader->SetParams(params);
 
         // Release any fallback texture resources
-        _fallbackTextureResourceHandles.clear();
+        _internalTextureResourceHandles.clear();
 
         HdSt_MaterialBufferSourceAndTextureHelper sourcesAndTextures;
 
@@ -282,6 +282,10 @@ HdStMaterial::_GetTextureResourceHandle(
         HdTextureResource::ID texID =
             GetTextureResourceID(sceneDelegate, connection);
 
+        // Step 1.
+        // Try to locate the texture in resource registry.
+        // A Bprim might have been inserted for this texture.
+        //
         if (texID != HdTextureResource::ID(-1)) {
             // Use render index to convert local texture id into global
             // texture key
@@ -322,15 +326,21 @@ HdStMaterial::_GetTextureResourceHandle(
             resourceRegistry->FindTextureResourceHandle
                               (handleKey, &handleInstance, &handleFound);
 
-        // A bad asset can cause the texture resource to not
-        // be found. Hence, issue a warning and continue onto the
-        // next param.
-        if (!handleFound) {
-            TF_WARN("No texture resource handle found with path %s",
-                param.connection.GetText());
-        } else {
+        if (handleFound) {
             handle = handleInstance.GetValue();
             handle->SetTextureResource(texResource);
+        }
+
+        // Step 2.
+        // If no texture was found in the registry, it might be a texture we
+        // discovered in the material network. If we can load it we will store
+        // the handle internally in this material.
+        //
+        if (!texResource) {
+            HdTextureResourceSharedPtr hdTexResource = 
+                sceneDelegate->GetTextureResource(connection);
+            texResource = boost::static_pointer_cast<HdStTextureResource>(
+                hdTexResource);
         }
     }
 
@@ -344,25 +354,37 @@ HdStMaterial::_GetTextureResourceHandle(
     //
     // XXX todo handle fallback Ptex textures
     if (!(handle && handle->GetTextureResource())) {
-        // Fallback texture are only supported for UV textures.
-        if (param.textureType != HdTextureType::Uv) {
-            return {};
+
+        if (!texResource) {
+            // A bad asset can cause the texture resource to not
+            // be found. Hence, issue a warning and insert a fallback texture.
+            TF_WARN("Texture not found. Using fallback texture for: %s",
+                    param.connection.GetText());
+
+            // Fallback texture are only supported for UV textures.
+            if (param.textureType != HdTextureType::Uv) {
+                return {};
+            }
+            GlfUVTextureStorageRefPtr texPtr =
+                GlfUVTextureStorage::New(1,1, param.fallbackValue);
+            GlfTextureHandleRefPtr texture =
+                GlfTextureRegistry::GetInstance().GetTextureHandle(texPtr);
+
+            texResource = HdStTextureResourceSharedPtr(
+                new HdStSimpleTextureResource(texture,
+                                              HdTextureType::Uv,
+                                              HdWrapClamp,
+                                              HdWrapClamp,
+                                              HdWrapClamp,
+                                              HdMinFilterNearest,
+                                              HdMagFilterNearest,
+                                              0));
         }
-        GlfUVTextureStorageRefPtr texPtr =
-            GlfUVTextureStorage::New(1,1, param.fallbackValue);
-        GlfTextureHandleRefPtr texture =
-            GlfTextureRegistry::GetInstance().GetTextureHandle(texPtr);
-        HdStTextureResourceSharedPtr texResource(
-            new HdStSimpleTextureResource(texture,
-                                          HdTextureType::Uv,
-                                          HdWrapClamp,
-                                          HdWrapClamp,
-                                          HdWrapClamp,
-                                          HdMinFilterNearest,
-                                          HdMagFilterNearest,
-                                          0));
-        handle.reset(new HdStTextureResourceHandle(texResource));
-        _fallbackTextureResourceHandles.push_back(handle);
+
+        if (texResource) {
+            handle.reset(new HdStTextureResourceHandle(texResource));
+            _internalTextureResourceHandles.push_back(handle);
+        }
     }
 
     return handle;

@@ -26,7 +26,7 @@ def Shader "HwPtexTexture_1" (
         }
     )
 
-    asset inputs:info:filename = @@ (
+    asset inputs:file = @@ (
         doc = "Asset path to the file containg the image data."
     )
 
@@ -64,7 +64,7 @@ def Shader "HwUvTexture_1" (
     # an entry gets created for this deprecated shader in the registry.
     uniform asset info:glslfx:sourceAsset = @./empty.glslfx@
 
-    asset inputs:info:filename = @@ (
+    asset inputs:file = @@ (
         doc = "Asset path to the file containg the image data."
     )
 
@@ -148,7 +148,7 @@ def Shader "HwPrimvar_1" (
     # an entry gets created for this deprecated shader in the registry.
     uniform asset info:glslfx:sourceAsset = @./empty.glslfx@
 
-    token inputs:info:varname = "" (
+    token inputs:varname = "" (
         sdrMetadata = {
             bool primvarProperty = 1
         }

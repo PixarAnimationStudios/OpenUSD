@@ -17,6 +17,11 @@
                         "bases": ["UsdImagingPrimAdapter"],
                         "isInternal": true,
                         "primTypeName": "HydraPbsSurface"
+                    },
+                    "UsdImagingGLMaterialTextureAdapter" : {
+                        "bases": ["UsdImagingMaterialAdapter"],
+                        "isInternal": true,
+                        "primTypeName": "MaterialTexture"
                     }
                 }
             },

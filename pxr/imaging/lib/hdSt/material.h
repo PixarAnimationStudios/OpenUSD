@@ -141,7 +141,11 @@ private:
     static HioGlslfx *_fallbackSurfaceShader;
 
     HdStSurfaceShaderSharedPtr _surfaceShader;
-    HdStTextureResourceHandleSharedPtrVector _fallbackTextureResourceHandles;
+
+    // Holds fallback textures if a texture cannot be found, but also holds
+    // texture we discovered inside a material network that could not be found
+    // in the resource registry (no Bprim inserted).
+    HdStTextureResourceHandleSharedPtrVector _internalTextureResourceHandles;
 
     bool _isInitialized : 1;
     bool _hasPtex : 1;

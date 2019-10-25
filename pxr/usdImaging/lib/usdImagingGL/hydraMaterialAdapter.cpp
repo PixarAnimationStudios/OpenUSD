@@ -561,6 +561,8 @@ UsdImagingGLHydraMaterialAdapter::_GetShaderSource(
 {
     auto getGLSLFXSource = [&shaderType, &metadataOut](const HioGlslfx &gfx) {
         if (!gfx.IsValid()){
+            TF_WARN("Glslfx not found or invalid: %s",
+                    gfx.GetFilePath().c_str());
             return std::string();
         }
         if (metadataOut) {

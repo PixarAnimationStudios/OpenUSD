@@ -49,6 +49,7 @@ pxr_library(usdImagingGL
         drawModeAdapter
         engine
         hydraMaterialAdapter
+        materialTextureAdapter
         package
         renderParams
 

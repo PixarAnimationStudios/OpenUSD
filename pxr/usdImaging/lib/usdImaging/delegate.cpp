@@ -88,6 +88,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (HydraPbsSurface)
     (DomeLight)
     (PreviewDomeLight)
+    (MaterialTexture)
 );
 
 // This environment variable matches a set of similar ones in
@@ -257,6 +258,11 @@ UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
                 adapterKey == _tokens->Material) {
                 adapterKey = _tokens->HydraPbsSurface;
             } 
+        } else {
+            if (bindingPurpose == HdTokens->preview &&
+                adapterKey == _tokens->Material) {
+                adapterKey = _tokens->MaterialTexture;
+            }
         }
 
         if (bindingPurpose == HdTokens->preview &&
@@ -2749,11 +2755,6 @@ UsdImagingDelegate::GetTextureResourceID(SdfPath const &textureId)
                                    (size_t) &GetRenderIndex() );
     } 
 
-    // A bad asset can cause _GetHdPrimInfo() to fail. Hence, issue a warning and 
-    // return an invalid resource ID.
-    TF_WARN("Could not get prim tracking data for path <%s>. Unable to get "
-            "associated texture resource ID.", textureId.GetText());
-
     return HdTextureResource::ID(-1);
 }
 
@@ -2764,9 +2765,37 @@ UsdImagingDelegate::GetTextureResource(SdfPath const &textureId)
     // than pulling values on demand.
     SdfPath cachePath = ConvertIndexPathToCachePath(textureId);
     _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+
+    UsdPrim texturePrim;
+
+    if (!primInfo) {
+        // When Storm tries to load a texture from a material network there is
+        // no Sprim for the texture node in _hdPrimInfoMap, because we only
+        // insert the material Sprim, not the nodes inside the network.
+        // We will check upstream to find the material Sprim.
+        //
+        // Example for texture attribute:
+        //    /Materials/Woody/BootMaterial/Tex.inputs:file
+        // We want to find Sprim:
+        //    /Materials/Woody/BootMaterial
+        //
+        // XXX If we want this to support nested UsdNodeGraphs we should 
+        // recursively dig for the material.
+        
+        SdfPath textureNodePath = textureId.GetParentPath();
+        SdfPath materialPath = textureNodePath.GetParentPath();
+        SdfPath materialCachePath = ConvertIndexPathToCachePath(materialPath);
+        primInfo = _GetHdPrimInfo(materialCachePath);
+        if (primInfo) {
+            texturePrim = _stage->GetPrimAtPath(textureNodePath);
+        }
+    } else {
+        texturePrim = primInfo->usdPrim;
+    }
+
     if (TF_VERIFY(primInfo)) {
         return primInfo->adapter
-            ->GetTextureResource(primInfo->usdPrim, cachePath, _time);
+            ->GetTextureResource(texturePrim, cachePath, _time);
     }
     return nullptr;
 }
