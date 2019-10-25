@@ -71,7 +71,7 @@ HdStInstancer::PopulateDrawItem(HdDrawItem *drawItem, HdRprimSharedData *sharedD
     }
 
     /* INSTANCE INDICES */
-    if (HdChangeTracker::IsInstanceIndexDirty(dirtyBits, sharedData->rprimID)) {
+    if (HdChangeTracker::IsInstancerDirty(dirtyBits, sharedData->rprimID)) {
         sharedData->barContainer.Set(
             drawingCoord->GetInstanceIndexIndex(),
             GetInstanceIndices(sharedData->rprimID));
@@ -264,8 +264,8 @@ HdStInstancer::GetInstanceIndices(SdfPath const &prototypeId)
     HF_MALLOC_TAG_FUNCTION();
 
     // Note: this function is called from the prototype HdRprm only if
-    // the prototype has DirtyInstanceIndex. There's no need to guard using
-    // dirtyBits within this function.
+    // the prototype has DirtyInstancer.  We should figure out a way to cache
+    // this on DirtyInstanceIndex (set on this instancer).
 
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
         boost::static_pointer_cast<HdStResourceRegistry>(

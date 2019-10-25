@@ -115,14 +115,6 @@ public:
                          UsdImagingPrimAdapterSharedPtr adapter =
                             UsdImagingPrimAdapterSharedPtr());
 
-    // Refresh the prim at the specified cache path.
-    USDIMAGING_API
-    void Refresh(SdfPath const& cachePath);
-
-    // Refresh the HdInstancer at the specified cache path.
-    USDIMAGING_API
-    void RefreshInstancer(SdfPath const& instancerPath);
-
     //
     // All removals are deferred to avoid surprises during change processing.
     //

@@ -103,7 +103,7 @@ HdEmbreeMesh::GetInitialDirtyBitsMask() const
         | HdChangeTracker::DirtySubdivTags
         | HdChangeTracker::DirtyPrimvar
         | HdChangeTracker::DirtyNormals
-        | HdChangeTracker::DirtyInstanceIndex
+        | HdChangeTracker::DirtyInstancer
         ;
 
     return (HdDirtyBits)mask;

@@ -245,24 +245,6 @@ UsdImagingIndexProxy::Repopulate(SdfPath const& usdPath)
 }
 
 void
-UsdImagingIndexProxy::Refresh(SdfPath const& cachePath)
-{
-    _AddTask(cachePath);
-    if (_delegate->_instancerPrimCachePaths.count(cachePath) > 0) {
-        MarkInstancerDirty(cachePath, HdChangeTracker::AllDirty);
-    } else {
-        MarkRprimDirty(cachePath, HdChangeTracker::AllDirty);
-    }
-}
-
-void 
-UsdImagingIndexProxy::RefreshInstancer(SdfPath const& instancerPath)
-{
-    _AddTask(instancerPath);
-    MarkInstancerDirty(instancerPath, HdChangeTracker::AllDirty);
-}
-
-void
 UsdImagingIndexProxy::MarkRprimDirty(SdfPath const& cachePath,
                                      HdDirtyBits dirtyBits)
 {

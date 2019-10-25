@@ -2172,7 +2172,6 @@ HdStMesh::GetInitialDirtyBitsMask() const
         | HdChangeTracker::DirtyCullStyle
         | HdChangeTracker::DirtyDoubleSided
         | HdChangeTracker::DirtyExtent
-        | HdChangeTracker::DirtyInstanceIndex
         | HdChangeTracker::DirtyNormals
         | HdChangeTracker::DirtyPoints
         | HdChangeTracker::DirtyPrimID
@@ -2184,6 +2183,10 @@ HdStMesh::GetInitialDirtyBitsMask() const
         | HdChangeTracker::DirtyTransform
         | HdChangeTracker::DirtyVisibility
         ;
+
+    if (!GetInstancerId().IsEmpty()) {
+        mask |= HdChangeTracker::DirtyInstancer;
+    }
 
     return mask;
 }

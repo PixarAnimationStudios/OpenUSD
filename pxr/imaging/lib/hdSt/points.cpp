@@ -281,7 +281,6 @@ HdStPoints::GetInitialDirtyBitsMask() const
     HdDirtyBits mask = HdChangeTracker::Clean
         | HdChangeTracker::InitRepr
         | HdChangeTracker::DirtyExtent
-        | HdChangeTracker::DirtyInstanceIndex
         | HdChangeTracker::DirtyPoints
         | HdChangeTracker::DirtyPrimID
         | HdChangeTracker::DirtyPrimvar
@@ -291,6 +290,10 @@ HdStPoints::GetInitialDirtyBitsMask() const
         | HdChangeTracker::DirtyVisibility
         | HdChangeTracker::DirtyWidths
         ;
+
+    if (!GetInstancerId().IsEmpty()) {
+        mask |= HdChangeTracker::DirtyInstancer;
+    }
 
     return mask;
 }

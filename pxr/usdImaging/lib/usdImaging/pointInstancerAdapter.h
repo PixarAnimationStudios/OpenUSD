@@ -32,8 +32,6 @@
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
 
 #include <mutex>
-#include <boost/unordered_map.hpp> 
-#include <boost/shared_ptr.hpp> 
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -164,17 +162,6 @@ public:
     // ---------------------------------------------------------------------- //
     /// \name Nested instancing support
     // ---------------------------------------------------------------------- //
-    virtual SdfPath GetPathForInstanceIndex(SdfPath const &instancerCachePath,
-                                            SdfPath const &protoCachePath,
-                                            int protoIndex,
-                                            int *instanceCountForThisLevel,
-                                            int *instancerIndex,
-                                            SdfPath *masterCachePath,
-                                            SdfPathVector *instanceContext) override;
-
-    virtual VtIntArray GetInstanceIndices(SdfPath const &instancerPath,
-                                          SdfPath const &protoRprimPath,
-                                          UsdTimeCode time) override;
 
     virtual GfMatrix4d GetRelativeInstancerTransform(
         SdfPath const &instancerPath,
@@ -184,11 +171,20 @@ public:
     // ---------------------------------------------------------------------- //
     /// \name Selection
     // ---------------------------------------------------------------------- //
+
     virtual bool PopulateSelection(
                                 HdSelection::HighlightMode const& highlightMode,
                                 SdfPath const &path,
                                 VtIntArray const &instanceIndices,
                                 HdSelectionSharedPtr const &result) override;
+
+    virtual SdfPath GetPathForInstanceIndex(SdfPath const &instancerCachePath,
+                                            SdfPath const &protoCachePath,
+                                            int protoIndex,
+                                            int *instanceCountForThisLevel,
+                                            int *instancerIndex,
+                                            SdfPath *masterCachePath,
+                                            SdfPathVector *instanceContext) override;
 
     // ---------------------------------------------------------------------- //
     /// \name Volume field information
@@ -203,7 +199,7 @@ protected:
                              UsdImagingIndexProxy* index) override final;
 
 private:
-    struct _ProtoRprim;
+    struct _ProtoPrim;
     struct _InstancerData;
 
     SdfPath _Populate(UsdPrim const& prim,
@@ -226,12 +222,15 @@ private:
     void _UnloadInstancer(SdfPath const& instancerPath,
                           UsdImagingIndexProxy* index);
 
-    // Updates per-frame instance indices.
-    void _UpdateInstanceMap(SdfPath const &instancerPath,
-                            UsdTimeCode time) const;
+    // Computes per-frame instance indices.
+    typedef std::unordered_map<SdfPath, VtIntArray, SdfPath::Hash> _InstanceMap;
+    _InstanceMap _ComputeInstanceMap(SdfPath const& instancerPath,
+                                     _InstancerData const& instrData,
+                                     UsdTimeCode time) const;
 
     // Updates per-frame instancer visibility.
     void _UpdateInstancerVisibility(SdfPath const& instancerPath,
+                                    _InstancerData const& instrData,
                                     UsdTimeCode time) const;
 
     // Returns true if the instancer is visible, taking into account all
@@ -239,18 +238,12 @@ private:
     bool _GetInstancerVisible(SdfPath const &instancerPath, UsdTimeCode time) 
         const;
 
-    // Update the dirty bits per-instancer. This is only executed once per
-    // instancer, this method uses the instancer mutex to avoid redundant work.
-    //
-    // Returns the instancer's dirty bits.
-    int _UpdateDirtyBits(UsdPrim const& instancerPrim) const;
+    // Gets the associated _ProtoPrim for the given instancer and cache path.
+    _ProtoPrim const& _GetProtoPrim(SdfPath const& instancerPath, 
+                                    SdfPath const& cachePath) const;
 
-    // Gets the associated _ProtoRprim for the given instancer and cache path.
-    _ProtoRprim const& _GetProtoRprim(SdfPath const& instancerPath, 
-                                      SdfPath const& cachePath) const;
-
-    // Gets the UsdPrim to use from the given _ProtoRprim.
-    const UsdPrim _GetProtoUsdPrim(_ProtoRprim const& proto) const;
+    // Gets the UsdPrim to use from the given _ProtoPrim.
+    const UsdPrim _GetProtoUsdPrim(_ProtoPrim const& proto) const;
 
     // Takes the transform in the value cache (this must exist before calling
     // this method) and applies a corrective transform to 1) remove any
@@ -288,61 +281,34 @@ private:
          .
      */
 
-    // A _Prototype represents a complete set of rprims for a given prototype
-    // path declared on the instancer;
-    struct _Prototype {
-        // The enabled flag is used to disable all rprims associated with a
-        // prototype; it marks them as invisible and disables data updates.
-        bool enabled;
-        // When requiresUpdate is false and enabled is true, it indicates that
-        // the rprim was drawn for a previous frame with the newly desired time;
-        // this is a cache hit and Usd-data fetch is skipped.
-        bool requiresUpdate;
-        // A vector of prototype indices that also index into the primvar data.
-        // All elements in this array can be dispatched as a single hardware
-        // draw call (though this is a detail of the renderer implementation).
-        VtIntArray indices;
-        // The root prototype path, typically the model root, which is not a
-        // gprim and not actually a prototype from Hydra's perspective.
-        SdfPath protoRootPath;
-    };
-    typedef boost::shared_ptr<_Prototype> _PrototypeSharedPtr;
-
-    // A proto rprim represents a single rprim under a prototype root declared
-    // on the instancer. For example, a character may be targeted by the
-    // prototypes relationship, which will have many meshes, each mesh is
-    // represented as a proto rprim.
-    struct _ProtoRprim {
-        _ProtoRprim() : variabilityBits(0), visible(true) {}
-        // Each rprim will become a prototype "child" under the instancer.
+    // A proto prim represents a single populated prim under a prototype root
+    // declared on the instancer. For example, a character may be targeted
+    // by the prototypes relationship; it will have many meshes, and each
+    // mesh is represented as a separate proto prim.
+    struct _ProtoPrim {
+        _ProtoPrim() : variabilityBits(0), visible(true) {}
+        // Each prim will become a prototype "child" under the instancer.
         // paths is a list of paths we had to hop across when resolving native
         // USD instances.
         SdfPathVector paths;
-        // The prim adapter for the actual prototype gprim.
+        // The prim adapter for the actual prototype prim.
         UsdImagingPrimAdapterSharedPtr adapter;
-        // The prototype group that this rprim belongs to.
-        // Over time, as instances are animated, multiple copies of the
-        // prototype may be required to, for example, draw two different frames
-        // of animation. This ID maps the rprim its associated instance data
-        // over time.
-        _PrototypeSharedPtr prototype;
+        // The root prototype path, typically the model root, which is a subtree
+        // and might contain several imageable prims.
+        SdfPath protoRootPath;
         // Tracks the variability of the underlying adapter to avoid
         // redundantly reading data. This value is stored as
         // HdDirtyBits bit flags.
-        HdDirtyBits variabilityBits;
+        // XXX: This is mutable so we can set it in TrackVariability.
+        mutable HdDirtyBits variabilityBits;
         // When variabilityBits does not include HdChangeTracker::DirtyVisibility
         // the visible field is the unvarying value for visibility.
-        bool visible;
+        // XXX: This is mutable so we can set it in TrackVariability.
+        mutable bool visible;
     };
 
-    // Indexed by cachePath (each rprim has one entry)
-    typedef boost::unordered_map<SdfPath,
-                                 _ProtoRprim, SdfPath::Hash> _ProtoRPrimMap;
-
-    // Map from usdPath -> cachePath(s), useful for change processing, when all
-    // we get is a usdPath.
-    typedef boost::unordered_map<SdfPath, 
-                                 SdfPathVector, SdfPath::Hash> _UsdToCacheMap;
+    // Indexed by cachePath (each prim has one entry)
+    typedef std::unordered_map<SdfPath, _ProtoPrim, SdfPath::Hash> _ProtoPrimMap;
 
     // All data asscoiated with a given Instancer prim. PrimMap could
     // technically be split out to avoid two lookups, however it seems cleaner
@@ -350,26 +316,26 @@ private:
     struct _InstancerData {
         _InstancerData() {}
         SdfPath parentInstancerCachePath;
-        _ProtoRPrimMap protoRprimMap;
-        _UsdToCacheMap usdToCacheMap;
-        std::vector<_PrototypeSharedPtr> prototypes;
-        std::mutex mutex;
-        HdDirtyBits dirtyBits;
-        bool visible;
+        _ProtoPrimMap protoPrimMap;
+        SdfPathVector prototypePaths;
 
-        // _InstancerData::visible and _Prototype::indices are both caches,
-        // so we want to record what usd timecode they correspond to.
-        UsdTimeCode visibleTime;
-        UsdTimeCode indicesTime;
+        // XXX: We keep a bunch of state around visibility that's set in
+        // TrackVariability and UpdateForTime.  "visible", and "visibleTime"
+        // (the cache key for visible) are set in UpdateForTime and guarded
+        // by "mutex".
+        mutable std::mutex mutex;
+        mutable bool variableVisibility;
+        mutable bool visible;
+        mutable UsdTimeCode visibleTime;
     };
 
     // A map of instancer data, one entry per instancer prim that has been
     // populated.
     // Note: this is accessed in multithreaded code paths and must be protected
-    typedef boost::unordered_map<SdfPath /*instancerPath*/, 
-                                 _InstancerData, 
-                                 SdfPath::Hash> _InstancerDataMap;
-    mutable _InstancerDataMap _instancerData;
+    typedef std::unordered_map<SdfPath /*instancerPath*/, 
+                               _InstancerData, 
+                               SdfPath::Hash> _InstancerDataMap;
+    _InstancerDataMap _instancerData;
 };
 
 

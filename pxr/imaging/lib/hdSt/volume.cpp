@@ -76,7 +76,7 @@ HdStVolume::~HdStVolume() = default;
 HdDirtyBits 
 HdStVolume::GetInitialDirtyBitsMask() const
 {
-    const int mask = HdChangeTracker::Clean
+    int mask = HdChangeTracker::Clean
         | HdChangeTracker::DirtyExtent
         | HdChangeTracker::DirtyPrimID
         | HdChangeTracker::DirtyRepr
@@ -84,8 +84,11 @@ HdStVolume::GetInitialDirtyBitsMask() const
         | HdChangeTracker::DirtyVisibility
         | HdChangeTracker::DirtyPrimvar
         | HdChangeTracker::DirtyMaterialId
-        | HdChangeTracker::DirtyInstanceIndex
         ;
+
+    if (!GetInstancerId().IsEmpty()) {
+        mask |= HdChangeTracker::DirtyInstancer;
+    }
 
     return (HdDirtyBits)mask;
 }

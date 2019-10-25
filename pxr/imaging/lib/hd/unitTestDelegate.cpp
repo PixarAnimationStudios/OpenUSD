@@ -251,6 +251,12 @@ HdUnitTestDelegate::AddInstancer(SdfPath const &id,
     if (!parentId.IsEmpty()) {
         _instancers[parentId].prototypes.push_back(id);
     }
+
+    // Instancers don't have initial dirty bits, so we need to add them.
+    HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+    tracker.MarkInstancerDirty(id, HdChangeTracker::DirtyTransform |
+                                   HdChangeTracker::DirtyPrimvar |
+                                   HdChangeTracker::DirtyInstanceIndex);
 }
 
 void
@@ -272,6 +278,10 @@ HdUnitTestDelegate::SetInstancerProperties(SdfPath const &id,
     _instancers[id].rotate = rotate;
     _instancers[id].translate = translate;
     _instancers[id].prototypeIndices = prototypeIndex;
+
+    HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+    tracker.MarkInstancerDirty(id, HdChangeTracker::DirtyPrimvar |
+                                   HdChangeTracker::DirtyInstanceIndex);
 }
 
 void
@@ -472,15 +482,7 @@ HdUnitTestDelegate::UpdateInstancerPrimvars(float time)
         }
 
         GetRenderIndex().GetChangeTracker().MarkInstancerDirty(
-            it->first,
-            HdChangeTracker::DirtyPrimvar);
-
-        // propagate dirtiness to all prototypes
-        TF_FOR_ALL (protoIt, it->second.prototypes) {
-            if (_instancers.find(*protoIt) != _instancers.end()) continue;
-            GetRenderIndex().GetChangeTracker().MarkRprimDirty(
-                *protoIt, HdChangeTracker::DirtyInstancer);
-        }
+            it->first, HdChangeTracker::DirtyPrimvar);
     }
 }
 
@@ -500,11 +502,8 @@ HdUnitTestDelegate::UpdateInstancerPrototypes(float time)
         }
 
         // invalidate instance index
-        TF_FOR_ALL (protoIt, it->second.prototypes) {
-            if (_instancers.find(*protoIt) != _instancers.end()) continue;
-            GetRenderIndex().GetChangeTracker().MarkRprimDirty(
-                *protoIt, HdChangeTracker::DirtyInstanceIndex);
-        }
+        GetRenderIndex().GetChangeTracker().MarkInstancerDirty(
+            it->first, HdChangeTracker::DirtyInstanceIndex);
     }
 }
 

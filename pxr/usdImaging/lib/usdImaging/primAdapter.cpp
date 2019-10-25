@@ -230,13 +230,6 @@ UsdImagingPrimAdapter::InvokeComputation(SdfPath const& computationPath,
 }
 
 /*virtual*/
-SdfPath
-UsdImagingPrimAdapter::GetInstancer(SdfPath const &cachePath)
-{
-    return SdfPath();
-}
-
-/*virtual*/
 std::vector<VtArray<TfToken>>
 UsdImagingPrimAdapter::GetInstanceCategories(UsdPrim const& prim)
 {
@@ -1000,15 +993,6 @@ TfToken
 UsdImagingPrimAdapter::GetModelDrawMode(UsdPrim const& prim)
 {
     return _delegate->_GetModelDrawMode(prim);
-}
-
-/*virtual*/
-VtIntArray
-UsdImagingPrimAdapter::GetInstanceIndices(SdfPath const &instancerPath,
-                                          SdfPath const &protoRprimPath,
-                                          UsdTimeCode time)
-{
-    return VtIntArray();
 }
 
 /*virtual*/
