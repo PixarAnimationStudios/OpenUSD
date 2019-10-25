@@ -29,6 +29,7 @@
 #include "USD_XformCache.h"
 #include "UT_Gf.h"
 
+#include <SYS/SYS_Version.h>
 #include <GT/GT_DAConstant.h>
 #include <GT/GT_DAConstantValue.h>
 #include <GT/GT_DAIndirect.h>
@@ -39,8 +40,10 @@
 #include <GT/GT_PrimSubdivisionMesh.h>
 #include <GT/GT_Refine.h>
 #include <GT/GT_RefineParms.h>
+#if SYS_VERSION_FULL_INT < 0x11050000 // Houdini 17.5
+#include <opensubdiv/far/ptexIndices.h>
+#endif
 #include <GT/GT_UtilOpenSubdiv.h>
-#include <SYS/SYS_Version.h>
 
 #include <iostream>
 #include <numeric>

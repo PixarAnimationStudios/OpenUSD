@@ -52,6 +52,8 @@
 #include <UT/UT_JSONWriter.h>
 #include <UT/UT_ParallelUtil.h>
 
+#include <numeric>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
