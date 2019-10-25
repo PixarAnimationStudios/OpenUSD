@@ -1853,6 +1853,43 @@ SdfPath::IsValidPathString(const std::string &pathString,
     return valid;
 }
 
+// Caller ensures both absolute or both relative.  We need to crawl up the
+// longer path until both are the same length.  Then we crawl up both until we
+// find the nodes whose parents match.  Then we can compare those nodes.
+static inline bool
+_LessThanCompareNodes(Sdf_PathNode const *l, Sdf_PathNode const *r)
+{
+    size_t lCount = l->GetElementCount();
+    size_t rCount = r->GetElementCount();
+    
+    // walk up to the same depth
+    size_t upSteps = lCount > rCount ? lCount - rCount : 0;
+    while (upSteps--) {
+        l = l->GetParentNode();
+    }
+    upSteps = rCount > lCount ? rCount - lCount : 0;
+    while (upSteps--) {
+        r = r->GetParentNode();
+    }
+    
+    // Now the cur nodes are at the same depth in the node tree
+    if (l == r) {
+        // They differ only in the tail.  If r has the tail, then this is
+        // less, otherwise r is less.
+        return lCount < rCount;
+    }
+    
+    Sdf_PathNode const *lp = l->GetParentNode();
+    Sdf_PathNode const *rp = r->GetParentNode();
+    while (lp != rp) {
+        l = lp, r = rp;
+        lp = l->GetParentNode(), rp = r->GetParentNode();
+    }
+    
+    // Now parents are equal, compare the current child nodes.
+    return l->Compare<Sdf_PathNode::LessThan>(*r);
+}
+
 bool
 SdfPath::_LessThanInternal(SdfPath const &lhs, SdfPath const &rhs)
 {
@@ -1869,49 +1906,17 @@ SdfPath::_LessThanInternal(SdfPath const &lhs, SdfPath const &rhs)
         return false;
     }
 
-    // Both absolute or both relative.  We need to crawl up the longer path
-    // until both are the same length.  Then we crawl up both till we find the
-    // nodes whose parents match.  Then we can compare those nodes.
-    auto compareNodes = [](Sdf_PathNode const *l, Sdf_PathNode const *r) {
-        size_t lCount = l->GetElementCount();
-        size_t rCount = r->GetElementCount();
-
-        // walk up to the same depth
-        size_t upSteps = lCount > rCount ? lCount - rCount : 0;
-        while (upSteps--) {
-            l = l->GetParentNode();
-        }
-        upSteps = rCount > lCount ? rCount - lCount : 0;
-        while (upSteps--) {
-            r = r->GetParentNode();
-        }
-        
-        // Now the cur nodes are at the same depth in the node tree
-        if (l == r) {
-            // They differ only in the tail.  If r has the tail, then this is
-            // less, otherwise r is less.
-            return lCount < rCount;
-        }
-
-        while (l->GetParentNode() != r->GetParentNode()) {
-            l = l->GetParentNode(), r = r->GetParentNode();
-        }
-
-        // Now parents are equal, compare the current child nodes.
-        return l->Compare<Sdf_PathNode::LessThan>(*r);
-    };
-
     // If there is a difference in prim part, it's more significant than the
     // property part.
     if (ARCH_LIKELY(lNode != rNode)) {
-        return compareNodes(lNode, rNode);
+        return _LessThanCompareNodes(lNode, rNode);
     }
 
     lNode = lhs._propPart.get(), rNode = rhs._propPart.get();
     if (!lNode || !rNode) {
         return !lNode;
     }
-    return compareNodes(lNode, rNode);
+    return _LessThanCompareNodes(lNode, rNode);
 }
 
 std::ostream & operator<<( std::ostream &out, const SdfPath &path ) {
