@@ -132,6 +132,10 @@ public:
     HDST_API
     Hgi* GetHgi();
 
+    // Returns whether or not the rendering is GL based
+    HDST_API
+    virtual bool IsOpenGL() const override { return true; }
+
 private:
     static const TfTokenVector SUPPORTED_RPRIM_TYPES;
     static const TfTokenVector SUPPORTED_SPRIM_TYPES;

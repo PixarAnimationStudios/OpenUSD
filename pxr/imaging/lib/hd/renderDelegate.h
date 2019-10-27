@@ -391,6 +391,20 @@ public:
     HD_API
     virtual HdAovDescriptor GetDefaultAovDescriptor(TfToken const& name) const;
 
+    ////////////////////////////////////////////////////////////////////////////
+    ///
+    /// Abilities
+    ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    ///
+    /// Returns whether or not the rendering is GL based
+    ///
+    HD_API
+    virtual bool IsOpenGL() const { return false; }
+
+    ///
+
 protected:
     /// This class must be derived from.
     HD_API

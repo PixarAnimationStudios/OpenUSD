@@ -255,6 +255,10 @@ public:
     void SetColorMaskUseDefault(bool useDefault);
     bool GetColorMaskUseDefault() const { return _colorMaskUseDefault;}
 
+    HD_API
+    void SetIsRenderPassId(bool isRenderPassId);
+    bool GetIsRenderPassId() const { return _isRenderPassId;}
+
     enum ColorMask {
         ColorMaskNone,
         ColorMaskRGB,
@@ -338,6 +342,8 @@ protected:
 
     bool _colorMaskUseDefault;
     ColorMask _colorMask;
+
+    bool _isRenderPassId;
 
     HdRenderPassAovBindingVector _aovBindings;
 };

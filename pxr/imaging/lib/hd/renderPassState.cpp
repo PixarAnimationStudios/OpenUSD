@@ -81,6 +81,7 @@ HdRenderPassState::HdRenderPassState()
     , _alphaToCoverageEnabled(true)
     , _colorMaskUseDefault(true)
     , _colorMask(HdRenderPassState::ColorMaskRGBA)
+    , _isRenderPassId(false)
 {
 }
 
@@ -348,6 +349,12 @@ void
 HdRenderPassState::SetBlendEnabled(bool enabled)
 {
     _blendEnabled = enabled;
+}
+
+void
+HdRenderPassState::SetIsRenderPassId(bool isRenderPassId)
+{
+    _isRenderPassId = isRenderPassId;
 }
 
 void

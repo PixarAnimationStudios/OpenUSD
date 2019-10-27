@@ -187,6 +187,18 @@ _IsStormRenderingBackend(HdRenderIndex const *index)
     return true;
 }
 
+static bool
+_IsOpenGLBackend(HdRenderIndex const *index)
+{
+    HdRenderDelegate *renderDelegate = index->GetRenderDelegate();
+
+    if(renderDelegate->IsOpenGL()) {
+        return true;
+    }
+
+    return false;
+}
+
 static GfVec3i
 _ViewportToAovDimension(const GfVec4d& viewport)
 {
@@ -315,6 +327,11 @@ HdxTaskController::_CreateRenderGraph()
         // depth-compositing and selection highlighting/picking.
         if (_AovsSupported()) {
             SetRenderOutputs({HdAovTokens->color});
+        }
+
+        if( _IsOpenGLBackend(GetRenderIndex())) {
+            // Picking rendergraph
+            _CreatePickTask();
         }
     }
 }
