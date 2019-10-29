@@ -29,6 +29,7 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticData.h"
 
+#include "pxr/base/arch/hints.h"
 #include "pxr/base/arch/threads.h"
 
 #include <tbb/spin_mutex.h>
@@ -190,14 +191,23 @@ struct _Stack
     tbb::spin_mutex mutex;
 };
 
-// Force this out-of-line since modern compilers generate way too many calls to
-// __tls_get_addr even if you cache a pointer to the thread_local yourself.
-static thread_local _Stack _tlStack;
-static _Stack &_GetLocalStack() ARCH_NOINLINE;
-static _Stack &_GetLocalStack()
+// A helper struct for thread_local that uses nullptr initialization as a
+// sentinel to prevent guard variable use from being invoked after first
+// initialization.
+template <class T>
+struct _FastThreadLocalBase
 {
-    return _tlStack;
-}
+    static T &Get() {
+        static thread_local T *theTPtr = nullptr;
+        if (ARCH_LIKELY(theTPtr)) {
+            return *theTPtr;
+        }
+        static thread_local T theT;
+        theTPtr = &theT;
+        return *theTPtr;
+    }
+};
+struct _LocalStack : _FastThreadLocalBase<_Stack> {};
 
 static bool _TimedTryAcquire(tbb::spin_mutex::scoped_lock &lock,
                              tbb::spin_mutex &mutex,
@@ -310,7 +320,7 @@ TfScopeDescription::_Push()
 {
     // No other thread can modify head, so we can read it without the lock
     // safely here.
-    _Stack &stack = _GetLocalStack();
+    _Stack &stack = _LocalStack::Get();
     _prev = stack.head;
     _localStack = &stack;
     tbb::spin_mutex::scoped_lock lock(stack.mutex);
