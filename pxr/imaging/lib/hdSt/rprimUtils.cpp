@@ -79,12 +79,12 @@ HdStPopulateConstantPrimvars(
             }
 
             source.reset(new HdVtBufferSource(
-                             HdTokens->instancerTransform,
+                             HdInstancerTokens->instancerTransform,
                              rootTransforms,
                              rootTransforms.size()));
             sources.push_back(source);
             source.reset(new HdVtBufferSource(
-                             HdTokens->instancerTransformInverse,
+                             HdInstancerTokens->instancerTransformInverse,
                              rootInverseTransforms,
                              rootInverseTransforms.size()));
             sources.push_back(source);

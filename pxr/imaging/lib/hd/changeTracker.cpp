@@ -710,7 +710,7 @@ bool
 HdChangeTracker::IsInstancerDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
     bool isDirty = (dirtyBits & DirtyInstancer) != 0;
-    _LogCacheAccess(HdTokens->instancer, id, !isDirty);
+    _LogCacheAccess(HdInstancerTokens->instancer, id, !isDirty);
     return isDirty;
 }
 
@@ -719,7 +719,7 @@ bool
 HdChangeTracker::IsInstanceIndexDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
     bool isDirty = (dirtyBits & DirtyInstanceIndex) != 0;
-    _LogCacheAccess(HdTokens->instanceIndices, id, !isDirty);
+    _LogCacheAccess(HdInstancerTokens->instanceIndices, id, !isDirty);
     return isDirty;
 }
 

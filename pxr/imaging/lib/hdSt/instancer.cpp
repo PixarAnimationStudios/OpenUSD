@@ -129,7 +129,8 @@ HdStInstancer::GetInstancePrimvars()
                     VtValue value = delegate->Get(instancerId, primvar.name);
                     if (!value.IsEmpty()) {
                         HdBufferSourceSharedPtr source;
-                        if (primvar.name == HdTokens->instanceTransform &&
+                        if (primvar.name ==
+                                HdInstancerTokens->instanceTransform &&
                             TF_VERIFY(value.IsHolding<VtArray<GfMatrix4d> >())) {
                             // Explicitly invoke the c'tor taking a
                             // VtArray<GfMatrix4d> to ensure we properly convert to
@@ -289,11 +290,11 @@ HdStInstancer::GetInstanceIndices(SdfPath const &prototypeId)
                     "range for <%s>\n",
                     GetId().GetText());
             HdBufferSpecVector bufferSpecs;
-            bufferSpecs.emplace_back(HdTokens->instanceIndices,
+            bufferSpecs.emplace_back(HdInstancerTokens->instanceIndices,
                                      HdTupleType {HdTypeInt32, 1});
             // for GPU frustum culling, we need a copy of instanceIndices.
             // see shader/frustumCull.glslfx
-            bufferSpecs.emplace_back(HdTokens->culledInstanceIndices,
+            bufferSpecs.emplace_back(HdInstancerTokens->culledInstanceIndices,
                                      HdTupleType {HdTypeInt32, 1});
 
             // allocate new one
@@ -364,10 +365,10 @@ HdStInstancer::GetInstanceIndices(SdfPath const &prototypeId)
     // update instance indices
     HdBufferSourceVector sources;
     HdBufferSourceSharedPtr source(
-        new HdVtBufferSource(HdTokens->instanceIndices,
+        new HdVtBufferSource(HdInstancerTokens->instanceIndices,
                              VtValue(instanceIndices)));
     sources.push_back(source);
-    source.reset(new HdVtBufferSource(HdTokens->culledInstanceIndices,
+    source.reset(new HdVtBufferSource(HdInstancerTokens->culledInstanceIndices,
                                       VtValue(instanceIndices)));
     sources.push_back(source);
     resourceRegistry->AddSources(indexRange, sources);

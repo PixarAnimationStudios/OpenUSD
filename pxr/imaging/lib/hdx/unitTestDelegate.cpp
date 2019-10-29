@@ -51,14 +51,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (rotate)
-    (scale)
-    (translate)
-    (renderTags)
-);
-
 static void
 _CreateGrid(int nx, int ny, VtVec3fArray *points,
             VtIntArray *numVerts, VtIntArray *verts)
@@ -328,7 +320,7 @@ Hdx_UnitTestDelegate::AddRenderTask(SdfPath const &id)
 
     // Don't filter on render tag.
     // XXX: However, this will mean no prim passes if any stage defines a tag
-    cache[_tokens->renderTags] = TfTokenVector();
+    cache[HdTokens->renderTags] = TfTokenVector();
 }
 
 void
@@ -401,7 +393,7 @@ Hdx_UnitTestDelegate::AddPickTask(SdfPath const &id)
 
     // Don't filter on render tag.
     // XXX: However, this will mean no prim passes if any stage defines a tag
-    cache[_tokens->renderTags] = TfTokenVector();
+    cache[HdTokens->renderTags] = TfTokenVector();
 
 }
 
@@ -768,15 +760,15 @@ Hdx_UnitTestDelegate::Get(SdfPath const& id, TfToken const& key)
         if(_meshes.find(id) != _meshes.end()) {
             return VtValue(_meshes[id].opacity);
         }
-    } else if (key == _tokens->scale) {
+    } else if (key == HdInstancerTokens->scale) {
         if (_instancers.find(id) != _instancers.end()) {
             return VtValue(_instancers[id].scale);
         }
-    } else if (key == _tokens->rotate) {
+    } else if (key == HdInstancerTokens->rotate) {
         if (_instancers.find(id) != _instancers.end()) {
             return VtValue(_instancers[id].rotate);
         }
-    } else if (key == _tokens->translate) {
+    } else if (key == HdInstancerTokens->translate) {
         if (_instancers.find(id) != _instancers.end()) {
             return VtValue(_instancers[id].translate);
         }
@@ -853,9 +845,9 @@ Hdx_UnitTestDelegate::GetPrimvarDescriptors(SdfPath const& id,
     }
     if (interpolation == HdInterpolationInstance &&
         _instancers.find(id) != _instancers.end()) {
-        primvars.emplace_back(_tokens->scale, interpolation);
-        primvars.emplace_back(_tokens->rotate, interpolation);
-        primvars.emplace_back(_tokens->translate, interpolation);
+        primvars.emplace_back(HdInstancerTokens->scale, interpolation);
+        primvars.emplace_back(HdInstancerTokens->rotate, interpolation);
+        primvars.emplace_back(HdInstancerTokens->translate, interpolation);
     }
     return primvars;
 }
@@ -974,7 +966,7 @@ Hdx_UnitTestDelegate::GetTextureResourceID(SdfPath const& textureId)
 TfTokenVector
 Hdx_UnitTestDelegate::GetTaskRenderTags(SdfPath const& taskId)
 {
-    return _valueCacheMap[taskId][_tokens->renderTags].Get<TfTokenVector>();
+    return _valueCacheMap[taskId][HdTokens->renderTags].Get<TfTokenVector>();
 }
 
 

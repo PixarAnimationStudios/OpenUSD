@@ -458,37 +458,43 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
         drawItem->GetInstanceIndexRange()) {
 
         HdStBufferArrayRangeGLSharedPtr instanceIndexBar =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL>(instanceIndexBar_);
+            boost::static_pointer_cast<HdStBufferArrayRangeGL>(
+                                                        instanceIndexBar_);
 
         HdStBufferResourceGLSharedPtr instanceIndices
-            = instanceIndexBar->GetResource(HdTokens->instanceIndices);
+            = instanceIndexBar->GetResource(
+                                    HdInstancerTokens->instanceIndices);
         HdStBufferResourceGLSharedPtr culledInstanceIndices
-            = instanceIndexBar->GetResource(HdTokens->culledInstanceIndices);
+            = instanceIndexBar->GetResource(
+                                    HdInstancerTokens->culledInstanceIndices);
 
         if (instanceIndices) {
             HdBinding instanceIndexArrayBinding =
-                locator.GetBinding(arrayBufferBindingType, HdTokens->instanceIndices);
-            _bindingMap[HdTokens->instanceIndices] = instanceIndexArrayBinding;
+                locator.GetBinding(arrayBufferBindingType,
+                                   HdInstancerTokens->instanceIndices);
+            _bindingMap[HdInstancerTokens->instanceIndices] =
+                instanceIndexArrayBinding;
             HdTupleType valueType = instanceIndices->GetTupleType();
                 TfToken glType =
                     HdStGLConversions::GetGLSLTypename(valueType.type);
             metaDataOut->instanceIndexArrayBinding =
                 MetaData::BindingDeclaration(
-                    /*name=*/HdTokens->instanceIndices,
+                    /*name=*/HdInstancerTokens->instanceIndices,
                     /*type=*/glType,
                     /*binding=*/instanceIndexArrayBinding);
         }
         if (culledInstanceIndices) {
             HdBinding culledInstanceIndexArrayBinding =
-                locator.GetBinding(arrayBufferBindingType, HdTokens->culledInstanceIndices);
-            _bindingMap[HdTokens->culledInstanceIndices] =
+                locator.GetBinding(arrayBufferBindingType,
+                                   HdInstancerTokens->culledInstanceIndices);
+            _bindingMap[HdInstancerTokens->culledInstanceIndices] =
                 culledInstanceIndexArrayBinding;
             HdTupleType valueType = instanceIndices->GetTupleType();
                 TfToken glType =
                     HdStGLConversions::GetGLSLTypename(valueType.type);
             metaDataOut->culledInstanceIndexArrayBinding =
                 MetaData::BindingDeclaration(
-                    /*name=*/HdTokens->culledInstanceIndices,
+                    /*name=*/HdInstancerTokens->culledInstanceIndices,
                     /*type=*/glType,
                     /*binding=*/culledInstanceIndexArrayBinding);
         }

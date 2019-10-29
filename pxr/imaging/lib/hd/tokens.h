@@ -45,7 +45,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (computeShader)                             \
     (coordSysBindings)                          \
     (cubic)                                     \
-    (culledInstanceIndices)                     \
     (cullStyle)                                 \
     (doubleSided)                               \
     (dispatchCount)                             \
@@ -68,12 +67,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (hermite)                                   \
     (hullIndices)                               \
     (indices)                                   \
-    (instancer)                                 \
-    (instancerTransform)                        \
-    (instancerTransformInverse)                 \
-    (instanceIndices)                           \
-    (instanceIndexBase)                         \
-    (instanceTransform)                         \
     (isFlipped)                                 \
     (itemsDrawn)                                \
     (layout)                                    \
@@ -110,6 +103,18 @@ PXR_NAMESPACE_OPEN_SCOPE
     (velocities)                                \
     (visibility)                                \
     (widths)
+
+#define HD_INSTANCER_TOKENS                     \
+    (culledInstanceIndices)                     \
+    (instancer)                                 \
+    (instancerTransform)                        \
+    (instancerTransformInverse)                 \
+    (instanceIndices)                           \
+    (instanceIndexBase)                         \
+    (instanceTransform)                         \
+    (rotate)                                    \
+    (scale)                                     \
+    (translate)
 
 #define HD_REPR_TOKENS                          \
     (disabled)                                  \
@@ -339,6 +344,7 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
     (threadLimit)
 
 TF_DECLARE_PUBLIC_TOKENS(HdTokens, HD_API, HD_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdInstancerTokens, HD_API, HD_INSTANCER_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdReprTokens, HD_API, HD_REPR_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPerfTokens, HD_API, HD_PERF_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdShaderTokens, HD_API, HD_SHADER_TOKENS);

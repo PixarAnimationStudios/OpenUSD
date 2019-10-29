@@ -39,13 +39,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (rotate)
-    (scale)
-    (translate)
-);
-
 template <typename T>
 static VtArray<T>
 _BuildArray(T values[], int numValues)
@@ -885,15 +878,15 @@ HdUnitTestDelegate::Get(SdfPath const& id, TfToken const& key)
         else if(_points.find(id) != _points.end()) {
             return _points[id].width;
         }
-    } else if (key == _tokens->scale) {
+    } else if (key == HdInstancerTokens->scale) {
         if (_instancers.find(id) != _instancers.end()) {
             return VtValue(_instancers[id].scale);
         }
-    } else if (key == _tokens->rotate) {
+    } else if (key == HdInstancerTokens->rotate) {
         if (_instancers.find(id) != _instancers.end()) {
             return VtValue(_instancers[id].rotate);
         }
-    } else if (key == _tokens->translate) {
+    } else if (key == HdInstancerTokens->translate) {
         if (_instancers.find(id) != _instancers.end()) {
             return VtValue(_instancers[id].translate);
         }
@@ -928,9 +921,9 @@ HdUnitTestDelegate::GetPrimvarDescriptors(SdfPath const& id,
     }
     if (interpolation == HdInterpolationInstance && _hasInstancePrimvars &&
         _instancers.find(id) != _instancers.end()) {
-        primvars.emplace_back(_tokens->scale, interpolation);
-        primvars.emplace_back(_tokens->rotate, interpolation);
-        primvars.emplace_back(_tokens->translate, interpolation);
+        primvars.emplace_back(HdInstancerTokens->scale, interpolation);
+        primvars.emplace_back(HdInstancerTokens->rotate, interpolation);
+        primvars.emplace_back(HdInstancerTokens->translate, interpolation);
     } else if(_meshes.find(id) != _meshes.end()) {
         if (_meshes[id].colorInterpolation == interpolation) {
             primvars.emplace_back(HdTokens->displayColor, interpolation,

@@ -818,7 +818,7 @@ struct UsdImagingInstanceAdapter::_IsInstanceTransformVaryingFn
             transformVarying = adapter->_IsTransformVarying(
                 prim,
                 HdChangeTracker::DirtyTransform,
-                HdTokens->instancer,
+                HdInstancerTokens->instancer,
                 &dirtyBits);
             cache[prim] = transformVarying;
         } else {
@@ -1141,10 +1141,11 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
             VtMatrix4dArray instanceXforms;
             if (_ComputeInstanceTransforms(prim, &instanceXforms, time)) {
                 valueCache->GetPrimvar(
-                    cachePath, HdTokens->instanceTransform) = instanceXforms;
+                    cachePath,
+                    HdInstancerTokens->instanceTransform) = instanceXforms;
                 _MergePrimvar(
                     &valueCache->GetPrimvars(cachePath),
-                    HdTokens->instanceTransform,
+                    HdInstancerTokens->instanceTransform,
                     HdInterpolationInstance);
             }
             for (auto const& ipv : instrData->inheritedPrimvars) {
@@ -1539,7 +1540,7 @@ UsdImagingInstanceAdapter::SamplePrimvar(
             maxNumSamples, sampleTimes, sampleValues);
     }
 
-    if (key == HdTokens->instanceTransform) {
+    if (key == HdInstancerTokens->instanceTransform) {
         GfInterval interval = _GetCurrentTimeSamplingInterval();
         std::vector<double> timeSamples;
         _GatherInstanceTransformsTimeSamples(usdPrim, interval, &timeSamples);
