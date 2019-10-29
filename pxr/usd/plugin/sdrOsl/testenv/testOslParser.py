@@ -49,7 +49,8 @@ class TestShaderNode(unittest.TestCase):
             cls.URI,         # Resolved URI
             sourceCode=cls.sourceCode,
             metadata=cls.metadata,
-            blindData=cls.blindData
+            blindData=cls.blindData,
+            subIdentifier=""
         )
 
         cls.node = SdrOsl.OslParser().Parse(discoveryResult)
@@ -92,6 +93,7 @@ class TestShaderNode(unittest.TestCase):
         sourceCode = ""
         metadata = {}
         blindData = ""
+        subIdentifier = ""
 
         discoveryResult = Ndr.NodeDiscoveryResult(
             "TestShaderPropertiesNodeOSL",  # Identifier
@@ -104,7 +106,8 @@ class TestShaderNode(unittest.TestCase):
             URI,                            # Resolved URI
             sourceCode,                     # sourceCode
             metadata,                       # metadata
-            blindData                       # blindData
+            blindData,                      # blindData
+            subIdentifier                   # subIdentifier
         )
         node = SdrOsl.OslParser().Parse(discoveryResult)
         assert node is not None

@@ -40,7 +40,8 @@ std::string
 _Repr(const NdrNodeDiscoveryResult& x)
 {
     return TF_PY_REPR_PREFIX +
-        TfStringPrintf("NodeDiscoveryResult(%s, %s, %s, %s, %s, %s, %s, %s%s%s)",
+        TfStringPrintf("NodeDiscoveryResult(%s, %s, %s, %s, %s, %s, %s, %s%s%s, "
+                       "%s)",
                        TfPyRepr(x.identifier).c_str(),
                        TfPyRepr(x.version).c_str(),
                        TfPyRepr(x.name).c_str(),
@@ -50,7 +51,8 @@ _Repr(const NdrNodeDiscoveryResult& x)
                        TfPyRepr(x.uri).c_str(),
                        TfPyRepr(x.resolvedUri).c_str(),
                        x.blindData.empty() ? "" :", ",
-                       x.blindData.empty() ? "" :TfPyRepr(x.blindData).c_str());
+                       x.blindData.empty() ? "" :TfPyRepr(x.blindData).c_str(),
+                       TfPyRepr(x.subIdentifier).c_str());
 }
 
 // XXX: WBN if Tf provided this sort of converter for stl maps.
@@ -144,13 +146,19 @@ void wrapNodeDiscoveryResult()
     class_<This>("NodeDiscoveryResult", no_init)
         .def(init<NdrIdentifier, NdrVersion, std::string, TfToken, TfToken, 
                   TfToken, std::string, std::string, std::string,
-                  NdrTokenMap, std::string>(
-                  (arg("identifier"), arg("version"), arg("name"), 
-                   arg("family"), arg("discoveryType"), arg("sourceType"), 
-                   arg("uri"), arg("resolvedUri"), 
+                  NdrTokenMap, std::string, TfToken>(
+                  (arg("identifier"),
+                   arg("version"),
+                   arg("name"),
+                   arg("family"),
+                   arg("discoveryType"),
+                   arg("sourceType"),
+                   arg("uri"),
+                   arg("resolvedUri"),
                    arg("sourceCode")=std::string(), 
                    arg("metadata")=NdrTokenMap(),
-                   arg("blindData")=std::string())))
+                   arg("blindData")=std::string(),
+                   arg("subIdentifier")=TfToken())))
         .add_property("identifier", &This::identifier)
         .add_property("version", &This::version)
         .add_property("name", &This::name)
@@ -162,6 +170,7 @@ void wrapNodeDiscoveryResult()
         .add_property("sourceCode", &This::sourceCode)
         .add_property("metadata", &This::metadata)
         .add_property("blindData", &This::blindData)
+        .add_property("subIdentifier", &This::subIdentifier)
         .def("__repr__", _Repr)
         ;
 
