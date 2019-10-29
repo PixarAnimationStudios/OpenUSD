@@ -39,6 +39,7 @@ pxr_library(hdx
         aovResolveTask
         colorizeTask
         colorizeSelectionTask
+        colorChannelTask
         colorCorrectionTask
         compositor
         drawTargetRenderPass
@@ -79,6 +80,7 @@ pxr_library(hdx
 
     RESOURCE_FILES
         plugInfo.json
+        shaders/colorChannel.glslfx
         shaders/colorCorrection.glslfx
         shaders/fullscreen.glslfx
         shaders/renderPass.glslfx

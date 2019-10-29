@@ -99,6 +99,13 @@ HdxPackageSimpleLightingShader()
 }
 
 TfToken
+HdxPackageColorChannelShader()
+{
+    static TfToken shader = _GetShaderPath("colorChannel.glslfx");
+    return shader;
+}
+
+TfToken
 HdxPackageColorCorrectionShader()
 {
     static TfToken shader = _GetShaderPath("colorCorrection.glslfx");

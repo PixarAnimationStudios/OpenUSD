@@ -111,13 +111,26 @@ TF_DECLARE_PUBLIC_TOKENS(HdxRenderTagTokens, HDX_API, HDX_RENDERTAG_TOKENS);
 
 TF_DECLARE_PUBLIC_TOKENS(HdxMaterialTagTokens, HDX_API, HDX_MATERIALTAG_TOKENS);
 
-#define HDX_COLOR_CORRECTION_TOKENS              \
+#define HDX_COLOR_CORRECTION_TOKENS             \
     (disabled)                                  \
     (sRGB)                                      \
-    (openColorIO)
+    (openColorIO)                               \
+    (channelsOnly)
 
 TF_DECLARE_PUBLIC_TOKENS(HdxColorCorrectionTokens, HDX_API, 
                          HDX_COLOR_CORRECTION_TOKENS);
+
+// Color channels
+#define HDX_COLOR_CHANNEL_TOKENS  \
+    (color)                         \
+    (red)                           \
+    (green)                         \
+    (blue)                          \
+    (alpha)                         \
+    (luminance)
+
+TF_DECLARE_PUBLIC_TOKENS(HdxColorChannelTokens, HDX_API, 
+                         HDX_COLOR_CHANNEL_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
