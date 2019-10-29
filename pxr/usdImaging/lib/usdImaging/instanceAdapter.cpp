@@ -1195,12 +1195,27 @@ UsdImagingInstanceAdapter::ProcessPropertyChange(UsdPrim const& prim,
         return HdChangeTracker::DirtyPrimvar;
     }
 
+    // Visibility changes to instance prims end up getting folded into the
+    // instance map.
+    if (propertyName == UsdGeomTokens->visibility) {
+        return HdChangeTracker::DirtyInstanceIndex;
+    }
+
+    // Is the property a primvar?
+    static std::string primvarsNS = "primvars:";
+    if (TfStringStartsWith(propertyName.GetString(), primvarsNS)) {
+        TfToken primvarName = TfToken(
+            propertyName.GetString().substr(primvarsNS.size()));
+        if (_PrimvarChangeRequiresResync(
+                prim, cachePath, propertyName, primvarName)) {
+            return HdChangeTracker::AllDirty;
+        } else {
+            return HdChangeTracker::DirtyPrimvar;
+        }
+    }
+
     // For other property changes, blast everything.  This will trigger a
     // prim resync.
-    // XXX: It would be way better to handle visibility changes here,
-    // but vis changes affect instance indices, and we don't really have
-    // a good way to set DirtyInstanceIndex on the right prim.  We should
-    // fix that!
     return HdChangeTracker::AllDirty;
 }
 

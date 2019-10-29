@@ -692,7 +692,8 @@ UsdImagingPrimAdapter::_PrimvarChangeRequiresResync(
         UsdPrim const& prim,
         SdfPath const& cachePath,
         TfToken const& propertyName,
-        TfToken const& primvarName) const
+        TfToken const& primvarName,
+        bool inherited) const
 {
     bool primvarInValueCache = false;
     HdPrimvarDescriptorVector const& vec =
@@ -705,8 +706,13 @@ UsdImagingPrimAdapter::_PrimvarChangeRequiresResync(
     }
 
     bool primvarOnPrim = false;
-    UsdAttribute attr = prim.GetAttribute(propertyName);
-    if (attr && attr.HasValue()) {
+    UsdGeomPrimvar pv;
+    if (inherited) {
+        pv = UsdGeomPrimvarsAPI(prim).FindPrimvarWithInheritance(propertyName);
+    } else {
+        pv = UsdGeomPrimvarsAPI(prim).GetPrimvar(propertyName);
+    }
+    if (pv && pv.HasValue()) {
         primvarOnPrim = true;
     }
 

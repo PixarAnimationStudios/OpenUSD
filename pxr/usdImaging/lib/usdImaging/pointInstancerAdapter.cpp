@@ -749,7 +749,9 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
             }
 
             // Convert non-constant primvars on UsdGeomPointInstancer
-            // into instance-rate primvars.
+            // into instance-rate primvars. Note: this only gets local primvars.
+            // Inherited primvars don't vary per-instance, so we let the
+            // prototypes pick them up.
             UsdGeomPrimvarsAPI primvars(instancer);
             for (auto const &pv: primvars.GetPrimvarsWithValues()) {
                 TfToken const& interp = pv.GetInterpolation();
@@ -846,9 +848,34 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
         }
     }
 
-    // XXX: Treat indices & transform changes as re-sync. In theory, we
-    // should only need to re-sync for changes to "prototypes", but we're a
-    // ways off...
+    if (propertyName == UsdGeomTokens->protoIndices ||
+        propertyName == UsdGeomTokens->invisibleIds) {
+        return HdChangeTracker::DirtyInstanceIndex;
+    }
+
+    // Is the property a primvar?
+    static std::string primvarsNS = "primvars:";
+    if (TfStringStartsWith(propertyName.GetString(), primvarsNS)) {
+
+        // Ignore local constant/uniform primvars.
+        UsdGeomPrimvar pv = UsdGeomPrimvarsAPI(prim).GetPrimvar(propertyName);
+        if (pv && (pv.GetInterpolation() == UsdGeomTokens->constant ||
+                   pv.GetInterpolation() == UsdGeomTokens->uniform)) {
+            return HdChangeTracker::Clean;
+        }
+
+        TfToken primvarName = TfToken(
+            propertyName.GetString().substr(primvarsNS.size()));
+        if (_PrimvarChangeRequiresResync(
+                prim, cachePath, propertyName, primvarName, false)) {
+            return HdChangeTracker::AllDirty;
+        } else {
+            return HdChangeTracker::DirtyPrimvar;
+        }
+    }
+
+    // XXX: Treat transform & visibility changes as re-sync, until we untangle
+    // instancer vs proto data.
     return HdChangeTracker::AllDirty;
 }
 

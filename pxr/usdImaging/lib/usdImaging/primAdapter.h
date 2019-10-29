@@ -547,7 +547,8 @@ protected:
     bool _PrimvarChangeRequiresResync(UsdPrim const& prim,
                                       SdfPath const& cachePath,
                                       TfToken const& propertyName,
-                                      TfToken const& primvarName) const;
+                                      TfToken const& primvarName,
+                                      bool inherited = true) const;
 
     virtual void _RemovePrim(SdfPath const& cachePath,
                              UsdImagingIndexProxy* index) = 0;
