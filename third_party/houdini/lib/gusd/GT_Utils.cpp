@@ -798,28 +798,6 @@ _SetUsdAttribute(const UsdAttribute& destAttr,
 //#############################################################################
 
 bool
-setExtentSample(UsdGeomBoundable& usdPrim,
-                const GT_PrimitiveHandle& gtPrim,
-                UsdTimeCode time=UsdTimeCode::Default())
-{
-    UT_BoundingBox houBoundsArray[1];
-    houBoundsArray[0].initBounds();
-    gtPrim->enlargeBounds(houBoundsArray, 1);
-
-    // XXX do we want extent to take width into account?
-    //gtPrim->enlargeRenderBounds(houBoundsArray, 1);
-    VtVec3fArray extent(2);
-    extent[0] = GfVec3f(houBoundsArray[0].xmin(),
-                        houBoundsArray[0].ymin(),
-                        houBoundsArray[0].zmin());
-    extent[1] = GfVec3f(houBoundsArray[0].xmax(),
-                        houBoundsArray[0].ymax(),
-                        houBoundsArray[0].zmax());
-
-    return usdPrim.GetExtentAttr().Set(extent, time);
-}
-
-bool
 setPvSample(const UsdGeomImageable&     usdPrim,
             const TfToken&              name,
             const GT_DataArrayHandle&   gtData,
