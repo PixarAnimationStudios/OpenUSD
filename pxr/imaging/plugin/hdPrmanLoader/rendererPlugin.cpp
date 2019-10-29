@@ -30,13 +30,6 @@
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
 #include "pxr/imaging/hdPrmanLoader/rendererPlugin.h"
 
-// TODO: only needed for HdPrmanLoader_GetLibraryProc
-#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
-#include <dlfcn.h>
-#elif defined(ARCH_OS_WINDOWS)
-#include <Windows.h>
-#endif
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 typedef HdRenderDelegate* (*CreateDelegateFunc)(
@@ -47,19 +40,6 @@ typedef void (*DeleteDelegateFunc)(
 static const std::string k_RMANTREE("RMANTREE");
 #if defined(ARCH_OS_WINDOWS)
 static const std::string k_PATH("PATH");
-#endif
-
-// TODO: for some reason this is not defined in libarch
-#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
-static void* HdPrmanLoader_GetLibraryProc(void* handle, const char* proc)
-{
-    return dlsym(handle, proc);
-}
-#elif defined(ARCH_OS_WINDOWS)
-static void* HdPrmanLoader_GetLibraryProc(void* handle, const char* proc)
-{
-    return GetProcAddress((HMODULE)handle, proc);
-}
 #endif
 
 // This holds the OS specific plugin info data
@@ -125,11 +105,11 @@ void HdPrmanLoader::Load()
     }
 
     _hdPrman.createFunc = reinterpret_cast<CreateDelegateFunc>(
-        HdPrmanLoader_GetLibraryProc(_hdPrman.hdxPrman,
-                                     "HdPrmanLoaderCreateDelegate"));
+        ArchLibraryGetSymbolAddress(_hdPrman.hdxPrman,
+                                    "HdPrmanLoaderCreateDelegate"));
     _hdPrman.deleteFunc = reinterpret_cast<DeleteDelegateFunc>(
-        HdPrmanLoader_GetLibraryProc(_hdPrman.hdxPrman,
-                                     "HdPrmanLoaderDeleteDelegate"));
+        ArchLibraryGetSymbolAddress(_hdPrman.hdxPrman,
+                                    "HdPrmanLoaderDeleteDelegate"));
     if (!_hdPrman.createFunc || !_hdPrman.deleteFunc) {
         TF_WARN("hdPrmanLoader factory methods could not be found.");
         return;

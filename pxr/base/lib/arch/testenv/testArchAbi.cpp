@@ -31,18 +31,10 @@
 
 #include <iostream>
 #include <typeinfo>
-#if defined(ARCH_OS_WINDOWS)
-#include <Windows.h>
-#define GETSYM(handle, name) GetProcAddress((HMODULE)handle, name)
-#else
-#include <dlfcn.h>
-#define WINAPI
-#define GETSYM(handle, name) dlsym(handle, name)
-#endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-typedef ArchAbiBase2* (WINAPI *NewDerived)();
+typedef ArchAbiBase2* (*NewDerived)();
 
 int
 main(int /*argc*/, char** /*argv*/)
@@ -67,7 +59,8 @@ main(int /*argc*/, char** /*argv*/)
         ARCH_AXIOM(plugin);
     }
 
-    NewDerived newPluginDerived = (NewDerived)GETSYM(plugin, "newDerived");
+    NewDerived newPluginDerived = (NewDerived)ArchLibraryGetSymbolAddress(
+        plugin, "newDerived");
     if (!newPluginDerived) {
         std::cerr << "Failed to find factory symbol" << std::endl;
         ARCH_AXIOM(newPluginDerived);

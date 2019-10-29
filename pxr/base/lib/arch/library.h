@@ -75,6 +75,15 @@ std::string ArchLibraryError();
 ARCH_API
 int ArchLibraryClose(void* handle);
 
+/// Obtain the address of a symbol defined within an object opened with
+/// \c ArchLibraryOpen.
+/// \ingroup group_arch_SystemFunctions
+///
+/// Obtain the address of a symbol that is specified by name.
+/// Returning the address of the symbol if successful; nullptr otherwise.
+ARCH_API
+void* ArchLibraryGetSymbolAddress(void* handle, const char* name);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_LIBRARY_H
