@@ -146,7 +146,9 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         if (fragmentSource.empty() && geometrySource.empty()) {
             _InitFallbackShader();
             fragmentSource = _fallbackSurfaceShader->GetSurfaceSource();
-            geometrySource = _fallbackSurfaceShader->GetGeometrySource();
+            // Note that we don't want displacement on purpose for the 
+            // fallback material.
+            geometrySource = std::string();
             materialMetadata = _fallbackSurfaceShader->GetMetadata();
         }
 
