@@ -192,9 +192,18 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
         // Set thread limit for Renderman. Leave a few threads for app.
         static const unsigned appThreads = 4;
         unsigned nThreads = std::max(WorkGetConcurrencyLimit()-appThreads, 1u);
+        // Check the environment
         unsigned nThreadsEnv = TfGetEnvSetting(HDX_PRMAN_NTHREADS);
-        if (nThreadsEnv > 0)
+        if (nThreadsEnv > 0) {
             nThreads = nThreadsEnv;
+        } else {
+            // Otherwise check for a render setting
+            VtValue vtThreads = renderDelegate->GetRenderSetting(
+                HdRenderSettingsTokens->threadLimit).Cast<int>();
+            if (!vtThreads.IsEmpty()) {
+                nThreads = vtThreads.UncheckedGet<int>();
+            }
+        }
         options->SetInteger(RixStr.k_limits_threads, nThreads);
 
         // XXX: Currently, Renderman doesn't support resizing the viewport
