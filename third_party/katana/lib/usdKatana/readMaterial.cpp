@@ -62,12 +62,21 @@ using FnKat::GroupBuilder;
 
 static std::string 
 _CreateShadingNode(
+        const SdfPath & materialPrimPath,
         UsdPrim shadingNode,
+        std::map<SdfPath, std::string> & primPathsToHandles,
         double currentTime,
         GroupBuilder& nodesBuilder,
         GroupBuilder& interfaceBuilder,
         const std::string & targetName,
         bool flatten);
+
+static std::string
+_CreateShadingNodeHandle(
+        const SdfPath & materialPrimPath,
+        UsdPrim shadingNode,
+        bool * resultHasBeenUniquified);
+
 
 FnKat::Attribute 
 _GetMaterialAttr(
@@ -77,7 +86,8 @@ _GetMaterialAttr(
 
 void
 _UnrollInterfaceFromPrim(
-        const UsdPrim& prim, 
+        const UsdPrim& prim,
+        std::map<SdfPath, std::string> & primPathsToHandles,
         const std::string& paramPrefix,
         GroupBuilder& materialBuilder,
         GroupBuilder& interfaceBuilder);
@@ -135,9 +145,72 @@ PxrUsdKatanaReadMaterial(
 ////////////////////////////////////////////////////////////////////////
 // Protected methods
 
+
+static SdfPath _ResolveConnectionRecursive(
+        const UsdStagePtr &stage, const SdfPath & sourcePath)
+{
+    if (!sourcePath.IsPropertyPath())
+    {
+        return SdfPath();
+    }
+
+    if (UsdShadeConnectableAPI source = UsdShadeConnectableAPI::Get(
+            stage, sourcePath.GetPrimPath()))
+    {
+        if (source.IsShader()) {
+            return sourcePath;
+        }
+
+        TfToken sourceName;
+        UsdShadeAttributeType sourceType;
+        std::tie(sourceName, sourceType) =
+                UsdShadeUtils::GetBaseNameAndType(
+                        sourcePath.GetNameToken());
+
+
+        UsdShadeConnectableAPI nextSource;
+        TfToken nextSourceName;
+        UsdShadeAttributeType nextSourceType;
+
+        if (UsdShadeConnectableAPI::GetConnectedSource(
+                source.GetPrim().GetProperty(sourcePath.GetNameToken()),
+                        &nextSource, &nextSourceName, &nextSourceType))
+        {
+            SdfPath nextAttrPath;
+
+            if (nextSourceType == UsdShadeAttributeType::Output)
+            {
+                UsdShadeOutput connectedOutput =
+                        nextSource.GetOutput(nextSourceName);
+                
+                nextAttrPath = connectedOutput.GetAttr().GetPath();
+            }            
+            else if (nextSourceType == UsdShadeAttributeType::Input)
+            {
+                UsdShadeInput connectedInput =
+                        nextSource.GetInput(nextSourceName);
+
+                nextAttrPath = connectedInput.GetAttr().GetPath();
+            }
+            else
+            {
+                return SdfPath();
+            }
+            
+            
+            return _ResolveConnectionRecursive(stage, nextAttrPath);
+        }
+    }
+
+    return SdfPath();
+}
+
+
 void 
 _GatherShadingParameters(
-    const UsdShadeShader &shaderSchema, 
+    const SdfPath & materialPrimPath,
+    const UsdShadeShader &shaderSchema,     
+    std::map<SdfPath, std::string> & primPathsToHandles,
     const string &handle,
     double currentTime,
     GroupBuilder& nodesBuilder,
@@ -175,13 +248,16 @@ _GatherShadingParameters(
             int connectionIdx = 0;
             for (const SdfPath& sourcePath : sourcePaths) {
 
+                SdfPath resolvedSourcePath = _ResolveConnectionRecursive(
+                        prim.GetStage(), sourcePath);
+
                 // We only care about connections to output properties
-                if (not sourcePath.IsPropertyPath())
+                if (not resolvedSourcePath.IsPropertyPath())
                     continue;
 
                 UsdShadeConnectableAPI source =
                         UsdShadeConnectableAPI::Get(prim.GetStage(),
-                                                    sourcePath.GetPrimPath());
+                                resolvedSourcePath.GetPrimPath());
                 if (not static_cast<bool>(source))
                     continue;
 
@@ -189,13 +265,15 @@ _GatherShadingParameters(
                 UsdShadeAttributeType sourceType;
                 std::tie(sourceName, sourceType) =
                         UsdShadeUtils::GetBaseNameAndType(
-                                sourcePath.GetNameToken());
+                                resolvedSourcePath.GetNameToken());
 
                 if (sourceType != UsdShadeAttributeType::Output)
                     continue;
 
                 std::string targetHandle = _CreateShadingNode(
+                        materialPrimPath,
                         source.GetPrim(),
+                        primPathsToHandles,
                         currentTime,
                         nodesBuilder,
                         interfaceBuilder,
@@ -279,28 +357,75 @@ _GatherShadingParameters(
     }
 }
 
+std::string _CreateShadingNodeHandle(
+        const SdfPath & materialPrimPath,
+        UsdPrim shadingNode,
+        bool * resultHasBeenUniquified)
+{
+    
+    if (resultHasBeenUniquified)
+    {
+        *resultHasBeenUniquified = false;  
+    }
+
+    std::string handle = PxrUsdKatanaUtils::GenerateShadingNodeHandle(shadingNode);
+    if (handle.empty()) {
+        return "";
+    }
+
+
+    // Because katana material attribute nodes are all siblings within the
+    // same group, we must encode non-local paths to avoid basename clashes
+    //
+    // For now, this is using a hash suffix.
+    // TODO: consider other, more friendly, encoding techniques
+    SdfPath shadingNodeParentPath = shadingNode.GetPath().GetParentPath();
+    if (shadingNodeParentPath != materialPrimPath)
+    {
+        handle += "_" + FnAttribute::StringAttribute(
+                shadingNodeParentPath.GetString()).getHash().str();
+
+        if (resultHasBeenUniquified)
+        {
+            *resultHasBeenUniquified = true;
+        }
+    }
+
+    return handle;
+}
+        
 
 // NOTE: the Ris codepath doesn't use the interfaceBuilder
 std::string 
 _CreateShadingNode(
+        const SdfPath & materialPrimPath,
         UsdPrim shadingNode,
+        std::map<SdfPath, std::string> & primPathsToHandles,
         double currentTime,
         GroupBuilder& nodesBuilder,
         GroupBuilder& interfaceBuilder,
         const std::string & targetName,
         bool flatten)
 {
-    std::string handle = PxrUsdKatanaUtils::GenerateShadingNodeHandle(shadingNode);
-    if (handle.empty()) {
-        return "";
+
+    auto I = primPathsToHandles.find(shadingNode.GetPath());
+    if (I != primPathsToHandles.end())
+    {
+        return (*I).second;
     }
 
-    // Check if we know about this node already
-    FnKat::GroupAttribute curNodes = nodesBuilder.build(
-            nodesBuilder.BuildAndRetain);
-    if (curNodes.getChildByName(handle).isValid()) {
-        // If so, just return and don't create anything
-        return handle;
+    
+
+    bool nameHasBeenUniquified = false;
+
+    std::string handle = _CreateShadingNodeHandle(
+            materialPrimPath, shadingNode, &nameHasBeenUniquified);
+    
+    primPathsToHandles[shadingNode.GetPath()] = handle;
+    
+    if (handle.empty())
+    {
+        return "";
     }
 
     // Create an empty group at the handle to prevent infinite recursion
@@ -348,7 +473,8 @@ _CreateShadingNode(
         GroupBuilder paramsBuilder;
         GroupBuilder connectionsBuilder;
 
-        _GatherShadingParameters(shaderSchema, handle, currentTime,
+        _GatherShadingParameters(materialPrimPath,
+            shaderSchema, primPathsToHandles, handle, currentTime,
             nodesBuilder, paramsBuilder, 
             interfaceBuilder, connectionsBuilder, targetName, flatten);
 
@@ -385,6 +511,12 @@ _CreateShadingNode(
                     FnKat::FloatAttribute(displayColorArray, 3, 3));
             }
         }
+
+        if (nameHasBeenUniquified)
+        {
+            shdNodeAttr.set("usdPrimPath", FnAttribute::StringAttribute(
+                    shadingNode.GetPath().GetString()));
+        }
     }
 
     if (validData) {
@@ -419,6 +551,9 @@ _GetMaterialAttr(
     GroupBuilder interfaceBuilder;
     GroupBuilder terminalsBuilder;
 
+
+    std::map<SdfPath, std::string> primPathsToHandles;
+
     /////////////////
     // RSL SECTION
     /////////////////
@@ -428,7 +563,8 @@ _GetMaterialAttr(
             /*ignoreBaseMaterial*/ not flatten);
     if (surfaceShader.GetPrim()) {
         std::string handle = _CreateShadingNode(
-            surfaceShader.GetPrim(), currentTime,
+            materialPrim.GetPath(),
+            surfaceShader.GetPrim(), primPathsToHandles, currentTime,
             nodesBuilder, interfaceBuilder, "prman", flatten);
     
         // If the source shader type is an RslShader, then publish it 
@@ -449,7 +585,8 @@ _GetMaterialAttr(
             /*ignoreBaseMaterial*/ not flatten);
     if (displacementShader.GetPrim()) {
         string handle = _CreateShadingNode(
-            displacementShader.GetPrim(), currentTime,
+            materialPrim.GetPath(),
+            displacementShader.GetPrim(), primPathsToHandles, currentTime,
             nodesBuilder, interfaceBuilder, "prman", flatten);
         terminalsBuilder.set("prmanDisplacement",
                              FnKat::StringAttribute(handle));
@@ -475,7 +612,8 @@ _GetMaterialAttr(
                         string shortHandle = shadingNodePrim.GetName();
                         
                         std::string handle = _CreateShadingNode(
-                            shadingNodePrim, currentTime,
+                            materialPrim.GetPath(),
+                            shadingNodePrim, primPathsToHandles, currentTime,
                             nodesBuilder, interfaceBuilder, "prman", flatten);
 
                         terminalsBuilder.set("prmanCoshaders."+shortHandle,
@@ -539,7 +677,8 @@ _GetMaterialAttr(
                 terminalName = terminalName.substr(terminalName.find(':')+1);
     
                 string handle = _CreateShadingNode(
-                    patternPrim, currentTime, nodesBuilder,
+                    materialPrim.GetPath(),
+                    patternPrim, primPathsToHandles, currentTime, nodesBuilder,
                             interfaceBuilder, "prman", flatten);
                 terminalsBuilder.set("prmanCustom_"+terminalName,
                     FnKat::StringAttribute(handle));
@@ -567,7 +706,8 @@ _GetMaterialAttr(
                                                 &sourceType)) {
                 foundGlslfxTerminal = true;
                 string handle = _CreateShadingNode(
-                    source.GetPrim(), currentTime,
+                    materialPrim.GetPath(),
+                    source.GetPrim(), primPathsToHandles, currentTime,
                     nodesBuilder, interfaceBuilder, "display", flatten);
 
                 terminalsBuilder.set("displayBxdf",
@@ -597,9 +737,10 @@ _GetMaterialAttr(
                     const SdfPath targetPath = targetPaths[0];
                     if (UsdPrim bxdfPrim =
                         stage->GetPrimAtPath(targetPath)) {
-                        
+
                         string handle = _CreateShadingNode(
-                            bxdfPrim, currentTime,
+                            materialPrim.GetPath(),
+                            bxdfPrim, primPathsToHandles, currentTime,
                             nodesBuilder, interfaceBuilder, "display", flatten);
 
                         terminalsBuilder.set("displayBxdf",
@@ -638,7 +779,8 @@ _GetMaterialAttr(
                 // relying on traversing the bxdf.
                 // We can remove this once the "derives" usd composition
                 // works, along with partial composition
-                _CreateShadingNode(curr, currentTime,
+                _CreateShadingNode(materialPrim.GetPath(),
+                        curr, primPathsToHandles, currentTime,
                         nodesBuilder, interfaceBuilder, "prman", flatten);
             }
 
@@ -649,7 +791,7 @@ _GetMaterialAttr(
             paramPrefix = PxrUsdKatanaUtils::GenerateShadingNodeHandle(curr);
         }
 
-        _UnrollInterfaceFromPrim(curr, 
+        _UnrollInterfaceFromPrim(curr, primPathsToHandles,
                 paramPrefix,
                 materialBuilder,
                 interfaceBuilder);
@@ -709,7 +851,8 @@ _GetMaterialAttr(
 
 /* static */ 
 void
-_UnrollInterfaceFromPrim(const UsdPrim& prim, 
+_UnrollInterfaceFromPrim(const UsdPrim& prim,
+        std::map<SdfPath, std::string> & primPathsToHandles,
         const std::string& paramPrefix,
         GroupBuilder& materialBuilder,
         GroupBuilder& interfaceBuilder)
@@ -765,9 +908,34 @@ _UnrollInterfaceFromPrim(const UsdPrim& prim,
             
             TfToken inputName = consumer.GetBaseName();
 
-            std::string handle = PxrUsdKatanaUtils::GenerateShadingNodeHandle(
-                consumerPrim);
 
+
+            const auto I = primPathsToHandles.find(consumerPrim.GetPath());
+
+
+            std::string handle;
+
+            if (I == primPathsToHandles.end())
+            {
+                // Due to child material non-flatten cases, we may not have
+                // visited the connected node. Generate the handle without
+                // validation as katana will do meaningful validation anyway
+                handle = _CreateShadingNodeHandle(
+                        prim.GetPath(), consumerPrim, nullptr);
+
+                // NOTE: do not insert back into the cache as we want
+                //       _CreateShadingNode to be the only thing that does.
+            }
+            else
+            {
+                handle = (*I).second;
+            }
+
+            if (handle.empty())
+            {
+                continue;
+            }
+            
             std::string srcKey = renamedParam + ".src";
 
             std::string srcVal = TfStringPrintf(
