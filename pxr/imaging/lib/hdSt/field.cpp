@@ -72,20 +72,16 @@ HdStField::Sync(HdSceneDelegate *sceneDelegate,
         // That way, a field resource is shared accross different render
         // indices/delegates.
 
+        HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+
+        HdResourceRegistrySharedPtr const &resourceRegistry =
+            renderIndex.GetResourceRegistry();
+
         // Check with resource registry whether the field resource
         // for this file has already been created.
-        HdInstance<HdResourceRegistry::TextureKey,
-                   HdTextureResourceSharedPtr> texInstance;
-        
-        HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
-        
-        HdResourceRegistrySharedPtr const &resourceRegistry = 
-            renderIndex.GetResourceRegistry();
-        
-        std::unique_lock<std::mutex> regLock =
-            resourceRegistry->RegisterTextureResource(texID,
-                                                      &texInstance);
-        
+        HdInstance<HdTextureResourceSharedPtr> texInstance =
+                resourceRegistry->RegisterTextureResource(texID);
+
 
         // Has the texture really changed.
         // The safest thing to do is assume it has, so that's the default used

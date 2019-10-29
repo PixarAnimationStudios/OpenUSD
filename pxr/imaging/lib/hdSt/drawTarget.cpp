@@ -386,11 +386,8 @@ HdStDrawTarget::_RegisterTextureResourceHandle(
 
 
     // Add to resource registry
-    HdInstance<HdResourceRegistry::TextureKey,
-               HdTextureResourceSharedPtr> texInstance;
-    std::unique_lock<std::mutex> regLock =
-                  resourceRegistry->RegisterTextureResource(texKey,
-                                                            &texInstance);
+    HdInstance<HdTextureResourceSharedPtr> texInstance =
+                resourceRegistry->RegisterTextureResource(texKey);
 
     if (texInstance.IsFirstInstance()) {
         texInstance.SetValue(HdTextureResourceSharedPtr(
@@ -402,12 +399,8 @@ HdStDrawTarget::_RegisterTextureResourceHandle(
 
     HdResourceRegistry::TextureKey handleKey =
         HdStTextureResourceHandle::GetHandleKey(&renderIndex, resourcePath);
-    HdInstance<HdResourceRegistry::TextureKey,
-               HdStTextureResourceHandleSharedPtr> handleInstance;
-
-    std::unique_lock<std::mutex> regLock2 =
-    resourceRegistry->RegisterTextureResourceHandle(handleKey,
-                                                    &handleInstance);
+    HdInstance<HdStTextureResourceHandleSharedPtr> handleInstance =
+                resourceRegistry->RegisterTextureResourceHandle(handleKey);
     if (handleInstance.IsFirstInstance()) {
         handleInstance.SetValue(HdStTextureResourceHandleSharedPtr(   
                                           new HdStTextureResourceHandle(

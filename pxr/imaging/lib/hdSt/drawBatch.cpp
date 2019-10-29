@@ -319,11 +319,9 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
     HdStGLSLProgram::ID hash = codeGen.ComputeHash();
 
     {
-        HdInstance<HdStGLSLProgram::ID, HdStGLSLProgramSharedPtr> programInstance;
-
         // ask registry to see if there's already compiled program
-        std::unique_lock<std::mutex> regLock = 
-            resourceRegistry->RegisterGLSLProgram(hash, &programInstance);
+        HdInstance<HdStGLSLProgramSharedPtr> programInstance =
+                                resourceRegistry->RegisterGLSLProgram(hash);
 
         if (programInstance.IsFirstInstance()) {
             HdStGLSLProgramSharedPtr glslProgram = codeGen.Compile();

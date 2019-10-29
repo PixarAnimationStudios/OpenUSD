@@ -101,12 +101,8 @@ HdStTexture::_RegisterTextureResource(
 
     HdResourceRegistry::TextureKey handleKey =
         HdStTextureResourceHandle::GetHandleKey(renderIndex, textureHandleId);
-    HdInstance<HdResourceRegistry::TextureKey,
-               HdStTextureResourceHandleSharedPtr> handleInstance;
-
-    std::unique_lock<std::mutex> regLock =
-    resourceRegistry->RegisterTextureResourceHandle(handleKey,
-                                                    &handleInstance);
+    HdInstance<HdStTextureResourceHandleSharedPtr> handleInstance =
+        resourceRegistry->RegisterTextureResourceHandle(handleKey);
     if (handleInstance.IsFirstInstance()) {
         handleInstance.SetValue(_textureResourceHandle);
     }

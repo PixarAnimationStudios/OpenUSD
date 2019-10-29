@@ -293,11 +293,9 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
 
         {
             // XXX: Should be HdSt_MeshTopologySharedPtr
-            HdInstance<HdTopology::ID, HdMeshTopologySharedPtr> topologyInstance;
-
             // ask registry if there's a sharable mesh topology
-            std::unique_lock<std::mutex> regLock =
-                resourceRegistry->RegisterMeshTopology(_topologyId, &topologyInstance);
+            HdInstance<HdMeshTopologySharedPtr> topologyInstance =
+                resourceRegistry->RegisterMeshTopology(_topologyId);
 
             if (topologyInstance.IsFirstInstance()) {
                 // if this is the first instance, set this topology to registry.
@@ -364,11 +362,9 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
     // fails to compile ( or even segfaults: filed as nvidia-bug 1719609 )
 
     {
-        HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> rangeInstance;
-
         // ask again registry if there's a shareable buffer range for the topology
-        std::unique_lock<std::mutex> regLock =
-            resourceRegistry->RegisterMeshIndexRange(_topologyId, indexToken, &rangeInstance);
+        HdInstance<HdBufferArrayRangeSharedPtr> rangeInstance =
+            resourceRegistry->RegisterMeshIndexRange(_topologyId, indexToken);
 
         if (rangeInstance.IsFirstInstance()) {
             // if not exists, update actual topology buffer to range.
@@ -559,11 +555,9 @@ HdStMesh::_PopulateAdjacency(HdStResourceRegistrySharedPtr const &resourceRegist
     // The topology may be null in the event that it has zero faces.
     if (!_topology) return;
 
-    HdInstance<HdTopology::ID, Hd_VertexAdjacencySharedPtr> adjacencyInstance;
-
     // ask registry if there's a sharable vertex adjacency
-    std::unique_lock<std::mutex> regLock =
-        resourceRegistry->RegisterVertexAdjacency(_topologyId, &adjacencyInstance);
+    HdInstance<Hd_VertexAdjacencySharedPtr> adjacencyInstance =
+        resourceRegistry->RegisterVertexAdjacency(_topologyId);
 
     if (adjacencyInstance.IsFirstInstance()) {
         Hd_VertexAdjacencySharedPtr adjacency(new Hd_VertexAdjacency());
@@ -1576,9 +1570,8 @@ HdStMesh::_GetSharedPrimvarRange(uint64_t primvarId,
     bool * isFirstInstance,
     HdStResourceRegistrySharedPtr const &resourceRegistry) const
 {
-    HdInstance<uint64_t, HdBufferArrayRangeSharedPtr> barInstance;
-    std::unique_lock<std::mutex> regLock = 
-        resourceRegistry->RegisterPrimvarRange(primvarId, &barInstance);
+    HdInstance<HdBufferArrayRangeSharedPtr> barInstance =
+        resourceRegistry->RegisterPrimvarRange(primvarId);
 
     HdBufferArrayRangeSharedPtr range;
 

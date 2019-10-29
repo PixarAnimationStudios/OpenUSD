@@ -43,6 +43,7 @@
 #include "pxr/base/gf/frustum.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/vt/array.h"
 
 #include <boost/functional/hash.hpp>
 

@@ -27,9 +27,8 @@
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferResource.h"
 #include "pxr/imaging/hd/computation.h"
-#include "pxr/imaging/hd/meshTopology.h"
+#include "pxr/imaging/hd/textureResource.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/vertexAdjacency.h"
 
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/getenv.h"
@@ -562,7 +561,8 @@ HdResourceRegistry::GetResourceAllocation() const
     size_t hydraTexturesMemory = 0;
 
     TF_FOR_ALL (textureResourceIt, _textureResourceRegistry) {
-        HdTextureResourceSharedPtr textureResource = textureResourceIt->second;
+        HdTextureResourceSharedPtr textureResource =
+                                        textureResourceIt->second.value;
 
         // In the event of an asset error, texture resources can be null
         if (textureResource) {
@@ -600,98 +600,91 @@ static bool _IsEnabledTopologyInstancing()
     return isTopologyInstancingEnabled;
 }
 
-template <typename ID, typename T> inline
-std::unique_lock<std::mutex>
-_Register(ID id, HdInstanceRegistry<HdInstance<ID, T> > &registry,
-          TfToken const &perfToken, HdInstance<ID, T> *instance)
+template <typename ID, typename T>
+HdInstance<T>
+_Register(ID id, HdInstanceRegistry<T> &registry, TfToken const &perfToken)
 {
     if (_IsEnabledTopologyInstancing()) {
-        std::unique_lock<std::mutex> lock = registry.GetInstance(id, instance);
+        HdInstance<T> instance = registry.GetInstance(id);
 
-        if (instance->IsFirstInstance()) {
+        if (instance.IsFirstInstance()) {
             HD_PERF_COUNTER_INCR(perfToken);
         }
 
-        return lock;
+        return instance;
     } else {
-        instance->Create(id, T(), nullptr, true);
-        return std::unique_lock<std::mutex>();  // Nothing actually locked
+        // Return an instance that is not managed by the registry when
+        // topology instancing is disabled.
+        return HdInstance<T>(id);
     }
 }
 
-std::unique_lock<std::mutex>
-HdResourceRegistry::RegisterBasisCurvesTopology(HdTopology::ID id,
-        HdInstance<HdTopology::ID, HdBasisCurvesTopologySharedPtr> *instance)
+HdInstance<HdBasisCurvesTopologySharedPtr>
+HdResourceRegistry::RegisterBasisCurvesTopology(
+        HdInstance<HdBasisCurvesTopologySharedPtr>::ID id)
 {
     return _Register(id, _basisCurvesTopologyRegistry,
-                     HdPerfTokens->instBasisCurvesTopology, instance);
+                     HdPerfTokens->instBasisCurvesTopology);
 }
 
-std::unique_lock<std::mutex>
-HdResourceRegistry::RegisterMeshTopology(HdTopology::ID id,
-        HdInstance<HdTopology::ID, HdMeshTopologySharedPtr> *instance)
+HdInstance<HdMeshTopologySharedPtr>
+HdResourceRegistry::RegisterMeshTopology(
+        HdInstance<HdMeshTopologySharedPtr>::ID id)
 {
     return _Register(id, _meshTopologyRegistry,
-                     HdPerfTokens->instMeshTopology, instance);
+                     HdPerfTokens->instMeshTopology);
 }
 
-std::unique_lock<std::mutex>
-HdResourceRegistry::RegisterVertexAdjacency(HdTopology::ID id,
-        HdInstance<HdTopology::ID, Hd_VertexAdjacencySharedPtr>  *instance)
+HdInstance<Hd_VertexAdjacencySharedPtr>
+HdResourceRegistry::RegisterVertexAdjacency(
+        HdInstance<Hd_VertexAdjacencySharedPtr>::ID id)
 {
     return _Register(id, _vertexAdjacencyRegistry,
-                     HdPerfTokens->instVertexAdjacency, instance);
+                     HdPerfTokens->instVertexAdjacency);
 }
 
-std::unique_lock<std::mutex>
+HdInstance<HdBufferArrayRangeSharedPtr>
 HdResourceRegistry::RegisterMeshIndexRange(
-        HdTopology::ID id, TfToken const &name,
-        HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *instance)
+        HdInstance<HdBufferArrayRangeSharedPtr>::ID id, TfToken const &name)
 {
     return _Register(id, _meshTopologyIndexRangeRegistry[name],
-                     HdPerfTokens->instMeshTopologyRange, instance);
+                     HdPerfTokens->instMeshTopologyRange);
 }
 
-std::unique_lock<std::mutex>
+HdInstance<HdBufferArrayRangeSharedPtr>
 HdResourceRegistry::RegisterBasisCurvesIndexRange(
-        HdTopology::ID id, TfToken const &name,
-        HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *instance)
+        HdInstance<HdBufferArrayRangeSharedPtr>::ID id, TfToken const &name)
 {
     return _Register(id, _basisCurvesTopologyIndexRangeRegistry[name],
-                     HdPerfTokens->instBasisCurvesTopologyRange, instance);
+                     HdPerfTokens->instBasisCurvesTopologyRange);
 }
 
-std::unique_lock<std::mutex>
-HdResourceRegistry::RegisterPrimvarRange(HdTopology::ID id,
-        HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *instance)
+HdInstance<HdBufferArrayRangeSharedPtr>
+HdResourceRegistry::RegisterPrimvarRange(
+        HdInstance<HdBufferArrayRangeSharedPtr>::ID id)
 {
     return _Register(id, _primvarRangeRegistry,
-                     HdPerfTokens->instPrimvarRange, instance);
+                     HdPerfTokens->instPrimvarRange);
 }
 
-std::unique_lock<std::mutex>
-HdResourceRegistry::RegisterExtComputationDataRange(HdTopology::ID id,
-        HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *instance)
+HdInstance<HdBufferArrayRangeSharedPtr>
+HdResourceRegistry::RegisterExtComputationDataRange(
+        HdInstance<HdBufferArrayRangeSharedPtr>::ID id)
 {
     return _Register(id, _extComputationDataRangeRegistry,
-                     HdPerfTokens->instExtComputationDataRange, instance);
+                     HdPerfTokens->instExtComputationDataRange);
 }
 
-std::unique_lock<std::mutex>
-HdResourceRegistry::RegisterTextureResource(
-        TextureKey id,
-        HdInstance<TextureKey, HdTextureResourceSharedPtr> *instance)
+HdInstance<HdTextureResourceSharedPtr>
+HdResourceRegistry::RegisterTextureResource(TextureKey id)
 {
-    return _textureResourceRegistry.GetInstance(id, instance);
+    return _textureResourceRegistry.GetInstance(id);
 }
 
-std::unique_lock<std::mutex>
-HdResourceRegistry::FindTextureResource(
-        TextureKey id,
-        HdInstance<TextureKey, HdTextureResourceSharedPtr> *instance,
-        bool *found)
+HdInstance<HdTextureResourceSharedPtr>
+HdResourceRegistry::FindTextureResource(TextureKey id, bool *found)
 {
-    return _textureResourceRegistry.FindInstance(id, instance, found);
+    return _textureResourceRegistry.FindInstance(id, found);
 }
 
 

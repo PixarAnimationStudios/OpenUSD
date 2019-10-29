@@ -72,17 +72,13 @@ HdTexture::Sync(HdSceneDelegate *sceneDelegate,
         bool isNewTexture = true;
 
         if (texID != HdTextureResource::ID(-1)) {
-            HdInstance<HdResourceRegistry::TextureKey,
-                       HdTextureResourceSharedPtr> texInstance;
-
             // Use render index to convert local texture id into global
             // texture key
             HdResourceRegistry::TextureKey texKey =
                                                renderIndex.GetTextureKey(texID);
 
-            std::unique_lock<std::mutex> regLock =
-                resourceRegistry->RegisterTextureResource(texKey,
-                                                          &texInstance);
+            HdInstance<HdTextureResourceSharedPtr> texInstance =
+                resourceRegistry->RegisterTextureResource(texKey);
 
             if (texInstance.IsFirstInstance()) {
                 _textureResource = _GetTextureResource(sceneDelegate,

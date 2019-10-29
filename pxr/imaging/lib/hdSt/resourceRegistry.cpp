@@ -29,6 +29,7 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdSt/copyComputation.h"
 #include "pxr/imaging/hdSt/dispatchBuffer.h"
+#include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/persistentBuffer.h"
 #include "pxr/imaging/hdSt/interleavedMemoryManager.h"
 #include "pxr/imaging/hdSt/vboMemoryManager.h"
@@ -117,7 +118,7 @@ HdStResourceRegistry::_TallyResourceAllocation(VtDictionary *result) const
 
     // glsl program & ubo allocation
     TF_FOR_ALL (progIt, _glslProgramRegistry) {
-        HdStGLSLProgramSharedPtr const &program = progIt->second;
+        HdStGLSLProgramSharedPtr const &program = progIt->second.value;
         if (!program) continue;
         size_t size =
             program->GetProgram().GetSize() +
@@ -318,35 +319,32 @@ HdStResourceRegistry::MergeShaderStorageBufferArrayRange(
                                  role, newBufferSpecs, newUsageHint, range);
 }
 
-std::unique_lock<std::mutex>
-HdStResourceRegistry::RegisterGeometricShader(HdStShaderKey::ID id,
-                        HdInstance<HdStShaderKey::ID, HdSt_GeometricShaderSharedPtr> *instance)
+HdInstance<HdSt_GeometricShaderSharedPtr>
+HdStResourceRegistry::RegisterGeometricShader(
+        HdInstance<HdSt_GeometricShaderSharedPtr>::ID id)
 {
-    return _geometricShaderRegistry.GetInstance(id, instance);
+    return _geometricShaderRegistry.GetInstance(id);
 }
 
-std::unique_lock<std::mutex>
-HdStResourceRegistry::RegisterGLSLProgram(HdStGLSLProgram::ID id,
-              HdInstance<HdStGLSLProgram::ID, HdStGLSLProgramSharedPtr> *instance)
+HdInstance<HdStGLSLProgramSharedPtr>
+HdStResourceRegistry::RegisterGLSLProgram(
+        HdInstance<HdStGLSLProgramSharedPtr>::ID id)
 {
-    return _glslProgramRegistry.GetInstance(id, instance);
+    return _glslProgramRegistry.GetInstance(id);
 }
 
-std::unique_lock<std::mutex>
+HdInstance<HdStTextureResourceHandleSharedPtr>
 HdStResourceRegistry::RegisterTextureResourceHandle(
-        TextureKey id,
-        HdInstance<TextureKey, HdStTextureResourceHandleSharedPtr> *instance)
+        HdInstance<HdStTextureResourceHandleSharedPtr>::ID id)
 {
-    return _textureResourceHandleRegistry.GetInstance(id, instance);
+    return _textureResourceHandleRegistry.GetInstance(id);
 }
 
-std::unique_lock<std::mutex>
+HdInstance<HdStTextureResourceHandleSharedPtr>
 HdStResourceRegistry::FindTextureResourceHandle(
-        TextureKey id,
-        HdInstance<TextureKey, HdStTextureResourceHandleSharedPtr> *instance,
-        bool *found)
+        HdInstance<HdStTextureResourceHandleSharedPtr>::ID id, bool *found)
 {
-    return _textureResourceHandleRegistry.FindInstance(id, instance, found);
+    return _textureResourceHandleRegistry.FindInstance(id, found);
 }
 
 void HdStResourceRegistry::InvalidateShaderRegistry()

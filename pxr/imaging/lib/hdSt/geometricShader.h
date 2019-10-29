@@ -31,6 +31,7 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderKey.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/imaging/garch/gl.h"
 #include "pxr/imaging/hio/glslfx.h"
 
 #include <boost/scoped_ptr.hpp>
@@ -38,7 +39,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdSt_GeometricShader> HdSt_GeometricShaderSharedPtr;
+typedef boost::shared_ptr<class HdSt_GeometricShader>
+                                        HdSt_GeometricShaderSharedPtr;
 
 /// \class HdSt_GeometricShader
 ///
@@ -178,13 +180,9 @@ public:
             KEY const &shaderKey, 
             HdStResourceRegistrySharedPtr const &resourceRegistry) {
 
-        HdInstance<HdStShaderKey::ID, HdSt_GeometricShaderSharedPtr> 
-            geometricShaderInstance;
-
-        // lookup registry
-        std::unique_lock<std::mutex> regLock =
+        HdInstance<HdSt_GeometricShaderSharedPtr> geometricShaderInstance =
             resourceRegistry->RegisterGeometricShader(
-                HdStShaderKey::ComputeHash(shaderKey), &geometricShaderInstance);
+                HdStShaderKey::ComputeHash(shaderKey));
 
         if (geometricShaderInstance.IsFirstInstance()) {
             geometricShaderInstance.SetValue(

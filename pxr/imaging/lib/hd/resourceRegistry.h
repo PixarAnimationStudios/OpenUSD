@@ -33,10 +33,8 @@
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/instanceRegistry.h"
-#include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/strategyBase.h"
-#include "pxr/imaging/hd/textureResource.h"
 
 #include "pxr/imaging/hf/perfLog.h"
 
@@ -59,8 +57,8 @@ typedef boost::shared_ptr<class HdBufferArray> HdBufferArraySharedPtr;
 typedef boost::shared_ptr<class HdMeshTopology> HdMeshTopologySharedPtr;
 typedef boost::shared_ptr<class HdBasisCurvesTopology> 
                                                  HdBasisCurvesTopologySharedPtr;
-typedef boost::weak_ptr<class HdBufferArrayRange> HdBufferArrayRangePtr;
 typedef boost::shared_ptr<class HdComputation> HdComputationSharedPtr;
+typedef boost::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
 typedef boost::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
 typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 
@@ -227,48 +225,49 @@ public:
     /// returns a lock on the instance registry.  This lock should be held
     /// until the HdInstance object is destroyed.
     HD_API
-    std::unique_lock<std::mutex> RegisterMeshTopology(HdTopology::ID id, 
-        HdInstance<HdTopology::ID, HdMeshTopologySharedPtr> *pInstance);
+    HdInstance<HdMeshTopologySharedPtr>
+    RegisterMeshTopology(HdInstance<HdMeshTopologySharedPtr>::ID id);
 
     HD_API
-    std::unique_lock<std::mutex> RegisterBasisCurvesTopology(HdTopology::ID id,
-        HdInstance<HdTopology::ID, HdBasisCurvesTopologySharedPtr> *pInstance);
+    HdInstance<HdBasisCurvesTopologySharedPtr>
+    RegisterBasisCurvesTopology(
+        HdInstance<HdBasisCurvesTopologySharedPtr>::ID id);
 
     HD_API
-    std::unique_lock<std::mutex> RegisterVertexAdjacency(HdTopology::ID id,
-        HdInstance<HdTopology::ID, Hd_VertexAdjacencySharedPtr> *pInstance);
+    HdInstance<Hd_VertexAdjacencySharedPtr>
+    RegisterVertexAdjacency(HdInstance<Hd_VertexAdjacencySharedPtr>::ID id);
 
     /// Index buffer array range instancing
     /// Returns the HdInstance points to shared HdBufferArrayRange,
     /// distinguished by given ID.
     /// *Refer the comment on RegisterTopology for the same consideration.
     HD_API
-    std::unique_lock<std::mutex> RegisterMeshIndexRange(
-        HdTopology::ID id, TfToken const &name,
-        HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *pInstance);
+    HdInstance<HdBufferArrayRangeSharedPtr>
+    RegisterMeshIndexRange(
+        HdInstance<HdBufferArrayRangeSharedPtr>::ID id, TfToken const &name);
 
     HD_API
-    std::unique_lock<std::mutex> RegisterBasisCurvesIndexRange(
-        HdTopology::ID id, TfToken const &name,
-        HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *pInstance);
+    HdInstance<HdBufferArrayRangeSharedPtr>
+    RegisterBasisCurvesIndexRange(
+       HdInstance<HdBufferArrayRangeSharedPtr>::ID id, TfToken const &name);
 
     /// Primvar array range instancing
     /// Returns the HdInstance pointing to shared HdBufferArrayRange,
     /// distinguished by given ID.
     /// *Refer the comment on RegisterTopology for the same consideration.
     HD_API
-    std::unique_lock<std::mutex> RegisterPrimvarRange(
-        HdTopology::ID id,
-        HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *pInstance);
+    HdInstance<HdBufferArrayRangeSharedPtr>
+    RegisterPrimvarRange(
+        HdInstance<HdBufferArrayRangeSharedPtr>::ID id);
 
     /// ExtComputation data array range instancing
     /// Returns the HdInstance pointing to shared HdBufferArrayRange,
     /// distinguished by given ID.
     /// *Refer the comment on RegisterTopology for the same consideration.
     HD_API
-    std::unique_lock<std::mutex> RegisterExtComputationDataRange(
-        HdTopology::ID id,
-        HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *pInstance);
+    HdInstance<HdBufferArrayRangeSharedPtr>
+    RegisterExtComputationDataRange(
+        HdInstance<HdBufferArrayRangeSharedPtr>::ID id);
 
     /// Globally unique id for texture, see RegisterTextureResource() for
     /// details.
@@ -282,18 +281,14 @@ public:
     /// multiple render indices, so the renderIndexId is used to create
     /// a globally unique id for the texture resource.
     HD_API
-    std::unique_lock<std::mutex> RegisterTextureResource(
-        TextureKey id,
-        HdInstance<TextureKey, HdTextureResourceSharedPtr>
-        *pInstance);
+    HdInstance<HdTextureResourceSharedPtr>
+    RegisterTextureResource(TextureKey id);
 
     /// Find a texture in the texture registry. If found, it returns it.
     /// See RegisterTextureResource() for parameter details.
     HD_API
-    std::unique_lock<std::mutex> FindTextureResource(
-        TextureKey id,
-        HdInstance<TextureKey, HdTextureResourceSharedPtr>
-        *instance, bool *found);
+    HdInstance<HdTextureResourceSharedPtr>
+    FindTextureResource(TextureKey id, bool *found);
 
     /// Invalidate any shaders registered with this registry.
     HD_API
@@ -370,27 +365,22 @@ private:
     typedef tbb::concurrent_vector<_PendingComputation> _PendingComputationList;
     _PendingComputationList  _pendingComputations;
 
+    // instance registries
 
-    // instancing registries
-    //   meshTopology to HdMeshTopology
-    typedef HdInstance<HdTopology::ID, HdMeshTopologySharedPtr>
-        _MeshTopologyInstance;
-    HdInstanceRegistry<_MeshTopologyInstance> _meshTopologyRegistry;
+    // Register mesh topology.
+    HdInstanceRegistry<HdMeshTopologySharedPtr>
+        _meshTopologyRegistry;
 
-    typedef HdInstance<HdTopology::ID, HdBasisCurvesTopologySharedPtr>
-        _BasisCurvesTopologyInstance;
-    HdInstanceRegistry<_BasisCurvesTopologyInstance>
+    // Register basisCurves topology.
+    HdInstanceRegistry<HdBasisCurvesTopologySharedPtr>
         _basisCurvesTopologyRegistry;
 
-    //   topology to vertex adjacency
-    typedef HdInstance<HdTopology::ID, Hd_VertexAdjacencySharedPtr>
-        _VertexAdjacencyInstance;
-    HdInstanceRegistry<_VertexAdjacencyInstance> _vertexAdjacencyRegistry;
+    // Register vertex adjacency.
+    HdInstanceRegistry<Hd_VertexAdjacencySharedPtr>
+        _vertexAdjacencyRegistry;
 
-    //   topology to HdBufferArrayRange
-    typedef HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr>
-        _TopologyIndexRangeInstance;
-    typedef HdInstanceRegistry<_TopologyIndexRangeInstance>
+    // Register topology index buffers.
+    typedef HdInstanceRegistry<HdBufferArrayRangeSharedPtr>
         _TopologyIndexRangeInstanceRegistry;
     typedef tbb::concurrent_unordered_map< TfToken,
                                            _TopologyIndexRangeInstanceRegistry,
@@ -400,19 +390,17 @@ private:
     _TopologyIndexRangeInstanceRegMap _meshTopologyIndexRangeRegistry;
     _TopologyIndexRangeInstanceRegMap _basisCurvesTopologyIndexRangeRegistry;
 
-    typedef HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr>
-        _PrimvarRangeInstance;
-    HdInstanceRegistry<_PrimvarRangeInstance> _primvarRangeRegistry;
+    // Register shared primvar buffers.
+    HdInstanceRegistry<HdBufferArrayRangeSharedPtr>
+        _primvarRangeRegistry;
 
-    typedef HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr>
-        _ExtComputationDataRangeInstance;
-    HdInstanceRegistry<_ExtComputationDataRangeInstance>
+    // Register ext computation resource.
+    HdInstanceRegistry<HdBufferArrayRangeSharedPtr>
         _extComputationDataRangeRegistry;
 
     // texture resource registry
-    typedef HdInstance<TextureKey, HdTextureResourceSharedPtr>
-         _TextureResourceRegistry;
-    HdInstanceRegistry<_TextureResourceRegistry> _textureResourceRegistry;
+    HdInstanceRegistry<HdTextureResourceSharedPtr>
+        _textureResourceRegistry;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

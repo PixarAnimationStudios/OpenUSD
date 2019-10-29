@@ -295,13 +295,10 @@ HdStMaterial::_GetTextureResourceHandle(
             HdResourceRegistry::TextureKey texKey =
                                                renderIndex.GetTextureKey(texID);
 
-            HdInstance<HdResourceRegistry::TextureKey,
-                        HdTextureResourceSharedPtr> texInstance;
-
             bool textureResourceFound = false;
-            std::unique_lock<std::mutex> regLock =
+            HdInstance<HdTextureResourceSharedPtr> texInstance =
                 resourceRegistry->FindTextureResource
-                                  (texKey, &texInstance, &textureResourceFound);
+                                  (texKey, &textureResourceFound);
 
             // A bad asset can cause the texture resource to not
             // be found. Hence, issue a warning and continue onto the
@@ -320,13 +317,10 @@ HdStMaterial::_GetTextureResourceHandle(
             HdStTextureResourceHandle::GetHandleKey(
                 &sceneDelegate->GetRenderIndex(), connection);
 
-        HdInstance<HdResourceRegistry::TextureKey,
-                    HdStTextureResourceHandleSharedPtr> handleInstance;
-
         bool handleFound = false;
-        std::unique_lock<std::mutex> regLock =
+        HdInstance<HdStTextureResourceHandleSharedPtr> handleInstance =
             resourceRegistry->FindTextureResourceHandle
-                              (handleKey, &handleInstance, &handleFound);
+                              (handleKey, &handleFound);
 
         if (handleFound) {
             handle = handleInstance.GetValue();

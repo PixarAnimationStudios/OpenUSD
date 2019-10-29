@@ -110,14 +110,13 @@ HdStExtCompGpuComputationResource::Resolve()
         HdStGLSLProgram::ID registryID = codeGen.ComputeHash();
 
         {
-            HdInstance<HdStGLSLProgram::ID, HdStGLSLProgramSharedPtr> programInstance;
-
             // ask registry to see if there's already compiled program
-            std::unique_lock<std::mutex> regLock =
-                _registry->RegisterGLSLProgram(registryID, &programInstance);
+            HdInstance<HdStGLSLProgramSharedPtr> programInstance =
+                                _registry->RegisterGLSLProgram(registryID);
 
             if (programInstance.IsFirstInstance()) {
-                HdStGLSLProgramSharedPtr glslProgram = codeGen.CompileComputeProgram();
+                HdStGLSLProgramSharedPtr glslProgram =
+                                                codeGen.CompileComputeProgram();
                 if (!TF_VERIFY(glslProgram)) {
                     return false;
                 }

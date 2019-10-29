@@ -496,11 +496,9 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             _topologyId);
 
         // XXX: Should be HdSt_BasisCurvesTopologySharedPtr
-        HdInstance<HdTopology::ID, HdBasisCurvesTopologySharedPtr> topologyInstance;
-
-        // ask registry if there's a sharable mesh topology
-        std::unique_lock<std::mutex> regLock =
-            resourceRegistry->RegisterBasisCurvesTopology(_topologyId, &topologyInstance);
+        // ask the registry if there is a sharable basisCurves topology
+        HdInstance<HdBasisCurvesTopologySharedPtr> topologyInstance =
+            resourceRegistry->RegisterBasisCurvesTopology(_topologyId);
 
         if (topologyInstance.IsFirstInstance()) {
             // if this is the first instance, create a new stream topology
@@ -547,11 +545,9 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
     }
 
     {
-        HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> rangeInstance;
-
-        std::unique_lock<std::mutex> regLock =
+        HdInstance<HdBufferArrayRangeSharedPtr> rangeInstance =
             resourceRegistry->RegisterBasisCurvesIndexRange(
-                _topologyId, indexToken, &rangeInstance);
+                                                _topologyId, indexToken);
 
         if(rangeInstance.IsFirstInstance()) {
             HdBufferSourceVector sources;

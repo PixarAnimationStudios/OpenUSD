@@ -458,11 +458,9 @@ HdStGLSLProgram::GetComputeProgram(
         HdStResourceRegistry *resourceRegistry)
 {
     // Find the program from registry
-    HdInstance<HdStGLSLProgram::ID, HdStGLSLProgramSharedPtr> programInstance;
-
-    std::unique_lock<std::mutex> regLock = 
-        resourceRegistry->RegisterGLSLProgram(
-            HdStGLSLProgram::ComputeHash(shaderToken), &programInstance);
+    HdInstance<HdStGLSLProgramSharedPtr> programInstance =
+                resourceRegistry->RegisterGLSLProgram(
+                        HdStGLSLProgram::ComputeHash(shaderToken));
 
     if (programInstance.IsFirstInstance()) {
         // if not exists, create new one

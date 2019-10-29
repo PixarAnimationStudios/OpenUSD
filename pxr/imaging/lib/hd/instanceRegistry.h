@@ -40,41 +40,73 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdInstance
 ///
-/// This class is used as a pointer to the shared instance in
+/// This class is used as an interface to a shared instance in
 /// HdInstanceRegistry.
 ///
-/// KEY has to be hashable index type and VALUE is shared_ptr. In most use
+/// KeyType is a hashable index type and VALUE is shared_ptr. In most use
 /// cases, the client computes a hash key which represents large bulky data
 /// (like topology, primvars) and registers it into HdInstanceRegistry. If the
 /// key has already been registered, the registry returns HdInstance and the
 /// client can use GetValue() without setting/computing actual bulky data. If
 /// it doesn't exist, IsFirstInstance() returns true for the first instance
-/// and the client needs to populate an appropriate data into through the
+/// and the client needs to populate an appropriate data VALUE into the
 /// instance by SetValue().
 ///
-template <typename KEY, typename VALUE>
+/// In order to support concurrent access to HdInstanceRegistry, this
+/// class holds a lock to a mutex in HdInstanceRegistry. This lock will
+/// be held until the instance of this interface class is destroyed.
+///
+template <typename VALUE>
 class HdInstance {
 public:
-    typedef KEY KeyType;
+    typedef uint64_t KeyType;
     typedef VALUE ValueType;
 
-    typedef tbb::concurrent_unordered_map<KeyType, ValueType> Dictionary;
+    typedef KeyType ID;
 
-    /// Constructor.
-    HdInstance() {}
+    struct ValueHolder {
+        ValueHolder(ValueType const & value = ValueType())
+            : value(value)
+            , recycleCounter(0)
+        { }
+        void ResetRecycleCounter() {
+            recycleCounter = 0;
+        }
 
-    /// Initalize the members of HdInstance
-    void Create(KeyType const &key,
-                ValueType const &value,
-                 Dictionary *parent,
-                 bool isFirstInstance)
-    {
-        _key             = key;
-        _value           = value;
-        _parent          = parent;
-        _isFirstInstance = isFirstInstance;
-    }
-  
+        ValueType value;
+        int recycleCounter;
+    };
+    typedef tbb::concurrent_unordered_map<KeyType, ValueHolder> Dictionary;
+
+    typedef std::mutex RegistryMutex;
+    typedef std::unique_lock<RegistryMutex> RegistryLock;
+
+    HdInstance() = delete;
+
+    /// Construct an instance holding a registry lock, representing a value
+    /// held in a registry container.
+    explicit HdInstance(KeyType const &key,
+                        ValueType const &value,
+                        RegistryLock registryLock,
+                        Dictionary *container)
+        : _key(key)
+        , _value(value)
+        , _registryLock(std::move(registryLock))
+        , _container(container)
+        , _isFirstInstance(!bool(_value))
+    { }
+
+    /// Construct an instance with no lock or registry container. This
+    /// is used to present a consistent interface to clients in cases
+    /// where shared resource registration is disabled.
+    explicit HdInstance(KeyType const &key)
+        : _key(key)
+        , _value(ValueType())
+        , _registryLock()
+        , _container(nullptr)
+        , _isFirstInstance(!bool(_value))
+    { }
+
     /// Returns the key
     KeyType const &GetKey() const { return _key; }
 
@@ -83,7 +115,7 @@ public:
 
     /// Update the value in dictionary indexed by the key.
     void SetValue(ValueType const &value) {
-        if (_parent) (*_parent)[_key] = value;
+        if (_container) (*_container)[_key] = ValueHolder(value);
         _value = value;
     }
 
@@ -93,10 +125,11 @@ public:
     }
 
 private:
-    KeyType     _key;
-    ValueType   _value;
-    Dictionary *_parent;
-    bool        _isFirstInstance;
+    KeyType       _key;
+    ValueType     _value;
+    RegistryLock  _registryLock;
+    Dictionary   *_container;
+    bool          _isFirstInstance;
 };
 
 /// \class HdInstanceRegistry
@@ -109,35 +142,39 @@ private:
 /// if the shared_ptr is unique (use_count==1). Note that Key is not
 /// involved to determine the lifetime of entries.
 ///
-template <typename INSTANCE>
+template <typename VALUE>
 class HdInstanceRegistry {
 public:
+    typedef HdInstance<VALUE> InstanceType;
+
     HdInstanceRegistry() = default;
     
     /// Copy constructor.  Need as HdInstanceRegistry is placed in a map
     /// and mutex is not copy constructable, so can't use default
     HdInstanceRegistry(const HdInstanceRegistry &other)
-        : _dictionary(other._dictionary),
-        _regLock()  // Lock is not copied
-    {
-    }
+        : _dictionary(other._dictionary)
+        , _registryMutex()  // mutex is not copied
+    { }
 
-    /// Returns a shared instance for given key as a pair of (key, value).
-    std::unique_lock<std::mutex> GetInstance(typename INSTANCE::KeyType const &key,
-                                             INSTANCE *instance);
+    /// Returns a shared instance for given key.
+    InstanceType GetInstance(
+        typename InstanceType::KeyType const &key);
 
-    /// Returns a shared instance for a given key as a pair of (key, value)
+    /// Returns a shared instance for a given key
     /// only if the key exists in the dictionary.
-    std::unique_lock<std::mutex> FindInstance(typename INSTANCE::KeyType const &key, 
-                                             INSTANCE *instance, bool *found);
+    InstanceType FindInstance(
+        typename InstanceType::KeyType const &key, bool *found);
 
-    /// Remove entries which has unreferenced key and returns the count of
-    /// remaining entries.
-    size_t GarbageCollect();
+    /// Removes unreferenced entries and returns the count
+    /// of remaining entries. When recycleCount is greater than zero,
+    /// unreferenced entries will not be removed until GarbageCollect() is
+    /// called that many more times, i.e. allowing unreferenced entries to
+    /// be recycled if they are needed again.
+    size_t GarbageCollect(int recycleCount = 0);
 
     /// Returns a const iterator being/end of dictionary. Mainly used for
     /// resource auditing.
-    typedef typename INSTANCE::Dictionary::const_iterator const_iterator;
+    typedef typename InstanceType::Dictionary::const_iterator const_iterator;
     const_iterator begin() const { return _dictionary.begin(); }
     const_iterator end() const { return _dictionary.end(); }
 
@@ -149,9 +186,8 @@ private:
         return value.unique();
     }
 
-    typedef typename INSTANCE::Dictionary _Dictionary;
-    _Dictionary _dictionary;
-    std::mutex _regLock;
+    typename InstanceType::Dictionary _dictionary;
+    typename InstanceType::RegistryMutex _registryMutex;
 
     HdInstanceRegistry &operator =(HdInstanceRegistry &) = delete;
 };
@@ -159,81 +195,83 @@ private:
 // ---------------------------------------------------------------------------
 // instance registry impl
 
-template <typename INSTANCE>
-std::unique_lock<std::mutex>
-HdInstanceRegistry<INSTANCE>::GetInstance(typename INSTANCE::KeyType const &key, 
-                                          INSTANCE *instance)
+template <typename VALUE>
+HdInstance<VALUE>
+HdInstanceRegistry<VALUE>::GetInstance(
+        typename HdInstance<VALUE>::KeyType const &key)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
     // Grab Registry lock
     // (and don't release it in this function, return it instead)
-    std::unique_lock<std::mutex> lock(_regLock);
+    typename InstanceType::RegistryLock lock(_registryMutex);
 
-    typename _Dictionary::iterator it = _dictionary.find(key);
-    bool firstInstance = false;
+    typename InstanceType::Dictionary::iterator it = _dictionary.find(key);
     if (it == _dictionary.end()) {
         // not found. create new one
         it = _dictionary.insert(
-            std::make_pair(key, typename INSTANCE::ValueType())).first;
-
-        firstInstance = true;
+            std::make_pair(key, typename InstanceType::ValueHolder())).first;
     }
 
-    instance->Create(key, it->second, &_dictionary, firstInstance);
-
-    return lock;
+    it->second.ResetRecycleCounter();
+    return InstanceType(key, it->second.value, std::move(lock), &_dictionary);
 }
 
-template <typename INSTANCE>
-std::unique_lock<std::mutex>
-HdInstanceRegistry<INSTANCE>::FindInstance(typename INSTANCE::KeyType const &key, 
-                                          INSTANCE *instance, bool *found)
+template <typename VALUE>
+HdInstance<VALUE>
+HdInstanceRegistry<VALUE>::FindInstance(
+        typename HdInstance<VALUE>::KeyType const &key, bool *found)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
     // Grab Registry lock
     // (and don't release it in this function, return it instead)
-    std::unique_lock<std::mutex> lock(_regLock);
+    typename InstanceType::RegistryLock lock(_registryMutex);
 
-    typename _Dictionary::iterator it = _dictionary.find(key);
+    typename InstanceType::Dictionary::iterator it = _dictionary.find(key);
     if (it == _dictionary.end()) {
         *found = false;
+        return InstanceType(key, VALUE(), std::move(lock), nullptr);
     } else {
         *found = true;
-        instance->Create(key, it->second, &_dictionary, false /*firstInstance*/);
+        it->second.ResetRecycleCounter();
+        return InstanceType(key, it->second.value,std::move(lock),&_dictionary);
     }
-
-    return lock;
 }
 
-template <typename INSTANCE>
+template <typename VALUE>
 size_t
-HdInstanceRegistry<INSTANCE>::GarbageCollect()
+HdInstanceRegistry<VALUE>::GarbageCollect(int recycleCount)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    size_t count = 0;
-    for (typename _Dictionary::iterator it = _dictionary.begin();
+    // Skip garbage collection entirely when then the recycleCount is < 0
+    if (recycleCount < 0) {
+        return _dictionary.size();
+    }
+
+    size_t inUseCount = 0;
+    for (typename InstanceType::Dictionary::iterator it = _dictionary.begin();
          it != _dictionary.end();) {
 
         // erase instance which isn't referred from anyone
-        if (_IsUnique(it->second)) {
+        bool isUnique = _IsUnique(it->second.value);
+        if (isUnique && (++it->second.recycleCounter > recycleCount)) {
             it = _dictionary.unsafe_erase(it);
         } else {
             ++it;
-            ++count;
+            ++inUseCount;
         }
     }
-    return count;
+    return inUseCount;
 }
 
-template <typename INSTANCE>
+template <typename VALUE>
 void
-HdInstanceRegistry<INSTANCE>::Invalidate()
+HdInstanceRegistry<VALUE>::Invalidate()
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();

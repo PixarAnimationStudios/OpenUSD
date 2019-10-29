@@ -134,10 +134,8 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
         if (_IsEnabledSharedExtComputationData() && IsInputAggregation()) {
             uint64_t inputId = _ComputeSharedComputationInputId(0, inputs);
 
-            HdInstance<uint64_t, HdBufferArrayRangeSharedPtr> barInstance;
-            std::unique_lock<std::mutex> regLog =
-                resourceRegistry->RegisterExtComputationDataRange(inputId,
-                                                                  &barInstance);
+            HdInstance<HdBufferArrayRangeSharedPtr> barInstance =
+                resourceRegistry->RegisterExtComputationDataRange(inputId);
 
             if (barInstance.IsFirstInstance()) {
                 // Allocate the first buffer range for this input key
