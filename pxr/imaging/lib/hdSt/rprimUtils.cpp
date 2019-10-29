@@ -142,7 +142,8 @@ HdStPopulateConstantPrimvars(
                 VtValue value = delegate->Get(id, pv.name);
 
                 // XXX Storm doesn't support string primvars yet
-                if (value.IsHolding<std::string>()) {
+                if (value.IsHolding<std::string>() ||
+                    value.IsHolding<VtStringArray>()) {
                     continue;
                 }
 
