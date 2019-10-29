@@ -70,7 +70,8 @@ class testUsdExportShadingModePxrRis(unittest.TestCase):
         self.assertTrue(cubePrim)
 
         # Validate the Material prim bound to the Mesh prim.
-        material = UsdShade.Material.GetBoundMaterial(cubePrim)
+        materialBindingAPI = UsdShade.MaterialBindingAPI(cubePrim)
+        material = materialBindingAPI.ComputeBoundMaterial()[0]
         self.assertTrue(material)
         materialPath = material.GetPath().pathString
         self.assertEqual(materialPath, '/MarbleCube/Materials/MarbleCubeSG')
