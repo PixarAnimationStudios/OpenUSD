@@ -407,7 +407,9 @@ public:
 
     /// Returns true if this is the empty path (SdfPath::EmptyPath()).
     inline bool IsEmpty() const noexcept {
-        return *this == SdfPath();
+        // No need to check _propPart, because it can only be non-null if
+        // _primPart is non-null.
+        return !_primPart; 
     }
 
     /// Returns the string representation of this path as a TfToken.
