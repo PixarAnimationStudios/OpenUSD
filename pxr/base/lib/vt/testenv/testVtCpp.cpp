@@ -322,6 +322,42 @@ static void testArray() {
         TF_AXIOM(ia.size() == ints.size());
         TF_AXIOM(std::equal(ia.begin(), ia.end(), ints.begin()));
     }
+
+    {
+        // Test VtArray resize with filling function.
+        VtDoubleArray da;
+        da.resize(1234, [](double *f, double *l) {
+                int n = 0;
+                while (f != l) {
+                    new (f++) double(n++);
+                }
+            });
+        TF_AXIOM(da.size() == 1234);
+        for (int n = 0; n != 1234; ++n) {
+            TF_AXIOM(da.cdata()[n] == double(n));
+        }
+
+        // Make it bigger.
+        da.resize(2345, [](double *f, double *l) {
+                int n = 0;
+                while (f != l) {
+                    new (f++) double(n++);
+                }
+            });
+        TF_AXIOM(da.size() == 2345);
+        for (int n = 1234; n != 2345; ++n) {
+            TF_AXIOM(da.cdata()[n] == double(n-1234));
+        }
+
+        // Make it smaller.
+        da.resize(123, [](double *f, double *l) {
+                TF_FATAL_ERROR("Expected no added elements");
+            });
+        TF_AXIOM(da.size() == 123);
+        for (int n = 0; n != 123; ++n) {
+            TF_AXIOM(da.cdata()[n] == double(n));
+        }
+    }
 }
 
 static void testArrayOperators() {
