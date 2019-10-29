@@ -273,18 +273,13 @@ public:
     /// Allows \c TfToken to be used in \c std::set
     inline bool operator<(TfToken const& r) const {
         auto ll = _rep.GetLiteral(), rl = r._rep.GetLiteral();
-        if (!ll) {
-            return rl;
+        if (ll && rl) {
+            auto lrep = _rep.Get(), rrep = r._rep.Get();
+            uint64_t lcc = lrep->_compareCode, rcc = rrep->_compareCode;
+            return lcc < rcc || (lcc == rcc && lrep->_str < rrep->_str);
         }
-        if (!rl || ll == rl) {
-            return false;
-        }
-        auto lrep = _rep.Get(), rrep = r._rep.Get();
-        uint64_t lcc = lrep->_compareCode, rcc = rrep->_compareCode;
-        if (lcc < rcc) {
-            return true;
-        }
-        return lcc == rcc && lrep->_str < rrep->_str;
+        // One or both are zero -- return true if ll is zero and rl is not.
+        return !ll && rl;
     }
 
     /// Greater-than operator that compares tokenized strings lexicographically.
