@@ -444,7 +444,7 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
                 sourcesAndTextures.ProcessPrimvarMaterialParam(param);
             } else if (param.IsFallback()) {
                 sourcesAndTextures.ProcessFallbackMaterialParam(
-                    param, sceneDelegate, material->GetId());
+                    param, param.fallbackValue);
             }
         }
     }

@@ -76,7 +76,7 @@ _GlslfxFallbackForMissingSdr(
         } else if (implSource == UsdShadeTokens->sourceAsset) {
             SdfAssetPath sourceAsset;
             if (usdTerminal.GetSourceAsset(&sourceAsset, networkSelector)) {
-                identifier = ArGetResolver().Resolve(sourceAsset.GetAssetPath());
+                identifier= ArGetResolver().Resolve(sourceAsset.GetAssetPath());
             }
         } else if (implSource == UsdShadeTokens->sourceCode) {
             std::string sourceCode;
@@ -118,9 +118,10 @@ UsdImagingMaterialAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 }
 
 SdfPath
-UsdImagingMaterialAdapter::Populate(UsdPrim const& prim,
-                            UsdImagingIndexProxy* index,
-                            UsdImagingInstancerContext const* instancerContext)
+UsdImagingMaterialAdapter::Populate(
+    UsdPrim const& prim,
+    UsdImagingIndexProxy* index,
+    UsdImagingInstancerContext const* instancerContext)
 {
     // Since material are populated by reference, they need to take care not to
     // be populated multiple times.
@@ -128,6 +129,16 @@ UsdImagingMaterialAdapter::Populate(UsdPrim const& prim,
     if (index->IsPopulated(cachePath)) {
         return cachePath;
     }
+
+    UsdShadeMaterial material(prim);
+    if (!material) return SdfPath::EmptyPath();
+
+    // Skip materials that do not match renderDelegate supported types
+    const TfToken context = _GetMaterialNetworkSelector();
+    TfTokenVector shaderSourceTypes = _GetShaderSourceTypes();
+    UsdShadeShader surface = material.ComputeSurfaceSource(context);
+    UsdShadeShader volume = material.ComputeVolumeSource(context);
+    if (!surface && !volume) return SdfPath::EmptyPath();
 
     index->InsertSprim(HdPrimTypeTokens->material,
                        cachePath,
@@ -148,43 +159,52 @@ UsdImagingMaterialAdapter::Populate(UsdPrim const& prim,
 
 /* virtual */
 void
-UsdImagingMaterialAdapter::TrackVariability(UsdPrim const& prim,
-                                          SdfPath const& cachePath,
-                                          HdDirtyBits* timeVaryingBits,
-                                          UsdImagingInstancerContext const*
-                                              instancerContext) const
+UsdImagingMaterialAdapter::TrackVariability(
+    UsdPrim const& prim,
+    SdfPath const& cachePath,
+    HdDirtyBits* timeVaryingBits,
+    UsdImagingInstancerContext const*
+    instancerContext) const
 {
-    // XXX: Time-varying parameters are not yet implemented
+    bool timeVarying = false;
+    HdMaterialNetworkMap map;
+    TfToken const& networkSelector = _GetMaterialNetworkSelector();
+    UsdTimeCode time = UsdTimeCode::Default();
+    _GetMaterialNetworkMap(prim, networkSelector, &map, time, &timeVarying);
+    if (timeVarying) {
+        *timeVaryingBits |= HdMaterial::DirtyResource;
+    }
 }
 
 /* virtual */
 void
-UsdImagingMaterialAdapter::UpdateForTime(UsdPrim const& prim,
-                                       SdfPath const& cachePath,
-                                       UsdTimeCode time,
-                                       HdDirtyBits requestedBits,
-                                       UsdImagingInstancerContext const*
-                                           instancerContext) const
+UsdImagingMaterialAdapter::UpdateForTime(
+    UsdPrim const& prim,
+    SdfPath const& cachePath,
+    UsdTimeCode time,
+    HdDirtyBits requestedBits,
+    UsdImagingInstancerContext const*
+    instancerContext) const
 {
-    UsdImagingValueCache* valueCache = _GetValueCache();
-
     if (requestedBits & HdMaterial::DirtyResource) {
-        TfToken const& networkSelector = _GetMaterialNetworkSelector();
-
         // Walk the material network and generate a HdMaterialNetworkMap
         // structure to store it in the value cache.
-        HdMaterialNetworkMap networkMap;
-        _GetMaterialNetworkMap(prim, networkSelector, &networkMap);
+        bool timeVarying = false;
+        HdMaterialNetworkMap map;
+        TfToken const& networkSelector = _GetMaterialNetworkSelector();
+        _GetMaterialNetworkMap(prim, networkSelector, &map, time, &timeVarying);
 
-        valueCache->GetMaterialResource(cachePath) = networkMap;
+        UsdImagingValueCache* valueCache = _GetValueCache();
+        valueCache->GetMaterialResource(cachePath) = map;
     }
 }
 
 /* virtual */
 HdDirtyBits
-UsdImagingMaterialAdapter::ProcessPropertyChange(UsdPrim const& prim,
-                                               SdfPath const& cachePath,
-                                               TfToken const& propertyName)
+UsdImagingMaterialAdapter::ProcessPropertyChange(
+    UsdPrim const& prim,
+    SdfPath const& cachePath,
+    TfToken const& propertyName)
 {
     if (propertyName == UsdGeomTokens->visibility) {
         // Materials aren't affected by visibility
@@ -198,10 +218,11 @@ UsdImagingMaterialAdapter::ProcessPropertyChange(UsdPrim const& prim,
 
 /* virtual */
 void
-UsdImagingMaterialAdapter::MarkDirty(UsdPrim const& prim,
-                                     SdfPath const& cachePath,
-                                     HdDirtyBits dirty,
-                                     UsdImagingIndexProxy* index)
+UsdImagingMaterialAdapter::MarkDirty(
+    UsdPrim const& prim,
+    SdfPath const& cachePath,
+    HdDirtyBits dirty,
+    UsdImagingIndexProxy* index)
 {
     // If this is invoked on behalf of a Shader prim underneath a
     // Material prim, walk up to the enclosing Material.
@@ -221,9 +242,10 @@ UsdImagingMaterialAdapter::MarkDirty(UsdPrim const& prim,
 
 /* virtual */
 void
-UsdImagingMaterialAdapter::MarkMaterialDirty(UsdPrim const& prim,
-                                             SdfPath const& cachePath,
-                                             UsdImagingIndexProxy* index)
+UsdImagingMaterialAdapter::MarkMaterialDirty(
+    UsdPrim const& prim,
+    SdfPath const& cachePath,
+    UsdImagingIndexProxy* index)
 {
     MarkDirty(prim, cachePath, HdMaterial::DirtyResource, index);
 }
@@ -231,8 +253,9 @@ UsdImagingMaterialAdapter::MarkMaterialDirty(UsdPrim const& prim,
 
 /* virtual */
 void
-UsdImagingMaterialAdapter::_RemovePrim(SdfPath const& cachePath,
-                                       UsdImagingIndexProxy* index)
+UsdImagingMaterialAdapter::_RemovePrim(
+    SdfPath const& cachePath,
+    UsdImagingIndexProxy* index)
 {
     index->RemoveSprim(HdPrimTypeTokens->material, cachePath);
 }
@@ -272,10 +295,11 @@ _GetPrimvarNameAttributeValue(
 }
 
 static void
-_ExtractPrimvarsFromNode(UsdShadeShader const & shadeNode,
-                              HdMaterialNode const & node,
-                              HdMaterialNetwork *materialNetwork,
-                              TfToken const& networkSelector)
+_ExtractPrimvarsFromNode(
+    UsdShadeShader const & shadeNode,
+    HdMaterialNode const & node,
+    HdMaterialNetwork *materialNetwork,
+    TfToken const& networkSelector)
 {
     auto &shaderReg = SdrRegistry::GetInstance();
     SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifierAndType(
@@ -308,7 +332,9 @@ void _WalkGraph(
     HdMaterialNetwork* materialNetwork,
     TfToken const& networkSelector,
     SdfPathSet* visitedNodes,
-    TfTokenVector const & shaderSourceTypes)
+    TfTokenVector const & shaderSourceTypes,
+    UsdTimeCode time,
+    bool* timeVarying)
 {
     // Store the path of the node
     HdMaterialNode node;
@@ -342,7 +368,9 @@ void _WalkGraph(
                 materialNetwork,
                 networkSelector,
                 visitedNodes,
-                shaderSourceTypes);
+                shaderSourceTypes,
+                time,
+                timeVarying);
 
             HdMaterialRelationship relationship;
             relationship.outputId = node.path;
@@ -353,9 +381,11 @@ void _WalkGraph(
         } else if (attrType == UsdShadeAttributeType::Input) {
             // If it is an input attribute we get the authored value
             VtValue value;
-            if (attr.Get(&value)) {
+            if (attr.Get(&value, time)) {
                 node.parameters[inputName] = value;
             }
+
+            *timeVarying |= attr.ValueMightBeTimeVarying();
         }
     }
 
@@ -395,7 +425,9 @@ _BuildHdMaterialNetworkFromTerminal(
     TfToken const& terminalIdentifier,
     TfToken const& networkSelector,
     TfTokenVector const& shaderSourceTypes,
-    HdMaterialNetworkMap *materialNetworkMap)
+    HdMaterialNetworkMap *materialNetworkMap,
+    UsdTimeCode time,
+    bool* timeVarying)
 {
     HdMaterialNetwork& network = materialNetworkMap->map[terminalIdentifier];
     std::vector<HdMaterialNode>& nodes = network.nodes;
@@ -406,7 +438,9 @@ _BuildHdMaterialNetworkFromTerminal(
         &network,
         networkSelector,
         &visitedNodes, 
-        shaderSourceTypes);
+        shaderSourceTypes,
+        time,
+        timeVarying);
 
     if (!TF_VERIFY(!nodes.empty())) return;
 
@@ -433,7 +467,9 @@ void
 UsdImagingMaterialAdapter::_GetMaterialNetworkMap(
     UsdPrim const &usdPrim, 
     TfToken const& networkSelector,
-    HdMaterialNetworkMap *networkMap) const
+    HdMaterialNetworkMap *networkMap,
+    UsdTimeCode time,
+    bool* timeVarying) const
 {
     UsdShadeMaterial material(usdPrim);
     if (!material) {
@@ -453,7 +489,9 @@ UsdImagingMaterialAdapter::_GetMaterialNetworkMap(
             HdMaterialTerminalTokens->surface,
             networkSelector,
             shaderSourceTypes,
-            networkMap);
+            networkMap,
+            time,
+            timeVarying);
     }
 
     if (UsdShadeShader d = material.ComputeDisplacementSource(context)) {
@@ -462,7 +500,9 @@ UsdImagingMaterialAdapter::_GetMaterialNetworkMap(
             HdMaterialTerminalTokens->displacement,
             networkSelector,
             shaderSourceTypes,
-            networkMap);
+            networkMap,
+            time,
+            timeVarying);
     }
 
     if (UsdShadeShader v = material.ComputeVolumeSource(context)) {
@@ -471,7 +511,9 @@ UsdImagingMaterialAdapter::_GetMaterialNetworkMap(
             HdMaterialTerminalTokens->volume,
             networkSelector,
             shaderSourceTypes,
-            networkMap);
+            networkMap,
+            time,
+            timeVarying);
     }
 }
 

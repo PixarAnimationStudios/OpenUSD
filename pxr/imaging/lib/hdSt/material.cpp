@@ -64,13 +64,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 HioGlslfx *HdStMaterial::_fallbackSurfaceShader = nullptr;
 
-// XXX In progress of deprecating hydra material adapter
-static bool _IsEnabledStormMaterialNetworks() {
-    static std::string _stormMatNet = 
-        TfGetenv("STORM_ENABLE_MATERIAL_NETWORKS");
-
-    return !_stormMatNet.empty() && std::stoi(_stormMatNet) > 0;
-}
 
 HdStMaterial::HdStMaterial(SdfPath const &id)
  : HdMaterial(id)
@@ -106,6 +99,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         sceneDelegate->GetRenderIndex().GetResourceRegistry();
     HdDirtyBits bits = *dirtyBits;
 
+    bool useDeprecatedSurface = true;
     bool needsRprimMaterialStateUpdate = false;
 
     std::string fragmentSource;
@@ -114,25 +108,34 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     TfToken materialTag = _materialTag;
     HdMaterialParamVector params;
 
-    if ((bits & DirtyResource) && _IsEnabledStormMaterialNetworks()) {
-        // Consume material network
+    if ((bits & DirtyResource)) {
+
         HdMaterialNetworkMap const& hdNetworkMap = 
             _GetMaterialResource(sceneDelegate);
-        HdStMaterialNetwork networkProcessor;
-        networkProcessor.ProcessMaterialNetwork(GetId(), hdNetworkMap);
-        fragmentSource = networkProcessor.GetFragmentCode();
-        geometrySource = networkProcessor.GetGeometryCode();
-        materialTag = networkProcessor.GetMaterialTag();
-        params = networkProcessor.GetMaterialParams();
-    } else {
-        // XXX Consume deprecated material
+
+        if (!hdNetworkMap.map.empty()) {
+            useDeprecatedSurface = false;
+            HdStMaterialNetwork networkProcessor;
+            networkProcessor.ProcessMaterialNetwork(GetId(), hdNetworkMap);
+            fragmentSource = networkProcessor.GetFragmentCode();
+            geometrySource = networkProcessor.GetGeometryCode();
+            materialTag = networkProcessor.GetMaterialTag();
+            params = networkProcessor.GetMaterialParams();
+        }
+    } 
+
+    // XXX Consume deprecated material
+    // Many places in code still use SurfaceShader, so if we do not find a
+    // material network, we try the old SurfaceShader method.
+    // We want this to eventually not exist.
+    if (useDeprecatedSurface) {
         if (bits & DirtySurfaceShader) {
             fragmentSource = GetSurfaceShaderSource(sceneDelegate);
             geometrySource = GetDisplacementShaderSource(sceneDelegate);
             materialMetadata = GetMaterialMetadata(sceneDelegate);
             materialTag = _GetMaterialTagDeprecated(materialMetadata);
         }
-        if (bits & DirtyParams) {
+        if ((bits & DirtySurfaceShader) || (bits & DirtyParams)) {
             params = GetMaterialParams(sceneDelegate);
         }
     }
@@ -225,14 +228,8 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
                 sourcesAndTextures.ProcessPrimvarMaterialParam(
                     param);
             } else if (param.IsFallback()) {
-                if (_IsEnabledStormMaterialNetworks()) {
-                    sourcesAndTextures.ProcessFallbackMaterialParam(
-                        param, param.fallbackValue);
-                } else {
-                    // XXX Deprecate.
-                    sourcesAndTextures.ProcessFallbackMaterialParam(
-                        param, sceneDelegate, GetId());
-                }
+                sourcesAndTextures.ProcessFallbackMaterialParam(
+                    param, param.fallbackValue);
             } else if (param.IsTexture()) {
                 sourcesAndTextures.ProcessTextureMaterialParam(
                     param, 
@@ -472,7 +469,6 @@ HdStMaterial::_GetMaterialResource(HdSceneDelegate* sceneDelegate) const
     if (vtMat.IsHolding<HdMaterialNetworkMap>()) {
         return vtMat.UncheckedGet<HdMaterialNetworkMap>();
     } else {
-        TF_CODING_ERROR("Not a valid material network map");
         static const HdMaterialNetworkMap emptyNetworkMap;
         return emptyNetworkMap;
     }

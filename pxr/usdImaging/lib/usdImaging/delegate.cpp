@@ -100,14 +100,6 @@ static bool _IsEnabledDrawModeCache() {
     return _v;
 }
 
-// XXX In progress of deprecating hydra material adapter
-static bool _IsEnabledStormMaterialNetworks() {
-    static std::string _stormMatNet = 
-        TfGetenv("STORM_ENABLE_MATERIAL_NETWORKS");
-
-    return !_stormMatNet.empty() && std::stoi(_stormMatNet) > 0;
-}
-
 
 // -------------------------------------------------------------------------- //
 // Delegate Implementation.
@@ -252,17 +244,9 @@ UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
         TfToken bindingPurpose = GetRenderIndex().
             GetRenderDelegate()->GetMaterialBindingPurpose();
 
-        // XXX In progress of deprecating hydra material adapter
-        if (!_IsEnabledStormMaterialNetworks()) {
-            if (bindingPurpose == HdTokens->preview &&
-                adapterKey == _tokens->Material) {
-                adapterKey = _tokens->HydraPbsSurface;
-            } 
-        } else {
-            if (bindingPurpose == HdTokens->preview &&
-                adapterKey == _tokens->Material) {
-                adapterKey = _tokens->MaterialTexture;
-            }
+        if (bindingPurpose == HdTokens->preview &&
+            adapterKey == _tokens->Material) {
+            adapterKey = _tokens->MaterialTexture;
         }
 
         if (bindingPurpose == HdTokens->preview &&
@@ -2783,12 +2767,10 @@ UsdImagingDelegate::GetTextureResource(SdfPath const &textureId)
         // recursively dig for the material.
         
         SdfPath textureNodePath = textureId.GetParentPath();
+        texturePrim = _stage->GetPrimAtPath(textureNodePath);
         SdfPath materialPath = textureNodePath.GetParentPath();
         SdfPath materialCachePath = ConvertIndexPathToCachePath(materialPath);
         primInfo = _GetHdPrimInfo(materialCachePath);
-        if (primInfo) {
-            texturePrim = _stage->GetPrimAtPath(textureNodePath);
-        }
     } else {
         texturePrim = primInfo->usdPrim;
     }
@@ -2924,7 +2906,10 @@ UsdImagingDelegate::GetMaterialResource(SdfPath const &materialId)
 
     SdfPath cachePath = ConvertIndexPathToCachePath(materialId);
     _UpdateSingleValue(cachePath, HdMaterial::DirtyResource);
-    TF_VERIFY(_valueCache.FindMaterialResource(cachePath, &vtMatResource));
+    // XXX When all code has transitioned over to use material networks we can
+    // change this TF_WARN back into a TF_VERIFY.
+    bool result = _valueCache.FindMaterialResource(cachePath, &vtMatResource);
+    if (!result) TF_WARN("Material network not found: %s", cachePath.GetText());
     return vtMatResource;
 }
 

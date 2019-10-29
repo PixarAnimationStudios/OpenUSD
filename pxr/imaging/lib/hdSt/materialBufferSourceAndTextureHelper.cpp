@@ -47,18 +47,6 @@ HdSt_MaterialBufferSourceAndTextureHelper::ProcessPrimvarMaterialParam(
 void
 HdSt_MaterialBufferSourceAndTextureHelper::ProcessFallbackMaterialParam(
     HdMaterialParam const &param,
-    HdSceneDelegate *sceneDelegate,
-    SdfPath const &materialId)
-{
-    ProcessFallbackMaterialParam(
-        param,
-        sceneDelegate->GetMaterialParamValue(
-            materialId, param.name));
-}
-
-void
-HdSt_MaterialBufferSourceAndTextureHelper::ProcessFallbackMaterialParam(
-    HdMaterialParam const &param,
     VtValue const &fallbackValue)
 {
     sources.push_back(

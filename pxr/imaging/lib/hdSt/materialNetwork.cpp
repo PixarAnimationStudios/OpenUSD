@@ -103,7 +103,7 @@ _ConvertLegacyHdMaterialNetwork(
     TfToken const & terminalName,
     HdSt_MaterialNetwork *result)
 {
-    auto iter = hdNetworkMap.map.find(terminalName);
+    auto const& iter = hdNetworkMap.map.find(terminalName);
     if (iter == hdNetworkMap.map.end()) {
         return false;
     }
@@ -129,7 +129,7 @@ _ConvertLegacyHdMaterialNetwork(
     // Transfer relationships to inputConnections on receiving/downstream nodes.
     for (HdMaterialRelationship const& rel : hdNetwork.relationships) {
         // outputId (in hdMaterial terms) is the input of the receiving node
-        auto iter = result->nodes.find(rel.outputId);
+        auto const& iter = result->nodes.find(rel.outputId);
         // skip connection if the destination node doesn't exist
         if (iter == result->nodes.end()) {
             continue;
@@ -199,7 +199,7 @@ _GetGlslfxForTerminal(
     // We have an info:id so we can use Sdr to get to the source code path
     // for glslfx. GetShaderNodeByIdentifierAndType() will insert a SdrNode
     // and we can use GetSourceURI to query the source code path.
-    auto &shaderReg = SdrRegistry::GetInstance();
+    SdrRegistry &shaderReg = SdrRegistry::GetInstance();
     SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifierAndType(
         nodeTypeId, HioGlslfxTokens->glslfx);
 
@@ -213,7 +213,7 @@ _GetGlslfxForTerminal(
     // We did not have info::id so we expect the terminal type id token to
     // have been resolved into the path or source code for the glslfx.
     // E.g. UsdImagingMaterialAdapter handles this for us.
-    if (TF_VERIFY(!nodeTypeId.IsEmpty())) {
+    if (!nodeTypeId.IsEmpty()) {
         // Most likely: the identifier is a path to a glslfx file
         glslfxOut.reset(new HioGlslfx(nodeTypeId));
         if (!glslfxOut->IsValid()) {
@@ -257,7 +257,7 @@ _GetParamFallbackValue(
     SdrRegistry& shaderReg = SdrRegistry::GetInstance();
 
     // Check if there are any connections to the terminal input.
-    auto connIt = node.inputConnections.find(paramName);
+    auto const& connIt = node.inputConnections.find(paramName);
 
     if (connIt != node.inputConnections.end()) {
         if (!connIt->second.empty()) {
@@ -279,8 +279,8 @@ _GetParamFallbackValue(
                 // node where the 'default input' becomes the value
                 // pass-through in the network. But Storm has no other
                 // mechanism currently to deal with fallback values.
-                auto defaultInput = conSdr->GetDefaultInput();
-                if (defaultInput) {
+                if (SdrShaderPropertyConstPtr const& defaultInput = 
+                        conSdr->GetDefaultInput()) {
                     TfToken const& def = defaultInput->GetName();
                     auto const& defParamIt = upstreamNode.parameters.find(def);
                     if (defParamIt != upstreamNode.parameters.end()) {
@@ -291,9 +291,8 @@ _GetParamFallbackValue(
                 // Sdr supports specifying default values for outputs so if we
                 // did not use the GetDefaultInput hack above, we fallback to
                 // using this DefaultOutput value.
-
-                auto output = conSdr->GetShaderOutput(con.upstreamOutputName);
-                if (output) {
+                if (SdrShaderPropertyConstPtr const& output = 
+                        conSdr->GetShaderOutput(con.upstreamOutputName)) {
                     VtValue out =  output->GetDefaultValue();
                     if (out.IsEmpty()) {
                         // If no default value was registered with Sdr for
@@ -631,7 +630,7 @@ _MakeParamsForInputParameter(
 
             // Find the node that is connected to this input
             HdSt_MaterialConnection const& con = cons.front();
-            auto upIt = network.nodes.find(con.upstreamNode);
+            auto const& upIt = network.nodes.find(con.upstreamNode);
 
             if (upIt != network.nodes.end()) {
 
@@ -700,7 +699,7 @@ _GatherMaterialParams(
 
     HdMaterialParamVector params;
 
-    auto &shaderReg = SdrRegistry::GetInstance();
+    SdrRegistry &shaderReg = SdrRegistry::GetInstance();
     SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifierAndType(
         node.nodeTypeId, HioGlslfxTokens->glslfx);
 
