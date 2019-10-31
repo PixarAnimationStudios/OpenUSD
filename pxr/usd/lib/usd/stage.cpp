@@ -5390,18 +5390,6 @@ void TypedStrongestValueComposer<VtArray<SdfTimeCode>>::_ResolveValueImpl(
         _value, layerOffsetAccess);
 }
 
-template <>
-void TypedStrongestValueComposer<SdfTimeSampleMap>::_ResolveValueImpl(
-    const PcpNodeRef &node,
-    const SdfLayerRefPtr &layer)
-{
-    // Create a layer offset accessor so we don't compute the layer
-    // offset unless one of the resolve functions actually needs it.
-    LayerOffsetAccess layerOffsetAccess(node, layer);
-    _TryApplyLayerOffsetToValue<SdfTimeSampleMap>(
-        _value, layerOffsetAccess);
-}
-
 struct ExistenceComposer
 {
     static const bool ProducesValue = false;
