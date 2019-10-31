@@ -173,11 +173,12 @@ HdStDispatchBuffer::HdStDispatchBuffer(TfToken const &role, int count,
     GLuint newId = 0;
     size_t stride = commandNumUints * sizeof(GLuint);
     size_t dataSize = count * stride;
-    glGenBuffers(1, &newId);
     // just allocate uninitialized
     if (caps.directStateAccessEnabled) {
-        glNamedBufferDataEXT(newId, dataSize, NULL, GL_STATIC_DRAW);
+        glCreateBuffers(1, &newId);
+        glNamedBufferData(newId, dataSize, NULL, GL_STATIC_DRAW);
     } else {
+        glGenBuffers(1, &newId);
         glBindBuffer(GL_ARRAY_BUFFER, newId);
         glBufferData(GL_ARRAY_BUFFER, dataSize, NULL, GL_STATIC_DRAW);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -211,10 +212,10 @@ HdStDispatchBuffer::CopyData(std::vector<GLuint> const &data)
     GlfContextCaps const &caps = GlfContextCaps::GetInstance();
 
     if (caps.directStateAccessEnabled) {
-        glNamedBufferSubDataEXT(_entireResource->GetId(),
-                                0,
-                                _entireResource->GetSize(),
-                                &data[0]);
+        glNamedBufferSubData(_entireResource->GetId(),
+                             0,
+                             _entireResource->GetSize(),
+                             &data[0]);
     } else {
         glBindBuffer(GL_ARRAY_BUFFER, _entireResource->GetId());
         glBufferSubData(GL_ARRAY_BUFFER, 0,

@@ -108,5 +108,7 @@ void wrapUsdVariantSets()
              arg("variantSetName"))
         .def("SetSelection", &UsdVariantSets::SetSelection,
              (arg("variantSetName"), arg("variantName")))
+        .def("GetAllVariantSelections", &UsdVariantSets::GetAllVariantSelections, 
+             return_value_policy<TfPyMapToDictionary>())
         ;
 }

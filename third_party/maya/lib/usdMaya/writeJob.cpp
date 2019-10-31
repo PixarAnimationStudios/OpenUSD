@@ -744,7 +744,7 @@ UsdMaya_WriteJob::_CreatePackage() const
     const std::string firstLayerName = TfStringPrintf(
             "%s.%s",
             firstLayerBaseName.c_str(),
-            UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
+            TfGetExtension(_fileName).c_str());
 
     if (mJobCtx.mArgs.compatibility == UsdMayaJobExportArgsTokens->appleArKit) {
         // If exporting with compatibility=appleArKit, there are additional

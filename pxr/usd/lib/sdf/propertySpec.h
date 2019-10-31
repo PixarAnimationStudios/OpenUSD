@@ -370,7 +370,7 @@ public:
     bool HasOnlyRequiredFields() const;
 
 private:
-    TfToken _GetAttributeValueTypeName() const;
+    inline TfToken _GetAttributeValueTypeName() const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

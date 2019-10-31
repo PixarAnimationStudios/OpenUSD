@@ -33,6 +33,7 @@ pxr_shared_library(${PXR_PACKAGE}
         usdGeom
         usdRi
         usdShade
+        usdSkel
         usdUtils
         ${HOUDINI_LIB_NAMES}
 
@@ -58,6 +59,7 @@ pxr_shared_library(${PXR_PACKAGE}
         stageCache
         stageEdit
         tokens
+        valueUtils
         writeCtrlFlags
         xformWrapper
         GEO_IOTranslator

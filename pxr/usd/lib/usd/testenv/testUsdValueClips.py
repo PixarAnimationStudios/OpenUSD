@@ -283,6 +283,106 @@ class TestUsdValueClips(unittest.TestCase):
             [0.0])
         ValidateAttributeTimeSamples(self.assertEqual, attr)
 
+    def test_ClipTimeCodeTiming(self):
+        """Exercises clip retiming via clipTimes metadata for timecode value 
+        attributes"""
+        stage = Usd.Stage.Open('timeCodeTiming/root.usda')
+
+        model = stage.GetPrimAtPath('/Model')
+        attr = model.GetAttribute('time')
+        attr2 = model.GetAttribute('timeArray')
+
+        # Default value should come through regardless of clip timing.
+        _Check(self.assertEqual, attr, expected=1.0)
+        _Check(self.assertEqual, attr2, expected=Sdf.TimeCodeArray([1.0,2.0]))
+
+        stage.SetInterpolationType(Usd.InterpolationTypeLinear)
+
+        # The 'clipTimes' metadata authored in the test asset offsets the 
+        # time samples in the clip by 10 frames and scales it slower by 50%,
+        # then at frame 21 it repeats the clip from frame 0 without the offset
+        # and scaling..
+        _Check(self.assertEqual, attr, time=0, expected=5.0)
+        _Check(self.assertEqual, attr, time=5, expected=5.0)
+        _Check(self.assertEqual, attr, time=10, expected=5.0)
+        _Check(self.assertEqual, attr, time=15, expected=5.0)
+        _Check(self.assertEqual, attr, time=20, expected=5.0)
+        _Check(self.assertEqual, attr, time=21, expected=46.0)
+        _Check(self.assertEqual, attr, time=26, expected=41.0)
+        _Check(self.assertEqual, attr, time=31, expected=36.0)
+        _Check(self.assertEqual, attr, time=36, expected=31.0)
+        _Check(self.assertEqual, attr, time=41, expected=26.0)
+
+        # Requests for samples before and after the mapping specified in
+        # 'clipTimes' just pick up the first or last time sample.
+        _Check(self.assertEqual, attr, time=-1, expected=5.0)
+        _Check(self.assertEqual, attr, time=42, expected=26.0)
+
+        # Repeat getting values at the same times for the SdfTimeCodeArray 
+        # valued attribute.
+        _Check(self.assertEqual, attr2, time=0, expected=Sdf.TimeCodeArray([0.0, 5.0]))
+        _Check(self.assertEqual, attr2, time=5, expected=Sdf.TimeCodeArray([5.0, 5.0]))
+        _Check(self.assertEqual, attr2, time=10, expected=Sdf.TimeCodeArray([10.0, 5.0]))
+        _Check(self.assertEqual, attr2, time=15, expected=Sdf.TimeCodeArray([15.0, 5.0]))
+        _Check(self.assertEqual, attr2, time=20, expected=Sdf.TimeCodeArray([20.0, 5.0]))
+        _Check(self.assertEqual, attr2, time=21, expected=Sdf.TimeCodeArray([21.0, 46.0]))
+        _Check(self.assertEqual, attr2, time=26, expected=Sdf.TimeCodeArray([26.0, 41.0]))
+        _Check(self.assertEqual, attr2, time=31, expected=Sdf.TimeCodeArray([31.0, 36.0]))
+        _Check(self.assertEqual, attr2, time=36, expected=Sdf.TimeCodeArray([36.0, 31.0]))
+        _Check(self.assertEqual, attr2, time=41, expected=Sdf.TimeCodeArray([41.0, 26.0]))
+
+        _Check(self.assertEqual, attr2, time=-1, expected=Sdf.TimeCodeArray([0.0, 5.0]))
+        _Check(self.assertEqual, attr2, time=42, expected=Sdf.TimeCodeArray([41.0, 26.0]))
+
+        # Repeat the test over again with held interpolation.
+        stage.SetInterpolationType(Usd.InterpolationTypeHeld)
+
+        # The 'clipTimes' metadata authored in the test asset offsets the 
+        # time samples in the clip by 10 frames and scales it slower by 50%,
+        # then at frame 21 it repeats the clip from frame 0 without the offset
+        # and scaling..
+        _Check(self.assertEqual, attr, time=0, expected=5.0)
+        _Check(self.assertEqual, attr, time=5, expected=5.0)
+        _Check(self.assertEqual, attr, time=10, expected=5.0)
+        _Check(self.assertEqual, attr, time=15, expected=5.0)
+        _Check(self.assertEqual, attr, time=20, expected=5.0)
+        _Check(self.assertEqual, attr, time=21, expected=46.0)
+        _Check(self.assertEqual, attr, time=26, expected=41.0)
+        _Check(self.assertEqual, attr, time=31, expected=36.0)
+        _Check(self.assertEqual, attr, time=36, expected=31.0)
+        _Check(self.assertEqual, attr, time=41, expected=26.0)
+
+        # Requests for samples before and after the mapping specified in
+        # 'clipTimes' just pick up the first or last time sample.
+        _Check(self.assertEqual, attr, time=-1, expected=5.0)
+        _Check(self.assertEqual, attr, time=42, expected=26.0)
+
+        # Repeat getting values at the same times for the SdfTimeCodeArray 
+        # valued attribute.
+        _Check(self.assertEqual, attr2, time=0, expected=Sdf.TimeCodeArray([0.0, 5.0]))
+        _Check(self.assertEqual, attr2, time=5, expected=Sdf.TimeCodeArray([0.0, 5.0]))
+        _Check(self.assertEqual, attr2, time=10, expected=Sdf.TimeCodeArray([10.0, 5.0]))
+        _Check(self.assertEqual, attr2, time=15, expected=Sdf.TimeCodeArray([10.0, 5.0]))
+        _Check(self.assertEqual, attr2, time=20, expected=Sdf.TimeCodeArray([20.0, 5.0]))
+        _Check(self.assertEqual, attr2, time=21, expected=Sdf.TimeCodeArray([21.0, 46.0]))
+        _Check(self.assertEqual, attr2, time=26, expected=Sdf.TimeCodeArray([26.0, 41.0]))
+        _Check(self.assertEqual, attr2, time=31, expected=Sdf.TimeCodeArray([31.0, 36.0]))
+        _Check(self.assertEqual, attr2, time=36, expected=Sdf.TimeCodeArray([36.0, 31.0]))
+        _Check(self.assertEqual, attr2, time=41, expected=Sdf.TimeCodeArray([41.0, 26.0]))
+
+        _Check(self.assertEqual, attr2, time=-1, expected=Sdf.TimeCodeArray([0.0, 5.0]))
+        _Check(self.assertEqual, attr2, time=42, expected=Sdf.TimeCodeArray([41.0, 26.0]))
+
+        # The clip has time samples authored every 5 frames, but
+        # since we've scaled everything by 50%, we should have samples
+        # every 10 frames.
+        self.assertEqual(attr.GetTimeSamples(), [0, 10, 20, 21, 26, 31, 36, 41])
+        self.assertEqual(attr.GetTimeSamplesInInterval(Gf.Interval(0, 30)),
+                [0, 10, 20, 21, 26])
+
+        ValidateAttributeTimeSamples(self.assertEqual, attr)
+        ValidateAttributeTimeSamples(self.assertEqual, attr2)
+
     def test_ClipsWithLayerOffsets(self):
         """Tests behavior of clips when layer offsets are involved"""
         stage = Usd.Stage.Open('layerOffsets/root.usda')
@@ -300,7 +400,8 @@ class TestUsdValueClips(unittest.TestCase):
 
         if Usd.UsesInverseLayerOffset():
             # The clip should be active starting from frame -10.0 due to the
-            # offset; outside of that we should get the value from the reference.
+            # offset; before that, we get the held value of the clip's first 
+            # time sample,
             _Check(self.assertEqual, attr1, time=-11, expected=-5.0)
 
             # Sublayer offset of 10 frames is present, so attribute value at
@@ -347,7 +448,8 @@ class TestUsdValueClips(unittest.TestCase):
                 [-5, 0])
         else:
             # The clip should be active starting from frame +10.0 due to the
-            # offset; outside of that we should get the value from the reference.
+            # offset; before that, we get the held value of the clip's first 
+            # time sample,
             _Check(self.assertEqual, attr1, time=9, expected=-5.0)
 
             # Sublayer offset of 10 frames is present, so attribute value at
@@ -389,6 +491,77 @@ class TestUsdValueClips(unittest.TestCase):
             self.assertEqual(attr3.GetTimeSamplesInInterval(
                 Gf.Interval(-5, 5)), 
                 [])
+
+        ValidateAttributeTimeSamples(self.assertEqual, attr1)
+        ValidateAttributeTimeSamples(self.assertEqual, attr2)
+        ValidateAttributeTimeSamples(self.assertEqual, attr3)
+
+    @unittest.skipIf(Usd.UsesInverseLayerOffset(),
+                     "skipping test when using inverse layer offsets")
+    def test_TimeCodeClipsWithLayerOffsets(self):
+        """Tests behavior of clips when layer offsets are involved and the
+        attributes are SdfTimeCode values. This test is almost identical to 
+        test_ClipsWithLayerOffsets except that values returned themselves are
+        also offset by the layer offsets."""
+        stage = Usd.Stage.Open('layerOffsets/root.usda')
+        stage.SetInterpolationType(Usd.InterpolationTypeHeld)
+
+        model1 = stage.GetPrimAtPath('/Model_1')
+        attr1 = model1.GetAttribute('time')
+        model2 = stage.GetPrimAtPath('/Model_2')
+        attr2 = model2.GetAttribute('time')
+        model3 = stage.GetPrimAtPath('/Model_3')
+        attr3 = model3.GetAttribute('time')
+
+        # Default time code value will be affected by layer offsets.
+        _Check(self.assertEqual, attr1, expected=11.0)
+
+        # The first time sample from the clip should be active starting from 
+        # frame +10.0 due to the offset; before that, we get the held value
+        # of the clip's first time sample, which is itself then adjusted by
+        # the offset.
+        _Check(self.assertEqual, attr1, time=9, expected=5.0)
+
+        # Sublayer offset of 10 frames is present, so attribute value at
+        # frame 20 should be from the clip at frame 10, etc. plus the value of
+        # the offset.
+        _Check(self.assertEqual, attr1, time=20, expected=0.0)
+        _Check(self.assertEqual, attr1, time=15, expected=5.0)
+        _Check(self.assertEqual, attr1, time=10, expected=5.0)
+        self.assertEqual(attr1.GetTimeSamples(), 
+           [10.0, 15.0, 20.0, 25.0, 30.0])
+        self.assertEqual(attr1.GetTimeSamplesInInterval(
+            Gf.Interval(-10, 10)), [10.0])
+
+        # Test that layer offsets on layers where
+        # clipTimes/clipActive are authored are taken into
+        # account. The test case is similar to above, except
+        # clipTimes/clipActive have been authored in a sublayer that
+        # is offset by 20 frames instead of 10.
+        _Check(self.assertEqual, attr2, expected=11.0)
+        _Check(self.assertEqual, attr2, time=19, expected=15.0)
+        _Check(self.assertEqual, attr2, time=40, expected=0.0)
+        _Check(self.assertEqual, attr2, time=35, expected=5.0)
+        _Check(self.assertEqual, attr2, time=30, expected=10.0)
+        self.assertEqual(attr2.GetTimeSamples(), 
+            [20.0, 25.0, 30.0, 35.0, 40.0])
+        self.assertEqual(attr2.GetTimeSamplesInInterval(
+            Gf.Interval(-17, 21)), 
+            [20.0])
+
+        # Test that reference offsets are taken into account. An offset
+        # of 10 frames is authored on the reference; this should be combined
+        # with the offset of 10 frames on the sublayer.
+        _Check(self.assertEqual, attr3, expected=21.0)
+        _Check(self.assertEqual, attr3, time=19, expected=15.0)
+        _Check(self.assertEqual, attr3, time=40, expected=0.0)
+        _Check(self.assertEqual, attr3, time=35, expected=5.0)
+        _Check(self.assertEqual, attr3, time=30, expected=10.0)
+        self.assertEqual(attr3.GetTimeSamples(), 
+            [20.0, 25.0, 30.0, 35.0, 40.0])
+        self.assertEqual(attr3.GetTimeSamplesInInterval(
+            Gf.Interval(-5, 5)), 
+            [])
 
         ValidateAttributeTimeSamples(self.assertEqual, attr1)
         ValidateAttributeTimeSamples(self.assertEqual, attr2)

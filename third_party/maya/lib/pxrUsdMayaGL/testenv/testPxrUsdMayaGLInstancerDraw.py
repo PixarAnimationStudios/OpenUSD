@@ -67,13 +67,17 @@ class testPxrUsdMayaGLInstancerDraw(unittest.TestCase):
         # Do the render.
         cmds.ogsRender(camera="persp", currentFrame=True, width=960, height=540)
 
+    def _SetModelPanelsToViewport2(self):
+        modelPanels = cmds.getPanel(type='modelPanel')
+        for modelPanel in modelPanels:
+            cmds.modelEditor(modelPanel, edit=True, rendererName='vp2Renderer')
+
     def testGenerateImages(self):
         cmds.file(os.path.abspath('InstancerDrawTest.ma'),
                 open=True, force=True)
 
         # Draw in VP2 at current frame.
-        panel = cmds.getPanel(wf=True)
-        cmds.modelEditor(panel, edit=True, rnm="vp2Renderer")
+        self._SetModelPanelsToViewport2()
         self._WriteViewportImage("InstancerTest", "initial")
 
         # Load assembly in "Cards" to use cards drawmode.
@@ -100,8 +104,7 @@ class testPxrUsdMayaGLInstancerDraw(unittest.TestCase):
         # Hopefully the instancer imager has reloaded in a sane way!
         cmds.file(os.path.abspath('InstancerDrawTest.ma'),
                 open=True, force=True)
-        panel = cmds.getPanel(wf=True)
-        cmds.modelEditor(panel, edit=True, rnm="vp2Renderer")
+        self._SetModelPanelsToViewport2()
         self._WriteViewportImage("InstancerTest", "reload")
 
 if __name__ == '__main__':

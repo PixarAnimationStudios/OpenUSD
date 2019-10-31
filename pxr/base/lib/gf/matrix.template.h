@@ -72,7 +72,7 @@ public:
     static const size_t numColumns = {{ DIM }};
 
     /// Default constructor. Leaves the matrix component values undefined.
-    {{ MAT }}() {}
+    {{ MAT }}() = default;
 
     /// Constructor. Initializes the matrix from {{ DIM*DIM }} independent
     /// \c {{ SCL }} values, specified in row-major order. For example,

@@ -159,7 +159,8 @@ public:
     // FIELDNAME 
     // --------------------------------------------------------------------- //
     /// Name of an individual field within the file specified by
-    /// the filePath attribute.
+    /// the filePath attribute. Clients which consume Field3D files
+    /// should treat this as the Field3D field \p attribute.
     ///
     /// \n  C++ Type: TfToken
     /// \n  Usd Type: SdfValueTypeNames->Token
@@ -175,6 +176,29 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDVOL_API
     UsdAttribute CreateFieldNameAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // FIELDPURPOSE 
+    // --------------------------------------------------------------------- //
+    /// Optional token which can be used to indicate the purpose or grouping
+    /// of an individual field. Clients which consume Field3D files
+    /// should treat this as the Field3D field \p name.
+    ///
+    /// \n  C++ Type: TfToken
+    /// \n  Usd Type: SdfValueTypeNames->Token
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: No Fallback
+    USDVOL_API
+    UsdAttribute GetFieldPurposeAttr() const;
+
+    /// See GetFieldPurposeAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDVOL_API
+    UsdAttribute CreateFieldPurposeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //

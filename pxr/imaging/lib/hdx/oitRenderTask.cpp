@@ -23,10 +23,9 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
-#include "pxr/base/tf/envSetting.h"
-
 #include "pxr/imaging/hdx/package.h"
 #include "pxr/imaging/hdx/oitRenderTask.h"
+#include "pxr/imaging/hdx/oitBufferAccessor.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdx/debugCodes.h"
 
@@ -37,29 +36,22 @@
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/imaging/hdSt/lightingShader.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
-#include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
-#include "pxr/imaging/hdSt/bufferResourceGL.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_ENV_SETTING(HDX_ENABLE_OIT, true, 
-                      "Enable order independent translucency");
-
-typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceSharedPtrVector;
-
-// -------------------------------------------------------------------------- //
-
 HdxOitRenderTask::HdxOitRenderTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdxRenderTask(delegate, id)
-    , _oitRenderPassShader()
-    , _viewport(0)
+    , _oitTranslucentRenderPassShader(
+        boost::make_shared<HdStRenderPassShader>(
+            HdxPackageRenderPassOitShader()))
+    , _oitOpaqueRenderPassShader(
+        boost::make_shared<HdStRenderPassShader>(
+            HdxPackageRenderPassOitOpaqueShader()))
+    , _isOitEnabled(HdxOitBufferAccessor::IsOitEnabled())
 {
-    _oitRenderPassShader.reset(
-        new HdStRenderPassShader(HdxPackageRenderPassOitShader()));
 }
 
 HdxOitRenderTask::~HdxOitRenderTask()
@@ -73,16 +65,29 @@ HdxOitRenderTask::Sync(
     HdDirtyBits* dirtyBits)
 {
     HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
-    HdxRenderTask::Sync(delegate, ctx, dirtyBits);
+    if (_isOitEnabled) {
+        HdxRenderTask::Sync(delegate, ctx, dirtyBits);
+    }
 }
 
 void
 HdxOitRenderTask::Prepare(HdTaskContext* ctx,
-                       HdRenderIndex* renderIndex)
+                          HdRenderIndex* renderIndex)
 {
-    HdxRenderTask::Prepare(ctx, renderIndex);
-    _PrepareOitBuffers(ctx, renderIndex); 
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    if (_isOitEnabled) {
+        HdxRenderTask::Prepare(ctx, renderIndex);
+
+        // OIT buffers take up significant GPU resources. Skip if there are no
+        // oit draw items (i.e. no translucent or volumetric draw items)
+        if (_GetDrawItemCount() > 0) {
+            HdxOitBufferAccessor(ctx).RequestOitBuffers();
+        }
+    }
 }
 
 void
@@ -91,26 +96,35 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
+    if (!_isOitEnabled) return;
+    if (_GetDrawItemCount() == 0) return;
+
     //
     // Pre Execute Setup
     //
+
+    HdxOitBufferAccessor oitBufferAccessor(ctx);
+
+    oitBufferAccessor.InitializeOitBuffersIfNecessary();
 
     HdRenderPassStateSharedPtr renderPassState = _GetRenderPassState(ctx);
     if (!TF_VERIFY(renderPassState)) return;
 
     HdStRenderPassState* extendedState =
         dynamic_cast<HdStRenderPassState*>(renderPassState.get());
-
-    // HdxRenderTask creates/syncs RenderPassState, but we want to override
-    // the shader used with the OIT shader that renders the pixels of each
-    // fragment into the OIT buffers (HdxOitResolveTask consumed this later)
-    if (extendedState) {
-        extendedState->SetOverrideShader(HdStShaderCodeSharedPtr());
-        extendedState->SetRenderPassShader(_oitRenderPassShader);
+    if (!TF_VERIFY(extendedState, "OIT only works with HdSt")) {
+        return;
     }
 
-    _ClearOitGpuBuffers(ctx);
+    extendedState->SetOverrideShader(HdStShaderCodeSharedPtr());
 
+    if (!oitBufferAccessor.AddOitBufferBindings(
+            _oitTranslucentRenderPassShader)) {
+        TF_CODING_ERROR(
+            "No OIT buffers allocated but needed by OIT render task");
+        return;
+    }
+    
     // We render into a SSBO -- not MSSA compatible
     bool oldMSAA = glIsEnabled(GL_MULTISAMPLE);
     glDisable(GL_MULTISAMPLE);
@@ -123,13 +137,30 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
     bool oldPointSmooth = glIsEnabled(GL_POINT_SMOOTH);
     glEnable(GL_POINT_SMOOTH);
 
+    // XXX HdxRenderTask::Prepare calls HdStRenderPassState::Prepare.
+    // This sets the cullStyle for the render pass shader.
+    // Since Oit uses a custom render pass shader, we must manually
+    // set cullStyle.
+    _oitOpaqueRenderPassShader->SetCullStyle(
+        extendedState->GetCullStyle());
+    _oitTranslucentRenderPassShader->SetCullStyle(
+        extendedState->GetCullStyle());
+
+    //
+    // Opaque pixels pass
+    // These pixels are rendered to FB instead of OIT buffers
+    //
+    extendedState->SetRenderPassShader(_oitOpaqueRenderPassShader);
+    renderPassState->SetEnableDepthMask(true);
+    renderPassState->SetColorMask(HdRenderPassState::ColorMaskRGBA);
+    HdxRenderTask::Execute(ctx);
+
+    //
+    // Translucent pixels pass
+    //
+    extendedState->SetRenderPassShader(_oitTranslucentRenderPassShader);
     renderPassState->SetEnableDepthMask(false);
     renderPassState->SetColorMask(HdRenderPassState::ColorMaskNone);
-
-    //
-    // HdxRenderTask EXECUTE
-    //
-
     HdxRenderTask::Execute(ctx);
 
     //
@@ -143,271 +174,6 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
     if (!oldPointSmooth) {
         glDisable(GL_POINT_SMOOTH);
     }
-}
-
-void
-HdxOitRenderTask::_PrepareOitBuffers(
-    HdTaskContext* ctx, 
-    HdRenderIndex* renderIndex)
-{
-    // XXX OIT can be globally disabled to preserve GPU memory
-    if (!bool(TfGetEnvSetting(HDX_ENABLE_OIT))) return;
-
-    const int numSamples = 8; // Should match glslfx files
-
-    HdResourceRegistrySharedPtr const& resourceRegistry = 
-        renderIndex->GetResourceRegistry();
-
-    // XXX Rebuilding the buffers is a slow operation that slows viewport
-    //     resizing. We only shrink in steps of 256^2 to reduce the impact.
-    GfVec4i viewport;
-    glGetIntegerv(GL_VIEWPORT, &viewport[0]);
-    
-    int sizeNew = viewport[2] * viewport[3];
-    int sizeOld = _viewport[2] * _viewport[3];
-    bool rebuildOitBuffers = (sizeNew > sizeOld || sizeOld-sizeNew > 256*256);
-
-    if (rebuildOitBuffers) {
-        // If glew version too old we emit a warning since OIT will not work.
-        if (!glClearNamedBufferData) {
-            TF_WARN("glClearNamedBufferData missing for OIT (old glew?)");
-        }
-
-        _counterBar.reset();
-        _dataBar.reset();
-        _depthBar.reset();
-        _indexBar.reset();
-        _uniformBar.reset();
-        renderIndex->GetChangeTracker().SetGarbageCollectionNeeded();
-
-        _viewport = viewport;
-    }
-
-    //
-    // Counter Buffer
-    //
-    if (!_counterBar) { 
-        HdBufferSpecVector specs;
-        specs.push_back(HdBufferSpec(
-            HdxTokens->hdxOitCounterBuffer, 
-            HdTupleType {HdTypeInt32, 1}));
-        _counterBar = resourceRegistry->AllocateSingleBufferArrayRange(
-                                            /*role*/HdxTokens->oitCounter,
-                                            specs,
-                                            HdBufferArrayUsageHint());
-
-        VtIntArray counters;
-        size_t countersSize = _viewport[2] * _viewport[3] + 1; 
-        int countersValue = -1; 
-        counters.assign(countersSize, countersValue);
-
-        HdBufferSourceSharedPtr counterSource(
-                new HdVtBufferSource(HdxTokens->hdxOitCounterBuffer,
-                                    VtValue(counters)));
-        resourceRegistry->AddSource(_counterBar, counterSource);
-    }
-
-    (*ctx)[HdxTokens->oitCounterBufferBar] = _counterBar;
-
-    //
-    // Index Buffer
-    //
-    if (!_indexBar) { 
-        HdBufferSpecVector specs;
-        specs.push_back(HdBufferSpec(
-            HdxTokens->hdxOitIndexBuffer,
-            HdTupleType {HdTypeInt32, 1}));
-        _indexBar = resourceRegistry->AllocateSingleBufferArrayRange(
-                                            /*role*/HdxTokens->oitIndices,
-                                            specs,
-                                            HdBufferArrayUsageHint());
-
-        VtIntArray indices;
-        size_t indicesSize = _viewport[2] * _viewport[3] * numSamples; 
-        int indicesValue = -1; 
-        indices.assign(indicesSize, indicesValue);
-
-        HdBufferSourceSharedPtr indicesSource(
-                new HdVtBufferSource(HdxTokens->hdxOitIndexBuffer,
-                                    VtValue(indices)));
-        resourceRegistry->AddSource(_indexBar, indicesSource);
-    }
-
-    (*ctx)[HdxTokens->oitIndexBufferBar] = _indexBar;
-
-    //
-    // Data Buffer
-    //
-    if (!_dataBar) { 
-        HdBufferSpecVector specs;
-        specs.push_back(HdBufferSpec(
-            HdxTokens->hdxOitDataBuffer, 
-            HdTupleType {HdTypeFloatVec4, 1}));
-        _dataBar = resourceRegistry->AllocateSingleBufferArrayRange(
-                                            /*role*/HdxTokens->oitData,
-                                            specs,
-                                            HdBufferArrayUsageHint());
-
-        VtVec4fArray dataArray;
-        size_t dataSize = _viewport[2] * _viewport[3] * numSamples;
-        GfVec4f dataValue = GfVec4f(0.0f, 0.0f, 0.0f, 0.0f); 
-        dataArray.assign(dataSize, dataValue);
-
-        HdBufferSourceSharedPtr dataSource(
-                new HdVtBufferSource(HdxTokens->hdxOitDataBuffer,
-                                    VtValue(dataArray)));
-        resourceRegistry->AddSource(_dataBar, dataSource);
-    }
-
-    (*ctx)[HdxTokens->oitDataBufferBar] = _dataBar;
-
-    //
-    // Depth Buffer
-    //
-    if (!_depthBar) { 
-        HdBufferSpecVector specs;
-        specs.push_back(HdBufferSpec(
-            HdxTokens->hdxOitDepthBuffer, 
-            HdTupleType {HdTypeFloat, 1}));
-        _depthBar = resourceRegistry->AllocateSingleBufferArrayRange(
-                                            /*role*/HdxTokens->oitDepth,
-                                            specs,
-                                            HdBufferArrayUsageHint());
-
-        VtFloatArray depthArray;
-        size_t depthSize = _viewport[2] * _viewport[3] * numSamples; 
-        float depthValue = 0.0f; 
-        depthArray.assign(depthSize, depthValue);
-
-        HdBufferSourceSharedPtr depthSource(
-                new HdVtBufferSource(HdxTokens->hdxOitDepthBuffer,
-                                    VtValue(depthArray)));
-        resourceRegistry->AddSource(_depthBar, depthSource);
-    }
-
-    (*ctx)[HdxTokens->oitDepthBufferBar] = _depthBar;
-
-    //
-    // Uniforms
-    //
-    if (!_uniformBar) {
-        HdBufferSpecVector specs;
-        specs.push_back(
-            HdBufferSpec(HdxTokens->oitWidth, HdTupleType {HdTypeInt32, 1}));
-        specs.push_back(
-            HdBufferSpec(HdxTokens->oitHeight, HdTupleType {HdTypeInt32, 1}));
-        specs.push_back(
-            HdBufferSpec(HdxTokens->oitSamples, HdTupleType {HdTypeInt32, 1}));
-        _uniformBar = resourceRegistry->AllocateUniformBufferArrayRange(
-                                            /*role*/HdxTokens->oitUniforms,
-                                            specs,
-                                            HdBufferArrayUsageHint());
-
-        HdBufferSourceSharedPtrVector uniformSources;
-        uniformSources.push_back(HdBufferSourceSharedPtr(
-                new HdVtBufferSource(HdxTokens->oitWidth,
-                                    VtValue((int)_viewport[2]))));
-        uniformSources.push_back(HdBufferSourceSharedPtr(
-                new HdVtBufferSource(HdxTokens->oitHeight,
-                                    VtValue((int)_viewport[3]))));
-        uniformSources.push_back(HdBufferSourceSharedPtr(
-                new HdVtBufferSource(HdxTokens->oitSamples,
-                                    VtValue(numSamples))));
-        resourceRegistry->AddSources(_uniformBar, uniformSources);
-    }
-
-    (*ctx)[HdxTokens->oitUniformBar] = _uniformBar;
-
-    //
-    // Binding Requests
-    //
-    if (rebuildOitBuffers) {
-        _oitRenderPassShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::SSBO,
-                             HdxTokens->oitCounterBufferBar, _counterBar,
-                             /*interleave*/false));
-        _oitRenderPassShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::SSBO,
-                             HdxTokens->oitDataBufferBar, _dataBar,
-                             /*interleave*/false));
-        _oitRenderPassShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::SSBO,
-                             HdxTokens->oitDepthBufferBar, _depthBar,
-                             /*interleave*/false));
-        _oitRenderPassShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::SSBO,
-                             HdxTokens->oitIndexBufferBar, _indexBar,
-                             /*interleave*/false));
-        _oitRenderPassShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::UBO, 
-                             HdxTokens->oitUniformBar, _uniformBar,
-                             /*interleave*/true));
-    }
-}
-
-void 
-HdxOitRenderTask::_ClearOitGpuBuffers(HdTaskContext* ctx)
-{
-    // Exit if glew version used by app is too old
-    if (!glClearNamedBufferData) return;
-    if (!_counterBar) return;
-
-    //
-    // Counter Buffer
-    //
-    HdStBufferArrayRangeGLSharedPtr stCounterBar =
-        boost::dynamic_pointer_cast<HdStBufferArrayRangeGL> (_counterBar);
-    HdStBufferResourceGLSharedPtr stCounterResource = 
-        stCounterBar->GetResource(HdxTokens->hdxOitCounterBuffer);
-
-    const GLint clearCounter = -1;
-    glClearNamedBufferData(stCounterResource->GetId(),
-                            GL_R32I,
-                            GL_RED_INTEGER,
-                            GL_INT,
-                            &clearCounter);
-
-    //
-    // Index Buffer
-    //
-    HdStBufferArrayRangeGLSharedPtr stIndexBar =
-        boost::dynamic_pointer_cast<HdStBufferArrayRangeGL> (_indexBar);
-    HdStBufferResourceGLSharedPtr stIndexResource = 
-        stIndexBar->GetResource(HdxTokens->hdxOitIndexBuffer);
-    const GLint clearIndex = -1;
-    glClearNamedBufferData(stIndexResource->GetId(),
-                            GL_R32I,
-                            GL_RED_INTEGER,
-                            GL_INT,
-                            &clearIndex);
-
-    //
-    // Data Buffer
-    //
-    HdStBufferArrayRangeGLSharedPtr stDataBar =
-        boost::dynamic_pointer_cast<HdStBufferArrayRangeGL> (_dataBar);
-    HdStBufferResourceGLSharedPtr stDataResource = 
-        stDataBar->GetResource(HdxTokens->hdxOitDataBuffer);
-    const GLfloat clearData = 0.0f;
-    glClearNamedBufferData(stDataResource->GetId(),
-                            GL_RGBA32F,
-                            GL_RED,
-                            GL_FLOAT,
-                            &clearData);
-
-    //
-    // Depth Buffer
-    //
-    HdStBufferArrayRangeGLSharedPtr stDepthBar =
-        boost::dynamic_pointer_cast<HdStBufferArrayRangeGL> (_depthBar);
-    HdStBufferResourceGLSharedPtr stDepthResource = 
-        stDepthBar->GetResource(HdxTokens->hdxOitDepthBuffer);
-    const GLfloat clearDepth = 0.0f;
-    glClearNamedBufferData(stDepthResource->GetId(),
-                            GL_R32F,
-                            GL_RED,
-                            GL_FLOAT,
-                            &clearDepth);
 }
 
 

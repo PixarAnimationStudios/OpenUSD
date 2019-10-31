@@ -24,7 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/payloads.h"
-#include "pxr/usd/usd/refOrPayloadListEditImpl.h"
+#include "pxr/usd/usd/listEditImpl.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -33,7 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // ------------------------------------------------------------------------- //
 
 using _ListEditImpl = 
-    Usd_RefOrPayloadListEditImpl<UsdPayloads, SdfPayloadsProxy>;
+    Usd_ListEditImpl<UsdPayloads, SdfPayloadsProxy>;
 
 // The implementation doesn't define this function as it needs to be specialized
 // so we implement it here.
@@ -56,7 +56,8 @@ UsdPayloads::AddPayload(const std::string &assetPath,
                         const SdfLayerOffset &layerOffset,
                         UsdListPosition position)
 {
-    return _ListEditImpl::Add(*this, assetPath, primPath, layerOffset, position);
+    SdfPayload payload(assetPath, primPath, layerOffset);
+    return AddPayload(payload, position);
 }
 
 bool
@@ -64,7 +65,8 @@ UsdPayloads::AddPayload(const std::string &assetPath,
                         const SdfLayerOffset &layerOffset,
                         UsdListPosition position)
 {
-    return _ListEditImpl::Add(*this, assetPath, layerOffset, position);
+    SdfPayload payload(assetPath, SdfPath(), layerOffset);
+    return AddPayload(payload, position);
 }
 
 bool 
@@ -72,7 +74,8 @@ UsdPayloads::AddInternalPayload(const SdfPath &primPath,
                                 const SdfLayerOffset &layerOffset,
                                 UsdListPosition position)
 {
-    return _ListEditImpl::AddInternal(*this, primPath, layerOffset, position);
+    SdfPayload payload(std::string(), primPath, layerOffset);
+    return AddPayload(payload, position);
 }
 
 bool

@@ -182,12 +182,12 @@ bool IsInstanceSelected(int offset, out int nextOffset)
     bool sel = false;
 
     #if defined(HD_INSTANCER_NUM_LEVELS) && HD_INSTANCER_NUM_LEVELS > 0
-    const int INSTANCE_SELOFFSETS_HEADER_SIZE = 2;
+    const int INSTANCE_SELOFFSETS_HEADER_SIZE = 3;
     hd_drawingCoord dc = GetDrawingCoord();
 
     for (int level = 0; level < HD_INSTANCER_NUM_LEVELS; level++) {
-        int min = HdGet_hdxSelectionBuffer(offset  );
-        int max = HdGet_hdxSelectionBuffer(offset+1);
+        int min = HdGet_hdxSelectionBuffer(offset+1);
+        int max = HdGet_hdxSelectionBuffer(offset+2);
         // allow to highlight in a top-down manner, by flipping level
         // during iteration.
         // note: instanceIndex[0] is instanceID.

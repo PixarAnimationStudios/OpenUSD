@@ -100,7 +100,7 @@ wrapNode()
         .def("GetRootNode", &_GetRootNode)
         .def("GetOriginRootNode", &_GetOriginRootNode)
 
-        .def("IsDirect", &This::IsDirect)
+        .def("IsRootNode", &This::IsRootNode)
         .def("IsDueToAncestor", &This::IsDueToAncestor)
         .def("GetDepthBelowIntroduction", &This::GetDepthBelowIntroduction)
         .def("GetIntroPath", &This::GetIntroPath)

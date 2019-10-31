@@ -87,14 +87,14 @@ private:
     MObject writeSkinningData(UsdGeomMesh& primSchema);
 
     bool _GetMeshUVSetData(
-            const MFnMesh& mesh,
+            const MObject& meshObj,
             const MString& uvSetName,
             VtArray<GfVec2f>* uvArray,
             TfToken* interpolation,
             VtArray<int>* assignmentIndices);
 
     bool _GetMeshColorSetData(
-            MFnMesh& mesh,
+            const MObject& meshObj,
             const MString& colorSet,
             bool isDisplayColor,
             const VtArray<GfVec3f>& shadersRGBData,

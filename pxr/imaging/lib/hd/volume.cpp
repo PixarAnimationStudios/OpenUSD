@@ -25,8 +25,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(HdVolumeTokens, HD_VOLUME_TOKENS);
-
 HdVolume::HdVolume(SdfPath const& id, SdfPath const& instancerId)
  : HdRprim(id, instancerId)
 {

@@ -121,9 +121,21 @@ static void _ConvertPixel(HdFormat dstFormat, uint8_t *dst,
         } else if (dstComponentFormat == HdFormatFloat32) {
             ((float*)dst)[c] = readValue;
         } else if (dstComponentFormat == HdFormatUNorm8) {
-            ((uint8_t*)dst)[c] = (readValue * 255.0f);
+            if (readValue < 0.0f) {
+                ((uint8_t*)dst)[c] = 0;
+            } else if (readValue > 1.0f) {
+                ((uint8_t*)dst)[c] = 255;
+            } else {
+                ((uint8_t*)dst)[c] = uint8_t(readValue *255.0f);
+            }
         } else if (dstComponentFormat == HdFormatSNorm8) {
-            ((int8_t*)dst)[c] = (readValue * 127.0f);
+            if (readValue < -1.0f) {
+                ((int8_t*)dst)[c] = -127;
+            } else if (readValue > 1.0f) {
+                ((int8_t*)dst)[c] = 127;
+            } else {
+                ((int8_t*)dst)[c] = int8_t(readValue * 127.0f);
+            }
         }
     }
 }
@@ -132,8 +144,9 @@ void
 HdxPrmanRenderBuffer::Blit(HdFormat format, int width, int height,
                            int offset, int stride, uint8_t const* data)
 {
-    size_t pixelSize = HdDataSizeOfFormat(_format);
     if (_format == format) {
+        size_t pixelSize = HdDataSizeOfFormat(_format);
+
         if (static_cast<unsigned int>(width) == _width 
             && static_cast<unsigned int>(height) == _height) {
             // Awesome! Blit line by line.
@@ -163,6 +176,9 @@ HdxPrmanRenderBuffer::Blit(HdFormat format, int width, int height,
             (HdGetComponentFormat(format) == HdFormatInt32) &&
             (HdGetComponentFormat(_format) == HdFormatInt32);
 
+        size_t srcPixelSize = HdDataSizeOfFormat(format);
+        size_t dstPixelSize = HdDataSizeOfFormat(_format);
+
         float scalei = width/float(_width);
         float scalej = height/float(_height);
         for (unsigned int j = 0; j < _height; ++j) {
@@ -172,15 +188,15 @@ HdxPrmanRenderBuffer::Blit(HdFormat format, int width, int height,
                 if (convertAsInt) {
                     _ConvertPixel<int32_t>(
                         _format, static_cast<uint8_t*>(
-                            &_buffer[(j * _width + i) * pixelSize]),
+                            &_buffer[(j * _width + i) * dstPixelSize]),
                         format,
-                            &data[(jj * stride + offset + ii) * pixelSize]);
+                            &data[(jj * stride + offset + ii) * srcPixelSize]);
                 } else {
                     _ConvertPixel<float>(
                         _format, static_cast<uint8_t*>(
-                            &_buffer[(j * _width + i) * pixelSize]),
+                            &_buffer[(j * _width + i) * dstPixelSize]),
                         format,
-                            &data[(jj * stride + offset + ii) * pixelSize]);
+                            &data[(jj * stride + offset + ii) * srcPixelSize]);
                 }
             }
         }

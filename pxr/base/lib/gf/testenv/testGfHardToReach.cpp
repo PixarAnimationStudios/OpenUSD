@@ -27,7 +27,9 @@
 #include "pxr/base/gf/matrix2d.h"
 #include "pxr/base/gf/matrix2f.h"
 #include "pxr/base/gf/matrix3d.h"
+#include "pxr/base/gf/matrix3f.h"
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/size2.h"
 #include "pxr/base/gf/size3.h"
 #include "pxr/base/gf/vec2f.h"
@@ -38,6 +40,8 @@
 #include "pxr/base/gf/vec4i.h"
 
 #include "pxr/base/tf/diagnostic.h"
+
+#include <type_traits>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -177,6 +181,33 @@ main(int argc, char *argv[])
         float halfsNan = GfHalf::sNan();
         TF_AXIOM(std::isnan(halfsNan));
     }
-    
+
     return 0;
 }
+
+template <class T>
+struct _CheckTraits
+{
+    static_assert(std::is_trivial<T>::value, "");
+};
+
+template struct _CheckTraits<GfVec2d>;
+template struct _CheckTraits<GfVec2f>;
+template struct _CheckTraits<GfVec2h>;
+template struct _CheckTraits<GfVec2i>;
+template struct _CheckTraits<GfVec3d>;
+template struct _CheckTraits<GfVec3f>;
+template struct _CheckTraits<GfVec3h>;
+template struct _CheckTraits<GfVec3i>;
+template struct _CheckTraits<GfVec4d>;
+template struct _CheckTraits<GfVec4f>;
+template struct _CheckTraits<GfVec4h>;
+template struct _CheckTraits<GfVec4i>;
+
+template struct _CheckTraits<GfMatrix2d>;
+template struct _CheckTraits<GfMatrix3d>;
+template struct _CheckTraits<GfMatrix4d>;
+
+template struct _CheckTraits<GfMatrix2f>;
+template struct _CheckTraits<GfMatrix3f>;
+template struct _CheckTraits<GfMatrix4f>;

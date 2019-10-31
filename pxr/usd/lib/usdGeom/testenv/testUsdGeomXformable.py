@@ -660,5 +660,18 @@ class TestUsdGeomXformable(unittest.TestCase):
         # warning.
         x.GetLocalTransformation(Usd.TimeCode.Default())
 
+    def test_InvalidXformable(self):
+        xf = UsdGeom.Xformable()
+        # This used to crash before the SchemaBase __getattribute__ method
+        # was overridden to test the validity of the underlying prim.
+        with self.assertRaises(RuntimeError):
+            xf.ClearXformOpOrder()
+        # It should still be safe to get the prim, but the prim will be invalid.
+        p = xf.GetPrim()
+        with self.assertRaises(RuntimeError):
+            p.IsActive()
+        # It should still be safe to get the path, but the path will be empty.
+        self.assertEqual(xf.GetPath(), Sdf.Path())
+
 if __name__ == "__main__":
     unittest.main()

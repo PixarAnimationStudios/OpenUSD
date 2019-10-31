@@ -54,7 +54,7 @@ public:
     void Resize(int width, int height);
 
     std::mutex mutex;
-    std::vector<uint8_t> color;
+    std::vector<float> color;
     std::vector<float> depth;
     std::vector<int32_t> primId;
     std::vector<int32_t> instanceId;
@@ -67,7 +67,7 @@ public:
     GfMatrix4d proj;
 
     // Clear functionality.
-    uint8_t clearColor[4];
+    float clearColor[4];
     float clearDepth;
     int32_t clearId;
     bool pendingClear;

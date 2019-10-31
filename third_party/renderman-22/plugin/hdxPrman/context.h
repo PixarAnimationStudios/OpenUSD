@@ -62,7 +62,6 @@ struct HdxPrman_InteractiveContext : public HdPrman_Context
     // The viewport camera to use.
     // Updated from render pass state.
     riley::CameraId cameraId;
-    riley::ShadingNode cameraNode;
         
     // Count of scene lights.  Maintained by the delegate.
     int sceneLightCount;

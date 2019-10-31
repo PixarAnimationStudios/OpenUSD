@@ -496,9 +496,8 @@ TestQueryTimeSample()
     SdfTimeSampleMap tsm;
     tsm[1.0] = "Foo";
     a->SetInfo(TfToken("timeSamples"),VtValue(tsm)); 
-    SdfPath path("/Foo");
-    TfToken attr("attr");
-    l->QueryTimeSample(SdfAbstractDataSpecId(&path, &attr), 1.0);
+    SdfPath path("/Foo.attr");
+    l->QueryTimeSample(path, 1.0);
 }
 
 void

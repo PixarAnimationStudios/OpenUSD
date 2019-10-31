@@ -40,8 +40,7 @@ def _takeShot(appController, fileName):
     viewportShot.save(fileName, "PNG")
 
 def _emitFrameAction(appController):
-    appController._ui.actionFrame_Selection.triggered.emit() 
-    QtWidgets.QApplication.processEvents()
+    appController._frameSelection()
 
 def _emitToggleFrameAction(appController):
     appController._ui.actionToggle_Framed_View.triggered.emit() 

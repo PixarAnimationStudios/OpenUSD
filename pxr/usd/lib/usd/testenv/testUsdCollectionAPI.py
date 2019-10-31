@@ -480,5 +480,17 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertFalse(Usd.CollectionAPI.IsSchemaPropertyBaseName(
                 Usd.Tokens.collection))
 
+    def test_RelativePathIsPathIncluded(self):
+        # ----------------------------------------------------------
+        # Test IsPathIncluded when passing in a relative path issues a coding
+        # error.
+        allGeomCollection = Usd.CollectionAPI.Get(testPrim, 'allGeom')
+        query = allGeomCollection.ComputeMembershipQuery()
+        with self.assertRaises(Tf.ErrorException):
+            query.IsPathIncluded('CollectionTest/Geom')
+
+        with self.assertRaises(Tf.ErrorException):
+            query.IsPathIncluded('CollectionTest/Geom', Usd.Tokens.expandPrims)
+
 if __name__ == "__main__":
     unittest.main()

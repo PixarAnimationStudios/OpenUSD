@@ -34,8 +34,6 @@
 
 #include <string>
 
-#include <boost/noncopyable.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfPatternMatcher
@@ -47,12 +45,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// pattern. This is because the matcher will only compile the regular
 /// expression once.
 ///
-class TfPatternMatcher : public boost::noncopyable {
+class TfPatternMatcher
+{
 
   public:
 
     /// Construct an empty (invalid) TfPatternMatcher.
     TF_API TfPatternMatcher();
+
+    TF_API TfPatternMatcher(TfPatternMatcher &&) = default;
+    TF_API TfPatternMatcher& operator=(TfPatternMatcher &&) = default;
 
     /// Construct a TfPatternMatcher with a default configuration.  Note that
     /// pattern compilation will not occur until the first call to \a Match()
@@ -78,6 +80,11 @@ class TfPatternMatcher : public boost::noncopyable {
     /// patterns, false otherwise.
     bool IsGlobPattern() const {
         return _isGlob;
+    }
+
+    /// Returns the matcher's pattern string.
+    TF_API const std::string& GetPattern() const {
+        return _pattern;
     }
 
     /// Returns true if the matcher has a valid pattern.  Note that empty

@@ -65,7 +65,7 @@ public:
     virtual HdBufferSourceVector GetChainedBuffers() const override;
 
 protected:
-    virtual bool _CheckValid() const;
+    virtual bool _CheckValid() const override;
 
 private:
     SdfPath const _id;

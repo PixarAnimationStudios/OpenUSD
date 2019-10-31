@@ -5,7 +5,7 @@ function(prman_osl SHADER_NAME SHADER_DIR)
     set(outfile ${CMAKE_CURRENT_BINARY_DIR}/${SHADER_NAME}.oso)
     add_custom_command(
         OUTPUT ${outfile}
-        COMMAND ${RENDERMAN_LOCATION}/bin/oslc -o ${outfile} ${infile}
+        COMMAND ${RENDERMAN_BINARY_DIR}/oslc -o ${outfile} ${infile}
         MAIN_DEPENDENCY ${infile}
         VERBATIM
     )
@@ -17,7 +17,7 @@ function(prman_osl SHADER_NAME SHADER_DIR)
     )
 endfunction()
 
-set(shader_dir "${PROJECT_SOURCE_DIR}/pxr/usdImaging/lib/usdShaders/shaders")
+set(shader_dir "${PROJECT_SOURCE_DIR}/pxr/usdImaging/plugin/usdShaders/shaders")
 prman_osl(UsdPreviewSurfaceParameters ${CMAKE_CURRENT_SOURCE_DIR})
 prman_osl(UsdUVTexture ${shader_dir})
 prman_osl(UsdPrimvarReader_float ${shader_dir})

@@ -43,6 +43,7 @@ This table lists the fundamental data types supported by USD.
 | half             | GfHalf        | 16 bit floating point                            |
 | float            | float         | 32 bit floating point                            |
 | double           | double        | 64 bit floating point                            |
+| timecode         | SdfTimeCode   | double representing a resolvable time            |
 | string           | std::string   | stl string                                       |
 | token            | TfToken       | interned string with fast comparison and hashing |
 | asset            | SdfAssetPath  | represents a resolvable path to another asset    |

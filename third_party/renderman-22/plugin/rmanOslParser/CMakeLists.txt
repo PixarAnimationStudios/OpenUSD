@@ -14,7 +14,7 @@ pxr_plugin(rmanOslParser
         ar
         ndr
         sdr
-        ${RENDERMAN_LIBRARY}        
+        ${LOADPRMAN_LIBRARY}        
 
     INCLUDE_DIRS
         ${RENDERMAN_INCLUDE_DIR}

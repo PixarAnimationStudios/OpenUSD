@@ -33,7 +33,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class SdfAbstractDataSpecId;
 class UsdAttribute;
 
 /// \class Usd_InterpolatorBase
@@ -46,10 +45,10 @@ class Usd_InterpolatorBase
 {
 public:
     virtual bool Interpolate(
-        const SdfLayerRefPtr& layer, const SdfAbstractDataSpecId& specId,
+        const SdfLayerRefPtr& layer, const SdfPath& path,
         double time, double lower, double upper) = 0;
     virtual bool Interpolate(
-        const Usd_ClipRefPtr& clip, const SdfAbstractDataSpecId& specId,
+        const Usd_ClipRefPtr& clip, const SdfPath& path,
         double time, double lower, double upper) = 0;
 };
 
@@ -63,14 +62,14 @@ class Usd_NullInterpolator
 {
 public:
     virtual bool Interpolate(
-        const SdfLayerRefPtr& layer, const SdfAbstractDataSpecId& specId,
+        const SdfLayerRefPtr& layer, const SdfPath& path,
         double time, double lower, double upper) final
     {
         return false;
     }
 
     virtual bool Interpolate(
-        const Usd_ClipRefPtr& clip, const SdfAbstractDataSpecId& specId,
+        const Usd_ClipRefPtr& clip, const SdfPath& path,
         double time, double lower, double upper) final
     {
         return false;
@@ -96,17 +95,17 @@ public:
     }
 
     virtual bool Interpolate(
-        const SdfLayerRefPtr& layer, const SdfAbstractDataSpecId& specId,
+        const SdfLayerRefPtr& layer, const SdfPath& path,
         double time, double lower, double upper) final;
 
     virtual bool Interpolate(
-        const Usd_ClipRefPtr& clip, const SdfAbstractDataSpecId& specId,
+        const Usd_ClipRefPtr& clip, const SdfPath& path,
         double time, double lower, double upper) final;
 
 private:
     template <class Src>
     bool _Interpolate(
-        const Src& src, const SdfAbstractDataSpecId& specId,
+        const Src& src, const SdfPath& path,
         double time, double lower, double upper);
 
 private:
@@ -134,17 +133,17 @@ public:
     }
 
     virtual bool Interpolate(
-        const SdfLayerRefPtr& layer, const SdfAbstractDataSpecId& specId,
+        const SdfLayerRefPtr& layer, const SdfPath& path,
         double time, double lower, double upper) final
     {
-        return layer->QueryTimeSample(specId, lower, _result);
+        return layer->QueryTimeSample(path, lower, _result);
     }
 
     virtual bool Interpolate(
-        const Usd_ClipRefPtr& clip, const SdfAbstractDataSpecId& specId,
+        const Usd_ClipRefPtr& clip, const SdfPath& path,
         double time, double lower, double upper) final
     {
-        return clip->QueryTimeSample(specId, lower, this, _result);
+        return clip->QueryTimeSample(path, lower, this, _result);
     }
 
 private:
@@ -194,23 +193,23 @@ public:
     }
 
     virtual bool Interpolate(
-        const SdfLayerRefPtr& layer, const SdfAbstractDataSpecId& specId,
+        const SdfLayerRefPtr& layer, const SdfPath& path,
         double time, double lower, double upper) final
     {
-        return _Interpolate(layer, specId, time, lower, upper);
+        return _Interpolate(layer, path, time, lower, upper);
     }
 
     virtual bool Interpolate(
-        const Usd_ClipRefPtr& clip, const SdfAbstractDataSpecId& specId,
+        const Usd_ClipRefPtr& clip, const SdfPath& path,
         double time, double lower, double upper) final
     {
-        return _Interpolate(clip, specId, time, lower, upper);
+        return _Interpolate(clip, path, time, lower, upper);
     }
 
 private:
     template <class Src>
     bool _Interpolate(
-        const Src& src, const SdfAbstractDataSpecId& specId,
+        const Src& src, const SdfPath& path,
         double time, double lower, double upper)
     {
         T lowerValue, upperValue;
@@ -224,11 +223,11 @@ private:
         Usd_LinearInterpolator<T> upperInterpolator(&upperValue);
 
         if (!Usd_QueryTimeSample(
-                src, specId, lower, &lowerInterpolator, &lowerValue)) {
+                src, path, lower, &lowerInterpolator, &lowerValue)) {
             return false;
         } 
         else if (!Usd_QueryTimeSample(
-                src, specId, upper, &upperInterpolator, &upperValue)) {
+                src, path, upper, &upperInterpolator, &upperValue)) {
             upperValue = lowerValue; 
         }
 
@@ -254,23 +253,23 @@ public:
     }
 
     virtual bool Interpolate(
-        const SdfLayerRefPtr& layer, const SdfAbstractDataSpecId& specId,
+        const SdfLayerRefPtr& layer, const SdfPath& path,
         double time, double lower, double upper) final
     {
-        return _Interpolate(layer, specId, time, lower, upper);
+        return _Interpolate(layer, path, time, lower, upper);
     }
 
     virtual bool Interpolate(
-        const Usd_ClipRefPtr& clip, const SdfAbstractDataSpecId& specId,
+        const Usd_ClipRefPtr& clip, const SdfPath& path,
         double time, double lower, double upper) final
     {
-        return _Interpolate(clip, specId, time, lower, upper);
+        return _Interpolate(clip, path, time, lower, upper);
     }
 
 private:
     template <class Src>
     bool _Interpolate(
-        const Src& src, const SdfAbstractDataSpecId& specId,
+        const Src& src, const SdfPath& path,
         double time, double lower, double upper)
     {
         VtArray<T> lowerValue, upperValue;
@@ -284,11 +283,11 @@ private:
         Usd_LinearInterpolator<VtArray<T> > upperInterpolator(&upperValue);
         
         if (!Usd_QueryTimeSample(
-                src, specId, lower, &lowerInterpolator, &lowerValue)) {
+                src, path, lower, &lowerInterpolator, &lowerValue)) {
             return false;
         } 
         else if (!Usd_QueryTimeSample(
-                src, specId, upper, &upperInterpolator, &upperValue)) {
+                src, path, upper, &upperInterpolator, &upperValue)) {
             upperValue = lowerValue;
         }
 
@@ -333,17 +332,17 @@ private:
 template <class Src, class T>
 inline bool
 Usd_GetOrInterpolateValue(
-    const Src& src, const SdfAbstractDataSpecId& specId,
+    const Src& src, const SdfPath& path,
     double time, double lower, double upper,
     Usd_InterpolatorBase* interpolator, T* result)
 {
     if (GfIsClose(lower, upper, /* epsilon = */ 1e-6)) {
         bool queryResult = Usd_QueryTimeSample(
-            src, specId, lower, interpolator, result);
+            src, path, lower, interpolator, result);
         return queryResult && (!Usd_ClearValueIfBlocked(result));
     }
 
-    return interpolator->Interpolate(src, specId, time, lower, upper);
+    return interpolator->Interpolate(src, path, time, lower, upper);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

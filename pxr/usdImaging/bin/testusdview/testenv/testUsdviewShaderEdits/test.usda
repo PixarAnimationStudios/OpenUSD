@@ -1,0 +1,88 @@
+#usda 1.0
+(
+    defaultPrim = "Scene"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Y"
+)
+
+def Scope "Scene" (
+        kind = "component"
+)
+{
+    def Scope "Looks"
+    {
+        def Material "MainMaterial_1"
+        {
+            token inputs:coords = "st"
+            token outputs:surface.connect = </Scene/Looks/MainMaterial_1/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1.0,0.0,0.0)
+                color3f inputs:diffuseColor.connect  = </Scene/Looks/MainMaterial_1/Diffuse.outputs:rgb>
+                token outputs:surface
+            }
+
+            def Shader "Diffuse"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @test.png@
+                float2 inputs:st.connect = </Scene/Looks/MainMaterial_1/Primvar.outputs:result>
+                float3 outputs:rgb
+            }
+
+            def Shader "Primvar"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                token inputs:varname.connect = </Scene/Looks/MainMaterial_1.inputs:coords>
+                float2 outputs:result
+            }
+
+            def Shader "ColorPrimvar"
+            {
+                uniform token info:id = "UsdPrimvarReader_float3"
+                token inputs:varname = "displayColor"
+                float3 outputs:result
+            }
+        }
+
+        def Material "MainMaterial_2"
+        {
+            token outputs:surface.connect = </Scene/Looks/MainMaterial_2/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.0,1.0,0.0)
+                token outputs:surface
+            }
+        }
+
+        def Material "MainMaterial_3"
+        {
+            token outputs:surface.connect = </Scene/Looks/MainMaterial_3/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1.0,1.0,0.0)
+                token outputs:surface
+            }
+        }
+    }
+
+    def Xform "Geom"
+    {
+        def Mesh "Plane" {
+            rel material:binding = </Scene/Looks/MainMaterial_1>
+            uniform bool doubleSided = 0
+            float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (interpolation = "vertex")
+            color3f[] primvars:displayColor = [(0.0, 0.0, 1.0)]
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            point3f[] points = [(-2,-2,-2), (2, -2,-2), (2, 2, -2), (-2, 2, -2)]
+        }
+    }
+}

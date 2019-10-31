@@ -31,8 +31,6 @@
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
 
-#include "pxr/imaging/hdx/rendererPluginRegistry.h"
-
 #include "pxr/usd/usd/prim.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyEnum.h"
@@ -107,6 +105,9 @@ void wrapEngine()
             .def( init<const SdfPath &, const SdfPathVector&,
                     const SdfPathVector& >() )
             .def("Render", &UsdImagingGLEngine::Render)
+            .def("SetWindowPolicy", &UsdImagingGLEngine::SetWindowPolicy)
+            .def("SetRenderViewport", &UsdImagingGLEngine::SetRenderViewport)
+            .def("SetCameraPath", &UsdImagingGLEngine::SetCameraPath)
             .def("SetCameraState", &UsdImagingGLEngine::SetCameraState)
             .def("SetLightingStateFromOpenGL",
                     &UsdImagingGLEngine::SetLightingStateFromOpenGL)
@@ -139,20 +140,22 @@ void wrapEngine()
                  return_value_policy< TfPySequenceToList >())
             .def("SetRendererAov", 
                     &UsdImagingGLEngine::SetRendererAov)
-            .def("GetResourceAllocation", 
-                    &UsdImagingGLEngine::GetResourceAllocation)
+            .def("GetRenderStats", 
+                    &UsdImagingGLEngine::GetRenderStats)
             .def("GetRendererSettingsList", 
                     &UsdImagingGLEngine::GetRendererSettingsList,
                  return_value_policy< TfPySequenceToList >())
             .def("GetRendererSetting", &UsdImagingGLEngine::GetRendererSetting)
             .def("SetRendererSetting", &UsdImagingGLEngine::SetRendererSetting)
-            .def("SetEnableFloatPointDrawTarget", 
-                    &UsdImagingGLEngine::SetEnableFloatPointDrawTarget)
             .def("SetColorCorrectionSettings", 
                     &UsdImagingGLEngine::SetColorCorrectionSettings)
             .def("IsColorCorrectionCapable", 
                 &UsdImagingGLEngine::IsColorCorrectionCapable)
                 .staticmethod("IsColorCorrectionCapable")
+            .def("IsPauseRendererSupported", 
+                &UsdImagingGLEngine::IsPauseRendererSupported)
+            .def("PauseRenderer", &UsdImagingGLEngine::PauseRenderer)
+            .def("ResumeRenderer", &UsdImagingGLEngine::ResumeRenderer)
         ;
 
     }

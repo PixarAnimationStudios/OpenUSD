@@ -59,6 +59,7 @@ public:
     virtual bool IsSupported(UsdImagingIndexProxy const* index) const;
     
 protected:
+    USDIMAGING_API
     virtual void _RemovePrim(SdfPath const& cachePath,
                              UsdImagingIndexProxy* index) final;
 

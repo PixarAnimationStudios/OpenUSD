@@ -57,14 +57,13 @@ class TestGfIntervalSet(unittest.TestCase):
             [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]])
 
     def runTest(self):
-        intervals = []
-        intervals.append(Gf.Interval(      ))
-        intervals.append(Gf.Interval(-2, -1))
-        intervals.append(Gf.Interval( 1    ))
-        intervals.append(Gf.Interval( 2,  5))
-        intervals.append(Gf.Interval( 3,  4))
-        intervals.append(Gf.Interval( 5,  7))
-        intervals.append(Gf.Interval( 6,  8))
+        intervals = [Gf.Interval(      ),
+                     Gf.Interval(-2, -1),
+                     Gf.Interval( 1    ),
+                     Gf.Interval( 2,  5),
+                     Gf.Interval( 3,  4),
+                     Gf.Interval( 5,  7),
+                     Gf.Interval( 6,  8)]
 
         testSets = map(Gf.MultiInterval, intervals)
 

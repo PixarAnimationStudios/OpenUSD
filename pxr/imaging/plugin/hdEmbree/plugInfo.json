@@ -5,7 +5,7 @@
                 "Types": {
                     "HdEmbreeRendererPlugin": {
                         "bases": [
-                            "HdxRendererPlugin"
+                            "HdRendererPlugin"
                         ],
                         "displayName": "Embree",
                         "priority": 99

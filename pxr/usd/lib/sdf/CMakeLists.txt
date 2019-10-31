@@ -64,6 +64,7 @@ pxr_library(sdf
         spec
         specType
         textFileFormat
+        timeCode
         tokens
         types
         valueTypeName
@@ -124,6 +125,7 @@ pxr_library(sdf
     PYMODULE_CPPFILES
         module.cpp
         wrapArrayAssetPath.cpp
+        wrapArrayTimeCode.cpp
         wrapAssetPath.cpp
         wrapAttributeSpec.cpp
         wrapChangeBlock.cpp
@@ -143,6 +145,7 @@ pxr_library(sdf
         wrapRelationshipSpec.cpp
         wrapReference.cpp
         wrapSpec.cpp
+        wrapTimeCode.cpp
         wrapTypes.cpp
         wrapValueTypeName.cpp
         wrapVariantSpec.cpp
@@ -192,8 +195,10 @@ pxr_test_scripts(
     testenv/testSdfPath2.py
     testenv/testSdfPath2Construct.py
     testenv/testSdfPayload.py
+    testenv/testSdfPrim.py
     testenv/testSdfReference.py
     testenv/testSdfSpecHash.py
+    testenv/testSdfTimeCode.py
     testenv/testSdfTypes.py
 )
 
@@ -361,6 +366,10 @@ pxr_register_test(testSdfPayload
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPayload"
 )
+pxr_register_test(testSdfPrim
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPrim"
+)
 pxr_register_test(testSdfReference
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfReference"
@@ -368,6 +377,10 @@ pxr_register_test(testSdfReference
 pxr_register_test(testSdfSpecHash
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfSpecHash"
+)
+pxr_register_test(testSdfTimeCode
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfTimeCode"
 )
 pxr_register_test(testSdfTypes
     PYTHON

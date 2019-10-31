@@ -56,6 +56,12 @@ GlfUVTextureStorage::GlfUVTextureStorage(
     /* nothing */
 }
 
+int
+GlfUVTextureStorage::GetNumDimensions() const
+{
+    return 2;
+}
+
 void 
 GlfUVTextureStorage::_ReadTexture()
 {

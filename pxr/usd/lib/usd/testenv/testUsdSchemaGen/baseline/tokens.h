@@ -346,6 +346,10 @@ struct UsdContrivedTokensType {
     /// 
     /// UsdContrivedBase
     const TfToken myVaryingToken;
+    /// \brief "myVaryingTokenArray"
+    /// 
+    /// UsdContrivedBase
+    const TfToken myVaryingTokenArray;
     /// \brief "myVecfArray"
     /// 
     /// UsdContrivedDerived
@@ -526,10 +530,18 @@ struct UsdContrivedTokensType {
     /// 
     /// Possible value for UsdContrivedBase::GetMyVaryingTokenAttr()
     const TfToken variableTokenAllowed1;
-    /// \brief "VariabletokenAllowed2"
+    /// \brief "VariableTokenAllowed2"
     /// 
     /// Possible value for UsdContrivedBase::GetMyVaryingTokenAttr()
-    const TfToken variabletokenAllowed2;
+    const TfToken variableTokenAllowed2;
+    /// \brief "VariableTokenArrayAllowed1"
+    /// 
+    /// Possible value for UsdContrivedBase::GetMyVaryingTokenArrayAttr()
+    const TfToken variableTokenArrayAllowed1;
+    /// \brief "VariableTokenArrayAllowed2"
+    /// 
+    /// Possible value for UsdContrivedBase::GetMyVaryingTokenArrayAttr()
+    const TfToken variableTokenArrayAllowed2;
     /// \brief "VariableTokenDefault"
     /// 
     /// Default value for UsdContrivedBase::GetMyVaryingTokenAttr()

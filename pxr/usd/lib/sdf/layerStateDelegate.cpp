@@ -47,69 +47,71 @@ SdfLayerStateDelegateBase::IsDirty()
 
 void 
 SdfLayerStateDelegateBase::SetField(
-    const SdfAbstractDataSpecId& id,
+    const SdfPath& path,
     const TfToken& field,
     const VtValue& value,
     const VtValue *oldValue)
 {
-    _OnSetField(id, field, value);
-    _layer->_PrimSetField(id, field, value, oldValue, /* useDelegate = */ false);
+    _OnSetField(path, field, value);
+    _layer->_PrimSetField(
+        path, field, value, oldValue, /* useDelegate = */ false);
 }
 
 void 
 SdfLayerStateDelegateBase::SetField(
-    const SdfAbstractDataSpecId& id,
+    const SdfPath &path,
     const TfToken& field,
     const SdfAbstractDataConstValue& value,
     const VtValue *oldValue)
 {
-    _OnSetField(id, field, value);
-    _layer->_PrimSetField(id, field, value, oldValue, /* useDelegate = */ false);
+    _OnSetField(path, field, value);
+    _layer->_PrimSetField(
+        path, field, value, oldValue, /* useDelegate = */ false);
 }
 void 
 SdfLayerStateDelegateBase::SetFieldDictValueByKey(
-    const SdfAbstractDataSpecId& id,
+    const SdfPath& path,
     const TfToken& field,
     const TfToken& keyPath,
     const VtValue& value,
     const VtValue *oldValue)
 {
-    _OnSetFieldDictValueByKey(id, field, keyPath, value);
+    _OnSetFieldDictValueByKey(path, field, keyPath, value);
     _layer->_PrimSetFieldDictValueByKey(
-        id, field, keyPath, value, oldValue, /* useDelegate = */ false);
+        path, field, keyPath, value, oldValue, /* useDelegate = */ false);
 }
 
 void 
 SdfLayerStateDelegateBase::SetFieldDictValueByKey(
-    const SdfAbstractDataSpecId& id,
+    const SdfPath& path,
     const TfToken& field,
     const TfToken& keyPath,
     const SdfAbstractDataConstValue& value,
     const VtValue *oldValue)
 {
-    _OnSetFieldDictValueByKey(id, field, keyPath, value);
+    _OnSetFieldDictValueByKey(path, field, keyPath, value);
     _layer->_PrimSetFieldDictValueByKey(
-        id, field, keyPath, value, oldValue, /* useDelegate = */ false);
+        path, field, keyPath, value, oldValue, /* useDelegate = */ false);
 }
 
 void 
 SdfLayerStateDelegateBase::SetTimeSample(
-    const SdfAbstractDataSpecId& id,
+    const SdfPath& path,
     double time,
     const VtValue& value)
 {
-    _OnSetTimeSample(id, time, value);
-    _layer->_PrimSetTimeSample(id, time, value, /* useDelegate = */ false);
+    _OnSetTimeSample(path, time, value);
+    _layer->_PrimSetTimeSample(path, time, value, /* useDelegate = */ false);
 }
 
 void 
 SdfLayerStateDelegateBase::SetTimeSample(
-    const SdfAbstractDataSpecId& id,
+    const SdfPath& path,
     double time,
     const SdfAbstractDataConstValue& value)
 {
-    _OnSetTimeSample(id, time, value);
-    _layer->_PrimSetTimeSample(id, time, value, /* useDelegate = */ false);
+    _OnSetTimeSample(path, time, value);
+    _layer->_PrimSetTimeSample(path, time, value, /* useDelegate = */ false);
 }
 
 void 
@@ -240,7 +242,7 @@ SdfSimpleLayerStateDelegate::_OnSetLayer(
 
 void 
 SdfSimpleLayerStateDelegate::_OnSetField(
-    const SdfAbstractDataSpecId& id,
+    const SdfPath& path,
     const TfToken& fieldName,
     const VtValue& value)
 {
@@ -249,7 +251,7 @@ SdfSimpleLayerStateDelegate::_OnSetField(
 
 void 
 SdfSimpleLayerStateDelegate::_OnSetField(
-    const SdfAbstractDataSpecId& id,
+    const SdfPath& path,
     const TfToken& fieldName,
     const SdfAbstractDataConstValue& value)
 {
@@ -258,7 +260,7 @@ SdfSimpleLayerStateDelegate::_OnSetField(
 
 void 
 SdfSimpleLayerStateDelegate::_OnSetFieldDictValueByKey(
-    const SdfAbstractDataSpecId& id,
+    const SdfPath& path,
     const TfToken& fieldName,
     const TfToken& keyPath,
     const VtValue& value)
@@ -268,7 +270,7 @@ SdfSimpleLayerStateDelegate::_OnSetFieldDictValueByKey(
 
 void 
 SdfSimpleLayerStateDelegate::_OnSetFieldDictValueByKey(
-    const SdfAbstractDataSpecId& id,
+    const SdfPath& path,
     const TfToken& fieldName,
     const TfToken& keyPath,
     const SdfAbstractDataConstValue& value)
@@ -278,7 +280,7 @@ SdfSimpleLayerStateDelegate::_OnSetFieldDictValueByKey(
 
 void 
 SdfSimpleLayerStateDelegate::_OnSetTimeSample(
-    const SdfAbstractDataSpecId& id,
+    const SdfPath& path,
     double time,
     const VtValue& value)
 {
@@ -287,7 +289,7 @@ SdfSimpleLayerStateDelegate::_OnSetTimeSample(
 
 void 
 SdfSimpleLayerStateDelegate::_OnSetTimeSample(
-    const SdfAbstractDataSpecId& id,
+    const SdfPath& path,
     double time,
     const SdfAbstractDataConstValue& value)
 {

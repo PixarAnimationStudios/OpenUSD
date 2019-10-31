@@ -63,12 +63,8 @@ void wrapUVTexture()
     scope thisScope = class_<This, bases<GlfBaseTexture>, ThisPtr, 
         boost::noncopyable>("UVTexture", no_init)
         .def(TfPyRefAndWeakPtr())
-        .def("__init__",TfMakePyConstructor(&_NewUVTexture))
-        .def("__init__",TfMakePyConstructor(&_NewUVTexture_2))
-
-        .add_property( "textureInfo", make_function(
-            &This::GetTextureInfo,
-            return_value_policy<return_by_value>()))
+        .def(TfMakePyConstructor(&_NewUVTexture))
+        .def(TfMakePyConstructor(&_NewUVTexture_2))
         ;
 }
 

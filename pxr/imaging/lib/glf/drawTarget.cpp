@@ -784,6 +784,12 @@ GlfDrawTarget::Attachment::GetBindings(TfToken const & identifier,
                         GL_TEXTURE_2D, GetGlTextureName(), samplerName));
 }
 
+GLuint
+GlfDrawTarget::Attachment::GetGlTextureName()
+{
+    return _textureName;
+}
+
 /* virtual */
 VtDictionary
 GlfDrawTarget::Attachment::GetTextureInfo(bool forceLoad)

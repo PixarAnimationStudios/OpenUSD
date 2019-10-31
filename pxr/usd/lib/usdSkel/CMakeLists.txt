@@ -23,6 +23,7 @@ pxr_library(usdSkel
         animation
         animMapper
         animQuery
+        bakeSkinning
         bindingAPI
         blendShape
         blendShapeQuery
@@ -58,6 +59,7 @@ pxr_library(usdSkel
         wrapAnimation.cpp
         wrapAnimMapper.cpp
         wrapAnimQuery.cpp
+        wrapBakeSkinning.cpp
         wrapBlendShapeQuery.cpp
         wrapBinding.cpp
         wrapBindingAPI.cpp
@@ -84,6 +86,7 @@ pxr_test_scripts(
     testenv/testUsdSkelAnimQuery.py 
     testenv/testUsdSkelBakeSkinning.py
     testenv/testUsdSkelBindingAPI.py
+    testenv/testUsdSkelBlendShape.py
     testenv/testUsdSkelCache.py
     testenv/testUsdSkelRoot.py
     testenv/testUsdSkelSkeletonQuery.py

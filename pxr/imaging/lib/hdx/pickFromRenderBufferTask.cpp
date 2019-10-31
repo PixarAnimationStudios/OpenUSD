@@ -141,10 +141,14 @@ HdxPickFromRenderBufferTask::Execute(HdTaskContext* ctx)
         }
     }
 
-    uint8_t *primIdPtr = _primId->Map();
-    uint8_t *depthPtr = _depth->Map();
-    uint8_t *elementIdPtr = _elementId ? _elementId->Map() : nullptr;
-    uint8_t *instanceIdPtr = _instanceId ? _instanceId->Map() : nullptr;
+    uint8_t *primIdPtr = reinterpret_cast<uint8_t*>(_primId->Map());
+    uint8_t *depthPtr = reinterpret_cast<uint8_t*>(_depth->Map());
+    uint8_t *elementIdPtr = _elementId ? 
+                            reinterpret_cast<uint8_t*>(_elementId->Map()) : 
+                            nullptr;
+    uint8_t *instanceIdPtr = _instanceId ? 
+                             reinterpret_cast<uint8_t*>(_instanceId->Map()) : 
+                             nullptr;
 
     GfVec2i renderBufferSize = GfVec2i(_primId->GetWidth(),
                                        _primId->GetHeight());
@@ -159,6 +163,11 @@ HdxPickFromRenderBufferTask::Execute(HdTaskContext* ctx)
     // Get the view, projection used to generate the ID buffers.
     GfMatrix4d renderView = _camera->GetViewMatrix();
     GfMatrix4d renderProj = _camera->GetProjectionMatrix();
+    CameraUtilConformWindowPolicy const& policy =
+        _camera->GetWindowPolicy();
+    renderProj = CameraUtilConformedWindow(renderProj, policy,
+        _params.viewport[3] != 0.0 ?
+            _params.viewport[2] / _params.viewport[3] : 1.0);
 
     // renderBufferXf transforms renderbuffer NDC to integer renderbuffer
     // indices, assuming (-1,-1) maps to 0,0 and (1,1) maps to w,h.
@@ -177,13 +186,19 @@ HdxPickFromRenderBufferTask::Execute(HdTaskContext* ctx)
 
     // Calculate the ID buffer area of interest: the indices of the pick
     // frustum near plane.
-    GfVec3d pickMin = pickNdcToRenderBuffer.Transform(GfVec3d(-1,-1,-1));
-    GfVec3d pickMax = pickNdcToRenderBuffer.Transform(GfVec3d(1,1,-1));
 
+    // Take the min and max corners in NDC space as representatives.
+    GfVec3d corner0 = pickNdcToRenderBuffer.Transform(GfVec3d(-1,-1,-1));
+    GfVec3d corner1 = pickNdcToRenderBuffer.Transform(GfVec3d(1,1,-1));
+    // Once transformed, find the minimum and maximum bounds of these points.
+    GfVec2d pickMin = GfVec2d(std::min(corner0[0], corner1[0]),
+                              std::min(corner0[1], corner1[1]));
+    GfVec2d pickMax = GfVec2d(std::max(corner0[0], corner1[0]),
+                              std::max(corner0[1], corner1[1]));
     // Since we're turning these into integer indices, round away from the
     // center; otherwise, we'll miss relevant pixels.
-    pickMin = GfVec3d(floor(pickMin[0]), floor(pickMin[1]), pickMin[2]);
-    pickMax = GfVec3d(ceil(pickMax[0]), ceil(pickMax[1]), pickMax[2]);
+    pickMin = GfVec2d(floor(pickMin[0]), floor(pickMin[1]));
+    pickMax = GfVec2d(ceil(pickMax[0]), ceil(pickMax[1]));
     GfVec4i subRect = GfVec4i(
             pickMin[0], pickMin[1],
             pickMax[0] - pickMin[0], pickMax[1] - pickMin[1]);
@@ -197,8 +212,8 @@ HdxPickFromRenderBufferTask::Execute(HdTaskContext* ctx)
     // specify the transform in terms of the main render pass.
     HdxPickResult result(
             reinterpret_cast<int32_t*>(primIdPtr),
-            reinterpret_cast<int32_t*>(elementIdPtr),
             reinterpret_cast<int32_t*>(instanceIdPtr),
+            reinterpret_cast<int32_t*>(elementIdPtr),
             nullptr,
             nullptr,
             nullptr,

@@ -767,6 +767,24 @@
                         "default": 0.5, 
                         "type": "half"
                     }, 
+                    "timecode_shaped": {
+                        "type": "timecode[]"
+                    }, 
+                    "timecode_shaped_default": {
+                        "default": [
+                            1.0, 
+                            1.5, 
+                            2.0
+                        ], 
+                        "type": "timecode[]"
+                    }, 
+                    "timecode_single": {
+                        "type": "timecode"
+                    }, 
+                    "timecode_single_default": {
+                        "default": 1, 
+                        "type": "timecode"
+                    }, 
                     "uchar_shaped": {
                         "type": "uchar[]"
                     }, 

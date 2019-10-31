@@ -210,9 +210,8 @@ public:
         SdfPath const &path, SdfPathListOp *listOp) const {
         if (path.IsPrimPropertyPath()) {
             VtValue targetPaths;
-            SdfAbstractDataSpecId specId(&path);
-            if ((Has(specId, SdfFieldKeys->TargetPaths, &targetPaths) ||
-                 Has(specId, SdfFieldKeys->ConnectionPaths, &targetPaths)) &&
+            if ((Has(path, SdfFieldKeys->TargetPaths, &targetPaths) ||
+                 Has(path, SdfFieldKeys->ConnectionPaths, &targetPaths)) &&
                 targetPaths.IsHolding<SdfPathListOp>()) {
                 targetPaths.UncheckedSwap(*listOp);
                 return true;
@@ -250,8 +249,7 @@ public:
         return false;
     }
 
-    inline bool HasSpec(const SdfAbstractDataSpecId &id) const {
-        const SdfPath &path = id.GetFullSpecPath();
+    inline bool HasSpec(const SdfPath &path) const {
         if (ARCH_UNLIKELY(path.IsTargetPath())) {
             return _HasTargetOrConnectionSpec(path);
         }
@@ -260,20 +258,18 @@ public:
             _flatData.find(path) != _flatData.end();
     }
 
-    inline void EraseSpec(const SdfAbstractDataSpecId &id) {
-        if (ARCH_UNLIKELY(id.GetFullSpecPath().IsTargetPath())) {
+    inline void EraseSpec(const SdfPath &path) {
+        if (ARCH_UNLIKELY(path.IsTargetPath())) {
             // Do nothing, we do not store target specs.
             return;
         }
         if (_MaybeMoveToHashTable()) {
             _hashLastSet = nullptr;
-            TF_VERIFY(_hashData->erase(id.GetFullSpecPath()),
-                      "%s", id.GetString().c_str());
+            TF_VERIFY(_hashData->erase(path), "%s", path.GetText());
         } else {
-            auto iter = _flatData.find(id.GetFullSpecPath());
+            auto iter = _flatData.find(path);
             size_t index = iter - _flatData.begin();
-            if (TF_VERIFY(iter != _flatData.end(),
-                          "%s", id.GetString().c_str())) {
+            if (TF_VERIFY(iter != _flatData.end(), "%s", path.GetText())) {
                 _flatLastSet = nullptr;
                 _flatData.erase(iter);
                 _flatTypes.erase(_flatTypes.begin() + index);
@@ -281,15 +277,12 @@ public:
         }
     }
 
-    inline void MoveSpec(const SdfAbstractDataSpecId& oldId,
-                         const SdfAbstractDataSpecId& newId) {
-        if (ARCH_UNLIKELY(oldId.GetFullSpecPath().IsTargetPath())) {
+    inline void MoveSpec(const SdfPath& oldPath,
+                         const SdfPath& newPath) {
+        if (ARCH_UNLIKELY(oldPath.IsTargetPath())) {
             // Do nothing, we do not store target specs.
             return;
         }
-
-        SdfPath const &oldPath = oldId.GetFullSpecPath();
-        SdfPath const &newPath = newId.GetFullSpecPath();
 
         if (_MaybeMoveToHashTable()) {
             auto oldIter = _hashData->find(oldPath);
@@ -322,16 +315,14 @@ public:
         }
     }
 
-    inline SdfSpecType GetSpecType(const SdfAbstractDataSpecId &id) const {
-        SdfPath const &path = id.GetFullSpecPath();
+    inline SdfSpecType GetSpecType(const SdfPath &path) const {
         if (path == SdfPath::AbsoluteRootPath()) {
             return SdfSpecTypePseudoRoot;
         }
         if (path.IsTargetPath()) {
             if (_HasTargetOrConnectionSpec(path)) {
                 SdfPath parentPath = path.GetParentPath();
-                SdfSpecType parentSpecType = 
-                    GetSpecType(SdfAbstractDataSpecId(&parentPath));
+                SdfSpecType parentSpecType = GetSpecType(parentPath);
                 if (parentSpecType == SdfSpecTypeRelationship) {
                     return SdfSpecTypeRelationshipTarget;
                 }
@@ -355,27 +346,26 @@ public:
     }
 
     inline void
-    CreateSpec(const SdfAbstractDataSpecId &id, SdfSpecType specType) {
+    CreateSpec(const SdfPath &path, SdfSpecType specType) {
         if (!TF_VERIFY(specType != SdfSpecTypeUnknown))
             return;
-        if (id.GetFullSpecPath().IsTargetPath()) {
+        if (path.IsTargetPath()) {
             // Do nothing, we do not store relationship target specs in usd.
             return;
         }
         if (_MaybeMoveToHashTable()) {
             // No need to blow the _hashLastSet cache here, since inserting into
             // the table won't invalidate existing references.
-            (*_hashData)[id.GetFullSpecPath()].specType = specType;
+            (*_hashData)[path].specType = specType;
         } else {
             _flatLastSet = nullptr;
-            auto iresult = 
-                _flatData.emplace(id.GetFullSpecPath(), _FlatSpecData());
+            auto iresult = _flatData.emplace(path, _FlatSpecData());
             auto index = iresult.first - _flatData.begin();
             if (iresult.second) {
                 _flatTypes.insert(
                     _flatTypes.begin() + index, _SpecType(specType));
             } else {
-                TF_VERIFY(_flatTypes[index].type == specType);
+                _flatTypes[index].type = specType;
             }
         }
     }
@@ -416,8 +406,7 @@ public:
                     }
                     for (auto const &p: specs) {
                         SdfPath tp = path.AppendTarget(p);
-                        if (!visitor->VisitSpec(
-                                data, SdfAbstractDataSpecId(&tp))) {
+                        if (!visitor->VisitSpec(data, tp)) {
                             return false;
                         }
                     }
@@ -428,8 +417,7 @@ public:
         
         if (_hashData) {
             for (auto const &p: *_hashData) {
-                SdfAbstractDataSpecId specId(&p.first);
-                if (!visitor->VisitSpec(data, specId) ||
+                if (!visitor->VisitSpec(data, p.first) ||
                     !doTargetAndConnectionSpecs(p.first, p.second.specType)) {
                     return;
                 }
@@ -437,8 +425,7 @@ public:
         } else {
             size_t index = 0;
             for (auto const &p: _flatData) {
-                SdfAbstractDataSpecId specId(&p.first);
-                if (!visitor->VisitSpec(data, specId)) {
+                if (!visitor->VisitSpec(data, p.first)) {
                     return;
                 }
                 SdfSpecType specType = _flatTypes[index++].type;
@@ -449,10 +436,10 @@ public:
         }
     }
 
-    inline bool Has(const SdfAbstractDataSpecId& id,
-                    const TfToken & field,
+    inline bool Has(const SdfPath &path,
+                    const TfToken &field,
                     SdfAbstractDataValue* value) const {
-        if (VtValue const *fieldValue = _GetFieldValue(id, field)) {
+        if (VtValue const *fieldValue = _GetFieldValue(path, field)) {
             if (value) {
                 VtValue val = _DetachValue(*fieldValue);
                 if (field == SdfDataTokens->TimeSamples) {
@@ -472,14 +459,14 @@ public:
         return false;
     }
 
-    inline bool Has(const SdfAbstractDataSpecId& id,
+    inline bool Has(const SdfPath& path,
                     const TfToken & field,
                     VtValue *value) const {
         // These are too expensive to do here, but could be uncommented for
         // debugging & tracking down corruption.
         //TF_DESCRIBE_SCOPE(GetAssetPath().c_str());
         //TfScopeDescription desc2(field.GetText());
-        if (VtValue const *fieldValue = _GetFieldValue(id, field)) {
+        if (VtValue const *fieldValue = _GetFieldValue(path, field)) {
             if (value) {
                 *value = _DetachValue(*fieldValue);
                 if (field == SdfDataTokens->TimeSamples) {
@@ -498,17 +485,17 @@ public:
         return false;
     }
 
-    inline VtValue Get(const SdfAbstractDataSpecId& id,
+    inline VtValue Get(const SdfPath& path,
                        const TfToken & field) const {
         VtValue result;
-        Has(id, field, &result);
+        Has(path, field, &result);
         return result;
     }
 
     template <class Data>
-    inline void _ListHelper(Data const &d, SdfAbstractDataSpecId const &id,
+    inline void _ListHelper(Data const &d, SdfPath const &path,
                             vector<TfToken> &out) const {
-        auto i = d.find(id.GetFullSpecPath());
+        auto i = d.find(path);
         if (i != d.end()) {
             auto const &fields = i->second.fields.Get();
             out.resize(fields.size());
@@ -518,28 +505,26 @@ public:
         }
     }
 
-    inline vector<TfToken> List(const SdfAbstractDataSpecId& id) const {
+    inline vector<TfToken> List(const SdfPath& path) const {
         vector<TfToken> names;
         _hashData ?
-            _ListHelper(*_hashData, id, names) :
-            _ListHelper(_flatData, id, names);
+            _ListHelper(*_hashData, path, names) :
+            _ListHelper(_flatData, path, names);
         return names;
     }
 
     template <class Data>
     inline void _SetHelper(
-        Data &d, SdfAbstractDataSpecId const &id,
+        Data &d, SdfPath const &path,
         typename Data::value_type *&lastSet,
         TfToken const &fieldName, VtValue const &value) {
 
-        SdfPath const &path = id.GetFullSpecPath();
-
         if (!lastSet || lastSet->first != path) {
-            auto i = d.find(id.GetFullSpecPath());
+            auto i = d.find(path);
             if (!TF_VERIFY(
                     i != d.end(),
                     "Tried to set field '%s' on nonexistent spec at <%s>",
-                    id.GetString().c_str(), fieldName.GetText())) {
+                    path.GetText(), fieldName.GetText())) {
                 return;
             }
             lastSet = &(*i);
@@ -575,37 +560,37 @@ public:
         fields.emplace_back(fieldName, *valPtr);
     }
 
-    inline void Set(const SdfAbstractDataSpecId& id,
+    inline void Set(const SdfPath& path,
                     const TfToken& fieldName,
                     const VtValue& value) {
         if (ARCH_UNLIKELY(value.IsEmpty())) {
-            Erase(id, fieldName);
+            Erase(path, fieldName);
             return;
         }
-        if (id.GetFullSpecPath().IsTargetPath()) {
+        if (path.IsTargetPath()) {
             TF_CODING_ERROR("Cannot set fields on relationship target or "
                             "attribute connection specs: "
-                            "<%s>:%s = %s", id.GetFullSpecPath().GetText(),
+                            "<%s>:%s = %s", path.GetText(),
                             fieldName.GetText(), TfStringify(value).c_str());
             return;
         }
         _hashData ?
-            _SetHelper(*_hashData, id, _hashLastSet, fieldName, value) :
-            _SetHelper(_flatData, id, _flatLastSet, fieldName, value);
+            _SetHelper(*_hashData, path, _hashLastSet, fieldName, value) :
+            _SetHelper(_flatData, path, _flatLastSet, fieldName, value);
     }
 
-    inline void Set(const SdfAbstractDataSpecId& id,
+    inline void Set(const SdfPath& path,
                     const TfToken& field,
                     const SdfAbstractDataConstValue& value) {
         VtValue val;
         TF_AXIOM(value.GetValue(&val));
-        return Set(id, field, val);
+        return Set(path, field, val);
     }
 
     template <class Data>
     inline void _EraseHelper(
-        Data &d, const SdfAbstractDataSpecId& id, const TfToken & field) {
-        auto i = d.find(id.GetFullSpecPath());
+        Data &d, const SdfPath& path, const TfToken & field) {
+        auto i = d.find(path);
         if (i == d.end())
             return;
 
@@ -622,10 +607,10 @@ public:
         }
     }
 
-    inline void Erase(const SdfAbstractDataSpecId& id, const TfToken & field) {
+    inline void Erase(const SdfPath& path, const TfToken & field) {
         _hashData ?
-            _EraseHelper(*_hashData, id, field) :
-            _EraseHelper(_flatData, id, field);
+            _EraseHelper(*_hashData, path, field) :
+            _EraseHelper(_flatData, path, field);
     }
 
     inline std::set<double>
@@ -635,8 +620,8 @@ public:
     }
 
     inline std::set<double>
-    ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const {
-        auto const &times = _ListTimeSamplesForPath(id);
+    ListTimeSamplesForPath(const SdfPath& path) const {
+        auto const &times = _ListTimeSamplesForPath(path);
         return std::set<double>(times.begin(), times.end());
     }
 
@@ -646,24 +631,24 @@ public:
     }
 
     inline size_t
-    GetNumTimeSamplesForPath(const SdfAbstractDataSpecId& id) const {
-        return _ListTimeSamplesForPath(id).size();
+    GetNumTimeSamplesForPath(const SdfPath& path) const {
+        return _ListTimeSamplesForPath(path).size();
     }
 
     inline bool GetBracketingTimeSamplesForPath(
-        const SdfAbstractDataSpecId& id,
+        const SdfPath& path,
         double time, double* tLower, double* tUpper) const {
         return _GetBracketingTimes(
-            _ListTimeSamplesForPath(id), time, tLower, tUpper);
+            _ListTimeSamplesForPath(path), time, tLower, tUpper);
     }
 
-    inline bool QueryTimeSample(const SdfAbstractDataSpecId& id, double time,
+    inline bool QueryTimeSample(const SdfPath& path, double time,
                                 VtValue *value) const {
         // This is too expensive to do here, but could be uncommented to help
         // debugging or tracking down file corruption.
         //TF_DESCRIBE_SCOPE(GetAssetPath().c_str());
         if (VtValue const *fieldValue =
-            _GetFieldValue(id, SdfDataTokens->TimeSamples)) {
+            _GetFieldValue(path, SdfDataTokens->TimeSamples)) {
             if (fieldValue->IsHolding<TimeSamples>()) {
                 auto const &ts = fieldValue->UncheckedGet<TimeSamples>();
                 auto const &times = ts.times.Get();
@@ -681,26 +666,26 @@ public:
         return false;
     }
 
-    inline bool QueryTimeSample(const SdfAbstractDataSpecId& id, double time,
+    inline bool QueryTimeSample(const SdfPath& path, double time,
                                 SdfAbstractDataValue* value) const {
         if (!value)
-            return QueryTimeSample(id, time, static_cast<VtValue *>(nullptr));
+            return QueryTimeSample(path, time, static_cast<VtValue *>(nullptr));
         VtValue vtVal;
-        return QueryTimeSample(id, time, &vtVal) && value->StoreValue(vtVal);
+        return QueryTimeSample(path, time, &vtVal) && value->StoreValue(vtVal);
     }
 
     inline void
-    SetTimeSample(const SdfAbstractDataSpecId& id, double time,
+    SetTimeSample(const SdfPath& path, double time,
                   const VtValue & value) {
         if (value.IsEmpty()) {
-            EraseTimeSample(id, time);
+            EraseTimeSample(path, time);
             return;
         }
 
         TimeSamples newSamples;
         
         VtValue *fieldValue =
-            _GetMutableFieldValue(id, SdfDataTokens->TimeSamples);
+            _GetMutableFieldValue(path, SdfDataTokens->TimeSamples);
         
         if (fieldValue && fieldValue->IsHolding<TimeSamples>()) {
             fieldValue->UncheckedSwap(newSamples);
@@ -725,15 +710,15 @@ public:
         if (fieldValue) {
             fieldValue->UncheckedSwap(newSamples);
         } else {
-            Set(id, SdfDataTokens->TimeSamples, VtValue::Take(newSamples));
+            Set(path, SdfDataTokens->TimeSamples, VtValue::Take(newSamples));
         }
     }
     
-    inline void EraseTimeSample(const SdfAbstractDataSpecId& id, double time) {
+    inline void EraseTimeSample(const SdfPath& path, double time) {
         TimeSamples newSamples;
         
         VtValue *fieldValue =
-            _GetMutableFieldValue(id, SdfDataTokens->TimeSamples);
+            _GetMutableFieldValue(path, SdfDataTokens->TimeSamples);
         
         if (fieldValue && fieldValue->IsHolding<TimeSamples>()) {
             fieldValue->UncheckedSwap(newSamples);
@@ -750,7 +735,7 @@ public:
         // If we're removing the last sample, remove the entire field to be
         // consistent with SdfData's implementation.
         if (newSamples.times.Get().size() == 1) {
-            Erase(id, SdfDataTokens->TimeSamples);
+            Erase(path, SdfDataTokens->TimeSamples);
         } else {
             // Otherwise remove just the one sample.
             auto index = iter-newSamples.times.Get().begin();
@@ -916,10 +901,10 @@ private:
     }
 
     inline std::vector<double> const &
-    _ListTimeSamplesForPath(const SdfAbstractDataSpecId &id) const {
+    _ListTimeSamplesForPath(const SdfPath &path) const {
         TF_DESCRIBE_SCOPE(GetAssetPath().c_str());
         if (const VtValue* fieldValue =
-            _GetFieldValue(id, SdfDataTokens->TimeSamples)) {
+            _GetFieldValue(path, SdfDataTokens->TimeSamples)) {
             if (fieldValue->IsHolding<TimeSamples>()) {
                 return fieldValue->UncheckedGet<TimeSamples>().times.Get();
             }
@@ -934,8 +919,7 @@ private:
         for (auto const &p: d) {
             tmp.swap(allTimes);
             allTimes.clear();
-            auto const &times =
-                _ListTimeSamplesForPath(SdfAbstractDataSpecId(&p.first));
+            auto const &times = _ListTimeSamplesForPath(p.first);
             set_union(tmp.begin(), tmp.end(), times.begin(), times.end(),
                       back_inserter(allTimes));
         }
@@ -1035,9 +1019,9 @@ private:
     template <class Data>
     inline VtValue const *
     _GetFieldValueHelper(Data const &d,
-                         SdfAbstractDataSpecId const &id,
+                         SdfPath const &path,
                          TfToken const &field) const {
-        auto i = d.find(id.GetFullSpecPath());
+        auto i = d.find(path);
         if (i != d.end()) {
             auto const &fields = i->second.fields.Get();
             for (size_t j=0, jEnd = fields.size(); j != jEnd; ++j) {
@@ -1050,19 +1034,19 @@ private:
     }        
         
     inline VtValue const *
-    _GetFieldValue(SdfAbstractDataSpecId const &id,
+    _GetFieldValue(SdfPath const &path,
                    TfToken const &field) const {
         return _hashData ?
-            _GetFieldValueHelper(*_hashData, id, field) :
-            _GetFieldValueHelper(_flatData, id, field);
+            _GetFieldValueHelper(*_hashData, path, field) :
+            _GetFieldValueHelper(_flatData, path, field);
     }
 
     template <class Data>
     inline VtValue *
     _GetMutableFieldValueHelper(Data &d,
-                                SdfAbstractDataSpecId const &id,
+                                SdfPath const &path,
                                 TfToken const &field) {
-        auto i = d.find(id.GetFullSpecPath());
+        auto i = d.find(path);
         if (i != d.end()) {
             auto &spec = i->second;
             auto const &fields = spec.fields.Get();
@@ -1077,11 +1061,11 @@ private:
     }
 
     inline VtValue *
-    _GetMutableFieldValue(const SdfAbstractDataSpecId& id,
+    _GetMutableFieldValue(const SdfPath& path,
                           const TfToken& field) {
         return _hashData ?
-            _GetMutableFieldValueHelper(*_hashData, id, field) :
-            _GetMutableFieldValueHelper(_flatData, id, field);
+            _GetMutableFieldValueHelper(*_hashData, path, field) :
+            _GetMutableFieldValueHelper(_flatData, path, field);
     }
 
     inline VtValue _DetachValue(VtValue const &val) const {
@@ -1232,34 +1216,34 @@ Usd_CrateData::StreamsData() const
 }
 
 bool
-Usd_CrateData::HasSpec(const SdfAbstractDataSpecId &id) const
+Usd_CrateData::HasSpec(const SdfPath &path) const
 {
-    return _impl->HasSpec(id);
+    return _impl->HasSpec(path);
 }
 
 void
-Usd_CrateData::EraseSpec(const SdfAbstractDataSpecId &id)
+Usd_CrateData::EraseSpec(const SdfPath &path)
 {
-    _impl->EraseSpec(id);
+    _impl->EraseSpec(path);
 }
 
 void
-Usd_CrateData::MoveSpec(const SdfAbstractDataSpecId& oldId,
-                        const SdfAbstractDataSpecId& newId)
+Usd_CrateData::MoveSpec(const SdfPath& oldPath,
+                        const SdfPath& newPath)
 {
-    return _impl->MoveSpec(oldId, newId);
+    return _impl->MoveSpec(oldPath, newPath);
 }
 
 SdfSpecType
-Usd_CrateData::GetSpecType(const SdfAbstractDataSpecId &id) const
+Usd_CrateData::GetSpecType(const SdfPath &path) const
 {
-    return _impl->GetSpecType(id);
+    return _impl->GetSpecType(path);
 }
 
 void
-Usd_CrateData::CreateSpec(const SdfAbstractDataSpecId &id, SdfSpecType specType)
+Usd_CrateData::CreateSpec(const SdfPath &path, SdfSpecType specType)
 {
-    _impl->CreateSpec(id, specType);
+    _impl->CreateSpec(path, specType);
 }
 
 void
@@ -1269,51 +1253,51 @@ Usd_CrateData::_VisitSpecs(SdfAbstractDataSpecVisitor* visitor) const
 }
 
 bool
-Usd_CrateData::Has(const SdfAbstractDataSpecId& id,
+Usd_CrateData::Has(const SdfPath& path,
                    const TfToken & field,
                    SdfAbstractDataValue* value) const
 {
-    return _impl->Has(id, field, value);
+    return _impl->Has(path, field, value);
 }
 
 bool
-Usd_CrateData::Has(const SdfAbstractDataSpecId& id,
+Usd_CrateData::Has(const SdfPath& path,
                    const TfToken & field,
                    VtValue *value) const
 {
-    return _impl->Has(id, field, value);
+    return _impl->Has(path, field, value);
 }
 
 VtValue
-Usd_CrateData::Get(const SdfAbstractDataSpecId& id, const TfToken & field) const
+Usd_CrateData::Get(const SdfPath& path, const TfToken & field) const
 {
-    return _impl->Get(id, field);
+    return _impl->Get(path, field);
 }
 
 std::vector<TfToken>
-Usd_CrateData::List(const SdfAbstractDataSpecId& id) const
+Usd_CrateData::List(const SdfPath& path) const
 {
-    return _impl->List(id);
+    return _impl->List(path);
 }
 
 void
-Usd_CrateData::Set(const SdfAbstractDataSpecId& id, const TfToken& fieldName,
+Usd_CrateData::Set(const SdfPath& path, const TfToken& fieldName,
                    const VtValue& value)
 {
-    return _impl->Set(id, fieldName, value);
+    return _impl->Set(path, fieldName, value);
 }
 
 void
-Usd_CrateData::Set(const SdfAbstractDataSpecId& id, const TfToken& field,
+Usd_CrateData::Set(const SdfPath& path, const TfToken& field,
                    const SdfAbstractDataConstValue& value)
 {
-    return _impl->Set(id, field, value);
+    return _impl->Set(path, field, value);
 }
 
 void
-Usd_CrateData::Erase(const SdfAbstractDataSpecId& id, const TfToken & field)
+Usd_CrateData::Erase(const SdfPath& path, const TfToken & field)
 {
-    return _impl->Erase(id, field);
+    return _impl->Erase(path, field);
 }
 
 // ------------------------------------------------------------------------- //
@@ -1326,9 +1310,9 @@ Usd_CrateData::ListAllTimeSamples() const
 }
 
 std::set<double>
-Usd_CrateData::ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
+Usd_CrateData::ListTimeSamplesForPath(const SdfPath& path) const
 {
-    return _impl->ListTimeSamplesForPath(id);
+    return _impl->ListTimeSamplesForPath(path);
 }
 
 bool
@@ -1339,44 +1323,44 @@ Usd_CrateData::GetBracketingTimeSamples(
 }
 
 size_t
-Usd_CrateData::GetNumTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
+Usd_CrateData::GetNumTimeSamplesForPath(const SdfPath& path) const
 {
-    return _impl->GetNumTimeSamplesForPath(id);
+    return _impl->GetNumTimeSamplesForPath(path);
 }
 
 bool
 Usd_CrateData::GetBracketingTimeSamplesForPath(
-    const SdfAbstractDataSpecId& id,
+    const SdfPath& path,
     double time, double* tLower, double* tUpper) const
 {
-    return _impl->GetBracketingTimeSamplesForPath(id, time, tLower, tUpper);
+    return _impl->GetBracketingTimeSamplesForPath(path, time, tLower, tUpper);
 }
 
 bool
-Usd_CrateData::QueryTimeSample(const SdfAbstractDataSpecId& id,
+Usd_CrateData::QueryTimeSample(const SdfPath& path,
                                double time, VtValue *value) const
 {
-    return _impl->QueryTimeSample(id, time, value);
+    return _impl->QueryTimeSample(path, time, value);
 }
 
 bool
-Usd_CrateData::QueryTimeSample(const SdfAbstractDataSpecId& id,
+Usd_CrateData::QueryTimeSample(const SdfPath& path,
                                double time, SdfAbstractDataValue* value) const
 {
-    return _impl->QueryTimeSample(id, time, value);
+    return _impl->QueryTimeSample(path, time, value);
 }
 
 void
-Usd_CrateData::SetTimeSample(const SdfAbstractDataSpecId& id,
+Usd_CrateData::SetTimeSample(const SdfPath& path,
                              double time, const VtValue &value)
 {
-    return _impl->SetTimeSample(id, time, value);
+    return _impl->SetTimeSample(path, time, value);
 }
 
 void
-Usd_CrateData::EraseTimeSample(const SdfAbstractDataSpecId& id, double time)
+Usd_CrateData::EraseTimeSample(const SdfPath& path, double time)
 {
-    return _impl->EraseTimeSample(id, time);
+    return _impl->EraseTimeSample(path, time);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -268,7 +268,9 @@ enum HdInterpolation
 /// \enum HdTextureType
 /// Enumerates Hydra's supported texture types.
 ///
-/// Uv:   Sample the uv coordinates and accesses a single texture.
+/// Uv:   Sample the uv coordinates and accesses a single 2d texture.
+///
+/// Uvw:  Sample the uvw coordinates and accesses a single 3d texture.
 ///
 /// Ptex: Use the ptex connectivity information to sample a ptex texture.
 ///
@@ -279,6 +281,7 @@ enum HdInterpolation
 enum class HdTextureType
 {
     Uv,
+    Uvw,
     Ptex,
     Udim
 };

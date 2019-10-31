@@ -133,6 +133,13 @@ GlfUdimTexture::GetBindings(
     return ret;
 }
 
+GLuint
+GlfUdimTexture::GetGlTextureName()
+{
+    _ReadImage();
+    return _imageArray;
+}
+
 VtDictionary
 GlfUdimTexture::GetTextureInfo(bool forceLoad)
 {

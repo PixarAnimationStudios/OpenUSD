@@ -144,7 +144,7 @@ public:
     /// \name Iteration
     /// @{
 
-    /// Returns range of iterators that encompass all direct children
+    /// Returns range of iterators that encompass all children of the root node
     /// with the given arc type as well as their descendants, in 
     /// strong-to-weak order.
     /// 
@@ -278,6 +278,14 @@ inline void swap(PcpPrimIndex &l, PcpPrimIndex &r) { l.swap(r); }
 class PcpPrimIndexOutputs 
 {
 public:
+    /// Enumerator whose enumerants describe the payload state of this prim
+    /// index.  NoPayload if the index has no payload arcs, otherwise whether
+    /// payloads were included or excluded, and if done so by consulting either
+    /// the cache's payload include set, or determined by a payload predicate.
+    enum PayloadState { NoPayload,
+                        IncludedByIncludeSet, ExcludedByIncludeSet,
+                        IncludedByPredicate, ExcludedByPredicate };
+
     /// Prim index describing the composition structure for the associated
     /// prim.
     PcpPrimIndex primIndex;
@@ -285,9 +293,9 @@ public:
     /// List of all errors encountered during indexing.
     PcpErrorVector allErrors;
 
-    /// True if this prim index has a payload that we included during indexing
-    /// that wasn't previously in the cache's payload include set.
-    bool includedDiscoveredPayload = false;
+    /// Indicates the payload state of this index.  See documentation for
+    /// PayloadState enum for more information.
+    PayloadState payloadState = NoPayload;
     
     /// A list of names of fields that were composed to generate dynamic file 
     /// format arguments for a node in primIndex. These are not necessarily 
@@ -299,7 +307,7 @@ public:
     inline void swap(PcpPrimIndexOutputs &r) {
         primIndex.swap(r.primIndex);
         allErrors.swap(r.allErrors);
-        std::swap(includedDiscoveredPayload, r.includedDiscoveredPayload);
+        std::swap(payloadState, r.payloadState);
         dynamicFileFormatDependency.swap(r.dynamicFileFormatDependency);
     }
 

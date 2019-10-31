@@ -24,6 +24,7 @@
 #define HDST_RENDER_DELEGATE_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hgiGL/hgi.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 
@@ -37,7 +38,7 @@ typedef boost::shared_ptr<class HdStResourceRegistry>
 ///
 /// HdStRenderDelegate
 ///
-/// The Stream Render Delegate provides a Hydra render that uses a
+/// The Storm Render Delegate provides a Hydra render that uses a
 /// streaming graphics implementation to draw the scene.
 ///
 class HdStRenderDelegate final : public HdRenderDelegate {
@@ -108,13 +109,28 @@ public:
     HDST_API
     virtual TfTokenVector GetShaderSourceTypes() const override;
 
+    HDST_API
+    virtual bool IsPrimvarFilteringNeeded() const override;
+
     // Returns whether or not HdStRenderDelegate can run on the current
     // hardware.
     HDST_API
     static bool IsSupported();
 
+    HDST_API
     virtual HdRenderSettingDescriptorList
         GetRenderSettingDescriptors() const override;
+
+    HDST_API
+    virtual VtDictionary GetRenderStats() const override;
+
+    HDST_API
+    virtual HdAovDescriptor
+        GetDefaultAovDescriptor(TfToken const& name) const override;
+
+    // Returns Hydra graphics interface
+    HDST_API
+    Hgi* GetHgi();
 
 private:
     static const TfTokenVector SUPPORTED_RPRIM_TYPES;
@@ -127,6 +143,8 @@ private:
     static HdStResourceRegistrySharedPtr _resourceRegistry;
 
     HdRenderSettingDescriptorList _settingDescriptors;
+
+    HgiGL _hgiGL;
 
     void _Initialize();
 

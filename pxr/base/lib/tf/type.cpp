@@ -590,6 +590,17 @@ TfType::GetBaseTypes() const
     return _info->baseTypes;
 }
 
+size_t
+TfType::GetNBaseTypes(TfType *out, size_t maxBases) const
+{
+    ScopedLock lock(_info->mutex, /*write=*/false);
+    size_t numBases = _info->baseTypes.size();
+    auto b = _info->baseTypes.begin();
+    auto e = b + std::min<size_t>(maxBases, numBases);
+    std::copy(b, e, out);
+    return numBases;
+}
+
 vector<TfType>
 TfType::GetDirectlyDerivedTypes() const
 {

@@ -249,6 +249,18 @@ public:
 
     /// @}
 
+    /// \name Computing transforms
+    /// @{
+
+    /// Return the 4x4 matrix that applies the rotation encoded by rotation
+    /// vector \p rotation using the rotation order \p rotationOrder.
+    USDGEOM_API
+    static GfMatrix4d GetRotationTransform(
+            const GfVec3f &rotation,
+            const UsdGeomXformCommonAPI::RotationOrder rotationOrder);
+
+    /// @}
+
 private:
 
     // Computes and stores op indices in the data members.

@@ -91,6 +91,7 @@ TraceEventContainer::Append(TraceEventContainer&& other)
 
     _Node::Join(_back, other._front);
     _back = other._back;
+    _nextEvent = other._nextEvent;
     other._nextEvent = nullptr;
     other._front = nullptr;
     other._back = nullptr;

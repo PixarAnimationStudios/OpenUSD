@@ -25,7 +25,7 @@ from qt import QtCore, QtGui, QtWidgets
 from constantGroup import ConstantGroup
 from pxr import Sdf, Usd, UsdGeom
 from primViewItem import PrimViewItem
-from common import PrintWarning, Timer
+from common import PrintWarning, Timer, UIPrimTreeColors, KeyboardShortcuts
 
 def _GetPropertySpecInSessionLayer(usdAttribute):
     propertyStack = usdAttribute.GetPropertyStack(Usd.TimeCode.Default())
@@ -33,6 +33,35 @@ def _GetPropertySpecInSessionLayer(usdAttribute):
         stageSessionLayer = usdAttribute.GetStage().GetSessionLayer()
         return stageSessionLayer.GetPropertyAtPath(usdAttribute.GetPath())
     return None
+
+# Function for getting the background color of the item for the delegates.
+# Returns none if we only want the default paint method. 
+def _GetBackgroundColor(item, option):
+    mouseOver = option.state & QtWidgets.QStyle.State_MouseOver
+    selected = option.state & QtWidgets.QStyle.State_Selected
+    pressed = option.state & QtWidgets.QStyle.State_Sunken
+
+    background = None
+
+    if item.ancestorOfSelected:
+        background = UIPrimTreeColors.ANCESTOR_OF_SELECTED
+        if mouseOver:
+            background = UIPrimTreeColors.ANCESTOR_OF_SELECTED_HOVER
+        if selected:
+            background = UIPrimTreeColors.SELECTED
+            if mouseOver:
+                background = UIPrimTreeColors.SELECTED_HOVER
+
+    else:
+        if not selected and not pressed and mouseOver:
+            background = UIPrimTreeColors.UNSELECTED_HOVER
+
+        if selected:
+            background = UIPrimTreeColors.SELECTED
+            if mouseOver:
+                background = UIPrimTreeColors.SELECTED_HOVER
+
+    return background
 
 class PrimViewColumnIndex(ConstantGroup):
     NAME, TYPE, VIS, DRAWMODE = range(4)
@@ -197,10 +226,21 @@ class DrawModeWidget(QtWidgets.QWidget):
         QtCore.QTimer.singleShot(0, self._CloseEditorIfNoEdit)
 
 class DrawModeItemDelegate(QtWidgets.QStyledItemDelegate):
-    def __init__(self, appController, parent=None):
+    def __init__(self, printTiming, parent=None):
         QtWidgets.QStyledItemDelegate.__init__(self, parent=parent)
         self._treeWidget = parent
-        self._appController = appController
+        self._printTiming = printTiming
+
+    # We need to override paint in this delegate as well so that the
+    # Draw Mode column will match with the behavior of the other
+    # items in the treeview. 
+    def paint(self, painter, option, index):
+        primViewItem = self._treeWidget.itemFromIndex(index)
+        background = _GetBackgroundColor(primViewItem, option)
+        if background:
+            painter.fillRect(option.rect, background)
+
+        super(DrawModeItemDelegate, self).paint(painter, option, index)
 
     def createEditor(self, parent, option, index):
         primViewItem = self._treeWidget.itemFromIndex(index)
@@ -210,12 +250,47 @@ class DrawModeItemDelegate(QtWidgets.QStyledItemDelegate):
 
         drawModeWidget = DrawModeWidget(primViewItem, 
             refreshFunc=self._treeWidget.UpdatePrimViewDrawMode,
-            printTiming=self._appController._printTiming,
+            printTiming=self._printTiming,
             parent=parent)
         # Store a copy of the widget in the primViewItem, for use when 
         # propagating changes to draw mode down a prim hierarchy.
         primViewItem.drawModeWidget = drawModeWidget
         return drawModeWidget
+
+class SelectedAncestorItemDelegate(QtWidgets.QStyledItemDelegate):
+    def __init__(self, parent=None):
+        QtWidgets.QStyledItemDelegate.__init__(self, parent=parent)
+        self._treeWidget = parent
+
+    # In order to highlight the ancestors of selected prims, we require
+    # a new delegate to be created to override the paint function.
+    # Because the stylesheet will override styling when items are hovered
+    # over, the hovering styling logic is moved to this delegate, and 
+    # primTreeWidget is excluded from the selectors for hovering
+    # in the stylesheet. 
+    def paint(self, painter, option, index):
+        primViewItem = self._treeWidget.itemFromIndex(index)
+
+        originalPosition = option.rect.left()
+        offsetPosition = self._treeWidget.header().offset()
+
+        # In order to fill in the entire cell for Prim Name, we must update the 
+        # dimensions of the rectangle painted. If the column is for Prim Name,
+        # we set the left side of the rectangle to be equal to the offset of the
+        # tree widget's header. 
+        background = _GetBackgroundColor(primViewItem, option)
+
+        if primViewItem.ancestorOfSelected:
+            if index.column() == PrimViewColumnIndex.NAME:
+                option.rect.setLeft(offsetPosition)
+
+        if background:
+            painter.fillRect(option.rect, background)
+
+        # resetting the dimensions of the rectangle so that we paint the correct
+        # content in the cells on top of the colors we previously painted.
+        option.rect.setLeft(originalPosition)
+        super(SelectedAncestorItemDelegate, self).paint(painter, option, index)
 
 
 class PrimItemSelectionModel(QtCore.QItemSelectionModel):
@@ -275,12 +350,17 @@ class PrimTreeWidget(QtWidgets.QTreeWidget):
         self._appController = None
         self._selectionModel = PrimItemSelectionModel(self.model())
         self.setSelectionModel(self._selectionModel)
+        # The list of ancestors of currently selected items
+        self._ancestorsOfSelected = []
 
-    def InitDrawModeDelegate(self, appController):
+    def InitControllers(self, appController):
         self._appController = appController
-        drawModeItemDelegate = DrawModeItemDelegate(appController, parent=self)
+        selectedAncestorItemDelegate = SelectedAncestorItemDelegate(parent=self)
+        self.setItemDelegate(selectedAncestorItemDelegate)
+        drawModeItemDelegate = DrawModeItemDelegate(appController._printTiming, 
+                                                    parent=self)
         self.setItemDelegateForColumn(PrimViewColumnIndex.DRAWMODE, 
-               drawModeItemDelegate)
+                                      drawModeItemDelegate)
 
     def ShowDrawModeWidgetForItem(self, primViewItem):
         self.openPersistentEditor(primViewItem, PrimViewColumnIndex.DRAWMODE)
@@ -308,6 +388,24 @@ class PrimTreeWidget(QtWidgets.QTreeWidget):
         click in that column to cause the item to be selected."""
         return col != PrimViewColumnIndex.VIS and col != PrimViewColumnIndex.DRAWMODE
 
+    def ExpandItemRecursively(self, item):
+        item = item.parent()
+        while item.parent():
+            if not item.isExpanded():
+                self.expandItem(item)
+            item = item.parent()
+
+    def FrameSelection(self):
+        if (self._appController):
+            selectedItems = [
+                self._appController._getItemAtPath(prim.GetPath())
+                for prim in self._appController._dataModel.selection.getPrims()]
+
+            for item in selectedItems:
+                self.ExpandItemRecursively(item)
+
+            self.scrollToItem(selectedItems[0])
+
     # We set selectability based on the column we mousePress'd in, and then
     # restore to true when leaving the widget, so that when we're not
     # interacting with the browser, anyone can modify selection through the
@@ -320,14 +418,7 @@ class PrimTreeWidget(QtWidgets.QTreeWidget):
         if item:
             col = self.columnAt(ev.x())
             self._selectionModel.processSelections = self.ColumnPressCausesSelection(col)
-        # The internals always set currentItem from a mouse click, and that
-        # affects things like keyboard navigation.  So if we didn't want the
-        # item to be selected, we don't want it to be current either, so
-        # restore the previous currnetItem afterwards.
-        currentItem = self.currentItem()
         super(PrimTreeWidget, self).mousePressEvent(ev)
-        if currentItem and not self._selectionModel.processSelections:
-            self.setCurrentItem(currentItem)
 
     def leaveEvent(self, ev):
         super(PrimTreeWidget, self).leaveEvent(ev)
@@ -338,20 +429,45 @@ class PrimTreeWidget(QtWidgets.QTreeWidget):
     # we have user plugins firing while we are still interacting with this
     # widget, and they manipulate selection.
     def clearSelection(self):
+        self._resetAncestorsOfSelected()
         with SelectionEnabler(self._selectionModel):
             super(PrimTreeWidget, self).clearSelection()
 
     def reset(self):
+        self._resetAncestorsOfSelected()
         with SelectionEnabler(self._selectionModel):
             super(PrimTreeWidget, self).reset()
 
     def selectAll(self):
+        self._resetAncestorsOfSelected()
         with SelectionEnabler(self._selectionModel):
             super(PrimTreeWidget, self).selectAll()
 
     def keyPressEvent(self, ev):
         with SelectionEnabler(self._selectionModel):
+            # Because setCurrentItem autoexpands the primview so that
+            # the current item is visible, we must set the current item
+            # only when we know it'll be needed for arrow navigation.
+            # We call this here before the selection data model clears
+            # the selection. 
+
+            if ev.key() == QtCore.Qt.Key_Down \
+            or ev.key() == QtCore.Qt.Key_Up \
+            or ev.key() == QtCore.Qt.Key_Right \
+            or ev.key() == QtCore.Qt.Key_Left:
+                currentPrim = self._appController._dataModel.selection.getFocusPrim()
+                currentItem = self._appController._getItemAtPath(currentPrim.GetPath())
+                self.setCurrentItem(currentItem, 0, QtCore.QItemSelectionModel.NoUpdate)
+
             super(PrimTreeWidget, self).keyPressEvent(ev)
+
+            # Handling the F hotkey comes after the super class's event handling,
+            # since the default behavior in the super class's keyPressEvent function
+            # is to set the current item to the first item found that alphabetically
+            # matches the key entered. Since we want to override this behavior for
+            # the F hotkey, we must handle it after the super class's keyPressEvent. 
+            if ev.key() == KeyboardShortcuts.FramingKey:
+                self.FrameSelection()
 
     def keyReleaseEvent(self, ev):
         with SelectionEnabler(self._selectionModel):
@@ -364,6 +480,32 @@ class PrimTreeWidget(QtWidgets.QTreeWidget):
         with SelectionEnabler(self._selectionModel):
             for item in added:
                 item.setSelected(True)
-                self.scrollToItem(item)
             for item in removed:
                 item.setSelected(False)
+        self._refreshAncestorsOfSelected()
+        # This is a big hammer... if we instead built up a list of the
+        # ModelIndices of all the changed ancestors, we could instead make
+        # our selectionModel emit selectionChanged for just those items,
+        # instead.  Does not currently seem to be impacting interactivity.
+        QtWidgets.QWidget.update(self)
+
+    def _resetAncestorsOfSelected(self):
+        for item in self._ancestorsOfSelected:
+            item.ancestorOfSelected = False
+        self._ancestorsOfSelected = []
+
+    # Refresh the list of ancestors of selected prims
+    def _refreshAncestorsOfSelected(self):
+        selectedItems = [
+            self._appController._getItemAtPath(prim.GetPath())
+            for prim in self._appController._dataModel.selection.getPrims()]
+
+        self._resetAncestorsOfSelected()
+
+        # Add all ancestor of the prim associated with the item
+        # to _ancestorsOfSelected, and mark them as selected ancestors
+        for item in selectedItems:
+            while item.parent():
+                item.parent().ancestorOfSelected = True
+                self._ancestorsOfSelected.append(item.parent())
+                item = item.parent()

@@ -49,6 +49,11 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((ImplementationName, "__SDR__implementationName"))\
     ((Target, "__SDR__target"))
 
+// Note: The concept of context is defined on NdrNode and can be queried with
+// the GetContext() method. Sdr categorizes shaders by the context in which they
+// are used inside of a renderer. For instance during 'pattern' evaluation to
+// feed into a surface or volume shader. For BXDFs used in 'surface' and
+// 'volume' rendering situations.
 #define SDR_NODE_CONTEXT_TOKENS      \
     ((Pattern, "pattern"))           \
     ((Surface, "surface"))           \
@@ -60,10 +65,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((PixelFilter, "pixelFilter"))
 
 #define SDR_NODE_ROLE_TOKENS         \
-    ((Surface, "surface"))           \
-    ((Displacement, "displacement")) \
     ((Primvar, "primvar"))           \
-    ((Texture, "texture"))
+    ((Texture, "texture"))           \
+    ((Field, "field"))
 
 TF_DECLARE_PUBLIC_TOKENS(SdrNodeMetadata, SDR_API, SDR_NODE_METADATA_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(SdrNodeContext, SDR_API, SDR_NODE_CONTEXT_TOKENS);
@@ -108,7 +112,10 @@ public:
     SDR_API
     NdrTokenVec GetAssetIdentifierInputNames() const;
 
-    /// Returns that first shader input that is tagged as the default input.
+    /// Returns the first shader input that is tagged as the default input.
+    /// A default input and its value can be used to acquire a fallback value
+    /// for a node when the node is considered 'disabled' or otherwise
+    /// incapable of producing an output value.
     SDR_API
     SdrShaderPropertyConstPtr GetDefaultInput() const;
 
@@ -134,8 +141,11 @@ public:
     const TfToken& GetCategory() const { return _category; }
 
     /// Returns the role of this node. This is used to annotate the role that 
-    /// the shader node plays inside a shader network. Example roles include 
-    /// 'surface', 'displacement', 'texture', 'primvarReader' etc.
+    /// the shader node plays inside a shader network. We can tag certain
+    /// shaders to indicate their role within a shading network. We currently
+    /// tag primvar reading nodes, texture reading nodes and nodes that access
+    /// volume fields (like extinction or scattering). This is done to identify
+    /// resources used by a shading network.
     SDR_API
     const std::string &GetRole() const;
 
@@ -155,15 +165,21 @@ public:
     SDR_API
     const NdrTokenVec& GetPages() const { return _pages; };
 
-    /// The list of primvars that this node uses (note that additional primvars
-    /// may also be present on specific input properties' values; the properties
-    /// that primvars are provided on can be determined via
-    /// `GetAdditionalPrimvarProperties()`).
+    /// The list of primvars this node knows it requires / uses.
+    /// For example, a shader node may require the 'normals' primvar to function
+    /// correctly. Additional, user specified primvars may have been authored on
+    /// the node. These can be queried via `GetAdditionalPrimvarProperties()`.
+    /// Together, `GetPrimvars()` and `GetAdditionalPrimvarProperties()`,
+    /// provide the complete list of primvar requirements for the node.
     SDR_API
     const NdrTokenVec& GetPrimvars() const { return _primvars; }
 
     /// The list of string input properties whose values provide the names of
-    /// additional primvars consumed by this node.
+    /// additional primvars consumed by this node. For example, this may return
+    /// a token named `varname`. This indicates that the client should query the
+    /// value of a (presumed to be string-valued) input attribute named varname
+    /// from its scene description to determine the name of a primvar the 
+    /// node will consume. See `GetPrimvars()` for additional information.
     SDR_API
     const NdrTokenVec& GetAdditionalPrimvarProperties() const {
         return _primvarNamingProperties;

@@ -215,6 +215,9 @@ public:
     inline VtValue
     GetPrimvar(HdSceneDelegate* delegate, const TfToken &name) const;
 
+    HD_API
+    VtMatrix4dArray GetInstancerTransforms(HdSceneDelegate* delegate);
+
     /// Returns true if any dirty flags are set for this rprim.
     HD_API
     bool IsDirty(HdChangeTracker &changeTracker) const;
@@ -272,18 +275,6 @@ protected:
     HD_API
     void _SetMaterialId(HdChangeTracker &changeTracker,
                         SdfPath const& materialId);
-
-    /// note: constant range has to be shared across reprs (smooth, refined),
-    /// since we're tracking dirtiness in a single bit (e.g. DirtyTransform)
-    /// unlike vertex primvars (DirtyPoints-DirtyRefinedPoints)
-    HD_API
-    void _PopulateConstantPrimvars(HdSceneDelegate *sceneDelegate,
-                            HdDrawItem *drawItem,
-                            HdDirtyBits *dirtyBits,
-                            HdPrimvarDescriptorVector const &constantPrimvars);
-
-    HD_API
-    VtMatrix4dArray _GetInstancerTransforms(HdSceneDelegate* delegate);
 
     // methods to assist allocating and migrating shared primvar ranges
     HD_API

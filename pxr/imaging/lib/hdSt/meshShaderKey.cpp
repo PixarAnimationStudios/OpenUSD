@@ -90,8 +90,10 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // main for all the shader stages
     ((mainVS,                  "Mesh.Vertex"))
-    ((mainBSplineTCS,          "Mesh.TessControl.BSpline"))
-    ((mainBezierTES,           "Mesh.TessEval.Bezier"))
+    ((mainBSplineQuadTCS,      "Mesh.TessControl.BSplineQuad"))
+    ((mainBezierQuadTES,       "Mesh.TessEval.BezierQuad"))
+    ((mainBoxSplineTriangleTCS,"Mesh.TessControl.BoxSplineTriangle"))
+    ((mainBezierTriangleTES,   "Mesh.TessEval.BezierTriangle"))
     ((mainTriangleTessGS,      "Mesh.Geometry.TriangleTess"))
     ((mainTriangleGS,          "Mesh.Geometry.Triangle"))
     ((mainQuadGS,              "Mesh.Geometry.Quad"))
@@ -146,6 +148,9 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     bool isPrimTypeTris   = HdSt_GeometricShader::IsPrimTypeTriangles(primType);
     const bool isPrimTypePatches = 
         HdSt_GeometricShader::IsPrimTypePatches(primType);
+    const bool isPrimTypePatchesBSpline = 
+        primType ==
+            HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BSPLINE;
 
     /* Normals configurations:
      * Smooth normals:
@@ -191,15 +196,21 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     // tessellation control shader
     TCS[0] = isPrimTypePatches ? _tokens->instancing : TfToken();
-    TCS[1] = isPrimTypePatches ? _tokens->mainBSplineTCS : TfToken();
+    TCS[1] = isPrimTypePatches ? isPrimTypePatchesBSpline
+                                   ? _tokens->mainBSplineQuadTCS
+                                   : _tokens->mainBoxSplineTriangleTCS
+                               : TfToken();
     TCS[2] = TfToken();
 
     // tessellation evaluation shader
     TES[0] = isPrimTypePatches ? _tokens->instancing : TfToken();
-    TES[1] = isPrimTypePatches ? _tokens->mainBezierTES : TfToken();
+    TES[1] = isPrimTypePatches ? isPrimTypePatchesBSpline
+                                   ? _tokens->mainBezierQuadTES
+                                   : _tokens->mainBezierTriangleTES
+                               : TfToken();
     TES[2] = TfToken();
 
-    // geometry shader (note that PRIM_MESH_PATCHES uses triangles)
+    // geometry shader
     GS[0] = _tokens->instancing;
 
     GS[1] = (normalsSource == NormalSourceFlat) ?
@@ -226,7 +237,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         _tokens->noCustomDisplacementGS :
         _tokens->customDisplacementGS;
 
-    GS[6] = isPrimTypeQuads? _tokens->mainQuadGS :
+    GS[6] = isPrimTypeQuads ? _tokens->mainQuadGS :
                 (isPrimTypePatches ? _tokens->mainTriangleTessGS
                                    : _tokens->mainTriangleGS);
     GS[7] = TfToken();

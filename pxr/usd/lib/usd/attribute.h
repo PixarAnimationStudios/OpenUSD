@@ -467,10 +467,14 @@ public:
         static_assert(!std::is_pointer<T>::value, "");
         static_assert(SdfValueTypeTraits<T>::IsValueType ||
                       std::is_same<T, SdfValueBlock>::value, "");
-
-        SdfAbstractDataConstTypedValue<T> in(&value);
-        return _UntypedSet(in, time);
+        return _Set(value, time);
     }
+
+    /// \overload
+    /// As a convenience, we allow the setting of string value typed attributes
+    /// via a C string value.
+    USD_API
+    bool Set(const char* value, UsdTimeCode time = UsdTimeCode::Default()) const;
 
     /// \overload 
     USD_API
@@ -647,12 +651,11 @@ private:
     bool _Create(const SdfValueTypeName &typeName, bool custom,
                  const SdfVariability &variability) const;
 
-    USD_API
-    bool _UntypedSet(const SdfAbstractDataConstValue& value, 
-                     UsdTimeCode t) const;
-
     template <typename T>
     bool _Get(T* value, UsdTimeCode time) const;
+
+    template <typename T>
+    bool _Set(const T& value, UsdTimeCode time) const;
 
     SdfPath
     _GetPathForAuthoring(const SdfPath &path, std::string* whyNot) const;

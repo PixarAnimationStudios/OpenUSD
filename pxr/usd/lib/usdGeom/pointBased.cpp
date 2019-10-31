@@ -118,6 +118,23 @@ UsdGeomPointBased::CreateVelocitiesAttr(VtValue const &defaultValue, bool writeS
 }
 
 UsdAttribute
+UsdGeomPointBased::GetAccelerationsAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->accelerations);
+}
+
+UsdAttribute
+UsdGeomPointBased::CreateAccelerationsAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->accelerations,
+                       SdfValueTypeNames->Vector3fArray,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdGeomPointBased::GetNormalsAttr() const
 {
     return GetPrim().GetAttribute(UsdGeomTokens->normals);
@@ -153,6 +170,7 @@ UsdGeomPointBased::GetSchemaAttributeNames(bool includeInherited)
     static TfTokenVector localNames = {
         UsdGeomTokens->points,
         UsdGeomTokens->velocities,
+        UsdGeomTokens->accelerations,
         UsdGeomTokens->normals,
     };
     static TfTokenVector allNames =
@@ -177,8 +195,12 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/usd/usdGeom/samplingUtils.h"
 #include "pxr/usd/usdGeom/boundableComputeExtent.h"
+#include "pxr/usd/usdGeom/motionAPI.h"
 #include "pxr/base/tf/registryManager.h"
+#include "pxr/base/gf/transform.h"
+#include "pxr/base/work/loops.h"
 #include "pxr/base/work/reduce.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -288,6 +310,160 @@ _ComputeExtentForPointBased(
     } else {
         return UsdGeomPointBased::ComputeExtent(points, extent);
     }
+}
+
+bool
+UsdGeomPointBased::ComputePointsAtTime(
+    VtArray<GfVec3f>* points,
+    const UsdTimeCode time,
+    const UsdTimeCode baseTime) const
+{
+    std::vector<VtVec3fArray> pointsArray;
+    std::vector<UsdTimeCode> times({time});
+    if (!ComputePointsAtTimes(&pointsArray,
+                            times,
+                            baseTime)) {
+        return false;
+    }
+    *points = pointsArray.at(0);
+
+    return true;
+}
+
+bool
+UsdGeomPointBased::ComputePointsAtTimes(
+    std::vector<VtArray<GfVec3f>>* pointsArray,
+    const std::vector<UsdTimeCode>& times,
+    const UsdTimeCode baseTime) const
+{
+    size_t numSamples = times.size();
+    for (auto time : times) {
+        if (time.IsNumeric() != baseTime.IsNumeric()) {
+            TF_CODING_ERROR(
+                "%s -- all sample times in times and baseTime must either all "
+                "be numeric or all be default",
+                GetPrim().GetPath().GetText());
+        }
+    }
+
+    VtVec3fArray positions;
+    VtVec3fArray velocities;
+    UsdTimeCode velocitiesSampleTime;
+    VtVec3fArray accelerations;
+    float velocityScale;
+
+    // by passing in 0 to expectedNumPositions we default the expected number
+    // of positions to the number of points in the points attribute
+    if (!UsdGeom_GetPositionsVelocitiesAndAccelerations(
+            GetPointsAttr(),
+            GetVelocitiesAttr(),
+            GetAccelerationsAttr(),
+            baseTime,
+            0, 
+            &positions,
+            &velocities,
+            &velocitiesSampleTime,
+            &accelerations,
+            &velocityScale,
+            GetPrim())) {
+        return false;
+    }
+
+    size_t numPoints = positions.size();
+    if (numPoints == 0) {
+        pointsArray->clear();
+        pointsArray->resize(numSamples);
+        return true;
+    }
+
+    UsdStageWeakPtr stage = GetPrim().GetStage();
+
+    std::vector<VtArray<GfVec3f>> pointsArrayData;
+    pointsArrayData.resize(numSamples);
+    bool useInterpolated = velocities.empty();
+    for (size_t i = 0; i < numSamples; i++) {
+
+        UsdTimeCode time = times[i];
+        VtArray<GfVec3f>* points = &(pointsArrayData[i]);
+
+        // If there are no valid velocities or angular velocities, we fallback to
+        // "standard" computation logic (linear interpolation between samples).
+        if (useInterpolated) {
+
+            // Try to fetch the points at the sample time. If this fails or the 
+            // fetched data don't have the correct topology, we fallback to the
+            // data from the base time.
+
+            VtVec3fArray interpolatedPoints;
+            if (GetPointsAttr().Get(&interpolatedPoints, time)
+                    && interpolatedPoints.size() == numPoints) {
+                positions = interpolatedPoints;
+            }
+
+        }
+
+        if (!ComputePointsAtTime(
+                points,
+                stage,
+                time,
+                positions,
+                velocities,
+                velocitiesSampleTime,
+                accelerations,
+                velocityScale)) {
+            return false;
+        }
+
+    }
+
+    *pointsArray = pointsArrayData;
+    return true;
+}
+
+bool
+UsdGeomPointBased::ComputePointsAtTime(
+    VtArray<GfVec3f>* points,
+    UsdStageWeakPtr& stage,
+    UsdTimeCode time,
+    const VtVec3fArray& positions,
+    const VtVec3fArray& velocities,
+    UsdTimeCode velocitiesSampleTime,
+    const VtVec3fArray& accelerations,
+    float velocityScale)
+{
+    size_t numPoints = positions.size();
+
+    const double timeCodesPerSecond = stage->GetTimeCodesPerSecond();
+    const float velocityTimeDelta = UsdGeom_CalculateTimeDelta(
+                                      velocityScale,
+                                      time,
+                                      velocitiesSampleTime,
+                                      timeCodesPerSecond);
+
+    points->resize(numPoints);
+
+    const auto computePoints = [&velocityTimeDelta, 
+        &positions, &velocities, &accelerations, 
+        &points] (size_t start, size_t end) {
+        for (size_t pointId = start ; pointId < end ; ++pointId) {
+            GfVec3f translation = positions[pointId];
+            if (velocities.size() != 0) {
+                GfVec3f velocity = velocities[pointId];
+                if (accelerations.size() != 0) {
+                    velocity += velocityTimeDelta * accelerations[pointId] * 0.5;
+                }
+                translation += velocityTimeDelta * velocity;
+            }
+            (*points)[pointId] = translation;
+
+        }
+    };
+
+    {
+        WorkParallelForN(numPoints, computePoints);
+    }
+
+    return true;
 }
 
 TF_REGISTRY_FUNCTION(UsdGeomBoundable)

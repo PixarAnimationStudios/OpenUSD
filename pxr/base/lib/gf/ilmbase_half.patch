@@ -1,5 +1,5 @@
---- openexr/IlmBase/Half/half.cpp	2018-10-01 18:23:23.824246552 -0700
-+++ ilmbase_half.cpp	2018-08-28 11:19:11.563834456 -0700
+--- openexr/IlmBase/Half/half.cpp	2019-09-09 23:40:27.186426000 -0700
++++ ilmbase_half.cpp	2019-08-05 18:07:51.371334000 -0700
 @@ -45,18 +45,27 @@
  //---------------------------------------------------------------------------
  
@@ -33,7 +33,7 @@
  
  //-----------------------------------------------
  // Overflow handler for float-to-half conversion;
-@@ -64,14 +73,14 @@
+@@ -64,7 +73,7 @@
  // which may be trapped by the operating system.
  //-----------------------------------------------
  
@@ -42,14 +42,6 @@
  half::overflow ()
  {
      volatile float f = 1e10;
- 
-     for (int i = 0; i < 10; i++)	
- 	f *= f;				// this will overflow before
--					// the for­loop terminates
-+					// the forÂ­loop terminates
-     return f;
- }
- 
 @@ -81,7 +90,7 @@
  // zeroes, denormalized numbers and exponent overflows.
  //-----------------------------------------------------
@@ -121,8 +113,8 @@
 +} // namespace pxr_half
 +
 +PXR_NAMESPACE_CLOSE_SCOPE
---- openexr/IlmBase/Half/half.h	2018-10-01 18:22:02.106135931 -0700
-+++ ilmbase_half.h	2018-08-28 11:18:33.291309415 -0700
+--- openexr/IlmBase/Half/half.h	2019-09-09 23:42:36.452479000 -0700
++++ ilmbase_half.h	2019-09-09 14:25:22.287651000 -0700
 @@ -82,11 +82,17 @@
  //
  //---------------------------------------------------------------------------
@@ -145,7 +137,29 @@
  
  class half
  {
-@@ -197,8 +203,8 @@
+@@ -96,9 +102,11 @@
+     // Constructors
+     //-------------
+ 
+-    half ();			// no initialization
++    half () = default;			// no initialization
+     half (float f);
+ 
++    constexpr half (const half& h) = default;
++
+ 
+     //--------------------
+     // Conversion to float
+@@ -118,7 +126,7 @@
+     // Assignment
+     //-----------
+ 
+-    half &		operator = (half  h);
++    half &		operator = (const half &) = default;
+     half &		operator = (float f);
+ 
+     half &		operator += (half  h);
+@@ -197,8 +205,8 @@
      // Access to the internal representation
      //--------------------------------------
  
@@ -156,7 +170,7 @@
  
  
    public:
-@@ -211,13 +217,13 @@
+@@ -211,13 +219,13 @@
  
    private:
  
@@ -174,7 +188,7 @@
  };
  
  
-@@ -226,18 +232,18 @@
+@@ -226,18 +234,18 @@
  // Stream I/O
  //-----------
  
@@ -199,7 +213,40 @@
  
  
  //-------------------------------------------------------------------------
-@@ -754,4 +760,9 @@
+@@ -414,17 +422,6 @@
+ //---------------------------------------------------------------------------
+ 
+ 
+-//--------------------
+-// Simple constructors
+-//--------------------
+-
+-inline
+-half::half ()
+-{
+-    // no initialization
+-}
+-
+-
+ //----------------------------
+ // Half-from-float constructor
+ //----------------------------
+@@ -573,14 +570,6 @@
+ 
+ 
+ inline half &
+-half::operator = (half h)
+-{
+-    _h = h._h;
+-    return *this;
+-}
+-
+-
+-inline half &
+ half::operator = (float f)
+ {
+     *this = half (f);
+@@ -758,4 +747,8 @@
      _h = bits;
  }
  
@@ -208,9 +255,8 @@
 +PXR_NAMESPACE_CLOSE_SCOPE
 +
  #endif
-+
---- openexr/IlmBase/Half/halfLimits.h	2018-10-01 18:23:29.296320927 -0700
-+++ ilmbase_halfLimits.h	2017-12-14 12:23:20.000000000 -0800
+--- openexr/IlmBase/Half/halfLimits.h	2019-09-09 23:40:27.206431000 -0700
++++ ilmbase_halfLimits.h	2019-08-05 18:07:51.394336000 -0700
 @@ -38,8 +38,8 @@
  //     Rod Bogart <rgb@ilm.com>
  

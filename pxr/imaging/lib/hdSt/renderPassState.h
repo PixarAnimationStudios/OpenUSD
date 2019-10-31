@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/renderPassState.h"
+#include "pxr/imaging/hgi/graphicsEncoderDesc.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -105,6 +106,9 @@ public:
 
     HDST_API
     size_t GetShaderHash() const;
+
+    // Helper to convert AOV bindings to HgiGraphicsEncoder descriptor
+    HgiGraphicsEncoderDesc MakeGraphicsEncoderDesc() const;
 
 private:
     bool _UseAlphaMask() const;

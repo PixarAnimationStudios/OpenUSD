@@ -1,40 +1,47 @@
-Node Definition Registry (NDR)
+/*!
+\page ndr_page_front Ndr : Node Definition Registry
+\if ( PIXAR_MFB_BUILD )
+\publicLib
+\mainpage Ndr : Node Definition Registry
+\endif
 
-The NDR provides a framework in which you can,
+Ndr provides a framework in which you can,
 agnostic to the node's domain (shading, lighting, compositing, etc), register
-nodes with the NDR, and subsequently ask for information about those nodes.
-The information NDR provides about these nodes will be fairly generic, given
-that the NDR must not cater to any specific type of node. However, specialized
-registries can derive from the NDR, and it's there that domain-specific logic
+nodes with Ndr, and subsequently ask for information about those nodes.
+The information Ndr provides about these nodes will be fairly generic, given
+that Ndr must not cater to any specific type of node. However, specialized
+registries can derive from Ndr, and it's there that domain-specific logic
 can be implemented. Additionally, node parsing and "discovery" are done via
-plugins, again to keep the NDR generic and extendable.
+plugins, again to keep Ndr generic and extendable.
 
 In addition to being able to instantiate specialized registries, domain-specific
-nodes and properties deriving from the base NDR classes can also be created.
+nodes and properties deriving from the base Ndr classes can also be created.
 This is explained in the sections below.
 
+\tableofcontents
 
-\section ndr_Organization NDR Organization
-The NDR can be split into 5 major components:
+\section ndr_Organization Ndr Organization
+Ndr can be split into 5 major components, as described by the following
+subsections.
 
-\subsection ndr_BaseClass NDR Base Registry
-The core NDR registry, `NdrRegistry`, is where node-level queries are done.
+\subsection ndr_BaseClass Ndr Base Registry
+The core Ndr registry, `NdrRegistry`, is where node-level queries are done.
 In practice, it will not be used directly (in almost all cases, a specialized
-registry deriving from NDR core will be used instead). Upon initialization, the
+registry deriving from Ndr core will be used instead). Upon initialization, the
 registry searches for all parser and discovery plugins. During this start-up
 phase the discovery plugins are all run, but the nodes that are found are NOT
 parsed. The registry parses nodes on demand when information about a node(s) is
 requested in order to keep the start-up process as fast as possible.
 
-The type of information that the base NDR registry provides includes:
+The type of information that the base Ndr registry provides includes:
 <ul>
     <li>The names of nodes that have been registered</li>
     <li>Parsed node instances (created on-demand when requested)</li>
     <li>Where the nodes were found</li>
 </ul>
 
-\subsection ndr_BaseNode NDR Base Node
-NDR provides a base node class, `NdrNode`, which exposes domain-agnostic
+\subsection ndr_BaseNode Ndr Base Node
+Ndr provides a base node class, `NdrNode`, which exposes domain-agnostic
 information such as:
 
 <ul>
@@ -43,8 +50,8 @@ information such as:
     <li>Any metadata attached to the node</li>
 </ul>
 
-\subsection ndr_BaseProperty NDR Base Property
-NDR also provides a base property class, `NdrProperty`. Inputs and outputs are
+\subsection ndr_BaseProperty Ndr Base Property
+Ndr also provides a base property class, `NdrProperty`. Inputs and outputs are
 on a node are collectively identified as "properties".
 
 The base property exposes information like:
@@ -82,14 +89,14 @@ information about parser plugins is available in the `NdrParserPlugin`
 documentation.
 
 \section custom_setup How to Set Up a Domain-Specific Registry
-The base NDR registry can be used as-is if only generic information about nodes
+The base Ndr registry can be used as-is if only generic information about nodes
 is needed. In most cases however, more detailed information about the nodes will
 be necessary, and this is where domain-specific registries come into play. The
 process can be divided into 5 areas of customization, which echo the 5 sections
-above:
+above.
 
 \subsection ndr_customReg Custom Registry
-The base NDR registry can be derived from to create a specialized registry. In
+The base Ndr registry can be derived from to create a specialized registry. In
 many cases, not much will be needed here except doing dynamic casts to your
 domain-specific nodes. The registry's base class provides methods such as
 `NdrRegistry::GetNode()` (which returns a `NdrNode`), but you may want to
@@ -114,3 +121,5 @@ See the documentation for `NdrDiscoveryPlugin` for more information.
 
 \section ndr_customParser Custom Parser Plugin
 See the documentation for `NdrParserPlugin` for more information.
+
+*/

@@ -172,8 +172,8 @@ UsdDancingCubesExampleFileFormat::CanFieldChangeAffectFileFormatArguments(
     for (const TfToken &token : UsdDancingCubesExample_DataParamsTokens->allTokens) {
         auto oldIt = oldDict.find(token);
         auto newIt = newDict.find(token);
-        const bool oldValExists = oldIt == oldDict.end();
-        const bool newValExists = newIt == newDict.end();
+        const bool oldValExists = oldIt != oldDict.end();
+        const bool newValExists = newIt != newDict.end();
 
         // If param value exists in one or not the other, we have change.
         if (oldValExists != newValExists) {

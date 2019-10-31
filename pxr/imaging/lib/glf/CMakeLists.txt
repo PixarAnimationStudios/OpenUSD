@@ -85,6 +85,7 @@ pxr_library(glf
         uvTextureData
         uvTextureStorage
         uvTextureStorageData
+        vdbTexture
         ${optionalPublicClasses}
 
     PRIVATE_CLASSES
@@ -119,6 +120,7 @@ pxr_library(glf
         wrapTextureRegistry.cpp
         wrapUVTexture.cpp
         wrapUVTextureStorage.cpp
+        wrapVdbTexture.cpp
 
     PYMODULE_FILES
         __init__.py
