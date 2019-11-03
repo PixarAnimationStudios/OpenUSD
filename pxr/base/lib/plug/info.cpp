@@ -207,6 +207,8 @@ _ReadPlugInfo(_ReadContext* context, std::string pathname)
     if (*pathname.rbegin() == '/') {
         pathname = pathname + _Tokens->PlugInfoName.GetString();
     }
+    // Resolve real path to avoid collisions with symlinked files
+    pathname = TfRealPath(pathname);
 
     // Ignore redundant reads.  This also prevents infinite recursion.
     if (!context->addVisitedPath(pathname)) {
@@ -731,7 +733,7 @@ Plug_ReadPlugInfo(
         // files must still explicitly append '/' to be handled as
         // directories.
         const bool hasslash = *pathname.rbegin() == '/';
-        if (hasslash || TfIsDir(pathname)) {
+        if (hasslash || TfIsDir(pathname, true)) {
             context.taskArena.Run([&context, pathname, hasslash] {
                 _ReadPlugInfoWithWildcards(&context,
                     hasslash ? pathname : pathname + "/");
