@@ -48,7 +48,6 @@ pxr_library(usdImagingGL
         domeLightAdapter
         drawModeAdapter
         engine
-        hydraMaterialAdapter
         materialTextureAdapter
         package
         renderParams

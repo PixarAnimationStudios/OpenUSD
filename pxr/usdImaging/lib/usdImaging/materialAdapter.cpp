@@ -133,9 +133,10 @@ UsdImagingMaterialAdapter::Populate(
     UsdShadeMaterial material(prim);
     if (!material) return SdfPath::EmptyPath();
 
-    // Skip materials that do not match renderDelegate supported types
+    // Skip materials that do not match renderDelegate supported types.
+    // XXX We can further improve filtering by combining the below descendants
+    // gather and validate the Sdr node types are supported by render delegate.
     const TfToken context = _GetMaterialNetworkSelector();
-    TfTokenVector shaderSourceTypes = _GetShaderSourceTypes();
     UsdShadeShader surface = material.ComputeSurfaceSource(context);
     UsdShadeShader volume = material.ComputeVolumeSource(context);
     if (!surface && !volume) return SdfPath::EmptyPath();
