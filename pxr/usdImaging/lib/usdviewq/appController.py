@@ -72,7 +72,7 @@ from common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts,
 import settings2
 from settings2 import StateSource
 from usdviewApi import UsdviewApi
-from rootDataModel import RootDataModel
+from rootDataModel import RootDataModel, ChangeNotice
 from viewSettingsDataModel import ViewSettingsDataModel
 import plugin
 from pythonInterpreter import Myconsole
@@ -124,6 +124,16 @@ class UsdviewDataModel(RootDataModel):
     @property
     def viewSettings(self):
         return self._viewSettingsDataModel
+
+    def _emitPrimsChanged(self, primChange, propertyChange):
+        # Override from base class: before alerting listening controllers,
+        # ensure our owned selectionDataModel is updated
+        if primChange == ChangeNotice.RESYNC:
+            self.selection.removeUnpopulatedPrims()
+
+        super(UsdviewDataModel, self)._emitPrimsChanged(primChange, 
+                                                        propertyChange)
+
 
 class UIStateProxySource(StateSource):
     """XXX Temporary class which allows AppController to serve as two state sources.
@@ -3186,7 +3196,11 @@ class AppController(QtCore.QObject):
                     if not item:
                         primPath = prim.GetPrimPath()
                         item = self._getItemAtPath(primPath)
-                    item.setExpanded(expand)
+                    # Depending on our "Show Prim" settings, a valid,
+                    # yet inactive, undefined, or abstract prim may
+                    # not yield an item at all.
+                    if item:
+                        item.setExpanded(expand)
 
     def _refreshPrimViewSelection(self, expandedPrims):
         """Refresh the selected prim view items to match the selection data

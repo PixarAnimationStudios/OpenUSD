@@ -134,6 +134,13 @@ class _PrimSelection(object):
 
         for path in self._selection.keys():
             self._clearPrimPath(path)
+    
+    def removeMatchingPaths(self, matches):
+        """Remove any paths that pass the given predicate"""
+
+        for path in self._selection.keys():
+            if matches(path):
+                self._clearPrimPath(path)
 
     def addPrimPath(self, path, instance=ALL_INSTANCES):
         """Add a path to the selection. If an instance is given, then only add
@@ -315,7 +322,10 @@ class _PropSelection(object):
 
 
 class SelectionDataModel(QtCore.QObject):
-    """Data model managing the current selection of prims and properties."""
+    """Data model managing the current selection of prims and properties.
+    Please note that the owner of an instance of this class is
+    responsible for calling SelectionDataModel.removeUnpopulatedPrims() when
+    appropriate, lest methods like getPrims() return invalid prims."""
 
     # Signals must be declared in the class, but each instance of the selection
     # data model has its own unique signal instances.
@@ -363,7 +373,7 @@ class SelectionDataModel(QtCore.QObject):
         self._computedPropSelection = _PropSelection()
 
     ### Internal Operations ###
-    def _primSelectionChanged(self):
+    def _primSelectionChanged(self, emitSelChangedSignal=True):
         """Should be called whenever a change is made to _primSelection. Some
         final work is done then the prim selection changed signal is emitted.
         """
@@ -386,7 +396,8 @@ class SelectionDataModel(QtCore.QObject):
 
         # Finally, emit the changed signal.
         added, removed = self._primSelection.getDiff()
-        self.signalPrimSelectionChanged.emit(added, removed)
+        if emitSelChangedSignal:
+            self.signalPrimSelectionChanged.emit(added, removed)
 
     def _propSelectionChanged(self):
         """Should be called whenever a change is made to _propSelection."""
@@ -762,6 +773,18 @@ class SelectionDataModel(QtCore.QObject):
         for prim in self.getPrims():
             if not prim.IsDefined():
                 self.removePrim(prim)
+
+    def removeUnpopulatedPrims(self):
+        """Remove all prim paths whose corresponding prims do not currently
+        exist on the stage.  It is the application's responsibility to
+        call this method while it is processing changes to the stage,
+        *before* querying this object for selections.  Because this is a
+        synchronization operation rather than an expression of GUI state
+        change, it does *not* perform any notifications/signals, which could
+        cause reentrant application change processing."""
+        stage = self._rootDataModel.stage
+        self._primSelection.removeMatchingPaths(lambda path: not stage.GetPrimAtPath(path))
+        self._primSelectionChanged(emitSelChangedSignal=False)
      
     ### Property Path Operations ###
 

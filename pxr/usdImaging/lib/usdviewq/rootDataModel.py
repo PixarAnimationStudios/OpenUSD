@@ -95,6 +95,9 @@ class RootDataModel(QtCore.QObject):
 
             self.signalStageReplaced.emit()
 
+    def _emitPrimsChanged(self, primChange, propertyChange):
+        self.signalPrimsChanged.emit(primChange, propertyChange)
+
     def __OnPrimsChanged(self, notice, sender):
         primChange = ChangeNotice.NONE
         propertyChange = ChangeNotice.NONE
@@ -112,7 +115,7 @@ class RootDataModel(QtCore.QObject):
                 if p.IsPropertyPath() and propertyChange == ChangeNotice.NONE:
                     propertyChange = ChangeNotice.INFOCHANGES
 
-        self.signalPrimsChanged.emit(primChange, propertyChange)
+        self._emitPrimsChanged(primChange, propertyChange)
 
     @property
     def currentFrame(self):
