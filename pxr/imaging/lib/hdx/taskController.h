@@ -208,6 +208,15 @@ public:
     HDX_API
     void SetColorChannelParams(HdxColorChannelTaskParams const& params);
 
+    /// -------------------------------------------------------
+    /// Colorize API
+
+    /// Turns the colorize task color quantization on or off.
+    /// XXX: This is a temporary function that will be soon deprecated. Please
+    //       avoid calling it.
+    HDX_API
+    void SetColorizeQuantizationEnabled(bool enabled);
+
 private:
     ///
     /// This class is not intended to be copied.
@@ -241,8 +250,6 @@ private:
 
     void _SetBlendStateForMaterialTag(TfToken const& materialTag,
                                       HdxRenderTaskParams *renderParams) const;
-
-    void _SetColorizeQuantizationEnabled(bool enabled);
 
     // Render graph topology control.
     bool _ShadowsEnabled() const;

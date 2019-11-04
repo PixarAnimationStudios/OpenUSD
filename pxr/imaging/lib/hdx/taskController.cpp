@@ -1836,7 +1836,7 @@ HdxTaskController::SetColorCorrectionParams(
         // XXX Disable Colorize 'color quantization' when ColorCorrection is
         // disabled. We need to retire Colorize writing to the framebuffer so we
         // can just rely on ColorCorrection.
-        _SetColorizeQuantizationEnabled(
+        SetColorizeQuantizationEnabled(
             !params.colorCorrectionMode.IsEmpty() &&
             params.colorCorrectionMode != HdxColorCorrectionTokens->disabled);
     }
@@ -1864,7 +1864,7 @@ HdxTaskController::SetColorChannelParams(
 }
 
 void 
-HdxTaskController::_SetColorizeQuantizationEnabled(bool enabled)
+HdxTaskController::SetColorizeQuantizationEnabled(bool enabled)
 {
     if (_colorizeTaskId.IsEmpty()) return;
 
