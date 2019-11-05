@@ -343,8 +343,9 @@ _GetParamFallbackValue(
     // because the buffer source will not be able to determine the HdTupleType.
     // Hope for the best and return a vec3.
 
-    TF_VERIFY(false, "Couldn't determine default value for: %s on nodeType: %s", 
-              paramName.GetText(), node.nodeTypeId.GetText());
+    TF_WARN("Couldn't determine default value for: %s on nodeType: %s", 
+            paramName.GetText(), node.nodeTypeId.GetText());
+
     return VtValue(GfVec3f(0));
 }
 
