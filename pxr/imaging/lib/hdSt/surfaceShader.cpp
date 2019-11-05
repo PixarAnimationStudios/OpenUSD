@@ -44,7 +44,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_ENV_SETTING(HDST_ENABLE_MATERIAL_PRIMVAR_FILTERING, false,
+TF_DEFINE_ENV_SETTING(HDST_ENABLE_MATERIAL_PRIMVAR_FILTERING, true,
     "Enables filtering of primvar signals by material binding.");
 
 static bool
