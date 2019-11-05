@@ -42,8 +42,22 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define HIO_GLSLFX_TOKENS  \
-    (glslfx)
+#define HIO_GLSLFX_TOKENS       \
+    (glslfx)                    \
+                                \
+    (fragmentShader)            \
+    (geometryShader)            \
+    (geometryShaderInjection)   \
+    (preamble)                  \
+    (tessControlShader)         \
+    (tessEvalShader)            \
+    (vertexShader)              \
+    (vertexShaderInjection)     \
+                                \
+    (surfaceShader)             \
+    (displacementShader)        \
+    (volumeShader)              \
+
 
 TF_DECLARE_PUBLIC_TOKENS(HioGlslfxTokens, HIO_API, HIO_GLSLFX_TOKENS);
 
@@ -157,41 +171,8 @@ public:
     HIO_API
     bool IsValid(std::string *reason=NULL) const;
 
-    /// \name Compatible shader sources
+    /// \name Access to commonly used shader sources.
     /// @{
-
-    /// Get the vertex source string
-    HIO_API
-    std::string GetVertexSource() const;
-
-    /// Get the tess control source string
-    HIO_API
-    std::string GetTessControlSource() const;
-
-    /// Get the tess eval source string
-    HIO_API
-    std::string GetTessEvalSource() const;
-
-    /// Get the geometry source string
-    HIO_API
-    std::string GetGeometrySource() const;
-
-    /// Get the fragment source string
-    HIO_API
-    std::string GetFragmentSource() const;
-
-    /// Get the volume source string
-    HIO_API
-    std::string GetVolumeSource() const;
-
-    /// @}
-
-    /// \name OpenSubdiv composable shader sources
-    /// @{
-
-    /// Get the preamble (osd uniform definitions)
-    HIO_API
-    std::string GetPreambleSource() const;
 
     /// Get the surface source string
     HIO_API
@@ -201,13 +182,9 @@ public:
     HIO_API
     std::string GetDisplacementSource() const;
 
-    /// Get the vertex injection source string
+    /// Get the volume source string
     HIO_API
-    std::string GetVertexInjectionSource() const;
-
-    /// Get the geometry injection source string
-    HIO_API
-    std::string GetGeometryInjectionSource() const;
+    std::string GetVolumeSource() const;
 
     /// @}
 

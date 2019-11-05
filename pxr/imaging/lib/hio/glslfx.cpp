@@ -62,18 +62,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (configuration)
     (glsl)
     ((import, "#import"))
-    (vertexShader)
-    (tessControlShader)
-    (tessEvalShader)
-    (geometryShader)
-    (fragmentShader)
-    (preamble)
     ((shaderResources, "ShaderResources"))
-    (surfaceShader)
-    (volumeShader)
-    (displacementShader)
-    (vertexShaderInjection)
-    (geometryShaderInjection)
     ((toolSubst, "$TOOLS"))
 );
 
@@ -580,73 +569,21 @@ HioGlslfx::_GetSource(const TfToken &shaderStageKey) const
 }
 
 string
-HioGlslfx::GetVertexSource() const
-{
-    return _GetSource(_tokens->vertexShader);
-}
-
-
-string
-HioGlslfx::GetTessControlSource() const
-{
-    return _GetSource(_tokens->tessControlShader);
-}
-
-
-string
-HioGlslfx::GetTessEvalSource() const
-{
-    return _GetSource(_tokens->tessEvalShader);
-}
-
-
-string
-HioGlslfx::GetGeometrySource() const
-{
-    return _GetSource(_tokens->geometryShader);
-}
-
-
-string
-HioGlslfx::GetFragmentSource() const
-{
-    return _GetSource(_tokens->fragmentShader);
-}
-
-string
-HioGlslfx::GetVolumeSource() const
-{
-    return _GetSource(_tokens->volumeShader);
-}
-
-string
-HioGlslfx::GetPreambleSource() const
-{
-    return _GetSource(_tokens->preamble);
-}
-
-string
 HioGlslfx::GetSurfaceSource() const
 {
-    return _GetSource(_tokens->surfaceShader);
+    return _GetSource(HioGlslfxTokens->surfaceShader);
 }
 
 string
 HioGlslfx::GetDisplacementSource() const
 {
-    return _GetSource(_tokens->displacementShader);
+    return _GetSource(HioGlslfxTokens->displacementShader);
 }
 
 string
-HioGlslfx::GetVertexInjectionSource() const
+HioGlslfx::GetVolumeSource() const
 {
-    return _GetSource(_tokens->vertexShaderInjection);
-}
-
-string
-HioGlslfx::GetGeometryInjectionSource() const
-{
-    return _GetSource(_tokens->geometryShaderInjection);
+    return _GetSource(HioGlslfxTokens->volumeShader);
 }
 
 string
