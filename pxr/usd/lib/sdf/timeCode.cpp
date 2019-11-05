@@ -44,7 +44,7 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_REGISTRY_FUNCTION(VtValue)
 {
-    VtValue::RegisterSimpleCast<double, SdfTimeCode>();
+    VtValue::RegisterSimpleBidirectionalCast<double, SdfTimeCode>();
 }
 
 std::ostream& 
