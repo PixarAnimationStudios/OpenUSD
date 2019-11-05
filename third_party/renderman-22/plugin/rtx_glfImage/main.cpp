@@ -144,6 +144,8 @@ _ConvertSRGBtoLinear(float *dest, int width, unsigned nChannels)
 int
 RtxGlfImagePlugin::Open(TextureCtx& tCtx)
 {
+    tCtx.userData = nullptr;
+
     // Parse args.
     std::string filename;
     for (unsigned int i = 0; i < tCtx.argc; i += 2) {
@@ -210,6 +212,7 @@ int
 RtxGlfImagePlugin::Fill(TextureCtx& tCtx, FillRequest& fillReq)
 {
     RtxGlfImagePluginUserData* data = this->data(tCtx);
+    assert(nullptr != data);
 
     // Find (or create) appropriate MIP level.
     GlfImage::StorageSpec level;
@@ -291,10 +294,12 @@ int
 RtxGlfImagePlugin::Close(TextureCtx& tCtx)
 {
     RtxGlfImagePluginUserData* data = this->data(tCtx);
-    for (GlfImage::StorageSpec &cachedLevel: data->mipLevels) {
-        delete [] (char*) cachedLevel.data;
+    if (nullptr != data) {
+        for (GlfImage::StorageSpec &cachedLevel: data->mipLevels) {
+            delete [] (char*) cachedLevel.data;
+        }
+        delete data;
     }
-    delete data;
     return 0;
 }
 
