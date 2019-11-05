@@ -138,7 +138,7 @@ private:
     HdMaterialNetworkMap const& _GetMaterialResource(
         HdSceneDelegate* sceneDelegate) const;
 
-    static HioGlslfx *_fallbackSurfaceShader;
+    static HioGlslfx *_fallbackGlslfx;
 
     HdStSurfaceShaderSharedPtr _surfaceShader;
 

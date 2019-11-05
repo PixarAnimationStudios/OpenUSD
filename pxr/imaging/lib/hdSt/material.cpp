@@ -62,7 +62,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (opacity)
 );
 
-HioGlslfx *HdStMaterial::_fallbackSurfaceShader = nullptr;
+HioGlslfx *HdStMaterial::_fallbackGlslfx = nullptr;
 
 
 HdStMaterial::HdStMaterial(SdfPath const &id)
@@ -148,11 +148,11 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     if (shaderIsDirty) {
         if (fragmentSource.empty() && geometrySource.empty()) {
             _InitFallbackShader();
-            fragmentSource = _fallbackSurfaceShader->GetSurfaceSource();
+            fragmentSource = _fallbackGlslfx->GetSurfaceSource();
             // Note that we don't want displacement on purpose for the 
             // fallback material.
             geometrySource = std::string();
-            materialMetadata = _fallbackSurfaceShader->GetMetadata();
+            materialMetadata = _fallbackGlslfx->GetMetadata();
         }
 
         _surfaceShader->SetFragmentSource(fragmentSource);
@@ -447,18 +447,18 @@ HdStMaterial::SetSurfaceShader(HdStSurfaceShaderSharedPtr &shaderCode)
 void
 HdStMaterial::_InitFallbackShader()
 {
-    if (_fallbackSurfaceShader != nullptr) {
+    if (_fallbackGlslfx != nullptr) {
         return;
     }
 
     const TfToken &filePath = HdStPackageFallbackSurfaceShader();
 
-    _fallbackSurfaceShader = new HioGlslfx(filePath);
+    _fallbackGlslfx = new HioGlslfx(filePath);
 
     // Check fallback shader loaded, if not continue with the invalid shader
     // this would mean the shader compilation fails and the prim would not
     // be drawn.
-    TF_VERIFY(_fallbackSurfaceShader->IsValid(),
+    TF_VERIFY(_fallbackGlslfx->IsValid(),
               "Failed to load fallback surface shader!");
 }
 
