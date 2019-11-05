@@ -24,12 +24,44 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/rprimUtils.h"
 
+#include "pxr/imaging/hdSt/material.h"
+#include "pxr/imaging/hdSt/mixinShader.h"
+
+#include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/rprimSharedData.h"
 #include "pxr/imaging/hd/types.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+
+HDST_API
+HdStShaderCodeSharedPtr
+HdStGetMaterialShader(
+    HdRprim *prim,
+    HdSceneDelegate *delegate,
+    std::string const & mixinSource)
+{
+    SdfPath const & materialId = prim->GetMaterialId();
+
+    // Resolve the prim's material or use the fallback material.
+    HdRenderIndex &renderIndex = delegate->GetRenderIndex();
+    HdStMaterial const * material = static_cast<HdStMaterial const *>(
+            renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
+    if (material == nullptr) {
+        material = static_cast<HdStMaterial const *>(
+                renderIndex.GetFallbackSprim(HdPrimTypeTokens->material));
+    }
+
+    // Augment the shader source if mixinSource is provided.
+    HdStShaderCodeSharedPtr shaderCode = material->GetShaderCode();
+    if (!mixinSource.empty()) {
+        shaderCode.reset(new HdStMixinShader(mixinSource, shaderCode));
+    }
+
+    return shaderCode;
+}
 
 void
 HdStPopulateConstantPrimvars(

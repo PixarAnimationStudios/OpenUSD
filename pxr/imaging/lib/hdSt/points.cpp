@@ -121,8 +121,7 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         dirtyBits, constantPrimvars);
 
     /* MATERIAL SHADER */
-    drawItem->SetMaterialShaderFromRenderIndex(
-        sceneDelegate->GetRenderIndex(), GetMaterialId());
+    drawItem->SetMaterialShader(HdStGetMaterialShader(this, sceneDelegate));
 
     /* INSTANCE PRIMVARS */
     if (!GetInstancerId().IsEmpty()) {

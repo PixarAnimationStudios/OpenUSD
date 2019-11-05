@@ -31,7 +31,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class HdRenderIndex;
 typedef boost::shared_ptr<class HdSt_GeometricShader> HdSt_GeometricShaderSharedPtr;
 typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 
@@ -60,14 +59,6 @@ public:
     void SetMaterialShader(HdStShaderCodeSharedPtr const &shader) {
         _materialShader = shader;
     }
-
-    /// Set the material shader by retriving an appropriate sprim from
-    /// the render index (using a fallback sprim as necessary) and
-    /// including optional mixin code.
-    void SetMaterialShaderFromRenderIndex(
-        const HdRenderIndex &renderIndex,
-        const SdfPath &materialId,
-        std::string mixinSource = std::string());
 
 protected:
     size_t _GetBufferArraysHash() const override;

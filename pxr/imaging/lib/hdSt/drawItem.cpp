@@ -22,11 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdSt/drawItem.h"
-#include "pxr/imaging/hdSt/geometricShader.h"
-#include "pxr/imaging/hdSt/material.h"
-#include "pxr/imaging/hdSt/mixinShader.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
-#include "pxr/imaging/hd/renderIndex.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -39,25 +35,6 @@ HdStDrawItem::HdStDrawItem(HdRprimSharedData const *sharedData)
 HdStDrawItem::~HdStDrawItem()
 {
     /*NOTHING*/
-}
-
-void
-HdStDrawItem::SetMaterialShaderFromRenderIndex(
-    const HdRenderIndex &renderIndex,
-    const SdfPath &materialId,
-    std::string mixinSource)
-{
-    const HdStMaterial *material = static_cast<const HdStMaterial *>(
-        renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
-    if (material == nullptr) {
-        material = static_cast<const HdStMaterial *>(
-                renderIndex.GetFallbackSprim(HdPrimTypeTokens->material));
-    }
-    HdStShaderCodeSharedPtr shaderCode = material->GetShaderCode();
-    if (!mixinSource.empty()) {
-        shaderCode.reset(new HdStMixinShader(mixinSource, shaderCode));
-    }
-    SetMaterialShader(shaderCode);
 }
 
 /*virtual*/

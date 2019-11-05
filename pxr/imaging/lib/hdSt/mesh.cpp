@@ -2118,17 +2118,15 @@ HdStMesh::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
 
     // Look up the mixin source if necessary. This is a per-rprim glsl
     // snippet, to be mixed into the surface shader.
-    SdfPath materialId;
-    std::string mixinSource;
+    HdStShaderCodeSharedPtr materialShader;
     if (updateMaterialShader) {
-        materialId = GetMaterialId();
-
         TfToken mixinKey =
             GetShadingStyle(sceneDelegate).GetWithDefault<TfToken>();
-        mixinSource = _GetMixinShaderSource(mixinKey);
-    }
+        std::string mixinSource = _GetMixinShaderSource(mixinKey);
 
-    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+        materialShader =
+            HdStGetMaterialShader(this, sceneDelegate, mixinSource);
+    }
 
     for (auto const& reprPair : _reprs) {
         const TfToken &reprToken = reprPair.first;
@@ -2145,8 +2143,7 @@ HdStMesh::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                     repr->GetDrawItem(drawItemIndex++));
 
                 if (updateMaterialShader) {
-                    drawItem->SetMaterialShaderFromRenderIndex(
-                        renderIndex, materialId, mixinSource);
+                    drawItem->SetMaterialShader(materialShader);
                 }
                 if (updateGeometricShader) {
                     _UpdateDrawItemGeometricShader(sceneDelegate,

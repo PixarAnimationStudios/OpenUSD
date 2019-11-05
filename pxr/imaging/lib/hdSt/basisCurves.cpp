@@ -431,12 +431,10 @@ HdStBasisCurves::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
         Msg("HdStMesh(%s) - Resetting shaders for draw items of all reprs.",
             GetId().GetText());
 
-    SdfPath materialId;
+    HdStShaderCodeSharedPtr materialShader;
     if (updateMaterialShader) {
-        materialId = GetMaterialId();
+        materialShader = HdStGetMaterialShader(this, sceneDelegate);
     }
-
-    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
     for (auto const& reprPair : _reprs) {
         const TfToken &reprToken = reprPair.first;
@@ -452,8 +450,7 @@ HdStBasisCurves::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                 repr->GetDrawItem(drawItemIndex++));
 
             if (updateMaterialShader) {
-                drawItem->SetMaterialShaderFromRenderIndex(
-                    renderIndex, materialId);
+                drawItem->SetMaterialShader(materialShader);
             }
             if (updateGeometricShader) {
                 _UpdateDrawItemGeometricShader(sceneDelegate, drawItem,
