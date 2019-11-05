@@ -112,6 +112,11 @@ public:
     HDST_API
     virtual void Reload();
 
+    /// Returns if the two shaders can be aggregated into the same draw batch.
+    HDST_API
+    static bool CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
+                             HdStShaderCodeSharedPtr const &shaderB);
+
 protected:
     HDST_API
     void _SetSource(TfToken const &shaderStageKey, std::string const &source);

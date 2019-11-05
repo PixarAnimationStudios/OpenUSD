@@ -127,8 +127,8 @@ bool
 HdSt_DrawBatch::_IsAggregated(HdStDrawItem const *drawItem0,
                               HdStDrawItem const *drawItem1)
 {
-    if (!HdStShaderCode::CanAggregate(drawItem0->GetMaterialShader(),
-                                    drawItem1->GetMaterialShader())) {
+    if (!HdStSurfaceShader::CanAggregate(drawItem0->GetMaterialShader(),
+                                         drawItem1->GetMaterialShader())) {
         return false;
     }
 

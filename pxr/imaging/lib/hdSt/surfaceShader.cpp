@@ -24,6 +24,7 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/surfaceShader.h"
+#include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/textureResource.h"
 #include "pxr/imaging/hdSt/textureResourceHandle.h"
@@ -31,10 +32,11 @@
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/resource.h"
-#include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
+
+#include "pxr/imaging/glf/contextCaps.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -313,5 +315,38 @@ HdStSurfaceShader::Reload()
 {
     // Nothing to do, this shader's sources are externally managed.
 }
+
+/*static*/
+bool
+HdStSurfaceShader::CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
+                                HdStShaderCodeSharedPtr const &shaderB)
+{
+    HdBufferArrayRangeSharedPtr dataA = shaderA->GetShaderData();
+    HdBufferArrayRangeSharedPtr dataB = shaderB->GetShaderData();
+
+    bool dataIsAggregated = (dataA == dataB) ||
+                            (dataA && dataA->IsAggregatedWith(dataB));
+
+    // We can't aggregate if the shaders have data buffers that aren't
+    // aggregated or if the shaders don't match.
+    if (!dataIsAggregated || shaderA->ComputeHash() != shaderB->ComputeHash()) {
+        return false;
+    }
+
+    bool bindlessTexture = GlfContextCaps::GetInstance()
+                                                .bindlessTextureEnabled;
+
+    // Without bindless textures, we can't aggregate shaders with textures.
+    if (!bindlessTexture) {
+        bool eitherHasTextures = !shaderA->GetTextures().empty() ||
+                                 !shaderB->GetTextures().empty();
+        if (eitherHasTextures) {
+            return false;
+        }
+    }
+     
+    return true;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

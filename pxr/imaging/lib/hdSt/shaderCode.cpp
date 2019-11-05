@@ -25,8 +25,6 @@
 
 #include "pxr/imaging/hd/tokens.h"
 
-#include "pxr/imaging/glf/contextCaps.h"
-
 #include "pxr/base/tf/iterator.h"
 
 #include <boost/functional/hash.hpp>
@@ -87,32 +85,6 @@ HdStShaderCode::GetTextures() const
 {
     return HdStShaderCode::TextureDescriptorVector();
 }
-
-/*static*/
-bool
-HdStShaderCode::CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
-                              HdStShaderCodeSharedPtr const &shaderB)
-{
-    bool bindlessTexture = GlfContextCaps::GetInstance()
-                                                .bindlessTextureEnabled;
-
-    // See if the shaders are same or not. If the bindless texture option
-    // is enabled, the shaders can be aggregated for those differences are
-    // only texture addresses.
-    if (bindlessTexture) {
-        if (shaderA->ComputeHash() != shaderB->ComputeHash()) {
-            return false;
-        }
-    } else {
-        // XXX: still wrong. it breaks batches for the shaders with same
-        // signature.
-        if (shaderA != shaderB) {
-            return false;
-        }
-    }
-    return true;
-}
-
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

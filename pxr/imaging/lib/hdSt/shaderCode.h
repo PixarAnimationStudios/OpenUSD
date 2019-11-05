@@ -113,11 +113,6 @@ public:
     /// Add custom bindings (used by codegen)
     virtual void AddBindings(HdBindingRequestVector* customBindings) = 0;
 
-    /// Returns if the two shaders can be aggregated in a same drawbatch or not.
-    HDST_API
-    static bool CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
-                             HdStShaderCodeSharedPtr const &shaderB);
-
     /// Material tags can be set in the meta-data of a glslfx file to control
     /// what rprim collection that prims using this shader should go into.
     /// E.g. We can use it to split opaque and translucent prims into different
