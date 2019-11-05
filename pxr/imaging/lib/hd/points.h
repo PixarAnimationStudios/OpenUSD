@@ -55,6 +55,9 @@ public:
     HD_API
     virtual ~HdPoints();
 
+    HD_API
+    TfTokenVector const & GetBuiltinPrimvarNames() const override;
+
     /// Configure geometric style of drawItems for \p reprName
     HD_API
     static void ConfigureRepr(TfToken const &reprName,

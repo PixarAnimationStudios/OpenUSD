@@ -24,8 +24,11 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/rprimUtils.h"
 
+#include "pxr/imaging/hdSt/drawItem.h"
+#include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/mixinShader.h"
+#include "pxr/imaging/hdSt/shaderCode.h"
 
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/rprim.h"
@@ -33,14 +36,97 @@
 #include "pxr/imaging/hd/types.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+#include "pxr/imaging/hio/glslfx.h"
+
+#include <algorithm>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
+
+static bool
+_IsEnabledPrimvarFiltering(HdStDrawItem const * drawItem) {
+    HdStShaderCodeSharedPtr materialShader = drawItem->GetMaterialShader();
+    return materialShader && materialShader->IsEnabledPrimvarFiltering();
+}
+
+static TfTokenVector
+_GetFilterNames(HdRprim const * prim,
+             HdStDrawItem const * drawItem,
+             HdStInstancer const * instancer = nullptr)
+{
+    TfTokenVector filterNames = prim->GetBuiltinPrimvarNames();
+
+    HdStShaderCodeSharedPtr materialShader = drawItem->GetMaterialShader();
+    if (materialShader) {
+        TfTokenVector const & names = materialShader->GetPrimvarNames();
+        filterNames.insert(filterNames.end(), names.begin(), names.end());
+    }
+    if (instancer) {
+        TfTokenVector const & names = instancer->GetBuiltinPrimvarNames();
+        filterNames.insert(filterNames.end(), names.begin(), names.end());
+    }
+    return filterNames;
+}
+
+static HdPrimvarDescriptorVector
+_FilterPrimvarDescriptors(HdPrimvarDescriptorVector primvars,
+                          TfTokenVector const & filterNames)
+{
+    primvars.erase(
+        std::remove_if(primvars.begin(), primvars.end(),
+            [&filterNames](HdPrimvarDescriptor const &desc) {
+                return std::find(filterNames.begin(), filterNames.end(),
+                                 desc.name) == filterNames.end();
+            }),
+        primvars.end());
+
+    return primvars;
+}
+
+HdPrimvarDescriptorVector
+HdStGetPrimvarDescriptors(
+    HdRprim const * prim,
+    HdStDrawItem const * drawItem,
+    HdSceneDelegate * delegate,
+    HdInterpolation interpolation)
+{
+    HdPrimvarDescriptorVector primvars =
+        prim->GetPrimvarDescriptors(delegate, interpolation);
+
+    if (_IsEnabledPrimvarFiltering(drawItem)) {
+        TfTokenVector filterNames = _GetFilterNames(prim, drawItem);
+
+        return _FilterPrimvarDescriptors(primvars, filterNames);
+    }
+
+    return primvars;
+}
+
+HdPrimvarDescriptorVector
+HdStGetInstancerPrimvarDescriptors(
+    HdStInstancer const * instancer,
+    HdRprim const * prim,
+    HdStDrawItem const * drawItem,
+    HdSceneDelegate * delegate)
+{
+    HdPrimvarDescriptorVector primvars =
+        delegate->GetPrimvarDescriptors(instancer->GetId(),
+                                        HdInterpolationInstance);
+
+    if (_IsEnabledPrimvarFiltering(drawItem)) {
+        TfTokenVector filterNames = _GetFilterNames(prim, drawItem, instancer);
+
+        return _FilterPrimvarDescriptors(primvars, filterNames);
+    }
+
+    return primvars;
+}
 
 HDST_API
 HdStShaderCodeSharedPtr
 HdStGetMaterialShader(
-    HdRprim *prim,
-    HdSceneDelegate *delegate,
+    HdRprim const * prim,
+    HdSceneDelegate * delegate,
     std::string const & mixinSource)
 {
     SdfPath const & materialId = prim->GetMaterialId();

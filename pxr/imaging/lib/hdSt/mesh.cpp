@@ -710,7 +710,8 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
     // The "points" attribute is expected to be in this list.
     HdPrimvarDescriptorVector primvars =
-        GetPrimvarDescriptors(sceneDelegate, HdInterpolationVertex);
+        HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
+                                  HdInterpolationVertex);
 
     // Track the last vertex index to distinguish between vertex and varying
     // while processing.
@@ -718,7 +719,8 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
     // Add varying primvars so we can process them all together, below.
     HdPrimvarDescriptorVector varyingPvs =
-        GetPrimvarDescriptors(sceneDelegate, HdInterpolationVarying);
+        HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
+                                  HdInterpolationVarying);
     primvars.insert(primvars.end(), varyingPvs.begin(), varyingPvs.end());
 
     HdBufferSourceVector sources;
@@ -1190,7 +1192,8 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
 
     SdfPath const& id = GetId();
     HdPrimvarDescriptorVector primvars =
-        GetPrimvarDescriptors(sceneDelegate, HdInterpolationFaceVarying);
+        HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
+                                  HdInterpolationFaceVarying);
     if (primvars.empty()) return;
 
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
@@ -1288,7 +1291,8 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
     HdPrimvarDescriptorVector primvars =
-        GetPrimvarDescriptors(sceneDelegate, HdInterpolationUniform);
+        HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
+                                  HdInterpolationUniform);
 
     HdBufferSourceVector sources;
     sources.reserve(primvars.size());
@@ -1563,6 +1567,17 @@ _GetMixinShaderSource(TfToken const &shaderStageKey)
     return mixinFX->GetSource(shaderStageKey);
 }
 
+static HdStShaderCodeSharedPtr
+_GetMaterialShader(
+    HdStMesh const * mesh,
+    HdSceneDelegate * sceneDelegate)
+{
+    TfToken mixinKey = 
+        mesh->GetShadingStyle(sceneDelegate).GetWithDefault<TfToken>();
+    std::string mixinSource = _GetMixinShaderSource(mixinKey);
+    return HdStGetMaterialShader(mesh, sceneDelegate, mixinSource);
+}
+
 HdBufferArrayRangeSharedPtr
 HdStMesh::_GetSharedPrimvarRange(uint64_t primvarId,
     HdBufferSpecVector const &bufferSpecs,
@@ -1619,6 +1634,9 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     /* VISIBILITY */
     _UpdateVisibility(sceneDelegate, dirtyBits);
 
+    /* MATERIAL SHADER (may affect subsequent primvar population) */
+    drawItem->SetMaterialShader(_GetMaterialShader(this, sceneDelegate));
+
     /* TOPOLOGY */
     // XXX: _PopulateTopology should be split into two phase
     //      for scene dirtybits and for repr dirtybits.
@@ -1669,7 +1687,8 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         HdPrimvarDescriptorVector constantPrimvars;
         if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
             constantPrimvars =
-                GetPrimvarDescriptors(sceneDelegate, HdInterpolationConstant);
+                HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
+                                          HdInterpolationConstant);
         }
         HdStPopulateConstantPrimvars(this, &_sharedData, sceneDelegate, drawItem, 
             dirtyBits, constantPrimvars);
@@ -1688,7 +1707,8 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         HdStInstancer *instancer = static_cast<HdStInstancer*>(
             sceneDelegate->GetRenderIndex().GetInstancer(GetInstancerId()));
         if (TF_VERIFY(instancer)) {
-            instancer->PopulateDrawItem(drawItem, &_sharedData, *dirtyBits);
+            instancer->PopulateDrawItem(this, drawItem,
+                                        &_sharedData, *dirtyBits);
         }
     }
 
@@ -2120,12 +2140,7 @@ HdStMesh::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
     // snippet, to be mixed into the surface shader.
     HdStShaderCodeSharedPtr materialShader;
     if (updateMaterialShader) {
-        TfToken mixinKey =
-            GetShadingStyle(sceneDelegate).GetWithDefault<TfToken>();
-        std::string mixinSource = _GetMixinShaderSource(mixinKey);
-
-        materialShader =
-            HdStGetMaterialShader(this, sceneDelegate, mixinSource);
+        materialShader = _GetMaterialShader(this, sceneDelegate);
     }
 
     for (auto const& reprPair : _reprs) {

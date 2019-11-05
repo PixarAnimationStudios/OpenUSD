@@ -130,6 +130,9 @@ public:
     inline VtValue GetPoints(HdSceneDelegate* delegate)  const;
     inline VtValue GetNormals(HdSceneDelegate* delegate) const;
 
+    HD_API
+    TfTokenVector const & GetBuiltinPrimvarNames() const override;
+
     /// Configure the geometric style of the mesh for a given representation.
     /// We currently allow up to 2 descriptors for a representation.
     /// Example of when this may be useful:

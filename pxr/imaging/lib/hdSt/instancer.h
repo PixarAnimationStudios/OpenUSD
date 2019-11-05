@@ -36,7 +36,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdDrawItem;
+class HdRprim;
+class HdStDrawItem;
 struct HdRprimSharedData;
 
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
@@ -75,7 +76,8 @@ public:
 
     /// Populates instance primvars and returns the buffer range.
     HDST_API
-    HdBufferArrayRangeSharedPtr GetInstancePrimvars();
+    HdBufferArrayRangeSharedPtr GetInstancePrimvars(HdRprim *prim,
+                                                    HdStDrawItem *drawItem);
 
     /// Populates the instance index indirection buffer for \p prototypeId and
     /// returns the buffer range.
@@ -85,7 +87,9 @@ public:
     /// Populates the rprim's draw item with the appropriate instancer
     /// buffer range data.
     HDST_API
-    void PopulateDrawItem(HdDrawItem *drawItem, HdRprimSharedData *sharedData,
+    void PopulateDrawItem(HdRprim *prim,
+                          HdStDrawItem *drawItem,
+                          HdRprimSharedData *sharedData,
                           HdDirtyBits dirtyBits);
 
 protected:

@@ -101,6 +101,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
 
     bool useDeprecatedSurface = true;
     bool needsRprimMaterialStateUpdate = false;
+    bool enablePrimvarFiltering = true;
 
     std::string fragmentSource;
     std::string geometrySource;
@@ -138,6 +139,9 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         if ((bits & DirtySurfaceShader) || (bits & DirtyParams)) {
             params = GetMaterialParams(sceneDelegate);
         }
+
+        // Disable primvar filtering for deprecated materials
+        enablePrimvarFiltering = false;
     }
 
     //
@@ -153,6 +157,9 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
             // fallback material.
             geometrySource = std::string();
             materialMetadata = _fallbackGlslfx->GetMetadata();
+
+            // Enable primvar filtering for fallback materials
+            enablePrimvarFiltering = true;
         }
 
         _surfaceShader->SetFragmentSource(fragmentSource);
@@ -179,6 +186,8 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
             needsRprimMaterialStateUpdate = true;
         }
     }
+
+    _surfaceShader->SetEnabledPrimvarFiltering(enablePrimvarFiltering);
 
     //
     // Mark batches dirty to force batch validation/rebuild.

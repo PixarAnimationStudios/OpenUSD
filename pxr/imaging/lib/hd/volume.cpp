@@ -34,4 +34,12 @@ HdVolume::~HdVolume()
 {
 }
 
+/* virtual */
+TfTokenVector const &
+HdVolume::GetBuiltinPrimvarNames() const
+{
+    static const TfTokenVector primvarNames;
+    return primvarNames;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

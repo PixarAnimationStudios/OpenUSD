@@ -71,6 +71,21 @@ HdStShaderCode::GetParams() const
     return empty;
 }
 
+/* virtual */
+bool
+HdStShaderCode::IsEnabledPrimvarFiltering() const
+{
+    return false;
+}
+
+/* virtual */
+TfTokenVector const&
+HdStShaderCode::GetPrimvarNames() const
+{
+    static const TfTokenVector EMPTY;
+    return EMPTY;
+}
+
 /*virtual*/
 HdBufferArrayRangeSharedPtr const&
 HdStShaderCode::GetShaderData() const

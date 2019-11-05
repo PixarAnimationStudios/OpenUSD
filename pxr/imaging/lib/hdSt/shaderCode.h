@@ -81,6 +81,14 @@ public:
     HDST_API
     virtual HdMaterialParamVector const& GetParams() const;
 
+    /// Returns whether primvar filtering is enabled for this shader.
+    HDST_API
+    virtual bool IsEnabledPrimvarFiltering() const;
+
+    /// Returns the names of primvar that are used by this shader.
+    HDST_API
+    virtual TfTokenVector const& GetPrimvarNames() const;
+
     struct TextureDescriptor {
         TfToken name;
         HdStTextureResourceHandleSharedPtr handle;

@@ -24,11 +24,12 @@
 #include "pxr/imaging/hdSt/instancer.h"
 
 #include "pxr/imaging/hdSt/drawItem.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/rprimUtils.h"
 #include "pxr/imaging/hd/debugCodes.h"
 #include "pxr/imaging/hd/rprimSharedData.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
-#include "pxr/imaging/hdSt/resourceRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -42,7 +43,9 @@ HdStInstancer::HdStInstancer(HdSceneDelegate* delegate,
 }
 
 void
-HdStInstancer::PopulateDrawItem(HdDrawItem *drawItem, HdRprimSharedData *sharedData,
+HdStInstancer::PopulateDrawItem(HdRprim *prim,
+                                HdStDrawItem *drawItem,
+                                HdRprimSharedData *sharedData,
                                 HdDirtyBits dirtyBits)
 {
     HD_TRACE_FUNCTION();
@@ -62,7 +65,7 @@ HdStInstancer::PopulateDrawItem(HdDrawItem *drawItem, HdRprimSharedData *sharedD
         // allocate instance primvar slot in the drawing coordinate.
         sharedData->barContainer.Set(
             drawingCoord->GetInstancePrimvarIndex(level),
-            currentInstancer->GetInstancePrimvars());
+            currentInstancer->GetInstancePrimvars(prim, drawItem));
 
         // next
         currentInstancer = static_cast<HdStInstancer*>(
@@ -81,7 +84,8 @@ HdStInstancer::PopulateDrawItem(HdDrawItem *drawItem, HdRprimSharedData *sharedD
 }
 
 HdBufferArrayRangeSharedPtr
-HdStInstancer::GetInstancePrimvars()
+HdStInstancer::GetInstancePrimvars(HdRprim *prim,
+                                   HdStDrawItem *drawItem)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -110,8 +114,8 @@ HdStInstancer::GetInstancePrimvars()
                 delegate->GetRenderIndex().GetResourceRegistry());
 
             HdPrimvarDescriptorVector primvars =
-                delegate->GetPrimvarDescriptors(instancerId,
-                                                HdInterpolationInstance);
+                HdStGetInstancerPrimvarDescriptors(this,
+                                                   prim, drawItem, delegate);
 
             // for all instance primvars
             HdBufferSourceVector sources;

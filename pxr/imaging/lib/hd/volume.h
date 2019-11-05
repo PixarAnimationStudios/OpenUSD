@@ -50,6 +50,9 @@ public:
 
     HD_API
     virtual ~HdVolume();
+
+    HD_API
+    TfTokenVector const & GetBuiltinPrimvarNames() const override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -23,6 +23,7 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/mesh.h"
+#include "pxr/imaging/hd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -38,6 +39,17 @@ HdMesh::HdMesh(SdfPath const& id,
 HdMesh::~HdMesh()
 {
     /*NOTHING*/
+}
+
+/* virtual */
+TfTokenVector const &
+HdMesh::GetBuiltinPrimvarNames() const
+{
+    static const TfTokenVector primvarNames = {
+        HdTokens->points,
+        HdTokens->normals,
+    };
+    return primvarNames;
 }
 
 // static repr configuration

@@ -65,6 +65,16 @@ HdMaterialParamVector const& HdStMixinShader::GetParams() const
     return _baseShader->GetParams();
 }
 
+bool HdStMixinShader:: IsEnabledPrimvarFiltering() const
+{
+    return _baseShader->IsEnabledPrimvarFiltering();
+}
+
+TfTokenVector const & HdStMixinShader::GetPrimvarNames() const 
+{
+    return _baseShader->GetPrimvarNames();
+}
+
 HdBufferArrayRangeSharedPtr const& HdStMixinShader::GetShaderData() const 
 {
     return _baseShader->GetShaderData();

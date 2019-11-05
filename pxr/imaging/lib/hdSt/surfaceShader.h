@@ -74,6 +74,12 @@ public:
     HDST_API
     virtual HdMaterialParamVector const& GetParams() const override;
     HDST_API
+    void SetEnabledPrimvarFiltering(bool enabled);
+    HDST_API
+    virtual bool IsEnabledPrimvarFiltering() const override;
+    HDST_API
+    virtual TfTokenVector const& GetPrimvarNames() const override;
+    HDST_API
     virtual HdBufferArrayRangeSharedPtr const& GetShaderData() const override;
     HDST_API
     virtual TextureDescriptorVector GetTextures() const override;
@@ -126,9 +132,11 @@ private:
     std::string _geometrySource;
 
     // Shader Parameters
-    HdMaterialParamVector      _params;
+    HdMaterialParamVector       _params;
     HdBufferSpecVector          _paramSpec;
     HdBufferArrayRangeSharedPtr _paramArray;
+    TfTokenVector               _primvarNames;
+    bool                        _isEnabledPrimvarFiltering;
 
     TextureDescriptorVector _textureDescriptors;
 

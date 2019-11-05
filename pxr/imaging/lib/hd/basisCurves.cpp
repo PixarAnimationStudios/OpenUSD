@@ -23,6 +23,7 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/basisCurves.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/base/tf/envSetting.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -40,6 +41,18 @@ HdBasisCurves::HdBasisCurves(SdfPath const& id,
 HdBasisCurves::~HdBasisCurves()
 {
     /*NOTHING*/
+}
+
+/* virtual */
+TfTokenVector const &
+HdBasisCurves::GetBuiltinPrimvarNames() const
+{
+    static const TfTokenVector primvarNames = {
+        HdTokens->points,
+        HdTokens->normals,
+        HdTokens->widths
+    };
+    return primvarNames;
 }
 
 // static repr configuration

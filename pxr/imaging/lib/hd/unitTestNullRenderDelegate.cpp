@@ -29,6 +29,7 @@
 #include "pxr/imaging/hd/basisCurves.h"
 #include "pxr/imaging/hd/points.h"
 #include "pxr/imaging/hd/texture.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/strategyBase.h"
@@ -222,6 +223,11 @@ public:
     }
 
     virtual ~Hd_NullRprim() = default;
+
+    TfTokenVector const & GetBuiltinPrimvarNames() const override {
+        static const TfTokenVector primvarNames;
+        return primvarNames;
+    }
 
     virtual void Sync(HdSceneDelegate *delegate,
                       HdRenderParam   *renderParam,

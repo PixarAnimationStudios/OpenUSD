@@ -212,6 +212,11 @@ public:
     GetPrimvarDescriptors(HdSceneDelegate* delegate,
                           HdInterpolation interpolation) const;
 
+    /// Returns the names of built-in primvars, i.e. primvars that
+    /// are part of the core geometric schema for this prim.
+    HD_API
+    virtual TfTokenVector const & GetBuiltinPrimvarNames() const = 0;
+
     inline VtValue
     GetPrimvar(HdSceneDelegate* delegate, const TfToken &name) const;
 

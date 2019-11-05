@@ -23,6 +23,7 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/points.h"
+#include "pxr/imaging/hd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -37,6 +38,18 @@ HdPoints::HdPoints(SdfPath const& id,
 HdPoints::~HdPoints()
 {
     /*NOTHING*/
+}
+
+/* virtual */
+TfTokenVector const &
+HdPoints::GetBuiltinPrimvarNames() const
+{
+    static const TfTokenVector primvarNames = {
+        HdTokens->points,
+        HdTokens->normals,
+        HdTokens->widths
+    };
+    return primvarNames;
 }
 
 // static repr configuration

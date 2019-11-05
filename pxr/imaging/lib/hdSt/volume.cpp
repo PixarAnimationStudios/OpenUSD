@@ -585,7 +585,8 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
     /* CONSTANT PRIMVARS, TRANSFORM AND EXTENT */
     const HdPrimvarDescriptorVector constantPrimvars =
-        GetPrimvarDescriptors(sceneDelegate, HdInterpolationConstant);
+        HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
+                                  HdInterpolationConstant);
     HdStPopulateConstantPrimvars(this, &_sharedData, sceneDelegate, drawItem, 
         dirtyBits, constantPrimvars);
 
@@ -593,7 +594,7 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     const _NameToFieldResource nameToFieldResource =
         _ComputeNameToFieldResource(sceneDelegate);
 
-    /* MATERIAL SHADER */
+    /* MATERIAL SHADER (may affect subsequent primvar population) */
     const HdStMaterial * const material = static_cast<const HdStMaterial *>(
         sceneDelegate->GetRenderIndex().GetSprim(
             HdPrimTypeTokens->material, GetMaterialId()));

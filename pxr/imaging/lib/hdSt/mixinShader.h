@@ -57,6 +57,10 @@ public:
 
     virtual HdMaterialParamVector const& GetParams() const override;
 
+    virtual bool IsEnabledPrimvarFiltering() const override;
+
+    virtual TfTokenVector const& GetPrimvarNames() const override;
+
     virtual HdStShaderCode::TextureDescriptorVector GetTextures() const override;
 
     /// Returns a buffer which stores parameter fallback values and texture

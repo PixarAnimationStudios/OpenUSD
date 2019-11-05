@@ -136,6 +136,9 @@ public:
     static int GetInstancerNumLevels(HdRenderIndex& index,
                                      HdRprim const& rprim);
 
+    HD_API
+    TfTokenVector const & GetBuiltinPrimvarNames() const;
+
 private:
     HdSceneDelegate* _delegate;
     SdfPath _id;

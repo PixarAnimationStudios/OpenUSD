@@ -24,6 +24,7 @@
 #include "pxr/imaging/hd/instancer.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/rprim.h"
+#include "pxr/imaging/hd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -55,6 +56,18 @@ HdInstancer::GetInstancerNumLevels(HdRenderIndex& index,
             : SdfPath::EmptyPath();
     }
     return instancerLevels;
+}
+
+TfTokenVector const &
+HdInstancer::GetBuiltinPrimvarNames() const
+{
+    static const TfTokenVector primvarNames = {
+        HdInstancerTokens->instanceTransform,
+        HdInstancerTokens->rotate,
+        HdInstancerTokens->scale,
+        HdInstancerTokens->translate
+    };
+    return primvarNames;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
