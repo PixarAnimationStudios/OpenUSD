@@ -2214,7 +2214,10 @@ prim_attr_variability :
         context->variability = VtValue(SdfVariabilityUniform);
     }
     | TOK_CONFIG {
-        context->variability = VtValue(SdfVariabilityConfig);
+        // Convert legacy "config" variability to SdfVariabilityUniform.
+        // This value was never officially used in USD but we handle
+        // this just in case the value was written out.
+        context->variability = VtValue(SdfVariabilityUniform);
     }
     ;
 

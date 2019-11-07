@@ -996,6 +996,18 @@ public:
         return SdfAssetPath(crate->GetToken(TokenIndex(i)));
     }
 
+    SdfVariability GetUninlinedValue(uint32_t i, SdfVariability *) const {
+        // Explicitly convert legacy SdfVariabilityConfig value to
+        // SdfVariabilityUniform. This "config" variability was never used
+        // in USD but clients may have written this value out so we need
+        // to handle it to maintain backwards compatibility.
+        static const uint32_t LEGACY_CONFIG_VARIABILITY = 2;
+        if (i == LEGACY_CONFIG_VARIABILITY) {
+            return SdfVariabilityUniform;
+        }
+        return static_cast<SdfVariability>(i);
+    }
+
     CrateFile const *crate;
 };
 
