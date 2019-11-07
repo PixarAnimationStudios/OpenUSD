@@ -9,6 +9,7 @@ set(DIRS
     usdGeom
     usdVol
     usdLux
+    usdMedia
     usdShade
     usdRender
     usdHydra
