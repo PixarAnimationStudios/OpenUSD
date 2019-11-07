@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDEMBREE_CONFIG_H
-#define HDEMBREE_CONFIG_H
+#ifndef PXR_IMAGING_PLUGIN_HD_EMBREE_CONFIG_H
+#define PXR_IMAGING_PLUGIN_HD_EMBREE_CONFIG_H
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/singleton.h"
@@ -105,4 +105,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDEMBREE_CONFIG_H
+#endif // PXR_IMAGING_PLUGIN_HD_EMBREE_CONFIG_H

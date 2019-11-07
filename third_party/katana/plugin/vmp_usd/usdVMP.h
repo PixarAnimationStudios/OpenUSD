@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef VMP_USD_USDVMP_H
-#define VMP_USD_USDVMP_H
+#ifndef EXT_KATANAPKG_PLUGIN_VMP_USD_USD_VMP_H
+#define EXT_KATANAPKG_PLUGIN_VMP_USD_USD_VMP_H
 
 // Glew must be included before gl.h
 #include "pxr/imaging/glf/glew.h"

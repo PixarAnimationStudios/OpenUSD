@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDPRMAN_MATERIAL_H
-#define HDPRMAN_MATERIAL_H
+#ifndef EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATERIAL_H
+#define EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATERIAL_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/material.h"
@@ -84,4 +84,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // HDPRMAN_MATERIAL_H
+#endif  // EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATERIAL_H

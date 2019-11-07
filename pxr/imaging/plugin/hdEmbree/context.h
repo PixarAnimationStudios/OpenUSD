@@ -21,12 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDEMBREE_CONTEXT_H
-#define HDEMBREE_CONTEXT_H
+#ifndef PXR_IMAGING_PLUGIN_HD_EMBREE_CONTEXT_H
+#define PXR_IMAGING_PLUGIN_HD_EMBREE_CONTEXT_H
 
 #include "pxr/pxr.h"
 
-#include "pxr/imaging/hdEmbree/sampler.h"
+#include "pxr/imaging/plugin/hdEmbree/sampler.h"
 
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/vt/array.h"
@@ -73,4 +73,4 @@ struct HdEmbreeInstanceContext
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDEMBREE_CONTEXT_H
+#endif // PXR_IMAGING_PLUGIN_HD_EMBREE_CONTEXT_H

@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXVP20_UTILS_H
-#define PXVP20_UTILS_H
+#ifndef PX_VP20_UTILS_H
+#define PX_VP20_UTILS_H
 
 /// \file px_vp20/utils.h
 

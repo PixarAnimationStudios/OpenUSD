@@ -24,8 +24,8 @@
 
 /// \file usdMaya/userTaggedAttribute.h
 
-#ifndef PXRUSDMAYA_USER_TAGGED_ATTRIBUTE_H
-#define PXRUSDMAYA_USER_TAGGED_ATTRIBUTE_H
+#ifndef USD_MAYA_USER_TAGGED_ATTRIBUTE_H
+#define USD_MAYA_USER_TAGGED_ATTRIBUTE_H
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"

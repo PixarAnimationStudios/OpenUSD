@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "hdxPrman/renderDelegate.h"
-#include "hdxPrman/renderBuffer.h"
-#include "hdxPrman/renderParam.h"
-#include "hdxPrman/renderPass.h"
-#include "hdxPrman/context.h"
+#include "renderDelegate.h"
+#include "renderBuffer.h"
+#include "renderParam.h"
+#include "renderPass.h"
+#include "context.h"
 
 #include "hdPrman/instancer.h"
 #include "hdPrman/light.h"

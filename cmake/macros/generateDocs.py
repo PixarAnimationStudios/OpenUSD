@@ -36,8 +36,8 @@ def _getModules(sourceRoot):
         if os.path.basename(p).startswith('.'):
             continue
 
-        # add all lib/ subdirs, such as usdGeom
-        path = os.path.join(os.path.join(sourceRoot, p), 'lib/')
+        # add all library dirs, such as usdGeom
+        path = os.path.join(sourceRoot, p)
         if os.path.isdir(path):
             topLevel.append(path)
 

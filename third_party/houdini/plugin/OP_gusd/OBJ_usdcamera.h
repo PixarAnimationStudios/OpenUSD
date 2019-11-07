@@ -25,8 +25,8 @@
    \file
    \brief USD Camera.
 */
-#ifndef _GUSD_OBJ_USDCAMERA_H_
-#define _GUSD_OBJ_USDCAMERA_H_
+#ifndef OP_GUSD_OBJ_USDCAMERA_H
+#define OP_GUSD_OBJ_USDCAMERA_H
 
 #include <OBJ/OBJ_Camera.h>
 #include <OP/OP_ParmCache.h>
@@ -149,4 +149,4 @@ public:
 PXR_NAMESPACE_CLOSE_SCOPE
 
 
-#endif /* _GUSD_OBJ_USDCAMERA_H_ */
+#endif /* OP_GUSD_OBJ_USDCAMERA_H */

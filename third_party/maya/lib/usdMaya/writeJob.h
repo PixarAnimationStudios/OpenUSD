@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_WRITE_JOB_H
-#define PXRUSDMAYA_WRITE_JOB_H
+#ifndef USD_MAYA_WRITE_JOB_H
+#define USD_MAYA_WRITE_JOB_H
 
 /// \file usdMaya/writeJob.h
 

@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_DIAGNOSTICDELEGATE_H
-#define PXRUSDMAYA_DIAGNOSTICDELEGATE_H
+#ifndef USD_MAYA_DIAGNOSTIC_DELEGATE_H
+#define USD_MAYA_DIAGNOSTIC_DELEGATE_H
 
 /// \file usdMaya/diagnosticDelegate.h
 

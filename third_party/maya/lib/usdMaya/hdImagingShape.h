@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_HD_IMAGING_SHAPE_H
-#define PXRUSDMAYA_HD_IMAGING_SHAPE_H
+#ifndef USD_MAYA_HD_IMAGING_SHAPE_H
+#define USD_MAYA_HD_IMAGING_SHAPE_H
 
 /// \file usdMaya/hdImagingShape.h
 

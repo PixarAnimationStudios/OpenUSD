@@ -22,8 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#ifndef USDDRACO_WRITER_H
-#define USDDRACO_WRITER_H
+#ifndef PXR_USD_PLUGIN_USD_DRACO_WRITER_H
+#define PXR_USD_PLUGIN_USD_DRACO_WRITER_H
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/mesh.h"
@@ -53,4 +53,4 @@ bool UsdDraco_PrimvarSupported(const UsdGeomPrimvar &primvar);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // USDDRACO_WRITER_H
+#endif  // PXR_USD_PLUGIN_USD_DRACO_WRITER_H

@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxrUsdPreviewSurface/usdPreviewSurface.h"
+#include "usdPreviewSurface.h"
 
 #include "pxr/pxr.h"
 

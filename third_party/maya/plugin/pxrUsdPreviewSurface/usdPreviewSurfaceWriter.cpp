@@ -22,9 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxrUsdPreviewSurface/usdPreviewSurfaceWriter.h"
+#include "usdPreviewSurfaceWriter.h"
 
-#include "pxrUsdPreviewSurface/usdPreviewSurface.h"
+#include "usdPreviewSurface.h"
 #include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/shaderWriter.h"
 #include "usdMaya/util.h"

@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDOBJ_STREAM_H
-#define USDOBJ_STREAM_H
+#ifndef PXR_EXTRAS_USD_EXAMPLES_USD_OBJ_STREAM_H
+#define PXR_EXTRAS_USD_EXAMPLES_USD_OBJ_STREAM_H
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec2f.h"
@@ -290,4 +290,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USDOBJ_STREAM_H
+#endif // PXR_EXTRAS_USD_EXAMPLES_USD_OBJ_STREAM_H

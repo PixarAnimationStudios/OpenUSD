@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_PRIM_WRITER_REGISTRY_H
-#define PXRUSDMAYA_PRIM_WRITER_REGISTRY_H
+#ifndef USD_MAYA_PRIM_WRITER_REGISTRY_H
+#define USD_MAYA_PRIM_WRITER_REGISTRY_H
 
 /// \file usdMaya/primWriterRegistry.h
 

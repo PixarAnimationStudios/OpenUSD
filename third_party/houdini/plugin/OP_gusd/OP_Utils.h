@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef _GUSD_OP_UTILS_H_
-#define _GUSD_OP_UTILS_H_
+#ifndef OP_GUSD_OP_UTILS_H
+#define OP_GUSD_OP_UTILS_H
 
 #include "gusd/stageCache.h"
 #include "gusd/GT_PrimCache.h"
@@ -47,4 +47,4 @@ void      ReloadStagesAndClearCaches(const UT_StringSet& paths);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif /*_GUSD_OP_UTILS_H_*/
+#endif /*OP_GUSD_OP_UTILS_H*/

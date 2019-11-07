@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_COLORSPACE_H
-#define PXRUSDMAYA_COLORSPACE_H
+#ifndef USD_MAYA_COLOR_SPACE_H
+#define USD_MAYA_COLOR_SPACE_H
 
 /// \file usdMaya/colorSpace.h
 

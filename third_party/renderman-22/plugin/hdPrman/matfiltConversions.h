@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDPRMAN_MATFILT_CONVERSIONS_H
-#define HDPRMAN_MATFILT_CONVERSIONS_H
+#ifndef EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATFILT_CONVERSIONS_H
+#define EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATFILT_CONVERSIONS_H
 
 #include "pxr/pxr.h"
 #include "hdPrman/matfiltFilterChain.h"

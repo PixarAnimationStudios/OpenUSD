@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDMAYA_NOTICE_H
-#define USDMAYA_NOTICE_H
+#ifndef USD_MAYA_NOTICE_H
+#define USD_MAYA_NOTICE_H
 
 /// \file usdMaya/notice.h
 

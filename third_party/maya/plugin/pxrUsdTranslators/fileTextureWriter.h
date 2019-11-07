@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDTRANSLATORS_FILE_TEXTURE_WRITER_H
-#define PXRUSDTRANSLATORS_FILE_TEXTURE_WRITER_H
+#ifndef PXR_USD_TRANSLATORS_FILE_TEXTURE_WRITER_H
+#define PXR_USD_TRANSLATORS_FILE_TEXTURE_WRITER_H
 
 /// \file pxrUsdTranslators/fileTextureWriter.h
 

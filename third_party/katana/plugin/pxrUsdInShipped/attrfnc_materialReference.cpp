@@ -35,7 +35,7 @@
 #include "usdKatana/readMaterial.h"
 #include "usdKatana/usdInPrivateData.h"
 
-#include "pxrUsdInShipped/attrfnc_materialReference.h"
+#include "attrfnc_materialReference.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

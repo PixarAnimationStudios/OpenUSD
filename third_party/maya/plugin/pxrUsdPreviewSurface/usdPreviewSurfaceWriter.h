@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_WRITER_H
-#define PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_WRITER_H
+#ifndef PXR_USD_PREVIEW_SURFACE_USD_PREVIEW_SURFACE_WRITER_H
+#define PXR_USD_PREVIEW_SURFACE_USD_PREVIEW_SURFACE_WRITER_H
 
 /// \file pxrUsdPreviewSurface/usdPreviewSurfaceWriter.h
 

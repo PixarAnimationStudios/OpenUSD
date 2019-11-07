@@ -22,8 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "hdxPrman/context.h"
-#include "hdxPrman/rendererPlugin.h"
+#include "context.h"
+#include "rendererPlugin.h"
 #include "hdPrman/rixStrings.h"
 
 #include "pxr/base/tf/stringUtils.h"

@@ -21,8 +21,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#ifndef PXRUSDMAYA_XFORM_STACK_H
-#define PXRUSDMAYA_XFORM_STACK_H
+#ifndef USD_MAYA_XFORM_STACK_H
+#define USD_MAYA_XFORM_STACK_H
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"

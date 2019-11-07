@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDXPRMAN_RENDER_PARAM_H
-#define HDXPRMAN_RENDER_PARAM_H
+#ifndef EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HDX_PRMAN_RENDER_PARAM_H
+#define EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HDX_PRMAN_RENDER_PARAM_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "hdPrman/renderParam.h"
-#include "hdxPrman/context.h"
+#include "context.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -50,4 +50,4 @@ public:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDXPRMAN_RENDER_PARAM_H
+#endif // EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HDX_PRMAN_RENDER_PARAM_H

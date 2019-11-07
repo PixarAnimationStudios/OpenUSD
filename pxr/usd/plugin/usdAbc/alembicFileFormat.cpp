@@ -22,9 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/usd/usdAbc/alembicFileFormat.h"
+#include "pxr/usd/plugin/usdAbc/alembicFileFormat.h"
 
-#include "pxr/usd/usdAbc/alembicData.h"
+#include "pxr/usd/plugin/usdAbc/alembicData.h"
 #include "pxr/usd/usd/usdaFileFormat.h"
 
 #include "pxr/usd/sdf/layer.h"

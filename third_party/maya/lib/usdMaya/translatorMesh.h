@@ -24,8 +24,8 @@
 
 /// \file usdMaya/translatorMesh.h
 
-#ifndef PXRUSDMAYA_TRANSLATOR_MESH_H
-#define PXRUSDMAYA_TRANSLATOR_MESH_H
+#ifndef USD_MAYA_TRANSLATOR_MESH_H
+#define USD_MAYA_TRANSLATOR_MESH_H
 
 #include "usdMaya/api.h"
 

@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxrUsdTranslators/cameraWriter.h"
+#include "cameraWriter.h"
 
 #include "usdMaya/adaptor.h"
 #include "usdMaya/primWriter.h"

@@ -380,7 +380,7 @@ pxr/pxr.h, which facilitates using namespaces:
 ##### ASCII Parser Editing/Validation
 
 There is an ASCII parser for the USD file format, which can be found in
-[sdf](pxr/usd/lib/sdf/). Most users will not have a need to edit the parser, but
+[sdf](pxr/usd/sdf). Most users will not have a need to edit the parser, but
 for the adventurous ones, there are a couple additional requirements.
 
 If you choose to edit the ASCII parsers, make sure

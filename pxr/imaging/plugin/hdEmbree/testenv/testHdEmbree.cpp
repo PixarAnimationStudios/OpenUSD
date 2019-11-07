@@ -37,8 +37,8 @@
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/renderBuffer.h"
 
-#include "pxr/imaging/hdEmbree/rendererPlugin.h"
-#include "pxr/imaging/hdEmbree/renderDelegate.h"
+#include "pxr/imaging/plugin/hdEmbree/rendererPlugin.h"
+#include "pxr/imaging/plugin/hdEmbree/renderDelegate.h"
 
 #include "pxr/base/tf/errorMark.h"
 

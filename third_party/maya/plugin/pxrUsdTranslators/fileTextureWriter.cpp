@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxrUsdTranslators/fileTextureWriter.h"
+#include "fileTextureWriter.h"
 
 #include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/shaderWriter.h"

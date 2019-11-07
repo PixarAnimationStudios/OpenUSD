@@ -24,8 +24,8 @@
 
 /// \file usdMaya/readUtil.h
 
-#ifndef PXRUSDMAYA_READUTIL_H
-#define PXRUSDMAYA_READUTIL_H
+#ifndef USD_MAYA_READ_UTIL_H
+#define USD_MAYA_READ_UTIL_H
 
 #include "usdMaya/api.h"
 

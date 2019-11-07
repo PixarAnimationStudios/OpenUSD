@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_USDINSHIPPED_DECLARECOREOPS_H
-#define PXR_USDINSHIPPED_DECLARECOREOPS_H
+#ifndef EXT_KATANAPKG_PLUGIN_OP_PXR_USD_IN_SHIPPED_DECLARE_CORE_OPS_H
+#define EXT_KATANAPKG_PLUGIN_OP_PXR_USD_IN_SHIPPED_DECLARE_CORE_OPS_H
 
 #include "usdKatana/usdInPluginRegistry.h"
 
@@ -44,4 +44,4 @@ PXRUSDKATANA_USDIN_PLUGIN_DECLARE(PxrUsdInCore_CameraOp)
 PXRUSDKATANA_USDIN_PLUGIN_DECLARE(PxrUsdInCore_ConstraintsOp)
 PXRUSDKATANA_USDIN_PLUGIN_DECLARE(PxrUsdInCore_LooksGroupOp)
 
-#endif // PXR_USDINSHIPPED_DECLARECOREOPS_H
+#endif // EXT_KATANAPKG_PLUGIN_OP_PXR_USD_IN_SHIPPED_DECLARE_CORE_OPS_H

@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_TRANSLATOR_NURBSPATCH_H
-#define PXRUSDMAYA_TRANSLATOR_NURBSPATCH_H
+#ifndef USD_MAYA_TRANSLATOR_NURBS_PATCH_H
+#define USD_MAYA_TRANSLATOR_NURBS_PATCH_H
 
 /// \file usdMaya/translatorNurbsPatch.h
 

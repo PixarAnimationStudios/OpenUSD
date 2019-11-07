@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_BLOCK_SCENE_MODIFICATION_CONTEXT_H
-#define PXRUSDMAYA_BLOCK_SCENE_MODIFICATION_CONTEXT_H
+#ifndef USD_MAYA_BLOCK_SCENE_MODIFICATION_CONTEXT_H
+#define USD_MAYA_BLOCK_SCENE_MODIFICATION_CONTEXT_H
 
 /// \file usdMaya/blockSceneModificationContext.h
 

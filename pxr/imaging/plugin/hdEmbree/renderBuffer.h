@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDEMBREE_RENDERBUFFER_H
-#define HDEMBREE_RENDERBUFFER_H
+#ifndef PXR_IMAGING_PLUGIN_HD_EMBREE_RENDER_BUFFER_H
+#define PXR_IMAGING_PLUGIN_HD_EMBREE_RENDER_BUFFER_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/renderBuffer.h"
@@ -196,4 +196,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDEMBREE_RENDERBUFFER_H
+#endif // PXR_IMAGING_PLUGIN_HD_EMBREE_RENDER_BUFFER_H

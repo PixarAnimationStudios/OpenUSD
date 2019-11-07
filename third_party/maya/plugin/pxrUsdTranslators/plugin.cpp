@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxrUsdTranslators/api.h"
+#include "api.h"
 
 #include <maya/MFnPlugin.h>
 #include <maya/MStatus.h>

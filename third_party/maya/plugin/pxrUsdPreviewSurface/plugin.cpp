@@ -22,10 +22,10 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxrUsdPreviewSurface/api.h"
+#include "api.h"
 
-#include "pxrUsdPreviewSurface/usdPreviewSurface.h"
-#include "pxrUsdPreviewSurface/usdPreviewSurfaceShadingNodeOverride.h"
+#include "usdPreviewSurface.h"
+#include "usdPreviewSurfaceShadingNodeOverride.h"
 
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/thisPlugin.h"

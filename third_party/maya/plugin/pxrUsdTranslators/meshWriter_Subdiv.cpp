@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxrUsdTranslators/meshWriter.h"
+#include "meshWriter.h"
 
 #include "pxr/usd/usdGeom/mesh.h"
 

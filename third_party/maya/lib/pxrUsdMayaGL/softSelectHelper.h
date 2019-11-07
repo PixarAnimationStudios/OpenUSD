@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYAGL_SOFT_SELECT_HELPER_H
-#define PXRUSDMAYAGL_SOFT_SELECT_HELPER_H
+#ifndef PXR_USD_MAYA_GL_SOFT_SELECT_HELPER_H
+#define PXR_USD_MAYA_GL_SOFT_SELECT_HELPER_H
 
 /// \file pxrUsdMayaGL/softSelectHelper.h
 
@@ -104,4 +104,4 @@ private:
 PXR_NAMESPACE_CLOSE_SCOPE
 
 
-#endif // PXRUSDMAYAGL_SOFT_SELECT_HELPER_H
+#endif // PXR_USD_MAYA_GL_SOFT_SELECT_HELPER_H

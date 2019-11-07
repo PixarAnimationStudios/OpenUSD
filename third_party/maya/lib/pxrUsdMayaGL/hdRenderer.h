@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYAGL_HD_RENDERER_H
-#define PXRUSDMAYAGL_HD_RENDERER_H
+#ifndef PXR_USD_MAYA_GL_HD_RENDERER_H
+#define PXR_USD_MAYA_GL_HD_RENDERER_H
 
 /// \file pxrUsdMayaGL/hdRenderer.h
 

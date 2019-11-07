@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_H
-#define PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_H
+#ifndef PXR_USD_PREVIEW_SURFACE_USD_PREVIEW_SURFACE_H
+#define PXR_USD_PREVIEW_SURFACE_USD_PREVIEW_SURFACE_H
 
 /// \file pxrUsdPreviewSurface/usdPreviewSurface.h
 
 #include "pxr/pxr.h"
-#include "pxrUsdPreviewSurface/api.h"
+#include "api.h"
 
 #include "pxr/base/tf/staticTokens.h"
 

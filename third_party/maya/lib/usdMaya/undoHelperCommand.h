@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_UNDO_HELPER_CMD_H
-#define PXRUSDMAYA_UNDO_HELPER_CMD_H
+#ifndef USD_MAYA_UNDO_HELPER_COMMAND_H
+#define USD_MAYA_UNDO_HELPER_COMMAND_H
 
 /// \file usdMaya/undoHelperCommand.h
 

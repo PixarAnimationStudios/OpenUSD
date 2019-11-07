@@ -24,8 +24,8 @@
 
 /// \file usdMaya/meshUtil.h
 
-#ifndef PXRUSDMAYA_MESH_UTIL_H
-#define PXRUSDMAYA_MESH_UTIL_H
+#ifndef USD_MAYA_MESH_UTIL_H
+#define USD_MAYA_MESH_UTIL_H
 
 #include "usdMaya/api.h"
 

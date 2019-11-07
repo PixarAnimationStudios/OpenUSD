@@ -21,12 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hdEmbree/renderer.h"
+#include "pxr/imaging/plugin/hdEmbree/renderer.h"
 
-#include "pxr/imaging/hdEmbree/renderBuffer.h"
-#include "pxr/imaging/hdEmbree/config.h"
-#include "pxr/imaging/hdEmbree/context.h"
-#include "pxr/imaging/hdEmbree/mesh.h"
+#include "pxr/imaging/plugin/hdEmbree/renderBuffer.h"
+#include "pxr/imaging/plugin/hdEmbree/config.h"
+#include "pxr/imaging/plugin/hdEmbree/context.h"
+#include "pxr/imaging/plugin/hdEmbree/mesh.h"
 
 #include "pxr/imaging/hd/perfLog.h"
 

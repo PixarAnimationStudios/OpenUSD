@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_PROXY_SHAPE_H
-#define PXRUSDMAYA_PROXY_SHAPE_H
+#ifndef USD_MAYA_PROXY_SHAPE_H
+#define USD_MAYA_PROXY_SHAPE_H
 
 /// \file usdMaya/proxyShape.h
 

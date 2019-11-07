@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "hdxPrman/renderBuffer.h"
+#include "renderBuffer.h"
 #include "pxr/base/gf/half.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

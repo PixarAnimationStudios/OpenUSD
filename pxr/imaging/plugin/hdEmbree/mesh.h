@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDEMBREE_MESH_H
-#define HDEMBREE_MESH_H
+#ifndef PXR_IMAGING_PLUGIN_HD_EMBREE_MESH_H
+#define PXR_IMAGING_PLUGIN_HD_EMBREE_MESH_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/mesh.h"
@@ -30,7 +30,7 @@
 #include "pxr/imaging/hd/vertexAdjacency.h"
 #include "pxr/base/gf/matrix4f.h"
 
-#include "pxr/imaging/hdEmbree/meshSamplers.h"
+#include "pxr/imaging/plugin/hdEmbree/meshSamplers.h"
 
 #include <embree2/rtcore.h>
 #include <embree2/rtcore_ray.h>
@@ -256,4 +256,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDEMBREE_MESH_H
+#endif // PXR_IMAGING_PLUGIN_HD_EMBREE_MESH_H

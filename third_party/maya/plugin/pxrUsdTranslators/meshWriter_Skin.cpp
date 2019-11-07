@@ -22,9 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxrUsdTranslators/meshWriter.h"
+#include "meshWriter.h"
 
-#include "pxrUsdTranslators/jointWriter.h"
+#include "jointWriter.h"
 
 #include "usdMaya/translatorSkel.h"
 #include "usdMaya/translatorUtil.h"

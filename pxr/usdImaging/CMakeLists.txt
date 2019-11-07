@@ -1,5 +1,10 @@
 set(DIRS
-    lib
+    usdImaging
+    usdImagingGL
+    usdSkelImaging
+    usdVolImaging
+    usdAppUtils
+    usdviewq
     bin
     plugin
 )

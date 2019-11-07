@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxrUsdTranslators/strokeWriter.h"
+#include "strokeWriter.h"
 
 #include "usdMaya/primWriter.h"
 #include "usdMaya/primWriterRegistry.h"

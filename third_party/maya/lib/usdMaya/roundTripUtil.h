@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_ROUND_TRIP_UTIL_H
-#define PXRUSDMAYA_ROUND_TRIP_UTIL_H
+#ifndef USD_MAYA_ROUND_TRIP_UTIL_H
+#define USD_MAYA_ROUND_TRIP_UTIL_H
 
 /// \file usdMaya/roundTripUtil.h
 

@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDTRANSLATORS_NURBS_CURVE_WRITER_H
-#define PXRUSDTRANSLATORS_NURBS_CURVE_WRITER_H
+#ifndef PXR_USD_TRANSLATORS_NURBS_CURVE_WRITER_H
+#define PXR_USD_TRANSLATORS_NURBS_CURVE_WRITER_H
 
 /// \file pxrUsdTranslators/nurbsCurveWriter.h
 

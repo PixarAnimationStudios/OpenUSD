@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_INSTANCED_NODE_WRITER_H
-#define PXRUSDMAYA_INSTANCED_NODE_WRITER_H
+#ifndef USD_MAYA_INSTANCED_NODE_WRITER_H
+#define USD_MAYA_INSTANCED_NODE_WRITER_H
 
 /// \file usdMaya/instancedNodeWriter.h
 

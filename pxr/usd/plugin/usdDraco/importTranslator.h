@@ -22,8 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#ifndef USDDRACO_IMPORT_TRANSLATOR_H
-#define USDDRACO_IMPORT_TRANSLATOR_H
+#ifndef PXR_USD_PLUGIN_USD_DRACO_IMPORT_TRANSLATOR_H
+#define PXR_USD_PLUGIN_USD_DRACO_IMPORT_TRANSLATOR_H
 
 #include "attributeDescriptor.h"
 #include "importAttribute.h"
@@ -94,4 +94,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // USDDRACO_IMPORT_TRANSLATOR_H
+#endif  // PXR_USD_PLUGIN_USD_DRACO_IMPORT_TRANSLATOR_H

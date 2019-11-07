@@ -24,8 +24,8 @@
 
 /// \file usdMaya/translatorSkel.h
 
-#ifndef PXRUSDMAYA_TRANSLATOR_SKEL_H
-#define PXRUSDMAYA_TRANSLATOR_SKEL_H
+#ifndef USD_MAYA_TRANSLATOR_SKEL_H
+#define USD_MAYA_TRANSLATOR_SKEL_H
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"

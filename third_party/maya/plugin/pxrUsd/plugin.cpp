@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxrUsd/api.h"
+#include "api.h"
 
 #include "pxrUsdMayaGL/hdImagingShapeDrawOverride.h"
 #include "pxrUsdMayaGL/hdImagingShapeUI.h"

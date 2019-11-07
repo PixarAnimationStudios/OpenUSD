@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_STAGE_NODE_H
-#define PXRUSDMAYA_STAGE_NODE_H
+#ifndef USD_MAYA_STAGE_NODE_H
+#define USD_MAYA_STAGE_NODE_H
 
 /// \file usdMaya/stageNode.h
 

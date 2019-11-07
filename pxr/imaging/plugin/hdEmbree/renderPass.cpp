@@ -24,8 +24,8 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hd/renderPassState.h"
-#include "pxr/imaging/hdEmbree/renderDelegate.h"
-#include "pxr/imaging/hdEmbree/renderPass.h"
+#include "pxr/imaging/plugin/hdEmbree/renderDelegate.h"
+#include "pxr/imaging/plugin/hdEmbree/renderPass.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

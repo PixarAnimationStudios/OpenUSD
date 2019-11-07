@@ -25,8 +25,8 @@
 /// \file glslProgram.h
 
 
-#ifndef __PX_VP20_GLSL_PROGRAM_H__
-#define __PX_VP20_GLSL_PROGRAM_H__
+#ifndef PX_VP20_GLSL_PROGRAM_H
+#define PX_VP20_GLSL_PROGRAM_H
 
 #include "pxr/pxr.h"
 #include "px_vp20/api.h"
@@ -76,4 +76,4 @@ class PxrMayaGLSLProgram
 PXR_NAMESPACE_CLOSE_SCOPE
 
 
-#endif  // __PX_VP20_GLSL_PROGRAM_H__
+#endif  // PX_VP20_GLSL_PROGRAM_H

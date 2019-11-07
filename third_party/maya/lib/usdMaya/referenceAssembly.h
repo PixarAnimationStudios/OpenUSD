@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYA_REFERENCE_ASSEMBLY_H
-#define PXRUSDMAYA_REFERENCE_ASSEMBLY_H
+#ifndef USD_MAYA_REFERENCE_ASSEMBLY_H
+#define USD_MAYA_REFERENCE_ASSEMBLY_H
 
 /// \file usdMaya/referenceAssembly.h
 

@@ -21,9 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "hdxPrman/rendererPlugin.h"
-#include "hdxPrman/context.h"
-#include "hdxPrman/renderDelegate.h"
+#include "rendererPlugin.h"
+#include "context.h"
+#include "renderDelegate.h"
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
 
 #include "pxr/base/tf/getenv.h"

@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYAGL_DEBUG_CODES
-#define PXRUSDMAYAGL_DEBUG_CODES
+#ifndef PXR_USD_MAYA_GL_DEBUG_CODES_H
+#define PXR_USD_MAYA_GL_DEBUG_CODES_H
 
 /// \file pxrUsdMayaGL/debugCodes.h
 

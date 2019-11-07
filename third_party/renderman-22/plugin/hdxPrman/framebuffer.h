@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_PRMAN_FRAMEBUFFER_H
-#define HD_PRMAN_FRAMEBUFFER_H
+#ifndef EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HDX_PRMAN_FRAMEBUFFER_H
+#define EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HDX_PRMAN_FRAMEBUFFER_H
 
 #include "pxr/pxr.h"
 

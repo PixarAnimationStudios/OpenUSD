@@ -24,8 +24,8 @@
 
 /// \file usdMaya/writeUtil.h
 
-#ifndef PXRUSDMAYA_WRITEUTIL_H
-#define PXRUSDMAYA_WRITEUTIL_H
+#ifndef USD_MAYA_WRITE_UTIL_H
+#define USD_MAYA_WRITE_UTIL_H
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"

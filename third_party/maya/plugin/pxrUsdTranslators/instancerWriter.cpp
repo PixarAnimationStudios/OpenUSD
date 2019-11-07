@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxrUsdTranslators/instancerWriter.h"
+#include "instancerWriter.h"
 
 #include "usdMaya/adaptor.h"
 #include "usdMaya/primWriterRegistry.h"

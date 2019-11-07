@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDPRMAN_GPRIM_H
-#define HDPRMAN_GPRIM_H
+#ifndef EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_GPRIM_H
+#define EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_GPRIM_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/enums.h"
@@ -449,4 +449,4 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDPRMAN_GPRIM_H
+#endif // EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_GPRIM_H

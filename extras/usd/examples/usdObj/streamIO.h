@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDOBJ_STREAMIO_H
-#define USDOBJ_STREAMIO_H
+#ifndef PXR_EXTRAS_USD_EXAMPLES_USD_OBJ_STREAM_IO_H
+#define PXR_EXTRAS_USD_EXAMPLES_USD_OBJ_STREAM_IO_H
 
 #include "pxr/pxr.h"
 #include <iosfwd>
@@ -52,4 +52,4 @@ UsdObjReadDataFromStream(std::istream &input,
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USDOBJ_STREAMIO_H
+#endif // PXR_EXTRAS_USD_EXAMPLES_USD_OBJ_STREAM_IO_H
