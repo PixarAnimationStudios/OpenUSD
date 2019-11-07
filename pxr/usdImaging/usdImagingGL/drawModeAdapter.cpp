@@ -365,13 +365,11 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                     TfToken(), 
                     HioGlslfxTokens->glslfx);
 
-            TfToken glslfxCardsUid;
-
+            // An sdr node representing the drawCards.glslfx should be added
+            // to the registry, so we don't expect this to fail.
             if (!TF_VERIFY(sdrNode)) {
                 return;
             }
-
-            glslfxCardsUid = sdrNode->GetIdentifier();
 
             // Generate material network with a terminal that points to
             // the DrawMode glslfx shader.
@@ -380,7 +378,7 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
             HdMaterialNetwork& network = networkMap.map[terminalType];
             HdMaterialNode terminal;
             terminal.path = cachePath;
-            terminal.identifier = glslfxCardsUid;
+            terminal.identifier = sdrNode->GetIdentifier();
 
             const TfToken textureAttrs[6] = {
                 UsdGeomTokens->modelCardTextureXPos,
@@ -409,32 +407,34 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                 schemaColor[0], schemaColor[1], schemaColor[2], 1.0f));
 
             for (int i = 0; i < 6; ++i) {
-                UsdAttribute attr = prim.GetAttribute(textureAttrs[i]);
+                if (UsdAttribute attr = prim.GetAttribute(textureAttrs[i])) {
+                    SdfPath textureNodePath = _GetMaterialPath(prim)
+                        .AppendProperty(textureAttrs[i]);
 
-                SdfPath textureNodePath = _GetMaterialPath(prim)
-                    .AppendProperty(textureAttrs[i]);
+                    // Make texture node
+                    HdMaterialNode textureNode;
+                    textureNode.path = textureNodePath;
+                    textureNode.identifier = UsdImagingTokens->UsdUVTexture;
+                    textureNode.parameters[_tokens->st] = _tokens->cardsUv;
+                    textureNode.parameters[_tokens->fallback] = fallback;
+                    VtValue textureFile;
+                    if (attr && attr.Get(&textureFile, time)) {
+                        textureNode.parameters[_tokens->file] = textureFile;
+                    }
 
-                // Make texture node
-                HdMaterialNode textureNode;
-                textureNode.path = textureNodePath;
-                textureNode.identifier = UsdImagingTokens->UsdUVTexture;
-                textureNode.parameters[_tokens->st] = _tokens->cardsUv;
-                textureNode.parameters[_tokens->fallback] = fallback;
-                VtValue textureFile;
-                if (attr && attr.Get(&textureFile, time)) {
-                    textureNode.parameters[_tokens->file] = textureFile;
+                    // Insert connection between texture node and terminal
+                    HdMaterialRelationship rel;
+                    rel.inputId = textureNode.path;
+                    rel.inputName = _tokens->rgba;
+                    rel.outputId = terminal.path;
+                    rel.outputName = textureNames[i];
+                    network.relationships.emplace_back(std::move(rel));
+
+                    // Insert texture node
+                    network.nodes.emplace_back(std::move(textureNode));
+                } else {
+                    terminal.parameters[textureNames[i]] = fallback;
                 }
-
-                // Insert connection between texture node and terminal
-                HdMaterialRelationship rel;
-                rel.inputId = textureNode.path;
-                rel.inputName = _tokens->rgba;
-                rel.outputId = terminal.path;
-                rel.outputName = textureNames[i];
-                network.relationships.emplace_back(std::move(rel));
-
-                // Insert texture node
-                network.nodes.emplace_back(std::move(textureNode));
             }
 
             // Insert terminal and update material network
