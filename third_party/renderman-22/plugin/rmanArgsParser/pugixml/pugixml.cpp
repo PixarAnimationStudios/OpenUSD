@@ -1917,7 +1917,7 @@ PUGI__NS_BEGIN
 
 	PUGI__FN bool parse_declaration_encoding(const uint8_t* data, size_t size, const uint8_t*& out_encoding, size_t& out_length)
 	{
-	#define PUGI__SCANCHAR(ch) { if (offset >= size || data[offset] != ch) { return false; } offset++; }
+	#define PUGI__SCANCHAR(ch) { if (offset >= size || data[offset] != ch) return false; offset++; }
 	#define PUGI__SCANCHARTYPE(ct) { while (offset < size && PUGI__IS_CHARTYPE(data[offset], ct)) offset++; }
 
 		// check if we have a non-empty XML declaration
