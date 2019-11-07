@@ -26,8 +26,8 @@
 import sys, os, argparse, shutil, subprocess, tempfile, platform, stat
 
 # This finds all modules in the source area. For example, it will find ar,
-# usdGeom, etc. in the pxr source area, or usdKatana, usdMaya, etc. in the
-# third_party source area.
+# usdGeom, etc. in the pxr source area, or usdKatana, etc. in the third_party
+# source area.
 def _getModules(sourceRoot):
     modules = []
     topLevel = []

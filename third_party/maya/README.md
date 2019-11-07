@@ -1,6 +1,2 @@
-Maya Plugins
-============
-
-This section contains libraries and plugins for Maya. 
-
-See the [online documentation](http://openusd.org/docs/Maya-USD-Plugins.html) for more details.
+The USD Maya plugins can be found in the Autodesk-supported repo available
+[here](https://github.com/Autodesk/maya-usd).

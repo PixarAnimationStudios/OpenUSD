@@ -941,7 +941,7 @@ def InstallOpenSubdiv(context, force, buildArgs):
         # all TBB libraries it finds, including libtbbmalloc and
         # libtbbmalloc_proxy. On Linux and MacOS, this has the
         # unwanted effect of replacing the system allocator with
-        # tbbmalloc, which can cause problems with the Maya plugin.
+        # tbbmalloc.
         extraArgs.append('-DNO_TBB=ON')
 
         # Add on any user-specified extra arguments.
@@ -1197,14 +1197,6 @@ def InstallUSD(context, force, buildArgs):
         else:
             extraArgs.append('-DPXR_BUILD_MATERIALX_PLUGIN=OFF')
 
-        if context.buildMaya:
-            if context.mayaLocation:
-                extraArgs.append('-DMAYA_LOCATION="{mayaLocation}"'
-                                 .format(mayaLocation=context.mayaLocation))
-            extraArgs.append('-DPXR_BUILD_MAYA_PLUGIN=ON')
-        else:
-            extraArgs.append('-DPXR_BUILD_MAYA_PLUGIN=OFF')
-
         if context.buildKatana:
             if context.katanaApiLocation:
                 extraArgs.append('-DKATANA_API_LOCATION="{apiLocation}"'
@@ -1271,9 +1263,9 @@ Python. In that case, it is important that USD and the plugins for that DCC are
 built using the DCC's version of Python and not the system version. This can be
 done by running %(prog)s using the DCC's version of Python.
 
-For example, to build USD and the Maya plugins on macOS for Maya 2019, run:
+For example, to build USD on macOS for use in Maya 2019, run:
 
-/Applications/Autodesk/maya2019/Maya.app/Contents/bin/mayapy %(prog)s --maya --no-usdview ...
+/Applications/Autodesk/maya2019/Maya.app/Contents/bin/mayapy %(prog)s --no-usdview ...
 
 Note that this is primarily an issue on macOS, where a DCC's version of Python
 is likely to conflict with the version provided by the system. On other
@@ -1450,16 +1442,6 @@ subgroup.add_argument("--materialx", dest="build_materialx", action="store_true"
 subgroup.add_argument("--no-materialx", dest="build_materialx", action="store_false",
                       help="Do not build MaterialX plugin for USD (default)")
 
-group = parser.add_argument_group(title="Maya Plugin Options")
-subgroup = group.add_mutually_exclusive_group()
-subgroup.add_argument("--maya", dest="build_maya", action="store_true", 
-                      default=False,
-                      help="Build Maya plugin for USD")
-subgroup.add_argument("--no-maya", dest="build_maya", action="store_false",
-                      help="Do not build Maya plugin for USD (default)")
-group.add_argument("--maya-location", type=str,
-                   help="Directory where Maya is installed.")
-
 group = parser.add_argument_group(title="Katana Plugin Options")
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--katana", dest="build_katana", action="store_true", 
@@ -1587,11 +1569,6 @@ class InstallContext:
         # - MaterialX Plugin
         self.buildMaterialX = args.build_materialx
 
-        # - Maya Plugin
-        self.buildMaya = args.build_maya
-        self.mayaLocation = (os.path.abspath(args.maya_location) 
-                             if args.maya_location else None)
-
         # - Katana Plugin
         self.buildKatana = args.build_katana
         self.katanaApiLocation = (os.path.abspath(args.katana_api_location)
@@ -1696,28 +1673,12 @@ if "--usdview" in sys.argv:
 if not context.buildPython:
     pythonPluginErrorMsg = (
         "%s plugin cannot be built when python support is disabled")
-    if context.buildMaya:
-        PrintError(pythonPluginErrorMsg % "Maya")
-        sys.exit(1)
     if context.buildHoudini:
         PrintError(pythonPluginErrorMsg % "Houdini")
         sys.exit(1)
     if context.buildKatana:
         PrintError(pythonPluginErrorMsg % "Katana")
         sys.exit(1)
-
-# Error out if we're building the Maya plugin and have enabled Ptex support
-# in imaging. Maya includes its own copy of Ptex, which we believe is 
-# version 2.0.41. We would need to build imaging against this version to
-# avoid symbol lookup errors due to library version differences when running
-# the Maya plugin. However, the current version of OpenImageIO requires
-# a later version of Ptex. Rather than try to untangle this, we punt for
-# now.
-if context.buildMaya and PTEX in requiredDependencies:
-    PrintError("Cannot enable Ptex support when building the Maya "
-               "plugin, since using a separately-built Ptex library "
-               "would conflict with the version used by Maya.")
-    sys.exit(1)
 
 # Determine whether we're running in Maya's version of Python. When building
 # against Maya's Python, there are some additional restrictions on what we're
@@ -1733,7 +1694,7 @@ try:
 except:
     pass
 
-if context.buildMaya and isMayaPython:
+if isMayaPython:
     if context.buildUsdview:
         PrintError("Cannot build usdview when building against Maya's version "
                    "of Python. Maya does not provide access to the 'OpenGL' "
@@ -1840,7 +1801,6 @@ Building with settings:
       HDF5 support:             {enableHDF5}
     Draco Plugin                {buildDraco}
     MaterialX Plugin            {buildMaterialX}
-    Maya Plugin                 {buildMaya}
     Katana Plugin               {buildKatana}
     Houdini Plugin              {buildHoudini}
 
@@ -1890,7 +1850,6 @@ summaryMsg = summaryMsg.format(
     buildDraco=("On" if context.buildDraco else "Off"),
     buildMaterialX=("On" if context.buildMaterialX else "Off"),
     enableHDF5=("On" if context.enableHDF5 else "Off"),
-    buildMaya=("On" if context.buildMaya else "Off"),
     buildKatana=("On" if context.buildKatana else "Off"),
     buildHoudini=("On" if context.buildHoudini else "Off"))
 
@@ -1966,10 +1925,6 @@ Print("""
     The following in your PATH environment variable:
     {requiredInPath}
 """.format(requiredInPath="\n    ".join(sorted(requiredInPath))))
-
-if context.buildMaya:
-    Print("See documentation at http://openusd.org/docs/Maya-USD-Plugins.html "
-          "for setting up the Maya plugin.\n")
     
 if context.buildKatana:
     Print("See documentation at http://openusd.org/docs/Katana-USD-Plugins.html "

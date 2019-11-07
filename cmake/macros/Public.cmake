@@ -169,7 +169,6 @@ function(pxr_library NAME)
     set(options
         DISABLE_PRECOMPILED_HEADERS
         KATANA_PLUGIN
-        MAYA_PLUGIN
     )
     set(oneValueArgs
         TYPE
@@ -259,15 +258,6 @@ function(pxr_library NAME)
         # In particular, shared objects install into plugin/Libs
         if(args_KATANA_PLUGIN)
             set(subdir "Libs")
-        endif()
-
-        # Maya plugins require the .mll suffix on Windows and .bundle on OSX.
-        if(args_MAYA_PLUGIN)
-            if (WIN32)
-                set(suffix ".mll")
-            elseif(APPLE)
-                set(suffix ".bundle")
-            endif()
         endif()
     else()
         # If the caller didn't specify the library type then choose the

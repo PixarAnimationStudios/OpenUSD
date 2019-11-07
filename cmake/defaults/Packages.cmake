@@ -149,10 +149,6 @@ if (PXR_BUILD_KATANA_PLUGIN)
         )
 endif()
 
-if (PXR_BUILD_MAYA_PLUGIN)
-    find_package(Maya REQUIRED)
-endif()
-
 if (PXR_BUILD_HOUDINI_PLUGIN)
     find_package(Houdini REQUIRED)
 endif()

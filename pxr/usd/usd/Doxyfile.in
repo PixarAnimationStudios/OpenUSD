@@ -823,13 +823,6 @@ INPUT                  = src/modules/usd/doxygen/externalOverview.dox \
                          src/modules/pxrUsdInShipped \
                          src/modules/vmp_usd \
                                                                       \
-                         ## "maya" package \
-                         src/modules/usdMaya/overview.dox \
-                         src/modules/pxrUsdMayaGL \
-                         src/modules/px_vp20 \
-                         src/modules/usdMaya \
-                         src/modules/pxrUsd \
-                                                                      \
                          ## Everything else \
                          src/modules
 
