@@ -1674,6 +1674,12 @@ if context.buildUsdview:
 if Linux():
     requiredDependencies.remove(ZLIB)
 
+# Error out if user is building monolithic library on windows with draco plugin
+# enabled. This currently results in missing symbols.
+if context.buildDraco and context.buildMonolithic and Windows():
+    PrintError("Draco plugin can not be enabled for monolithic build on Windows")
+    sys.exit(1)
+
 # Error out if user explicitly specified building usdview without required
 # components. Otherwise, usdview will be silently disabled. This lets users
 # specify "--no-python" without explicitly having to specify "--no-usdview",
