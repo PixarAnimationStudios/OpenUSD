@@ -2774,7 +2774,7 @@ UsdImagingDelegate::GetTextureResource(SdfPath const &textureId)
         texturePrim = primInfo->usdPrim;
     }
 
-    if (TF_VERIFY(primInfo)) {
+    if (TF_VERIFY(primInfo, textureId.GetText())) {
         return primInfo->adapter
             ->GetTextureResource(texturePrim, cachePath, _time);
     }
