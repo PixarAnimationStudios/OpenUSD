@@ -492,15 +492,11 @@ HdStRenderPassState::MakeGraphicsEncoderDesc() const
 
         HgiAttachmentDesc attachmentDesc;
 
-        HgiSampleCount sampleCount = aov.renderBuffer->IsMultiSampled() ?
-            HgiSampleCount4 : HgiSampleCount1;
-
         HgiAttachmentLoadOp loadOp = aov.clearValue.IsEmpty() ?
             HgiAttachmentLoadOpDontCare :
             HgiAttachmentLoadOpClear;
 
         attachmentDesc.texture = hgiTexHandle;
-        attachmentDesc.sampleCount = sampleCount;
         attachmentDesc.loadOp = loadOp;
         attachmentDesc.storeOp = HgiAttachmentStoreOpStore;
 

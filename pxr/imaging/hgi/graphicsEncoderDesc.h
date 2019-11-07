@@ -41,8 +41,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// <ul>
 /// <li>texture:
 ///   The texture used as render target attachment.</li>
-/// <li>sampleCount:
-///   samples per texel (multi-sampling)</li>
 /// <li>loadOp:
 ///   The operation to perform on the attachment pixel data prior to rendering.</li>
 /// <li>storeOp:
@@ -53,14 +51,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct HgiAttachmentDesc {
     HgiAttachmentDesc() 
     : texture(nullptr)
-    , sampleCount(HgiSampleCount1)
     , loadOp(HgiAttachmentLoadOpLoad)
     , storeOp(HgiAttachmentStoreOpStore)
     , clearValue(0)
     {}
 
     HgiTextureHandle texture;
-    HgiSampleCount sampleCount;
     HgiAttachmentLoadOp loadOp;
     HgiAttachmentStoreOp storeOp;
     GfVec4f clearValue;

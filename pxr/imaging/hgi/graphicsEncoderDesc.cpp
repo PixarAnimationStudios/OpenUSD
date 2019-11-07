@@ -31,7 +31,6 @@ bool operator==(
 {
     return  lhs.clearValue == rhs.clearValue &&
             lhs.loadOp == rhs.loadOp &&
-            lhs.sampleCount == rhs.sampleCount &&
             lhs.storeOp == rhs.storeOp &&
             lhs.texture == rhs.texture;
 }
@@ -51,7 +50,6 @@ std::ostream& operator<<(
         << "has_texture: " << (attachment.texture!=nullptr) << ", "
         << "clearValue: " << attachment.clearValue << ", "
         << "loadOp: " << attachment.loadOp << ", "
-        << "sampleCount: " << attachment.sampleCount << ", "
         << "storeOp: " << attachment.storeOp <<
     "}";
     return out;
