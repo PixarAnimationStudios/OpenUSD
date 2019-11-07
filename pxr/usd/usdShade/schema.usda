@@ -1,4 +1,4 @@
-#usda 0.0
+#usda 1.0
 (
     "This file describes the USD Shader schemata for code generation."
     subLayers = [
