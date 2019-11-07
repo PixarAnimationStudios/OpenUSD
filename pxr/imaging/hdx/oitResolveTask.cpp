@@ -160,6 +160,7 @@ HdxOitResolveTask::_PrepareOitBuffers(
                              screenSize[1] > _screenSize[1]);
 
     if (resizeOitBuffers) {
+        _screenSize = screenSize;
         int newBufferSize = screenSize[0] * screenSize[1];
 
         // +1 because element 0 of the counter buffer is used as an atomic
@@ -265,7 +266,7 @@ HdxOitResolveTask::Prepare(HdTaskContext* ctx,
     } else {
         // Without AOVs we don't know the window / screen size.
         const int oitScreenSizeFallback = 2048;
-        if (screenSize[0] != oitScreenSizeFallback) {
+        if (_screenSize[0] != oitScreenSizeFallback) {
             TF_WARN("Invalid AOVs for Oit Resolve Task");
         }
         screenSize[0] = oitScreenSizeFallback;
