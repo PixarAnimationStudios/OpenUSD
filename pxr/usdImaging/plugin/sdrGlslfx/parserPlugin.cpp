@@ -263,8 +263,17 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
             )));
     }
 
-    // XXX: Add support for reading attributes from glslfx and 
-    //      converting to primvars
+    NdrTokenMap metadata = discoveryResult.metadata;
+    std::vector<std::string> primvarNames;
+    if (metadata.count(SdrNodeMetadata->Primvars)) {
+        primvarNames.push_back(metadata.at(SdrNodeMetadata->Primvars));
+    }
+    
+    HioGlslfxConfig::Attributes attributes = glslfx->GetAttributes();
+    for (HioGlslfxConfig::Attribute const & a : attributes) {
+        primvarNames.push_back(a.name);
+    }
+    metadata[SdrNodeMetadata->Primvars] = TfStringJoin(primvarNames, "|");
 
     // XXX: Add support for reading metadata from glslfx and converting
     //      to node metadata
@@ -279,7 +288,7 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
         discoveryResult.uri,
         discoveryResult.resolvedUri,
         std::move(nodeProperties),
-        discoveryResult.metadata,
+        metadata,
         discoveryResult.sourceCode));
 }
 

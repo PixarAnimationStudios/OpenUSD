@@ -51,15 +51,15 @@
         },
         "textureZNeg" : {
             "default": [0.18, 0.18, 0.18, 1.0]
+        },
+        "activeTexCard" : {
+            "default": 0
         }
     }
 }
 
 --- --------------------------------------------------------------------------
 -- glsl Surface.Fallback
-
-#ifdef HD_HAS_cardsTexAssign
-// Case 1: Drawing cards with assigned textures. Sample the textures.
 
 vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
@@ -71,9 +71,9 @@ vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     const int Y_NEG = 16;
     const int Z_NEG = 32;
 
-    // XXX: This is a terrible way to do this.
     vec4 diffuse = color;
-    const int texAssign = HdGet_cardsTexAssign();
+    const int texAssign = HdGet_activeTexCard();
+
     if (texAssign == X_POS) {
 #ifdef HD_HAS_textureXPos
         diffuse = HdGet_textureXPos();
@@ -107,15 +107,3 @@ vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     color.a = diffuse.a;
     return color;
 }
-#else
-// Case 2: Drawing cards with no textures, fall back to "color".
-
-vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
-{
-    // Apply selection pre-lighting
-    color.rgb = ApplyColorOverrides(color.rgbb).rgb;
-
-    color.rgb = FallbackLighting(Peye.xyz, Neye, color.rgb);
-    return color;
-}
-#endif

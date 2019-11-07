@@ -412,8 +412,6 @@ _MakeMaterialParamsForPrimvarInput(
     param.textureType = HdTextureType::Uv  /*No Texture*/;
 
     // A node may require 'additional primvars' to function correctly.
-
-    TfTokenVector varNames;
     for (auto const& propName: sdrNode->GetAdditionalPrimvarProperties()) {
         TfToken primvarName = 
             _GetPrimvarNameAttributeValue(sdrNode, node, propName);

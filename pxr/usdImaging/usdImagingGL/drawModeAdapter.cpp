@@ -72,6 +72,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     (st)
     (rgba)
     (fallback)
+
+    (varname)
+    (result)
+    (activeTexCard)
 );
 
 namespace {
@@ -436,6 +440,27 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                     terminal.parameters[textureNames[i]] = fallback;
                 }
             }
+
+            // Adding a primvar reader for the card assignment
+            // Make primvar reader node
+            SdfPath primvarNodePath = _GetMaterialPath(prim)
+                .AppendProperty(_tokens->cardsTexAssign);
+            HdMaterialNode primvarNode;
+            primvarNode.path = primvarNodePath;
+            primvarNode.identifier = UsdImagingTokens->UsdPrimvarReader_int;
+            primvarNode.parameters[_tokens->varname] = _tokens->cardsTexAssign;
+            primvarNode.parameters[_tokens->fallback] = VtValue(0);
+
+            // Insert connection between primvar reader node and terminal
+            HdMaterialRelationship relPrimvar;
+            relPrimvar.inputId = primvarNode.path;
+            relPrimvar.inputName = _tokens->result;
+            relPrimvar.outputId = terminal.path;
+            relPrimvar.outputName = _tokens->activeTexCard;
+            network.relationships.emplace_back(std::move(relPrimvar));
+
+            // Insert primvar reader node
+            network.nodes.emplace_back(std::move(primvarNode));
 
             // Insert terminal and update material network
             networkMap.terminals.push_back(terminal.path);
