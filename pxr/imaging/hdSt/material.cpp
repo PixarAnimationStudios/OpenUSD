@@ -360,8 +360,10 @@ HdStMaterial::_GetTextureResourceHandle(
         if (!texResource) {
             // A bad asset can cause the texture resource to not
             // be found. Hence, issue a warning and insert a fallback texture.
-            TF_WARN("Texture not found. Using fallback texture for: %s",
-                    param.connection.GetText());
+            if (!param.connection.IsEmpty()) {
+                TF_WARN("Texture not found. Using fallback texture for: %s",
+                        param.connection.GetText());
+            }
 
             // Fallback texture are only supported for UV textures.
             if (param.textureType != HdTextureType::Uv) {
