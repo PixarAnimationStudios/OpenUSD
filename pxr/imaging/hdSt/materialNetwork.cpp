@@ -790,6 +790,11 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
         HioGlslfxUniquePtr surfaceGfx;
         _GetGlslfxForTerminal(surfaceGfx, surfTerminal->nodeTypeId);
         if (surfaceGfx) {
+
+            // If the glslfx file is not valid we skip parsing the network.
+            // This produces no fragmentSource which means Storm's material
+            // will use the fallback shader.
+
             if (surfaceGfx->IsValid()) {
                 _fragmentSource = isVolume ? surfaceGfx->GetVolumeSource() : 
                     surfaceGfx->GetSurfaceSource();
@@ -797,9 +802,6 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
                 _materialTag= _GetMaterialTag(_materialMetadata, *surfTerminal);
                 _materialParams = _GatherMaterialParams(
                     surfaceNetwork, *surfTerminal, surfaceGfx);
-            } else {
-                TF_WARN("Glslfx not found or invalid: %s",
-                        surfaceGfx->GetFilePath().c_str());
             }
         }
     }

@@ -298,6 +298,11 @@ HioGlslfx::_ProcessInput(std::istream * input,
         }
     }
 
+    // If we never found the glslfx version this isn't a valid glslfx.
+    if (context.version < 0) {
+        return false;
+    }
+
     for (std::string const& importFile : context.imports) {
         TF_DEBUG(HIO_DEBUG_GLSLFX).Msg(" Importing File : %s\n",
                                         importFile.c_str());
