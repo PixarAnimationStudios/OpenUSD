@@ -2898,6 +2898,11 @@ UsdImagingDelegate::GetMaterialResource(SdfPath const &materialId)
 {
     VtValue vtMatResource;
 
+    // If custom shading is disabled, use fallback
+    if (!_sceneMaterialsEnabled) {
+        return vtMatResource;
+    }
+
     if (!TF_VERIFY(materialId != SdfPath())) {
         return vtMatResource;
     }
