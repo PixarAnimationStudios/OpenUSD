@@ -65,6 +65,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     (worldtoscreen)
 
     (displayRoughness)
+
+    (file)
+    (st)
+    (rgba)
+    (fallback)
 );
 
 namespace {
@@ -86,6 +91,13 @@ TF_REGISTRY_FUNCTION(TfType)
     typedef UsdImagingGLDrawModeAdapter Adapter;
     TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
+}
+
+static SdfPath
+_GetMaterialPath(UsdPrim const& prim)
+{
+    const SdfPath matPath = SdfPath(_tokens->material.GetString());
+    return prim.GetPath().AppendPath(matPath);
 }
 
 UsdImagingGLDrawModeAdapter::~UsdImagingGLDrawModeAdapter()
@@ -182,33 +194,12 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
     }
 
     // Additionally, insert the material.
-    SdfPath materialPath = prim.GetPath().
-        AppendProperty(_tokens->material);
+    SdfPath materialPath = _GetMaterialPath(prim);
     if (index->IsSprimTypeSupported(HdPrimTypeTokens->material) &&
         !index->IsPopulated(materialPath)) {
         index->InsertSprim(HdPrimTypeTokens->material,
             materialPath, prim, shared_from_this());
         HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
-    }
-
-    // Add all of the texture dependencies.
-    TfToken textureAttrs[6] = {
-        UsdGeomTokens->modelCardTextureXPos,
-        UsdGeomTokens->modelCardTextureYPos,
-        UsdGeomTokens->modelCardTextureZPos,
-        UsdGeomTokens->modelCardTextureXNeg,
-        UsdGeomTokens->modelCardTextureYNeg,
-        UsdGeomTokens->modelCardTextureZNeg,
-    };
-
-    for (int i = 0; i < 6; ++i) {
-        UsdAttribute attr = prim.GetAttribute(textureAttrs[i]);
-        if (attr && index->IsBprimTypeSupported(HdPrimTypeTokens->texture)
-                 && !index->IsPopulated(attr.GetPath())) {
-            index->InsertBprim(HdPrimTypeTokens->texture,
-                    attr.GetPath(), prim, shared_from_this());
-            HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
-        }
     }
 
     // Record the drawmode for use in UpdateForTime().
@@ -220,23 +211,7 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
 bool
 UsdImagingGLDrawModeAdapter::_IsMaterialPath(SdfPath const& path) const
 {
-    return IsChildPath(path) && path.GetNameToken() == _tokens->material;
-}
-
-bool
-UsdImagingGLDrawModeAdapter::_IsTexturePath(SdfPath const& path) const
-{
-    if (!IsChildPath(path)) {
-        return false;
-    }
-    TfToken name = path.GetNameToken();
-    return
-        name == UsdGeomTokens->modelCardTextureXPos ||
-        name == UsdGeomTokens->modelCardTextureYPos ||
-        name == UsdGeomTokens->modelCardTextureZPos ||
-        name == UsdGeomTokens->modelCardTextureXNeg ||
-        name == UsdGeomTokens->modelCardTextureYNeg ||
-        name == UsdGeomTokens->modelCardTextureZNeg;
+    return path.GetNameToken() == _tokens->material;
 }
 
 void
@@ -245,8 +220,6 @@ UsdImagingGLDrawModeAdapter::_RemovePrim(SdfPath const& cachePath,
 {
     if (_IsMaterialPath(cachePath)) {
         index->RemoveSprim(HdPrimTypeTokens->material, cachePath);
-    } else if (_IsTexturePath(cachePath)) {
-        index->RemoveBprim(HdPrimTypeTokens->texture, cachePath);
     } else {
         _drawModeMap.erase(cachePath);
         index->RemoveRprim(cachePath);
@@ -261,8 +234,6 @@ UsdImagingGLDrawModeAdapter::MarkDirty(UsdPrim const& prim,
 {
     if (_IsMaterialPath(cachePath)) {
         index->MarkSprimDirty(cachePath, dirty);
-    } else if (_IsTexturePath(cachePath)) {
-        index->MarkBprimDirty(cachePath, dirty);
     } else {
         index->MarkRprimDirty(cachePath, dirty);
     }
@@ -273,7 +244,7 @@ UsdImagingGLDrawModeAdapter::MarkTransformDirty(UsdPrim const& prim,
                                               SdfPath const& cachePath,
                                               UsdImagingIndexProxy* index)
 {
-    if (!_IsMaterialPath(cachePath) && !_IsTexturePath(cachePath)) {
+    if (!_IsMaterialPath(cachePath)) {
         index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyTransform);
     }
 }
@@ -283,7 +254,7 @@ UsdImagingGLDrawModeAdapter::MarkVisibilityDirty(UsdPrim const& prim,
                                                SdfPath const& cachePath,
                                                UsdImagingIndexProxy* index)
 {
-    if (!_IsMaterialPath(cachePath) && !_IsTexturePath(cachePath)) {
+    if (!_IsMaterialPath(cachePath)) {
         index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyVisibility);
     }
 }
@@ -294,9 +265,8 @@ UsdImagingGLDrawModeAdapter::MarkMaterialDirty(UsdPrim const& prim,
                                                UsdImagingIndexProxy* index)
 {
     if (_IsMaterialPath(cachePath)) {
-        index->MarkSprimDirty(cachePath, HdMaterial::DirtySurfaceShader |
-                                         HdMaterial::DirtyParams);
-    } else if (!_IsTexturePath(cachePath)) {
+        index->MarkSprimDirty(cachePath, HdMaterial::DirtyResource);
+    } else {
         // If the Usd material changed, it could mean the primvar set also
         // changed Hydra doesn't currently manage detection and propagation of
         // these changes, so we must mark the rprim dirty.
@@ -334,19 +304,8 @@ UsdImagingGLDrawModeAdapter::TrackVariability(UsdPrim const& prim,
                                             UsdImagingInstancerContext const*
                                                instancerContext) const
 {
-    // If the textures are time-varying, we need to mark DirtyTexture on the
-    // texture, and DirtyParams on the shader (so that the shader picks up
-    // the new texture handle).
-    // XXX: the DirtyParams part of this can go away when we do the dependency
-    // tracking in hydra.
-    if (_IsTexturePath(cachePath)) {
-        _CheckForTextureVariability(prim, HdTexture::DirtyTexture,
-                                    timeVaryingBits);
-        return;
-    }
-
     if (_IsMaterialPath(cachePath)) {
-        _CheckForTextureVariability(prim, HdMaterial::DirtyParams,
+        _CheckForTextureVariability(prim, HdMaterial::DirtyResource,
                                     timeVaryingBits);
         return;
     }
@@ -389,30 +348,20 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
     UsdImagingValueCache* valueCache = _GetValueCache();
     UsdGeomModelAPI model(prim);
 
-    if (_IsTexturePath(cachePath)) {
-        // textures don't currently use UpdateForTime().
-        return;
-    }
-
     if (_IsMaterialPath(cachePath)) {
-        // DirtySurfaceShader indicates we should return the shader source.
-        if (requestedBits & HdMaterial::DirtySurfaceShader) {
-            valueCache->GetSurfaceShaderSource(cachePath) =
-                _GetSurfaceShaderSource();
-            valueCache->GetDisplacementShaderSource(cachePath) =
-                std::string();
-            valueCache->GetMaterialMetadata(cachePath) =
-                                                VtValue(VtDictionary());
-        }
 
-        // DirtyParams indicates we should return material bindings;
-        // in our case, loop through the texture attributes to see
-        // which ones to add. Use the draw mode color as a fallback value.
-        if (requestedBits & HdMaterial::DirtyParams) {
-            HdMaterialParamVector params;
-            UsdAttribute attr;
+        if (requestedBits & HdMaterial::DirtyResource) {
 
-            TfToken textureAttrs[6] = {
+            // Generate material network with a terminal that points to
+            // the DrawMode glslfx shader.
+            TfToken const& terminalType = HdMaterialTerminalTokens->surface;
+            HdMaterialNetworkMap networkMap;
+            HdMaterialNetwork& network = networkMap.map[terminalType];
+            HdMaterialNode terminal;
+            terminal.path = cachePath;
+            terminal.identifier = UsdImagingGLPackageDrawModeShader();
+
+            const TfToken textureAttrs[6] = {
                 UsdGeomTokens->modelCardTextureXPos,
                 UsdGeomTokens->modelCardTextureYPos,
                 UsdGeomTokens->modelCardTextureZPos,
@@ -420,7 +369,7 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                 UsdGeomTokens->modelCardTextureYNeg,
                 UsdGeomTokens->modelCardTextureZNeg,
             };
-            TfToken textureNames[6] = {
+            const TfToken textureNames[6] = {
                 _tokens->textureXPos,
                 _tokens->textureYPos,
                 _tokens->textureZPos,
@@ -438,18 +387,39 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
             VtValue fallback = VtValue(GfVec4f(
                 schemaColor[0], schemaColor[1], schemaColor[2], 1.0f));
 
-            TfTokenVector samplerParams = { _tokens->cardsUv };
             for (int i = 0; i < 6; ++i) {
-                attr = prim.GetAttribute(textureAttrs[i]);
-                if (attr) {
-                    params.push_back(HdMaterialParam(
-                                HdMaterialParam::ParamTypeTexture,
-                                textureNames[i], fallback,
-                                attr.GetPath(), samplerParams,
-                                HdTextureType::Uv));
+                if (UsdAttribute attr = prim.GetAttribute(textureAttrs[i])) {
+                    SdfPath textureNodePath = _GetMaterialPath(prim)
+                        .AppendProperty(textureAttrs[i]);
+
+                    // Make texture node
+                    HdMaterialNode textureNode;
+                    textureNode.path = textureNodePath;
+                    textureNode.identifier = UsdImagingTokens->UsdUVTexture;
+                    textureNode.parameters[_tokens->st] = _tokens->cardsUv;
+                    textureNode.parameters[_tokens->fallback] = fallback;
+                    VtValue textureFile;
+                    if (attr.Get(&textureFile, time)) {
+                        textureNode.parameters[_tokens->file] = textureFile;
+                    }
+
+                    // Insert connection between texture node and terminal
+                    HdMaterialRelationship rel;
+                    rel.inputId = textureNode.path;
+                    rel.inputName = _tokens->rgba;
+                    rel.outputId = terminal.path;
+                    rel.outputName = textureNames[i];
+                    network.relationships.emplace_back(std::move(rel));
+
+                    // Insert texture node
+                    network.nodes.emplace_back(std::move(textureNode));
                 }
             }
-            valueCache->GetMaterialParams(cachePath) = params;
+
+            // Insert terminal and update material network
+            networkMap.terminals.push_back(terminal.path);
+            network.nodes.emplace_back(std::move(terminal));
+            valueCache->GetMaterialResource(cachePath) = VtValue(networkMap);
         }
 
         return;
@@ -475,8 +445,7 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
     }
 
     if (requestedBits & HdChangeTracker::DirtyMaterialId) {
-        SdfPath materialPath = prim.GetPath().
-            AppendProperty(_tokens->material);
+        SdfPath materialPath = _GetMaterialPath(prim);
         valueCache->GetMaterialId(cachePath) = materialPath;
     }
 
@@ -1113,7 +1082,19 @@ UsdImagingGLDrawModeAdapter::GetTextureResource(UsdPrim const& usdPrim,
                                                      SdfPath const &id,
                                                      UsdTimeCode time) const
 {
-    return UsdImagingGL_GetTextureResource(usdPrim, id, time);
+    // When we inserted the material network, the texture node used a path
+    // that inserted the material Sprim path so we can find the primInfo.
+    //    /World/MyPIXform/PI/Protos/P1/material.model:cardTextureXPos
+    // The actual textures are authored on the prim, so convert path to:
+    //    /World/MyPIXform/PI/Protos/P1.model:cardTextureXPos
+
+    SdfPath materialPath = id.GetParentPath();
+    SdfPath primPath = materialPath.GetParentPath();
+    SdfPath textureAttrPath = primPath.AppendProperty(id.GetNameToken());
+
+    UsdPrim texturePrim = _GetPrim(primPath);
+
+    return UsdImagingGL_GetTextureResource(texturePrim, textureAttrPath, time);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

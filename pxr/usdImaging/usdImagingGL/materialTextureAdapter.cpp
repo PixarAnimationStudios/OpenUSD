@@ -45,7 +45,11 @@ UsdImagingGLMaterialTextureAdapter::GetTextureResource(
     SdfPath const &id,
     UsdTimeCode time) const
 {
-    return UsdImagingGL_GetTextureResource(usdPrim, id, time);
+    // The usdPrim we receive is the Material prim, since that is the prim we
+    // inserted the SPrim and primInfo for. However, the texture is authored on
+    // the texture prim, so we get the texture prim.
+    UsdPrim texturePrim = _GetPrim(id.GetParentPath());
+    return UsdImagingGL_GetTextureResource(texturePrim, id, time);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

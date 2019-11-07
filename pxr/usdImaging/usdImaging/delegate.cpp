@@ -2746,37 +2746,36 @@ UsdImagingDelegate::GetTextureResource(SdfPath const &textureId)
 {
     // PERFORMANCE: We should schedule this to be updated during Sync, rather
     // than pulling values on demand.
+
+    // Check if we can find primInfo for the path directly.
+    // This only works if a prim was inserted for this path.
     SdfPath cachePath = ConvertIndexPathToCachePath(textureId);
     _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
 
-    UsdPrim texturePrim;
-
     if (!primInfo) {
-        // When Storm tries to load a texture from a material network there is
-        // no Sprim for the texture node in _hdPrimInfoMap, because we only
-        // insert the material Sprim, not the nodes inside the network.
-        // We will check upstream to find the material Sprim.
+        // For texture nodes we may have only inserted an Sprim for the material
+        // not for the texture itself. There is only primInfo for the material.
+        //
+        // UsdShade has the rule that a UsdShade node must be nested inside the
+        // UsdMaterial scope. We traverse the parent paths to find the material.
         //
         // Example for texture attribute:
         //    /Materials/Woody/BootMaterial/Tex.inputs:file
         // We want to find Sprim:
         //    /Materials/Woody/BootMaterial
-        //
-        // XXX If we want this to support nested UsdNodeGraphs we should 
-        // recursively dig for the material.
-        
-        SdfPath textureNodePath = textureId.GetParentPath();
-        texturePrim = _stage->GetPrimAtPath(textureNodePath);
-        SdfPath materialPath = textureNodePath.GetParentPath();
-        SdfPath materialCachePath = ConvertIndexPathToCachePath(materialPath);
-        primInfo = _GetHdPrimInfo(materialCachePath);
-    } else {
-        texturePrim = primInfo->usdPrim;
+
+        // While-loop to account for nesting of UsdNodeGraphs and DrawMode
+        // adapter with prototypes.
+        SdfPath parentPath = cachePath;
+        while (!primInfo && !parentPath.IsRootPrimPath()) {
+            parentPath = parentPath.GetParentPath();
+            primInfo = _GetHdPrimInfo(parentPath);
+        }
     }
 
     if (TF_VERIFY(primInfo, textureId.GetText())) {
         return primInfo->adapter
-            ->GetTextureResource(texturePrim, cachePath, _time);
+            ->GetTextureResource(primInfo->usdPrim, cachePath, _time);
     }
     return nullptr;
 }

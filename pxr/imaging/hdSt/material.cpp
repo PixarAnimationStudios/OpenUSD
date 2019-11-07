@@ -48,10 +48,6 @@
 
 #include <boost/pointer_cast.hpp>
 
-// XXX In progress of moving HdStMaterial to use 
-// HdSceneDelegate::GetMaterialResource to obtain full material networks
-// which will let us receive more general networks in Storm in the future.
-#include "pxr/base/tf/getenv.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

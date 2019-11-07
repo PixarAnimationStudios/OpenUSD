@@ -403,6 +403,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (maskColor)                 // renderPass shader
     (maskWeight)                // renderPass shader
     (wireframeColor)            // renderPass shader
+
+    (cardsTexAssign)            // DrawMode adapter
 );
 
 static TfTokenVector const &
@@ -432,7 +434,9 @@ _GetExtraWhitelistedShaderPrimvarNames()
         _tokens->overrideWireframeColor,
         _tokens->maskColor,
         _tokens->maskWeight,
-        _tokens->wireframeColor
+        _tokens->wireframeColor,
+
+        _tokens->cardsTexAssign
     };
     return primvarNames;
 }

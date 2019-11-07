@@ -489,8 +489,9 @@ _MakeMaterialParamsForTextureInput(
         auto const& it = node.parameters.find(fileProp);
         if (it != node.parameters.end()){
             filePath = _ResolveAssetPath(it->second);
+
             // Our texture loading goes via sceneDelegate->GetTextureResource() 
-            // which will try to find a texture prim by by the textureId path.
+            // which will try to find a texture prim by the textureId path.
             // There is a difference in path between UsdShader attribute paths 
             // and the names/paths given to us by HdMaterialNode.parameters.
             // UsdShade inputs have 'inputs:' identifier where node.parameters
@@ -500,12 +501,14 @@ _MakeMaterialParamsForTextureInput(
             //    /Materials/HwUvTexture_1/Shader/Clamp/Tex.file
             //  UdShade:
             //    /Materials/HwUvTexture_1/Shader/Clamp/Tex.inputs:file
-            //
-            SdfPath UsdShadeInputPath = nodePath.AppendProperty(
-                TfToken(SdfPath::JoinIdentifier(
-                    _tokens->inputs, fileProp)));
 
-            textureId = SdfPath(UsdShadeInputPath);
+            if (!nodePath.IsPrimPath()) {
+                textureId = nodePath;
+            } else {
+                textureId = nodePath.AppendProperty(
+                    TfToken(SdfPath::JoinIdentifier(
+                        _tokens->inputs, fileProp)));
+            }
         }
     } else {
         TF_WARN("Invalid number of asset identifier input names: %s", 
@@ -556,6 +559,22 @@ _MakeMaterialParamsForTextureInput(
                 // and put it into the texture's samplerCoords.
                 //    params.emplace_back(std::move(primvarParam));
                 texParam.samplerCoords = primvarParam.samplerCoords;
+            }
+        }
+    } else {
+
+        // See if a st value was directly authored as value.
+        
+        auto iter = node.parameters.find(_tokens->st);
+        if (iter == node.parameters.end()) {
+            iter = node.parameters.find(_tokens->uv);
+        }
+
+        if (iter != node.parameters.end()) {
+            if (iter->second.IsHolding<TfToken>()) {
+                TfToken const& samplerCoord = 
+                    iter->second.UncheckedGet<TfToken>();
+                    texParam.samplerCoords.push_back(samplerCoord);
             }
         }
     }
