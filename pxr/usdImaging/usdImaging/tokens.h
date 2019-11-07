@@ -54,7 +54,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (UsdPrimvarReader_float)\
     (UsdPrimvarReader_float2)\
     (UsdPrimvarReader_float3)\
-    (UsdPrimvarReader_float4)
+    (UsdPrimvarReader_float4)\
+    (UsdPrimvarReader_int)
 
 TF_DECLARE_PUBLIC_TOKENS(UsdImagingTokens, USDIMAGING_API, USDIMAGING_TOKENS);
 
