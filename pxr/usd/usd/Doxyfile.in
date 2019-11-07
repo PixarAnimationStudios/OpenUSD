@@ -821,7 +821,6 @@ INPUT                  = src/modules/usd/doxygen/externalOverview.dox \
                          src/modules/pxrUsdIn \
                          src/modules/pxrUsdInPrman \
                          src/modules/pxrUsdInShipped \
-                         src/modules/vmp_usd \
                                                                       \
                          ## Everything else \
                          src/modules
