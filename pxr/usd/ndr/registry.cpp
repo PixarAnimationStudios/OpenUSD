@@ -435,6 +435,13 @@ NdrRegistry::GetNodeFromAsset(const SdfAssetPath &asset,
         return nullptr;
     }
 
+    // Move the discovery result into _discoveryResults so the node can be found
+    // in the Get*() methods
+    {
+        std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
+        _discoveryResults.emplace_back(std::move(dr));
+    }
+
     nmLock.lock();
 
     NodeMap::const_iterator result =
@@ -503,6 +510,13 @@ NdrRegistry::GetNodeFromSourceCode(const std::string &sourceCode,
         TF_RUNTIME_ERROR("Could not create node for the given source code of "
             "source type '%s'.", sourceType.GetText());
         return nullptr;
+    }
+
+    // Move the discovery result into _discoveryResults so the node can be found
+    // in the Get*() methods
+    {
+        std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
+        _discoveryResults.emplace_back(std::move(dr));
     }
 
     nmLock.lock();
@@ -641,17 +655,6 @@ NdrRegistry::_GetNodeByTypePriority(
 NdrNodeConstPtr
 NdrRegistry::GetNodeByURI(const std::string& uri)
 {
-    // Determine if the node has already been parsed
-    {
-        std::lock_guard<std::mutex> nmLock(_nodeMapMutex);
-
-        for (const NodeMap::value_type& nodePair : _nodeMap) {
-            if (nodePair.second->GetSourceURI() == uri) {
-                return nodePair.second.get();
-            }
-        }
-    }
-
     NdrNodeConstPtrVec parsedNodes = _ParseNodesMatchingPredicate(
         [&uri](const NdrNodeDiscoveryResult& dr) {
             return dr.uri == uri;
