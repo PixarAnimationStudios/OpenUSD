@@ -58,6 +58,7 @@ NdrParserPlugin::GetInvalidNode(const NdrNodeDiscoveryResult& dr)
             TfToken("unknown discovery type"),
             TfToken("unknown source type"),
             dr.uri,
+            dr.resolvedUri,
             /* properties = */ NdrPropertyUniquePtrVec()
         )
     );

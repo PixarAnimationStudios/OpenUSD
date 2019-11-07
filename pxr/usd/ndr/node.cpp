@@ -36,6 +36,7 @@ NdrNode::NdrNode(
     const TfToken& context,
     const TfToken& sourceType,
     const std::string& uri,
+    const std::string& resolvedUri,
     NdrPropertyUniquePtrVec&& properties,
     const NdrTokenMap& metadata,
     const std::string &sourceCode)
@@ -46,6 +47,7 @@ NdrNode::NdrNode(
       _context(context),
       _sourceType(sourceType),
       _uri(uri),
+      _resolvedUri(resolvedUri),
       _properties(std::move(properties)),
       _metadata(metadata),
       _sourceCode(sourceCode)

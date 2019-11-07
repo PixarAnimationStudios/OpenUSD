@@ -155,6 +155,7 @@ RmanOslParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
             _tokens->sourceType,    // OSL shaders don't declare different types
                                     // so use the same type as the source type
             discoveryResult.uri,
+            discoveryResult.resolvedUri,
             _getNodeProperties(discoveryResult),
             _getNodeMetadata(discoveryResult.metadata),
             discoveryResult.sourceCode

@@ -23,6 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 
 import unittest
+from Mentor.Runtime import FindDataFile
 from pxr import Ndr
 from pxr import SdrOsl
 from pxr.Sdr import shaderParserTestUtils as utils
@@ -31,7 +32,8 @@ from pxr.Sdr import shaderParserTestUtils as utils
 class TestShaderNode(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.URI = "TestNodeOSL.oso"
+        cls.uri = "TestNodeOSL.oso"
+        cls.resolvedUri = FindDataFile(cls.uri)
 
         cls.sourceCode="TestNode source code"
         cls.metadata = {"extra": "extraMetadata", 
@@ -45,8 +47,8 @@ class TestShaderNode(unittest.TestCase):
             "",              # Family
             "oso",           # Discovery type (extension)
             "OSL",           # Source type
-            cls.URI,         # URI
-            cls.URI,         # Resolved URI
+            cls.uri,         # URI
+            cls.resolvedUri, # Resolved URI
             sourceCode=cls.sourceCode,
             metadata=cls.metadata,
             blindData=cls.blindData,
@@ -73,7 +75,8 @@ class TestShaderNode(unittest.TestCase):
 
         utils.TestBasicNode(self.node,
                             "OSL",
-                            self.URI)
+                            self.uri,
+                            self.resolvedUri)
 
     def test_ShaderSpecific(self):
         """
@@ -89,7 +92,8 @@ class TestShaderNode(unittest.TestCase):
         See shaderParserTestUtils TestShaderPropertiesNode method for detailed
         description of the test.
         """
-        URI = "TestShaderPropertiesNodeOSL.oso"
+        uri = "TestShaderPropertiesNodeOSL.oso"
+        resolvedUri = FindDataFile(uri)
         sourceCode = ""
         metadata = {}
         blindData = ""
@@ -102,8 +106,8 @@ class TestShaderNode(unittest.TestCase):
             "",                             # Family
             "oso",                          # Discovery type (extension)
             "OSL",                          # Source type
-            URI,                            # URI
-            URI,                            # Resolved URI
+            uri,                            # URI
+            resolvedUri,                    # Resolved URI
             sourceCode,                     # sourceCode
             metadata,                       # metadata
             blindData,                      # blindData

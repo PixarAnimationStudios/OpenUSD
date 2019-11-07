@@ -198,13 +198,13 @@ _GetGlslfxForTerminal(
     //
     // We have an info:id so we can use Sdr to get to the source code path
     // for glslfx. GetShaderNodeByIdentifierAndType() will insert a SdrNode
-    // and we can use GetSourceURI to query the source code path.
+    // and we can use GetResolvedSourceURI to query the source code path.
     SdrRegistry &shaderReg = SdrRegistry::GetInstance();
     SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifierAndType(
         nodeTypeId, HioGlslfxTokens->glslfx);
 
     if (sdrNode) {
-        std::string const& glslfxPath = sdrNode->GetSourceURI();
+        std::string const& glslfxPath = sdrNode->GetResolvedSourceURI();
         glslfxOut.reset(new HioGlslfx(glslfxPath));
         return;
     }

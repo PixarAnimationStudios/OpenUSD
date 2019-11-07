@@ -243,7 +243,7 @@ def TestShadingProperties(node):
         assert properties["vstruct1_bump"].IsVStructMember()
 
 
-def TestBasicNode(node, nodeSourceType, nodeURI):
+def TestBasicNode(node, nodeSourceType, nodeURI, resolvedNodeURI):
     """
     Test basic, non-shader-specific correctness on the specified node.
     """
@@ -252,7 +252,7 @@ def TestBasicNode(node, nodeSourceType, nodeURI):
     # ---
     # The source type needs to be passed manually in order to ensure the utils
     # do not have a dependency on the plugin (where the source type resides).
-    # The URI is also manually specified because the utils cannot know ahead of
+    # The URIs are manually specified because the utils cannot know ahead of
     # time where the node originated.
 
     isOSL = IsNodeOSL(node)
@@ -299,6 +299,7 @@ def TestBasicNode(node, nodeSourceType, nodeURI):
     assert node.GetSourceType() == nodeSourceType
     assert node.GetFamily() == ""
     assert node.GetSourceURI() == nodeURI
+    assert node.GetResolvedSourceURI() == resolvedNodeURI
     assert node.IsValid()
     assert node.GetInfoString().startswith(info)
     assert len(nodeInputs) == 17

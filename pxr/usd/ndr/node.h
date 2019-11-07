@@ -57,6 +57,7 @@ public:
             const TfToken& context,
             const TfToken& sourceType,
             const std::string& uri,
+            const std::string& resolvedUri,
             NdrPropertyUniquePtrVec&& properties,
             const NdrTokenMap& metadata = NdrTokenMap(),
             const std::string &sourceCode = std::string());
@@ -110,8 +111,17 @@ public:
     const TfToken& GetSourceType() const { return _sourceType; }
 
     /// Gets the URI to the resource that this node originated from. Could be a
-    /// path to a file, or some other resource identifier.
+    /// path to a file, or some other resource identifier. This URI may not be
+    /// fully resolved.
+    ///
+    /// \sa NdrNode::GetResolvedSourceURI()
     const std::string& GetSourceURI() const { return _uri; }
+
+    /// Gets the resolved source URI of the node. This is determined during the
+    /// node discovery process.
+    ///
+    /// \sa NdrNode::GetSourceURI()
+    const std::string& GetResolvedSourceURI() const { return _resolvedUri; }
 
     /// Returns  the source code for this node. This will be empty for most 
     /// nodes. It will be non-empty only for the nodes that are constructed 
@@ -196,6 +206,7 @@ protected:
     TfToken _context;
     TfToken _sourceType;
     std::string _uri;
+    std::string _resolvedUri;
     NdrPropertyUniquePtrVec _properties;
     NdrTokenMap _metadata;
     std::string _sourceCode;

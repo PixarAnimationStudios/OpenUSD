@@ -78,6 +78,7 @@ public:
                                   context,
                                   discoveryResult.sourceType,
                                   uri,
+                                  discoveryResult.resolvedUri,
                                   std::move(properties),
                                   std::move(metadata)));
     }

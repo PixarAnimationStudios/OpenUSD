@@ -50,6 +50,7 @@ public:
                 discoveryResult.sourceType,
                 discoveryResult.sourceType,
                 discoveryResult.uri,
+                discoveryResult.resolvedUri,
                 NdrPropertyUniquePtrVec()
             )
         );

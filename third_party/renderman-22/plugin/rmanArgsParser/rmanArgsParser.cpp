@@ -235,6 +235,7 @@ RmanArgsParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
             shaderRepresentation.type,
             _tokens->sourceType,
             discoveryResult.uri,
+            discoveryResult.resolvedUri,
             std::move(shaderRepresentation.properties),
             metadata,
             discoveryResult.sourceCode)

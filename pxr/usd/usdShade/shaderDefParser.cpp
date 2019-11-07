@@ -349,8 +349,8 @@ UsdShadeShaderDefParserPlugin::Parse(
         return NdrParserPlugin::GetInvalidNode(discoveryResult);
     }
 
-    const std::string &nodeUri = nodeUriAssetPath.GetResolvedPath();
-    if (nodeUri.empty()) {
+    const std::string &resolvedNodeUri = nodeUriAssetPath.GetResolvedPath();
+    if (resolvedNodeUri.empty()) {
         TF_RUNTIME_ERROR("Unable to resolve path @%s@ in shader "
             "definition file '%s'", nodeUriAssetPath.GetAssetPath().c_str(), 
             rootLayerPath.c_str());
@@ -364,7 +364,8 @@ UsdShadeShaderDefParserPlugin::Parse(
         discoveryResult.family,
         discoveryResult.discoveryType, /* discoveryType */
         discoveryResult.sourceType, /* sourceType */
-        nodeUri,
+        nodeUriAssetPath.GetAssetPath(),
+        resolvedNodeUri,
         _GetShaderProperties(shaderDef),
         _GetSdrMetadata(shaderDef, discoveryResult.metadata),
         discoveryResult.sourceCode
