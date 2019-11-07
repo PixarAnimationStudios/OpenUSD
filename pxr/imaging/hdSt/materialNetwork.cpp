@@ -194,32 +194,22 @@ _GetGlslfxForTerminal(
     HioGlslfxUniquePtr& glslfxOut,
     TfToken const& nodeTypeId)
 {
-    // 1. info::id was set in usda (token info:id = "UsdPreviewSurface").
-    //
-    // We have an info:id so we can use Sdr to get to the source code path
-    // for glslfx. GetShaderNodeByIdentifierAndType() will insert a SdrNode
-    // and we can use GetResolvedSourceURI to query the source code path.
+    // If there is a URI, we will use that, otherwise we will try to use
+    // the source code.
     SdrRegistry &shaderReg = SdrRegistry::GetInstance();
     SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifierAndType(
         nodeTypeId, HioGlslfxTokens->glslfx);
 
     if (sdrNode) {
-        std::string const& glslfxPath = sdrNode->GetResolvedSourceURI();
-        glslfxOut.reset(new HioGlslfx(glslfxPath));
-        return;
-    }
-
-    // 2. info::sourceAsset (asset info:glslfx:sourceAsset = @custm.glslfx@)
-    // We did not have info::id so we expect the terminal type id token to
-    // have been resolved into the path or source code for the glslfx.
-    // E.g. UsdImagingMaterialAdapter handles this for us.
-    if (!nodeTypeId.IsEmpty()) {
-        // Most likely: the identifier is a path to a glslfx file
-        glslfxOut.reset(new HioGlslfx(nodeTypeId));
-        if (!glslfxOut->IsValid()) {
-            // Less likely: the identifier is a glslfx code snippet
-            std::istringstream sourceCodeStream(nodeTypeId);
-            glslfxOut.reset(new HioGlslfx(sourceCodeStream));
+        std::string const& glslfxFilePath = sdrNode->GetResolvedSourceURI();
+        if (!glslfxFilePath.empty()) {
+            glslfxOut.reset(new HioGlslfx(glslfxFilePath));
+        } else {
+            std::string const& sourceCode = sdrNode->GetSourceCode();
+            if (!sourceCode.empty()) {
+                std::istringstream sourceCodeStream(sourceCode);
+                glslfxOut.reset(new HioGlslfx(sourceCodeStream));
+            }
         }
     }
 }
@@ -728,26 +718,6 @@ _GatherMaterialParams(
     TfTokenVector parameters;
     if (sdrNode) {
         parameters = sdrNode->GetInputNames();
-    } else {
-        // For custom glslfx, that have no schema / sdr node so we cannot
-        // ask for GetInputNames. As alternative we build the list of params
-        // XXX If a shader parameter is not authored in the usda it will not
-        // appear in the node.parameters list and we won't be able to make
-        // HdMaterialParam out of it. And the shader will probably fail to 
-        // compile.
-        parameters.reserve(node.parameters.size());
-        for (auto const& it : node.parameters) {
-            parameters.push_back(it.first);
-        }
-        for (auto const& it : node.inputConnections) {
-            parameters.push_back(it.first);
-        }
-
-        // Ensure each parameters is only once in the parameters vector.
-        // Some parameters may have been authored AND have a connection.
-        std::sort(parameters.begin(), parameters.end());
-        parameters.erase(std::unique(parameters.begin(), parameters.end()),
-                         parameters.end());
     }
 
     for (TfToken const& inputName : parameters) {

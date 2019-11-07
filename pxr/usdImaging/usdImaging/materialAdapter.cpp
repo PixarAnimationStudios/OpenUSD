@@ -47,66 +47,6 @@ TF_REGISTRY_FUNCTION(TfType)
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
 
-// XXX Deprecate when glslfx has a Sdr plugin
-static void
-_GlslfxFallbackForMissingSdr(
-    TfToken const& networkSelector,
-    UsdShadeShader const& usdTerminal,
-    HdMaterialNode* terminalNode)
-{
-    // If the identifier could not be found, there likely isn't a Sdr plugin
-    // for this network type. This is currently the case for glslfx files.
-    // Put source path/code as identifier for backend to resolve.
-
-    if (terminalNode->identifier.IsEmpty()) {
-        std::string identifier;
-        TfToken implSource = usdTerminal.GetImplementationSource();
-
-        if (implSource == UsdShadeTokens->id) {
-            TfToken shaderId;
-
-            if (usdTerminal.GetShaderId(&shaderId)) {
-                auto &shaderReg = SdrRegistry::GetInstance();
-                if (SdrShaderNodeConstPtr sdrNode = 
-                        shaderReg.GetShaderNodeByIdentifierAndType(shaderId, 
-                            networkSelector)) {
-                    identifier = sdrNode->GetSourceURI();
-                }
-            }
-        } else if (implSource == UsdShadeTokens->sourceAsset) {
-            SdfAssetPath sourceAsset;
-            if (usdTerminal.GetSourceAsset(&sourceAsset, networkSelector)) {
-                identifier= ArGetResolver().Resolve(sourceAsset.GetAssetPath());
-            }
-        } else if (implSource == UsdShadeTokens->sourceCode) {
-            std::string sourceCode;
-            if (usdTerminal.GetSourceCode(&sourceCode, networkSelector)) {
-                identifier = sourceCode;
-            }
-        }
-
-        terminalNode->identifier = TfToken(identifier);
-
-        // If the terminal node has no Sdr node we provide default values for
-        // each of its inputs, because inside Storm we would have no way of
-        // knowing what the inputs are of the terminal (we can't ask Sdr).
-        // Storm can't compile the shader unless each terminal input has a
-        // HdMaterialParam created for it.
-        std::vector<UsdShadeInput> shadeNodeInputs = usdTerminal.GetInputs();
-        for (UsdShadeInput input: shadeNodeInputs) {
-            TfToken inputName = input.GetBaseName();
-            auto const& it = terminalNode->parameters.find(inputName);
-            if (it == terminalNode->parameters.end()) {
-                VtValue value;
-                if (!input.Get(&value)) {
-                    value = input.GetTypeName().GetDefaultValue();
-                }
-                terminalNode->parameters[inputName] = value;
-            }
-        }
-    }
-}
-
 UsdImagingMaterialAdapter::~UsdImagingMaterialAdapter()
 {
 }
@@ -447,14 +387,6 @@ _BuildHdMaterialNetworkFromTerminal(
 
     // _WalkGraph() inserts the terminal last in the nodes list.
     HdMaterialNode& terminalNode = nodes.back();
-
-    // XXX Custom glslfx shaders are missing a Sdr parser.
-    // We need to patch-up a few things for Storm to consume these networks.
-    // Once there is a Sdr parser for glslfx this can be removed.
-    _GlslfxFallbackForMissingSdr(
-        networkSelector,
-        usdTerminal,
-        &terminalNode);
 
     if (terminalNode.identifier.IsEmpty()) {
         TF_WARN("UsdShade Shader without id: %s.", terminalNode.path.GetText());

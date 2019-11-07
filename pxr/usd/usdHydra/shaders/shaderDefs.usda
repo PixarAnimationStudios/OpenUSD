@@ -102,6 +102,13 @@ def Shader "HwUvTexture_1" (
         allowedTokens = ["nearest", "linear"]
         doc = "Specifies the magnification filter mode for this texture."
     )
+
+    float4 inputs:fallback = (0.0, 0.0, 0.0, 1.0) (
+        doc = """Fallback value to be used when no texture is connected."""
+        sdrMetadata = {
+            token defaultInput = "1"
+        }
+    )
 }
 
 def Shader "HwFieldReader" (

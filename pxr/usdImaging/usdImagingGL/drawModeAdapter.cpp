@@ -41,6 +41,8 @@
 #include "pxr/imaging/pxOsd/tokens.h"
 
 #include "pxr/usd/usdGeom/modelAPI.h"
+#include "pxr/usd/sdr/registry.h"
+#include "pxr/usd/sdr/shaderNode.h"
 
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/tf/type.h"
@@ -352,6 +354,25 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
 
         if (requestedBits & HdMaterial::DirtyResource) {
 
+
+            SdfAssetPath path(UsdImagingGLPackageDrawModeShader());
+            
+            SdrRegistry &shaderReg = SdrRegistry::GetInstance();
+            SdrShaderNodeConstPtr sdrNode = 
+                shaderReg.GetShaderNodeFromAsset(
+                    path, 
+                    NdrTokenMap(), 
+                    TfToken(), 
+                    HioGlslfxTokens->glslfx);
+
+            TfToken glslfxCardsUid;
+
+            if (!TF_VERIFY(sdrNode)) {
+                return;
+            }
+
+            glslfxCardsUid = sdrNode->GetIdentifier();
+
             // Generate material network with a terminal that points to
             // the DrawMode glslfx shader.
             TfToken const& terminalType = HdMaterialTerminalTokens->surface;
@@ -359,7 +380,7 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
             HdMaterialNetwork& network = networkMap.map[terminalType];
             HdMaterialNode terminal;
             terminal.path = cachePath;
-            terminal.identifier = UsdImagingGLPackageDrawModeShader();
+            terminal.identifier = glslfxCardsUid;
 
             const TfToken textureAttrs[6] = {
                 UsdGeomTokens->modelCardTextureXPos,
@@ -388,32 +409,32 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                 schemaColor[0], schemaColor[1], schemaColor[2], 1.0f));
 
             for (int i = 0; i < 6; ++i) {
-                if (UsdAttribute attr = prim.GetAttribute(textureAttrs[i])) {
-                    SdfPath textureNodePath = _GetMaterialPath(prim)
-                        .AppendProperty(textureAttrs[i]);
+                UsdAttribute attr = prim.GetAttribute(textureAttrs[i]);
 
-                    // Make texture node
-                    HdMaterialNode textureNode;
-                    textureNode.path = textureNodePath;
-                    textureNode.identifier = UsdImagingTokens->UsdUVTexture;
-                    textureNode.parameters[_tokens->st] = _tokens->cardsUv;
-                    textureNode.parameters[_tokens->fallback] = fallback;
-                    VtValue textureFile;
-                    if (attr.Get(&textureFile, time)) {
-                        textureNode.parameters[_tokens->file] = textureFile;
-                    }
+                SdfPath textureNodePath = _GetMaterialPath(prim)
+                    .AppendProperty(textureAttrs[i]);
 
-                    // Insert connection between texture node and terminal
-                    HdMaterialRelationship rel;
-                    rel.inputId = textureNode.path;
-                    rel.inputName = _tokens->rgba;
-                    rel.outputId = terminal.path;
-                    rel.outputName = textureNames[i];
-                    network.relationships.emplace_back(std::move(rel));
-
-                    // Insert texture node
-                    network.nodes.emplace_back(std::move(textureNode));
+                // Make texture node
+                HdMaterialNode textureNode;
+                textureNode.path = textureNodePath;
+                textureNode.identifier = UsdImagingTokens->UsdUVTexture;
+                textureNode.parameters[_tokens->st] = _tokens->cardsUv;
+                textureNode.parameters[_tokens->fallback] = fallback;
+                VtValue textureFile;
+                if (attr && attr.Get(&textureFile, time)) {
+                    textureNode.parameters[_tokens->file] = textureFile;
                 }
+
+                // Insert connection between texture node and terminal
+                HdMaterialRelationship rel;
+                rel.inputId = textureNode.path;
+                rel.inputName = _tokens->rgba;
+                rel.outputId = terminal.path;
+                rel.outputName = textureNames[i];
+                network.relationships.emplace_back(std::move(rel));
+
+                // Insert texture node
+                network.nodes.emplace_back(std::move(textureNode));
             }
 
             // Insert terminal and update material network
