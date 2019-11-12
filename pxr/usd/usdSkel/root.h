@@ -57,7 +57,7 @@ class SdfAssetPath;
 /// A SkelRoot must be defined at or above a skinned primitive for any skinning
 /// behaviors in UsdSkel.
 /// 
-/// See the extented \ref UsdSkel_SkelRoot "Skel Root Schema" documentation for
+/// See the extended \ref UsdSkel_SkelRoot "Skel Root Schema" documentation for
 /// more information.
 ///
 class UsdSkelRoot : public UsdGeomBoundable
