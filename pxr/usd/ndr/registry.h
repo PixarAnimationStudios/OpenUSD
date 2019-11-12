@@ -89,6 +89,15 @@ public:
     NDR_API
     void SetExtraDiscoveryPlugins(const std::vector<TfType>& pluginTypes);
 
+    /// Allows the client to set any additional parser plugins that would
+    /// otherwise NOT be found through the plugin system.
+    ///
+    /// Note that this method cannot be called after any nodes in the registry
+    /// have been parsed (eg, through GetNode*()), otherwise an error will
+    /// result.
+    NDR_API
+    void SetExtraParserPlugins(const std::vector<TfType>& pluginTypes);
+
     /// Parses the given \p asset, constructs a NdrNode from it and adds it to
     /// the registry.
     /// 
@@ -313,11 +322,15 @@ private:
     // internal discovery results vector
     void _RunDiscoveryPlugins(const DiscoveryPluginRefPtrVec& discoveryPlugins);
 
-    // Finds and instantiates the discovery plugins via Tf
+    // Finds and instantiates the discovery plugins
     void _FindAndInstantiateDiscoveryPlugins();
 
-    // Finds and instantiates the parser plugins via Tf
+    // Finds and instantiates the parser plugins
     void _FindAndInstantiateParserPlugins();
+
+    // Instantiates the specified parser plugins and adds them to
+    // the registry.
+    void _InstantiateParserPlugins(const std::set<TfType>& parserPluginTypes);
 
     // Parses all nodes that match the specified predicate, optionally only
     // parsing the first node that matches (good to use when the predicate will

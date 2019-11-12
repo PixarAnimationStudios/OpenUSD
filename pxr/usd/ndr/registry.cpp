@@ -48,6 +48,11 @@ TF_DEFINE_ENV_SETTING(
     "The auto-discovery of discovery plugins in ndr can be skipped. "
     "This is used mostly for testing purposes.");
 
+TF_DEFINE_ENV_SETTING(
+    PXR_NDR_SKIP_PARSER_PLUGIN_DISCOVERY, 0,
+    "The auto-discovery of parser plugins in ndr can be skipped. "
+    "This is used mostly for testing purposes.");
+
 // This function is used for property validation. It is written as a non-static
 // freestanding function so that we can exercise it in a test without needing
 // to expose it in the header file.  It is also written without using unique
@@ -368,6 +373,38 @@ NdrRegistry::SetExtraDiscoveryPlugins(const std::vector<TfType>& pluginTypes)
     SetExtraDiscoveryPlugins(std::move(discoveryPlugins));
 }
 
+void
+NdrRegistry::SetExtraParserPlugins(const std::vector<TfType>& pluginTypes)
+{
+    {
+        std::lock_guard<std::mutex> nmLock(_nodeMapMutex);
+
+        // This policy was implemented in order to keep internal registry
+        // operations simpler, and it "just makes sense" to have all plugins
+        // run before asking for information from the registry.
+        if (!_nodeMap.empty()) {
+            TF_CODING_ERROR("SetExtraParserPlugins() cannot be called after"
+                            " nodes have been parsed; ignoring.");
+            return;
+        }
+    }
+
+    // Validate the types and remove duplicates.
+    std::set<TfType> parserPluginTypes;
+    auto& parserPluginType = TfType::Find<NdrParserPlugin>();
+    for (auto&& type: pluginTypes) {
+        if (!TF_VERIFY(type.IsA(parserPluginType),
+                       "Type %s is not a %s",
+                       type.GetTypeName().c_str(),
+                       parserPluginType.GetTypeName().c_str())) {
+            return;
+        }
+        parserPluginTypes.insert(type);
+    }
+
+    _InstantiateParserPlugins(parserPluginTypes);
+}
+
 NdrNodeConstPtr 
 NdrRegistry::GetNodeFromAsset(const SdfAssetPath &asset,
                               const NdrTokenMap &metadata,
@@ -383,7 +420,7 @@ NdrRegistry::GetNodeFromAsset(const SdfAssetPath &asset,
     if (parserIt == _parserPluginMap.end()) {
         TF_DEBUG(NDR_PARSING).Msg("Encountered a asset @%s@ of type [%s], but "
                                   "a parser for the type could not be found; "
-                                  "ignoring.", asset.GetAssetPath().c_str(),
+                                  "ignoring.\n", asset.GetAssetPath().c_str(),
                                   discoveryType.GetText());
         return nullptr;
     }
@@ -471,7 +508,7 @@ NdrRegistry::GetNodeFromSourceCode(const std::string &sourceCode,
        
         TF_DEBUG(NDR_PARSING).Msg("Encountered source code of type [%s], but "
                                   "a parser for the type could not be found; "
-                                  "ignoring.", sourceType.GetText());
+                                  "ignoring.\n", sourceType.GetText());
         return nullptr;
     }
 
@@ -789,6 +826,10 @@ NdrRegistry::_FindAndInstantiateDiscoveryPlugins()
 
     // Instantiate any discovery plugins that were found
     for (const TfType& discoveryPluginType : discoveryPluginTypes) {
+        TF_DEBUG(NDR_DISCOVERY).Msg(
+            "Found NdrDiscoveryPlugin '%s'\n", 
+            discoveryPluginType.GetTypeName().c_str());
+
         NdrDiscoveryPluginFactoryBase* pluginFactory =
             discoveryPluginType.GetFactory<NdrDiscoveryPluginFactoryBase>();
 
@@ -801,13 +842,30 @@ NdrRegistry::_FindAndInstantiateDiscoveryPlugins()
 void
 NdrRegistry::_FindAndInstantiateParserPlugins()
 {
+    // The auto-discovery of parser plugins can be skipped. This is mostly
+    // for testing purposes.
+    if (TfGetEnvSetting(PXR_NDR_SKIP_PARSER_PLUGIN_DISCOVERY)) {
+        return;
+    }
+
     // Find all of the available parser plugins
     std::set<TfType> parserPluginTypes;
     PlugRegistry::GetInstance().GetAllDerivedTypes<NdrParserPlugin>(
         &parserPluginTypes);
 
+    _InstantiateParserPlugins(parserPluginTypes);
+}
+
+void
+NdrRegistry::_InstantiateParserPlugins(
+    const std::set<TfType>& parserPluginTypes)
+{
     // Instantiate any parser plugins that were found
     for (const TfType& parserPluginType : parserPluginTypes) {
+        TF_DEBUG(NDR_DISCOVERY).Msg(
+            "Found NdrParserPlugin '%s' for discovery types:\n", 
+            parserPluginType.GetTypeName().c_str());
+
         NdrParserPluginFactoryBase* pluginFactory =
             parserPluginType.GetFactory<NdrParserPluginFactoryBase>();
 
@@ -819,6 +877,8 @@ NdrRegistry::_FindAndInstantiateParserPlugins()
         _parserPlugins.emplace_back(parserPlugin);
 
         for (const TfToken& discoveryType : parserPlugin->GetDiscoveryTypes()) {
+            TF_DEBUG(NDR_DISCOVERY).Msg("  - %s\n", discoveryType.GetText());
+
             auto i = _parserPluginMap.insert({discoveryType, parserPlugin});
             if (!i.second){
                 const TfType otherType = TfType::Find(*i.first->second);
@@ -890,7 +950,7 @@ NdrRegistry::_InsertNodeIntoCache(const NdrNodeDiscoveryResult& dr)
     if (i == _parserPluginMap.end()) {
         TF_DEBUG(NDR_PARSING).Msg("Encountered a node of type [%s], "
                                   "with name [%s], but a parser for that type "
-                                  "could not be found; ignoring.", 
+                                  "could not be found; ignoring.\n", 
                                   dr.discoveryType.GetText(),  dr.name.c_str());
         return nullptr;
     }

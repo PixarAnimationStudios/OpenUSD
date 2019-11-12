@@ -113,6 +113,7 @@ void wrapRegistry()
     class_<This, ThisPtr, boost::noncopyable>("Registry", no_init)
         .def(TfPySingleton())
         .def("SetExtraDiscoveryPlugins", &_SetExtraDiscoveryPlugins)
+        .def("SetExtraParserPlugins", &This::SetExtraParserPlugins)
         .def("GetSearchURIs", &This::GetSearchURIs)
         .def("GetNodeIdentifiers", &This::GetNodeIdentifiers,
             (args("family") = TfToken(),

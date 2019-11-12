@@ -51,15 +51,16 @@ class TestShaderNode(unittest.TestCase):
         tdpType  = Tf.Type.FindByName('_NdrTestDiscoveryPlugin')
         tdp2Type = Tf.Type.FindByName('_NdrTestDiscoveryPlugin2')
 
+        tppType = Tf.Type.FindByName('_NdrArgsTestParserPlugin')
+        tpp2Type = Tf.Type.FindByName('_NdrOslTestParserPlugin')
+
         # We don't check for all the derived types of NdrDiscoveryPlugin
-        # because this test only uses the two discovery plugins that are defined
-        # in this testenv
+        # because this test only uses the discovery and parser plugins 
+        # that are defined in this testenv
         assert {tdpType, tdp2Type}.issubset(
             set(pr.GetAllDerivedTypes('NdrDiscoveryPlugin')))
-        self.assertEqual({Tf.Type.FindByName('_NdrArgsTestParserPlugin'),
-                              Tf.Type.FindByName('_NdrOslTestParserPlugin')} -
-                         set(pr.GetAllDerivedTypes('NdrParserPlugin')),
-                         set())
+        assert {tppType, tpp2Type}.issubset(
+            set(pr.GetAllDerivedTypes('NdrParserPlugin')))
 
         # The following source types are what we expect to discover from
         # _NdrTestDiscoveryPlugin and _NdrTestDiscoveryPlugin2.  Note that there
@@ -69,13 +70,18 @@ class TestShaderNode(unittest.TestCase):
         glslfxType = "glslfx"
 
         # Instantiating the registry will kick off the discovery process.
-        # This test assumes the PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY has
-        # been set prior to being run to ensure built-in plugins are not
-        # found. Instead we'll list the plugins we want explicitly.
+        # This test assumes the PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY 
+        # and PXR_NDR_SKIP_PARSER_PLUGIN_DISCOVERY has been set prior to 
+        # being run to ensure built-in plugins are not found. Instead 
+        # we'll list the plugins we want explicitly.
 
         # Setting this from within the script does not work on Windows.
         # os.environ["PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY"] = ""
+        # os.environ["PXR_NDR_SKIP_PARSER_PLUGIN_DISCOVERY"] = ""
         reg = Sdr.Registry()
+
+        # Set up the test parser plugins.
+        reg.SetExtraParserPlugins([tppType, tpp2Type])
 
         # We will register the discovery plugins one by one so that we can check
         # source types are not duplicated in the registry if we have plugins
