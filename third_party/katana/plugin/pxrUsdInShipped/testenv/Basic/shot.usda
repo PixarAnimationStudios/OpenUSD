@@ -127,7 +127,7 @@ def Xform "World" (
         def Material "PxrDisney5SG"
         {
             int katana:fromKlf:material:pbsNetworkMaterialVersion = 1
-            rel riLook:bxdf = </World/Looks/PxrDisney5SG/PxrDisney5>
+            token outputs:ri:surface.connect = </World/Looks/PxrDisney5SG/PxrDisney5.outputs:out>
 
             def Shader "PxrDisney5"
             {
@@ -156,6 +156,7 @@ def Xform "World" (
                 float inputs:specularTint = 0
                 float inputs:subsurface = 0
                 color3f inputs:subsurfaceColor = (0, 0, 0)
+                token outputs:out
             }
 
             def Shader "PxrMix1"
