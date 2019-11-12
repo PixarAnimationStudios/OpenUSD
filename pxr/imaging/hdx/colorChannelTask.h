@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HDX_COLOR_CHANNEL_TASK_H
-#define PXR_IMAGING_HDX_COLOR_CHANNEL_TASK_H
+#ifndef HDX_COLORCHANNEL_TASK_H
+#define HDX_COLORCHANNEL_TASK_H
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
@@ -99,7 +99,10 @@ private:
     GLint _locations[5];
     GLuint _vertexBuffer;
 
-    GlfGLContextSharedPtr _owningContext;
+    // XXX: Removed due to slowness in the IsCurrent() call when multiple
+    //      gl contexts are registered in GlfGLContextRegistry.
+    // GlfGLContextSharedPtr _owningContext;
+
     GLuint _copyFramebuffer;
     GfVec2i _framebufferSize;
 

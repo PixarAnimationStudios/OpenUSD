@@ -357,38 +357,52 @@ HdxColorCorrectionTask::_CreateFramebufferResources()
         glBindTexture(GL_TEXTURE_2D, restoreTexture);
     }
 
-    bool switchedGLContext = !_owningContext || !_owningContext->IsCurrent();
-
-    if (switchedGLContext) {
-        // If we're rendering with a different context than the render pass
-        // was created with, recreate the FBO because FB is not shared.
-        // XXX we need this since we use a FBO in _CopyTexture(). Ideally we
-        // use HdxCompositor to do the copy, but for that we need to know the
-        // textureId currently bound to the default framebuffer. However
-        // glGetFramebufferAttachmentParameteriv will return and error when
-        // trying to query the texture name bound to GL_BACK_LEFT.
-        if (_owningContext && _owningContext->IsValid()) {
-            GlfGLContextScopeHolder contextHolder(_owningContext);
-            glDeleteFramebuffers(1, &_copyFramebuffer);
-            glDeleteFramebuffers(1, &_aovFramebuffer);
-        }
-
-        _owningContext = GlfGLContext::GetCurrentGLContext();
-        if (!TF_VERIFY(_owningContext, "No valid GL context")) {
-            return false;
-        }
-
+      
+    // XXX: Removed due to slowness in the IsCurrent() call when multiple
+    //      gl contexts are registered in GlfGLContextRegistry. This code is
+    //      relevant only when there is a possibility of having context
+    //      switching between the creation of the render pass and the execution
+    //      of this task on each frame.
+    //
+    // bool switchedGLContext = !_owningContext || !_owningContext->IsCurrent();
+    // 
+    // if (switchedGLContext) {
+    //     // If we're rendering with a different context than the render pass
+    //     // was created with, recreate the FBO because FB is not shared.
+    //     // XXX we need this since we use a FBO in _CopyTexture(). Ideally we
+    //     // use HdxCompositor to do the copy, but for that we need to know the
+    //     // textureId currently bound to the default framebuffer. However
+    //     // glGetFramebufferAttachmentParameteriv will return and error when
+    //     // trying to query the texture name bound to GL_BACK_LEFT.
+    //     if (_owningContext && _owningContext->IsValid()) {
+    //         GlfGLContextScopeHolder contextHolder(_owningContext);
+    //         glDeleteFramebuffers(1, &_copyFramebuffer);
+    //         glDeleteFramebuffers(1, &_aovFramebuffer);
+    //     }
+    // 
+    //     _owningContext = GlfGLContext::GetCurrentGLContext();
+    //     if (!TF_VERIFY(_owningContext, "No valid GL context")) {
+    //         return false;
+    //     }
+    // 
+    
         if (_copyFramebuffer == 0) {
             glGenFramebuffers(1, &_copyFramebuffer);
         }
         if (_aovFramebuffer == 0) {
             glGenFramebuffers(1, &_aovFramebuffer);
         }
-    }
 
+    // }
+    //
     HgiGLTexture* aovTexture = _GetAovHgiGLTexture();
 
-    if (createTexture || switchedGLContext || aovTexture!=_aovTexture) {
+    // XXX: see code comment above. Here we remove switchedGLContext from the
+    //      if statement.
+    // if (createTexture || switchedGLContext || aovTexture!=_aovTexture) {
+
+    if (createTexture || aovTexture!=_aovTexture) {
+   
         _aovTexture = aovTexture;
 
         GLint restoreReadFB, restoreDrawFB;
