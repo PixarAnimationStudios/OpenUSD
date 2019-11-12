@@ -680,6 +680,9 @@ _MakeParamsForInputParameter(
                             visitedNodes);
 
                     }
+                } else {
+                    TF_WARN("Unrecognized connected node: %s", 
+                            upstreamNode.nodeTypeId.GetText());
                 }
             }
         }
@@ -716,6 +719,8 @@ _GatherMaterialParams(
     TfTokenVector parameters;
     if (sdrNode) {
         parameters = sdrNode->GetInputNames();
+    } else {
+        TF_WARN("Unrecognized node: %s", node.nodeTypeId.GetText());
     }
 
     for (TfToken const& inputName : parameters) {
