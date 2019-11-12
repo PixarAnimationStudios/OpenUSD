@@ -149,7 +149,11 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     _UpdateVisibility(sceneDelegate, dirtyBits);
 
     /* MATERIAL SHADER (may affect subsequent primvar population) */
-    drawItem->SetMaterialShader(HdStGetMaterialShader(this, sceneDelegate));
+    if ((*dirtyBits & (HdChangeTracker::DirtyInstancer |
+                       HdChangeTracker::NewRepr)) ||
+        HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
+        drawItem->SetMaterialShader(HdStGetMaterialShader(this, sceneDelegate));
+    }
 
     /* CONSTANT PRIMVARS, TRANSFORM AND EXTENT */
     HdPrimvarDescriptorVector constantPrimvars =

@@ -1635,7 +1635,11 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     _UpdateVisibility(sceneDelegate, dirtyBits);
 
     /* MATERIAL SHADER (may affect subsequent primvar population) */
-    drawItem->SetMaterialShader(_GetMaterialShader(this, sceneDelegate));
+    if ((*dirtyBits & (HdChangeTracker::DirtyInstancer |
+                       HdChangeTracker::NewRepr)) ||
+        HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
+        drawItem->SetMaterialShader(_GetMaterialShader(this, sceneDelegate));
+    }
 
     /* TOPOLOGY */
     // XXX: _PopulateTopology should be split into two phase
