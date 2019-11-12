@@ -64,6 +64,8 @@ HdStSurfaceShader::HdStSurfaceShader()
  , _paramArray()
  , _primvarNames(_CollectPrimvarNames(_params))
  , _isEnabledPrimvarFiltering(_IsEnabledMaterialPrimvarFiltering())
+ , _computedHash(0)
+ , _isValidComputedHash(false)
  , _textureDescriptors()
  , _materialTag()
 {
@@ -78,8 +80,10 @@ HdStSurfaceShader::_SetSource(TfToken const &shaderStageKey, std::string const &
 {
     if (shaderStageKey == HdShaderTokens->fragmentShader) {
         _fragmentSource = source;
+        _isValidComputedHash = false;
     } else if (shaderStageKey == HdShaderTokens->geometryShader) {
         _geometrySource = source;
+        _isValidComputedHash = false;
     }
 }
 
@@ -243,6 +247,17 @@ HdStSurfaceShader::AddBindings(HdBindingRequestVector *customBindings)
 HdStShaderCode::ID
 HdStSurfaceShader::ComputeHash() const
 {
+    // All mutator methods that might affect the hash must reset this (fragile).
+    if (!_isValidComputedHash) {
+        _computedHash = _ComputeHash();
+        _isValidComputedHash = true;
+    }
+    return _computedHash;
+}
+
+HdStShaderCode::ID
+HdStSurfaceShader::_ComputeHash() const
+{
     size_t hash = 0;
     
     for (HdMaterialParam const& param : _params) {
@@ -276,12 +291,14 @@ void
 HdStSurfaceShader::SetFragmentSource(const std::string &source)
 {
     _fragmentSource = source;
+    _isValidComputedHash = false;
 }
 
 void
 HdStSurfaceShader::SetGeometrySource(const std::string &source)
 {
     _geometrySource = source;
+    _isValidComputedHash = false;
 }
 
 void
@@ -289,12 +306,14 @@ HdStSurfaceShader::SetParams(const HdMaterialParamVector &params)
 {
     _params = params;
     _primvarNames = _CollectPrimvarNames(_params);
+    _isValidComputedHash = false;
 }
 
 void
 HdStSurfaceShader::SetTextureDescriptors(const TextureDescriptorVector &texDesc)
 {
     _textureDescriptors = texDesc;
+    _isValidComputedHash = false;
 }
 
 void
@@ -320,7 +339,7 @@ HdStSurfaceShader::SetBufferSources(HdBufferSourceVector &bufferSources,
 
             if (!TF_VERIFY(range->IsValid())) {
                 _paramArray.reset();
-    } else {
+            } else {
                 _paramArray = range;
             }
         }
@@ -329,6 +348,7 @@ HdStSurfaceShader::SetBufferSources(HdBufferSourceVector &bufferSources,
             resourceRegistry->AddSources(_paramArray, bufferSources);
         }
     }
+    _isValidComputedHash = false;
 }
 
 TfToken
@@ -341,6 +361,7 @@ void
 HdStSurfaceShader::SetMaterialTag(TfToken const &tag)
 {
     _materialTag = tag;
+    _isValidComputedHash = false;
 }
 
 /// If the prim is based on asset, reload that asset.

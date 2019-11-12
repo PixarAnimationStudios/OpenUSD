@@ -127,6 +127,9 @@ protected:
     HDST_API
     void _SetSource(TfToken const &shaderStageKey, std::string const &source);
 
+    HDST_API
+    ID _ComputeHash() const;
+
 private:
     std::string _fragmentSource;
     std::string _geometrySource;
@@ -137,6 +140,9 @@ private:
     HdBufferArrayRangeSharedPtr _paramArray;
     TfTokenVector               _primvarNames;
     bool                        _isEnabledPrimvarFiltering;
+
+    mutable size_t              _computedHash;
+    mutable bool                _isValidComputedHash;
 
     TextureDescriptorVector _textureDescriptors;
 
