@@ -135,8 +135,10 @@ private:
     void _InitFallbackShader();
 
     // Obtain the material network resources of this material.
+    // `hasMaterial` returns false if no material network was found.
     HdMaterialNetworkMap const& _GetMaterialResource(
-        HdSceneDelegate* sceneDelegate) const;
+        HdSceneDelegate* sceneDelegate,
+        bool* hasMaterial) const;
 
     static HioGlslfx *_fallbackGlslfx;
 

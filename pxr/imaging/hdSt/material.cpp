@@ -107,11 +107,13 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
 
     if ((bits & DirtyResource)) {
 
+        bool hasMaterialNetwork = false;
         HdMaterialNetworkMap const& hdNetworkMap = 
-            _GetMaterialResource(sceneDelegate);
+            _GetMaterialResource(sceneDelegate, &hasMaterialNetwork);
 
-        if (!hdNetworkMap.map.empty()) {
-            useDeprecatedSurface = false;
+        useDeprecatedSurface = !hasMaterialNetwork;
+
+        if (!hdNetworkMap.terminals.empty() && !hdNetworkMap.map.empty()) {
             HdStMaterialNetwork networkProcessor;
             networkProcessor.ProcessMaterialNetwork(GetId(), hdNetworkMap);
             fragmentSource = networkProcessor.GetFragmentCode();
@@ -470,12 +472,16 @@ HdStMaterial::_InitFallbackShader()
 }
 
 HdMaterialNetworkMap const&
-HdStMaterial::_GetMaterialResource(HdSceneDelegate* sceneDelegate) const
+HdStMaterial::_GetMaterialResource(
+    HdSceneDelegate* sceneDelegate,
+    bool* hasMaterial) const
 {
     VtValue vtMat = sceneDelegate->GetMaterialResource(GetId());
     if (vtMat.IsHolding<HdMaterialNetworkMap>()) {
+        *hasMaterial = true;
         return vtMat.UncheckedGet<HdMaterialNetworkMap>();
     } else {
+        *hasMaterial = false;
         static const HdMaterialNetworkMap emptyNetworkMap;
         return emptyNetworkMap;
     }

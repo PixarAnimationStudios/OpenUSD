@@ -242,7 +242,7 @@ _ExtractPrimvarsFromNode(
     HdMaterialNetwork *materialNetwork,
     TfToken const& networkSelector)
 {
-    auto &shaderReg = SdrRegistry::GetInstance();
+    SdrRegistry &shaderReg = SdrRegistry::GetInstance();
     SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifierAndType(
         node.identifier, networkSelector);
 
@@ -375,7 +375,7 @@ _BuildHdMaterialNetworkFromTerminal(
     SdfPathSet visitedNodes;
 
     _WalkGraph(
-        usdTerminal, 
+        usdTerminal,
         &network,
         networkSelector,
         &visitedNodes, 
@@ -387,13 +387,20 @@ _BuildHdMaterialNetworkFromTerminal(
 
     // _WalkGraph() inserts the terminal last in the nodes list.
     HdMaterialNode& terminalNode = nodes.back();
-
-    if (terminalNode.identifier.IsEmpty()) {
-        TF_WARN("UsdShade Shader without id: %s.", terminalNode.path.GetText());
-    }
-
-    // Store terminals on material network so backend can easily access them.
+    
+    // Store terminals on material so backend can easily access them.
     materialNetworkMap->terminals.push_back(terminalNode.path);
+
+    // Validate that idenfitier (info:id) is known to Sdr.
+    // Return empty network if it fails so backend can use fallback material.
+    SdrRegistry &shaderReg = SdrRegistry::GetInstance();
+    if (!shaderReg.GetNodeByIdentifier(
+            terminalNode.identifier, shaderSourceTypes)) {
+        TF_WARN("Invalid info:id %s node: %s", 
+                terminalNode.identifier.GetText(),
+                terminalNode.path.GetText());
+        *materialNetworkMap = HdMaterialNetworkMap();
+    }
 };
 
 void 
