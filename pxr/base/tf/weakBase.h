@@ -56,7 +56,7 @@ public:
     }
 
     // Note that only "false" is of value in a multi-threaded world...
-    bool _IsAlive() {
+    bool _IsAlive() const {
         return _alive;
     }
 
