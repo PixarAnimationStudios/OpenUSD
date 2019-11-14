@@ -117,6 +117,32 @@ class TestFileFormat(unittest.TestCase):
         with open('NodeGraphs.usda', 'w') as f:
             print >>f, stage.GetRootLayer().ExportToString()
 
+    def test_ExpandFilePrefix(self):
+        """
+        Test active file prefix defined by the fileprefix attribute 
+        in a parent tag.
+        """
+
+        stage = UsdMtlx._TestFile('ExpandFilePrefix.mtlx')
+
+        materialPrefixInValue = UsdShade.Material.Get(stage, 
+                                                      Sdf.Path('/MaterialX/Materials/prefixInValue'))
+        materialPrefixInAttr = UsdShade.Material.Get(stage,
+                                                     Sdf.Path('/MaterialX/Materials/prefixInAttr'))
+
+        prefixInValueInputs = materialPrefixInValue.GetInputs()
+        prefixInAttrInputs = materialPrefixInAttr.GetInputs()
+
+        self.assertEqual(len(prefixInValueInputs), 1)
+        self.assertEqual(len(prefixInAttrInputs), 1)
+        
+        expectedValue = os.path.join(os.sep, 'images', 'img1.jpg')
+        materialPrefixInAttrResolved = materialPrefixInValue.GetInput('in').Get().resolvedPath
+        materialPrefixInValueResolved = materialPrefixInAttr.GetInput('in').Get().resolvedPath
+
+        self.assertTrue(materialPrefixInAttrResolved.endswith(expectedValue))
+        self.assertTrue(materialPrefixInValueResolved.endswith(expectedValue))
+
     def test_MultiBindInputs(self):
         """
         Test MaterialX conversion with mutliple bind inputs.
