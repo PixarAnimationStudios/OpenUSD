@@ -38,6 +38,7 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/array.h"
+#include <MaterialXFormat/File.h>
 #include <MaterialXFormat/XmlIo.h>
 #include <map>
 #include <type_traits>
@@ -404,6 +405,7 @@ UsdMtlxGetUsdValue(
     bool getDefaultValue)
 {
     static const std::string defaultAttr("default");
+    static const std::string filename("filename");
     static const std::string typeAttr = mx::TypedElement::TYPE_ATTRIBUTE;
     static const std::string valueAttr = mx::ValueElement::VALUE_ATTRIBUTE;
 
@@ -414,11 +416,39 @@ UsdMtlxGetUsdValue(
 
     // Get the value string.
     auto&& valueString =
-        getDefaultValue ? mtlx->getAttribute(defaultAttr)
-                        : mtlx->getAttribute(valueAttr);
+            getDefaultValue ? mtlx->getAttribute(defaultAttr)
+                            : mtlx->getAttribute(valueAttr);
 
-    // Get the value.
-    return _GetUsdValue(valueString, mtlx->getAttribute(typeAttr));
+    // Evaluate the absolute path if this is a filename to include
+    // any active file prefixes.
+    if (mtlx->getAttribute(typeAttr) == filename && !valueString.empty()) {
+        mx::FilePath filePath = mx::FilePath(valueString);
+
+        if (!filePath.isAbsolute()) {
+            mx::FileSearchPath fileSearchPath = mx::FileSearchPath();
+            mx::FilePath prefixPath = mx::FilePath(mtlx->getActiveFilePrefix());
+            mx::FilePath resolvedFilePath;
+            mx::FilePath combinedPath;
+
+            if (!prefixPath.isEmpty()) {
+                // Combine paths with OS-appropriate directory separator
+                combinedPath = prefixPath / filePath;
+            }
+            else {
+                combinedPath = filePath;
+            }
+            
+            // Return the absolute path based on the MaterialX search path
+            filePath = fileSearchPath.find(combinedPath);
+        }
+
+        // Get the value.
+        return _GetUsdValue(filePath.asString(), mtlx->getAttribute(typeAttr));
+    } 
+    else {
+        // Get the value.
+        return _GetUsdValue(valueString, mtlx->getAttribute(typeAttr));
+    }
 }
 
 std::vector<VtValue>

@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<materialx version="1.36">
+    <nodedef name="ND_layerShader" type="surfaceshader" node="layerShader">
+        <input name="in" type="filename"/>
+    </nodedef>
+    <material name="prefixInValue">
+        <shaderref name="layered_sr" node="layerShader">
+            <bindinput name="in" type="filename" value="images/img1.jpg"/>
+        </shaderref>
+    </material>
+    <material name="prefixInAttr"  fileprefix="images">
+        <shaderref name="layered_sr" node="layerShader">
+            <bindinput name="in" type="filename" value="img1.jpg"/>
+        </shaderref>
+    </material>
+</materialx>
