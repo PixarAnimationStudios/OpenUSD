@@ -114,12 +114,21 @@ def GetVisualStudioCompilerAndVersion():
             return (msvcCompiler, tuple(int(v) for v in match.groups()))
     return None
 
-def IsVisualStudio2017OrGreater():
-    VISUAL_STUDIO_2017_VERSION = (15, 0)
+VISUAL_STUDIO_2017_VERSION = (15, 0)
+VISUAL_STUDIO_2019_VERSION = (16, 0)
+
+def IsVisualStudio2019OrGreater():
     msvcCompilerAndVersion = GetVisualStudioCompilerAndVersion()
     if msvcCompilerAndVersion:
         _, version = msvcCompilerAndVersion
-        return version >= VISUAL_STUDIO_2017_VERSION
+        return version >= VISUAL_STUDIO_2019_VERSION
+    return False
+
+def IsVisualStudio2017():
+    msvcCompilerAndVersion = GetVisualStudioCompilerAndVersion()
+    if msvcCompilerAndVersion:
+        _, version = msvcCompilerAndVersion
+        return version >= VISUAL_STUDIO_2017_VERSION and version < VISUAL_STUDIO_2019_VERSION
     return False
 
 def GetPythonInfo():
@@ -275,14 +284,19 @@ def RunCMake(context, force, extraArgs = None):
     # building a 64-bit project. (Surely there is a better way to do this?)
     # TODO: figure out exactly what "vcvarsall.bat x64" sets to force x64
     if generator is None and Windows():
-        if IsVisualStudio2017OrGreater():
+        if IsVisualStudio2019OrGreater():
+            # VS 2019 generator in cmake changed format for specifying arch
+            # "By default this generator uses the 64-bit variant on x64 hosts and the 32-bit variant
+            # otherwise" - from https://cmake.org/cmake/help/v3.14/generator/Visual%20Studio%2016%202019.html
+            generator = "Visual Studio 16 2019"
+        elif IsVisualStudio2017():
             generator = "Visual Studio 15 2017 Win64"
         else:
             generator = "Visual Studio 14 2015 Win64"
 
     if generator is not None:
         generator = '-G "{gen}"'.format(gen=generator)
-                
+
     # On MacOS, enable the use of @rpath for relocatable builds.
     osx_rpath = None
     if MacOS():
@@ -538,8 +552,10 @@ elif Windows():
     # causes problems for other dependencies that look for boost.
     BOOST_VERSION_FILE = "include/boost-1_61/boost/version.hpp"
 
-    # On Visual Studio 2017 we need at least boost 1.65.1
-    if IsVisualStudio2017OrGreater():
+    if IsVisualStudio2019OrGreater(): # On Visual Studio 2019 we need at least boost 1.70.0
+        BOOST_URL = "https://dl.bintray.com/boostorg/release/1.71.0/source/boost_1_71_0.tar.gz"
+        BOOST_VERSION_FILE = "include/boost-1_71_0/boost/version.hpp"
+    elif IsVisualStudio2017(): # On Visual Studio 2017 we need at least boost 1.65.1
         BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.65.1/boost_1_65_1.tar.gz"
         BOOST_VERSION_FILE = "include/boost-1_65_1/boost/version.hpp"
 
@@ -591,7 +607,9 @@ def InstallBoost(context, force, buildArgs):
             b2_settings.append("-a")
 
         if Windows():
-            if IsVisualStudio2017OrGreater():
+            if IsVisualStudio2019OrGreater():
+                b2_settings.append("toolset=msvc-14.2")
+            elif ISVisualStudio2017():
                 b2_settings.append("toolset=msvc-14.1")
             else:
                 b2_settings.append("toolset=msvc-14.0")
@@ -1224,6 +1242,11 @@ def InstallUSD(context, force, buildArgs):
         if Windows():
             # Increase the precompiled header buffer limit.
             extraArgs.append('-DCMAKE_CXX_FLAGS="/Zm150"')
+
+            if IsVisualStudio2019OrGreater():
+                # The default for cmake seems to be
+                # to look for static libs on Windows
+                extraArgs.append('-DBoost_USE_STATIC_LIBS=OFF')
 
         extraArgs += buildArgs
 
