@@ -22,18 +22,17 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+import os
 import unittest
-from Mentor.Runtime import FindDataFile
 from pxr import Ndr
 from pxr import SdrOsl
 from pxr.Sdr import shaderParserTestUtils as utils
-
 
 class TestShaderNode(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.uri = "TestNodeOSL.oso"
-        cls.resolvedUri = FindDataFile(cls.uri)
+        cls.resolvedUri = os.path.abspath(cls.uri)
 
         cls.sourceCode="TestNode source code"
         cls.metadata = {"extra": "extraMetadata", 
@@ -93,7 +92,7 @@ class TestShaderNode(unittest.TestCase):
         description of the test.
         """
         uri = "TestShaderPropertiesNodeOSL.oso"
-        resolvedUri = FindDataFile(uri)
+        resolvedUri = os.path.abspath(uri)
         sourceCode = ""
         metadata = {}
         blindData = ""
