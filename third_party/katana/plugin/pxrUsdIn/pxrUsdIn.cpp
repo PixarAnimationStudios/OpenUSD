@@ -521,14 +521,24 @@ public:
                 {
                     interface.setAttr(
                             "type", FnKat::StringAttribute("instance"));
+
+                    // If we are a nested instance, the UsdInArgs' root location
+                    // will be different from the "original" root location
+                    // specified on the PxrUsdIn node, since the
+                    // BuildIntermediate op reinvokes pxrUsdIn with modified
+                    // UsdInArgs when building out masters.
+                    // We can get at the original root location by querying the
+                    // raw op args rather than the UsdInArgs.
+                    std::string rootLocationPath = FnAttribute::StringAttribute(
+                        opArgs.getChildByName("location")).getValue(
+                            interface.getRootLocationPath(), false);
                     interface.setAttr("geometry.instanceSource",
                             FnAttribute::StringAttribute(
-                                usdInArgs->GetRootLocationPath() + 
-                                masterParentPath +
+                                rootLocationPath + masterParentPath +
                                 "/Masters/" + masterPath));
-                    
-                    // XXX, ConstraintGroups are still made for models 
-                    //      that became instances. Need to suppress creation 
+
+                    // XXX, ConstraintGroups are still made for models
+                    //      that became instances. Need to suppress creation
                     //      of that stuff
                     interface.deleteChildren();
                     skipAllChildren = true;
