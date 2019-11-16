@@ -26,6 +26,7 @@
 
 #include "pxr/imaging/hdSt/basisCurvesShaderKey.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/basisCurves.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/staticTokens.h"
 
@@ -105,6 +106,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // terminals
     ((surfaceFS,                       "Fragment.Surface"))
+    ((hullColorFS,                     "Fragment.HullColor"))
     ((commonFS,                        "Fragment.CommonTerminals"))
     ((scalarOverrideFS,                "Fragment.ScalarOverride"))
 );
@@ -124,7 +126,8 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     TfToken const &type, TfToken const &basis, 
     DrawStyle drawStyle, NormalStyle normalStyle,
     bool basisWidthInterpolation,
-    bool basisNormalInterpolation)
+    bool basisNormalInterpolation,
+    TfToken shadingTerminal)
     : glslfx(_tokens->baseGLSLFX)
 {
     bool drawThick = (drawStyle == HdSt_BasisCurvesShaderKey::HALFTUBE) || 
@@ -287,7 +290,11 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     // Common must be first as it defines terminal interfaces
     uint8_t fsIndex = 0;
     FS[fsIndex++] = _tokens->commonFS;
-    FS[fsIndex++] = _tokens->surfaceFS;
+    if (shadingTerminal == HdBasisCurvesReprDescTokens->hullColor) {
+        FS[fsIndex++] = _tokens->hullColorFS;
+    } else {
+        FS[fsIndex++] = _tokens->surfaceFS;
+    }
     FS[fsIndex++] = _tokens->scalarOverrideFS;
 
     // we don't currently ever set primType to PRIM_POINTS for curves, but

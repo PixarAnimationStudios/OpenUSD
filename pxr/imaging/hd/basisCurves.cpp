@@ -28,6 +28,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PUBLIC_TOKENS(HdBasisCurvesReprDescTokens,
+                        HD_BASISCURVES_REPR_DESC_TOKENS);
+
 TF_DEFINE_ENV_SETTING(HD_ENABLE_REFINED_CURVES, 0, 
                       "Force curves to always be refined.");
 

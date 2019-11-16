@@ -299,7 +299,8 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
                                         drawStyle,
                                         normalStyle,
                                         _basisWidthInterpolation,
-                                        _basisNormalInterpolation);
+                                        _basisNormalInterpolation,
+                                        desc.shadingTerminal);
 
     TF_DEBUG(HD_RPRIM_UPDATED).
             Msg("HdStBasisCurves(%s) - Shader Key PrimType: %s\n ",

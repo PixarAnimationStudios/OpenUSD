@@ -31,14 +31,23 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#define HD_BASISCURVES_REPR_DESC_TOKENS \
+    (surfaceShader)                     \
+    (hullColor)
+
+TF_DECLARE_PUBLIC_TOKENS(HdBasisCurvesReprDescTokens, HD_API,
+                         HD_BASISCURVES_REPR_DESC_TOKENS);
+
 /// \class HdBasisCurvesReprDesc
 ///
 /// Descriptor to configure a drawItem for a repr.
 ///
 struct HdBasisCurvesReprDesc {
     HdBasisCurvesReprDesc(
-        HdBasisCurvesGeomStyle geomStyle = HdBasisCurvesGeomStyleInvalid)
-        : geomStyle(geomStyle)
+        HdBasisCurvesGeomStyle geomStyle = HdBasisCurvesGeomStyleInvalid,
+        TfToken shadingTerminal = HdBasisCurvesReprDescTokens->surfaceShader)
+        : geomStyle(geomStyle),
+          shadingTerminal(shadingTerminal)
         {}
 
     bool IsEmpty() const {
@@ -46,6 +55,9 @@ struct HdBasisCurvesReprDesc {
     }
     
     HdBasisCurvesGeomStyle geomStyle;
+    /// Specifies how the fragment color should be computed from primvar;
+    /// this can be used to render heatmap highlighting etc.
+    TfToken         shadingTerminal;
 };
 
 /// Hydra Schema for a collection of curves using a particular basis.
