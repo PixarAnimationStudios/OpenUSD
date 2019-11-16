@@ -72,14 +72,47 @@ _SetCurveAttrs(PxrUsdKatanaAttrMap& attrs,
     }
     else if (numWidths > 1)
     {
+        const char * widthValueName = "geometry.point.width";
+        TfToken interp = basisCurves.GetWidthsInterpolation();
+
+        if (interp == UsdGeomTokens->vertex)
+        {
+            // vertex corresponds to "geometry.point.width"
+            // everything else should go into arbitrary so that its footprint
+            // can be validated
+        }
+        else
+        {
+            widthValueName = "geometry.arbitrary.width.value";
+            
+            if (interp == UsdGeomTokens->varying)
+            {
+                attrs.set("geometry.arbitrary.width.scope",
+                        FnAttribute::StringAttribute("point"));
+
+            }
+            else if (interp == UsdGeomTokens->uniform)
+            {
+                attrs.set("geometry.arbitrary.width.scope",
+                        FnAttribute::StringAttribute("face"));
+            }
+            else
+            {
+                 FnLogWarn("Unsupported width interpolation, "
+                        << interp.GetString()
+                        << ", in " << basisCurves.GetPath().GetString());
+            }
+        }
+
+
 #if KATANA_VERSION_MAJOR >= 3
         auto widthsAttr = VtKatanaMapOrCopy(widths);
-        attrs.set("geometry.point.width", widthsAttr);
+        attrs.set(widthValueName, widthsAttr);
 #else
         FnKat::FloatBuilder widthsBuilder(1);
         widthsBuilder.set(
             std::vector<float>(widths.begin(), widths.end()));
-        attrs.set("geometry.point.width", widthsBuilder.build());
+        attrs.set(widthValueName, widthsBuilder.build());
 #endif // KATANA_VERSION_MAJOR >= 3
     }
 
@@ -171,10 +204,43 @@ PxrUsdKatanaReadBasisCurves(
         // Additionally, varying and facevarying may not be correct for
         // periodic cubic curves.
         TfToken interp = basisCurves.GetNormalsInterpolation();
-        if (interp == UsdGeomTokens->faceVarying
-         || interp == UsdGeomTokens->varying
-         || interp == UsdGeomTokens->vertex) {
+        
+        if (interp == UsdGeomTokens->vertex)
+        {
+            // non-arbitrary N is assumed to match the point length
+            // ("vertex") in prman
             attrs.set("geometry.point.N", normalsAttr);
+        }
+        else
+        {
+            // otherwise, use full arbitrary declaration
+            FnAttribute::StringAttribute scopeValue;
+
+            if (interp == UsdGeomTokens->constant)
+            {
+                scopeValue = FnAttribute::StringAttribute("primitive");
+            }
+            else if (interp == UsdGeomTokens->uniform)
+            {
+                scopeValue = FnAttribute::StringAttribute("face");   
+            }
+            else if (interp == UsdGeomTokens->varying)
+            {
+                scopeValue = FnAttribute::StringAttribute("point");   
+            }
+
+            if (scopeValue.isValid())
+            {
+                attrs.set("geometry.arbitrary.N.scope", scopeValue);
+                attrs.set("geometry.arbitrary.N.inputType",
+                        FnAttribute::StringAttribute("normal3"));
+                attrs.set("geometry.arbitrary.N.value", normalsAttr);    
+            }
+            else
+            {
+                FnLogWarn("Ignoring unsupported N interpolation, " << interp.GetString()
+                        << ", in " << basisCurves.GetPath().GetString());
+            }
         }
     }
 
