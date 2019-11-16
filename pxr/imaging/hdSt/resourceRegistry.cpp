@@ -24,19 +24,24 @@
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/glf/textureRegistry.h"
 
-#include "pxr/imaging/hdSt/resourceRegistry.h"
-
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdSt/copyComputation.h"
 #include "pxr/imaging/hdSt/dispatchBuffer.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
-#include "pxr/imaging/hdSt/persistentBuffer.h"
 #include "pxr/imaging/hdSt/interleavedMemoryManager.h"
+#include "pxr/imaging/hdSt/persistentBuffer.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/textureResource.h"
 #include "pxr/imaging/hdSt/vboMemoryManager.h"
 #include "pxr/imaging/hdSt/vboSimpleMemoryManager.h"
 
+#include "pxr/base/tf/envSetting.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
+
+TF_DEFINE_ENV_SETTING(HDST_ENABLE_RESOURCE_INSTANCING, true,
+                  "Enable instance registry deduplication of resource data");
 
 HdStResourceRegistry::HdStResourceRegistry()
 {
@@ -67,13 +72,65 @@ HdStResourceRegistry::~HdStResourceRegistry()
 void
 HdStResourceRegistry::_GarbageCollect()
 {
+    // The sequence in which we run garbage collection is significant.
+    // We want to clean objects first which might be holding references
+    // to other objects which will be subsequently cleaned up.
+
     GarbageCollectDispatchBuffers();
     GarbageCollectPersistentBuffers();
+
+    {
+        size_t count = _meshTopologyRegistry.GarbageCollect();
+        HD_PERF_COUNTER_SET(HdPerfTokens->instMeshTopology, count);
+    }
+
+    {
+        size_t count = _basisCurvesTopologyRegistry.GarbageCollect();
+        HD_PERF_COUNTER_SET(HdPerfTokens->instBasisCurvesTopology, count);
+    }
+
+    {
+        size_t count = _vertexAdjacencyRegistry.GarbageCollect();
+        HD_PERF_COUNTER_SET(HdPerfTokens->instVertexAdjacency, count);
+    }
+
+    {
+        size_t count = 0;
+        for (auto & it: _meshTopologyIndexRangeRegistry) {
+            count += it.second.GarbageCollect();
+        }
+        HD_PERF_COUNTER_SET(HdPerfTokens->instMeshTopologyRange, count);
+    }
+
+    {
+        size_t count = 0;
+        for (auto & it: _basisCurvesTopologyIndexRangeRegistry) {
+            count += it.second.GarbageCollect();
+        }
+        HD_PERF_COUNTER_SET(HdPerfTokens->instBasisCurvesTopologyRange, count);
+    }
+
+    {
+        size_t count = _primvarRangeRegistry.GarbageCollect();
+        HD_PERF_COUNTER_SET(HdPerfTokens->instPrimvarRange, count);
+    }
+
+    {
+        size_t count = _extComputationDataRangeRegistry.GarbageCollect();
+        HD_PERF_COUNTER_SET(HdPerfTokens->instExtComputationDataRange, count);
+    }
 
     // Cleanup Shader registries
     _geometricShaderRegistry.GarbageCollect();
     _glslProgramRegistry.GarbageCollect();
     _textureResourceHandleRegistry.GarbageCollect();
+}
+
+void
+HdStResourceRegistry::_GarbageCollectBprims()
+{
+    // Cleanup texture registries
+    _textureResourceRegistry.GarbageCollect();
 }
 
 void
@@ -85,8 +142,7 @@ HdStResourceRegistry::_TallyResourceAllocation(VtDictionary *result) const
                                 VtDefault = 0);
 
     // dispatch buffers
-    TF_FOR_ALL (bufferIt, _dispatchBufferRegistry) {
-        HdStDispatchBufferSharedPtr buffer = (*bufferIt);
+    for (auto const & buffer: _dispatchBufferRegistry) {
         if (!TF_VERIFY(buffer)) {
             continue;
         }
@@ -101,8 +157,7 @@ HdStResourceRegistry::_TallyResourceAllocation(VtDictionary *result) const
     }
 
     // persistent buffers
-    TF_FOR_ALL (bufferIt, _persistentBufferRegistry) {
-        HdStPersistentBufferSharedPtr buffer = (*bufferIt);
+    for (auto const & buffer: _persistentBufferRegistry) {
         if (!TF_VERIFY(buffer)) {
             continue;
         }
@@ -117,9 +172,12 @@ HdStResourceRegistry::_TallyResourceAllocation(VtDictionary *result) const
     }
 
     // glsl program & ubo allocation
-    TF_FOR_ALL (progIt, _glslProgramRegistry) {
-        HdStGLSLProgramSharedPtr const &program = progIt->second.value;
-        if (!program) continue;
+    for (auto const & it: _glslProgramRegistry) {
+        HdStGLSLProgramSharedPtr const & program = it.second.value;
+        // In the event of a compile or link error, programs can be null
+        if (!program) {
+            continue;
+        }
         size_t size =
             program->GetProgram().GetSize() +
             program->GetGlobalUniformBuffer().GetSize();
@@ -130,6 +188,24 @@ HdStResourceRegistry::_TallyResourceAllocation(VtDictionary *result) const
                                                   VtDefault = 0) + size;
 
         gpuMemoryUsed += size;
+    }
+
+    // Texture Resources
+    {
+        size_t textureResourceMemory = 0;
+
+        for (auto const & it: _textureResourceRegistry) {
+            HdStTextureResourceSharedPtr const & texResource = it.second.value;
+            // In the event of an asset error, texture resources can be null
+            if (!texResource) {
+                continue;
+            }
+
+            textureResourceMemory += texResource->GetMemoryUsed();
+        }
+        (*result)[HdPerfTokens->textureResourceMemory] = VtValue(
+                                                textureResourceMemory);
+        gpuMemoryUsed += textureResourceMemory;
     }
 
     // Texture registry
@@ -318,6 +394,101 @@ HdStResourceRegistry::MergeShaderStorageBufferArrayRange(
                                  _uniformSsboBufferArrayRegistry,
                                  role, newBufferSpecs, newUsageHint, range);
 }
+
+static bool _IsEnabledResourceInstancing()
+{
+    static bool isResourceInstancingEnabled =
+        TfGetEnvSetting(HDST_ENABLE_RESOURCE_INSTANCING);
+    return isResourceInstancingEnabled;
+}
+
+template <typename ID, typename T>
+HdInstance<T>
+_Register(ID id, HdInstanceRegistry<T> &registry, TfToken const &perfToken)
+{
+    if (_IsEnabledResourceInstancing()) {
+        HdInstance<T> instance = registry.GetInstance(id);
+
+        if (instance.IsFirstInstance()) {
+            HD_PERF_COUNTER_INCR(perfToken);
+        }
+
+        return instance;
+    } else {
+        // Return an instance that is not managed by the registry when
+        // topology instancing is disabled.
+        return HdInstance<T>(id);
+    }
+}
+
+HdInstance<HdSt_BasisCurvesTopologySharedPtr>
+HdStResourceRegistry::RegisterBasisCurvesTopology(
+        HdInstance<HdSt_BasisCurvesTopologySharedPtr>::ID id)
+{
+    return _Register(id, _basisCurvesTopologyRegistry,
+                     HdPerfTokens->instBasisCurvesTopology);
+}
+
+HdInstance<HdSt_MeshTopologySharedPtr>
+HdStResourceRegistry::RegisterMeshTopology(
+        HdInstance<HdSt_MeshTopologySharedPtr>::ID id)
+{
+    return _Register(id, _meshTopologyRegistry,
+                     HdPerfTokens->instMeshTopology);
+}
+
+HdInstance<Hd_VertexAdjacencySharedPtr>
+HdStResourceRegistry::RegisterVertexAdjacency(
+        HdInstance<Hd_VertexAdjacencySharedPtr>::ID id)
+{
+    return _Register(id, _vertexAdjacencyRegistry,
+                     HdPerfTokens->instVertexAdjacency);
+}
+
+HdInstance<HdBufferArrayRangeSharedPtr>
+HdStResourceRegistry::RegisterMeshIndexRange(
+        HdInstance<HdBufferArrayRangeSharedPtr>::ID id, TfToken const &name)
+{
+    return _Register(id, _meshTopologyIndexRangeRegistry[name],
+                     HdPerfTokens->instMeshTopologyRange);
+}
+
+HdInstance<HdBufferArrayRangeSharedPtr>
+HdStResourceRegistry::RegisterBasisCurvesIndexRange(
+        HdInstance<HdBufferArrayRangeSharedPtr>::ID id, TfToken const &name)
+{
+    return _Register(id, _basisCurvesTopologyIndexRangeRegistry[name],
+                     HdPerfTokens->instBasisCurvesTopologyRange);
+}
+
+HdInstance<HdBufferArrayRangeSharedPtr>
+HdStResourceRegistry::RegisterPrimvarRange(
+        HdInstance<HdBufferArrayRangeSharedPtr>::ID id)
+{
+    return _Register(id, _primvarRangeRegistry,
+                     HdPerfTokens->instPrimvarRange);
+}
+
+HdInstance<HdBufferArrayRangeSharedPtr>
+HdStResourceRegistry::RegisterExtComputationDataRange(
+        HdInstance<HdBufferArrayRangeSharedPtr>::ID id)
+{
+    return _Register(id, _extComputationDataRangeRegistry,
+                     HdPerfTokens->instExtComputationDataRange);
+}
+
+HdInstance<HdStTextureResourceSharedPtr>
+HdStResourceRegistry::RegisterTextureResource(TextureKey id)
+{
+    return _textureResourceRegistry.GetInstance(id);
+}
+
+HdInstance<HdStTextureResourceSharedPtr>
+HdStResourceRegistry::FindTextureResource(TextureKey id, bool *found)
+{
+    return _textureResourceRegistry.FindInstance(id, found);
+}
+
 
 HdInstance<HdSt_GeometricShaderSharedPtr>
 HdStResourceRegistry::RegisterGeometricShader(

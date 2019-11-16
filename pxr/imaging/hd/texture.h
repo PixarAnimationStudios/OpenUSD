@@ -28,32 +28,14 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bprim.h"
-#include "pxr/imaging/hd/textureResource.h"
-#include "pxr/imaging/hd/types.h"
-#include "pxr/imaging/hd/enums.h"
 
 #include "pxr/usd/sdf/path.h"
-
-#include "pxr/base/vt/value.h"
-#include "pxr/base/tf/token.h"
-
-#include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class HdRenderIndex;
-class HdSceneDelegate;
-
-typedef boost::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
-
 ///
 /// Represents a Texture Buffer Prim.
-/// Texture could be a uv texture or a ptex texture.
-/// Multiple texture prims could represent the same texture buffer resource
-/// and the scene delegate is used to get a global unique id for the texture.
-/// The delegate is also used to obtain a HdTextureResource for the texture
-/// represented by that id.
 ///
 class HdTexture : public HdBprim {
 public:
@@ -70,49 +52,6 @@ public:
     HdTexture(SdfPath const & id);
     HD_API
     virtual ~HdTexture();
-
-    /// Synchronizes state from the delegate to Hydra, for example, allocating
-    /// parameters into GPU memory.
-    HD_API
-    virtual void Sync(HdSceneDelegate *sceneDelegate,
-                      HdRenderParam   *renderParam,
-                      HdDirtyBits     *dirtyBits) override;
-
-    /// Returns the minimal set of dirty bits to place in the
-    /// change tracker for use in the first sync of this prim.
-    /// Typically this would be all dirty bits.
-    HD_API
-    virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
-
-    // ---------------------------------------------------------------------- //
-    /// \name Texture API
-    // ---------------------------------------------------------------------- //
-
-    /// Returns the type of the texture.
-    HD_API
-    virtual HdTextureType GetTextureType() const;
-
-    /// Returns true if mipmaps should be generated when loading.
-    HD_API
-    bool ShouldGenerateMipMaps() const;
-
-protected:
-    HD_API
-    virtual HdTextureResourceSharedPtr _GetTextureResource(
-        HdSceneDelegate *sceneDelegate,
-        const SdfPath &sceneId,
-        HdTextureResource::ID texID) const;
-
-    HD_API
-    virtual void _RegisterTextureResource(
-        HdRenderIndex *renderIndex,
-        const SdfPath &textureHandleId,
-        const HdTextureResourceSharedPtr &textureResource);
-
-private:
-    // Make sure we have a reference to the texture resource, so its
-    // life time exists at least as long as this object.
-    HdTextureResourceSharedPtr _textureResource;
 };
 
 

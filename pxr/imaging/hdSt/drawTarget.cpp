@@ -386,16 +386,15 @@ HdStDrawTarget::_RegisterTextureResourceHandle(
 
 
     // Add to resource registry
-    HdInstance<HdTextureResourceSharedPtr> texInstance =
+    HdInstance<HdStTextureResourceSharedPtr> texInstance =
                 resourceRegistry->RegisterTextureResource(texKey);
 
     if (texInstance.IsFirstInstance()) {
-        texInstance.SetValue(HdTextureResourceSharedPtr(
+        texInstance.SetValue(HdStTextureResourceSharedPtr(
                                          new HdSt_DrawTargetTextureResource()));
     }
 
-    HdStTextureResourceSharedPtr texResource =
-        boost::static_pointer_cast<HdStTextureResource>(texInstance.GetValue());
+    HdStTextureResourceSharedPtr texResource = texInstance.GetValue();
 
     HdResourceRegistry::TextureKey handleKey =
         HdStTextureResourceHandle::GetHandleKey(&renderIndex, resourcePath);

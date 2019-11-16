@@ -502,9 +502,8 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         _topologyId = ArchHash64((const char*)&refined, sizeof(refined),
             _topologyId);
 
-        // XXX: Should be HdSt_BasisCurvesTopologySharedPtr
         // ask the registry if there is a sharable basisCurves topology
-        HdInstance<HdBasisCurvesTopologySharedPtr> topologyInstance =
+        HdInstance<HdSt_BasisCurvesTopologySharedPtr> topologyInstance =
             resourceRegistry->RegisterBasisCurvesTopology(_topologyId);
 
         if (topologyInstance.IsFirstInstance()) {
@@ -513,18 +512,10 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             HdSt_BasisCurvesTopologySharedPtr topology =
                                      HdSt_BasisCurvesTopology::New(srcTopology);
 
-            // XXX: Registry is currently in core Hd, so doesn't have access
-            // to the St version of the topology,
-            HdBasisCurvesTopologySharedPtr baseTopology =
-                    boost::static_pointer_cast<HdBasisCurvesTopology>(topology);
-
-            topologyInstance.SetValue(baseTopology);
+            topologyInstance.SetValue(topology);
         }
 
-        // XXX: Registry is currently in core Hd, so doesn't have access
-        // to the St version of the topology,
-        _topology = boost::static_pointer_cast<HdSt_BasisCurvesTopology>(
-                                                   topologyInstance.GetValue());
+        _topology = topologyInstance.GetValue();
         TF_VERIFY(_topology);
 
         // hash collision check

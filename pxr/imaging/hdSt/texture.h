@@ -28,13 +28,11 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/texture.h"
-
-#include "pxr/imaging/garch/gl.h"
+#include "pxr/imaging/hd/textureResource.h"
+#include "pxr/imaging/hd/types.h"
+#include "pxr/imaging/hd/enums.h"
 
 #include "pxr/usd/sdf/path.h"
-
-#include "pxr/base/vt/value.h"
-#include "pxr/base/tf/token.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -42,35 +40,57 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class HdSceneDelegate;
+class HdRenderIndex;
 
-typedef boost::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
-typedef boost::shared_ptr<class HdStTextureResourceHandle> HdStTextureResourceHandleSharedPtr;
+typedef boost::shared_ptr<class HdStTextureResource>
+                HdStTextureResourceSharedPtr;
+typedef boost::shared_ptr<class HdStTextureResourceHandle>
+                HdStTextureResourceHandleSharedPtr;
 
 ///
 /// Represents a Texture Buffer Prim.
 /// Texture could be a uv texture or a ptex texture.
 /// Multiple texture prims could represent the same texture buffer resource
 /// and the scene delegate is used to get a global unique id for the texture.
-/// The delegate is also used to obtain a HdStSimpleTextureResource for the texture
+/// The delegate is also used to obtain a HdTextureResource for the texture
 /// represented by that id.
 ///
 class HdStTexture : public HdTexture {
 public:
+    HDST_API
     HdStTexture(SdfPath const & id);
+    HDST_API
     virtual ~HdStTexture();
 
+    /// Synchronizes state from the delegate to Hydra, for example, allocating
+    /// parameters into GPU memory.
+    HDST_API
+    virtual void Sync(HdSceneDelegate *sceneDelegate,
+                      HdRenderParam   *renderParam,
+                      HdDirtyBits     *dirtyBits) override;
+
+    /// Returns the minimal set of dirty bits to place in the
+    /// change tracker for use in the first sync of this prim.
+    /// Typically this would be all dirty bits.
+    HDST_API
+    virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
+
 protected:
-    virtual HdTextureResourceSharedPtr _GetTextureResource(
+    HdStTextureResourceSharedPtr _GetTextureResource(
         HdSceneDelegate *sceneDelegate,
         const SdfPath &sceneId,
-        HdTextureResource::ID texID) const override;
+        HdTextureResource::ID texID) const;
 
-    virtual void _RegisterTextureResource(
+    void _RegisterTextureResource(
         HdRenderIndex *renderIndex,
         const SdfPath &textureHandleId,
-        const HdTextureResourceSharedPtr &textureResource) override;
+        const HdTextureResourceSharedPtr &textureResource);
 
 private:
+    // Make sure we have a reference to the texture resource, so its
+    // life time exists at least as long as this object.
+    HdStTextureResourceSharedPtr _textureResource;
+
     HdStTextureResourceHandleSharedPtr _textureResourceHandle;
 };
 

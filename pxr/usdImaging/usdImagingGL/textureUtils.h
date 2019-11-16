@@ -28,7 +28,7 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/timeCode.h"
-#include "pxr/imaging/hd/texture.h"
+#include "pxr/imaging/hd/textureResource.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

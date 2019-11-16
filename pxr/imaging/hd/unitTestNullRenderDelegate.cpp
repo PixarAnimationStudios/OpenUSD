@@ -421,6 +421,28 @@ private:
     Hd_NullCoordSys &operator =(const Hd_NullCoordSys &) = delete;
 };
 
+class Hd_NullTexture final : public HdTexture {
+public:
+    Hd_NullTexture(SdfPath const& id) : HdTexture(id) {}
+    virtual ~Hd_NullTexture() = default;
+
+    virtual void Sync(HdSceneDelegate *sceneDelegate,
+                      HdRenderParam   *renderParam,
+                      HdDirtyBits     *dirtyBits) override
+    {
+        *dirtyBits = HdTexture::Clean;
+    };
+
+    virtual HdDirtyBits GetInitialDirtyBitsMask() const override {
+        return HdMaterial::Clean;
+    }
+
+private:
+    Hd_NullTexture()                                  = delete;
+    Hd_NullTexture(const Hd_NullTexture &)             = delete;
+    Hd_NullTexture &operator =(const Hd_NullTexture &) = delete;
+};
+
 
 const TfTokenVector Hd_UnitTestNullRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
@@ -559,7 +581,7 @@ Hd_UnitTestNullRenderDelegate::CreateBprim(TfToken const& typeId,
                                     SdfPath const& bprimId)
 {
     if (typeId == HdPrimTypeTokens->texture) {
-        return new HdTexture(bprimId);
+        return new Hd_NullTexture(bprimId);
     } else  {
         TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
     }
@@ -572,7 +594,7 @@ HdBprim *
 Hd_UnitTestNullRenderDelegate::CreateFallbackBprim(TfToken const& typeId)
 {
     if (typeId == HdPrimTypeTokens->texture) {
-        return new HdTexture(SdfPath::EmptyPath());
+        return new Hd_NullTexture(SdfPath::EmptyPath());
     } else {
         TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
     }

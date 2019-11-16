@@ -292,15 +292,13 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             sizeof(useQuadIndices), _topologyId);
 
         {
-            // XXX: Should be HdSt_MeshTopologySharedPtr
             // ask registry if there's a sharable mesh topology
-            HdInstance<HdMeshTopologySharedPtr> topologyInstance =
+            HdInstance<HdSt_MeshTopologySharedPtr> topologyInstance =
                 resourceRegistry->RegisterMeshTopology(_topologyId);
 
             if (topologyInstance.IsFirstInstance()) {
                 // if this is the first instance, set this topology to registry.
-                topologyInstance.SetValue(
-                        boost::static_pointer_cast<HdMeshTopology>(topology));
+                topologyInstance.SetValue(topology);
 
                 // if refined, we submit a subdivision preprocessing
                 // no matter what desc says
@@ -324,8 +322,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                     resourceRegistry->AddSource(quadInfoBuilder);
                 }
             }
-            _topology = boost::static_pointer_cast<HdSt_MeshTopology>(
-                                                   topologyInstance.GetValue());
+            _topology = topologyInstance.GetValue();
         }
         TF_VERIFY(_topology);
 

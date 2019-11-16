@@ -32,7 +32,6 @@
 #include "pxr/imaging/hd/bufferArrayRegistry.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/bufferSpec.h"
-#include "pxr/imaging/hd/instanceRegistry.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/strategyBase.h"
 
@@ -54,12 +53,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 typedef boost::shared_ptr<class HdBufferArray> HdBufferArraySharedPtr;
-typedef boost::shared_ptr<class HdMeshTopology> HdMeshTopologySharedPtr;
-typedef boost::shared_ptr<class HdBasisCurvesTopology> 
-                                                 HdBasisCurvesTopologySharedPtr;
 typedef boost::shared_ptr<class HdComputation> HdComputationSharedPtr;
-typedef boost::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
-typedef boost::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
 typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 
 /// \class HdResourceRegistry
@@ -211,84 +205,9 @@ public:
     HD_API
     VtDictionary GetResourceAllocation() const;
 
-    /// Topology instancing
-    /// Returns (in the pointer) the HdInstance points to shared HdMeshTopology,
-    /// distinguished by given ID. If IsFirstInstance() of the instance is
-    /// true, the caller is responsible to initialize the HdMeshTopology.
-    /// Also the HdMeshTopology has to be owned by someone else, otherwise
-    /// the entry will get deleted on GarbageCollect(). HdInstance is
-    /// intended to be used for temporary pointer, so the caller should not
-    /// hold the instance for an extended time. ID is used as a hash key
-    /// and the resolution of hash collision is the client's responsibility.
-    ///
-    /// Note: As entries can be added by multiple threads the routine
-    /// returns a lock on the instance registry.  This lock should be held
-    /// until the HdInstance object is destroyed.
-    HD_API
-    HdInstance<HdMeshTopologySharedPtr>
-    RegisterMeshTopology(HdInstance<HdMeshTopologySharedPtr>::ID id);
-
-    HD_API
-    HdInstance<HdBasisCurvesTopologySharedPtr>
-    RegisterBasisCurvesTopology(
-        HdInstance<HdBasisCurvesTopologySharedPtr>::ID id);
-
-    HD_API
-    HdInstance<Hd_VertexAdjacencySharedPtr>
-    RegisterVertexAdjacency(HdInstance<Hd_VertexAdjacencySharedPtr>::ID id);
-
-    /// Index buffer array range instancing
-    /// Returns the HdInstance points to shared HdBufferArrayRange,
-    /// distinguished by given ID.
-    /// *Refer the comment on RegisterTopology for the same consideration.
-    HD_API
-    HdInstance<HdBufferArrayRangeSharedPtr>
-    RegisterMeshIndexRange(
-        HdInstance<HdBufferArrayRangeSharedPtr>::ID id, TfToken const &name);
-
-    HD_API
-    HdInstance<HdBufferArrayRangeSharedPtr>
-    RegisterBasisCurvesIndexRange(
-       HdInstance<HdBufferArrayRangeSharedPtr>::ID id, TfToken const &name);
-
-    /// Primvar array range instancing
-    /// Returns the HdInstance pointing to shared HdBufferArrayRange,
-    /// distinguished by given ID.
-    /// *Refer the comment on RegisterTopology for the same consideration.
-    HD_API
-    HdInstance<HdBufferArrayRangeSharedPtr>
-    RegisterPrimvarRange(
-        HdInstance<HdBufferArrayRangeSharedPtr>::ID id);
-
-    /// ExtComputation data array range instancing
-    /// Returns the HdInstance pointing to shared HdBufferArrayRange,
-    /// distinguished by given ID.
-    /// *Refer the comment on RegisterTopology for the same consideration.
-    HD_API
-    HdInstance<HdBufferArrayRangeSharedPtr>
-    RegisterExtComputationDataRange(
-        HdInstance<HdBufferArrayRangeSharedPtr>::ID id);
-
-    /// Globally unique id for texture, see RegisterTextureResource() for
+    /// Globally unique id for texture, see HdRenderIndex::GetTextureKey() for
     /// details.
     typedef size_t TextureKey;
-
-    /// Register a texture into the texture registry.
-    /// Typically the other id's used refer to unique content
-    /// where as for textures it's a unique id provided by the scene delegate.
-    /// Hydra expects the id's to be unique in the context of a scene/stage
-    /// aka render index.  However, the texture registry can be shared between
-    /// multiple render indices, so the renderIndexId is used to create
-    /// a globally unique id for the texture resource.
-    HD_API
-    HdInstance<HdTextureResourceSharedPtr>
-    RegisterTextureResource(TextureKey id);
-
-    /// Find a texture in the texture registry. If found, it returns it.
-    /// See RegisterTextureResource() for parameter details.
-    HD_API
-    HdInstance<HdTextureResourceSharedPtr>
-    FindTextureResource(TextureKey id, bool *found);
 
     /// Invalidate any shaders registered with this registry.
     HD_API
@@ -300,9 +219,10 @@ public:
                                      const HdResourceRegistry& self);
 
 protected:
-    /// A hook for derived registries to perform additional GC when
-    /// GarbageCollect() is invoked.
+    /// Hooks for derived registries to perform additional GC when
+    /// GarbageCollect() or GarbageCollectBprims() is invoked.
     virtual void _GarbageCollect();
+    virtual void _GarbageCollectBprims();
 
     /// A hook for derived registries to tally their resources
     /// by key into the given dictionary.  Any additions should
@@ -365,42 +285,6 @@ private:
     typedef tbb::concurrent_vector<_PendingComputation> _PendingComputationList;
     _PendingComputationList  _pendingComputations;
 
-    // instance registries
-
-    // Register mesh topology.
-    HdInstanceRegistry<HdMeshTopologySharedPtr>
-        _meshTopologyRegistry;
-
-    // Register basisCurves topology.
-    HdInstanceRegistry<HdBasisCurvesTopologySharedPtr>
-        _basisCurvesTopologyRegistry;
-
-    // Register vertex adjacency.
-    HdInstanceRegistry<Hd_VertexAdjacencySharedPtr>
-        _vertexAdjacencyRegistry;
-
-    // Register topology index buffers.
-    typedef HdInstanceRegistry<HdBufferArrayRangeSharedPtr>
-        _TopologyIndexRangeInstanceRegistry;
-    typedef tbb::concurrent_unordered_map< TfToken,
-                                           _TopologyIndexRangeInstanceRegistry,
-                                           TfToken::HashFunctor >
-        _TopologyIndexRangeInstanceRegMap;
-
-    _TopologyIndexRangeInstanceRegMap _meshTopologyIndexRangeRegistry;
-    _TopologyIndexRangeInstanceRegMap _basisCurvesTopologyIndexRangeRegistry;
-
-    // Register shared primvar buffers.
-    HdInstanceRegistry<HdBufferArrayRangeSharedPtr>
-        _primvarRangeRegistry;
-
-    // Register ext computation resource.
-    HdInstanceRegistry<HdBufferArrayRangeSharedPtr>
-        _extComputationDataRangeRegistry;
-
-    // texture resource registry
-    HdInstanceRegistry<HdTextureResourceSharedPtr>
-        _textureResourceRegistry;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

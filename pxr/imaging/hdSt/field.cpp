@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdSt/field.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/hd/volume.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -74,12 +75,13 @@ HdStField::Sync(HdSceneDelegate *sceneDelegate,
 
         HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
-        HdResourceRegistrySharedPtr const &resourceRegistry =
-            renderIndex.GetResourceRegistry();
+        HdStResourceRegistrySharedPtr const &resourceRegistry =
+            boost::static_pointer_cast<HdStResourceRegistry>(
+                renderIndex.GetResourceRegistry());
 
         // Check with resource registry whether the field resource
         // for this file has already been created.
-        HdInstance<HdTextureResourceSharedPtr> texInstance =
+        HdInstance<HdStTextureResourceSharedPtr> texInstance =
                 resourceRegistry->RegisterTextureResource(texID);
 
 
@@ -107,7 +109,8 @@ HdStField::Sync(HdSceneDelegate *sceneDelegate,
             texInstance.SetValue(_fieldResource);
         } else {
             HdStFieldResourceSharedPtr const fieldResource =
-                boost::dynamic_pointer_cast<HdStFieldResource>(texInstance.GetValue());
+                boost::dynamic_pointer_cast<HdStFieldResource>(
+                                                texInstance.GetValue());
             if (_fieldResource == fieldResource) {
                 isNewTexture = false;
             } else {

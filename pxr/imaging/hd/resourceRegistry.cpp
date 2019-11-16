@@ -27,11 +27,9 @@
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferResource.h"
 #include "pxr/imaging/hd/computation.h"
-#include "pxr/imaging/hd/textureResource.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/tf/instantiateSingleton.h"
-#include "pxr/base/tf/getenv.h"
 #include "pxr/base/work/loops.h"
 
 #include <algorithm>
@@ -458,45 +456,11 @@ HdResourceRegistry::GarbageCollect()
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->garbageCollected);
 
-    // cleanup instance registries
-    size_t numMeshTopology = _meshTopologyRegistry.GarbageCollect();
-    size_t numBasisCurvesTopology =
-                _basisCurvesTopologyRegistry.GarbageCollect();
-    size_t numVertexAdjacency = _vertexAdjacencyRegistry.GarbageCollect();
-
-    // reset instance perf counters
-    HD_PERF_COUNTER_SET(HdPerfTokens->instMeshTopology, numMeshTopology);
-    HD_PERF_COUNTER_SET(HdPerfTokens->instBasisCurvesTopology,
-                        numBasisCurvesTopology);
-    HD_PERF_COUNTER_SET(HdPerfTokens->instVertexAdjacency, numVertexAdjacency);
-
-    // index range registry has to be cleaned BEFORE buffer array,
-    // since it retains shared_ptr of buffer array range which expects
-    // to be expired at buffer array's garbage collection.
-    size_t numIndexRange = 0;
-    TF_FOR_ALL (it, _meshTopologyIndexRangeRegistry) {
-        numIndexRange += it->second.GarbageCollect();
-    }
-    // reset index range perf counters
-    HD_PERF_COUNTER_SET(HdPerfTokens->instMeshTopologyRange, numIndexRange);
-
-    numIndexRange = 0;
-    TF_FOR_ALL (it, _basisCurvesTopologyIndexRangeRegistry) {
-        numIndexRange += it->second.GarbageCollect();
-    }
-    // reset index range perf counters
-    HD_PERF_COUNTER_SET(HdPerfTokens->instBasisCurvesTopologyRange,
-                        numIndexRange);
-
-    // reset shared primvar range perf counter
-    size_t numSharedPrimvarRanges = _primvarRangeRegistry.GarbageCollect();
-    HD_PERF_COUNTER_SET(HdPerfTokens->instPrimvarRange, numSharedPrimvarRanges);
-
-    // reset shared computation data range perf counter
-    size_t numSharedExtComputationDataRanges =
-                _extComputationDataRangeRegistry.GarbageCollect();
-    HD_PERF_COUNTER_SET(HdPerfTokens->instExtComputationDataRange,
-                        numSharedExtComputationDataRanges);
+    // Prompt derived registries to collect their garbage.
+    // Do this first in order to clean up any derived items that might
+    // be holding references to resources in buffer array registries
+    // which are cleaned below.
+    _GarbageCollect();
 
     // cleanup buffer array
     // buffer array retains weak_ptrs of range. All unused ranges should be
@@ -506,9 +470,6 @@ HdResourceRegistry::GarbageCollect()
     _uniformUboBufferArrayRegistry.GarbageCollect();
     _uniformSsboBufferArrayRegistry.GarbageCollect();
     _singleBufferArrayRegistry.GarbageCollect();
-
-    // Prompt derived registries to collect their garbage.
-    _GarbageCollect();
 }
 
 void
@@ -520,8 +481,14 @@ HdResourceRegistry::_GarbageCollect()
 void
 HdResourceRegistry::GarbageCollectBprims()
 {
-    // Cleanup texture registries
-    _textureResourceRegistry.GarbageCollect();
+    // Prompt derived registries to collect their garbage.
+    _GarbageCollectBprims();
+}
+
+void
+HdResourceRegistry::_GarbageCollectBprims()
+{
+    /* NOTHING */
 }
 
 VtDictionary
@@ -557,21 +524,6 @@ HdResourceRegistry::GetResourceAllocation() const
                      ssboSize       +
                      singleBufferSize;
 
-    // textures
-    size_t hydraTexturesMemory = 0;
-
-    TF_FOR_ALL (textureResourceIt, _textureResourceRegistry) {
-        HdTextureResourceSharedPtr textureResource =
-                                        textureResourceIt->second.value;
-
-        // In the event of an asset error, texture resources can be null
-        if (textureResource) {
-            hydraTexturesMemory += textureResource->GetMemoryUsed();
-        }
-    }
-    result[HdPerfTokens->textureResourceMemory] = VtValue(hydraTexturesMemory);
-    gpuMemoryUsed += hydraTexturesMemory;
-
     result[HdPerfTokens->gpuMemoryUsed.GetString()] = gpuMemoryUsed;
 
     // Prompt derived registries to tally their resources.
@@ -591,102 +543,6 @@ HdResourceRegistry::_TallyResourceAllocation(VtDictionary*) const
 {
     /* NOTHING */
 }
-
-static bool _IsEnabledTopologyInstancing()
-{
-    // disable instancing
-    static bool isTopologyInstancingEnabled =
-        TfGetenvBool("HD_ENABLE_TOPOLOGY_INSTANCING", true);
-    return isTopologyInstancingEnabled;
-}
-
-template <typename ID, typename T>
-HdInstance<T>
-_Register(ID id, HdInstanceRegistry<T> &registry, TfToken const &perfToken)
-{
-    if (_IsEnabledTopologyInstancing()) {
-        HdInstance<T> instance = registry.GetInstance(id);
-
-        if (instance.IsFirstInstance()) {
-            HD_PERF_COUNTER_INCR(perfToken);
-        }
-
-        return instance;
-    } else {
-        // Return an instance that is not managed by the registry when
-        // topology instancing is disabled.
-        return HdInstance<T>(id);
-    }
-}
-
-HdInstance<HdBasisCurvesTopologySharedPtr>
-HdResourceRegistry::RegisterBasisCurvesTopology(
-        HdInstance<HdBasisCurvesTopologySharedPtr>::ID id)
-{
-    return _Register(id, _basisCurvesTopologyRegistry,
-                     HdPerfTokens->instBasisCurvesTopology);
-}
-
-HdInstance<HdMeshTopologySharedPtr>
-HdResourceRegistry::RegisterMeshTopology(
-        HdInstance<HdMeshTopologySharedPtr>::ID id)
-{
-    return _Register(id, _meshTopologyRegistry,
-                     HdPerfTokens->instMeshTopology);
-}
-
-HdInstance<Hd_VertexAdjacencySharedPtr>
-HdResourceRegistry::RegisterVertexAdjacency(
-        HdInstance<Hd_VertexAdjacencySharedPtr>::ID id)
-{
-    return _Register(id, _vertexAdjacencyRegistry,
-                     HdPerfTokens->instVertexAdjacency);
-}
-
-HdInstance<HdBufferArrayRangeSharedPtr>
-HdResourceRegistry::RegisterMeshIndexRange(
-        HdInstance<HdBufferArrayRangeSharedPtr>::ID id, TfToken const &name)
-{
-    return _Register(id, _meshTopologyIndexRangeRegistry[name],
-                     HdPerfTokens->instMeshTopologyRange);
-}
-
-HdInstance<HdBufferArrayRangeSharedPtr>
-HdResourceRegistry::RegisterBasisCurvesIndexRange(
-        HdInstance<HdBufferArrayRangeSharedPtr>::ID id, TfToken const &name)
-{
-    return _Register(id, _basisCurvesTopologyIndexRangeRegistry[name],
-                     HdPerfTokens->instBasisCurvesTopologyRange);
-}
-
-HdInstance<HdBufferArrayRangeSharedPtr>
-HdResourceRegistry::RegisterPrimvarRange(
-        HdInstance<HdBufferArrayRangeSharedPtr>::ID id)
-{
-    return _Register(id, _primvarRangeRegistry,
-                     HdPerfTokens->instPrimvarRange);
-}
-
-HdInstance<HdBufferArrayRangeSharedPtr>
-HdResourceRegistry::RegisterExtComputationDataRange(
-        HdInstance<HdBufferArrayRangeSharedPtr>::ID id)
-{
-    return _Register(id, _extComputationDataRangeRegistry,
-                     HdPerfTokens->instExtComputationDataRange);
-}
-
-HdInstance<HdTextureResourceSharedPtr>
-HdResourceRegistry::RegisterTextureResource(TextureKey id)
-{
-    return _textureResourceRegistry.GetInstance(id);
-}
-
-HdInstance<HdTextureResourceSharedPtr>
-HdResourceRegistry::FindTextureResource(TextureKey id, bool *found)
-{
-    return _textureResourceRegistry.FindInstance(id, found);
-}
-
 
 void HdResourceRegistry::InvalidateShaderRegistry()
 {
