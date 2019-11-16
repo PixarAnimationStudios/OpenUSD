@@ -371,11 +371,25 @@ HdStSurfaceShader::Reload()
     // Nothing to do, this shader's sources are externally managed.
 }
 
+static bool
+operator== (HdStShaderCode::TextureDescriptor const & a,
+            HdStShaderCode::TextureDescriptor const & b)
+{
+    return a.name == b.name &&
+           a.handle == b.handle &&
+           a.type == b.type;
+}
+
 /*static*/
 bool
 HdStSurfaceShader::CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
                                 HdStShaderCodeSharedPtr const &shaderB)
 {
+    // Can aggregate if the shaders are identical.
+    if (shaderA == shaderB) {
+        return true;
+    }
+
     HdBufferArrayRangeSharedPtr dataA = shaderA->GetShaderData();
     HdBufferArrayRangeSharedPtr dataB = shaderB->GetShaderData();
 
@@ -391,11 +405,10 @@ HdStSurfaceShader::CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
     bool bindlessTexture = GlfContextCaps::GetInstance()
                                                 .bindlessTextureEnabled;
 
-    // Without bindless textures, we can't aggregate shaders with textures.
+    // Without bindless textures, we can't aggregate unless textures also match.
     if (!bindlessTexture) {
-        bool eitherHasTextures = !shaderA->GetTextures().empty() ||
-                                 !shaderB->GetTextures().empty();
-        if (eitherHasTextures) {
+        bool texturesMatch = shaderA->GetTextures() == shaderB->GetTextures();
+        if (!texturesMatch) {
             return false;
         }
     }
