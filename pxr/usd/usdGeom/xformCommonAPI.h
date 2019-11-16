@@ -24,22 +24,29 @@
 #ifndef USDGEOM_GENERATED_XFORMCOMMONAPI_H
 #define USDGEOM_GENERATED_XFORMCOMMONAPI_H
 
+/// \file usdGeom/xformCommonAPI.h
+
 #include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/api.h"
-#include "pxr/usd/usdGeom/xformable.h"
-#include "pxr/usd/usd/schemaBase.h"
+#include "pxr/usd/usd/apiSchemaBase.h"
+#include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
+
+#include "pxr/usd/usdGeom/xformable.h"
+#include "pxr/usd/usdGeom/xformOp.h" 
+
+#include "pxr/base/vt/value.h"
 
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/matrix4d.h"
 
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 
-#include <vector>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
+class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
 // XFORMCOMMONAPI                                                             //
@@ -47,15 +54,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class UsdGeomXformCommonAPI
 ///
-/// This class provides API for authoring and retrieving a standard set of 
-/// component transformations which include a scale, a rotation, a 
+/// This class provides API for authoring and retrieving a standard set
+/// of component transformations which include a scale, a rotation, a 
 /// scale-rotate pivot and a translation. The goal of the API is to enhance 
 /// component-wise interchange. It achieves this by limiting the set of allowed 
 /// basic ops and by specifying the order in which they are applied. In addition
 /// to the basic set of ops, the 'resetXformStack' bit can also be set to 
 /// indicate whether the underlying xformable resets the parent transformation 
 /// (i.e. does not inherit it's parent's transformation). 
-///
+/// 
 /// \sa UsdGeomXformCommonAPI::GetResetXformStack()
 /// \sa UsdGeomXformCommonAPI::SetResetXformStack()
 /// 
@@ -84,60 +91,87 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// A new UsdGeomXformCommonAPI object must be created with the xformable after 
 /// invoking any operation on the underlying xformable that would cause the 
 /// xformOpOrder to change.
-/// 
-class UsdGeomXformCommonAPI: public UsdSchemaBase
+///
+class UsdGeomXformCommonAPI : public UsdAPISchemaBase
 {
 public:
-    explicit UsdGeomXformCommonAPI(const UsdPrim &prim=UsdPrim())
-        : UsdSchemaBase(prim)
-        , _xformable(UsdGeomXformable(prim))
-        , _computedOpIndices(false)
-        , _translateOpIndex(_InvalidIndex)
-        , _rotateOpIndex(_InvalidIndex)
-        , _scaleOpIndex(_InvalidIndex)
-        , _pivotOpIndex(_InvalidIndex)
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaType
+    static const UsdSchemaType schemaType = UsdSchemaType::NonAppliedAPI;
+
+    /// Construct a UsdGeomXformCommonAPI on UsdPrim \p prim .
+    /// Equivalent to UsdGeomXformCommonAPI::Get(prim.GetStage(), prim.GetPath())
+    /// for a \em valid \p prim, but will not immediately throw an error for
+    /// an invalid \p prim
+    explicit UsdGeomXformCommonAPI(const UsdPrim& prim=UsdPrim())
+        : UsdAPISchemaBase(prim)
     {
-        bool resetsXformStack = false;
-        _xformOps = _xformable.GetOrderedXformOps(&resetsXformStack);
     }
 
-    explicit UsdGeomXformCommonAPI(
-        const UsdGeomXformable& xformable)
-        : UsdSchemaBase(xformable.GetPrim())
-        , _xformable(xformable)
-        , _computedOpIndices(false)
-        , _translateOpIndex(_InvalidIndex)
-        , _rotateOpIndex(_InvalidIndex)
-        , _scaleOpIndex(_InvalidIndex)
-        , _pivotOpIndex(_InvalidIndex)
+    /// Construct a UsdGeomXformCommonAPI on the prim held by \p schemaObj .
+    /// Should be preferred over UsdGeomXformCommonAPI(schemaObj.GetPrim()),
+    /// as it preserves SchemaBase state.
+    explicit UsdGeomXformCommonAPI(const UsdSchemaBase& schemaObj)
+        : UsdAPISchemaBase(schemaObj)
     {
-        bool resetsXformStack = false;
-        _xformOps = _xformable.GetOrderedXformOps(&resetsXformStack);
     }
 
     /// Destructor.
     USDGEOM_API
     virtual ~UsdGeomXformCommonAPI();
 
-    /// Return a UsdGeomXformCommonAPI holding the xformable adhering 
-    /// to this API at \p path on \p stage.  If no prim exists at \p path on
-    /// \p stage, or if the prim at that path does not adhere to this API,
-    /// return an invalid API object.  This is shorthand for the following:
+    /// Return a vector of names of all pre-declared attributes for this schema
+    /// class and all its ancestor classes.  Does not include attributes that
+    /// may be authored by custom/extended methods of the schemas involved.
+    USDGEOM_API
+    static const TfTokenVector &
+    GetSchemaAttributeNames(bool includeInherited=true);
+
+    /// Return a UsdGeomXformCommonAPI holding the prim adhering to this
+    /// schema at \p path on \p stage.  If no prim exists at \p path on
+    /// \p stage, or if the prim at that path does not adhere to this schema,
+    /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdGeomXformCommonAPI(UsdGeomXformable(stage->GetPrimAtPath(path)));
+    /// UsdGeomXformCommonAPI(stage->GetPrimAtPath(path));
     /// \endcode
     ///
     USDGEOM_API
     static UsdGeomXformCommonAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
+
 protected:
-    /// Returns whether the underlying xformable is compatible with the API.
+    /// Returns the type of schema this class belongs to.
+    ///
+    /// \sa UsdSchemaType
     USDGEOM_API
-    bool _IsCompatible() const override;
+    UsdSchemaType _GetSchemaType() const override;
+
+private:
+    // needs to invoke _GetStaticTfType.
+    friend class UsdSchemaRegistry;
+    USDGEOM_API
+    static const TfType &_GetStaticTfType();
+
+    static bool _IsTypedSchema();
+
+    // override SchemaBase virtuals.
+    USDGEOM_API
+    const TfType &_GetTfType() const override;
 
 public:
+    // ===================================================================== //
+    // Feel free to add custom code below this line, it will be preserved by 
+    // the code generator. 
+    //
+    // Just remember to: 
+    //  - Close the class declaration with }; 
+    //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
+    //  - Close the include guard with #endif
+    // ===================================================================== //
+    // --(BEGIN CUSTOM CODE)--
 
     /// Enumerates the rotation order of the 3-angle Euler rotation.
     enum RotationOrder {
@@ -261,6 +295,11 @@ public:
 
     /// @}
 
+protected:
+    /// Returns whether the underlying xformable is compatible with the API.
+    USDGEOM_API
+    bool _IsCompatible() const override;
+
 private:
 
     // Computes and stores op indices in the data members.
@@ -274,10 +313,12 @@ private:
     bool _VerifyCompatibility();
 
     // Used to determine compatibility.
-    bool _ValidateAndComputeXformOpIndices(int *translateOpIndex=NULL,
-                                           int *pivotOpIndex=NULL,
-                                           int *rotateOpIndex=NULL,
-                                           int *scaleOpIndex=NULL) const;
+    static bool _ValidateAndComputeXformOpIndices(
+            const std::vector<UsdGeomXformOp>& xformOps,
+            int *translateOpIndex=nullptr,
+            int *pivotOpIndex=nullptr,
+            int *rotateOpIndex=nullptr,
+            int *scaleOpIndex=nullptr);
 
     // Convenience functions 
     bool _HasTranslateOp() const {
@@ -301,24 +342,21 @@ private:
     }
 
 private:
-    // The xformable schema object on which this API operates.
-    UsdGeomXformable _xformable;
-
-    static const int _InvalidIndex = -1;
+    static constexpr int _InvalidIndex = -1;
 
     // Records whether the component xform ops indices have been computed and 
-    // cached in the data members below. This happens the first time 
-    // _IsCompatible is called, which is invoked inside the bool operator.
-    bool _computedOpIndices;
+    // cached in the data members below. This happens the first time that the
+    // non-const Set/Get functions are called.
+    bool _computedOpIndices = false;
 
     // Copy of the ordered xform ops.
     std::vector<UsdGeomXformOp> _xformOps;
     
     // Various op indices.
-    int _translateOpIndex;
-    int _rotateOpIndex;
-    int _scaleOpIndex;
-    int _pivotOpIndex;
+    int _translateOpIndex = _InvalidIndex;
+    int _rotateOpIndex = _InvalidIndex;
+    int _scaleOpIndex = _InvalidIndex;
+    int _pivotOpIndex = _InvalidIndex;
 };
 
 
