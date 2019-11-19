@@ -157,6 +157,19 @@ private:
     bool _didWritePrevValue=true;
 };
 
+namespace
+{
+    struct _AttrHash {
+        inline size_t operator() (const UsdAttribute &attr) const {
+            return hash_value(attr);
+        }
+    };
+
+    using _AttrValueWriterMap = std::unordered_map<UsdAttribute,
+                                                   UsdUtilsSparseAttrValueWriter,
+                                                  _AttrHash>;
+} // anonymous namespace
+
 /// \class UsdUtilsSparseValueWriter
 /// 
 /// Utility class that manages sparse authoring of a set of UsdAttributes.
@@ -265,6 +278,11 @@ public:
         _attrValueWriterMap.clear();
     }
 
+    USDUTILS_API
+    const _AttrValueWriterMap& GetAttrValueWriterMap() const {
+        return _attrValueWriterMap;
+    }
+
 private:
     // Templated helper method used by the two public SetAttribute() methods.
     template <typename T>
@@ -272,15 +290,6 @@ private:
                            T &value,
                            const UsdTimeCode time);
 
-    struct _AttrHash {
-        inline size_t operator() (const UsdAttribute &attr) const {
-            return hash_value(attr);
-        }
-    };
-
-    using _AttrValueWriterMap = std::unordered_map<UsdAttribute,
-                                                   UsdUtilsSparseAttrValueWriter,
-                                                  _AttrHash>;
     _AttrValueWriterMap _attrValueWriterMap;
 };
 
