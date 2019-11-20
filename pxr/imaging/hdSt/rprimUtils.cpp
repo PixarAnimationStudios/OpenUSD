@@ -268,8 +268,8 @@ HdStPopulateConstantPrimvars(
                 if (value.IsArrayValued() && value.GetArraySize() == 0) {
                     // A value holding an empty array does not count as an
                     // empty value. Catch that case here.
-                    TF_WARN("Empty array value for constant primvar %s "
-                            "on Rprim %s", pv.name.GetText(), id.GetText());
+                    //
+                    // Do nothing in this case.
                 } else if (!value.IsEmpty()) {
                     // Given that this is a constant primvar, if it is
                     // holding VtArray then use that as a single array
