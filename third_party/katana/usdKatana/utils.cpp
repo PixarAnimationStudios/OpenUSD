@@ -1135,9 +1135,9 @@ PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
         UsdUtilsGetPrimAtPathWithForwarding(
             data.GetUsdInArgs()->GetStage(), path);
 
-    // LooksDerivedStructure is legacy
-    bool isLibrary = (materialGroupKatanaPath == "/" || 
-        materialGroupKatanaPath == "/LooksDerivedStructure");
+    // library materials are directly under the pseudo root and their group path
+    // is just '/'
+    bool isLibrary = materialGroupKatanaPath == "/";
 
     if (isLibrary) {
         // materials are at the root: we are in a library
