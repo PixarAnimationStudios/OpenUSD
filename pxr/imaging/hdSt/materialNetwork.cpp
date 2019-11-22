@@ -61,6 +61,11 @@ TF_DEFINE_PRIVATE_TOKENS(
 struct HdSt_MaterialConnection {
     SdfPath upstreamNode;
     TfToken upstreamOutputName;
+
+    bool operator==(const HdSt_MaterialConnection & rhs) const {
+        return upstreamNode == rhs.upstreamNode
+            && upstreamOutputName == rhs.upstreamOutputName;
+    }
 };
 
 /// \struct HdStMaterialNode
@@ -75,6 +80,12 @@ struct HdSt_MaterialNode {
     TfToken nodeTypeId;
     std::map<TfToken, VtValue> parameters;
     std::map<TfToken, std::vector<HdSt_MaterialConnection>> inputConnections;
+
+    bool operator==(const HdSt_MaterialNode & rhs) const {
+        return nodeTypeId == rhs.nodeTypeId
+            && parameters == rhs.parameters
+            && inputConnections == rhs.inputConnections;
+    }
 };
 
 /// \struct HdStMaterialNetwork
@@ -88,6 +99,10 @@ struct HdSt_MaterialNetwork {
     std::map<SdfPath, HdSt_MaterialNode> nodes;
     std::map<TfToken, HdSt_MaterialConnection> terminals;
     TfTokenVector primvars;
+
+    bool operator==(const HdSt_MaterialNetwork & rhs) const {
+        return nodes == rhs.nodes && terminals == rhs.terminals;
+    }
 };
 
 // XXX We wish to transition to a new material network description and unify

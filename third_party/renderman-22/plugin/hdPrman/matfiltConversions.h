@@ -32,16 +32,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// Converts a single terminal of an HdMaterialNetworkMap to a MatfiltNetwork
 /// NOTE: currently doesn't handle primvars field of HdMaterialNetwork
-bool MatfiltConvertFromHdMaterialNetworkMapTerminal(
+bool MatfiltConvertFromHdMaterialNetworkMap(
     const HdMaterialNetworkMap & hdNetworkMap,
-    const TfToken & terminalName,
     MatfiltNetwork *result);
-
-/// Converts MatfiltNetwork from each terminal into HdMaterialNetwork entries
-/// within a HdMaterialNetworkMap
-bool MatfiltConvertToHdMaterialNetworkMap(
-    const MatfiltNetwork & matfiltNetwork,
-    HdMaterialNetworkMap *result);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

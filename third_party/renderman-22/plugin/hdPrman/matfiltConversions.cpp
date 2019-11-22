@@ -28,33 +28,34 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 bool
-MatfiltConvertFromHdMaterialNetworkMapTerminal(
+MatfiltConvertFromHdMaterialNetworkMap(
     const HdMaterialNetworkMap & hdNetworkMap,
-    const TfToken & terminalName,
     MatfiltNetwork *result)
 {
-    auto iter = hdNetworkMap.map.find(terminalName);
-    if (iter == hdNetworkMap.map.end()) {
-        return false;
-    }
-    const HdMaterialNetwork & hdNetwork = iter->second;
+    for (auto const& iter: hdNetworkMap.map) {
+        const TfToken & terminalName = iter.first;
+        const HdMaterialNetwork & hdNetwork = iter.second;
 
-    // Transfer over individual nodes
+        if (hdNetwork.nodes.empty()) {
+            continue;
+    }
+
+        // Transfer over individual nodes.
+        // Note that the same nodes may be shared by multiple terminals.
+        // We simply overwrite them here.
     for (const HdMaterialNode & node : hdNetwork.nodes) {
         MatfiltNode & matfiltNode = result->nodes[node.path];
         matfiltNode.nodeTypeId = node.identifier;
         matfiltNode.parameters = node.parameters;
     }
 
-    // Assume that the last entry is the terminal (as that's not specified in
-    // HdMaterialNetworkMap/HdMaterialNetwork).
-    if (!hdNetwork.nodes.empty()) {
+        // Assume that the last entry is the terminal (as that's not
+        // specified in HdMaterialNetworkMap/HdMaterialNetwork).
         result->terminals[terminalName].upstreamNode =
             hdNetwork.nodes.back().path;
-    }
 
-    // Transfer over relationships to inputConnections on receiving/downstream
-    // nodes.
+        // Transfer over relationships to inputConnections on
+        // receiving/downstream nodes.
     for (const HdMaterialRelationship & rel : hdNetwork.relationships) {
         // outputId (in hdMaterial terms) is the input of the receiving node
         auto iter = result->nodes.find(rel.outputId);
@@ -62,73 +63,15 @@ MatfiltConvertFromHdMaterialNetworkMapTerminal(
         if (iter == result->nodes.end()) {
             continue;
         }
-        iter->second.inputConnections[rel.outputName]
-            .emplace_back( MatfiltConnection{rel.inputId, rel.inputName});
-    }
-
-    return true;
-}
-
-static void
-_MatfiltConvertToHdMaterialNetworkMapVisitNode(
-    const MatfiltNetwork & matfiltNetwork,
-    const SdfPath & nodeId,
-    std::unordered_set<SdfPath, SdfPath::Hash> & visitedNodes,
-    HdMaterialNetwork *result)
-{
-    if (!visitedNodes.insert(nodeId).second) {
-        // Already visited
-        return;
-    }
-    MatfiltNode const* matfiltNode =
-        TfMapLookupPtr(matfiltNetwork.nodes, nodeId);
-    if (!matfiltNode) {
-        // can't find the node?, skip it
-        return;
-    }
-
-    // walk the inputParameters first so that dependencies are declared first
-    for (const auto & I : matfiltNode->inputConnections) {
-        const TfToken & inputName = I.first;
-        const std::vector<MatfiltConnection> & connectionVector = I.second;
-
-        for (const MatfiltConnection & connection : connectionVector) {
-            _MatfiltConvertToHdMaterialNetworkMapVisitNode(matfiltNetwork,
-                    connection.upstreamNode, visitedNodes, result);
-
-            result->relationships.emplace_back();
-            HdMaterialRelationship & relationship =
-                    result->relationships.back();
-
-            relationship.inputId = connection.upstreamNode;
-            relationship.inputName = connection.upstreamOutputName;
-            relationship.outputId = nodeId;
-            relationship.outputName = inputName;
+            std::vector<MatfiltConnection> &conns =
+                iter->second.inputConnections[rel.outputName];
+            MatfiltConnection conn = {rel.inputId, rel.inputName};
+            // skip connection if it already exists (it may be shared
+            // between surface and displacement)
+            if (std::find(conns.begin(), conns.end(), conn) == conns.end()) {
+                conns.emplace_back(conn);
         }
     }
-
-    result->nodes.emplace_back();
-    HdMaterialNode & hdNode = result->nodes.back();
-    hdNode.path = nodeId;
-    hdNode.identifier = matfiltNode->nodeTypeId;
-    hdNode.parameters = matfiltNode->parameters;
-}
-
-bool
-MatfiltConvertToHdMaterialNetworkMap(
-    const MatfiltNetwork & matfiltNetwork,
-    HdMaterialNetworkMap *result)
-{
-    std::unordered_set<SdfPath, SdfPath::Hash> visitedNodes;
-    for (const auto & I : matfiltNetwork.terminals) {
-        visitedNodes.clear();
-        const TfToken & terminalName = I.first;
-        const MatfiltConnection & terminalConnection = I.second;        
-        _MatfiltConvertToHdMaterialNetworkMapVisitNode(
-            matfiltNetwork,
-            terminalConnection.upstreamNode,
-            visitedNodes,
-            &result->map[terminalName]);
     }
 
     return true;

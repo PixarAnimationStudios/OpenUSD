@@ -38,6 +38,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct MatfiltConnection {
     SdfPath upstreamNode;
     TfToken upstreamOutputName;
+
+    bool operator==(const MatfiltConnection & rhs) const {
+        return upstreamNode == rhs.upstreamNode
+                && upstreamOutputName == rhs.upstreamOutputName;
+    }
 };
 
 /// \struct MatfiltNode
@@ -50,6 +55,12 @@ struct MatfiltNode {
     TfToken nodeTypeId;
     std::map<TfToken, VtValue> parameters;
     std::map<TfToken, std::vector<MatfiltConnection>> inputConnections;
+
+    bool operator==(const MatfiltNode & rhs) const {
+        return nodeTypeId == rhs.nodeTypeId
+                && parameters == rhs.parameters
+                && inputConnections == rhs.inputConnections;
+    }
 };
 
 /// \struct MatfiltNetwork
@@ -60,6 +71,10 @@ struct MatfiltNode {
 struct MatfiltNetwork {
     std::map<SdfPath, MatfiltNode> nodes;
     std::map<TfToken, MatfiltConnection> terminals;
+
+    bool operator==(const MatfiltNetwork & rhs) const {
+        return nodes == rhs.nodes && terminals == rhs.terminals;
+    }
 };
 
 /// A function which manipulates a shading network for a given context.
