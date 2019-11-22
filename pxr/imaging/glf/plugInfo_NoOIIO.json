@@ -6,7 +6,7 @@
                 "Types": {                                                                  
                     "Glf_StbImage" : {
                         "bases": ["GlfImage"],
-                        "imageTypes": ["bmp", "jpg", "png", "tga", "hdr"],
+                        "imageTypes": ["bmp", "jpg", "jpeg", "png", "tga", "hdr"],
                         "precedence": -1 
                     },
                     "GlfPtexTexture" : {
