@@ -105,20 +105,17 @@ class TestUsdShadeConnectability(unittest.TestCase):
         # Make the connection.
         self.assertTrue(shaderInputColor.ConnectToSource(
             material, colorInterfaceInput.GetBaseName(),
-            UsdShade.AttributeType.Input if UsdShade.Utils.WriteNewEncoding() 
-                else UsdShade.AttributeType.InterfaceAttribute))
+            UsdShade.AttributeType.Input))
 
-        if UsdShade.Utils.WriteNewEncoding():
-            self.assertEqual(
-                shaderInputColor.GetRawConnectedSourcePaths(),
-                [colorInterfaceInput.GetAttr().GetPath()])
+        self.assertEqual(
+            shaderInputColor.GetRawConnectedSourcePaths(),
+            [colorInterfaceInput.GetAttr().GetPath()])
     
         self._CanConnect(shaderInputFloat, floatInterfaceInput)
         self.assertTrue(shaderInputFloat.ConnectToSource(floatInterfaceInput))
 
-        if UsdShade.Utils.WriteNewEncoding():
-            self.assertEqual(shaderInputFloat.GetRawConnectedSourcePaths(),
-                             [floatInterfaceInput.GetAttr().GetPath()])
+        self.assertEqual(shaderInputFloat.GetRawConnectedSourcePaths(),
+                         [floatInterfaceInput.GetAttr().GetPath()])
 
         shaderOutputColor = shader.CreateOutput("color", Sdf.ValueTypeNames.Color3f)
         shaderOutputFloat = shader.CreateOutput("fOut", Sdf.ValueTypeNames.Float)
@@ -139,8 +136,7 @@ class TestUsdShadeConnectability(unittest.TestCase):
         self._CanConnect(nodeGraphInputFloat, shaderOutputFloat)
         self.assertTrue(nodeGraphInputFloat.ConnectToSource(
             shader, shaderOutputFloat.GetBaseName(), 
-                UsdShade.AttributeType.Input if UsdShade.Utils.WriteNewEncoding() 
-                else UsdShade.AttributeType.Parameter))
+                UsdShade.AttributeType.Input))
 
         nodeGraphInputColor = nodeGraph.CreateInput("nodeGraphColor", 
                                                     Sdf.ValueTypeNames.Color3f)

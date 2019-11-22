@@ -32,16 +32,6 @@ over "GLOBAL" (
                 connectability is also 'interfaceOnly'.
                 """
             }
-            dictionary connectedSourceFor = {
-                string value = "connectedSourceFor:"
-                string doc = """The prefix on UsdShadeShader relationships
-                associated with a Parameter.
-
-                This prefixed relationship has a suffix matching the associated
-                attribute name, and denotes a logical shader connection between
-                UsdShadeShaders.
-                """
-            }
             dictionary outputs = {
                 string value = "outputs:"
                 string doc = """The prefix on shading attributes
@@ -52,18 +42,6 @@ over "GLOBAL" (
                 string value = "inputs:"
                 string doc = """The prefix on shading attributes
                 denoting an input.
-                """
-            }
-            dictionary interface = {
-                string value = "interface:"
-                string doc = """(DEPRECATED) The prefix on UsdShadeNodeGraph 
-                attributes denoting an interface attribute.
-                """
-            }
-            dictionary interfaceRecipientsOf = {
-                string value = "interfaceRecipientsOf:"
-                string doc = """(DEPRECATED) The prefix on UsdShadeNodeGraph
-                relationships denoting the target of an interface attribute.
                 """
             }
         }
@@ -162,11 +140,6 @@ class Material "Material" (
             dictionary materialVariant = {
                 string doc = """The variant name of material variation
                 described on a UsdShadeMaterial.
-                """
-            }
-            dictionary derivesFrom  = {
-                string doc = """A legacy relationship name specifying a
-                specializes composition on a UsdShadeMaterial.
                 """
             }
             dictionary surface = {

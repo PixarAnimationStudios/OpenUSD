@@ -39,14 +39,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// 
 /// Specifies the type of a shading attribute.
 /// 
-/// "Parameter" and "InterfaceAttribute" are deprecated shading attribute types.
-/// 
 enum class UsdShadeAttributeType {
     Invalid,
     Input,
     Output,
-    Parameter,
-    InterfaceAttribute
 };
 
 /// \class UsdShadeUtils
@@ -73,16 +69,6 @@ public:
     USDSHADE_API
     static TfToken GetFullName(const TfToken &baseName, 
                                const UsdShadeAttributeType type);
-
-    /// Whether the env-setting that enables the reading of old-style encoding 
-    /// of shading networks is set to 'true'.
-    USDSHADE_API
-    static bool ReadOldEncoding();
-
-    /// Whether the env-setting that enables the writing of new-style encoding 
-    /// of shading networks is set to 'true'.
-    USDSHADE_API
-    static bool WriteNewEncoding();
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

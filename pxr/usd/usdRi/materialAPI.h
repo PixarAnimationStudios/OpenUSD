@@ -301,22 +301,6 @@ public:
     /// @}
 
 
-    // --------------------------------------------------------------------- //
-    /// \name Convenience API 
-    /// This API is provided here mainly to handle backwards compatibility with 
-    /// the old encoding of shading networks.
-    // --------------------------------------------------------------------- //
-    /// @{
-        
-    /// Set the input consumer of the given \p interfaceInput to the specified 
-    /// input, \p consumer.
-    /// 
-    /// This sets the connected source of \p consumer to \p interfaceInput.
-    /// 
-    USDRI_API
-    bool SetInterfaceInputConsumer(UsdShadeInput &interfaceInput, 
-                                   const UsdShadeInput &consumer) const;
-
     /// Walks the namespace subtree below the material and computes a map 
     /// containing the list of all inputs on the material and the associated 
     /// vector of consumers of their values. The consumers can be inputs on 
@@ -325,10 +309,6 @@ public:
     UsdShadeNodeGraph::InterfaceInputConsumersMap
     ComputeInterfaceInputConsumersMap(
             bool computeTransitiveConsumers=false) const;
-
-    /// Returns all the interface inputs belonging to the material.
-    USDRI_API
-    std::vector<UsdShadeInput> GetInterfaceInputs() const;
 
     /// @}
 

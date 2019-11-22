@@ -189,15 +189,7 @@ UsdShadeInput
 UsdShadeNodeGraph::CreateInput(const TfToken& name,
                               const SdfValueTypeName& typeName) const
 {
-    // If we're writing the input in the old encoding, prepend the input name 
-    // with "interface:". We do this here because the prim wrapped in this 
-    // NodeGraph object may be untyped, in which case 
-    // UsdShadeConnectableAPI::CreateInput will be unable to prepend the right 
-    // prefix.
-    return UsdShadeConnectableAPI(GetPrim()).CreateInput(
-        UsdShadeUtils::WriteNewEncoding() ? name : 
-            TfToken(UsdShadeTokens->interface_.GetString() + name.GetString()), 
-        typeName);
+    return UsdShadeConnectableAPI(GetPrim()).CreateInput(name, typeName);
 }
 
 UsdShadeInput
@@ -218,158 +210,22 @@ UsdShadeNodeGraph::GetInterfaceInputs() const
     return GetInputs();
 }
 
-static std::string
-_GetInterfaceAttributeRelPrefix(const TfToken& renderTarget)
-{
-    return renderTarget.IsEmpty() ? UsdShadeTokens->interfaceRecipientsOf:
-            TfStringPrintf("%s:%s", renderTarget.GetText(),
-                UsdShadeTokens->interfaceRecipientsOf.GetText());
-}
-
-std::vector<UsdShadeInput> 
-UsdShadeNodeGraph::_GetInterfaceInputs(const TfToken &renderTarget) const
-{
-    if (renderTarget.IsEmpty() ||
-        !UsdShadeUtils::ReadOldEncoding()) {
-        return GetInterfaceInputs();
-    }
-
-    std::vector<UsdShadeInput> result;
-    const std::string relPrefix = _GetInterfaceAttributeRelPrefix(renderTarget);
-    std::vector<UsdRelationship> rels = GetPrim().GetRelationships();
-    TF_FOR_ALL(relIter, rels) {
-        UsdRelationship rel = *relIter;
-        std::string relName = rel.GetName().GetString();
-        if (TfStringStartsWith(relName, relPrefix)) {
-            TfToken interfaceAttrName(relName.substr(relPrefix.size()));
-            UsdShadeInput interfaceInput = GetInput(interfaceAttrName);
-            if (interfaceInput.GetAttr()) {
-                result.push_back(interfaceInput);
-            }
-        }
-    }
-
-    return result;
-}
-
 static bool 
 _IsValidInput(UsdShadeConnectableAPI const &source, 
               UsdShadeAttributeType const sourceType) 
 {
-    return (sourceType == UsdShadeAttributeType::Input) || 
-           (UsdShadeUtils::ReadOldEncoding() && 
-            ((source.IsNodeGraph() && 
-              sourceType == UsdShadeAttributeType::InterfaceAttribute) 
-             || 
-             (source.IsShader() && 
-              sourceType == UsdShadeAttributeType::Parameter)));
-}
-
-static 
-std::vector<UsdShadeInput>
-_GetInterfaceAttributeRecipientInputs(
-    const UsdAttribute &interfaceAttr,
-    const TfToken &renderTarget,
-    const TfTokenVector &propertyNames)
-{
-    UsdPrim prim = interfaceAttr.GetPrim();
-    std::vector<UsdShadeInput> ret;
-    std::string baseName = UsdShadeUtils::GetBaseNameAndType(
-            interfaceAttr.GetName()).first.GetString();
-
-    std::vector<UsdRelationship> interfaceRecipientsOfRels;
-    if (!renderTarget.IsEmpty()) {
-        TfToken relName(_GetInterfaceAttributeRelPrefix(renderTarget) 
-                        + baseName);
-        if (UsdRelationship rel = prim.GetRelationship(relName)) {
-            interfaceRecipientsOfRels.push_back(rel);
-        }
-    } else {
-        // Find "interfaceRecipientsOf:" relationships for all renderTargets.
-        for (const TfToken &propName : propertyNames) {
-            // If the relationship name contains "interfaceRecipientsOf:"
-            // and if its basename matches the basename of the interface 
-            // attribute, it must be relevant to this relationship.
-            if (TfStringContains(propName, 
-                UsdShadeTokens->interfaceRecipientsOf) &&
-                TfStringEndsWith(propName,  std::string(":").append(
-                    interfaceAttr.GetBaseName().GetString()))) {
-                            
-                // Ignore silently if it's not a valid relationship.
-                if (UsdRelationship rel = prim.GetRelationship(propName)) {
-                    interfaceRecipientsOfRels.push_back(rel);
-                }
-            }
-        }
-    }
-
-    for (const UsdRelationship &rel : interfaceRecipientsOfRels) {
-        std::vector<SdfPath> targets;
-        rel.GetTargets(&targets);
-        TF_FOR_ALL(targetIter, targets) {
-            const SdfPath& targetPath = *targetIter;
-            if (targetPath.IsPropertyPath()) {
-                if (UsdPrim targetPrim = prim.GetStage()->GetPrimAtPath(
-                            targetPath.GetPrimPath())) {
-                    if (UsdAttribute attr = targetPrim.GetAttribute(
-                                targetPath.GetNameToken())) {
-                        ret.push_back(UsdShadeInput(attr));
-                    }
-                }
-            }
-        }
-    }
-
-    return ret;
+    return (sourceType == UsdShadeAttributeType::Input);
 }
 
 static
 UsdShadeNodeGraph::InterfaceInputConsumersMap 
 _ComputeNonTransitiveInputConsumersMap(
-    const UsdShadeNodeGraph &nodeGraph,
-    const TfToken &renderTarget)
+    const UsdShadeNodeGraph &nodeGraph)
 {
     UsdShadeNodeGraph::InterfaceInputConsumersMap result;
 
-    // If we're reading old encoding, cache the vector of property names to 
-    // avoid computing the entire vector once per node-graph input.
-    TfTokenVector propertyNames;
-    if (UsdShadeUtils::ReadOldEncoding()) {
-        propertyNames = nodeGraph.GetPrim().GetAuthoredPropertyNames();
-    }
-
-    bool foundOldStyleInterfaceInputs = false;
-    std::vector<UsdShadeInput> inputs = nodeGraph.GetInputs();
-    for (const auto &input : inputs) {
-        std::vector<UsdShadeInput> consumers;
-        if (UsdShadeUtils::ReadOldEncoding()) {
-            // If the interface input is an interface attribute, then get all 
-            // consumer params using _GetInterfaceAttributeRecipientInputs.
-            if (UsdShadeUtils::GetBaseNameAndType(input.GetAttr().GetName()).second
-                    == UsdShadeAttributeType::InterfaceAttribute) {
-                                
-                const std::vector<UsdShadeInput> &recipients = 
-                    _GetInterfaceAttributeRecipientInputs(input.GetAttr(), 
-                        renderTarget, propertyNames);
-                if (!recipients.empty()) {
-                    foundOldStyleInterfaceInputs = true;
-                    consumers = recipients;
-                }
-            }
-        }
-        result[input] = consumers;
-    }
-
-    // If we find old-style interface inputs on the material, then it's likely 
-    // that the material and all its descendants have old-style encoding of 
-    // shading networks. Hence, skip the downward traversal.
-    // 
-    // If authoring of bidirectional connections on old-style interface 
-    // attributes (which is a feature we only use for testing) is enabled, 
-    // then we can't skip the downward traversal.
-    if (foundOldStyleInterfaceInputs && 
-        !UsdShadeConnectableAPI::AreBidirectionalInterfaceConnectionsEnabled()) {
-        return result;
+    for (const auto& input : nodeGraph.GetInputs()) {
+        result[input] = {};
     }
 
     // XXX: This traversal isn't instancing aware. We must update this 
@@ -404,8 +260,7 @@ static
 void
 _RecursiveComputeNodeGraphInterfaceInputConsumers(
     const UsdShadeNodeGraph::InterfaceInputConsumersMap &inputConsumersMap,
-    UsdShadeNodeGraph::NodeGraphInputConsumersMap *nodeGraphInputConsumers,
-    const TfToken &renderTarget) 
+    UsdShadeNodeGraph::NodeGraphInputConsumersMap *nodeGraphInputConsumers)
 {
     for (const auto &inputAndConsumers : inputConsumersMap) {
         const std::vector<UsdShadeInput> &consumers = inputAndConsumers.second;
@@ -415,11 +270,11 @@ _RecursiveComputeNodeGraphInterfaceInputConsumers(
                 if (!nodeGraphInputConsumers->count(connectable)) {
 
                     const auto &irMap = _ComputeNonTransitiveInputConsumersMap(
-                        UsdShadeNodeGraph(connectable), renderTarget);
+                        UsdShadeNodeGraph(connectable));
                     (*nodeGraphInputConsumers)[connectable] = irMap;
                     
                     _RecursiveComputeNodeGraphInterfaceInputConsumers(irMap, 
-                        nodeGraphInputConsumers, renderTarget);
+                        nodeGraphInputConsumers);
                 }
             }
         }
@@ -467,16 +322,8 @@ UsdShadeNodeGraph::InterfaceInputConsumersMap
 UsdShadeNodeGraph::ComputeInterfaceInputConsumersMap(
     bool computeTransitiveConsumers) const
 {
-    return _ComputeInterfaceInputConsumersMap(computeTransitiveConsumers, TfToken());
-}
-
-UsdShadeNodeGraph::InterfaceInputConsumersMap 
-UsdShadeNodeGraph::_ComputeInterfaceInputConsumersMap(
-    bool computeTransitiveConsumers,
-    const TfToken &renderTarget) const
-{
     InterfaceInputConsumersMap result = 
-        _ComputeNonTransitiveInputConsumersMap(*this, renderTarget);
+        _ComputeNonTransitiveInputConsumersMap(*this);
 
     if (!computeTransitiveConsumers)
         return result;
@@ -484,8 +331,7 @@ UsdShadeNodeGraph::_ComputeInterfaceInputConsumersMap(
     // Collect all node-graphs for which we must compute the input-consumers map.
     NodeGraphInputConsumersMap nodeGraphInputConsumers;
     _RecursiveComputeNodeGraphInterfaceInputConsumers(result, 
-                                                      &nodeGraphInputConsumers,
-                                                      renderTarget);
+                                                      &nodeGraphInputConsumers);
 
     // If the are no consumers belonging to node-graphs, we're done.
     if (nodeGraphInputConsumers.empty())

@@ -52,9 +52,6 @@ void wrapUsdShadeUtils()
         .value("Invalid", UsdShadeAttributeType::Invalid)
         .value("Input", UsdShadeAttributeType::Input)
         .value("Output", UsdShadeAttributeType::Output)
-        .value("Parameter", UsdShadeAttributeType::Parameter)
-        .value("InterfaceAttribute", 
-            UsdShadeAttributeType::InterfaceAttribute)
         ;
 
     scope thisScope = class_<UsdShadeUtils>("Utils", no_init)
@@ -67,12 +64,6 @@ void wrapUsdShadeUtils()
 
         .def("GetFullName", UsdShadeUtils::GetFullName)
         .staticmethod("GetFullName")
-
-        .def("WriteNewEncoding", UsdShadeUtils::WriteNewEncoding)
-        .staticmethod("WriteNewEncoding")
-        
-        .def("ReadOldEncoding", UsdShadeUtils::ReadOldEncoding)
-        .staticmethod("ReadOldEncoding")
     ;
 
 }

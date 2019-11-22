@@ -70,18 +70,10 @@ struct UsdShadeTokensType {
     /// 
     /// Token valued metadata key authored on a material  binding relationship to indicate the strength of the binding  relative to bindings authored on descendants. 
     const TfToken bindMaterialAs;
-    /// \brief "connectedSourceFor:"
-    /// 
-    /// The prefix on UsdShadeShader relationships associated with a Parameter.  This prefixed relationship has a suffix matching the associated attribute name, and denotes a logical shader connection between UsdShadeShaders. 
-    const TfToken connectedSourceFor;
     /// \brief "coordSys:"
     /// 
     /// Namespace prefix for relationships that bind coordinate systems.
     const TfToken coordSys;
-    /// \brief "derivesFrom"
-    /// 
-    /// A legacy relationship name specifying a specializes composition on a UsdShadeMaterial. 
-    const TfToken derivesFrom;
     /// \brief "displacement"
     /// 
     /// Describes the <i>displacement</i> output  terminal on a UsdShadeMaterial. It is used to define the  terminal UsdShadeShader describing the displacement of a  UsdShadeMaterial. 
@@ -110,18 +102,10 @@ struct UsdShadeTokensType {
     /// 
     /// The prefix on shading attributes denoting an input. 
     const TfToken inputs;
-    /// \brief "interface:"
-    /// 
-    /// (DEPRECATED) The prefix on UsdShadeNodeGraph  attributes denoting an interface attribute. 
-    const TfToken interface_;
     /// \brief "interfaceOnly"
     /// 
     /// Possible value for 'connectability' metadata on  a UsdShadeInput. It implies that the input can only connect to  a NodeGraph Input (which represents an interface override, not  a render-time dataflow connection), or another Input whose  connectability is also 'interfaceOnly'. 
     const TfToken interfaceOnly;
-    /// \brief "interfaceRecipientsOf:"
-    /// 
-    /// (DEPRECATED) The prefix on UsdShadeNodeGraph relationships denoting the target of an interface attribute. 
-    const TfToken interfaceRecipientsOf;
     /// \brief "materialBind"
     /// 
     /// The name of the GeomSubset family used to  identify face subsets defined for the purpose of binding  materials to facesets. 

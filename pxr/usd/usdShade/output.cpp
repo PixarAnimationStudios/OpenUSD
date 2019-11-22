@@ -36,8 +36,6 @@
 #include <stdlib.h>
 #include <algorithm>
 
-#include "pxr/base/tf/envSetting.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 

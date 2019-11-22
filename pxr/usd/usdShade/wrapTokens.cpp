@@ -66,9 +66,7 @@ void wrapUsdShadeTokens()
         cls("Tokens", boost::python::no_init);
     _AddToken(cls, "allPurpose", UsdShadeTokens->allPurpose);
     _AddToken(cls, "bindMaterialAs", UsdShadeTokens->bindMaterialAs);
-    _AddToken(cls, "connectedSourceFor", UsdShadeTokens->connectedSourceFor);
     _AddToken(cls, "coordSys", UsdShadeTokens->coordSys);
-    _AddToken(cls, "derivesFrom", UsdShadeTokens->derivesFrom);
     _AddToken(cls, "displacement", UsdShadeTokens->displacement);
     _AddToken(cls, "fallbackStrength", UsdShadeTokens->fallbackStrength);
     _AddToken(cls, "full", UsdShadeTokens->full);
@@ -76,9 +74,7 @@ void wrapUsdShadeTokens()
     _AddToken(cls, "infoId", UsdShadeTokens->infoId);
     _AddToken(cls, "infoImplementationSource", UsdShadeTokens->infoImplementationSource);
     _AddToken(cls, "inputs", UsdShadeTokens->inputs);
-    _AddToken(cls, "interface_", UsdShadeTokens->interface_);
     _AddToken(cls, "interfaceOnly", UsdShadeTokens->interfaceOnly);
-    _AddToken(cls, "interfaceRecipientsOf", UsdShadeTokens->interfaceRecipientsOf);
     _AddToken(cls, "materialBind", UsdShadeTokens->materialBind);
     _AddToken(cls, "materialBinding", UsdShadeTokens->materialBinding);
     _AddToken(cls, "materialBindingCollection", UsdShadeTokens->materialBindingCollection);

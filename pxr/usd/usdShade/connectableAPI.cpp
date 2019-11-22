@@ -114,8 +114,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-#include "pxr/base/tf/envSetting.h"
-
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/pcp/primIndex.h"
@@ -129,30 +127,11 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_ENV_SETTING(
-    USD_SHADE_BACK_COMPAT, true,
-    "Set to false to terminate support for older encodings of the UsdShading "
-    "model.");
-
-TF_DEFINE_ENV_SETTING(
-    USD_SHADE_ENABLE_BIDIRECTIONAL_INTERFACE_CONNECTIONS, false,
-    "Enables authoring of connections to interface attributes from shader "
-    "inputs (or parameters). This allows multiple connections to the same "
-    "interface attribute when authoring shading networks with the old "
-    "encoding.");
-
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (outputName)
     (outputs)
 );
-
-/* static */
-bool 
-UsdShadeConnectableAPI::AreBidirectionalInterfaceConnectionsEnabled()
-{
-    return TfGetEnvSetting(USD_SHADE_ENABLE_BIDIRECTIONAL_INTERFACE_CONNECTIONS);
-}
 
 bool 
 UsdShadeConnectableAPI::IsShader() const
@@ -285,66 +264,12 @@ UsdShadeConnectableAPI::CanConnect(
     return _CanConnectInputToSource(input, source, &reason);
 }
 
-static TfToken 
-_GetConnectionRelName(const TfToken &attrName)
-{
-    return TfToken(UsdShadeTokens->connectedSourceFor.GetString() + 
-                   attrName.GetString());
-}
-
-static
-UsdRelationship 
-_GetConnectionRel(
-    const UsdProperty &shadingProp, 
-    bool create)
-{
-    // If it's already a relationship, simply return it as-is.
-    if (UsdRelationship rel = shadingProp.As<UsdRelationship>())
-        return rel;
-
-    const UsdPrim& prim = shadingProp.GetPrim();
-
-    // If it's an attribute, return the associated connectedSourceFor 
-    // relationship.
-    UsdAttribute shadingAttr = shadingProp.As<UsdAttribute>();
-    if (shadingAttr) {    
-        const TfToken& relName = _GetConnectionRelName(shadingAttr.GetName());
-        if (UsdRelationship rel = prim.GetRelationship(relName)) {
-            return rel;
-        }
-        else if (create) {
-            return prim.CreateRelationship(relName, /* custom = */ false);
-        }
-    }
-    
-    return UsdRelationship();
-}
-
-// Creates an old-style interfaceRecipientsOf relationship for an interface 
-// attribute. Exists temporarily for backwards compatibility.
-static UsdRelationship
-_GetInterfaceAttributeRel(const UsdAttribute &interfaceAttr,
-                          const TfToken &renderTarget)
-{
-    std::string relPrefix = renderTarget.IsEmpty() ? 
-            UsdShadeTokens->interfaceRecipientsOf :
-            TfStringPrintf("%s:%s", renderTarget.GetText(),
-                UsdShadeTokens->interfaceRecipientsOf.GetText());
-    std::string baseName = UsdShadeUtils::GetBaseNameAndType(
-            interfaceAttr.GetName()).first.GetString();
-
-    TfToken relName(relPrefix + baseName);
-    return interfaceAttr.GetPrim().CreateRelationship(relName, 
-        /*custom */ false);
-}
-
 /* static */
 bool  
-UsdShadeConnectableAPI::_ConnectToSource(
+UsdShadeConnectableAPI::ConnectToSource(
     UsdProperty const &shadingProp,
     UsdShadeConnectableAPI const &source, 
     TfToken const &sourceName,
-    TfToken const &renderTarget,
     UsdShadeAttributeType const sourceType,
     SdfValueTypeName typeName)
 {
@@ -374,22 +299,6 @@ UsdShadeConnectableAPI::_ConnectToSource(
             }
         }
 
-        if (!UsdShadeUtils::WriteNewEncoding() &&
-            sourceType == UsdShadeAttributeType::InterfaceAttribute) 
-        {
-            // Author "interfaceRecipientsOf" pointing in the reverse direction
-            // if we're authoring the old-style encoding.
-            if (UsdRelationship rel = _GetInterfaceAttributeRel(sourceAttr,
-                                                                renderTarget)) {
-                SdfPathVector targets{shadingProp.GetPath()};
-                success = rel.SetTargets(targets);
-            }
-
-            if (!AreBidirectionalInterfaceConnectionsEnabled()) {
-                return success;
-            }
-        }
-
         // If a typeName isn't specified, 
         if (!typeName) {
             // If shadingProp is not an attribute, it must be a terminal output 
@@ -405,34 +314,14 @@ UsdShadeConnectableAPI::_ConnectToSource(
                 /* custom = */ false);
         }
 
-        // If writing of new encoding is disabled or if the shadingProp
-        // is a relationship (i.e. old-style terminal output), then author the
-        // connection as a relationship.
-        if (!UsdShadeUtils::WriteNewEncoding() ||
-            shadingProp.Is<UsdRelationship>()) 
-        {
-            UsdRelationship rel = _GetConnectionRel(shadingProp, /* create */ true);
-            if (!rel) {
-                TF_CODING_ERROR("Failed connecting shading property <%s>. "
-                                "Unable to make the connection to source <%s>.", 
-                                shadingProp.GetPath().GetText(),
-                                sourcePrim.GetPath().GetText());
-                return false;
-            }
-
-            SdfPathVector  target{sourceAttr.GetPath()};
-            success = rel.SetTargets(target);
-
-        } else {
-            UsdAttribute shadingAttr = shadingProp.As<UsdAttribute>();
-            if (!shadingAttr) {
-                TF_CODING_ERROR("Attempted to author a connection on an invalid"
-                    "shading property <%s>.", UsdDescribe(shadingAttr).c_str());
-                return false;
-            }
-            success = shadingAttr.SetConnections(
-                SdfPathVector{sourceAttr.GetPath()});
+        UsdAttribute shadingAttr = shadingProp.As<UsdAttribute>();
+        if (!shadingAttr) {
+            TF_CODING_ERROR("Attempted to author a connection on an invalid"
+                "shading property <%s>.", UsdDescribe(shadingAttr).c_str());
+            return false;
         }
+        success = shadingAttr.SetConnections(
+            SdfPathVector{sourceAttr.GetPath()});
 
             
         
@@ -447,20 +336,6 @@ UsdShadeConnectableAPI::_ConnectToSource(
 
 
     return success;
-}
-
-/* static */
-bool  
-UsdShadeConnectableAPI::ConnectToSource(
-    UsdProperty const &shadingProp,
-    UsdShadeConnectableAPI const &source, 
-    TfToken const &sourceName, 
-    UsdShadeAttributeType const sourceType,
-    SdfValueTypeName typeName)
-{
-    return UsdShadeConnectableAPI::_ConnectToSource(shadingProp, source, 
-        sourceName, /* renderTarget */ TfToken(), 
-        sourceType, typeName);
 }
 
 /* static */
@@ -496,18 +371,7 @@ UsdShadeConnectableAPI::ConnectToSource(
 bool 
 UsdShadeConnectableAPI::ConnectToSource(
     UsdProperty const &shadingProp, 
-    UsdShadeInput const &sourceInput) 
-{
-    return UsdShadeConnectableAPI::_ConnectToSource(shadingProp, sourceInput, 
-        /* renderTarget */ TfToken());
-}
-
-/* static */
-bool 
-UsdShadeConnectableAPI::_ConnectToSource(
-    UsdProperty const &shadingProp, 
-    UsdShadeInput const &sourceInput,
-    TfToken const &renderTarget)
+    UsdShadeInput const &sourceInput)
 {
     // An interface attribute may be wrapped in the UsdShadeInput, hence get the 
     // 
@@ -516,10 +380,10 @@ UsdShadeConnectableAPI::_ConnectToSource(
     std::tie(sourceName, sourceType) = UsdShadeUtils::GetBaseNameAndType(
         sourceInput.GetFullName());
 
-    return _ConnectToSource(
+    return ConnectToSource(
         shadingProp, 
         UsdShadeConnectableAPI(sourceInput.GetPrim()),
-        sourceName, renderTarget,
+        sourceName,
         sourceType, 
         sourceInput.GetTypeName());
 }
@@ -566,23 +430,6 @@ UsdShadeConnectableAPI::GetConnectedSource(
         shadingAttr.GetConnections(&sources);
     }
 
-    // Check the old encoding only when we haven't already found a source 
-    // authored via UsdAttribute connections.
-    if (UsdShadeUtils::ReadOldEncoding() && sources.empty()) {
-        UsdRelationship connection = _GetConnectionRel(shadingProp, false);
-        // There should be no possibility of forwarding here, unless the given 
-        // shading property is a terminal output (or relationship).
-        if (connection) {
-            bool shadingPropIsTerminal = shadingProp.Is<UsdRelationship>();
-            shadingPropIsTerminal ? connection.GetForwardedTargets(&sources)
-                : connection.GetTargets(&sources);
-
-            if (TfGetEnvSetting(USD_SHADE_BACK_COMPAT)) {
-                connection.GetMetadata(_tokens->outputName, sourceName);
-            }
-        }
-    }
-
     // XXX(validation)  sources.size() <= 1, also sourceName,
     //                  target Material == source Material ?
     if (sources.size() == 1) {
@@ -596,13 +443,6 @@ UsdShadeConnectableAPI::GetConnectedSource(
             std::tie(*sourceName, *sourceType) = 
                 UsdShadeUtils::GetBaseNameAndType(attrName);
             return target.Is<UsdAttribute>();
-        } else {
-            // If this is a terminal-style output, then allow connection 
-            // to a prim.
-            if (UsdShadeUtils::ReadOldEncoding() && 
-                shadingProp.Is<UsdRelationship>()) {
-                return static_cast<bool>(*source);
-            }
         }
     }
 
@@ -623,21 +463,6 @@ UsdShadeConnectableAPI::GetRawConnectedSourcePaths(
         }
     }
     
-    // If we already have a sourcePath authored as an attribute connection,
-    // return it.
-    if (sourcePaths->empty() && UsdShadeUtils::ReadOldEncoding()) {
-        const UsdRelationship rel = _GetConnectionRel(shadingProp, /* create */ false);
-        if (!rel) {
-            return false;
-        }
-
-        if (!rel.GetTargets(sourcePaths)) {
-            TF_WARN("Unable to get targets for relationship <%s>",
-                    rel.GetPath().GetText());
-            return false;
-        }
-    }
-
     return true;
 }
 
@@ -724,91 +549,33 @@ UsdShadeConnectableAPI::IsSourceConnectionFromBaseMaterial(
                 }
             }
         }
-        
-        
-    }
-
-    if (!UsdShadeUtils::ReadOldEncoding()) {
-        return false;
-    }
-
-    // Check the old encoding.
-    UsdRelationship rel = _GetConnectionRel(shadingProp, /*create*/ false);
-    if (!rel) {
-        return false;
-    }
-
-    // USD core doesn't provide a UsdResolveInfo style API for asking where
-    // relationship targets are authored, so we do it here ourselves.
-    // Find the strongest opinion about the relationship targets.
-    SdfRelationshipSpecHandle strongestRelSpec;
-    SdfPropertySpecHandleVector propStack = rel.GetPropertyStack();
-    for (const SdfPropertySpecHandle &prop: propStack) {
-        if (SdfRelationshipSpecHandle relSpec =
-            TfDynamic_cast<SdfRelationshipSpecHandle>(prop)) {
-            if (relSpec->HasTargetPathList()) {
-                strongestRelSpec = relSpec;
-                break;
-            }
-        }
-    }
-    // Find which prim node introduced that opinion.
-    if (strongestRelSpec) {
-        for(const PcpNodeRef &node:
-            rel.GetPrim().GetPrimIndex().GetNodeRange()) {
-            if (node.GetPath() == strongestRelSpec->GetPath().GetPrimPath() &&
-                node.GetLayerStack()->HasLayer(strongestRelSpec->GetLayer())) {
-                return _NodeRepresentsLiveBaseMaterial(node);
-            }
-        }
     }
 
     return false;
-
 }
 
 /* static */
 bool 
 UsdShadeConnectableAPI::DisconnectSource(UsdProperty const &shadingProp)
 {
-    bool success = true;
-    if (UsdShadeUtils::WriteNewEncoding()) {
-        if (UsdAttribute shadingAttr = shadingProp.As<UsdAttribute>()) {
-            success = shadingAttr.BlockConnections();
-        }
+    UsdAttribute shadingAttr = shadingProp.As<UsdAttribute>();
+    if (!shadingAttr) {
+         return true;
     }
 
-    // Don't bother looking for and blocking rel targets, if reading of old 
-    // encoding is disabled.
-    if (UsdShadeUtils::ReadOldEncoding()) {
-        if (UsdRelationship rel = _GetConnectionRel(shadingProp, false)) {
-            success = rel.BlockTargets();
-        }
-    }
-
-    return success;
+    return shadingAttr.BlockConnections();
 }
 
 /* static */
 bool 
 UsdShadeConnectableAPI::ClearSource(UsdProperty const &shadingProp)
 {
-    bool success = true;
-    if (UsdShadeUtils::WriteNewEncoding()) {
-        if (UsdAttribute shadingAttr = shadingProp.As<UsdAttribute>()) {
-            success = shadingAttr.ClearConnections();
-        }
+    UsdAttribute shadingAttr = shadingProp.As<UsdAttribute>();
+    if (!shadingAttr) {
+        return true;
     }
 
-    // Don't bother looking for and clearing rel targets, if reading of old 
-    // encoding is disabled.
-    if (UsdShadeUtils::ReadOldEncoding()) {
-        if (UsdRelationship rel = _GetConnectionRel(shadingProp, false)) {
-            success = rel.ClearTargets(/* removeSpec = */ true);
-        }
-    }
-
-    return success;
+    return shadingAttr.ClearConnections();
 }
 
 UsdShadeOutput 
@@ -827,14 +594,6 @@ UsdShadeConnectableAPI::GetOutput(const TfToken &name) const
         return UsdShadeOutput(GetPrim().GetAttribute(outputAttrName));
     } 
  
-    if (UsdShadeUtils::ReadOldEncoding()) {
-        if (IsNodeGraph()) {
-            if (GetPrim().HasRelationship(name)) {
-                return UsdShadeOutput(GetPrim().GetRelationship(name));
-            }
-        }
-    }
-
     return UsdShadeOutput();
 }
 
@@ -851,26 +610,6 @@ UsdShadeConnectableAPI::GetOutputs() const
         if (TfStringStartsWith(attr.GetName().GetString(), 
                                UsdShadeTokens->outputs)) {
             ret.push_back(UsdShadeOutput(attr));
-        }
-    }
-
-    if (UsdShadeUtils::ReadOldEncoding() && IsNodeGraph()) {
-        std::vector<UsdRelationship> rels= GetPrim().GetRelationships();
-        TF_FOR_ALL(relIter, rels) { 
-            const UsdRelationship& rel= *relIter;
-            // Excluded the "connectedSourceFor:" and "interfaceRecipientsOf:" 
-            // relationships.
-            if (!TfStringStartsWith(rel.GetName(), 
-                                    UsdShadeTokens->connectedSourceFor) &&
-                !TfStringStartsWith(rel.GetName(), 
-                                    UsdShadeTokens->interfaceRecipientsOf)) 
-            {
-                // All non-connection related relationships on node-graphs
-                // typically represent terminal outputs, so wrap the 
-                // relationship in a UsdShadeOutput object and add to the 
-                // resuls.
-                ret.push_back(UsdShadeOutput(rel));
-            }
         }
     }
 
@@ -894,22 +633,6 @@ UsdShadeConnectableAPI::GetInput(const TfToken &name) const
         return UsdShadeInput(GetPrim().GetAttribute(inputAttrName));
     }
 
-    if (UsdShadeUtils::ReadOldEncoding()) {
-        if (IsNodeGraph()) {
-            TfToken interfaceAttrName = TfToken(
-                UsdShadeTokens->interface_.GetString() + name.GetString());
-            if (GetPrim().HasAttribute(interfaceAttrName)) {
-                return UsdShadeInput(GetPrim().GetAttribute(interfaceAttrName));
-            }
-        }
-
-        if (IsShader()) {
-            if (GetPrim().HasAttribute(name)) {
-                return UsdShadeInput(GetPrim().GetAttribute(name));
-            }
-        }
-    }
-
     return UsdShadeInput();
 }
 
@@ -927,24 +650,6 @@ UsdShadeConnectableAPI::GetInputs() const
                                UsdShadeTokens->inputs)) {
             ret.push_back(UsdShadeInput(attr));
             continue;
-        }
-
-        // Support for old style encoding containing interface attributes 
-        // and parameters.
-        if (UsdShadeUtils::ReadOldEncoding()) {
-            if (IsNodeGraph() && 
-                (TfStringStartsWith(attr.GetName().GetString(), 
-                                  UsdShadeTokens->interface_))) {
-                // If it's an interface attribute on a node-graph, wrap it in a 
-                // UsdShadeInput object and add it to the list of inputs.
-                ret.push_back(UsdShadeInput(attr));
-            } else if (attr.GetNamespace().IsEmpty()) {
-                // Assume that the attribute belongs to a shader.
-                // If it's an unnamespaced (parameter) attribute on a shader, 
-                // wrap it in a UsdShadeInput object and add it to the list of 
-                // inputs.
-                ret.push_back(UsdShadeInput(attr));
-            }
         }
     }
 

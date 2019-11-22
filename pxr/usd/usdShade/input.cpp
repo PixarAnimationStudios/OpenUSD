@@ -38,8 +38,6 @@
 #include <stdlib.h>
 #include <algorithm>
 
-#include "pxr/base/tf/envSetting.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -63,10 +61,6 @@ UsdShadeInput::GetBaseName() const
     string name = GetFullName();
     if (TfStringStartsWith(name, UsdShadeTokens->inputs)) {
         return TfToken(name.substr(UsdShadeTokens->inputs.GetString().size()));
-    } else if (UsdShadeUtils::ReadOldEncoding() && 
-               TfStringStartsWith(name, UsdShadeTokens->interface_)) {
-        return TfToken(name.substr(
-            UsdShadeTokens->interface_.GetString().size()));
     }
     
     return GetFullName();
@@ -95,38 +89,9 @@ UsdShadeInput::UsdShadeInput(
         _attr = prim.GetAttribute(inputAttrName);
     }
 
-    if (UsdShadeUtils::ReadOldEncoding()) {
-        if (prim.HasAttribute(name)) {
-            _attr = prim.GetAttribute(name);
-        }
-        else {
-            TfToken interfaceAttrName(UsdShadeTokens->interface_.GetString() + 
-                                      name.GetString());
-            if (prim.HasAttribute(interfaceAttrName)) {
-                _attr = prim.GetAttribute(interfaceAttrName);
-            }
-        }
-    }
-
     if (!_attr) {
-        if (UsdShadeUtils::WriteNewEncoding()) {
-            _attr = prim.CreateAttribute(inputAttrName, typeName, 
-                /* custom = */ false);
-        } else {
-            UsdShadeConnectableAPI connectable(prim);
-            // If this is a node-graph and the name already contains "interface:" 
-            // namespace in it, just create the attribute with the requested 
-            // name.
-            if (connectable.IsNodeGraph()) { 
-                TfToken attrName = TfStringStartsWith(name.GetString(),
-                    UsdShadeTokens->interface_) ? name : 
-                    TfToken(UsdShadeTokens->interface_.GetString() + name.GetString());
-                _attr = prim.CreateAttribute(attrName, typeName, /*custom*/ false);
-            } else {
-                // fallback to creating an old style UsdShadeParameter.
-                _attr = prim.CreateAttribute(name, typeName, /*custom*/ false);
-            }
-        }
+        _attr = prim.CreateAttribute(inputAttrName, typeName, 
+            /* custom = */ false);
     }
 }
 
@@ -235,15 +200,8 @@ bool
 UsdShadeInput::IsInput(const UsdAttribute &attr)
 {
     return attr && attr.IsDefined() && 
-            // If reading of old encoding is supported, then assume it's      
-            // an input as long as it's not in the "outputs:" namespace.
-            // If support for reading the old encoding is disabled, then only
-            // identify as an input if the attr is in the "inputs:" namespace.
-            (UsdShadeUtils::ReadOldEncoding() ? 
-             !TfStringStartsWith(attr.GetName().GetString(), 
-                                UsdShadeTokens->outputs) :
              TfStringStartsWith(attr.GetName().GetString(), 
-                                UsdShadeTokens->inputs));
+                                UsdShadeTokens->inputs);
 }
 
 /* static */
@@ -251,11 +209,6 @@ bool
 UsdShadeInput::IsInterfaceInputName(const std::string & name)
 {
     if (TfStringStartsWith(name, UsdShadeTokens->inputs)) {
-        return true;
-    }
-
-    if (UsdShadeUtils::ReadOldEncoding() &&
-        TfStringStartsWith(name, UsdShadeTokens->interface_)) {
         return true;
     }
 

@@ -254,11 +254,6 @@ UsdRiMaterialAPI::_GetBxdfOutput(const UsdPrim &materialPrim) const
     if (const UsdAttribute bxdfAttr = materialPrim.GetAttribute(
             _tokens->bxdfOutputAttrName)) {
         return UsdShadeOutput(bxdfAttr);
-    } else if (UsdShadeUtils::ReadOldEncoding()) {
-        if (const UsdRelationship rel = materialPrim.GetRelationship(
-                _tokens->riLookBxdf)) {
-            return UsdShadeOutput(rel);
-        }
     }
     return UsdShadeOutput();    
 }
@@ -347,94 +342,53 @@ UsdRiMaterialAPI::SetSurfaceSource(const SdfPath &surfacePath) const
     static const bool writeBxdfOutput = 
             TfGetEnvSetting(USD_RI_WRITE_BXDF_OUTPUT);
     if (writeBxdfOutput) {
-        if (UsdShadeUtils::WriteNewEncoding()) {
-            if (UsdShadeOutput bxdfOutput = UsdShadeMaterial(GetPrim())
-                    .CreateOutput(_tokens->bxdfOutputName, 
-                                  SdfValueTypeNames->Token)) {
-                const SdfPath sourcePath = surfacePath.IsPropertyPath() ? 
-                    surfacePath : 
-                    surfacePath.AppendProperty(_tokens->defaultOutputName);
-                return UsdShadeConnectableAPI::ConnectToSource(
-                    bxdfOutput, sourcePath);
-            }
-        } else if (UsdRelationship bxdfRel= GetPrim().CreateRelationship(
-                    _tokens->riLookBxdf, /*custom*/ false)) {
-            return bxdfRel.SetTargets(
-                    std::vector<SdfPath>{surfacePath.GetPrimPath()});
+        if (UsdShadeOutput bxdfOutput = UsdShadeMaterial(GetPrim())
+                .CreateOutput(_tokens->bxdfOutputName, 
+                              SdfValueTypeNames->Token)) {
+            const SdfPath sourcePath = surfacePath.IsPropertyPath() ? 
+                surfacePath : 
+                surfacePath.AppendProperty(_tokens->defaultOutputName);
+            return UsdShadeConnectableAPI::ConnectToSource(
+                bxdfOutput, sourcePath);
         }
         return false;
     }
 
-    if (UsdShadeUtils::WriteNewEncoding()) {
-        UsdShadeOutput surfaceOutput = UsdShadeMaterial(GetPrim())
-                .CreateSurfaceOutput(/*purpose*/ _tokens->ri);
-        return UsdShadeConnectableAPI::ConnectToSource(
-            surfaceOutput, surfacePath.IsPropertyPath() ? surfacePath :
-                surfacePath.AppendProperty(_tokens->defaultOutputName));
-    } else if (UsdRelationship surfaceRel = GetPrim().CreateRelationship(
-                    _tokens->riLookSurface, /*custom*/ false)) {
-        return surfaceRel.SetTargets(std::vector<SdfPath>{surfacePath});
-    }
-
-    
-    return false;
+    UsdShadeOutput surfaceOutput = UsdShadeMaterial(GetPrim())
+            .CreateSurfaceOutput(/*purpose*/ _tokens->ri);
+    return UsdShadeConnectableAPI::ConnectToSource(
+        surfaceOutput, surfacePath.IsPropertyPath() ? surfacePath :
+            surfacePath.AppendProperty(_tokens->defaultOutputName));
 }
 
 bool
 UsdRiMaterialAPI::SetDisplacementSource(const SdfPath &displacementPath) const
 {
-    if (UsdShadeUtils::WriteNewEncoding()) {
-        UsdShadeOutput displacementOutput = UsdShadeMaterial(GetPrim())
-                .CreateDisplacementOutput(/*purpose*/ _tokens->ri);
-        return UsdShadeConnectableAPI::ConnectToSource(
-            displacementOutput, displacementPath.IsPropertyPath() ? 
-                displacementPath :
-                displacementPath.AppendProperty(_tokens->defaultOutputName));
-    } else if (UsdRelationship displacementRel = GetPrim().CreateRelationship(
-                    _tokens->riLookDisplacement, /*custom*/ false)) {
-        return displacementRel.SetTargets(
-            std::vector<SdfPath>{displacementPath});
-    }
-    return false;
+    UsdShadeOutput displacementOutput = UsdShadeMaterial(GetPrim())
+            .CreateDisplacementOutput(/*purpose*/ _tokens->ri);
+    return UsdShadeConnectableAPI::ConnectToSource(
+        displacementOutput, displacementPath.IsPropertyPath() ? 
+            displacementPath :
+            displacementPath.AppendProperty(_tokens->defaultOutputName));
 }
 
 bool
 UsdRiMaterialAPI::SetVolumeSource(const SdfPath &volumePath) const
 {
-    if (UsdShadeUtils::WriteNewEncoding()) {
-        UsdShadeOutput volumeOutput = UsdShadeMaterial(GetPrim())
-                .CreateVolumeOutput(/*purpose*/ _tokens->ri);
-        return UsdShadeConnectableAPI::ConnectToSource(
-            volumeOutput, volumePath.IsPropertyPath() ? 
-                volumePath :
-                volumePath.AppendProperty(_tokens->defaultOutputName));
-    } else if (UsdRelationship volumeRel = GetPrim().CreateRelationship(
-                    _tokens->riLookVolume, /*custom*/ false)) {
-        return volumeRel.SetTargets(std::vector<SdfPath>{volumePath});
-    }
-    return false;
-}
-
-bool 
-UsdRiMaterialAPI::SetInterfaceInputConsumer(UsdShadeInput &interfaceInput, 
-                                            const UsdShadeInput &consumer) const
-{
-    return UsdShadeConnectableAPI::_ConnectToSource(consumer, 
-        interfaceInput, _tokens->ri);
+    UsdShadeOutput volumeOutput = UsdShadeMaterial(GetPrim())
+            .CreateVolumeOutput(/*purpose*/ _tokens->ri);
+    return UsdShadeConnectableAPI::ConnectToSource(
+        volumeOutput, volumePath.IsPropertyPath() ? 
+            volumePath :
+            volumePath.AppendProperty(_tokens->defaultOutputName));
 }
 
 UsdShadeNodeGraph::InterfaceInputConsumersMap
 UsdRiMaterialAPI::ComputeInterfaceInputConsumersMap(
         bool computeTransitiveConsumers) const
 {
-    return UsdShadeNodeGraph(GetPrim())._ComputeInterfaceInputConsumersMap(
-        computeTransitiveConsumers, _tokens->ri);
-}
-
-std::vector<UsdShadeInput> 
-UsdRiMaterialAPI::GetInterfaceInputs() const
-{
-    return UsdShadeMaterial(GetPrim())._GetInterfaceInputs(_tokens->ri);
+    return UsdShadeNodeGraph(GetPrim()).ComputeInterfaceInputConsumersMap(
+        computeTransitiveConsumers);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

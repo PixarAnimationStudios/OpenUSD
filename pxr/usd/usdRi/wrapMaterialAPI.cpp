@@ -168,13 +168,10 @@ WRAP_CUSTOM {
         .def("SetDisplacementSource", &This::SetDisplacementSource)
         .def("SetVolumeSource", &This::SetVolumeSource)
  
-        .def("SetInterfaceInputConsumer", &This::SetInterfaceInputConsumer)
         .def("ComputeInterfaceInputConsumersMap", 
             &This::ComputeInterfaceInputConsumersMap, 
             (arg("computeTransitiveConsumers")=false),
             return_value_policy<TfPyMapToDictionary>())
-        .def("GetInterfaceInputs", &This::GetInterfaceInputs,
-             return_value_policy<TfPySequenceToList>())
     ;
 }
 

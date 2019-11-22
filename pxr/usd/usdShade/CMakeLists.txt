@@ -186,14 +186,6 @@ pxr_register_test(testUsdShadeMaterialSpecializesBaseComposition
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_register_test(testUsdShadeInterfaceInputConsumers_OldEncoding
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeInterfaceInputConsumers"
-    EXPECTED_RETURN_CODE 0
-    ENV
-        USD_SHADE_ENABLE_BIDIRECTIONAL_INTERFACE_CONNECTIONS=1
-)
-
 pxr_register_test(testUsdShadeInterfaceInputConsumers
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeInterfaceInputConsumers"
@@ -204,8 +196,6 @@ pxr_register_test(testUsdShadeConnectability
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeConnectability"
     EXPECTED_RETURN_CODE 0
-    ENV
-        USD_SHADE_READ_OLD_ENCODING=0
 )
 
 pxr_register_test(testUsdShadeConnectability_OldEncoding

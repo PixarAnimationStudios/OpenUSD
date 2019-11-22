@@ -198,7 +198,7 @@ class TestUsdShadeNodeGraphs(unittest.TestCase):
         self._TestInputs(stage)
 
     def test_StaticMethods(self):
-        self.assertTrue(UsdShade.Input.IsInterfaceInputName('interface:bla'))
+        self.assertFalse(UsdShade.Input.IsInterfaceInputName('interface:bla'))
         self.assertTrue(UsdShade.Input.IsInterfaceInputName('inputs:bla'))
         self.assertTrue(UsdShade.Input.IsInterfaceInputName('inputs:other:bla'))
         self.assertFalse(UsdShade.Input.IsInterfaceInputName('notinput:bla'))

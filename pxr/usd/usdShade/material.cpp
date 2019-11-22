@@ -203,8 +203,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/variantSets.h"
 
-#include "pxr/base/tf/envSetting.h"
-
 #include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/materialBindingAPI.h"
 #include "pxr/usd/usdShade/tokens.h"
@@ -217,9 +215,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (material)
 );
 
-TF_DEFINE_ENV_SETTING(
-    USD_HONOR_LEGACY_BASE_MATERIAL, true,
-    "If on, read base material as derivesFrom relationship when available.");
 
 std::pair<UsdStagePtr, UsdEditTarget >
 UsdShadeMaterial::GetEditContextForVariant(const TfToken &materialVariation,
@@ -404,19 +399,6 @@ UsdShadeMaterial::GetBaseMaterial() const
 SdfPath
 UsdShadeMaterial::GetBaseMaterialPath() const 
 {
-    // first look for deriveFrom relationship
-    if (TfGetEnvSetting(USD_HONOR_LEGACY_BASE_MATERIAL)) {
-        UsdRelationship baseRel = GetPrim().GetRelationship(
-                UsdShadeTokens->derivesFrom);
-        if (baseRel.IsValid()) {
-            SdfPathVector targets;
-            baseRel.GetTargets(&targets);
-            if (targets.size() == 1) {
-                return targets[0];
-            }
-        }
-    }
-
     SdfPath parentMaterialPath = FindBaseMaterialPathInPrimIndex(
         GetPrim().GetPrimIndex(), [=](const SdfPath &p) {
             return bool(_GetMaterialAtPath(GetPrim(), p));

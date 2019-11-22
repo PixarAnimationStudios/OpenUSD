@@ -26,23 +26,11 @@
 #include "pxr/usd/usdShade/tokens.h"
 #include "pxr/usd/sdf/path.h"
 
-#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-TF_DEFINE_ENV_SETTING(
-    USD_SHADE_READ_OLD_ENCODING, true,
-    "Set to false to disable support for reading old-style of encoding with "
-    "parameters, interface attributes and terminals.");
-
-TF_DEFINE_ENV_SETTING(
-    USD_SHADE_WRITE_NEW_ENCODING, true,
-    "Set to true to enable the authoring of shading networks using the new "
-    "encoding (with inputs and outputs, in place of parameters, interface "
-    "attributes and terminals.");
 
 using std::vector;
 using std::string;
@@ -56,10 +44,6 @@ UsdShadeUtils::GetPrefixForAttributeType(UsdShadeAttributeType sourceType)
             return UsdShadeTokens->inputs.GetString();
         case UsdShadeAttributeType::Output:
             return UsdShadeTokens->outputs.GetString();
-        case UsdShadeAttributeType::Parameter: 
-            return string();
-        case UsdShadeAttributeType::InterfaceAttribute:
-            return UsdShadeTokens->interface_.GetString();
         default:
             return string();
     }
@@ -80,13 +64,7 @@ UsdShadeUtils::GetBaseNameAndType(const TfToken &fullName)
         return std::make_pair(TfToken(res.first),UsdShadeAttributeType::Output);
     }
 
-    res = SdfPath::StripPrefixNamespace(fullName, UsdShadeTokens->interface_);
-    if (res.second) {
-        return std::make_pair(TfToken(res.first), 
-                              UsdShadeAttributeType::InterfaceAttribute);
-    }
-
-    return std::make_pair(fullName, UsdShadeAttributeType::Parameter);
+    return std::make_pair(fullName, UsdShadeAttributeType::Invalid);
 }
 
 /* static */
@@ -96,24 +74,6 @@ UsdShadeUtils::GetFullName(const TfToken &baseName,
 {
     return TfToken(UsdShadeUtils::GetPrefixForAttributeType(type) + 
                    baseName.GetString());
-}
-
-/* static */
-bool 
-UsdShadeUtils::ReadOldEncoding()
-{
-    static const bool readOldEncoding = 
-        TfGetEnvSetting(USD_SHADE_READ_OLD_ENCODING);
-    return readOldEncoding;
-}
-
-/* static */
-bool 
-UsdShadeUtils::WriteNewEncoding()
-{       
-    static const bool writeNewEncoding = 
-        TfGetEnvSetting(USD_SHADE_WRITE_NEW_ENCODING);
-    return writeNewEncoding;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
