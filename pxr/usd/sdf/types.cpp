@@ -115,7 +115,6 @@ TF_REGISTRY_FUNCTION(TfEnum)
     // SdfVariability
     TF_ADD_ENUM_NAME(SdfVariabilityVarying, "Varying");
     TF_ADD_ENUM_NAME(SdfVariabilityUniform, "Uniform");
-    TF_ADD_ENUM_NAME(SdfVariabilityConfig, "Config");
 }
 
 // Register all units with the TfEnum registry.

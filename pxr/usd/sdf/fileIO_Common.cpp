@@ -818,8 +818,6 @@ const char* Sdf_FileIOUtility::Stringify( SdfVariability val )
         return "";
     case SdfVariabilityUniform:
         return "uniform";
-    case SdfVariabilityConfig:
-        return "config";
     default:
         TF_CODING_ERROR("unknown value");
         return "";

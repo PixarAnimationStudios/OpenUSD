@@ -300,14 +300,6 @@ UsdAttribute::_CreateSpec(const SdfValueTypeName& typeName, bool custom,
 {
     UsdStage *stage = _GetStage();
     
-    if (variability != SdfVariabilityVarying && 
-        variability != SdfVariabilityUniform){
-        TF_CODING_ERROR("UsdAttributes can only possess variability "
-                        "varying or uniform.  Cannot create attribute %s.%s",
-                        GetPrimPath().GetText(), _PropName().GetText());
-        return TfNullPtr;
-    }
-    
     // Try to create a spec for editing either from the definition or from
     // copying existing spec info.
     TfErrorMark m;

@@ -173,16 +173,12 @@ enum SdfPermission {
 ///            only with non-animated values (default values).  They cannot 
 ///            be affected by Actions, but they can be connected to other 
 ///            Uniform attributes.
-///     <li><b>SdfVariabilityConfig.</b> Config attributes are the same as 
-///            Uniform except that a Prim can choose to alter its collection 
-///            of built-in properties based on the values of its Config attributes.
 ///     <li><b>SdNumVariabilities.</b> Internal sentinel value.
 /// </ul>
 ///
 enum SdfVariability {
     SdfVariabilityVarying,
     SdfVariabilityUniform,
-    SdfVariabilityConfig,
 
     SdfNumVariabilities 
 };

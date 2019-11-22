@@ -518,16 +518,6 @@ TestVariability()
                                                    /* custom = */ true,
                                                    SdfVariabilityUniform);
     TF_VERIFY(uniformAttr.GetVariability() == SdfVariabilityUniform);
-    
-    
-    {
-        // Config variability is illegal in Usd
-        ExpectedError  err;
-        TF_VERIFY(!foo.CreateAttribute(TfToken("configAttr"), 
-                                          SdfValueTypeNames->Token,
-                                          true, SdfVariabilityConfig));
-    }
-
 }
 
 int main()
