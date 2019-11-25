@@ -116,6 +116,7 @@ pxr_test_scripts(
     testenv/testUsdGeomConsts.py
     testenv/testUsdGeomCurves.py
     testenv/testUsdGeomExtentTransform.py
+    testenv/testUsdGeomImageable.py
     testenv/testUsdGeomMesh.py
     testenv/testUsdGeomMetrics.py
     testenv/testUsdGeomMotionAPI.py
@@ -200,6 +201,10 @@ pxr_install_test_dir(
     SRC testenv/testUsdGeomComputeAtTime
     DEST testUsdGeomComputeAtTime
 )
+
+pxr_install_test_dir(
+    SRC testenv/testUsdGeomImageable
+    DEST testUsdGeomImageable)
 
 pxr_register_test(testUsdGeomBasisCurves
     PYTHON
@@ -329,3 +334,10 @@ pxr_register_test(testUsdGeomComputeAtTime
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomComputeAtTime"
     EXPECTED_RETURN_CODE 0
 )
+
+pxr_register_test(testUsdGeomImageable
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomImageable"
+    EXPECTED_RETURN_CODE 0
+)
+

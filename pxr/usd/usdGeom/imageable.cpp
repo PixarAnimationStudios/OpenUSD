@@ -329,8 +329,8 @@ _MakeVisible(const UsdPrim &prim, UsdTimeCode const &time,
         if (UsdGeomImageable imageableParent = UsdGeomImageable(parent)) {
 
             // Change visibility of parent to inherited if it is invisible.
-            if (*hasInvisibleAncestor ||
-                _SetInheritedIfInvisible(imageableParent, time))  {
+            if (_SetInheritedIfInvisible(imageableParent, time) ||
+                *hasInvisibleAncestor) {
 
                 *hasInvisibleAncestor = true;
 
