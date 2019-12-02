@@ -28,7 +28,7 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/setenv.h"
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
-#include "pxr/imaging/hdPrmanLoader/rendererPlugin.h"
+#include "pxr/imaging/plugin/hdPrmanLoader/rendererPlugin.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
