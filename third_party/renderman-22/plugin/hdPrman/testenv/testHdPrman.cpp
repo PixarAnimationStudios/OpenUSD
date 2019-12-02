@@ -131,6 +131,7 @@ PrintUsage(const char* cmd, const char *err=nullptr)
     fprintf(stderr, "Usage: %s INPUT.usd "
             "[--out OUTPUT] [--frame FRAME] [--freeCamProj CAM_PROJECTION] "
             "[--sceneCamPath CAM_PATH] [--settings RENDERSETTINGS_PATH] "
+            "[--sceneCamAspect aspectRatio] "
             "[--visualize STYLE] [--perf PERF] [--trace TRACE]\n"
             "OUTPUT defaults to UsdRenderSettings if not specified.\n"
             "FRAME defaults to 0 if not specified.\n"
@@ -204,6 +205,7 @@ int main(int argc, char *argv[])
     std::string cameraProjection("PxrPerspective");
     static const std::string PxrOrthographic("PxrOrthographic");
     SdfPath sceneCamPath, renderSettingsPath;
+    float sceneCamAspect = -1.0;
     std::string visualizerStyle;
 
     for (int i=2; i<argc-1; ++i) {
@@ -211,6 +213,8 @@ int main(int argc, char *argv[])
             frameNum = atoi(argv[++i]);
         } else if (std::string(argv[i]) == "--sceneCamPath") {
             sceneCamPath = SdfPath(argv[++i]);
+        } else if (std::string(argv[i]) == "--sceneCamAspect") {
+            sceneCamAspect = atof(argv[++i]);
         } else if (std::string(argv[i]) == "--freeCamProj") {
             cameraProjection = argv[++i];
             isOrthographic = cameraProjection == PxrOrthographic;
@@ -313,6 +317,10 @@ int main(int argc, char *argv[])
         // Command line overrides built-in paths.
         if (!sceneCamPath.IsEmpty()) {
             product.cameraPath = sceneCamPath;
+        }
+        if (sceneCamAspect > 0.0) {
+            product.resolution[1] = (int)(product.resolution[0]/sceneCamAspect);
+            product.apertureSize[1] = product.apertureSize[0]/sceneCamAspect;
         }
         VtDictionaryOver(&product.extraSettings, defaultSettings);
     }
