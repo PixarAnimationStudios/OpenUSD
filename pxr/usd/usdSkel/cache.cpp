@@ -139,11 +139,13 @@ UsdSkelCache::ComputeSkelBindings(const UsdSkelRoot& skelRoot,
 
     std::vector<UsdSkelSkeleton> skelStack(1);
     
-    auto range = UsdPrimRange::PreAndPostVisit(skelRoot.GetPrim());
+    // TODO: Consider traversing instance proxies at this point.
+    // But when doing so, must ensure that UsdSkelBakeSkinning, et.al.,
+    // take instancing into account.
+    const auto range = UsdPrimRange::PreAndPostVisit(skelRoot.GetPrim());
     for (auto it = range.begin(); it != range.end(); ++it) {
 
         if (ARCH_UNLIKELY(!it->IsA<UsdGeomImageable>())) {
-
             if (!it.IsPostVisit()) {
                 TF_DEBUG(USDSKEL_CACHE).Msg(
                     "[UsdSkelCache]  Pruning traversal at <%s> "
@@ -164,7 +166,7 @@ UsdSkelCache::ComputeSkelBindings(const UsdSkelRoot& skelRoot,
             continue;
         }
 
-        UsdSkelBindingAPI binding(*it);
+        const UsdSkelBindingAPI binding(*it);
 
         UsdSkelSkeleton skel;
         if (!binding.GetSkeleton(&skel)) {
@@ -177,8 +179,8 @@ UsdSkelCache::ComputeSkelBindings(const UsdSkelRoot& skelRoot,
                 skel.GetPrim().GetPath().GetText());
         }
 
-        if (skel) {
-            if (UsdSkelSkinningQuery query = GetSkinningQuery(*it)) {
+        if (skel && skel.GetPrim().IsActive()) {
+            if (const UsdSkelSkinningQuery query = GetSkinningQuery(*it)) {
                 TF_DEBUG(USDSKEL_CACHE).Msg(
                     "[UsdSkelCache]  Found skinnable prim <%s>, bound to "
                     "skel <%s>.\n", it->GetPath().GetText(),
@@ -224,27 +226,69 @@ UsdSkelCache::ComputeSkelBinding(const UsdSkelRoot& skelRoot,
     }
 
 
-    UsdSkelSkeleton boundSkel;
+    // Traverse over the prims beneath the skelRoot.
+    // While traversing, we maintain a stack of 'bound' skeletons,
+    // and map the last item on the stack to descendant prims.
+    // This is done to handle inherited skel:skeleton bindings.
 
+    std::vector<UsdSkelSkeleton> skelStack(1);
     VtArray<UsdSkelSkinningQuery> skinningQueries;
     
-    auto range = UsdPrimRange(skelRoot.GetPrim());
+    // TODO: Consider traversing instance proxies at this point.
+    // But when doing so, must ensure that UsdSkelBakeSkinning, et.al.,
+    // take instancing into account.
+    const auto range = UsdPrimRange::PreAndPostVisit(skelRoot.GetPrim());
     for (auto it = range.begin(); it != range.end(); ++it) {
+
         if (ARCH_UNLIKELY(!it->IsA<UsdGeomImageable>())) {
-            it.PruneChildren();
+            if (!it.IsPostVisit()) {
+                TF_DEBUG(USDSKEL_CACHE).Msg(
+                    "[UsdSkelCache]  Pruning traversal at <%s> "
+                    "(prim is not UsdGeomImageable)\n",
+                    it->GetPath().GetText());
+
+                it.PruneChildren();
+            }
             continue;
         }
 
-        UsdSkelSkeleton locallyBoundSkel;
-        if (UsdSkelBindingAPI(*it).GetSkeleton(&locallyBoundSkel))
-            boundSkel = locallyBoundSkel;
+        if (it.IsPostVisit()) {
+            if (TF_VERIFY(!skelStack.empty())) {
+                skelStack.pop_back();
+            } else {
+                return false;
+            }
+            continue;
+        }
+
+        const UsdSkelBindingAPI binding(*it);
+
+        UsdSkelSkeleton boundSkel;
+        if (!binding.GetSkeleton(&boundSkel)) {
+            boundSkel = skelStack.back();
+        } else  {
+            TF_DEBUG(USDSKEL_CACHE).Msg(
+                "[UsdSkelCache]  Found skel binding at <%s> "
+                "which targets skel <%s>.\n",
+                it->GetPath().GetText(),
+                boundSkel.GetPrim().GetPath().GetText());
+        }
 
         if (boundSkel.GetPrim() == skel.GetPrim()) {
-            if (UsdSkelSkinningQuery query = GetSkinningQuery(*it)) {
+            if (const UsdSkelSkinningQuery query = GetSkinningQuery(*it)) {
+                TF_DEBUG(USDSKEL_CACHE).Msg(
+                    "[UsdSkelCache]  Found skinnable prim <%s>\n",
+                    it->GetPath().GetText());
+
                 skinningQueries.push_back(query);
+
+                // Don't allow skinnable prims to be nested.
+                it.PruneChildren();
             }
         }
+        skelStack.push_back(boundSkel);
     }
+
     *binding = UsdSkelBinding(skel, skinningQueries);
     return true;
 }

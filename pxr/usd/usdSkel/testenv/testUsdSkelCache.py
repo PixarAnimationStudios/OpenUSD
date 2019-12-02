@@ -47,205 +47,101 @@ class TestUsdSkelCache(unittest.TestCase):
         # TODO: Test query of anim behind instancing
 
     
-    def test_InheritedAnimationSource(self):
+    def test_InheritedAnimBinding(self):
         """Tests for correctness in the interpretation of the inherited
            skel:animationSource binding."""
         
         testFile = "populate.usda"
         stage = Usd.Stage.Open(testFile)
 
-        rootPath = "/AnimationSource"
-
         cache = UsdSkel.Cache()
-        root = UsdSkel.Root(stage.GetPrimAtPath(rootPath))
+        root = UsdSkel.Root(stage.GetPrimAtPath("/AnimBinding"))
         self.assertTrue(cache.Populate(root))
 
-        queryA = cache.GetSkelQuery(
-            UsdSkel.Skeleton.Get(stage, rootPath+"/Scope/A"))
-        self.assertTrue(queryA)
-        self.assertEqual(queryA.GetAnimQuery().GetPrim().GetPath(),
+        query = cache.GetSkelQuery(
+            UsdSkel.Skeleton.Get(stage, "/AnimBinding/Scope/Inherit"))
+        self.assertTrue(query)
+        self.assertEqual(query.GetAnimQuery().GetPrim().GetPath(),
                          Sdf.Path("/Anim1"))
 
-        queryB = cache.GetSkelQuery(
-            UsdSkel.Skeleton.Get(stage, rootPath+"/Scope/B"))
-        self.assertTrue(queryB)
-        self.assertEqual(queryB.GetAnimQuery().GetPrim().GetPath(),
+        query = cache.GetSkelQuery(
+            UsdSkel.Skeleton.Get(stage, "/AnimBinding/Scope/Override"))
+        self.assertTrue(query)
+        self.assertEqual(query.GetAnimQuery().GetPrim().GetPath(),
                          Sdf.Path("/Anim2"))
 
-        queryC = cache.GetSkelQuery(
-            UsdSkel.Skeleton.Get(stage, rootPath+"/Scope/C"))
-        self.assertFalse(queryC)
+        query = cache.GetSkelQuery(
+            UsdSkel.Skeleton.Get(stage, "/AnimBinding/Scope/Block"))
+        self.assertTrue(query)
+        self.assertFalse(query.GetAnimQuery())
         
-        queryD = cache.GetSkelQuery(
-            UsdSkel.Skeleton.Get(stage, rootPath+"/Scope/C"))
-        self.assertFalse(queryD)
+        query = cache.GetSkelQuery(
+            UsdSkel.Skeleton.Get(stage, "/AnimBinding/Unbound"))
+        self.assertTrue(query)
+        self.assertFalse(query.GetAnimQuery())
+
+        query = cache.GetSkelQuery(
+            UsdSkel.Skeleton.Get(stage, "/AnimBinding/BoundToInactiveAnim"))
+        self.assertTrue(query)
+        self.assertFalse(query.GetAnimQuery())
 
         # Ensure that the animationSource binding crosses instancing arcs.
 
-        queryInstA = cache.GetSkelQuery(
-            UsdSkel.Skeleton.Get(stage, rootPath+"/Instance/A"))
-        self.assertTrue(queryInstA)
-        self.assertEqual(queryInstA.GetAnimQuery().GetPrim().GetPath(),
+        query = cache.GetSkelQuery(
+            UsdSkel.Skeleton.Get(stage, "/AnimBinding/Instance/Inherit"))
+        self.assertTrue(query)
+        self.assertEqual(query.GetAnimQuery().GetPrim().GetPath(),
                          Sdf.Path("/Anim1"))
 
-        queryInstB = cache.GetSkelQuery(
-            UsdSkel.Skeleton.Get(stage, rootPath+"/Instance/B"))
-        self.assertTrue(queryInstB)
-        self.assertTrue(queryInstB.GetAnimQuery().GetPrim().IsInMaster())
+        # TODO: This test case is failing:
+        query = cache.GetSkelQuery(
+            UsdSkel.Skeleton.Get(stage, "/AnimBinding/Instance/Override"))
+        self.assertTrue(query)
+        self.assertTrue(query.GetAnimQuery().GetPrim().IsInMaster())
 
 
-    def _test_InheritedSkeletonBinding(self):
+    def test_InheritedSkeletonBinding(self):
         """Tests for correctness in the interpretation of the inherited
            skel:skeleton binding."""
-        testFile = "populate.usda"
-        stage = Usd.Stage.Open(testFile)
-
-        rootPath = "/Skeleton"
-
-        # TODO: To correctly test this, we need either a different kind of mapping,
-        # or we need the skinning query to keep a record of the bound prim.
-
-        cache = UsdSkel.Cache()
-        root = UsdSkel.Root(stage.GetPrimAtPath(rootPath))
-        self.assertTrue(cache.Populate(root))
-
-        queryA = cache.GetSkinningQuery(
-            UsdSkel.Animation.Get(stage, rootPath+"/Scope/A"))
-        self.assertTrue(queryA)
-        self.assertEqual(queryA.GetSkelQuery().GetPrim().GetPath(),
-                         Sdf.Path("/Anim1"))
-
-        queryB = cache.GetSkinningQuery(UsdSkel.Animation.Get(stage, rootPath+"/Scope/B"))
-        self.assertTrue(queryB)
-        self.assertEqual(queryB.GetAnimQuery().GetPrim().GetPath(),
-                         Sdf.Path("/Anim2"))
-
-        queryC = cache.GetSkinningQuery(UsdSkel.Animation.Get(stage, rootPath+"/Scope/C"))
-        self.assertFalse(queryC)
-        
-        queryD = cache.GetSkinningQuery(UsdSkel.Animation.Get(stage, rootPath+"/Scope/C"))
-        self.assertFalse(queryD)
-
-
-
-    def _test_Populate(self):
-        """Tests for correctness in interpretation of inherited bindings,
-           as computed through Populate()."""
 
         testFile = "populate.usda"
         stage = Usd.Stage.Open(testFile)
 
-        rootPath = "/InheritedBindings"
-
         cache = UsdSkel.Cache()
-        root = UsdSkel.Root(stage.GetPrimAtPath(rootPath))
-        print "Expect warnings about invalid skel:skeletonInstance targets"
+        root = UsdSkel.Root(stage.GetPrimAtPath("/SkelBinding"))
         self.assertTrue(cache.Populate(root))
 
-        def _GetSkelQuery(path):
-            return cache.GetSkelQuery(stage.GetPrimAtPath(path))
+        skel1 = UsdSkel.Skeleton.Get(stage, "/Skel1")
+        skel2 = UsdSkel.Skeleton.Get(stage, "/Skel2")
 
-        def _GetInheritedSkelQuery(path):
-            return cache.GetInheritedSkelQuery(stage.GetPrimAtPath(path))
+        # TODO: Skel population does not currently traverse instance proxies,
+        # so the resolved bindings below will not include skinned meshes within
+        # instances.
 
-        def _GetSkelPath(skelQuery):
-            return skelQuery.GetSkeleton().GetPrim().GetPath()
+        binding1 = cache.ComputeSkelBinding(root, skel1)
+        self.assertEqual(binding1.GetSkeleton().GetPrim(), skel1.GetPrim())
+        self.assertEqual([t.GetPrim() for t in binding1.GetSkinningTargets()],
+                         [stage.GetPrimAtPath(("/SkelBinding/Scope/Inherit"))])
 
-        def _GetAnimPath(skelQuery):
-            return skelQuery.GetAnimQuery().GetPrim().GetPath()
+        binding2 = cache.ComputeSkelBinding(root, skel2)
+        self.assertEqual(binding2.GetSkeleton().GetPrim(), skel2.GetPrim())
+        self.assertEqual([t.GetPrim() for t in binding2.GetSkinningTargets()],
+                         [stage.GetPrimAtPath(("/SkelBinding/Scope/Override"))])
 
-        skel = _GetSkelQuery(rootPath+"/Model1")
-        self.assertEqual(_GetSkelPath(skel), Sdf.Path("/Skel1"))
-        assert not skel.GetAnimQuery()
+        allBindings = cache.ComputeSkelBindings(root)
+        # Expecting two resolved bindings. This should *not* include bindings
+        # for any inactive skels.
+        self.assertEqual(len(allBindings), 2)
 
-        # an animationSource does not itself define a skel binding.
-        # bindings are associated with skel:skeleton rels only!
-        skel = _GetSkelQuery(rootPath+"/Model1/A")
-        assert not skel
+        self.assertEqual(binding1.GetSkeleton().GetPrim(),
+                         allBindings[0].GetSkeleton().GetPrim())
+        self.assertEqual([t.GetPrim() for t in binding1.GetSkinningTargets()],
+                         [t.GetPrim() for t in allBindings[0].GetSkinningTargets()])
 
-        skel = _GetSkelQuery(rootPath+"/Model1/A/B")
-        self.assertEqual(_GetSkelPath(skel), Sdf.Path("/Skel2"))
-        self.assertEqual(_GetAnimPath(skel), Sdf.Path("/Anim1"))
-
-        skel = _GetSkelQuery(rootPath+"/Model1/C")
-        self.assertEqual(_GetSkelPath(skel), Sdf.Path("/Skel3"))
-        self.assertEqual(_GetAnimPath(skel), Sdf.Path("/Anim2"))
-
-        # Inherited skel queries?
-        self.assertEqual(
-            _GetSkelPath(_GetInheritedSkelQuery(rootPath+"/Model1/A/B/Gprim")),
-            _GetSkelPath(_GetSkelQuery(rootPath+"/Model1/A/B")))
-
-        self.assertEqual(
-            _GetSkelPath(_GetInheritedSkelQuery(rootPath+"/Model1/A/B")),
-            _GetSkelPath(_GetSkelQuery(rootPath+"/Model1/A/B")))
-
-        # Scope with no bound skel.
-        assert not _GetSkelQuery(rootPath+"/Model2")
-        assert not cache.GetSkelQuery(Usd.Prim())
-
-        # Scope with a bound skel, but whose animation source is inactive.
-        skel = _GetSkelQuery(rootPath+"/Model3/SkelWithInactiveAnim")
-        self.assertEqual(_GetSkelPath(skel), Sdf.Path("/Skel1"))
-        assert not skel.GetAnimQuery()
-
-        # Inheritance of skel:xform?
-        skel = _GetSkelQuery(rootPath+"/IndirectBindings/Instance")
-        self.assertEqual(skel.GetPrim().GetPath(),
-                         Sdf.Path(rootPath+"/IndirectBindings/Instance"))
-
-        indirectSkel = _GetSkelQuery(rootPath+"/IndirectBindings/Indirect")
-        self.assertEqual(indirectSkel.GetPrim().GetPath(),
-                         Sdf.Path(rootPath+"/IndirectBindings/Instance"))
-        self.assertEqual(_GetSkelPath(indirectSkel), Sdf.Path("/Skel1"))
-
-        nestedSkel = _GetSkelQuery(rootPath+"/IndirectBindings/Indirect/Instance")
-        self.assertEqual(nestedSkel.GetPrim().GetPath(),
-                         Sdf.Path(rootPath+"/IndirectBindings/Indirect/Instance"))
-        self.assertEqual(_GetSkelPath(nestedSkel), Sdf.Path("/Skel2"))
-
-        self.assertFalse(_GetSkelQuery(rootPath+"/IndirectBindings/Illegal"))
-
-        def _GetSkinningQuery(path):
-            return cache.GetSkinningQuery(stage.GetPrimAtPath(path))
-
-        # Make sure some scopes are not being treated as skinning targets.
-        nonSkinnablePaths = (rootPath+"/Model1/NonRigidScope1",
-                             rootPath+"/Model1/NonRigidScope2",
-                             rootPath+"/Model1/RigidScopeParent")
-                          
-        for path in nonSkinnablePaths:
-            assert not _GetSkinningQuery(path)
-
-        query = _GetSkinningQuery(rootPath+"/Model1/NonRigidScope1/A")
-        assert query
-        assert query.IsRigidlyDeformed()
-        assert query.GetJointMapper()
-        self.assertEquals(query.GetJointOrder(),
-                          Vt.TokenArray(["A", "B", "C"]))
-
-        query = _GetSkinningQuery(rootPath+"/Model1/NonRigidScope1/B")
-        assert query
-        assert not query.IsRigidlyDeformed()
-        assert not query.GetJointMapper()
-
-        query = _GetSkinningQuery(rootPath+"/Model1/NonRigidScope2/A")
-        assert query
-        assert query.IsRigidlyDeformed()
-        assert query.GetJointMapper()
-        self.assertEquals(query.GetJointOrder(),
-                          Vt.TokenArray(["A", "B", "C"]))
-
-        query = _GetSkinningQuery(rootPath+"/Model1/NonRigidScope2/B")
-        assert query
-        assert query.IsRigidlyDeformed()
-        assert not query.GetJointMapper()
-
-        # TODO: When adding support for rigid deformation of intermediate
-        # xformables, Model1/RigidScopeParent/RigidScope should be treated
-        # as being skinnable.
-        assert _GetSkinningQuery(rootPath+"/Model1/RigidScopeParent/RigidScope/A")
-        assert _GetSkinningQuery(rootPath+"/Model1/RigidScopeParent/RigidScope/B")
+        self.assertEqual(binding2.GetSkeleton().GetPrim(),
+                         allBindings[1].GetSkeleton().GetPrim())
+        self.assertEqual([t.GetPrim() for t in binding2.GetSkinningTargets()],
+                         [t.GetPrim() for t in allBindings[1].GetSkinningTargets()])
 
 
 if __name__ == "__main__":

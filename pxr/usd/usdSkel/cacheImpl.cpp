@@ -205,17 +205,20 @@ UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root)
     TF_DEBUG(USDSKEL_CACHE).Msg("[UsdSkelCache] Populate map from <%s>\n",
                                 root.GetPrim().GetPath().GetText());
 
-    if(!root) {
+    if (!root) {
         TF_CODING_ERROR("'root' is invalid.");
         return false;
     }
 
     std::vector<std::pair<SkinningQueryKey,UsdPrim> > stack(1);
 
-    UsdPrimRange range =
+    // TODO: Consider traversing instance proxies at this point.
+    // But when doing so, must ensure that UsdSkelBakeSkinning, et.al.,
+    // take instancing into account.
+    const UsdPrimRange range =
         UsdPrimRange::PreAndPostVisit(root.GetPrim(),
                                       UsdPrimDefaultPredicate);
-                                      // UsdPrimIsInstance);
+                                      // UsdTraverseInstanceProxies());
 
     for (auto it = range.begin(); it != range.end(); ++it) {
         
@@ -245,22 +248,22 @@ UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root)
         if (binding.GetSkeleton(&skel))
             key.skel = skel.GetPrim();
 
-        if (UsdAttribute attr = binding.GetJointIndicesAttr())
+        if (const UsdAttribute attr = binding.GetJointIndicesAttr())
             key.jointIndicesAttr = attr;
 
-        if (UsdAttribute attr = binding.GetJointWeightsAttr())
+        if (const UsdAttribute attr = binding.GetJointWeightsAttr())
             key.jointWeightsAttr = attr;
         
-        if (UsdAttribute attr = binding.GetGeomBindTransformAttr())
+        if (const UsdAttribute attr = binding.GetGeomBindTransformAttr())
             key.geomBindTransformAttr = attr;
 
-        if (UsdAttribute attr = binding.GetJointsAttr())
+        if (const UsdAttribute attr = binding.GetJointsAttr())
             key.jointsAttr = attr;
 
-        if (UsdAttribute attr = binding.GetBlendShapesAttr())
+        if (const UsdAttribute attr = binding.GetBlendShapesAttr())
             key.blendShapesAttr = attr;
 
-        if (UsdRelationship rel = binding.GetBlendShapeTargetsRel())
+        if (const UsdRelationship rel = binding.GetBlendShapeTargetsRel())
             key.blendShapeTargetsRel = rel;
 
         if (UsdSkelIsSkinnablePrim(*it)) {
