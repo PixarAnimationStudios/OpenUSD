@@ -2446,16 +2446,23 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim,
     // Filter nameOrder by the mask, if necessary.  If this subtree is
     // completely included, stop looking at the mask from here forward.
     if (mask) {
-        if (mask->IncludesSubtree(prim->GetPath())) {
+        // We always operate on the source prim index path here, not the prim
+        // path since that would be something like /_MasterX/../../.. for prims
+        // in masters.  Masks and load rules operate on the "uninstanced" view
+        // of the world, and are included in instancing keys, so whichever index
+        // we choose to be the source for a master must be included in the
+        // stage-wide pop mask & load rules, and identically for all instances
+        // that share a master.
+        const SdfPath& sourceIndexPath = prim->GetSourcePrimIndex().GetPath();
+        if (mask->IncludesSubtree(sourceIndexPath)) {
             mask = nullptr;
         } else {
             // Remove all names from nameOrder that aren't included in the mask.
-            SdfPath const &primPath = prim->GetPath();
             nameOrder.erase(
                 remove_if(nameOrder.begin(), nameOrder.end(),
-                          [&primPath, mask](TfToken const &nameTok) {
+                          [&sourceIndexPath, mask](TfToken const &nameTok) {
                               return !mask->Includes(
-                                  primPath.AppendChild(nameTok));
+                                  sourceIndexPath.AppendChild(nameTok));
                           }), nameOrder.end());
         }
     }

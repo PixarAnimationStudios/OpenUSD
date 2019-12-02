@@ -551,6 +551,244 @@ def "geo" ( append payload = @%s@ )
         r.subLayerPaths.clear()
         r.subLayerPaths.append(e.identifier)
         s.MuteAndUnmuteLayers([], [c.identifier])
+
+    def test_USD_5709(self):
+        # Population masks with paths descendant to instances were not working
+        # correctly, since we incorrectly applied the mask to the _master_ prim
+        # paths when populating master prim hierarchies.  This test ensures that
+        # masks with paths descendant to instances work as expected.
+        from pxr import Usd, Sdf
+        l = Sdf.Layer.CreateAnonymous('.usda')
+        l.ImportFromString('''#usda 1.0
+        def Sphere "test"
+        {
+            def Scope "scope1" {}
+            def Scope "scope2" {}
+            def Scope "scope3" {}
+        }
+
+        def Scope "Model" (
+            instanceable = True
+            payload = </test>
+        )
+        {
+        }
+
+        def "M1" ( append references = </Model> )
+        {
+        }
+        def "M2" ( append references = </Model> )
+        {
+        }
+        def "M3" ( append references = </Model> )
+        {
+        }
+
+        def Scope "Nested" (instanceable = True)
+        {
+            def "M1" ( append references = </Model> ) {}
+            def "M2" ( append references = </Model> ) {}
+            def "M3" ( append references = </Model> ) {}
+        }
+
+        def "N1" (append references = </Nested>)
+        {
+        }
+        def "N2" (append references = </Nested>)
+        {
+        }
+        def "N3" (append references = </Nested>)
+        {
+        }
+        ''')
+        ########################################################################
+        # Non-nested instancing
+        s = Usd.Stage.OpenMasked(
+            l, mask=Usd.StagePopulationMask(['/M1/scope2']))
+        self.assertFalse(s.GetPrimAtPath('/M1/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/M1/scope3'))
+
+        s = Usd.Stage.OpenMasked(
+            l, mask=Usd.StagePopulationMask(['/M1/scope2', '/M3']))
+        self.assertFalse(s.GetPrimAtPath('/M1/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/M1/scope3'))
+        self.assertTrue(s.GetPrimAtPath('/M3/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/M3/scope2'))
+        self.assertTrue(s.GetPrimAtPath('/M3/scope3'))
+
+        s = Usd.Stage.OpenMasked(
+            l, mask=Usd.StagePopulationMask(['/M1/scope2', '/M3/scope2']))
+        self.assertFalse(s.GetPrimAtPath('/M1/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/M1/scope3'))
+        self.assertFalse(s.GetPrimAtPath('/M3/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/M3/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/M3/scope3'))
+
+        s = Usd.Stage.OpenMasked(
+            l, mask=Usd.StagePopulationMask(['/M1/scope2']),
+            load=Usd.Stage.LoadNone)
+        self.assertFalse(s.GetPrimAtPath('/M1/scope2'))
+        s.Load('/M1')
+        self.assertFalse(s.GetPrimAtPath('/M1/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/M1/scope3'))
+
+        s = Usd.Stage.OpenMasked(
+            l, mask=Usd.StagePopulationMask(['/M1/scope2', '/M3']),
+            load=Usd.Stage.LoadNone)
+        self.assertFalse(s.GetPrimAtPath('/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/M3/scope1'))
+        s.Load('/M1')
+        s.Load('/M3')
+        self.assertFalse(s.GetPrimAtPath('/M1/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/M1/scope3'))
+        self.assertTrue(s.GetPrimAtPath('/M3/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/M3/scope2'))
+        self.assertTrue(s.GetPrimAtPath('/M3/scope3'))
+
+        s = Usd.Stage.OpenMasked(
+            l, mask=Usd.StagePopulationMask(['/M1/scope2', '/M3/scope2']),
+            load=Usd.Stage.LoadNone)
+        self.assertFalse(s.GetPrimAtPath('/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/M3/scope2'))
+        s.Load('/M1')
+        s.Load('/M3')
+        self.assertFalse(s.GetPrimAtPath('/M1/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/M1/scope3'))
+        self.assertFalse(s.GetPrimAtPath('/M3/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/M3/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/M3/scope3'))
+
+        ########################################################################
+        # Nested instancing
+        s = Usd.Stage.OpenMasked(
+            l, mask=Usd.StagePopulationMask(['/N1/M1/scope2']))
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/N1/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope3'))
+
+        s = Usd.Stage.OpenMasked(
+            l, mask=Usd.StagePopulationMask(['/N1/M1/scope2', '/N3/M3']))
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/N1/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope3'))
+        self.assertTrue(s.GetPrimAtPath('/N3/M3/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/N3/M3/scope2'))
+        self.assertTrue(s.GetPrimAtPath('/N3/M3/scope3'))
+
+        s = Usd.Stage.OpenMasked(
+            l, mask=Usd.StagePopulationMask(['/N1/M1/scope2', '/N3/M3/scope2']))
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/N1/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope3'))
+        self.assertFalse(s.GetPrimAtPath('/N3/M3/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/N3/M3/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/N3/M3/scope3'))
+
+        s = Usd.Stage.OpenMasked(
+            l, mask=Usd.StagePopulationMask(['/N1/M1/scope2']),
+            load=Usd.Stage.LoadNone)
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope2'))
+        s.Load('/N1/M1')
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/N1/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope3'))
+
+        s = Usd.Stage.OpenMasked(
+            l, mask=Usd.StagePopulationMask(['/N1/M1/scope2', '/N3/M3']),
+            load=Usd.Stage.LoadNone)
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/N3/M3/scope1'))
+        s.Load('/N1/M1')
+        s.Load('/N3/M3')
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/N1/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope3'))
+        self.assertTrue(s.GetPrimAtPath('/N3/M3/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/N3/M3/scope2'))
+        self.assertTrue(s.GetPrimAtPath('/N3/M3/scope3'))
+
+        s = Usd.Stage.OpenMasked(
+            l, mask=Usd.StagePopulationMask(['/N1/M1/scope2', '/N3/M3/scope2']),
+            load=Usd.Stage.LoadNone)
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/N3/M3/scope2'))
+        s.Load('/N1/M1')
+        s.Load('/N3/M3')
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/N1/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope3'))
+        self.assertFalse(s.GetPrimAtPath('/N3/M3/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/N3/M3/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/N3/M3/scope3'))
+
+        ########################################################################
+        # Nested instancing again
+        s = Usd.Stage.OpenMasked(
+            l, mask=Usd.StagePopulationMask(['/N1/M1/scope2']))
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/N1/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope3'))
+
+        s = Usd.Stage.OpenMasked(
+            l, mask=Usd.StagePopulationMask(['/N1/M1/scope2', '/N3/M1']))
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/N1/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope3'))
+        self.assertTrue(s.GetPrimAtPath('/N3/M1/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/N3/M1/scope2'))
+        self.assertTrue(s.GetPrimAtPath('/N3/M1/scope3'))
+
+        s = Usd.Stage.OpenMasked(
+            l, mask=Usd.StagePopulationMask(['/N1/M1/scope2', '/N3/M1/scope2']))
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/N1/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope3'))
+        self.assertFalse(s.GetPrimAtPath('/N3/M1/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/N3/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/N3/M1/scope3'))
+
+        s = Usd.Stage.OpenMasked(
+            l, mask=Usd.StagePopulationMask(['/N1/M1/scope2']),
+            load=Usd.Stage.LoadNone)
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope2'))
+        s.Load('/N1/M1')
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/N1/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope3'))
+
+        s = Usd.Stage.OpenMasked(
+            l, mask=Usd.StagePopulationMask(['/N1/M1/scope2', '/N3/M1']),
+            load=Usd.Stage.LoadNone)
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/N3/M1/scope1'))
+        s.Load('/N1/M1')
+        s.Load('/N3/M1')
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/N1/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope3'))
+        self.assertTrue(s.GetPrimAtPath('/N3/M1/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/N3/M1/scope2'))
+        self.assertTrue(s.GetPrimAtPath('/N3/M1/scope3'))
+
+        s = Usd.Stage.OpenMasked(
+            l, mask=Usd.StagePopulationMask(['/N1/M1/scope2', '/N3/M1/scope2']),
+            load=Usd.Stage.LoadNone)
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/N3/M1/scope2'))
+        s.Load('/N1/M1')
+        s.Load('/N3/M1')
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/N1/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/N1/M1/scope3'))
+        self.assertFalse(s.GetPrimAtPath('/N3/M1/scope1'))
+        self.assertTrue(s.GetPrimAtPath('/N3/M1/scope2'))
+        self.assertFalse(s.GetPrimAtPath('/N3/M1/scope3'))
         
 if __name__ == '__main__':
     unittest.main()
