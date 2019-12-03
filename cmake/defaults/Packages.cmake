@@ -121,6 +121,11 @@ if (PXR_BUILD_IMAGING)
         find_package(PTex REQUIRED)
         add_definitions(-DPXR_PTEX_SUPPORT_ENABLED)
     endif()
+    # --OpenVDB
+    if (PXR_ENABLE_OPENVDB_SUPPORT)
+        find_package(OpenVDB REQUIRED)
+        add_definitions(-DPXR_OPENVDB_SUPPORT_ENABLED)
+    endif()
     # --X11
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
         find_package(X11)
