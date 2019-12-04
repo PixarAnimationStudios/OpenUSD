@@ -2097,14 +2097,7 @@ class "XformCommonAPI"
     xformable may have only a translate or a rotate. It would still be 
     considered as compatible with this API. Individual SetTranslate(), 
     SetRotate(), SetScale() and SetPivot() methods are provided by this API 
-    to allow such sparse authoring.
-
-    \\note Manipulating the xformOpOrder attribute manually or using the API 
-    provided in UsdGeomXformable to add or remove xformOps causes the 
-    UsdGeomXformCommonAPI object to contain invalid or stale information. 
-    A new UsdGeomXformCommonAPI object must be created with the xformable after 
-    invoking any operation on the underlying xformable that would cause the 
-    xformOpOrder to change."""
+    to allow such sparse authoring."""
     customData = {
         string apiSchemaType = "nonApplied"
         string extraIncludes = """

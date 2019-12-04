@@ -139,12 +139,49 @@ _GetXformVectorsByAccumulation(
                   : tuple();
 }
 
+static tuple
+_CreateXformOps1(
+    UsdGeomXformCommonAPI self,
+    UsdGeomXformCommonAPI::RotationOrder rotOrder,
+    UsdGeomXformCommonAPI::OpFlags op1,
+    UsdGeomXformCommonAPI::OpFlags op2,
+    UsdGeomXformCommonAPI::OpFlags op3,
+    UsdGeomXformCommonAPI::OpFlags op4)
+{
+    UsdGeomXformCommonAPI::Ops ops = self.CreateXformOps(
+        rotOrder, op1, op2, op3, op4);
+    return make_tuple(
+        ops.translateOp,
+        ops.pivotOp,
+        ops.rotateOp,
+        ops.scaleOp,
+        ops.inversePivotOp);
+}
+
+static tuple
+_CreateXformOps2(
+    UsdGeomXformCommonAPI self,
+    UsdGeomXformCommonAPI::OpFlags op1,
+    UsdGeomXformCommonAPI::OpFlags op2,
+    UsdGeomXformCommonAPI::OpFlags op3,
+    UsdGeomXformCommonAPI::OpFlags op4)
+{
+    UsdGeomXformCommonAPI::Ops ops = self.CreateXformOps(op1, op2, op3, op4);
+    return make_tuple(
+        ops.translateOp,
+        ops.pivotOp,
+        ops.rotateOp,
+        ops.scaleOp,
+        ops.inversePivotOp);
+}
+
 WRAP_CUSTOM {
     using This = UsdGeomXformCommonAPI;
 
     {
         scope xformCommonAPIScope = _class;
         TfPyWrapEnum<This::RotationOrder>();
+        TfPyWrapEnum<This::OpFlags>();
     }
 
     _class
@@ -183,6 +220,19 @@ WRAP_CUSTOM {
 
         .def("SetResetXformStack", &This::SetResetXformStack,
             arg("resetXformStack"))
+
+        .def("CreateXformOps", _CreateXformOps1,
+            (arg("rotationOrder"),
+             arg("op1")=UsdGeomXformCommonAPI::OpNone,
+             arg("op2")=UsdGeomXformCommonAPI::OpNone,
+             arg("op3")=UsdGeomXformCommonAPI::OpNone,
+             arg("op4")=UsdGeomXformCommonAPI::OpNone))
+
+        .def("CreateXformOps", _CreateXformOps2,
+            (arg("op1")=UsdGeomXformCommonAPI::OpNone,
+             arg("op2")=UsdGeomXformCommonAPI::OpNone,
+             arg("op3")=UsdGeomXformCommonAPI::OpNone,
+             arg("op4")=UsdGeomXformCommonAPI::OpNone))
 
         .def("GetRotationTransform", &This::GetRotationTransform,
             (arg("rotation"), arg("rotationOrder")))
