@@ -2081,7 +2081,6 @@ class StageView(QtOpenGL.QGLWidget):
         if Tf.Debug.IsDebugSymbolNameEnabled(DEBUG_CLIPPING):
             print "Pick results = {}".format(results)
 
-        self.doneCurrent()
         return results
 
     def computePickFrustum(self, x, y):
