@@ -780,6 +780,8 @@ def _AddToken(tokenDict, tokenId, val, desc):
     ])
     if tokenId in reserved:
         tokenId = tokenId + '_'
+    elif not Tf.IsValidIdentifier(tokenId):
+        tokenId = Tf.MakeValidIdentifier(tokenId);
     if tokenId in tokenDict:
         token = tokenDict[tokenId]
 
