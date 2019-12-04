@@ -193,8 +193,11 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
             projParams
         };
 
-        // Set riley camera and projection shader params from the Hydra camera.
-        hdCam->SetRileyCameraParams(camParams, projParams);
+        // Set riley camera and projection shader params from the Hydra camera,
+        // if available.
+        if (hdCam) {
+            hdCam->SetRileyCameraParams(camParams, projParams);
+        }
 
         // XXX Normally we would update RenderMan option 'ScreenWindow' to
         // account for an orthographic camera,
@@ -241,21 +244,32 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         flipZ[2][2] = -1.0;
         viewToWorldCorrectionMatrix = flipZ * viewToWorldCorrectionMatrix;
 
-        // Convert  from Gf to Rt.
-        HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> const& xforms =
-            hdCam->GetTimeSampleXforms();
+        riley::Transform xform;
+        if (hdCam) {
+            // Use time sampled transforms authored on the scene camera.
+            HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> const& 
+                xforms = hdCam->GetTimeSampleXforms();
 
-        TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES> 
-            xf_rt_values(xforms.count);
-        
-        for (size_t i=0; i < xforms.count; ++i) {
-            xf_rt_values[i] = HdPrman_GfMatrixToRtMatrix(
-                viewToWorldCorrectionMatrix * xforms.values[i]);
+            TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES> 
+                xf_rt_values(xforms.count);
+            
+            for (size_t i=0; i < xforms.count; ++i) {
+                xf_rt_values[i] = HdPrman_GfMatrixToRtMatrix(
+                    viewToWorldCorrectionMatrix * xforms.values[i]);
+            }
+
+            xform = { unsigned(xforms.count), xf_rt_values.data(),
+                      xforms.times.data() };
+        } else {
+            // Use the framing state as a single time sample.
+            float const zerotime = 0.0f;
+            RtMatrix4x4 matrix = HdPrman_GfMatrixToRtMatrix(
+                viewToWorldCorrectionMatrix * viewToWorldMatrix);
+
+            xform = {1, &matrix, &zerotime};
         }
 
         // Commit new camera.
-        riley::Transform xform = {
-            unsigned(xforms.count), xf_rt_values.data(), xforms.times.data() };
 
         riley->ModifyCamera(
             _interactiveContext->cameraId, 
