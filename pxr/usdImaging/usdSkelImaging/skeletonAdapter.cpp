@@ -477,8 +477,11 @@ UsdSkelImagingSkeletonAdapter::MarkDirty(const UsdPrim& prim,
         UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(prim);
         adapter->MarkDirty(prim, cachePath, dirty, index);
 
-        // Propagate dirtyness to the computations.
-        // See related comment in ProcessPropertyChange(..)
+        // Propagate dirtyness on the skinned prim to the computations.
+        // Also see related comment in ProcessPropertyChange(..)
+
+        // The skinning computation pulls on the transform as well as primvars
+        // authored on the skinned prim.
         if (dirty & HdChangeTracker::DirtyTransform ||
             dirty & HdChangeTracker::DirtyPrimvar) {
           
@@ -488,12 +491,16 @@ UsdSkelImagingSkeletonAdapter::MarkDirty(const UsdPrim& prim,
             
             index->MarkSprimDirty(_GetSkinningComputationPath(cachePath),
                                   HdExtComputation::DirtySceneInput);
-            
-            if (_IsEnabledAggregatorComputation()) {
-                index->MarkSprimDirty(
-                    _GetSkinningInputAggregatorComputationPath(cachePath),
-                    HdExtComputation::DirtySceneInput);
-            }
+
+        }
+
+        // The aggregator computation pulls on primvars authored on the skinned
+        // prim, but doesn't pull on its transform.
+        if (_IsEnabledAggregatorComputation() &&
+            (dirty & HdChangeTracker::DirtyPrimvar)) {
+            index->MarkSprimDirty(
+                _GetSkinningInputAggregatorComputationPath(cachePath),
+                HdExtComputation::DirtySceneInput);
         }
     
     } else if (_IsSkinningComputationPath(cachePath) ||
