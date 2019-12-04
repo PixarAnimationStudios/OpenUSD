@@ -108,7 +108,7 @@ def GetVisualStudioCompilerAndVersion():
         # VisualStudioVersion environment variable should be set by the
         # Visual Studio Command Prompt.
         match = re.search(
-            "(\d+).(\d+)", 
+            "(\d+).(\d+)",
             os.environ.get("VisualStudioVersion", ""))
         if match:
             return (msvcCompiler, tuple(int(v) for v in match.groups()))
@@ -313,6 +313,31 @@ def RunCMake(context, force, extraArgs = None):
         Run("cmake --build . --config {config} --target install -- {multiproc}"
             .format(config=config,
                     multiproc=FormatMultiProcs(context.numJobs, generator)))
+
+def GetCMakeVersion():
+    """
+    Returns the CMake version as tuple of integers (major, minor) or
+    (major, minor, patch) or None if an error occured while launching cmake and
+    parsing its output.
+    """
+
+    output_string = GetCommandOutput("cmake --version")
+    if not output_string:
+        PrintWarning("Could not determine cmake version -- please install it "
+                     "and adjust your PATH")
+        return None
+
+    # cmake reports, e.g., "... version 3.14.3"
+    match = re.search(r"version (\d+)\.(\d+)(\.(\d+))?", output_string)
+    if not match:
+        PrintWarning("Could not determine cmake version")
+        return None
+
+    major, minor, patch_group, patch = match.groups()
+    if patch_group is None:
+        return (int(major), int(minor))
+    else:
+        return (int(major), int(minor), int(patch))
 
 def PatchFile(filename, patches, multiLineMatches=False):
     """Applies patches to the specified file. patches is a list of tuples
@@ -525,7 +550,7 @@ ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
 # boost
 
 if Linux():
-    BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.55.0/boost_1_55_0.tar.gz"
+    BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost/version.hpp"
 elif MacOS():
     BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz"
@@ -581,8 +606,26 @@ def InstallBoost(context, force, buildArgs):
 
         if context.buildKatana or context.buildOIIO:
             b2_settings.append("--with-date_time")
+
+        if context.buildKatana or context.buildOIIO or context.enableOpenVDB:
             b2_settings.append("--with-system")
             b2_settings.append("--with-thread")
+
+        if context.enableOpenVDB:
+            b2_settings.append("--with-iostreams")
+
+            # b2 with -sNO_COMPRESSION=1 fails with the following error message:
+            #     error: at [...]/boost_1_61_0/tools/build/src/kernel/modules.jam:107
+            #     error: Unable to find file or target named
+            #     error:     '/zlib//zlib'
+            #     error: referred to from project at
+            #     error:     'libs/iostreams/build'
+            #     error: could not resolve project reference '/zlib'
+
+            # But to avoid an extra library dependency, we can still explicitly
+            # exclude the bzip2 compression from boost_iostreams (note that
+            # OpenVDB uses blosc compression).
+            b2_settings.append("-sNO_BZIP2=1")
 
         if context.buildOIIO:
             b2_settings.append("--with-filesystem")
@@ -843,6 +886,52 @@ def InstallPtex_LinuxOrMacOS(context, force, buildArgs):
         RunCMake(context, force, buildArgs)
 
 PTEX = Dependency("Ptex", InstallPtex, "include/PtexVersion.h")
+
+############################################################
+# BLOSC (Compression used by OpenVDB)
+
+# Using latest blosc since neither the version OpenVDB recommends
+# (1.5) nor the version we test against (1.6.1) compile on Mac OS X
+# Sierra (10.12) or Mojave (10.14).
+BLOSC_URL = "https://github.com/Blosc/c-blosc/archive/v1.17.0.zip"
+
+def InstallOpenVDB(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(BLOSC_URL, context, force)):
+        RunCMake(context, force, buildArgs)
+
+BLOSC = Dependency("Blosc", InstallOpenVDB, "include/blosc.h")
+
+############################################################
+# OpenVDB
+
+# Using version 6.1.0 since it has reworked its CMake files so that
+# there are better options to not compile the OpenVDB binaries and to
+# not require additional dependencies such as GLFW. Note that version
+# 6.1.0 does require CMake 3.3 though.
+
+OPENVDB_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/v6.1.0.zip"
+
+def InstallOpenVDB(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(OPENVDB_URL, context, force)):
+        extraArgs = [
+            '-DOPENVDB_BUILD_PYTHON_MODULE=OFF',
+            '-DOPENVDB_BUILD_BINARIES=OFF',
+            '-DOPENVDB_BUILD_UNITTESTS=OFF'
+        ]
+
+        extraArgs.append('-DBOOST_ROOT="{instDir}"'
+                         .format(instDir=context.instDir))
+        extraArgs.append('-DBLOSC_ROOT="{instDir}"'
+                         .format(instDir=context.instDir))
+        extraArgs.append('-DTBB_ROOT="{instDir}"'
+                         .format(instDir=context.instDir))
+        # OpenVDB needs Half type from IlmBase
+        extraArgs.append('-DILMBASE_ROOT="{instDir}"'
+                         .format(instDir=context.instDir))
+        
+        RunCMake(context, force, extraArgs)
+
+OPENVDB = Dependency("OpenVDB", InstallOpenVDB, "include/openvdb/openvdb.h")
 
 ############################################################
 # OpenImageIO
@@ -1131,6 +1220,11 @@ def InstallUSD(context, force, buildArgs):
             else:
                 extraArgs.append('-DPXR_ENABLE_PTEX_SUPPORT=OFF')
 
+            if context.enableOpenVDB:
+                extraArgs.append('-DPXR_ENABLE_OPENVDB_SUPPORT=ON')
+            else:
+                extraArgs.append('-DPXR_ENABLE_OPENVDB_SUPPORT=OFF')
+
             if context.buildEmbree:
                 if context.embreeLocation:
                     extraArgs.append('-DEMBREE_LOCATION="{location}"'
@@ -1373,6 +1467,13 @@ subgroup.add_argument("--no-ptex", dest="enable_ptex",
                       action="store_false",
                       help="Disable Ptex support in imaging (default)")
 subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--openvdb", dest="enable_openvdb", action="store_true", 
+                      default=False, 
+                      help="Enable OpenVDB support in imaging")
+subgroup.add_argument("--no-openvdb", dest="enable_openvdb", 
+                      action="store_false",
+                      help="Disable OpenVDB support in imaging (default)")
+subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--usdview", dest="build_usdview",
                       action="store_true", default=True,
                       help="Build usdview (default)")
@@ -1538,6 +1639,7 @@ class InstallContext:
         self.buildImaging = (args.build_imaging == IMAGING or
                              args.build_imaging == USD_IMAGING)
         self.enablePtex = self.buildImaging and args.enable_ptex
+        self.enableOpenVDB = self.buildImaging and args.enable_openvdb
 
         # - USD Imaging
         self.buildUsdImaging = (args.build_imaging == USD_IMAGING)
@@ -1634,6 +1736,11 @@ if context.buildImaging:
 
     requiredDependencies += [OPENEXR, GLEW, 
                              OPENSUBDIV]
+
+    if context.enableOpenVDB:
+        # OpenVDB requires Half type from IlmBase which is already
+        # pulled in through OPENEXR.
+        requiredDependencies += [BLOSC, OPENVDB]
     
     if context.buildOIIO:
         requiredDependencies += [JPEG, TIFF, PNG, OPENIMAGEIO]
@@ -1768,6 +1875,18 @@ if PYSIDE in requiredDependencies:
                    .format(" or ".join(pysideUic)))
         sys.exit(1)
 
+if OPENVDB in requiredDependencies:
+    # Check OpenVDB's cmake requirements
+    cmake_required_version = (3, 3)
+    cmake_version = GetCMakeVersion()
+    if not cmake_version:
+        PrintError("Failed to determine CMake version")
+        sys.exit(1)
+    if cmake_version < cmake_required_version:
+        PrintError(("CMake version 3.3 required to build OpenVDB, but version "
+                    "found was %s") % (".".join("%d" % v for v in cmake_version)))
+        sys.exit(1)
+
 if JPEG in requiredDependencies:
     # NASM is required to build libjpeg-turbo
     if (Windows() and not find_executable("nasm")):
@@ -1789,6 +1908,7 @@ Building with settings:
     Config                      {buildConfig}
     Imaging                     {buildImaging}
       Ptex support:             {enablePtex}
+      OpenVDB support:          {enableOpenVDB}
       OpenImageIO support:      {buildOIIO} 
       OpenColorIO support:      {buildOCIO} 
       PRMan support:            {buildPrman}
@@ -1838,6 +1958,7 @@ summaryMsg = summaryMsg.format(
     buildConfig=("Debug" if context.buildDebug else "Release"),
     buildImaging=("On" if context.buildImaging else "Off"),
     enablePtex=("On" if context.enablePtex else "Off"),
+    enableOpenVDB=("On" if context.enableOpenVDB else "Off"),
     buildOIIO=("On" if context.buildOIIO else "Off"),
     buildOCIO=("On" if context.buildOCIO else "Off"),
     buildPrman=("On" if context.buildPrman else "Off"),
