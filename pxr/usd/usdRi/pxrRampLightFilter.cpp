@@ -120,15 +120,15 @@ UsdRiPxrRampLightFilter::CreateRampModeAttr(VtValue const &defaultValue, bool wr
 }
 
 UsdAttribute
-UsdRiPxrRampLightFilter::GetFalloffRampBeginDistanceAttr() const
+UsdRiPxrRampLightFilter::GetBeginDistanceAttr() const
 {
-    return GetPrim().GetAttribute(UsdRiTokens->falloffRampBeginDistance);
+    return GetPrim().GetAttribute(UsdRiTokens->beginDistance);
 }
 
 UsdAttribute
-UsdRiPxrRampLightFilter::CreateFalloffRampBeginDistanceAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRiPxrRampLightFilter::CreateBeginDistanceAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdRiTokens->falloffRampBeginDistance,
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->beginDistance,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -137,16 +137,152 @@ UsdRiPxrRampLightFilter::CreateFalloffRampBeginDistanceAttr(VtValue const &defau
 }
 
 UsdAttribute
-UsdRiPxrRampLightFilter::GetFalloffRampEndDistanceAttr() const
+UsdRiPxrRampLightFilter::GetEndDistanceAttr() const
 {
-    return GetPrim().GetAttribute(UsdRiTokens->falloffRampEndDistance);
+    return GetPrim().GetAttribute(UsdRiTokens->endDistance);
 }
 
 UsdAttribute
-UsdRiPxrRampLightFilter::CreateFalloffRampEndDistanceAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRiPxrRampLightFilter::CreateEndDistanceAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdRiTokens->falloffRampEndDistance,
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->endDistance,
                        SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrRampLightFilter::GetFalloffAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->falloff);
+}
+
+UsdAttribute
+UsdRiPxrRampLightFilter::CreateFalloffAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->falloff,
+                       SdfValueTypeNames->Int,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrRampLightFilter::GetFalloffKnotsAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->falloffKnots);
+}
+
+UsdAttribute
+UsdRiPxrRampLightFilter::CreateFalloffKnotsAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->falloffKnots,
+                       SdfValueTypeNames->FloatArray,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrRampLightFilter::GetFalloffFloatsAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->falloffFloats);
+}
+
+UsdAttribute
+UsdRiPxrRampLightFilter::CreateFalloffFloatsAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->falloffFloats,
+                       SdfValueTypeNames->FloatArray,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrRampLightFilter::GetFalloffInterpolationAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->falloffInterpolation);
+}
+
+UsdAttribute
+UsdRiPxrRampLightFilter::CreateFalloffInterpolationAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->falloffInterpolation,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrRampLightFilter::GetColorRampAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->colorRamp);
+}
+
+UsdAttribute
+UsdRiPxrRampLightFilter::CreateColorRampAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->colorRamp,
+                       SdfValueTypeNames->Int,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrRampLightFilter::GetColorRampKnotsAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->colorRampKnots);
+}
+
+UsdAttribute
+UsdRiPxrRampLightFilter::CreateColorRampKnotsAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->colorRampKnots,
+                       SdfValueTypeNames->FloatArray,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrRampLightFilter::GetColorRampColorsAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->colorRampColors);
+}
+
+UsdAttribute
+UsdRiPxrRampLightFilter::CreateColorRampColorsAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->colorRampColors,
+                       SdfValueTypeNames->Color3fArray,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrRampLightFilter::GetColorRampInterpolationAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->colorRampInterpolation);
+}
+
+UsdAttribute
+UsdRiPxrRampLightFilter::CreateColorRampInterpolationAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->colorRampInterpolation,
+                       SdfValueTypeNames->Token,
                        /* custom = */ false,
                        SdfVariabilityVarying,
                        defaultValue,
@@ -171,8 +307,16 @@ UsdRiPxrRampLightFilter::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         UsdRiTokens->rampMode,
-        UsdRiTokens->falloffRampBeginDistance,
-        UsdRiTokens->falloffRampEndDistance,
+        UsdRiTokens->beginDistance,
+        UsdRiTokens->endDistance,
+        UsdRiTokens->falloff,
+        UsdRiTokens->falloffKnots,
+        UsdRiTokens->falloffFloats,
+        UsdRiTokens->falloffInterpolation,
+        UsdRiTokens->colorRamp,
+        UsdRiTokens->colorRampKnots,
+        UsdRiTokens->colorRampColors,
+        UsdRiTokens->colorRampInterpolation,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

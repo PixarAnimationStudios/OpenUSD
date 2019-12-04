@@ -148,44 +148,44 @@ _CreateRefineBackAttr(UsdRiPxrRodLightFilter &self,
 }
         
 static UsdAttribute
-_CreateEdgeTopAttr(UsdRiPxrRodLightFilter &self,
+_CreateEdgeScaleTopAttr(UsdRiPxrRodLightFilter &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateEdgeTopAttr(
+    return self.CreateEdgeScaleTopAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
-_CreateEdgeBottomAttr(UsdRiPxrRodLightFilter &self,
+_CreateEdgeScaleBottomAttr(UsdRiPxrRodLightFilter &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateEdgeBottomAttr(
+    return self.CreateEdgeScaleBottomAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
-_CreateEdgeLeftAttr(UsdRiPxrRodLightFilter &self,
+_CreateEdgeScaleLeftAttr(UsdRiPxrRodLightFilter &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateEdgeLeftAttr(
+    return self.CreateEdgeScaleLeftAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
-_CreateEdgeRightAttr(UsdRiPxrRodLightFilter &self,
+_CreateEdgeScaleRightAttr(UsdRiPxrRodLightFilter &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateEdgeRightAttr(
+    return self.CreateEdgeScaleRightAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
-_CreateEdgeFrontAttr(UsdRiPxrRodLightFilter &self,
+_CreateEdgeScaleFrontAttr(UsdRiPxrRodLightFilter &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateEdgeFrontAttr(
+    return self.CreateEdgeScaleFrontAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
-_CreateEdgeBackAttr(UsdRiPxrRodLightFilter &self,
+_CreateEdgeScaleBackAttr(UsdRiPxrRodLightFilter &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateEdgeBackAttr(
+    return self.CreateEdgeScaleBackAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
@@ -194,6 +194,62 @@ _CreateColorSaturationAttr(UsdRiPxrRodLightFilter &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateColorSaturationAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateFalloffAttr(UsdRiPxrRodLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateFalloffAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateFalloffKnotsAttr(UsdRiPxrRodLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateFalloffKnotsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateFalloffFloatsAttr(UsdRiPxrRodLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateFalloffFloatsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateFalloffInterpolationAttr(UsdRiPxrRodLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateFalloffInterpolationAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateColorRampAttr(UsdRiPxrRodLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateColorRampAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateColorRampKnotsAttr(UsdRiPxrRodLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateColorRampKnotsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateColorRampColorsAttr(UsdRiPxrRodLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateColorRampColorsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Color3fArray), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateColorRampInterpolationAttr(UsdRiPxrRodLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateColorRampInterpolationAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
 
 } // anonymous namespace
@@ -327,45 +383,45 @@ void wrapUsdRiPxrRodLightFilter()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetEdgeTopAttr",
-             &This::GetEdgeTopAttr)
-        .def("CreateEdgeTopAttr",
-             &_CreateEdgeTopAttr,
+        .def("GetEdgeScaleTopAttr",
+             &This::GetEdgeScaleTopAttr)
+        .def("CreateEdgeScaleTopAttr",
+             &_CreateEdgeScaleTopAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetEdgeBottomAttr",
-             &This::GetEdgeBottomAttr)
-        .def("CreateEdgeBottomAttr",
-             &_CreateEdgeBottomAttr,
+        .def("GetEdgeScaleBottomAttr",
+             &This::GetEdgeScaleBottomAttr)
+        .def("CreateEdgeScaleBottomAttr",
+             &_CreateEdgeScaleBottomAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetEdgeLeftAttr",
-             &This::GetEdgeLeftAttr)
-        .def("CreateEdgeLeftAttr",
-             &_CreateEdgeLeftAttr,
+        .def("GetEdgeScaleLeftAttr",
+             &This::GetEdgeScaleLeftAttr)
+        .def("CreateEdgeScaleLeftAttr",
+             &_CreateEdgeScaleLeftAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetEdgeRightAttr",
-             &This::GetEdgeRightAttr)
-        .def("CreateEdgeRightAttr",
-             &_CreateEdgeRightAttr,
+        .def("GetEdgeScaleRightAttr",
+             &This::GetEdgeScaleRightAttr)
+        .def("CreateEdgeScaleRightAttr",
+             &_CreateEdgeScaleRightAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetEdgeFrontAttr",
-             &This::GetEdgeFrontAttr)
-        .def("CreateEdgeFrontAttr",
-             &_CreateEdgeFrontAttr,
+        .def("GetEdgeScaleFrontAttr",
+             &This::GetEdgeScaleFrontAttr)
+        .def("CreateEdgeScaleFrontAttr",
+             &_CreateEdgeScaleFrontAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetEdgeBackAttr",
-             &This::GetEdgeBackAttr)
-        .def("CreateEdgeBackAttr",
-             &_CreateEdgeBackAttr,
+        .def("GetEdgeScaleBackAttr",
+             &This::GetEdgeScaleBackAttr)
+        .def("CreateEdgeScaleBackAttr",
+             &_CreateEdgeScaleBackAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
@@ -373,6 +429,62 @@ void wrapUsdRiPxrRodLightFilter()
              &This::GetColorSaturationAttr)
         .def("CreateColorSaturationAttr",
              &_CreateColorSaturationAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetFalloffAttr",
+             &This::GetFalloffAttr)
+        .def("CreateFalloffAttr",
+             &_CreateFalloffAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetFalloffKnotsAttr",
+             &This::GetFalloffKnotsAttr)
+        .def("CreateFalloffKnotsAttr",
+             &_CreateFalloffKnotsAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetFalloffFloatsAttr",
+             &This::GetFalloffFloatsAttr)
+        .def("CreateFalloffFloatsAttr",
+             &_CreateFalloffFloatsAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetFalloffInterpolationAttr",
+             &This::GetFalloffInterpolationAttr)
+        .def("CreateFalloffInterpolationAttr",
+             &_CreateFalloffInterpolationAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetColorRampAttr",
+             &This::GetColorRampAttr)
+        .def("CreateColorRampAttr",
+             &_CreateColorRampAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetColorRampKnotsAttr",
+             &This::GetColorRampKnotsAttr)
+        .def("CreateColorRampKnotsAttr",
+             &_CreateColorRampKnotsAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetColorRampColorsAttr",
+             &This::GetColorRampColorsAttr)
+        .def("CreateColorRampColorsAttr",
+             &_CreateColorRampColorsAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetColorRampInterpolationAttr",
+             &This::GetColorRampInterpolationAttr)
+        .def("CreateColorRampInterpolationAttr",
+             &_CreateColorRampInterpolationAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

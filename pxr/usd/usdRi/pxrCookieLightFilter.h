@@ -282,7 +282,7 @@ public:
     /// \n  C++ Type: GfVec3f
     /// \n  Usd Type: SdfValueTypeNames->Color3f
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// \n  Fallback Value: (1, 1, 1)
     USDRI_API
     UsdAttribute GetTextureFillColorAttr() const;
 
@@ -293,6 +293,28 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDRI_API
     UsdAttribute CreateTextureFillColorAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // TEXTUREPREMULTIPLIEDALPHA 
+    // --------------------------------------------------------------------- //
+    /// Textures are usually premultiplied by their alpha. If this not
+    /// the case, uncheck this.
+    ///
+    /// \n  C++ Type: bool
+    /// \n  Usd Type: SdfValueTypeNames->Bool
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: True
+    USDRI_API
+    UsdAttribute GetTexturePremultipliedAlphaAttr() const;
+
+    /// See GetTexturePremultipliedAlphaAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateTexturePremultipliedAlphaAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
@@ -493,12 +515,12 @@ public:
     // --------------------------------------------------------------------- //
     // ANALYTICAPEX 
     // --------------------------------------------------------------------- //
-    /// Shear the projection along the Y axis.
+    /// Distance between the center of cookie and the center of projection.
     ///
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// \n  Fallback Value: 25.0
     USDRI_API
     UsdAttribute GetAnalyticApexAttr() const;
 
@@ -631,7 +653,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// \n  Fallback Value: 0.5
     USDRI_API
     UsdAttribute GetAnalyticBlurMidpointAttr() const;
 
@@ -652,7 +674,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// \n  Fallback Value: 10.0
     USDRI_API
     UsdAttribute GetAnalyticBlurFarDistanceAttr() const;
 
@@ -673,7 +695,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// \n  Fallback Value: 1.0
     USDRI_API
     UsdAttribute GetAnalyticBlurNearValueAttr() const;
 
@@ -694,7 +716,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// \n  Fallback Value: 1.0
     USDRI_API
     UsdAttribute GetAnalyticBlurMidValueAttr() const;
 
@@ -715,7 +737,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// \n  Fallback Value: 1.0
     USDRI_API
     UsdAttribute GetAnalyticBlurFarValueAttr() const;
 
@@ -736,7 +758,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// \n  Fallback Value: 1.0
     USDRI_API
     UsdAttribute GetAnalyticBlurExponentAttr() const;
 
@@ -779,7 +801,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// \n  Fallback Value: 0.5
     USDRI_API
     UsdAttribute GetAnalyticDensityMidpointAttr() const;
 
@@ -801,7 +823,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// \n  Fallback Value: 10.0
     USDRI_API
     UsdAttribute GetAnalyticDensityFarDistanceAttr() const;
 
@@ -822,7 +844,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// \n  Fallback Value: 1.0
     USDRI_API
     UsdAttribute GetAnalyticDensityNearValueAttr() const;
 
@@ -843,7 +865,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// \n  Fallback Value: 1.0
     USDRI_API
     UsdAttribute GetAnalyticDensityMidValueAttr() const;
 
@@ -864,7 +886,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// \n  Fallback Value: 1.0
     USDRI_API
     UsdAttribute GetAnalyticDensityFarValueAttr() const;
 
@@ -885,7 +907,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// \n  Fallback Value: 1.0
     USDRI_API
     UsdAttribute GetAnalyticDensityExponentAttr() const;
 
@@ -993,7 +1015,7 @@ public:
     /// \n  C++ Type: GfVec3f
     /// \n  Usd Type: SdfValueTypeNames->Color3f
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// \n  Fallback Value: (1, 1, 1)
     USDRI_API
     UsdAttribute GetColorTintAttr() const;
 

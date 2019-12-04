@@ -205,6 +205,23 @@ UsdRiPxrCookieLightFilter::CreateTextureFillColorAttr(VtValue const &defaultValu
 }
 
 UsdAttribute
+UsdRiPxrCookieLightFilter::GetTexturePremultipliedAlphaAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->texturePremultipliedAlpha);
+}
+
+UsdAttribute
+UsdRiPxrCookieLightFilter::CreateTexturePremultipliedAlphaAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->texturePremultipliedAlpha,
+                       SdfValueTypeNames->Bool,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdRiPxrCookieLightFilter::GetTextureInvertUAttr() const
 {
     return GetPrim().GetAttribute(UsdRiTokens->textureInvertU);
@@ -788,6 +805,7 @@ UsdRiPxrCookieLightFilter::GetSchemaAttributeNames(bool includeInherited)
         UsdRiTokens->textureMap,
         UsdRiTokens->textureWrapMode,
         UsdRiTokens->textureFillColor,
+        UsdRiTokens->texturePremultipliedAlpha,
         UsdRiTokens->textureInvertU,
         UsdRiTokens->textureInvertV,
         UsdRiTokens->textureScaleU,

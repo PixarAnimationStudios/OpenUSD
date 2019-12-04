@@ -57,17 +57,73 @@ _CreateRampModeAttr(UsdRiPxrRampLightFilter &self,
 }
         
 static UsdAttribute
-_CreateFalloffRampBeginDistanceAttr(UsdRiPxrRampLightFilter &self,
+_CreateBeginDistanceAttr(UsdRiPxrRampLightFilter &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateFalloffRampBeginDistanceAttr(
+    return self.CreateBeginDistanceAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
-_CreateFalloffRampEndDistanceAttr(UsdRiPxrRampLightFilter &self,
+_CreateEndDistanceAttr(UsdRiPxrRampLightFilter &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateFalloffRampEndDistanceAttr(
+    return self.CreateEndDistanceAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateFalloffAttr(UsdRiPxrRampLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateFalloffAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateFalloffKnotsAttr(UsdRiPxrRampLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateFalloffKnotsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateFalloffFloatsAttr(UsdRiPxrRampLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateFalloffFloatsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateFalloffInterpolationAttr(UsdRiPxrRampLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateFalloffInterpolationAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateColorRampAttr(UsdRiPxrRampLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateColorRampAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateColorRampKnotsAttr(UsdRiPxrRampLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateColorRampKnotsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateColorRampColorsAttr(UsdRiPxrRampLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateColorRampColorsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Color3fArray), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateColorRampInterpolationAttr(UsdRiPxrRampLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateColorRampInterpolationAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
 
 } // anonymous namespace
@@ -110,17 +166,73 @@ void wrapUsdRiPxrRampLightFilter()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetFalloffRampBeginDistanceAttr",
-             &This::GetFalloffRampBeginDistanceAttr)
-        .def("CreateFalloffRampBeginDistanceAttr",
-             &_CreateFalloffRampBeginDistanceAttr,
+        .def("GetBeginDistanceAttr",
+             &This::GetBeginDistanceAttr)
+        .def("CreateBeginDistanceAttr",
+             &_CreateBeginDistanceAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetFalloffRampEndDistanceAttr",
-             &This::GetFalloffRampEndDistanceAttr)
-        .def("CreateFalloffRampEndDistanceAttr",
-             &_CreateFalloffRampEndDistanceAttr,
+        .def("GetEndDistanceAttr",
+             &This::GetEndDistanceAttr)
+        .def("CreateEndDistanceAttr",
+             &_CreateEndDistanceAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetFalloffAttr",
+             &This::GetFalloffAttr)
+        .def("CreateFalloffAttr",
+             &_CreateFalloffAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetFalloffKnotsAttr",
+             &This::GetFalloffKnotsAttr)
+        .def("CreateFalloffKnotsAttr",
+             &_CreateFalloffKnotsAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetFalloffFloatsAttr",
+             &This::GetFalloffFloatsAttr)
+        .def("CreateFalloffFloatsAttr",
+             &_CreateFalloffFloatsAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetFalloffInterpolationAttr",
+             &This::GetFalloffInterpolationAttr)
+        .def("CreateFalloffInterpolationAttr",
+             &_CreateFalloffInterpolationAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetColorRampAttr",
+             &This::GetColorRampAttr)
+        .def("CreateColorRampAttr",
+             &_CreateColorRampAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetColorRampKnotsAttr",
+             &This::GetColorRampKnotsAttr)
+        .def("CreateColorRampKnotsAttr",
+             &_CreateColorRampKnotsAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetColorRampColorsAttr",
+             &This::GetColorRampColorsAttr)
+        .def("CreateColorRampColorsAttr",
+             &_CreateColorRampColorsAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetColorRampInterpolationAttr",
+             &This::GetColorRampInterpolationAttr)
+        .def("CreateColorRampInterpolationAttr",
+             &_CreateColorRampInterpolationAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

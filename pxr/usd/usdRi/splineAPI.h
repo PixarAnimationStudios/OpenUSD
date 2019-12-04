@@ -65,7 +65,7 @@ class SdfAssetPath;
 /// 
 /// - linear (UsdRiTokens->linear)
 /// - bspline (UsdRiTokens->bspline)
-/// - Catmull-Rom (UsdRiTokens->catmullRom)
+/// - Catmull-Rom (UsdRiTokens->catmull_rom)
 /// 
 ///
 class UsdRiSplineAPI : public UsdAPISchemaBase

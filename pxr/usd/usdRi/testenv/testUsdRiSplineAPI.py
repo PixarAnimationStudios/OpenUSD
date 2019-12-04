@@ -27,7 +27,7 @@ from pxr import Sdf, Usd, UsdLux, UsdRi
 import unittest
 
 def SetEaseOut(spline):
-    spline.CreateInterpolationAttr().Set(UsdRi.Tokens.catmullRom)
+    spline.CreateInterpolationAttr().Set(UsdRi.Tokens.catmull_rom)
     spline.CreatePositionsAttr().Set([0.0, 0.3, 0.7, 1.0])
     spline.CreateValuesAttr().Set([1.0, 0.8, 0.2, 0.0])
 
@@ -69,7 +69,7 @@ class TestUsdRiSplineAPI(unittest.TestCase):
         assert not IsValid(falloffRamp)
 
         # check all known interp types
-        for interp in ['linear', 'constant', 'catmullRom', 'bspline']:
+        for interp in ['linear', 'constant', 'catmull-rom', 'bspline']:
             falloffRamp.CreateInterpolationAttr().Set(interp)
             assert IsValid(falloffRamp)
 

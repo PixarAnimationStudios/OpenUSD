@@ -92,6 +92,13 @@ _CreateTextureFillColorAttr(UsdRiPxrCookieLightFilter &self,
 }
         
 static UsdAttribute
+_CreateTexturePremultipliedAlphaAttr(UsdRiPxrCookieLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateTexturePremultipliedAlphaAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateTextureInvertUAttr(UsdRiPxrCookieLightFilter &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateTextureInvertUAttr(
@@ -394,6 +401,13 @@ void wrapUsdRiPxrCookieLightFilter()
              &This::GetTextureFillColorAttr)
         .def("CreateTextureFillColorAttr",
              &_CreateTextureFillColorAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetTexturePremultipliedAlphaAttr",
+             &This::GetTexturePremultipliedAlphaAttr)
+        .def("CreateTexturePremultipliedAlphaAttr",
+             &_CreateTexturePremultipliedAlphaAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         

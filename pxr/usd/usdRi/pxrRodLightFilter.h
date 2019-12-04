@@ -57,6 +57,11 @@ class SdfAssetPath;
 ///
 /// Simulates a rod or capsule-shaped region to modulate light.
 ///
+/// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
+/// that are text/tokens, the actual token is published and defined in \ref UsdRiTokens.
+/// So to set an attribute to the value "rightHanded", use UsdRiTokens->rightHanded
+/// as the value.
+///
 class UsdRiPxrRodLightFilter : public UsdLuxLightFilter
 {
 public:
@@ -160,7 +165,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// \n  Fallback Value: 0.0
     USDRI_API
     UsdAttribute GetWidthAttr() const;
 
@@ -181,7 +186,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// \n  Fallback Value: 0.0
     USDRI_API
     UsdAttribute GetHeightAttr() const;
 
@@ -202,7 +207,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// \n  Fallback Value: 0.0
     USDRI_API
     UsdAttribute GetDepthAttr() const;
 
@@ -223,7 +228,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.5
+    /// \n  Fallback Value: 1.0
     USDRI_API
     UsdAttribute GetRadiusAttr() const;
 
@@ -245,7 +250,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// \n  Fallback Value: 0.25
     USDRI_API
     UsdAttribute GetEdgeThicknessAttr() const;
 
@@ -324,7 +329,7 @@ public:
     // --------------------------------------------------------------------- //
     // REFINETOP 
     // --------------------------------------------------------------------- //
-    /// Additional adjustment to the top region.
+    /// Additional offset adjustment to the top region.
     ///
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
@@ -345,7 +350,7 @@ public:
     // --------------------------------------------------------------------- //
     // REFINEBOTTOM 
     // --------------------------------------------------------------------- //
-    /// Additional adjustment to the top region.
+    /// Additional offset adjustment to the top region.
     ///
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
@@ -366,7 +371,7 @@ public:
     // --------------------------------------------------------------------- //
     // REFINELEFT 
     // --------------------------------------------------------------------- //
-    /// Additional adjustment to the left region.
+    /// Additional offset adjustment to the left region.
     ///
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
@@ -387,7 +392,7 @@ public:
     // --------------------------------------------------------------------- //
     // REFINERIGHT 
     // --------------------------------------------------------------------- //
-    /// Additional adjustment to the left region.
+    /// Additional offset adjustment to the left region.
     ///
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
@@ -408,7 +413,7 @@ public:
     // --------------------------------------------------------------------- //
     // REFINEFRONT 
     // --------------------------------------------------------------------- //
-    /// Additional adjustment to the front region.
+    /// Additional offset adjustment to the front region.
     ///
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
@@ -429,7 +434,7 @@ public:
     // --------------------------------------------------------------------- //
     // REFINEBACK 
     // --------------------------------------------------------------------- //
-    /// Additional adjustment to the back region.
+    /// Additional offset adjustment to the back region.
     ///
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
@@ -448,129 +453,129 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
-    // EDGETOP 
+    // EDGESCALETOP 
     // --------------------------------------------------------------------- //
-    /// Additional adjustment to the top region.
+    /// Additional edge scale adjustment to the top region.
     ///
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// \n  Fallback Value: 1.0
     USDRI_API
-    UsdAttribute GetEdgeTopAttr() const;
+    UsdAttribute GetEdgeScaleTopAttr() const;
 
-    /// See GetEdgeTopAttr(), and also 
+    /// See GetEdgeScaleTopAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDRI_API
-    UsdAttribute CreateEdgeTopAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateEdgeScaleTopAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
-    // EDGEBOTTOM 
+    // EDGESCALEBOTTOM 
     // --------------------------------------------------------------------- //
-    /// Additional adjustment to the top region.
+    /// Additional edge scale adjustment to the top region.
     ///
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// \n  Fallback Value: 1.0
     USDRI_API
-    UsdAttribute GetEdgeBottomAttr() const;
+    UsdAttribute GetEdgeScaleBottomAttr() const;
 
-    /// See GetEdgeBottomAttr(), and also 
+    /// See GetEdgeScaleBottomAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDRI_API
-    UsdAttribute CreateEdgeBottomAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateEdgeScaleBottomAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
-    // EDGELEFT 
+    // EDGESCALELEFT 
     // --------------------------------------------------------------------- //
-    /// Additional adjustment to the left region.
+    /// Additional edge scale adjustment to the left region.
     ///
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// \n  Fallback Value: 1.0
     USDRI_API
-    UsdAttribute GetEdgeLeftAttr() const;
+    UsdAttribute GetEdgeScaleLeftAttr() const;
 
-    /// See GetEdgeLeftAttr(), and also 
+    /// See GetEdgeScaleLeftAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDRI_API
-    UsdAttribute CreateEdgeLeftAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateEdgeScaleLeftAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
-    // EDGERIGHT 
+    // EDGESCALERIGHT 
     // --------------------------------------------------------------------- //
-    /// Additional adjustment to the left region.
+    /// Additional edge scale adjustment to the left region.
     ///
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// \n  Fallback Value: 1.0
     USDRI_API
-    UsdAttribute GetEdgeRightAttr() const;
+    UsdAttribute GetEdgeScaleRightAttr() const;
 
-    /// See GetEdgeRightAttr(), and also 
+    /// See GetEdgeScaleRightAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDRI_API
-    UsdAttribute CreateEdgeRightAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateEdgeScaleRightAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
-    // EDGEFRONT 
+    // EDGESCALEFRONT 
     // --------------------------------------------------------------------- //
-    /// Additional adjustment to the front region.
+    /// Additional edge scale adjustment to the front region.
     ///
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// \n  Fallback Value: 1.0
     USDRI_API
-    UsdAttribute GetEdgeFrontAttr() const;
+    UsdAttribute GetEdgeScaleFrontAttr() const;
 
-    /// See GetEdgeFrontAttr(), and also 
+    /// See GetEdgeScaleFrontAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDRI_API
-    UsdAttribute CreateEdgeFrontAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateEdgeScaleFrontAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
-    // EDGEBACK 
+    // EDGESCALEBACK 
     // --------------------------------------------------------------------- //
-    /// Additional adjustment to the back region.
+    /// Additional edge scale adjustment to the back region.
     ///
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// \n  Fallback Value: 1.0
     USDRI_API
-    UsdAttribute GetEdgeBackAttr() const;
+    UsdAttribute GetEdgeScaleBackAttr() const;
 
-    /// See GetEdgeBackAttr(), and also 
+    /// See GetEdgeScaleBackAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDRI_API
-    UsdAttribute CreateEdgeBackAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateEdgeScaleBackAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
@@ -593,6 +598,176 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDRI_API
     UsdAttribute CreateColorSaturationAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // FALLOFF 
+    // --------------------------------------------------------------------- //
+    /// Controls the transition from the core to the edge.
+    ///
+    /// \n  C++ Type: int
+    /// \n  Usd Type: SdfValueTypeNames->Int
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: 6
+    USDRI_API
+    UsdAttribute GetFalloffAttr() const;
+
+    /// See GetFalloffAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateFalloffAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // FALLOFFKNOTS 
+    // --------------------------------------------------------------------- //
+    /// Knots of the falloff spline.
+    ///
+    /// \n  C++ Type: VtArray<float>
+    /// \n  Usd Type: SdfValueTypeNames->FloatArray
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: [0, 0, 0.3, 0.7, 1, 1]
+    USDRI_API
+    UsdAttribute GetFalloffKnotsAttr() const;
+
+    /// See GetFalloffKnotsAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateFalloffKnotsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // FALLOFFFLOATS 
+    // --------------------------------------------------------------------- //
+    /// Float values of the falloff spline.
+    ///
+    /// \n  C++ Type: VtArray<float>
+    /// \n  Usd Type: SdfValueTypeNames->FloatArray
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: [0, 0, 0.2, 0.8, 1, 1]
+    USDRI_API
+    UsdAttribute GetFalloffFloatsAttr() const;
+
+    /// See GetFalloffFloatsAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateFalloffFloatsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // FALLOFFINTERPOLATION 
+    // --------------------------------------------------------------------- //
+    /// Falloff spline type. 
+    ///
+    /// \n  C++ Type: TfToken
+    /// \n  Usd Type: SdfValueTypeNames->Token
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: bspline
+    /// \n  \ref UsdRiTokens "Allowed Values": [linear, catmull-rom, bspline, constant]
+    USDRI_API
+    UsdAttribute GetFalloffInterpolationAttr() const;
+
+    /// See GetFalloffInterpolationAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateFalloffInterpolationAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // COLORRAMP 
+    // --------------------------------------------------------------------- //
+    /// Controls the color gradient for the transition.
+    ///
+    /// \n  C++ Type: int
+    /// \n  Usd Type: SdfValueTypeNames->Int
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: 4
+    USDRI_API
+    UsdAttribute GetColorRampAttr() const;
+
+    /// See GetColorRampAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateColorRampAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // COLORRAMPKNOTS 
+    // --------------------------------------------------------------------- //
+    /// Knots of the colorRamp spline.
+    ///
+    /// \n  C++ Type: VtArray<float>
+    /// \n  Usd Type: SdfValueTypeNames->FloatArray
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: [0, 0, 1, 1]
+    USDRI_API
+    UsdAttribute GetColorRampKnotsAttr() const;
+
+    /// See GetColorRampKnotsAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateColorRampKnotsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // COLORRAMPCOLORS 
+    // --------------------------------------------------------------------- //
+    /// Color values of the colorRamp spline.
+    ///
+    /// \n  C++ Type: VtArray<GfVec3f>
+    /// \n  Usd Type: SdfValueTypeNames->Color3fArray
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)]
+    USDRI_API
+    UsdAttribute GetColorRampColorsAttr() const;
+
+    /// See GetColorRampColorsAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateColorRampColorsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // COLORRAMPINTERPOLATION 
+    // --------------------------------------------------------------------- //
+    /// ColorRamp spline type. 
+    ///
+    /// \n  C++ Type: TfToken
+    /// \n  Usd Type: SdfValueTypeNames->Token
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: linear
+    /// \n  \ref UsdRiTokens "Allowed Values": [linear, catmull-rom, bspline, constant]
+    USDRI_API
+    UsdAttribute GetColorRampInterpolationAttr() const;
+
+    /// See GetColorRampInterpolationAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateColorRampInterpolationAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //

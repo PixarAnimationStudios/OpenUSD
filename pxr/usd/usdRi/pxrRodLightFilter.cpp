@@ -341,15 +341,15 @@ UsdRiPxrRodLightFilter::CreateRefineBackAttr(VtValue const &defaultValue, bool w
 }
 
 UsdAttribute
-UsdRiPxrRodLightFilter::GetEdgeTopAttr() const
+UsdRiPxrRodLightFilter::GetEdgeScaleTopAttr() const
 {
-    return GetPrim().GetAttribute(UsdRiTokens->edgeTop);
+    return GetPrim().GetAttribute(UsdRiTokens->edgeScaleTop);
 }
 
 UsdAttribute
-UsdRiPxrRodLightFilter::CreateEdgeTopAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRiPxrRodLightFilter::CreateEdgeScaleTopAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdRiTokens->edgeTop,
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->edgeScaleTop,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -358,15 +358,15 @@ UsdRiPxrRodLightFilter::CreateEdgeTopAttr(VtValue const &defaultValue, bool writ
 }
 
 UsdAttribute
-UsdRiPxrRodLightFilter::GetEdgeBottomAttr() const
+UsdRiPxrRodLightFilter::GetEdgeScaleBottomAttr() const
 {
-    return GetPrim().GetAttribute(UsdRiTokens->edgeBottom);
+    return GetPrim().GetAttribute(UsdRiTokens->edgeScaleBottom);
 }
 
 UsdAttribute
-UsdRiPxrRodLightFilter::CreateEdgeBottomAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRiPxrRodLightFilter::CreateEdgeScaleBottomAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdRiTokens->edgeBottom,
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->edgeScaleBottom,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -375,15 +375,15 @@ UsdRiPxrRodLightFilter::CreateEdgeBottomAttr(VtValue const &defaultValue, bool w
 }
 
 UsdAttribute
-UsdRiPxrRodLightFilter::GetEdgeLeftAttr() const
+UsdRiPxrRodLightFilter::GetEdgeScaleLeftAttr() const
 {
-    return GetPrim().GetAttribute(UsdRiTokens->edgeLeft);
+    return GetPrim().GetAttribute(UsdRiTokens->edgeScaleLeft);
 }
 
 UsdAttribute
-UsdRiPxrRodLightFilter::CreateEdgeLeftAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRiPxrRodLightFilter::CreateEdgeScaleLeftAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdRiTokens->edgeLeft,
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->edgeScaleLeft,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -392,15 +392,15 @@ UsdRiPxrRodLightFilter::CreateEdgeLeftAttr(VtValue const &defaultValue, bool wri
 }
 
 UsdAttribute
-UsdRiPxrRodLightFilter::GetEdgeRightAttr() const
+UsdRiPxrRodLightFilter::GetEdgeScaleRightAttr() const
 {
-    return GetPrim().GetAttribute(UsdRiTokens->edgeRight);
+    return GetPrim().GetAttribute(UsdRiTokens->edgeScaleRight);
 }
 
 UsdAttribute
-UsdRiPxrRodLightFilter::CreateEdgeRightAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRiPxrRodLightFilter::CreateEdgeScaleRightAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdRiTokens->edgeRight,
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->edgeScaleRight,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -409,15 +409,15 @@ UsdRiPxrRodLightFilter::CreateEdgeRightAttr(VtValue const &defaultValue, bool wr
 }
 
 UsdAttribute
-UsdRiPxrRodLightFilter::GetEdgeFrontAttr() const
+UsdRiPxrRodLightFilter::GetEdgeScaleFrontAttr() const
 {
-    return GetPrim().GetAttribute(UsdRiTokens->edgeFront);
+    return GetPrim().GetAttribute(UsdRiTokens->edgeScaleFront);
 }
 
 UsdAttribute
-UsdRiPxrRodLightFilter::CreateEdgeFrontAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRiPxrRodLightFilter::CreateEdgeScaleFrontAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdRiTokens->edgeFront,
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->edgeScaleFront,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -426,15 +426,15 @@ UsdRiPxrRodLightFilter::CreateEdgeFrontAttr(VtValue const &defaultValue, bool wr
 }
 
 UsdAttribute
-UsdRiPxrRodLightFilter::GetEdgeBackAttr() const
+UsdRiPxrRodLightFilter::GetEdgeScaleBackAttr() const
 {
-    return GetPrim().GetAttribute(UsdRiTokens->edgeBack);
+    return GetPrim().GetAttribute(UsdRiTokens->edgeScaleBack);
 }
 
 UsdAttribute
-UsdRiPxrRodLightFilter::CreateEdgeBackAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRiPxrRodLightFilter::CreateEdgeScaleBackAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdRiTokens->edgeBack,
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->edgeScaleBack,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -453,6 +453,142 @@ UsdRiPxrRodLightFilter::CreateColorSaturationAttr(VtValue const &defaultValue, b
 {
     return UsdSchemaBase::_CreateAttr(UsdRiTokens->colorSaturation,
                        SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrRodLightFilter::GetFalloffAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->falloff);
+}
+
+UsdAttribute
+UsdRiPxrRodLightFilter::CreateFalloffAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->falloff,
+                       SdfValueTypeNames->Int,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrRodLightFilter::GetFalloffKnotsAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->falloffKnots);
+}
+
+UsdAttribute
+UsdRiPxrRodLightFilter::CreateFalloffKnotsAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->falloffKnots,
+                       SdfValueTypeNames->FloatArray,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrRodLightFilter::GetFalloffFloatsAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->falloffFloats);
+}
+
+UsdAttribute
+UsdRiPxrRodLightFilter::CreateFalloffFloatsAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->falloffFloats,
+                       SdfValueTypeNames->FloatArray,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrRodLightFilter::GetFalloffInterpolationAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->falloffInterpolation);
+}
+
+UsdAttribute
+UsdRiPxrRodLightFilter::CreateFalloffInterpolationAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->falloffInterpolation,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrRodLightFilter::GetColorRampAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->colorRamp);
+}
+
+UsdAttribute
+UsdRiPxrRodLightFilter::CreateColorRampAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->colorRamp,
+                       SdfValueTypeNames->Int,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrRodLightFilter::GetColorRampKnotsAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->colorRampKnots);
+}
+
+UsdAttribute
+UsdRiPxrRodLightFilter::CreateColorRampKnotsAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->colorRampKnots,
+                       SdfValueTypeNames->FloatArray,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrRodLightFilter::GetColorRampColorsAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->colorRampColors);
+}
+
+UsdAttribute
+UsdRiPxrRodLightFilter::CreateColorRampColorsAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->colorRampColors,
+                       SdfValueTypeNames->Color3fArray,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdRiPxrRodLightFilter::GetColorRampInterpolationAttr() const
+{
+    return GetPrim().GetAttribute(UsdRiTokens->colorRampInterpolation);
+}
+
+UsdAttribute
+UsdRiPxrRodLightFilter::CreateColorRampInterpolationAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->colorRampInterpolation,
+                       SdfValueTypeNames->Token,
                        /* custom = */ false,
                        SdfVariabilityVarying,
                        defaultValue,
@@ -490,13 +626,21 @@ UsdRiPxrRodLightFilter::GetSchemaAttributeNames(bool includeInherited)
         UsdRiTokens->refineRight,
         UsdRiTokens->refineFront,
         UsdRiTokens->refineBack,
-        UsdRiTokens->edgeTop,
-        UsdRiTokens->edgeBottom,
-        UsdRiTokens->edgeLeft,
-        UsdRiTokens->edgeRight,
-        UsdRiTokens->edgeFront,
-        UsdRiTokens->edgeBack,
+        UsdRiTokens->edgeScaleTop,
+        UsdRiTokens->edgeScaleBottom,
+        UsdRiTokens->edgeScaleLeft,
+        UsdRiTokens->edgeScaleRight,
+        UsdRiTokens->edgeScaleFront,
+        UsdRiTokens->edgeScaleBack,
         UsdRiTokens->colorSaturation,
+        UsdRiTokens->falloff,
+        UsdRiTokens->falloffKnots,
+        UsdRiTokens->falloffFloats,
+        UsdRiTokens->falloffInterpolation,
+        UsdRiTokens->colorRamp,
+        UsdRiTokens->colorRampKnots,
+        UsdRiTokens->colorRampColors,
+        UsdRiTokens->colorRampInterpolation,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

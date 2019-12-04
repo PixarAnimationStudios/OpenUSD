@@ -204,30 +204,30 @@ _CreateRefineRightAttr(UsdRiPxrBarnLightFilter &self,
 }
         
 static UsdAttribute
-_CreateEdgeTopAttr(UsdRiPxrBarnLightFilter &self,
+_CreateEdgeScaleTopAttr(UsdRiPxrBarnLightFilter &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateEdgeTopAttr(
+    return self.CreateEdgeScaleTopAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
-_CreateEdgeBottomAttr(UsdRiPxrBarnLightFilter &self,
+_CreateEdgeScaleBottomAttr(UsdRiPxrBarnLightFilter &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateEdgeBottomAttr(
+    return self.CreateEdgeScaleBottomAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
-_CreateEdgeLeftAttr(UsdRiPxrBarnLightFilter &self,
+_CreateEdgeScaleLeftAttr(UsdRiPxrBarnLightFilter &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateEdgeLeftAttr(
+    return self.CreateEdgeScaleLeftAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
-_CreateEdgeRightAttr(UsdRiPxrBarnLightFilter &self,
+_CreateEdgeScaleRightAttr(UsdRiPxrBarnLightFilter &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateEdgeRightAttr(
+    return self.CreateEdgeScaleRightAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
 
@@ -418,31 +418,31 @@ void wrapUsdRiPxrBarnLightFilter()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetEdgeTopAttr",
-             &This::GetEdgeTopAttr)
-        .def("CreateEdgeTopAttr",
-             &_CreateEdgeTopAttr,
+        .def("GetEdgeScaleTopAttr",
+             &This::GetEdgeScaleTopAttr)
+        .def("CreateEdgeScaleTopAttr",
+             &_CreateEdgeScaleTopAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetEdgeBottomAttr",
-             &This::GetEdgeBottomAttr)
-        .def("CreateEdgeBottomAttr",
-             &_CreateEdgeBottomAttr,
+        .def("GetEdgeScaleBottomAttr",
+             &This::GetEdgeScaleBottomAttr)
+        .def("CreateEdgeScaleBottomAttr",
+             &_CreateEdgeScaleBottomAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetEdgeLeftAttr",
-             &This::GetEdgeLeftAttr)
-        .def("CreateEdgeLeftAttr",
-             &_CreateEdgeLeftAttr,
+        .def("GetEdgeScaleLeftAttr",
+             &This::GetEdgeScaleLeftAttr)
+        .def("CreateEdgeScaleLeftAttr",
+             &_CreateEdgeScaleLeftAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetEdgeRightAttr",
-             &This::GetEdgeRightAttr)
-        .def("CreateEdgeRightAttr",
-             &_CreateEdgeRightAttr,
+        .def("GetEdgeScaleRightAttr",
+             &This::GetEdgeScaleRightAttr)
+        .def("CreateEdgeScaleRightAttr",
+             &_CreateEdgeScaleRightAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

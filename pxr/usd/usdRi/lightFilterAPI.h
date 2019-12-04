@@ -193,7 +193,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// \n  Fallback Value: 1.0
     USDRI_API
     UsdAttribute GetRiDensityAttr() const;
 
@@ -214,7 +214,7 @@ public:
     /// \n  C++ Type: bool
     /// \n  Usd Type: SdfValueTypeNames->Bool
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// \n  Fallback Value: False
     USDRI_API
     UsdAttribute GetRiInvertAttr() const;
 
@@ -235,7 +235,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// \n  Fallback Value: 0.0
     USDRI_API
     UsdAttribute GetRiIntensityAttr() const;
 
@@ -278,7 +278,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// \n  Fallback Value: 1.0
     USDRI_API
     UsdAttribute GetRiDiffuseAttr() const;
 
@@ -300,7 +300,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// \n  Fallback Value: 1.0
     USDRI_API
     UsdAttribute GetRiSpecularAttr() const;
 

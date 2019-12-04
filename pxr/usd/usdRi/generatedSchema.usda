@@ -318,23 +318,23 @@ class "RiLightFilterAPI" (
         Fallback: multiply
         """
     )
-    float ri:density (
+    float ri:density = 1 (
         doc = "Scales the strength of the filter."
     )
-    float ri:diffuse (
+    float ri:diffuse = 1 (
         doc = """A multiplier for the effect of this light on the diffuse
         response of materials.  This is a non-physical control."""
     )
     float ri:exposure = 0 (
         doc = "Exposure control for the multiplier."
     )
-    float ri:intensity (
+    float ri:intensity = 0 (
         doc = "Multipier for the diffuse and specular result."
     )
-    bool ri:invert (
+    bool ri:invert = 0 (
         doc = "When true, inverts the output of the light filter."
     )
-    float ri:specular (
+    float ri:specular = 1 (
         doc = """A multiplier for the effect of this light on the specular
         response of materials.  This is a non-physical control."""
     )
@@ -371,7 +371,7 @@ class "RiSplineAPI" (
 
     - linear (UsdRiTokens->linear)
     - bspline (UsdRiTokens->bspline)
-    - Catmull-Rom (UsdRiTokens->catmullRom)
+    - Catmull-Rom (UsdRiTokens->catmull_rom)
     '''
 )
 {
@@ -798,6 +798,10 @@ class PxrIntMultLightFilter "PxrIntMultLightFilter" (
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
+    float color:saturation = 1 (
+        doc = """Saturation of the light before hitting the surface (0=greyscale,1=normal,
+\t>1=boosted colors)."""
+    )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
@@ -858,6 +862,10 @@ class PxrIntMultLightFilter "PxrIntMultLightFilter" (
         well with the needs of multithreaded rendering. Purpose provides us with
         a better tool for dynamic, interactive complexity management.'''
     )
+    float ri:intensity = 1 (
+        doc = """Multipier for the light intensity.
+\tThis setting is meant to override the fallback value in RiLightFilterAPI"""
+    )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         doc = '''Visibility is meant to be the simplest form of "pruning" 
@@ -885,17 +893,17 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
     doc = "Simulated geometric barn doors that control the spread of light."
 )
 {
-    float analytic:apex = 0 (
+    float analytic:apex = 25 (
         doc = "Shear the projection along the Y axis."
     )
-    float analytic:density:exponent = 0 (
+    float analytic:density:exponent = 1 (
         doc = "Power exponent of the density interpolation."
     )
     float analytic:density:farDistance = 0 (
         doc = """Distance from the barn where the density interpolation
         ends."""
     )
-    float analytic:density:farValue = 0 (
+    float analytic:density:farValue = 1 (
         doc = "Density multiplier at the end of interpolation."
     )
     float analytic:density:nearDistance = 0 (
@@ -928,17 +936,17 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
         the barn."""
     )
     uniform bool collection:filterLink:includeRoot = 1
-    float edge:bottom = 0 (
-        doc = "Additional adjustment to the top region."
+    float edgeScale:bottom = 1 (
+        doc = "Additional edge scale adjustment to the top region."
     )
-    float edge:left = 0 (
-        doc = "Additional adjustment to the left region."
+    float edgeScale:left = 1 (
+        doc = "Additional edge scale adjustment to the left region."
     )
-    float edge:right = 0 (
-        doc = "Additional adjustment to the left region."
+    float edgeScale:right = 1 (
+        doc = "Additional edge scale adjustment to the left region."
     )
-    float edge:top = 0 (
-        doc = "Additional adjustment to the top region."
+    float edgeScale:top = 1 (
+        doc = "Additional edge scale adjustment to the top region."
     )
     float edgeThickness = 0 (
         doc = """Thickness of the edge region.  Larger values will
@@ -947,7 +955,7 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
     float height = 1 (
         doc = "Height of the inner region of the barn (Y axis)."
     )
-    token preBarnEffect = "noEffect" (
+    token preBarnEffect = "noLight" (
         allowedTokens = ["noEffect", "cone", "noLight"]
         doc = """The effect on light before it reaches the barn
         geometry."""
@@ -1016,16 +1024,16 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
         doc = "Radius of the corners of the inner barn square."
     )
     float refine:bottom = 0 (
-        doc = "Additional adjustment to the top region."
+        doc = "Additional offset adjustment to the top region."
     )
     float refine:left = 0 (
-        doc = "Additional adjustment to the left region."
+        doc = "Additional offset adjustment to the left region."
     )
     float refine:right = 0 (
-        doc = "Additional adjustment to the left region."
+        doc = "Additional offset adjustment to the left region."
     )
     float refine:top = 0 (
-        doc = "Additional adjustment to the top region."
+        doc = "Additional offset adjustment to the top region."
     )
     float scale:height = 1 (
         doc = "Scale the height of the inner barn shape."
@@ -1063,8 +1071,8 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
     doc = "A textured surface that filters light."
 )
 {
-    float analytic:apex = 0 (
-        doc = "Shear the projection along the Y axis."
+    float analytic:apex = 25 (
+        doc = "Distance between the center of cookie and the center of projection."
     )
     float analytic:blur:amount = 0 (
         doc = """Specify the blur of projected texture from 0-1. This
@@ -1072,26 +1080,26 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
         blurs between the projected color and the fill color when the
         texture is not repeating."""
     )
-    float analytic:blur:exponent = 0 (
+    float analytic:blur:exponent = 1 (
         doc = "Power exponent of the blur interpolation."
     )
-    float analytic:blur:farDistance = 0 (
+    float analytic:blur:farDistance = 10 (
         doc = "Distance from the cookie where the blur interpolation ends."
     )
-    float analytic:blur:farValue = 0 (
+    float analytic:blur:farValue = 1 (
         doc = "Blur multiplier at the end of interpolation."
     )
-    float analytic:blur:midpoint = 0 (
+    float analytic:blur:midpoint = 0.5 (
         doc = "Distance between near and far where midValue is located."
     )
-    float analytic:blur:midValue = 0 (
+    float analytic:blur:midValue = 1 (
         doc = "Blur multiplier in the middle of interpolation."
     )
     float analytic:blur:nearDistance = 0 (
         doc = """Distance from the cookie where the blur interpolation
         starts."""
     )
-    float analytic:blur:nearValue = 0 (
+    float analytic:blur:nearValue = 1 (
         doc = "Blur multiplier where the blur interpolation starts."
     )
     float analytic:blur:sMult = 0 (
@@ -1100,27 +1108,27 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
     float analytic:blur:tMult = 0 (
         doc = "Blur multiplier in the T direction."
     )
-    float analytic:density:exponent = 0 (
+    float analytic:density:exponent = 1 (
         doc = "Power exponent of the density interpolation."
     )
-    float analytic:density:farDistance = 0 (
+    float analytic:density:farDistance = 10 (
         doc = """Distance from the cookie where the density interpolation
         ends."""
     )
-    float analytic:density:farValue = 0 (
+    float analytic:density:farValue = 1 (
         doc = "Density multiplier at the end of interpolation."
     )
-    float analytic:density:midpoint = 0 (
+    float analytic:density:midpoint = 0.5 (
         doc = "Distance between near and far where midValue is located."
     )
-    float analytic:density:midValue = 0 (
+    float analytic:density:midValue = 1 (
         doc = "Density multiplier in the middle of interpolation."
     )
     float analytic:density:nearDistance = 0 (
         doc = """Distance from the cookie where the density
         interpolation starts."""
     )
-    float analytic:density:nearValue = 0 (
+    float analytic:density:nearValue = 1 (
         doc = "Density multiplier where the density interpolation starts."
     )
     bool analytic:directional = 0 (
@@ -1152,7 +1160,7 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
         doc = """Saturation of the result (0=greyscale, 1=normal,
         >1=boosted colors)."""
     )
-    color3f color:tint (
+    color3f color:tint = (1, 1, 1) (
         doc = """Tint of the resulting color after saturation, contrast
         and clamp."""
     )
@@ -1234,7 +1242,7 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
         well with the needs of multithreaded rendering. Purpose provides us with
         a better tool for dynamic, interactive complexity management.'''
     )
-    color3f texture:fillColor (
+    color3f texture:fillColor = (1, 1, 1) (
         doc = """If the texture is not repeating, this specifies the
         color for the region outside of and behind the projected rectangle."""
     )
@@ -1256,6 +1264,10 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
     )
     float texture:offsetV = 0 (
         doc = "Offsets the texture in the V direction."
+    )
+    bool texture:premultipliedAlpha = 1 (
+        doc = """Textures are usually premultiplied by their alpha. If this not
+\tthe case, uncheck this."""
     )
     float texture:scaleU = 1 (
         doc = "Scales the U dimension."
@@ -1301,9 +1313,39 @@ class PxrRampLightFilter "PxrRampLightFilter" (
     doc = "A ramp to modulate how a light falls off with distance."
 )
 {
+    float beginDistance = 0 (
+        doc = "Distance where the ramp starts."
+    )
     uniform bool collection:filterLink:includeRoot = 1
-    float falloffRamp:beginDistance = 0
-    float falloffRamp:endDistance = 10
+    int colorRamp = 4 (
+        doc = "Controls the color gradient for the transition."
+    )
+    color3f[] colorRamp:colors = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)] (
+        doc = "Color values of the colorRamp spline."
+    )
+    token colorRamp:interpolation = "linear" (
+        allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
+        doc = "ColorRamp spline type. "
+    )
+    float[] colorRamp:knots = [0, 0, 1, 1] (
+        doc = "Knots of the colorRamp spline."
+    )
+    float endDistance = 10 (
+        doc = "Distance where the ramp ends."
+    )
+    int falloff = 4 (
+        doc = "Controls the transition from the core to the edge."
+    )
+    float[] falloff:floats = [0, 0, 1, 1] (
+        doc = "Float values of the falloff spline."
+    )
+    token falloff:interpolation = "linear" (
+        allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
+        doc = "Falloff spline type. "
+    )
+    float[] falloff:knots = [0, 0, 1, 1] (
+        doc = "Knots of the falloff spline."
+    )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
@@ -1400,32 +1442,58 @@ class PxrRodLightFilter "PxrRodLightFilter" (
         doc = """Saturation of the result (0=greyscale, 1=normal,
         >1=boosted colors)."""
     )
-    float depth = 1 (
+    int colorRamp = 4 (
+        doc = "Controls the color gradient for the transition."
+    )
+    color3f[] colorRamp:colors = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)] (
+        doc = "Color values of the colorRamp spline."
+    )
+    token colorRamp:interpolation = "linear" (
+        allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
+        doc = "ColorRamp spline type. "
+    )
+    float[] colorRamp:knots = [0, 0, 1, 1] (
+        doc = "Knots of the colorRamp spline."
+    )
+    float depth = 0 (
         doc = "Depth of the inner region of the rod (Z axis)."
     )
-    float edge:back = 0 (
-        doc = "Additional adjustment to the back region."
+    float edgeScale:back = 1 (
+        doc = "Additional edge scale adjustment to the back region."
     )
-    float edge:bottom = 0 (
-        doc = "Additional adjustment to the top region."
+    float edgeScale:bottom = 1 (
+        doc = "Additional edge scale adjustment to the top region."
     )
-    float edge:front = 0 (
-        doc = "Additional adjustment to the front region."
+    float edgeScale:front = 1 (
+        doc = "Additional edge scale adjustment to the front region."
     )
-    float edge:left = 0 (
-        doc = "Additional adjustment to the left region."
+    float edgeScale:left = 1 (
+        doc = "Additional edge scale adjustment to the left region."
     )
-    float edge:right = 0 (
-        doc = "Additional adjustment to the left region."
+    float edgeScale:right = 1 (
+        doc = "Additional edge scale adjustment to the left region."
     )
-    float edge:top = 0 (
-        doc = "Additional adjustment to the top region."
+    float edgeScale:top = 1 (
+        doc = "Additional edge scale adjustment to the top region."
     )
-    float edgeThickness = 0 (
+    float edgeThickness = 0.25 (
         doc = """Thickness of the edge region.  Larger values will
         soften the edge shape."""
     )
-    float height = 1 (
+    int falloff = 6 (
+        doc = "Controls the transition from the core to the edge."
+    )
+    float[] falloff:floats = [0, 0, 0.2, 0.8, 1, 1] (
+        doc = "Float values of the falloff spline."
+    )
+    token falloff:interpolation = "bspline" (
+        allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
+        doc = "Falloff spline type. "
+    )
+    float[] falloff:knots = [0, 0, 0.3, 0.7, 1, 1] (
+        doc = "Knots of the falloff spline."
+    )
+    float height = 0 (
         doc = "Height of the inner region of the rod (Y axis)."
     )
     rel proxyPrim (
@@ -1488,26 +1556,26 @@ class PxrRodLightFilter "PxrRodLightFilter" (
         well with the needs of multithreaded rendering. Purpose provides us with
         a better tool for dynamic, interactive complexity management.'''
     )
-    float radius = 0.5 (
+    float radius = 1 (
         doc = "Radius of the corners of the inner rod box."
     )
     float refine:back = 0 (
-        doc = "Additional adjustment to the back region."
+        doc = "Additional offset adjustment to the back region."
     )
     float refine:bottom = 0 (
-        doc = "Additional adjustment to the top region."
+        doc = "Additional offset adjustment to the top region."
     )
     float refine:front = 0 (
-        doc = "Additional adjustment to the front region."
+        doc = "Additional offset adjustment to the front region."
     )
     float refine:left = 0 (
-        doc = "Additional adjustment to the left region."
+        doc = "Additional offset adjustment to the left region."
     )
     float refine:right = 0 (
-        doc = "Additional adjustment to the left region."
+        doc = "Additional offset adjustment to the left region."
     )
     float refine:top = 0 (
-        doc = "Additional adjustment to the top region."
+        doc = "Additional offset adjustment to the top region."
     )
     float scale:depth = 1 (
         doc = "Scale the depth of the inner rod shape."
@@ -1527,7 +1595,7 @@ class PxrRodLightFilter "PxrRodLightFilter" (
         deactivating geometry prims, invisible geometry is still 
         available for inspection, for positioning, for defining volumes, etc.'''
     )
-    float width = 1 (
+    float width = 0 (
         doc = "Width of the inner region of the rod (X axis)."
     )
     uniform token[] xformOpOrder (

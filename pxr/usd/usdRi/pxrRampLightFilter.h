@@ -180,45 +180,215 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
-    // FALLOFFRAMPBEGINDISTANCE 
+    // BEGINDISTANCE 
     // --------------------------------------------------------------------- //
-    /// 
+    /// Distance where the ramp starts.
     ///
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: 0.0
     USDRI_API
-    UsdAttribute GetFalloffRampBeginDistanceAttr() const;
+    UsdAttribute GetBeginDistanceAttr() const;
 
-    /// See GetFalloffRampBeginDistanceAttr(), and also 
+    /// See GetBeginDistanceAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDRI_API
-    UsdAttribute CreateFalloffRampBeginDistanceAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateBeginDistanceAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
-    // FALLOFFRAMPENDDISTANCE 
+    // ENDDISTANCE 
     // --------------------------------------------------------------------- //
-    /// 
+    /// Distance where the ramp ends.
     ///
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: 10.0
     USDRI_API
-    UsdAttribute GetFalloffRampEndDistanceAttr() const;
+    UsdAttribute GetEndDistanceAttr() const;
 
-    /// See GetFalloffRampEndDistanceAttr(), and also 
+    /// See GetEndDistanceAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDRI_API
-    UsdAttribute CreateFalloffRampEndDistanceAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateEndDistanceAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // FALLOFF 
+    // --------------------------------------------------------------------- //
+    /// Controls the transition from the core to the edge.
+    ///
+    /// \n  C++ Type: int
+    /// \n  Usd Type: SdfValueTypeNames->Int
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: 4
+    USDRI_API
+    UsdAttribute GetFalloffAttr() const;
+
+    /// See GetFalloffAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateFalloffAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // FALLOFFKNOTS 
+    // --------------------------------------------------------------------- //
+    /// Knots of the falloff spline.
+    ///
+    /// \n  C++ Type: VtArray<float>
+    /// \n  Usd Type: SdfValueTypeNames->FloatArray
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: [0, 0, 1, 1]
+    USDRI_API
+    UsdAttribute GetFalloffKnotsAttr() const;
+
+    /// See GetFalloffKnotsAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateFalloffKnotsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // FALLOFFFLOATS 
+    // --------------------------------------------------------------------- //
+    /// Float values of the falloff spline.
+    ///
+    /// \n  C++ Type: VtArray<float>
+    /// \n  Usd Type: SdfValueTypeNames->FloatArray
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: [0, 0, 1, 1]
+    USDRI_API
+    UsdAttribute GetFalloffFloatsAttr() const;
+
+    /// See GetFalloffFloatsAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateFalloffFloatsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // FALLOFFINTERPOLATION 
+    // --------------------------------------------------------------------- //
+    /// Falloff spline type. 
+    ///
+    /// \n  C++ Type: TfToken
+    /// \n  Usd Type: SdfValueTypeNames->Token
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: linear
+    /// \n  \ref UsdRiTokens "Allowed Values": [linear, catmull-rom, bspline, constant]
+    USDRI_API
+    UsdAttribute GetFalloffInterpolationAttr() const;
+
+    /// See GetFalloffInterpolationAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateFalloffInterpolationAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // COLORRAMP 
+    // --------------------------------------------------------------------- //
+    /// Controls the color gradient for the transition.
+    ///
+    /// \n  C++ Type: int
+    /// \n  Usd Type: SdfValueTypeNames->Int
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: 4
+    USDRI_API
+    UsdAttribute GetColorRampAttr() const;
+
+    /// See GetColorRampAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateColorRampAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // COLORRAMPKNOTS 
+    // --------------------------------------------------------------------- //
+    /// Knots of the colorRamp spline.
+    ///
+    /// \n  C++ Type: VtArray<float>
+    /// \n  Usd Type: SdfValueTypeNames->FloatArray
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: [0, 0, 1, 1]
+    USDRI_API
+    UsdAttribute GetColorRampKnotsAttr() const;
+
+    /// See GetColorRampKnotsAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateColorRampKnotsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // COLORRAMPCOLORS 
+    // --------------------------------------------------------------------- //
+    /// Color values of the colorRamp spline.
+    ///
+    /// \n  C++ Type: VtArray<GfVec3f>
+    /// \n  Usd Type: SdfValueTypeNames->Color3fArray
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)]
+    USDRI_API
+    UsdAttribute GetColorRampColorsAttr() const;
+
+    /// See GetColorRampColorsAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateColorRampColorsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // COLORRAMPINTERPOLATION 
+    // --------------------------------------------------------------------- //
+    /// ColorRamp spline type. 
+    ///
+    /// \n  C++ Type: TfToken
+    /// \n  Usd Type: SdfValueTypeNames->Token
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: linear
+    /// \n  \ref UsdRiTokens "Allowed Values": [linear, catmull-rom, bspline, constant]
+    USDRI_API
+    UsdAttribute GetColorRampInterpolationAttr() const;
+
+    /// See GetColorRampInterpolationAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDRI_API
+    UsdAttribute CreateColorRampInterpolationAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //

@@ -477,15 +477,15 @@ UsdRiPxrBarnLightFilter::CreateRefineRightAttr(VtValue const &defaultValue, bool
 }
 
 UsdAttribute
-UsdRiPxrBarnLightFilter::GetEdgeTopAttr() const
+UsdRiPxrBarnLightFilter::GetEdgeScaleTopAttr() const
 {
-    return GetPrim().GetAttribute(UsdRiTokens->edgeTop);
+    return GetPrim().GetAttribute(UsdRiTokens->edgeScaleTop);
 }
 
 UsdAttribute
-UsdRiPxrBarnLightFilter::CreateEdgeTopAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRiPxrBarnLightFilter::CreateEdgeScaleTopAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdRiTokens->edgeTop,
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->edgeScaleTop,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -494,15 +494,15 @@ UsdRiPxrBarnLightFilter::CreateEdgeTopAttr(VtValue const &defaultValue, bool wri
 }
 
 UsdAttribute
-UsdRiPxrBarnLightFilter::GetEdgeBottomAttr() const
+UsdRiPxrBarnLightFilter::GetEdgeScaleBottomAttr() const
 {
-    return GetPrim().GetAttribute(UsdRiTokens->edgeBottom);
+    return GetPrim().GetAttribute(UsdRiTokens->edgeScaleBottom);
 }
 
 UsdAttribute
-UsdRiPxrBarnLightFilter::CreateEdgeBottomAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRiPxrBarnLightFilter::CreateEdgeScaleBottomAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdRiTokens->edgeBottom,
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->edgeScaleBottom,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -511,15 +511,15 @@ UsdRiPxrBarnLightFilter::CreateEdgeBottomAttr(VtValue const &defaultValue, bool 
 }
 
 UsdAttribute
-UsdRiPxrBarnLightFilter::GetEdgeLeftAttr() const
+UsdRiPxrBarnLightFilter::GetEdgeScaleLeftAttr() const
 {
-    return GetPrim().GetAttribute(UsdRiTokens->edgeLeft);
+    return GetPrim().GetAttribute(UsdRiTokens->edgeScaleLeft);
 }
 
 UsdAttribute
-UsdRiPxrBarnLightFilter::CreateEdgeLeftAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRiPxrBarnLightFilter::CreateEdgeScaleLeftAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdRiTokens->edgeLeft,
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->edgeScaleLeft,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -528,15 +528,15 @@ UsdRiPxrBarnLightFilter::CreateEdgeLeftAttr(VtValue const &defaultValue, bool wr
 }
 
 UsdAttribute
-UsdRiPxrBarnLightFilter::GetEdgeRightAttr() const
+UsdRiPxrBarnLightFilter::GetEdgeScaleRightAttr() const
 {
-    return GetPrim().GetAttribute(UsdRiTokens->edgeRight);
+    return GetPrim().GetAttribute(UsdRiTokens->edgeScaleRight);
 }
 
 UsdAttribute
-UsdRiPxrBarnLightFilter::CreateEdgeRightAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRiPxrBarnLightFilter::CreateEdgeScaleRightAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdRiTokens->edgeRight,
+    return UsdSchemaBase::_CreateAttr(UsdRiTokens->edgeScaleRight,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -583,10 +583,10 @@ UsdRiPxrBarnLightFilter::GetSchemaAttributeNames(bool includeInherited)
         UsdRiTokens->refineBottom,
         UsdRiTokens->refineLeft,
         UsdRiTokens->refineRight,
-        UsdRiTokens->edgeTop,
-        UsdRiTokens->edgeBottom,
-        UsdRiTokens->edgeLeft,
-        UsdRiTokens->edgeRight,
+        UsdRiTokens->edgeScaleTop,
+        UsdRiTokens->edgeScaleBottom,
+        UsdRiTokens->edgeScaleLeft,
+        UsdRiTokens->edgeScaleRight,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

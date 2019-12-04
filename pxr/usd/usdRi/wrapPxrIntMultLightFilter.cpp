@@ -48,6 +48,20 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
+        
+static UsdAttribute
+_CreateRiIntensityAttr(UsdRiPxrIntMultLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateRiIntensityAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateColorSaturationAttr(UsdRiPxrIntMultLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateColorSaturationAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
 
 } // anonymous namespace
 
@@ -81,6 +95,20 @@ void wrapUsdRiPxrIntMultLightFilter()
 
         .def(!self)
 
+        
+        .def("GetRiIntensityAttr",
+             &This::GetRiIntensityAttr)
+        .def("CreateRiIntensityAttr",
+             &_CreateRiIntensityAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetColorSaturationAttr",
+             &This::GetColorSaturationAttr)
+        .def("CreateColorSaturationAttr",
+             &_CreateColorSaturationAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
 
     ;
 
