@@ -155,9 +155,6 @@ private:
     // animated), and they are computed for purposes default/proxy/render.
     GfRange3d _ComputeExtent(UsdPrim const& prim) const;
 
-    // Returns the draw mode surface shader.
-    std::string _GetSurfaceShaderSource() const;
-
     // Generate geometry for "origin" draw mode.
     void _GenerateOriginGeometry(VtValue* topo, VtValue* points,
                                  GfRange3d const& extents) const;

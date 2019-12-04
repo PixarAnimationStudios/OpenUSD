@@ -153,23 +153,6 @@ public:
             static TfToken attr("materialResource");
             return Key(path, attr);
         }
-        // XXX: Shader API will be deprecated soon.
-        static Key SurfaceShaderSource(SdfPath const& path) {
-            static TfToken attr("surfaceShaderSource");
-            return Key(path, attr);
-        }
-        static Key DisplacementShaderSource(SdfPath const& path) {
-            static TfToken attr("displacementShaderSource");
-            return Key(path, attr);
-        }
-        static Key MaterialMetadata(SdfPath const& path) {
-            static TfToken attr("materialMetadata");
-            return Key(path, attr);
-        }
-        static Key MaterialParams(SdfPath const& path) {
-            static TfToken attr("surfaceShaderParams");
-            return Key(path, attr);
-        }
         static Key ExtComputationSceneInputNames(SdfPath const& path) {
             static TfToken attr("extComputationSceneInputNames");
             return Key(path, attr);
@@ -341,18 +324,6 @@ public:
             _Erase<HdPrimvarDescriptorVector>(Key::Primvars(path));
         }
 
-        // XXX: Shader API will be deprecated soon.
-        _Erase<std::string>(Key::SurfaceShaderSource(path));
-        _Erase<std::string>(Key::DisplacementShaderSource(path));
-        _Erase<VtValue>(Key::MaterialMetadata(path));
-        HdMaterialParamVector shaderVars;
-        if (FindMaterialParams(path, &shaderVars)) {
-            for (HdMaterialParam const& param : shaderVars) {
-                _Erase<VtValue>(Key(path, param.name));
-            }
-            _Erase<HdMaterialParamVector>(Key::MaterialParams(path));
-        }
-
         {
             // ExtComputation related state
             TfTokenVector sceneInputNames;
@@ -451,22 +422,6 @@ public:
     VtValue& GetMaterialResource(SdfPath const& path) const {
         return _Get<VtValue>(Key::MaterialResource(path));
     }
-    // XXX: Shader API will be deprecated soon
-    std::string& GetSurfaceShaderSource(SdfPath const& path) const {
-        return _Get<std::string>(Key::SurfaceShaderSource(path));
-    }
-    std::string& GetDisplacementShaderSource(SdfPath const& path) const {
-        return _Get<std::string>(Key::DisplacementShaderSource(path));
-    }
-    VtValue& GetMaterialMetadata(SdfPath const& path) const {
-        return _Get<VtValue>(Key::MaterialMetadata(path));
-    }
-    HdMaterialParamVector& GetMaterialParams(SdfPath const& path) const {
-        return _Get<HdMaterialParamVector>(Key::MaterialParams(path));
-    }
-    VtValue& GetMaterialParam(SdfPath const& path, TfToken const& name) const {
-        return _Get<VtValue>(Key(path, name));
-    }
     TfTokenVector& GetExtComputationSceneInputNames(SdfPath const& path) const {
         return _Get<TfTokenVector>(Key::ExtComputationSceneInputNames(path));
     }
@@ -552,22 +507,6 @@ public:
     }
     bool FindMaterialResource(SdfPath const& path, VtValue* value) const {
         return _Find(Key::MaterialResource(path), value);
-    }
-    // XXX: Shader API will be deprecated soon
-    bool FindSurfaceShaderSource(SdfPath const& path, std::string* value) const {
-        return _Find(Key::SurfaceShaderSource(path), value);
-    }
-    bool FindDisplacementShaderSource(SdfPath const& path, std::string* value) const {
-        return _Find(Key::DisplacementShaderSource(path), value);
-    }
-    bool FindMaterialMetadata(SdfPath const& path, VtValue* value) const {
-        return _Find(Key::MaterialMetadata(path), value);
-    }
-    bool FindMaterialParams(SdfPath const& path, HdMaterialParamVector* value) const {
-        return _Find(Key::MaterialParams(path), value);
-    }
-    bool FindMaterialParam(SdfPath const& path, TfToken const& name, VtValue* value) const {
-        return _Find(Key(path, name), value);
     }
     bool FindExtComputationSceneInputNames(SdfPath const& path,
                                            TfTokenVector* value) const {
@@ -657,22 +596,6 @@ public:
     bool ExtractPrimvar(SdfPath const& path, TfToken const& name, VtValue* value) {
         return _Extract(Key(path, name), value);
     }
-    // XXX: Shader API will be deprecated soon
-    bool ExtractSurfaceShaderSource(SdfPath const& path, std::string* value) {
-        return _Extract(Key::SurfaceShaderSource(path), value);
-    }
-    bool ExtractDisplacementShaderSource(SdfPath const& path, std::string* value) {
-        return _Extract(Key::DisplacementShaderSource(path), value);
-    }
-    bool ExtractMaterialMetadata(SdfPath const& path, VtValue* value) {
-        return _Extract(Key::MaterialMetadata(path), value);
-    }
-    bool ExtractMaterialParams(SdfPath const& path, HdMaterialParamVector* value) {
-        return _Extract(Key::MaterialParams(path), value);
-    }
-    bool ExtractMaterialParam(SdfPath const& path, TfToken const& name, VtValue* value) {
-        return _Extract(Key(path, name), value);
-    }
     bool ExtractExtComputationSceneInputNames(SdfPath const& path,
                                               TfTokenVector* value) {
         return _Extract(Key::ExtComputationSceneInputNames(path), value);
@@ -721,7 +644,6 @@ public:
         _GarbageCollect(_sdfPathCache);
         // XXX: shader type caches, shader API will be deprecated soon
         _GarbageCollect(_stringCache);
-        _GarbageCollect(_shaderParamCache);
         _GarbageCollect(_extComputationInputsCache);
         _GarbageCollect(_extComputationOutputsCache);
         _GarbageCollect(_extComputationPrimvarsCache);
@@ -769,12 +691,8 @@ private:
     typedef _TypedCache<HdPrimvarDescriptorVector> _PviCache;
     mutable _PviCache _pviCache;
 
-    // XXX: shader type caches, shader API will be deprecated soon
     typedef _TypedCache<std::string> _StringCache;
     mutable _StringCache _stringCache;
-
-    typedef _TypedCache<HdMaterialParamVector> _MaterialParamCache;
-    mutable _MaterialParamCache _shaderParamCache;
 
     typedef _TypedCache<HdExtComputationInputDescriptorVector>
         _ExtComputationInputsCache;
@@ -818,12 +736,8 @@ private:
     void _GetCache(_SdfPathCache **cache) const {
         *cache = &_sdfPathCache;
     }
-    // XXX: shader type caches, shader API will be deprecated soon
     void _GetCache(_StringCache **cache) const {
         *cache = &_stringCache;
-    }
-    void _GetCache(_MaterialParamCache **cache) const {
-        *cache = &_shaderParamCache;
     }
     void _GetCache(_ExtComputationInputsCache **cache) const {
         *cache = &_extComputationInputsCache;

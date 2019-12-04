@@ -27,6 +27,7 @@
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/matrix4f.h"
+#include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ndr/nodeDiscoveryResult.h"
@@ -79,7 +80,7 @@ ConvertToSdrCompatibleValueAndType(
 
         std::vector<VtValue> const & anyVec = any.Get< std::vector<VtValue> >();
         if (anyVec.size() == 3) {
-            // for now, support only float/double arrays of length 3
+            // support for vectors length 3
             GfVec3f retVec;
             for (int i = 0; i < 3; i++) {
                 if (anyVec[i].IsHolding<double>()) {
@@ -96,20 +97,26 @@ ConvertToSdrCompatibleValueAndType(
 
         // support for matrix
         } else if (anyVec.size() == 16) {
-            GfMatrix4f retMat;
-            float * m = retMat.GetArray();
-            for(int i=0; i < 16; i++) {
-                if (anyVec[i].IsHolding<double>()) {
+            if (anyVec[0].IsHolding<double>()) {
+                GfMatrix4d retMat;
+                double * m = retMat.GetArray();
+                for(int i=0; i < 16; i++) {
                     m[i] = anyVec[i].UncheckedGet<double>();
-                } else if (anyVec[i].IsHolding<float>()) {
-                    m[i] = anyVec[i].UncheckedGet<float>();
-                } else {
-                    return VtValue();
                 }
+                *sdrType = SdrPropertyTypes->Matrix;
+                return VtValue(retMat);
             }
-
-            *sdrType = SdrPropertyTypes->Matrix;
-            return VtValue(retMat);
+            else if (anyVec[0].IsHolding<float>()) {
+                GfMatrix4f retMat;
+                float * m = retMat.GetArray();
+                for(int i=0; i < 16; i++) {
+                    m[i] = anyVec[i].UncheckedGet<float>();
+                }
+                *sdrType = SdrPropertyTypes->Matrix;
+                return VtValue(retMat);
+            } else {
+                return VtValue();
+            }
         
         // support for vectors length 2
         } else if (anyVec.size() == 2) {
@@ -273,6 +280,7 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
     for (HioGlslfxConfig::Attribute const & a : attributes) {
         primvarNames.push_back(a.name);
     }
+
     metadata[SdrNodeMetadata->Primvars] = TfStringJoin(primvarNames, "|");
 
     // XXX: Add support for reading metadata from glslfx and converting

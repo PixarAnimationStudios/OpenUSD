@@ -25,6 +25,10 @@
 #include "pxr/usdImaging/usdImagingGL/textureUtils.h"
 #include "pxr/imaging/glf/image.h"
 
+#include "pxr/usd/usdShade/shader.h"
+#include "pxr/usd/usdShade/tokens.h"
+#include "pxr/usd/sdr/registry.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -48,8 +52,39 @@ UsdImagingGLMaterialTextureAdapter::GetTextureResource(
     // The usdPrim we receive is the Material prim, since that is the prim we
     // inserted the SPrim and primInfo for. However, the texture is authored on
     // the texture prim, so we get the texture prim.
-    UsdPrim texturePrim = _GetPrim(id.GetParentPath());
-    return UsdImagingGL_GetTextureResource(texturePrim, id, time);
+    UsdPrim texturePrim = _GetPrim(id);
+
+    // Our texture loader wants the attribute that contains the file path.
+    // So we change:
+    //    /Materials/Woody/BootMaterial/Tex
+    // into:
+    //    /Materials/Woody/BootMaterial/Tex.inputs:file
+    //
+    // In order to do this correctly we need to consult Sdr to get the exact
+    // name of the property that will provide the file path.
+
+    SdfPath texAttr = id;
+    UsdShadeShader shadeNode(texturePrim);
+
+    if (shadeNode) {
+        TfToken shaderId;
+        shadeNode.GetShaderId(&shaderId);
+
+        SdrRegistry& shaderReg = SdrRegistry::GetInstance();
+        if (SdrShaderNodeConstPtr sdrNode = 
+            shaderReg.GetShaderNodeByIdentifier(shaderId)) {
+            NdrTokenVec const& assetIdentifierPropertyNames = 
+                sdrNode->GetAssetIdentifierInputNames();
+            if (assetIdentifierPropertyNames.size() == 1) {
+                TfToken const& fileProp = assetIdentifierPropertyNames[0];
+                texAttr = texAttr.AppendProperty(
+                    TfToken(SdfPath::JoinIdentifier(
+                       UsdShadeTokens->inputsId, fileProp)));
+            }
+        }
+    }
+
+    return UsdImagingGL_GetTextureResource(texturePrim, texAttr, time);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

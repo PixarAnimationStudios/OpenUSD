@@ -852,15 +852,13 @@ Hdx_UnitTestDelegate::GetPrimvarDescriptors(SdfPath const& id,
     return primvars;
 }
 
-void
-Hdx_UnitTestDelegate::AddMaterial(SdfPath const &id,
-                                std::string const &sourceSurface,
-                                std::string const &sourceDisplacement,
-                                HdMaterialParamVector const &params)
+void 
+Hdx_UnitTestDelegate::AddMaterialResource(SdfPath const &id,
+                                         VtValue materialResource)
 {
     HdRenderIndex& index = GetRenderIndex();
     index.InsertSprim(HdPrimTypeTokens->material, this, id);
-    _materials[id] = _Material(sourceSurface, sourceDisplacement, params);
+    _materials[id] = materialResource;
 }
 
 void
@@ -880,47 +878,11 @@ Hdx_UnitTestDelegate::GetMaterialId(SdfPath const &rprimId)
 }
 
 /*virtual*/
-std::string
-Hdx_UnitTestDelegate::GetSurfaceShaderSource(SdfPath const &materialId)
+VtValue 
+Hdx_UnitTestDelegate::GetMaterialResource(SdfPath const &materialId)
 {
-    if (_Material *material = TfMapLookupPtr(_materials, materialId)) {
-        return material->sourceSurface;
-    } else {
-        return TfToken();
-    }
-}
-
-/*virtual*/
-std::string
-Hdx_UnitTestDelegate::GetDisplacementShaderSource(SdfPath const &materialId)
-{
-    if (_Material *material = TfMapLookupPtr(_materials, materialId)) {
-        return material->sourceDisplacement;
-    } else {
-        return TfToken();
-    }
-}
-
-/*virtual*/
-HdMaterialParamVector
-Hdx_UnitTestDelegate::GetMaterialParams(SdfPath const &materialId)
-{
-    if (_Material *material = TfMapLookupPtr(_materials, materialId)) {
-        return material->params;
-    }
-    return HdMaterialParamVector();
-}
-
-/*virtual*/
-VtValue
-Hdx_UnitTestDelegate::GetMaterialParamValue(SdfPath const &materialId, 
-                                            TfToken const &paramName)
-{
-    if (_Material *material = TfMapLookupPtr(_materials, materialId)) {
-        for (HdMaterialParam const& param : material->params) {
-            if (param.name == paramName)
-                return param.fallbackValue;
-        }
+    if (VtValue *material = TfMapLookupPtr(_materials, materialId)){
+        return *material;
     }
     return VtValue();
 }

@@ -95,9 +95,12 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         sceneDelegate->GetRenderIndex().GetResourceRegistry();
     HdDirtyBits bits = *dirtyBits;
 
-    bool useDeprecatedSurface = true;
+    if (!(bits & DirtyResource) && !(bits & DirtyParams)) {
+        *dirtyBits = Clean;
+        return;
+    }
+
     bool needsRprimMaterialStateUpdate = false;
-    bool enablePrimvarFiltering = true;
 
     std::string fragmentSource;
     std::string geometrySource;
@@ -105,87 +108,55 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     TfToken materialTag = _materialTag;
     HdMaterialParamVector params;
 
-    if ((bits & DirtyResource)) {
-
-        bool hasMaterialNetwork = false;
-        HdMaterialNetworkMap const& hdNetworkMap = 
-            _GetMaterialResource(sceneDelegate, &hasMaterialNetwork);
-
-        useDeprecatedSurface = !hasMaterialNetwork;
-
+    VtValue vtMat = sceneDelegate->GetMaterialResource(GetId());
+    if (vtMat.IsHolding<HdMaterialNetworkMap>()) {
+        HdMaterialNetworkMap const& hdNetworkMap =
+            vtMat.UncheckedGet<HdMaterialNetworkMap>();
         if (!hdNetworkMap.terminals.empty() && !hdNetworkMap.map.empty()) {
             HdStMaterialNetwork networkProcessor;
             networkProcessor.ProcessMaterialNetwork(GetId(), hdNetworkMap);
             fragmentSource = networkProcessor.GetFragmentCode();
             geometrySource = networkProcessor.GetGeometryCode();
+            materialMetadata = networkProcessor.GetMetadata();
             materialTag = networkProcessor.GetMaterialTag();
             params = networkProcessor.GetMaterialParams();
         }
-    } 
-
-    // XXX Consume deprecated material
-    // Many places in code still use SurfaceShader, so if we do not find a
-    // material network, we try the old SurfaceShader method.
-    // We want this to eventually not exist.
-    if (useDeprecatedSurface) {
-        if (bits & DirtySurfaceShader) {
-            fragmentSource = GetSurfaceShaderSource(sceneDelegate);
-            geometrySource = GetDisplacementShaderSource(sceneDelegate);
-            materialMetadata = GetMaterialMetadata(sceneDelegate);
-            materialTag = _GetMaterialTagDeprecated(materialMetadata);
-        }
-        if ((bits & DirtySurfaceShader) || (bits & DirtyParams)) {
-            params = GetMaterialParams(sceneDelegate);
-        }
-
-        // Disable primvar filtering for deprecated materials
-        enablePrimvarFiltering = false;
     }
 
-    //
-    // Propagate shader changes
-    //
-    bool shaderIsDirty= ((bits & DirtyResource) || (bits & DirtySurfaceShader));
-
-    if (shaderIsDirty) {
-        if (fragmentSource.empty() && geometrySource.empty()) {
-            _InitFallbackShader();
-            fragmentSource = _fallbackGlslfx->GetSurfaceSource();
-            // Note that we don't want displacement on purpose for the 
-            // fallback material.
-            geometrySource = std::string();
-            materialMetadata = _fallbackGlslfx->GetMetadata();
-
-            // Enable primvar filtering for fallback materials
-            enablePrimvarFiltering = true;
-        }
-
-        _surfaceShader->SetFragmentSource(fragmentSource);
-        _surfaceShader->SetGeometrySource(geometrySource);
-
-        bool hasDisplacement = !(geometrySource.empty());
-
-        if (_hasDisplacement != hasDisplacement) {
-            _hasDisplacement = hasDisplacement;
-            needsRprimMaterialStateUpdate = true;
-        }
-
-        bool hasLimitSurfaceEvaluation =
-            _GetHasLimitSurfaceEvaluation(materialMetadata);
-
-        if (_hasLimitSurfaceEvaluation != hasLimitSurfaceEvaluation) {
-            _hasLimitSurfaceEvaluation = hasLimitSurfaceEvaluation;
-            needsRprimMaterialStateUpdate = true;
-        }
-
-        if (_materialTag != materialTag) {
-            _materialTag = materialTag;
-            _surfaceShader->SetMaterialTag(_materialTag);
-            needsRprimMaterialStateUpdate = true;
-        }
+    if (fragmentSource.empty() && geometrySource.empty()) {
+        _InitFallbackShader();
+        fragmentSource = _fallbackGlslfx->GetSurfaceSource();
+        // Note that we don't want displacement on purpose for the 
+        // fallback material.
+        geometrySource = std::string();
+        materialMetadata = _fallbackGlslfx->GetMetadata();
     }
 
-    _surfaceShader->SetEnabledPrimvarFiltering(enablePrimvarFiltering);
+    _surfaceShader->SetFragmentSource(fragmentSource);
+    _surfaceShader->SetGeometrySource(geometrySource);
+
+    bool hasDisplacement = !(geometrySource.empty());
+
+    if (_hasDisplacement != hasDisplacement) {
+        _hasDisplacement = hasDisplacement;
+        needsRprimMaterialStateUpdate = true;
+    }
+
+    bool hasLimitSurfaceEvaluation =
+        _GetHasLimitSurfaceEvaluation(materialMetadata);
+
+    if (_hasLimitSurfaceEvaluation != hasLimitSurfaceEvaluation) {
+        _hasLimitSurfaceEvaluation = hasLimitSurfaceEvaluation;
+        needsRprimMaterialStateUpdate = true;
+    }
+
+    if (_materialTag != materialTag) {
+        _materialTag = materialTag;
+        _surfaceShader->SetMaterialTag(_materialTag);
+        needsRprimMaterialStateUpdate = true;
+    }
+
+    _surfaceShader->SetEnabledPrimvarFiltering(true);
 
     //
     // Mark batches dirty to force batch validation/rebuild.
@@ -197,10 +168,9 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         // network topology changes or the prim goes from opaque to translucent.
         // We skip this the first time since batches will already be rebuild.
 
-        bool markBatchesDirty = (bits & DirtySurfaceShader) ||
-                                (_materialTag != materialTag);
+        bool markBatchesDirty = (_materialTag != materialTag);
 
-        if (!markBatchesDirty && shaderIsDirty) {
+        if (!markBatchesDirty) {
             // XXX cheaper to compare network topology instead fo strings?
             std::string const& oldFragmentSource = 
                 _surfaceShader->GetSource(HdShaderTokens->fragmentShader);
@@ -220,41 +190,39 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     //
     // Update material parameters
     //
-    bool paramsAreDirty = ((bits & DirtyResource) || (bits & DirtyParams));
-    if (paramsAreDirty) {
-        _surfaceShader->SetParams(params);
+    _surfaceShader->SetParams(params);
 
-        // Release any fallback texture resources
-        _internalTextureResourceHandles.clear();
+    // Release any fallback texture resources
+    _internalTextureResourceHandles.clear();
 
-        HdSt_MaterialBufferSourceAndTextureHelper sourcesAndTextures;
+    HdSt_MaterialBufferSourceAndTextureHelper sourcesAndTextures;
 
-        bool hasPtex = false;
-        for (HdMaterialParam const & param: params) {
-            if (param.IsPrimvar()) {
-                sourcesAndTextures.ProcessPrimvarMaterialParam(
-                    param);
-            } else if (param.IsFallback()) {
-                sourcesAndTextures.ProcessFallbackMaterialParam(
-                    param, param.fallbackValue);
-            } else if (param.IsTexture()) {
-                sourcesAndTextures.ProcessTextureMaterialParam(
-                    param, 
-                    _GetTextureResourceHandle(sceneDelegate, param),
-                    &hasPtex);
-            }
-        }
-
-        _surfaceShader->SetTextureDescriptors(
-            sourcesAndTextures.textures);
-        _surfaceShader->SetBufferSources(
-            sourcesAndTextures.sources, resourceRegistry);
-
-        if (_hasPtex != hasPtex) {
-            _hasPtex = hasPtex;
-            needsRprimMaterialStateUpdate = true;
+    bool hasPtex = false;
+    for (HdMaterialParam const & param: params) {
+        if (param.IsPrimvar()) {
+            sourcesAndTextures.ProcessPrimvarMaterialParam(
+                param);
+        } else if (param.IsFallback()) {
+            sourcesAndTextures.ProcessFallbackMaterialParam(
+                param, param.fallbackValue);
+        } else if (param.IsTexture()) {
+            sourcesAndTextures.ProcessTextureMaterialParam(
+                param, 
+                _GetTextureResourceHandle(sceneDelegate, param),
+                &hasPtex);
         }
     }
+
+    _surfaceShader->SetTextureDescriptors(
+        sourcesAndTextures.textures);
+    _surfaceShader->SetBufferSources(
+        sourcesAndTextures.sources, resourceRegistry);
+
+    if (_hasPtex != hasPtex) {
+        _hasPtex = hasPtex;
+        needsRprimMaterialStateUpdate = true;
+        }
+
 
     if (needsRprimMaterialStateUpdate && _isInitialized) {
         // XXX Forcing rprims to have a dirty material id to re-evaluate
@@ -467,22 +435,6 @@ HdStMaterial::_InitFallbackShader()
     // be drawn.
     TF_VERIFY(_fallbackGlslfx->IsValid(),
               "Failed to load fallback surface shader!");
-}
-
-HdMaterialNetworkMap const&
-HdStMaterial::_GetMaterialResource(
-    HdSceneDelegate* sceneDelegate,
-    bool* hasMaterial) const
-{
-    VtValue vtMat = sceneDelegate->GetMaterialResource(GetId());
-    if (vtMat.IsHolding<HdMaterialNetworkMap>()) {
-        *hasMaterial = true;
-        return vtMat.UncheckedGet<HdMaterialNetworkMap>();
-    } else {
-        *hasMaterial = false;
-        static const HdMaterialNetworkMap emptyNetworkMap;
-        return emptyNetworkMap;
-    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -48,7 +48,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (isPtex)
     (st)
     (uv)
-    (inputs)
     (fieldname)
 );
 
@@ -390,13 +389,28 @@ _GetPrimvarNameAttributeValue(
 
 static HdMaterialParamVector
 _MakeMaterialParamsForUnconnectedParam(
-    HdSt_MaterialNode const& node,
     TfToken const& paramName)
 {
     HdMaterialParamVector params;
     HdMaterialParam param;
     param.paramType = HdMaterialParam::ParamTypeFallback;
     param.name = paramName;
+    param.connection = SdfPath();          /*No connection*/
+    param.samplerCoords = TfTokenVector(); /*No UV*/
+    param.textureType = HdTextureType::Uv  /*No Texture*/;
+
+    params.emplace_back(std::move(param));
+    return params;
+}
+
+static HdMaterialParamVector
+_MakeMaterialParamsForAdditionaPrimvar(
+    TfToken const& primvarName)
+{
+    HdMaterialParamVector params;
+    HdMaterialParam param;
+    param.paramType = HdMaterialParam::ParamTypeAdditionalPrimvar;
+    param.name = primvarName;
     param.connection = SdfPath();          /*No connection*/
     param.samplerCoords = TfTokenVector(); /*No UV*/
     param.textureType = HdTextureType::Uv  /*No Texture*/;
@@ -482,7 +496,6 @@ _MakeMaterialParamsForTextureInput(
 
     // Extract texture file path
     std::string filePath;
-    SdfPath textureId;
 
     NdrTokenVec const& assetIdentifierPropertyNames = 
         sdrNode->GetAssetIdentifierInputNames();
@@ -491,34 +504,19 @@ _MakeMaterialParamsForTextureInput(
         TfToken const& fileProp = assetIdentifierPropertyNames[0];
         auto const& it = node.parameters.find(fileProp);
         if (it != node.parameters.end()){
+            // We use the nodePath, not the filePath, for the 'connection'.
+            // Based on the connection path we will do a texture lookup via
+            // the scene delegate. The scene delegate will lookup this texture
+            // prim (by path) to query the file attribute value for filepath.
+            // The reason for this re-direct is to support other texture uses
+            // such as render-targets.
             filePath = _ResolveAssetPath(it->second);
-
-            // Our texture loading goes via sceneDelegate->GetTextureResource() 
-            // which will try to find a texture prim by the textureId path.
-            // There is a difference in path between UsdShader attribute paths 
-            // and the names/paths given to us by HdMaterialNode.parameters.
-            // UsdShade inputs have 'inputs:' identifier where node.parameters
-            // do not.
-            //
-            //  Hd:
-            //    /Materials/HwUvTexture_1/Shader/Clamp/Tex.file
-            //  UdShade:
-            //    /Materials/HwUvTexture_1/Shader/Clamp/Tex.inputs:file
-
-            if (!nodePath.IsPrimPath()) {
-                textureId = nodePath;
-            } else {
-                textureId = nodePath.AppendProperty(
-                    TfToken(SdfPath::JoinIdentifier(
-                        _tokens->inputs, fileProp)));
-            }
+            texParam.connection = nodePath;
         }
     } else {
         TF_WARN("Invalid number of asset identifier input names: %s", 
                 nodePath.GetText());
     }
-
-    texParam.connection = textureId;
 
     // Determine the texture type
     HdTextureType textureType = HdTextureType::Uv;
@@ -704,7 +702,7 @@ _MakeParamsForInputParameter(
     } 
 
     // Nothing (supported) was connected, output a fallback material param    
-    return _MakeMaterialParamsForUnconnectedParam(node, paramName);
+    return _MakeMaterialParamsForUnconnectedParam(paramName);
 }
 
 static HdMaterialParamVector 
@@ -749,6 +747,23 @@ _GatherMaterialParams(
         p.fallbackValue= _GetParamFallbackValue(network, node, p.name);
     }
 
+    // Create HdMaterialParams for each primvar the terminal says it needs.
+    // Primvars come from 'attributes' in the glslfx and are seperate from
+    // the input 'parameters'. We need to create a material param for them so
+    // that these primvars survive 'primvar filtering' that discards any unused
+    // primvars on the mesh.
+    // If the network lists additional primvars, we add those too.
+    NdrTokenVec pv = sdrNode->GetPrimvars();
+    pv.insert(pv.end(), network.primvars.begin(), network.primvars.end());
+    std::sort(pv.begin(), pv.end());
+    pv.erase(std::unique(pv.begin(), pv.end()), pv.end());
+
+    for (TfToken const& primvarName : pv) {
+        HdMaterialParamVector aPrimvars = 
+            _MakeMaterialParamsForAdditionaPrimvar(primvarName);
+        params.insert(params.end(), aPrimvars.begin(), aPrimvars.end());
+    }
+
     return params;
 }
 
@@ -767,7 +782,6 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
     HdMaterialNetworkMap const& hdNetworkMap)
 {
     HdSt_MaterialNetwork surfaceNetwork;
-    HdSt_MaterialNetwork displacementNetwork;
 
     // The fragment source comes from the 'surface' network or the
     // 'volume' network.
@@ -783,12 +797,6 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
             HdMaterialTerminalTokens->volume,
             &surfaceNetwork);
     }
-
-    // Geometry source can be provided via a 'displacement' network.
-    _ConvertLegacyHdMaterialNetwork(
-        hdNetworkMap,
-        HdMaterialTerminalTokens->displacement,
-        &displacementNetwork);
 
     if (HdSt_MaterialNode const* surfTerminal = 
             _GetTerminalNode(materialId, surfaceNetwork)) 
@@ -809,18 +817,13 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
                 _materialTag= _GetMaterialTag(_materialMetadata, *surfTerminal);
                 _materialParams = _GatherMaterialParams(
                     surfaceNetwork, *surfTerminal, surfaceGfx);
-            }
-        }
-    }
 
-    if (HdSt_MaterialNode const* dispTerminal = 
-            _GetTerminalNode(materialId, displacementNetwork)) 
-    {
-        // Extract the glslfx for displacement.
-        HioGlslfxUniquePtr displacementGfx;
-        _GetGlslfxForTerminal(displacementGfx, dispTerminal->nodeTypeId);
-        if (displacementGfx && displacementGfx->IsValid()) {
-            _geometrySource = displacementGfx->GetDisplacementSource();
+                // OSL networks have a displacement network in hdNetworkMap
+                // under terminal: HdMaterialTerminalTokens->displacement.
+                // For Storm however we expect the displacement shader to be
+                // provided via the surface glslfx / terminal.
+                _geometrySource = surfaceGfx->GetDisplacementSource();
+            }
         }
     }
 }

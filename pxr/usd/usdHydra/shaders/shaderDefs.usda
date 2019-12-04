@@ -48,6 +48,8 @@ def Shader "HwPtexTexture_1" (
         doc = """The Ptex face offset to be applied to the face index. By
         default, this parameter will be bound to the ptexFaceOffset primvar."""
     )
+
+    float3 outputs:color
 }
 
 def Shader "HwUvTexture_1" (

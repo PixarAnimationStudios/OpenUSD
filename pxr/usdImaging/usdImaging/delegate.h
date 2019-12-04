@@ -353,15 +353,9 @@ public:
     // Material Support
     USDIMAGING_API
     virtual SdfPath GetMaterialId(SdfPath const &rprimId) override;
-    USDIMAGING_API
-    virtual std::string GetSurfaceShaderSource(SdfPath const &id) override;
-    USDIMAGING_API
-    virtual std::string GetDisplacementShaderSource(SdfPath const &id) override;
-    USDIMAGING_API
-    virtual VtValue GetMaterialParamValue(SdfPath const &id,
-                                          TfToken const &paramName) override;
-    USDIMAGING_API
-    virtual HdMaterialParamVector GetMaterialParams(SdfPath const &id) override;
+
+    USDIMAGING_API 
+    virtual VtValue GetMaterialResource(SdfPath const &materialId) override;
 
     // Texture Support
     USDIMAGING_API
@@ -382,14 +376,6 @@ public:
     USDIMAGING_API
     virtual HdVolumeFieldDescriptorVector
     GetVolumeFieldDescriptors(SdfPath const &volumeId) override;
-
-    // Material Support
-    USDIMAGING_API 
-    virtual VtValue GetMaterialResource(SdfPath const &materialId) override;
-
-    USDIMAGING_API
-    virtual VtDictionary
-    GetMaterialMetadata(SdfPath const &materialId) override;
 
     // Instance path resolution
 

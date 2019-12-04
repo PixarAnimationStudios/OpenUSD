@@ -1091,17 +1091,6 @@ UsdImagingGLDrawModeAdapter::_GenerateTextureCoordinates(
     *assign = VtValue(faceAssign);
 }
 
-std::string
-UsdImagingGLDrawModeAdapter::_GetSurfaceShaderSource() const
-{
-    HioGlslfx gfx (UsdImagingGLPackageDrawModeShader());
-    if (!gfx.IsValid()) {
-        TF_CODING_ERROR("Couldn't load UsdImagingPackageDrawModeShader");
-        return std::string();
-    }
-    return gfx.GetSurfaceSource();
-}
-
 GfRange3d
 UsdImagingGLDrawModeAdapter::_ComputeExtent(UsdPrim const& prim) const
 {

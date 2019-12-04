@@ -208,20 +208,6 @@ public:
                                 VtVec4fArray const &rotate,
                                 VtVec3fArray const &translate);
 
-    /// XXX : This will be removed as we integrate materials into the
-    ///       new material resource pipeline.
-    HD_API
-    void AddMaterialHydra(SdfPath const &id,
-                          std::string const &sourceSurface,
-                          std::string const &sourceDisplacement,
-                          HdMaterialParamVector const &params);
-    
-    HD_API
-    void UpdateMaterialHydra(SdfPath const &id,
-                             std::string const &sourceSurface,
-                             std::string const &sourceDisplacement,
-                             HdMaterialParamVector const &params);
-
     /// Material
     HD_API
     void AddMaterialResource(SdfPath const &id,
@@ -351,18 +337,10 @@ public:
 
     HD_API
     virtual SdfPath GetMaterialId(SdfPath const& rprimId) override;
-    HD_API
-    virtual std::string GetSurfaceShaderSource(SdfPath const &materialId)
-        override;
-    HD_API
-    virtual std::string GetDisplacementShaderSource(SdfPath const &materialId)
-        override;    
-    HD_API
-    virtual HdMaterialParamVector GetMaterialParams(SdfPath const &materialId)
-        override;
-    HD_API
-    virtual VtValue GetMaterialParamValue(SdfPath const &materialId, 
-                                          TfToken const &paramName) override;
+
+    HD_API 
+    virtual VtValue GetMaterialResource(SdfPath const &materialId) override;
+
     HD_API
     virtual VtValue GetCameraParamValue(SdfPath const &cameraId, 
                                         TfToken const &paramName) override;
@@ -372,8 +350,7 @@ public:
     HD_API
     virtual HdTextureResourceSharedPtr GetTextureResource(
         SdfPath const& textureId) override;
-    HD_API 
-    virtual VtValue GetMaterialResource(SdfPath const &materialId) override;
+
     HD_API
     virtual HdRenderBufferDescriptor GetRenderBufferDescriptor(
         SdfPath const& id) override;
@@ -491,20 +468,6 @@ private:
 
         std::vector<SdfPath> prototypes;
     };
-    struct _MaterialHydra {
-        _MaterialHydra() { }
-        _MaterialHydra(std::string const &srcSurface, 
-                       std::string const &srcDisplacement,
-                       HdMaterialParamVector const &pms)
-            : sourceSurface(srcSurface)
-            , sourceDisplacement(srcDisplacement)
-            , params(pms) {
-        }
-
-        std::string sourceSurface;
-        std::string sourceDisplacement;
-        HdMaterialParamVector params;
-    };
     struct _Camera {
         VtDictionary params;
     };
@@ -527,7 +490,6 @@ private:
     std::map<SdfPath, _Curves> _curves;
     std::map<SdfPath, _Points> _points;
     std::map<SdfPath, _Instancer> _instancers;
-    std::map<SdfPath, _MaterialHydra> _materialsHydra;
     std::map<SdfPath, VtValue> _materials;
     std::map<SdfPath, _Camera> _cameras;
     std::map<SdfPath, _RenderBuffer> _renderBuffers;

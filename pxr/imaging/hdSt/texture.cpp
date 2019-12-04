@@ -165,7 +165,7 @@ _PropagateTextureDirtinessToMaterials(HdRenderIndex * renderIndex)
     size_t numMaterials = materials.size();
     for (size_t materialNum = 0; materialNum < numMaterials; ++materialNum) {
         changeTracker.MarkSprimDirty(materials[materialNum],
-                                     HdMaterial::DirtyParams);
+                                     HdMaterial::DirtyResource);
     }
 }
 };

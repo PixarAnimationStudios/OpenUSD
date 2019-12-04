@@ -2589,142 +2589,30 @@ UsdImagingDelegate::GetMaterialId(SdfPath const &rprimId)
     return ConvertCachePathToIndexPath(pathValue);
 }
 
-/*virtual*/
-std::string
-UsdImagingDelegate::GetSurfaceShaderSource(SdfPath const &materialId)
-{
-    HD_TRACE_FUNCTION();
-
-    if (materialId.IsEmpty()) {
-        return std::string();
-    }
-
-    // If custom shading is disabled, use fallback
-    if (!_sceneMaterialsEnabled) {
-        return std::string();
-    }
-
-    SdfPath cachePath = ConvertIndexPathToCachePath(materialId);
-    std::string source;
-
-    if (!_valueCache.ExtractSurfaceShaderSource(cachePath, &source)) {
-        TF_DEBUG(HD_SAFE_MODE).Msg(
-            "WARNING: Slow surface shader source fetch for %s\n",
-            materialId.GetText());
-        _UpdateSingleValue(cachePath, HdMaterial::DirtySurfaceShader);
-        TF_VERIFY(_valueCache.ExtractSurfaceShaderSource(cachePath, &source));
-    }
-
-    return source;
-}
-
-/*virtual*/
-std::string
-UsdImagingDelegate::GetDisplacementShaderSource(SdfPath const &materialId)
-{
-    HD_TRACE_FUNCTION();
-
-    if (materialId.IsEmpty()) {
-        return std::string();
-    }
-
-    // If custom shading is disabled, use fallback
-    if (!_sceneMaterialsEnabled) {
-        return std::string();
-    }
-
-    SdfPath cachePath = ConvertIndexPathToCachePath(materialId);
-    std::string source;
-
-    if (!_valueCache.ExtractDisplacementShaderSource(cachePath, &source)) {
-        TF_DEBUG(HD_SAFE_MODE).Msg(
-            "WARNING: Slow displacement shader source fetch for %s\n",
-            materialId.GetText());
-        _UpdateSingleValue(cachePath, HdMaterial::DirtySurfaceShader);
-        TF_VERIFY(_valueCache.ExtractDisplacementShaderSource(
-                  cachePath, &source));
-    }
-
-    return source;
-}
-
-/*virtual*/
 VtValue
-UsdImagingDelegate::GetMaterialParamValue(SdfPath const &materialId, 
-                                          TfToken const &paramName)
+UsdImagingDelegate::GetMaterialResource(SdfPath const &materialId)
 {
-    HD_TRACE_FUNCTION();
-
-    if (materialId.IsEmpty()) {
-        // Handle fallback material
-        VtFloatArray dummy;
-        dummy.resize(1);
-        return VtValue(dummy);
-    }
-
-    SdfPath cachePath = ConvertIndexPathToCachePath(materialId);
-    VtValue param;
-
-    // XXX: See comment in GetMaterialParams.
-    TF_VERIFY(_valueCache.ExtractMaterialParam(cachePath, paramName, &param));
-
-    if (param.IsEmpty()) {
-        // XXX: hydra crashes with empty vt values, should fix
-        VtFloatArray dummy;
-        dummy.resize(1);
-        param = VtValue(dummy);
-    }
-    return param;
-}
-
-/*virtual*/
-HdMaterialParamVector
-UsdImagingDelegate::GetMaterialParams(SdfPath const &materialId)
-{
-    HD_TRACE_FUNCTION();
-
-    if (materialId.IsEmpty()) {
-        return HdMaterialParamVector();
-    }
+    VtValue vtMatResource;
 
     // If custom shading is disabled, use fallback
     if (!_sceneMaterialsEnabled) {
-        return HdMaterialParamVector();
+        return vtMatResource;
     }
 
+    if (!TF_VERIFY(materialId != SdfPath())) {
+        return vtMatResource;
+    }
 
     SdfPath cachePath = ConvertIndexPathToCachePath(materialId);
-    HdMaterialParamVector params;
+    _UpdateSingleValue(cachePath, HdMaterial::DirtyResource);
+    bool result = _valueCache.FindMaterialResource(cachePath, &vtMatResource);
 
-    // XXX: This is a little complicated. Materials aren't part of the
-    // delegate sync, since they aren't rprims. We can manually call
-    // UpdateForTime() on materials via _UpdateSingleValue, but we can't rely
-    // on the value cache's "ExtractFoo" to fail if unpopulated, like we do
-    // elsewhere, because the value cache GarbageCollect is called *ONLY* on
-    // delegates with rprims that participated in delegate sync.  So if a
-    // material is the only thing changing this frame, you'll have stale empty
-    // values from the last time you called Extract (since Extract just
-    // swap()s with an empty value, and doesn't delete the cache entry until
-    // GC).
-    //
-    // As a workaround: Every time we update materials, we'll call
-    // GetSurfaceShaderParams() once, and then GetSurfaceShaderParamValue()
-    // many times.  We unconditionally update params here, and let GetParamValue
-    // hitch a free ride. This happens to work with HdStShader's implementation.
-    //
-    // The correct long-term solution is to include sprims in delegate sync!
+    // XXX When all code has transitioned over to use material networks we can
+    // renable this TF_VERIFY.
+    TF_UNUSED(result);
+    // TF_VERIFY(result, "Material network not found: %s", cachePath.GetText());
 
-    _UpdateSingleValue(cachePath, HdMaterial::DirtyParams);
-    TF_VERIFY(_valueCache.FindMaterialParams(cachePath, &params));
-
-    // Connections need to be represented as index paths...
-    for (HdMaterialParam& param : params) {
-        if (param.IsTexture()) {
-            param.connection = ConvertCachePathToIndexPath(param.connection);
-        }
-    }
-
-    return params;
+    return vtMatResource;
 }
 
 HdTextureResource::ID
@@ -2759,8 +2647,8 @@ UsdImagingDelegate::GetTextureResource(SdfPath const &textureId)
         // UsdShade has the rule that a UsdShade node must be nested inside the
         // UsdMaterial scope. We traverse the parent paths to find the material.
         //
-        // Example for texture attribute:
-        //    /Materials/Woody/BootMaterial/Tex.inputs:file
+        // Example for texture prim:
+        //    /Materials/Woody/BootMaterial/UsdShadeNodeGraph/Tex
         // We want to find Sprim:
         //    /Materials/Woody/BootMaterial
 
@@ -2891,62 +2779,6 @@ UsdImagingDelegate::GetVolumeFieldDescriptors(SdfPath const &volumeId)
     }
 
     return HdVolumeFieldDescriptorVector();
-}
-
-VtValue
-UsdImagingDelegate::GetMaterialResource(SdfPath const &materialId)
-{
-    VtValue vtMatResource;
-
-    // If custom shading is disabled, use fallback
-    if (!_sceneMaterialsEnabled) {
-        return vtMatResource;
-    }
-
-    if (!TF_VERIFY(materialId != SdfPath())) {
-        return vtMatResource;
-    }
-
-    SdfPath cachePath = ConvertIndexPathToCachePath(materialId);
-    _UpdateSingleValue(cachePath, HdMaterial::DirtyResource);
-    bool result = _valueCache.FindMaterialResource(cachePath, &vtMatResource);
-
-    // XXX When all code has transitioned over to use material networks we can
-    // renable this TF_VERIFY.
-    TF_UNUSED(result);
-    // TF_VERIFY(result, "Material network not found: %s", cachePath.GetText());
-
-    return vtMatResource;
-}
-
-VtDictionary
-UsdImagingDelegate::GetMaterialMetadata(SdfPath const &materialId)
-{
-
-    HD_TRACE_FUNCTION();
-
-    if (!TF_VERIFY(materialId != SdfPath())) {
-        return VtDictionary();
-    }
-
-    // If custom shading is disabled, use fallback
-    if (!_sceneMaterialsEnabled) {
-        return VtDictionary();
-    }
-
-    SdfPath cachePath = ConvertIndexPathToCachePath(materialId);
-    VtValue value;
-
-    if (!_valueCache.ExtractMaterialMetadata(cachePath, &value)) {
-        TF_DEBUG(HD_SAFE_MODE).Msg(
-            "WARNING: Slow material metadata fetch for %s\n",
-            materialId.GetText());
-        // MaterialMetadata updates along with DirtySurfaceShader
-        _UpdateSingleValue(cachePath, HdMaterial::DirtySurfaceShader);
-        TF_VERIFY(_valueCache.ExtractMaterialMetadata(cachePath, &value));
-    }
-
-    return value.GetWithDefault<VtDictionary>();
 }
 
 TfTokenVector

@@ -109,11 +109,14 @@ public:
     class Attribute {
     public:
         Attribute(std::string const & name,
+                  VtValue const & defaultValue,
                   std::string const & docString = "") :
             name(name),
+            defaultValue(defaultValue),
             docString(docString) { }
 
         std::string name;
+        VtValue defaultValue;
         std::string docString;
     };
 

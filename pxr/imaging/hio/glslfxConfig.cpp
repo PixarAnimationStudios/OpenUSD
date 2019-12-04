@@ -47,6 +47,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (color)
     ((defVal, "default"))
     (source)
+    (type)
 );
 
 VtDictionary Hio_GetDictionaryFromInput
@@ -459,6 +460,48 @@ HioGlslfxConfig::_GetAttributes(VtDictionary const & dict,
         const VtDictionary& attributeDataDict =
             attributeData.UncheckedGet<VtDictionary>();
 
+        // We would like the 'attribute' section to start using 'default:' to
+        // describe the value type of primvar inputs, but currently they often
+        // use 'type: "vec4"'.
+        // The awkward looking 'std::vector<VtValue>(...)' usage below is to
+        // match the json parser return for "default: (0,0,0)".
+        
+        struct _TypeToDefault {
+            std::string type;
+            VtValue defaultValue;
+        };
+
+        static const _TypeToDefault _TypeToDefaultTable[] = {
+            { "float", VtValue(0.0f) },
+            { "double", VtValue(0.0) },
+            { "vec2", VtValue(std::vector<VtValue>(2, VtValue(0.0f))) },
+            { "vec3", VtValue(std::vector<VtValue>(3, VtValue(0.0f))) },
+            { "vec4", VtValue(std::vector<VtValue>(4, VtValue(0.0f))) }
+        };
+
+        VtValue defVal;
+        if (!TfMapLookup(attributeDataDict, _tokens->defVal, &defVal)) {
+            // If we didn't find 'default:' in glslfx, try 'type:'
+            if (TfMapLookup(attributeDataDict, _tokens->type, &defVal) &&
+                defVal.IsHolding<std::string>()) {
+
+                std::string const& str = defVal.UncheckedGet<std::string>();
+
+                for (_TypeToDefault const& t : _TypeToDefaultTable) {
+                    if (t.type == str) {
+                        defVal = t.defaultValue;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (defVal.IsEmpty()) {
+            *errorStr = TfStringPrintf("Invalid type or default value for %s",
+                                       attributeName.c_str());
+            defVal = VtValue(std::vector<float>(4, 0.0f));
+        }
+
         // optional documentation string
         VtValue docVal;
         string docString;
@@ -477,7 +520,7 @@ HioGlslfxConfig::_GetAttributes(VtDictionary const & dict,
         TF_DEBUG(HIO_DEBUG_GLSLFX).Msg("        attribute: %s\n",
             attributeName.c_str());
 
-        ret.push_back(Attribute(attributeName, docString));
+        ret.push_back(Attribute(attributeName, defVal, docString));
     }
 
     return ret;

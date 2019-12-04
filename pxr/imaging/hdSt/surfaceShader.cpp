@@ -490,6 +490,8 @@ _CollectPrimvarNames(const HdMaterialParamVector &params)
             primvarNames.insert(primvarNames.end(),
                                 param.samplerCoords.begin(),
                                 param.samplerCoords.end());
+        } else if (param.IsAdditionalPrimvar()) {
+            primvarNames.push_back(param.name);
         }
     }
     return primvarNames;

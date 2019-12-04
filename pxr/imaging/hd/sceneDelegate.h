@@ -644,31 +644,10 @@ public:
     HD_API
     virtual SdfPath GetMaterialId(SdfPath const &rprimId);
 
-    /// Returns the surface shader source code for the given material ID.
-    HD_API
-    virtual std::string GetSurfaceShaderSource(SdfPath const &materialId);
-
-    /// Returns the displacement shader source code for the given material ID.
-    HD_API
-    virtual std::string GetDisplacementShaderSource(SdfPath const &materialId);
-
-    /// Returns a single value for the given material and named parameter.
-    HD_API
-    virtual VtValue GetMaterialParamValue(SdfPath const &materialId, 
-                                          TfToken const &paramName);
-
-    /// Returns the material params for the given material ID.
-    HD_API
-    virtual HdMaterialParamVector GetMaterialParams(SdfPath const& materialId);
-
     // Returns a material resource which contains the information 
     // needed to create a material.
     HD_API 
     virtual VtValue GetMaterialResource(SdfPath const &materialId);
-
-    // Returns the metadata dictionary for the given material ID. 
-    HD_API
-    virtual VtDictionary GetMaterialMetadata(SdfPath const &materialId);
 
     // -----------------------------------------------------------------------//
     /// \name Texture Aspects

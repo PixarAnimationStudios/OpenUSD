@@ -40,11 +40,9 @@ public:
     enum DirtyBits : HdDirtyBits {
         Clean                 = 0,
         // XXX: Got to skip varying and force sync bits for now
-        DirtySurfaceShader    = 1 << 2,
-        DirtyParams           = 1 << 3,
-        DirtyResource         = 1 << 4,
-        AllDirty              = (DirtySurfaceShader
-                                 |DirtyParams
+        DirtyParams           = 1 << 2,
+        DirtyResource         = 1 << 3,
+        AllDirty              = (DirtyParams
                                  |DirtyResource)
     };
 

@@ -277,48 +277,11 @@ HdSceneDelegate::GetMaterialId(SdfPath const &rprimId)
 }
 
 /*virtual*/
-std::string
-HdSceneDelegate::GetSurfaceShaderSource(SdfPath const &materialId)
-{
-    return std::string("");
-}
-
-/*virtual*/
-std::string
-HdSceneDelegate::GetDisplacementShaderSource(SdfPath const &materialId)
-{
-    return std::string("");
-}
-
-/*virtual*/
-VtValue
-HdSceneDelegate::GetMaterialParamValue(SdfPath const &materialId, 
-                                       TfToken const &paramName)
-{
-    return VtValue();
-}
-
-/*virtual*/
-HdMaterialParamVector
-HdSceneDelegate::GetMaterialParams(SdfPath const &materialId)
-{
-    return HdMaterialParamVector();
-}
-
-/*virtual*/
 VtValue 
 HdSceneDelegate::GetMaterialResource(SdfPath const &materialId)
 {
     return VtValue();
 }
-
-/* virtual */
-VtDictionary
-HdSceneDelegate::GetMaterialMetadata(SdfPath const &materialId)
-{
-    return VtDictionary();
-}
-
 
 // -----------------------------------------------------------------------//
 /// \name Texture Aspects

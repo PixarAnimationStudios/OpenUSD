@@ -71,30 +71,6 @@ public:
     HDST_API
     HdStShaderCodeSharedPtr GetShaderCode() const;
 
-    /// Obtain the source code for the Surface Shader for this prim from
-    /// the scene delegate.
-    inline std::string GetSurfaceShaderSource(
-        HdSceneDelegate* sceneDelegate) const;
-
-    /// Obtain the source code for the Displacement Shader for this prim from
-    /// the scene delegate.
-    inline std::string GetDisplacementShaderSource(
-        HdSceneDelegate* sceneDelegate) const;
-
-    /// Obtain the collection of material param descriptions for this prim from
-    /// the scene delegate.
-    inline HdMaterialParamVector GetMaterialParams(
-        HdSceneDelegate* sceneDelegate) const;
-
-    /// Obtain the value of the specified material param for this prim from the
-    /// scene delegate.
-    inline VtValue GetMaterialParamValue(HdSceneDelegate* sceneDelegate,
-                                         TfToken const &paramName) const;
-
-    /// Obtains the metadata dictionary for the material.
-    inline VtDictionary GetMaterialMetadata(
-        HdSceneDelegate* sceneDelegate) const;
-
     /// Obtain the scene delegates's globally unique id for the texture
     /// resource identified by textureId.
     inline HdTextureResource::ID GetTextureResourceID(
@@ -134,12 +110,6 @@ private:
 
     void _InitFallbackShader();
 
-    // Obtain the material network resources of this material.
-    // `hasMaterial` returns false if no material network was found.
-    HdMaterialNetworkMap const& _GetMaterialResource(
-        HdSceneDelegate* sceneDelegate,
-        bool* hasMaterial) const;
-
     static HioGlslfx *_fallbackGlslfx;
 
     HdStSurfaceShaderSharedPtr _surfaceShader;
@@ -156,37 +126,6 @@ private:
 
     TfToken _materialTag;
 };
-
-inline std::string
-HdStMaterial::GetSurfaceShaderSource(HdSceneDelegate* sceneDelegate) const
-{
-    return sceneDelegate->GetSurfaceShaderSource(GetId());
-}
-
-inline std::string
-HdStMaterial::GetDisplacementShaderSource(HdSceneDelegate* sceneDelegate) const
-{
-    return sceneDelegate->GetDisplacementShaderSource(GetId());
-}
-
-inline HdMaterialParamVector
-HdStMaterial::GetMaterialParams(HdSceneDelegate* sceneDelegate) const
-{
-    return sceneDelegate->GetMaterialParams(GetId());
-}
-
-inline VtValue
-HdStMaterial::GetMaterialParamValue(HdSceneDelegate* sceneDelegate,
-                                  TfToken const &paramName) const
-{
-    return sceneDelegate->GetMaterialParamValue(GetId(), paramName);
-}
-
-inline VtDictionary
-HdStMaterial::GetMaterialMetadata(HdSceneDelegate* sceneDelegate) const
-{
-    return sceneDelegate->GetMaterialMetadata(GetId());
-}
 
 inline HdTextureResource::ID
 HdStMaterial::GetTextureResourceID(HdSceneDelegate* sceneDelegate,

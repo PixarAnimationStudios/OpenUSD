@@ -98,10 +98,9 @@ public:
                                 VtVec3fArray const &translate);
 
     /// Material
-    void AddMaterial(SdfPath const &id,
-                   std::string const &sourceSurface,
-                   std::string const &sourceDisplacement,
-                   HdMaterialParamVector const &params);
+    void AddMaterialResource(SdfPath const &id,
+                             VtValue materialResource);
+
     void BindMaterial(SdfPath const &rprimId, SdfPath const &materialId);
 
     // prims    
@@ -170,12 +169,8 @@ public:
     HdReprSelector GetReprSelector(SdfPath const &id) override;
 
     SdfPath GetMaterialId(SdfPath const &rprimId) override;
-    std::string GetSurfaceShaderSource(SdfPath const &shaderId) override;
-    std::string GetDisplacementShaderSource(SdfPath const &shaderId) override;
-    HdMaterialParamVector GetMaterialParams(SdfPath const &shaderId) override;
-    VtValue GetMaterialParamValue(
-        SdfPath const &shaderId,
-        TfToken const &paramName) override;
+    VtValue GetMaterialResource(SdfPath const &materialId) override;
+
     VtValue GetCameraParamValue(
         SdfPath const &cameraId,
         TfToken const &paramName) override;
@@ -243,25 +238,11 @@ private:
 
         std::vector<SdfPath> prototypes;
     };
-    struct _Material {
-        _Material() { }
-        _Material(std::string const &srcSurface,
-                  std::string const &srcDisplacement, 
-                  HdMaterialParamVector const &pms)
-            : sourceSurface(srcSurface)
-            , sourceDisplacement(srcDisplacement)
-            , params(pms) {
-        }
-
-        std::string sourceSurface;
-        std::string sourceDisplacement;
-        HdMaterialParamVector params;
-    };
     struct _DrawTarget {
     };
     std::map<SdfPath, _Mesh> _meshes;
     std::map<SdfPath, _Instancer> _instancers;
-    std::map<SdfPath, _Material> _materials;
+    std::map<SdfPath, VtValue> _materials;
     std::map<SdfPath, int> _refineLevels;
     std::map<SdfPath, _DrawTarget> _drawTargets;
     int _refineLevel;

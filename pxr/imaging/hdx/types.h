@@ -39,11 +39,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // Struct used to send shader inputs from Presto and send them to Hydra
 struct HdxShaderInputs {
-    VtDictionary         parameters;
-    VtDictionary         textures;
-    VtDictionary         textureFallbackValues;
-    std::vector<TfToken> attributes;
-    VtDictionary         metaData;
+    VtDictionary parameters;
+    VtDictionary textures;
+    VtDictionary textureFallbackValues;
+    TfTokenVector attributes;
+    VtDictionary metaData;
 };
 
 HDX_API

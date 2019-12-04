@@ -277,40 +277,6 @@ HdUnitTestDelegate::SetInstancerProperties(SdfPath const &id,
                                    HdChangeTracker::DirtyInstanceIndex);
 }
 
-void
-HdUnitTestDelegate::AddMaterialHydra(SdfPath const &id,
-                                      std::string const &sourceSurface,
-                                      std::string const &sourceDisplacement,
-                                      HdMaterialParamVector const &params)
-{
-    HdRenderIndex& index = GetRenderIndex();
-    index.InsertSprim(HdPrimTypeTokens->material, this, id);
-    _materialsHydra[id] = _MaterialHydra(sourceSurface, 
-                                         sourceDisplacement, 
-                                         params);
-}
-
-void
-HdUnitTestDelegate::UpdateMaterialHydra(SdfPath const &id,
-                                        std::string const &sourceSurface,
-                                        std::string const &sourceDisplacement,
-                                        HdMaterialParamVector const &params)
-{
-    _materialsHydra[id] = _MaterialHydra(sourceSurface, 
-                                         sourceDisplacement, 
-                                         params);
-
-    HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
-    tracker.MarkSprimDirty(id, HdMaterial::DirtySurfaceShader |
-                               HdMaterial::DirtyParams);
-
-    for (auto const &p : _materialBindings) {
-        if (p.second == id) {
-            tracker.MarkRprimDirty(p.first, HdChangeTracker::DirtyMaterialId);
-        }
-    }
-}
-
 void 
 HdUnitTestDelegate::AddMaterialResource(SdfPath const &id,
                                          VtValue materialResource)
@@ -706,48 +672,11 @@ HdUnitTestDelegate::GetMaterialId(SdfPath const& rprimId)
 }
 
 /*virtual*/
-std::string
-HdUnitTestDelegate::GetSurfaceShaderSource(SdfPath const &materialId)
+VtValue 
+HdUnitTestDelegate::GetMaterialResource(SdfPath const &materialId)
 {
-    if (_MaterialHydra *material = TfMapLookupPtr(_materialsHydra, materialId)){
-        return material->sourceSurface;
-    } else {
-        return TfToken();
-    }
-}
-
-/*virtual*/
-std::string
-HdUnitTestDelegate::GetDisplacementShaderSource(SdfPath const &materialId)
-{
-    if (_MaterialHydra *material = TfMapLookupPtr(_materialsHydra, materialId)){
-        return material->sourceDisplacement;
-    } else {
-        return TfToken();
-    }
-}
-
-/*virtual*/
-HdMaterialParamVector
-HdUnitTestDelegate::GetMaterialParams(SdfPath const &materialId)
-{
-    if (_MaterialHydra *material = TfMapLookupPtr(_materialsHydra, materialId)){
-        return material->params;
-    }
-    
-    return HdMaterialParamVector();
-}
-
-/*virtual*/
-VtValue
-HdUnitTestDelegate::GetMaterialParamValue(SdfPath const &materialId, 
-                                          TfToken const &paramName)
-{
-    if (_MaterialHydra *material = TfMapLookupPtr(_materialsHydra, materialId)){
-        for (HdMaterialParam const& param : material->params) {
-            if (param.name == paramName)
-                return param.fallbackValue;
-        }
+    if (VtValue *material = TfMapLookupPtr(_materials, materialId)){
+        return *material;
     }
     return VtValue();
 }
@@ -760,16 +689,6 @@ HdUnitTestDelegate::GetCameraParamValue(SdfPath const &cameraId,
     if (_cameras.find(cameraId) != _cameras.end()) {
         return _cameras[cameraId].params[paramName];
     } 
-    return VtValue();
-}
-
-/*virtual*/
-VtValue 
-HdUnitTestDelegate::GetMaterialResource(SdfPath const &materialId)
-{
-    if (VtValue *material = TfMapLookupPtr(_materials, materialId)){
-        return *material;
-    }
     return VtValue();
 }
 

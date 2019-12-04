@@ -60,7 +60,10 @@ public:
         ParamTypeField,
         // Accesses 3d texture with potential transform and fallback under
         // different name
-        ParamTypeFieldRedirect
+        ParamTypeFieldRedirect,
+        // Additional primvar needed by material. One that is not connected to
+        // a input parameter (ParamTypePrimvar).
+        ParamTypeAdditionalPrimvar
     };
 
     HD_API
@@ -99,6 +102,9 @@ public:
     }
     bool IsFieldRedirect() const {
         return paramType == ParamTypeFieldRedirect;
+    }
+    bool IsAdditionalPrimvar() const {
+        return paramType == ParamTypeAdditionalPrimvar;
     }
 
     ParamType paramType;

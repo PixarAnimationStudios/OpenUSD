@@ -699,6 +699,10 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                     = MetaData::FieldRedirectAccessor(
                         /*name=*/glName,
                         /*fieldName=*/glFieldName);
+            } else if (param.IsAdditionalPrimvar()) {
+                // Additional primvars is used so certain primvars survive
+                // primvar filtering. We can ignore them here, because primvars
+                // found on the drawItem are already processed further above.
             } else {
                 TF_CODING_ERROR("Can't resolve %s", param.name.GetText());
             }
