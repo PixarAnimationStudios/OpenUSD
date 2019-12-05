@@ -177,22 +177,36 @@ UsdImagingMeshAdapter::TrackVariability(UsdPrim const& prim,
         }
     }
 
-    // Discover time-varying UsdGeomSubset children.
-    if (UsdGeomImageable imageable = UsdGeomImageable(prim)) {
-        for (const UsdGeomSubset &subset:
-             UsdGeomSubset::GetAllGeomSubsets(imageable)) {
-            _IsVarying(subset.GetPrim(),
-                       UsdGeomTokens->elementType,
-                       HdChangeTracker::DirtyTopology,
-                       UsdImagingTokens->usdVaryingPrimvar,
-                       timeVaryingBits,
-                       /*isInherited*/false);
-            _IsVarying(subset.GetPrim(),
-                       UsdGeomTokens->indices,
-                       HdChangeTracker::DirtyTopology,
-                       UsdImagingTokens->usdVaryingPrimvar,
-                       timeVaryingBits,
-                       /*isInherited*/false);
+    // Discover time-varying UsdGeomSubset children, which indicates that the
+    // topology must be treated as time varying. Only do these checks until
+    // we determine the topology is time varying, because each call to
+    // _IsVarying will clear the topology dirty bit if it's already set.
+    if (((*timeVaryingBits) & HdChangeTracker::DirtyTopology) == 0) {
+        if (UsdGeomImageable imageable = UsdGeomImageable(prim)) {
+            for (const UsdGeomSubset &subset:
+                 UsdGeomSubset::GetAllGeomSubsets(imageable)) {
+
+                // If the topology dirty flag is already set, exit the loop.
+                if (((*timeVaryingBits) & HdChangeTracker::DirtyTopology) != 0){
+                    break;
+                }
+
+                if (!_IsVarying(subset.GetPrim(),
+                           UsdGeomTokens->elementType,
+                           HdChangeTracker::DirtyTopology,
+                           UsdImagingTokens->usdVaryingPrimvar,
+                           timeVaryingBits,
+                           /*isInherited*/false)) {
+                    // Only do this check if the elementType is not already
+                    // known to be varying.
+                    _IsVarying(subset.GetPrim(),
+                               UsdGeomTokens->indices,
+                               HdChangeTracker::DirtyTopology,
+                               UsdImagingTokens->usdVaryingPrimvar,
+                               timeVaryingBits,
+                               /*isInherited*/false);
+                }
+            }
         }
     }
 }
