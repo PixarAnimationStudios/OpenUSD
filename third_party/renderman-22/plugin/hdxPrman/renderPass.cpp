@@ -101,6 +101,10 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         // we are just using Hydra to sync the scene contents to Riley.
         return;
     }
+    if (_interactiveContext->renderThread.IsPauseRequested()) {
+        // No more updates if pause is pending
+        return;
+    }
 
     RixRileyManager *mgr = _interactiveContext->mgr;
     riley::Riley *riley = _interactiveContext->riley;
