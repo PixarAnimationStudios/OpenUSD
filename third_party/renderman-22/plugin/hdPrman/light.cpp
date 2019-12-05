@@ -251,62 +251,73 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
 
     // UsdLuxShapingAPI
     {
-        VtValue shapingFocus =
-            sceneDelegate->GetLightParamValue(id, HdLightTokens->shapingFocus);
-        if (shapingFocus.IsHolding<float>()) {
-            params->SetFloat(us_emissionFocus,
-                             shapingFocus.UncheckedGet<float>());
+        if (_hdLightType != HdPrimTypeTokens->domeLight) {
+            VtValue shapingFocus =
+                sceneDelegate->GetLightParamValue(id, HdLightTokens->shapingFocus);
+            if (shapingFocus.IsHolding<float>()) {
+                params->SetFloat(us_emissionFocus,
+                                 shapingFocus.UncheckedGet<float>());
+            }
+
+            // XXX -- emissionFocusNormalize is missing here
+
+            VtValue shapingFocusTint =
+                sceneDelegate->GetLightParamValue(id, 
+                    HdLightTokens->shapingFocusTint);
+            if (shapingFocusTint.IsHolding<GfVec3f>()) {
+                GfVec3f v = shapingFocusTint.UncheckedGet<GfVec3f>();
+                params->SetColor(us_emissionFocusTint,
+                                 RtColorRGB(v[0], v[1], v[2]));
+            }
         }
 
-        VtValue shapingFocusTint =
-            sceneDelegate->GetLightParamValue(id, 
-                HdLightTokens->shapingFocusTint);
-        if (shapingFocusTint.IsHolding<GfVec3f>()) {
-            GfVec3f v = shapingFocusTint.UncheckedGet<GfVec3f>();
-            params->SetColor(us_emissionFocusTint,
-                             RtColorRGB(v[0], v[1], v[2]));
-        }
+        // ies is only supported on rect, disk, cylinder and sphere light.
+        // cone angle also on supported on rect, disk, cylinder and sphere lights.
+        // XXX -- fix for mesh/geometry light when it comes online
+        if (_hdLightType == HdPrimTypeTokens->rectLight ||
+            _hdLightType == HdPrimTypeTokens->diskLight ||
+            _hdLightType == HdPrimTypeTokens->cylinderLight ||
+            _hdLightType == HdPrimTypeTokens->sphereLight) {
 
-        VtValue shapingConeAngle =
-            sceneDelegate->GetLightParamValue(id, 
-                HdLightTokens->shapingConeAngle);
-        if (shapingConeAngle.IsHolding<float>()) {
-            params->SetFloat(us_coneAngle,
-                             shapingConeAngle.UncheckedGet<float>());
-        }
+            VtValue shapingConeAngle =
+                sceneDelegate->GetLightParamValue(id, 
+                    HdLightTokens->shapingConeAngle);
+            if (shapingConeAngle.IsHolding<float>()) {
+                params->SetFloat(us_coneAngle,
+                                 shapingConeAngle.UncheckedGet<float>());
+            }
 
-        VtValue shapingConeSoftness =
-            sceneDelegate->GetLightParamValue(id, 
-                HdLightTokens->shapingConeSoftness);
-        if (shapingConeSoftness.IsHolding<float>()) {
-            params->SetFloat(us_coneSoftness,
-                             shapingConeSoftness.UncheckedGet<float>());
-        }
+            VtValue shapingConeSoftness =
+                sceneDelegate->GetLightParamValue(id, 
+                    HdLightTokens->shapingConeSoftness);
+            if (shapingConeSoftness.IsHolding<float>()) {
+                params->SetFloat(us_coneSoftness,
+                                 shapingConeSoftness.UncheckedGet<float>());
+            }
 
-        // TODO - ies is only supported on rect, disk, and sphere light. Update 
-        // to not set these parameters for other light types.
-        VtValue shapingIesFile =
-            sceneDelegate->GetLightParamValue(id, 
-                HdLightTokens->shapingIesFile);
-        if (shapingIesFile.IsHolding<SdfAssetPath>()) {
-            SdfAssetPath ap = shapingIesFile.UncheckedGet<SdfAssetPath>();
-            params->SetString(us_iesProfile, _RtStringFromSdfAssetPath(ap));
-        }
+            VtValue shapingIesFile =
+                sceneDelegate->GetLightParamValue(id, 
+                    HdLightTokens->shapingIesFile);
+            if (shapingIesFile.IsHolding<SdfAssetPath>()) {
+                SdfAssetPath ap = shapingIesFile.UncheckedGet<SdfAssetPath>();
+                params->SetString(us_iesProfile, _RtStringFromSdfAssetPath(ap));
+            }
 
-        VtValue shapingIesAngleScale =
-            sceneDelegate->GetLightParamValue(id,
-                HdLightTokens->shapingIesAngleScale);
-        if (shapingIesAngleScale.IsHolding<float>()) {
-            params->SetFloat(us_iesProfileScale,
-                             shapingIesAngleScale.UncheckedGet<float>());
-        }
+            VtValue shapingIesAngleScale =
+                sceneDelegate->GetLightParamValue(id,
+                    HdLightTokens->shapingIesAngleScale);
+            if (shapingIesAngleScale.IsHolding<float>()) {
+                params->SetFloat(us_iesProfileScale,
+                                 shapingIesAngleScale.UncheckedGet<float>());
+            }
 
-        VtValue shapingIesNormalize =
-            sceneDelegate->GetLightParamValue(id,
-                HdLightTokens->shapingIesNormalize);
-        if (shapingIesNormalize.IsHolding<bool>()) {
-            params->SetInteger(us_iesProfileNormalize,
-                               shapingIesNormalize.UncheckedGet<bool>());
+            VtValue shapingIesNormalize =
+                sceneDelegate->GetLightParamValue(id,
+                    HdLightTokens->shapingIesNormalize);
+            if (shapingIesNormalize.IsHolding<bool>()) {
+                params->SetInteger(us_iesProfileNormalize,
+                                   shapingIesNormalize.UncheckedGet<bool>());
+            }
         }
     }
 
