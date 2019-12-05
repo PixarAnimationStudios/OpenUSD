@@ -300,8 +300,8 @@ class TestUsdGeomXformAPI(unittest.TestCase):
         # component values *may* not.
         xtrans = x.GetLocalTransformation(Usd.TimeCode.Default())
         ztrans = z.GetLocalTransformation(Usd.TimeCode.Default())
-        for a, b in zip([xtrans.GetRow(i) for i in range(0,5)],
-                        [ztrans.GetRow(i) for i in range(0,5)]):
+        for a, b in zip([xtrans.GetRow(i) for i in range(4)],
+                        [ztrans.GetRow(i) for i in range(4)]):
             if any(map(math.isnan, a)) or any(map(math.isnan, b)):
                 continue
             self.assertTrue(Gf.IsClose(a,b,1e-5))
