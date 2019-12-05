@@ -372,7 +372,7 @@ struct UsdRiTokensType {
     const TfToken month;
     /// \brief "multiply"
     /// 
-    /// Possible value for UsdRiLightFilterAPI::GetRiCombineModeAttr()
+    /// Possible value for UsdRiLightFilterAPI::GetRiCombineModeAttr(), Default value for UsdRiLightFilterAPI::GetRiCombineModeAttr()
     const TfToken multiply;
     /// \brief "noEffect"
     /// 

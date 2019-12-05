@@ -250,7 +250,7 @@ class "RiLightFilterAPI" (
     }
 )
 {
-    token ri:combineMode (
+    token ri:combineMode = "multiply" (
         allowedTokens = ["multiply", "max", "min", "screen"]
         doc = """Specifies how this filter combines with others.
         Valid values are:

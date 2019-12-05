@@ -171,7 +171,7 @@ public:
     /// \n  C++ Type: TfToken
     /// \n  Usd Type: SdfValueTypeNames->Token
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// \n  Fallback Value: multiply
     /// \n  \ref UsdRiTokens "Allowed Values": [multiply, max, min, screen]
     USDRI_API
     UsdAttribute GetRiCombineModeAttr() const;
