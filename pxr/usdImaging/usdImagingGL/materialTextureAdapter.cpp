@@ -26,10 +26,15 @@
 #include "pxr/imaging/glf/image.h"
 
 #include "pxr/usd/usdShade/shader.h"
-#include "pxr/usd/usdShade/tokens.h"
 #include "pxr/usd/sdr/registry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    (inputs)
+);
 
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -79,7 +84,7 @@ UsdImagingGLMaterialTextureAdapter::GetTextureResource(
                 TfToken const& fileProp = assetIdentifierPropertyNames[0];
                 texAttr = texAttr.AppendProperty(
                     TfToken(SdfPath::JoinIdentifier(
-                       UsdShadeTokens->inputsId, fileProp)));
+                       _tokens->inputs, fileProp)));
             }
         }
     }

@@ -102,10 +102,6 @@ struct UsdShadeTokensType {
     /// 
     /// The prefix on shading attributes denoting an input. 
     const TfToken inputs;
-    /// \brief "inputsId"
-    /// 
-    /// The prefix on shading attributes denoting an input WITHOUT ':'
-    const TfToken inputsId;
     /// \brief "interfaceOnly"
     /// 
     /// Possible value for 'connectability' metadata on  a UsdShadeInput. It implies that the input can only connect to  a NodeGraph Input (which represents an interface override, not  a render-time dataflow connection), or another Input whose  connectability is also 'interfaceOnly'. 
