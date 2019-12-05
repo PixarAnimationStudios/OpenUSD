@@ -43,6 +43,7 @@
 #include "pxr/imaging/hdx/simpleLightTask.h"
 #include "pxr/imaging/hdx/shadowTask.h"
 #include "pxr/imaging/hdx/tokens.h"
+#include "pxr/imaging/hdx/shadowMatrixComputation.h"
 
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
@@ -82,6 +83,28 @@ TF_DEFINE_PRIVATE_TOKENS(
     // for the stage orientation
     (StageOrientation)
 );
+
+namespace {
+    class HdxShadowMatrix : public HdxShadowMatrixComputation
+    {
+    public:
+        HdxShadowMatrix(const GlfSimpleLight& light)
+        {
+            // We use the shadow matrix as provided by Maya directly.
+            _shadowMatrix = light.GetShadowMatrix();
+        }
+
+        GfMatrix4d Compute(
+            const GfVec4f& viewport,
+            CameraUtilConformWindowPolicy policy) override
+        {
+            return _shadowMatrix;
+        }
+
+    private:
+        GfMatrix4d _shadowMatrix;
+    };
+}
 
 // ---------------------------------------------------------------------------
 // Delegate implementation.
@@ -1581,7 +1604,33 @@ HdxTaskController::SetLightingState(GlfSimpleLightingContextPtr const& src)
         GlfSimpleLight light = _GetLightAtId(i);
         if (light != lights[i]) {
             _delegate.SetParameter(_lightIds[i], 
-                                    HdLightTokens->params, lights[i]);
+                                    HdLightTokens->params, VtValue(lights[i]));
+
+            _delegate.SetParameter(_lightIds[i],
+                                    HdLightTokens->transform, VtValue());
+
+            HdxShadowParams shadowParams;
+            shadowParams.enabled = lights[i].HasShadow();
+            shadowParams.resolution = lights[i].GetShadowResolution();
+            // Notice: The Hydra lighting shader currently adds the bias value to the
+            // depth of the position being tested for shadowing whereas the Maya
+            // behavior appears to be that it is subtracted. To handle this for now,
+            // we simply negate the bias value from Maya before passing it to Hydra.
+            shadowParams.bias = -1.0f * lights[i].GetShadowBias();
+            shadowParams.blur = lights[i].GetShadowBlur();
+
+            if (lights[i].HasShadow()) {
+                shadowParams.shadowMatrix =
+                    HdxShadowMatrixComputationSharedPtr(
+                        new HdxShadowMatrix(lights[i]));
+            }
+
+            SetEnableShadows(shadowParams.enabled);
+            _delegate.SetParameter(_lightIds[i], HdLightTokens->shadowParams, VtValue(shadowParams));
+            _delegate.SetParameter(_lightIds[i], HdLightTokens->shadowCollection,
+                                    VtValue(HdRprimCollection(
+                                        HdTokens->geometry,
+                                        HdReprSelector(HdReprTokens->refined))));
 
             if (light.IsDomeLight()) {
                 _delegate.SetParameter(_lightIds[i], 
@@ -1589,7 +1638,7 @@ HdxTaskController::SetLightingState(GlfSimpleLightingContextPtr const& src)
                                     _defaultDomeLightTextureResource);
             }
             GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
-                _lightIds[i], HdLight::DirtyParams);
+                _lightIds[i], HdStLight::AllDirty);
         }
     }
 
@@ -1603,15 +1652,21 @@ HdxTaskController::SetLightingState(GlfSimpleLightingContextPtr const& src)
             HdTokens->params);
 
     if (lightParams.sceneAmbient != src->GetSceneAmbient() ||
-        lightParams.material != src->GetMaterial()) {
+        lightParams.material != src->GetMaterial() ||
+        lightParams.enableShadows != src->GetUseShadows()) {
 
         lightParams.sceneAmbient = src->GetSceneAmbient();
         lightParams.material = src->GetMaterial();
+        lightParams.enableShadows = src->GetUseShadows();
 
         _delegate.SetParameter(
             _simpleLightTaskId, HdTokens->params, lightParams);
+        
         GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
             _simpleLightTaskId, HdChangeTracker::DirtyParams);
+
+        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+            _shadowTaskId, HdChangeTracker::DirtyParams);
     }
 }
 
