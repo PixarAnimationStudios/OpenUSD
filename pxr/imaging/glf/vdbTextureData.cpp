@@ -391,7 +391,7 @@ GlfVdbTextureData::Read(int degradeLevel, bool generateMipmap,
         _size = 0;
 
         // Not emitting warning as volume might be empty for
-        // legitamite reason (for example during an animation).
+        // legitimate reason (for example during an animation).
 
         return false;
     }

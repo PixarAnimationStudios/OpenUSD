@@ -37,7 +37,15 @@ out VertexData
 {
     // Relying on perspectively correct interpolation.
     vec3 Peye;
+    float nearDistance;
 } outData;
+
+// Compute near distance assuming perspective camera
+float
+computeNearDistance(MAT4 projMat)
+{
+    return projMat[3][2] / (projMat[2][2] - 1.0);
+}
 
 void main(void)
 {
@@ -50,6 +58,9 @@ void main(void)
     vec4 pointEye = vec4(GetWorldToViewMatrix() * transform * point); 
 
     outData.Peye = pointEye.xyz / pointEye.w;
+
+    // Compute near distance assuming perspective camera
+    outData.nearDistance = computeNearDistance(GetProjectionMatrix());
 
     gl_Position = vec4(GetProjectionMatrix() * pointEye);
 
@@ -70,6 +81,7 @@ const int maxNumSteps = 10000;
 in VertexData
 {
     vec3 Peye;
+    float nearDistance;
 } inData;
 
 // Is point (in local coordinates) in bounding box.
@@ -256,6 +268,50 @@ volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye)
     return result;
 }
 
+// Compute the point from which we start ray marching. The input is
+// the point on the boundary of the volume bounding box corresponding to this
+// fragment. Input and output are both in eye space.
+//
+// If the camera (or more precisely, the point where the eye ray
+// intersects the near clipping plane) is inside the volume, then the
+// fragment shader is called only for the point where the eye ray is
+// exiting the bounding box. To obtain the correct result in this
+// case, we need to move the start point close to the camera.
+//
+vec3
+computeRayStartEye(vec3 Peye)
+{
+    // Assuming perspective camera
+
+    // Compute where eye ray intersects near clipping plane in eye space ...
+    vec3 nearClippingPointEye =
+        -inData.nearDistance * vec3( Peye.xy / Peye.z, 1.0);
+    // ... and local space.
+    vec3 nearClippingPoint = eyeToLocal(nearClippingPointEye);
+    
+    // If that point is inside the bounding box of the volume, ...
+    if (inBoundingBox(nearClippingPoint)) {
+        // ... we need to move the point close to the camera.
+        //
+        // This point could be obtained by either intersecting the eye ray
+        // with the near clipping plane (i.e., just using nearClippingPointEye) or
+        // with a sphere about there eye (with radius being the near distance).
+        //
+        // Note that in the former case, the distance between the eye
+        // and the point where raymarching starts is non-constant
+        // across the image and could introduce bias. Thus, we are using the latter.
+        //
+        // Note that we can use points in front of the near plane
+        // since OIT resolution makes now assumption about the depth
+        // value.
+        //
+        return normalize(Peye) * inData.nearDistance;
+    }
+    
+    // Otherwise, just return input.
+    return Peye;
+}
+
 void main(void)
 {
     instanceModelViewInverse =
@@ -265,11 +321,12 @@ void main(void)
     // camera facing.
     vec3 Neye = vec3(0, 0, 1);
 
+    vec3 rayStartEye = computeRayStartEye(inData.Peye);
     // Assuming perspective camera
     vec3 rayDirectionEye = normalize(inData.Peye);
 
     VolumeContribution volumeContribution =
-        volumeIntegrator(inData.Peye, rayDirectionEye);
+        volumeIntegrator(rayStartEye, rayDirectionEye);
     float alpha = 1 - volumeContribution.transmittance;
     vec4 color = ApplyColorOverrides(vec4(volumeContribution.color, alpha));
 
