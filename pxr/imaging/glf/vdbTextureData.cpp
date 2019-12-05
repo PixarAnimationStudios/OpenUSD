@@ -181,9 +181,24 @@ public:
                                             openvdb::tools::LayoutXYZ>;
     using GridPtr = typename GridType::Ptr;
 
-    _DenseGridHolder(const GridPtr &grid)
-        // Allocate dense grid of appropriate size
-        : _denseGrid(_ComputeTreeBoundingBox(grid))
+    // Create dense grid holder or return null pointer for empty grid.
+    // Callee owns result.
+    static 
+    _DenseGridHolder *New(const GridPtr &grid)
+    {
+        // Determine bounding box of grid
+        const openvdb::CoordBBox bbox = _ComputeTreeBoundingBox(grid);
+        if (bbox.empty()) {
+            // Empty grid
+            return nullptr;
+        }
+        // Allocate dense grid of that size and copy grid to it.
+        return new _DenseGridHolder(grid, bbox);
+    }
+
+    _DenseGridHolder(const GridPtr &grid, const openvdb::CoordBBox &bbox)
+        // Allocate dense grid of given size
+        : _denseGrid(bbox)
     {
         TRACE_SCOPE("GlfVdbTextureData: Copy to dense");
         openvdb::tools::copyToDense(grid->tree(), _denseGrid);
@@ -313,7 +328,8 @@ GlfVdbTextureData::Read(int degradeLevel, bool generateMipmap,
             "[VdbTextureData] Converting float grid to dense");
         TRACE_SCOPE("Converting to float dense grid");
 
-        _denseGrid.reset(new _DenseGridHolder<openvdb::FloatGrid>(floatGrid));
+        _denseGrid.reset(
+            _DenseGridHolder<openvdb::FloatGrid>::New(floatGrid));
         _bytesPerPixel = sizeof(float);
         _glInternalFormat = GL_RED;
         _glFormat = GL_RED;
@@ -326,7 +342,8 @@ GlfVdbTextureData::Read(int degradeLevel, bool generateMipmap,
             "[VdbTextureData] Converting double grid to dense");
         TRACE_SCOPE("Converting to double dense grid");
 
-        _denseGrid.reset(new _DenseGridHolder<openvdb::DoubleGrid>(doubleGrid));
+        _denseGrid.reset(
+            _DenseGridHolder<openvdb::DoubleGrid>::New(doubleGrid));
         _bytesPerPixel = sizeof(double);
         _glInternalFormat = GL_RED;
         _glFormat = GL_RED;
@@ -339,7 +356,8 @@ GlfVdbTextureData::Read(int degradeLevel, bool generateMipmap,
             "[VdbTextureData] Converting vec3f grid to dense");
         TRACE_SCOPE("Converting to vec3f dense grid");
 
-        _denseGrid.reset(new _DenseGridHolder<openvdb::Vec3fGrid>(vec3fGrid));
+        _denseGrid.reset(
+            _DenseGridHolder<openvdb::Vec3fGrid>::New(vec3fGrid));
         _bytesPerPixel = 3 * sizeof(float);
         _glInternalFormat = GL_RGB;
         _glFormat = GL_RGB;
@@ -352,7 +370,8 @@ GlfVdbTextureData::Read(int degradeLevel, bool generateMipmap,
             "[VdbTextureData] Converting vec3d grid to dense");
         TRACE_SCOPE("Converting to vec3d dense grid");
 
-        _denseGrid.reset(new _DenseGridHolder<openvdb::Vec3dGrid>(vec3dGrid));
+        _denseGrid.reset(
+            _DenseGridHolder<openvdb::Vec3dGrid>::New(vec3dGrid));
         _bytesPerPixel = 3 * sizeof(double);
         _glInternalFormat = GL_RGB;
         _glFormat = GL_RGB;
@@ -360,6 +379,20 @@ GlfVdbTextureData::Read(int degradeLevel, bool generateMipmap,
 
     } else {
         TF_WARN("Unsupported OpenVDB grid type");
+        return false;
+    }
+
+    if (!_denseGrid) {
+        _nativeWidth  = 0;
+        _nativeHeight = 0;
+        // Following convention from GlfBaseTexture to set
+        // depth to 1 by default.
+        _nativeDepth  = 1;
+        _size = 0;
+
+        // Not emitting warning as volume might be empty for
+        // legitamite reason (for example during an animation).
+
         return false;
     }
 
