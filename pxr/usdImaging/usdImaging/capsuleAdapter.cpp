@@ -141,11 +141,6 @@ VtValue
 UsdImagingCapsuleAdapter::GetMeshPoints(UsdPrim const& prim, 
                                         UsdTimeCode time)
 {
-    // We can't use the trick of constant points and varying transform with this
-    // primitive type (that we use for other implicit surfaces), because any
-    // nonuniform scaling will distort the hemispherical end caps.  So just
-    // generate points for the attribute values as needed.
-
     UsdGeomCapsule capsule(prim);
     double height = 1.0;
     double radius = 0.5;

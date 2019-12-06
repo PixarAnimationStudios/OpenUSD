@@ -992,11 +992,6 @@ UsdImagingGLLegacyEngine::_HandleCube(const UsdPrim &prim)
     // Apply xforms for node-collapsed geometry.
     _HandleXform(prim);
 
-    // Update the transform with the size authored for the cube.
-    const GfMatrix4d xf =
-        UsdImagingCubeAdapter::GetMeshTransform(prim, _params.frame);
-    _ctm = xf * _ctm;
-
     // Get points and topology from the mesh
     const VtValue ptsSource =
         UsdImagingCubeAdapter::GetMeshPoints(prim, _params.frame);
@@ -1021,11 +1016,6 @@ UsdImagingGLLegacyEngine::_HandleSphere(const UsdPrim &prim)
 
     // Apply xforms for node-collapsed geometry.
     _HandleXform(prim);
-
-    // Update the transform with the size authored for the cube.
-    const GfMatrix4d xf =
-        UsdImagingSphereAdapter::GetMeshTransform(prim, _params.frame);
-    _ctm = xf * _ctm;
 
     // Get points and topology from the mesh
     const VtValue ptsSource =
@@ -1052,11 +1042,6 @@ UsdImagingGLLegacyEngine::_HandleCone(const UsdPrim &prim)
     // Apply xforms for node-collapsed geometry.
     _HandleXform(prim);
 
-    // Update the transform with the size authored for the cube.
-    const GfMatrix4d xf =
-        UsdImagingConeAdapter::GetMeshTransform(prim, _params.frame);
-    _ctm = xf * _ctm;
-
     // Get points and topology from the mesh
     const VtValue ptsSource =
         UsdImagingConeAdapter::GetMeshPoints(prim, _params.frame);
@@ -1081,11 +1066,6 @@ UsdImagingGLLegacyEngine::_HandleCylinder(const UsdPrim &prim)
 
     // Apply xforms for node-collapsed geometry.
     _HandleXform(prim);
-
-    // Update the transform with the size authored for the cube.
-    const GfMatrix4d xf =
-        UsdImagingCylinderAdapter::GetMeshTransform(prim, _params.frame);
-    _ctm = xf * _ctm;
 
     // Get points and topology from the mesh
     const VtValue ptsSource =

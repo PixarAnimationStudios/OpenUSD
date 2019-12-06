@@ -80,13 +80,13 @@ UsdImagingCubeAdapter::TrackVariability(UsdPrim const& prim,
     // has been carefully pre-populated to avoid mutating the underlying
     // container during update.
     
-    // The base adapter may already be setting that transform dirty bit.
+    // The base adapter may already be setting that points dirty bit.
     // _IsVarying will clear it, so check it isn't already marked as
     // varying before checking for additional set cases.
-     if ((*timeVaryingBits & HdChangeTracker::DirtyTransform) == 0) {
+     if ((*timeVaryingBits & HdChangeTracker::DirtyPoints) == 0) {
         _IsVarying(prim, UsdGeomTokens->size,
-                      HdChangeTracker::DirtyTransform,
-                      UsdImagingTokens->usdVaryingXform,
+                      HdChangeTracker::DirtyPoints,
+                      UsdImagingTokens->usdVaryingPrimvar,
                       timeVaryingBits, /*inherited*/false);
     }
 }
@@ -104,12 +104,6 @@ UsdImagingCubeAdapter::UpdateForTime(UsdPrim const& prim,
 
     UsdImagingValueCache* valueCache = _GetValueCache();
 
-    if (requestedBits & HdChangeTracker::DirtyTransform) {
-        // Update the transform with the size authored for the cube.
-        GfMatrix4d& ctm = valueCache->GetTransform(cachePath);
-        GfMatrix4d xf = GetMeshTransform(prim, time);
-        ctm = xf * ctm;
-    }
     if (requestedBits & HdChangeTracker::DirtyTopology) {
         valueCache->GetTopology(cachePath) = GetMeshTopology();
     }
@@ -125,28 +119,8 @@ UsdImagingCubeAdapter::GetPoints(UsdPrim const& prim,
     return GetMeshPoints(prim, time);   
 }
 
-/*static*/
-VtValue
-UsdImagingCubeAdapter::GetMeshPoints(UsdPrim const& prim, 
-                                     UsdTimeCode time)
-{
-    // The points are constant; the prim's attributes are accomodated by
-    // manipulating the transform (see GetMeshTransform() below).
-    return VtValue(UsdImagingGetUnitCubeMeshPoints());
-}
-
-/*static*/
-VtValue
-UsdImagingCubeAdapter::GetMeshTopology()
-{
-    // Like the points, topology is constant and identical for all cubes.
-    return VtValue(HdMeshTopology(UsdImagingGetUnitCubeMeshTopology()));
-}
-
-/*static*/
-GfMatrix4d
-UsdImagingCubeAdapter::GetMeshTransform(UsdPrim const& prim, 
-                                        UsdTimeCode time)
+static GfMatrix4d
+_GetImplicitGeomScaleTransform(UsdPrim const& prim, UsdTimeCode time)
 {
     UsdGeomCube cube(prim);
 
@@ -159,26 +133,29 @@ UsdImagingCubeAdapter::GetMeshTransform(UsdPrim const& prim,
     return UsdImagingGenerateSphereOrCubeTransform(size);
 }
 
-size_t
-UsdImagingCubeAdapter::SampleTransform(
-    UsdPrim const& prim, SdfPath const& cachePath,
-    UsdTimeCode time, size_t maxNumSamples, float *sampleTimes,
-    GfMatrix4d *sampleValues)
+/*static*/
+VtValue
+UsdImagingCubeAdapter::GetMeshPoints(UsdPrim const& prim, 
+                                     UsdTimeCode time)
 {
-    const size_t numSamples = BaseAdapter::SampleTransform(
-        prim, cachePath, time, maxNumSamples,
-        sampleTimes, sampleValues);
-
-    // Apply modeling transformation (which may be time-varying)
-    size_t numSamplesToEvaluate = std::min(maxNumSamples, numSamples);
-    for (size_t i=0; i < numSamplesToEvaluate; ++i) {
-        UsdTimeCode usdTime = _GetTimeWithOffset(sampleTimes[i]);
-        GfMatrix4d xf = GetMeshTransform(prim, usdTime);
-        sampleValues[i] = xf * sampleValues[i];
+    // Return scaled points (and not that of a unit geometry)
+    VtVec3fArray points = UsdImagingGetUnitCubeMeshPoints();
+    GfMatrix4d scale = _GetImplicitGeomScaleTransform(prim, time);
+    for (GfVec3f& pt : points) {
+        pt = scale.Transform(pt);
     }
 
-    return numSamples;
+    return VtValue(points);
 }
+
+/*static*/
+VtValue
+UsdImagingCubeAdapter::GetMeshTopology()
+{
+    // Topology is constant and identical for all cubes.
+    return VtValue(HdMeshTopology(UsdImagingGetUnitCubeMeshTopology()));
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

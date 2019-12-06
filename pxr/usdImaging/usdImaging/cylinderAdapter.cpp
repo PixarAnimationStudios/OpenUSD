@@ -86,22 +86,22 @@ UsdImagingCylinderAdapter::TrackVariability(UsdPrim const& prim,
     // base adapter invocation) that might result in the bit being set, we need
     // to be careful not to reset it.  Translation: only check _IsVarying for a
     // given cause IFF the bit wasn't already set by a previous invocation.
-    if ((*timeVaryingBits & HdChangeTracker::DirtyTransform) == 0) {
+    if ((*timeVaryingBits & HdChangeTracker::DirtyPoints) == 0) {
         _IsVarying(prim, UsdGeomTokens->height,
-                   HdChangeTracker::DirtyTransform,
-                   UsdImagingTokens->usdVaryingXform,
+                   HdChangeTracker::DirtyPoints,
+                   UsdImagingTokens->usdVaryingPrimvar,
                    timeVaryingBits, /*inherited*/false);
     }
-    if ((*timeVaryingBits & HdChangeTracker::DirtyTransform) == 0) {
+    if ((*timeVaryingBits & HdChangeTracker::DirtyPoints) == 0) {
         _IsVarying(prim, UsdGeomTokens->radius,
-                   HdChangeTracker::DirtyTransform,
-                   UsdImagingTokens->usdVaryingXform,
+                   HdChangeTracker::DirtyPoints,
+                   UsdImagingTokens->usdVaryingPrimvar,
                    timeVaryingBits, /*inherited*/false);
     }
-    if ((*timeVaryingBits & HdChangeTracker::DirtyTransform) == 0) {
+    if ((*timeVaryingBits & HdChangeTracker::DirtyPoints) == 0) {
         _IsVarying(prim, UsdGeomTokens->axis,
-                   HdChangeTracker::DirtyTransform,
-                   UsdImagingTokens->usdVaryingXform,
+                   HdChangeTracker::DirtyPoints,
+                   UsdImagingTokens->usdVaryingPrimvar,
                    timeVaryingBits, /*inherited*/false);
     }
 }
@@ -120,12 +120,6 @@ UsdImagingCylinderAdapter::UpdateForTime(UsdPrim const& prim,
     BaseAdapter::UpdateForTime(
         prim, cachePath, time, requestedBits, instancerContext);
     UsdImagingValueCache* valueCache = _GetValueCache();
-    if (requestedBits & HdChangeTracker::DirtyTransform) {
-        // Update the transform with the size authored for the sphere.
-        GfMatrix4d& ctm = valueCache->GetTransform(cachePath);
-        GfMatrix4d xf = GetMeshTransform(prim, time);
-        ctm = xf * ctm;
-    }
     if (requestedBits & HdChangeTracker::DirtyTopology) {
         valueCache->GetTopology(cachePath) = GetMeshTopology();
     }
@@ -142,27 +136,8 @@ UsdImagingCylinderAdapter::GetPoints(UsdPrim const& prim,
 }
 
 /*static*/
-VtValue
-UsdImagingCylinderAdapter::GetMeshPoints(UsdPrim const& prim,
-                                         UsdTimeCode time)
-{
-    // The points are constant; the prim's attributes are accomodated by
-    // manipulating the transform (see GetMeshTransform() below).
-    return VtValue(UsdImagingGetUnitCylinderMeshPoints());
-}
-
-/*static*/
-VtValue
-UsdImagingCylinderAdapter::GetMeshTopology()
-{
-    // Like the points, topology is constant and identical for all cylinders.
-    return VtValue(HdMeshTopology(UsdImagingGetUnitCylinderMeshTopology()));
-}
-
-/*static*/
-GfMatrix4d
-UsdImagingCylinderAdapter::GetMeshTransform(UsdPrim const& prim, 
-                                            UsdTimeCode time)
+static GfMatrix4d
+_GetImplicitGeomScaleTransform(UsdPrim const& prim, UsdTimeCode time)
 {
     UsdGeomCylinder cylinder(prim);
 
@@ -186,26 +161,29 @@ UsdImagingCylinderAdapter::GetMeshTransform(UsdPrim const& prim,
     return UsdImagingGenerateConeOrCylinderTransform(height, radius, axis);
 }
 
-size_t
-UsdImagingCylinderAdapter::SampleTransform(
-    UsdPrim const& prim, SdfPath const& cachePath,
-    UsdTimeCode time, size_t maxNumSamples, float *sampleTimes,
-    GfMatrix4d *sampleValues)
+/*static*/
+VtValue
+UsdImagingCylinderAdapter::GetMeshPoints(UsdPrim const& prim,
+                                         UsdTimeCode time)
 {
-    const size_t numSamples = BaseAdapter::SampleTransform(
-        prim, cachePath, time, maxNumSamples,
-        sampleTimes, sampleValues);
-
-    // Apply modeling transformation (which may be time-varying)
-    size_t numSamplesToEvaluate = std::min(maxNumSamples, numSamples);
-    for (size_t i=0; i < numSamplesToEvaluate; ++i) {
-        UsdTimeCode usdTime = _GetTimeWithOffset(sampleTimes[i]);
-        GfMatrix4d xf = GetMeshTransform(prim, usdTime);
-        sampleValues[i] = xf * sampleValues[i];
+    // Return scaled points (and not that of a unit geometry)
+    VtVec3fArray points = UsdImagingGetUnitCylinderMeshPoints();
+    GfMatrix4d scale = _GetImplicitGeomScaleTransform(prim, time);
+    for (GfVec3f& pt : points) {
+        pt = scale.Transform(pt);
     }
 
-    return numSamples;
+    return VtValue(points);
 }
+
+/*static*/
+VtValue
+UsdImagingCylinderAdapter::GetMeshTopology()
+{
+    // Topology is constant and identical for all cylinders.
+    return VtValue(HdMeshTopology(UsdImagingGetUnitCylinderMeshTopology()));
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
