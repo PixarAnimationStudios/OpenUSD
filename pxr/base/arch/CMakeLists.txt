@@ -105,6 +105,12 @@ pxr_build_test(testArchFunction
     CPPFILES
         testenv/testFunction.cpp
 )
+pxr_build_test(testArchMath
+    LIBRARIES
+        arch
+    CPPFILES
+        testenv/testMath.cpp
+)
 pxr_build_test(testArchStackTrace
     LIBRARIES
         arch

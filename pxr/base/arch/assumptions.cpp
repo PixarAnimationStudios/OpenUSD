@@ -29,7 +29,9 @@
 #include "pxr/base/arch/error.h"
 #include "pxr/base/arch/export.h"
 #include "pxr/base/arch/math.h"
-#include <stdio.h>
+
+#include <cstdio>
+#include <limits>
 
 #if defined(ARCH_OS_LINUX)
 #include <unistd.h>
@@ -95,55 +97,28 @@ Arch_ValidateAssumptions()
      * We do an atomic compare-and-swap on enum's, treating then as ints,
      * so we are assuming that an enum is the same size as an int.
      */
-    if (sizeof(SomeEnum) != sizeof(int))
-        ARCH_ERROR("sizeof(enum) != sizeof(int)");
-
-    if (sizeof(int) != 4)
-        ARCH_ERROR("sizeof(int) != 4");
+    static_assert(sizeof(SomeEnum) == sizeof(int),
+                  "sizeof(enum) != sizeof(int)");
 
     /*
-     * Verify that the exponent and significand of float and double are
-     * IEEE-754 compliant.
+     * Assert that sizeof(int) is 4.
      */
-    if (sizeof(float) != sizeof(uint32_t) ||
-        ArchFloatToBitPattern(5.6904566e-28f) != 0x12345678 ||
-        ArchBitPatternToFloat(0x12345678) != 5.6904566e-28f)
-    {
-        // CODE_COVERAGE_OFF
-        ARCH_ERROR("float is not IEEE-754 compliant");
-        //CODE_COVERAGE_ON
-    }
-    if (sizeof(double) != sizeof(uint64_t) ||
-        ArchDoubleToBitPattern(
-            5.6263470058989390e-221) != 0x1234567811223344ULL ||
-        ArchBitPatternToDouble(
-            0x1234567811223344ULL) != 5.6263470058989390e-221)
-    {
-        // CODE_COVERAGE_OFF
-        ARCH_ERROR("double is not IEEE-754 compliant");
-        //CODE_COVERAGE_ON
-    }
-
+    static_assert(sizeof(int) == 4, "sizeof(int) != 4");
 
     /*
-     * Lots of things depend on characters being able to compare with EOF.
+     * Verify that float and double are IEEE-754 compliant.
      */
-    int ic = EOF;
-    char c = ic;
-
-    if (c != EOF) {
-        // CODE_COVERAGE_OFF
-        ARCH_ERROR("testing a char against EOF fails");
-        //CODE_COVERAGE_ON
-    }
+    static_assert(sizeof(float) == sizeof(uint32_t) &&
+                  sizeof(double) == sizeof(uint64_t) &&
+                  std::numeric_limits<float>::is_iec559 &&
+                  std::numeric_limits<double>::is_iec559,
+                  "float/double not IEEE-754 compliant");
 
     /*
      * Check the demangler on a very simple type.
      */
     if (ArchGetDemangled<int>() != "int") {
-        // CODE_COVERAGE_OFF
-        ARCH_ERROR("C++ demangling is badly broken.");
-        // CODE_COVERAGE_ON    
+        ARCH_WARNING("C++ demangling appears badly broken.");
     }
 
     /*
@@ -151,9 +126,7 @@ Arch_ValidateAssumptions()
      * on the current hardware architecture.
      */ 
     if (ARCH_CACHE_LINE_SIZE != Arch_ObtainCacheLineSize()) {
-        // CODE_COVERAGE_OFF
-        ARCH_ERROR("ARCH_CACHE_LINE_SIZE is not set correctly.");
-        // CODE_COVERAGE_ON  
+        ARCH_WARNING("ARCH_CACHE_LINE_SIZE != Arch_ObtainCacheLineSize()");
     }
 }
 
