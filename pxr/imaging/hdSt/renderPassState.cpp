@@ -472,15 +472,12 @@ HdStRenderPassState::MakeGraphicsEncoderDesc() const
     // that backs the render buffer and was attached for graphics encoding.
 
     for (const HdRenderPassAovBinding& aov : aovBindings) {
-        HdStRenderBuffer const* stRenderBuffer = 
-            dynamic_cast<HdStRenderBuffer const*>(aov.renderBuffer);
-
-        if (!TF_VERIFY(stRenderBuffer, "Invalid render buffer")) {
+        if (!TF_VERIFY(aov.renderBuffer, "Invalid render buffer")) {
             continue;
         }
-        HgiTextureHandle hgiTexHandle = aov.renderBuffer->IsMultiSampled() ?
-            stRenderBuffer->GetMultiSampleTextureHandle() :
-            stRenderBuffer->GetTextureHandle();
+        bool multiSampled = aov.renderBuffer->IsMultiSampled();
+        HgiTextureHandle hgiTexHandle =
+            aov.renderBuffer->GetHgiTextureHandle(multiSampled);
 
         if (!TF_VERIFY(hgiTexHandle, "Invalid render buffer texture")) {
             continue;

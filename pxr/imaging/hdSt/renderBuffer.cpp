@@ -186,16 +186,13 @@ HdStRenderBuffer::Resolve()
 }
 
 HgiTextureHandle 
-HdStRenderBuffer::GetMultiSampleTextureHandle() const 
+HdStRenderBuffer::GetHgiTextureHandle(bool multiSampled) const 
 {
-    TF_VERIFY(_multiSampled, "RenderBuffer is not multi-sample");
-    return _textureMS;
-}
-
-HgiTextureHandle 
-HdStRenderBuffer::GetTextureHandle() const 
-{
-    return _texture;
+    if (multiSampled && _multiSampled) {
+        return _textureMS;
+    } else {
+        return _texture;
+    }
 }
 
 

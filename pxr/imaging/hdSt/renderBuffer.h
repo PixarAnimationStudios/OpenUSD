@@ -94,14 +94,9 @@ public:
     HDST_API
     void Resolve() override;
 
-    /// Returns the multi-sample texture handle.
-    /// If the backing buffer is not multi-sample this returns nullptr.
+    /// Returns the texture handle.
     HDST_API
-    HgiTextureHandle GetMultiSampleTextureHandle() const;
-
-    /// Returns the handle of the resolved (non-multi-sample) texture.
-    HDST_API
-    HgiTextureHandle GetTextureHandle() const;
+    HgiTextureHandle GetHgiTextureHandle(bool multiSampled) const override;
 
 private:
     // Release any allocated resources.

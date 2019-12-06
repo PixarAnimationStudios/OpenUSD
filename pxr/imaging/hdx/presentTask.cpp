@@ -91,25 +91,14 @@ HdxPresentTask::Execute(HdTaskContext* ctx)
     HF_MALLOC_TAG_FUNCTION();
     GLF_GROUP_FUNCTION();
 
-    if (!_aovBuffer) {
-        return;
-    }
+    const bool mulSmp = false;
 
-    HdStRenderBuffer* stAovBuffer =
-        dynamic_cast<HdStRenderBuffer*>(_aovBuffer);
-    HdStRenderBuffer* stDepthBuffer =
-        dynamic_cast<HdStRenderBuffer*>(_depthBuffer);
-
-    if (!stAovBuffer) {
-        return;
-    }
-
-    HgiGLTexture* colorTex = stAovBuffer ?
-        static_cast<HgiGLTexture*>(stAovBuffer->GetTextureHandle()) :
+    HgiGLTexture* colorTex = _aovBuffer ? 
+        static_cast<HgiGLTexture*>(_aovBuffer->GetHgiTextureHandle(mulSmp)) :
         nullptr;
 
-    HgiGLTexture* depthTex = stDepthBuffer ?
-        static_cast<HgiGLTexture*>(stDepthBuffer->GetTextureHandle()) :
+    HgiGLTexture* depthTex = _depthBuffer ? 
+        static_cast<HgiGLTexture*>(_depthBuffer->GetHgiTextureHandle(mulSmp)):
         nullptr;
 
     uint32_t colorId = colorTex ? colorTex->GetTextureId() : 0;

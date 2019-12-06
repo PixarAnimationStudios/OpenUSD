@@ -34,6 +34,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+typedef class HgiTexture* HgiTextureHandle;
+
+
 /// \class HdRenderBuffer
 ///
 /// A render buffer is a handle to a data resource that can be rendered into,
@@ -120,6 +123,15 @@ public:
     /// Return whether the buffer is converged (whether the renderer is
     /// still adding samples or not).
     virtual bool IsConverged() const = 0;
+
+    /// This optional API returns the hgi gpu texture handle that backs this
+    /// render buffer. It allows later compositing steps to make use of the
+    /// already-on-gpu texture and skip the Map() cpu to gpu copy.
+    /// If `multiSampled` is true, and the render buffer is ms, the
+    /// ms texture is returned, otherwise the non-ms texture is returned.
+    /// CPU-based render buffer can ignore this api.
+    virtual HgiTextureHandle GetHgiTextureHandle(bool multiSampled) const {
+        return nullptr;}
 
 protected:
     /// Deallocate the buffer, freeing any owned resources.

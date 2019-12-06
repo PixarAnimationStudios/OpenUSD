@@ -265,23 +265,6 @@ HdxColorCorrectionTask::_CreateBufferResources()
     return true;
 }
 
-HgiGLTexture*
-HdxColorCorrectionTask::_GetAovHgiGLTexture()
-{
-    if (HdStRenderBuffer* stAovBuffer =
-            dynamic_cast<HdStRenderBuffer*>(_aovBuffer)) {
-        
-        // XXX Since ColorCorrection is doing its own GL calls (not yet via Hgi)
-        // we are directly accessing the HgiGLTexture to get the gl resource id.
-        // This should be removed once we can express ColorCorrection via Hgi.
-
-        // ColorCorrection is applied to the resolved, non-ms aov texture.
-        return static_cast<HgiGLTexture*>(stAovBuffer->GetTextureHandle());
-    } else {
-        return nullptr;
-    }
-}
-
 void
 HdxColorCorrectionTask::_CopyTexture()
 {
@@ -395,7 +378,14 @@ HdxColorCorrectionTask::_CreateFramebufferResources()
 
     // }
     //
-    HgiGLTexture* aovTexture = _GetAovHgiGLTexture();
+
+    HgiTextureHandle texHandle = _aovBuffer ? 
+        _aovBuffer->GetHgiTextureHandle(/*ms*/false) : nullptr;
+
+    // XXX Since this entire task is coded for GL we can static_cast to
+    // HgiGLTexture for now. When task is re-written to use Hgi everywhere, we
+    // should no longer need this cast and can just use HgiTextureHandle.
+    HgiGLTexture* aovTexture = static_cast<HgiGLTexture*>(texHandle);
 
     // XXX: see code comment above. Here we remove switchedGLContext from the
     //      if statement.
