@@ -2216,6 +2216,18 @@ private:
         friend struct Usd_ListEditImpl;
 };
 
+// UsdObject's typed metadata query relies on this specialization being
+// externally visible and exporting the primary template does not
+// automatically export this specialization.
+template <>
+USD_API
+bool
+UsdStage::_GetTypeSpecificResolvedMetadata(const UsdObject &obj,
+                                           const TfToken& fieldName,
+                                           const TfToken &keyPath,
+                                           bool useFallbacks,
+                                           SdfTimeSampleMap* result) const;
+
 template<typename T>
 bool
 UsdStage::GetMetadata(const TfToken& key, T* value) const
