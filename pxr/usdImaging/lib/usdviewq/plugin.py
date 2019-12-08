@@ -183,6 +183,25 @@ class CommandPlugin(object):
         self._callback(self._usdviewApi)
 
 
+class PluginItem(object):
+    """Object which wraps QMenu action item."""
+
+    def __init__(self, action):
+        self._action = action
+
+    def setChecked(self, isChecked):
+        """Specify whether the action is checked."""
+
+        if not self._action.isCheckable():
+            self._action.setCheckable(True)
+        self._action.setChecked(isChecked)
+
+    def setEnabled(self, isEnabled):
+        """Specify whether the action is enabled."""
+
+        self._action.setEnabled(isEnabled)
+
+
 class PluginMenu(object):
     """Object which adds Usdview command plugins to a QMenu."""
 
@@ -203,6 +222,8 @@ class PluginMenu(object):
 
         if shortcut is not None:
             action.setShortcut(QtGui.QKeySequence(shortcut))
+
+        return PluginItem(action)
 
     def findOrCreateSubmenu(self, menuName):
         """Get a PluginMenu object for the submenu with the given name. If no
