@@ -239,7 +239,10 @@ public:
     // ICON 
     // --------------------------------------------------------------------- //
     /// 
-    /// This points to an image that should be displayed on the node
+    /// This points to an image that should be displayed on the node.  It is 
+    /// intended to be useful for summary visual classification of nodes, rather
+    /// than a thumbnail preview of the computed result of the node in some
+    /// computational system.
     /// 
     ///
     /// \n  C++ Type: SdfAssetPath
