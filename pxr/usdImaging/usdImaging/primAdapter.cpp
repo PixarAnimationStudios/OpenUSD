@@ -706,13 +706,14 @@ UsdImagingPrimAdapter::_PrimvarChangeRequiresResync(
     }
 
     bool primvarOnPrim = false;
-    UsdGeomPrimvar pv;
+    UsdAttribute attr;
     if (inherited) {
-        pv = UsdGeomPrimvarsAPI(prim).FindPrimvarWithInheritance(propertyName);
+        attr = UsdGeomPrimvarsAPI(prim)
+            .FindPrimvarWithInheritance(propertyName);
     } else {
-        pv = UsdGeomPrimvarsAPI(prim).GetPrimvar(propertyName);
+        attr = prim.GetAttribute(propertyName);
     }
-    if (pv && pv.HasValue()) {
+    if (attr && attr.HasValue()) {
         primvarOnPrim = true;
     }
 

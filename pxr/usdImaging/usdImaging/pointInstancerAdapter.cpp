@@ -841,7 +841,7 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
         }
 
         if (_PrimvarChangeRequiresResync(
-                prim, cachePath, propertyName, primvarName)) {
+                prim, cachePath, propertyName, primvarName, false)) {
             return HdChangeTracker::AllDirty;
         } else {
             return HdChangeTracker::DirtyPrimvar;
