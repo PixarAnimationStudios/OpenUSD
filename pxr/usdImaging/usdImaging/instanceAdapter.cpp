@@ -2124,31 +2124,27 @@ struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn
 bool
 UsdImagingInstanceAdapter::PopulateSelection(
     HdSelection::HighlightMode const& highlightMode,
-    SdfPath const &instancePath,
+    SdfPath const &cachePath,
+    UsdPrim const &usdPrim,
     VtIntArray const &instanceIndices,
     HdSelectionSharedPtr const &result)
 {
     HD_TRACE_FUNCTION();
 
+    // cachePath points to an actual hydra instancer, so we use it as
+    // instancerPath.  The instance path is usdPrim.
+    SdfPath instancePath = usdPrim.GetPath();
+
     TF_DEBUG(USDIMAGING_SELECTION).Msg(
         "PopulateSelection: instance = %s\n", instancePath.GetText());
 
-    // look for instancePath
-    //
-    // XXX: do we still need to iterate over all instancer?
-    //
-    bool found = false;
-    TF_FOR_ALL (it, _instancerData) {
-        _PopulateInstanceSelectionFn populateFn(
-            this, it->first, instancePath, instanceIndices,
+    _PopulateInstanceSelectionFn populateFn(
+        this, cachePath, instancePath, instanceIndices,
             highlightMode, result);
 
-        _RunForAllInstancesToDraw(_GetPrim(it->first), &populateFn);
+    _RunForAllInstancesToDraw(_GetPrim(cachePath), &populateFn);
 
-        found |= populateFn.found;
-    }
-
-    return found;
+    return populateFn.found;
 }
 
 /*virtual*/

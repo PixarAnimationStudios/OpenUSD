@@ -326,7 +326,8 @@ public:
     // ---------------------------------------------------------------------- //
     USDIMAGING_API
     virtual bool PopulateSelection(HdSelection::HighlightMode const& highlightMode,
-                                   SdfPath const &usdPath,
+                                   SdfPath const &cachePath,
+                                   UsdPrim const &usdPrim,
                                    VtIntArray const &instanceIndices,
                                    HdSelectionSharedPtr const &result);
 

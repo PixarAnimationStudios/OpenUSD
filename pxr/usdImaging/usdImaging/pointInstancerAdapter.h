@@ -174,7 +174,8 @@ public:
 
     virtual bool PopulateSelection(
                                 HdSelection::HighlightMode const& highlightMode,
-                                SdfPath const &path,
+                                SdfPath const &cachePath,
+                                UsdPrim const &usdPrim,
                                 VtIntArray const &instanceIndices,
                                 HdSelectionSharedPtr const &result) override;
 

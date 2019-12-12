@@ -2166,17 +2166,12 @@ UsdImagingDelegate::PopulateSelection(
     // XXX: should we recurse into the subtree when
     // (instanceIndex != ALL_INSTANCES)?
     SdfPathVector affectedCachePaths;
-    SdfPathVector affectedUsdPaths;
-    _GatherDependencies(usdPath, &affectedCachePaths, &affectedUsdPaths);
-    if (!TF_VERIFY(affectedCachePaths.size() == affectedUsdPaths.size())) {
-        return false;
-    }
+    _GatherDependencies(usdPath, &affectedCachePaths);
 
     // Loop through gathered prims and add them to the selection set
     bool added = false;
     for (size_t i = 0; i < affectedCachePaths.size(); ++i) {
         SdfPath const& affectedCachePath = affectedCachePaths[i];
-        SdfPath const& affectedUsdPath = affectedUsdPaths[i];
 
         _HdPrimInfo *primInfo = _GetHdPrimInfo(affectedCachePath);
         if (primInfo == nullptr) {
@@ -2202,18 +2197,8 @@ UsdImagingDelegate::PopulateSelection(
             continue;
         }
 
-        // If the prim we're selecting is an instance, pass the instance path
-        // instead of the native instancer cache path so that PopulateSelection
-        // knows which instance is selected.
-        // XXX: This API should be fixed up to take true cache path and the
-        // affected Usd Prim.
-        UsdPrim affectedUsdPrim = _stage->GetPrimAtPath(affectedUsdPath);
-        SdfPath selectionPath = affectedCachePath;
-        if (affectedUsdPrim && affectedUsdPrim.IsInstance()) {
-            selectionPath = affectedUsdPath;
-        }
         added |= adapter->PopulateSelection(highlightMode,
-                selectionPath, instanceIndices, result);
+                affectedCachePath, usdPrim, instanceIndices, result);
     }
     return added;
 }
