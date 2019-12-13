@@ -781,6 +781,7 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
     SdfPath const& materialId,
     HdMaterialNetworkMap const& hdNetworkMap)
 {
+    HD_TRACE_FUNCTION();
     HdSt_MaterialNetwork surfaceNetwork;
 
     // The fragment source comes from the 'surface' network or the
