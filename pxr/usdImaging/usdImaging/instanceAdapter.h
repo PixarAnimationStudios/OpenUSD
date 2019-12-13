@@ -247,7 +247,6 @@ private:
     // per-node), and returns whether the instance map is variable.
     // Note: this function assumes the instancer data is already locked by
     // the caller...
-    struct _InstancerData;
     struct _ComputeInstanceMapVariabilityFn;
     bool _ComputeInstanceMapVariability(UsdPrim const& instancerPrim,
                                         _InstancerData const& instrData) const;
