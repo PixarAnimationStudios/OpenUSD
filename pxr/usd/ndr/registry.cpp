@@ -26,6 +26,7 @@
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/type.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/work/loops.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ndr/debugCodes.h"
@@ -303,6 +304,7 @@ private:
 
 NdrRegistry::NdrRegistry()
 {
+    TRACE_FUNCTION();
     _FindAndInstantiateParserPlugins();
     _FindAndInstantiateDiscoveryPlugins();
     _RunDiscoveryPlugins(_discoveryPlugins);
