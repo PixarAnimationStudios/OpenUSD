@@ -2103,6 +2103,13 @@ class "XformCommonAPI"
         string extraIncludes = """
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdGeom/xformOp.h" """
+        dictionary schemaTokens = {
+            dictionary pivot = {
+                string doc = """Op suffix for the standard scale-rotate pivot
+                on a UsdGeomXformCommonAPI-compatible prim.
+                """
+            }
+        }
     }
 )
 {

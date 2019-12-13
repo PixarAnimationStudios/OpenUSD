@@ -719,5 +719,45 @@ class TestUsdGeomXformAPI(unittest.TestCase):
         self.assertTrue(xfc)
         self.assertEqual(r.GetOpType(), UsdGeom.XformOp.TypeRotateYXZ)
 
+    def test_RotationOrderConversions(self):
+        pairs = [
+            (UsdGeom.XformCommonAPI.RotationOrderXYZ,
+                UsdGeom.XformOp.TypeRotateXYZ),
+            (UsdGeom.XformCommonAPI.RotationOrderXZY,
+                UsdGeom.XformOp.TypeRotateXZY),
+            (UsdGeom.XformCommonAPI.RotationOrderYXZ,
+                UsdGeom.XformOp.TypeRotateYXZ),
+            (UsdGeom.XformCommonAPI.RotationOrderYZX,
+                UsdGeom.XformOp.TypeRotateYZX),
+            (UsdGeom.XformCommonAPI.RotationOrderZXY,
+                UsdGeom.XformOp.TypeRotateZXY),
+            (UsdGeom.XformCommonAPI.RotationOrderZYX,
+                UsdGeom.XformOp.TypeRotateZYX),
+        ]
+        for rotOrder, opType in pairs:
+            self.assertEqual(
+                UsdGeom.XformCommonAPI.ConvertRotationOrderToOpType(rotOrder),
+                opType)
+            self.assertEqual(
+                UsdGeom.XformCommonAPI.ConvertOpTypeToRotationOrder(opType),
+                rotOrder)
+            self.assertTrue(
+                UsdGeom.XformCommonAPI.CanConvertOpTypeToRotationOrder(opType))
+
+        nonThreeAxisRotates = [
+            UsdGeom.XformOp.TypeTransform,
+            UsdGeom.XformOp.TypeTranslate,
+            UsdGeom.XformOp.TypeScale,
+            UsdGeom.XformOp.TypeOrient,
+            UsdGeom.XformOp.TypeRotateX,
+            UsdGeom.XformOp.TypeRotateY,
+            UsdGeom.XformOp.TypeRotateZ,
+        ]
+        for opType in nonThreeAxisRotates:
+            self.assertFalse(
+                UsdGeom.XformCommonAPI.CanConvertOpTypeToRotationOrder(opType))
+            with self.assertRaises(Tf.ErrorException):
+                UsdGeom.XformCommonAPI.ConvertOpTypeToRotationOrder(opType)
+
 if __name__ == "__main__":
     unittest.main()

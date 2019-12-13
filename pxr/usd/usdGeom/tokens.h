@@ -434,6 +434,10 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomBasisCurves::GetWrapAttr()
     const TfToken pinned;
+    /// \brief "pivot"
+    /// 
+    /// Op suffix for the standard scale-rotate pivot on a UsdGeomXformCommonAPI-compatible prim. 
+    const TfToken pivot;
     /// \brief "points"
     /// 
     /// UsdGeomPointBased

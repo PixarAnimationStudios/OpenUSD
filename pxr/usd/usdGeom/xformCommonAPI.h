@@ -31,6 +31,7 @@
 #include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usdGeom/tokens.h"
 
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdGeom/xformOp.h" 
@@ -333,12 +334,39 @@ public:
 
     /// Return the 4x4 matrix that applies the rotation encoded by rotation
     /// vector \p rotation using the rotation order \p rotationOrder.
+    ///
+    /// \deprecated Please use the result of ConvertRotationOrderToOpType()
+    /// along with UsdGeomXformOp::GetOpTransform() instead.
     USDGEOM_API
     static GfMatrix4d GetRotationTransform(
             const GfVec3f &rotation,
             const UsdGeomXformCommonAPI::RotationOrder rotationOrder);
 
     /// @}
+
+    /// Converts the given \p rotOrder to the corresponding value in the
+    /// UsdGeomXformOp::Type enum. For example, RotationOrderYZX corresponds to
+    /// TypeRotateYZX. Raises a coding error if \p rotOrder is not one of the
+    /// named enumerators of RotationOrder.
+    USDGEOM_API
+    static UsdGeomXformOp::Type ConvertRotationOrderToOpType(
+        RotationOrder rotOrder);
+
+    /// Converts the given \p opType to the corresponding value in the
+    /// UsdGeomXformCommonAPI::RotationOrder enum. For example, TypeRotateYZX
+    /// corresponds to RotationOrderYZX. Raises a coding error if \p opType is
+    /// not convertible to RotationOrder (i.e., if it isn't a three-axis
+    /// rotation) and returns the default RotationOrderXYZ instead.
+    USDGEOM_API
+    static RotationOrder ConvertOpTypeToRotationOrder(
+        UsdGeomXformOp::Type opType);
+
+    /// Whether the given \p opType has a corresponding value in the
+    /// UsdGeomXformCommonAPI::RotationOrder enum (i.e., whether it is a
+    /// three-axis rotation).
+    USDGEOM_API
+    static bool CanConvertOpTypeToRotationOrder(
+        UsdGeomXformOp::Type opType);
 
 protected:
     /// Returns whether the underlying xformable is compatible with the API.

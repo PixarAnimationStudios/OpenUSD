@@ -237,6 +237,21 @@ WRAP_CUSTOM {
         .def("GetRotationTransform", &This::GetRotationTransform,
             (arg("rotation"), arg("rotationOrder")))
         .staticmethod("GetRotationTransform")
+
+        .def("ConvertRotationOrderToOpType",
+            &This::ConvertRotationOrderToOpType,
+            arg("rotationOrder"))
+        .staticmethod("ConvertRotationOrderToOpType")
+
+        .def("ConvertOpTypeToRotationOrder",
+            &This::ConvertOpTypeToRotationOrder,
+            arg("opType"))
+        .staticmethod("ConvertOpTypeToRotationOrder")
+
+        .def("CanConvertOpTypeToRotationOrder",
+            &This::CanConvertOpTypeToRotationOrder,
+            arg("opType"))
+        .staticmethod("CanConvertOpTypeToRotationOrder")
         ;
 }
 
