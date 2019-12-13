@@ -27,6 +27,8 @@
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/base/work/loops.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdxColorizeTask::HdxColorizeTask(HdSceneDelegate* delegate, SdfPath const& id)
@@ -69,20 +71,27 @@ static void _colorizeNdcDepth(
 {
     // depth is in clip space, so remap (-1, 1) to (0,1) and clamp.
     float *depthBuffer = reinterpret_cast<float*>(src);
-    for (size_t i = 0; i < nPixels; ++i) {
-        float valuef =
-            std::min(std::max((depthBuffer[i] * 0.5f) + 0.5f, 0.0f), 1.0f);
-        uint8_t value = (uint8_t)(255.0f * valuef);
-        // special case 1.0 (far plane) as all black.
-        if (depthBuffer[i] >= 1.0f) {
-            value = 0;
+
+    WorkParallelForN(nPixels,
+        [&dest, &src, &nPixels, &imageWidth, &depthBuffer]
+        (size_t begin, size_t end) 
+    {
+        for (size_t i=begin; i<end; ++i) {
+            float valuef =
+                std::min(std::max((depthBuffer[i] * 0.5f) + 0.5f, 0.0f), 1.0f);
+            uint8_t value = (uint8_t)(255.0f * valuef);
+            // special case 1.0 (far plane) as all black.
+            if (depthBuffer[i] >= 1.0f) {
+                value = 0;
+            }
+            dest[i*4+0] = value;
+            dest[i*4+1] = value;
+            dest[i*4+2] = value;
+            dest[i*4+3] = 255;
         }
-        dest[i*4+0] = value;
-        dest[i*4+1] = value;
-        dest[i*4+2] = value;
-        dest[i*4+3] = 255;
-    }
+    });
 }
+
 static void _colorizeLinearDepth(
     uint8_t* dest, uint8_t* src, size_t nPixels, uint32_t imageWidth)
 {
@@ -94,33 +103,47 @@ static void _colorizeLinearDepth(
     for (size_t i = 0; i < nPixels; ++i) {
         maxDepth = std::max(depthBuffer[i], maxDepth);
     }
+
     if (maxDepth != 0.0f) {
-        for (size_t i = 0; i < nPixels; ++i) {
-            float valuef =
-                std::min(std::max((depthBuffer[i] / maxDepth), 0.0f), 1.0f);
-            uint8_t value =
-                (uint8_t)(255.0f * valuef);
-            dest[i*4+0] = value;
-            dest[i*4+1] = value;
-            dest[i*4+2] = value;
-            dest[i*4+3] = 255;
-        }
+        WorkParallelForN(nPixels,
+            [&dest, &src, &nPixels, &imageWidth, &depthBuffer, &maxDepth]
+            (size_t begin, size_t end)
+        {
+            for (size_t i=begin; i<end; ++i) {
+                float valuef =
+                    std::min(std::max((depthBuffer[i] / maxDepth), 0.0f), 1.0f);
+                uint8_t value =
+                    (uint8_t)(255.0f * valuef);
+                dest[i*4+0] = value;
+                dest[i*4+1] = value;
+                dest[i*4+2] = value;
+                dest[i*4+3] = 255;
+            }
+        });
     }
 }
+
 static void _colorizeNormal(
     uint8_t* dest, uint8_t* src, size_t nPixels, uint32_t imageWidth)
 {
     float *normalBuffer = reinterpret_cast<float*>(src);
-    for (size_t i = 0; i < nPixels; ++i) {
-        GfVec3f n(normalBuffer[i*3+0], normalBuffer[i*3+1],
-                  normalBuffer[i*3+2]);
-        n = (n * 0.5f) + GfVec3f(0.5f);
-        dest[i*4+0] = (uint8_t)(n[0] * 255.0f);
-        dest[i*4+1] = (uint8_t)(n[1] * 255.0f);
-        dest[i*4+2] = (uint8_t)(n[2] * 255.0f);
-        dest[i*4+3] = 255;
-    }
+
+    WorkParallelForN(nPixels,
+        [&dest, &src, &nPixels, &imageWidth, &normalBuffer]
+        (size_t begin, size_t end)
+    {
+        for (size_t i=begin; i<end; ++i) {
+            GfVec3f n(normalBuffer[i*3+0], normalBuffer[i*3+1],
+                      normalBuffer[i*3+2]);
+            n = (n * 0.5f) + GfVec3f(0.5f);
+            dest[i*4+0] = (uint8_t)(n[0] * 255.0f);
+            dest[i*4+1] = (uint8_t)(n[1] * 255.0f);
+            dest[i*4+2] = (uint8_t)(n[2] * 255.0f);
+            dest[i*4+3] = 255;
+        }
+    });
 }
+
 static void _colorizeId(
     uint8_t* dest, uint8_t* src, size_t nPixels, uint32_t imageWidth)
 {
@@ -128,30 +151,43 @@ static void _colorizeId(
     // hash the ID to 3 bytes and use those as color. Even fancier,
     // hash to hue and stratified (saturation, value) levels, etc.
     int32_t *idBuffer = reinterpret_cast<int32_t*>(src);
-    for (size_t i = 0; i < nPixels; ++i) {
-        int32_t id = idBuffer[i];
-        dest[i*4+0] = (uint8_t)(id & 0xff);
-        dest[i*4+1] = (uint8_t)((id >> 8) & 0xff);
-        dest[i*4+2] = (uint8_t)((id >> 16) & 0xff);
-        dest[i*4+3] = 255;
-    }
+
+    WorkParallelForN(nPixels,
+        [&dest, &src, &nPixels, &imageWidth, &idBuffer]
+        (size_t begin, size_t end)
+    {
+            for (size_t i=begin; i<end; ++i) {
+            int32_t id = idBuffer[i];
+            dest[i*4+0] = (uint8_t)(id & 0xff);
+            dest[i*4+1] = (uint8_t)((id >> 8) & 0xff);
+            dest[i*4+2] = (uint8_t)((id >> 16) & 0xff);
+            dest[i*4+3] = 255;
+        }
+    });
 }
+
 static void _colorizePrimvar(
     uint8_t* dest, uint8_t* src, size_t nPixels, uint32_t imageWidth)
 {
     float *primvarBuffer = reinterpret_cast<float*>(src);
-    for (size_t i = 0; i < nPixels; ++i) {
-        GfVec3f p(std::fmod(primvarBuffer[i*3+0], 1.0f),
-                  std::fmod(primvarBuffer[i*3+1], 1.0f),
-                  std::fmod(primvarBuffer[i*3+2], 1.0f));
-        if (p[0] < 0.0f) { p[0] += 1.0f; }
-        if (p[1] < 0.0f) { p[1] += 1.0f; }
-        if (p[2] < 0.0f) { p[2] += 1.0f; }
-        dest[i*4+0] = (uint8_t)(p[0] * 255.0f);
-        dest[i*4+1] = (uint8_t)(p[1] * 255.0f);
-        dest[i*4+2] = (uint8_t)(p[2] * 255.0f);
-        dest[i*4+3] = 255;
-    }
+
+    WorkParallelForN(nPixels,
+        [&dest, &src, &nPixels, &imageWidth, &primvarBuffer]
+        (size_t begin, size_t end) 
+    {
+        for (size_t i=begin; i<end; ++i) {
+            GfVec3f p(std::fmod(primvarBuffer[i*3+0], 1.0f),
+                      std::fmod(primvarBuffer[i*3+1], 1.0f),
+                      std::fmod(primvarBuffer[i*3+2], 1.0f));
+            if (p[0] < 0.0f) { p[0] += 1.0f; }
+            if (p[1] < 0.0f) { p[1] += 1.0f; }
+            if (p[2] < 0.0f) { p[2] += 1.0f; }
+            dest[i*4+0] = (uint8_t)(p[0] * 255.0f);
+            dest[i*4+1] = (uint8_t)(p[1] * 255.0f);
+            dest[i*4+2] = (uint8_t)(p[2] * 255.0f);
+            dest[i*4+3] = 255;
+        }
+    });
 }
 
 // Prman linear to display
@@ -282,22 +318,28 @@ static void _float32ToDisplay(
     uint32_t imageWidth)
 {
     float *colorBuffer = reinterpret_cast<float*>(src);
-    for (size_t i = 0; i < nPixels; ++i) {
-        GfVec4f n(colorBuffer[i*4+0], colorBuffer[i*4+1],
-                  colorBuffer[i*4+2], colorBuffer[i*4+3]);
 
-        int x = i % imageWidth;
-        int y = i / imageWidth;
+    WorkParallelForN(nPixels,
+        [&dest, &src, &nPixels, &imageWidth, &colorBuffer]
+        (size_t begin, size_t end)
+    {
+        for (size_t i=begin; i<end; ++i) {
+            GfVec4f n(colorBuffer[i*4+0], colorBuffer[i*4+1],
+                      colorBuffer[i*4+2], colorBuffer[i*4+3]);
 
-        dest[i*4+0] = DspyQuantize(
-            DspyLinearTosRGB(n[0]), x, y, 0, 0, UINT8_MAX, true);
-        dest[i*4+1] = DspyQuantize(
-            DspyLinearTosRGB(n[1]), x, y, 1, 0, UINT8_MAX, true);
-        dest[i*4+2] = DspyQuantize(
-            DspyLinearTosRGB(n[2]), x, y, 2, 0, UINT8_MAX, true);
+            int x = i % imageWidth;
+            int y = i / imageWidth;
 
-        dest[i*4+3] = (uint8_t)(n[3] * 255.0f);
-    }
+            dest[i*4+0] = DspyQuantize(
+                DspyLinearTosRGB(n[0]), x, y, 0, 0, UINT8_MAX, true);
+            dest[i*4+1] = DspyQuantize(
+                DspyLinearTosRGB(n[1]), x, y, 1, 0, UINT8_MAX, true);
+            dest[i*4+2] = DspyQuantize(
+                DspyLinearTosRGB(n[2]), x, y, 2, 0, UINT8_MAX, true);
+
+            dest[i*4+3] = (uint8_t)(n[3] * 255.0f);
+        }
+    });
 }
 
 static void _float16ToDisplay(
@@ -307,22 +349,28 @@ static void _float16ToDisplay(
     uint32_t imageWidth)
 {
     GfHalf *colorBuffer = reinterpret_cast<GfHalf*>(src);
-    for (size_t i = 0; i < nPixels; ++i) {
-        GfVec4f n(colorBuffer[i*4+0], colorBuffer[i*4+1],
-                  colorBuffer[i*4+2], colorBuffer[i*4+3]);
 
-        int x = i % imageWidth;
-        int y = i / imageWidth;
+    WorkParallelForN(nPixels,
+        [&dest, &src, &nPixels, &imageWidth, &colorBuffer]
+        (size_t begin, size_t end)
+    {
+        for (size_t i=begin; i<end; ++i) {
+            GfVec4f n(colorBuffer[i*4+0], colorBuffer[i*4+1],
+                      colorBuffer[i*4+2], colorBuffer[i*4+3]);
 
-        dest[i*4+0] = DspyQuantize(
-            DspyLinearTosRGB(n[0]), x, y, 0, 0, UINT8_MAX, true);
-        dest[i*4+1] = DspyQuantize(
-            DspyLinearTosRGB(n[1]), x, y, 1, 0, UINT8_MAX, true);
-        dest[i*4+2] = DspyQuantize(
-            DspyLinearTosRGB(n[2]), x, y, 2, 0, UINT8_MAX, true);
+            int x = i % imageWidth;
+            int y = i / imageWidth;
 
-        dest[i*4+3] = (uint8_t)(n[3] * 255.0f);
-    }
+            dest[i*4+0] = DspyQuantize(
+                DspyLinearTosRGB(n[0]), x, y, 0, 0, UINT8_MAX, true);
+            dest[i*4+1] = DspyQuantize(
+                DspyLinearTosRGB(n[1]), x, y, 1, 0, UINT8_MAX, true);
+            dest[i*4+2] = DspyQuantize(
+                DspyLinearTosRGB(n[2]), x, y, 2, 0, UINT8_MAX, true);
+
+            dest[i*4+3] = (uint8_t)(n[3] * 255.0f);
+        }
+    });
 }
 
 static void _uint8ToDisplay(
@@ -332,24 +380,30 @@ static void _uint8ToDisplay(
     uint32_t imageWidth)
 {
     uint8_t *colorBuffer = reinterpret_cast<uint8_t*>(src);
-    for (size_t i = 0; i < nPixels; ++i) {
-        GfVec4f n(colorBuffer[i*4+0] / 255.0f, 
-                  colorBuffer[i*4+1] / 255.0f,
-                  colorBuffer[i*4+2] / 255.0f, 
-                  colorBuffer[i*4+3] / 255.0f);
 
-        int x = i % imageWidth;
-        int y = i / imageWidth;
+    WorkParallelForN(nPixels,
+        [&dest, &src, &nPixels, &imageWidth, &colorBuffer]
+        (size_t begin, size_t end)
+    {
+        for (size_t i=begin; i<end; ++i) {
+            GfVec4f n(colorBuffer[i*4+0] / 255.0f, 
+                      colorBuffer[i*4+1] / 255.0f,
+                      colorBuffer[i*4+2] / 255.0f, 
+                      colorBuffer[i*4+3] / 255.0f);
 
-        dest[i*4+0] = DspyQuantize(
-            DspyLinearTosRGB(n[0]), x, y, 0, 0, UINT8_MAX, true);
-        dest[i*4+1] = DspyQuantize(
-            DspyLinearTosRGB(n[1]), x, y, 1, 0, UINT8_MAX, true);
-        dest[i*4+2] = DspyQuantize(
-            DspyLinearTosRGB(n[2]), x, y, 2, 0, UINT8_MAX, true);
+            int x = i % imageWidth;
+            int y = i / imageWidth;
 
-        dest[i*4+3] = (uint8_t)(n[3] * 255.0f);
-    }
+            dest[i*4+0] = DspyQuantize(
+                DspyLinearTosRGB(n[0]), x, y, 0, 0, UINT8_MAX, true);
+            dest[i*4+1] = DspyQuantize(
+                DspyLinearTosRGB(n[1]), x, y, 1, 0, UINT8_MAX, true);
+            dest[i*4+2] = DspyQuantize(
+                DspyLinearTosRGB(n[2]), x, y, 2, 0, UINT8_MAX, true);
+
+            dest[i*4+3] = (uint8_t)(n[3] * 255.0f);
+        }
+    });
 }
 
 // XXX: It would be nice to make the colorizers more flexible on input format,
