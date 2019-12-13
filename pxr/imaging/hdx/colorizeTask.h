@@ -99,7 +99,7 @@ struct HdxColorizeTaskParams
         : aovName()
         , aovBufferPath()
         , depthBufferPath()
-        , applyColorQuantization(true)
+        , applyColorQuantization(false)
         {}
 
     // XXX: Right now the API is pretty basic: draw buffer X as aov Y
