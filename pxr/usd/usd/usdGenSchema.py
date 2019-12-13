@@ -754,6 +754,8 @@ def _ExtractCustomCode(filePath, default=None):
 
 
 def _AddToken(tokenDict, tokenId, val, desc):
+    """tokenId must be an identifier"""
+
     cppReservedKeywords = [
         "alignas", "alignof", "and", "and_eq", "asm", "atomic_cancel",
         "atomic_commit", "atomic_noexcept", "auto", "bitand", "bitor", "bool",
@@ -780,8 +782,13 @@ def _AddToken(tokenDict, tokenId, val, desc):
     ])
     if tokenId in reserved:
         tokenId = tokenId + '_'
-    elif not Tf.IsValidIdentifier(tokenId):
-        tokenId = Tf.MakeValidIdentifier(tokenId);
+    if not Tf.IsValidIdentifier(tokenId):
+        raise Exception(
+            'Token identifiers must be actual C/python-style identifiers.  '
+            '\"%s\" is not a valid identifier... for libraryTokens and '
+            'schemaTokens, use the "value" field to specify the non-identifier '
+            'token value.' % tokenId)
+
     if tokenId in tokenDict:
         token = tokenDict[tokenId]
 

@@ -34,7 +34,8 @@ def "GLOBAL" (
             dictionary bspline = {
                 string doc = "UsdSplineAPI - BSpline spline interpolation"
             }
-            dictionary "catmull-rom" = {
+            dictionary "catmull_rom" = {
+                string value = "catmull-rom"
                 string doc = "UsdSplineAPI - Catmull-Rom spline interpolation"
             }
             dictionary constant = {
