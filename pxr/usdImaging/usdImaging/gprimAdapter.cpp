@@ -560,14 +560,10 @@ UsdImagingGprimAdapter::GetPoints(UsdPrim const& prim,
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    VtVec3fArray points;
-    if (!prim.GetAttribute(UsdGeomTokens->points).Get(&points, time)) {
-        TF_WARN("Points could not be read from prim: <%s>",
-                prim.GetPath().GetText());
-        points = VtVec3fArray();
-    }
-
-    return VtValue(points);
+    // Previously, we issued a warning if the points attribute wasn't
+    // authored, which resulted in a lot of logging.
+    // Handle it silently instead by returning an empty array.
+    return VtValue(_Get<VtVec3fArray>(prim, UsdGeomTokens->points, time));
 }
 
 // -------------------------------------------------------------------------- //
