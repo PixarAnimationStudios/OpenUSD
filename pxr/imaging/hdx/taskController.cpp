@@ -273,22 +273,15 @@ HdxTaskController::_CreateRenderGraph()
             HdxMaterialTagTokens->additive));
         _renderTaskIds.push_back(_CreateRenderTask(
             HdxMaterialTagTokens->translucent));
-
-        // Volume rendering want to sample from depth, so resolve before volume,
-        // but after OIT translucent pass since OIT translucent pass includes
-        // an opaque pass that needs to render pixels into depth buffer.
-        _aovDepthResolveTaskId =
-            _CreateAovResolveTask(_tokens->aovDepthResolveTask);
-
         _renderTaskIds.push_back(_CreateRenderTask(
             HdStMaterialTagTokens->volume));
 
         _CreateOitResolveTask();
 
-        // OIT resolve composites OIT pixels into multi-sample color AOV so
-        // resolve color AOV after Oit Resolve.
         _aovColorResolveTaskId = 
             _CreateAovResolveTask(_tokens->aovColorResolveTask);
+        _aovDepthResolveTaskId =
+            _CreateAovResolveTask(_tokens->aovDepthResolveTask);
 
         _CreateSelectionTask();
         _CreateColorCorrectionTask();
@@ -742,7 +735,7 @@ HdxTaskController::GetRenderingTasks() const
         tasks.push_back(GetRenderIndex()->GetTask(id));
     }
 
-    // Merge translucent and volume pixels into color target
+    // Merge translucent and volume pixels into color (msaa) target
     if (!_oitResolveTaskId.IsEmpty()) {
         tasks.push_back(GetRenderIndex()->GetTask(_oitResolveTaskId));
     }
