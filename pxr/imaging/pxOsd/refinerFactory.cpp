@@ -131,8 +131,12 @@ Converter::GetOptions() const {
     if (!faceVaryingLinearInterpolation.IsEmpty()) {
         if (faceVaryingLinearInterpolation==PxOsdOpenSubdivTokens->all) {
             options.SetFVarLinearInterpolation(Options::FVAR_LINEAR_ALL);
+        } else if (faceVaryingLinearInterpolation==PxOsdOpenSubdivTokens->cornersOnly) {
+            options.SetFVarLinearInterpolation(Options::FVAR_LINEAR_CORNERS_ONLY);
         } else if (faceVaryingLinearInterpolation==PxOsdOpenSubdivTokens->cornersPlus1) {
             options.SetFVarLinearInterpolation(Options::FVAR_LINEAR_CORNERS_PLUS1);
+        } else if (faceVaryingLinearInterpolation==PxOsdOpenSubdivTokens->cornersPlus2) {
+            options.SetFVarLinearInterpolation(Options::FVAR_LINEAR_CORNERS_PLUS2);
         } else if (faceVaryingLinearInterpolation==PxOsdOpenSubdivTokens->none) {
             options.SetFVarLinearInterpolation(Options::FVAR_LINEAR_NONE);
         } else if (faceVaryingLinearInterpolation==PxOsdOpenSubdivTokens->boundaries) {
