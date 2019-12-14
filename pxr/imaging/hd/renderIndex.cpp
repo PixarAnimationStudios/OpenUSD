@@ -405,7 +405,7 @@ HdRenderIndex::RemoveSprim(TfToken const& typeId, SdfPath const& id)
     _sprimIndex.RemovePrim(typeId, id, _tracker, _renderDelegate);
 }
 
-HdSprim const*
+HdSprim*
 HdRenderIndex::GetSprim(TfToken const& typeId, SdfPath const& id) const
 {
     return _sprimIndex.GetPrim(typeId, id);

@@ -175,6 +175,10 @@ HdEngine::ReloadAllShaders(HdRenderIndex& index)
                                  materialIt != materials.end();
                                ++materialIt) {
 
+        HdMaterial* material = static_cast<HdMaterial*>(
+            index.GetSprim(HdPrimTypeTokens->material, *materialIt));
+        material->Reload();
+
         tracker.MarkSprimDirty(*materialIt, HdChangeTracker::AllDirty);
     }
 

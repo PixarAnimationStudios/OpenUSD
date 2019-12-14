@@ -305,7 +305,7 @@ public:
     void RemoveSprim(TfToken const& typeId, SdfPath const &id);
 
     HD_API
-    HdSprim const *GetSprim(TfToken const& typeId, SdfPath const &id) const;
+    HdSprim *GetSprim(TfToken const& typeId, SdfPath const &id) const;
 
     /// Returns the subtree rooted under the given path for the given sprim
     /// type.

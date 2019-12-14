@@ -402,6 +402,7 @@ HdStMaterial::GetInitialDirtyBitsMask() const
 void
 HdStMaterial::Reload()
 {
+    _networkProcessor.ClearGlslfx();
     _surfaceShader->Reload();
 }
 

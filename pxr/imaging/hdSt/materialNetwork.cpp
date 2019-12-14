@@ -875,5 +875,11 @@ HdStMaterialNetwork::GetMaterialParams() const
     return _materialParams;
 }
 
+void
+HdStMaterialNetwork::ClearGlslfx()
+{
+    _surfaceGfx.reset();
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
