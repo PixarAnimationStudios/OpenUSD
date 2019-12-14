@@ -35,7 +35,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdStField::HdStField(SdfPath const& id, TfToken const & fieldType) 
-  : HdField(id), _fieldType(fieldType)
+  : HdField(id)
+  , _fieldType(fieldType)
+  , _isInitialized(false)
 {
 }
 
@@ -128,7 +130,21 @@ HdStField::Sync(HdSceneDelegate *sceneDelegate,
         if (isNewTexture) {
             renderIndex.GetChangeTracker().SetBprimGarbageCollectionNeeded();
         }
+
+        if (_isInitialized) {
+            // Force volume prim to pick up the new field resource and
+            // recompute bounding box.
+            //
+            // XXX:-matthias
+            // Ideally, this would be more fine-grained than blasting all
+            // rprims.
+            HdChangeTracker& changeTracker =
+                sceneDelegate->GetRenderIndex().GetChangeTracker();
+            changeTracker.MarkAllRprimsDirty(HdChangeTracker::DirtyVolumeField);
+        }
     }
+
+    _isInitialized = true;
 
     *dirtyBits = Clean;
 }

@@ -61,8 +61,9 @@ public:
 
 private:
     const TfToken _fieldType;
-
     HdStFieldResourceSharedPtr _fieldResource;
+
+    bool _isInitialized : 1;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -73,18 +73,26 @@ HdStVolume::HdStVolume(SdfPath const& id, SdfPath const & instancerId)
 
 HdStVolume::~HdStVolume() = default;
 
+// Dirty bits requiring recomputing the material shader and the
+// bounding box.
+static const int _shaderAndBBoxComputationDirtyBitsMask =
+    HdChangeTracker::Clean 
+    | HdChangeTracker::DirtyExtent
+    | HdChangeTracker::DirtyMaterialId
+    | HdChangeTracker::DirtyRepr
+    | HdChangeTracker::DirtyVolumeField;
+
+static const int _initialDirtyBitsMask =
+    _shaderAndBBoxComputationDirtyBitsMask
+    | HdChangeTracker::DirtyPrimID
+    | HdChangeTracker::DirtyPrimvar
+    | HdChangeTracker::DirtyTransform
+    | HdChangeTracker::DirtyVisibility;
+
 HdDirtyBits 
 HdStVolume::GetInitialDirtyBitsMask() const
 {
-    int mask = HdChangeTracker::Clean
-        | HdChangeTracker::DirtyExtent
-        | HdChangeTracker::DirtyPrimID
-        | HdChangeTracker::DirtyRepr
-        | HdChangeTracker::DirtyTransform
-        | HdChangeTracker::DirtyVisibility
-        | HdChangeTracker::DirtyPrimvar
-        | HdChangeTracker::DirtyMaterialId
-        ;
+    int mask = _initialDirtyBitsMask;
 
     if (!GetInstancerId().IsEmpty()) {
         mask |= HdChangeTracker::DirtyInstancer;
@@ -598,6 +606,17 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                                   HdInterpolationConstant);
     HdStPopulateConstantPrimvars(this, &_sharedData, sceneDelegate, drawItem, 
         dirtyBits, constantPrimvars);
+
+    // The rest of this method is computing the material shader and the vertices
+    // and topology of the bounding box. We can skip it unless the material, any
+    // of the parameters or the fields have changed.
+    //
+    // XXX:
+    // We might separate the material shader and bounding box computation and
+    // do a finer grained sync.
+    if (!((*dirtyBits) & _shaderAndBBoxComputationDirtyBitsMask)) {
+        return;
+    }
 
     /* FIELDS */
     const _NameToFieldResource nameToFieldResource =
