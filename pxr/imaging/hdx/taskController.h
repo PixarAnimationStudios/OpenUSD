@@ -295,7 +295,7 @@ private:
             _valueCacheMap[id][key] = value;
         }
         template <typename T>
-        T const& GetParameter(SdfPath const& id, TfToken const& key) const {
+        T GetParameter(SdfPath const& id, TfToken const& key) const {
             VtValue vParams;
             _ValueCache vCache;
             TF_VERIFY(
