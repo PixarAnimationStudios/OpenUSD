@@ -107,8 +107,6 @@ private:
     bool
     _GetHasLimitSurfaceEvaluation(VtDictionary const & metadata) const;
 
-    TfToken _GetMaterialTagDeprecated(VtDictionary const & metadata) const;
-
     void _InitFallbackShader();
 
     static HioGlslfx *_fallbackGlslfx;

@@ -365,31 +365,6 @@ HdStMaterial::_GetHasLimitSurfaceEvaluation(VtDictionary const & metadata) const
     return value.IsHolding<bool>() && value.Get<bool>();
 }
 
-// XXX Deprecated. This is used for old material descriptions where
-// HydraMaterialAdapter calculates the materialTag and we extract it here from
-// the metadata. The new '_GetMaterialTag' function is at top of file.
-// Once we exclusively use HdMaterialNetwork for storm we can remove this.
-TfToken
-HdStMaterial::_GetMaterialTagDeprecated(VtDictionary const & metadata) const
-{
-    VtValue value = TfMapLookupByValue(metadata,
-                                       HdShaderTokens->materialTag,
-                                       VtValue());
-
-    // A string when the materialTag is hardcoded in the glslfx.
-    // A token if the materialTag is auto-determined in MaterialAdapter.
-    if (value.IsHolding<TfToken>()) {
-        return value.UncheckedGet<TfToken>();
-    } else if (value.IsHolding<std::string>()) {
-        return TfToken(value.UncheckedGet<std::string>());
-    }
-
-    // An empty materialTag on the HdRprimCollection level means: 'ignore all
-    // materialTags and add everything to the collection'. Instead we return a
-    // default token because we do want materialTags to drive HdSt collections.
-    return HdStMaterialTagTokens->defaultMaterialTag;
-}
-
 // virtual
 HdDirtyBits
 HdStMaterial::GetInitialDirtyBitsMask() const
