@@ -81,6 +81,7 @@ HdRenderPassState::HdRenderPassState()
     , _alphaToCoverageEnabled(true)
     , _colorMaskUseDefault(true)
     , _colorMask(HdRenderPassState::ColorMaskRGBA)
+    , _useMultiSampleAov(true)
 {
 }
 
@@ -258,6 +259,18 @@ HdRenderPassAovBindingVector const&
 HdRenderPassState::GetAovBindings() const
 {
     return _aovBindings;
+}
+
+void
+HdRenderPassState::SetUseAovMultiSample(bool state)
+{
+    _useMultiSampleAov = state;
+}
+
+bool
+HdRenderPassState::GetUseAovMultiSample() const
+{
+    return _useMultiSampleAov;
 }
 
 void

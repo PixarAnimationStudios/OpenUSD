@@ -139,6 +139,11 @@ HdxOitVolumeRenderTask::Execute(HdTaskContext* ctx)
     _oitVolumeRenderPassShader->SetCullStyle(
         renderPassState->GetCullStyle());
 
+    // We want OIT to render into the resolve aov, not the multi sample aov.
+    // This assumes a 'resolve' task has been run between rendering the opaque
+    // prims and volume prims. See HdxTaskController::GetRenderingTasks().
+    renderPassState->SetUseAovMultiSample(false);
+
     //
     // Translucent pixels pass
     //

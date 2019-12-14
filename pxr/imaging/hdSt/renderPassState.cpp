@@ -463,6 +463,7 @@ HdStRenderPassState::MakeGraphicsEncoderDesc() const
 {
     const size_t maxColorAttachments = 8;
     const HdRenderPassAovBindingVector& aovBindings = GetAovBindings();
+    const bool useMultiSample = GetUseAovMultiSample();
 
     HgiGraphicsEncoderDesc desc;
 
@@ -475,7 +476,8 @@ HdStRenderPassState::MakeGraphicsEncoderDesc() const
         if (!TF_VERIFY(aov.renderBuffer, "Invalid render buffer")) {
             continue;
         }
-        bool multiSampled = aov.renderBuffer->IsMultiSampled();
+
+        bool multiSampled= useMultiSample && aov.renderBuffer->IsMultiSampled();
         HgiTextureHandle hgiTexHandle =
             aov.renderBuffer->GetHgiTextureHandle(multiSampled);
 

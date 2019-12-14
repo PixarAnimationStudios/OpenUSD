@@ -731,23 +731,30 @@ HdxTaskController::GetRenderingTasks() const
         tasks.push_back(GetRenderIndex()->GetTask(_shadowTaskId));
 
     // Perform draw calls
-    for (auto const& id : _renderTaskIds) {
-        tasks.push_back(GetRenderIndex()->GetTask(id));
+    if (!_renderTaskIds.empty()) {
+        // Render opaque prims
+        SdfPath const& opaqueId = _renderTaskIds.front();
+        tasks.push_back(GetRenderIndex()->GetTask(opaqueId));
+
+        // Resolve color multi-sample Aov.
+        if (!_aovColorResolveTaskId.IsEmpty()) {
+            tasks.push_back(GetRenderIndex()->GetTask(_aovColorResolveTaskId));
+        }
+        // Resolve depth multi-sample Aov
+        if (!_aovDepthResolveTaskId.IsEmpty()) {
+            tasks.push_back(GetRenderIndex()->GetTask(_aovDepthResolveTaskId));
+        }
+
+        // Render translucent and volume prims
+        for (size_t i=1; i<_renderTaskIds.size(); i++) {
+            SdfPath const& id = _renderTaskIds[i];
+            tasks.push_back(GetRenderIndex()->GetTask(id));
+        }
     }
 
-    // Merge translucent and volume pixels into color (msaa) target
+    // Merge translucent and volume pixels into color target
     if (!_oitResolveTaskId.IsEmpty()) {
         tasks.push_back(GetRenderIndex()->GetTask(_oitResolveTaskId));
-    }
-
-    // Resolve color multi-sample AOV since ColorCorrection works on non-ms.
-    if (!_aovColorResolveTaskId.IsEmpty()) {
-        tasks.push_back(GetRenderIndex()->GetTask(_aovColorResolveTaskId));
-    }
-
-    // Resolve depth multi-sample
-    if (!_aovDepthResolveTaskId.IsEmpty()) {
-        tasks.push_back(GetRenderIndex()->GetTask(_aovDepthResolveTaskId));
     }
 
     if (!_selectionTaskId.IsEmpty() && _SelectionEnabled())

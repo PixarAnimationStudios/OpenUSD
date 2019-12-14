@@ -166,6 +166,13 @@ public:
     HD_API
     HdRenderPassAovBindingVector const& GetAovBindings() const;
 
+    /// Returns true if the render pass wants to render into the multi-sample
+    /// aovs. Returns false if the render wants to render into the resolve aovs.
+    HD_API
+    void SetUseAovMultiSample(bool state);
+    HD_API
+    bool GetUseAovMultiSample() const;
+
     HD_API
     void SetCullStyle(HdCullStyle cullStyle);
     HD_API
@@ -340,6 +347,7 @@ protected:
     ColorMask _colorMask;
 
     HdRenderPassAovBindingVector _aovBindings;
+    bool _useMultiSampleAov;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
