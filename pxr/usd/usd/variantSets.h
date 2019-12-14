@@ -228,12 +228,13 @@ public:
 
     // TODO: don't we want remove and reorder, clear, etc. also?
 
-    /// Compute a list of all VariantSets authored on the originiating UsdPrim.
-    /// Always return true.
+    /// Compute the list of all VariantSets authored on the originating
+    /// UsdPrim.  Always return true.  Clear the contents of \p names and store
+    /// the result there.
     USD_API
     bool GetNames(std::vector<std::string>* names) const;
 
-    /// Return a list of all VariantSets authored on the originiating UsdPrim.
+    /// Return a list of all VariantSets authored on the originating UsdPrim.
     USD_API
     std::vector<std::string> GetNames() const;
 

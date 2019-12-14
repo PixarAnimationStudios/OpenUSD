@@ -41,6 +41,8 @@
 #include "pxr/usd/pcp/composeSite.h"
 #include "pxr/usd/pcp/primIndex.h"
 
+#include <algorithm>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 using std::string;
@@ -253,12 +255,23 @@ UsdVariantSets::HasVariantSet(const std::string& variantSetName) const
 bool 
 UsdVariantSets::GetNames(std::vector<std::string>* names) const
 {
-    TF_REVERSE_FOR_ALL(i, _prim.GetPrimIndex().GetNodeRange()) {
-        PcpComposeSiteVariantSets(*i, names);
+    names->clear();
+    std::set<std::string> seenNames;
+    std::vector<std::string> fromNode;
+    for (PcpNodeRef const &node: _prim.GetPrimIndex().GetNodeRange()) {
+        // Compose this node's variant sets.
+        fromNode.clear();
+        PcpComposeSiteVariantSets(node, &fromNode);
+        // For each vset from this node, look for it in `seenNames`.  If it's
+        // present, do nothing.  If it's not present, append it to `names`.
+        for (std::string &vsetName: fromNode) {
+            if (seenNames.insert(vsetName).second) {
+                names->push_back(std::move(vsetName));
+            }
+        }
     }
     return true;
 }
-
 
 std::vector<std::string> 
 UsdVariantSets::GetNames() const

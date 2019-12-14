@@ -135,6 +135,78 @@ class TestUsdVariants(unittest.TestCase):
             self.assertTrue(s.GetRootLayer().GetPrimAtPath(
                 '/Foo{LOD=High}{Costume=Spooky}SpookyHat'))
 
+    def test_USD_5189(self):
+        for fmt in allFormats:
+            l = Sdf.Layer.CreateAnonymous('.'+fmt)
+            l.ImportFromString('''#usda 1.0
+(
+   defaultPrim = "prim"
+)
+
+def "prim" (
+    inherits = </class>
+    prepend variantSets = "myVariantSet"
+    variants = {
+        string myVariantSet = "light"
+    }
+)
+{
+    variantSet "myVariantSet" = {
+        "full"
+        {
+            string bar = "full"
+        }
+        
+        "light"
+        {
+            string bar = "light"
+        }
+    }
+}
+
+over "refprim" (
+    references = </prim>
+    delete variantSets = "myVariantSet"
+    prepend variantSets = "myRefVariantSet"
+)
+{
+    variantSet "myRefVariantSet" = {
+        "open"
+        {
+        }
+    }
+}
+
+over "refrefprim" (
+    references = </refprim>
+    delete variantSets = "myRefVariantSet"
+    variants = {
+        string myVariantSet = "full"
+    }
+    prepend variantSets = "myRefRefVariantSet"
+)
+{
+    variantSet "myRefRefVariantSet" = {
+        "closed"
+        {
+        }
+    }
+}
+''')
+
+            s = Usd.Stage.Open(l)
+            p = s.GetPrimAtPath('/prim')
+            rp = s.GetPrimAtPath('/refprim')
+            rrp = s.GetPrimAtPath('/refrefprim')
+
+            # With bug USD-5189, only the first would return 'myVariantSet', the
+            # others would be empty.
+            self.assertEqual(p.GetVariantSets().GetNames(),
+                             ['myVariantSet'])
+            self.assertEqual(rp.GetVariantSets().GetNames(),
+                             ['myRefVariantSet', 'myVariantSet'])
+            self.assertEqual(rrp.GetVariantSets().GetNames(),
+                             ['myRefRefVariantSet', 'myRefVariantSet', 'myVariantSet'])
 
 if __name__ == '__main__':
     unittest.main()
