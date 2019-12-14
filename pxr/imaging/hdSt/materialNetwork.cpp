@@ -208,6 +208,8 @@ _GetGlslfxForTerminal(
     HioGlslfxUniquePtr& glslfxOut,
     TfToken const& nodeTypeId)
 {
+    HD_TRACE_FUNCTION();
+
     // If there is a URI, we will use that, otherwise we will try to use
     // the source code.
     SdrRegistry &shaderReg = SdrRegistry::GetInstance();
@@ -711,6 +713,8 @@ _GatherMaterialParams(
     HdSt_MaterialNode const& node,
     HioGlslfxUniquePtr const& glslfx) 
 {
+    HD_TRACE_FUNCTION();
+
     // Hydra Storm currently supports two material configurations.
     // A custom glslfx file or a PreviewSurface material network.
     // Either configuration consists of a terminal (Shader or PreviewSurface)
