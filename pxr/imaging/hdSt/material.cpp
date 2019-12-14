@@ -25,7 +25,6 @@
 
 #include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/materialBufferSourceAndTextureHelper.h"
-#include "pxr/imaging/hdSt/materialNetwork.h"
 #include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
@@ -113,13 +112,12 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         HdMaterialNetworkMap const& hdNetworkMap =
             vtMat.UncheckedGet<HdMaterialNetworkMap>();
         if (!hdNetworkMap.terminals.empty() && !hdNetworkMap.map.empty()) {
-            HdStMaterialNetwork networkProcessor;
-            networkProcessor.ProcessMaterialNetwork(GetId(), hdNetworkMap);
-            fragmentSource = networkProcessor.GetFragmentCode();
-            geometrySource = networkProcessor.GetGeometryCode();
-            materialMetadata = networkProcessor.GetMetadata();
-            materialTag = networkProcessor.GetMaterialTag();
-            params = networkProcessor.GetMaterialParams();
+            _networkProcessor.ProcessMaterialNetwork(GetId(), hdNetworkMap);
+            fragmentSource = _networkProcessor.GetFragmentCode();
+            geometrySource = _networkProcessor.GetGeometryCode();
+            materialMetadata = _networkProcessor.GetMetadata();
+            materialTag = _networkProcessor.GetMaterialTag();
+            params = _networkProcessor.GetMaterialParams();
         }
     }
 

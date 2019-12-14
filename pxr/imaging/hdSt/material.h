@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hdSt/materialNetwork.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hf/perfLog.h"
 
@@ -125,6 +126,8 @@ private:
     bool _hasDisplacement : 1;
 
     TfToken _materialTag;
+
+    HdStMaterialNetwork _networkProcessor;
 };
 
 inline HdTextureResource::ID

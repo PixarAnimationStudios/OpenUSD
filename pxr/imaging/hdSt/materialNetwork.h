@@ -30,6 +30,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+typedef std::unique_ptr<class HioGlslfx> HioGlslfxUniquePtr;
+
 
 /// \class HdStMaterialNetwork
 ///
@@ -71,6 +73,7 @@ private:
     std::string _geometrySource;
     VtDictionary _materialMetadata;
     HdMaterialParamVector _materialParams;
+    HioGlslfxUniquePtr _surfaceGfx;
 };
 
 
