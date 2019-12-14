@@ -95,7 +95,6 @@ private:
 
     // For now these are only valid for the lifetime of a single pass of
     // the render graph.  Maybe long-term these could be change-tracked.
-    GlfSimpleShadowArrayRefPtr _shadows;
     GlfSimpleLightVector _glfSimpleLights;
 
     size_t _AppendLightsOfType(HdRenderIndex &renderIndex,

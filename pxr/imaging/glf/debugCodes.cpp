@@ -38,6 +38,8 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_ERROR_STACKTRACE,
         "Glf dump stack trace on GL error");
     TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_SHADOW_TEXTURES,
+        "Glf logging for shadow map management");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_DUMP_SHADOW_TEXTURES,
         "Glf outputs shadows textures to image files");
     TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_TEXTURE_IMAGE_PLUGINS,
         "Glf texture image plugin registration");

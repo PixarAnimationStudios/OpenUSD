@@ -100,6 +100,12 @@ HdxSimpleLightingShader::GetSource(TfToken const &shaderStageKey) const
     bool useShadows = _useLighting ? _lightingContext->GetUseShadows() : false;
     defineStream << "#define NUM_LIGHTS " << numLights<< "\n";
     defineStream << "#define USE_SHADOWS " << (int)(useShadows) << "\n";
+    if (useShadows) {
+        bool const useBindlessShadowMaps =
+            GlfSimpleShadowArray::GetBindlessShadowMapsEnabled();;
+        defineStream << "#define USE_BINDLESS_SHADOW_TEXTURES "
+                     << int(useBindlessShadowMaps) << "\n";
+    }
 
     return defineStream.str() + source;
 }

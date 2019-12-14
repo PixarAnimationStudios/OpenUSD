@@ -136,6 +136,7 @@ private:
     GlfUniformBlockRefPtr _lightingUniformBlock;
     GlfUniformBlockRefPtr _shadowUniformBlock;
     GlfUniformBlockRefPtr _materialUniformBlock;
+    GlfUniformBlockRefPtr _bindlessShadowlUniformBlock;
 
     bool _lightingUniformBlockValid;
     bool _shadowUniformBlockValid;

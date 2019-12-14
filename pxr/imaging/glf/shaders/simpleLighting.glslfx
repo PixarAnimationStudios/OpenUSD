@@ -160,9 +160,20 @@ computeShadowFilterWidth(int index, vec4 Peye)
 // ---------------------------------------------------------------------------
 // textures
 // ---------------------------------------------------------------------------
+
+#if USE_BINDLESS_SHADOW_TEXTURES
+#if NUM_LIGHTS > 0
+
+uniform BindlessShadowSamplers {
+    uvec2 shadowCompareTextures[NUM_LIGHTS];
+};
+#endif // NUM_LIGHTS > 0
+#else // USE_BINDLESS_SHADOW_TEXTURES
+
 uniform sampler2DArray shadowTexture;
 uniform sampler2DArrayShadow shadowCompareTexture;
 
+#endif // !USE_BINDLESS_SHADOW_TEXTURES
 // ---------------------------------------------------------------------------
 // lighting functions
 // ---------------------------------------------------------------------------
@@ -192,8 +203,13 @@ integrateLightsDefault(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 float
 shadowCompare(int index, vec4 coord)
 {
+#if USE_BINDLESS_SHADOW_TEXTURES
+    return texture(sampler2DShadow(shadowCompareTextures[index]),
+                vec3(coord.x/coord.w, coord.y/coord.w, coord.z));
+#else
     return texture(shadowCompareTexture,
-                   vec4(coord.x/coord.w, coord.y/coord.w, index, coord.z));
+                vec4(coord.x/coord.w, coord.y/coord.w, index, coord.z));
+#endif
 }
 
 #ifndef SHADOW_FILTER
