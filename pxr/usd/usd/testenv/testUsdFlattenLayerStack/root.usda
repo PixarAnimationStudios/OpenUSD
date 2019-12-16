@@ -27,3 +27,23 @@ over "ListOpTest"
 class "_class_Sphere"
 {
 }
+
+over "assetWithVariant" (
+    variants = {
+        string variantSet2 = "d"
+    }
+    append variantSets = "variantSet2"
+) {
+    variantSet "variantSet2" = {
+        "c" {
+            def Xform "c"
+            {
+            }
+        }
+        "d" {
+            def Xform "d"
+            {
+            }
+        }
+    }
+}

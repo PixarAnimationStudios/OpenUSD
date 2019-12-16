@@ -111,3 +111,23 @@ def Sphere "TimeCodeTest" (
         1: [20, 40],
     }
 }
+
+def Xform "assetWithVariant" (
+    variants = {
+        string variantSet1 = "b"
+    }
+    append variantSets = "variantSet1"
+) {
+    variantSet "variantSet1" = {
+        "a" {
+            def Xform "a"
+            {
+            }
+        }
+        "b" {
+            def Xform "b"
+            {
+            }
+        }
+    }
+}

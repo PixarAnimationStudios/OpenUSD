@@ -124,6 +124,17 @@ _Reduce(const VtDictionary &lhs, const VtDictionary &rhs)
 
 template <>
 VtValue
+_Reduce(const SdfVariantSelectionMap &lhs, const SdfVariantSelectionMap &rhs)
+{
+    SdfVariantSelectionMap result(rhs);
+    for (auto const& entry: lhs) {
+        result[entry.first] = entry.second;
+    }
+    return VtValue(result);
+}
+
+template <>
+VtValue
 _Reduce(const SdfSpecifier &lhs, const SdfSpecifier &rhs)
 {
     // SdfSpecifierOver is the equivalent of "no opinion"
@@ -179,6 +190,7 @@ _Reduce(const VtValue &lhs, const VtValue &rhs, const TfToken &field)
     TYPE_DISPATCH(SdfUnregisteredValueListOp);
     TYPE_DISPATCH(VtDictionary);
     TYPE_DISPATCH(SdfTimeSampleMap);
+    TYPE_DISPATCH(SdfVariantSelectionMap);
 #undef TYPE_DISPATCH
 
     // TypeName is a special case: empty token represents "no opinion".

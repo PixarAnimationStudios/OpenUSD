@@ -142,6 +142,16 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
             self.assertEqual(a.Get(-10.0), 10.0)
             self.assertEqual(a.Get(-9), 20.0)
 
+            # Variant sets and selections
+            p = stage.GetPrimAtPath('/assetWithVariant')
+            self.assertEqual(
+                p.GetVariantSets().GetNames(),
+                ['variantSet1', 'variantSet2'])
+            self.assertFalse(stage.GetPrimAtPath('/assetWithVariant/a'))
+            self.assertTrue(stage.GetPrimAtPath('/assetWithVariant/b'))
+            self.assertFalse(stage.GetPrimAtPath('/assetWithVariant/c'))
+            self.assertTrue(stage.GetPrimAtPath('/assetWithVariant/d'))
+
 
         # Confirm relative asset path handling in the output stage.
         p = result_stage.GetPrimAtPath('/Sphere')
