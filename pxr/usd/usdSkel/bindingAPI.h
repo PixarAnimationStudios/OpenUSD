@@ -159,10 +159,11 @@ public:
     /// down to all the leaf gprims. If this transform is unset, an identity
     /// transform is used instead.
     ///
-    /// \n  C++ Type: GfMatrix4d
-    /// \n  Usd Type: SdfValueTypeNames->Matrix4d
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `matrix4d primvars:skel:geomBindTransform` |
+    /// | C++ Type | GfMatrix4d |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Matrix4d |
     USDSKEL_API
     UsdAttribute GetGeomBindTransformAttr() const;
 
@@ -184,10 +185,12 @@ public:
     /// attribute. If undefined on a primitive, the primitive inherits the 
     /// value of the nearest ancestor prim, if any.
     ///
-    /// \n  C++ Type: VtArray<TfToken>
-    /// \n  Usd Type: SdfValueTypeNames->TokenArray
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token[] skel:joints` |
+    /// | C++ Type | VtArray<TfToken> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->TokenArray |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDSKEL_API
     UsdAttribute GetJointsAttr() const;
 
@@ -212,10 +215,11 @@ public:
     /// See UsdGeomPrimvar for more information on interpolation and
     /// elementSize.
     ///
-    /// \n  C++ Type: VtArray<int>
-    /// \n  Usd Type: SdfValueTypeNames->IntArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int[] primvars:skel:jointIndices` |
+    /// | C++ Type | VtArray<int> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->IntArray |
     USDSKEL_API
     UsdAttribute GetJointIndicesAttr() const;
 
@@ -238,10 +242,11 @@ public:
     /// *jointWeights* must match that of *jointIndices*. See UsdGeomPrimvar
     /// for more information on interpolation and elementSize.
     ///
-    /// \n  C++ Type: VtArray<float>
-    /// \n  Usd Type: SdfValueTypeNames->FloatArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float[] primvars:skel:jointWeights` |
+    /// | C++ Type | VtArray<float> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->FloatArray |
     USDSKEL_API
     UsdAttribute GetJointWeightsAttr() const;
 
@@ -264,10 +269,12 @@ public:
     /// is not inherited hierarchically, and is expected to be authored directly
     /// on the skinnable primitive to which the blend shapes apply.
     ///
-    /// \n  C++ Type: VtArray<TfToken>
-    /// \n  Usd Type: SdfValueTypeNames->TokenArray
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token[] skel:blendShapes` |
+    /// | C++ Type | VtArray<TfToken> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->TokenArray |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDSKEL_API
     UsdAttribute GetBlendShapesAttr() const;
 

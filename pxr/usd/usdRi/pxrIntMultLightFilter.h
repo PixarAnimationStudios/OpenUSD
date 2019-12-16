@@ -155,10 +155,11 @@ public:
     /// Multipier for the light intensity.
     /// This setting is meant to override the fallback value in RiLightFilterAPI
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float ri:intensity = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetRiIntensityAttr() const;
 
@@ -177,10 +178,11 @@ public:
     /// Saturation of the light before hitting the surface (0=greyscale,1=normal,
     /// >1=boosted colors).
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float color:saturation = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetColorSaturationAttr() const;
 

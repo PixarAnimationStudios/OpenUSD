@@ -185,10 +185,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: int
-    /// \n  Usd Type: SdfValueTypeNames->Int
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int testAttrOne` |
+    /// | C++ Type | int |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int |
     USDCONTRIVED_API
     UsdAttribute GetTestAttrOneAttr() const;
 
@@ -206,10 +207,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: double
-    /// \n  Usd Type: SdfValueTypeNames->Double
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double testAttrTwo` |
+    /// | C++ Type | double |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double |
     USDCONTRIVED_API
     UsdAttribute GetTestAttrTwoAttr() const;
 

@@ -177,10 +177,11 @@ public:
     /// Its value for the 'i'th curve must be less than or equal to
     /// curveVertexCount[i]
     ///
-    /// \n  C++ Type: VtArray<int>
-    /// \n  Usd Type: SdfValueTypeNames->IntArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: []
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int[] order = []` |
+    /// | C++ Type | VtArray<int> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->IntArray |
     USDGEOM_API
     UsdAttribute GetOrderAttr() const;
 
@@ -201,10 +202,11 @@ public:
     /// must be ( curveVertexCount[i] + order[i] ), and its
     /// entries must take on monotonically increasing values.
     ///
-    /// \n  C++ Type: VtArray<double>
-    /// \n  Usd Type: SdfValueTypeNames->DoubleArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double[] knots` |
+    /// | C++ Type | VtArray<double> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->DoubleArray |
     USDGEOM_API
     UsdAttribute GetKnotsAttr() const;
 
@@ -227,10 +229,11 @@ public:
     /// than or equal to the last element's value in knots['i'th curve slice].
     /// Range maps to (vmin, vmax) in the RenderMan spec.
     ///
-    /// \n  C++ Type: VtArray<GfVec2d>
-    /// \n  Usd Type: SdfValueTypeNames->Double2Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double2[] ranges` |
+    /// | C++ Type | VtArray<GfVec2d> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double2Array |
     USDGEOM_API
     UsdAttribute GetRangesAttr() const;
 

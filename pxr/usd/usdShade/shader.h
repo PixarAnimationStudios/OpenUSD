@@ -200,11 +200,13 @@ public:
     /// the shader source.
     /// 
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: id
-    /// \n  \ref UsdShadeTokens "Allowed Values": [id, sourceAsset, sourceCode]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token info:implementationSource = "id"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | \ref UsdShadeTokens "Allowed Values" | id, sourceAsset, sourceCode |
     USDSHADE_API
     UsdAttribute GetImplementationSourceAttr() const;
 
@@ -229,10 +231,12 @@ public:
     /// \sa SetShaderId()
     /// 
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token info:id` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDSHADE_API
     UsdAttribute GetIdAttr() const;
 

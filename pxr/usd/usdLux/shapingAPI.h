@@ -148,10 +148,11 @@ public:
     /// Implemented as an off-axis cosine power exponent.
     /// TODO: clarify semantics
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float shaping:focus = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDLUX_API
     UsdAttribute GetShapingFocusAttr() const;
 
@@ -171,10 +172,11 @@ public:
     /// falloff region.  The default tint is black.
     /// TODO: clarify semantics
     ///
-    /// \n  C++ Type: GfVec3f
-    /// \n  Usd Type: SdfValueTypeNames->Color3f
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `color3f shaping:focusTint = (0, 0, 0)` |
+    /// | C++ Type | GfVec3f |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color3f |
     USDLUX_API
     UsdAttribute GetShapingFocusTintAttr() const;
 
@@ -193,10 +195,11 @@ public:
     /// Angular limit off the primary axis to restrict the
     /// light spread.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 90.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float shaping:cone:angle = 90` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDLUX_API
     UsdAttribute GetShapingConeAngleAttr() const;
 
@@ -215,10 +218,11 @@ public:
     /// Controls the cutoff softness for cone angle.
     /// TODO: clarify semantics
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float shaping:cone:softness = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDLUX_API
     UsdAttribute GetShapingConeSoftnessAttr() const;
 
@@ -237,10 +241,11 @@ public:
     /// An IES (Illumination Engineering Society) light
     /// profile describing the angular distribution of light.
     ///
-    /// \n  C++ Type: SdfAssetPath
-    /// \n  Usd Type: SdfValueTypeNames->Asset
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `asset shaping:ies:file` |
+    /// | C++ Type | SdfAssetPath |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Asset |
     USDLUX_API
     UsdAttribute GetShapingIesFileAttr() const;
 
@@ -259,10 +264,11 @@ public:
     /// Rescales the angular distribution of the IES profile.
     /// TODO: clarify semantics
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float shaping:ies:angleScale = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDLUX_API
     UsdAttribute GetShapingIesAngleScaleAttr() const;
 
@@ -281,10 +287,11 @@ public:
     /// Normalizes the IES profile so that it affects the shaping
     /// of the light while preserving the overall energy output.
     ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: False
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `bool shaping:ies:normalize = 0` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
     USDLUX_API
     UsdAttribute GetShapingIesNormalizeAttr() const;
 

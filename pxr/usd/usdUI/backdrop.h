@@ -180,10 +180,12 @@ public:
     /// graph. This help-description explains what the nodes in a backdrop do.
     /// 
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token ui:description` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDUI_API
     UsdAttribute GetDescriptionAttr() const;
 

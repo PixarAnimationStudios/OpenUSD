@@ -162,11 +162,12 @@ public:
     // --------------------------------------------------------------------- //
     /// Specifies the direction in which the ramp is applied
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: distanceToLight
-    /// \n  \ref UsdRiTokens "Allowed Values": [distanceToLight, linear, spherical, radial]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token rampMode = "distanceToLight"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref UsdRiTokens "Allowed Values" | distanceToLight, linear, spherical, radial |
     USDRI_API
     UsdAttribute GetRampModeAttr() const;
 
@@ -184,10 +185,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Distance where the ramp starts.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float beginDistance = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetBeginDistanceAttr() const;
 
@@ -205,10 +207,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Distance where the ramp ends.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 10.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float endDistance = 10` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetEndDistanceAttr() const;
 
@@ -226,10 +229,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Controls the transition from the core to the edge.
     ///
-    /// \n  C++ Type: int
-    /// \n  Usd Type: SdfValueTypeNames->Int
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 4
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int falloff = 4` |
+    /// | C++ Type | int |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int |
     USDRI_API
     UsdAttribute GetFalloffAttr() const;
 
@@ -247,10 +251,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Knots of the falloff spline.
     ///
-    /// \n  C++ Type: VtArray<float>
-    /// \n  Usd Type: SdfValueTypeNames->FloatArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: [0, 0, 1, 1]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float[] falloff:knots = [0, 0, 1, 1]` |
+    /// | C++ Type | VtArray<float> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->FloatArray |
     USDRI_API
     UsdAttribute GetFalloffKnotsAttr() const;
 
@@ -268,10 +273,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Float values of the falloff spline.
     ///
-    /// \n  C++ Type: VtArray<float>
-    /// \n  Usd Type: SdfValueTypeNames->FloatArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: [0, 0, 1, 1]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float[] falloff:floats = [0, 0, 1, 1]` |
+    /// | C++ Type | VtArray<float> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->FloatArray |
     USDRI_API
     UsdAttribute GetFalloffFloatsAttr() const;
 
@@ -289,11 +295,12 @@ public:
     // --------------------------------------------------------------------- //
     /// Falloff spline type. 
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: linear
-    /// \n  \ref UsdRiTokens "Allowed Values": [linear, catmull-rom, bspline, constant]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token falloff:interpolation = "linear"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref UsdRiTokens "Allowed Values" | linear, catmull-rom, bspline, constant |
     USDRI_API
     UsdAttribute GetFalloffInterpolationAttr() const;
 
@@ -311,10 +318,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Controls the color gradient for the transition.
     ///
-    /// \n  C++ Type: int
-    /// \n  Usd Type: SdfValueTypeNames->Int
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 4
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int colorRamp = 4` |
+    /// | C++ Type | int |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int |
     USDRI_API
     UsdAttribute GetColorRampAttr() const;
 
@@ -332,10 +340,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Knots of the colorRamp spline.
     ///
-    /// \n  C++ Type: VtArray<float>
-    /// \n  Usd Type: SdfValueTypeNames->FloatArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: [0, 0, 1, 1]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float[] colorRamp:knots = [0, 0, 1, 1]` |
+    /// | C++ Type | VtArray<float> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->FloatArray |
     USDRI_API
     UsdAttribute GetColorRampKnotsAttr() const;
 
@@ -353,10 +362,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Color values of the colorRamp spline.
     ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Color3fArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `color3f[] colorRamp:colors = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)]` |
+    /// | C++ Type | VtArray<GfVec3f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color3fArray |
     USDRI_API
     UsdAttribute GetColorRampColorsAttr() const;
 
@@ -374,11 +384,12 @@ public:
     // --------------------------------------------------------------------- //
     /// ColorRamp spline type. 
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: linear
-    /// \n  \ref UsdRiTokens "Allowed Values": [linear, catmull-rom, bspline, constant]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token colorRamp:interpolation = "linear"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref UsdRiTokens "Allowed Values" | linear, catmull-rom, bspline, constant |
     USDRI_API
     UsdAttribute GetColorRampInterpolationAttr() const;
 

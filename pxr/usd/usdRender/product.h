@@ -175,10 +175,12 @@ public:
     /// ote In the future, UsdRender may define additional product
     /// types.
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: raster
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token productType = "raster"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDRENDER_API
     UsdAttribute GetProductTypeAttr() const;
 
@@ -199,10 +201,11 @@ public:
     /// driver, whose responsibility it is to situate the product on a
     /// filesystem or other storage, in the desired location.
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token productName = ""` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
     USDRENDER_API
     UsdAttribute GetProductNameAttr() const;
 

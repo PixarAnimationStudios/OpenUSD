@@ -183,10 +183,11 @@ public:
     /// A color texture to use on the dome, such as an HDR (high
     /// dynamic range) texture intended for IBL (image based lighting).
     ///
-    /// \n  C++ Type: SdfAssetPath
-    /// \n  Usd Type: SdfValueTypeNames->Asset
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `asset texture:file` |
+    /// | C++ Type | SdfAssetPath |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Asset |
     USDLUX_API
     UsdAttribute GetTextureFileAttr() const;
 
@@ -217,11 +218,12 @@ public:
     /// vertical cross.
     /// 
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: automatic
-    /// \n  \ref UsdLuxTokens "Allowed Values": [automatic, latlong, mirroredBall, angular, cubeMapVerticalCross]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token texture:format = "automatic"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref UsdLuxTokens "Allowed Values" | automatic, latlong, mirroredBall, angular, cubeMapVerticalCross |
     USDLUX_API
     UsdAttribute GetTextureFormatAttr() const;
 

@@ -361,11 +361,13 @@ public:
     /// Linear curves interpolate linearly between two vertices.  
     /// Cubic curves use a basis matrix with four vertices to interpolate a segment.
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: cubic
-    /// \n  \ref UsdGeomTokens "Allowed Values": [linear, cubic]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token type = "cubic"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | \ref UsdGeomTokens "Allowed Values" | linear, cubic |
     USDGEOM_API
     UsdAttribute GetTypeAttr() const;
 
@@ -383,11 +385,13 @@ public:
     // --------------------------------------------------------------------- //
     /// The basis specifies the vstep and matrix used for cubic interpolation.
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: bezier
-    /// \n  \ref UsdGeomTokens "Allowed Values": [bezier, bspline, catmullRom, hermite, power]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token basis = "bezier"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | \ref UsdGeomTokens "Allowed Values" | bezier, bspline, catmullRom, hermite, power |
     USDGEOM_API
     UsdAttribute GetBasisAttr() const;
 
@@ -409,11 +413,13 @@ public:
     /// to ensure that the curve interpolation starts at P[0] and ends at P[n-1].
     /// 
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: nonperiodic
-    /// \n  \ref UsdGeomTokens "Allowed Values": [nonperiodic, periodic, pinned]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token wrap = "nonperiodic"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | \ref UsdGeomTokens "Allowed Values" | nonperiodic, periodic, pinned |
     USDGEOM_API
     UsdAttribute GetWrapAttr() const;
 

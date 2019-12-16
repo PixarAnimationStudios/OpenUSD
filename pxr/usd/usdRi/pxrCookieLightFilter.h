@@ -167,11 +167,12 @@ public:
     /// and falloff controls.
     /// 
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: physical
-    /// \n  \ref UsdRiTokens "Allowed Values": [physical, analytic]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token cookieMode = "physical"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref UsdRiTokens "Allowed Values" | physical, analytic |
     USDRI_API
     UsdAttribute GetCookieModeAttr() const;
 
@@ -189,10 +190,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Width of the rect the light is shining through.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float width = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetWidthAttr() const;
 
@@ -210,10 +212,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Height of the rect the light is shining through.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float height = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetHeightAttr() const;
 
@@ -231,10 +234,11 @@ public:
     // --------------------------------------------------------------------- //
     /// A color texture to use on the cookie.  May use alpha.
     ///
-    /// \n  C++ Type: SdfAssetPath
-    /// \n  Usd Type: SdfValueTypeNames->Asset
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `asset texture:map` |
+    /// | C++ Type | SdfAssetPath |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Asset |
     USDRI_API
     UsdAttribute GetTextureMapAttr() const;
 
@@ -256,11 +260,12 @@ public:
     /// - clamp: uses the value from the nearest edge
     /// 
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: off
-    /// \n  \ref UsdRiTokens "Allowed Values": [off, repeat, clamp]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token texture:wrapMode = "off"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref UsdRiTokens "Allowed Values" | off, repeat, clamp |
     USDRI_API
     UsdAttribute GetTextureWrapModeAttr() const;
 
@@ -279,10 +284,11 @@ public:
     /// If the texture is not repeating, this specifies the
     /// color for the region outside of and behind the projected rectangle.
     ///
-    /// \n  C++ Type: GfVec3f
-    /// \n  Usd Type: SdfValueTypeNames->Color3f
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (1, 1, 1)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `color3f texture:fillColor = (1, 1, 1)` |
+    /// | C++ Type | GfVec3f |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color3f |
     USDRI_API
     UsdAttribute GetTextureFillColorAttr() const;
 
@@ -301,10 +307,11 @@ public:
     /// Textures are usually premultiplied by their alpha. If this not
     /// the case, uncheck this.
     ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: True
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `bool texture:premultipliedAlpha = 1` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
     USDRI_API
     UsdAttribute GetTexturePremultipliedAlphaAttr() const;
 
@@ -324,10 +331,11 @@ public:
     /// orientation of the texture as seen from the light source matches
     /// the orientation as it is viewed in an image viewer.
     ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: False
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `bool texture:invertU = 0` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
     USDRI_API
     UsdAttribute GetTextureInvertUAttr() const;
 
@@ -347,10 +355,11 @@ public:
     /// orientation of the texture as seen from the light source matches
     /// the orientation as it is viewed in an image viewer.
     ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: False
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `bool texture:invertV = 0` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
     USDRI_API
     UsdAttribute GetTextureInvertVAttr() const;
 
@@ -368,10 +377,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Scales the U dimension.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float texture:scaleU = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetTextureScaleUAttr() const;
 
@@ -389,10 +399,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Scales the V dimension.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float texture:scaleV = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetTextureScaleVAttr() const;
 
@@ -410,10 +421,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Offsets the texture in the U direction.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float texture:offsetU = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetTextureOffsetUAttr() const;
 
@@ -431,10 +443,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Offsets the texture in the V direction.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float texture:offsetV = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetTextureOffsetVAttr() const;
 
@@ -454,10 +467,11 @@ public:
     /// using the orthographic projection. When it is off, the texture
     /// projects using a focal point specified by the analytic:apex.
     ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: False
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `bool analytic:directional = 0` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
     USDRI_API
     UsdAttribute GetAnalyticDirectionalAttr() const;
 
@@ -475,10 +489,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Shear the projection along the X axis.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:shearX = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticShearXAttr() const;
 
@@ -496,10 +511,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Shear the projection along the Y axis.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:shearY = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticShearYAttr() const;
 
@@ -517,10 +533,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Distance between the center of cookie and the center of projection.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 25.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:apex = 25` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticApexAttr() const;
 
@@ -541,10 +558,11 @@ public:
     /// Otherwise, it only follows the orientation of the filter. WARNING:
     /// This does not work with dome and mesh lights.
     ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: False
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `bool analytic:useLightDirection = 0` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
     USDRI_API
     UsdAttribute GetAnalyticUseLightDirectionAttr() const;
 
@@ -565,10 +583,11 @@ public:
     /// blurs between the projected color and the fill color when the
     /// texture is not repeating.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:blur:amount = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticBlurAmountAttr() const;
 
@@ -586,10 +605,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Blur multiplier in the S direction.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:blur:sMult = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticBlurSMultAttr() const;
 
@@ -607,10 +627,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Blur multiplier in the T direction.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:blur:tMult = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticBlurTMultAttr() const;
 
@@ -629,10 +650,11 @@ public:
     /// Distance from the cookie where the blur interpolation
     /// starts.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:blur:nearDistance = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticBlurNearDistanceAttr() const;
 
@@ -650,10 +672,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Distance between near and far where midValue is located.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.5
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:blur:midpoint = 0.5` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticBlurMidpointAttr() const;
 
@@ -671,10 +694,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Distance from the cookie where the blur interpolation ends.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 10.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:blur:farDistance = 10` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticBlurFarDistanceAttr() const;
 
@@ -692,10 +716,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Blur multiplier where the blur interpolation starts.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:blur:nearValue = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticBlurNearValueAttr() const;
 
@@ -713,10 +738,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Blur multiplier in the middle of interpolation.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:blur:midValue = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticBlurMidValueAttr() const;
 
@@ -734,10 +760,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Blur multiplier at the end of interpolation.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:blur:farValue = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticBlurFarValueAttr() const;
 
@@ -755,10 +782,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Power exponent of the blur interpolation.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:blur:exponent = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticBlurExponentAttr() const;
 
@@ -777,10 +805,11 @@ public:
     /// Distance from the cookie where the density
     /// interpolation starts.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:density:nearDistance = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticDensityNearDistanceAttr() const;
 
@@ -798,10 +827,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Distance between near and far where midValue is located.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.5
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:density:midpoint = 0.5` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticDensityMidpointAttr() const;
 
@@ -820,10 +850,11 @@ public:
     /// Distance from the cookie where the density interpolation
     /// ends.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 10.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:density:farDistance = 10` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticDensityFarDistanceAttr() const;
 
@@ -841,10 +872,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Density multiplier where the density interpolation starts.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:density:nearValue = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticDensityNearValueAttr() const;
 
@@ -862,10 +894,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Density multiplier in the middle of interpolation.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:density:midValue = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticDensityMidValueAttr() const;
 
@@ -883,10 +916,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Density multiplier at the end of interpolation.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:density:farValue = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticDensityFarValueAttr() const;
 
@@ -904,10 +938,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Power exponent of the density interpolation.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:density:exponent = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticDensityExponentAttr() const;
 
@@ -926,10 +961,11 @@ public:
     /// Saturation of the result (0=greyscale, 1=normal,
     /// >1=boosted colors).
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float color:saturation = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetColorSaturationAttr() const;
 
@@ -947,10 +983,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Midpoint for the contrast control.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.180000007153
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float color:midpoint = 0.18` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetColorMidpointAttr() const;
 
@@ -969,10 +1006,11 @@ public:
     /// Contrast control (less than 1 = contrast reduction,
     /// larger than 1 = contrast increase).
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float color:contrast = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetColorContrastAttr() const;
 
@@ -990,10 +1028,11 @@ public:
     // --------------------------------------------------------------------- //
     /// White point for the contrast control if (contrast > 1.0).
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float color:whitepoint = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetColorWhitepointAttr() const;
 
@@ -1012,10 +1051,11 @@ public:
     /// Tint of the resulting color after saturation, contrast
     /// and clamp.
     ///
-    /// \n  C++ Type: GfVec3f
-    /// \n  Usd Type: SdfValueTypeNames->Color3f
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (1, 1, 1)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `color3f color:tint = (1, 1, 1)` |
+    /// | C++ Type | GfVec3f |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color3f |
     USDRI_API
     UsdAttribute GetColorTintAttr() const;
 

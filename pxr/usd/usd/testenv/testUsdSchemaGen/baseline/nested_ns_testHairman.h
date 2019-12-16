@@ -153,10 +153,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float temp` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDCONTRIVED_API
     UsdAttribute GetTempAttr() const;
 
@@ -174,10 +175,11 @@ public:
     // --------------------------------------------------------------------- //
     /// This exercises custom API naming.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float riStatements:attributes:user:Gofur_GeomOnHairdensity` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDCONTRIVED_API
     UsdAttribute GetGofur_GeomOnHairdensityAttr() const;
 

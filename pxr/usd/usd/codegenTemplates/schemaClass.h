@@ -337,9 +337,13 @@ public:
     // --------------------------------------------------------------------- //
     /// {{ attr.doc }}
     ///
+{% if attr.details %}
+    /// | ||
+    /// | -- | -- |
 {% for detail in attr.details %}
-    /// \n  {{ detail[0] }}: {{ detail[1] }}
+    /// | {{ detail[0] }} | {{ detail[1] }} |
 {% endfor %}
+{% endif %}
     {% if useExportAPI -%}
     {{ Upper(libraryName) }}_API
     {% endif -%}

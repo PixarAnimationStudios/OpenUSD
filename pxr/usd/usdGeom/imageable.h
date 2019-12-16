@@ -151,11 +151,12 @@ public:
     /// deactivating geometry prims, invisible geometry is still 
     /// available for inspection, for positioning, for defining volumes, etc.
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: inherited
-    /// \n  \ref UsdGeomTokens "Allowed Values": [inherited, invisible]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token visibility = "inherited"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref UsdGeomTokens "Allowed Values" | inherited, invisible |
     USDGEOM_API
     UsdAttribute GetVisibilityAttr() const;
 
@@ -207,11 +208,13 @@ public:
     /// well with the needs of multithreaded rendering. Purpose provides us with
     /// a better tool for dynamic, interactive complexity management.
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: default
-    /// \n  \ref UsdGeomTokens "Allowed Values": [default, render, proxy, guide]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token purpose = "default"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | \ref UsdGeomTokens "Allowed Values" | default, render, proxy, guide |
     USDGEOM_API
     UsdAttribute GetPurposeAttr() const;
 

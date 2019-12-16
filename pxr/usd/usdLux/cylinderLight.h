@@ -157,10 +157,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Width of the rectangle, in the local X axis.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float length = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDLUX_API
     UsdAttribute GetLengthAttr() const;
 
@@ -178,10 +179,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Radius of the cylinder.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.5
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float radius = 0.5` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDLUX_API
     UsdAttribute GetRadiusAttr() const;
 
@@ -202,10 +204,11 @@ public:
     /// benefit from non-area lighting. Renderers that only support
     /// area lights can disregard this.
     ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: False
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `bool treatAsLine = 0` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
     USDLUX_API
     UsdAttribute GetTreatAsLineAttr() const;
 

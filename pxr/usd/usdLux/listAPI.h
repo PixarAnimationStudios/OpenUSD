@@ -280,11 +280,12 @@ public:
     /// cache.  This is the fallback behavior.
     /// 
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
-    /// \n  \ref UsdLuxTokens "Allowed Values": [consumeAndHalt, consumeAndContinue, ignore]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token lightList:cacheBehavior` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref UsdLuxTokens "Allowed Values" | consumeAndHalt, consumeAndContinue, ignore |
     USDLUX_API
     UsdAttribute GetLightListCacheBehaviorAttr() const;
 

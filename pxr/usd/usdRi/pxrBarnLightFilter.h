@@ -160,11 +160,12 @@ public:
     /// Chooses a physical or analytic evaluation model for
     /// the barn.
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: physical
-    /// \n  \ref UsdRiTokens "Allowed Values": [physical, analytic]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token barnMode = "physical"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref UsdRiTokens "Allowed Values" | physical, analytic |
     USDRI_API
     UsdAttribute GetBarnModeAttr() const;
 
@@ -182,10 +183,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Width of the inner region of the barn (X axis).
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float width = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetWidthAttr() const;
 
@@ -203,10 +205,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Height of the inner region of the barn (Y axis).
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float height = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetHeightAttr() const;
 
@@ -224,10 +227,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Radius of the corners of the inner barn square.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.5
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float radius = 0.5` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetRadiusAttr() const;
 
@@ -247,10 +251,11 @@ public:
     /// using the orthographic projection. When it is off, the texture
     /// projects using a focal point specified by the analytic:apex.
     ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: False
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `bool analytic:directional = 0` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
     USDRI_API
     UsdAttribute GetAnalyticDirectionalAttr() const;
 
@@ -268,10 +273,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Shear the projection along the X axis.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:shearX = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticShearXAttr() const;
 
@@ -289,10 +295,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Shear the projection along the Y axis.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:shearY = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticShearYAttr() const;
 
@@ -310,10 +317,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Shear the projection along the Y axis.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 25.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:apex = 25` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticApexAttr() const;
 
@@ -334,10 +342,11 @@ public:
     /// Otherwise, it only follows the orientation of the barn. WARNING:
     /// This does not work with dome and mesh lights.
     ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: False
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `bool analytic:useLightDirection = 0` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
     USDRI_API
     UsdAttribute GetAnalyticUseLightDirectionAttr() const;
 
@@ -356,10 +365,11 @@ public:
     /// Distance from the barn where the density
     /// interpolation starts.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:density:nearDistance = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticDensityNearDistanceAttr() const;
 
@@ -378,10 +388,11 @@ public:
     /// Distance from the barn where the density interpolation
     /// ends.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:density:farDistance = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticDensityFarDistanceAttr() const;
 
@@ -399,10 +410,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Density multiplier where the density interpolation starts.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:density:nearValue = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticDensityNearValueAttr() const;
 
@@ -420,10 +432,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Density multiplier at the end of interpolation.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:density:farValue = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticDensityFarValueAttr() const;
 
@@ -441,10 +454,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Power exponent of the density interpolation.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float analytic:density:exponent = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetAnalyticDensityExponentAttr() const;
 
@@ -463,10 +477,11 @@ public:
     /// Thickness of the edge region.  Larger values will
     /// soften the edge shape.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float edgeThickness = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetEdgeThicknessAttr() const;
 
@@ -485,11 +500,12 @@ public:
     /// The effect on light before it reaches the barn
     /// geometry.
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: noLight
-    /// \n  \ref UsdRiTokens "Allowed Values": [noEffect, cone, noLight]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token preBarnEffect = "noLight"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref UsdRiTokens "Allowed Values" | noEffect, cone, noLight |
     USDRI_API
     UsdAttribute GetPreBarnEffectAttr() const;
 
@@ -507,10 +523,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Scale the width of the inner barn shape.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float scale:width = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetScaleWidthAttr() const;
 
@@ -528,10 +545,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Scale the height of the inner barn shape.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float scale:height = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetScaleHeightAttr() const;
 
@@ -549,10 +567,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Additional offset adjustment to the top region.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float refine:top = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetRefineTopAttr() const;
 
@@ -570,10 +589,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Additional offset adjustment to the top region.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float refine:bottom = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetRefineBottomAttr() const;
 
@@ -591,10 +611,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Additional offset adjustment to the left region.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float refine:left = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetRefineLeftAttr() const;
 
@@ -612,10 +633,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Additional offset adjustment to the left region.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float refine:right = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetRefineRightAttr() const;
 
@@ -633,10 +655,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Additional edge scale adjustment to the top region.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float edgeScale:top = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetEdgeScaleTopAttr() const;
 
@@ -654,10 +677,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Additional edge scale adjustment to the top region.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float edgeScale:bottom = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetEdgeScaleBottomAttr() const;
 
@@ -675,10 +699,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Additional edge scale adjustment to the left region.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float edgeScale:left = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetEdgeScaleLeftAttr() const;
 
@@ -696,10 +721,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Additional edge scale adjustment to the left region.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float edgeScale:right = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetEdgeScaleRightAttr() const;
 

@@ -162,10 +162,11 @@ public:
     /// the filePath attribute. Clients which consume Field3D files
     /// should treat this as the Field3D field \p attribute.
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token fieldName` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
     USDVOL_API
     UsdAttribute GetFieldNameAttr() const;
 
@@ -185,10 +186,11 @@ public:
     /// of an individual field. Clients which consume Field3D files
     /// should treat this as the Field3D field \p name.
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token fieldPurpose` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
     USDVOL_API
     UsdAttribute GetFieldPurposeAttr() const;
 
@@ -208,10 +210,11 @@ public:
     /// name. This attribute is an index used to disambiguate
     /// between these multiple fields with the same name.
     ///
-    /// \n  C++ Type: int
-    /// \n  Usd Type: SdfValueTypeNames->Int
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int fieldIndex` |
+    /// | C++ Type | int |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int |
     USDVOL_API
     UsdAttribute GetFieldIndexAttr() const;
 

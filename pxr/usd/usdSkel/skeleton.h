@@ -165,10 +165,12 @@ public:
     /// joint. It is not required that the name at the end of each path be
     /// unique, but rather only that the paths themselves be unique.
     ///
-    /// \n  C++ Type: VtArray<TfToken>
-    /// \n  Usd Type: SdfValueTypeNames->TokenArray
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token[] joints` |
+    /// | C++ Type | VtArray<TfToken> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->TokenArray |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDSKEL_API
     UsdAttribute GetJointsAttr() const;
 
@@ -188,10 +190,12 @@ public:
     /// optionally set to provide better names when translating to DCC apps 
     /// that require unique joint names.
     ///
-    /// \n  C++ Type: VtArray<TfToken>
-    /// \n  Usd Type: SdfValueTypeNames->TokenArray
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token[] jointNames` |
+    /// | C++ Type | VtArray<TfToken> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->TokenArray |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDSKEL_API
     UsdAttribute GetJointNamesAttr() const;
 
@@ -210,10 +214,12 @@ public:
     /// Specifies the bind-pose transforms of each joint in
     /// **world space**, in the ordering imposed by *joints*.
     ///
-    /// \n  C++ Type: VtArray<GfMatrix4d>
-    /// \n  Usd Type: SdfValueTypeNames->Matrix4dArray
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform matrix4d[] bindTransforms` |
+    /// | C++ Type | VtArray<GfMatrix4d> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Matrix4dArray |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDSKEL_API
     UsdAttribute GetBindTransformsAttr() const;
 
@@ -235,10 +241,12 @@ public:
     /// bound animation source, or when that animation source only contains
     /// animation for a subset of a Skeleton's joints.
     ///
-    /// \n  C++ Type: VtArray<GfMatrix4d>
-    /// \n  Usd Type: SdfValueTypeNames->Matrix4dArray
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform matrix4d[] restTransforms` |
+    /// | C++ Type | VtArray<GfMatrix4d> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Matrix4dArray |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDSKEL_API
     UsdAttribute GetRestTransformsAttr() const;
 

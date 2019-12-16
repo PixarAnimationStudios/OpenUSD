@@ -332,10 +332,12 @@ public:
     /// SetXformOpOrder(), and consulted by GetOrderedXformOps() and
     /// GetLocalTransformation().
     ///
-    /// \n  C++ Type: VtArray<TfToken>
-    /// \n  Usd Type: SdfValueTypeNames->TokenArray
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token[] xformOpOrder` |
+    /// | C++ Type | VtArray<TfToken> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->TokenArray |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDGEOM_API
     UsdAttribute GetXformOpOrderAttr() const;
 

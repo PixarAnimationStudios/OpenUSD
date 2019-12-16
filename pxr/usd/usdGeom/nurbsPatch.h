@@ -207,10 +207,11 @@ public:
     /// Number of vertices in the U direction.  Should be at least as
     /// large as uOrder.
     ///
-    /// \n  C++ Type: int
-    /// \n  Usd Type: SdfValueTypeNames->Int
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int uVertexCount` |
+    /// | C++ Type | int |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int |
     USDGEOM_API
     UsdAttribute GetUVertexCountAttr() const;
 
@@ -229,10 +230,11 @@ public:
     /// Number of vertices in the V direction.  Should be at least as
     /// large as vOrder.
     ///
-    /// \n  C++ Type: int
-    /// \n  Usd Type: SdfValueTypeNames->Int
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int vVertexCount` |
+    /// | C++ Type | int |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int |
     USDGEOM_API
     UsdAttribute GetVVertexCountAttr() const;
 
@@ -251,10 +253,11 @@ public:
     /// Order in the U direction.  Order must be positive and is
     /// equal to the degree of the polynomial basis to be evaluated, plus 1.
     ///
-    /// \n  C++ Type: int
-    /// \n  Usd Type: SdfValueTypeNames->Int
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int uOrder` |
+    /// | C++ Type | int |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int |
     USDGEOM_API
     UsdAttribute GetUOrderAttr() const;
 
@@ -273,10 +276,11 @@ public:
     /// Order in the V direction.  Order must be positive and is
     /// equal to the degree of the polynomial basis to be evaluated, plus 1.
     ///
-    /// \n  C++ Type: int
-    /// \n  Usd Type: SdfValueTypeNames->Int
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int vOrder` |
+    /// | C++ Type | int |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int |
     USDGEOM_API
     UsdAttribute GetVOrderAttr() const;
 
@@ -296,10 +300,11 @@ public:
     /// The length of this array must be ( uVertexCount + uOrder ), and its
     /// entries must take on monotonically increasing values.
     ///
-    /// \n  C++ Type: VtArray<double>
-    /// \n  Usd Type: SdfValueTypeNames->DoubleArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double[] uKnots` |
+    /// | C++ Type | VtArray<double> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->DoubleArray |
     USDGEOM_API
     UsdAttribute GetUKnotsAttr() const;
 
@@ -319,10 +324,11 @@ public:
     /// The length of this array must be ( vVertexCount + vOrder ), and its
     /// entries must take on monotonically increasing values.
     ///
-    /// \n  C++ Type: VtArray<double>
-    /// \n  Usd Type: SdfValueTypeNames->DoubleArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double[] vKnots` |
+    /// | C++ Type | VtArray<double> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->DoubleArray |
     USDGEOM_API
     UsdAttribute GetVKnotsAttr() const;
 
@@ -343,11 +349,13 @@ public:
     /// surface along the U dimension.
     /// \sa \ref UsdGeom_NurbsPatch_Form "NurbsPatch Form" 
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: open
-    /// \n  \ref UsdGeomTokens "Allowed Values": [open, closed, periodic]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token uForm = "open"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | \ref UsdGeomTokens "Allowed Values" | open, closed, periodic |
     USDGEOM_API
     UsdAttribute GetUFormAttr() const;
 
@@ -368,11 +376,13 @@ public:
     /// surface along the V dimension.
     /// \sa \ref UsdGeom_NurbsPatch_Form "NurbsPatch Form" 
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: open
-    /// \n  \ref UsdGeomTokens "Allowed Values": [open, closed, periodic]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token vForm = "open"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | \ref UsdGeomTokens "Allowed Values" | open, closed, periodic |
     USDGEOM_API
     UsdAttribute GetVFormAttr() const;
 
@@ -394,10 +404,11 @@ public:
     /// value of uKnots[uOrder-1].  The maxium must be less than or equal
     /// to the last element's value in uKnots.
     ///
-    /// \n  C++ Type: GfVec2d
-    /// \n  Usd Type: SdfValueTypeNames->Double2
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double2 uRange` |
+    /// | C++ Type | GfVec2d |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double2 |
     USDGEOM_API
     UsdAttribute GetURangeAttr() const;
 
@@ -419,10 +430,11 @@ public:
     /// value of vKnots[vOrder-1].  The maxium must be less than or equal
     /// to the last element's value in vKnots.
     ///
-    /// \n  C++ Type: GfVec2d
-    /// \n  Usd Type: SdfValueTypeNames->Double2
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double2 vRange` |
+    /// | C++ Type | GfVec2d |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double2 |
     USDGEOM_API
     UsdAttribute GetVRangeAttr() const;
 
@@ -445,10 +457,11 @@ public:
     /// \note Some DCC's pre-weight the \em points, but in this schema, 
     /// \em points are not pre-weighted.
     ///
-    /// \n  C++ Type: VtArray<double>
-    /// \n  Usd Type: SdfValueTypeNames->DoubleArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double[] pointWeights` |
+    /// | C++ Type | VtArray<double> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->DoubleArray |
     USDGEOM_API
     UsdAttribute GetPointWeightsAttr() const;
 
@@ -470,10 +483,11 @@ public:
     /// total nuber of curves in the trim, to which we will refer as 
     /// \em nCurves in describing the other trim attributes.
     ///
-    /// \n  C++ Type: VtArray<int>
-    /// \n  Usd Type: SdfValueTypeNames->IntArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int[] trimCurve:counts` |
+    /// | C++ Type | VtArray<int> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->IntArray |
     USDGEOM_API
     UsdAttribute GetTrimCurveCountsAttr() const;
 
@@ -491,10 +505,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Flat list of orders for each of the \em nCurves curves.
     ///
-    /// \n  C++ Type: VtArray<int>
-    /// \n  Usd Type: SdfValueTypeNames->IntArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int[] trimCurve:orders` |
+    /// | C++ Type | VtArray<int> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->IntArray |
     USDGEOM_API
     UsdAttribute GetTrimCurveOrdersAttr() const;
 
@@ -513,10 +528,11 @@ public:
     /// Flat list of number of vertices for each of the
     /// \em nCurves curves.
     ///
-    /// \n  C++ Type: VtArray<int>
-    /// \n  Usd Type: SdfValueTypeNames->IntArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int[] trimCurve:vertexCounts` |
+    /// | C++ Type | VtArray<int> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->IntArray |
     USDGEOM_API
     UsdAttribute GetTrimCurveVertexCountsAttr() const;
 
@@ -537,10 +553,11 @@ public:
     /// all elements of \em vertexCounts plus the sum over all elements of
     /// \em orders.
     ///
-    /// \n  C++ Type: VtArray<double>
-    /// \n  Usd Type: SdfValueTypeNames->DoubleArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double[] trimCurve:knots` |
+    /// | C++ Type | VtArray<double> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->DoubleArray |
     USDGEOM_API
     UsdAttribute GetTrimCurveKnotsAttr() const;
 
@@ -559,10 +576,11 @@ public:
     /// Flat list of minimum and maximum parametric values 
     /// (as defined by \em knots) for each of the \em nCurves curves.
     ///
-    /// \n  C++ Type: VtArray<GfVec2d>
-    /// \n  Usd Type: SdfValueTypeNames->Double2Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double2[] trimCurve:ranges` |
+    /// | C++ Type | VtArray<GfVec2d> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double2Array |
     USDGEOM_API
     UsdAttribute GetTrimCurveRangesAttr() const;
 
@@ -582,10 +600,11 @@ public:
     /// the \em nCurves curves.  The number of points should be equal to the
     /// um over all elements of \em vertexCounts.
     ///
-    /// \n  C++ Type: VtArray<GfVec3d>
-    /// \n  Usd Type: SdfValueTypeNames->Double3Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double3[] trimCurve:points` |
+    /// | C++ Type | VtArray<GfVec3d> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double3Array |
     USDGEOM_API
     UsdAttribute GetTrimCurvePointsAttr() const;
 

@@ -162,10 +162,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Width of the inner region of the rod (X axis).
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float width = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetWidthAttr() const;
 
@@ -183,10 +184,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Height of the inner region of the rod (Y axis).
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float height = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetHeightAttr() const;
 
@@ -204,10 +206,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Depth of the inner region of the rod (Z axis).
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float depth = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetDepthAttr() const;
 
@@ -225,10 +228,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Radius of the corners of the inner rod box.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float radius = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetRadiusAttr() const;
 
@@ -247,10 +251,11 @@ public:
     /// Thickness of the edge region.  Larger values will
     /// soften the edge shape.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.25
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float edgeThickness = 0.25` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetEdgeThicknessAttr() const;
 
@@ -268,10 +273,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Scale the width of the inner rod shape.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float scale:width = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetScaleWidthAttr() const;
 
@@ -289,10 +295,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Scale the height of the inner rod shape.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float scale:height = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetScaleHeightAttr() const;
 
@@ -310,10 +317,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Scale the depth of the inner rod shape.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float scale:depth = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetScaleDepthAttr() const;
 
@@ -331,10 +339,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Additional offset adjustment to the top region.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float refine:top = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetRefineTopAttr() const;
 
@@ -352,10 +361,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Additional offset adjustment to the top region.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float refine:bottom = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetRefineBottomAttr() const;
 
@@ -373,10 +383,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Additional offset adjustment to the left region.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float refine:left = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetRefineLeftAttr() const;
 
@@ -394,10 +405,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Additional offset adjustment to the left region.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float refine:right = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetRefineRightAttr() const;
 
@@ -415,10 +427,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Additional offset adjustment to the front region.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float refine:front = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetRefineFrontAttr() const;
 
@@ -436,10 +449,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Additional offset adjustment to the back region.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float refine:back = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetRefineBackAttr() const;
 
@@ -457,10 +471,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Additional edge scale adjustment to the top region.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float edgeScale:top = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetEdgeScaleTopAttr() const;
 
@@ -478,10 +493,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Additional edge scale adjustment to the top region.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float edgeScale:bottom = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetEdgeScaleBottomAttr() const;
 
@@ -499,10 +515,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Additional edge scale adjustment to the left region.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float edgeScale:left = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetEdgeScaleLeftAttr() const;
 
@@ -520,10 +537,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Additional edge scale adjustment to the left region.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float edgeScale:right = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetEdgeScaleRightAttr() const;
 
@@ -541,10 +559,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Additional edge scale adjustment to the front region.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float edgeScale:front = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetEdgeScaleFrontAttr() const;
 
@@ -562,10 +581,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Additional edge scale adjustment to the back region.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float edgeScale:back = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetEdgeScaleBackAttr() const;
 
@@ -584,10 +604,11 @@ public:
     /// Saturation of the result (0=greyscale, 1=normal,
     /// >1=boosted colors).
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float color:saturation = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetColorSaturationAttr() const;
 
@@ -605,10 +626,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Controls the transition from the core to the edge.
     ///
-    /// \n  C++ Type: int
-    /// \n  Usd Type: SdfValueTypeNames->Int
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 6
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int falloff = 6` |
+    /// | C++ Type | int |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int |
     USDRI_API
     UsdAttribute GetFalloffAttr() const;
 
@@ -626,10 +648,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Knots of the falloff spline.
     ///
-    /// \n  C++ Type: VtArray<float>
-    /// \n  Usd Type: SdfValueTypeNames->FloatArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: [0, 0, 0.3, 0.7, 1, 1]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float[] falloff:knots = [0, 0, 0.3, 0.7, 1, 1]` |
+    /// | C++ Type | VtArray<float> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->FloatArray |
     USDRI_API
     UsdAttribute GetFalloffKnotsAttr() const;
 
@@ -647,10 +670,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Float values of the falloff spline.
     ///
-    /// \n  C++ Type: VtArray<float>
-    /// \n  Usd Type: SdfValueTypeNames->FloatArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: [0, 0, 0.2, 0.8, 1, 1]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float[] falloff:floats = [0, 0, 0.2, 0.8, 1, 1]` |
+    /// | C++ Type | VtArray<float> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->FloatArray |
     USDRI_API
     UsdAttribute GetFalloffFloatsAttr() const;
 
@@ -668,11 +692,12 @@ public:
     // --------------------------------------------------------------------- //
     /// Falloff spline type. 
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: bspline
-    /// \n  \ref UsdRiTokens "Allowed Values": [linear, catmull-rom, bspline, constant]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token falloff:interpolation = "bspline"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref UsdRiTokens "Allowed Values" | linear, catmull-rom, bspline, constant |
     USDRI_API
     UsdAttribute GetFalloffInterpolationAttr() const;
 
@@ -690,10 +715,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Controls the color gradient for the transition.
     ///
-    /// \n  C++ Type: int
-    /// \n  Usd Type: SdfValueTypeNames->Int
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 4
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int colorRamp = 4` |
+    /// | C++ Type | int |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int |
     USDRI_API
     UsdAttribute GetColorRampAttr() const;
 
@@ -711,10 +737,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Knots of the colorRamp spline.
     ///
-    /// \n  C++ Type: VtArray<float>
-    /// \n  Usd Type: SdfValueTypeNames->FloatArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: [0, 0, 1, 1]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float[] colorRamp:knots = [0, 0, 1, 1]` |
+    /// | C++ Type | VtArray<float> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->FloatArray |
     USDRI_API
     UsdAttribute GetColorRampKnotsAttr() const;
 
@@ -732,10 +759,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Color values of the colorRamp spline.
     ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Color3fArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `color3f[] colorRamp:colors = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)]` |
+    /// | C++ Type | VtArray<GfVec3f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color3fArray |
     USDRI_API
     UsdAttribute GetColorRampColorsAttr() const;
 
@@ -753,11 +781,12 @@ public:
     // --------------------------------------------------------------------- //
     /// ColorRamp spline type. 
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: linear
-    /// \n  \ref UsdRiTokens "Allowed Values": [linear, catmull-rom, bspline, constant]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token colorRamp:interpolation = "linear"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref UsdRiTokens "Allowed Values" | linear, catmull-rom, bspline, constant |
     USDRI_API
     UsdAttribute GetColorRampInterpolationAttr() const;
 

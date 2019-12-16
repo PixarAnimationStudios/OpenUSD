@@ -212,10 +212,12 @@ public:
     /// \sa <a href="http://graphics.pixar.com/usd/docs/Usdz-File-Format-Specification.html#UsdzFileFormatSpecification-UsdzSpecification">Usdz Specification</a>
     /// 
     ///
-    /// \n  C++ Type: SdfAssetPath
-    /// \n  Usd Type: SdfValueTypeNames->Asset
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: @@
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform asset filePath = @@` |
+    /// | C++ Type | SdfAssetPath |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Asset |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDMEDIA_API
     UsdAttribute GetFilePathAttr() const;
 
@@ -243,11 +245,13 @@ public:
     /// sound-tracks.
     /// 
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: spatial
-    /// \n  \ref UsdMediaTokens "Allowed Values": [spatial, nonSpatial]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token auralMode = "spatial"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | \ref UsdMediaTokens "Allowed Values" | spatial, nonSpatial |
     USDMEDIA_API
     UsdAttribute GetAuralModeAttr() const;
 
@@ -282,11 +286,13 @@ public:
     /// be active.
     /// 
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: onceFromStart
-    /// \n  \ref UsdMediaTokens "Allowed Values": [onceFromStart, onceFromStartToEnd, loopFromStart, loopFromStartToEnd, loopFromStage]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token playbackMode = "onceFromStart"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | \ref UsdMediaTokens "Allowed Values" | onceFromStart, onceFromStartToEnd, loopFromStart, loopFromStartToEnd, loopFromStage |
     USDMEDIA_API
     UsdAttribute GetPlaybackModeAttr() const;
 
@@ -312,10 +318,12 @@ public:
     /// \ref Usd_SpatialAudio_TimeScaling for more details and caveats.
     /// 
     ///
-    /// \n  C++ Type: SdfTimeCode
-    /// \n  Usd Type: SdfValueTypeNames->TimeCode
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: 0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform timecode startTime = 0` |
+    /// | C++ Type | SdfTimeCode |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->TimeCode |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDMEDIA_API
     UsdAttribute GetStartTimeAttr() const;
 
@@ -344,10 +352,12 @@ public:
     /// See \ref Usd_SpatialAudio_TimeScaling for more details and caveats.
     /// 
     ///
-    /// \n  C++ Type: SdfTimeCode
-    /// \n  Usd Type: SdfValueTypeNames->TimeCode
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: 0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform timecode endTime = 0` |
+    /// | C++ Type | SdfTimeCode |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->TimeCode |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDMEDIA_API
     UsdAttribute GetEndTimeAttr() const;
 
@@ -371,10 +381,12 @@ public:
     /// all other loops begin from the start of the audio clip.
     /// 
     ///
-    /// \n  C++ Type: double
-    /// \n  Usd Type: SdfValueTypeNames->Double
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform double mediaOffset = 0` |
+    /// | C++ Type | double |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDMEDIA_API
     UsdAttribute GetMediaOffsetAttr() const;
 
@@ -394,10 +406,11 @@ public:
     /// the signal. Negative values will be clamped to 0. 
     /// 
     ///
-    /// \n  C++ Type: double
-    /// \n  Usd Type: SdfValueTypeNames->Double
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double gain = 1` |
+    /// | C++ Type | double |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double |
     USDMEDIA_API
     UsdAttribute GetGainAttr() const;
 

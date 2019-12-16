@@ -302,25 +302,30 @@ class AttrInfo(PropInfo):
             self.usdType = "SdfValueTypeNames->%s" % (
                 valueTypeNameToStr[sdfProp.typeName])
 
-        # Format fallback string.
-        if isinstance(self.fallback, Vt.TokenArray):
-            fallbackStr = ('[' + ', '.join(
-                [x if x else '""' for x in self.fallback]) + ']')
-        elif self.fallback != None:
-            fallbackStr = str(self.fallback)
-        else:
-            fallbackStr = 'No Fallback'
-        
-        self.details = [('C++ Type', self.typeName.cppTypeName),
-                        ('Usd Type', self.usdType),
-                        ('Variability', self.variability),
-                        ('Fallback Value', fallbackStr)]
+        self.details = [
+            ('Declaration', '`%s`' % _GetAttrDeclaration(sdfProp)),
+            ('C++ Type', self.typeName.cppTypeName),
+            ('\\ref Usd_Datatypes "Usd Type"', self.usdType),
+        ]
+
+        if self.variability == "SdfVariabilityUniform":
+            self.details.append(('\\ref SdfVariability "Variability"', self.variability))
+
         if self.allowedTokens:
-            tokenListStr = ('[' + ', '.join(
-                [x if x else '""' for x in self.allowedTokens]) + ']')
+            tokenListStr = ', '.join(
+                [x if x else '""' for x in self.allowedTokens])
             self.details.append(('\\ref ' + \
                 _GetTokensPrefix(sdfProp.layer) + \
                 'Tokens "Allowed Values"', tokenListStr))
+
+
+def _GetAttrDeclaration(attrSpec):
+    anon = Sdf.Layer.CreateAnonymous()
+    ps = Sdf.PrimSpec(anon, '_', Sdf.SpecifierDef)
+    tmpAttr = Sdf.AttributeSpec(ps, attrSpec.name, attrSpec.typeName, attrSpec.variability)
+    tmpAttr.default = attrSpec.default
+    return tmpAttr.GetAsText().strip()
+
 
 def _ExtractNames(sdfPrim, customData):
     usdPrimTypeName = sdfPrim.path.name

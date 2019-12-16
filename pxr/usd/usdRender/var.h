@@ -169,10 +169,12 @@ public:
     // --------------------------------------------------------------------- //
     /// The type of this channel, as a USD attribute type.
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: color3f
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token dataType = "color3f"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDRENDER_API
     UsdAttribute GetDataTypeAttr() const;
 
@@ -191,10 +193,12 @@ public:
     /// The renderer should look for an output of this name
     /// as the computed value for the RenderVar.
     ///
-    /// \n  C++ Type: std::string
-    /// \n  Usd Type: SdfValueTypeNames->String
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: 
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform string sourceName = ""` |
+    /// | C++ Type | std::string |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->String |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDRENDER_API
     UsdAttribute GetSourceNameAttr() const;
 
@@ -229,11 +233,13 @@ public:
     /// may have varying implementations for each renderer.
     /// 
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: raw
-    /// \n  \ref UsdRenderTokens "Allowed Values": [raw, primvar, lpe, intrinsic]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token sourceType = "raw"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | \ref UsdRenderTokens "Allowed Values" | raw, primvar, lpe, intrinsic |
     USDRENDER_API
     UsdAttribute GetSourceTypeAttr() const;
 

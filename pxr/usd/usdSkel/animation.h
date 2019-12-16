@@ -162,10 +162,12 @@ public:
     /// Skeleton primitives. The order of the joints as listed here may
     /// vary from the order of joints on the Skeleton itself.
     ///
-    /// \n  C++ Type: VtArray<TfToken>
-    /// \n  Usd Type: SdfValueTypeNames->TokenArray
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token[] joints` |
+    /// | C++ Type | VtArray<TfToken> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->TokenArray |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDSKEL_API
     UsdAttribute GetJointsAttr() const;
 
@@ -184,10 +186,11 @@ public:
     /// Joint-local translations of all affected joints. Array length 
     /// should match the size of the *joints* attribute.
     ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Float3Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float3[] translations` |
+    /// | C++ Type | VtArray<GfVec3f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float3Array |
     USDSKEL_API
     UsdAttribute GetTranslationsAttr() const;
 
@@ -207,10 +210,11 @@ public:
     /// in 32-bit precision. Array length should match the size of the 
     /// *joints* attribute.
     ///
-    /// \n  C++ Type: VtArray<GfQuatf>
-    /// \n  Usd Type: SdfValueTypeNames->QuatfArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `quatf[] rotations` |
+    /// | C++ Type | VtArray<GfQuatf> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->QuatfArray |
     USDSKEL_API
     UsdAttribute GetRotationsAttr() const;
 
@@ -230,10 +234,11 @@ public:
     /// 16 bit precision. Array length should match the size of the *joints* 
     /// attribute.
     ///
-    /// \n  C++ Type: VtArray<GfVec3h>
-    /// \n  Usd Type: SdfValueTypeNames->Half3Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `half3[] scales` |
+    /// | C++ Type | VtArray<GfVec3h> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Half3Array |
     USDSKEL_API
     UsdAttribute GetScalesAttr() const;
 
@@ -254,10 +259,12 @@ public:
     /// the tokens set in the *skel:blendShapes* binding property of the
     /// UsdSkelBindingAPI.
     ///
-    /// \n  C++ Type: VtArray<TfToken>
-    /// \n  Usd Type: SdfValueTypeNames->TokenArray
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token[] blendShapes` |
+    /// | C++ Type | VtArray<TfToken> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->TokenArray |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDSKEL_API
     UsdAttribute GetBlendShapesAttr() const;
 
@@ -278,10 +285,11 @@ public:
     /// *blendShapes* token array, and therefore must have the same length as
     /// *blendShapes.
     ///
-    /// \n  C++ Type: VtArray<float>
-    /// \n  Usd Type: SdfValueTypeNames->FloatArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float[] blendShapeWeights` |
+    /// | C++ Type | VtArray<float> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->FloatArray |
     USDSKEL_API
     UsdAttribute GetBlendShapeWeightsAttr() const;
 

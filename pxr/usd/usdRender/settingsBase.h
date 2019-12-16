@@ -137,10 +137,12 @@ public:
     /// The image pixel resolution, corresponding to the
     /// camera's screen window.
     ///
-    /// \n  C++ Type: GfVec2i
-    /// \n  Usd Type: SdfValueTypeNames->Int2
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: (2048, 1080)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform int2 resolution = (2048, 1080)` |
+    /// | C++ Type | GfVec2i |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int2 |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDRENDER_API
     UsdAttribute GetResolutionAttr() const;
 
@@ -159,10 +161,12 @@ public:
     /// The aspect ratio (width/height) of image pixels..
     /// The default ratio 1.0 indicates square pixels.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform float pixelAspectRatio = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDRENDER_API
     UsdAttribute GetPixelAspectRatioAttr() const;
 
@@ -203,11 +207,13 @@ public:
     /// existing attribute value of pixelAspectRatio
     /// 
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: expandAperture
-    /// \n  \ref UsdRenderTokens "Allowed Values": [expandAperture, cropAperture, adjustApertureWidth, adjustApertureHeight, adjustPixelAspectRatio]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token aspectRatioConformPolicy = "expandAperture"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | \ref UsdRenderTokens "Allowed Values" | expandAperture, cropAperture, adjustApertureWidth, adjustApertureHeight, adjustPixelAspectRatio |
     USDRENDER_API
     UsdAttribute GetAspectRatioConformPolicyAttr() const;
 
@@ -254,10 +260,12 @@ public:
     /// aspectRatioConformPolicy.
     /// 
     ///
-    /// \n  C++ Type: GfVec4f
-    /// \n  Usd Type: SdfValueTypeNames->Float4
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: (0, 0, 1, 1)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform float4 dataWindowNDC = (0, 0, 1, 1)` |
+    /// | C++ Type | GfVec4f |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float4 |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDRENDER_API
     UsdAttribute GetDataWindowNDCAttr() const;
 
@@ -278,10 +286,12 @@ public:
     /// shutter interval.  This gives us a convenient way to disable
     /// motion blur.
     ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: False
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform bool instantaneousShutter = 0` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDRENDER_API
     UsdAttribute GetInstantaneousShutterAttr() const;
 

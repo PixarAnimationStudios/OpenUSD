@@ -146,10 +146,11 @@ public:
     /// Intensity adjustment relative to the light intensity.
     /// This gets multiplied by the light's intensity and power
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float ri:portal:intensity` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetRiPortalIntensityAttr() const;
 
@@ -167,10 +168,11 @@ public:
     // --------------------------------------------------------------------- //
     /// tint: This parameter tints the color from the dome texture.
     ///
-    /// \n  C++ Type: GfVec3f
-    /// \n  Usd Type: SdfValueTypeNames->Color3f
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `color3f ri:portal:tint` |
+    /// | C++ Type | GfVec3f |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color3f |
     USDRI_API
     UsdAttribute GetRiPortalTintAttr() const;
 

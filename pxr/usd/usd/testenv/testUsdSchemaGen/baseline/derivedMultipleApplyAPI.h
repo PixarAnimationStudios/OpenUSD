@@ -185,10 +185,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: int
-    /// \n  Usd Type: SdfValueTypeNames->Int
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int testAttrThree` |
+    /// | C++ Type | int |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int |
     USDCONTRIVED_API
     UsdAttribute GetTestAttrThreeAttr() const;
 

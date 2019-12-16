@@ -163,10 +163,12 @@ public:
     /// specified per-RenderProduct because it is a statement of
     /// which geometry is present.
     ///
-    /// \n  C++ Type: VtArray<TfToken>
-    /// \n  Usd Type: SdfValueTypeNames->TokenArray
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: [default, render]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token[] includedPurposes = ["default", "render"]` |
+    /// | C++ Type | VtArray<TfToken> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->TokenArray |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDRENDER_API
     UsdAttribute GetIncludedPurposesAttr() const;
 
@@ -186,11 +188,13 @@ public:
     /// resolving material bindings in the scene.  The empty string
     /// indicates the "allPurpose" binding.
     ///
-    /// \n  C++ Type: VtArray<TfToken>
-    /// \n  Usd Type: SdfValueTypeNames->TokenArray
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: [full, ""]
-    /// \n  \ref UsdRenderTokens "Allowed Values": [full, preview, ""]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token[] materialBindingPurposes = ["full", ""]` |
+    /// | C++ Type | VtArray<TfToken> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->TokenArray |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | \ref UsdRenderTokens "Allowed Values" | full, preview, "" |
     USDRENDER_API
     UsdAttribute GetMaterialBindingPurposesAttr() const;
 

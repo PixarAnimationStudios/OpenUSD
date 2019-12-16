@@ -163,10 +163,12 @@ public:
     /// **Required property**. Position offsets which, when added to the
     /// base pose, provides the target shape.
     ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Vector3fArray
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform vector3f[] offsets` |
+    /// | C++ Type | VtArray<GfVec3f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Vector3fArray |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDSKEL_API
     UsdAttribute GetOffsetsAttr() const;
 
@@ -185,10 +187,12 @@ public:
     /// **Required property**. Normal offsets which, when added to the
     /// base pose, provides the normals of the target shape.
     ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Vector3fArray
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform vector3f[] normalOffsets` |
+    /// | C++ Type | VtArray<GfVec3f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Vector3fArray |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDSKEL_API
     UsdAttribute GetNormalOffsetsAttr() const;
 
@@ -209,10 +213,12 @@ public:
     /// authored, the number of elements must be equal to the number of elements
     /// in the *offsets* array.
     ///
-    /// \n  C++ Type: VtArray<int>
-    /// \n  Usd Type: SdfValueTypeNames->IntArray
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform int[] pointIndices` |
+    /// | C++ Type | VtArray<int> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->IntArray |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDSKEL_API
     UsdAttribute GetPointIndicesAttr() const;
 

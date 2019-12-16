@@ -142,10 +142,11 @@ public:
     /// UsdGeomPrimvar, it can also be used as a gprim override for any shader
     /// that consumes a \em displayColor parameter.
     ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Color3fArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `color3f[] primvars:displayColor` |
+    /// | C++ Type | VtArray<GfVec3f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color3fArray |
     USDGEOM_API
     UsdAttribute GetDisplayColorAttr() const;
 
@@ -166,10 +167,11 @@ public:
     /// each can be independently overridden, and because shaders rarely consume
     /// rgba parameters.
     ///
-    /// \n  C++ Type: VtArray<float>
-    /// \n  Usd Type: SdfValueTypeNames->FloatArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float[] primvars:displayOpacity` |
+    /// | C++ Type | VtArray<float> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->FloatArray |
     USDGEOM_API
     UsdAttribute GetDisplayOpacityAttr() const;
 
@@ -203,10 +205,12 @@ public:
     /// forward-facing normals on each side of the surface for lighting
     /// calculations.
     ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: False
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform bool doubleSided = 0` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDGEOM_API
     UsdAttribute GetDoubleSidedAttr() const;
 
@@ -228,11 +232,13 @@ public:
     /// generalization of orientation to composed scenes with transformation
     /// hierarchies.
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: rightHanded
-    /// \n  \ref UsdGeomTokens "Allowed Values": [rightHanded, leftHanded]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token orientation = "rightHanded"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | \ref UsdGeomTokens "Allowed Values" | rightHanded, leftHanded |
     USDGEOM_API
     UsdAttribute GetOrientationAttr() const;
 

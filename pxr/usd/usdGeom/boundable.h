@@ -164,10 +164,11 @@ public:
     /// the extent of all children, as they will be pruned from BBox computation
     /// during traversal.
     ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Float3Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float3[] extent` |
+    /// | C++ Type | VtArray<GfVec3f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float3Array |
     USDGEOM_API
     UsdAttribute GetExtentAttr() const;
 

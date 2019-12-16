@@ -134,11 +134,12 @@ public:
     // --------------------------------------------------------------------- //
     /// VariableToken attribute docs.
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: VariableTokenDefault
-    /// \n  \ref UsdContrivedTokens "Allowed Values": [VariableTokenAllowed1, VariableTokenAllowed2, ""]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token myVaryingToken = "VariableTokenDefault"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref UsdContrivedTokens "Allowed Values" | VariableTokenAllowed1, VariableTokenAllowed2, "" |
     USDCONTRIVED_API
     UsdAttribute GetMyVaryingTokenAttr() const;
 
@@ -156,11 +157,13 @@ public:
     // --------------------------------------------------------------------- //
     /// VariableTokenArray attribute docs.
     ///
-    /// \n  C++ Type: VtArray<TfToken>
-    /// \n  Usd Type: SdfValueTypeNames->TokenArray
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: [VariableTokenArrayAllowed1, ""]
-    /// \n  \ref UsdContrivedTokens "Allowed Values": [VariableTokenArrayAllowed1, VariableTokenArrayAllowed2, ""]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token[] myVaryingTokenArray = ["VariableTokenArrayAllowed1", ""]` |
+    /// | C++ Type | VtArray<TfToken> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->TokenArray |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | \ref UsdContrivedTokens "Allowed Values" | VariableTokenArrayAllowed1, VariableTokenArrayAllowed2, "" |
     USDCONTRIVED_API
     UsdAttribute GetMyVaryingTokenArrayAttr() const;
 
@@ -178,10 +181,12 @@ public:
     // --------------------------------------------------------------------- //
     /// Uniform bool, default false
     ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: False
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform bool myUniformBool = 0` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDCONTRIVED_API
     UsdAttribute GetMyUniformBoolAttr() const;
 
@@ -199,10 +204,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: double
-    /// \n  Usd Type: SdfValueTypeNames->Double
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double myDouble` |
+    /// | C++ Type | double |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double |
     USDCONTRIVED_API
     UsdAttribute GetMyDoubleAttr() const;
 
@@ -220,10 +226,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: True
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `bool bool = 1` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
     USDCONTRIVED_API
     UsdAttribute GetBoolAttr() const;
 
@@ -241,10 +248,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: unsigned char
-    /// \n  Usd Type: SdfValueTypeNames->UChar
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uchar uchar = 0` |
+    /// | C++ Type | unsigned char |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->UChar |
     USDCONTRIVED_API
     UsdAttribute GetUcharAttr() const;
 
@@ -262,10 +270,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: int
-    /// \n  Usd Type: SdfValueTypeNames->Int
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int int = 0` |
+    /// | C++ Type | int |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int |
     USDCONTRIVED_API
     UsdAttribute GetIntAttr() const;
 
@@ -283,10 +292,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: unsigned int
-    /// \n  Usd Type: SdfValueTypeNames->UInt
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uint uint = 0` |
+    /// | C++ Type | unsigned int |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->UInt |
     USDCONTRIVED_API
     UsdAttribute GetUintAttr() const;
 
@@ -304,10 +314,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: int64_t
-    /// \n  Usd Type: SdfValueTypeNames->Int64
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int64 int64 = 0` |
+    /// | C++ Type | int64_t |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int64 |
     USDCONTRIVED_API
     UsdAttribute GetInt64Attr() const;
 
@@ -325,10 +336,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: uint64_t
-    /// \n  Usd Type: SdfValueTypeNames->UInt64
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uint64 uint64 = 0` |
+    /// | C++ Type | uint64_t |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->UInt64 |
     USDCONTRIVED_API
     UsdAttribute GetUint64Attr() const;
 
@@ -346,10 +358,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfHalf
-    /// \n  Usd Type: SdfValueTypeNames->Half
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `half half = 0` |
+    /// | C++ Type | GfHalf |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Half |
     USDCONTRIVED_API
     UsdAttribute GetHalfAttr() const;
 
@@ -367,10 +380,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float float = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDCONTRIVED_API
     UsdAttribute GetFloatAttr() const;
 
@@ -388,10 +402,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: double
-    /// \n  Usd Type: SdfValueTypeNames->Double
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double double = 0` |
+    /// | C++ Type | double |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double |
     USDCONTRIVED_API
     UsdAttribute GetDoubleAttr() const;
 
@@ -409,10 +424,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: std::string
-    /// \n  Usd Type: SdfValueTypeNames->String
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: string
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `string string = "string"` |
+    /// | C++ Type | std::string |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->String |
     USDCONTRIVED_API
     UsdAttribute GetStringAttr() const;
 
@@ -430,10 +446,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: token
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token token = "token"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
     USDCONTRIVED_API
     UsdAttribute GetTokenAttr() const;
 
@@ -451,10 +468,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: SdfAssetPath
-    /// \n  Usd Type: SdfValueTypeNames->Asset
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: @asset@
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `asset asset = @asset@` |
+    /// | C++ Type | SdfAssetPath |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Asset |
     USDCONTRIVED_API
     UsdAttribute GetAssetAttr() const;
 
@@ -472,10 +490,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec2i
-    /// \n  Usd Type: SdfValueTypeNames->Int2
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int2 int2 = (0, 0)` |
+    /// | C++ Type | GfVec2i |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int2 |
     USDCONTRIVED_API
     UsdAttribute GetInt2Attr() const;
 
@@ -493,10 +512,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec3i
-    /// \n  Usd Type: SdfValueTypeNames->Int3
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int3 int3 = (0, 0, 0)` |
+    /// | C++ Type | GfVec3i |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int3 |
     USDCONTRIVED_API
     UsdAttribute GetInt3Attr() const;
 
@@ -514,10 +534,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec4i
-    /// \n  Usd Type: SdfValueTypeNames->Int4
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int4 int4 = (0, 0, 0, 0)` |
+    /// | C++ Type | GfVec4i |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int4 |
     USDCONTRIVED_API
     UsdAttribute GetInt4Attr() const;
 
@@ -535,10 +556,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec2h
-    /// \n  Usd Type: SdfValueTypeNames->Half2
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `half2 half2 = (0, 0)` |
+    /// | C++ Type | GfVec2h |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Half2 |
     USDCONTRIVED_API
     UsdAttribute GetHalf2Attr() const;
 
@@ -556,10 +578,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec3h
-    /// \n  Usd Type: SdfValueTypeNames->Half3
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `half3 half3 = (0, 0, 0)` |
+    /// | C++ Type | GfVec3h |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Half3 |
     USDCONTRIVED_API
     UsdAttribute GetHalf3Attr() const;
 
@@ -577,10 +600,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec4h
-    /// \n  Usd Type: SdfValueTypeNames->Half4
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `half4 half4 = (0, 0, 0, 0)` |
+    /// | C++ Type | GfVec4h |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Half4 |
     USDCONTRIVED_API
     UsdAttribute GetHalf4Attr() const;
 
@@ -598,10 +622,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec2f
-    /// \n  Usd Type: SdfValueTypeNames->Float2
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float2 float2 = (0, 0)` |
+    /// | C++ Type | GfVec2f |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float2 |
     USDCONTRIVED_API
     UsdAttribute GetFloat2Attr() const;
 
@@ -619,10 +644,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec3f
-    /// \n  Usd Type: SdfValueTypeNames->Float3
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float3 float3 = (0, 0, 0)` |
+    /// | C++ Type | GfVec3f |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float3 |
     USDCONTRIVED_API
     UsdAttribute GetFloat3Attr() const;
 
@@ -640,10 +666,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec4f
-    /// \n  Usd Type: SdfValueTypeNames->Float4
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float4 float4 = (0, 0, 0, 0)` |
+    /// | C++ Type | GfVec4f |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float4 |
     USDCONTRIVED_API
     UsdAttribute GetFloat4Attr() const;
 
@@ -661,10 +688,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec2d
-    /// \n  Usd Type: SdfValueTypeNames->Double2
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double2 double2 = (0, 0)` |
+    /// | C++ Type | GfVec2d |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double2 |
     USDCONTRIVED_API
     UsdAttribute GetDouble2Attr() const;
 
@@ -682,10 +710,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec3d
-    /// \n  Usd Type: SdfValueTypeNames->Double3
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double3 double3 = (0, 0, 0)` |
+    /// | C++ Type | GfVec3d |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double3 |
     USDCONTRIVED_API
     UsdAttribute GetDouble3Attr() const;
 
@@ -703,10 +732,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec4d
-    /// \n  Usd Type: SdfValueTypeNames->Double4
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double4 double4 = (0, 0, 0, 0)` |
+    /// | C++ Type | GfVec4d |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double4 |
     USDCONTRIVED_API
     UsdAttribute GetDouble4Attr() const;
 
@@ -724,10 +754,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec3h
-    /// \n  Usd Type: SdfValueTypeNames->Point3h
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `point3h point3h = (0, 0, 0)` |
+    /// | C++ Type | GfVec3h |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Point3h |
     USDCONTRIVED_API
     UsdAttribute GetPoint3hAttr() const;
 
@@ -745,10 +776,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec3f
-    /// \n  Usd Type: SdfValueTypeNames->Point3f
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `point3f point3f = (0, 0, 0)` |
+    /// | C++ Type | GfVec3f |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Point3f |
     USDCONTRIVED_API
     UsdAttribute GetPoint3fAttr() const;
 
@@ -766,10 +798,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec3d
-    /// \n  Usd Type: SdfValueTypeNames->Point3d
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `point3d point3d = (0, 0, 0)` |
+    /// | C++ Type | GfVec3d |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Point3d |
     USDCONTRIVED_API
     UsdAttribute GetPoint3dAttr() const;
 
@@ -787,10 +820,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec3d
-    /// \n  Usd Type: SdfValueTypeNames->Vector3d
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `vector3d vector3d = (0, 0, 0)` |
+    /// | C++ Type | GfVec3d |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Vector3d |
     USDCONTRIVED_API
     UsdAttribute GetVector3dAttr() const;
 
@@ -808,10 +842,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec3f
-    /// \n  Usd Type: SdfValueTypeNames->Vector3f
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `vector3f vector3f = (0, 0, 0)` |
+    /// | C++ Type | GfVec3f |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Vector3f |
     USDCONTRIVED_API
     UsdAttribute GetVector3fAttr() const;
 
@@ -829,10 +864,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec3h
-    /// \n  Usd Type: SdfValueTypeNames->Vector3h
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `vector3h vector3h = (0, 0, 0)` |
+    /// | C++ Type | GfVec3h |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Vector3h |
     USDCONTRIVED_API
     UsdAttribute GetVector3hAttr() const;
 
@@ -850,10 +886,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec3d
-    /// \n  Usd Type: SdfValueTypeNames->Normal3d
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `normal3d normal3d = (0, 0, 0)` |
+    /// | C++ Type | GfVec3d |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Normal3d |
     USDCONTRIVED_API
     UsdAttribute GetNormal3dAttr() const;
 
@@ -871,10 +908,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec3f
-    /// \n  Usd Type: SdfValueTypeNames->Normal3f
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `normal3f normal3f = (0, 0, 0)` |
+    /// | C++ Type | GfVec3f |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Normal3f |
     USDCONTRIVED_API
     UsdAttribute GetNormal3fAttr() const;
 
@@ -892,10 +930,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec3h
-    /// \n  Usd Type: SdfValueTypeNames->Normal3h
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `normal3h normal3h = (0, 0, 0)` |
+    /// | C++ Type | GfVec3h |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Normal3h |
     USDCONTRIVED_API
     UsdAttribute GetNormal3hAttr() const;
 
@@ -913,10 +952,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec3d
-    /// \n  Usd Type: SdfValueTypeNames->Color3d
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `color3d color3d = (0, 0, 0)` |
+    /// | C++ Type | GfVec3d |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color3d |
     USDCONTRIVED_API
     UsdAttribute GetColor3dAttr() const;
 
@@ -934,10 +974,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec3f
-    /// \n  Usd Type: SdfValueTypeNames->Color3f
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `color3f color3f = (0, 0, 0)` |
+    /// | C++ Type | GfVec3f |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color3f |
     USDCONTRIVED_API
     UsdAttribute GetColor3fAttr() const;
 
@@ -955,10 +996,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec3h
-    /// \n  Usd Type: SdfValueTypeNames->Color3h
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `color3h color3h = (0, 0, 0)` |
+    /// | C++ Type | GfVec3h |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color3h |
     USDCONTRIVED_API
     UsdAttribute GetColor3hAttr() const;
 
@@ -976,10 +1018,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec4d
-    /// \n  Usd Type: SdfValueTypeNames->Color4d
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `color4d color4d = (0, 0, 0, 0)` |
+    /// | C++ Type | GfVec4d |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color4d |
     USDCONTRIVED_API
     UsdAttribute GetColor4dAttr() const;
 
@@ -997,10 +1040,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec4f
-    /// \n  Usd Type: SdfValueTypeNames->Color4f
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `color4f color4f = (0, 0, 0, 0)` |
+    /// | C++ Type | GfVec4f |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color4f |
     USDCONTRIVED_API
     UsdAttribute GetColor4fAttr() const;
 
@@ -1018,10 +1062,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfVec4h
-    /// \n  Usd Type: SdfValueTypeNames->Color4h
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `color4h color4h = (0, 0, 0, 0)` |
+    /// | C++ Type | GfVec4h |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color4h |
     USDCONTRIVED_API
     UsdAttribute GetColor4hAttr() const;
 
@@ -1039,10 +1084,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfQuatd
-    /// \n  Usd Type: SdfValueTypeNames->Quatd
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (1, 0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `quatd quatd = (1, 0, 0, 0)` |
+    /// | C++ Type | GfQuatd |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Quatd |
     USDCONTRIVED_API
     UsdAttribute GetQuatdAttr() const;
 
@@ -1060,10 +1106,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfQuatf
-    /// \n  Usd Type: SdfValueTypeNames->Quatf
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (1, 0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `quatf quatf = (1, 0, 0, 0)` |
+    /// | C++ Type | GfQuatf |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Quatf |
     USDCONTRIVED_API
     UsdAttribute GetQuatfAttr() const;
 
@@ -1081,10 +1128,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfQuath
-    /// \n  Usd Type: SdfValueTypeNames->Quath
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (1, 0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `quath quath = (1, 0, 0, 0)` |
+    /// | C++ Type | GfQuath |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Quath |
     USDCONTRIVED_API
     UsdAttribute GetQuathAttr() const;
 
@@ -1102,10 +1150,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfMatrix2d
-    /// \n  Usd Type: SdfValueTypeNames->Matrix2d
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: ( (1, 0), (0, 1) )
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `matrix2d matrix2d = ( (1, 0), (0, 1) )` |
+    /// | C++ Type | GfMatrix2d |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Matrix2d |
     USDCONTRIVED_API
     UsdAttribute GetMatrix2dAttr() const;
 
@@ -1123,10 +1172,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfMatrix3d
-    /// \n  Usd Type: SdfValueTypeNames->Matrix3d
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: ( (1, 0, 0), (0, 1, 0), (0, 0, 1) )
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `matrix3d matrix3d = ( (1, 0, 0), (0, 1, 0), (0, 0, 1) )` |
+    /// | C++ Type | GfMatrix3d |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Matrix3d |
     USDCONTRIVED_API
     UsdAttribute GetMatrix3dAttr() const;
 
@@ -1144,10 +1194,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfMatrix4d
-    /// \n  Usd Type: SdfValueTypeNames->Matrix4d
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `matrix4d matrix4d = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )` |
+    /// | C++ Type | GfMatrix4d |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Matrix4d |
     USDCONTRIVED_API
     UsdAttribute GetMatrix4dAttr() const;
 
@@ -1165,10 +1216,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: GfMatrix4d
-    /// \n  Usd Type: SdfValueTypeNames->Frame4d
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `frame4d frame4d = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )` |
+    /// | C++ Type | GfMatrix4d |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Frame4d |
     USDCONTRIVED_API
     UsdAttribute GetFrame4dAttr() const;
 
@@ -1186,10 +1238,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<bool>
-    /// \n  Usd Type: SdfValueTypeNames->BoolArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `bool[] boolArray` |
+    /// | C++ Type | VtArray<bool> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->BoolArray |
     USDCONTRIVED_API
     UsdAttribute GetBoolArrayAttr() const;
 
@@ -1207,10 +1260,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<unsigned char>
-    /// \n  Usd Type: SdfValueTypeNames->UCharArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uchar[] ucharArray` |
+    /// | C++ Type | VtArray<unsigned char> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->UCharArray |
     USDCONTRIVED_API
     UsdAttribute GetUcharArrayAttr() const;
 
@@ -1228,10 +1282,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<int>
-    /// \n  Usd Type: SdfValueTypeNames->IntArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int[] intArray` |
+    /// | C++ Type | VtArray<int> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->IntArray |
     USDCONTRIVED_API
     UsdAttribute GetIntArrayAttr() const;
 
@@ -1249,10 +1304,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<unsigned int>
-    /// \n  Usd Type: SdfValueTypeNames->UIntArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uint[] uintArray` |
+    /// | C++ Type | VtArray<unsigned int> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->UIntArray |
     USDCONTRIVED_API
     UsdAttribute GetUintArrayAttr() const;
 
@@ -1270,10 +1326,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<int64_t>
-    /// \n  Usd Type: SdfValueTypeNames->Int64Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int64[] int64Array` |
+    /// | C++ Type | VtArray<int64_t> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int64Array |
     USDCONTRIVED_API
     UsdAttribute GetInt64ArrayAttr() const;
 
@@ -1291,10 +1348,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<uint64_t>
-    /// \n  Usd Type: SdfValueTypeNames->UInt64Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uint64[] uint64Array` |
+    /// | C++ Type | VtArray<uint64_t> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->UInt64Array |
     USDCONTRIVED_API
     UsdAttribute GetUint64ArrayAttr() const;
 
@@ -1312,10 +1370,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfHalf>
-    /// \n  Usd Type: SdfValueTypeNames->HalfArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `half[] halfArray` |
+    /// | C++ Type | VtArray<GfHalf> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->HalfArray |
     USDCONTRIVED_API
     UsdAttribute GetHalfArrayAttr() const;
 
@@ -1333,10 +1392,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<float>
-    /// \n  Usd Type: SdfValueTypeNames->FloatArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float[] floatArray` |
+    /// | C++ Type | VtArray<float> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->FloatArray |
     USDCONTRIVED_API
     UsdAttribute GetFloatArrayAttr() const;
 
@@ -1354,10 +1414,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<double>
-    /// \n  Usd Type: SdfValueTypeNames->DoubleArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double[] doubleArray` |
+    /// | C++ Type | VtArray<double> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->DoubleArray |
     USDCONTRIVED_API
     UsdAttribute GetDoubleArrayAttr() const;
 
@@ -1375,10 +1436,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<std::string>
-    /// \n  Usd Type: SdfValueTypeNames->StringArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `string[] stringArray` |
+    /// | C++ Type | VtArray<std::string> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->StringArray |
     USDCONTRIVED_API
     UsdAttribute GetStringArrayAttr() const;
 
@@ -1396,10 +1458,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<TfToken>
-    /// \n  Usd Type: SdfValueTypeNames->TokenArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token[] tokenArray` |
+    /// | C++ Type | VtArray<TfToken> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->TokenArray |
     USDCONTRIVED_API
     UsdAttribute GetTokenArrayAttr() const;
 
@@ -1417,10 +1480,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<SdfAssetPath>
-    /// \n  Usd Type: SdfValueTypeNames->AssetArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `asset[] assetArray` |
+    /// | C++ Type | VtArray<SdfAssetPath> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->AssetArray |
     USDCONTRIVED_API
     UsdAttribute GetAssetArrayAttr() const;
 
@@ -1438,10 +1502,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec2i>
-    /// \n  Usd Type: SdfValueTypeNames->Int2Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int2[] int2Array` |
+    /// | C++ Type | VtArray<GfVec2i> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int2Array |
     USDCONTRIVED_API
     UsdAttribute GetInt2ArrayAttr() const;
 
@@ -1459,10 +1524,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec3i>
-    /// \n  Usd Type: SdfValueTypeNames->Int3Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int3[] int3Array` |
+    /// | C++ Type | VtArray<GfVec3i> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int3Array |
     USDCONTRIVED_API
     UsdAttribute GetInt3ArrayAttr() const;
 
@@ -1480,10 +1546,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec4i>
-    /// \n  Usd Type: SdfValueTypeNames->Int4Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int4[] int4Array` |
+    /// | C++ Type | VtArray<GfVec4i> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int4Array |
     USDCONTRIVED_API
     UsdAttribute GetInt4ArrayAttr() const;
 
@@ -1501,10 +1568,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec2h>
-    /// \n  Usd Type: SdfValueTypeNames->Half2Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `half2[] half2Array` |
+    /// | C++ Type | VtArray<GfVec2h> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Half2Array |
     USDCONTRIVED_API
     UsdAttribute GetHalf2ArrayAttr() const;
 
@@ -1522,10 +1590,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec3h>
-    /// \n  Usd Type: SdfValueTypeNames->Half3Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `half3[] half3Array` |
+    /// | C++ Type | VtArray<GfVec3h> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Half3Array |
     USDCONTRIVED_API
     UsdAttribute GetHalf3ArrayAttr() const;
 
@@ -1543,10 +1612,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec4h>
-    /// \n  Usd Type: SdfValueTypeNames->Half4Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `half4[] half4Array` |
+    /// | C++ Type | VtArray<GfVec4h> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Half4Array |
     USDCONTRIVED_API
     UsdAttribute GetHalf4ArrayAttr() const;
 
@@ -1564,10 +1634,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec2f>
-    /// \n  Usd Type: SdfValueTypeNames->Float2Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float2[] float2Array` |
+    /// | C++ Type | VtArray<GfVec2f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float2Array |
     USDCONTRIVED_API
     UsdAttribute GetFloat2ArrayAttr() const;
 
@@ -1585,10 +1656,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Float3Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float3[] float3Array` |
+    /// | C++ Type | VtArray<GfVec3f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float3Array |
     USDCONTRIVED_API
     UsdAttribute GetFloat3ArrayAttr() const;
 
@@ -1606,10 +1678,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec4f>
-    /// \n  Usd Type: SdfValueTypeNames->Float4Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float4[] float4Array` |
+    /// | C++ Type | VtArray<GfVec4f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float4Array |
     USDCONTRIVED_API
     UsdAttribute GetFloat4ArrayAttr() const;
 
@@ -1627,10 +1700,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec2d>
-    /// \n  Usd Type: SdfValueTypeNames->Double2Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double2[] double2Array` |
+    /// | C++ Type | VtArray<GfVec2d> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double2Array |
     USDCONTRIVED_API
     UsdAttribute GetDouble2ArrayAttr() const;
 
@@ -1648,10 +1722,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec3d>
-    /// \n  Usd Type: SdfValueTypeNames->Double3Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double3[] double3Array` |
+    /// | C++ Type | VtArray<GfVec3d> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double3Array |
     USDCONTRIVED_API
     UsdAttribute GetDouble3ArrayAttr() const;
 
@@ -1669,10 +1744,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec4d>
-    /// \n  Usd Type: SdfValueTypeNames->Double4Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double4[] double4Array` |
+    /// | C++ Type | VtArray<GfVec4d> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double4Array |
     USDCONTRIVED_API
     UsdAttribute GetDouble4ArrayAttr() const;
 
@@ -1690,10 +1766,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec3h>
-    /// \n  Usd Type: SdfValueTypeNames->Point3hArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `point3h[] point3hArray` |
+    /// | C++ Type | VtArray<GfVec3h> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Point3hArray |
     USDCONTRIVED_API
     UsdAttribute GetPoint3hArrayAttr() const;
 
@@ -1711,10 +1788,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Point3fArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `point3f[] point3fArray` |
+    /// | C++ Type | VtArray<GfVec3f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Point3fArray |
     USDCONTRIVED_API
     UsdAttribute GetPoint3fArrayAttr() const;
 
@@ -1732,10 +1810,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec3d>
-    /// \n  Usd Type: SdfValueTypeNames->Point3dArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `point3d[] point3dArray` |
+    /// | C++ Type | VtArray<GfVec3d> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Point3dArray |
     USDCONTRIVED_API
     UsdAttribute GetPoint3dArrayAttr() const;
 
@@ -1753,10 +1832,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec3h>
-    /// \n  Usd Type: SdfValueTypeNames->Vector3hArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `vector3h[] vector3hArray` |
+    /// | C++ Type | VtArray<GfVec3h> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Vector3hArray |
     USDCONTRIVED_API
     UsdAttribute GetVector3hArrayAttr() const;
 
@@ -1774,10 +1854,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Vector3fArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `vector3f[] vector3fArray` |
+    /// | C++ Type | VtArray<GfVec3f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Vector3fArray |
     USDCONTRIVED_API
     UsdAttribute GetVector3fArrayAttr() const;
 
@@ -1795,10 +1876,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec3d>
-    /// \n  Usd Type: SdfValueTypeNames->Vector3dArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `vector3d[] vector3dArray` |
+    /// | C++ Type | VtArray<GfVec3d> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Vector3dArray |
     USDCONTRIVED_API
     UsdAttribute GetVector3dArrayAttr() const;
 
@@ -1816,10 +1898,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec3h>
-    /// \n  Usd Type: SdfValueTypeNames->Normal3hArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `normal3h[] normal3hArray` |
+    /// | C++ Type | VtArray<GfVec3h> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Normal3hArray |
     USDCONTRIVED_API
     UsdAttribute GetNormal3hArrayAttr() const;
 
@@ -1837,10 +1920,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Normal3fArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `normal3f[] normal3fArray` |
+    /// | C++ Type | VtArray<GfVec3f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Normal3fArray |
     USDCONTRIVED_API
     UsdAttribute GetNormal3fArrayAttr() const;
 
@@ -1858,10 +1942,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec3d>
-    /// \n  Usd Type: SdfValueTypeNames->Normal3dArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `normal3d[] normal3dArray` |
+    /// | C++ Type | VtArray<GfVec3d> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Normal3dArray |
     USDCONTRIVED_API
     UsdAttribute GetNormal3dArrayAttr() const;
 
@@ -1879,10 +1964,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec3h>
-    /// \n  Usd Type: SdfValueTypeNames->Color3hArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `color3h[] color3hArray` |
+    /// | C++ Type | VtArray<GfVec3h> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color3hArray |
     USDCONTRIVED_API
     UsdAttribute GetColor3hArrayAttr() const;
 
@@ -1900,10 +1986,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Color3fArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `color3f[] color3fArray` |
+    /// | C++ Type | VtArray<GfVec3f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color3fArray |
     USDCONTRIVED_API
     UsdAttribute GetColor3fArrayAttr() const;
 
@@ -1921,10 +2008,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec3d>
-    /// \n  Usd Type: SdfValueTypeNames->Color3dArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `color3d[] color3dArray` |
+    /// | C++ Type | VtArray<GfVec3d> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color3dArray |
     USDCONTRIVED_API
     UsdAttribute GetColor3dArrayAttr() const;
 
@@ -1942,10 +2030,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec4h>
-    /// \n  Usd Type: SdfValueTypeNames->Color4hArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `color4h[] color4hArray` |
+    /// | C++ Type | VtArray<GfVec4h> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color4hArray |
     USDCONTRIVED_API
     UsdAttribute GetColor4hArrayAttr() const;
 
@@ -1963,10 +2052,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec4f>
-    /// \n  Usd Type: SdfValueTypeNames->Color4fArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `color4f[] color4fArray` |
+    /// | C++ Type | VtArray<GfVec4f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color4fArray |
     USDCONTRIVED_API
     UsdAttribute GetColor4fArrayAttr() const;
 
@@ -1984,10 +2074,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec4d>
-    /// \n  Usd Type: SdfValueTypeNames->Color4dArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `color4d[] color4dArray` |
+    /// | C++ Type | VtArray<GfVec4d> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color4dArray |
     USDCONTRIVED_API
     UsdAttribute GetColor4dArrayAttr() const;
 
@@ -2005,10 +2096,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfQuath>
-    /// \n  Usd Type: SdfValueTypeNames->QuathArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `quath[] quathArray` |
+    /// | C++ Type | VtArray<GfQuath> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->QuathArray |
     USDCONTRIVED_API
     UsdAttribute GetQuathArrayAttr() const;
 
@@ -2026,10 +2118,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfQuatf>
-    /// \n  Usd Type: SdfValueTypeNames->QuatfArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `quatf[] quatfArray` |
+    /// | C++ Type | VtArray<GfQuatf> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->QuatfArray |
     USDCONTRIVED_API
     UsdAttribute GetQuatfArrayAttr() const;
 
@@ -2047,10 +2140,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfQuatd>
-    /// \n  Usd Type: SdfValueTypeNames->QuatdArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `quatd[] quatdArray` |
+    /// | C++ Type | VtArray<GfQuatd> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->QuatdArray |
     USDCONTRIVED_API
     UsdAttribute GetQuatdArrayAttr() const;
 
@@ -2068,10 +2162,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfMatrix2d>
-    /// \n  Usd Type: SdfValueTypeNames->Matrix2dArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `matrix2d[] matrix2dArray` |
+    /// | C++ Type | VtArray<GfMatrix2d> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Matrix2dArray |
     USDCONTRIVED_API
     UsdAttribute GetMatrix2dArrayAttr() const;
 
@@ -2089,10 +2184,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfMatrix3d>
-    /// \n  Usd Type: SdfValueTypeNames->Matrix3dArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `matrix3d[] matrix3dArray` |
+    /// | C++ Type | VtArray<GfMatrix3d> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Matrix3dArray |
     USDCONTRIVED_API
     UsdAttribute GetMatrix3dArrayAttr() const;
 
@@ -2110,10 +2206,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfMatrix4d>
-    /// \n  Usd Type: SdfValueTypeNames->Matrix4dArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `matrix4d[] matrix4dArray` |
+    /// | C++ Type | VtArray<GfMatrix4d> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Matrix4dArray |
     USDCONTRIVED_API
     UsdAttribute GetMatrix4dArrayAttr() const;
 
@@ -2131,10 +2228,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfMatrix4d>
-    /// \n  Usd Type: SdfValueTypeNames->Frame4dArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `frame4d[] frame4dArray` |
+    /// | C++ Type | VtArray<GfMatrix4d> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Frame4dArray |
     USDCONTRIVED_API
     UsdAttribute GetFrame4dArrayAttr() const;
 

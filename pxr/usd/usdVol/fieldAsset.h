@@ -139,10 +139,11 @@ public:
     /// a volume.  However, it does not, at this time, support
     /// any pattern substitutions like "$F". 
     ///
-    /// \n  C++ Type: SdfAssetPath
-    /// \n  Usd Type: SdfValueTypeNames->Asset
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `asset filePath` |
+    /// | C++ Type | SdfAssetPath |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Asset |
     USDVOL_API
     UsdAttribute GetFilePathAttr() const;
 

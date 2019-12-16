@@ -154,10 +154,11 @@ public:
     /// day: Day of the month, 1 through 31.
     /// This is ignored if month is 0.
     ///
-    /// \n  C++ Type: int
-    /// \n  Usd Type: SdfValueTypeNames->Int
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int day = 1` |
+    /// | C++ Type | int |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int |
     USDRI_API
     UsdAttribute GetDayAttr() const;
 
@@ -177,10 +178,11 @@ public:
     /// model is 1.7 for  an exceptionally clear sky, and 10, for an
     /// nversion, is the upper  limit.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 2.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float haziness = 2` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetHazinessAttr() const;
 
@@ -201,10 +203,11 @@ public:
     /// is in effect, subtract 1 to correct to standard time.  This is
     /// ignored if month is 0.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 14.6333332062
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float hour = 14.633333` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetHourAttr() const;
 
@@ -224,10 +227,11 @@ public:
     /// for south.  Ranges frmo -90 to +90 degrees. This is ignored if
     /// month is 0.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 47.6020011902
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float latitude = 47.602` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetLatitudeAttr() const;
 
@@ -247,10 +251,11 @@ public:
     /// for west.  Ranges frmo -180 to +180 degrees.    This is ignored
     /// if month is 0.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: -122.332000732
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float longitude = -122.332` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetLongitudeAttr() const;
 
@@ -270,10 +275,11 @@ public:
     /// 0, means to use the explicitly given sun direction   instead of
     /// automatically computing it.
     ///
-    /// \n  C++ Type: int
-    /// \n  Usd Type: SdfValueTypeNames->Int
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int month = 0` |
+    /// | C++ Type | int |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int |
     USDRI_API
     UsdAttribute GetMonthAttr() const;
 
@@ -293,10 +299,11 @@ public:
     /// default, white (1,1,1),  gives results based on measured
     /// physical values.
     ///
-    /// \n  C++ Type: GfVec3f
-    /// \n  Usd Type: SdfValueTypeNames->Color3f
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (1, 1, 1)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `color3f skyTint = (1, 1, 1)` |
+    /// | C++ Type | GfVec3f |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color3f |
     USDRI_API
     UsdAttribute GetSkyTintAttr() const;
 
@@ -317,10 +324,11 @@ public:
     /// is in the XZ plane (for  sunrise/set).  Note that the Y component
     /// must non- negative.  Ignored if a month is given.
     ///
-    /// \n  C++ Type: GfVec3f
-    /// \n  Usd Type: SdfValueTypeNames->Vector3f
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 1)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `vector3f sunDirection = (0, 0, 1)` |
+    /// | C++ Type | GfVec3f |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Vector3f |
     USDRI_API
     UsdAttribute GetSunDirectionAttr() const;
 
@@ -340,10 +348,11 @@ public:
     /// Leave at 1 for a  realistic sun size with an 0.55 degree
     /// angular diameter.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float sunSize = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetSunSizeAttr() const;
 
@@ -364,10 +373,11 @@ public:
     /// physical values. Setting this to black removes the sun
     /// contribution.
     ///
-    /// \n  C++ Type: GfVec3f
-    /// \n  Usd Type: SdfValueTypeNames->Color3f
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (1, 1, 1)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `color3f sunTint = (1, 1, 1)` |
+    /// | C++ Type | GfVec3f |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color3f |
     USDRI_API
     UsdAttribute GetSunTintAttr() const;
 
@@ -385,10 +395,11 @@ public:
     // --------------------------------------------------------------------- //
     /// year: Four-digit year.    This is ignored if month is 0.
     ///
-    /// \n  C++ Type: int
-    /// \n  Usd Type: SdfValueTypeNames->Int
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 2015
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int year = 2015` |
+    /// | C++ Type | int |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int |
     USDRI_API
     UsdAttribute GetYearAttr() const;
 
@@ -408,10 +419,11 @@ public:
     /// Positive for east,  negative for west.  For example, this would
     /// be -8 for Pacific time.    This is ignored if month is 0.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: -8.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float zone = -8` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetZoneAttr() const;
 

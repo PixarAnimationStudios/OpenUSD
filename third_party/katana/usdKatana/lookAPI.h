@@ -173,10 +173,12 @@ public:
     /// is reconstructed.
     /// 
     ///
-    /// \n  C++ Type: std::string
-    /// \n  Usd Type: SdfValueTypeNames->String
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform string katana:primName` |
+    /// | C++ Type | std::string |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->String |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDKATANA_API
     UsdAttribute GetPrimNameAttr() const;
 

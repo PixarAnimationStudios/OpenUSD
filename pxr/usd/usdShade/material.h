@@ -209,10 +209,11 @@ public:
     /// Represents the universal "surface" output terminal of a
     /// material.
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token outputs:surface` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
     USDSHADE_API
     UsdAttribute GetSurfaceAttr() const;
 
@@ -231,10 +232,11 @@ public:
     /// Represents the universal "displacement" output terminal of a 
     /// material.
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token outputs:displacement` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
     USDSHADE_API
     UsdAttribute GetDisplacementAttr() const;
 
@@ -253,10 +255,11 @@ public:
     /// Represents the universal "volume" output terminal of a
     /// material.
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token outputs:volume` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
     USDSHADE_API
     UsdAttribute GetVolumeAttr() const;
 

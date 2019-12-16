@@ -237,11 +237,13 @@ public:
     /// has kind \em component. See \ref UsdGeomModelAPI_drawMode
     /// for mode descriptions.
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
-    /// \n  \ref UsdGeomTokens "Allowed Values": [origin, bounds, cards, default]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token model:drawMode` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | \ref UsdGeomTokens "Allowed Values" | origin, bounds, cards, default |
     USDGEOM_API
     UsdAttribute GetModelDrawModeAttr() const;
 
@@ -261,10 +263,12 @@ public:
     /// set, apply an alternate imaging mode to this prim. See
     /// \ref UsdGeomModelAPI_drawMode.
     ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform bool model:applyDrawMode` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDGEOM_API
     UsdAttribute GetModelApplyDrawModeAttr() const;
 
@@ -286,10 +290,12 @@ public:
     /// fallback quad color. If unspecified, it should be interpreted
     /// as (0.18, 0.18, 0.18).
     ///
-    /// \n  C++ Type: GfVec3f
-    /// \n  Usd Type: SdfValueTypeNames->Float3
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform float3 model:drawModeColor` |
+    /// | C++ Type | GfVec3f |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float3 |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDGEOM_API
     UsdAttribute GetModelDrawModeColorAttr() const;
 
@@ -310,11 +316,13 @@ public:
     /// geometry descriptions. If unspecified, it should be interpreted
     /// as \em cross.
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
-    /// \n  \ref UsdGeomTokens "Allowed Values": [cross, box, fromTexture]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token model:cardGeometry` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | \ref UsdGeomTokens "Allowed Values" | cross, box, fromTexture |
     USDGEOM_API
     UsdAttribute GetModelCardGeometryAttr() const;
 
@@ -333,10 +341,11 @@ public:
     /// In \em cards imaging mode, the texture applied to the X+ quad.
     /// The texture axes (s,t) are mapped to model-space axes (-y, -z).
     ///
-    /// \n  C++ Type: SdfAssetPath
-    /// \n  Usd Type: SdfValueTypeNames->Asset
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `asset model:cardTextureXPos` |
+    /// | C++ Type | SdfAssetPath |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Asset |
     USDGEOM_API
     UsdAttribute GetModelCardTextureXPosAttr() const;
 
@@ -355,10 +364,11 @@ public:
     /// In \em cards imaging mode, the texture applied to the Y+ quad.
     /// The texture axes (s,t) are mapped to model-space axes (x, -z).
     ///
-    /// \n  C++ Type: SdfAssetPath
-    /// \n  Usd Type: SdfValueTypeNames->Asset
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `asset model:cardTextureYPos` |
+    /// | C++ Type | SdfAssetPath |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Asset |
     USDGEOM_API
     UsdAttribute GetModelCardTextureYPosAttr() const;
 
@@ -377,10 +387,11 @@ public:
     /// In \em cards imaging mode, the texture applied to the Z+ quad.
     /// The texture axes (s,t) are mapped to model-space axes (x, -y).
     ///
-    /// \n  C++ Type: SdfAssetPath
-    /// \n  Usd Type: SdfValueTypeNames->Asset
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `asset model:cardTextureZPos` |
+    /// | C++ Type | SdfAssetPath |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Asset |
     USDGEOM_API
     UsdAttribute GetModelCardTextureZPosAttr() const;
 
@@ -399,10 +410,11 @@ public:
     /// In \em cards imaging mode, the texture applied to the X- quad.
     /// The texture axes (s,t) are mapped to model-space axes (y, -z).
     ///
-    /// \n  C++ Type: SdfAssetPath
-    /// \n  Usd Type: SdfValueTypeNames->Asset
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `asset model:cardTextureXNeg` |
+    /// | C++ Type | SdfAssetPath |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Asset |
     USDGEOM_API
     UsdAttribute GetModelCardTextureXNegAttr() const;
 
@@ -421,10 +433,11 @@ public:
     /// In \em cards imaging mode, the texture applied to the Y- quad.
     /// The texture axes (s,t) are mapped to model-space axes (-x, -z).
     ///
-    /// \n  C++ Type: SdfAssetPath
-    /// \n  Usd Type: SdfValueTypeNames->Asset
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `asset model:cardTextureYNeg` |
+    /// | C++ Type | SdfAssetPath |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Asset |
     USDGEOM_API
     UsdAttribute GetModelCardTextureYNegAttr() const;
 
@@ -443,10 +456,11 @@ public:
     /// In \em cards imaging mode, the texture applied to the Z- quad.
     /// The texture axes (s,t) are mapped to model-space axes (-x, -y).
     ///
-    /// \n  C++ Type: SdfAssetPath
-    /// \n  Usd Type: SdfValueTypeNames->Asset
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `asset model:cardTextureZNeg` |
+    /// | C++ Type | SdfAssetPath |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Asset |
     USDGEOM_API
     UsdAttribute GetModelCardTextureZNegAttr() const;
 

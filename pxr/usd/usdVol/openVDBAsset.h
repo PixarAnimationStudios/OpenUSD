@@ -161,10 +161,11 @@ public:
     /// Name of an individual grid within the file specified by
     /// the filePath attribute.
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token fieldName` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
     USDVOL_API
     UsdAttribute GetFieldNameAttr() const;
 

@@ -153,10 +153,11 @@ public:
     // --------------------------------------------------------------------- //
     /// The name of the AOV to write to.
     ///
-    /// \n  C++ Type: std::string
-    /// \n  Usd Type: SdfValueTypeNames->String
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `string aovName = ""` |
+    /// | C++ Type | std::string |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->String |
     USDRI_API
     UsdAttribute GetAovNameAttr() const;
 
@@ -176,10 +177,11 @@ public:
     /// is generated. If this is off, you can get a mask of only in the
     /// refraction or reflection.
     ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: True
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `bool inPrimaryHit = 1` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
     USDRI_API
     UsdAttribute GetInPrimaryHitAttr() const;
 
@@ -199,10 +201,11 @@ public:
     /// reflections to get  the masking signal.  Warning: this will
     /// require some amount of samples to get a clean mask.
     ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: False
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `bool inReflection = 0` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
     USDRI_API
     UsdAttribute GetInReflectionAttr() const;
 
@@ -222,10 +225,11 @@ public:
     /// refractions  to get the masking signal.  Warning: this will
     /// require some amount of samples to get a clean mask.
     ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: False
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `bool inRefraction = 0` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
     USDRI_API
     UsdAttribute GetInRefractionAttr() const;
 
@@ -243,10 +247,11 @@ public:
     // --------------------------------------------------------------------- //
     /// If this is on, it inverts the signal for the AOV.
     ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: False
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `bool invert = 0` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
     USDRI_API
     UsdAttribute GetInvertAttr() const;
 
@@ -266,10 +271,11 @@ public:
     /// appear in the mask. Since this is not always desirable, this can
     /// be turned off.
     ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: True
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `bool onVolumeBoundaries = 1` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
     USDRI_API
     UsdAttribute GetOnVolumeBoundariesAttr() const;
 
@@ -288,10 +294,11 @@ public:
     /// If this is on, it outputs a RGB color image instead of a
     /// float image for the AOV.
     ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: False
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `bool useColor = 0` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
     USDRI_API
     UsdAttribute GetUseColorAttr() const;
 
@@ -312,10 +319,11 @@ public:
     /// or refraction. This can lead to values below and above 1.0. Turn
     /// this off if you want a more solid mask.
     ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: True
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `bool useThroughput = 1` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
     USDRI_API
     UsdAttribute GetUseThroughputAttr() const;
 

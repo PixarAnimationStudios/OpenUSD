@@ -158,10 +158,11 @@ public:
     /// Higher values broaden the light and therefore soften shadow edges.
     /// 
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.52999997139
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float angle = 0.53` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDLUX_API
     UsdAttribute GetAngleAttr() const;
 
@@ -180,10 +181,11 @@ public:
     /// Scales the emission of the light linearly.
     /// The DistantLight has a high default intensity to approximate the Sun.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 50000.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float intensity = 50000` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDLUX_API
     UsdAttribute GetIntensityAttr() const;
 

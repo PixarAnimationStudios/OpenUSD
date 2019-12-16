@@ -282,11 +282,13 @@ public:
     /// Specifies how the paths that are included in
     /// the collection must be expanded to determine its members.
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: expandPrims
-    /// \n  \ref UsdTokens "Allowed Values": [explicitOnly, expandPrims, expandPrimsAndProperties]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token expansionRule = "expandPrims"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | \ref UsdTokens "Allowed Values" | explicitOnly, expandPrims, expandPrimsAndProperties |
     USD_API
     UsdAttribute GetExpansionRuleAttr() const;
 
@@ -307,10 +309,12 @@ public:
     /// paths.  The fallback is false.  This separate attribute is
     /// required because relationships cannot directly target the root.
     ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform bool includeRoot` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USD_API
     UsdAttribute GetIncludeRootAttr() const;
 

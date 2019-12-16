@@ -131,10 +131,11 @@ public:
     /// The primary geometry attribute for all PointBased
     /// primitives, describes points in (local) space.
     ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Point3fArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `point3f[] points` |
+    /// | C++ Type | VtArray<GfVec3f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Point3fArray |
     USDGEOM_API
     UsdAttribute GetPointsAttr() const;
 
@@ -163,10 +164,11 @@ public:
     /// 
     /// See also \ref UsdGeom_VelocityInterpolation .
     ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Vector3fArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `vector3f[] velocities` |
+    /// | C++ Type | VtArray<GfVec3f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Vector3fArray |
     USDGEOM_API
     UsdAttribute GetVelocitiesAttr() const;
 
@@ -189,10 +191,11 @@ public:
     /// To convert to position units per squared UsdTimeCode, divide by the
     /// square of UsdStage::GetTimeCodesPerSecond().
     ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Vector3fArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `vector3f[] accelerations` |
+    /// | C++ Type | VtArray<GfVec3f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Vector3fArray |
     USDGEOM_API
     UsdAttribute GetAccelerationsAttr() const;
 
@@ -217,10 +220,11 @@ public:
     /// \ref SetNormalsInterpolation() . If 'normals' and 'primvars:normals'
     /// are both specified, the latter has precedence.
     ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Normal3fArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `normal3f[] normals` |
+    /// | C++ Type | VtArray<GfVec3f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Normal3fArray |
     USDGEOM_API
     UsdAttribute GetNormalsAttr() const;
 

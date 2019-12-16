@@ -374,10 +374,11 @@ public:
     /// drawn for each instance.  <b>Topology attribute</b> - can be animated, 
     /// but at a potential performance impact for streaming.
     ///
-    /// \n  C++ Type: VtArray<int>
-    /// \n  Usd Type: SdfValueTypeNames->IntArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int[] protoIndices` |
+    /// | C++ Type | VtArray<int> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->IntArray |
     USDGEOM_API
     UsdAttribute GetProtoIndicesAttr() const;
 
@@ -400,10 +401,11 @@ public:
     /// binary state on Id'd instances without adding a separate primvar.
     /// See also \ref UsdGeomPointInstancer_varyingTopo
     ///
-    /// \n  C++ Type: VtArray<int64_t>
-    /// \n  Usd Type: SdfValueTypeNames->Int64Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int64[] ids` |
+    /// | C++ Type | VtArray<int64_t> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int64Array |
     USDGEOM_API
     UsdAttribute GetIdsAttr() const;
 
@@ -422,10 +424,11 @@ public:
     /// <b>Required property</b>. Per-instance position.  See also 
     /// \ref UsdGeomPointInstancer_transform .
     ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Point3fArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `point3f[] positions` |
+    /// | C++ Type | VtArray<GfVec3f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Point3fArray |
     USDGEOM_API
     UsdAttribute GetPositionsAttr() const;
 
@@ -454,10 +457,11 @@ public:
     /// 
     /// See also \ref UsdGeomPointInstancer_transform .
     ///
-    /// \n  C++ Type: VtArray<GfQuath>
-    /// \n  Usd Type: SdfValueTypeNames->QuathArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `quath[] orientations` |
+    /// | C++ Type | VtArray<GfQuath> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->QuathArray |
     USDGEOM_API
     UsdAttribute GetOrientationsAttr() const;
 
@@ -478,10 +482,11 @@ public:
     /// 
     /// See also \ref UsdGeomPointInstancer_transform .
     ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Float3Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float3[] scales` |
+    /// | C++ Type | VtArray<GfVec3f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float3Array |
     USDGEOM_API
     UsdAttribute GetScalesAttr() const;
 
@@ -509,10 +514,11 @@ public:
     /// See also \ref UsdGeomPointInstancer_transform, 
     /// \ref UsdGeom_VelocityInterpolation .
     ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Vector3fArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `vector3f[] velocities` |
+    /// | C++ Type | VtArray<GfVec3f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Vector3fArray |
     USDGEOM_API
     UsdAttribute GetVelocitiesAttr() const;
 
@@ -535,10 +541,11 @@ public:
     /// To convert to position units per squared UsdTimeCode, divide by the
     /// square of UsdStage::GetTimeCodesPerSecond().
     ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Vector3fArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `vector3f[] accelerations` |
+    /// | C++ Type | VtArray<GfVec3f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Vector3fArray |
     USDGEOM_API
     UsdAttribute GetAccelerationsAttr() const;
 
@@ -563,10 +570,11 @@ public:
     /// 
     /// See also \ref UsdGeomPointInstancer_transform .
     ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Vector3fArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `vector3f[] angularVelocities` |
+    /// | C++ Type | VtArray<GfVec3f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Vector3fArray |
     USDGEOM_API
     UsdAttribute GetAngularVelocitiesAttr() const;
 
@@ -585,10 +593,11 @@ public:
     /// A list of id's to make invisible at the evaluation time.
     /// See \ref UsdGeomPointInstancer_invisibleIds .
     ///
-    /// \n  C++ Type: VtArray<int64_t>
-    /// \n  Usd Type: SdfValueTypeNames->Int64Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: []
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int64[] invisibleIds = []` |
+    /// | C++ Type | VtArray<int64_t> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int64Array |
     USDGEOM_API
     UsdAttribute GetInvisibleIdsAttr() const;
 

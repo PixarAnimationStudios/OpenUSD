@@ -138,10 +138,11 @@ public:
     /// gives the number of such curves, and each element describes the
     /// number of vertices in the corresponding curve
     ///
-    /// \n  C++ Type: VtArray<int>
-    /// \n  Usd Type: SdfValueTypeNames->IntArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int[] curveVertexCounts` |
+    /// | C++ Type | VtArray<int> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->IntArray |
     USDGEOM_API
     UsdAttribute GetCurveVertexCountsAttr() const;
 
@@ -165,10 +166,11 @@ public:
     /// its 'interpolation'.  See \ref SetWidthsInterpolation() .  If 'widths'
     /// and 'primvars:widths' are both specified, the latter has precedence.
     ///
-    /// \n  C++ Type: VtArray<float>
-    /// \n  Usd Type: SdfValueTypeNames->FloatArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float[] widths` |
+    /// | C++ Type | VtArray<float> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->FloatArray |
     USDGEOM_API
     UsdAttribute GetWidthsAttr() const;
 

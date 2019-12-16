@@ -168,11 +168,12 @@ public:
     /// Fallback: multiply
     /// 
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: multiply
-    /// \n  \ref UsdRiTokens "Allowed Values": [multiply, max, min, screen]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token ri:combineMode = "multiply"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref UsdRiTokens "Allowed Values" | multiply, max, min, screen |
     USDRI_API
     UsdAttribute GetRiCombineModeAttr() const;
 
@@ -190,10 +191,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Scales the strength of the filter.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float ri:density = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetRiDensityAttr() const;
 
@@ -211,10 +213,11 @@ public:
     // --------------------------------------------------------------------- //
     /// When true, inverts the output of the light filter.
     ///
-    /// \n  C++ Type: bool
-    /// \n  Usd Type: SdfValueTypeNames->Bool
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: False
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `bool ri:invert = 0` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
     USDRI_API
     UsdAttribute GetRiInvertAttr() const;
 
@@ -232,10 +235,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Multipier for the diffuse and specular result.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float ri:intensity = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetRiIntensityAttr() const;
 
@@ -253,10 +257,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Exposure control for the multiplier.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float ri:exposure = 0` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetRiExposureAttr() const;
 
@@ -275,10 +280,11 @@ public:
     /// A multiplier for the effect of this light on the diffuse
     /// response of materials.  This is a non-physical control.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float ri:diffuse = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetRiDiffuseAttr() const;
 
@@ -297,10 +303,11 @@ public:
     /// A multiplier for the effect of this light on the specular
     /// response of materials.  This is a non-physical control.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float ri:specular = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDRI_API
     UsdAttribute GetRiSpecularAttr() const;
 

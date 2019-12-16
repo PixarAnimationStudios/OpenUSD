@@ -166,10 +166,11 @@ public:
     /// 
     /// \sa GetExtentAttr()
     ///
-    /// \n  C++ Type: double
-    /// \n  Usd Type: SdfValueTypeNames->Double
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 2.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double height = 2` |
+    /// | C++ Type | double |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double |
     USDGEOM_API
     UsdAttribute GetHeightAttr() const;
 
@@ -190,10 +191,11 @@ public:
     /// 
     /// \sa GetExtentAttr()
     ///
-    /// \n  C++ Type: double
-    /// \n  Usd Type: SdfValueTypeNames->Double
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double radius = 1` |
+    /// | C++ Type | double |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double |
     USDGEOM_API
     UsdAttribute GetRadiusAttr() const;
 
@@ -211,11 +213,13 @@ public:
     // --------------------------------------------------------------------- //
     /// The axis along which the spine of the cylinder is aligned
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: Z
-    /// \n  \ref UsdGeomTokens "Allowed Values": [X, Y, Z]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token axis = "Z"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | \ref UsdGeomTokens "Allowed Values" | X, Y, Z |
     USDGEOM_API
     UsdAttribute GetAxisAttr() const;
 
@@ -234,10 +238,11 @@ public:
     /// Extent is re-defined on Cylinder only to provide a fallback
     /// value. \sa UsdGeomGprim::GetExtentAttr().
     ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Float3Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: [(-1, -1, -1), (1, 1, 1)]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float3[] extent = [(-1, -1, -1), (1, 1, 1)]` |
+    /// | C++ Type | VtArray<GfVec3f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float3Array |
     USDGEOM_API
     UsdAttribute GetExtentAttr() const;
 

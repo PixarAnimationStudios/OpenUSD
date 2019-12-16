@@ -168,10 +168,11 @@ public:
     /// 'widths' and 'primvars:widths' are both specified, the latter
     /// has precedence.
     ///
-    /// \n  C++ Type: VtArray<float>
-    /// \n  Usd Type: SdfValueTypeNames->FloatArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float[] widths` |
+    /// | C++ Type | VtArray<float> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->FloatArray |
     USDGEOM_API
     UsdAttribute GetWidthsAttr() const;
 
@@ -194,10 +195,11 @@ public:
     /// binary state on Id'd points without adding a separate 
     /// primvar.
     ///
-    /// \n  C++ Type: VtArray<int64_t>
-    /// \n  Usd Type: SdfValueTypeNames->Int64Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int64[] ids` |
+    /// | C++ Type | VtArray<int64_t> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int64Array |
     USDGEOM_API
     UsdAttribute GetIdsAttr() const;
 

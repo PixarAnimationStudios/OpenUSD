@@ -163,10 +163,11 @@ public:
     /// 
     /// See also ComputeVelocityScale()
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float motion:velocityScale = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDGEOM_API
     UsdAttribute GetVelocityScaleAttr() const;
 

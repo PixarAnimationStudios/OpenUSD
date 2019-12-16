@@ -185,10 +185,11 @@ public:
     /// vertex of each face in the mesh.  If this attribute has more than
     /// one timeSample, the mesh is considered to be topologically varying.
     ///
-    /// \n  C++ Type: VtArray<int>
-    /// \n  Usd Type: SdfValueTypeNames->IntArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int[] faceVertexIndices` |
+    /// | C++ Type | VtArray<int> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->IntArray |
     USDGEOM_API
     UsdAttribute GetFaceVertexIndicesAttr() const;
 
@@ -210,10 +211,11 @@ public:
     /// faces in the mesh.  If this attribute has more than
     /// one timeSample, the mesh is considered to be topologically varying.
     ///
-    /// \n  C++ Type: VtArray<int>
-    /// \n  Usd Type: SdfValueTypeNames->IntArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int[] faceVertexCounts` |
+    /// | C++ Type | VtArray<int> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->IntArray |
     USDGEOM_API
     UsdAttribute GetFaceVertexCountsAttr() const;
 
@@ -239,11 +241,13 @@ public:
     /// lighterweight and faster to render, depending on renderer and render
     /// mode.)
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: catmullClark
-    /// \n  \ref UsdGeomTokens "Allowed Values": [catmullClark, loop, bilinear, none]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token subdivisionScheme = "catmullClark"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | \ref UsdGeomTokens "Allowed Values" | catmullClark, loop, bilinear, none |
     USDGEOM_API
     UsdAttribute GetSubdivisionSchemeAttr() const;
 
@@ -263,11 +267,12 @@ public:
     /// interpolated. Valid values are "none", 
     /// "edgeAndCorner" (the default), or "edgeOnly".
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: edgeAndCorner
-    /// \n  \ref UsdGeomTokens "Allowed Values": [none, edgeAndCorner, edgeOnly]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token interpolateBoundary = "edgeAndCorner"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref UsdGeomTokens "Allowed Values" | none, edgeAndCorner, edgeOnly |
     USDGEOM_API
     UsdAttribute GetInterpolateBoundaryAttr() const;
 
@@ -292,11 +297,12 @@ public:
     /// 
     /// See http://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#face-varying-interpolation-rules
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: cornersPlus1
-    /// \n  \ref UsdGeomTokens "Allowed Values": [all, none, boundaries, cornersOnly, cornersPlus1, cornersPlus2]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token faceVaryingLinearInterpolation = "cornersPlus1"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref UsdGeomTokens "Allowed Values" | all, none, boundaries, cornersOnly, cornersPlus1, cornersPlus2 |
     USDGEOM_API
     UsdAttribute GetFaceVaryingLinearInterpolationAttr() const;
 
@@ -318,11 +324,12 @@ public:
     /// 
     /// See http://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#triangle-subdivision-rule
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: catmullClark
-    /// \n  \ref UsdGeomTokens "Allowed Values": [catmullClark, smooth]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token triangleSubdivisionRule = "catmullClark"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref UsdGeomTokens "Allowed Values" | catmullClark, smooth |
     USDGEOM_API
     UsdAttribute GetTriangleSubdivisionRuleAttr() const;
 
@@ -341,10 +348,11 @@ public:
     /// The face indices (indexing into the 'faceVertexCounts'
     /// attribute) of all faces that should be made invisible.
     ///
-    /// \n  C++ Type: VtArray<int>
-    /// \n  Usd Type: SdfValueTypeNames->IntArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: []
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int[] holeIndices = []` |
+    /// | C++ Type | VtArray<int> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->IntArray |
     USDGEOM_API
     UsdAttribute GetHoleIndicesAttr() const;
 
@@ -362,10 +370,11 @@ public:
     // --------------------------------------------------------------------- //
     /// The vertex indices of all vertices that are sharp corners.
     ///
-    /// \n  C++ Type: VtArray<int>
-    /// \n  Usd Type: SdfValueTypeNames->IntArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: []
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int[] cornerIndices = []` |
+    /// | C++ Type | VtArray<int> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->IntArray |
     USDGEOM_API
     UsdAttribute GetCornerIndicesAttr() const;
 
@@ -386,10 +395,11 @@ public:
     /// corner), so the size of this array must match that of
     /// 'cornerIndices'
     ///
-    /// \n  C++ Type: VtArray<float>
-    /// \n  Usd Type: SdfValueTypeNames->FloatArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: []
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float[] cornerSharpnesses = []` |
+    /// | C++ Type | VtArray<float> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->FloatArray |
     USDGEOM_API
     UsdAttribute GetCornerSharpnessesAttr() const;
 
@@ -409,10 +419,11 @@ public:
     /// this array must be equal to the sum of all elements of the 
     /// 'creaseLengths' attribute.
     ///
-    /// \n  C++ Type: VtArray<int>
-    /// \n  Usd Type: SdfValueTypeNames->IntArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: []
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int[] creaseIndices = []` |
+    /// | C++ Type | VtArray<int> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->IntArray |
     USDGEOM_API
     UsdAttribute GetCreaseIndicesAttr() const;
 
@@ -434,10 +445,11 @@ public:
     /// attribute. Since each crease must be at least one edge long, each
     /// element of this array should be greater than one.
     ///
-    /// \n  C++ Type: VtArray<int>
-    /// \n  Usd Type: SdfValueTypeNames->IntArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: []
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int[] creaseLengths = []` |
+    /// | C++ Type | VtArray<int> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->IntArray |
     USDGEOM_API
     UsdAttribute GetCreaseLengthsAttr() const;
 
@@ -463,10 +475,11 @@ public:
     /// per crease on a mesh, or sharpnesses for all edges making up
     /// the creases on a mesh.
     ///
-    /// \n  C++ Type: VtArray<float>
-    /// \n  Usd Type: SdfValueTypeNames->FloatArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: []
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float[] creaseSharpnesses = []` |
+    /// | C++ Type | VtArray<float> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->FloatArray |
     USDGEOM_API
     UsdAttribute GetCreaseSharpnessesAttr() const;
 

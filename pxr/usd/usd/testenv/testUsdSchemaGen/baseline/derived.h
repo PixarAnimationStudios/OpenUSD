@@ -162,10 +162,11 @@ public:
     /// and should have no effect on the transformation encoded in the
     /// 'transform' attribute.
     ///
-    /// \n  C++ Type: GfVec3f
-    /// \n  Usd Type: SdfValueTypeNames->Float3
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: (0, 0, 0)
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float3 pivotPosition = (0, 0, 0)` |
+    /// | C++ Type | GfVec3f |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float3 |
     USDCONTRIVED_API
     UsdAttribute GetPivotPositionAttr() const;
 
@@ -183,10 +184,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Float3Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float3[] myVecfArray` |
+    /// | C++ Type | VtArray<GfVec3f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float3Array |
     USDCONTRIVED_API
     UsdAttribute GetMyVecfArrayAttr() const;
 
@@ -205,10 +207,11 @@ public:
     /// The face indices (indexing into the 'faceVertexCounts'
     /// attribute) of all faces that should be made invisible.
     ///
-    /// \n  C++ Type: VtArray<int>
-    /// \n  Usd Type: SdfValueTypeNames->IntArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: []
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int[] holeIndices = []` |
+    /// | C++ Type | VtArray<int> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->IntArray |
     USDCONTRIVED_API
     UsdAttribute GetHoleIndicesAttr() const;
 
@@ -226,10 +229,11 @@ public:
     // --------------------------------------------------------------------- //
     /// The vertex indices of all vertices that are sharp corners.
     ///
-    /// \n  C++ Type: VtArray<int>
-    /// \n  Usd Type: SdfValueTypeNames->IntArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: []
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int[] cornerIndices = []` |
+    /// | C++ Type | VtArray<int> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->IntArray |
     USDCONTRIVED_API
     UsdAttribute GetCornerIndicesAttr() const;
 
@@ -250,10 +254,11 @@ public:
     /// corner), so the size of this array must match that of
     /// 'cornerIndices'
     ///
-    /// \n  C++ Type: VtArray<float>
-    /// \n  Usd Type: SdfValueTypeNames->FloatArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: []
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float[] cornerSharpnesses = []` |
+    /// | C++ Type | VtArray<float> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->FloatArray |
     USDCONTRIVED_API
     UsdAttribute GetCornerSharpnessesAttr() const;
 
@@ -275,10 +280,11 @@ public:
     /// attribute. Since each crease must be at least one edge long, each
     /// element of this array should be greater than one.
     ///
-    /// \n  C++ Type: VtArray<int>
-    /// \n  Usd Type: SdfValueTypeNames->IntArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: []
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int[] creaseLengths = []` |
+    /// | C++ Type | VtArray<int> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->IntArray |
     USDCONTRIVED_API
     UsdAttribute GetCreaseLengthsAttr() const;
 
@@ -297,10 +303,11 @@ public:
     /// Double-precision transformation matrix, which should encode
     /// the entire local transformation for a prim.
     ///
-    /// \n  C++ Type: GfMatrix4d
-    /// \n  Usd Type: SdfValueTypeNames->Matrix4d
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `matrix4d transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )` |
+    /// | C++ Type | GfMatrix4d |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Matrix4d |
     USDCONTRIVED_API
     UsdAttribute GetTransformAttr() const;
 
@@ -318,10 +325,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<SdfAssetPath>
-    /// \n  Usd Type: SdfValueTypeNames->AssetArray
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `asset[] testingAsset` |
+    /// | C++ Type | VtArray<SdfAssetPath> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->AssetArray |
     USDCONTRIVED_API
     UsdAttribute GetTestingAssetAttr() const;
 
@@ -339,10 +347,11 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float namespaced:property = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDCONTRIVED_API
     UsdAttribute GetNamespacedPropertyAttr() const;
 
@@ -360,10 +369,11 @@ public:
     // --------------------------------------------------------------------- //
     /// newToken should be included in the global token set.
     ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: newToken
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token justDefault = "newToken"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
     USDCONTRIVED_API
     UsdAttribute GetJustDefaultAttr() const;
 

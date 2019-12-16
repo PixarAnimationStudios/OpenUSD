@@ -144,10 +144,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Double value denoting mass
     ///
-    /// \n  C++ Type: double
-    /// \n  Usd Type: SdfValueTypeNames->Double
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double params:mass` |
+    /// | C++ Type | double |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double |
     USDSCHEMAEXAMPLES_API
     UsdAttribute GetMassAttr() const;
 
@@ -165,10 +166,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Double value denoting velocity
     ///
-    /// \n  C++ Type: double
-    /// \n  Usd Type: SdfValueTypeNames->Double
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double params:velocity` |
+    /// | C++ Type | double |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double |
     USDSCHEMAEXAMPLES_API
     UsdAttribute GetVelocityAttr() const;
 
@@ -186,10 +188,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Double value denoting volume
     ///
-    /// \n  C++ Type: double
-    /// \n  Usd Type: SdfValueTypeNames->Double
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double params:volume` |
+    /// | C++ Type | double |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double |
     USDSCHEMAEXAMPLES_API
     UsdAttribute GetVolumeAttr() const;
 

@@ -160,10 +160,11 @@ public:
     /// 
     /// \sa GetExtentAttr()
     ///
-    /// \n  C++ Type: double
-    /// \n  Usd Type: SdfValueTypeNames->Double
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 2.0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double size = 2` |
+    /// | C++ Type | double |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double |
     USDGEOM_API
     UsdAttribute GetSizeAttr() const;
 
@@ -182,10 +183,11 @@ public:
     /// Extent is re-defined on Cube only to provide a fallback value.
     /// \sa UsdGeomGprim::GetExtentAttr().
     ///
-    /// \n  C++ Type: VtArray<GfVec3f>
-    /// \n  Usd Type: SdfValueTypeNames->Float3Array
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: [(-1, -1, -1), (1, 1, 1)]
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float3[] extent = [(-1, -1, -1), (1, 1, 1)]` |
+    /// | C++ Type | VtArray<GfVec3f> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float3Array |
     USDGEOM_API
     UsdAttribute GetExtentAttr() const;
 

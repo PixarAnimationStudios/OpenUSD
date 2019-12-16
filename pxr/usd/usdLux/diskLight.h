@@ -155,10 +155,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Radius of the disk.
     ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0.5
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float radius = 0.5` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDLUX_API
     UsdAttribute GetRadiusAttr() const;
 
