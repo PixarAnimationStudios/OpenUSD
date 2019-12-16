@@ -483,12 +483,16 @@ _FindOrOpenRelativeToLayer(
     return SdfFindOrOpenRelativeToLayer(anchor, &mutableLayerPath, args);
 }
 
+using Py_SdfLayerTraversalFunctionSig = void(const SdfPath&);
+
 } // anonymous namespace 
 
 void wrapLayer()
 {
     typedef SdfLayer       This;
     typedef SdfLayerHandle ThisHandle;
+
+    TfPyFunctionFromPython<::Py_SdfLayerTraversalFunctionSig>();
 
     def("FindOrOpenRelativeToLayer", &_FindOrOpenRelativeToLayer,
          ( arg("anchor"),
@@ -664,6 +668,10 @@ void wrapLayer()
                       return_value_policy<TfPySequenceToList>()), 
              "Return list of muted layers.\n")
              .staticmethod("GetMutedLayers")
+
+        .def("Traverse",
+                &This::Traverse,
+                (arg("path"), arg("func")))
 
         .add_property("colorConfiguration",
             &This::GetColorConfiguration,

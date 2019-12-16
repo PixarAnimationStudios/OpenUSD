@@ -214,5 +214,52 @@ def "Root" (
                 "Unexpected references {0} at {1}"
                 .format(prim.referenceList, prim.path))
 
+    def test_Traverse(self):
+        ''' Tests Sdf.Layer.Traverse '''
+
+        srcLayer = Sdf.Layer.CreateAnonymous()
+        srcLayerStr = '''\
+#sdf 1.4.32
+
+def "Root"
+{
+    double myAttr = 0
+    rel myRel
+
+    def "Child"
+    {
+    }
+
+    variantSet "v" = {
+        "x" {
+            def "ChildInVariant"
+            {
+                double myAttr
+            }
+        }
+    }
+}
+        '''
+        srcLayer.ImportFromString(srcLayerStr)
+
+        primPaths = set()
+        propPaths = set()
+        def visit(path):
+            if path.IsPrimPath():
+                primPaths.add(path)
+            elif path.IsPropertyPath():
+                propPaths.add(path)
+
+        srcLayer.Traverse(Sdf.Path('/'), visit)
+
+        self.assertIn(Sdf.Path('/Root'), primPaths)
+        self.assertIn(Sdf.Path('/Root/Child'), primPaths)
+        self.assertIn(Sdf.Path('/Root{v=x}ChildInVariant'), primPaths)
+
+        self.assertIn(Sdf.Path('/Root.myAttr'), propPaths)
+        self.assertIn(Sdf.Path('/Root{v=x}ChildInVariant.myAttr'), propPaths)
+        self.assertIn(Sdf.Path('/Root.myRel'), propPaths)
+
+
 if __name__ == "__main__":
     unittest.main()
