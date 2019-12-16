@@ -507,15 +507,7 @@ UsdImagingGLLegacyEngine::SetCameraPath(const SdfPath& id)
     if (_sceneCamId != id) {
         _sceneCamId = id;
 
-        // Update handle to camera prim.
-        UsdPrim prim = _root.GetStage()->GetPrimAtPath(_sceneCamId);
-        if (!TF_VERIFY(prim)) {
-            return;
-        }
-        if (!TF_VERIFY(prim.IsA<UsdGeomCamera>())) {
-            return;
-        }
-        _sceneCam = prim;
+        _sceneCam = UsdPrim(); 
     }
 
     _usingSceneCam = true;
@@ -757,8 +749,20 @@ UsdImagingGLLegacyEngine::_ResolveCamera()
         targetAspect = _viewport[2] / _viewport[3];
     }
 
+    if (_usingSceneCam && !_sceneCam) {
+        // Update handle to camera prim, if it has not already been updated.
+        UsdPrim prim = _root.GetStage()->GetPrimAtPath(_sceneCamId);
+        if (!TF_VERIFY(prim)) {
+            _usingSceneCam = false;
+        }
+        if (!TF_VERIFY(prim.IsA<UsdGeomCamera>())) {
+            _usingSceneCam = false;
+        }
+        _sceneCam = prim;
+    }
+
     if (_usingSceneCam) {
-        // Validation is handled in SetCameraPath, so the verify below is legit.
+        
         UsdGeomCamera cam(_sceneCam);
         TF_VERIFY(cam);
 
