@@ -112,6 +112,15 @@ struct HdPrman_Context
     HDPRMAN_API
     bool IsLightLinkUsed(TfToken const& name);
 
+    HDPRMAN_API
+    void IncrementLightFilterCount(TfToken const& name);
+
+    HDPRMAN_API
+    void DecrementLightFilterCount(TfToken const& name);
+
+    HDPRMAN_API
+    bool IsLightFilterUsed(TfToken const& name);
+
     virtual ~HdPrman_Context() = default;
 
 private:
@@ -123,6 +132,11 @@ private:
 
     // Mutex protecting lightLinkRefs.
     std::mutex _lightLinkMutex;
+
+    std::unordered_map<TfToken, size_t, TfToken::HashFunctor> _lightFilterRefs;
+
+    // Mutex protecting lightFilterRefs.
+    std::mutex _lightFilterMutex;
 
     // Map from Hydra coordinate system vector pointer to Riley equivalent.
     typedef std::unordered_map<

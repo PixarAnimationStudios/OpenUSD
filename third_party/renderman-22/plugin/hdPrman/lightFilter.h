@@ -21,27 +21,35 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_LIGHT_H
-#define EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_LIGHT_H
+#ifndef EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_LIGHT_FILTER_H
+#define EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_LIGHT_FILTER_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/light.h"
+#include "pxr/imaging/hd/sprim.h"
 #include "Riley.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// For now, the procs in this file are boiler plate for when hdPrman needs to
+// have light filters become prime citizens.  This will probably happen when
+// its time to implement shared light filters.  For now, light filters are
+// handled inside the lights in light.cpp.
+//
+// Also, for now base the HdPrmanLightFilter class on HdSprim as there
+// currently is no HdLightFilter class.
+
 class HdSceneDelegate;
 struct HdPrman_Context;
 
-/// \class HdPrmanLight
+/// \class HdPrmanLightFilter
 ///
-/// A representation for lights.
+/// A representation for light filters.
 ///
-class HdPrmanLight final : public HdLight 
+class HdPrmanLightFilter final : public HdSprim 
 {
 public:
-    HdPrmanLight(SdfPath const& id, TfToken const& lightType);
-    virtual ~HdPrmanLight();
+    HdPrmanLightFilter(SdfPath const& id, TfToken const& lightFilterType);
+    virtual ~HdPrmanLightFilter();
 
     /// Synchronizes state from the delegate to this object.
     void Sync(HdSceneDelegate *sceneDelegate,
@@ -53,23 +61,21 @@ public:
     /// Typically this would be all dirty bits.
     HdDirtyBits GetInitialDirtyBitsMask() const override;
 
-    /// Return true if this light is valid.
+    riley::ShadingNode *GetLightFilter() const { return _lightFilter; }
+
+    /// Return true if this light filter is valid.
     bool IsValid() const;
 
     void Finalize(HdRenderParam *renderParam) override;
 
 private:
-    void _ResetLight(HdPrman_Context *context);
+    void _ResetLightFilter(HdPrman_Context *context);
 
-    const TfToken _hdLightType;
-    riley::LightShaderId _shaderId;
-    riley::LightInstanceId _instanceId;
-
-    TfToken _lightLink;
-    SdfPathVector _lightFilterPaths;
+    const TfToken _hdLightFilterType;
+    riley::ShadingNode *_lightFilter;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_LIGHT_H
+#endif  // EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_LIGHT_FILTER_H

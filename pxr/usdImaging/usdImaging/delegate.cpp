@@ -88,6 +88,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (DomeLight)
     (PreviewDomeLight)
     (MaterialTexture)
+    (lightFilterType)
 );
 
 // This environment variable matches a set of similar ones in
@@ -2675,9 +2676,14 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
     }
     UsdLuxLight light = UsdLuxLight(prim);
     if (!light) {
-        // XXX Should it be a coding error to query light params
-        // on non-light prims?
-        return VtValue();
+        // Its ok that this is not a light. Lets assume its a light filter.
+        // Asking for the lightFilterType is the render delegates way of
+        // determining the type of the light filter.
+        if (paramName == _tokens->lightFilterType) {
+            return VtValue(prim.GetTypeName());
+        }
+        // Fallback to USD attributes.
+        return _GetUsdPrimAttribute(cachePath, paramName);
     }
 
     // Special handling of non-attribute parameters and textureResources
@@ -2710,6 +2716,10 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
     } else if (paramName == HdTokens->lightLink) {
         UsdCollectionAPI lightLink = light.GetLightLinkCollectionAPI();
         return VtValue(_collectionCache.GetIdForCollection(lightLink));
+    } else if (paramName == HdTokens->filters) {
+        SdfPathVector filterPaths;
+        light.GetFiltersRel().GetForwardedTargets(&filterPaths);
+        return VtValue(filterPaths);
     } else if (paramName == HdTokens->shadowLink) {
         UsdCollectionAPI shadowLink = light.GetShadowLinkCollectionAPI();
         return VtValue(_collectionCache.GetIdForCollection(shadowLink));

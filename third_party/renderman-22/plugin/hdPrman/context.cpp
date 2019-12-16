@@ -74,6 +74,42 @@ HdPrman_Context::IsLightLinkUsed(TfToken const& name)
     return _lightLinkRefs.find(name) != _lightLinkRefs.end();
 }
 
+// XXX -- Currently, there is no need for the light filter data generated
+// in the next 3 procs but its likely it will be needed once we implement
+// shared light filters.  For now, we just #ifdef out the guts of the procs
+// to avoid running the mutex.
+
+void
+HdPrman_Context::IncrementLightFilterCount(TfToken const& name)
+{
+#ifdef ENABLE_LIGHT_FILTER_COUNTERS
+    std::lock_guard<std::mutex> lock(_lightFilterMutex);
+    --_lightFilterRefs[name];
+#endif // ENABLE_LIGHT_FILTER_COUNTERS
+}
+
+void 
+HdPrman_Context::DecrementLightFilterCount(TfToken const& name)
+{
+#ifdef ENABLE_LIGHT_FILTER_COUNTERS
+    std::lock_guard<std::mutex> lock(_lightFilterMutex);
+    if (--_lightFilterRefs[name] == 0) {
+        _lightFilterRefs.erase(name);
+    }
+#endif // ENABLE_LIGHT_FILTER_COUNTERS
+}
+
+bool 
+HdPrman_Context::IsLightFilterUsed(TfToken const& name)
+{
+#ifdef ENABLE_LIGHT_FILTER_COUNTERS
+    std::lock_guard<std::mutex> lock(_lightFilterMutex);
+    return _lightFilterRefs.find(name) != _lightFilterRefs.end();
+#else // ENABLE_LIGHT_FILTER_COUNTERS
+    return false;
+#endif // ENABLE_LIGHT_FILTER_COUNTERS
+}
+
 inline static RixDetailType
 _RixDetailForHdInterpolation(HdInterpolation interp)
 {

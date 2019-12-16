@@ -62,6 +62,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (elementsVisibility)                        \
     (extent)                                    \
     (faceColors)                                \
+    (filters)                                   \
     (full)                                      \
     (geometry)                                  \
     (hermite)                                   \

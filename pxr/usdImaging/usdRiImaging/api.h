@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,21 +21,27 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "hdPrman/debugCodes.h"
+#ifndef PXR_USD_IMAGING_USD_RI_IMAGING_API_H
+#define PXR_USD_IMAGING_USD_RI_IMAGING_API_H
 
-#include "pxr/base/tf/registryManager.h"
+#include "pxr/base/arch/export.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
+#if defined(PXR_STATIC)
+#   define USDRIIMAGING_API
+#   define USDRIIMAGING_API_TEMPLATE_CLASS(...)
+#   define USDRIIMAGING_API_TEMPLATE_STRUCT(...)
+#   define USDRIIMAGING_LOCAL
+#else
+#   if defined(USDRIIMAGING_EXPORTS)
+#       define USDRIIMAGING_API ARCH_EXPORT
+#       define USDRIIMAGING_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
+#       define USDRIIMAGING_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
+#   else
+#       define USDRIIMAGING_API ARCH_IMPORT
+#       define USDRIIMAGING_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
+#       define USDRIIMAGING_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
+#   endif
+#   define USDRIIMAGING_LOCAL ARCH_HIDDEN
+#endif
 
-TF_REGISTRY_FUNCTION(TfDebug)
-{
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_PRIMVARS, "Primvars");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_MATERIALS, "Materials");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_LIGHT_LINKING, "Light linking");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_LIGHT_LIST, "Light list");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_VSTRUCTS, "Vstruct expansion");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_LIGHT_FILTER_LINKING, "Light filter linking");
-}
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
+#endif // PXR_USD_IMAGING_USD_RI_IMAGING_API_H

@@ -21,21 +21,36 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "hdPrman/debugCodes.h"
+#ifndef EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATFILT_CONVERSIONS_H
+#define EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATFILT_CONVERSIONS_H
 
-#include "pxr/base/tf/registryManager.h"
+#include "hdPrman/light.h"
+#include "hdPrman/context.h"
+#include "hdPrman/debugCodes.h"
+#include "hdPrman/renderParam.h"
+#include "hdPrman/rixStrings.h"
+#include "pxr/base/gf/vec3f.h"
+#include "pxr/usd/sdf/types.h"
+#include "pxr/base/tf/debug.h"
+#include "pxr/base/tf/staticTokens.h"
+#include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hf/diagnostic.h"
+
+#include "RixParamList.h"
+#include "RixShadingUtils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfDebug)
-{
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_PRIMVARS, "Primvars");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_MATERIALS, "Materials");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_LIGHT_LINKING, "Light linking");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_LIGHT_LIST, "Light list");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_VSTRUCTS, "Vstruct expansion");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_LIGHT_FILTER_LINKING, "Light filter linking");
-}
+bool HdPrmanLightFilterPopulateParams(
+    riley::ShadingNode *filter,
+    SdfPath &filterPath,
+    TfToken filterType,
+    std::vector<riley::CoordinateSystemId> *coordsysIds,
+    HdSceneDelegate *sceneDelegate,
+    RixRileyManager *mgr,
+    riley::Riley *riley,
+    RtUString rileyTypeName);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
+#endif
