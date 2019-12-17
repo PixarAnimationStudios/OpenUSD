@@ -119,8 +119,14 @@ public:
     /// HdStShaderCode overrides
     virtual ID ComputeHash() const;
     virtual std::string GetSource(TfToken const &shaderStageKey) const;
-    virtual void BindResources(HdSt_ResourceBinder const &binder, int program);
-    virtual void UnbindResources(HdSt_ResourceBinder const &binder, int program);
+    HDST_API
+    virtual void BindResources(int program,
+                               HdSt_ResourceBinder const &binder,
+                               HdRenderPassState const &state) override;
+    HDST_API
+    virtual void UnbindResources(int program,
+                                 HdSt_ResourceBinder const &binder,
+                                 HdRenderPassState const &state) override;
     virtual void AddBindings(HdBindingRequestVector *customBindings);
 
     /// HdStLightingShader overrides

@@ -157,14 +157,14 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
     bool hasOverrideShader = bool(renderPassState->GetOverrideShader());
 
     TF_FOR_ALL(it, shaders) {
-        (*it)->BindResources(binder, programId);
+        (*it)->BindResources(programId, binder, *renderPassState);
     }
 
     // Set up geometric shader states
     // all batch item should have the same geometric shader.
     HdSt_GeometricShaderSharedPtr const &geometricShader
         = program.GetGeometricShader();
-    geometricShader->BindResources(binder, programId);
+    geometricShader->BindResources(programId, binder, *renderPassState);
 
     size_t numItemsDrawn = 0;
     TF_FOR_ALL(drawItemIt, _drawItemInstances) {
@@ -341,7 +341,8 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         // shader textures
         //
         if (!hasOverrideShader && program.GetSurfaceShader()) {
-            program.GetSurfaceShader()->BindResources(binder, programId);
+            program.GetSurfaceShader()->BindResources(
+                programId, binder, *renderPassState);
         }
 
         /*
@@ -450,7 +451,8 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         }
 
         if (!hasOverrideShader && program.GetSurfaceShader()) {
-            program.GetSurfaceShader()->UnbindResources(binder, programId);
+            program.GetSurfaceShader()->UnbindResources(
+                programId, binder, *renderPassState);
         }
 
         HD_PERF_COUNTER_INCR(HdPerfTokens->drawCalls);
@@ -459,9 +461,9 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
     HD_PERF_COUNTER_ADD(HdTokens->itemsDrawn, numItemsDrawn);
 
     TF_FOR_ALL(it, shaders) {
-        (*it)->UnbindResources(binder, programId);
+        (*it)->UnbindResources(programId, binder, *renderPassState);
     }
-    geometricShader->UnbindResources(binder, programId);
+    geometricShader->UnbindResources(programId, binder, *renderPassState);
 
     // unbind (make non resident all bindless buffers)
     if (constantBarCurrent)

@@ -85,16 +85,18 @@ HdStShaderCode::TextureDescriptorVector HdStMixinShader::GetTextures() const
     return _baseShader->GetTextures();
 }
 
-void HdStMixinShader::BindResources(HdSt_ResourceBinder const &binder,
-                                        int program) 
+void HdStMixinShader::BindResources(const int program,
+                                    HdSt_ResourceBinder const &binder,
+                                    HdRenderPassState const &state)
 {
-    _baseShader->BindResources(binder, program);
+    _baseShader->BindResources(program, binder, state);
 }
 
-void HdStMixinShader::UnbindResources(HdSt_ResourceBinder const &binder,
-                                          int program)
+void HdStMixinShader::UnbindResources(const int program,
+                                      HdSt_ResourceBinder const &binder,
+                                      HdRenderPassState const &state)
 {
-    _baseShader->UnbindResources(binder, program);
+    _baseShader->UnbindResources(program, binder, state);
 }
 
 void HdStMixinShader::AddBindings(HdBindingRequestVector *customBindings)

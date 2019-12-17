@@ -92,13 +92,17 @@ HdStComputeShader::GetTextures() const
 }
 /*virtual*/
 void
-HdStComputeShader::BindResources(HdSt_ResourceBinder const &binder, int program)
+HdStComputeShader::BindResources(const int program,
+                                 HdSt_ResourceBinder const &binder,
+                                 HdRenderPassState const &state)
 {
     binder.BindShaderResources(this);
 }
 /*virtual*/
 void
-HdStComputeShader::UnbindResources(HdSt_ResourceBinder const &binder, int program)
+HdStComputeShader::UnbindResources(const int program,
+                                   HdSt_ResourceBinder const &binder,
+                                   HdRenderPassState const &state)
 {
     binder.UnbindShaderResources(this);
 }

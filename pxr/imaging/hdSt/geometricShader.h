@@ -120,9 +120,14 @@ public:
     HDST_API
     virtual std::string GetSource(TfToken const &shaderStageKey) const;
     HDST_API
-    virtual void BindResources(HdSt_ResourceBinder const &binder, int program);
+    virtual void BindResources(int program,
+                               HdSt_ResourceBinder const &binder,
+                               HdRenderPassState const &state) override;
+    
     HDST_API
-    virtual void UnbindResources(HdSt_ResourceBinder const &binder, int program);
+    virtual void UnbindResources(int program,
+                                 HdSt_ResourceBinder const &binder,
+                                 HdRenderPassState const &state) override;
     HDST_API
     virtual void AddBindings(HdBindingRequestVector *customBindings);
 

@@ -55,8 +55,10 @@ public:
     void AddBindings(HdBindingRequestVector * customBindings) override;
     
     /// Querries render delegate for step sizes and binds the uniforms.
-    void BindResources(HdSt_ResourceBinder const &binder, int program) override;
-
+    void BindResources(int program,
+                       HdSt_ResourceBinder const &binder,
+                       HdRenderPassState const &state) override;
+    
 private:
     HdRenderDelegate * const _renderDelegate;
     int _lastRenderSettingsVersion;

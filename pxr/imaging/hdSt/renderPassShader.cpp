@@ -99,7 +99,9 @@ HdStRenderPassShader::GetSource(TfToken const &shaderStageKey) const
 
 /*virtual*/
 void
-HdStRenderPassShader::BindResources(HdSt_ResourceBinder const &binder, int program)
+HdStRenderPassShader::BindResources(const int program,
+                                    HdSt_ResourceBinder const &binder,
+                                    HdRenderPassState const &state)
 {
     TF_FOR_ALL(it, _customBuffers) {
         binder.Bind(it->second);
@@ -112,8 +114,9 @@ HdStRenderPassShader::BindResources(HdSt_ResourceBinder const &binder, int progr
 
 /*virtual*/
 void
-HdStRenderPassShader::UnbindResources(HdSt_ResourceBinder const &binder,
-                                     int program)
+HdStRenderPassShader::UnbindResources(const int program,
+                                      HdSt_ResourceBinder const &binder,
+                                      HdRenderPassState const &state)
 {
     TF_FOR_ALL(it, _customBuffers) {
         binder.Unbind(it->second);

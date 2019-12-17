@@ -141,7 +141,9 @@ HdStSurfaceShader::GetTextures() const
 }
 /*virtual*/
 void
-HdStSurfaceShader::BindResources(HdSt_ResourceBinder const &binder, int program)
+HdStSurfaceShader::BindResources(const int program,
+                                 HdSt_ResourceBinder const &binder,
+                                 HdRenderPassState const &state)
 {
     for (auto const & it : _textureDescriptors) {
         HdBinding binding = binder.GetBinding(it.name);
@@ -198,7 +200,9 @@ HdStSurfaceShader::BindResources(HdSt_ResourceBinder const &binder, int program)
 }
 /*virtual*/
 void
-HdStSurfaceShader::UnbindResources(HdSt_ResourceBinder const &binder, int program)
+HdStSurfaceShader::UnbindResources(const int program,
+                                   HdSt_ResourceBinder const &binder,
+                                   HdRenderPassState const &state)
 {
     binder.UnbindShaderResources(this);
 
