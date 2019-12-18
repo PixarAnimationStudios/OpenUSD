@@ -114,7 +114,21 @@ def GetVisualStudioCompilerAndVersion():
             return (msvcCompiler, tuple(int(v) for v in match.groups()))
     return None
 
+def IsVisualStudio2019OrGreater():
+    if not Windows():
+        return False
+
+    VISUAL_STUDIO_2019_VERSION = (16, 0)
+    msvcCompilerAndVersion = GetVisualStudioCompilerAndVersion()
+    if msvcCompilerAndVersion:
+        _, version = msvcCompilerAndVersion
+        return version >= VISUAL_STUDIO_2019_VERSION
+    return False
+
 def IsVisualStudio2017OrGreater():
+    if not Windows():
+        return False
+
     VISUAL_STUDIO_2017_VERSION = (15, 0)
     msvcCompilerAndVersion = GetVisualStudioCompilerAndVersion()
     if msvcCompilerAndVersion:
@@ -275,13 +289,18 @@ def RunCMake(context, force, extraArgs = None):
     # building a 64-bit project. (Surely there is a better way to do this?)
     # TODO: figure out exactly what "vcvarsall.bat x64" sets to force x64
     if generator is None and Windows():
-        if IsVisualStudio2017OrGreater():
+        if IsVisualStudio2019OrGreater():
+            generator = "Visual Studio 16 2019"
+        elif IsVisualStudio2017OrGreater():
             generator = "Visual Studio 15 2017 Win64"
         else:
             generator = "Visual Studio 14 2015 Win64"
 
     if generator is not None:
         generator = '-G "{gen}"'.format(gen=generator)
+
+    if IsVisualStudio2019OrGreater():
+        generator = generator + " -A x64"
                 
     # On MacOS, enable the use of @rpath for relocatable builds.
     osx_rpath = None
@@ -556,17 +575,18 @@ elif MacOS():
     BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost/version.hpp"
 elif Windows():
-    BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz"
+    # On Visual Studio 2017 we need at least boost 1.65.1
     # The default installation of boost on Windows puts headers in a versioned 
     # subdirectory, which we have to account for here. In theory, specifying 
     # "layout=system" would make the Windows install match Linux/MacOS, but that 
     # causes problems for other dependencies that look for boost.
-    BOOST_VERSION_FILE = "include/boost-1_61/boost/version.hpp"
-
-    # On Visual Studio 2017 we need at least boost 1.65.1
     if IsVisualStudio2017OrGreater():
         BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.65.1/boost_1_65_1.tar.gz"
         BOOST_VERSION_FILE = "include/boost-1_65_1/boost/version.hpp"
+    else:
+        BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz"
+        BOOST_VERSION_FILE = "include/boost-1_61/boost/version.hpp"
+
 
 def InstallBoost(context, force, buildArgs):
     # Documentation files in the boost archive can have exceptionally
@@ -634,6 +654,8 @@ def InstallBoost(context, force, buildArgs):
             b2_settings.append("-a")
 
         if Windows():
+            if IsVisualStudio2019OrGreater():
+                pass
             if IsVisualStudio2017OrGreater():
                 b2_settings.append("toolset=msvc-14.1")
             else:
