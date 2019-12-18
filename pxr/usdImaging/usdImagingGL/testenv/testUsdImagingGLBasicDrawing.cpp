@@ -273,6 +273,10 @@ My_TestGLDrawing::DrawTest(bool offscreen)
 
         glEnable(GL_DEPTH_TEST);
 
+        if (!GetRendererAov().IsEmpty()) {
+            _engine->SetRendererAov(GetRendererAov());
+        }
+
         if(IsEnabledTestLighting()) {
             if(UsdImagingGLEngine::IsHydraEnabled()) {
                 _engine->SetLightingState(_lightingContext);

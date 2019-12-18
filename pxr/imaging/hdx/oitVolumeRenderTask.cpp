@@ -36,6 +36,7 @@
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hdSt/lightingShader.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
@@ -50,6 +51,9 @@ HdxOitVolumeRenderTask::HdxOitVolumeRenderTask(
             HdxPackageRenderPassOitShader()))
     , _isOitEnabled(HdxOitBufferAccessor::IsOitEnabled())
 {
+    // Raymarching shader needs to stop when hitting opaque geometry,
+    // so allow shader to read the depth buffer.
+    _oitVolumeRenderPassShader->AddAovReadback(HdAovTokens->depth);
 }
 
 HdxOitVolumeRenderTask::~HdxOitVolumeRenderTask() = default;

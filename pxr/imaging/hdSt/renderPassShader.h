@@ -70,6 +70,8 @@ public:
                                  HdRenderPassState const &state) override;
     HDST_API
     virtual void AddBindings(HdBindingRequestVector *customBindings) override;
+    HDST_API
+    virtual HdMaterialParamVector const& GetParams() const override;
 
     /// Add a custom binding request for use when this shader executes.
     HDST_API
@@ -82,6 +84,15 @@ public:
     /// Clear all custom bindings associated with this shader.
     HDST_API
     void ClearBufferBindings();
+
+    /// Add a request to read an AOV back in the shader. The shader can
+    /// access the requested AOV as HdGet_NAMEReadback().
+    HDST_API
+    void AddAovReadback(TfToken const &name);
+
+    /// Remove \p name from requests to read AOVs.
+    HDST_API
+    void RemoveAovReadback(TfToken const &name);
 
     HdCullStyle GetCullStyle() const {
         return _cullStyle;
@@ -100,6 +111,8 @@ private:
     TfHashMap<TfToken, HdBindingRequest, TfToken::HashFunctor> _customBuffers;
     HdCullStyle _cullStyle;
 
+    TfHashSet<TfToken, TfToken::HashFunctor> _aovReadbackRequests;
+    HdMaterialParamVector _params;
 
     // No copying
     HdStRenderPassShader(const HdStRenderPassShader &)                     = delete;

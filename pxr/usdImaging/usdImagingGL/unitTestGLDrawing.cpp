@@ -323,7 +323,8 @@ static void Usage(int argc, char *argv[])
 "                           [-complexities complexities1 complexities2 ...]\n"
 "                           [-times times1 times2 ...] [-cullBackfaces]\n"
 "                           [-clear r g b a] [-translate x y z]\n"
-"                           [-renderSetting name type value] [...]\n"
+"                           [-renderSetting name type value]\n"
+"                           [-rendererAov name] [...]\n"
 "\n"
 "  usdImaging basic drawing test\n"
 "\n"
@@ -355,6 +356,7 @@ static void Usage(int argc, char *argv[])
 "  -cullBackfaces      enable backface culling\n"
 "  -clear r g b a      clear color\n"
 "  -translate x y z    default camera translation\n"
+"  -rendererAov name   Name of AOV to display or write out\n"
 "  -renderSetting name type value\n"
 "                      Specifies a setting with given name, type (such as\n"
 "                      float) and value passed to renderer. -renderSetting\n"
@@ -501,6 +503,10 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
         else if (strcmp(argv[i], "-renderer") == 0) {
             CheckForMissingArguments(i, 1, argc, argv);
             _renderer = TfToken(argv[++i]);
+        }
+        else if (strcmp(argv[i], "-rendererAov") == 0) {
+            CheckForMissingArguments(i, 1, argc, argv);
+            _rendererAov = TfToken(argv[++i]);
         }
         else if (strcmp(argv[i], "-clipPlane") == 0) {
             CheckForMissingArguments(i, 4, argc, argv);

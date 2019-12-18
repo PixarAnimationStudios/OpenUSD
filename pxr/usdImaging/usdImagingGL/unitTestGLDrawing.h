@@ -69,6 +69,7 @@ public:
     GfVec4f const & GetClearColor() const { return _clearColor; }
     GfVec3f const & GetTranslate() const { return _translate; }
     VtDictionary const &GetRenderSettings() const { return _renderSettings; }
+    TfToken const & GetRendererAov() const { return _rendererAov; }
 
     void RunTest(int argc, char *argv[]);
 
@@ -126,6 +127,7 @@ private:
     GfVec4f _clearColor;
     GfVec3f _translate;
     VtDictionary _renderSettings;
+    TfToken _rendererAov;
 };
 
 

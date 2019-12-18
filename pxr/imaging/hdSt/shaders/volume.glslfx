@@ -37,14 +37,16 @@ out VertexData
 {
     // Relying on perspectively correct interpolation.
     vec3 Peye;
-    float nearDistance;
+    vec2 nearAndFarDistance;
 } outData;
 
-// Compute near distance assuming perspective camera
-float
-computeNearDistance(MAT4 projMat)
+// Compute near and far distance assuming perspective camera
+vec2
+computeNearAndFarDistance(MAT4 projMat)
 {
-    return projMat[3][2] / (projMat[2][2] - 1.0);
+    const float a = projMat[2][2];
+    const float b = projMat[3][2];
+    return vec2(b / (a - 1.0), b / (a + 1.0));
 }
 
 void main(void)
@@ -59,8 +61,9 @@ void main(void)
 
     outData.Peye = pointEye.xyz / pointEye.w;
 
-    // Compute near distance assuming perspective camera
-    outData.nearDistance = computeNearDistance(GetProjectionMatrix());
+    // Compute near and far distance assuming perspective camera
+    outData.nearAndFarDistance = computeNearAndFarDistance(
+        GetProjectionMatrix());
 
     gl_Position = vec4(GetProjectionMatrix() * pointEye);
 
@@ -81,7 +84,7 @@ const int maxNumSteps = 10000;
 in VertexData
 {
     vec3 Peye;
-    float nearDistance;
+    vec2 nearAndFarDistance;
 } inData;
 
 // Is point (in local coordinates) in bounding box.
@@ -214,7 +217,7 @@ struct VolumeContribution
 };
 
 VolumeContribution
-volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye)
+volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye, float rayEndDepth)
 {
     const float stepSize = HdGet_stepSize();
     int i = 1;
@@ -229,7 +232,13 @@ volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye)
         vec3 rayPointEye = rayStartEye + stepSize * i * rayDirectionEye;
         vec3 rayPoint = eyeToLocal(rayPointEye);
 
+        // Stop when outside of volume bounding box
         if (!inBoundingBox(rayPoint)) {
+            break;
+        }
+
+        // Stop when hitting opaque geometry in the volume.
+        if (rayPointEye.z < rayEndDepth) {
             break;
         }
 
@@ -285,7 +294,7 @@ computeRayStartEye(vec3 Peye)
 
     // Compute where eye ray intersects near clipping plane in eye space ...
     vec3 nearClippingPointEye =
-        -inData.nearDistance * vec3( Peye.xy / Peye.z, 1.0);
+        -inData.nearAndFarDistance.x * vec3( Peye.xy / Peye.z, 1.0);
     // ... and local space.
     vec3 nearClippingPoint = eyeToLocal(nearClippingPointEye);
     
@@ -305,12 +314,33 @@ computeRayStartEye(vec3 Peye)
         // since OIT resolution makes now assumption about the depth
         // value.
         //
-        return normalize(Peye) * inData.nearDistance;
+        return normalize(Peye) * inData.nearAndFarDistance.x;
     }
     
     // Otherwise, just return input.
     return Peye;
 }
+
+// The depth at which we hit opaque geometry.
+float
+computeRayEndDepth(vec2 fragcoord)
+{
+#ifdef HD_HAS_depthReadback
+    // Sample the z-Buffer at the frag coordinate.
+    const float bufferVal = texelFetch(HdGetSampler_depthReadback(),
+                                       ivec2(fragcoord),
+                                       /* lod = */ 0).z;
+#else
+    // Assume far-plane if we cannot sample the z-Buffer.
+    const float bufferVal = 1.0;
+#endif
+    
+    const float near = inData.nearAndFarDistance.x;
+    const float far  = inData.nearAndFarDistance.y;
+    
+    // Convert z-Buffer value (in interval [0,1]) to z-Value.
+    return - (far * near) / (bufferVal * near + (1.0 - bufferVal) * far);
+};
 
 void main(void)
 {
@@ -319,18 +349,24 @@ void main(void)
         GetWorldToViewInverseMatrix();
     
     // camera facing.
-    vec3 Neye = vec3(0, 0, 1);
+    const vec3 Neye = vec3(0, 0, 1);
 
-    vec3 rayStartEye = computeRayStartEye(inData.Peye);
+    const vec3 rayStartEye = computeRayStartEye(inData.Peye);
     // Assuming perspective camera
-    vec3 rayDirectionEye = normalize(inData.Peye);
+    const vec3 rayDirectionEye = normalize(inData.Peye);
 
-    VolumeContribution volumeContribution =
-        volumeIntegrator(rayStartEye, rayDirectionEye);
-    float alpha = 1 - volumeContribution.transmittance;
-    vec4 color = ApplyColorOverrides(vec4(volumeContribution.color, alpha));
+    // The depth (z-value) at which we stop raymarching because we hit
+    // opaque geometry.
+    // This will be a negative value since the camera is looking down
+    // the minus z-direction by OpenGL conventions.
+    const float rayEndDepth = computeRayEndDepth(gl_FragCoord.xy);
 
-    vec4 patchCoord = vec4(0.0);
+    const VolumeContribution volumeContribution =
+        volumeIntegrator(rayStartEye, rayDirectionEye, rayEndDepth);
+    const float alpha = 1 - volumeContribution.transmittance;
+    const vec4 color = ApplyColorOverrides(vec4(volumeContribution.color, alpha));
+
+    const vec4 patchCoord = vec4(0.0);
 
     RenderOutput(vec4(volumeContribution.firstHitPeye, 1),
                  Neye, color, patchCoord);
