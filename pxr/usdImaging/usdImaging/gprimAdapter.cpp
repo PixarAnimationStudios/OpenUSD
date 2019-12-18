@@ -601,6 +601,7 @@ UsdImagingGprimAdapter::GetColor(UsdPrim const& prim,
 
     VtVec3fArray result(1, GfVec3f(0.5f));
     TfToken colorInterp;
+    bool hasAuthoredColor = false;
 
     // for a prim's color we use the following precedence:
     // material rel >  local prim var(s)
@@ -628,6 +629,7 @@ UsdImagingGprimAdapter::GetColor(UsdPrim const& prim,
                     matPrim.GetAttribute(HdTokens->displayColor)
                         .Get(&result[0], time)) {
                     colorInterp = UsdGeomTokens->constant;
+                    hasAuthoredColor = true;
                 }
             }
         }
@@ -635,12 +637,15 @@ UsdImagingGprimAdapter::GetColor(UsdPrim const& prim,
 
     {
         // -- Prim local prim var --
-        if (colorInterp.IsEmpty()) { // did not get color from material
+        if (!hasAuthoredColor) { // did not get color from material
             UsdGeomGprim gprimSchema(prim);
             const UsdGeomPrimvar& primvar = 
                 gprimSchema.GetDisplayColorPrimvar();
+            colorInterp = primvar.GetInterpolation();
+
             if (primvar.ComputeFlattened(&result, time)) {
-                colorInterp = primvar.GetInterpolation();
+                hasAuthoredColor = true;
+
                 if (colorInterp == UsdGeomTokens->constant &&
                     result.size() > 1) {
                     TF_WARN("Prim %s has %lu element(s) for %s even "
@@ -649,12 +654,22 @@ UsdImagingGprimAdapter::GetColor(UsdPrim const& prim,
                             primvar.GetName().GetText());
                     result.resize(1);
                 }
+
+            } else if (primvar.HasAuthoredValue()) {
+                // If the primvar exists and ComputeFlattened returns false, 
+                // the value authored is None, in which case, we return an empty
+                // array.
+                hasAuthoredColor = true;
+                result = VtVec3fArray();
+            } else {
+                // All UsdGeomPointBased prims have the displayColor primvar
+                // by default. Suppress unauthored ones from being
+                // published to the backend.
             }
         }
     }
 
-    if (colorInterp.IsEmpty()) {
-        // No color defined for this prim
+    if (!hasAuthoredColor) {
         return false;
     }
 
@@ -679,6 +694,7 @@ UsdImagingGprimAdapter::GetOpacity(UsdPrim const& prim,
 
     VtFloatArray result(1, 1.0f);
     TfToken opacityInterp;
+    bool hasAuthoredOpacity = false;
 
     // for a prim's opacity, we use the following precedence:
     // material rel >  local prim var(s)
@@ -706,6 +722,7 @@ UsdImagingGprimAdapter::GetOpacity(UsdPrim const& prim,
                     matPrim.GetAttribute(HdTokens->displayOpacity)
                         .Get(&result[0], time)) {
                     opacityInterp = UsdGeomTokens->constant;
+                    hasAuthoredOpacity = true;
                 }
             }
         }
@@ -713,12 +730,15 @@ UsdImagingGprimAdapter::GetOpacity(UsdPrim const& prim,
 
     {
         // -- Prim local prim var --
-        if (opacityInterp.IsEmpty()) { // did not get opacity from material
+        if (!hasAuthoredOpacity) { // did not get opacity from material
             UsdGeomGprim gprimSchema(prim);
             const UsdGeomPrimvar& primvar = 
                 gprimSchema.GetDisplayOpacityPrimvar();
+            opacityInterp = primvar.GetInterpolation();
+            
             if (primvar.ComputeFlattened(&result, time)) {
-                opacityInterp = primvar.GetInterpolation();
+                hasAuthoredOpacity = true;
+
                 if (opacityInterp == UsdGeomTokens->constant &&
                     result.size() > 1) {
                     TF_WARN("Prim %s has %lu element(s) for %s even "
@@ -727,11 +747,21 @@ UsdImagingGprimAdapter::GetOpacity(UsdPrim const& prim,
                             primvar.GetName().GetText());
                     result.resize(1);
                 }
+            } else if (primvar.HasAuthoredValue()) {
+                // If the primvar exists and ComputeFlattened returns false, 
+                // the value authored is None, in which case, we return an empty
+                // array,
+                hasAuthoredOpacity = true;
+                result = VtFloatArray();
+            } else {
+                // All UsdGeomPointBased prims have the displayOpacity primvar
+                // by default. Suppress unauthored ones from being
+                // published to the backend.
             }
         }
     }
 
-    if (opacityInterp.IsEmpty()) {
+    if (!hasAuthoredOpacity) {
         return false;
     }
 
