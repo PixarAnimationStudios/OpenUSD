@@ -143,7 +143,7 @@ HdEmbreeRenderer::_ValidateAovBindings()
         }
 
         if (_aovNames[i].name != HdAovTokens->color &&
-            _aovNames[i].name != HdAovTokens->linearDepth &&
+            _aovNames[i].name != HdAovTokens->cameraDepth &&
             _aovNames[i].name != HdAovTokens->depth &&
             _aovNames[i].name != HdAovTokens->primId &&
             _aovNames[i].name != HdAovTokens->instanceId &&
@@ -158,7 +158,7 @@ HdEmbreeRenderer::_ValidateAovBindings()
         HdFormat format = _aovBindings[i].renderBuffer->GetFormat();
 
         // depth is only supported for float32 attachments
-        if ((_aovNames[i].name == HdAovTokens->linearDepth ||
+        if ((_aovNames[i].name == HdAovTokens->cameraDepth ||
              _aovNames[i].name == HdAovTokens->depth) &&
             format != HdFormatFloat32) {
             TF_WARN("Aov '%s' has unsupported format '%s'",
@@ -603,12 +603,12 @@ HdEmbreeRenderer::_TraceRay(unsigned int x, unsigned int y,
             GfVec4f clearColor = _GetClearColor(_aovBindings[i].clearValue);
             GfVec4f sample = _ComputeColor(ray, random, clearColor);
             renderBuffer->Write(GfVec3i(x,y,1), 4, sample.data());
-        } else if ((_aovNames[i].name == HdAovTokens->linearDepth ||
+        } else if ((_aovNames[i].name == HdAovTokens->cameraDepth ||
                     _aovNames[i].name == HdAovTokens->depth) &&
                    renderBuffer->GetFormat() == HdFormatFloat32) {
             float depth;
-            bool ndc = (_aovNames[i].name == HdAovTokens->depth);
-            if(_ComputeDepth(ray, &depth, ndc)) {
+            bool clip = (_aovNames[i].name == HdAovTokens->depth);
+            if(_ComputeDepth(ray, &depth, clip)) {
                 renderBuffer->Write(GfVec3i(x,y,1), 1, &depth);
             }
         } else if ((_aovNames[i].name == HdAovTokens->primId ||
@@ -675,13 +675,13 @@ HdEmbreeRenderer::_ComputeId(RTCRay const& rayHit, TfToken const& idType,
 bool
 HdEmbreeRenderer::_ComputeDepth(RTCRay const& rayHit,
                                 float *depth,
-                                bool ndc)
+                                bool clip)
 {
     if (rayHit.geomID == RTC_INVALID_GEOMETRY_ID) {
         return false;
     }
 
-    if (ndc) {
+    if (clip) {
         GfVec3f hitPos = GfVec3f(rayHit.org[0] + rayHit.tfar * rayHit.dir[0],
             rayHit.org[1] + rayHit.tfar * rayHit.dir[1],
             rayHit.org[2] + rayHit.tfar * rayHit.dir[2]);
@@ -689,7 +689,8 @@ HdEmbreeRenderer::_ComputeDepth(RTCRay const& rayHit,
         hitPos = _viewMatrix.Transform(hitPos);
         hitPos = _projMatrix.Transform(hitPos);
 
-        *depth = hitPos[2];
+        // For the depth range transform, we assume [0,1].
+        *depth = (hitPos[2] + 1.0f) / 2.0f;
     } else {
         *depth = rayHit.tfar;
     }

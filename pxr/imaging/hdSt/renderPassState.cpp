@@ -507,8 +507,7 @@ HdStRenderPassState::MakeGraphicsEncoderDesc() const
             attachmentDesc.clearValue = col;
         }
 
-        if (aov.aovName == HdAovTokens->linearDepth ||
-            aov.aovName == HdAovTokens->depth) {
+        if (aov.aovName == HdAovTokens->depth) {
             desc.depthAttachment = std::move(attachmentDesc);
         } else if (TF_VERIFY(desc.colorAttachments.size() < maxColorAttachments, 
                             "Too many aov bindings for color attachments")) 

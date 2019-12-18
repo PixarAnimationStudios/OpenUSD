@@ -81,7 +81,7 @@ public:
     /// Draw the provided color/depth buffers to the bound framebuffer.
     /// This will load the GLSL compositing program on-demand.
     HDX_API
-    void Draw(GLuint colorId, GLuint depthId, bool remapDepth);
+    void Draw(GLuint colorId, GLuint depthId);
 
 private:
     // Utility function to create a GL texture.
@@ -95,7 +95,7 @@ private:
     GLuint _depthTexture;
 
     HdStGLSLProgramSharedPtr _compositorProgram;
-    GLint _locations[5];
+    std::vector<GLint> _locations;
     GLuint _vertexBuffer;
     bool _useDepthProgram;
 };

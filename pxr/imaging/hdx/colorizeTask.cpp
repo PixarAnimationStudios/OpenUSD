@@ -92,10 +92,10 @@ static void _colorizeNdcDepth(
     });
 }
 
-static void _colorizeLinearDepth(
+static void _colorizeCameraDepth(
     uint8_t* dest, uint8_t* src, size_t nPixels, uint32_t imageWidth)
 {
-    // linearDepth is depth from the camera, in world units. Its range is
+    // cameraDepth is depth from the camera, in world units. Its range is
     // [0, N] for some maximum N; to display it, rescale to [0, 1] and
     // splat that across RGB.
     float maxDepth = 0.0f;
@@ -413,7 +413,7 @@ static _Colorizer _colorizerTable[] = {
     { HdAovTokens->color, HdFormatFloat16Vec4, _float16ToDisplay },
     { HdAovTokens->color, HdFormatFloat32Vec4, _float32ToDisplay },
     { HdAovTokens->depth, HdFormatFloat32, _colorizeNdcDepth },
-    { HdAovTokens->linearDepth, HdFormatFloat32, _colorizeLinearDepth },
+    { HdAovTokens->cameraDepth, HdFormatFloat32, _colorizeCameraDepth },
     { HdAovTokens->Neye, HdFormatFloat32Vec3, _colorizeNormal },
     { HdAovTokens->normal, HdFormatFloat32Vec3, _colorizeNormal },
     { HdAovTokens->primId, HdFormatInt32, _colorizeId },

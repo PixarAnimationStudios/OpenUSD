@@ -203,8 +203,8 @@ HdxPickFromRenderBufferTask::Execute(HdTaskContext* ctx)
             pickMin[0], pickMin[1],
             pickMax[0] - pickMin[0], pickMax[1] - pickMin[1]);
 
-    // Depth range of the "depth" AOV is (-1,1)
-    GfVec2f depthRange(-1, 1);
+    // Depth range of the "depth" AOV is (0,1)
+    GfVec2f depthRange(0, 1);
 
     // For un-projection in HdxPickResult, we need to provide "viewMatrix" and
     // "projectionMatrix", to be combined into ndcToWorld.

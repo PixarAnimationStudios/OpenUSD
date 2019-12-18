@@ -123,7 +123,7 @@ HdxPresentTask::Execute(HdTaskContext* ctx)
     glGetBooleanv(GL_BLEND, &blendEnabled);
     glDisable(GL_BLEND);
 
-    _compositor.Draw(colorId, depthId, /*remap depth*/ false);
+    _compositor.Draw(colorId, depthId);
 
     if (blendEnabled) {
         glEnable(GL_BLEND);

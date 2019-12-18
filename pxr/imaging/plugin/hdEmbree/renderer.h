@@ -146,7 +146,7 @@ private:
                           std::default_random_engine &random,
                           GfVec4f const& clearColor);
     // Compute the depth at the given ray hit.
-    bool _ComputeDepth(RTCRay const& rayHit, float *depth, bool ndc);
+    bool _ComputeDepth(RTCRay const& rayHit, float *depth, bool clip);
     // Compute the given ID at the given ray hit.
     bool _ComputeId(RTCRay const& rayHit, TfToken const& idType, int32_t *id);
     // Compute the normal at the given ray hit.

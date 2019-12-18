@@ -250,7 +250,7 @@ HdEmbreeRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
                                VtValue(GfVec3f(-1.0f)));
     } else if (name == HdAovTokens->depth) {
         return HdAovDescriptor(HdFormatFloat32, false, VtValue(1.0f));
-    } else if (name == HdAovTokens->linearDepth) {
+    } else if (name == HdAovTokens->cameraDepth) {
         return HdAovDescriptor(HdFormatFloat32, false, VtValue(0.0f));
     } else if (name == HdAovTokens->primId ||
                name == HdAovTokens->instanceId ||

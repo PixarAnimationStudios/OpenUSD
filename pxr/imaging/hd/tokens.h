@@ -273,10 +273,10 @@ PXR_NAMESPACE_OPEN_SCOPE
      * depth of the final fragment.
      */                                         \
     (depth)                                     \
-    /* HdAovTokens->linearDepth represents the camera-space
+    /* HdAovTokens->cameraDepth represents the camera-space
      * depth of the final fragment.
      */                                         \
-    (linearDepth)                               \
+    (cameraDepth)                               \
     /* ID rendering - these tokens represent the
      * prim, instance, and subprim ids of the final
      * fragment.

@@ -73,8 +73,7 @@ HdStRenderBuffer::Allocate(
     // is build out of HdAovTokens.
     const TfToken& bufferName = GetId().GetNameToken();
     bool _isDepthBuffer = 
-        TfStringEndsWith(bufferName.GetString(), HdAovTokens->depth) ||
-        TfStringEndsWith(bufferName.GetString(), HdAovTokens->linearDepth);
+        TfStringEndsWith(bufferName.GetString(), HdAovTokens->depth);
 
     _usage = _isDepthBuffer ? HgiTextureUsageBitsDepthTarget : 
                               HgiTextureUsageBitsColorTarget;
