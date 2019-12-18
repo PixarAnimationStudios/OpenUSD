@@ -119,6 +119,10 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "print all posted errors immediately, meaning that even errors that "
         "are expected and handled will be printed, producing possibly "
         "confusing output");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(TF_TREAT_WARNING_AS_ERROR,
+        "handle all warnings as though they were errors - for instance, "
+        "they will issue a stack trace if TF_LOG_STACK_TRACE_ON_ERROR is "
+        "set");
 }
 
 
@@ -513,6 +517,11 @@ TfDiagnosticMgr::WarningHelper::Post(const char *fmt, ...) const
 void
 TfDiagnosticMgr::WarningHelper::Post(const string& msg) const
 {
+    if (TfDebug::IsEnabled(TF_TREAT_WARNING_AS_ERROR)) {
+        TfDiagnosticMgr::ErrorHelper(_context, _warningCode,
+                _warningCodeString).Post(msg);
+        return;
+    }
     TfDiagnosticMgr::GetInstance().PostWarning(_warningCode, _warningCodeString,
         _context, msg, TfDiagnosticInfo(), false);
 }
