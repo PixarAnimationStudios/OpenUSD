@@ -335,7 +335,7 @@ UsdImagingMeshAdapter::_GetMeshTopology(UsdPrim const& prim,
              VtIntArray indices;
              TfToken elementType;
              if (subset.GetElementTypeAttr().Get(&elementType) &&
-                 subset.GetIndicesAttr().Get(&indices)) {
+                 subset.GetIndicesAttr().Get(&indices, time)) {
                  if (elementType == UsdGeomTokens->face) {
                      geomSubsets.emplace_back(
                         HdGeomSubset {
