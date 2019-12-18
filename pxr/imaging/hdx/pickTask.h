@@ -100,7 +100,8 @@ struct HdxPickHit {
     int pointIndex;
     GfVec3f worldSpaceHitPoint;
     GfVec3f worldSpaceHitNormal;
-    float ndcDepth;
+    // normalizedDepth is in the range [0,1].
+    float normalizedDepth;
 
     inline bool IsValid() const {
         return !objectId.IsEmpty();
