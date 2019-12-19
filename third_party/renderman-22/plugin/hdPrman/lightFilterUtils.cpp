@@ -647,10 +647,10 @@ HdPrmanLightFilterPopulateParams(
             const std::vector<float> v =
                                 pval.UncheckedGet<std::vector<float>>();
             TF_DEBUG(HDPRMAN_LIGHT_FILTER_LINKING)
-                .Msg("      falloff:knots size %d\n", (int)(v.size()));
-            for(int ii = 0; ii < v.size(); ii++)
+                .Msg("      falloff:knots size %zu\n", v.size());
+            for(size_t ii = 0; ii < v.size(); ii++)
                 TF_DEBUG(HDPRMAN_LIGHT_FILTER_LINKING)
-                    .Msg("        %2d: %f\n", ii, v[ii]);
+                    .Msg("        %2zu: %f\n", ii, v[ii]);
             filter_params->SetFloatArray(RtUString("falloff_Knots"),
                                          &v[0], v.size());
             // XXX -- extra param to hold the size of the spline
@@ -662,10 +662,10 @@ HdPrmanLightFilterPopulateParams(
             const std::vector<float>& v =
                                 pval.UncheckedGet<std::vector<float>>();
             TF_DEBUG(HDPRMAN_LIGHT_FILTER_LINKING)
-                .Msg("      falloff:floats size %d\n", (int)(v.size()));
-            for(int ii = 0; ii < v.size(); ii++)
+                .Msg("      falloff:floats size %zu\n", v.size());
+            for(size_t ii = 0; ii < v.size(); ii++)
                 TF_DEBUG(HDPRMAN_LIGHT_FILTER_LINKING)
-                    .Msg("        %2d: %f\n", ii, v[ii]);
+                    .Msg("        %2zu: %f\n", ii, v[ii]);
             filter_params->SetFloatArray(RtUString("falloff_Floats"),
                                          &v[0], v.size());
         }
@@ -685,10 +685,10 @@ HdPrmanLightFilterPopulateParams(
             const std::vector<float> v =
                                 pval.UncheckedGet<std::vector<float>>();
             TF_DEBUG(HDPRMAN_LIGHT_FILTER_LINKING)
-                .Msg("      colorRamp:knots size %d\n", (int)(v.size()));
-            for(int ii = 0; ii < v.size(); ii++)
+                .Msg("      colorRamp:knots size %zu\n", v.size());
+            for(size_t ii = 0; ii < v.size(); ii++)
                 TF_DEBUG(HDPRMAN_LIGHT_FILTER_LINKING)
-                    .Msg("        %2d: %f\n", ii, v[ii]);
+                    .Msg("        %2zu: %f\n", ii, v[ii]);
             filter_params->SetFloatArray(RtUString("colorRamp_Knots"),
                                          &v[0], v.size());
             // XXX -- extra param to hold the size of the spline
@@ -700,10 +700,10 @@ HdPrmanLightFilterPopulateParams(
             const std::vector<GfVec3f> v =
                                 pval.UncheckedGet<std::vector<GfVec3f>>();
             TF_DEBUG(HDPRMAN_LIGHT_FILTER_LINKING)
-                .Msg("      colorRamp:colors size %d\n", (int)(v.size()));
-            for(int ii = 0; ii < v.size(); ii++)
+                .Msg("      colorRamp:colors size %zu\n", v.size());
+            for(size_t ii = 0; ii < v.size(); ii++)
                 TF_DEBUG(HDPRMAN_LIGHT_FILTER_LINKING)
-                    .Msg("      %2d: %f %f %f\n",
+                    .Msg("      %2zu: %f %f %f\n",
                                         ii, v[ii][0], v[ii][1], v[ii][2]);
             filter_params->SetColorArray(RtUString("colorRamp_Colors"), 
                     reinterpret_cast<const RtColorRGB*>(&v[0]), v.size());
