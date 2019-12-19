@@ -27,10 +27,10 @@ pxr_library(usdRiImaging
         pxrBarnLightFilterAdapter
         pxrIntMultLightFilterAdapter
         pxrRodLightFilterAdapter
+        tokens
 
     PUBLIC_HEADERS
         api.h
-        unitTestHelper.h
         version.h
 
     RESOURCE_FILES
