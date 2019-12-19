@@ -335,3 +335,5 @@ HdStRenderPassShader::GetParams() const
 {
     return _params;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
