@@ -16,6 +16,7 @@ pxr_library(usdRiImaging
         usdGeom
         usdLux
         usdShade
+        usdImaging
         usdVol
         ar
         ${TBB_tbb_LIBRARY}
