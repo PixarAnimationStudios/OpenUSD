@@ -271,6 +271,14 @@ private:
                                               std::vector<double>* outTimes) 
                                                   const;
 
+    // Gathers the specified primvar time samples given an instancer.
+    struct _GatherInstancePrimvarTimeSamplesFn;
+    bool _GatherInstancePrimvarTimeSamples(UsdPrim const& instancer,
+                                           TfToken const& key,
+                                           GfInterval interval,
+                                           std::vector<double>* outTimes) 
+                                               const;
+
     // Returns true if any of the instances corresponding to the given
     // instancer has a varying transform.
     struct _IsInstanceTransformVaryingFn;
