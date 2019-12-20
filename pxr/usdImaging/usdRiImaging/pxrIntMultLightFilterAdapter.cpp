@@ -24,14 +24,13 @@
 #include "pxr/usdImaging/usdRiImaging/pxrIntMultLightFilterAdapter.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
+#include "pxr/usdImaging/usdImaging/lightAdapter.h"
 #include "pxr/usdImaging/usdRiImaging/tokens.h"
 
 #include "pxr/imaging/hd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-bool _IsEnabledSceneLights();
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -48,7 +47,7 @@ bool
 UsdRiImagingPxrIntMultLightFilterAdapter::IsSupported(
         UsdImagingIndexProxy const* index) const
 {
-    return _IsEnabledSceneLights() &&
+    return UsdImagingLightAdapter::IsEnabledSceneLights() &&
           index->IsSprimTypeSupported(UsdRiImagingTokens->pxrIntMultLightFilter);
 }
 

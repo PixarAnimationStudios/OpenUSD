@@ -31,8 +31,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-bool _IsEnabledSceneLights();
-
 TF_REGISTRY_FUNCTION(TfType)
 {
     typedef UsdImagingDiskLightAdapter Adapter;
@@ -47,7 +45,7 @@ UsdImagingDiskLightAdapter::~UsdImagingDiskLightAdapter()
 bool
 UsdImagingDiskLightAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {
-    return _IsEnabledSceneLights() &&
+    return UsdImagingLightAdapter::IsEnabledSceneLights() &&
            index->IsSprimTypeSupported(HdPrimTypeTokens->diskLight);
 }
 

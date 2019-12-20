@@ -31,8 +31,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-bool _IsEnabledSceneLights();
-
 TF_REGISTRY_FUNCTION(TfType)
 {
     typedef UsdImagingCylinderLightAdapter Adapter;
@@ -47,7 +45,7 @@ UsdImagingCylinderLightAdapter::~UsdImagingCylinderLightAdapter()
 bool
 UsdImagingCylinderLightAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {
-    return _IsEnabledSceneLights() &&
+    return UsdImagingLightAdapter::IsEnabledSceneLights() &&
            index->IsSprimTypeSupported(HdPrimTypeTokens->cylinderLight);
 }
 

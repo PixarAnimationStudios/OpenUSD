@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_USD_IMAGING_USD_IMAGING_LIGHT_ADAPTER_H
-#define PXR_USD_IMAGING_USD_IMAGING_LIGHT_ADAPTER_H
+#ifndef PXR_USD_IMAGING_USD_IMAGING_LIGHT_FILTER_ADAPTER_H
+#define PXR_USD_IMAGING_USD_IMAGING_LIGHT_FILTER_ADAPTER_H
 
 /// \file usdImaging/lightFilterAdapter.h
 
@@ -104,4 +104,4 @@ public:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_USD_IMAGING_USD_IMAGING_LIGHT_ADAPTER_H
+#endif // PXR_USD_IMAGING_USD_IMAGING_LIGHT_FILTER_ADAPTER_H

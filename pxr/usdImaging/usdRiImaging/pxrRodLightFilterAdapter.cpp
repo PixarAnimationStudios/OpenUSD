@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usdImaging/usdRiImaging/pxrRodLightFilterAdapter.h"
+#include "pxr/usdImaging/usdImaging/lightAdapter.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdRiImaging/tokens.h"
@@ -30,8 +31,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-bool _IsEnabledSceneLights();
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -48,7 +47,7 @@ bool
 UsdRiImagingPxrRodLightFilterAdapter::IsSupported(
         UsdImagingIndexProxy const* index) const
 {
-    return _IsEnabledSceneLights() &&
+    return UsdImagingLightAdapter::IsEnabledSceneLights() &&
           index->IsSprimTypeSupported(UsdRiImagingTokens->pxrRodLightFilter);
 }
 

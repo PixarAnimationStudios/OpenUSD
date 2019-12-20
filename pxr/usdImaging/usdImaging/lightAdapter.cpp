@@ -45,7 +45,8 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_DEFINE_ENV_SETTING(USDIMAGING_ENABLE_SCENE_LIGHTS, 1, 
                       "Enable loading scene lights.");
-bool _IsEnabledSceneLights() {
+/*static*/
+bool UsdImagingLightAdapter::IsEnabledSceneLights() {
     static bool _v = TfGetEnvSetting(USDIMAGING_ENABLE_SCENE_LIGHTS) == 1;
     return _v;
 }

@@ -31,8 +31,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-bool _IsEnabledSceneLights();
-
 TF_REGISTRY_FUNCTION(TfType)
 {
     typedef UsdImagingDomeLightAdapter Adapter;
@@ -47,7 +45,7 @@ UsdImagingDomeLightAdapter::~UsdImagingDomeLightAdapter()
 bool
 UsdImagingDomeLightAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {
-    return _IsEnabledSceneLights() &&
+    return UsdImagingLightAdapter::IsEnabledSceneLights() &&
            index->IsSprimTypeSupported(HdPrimTypeTokens->domeLight);
 }
 
