@@ -24,6 +24,11 @@
 /// \file wrapLayer.cpp
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/pragmas.h"
+
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_PLACEMENT_NEW  // because of pyFunction.h and boost::function
+
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/sdf/attributeSpec.h"
@@ -921,3 +926,5 @@ void wrapLayer()
 }
 
 TF_REFPTR_CONST_VOLATILE_GET(SdfLayer)
+
+ARCH_PRAGMA_POP
