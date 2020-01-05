@@ -162,8 +162,9 @@ UsdProperty::IsAuthored() const
     for (Usd_Resolver res(
              &GetPrim().GetPrimIndex()); res.IsValid(); res.NextLayer()) {
         if (res.GetLayer()->HasSpec(
-                SdfAbstractDataSpecId(&res.GetLocalPath(), &_PropName())))
+                res.GetLocalPath().AppendProperty(_PropName()))) {
             return true;
+        }
     }
     return false;
 }
@@ -172,10 +173,9 @@ bool
 UsdProperty::IsAuthoredAt(const UsdEditTarget &editTarget) const
 {
     if (editTarget.IsValid()) {
-        SdfPath mappedPath = editTarget.MapToSpecPath(GetPrimPath());
+        SdfPath mappedPath = editTarget.MapToSpecPath(GetPath());
         return !mappedPath.IsEmpty() &&
-            editTarget.GetLayer()->HasSpec(
-                SdfAbstractDataSpecId(&mappedPath, &_PropName()));
+            editTarget.GetLayer()->HasSpec(mappedPath);
     }
     return false;
 }

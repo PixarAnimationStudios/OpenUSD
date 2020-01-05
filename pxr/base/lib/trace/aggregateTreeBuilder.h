@@ -44,12 +44,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 class Trace_AggregateTreeBuilder : private TraceCollection::Visitor
 {
 public:
-    static void AddCollectionDataToTree(
-        TraceAggregateTree* tree, const TraceCollection& collection);
+    static void AddEventTreeToAggregate(
+        TraceAggregateTree* aggregateTree,
+        const TraceEventTreeRefPtr& eventTree,
+        const TraceCollection& collection);
 
 private:
     Trace_AggregateTreeBuilder(
-        TraceAggregateTree* tree, const TraceCollection& collection);
+        TraceAggregateTree* tree, const TraceEventTreeRefPtr& eventTree);
 
     void _ProcessCounters(const TraceCollection& collection);
 

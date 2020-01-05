@@ -105,8 +105,12 @@ class "Base" (
         doc = "Uniform bool, default false"
     )
     token myVaryingToken = "VariableTokenDefault" (
-        allowedTokens = ["VariableTokenAllowed1", "VariabletokenAllowed2"]
+        allowedTokens = ["VariableTokenAllowed1", "VariableTokenAllowed2", ""]
         doc = "VariableToken attribute docs."
+    )
+    uniform token[] myVaryingTokenArray = ["VariableTokenArrayAllowed1", ""] (
+        allowedTokens = ["VariableTokenArrayAllowed1", "VariableTokenArrayAllowed2", ""]
+        doc = "VariableTokenArray attribute docs."
     )
     normal3d normal3d = (0, 0, 0)
     normal3d[] normal3dArray
@@ -237,8 +241,12 @@ class Derived "Derived" (
         doc = "Uniform bool, default false"
     )
     token myVaryingToken = "VariableTokenDefault" (
-        allowedTokens = ["VariableTokenAllowed1", "VariabletokenAllowed2"]
+        allowedTokens = ["VariableTokenAllowed1", "VariableTokenAllowed2", ""]
         doc = "VariableToken attribute docs."
+    )
+    uniform token[] myVaryingTokenArray = ["VariableTokenArrayAllowed1", ""] (
+        allowedTokens = ["VariableTokenArrayAllowed1", "VariableTokenArrayAllowed2", ""]
+        doc = "VariableTokenArray attribute docs."
     )
     float3[] myVecfArray
     float namespaced:property = 1

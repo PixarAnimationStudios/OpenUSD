@@ -27,14 +27,9 @@ Tf.PrepareModule(_usdLux, locals())
 del Tf
 
 try:
-    import __DOC
+    from . import __DOC
     __DOC.Execute(locals())
     del __DOC
 except Exception:
-    try:
-        import __tmpDoc
-        __tmpDoc.Execute(locals())
-        del __tmpDoc
-    except:
-        pass
+    pass
 

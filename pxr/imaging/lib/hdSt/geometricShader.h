@@ -42,7 +42,7 @@ typedef boost::shared_ptr<class HdSt_GeometricShader> HdSt_GeometricShaderShared
 
 /// \class HdSt_GeometricShader
 ///
-/// A geometric shader -- hydra internal use
+/// A geometric shader -- Storm internal use
 ///
 class HdSt_GeometricShader : public HdStShaderCode {
 public:
@@ -56,7 +56,10 @@ public:
         PRIM_MESH_REFINED_TRIANGLES, // e.g: loop subdiv
         PRIM_MESH_COARSE_QUADS,      // e.g: quadrangulation for ptex
         PRIM_MESH_REFINED_QUADS,     // e.g: catmark/bilinear subdiv
-        PRIM_MESH_PATCHES
+        PRIM_MESH_BSPLINE,           // e.g. catmark limit surface patches
+        PRIM_MESH_BOXSPLINETRIANGLE, // e.g. loop limit surface patches
+        PRIM_VOLUME                  // Simply draws triangles of bounding
+                                     // box of a volume.
     };                                         
 
     /// static query functions for PrimitiveType
@@ -75,12 +78,14 @@ public:
                 primType == PrimitiveType::PRIM_MESH_REFINED_TRIANGLES ||
                 primType == PrimitiveType::PRIM_MESH_COARSE_QUADS      ||
                 primType == PrimitiveType::PRIM_MESH_REFINED_QUADS     ||
-                primType == PrimitiveType::PRIM_MESH_PATCHES);
+                primType == PrimitiveType::PRIM_MESH_BSPLINE   ||
+                primType == PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE);
     }
 
     static inline bool IsPrimTypeTriangles(PrimitiveType primType) {
         return (primType == PrimitiveType::PRIM_MESH_COARSE_TRIANGLES ||
-                primType == PrimitiveType::PRIM_MESH_REFINED_TRIANGLES);
+                primType == PrimitiveType::PRIM_MESH_REFINED_TRIANGLES ||
+                primType == PrimitiveType::PRIM_VOLUME);
     }
 
     static inline bool IsPrimTypeQuads(PrimitiveType primType) {
@@ -89,7 +94,8 @@ public:
     }
 
     static inline bool IsPrimTypePatches(PrimitiveType primType) {
-        return primType == PrimitiveType::PRIM_MESH_PATCHES ||
+        return primType == PrimitiveType::PRIM_MESH_BSPLINE ||
+               primType == PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE ||
                primType == PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES ||
                primType == PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES;
     }

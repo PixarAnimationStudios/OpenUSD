@@ -55,12 +55,6 @@ Sdf_Identity::GetLayer() const
     return empty;
 }
 
-const SdfPath &
-Sdf_Identity::GetPath() const
-{
-    return _path;
-}
-
 void Sdf_Identity::_Forget()
 {
     _path = SdfPath();
@@ -85,20 +79,10 @@ Sdf_IdentityRegistry::~Sdf_IdentityRegistry()
     }
 }
 
-const SdfLayerHandle &
-Sdf_IdentityRegistry::GetLayer() const
-{
-    return _layer;
-}
-
 Sdf_IdentityRefPtr
 Sdf_IdentityRegistry::Identify(const SdfPath &path)
 {
-    tbb::spin_mutex::scoped_lock lock(_idsMutex);
-
-    _IdMap::iterator i = _ids.find(path);
-    if (i != _ids.end()) {
-        Sdf_Identity *rawId = i->second;
+    auto TryAcquire = [](Sdf_Identity *rawId) { 
         // Acquire an additional reference to this identity.  We need to do
         // this before proceeding to protect ourselves from race conditions,
         // since other threads could drop the ref-count of this identity at
@@ -107,7 +91,7 @@ Sdf_IdentityRegistry::Identify(const SdfPath &path)
             // The node is still in active use and we can share it.
             // Since we just acquired a reference here, we know the
             // node cannot expire before we return it.
-            return Sdf_IdentityRefPtr(rawId, /* add_ref = */ false);
+            return true;
         } else {
             // The identity has expired but not yet been removed from
             // the registry map, due to the registry destructor racing
@@ -118,6 +102,32 @@ Sdf_IdentityRegistry::Identify(const SdfPath &path)
             // so we must allocate a new identity.  Discard the reference
             // we just acquired.
             --rawId->_refCount;
+            return false;
+        }
+    };
+
+    Sdf_IdentityRefPtr oldLastId;
+    tbb::spin_mutex::scoped_lock lock(_idsMutex);
+
+    if (Sdf_Identity *lastIdPtr = _lastId.get()) {
+        if (lastIdPtr->GetPath() == path) {
+            if (TryAcquire(lastIdPtr)) {
+                return Sdf_IdentityRefPtr(lastIdPtr, /* add_ref = */ false);
+            }
+        }
+    }
+
+    // Copy _lastId so we don't attempt to drop it until we've released the
+    // lock.
+    oldLastId = _lastId;
+
+    _IdMap::iterator i = _ids.find(path);
+    if (i != _ids.end()) {
+        Sdf_Identity *rawId = i->second;
+        if (TryAcquire(rawId)) {
+            Sdf_IdentityRefPtr ret(rawId, /* add_ref = */ false);
+            _lastId = ret;
+            return ret;
         }
     }
 
@@ -130,7 +140,8 @@ Sdf_IdentityRegistry::Identify(const SdfPath &path)
     // identity is in the process of being destroyed.
     _ids[path] = id;
 
-    return Sdf_IdentityRefPtr(id);
+    _lastId = Sdf_IdentityRefPtr(id);
+    return _lastId;
 }
 
 void
@@ -195,7 +206,7 @@ Sdf_IdentityRegistry::MoveIdentity(const SdfPath &oldPath,
     _IdMap::iterator oldIdIt = _ids.find(oldPath);
     newIdStatus.first->second = oldIdIt->second;
     newIdStatus.first->second->_path = newPath;
-    
+
     // Erase the old identity map entry.
     _ids.erase(oldIdIt);
 }

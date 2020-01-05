@@ -50,6 +50,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace GusdUSD_Utils
 {
 
+/// TODO: Would be nice to loft these TfTokens into a a shared place.
+const TfToken kModelingVariantToken("modelingVariant");
+const TfToken kAllVariantsToken("ALL_VARIANTS");
+
 
 /// Convert a TfToken to a UT_StringHolder.
 GUSD_API
@@ -115,6 +119,17 @@ GUSD_API
 void        ExtractPrimPathAndVariants(const SdfPath& path,
                                        SdfPath& primPath,
                                        SdfPath& variants);
+
+/** Set a modeling variant on a stage given the prim and variant to set.*/
+GUSD_API
+void        SetModelingVariant(const UsdStageRefPtr& stage,
+                               const UsdPrim& prim,
+                               const TfToken& variant);
+
+/** Clear any variant selection on a prim.*/
+GUSD_API
+void        ClearModelingVariant(const UsdStageRefPtr& stage,
+                                 const UsdPrim& prim);
 
 /** Sort an array of prims (by path) */
 GUSD_API

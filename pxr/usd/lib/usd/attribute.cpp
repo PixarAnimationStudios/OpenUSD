@@ -198,7 +198,9 @@ UsdAttribute::HasValue() const
 bool
 UsdAttribute::HasFallbackValue() const
 {
-    return _GetStage()->_GetAttributeDefinition(*this)->HasDefaultValue();
+    SdfAttributeSpecHandle attrDef =
+        _GetStage()->_GetAttributeDefinition(*this);
+    return attrDef && attrDef->HasDefaultValue();
 }
 
 bool 
@@ -217,45 +219,7 @@ UsdAttribute::_Get(T* value, UsdTimeCode time) const
 bool 
 UsdAttribute::Get(VtValue* value, UsdTimeCode time) const 
 {
-    auto stage = _GetStage();
-    bool foundValue = stage->_GetValue(time, *this, value);
-
-    // Special case for SdfAssetPath -- compute the resolved asset path.
-    if (foundValue && value) {
-        stage->_MakeResolvedAssetPaths(time, *this, value);
-    }
-
-    return foundValue;
-}
-
-// Specializations for SdfAssetPath(Array) that do path resolution.
-template <>
-USD_API bool
-UsdAttribute::_Get(SdfAssetPath *assetPath, UsdTimeCode time) const
-{
-    auto stage = _GetStage();
-
-    if (stage->_GetValue(time, *this, assetPath)) {
-        stage->_MakeResolvedAssetPaths(time, *this, assetPath, 1);
-        return true;
-    }
-
-    return false;
-}
-
-template <>
-USD_API bool
-UsdAttribute::_Get(VtArray<SdfAssetPath> *assetPaths, UsdTimeCode time) const
-{
-    auto stage = _GetStage();
-
-    if (stage->_GetValue(time, *this, assetPaths)) {
-        stage->_MakeResolvedAssetPaths(time, *this, assetPaths->data(), 
-                                       assetPaths->size());
-        return true;
-    }
-
-    return false;
+    return _GetStage()->_GetValue(time, *this, value);
 }
 
 UsdResolveInfo
@@ -266,11 +230,17 @@ UsdAttribute::GetResolveInfo(UsdTimeCode time) const
     return resolveInfo;
 }
 
+template <typename T>
 bool 
-UsdAttribute::_UntypedSet(const SdfAbstractDataConstValue& value,
-                          UsdTimeCode time) const
+UsdAttribute::_Set(const T& value, UsdTimeCode time) const
 {
     return _GetStage()->_SetValue(time, *this, value);
+}
+
+bool 
+UsdAttribute::Set(const char* value, UsdTimeCode time) const {
+    std::string strVal(value);
+    return _Set(strVal, time);
 }
 
 bool 
@@ -375,16 +345,25 @@ UsdAttribute::_Create(const SdfValueTypeName& typeName, bool custom,
 ARCH_PRAGMA_PUSH
 ARCH_PRAGMA_INSTANTIATION_AFTER_SPECIALIZATION
 
-// Explicitly instantiate templated getters for all Sdf value
+// Explicitly instantiate templated getters and setters for all Sdf value
 // types.
 #define _INSTANTIATE_GET(r, unused, elem)                               \
     template USD_API bool UsdAttribute::_Get(                           \
         SDF_VALUE_CPP_TYPE(elem)*, UsdTimeCode) const;                  \
     template USD_API bool UsdAttribute::_Get(                           \
-        SDF_VALUE_CPP_ARRAY_TYPE(elem)*, UsdTimeCode) const;
+        SDF_VALUE_CPP_ARRAY_TYPE(elem)*, UsdTimeCode) const;            \
+    template USD_API bool UsdAttribute::_Set(                           \
+        const SDF_VALUE_CPP_TYPE(elem)&, UsdTimeCode) const;            \
+    template USD_API bool UsdAttribute::_Set(                           \
+        const SDF_VALUE_CPP_ARRAY_TYPE(elem)&, UsdTimeCode) const;
 
 BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)
 #undef _INSTANTIATE_GET
+
+// In addition to the Sdf value types, _Set can also be called with an 
+// SdfValueBlock.
+template USD_API bool UsdAttribute::_Set(
+    const SdfValueBlock &, UsdTimeCode) const;
 
 ARCH_PRAGMA_POP
 

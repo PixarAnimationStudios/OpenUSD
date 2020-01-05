@@ -66,6 +66,12 @@ void wrapShaderProperty()
         "PropertyMetadata", SdrPropertyMetadata, SDR_PROPERTY_METADATA_TOKENS
     );
 
+    TF_PY_WRAP_PUBLIC_TOKENS(
+        "PropertyRole",
+        SdrPropertyRole,
+        SDR_PROPERTY_ROLE_TOKENS
+    );
+
     to_python_converter<NdrOption, TfTokenPairToPythonConverter>();
     return_value_policy<copy_const_reference> copyRefPolicy;
 
@@ -86,6 +92,8 @@ void wrapShaderProperty()
             &This::GetImplementationName, copyRefPolicy)
         .def("GetVStructMemberOf", &This::GetVStructMemberOf, copyRefPolicy)
         .def("GetVStructMemberName", &This::GetVStructMemberName, copyRefPolicy)
+        .def("GetVStructConditionalExpr",
+            &This::GetVStructConditionalExpr, copyRefPolicy)
         .def("IsVStructMember", &This::IsVStructMember)
         .def("IsVStruct", &This::IsVStruct)
         .def("GetValidConnectionTypes", &This::GetValidConnectionTypes,

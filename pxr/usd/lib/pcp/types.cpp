@@ -33,25 +33,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfEnum)
 {
     TF_ADD_ENUM_NAME(PcpArcTypeRoot, "root");
-    TF_ADD_ENUM_NAME(PcpArcTypeLocalInherit, "local inherit");
-    TF_ADD_ENUM_NAME(PcpArcTypeGlobalInherit, "global inherit");
+    TF_ADD_ENUM_NAME(PcpArcTypeInherit, "inherit");
     TF_ADD_ENUM_NAME(PcpArcTypeRelocate, "relocate");
     TF_ADD_ENUM_NAME(PcpArcTypeVariant, "variant");
     TF_ADD_ENUM_NAME(PcpArcTypeReference, "reference");
     TF_ADD_ENUM_NAME(PcpArcTypePayload, "payload");
-    TF_ADD_ENUM_NAME(PcpArcTypeLocalSpecializes, "local specializes");
-    TF_ADD_ENUM_NAME(PcpArcTypeGlobalSpecializes, "global specializes");
+    TF_ADD_ENUM_NAME(PcpArcTypeSpecialize, "specialize");
 
     TF_ADD_ENUM_NAME(PcpRangeTypeRoot, "root");
-    TF_ADD_ENUM_NAME(PcpRangeTypeLocalInherit, "local inherit");
-    TF_ADD_ENUM_NAME(PcpRangeTypeGlobalInherit, "global inherit");
+    TF_ADD_ENUM_NAME(PcpRangeTypeInherit, "inherit");
     TF_ADD_ENUM_NAME(PcpRangeTypeVariant, "variant");
     TF_ADD_ENUM_NAME(PcpRangeTypeReference, "reference");
     TF_ADD_ENUM_NAME(PcpRangeTypePayload, "payload");
-    TF_ADD_ENUM_NAME(PcpRangeTypeLocalSpecializes, "local specializes");
-    TF_ADD_ENUM_NAME(PcpRangeTypeGlobalSpecializes, "global specializes");
+    TF_ADD_ENUM_NAME(PcpRangeTypeSpecialize, "specialize");
     TF_ADD_ENUM_NAME(PcpRangeTypeAll, "all");
-    TF_ADD_ENUM_NAME(PcpRangeTypeAllInherits, "all inherits");
     TF_ADD_ENUM_NAME(PcpRangeTypeWeakerThanRoot, "weaker than root");
     TF_ADD_ENUM_NAME(PcpRangeTypeStrongerThanPayload, "stronger than payload");
     TF_ADD_ENUM_NAME(PcpRangeTypeInvalid, "invalid");

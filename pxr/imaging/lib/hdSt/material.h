@@ -36,8 +36,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 typedef boost::shared_ptr<class HdStSurfaceShader> HdStSurfaceShaderSharedPtr;
 typedef boost::shared_ptr<class HdStTextureResource> HdStTextureResourceSharedPtr;
-typedef std::vector<HdStTextureResourceSharedPtr>
-                                HdStTextureResourceSharedPtrVector;
+typedef boost::shared_ptr<class HdStTextureResourceHandle> HdStTextureResourceHandleSharedPtr;
+typedef std::vector<HdStTextureResourceHandleSharedPtr>
+                                HdStTextureResourceHandleSharedPtrVector;
 
 class HioGlslfx;
 
@@ -122,27 +123,32 @@ public:
     void SetSurfaceShader(HdStSurfaceShaderSharedPtr &shaderCode);
 
 private:
-    HdStTextureResourceSharedPtr
-    _GetTextureResource(HdSceneDelegate *sceneDelegate,
-                        HdMaterialParam const &param);
+    HdStTextureResourceHandleSharedPtr
+    _GetTextureResourceHandle(HdSceneDelegate *sceneDelegate,
+                              HdMaterialParam const &param);
 
     bool
     _GetHasLimitSurfaceEvaluation(VtDictionary const & metadata) const;
 
-    TfToken _GetMaterialTag(VtDictionary const & metadata) const;
+    TfToken _GetMaterialTagDeprecated(VtDictionary const & metadata) const;
 
     void _InitFallbackShader();
 
-    static HioGlslfx                  *_fallbackSurfaceShader;
+    // Obtain the material network resources of this material.
+    HdMaterialNetworkMap const& _GetMaterialResource(
+        HdSceneDelegate* sceneDelegate) const;
 
-    HdStSurfaceShaderSharedPtr         _surfaceShader;
-    HdStTextureResourceSharedPtrVector _fallbackTextureResources;
+    static HioGlslfx *_fallbackSurfaceShader;
 
-    bool                               _hasPtex : 1;
-    bool                               _hasLimitSurfaceEvaluation : 1;
-    bool                               _hasDisplacement : 1;
+    HdStSurfaceShaderSharedPtr _surfaceShader;
+    HdStTextureResourceHandleSharedPtrVector _fallbackTextureResourceHandles;
 
-    TfToken                            _materialTag;
+    bool _isInitialized : 1;
+    bool _hasPtex : 1;
+    bool _hasLimitSurfaceEvaluation : 1;
+    bool _hasDisplacement : 1;
+
+    TfToken _materialTag;
 };
 
 inline std::string

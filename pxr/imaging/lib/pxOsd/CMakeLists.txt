@@ -7,6 +7,7 @@ pxr_library(pxOsd
         gf
         vt
         ${OPENSUBDIV_LIBRARIES}
+        ${Boost_PYTHON_LIBRARY}
 
     INCLUDE_DIRS
         ${OPENSUBDIV_INCLUDE_DIR}
@@ -20,4 +21,14 @@ pxr_library(pxOsd
         subdivTags
         tokens
 
+    PYTHON_CPPFILES
+        moduleDeps.cpp
+
+    PYMODULE_CPPFILES
+        module.cpp
+        wrapMeshTopology.cpp
+        wrapSubdivTags.cpp
+
+    PYMODULE_FILES
+        __init__.py
 )

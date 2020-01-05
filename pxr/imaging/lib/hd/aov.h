@@ -155,6 +155,10 @@ HD_API
 bool operator!=(const HdRenderPassAovBinding& lhs,
     const HdRenderPassAovBinding& rhs);
 
+HD_API
+size_t hash_value(const HdRenderPassAovBinding &b);
+
+
 /// \class HdParsedAovToken
 ///
 /// Represents an AOV token which has been parsed to extract the prefix

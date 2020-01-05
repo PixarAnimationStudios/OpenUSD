@@ -38,6 +38,8 @@
 
 #include "pxr/base/tf/token.h"
 
+#include <boost/optional.hpp>
+
 #include <string>
 #include <vector>
 

@@ -99,7 +99,7 @@ def _resolvePath(baselineDir, fileName):
     if os.path.isdir(nonSpecific):
         baselineDir = nonSpecific
 
-    return os.path.join(baselineDir, fileName)
+    return os.path.normpath(os.path.join(baselineDir, fileName))
 
 def _stripPath(f, pathPattern):
     import re

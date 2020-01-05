@@ -36,8 +36,8 @@
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/base/tf/declarePtrs.h"
 
-#include <boost/optional.hpp>
 #include <vector>
+#include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -52,83 +52,6 @@ class SdfAbstractDataValue;
 
 TF_DECLARE_PUBLIC_TOKENS(SdfDataTokens, SDF_API, SDF_DATA_TOKENS);
 
-/// \class SdfAbstractDataSpecId
-///
-/// Identifies a spec in an SdfAbstractData container. Conceptually, this
-/// identifier is simply the spec's scene description path. However, this
-/// object allows that identifier to be constructed in a variety of ways, 
-/// potentially allowing the consumer to avoid path manipulations.
-///
-/// For efficiency, SdfAbstractDataSpecId objects do not make copies of
-/// the path and token parameters passed to its constructors -- it just
-/// holds on to pointers to them. The constructors take their parameters
-/// by pointer to ensure that consumers do not pass in temporary values,
-/// which could lead to undefined behavior.
-///
-class SdfAbstractDataSpecId
-{
-public:
-    /// Construct an identifier for the spec at \p fullSpecPath.
-    /// For convenience, this is intended to be implicitly constructible
-    /// from an SdfPath.
-    explicit SdfAbstractDataSpecId(const SdfPath* fullSpecPath)
-        : _path(fullSpecPath)
-        , _propertyName(NULL)
-    {
-    }
-
-    /// Construct an identifier for the property named \p propertyName owned
-    /// by the spec at \p owningSpecPath. If \p propertyName is empty, this
-    /// constructs an identifier for the spec at \p owningSpecPath.
-    SdfAbstractDataSpecId(const SdfPath* owningSpecPath, 
-                          const TfToken* propertyName)
-        : _path(owningSpecPath)
-        , _propertyName(propertyName->IsEmpty() ? NULL : propertyName)
-    {
-    }
-
-    /// Returns string representation of this key. Equivalent to
-    /// GetFullSpecPath().GetString().
-    SDF_API std::string GetString() const;
-
-    /// Returns true if this object identifies a property spec, false otherwise.
-    SDF_API bool IsProperty() const;
-
-    /// Returns the full path to the spec identified by this object.
-    const SdfPath& GetFullSpecPath() const
-    {
-        return (!_propertyName ? *_path : _ComputeFullSpecPath());
-    }
-
-    /// If this object identifies a property, returns the path to the spec
-    /// that owns the property. Otherwise, returns the full path to the spec
-    /// identified by this object.
-    ///
-    /// This path and the property name together form the full spec path.
-    const SdfPath& GetPropertyOwningSpecPath() const
-    {
-        return (_propertyName || !_path->IsPropertyPath() ? 
-            *_path : _ComputePropertyOwningSpecPath());
-    }
-
-    /// If this object identifies a property, returns that property's name.
-    /// Otherwise, returns an empty token.
-    ///
-    /// The property-owning spec path and this name together form the full spec
-    /// path.
-    SDF_API const TfToken& GetPropertyName() const;
-
-private:
-    SDF_API const SdfPath& _ComputeFullSpecPath() const;
-    SDF_API const SdfPath& _ComputePropertyOwningSpecPath() const;
-
-private:
-    const SdfPath* _path;
-    const TfToken* _propertyName;
-
-    mutable boost::optional<SdfPath> _fullSpecPathBuffer;
-    mutable boost::optional<SdfPath> _propertySpecPathBuffer;
-};
 
 /// \class SdfAbstractData
 ///
@@ -198,30 +121,30 @@ public:
     /// \name Spec API
     /// @{
 
-    /// Create a new spec at \a id with the given \a specType. If the spec
+    /// Create a new spec at \a path with the given \a specType. If the spec
     /// already exists the spec type will be changed.
     SDF_API
-    virtual void CreateSpec(const SdfAbstractDataSpecId &id, 
+    virtual void CreateSpec(const SdfPath &path, 
                             SdfSpecType specType) = 0;
 
-    /// Return true if this data has a spec for \a id.
+    /// Return true if this data has a spec for \a path.
     SDF_API
-    virtual bool HasSpec(const SdfAbstractDataSpecId &id) const = 0;
+    virtual bool HasSpec(const SdfPath &path) const = 0;
 
-    /// Erase the spec at \a id and any fields that are on it.
+    /// Erase the spec at \a path and any fields that are on it.
     /// Note that this does not erase child specs.
     SDF_API
-    virtual void EraseSpec(const SdfAbstractDataSpecId &id) = 0;
+    virtual void EraseSpec(const SdfPath &path) = 0;
 
-    /// Move the spec at \a oldId to \a newId, including all the
+    /// Move the spec at \a oldPath to \a newPath, including all the
     /// fields that are on it. This does not move any child specs.
     SDF_API
-    virtual void MoveSpec(const SdfAbstractDataSpecId &oldId, 
-                          const SdfAbstractDataSpecId &newId) = 0;
+    virtual void MoveSpec(const SdfPath &oldPath, 
+                          const SdfPath &newPath) = 0;
 
-    /// Return the spec type for the spec at \a id. Returns SdfSpecTypeUnknown
+    /// Return the spec type for the spec at \a path. Returns SdfSpecTypeUnknown
     /// if the spec doesn't exist.
-    virtual SdfSpecType GetSpecType(const SdfAbstractDataSpecId &id) const = 0;
+    virtual SdfSpecType GetSpecType(const SdfPath &path) const = 0;
 
     /// Visits every spec in this SdfAbstractData object with the given 
     /// \p visitor. The order in which specs are visited is undefined. 
@@ -235,64 +158,94 @@ public:
     /// \name Field API
     /// @{
 
-    /// Returns whether a value exists for the given \a id and \a fieldName.
+    /// Returns whether a value exists for the given \a path and \a fieldName.
     /// Optionally returns the value if it exists.
     SDF_API
-    virtual bool Has(const SdfAbstractDataSpecId& id, const TfToken& fieldName,
+    virtual bool Has(const SdfPath& path, const TfToken& fieldName,
                      SdfAbstractDataValue* value) const = 0;
 
-    /// Return whether a value exists for the given \a id and \a fieldName.
+    /// Return whether a value exists for the given \a path and \a fieldName.
     /// Optionally returns the value if it exists.
     SDF_API
-    virtual bool Has(const SdfAbstractDataSpecId& id, const TfToken &fieldName,
+    virtual bool Has(const SdfPath& path, const TfToken &fieldName,
                      VtValue *value = NULL) const = 0;
 
-    /// Return the value for the given \a id and \a fieldName. Returns an
+    /// Fill \p specType (which cannot be nullptr) as if by a call to
+    /// GetSpecType(path).  If the resulting specType is not SdfSpecTypeUnknown,
+    /// then act as if Has(path, fieldName, value) was called and return its
+    /// result.  In other words, the semantics of this function must be
+    /// identical to this sequence:
+    ///
+    /// \code
+    /// *specType = GetSpecType(path);
+    /// return *specType != SdfSpecTypeUnknown && Has(path, fieldName, value);
+    /// \endcode
+    SDF_API
+    virtual bool
+    HasSpecAndField(const SdfPath &path, const TfToken &fieldName,
+                    SdfAbstractDataValue *value, SdfSpecType *specType) const;
+
+    /// Fill \p specType (which cannot be nullptr) as if by a call to
+    /// GetSpecType(path).  If the resulting specType is not SdfSpecTypeUnknown,
+    /// then act as if Has(path, fieldName, value) was called and return its
+    /// result.  In other words, the semantics of this function must be
+    /// identical to this sequence:
+    ///
+    /// \code
+    /// *specType = GetSpecType(path);
+    /// return *specType != SdfSpecTypeUnknown && Has(path, fieldName, value);
+    /// \endcode
+    SDF_API
+    virtual bool
+    HasSpecAndField(const SdfPath &path, const TfToken &fieldName,
+                    VtValue *value, SdfSpecType *specType) const;
+
+    /// Return the value for the given \a path and \a fieldName. Returns an
     /// empty value if none is set.
     SDF_API
-    virtual VtValue Get(const SdfAbstractDataSpecId& id, 
+    virtual VtValue Get(const SdfPath& path, 
                         const TfToken& fieldName) const = 0;
 
-    /// Return the type of the value for \p fieldName on spec \p id.  If no such
-    /// field exists, return typeid(void).  Derived classes may optionally
+    /// Return the type of the value for \p fieldName on spec \p path.  If no
+    /// such field exists, return typeid(void).  Derived classes may optionally
     /// override this for performance.  The base implementation is equivalent
     /// to:
     ///
     /// \code
-    /// return Get(id, fieldName).GetTypeid();
+    /// return Get(path, fieldName).GetTypeid();
     /// \endcode
     SDF_API
     virtual std::type_info const &
-    GetTypeid(const SdfAbstractDataSpecId &id, const TfToken &fieldName) const;
+    GetTypeid(const SdfPath &path, const TfToken &fieldName) const;
 
-    /// Set the value of the given \a id and \a fieldName.
+    /// Set the value of the given \a path and \a fieldName.
     ///
     /// It's an error to set a field on a spec that does not exist. Setting a
     /// field to an empty VtValue is the same as calling Erase() on it.
     SDF_API
-    virtual void Set(const SdfAbstractDataSpecId &id, const TfToken &fieldName,
+    virtual void Set(const SdfPath &path, const TfToken &fieldName,
                      const VtValue &value) = 0;
 
-    /// Set the value of the given \a id and \a fieldName.
+    /// Set the value of the given \a path and \a fieldName.
     ///
     /// It's an error to set a field on a spec that does not exist.
     SDF_API
-    virtual void Set(const SdfAbstractDataSpecId &id, const TfToken &fieldName,
+    virtual void Set(const SdfPath &path, const TfToken &fieldName,
                      const SdfAbstractDataConstValue& value) = 0;
 
-    /// Remove the field at \p id and \p fieldName, if one exists.
+    /// Remove the field at \p path and \p fieldName, if one exists.
     SDF_API
-    virtual void Erase(const SdfAbstractDataSpecId& id, 
+    virtual void Erase(const SdfPath& path, 
                        const TfToken& fieldName) = 0;
 
-    /// Return the names of all the fields that are set at \p id.
+    /// Return the names of all the fields that are set at \p path.
     SDF_API
-    virtual std::vector<TfToken> List(const SdfAbstractDataSpecId& id) const = 0;
+    virtual std::vector<TfToken> List(const SdfPath& path) const = 0;
 
-    /// Return the value for the given \a id and \a fieldName. Returns the
+    /// Return the value for the given \a path and \a fieldName. Returns the
     /// provided \a defaultValue value if none is set.
     template <class T>
-    inline T GetAs(const SdfAbstractDataSpecId& id, const TfToken& fieldName,
+    inline T GetAs(const SdfPath& path, const TfToken& fieldName,
                    const T& defaultValue = T()) const;
 
     /// @}
@@ -302,55 +255,56 @@ public:
     /// @{
 
     // Return true and set \p value (if non null) if the field identified by
-    // \p id and \p fieldName is dictionary-valued, and if there is an element
+    // \p path and \p fieldName is dictionary-valued, and if there is an element
     // at \p keyPath in that dictionary.  Return false otherwise.  If
     // \p keyPath names an entire sub-dictionary, set \p value to that entire
     // sub-dictionary and return true.
     SDF_API
-    virtual bool HasDictKey(const SdfAbstractDataSpecId& id,
+    virtual bool HasDictKey(const SdfPath& path,
                             const TfToken &fieldName,
                             const TfToken &keyPath,
                             SdfAbstractDataValue* value) const;
     SDF_API
-    virtual bool HasDictKey(const SdfAbstractDataSpecId& id,
+    virtual bool HasDictKey(const SdfPath& path,
                             const TfToken &fieldName,
                             const TfToken &keyPath,
                             VtValue *value = NULL) const;
 
     // Same as HasDictKey but return empty VtValue on failure.
     SDF_API
-    virtual VtValue GetDictValueByKey(const SdfAbstractDataSpecId& id,
+    virtual VtValue GetDictValueByKey(const SdfPath& path,
                                       const TfToken &fieldName,
                                       const TfToken &keyPath) const;
 
     // Set the element at \p keyPath in the dictionary-valued field identified
-    // by \p id and \p fieldName.  If the field itself is not dictionary-valued,
-    // replace the field with a new dictionary and set the element at \p keyPath
-    // in it.  If \p value is empty, invoke EraseDictValueByKey instead.
+    // by \p path and \p fieldName.  If the field itself is not
+    // dictionary-valued, replace the field with a new dictionary and set the
+    // element at \p keyPath in it.  If \p value is empty, invoke
+    // EraseDictValueByKey instead.
     SDF_API
-    virtual void SetDictValueByKey(const SdfAbstractDataSpecId& id,
+    virtual void SetDictValueByKey(const SdfPath& path,
                                    const TfToken &fieldName,
                                    const TfToken &keyPath,
                                    const VtValue &value);
     SDF_API
-    virtual void SetDictValueByKey(const SdfAbstractDataSpecId& id,
+    virtual void SetDictValueByKey(const SdfPath& path,
                                    const TfToken &fieldName,
                                    const TfToken &keyPath,
                                    const SdfAbstractDataConstValue& value);
 
-    // If \p id and \p fieldName identify a dictionary-valued field with an
+    // If \p path and \p fieldName identify a dictionary-valued field with an
     // element at \p keyPath, remove that element from the dictionary.  If this
     // leaves the dictionary empty, Erase() the entire field.
     SDF_API
-    virtual void EraseDictValueByKey(const SdfAbstractDataSpecId& id,
+    virtual void EraseDictValueByKey(const SdfPath& path,
                                      const TfToken &fieldName,
                                      const TfToken &keyPath);
 
-    // If \p id, \p fieldName, and \p keyPath identify a (sub) dictionary,
+    // If \p path, \p fieldName, and \p keyPath identify a (sub) dictionary,
     // return a vector of the keys in that dictionary, otherwise return an empty
     // vector.
     SDF_API
-    virtual std::vector<TfToken> ListDictKeys(const SdfAbstractDataSpecId& id,
+    virtual std::vector<TfToken> ListDictKeys(const SdfPath& path,
                                               const TfToken &fieldName,
                                               const TfToken &keyPath) const;
 
@@ -374,7 +328,7 @@ public:
     
     SDF_API
     virtual std::set<double>
-    ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const = 0;
+    ListTimeSamplesForPath(const SdfPath& path) const = 0;
 
     SDF_API
     virtual bool
@@ -382,31 +336,31 @@ public:
 
     SDF_API
     virtual size_t
-    GetNumTimeSamplesForPath(const SdfAbstractDataSpecId& id) const = 0;
+    GetNumTimeSamplesForPath(const SdfPath& path) const = 0;
 
     SDF_API
     virtual bool
-    GetBracketingTimeSamplesForPath(const SdfAbstractDataSpecId& id, 
+    GetBracketingTimeSamplesForPath(const SdfPath& path, 
                                     double time,
                                     double* tLower, double* tUpper) const = 0;
 
     SDF_API
     virtual bool
-    QueryTimeSample(const SdfAbstractDataSpecId& id, double time,
+    QueryTimeSample(const SdfPath& path, double time,
                     VtValue *optionalValue = NULL) const = 0;
     SDF_API
     virtual bool
-    QueryTimeSample(const SdfAbstractDataSpecId& id, double time,
+    QueryTimeSample(const SdfPath& path, double time,
                     SdfAbstractDataValue *optionalValue) const = 0;
 
     SDF_API
     virtual void
-    SetTimeSample(const SdfAbstractDataSpecId& id, double time, 
+    SetTimeSample(const SdfPath& path, double time, 
                   const VtValue & value) = 0;
 
     SDF_API
     virtual void
-    EraseTimeSample(const SdfAbstractDataSpecId& id, double time) = 0;
+    EraseTimeSample(const SdfPath& path, double time) = 0;
 
     /// @}
 
@@ -422,10 +376,10 @@ protected:
 
 template <class T>
 inline T SdfAbstractData::GetAs(
-    const SdfAbstractDataSpecId& id, 
+    const SdfPath& path, 
     const TfToken& field, const T& defaultVal) const
 {
-    VtValue val = Get(id, field);
+    VtValue val = Get(path, field);
     if (val.IsHolding<T>()) {
         return val.UncheckedGet<T>();
     }
@@ -493,17 +447,20 @@ public:
 
     virtual bool StoreValue(const VtValue& v)
     {
+        if (ARCH_LIKELY(v.IsHolding<T>())) {
+            *static_cast<T*>(value) = v.UncheckedGet<T>();
+            if (std::is_same<T, SdfValueBlock>::value) {
+                isValueBlock = true;
+            }
+            return true;
+        }
+        
         if (v.IsHolding<SdfValueBlock>()) {
             isValueBlock = true;
             return true;
         }
 
-        if (!v.IsHolding<T>()) {
-            return false;
-        }
-
-        *static_cast<T*>(value) = v.UncheckedGet<T>();
-        return true;
+        return false;
     }
 };
 
@@ -607,13 +564,12 @@ public:
     SDF_API
     virtual ~SdfAbstractDataSpecVisitor();
 
-    /// \c SdfAbstractData::VisitSpecs will call this function for every entry
-    /// it contains, passing itself as \p data and the entry's spec id as \p id.
-    /// If this function returns false, the iteration through the entries 
-    /// will end early, otherwise it will continue.
+    /// \c SdfAbstractData::VisitSpecs calls this function for every entry it
+    /// contains, passing itself as \p data and the entry's \p path.  Return
+    /// false to stop iteration early, true to continue.
     SDF_API
     virtual bool VisitSpec(const SdfAbstractData& data, 
-                           const SdfAbstractDataSpecId& id) = 0;
+                           const SdfPath& path) = 0;
 
     /// \c SdfAbstractData::VisitSpecs will call this after visitation is
     /// complete, even if some \c VisitSpec() returned \c false.
@@ -623,4 +579,4 @@ public:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // SD_ABSTRACTDATA_H
+#endif // SDF_ABSTRACTDATA_H

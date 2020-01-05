@@ -590,7 +590,7 @@ struct _ClipSet {
         size_t layerStackOrder;
         SdfLayerOffset offset;
     };
-    boost::optional<_AnchorInfo> anchorInfo;
+    _AnchorInfo anchorInfo;
     VtDictionary clipInfo;
 };
 }
@@ -630,7 +630,7 @@ _RecordAnchorInfo(
         const SdfPath& path = node.GetPath();
         const PcpLayerStackRefPtr& layerStack = node.GetLayerStack();
         const SdfLayerRefPtr& layer = layerStack->GetLayers()[layerIdx];
-        clipSet->anchorInfo = _ClipSet::_AnchorInfo{
+        clipSet->anchorInfo = _ClipSet::_AnchorInfo {
             layerStack, path, layerIdx, 0, // This will get filled in later
             _GetLayerOffsetToRoot(node, layer)
         };
@@ -760,8 +760,8 @@ _ResolveClipSetsInNode(
         else {
             // If no anchor info is found, this clip set will be removed
             // later on.
-            if (it->second.anchorInfo) {
-                it->second.anchorInfo->layerStackOrder = 
+            if (it->second.anchorInfo.layerStack) {
+                it->second.anchorInfo.layerStackOrder = 
                     std::distance(addedClipSets.begin(), addedIt);
             }
             ++it;
@@ -788,7 +788,7 @@ _ResolveClipInfo(
             const _ClipSet& nodeClipSet = entry.second;
 
             _ClipSet& composedClipSet = composedClipSets[clipSetName];
-            if (!composedClipSet.anchorInfo) {
+            if (!composedClipSet.anchorInfo.layerStack) {
                 composedClipSet.anchorInfo = nodeClipSet.anchorInfo;
             }
             VtDictionaryOverRecursive(
@@ -799,7 +799,7 @@ _ResolveClipInfo(
     // Remove all clip sets that have no anchor info; without anchor info,
     // value resolution won't know at which point to introduce these clip sets.
     for (auto it = composedClipSets.begin(); it != composedClipSets.end(); ) {
-        if (!it->second.anchorInfo) {
+        if (!it->second.anchorInfo.layerStack) {
             it = composedClipSets.erase(it);
         }
         else {
@@ -821,10 +821,10 @@ _ResolveClipInfo(
     }
     std::sort(sortedClipSets.begin(), sortedClipSets.end(),
         [](const _ClipSet& x, const _ClipSet& y) {
-            return std::tie(x.anchorInfo->layerStack, x.anchorInfo->primPath,
-                            x.anchorInfo->layerStackOrder) <
-                std::tie(y.anchorInfo->layerStack, y.anchorInfo->primPath,
-                         y.anchorInfo->layerStackOrder);
+            return std::tie(x.anchorInfo.layerStack, x.anchorInfo.primPath,
+                            x.anchorInfo.layerStackOrder) <
+                std::tie(y.anchorInfo.layerStack, y.anchorInfo.primPath,
+                         y.anchorInfo.layerStackOrder);
         });
 
     // Unpack the information in the composed clip sets into individual
@@ -834,9 +834,9 @@ _ResolveClipInfo(
         resolvedClipInfo->push_back(Usd_ResolvedClipInfo());
         Usd_ResolvedClipInfo& out = resolvedClipInfo->back();
 
-        out.sourceLayerStack = clipSet.anchorInfo->layerStack;
-        out.sourcePrimPath = clipSet.anchorInfo->primPath;
-        out.indexOfLayerWhereAssetPathsFound = clipSet.anchorInfo->layerIndex;
+        out.sourceLayerStack = clipSet.anchorInfo.layerStack;
+        out.sourcePrimPath = clipSet.anchorInfo.primPath;
+        out.indexOfLayerWhereAssetPathsFound = clipSet.anchorInfo.layerIndex;
 
         const VtDictionary& clipInfo = clipSet.clipInfo;
         _SetInfo(clipInfo, UsdClipsAPIInfoKeys->primPath, &out.clipPrimPath);
@@ -887,9 +887,9 @@ _ResolveClipInfo(
                 // author all clip metadata in the same layer -- and it's not
                 // clear what the desired result in that case would be anyway.
                 _ApplyLayerOffsetToExternalTimes(
-                    clipSet.anchorInfo->offset, &*out.clipTimes);
+                    clipSet.anchorInfo.offset, &*out.clipTimes);
                 _ApplyLayerOffsetToExternalTimes(
-                    clipSet.anchorInfo->offset, &*out.clipActive);
+                    clipSet.anchorInfo.offset, &*out.clipActive);
             }
         }
     }
@@ -1092,16 +1092,16 @@ _GetBracketingTimeSamples(const Container& authoredClipTimes,
 
 bool 
 Usd_Clip::_GetBracketingTimeSamplesForPathInternal(
-    const SdfAbstractDataSpecId& id, ExternalTime time, 
+    const SdfPath& path, ExternalTime time, 
     ExternalTime* tLower, ExternalTime* tUpper) const
 {
     const SdfLayerRefPtr& clip = _GetLayerForClip();
-    const _TranslatedSpecId idInClip = _TranslateIdToClip(id);
+    const SdfPath clipPath = _TranslatePathToClip(path);
     const InternalTime timeInClip = _TranslateTimeToInternal(time);
     InternalTime lowerInClip, upperInClip;
 
     if (!clip->GetBracketingTimeSamplesForPath(
-            idInClip.id, timeInClip, &lowerInClip, &upperInClip)) {
+            clipPath, timeInClip, &lowerInClip, &upperInClip)) {
         return false;
     }
 
@@ -1230,12 +1230,12 @@ Usd_Clip::_GetBracketingTimeSamplesForPathInternal(
 
 bool 
 Usd_Clip::GetBracketingTimeSamplesForPath(
-    const SdfAbstractDataSpecId& id, ExternalTime time, 
+    const SdfPath& path, ExternalTime time, 
     ExternalTime* tLower, ExternalTime* tUpper) const
 {
     double lowerInClipLayer, upperInClipLayer;
     bool fetchFromClip = _GetBracketingTimeSamplesForPathInternal(
-        id, time, &lowerInClipLayer, &upperInClipLayer);
+        path, time, &lowerInClipLayer, &upperInClipLayer);
 
     bool fetchFromAuthoredClipTimes = false;
     double lowerInClipTimes, upperInClipTimes;
@@ -1267,10 +1267,10 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
 }
 
 std::set<Usd_Clip::InternalTime>
-Usd_Clip::_GetMergedTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
+Usd_Clip::_GetMergedTimeSamplesForPath(const SdfPath& path) const
 {
     std::set<Usd_Clip::InternalTime> timeSamplesInClip = 
-        _GetLayerForClip()->ListTimeSamplesForPath(_TranslateIdToClip(id).id);
+        _GetLayerForClip()->ListTimeSamplesForPath(_TranslatePathToClip(path));
     for (const TimeMapping& t : times) {
         timeSamplesInClip.insert(t.internalTime);
     }
@@ -1279,15 +1279,15 @@ Usd_Clip::_GetMergedTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
 }
 
 size_t
-Usd_Clip::GetNumTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
+Usd_Clip::GetNumTimeSamplesForPath(const SdfPath& path) const
 {
-    return _GetMergedTimeSamplesForPath(id).size();
+    return _GetMergedTimeSamplesForPath(path).size();
 }
 
 std::set<Usd_Clip::ExternalTime>
-Usd_Clip::ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
+Usd_Clip::ListTimeSamplesForPath(const SdfPath& path) const
 {
-    std::set<InternalTime> timeSamplesInClip = _GetMergedTimeSamplesForPath(id);
+    std::set<InternalTime> timeSamplesInClip = _GetMergedTimeSamplesForPath(path);
     if (times.empty()) {
         return timeSamplesInClip;
     }
@@ -1348,17 +1348,15 @@ Usd_Clip::ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
 }
 
 bool 
-Usd_Clip::HasField(const SdfAbstractDataSpecId& id, const TfToken& field) const
+Usd_Clip::HasField(const SdfPath& path, const TfToken& field) const
 {
-    return _GetLayerForClip()->HasField(_TranslateIdToClip(id).id, field);
+    return _GetLayerForClip()->HasField(_TranslatePathToClip(path), field);
 }
 
-Usd_Clip::_TranslatedSpecId 
-Usd_Clip::_TranslateIdToClip(const SdfAbstractDataSpecId& id) const
+SdfPath
+Usd_Clip::_TranslatePathToClip(const SdfPath& path) const
 {
-    return _TranslatedSpecId(
-        id.GetPropertyOwningSpecPath().ReplacePrefix(sourcePrimPath, primPath),
-        id.GetPropertyName());
+    return path.ReplacePrefix(sourcePrimPath, primPath);
 }
 
 Usd_Clip::InternalTime
@@ -1412,10 +1410,9 @@ Usd_Clip::_TranslateTimeToExternal(
 }
 
 SdfPropertySpecHandle
-Usd_Clip::GetPropertyAtPath(const SdfAbstractDataSpecId &id) const
+Usd_Clip::GetPropertyAtPath(const SdfPath &path) const
 {
-    const auto path = _TranslateIdToClip(id).id.GetFullSpecPath();
-    return _GetLayerForClip()->GetPropertyAtPath(path);
+    return _GetLayerForClip()->GetPropertyAtPath(_TranslatePathToClip(path));
 }
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -1476,46 +1473,170 @@ Usd_Clip::GetLayerIfOpen() const
     return SdfLayerHandle();
 }
 
+namespace { // Anonymous namespace
+
+// SdfTimeCode values from clips need to be converted from internal time to
+// external time. We treat time code values as relative to the internal time
+// to convert to external.
+inline
+void 
+_ConvertValueForTime(const Usd_Clip::ExternalTime &extTime, 
+                     const Usd_Clip::InternalTime &intTime,
+                     SdfTimeCode *value)
+{
+    *value = *value + (extTime - intTime);
+}
+
+// Similarly we convert arrays of SdfTimeCodes.
+inline
+void 
+_ConvertValueForTime(const Usd_Clip::ExternalTime &extTime, 
+                     const Usd_Clip::InternalTime &intTime,
+                     VtArray<SdfTimeCode> *value)
+{
+    for (size_t i = 0; i < value->size(); ++i) {
+        _ConvertValueForTime(extTime, intTime, &(*value)[i]);
+    }
+}
+
+// Helpers for accessing the typed value from type erased values, needed for
+// converting SdfTimeCodes.
 template <class T>
-bool
-Usd_Clip::_Interpolate(
-    const SdfLayerRefPtr& clip, const _TranslatedSpecId& clipId,
-    InternalTime clipTime, Usd_InterpolatorBase* interpolator,
-    T* value) const
+inline
+void _UncheckedSwap(SdfAbstractDataValue *value, T& val) {
+    std::swap(*static_cast<T*>(value->value), val);
+}
+
+template <class T>
+inline
+void _UncheckedSwap(VtValue *value, T& val) {
+    value->UncheckedSwap(val);
+}
+
+template <class T>
+inline
+bool _IsHolding(const SdfAbstractDataValue &value) {
+    return TfSafeTypeCompare(typeid(T), value.valueType);
+}
+
+template <class T>
+inline
+bool _IsHolding(const VtValue &value) {
+    return value.IsHolding<T>();
+}
+
+// For type erased values, we need to convert them if they hold SdfTimeCode 
+// based types.
+template <class Storage>
+inline
+void
+_ConvertTypeErasedValueForTime(const Usd_Clip::ExternalTime &extTime, 
+                               const Usd_Clip::InternalTime &intTime,
+                               Storage *value)
+{
+    if (_IsHolding<SdfTimeCode>(*value)) {
+        SdfTimeCode rawVal;
+        _UncheckedSwap(value, rawVal);
+        _ConvertValueForTime(extTime, intTime, &rawVal);
+        _UncheckedSwap(value, rawVal);
+    } else if (_IsHolding<VtArray<SdfTimeCode>>(*value)) {
+        VtArray<SdfTimeCode> rawVal;
+        _UncheckedSwap(value, rawVal);
+        _ConvertValueForTime(extTime, intTime, &rawVal);
+        _UncheckedSwap(value, rawVal);
+    }
+}
+
+void 
+_ConvertValueForTime(const Usd_Clip::ExternalTime &extTime, 
+                     const Usd_Clip::InternalTime &intTime,
+                     VtValue *value)
+{
+    _ConvertTypeErasedValueForTime(extTime, intTime, value);
+}
+
+void 
+_ConvertValueForTime(const Usd_Clip::ExternalTime &extTime, 
+                     const Usd_Clip::InternalTime &intTime,
+                     SdfAbstractDataValue *value)
+{
+    _ConvertTypeErasedValueForTime(extTime, intTime, value);
+}
+
+// Fallback no-op default for the rest of the value types; there is no time 
+// conversion necessary for non-timecode types.
+template <class T>
+inline
+void _ConvertValueForTime(const Usd_Clip::ExternalTime &extTime, 
+                          const Usd_Clip::InternalTime &intTime,
+                          T *value)
+{
+}
+
+template <class T>
+static bool
+_Interpolate(
+    const SdfLayerRefPtr& clip, const SdfPath &clipPath,
+    Usd_Clip::InternalTime clipTime, Usd_InterpolatorBase* interpolator,
+    T* value)
 {
     double lowerInClip, upperInClip;
     if (clip->GetBracketingTimeSamplesForPath(
-            clipId.id, clipTime, &lowerInClip, &upperInClip)) {
+            clipPath, clipTime, &lowerInClip, &upperInClip)) {
             
         return Usd_GetOrInterpolateValue(
-            clip, clipId.id, clipTime, lowerInClip, upperInClip,
+            clip, clipPath, clipTime, lowerInClip, upperInClip,
             interpolator, value);
     }
 
     return false;
 }
 
-#define _INSTANTIATE_INTERPOLATE(r, unused, elem)               \
-    template bool Usd_Clip::_Interpolate(                       \
-        const SdfLayerRefPtr&, const _TranslatedSpecId&,        \
-        InternalTime, Usd_InterpolatorBase*,                    \
+}; // End anonymous namespace
+
+template <class T>
+bool 
+Usd_Clip::QueryTimeSample(
+    const SdfPath& path, ExternalTime time, 
+    Usd_InterpolatorBase* interpolator, T* value) const
+{
+    const SdfPath clipPath = _TranslatePathToClip(path);
+    const InternalTime clipTime = _TranslateTimeToInternal(time);
+    const SdfLayerRefPtr& clip = _GetLayerForClip();
+
+    if (!clip->QueryTimeSample(clipPath, clipTime, value)) {
+        // See comment in Usd_Clip::GetBracketingTimeSamples.
+        if (!_Interpolate(clip, clipPath, clipTime, interpolator, value)) {
+            return false;
+        }
+    }
+
+    // Convert values containing SdfTimeCodes if necessary.
+    _ConvertValueForTime(time, clipTime, value);
+    return true;
+}
+
+#define _INSTANTIATE_QUERY_TIME_SAMPLE(r, unused, elem)         \
+    template bool Usd_Clip::QueryTimeSample(                    \
+        const SdfPath&, Usd_Clip::ExternalTime,                 \
+        Usd_InterpolatorBase*,                                  \
         SDF_VALUE_CPP_TYPE(elem)*) const;                       \
-    template bool Usd_Clip::_Interpolate(                       \
-        const SdfLayerRefPtr&, const _TranslatedSpecId&,        \
-        InternalTime, Usd_InterpolatorBase*,                    \
-        SDF_VALUE_CPP_ARRAY_TYPE(elem)*) const;                 \
+    template bool Usd_Clip::QueryTimeSample(                    \
+        const SdfPath&, Usd_Clip::ExternalTime,                 \
+        Usd_InterpolatorBase*,                                  \
+        SDF_VALUE_CPP_ARRAY_TYPE(elem)*) const;
 
-BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_INTERPOLATE, ~, SDF_VALUE_TYPES)
-#undef _INSTANTIATE_INTERPOLATE
+BOOST_PP_SEQ_FOR_EACH(_INSTANTIATE_QUERY_TIME_SAMPLE, ~, SDF_VALUE_TYPES)
+#undef _INSTANTIATE_QUERY_TIME_SAMPLE
 
-template bool Usd_Clip::_Interpolate(
-    const SdfLayerRefPtr&, const _TranslatedSpecId&,
-    InternalTime, Usd_InterpolatorBase*,
+template bool Usd_Clip::QueryTimeSample(
+    const SdfPath&, Usd_Clip::ExternalTime,
+    Usd_InterpolatorBase*,
     SdfAbstractDataValue*) const;
 
-template bool Usd_Clip::_Interpolate(
-    const SdfLayerRefPtr&, const _TranslatedSpecId&,
-    InternalTime, Usd_InterpolatorBase*,
+template bool Usd_Clip::QueryTimeSample(
+    const SdfPath&, Usd_Clip::ExternalTime,
+    Usd_InterpolatorBase*,
     VtValue*) const;
 
 PXR_NAMESPACE_CLOSE_SCOPE

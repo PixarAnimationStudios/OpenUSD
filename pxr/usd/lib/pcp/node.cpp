@@ -165,7 +165,7 @@ PcpNodeRef::GetSite() const
 }
 
 bool 
-PcpNodeRef::IsDirect() const
+PcpNodeRef::IsRootNode() const
 {
     return GetArcType() == PcpArcTypeRoot;
 }

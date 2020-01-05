@@ -49,11 +49,15 @@ class "Light" (
 
     Linking is specified as collections (UsdCollectionAPI) which can
     be accessed via GetLightLinkCollection() and GetShadowLinkCollection().
-    Note however that there are extra semantics in how UsdLuxLight
-    uses its collections: if a collection is empty, the light is treated
-    as linked to <i>all</i> geometry for the respective purpose.
-    UsdCollectionAPI and UsdCollectionAPI::MembershipQuery are unaware
-    of this light-specific interpretation.
+    Note that these collections have their includeRoot set to true,
+    so that lights will illuminate and cast shadows from all objects
+    by default.  To illuminate only a specific set of objects, there
+    are two options.  One option is to modify the collection paths
+    to explicitly exclude everything else, assuming it is known;
+    the other option is to set includeRoot to false and explicitly
+    include the desired objects.  These are complementary approaches
+    that may each be preferable depending on the scenario and how
+    to best express the intent of the light setup.
     """
     customData = {
         string extraIncludes = """
@@ -293,7 +297,7 @@ class "ShapingAPI" (
         doc = """An IES (Illumination Engineering Society) light
         profile describing the angular distribution of light."""
     )
-    float shaping:ies:angleScale (
+    float shaping:ies:angleScale = 0 (
         displayGroup = "Shaping"
         doc = """Rescales the angular distribution of the IES profile.
         TODO: clarify semantics"""
@@ -329,15 +333,17 @@ class "ShadowAPI" (
         doc = """The color of shadows cast by the light.  This is a
         non-physical control.  The default is to cast black shadows."""
     )
-    float shadow:distance (
+    float shadow:distance = -1.0 (
         displayGroup = "Shadows"
         doc = """The maximum distance shadows are cast.
-        There is no limit unless this attribute value is overridden."""
+        The default value (-1) indicates no limit.
+        """
     )
-    float shadow:falloff (
+    float shadow:falloff = -1.0 (
         displayGroup = "Shadows"
-        doc = """The near distance at which shadow falloff beings.
-        There is no falloff unless this attribute value is overridden."""
+        doc = """The near distance at which shadow falloff begins.
+        The default value (-1) indicates no falloff.
+        """
     )
     float shadow:falloffGamma = 1.0 (
         displayGroup = "Shadows"
@@ -411,7 +417,9 @@ class RectLight "RectLight" (
     inherits = </Light>
     doc = """Light emitted from one side of a rectangle.
     The rectangle is centered in the XY plane and emits light along the -Z axis.
-    The rectangle is 1 unit in length in the X and Y axis."""
+    The rectangle is 1 unit in length in the X and Y axis.  In the default 
+    position, a texture file's min coordinates should be at (+X, +Y) and 
+    max coordinates at (-X, -Y)."""
 ) {
     float width = 1 (
         doc = "Width of the rectangle, in the local X axis."
@@ -473,7 +481,29 @@ class GeometryLight "GeometryLight" (
 class DomeLight "DomeLight" (
     inherits = </Light>
     doc = """Light emitted inward from a distant external environment,
-    such as a sky or IBL light probe."""
+    such as a sky or IBL light probe.  The orientation of a dome light with a
+    latlong texture is expected to match the OpenEXR specification for latlong 
+    environment maps.  From the OpenEXR documentation:
+    
+    -------------------------------------------------------------------------
+    Latitude-Longitude Map:
+    
+    The environment is projected onto the image using polar coordinates
+    (latitude and longitude).  A pixel's x coordinate corresponds to
+    its longitude, and the y coordinate corresponds to its latitude.
+    Pixel (dataWindow.min.x, dataWindow.min.y) has latitude +pi/2 and
+    longitude +pi; pixel (dataWindow.max.x, dataWindow.max.y) has
+    latitude -pi/2 and longitude -pi.
+    
+    In 3D space, latitudes -pi/2 and +pi/2 correspond to the negative and
+    positive y direction.  Latitude 0, longitude 0 points into positive
+    z direction; and latitude 0, longitude pi/2 points into positive x
+    direction.
+    
+    The size of the data window should be 2*N by N pixels (width by height),
+    where N can be any integer greater than 0.
+    -------------------------------------------------------------------------
+"""
 ) {
     asset texture:file (
         doc = """A color texture to use on the dome, such as an HDR (high

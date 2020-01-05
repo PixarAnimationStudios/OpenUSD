@@ -1,0 +1,14 @@
+#usda 1.0
+(
+    subLayers = [
+        @./root_sub.usda@ (scale = 0.5)
+    ]
+    customLayerData = {
+        timecode timeCode = 10.0
+        timecode[] timeCodeArray = [10.0, 20.0]
+        dictionary subDict = {
+            timecode timeCode = 10.0
+            timecode[] timeCodeArray = [10.0, 20.0]
+        }    
+    }
+)

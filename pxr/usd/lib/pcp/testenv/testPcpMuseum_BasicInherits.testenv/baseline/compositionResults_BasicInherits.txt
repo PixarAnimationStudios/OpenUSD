@@ -106,3 +106,40 @@ Results for composing </NonExistentInherit/Child>
 Prim Stack:
     nonexistent.sdf      /NonExistentInherit/Child
 
+------------------------------------------------------------------------
+Results for composing </RootClass>
+
+Prim Stack:
+    root.sdf             /RootClass
+
+------------------------------------------------------------------------
+Results for composing </ParentClass>
+
+Prim Stack:
+    root.sdf             /ParentClass
+
+Child names:
+     ['SubrootClass']
+
+------------------------------------------------------------------------
+Results for composing </ParentClass/SubrootClass>
+
+Prim Stack:
+    root.sdf             /ParentClass/SubrootClass
+
+------------------------------------------------------------------------
+Results for composing </InheritsOrder1>
+
+Prim Stack:
+    root.sdf             /InheritsOrder1
+    root.sdf             /RootClass
+    root.sdf             /ParentClass/SubrootClass
+
+------------------------------------------------------------------------
+Results for composing </InheritsOrder2>
+
+Prim Stack:
+    root.sdf             /InheritsOrder2
+    root.sdf             /ParentClass/SubrootClass
+    root.sdf             /RootClass
+

@@ -47,6 +47,7 @@
 #include <string>
 #include <typeindex>
 #include <typeinfo>
+#include <type_traits>
 #include <vector>
 #include <cmath>
 #include <limits>
@@ -57,6 +58,9 @@ using std::type_info;
 using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+static_assert(std::is_nothrow_move_constructible<VtValue>::value &&
+              std::is_nothrow_move_assignable<VtValue>::value, "");
 
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<VtValue>();

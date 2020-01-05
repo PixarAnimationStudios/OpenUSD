@@ -40,7 +40,6 @@ TF_DECLARE_WEAK_AND_REF_PTRS(SdfLayerStateDelegateBase);
 TF_DECLARE_WEAK_AND_REF_PTRS(SdfSimpleLayerStateDelegate);
 TF_DECLARE_WEAK_PTRS(SdfAbstractData);
 
-class SdfAbstractDataSpecId;
 class SdfAbstractDataConstValue;
 class SdfPath;
 class TfToken;
@@ -69,21 +68,21 @@ public:
 
     SDF_API
     void SetField(
-        const SdfAbstractDataSpecId& id,
+        const SdfPath& path,
         const TfToken& field,
         const VtValue& value,
         const VtValue *oldValue=NULL);
 
     SDF_API
     void SetField(
-        const SdfAbstractDataSpecId& id,
+        const SdfPath& path,
         const TfToken& field,
         const SdfAbstractDataConstValue& value,
         const VtValue *oldValue=NULL);
 
     SDF_API
     void SetFieldDictValueByKey(
-        const SdfAbstractDataSpecId& id,
+        const SdfPath& path,
         const TfToken& field,
         const TfToken& keyPath,
         const VtValue& value,
@@ -91,7 +90,7 @@ public:
 
     SDF_API
     void SetFieldDictValueByKey(
-        const SdfAbstractDataSpecId& id,
+        const SdfPath& path,
         const TfToken& field,
         const TfToken& keyPath,
         const SdfAbstractDataConstValue& value,
@@ -99,13 +98,13 @@ public:
 
     SDF_API
     void SetTimeSample(
-        const SdfAbstractDataSpecId& id,
+        const SdfPath& path,
         double time,
         const VtValue& value);
 
     SDF_API
     void SetTimeSample(
-        const SdfAbstractDataSpecId& id,
+        const SdfPath& path,
         double time,
         const SdfAbstractDataConstValue& value);
 
@@ -182,33 +181,33 @@ protected:
 
     /// Invoked when a field is being changed on the associated layer.
     virtual void _OnSetField(
-        const SdfAbstractDataSpecId& id,
+        const SdfPath& path,
         const TfToken& fieldName,
         const VtValue& value) = 0;
     virtual void _OnSetField(
-        const SdfAbstractDataSpecId& id,
+        const SdfPath& path,
         const TfToken& fieldName,
         const SdfAbstractDataConstValue& value) = 0;
 
     /// Invoked when a field dict key is being changed on the associated layer.
     virtual void _OnSetFieldDictValueByKey(
-        const SdfAbstractDataSpecId& id,
+        const SdfPath& path,
         const TfToken& fieldName,
         const TfToken& keyPath,
         const VtValue& value) = 0;
     virtual void _OnSetFieldDictValueByKey(
-        const SdfAbstractDataSpecId& id,
+        const SdfPath& path,
         const TfToken& fieldName,
         const TfToken& keyPath,
         const SdfAbstractDataConstValue& value) = 0;
 
     /// Invoked when a time sample is being changed on the associated layer.
     virtual void _OnSetTimeSample(
-        const SdfAbstractDataSpecId& id,
+        const SdfPath& path,
         double time,
         const VtValue& value) = 0;
     virtual void _OnSetTimeSample(
-        const SdfAbstractDataSpecId& id,
+        const SdfPath& path,
         double time,
         const SdfAbstractDataConstValue& value) = 0;
 
@@ -282,30 +281,30 @@ protected:
         const SdfLayerHandle& layer) override;
 
     virtual void _OnSetField(
-        const SdfAbstractDataSpecId& id,
+        const SdfPath& path,
         const TfToken& fieldName,
         const VtValue& value) override;
     virtual void _OnSetField(
-        const SdfAbstractDataSpecId& id,
+        const SdfPath& path,
         const TfToken& fieldName,
         const SdfAbstractDataConstValue& value) override;
     virtual void _OnSetFieldDictValueByKey(
-        const SdfAbstractDataSpecId& id,
+        const SdfPath& path,
         const TfToken& fieldName,
         const TfToken& keyPath,
         const VtValue& value) override;
     virtual void _OnSetFieldDictValueByKey(
-        const SdfAbstractDataSpecId& id,
+        const SdfPath& path,
         const TfToken& fieldName,
         const TfToken& keyPath,
         const SdfAbstractDataConstValue& value) override;
 
     virtual void _OnSetTimeSample(
-        const SdfAbstractDataSpecId& id,
+        const SdfPath& path,
         double time,
         const VtValue& value) override;
     virtual void _OnSetTimeSample(
-        const SdfAbstractDataSpecId& id,
+        const SdfPath& path,
         double time,
         const SdfAbstractDataConstValue& value) override;
 
@@ -323,19 +322,19 @@ protected:
         const SdfPath& newPath) override;
 
     virtual void _OnPushChild(
-        const SdfPath& id,
+        const SdfPath& path,
         const TfToken& fieldName,
         const TfToken& value) override;
     virtual void _OnPushChild(
-        const SdfPath& id,
+        const SdfPath& path,
         const TfToken& fieldName,
         const SdfPath& value) override;
     virtual void _OnPopChild(
-        const SdfPath& id,
+        const SdfPath& path,
         const TfToken& fieldName,
         const TfToken& oldValue) override;
     virtual void _OnPopChild(
-        const SdfPath& id,
+        const SdfPath& path,
         const TfToken& fieldName,
         const SdfPath& oldValue) override;
 

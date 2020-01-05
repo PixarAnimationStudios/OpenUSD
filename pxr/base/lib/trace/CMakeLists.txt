@@ -273,13 +273,9 @@ pxr_register_test(testTraceMarkers
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceMarkers"
 )
 
-# Temporaily disable this test, currently can take 10 to 20 minutes 
-# or more depending on the OS.
-if (0)
-    pxr_register_test(testTraceReportPerf
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceReportPerf"
-    )
-endif()
+pxr_register_test(testTraceReportPerf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceReportPerf"
+)    
 
 pxr_register_test(testTraceEventContainer
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceEventContainer"

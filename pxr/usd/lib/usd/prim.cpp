@@ -918,12 +918,22 @@ UsdPrim::HasAuthoredPayloads() const
 void
 UsdPrim::Load(UsdLoadPolicy policy) const
 {
+    if (IsInMaster()) {
+        TF_CODING_ERROR("Attempted to load a prim in a master <%s>",
+                        GetPath().GetText());
+        return;
+    }
     _GetStage()->Load(GetPath(), policy);
 }
 
 void
 UsdPrim::Unload() const
 {
+    if (IsInMaster()) {
+        TF_CODING_ERROR("Attempted to unload a prim in a master <%s>",
+                        GetPath().GetText());
+        return;
+    }
     _GetStage()->Unload(GetPath());
 }
 

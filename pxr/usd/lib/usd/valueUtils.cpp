@@ -45,4 +45,29 @@ Usd_MergeTimeSamples(std::vector<double> * const timeSamples,
     timeSamples->swap(*tempUnionTimeSamples);
 }
 
+// Apply the offset to the value if it's holding the templated type.
+template <class T>
+static bool
+_TryApplyLayerOffsetToValue(VtValue *value, const SdfLayerOffset &offset)
+{
+    if (value->IsHolding<T>()) {
+        T v;
+        value->UncheckedSwap(v);
+        Usd_ApplyLayerOffsetToValue(&v, offset);
+        value->UncheckedSwap(v);
+        return true;
+    }
+    return false;
+}
+
+void
+Usd_ApplyLayerOffsetToValue(VtValue *value, const SdfLayerOffset &offset)
+{
+    // Try applying the offset for each of our supported value types.
+    _TryApplyLayerOffsetToValue<SdfTimeCode>(value, offset) ||
+    _TryApplyLayerOffsetToValue<VtArray<SdfTimeCode>>(value, offset) ||
+    _TryApplyLayerOffsetToValue<VtDictionary>(value, offset) ||
+    _TryApplyLayerOffsetToValue<SdfTimeSampleMap>(value, offset);
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

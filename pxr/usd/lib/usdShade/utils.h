@@ -42,6 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// "Parameter" and "InterfaceAttribute" are deprecated shading attribute types.
 /// 
 enum class UsdShadeAttributeType {
+    Invalid,
     Input,
     Output,
     Parameter,

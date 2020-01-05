@@ -35,11 +35,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define HD_VOLUME_TOKENS                                    \
-    (filePath)
-
-TF_DECLARE_PUBLIC_TOKENS(HdVolumeTokens, HD_API, HD_VOLUME_TOKENS);
-
 class HdSceneDelegate;
 typedef boost::shared_ptr<class HdVolume> HdVolumeSharedPtr;
 typedef std::vector<class HdVolume const *> HdVolumePtrConstVector;

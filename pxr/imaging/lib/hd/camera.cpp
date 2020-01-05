@@ -100,6 +100,9 @@ HdCamera::Sync(HdSceneDelegate *sceneDelegate,
         }
     }
 
+    // Clear all the dirty bits (i.e., including DirtyParams even though it
+    // isn't handled above). This ensures that the sprim doesn't remain in the
+    // dirty list always.
     *dirtyBits = Clean;
 }
 
@@ -107,7 +110,11 @@ HdCamera::Sync(HdSceneDelegate *sceneDelegate,
 HdDirtyBits
 HdCamera::GetInitialDirtyBitsMask() const
 {
-    return AllDirty;
+    // Don't set DirtyParams. A renderer interested in consuming camera
+    // parameters is expected to inherit from HdCamera and override this method
+    // and Sync to handle DirtyParams.
+    return (DirtyViewMatrix | DirtyProjMatrix | DirtyWindowPolicy |
+            DirtyClipPlanes);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

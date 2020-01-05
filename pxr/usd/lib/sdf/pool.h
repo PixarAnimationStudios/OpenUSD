@@ -85,7 +85,7 @@ public:
     static constexpr uint64_t ElemsPerRegion = 1ull << (32-RegionBits);
 
     // Maximum index of an element in a region.
-    static constexpr uint32_t MaxIndex = (1ull << (32-RegionBits)) - 1;
+    static constexpr uint32_t MaxIndex = ElemsPerRegion - 1;
 
     // Mask to extract region number from a handle value.
     static constexpr uint32_t RegionMask = ((1 << RegionBits)-1);
@@ -232,7 +232,10 @@ private:
             for (unsigned region = 1; region != NumRegions+1; ++region) {
                 char const *start = _regionStarts[region];
                 ptrdiff_t diff = ptr - start;
-                if (ARCH_LIKELY(start && 
+                // Indexes start at 1 to avoid hash collisions when combining
+                // multiple pool indexes in a single hash, so strictly greater
+                // than 0 rather than greater-equal is appropriate here.
+                if (ARCH_LIKELY(start && (diff > 0) &&
                      (diff < static_cast<ptrdiff_t>(ElemsPerRegion*ElemSize)))){
                     return Handle(region, 
                                   static_cast<uint32_t>(diff / ElemSize));

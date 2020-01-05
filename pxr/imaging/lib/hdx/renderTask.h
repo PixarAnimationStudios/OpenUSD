@@ -96,6 +96,11 @@ protected:
     HDX_API
     HdRenderPassStateSharedPtr _GetRenderPassState(HdTaskContext *ctx) const;
 
+    // Returns the number of draw items used for rendering. This will only 
+    // return the correct result after HdxRenderTask::Prepare() has been called.
+    HDX_API
+    size_t _GetDrawItemCount() const;
+
 private:
     HdRenderPassSharedPtr _pass;
     TfTokenVector _renderTags;

@@ -26,11 +26,13 @@ pxr_library(usd
         clipsAPI
         attributeQuery
         collectionAPI
+        collectionMembershipQuery
         common
         crateInfo
         debugCodes
         editContext
         editTarget
+        flattenUtils
         inherits
         interpolation
         modelAPI
@@ -38,6 +40,7 @@ pxr_library(usd
         object
         payloads
         prim
+        primCompositionQuery
         primData
         primDataHandle
         primFlags
@@ -53,6 +56,7 @@ pxr_library(usd
         stage
         stageCache
         stageCacheContext
+        stageLoadRules
         stagePopulationMask
         timeCode
         tokens
@@ -86,7 +90,7 @@ pxr_library(usd
     PRIVATE_HEADERS
         crateDataTypes.h
         crateValueInliners.h
-        refOrPayloadListEditImpl.h
+        listEditImpl.h
         wrapUtils.h
 
     PYTHON_CPPFILES
@@ -99,10 +103,12 @@ pxr_library(usd
         wrapAttributeQuery.cpp
         wrapClipsAPI.cpp
         wrapCollectionAPI.cpp
+        wrapCollectionMembershipQuery.cpp
         wrapCommon.cpp
         wrapCrateInfo.cpp
         wrapEditContext.cpp
         wrapEditTarget.cpp
+        wrapFlattenUtils.cpp
         wrapInherits.cpp
         wrapInterpolation.cpp
         wrapModelAPI.cpp
@@ -110,6 +116,7 @@ pxr_library(usd
         wrapObject.cpp
         wrapPayloads.cpp
         wrapPrim.cpp
+        wrapPrimCompositionQuery.cpp
         wrapPrimFlags.cpp
         wrapPrimRange.cpp
         wrapProperty.cpp
@@ -122,6 +129,7 @@ pxr_library(usd
         wrapStage.cpp
         wrapStageCache.cpp
         wrapStageCacheContext.cpp
+        wrapStageLoadRules.cpp
         wrapStagePopulationMask.cpp
         wrapTokens.cpp
         wrapTimeCode.cpp
@@ -170,12 +178,13 @@ pxr_test_scripts(
     testenv/testUsdChangeProcessing.py
     testenv/testUsdClasses.py
     testenv/testUsdCollectionAPI.py
-    testenv/testUsdCrate07To08Conversion.py
+    testenv/testUsdCratePayloadConversionFromVersion07.py
     testenv/testUsdCreateProperties.py
     testenv/testUsdDataFormats.py
     testenv/testUsdFileFormats.py
     testenv/testUsdFlatten.py
     testenv/testUsdFlatten2.py
+    testenv/testUsdFlattenLayerStack.py
     testenv/testUsdFlattenProperties.py
     testenv/testUsdInherits.py
     testenv/testUsdInstanceProxy.py
@@ -184,11 +193,13 @@ pxr_test_scripts(
     testenv/testUsdModel.py
     testenv/testUsdNotices.py
     testenv/testUsdPayloads.py
+    testenv/testUsdPrimCompositionQuery.py
     testenv/testUsdPrimFlagsPredicate.py
     testenv/testUsdPrimRange.py
     testenv/testUsdPrims.py
     testenv/testUsdReferences.py
     testenv/testUsdRelationships.py
+    testenv/testUsdSchemaBasePy.py
     testenv/testUsdSchemaRegistry.py
     testenv/testUsdSpecializes.py
     testenv/testUsdStage.py
@@ -198,6 +209,7 @@ pxr_test_scripts(
     testenv/testUsdTimeCodeRepr.py
     testenv/testUsdTimeOffsets.py
     testenv/testUsdTimeSamples.py
+    testenv/testUsdTimeValueAuthoring.py
     testenv/testUsdUsdzFileFormat.py
     testenv/testUsdValueClips.py
     testenv/testUsdVariantEditing.py
@@ -316,6 +328,17 @@ pxr_build_test(testUsdSchemaBase
         testenv/testUsdSchemaBase.cpp
 )
 
+pxr_build_test(testUsdTimeValueAuthoringCpp
+    LIBRARIES
+        arch
+        plug
+        sdf
+        tf
+        usd
+    CPPFILES
+        testenv/testUsdTimeValueAuthoring.cpp
+)
+
 pxr_build_test(testUsdUsdzResolver
     LIBRARIES
         ar
@@ -332,8 +355,8 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/testUsdCrate07To08Conversion.testenv
-    DEST testUsdCrate07To08Conversion
+    SRC testenv/testUsdCratePayloadConversionFromVersion07.testenv
+    DEST testUsdCratePayloadConversionFromVersion07
 )
 
 pxr_install_test_dir(
@@ -354,6 +377,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdFlatten2
     DEST testUsdFlatten4
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdFlattenLayerStack
+    DEST testUsdFlattenLayerStack
 )
 
 pxr_install_test_dir(
@@ -407,6 +435,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdPrimCompositionQuery.testenv
+    DEST testUsdPrimCompositionQuery
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdPrimGetDescendants.testenv
     DEST testUsdPrimGetDescendants
 )
@@ -429,6 +462,16 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdSchemaRegistry
     DEST testUsdSchemaRegistry
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdTimeValueAuthoring
+    DEST testUsdTimeValueAuthoring
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdTimeValueAuthoring
+    DEST testUsdTimeValueAuthoringCpp
 )
 
 pxr_install_test_dir(
@@ -608,6 +651,11 @@ pxr_register_test(testUsdCreateAttributeCpp
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdHardToReach
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdHardToReach"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdInstancing
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdInstancing"
@@ -618,6 +666,11 @@ pxr_register_test(testUsdInstancing
 pxr_register_test(testUsdInstanceProxy
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdInstanceProxy"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdIntegerCoding
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdIntegerCoding"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -641,6 +694,12 @@ pxr_register_test(testUsdReferences
 
 pxr_register_test(testUsdTemplatedIO
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTemplatedIO"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdPrimCompositionQuery
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdPrimCompositionQuery"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -741,9 +800,9 @@ pxr_register_test(testUsdPayloads
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_register_test(testUsdCrate07To08Conversion
+pxr_register_test(testUsdCratePayloadConversionFromVersion07
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdCrate07To08Conversion"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdCratePayloadConversionFromVersion07"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -813,6 +872,12 @@ pxr_register_test(testUsdFlatten4
         USD_ASSIGN_MASTERS_DETERMINISTICALLY=1
 )
 
+pxr_register_test(testUsdFlattenLayerStack
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdFlattenLayerStack"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdNotices
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdNotices"
@@ -830,9 +895,26 @@ pxr_register_test(testUsdSchemaBase
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdSchemaBasePy
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSchemaBasePy"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdSchemaRegistry
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSchemaRegistry"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdTimeValueAuthoring
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTimeValueAuthoring"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdTimeValueAuthoringCpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTimeValueAuthoringCpp"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -845,5 +927,9 @@ pxr_register_test(testUsdUsdzFileFormat
 pxr_register_test(testUsdZipFile
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdZipFile"
+    EXPECTED_RETURN_CODE 0
+)
+pxr_register_test(testUsdUsdzResolver
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUsdzResolver"
     EXPECTED_RETURN_CODE 0
 )

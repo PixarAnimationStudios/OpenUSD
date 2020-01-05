@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/material.h"
+#include "hdPrman/matfiltFilterChain.h"
 #include "Riley.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -63,6 +64,15 @@ public:
     bool IsValid() const;
 
     virtual void Finalize(HdRenderParam *renderParam) override;
+
+    /// Return the static list of tokens supported.
+    static TfTokenVector const& GetShaderSourceTypes();
+
+    /// Get material filtering chain.
+    static MatfiltFilterChain GetFilterChain();
+
+    /// Set material filtering chain.
+    static void SetFilterChain(MatfiltFilterChain const& chain);
 
 private:
     void _ResetMaterial(HdPrman_Context *context);

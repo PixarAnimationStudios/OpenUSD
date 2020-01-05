@@ -41,14 +41,12 @@ struct Pcp_GraphStats
 public:
     Pcp_GraphStats()
         : numNodes(0)
-        , numImpliedLocalInherits(0)
-        , numImpliedGlobalInherits(0)
+        , numImpliedInherits(0)
     { }
 
     size_t numNodes;
     std::map<PcpArcType, size_t> typeToNumNodes;
-    size_t numImpliedLocalInherits;
-    size_t numImpliedGlobalInherits;
+    size_t numImpliedInherits;
 };
 
 struct Pcp_CacheStats
@@ -92,10 +90,8 @@ public:
             const bool nodeIsImpliedInherit = 
                 node.GetOriginNode() != node.GetParentNode();
             if (nodeIsImpliedInherit) {
-                if (node.GetArcType() == PcpArcTypeLocalInherit)
-                    ++(stats->numImpliedLocalInherits);
-                else if (node.GetArcType() == PcpArcTypeGlobalInherit)
-                    ++(stats->numImpliedGlobalInherits);
+                if (node.GetArcType() == PcpArcTypeInherit)
+                    ++(stats->numImpliedInherits);
             }
         }
     }
@@ -241,31 +237,14 @@ public:
                     _Helper::FormatNumber(typeToNumCulledNodes[t]).c_str())
                 << endl;
             
-            std::string impliedTypeName;
-            const size_t* numImpliedNodes = NULL;
-            const size_t* numImpliedCulledNodes = NULL;
-
-            if (t == PcpArcTypeLocalInherit) {
-                impliedTypeName = "implied local inherits";
-                numImpliedNodes = &totalStats.numImpliedLocalInherits;
-                numImpliedCulledNodes = 
-                    &culledStats.numImpliedLocalInherits;
+            if (t == PcpArcTypeInherit) {
+                out << "      implied inherits: "
+                    << TfStringPrintf("%*s%s / %s",
+                        13, "",
+                        _Helper::FormatNumber(totalStats.numImpliedInherits).c_str(),
+                        _Helper::FormatNumber(culledStats.numImpliedInherits).c_str())
+                    << endl;
             }
-            else if (t == PcpArcTypeGlobalInherit) {
-                impliedTypeName = "implied global inherits";
-                numImpliedNodes = &totalStats.numImpliedGlobalInherits;
-                numImpliedCulledNodes = &culledStats.numImpliedGlobalInherits;
-            }
-            else {
-                continue;
-            }
-
-            out << "      " << impliedTypeName << ": "
-                << TfStringPrintf("%*s%s / %s",
-                    (int)(29 - impliedTypeName.size()), "",
-                    _Helper::FormatNumber(*numImpliedNodes).c_str(),
-                    _Helper::FormatNumber(*numImpliedCulledNodes).c_str())
-                << endl;
         }
 
         out << "  (*) This does not include culled nodes that were erased "

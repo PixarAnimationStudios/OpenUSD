@@ -228,7 +228,9 @@ class VtValue
     template <class T>
     struct _UsesLocalStore : boost::mpl::bool_<
         (sizeof(T) <= sizeof(_Storage)) &&
-        VtValueTypeHasCheapCopy<T>::value > {};
+        VtValueTypeHasCheapCopy<T>::value &&
+        std::is_nothrow_move_constructible<T>::value &&
+        std::is_nothrow_move_assignable<T>::value> {};
 
     // Type information base class.
     struct _TypeInfo {
@@ -298,7 +300,7 @@ class VtValue
         void Destroy(_Storage &storage) const {
             _destroy(storage);
         }
-        void Move(_Storage &src, _Storage &dst) const {
+        void Move(_Storage &src, _Storage &dst) const noexcept {
             _move(src, dst);
         }
         size_t Hash(_Storage const &storage) const {
@@ -455,7 +457,7 @@ class VtValue
             return GetObj(lhs) == GetObj(rhs);
         }
 
-        static void _Move(_Storage &src, _Storage &dst) {
+        static void _Move(_Storage &src, _Storage &dst) noexcept {
             new (&_Container(dst)) Container(std::move(_Container(src)));
             _Destroy(src);
         }
@@ -640,7 +642,7 @@ public:
     }
 
     /// Move construct with \p other.
-    VtValue(VtValue &&other) {
+    VtValue(VtValue &&other) noexcept {
         _Move(other, *this);
     }
 
@@ -691,7 +693,7 @@ public:
     }
 
     /// Move assignment from another \a VtValue.
-    VtValue &operator=(VtValue &&other) {
+    VtValue &operator=(VtValue &&other) noexcept {
         if (ARCH_LIKELY(this != &other))
             _Move(other, *this);
         return *this;
@@ -736,7 +738,7 @@ public:
     }
 
     /// Swap this with \a rhs.
-    VtValue &Swap(VtValue &rhs) {
+    VtValue &Swap(VtValue &rhs) noexcept {
         // Do nothing if both empty.  Otherwise general swap.
         if (!IsEmpty() || !rhs.IsEmpty()) {
             VtValue tmp;
@@ -1053,7 +1055,7 @@ private:
         }
     }
 
-    static inline void _Move(VtValue &src, VtValue &dst) {
+    static inline void _Move(VtValue &src, VtValue &dst) noexcept {
         if (src.IsEmpty()) {
             dst._Clear();
             return;

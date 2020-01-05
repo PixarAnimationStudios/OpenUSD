@@ -137,52 +137,52 @@ public:
 
     bool IsEmpty() const override;
 
-    void CreateSpec(const SdfAbstractDataSpecId& id, 
+    void CreateSpec(const SdfPath& path, 
                     SdfSpecType specType) override;
-    bool HasSpec(const SdfAbstractDataSpecId& id) const override;
-    void EraseSpec(const SdfAbstractDataSpecId& id) override;
-    void MoveSpec(const SdfAbstractDataSpecId& oldId, 
-                  const SdfAbstractDataSpecId& newId) override;
-    SdfSpecType GetSpecType(const SdfAbstractDataSpecId& id) const override;
+    bool HasSpec(const SdfPath& path) const override;
+    void EraseSpec(const SdfPath& path) override;
+    void MoveSpec(const SdfPath& oldPath, 
+                  const SdfPath& newPath) override;
+    SdfSpecType GetSpecType(const SdfPath& path) const override;
 
-    bool Has(const SdfAbstractDataSpecId& id, const TfToken &fieldName,
+    bool Has(const SdfPath& path, const TfToken &fieldName,
              SdfAbstractDataValue* value) const override;
-    bool Has(const SdfAbstractDataSpecId& id, const TfToken& fieldName,
+    bool Has(const SdfPath& path, const TfToken& fieldName,
              VtValue *value = NULL) const override;
-    VtValue Get(const SdfAbstractDataSpecId& id, 
+    VtValue Get(const SdfPath& path, 
                 const TfToken& fieldName) const override;
-    void Set(const SdfAbstractDataSpecId& id, const TfToken& fieldName,
+    void Set(const SdfPath& path, const TfToken& fieldName,
              const VtValue & value) override;
-    void Set(const SdfAbstractDataSpecId& id, const TfToken& fieldName,
+    void Set(const SdfPath& path, const TfToken& fieldName,
              const SdfAbstractDataConstValue& value) override;
-    void Erase(const SdfAbstractDataSpecId& id, 
+    void Erase(const SdfPath& path, 
                const TfToken& fieldName) override;
-    std::vector<TfToken> List(const SdfAbstractDataSpecId& id) const override;
+    std::vector<TfToken> List(const SdfPath& path) const override;
 
     std::set<double> ListAllTimeSamples() const override;
     
     std::set<double> ListTimeSamplesForPath(
-        const SdfAbstractDataSpecId& id) const override;
+        const SdfPath& path) const override;
 
     bool GetBracketingTimeSamples(
         double time, double* tLower, double* tUpper) const override;
 
     size_t GetNumTimeSamplesForPath(
-        const SdfAbstractDataSpecId& id) const override;
+        const SdfPath& path) const override;
 
     bool GetBracketingTimeSamplesForPath(
-        const SdfAbstractDataSpecId& id, double time, 
+        const SdfPath& path, double time, 
         double* tLower, double* tUpper) const override;
 
-    bool QueryTimeSample(const SdfAbstractDataSpecId& id, double time,
+    bool QueryTimeSample(const SdfPath& path, double time,
                          SdfAbstractDataValue *optionalValue) const override;
-    bool QueryTimeSample(const SdfAbstractDataSpecId& id, double time, 
+    bool QueryTimeSample(const SdfPath& path, double time, 
                          VtValue *value) const override;
 
-    void SetTimeSample(const SdfAbstractDataSpecId& id, double time, 
+    void SetTimeSample(const SdfPath& path, double time, 
                        const VtValue & value) override;
 
-    void EraseTimeSample(const SdfAbstractDataSpecId& id, double time) override;
+    void EraseTimeSample(const SdfPath& path, double time) override;
 
 protected:
     // SdfAbstractData overrides

@@ -395,7 +395,13 @@ class Field3DAsset "Field3DAsset" (
     )
     token fieldName (
         doc = """Name of an individual field within the file specified by
-                 the filePath attribute."""
+                 the filePath attribute. Clients which consume Field3D files
+                 should treat this as the Field3D field \\p attribute."""
+    )
+    token fieldPurpose (
+        doc = """Optional token which can be used to indicate the purpose or grouping
+                 of an individual field. Clients which consume Field3D files
+                 should treat this as the Field3D field \\p name."""
     )
     asset filePath (
         doc = """An asset path attribute that points to a file on disk.

@@ -114,9 +114,9 @@ HdStComputeShader::ComputeHash() const
 {
     size_t hash = 0;
     
-    TF_FOR_ALL(it, _params) {
-        if (it->IsFallback())
-            boost::hash_combine(hash, it->GetName().Hash());
+    for (HdMaterialParam const& param : _params) {
+        if (param.IsFallback())
+            boost::hash_combine(hash, param.name.Hash());
     }
     boost::hash_combine(hash, 
         ArchHash(_computeSource.c_str(), _computeSource.size()));

@@ -25,11 +25,11 @@
 #define HDXPRMAN_RENDERER_PLUGIN_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hdx/rendererPlugin.h"
+#include "pxr/imaging/hd/rendererPlugin.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdxPrmanRendererPlugin final : public HdxRendererPlugin {
+class HdxPrmanRendererPlugin final : public HdRendererPlugin {
 public:
     HdxPrmanRendererPlugin() = default;
     virtual ~HdxPrmanRendererPlugin() = default;

@@ -36,6 +36,7 @@
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdSkel/binding.h"
 #include "pxr/usd/usdSkel/skeleton.h"
+#include "pxr/usd/usdSkel/skeletonQuery.h"
 #include "pxr/usd/usdSkel/topology.h"
 
 #include <GA/GA_AIFIndexPair.h>
@@ -168,9 +169,23 @@ Gusd_GetChildren(const UsdSkelTopology& topology,
 
 
 GU_AgentRigPtr
-GusdCreateAgentRig(const char* name, const UsdSkelSkeleton& skel)
+GusdCreateAgentRig(const char* name, const UsdSkelSkeletonQuery& skelQuery)
 {
     TRACE_FUNCTION();
+
+    if (!skelQuery.IsValid()) {
+        GUSD_WARN().Msg("%s -- invalid skelDefinition.",
+                        skelQuery.GetSkeleton().GetPrim().GetPath().GetText());
+        return nullptr;
+    }
+
+    if(!skelQuery.HasBindPose()) {
+        GUSD_WARN().Msg("%s -- `bindTransformsAttrs` is invalid.",
+                        skelQuery.GetSkeleton().GetPrim().GetPath().GetText());                 
+        return nullptr;
+    }        
+   
+    const UsdSkelSkeleton& skel = skelQuery.GetSkeleton();
 
     if (!skel) {
         TF_CODING_ERROR("'skel' is invalid");
@@ -189,7 +204,7 @@ GusdCreateAgentRig(const char* name, const UsdSkelSkeleton& skel)
         return nullptr;
     }
 
-    UsdSkelTopology topology(joints);
+    const UsdSkelTopology topology(joints);
     std::string reason;
     if (!topology.Validate(&reason)) {
         GUSD_WARN().Msg("%s -- invalid topology: %s",
@@ -197,6 +212,7 @@ GusdCreateAgentRig(const char* name, const UsdSkelSkeleton& skel)
                         reason.c_str());
         return nullptr;
     }
+
     return GusdCreateAgentRig(name, topology, jointNames);
 }
 
@@ -271,18 +287,42 @@ Gusd_CreateCaptureAttributes(
 
     GA_ROHandleI jointIndicesHnd(&gd, GA_ATTRIB_POINT,
                                  GUSD_SKEL_JOINTINDICES_ATTR);
+    
+    bool perPointJointIndices = true;
+
     if (jointIndicesHnd.isInvalid()) {
-         GUSD_WARN().Msg("Could not find int skel_jointIndices attribute.");
-        return false;
+
+        // If the influences were stored with 'constant' interpolation,
+        // they may be defined as a detail attrib instead.
+        jointIndicesHnd.bind(&gd, GA_ATTRIB_DETAIL,
+                             GUSD_SKEL_JOINTINDICES_ATTR);
+        if (jointIndicesHnd.isValid()) {
+            perPointJointIndices = false;
+        } else {
+            GUSD_WARN().Msg("Could not find int skel_jointIndices attribute.");
+            return false;
+        }
     }
     GA_ROHandleF jointWeightsHnd(&gd, GA_ATTRIB_POINT,
                                  GUSD_SKEL_JOINTWEIGHTS_ATTR);
+    bool perPointJointWeights = true;
+
     if (jointWeightsHnd.isInvalid()) {
-         GUSD_WARN().Msg("Could not find float skel_jointWeights attribute.");
-        return false;
+        
+        // If the influences were stored with 'constant' interpolation,
+        // they may be defined as a detail attrib instead.
+        jointWeightsHnd.bind(&gd, GA_ATTRIB_DETAIL,
+                             GUSD_SKEL_JOINTWEIGHTS_ATTR);
+        if (jointWeightsHnd.isValid()) {
+            perPointJointWeights = false;
+        } else {
+            GUSD_WARN().Msg("Could not find float skel_jointWeights "
+                            "attribute.");
+            return false;
+        }
     }
     if (jointIndicesHnd.getTupleSize() != jointWeightsHnd.getTupleSize()) {
-         GUSD_WARN().Msg("Tuple size of skel_jointIndices [%d] != "
+        GUSD_WARN().Msg("Tuple size of skel_jointIndices [%d] != "
                         "tuple size of skel_JointWeights [%d]",
                         jointIndicesHnd.getTupleSize(),
                         jointWeightsHnd.getTupleSize());
@@ -349,11 +389,20 @@ Gusd_CreateCaptureAttributes(
 
                 for ( ; o < end; ++o) {
                     if (jointIndicesTuple->get(jointIndicesHnd.getAttribute(),
-                                               o, indices.data(), tupleSize) &&
+                                               perPointJointIndices ? o : 0,
+                                               indices.data(), tupleSize) &&
                         jointWeightsTuple->get(jointWeightsHnd.getAttribute(),
-                                               o, weights.data(), tupleSize)) {
+                                               perPointJointWeights ? o : 0,
+                                               weights.data(), tupleSize)) {
 
-                        // Normalize in-place.
+                        // Joint influences are required to be stored
+                        // pre-normalized in USD, but subsequent import
+                        // processing may have altered that.
+                        // Normalize in-place to be safe.
+                        //
+                        // TODO: If the shape was rigid, then we are needlessly
+                        // re-normalizing over each run. It would be more
+                        // efficient to pre-normalize instead.
                         float sum = 0;
                         for (int c = 0; c < tupleSize; ++c)
                             sum += weights[c];
@@ -373,8 +422,10 @@ Gusd_CreateCaptureAttributes(
         });
 
     if (deleteInluencePrimvars) {
-        gd.destroyPointAttrib(GUSD_SKEL_JOINTINDICES_ATTR);
-        gd.destroyPointAttrib(GUSD_SKEL_JOINTWEIGHTS_ATTR);
+        gd.destroyAttribute(jointIndicesHnd->getOwner(),
+                            jointIndicesHnd->getName());
+        gd.destroyAttribute(jointWeightsHnd->getOwner(),
+                            jointWeightsHnd->getName());
     }
     return true;
 }
@@ -561,13 +612,6 @@ GusdReadSkinnablePrim(GU_Detail& gd,
                       const GT_RefineParms* refineParms)
 {
     TRACE_FUNCTION();
-
-    // TODO: Support rigid deformations.
-    // Should be trivial when constraining to a single joint,
-    // but multi-joint rigid deformations might not be supported.
-    if (skinningQuery.IsRigidlyDeformed()) {
-        return false;
-    }
 
     // Convert joint names in Skeleton order to the order specified
     // on this skinnable prim (if any).

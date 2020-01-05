@@ -313,7 +313,8 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
         } else {
             state->SetStencilEnabled(false);
         }
-        state->SetAlphaThreshold(_params.alphaThreshold);
+        // Make sure translucent pixels can be picked by not discarding them
+        state->SetAlphaThreshold(0.0f);
         state->SetCullStyle(_params.cullStyle);
         state->SetCameraFramingState(_contextParams.viewMatrix, 
                                      _contextParams.projectionMatrix,
@@ -635,8 +636,8 @@ HdxPickResult::_ResolveHit(int index, int x, int y, float z,
 
     // Calculate the hit location in NDC, then transform to worldspace.
     GfVec3d ndcHit(
-        (x / _bufferSize[0]) * 2.0 - 1.0,
-        (y / _bufferSize[1]) * 2.0 - 1.0,
+        ((double)x / _bufferSize[0]) * 2.0 - 1.0,
+        ((double)y / _bufferSize[1]) * 2.0 - 1.0,
         ((z - _depthRange[0]) / (_depthRange[1] - _depthRange[0])) * 2.0 - 1.0);
     hit->worldSpaceHitPoint = GfVec3f(_ndcToWorld.Transform(ndcHit));
     hit->ndcDepth = ndcHit[2];
@@ -915,8 +916,7 @@ operator<<(std::ostream& out, HdxPickHit const& h)
 bool
 operator==(HdxPickTaskParams const& lhs, HdxPickTaskParams const& rhs)
 {
-    return lhs.alphaThreshold == rhs.alphaThreshold
-        && lhs.cullStyle == rhs.cullStyle
+    return lhs.cullStyle == rhs.cullStyle
         && lhs.enableSceneMaterials == rhs.enableSceneMaterials;
 }
 
@@ -930,7 +930,6 @@ std::ostream&
 operator<<(std::ostream& out, HdxPickTaskParams const& p)
 {
     out << "PickTask Params: (...) "
-        << p.alphaThreshold << " "
         << p.cullStyle << " "
         << p.enableSceneMaterials;
     return out;

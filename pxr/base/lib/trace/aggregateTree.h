@@ -35,6 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class TraceCollection;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(TraceAggregateTree);
+TF_DECLARE_WEAK_AND_REF_PTRS(TraceEventTree);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// \class TraceAggregateTree
@@ -83,8 +84,11 @@ public:
     /// Removes all data and nodes from the tree.
     TRACE_API void Clear();
 
-    /// Creates new nodes and counter data from data in /p collection.
-    TRACE_API void Append(const TraceCollection& collection);
+    /// Creates new nodes and counter data from data in \p eventTree and \p 
+    /// collection. 
+    TRACE_API void Append(
+        const TraceEventTreeRefPtr& eventTree,
+        const TraceCollection& collection);
 
 private:
     TRACE_API TraceAggregateTree();

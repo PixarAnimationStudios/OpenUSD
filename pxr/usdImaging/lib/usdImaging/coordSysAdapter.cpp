@@ -67,6 +67,8 @@ UsdImagingCoordSysAdapter::Populate(UsdPrim const& usdPrim,
                 index->InsertSprim(HdPrimTypeTokens->coordSys, idVec[i],
                                    _GetPrim(bindingVec[i].coordSysPrimPath),
                                    shared_from_this());
+                index->AddDependency(idVec[i],
+                    _GetPrim(bindingVec[i].bindingRelPath.GetPrimPath()));
             }
         }
     }
@@ -110,6 +112,9 @@ void
 UsdImagingCoordSysAdapter::ProcessPrimResync(SdfPath const& primPath,
                                              UsdImagingIndexProxy* index)
 {
+    // If we get a resync notice, remove the coord sys object, and rely on
+    // the delegate resync function to re-populate.
+    _RemovePrim(primPath, index);
 }
 
 HdDirtyBits

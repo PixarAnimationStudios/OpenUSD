@@ -184,15 +184,15 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
 
     // Update Render Tags
     _renderTags.clear();
-    _renderTags.push_back(HdTokens->geometry);
+    _renderTags.push_back(HdRenderTagTokens->geometry);
     if (drawRenderPurpose) {
-        _renderTags.push_back(UsdGeomTokens->render);
+        _renderTags.push_back(HdRenderTagTokens->render);
     }
     if (drawProxyPurpose) {
-        _renderTags.push_back(HdTokens->proxy);
+        _renderTags.push_back(HdRenderTagTokens->proxy);
     }
     if (drawGuidePurpose) {
-        _renderTags.push_back(HdTokens->guide);
+        _renderTags.push_back(HdRenderTagTokens->guide);
     }
 
     MStatus status;

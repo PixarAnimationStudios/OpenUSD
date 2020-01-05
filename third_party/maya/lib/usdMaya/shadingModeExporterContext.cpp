@@ -310,9 +310,7 @@ UsdMayaShadingModeExportContext::GetAssignments() const
 
         // If the bound prim's path is not below a bindable root, skip it.
         if (SdfPathFindLongestPrefix(
-                _bindableRoots.begin(),
-                _bindableRoots.end(),
-                usdPath) == _bindableRoots.end()) {
+                _bindableRoots, usdPath) == _bindableRoots.end()) {
             continue;
         }
 

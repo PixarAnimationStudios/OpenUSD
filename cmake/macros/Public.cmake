@@ -222,14 +222,16 @@ function(pxr_library NAME)
     endif()
 
     # Collect libraries.
-    get_property(help CACHE PXR_ALL_LIBS PROPERTY HELPSTRING)
-    list(APPEND PXR_ALL_LIBS ${NAME})
-    set(PXR_ALL_LIBS "${PXR_ALL_LIBS}" CACHE INTERNAL "${help}")
-    if(args_TYPE STREQUAL "STATIC")
-        # Note if this library is explicitly STATIC.
-        get_property(help CACHE PXR_STATIC_LIBS PROPERTY HELPSTRING)
-        list(APPEND PXR_STATIC_LIBS ${NAME})
-        set(PXR_STATIC_LIBS "${PXR_STATIC_LIBS}" CACHE INTERNAL "${help}")
+    if(NOT args_TYPE STREQUAL "PLUGIN")
+        get_property(help CACHE PXR_ALL_LIBS PROPERTY HELPSTRING)
+        list(APPEND PXR_ALL_LIBS ${NAME})
+        set(PXR_ALL_LIBS "${PXR_ALL_LIBS}" CACHE INTERNAL "${help}")
+        if(args_TYPE STREQUAL "STATIC")
+            # Note if this library is explicitly STATIC.
+            get_property(help CACHE PXR_STATIC_LIBS PROPERTY HELPSTRING)
+            list(APPEND PXR_STATIC_LIBS ${NAME})
+            set(PXR_STATIC_LIBS "${PXR_STATIC_LIBS}" CACHE INTERNAL "${help}")
+        endif()
     endif()
 
     # Expand classes into filenames.

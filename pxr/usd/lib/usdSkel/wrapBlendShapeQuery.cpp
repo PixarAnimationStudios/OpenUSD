@@ -75,7 +75,7 @@ _ComputeDeformedPoints(const UsdSkelBlendShapeQuery& self,
 {
     return self.ComputeDeformedPoints(
         subShapeWeights, blendShapeIndices, subShapeIndices,
-        _PyListToVector<VtUIntArray>(blendShapePointIndices),
+        _PyListToVector<VtIntArray>(blendShapePointIndices),
         _PyListToVector<VtVec3fArray>(subShapePointOffsets), points);
 }
 

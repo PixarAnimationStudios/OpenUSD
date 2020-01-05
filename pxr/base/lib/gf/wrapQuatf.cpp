@@ -83,6 +83,10 @@ void wrapQuatf()
     def("Slerp",
         (GfQuatf (*)(double, const GfQuatf&, const GfQuatf&))
         GfSlerp);
+
+    def("Dot",
+        (float (*)(const GfQuatf&, const GfQuatf&))
+        GfDot);
     
     class_<GfQuatf>("Quatf", no_init)
         .def("__init__", make_constructor(__init__))

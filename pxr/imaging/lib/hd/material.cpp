@@ -85,7 +85,8 @@ std::ostream& operator<<(std::ostream& out, const HdMaterialNetworkMap& pv)
 bool operator==(const HdMaterialNetworkMap& lhs,
                 const HdMaterialNetworkMap& rhs) 
 {
-    return lhs.map == rhs.map;
+    return lhs.map == rhs.map &&
+           lhs.terminals == rhs.terminals;
 }
 
 bool operator!=(const HdMaterialNetworkMap& lhs,

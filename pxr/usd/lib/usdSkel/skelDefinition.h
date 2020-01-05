@@ -95,6 +95,12 @@ public:
     template <typename Matrix4>
     bool GetJointLocalInverseRestTransforms(VtArray<Matrix4>* xforms);
 
+    /// See UsdSkel_SkeletonQuery::HasBindPose()
+    bool HasBindPose ();
+
+    /// See UsdSkel_SkeletonQuery::HasRestPose()
+    bool HasRestPose ();
+
 private:
     UsdSkel_SkelDefinition();
 

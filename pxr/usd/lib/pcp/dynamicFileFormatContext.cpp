@@ -78,10 +78,9 @@ private:
     {
         // Search the node's layer stack in strength order for the field on
         // the spec.
-        const SdfAbstractDataSpecId specId(&node.GetPath());
         for (const SdfLayerHandle &layer : node.GetLayerStack()->GetLayers()) {
             VtValue value;
-            if (layer->HasField(specId, _fieldName, &value)) {
+            if (layer->HasField(node.GetPath(), _fieldName, &value)) {
                 // Process the value and mark found
                 composeFunc(std::move(value));
                 _foundValue = true;

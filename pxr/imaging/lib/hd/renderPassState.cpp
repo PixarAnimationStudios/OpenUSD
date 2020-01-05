@@ -134,7 +134,6 @@ HdRenderPassState::SetCameraAndViewport(HdCamera const *camera,
 {
     if (!camera) {
         TF_CODING_ERROR("Received null camera\n");
-        return;
     }
     _camera = camera;
     _viewport = GfVec4f((float)viewport[0], (float)viewport[1],

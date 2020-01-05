@@ -409,6 +409,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_ImpliedAndAncestralInherits.testenv
+    DEST testPcpMuseum_ImpliedAndAncestralInherits
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_PayloadsAndAncestralArcs.testenv
     DEST testPcpMuseum_PayloadsAndAncestralArcs
 )
@@ -946,6 +951,22 @@ pxr_register_test(testPcpMuseum_BasicSpecializesAndVariants
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicSpecializesAndVariants/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicSpecializesAndVariants.txt
     DIFF_COMPARE compositionResults_BasicSpecializesAndVariants.txt 
+)
+
+pxr_register_test(testPcpMuseum_ImpliedAndAncestralInherits
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_TrickyMultipleRelocations4.txt ImpliedAndAncestralInherits/root.sdf" 
+    STDOUT_REDIRECT compositionResults_ImpliedAndAncestralInherits.txt
+    DIFF_COMPARE compositionResults_ImpliedAndAncestralInherits.txt
+)
+
+pxr_register_test(testPcpMuseum_ImpliedAndAncestralInherits_graph
+    PYTHON
+    TESTENV testPcpMuseum_ImpliedAndAncestralInherits
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --dumpPath /World/CharGroup/Sim/includes/Hand/Geom --dumpMaps ImpliedAndAncestralInherits/root.sdf" 
+    STDOUT_REDIRECT compositionResults_ImpliedAndAncestralInherits_graph.txt
+    CLEAN_OUTPUT "[^@]*/ImpliedAndAncestralInherits/"
+    DIFF_COMPARE compositionResults_ImpliedAndAncestralInherits_graph.txt 
 )
 
 pxr_register_test(testPcpMuseum_PayloadsAndAncestralArcs

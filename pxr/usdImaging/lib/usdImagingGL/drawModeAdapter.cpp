@@ -42,6 +42,7 @@
 
 #include "pxr/usd/usdGeom/modelAPI.h"
 
+#include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/tf/type.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -941,6 +942,29 @@ UsdImagingGLDrawModeAdapter::_GenerateCardsFromTextureGeometry(
     }
 }
 
+namespace
+{
+
+template <class Vec>
+bool
+_ConvertToMatrix(const Vec &mvec, GfMatrix4d *mat)
+{
+    if (mvec.size() == 16) {
+        mat->Set(mvec[ 0], mvec[ 1], mvec[ 2], mvec[ 3],
+                 mvec[ 4], mvec[ 5], mvec[ 6], mvec[ 7],
+                 mvec[ 8], mvec[ 9], mvec[10], mvec[11],
+                 mvec[12], mvec[13], mvec[14], mvec[15]);
+        return true;
+    }
+
+    TF_WARN(
+        "worldtoscreen metadata expected 16 values, got %zu",
+        mvec.size());
+    return false;
+};
+
+}
+
 bool
 UsdImagingGLDrawModeAdapter::_GetMatrixFromImageMetadata(
     UsdAttribute const& attr, GfMatrix4d *mat) const
@@ -962,18 +986,39 @@ UsdImagingGLDrawModeAdapter::_GetMatrixFromImageMetadata(
         return false;
     }
 
-    // Read the "worldtoscreen" metadata, as a vector that we expect to be
-    // of size 16, and matrixify it.
-    std::vector<float> mvec;
-    if (!(img->GetMetadata(_tokens->worldtoscreen, &mvec)) ||
-        mvec.size() != 16) {
-        return false;
+    // Read the "worldtoscreen" metadata. This metadata specifies a 4x4
+    // matrix but may be given as any the following data types, since
+    // some image formats may support certain metadata types but not others.
+    //
+    // - std::vector<float> or std::vector<double> with 16 elements
+    //   in row major order.
+    // - GfMatrix4f or GfMatrix4d
+    VtValue worldtoscreen;
+    if (img->GetMetadata(_tokens->worldtoscreen, &worldtoscreen)) {
+        if (worldtoscreen.IsHolding<std::vector<float>>()) {
+            return _ConvertToMatrix(
+                worldtoscreen.UncheckedGet<std::vector<float>>(), mat);
+        }
+        else if (worldtoscreen.IsHolding<std::vector<double>>()) {
+            return _ConvertToMatrix(
+                worldtoscreen.UncheckedGet<std::vector<double>>(), mat);
+        }
+        else if (worldtoscreen.IsHolding<GfMatrix4f>()) {
+            *mat = GfMatrix4d(worldtoscreen.UncheckedGet<GfMatrix4f>());
+            return true;
+        }
+        else if (worldtoscreen.IsHolding<GfMatrix4d>()) {
+            *mat = worldtoscreen.UncheckedGet<GfMatrix4d>();
+            return true;
+        }
+        else {
+            TF_WARN(
+                "worldtoscreen metadata holding unexpected type '%s'",
+                worldtoscreen.GetTypeName().c_str());
+        }
     }
-    mat->Set(mvec[ 0], mvec[ 1], mvec[ 2], mvec[ 3],
-             mvec[ 4], mvec[ 5], mvec[ 6], mvec[ 7],
-             mvec[ 8], mvec[ 9], mvec[10], mvec[11],
-             mvec[12], mvec[13], mvec[14], mvec[15]);
-    return true;
+
+    return false;
 }
 
 void

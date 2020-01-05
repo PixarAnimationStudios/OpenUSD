@@ -8,6 +8,8 @@
 UsdShade provides schemas and behaviors for creating and binding materials,
 which encapsulate shading networks.
 
+\tableofcontents
+
 # UsdShade Networks {#UsdShadeNetworks}
 
 UsdShade provides schemas and behaviors for creating shading networks
@@ -27,13 +29,13 @@ Here's a python example.
     material = UsdShade.Material.Define(stage, materialPath)
 
     # create shaders
-    downStreamShader = UsdShade.Shader.Define(
-        stage, materialPath.AppendChild('Upstream'))
-    upstreamShader = UsdShade.Shader.Define(
+    downstreamShader = UsdShade.Shader.Define(
         stage, materialPath.AppendChild('Downstream'))
+    upstreamShader = UsdShade.Shader.Define(
+        stage, materialPath.AppendChild('Upstream'))
 
     # Connect
-    inputPort = downStreamShader.CreateInput(
+    inputPort = downstreamShader.CreateInput(
         'DownstreamInput', Sdf.ValueTypeNames.Float)
     inputPort.ConnectToSource(upstreamShader, 'UpstreamOutput')
 ~~~~~~~~~~~~~
@@ -49,13 +51,13 @@ This will yield a material with two connected nodes.
         {
             def Material "MyMaterial"
             {
-                def Shader "Upstream"
+                def Shader "Downstream"
                 {
                     float inputs:DownstreamInput.connect = 
-                        </Model/Materials/MyMaterial/Downstream.outputs:UpstreamOutput>
+                        </Model/Materials/MyMaterial/Upstream.outputs:UpstreamOutput>
                 }
 
-                def Shader "Downstream"
+                def Shader "Upstream"
                 {
                     float outputs:UpstreamOutput
                 }
@@ -79,18 +81,18 @@ Shading networks can be organized into coherent packaged units
 to the internal nodes.  In this scenario, the UsdShadeNodeGraph is a parent or
 ancestor prim to all of the UsdShadeShader prims in the network, and serves
 as the point of encapsulation - the UsdShadeNodeGraph prim can then be 
-*referenced* into other, larger networks as a building block, with its entire
+__referenced__ into other, larger networks as a building block, with its entire
 network intact.  When referenced into larger networks, NodeGraphs can also
 be [instanced](http://openusd.org/docs/USD-Glossary.html#USDGlossary-Instancing)
 so that they appear as a single prim in the network, and can be processed
 more efficiently when referenced from multiple locations.
 
 If the network of shading nodes is directly consumable as a "shader" of a
-type known to some client renderer (e.g. a *surface shader*), then the
+type known to some client renderer (e.g. a __surface shader__), then the
 encapsulating parent/ancestor should be declared as a UsdShadeMaterial, which
 is a container that can also be bound to geometries or collections. Materials
 can also be reused and instanced, retaining the same network but allowing
-top-level "Material Interface" parameter to be authored uniquely.
+top-level "Material Interface" parameters to be authored uniquely.
 
 To expose a parameter to the container, we use the same mechanism that
 connects nodes.
@@ -119,13 +121,13 @@ UsdShadeMaterial called 'MyMaterial', and set its default value to 1.0
             {
                 float inputs:ExposedPort = 1
 
-                def Shader "Upstream"
+                def Shader "Downstream"
                 {
                     float inputs:DownstreamInput.connect = 
-                        </Model/Materials/MyMaterial/Downstream.outputs:UpstreamOutput>
+                        </Model/Materials/MyMaterial/Upstream.outputs:UpstreamOutput>
                 }
 
-                def Shader "Downstream"
+                def Shader "Upstream"
                 {
                     float inputs:internalPort.connect = 
                         </Model/Materials/MyMaterial.inputs:ExposedPort>
@@ -177,6 +179,152 @@ UsdShadeMaterial called 'MyMaterial', and set its default value to 1.0
         }
     }
 ~~~~~~~~~~~~~
+
+# Connections and Dataflow in UsdShade {#UsdShadeConnections}
+
+UsdShade uses UsdAttribute connections both to indicate dataflow from 
+shading node outputs to inputs, __and__ to indicate pre-rendering propagation
+of values authored on UsdShadeNodeGraph and UsdShadeMaterial inputs to shader
+node inputs.  In USD, connections (and relationships) are authored on the
+__consumer__, and target the source or __producer__.  Therefore, data in
+a UsdShade network flows from a connection's target to its anchor.  To
+reliably translate UsdShade networks for consumption by renderers, we need to 
+establish a few rules about how values propagate in the face of connections.
+
+## Valid Shader Connections Win Over Input Values ## {#UsdShadeConnectOverInput}
+
+When an input on a shading node has __both__ an authored value (default or
+timeSamples), __and__ a connection to an output on another shading node, then
+the connection alone is transmitted to the renderer - the authored value is
+irrelevant.  Connections that target an output that __does not exist in the 
+containing Material__ are ignored; if the connected input has an authored
+value, then in this case, and this case alone, we pass the value to the
+renderer and ignore the connection.
+
+In the following example, we will provide values to the renderer for inputs
+_valueOnly_ (2) and _brokenConnection_ (4), while informing the renderer of 
+a connection between _validOutput_ and _connected_, ignoring the value authored 
+of 42 on _connected_.
+
+~~~~~~~~~~~~~{.usd}
+    #usda 1.0
+
+    def "Model"
+    {
+        def "Materials"
+        {
+            def Material "MyMaterial"
+            {
+                def Shader "Downstream"
+                {
+                    float inputs:brokenConnection = 4
+                    float inputs:brokenConnection.connect = 
+                        </Model/Materials/MyMaterial/MissingShader.outputs:MissingOutput>
+
+                    float inputs:connected = 42
+                    float inputs:connected.connect = 
+                        </Model/Materials/MyMaterial/Upstream.outputs:UpstreamOutput>
+
+                    float inputs:valueOnly = 2
+
+                }
+
+                def Shader "Upstream"
+                {
+                    float outputs:UpstreamOutput
+                }
+            }
+        }
+    }
+~~~~~~~~~~~~~
+
+## Resolving Interface Connections ## {#UsdShadeResolvingInterface}
+
+When we create inputs on NodeGraphs or Materials to serve as "public interface"
+for shading properties, it is common to _create_ an approrpiately-typed
+attribute, but __not provide a default value for it__.  When USD is the document
+for a material shading network, this "uninitialized interface attribute"
+allows the Material to continue to receive updates to published shaders made
+available through the SdrShaderRegistry long after the Material has been
+created.  Why? Because of the first rule of interface value propagation:
+
+- If a Material or NodeGraph input provides no value, and one or more of its
+  shader's inputs connects to the interface attribute, then the value supplied
+  to the renderer for that shading input should be whatever value is authored
+  on the shader input, or if none is authored, then we emit __no value__ to
+  the renderer, indicating it should simply follow the shader implementation's
+  own default value.
+
+NodeGraphs can be embedded inside Materials, and also as nested components
+inside other NodeGraphs.  Because of this nestability, it is posible that
+a deeply embedded shader node input may need to travel several connection hops
+to find an interface attribute that provides a value for it to use.  This leads
+to the second and final rule of interface value propagation:
+
+- If a shader node input is connected to a containing NodeGraph input that is
+  in turn connected to an outer-containing NodeGraph or Material, it is the
+  __outermost authored input default in the connection chain__ that provides the
+  shader input's value.  This allows the "user" of a NodeGraph to always be able
+  to drive its inputs from its own public interface.
+
+Putting these two rules together, in the example below, we expect the 
+following values to be passed to the renderer for each shader input:
+
+- _spOne_ = 4, because neither of the interface attributes in its connection 
+  chain supply a value.
+- _spTwo_ = 14, because _matInterfaceTwo_ provides the strongest opinion, as the
+  outermost value-provider in the connection chain.
+- _spThree_ = 64, because only its directly-embedding NodeGraph's interface 
+  attribute provides a value stronger than its own default.
+
+~~~~~~~~~~~~~{.usd}
+    #usda 1.0
+
+    def "Model"
+    {
+        def "Materials"
+        {
+            def Material "MyMaterial"
+            {
+                float inputs:matInterfaceOne
+                float inputs:matInterfaceTwo = 14
+                float inputs:matInterfaceThree
+ 
+                def NodeGraph "Package"
+                {
+                    float inputs:ngInterfaceOne.connect = 
+                        </Model/Materials/MyMaterial.inputs:matInterfaceOne>
+
+                    float inputs:ngInterfaceTwo = 28
+                    float inputs:ngInterfaceTwo.connect =
+                        </Model/Materials/MyMaterial.inputs:matInterfaceTwo>
+
+                    float inputs:ngInterfaceThree = 64
+                    float inputs:ngInterfaceThree.connect =
+                        </Model/Materials/MyMaterial.inputs:matInterfaceThree>
+
+                    def Shader "EmbeddedInNG"
+                    {
+                        float inputs:spOne = 4
+                        float inputs:spOne.connect = 
+                            </Model/Materials/MyMaterial/Package.inputs:ngInterfaceOne>
+
+                        float inputs:spTwo = 5
+                        float inputs:spTwo.connect = 
+                            </Model/Materials/MyMaterial/Package.inputs:ngInterfaceTwo>
+
+                        float inputs:spThree = 6
+                        float inputs:spThree.connect = 
+                            </Model/Materials/MyMaterial/Package.inputs:ngInterfaceThree>
+
+                    }
+                }
+            }
+        }
+    }
+~~~~~~~~~~~~~
+
+
 # UsdShade Based Shader Definition {#UsdShadeShaderDefinition}
 
 UsdShade has an NdrParserPlugin (\ref UsdShadeShaderDefParserPlugin) that 

@@ -426,11 +426,7 @@ bool GetBoolCustomData(
         const PXR_NS::TfToken& key,
         const bool defaultValue);
 
-// Compute the value of \p attr, returning true upon success.
-//
-// Only valid for T's bool, short, int, float, double, and MObject.  No
-// need to boost:mpl verify it, though, since getValue() will fail to compile
-// with any other types
+/// Compute the value of \p attr, returning true upon success.
 template <typename T>
 bool getPlugValue(
         const MFnDependencyNode& depNode,
@@ -438,7 +434,7 @@ bool getPlugValue(
         T* val,
         bool* isAnimated = nullptr)
 {
-    MPlug plg = depNode.findPlug(attr, /* findNetworked = */ true);
+    MPlug plg = depNode.findPlug(attr, /* wantNetworkedPlug = */ true);
     if (plg.isNull()) {
         return false;
     }

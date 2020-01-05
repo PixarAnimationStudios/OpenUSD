@@ -140,7 +140,7 @@ public:
 
     // Provide an overload for TfToken to prevent hashing via TfToken's implicit
     // conversion to std::string.
-    size_t operator()(const TfToken& t) const;
+    TF_API size_t operator()(const TfToken& t) const;
 };
 
 struct TfHashCharPtr {

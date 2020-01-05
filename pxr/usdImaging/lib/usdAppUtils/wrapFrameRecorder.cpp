@@ -47,6 +47,8 @@ wrapFrameRecorder()
         .def("SetImageWidth", &This::SetImageWidth)
         .def("SetComplexity", &This::SetComplexity)
         .def("SetColorCorrectionMode", &This::SetColorCorrectionMode)
+        .def("SetIncludedPurposes", &This::SetIncludedPurposes,
+             (arg("purposes")))
         .def(
             "Record",
             &This::Record,

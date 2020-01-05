@@ -128,6 +128,7 @@ struct HdMaterialNetwork {
 /// Describes a map from network type to network.
 struct HdMaterialNetworkMap {
     std::map<TfToken, HdMaterialNetwork> map;
+    std::vector<SdfPath> terminals;
 };
 
 // VtValue requirements

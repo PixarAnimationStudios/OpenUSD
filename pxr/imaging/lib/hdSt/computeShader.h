@@ -50,7 +50,7 @@ typedef boost::shared_ptr<class HdStComputeShader> HdStComputeShaderSharedPtr;
 /// A scene-based ComputeShader object.
 ///
 /// When compute shaders are expressed in the scene graph, the HdSceneDelegate
-/// can use this object to express these compute shaders in Hydra.
+/// can use this object to express these compute shaders in Storm.
 /// In addition to the shader itself, a binding from the Computation Sprim
 /// to the ComputeShader must be expressed as well.
 class HdStComputeShader : public HdStShaderCode {

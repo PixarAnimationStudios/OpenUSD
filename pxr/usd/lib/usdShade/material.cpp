@@ -470,7 +470,7 @@ UsdShadeMaterial::FindBaseMaterialPathInPrimIndex(
         const PathPredicate & pathIsMaterialPredicate)
 {
     for(const PcpNodeRef &node: primIndex.GetNodeRange()) {
-        if (PcpIsSpecializesArc(node.GetArcType())) {
+        if (PcpIsSpecializeArc(node.GetArcType())) {
             // We only consider children of the prim's root node because any
             // specializes arc we care about that is authored inside referenced
             // scene description will "imply" up into the root layer stack.

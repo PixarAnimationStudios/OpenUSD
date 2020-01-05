@@ -46,13 +46,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 bool
 PxrUsdTranslators_MeshWriter::_GetMeshUVSetData(
-        const MFnMesh& mesh,
+        const MObject& meshObj,
         const MString& uvSetName,
         VtArray<GfVec2f>* uvArray,
         TfToken* interpolation,
         VtArray<int>* assignmentIndices)
 {
     MStatus status;
+    MFnMesh mesh(meshObj);
 
     // Sanity check first to make sure this UV set even has assigned values
     // before we attempt to do anything with the data.
@@ -83,7 +84,7 @@ PxrUsdTranslators_MeshWriter::_GetMeshUVSetData(
     assignmentIndices->assign((size_t)numFaceVertices, -1);
     *interpolation = UsdGeomTokens->faceVarying;
 
-    MItMeshFaceVertex itFV(mesh.object());
+    MItMeshFaceVertex itFV(meshObj);
     unsigned int fvi = 0;
     for (itFV.reset(); !itFV.isDone(); itFV.next(), ++fvi) {
         if (!itFV.hasUVs(uvSetName)) {
@@ -195,7 +196,7 @@ _LinearColorFromColorSet(
 /// vertex, uniform, or constant interpolation if possible.
 /// Unauthored/unpainted values will be given the index -1.
 bool PxrUsdTranslators_MeshWriter::_GetMeshColorSetData(
-        MFnMesh& mesh,
+        const MObject& meshObj,
         const MString& colorSet,
         bool isDisplayColor,
         const VtArray<GfVec3f>& shadersRGBData,
@@ -208,6 +209,7 @@ bool PxrUsdTranslators_MeshWriter::_GetMeshColorSetData(
         MFnMesh::MColorRepresentation* colorSetRep,
         bool* clamped)
 {
+    MFnMesh mesh(meshObj);
     // If there are no colors, return immediately as failure.
     if (mesh.numColors(colorSet) == 0) {
         return false;

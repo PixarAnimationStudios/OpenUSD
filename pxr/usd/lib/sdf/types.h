@@ -32,6 +32,7 @@
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/listOp.h"
+#include "pxr/usd/sdf/timeCode.h"
 #include "pxr/usd/sdf/valueTypeName.h"
 
 #include "pxr/base/arch/demangle.h"
@@ -342,6 +343,7 @@ SDF_API TfToken SdfGetRoleNameForValueTypeName(TfToken const &typeName);
     ((Half,       half,       GfHalf,         ()    )) \
     ((Float,      float,      float,          ()    )) \
     ((Double,     double,     double,         ()    )) \
+    ((TimeCode,   timecode,   SdfTimeCode,    ()    )) \
     ((String,     string,     std::string,    ()    )) \
     ((Token,      token,      TfToken,        ()    )) \
     ((Asset,      asset,      SdfAssetPath,   ()    ))
@@ -488,7 +490,7 @@ class Sdf_ValueTypeNamesType : boost::noncopyable {
 public:
     SdfValueTypeName Bool;
     SdfValueTypeName UChar, Int, UInt, Int64, UInt64;
-    SdfValueTypeName Half, Float, Double;
+    SdfValueTypeName Half, Float, Double, TimeCode;
     SdfValueTypeName String, Token, Asset;
     SdfValueTypeName Int2,     Int3,     Int4;
     SdfValueTypeName Half2,    Half3,    Half4;
@@ -507,7 +509,7 @@ public:
 
     SdfValueTypeName BoolArray;
     SdfValueTypeName UCharArray, IntArray, UIntArray, Int64Array, UInt64Array;
-    SdfValueTypeName HalfArray, FloatArray, DoubleArray;
+    SdfValueTypeName HalfArray, FloatArray, DoubleArray, TimeCodeArray;
     SdfValueTypeName StringArray, TokenArray, AssetArray;
     SdfValueTypeName Int2Array,     Int3Array,     Int4Array;
     SdfValueTypeName Half2Array,    Half3Array,    Half4Array;

@@ -97,7 +97,7 @@ public:
     /// If requested, the variant selection (if any) will be returned in
     /// \p value .
     USD_API
-    bool HasAuthoredVariantSelection(std::string *value = NULL) const;
+    bool HasAuthoredVariantSelection(std::string *value = nullptr) const;
 
     /// Author a variant selection for this VariantSet, setting it to
     /// \a variantName in the stage's current EditTarget.  Return true if the
@@ -261,6 +261,13 @@ public:
     USD_API
     bool SetSelection(const std::string& variantSetName,
                       const std::string& variantName);
+
+    /// Returns the composed map of all variant selections authored on the
+    /// the originating UsdPrim, regardless of whether a corresponding 
+    /// variant set exists.
+    USD_API
+    SdfVariantSelectionMap GetAllVariantSelections() const;
+
 
 private:
     explicit UsdVariantSets(const UsdPrim& prim) 

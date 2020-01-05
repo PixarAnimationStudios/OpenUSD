@@ -112,9 +112,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         # initialization without inverting the name->value logic
         self._highlightColorName = self.stateProperty("highlightColor", default="Yellow")
         self._ambientLightOnly = self.stateProperty("cameraLightEnabled", default=True)
-        self._keyLightEnabled = self.stateProperty("keyLightEnabled", default=True)
-        self._fillLightEnabled = self.stateProperty("fillLightEnabled", default=True)
-        self._backLightEnabled = self.stateProperty("backLightEnabled", default=True)
+        self._domeLightEnabled = self.stateProperty("domeLightEnabled", default=False)
         self._clearColorText = self.stateProperty("backgroundColor", default="Grey (Dark)")
         self._autoComputeClippingPlanes = self.stateProperty("autoComputeClippingPlanes", default=False)
         self._showBBoxPlayback = self.stateProperty("showBBoxesDuringPlayback", default=False)
@@ -164,9 +162,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         state["selectionHighlightMode"] = self._selHighlightMode
         state["highlightColor"] = self._highlightColorName
         state["cameraLightEnabled"] = self._ambientLightOnly
-        state["keyLightEnabled"] = self._keyLightEnabled
-        state["fillLightEnabled"] = self._fillLightEnabled
-        state["backLightEnabled"] = self._backLightEnabled
+        state["domeLightEnabled"] = self._domeLightEnabled
         state["backgroundColor"] = self._clearColorText
         state["autoComputeClippingPlanes"] = self._autoComputeClippingPlanes
         state["showBBoxesDuringPlayback"] = self._showBBoxPlayback
@@ -536,31 +532,13 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         self._ambientLightOnly = value
 
     @property
-    def keyLightEnabled(self):
-        return self._keyLightEnabled
+    def domeLightEnabled(self):
+        return self._domeLightEnabled
 
-    @keyLightEnabled.setter
+    @domeLightEnabled.setter
     @visibleViewSetting
-    def keyLightEnabled(self, value):
-        self._keyLightEnabled = value
-
-    @property
-    def fillLightEnabled(self):
-        return self._fillLightEnabled
-
-    @fillLightEnabled.setter
-    @visibleViewSetting
-    def fillLightEnabled(self, value):
-        self._fillLightEnabled = value
-
-    @property
-    def backLightEnabled(self):
-        return self._backLightEnabled
-
-    @backLightEnabled.setter
-    @visibleViewSetting
-    def backLightEnabled(self, value):
-        self._backLightEnabled = value
+    def domeLightEnabled(self, value):
+        self._domeLightEnabled = value
 
     @property
     def clearColorText(self):

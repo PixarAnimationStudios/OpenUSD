@@ -18,8 +18,10 @@ pxr_plugin(${PXR_PACKAGE}
         usdSkel
         usdUtils
         vt
-        ${Boost_PYTHON_LIBRARY}
-        ${MAYA_LIBRARIES}
+        ${MAYA_Foundation_LIBRARY}
+        ${MAYA_OpenMaya_LIBRARY}
+        ${MAYA_OpenMayaAnim_LIBRARY}
+        ${MAYA_OpenMayaFX_LIBRARY}
 
     INCLUDE_DIRS
         ${MAYA_INCLUDE_DIRS}
@@ -34,6 +36,7 @@ pxr_plugin(${PXR_PACKAGE}
         nurbsCurveWriter
         nurbsSurfaceWriter
         particleWriter
+        strokeWriter
 
     CPPFILES
         cameraReader.cpp
@@ -63,6 +66,7 @@ pxr_plugin(${PXR_PACKAGE}
 pxr_test_scripts(
     testenv/testPxrUsdTranslators.py
     testenv/testPxrUsdTranslatorsScope.py
+    testenv/testPxrUsdTranslatorsStroke.py
 )
 
 pxr_register_test(testPxrUsdTranslators
@@ -70,7 +74,7 @@ pxr_register_test(testPxrUsdTranslators
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPxrUsdTranslators"
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
-        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
 )
@@ -85,7 +89,22 @@ pxr_register_test(testPxrUsdTranslatorsScope
     TESTENV testPxrUsdTranslatorsScope
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
-        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/lib/usd/usdMaya/resources
+        MAYA_DISABLE_CIP=1
+        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
+)
+
+pxr_install_test_dir(
+    SRC testenv/StrokeExportTest
+    DEST testPxrUsdTranslatorsStroke
+)
+pxr_register_test(testPxrUsdTranslatorsStroke
+    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPxrUsdTranslatorsStroke"
+    TESTENV testPxrUsdTranslatorsStroke
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
 )

@@ -267,6 +267,35 @@ HdEmbreeRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
     return HdAovDescriptor();
 }
 
+VtDictionary 
+HdEmbreeRenderDelegate::GetRenderStats() const
+{
+    VtDictionary stats;
+    stats[HdPerfTokens->numCompletedSamples.GetString()] = 
+        _renderer.GetCompletedSamples();
+    return stats;
+}
+
+bool
+HdEmbreeRenderDelegate::IsPauseSupported() const
+{
+    return true;
+}
+
+bool
+HdEmbreeRenderDelegate::Pause()
+{
+    _renderThread.PauseRender();
+    return true;
+}
+
+bool
+HdEmbreeRenderDelegate::Resume()
+{
+    _renderThread.ResumeRender();
+    return true;
+}
+
 HdRenderPassSharedPtr
 HdEmbreeRenderDelegate::CreateRenderPass(HdRenderIndex *index,
                             HdRprimCollection const& collection)
