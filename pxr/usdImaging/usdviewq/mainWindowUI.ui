@@ -18,6 +18,15 @@
   </property>
   <property name="comment" stdset="0">
    <string>
+     PLEASE DO NOT HAND EDIT THIS FILE, AS ITS XML FORMAT IS FRAGILE AND QT'S
+     TOOLS ARE INCONSISTENT ACROSS PLATFORMS ON TOLERANCE TO BAD CONSTRUCTS.
+     
+     Instead prefer qdesigner5 to make edits to the document.  If you are 
+     allergic to gui tools, then AT LEAST, after making hand edits, prior to
+     checking them in, load this file in qdesigner5, ensure it loads without 
+     error, and then SAVE THE FILE BACK OUT, AND CHECK THAT IN, so that the
+     next developer using qdesigner5 does not contend with unrelated diffs.
+     
      Copyright 2016 Pixar                                                                   
                                                                                             
      Licensed under the Apache License, Version 2.0 (the &quot;Apache License&quot;)      
@@ -1455,12 +1464,11 @@
    </property>
   </action>
   <action name="actionPause">
-    <string>Pause Render</string>
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
    <property name="text">
     <string>Pause Render</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
    </property>
    <property name="shortcut">
     <string>Ctrl+P</string>
