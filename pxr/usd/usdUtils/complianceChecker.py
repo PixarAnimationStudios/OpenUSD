@@ -281,14 +281,14 @@ class ARKitLayerChecker(BaseRuleChecker):
                     "'%s'." % (layer.identifier, formatId))
 
 class ARKitPrimTypeChecker(BaseRuleChecker):
-    # All core prim types other than UsdGeomPointInstancers and the type in 
-    # UsdLux are allowed.
+    # All core prim types other than UsdGeomPointInstancers, Curve types, Nurbs,
+    # and the types in  UsdLux are allowed.
     _allowedPrimTypeNames = ('', 'Scope', 'Xform', 'Camera',
                             'Shader', 'Material',
                             'Mesh', 'Sphere', 'Cube', 'Cylinder', 'Cone',
                             'Capsule', 'GeomSubset', 'Points', 
                             'SkelRoot', 'Skeleton', 'SkelAnimation', 
-                            'BlendShape')
+                            'BlendShape', 'SpatialAudio')
 
     @staticmethod
     def GetDescription():
