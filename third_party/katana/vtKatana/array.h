@@ -140,17 +140,32 @@ typename VtKatana_GetKatanaAttrType<T>::type VtKatanaCopy(
 /// number of time samples in general is small, so this shouldn't be
 /// an issue, but if this is of concern, use VtKatanaCopy instead.
 template <typename T>
-const VtArray<T> VtKatanaMapOrCopy(
-        const typename VtKatana_GetKatanaAttrType<T>::type& attr,
-        float sample = 0.0f);
+VtArray<T> VtKatanaMapOrCopy(
+    const typename VtKatana_GetKatanaAttrType<T>::type& attr, float sample);
 
-/// Copy a single sample from a Katana attribute to a VtArray, minizing
+
+/// Create a map containing VtArrays of all motion samples contained
+/// by \p attribute.
+///
+/// \sa VtKatanaMapOrCopy(const typename VtKatana_GetKatanaAttrType<T>::type&, float)
+template <typename T>
+std::map<float, VtArray<T>> VtKatanaMapOrCopy(
+    const typename VtKatana_GetKatanaAttrType<T>::type& attribute);
+
+/// Copy a single sample from a Katana attribute to a VtArray, minimizing
 /// intermediate copies, but disallowing any Zero Copy features the type
 /// might support.
 template <typename T>
-const VtArray<T> VtKatanaCopy(
-    const typename VtKatana_GetKatanaAttrType<T>::type& attr,
-    float sample = 0.0f);
+VtArray<T> VtKatanaCopy(
+    const typename VtKatana_GetKatanaAttrType<T>::type& attr, float sample);
+
+/// Copy ALL time samples from a Katana attribute to a map of VtArrays,
+/// minimizing intermediate copies, but disallowing any Zero Copy features
+/// the type might support.
+template <typename T>
+std::map<float, VtArray<T>> VtKatanaCopy(
+    const typename VtKatana_GetKatanaAttrType<T>::type& attr);
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
