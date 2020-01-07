@@ -26,6 +26,7 @@
 #include "RixInterfaces.h"
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/glf/image.h"
+#include "pxr/imaging/glf/utils.h"
 #include "pxr/base/gf/gamma.h"
 #include <mutex>
 
@@ -109,30 +110,19 @@ _ConvertWrapMode(GLenum glWrapMode, RixMessages *msgs,
     }
 }
 
+template <class T>
 static void
-_ConvertSRGBtoLinear(unsigned char *dest, int width, unsigned nChannels)
+_ConvertSRGBtoLinear(T *dest, unsigned nPixels, 
+                     unsigned nChannels, unsigned channelOffset)
 {
-    unsigned char *s = dest;
-    for (unsigned i=0; i<(width*nChannels); i++) {
+    const bool hasAlphaChannel = (channelOffset + nChannels == 4);
 
-        // The alpha channel is generally linear already -- skip 4th pixel
-        bool isAlphaChannel = (nChannels==4 && ((i+1)%4==0));
-        if (!isAlphaChannel) {
-            *s = GfConvertDisplayToLinear(*s);
-        }
+    T *s = dest;
+    for (unsigned i=0; i<(nPixels*nChannels); i++) {
 
-        s++;
-    }
-}
-
-static void
-_ConvertSRGBtoLinear(float *dest, int width, unsigned nChannels)
-{
-    float *s = dest;
-    for (unsigned i=0; i<(width*nChannels); i++) {
-
-        // The alpha channel is generally linear already -- skip 4th pixel
-        bool isAlphaChannel = (nChannels==4 && ((i+1)%4==0));
+        // The alpha channel is generally linear already -- skip pixel
+        const bool isAlphaChannel = 
+            hasAlphaChannel && ((i + 1) % nChannels == 0);
         if (!isAlphaChannel) {
             *s = GfConvertDisplayToLinear(*s);
         }
@@ -254,37 +244,58 @@ RtxGlfImagePlugin::Fill(TextureCtx& tCtx, FillRequest& fillReq)
     const bool isSRGB = data->image->IsColorSpaceSRGB();
     const GLenum type = data->image->GetType();
 
-    const int nChannels = level.format == GL_RED  ? 1 :
-                          level.format == GL_RGBA ? 4 :
-                          3;
+    const int numImageChannels = GlfGetNumElements(level.format);
+    const int bytesPerChannel = GlfGetElementSize(type);
 
     // Copy out tile data, one row at a time.
-    const int bytesPerPixel = level.depth;
-    const int bytesPerImageRow = bytesPerPixel * level.width;
-    const int bytesPerTileRow = bytesPerPixel * fillReq.tile.size.X;
+    const int bytesPerImagePixel = level.depth;
+    const int bytesPerImageRow = bytesPerImagePixel * level.width;
+    const int bytesPerTilePixel = bytesPerChannel * fillReq.numChannels;
+    const int bytesPerTileRow = bytesPerTilePixel * fillReq.tile.size.X;
     const RtInt startX = fillReq.tile.offset.X * fillReq.tile.size.X;
     const RtInt startY = fillReq.tile.offset.Y * fillReq.tile.size.Y;
     const RtInt endY = startY + fillReq.tile.size.Y;
     char *src = (char*) level.data
-        + (startY * level.width + startX) * bytesPerPixel;
+        + (startY * level.width + startX) * bytesPerImagePixel
+        + (fillReq.channelOffset * bytesPerChannel);
     char *dest = (char*) fillReq.tileData;
 
-    for (int y = startY; y < endY; y++) {
-        memcpy(dest, src, bytesPerTileRow);
+    // If fill request wants all channels in the image, just memcpy each row.
+    // Otherwise we need to iterate over each pixel and copy just the 
+    // requested channels.
+    if (fillReq.channelOffset == 0 && 
+        fillReq.numChannels == numImageChannels) {
 
-        // Make sure texture data is linear
-        if (isSRGB) {
-            if (type == GL_FLOAT) {
-                _ConvertSRGBtoLinear((float*)dest, fillReq.tile.size.X,
-                                     nChannels);
-            } else if (type == GL_UNSIGNED_BYTE) {
-                _ConvertSRGBtoLinear((unsigned char*)dest, fillReq.tile.size.X,
-                                     nChannels);
-            }
+        for (int y = startY; y < endY; y++) {
+            memcpy(dest, src, bytesPerTileRow);
+            src += bytesPerImageRow;
+            dest += bytesPerTileRow;
         }
+    }
+    else {
+        for (int y = startY; y < endY; y++) {
+            for (char *d = dest, *dEnd = dest + bytesPerTileRow, *s = src; 
+                 d != dEnd; d += bytesPerTilePixel, s += bytesPerImagePixel) {
+                memcpy(d, s, bytesPerTilePixel);
+            }
+            src += bytesPerImageRow;
+            dest += bytesPerTileRow;
+        }
+    }
 
-        src += bytesPerImageRow;
-        dest += bytesPerTileRow;
+    // Make sure texture data is linear
+    if (isSRGB) {
+        if (type == GL_FLOAT) {
+            _ConvertSRGBtoLinear(
+                (float*)fillReq.tileData, 
+                fillReq.tile.size.X * fillReq.tile.size.Y,
+                fillReq.numChannels, fillReq.channelOffset);
+        } else if (type == GL_UNSIGNED_BYTE) {
+            _ConvertSRGBtoLinear(
+                (unsigned char*)fillReq.tileData, 
+                fillReq.tile.size.X * fillReq.tile.size.Y,
+                fillReq.numChannels, fillReq.channelOffset);
+        }
     }
 
     return 0;
