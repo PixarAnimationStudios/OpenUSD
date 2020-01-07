@@ -27,6 +27,7 @@
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/material.h"
+#include "pxr/imaging/hd/perfLog.h"
 
 #include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/material.h"
@@ -63,6 +64,8 @@ UsdImagingMaterialAdapter::Populate(
     UsdImagingIndexProxy* index,
     UsdImagingInstancerContext const* instancerContext)
 {
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
     // Since material are populated by reference, they need to take care not to
     // be populated multiple times.
     SdfPath cachePath = prim.GetPath();
