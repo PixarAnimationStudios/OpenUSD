@@ -37,33 +37,19 @@ out VertexData
 {
     // Relying on perspectively correct interpolation.
     vec3 Peye;
-    vec2 nearAndFarDistance;
 } outData;
-
-// Compute near and far distance assuming perspective camera
-vec2
-computeNearAndFarDistance(MAT4 projMat)
-{
-    const float a = projMat[2][2];
-    const float b = projMat[3][2];
-    return vec2(b / (a - 1.0), b / (a + 1.0));
-}
 
 void main(void)
 {
     // Bounding box vertex in local spce
-    vec4 point = vec4(HdGet_points().xyz, 1);
+    const vec4 point = vec4(HdGet_points().xyz, 1);
 
-    MAT4 transform  = ApplyInstanceTransform(HdGet_transform());
+    const MAT4 transform  = ApplyInstanceTransform(HdGet_transform());
 
     // Bounding box vertex in eye space.
-    vec4 pointEye = vec4(GetWorldToViewMatrix() * transform * point); 
+    const vec4 pointEye = vec4(GetWorldToViewMatrix() * transform * point); 
 
     outData.Peye = pointEye.xyz / pointEye.w;
-
-    // Compute near and far distance assuming perspective camera
-    outData.nearAndFarDistance = computeNearAndFarDistance(
-        GetProjectionMatrix());
 
     gl_Position = vec4(GetProjectionMatrix() * pointEye);
 
@@ -84,21 +70,33 @@ const int maxNumSteps = 10000;
 in VertexData
 {
     vec3 Peye;
-    vec2 nearAndFarDistance;
 } inData;
+
+// Transform a point by a 4x4 matrix
+vec3
+transformPoint(mat4 m, vec3 point)
+{
+    const vec4 result = m * vec4(point, 1.0);
+    return result.xyz / result.w;
+}
+
+// Transform a point by a 4x4 matrix
+vec3
+transformPoint(dmat4 m, vec3 point)
+{
+    const vec4 result = vec4(m * vec4(point, 1.0));
+    return result.xyz / result.w;
+}
 
 // Is point (in local coordinates) in bounding box.
 bool
 inBoundingBox(vec3 p)
 {
-    vec4 pVolHom = vec4(
-        HdGet_volumeBBoxInverseTransform() * vec4(p, 1));
-    vec3 pVol = pVolHom.xyz / pVolHom.w;
-    
+    const vec3 pVol = transformPoint(HdGet_volumeBBoxInverseTransform(), p);
 
     // Bounding box
-    vec3 localMin = vec3(HdGet_volumeBBoxLocalMin().xyz);
-    vec3 localMax = vec3(HdGet_volumeBBoxLocalMax().xyz);
+    const vec3 localMin = vec3(HdGet_volumeBBoxLocalMin().xyz);
+    const vec3 localMax = vec3(HdGet_volumeBBoxLocalMax().xyz);
 
     return
         all(lessThanEqual(localMin, pVol)) &&
@@ -114,8 +112,7 @@ MAT4 instanceModelViewInverse;
 vec3
 eyeToLocal(vec3 p)
 {
-    vec4 t = instanceModelViewInverse * vec4(p, 1);
-    return t.xyz / t.w;
+    return transformPoint(instanceModelViewInverse, p);
 }
 
 #if NUM_LIGHTS == 0
@@ -142,8 +139,8 @@ accumulatedTransmittance(vec3 rayStartEye, vec3 rayDirectionEye)
     float totalExtinction = 0.0;
     
     while(i < maxNumSteps) {
-        vec3 rayPointEye = rayStartEye + stepSize * i * rayDirectionEye;
-        vec3 rayPoint = eyeToLocal(rayPointEye);
+        const vec3 rayPointEye = rayStartEye + stepSize * i * rayDirectionEye;
+        const vec3 rayPoint = eyeToLocal(rayPointEye);
 
         if (!inBoundingBox(rayPoint)) {
             break;
@@ -166,21 +163,21 @@ lightingComputation(vec3 rayPointEye, vec3 rayDirectionEye)
     vec3 result = vec3(0.0);
     for (int i = 0; i < NUM_LIGHTS; ++i) {
 
-        vec4 Plight = lightSource[i].position;
+        const vec4 Plight = lightSource[i].position;
 
-        vec3 lightDirectionEye = normalize(
+        const vec3 lightDirectionEye = normalize(
             (Plight.w == 0.0) ? Plight.xyz : Plight.xyz - rayPointEye);
 
-        float atten =
+        const float atten =
             lightDistanceAttenuation(vec4(rayPointEye,1), i) *
             lightSpotAttenuation(lightDirectionEye, i);
 
 // For now, not using shadows for volumes.
 #if USE_SHADOWS && 0
-        float shadow = (lightSource[i].hasShadow) ?
+        const float shadow = (lightSource[i].hasShadow) ?
             shadowing(lightSource[i].shadowIndex, rayPointEye) : 1.0;
 #else
-        float shadow = 1.0;
+        const float shadow = 1.0;
 #endif
 
         if (shadow > 0.0001) {
@@ -229,8 +226,8 @@ volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye, float rayEndDepth)
 
     // integrate transmittance and light along ray for bounding box
     while(i < maxNumSteps) {
-        vec3 rayPointEye = rayStartEye + stepSize * i * rayDirectionEye;
-        vec3 rayPoint = eyeToLocal(rayPointEye);
+        const vec3 rayPointEye = rayStartEye + stepSize * i * rayDirectionEye;
+        const vec3 rayPoint = eyeToLocal(rayPointEye);
 
         // Stop when outside of volume bounding box
         if (!inBoundingBox(rayPoint)) {
@@ -244,9 +241,9 @@ volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye, float rayEndDepth)
 
         // Evaluate volume shader functions to determine extinction,
         // scattering, and emission.
-        float extinctionValue = extinctionFunction(rayPoint);
-        float scatteringValue = scatteringFunction(rayPoint);
-        vec3 emissionValue = emissionFunction(rayPoint);
+        const float extinctionValue = extinctionFunction(rayPoint);
+        const float scatteringValue = scatteringFunction(rayPoint);
+        const vec3 emissionValue = emissionFunction(rayPoint);
 
         // If this is the first time the ray is hitting a non-empty voxel,
         // record the coordinates.
@@ -259,7 +256,7 @@ volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye, float rayEndDepth)
         }
 
         // In scattering contribution
-        vec3 inScattering =
+        const vec3 inScattering =
             scatteringValue *
             lightingComputation(rayPointEye, rayDirectionEye);
 
@@ -277,6 +274,44 @@ volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye, float rayEndDepth)
     return result;
 }
 
+// Is camera orthographic?
+bool
+isCameraOrthographic()
+{
+    return abs(GetProjectionMatrix()[3][3] - 1.0) < 1e-5;
+}
+
+// Convert depth value z in [-1,1] to depth in eye space [-near, -far].
+float
+NDCtoEyeDepth(float z)
+{
+    const MAT4 m = inverse(GetProjectionMatrix());
+    return (m[2][2] * z + m[3][2]) / (m[2][3] * z + m[3][3]);
+}
+
+// Compute the near clipping distance. Always returns a positive value.
+float
+computeNearDistance()
+{
+    return abs(NDCtoEyeDepth(-1.0));
+}
+
+// Given an eye ray (ray from eye to given point in eye space),
+// computes the intersection of the ray with near clipping plane.
+vec3
+computeNearPointEye(vec3 Peye)
+{
+    // Transform point from eye to clip space.
+    const vec4 Pclip = GetProjectionMatrix() * vec4(Peye, 1.0);
+    // Project point onto near clipping plane in clip space
+    // (equivalently, set z to -1 in NDC).
+    const vec4 nearPointClip = vec4(Pclip.xy, -Pclip.w, Pclip.w);
+    // Convert back to eye space
+    const vec4 nearPointEye = inverse(GetProjectionMatrix()) * nearPointClip;
+
+    return nearPointEye.xyz / nearPointEye.w;
+}
+
 // Compute the point from which we start ray marching. The input is
 // the point on the boundary of the volume bounding box corresponding to this
 // fragment. Input and output are both in eye space.
@@ -290,38 +325,77 @@ volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye, float rayEndDepth)
 vec3
 computeRayStartEye(vec3 Peye)
 {
-    // Assuming perspective camera
-
     // Compute where eye ray intersects near clipping plane in eye space ...
-    vec3 nearClippingPointEye =
-        -inData.nearAndFarDistance.x * vec3( Peye.xy / Peye.z, 1.0);
+    const vec3 nearClippingPointEye = computeNearPointEye(Peye);
     // ... and local space.
-    vec3 nearClippingPoint = eyeToLocal(nearClippingPointEye);
-    
+    const vec3 nearClippingPoint = eyeToLocal(nearClippingPointEye);
+
     // If that point is inside the bounding box of the volume, ...
     if (inBoundingBox(nearClippingPoint)) {
         // ... we need to move the point close to the camera.
-        //
-        // This point could be obtained by either intersecting the eye ray
-        // with the near clipping plane (i.e., just using nearClippingPointEye) or
-        // with a sphere about there eye (with radius being the near distance).
-        //
-        // Note that in the former case, the distance between the eye
-        // and the point where raymarching starts is non-constant
-        // across the image and could introduce bias. Thus, we are using the latter.
-        //
-        // Note that we can use points in front of the near plane
-        // since OIT resolution makes now assumption about the depth
-        // value.
-        //
-        return normalize(Peye) * inData.nearAndFarDistance.x;
+        if (isCameraOrthographic()) {
+            // If orthographic, take intersectin of eye ray with
+            // near clipping plane.
+            return nearClippingPointEye;
+        } else {
+            //
+            // This point could be obtained by either intersecting the
+            // eye ray with the near clipping plane or with a sphere
+            // about there eye (with radius being the near distance).
+            //
+            // Note that in the former case, the distance between the
+            // eye and the point where raymarching starts is
+            // non-constant across the image. This could mean that we
+            // skip more volume away the center of the image making the
+            // image darker there - so we see opposite vignetting.
+            // To avoid this bias, we use the latter.
+            //
+            // Note that we can use points in front of the near plane
+            // since OIT resolution makes no assumptions about the
+            // depth value.
+            //
+            return normalize(Peye) * computeNearDistance();
+        }
     }
     
     // Otherwise, just return input.
     return Peye;
 }
 
-// The depth at which we hit opaque geometry.
+// Consider the ray from the eye to a given point in eye space.
+// Computes the direction of this ray in both cases where the
+// camera is orthographic or perspective.
+vec3
+computeRayDirectionEye(vec3 rayStartEye)
+{
+    // In NDC space, the ray is always pointing into the z-direction (0,0,1).
+    // In clip space, this corresponds to (0,0,1,0).
+    // We need to multiply (0,0,1,0) by the inverse projection matrix to
+    // get to homogeneous eye space.
+    // Or alternatively, we can get the direction in homogeneous eye space
+    // by taking the respective column of the inverse projection matrix:
+    const vec4 dir = inverse(GetProjectionMatrix())[2];
+
+    // To compute the corresponding direction in non-homogeneous eye space,
+    // compute the position of the ray after time dt << 1:
+    //     vec4 pHomogeneous = vec4(rayStartEye, 1.0) + dt * dir;
+    //     vec3 p = pHomogeneous.xyz / pHomogeneous.w;
+    //
+    // Or equivalently:
+    //     vec3 p = (rayStartEye + dt * dir.xyz) / (1.0 + dir.w * dt);
+    // And since dt << 1, we have
+    //     vec3 p = (rayStartEye + dt * dir.xyz) * (1.0 - dir.w * dt);
+    // And dropping higher order terms:
+    //     vec3 p = rayStartEye + dt * (dir.xyz - rayStartEye * dir.w);
+    // So the new direction is given by:
+    //     vec3 d = dir.xyz - rayStartEye * dir.w;
+
+    // Normalize direction in eye space.
+    return normalize(dir.xyz - rayStartEye * dir.w);
+}
+
+// The depth at which we hit opaque geometry in eye space (negative
+// value by OpenGL convention).
 float
 computeRayEndDepth(vec2 fragcoord)
 {
@@ -334,12 +408,8 @@ computeRayEndDepth(vec2 fragcoord)
     // Assume far-plane if we cannot sample the z-Buffer.
     const float bufferVal = 1.0;
 #endif
-    
-    const float near = inData.nearAndFarDistance.x;
-    const float far  = inData.nearAndFarDistance.y;
-    
-    // Convert z-Buffer value (in interval [0,1]) to z-Value.
-    return - (far * near) / (bufferVal * near + (1.0 - bufferVal) * far);
+
+    return NDCtoEyeDepth(2.0 * bufferVal - 1.0);
 };
 
 void main(void)
@@ -352,8 +422,7 @@ void main(void)
     const vec3 Neye = vec3(0, 0, 1);
 
     const vec3 rayStartEye = computeRayStartEye(inData.Peye);
-    // Assuming perspective camera
-    const vec3 rayDirectionEye = normalize(inData.Peye);
+    const vec3 rayDirectionEye = computeRayDirectionEye(rayStartEye);
 
     // The depth (z-value) at which we stop raymarching because we hit
     // opaque geometry.
