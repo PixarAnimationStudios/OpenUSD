@@ -48,7 +48,7 @@ HdxOitVolumeRenderTask::HdxOitVolumeRenderTask(
     : HdxRenderTask(delegate, id)
     , _oitVolumeRenderPassShader(
         boost::make_shared<HdStRenderPassShader>(
-            HdxPackageRenderPassOitShader()))
+            HdxPackageRenderPassOitVolumeShader()))
     , _isOitEnabled(HdxOitBufferAccessor::IsOitEnabled())
 {
     // Raymarching shader needs to stop when hitting opaque geometry,

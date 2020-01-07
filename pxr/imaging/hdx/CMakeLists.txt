@@ -92,6 +92,7 @@ pxr_library(hdx
         shaders/simpleLightingShader.glslfx
         shaders/renderPassOitShader.glslfx
         shaders/renderPassOitOpaqueShader.glslfx
+        shaders/renderPassOitVolumeShader.glslfx
         shaders/oitResolveImageShader.glslfx
         textures/StinsonBeach.exr
 )

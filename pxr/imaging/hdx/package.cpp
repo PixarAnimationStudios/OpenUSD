@@ -127,6 +127,13 @@ HdxPackageRenderPassOitOpaqueShader()
 }
 
 TfToken
+HdxPackageRenderPassOitVolumeShader()
+{
+    static TfToken shader = _GetShaderPath("renderPassOitVolumeShader.glslfx");
+    return shader;
+}
+
+TfToken
 HdxPackageOitResolveImageShader()
 {
     static TfToken shader = _GetShaderPath("oitResolveImageShader.glslfx");
