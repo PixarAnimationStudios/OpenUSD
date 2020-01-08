@@ -24,11 +24,6 @@
 
 #include "pxr/pxr.h"
 
-#include "pxr/base/arch/pragmas.h"
-
-ARCH_PRAGMA_PUSH
-ARCH_PRAGMA_PLACEMENT_NEW  // because of pyFunction.h and boost::function
-
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/error.h"
@@ -580,5 +575,3 @@ TF_REFPTR_CONST_VOLATILE_GET(Tf_TestBase)
 TF_REFPTR_CONST_VOLATILE_GET(Tf_TestDerived)
 TF_REFPTR_CONST_VOLATILE_GET(polymorphic_Tf_TestBase<class Tf_TestBase>)
 TF_REFPTR_CONST_VOLATILE_GET(polymorphic_Tf_TestDerived<class Tf_TestDerived>)
-
-ARCH_PRAGMA_POP
