@@ -24,9 +24,6 @@
 #include "pxr/pxr.h"
 #include "pxr/base/arch/pragmas.h"
 
-ARCH_PRAGMA_PUSH
-ARCH_PRAGMA_PLACEMENT_NEW  // because of pyFunction.h and boost::function
-
 #include <boost/python/def.hpp>
 
 #include "pxr/usd/usd/flattenUtils.h"
@@ -83,5 +80,3 @@ void wrapUsdFlattenUtils()
         UsdFlattenLayerStackResolveAssetPath,
         (arg("sourceLayer"), arg("assetPath")));
 }
-
-ARCH_PRAGMA_POP
