@@ -96,10 +96,9 @@ endif()
 # ----------------------------------------------
 
 if (PXR_BUILD_IMAGING)
-    # --OpenEXR
-    find_package(OpenEXR REQUIRED)
     # --OpenImageIO
     if (PXR_BUILD_OPENIMAGEIO_PLUGIN)
+        find_package(OpenEXR REQUIRED)
         find_package(OpenImageIO REQUIRED)
         add_definitions(-DPXR_OIIO_PLUGIN_ENABLED)
     endif()
@@ -123,6 +122,7 @@ if (PXR_BUILD_IMAGING)
     endif()
     # --OpenVDB
     if (PXR_ENABLE_OPENVDB_SUPPORT)
+        find_package(OpenEXR REQUIRED)
         find_package(OpenVDB REQUIRED)
         add_definitions(-DPXR_OPENVDB_SUPPORT_ENABLED)
     endif()
@@ -184,6 +184,7 @@ endif()
 
 if(PXR_ENABLE_OSL_SUPPORT)
     find_package(OSL REQUIRED)
+    find_package(OpenEXR REQUIRED)
 endif()
 
 # ----------------------------------------------
