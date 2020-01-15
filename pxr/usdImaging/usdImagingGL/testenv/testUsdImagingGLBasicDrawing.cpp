@@ -310,12 +310,12 @@ My_TestGLDrawing::DrawTest(bool offscreen)
         int convergenceIterations = 0;
 
         {
-            TRACE_SCOPE("Test Profile: renderTime");
+            TRACE_FUNCTION_SCOPE("test profile: renderTime");
 
             renderTime.Start();
 
             do {
-                TRACE_SCOPE("Iteration render convergence");
+                TRACE_FUNCTION_SCOPE("iteration render convergence");
                 
                 convergenceIterations++;
                 glClearBufferfv(GL_COLOR, 0, clearColor.data());
@@ -325,7 +325,7 @@ My_TestGLDrawing::DrawTest(bool offscreen)
             } while (!_engine->IsConverged());
         
             {
-                TRACE_SCOPE("Call to glFinish");
+                TRACE_FUNCTION_SCOPE("glFinish");
                 glFinish();
             }
 
