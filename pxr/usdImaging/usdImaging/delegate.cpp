@@ -2580,10 +2580,7 @@ UsdImagingDelegate::GetMaterialResource(SdfPath const &materialId)
     _UpdateSingleValue(cachePath, HdMaterial::DirtyResource);
     bool result = _valueCache.FindMaterialResource(cachePath, &vtMatResource);
 
-    // XXX When all code has transitioned over to use material networks we can
-    // renable this TF_VERIFY.
-    TF_UNUSED(result);
-    // TF_VERIFY(result, "Material network not found: %s", cachePath.GetText());
+    TF_VERIFY(result, "Material network not found: %s", cachePath.GetText());
 
     return vtMatResource;
 }
