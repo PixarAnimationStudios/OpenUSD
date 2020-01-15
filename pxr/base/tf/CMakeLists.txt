@@ -137,6 +137,7 @@ pxr_library(tf
         type_Impl.h
 
     PYTHON_PUBLIC_HEADERS
+        pySafePython.h
         pyStaticTokens.h
 
     PRIVATE_CLASSES
