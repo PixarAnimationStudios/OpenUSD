@@ -110,7 +110,10 @@ TF_REGISTRY_FUNCTION(TfDebug)
 {
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         TF_LOG_STACK_TRACE_ON_ERROR,
-        "issue stack traces for all errors");
+        "log stack traces for all errors");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        TF_LOG_STACK_TRACE_ON_WARNING,
+        "log stack traces for all warnings");
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         TF_ERROR_MARK_TRACKING,
         "capture stack traces at TfErrorMark ctor/dtor, enable "
@@ -298,6 +301,14 @@ TfDiagnosticMgr::PostWarning(
     if (TfDebug::IsEnabled(TF_ATTACH_DEBUGGER_ON_WARNING))
         ArchDebuggerTrap();
 
+    const bool logStackTraceOnWarning =
+        TfDebug::IsEnabled(TF_LOG_STACK_TRACE_ON_WARNING);
+
+    if (logStackTraceOnWarning) {
+        _PrintDiagnostic(stderr, warningCode, context, commentary, info);
+        TfLogStackTrace("WARNING", /* logToDb */ false);
+    }
+
     quiet |= _quiet;
 
     TfWarning warning(warningCode, warningCodeString, context, commentary, info,
@@ -314,7 +325,7 @@ TfDiagnosticMgr::PostWarning(
         dispatchedToDelegate = !_delegates.empty();
     }
     
-    if (!dispatchedToDelegate && !quiet) {
+    if (!logStackTraceOnWarning && !dispatchedToDelegate && !quiet) {
         _PrintDiagnostic(stderr, warningCode, context, commentary, info);
     }
 }
