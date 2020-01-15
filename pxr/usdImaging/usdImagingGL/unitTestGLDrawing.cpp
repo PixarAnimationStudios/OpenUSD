@@ -32,12 +32,16 @@
 
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/gf/vec2i.h"
+#include "pxr/base/trace/collector.h"
+#include "pxr/base/trace/reporter.h"
 
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/arch/systemInfo.h"
 
 #include <stdio.h>
 #include <stdarg.h>
+
+#include <fstream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -327,7 +331,9 @@ static void Usage(int argc, char *argv[])
 "                           [-times times1 times2 ...] [-cullBackfaces]\n"
 "                           [-clear r g b a] [-translate x y z]\n"
 "                           [-renderSetting name type value]\n"
-"                           [-rendererAov name] [...]\n"
+"                           [-rendererAov name]\n"
+"                           [-perfStatsFile path]\n"
+"                           [-traceFile path] [...]\n"
 "\n"
 "  usdImaging basic drawing test\n"
 "\n"
@@ -360,6 +366,8 @@ static void Usage(int argc, char *argv[])
 "  -clear r g b a      clear color\n"
 "  -translate x y z    default camera translation\n"
 "  -rendererAov name   Name of AOV to display or write out\n"
+"  -perfStatsFile path Path to file performance stats are written to\n"
+"  -traceFile path     Path to trace file to write\n"
 "  -renderSetting name type value\n"
 "                      Specifies a setting with given name, type (such as\n"
 "                      float) and value passed to renderer. -renderSetting\n"
@@ -539,6 +547,14 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
             CheckForMissingArguments(i, 1, argc, argv);
             _rendererAov = TfToken(argv[++i]);
         }
+        else if (strcmp(argv[i], "-perfStatsFile") == 0) {
+            CheckForMissingArguments(i, 1, argc, argv);
+            _perfStatsFile = argv[++i];
+        }
+        else if (strcmp(argv[i], "-traceFile") == 0) {
+            CheckForMissingArguments(i, 1, argc, argv);
+            _traceFile = argv[++i];
+        }
         else if (strcmp(argv[i], "-clipPlane") == 0) {
             CheckForMissingArguments(i, 4, argc, argv);
             args->clipPlaneCoords.push_back(ParseDouble(i, argc, argv));
@@ -611,10 +627,14 @@ UsdImagingGL_UnitTestGLDrawing::KeyRelease(int key)
 void
 UsdImagingGL_UnitTestGLDrawing::RunTest(int argc, char *argv[])
 {
-    UsdImagingGL_UnitTestHelper_InitPlugins();
-
     _Args args;
     _Parse(argc, argv, &args);
+
+    if (!_traceFile.empty()) {
+        TraceCollector::GetInstance().SetEnabled(true);
+    }
+
+    UsdImagingGL_UnitTestHelper_InitPlugins();
 
     for (size_t i=0; i<args.clipPlaneCoords.size()/4; ++i) {
         _clipPlanes.push_back(GfVec4d(&args.clipPlaneCoords[i*4]));
@@ -661,6 +681,20 @@ UsdImagingGL_UnitTestGLDrawing::RunTest(int argc, char *argv[])
         _widget->DrawOffscreen();
     } else {
         _widget->Run();
+    }
+    
+    if(!_traceFile.empty()) {
+        TraceCollector::GetInstance().SetEnabled(false);
+
+        {
+            std::ofstream traceOutFile(_traceFile);
+            if (TF_VERIFY(traceOutFile)) {
+                TraceReporter::GetGlobalReporter()->Report(traceOutFile);
+            }
+        }
+
+        TraceCollector::GetInstance().Clear();
+        TraceReporter::GetGlobalReporter()->ClearTree();
     }
 }
 

@@ -36,6 +36,7 @@
 #include "pxr/base/gf/rotation.h"
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/tf/getenv.h"
+#include "pxr/base/trace/trace.h"
 
 #include "pxr/imaging/glf/simpleLightingContext.h"
 #include "pxr/imaging/hd/mesh.h"
@@ -55,6 +56,7 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <fstream>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -94,6 +96,8 @@ GLuint vao;
 void
 My_TestGLDrawing::InitTest()
 {
+    TRACE_FUNCTION();
+    
     std::cout << "My_TestGLDrawing::InitTest()\n";
     _stage = UsdStage::Open(GetStageFilePath());
     SdfPathVector excludedPaths;
@@ -207,7 +211,11 @@ My_TestGLDrawing::InitTest()
 void
 My_TestGLDrawing::DrawTest(bool offscreen)
 {
+    TRACE_FUNCTION();
+
     std::cout << "My_TestGLDrawing::DrawTest()\n";
+
+    TfStopwatch renderTime;
 
     HdPerfLog& perfLog = HdPerfLog::GetInstance();
     perfLog.Enable();
@@ -252,8 +260,7 @@ My_TestGLDrawing::DrawTest(bool offscreen)
         _engine->SetCameraPath(SdfPath(GetCameraPath()));
     }
     _engine->SetRenderViewport(viewport);
-
-    size_t i = 0;
+ 
     TF_FOR_ALL(timeIt, GetTimes()) {
         UsdTimeCode time = *timeIt;
         if (*timeIt == -999) {
@@ -300,11 +307,28 @@ My_TestGLDrawing::DrawTest(bool offscreen)
 
         // Make sure we render to convergence.
         TfErrorMark mark;
-        do {
-            glClearBufferfv(GL_COLOR, 0, clearColor.data());
-            glClearBufferfv(GL_DEPTH, 0, clearDepth);
-            _engine->Render(_stage->GetPseudoRoot(), params);
-        } while (!_engine->IsConverged());
+
+        int convergenceIterations = 0;
+
+        {
+            TRACE_SCOPE("TestRendering");
+
+            do {
+                TRACE_SCOPE("TestRendering (convergence iteration)");
+                
+                convergenceIterations++;
+                glClearBufferfv(GL_COLOR, 0, clearColor.data());
+                glClearBufferfv(GL_DEPTH, 0, clearDepth);
+                
+                renderTime.Start();
+                _engine->Render(_stage->GetPseudoRoot(), params);
+                renderTime.Stop();
+                
+            } while (!_engine->IsConverged());
+        }
+
+        std::cout << "Iterations to convergence: " << convergenceIterations << std::endl;
+
         TF_VERIFY(mark.IsClean(), "Errors occurred while rendering!");
 
         std::cout << "itemsDrawn " << perfLog.GetCounter(HdTokens->itemsDrawn) << std::endl;
@@ -320,7 +344,16 @@ My_TestGLDrawing::DrawTest(bool offscreen)
             std::cout << imageFilePath << "\n";
             WriteToFile("color", imageFilePath);
         }
-        i++;
+    }
+
+    if (!GetPerfStatsFile().empty()) {
+        std::ofstream perfstatsRaw(GetPerfStatsFile(), std::ofstream::out);
+        if (TF_VERIFY(perfstatsRaw)) {
+            perfstatsRaw << "{ 'profile'  : 'renderTime', "
+                         << "   'metric'  : 'time', "
+                         << "   'value'   : " << renderTime.GetSeconds() << ", "
+                         << "   'samples' : " << GetTimes().size() << " }" << std::endl;
+        }
     }
 }
 

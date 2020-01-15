@@ -74,6 +74,7 @@ public:
     GfVec3f const & GetTranslate() const { return _translate; }
     VtDictionary const &GetRenderSettings() const { return _renderSettings; }
     TfToken const & GetRendererAov() const { return _rendererAov; }
+    std::string const &GetPerfStatsFile() const { return _perfStatsFile; }
 
     void RunTest(int argc, char *argv[]);
 
@@ -132,6 +133,8 @@ private:
     GfVec3f _translate;
     VtDictionary _renderSettings;
     TfToken _rendererAov;
+    std::string _perfStatsFile;
+    std::string _traceFile;
 
     bool _showGuides;
     bool _showRender;
