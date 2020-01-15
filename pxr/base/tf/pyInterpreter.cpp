@@ -41,7 +41,7 @@
 #include <atomic>
 #include <mutex>
 #include <string>
-#include <Python.h>
+#include "pxr/base/tf/pySafePython.h"
 #include <signal.h>
 
 using std::string;

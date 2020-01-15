@@ -24,7 +24,7 @@
 #ifndef PXR_BASE_TF_PY_TRACING_H
 #define PXR_BASE_TF_PY_TRACING_H
 
-#include <Python.h>
+#include "pxr/base/tf/pySafePython.h"
 
 #include "pxr/pxr.h"
 

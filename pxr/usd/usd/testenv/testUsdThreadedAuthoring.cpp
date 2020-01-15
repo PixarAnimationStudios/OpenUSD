@@ -34,7 +34,7 @@
 #include <tbb/concurrent_vector.h>
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
-#include <Python.h>
+#include "pxr/base/tf/pySafePython.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
 #include <string>
