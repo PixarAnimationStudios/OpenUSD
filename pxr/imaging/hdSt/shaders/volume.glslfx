@@ -67,6 +67,9 @@ void main(void)
 
 const int maxNumSteps = 10000;
 
+// Min transmittance (ray marching stops when underrun)
+const float minTransmittance = 0.002;
+
 // Minimal scattering amount to ray march to light
 const float minScattering = 0.002;
 
@@ -273,6 +276,11 @@ volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye, float rayEndDepth)
 
         // Update transmittance
         result.transmittance *= exp(-extinctionValue * stepSize);
+
+        // Stop when the volume has become close to opaque.
+        if (result.transmittance < minTransmittance) {
+            break;
+        }
 
         i+=1;
     }
