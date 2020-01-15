@@ -33,7 +33,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HD_BASISCURVES_REPR_DESC_TOKENS \
     (surfaceShader)                     \
-    (hullColor)
+    (hullColor)                         \
+    (pointColor)
 
 TF_DECLARE_PUBLIC_TOKENS(HdBasisCurvesReprDescTokens, HD_API,
                          HD_BASISCURVES_REPR_DESC_TOKENS);

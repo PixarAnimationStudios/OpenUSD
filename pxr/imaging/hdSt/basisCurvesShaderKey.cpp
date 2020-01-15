@@ -107,6 +107,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     // terminals
     ((surfaceFS,                       "Fragment.Surface"))
     ((hullColorFS,                     "Fragment.HullColor"))
+    ((pointColorFS,                    "Fragment.PointColor"))
     ((commonFS,                        "Fragment.CommonTerminals"))
     ((scalarOverrideFS,                "Fragment.ScalarOverride"))
 );
@@ -292,7 +293,9 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     FS[fsIndex++] = _tokens->commonFS;
     if (shadingTerminal == HdBasisCurvesReprDescTokens->hullColor) {
         FS[fsIndex++] = _tokens->hullColorFS;
-    } else {
+    } else if (shadingTerminal == HdBasisCurvesReprDescTokens->pointColor) {
+        FS[fsIndex++] = _tokens->pointColorFS;
+    }else {
         FS[fsIndex++] = _tokens->surfaceFS;
     }
     FS[fsIndex++] = _tokens->scalarOverrideFS;
