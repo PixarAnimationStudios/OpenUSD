@@ -67,6 +67,9 @@ void main(void)
 
 const int maxNumSteps = 10000;
 
+// Minimal scattering amount to ray march to light
+const float minScattering = 0.002;
+
 in VertexData
 {
     vec3 Peye;
@@ -255,10 +258,13 @@ volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye, float rayEndDepth)
             }
         }
 
-        // In scattering contribution
+        // In scattering contribution, lighting only computed if scattering
+        // is non-trivial.
         const vec3 inScattering =
-            scatteringValue *
-            lightingComputation(rayPointEye, rayDirectionEye);
+            (scatteringValue >= minScattering) ?
+                (scatteringValue *
+                 lightingComputation(rayPointEye, rayDirectionEye))
+            : vec3(0.0);
 
         // In scattering and emission contribution
         result.color += 
