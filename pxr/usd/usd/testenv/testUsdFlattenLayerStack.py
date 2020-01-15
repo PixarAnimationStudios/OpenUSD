@@ -254,6 +254,15 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
         b = prim.GetAttribute('b')
         self.assertEqual(b.Get(), None)
 
+        # a value block will block both defaults and time samples
+        c = prim.GetAttribute('c')
+        self.assertEqual(c.Get(), None)
+        self.assertEqual(c.Get(1), None)
+
+        # strong time samples will override a weaker value block
+        d = prim.GetAttribute('d')
+        self.assertEqual(d.Get(1), 789)
+
 if __name__=="__main__":
     # Register test plugin defining timecode metadata fields.
     testDir = os.path.abspath(os.getcwd())
