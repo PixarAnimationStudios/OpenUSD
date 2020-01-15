@@ -235,6 +235,25 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
         self.assertEqual(list(assetArrayAttr.Get()), 
                          [Sdf.AssetPath('foo'), Sdf.AssetPath('foo')])
 
+    def test_ValueBlocks(self):
+        src_stage = Usd.Stage.Open('valueBlocks_root.usda')
+        def replaceWithFoo(layer, s):
+            return 'foo'
+
+        src_layer_stack = src_stage._GetPcpCache().layerStack
+        layer = Usd.FlattenLayerStack(src_layer_stack, tag='valueBlocks')
+        print layer.ExportToString()
+        result_stage = Usd.Stage.Open(layer)
+
+        # verify that value blocks worked
+        prim = result_stage.GetPrimAtPath('/Human')
+        a = prim.GetAttribute('a')
+        self.assertEqual(a.Get(), Vt.IntArray(1, (1,)))
+
+        # a strong value block flattens to a value block
+        b = prim.GetAttribute('b')
+        self.assertEqual(b.Get(), None)
+
 if __name__=="__main__":
     # Register test plugin defining timecode metadata fields.
     testDir = os.path.abspath(os.getcwd())

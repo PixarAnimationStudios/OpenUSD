@@ -1,0 +1,7 @@
+#usda 1.0
+
+over "Human"
+{
+    int[] a = [1]
+    int[] b = None
+}
