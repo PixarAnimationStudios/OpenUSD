@@ -27,6 +27,7 @@
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/textureResource.h"
 #include "pxr/imaging/hdSt/domeLightComputations.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -155,6 +156,9 @@ HdStLight::_SetupComputations(GLuint sourceTexture,
         return;
     }
     
+    HdStResourceRegistry* hdStResourceRegistry =
+        static_cast<HdStResourceRegistry*>(resourceRegistry);
+
     // get the width and height of the source texture
     int textureWidth = 0, textureHeight = 0;
     glActiveTexture(GL_TEXTURE0);
@@ -185,7 +189,7 @@ HdStLight::_SetupComputations(GLuint sourceTexture,
             new HdSt_DomeLightComputationGPU(_tokens->domeLightIrradiance, 
             sourceTexture, _irradianceTexture, textureWidth, textureHeight,
             numLevels, level));
-    resourceRegistry->AddComputation(nullptr, irradianceComputation);
+    hdStResourceRegistry->AddComputation(nullptr, irradianceComputation);
 
     // PreFilter 
     glGenTextures(1, &_prefilterTexture);
@@ -206,7 +210,7 @@ HdStLight::_SetupComputations(GLuint sourceTexture,
                 new HdSt_DomeLightComputationGPU(_tokens->domeLightPrefilter, 
                 sourceTexture, _prefilterTexture, textureWidth, textureHeight, 
                 numPrefilterLevels, mipLevel, roughness));
-        resourceRegistry->AddComputation(nullptr, preFilterComputation);
+        hdStResourceRegistry->AddComputation(nullptr, preFilterComputation);
     }
 
     // BRDF LUT
@@ -224,7 +228,7 @@ HdStLight::_SetupComputations(GLuint sourceTexture,
             new HdSt_DomeLightComputationGPU(_tokens->domeLightBRDF, 
             sourceTexture, _brdfTexture, textureHeight, textureHeight, 
             numLevels, level));    
-    resourceRegistry->AddComputation(nullptr, brdfComputation);
+    hdStResourceRegistry->AddComputation(nullptr, brdfComputation);
 }
 
 /* virtual */

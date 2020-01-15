@@ -24,14 +24,32 @@
 #ifndef PXR_IMAGING_HD_ST_RESOURCE_REGISTRY_H
 #define PXR_IMAGING_HD_ST_RESOURCE_REGISTRY_H
 
+#include <atomic>
+#include <map>
+#include <memory>
+#include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+#include <tbb/concurrent_vector.h>
+
 #include "pxr/pxr.h"
+#include "pxr/base/vt/dictionary.h"
+
 #include "pxr/imaging/hdSt/api.h"
 
+#include "pxr/imaging/hd/bufferArrayRange.h"
+#include "pxr/imaging/hd/bufferArrayRegistry.h"
+#include "pxr/imaging/hd/bufferSource.h"
+#include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/instanceRegistry.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
+#include "pxr/imaging/hd/strategyBase.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+typedef boost::shared_ptr<class HdBufferArray> 
+    HdBufferArraySharedPtr;
+typedef boost::shared_ptr<class HdComputation>
+    HdComputationSharedPtr;
 typedef boost::shared_ptr<class HdStDispatchBuffer>
     HdStDispatchBufferSharedPtr;
 typedef boost::shared_ptr<class HdStGLSLProgram>
@@ -66,6 +84,130 @@ public:
 
     HDST_API
     virtual ~HdStResourceRegistry();
+
+    HDST_API
+    void InvalidateShaderRegistry() override;
+
+    HDST_API
+    VtDictionary GetResourceAllocation() const override;
+
+    /// Allocate new non uniform buffer array range
+    HDST_API
+    HdBufferArrayRangeSharedPtr AllocateNonUniformBufferArrayRange(
+        TfToken const &role,
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint);
+
+    /// Allocate new immutable non uniform buffer array range
+    HDST_API
+    HdBufferArrayRangeSharedPtr AllocateNonUniformImmutableBufferArrayRange(
+        TfToken const &role,
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint);
+
+    /// Allocate new uniform buffer range
+    HDST_API
+    HdBufferArrayRangeSharedPtr AllocateUniformBufferArrayRange(
+        TfToken const &role,
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint);
+
+    /// Allocate new shader storage buffer range
+    HDST_API
+    HdBufferArrayRangeSharedPtr AllocateShaderStorageBufferArrayRange(
+        TfToken const &role,
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint);
+
+    /// Allocate single entry (non-aggregated) buffer array range
+    HDST_API
+    HdBufferArrayRangeSharedPtr AllocateSingleBufferArrayRange(
+        TfToken const &role,
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint);
+
+    /// Append source data for given range to be committed later.
+    HDST_API
+    void AddSources(HdBufferArrayRangeSharedPtr const &range,
+                    HdBufferSourceVector &sources);
+
+    /// Append a source data for given range to be committed later.
+    HDST_API
+    void AddSource(HdBufferArrayRangeSharedPtr const &range,
+                   HdBufferSourceSharedPtr const &source);
+
+    /// Append a source data just to be resolved (used for cpu computations).
+    HDST_API
+    void AddSource(HdBufferSourceSharedPtr const &source);
+
+    /// Append a gpu computation into queue.
+    /// The parameter 'range' specifies the destination buffer range,
+    /// which has to be allocated by caller of this function.
+    ///
+    /// note: GPU computations will be executed in the order that
+    /// they are registered.
+    HDST_API
+    void AddComputation(HdBufferArrayRangeSharedPtr const &range,
+                        HdComputationSharedPtr const &computaion);
+
+    /// Set the aggregation strategy for non uniform parameters
+    /// (vertex, varying, facevarying)
+    /// Takes ownership of the passed in strategy object.
+    void SetNonUniformAggregationStrategy(HdAggregationStrategy *strategy) {
+        _nonUniformAggregationStrategy.reset(strategy);
+    }
+
+    /// Set the aggregation strategy for non uniform immutable parameters
+    /// (vertex, varying, facevarying)
+    /// Takes ownership of the passed in strategy object.
+    void SetNonUniformImmutableAggregationStrategy(
+        HdAggregationStrategy *strategy) {
+        _nonUniformImmutableAggregationStrategy.reset(strategy);
+    }
+
+    /// Set the aggregation strategy for uniform (shader globals)
+    /// Takes ownership of the passed in strategy object.
+    void SetUniformAggregationStrategy(HdAggregationStrategy *strategy) {
+        _uniformUboAggregationStrategy.reset(strategy);
+    }
+
+    /// Set the aggregation strategy for SSBO (uniform primvars)
+    /// Takes ownership of the passed in strategy object.
+    void SetShaderStorageAggregationStrategy(HdAggregationStrategy *strategy) {
+        _uniformSsboAggregationStrategy.reset(strategy);
+    }
+
+    /// Set the aggregation strategy for single buffers (for nested instancer).
+    /// Takes ownership of the passed in strategy object.
+    void SetSingleStorageAggregationStrategy(HdAggregationStrategy *strategy) {
+        _singleAggregationStrategy.reset(strategy);
+    }
+
+    /// Returns whether an aggregation strategy is set for non uniform params.
+    bool HasNonUniformAggregationStrategy() const {
+        return _nonUniformAggregationStrategy.get();
+    }
+
+    /// Returns whether an aggregation strategy is set for non uniform
+    /// immutable params.
+    bool HasNonUniformImmutableAggregationStrategy() const {
+        return _nonUniformImmutableAggregationStrategy.get();
+    }
+
+    /// Returns whether an aggregation strategy is set for uniform params.
+    bool HasUniformAggregationStrategy() const {
+        return _uniformUboAggregationStrategy.get();
+    }
+
+    /// Returns whether an aggregation strategy is set for SSBO.
+    bool HasShaderStorageAggregationStrategy() const {
+        return _uniformSsboAggregationStrategy.get();
+    }
+
+    /// Returns whether an aggregation strategy is set for single buffers.
+    bool HasSingleStorageAggregationStrategy() const {
+        return _singleAggregationStrategy.get();
+    }
 
     /// Register a buffer allocated with \a count * \a commandNumUints *
     /// sizeof(GLuint) to be used as an indirect dispatch buffer.
@@ -231,14 +373,71 @@ public:
     FindTextureResourceHandle(
         HdInstance<HdStTextureResourceHandleSharedPtr>::ID id, bool *found);
 
-    void InvalidateShaderRegistry() override;
+    /// Debug dump
+    HDST_API
+    friend std::ostream &operator <<(
+        std::ostream &out,
+        const HdStResourceRegistry& self);
 
 protected:
-    virtual void _GarbageCollect() override;
-    virtual void _GarbageCollectBprims() override;
-    virtual void _TallyResourceAllocation(VtDictionary *result) const override;
+    void _Commit() override;
+    void _GarbageCollect() override;
+    void _GarbageCollectBprims() override;
 
 private:
+    // Tally resources by key into the given dictionary. Any additions should
+    // be cumulative with the existing key values. 
+    void _TallyResourceAllocation(VtDictionary *result) const;
+
+    // TODO: this is a transient structure. we'll revisit the BufferSource
+    // interface later.
+    struct _PendingSource {
+        _PendingSource(HdBufferArrayRangeSharedPtr const &range)
+            : range(range)
+            , sources() 
+        {
+        }
+
+        _PendingSource(HdBufferArrayRangeSharedPtr const &range,
+                       HdBufferSourceSharedPtr     const &source)
+            : range(range)
+            , sources(1, source)
+        {
+        }
+
+        HdBufferArrayRangeSharedPtr range;
+        HdBufferSourceVector sources;
+    };
+
+    typedef tbb::concurrent_vector<_PendingSource> _PendingSourceList;
+    _PendingSourceList    _pendingSources;
+    std::atomic_size_t   _numBufferSourcesToResolve;
+    
+    struct _PendingComputation{
+        _PendingComputation(HdBufferArrayRangeSharedPtr const &range,
+                            HdComputationSharedPtr const &computation)
+            : range(range), computation(computation) { }
+        HdBufferArrayRangeSharedPtr range;
+        HdComputationSharedPtr computation;
+    };
+
+    typedef tbb::concurrent_vector<_PendingComputation> _PendingComputationList;
+    _PendingComputationList  _pendingComputations;
+
+    // aggregated buffer array
+    HdBufferArrayRegistry _nonUniformBufferArrayRegistry;
+    HdBufferArrayRegistry _nonUniformImmutableBufferArrayRegistry;
+    HdBufferArrayRegistry _uniformUboBufferArrayRegistry;
+    HdBufferArrayRegistry _uniformSsboBufferArrayRegistry;
+    HdBufferArrayRegistry _singleBufferArrayRegistry;
+
+    // current aggregation strategies
+    std::unique_ptr<HdAggregationStrategy> _nonUniformAggregationStrategy;
+    std::unique_ptr<HdAggregationStrategy>
+                                _nonUniformImmutableAggregationStrategy;
+    std::unique_ptr<HdAggregationStrategy> _uniformUboAggregationStrategy;
+    std::unique_ptr<HdAggregationStrategy> _uniformSsboAggregationStrategy;
+    std::unique_ptr<HdAggregationStrategy> _singleAggregationStrategy;
 
     typedef std::vector<HdStDispatchBufferSharedPtr>
         _DispatchBufferRegistry;

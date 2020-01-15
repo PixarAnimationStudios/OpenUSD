@@ -42,6 +42,7 @@
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/imageShaderRenderPass.h"
 
 #include "pxr/imaging/hdx/oitBufferAccessor.h"
@@ -81,8 +82,9 @@ HdxOitResolveTask::_PrepareOitBuffers(
 {
     const int numSamples = 8; // Should match glslfx files
 
-    HdResourceRegistrySharedPtr const& resourceRegistry = 
-        renderIndex->GetResourceRegistry();
+     HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
+        boost::static_pointer_cast<HdStResourceRegistry>(
+            renderIndex->GetResourceRegistry());
 
     bool createOitBuffers = !_counterBar;
     if (createOitBuffers) { 
@@ -93,7 +95,7 @@ HdxOitResolveTask::_PrepareOitBuffers(
         counterSpecs.push_back(HdBufferSpec(
             HdxTokens->hdxOitCounterBuffer, 
             HdTupleType {HdTypeInt32, 1}));
-        _counterBar = resourceRegistry->AllocateSingleBufferArrayRange(
+        _counterBar = hdStResourceRegistry->AllocateSingleBufferArrayRange(
                                             /*role*/HdxTokens->oitCounter,
                                             counterSpecs,
                                             HdBufferArrayUsageHint());
@@ -104,7 +106,7 @@ HdxOitResolveTask::_PrepareOitBuffers(
         indexSpecs.push_back(HdBufferSpec(
             HdxTokens->hdxOitIndexBuffer,
             HdTupleType {HdTypeInt32, 1}));
-        _indexBar = resourceRegistry->AllocateSingleBufferArrayRange(
+        _indexBar = hdStResourceRegistry->AllocateSingleBufferArrayRange(
                                             /*role*/HdxTokens->oitIndices,
                                             indexSpecs,
                                             HdBufferArrayUsageHint());
@@ -116,7 +118,7 @@ HdxOitResolveTask::_PrepareOitBuffers(
         dataSpecs.push_back(HdBufferSpec(
             HdxTokens->hdxOitDataBuffer, 
             HdTupleType {HdTypeFloatVec4, 1}));
-        _dataBar = resourceRegistry->AllocateSingleBufferArrayRange(
+        _dataBar = hdStResourceRegistry->AllocateSingleBufferArrayRange(
                                             /*role*/HdxTokens->oitData,
                                             dataSpecs,
                                             HdBufferArrayUsageHint());
@@ -128,7 +130,7 @@ HdxOitResolveTask::_PrepareOitBuffers(
         depthSpecs.push_back(HdBufferSpec(
             HdxTokens->hdxOitDepthBuffer, 
             HdTupleType {HdTypeFloat, 1}));
-        _depthBar = resourceRegistry->AllocateSingleBufferArrayRange(
+        _depthBar = hdStResourceRegistry->AllocateSingleBufferArrayRange(
                                             /*role*/HdxTokens->oitDepth,
                                             depthSpecs,
                                             HdBufferArrayUsageHint());
@@ -140,7 +142,7 @@ HdxOitResolveTask::_PrepareOitBuffers(
         uniformSpecs.push_back( HdBufferSpec(
             HdxTokens->oitScreenSize,HdTupleType{HdTypeInt32Vec2, 1}));
 
-        _uniformBar = resourceRegistry->AllocateUniformBufferArrayRange(
+        _uniformBar = hdStResourceRegistry->AllocateUniformBufferArrayRange(
                                             /*role*/HdxTokens->oitUniforms,
                                             uniformSpecs,
                                             HdBufferArrayUsageHint());
@@ -175,7 +177,7 @@ HdxOitResolveTask::_PrepareOitBuffers(
         uniformSources.push_back(HdBufferSourceSharedPtr(
                               new HdVtBufferSource(HdxTokens->oitScreenSize,
                                                    VtValue(screenSize))));
-        resourceRegistry->AddSources(_uniformBar, uniformSources);
+        hdStResourceRegistry->AddSources(_uniformBar, uniformSources);
     }
 }
 

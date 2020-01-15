@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/mixinShader.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 
 #include "pxr/imaging/hd/renderIndex.h"
@@ -303,6 +304,9 @@ HdStPopulateConstantPrimvars(
         return;
     }
 
+     HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
+        boost::static_pointer_cast<HdStResourceRegistry>(resourceRegistry);
+
     // Allocate a new uniform buffer if not exists.
     if (!drawItem->GetConstantPrimvarRange()) {
         // establish a buffer range
@@ -310,7 +314,7 @@ HdStPopulateConstantPrimvars(
         HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 
         HdBufferArrayRangeSharedPtr range =
-            resourceRegistry->AllocateShaderStorageBufferArrayRange(
+            hdStResourceRegistry->AllocateShaderStorageBufferArrayRange(
                 HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
         TF_VERIFY(range->IsValid());
 
@@ -319,7 +323,7 @@ HdStPopulateConstantPrimvars(
     }
     TF_VERIFY(drawItem->GetConstantPrimvarRange()->IsValid());
 
-    resourceRegistry->AddSources(
+    hdStResourceRegistry->AddSources(
         drawItem->GetConstantPrimvarRange(), sources);
 }
 

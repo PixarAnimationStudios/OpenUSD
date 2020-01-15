@@ -31,6 +31,7 @@
 #include "pxr/imaging/hdSt/renderBuffer.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
@@ -96,6 +97,9 @@ HdStRenderPassState::Prepare(
     GLF_GROUP_FUNCTION();
 
     HdRenderPassState::Prepare(resourceRegistry);
+
+    HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
+        boost::static_pointer_cast<HdStResourceRegistry>(resourceRegistry);
 
     VtVec4fArray clipPlanes;
     TF_FOR_ALL(it, GetClipPlanes()) {
@@ -175,8 +179,9 @@ HdStRenderPassState::Prepare(
         _clipPlanesBufferSize = clipPlanes.size();
 
         // allocate interleaved buffer
-        _renderPassStateBar = resourceRegistry->AllocateUniformBufferArrayRange(
-            HdTokens->drawingShader, bufferSpecs, HdBufferArrayUsageHint());
+        _renderPassStateBar = 
+            hdStResourceRegistry->AllocateUniformBufferArrayRange(
+                HdTokens->drawingShader, bufferSpecs, HdBufferArrayUsageHint());
 
         HdStBufferArrayRangeGLSharedPtr _renderPassStateBar_ =
             boost::static_pointer_cast<HdStBufferArrayRangeGL> (_renderPassStateBar);
@@ -253,7 +258,7 @@ HdStRenderPassState::Prepare(
                                   clipPlanes.size())));
     }
 
-    resourceRegistry->AddSources(_renderPassStateBar, sources);
+    hdStResourceRegistry->AddSources(_renderPassStateBar, sources);
 
     // notify view-transform to the lighting shader to update its uniform block
     _lightingShader->SetCamera(worldToViewMatrix, projMatrix);
