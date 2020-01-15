@@ -149,6 +149,17 @@ HdStGetMaterialShader(
     return shaderCode;
 }
 
+bool
+HdStShouldPopulateConstantPrimvars(
+    HdDirtyBits const *dirtyBits,
+    SdfPath const& id)
+{
+    return HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id) ||
+           HdChangeTracker::IsTransformDirty(*dirtyBits, id) ||
+           HdChangeTracker::IsExtentDirty(*dirtyBits, id) ||
+           HdChangeTracker::IsPrimIdDirty(*dirtyBits, id);
+}
+
 void
 HdStPopulateConstantPrimvars(
     HdRprim* prim,

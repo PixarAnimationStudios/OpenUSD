@@ -43,7 +43,6 @@
 
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/computation.h"
-#include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -155,12 +154,15 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         drawItem->SetMaterialShader(HdStGetMaterialShader(this, sceneDelegate));
     }
 
-    /* CONSTANT PRIMVARS, TRANSFORM AND EXTENT */
-    HdPrimvarDescriptorVector constantPrimvars =
-        HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
-                                  HdInterpolationConstant);
-    HdStPopulateConstantPrimvars(this, &_sharedData, sceneDelegate, drawItem, 
-        dirtyBits, constantPrimvars);
+    /* CONSTANT PRIMVARS, TRANSFORM, EXTENT AND PRIMID */
+    if (HdStShouldPopulateConstantPrimvars(dirtyBits, id)) {
+        HdPrimvarDescriptorVector constantPrimvars =
+            HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
+                                    HdInterpolationConstant);
+
+        HdStPopulateConstantPrimvars(this, &_sharedData, sceneDelegate,
+            drawItem, dirtyBits, constantPrimvars);
+    }
 
     /* INSTANCE PRIMVARS */
     if (!GetInstancerId().IsEmpty()) {
@@ -438,8 +440,8 @@ HdStBasisCurves::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                                            bool updateGeometricShader)
 {
     TF_DEBUG(HD_RPRIM_UPDATED).
-        Msg("HdStMesh(%s) - Resetting shaders for draw items of all reprs.",
-            GetId().GetText());
+        Msg("HdStBasisCurves(%s) - Resetting shaders for draw items of all "
+            "reprs.\n", GetId().GetText());
 
     HdStShaderCodeSharedPtr materialShader;
     if (updateMaterialShader) {

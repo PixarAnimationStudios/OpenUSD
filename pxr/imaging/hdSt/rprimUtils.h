@@ -66,6 +66,13 @@ HdStGetMaterialShader(
     HdSceneDelegate * delegate,
     std::string const & mixinSource = std::string());
 
+// Returns whether constant primvars need to be populated/updated based on the
+// dirty bits for a given rprim.
+HDST_API
+bool HdStShouldPopulateConstantPrimvars(
+    HdDirtyBits const *dirtyBits,
+    SdfPath const& id);
+
 // Given prim information it will create sources representing
 // constant primvars and hand it to the resource registry.
 HDST_API

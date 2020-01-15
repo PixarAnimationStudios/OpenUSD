@@ -117,12 +117,15 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     /* MATERIAL SHADER (may affect subsequent primvar population) */
     drawItem->SetMaterialShader(HdStGetMaterialShader(this, sceneDelegate));
 
-    /* CONSTANT PRIMVARS, TRANSFORM AND EXTENT */
-    HdPrimvarDescriptorVector constantPrimvars =
-        HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
-                                  HdInterpolationConstant);
-    HdStPopulateConstantPrimvars(this, &_sharedData, sceneDelegate, drawItem, 
-        dirtyBits, constantPrimvars);
+    /* CONSTANT PRIMVARS, TRANSFORM, EXTENT AND PRIMID */
+    if (HdStShouldPopulateConstantPrimvars(dirtyBits, id)) {
+        HdPrimvarDescriptorVector constantPrimvars =
+            HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
+                                    HdInterpolationConstant);
+
+        HdStPopulateConstantPrimvars(this, &_sharedData, sceneDelegate, 
+            drawItem, dirtyBits, constantPrimvars);
+    }
 
     /* INSTANCE PRIMVARS */
     if (!GetInstancerId().IsEmpty()) {

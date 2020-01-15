@@ -1683,16 +1683,14 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         _PopulateAdjacency(resourceRegistry);
     }
 
-    /* CONSTANT PRIMVARS */
-    {
-        HdPrimvarDescriptorVector constantPrimvars;
-        if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
-            constantPrimvars =
-                HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
-                                          HdInterpolationConstant);
-        }
-        HdStPopulateConstantPrimvars(this, &_sharedData, sceneDelegate, drawItem, 
-            dirtyBits, constantPrimvars);
+    /* CONSTANT PRIMVARS, TRANSFORM, EXTENT AND PRIMID */
+    if (HdStShouldPopulateConstantPrimvars(dirtyBits, id)) {
+        HdPrimvarDescriptorVector constantPrimvars =
+            HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
+                                        HdInterpolationConstant);
+
+        HdStPopulateConstantPrimvars(this, &_sharedData, sceneDelegate, 
+            drawItem, dirtyBits, constantPrimvars);
 
         // Check if normals are provided as a constant primvar
         for (const HdPrimvarDescriptor& pv : constantPrimvars) {
@@ -2134,7 +2132,7 @@ HdStMesh::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                                     bool updateGeometricShader)
 {
     TF_DEBUG(HD_RPRIM_UPDATED).
-        Msg("HdStMesh(%s) - Resetting shaders for draw items of all reprs.",
+        Msg("HdStMesh(%s) - Resetting shaders for draw items of all reprs.\n",
             GetId().GetText());
 
     // Look up the mixin source if necessary. This is a per-rprim glsl
