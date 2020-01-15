@@ -122,6 +122,7 @@ pxr_library(tf
         cxxCast.h
         declarePtrs.h
         diagnosticLite.h
+        functionRef.h
         hashmap.h
         hashset.h
         instantiateSingleton.h
@@ -318,6 +319,7 @@ pxr_build_test(testTf
         testenv/envSetting.cpp
         testenv/fastCompression.cpp
         testenv/fileUtils.cpp
+        testenv/functionRef.cpp
         testenv/getenv.cpp
         testenv/hash.cpp
         testenv/iterator.cpp
@@ -484,6 +486,9 @@ pxr_register_test(TfFileUtils
 pxr_register_test(TfFileUtils_Python
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfFileUtils"
+)
+pxr_register_test(TfFunctionRef
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfFunctionRef"
 )
 pxr_register_test(TfStringUtils_Python
     PYTHON
