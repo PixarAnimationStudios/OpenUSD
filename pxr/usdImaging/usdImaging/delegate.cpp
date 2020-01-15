@@ -1602,19 +1602,6 @@ UsdImagingDelegate::GetRenderTag(SdfPath const& id)
     TF_VERIFY(_valueCache.FindPurpose(cachePath, &purpose), "%s", 
               cachePath.GetText());
 
-    // If it is a property path then let's resolve it.
-    // parent opinion wins if it is not default
-    if (cachePath.IsPropertyPath()) {
-        SdfPath cachePrimPath = cachePath.GetPrimPath();
-        TfToken purposeParent = UsdGeomTokens->default_;
-        TF_VERIFY(_valueCache.FindPurpose(cachePrimPath, &purposeParent), "%s", 
-                  cachePrimPath.GetText());
-        
-        if (purposeParent != UsdGeomTokens->default_) {
-            purpose = purposeParent;
-        }
-    }
-
     if (purpose == UsdGeomTokens->default_) {
         // Simple mapping so all render tags in multiple delegates match
         purpose = HdRenderTagTokens->geometry;

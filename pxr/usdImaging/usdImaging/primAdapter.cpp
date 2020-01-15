@@ -966,16 +966,39 @@ UsdImagingPrimAdapter::GetVisible(UsdPrim const& prim, UsdTimeCode time) const
 }
 
 TfToken 
-UsdImagingPrimAdapter::GetPurpose(UsdPrim const& prim) const
+UsdImagingPrimAdapter::GetPurpose(UsdPrim const& prim, 
+    UsdImagingInstancerContext const* instancerContext) const
 {
     HD_TRACE_FUNCTION();
 
-    if (_IsEnabledPurposeCache()) {
-        return _delegate->_purposeCache.GetValue(prim);
+    UsdImaging_PurposeStrategy::value_type purposeInfo = 
+        _IsEnabledPurposeCache() ?
+            _delegate->_purposeCache.GetValue(prim) :
+            UsdImaging_PurposeStrategy::ComputePurposeInfo(prim);
 
-    } else {
-        return UsdImaging_PurposeStrategy::ComputePurpose(prim);
+    // Inherit the instance's purpose if our prim has a fallback purpose and
+    // there's an instance that provide a purpose to inherit.
+    if (!purposeInfo.isInheritable &&
+        instancerContext &&
+        !instancerContext->instanceInheritablePurpose.IsEmpty()) {
+        return instancerContext->instanceInheritablePurpose;
     }
+
+    return purposeInfo.purpose.IsEmpty() ? 
+        UsdGeomTokens->default_ : purposeInfo.purpose;
+}
+
+TfToken 
+UsdImagingPrimAdapter::GetInheritablePurpose(UsdPrim const& prim) const
+{
+    HD_TRACE_FUNCTION();
+
+    UsdImaging_PurposeStrategy::value_type purposeInfo = 
+        _IsEnabledPurposeCache() ?
+            _delegate->_purposeCache.GetValue(prim) :
+            UsdImaging_PurposeStrategy::ComputePurposeInfo(prim);
+
+    return purposeInfo.GetInheritablePurpose();
 }
 
 SdfPath

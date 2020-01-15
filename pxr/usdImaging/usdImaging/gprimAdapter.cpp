@@ -246,11 +246,7 @@ UsdImagingGprimAdapter::TrackVariability(UsdPrim const& prim,
                timeVaryingBits,
                true);
 
-    TfToken purpose = GetPurpose(prim);
-    // Empty purpose means there is no opinion, fall back to geom.
-    if (purpose.IsEmpty())
-        purpose = UsdGeomTokens->default_;
-    valueCache->GetPurpose(cachePath) = purpose;
+    valueCache->GetPurpose(cachePath) = GetPurpose(prim, instancerContext);
 }
 
 void

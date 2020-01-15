@@ -142,6 +142,7 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
     // contains the instance proxy path for the master we're currently in,
     // so we can stitch the full proxy path together.
     TfToken instanceDrawMode;
+    TfToken instanceInheritablePurpose;
     std::vector<_InstancerData::PrimvarInfo> inheritedPrimvars;
     {
         instancerChain = { instancePath };
@@ -152,6 +153,7 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
             _GetPrimPathFromInstancerChain(instancerChain);
         if (UsdPrim instanceUsdPrim = _GetPrim(instanceChainPath)) {
             instanceDrawMode = GetModelDrawMode(instanceUsdPrim);
+            instanceInheritablePurpose = GetInheritablePurpose(instanceUsdPrim);
             UsdImaging_InheritedPrimvarStrategy::value_type
                 inheritedPrimvarRecord = _GetInheritedPrimvars(instanceUsdPrim);
             if (inheritedPrimvarRecord) {
@@ -183,7 +185,8 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
         // split the instance.
         if (instancerData.materialUsdPath == instancerMaterialUsdPath &&
             instancerData.drawMode == instanceDrawMode &&
-            instancerData.inheritedPrimvars == inheritedPrimvars) {
+            instancerData.inheritedPrimvars == inheritedPrimvars &&
+            instancerData.inheritablePurpose == instanceInheritablePurpose) {
             instancerPath = it->second;
             break;
         }
@@ -213,11 +216,13 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
         instancerData.masterPath = masterPrim.GetPath();
         instancerData.materialUsdPath = instancerMaterialUsdPath;
         instancerData.drawMode = instanceDrawMode;
+        instancerData.inheritablePurpose = instanceInheritablePurpose;
         instancerData.inheritedPrimvars = inheritedPrimvars;
 
         UsdImagingInstancerContext ctx = { SdfPath(),
                                            TfToken(),
                                            SdfPath(),
+                                           TfToken(),
                                            TfToken(),
                                            instancerAdapter };
 
@@ -293,12 +298,14 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
                 protoMaterialId = instancerMaterialUsdPath;
             }
             TfToken protoDrawMode = GetModelDrawMode(instanceProxyPrim);
+            TfToken protoInheritablePurpose = 
+                GetInheritablePurpose(instanceProxyPrim);
 
             const SdfPath protoPath = 
                 _InsertProtoPrim(&iter, protoName, protoMaterialId,
-                                 protoDrawMode, instancerPath,
-                                 primAdapter, instancerAdapter, index,
-                                 &isLeafInstancer);
+                                 protoDrawMode, protoInheritablePurpose, 
+                                 instancerPath, primAdapter, instancerAdapter, 
+                                 index, &isLeafInstancer);
                     
             // 
             // Update instancer data.
@@ -425,6 +432,7 @@ UsdImagingInstanceAdapter::_InsertProtoPrim(
     TfToken const& protoName,
     SdfPath materialUsdPath,
     TfToken drawMode,
+    TfToken inheritablePurpose,
     SdfPath instancerPath,
     UsdImagingPrimAdapterSharedPtr const& primAdapter,
     UsdImagingPrimAdapterSharedPtr const& instancerAdapter,
@@ -443,6 +451,7 @@ UsdImagingInstanceAdapter::_InsertProtoPrim(
                                        protoName,
                                        materialUsdPath,
                                        drawMode,
+                                       inheritablePurpose,
                                        instancerAdapter };
 
     SdfPath protoPath = primAdapter->Populate(prim, index, &ctx);
@@ -482,8 +491,6 @@ UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
                                   UsdImagingInstancerContext const* 
                                       instancerContext) const
 {
-    UsdImagingValueCache* valueCache = _GetValueCache();
-
     if (_IsChildPrim(prim, cachePath)) {
         UsdImagingInstancerContext instancerContext;
         _ProtoPrim const& proto = _GetProtoPrim(prim.GetPath(),
@@ -498,11 +505,6 @@ UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
             timeVaryingBits, &instancerContext);
     } else if (_InstancerData const* instrData =
                TfMapLookupPtr(_instancerData, prim.GetPath())) {
-        // In this case, prim is an instance master. Master prims provide
-        // no data of their own, so we fall back to the default purpose.
-        // XXX: This seems incorrect?
-        valueCache->GetPurpose(cachePath) = UsdGeomTokens->default_;
-
         // Count how many instances there are in total (used for the loop
         // counter of _RunForAllInstancesToDraw).
         instrData->numInstancesToDraw = _CountAllInstancesToDraw(prim);
@@ -1759,6 +1761,7 @@ UsdImagingInstanceAdapter::_GetProtoPrim(SdfPath const& instancerPath,
     SdfPath instancerCachePath;
     SdfPath materialUsdPath;
     TfToken drawMode;
+    TfToken inheritablePurpose;
 
     if (it != _instancerData.end()) {
         _PrimMap::const_iterator primIt = it->second.primMap.find(cachePath);
@@ -1768,6 +1771,7 @@ UsdImagingInstanceAdapter::_GetProtoPrim(SdfPath const& instancerPath,
         instancerCachePath = instancerPath;
         materialUsdPath = it->second.materialUsdPath;
         drawMode = it->second.drawMode;
+        inheritablePurpose = it->second.inheritablePurpose;
         r = &(primIt->second);
     } else {
         // If we didn't find an instancerData entry, it's likely because the
@@ -1787,6 +1791,8 @@ UsdImagingInstanceAdapter::_GetProtoPrim(SdfPath const& instancerPath,
                     pathInstancerDataPair.second.materialUsdPath;
                 drawMode =
                     pathInstancerDataPair.second.drawMode;
+                inheritablePurpose =
+                    pathInstancerDataPair.second.inheritablePurpose;
                 r = &protoIt->second;
                 break;
             }
@@ -1800,6 +1806,7 @@ UsdImagingInstanceAdapter::_GetProtoPrim(SdfPath const& instancerPath,
     ctx->instancerCachePath = instancerCachePath;
     ctx->instancerMaterialUsdPath = materialUsdPath;
     ctx->instanceDrawMode = drawMode;
+    ctx->instanceInheritablePurpose = inheritablePurpose;
     ctx->childName = TfToken();
     // Note: use a null adapter here.  The UsdImagingInstancerContext is
     // not really used outside of population.  We should clean this up and

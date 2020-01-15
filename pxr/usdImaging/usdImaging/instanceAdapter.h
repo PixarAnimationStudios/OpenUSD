@@ -221,6 +221,7 @@ private:
                      const TfToken& protoName,
                      SdfPath materialId,
                      TfToken drawMode,
+                     TfToken inheritablePurpose,
                      SdfPath instancerPath,
                      UsdImagingPrimAdapterSharedPtr const& primAdapter,
                      UsdImagingPrimAdapterSharedPtr const& instancerAdapter,
@@ -377,6 +378,10 @@ private:
 
         // The drawmode associated with this instancer.
         TfToken drawMode;
+
+        // The purpose value associated with this instance that can be inherited
+        // by proto prims that need to inherit ancestor purpose.
+        TfToken inheritablePurpose;
 
         // Inherited primvar
         struct PrimvarInfo {

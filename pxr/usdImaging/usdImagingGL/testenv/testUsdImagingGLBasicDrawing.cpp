@@ -268,6 +268,9 @@ My_TestGLDrawing::DrawTest(bool offscreen)
         params.cullStyle = IsEnabledCullBackfaces() ?
                             UsdImagingGLCullStyle::CULL_STYLE_BACK :
                             UsdImagingGLCullStyle::CULL_STYLE_NOTHING;
+        params.showGuides = IsShowGuides();
+        params.showRender = IsShowRender();
+        params.showProxy = IsShowProxy();
 
         glViewport(0, 0, width, height);
 

@@ -375,10 +375,21 @@ public:
     USDIMAGING_API
     bool GetVisible(UsdPrim const& prim, UsdTimeCode time) const;
 
-    /// Returns the purpose token for \p prim.
-    ///
+    /// Returns the purpose token for \p prim. If an \p instancerContext is 
+    /// provided and the prim doesn't have an explicitly authored or inherited 
+    /// purpose, it may inherit the instancerContext's purpose if the instance
+    /// has an explicit purpose.
     USDIMAGING_API
-    TfToken GetPurpose(UsdPrim const& prim) const;
+    TfToken GetPurpose(
+        UsdPrim const& prim, 
+        UsdImagingInstancerContext const* instancerContext) const;
+
+    /// Returns the purpose token for \p prim, but only if it is inheritable 
+    /// by child prims (i.e. it is an explicitly authored purpose on the prim
+    /// itself or one of the prim's ancestors), otherwise it returns the empty 
+    /// token.
+    USDIMAGING_API
+    TfToken GetInheritablePurpose(UsdPrim const& prim) const;
 
     /// Fetches the transform for the given prim at the given time from a
     /// pre-computed cache of prim transforms. Requesting transforms at

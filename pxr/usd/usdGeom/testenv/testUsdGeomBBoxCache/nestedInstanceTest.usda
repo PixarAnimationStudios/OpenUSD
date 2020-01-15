@@ -1,0 +1,89 @@
+#usda 1.0
+
+class "_Depth_2"
+{
+    def Cube "Cube"
+    {
+        double size = 1
+        double3 xformOp:translate = (0, 0, 5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+class "_Depth_1"
+{
+    def Sphere "Geom"
+    {
+        double radius = 1.5
+    }
+
+    def Xform "InnerFallbackXform"
+    {
+        double3 xformOp:translate = (0, 0, 5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Cube "FallbackCube"
+        {
+        }
+
+        # Instance within another instance with no inheritable ancestor purpose.
+        # This may inherit purpose from the outer instance.
+        def "Scope" (
+            inherits = </_Depth_2>
+            instanceable = true
+        )
+        {
+        }
+    }
+
+    def Xform "InnerRenderXform"
+    {
+        color3f[] primvars:displayColor = [(1, 0.3, 0.3)]
+        uniform token purpose = "render"
+        double3 xformOp:translate = (-10, 0, 5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Sphere "RenderSphere"
+        {
+        }
+
+        # Instance within another instance but under an ancestor with render
+        # purpose. This will have the render purpose regardless of outer
+        # instance purpose.
+        def Scope "Scope" (
+            inherits = </_Depth_2>
+            instanceable = true
+        )
+        {
+        }
+    }
+
+}
+
+def Xform "Root"
+{
+    # Instance with no explicit purpose. Master children cannot inherit this
+    # purpose.
+    def Xform "OuterFallbackXform" (
+        inherits = </_Depth_1>
+        instanceable = true
+    )
+    {
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    # Instance with explicit render purpose. Master children can inherit this 
+    # purpose.
+    def Xform "OuterRenderXform" (
+        inherits = </_Depth_1>
+        instanceable = true
+    )
+    {
+        color3f[] primvars:displayColor = [(1, 0, 0)]
+        uniform token purpose = "render"
+        double3 xformOp:translate = (0, 0, -15)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+

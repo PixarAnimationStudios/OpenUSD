@@ -226,6 +226,7 @@ UsdImagingPointInstancerAdapter::_Populate(UsdPrim const& prim,
                                            /*childName=*/TfToken(),
                                            SdfPath(),
                                            TfToken(),
+                                           TfToken(),
                                            instancerAdapter};
         _PopulatePrototype(protoIndex, instrData, protoRootPrim, index, &ctx);
     }
@@ -368,6 +369,7 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                     instancerContext->childName,
                     instancerContext->instancerMaterialUsdPath,
                     instancerContext->instanceDrawMode,
+                    instancerContext->instanceInheritablePurpose,
                     UsdImagingPrimAdapterSharedPtr() };
                 protoPath = adapter->Populate(*iter, index, &ctx);
             } else {
@@ -383,11 +385,14 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
 
                 SdfPath const& materialId = GetMaterialUsdPath(populatePrim);
                 TfToken const& drawMode = GetModelDrawMode(instanceProxyPrim);
+                TfToken const& inheritablePurpose = 
+                    GetInheritablePurpose(instanceProxyPrim);
                 UsdImagingInstancerContext ctx = {
                     instancerContext->instancerCachePath,
                     /*childName=*/protoName,
                     materialId,
                     drawMode,
+                    inheritablePurpose,
                     instancerContext->instancerAdapter };
                 protoPath = adapter->Populate(populatePrim, index, &ctx);
             }
@@ -437,8 +442,6 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
                                   UsdImagingInstancerContext const* 
                                       instancerContext) const
 {
-    UsdImagingValueCache* valueCache = _GetValueCache();
-
     // XXX: This is no good: if an attribute has exactly one time sample, the
     // default value will get cached and never updated. However, if we use an
     // arbitrary time here, attributes which have valid default values and 1
@@ -465,28 +468,13 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
                                         &proto.variabilityBits);
         *timeVaryingBits |= proto.variabilityBits;
 
-        // Compute the purpose. We need to compute purpose relative to the
-        // model root, and protoPrim may be across an instance boundary from
-        // protoRootPrim, so override the purpose computed by the adapter and
-        // compute it ourselves, for each master subtree and then for the final
-        // path relative to the proto root.
-        valueCache->GetPurpose(cachePath) = UsdGeomTokens->default_;
-        UsdPrim protoRootPrim = _GetPrim(proto.protoRootPath);
-
-        for (size_t i = 0; i < proto.paths.size()-1;++i) {
-            _ComputeProtoPurpose(_GetPrim(proto.paths[i+1]).GetMaster(),
-                                 _GetPrim(proto.paths[i+0]),
-                                 &valueCache->GetPurpose(cachePath));
-        }
-        _ComputeProtoPurpose(protoRootPrim, _GetPrim(proto.paths.back()),
-                             &valueCache->GetPurpose(cachePath));
-
         if (!(proto.variabilityBits & HdChangeTracker::DirtyVisibility)) {
             // Pre-cache visibility, because we now know that it is static for
             // the populated prototype over all time.
             // protoPrim may be across an instance boundary from protoRootPrim,
             // so compute visibility for each master subtree, and then for the
             // final path relative to the proto root.
+            UsdPrim protoRootPrim = _GetPrim(proto.protoRootPath);
             for (size_t i = 0; i < proto.paths.size()-1; ++i) {
                 _ComputeProtoVisibility(_GetPrim(proto.paths[i+1]).GetMaster(),
                                         _GetPrim(proto.paths[i+0]),
@@ -508,11 +496,6 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
         return;
     } else  if (_InstancerData const* instrData =
                 TfMapLookupPtr(_instancerData, cachePath)) {
-        TfToken purpose = GetPurpose(prim);
-        // Empty purpose means there is no opinion, fall back to default.
-        if (purpose.IsEmpty())
-            purpose = UsdGeomTokens->default_;
-        valueCache->GetPurpose(cachePath) = purpose;
 
         // Mark instance indices as time varying if any of the following is 
         // time varying : protoIndices, invisibleIds
@@ -1445,40 +1428,6 @@ UsdImagingPointInstancerAdapter::_ComputeProtoVisibility(
         *vis = false;
         return;
     }
-}
-
-void
-UsdImagingPointInstancerAdapter::_ComputeProtoPurpose(
-                                 UsdPrim const& protoRoot,
-                                 UsdPrim const& protoGprim,
-                                 TfToken* purpose) const
-{
-    if (!TF_VERIFY(purpose)) { return; }
-    if (!protoGprim.GetPath().HasPrefix(protoRoot.GetPath())) {
-        TF_CODING_ERROR("Prototype <%s> is not prefixed under "
-                "proto root <%s>\n",
-                protoGprim.GetPath().GetText(),
-                protoRoot.GetPath().GetText());
-        return;
-    }
-
-    // Recurse until we get to the protoRoot. With this recursion, we'll
-    // process the protoRoot first, then a child, down to the protoGprim.
-    if (!protoGprim.IsMaster()  &&
-        protoRoot != protoGprim &&
-        protoGprim.GetParent()) {
-        _ComputeProtoPurpose(protoRoot, protoGprim.GetParent(), purpose);
-    }
-
-    // If an ancestor has a purpose, we need not check other prims (bail
-    // here at every child recursion after the first parent purpose is found).
-    if (*purpose != UsdGeomTokens->default_) {
-        return;
-    }
-
-    // Fetch the value for this prim, intentionally only reading the default
-    // sample, as purpose is not time varying.
-    UsdGeomImageable(protoGprim).GetPurposeAttr().Get(purpose);
 }
 
 /*virtual*/

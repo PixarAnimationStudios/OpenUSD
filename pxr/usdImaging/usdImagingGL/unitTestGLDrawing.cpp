@@ -236,6 +236,9 @@ UsdImagingGL_UnitTestGLDrawing::UsdImagingGL_UnitTestGLDrawing()
     , _drawMode(UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH)
     , _shouldFrameAll(false)
     , _cullBackfaces(false)
+    , _showGuides(UsdImagingGLRenderParams().showGuides)
+    , _showRender(UsdImagingGLRenderParams().showRender)
+    , _showProxy(UsdImagingGLRenderParams().showProxy)
 {
 }
 
@@ -362,6 +365,12 @@ static void Usage(int argc, char *argv[])
 "                      float) and value passed to renderer. -renderSetting\n"
 "                      can be given multiple times to specify different\n"
 "                      settings\n"
+"  -guidesPurpose [show|hide]\n"
+"                      force prims of purpose 'guide' to be shown or hidden\n"
+"  -renderPurpose [show|hide]\n"
+"                      force prims of purpose 'render' to be shown or hidden\n"
+"  -proxyPurpose [show|hide]\n"
+"                      force prims of purpose 'proxy' to be shown or hidden\n"
 ;
 
     Die(usage, TfGetBaseName(argv[0]).c_str());
@@ -404,6 +413,28 @@ static double ParseDouble(int& i, int argc, char *argv[],
         *invalid = false;
     }
     return result;
+}
+
+static bool ParseShowHide(int& i, int argc, char *argv[],
+                          bool* result)
+{
+    if (i + 1 == argc) {
+        ParseError(argv[0], "missing parameter for '%s'", argv[i]);
+        return false;
+    }
+    if (strcmp(argv[i + 1], "show") == 0) {
+        *result = true;
+    } else if (strcmp(argv[i + 1], "hide") == 0) {
+        *result = false;
+    } else {
+        ParseError(argv[0], "invalid parameter for '%s': %s. Must be either "
+                            "'show' or 'hide'",
+                   argv[i], argv[i + 1]);
+        return false;
+    }
+
+    ++i;
+    return true;
 }
 
 static const char * ParseString(int &i, int argc, char *argv[],
@@ -538,6 +569,15 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
             CheckForMissingArguments(i, 2, argc, argv);
             const char * const key = ParseString(i, argc, argv);
             _renderSettings[key] = ParseVtValue(i, argc, argv);
+        }
+        else if (strcmp(argv[i], "-guidesPurpose") == 0) {
+            ParseShowHide(i, argc, argv, &_showGuides);
+        }
+        else if (strcmp(argv[i], "-renderPurpose") == 0) {
+            ParseShowHide(i, argc, argv, &_showRender);
+        }
+        else if (strcmp(argv[i], "-proxyPurpose") == 0) {
+            ParseShowHide(i, argc, argv, &_showProxy);
         }
         else {
             ParseError(argv[0], "unknown argument %s", argv[i]);

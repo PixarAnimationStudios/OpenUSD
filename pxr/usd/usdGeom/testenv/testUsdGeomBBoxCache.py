@@ -460,7 +460,52 @@ def TestUsd4957():
     AssertBBoxesClose(relativeBbox, cBbox,
                       "ComputeRelativeBound produced a wrong bbox.")
 
+def TestPurposeWithInstancing():
+    """ Tests that purpose filtered bounding boxes work correctly with native
+        instancing and inherited purpose.
+    """
 
+    # Our test stages should all produce the exact same default and render 
+    # purpose bounding boxes even though they have different permutations of 
+    # instancing prims.
+    defaultBBox = Gf.BBox3d(Gf.Range3d(
+        Gf.Vec3d(-1.0, -1.0, -1.0), Gf.Vec3d(1.0, 1.0, 11.0)))
+    renderBBox = Gf.BBox3d(Gf.Range3d(
+        Gf.Vec3d(-11.0, -1.0, -16.0), Gf.Vec3d(1.0, 1.0, 11.0)))
+    defaultCache = UsdGeom.BBoxCache(Usd.TimeCode.Default(), ['default'])
+    renderCache = UsdGeom.BBoxCache(Usd.TimeCode.Default(), ['default', 'render'])
+
+    # Stage with all instancing disabled.
+    stage = Usd.Stage.Open("disableAllInstancing.usda")
+    assert len(stage.GetMasters()) == 0
+    root = stage.GetPrimAtPath("/Root")
+
+    assert defaultCache.ComputeWorldBound(root) == defaultBBox
+    assert renderCache.ComputeWorldBound(root) == renderBBox
+
+    # Stage with one set of instances.
+    stage = Usd.Stage.Open("disableInnerInstancing.usda")
+    assert len(stage.GetMasters()) == 1
+    root = stage.GetPrimAtPath("/Root")
+
+    assert defaultCache.ComputeWorldBound(root) == defaultBBox
+    assert renderCache.ComputeWorldBound(root) == renderBBox
+
+    # Stage with one different set of instances.
+    stage = Usd.Stage.Open("disableOuterInstancing.usda")
+    assert len(stage.GetMasters()) == 1
+    root = stage.GetPrimAtPath("/Root")
+
+    assert defaultCache.ComputeWorldBound(root) == defaultBBox
+    assert renderCache.ComputeWorldBound(root) == renderBBox
+
+    # Stage with both sets of instances which are nested.
+    stage = Usd.Stage.Open("nestedInstanceTest.usda")
+    assert len(stage.GetMasters()) == 2
+    root = stage.GetPrimAtPath("/Root")
+
+    assert defaultCache.ComputeWorldBound(root) == defaultBBox
+    assert renderCache.ComputeWorldBound(root) == renderBBox
 
 if __name__ == "__main__":
     Main()
@@ -469,6 +514,7 @@ if __name__ == "__main__":
     TestUnloadedExtentsHints()
     TestIgnoredPrims()
     TestIgnoreVisibility()
+    TestPurposeWithInstancing()
     
     # Turn off debug symbol for these regression tests.
     Tf.Debug.SetDebugSymbolsByName("USDGEOM_BBOX", 0)

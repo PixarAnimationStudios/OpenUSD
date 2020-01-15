@@ -25,7 +25,8 @@ distinction is made for two reasons:
   UsdGeomImageable-derived prims should be able to express a look/material 
   binding.
 - for the common properties described in UsdGeomImageable, including visibility,
-  purpose, and the attribute schema for \ref UsdGeom_PrimvarsOverview "primvars".
+  \ref UsdGeom_ImageablePurpose "purpose", and the attribute schema for 
+  \ref UsdGeom_PrimvarsOverview "primvars".
 
 Admittedly, not all of the classes inheriting from UsdGeomImageable really need
 to be imageable - they are grouped as they are to avoid the need for
@@ -130,6 +131,83 @@ UsdGeomPrimvar encapsulates a single primvar, and provides the features
 associated with interpolating data across a surface.  UsdGeomPrimvarsAPI
 provides the interface for creating and querying primvars on a prim, as well
 as the computations related to primvar inheritance.
+
+\section UsdGeom_ImageablePurpose Imageable Purpose
+
+Purpose is a concept we have found useful in our pipeline for 
+classifying geometry into categories that can each be independently
+included or excluded from traversals of prims on a stage, such as
+rendering or bounding-box computation traversals.  The fallback
+purpose, \em default indicates that a prim has "no special purpose"
+and should generally be included in all traversals.  Prims with purpose
+\em render should generally only be included when performing a "final 
+quality" render.  Prims with purpose \em proxy should generally only be
+included when performing a lightweight proxy render (such as openGL).  
+Finally, prims with purpose \em guide should generally only be included
+when an interactive application has been explicitly asked to "show guides". 
+        
+A prim that is Imageable with an authored opinion about its purpose will
+always have the same effective purpose as its authored value.  If the 
+prim is not Imageable or does not have an authored opinion about its own
+purpose, then it will inherit the purpose of the closest Imageable 
+ancestor with an authored purpose opinion.  If there are no Imageable 
+ancestors with an authored purpose opinion then this prim uses its 
+fallback purpose.
+
+For example, if you have a prim tree like such
+\code
+def "Root" {
+    token purpose = "proxy"
+
+    def Xform "RenderXform" {
+        token purpose = "render"
+
+        def "Prim {
+            token purpose = "default"
+
+            def Xform "InheritXform" {
+            }
+
+            def Xform "GuideXform" {
+                token purpose = "guide"
+            }
+        }
+    }
+
+    def Xform "Xform {
+    }
+}
+\endcode
+
+\li </Root> is not Imageable so its purpose attribute is ignored and its
+effective purpose is \em default.
+\li </Root/RenderXform> is Imageable and has an authored purpose of 
+\em render so its effective purpose is \em render.
+\li </Root/RenderXform/Prim> is not Imageable so its purpose attribute is
+ignored.  ComputePurpose will return the effective purpose of 
+\em render, inherited from its parent Imageable's authored purpose.
+\li </Root/RenderXform/Prim/InheritXform> is Imageable but with no authored
+purpose.  Its effective purpose is \em render, inherited from the
+authored purpose of </Root/RenderXform>
+\li </Root/RenderXform/Prim/GuideXform> is Imageable and has an authored 
+purpose of \em guide so its effective purpose is \em guide.
+\li </Root/Xform> is Imageable but with no authored purpose. It also has
+no Imageable ancestor with an authored purpose its effective purpose is
+its fallback value of \em default.
+                
+Purpose \em render can be useful in creating "light blocker"
+geometry for raytracing interior scenes.  Purposes \em render and
+\em proxy can be used together to partition a complicated model
+into a lightweight proxy representation for interactive use, and a
+fully realized, potentially quite heavy, representation for rendering.
+One can use UsdVariantSets to create proxy representations, but doing
+so requires that we recompose parts of the UsdStage in order to change
+to a different runtime level of detail, and that does not interact
+well with the needs of multithreaded rendering. Purpose provides us with
+a better tool for dynamic, interactive complexity management.
+
+As demonstrated in UsdGeomBBoxCache, a traverser should be ready to 
+accept combinations of included purposes as an input.
 
 \section UsdGeom_LinAlgBasics Linear Algebra in UsdGeom
 

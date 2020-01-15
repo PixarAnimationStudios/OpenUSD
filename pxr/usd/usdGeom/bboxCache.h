@@ -377,6 +377,44 @@ private:
     typedef std::map<TfToken, GfBBox3d,  TfTokenFastArbitraryLessThan>
         _PurposeToBBoxMap;
 
+    // Each individual prim will have it's own entry in the bbox cache.
+    // When instancing is involved we store the master prims and their children
+    // in the cache for use by each prim that instances each master.
+    // However, because of the way we compute and inherit purpose, we may end
+    // up needed to compute multitple different bboxes for masters and their 
+    // children if the prims that instance them would cause these masters to 
+    // inherit a different purpose value when the prims under the master don't 
+    // have an authored purpose of their own.
+    //
+    // This struct is here to represent a prim and the purpose that it would
+    // inherit from the prim that instances it. It is used as the key for the 
+    // map of prim's to the cached entries, allowing prim's in masters to have
+    // more than one bbox cache entry for each distinct context needed to 
+    // appropriately compute for all instances. instanceInheritablePurpose will
+    // always be empty for prims that aren't masters or children of masters, 
+    // meaning that prims not in masters will only have one context each.
+    struct _PrimContext {
+        // The prim itself
+        UsdPrim prim;
+
+        // The purpose that would be inherited from the instancing prim if this
+        // prim does not have an explicit purpose.
+        TfToken instanceInheritablePurpose;
+
+        _PrimContext() = default;
+        explicit _PrimContext(const UsdPrim &prim_, 
+                               const TfToken &purpose = TfToken()) 
+            : prim(prim_), instanceInheritablePurpose(purpose) {};
+
+        bool operator==(const _PrimContext &rhs) const {
+            return prim == rhs.prim && 
+                instanceInheritablePurpose == rhs.instanceInheritablePurpose;
+        }
+
+        // Convenience stringify for debugging.
+        std::string ToString() const;
+    };
+
     bool
     _ComputePointInstanceBoundsHelper(
         const UsdGeomPointInstancer &instancer,
@@ -412,7 +450,7 @@ private:
     // \p inverseComponentCtm is used to combine all the child bboxes in
     // component-relative space.
     void _ResolvePrim(_BBoxTask* task,
-                      const UsdPrim& prim,
+                      const _PrimContext& prim,
                       const GfMatrix4d &inverseComponentCtm);
 
     struct _Entry {
@@ -434,8 +472,10 @@ private:
         // True when the entry is visible.
         bool isIncluded;
 
-        // Computed purpose value of the prim that's associated with the entry.
-        TfToken purpose;
+        // Computed purpose info of the prim that's associated with the entry.
+        // This data includes the prim's actual computed purpose as well as
+        // whether this purpose is inheritable by child prims.
+        UsdGeomImageable::PurposeInfo purposeInfo;
 
         // Queries for attributes that need to be re-computed at each
         // time for this entry. This will be invalid for non-varying entries.
@@ -447,8 +487,9 @@ private:
     // \p prim and all of its descendents. In this case, the master prims
     // whose bounding boxes need to be resolved in order to resolve \p prim
     // will be returned in \p masterPrims.
-    _Entry* _FindOrCreateEntriesForPrim(const UsdPrim& prim,
-                                        std::vector<UsdPrim>* masterPrims);
+    _Entry* _FindOrCreateEntriesForPrim(
+        const _PrimContext& prim,
+        std::vector<_PrimContext> *masterPrimContexts);
 
     // Returns the combined bounding box for the currently included set of
     // purposes given a _PurposeToBBoxMap.
@@ -467,15 +508,36 @@ private:
     // from the traversal to pre-populate entries.
     bool _ShouldPruneChildren(const UsdPrim &prim, _Entry *entry);
 
-    // Helper function for computing a prim's purpose efficiently by using the
-    // parent entry's cached computed-purpose.
-    TfToken _ComputePurpose(const UsdPrim &prim);
+    // Helper function for computing a prim's purpose info efficiently by 
+    // using the parent entry's cached computed purpose info and caching it
+    // its cache entry.
+    // Optionally this can recursively compute and cache the purposes for any 
+    // existing parent entries in the cache that haven't had their purposes 
+    // computed yet.
+    template <bool IsRecursive>
+    void _ComputePurposeInfo(_Entry *entry, const _PrimContext &prim);
 
     // Helper to determine if we should use extents hints for \p prim.
     inline bool _UseExtentsHintForPrim(UsdPrim const &prim) const;
 
-    typedef boost::hash<UsdPrim> _UsdPrimHash;
-    typedef TfHashMap<UsdPrim, _Entry, _UsdPrimHash> _PrimBBoxHashMap;
+    // Need hash_value for boost to key cache entries by prim context.
+    friend size_t hash_value(const _PrimContext &key);
+
+    typedef boost::hash<_PrimContext> _PrimContextHash;
+    typedef TfHashMap<_PrimContext, _Entry, _PrimContextHash> _PrimBBoxHashMap;
+
+    // Finds the cache entry for the prim context if it exists.
+    _Entry *_FindEntry(const _PrimContext &primContext)
+    {
+        return TfMapLookupPtr(_bboxCache, primContext);
+    }
+
+    // Returns the cache entry for the prim context, adding it if doesn't 
+    // exist.
+    _Entry *_InsertEntry(const _PrimContext &primContext)
+    {
+        return &(_bboxCache[primContext]);
+    }
 
     WorkArenaDispatcher _dispatcher;
     UsdTimeCode _time;

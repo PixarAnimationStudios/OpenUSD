@@ -264,11 +264,6 @@ private:
                                  UsdTimeCode time,
                                  bool* vis) const;
 
-    // Computes the Purpose for the prototype, stopping at the proto root.
-    void _ComputeProtoPurpose(UsdPrim const& protoRoot,
-                              UsdPrim const& protoGprim,
-                              TfToken* purpose) const;
-
     /*
       PointInstancer (InstancerData)
          |
