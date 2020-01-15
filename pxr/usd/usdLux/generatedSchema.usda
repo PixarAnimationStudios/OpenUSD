@@ -337,11 +337,6 @@ class "ShadowAPI" (
         displayGroup = "Shadows"
         doc = "Enables shadows to be cast by this light."
     )
-    rel shadow:exclude (
-        displayGroup = "Shadows"
-        displayName = "Shadow Exclude Subset"
-        doc = "Set of geometry to ignore for the purpose of casting shadows from a light.  If this is not specified, all geometry is used for shadowing."
-    )
     float shadow:falloff = -1 (
         displayGroup = "Shadows"
         doc = """The near distance at which shadow falloff begins.
@@ -353,11 +348,6 @@ class "ShadowAPI" (
         doc = """A gamma (i.e., exponential) control over shadow strength
         with linear distance within the falloff zone.
         This requires the use of shadowDistance and shadowFalloff."""
-    )
-    rel shadow:include (
-        displayGroup = "Shadows"
-        displayName = "Shadow Include Subset"
-        doc = "Set of geometry to consider for the purpose of casting shadows from a light.  If this is not specified, all geometry is used for shadowing."
     )
 }
 

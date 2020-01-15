@@ -152,16 +152,6 @@ void wrapUsdLuxShadowAPI()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
-        
-        .def("GetShadowIncludeRel",
-             &This::GetShadowIncludeRel)
-        .def("CreateShadowIncludeRel",
-             &This::CreateShadowIncludeRel)
-        
-        .def("GetShadowExcludeRel",
-             &This::GetShadowExcludeRel)
-        .def("CreateShadowExcludeRel",
-             &This::CreateShadowExcludeRel)
     ;
 
     _CustomWrapCode(cls);

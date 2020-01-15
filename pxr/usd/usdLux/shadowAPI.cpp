@@ -182,32 +182,6 @@ UsdLuxShadowAPI::CreateShadowFalloffGammaAttr(VtValue const &defaultValue, bool 
                        writeSparsely);
 }
 
-UsdRelationship
-UsdLuxShadowAPI::GetShadowIncludeRel() const
-{
-    return GetPrim().GetRelationship(UsdLuxTokens->shadowInclude);
-}
-
-UsdRelationship
-UsdLuxShadowAPI::CreateShadowIncludeRel() const
-{
-    return GetPrim().CreateRelationship(UsdLuxTokens->shadowInclude,
-                       /* custom = */ false);
-}
-
-UsdRelationship
-UsdLuxShadowAPI::GetShadowExcludeRel() const
-{
-    return GetPrim().GetRelationship(UsdLuxTokens->shadowExclude);
-}
-
-UsdRelationship
-UsdLuxShadowAPI::CreateShadowExcludeRel() const
-{
-    return GetPrim().CreateRelationship(UsdLuxTokens->shadowExclude,
-                       /* custom = */ false);
-}
-
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)

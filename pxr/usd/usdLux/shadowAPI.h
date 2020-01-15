@@ -258,34 +258,6 @@ public:
     UsdAttribute CreateShadowFalloffGammaAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
-    // --------------------------------------------------------------------- //
-    // SHADOWINCLUDE 
-    // --------------------------------------------------------------------- //
-    /// Set of geometry to consider for the purpose of casting shadows from a light.  If this is not specified, all geometry is used for shadowing.
-    ///
-    USDLUX_API
-    UsdRelationship GetShadowIncludeRel() const;
-
-    /// See GetShadowIncludeRel(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
-    USDLUX_API
-    UsdRelationship CreateShadowIncludeRel() const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // SHADOWEXCLUDE 
-    // --------------------------------------------------------------------- //
-    /// Set of geometry to ignore for the purpose of casting shadows from a light.  If this is not specified, all geometry is used for shadowing.
-    ///
-    USDLUX_API
-    UsdRelationship GetShadowExcludeRel() const;
-
-    /// See GetShadowExcludeRel(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
-    USDLUX_API
-    UsdRelationship CreateShadowExcludeRel() const;
-
-public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 
