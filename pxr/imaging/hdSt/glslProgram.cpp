@@ -375,7 +375,7 @@ HdStGLSLProgram::Link()
         success = false;
 
         if (TfDebug::IsEnabled(HDST_DUMP_FAILING_SHADER_SOURCE)) {
-            _DebugLinkSource(program);
+            std::cout << _DebugLinkSource(program) << std::flush;
         }
     }
 
