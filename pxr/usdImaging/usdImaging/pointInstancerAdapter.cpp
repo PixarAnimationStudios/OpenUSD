@@ -127,8 +127,7 @@ UsdImagingPointInstancerAdapter::_Populate(UsdPrim const& prim,
     // for a single declared "prototype".
     SdfPathVector usdProtoPaths;
     UsdRelationship protosRel = inst.GetPrototypesRel();
-    if (!protosRel.GetForwardedTargets(&usdProtoPaths) 
-        || usdProtoPaths.empty()) {
+    if (!protosRel.GetForwardedTargets(&usdProtoPaths)) {
         TF_WARN("Point instancer %s does not have a valid 'prototypes' "
                 "relationship. Not adding it to the render index."
                 , instancerCachePath.GetText());
