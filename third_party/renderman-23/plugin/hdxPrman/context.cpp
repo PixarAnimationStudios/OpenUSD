@@ -515,12 +515,24 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
     }
 }
 
+riley::IntegratorId HdxPrman_InteractiveContext::GetIntegrator()
+{
+    return(integratorId);
+}
+
+void HdxPrman_InteractiveContext::SetIntegrator(riley::IntegratorId iid)
+{
+    integratorId = iid;
+    for (auto& view : renderViews)
+    {
+        view.integratorId = integratorId;
+    }
+}
 
 void HdxPrman_InteractiveContext::StartRender()
 {
     // Last chance to set Ri options before starting riley!
     // Called from HdxPrman_RenderPass::_Execute
-
 
     // Prepare Riley state for rendering.
     // Pass a valid riley callback pointer during IPR
