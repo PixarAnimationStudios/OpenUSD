@@ -51,9 +51,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (openvdbAsset)
-    (pxrBarnLightFilter)
-    (pxrIntMultLightFilter)
-    (pxrRodLightFilter)
 );
 
 TF_DEFINE_PUBLIC_TOKENS(HdPrmanIntegratorTokens,
@@ -73,15 +70,13 @@ const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_SPRIM_TYPES =
     HdPrimTypeTokens->material,
     HdPrimTypeTokens->distantLight,
     HdPrimTypeTokens->domeLight,
+    HdPrimTypeTokens->lightFilter,
     HdPrimTypeTokens->rectLight,
     HdPrimTypeTokens->diskLight,
     HdPrimTypeTokens->cylinderLight,
     HdPrimTypeTokens->sphereLight,
     HdPrimTypeTokens->extComputation,
     HdPrimTypeTokens->coordSys,
-    _tokens->pxrBarnLightFilter,
-    _tokens->pxrIntMultLightFilter,
-    _tokens->pxrRodLightFilter,
 };
 
 const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_BPRIM_TYPES =
@@ -273,18 +268,13 @@ HdPrmanRenderDelegate::CreateSprim(TfToken const& typeId,
         return new HdPrmanMaterial(sprimId);
     } else if (typeId == HdPrimTypeTokens->coordSys) {
         return new HdPrmanCoordSys(sprimId);
-    } else if (typeId == _tokens->pxrBarnLightFilter ||
-               typeId == _tokens->pxrIntMultLightFilter ||
-               typeId == _tokens->pxrRodLightFilter) {
+    } else if (typeId == HdPrimTypeTokens->lightFilter) {
         return new HdPrmanLightFilter(sprimId, typeId);
     } else if (typeId == HdPrimTypeTokens->distantLight ||
                typeId == HdPrimTypeTokens->domeLight ||
                typeId == HdPrimTypeTokens->rectLight ||
                typeId == HdPrimTypeTokens->diskLight ||
                typeId == HdPrimTypeTokens->cylinderLight ||
-               typeId == _tokens->pxrBarnLightFilter ||
-               typeId == _tokens->pxrIntMultLightFilter ||
-               typeId == _tokens->pxrRodLightFilter ||
                typeId == HdPrimTypeTokens->sphereLight) {
         return new HdPrmanLight(sprimId, typeId);
     } else if (typeId == HdPrimTypeTokens->extComputation) {
@@ -307,18 +297,13 @@ HdPrmanRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
         return new HdPrmanMaterial(SdfPath::EmptyPath());
     } else if (typeId == HdPrimTypeTokens->coordSys) {
         return new HdPrmanCoordSys(SdfPath::EmptyPath());
-    } else if (typeId == _tokens->pxrBarnLightFilter ||
-               typeId == _tokens->pxrIntMultLightFilter ||
-               typeId == _tokens->pxrRodLightFilter) {
+    } else if (typeId == HdPrimTypeTokens->lightFilter) {
         return new HdPrmanLightFilter(SdfPath::EmptyPath(), typeId);
     } else if (typeId == HdPrimTypeTokens->distantLight ||
                typeId == HdPrimTypeTokens->domeLight ||
                typeId == HdPrimTypeTokens->rectLight ||
                typeId == HdPrimTypeTokens->diskLight ||
                typeId == HdPrimTypeTokens->cylinderLight ||
-               typeId == _tokens->pxrBarnLightFilter ||
-               typeId == _tokens->pxrIntMultLightFilter ||
-               typeId == _tokens->pxrRodLightFilter ||
                typeId == HdPrimTypeTokens->sphereLight) {
         return new HdPrmanLight(SdfPath::EmptyPath(), typeId);
     } else if (typeId == HdPrimTypeTokens->extComputation) {
