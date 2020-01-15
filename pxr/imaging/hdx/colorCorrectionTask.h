@@ -110,7 +110,7 @@ private:
     std::string _viewOCIO;
     std::string _colorspaceOCIO;
     std::string _looksOCIO;
-    int _lut3dSizeOCIO;
+    int _lut3dSizeOCIO = 0;
 
     TfToken _aovName;
     SdfPath _aovBufferPath;
@@ -151,9 +151,9 @@ struct HdxColorCorrectionTaskParams
     std::string colorspaceOCIO;
     std::string looksOCIO;
 
-    // The width, height and depth used for the GPU LUT 3d texture
-    // 0-64 (65) is the current pxr default
-    int lut3dSizeOCIO;
+    // The width, height and depth used for the GPU LUT 3d texture.
+    // A value of 0 indicates we should use an appropriate default size.
+    int lut3dSizeOCIO = 0;
 
     // When no AOV is provided ColorCorrection will operate on the default FB
     // color attachment.

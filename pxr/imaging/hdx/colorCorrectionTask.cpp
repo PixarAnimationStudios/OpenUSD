@@ -71,18 +71,12 @@ HdxColorCorrectionTask::HdxColorCorrectionTask(HdSceneDelegate* delegate,
     , _vertexBuffer(0)
     , _copyFramebuffer(0)
     , _framebufferSize(0)
-    , _lut3dSizeOCIO(65)
+    , _lut3dSizeOCIO(0)
     , _aovBufferPath()
     , _aovBuffer(nullptr)
     , _aovTexture(nullptr)
     , _aovFramebuffer(0)
 {
-    // 3D lut override similar to KATANA_OCIO_LUT3D_EDGE_SIZE
-    int size = TfGetenvInt("USDVIEW_OCIO_LUT3D_EDGE_SIZE", 0);
-
-    if (size > 0) {
-        _lut3dSizeOCIO = size;
-    }
 }
 
 HdxColorCorrectionTask::~HdxColorCorrectionTask()
@@ -152,6 +146,18 @@ HdxColorCorrectionTask::_CreateOpenColorIOResources()
         }
 
         OCIO::ConstProcessorRcPtr processor = config->getProcessor(transform);
+
+        // If 3D lut size is 0 then use a reasonable default size.
+        // We use 65 (0-64) samples which works well with OCIO resampling.
+        if (_lut3dSizeOCIO == 0) {
+            _lut3dSizeOCIO = 65;
+        }
+
+        // Optionally override similar to KATANA_OCIO_LUT3D_EDGE_SIZE
+        int size = TfGetenvInt("USDVIEW_OCIO_LUT3D_EDGE_SIZE", 0);
+        if (size > 0) {
+            _lut3dSizeOCIO = size;
+        }
 
         // Create a GPU Shader Description
         OCIO::GpuShaderDesc shaderDesc;
