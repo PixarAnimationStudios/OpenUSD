@@ -346,8 +346,7 @@ struct SpecVisitor : bp::def_visitor<SpecVisitor<Abstract> > {
         static std::string Repr(const bp::object& self)
         {
             const HeldType& held = bp::extract<const HeldType&>(self);
-            return _SpecRepr(self,
-                             held ? boost::get_pointer(held) : NULL);
+            return _SpecRepr(self, get_pointer(held));
         }
 
         static bool IsExpired(const HeldType& self)

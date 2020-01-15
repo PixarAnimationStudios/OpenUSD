@@ -149,17 +149,16 @@ public:
     }
 
 private:
+    friend
+    inline SpecType *get_pointer(const SdfHandle &x) {
+        return ARCH_UNLIKELY(x._spec.IsDormant()) ?
+            nullptr : const_cast<SpecType*>(&x._spec);
+    }
+
     SpecType _spec;
 
     template <class U> friend class SdfHandle;
 };
-
-template <class T>
-T*
-get_pointer(const SdfHandle<T>& x)
-{
-    return !x ? 0 : x.operator->();
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
