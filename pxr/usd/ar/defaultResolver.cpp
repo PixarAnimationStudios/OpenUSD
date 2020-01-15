@@ -310,6 +310,13 @@ ArDefaultResolver::CanCreateNewLayerWithIdentifier(
     return true;
 }
 
+bool
+ArDefaultResolver::CanCreateNewFoldersIfNeeded(
+    const std::string& pathString)
+{
+    return true;
+}
+
 ArResolverContext 
 ArDefaultResolver::CreateDefaultContext()
 {

@@ -4229,12 +4229,14 @@ SdfLayer::_WriteToFile(const string & newFileName,
         return false;
     }
 
-    string layerDir = TfGetPathName(newFileName);
-    if (!(layerDir.empty() || TfIsDir(layerDir) || TfMakeDirs(layerDir))) {
-        TF_RUNTIME_ERROR(
-            "Cannot create destination directory %s",
-            layerDir.c_str());
-        return false;
+    if (Sdf_CanCreateNewFoldersIfNeeded(newFileName)) {
+        string layerDir = TfGetPathName(newFileName);
+        if (!(layerDir.empty() || TfIsDir(layerDir) || TfMakeDirs(layerDir))) {
+            TF_RUNTIME_ERROR(
+                "Cannot create destination directory %s",
+                layerDir.c_str());
+            return false;
+        }
     }
     
     bool ok = fileFormat->WriteToFile(*this, newFileName, comment, args);

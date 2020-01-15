@@ -501,6 +501,12 @@ public:
             identifier, whyNot);
     }
 
+    virtual bool CanCreateNewFoldersIfNeeded(
+        const std::string& pathString) override
+    {
+        return true;
+    }
+
     // The underlying resolver and the package resolvers all participate in
     // scoped caching and may have caching-related data to store away. To
     // accommodate this, _Resolver stores away a vector of VtValues where

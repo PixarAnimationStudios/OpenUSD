@@ -86,6 +86,12 @@ Sdf_CanCreateNewLayerWithIdentifier(
     return ArGetResolver().CanCreateNewLayerWithIdentifier(identifier, whyNot);
 }
 
+bool Sdf_CanCreateNewFoldersIfNeeded(
+	const std::string& pathString)
+{
+	return ArGetResolver().CanCreateNewFoldersIfNeeded(pathString);
+}
+
 string
 Sdf_ResolvePath(
     const string& layerPath,

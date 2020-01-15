@@ -63,6 +63,11 @@ bool Sdf_CanCreateNewLayerWithIdentifier(
     const std::string& identifier,
     std::string* whyNot);
 
+/// Returns true if a new folders can be created if needed using the given
+/// \p pathString, false otherwise.
+bool Sdf_CanCreateNewFoldersIfNeeded(
+    const std::string& pathString);
+
 /// If \p layerPath is relative, it is first resolved anchored to the
 /// current working directory. If the file is found this way, it is returned. 
 /// If the file is not found, or \p layerPath is not relative, 

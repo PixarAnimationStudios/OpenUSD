@@ -154,6 +154,10 @@ public:
         std::string* whyNot) override;
 
     AR_API
+    virtual bool CanCreateNewFoldersIfNeeded(
+        const std::string& pathString) override;
+
+    AR_API
     virtual ArResolverContext CreateDefaultContext() override;
 
     /// Creates a context that adds the directory containing \p filePath

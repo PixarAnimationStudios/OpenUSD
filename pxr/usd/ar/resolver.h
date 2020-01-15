@@ -284,6 +284,12 @@ public:
         const std::string& identifier, 
         std::string* whyNot) = 0;
 
+    /// Returns true if a new folders can be created if needed using the given
+    /// \p pathString, false otherwise.
+    AR_API
+    virtual bool CanCreateNewFoldersIfNeeded(
+        const std::string& pathString) = 0;
+
     /// @}
 
     // --------------------------------------------------------------------- //
