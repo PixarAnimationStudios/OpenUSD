@@ -234,12 +234,29 @@ protected:
         // We assume that duplicate data items are never allowed to be
         // authored. For full generality, this information ought to come from
         // the layer schema.
-        for (size_t i = 0; i < newValues.size(); ++i) {
-            for (size_t j = i + 1; j < newValues.size(); ++j) {
-                if (newValues[i] == newValues[j]) {
+
+        // We also assume that the `oldValues` are already valid and do not
+        // contain duplicates.  With this assumption, we can accelerate the
+        // common case of appending new items at the end and skip over a common
+        // prefix of oldValues and newValues.  Then we can only check for dupes
+        // in the tail of newValues.
+
+        typename value_vector_type::const_iterator
+            oldValuesTail = oldValues.begin(),
+            newValuesTail = newValues.begin(); 
+        auto oldEnd = oldValues.end(), newEnd = newValues.end();
+        while (oldValuesTail != oldEnd && newValuesTail != newEnd &&
+               *oldValuesTail == *newValuesTail) {
+            ++oldValuesTail, ++newValuesTail;
+        }
+
+        for (auto i = newValuesTail; i != newEnd; ++i) {
+            // Have to check unmatched new items for dupes.
+            for (auto j = newValues.begin(); j != i; ++j) {
+                if (*i == *j) {
                     TF_CODING_ERROR("Duplicate item '%s' not allowed for "
                                     "field '%s' on <%s>",
-                                    TfStringify(newValues[i]).c_str(),
+                                    TfStringify(*i).c_str(),
                                     _field.GetText(),
                                     this->GetPath().GetText());
                     return false;
@@ -255,15 +272,15 @@ protected:
                             _field.GetText());
         }
         else {
-            TF_FOR_ALL(v, newValues) {
-                if (SdfAllowed isValid = fieldDef->IsValidListValue(*v)) { }
+            for (auto i = newValuesTail; i != newEnd; ++i) {
+                if (SdfAllowed isValid = fieldDef->IsValidListValue(*i)) { }
                 else {
                     TF_CODING_ERROR("%s", isValid.GetWhyNot().c_str());
                     return false;
                 }
             }
         }
-
+        
         return true;
     }
 
