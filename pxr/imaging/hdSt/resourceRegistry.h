@@ -150,65 +150,6 @@ public:
     void AddComputation(HdBufferArrayRangeSharedPtr const &range,
                         HdComputationSharedPtr const &computaion);
 
-    /// Set the aggregation strategy for non uniform parameters
-    /// (vertex, varying, facevarying)
-    /// Takes ownership of the passed in strategy object.
-    void SetNonUniformAggregationStrategy(HdAggregationStrategy *strategy) {
-        _nonUniformAggregationStrategy.reset(strategy);
-    }
-
-    /// Set the aggregation strategy for non uniform immutable parameters
-    /// (vertex, varying, facevarying)
-    /// Takes ownership of the passed in strategy object.
-    void SetNonUniformImmutableAggregationStrategy(
-        HdAggregationStrategy *strategy) {
-        _nonUniformImmutableAggregationStrategy.reset(strategy);
-    }
-
-    /// Set the aggregation strategy for uniform (shader globals)
-    /// Takes ownership of the passed in strategy object.
-    void SetUniformAggregationStrategy(HdAggregationStrategy *strategy) {
-        _uniformUboAggregationStrategy.reset(strategy);
-    }
-
-    /// Set the aggregation strategy for SSBO (uniform primvars)
-    /// Takes ownership of the passed in strategy object.
-    void SetShaderStorageAggregationStrategy(HdAggregationStrategy *strategy) {
-        _uniformSsboAggregationStrategy.reset(strategy);
-    }
-
-    /// Set the aggregation strategy for single buffers (for nested instancer).
-    /// Takes ownership of the passed in strategy object.
-    void SetSingleStorageAggregationStrategy(HdAggregationStrategy *strategy) {
-        _singleAggregationStrategy.reset(strategy);
-    }
-
-    /// Returns whether an aggregation strategy is set for non uniform params.
-    bool HasNonUniformAggregationStrategy() const {
-        return _nonUniformAggregationStrategy.get();
-    }
-
-    /// Returns whether an aggregation strategy is set for non uniform
-    /// immutable params.
-    bool HasNonUniformImmutableAggregationStrategy() const {
-        return _nonUniformImmutableAggregationStrategy.get();
-    }
-
-    /// Returns whether an aggregation strategy is set for uniform params.
-    bool HasUniformAggregationStrategy() const {
-        return _uniformUboAggregationStrategy.get();
-    }
-
-    /// Returns whether an aggregation strategy is set for SSBO.
-    bool HasShaderStorageAggregationStrategy() const {
-        return _uniformSsboAggregationStrategy.get();
-    }
-
-    /// Returns whether an aggregation strategy is set for single buffers.
-    bool HasSingleStorageAggregationStrategy() const {
-        return _singleAggregationStrategy.get();
-    }
-
     /// Register a buffer allocated with \a count * \a commandNumUints *
     /// sizeof(GLuint) to be used as an indirect dispatch buffer.
     HDST_API
@@ -372,6 +313,44 @@ public:
     HdInstance<HdStTextureResourceHandleSharedPtr>
     FindTextureResourceHandle(
         HdInstance<HdStTextureResourceHandleSharedPtr>::ID id, bool *found);
+
+public:
+    //
+    // Unit test API
+    //
+
+    /// Set the aggregation strategy for non uniform parameters
+    /// (vertex, varying, facevarying)
+    /// Takes ownership of the passed in strategy object.
+    void SetNonUniformAggregationStrategy(HdAggregationStrategy *strategy) {
+        _nonUniformAggregationStrategy.reset(strategy);
+    }
+
+    /// Set the aggregation strategy for non uniform immutable parameters
+    /// (vertex, varying, facevarying)
+    /// Takes ownership of the passed in strategy object.
+    void SetNonUniformImmutableAggregationStrategy(
+        HdAggregationStrategy *strategy) {
+        _nonUniformImmutableAggregationStrategy.reset(strategy);
+    }
+
+    /// Set the aggregation strategy for uniform (shader globals)
+    /// Takes ownership of the passed in strategy object.
+    void SetUniformAggregationStrategy(HdAggregationStrategy *strategy) {
+        _uniformUboAggregationStrategy.reset(strategy);
+    }
+
+    /// Set the aggregation strategy for SSBO (uniform primvars)
+    /// Takes ownership of the passed in strategy object.
+    void SetShaderStorageAggregationStrategy(HdAggregationStrategy *strategy) {
+        _uniformSsboAggregationStrategy.reset(strategy);
+    }
+
+    /// Set the aggregation strategy for single buffers (for nested instancer).
+    /// Takes ownership of the passed in strategy object.
+    void SetSingleStorageAggregationStrategy(HdAggregationStrategy *strategy) {
+        _singleAggregationStrategy.reset(strategy);
+    }
 
     /// Debug dump
     HDST_API

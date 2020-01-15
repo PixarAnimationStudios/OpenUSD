@@ -321,8 +321,9 @@ HdStSurfaceShader::SetTextureDescriptors(const TextureDescriptorVector &texDesc)
 }
 
 void
-HdStSurfaceShader::SetBufferSources(HdBufferSourceVector &bufferSources,
-                                  HdResourceRegistrySharedPtr const &resourceRegistry)
+HdStSurfaceShader::SetBufferSources(
+    HdBufferSourceVector &bufferSources,
+    HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     if (bufferSources.empty()) {
         _paramArray.reset();
@@ -331,18 +332,15 @@ HdStSurfaceShader::SetBufferSources(HdBufferSourceVector &bufferSources,
         HdBufferSpecVector bufferSpecs;
         HdBufferSpec::GetBufferSpecs(bufferSources, &bufferSpecs);
 
-        HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
-            boost::static_pointer_cast<HdStResourceRegistry>(resourceRegistry);
-
         if (!_paramArray || _paramSpec != bufferSpecs) {
             _paramSpec = bufferSpecs;
 
             // establish a buffer range
             HdBufferArrayRangeSharedPtr range =
-                    hdStResourceRegistry->AllocateShaderStorageBufferArrayRange(
-                                                  HdTokens->materialParams,
-                                                  bufferSpecs,
-                                                  HdBufferArrayUsageHint());
+                resourceRegistry->AllocateShaderStorageBufferArrayRange(
+                    HdTokens->materialParams,
+                    bufferSpecs,
+                    HdBufferArrayUsageHint());
 
             if (!TF_VERIFY(range->IsValid())) {
                 _paramArray.reset();
@@ -352,7 +350,7 @@ HdStSurfaceShader::SetBufferSources(HdBufferSourceVector &bufferSources,
         }
 
         if (_paramArray->IsValid()) {
-            hdStResourceRegistry->AddSources(_paramArray, bufferSources);
+            resourceRegistry->AddSources(_paramArray, bufferSources);
         }
     }
     _isValidComputedHash = false;

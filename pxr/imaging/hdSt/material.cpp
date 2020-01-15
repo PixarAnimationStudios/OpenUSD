@@ -90,8 +90,10 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
 
     TF_UNUSED(renderParam);
 
-    HdResourceRegistrySharedPtr const &resourceRegistry = 
-        sceneDelegate->GetRenderIndex().GetResourceRegistry();
+    HdStResourceRegistrySharedPtr const& resourceRegistry =
+        boost::static_pointer_cast<HdStResourceRegistry>(
+            sceneDelegate->GetRenderIndex().GetResourceRegistry());
+
     HdDirtyBits bits = *dirtyBits;
 
     if (!(bits & DirtyResource) && !(bits & DirtyParams)) {

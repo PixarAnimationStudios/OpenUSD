@@ -48,7 +48,8 @@ class HdSceneDelegate;
 
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 typedef boost::shared_ptr<class HdStSurfaceShader> HdStSurfaceShaderSharedPtr;
-typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
+typedef boost::shared_ptr<class HdStResourceRegistry>
+    HdStResourceRegistrySharedPtr;
 
 /// \class HdStSurfaceShader
 ///
@@ -111,8 +112,9 @@ public:
     HDST_API
     void SetTextureDescriptors(const TextureDescriptorVector &texDesc);
     HDST_API
-    void SetBufferSources(HdBufferSourceVector &bufferSources, 
-                          HdResourceRegistrySharedPtr const &resourceRegistry);
+    void SetBufferSources(
+        HdBufferSourceVector &bufferSources, 
+        HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     HDST_API
     void SetMaterialTag(TfToken const &materialTag);

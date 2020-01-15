@@ -47,7 +47,9 @@ class HdSceneDelegate;
 typedef boost::shared_ptr<class HdStLight> HdStLightSharedPtr;
 typedef std::vector<class HdStLight const *> HdStLightPtrConstVector;
 typedef boost::shared_ptr<class HdStTextureResource> 
-                                                HdStTextureResourceSharedPtr;
+    HdStTextureResourceSharedPtr;
+typedef boost::shared_ptr<class HdStResourceRegistry>
+    HdStResourceRegistrySharedPtr;
 
 /// \class HdStLight
 ///
@@ -92,7 +94,7 @@ private:
     
     /// called by _CreateDomeLight to add the compute tasks
     void _SetupComputations(GLuint sourceTexture, 
-                            HdResourceRegistry *resourceRegistry);
+                            HdStResourceRegistry *resourceRegistry);
 
 private:
     // Stores the internal light type of this light.

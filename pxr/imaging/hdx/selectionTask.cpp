@@ -92,13 +92,12 @@ HdxSelectionTask::Prepare(HdTaskContext* ctx,
     }
 
     HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
-        boost::static_pointer_cast<HdStResourceRegistry>(
+        boost::dynamic_pointer_cast<HdStResourceRegistry>(
             renderIndex->GetResourceRegistry());
 
-    // If the resource registry doesn't support uniform or single bars,
+    // Only Storm supports buffer array range. Without its registry
     // there's nowhere to put selection state, so don't compute it.
-    if (!(hdStResourceRegistry->HasSingleStorageAggregationStrategy()) ||
-        !(hdStResourceRegistry->HasUniformAggregationStrategy())) {
+    if (!hdStResourceRegistry) {
         return;
     }
 
