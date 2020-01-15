@@ -109,22 +109,6 @@ public:
     USDIMAGING_API
     virtual void PostSyncCleanup() override;
 
-    // TODO: Populate implies that multiple stages can be loaded at once, though
-    // this is not currently supported.
-
-    /// Populates the rootPrim in the HdRenderIndex in each delegate, 
-    /// excluding all paths in the \p excludedPrimPaths, as well as their
-    /// prim children.
-    ///
-    /// This is equivalent to calling Populate on each delegate individually.
-    /// However, this method will try to parallelize certain operations,
-    /// making it potentially more efficient.
-    USDIMAGING_API
-    static void Populate(std::vector<UsdImagingDelegate*> const& delegates,
-                         UsdPrimVector const& rootPrims,
-                         std::vector<SdfPathVector> const& excludedPrimPaths,
-                         std::vector<SdfPathVector> const& invisedPrimPaths);
-        
     /// Populates the rootPrim in the HdRenderIndex.
     USDIMAGING_API
     void Populate(UsdPrim const& rootPrim);

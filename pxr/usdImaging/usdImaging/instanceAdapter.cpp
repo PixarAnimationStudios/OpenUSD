@@ -340,6 +340,10 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
                                    /*parentPath=*/ctx.instancerCachePath,
                                    _GetPrim(instancerPath),
                                    ctx.instancerAdapter);
+
+            // Mark this instancer as having a TrackVariability queued, since
+            // we automatically queue it in InsertInstancer.
+            instancerData.refreshVariability = true;
         } else if (nestedInstances.empty()) {
             // if this instance path ends up to have no prims in subtree
             // and not an instance itself , we don't need to track this path
@@ -400,6 +404,9 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
             continue;
         }
 
+        _InstancerData& depInstancerData =
+            _instancerData[depInstancerPath];
+
         if (index->IsPopulated(depInstancerPath)) {
             // If we've found a populated instancer, register a dependency,
             // unless depInstancerPath == prim.GetPath, in which case the
@@ -413,10 +420,14 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
                     HdChangeTracker::DirtyPrimvar |
                     HdChangeTracker::DirtyTransform |
                     HdChangeTracker::DirtyInstanceIndex);
+
+            // Tell UsdImaging to re-run TrackVariability.
+            if (!depInstancerData.refreshVariability) {
+                depInstancerData.refreshVariability = true;
+                index->Refresh(depInstancerPath);
+            }
         }
 
-        _InstancerData& depInstancerData =
-            _instancerData[depInstancerPath];
         for (SdfPath const& nestedInstance :
                 depInstancerData.nestedInstances) {
             depInstancePaths.push(nestedInstance);
@@ -520,6 +531,8 @@ UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
         if (_ComputeInstanceMapVariability(prim, *instrData)) {
             *timeVaryingBits |= HdChangeTracker::DirtyInstanceIndex;
         }
+
+        instrData->refreshVariability = false;
     }
 }
 
@@ -1725,6 +1738,11 @@ UsdImagingInstanceAdapter::_ResyncInstancer(SdfPath const& instancerPath,
 
     // Remove local instancer data.
     _instancerData.erase(instIt);
+
+    TF_FOR_ALL(pathIt, instancePaths) {
+        auto it = _instanceToInstancerMap.find(*pathIt);
+        _instanceToInstancerMap.erase(it);
+    }
 
     // Repopulate the instancer's previous instances. Those that don't exist
     // anymore will be ignored, while those that still exist will be

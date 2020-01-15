@@ -303,30 +303,18 @@ UsdImagingDelegate::_GetHdPrimInfo(const SdfPath &cachePath)
 // -------------------------------------------------------------------------- //
 
 class UsdImagingDelegate::_Worker {
-public:
-    typedef std::vector<std::pair<SdfPath, int> > ResultVector;
-
 private:
-    struct _Task {
-        _Task() : delegate(nullptr) { }
-        _Task(UsdImagingDelegate* delegate_, const SdfPath& path_)
-            : delegate(delegate_)
-            , path(path_)
-        {
-        }
-
-        UsdImagingDelegate* delegate;
-        SdfPath path;
-    };
-    std::vector<_Task> _tasks;
+    SdfPathVector _tasks;
+    UsdImagingDelegate *_delegate;
 
 public:
-    _Worker()
+    _Worker(UsdImagingDelegate *delegate)
+        : _delegate(delegate)
     {
     }
 
-    void AddTask(UsdImagingDelegate* delegate, SdfPath const& cachePath) {
-        _tasks.push_back(_Task(delegate, cachePath));
+    void AddTask(SdfPath const& cachePath) {
+        _tasks.push_back(cachePath);
     }
 
     size_t GetTaskCount() {
@@ -336,28 +324,23 @@ public:
     // Disables value cache mutations for all imaging delegates that have
     // added tasks to this worker.
     void DisableValueCacheMutations() {
-        TF_FOR_ALL(it, _tasks) {
-            it->delegate->_valueCache.DisableMutation();
-        }
+        _delegate->_valueCache.DisableMutation();
     }
 
     // Enables value cache mutations for all imaging delegates that have
     // added tasks to this worker.
     void EnableValueCacheMutations() {
-        TF_FOR_ALL(it, _tasks) {
-            it->delegate->_valueCache.EnableMutation();
-        }
+        _delegate->_valueCache.EnableMutation();
     }
 
     // Populates prim variability and initial state.
     // Used as a parallel callback method for use with WorkParallelForN.
     void UpdateVariability(size_t start, size_t end) {
         for (size_t i = start; i < end; i++) {
-            UsdImagingDelegate* delegate = _tasks[i].delegate;
-            UsdImagingIndexProxy indexProxy(delegate, nullptr);
-            SdfPath const& cachePath = _tasks[i].path;
+            UsdImagingIndexProxy indexProxy(_delegate, nullptr);
+            SdfPath const& cachePath = _tasks[i];
 
-            _HdPrimInfo *primInfo = delegate->_GetHdPrimInfo(cachePath);
+            _HdPrimInfo *primInfo = _delegate->_GetHdPrimInfo(cachePath);
             if (TF_VERIFY(primInfo, "%s\n", cachePath.GetText())) {
                 _AdapterSharedPtr const& adapter = primInfo->adapter;
                 if (TF_VERIFY(adapter, "%s\n", cachePath.GetText())) {
@@ -379,11 +362,10 @@ public:
     // Used as a parallel callback method for use with WorkParallelForN.
     void UpdateForTime(size_t start, size_t end) {
         for (size_t i = start; i < end; i++) {
-            UsdImagingDelegate* delegate = _tasks[i].delegate;
-            UsdTimeCode const& time = delegate->_time;
-            SdfPath const& cachePath = _tasks[i].path;
+            UsdTimeCode const& time = _delegate->_time;
+            SdfPath const& cachePath = _tasks[i];
 
-            _HdPrimInfo *primInfo = delegate->_GetHdPrimInfo(cachePath);
+            _HdPrimInfo *primInfo = _delegate->_GetHdPrimInfo(cachePath);
             if (TF_VERIFY(primInfo, "%s\n", cachePath.GetText())) {
                 _AdapterSharedPtr const& adapter = primInfo->adapter;
                 if (TF_VERIFY(adapter, "%s\n", cachePath.GetText())) {
@@ -404,7 +386,7 @@ void
 UsdImagingDelegate::_AddTask(
     UsdImagingDelegate::_Worker *worker, SdfPath const& cachePath)
 {
-    worker->AddTask(this, cachePath);
+    worker->AddTask(cachePath);
 }
 
 // -------------------------------------------------------------------------- //
@@ -414,7 +396,7 @@ UsdImagingDelegate::_AddTask(
 void
 UsdImagingDelegate::SyncAll(bool includeUnvarying)
 {
-    UsdImagingDelegate::_Worker worker;
+    UsdImagingDelegate::_Worker worker(this);
 
     TF_FOR_ALL(it, _hdPrimInfoMap) {
         const SdfPath &cachePath = it->first;
@@ -438,7 +420,7 @@ UsdImagingDelegate::SyncAll(bool includeUnvarying)
                       HdChangeTracker::StringifyDirtyBits(
                                                    primInfo.dirtyBits).c_str());
 
-            worker.AddTask(this, cachePath);
+            worker.AddTask(cachePath);
         }
     }
 
@@ -448,7 +430,7 @@ UsdImagingDelegate::SyncAll(bool includeUnvarying)
 void
 UsdImagingDelegate::Sync(HdSyncRequestVector* request)
 {
-    UsdImagingDelegate::_Worker worker;
+    UsdImagingDelegate::_Worker worker(this);
     if (!TF_VERIFY(request)) {
         return;
     }
@@ -480,7 +462,7 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
                     primInfo->dirtyBits,
                     HdChangeTracker::StringifyDirtyBits(primInfo->dirtyBits).c_str());
 
-            worker.AddTask(this, cachePath);
+            worker.AddTask(cachePath);
         }
     }
 
@@ -503,7 +485,7 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
                     primInfo->dirtyBits,
                     HdChangeTracker::StringifyDirtyBits(
                                               primInfo->dirtyBits).c_str());
-            worker.AddTask(this, cachePath);
+            worker.AddTask(cachePath);
         }
     }
 
@@ -535,7 +517,7 @@ UsdImagingDelegate::Populate(UsdPrim const& rootPrim,
 
     _SetStateForPopulation(rootPrim, excludedPrimPaths, invisedPrimPaths);
 
-    UsdImagingDelegate::_Worker worker;
+    UsdImagingDelegate::_Worker worker(this);
     UsdImagingIndexProxy indexProxy(this, &worker);
 
     indexProxy.Repopulate(rootPrim.GetPath());
@@ -732,44 +714,6 @@ UsdImagingDelegate::_ExecuteWorkForVariabilityUpdate(_Worker* worker)
     worker->EnableValueCacheMutations();
 }
 
-void 
-UsdImagingDelegate::Populate(std::vector<UsdImagingDelegate*> const& delegates,
-                         UsdPrimVector const& rootPrims,
-                         std::vector<SdfPathVector> const& excludedPrimPaths,
-                         std::vector<SdfPathVector> const& invisedPrimPaths)
-{
-    if (!(delegates.size() == rootPrims.size()            && 
-             delegates.size() == excludedPrimPaths.size() && 
-             delegates.size() == invisedPrimPaths.size())) {
-        TF_CODING_ERROR("Mismatched parameters");
-        return;
-    }
-
-    if (delegates.empty()) {
-        return;
-    }
-
-    HD_TRACE_FUNCTION();
-
-    UsdImagingDelegate::_Worker worker;
-
-    for (size_t i = 0; i < delegates.size(); ++i) {
-        if (!delegates[i]->_CanPopulate(rootPrims[i]))
-            continue;
-
-        delegates[i]->_SetStateForPopulation(rootPrims[i], 
-            excludedPrimPaths[i], invisedPrimPaths[i]);
-
-        UsdImagingIndexProxy indexProxy(delegates[i], &worker);
-        indexProxy.Repopulate(rootPrims[i].GetPath());
-
-        delegates[i]->_Populate(&indexProxy);
-    }
-
-    _ExecuteWorkForVariabilityUpdate(&worker);
-
-}
-
 void
 UsdImagingDelegate::_ExecuteWorkForTimeUpdate(_Worker* worker)
 {
@@ -921,7 +865,7 @@ UsdImagingDelegate::ApplyPendingUpdates()
     _coordSysBindingCache.Clear();
     _inheritedPrimvarCache.Clear();
 
-    UsdImagingDelegate::_Worker worker;
+    UsdImagingDelegate::_Worker worker(this);
     UsdImagingIndexProxy indexProxy(this, &worker);
 
     if (!_usdPathsToResync.empty()) {
@@ -986,6 +930,7 @@ UsdImagingDelegate::ApplyPendingUpdates()
     // If any changes called Repopulate() on the indexProxy, we need to
     // repopulate them before any updates. If the list is empty, _Populate is a
     // no-op.
+    indexProxy._UniqueifyPathsToRepopulate();
     _Populate(&indexProxy);
     _ExecuteWorkForVariabilityUpdate(&worker);
 }
@@ -1088,24 +1033,19 @@ UsdImagingDelegate::_ResyncUsdPrim(SdfPath const& usdPath,
     //
     //  (2) Since the resync target isn't a child of a hydra prim, check if
     //      it's a parent of any hydra prims.  If so, we need to remove the
-    //      old prims and repopulate them and any new prims.  We do this in
-    //      one of two ways depending on "repopulateFromRoot":
+    //      old prims and repopulate them and any new prims.  We do this by
+    //      finding all existing hydra prims below "usdPath", and calling
+    //      ProcessPrimResync().  This will either re-add them or remove them,
+    //      based on whether the USD prim still exists.  Also: traverse
+    //      "usdPath" looking for imageable prims that *have not* been
+    //      populated; add them.
     //
-    //  (2a) Find all existing hydra prims below "usdPath", and call
-    //       ProcessPrimResync().  This will either re-add them or remove them,
-    //       based on whether the USD prim still exists.  Also: traverse
-    //       "usdPath" looking for imageable prims that *have not* been
-    //       populated; add them.
-    //
-    //  -- or --
-    //
-    //  (2b) Find all existing hydra prims below "usdPath" and call
-    //       ProcessPrimRemoval().  After removing old prims in this subtree,
-    //       call Repopulate() on usdPath, which will traverse the subtree
-    //       looking for imageable prims.
-    //
-    //  Editors note: (2a) is more efficient, but (2b) is needed for certain
-    //  hierarchy-affecting operations like model:drawMode changes.
+    // Certain hierarchy-affecting operations like model:drawMode changes
+    // require we re-populate from the top of the subtree whose "drawMode"
+    // attribute changed; if repopulateFromRoot is true, we additionally
+    // add "usdPath" to repopulation.  _UniqueifyPathsToRepopulate will remove
+    // the individual paths from that subtree that were added by
+    // ProcessPrimResync.
     //
     //  -- If case (1) and (2) don't apply, proceed --
     //
@@ -1159,20 +1099,16 @@ UsdImagingDelegate::_ResyncUsdPrim(SdfPath const& usdPath,
             if (primInfo != nullptr &&
                 TF_VERIFY(primInfo->adapter != nullptr)) {
 
-                // If "repopulateFromRoot" is set, remove individual prims and
-                // repopulate from the original resync target, instead of
-                // resyncing prims individually.
-                //
                 // Note: ProcessPrimResync will remove the prim from the index,
                 // similar to ProcessPrimRemoval, but then additionally
-                // call proxy->Repopulate() on itself.
-                if (repopulateFromRoot) {
-                    primInfo->adapter->ProcessPrimRemoval(
-                        affectedCachePath, proxy);
-                } else {
-                    primInfo->adapter->ProcessPrimResync(
-                        affectedCachePath, proxy);
-                }
+                // call proxy->Repopulate() on itself. In the case of
+                // "repopulateFromRoot", this is redundant with us repopulating
+                // the whole subtree below, but change processing will
+                // remove the redundancy.  It's important to call
+                // ProcessPrimResync to add Repopulate calls for objects not
+                // under "usdPath" (such as sibling native instances).
+                primInfo->adapter->ProcessPrimResync(
+                    affectedCachePath, proxy);
             }
         }
         if (repopulateFromRoot) {

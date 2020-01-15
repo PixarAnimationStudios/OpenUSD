@@ -368,7 +368,7 @@ private:
     // technically be split out to avoid two lookups, however it seems cleaner
     // to keep everything bundled up under the instancer path.
     struct _InstancerData {
-        _InstancerData() : numInstancesToDraw(0) { }
+        _InstancerData() : numInstancesToDraw(0), refreshVariability(false) { }
 
         // The master prim path associated with this instancer.
         SdfPath masterPath;
@@ -426,6 +426,10 @@ private:
 
         // Nested native instances.
         SdfPathVector nestedInstances;
+
+        // Flag indicating we've queued up the delegate to call TrackVariability
+        // on this instancer.  We record this so we don't do it multiple times.
+        mutable bool refreshVariability;
     };
 
     // Map from instancer cache path to instancer data.

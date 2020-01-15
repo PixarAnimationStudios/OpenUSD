@@ -245,6 +245,28 @@ UsdImagingIndexProxy::Repopulate(SdfPath const& usdPath)
 }
 
 void
+UsdImagingIndexProxy::Refresh(SdfPath const& cachePath)
+{
+    _AddTask(cachePath);
+}
+
+void
+UsdImagingIndexProxy::_UniqueifyPathsToRepopulate()
+{
+    if (_usdPathsToRepopulate.empty()) {
+        return;
+    }
+
+    std::sort(_usdPathsToRepopulate.begin(), _usdPathsToRepopulate.end());
+    auto last = std::unique(_usdPathsToRepopulate.begin(),
+                            _usdPathsToRepopulate.end(),
+                            [](SdfPath const &l, SdfPath const &r) {
+                                return r.HasPrefix(l);
+                            });
+    _usdPathsToRepopulate.erase(last, _usdPathsToRepopulate.end());
+}
+
+void
 UsdImagingIndexProxy::MarkRprimDirty(SdfPath const& cachePath,
                                      HdDirtyBits dirtyBits)
 {
