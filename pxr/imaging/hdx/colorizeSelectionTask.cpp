@@ -164,7 +164,7 @@ HdxColorizeSelectionTask::Execute(HdTaskContext* ctx)
     _ColorizeSelection();
 
     // Blit!
-    _compositor.UpdateColor(
+    _compositor.SetTexture(TfToken("color"),
         _primId->GetWidth(), 
         _primId->GetHeight(),
         HdFormatUNorm8Vec4, 
@@ -186,6 +186,7 @@ HdxColorizeSelectionTask::Execute(HdTaskContext* ctx)
     glEnable(GL_BLEND);
     glBlendFuncSeparate(GL_ONE, GL_SRC_ALPHA, GL_ZERO, GL_ONE);
 
+    _compositor.SetProgramToCompositor(/*depthAware = */false);
     _compositor.Draw();
 
     glEnable(GL_DEPTH_TEST);

@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hdx/api.h"
-#include "pxr/imaging/hdx/compositor.h"
+#include "pxr/imaging/hdx/fullscreenShader.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -67,7 +67,7 @@ private:
     HdRenderBuffer *_aovBuffer;
     HdRenderBuffer *_depthBuffer;
 
-    HdxCompositor _compositor;
+    HdxFullscreenShader _compositor;
 
     HdxPresentTask() = delete;
     HdxPresentTask(const HdxPresentTask &) = delete;

@@ -195,14 +195,15 @@ HdEmbreeRenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
             _colorBuffer.Resolve();
             uint8_t *cdata = reinterpret_cast<uint8_t*>(_colorBuffer.Map());
             if (cdata) {
-                _compositor.UpdateColor(_width, _height,
-                                        _colorBuffer.GetFormat(), cdata);
+                _compositor.SetTexture(TfToken("color"), _width, _height,
+                                       _colorBuffer.GetFormat(), cdata);
                 _colorBuffer.Unmap();
             }
             _depthBuffer.Resolve();
             uint8_t *ddata = reinterpret_cast<uint8_t*>(_depthBuffer.Map());
             if (ddata) {
-                _compositor.UpdateDepth(_width, _height, ddata);
+                _compositor.SetTexture(TfToken("depth"), _width, _height,
+                                       HdFormatFloat32, ddata);
                 _depthBuffer.Unmap();
             }
         }
@@ -213,6 +214,7 @@ HdEmbreeRenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         glGetBooleanv(GL_BLEND, &restoreblendEnabled);
         glDisable(GL_BLEND);
 
+        _compositor.SetProgramToCompositor(/* depthAware = */true);
         _compositor.Draw();
 
         if (restoreblendEnabled) {

@@ -39,7 +39,6 @@
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 
-#include "pxr/imaging/hdx/compositor.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/pickTask.h"

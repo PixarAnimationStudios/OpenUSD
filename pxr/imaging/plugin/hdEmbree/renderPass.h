@@ -31,7 +31,7 @@
 #include "pxr/imaging/hd/renderThread.h"
 #include "pxr/imaging/plugin/hdEmbree/renderer.h"
 #include "pxr/imaging/plugin/hdEmbree/renderBuffer.h"
-#include "pxr/imaging/hdx/compositor.h"
+#include "pxr/imaging/hdx/fullscreenShader.h"
 
 #include "pxr/base/gf/matrix4d.h"
 
@@ -126,7 +126,7 @@ private:
 
     // A compositor utility class, for rendering the final result to the
     // viewport.
-    HdxCompositor _compositor;
+    HdxFullscreenShader _compositor;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

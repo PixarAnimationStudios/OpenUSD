@@ -41,10 +41,10 @@ pxr_library(hdx
         colorizeSelectionTask
         colorChannelTask
         colorCorrectionTask
-        compositor
         drawTargetRenderPass
         drawTargetTask
         drawTargetResolveTask
+        fullscreenShader
         oitBufferAccessor
         oitRenderTask
         oitResolveTask

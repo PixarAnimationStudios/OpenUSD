@@ -123,7 +123,11 @@ HdxPresentTask::Execute(HdTaskContext* ctx)
     glGetBooleanv(GL_BLEND, &blendEnabled);
     glDisable(GL_BLEND);
 
-    _compositor.Draw(colorId, depthId);
+    HdxFullscreenShader::TextureMap textures;
+    textures[TfToken("color")] = colorId;
+    textures[TfToken("depth")] = depthId;
+    _compositor.SetProgramToCompositor(/*depthAware = */true);
+    _compositor.Draw(textures);
 
     if (blendEnabled) {
         glEnable(GL_BLEND);

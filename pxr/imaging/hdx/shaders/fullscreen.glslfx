@@ -62,11 +62,11 @@ void main(void)
 
 varying vec2 uv;
 
-uniform sampler2D colorIn;
+uniform sampler2D color;
 
 void main(void)
 {
-    gl_FragColor = texture2D(colorIn, uv);
+    gl_FragColor = texture2D(color, uv);
 }
 
 -- glsl Composite.FragmentWithDepth
@@ -75,12 +75,12 @@ void main(void)
 
 varying vec2 uv;
 
-uniform sampler2D colorIn;
-uniform sampler2D depthIn;
+uniform sampler2D color;
+uniform sampler2D depth;
 
 void main(void)
 {
-    float depth = texture2D(depthIn, uv).r;
-    gl_FragColor = texture2D(colorIn, uv);
+    float depth = texture2D(depth, uv).r;
+    gl_FragColor = texture2D(color, uv);
     gl_FragDepth = depth;
 }

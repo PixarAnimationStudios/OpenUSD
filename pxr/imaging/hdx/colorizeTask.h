@@ -26,7 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
-#include "pxr/imaging/hdx/compositor.h"
+#include "pxr/imaging/hdx/fullscreenShader.h"
 #include "pxr/imaging/hdx/progressiveTask.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -81,7 +81,7 @@ private:
     size_t _outputBufferSize;
     bool _converged;
 
-    HdxCompositor _compositor;
+    HdxFullscreenShader _compositor;
     bool _needsValidation;
 
     HdxColorizeTask() = delete;

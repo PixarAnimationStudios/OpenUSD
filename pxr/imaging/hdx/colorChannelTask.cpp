@@ -223,8 +223,8 @@ HdxColorChannelTask::_CreateFramebufferResources()
     //     // If we're rendering with a different context than the render pass
     //     // was created with, recreate the FBO because FB is not shared.
     //     // XXX we need this since we use a FBO in _CopyTexture(). Ideally we
-    //     // use HdxCompositor to do the copy, but for that we need to know the
-    //     // textureId currently bound to the default framebuffer. However
+    //     // use HdxFullscreenShader to do the copy, but for that we need to know
+    //     // the textureId currently bound to the default framebuffer. However
     //     // glGetFramebufferAttachmentParameteriv will return and error when
     //     // trying to query the texture name bound to GL_BACK_LEFT.
     //     if (_owningContext && _owningContext->IsValid()) {
@@ -269,7 +269,7 @@ HdxColorChannelTask::_ApplyColorChannel()
     // A note here: colorChannel is used for all of our plugins and has to be
     // robust to poor GL support.  OSX compatibility profile provides a
     // GL 2.1 API, slightly restricting our choice of API and heavily
-    // restricting our shader syntax. See also HdxCompositor.
+    // restricting our shader syntax. See also HdxFullscreenShader.
 
     // Read from the texture-copy we made of the clients FBO and output the
     // color-corrected pixels into the clients FBO.

@@ -16,7 +16,7 @@ and extensions useful for clients interested in using Hydra for imaging.
 
 It currently houses common tasks, such as:
 \li HdxColorizeTask
-\li HdxCompositor
+\li HdxFullscreenShader
 \li HdxRenderSetupTask
 \li HdxRenderTask
 \li HdxSelectionTask
