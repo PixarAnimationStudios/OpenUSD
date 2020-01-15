@@ -279,8 +279,22 @@ public:
     }
 
     USDUTILS_API
-    const _AttrValueWriterMap& GetAttrValueWriterMap() const {
+    _AttrValueWriterMap GetAttrValueWriter() const {
         return _attrValueWriterMap;
+    }
+
+    USDUTILS_API
+    std::vector<UsdUtilsSparseAttrValueWriter> GetSparseAttrValueWriters() const {
+        std::vector<UsdUtilsSparseAttrValueWriter> sparseValueWriterVec;
+        sparseValueWriterVec.reserve(_attrValueWriterMap.size());
+        std::transform(_attrValueWriterMap.begin(),
+                       _attrValueWriterMap.end(),
+                        back_inserter(sparseValueWriterVec),
+                        [](std::pair<UsdAttribute, UsdUtilsSparseAttrValueWriter> const& pair)
+                        {
+                            return pair.second;
+                        });
+        return sparseValueWriterVec;
     }
 
 private:
