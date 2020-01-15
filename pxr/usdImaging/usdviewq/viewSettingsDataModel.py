@@ -100,6 +100,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         self._defaultMaterialSpecular = self.stateProperty("defaultMaterialSpecular", default=DEFAULT_SPECULAR)
         self._redrawOnScrub = self.stateProperty("redrawOnScrub", default=True)
         self._renderMode = self.stateProperty("renderMode", default=RenderModes.SMOOTH_SHADED)
+        self._freeCameraFOV = self.stateProperty("freeCameraFOV", default=60.0)
         self._colorCorrectionMode = self.stateProperty("colorCorrectionMode", default=ColorCorrectionModes.SRGB)
         self._pickMode = self.stateProperty("pickMode", default=PickModes.PRIMS)
 
@@ -157,6 +158,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         state["defaultMaterialSpecular"] = self._defaultMaterialSpecular
         state["redrawOnScrub"] = self._redrawOnScrub
         state["renderMode"] = self._renderMode
+        state["freeCameraFOV"] = self._freeCameraFOV
         state["colorCorrectionMode"] = self._colorCorrectionMode
         state["pickMode"] = self._pickMode
         state["selectionHighlightMode"] = self._selHighlightMode
@@ -261,6 +263,24 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
     @visibleViewSetting
     def renderMode(self, value):
         self._renderMode = value
+
+    @property
+    def freeCameraFOV(self):
+        return self._freeCameraFOV
+
+    @freeCameraFOV.setter
+    @visibleViewSetting
+    def freeCameraFOV(self, value):
+        if self._freeCamera:
+            # Setting the freeCamera's fov will trigger our own update
+            self._freeCamera.fov = value
+        else:
+            self._freeCameraFOV = value
+
+    @visibleViewSetting
+    def _updateFOV(self):
+        if self._freeCamera:
+            self._freeCameraFOV = self.freeCamera.fov
 
     @property
     def colorCorrectionMode(self):
@@ -597,9 +617,18 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
     @freeCamera.setter
     @visibleViewSetting
     def freeCamera(self, value):
-        if not isinstance(value, FreeCamera):
+        """ViewSettingsDataModel does not guarantee it will hold a valid
+        FreeCamera, but if one is set, we will keep the dataModel's stateful
+        FOV ('freeCameraFOV') in sync with the FreeCamera"""
+
+        if not isinstance(value, FreeCamera) and value != None:
             raise TypeError("Free camera must be a FreeCamera object.")
+        if self._freeCamera:
+            self._freeCamera.signalFrustumChanged.disconnect(self._updateFOV)
         self._freeCamera = value
+        if self._freeCamera:
+            self._freeCamera.signalFrustumChanged.connect(self._updateFOV)
+            self._freeCameraFOV = self._freeCamera.fov
 
     @property
     def cameraPath(self):

@@ -829,7 +829,8 @@ class StageView(QtOpenGL.QGLWidget):
         self._dataModel.selection.signalPrimSelectionChanged.connect(
             self._primSelectionChanged)
 
-        self._dataModel.viewSettings.freeCamera = FreeCamera(True)
+        self._dataModel.viewSettings.freeCamera = FreeCamera(True,
+                                    self._dataModel.viewSettings.freeCameraFOV)
         self._lastComputedGfCamera = None
 
         # prep Mask regions
@@ -1017,7 +1018,9 @@ class StageView(QtOpenGL.QGLWidget):
         if self._dataModel.stage:
             self._stageIsZup = (
                 UsdGeom.GetStageUpAxis(self._dataModel.stage) == UsdGeom.Tokens.z)
-            self._dataModel.viewSettings.freeCamera = FreeCamera(self._stageIsZup)
+            self._dataModel.viewSettings.freeCamera = \
+                    FreeCamera(self._stageIsZup,
+                               self._dataModel.viewSettings.freeCameraFOV)
 
     # simple GLSL program for axis/bbox drawings
     def GetSimpleGLSLProgram(self):
@@ -1896,7 +1899,9 @@ class StageView(QtOpenGL.QGLWidget):
                     self._lastComputedGfCamera, self._stageIsZup)
             else:
                 self._dataModel.viewSettings.freeCamera = FreeCamera(
-                    self._stageIsZup)
+                    self._stageIsZup,
+                    self._dataModel.viewSettings.freeCameraFOV)
+
             # override clipping plane state is managed by StageView,
             # so that it can be persistent.  Therefore we must restore it
             # now

@@ -1741,11 +1741,9 @@ class AppController(QtCore.QObject):
 
     def _adjustFOV(self):
         fov = QtWidgets.QInputDialog.getDouble(self._mainWindow, "Adjust FOV",
-            "Enter a value between 0 and 180", self._dataModel.viewSettings.freeCamera.fov, 0, 180)
+            "Enter a value between 0 and 180", self._dataModel.viewSettings.freeCameraFOV, 0, 180)
         if (fov[1]):
-            self._dataModel.viewSettings.freeCamera.fov = fov[0]
-            if self._stageView:
-                self._stageView.update()
+            self._dataModel.viewSettings.freeCameraFOV = fov[0]
 
     def _adjustClippingPlanes(self, checked):
         # Eventually, this will not be accessible when _stageView is None.
