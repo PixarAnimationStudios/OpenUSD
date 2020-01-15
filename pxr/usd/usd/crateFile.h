@@ -438,7 +438,7 @@ private:
 
     ////////////////////////////////////////////////////////////////////////
 
-    // _BootStrap structure.  Appears at end of file, houses version, file
+    // _BootStrap structure.  Appears at start of file, houses version, file
     // identifier string and offset to _TableOfContents.
     struct _BootStrap {
         _BootStrap();
