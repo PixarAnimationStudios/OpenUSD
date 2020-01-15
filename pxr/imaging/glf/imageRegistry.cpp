@@ -68,15 +68,17 @@ GlfImageRegistry::_ConstructImage(std::string const & filename)
     static GlfImageSharedPtr NULL_IMAGE;
 
     // Lookup the plug-in type name based on the filename.
-    TfToken fileExtension(ArGetResolver().GetExtension(filename));
+    TfToken fileExtension(
+            TfStringToLower(ArGetResolver().GetExtension(filename)));
 
     TfType const & pluginType = _typeMap->Find(fileExtension);
 
     if (!pluginType) {
         // Unknown prim type.
         TF_DEBUG(GLF_DEBUG_TEXTURE_IMAGE_PLUGINS).Msg(
-                "[PluginLoad] Unknown image type '%s'\n",
-                fileExtension.GetText());
+                "[PluginLoad] Unknown image type '%s' for file '%s'\n",
+                fileExtension.GetText(),
+                filename.c_str());
         return NULL_IMAGE;
     }
 
@@ -92,9 +94,10 @@ GlfImageRegistry::_ConstructImage(std::string const & filename)
     GlfImageFactoryBase* factory = pluginType.GetFactory<GlfImageFactoryBase>();
     if (!factory) {
         TF_CODING_ERROR("[PluginLoad] Cannot manufacture type '%s' "
-                "for image type '%s'\n",
+                "for image type '%s' for file '%s'\n",
                 pluginType.GetTypeName().c_str(),
-                fileExtension.GetText());
+                fileExtension.GetText(),
+                filename.c_str());
 
         return NULL_IMAGE;
     }
@@ -102,16 +105,19 @@ GlfImageRegistry::_ConstructImage(std::string const & filename)
     GlfImageSharedPtr instance = factory->New();
     if (!instance) {
         TF_CODING_ERROR("[PluginLoad] Cannot construct instance of type '%s' "
-                "for image type '%s'\n",
+                "for image type '%s' for file '%s'\n",
                 pluginType.GetTypeName().c_str(),
-                fileExtension.GetText());
+                fileExtension.GetText(),
+                filename.c_str());
         return NULL_IMAGE;
     }
 
     TF_DEBUG(GLF_DEBUG_TEXTURE_IMAGE_PLUGINS).Msg(
-    	        "[PluginLoad] Loaded plugin '%s' for image type '%s'\n",
+    	        "[PluginLoad] Loaded plugin '%s' for image type '%s' for "
+                "file '%s'\n",
                 pluginType.GetTypeName().c_str(),
-                fileExtension.GetText());
+                fileExtension.GetText(),
+                filename.c_str());
 
     return instance;
 }
