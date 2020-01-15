@@ -153,7 +153,7 @@ struct HdxColorCorrectionTaskParams
 
     // The width, height and depth used for the GPU LUT 3d texture
     // 0-64 (65) is the current pxr default
-    int lut3dSizeOCIO = 65;
+    int lut3dSizeOCIO;
 
     // When no AOV is provided ColorCorrection will operate on the default FB
     // color attachment.

@@ -35,7 +35,7 @@
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/hio/glslfx.h"
 #include "pxr/imaging/glf/glContext.h"
-#include "pxr/base/tf/setenv.h"
+#include "pxr/base/tf/getenv.h"
 #include "pxr/imaging/hgiGL/texture.h"
 
 #ifdef PXR_OCIO_PLUGIN_ENABLED
@@ -71,12 +71,18 @@ HdxColorCorrectionTask::HdxColorCorrectionTask(HdSceneDelegate* delegate,
     , _vertexBuffer(0)
     , _copyFramebuffer(0)
     , _framebufferSize(0)
-    , _lut3dSizeOCIO(32)
+    , _lut3dSizeOCIO(65)
     , _aovBufferPath()
     , _aovBuffer(nullptr)
     , _aovTexture(nullptr)
     , _aovFramebuffer(0)
 {
+    // 3D lut override similar to KATANA_OCIO_LUT3D_EDGE_SIZE
+    int size = TfGetenvInt("USDVIEW_OCIO_LUT3D_EDGE_SIZE", 0);
+
+    if (size > 0) {
+        _lut3dSizeOCIO = size;
+    }
 }
 
 HdxColorCorrectionTask::~HdxColorCorrectionTask()
@@ -198,6 +204,12 @@ HdxColorCorrectionTask::_CreateShaderResources()
     #ifdef PXR_OCIO_PLUGIN_ENABLED
         bool useOCIO = 
             _colorCorrectionMode == HdxColorCorrectionTokens->openColorIO;
+
+        // Only use if $OCIO environment variable is set.
+        // (Otherwise this option should be disabled.)
+        if (TfGetenv("OCIO") == "") {
+            useOCIO = false;
+        }
     #else
         bool useOCIO = false;
     #endif
@@ -428,6 +440,12 @@ HdxColorCorrectionTask::_ApplyColorCorrection()
     #ifdef PXR_OCIO_PLUGIN_ENABLED
         bool useOCIO = 
             _colorCorrectionMode == HdxColorCorrectionTokens->openColorIO;
+
+        // Only use if $OCIO environment variable is set.
+        // (Otherwise this option should be disabled.)
+        if (TfGetenv("OCIO") == "") {
+            useOCIO = false;
+        }
     #else
         bool useOCIO = false;
     #endif
