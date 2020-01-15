@@ -138,7 +138,9 @@ HdPrmanLightFilterPopulateParams(
     SdfPath &filterPath,
     TfToken filterType,
     std::vector<riley::CoordinateSystemId> *coordsysIds,
+    std::vector<TfToken> *filterLinks,
     HdSceneDelegate *sceneDelegate,
+    HdPrman_Context *context,
     riley::Riley *riley,
     RtUString lightTypeName)
 {
@@ -751,6 +753,28 @@ HdPrmanLightFilterPopulateParams(
             filter->params.SetString(RtUString("__lightFilterParentShader"),
                                      lightTypeName);
     }
+
+    // Light filter linking
+    VtValue val = sceneDelegate->GetLightParamValue(filterPath,
+                                    HdTokens->lightFilterLink);
+    TfToken lightFilterLink = TfToken();
+    if (val.IsHolding<TfToken>()) {
+        lightFilterLink = val.UncheckedGet<TfToken>();
+    }
+    
+    if (!lightFilterLink.IsEmpty()) {
+        context->IncrementLightFilterCount(lightFilterLink);
+        (*filterLinks).push_back(lightFilterLink);
+        // For light filters to link geometry, the light filters must
+        // be assigned a grouping membership, and the
+        // geometry must subscribe to that grouping.
+        filter->params.SetString(RtUString("linkingGroups"),
+                            RtUString(lightFilterLink.GetText()));
+        TF_DEBUG(HDPRMAN_LIGHT_LINKING)
+            .Msg("HdPrman: Light filter <%s> linkingGroups \"%s\"\n",
+                    filterPath.GetText(), lightFilterLink.GetText());
+    }
+
     return true;
 }
 

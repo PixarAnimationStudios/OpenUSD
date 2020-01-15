@@ -74,6 +74,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (leftHanded)                                \
     (linear)                                    \
     (lightLink)                                 \
+    (lightFilterLink)                           \
     (materialParams)                            \
     (nonperiodic)                               \
     (normals)                                   \

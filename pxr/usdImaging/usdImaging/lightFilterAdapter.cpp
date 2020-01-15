@@ -30,6 +30,7 @@
 
 #include "pxr/imaging/hd/light.h"
 #include "pxr/usd/usdLux/light.h"
+#include "pxr/usd/usdLux/lightFilter.h"
 
 #include "pxr/base/tf/envSetting.h"
 
@@ -79,6 +80,15 @@ UsdImagingLightFilterAdapter::TrackVariability(UsdPrim const& prim,
     // lights...
     valueCache->GetVisible(cachePath) = GetVisible(prim,
         _GetTimeWithOffset(0.0));
+
+    UsdLuxLightFilter lightFilter(prim);
+    if (TF_VERIFY(lightFilter)) {
+        UsdImaging_CollectionCache &collectionCache = _GetCollectionCache();
+        collectionCache.UpdateCollection(
+                                lightFilter.GetFilterLinkCollectionAPI());
+        // TODO: When collections change we need to invalidate affected
+        // prims with the DirtyCollections flag.
+    }
 }
 
 // Thread safe.

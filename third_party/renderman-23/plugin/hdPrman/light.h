@@ -67,6 +67,7 @@ private:
 
     TfToken _lightLink;
     SdfPathVector _lightFilterPaths;
+    std::vector<TfToken> _lightFilterLinks;
 };
 
 

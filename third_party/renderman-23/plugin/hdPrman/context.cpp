@@ -56,7 +56,7 @@ void
 HdPrman_Context::IncrementLightLinkCount(TfToken const& name)
 {
     std::lock_guard<std::mutex> lock(_lightLinkMutex);
-    --_lightLinkRefs[name];
+    ++_lightLinkRefs[name];
 }
 
 void 
@@ -99,39 +99,27 @@ HdPrman_Context::SetInstantaneousShutter(bool instantaneousShutter)
     _instantaneousShutter = instantaneousShutter;
 }
 
-// XXX -- Currently, there is no need for the light filter data generated
-// in the next 3 procs but its likely it will be needed once we implement
-// shared light filters.  For now, we just #ifdef out the guts of the procs
-// to avoid running the mutex.
 void
 HdPrman_Context::IncrementLightFilterCount(TfToken const& name)
 {
-#ifdef ENABLE_LIGHT_FILTER_COUNTERS
     std::lock_guard<std::mutex> lock(_lightFilterMutex);
-    --_lightFilterRefs[name];
-#endif // ENABLE_LIGHT_FILTER_COUNTERS
+    ++_lightFilterRefs[name];
 }
 
 void 
 HdPrman_Context::DecrementLightFilterCount(TfToken const& name)
 {
-#ifdef ENABLE_LIGHT_FILTER_COUNTERS
     std::lock_guard<std::mutex> lock(_lightFilterMutex);
     if (--_lightFilterRefs[name] == 0) {
         _lightFilterRefs.erase(name);
     }
-#endif // ENABLE_LIGHT_FILTER_COUNTERS
 }
 
 bool 
 HdPrman_Context::IsLightFilterUsed(TfToken const& name)
 {
-#ifdef ENABLE_LIGHT_FILTER_COUNTERS
     std::lock_guard<std::mutex> lock(_lightFilterMutex);
     return _lightFilterRefs.find(name) != _lightFilterRefs.end();
-#else // ENABLE_LIGHT_FILTER_COUNTERS
-    return false;
-#endif // ENABLE_LIGHT_FILTER_COUNTERS
 }
 
 inline static RtDetailType
@@ -658,6 +646,8 @@ HdPrman_Context::ConvertCategoriesToAttributes(
         // XXX -- setting k_grouping_membership might not be necessasy
         attrs.SetString( RixStr.k_grouping_membership,
                          RtUString("") );
+        attrs.SetString( RixStr.k_lightfilter_subset,
+                         RtUString("") );
         attrs.SetString( RixStr.k_lighting_subset,
                          RtUString("default") );
         TF_DEBUG(HDPRMAN_LIGHT_LINKING)
@@ -665,6 +655,7 @@ HdPrman_Context::ConvertCategoriesToAttributes(
                  id.GetText());
         return;
     }
+
     std::string membership;
     for (TfToken const& category: categories) {
         if (!membership.empty()) {
@@ -696,6 +687,25 @@ HdPrman_Context::ConvertCategoriesToAttributes(
     TF_DEBUG(HDPRMAN_LIGHT_LINKING)
         .Msg("HdPrman: <%s> lighting:subset = \"%s\"\n",
              id.GetText(), lightingSubset.c_str());
+
+    // Light filter linking:
+    // Geometry subscribes to categories of light filters applied to it.
+    // Take any categories used by a light filter as a lightFilterLink param
+    // and list as k_lightfilter_subset.
+    std::string lightFilterSubset = "default";
+    for (TfToken const& category: categories) {
+        if (IsLightFilterUsed(category)) {
+            if (!lightFilterSubset.empty()) {
+                lightFilterSubset += " ";
+            }
+            lightFilterSubset += category;
+        }
+    }
+    attrs.SetString( RixStr.k_lightfilter_subset,
+                      RtUString(lightFilterSubset.c_str()) );
+    TF_DEBUG(HDPRMAN_LIGHT_LINKING)
+        .Msg("HdPrman: <%s> lightFilter:subset = \"%s\"\n",
+             id.GetText(), lightFilterSubset.c_str());
 }
 
 bool

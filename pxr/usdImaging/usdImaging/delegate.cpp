@@ -59,6 +59,7 @@
 #include "pxr/usd/usdGeom/modelAPI.h"
 
 #include "pxr/usd/usdLux/light.h"
+#include "pxr/usd/usdLux/lightFilter.h"
 
 #include "pxr/base/work/loops.h"
 
@@ -2665,6 +2666,13 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
         // determining the type of the light filter.
         if (paramName == _tokens->lightFilterType) {
             return VtValue(prim.GetTypeName());
+        }
+        if (paramName == HdTokens->lightFilterLink) {
+            UsdLuxLightFilter lightFilter = UsdLuxLightFilter(prim);
+            UsdCollectionAPI lightFilterLink =
+                            lightFilter.GetFilterLinkCollectionAPI();
+            return VtValue(_collectionCache.GetIdForCollection(
+                                                    lightFilterLink));
         }
         // Fallback to USD attributes.
         return _GetUsdPrimAttribute(cachePath, paramName);
