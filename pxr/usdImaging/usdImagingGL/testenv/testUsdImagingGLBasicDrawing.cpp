@@ -307,30 +307,34 @@ My_TestGLDrawing::DrawTest(bool offscreen)
 
         // Make sure we render to convergence.
         TfErrorMark mark;
-
         int convergenceIterations = 0;
 
         {
-            TRACE_SCOPE("TestRendering");
+            TRACE_SCOPE("Test Profile: renderTime");
+
+            renderTime.Start();
 
             do {
-                TRACE_SCOPE("TestRendering (convergence iteration)");
+                TRACE_SCOPE("Iteration render convergence");
                 
                 convergenceIterations++;
                 glClearBufferfv(GL_COLOR, 0, clearColor.data());
                 glClearBufferfv(GL_DEPTH, 0, clearDepth);
                 
-                renderTime.Start();
                 _engine->Render(_stage->GetPseudoRoot(), params);
-                renderTime.Stop();
-                
             } while (!_engine->IsConverged());
-        }
+        
+            {
+                TRACE_SCOPE("Call to glFinish");
+                glFinish();
+            }
 
-        std::cout << "Iterations to convergence: " << convergenceIterations << std::endl;
+            renderTime.Stop();            
+        }
 
         TF_VERIFY(mark.IsClean(), "Errors occurred while rendering!");
 
+        std::cout << "Iterations to convergence: " << convergenceIterations << std::endl;
         std::cout << "itemsDrawn " << perfLog.GetCounter(HdTokens->itemsDrawn) << std::endl;
         std::cout << "totalItemCount " << perfLog.GetCounter(HdTokens->totalItemCount) << std::endl;
 
