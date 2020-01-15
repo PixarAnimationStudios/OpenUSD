@@ -1,0 +1,11 @@
+#usda 1.0
+
+# Demonstrates a prim with a list of payloads that used a specified file format argument of 
+# UsdExample_payloadId to allow the argDict metadata field to specify different parameters
+# for each in the same prim.
+def "PayloadRoot" (
+    payload = [@cone.usdrecursivepayloadsexample:SDF_FORMAT_ARGS:UsdExample_payloadId=Foo@,              
+               @sphere.usdrecursivepayloadsexample:SDF_FORMAT_ARGS:UsdExample_payloadId=Bar@]
+)
+{
+}
