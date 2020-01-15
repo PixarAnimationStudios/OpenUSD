@@ -49,6 +49,9 @@ UsdImaging_CollectionCache::UpdateCollection(UsdCollectionAPI const& c)
     UsdCollectionAPI::MembershipQuery query = c.ComputeMembershipQuery();
 
     if (_IsQueryTrivial(query)) {
+        TF_DEBUG(USDIMAGING_COLLECTIONS)
+            .Msg("UsdImaging_CollectionCache: trivial for <%s>\n",
+                 path.GetText());
         return TfToken();
     }
 
