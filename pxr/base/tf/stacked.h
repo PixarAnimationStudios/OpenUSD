@@ -29,12 +29,10 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/arch/demangle.h"
 
-#include <boost/mpl/if.hpp>
-#include <boost/noncopyable.hpp>
-
 #include <tbb/enumerable_thread_specific.h>
 
 #include <atomic>
+#include <type_traits>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -95,7 +93,7 @@ private:
 
 public:
     /* Choose the stack storage type based on thea PerThread argument. */
-    typedef typename boost::mpl::if_c<
+    typedef typename std::conditional<
         PerThread, _PerThreadStackStorage, _GlobalStackStorage
     >::type Type;
 };
@@ -136,7 +134,9 @@ struct Tf_StackedStorage {
 ///
 template <class Derived, bool PerThread = true,
           class Holder = Tf_StackedStorage<Derived, PerThread>>
-class TfStacked : boost::noncopyable {
+class TfStacked {
+    TfStacked(TfStacked const &) = delete;
+    TfStacked& operator=(TfStacked const &) = delete;
     typedef typename Holder::Type _StorageType;
 public:
     typedef Holder Storage;
