@@ -1494,13 +1494,16 @@ class AppController(QtCore.QObject):
         buttonBox = QtWidgets.QDialogButtonBox(
             QtWidgets.QDialogButtonBox.Ok |
             QtWidgets.QDialogButtonBox.Cancel |
-            QtWidgets.QDialogButtonBox.RestoreDefaults)
+            QtWidgets.QDialogButtonBox.RestoreDefaults |
+            QtWidgets.QDialogButtonBox.Apply)
         layout.addWidget(buttonBox)
         buttonBox.rejected.connect(self._ui.settingsMoreDialog.reject)
         buttonBox.accepted.connect(self._ui.settingsMoreDialog.accept)
         self._ui.settingsMoreDialog.accepted.connect(self._applyMoreRendererSettings)
         defaultButton = buttonBox.button(QtWidgets.QDialogButtonBox.RestoreDefaults)
         defaultButton.clicked.connect(self._resetMoreRendererSettings)
+        applyButton = buttonBox.button(QtWidgets.QDialogButtonBox.Apply)
+        applyButton.clicked.connect(self._applyMoreRendererSettings)
 
         self._ui.settingsMoreDialog.setLayout(layout)
         self._ui.settingsMoreDialog.show()
