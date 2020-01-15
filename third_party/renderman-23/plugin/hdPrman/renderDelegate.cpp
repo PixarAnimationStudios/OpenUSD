@@ -34,13 +34,13 @@
 #include "hdPrman/renderDelegate.h"
 #include "hdPrman/renderParam.h"
 #include "hdPrman/renderPass.h"
+#include "hdPrman/resourceRegistry.h"
 #include "hdPrman/volume.h"
 
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/bprim.h"
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/extComputation.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/sprim.h"
 
@@ -107,7 +107,7 @@ void
 HdPrmanRenderDelegate::_Initialize()
 {
     _renderParam = std::make_shared<HdPrman_RenderParam>(_context);
-    _resourceRegistry.reset(new HdResourceRegistry());
+    _resourceRegistry = boost::make_shared<HdPrman_ResourceRegistry>(_context);
 
     std::string integrator = HdPrmanIntegratorTokens->PxrPathTracer;
     const std::string interactiveIntegrator = 

@@ -73,6 +73,13 @@ void HdResourceRegistry::InvalidateShaderRegistry()
     // but the base registry has nothing to do.
 }
 
+void
+HdResourceRegistry::ReloadResource(
+    TfToken const& resourceType,
+    std::string const& path)
+{
+}
+
 VtDictionary
 HdResourceRegistry::GetResourceAllocation() const
 {

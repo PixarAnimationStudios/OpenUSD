@@ -76,6 +76,17 @@ public:
     HD_API
     virtual void InvalidateShaderRegistry();
 
+    /// Generic method to inform RenderDelegate a resource needs to be reloaded.
+    /// This method can be used by the application to inform the renderDelegate
+    /// that a resource, which may not have any prim representation in Hydra, 
+    /// needs to be reloaded. For example a texture found in a material network.
+    /// The `path` can be absolute or relative. It should usually match the
+    /// path found for textures during HdMaterial::Sync.
+    HD_API
+    virtual void ReloadResource(
+        TfToken const& resourceType,
+        std::string const& path);
+
     /// Returns a report of resource allocation by role in bytes and
     /// a summary total allocation of GPU memory in bytes for this registry.
     HD_API

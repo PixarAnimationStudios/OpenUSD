@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,31 +21,31 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef EXT_RMANPKG_23_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_PARAM_H
-#define EXT_RMANPKG_23_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_PARAM_H
+#include "pxr/imaging/hd/tokens.h"
+#include "RixRiCtl.h"
+#include "hdPrman/resourceRegistry.h"
 
-#include "pxr/pxr.h"
-#include "pxr/imaging/hd/renderDelegate.h"
-#include "hdPrman/context.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdPrman_RenderParam : public HdRenderParam {
-public:
-    HdPrman_RenderParam(std::shared_ptr<HdPrman_Context> const& context)
-        : _context(context)
-        {}
-    virtual ~HdPrman_RenderParam() = default;
+HdPrman_ResourceRegistry::HdPrman_ResourceRegistry(
+    std::shared_ptr<HdPrman_Context> const& context)
+    : _context(context)
+{
+}
 
-    // Request edit access to the Riley scene and then return the context.
-    virtual HdPrman_Context* AcquireContext() {
-        return _context.get();
+HdPrman_ResourceRegistry::~HdPrman_ResourceRegistry()
+{
+}
+
+void
+HdPrman_ResourceRegistry::ReloadResource(
+    TfToken const& resourceType,
+    std::string const& path)
+{
+    if (resourceType == HdResourceTypeTokens->texture) {
+        _context->ri->InvalidateTexture(RtUString(path.c_str()));
     }
-
-protected:
-    std::shared_ptr<HdPrman_Context> _context;
-};
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif // EXT_RMANPKG_23_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_PARAM_H
