@@ -45,6 +45,7 @@
 #endif
 #include <algorithm>
 #include <atomic>
+#include <cinttypes>
 #include <cmath>
 #include <cstdarg>
 #include <cstddef>
@@ -53,9 +54,9 @@
 #include <cstring>
 #include <deque>
 #include <functional>
-#include <inttypes.h>
 #include <iosfwd>
 #include <list>
+#include <locale>
 #include <map>
 #include <math.h>
 #include <memory>
@@ -64,7 +65,6 @@
 #include <sstream>
 #include <stdarg.h>
 #include <stddef.h>
-#include <stdint.h>
 #include <string>
 #include <sys/types.h>
 #include <type_traits>
@@ -75,9 +75,7 @@
 #include <utility>
 #include <vector>
 #include <boost/any.hpp>
-#include <boost/function.hpp>
 #include <boost/functional/hash_fwd.hpp>
-#include <boost/mpl/assert.hpp>
 #include <boost/mpl/if.hpp>
 #include <boost/mpl/or.hpp>
 #include <boost/noncopyable.hpp>
@@ -106,21 +104,21 @@
 #undef toupper
 #endif
 #endif // PXR_PYTHON_SUPPORT_ENABLED
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/type_traits/is_base_of.hpp>
-#include <boost/type_traits/is_class.hpp>
 #include <boost/type_traits/is_const.hpp>
 #include <boost/type_traits/is_convertible.hpp>
 #include <boost/type_traits/is_enum.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <tbb/atomic.h>
+#include <tbb/blocked_range.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/concurrent_vector.h>
 #include <tbb/enumerable_thread_specific.h>
+#include <tbb/parallel_for.h>
+#include <tbb/parallel_for_each.h>
+#include <tbb/parallel_reduce.h>
 #include <tbb/spin_rw_mutex.h>
 #include <tbb/task.h>
 #include <tbb/task_arena.h>
 #include <tbb/task_scheduler_init.h>
-#include <tbb/tbb.h>

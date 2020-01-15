@@ -56,6 +56,7 @@
 #endif
 #include <algorithm>
 #include <atomic>
+#include <cinttypes>
 #include <cmath>
 #include <cstdarg>
 #include <cstddef>
@@ -67,14 +68,16 @@
 #include <fcntl.h>
 #include <fstream>
 #include <functional>
-#include <inttypes.h>
+#include <initializer_list>
 #include <iosfwd>
 #include <iterator>
 #include <list>
+#include <locale>
 #include <map>
 #include <math.h>
 #include <memory>
 #include <mutex>
+#include <new>
 #include <regex>
 #include <set>
 #include <sstream>
@@ -98,18 +101,12 @@
 #include <boost/functional/hash.hpp>
 #include <boost/functional/hash_fwd.hpp>
 #include <boost/mpl/and.hpp>
-#include <boost/mpl/assert.hpp>
-#include <boost/mpl/empty.hpp>
-#include <boost/mpl/front.hpp>
 #include <boost/mpl/if.hpp>
 #include <boost/mpl/or.hpp>
-#include <boost/mpl/pop_front.hpp>
-#include <boost/mpl/remove.hpp>
 #include <boost/mpl/vector.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
-#include <boost/preprocessor.hpp>
 #include <boost/preprocessor/arithmetic/add.hpp>
 #include <boost/preprocessor/arithmetic/inc.hpp>
 #include <boost/preprocessor/arithmetic/sub.hpp>
@@ -119,11 +116,17 @@
 #include <boost/preprocessor/control/iif.hpp>
 #include <boost/preprocessor/facilities/expand.hpp>
 #include <boost/preprocessor/if.hpp>
+#include <boost/preprocessor/iterate.hpp>
 #include <boost/preprocessor/logical/and.hpp>
 #include <boost/preprocessor/logical/not.hpp>
 #include <boost/preprocessor/punctuation/comma.hpp>
 #include <boost/preprocessor/punctuation/comma_if.hpp>
 #include <boost/preprocessor/punctuation/paren.hpp>
+#include <boost/preprocessor/repetition/enum.hpp>
+#include <boost/preprocessor/repetition/enum_binary_params.hpp>
+#include <boost/preprocessor/repetition/enum_params.hpp>
+#include <boost/preprocessor/repetition/enum_trailing_binary_params.hpp>
+#include <boost/preprocessor/repetition/enum_trailing_params.hpp>
 #include <boost/preprocessor/repetition/repeat.hpp>
 #include <boost/preprocessor/seq/filter.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
@@ -170,21 +173,18 @@
 #endif
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/range.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/type_traits/add_reference.hpp>
 #include <boost/type_traits/is_abstract.hpp>
 #include <boost/type_traits/is_base_of.hpp>
-#include <boost/type_traits/is_class.hpp>
 #include <boost/type_traits/is_const.hpp>
 #include <boost/type_traits/is_convertible.hpp>
 #include <boost/type_traits/is_enum.hpp>
-#include <boost/type_traits/is_polymorphic.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/utility.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <tbb/atomic.h>
+#include <tbb/cache_aligned_allocator.h>
 #include <tbb/concurrent_vector.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/spin_mutex.h>
@@ -192,5 +192,5 @@
 #include <tbb/task_arena.h>
 #include <tbb/task_group.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
-#include <Python.h>
+#include "pxr/base/tf/pySafePython.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED

@@ -58,6 +58,7 @@
 #include <atomic>
 #include <bitset>
 #include <cfloat>
+#include <cinttypes>
 #include <cmath>
 #include <cstdarg>
 #include <cstddef>
@@ -70,16 +71,16 @@
 #include <float.h>
 #include <functional>
 #include <initializer_list>
-#include <inttypes.h>
 #include <iosfwd>
-#include <iostream>
 #include <iterator>
 #include <limits>
 #include <list>
+#include <locale>
 #include <map>
 #include <math.h>
 #include <memory>
 #include <mutex>
+#include <new>
 #include <ostream>
 #include <set>
 #include <sstream>
@@ -89,6 +90,7 @@
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <thread>
 #include <type_traits>
 #include <typeindex>
 #include <typeinfo>
@@ -127,8 +129,6 @@
 #include <boost/assign.hpp>
 #include <boost/call_traits.hpp>
 #include <boost/compressed_pair.hpp>
-#include <boost/container/vector.hpp>
-#include <boost/function.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/functional/hash_fwd.hpp>
 #include <boost/intrusive_ptr.hpp>
@@ -138,23 +138,12 @@
 #include <boost/iterator/reverse_iterator.hpp>
 #include <boost/iterator_adaptors.hpp>
 #include <boost/mpl/and.hpp>
-#include <boost/mpl/assert.hpp>
-#include <boost/mpl/bool.hpp>
-#include <boost/mpl/empty.hpp>
-#include <boost/mpl/front.hpp>
 #include <boost/mpl/if.hpp>
-#include <boost/mpl/integral_c.hpp>
-#include <boost/mpl/joint_view.hpp>
-#include <boost/mpl/logical.hpp>
 #include <boost/mpl/or.hpp>
-#include <boost/mpl/pop_front.hpp>
-#include <boost/mpl/remove.hpp>
-#include <boost/mpl/transform_view.hpp>
-#include <boost/mpl/vector.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
-#include <boost/preprocessor.hpp>
+#include <boost/optional/optional_fwd.hpp>
 #include <boost/preprocessor/arithmetic/add.hpp>
 #include <boost/preprocessor/arithmetic/inc.hpp>
 #include <boost/preprocessor/arithmetic/sub.hpp>
@@ -163,7 +152,6 @@
 #include <boost/preprocessor/control/expr_iif.hpp>
 #include <boost/preprocessor/control/iif.hpp>
 #include <boost/preprocessor/facilities/expand.hpp>
-#include <boost/preprocessor/list/fold_left.hpp>
 #include <boost/preprocessor/list/for_each.hpp>
 #include <boost/preprocessor/list/size.hpp>
 #include <boost/preprocessor/logical/and.hpp>
@@ -200,10 +188,7 @@
 #endif
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/range/iterator_range.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/smart_ptr/intrusive_ptr.hpp>
-#include <boost/type_traits.hpp>
 #include <boost/type_traits/decay.hpp>
 #include <boost/type_traits/has_left_shift.hpp>
 #include <boost/type_traits/has_trivial_assign.hpp>
@@ -211,22 +196,19 @@
 #include <boost/type_traits/has_trivial_copy.hpp>
 #include <boost/type_traits/has_trivial_destructor.hpp>
 #include <boost/type_traits/is_base_of.hpp>
-#include <boost/type_traits/is_class.hpp>
 #include <boost/type_traits/is_const.hpp>
 #include <boost/type_traits/is_convertible.hpp>
 #include <boost/type_traits/is_enum.hpp>
-#include <boost/type_traits/is_polymorphic.hpp>
 #include <boost/type_traits/is_same.hpp>
-#include <boost/type_traits/remove_const.hpp>
 #include <boost/type_traits/remove_cv.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/utility.hpp>
 #include <boost/utility/enable_if.hpp>
-#include <boost/utility/value_init.hpp>
 #include <boost/variant.hpp>
 #include <tbb/atomic.h>
-#include <tbb/concurrent_hash_map.h>
+#include <tbb/cache_aligned_allocator.h>
+#include <tbb/concurrent_queue.h>
 #include <tbb/concurrent_unordered_set.h>
 #include <tbb/concurrent_vector.h>
 #include <tbb/enumerable_thread_specific.h>
@@ -235,5 +217,5 @@
 #include <tbb/task.h>
 #include <tbb/task_arena.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
-#include <Python.h>
+#include "pxr/base/tf/pySafePython.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED

@@ -38,6 +38,7 @@
 #endif
 #include <atomic>
 #include <cfloat>
+#include <cinttypes>
 #include <cmath>
 #include <cstdarg>
 #include <cstddef>
@@ -46,11 +47,13 @@
 #include <cstring>
 #include <deque>
 #include <float.h>
-#include <inttypes.h>
+#include <functional>
+#include <initializer_list>
 #include <iosfwd>
-#include <iostream>
+#include <iterator>
 #include <limits>
 #include <list>
+#include <locale>
 #include <map>
 #include <math.h>
 #include <memory>
@@ -70,20 +73,12 @@
 #include <utility>
 #include <vector>
 #include <boost/any.hpp>
-#include <boost/function.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/functional/hash_fwd.hpp>
-#include <boost/mpl/assert.hpp>
-#include <boost/mpl/empty.hpp>
-#include <boost/mpl/front.hpp>
 #include <boost/mpl/if.hpp>
 #include <boost/mpl/or.hpp>
-#include <boost/mpl/pop_front.hpp>
-#include <boost/mpl/remove.hpp>
-#include <boost/mpl/vector.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/operators.hpp>
-#include <boost/optional.hpp>
 #include <boost/preprocessor/arithmetic/add.hpp>
 #include <boost/preprocessor/arithmetic/inc.hpp>
 #include <boost/preprocessor/arithmetic/sub.hpp>
@@ -124,14 +119,12 @@
 #undef toupper
 #endif
 #endif // PXR_PYTHON_SUPPORT_ENABLED
-#include <boost/scoped_ptr.hpp>
 #include <boost/type_traits/is_base_of.hpp>
-#include <boost/type_traits/is_class.hpp>
 #include <boost/type_traits/is_const.hpp>
 #include <boost/type_traits/is_convertible.hpp>
 #include <boost/type_traits/is_enum.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/utility/enable_if.hpp>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
-#include <Python.h>
+#include "pxr/base/tf/pySafePython.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED

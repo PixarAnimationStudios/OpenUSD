@@ -38,20 +38,20 @@
 #endif
 #include <algorithm>
 #include <atomic>
+#include <cinttypes>
 #include <cstdarg>
 #include <cstdint>
 #include <cstring>
-#include <inttypes.h>
 #include <iosfwd>
 #include <iostream>
 #include <list>
+#include <locale>
 #include <map>
 #include <memory>
 #include <set>
 #include <sstream>
 #include <stdarg.h>
 #include <stddef.h>
-#include <stdint.h>
 #include <string>
 #include <sys/types.h>
 #include <type_traits>
