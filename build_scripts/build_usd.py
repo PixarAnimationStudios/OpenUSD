@@ -1038,8 +1038,15 @@ def InstallOpenSubdiv(context, force, buildArgs):
 
         # OpenSubdiv's FindGLEW module won't look in CMAKE_PREFIX_PATH, so
         # we need to explicitly specify GLEW_LOCATION here.
-        extraArgs.append('-DGLEW_LOCATION="{instDir}"'
+        extraArgs.append('-DGLEW_FOUND=1')
+        extraArgs.append('-DGLEW_INCLUDE_DIR="{instDir}/include"'
                          .format(instDir=context.instDir))
+        if Windows():
+            extraArgs.append('-DGLEW_LIBRARY="{instDir}/lib/glew32.lib"'
+                             .format(instDir=context.instDir))
+        else:
+            extraArgs.append('-DGLEW_LIBRARY="{instDir}/lib/glew32.a"'
+                             .format(instDir=context.instDir))
 
         # If Ptex support is disabled in USD, disable support in OpenSubdiv
         # as well. This ensures OSD doesn't accidentally pick up a Ptex
