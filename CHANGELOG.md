@@ -8,7 +8,7 @@ this includes requiring support for C++14.
 
 This release adds a Hydra plugin for RenderMan 23 and removes the deprecated
 Maya plugin from the repository. This release also deprecates support for the
-Houdini plugin. See details below.
+Houdini and Katana plugins. See details below.
 
 ### Build
 - The source tree has been restructured so that code no longer lives under a
@@ -130,6 +130,9 @@ Houdini plugin. See details below.
 - Additional changes for Houdini 17.5 compatibility.
 
 ### Katana Plugin
+- Deprecated Katana plugin in favor of the Foundry-supported Katana plugins 
+  available at https://github.com/TheFoundryVisionmongers/KatanaUsdPlugins.
+  We anticipate removing the plugin from the USD repository in a future release.
 - Changed how UsdGeomBasisCurve Widths and Normal attributes are read into
   Katana. Author either a geometry.point.* entry (old behavior) or a
   geometry.arbitrary.* entry (new behavior) based on the attribute's
