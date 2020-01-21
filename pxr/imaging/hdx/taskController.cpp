@@ -1563,6 +1563,43 @@ HdxTaskController::SetSelectionColor(GfVec4f const& color)
 }
 
 void
+HdxTaskController::SetSelectionEnableOutline(bool enableOutline)
+{
+    if (!_colorizeSelectionTaskId.IsEmpty()) {
+        HdxColorizeSelectionTaskParams params =
+            _delegate.GetParameter<HdxColorizeSelectionTaskParams>(
+                _colorizeSelectionTaskId, HdTokens->params);
+
+        if (params.enableOutline != enableOutline) {
+            params.enableOutline = enableOutline;
+            _delegate.SetParameter(_colorizeSelectionTaskId,
+                HdTokens->params, params);
+            GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+                _colorizeSelectionTaskId, HdChangeTracker::DirtyParams);
+        }
+    }
+}
+
+void
+HdxTaskController::SetSelectionOutlineRadius(unsigned int radius)
+{
+    if (!_colorizeSelectionTaskId.IsEmpty()) {
+        HdxColorizeSelectionTaskParams params =
+            _delegate.GetParameter<HdxColorizeSelectionTaskParams>(
+                _colorizeSelectionTaskId, HdTokens->params);
+
+        if (params.outlineRadius != radius) {
+            params.outlineRadius = radius;
+            _delegate.SetParameter(_colorizeSelectionTaskId,
+                HdTokens->params, params);
+            GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+                _colorizeSelectionTaskId, HdChangeTracker::DirtyParams);
+        }
+    }
+}
+
+
+void
 HdxTaskController::SetLightingState(GlfSimpleLightingContextPtr const& src)
 {
     // If simpleLightTask doesn't exist, no need to process the lighting

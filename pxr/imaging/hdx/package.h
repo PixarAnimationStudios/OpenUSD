@@ -43,6 +43,7 @@ TfToken HdxPackageRenderPassOitShader();
 TfToken HdxPackageRenderPassOitOpaqueShader();
 TfToken HdxPackageRenderPassOitVolumeShader();
 TfToken HdxPackageOitResolveImageShader();
+TfToken HdxPackageOutlineShader();
 
 TfToken HdxPackageDefaultDomeLightTexture();
 

@@ -141,6 +141,13 @@ HdxPackageOitResolveImageShader()
 }
 
 TfToken
+HdxPackageOutlineShader()
+{
+    static TfToken shader = _GetShaderPath("outline.glslfx");
+    return shader;
+}
+
+TfToken
 HdxPackageDefaultDomeLightTexture()
 {
     static TfToken domeLightTexture = _GetTexturePath("StinsonBeach.exr");

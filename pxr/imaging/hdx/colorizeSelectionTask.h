@@ -41,6 +41,8 @@ struct HdxColorizeSelectionTaskParams
         : enableSelection(false)
         , selectionColor(0)
         , locateColor(0)
+        , enableOutline(false)
+        , outlineRadius(5)
         , primIdBufferPath()
         , instanceIdBufferPath()
         , elementIdBufferPath()
@@ -49,6 +51,8 @@ struct HdxColorizeSelectionTaskParams
     bool enableSelection;
     GfVec4f selectionColor;
     GfVec4f locateColor;
+    bool enableOutline;
+    unsigned int outlineRadius;
 
     SdfPath primIdBufferPath;
     SdfPath instanceIdBufferPath;
@@ -60,6 +64,9 @@ struct HdxColorizeSelectionTaskParams
 /// A task for taking ID buffer data and turning it into a "selection overlay"
 /// that can be composited on top of hydra's color output.
 ///
+/// If enableOutline is true then instead of overlaying the ID buffer as is, an
+/// outline with thickness of outlineRadius pixels around the areas with IDs
+/// will be overlaid. Otherwise, the ID buffer will be overlaid as is.
 class HdxColorizeSelectionTask : public HdxProgressiveTask
 {
 public:
