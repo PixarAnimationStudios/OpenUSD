@@ -200,6 +200,31 @@ public:
     HD_API
     virtual bool Resume();
 
+    ///
+    /// Advertise whether this delegate supports stopping and restarting of
+    /// background render threads. Default implementation returns false.
+    ///
+    HD_API
+    virtual bool IsStopSupported() const;
+
+    ///
+    /// Stop all of this delegate's background rendering threads. Default
+    /// implementation does nothing.
+    ///
+    /// Returns \c true if successful.
+    ///
+    HD_API
+    virtual bool Stop();
+
+    ///
+    /// Restart all of this delegate's background rendering threads previously
+    /// stopped by a call to Stop. Default implementation does nothing.
+    ///
+    /// Returns \c true if successful.
+    ///
+    HD_API
+    virtual bool Restart();
+
     ////////////////////////////////////////////////////////////////////////////
     ///
     /// Renderpass Factory

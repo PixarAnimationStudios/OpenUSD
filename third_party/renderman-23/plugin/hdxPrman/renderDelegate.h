@@ -62,6 +62,15 @@ public:
     ///       user experience and poor peformance. 
     virtual bool IsPauseSupported() const override { return false; }
 
+    /// Return true to indicate that stopping and restarting are supported.
+    virtual bool IsStopSupported() const override;
+
+    /// Stop background rendering threads.
+    virtual bool Stop() override;
+
+    /// Restart background rendering threads.
+    virtual bool Restart() override;
+
 private:
     // This class does not support copying.
     HdxPrmanRenderDelegate(const HdxPrmanRenderDelegate &)             = delete;

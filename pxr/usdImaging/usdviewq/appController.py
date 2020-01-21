@@ -337,6 +337,7 @@ class AppController(QtCore.QObject):
             self._printTiming = parserData.timing or self._debug
             self._lastViewContext = {}
             self._paused = False
+            self._stopped = False
             if QT_BINDING == 'PySide':
                 self._statusFileName = 'state'
                 self._deprecatedStatusFileNames = ('.usdviewrc')
@@ -789,6 +790,8 @@ class AppController(QtCore.QObject):
 
             self._ui.actionPause.triggered.connect(
                 self._togglePause)
+            self._ui.actionStop.triggered.connect(
+                self._toggleStop)
 
             # Setup quit actions to ensure _cleanAndClose is only invoked once.
             self._ui.actionQuit.triggered.connect(QtWidgets.QApplication.instance().quit)
@@ -1313,6 +1316,7 @@ class AppController(QtCore.QObject):
                 self._configureRendererAovs()
                 self._configureRendererSettings()
                 self._configurePauseAction()
+                self._configureStopAction()
 
     def _configureRendererPlugins(self):
         if self._stageView:
@@ -1349,6 +1353,7 @@ class AppController(QtCore.QObject):
             self._configureRendererAovs()
             self._configureRendererSettings()
             self._configurePauseAction()
+            self._configureStopAction()
 
     # Renderer AOV support
     def _rendererAovChanged(self, aov):
@@ -1542,6 +1547,16 @@ class AppController(QtCore.QObject):
                 self._stageView.IsPauseRendererSupported())
             self._ui.actionPause.setChecked(self._paused and
                 self._stageView.IsPauseRendererSupported())
+
+    def _configureStopAction(self):
+        if self._stageView:
+            # This is called when the user picks a new renderer, which
+            # always starts in an unstopped state.
+            self._stopped = False
+            self._ui.actionStop.setEnabled(
+                self._stageView.IsStopRendererSupported())
+            self._ui.actionStop.setChecked(self._stopped and
+                self._stageView.IsStopRendererSupported())
 
     def _configureColorManagement(self):
         enableMenu = (not self._noRender and 
@@ -2529,6 +2544,16 @@ class AppController(QtCore.QObject):
             self._paused = not self._paused
             self._stageView.SetRendererPaused(self._paused)
             self._ui.actionPause.setChecked(self._paused)
+
+    def _toggleStop(self):
+        if self._stageView.IsStopRendererSupported():
+            # Ask the renderer whether its currently stopped or not
+            # as the value of the _stopped variable can become out of
+            # date if for example any camera munging happens
+            self._stopped = self._stageView.IsRendererConverged()
+            self._stopped = not self._stopped
+            self._stageView.SetRendererStopped(self._stopped)
+            self._ui.actionStop.setChecked(self._stopped)
 
     def _reopenStage(self):
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)

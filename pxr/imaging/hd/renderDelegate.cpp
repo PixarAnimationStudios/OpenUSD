@@ -181,5 +181,23 @@ HdRenderDelegate::Resume()
     return false;
 }
 
+bool
+HdRenderDelegate::IsStopSupported() const
+{
+    return false;
+}
+
+bool
+HdRenderDelegate::Stop()
+{
+    return false;
+}
+
+bool
+HdRenderDelegate::Restart()
+{
+    return false;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

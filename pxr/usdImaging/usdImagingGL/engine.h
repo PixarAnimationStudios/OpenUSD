@@ -411,6 +411,22 @@ public:
     USDIMAGINGGL_API
     bool ResumeRenderer();
 
+    /// Query the renderer as to whether it supports stopping and restarting.
+    USDIMAGINGGL_API
+    bool IsStopRendererSupported() const;
+
+    /// Stop the renderer.
+    ///
+    /// Returns \c true if successful.
+    USDIMAGINGGL_API
+    bool StopRenderer();
+
+    /// Restart the renderer.
+    ///
+    /// Returns \c true if successful.
+    USDIMAGINGGL_API
+    bool RestartRenderer();
+
     /// @}
 
     // ---------------------------------------------------------------------

@@ -168,4 +168,24 @@ HdxPrmanRenderDelegate::GetDefaultAovDescriptor(
     return HdAovDescriptor();
 }
 
+bool
+HdxPrmanRenderDelegate::IsStopSupported() const
+{
+    return true;
+}
+
+bool
+HdxPrmanRenderDelegate::Stop()
+{
+    _interactiveContext->StopRender();
+    return true;
+}
+bool
+HdxPrmanRenderDelegate::Restart()
+{
+    // Next call into HdxPrman_RenderPass::_Execute will do a StartRender
+    _interactiveContext->sceneVersion++;
+    return true;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -229,7 +229,7 @@
              <string>Vis</string>
             </property>
             <property name="textAlignment">
-             <set>AlignLeft|AlignVCenter</set>
+             <set>AlignLeading|AlignVCenter</set>
             </property>
            </column>
            <column>
@@ -591,7 +591,16 @@
             <enum>QFrame::Plain</enum>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_3">
-            <property name="margin">
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
              <number>0</number>
             </property>
             <item>
@@ -604,7 +613,16 @@
                 <string>Value</string>
                </attribute>
                <layout class="QVBoxLayout" name="verticalLayout">
-                <property name="margin">
+                <property name="leftMargin">
+                 <number>6</number>
+                </property>
+                <property name="topMargin">
+                 <number>6</number>
+                </property>
+                <property name="rightMargin">
+                 <number>6</number>
+                </property>
+                <property name="bottomMargin">
                  <number>6</number>
                 </property>
                 <item>
@@ -1167,7 +1185,7 @@
      <x>0</x>
      <y>0</y>
      <width>1145</width>
-     <height>30</height>
+     <height>27</height>
     </rect>
    </property>
    <property name="minimumSize">
@@ -1216,7 +1234,7 @@
     <property name="title">
      <string>&amp;View</string>
     </property>
-    <property name="toolTipsVisible" stdset="0">
+    <property name="toolTipsVisible">
      <bool>true</bool>
     </property>
     <widget class="QMenu" name="menuHUD">
@@ -1386,6 +1404,7 @@
     <addaction name="menuRendererSettings"/>
     <addaction name="menuRendererAovs"/>
     <addaction name="actionPause"/>
+    <addaction name="actionStop"/>
     <addaction name="separator"/>
     <addaction name="actionReset_View"/>
     <addaction name="actionAdjust_FOV"/>
@@ -1464,14 +1483,28 @@
    </property>
   </action>
   <action name="actionPause">
-   <property name="text">
-    <string>Pause Render</string>
-   </property>
    <property name="checkable">
     <bool>true</bool>
    </property>
+   <property name="text">
+    <string>Pause Render</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+P</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionStop">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Stop Render</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+\</string>
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>

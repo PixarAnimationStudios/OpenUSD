@@ -156,6 +156,10 @@ void wrapEngine()
                 &UsdImagingGLEngine::IsPauseRendererSupported)
             .def("PauseRenderer", &UsdImagingGLEngine::PauseRenderer)
             .def("ResumeRenderer", &UsdImagingGLEngine::ResumeRenderer)
+            .def("IsStopRendererSupported", 
+                &UsdImagingGLEngine::IsStopRendererSupported)
+            .def("StopRenderer", &UsdImagingGLEngine::StopRenderer)
+            .def("RestartRenderer", &UsdImagingGLEngine::RestartRenderer)
         ;
 
     }

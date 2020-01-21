@@ -982,6 +982,39 @@ UsdImagingGLEngine::ResumeRenderer()
     return _renderIndex->GetRenderDelegate()->Resume();
 }
 
+bool
+UsdImagingGLEngine::IsStopRendererSupported() const
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return false;
+    }
+
+    TF_VERIFY(_renderIndex);
+    return _renderIndex->GetRenderDelegate()->IsStopSupported();
+}
+
+bool
+UsdImagingGLEngine::StopRenderer()
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return false;
+    }
+
+    TF_VERIFY(_renderIndex);
+    return _renderIndex->GetRenderDelegate()->Stop();
+}
+
+bool
+UsdImagingGLEngine::RestartRenderer()
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return false;
+    }
+
+    TF_VERIFY(_renderIndex);
+    return _renderIndex->GetRenderDelegate()->Restart();
+}
+
 //----------------------------------------------------------------------------
 // Color Correction
 //----------------------------------------------------------------------------
