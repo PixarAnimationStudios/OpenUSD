@@ -46,9 +46,6 @@ class HgiBlitEncoder
 {
 public:
     HGI_API
-    HgiBlitEncoder();
-
-    HGI_API
     virtual ~HgiBlitEncoder();
 
     /// Finish recording of commands. No further commands can be recorded.
@@ -70,6 +67,10 @@ public:
     /// Resolve a multi-sample texture (MSAA) so it can be read from.
     HGI_API
     virtual void ResolveImage(HgiResolveImageOp const& resolveOp)= 0;
+
+protected:
+    HGI_API
+    HgiBlitEncoder();
 
 private:
     HgiBlitEncoder & operator=(const HgiBlitEncoder&) = delete;

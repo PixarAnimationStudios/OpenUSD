@@ -41,9 +41,6 @@ class HgiGLImmediateCommandBuffer final : public HgiImmediateCommandBuffer
 {
 public:
     HGIGL_API
-    HgiGLImmediateCommandBuffer();
-
-    HGIGL_API
     virtual ~HgiGLImmediateCommandBuffer();
 
     HGIGL_API
@@ -52,6 +49,12 @@ public:
 
     HGIGL_API
     HgiBlitEncoderUniquePtr CreateBlitEncoder() override;
+
+protected:
+    friend class HgiGL;
+
+    HGIGL_API
+    HgiGLImmediateCommandBuffer();
 
 private:
     HgiGLImmediateCommandBuffer & operator=

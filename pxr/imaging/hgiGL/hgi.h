@@ -62,6 +62,12 @@ public:
     HGIGL_API
     void DestroyTexture(HgiTextureHandle* texHandle) override;
 
+    HGIGL_API
+    HgiBufferHandle CreateBuffer(HgiBufferDesc const & desc) override;
+
+    HGIGL_API
+    void DestroyBuffer(HgiBufferHandle* bufHandle) override;
+
 private:
     HgiGL & operator=(const HgiGL&) = delete;
     HgiGL(const HgiGL&) = delete;

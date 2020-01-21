@@ -38,12 +38,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HgiGLTexture final : public HgiTexture {
 public:
     HGIGL_API
-    HgiGLTexture(HgiTextureDesc const & desc);
-
-    HGIGL_API
     virtual ~HgiGLTexture();
 
     uint32_t GetTextureId() const {return _textureId;}
+
+protected:
+    friend class HgiGL;
+
+    HGIGL_API
+    HgiGLTexture(HgiTextureDesc const & desc);
 
 private:
     HgiGLTexture() = delete;

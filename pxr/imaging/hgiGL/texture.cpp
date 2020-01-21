@@ -54,7 +54,7 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
         glPixelType = GL_FLOAT;
         glInternalFormat = GL_DEPTH_COMPONENT32F;
     } else {
-        TF_CODING_ERROR("Unknown HgTextureUsage bit");
+        TF_CODING_ERROR("Unknown HgiTextureUsage bit");
     }
 
     if (desc.sampleCount == HgiSampleCount1) {

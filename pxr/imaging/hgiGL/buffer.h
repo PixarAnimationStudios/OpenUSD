@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,33 +21,44 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hgi/texture.h"
+#ifndef PXR_IMAGING_HGI_GL_BUFFER_H
+#define PXR_IMAGING_HGI_GL_BUFFER_H
+
+#include "pxr/pxr.h"
+#include "pxr/imaging/hgiGL/api.h"
+#include "pxr/imaging/hgi/buffer.h"
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiTexture::HgiTexture(HgiTextureDesc const&)
-{
-}
+/// \class HgiGLBuffer
+///
+/// Represents an OpenGL GPU buffer resource.
+///
+class HgiGLBuffer final : public HgiBuffer {
+public:
+    HGIGL_API
+    virtual ~HgiGLBuffer();
 
-HgiTexture::~HgiTexture()
-{
-}
+    uint32_t GetBufferId() const {return _bufferId;}
 
-bool operator==(const HgiTextureDesc& lhs,
-    const HgiTextureDesc& rhs) 
-{
-    return  lhs.debugName == rhs.debugName &&
-            lhs.usage == rhs.usage &&
-            lhs.format == rhs.format &&
-            lhs.dimensions == rhs.dimensions &&
-            lhs.sampleCount == rhs.sampleCount;
-}
+protected:
+    friend class HgiGL;
 
-bool operator!=(const HgiTextureDesc& lhs,
-    const HgiTextureDesc& rhs)
-{
-    return !(lhs == rhs);
-}
+    HGIGL_API
+    HgiGLBuffer(HgiBufferDesc const & desc);
+
+private:
+    HgiGLBuffer() = delete;
+    HgiGLBuffer & operator=(const HgiGLBuffer&) = delete;
+    HgiGLBuffer(const HgiGLBuffer&) = delete;
+
+    HgiBufferDesc _descriptor;
+    uint32_t _bufferId;
+    void* _mapped;
+};
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif

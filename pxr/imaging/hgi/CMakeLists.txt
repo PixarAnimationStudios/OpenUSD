@@ -8,6 +8,7 @@ pxr_library(hgi
 
     PUBLIC_CLASSES
         blitEncoder
+        buffer
         graphicsEncoder
         graphicsEncoderDesc
         hgi

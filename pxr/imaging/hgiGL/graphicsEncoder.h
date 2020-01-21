@@ -44,9 +44,6 @@ class HgiGLGraphicsEncoder final : public HgiGraphicsEncoder
 {
 public:
     HGIGL_API
-    HgiGLGraphicsEncoder(HgiGraphicsEncoderDesc const& desc);
-
-    HGIGL_API
     virtual ~HgiGLGraphicsEncoder();
 
     HGIGL_API
@@ -60,6 +57,13 @@ public:
 
     HGIGL_API
     void PopDebugGroup() override;
+
+protected:
+    friend class HgiGL;
+    friend class HgiGLImmediateCommandBuffer;
+
+    HGIGL_API
+    HgiGLGraphicsEncoder(HgiGraphicsEncoderDesc const& desc);
 
 private:
     HgiGLGraphicsEncoder() = delete;

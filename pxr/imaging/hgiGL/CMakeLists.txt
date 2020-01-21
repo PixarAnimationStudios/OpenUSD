@@ -27,6 +27,7 @@ pxr_library(hgiGL
 
     PUBLIC_CLASSES
         blitEncoder
+        buffer
         graphicsEncoder
         hgi
         immediateCommandBuffer

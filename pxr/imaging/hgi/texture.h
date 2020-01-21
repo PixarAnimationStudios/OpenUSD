@@ -40,6 +40,7 @@ struct HgiTextureDesc;
 /// \class HgiTexture 
 ///
 /// Represents a graphics platform independent GPU texture resource.
+/// Textures should be created via Hgi::CreateTexture.
 ///
 /// Base class for Hgi textures.
 /// To the client (HdSt) texture resources are referred to via
@@ -48,10 +49,11 @@ struct HgiTextureDesc;
 class HgiTexture {
 public:
     HGI_API
-    HgiTexture(HgiTextureDesc const& desc);
-
-    HGI_API
     virtual ~HgiTexture();
+
+protected:
+    HGI_API
+    HgiTexture(HgiTextureDesc const& desc);
 
 private:
     HgiTexture() = delete;
@@ -68,6 +70,8 @@ typedef HgiTexture* HgiTextureHandle;
 /// Describes the properties needed to create a GPU texture.
 ///
 /// <ul>
+/// <li>debugName:
+///   This label can be applied as debug label for gpu debugging.</li>
 /// <li>usage:
 ///   Describes how the texture is intended to be used.</li>
 /// <li>format:
@@ -86,6 +90,7 @@ struct HgiTextureDesc {
     , sampleCount(HgiSampleCount1)
     {}
 
+    std::string debugName;
     HgiTextureUsage usage;
     HgiFormat format;
     GfVec3i dimensions;

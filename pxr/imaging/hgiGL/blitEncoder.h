@@ -41,9 +41,6 @@ class HgiGLBlitEncoder final : public HgiBlitEncoder
 {
 public:
     HGIGL_API
-    HgiGLBlitEncoder(HgiGLImmediateCommandBuffer* cmdBuf);
-
-    HGIGL_API
     virtual ~HgiGLBlitEncoder();
 
     HGIGL_API
@@ -60,6 +57,13 @@ public:
 
     HGIGL_API
     void ResolveImage(HgiResolveImageOp const& resolveOp) override;
+
+protected:
+    friend class HgiGL;
+    friend class HgiGLImmediateCommandBuffer;
+
+    HGIGL_API
+    HgiGLBlitEncoder(HgiGLImmediateCommandBuffer* cmdBuf);
 
 private:
     HgiGLBlitEncoder() = delete;

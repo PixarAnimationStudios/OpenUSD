@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hgiGL/hgi.h"
+#include "pxr/imaging/hgiGL/buffer.h"
 #include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
 #include "pxr/imaging/hgiGL/texture.h"
@@ -56,7 +57,22 @@ HgiGL::DestroyTexture(HgiTextureHandle* texHandle)
 {
     if (TF_VERIFY(texHandle, "Invalid texture")) {
         delete *texHandle;
-        texHandle = nullptr;
+        *texHandle = nullptr;
+    }
+}
+
+HgiBufferHandle
+HgiGL::CreateBuffer(HgiBufferDesc const & desc)
+{
+    return new HgiGLBuffer(desc);
+}
+
+void
+HgiGL::DestroyBuffer(HgiBufferHandle* bufHandle)
+{
+    if (TF_VERIFY(bufHandle, "Invalid buffer")) {
+        delete *bufHandle;
+        *bufHandle = nullptr;
     }
 }
 

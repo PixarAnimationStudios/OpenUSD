@@ -43,9 +43,6 @@ class HgiGraphicsEncoder
 {
 public:
     HGI_API
-    HgiGraphicsEncoder();
-
-    HGI_API
     virtual ~HgiGraphicsEncoder();
 
     /// Finish recording of commands. No further commands can be recorded.
@@ -63,6 +60,10 @@ public:
     /// Pop the lastest debug marker off encoder.
     HGI_API
     virtual void PopDebugGroup() = 0;
+
+protected:
+    HGI_API
+    HgiGraphicsEncoder();
 
 private:
     HgiGraphicsEncoder & operator=(const HgiGraphicsEncoder&) = delete;

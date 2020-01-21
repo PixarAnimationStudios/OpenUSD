@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgi/api.h"
+#include "pxr/imaging/hgi/buffer.h"
 #include "pxr/imaging/hgi/texture.h"
 #include "pxr/imaging/hgi/types.h"
 
@@ -81,6 +82,14 @@ public:
     /// Destroy a texture in rendering backend.
     HGI_API
     virtual void DestroyTexture(HgiTextureHandle* texHandle) = 0;
+
+    /// Create a buffer in rendering backend.
+    HGI_API
+    virtual HgiBufferHandle CreateBuffer(HgiBufferDesc const & desc) = 0;
+
+    /// Destroy a buffer in rendering backend.
+    HGI_API
+    virtual void DestroyBuffer(HgiBufferHandle* bufHandle) = 0;
 
 private:
     Hgi & operator=(const Hgi&) = delete;
