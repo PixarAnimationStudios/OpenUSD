@@ -81,7 +81,8 @@ def _testBasic(appController):
         _postAndProcessKeyEvent(QtCore.Qt.Key_Right, appObj)
 
     assert len(selectionDataModel.getPrims()) == 1
-    assert selectionDataModel.getFocusPrim().GetPrimPath() == path
+    assert selectionDataModel.getFocusPrim().GetPrimPath() == path, \
+        "Expected <%s>, got <%s>" % (path, selectionDataModel.getFocusPrim().GetPrimPath())
 
     # Now roll it all back up
     for i in xrange(1, 2 * path.pathElementCount):

@@ -34,6 +34,8 @@ class PrimLegend(QtWidgets.QWidget):
         self._ui = Ui_PrimLegend()
         self._ui.setupUi(self)
 
+        # start out in a minimized/hidden state
+        self.setMaximumHeight(0)
         self._isMinimized = True
 
         graphicsScene = QtWidgets.QGraphicsScene()
@@ -94,6 +96,4 @@ class PrimLegend(QtWidgets.QWidget):
         return self.height()
 
     def GetResetHeight(self):
-        # This predefined height is determined by the elements that exist in
-        # the primLegend. For more information see primLegendUI.ui
-        return 120
+        return self.sizeHint().height()

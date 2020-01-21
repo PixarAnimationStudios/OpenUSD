@@ -1,10 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>AdjustClipping</class>
- <widget class="QDialog" name="AdjustClipping">
- <property name="comment" stdset="0">
+ <class>Preferences</class>
+ <widget class="QDialog" name="Preferences">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>295</width>
+    <height>99</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Preferences</string>
+  </property>
+  <property name="comment" stdset="0">
    <string>
-     Copyright 2016 Pixar                                                                   
+     Copyright 2020 Pixar                                                                   
                                                                                             
      Licensed under the Apache License, Version 2.0 (the &quot;Apache License&quot;)      
      with the following modification; you may not use this file except in                   
@@ -27,63 +38,82 @@
      language governing permissions and limitations under the Apache License.               
   </string>
   </property>
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>331</width>
-    <height>86</height>
-   </rect>
-  </property>
-  <property name="windowTitle">
-   <string>Adjust Clipping Planes</string>
-  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout">
+    <layout class="QVBoxLayout" name="prefsOverButtonsLayout">
      <item>
-      <layout class="QVBoxLayout" name="verticalLayout_2">
+      <layout class="QHBoxLayout" name="horizontalLayout_3">
        <item>
-        <widget class="QCheckBox" name="overrideNear">
-         <property name="focusPolicy">
-          <enum>Qt::NoFocus</enum>
-         </property>
+        <widget class="QLabel" name="fontSizeLabel">
          <property name="text">
-          <string>Override Near</string>
+          <string>Font Size</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="overrideFar">
-         <property name="focusPolicy">
-          <enum>Qt::NoFocus</enum>
+        <widget class="QSpinBox" name="fontSizeSpinBox">
+         <property name="minimum">
+          <number>6</number>
          </property>
-         <property name="text">
-          <string>Override Far</string>
+         <property name="value">
+          <number>10</number>
          </property>
         </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
        </item>
       </layout>
      </item>
      <item>
-      <layout class="QVBoxLayout" name="verticalLayout_3">
+      <spacer name="verticalSpacer">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>40</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="Line" name="line">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
        <item>
-        <widget class="QLineEdit" name="nearEdit">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
+        <spacer name="horizontalSpacer">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
          </property>
-        </widget>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
        </item>
        <item>
-        <widget class="QLineEdit" name="farEdit">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
+        <widget class="QDialogButtonBox" name="buttonBox">
+         <property name="standardButtons">
+          <set>QDialogButtonBox::Apply|QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
          </property>
         </widget>
        </item>

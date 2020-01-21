@@ -1,5 +1,14 @@
 /**
  * GENERAL CSS STYLE RULES
+ *
+ *
+ * This stylesheet is actually a template that uses the following variables,
+ * which must be replaced by client with actual values, prior to setting as
+ * an application stylesheet.
+ * BASE_FONT_SZ - size for most text/labels in the app
+ * SMALL_FONT_SZ - size for interior editor decorations (e.g. menubars/headers)
+ * RESOURCE_DIR - location at which usdview should find its icons and other
+ *                resources
  */
 
 /* *** QWidget ***
@@ -8,7 +17,7 @@
 
 QWidget {
     /* font */
-    font: 10pt "Gotham Rounded";
+    font: %(BASE_FONT_SZ)s "Gotham Rounded";
     color: rgb(227, 227, 227);
 
     /* brownish background color */
@@ -44,12 +53,13 @@ QGroupBox::title {
     padding: 0px 3px; /* cover the border around the title */
 }
 
-/* *** QDoubleSpinBox ***
- * Base style for QDoubleSpinBox
+/* *** QAbstractSpinBox ***
+ * Base style for QAbstractSpinBox
  * This is the widget that allows users to select a value
- * and provides up/down arrows to adjust it.
+ * and provides up/down arrows to adjust it.  We configure QAbstractSpinBox
+ * because we use both QDoubleSpinBox and QSpinBox
  */
-QDoubleSpinBox {
+QAbstractSpinBox {
     background: rgb(34, 34, 34);
     padding: 2px;    /* make it a little bigger */
     border-radius: 7px;  /* make it very round like in presto */
@@ -58,31 +68,31 @@ QDoubleSpinBox {
 }
 
 /* Common style for the up and down buttons */
-QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {
+QAbstractSpinBox::up-button, QAbstractSpinBox::down-button {
     background: rgb(42, 42, 42);
     margin-right: -1px;  /* Move to the right a little */
 }
 
 /* Darken the background when button pressed down */
-QDoubleSpinBox::up-button:pressed, QDoubleSpinBox::down-button:pressed {
+QAbstractSpinBox::up-button:pressed, QAbstractSpinBox::down-button:pressed {
     background: rgb(34, 34, 34);
 }
 
 /* Round the outside of the button like in presto */
-QDoubleSpinBox::up-button {
+QAbstractSpinBox::up-button {
     margin-top: -3px;  /* move higher to align */
     border-top-right-radius: 7px;
 }
 
 /* Round the outside of the button like in presto */
-QDoubleSpinBox::down-button {
+QAbstractSpinBox::down-button {
     margin-bottom: -3px;  /* move lower to align */
     border-bottom-right-radius: 7px;
 }
 
 /* Adjust size and color of both arrows (inside buttons) */
-QDoubleSpinBox::up-arrow,
-QDoubleSpinBox::down-arrow,
+QAbstractSpinBox::up-arrow,
+QAbstractSpinBox::down-arrow,
 QComboBox::down-arrow {
     width: 6px;
     height: 3px;
@@ -90,14 +100,14 @@ QComboBox::down-arrow {
 }
 
 /* Set the disabled color for the arrows */
-QDoubleSpinBox::up-arrow:disabled,
-QDoubleSpinBox::down-arrow:disabled,
+QAbstractSpinBox::up-arrow:disabled,
+QAbstractSpinBox::down-arrow:disabled,
 QComboBox::down-arrow:disabled {
     background: rgb(88, 88, 88);
 }
 
 /* Shape the up arrow */
-QDoubleSpinBox::up-arrow {
+QAbstractSpinBox::up-arrow {
     border-top-right-radius: 3px;    /* round upper left and upper right */
     border-top-left-radius: 3px;    /* to form a triangle-ish shape */
     border-bottom: 1px solid rgb(122, 122, 122); /* decorative */
@@ -105,7 +115,7 @@ QDoubleSpinBox::up-arrow {
 
 
 /* Shape the down arrow */
-QDoubleSpinBox::down-arrow,
+QAbstractSpinBox::down-arrow,
 QComboBox::down-arrow{
     border-bottom-right-radius: 3px; /* round lower right and lower left */
     border-bottom-left-radius: 3px;  /* to form a triangle-ish shape */
@@ -116,8 +126,8 @@ QComboBox::down-arrow{
  * base style for QTextEdit
  */
 
-/* font color for QTextEdit, QLineEdit and QDoubleSpinBox */
-QTextEdit, QPlainTextEdit, QDoubleSpinBox, QlineEdit{
+/* font color for QTextEdit, QLineEdit and QAbstractSpinBox */
+QTextEdit, QPlainTextEdit, QAbstractSpinBox, QlineEdit{
     color: rgb(227, 227, 227);
 }
 
@@ -200,7 +210,7 @@ QPushButton{
     border-radius: 3;
 
     /* give the text enough space */
-    padding: 4px;
+    padding: 3px;
     padding-right: 10px;
     padding-left: 10px;
 }
@@ -239,7 +249,9 @@ QTreeView::item, QTableView::item {
     /* this border serves to separate the columns
      * since the grid is often invised */
     border-right: 1px solid rgb(41, 41, 41);
-    height: 20px;
+    
+    padding-top: 1px;
+    padding-bottom: 1px;
 }
 
 /* Selected items highlighted in orange */
@@ -267,25 +279,25 @@ QTableView::item:hover:!pressed:selected {
 QTreeView::branch:has-children:!has-siblings:closed,
 QTreeView::branch:closed:has-children:has-siblings {
     border-image: none;
-    image: url(RESOURCE_DIR/icons/branch-closed.png);
+    image: url(%(RESOURCE_DIR)s/icons/branch-closed.png);
 }
 
 QTreeView::branch:open:has-children:!has-siblings,
 QTreeView::branch:open:has-children:has-siblings  {
     border-image: none;
-    image: url(RESOURCE_DIR/icons/branch-open.png);
+    image: url(%(RESOURCE_DIR)s/icons/branch-open.png);
 }
 
 QTreeView::branch:selected:has-children:!has-siblings:closed,
 QTreeView::branch:selected:closed:has-children:has-siblings {
     border-image: none;
-    image: url(RESOURCE_DIR/icons/branch-closed-selected.png);
+    image: url(%(RESOURCE_DIR)s/icons/branch-closed-selected.png);
 }
 
 QTreeView::branch:selected:open:has-children:!has-siblings,
 QTreeView::branch:selected:open:has-children:has-siblings  {
     border-image: none;
-    image: url(RESOURCE_DIR/icons/branch-open-selected.png);
+    image: url(%(RESOURCE_DIR)s/icons/branch-open-selected.png);
 }
 
 /* give the tables and trees an alternating dark/clear blue background */
@@ -296,7 +308,7 @@ QTableView, QTableWidget, QTreeWidget, #primFrame, #attributeFrame{
 
 /* Font setting for the table widget */
 QTableWidget{
-    font: 25 10pt "Gotham Rounded";
+    font: 25 %(BASE_FONT_SZ)s "Gotham Rounded";
 }
 
 /* bump to the right to hide the extra line */
@@ -318,6 +330,7 @@ QHeaderView::section {
     /* clear blue color and darker background */
     color: rgb(201, 199, 195);
     background: rgb(78, 80, 84);
+    font-size: %(SMALL_FONT_SZ)s;
 }
 
 /* *** QTabWidget ***
@@ -487,17 +500,16 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
 }
 
 /* *** QMenuBar ***
- * Style the menu bar 
+ * Style the menu bars 
  */
-QMenuBar#menubar {
-    font-size: 10pt;
-    background: rgb(80, 80, 80);
-    border: 2px solid rgb(41, 41, 41);
+QMenuBar {
+    font-size: %(SMALL_FONT_SZ)s; 
 }
 
-QMenuBar#primViewMenuBar {
-    font-size: 8pt;
+/* A bit bigger and brighter for main menu */
+QMenuBar#menubar {
     background: rgb(80, 80, 80);
+    font-size: %(BASE_FONT_SZ)s;
     border: 2px solid rgb(41, 41, 41);
 }
 
@@ -548,11 +560,11 @@ QMenu::separator {
 
 /* Use a custom submenu arrow so it is not affected by the user's theme. */
 QMenu::right-arrow:enabled {
-    image: url(RESOURCE_DIR/icons/right-arrow.png);
+    image: url(%(RESOURCE_DIR)s/icons/right-arrow.png);
 }
 
 QMenu::right-arrow:disabled {
-    image: url(RESOURCE_DIR/icons/right-arrow-disabled.png);
+    image: url(%(RESOURCE_DIR)s/icons/right-arrow-disabled.png);
 }
 
 /* *** QComboBox ***
@@ -560,7 +572,7 @@ QMenu::right-arrow:disabled {
  * Note: The down arrow is style in the QSpinBox style
  */
 QComboBox {
-    color: rgb(227, 227, 227); /* Weird, if we dont specify, its back */
+    color: rgb(227, 227, 227); /* Weird, if we dont specify, it's black */
     height: 22px;
     background: rgb(41, 41, 41);
     border:none;

@@ -630,3 +630,34 @@ class PropertyNotFoundException(Exception):
     def __init__(self, path):
         super(PropertyNotFoundException, self).__init__(
             "Property not found at path in stage: %s" % str(path))
+
+class FixableDoubleValidator(QtGui.QDoubleValidator):
+    """This class implements a fixup() method for QDoubleValidator
+    (see method for specific behavior).  To work around the brokenness
+    of Pyside's fixup() wrapping, we allow the validator to directly
+    update its parent if it is a QLineEdit, from within fixup().  Thus
+    every QLineEdit must possess its own unique FixableDoubleValidator.
+    
+    The fixup method we supply (which can be usefully called directly)
+    applies clamping and rounding to enforce the QDoubleValidator's
+    range and decimals settings."""
+
+    def __init__(self, parent):
+        super(FixableDoubleValidator, self).__init__(parent)
+        
+        self._lineEdit = parent if isinstance(parent, QtWidgets.QLineEdit) else None
+
+    def fixup(self, valStr):
+        # We implement this to fulfill the virtual for internal QLineEdit
+        # behavior, hoping that PySide will do the right thing, but it is
+        # useless to call from Python directly due to string immutability
+        try:
+            val = float(valStr)
+            val = max(val, self.bottom())
+            val = min(val, self.top())
+            val = round(val)
+            valStr = str(val)
+            if self._lineEdit:
+                self._lineEdit.setText(valStr)
+        except ValueError:
+            pass

@@ -284,19 +284,8 @@ class Launcher(object):
         if arg_parse_result.clearSettings:
             AppController.clearSettings()
 
-        # Find the resource directory
-        resourceDir = os.path.dirname(os.path.realpath(__file__)) + "/"
-
         # Create the Qt application
         app = QtWidgets.QApplication(sys.argv)
-
-        # Apply the style sheet to it
-        sheet = open(os.path.join(resourceDir, 'usdviewstyle.qss'), 'r')
-
-        # Qt style sheet accepts only forward slashes as path separators
-        sheetString = sheet.read().replace('RESOURCE_DIR',
-                                           resourceDir.replace("\\", "/"))
-        app.setStyleSheet(sheetString)
 
         contextCreator = lambda usdFile: self.GetResolverContext(usdFile)
         appController = AppController(arg_parse_result, contextCreator)

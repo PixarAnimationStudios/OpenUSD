@@ -126,6 +126,4 @@ class PropertyLegend(QtWidgets.QWidget):
         return self.height()
 
     def GetResetHeight(self):
-        # This predefined height is determined by the elements that exist in
-        # the propertyLegend. For more information see propertyLegendUI.ui
-        return 134
+        return self.sizeHint().height()

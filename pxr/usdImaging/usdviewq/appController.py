@@ -50,7 +50,7 @@ from primTreeWidget import PrimTreeWidget, PrimViewColumnIndex
 from primViewItem import PrimViewItem
 from variantComboBox import VariantComboBox
 from legendUtil import ToggleLegendWithBrowser
-import prettyPrint, adjustClipping, adjustDefaultMaterial, settings
+import prettyPrint, adjustClipping, adjustDefaultMaterial, preferences, settings
 from constantGroup import ConstantGroup
 from selectionDataModel import ALL_INSTANCES, SelectionDataModel
 
@@ -309,8 +309,38 @@ class AppController(QtCore.QObject):
             settings2Path = os.path.join(settingsPathDir, "state.json")
             self._settings2 = settings2.Settings(SETTINGS_VERSION, settings2Path)
 
-        uiProxy = UIStateProxySource(self, self._settings2, "ui")
 
+    def _setStyleSheetUsingState(self):
+        # We use a style file that is actually a template, which we fill
+        # in from state, and is how we change app font sizes, for example.
+
+        # Find the resource directory
+        resourceDir = os.path.dirname(os.path.realpath(__file__)) + "/"
+        # Qt style sheet accepts only forward slashes as path separators
+        resourceDir = resourceDir.replace("\\", "/")
+
+        fontSize = self._dataModel.viewSettings.fontSize
+        baseFontSizeStr = "%spt" % str(fontSize)
+        
+        # The choice of 8 for smallest smallSize is for performance reasons,
+        # based on the "Gotham Rounded" font used by usdviewstyle.qss . If we
+        # allow it to float, we get a 2-3 hundred millisecond hit in startup
+        # time as Qt (apparently) manufactures a suitably sized font.  
+        # Mysteriously, we don't see this cost for larger font sizes.
+        smallSize = 8 if fontSize < 12 else int(round(fontSize * 0.8))
+        smallFontSizeStr = "%spt" % str(smallSize)
+
+        # Apply the style sheet to it
+        sheet = open(os.path.join(resourceDir, 'usdviewstyle.qss'), 'r')
+        sheetString = sheet.read() % {
+            'RESOURCE_DIR'  : resourceDir,
+            'BASE_FONT_SZ'  : baseFontSizeStr,
+            'SMALL_FONT_SZ' : smallFontSizeStr }
+
+        app = QtWidgets.QApplication.instance()
+        app.setStyleSheet(sheetString)
+
+        
     def __del__(self):
         # This is needed to free Qt items before exit; Qt hits failed GTK
         # assertions without it.
@@ -361,6 +391,16 @@ class AppController(QtCore.QObject):
                 else:
                     os.environ['HD_DEFAULT_RENDERER'] = self._rendererNameOpt
 
+            self._openSettings2(parserData.defaultSettings)
+
+            self._dataModel = UsdviewDataModel(
+                self._printTiming, self._settings2)
+
+            # Now that we've read in our state and applied parserData
+            # overrides, we can process our styleSheet... *before* we
+            # start listening for style-related changes.
+            self._setStyleSheetUsingState()
+
             self._mainWindow = QtWidgets.QMainWindow(None)
             # Showing the window immediately prevents UI flashing.
             self._mainWindow.show()
@@ -397,13 +437,9 @@ class AppController(QtCore.QObject):
                 print parserData.usdFile, 'has no prims; exiting.'
                 sys.exit(0)
 
-            self._openSettings2(parserData.defaultSettings)
+            # We instantiate a UIStateProxySource only for its side-effects
+            uiProxy = UIStateProxySource(self, self._settings2, "ui")
 
-            self._dataModel = UsdviewDataModel(
-                self._printTiming, self._settings2)
-
-            self._dataModel.signalPrimsChanged.connect(
-                self._onPrimsChanged)
 
             self._dataModel.stage = stage
 
@@ -483,6 +519,12 @@ class AppController(QtCore.QObject):
                         settings.EmitWarning(settingsPath)
                 except:
                     settings.EmitWarning(settingsPath)
+
+
+            self._dataModel.viewSettings.signalStyleSettingsChanged.connect(
+                self._setStyleSheetUsingState)
+            self._dataModel.signalPrimsChanged.connect(
+                self._onPrimsChanged)
 
             QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
 
@@ -779,6 +821,9 @@ class AppController(QtCore.QObject):
 
             self._ui.actionAdjust_Default_Material.triggered[bool].connect(
                 self._adjustDefaultMaterial)
+
+            self._ui.actionPreferences.triggered[bool].connect(
+                self._togglePreferences)
 
             self._ui.actionOpen.triggered.connect(self._openFile)
 
@@ -1788,6 +1833,17 @@ class AppController(QtCore.QObject):
         else:
             self._adjustDefaultMaterialDlg.close()
 
+    def _togglePreferences(self, checked):
+        if (checked):
+            self._preferencesDlg = preferences.Preferences(
+                self._mainWindow, self._dataModel)
+            self._preferencesDlg.finished.connect(lambda status :
+                self._ui.actionPreferences.setChecked(False))
+
+            self._preferencesDlg.show()
+        else:
+            self._preferencesDlg.close()
+
     def _redrawOptionToggled(self, checked):
         self._dataModel.viewSettings.redrawOnScrub = checked
         self._ui.frameSlider.setTracking(
@@ -2118,6 +2174,9 @@ class AppController(QtCore.QObject):
 
     @classmethod
     def _outputBaseDirectory(cls):
+        if os.getenv('PXR_USDVIEW_SUPPRESS_STATE_SAVING', "0") == "1":
+            return None
+
         homeDirRoot = os.getenv('HOME') or os.path.expanduser('~')
         baseDir = os.path.join(homeDirRoot, '.usdview')
 
@@ -2127,8 +2186,9 @@ class AppController(QtCore.QObject):
             return baseDir
 
         except OSError:
-            sys.stderr.write('ERROR: Unable to create base directory '
-                             'for settings file, settings will not be saved.\n')
+            sys.stderr.write("ERROR: Unable to create base directory '%s' "
+                             "for settings file, settings will not be saved.\n"
+                             % baseDir)
             return None
 
     # View adjustment functionality ===========================================

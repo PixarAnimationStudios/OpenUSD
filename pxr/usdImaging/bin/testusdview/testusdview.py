@@ -55,6 +55,11 @@ class TestUsdView(Usdviewq.Launcher):
         arg_parse_result.defaultSettings = True
         super(TestUsdView, self).ValidateOptions(arg_parse_result)
 
+        # Further, we ensure usdview won't try to create any state directory
+        # to save its state, as that would be bad for running multiple tests
+        # in parallel
+        os.environ['PXR_USDVIEW_SUPPRESS_STATE_SAVING'] = "1"
+        
         self.__LaunchProcess(arg_parse_result)
 
     def __LaunchProcess(self, arg_parse_result):

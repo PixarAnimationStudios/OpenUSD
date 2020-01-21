@@ -51,6 +51,7 @@ pxr_library(usdviewq
         settings2.py
         adjustClipping.py
         adjustDefaultMaterial.py
+        preferences.py
         primViewItem.py
         common.py
         legendUtil.py
@@ -74,6 +75,7 @@ pxr_library(usdviewq
         adjustClippingUI.ui
         adjustDefaultMaterialUI.ui
         attributeValueEditorUI.ui
+        preferencesUI.ui
         primLegendUI.ui
         propertyLegendUI.ui
 )

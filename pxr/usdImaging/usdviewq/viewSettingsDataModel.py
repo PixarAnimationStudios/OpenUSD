@@ -88,6 +88,9 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
     # emitted when any aspect of the defaultMaterial changes
     signalDefaultMaterialChanged = QtCore.Signal()
 
+    # emitted when any setting affecting the GUI style changes
+    signalStyleSettingsChanged = QtCore.Signal()
+
     def __init__(self, rootDataModel, parent):
         QtCore.QObject.__init__(self)
         StateSource.__init__(self, parent, "model")
@@ -150,6 +153,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         self._complexity = RefinementComplexities.LOW
         self._freeCamera = None
         self._cameraPath = None
+        self._fontSize = self.stateProperty("fontSize", default=10)
 
     def onSaveState(self, state):
         state["cameraMaskColor"] = list(self._cameraMaskColor)
@@ -192,6 +196,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         state["showHUDComplexity"] = self._showHUD_Complexity
         state["showHUDPerformance"] = self._showHUD_Performance
         state["showHUDGPUStats"] = self._showHUD_GPUstats
+        state["fontSize"] = self._fontSize
 
     @property
     def cameraMaskColor(self):
@@ -617,9 +622,9 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
     @freeCamera.setter
     @visibleViewSetting
     def freeCamera(self, value):
-        """ViewSettingsDataModel does not guarantee it will hold a valid
-        FreeCamera, but if one is set, we will keep the dataModel's stateful
-        FOV ('freeCameraFOV') in sync with the FreeCamera"""
+        # ViewSettingsDataModel does not guarantee it will hold a valid
+        # FreeCamera, but if one is set, we will keep the dataModel's stateful
+        # FOV ('freeCameraFOV') in sync with the FreeCamera
 
         if not isinstance(value, FreeCamera) and value != None:
             raise TypeError("Free camera must be a FreeCamera object.")
@@ -660,3 +665,15 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
                     "the prim is not a UsdGeom.Camera." % (value.GetName()))
         else:
             self.cameraPath = None
+
+    @property
+    def fontSize(self):
+        return self._fontSize
+
+    @fontSize.setter
+    @visibleViewSetting
+    def fontSize(self, value):
+        if value != self._fontSize:
+            self._fontSize = value
+            self.signalStyleSettingsChanged.emit()
+
