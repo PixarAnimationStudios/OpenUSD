@@ -48,7 +48,7 @@ UsdRiImagingPxrIntMultLightFilterAdapter::IsSupported(
         UsdImagingIndexProxy const* index) const
 {
     return UsdImagingLightAdapter::IsEnabledSceneLights() &&
-          index->IsSprimTypeSupported(UsdRiImagingTokens->pxrIntMultLightFilter);
+          index->IsSprimTypeSupported(HdPrimTypeTokens->lightFilter);
 }
 
 SdfPath
@@ -56,8 +56,8 @@ UsdRiImagingPxrIntMultLightFilterAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
-    index->InsertSprim(UsdRiImagingTokens->pxrIntMultLightFilter, prim.GetPath(), prim);
-    HD_PERF_COUNTER_INCR(UsdRiImagingTokens->usdPopulatedPrimCount);
+    index->InsertSprim(HdPrimTypeTokens->lightFilter, prim.GetPath(), prim);
+    HD_PERF_COUNTER_INCR(HdPrimTypeTokens->lightFilter);
 
     return prim.GetPath();
 }
@@ -66,7 +66,7 @@ void
 UsdRiImagingPxrIntMultLightFilterAdapter::_RemovePrim(SdfPath const& cachePath,
                                          UsdImagingIndexProxy* index)
 {
-    index->RemoveSprim(UsdRiImagingTokens->pxrIntMultLightFilter, cachePath);
+    index->RemoveSprim(HdPrimTypeTokens->lightFilter, cachePath);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
