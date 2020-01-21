@@ -26,6 +26,7 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/base/vt/streamOut.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/functions.h"
 
@@ -1455,6 +1456,10 @@ VtValue const *VtGetErasedProxiedVtValue(_ErasedDoubleProxy const &p) {
         p.vtValue.reset(new VtValue(p.val));
     }
     return p.vtValue.get();
+}
+
+std::ostream &operator<<(std::ostream &o, _ErasedDoubleProxy const &p) {
+    return VtStreamOut(p.val, o);
 }
 
 static void

@@ -546,7 +546,7 @@ class VtValue
         
         static std::ostream &
         StreamOut(ErasedProxy const &obj, std::ostream &out) {
-            return out << *VtGetErasedProxiedVtValue(obj);
+            return VtStreamOut(obj, out);
         }
         static Vt_ShapeData const *GetShapeData(ErasedProxy const &obj) {
             return VtGetErasedProxiedVtValue(obj)->_GetShapeData();
