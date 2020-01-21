@@ -306,7 +306,7 @@ int main(int argc, char *argv[])
     // Merge fallback settings specific to testHdPrman.
     VtDictionary defaultSettings;
     defaultSettings["ri:hider:jitter"] = 1;
-    defaultSettings["ri:hider:minsamples"] = 1;
+    defaultSettings["ri:hider:minsamples"] = 32;
     defaultSettings["ri:hider:maxsamples"] = 64;
     defaultSettings["ri:trace:maxdepth"] = 10;
     defaultSettings["ri:Ri:PixelVariance"] = 0.01f;
