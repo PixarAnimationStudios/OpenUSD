@@ -576,7 +576,8 @@ Glf_OIIOImage::ReadCropped(int const cropTop,
         return false;
     }
    
-    int strideLength = imageInput->spec().width * GetBytesPerPixel();
+    int strideLength = imageInput->spec().width * 
+                       imageInput->spec().pixel_bytes();
     int readStride = (storage.flipped)? 
                      (-strideLength) : (strideLength);
     int size = imageInput->spec().height * strideLength;
