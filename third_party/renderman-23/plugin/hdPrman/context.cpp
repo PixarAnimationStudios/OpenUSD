@@ -448,6 +448,12 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
 
     const RtDetailType detail = _RixDetailForHdInterpolation(hdInterp);
 
+    TF_DEBUG(HDPRMAN_PRIMVARS)
+        .Msg("HdPrman: _Convert called -- <%s> %s %s\n",
+             id.GetText(),
+             TfEnum::GetName(hdInterp).c_str(),
+             label);
+
     // Computed primvars
     if (paramType == _ParamTypePrimvar) {
         // XXX: Prman doesn't seem to check dirtyness before pulling a value.
@@ -507,6 +513,13 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
     for (HdPrimvarDescriptor const& primvar:
          sceneDelegate->GetPrimvarDescriptors(id, hdInterp))
     {
+        TF_DEBUG(HDPRMAN_PRIMVARS)
+            .Msg("HdPrman: authored id <%s> hdInterp %s label %s primvar \"%s\"\n",
+                 id.GetText(),
+                 TfEnum::GetName(hdInterp).c_str(),
+                 label,
+                 primvar.name.GetText());
+
         // Skip params with special handling.
         if (primvar.name == HdTokens->points) {
             continue;
@@ -643,9 +656,6 @@ HdPrman_Context::ConvertCategoriesToAttributes(
     RtParamList& attrs)
 {
     if (categories.empty()) {
-        // XXX -- setting k_grouping_membership might not be necessasy
-        attrs.SetString( RixStr.k_grouping_membership,
-                         RtUString("") );
         attrs.SetString( RixStr.k_lightfilter_subset,
                          RtUString("") );
         attrs.SetString( RixStr.k_lighting_subset,
@@ -662,6 +672,13 @@ HdPrman_Context::ConvertCategoriesToAttributes(
             membership += " ";
         }
         membership += category;
+    }
+    // Fetch incoming grouping:membership and tack it onto categories
+    RtUString inputGrouping = RtUString("");
+    attrs.GetString(RixStr.k_grouping_membership, inputGrouping);
+    if (inputGrouping != RtUString("")) {
+        std::string input = inputGrouping.CStr();
+        membership += " " + input;
     }
     attrs.SetString( RixStr.k_grouping_membership,
                        RtUString(membership.c_str()) );
