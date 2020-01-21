@@ -33,6 +33,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HgiGL::HgiGL()
 {
+    if (!HgiGLMeetsMinimumRequirements()) {
+        TF_WARN(
+            "HgiGL minimum OpenGL requirements not met. "
+            "Please ensure that OpenGL is initialized and supports version 4.5"
+        );
+    }
+
     HgiGLSetupGL4Debug();
 }
 

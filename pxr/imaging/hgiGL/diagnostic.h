@@ -46,6 +46,10 @@ void HgiGLPostPendingGLErrors(std::string const & where = std::string());
 HGIGL_API
 void HgiGLSetupGL4Debug();
 
+HGIGL_API
+bool HgiGLMeetsMinimumRequirements();
+
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
