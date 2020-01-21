@@ -146,11 +146,6 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
     _oitTranslucentRenderPassShader->SetCullStyle(
         extendedState->GetCullStyle());
 
-    // We want OIT to render into the resolve aov, not the multi sample aov.
-    // This assumes a 'resolve' task has been run between rendering the opaque
-    // prims and translucent prims. See HdxTaskController::GetRenderingTasks().
-    renderPassState->SetUseAovMultiSample(false);
-
     //
     // Opaque pixels pass
     // These pixels are rendered to FB instead of OIT buffers

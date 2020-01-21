@@ -732,9 +732,16 @@ HdxTaskController::GetRenderingTasks() const
 
     // Perform draw calls
     if (!_renderTaskIds.empty()) {
-        // Render opaque prims
-        SdfPath const& opaqueId = _renderTaskIds.front();
-        tasks.push_back(GetRenderIndex()->GetTask(opaqueId));
+        SdfPath volumeId = _GetRenderTaskPath(HdStMaterialTagTokens->volume);
+
+        // Render opaque prims, additive and translucent blended prims.
+        // Skip volume prims, because volume rendering reads from the depth
+        // buffer so we must resolve depth first first.
+        for (SdfPath const& id : _renderTaskIds) {
+            if (id != volumeId) {
+                tasks.push_back(GetRenderIndex()->GetTask(id));
+            }
+        }
 
         // Resolve color multi-sample Aov.
         if (!_aovColorResolveTaskId.IsEmpty()) {
@@ -745,10 +752,10 @@ HdxTaskController::GetRenderingTasks() const
             tasks.push_back(GetRenderIndex()->GetTask(_aovDepthResolveTaskId));
         }
 
-        // Render translucent and volume prims
-        for (size_t i=1; i<_renderTaskIds.size(); i++) {
-            SdfPath const& id = _renderTaskIds[i];
-            tasks.push_back(GetRenderIndex()->GetTask(id));
+        // Render volume prims
+        if (std::find(_renderTaskIds.begin(), _renderTaskIds.end(), volumeId) 
+                != _renderTaskIds.end()) {
+            tasks.push_back(GetRenderIndex()->GetTask(volumeId));
         }
     }
 
