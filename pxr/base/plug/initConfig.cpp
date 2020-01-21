@@ -23,6 +23,7 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/plug/debugCodes.h"
 #include "pxr/base/plug/info.h"
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/getenv.h"
@@ -31,10 +32,14 @@
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/symbols.h"
+#include "pxr/base/arch/systemInfo.h"
 
 #include <boost/preprocessor/stringize.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+// Defined in debugCodes.cpp  See comment there for explanation.
+void Plug_RegistryFunctionForTfDebug();
 
 namespace {
 
@@ -69,29 +74,51 @@ _AppendPathList(
 
 ARCH_CONSTRUCTOR(Plug_InitConfig, 2, void)
 {
+    // Defined in debugCodes.cpp  See comment there for explanation.
+    Plug_RegistryFunctionForTfDebug();
+    
     std::vector<std::string> result;
 
-    // Determine the absolute path to the Plug shared library.
-    // Any relative paths specified in the plugin search path will be
-    // anchored to this directory, to allow for relocatability.
-    std::string sharedLibPath;
+    // Determine the absolute path to the Plug shared library.  Any relative
+    // paths specified in the plugin search path will be anchored to this
+    // directory, to allow for relocatability.  Note that this can fail when pxr
+    // is built as a static library.  In that case, fall back to using
+    // ArchGetExecutablePath().  Also provide some diagnostic output if the
+    // PLUG_INFO_SEARCH debug flag is enabled.
+    std::string binaryPath;
     if (!ArchGetAddressInfo(
-        reinterpret_cast<void*>(&Plug_InitConfig), &sharedLibPath,
+        reinterpret_cast<void*>(&Plug_InitConfig), &binaryPath,
             nullptr, nullptr, nullptr)) {
-        TF_CODING_ERROR("Unable to determine absolute path for Plug.");
+        TF_DEBUG(PLUG_INFO_SEARCH).Msg(
+            "Failed to determine absolute path for Plug search "
+            "using using ArchGetAddressInfo().  This is expected "
+            "if pxr is linked as a static library.\n");
     }
 
-    sharedLibPath = TfGetPathName(sharedLibPath);
+    if (binaryPath.empty()) {
+        TF_DEBUG(PLUG_INFO_SEARCH).Msg(
+            "Using ArchGetExecutablePath() to determine absolute "
+            "path for Plug search location.\n");
+        binaryPath = ArchGetExecutablePath();
+    }
+
+    binaryPath = TfGetPathName(binaryPath);
+
+    if (TfDebug::IsEnabled(PLUG_INFO_SEARCH)) {
+        TF_DEBUG(PLUG_INFO_SEARCH).Msg(
+            "Plug will search for plug infos under '%s'\n",
+            binaryPath.c_str());
+    }
 
     // Environment locations.
-    _AppendPathList(&result, TfGetenv(pathEnvVarName), sharedLibPath);
+    _AppendPathList(&result, TfGetenv(pathEnvVarName), binaryPath);
 
     // Fallback locations.
-    _AppendPathList(&result, buildLocation, sharedLibPath);
-    _AppendPathList(&result, pluginBuildLocation, sharedLibPath);
+    _AppendPathList(&result, buildLocation, binaryPath);
+    _AppendPathList(&result, pluginBuildLocation, binaryPath);
 
 #ifdef PXR_INSTALL_LOCATION
-    _AppendPathList(&result, installLocation, sharedLibPath);
+    _AppendPathList(&result, installLocation, binaryPath);
 #endif // PXR_INSTALL_LOCATION
 
     Plug_SetPaths(result);
