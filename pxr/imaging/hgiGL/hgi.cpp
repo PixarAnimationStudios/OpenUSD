@@ -27,13 +27,19 @@
 #include "pxr/imaging/hgiGL/diagnostic.h"
 #include "pxr/imaging/hgiGL/texture.h"
 
+#include "pxr/base/tf/envSetting.h"
+
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_ENV_SETTING(HGIGL_ENABLE_GL_VERSION_VALIDATION, true,
+    "Enables validation OpenGL version.");
 
 
 HgiGL::HgiGL()
 {
-    if (!HgiGLMeetsMinimumRequirements()) {
+    const bool checkVersion = TfGetEnvSetting(HGIGL_ENABLE_GL_VERSION_VALIDATION);
+    if (checkVersion && !HgiGLMeetsMinimumRequirements()) {
         TF_WARN(
             "HgiGL minimum OpenGL requirements not met. "
             "Please ensure that OpenGL is initialized and supports version 4.5"
