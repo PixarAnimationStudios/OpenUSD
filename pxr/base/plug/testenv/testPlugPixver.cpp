@@ -47,7 +47,8 @@ Plug_GetPaths()
 }
 
 void
-Plug_SetPaths(const std::vector<std::string>& paths)
+Plug_SetPaths(const std::vector<std::string>& paths,
+              const std::vector<std::string>& debugMessages)
 {
     Plug_GetPaths() = paths;
 }

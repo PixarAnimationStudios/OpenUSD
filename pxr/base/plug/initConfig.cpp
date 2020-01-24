@@ -23,7 +23,6 @@
 //
 
 #include "pxr/pxr.h"
-#include "pxr/base/plug/debugCodes.h"
 #include "pxr/base/plug/info.h"
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/getenv.h"
@@ -37,9 +36,6 @@
 #include <boost/preprocessor/stringize.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-// Defined in debugCodes.cpp  See comment there for explanation.
-void Plug_RegistryFunctionForTfDebug();
 
 namespace {
 
@@ -74,10 +70,9 @@ _AppendPathList(
 
 ARCH_CONSTRUCTOR(Plug_InitConfig, 2, void)
 {
-    // Defined in debugCodes.cpp  See comment there for explanation.
-    Plug_RegistryFunctionForTfDebug();
-    
     std::vector<std::string> result;
+
+    std::vector<std::string> debugMessages;
 
     // Determine the absolute path to the Plug shared library.  Any relative
     // paths specified in the plugin search path will be anchored to this
@@ -89,14 +84,14 @@ ARCH_CONSTRUCTOR(Plug_InitConfig, 2, void)
     if (!ArchGetAddressInfo(
         reinterpret_cast<void*>(&Plug_InitConfig), &binaryPath,
             nullptr, nullptr, nullptr)) {
-        TF_DEBUG(PLUG_INFO_SEARCH).Msg(
+        debugMessages.emplace_back(
             "Failed to determine absolute path for Plug search "
             "using using ArchGetAddressInfo().  This is expected "
             "if pxr is linked as a static library.\n");
     }
 
     if (binaryPath.empty()) {
-        TF_DEBUG(PLUG_INFO_SEARCH).Msg(
+        debugMessages.emplace_back(
             "Using ArchGetExecutablePath() to determine absolute "
             "path for Plug search location.\n");
         binaryPath = ArchGetExecutablePath();
@@ -104,11 +99,10 @@ ARCH_CONSTRUCTOR(Plug_InitConfig, 2, void)
 
     binaryPath = TfGetPathName(binaryPath);
 
-    if (TfDebug::IsEnabled(PLUG_INFO_SEARCH)) {
-        TF_DEBUG(PLUG_INFO_SEARCH).Msg(
+    debugMessages.emplace_back(
+        TfStringPrintf(
             "Plug will search for plug infos under '%s'\n",
-            binaryPath.c_str());
-    }
+            binaryPath.c_str()));
 
     // Environment locations.
     _AppendPathList(&result, TfGetenv(pathEnvVarName), binaryPath);
@@ -121,7 +115,7 @@ ARCH_CONSTRUCTOR(Plug_InitConfig, 2, void)
     _AppendPathList(&result, installLocation, binaryPath);
 #endif // PXR_INSTALL_LOCATION
 
-    Plug_SetPaths(result);
+    Plug_SetPaths(result, debugMessages);
 }
 
 }
