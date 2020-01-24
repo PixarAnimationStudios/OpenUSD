@@ -33,9 +33,17 @@ typename VtKatana_GetKatanaAttrType<T>::type VtKatanaCopy(
     return VtKatana_Internal::VtKatana_FromVtConversion<T>::CopyElement(value);
 }
 
+template <typename T>
+typename VtKatana_GetKatanaAttrType<T>::type VtKatanaCopy(
+    const std::map<float, T>& samples) {
+    return VtKatana_Internal::VtKatana_FromVtConversion<T>::CopyElementSamples(samples);
+}
+
 #define VTKATANA_DEFINE_VALUE_COPY(T)                                       \
     template typename VtKatana_GetKatanaAttrType<T>::type VtKatanaCopy<T>(  \
-        const T& value);                                                    
+        const T& value);                                                    \
+    template typename VtKatana_GetKatanaAttrType<T>::type VtKatanaCopy<T>(  \
+        const std::map<float, T>& value);                                                    
 
 // Integral types
 

@@ -394,7 +394,7 @@ public:
     CopyElement(const T& value) {
         return AttrType(VtKatana_GetText<T>(value));
     }
-    
+
     /// Utility for copying numeric scalar types
     template <typename T = ElementType>
     static typename std::enable_if<VtKatana_IsNumericScalar<T>::value,
@@ -403,7 +403,7 @@ public:
         return AttrType(value);
     }
 
-    /// Utility for copying numeric scalar types
+    /// Utility for copying numeric tuple types (that can be casted)
     template <typename T = ElementType>
     static typename std::enable_if<VtKatana_IsNumericCastableTuple<T>::value,
                                    AttrType>::type
@@ -415,19 +415,106 @@ public:
 
     /// Utility for copying numeric tuple types
     template <typename T = ElementType>
-    static typename std::enable_if<VtKatana_IsNumericCopyRequiredTuple<T>::value,
-                                   AttrType>::type
-    CopyElement(const T& value) {
-        typedef typename VtKatana_GetNumericCopyTuplePeer<T>::type TupleCopyPeer;
+    static
+        typename std::enable_if<VtKatana_IsNumericCopyRequiredTuple<T>::value,
+                                AttrType>::type
+        CopyElement(const T& value) {
+        typedef
+            typename VtKatana_GetNumericCopyTuplePeer<T>::type TupleCopyPeer;
         static_assert(
             std::is_same<typename VtKatana_GetNumericScalarType<T>::type,
-                         GfHalf>::value, "");
+                         GfHalf>::value,
+            "");
         static_assert(VtKatana_GetNumericTupleSize<T>::value ==
-                           VtKatana_GetNumericTupleSize<TupleCopyPeer>::value, "");
+                          VtKatana_GetNumericTupleSize<TupleCopyPeer>::value,
+                      "");
         TupleCopyPeer peer(value);
         auto data = peer.data();
         size_t size = VtKatana_GetNumericTupleSize<T>::value;
         return AttrType(data, size, size);
+    }
+
+    /// Utility for copying string holder types
+    template <typename T = ElementType>
+    static typename std::enable_if<VtKatana_IsOrHoldsString<T>::value,
+                                   AttrType>::type
+    CopyElementSamples(const std::map<float, T>& samples) {
+        std::vector<float> times;
+        std::vector<std::vector<const char*>> holders;
+        for (const auto& sample : samples) {
+            times.push_back(sample.first);
+            holders.push_back(std::vector<const char*>(
+                1, VtKatana_GetText<T>(sample.second)));
+        }
+        std::vector<const char* const*> cstrPtrs;
+        std::transform(holders.begin(), holders.end(),
+                       std::back_inserter(cstrPtrs),
+                       [](const std::vector<const char*>& holder) {
+                           return holder.data();
+                       });
+        return AttrType(times.data(), times.size(),
+                        const_cast<const char***>(cstrPtrs.data()), 1, 1);
+    }
+
+    /// Utility for copying numeric scalar types
+    template <typename T = ElementType>
+    static typename std::enable_if<VtKatana_IsNumericCastableScalar<T>::value,
+                                   AttrType>::type
+    CopyElementSamples(const std::map<float, T>& samples) {
+        std::vector<float> times;
+        std::vector<const T*> dataPtrs;
+        for (const auto& sample : samples) {
+            times.push_back(sample.first);
+            dataPtrs.push_back(&sample.second);
+        }
+        return AttrType(times.data(), times.size(), dataPtrs.data(), 1, 1);
+    }
+
+    /// Utility for copying numeric tuple types (that can be casted)
+    template <typename T = ElementType>
+    static typename std::enable_if<VtKatana_IsNumericCastableTuple<T>::value,
+                                   AttrType>::type
+    CopyElementSamples(const std::map<float, T>& samples) {
+        typedef typename VtKatana_GetNumericScalarType<T>::type ScalarType;
+        std::vector<float> times;
+        std::vector<const ScalarType*> dataPtrs;
+        for (const auto& sample : samples) {
+            times.push_back(sample.first);
+            dataPtrs.push_back(sample.second.data());
+        }
+        size_t elementSize = VtKatana_GetNumericTupleSize<T>::value;
+        return AttrType(times.data(), times.size(), dataPtrs.data(),
+                        elementSize, elementSize);
+    }
+
+    /// Utility for copying numeric scalar types
+    template <typename T = ElementType>
+    static
+        typename std::enable_if<VtKatana_IsNumericCopyRequiredScalar<T>::value,
+                                AttrType>::type
+        CopyElementSamples(const std::map<float, T>& samples) {
+        typedef typename VtKatana_GetKatanaAttrType<T>::type::value_type
+            PeerScalarType;
+        std::map<float, PeerScalarType> peerSamples;
+        for (const auto& sample : samples) {
+            peerSamples.emplace(sample.first, PeerScalarType(sample.second));
+        }
+        return CopyElementSamples(peerSamples);
+    }
+
+    /// Utility for copying numeric tuple types
+    template <typename T = ElementType>
+    static
+        typename std::enable_if<VtKatana_IsNumericCopyRequiredTuple<T>::value,
+                                AttrType>::type
+        CopyElementSamples(const std::map<float, T>& samples) {
+        typedef
+            typename VtKatana_GetNumericCopyTuplePeer<T>::type TupleCopyPeer;
+        std::map<float, TupleCopyPeer> peerSamples;
+        for (const auto& sample : samples) {
+            peerSamples.emplace(sample.first, TupleCopyPeer(sample.second));
+        }
+        return CopyElementSamples(peerSamples);
     }
 };
 }

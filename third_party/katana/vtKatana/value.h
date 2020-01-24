@@ -34,6 +34,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 template <typename T>
 typename VtKatana_GetKatanaAttrType<T>::type VtKatanaCopy(const T& value);
 
+
+/// Copy \p samples to a katana attribute, minimizing intermediate copies
+/// when possible, but always copying at least once.
+template <typename T>
+typename VtKatana_GetKatanaAttrType<T>::type VtKatanaCopy(
+    const std::map<float, T>& samples);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
