@@ -402,9 +402,6 @@ class AppController(QtCore.QObject):
             self._setStyleSheetUsingState()
 
             self._mainWindow = QtWidgets.QMainWindow(None)
-            # Showing the window immediately prevents UI flashing.
-            self._mainWindow.show()
-
             self._ui = Ui_MainWindow()
             self._ui.setupUi(self._mainWindow)
 
@@ -412,6 +409,11 @@ class AppController(QtCore.QObject):
             self._statusBar = QtWidgets.QStatusBar(self._mainWindow)
             self._mainWindow.setStatusBar(self._statusBar)
 
+            # Waiting to show the mainWindow till after setting the
+            # statusBar saves considerable GUI configuration time.
+            self._mainWindow.show()
+            self._mainWindow.setFocus()
+            
             # Install our custom event filter.  The member assignment of the
             # filter is just for lifetime management
             from appEventFilter import AppEventFilter
