@@ -249,10 +249,15 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
 
         size_t arraySize = 0;
         TfToken sdrType = SdrPropertyTypes->Color;
+        VtValue defaultValue = ConvertToSdrCompatibleValueAndType(
+            t.defaultValue,
+            &arraySize,
+            &sdrType);
 
-        // XXX : Glslfx does not specify a default value for textures,
-        // for now we will just use black.
-        VtValue defaultValue = VtValue(GfVec3f(0.0,0.0,0.0));
+        // Check for a default value, or fallback to all black.
+        if (defaultValue.IsEmpty()) {
+            defaultValue = VtValue(GfVec3f(0.0,0.0,0.0));
+        }
 
         NdrTokenMap hints;
         NdrOptionVec options;
