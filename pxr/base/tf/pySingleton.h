@@ -33,7 +33,7 @@
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/weakPtr.h"
 
-#include <boost/mpl/vector.hpp>
+#include <boost/mpl/vector/vector10.hpp>
 
 #include <boost/python/class.hpp>
 #include <boost/python/default_call_policies.hpp>
@@ -101,8 +101,8 @@ struct Visitor : bp::def_visitor<Visitor> {
                   make_function(std::bind(
                                     _Repr, std::placeholders::_1, _reprPrefix),
                                 bp::default_call_policies(),
-                                boost::mpl::vector<std::string,
-                                                   bp::object const &>()));
+                                boost::mpl::vector2<std::string,
+                                                    bp::object const &>()));
     }
 private:
     std::string _reprPrefix;
