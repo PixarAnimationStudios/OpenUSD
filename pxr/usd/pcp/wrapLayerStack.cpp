@@ -59,14 +59,6 @@ _GetLayerOffsets(const PcpLayerStack &layerStack)
     return rval;
 }
 
-static std::vector<std::string>
-_GetResolvedAssetPaths(const PcpLayerStack &layerStack)
-{
-
-    const std::set<string>& paths = layerStack.GetResolvedAssetPaths();
-    return std::vector<string>(paths.begin(), paths.end());
-}
-
 } // anonymous namespace 
 
 void wrapLayerStack()
@@ -86,9 +78,6 @@ void wrapLayerStack()
         .add_property("layerTree", 
                       make_function(&PcpLayerStack::GetLayerTree,
                                     return_value_policy<return_by_value>()))
-        .add_property("resolvedAssetPaths",
-                      make_function(&_GetResolvedAssetPaths,
-                                    return_value_policy<TfPySequenceToList>()))
         .add_property("relocatesSourceToTarget",
                       make_function(&PcpLayerStack::GetRelocatesSourceToTarget,
                                     return_value_policy<return_by_value>()))

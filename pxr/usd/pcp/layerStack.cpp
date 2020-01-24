@@ -510,12 +510,6 @@ PcpLayerStack::GetLayerOffsetForLayer(size_t layerIdx) const
 }
 
 const std::set<std::string>& 
-PcpLayerStack::GetResolvedAssetPaths() const
-{
-    return _assetPaths;
-}
-
-const std::set<std::string>& 
 PcpLayerStack::GetMutedLayers() const
 {
     return _mutedAssetPaths;
@@ -596,7 +590,6 @@ PcpLayerStack::_BlowLayers()
     _mapFunctions.clear();
     _layerTree = TfNullPtr;
     _sublayerSourceInfo.clear();
-    _assetPaths.clear();
     _mutedAssetPaths.clear();
 }
 
@@ -747,8 +740,6 @@ PcpLayerStack::_BuildLayerStack(
     const vector<string> &sublayers = layer->GetSubLayerPaths();
     const SdfLayerOffsetVector &sublayerOffsets = layer->GetSubLayerOffsets();
     for(size_t i=0, numSublayers = sublayers.size(); i<numSublayers; i++) {
-        _assetPaths.insert(sublayers[i]);
-
         string canonicalMutedPath;
         if (mutedLayers.IsLayerMuted(layer, sublayers[i], 
                                      &canonicalMutedPath)) {

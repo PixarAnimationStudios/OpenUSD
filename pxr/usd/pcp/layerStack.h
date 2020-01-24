@@ -103,11 +103,6 @@ public:
     PCP_API
     const SdfLayerOffset* GetLayerOffsetForLayer(size_t layerIdx) const;
 
-    /// Returns the set of asset paths resolved while building the
-    /// layer stack.
-    PCP_API
-    const std::set<std::string>& GetResolvedAssetPaths() const;
-
     /// Returns the set of layers that were muted in this layer
     /// stack.
     PCP_API
@@ -271,10 +266,6 @@ private:
 
     /// List of source info for sublayer asset path computations.
     std::vector<_SublayerSourceInfo> _sublayerSourceInfo;
-
-    /// Set of asset paths resolved while building the layer stack.
-    /// This is used to handle updates.
-    std::set<std::string> _assetPaths;
 
     /// Set of asset paths that were muted in this layer stack.
     std::set<std::string> _mutedAssetPaths;
