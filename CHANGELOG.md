@@ -1,6 +1,6 @@
 # Change Log
 
-## [20.02] - 2020-01-21
+## [20.02] - 2020-01-24
 
 We anticipate aligning with the version requirements from the VFX Reference
 Platform CY2018 (https://vfxplatform.com) in the next release. In particular,
