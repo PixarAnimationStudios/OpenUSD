@@ -177,7 +177,7 @@ ArchRegex::ArchRegex(const std::string& pattern, unsigned int flags) :
     }
 }
 
-ArchRegex::ArchRegex(ArchRegex&& rhs) :
+ArchRegex::ArchRegex(ArchRegex&& rhs) noexcept :
     _flags(std::move(rhs._flags)),
     _error(std::move(rhs._error)),
     _impl (std::move(rhs._impl))
@@ -186,7 +186,7 @@ ArchRegex::ArchRegex(ArchRegex&& rhs) :
 }
 
 ArchRegex&
-ArchRegex::operator=(ArchRegex&& rhs)
+ArchRegex::operator=(ArchRegex&& rhs) noexcept
 {
     _flags = std::move(rhs._flags);
     _error = std::move(rhs._error);
