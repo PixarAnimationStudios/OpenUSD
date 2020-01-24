@@ -1,0 +1,288 @@
+#usda 1.0
+(
+    """ This file contains a schema for supporting skeletal animations in USD.
+    """
+    subLayers = [
+        @usdGeom/schema.usda@
+    ]
+) 
+
+over "GLOBAL" (
+    customData = {
+        string libraryName       = "usdSkel"
+        string libraryPath       = "pxr/usd/usdSkel"
+
+        dictionary libraryTokens = {
+            dictionary weight = {
+                string doc = """UsdSkelInbetweenShape - The weight location at
+                which the inbetween shape applies."""                             
+            }
+        }
+    }
+) {
+}
+
+
+class SkelRoot "SkelRoot" (
+    inherits = </Boundable>
+    doc = """Boundable prim type used to identify a scope beneath which
+    skeletally-posed primitives are defined.
+
+    A SkelRoot must be defined at or above a skinned primitive for any skinning
+    behaviors in UsdSkel.
+
+    See the extended \\ref UsdSkel_SkelRoot "Skel Root Schema" documentation for
+    more information."""
+    customData = {
+        string className = "Root"
+        
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = true
+        }
+    }
+) {
+}
+
+
+class Skeleton "Skeleton" (
+    inherits = </Boundable>
+    doc = """Describes a skeleton. 
+
+    See the extended \\ref UsdSkel_Skeleton "Skeleton Schema" documentation for
+    more information.
+    """
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = true
+        }
+
+        string extraIncludes = """
+#include "pxr/usd/usdSkel/topology.h" """
+    }
+) {
+    uniform token[] joints (
+        doc = """An array of path tokens identifying the set of joints that make
+        up the skeleton, and their order. Each token in the array must be valid
+        when parsed as an SdfPath. The parent-child relationships of the
+        corresponding paths determine the parent-child relationships of each
+        joint. It is not required that the name at the end of each path be
+        unique, but rather only that the paths themselves be unique."""
+    )
+
+    uniform token[] jointNames (
+        doc = """If authored, provides a unique name per joint. This may be
+        optionally set to provide better names when translating to DCC apps 
+        that require unique joint names."""
+    )
+
+    uniform matrix4d[] bindTransforms (
+        doc = """Specifies the bind-pose transforms of each joint in
+        **world space**, in the ordering imposed by *joints*."""
+    )
+    uniform matrix4d[] restTransforms (
+        doc = """Specifies the rest-pose transforms of each joint in
+        **local space**, in the ordering imposed by *joints*. This provides
+        fallback values for joint transforms when a Skeleton either has no
+        bound animation source, or when that animation source only contains
+        animation for a subset of a Skeleton's joints."""
+    )
+}
+
+
+class SkelAnimation "SkelAnimation" (
+    inherits = </Typed>
+    doc = """Describes a skel animation, where joint animation is stored in a
+    vectorized form.
+
+    See the extended \\ref UsdSkel_SkelAnimation "Skel Animation"
+    documentation for more information.
+    """
+    customData = {
+        string className = "Animation"
+    }
+) {
+    uniform token[] joints (
+        doc = """Array of tokens identifying which joints this animation's
+        data applies to. The tokens for joints correspond to the tokens of
+        Skeleton primitives. The order of the joints as listed here may
+        vary from the order of joints on the Skeleton itself."""
+    )
+
+    float3[] translations (
+        doc = """Joint-local translations of all affected joints. Array length 
+        should match the size of the *joints* attribute."""
+    )
+    
+    quatf[] rotations (
+        doc = """Joint-local unit quaternion rotations of all affected joints, 
+        in 32-bit precision. Array length should match the size of the 
+        *joints* attribute."""
+    )
+
+    half3[] scales (
+        doc = """Joint-local scales of all affected joints, in
+        16 bit precision. Array length should match the size of the *joints* 
+        attribute."""
+    )
+
+    uniform token[] blendShapes ( 
+         doc = """Array of tokens identifying which blend shapes this
+         animation's data applies to. The tokens for blendShapes correspond to
+         the tokens set in the *skel:blendShapes* binding property of the
+         UsdSkelBindingAPI."""
+    )
+
+    float[] blendShapeWeights (
+        doc = """Array of weight values for each blend shape. Each weight value
+        is associated with the corresponding blend shape identified within the
+        *blendShapes* token array, and therefore must have the same length as
+        *blendShapes."""
+    )
+}
+
+
+class PackedJointAnimation "PackedJointAnimation" (
+    inherits = </SkelAnimation>
+    doc = """Deprecated. Please use SkelAnimation instead."""
+)
+{
+}
+
+class "SkelBindingAPI" (
+    inherits = </APISchemaBase>
+    doc = """Provides API for authoring and extracting all the skinning-related
+    data that lives in the "geometry hierarchy" of prims and models that want
+    to be skeletally deformed.
+
+    See the extended \\ref UsdSkel_BindingAPI "UsdSkelBindingAPI schema"
+    documentation for more about bindings and how they apply in a scene graph.
+    """
+    customData = {
+        string className = "BindingAPI"
+        string extraIncludes = """
+#include "pxr/base/tf/span.h"
+#include "pxr/usd/usdGeom/primvar.h"
+#include "pxr/usd/usdSkel/skeleton.h" """
+    }
+)
+{
+    rel skel:animationSource (
+        customData = {
+            string apiName = "animationSource"
+        }       
+        doc = """Animation source to be bound to Skeleton primitives at or
+        beneath the location at which this property is defined.
+        """
+    )
+
+    rel skel:skeleton (
+        customData = {
+            string apiName = "skeleton"
+        }       
+        doc = """Skeleton to be bound to this prim and its descendents that
+        possess a mapping and weighting to the joints of the identified
+        Skeleton."""
+    )
+
+    matrix4d primvars:skel:geomBindTransform (
+        customData = {
+            string apiName = "geomBindTransform"
+        } 
+        doc = """Encodes the bind-time world space transforms of the prim.
+        If the transform is identical for a group of gprims that share a common
+        ancestor, the transform may be authored on the ancestor, to "inherit"
+        down to all the leaf gprims. If this transform is unset, an identity
+        transform is used instead."""
+    )
+
+    uniform token[] skel:joints (
+        customData = {
+            string apiName = "joints"
+        }       
+        doc = """An (optional) array of tokens defining the list of
+        joints to which jointIndices apply. If not defined, jointIndices applies
+        to the ordered list of joints defined in the bound Skeleton's *joints*
+        attribute. If undefined on a primitive, the primitive inherits the 
+        value of the nearest ancestor prim, if any."""
+    )
+
+    int[] primvars:skel:jointIndices (
+        customData = {
+            string apiName = "jointIndices"
+        }       
+        doc = """Indices into the *joints* attribute of the closest
+        (in namespace) bound Skeleton that affect each point of a PointBased
+        gprim. The primvar can have either *constant* or *vertex* interpolation.
+        This primvar's *elementSize* will determine how many joint influences
+        apply to each point. Indices must point be valid. Null influences should
+        be defined by setting values in jointWeights to zero.
+        See UsdGeomPrimvar for more information on interpolation and
+        elementSize."""
+    )
+
+    float[] primvars:skel:jointWeights (
+        customData = {
+            string apiName = "jointWeights"
+        }       
+        doc = """Weights for the joints that affect each point of a PointBased
+        gprim. The primvar can have either *constant* or *vertex* interpolation.
+        This primvar's *elementSize* will determine how many joints influences
+        apply to each point. The length, interpolation, and elementSize of
+        *jointWeights* must match that of *jointIndices*. See UsdGeomPrimvar
+        for more information on interpolation and elementSize."""
+    )
+
+    uniform token[] skel:blendShapes (
+        customData = {
+            string apiName = "blendShapes"
+        }
+        doc = """An array of tokens defining the order onto which blend shape
+        weights from an animation source map onto the *skel:blendShapeTargets*
+        rel of a binding site. If authored, the number of elements must be equal
+        to the number of targets in the _blendShapeTargets_ rel. This property
+        is not inherited hierarchically, and is expected to be authored directly
+        on the skinnable primitive to which the blend shapes apply."""
+    )
+    rel skel:blendShapeTargets (
+        customData = {
+            string apiName= "blendShapeTargets"
+        }
+        doc = """Ordered list of all target blend shapes. This property is not
+        inherited hierarchically, and is expected to be authored directly on
+        the skinnable primitive to which the the blend shapes apply."""
+    )
+}
+
+
+class BlendShape "BlendShape" (
+      inherits = </Typed>
+      doc = """Describes a target blend shape, possibly containing inbetween
+      shapes.
+
+      See the extended \\ref UsdSkel_BlendShape "Blend Shape Schema
+      documentation for information.
+      """
+    customData = {
+        string extraIncludes = """
+#include "pxr/base/tf/span.h"
+#include "pxr/usd/usdSkel/inbetweenShape.h" """
+    }
+)
+{
+    uniform vector3f[] offsets (
+        doc = """**Required property**. Position offsets which, when added to the
+        base pose, provides the target shape."""
+    )
+
+    uniform vector3f[] normalOffsets (
+        doc = """**Required property**. Normal offsets which, when added to the
+        base pose, provides the normals of the target shape."""
+    )
+
+    uniform int[] pointIndices (
+        doc = """**Optional property**. Indices into the original mesh that
+        correspond to the values in *offsets* and of any inbetween shapes. If
+        authored, the number of elements must be equal to the number of elements
+        in the *offsets* array."""
+    )
+}

@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDPRMAN_MESH_H
-#define HDPRMAN_MESH_H
+#ifndef EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MESH_H
+#define EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MESH_H
 
 #include "pxr/pxr.h"
 #include "hdPrman/gprim.h"
@@ -55,4 +55,4 @@ protected:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDPRMAN_MESH_H
+#endif // EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MESH_H

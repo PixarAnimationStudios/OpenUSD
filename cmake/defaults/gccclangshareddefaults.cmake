@@ -51,10 +51,6 @@ if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
     endif()
 endif()
 
-if (${PXR_MAYA_TBB_BUG_WORKAROUND})
-    set(_PXR_GCC_CLANG_SHARED_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS} -Wl,-Bsymbolic")
-endif()
-
 # If using pthreads then tell the compiler.  This should automatically cause
 # the linker to pull in the pthread library if necessary so we also clear
 # PXR_THREAD_LIBS.

@@ -100,7 +100,7 @@ def coalesceFiles(
         outLayer = Sdf.Layer.CreateNew(outFile)
 
     # Find out where the extension begins in the outFile string. Note that this
-    # search for '.usd' will also find usda (or even usdb and usdc) extensions.
+    # search for '.usd' will also find usda (or even usdc) extensions.
     extension = outFile.rfind('.usd')
     assert extension != -1, 'unable to find extension on file %s' % outFile
 

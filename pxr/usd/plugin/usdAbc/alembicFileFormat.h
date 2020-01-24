@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDABC_ALEMBIC_FILE_FORMAT_H
-#define USDABC_ALEMBIC_FILE_FORMAT_H
+#ifndef PXR_USD_PLUGIN_USD_ABC_ALEMBIC_FILE_FORMAT_H
+#define PXR_USD_PLUGIN_USD_ABC_ALEMBIC_FILE_FORMAT_H
  
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/fileFormat.h"
@@ -79,4 +79,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USDABC_ALEMBIC_FILE_FORMAT_H
+#endif // PXR_USD_PLUGIN_USD_ABC_ALEMBIC_FILE_FORMAT_H

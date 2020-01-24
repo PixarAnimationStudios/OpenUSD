@@ -1,0 +1,133 @@
+#usda 1.0
+
+def Sphere "Sphere" (
+    inherits = </_class_Sphere>
+    payload = @./payload.usda@
+    references = [ @./reference.usda@ ]
+    variantSets = "vset_1"
+    variants = {
+        string vset_1 = "default"
+        string vset_2 = "default"
+    }
+)
+{
+    float timeSamplesAcrossLayerOffset
+    float timeSamplesAcrossLayerOffset.timeSamples = {
+        1: 1,
+        10: 10,
+    }
+
+    float defaultOverTimeSamples
+    float defaultOverTimeSamples.timeSamples = {
+        1: 1,
+        10: 10,
+    }
+
+    float timeSamplesOverDefault
+    float timeSamplesOverDefault = 123
+
+    asset relativePath = @./foo.usda@
+    asset[] relativePathVec = [ @./foo.usda@, @./bar.usda@ ]
+
+    variantSet "vset_1" = {
+        "default" (
+            variantSets = "vset_2"
+        )
+        {
+            variantSet "vset_2" = {
+                "default"
+                {
+                    def Xform "ChildFromNestedVariant"
+                    {
+                    }
+                }
+            }
+        }
+    }
+}
+
+def Sphere "ListOpTest"
+{
+    custom rel foo
+    prepend rel foo = </Pre_sub>
+    append rel foo = </App_sub>
+    delete rel foo = </Del_sub>
+}
+
+def Sphere "SphereUsingClip_LegacyForm" (
+    clipAssetPaths = [ @./clip_moving_sphere.usda@ ]
+    clipManifestAssetPath = @./clip_static_sphere.usda@
+    clipPrimPath = "/Sphere"
+    clipActive = [ (1, 0) ]
+    clipTimes = [ (1, 1), (10, 10) ]
+    references = @./clip_static_sphere.usda@</Sphere>
+)
+{
+}
+
+def Sphere "SphereUsingClip" (
+    clips = {
+        dictionary default = {
+            asset[] assetPaths = [@./clip_moving_sphere.usda@]
+            string primPath = "/Sphere"
+            double2[] active = [(1, 0)]
+            double2[] times = [(1, 1), (10,10)]
+        }
+    }
+    references = @./clip_static_sphere.usda@</Sphere>
+)
+{
+}
+
+def Sphere "TimeCodeTest" (
+    customData = {
+        double doubleVal = 10
+        dictionary subDict = {
+            double doubleVal = 10
+            timecode timeCode = 10
+            timecode[] timeCodeArray = [10, 20]
+        }
+        timecode timeCode = 10
+        timecode[] timeCodeArray = [10, 20]
+    }
+    doubleTest = 10
+    timeCodeArrayTest = [10, 20]
+    timeCodeTest = 10
+)
+{
+    double Double = 10
+    double Double.timeSamples = {
+        0: 10,
+        1: 20,
+    }
+    timecode TimeCode = 10
+    timecode TimeCode.timeSamples = {
+        0: 10,
+        1: 20,
+    }
+    timecode[] TimeCodeArray = [10, 20]
+    timecode[] TimeCodeArray.timeSamples = {
+        0: [10, 30],
+        1: [20, 40],
+    }
+}
+
+def Xform "assetWithVariant" (
+    variants = {
+        string variantSet1 = "b"
+    }
+    append variantSets = "variantSet1"
+) {
+    variantSet "variantSet1" = {
+        "a" {
+            def Xform "a"
+            {
+            }
+        }
+        "b" {
+            def Xform "b"
+            {
+            }
+        }
+    }
+}

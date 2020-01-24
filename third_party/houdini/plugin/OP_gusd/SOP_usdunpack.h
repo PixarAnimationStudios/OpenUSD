@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef __GUSD_SOP_USDUNPACK_H__
-#define __GUSD_SOP_USDUNPACK_H__
+#ifndef OP_GUSD_SOP_USDUNPACK_H
+#define OP_GUSD_SOP_USDUNPACK_H
 
 #include <PRM/PRM_Template.h>
 #include <SOP/SOP_Node.h>
@@ -85,4 +85,4 @@ public:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __GUSD_SOP_USDUNPACK_H__
+#endif // OP_GUSD_SOP_USDUNPACK_H

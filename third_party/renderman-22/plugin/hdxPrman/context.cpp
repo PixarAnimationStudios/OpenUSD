@@ -22,8 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "hdxPrman/context.h"
-#include "hdxPrman/rendererPlugin.h"
+#include "context.h"
+#include "rendererPlugin.h"
 #include "hdPrman/rixStrings.h"
 
 #include "pxr/base/tf/stringUtils.h"
@@ -87,7 +87,6 @@ HdxPrman_InteractiveContext::~HdxPrman_InteractiveContext()
 
 TF_DEFINE_ENV_SETTING(HDX_PRMAN_ENABLE_MOTIONBLUR, true, "bool env setting to control hdPrman motion blur");
 TF_DEFINE_ENV_SETTING(HDX_PRMAN_NTHREADS, 0, "override number of threads used by hdPrman");
-TF_DEFINE_ENV_SETTING(HDX_PRMAN_MAX_SAMPLES, 0, "override max samples in hdPrman");
 TF_DEFINE_ENV_SETTING(HDX_PRMAN_OSL_VERBOSE, 0, "override osl verbose in hdPrman");
 
 void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
@@ -177,12 +176,6 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
 
     riley::ScopedCoordinateSystem const k_NoCoordsys = { 0, nullptr };
 
-    // Configure default time samples.
-    defaultTimeSamples.push_back(0.0);
-    defaultTimeSamples.push_back(1.0);
-    // XXX In the future, we'll want a way for clients to configure this map.
-    timeSampleMap[SdfPath::AbsoluteRootPath()] = defaultTimeSamples;
-
     // XXX Shutter settings from studio katana defaults:
     // - /root.renderSettings.shutter{Open,Close}
     float shutterInterval[2] = { 0.0f, 0.5f };
@@ -199,9 +192,18 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
         // Set thread limit for Renderman. Leave a few threads for app.
         static const unsigned appThreads = 4;
         unsigned nThreads = std::max(WorkGetConcurrencyLimit()-appThreads, 1u);
+        // Check the environment
         unsigned nThreadsEnv = TfGetEnvSetting(HDX_PRMAN_NTHREADS);
-        if (nThreadsEnv > 0)
+        if (nThreadsEnv > 0) {
             nThreads = nThreadsEnv;
+        } else {
+            // Otherwise check for a render setting
+            VtValue vtThreads = renderDelegate->GetRenderSetting(
+                HdRenderSettingsTokens->threadLimit).Cast<int>();
+            if (!vtThreads.IsEmpty()) {
+                nThreads = vtThreads.UncheckedGet<int>();
+            }
+        }
         options->SetInteger(RixStr.k_limits_threads, nThreads);
 
         // XXX: Currently, Renderman doesn't support resizing the viewport
@@ -216,14 +218,19 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
         // Read the maxSamples out of settings (if it exists). Use a default
         // of 1024, so we don't cut the progressive render off early.
         // Setting a lower value here would be useful for unit tests.
-        const int defaultMaxSamples = 1024;
-        int maxSamples = renderDelegate->GetRenderSetting<int>(
-            HdRenderSettingsTokens->convergedSamplesPerPixel,
-            defaultMaxSamples);
-        int maxSamplesEnv = TfGetEnvSetting(HDX_PRMAN_MAX_SAMPLES);
-        if (maxSamplesEnv > 0)
-            maxSamples = maxSamplesEnv;
+        VtValue vtMaxSamples = renderDelegate->GetRenderSetting(
+            HdRenderSettingsTokens->convergedSamplesPerPixel).Cast<int>();
+        int maxSamples = TF_VERIFY(!vtMaxSamples.IsEmpty()) ?
+            vtMaxSamples.UncheckedGet<int>() : 1024;
         options->SetInteger(RixStr.k_hider_maxsamples, maxSamples);
+
+        // Read the variance threshold out of settings (if it exists). Use a
+        // default of 0.001.
+        VtValue vtPixelVariance = renderDelegate->GetRenderSetting(
+            HdRenderSettingsTokens->convergedVariance).Cast<float>();
+        float pixelVariance = TF_VERIFY(!vtPixelVariance.IsEmpty()) ?
+            vtPixelVariance.UncheckedGet<float>() : 0.001f;
+        options->SetFloat(RixStr.k_Ri_PixelVariance, pixelVariance);
 
         // Searchpaths (TEXTUREPATH, etc)
         HdPrman_UpdateSearchPathsFromEnvironment(options);
@@ -234,7 +241,6 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
         options->SetInteger(RixStr.k_hider_minsamples, 1);
         options->SetInteger(RixStr.k_trace_maxdepth, 10);
         options->SetFloat(RixStr.k_Ri_FormatPixelAspectRatio, 1.0f);
-        options->SetFloat(RixStr.k_Ri_PixelVariance, 0.001f);
         options->SetString(RixStr.k_bucket_order, us_circle);
 
         // Camera lens

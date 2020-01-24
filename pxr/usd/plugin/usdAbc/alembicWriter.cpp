@@ -24,8 +24,8 @@
 /// \file alembicWriter.cpp
 
 #include "pxr/pxr.h"
-#include "pxr/usd/usdAbc/alembicWriter.h"
-#include "pxr/usd/usdAbc/alembicUtil.h"
+#include "pxr/usd/plugin/usdAbc/alembicWriter.h"
+#include "pxr/usd/plugin/usdAbc/alembicUtil.h"
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/xformOp.h"
 #include "pxr/usd/sdf/schema.h"

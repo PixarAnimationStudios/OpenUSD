@@ -25,7 +25,7 @@
 
 #include <boost/python/def.hpp>
 
-#include "pxr/usd/usdAbc/alembicTest.h"
+#include "pxr/usd/plugin/usdAbc/alembicTest.h"
 
 using namespace boost::python;
 

@@ -23,6 +23,7 @@
 //
 #include "hdPrman/instancer.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec3f.h"
@@ -38,16 +39,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// Define local tokens for the names of the primvars the instancer
-// consumes.
-// XXX: These should be hydra tokens...
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (instanceTransform)
-    (rotate)
-    (scale)
-    (translate)
-);
 
 HdPrmanInstancer::HdPrmanInstancer(HdSceneDelegate* delegate,
                                      SdfPath const& id,
@@ -124,9 +115,9 @@ HdPrmanInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
     }
 
     // "translate" holds a translation vector for each index.
-    if (_primvarMap.count(_tokens->translate) > 0) {
+    if (_primvarMap.count(HdInstancerTokens->translate) > 0) {
         const VtVec3fArray translates =
-            _primvarMap[_tokens->translate].value.Get<VtVec3fArray>();
+            _primvarMap[HdInstancerTokens->translate].value.Get<VtVec3fArray>();
         for (int i: instanceIndices) {
             GfMatrix4d translateMat(1);
             translateMat.SetTranslate(GfVec3d(translates[i]));
@@ -135,9 +126,9 @@ HdPrmanInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
     }
 
     // "rotate" holds a quaternion in <real, i, j, k> format for each index.
-    if (_primvarMap.count(_tokens->rotate) > 0) {
+    if (_primvarMap.count(HdInstancerTokens->rotate) > 0) {
         const VtVec4fArray rotates =
-            _primvarMap[_tokens->rotate].value.Get<VtVec4fArray>();
+            _primvarMap[HdInstancerTokens->rotate].value.Get<VtVec4fArray>();
         for (int i: instanceIndices) {
             GfQuaternion quat(rotates[i][0],
                 GfVec3d(rotates[i][1], rotates[i][2], rotates[i][3]));
@@ -148,9 +139,9 @@ HdPrmanInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
     }
 
     // "scale" holds an axis-aligned scale vector for each index.
-    if (_primvarMap.count(_tokens->scale) > 0) {
+    if (_primvarMap.count(HdInstancerTokens->scale) > 0) {
         const VtVec3fArray scales =
-            _primvarMap[_tokens->scale].value.Get<VtVec3fArray>();
+            _primvarMap[HdInstancerTokens->scale].value.Get<VtVec3fArray>();
         for (int i: instanceIndices) {
             GfMatrix4d scaleMat(1);
             scaleMat.SetScale(GfVec3d(scales[i]));
@@ -159,9 +150,9 @@ HdPrmanInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
     }
 
     // "instanceTransform" holds a 4x4 transform matrix for each index.
-    if (_primvarMap.count(_tokens->instanceTransform) > 0) {
+    if (_primvarMap.count(HdInstancerTokens->instanceTransform) > 0) {
         const VtMatrix4dArray instanceTransforms =
-            _primvarMap[_tokens->instanceTransform]
+            _primvarMap[HdInstancerTokens->instanceTransform]
             .value.Get<VtMatrix4dArray>();
         for (int i: instanceIndices) {
             transforms[i] = instanceTransforms[i] * transforms[i];
@@ -229,11 +220,14 @@ HdPrmanInstancer::SampleInstanceTransforms(
     HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> boxedRotates;
     HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> boxedScales;
     delegate->SampleInstancerTransform(instancerId, &instancerXform);
-    delegate->SamplePrimvar(instancerId, _tokens->instanceTransform,
+    delegate->SamplePrimvar(instancerId, HdInstancerTokens->instanceTransform,
                             &boxedInstanceXforms);
-    delegate->SamplePrimvar(instancerId, _tokens->translate, &boxedTranslates);
-    delegate->SamplePrimvar(instancerId, _tokens->scale, &boxedScales);
-    delegate->SamplePrimvar(instancerId, _tokens->rotate, &boxedRotates);
+    delegate->SamplePrimvar(instancerId, HdInstancerTokens->translate,
+                            &boxedTranslates);
+    delegate->SamplePrimvar(instancerId, HdInstancerTokens->scale,
+                            &boxedScales);
+    delegate->SamplePrimvar(instancerId, HdInstancerTokens->rotate,
+                            &boxedRotates);
 
     // Unbox samples held as VtValues
     HdTimeSampleArray<VtMatrix4dArray, HDPRMAN_MAX_TIME_SAMPLES> instanceXforms;
@@ -375,10 +369,10 @@ HdPrmanInstancer::GetInstancePrimvars(
             continue;
         }
         // Skip primvars that have special handling elsewhere.
-        if (entry.first == _tokens->instanceTransform ||
-            entry.first == _tokens->rotate ||
-            entry.first == _tokens->scale ||
-            entry.first == _tokens->translate) {
+        if (entry.first == HdInstancerTokens->instanceTransform ||
+            entry.first == HdInstancerTokens->rotate ||
+            entry.first == HdInstancerTokens->scale ||
+            entry.first == HdInstancerTokens->translate) {
             continue;
         }
         // Confirm that instance-rate primvars are array-valued

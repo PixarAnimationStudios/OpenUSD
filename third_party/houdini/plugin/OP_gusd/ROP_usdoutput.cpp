@@ -42,6 +42,7 @@
 #include "pxr/usd/usdGeom/scope.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformCache.h"
+#include "pxr/usd/usdShade/materialBindingAPI.h"
 #include "pxr/usd/usdUtils/pipeline.h"
 #include "pxr/usd/kind/registry.h"
 #include "pxr/usd/sdf/fileFormat.h"
@@ -1733,7 +1734,7 @@ renderFrame(fpreal time,
                     // appearing on the start frame.
                     if ( m_granularity == ONE_FILE ) {
                         if ( !SYSisEqual(sampleFrame, m_startFrame + shutterOpen, 1e-6) ) {
-                            primPtr->addLeadingBookend( sampleFrame, m_startFrame );
+                            primPtr->addLeadingBookend( sampleFrame );
                         }
                     }
                     primPtr->markVisible( true );
@@ -2068,7 +2069,7 @@ bindAndWriteShaders(UsdRefShaderMap& usdRefShaderMap,
             for (auto primPathIt = primPaths.begin();
                  primPathIt != primPaths.end(); ++primPathIt) {
                 UsdPrim prim = m_usdStage->GetPrimAtPath(*primPathIt);
-                usdMaterial.Bind(prim);
+                UsdShadeMaterialBindingAPI(prim).Bind(usdMaterial);
             }
         }
     }

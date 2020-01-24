@@ -23,10 +23,11 @@
 #
 include(Version)
 
-# Copy headers to the build tree.  In the source tree we find headers in
-# paths like pxr/base/lib/tf but we #include using paths like pxr/base/tf,
-# i.e. without 'lib/'.  So we copy the headers (public and private) into
-# the build tree under paths of the latter scheme.
+# Copy headers to the build tree.  Under pxr/ the include paths match the
+# source tree paths but elsewhere they do not. Instead we use include
+# paths like rmanArgsParser/rmanArgsParser.h.  So if /pxr/ is not in the
+# source tree path then copy the headers (public and private) into the
+# build tree under paths of the latter scheme.
 function(_copy_headers LIBRARY_NAME)
     set(options  "")
     set(oneValueArgs PREFIX)
@@ -40,6 +41,10 @@ function(_copy_headers LIBRARY_NAME)
 
     set(files_copied "")
     set(hpath "${_args_PREFIX}/${LIBRARY_NAME}")
+    if ("${CMAKE_CURRENT_SOURCE_DIR}" MATCHES ".*/pxr/.*")
+        # Include paths under pxr/ match the source path.
+        file(RELATIVE_PATH hpath "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+    endif()
     set(header_dest_dir "${CMAKE_BINARY_DIR}/${PXR_INSTALL_SUBDIR}/include/${hpath}")
     if( NOT "${_args_FILES}" STREQUAL "")
         set(files_copied "")
@@ -102,7 +107,7 @@ endfunction() # _plugInfo_subst
 
 # Generate a doxygen config file
 function(_pxrDoxyConfig_subst)
-    configure_file(${CMAKE_SOURCE_DIR}/pxr/usd/lib/usd/Doxyfile.in
+    configure_file(${CMAKE_SOURCE_DIR}/pxr/usd/usd/Doxyfile.in
                    ${CMAKE_BINARY_DIR}/Doxyfile
     )
 endfunction()
@@ -1215,6 +1220,7 @@ function(_pxr_library NAME)
         PROPERTIES
             FOLDER "${folder}"
             POSITION_INDEPENDENT_CODE ON
+            IMPORT_PREFIX "${args_PREFIX}"            
             PREFIX "${args_PREFIX}"
             SUFFIX "${args_SUFFIX}"
             PUBLIC_HEADER "${args_PUBLIC_HEADERS}"

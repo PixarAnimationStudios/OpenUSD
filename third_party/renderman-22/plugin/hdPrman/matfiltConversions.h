@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDPRMAN_MATFILT_CONVERSIONS_H
-#define HDPRMAN_MATFILT_CONVERSIONS_H
+#ifndef EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATFILT_CONVERSIONS_H
+#define EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATFILT_CONVERSIONS_H
 
 #include "pxr/pxr.h"
 #include "hdPrman/matfiltFilterChain.h"
@@ -32,16 +32,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// Converts a single terminal of an HdMaterialNetworkMap to a MatfiltNetwork
 /// NOTE: currently doesn't handle primvars field of HdMaterialNetwork
-bool MatfiltConvertFromHdMaterialNetworkMapTerminal(
+bool MatfiltConvertFromHdMaterialNetworkMap(
     const HdMaterialNetworkMap & hdNetworkMap,
-    const TfToken & terminalName,
     MatfiltNetwork *result);
-
-/// Converts MatfiltNetwork from each terminal into HdMaterialNetwork entries
-/// within a HdMaterialNetworkMap
-bool MatfiltConvertToHdMaterialNetworkMap(
-    const MatfiltNetwork & matfiltNetwork,
-    HdMaterialNetworkMap *result);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -39,11 +39,6 @@ _add_define(GLX_GLXEXT_PROTOTYPES)
 # Python bindings for tf require this define.
 _add_define(BOOST_PYTHON_NO_PY_SIGNATURES)
 
-# Maya seems to require this
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    _add_define(LINUX)
-endif()
-
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     _add_define(BUILD_OPTLEVEL_DEV)
 endif()

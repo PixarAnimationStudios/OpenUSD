@@ -22,8 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#ifndef USDDRACO_EXPORT_ATTRIBUTE_H
-#define USDDRACO_EXPORT_ATTRIBUTE_H
+#ifndef PXR_USD_PLUGIN_USD_DRACO_EXPORT_ATTRIBUTE_H
+#define PXR_USD_PLUGIN_USD_DRACO_EXPORT_ATTRIBUTE_H
 
 #include "attributeDescriptor.h"
 
@@ -301,4 +301,4 @@ inline bool UsdDracoExportAttribute<T>::HasPointAttribute() const {
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // USDDRACO_EXPORT_ATTRIBUTE_H
+#endif  // PXR_USD_PLUGIN_USD_DRACO_EXPORT_ATTRIBUTE_H

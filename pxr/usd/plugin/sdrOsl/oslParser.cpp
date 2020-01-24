@@ -37,7 +37,7 @@
 #include "pxr/usd/sdr/shaderMetadataHelpers.h"
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderProperty.h"
-#include "pxr/usd/sdrOsl/oslParser.h"
+#include "pxr/usd/plugin/sdrOsl/oslParser.h"
 
 #include <tuple>
 
@@ -146,6 +146,7 @@ SdrOslParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
             _tokens->sourceType,    // OSL shaders don't declare different types
                                     // so use the same type as the source type
             discoveryResult.uri,
+            discoveryResult.resolvedUri,
             _getNodeProperties(oslQuery, discoveryResult),
             _getNodeMetadata(oslQuery, discoveryResult.metadata),
             discoveryResult.sourceCode

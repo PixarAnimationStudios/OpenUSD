@@ -24,7 +24,7 @@
 
 #include "pxr/pxr.h"
 
-#include "pxrUsdInPrman/declarePackageOps.h"
+#include "declarePackageOps.h"
 
 
 PXR_NAMESPACE_USING_DIRECTIVE

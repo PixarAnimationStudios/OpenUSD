@@ -3,20 +3,6 @@
         {
             "Info": {
                 "SdfMetadata": {
-                    "Usd_DCE_PerSide": {
-                        "type": "int",
-                        "default": 1,
-                        "displayGroup": "Core",
-                        "appliesTo": ["prims"],
-                        "documentation:": "Used to set number of copies."
-                    },
-                    "Usd_DCE_NumFrames": {
-                        "type": "int",
-                        "default": 1,
-                        "displayGroup": "Core",
-                        "appliesTo": ["prims"],
-                        "documentation:": "Used to set number of copies."
-                    },
                     "Usd_DCE_Params": {
                         "type": "dictionary",
                         "displayGroup": "Core",

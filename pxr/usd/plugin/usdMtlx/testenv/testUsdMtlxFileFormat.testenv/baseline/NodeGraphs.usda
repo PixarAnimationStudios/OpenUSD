@@ -177,12 +177,10 @@ def "MaterialX"
 
             def Shader "n7"
             {
-                uniform token info:id = "ND_contrast_color3FA"
-                float inputs:amount = 0 (
-                    connectability = "interfaceOnly"
-                )
+                uniform token info:id = "ND_contrast_color3"
+                color3f inputs:amount = (0, 0, 0)
                 color3f inputs:in.connect = </MaterialX/NodeGraphs/nodegraph3/img2.outputs:result>
-                float inputs:pivot = 0.5 (
+                color3f inputs:pivot = (0.5, 0.5, 0.5) (
                     connectability = "interfaceOnly"
                 )
                 color3f outputs:result

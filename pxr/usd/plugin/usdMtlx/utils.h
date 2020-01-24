@@ -22,11 +22,11 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#ifndef USDMTLX_UTILS_H
-#define USDMTLX_UTILS_H
+#ifndef PXR_USD_PLUGIN_USD_MTLX_UTILS_H
+#define PXR_USD_PLUGIN_USD_MTLX_UTILS_H
 
 #include "pxr/pxr.h"
-#include "pxr/usd/usdMtlx/api.h"
+#include "pxr/usd/plugin/usdMtlx/api.h"
 #include "pxr/usd/ndr/declare.h"
 #include "pxr/usd/sdf/valueTypeName.h"
 #include "pxr/base/vt/value.h"
@@ -155,4 +155,4 @@ UsdMtlxSplitStringArray(const std::string& s);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USDMTLX_UTILS_H
+#endif // PXR_USD_PLUGIN_USD_MTLX_UTILS_H

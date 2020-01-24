@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDOBJ_TRANSLATOR_H
-#define USDOBJ_TRANSLATOR_H
+#ifndef PXR_EXTRAS_USD_EXAMPLES_USD_OBJ_TRANSLATOR_H
+#define PXR_EXTRAS_USD_EXAMPLES_USD_OBJ_TRANSLATOR_H
 #include "pxr/pxr.h"
 #include "pxr/base/tf/declarePtrs.h"
 
@@ -38,4 +38,4 @@ UsdObjTranslateObjToUsd(const class UsdObjStream &objStream);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USDOBJ_TRANSLATOR_H
+#endif // PXR_EXTRAS_USD_EXAMPLES_USD_OBJ_TRANSLATOR_H

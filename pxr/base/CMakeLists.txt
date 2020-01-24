@@ -1,5 +1,12 @@
 set(DIRS
-    lib
+    arch
+    tf
+    gf
+    js
+    trace
+    work
+    plug
+    vt
 #    bin
 )
 

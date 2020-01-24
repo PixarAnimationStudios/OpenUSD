@@ -1,0 +1,101 @@
+#usda 1.0
+
+def SkelAnimation "Anim1" {}
+
+def SkelAnimation "Anim2" {}
+
+def SkelAnimation "InactiveAnim" (active=false) {}
+
+def Skeleton "Skel1" {}
+
+def Skeleton "Skel2" {}
+
+def Skeleton "InactiveSkel" (active=false) {}
+
+def Scope "InstancedModelAnimBindings" (
+    instanceable = true
+)
+{
+    def SkelAnimation "Anim" {
+    }
+   
+    def Skeleton "Inherit" {}
+
+    def Skeleton "Override" {
+        rel skel:animationSource = <../Anim>
+    }
+}
+
+def SkelRoot "AnimBinding" {
+
+    def Scope "Scope" {
+        rel skel:animationSource = </Anim1>
+
+        def Skeleton "Inherit" {}
+    
+        def Skeleton "Override" {
+            rel skel:animationSource = </Anim2>
+        }
+
+        def Skeleton "Block" {
+            rel skel:animationSource = None
+        }
+    }
+
+    def Skeleton "Unbound" {}
+    
+    def Skeleton "BoundToInactiveAnim" {
+        rel skel:animationSource = </InactiveAnim>
+    }
+
+    over "Instance" (
+        add references = </InstancedModelAnimBindings>
+    )
+    {
+        rel skel:animationSource = </Anim1>
+    }
+}
+
+def Scope "InstancedModelSkelBindings" (
+    instanceable = true
+)
+{
+    def Skeleton "Skel" {
+    }
+   
+    def Mesh "Inherit" {}
+
+    def Mesh "Override" {
+        rel skel:skeleton = <../Skel>
+    }
+}
+
+def SkelRoot "SkelBinding" {
+
+    def Scope "Scope" {
+        rel skel:skeleton = </Skel1>
+
+        def Mesh "Inherit" {}
+    
+        def Mesh "Override" {
+            rel skel:skeleton = </Skel2>
+        }
+
+        def Mesh "Block" {
+            rel skel:skeleton = None
+        }
+   }
+
+    def Mesh "Unbound" {}
+    
+    def Mesh "BoundToInactiveSkel" {
+        rel skel:skeleton = </InactiveSkel>
+    }
+
+    over "Instance" (
+        add references = </InstancedModelSkelBindings>
+    )
+    {
+        rel skel:skeleton = </Skel1>
+    }
+}

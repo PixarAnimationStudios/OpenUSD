@@ -21,9 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "hdxPrman/renderPass.h"
-#include "hdxPrman/context.h"
-#include "hdxPrman/renderBuffer.h"
+#include "renderPass.h"
+#include "context.h"
+#include "renderBuffer.h"
 
 #include "hdPrman/camera.h"
 #include "hdPrman/renderDelegate.h"
@@ -99,6 +99,10 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         // If this is not an interactive context, don't use Hydra to drive
         // rendering and presentation of the framebuffer.  Instead, assume
         // we are just using Hydra to sync the scene contents to Riley.
+        return;
+    }
+    if (_interactiveContext->renderThread.IsPauseRequested()) {
+        // No more updates if pause is pending
         return;
     }
 
@@ -193,8 +197,11 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
             projParams
         };
 
-        // Set riley camera and projection shader params from the Hydra camera.
-        hdCam->SetRileyCameraParams(camParams, projParams);
+        // Set riley camera and projection shader params from the Hydra camera,
+        // if available.
+        if (hdCam) {
+            hdCam->SetRileyCameraParams(camParams, projParams);
+        }
 
         // XXX Normally we would update RenderMan option 'ScreenWindow' to
         // account for an orthographic camera,
@@ -241,21 +248,32 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         flipZ[2][2] = -1.0;
         viewToWorldCorrectionMatrix = flipZ * viewToWorldCorrectionMatrix;
 
-        // Convert  from Gf to Rt.
-        HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> const& xforms =
-            hdCam->GetTimeSampleXforms();
+        riley::Transform xform;
+        if (hdCam) {
+            // Use time sampled transforms authored on the scene camera.
+            HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> const& 
+                xforms = hdCam->GetTimeSampleXforms();
 
-        TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES> 
-            xf_rt_values(xforms.count);
-        
-        for (size_t i=0; i < xforms.count; ++i) {
-            xf_rt_values[i] = HdPrman_GfMatrixToRtMatrix(
-                viewToWorldCorrectionMatrix * xforms.values[i]);
+            TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES> 
+                xf_rt_values(xforms.count);
+            
+            for (size_t i=0; i < xforms.count; ++i) {
+                xf_rt_values[i] = HdPrman_GfMatrixToRtMatrix(
+                    viewToWorldCorrectionMatrix * xforms.values[i]);
+            }
+
+            xform = { unsigned(xforms.count), xf_rt_values.data(),
+                      xforms.times.data() };
+        } else {
+            // Use the framing state as a single time sample.
+            float const zerotime = 0.0f;
+            RtMatrix4x4 matrix = HdPrman_GfMatrixToRtMatrix(
+                viewToWorldCorrectionMatrix * viewToWorldMatrix);
+
+            xform = {1, &matrix, &zerotime};
         }
 
         // Commit new camera.
-        riley::Transform xform = {
-            unsigned(xforms.count), xf_rt_values.data(), xforms.times.data() };
 
         riley->ModifyCamera(
             _interactiveContext->cameraId, 
@@ -288,6 +306,24 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         _quickIntegrateTime = renderDelegate->GetRenderSetting<int>(
             HdPrmanRenderSettingsTokens->interactiveIntegratorTimeout,
             200) / 1000.f;
+
+        // Update convergence criteria.
+        RixParamList *options = mgr->CreateRixParamList();
+
+        VtValue vtMaxSamples = renderDelegate->GetRenderSetting(
+            HdRenderSettingsTokens->convergedSamplesPerPixel).Cast<int>();
+        int maxSamples = TF_VERIFY(!vtMaxSamples.IsEmpty()) ?
+            vtMaxSamples.UncheckedGet<int>() : 1024;
+        options->SetInteger(RixStr.k_hider_maxsamples, maxSamples);
+
+        VtValue vtPixelVariance = renderDelegate->GetRenderSetting(
+            HdRenderSettingsTokens->convergedVariance).Cast<float>();
+        float pixelVariance = TF_VERIFY(!vtPixelVariance.IsEmpty()) ?
+            vtPixelVariance.UncheckedGet<float>() : 0.001f;
+        options->SetFloat(RixStr.k_Ri_PixelVariance, pixelVariance);
+
+        _interactiveContext->riley->SetOptions(*options);
+        mgr->DestroyRixParamList(options);
 
         _lastSettingsVersion = currentSettingsVersion;
         needStartRender = true;

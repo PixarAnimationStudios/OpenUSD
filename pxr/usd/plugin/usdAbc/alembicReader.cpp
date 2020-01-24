@@ -24,8 +24,8 @@
 /// \file alembicReader.cpp
 
 #include "pxr/pxr.h"
-#include "pxr/usd/usdAbc/alembicReader.h"
-#include "pxr/usd/usdAbc/alembicUtil.h"
+#include "pxr/usd/plugin/usdAbc/alembicReader.h"
+#include "pxr/usd/plugin/usdAbc/alembicUtil.h"
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/sdf/schema.h"

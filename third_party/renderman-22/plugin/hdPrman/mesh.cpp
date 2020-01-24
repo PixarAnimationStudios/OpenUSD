@@ -74,7 +74,7 @@ HdPrman_Mesh::GetInitialDirtyBitsMask() const
         | HdChangeTracker::DirtyPrimvar
         | HdChangeTracker::DirtyNormals
         | HdChangeTracker::DirtyMaterialId
-        | HdChangeTracker::DirtyInstanceIndex
+        | HdChangeTracker::DirtyInstancer
         ;
 
     return (HdDirtyBits)mask;

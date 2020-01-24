@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDMTLX_READER_H
-#define USDMTLX_READER_H
+#ifndef PXR_USD_PLUGIN_USD_MTLX_READER_H
+#define PXR_USD_PLUGIN_USD_MTLX_READER_H
  
 #include "pxr/pxr.h"
-#include "pxr/usd/usdMtlx/api.h"
+#include "pxr/usd/plugin/usdMtlx/api.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include <MaterialXCore/Document.h>
@@ -56,4 +56,4 @@ void UsdMtlxReadNodeGraphs(const MaterialX::ConstDocumentPtr& mtlx,
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USDMTLX_READER_H
+#endif // PXR_USD_PLUGIN_USD_MTLX_READER_H

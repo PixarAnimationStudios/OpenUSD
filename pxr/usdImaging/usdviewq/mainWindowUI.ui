@@ -1,0 +1,2690 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1145</width>
+    <height>1002</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true"/>
+  </property>
+  <property name="comment" stdset="0">
+   <string>
+     PLEASE DO NOT HAND EDIT THIS FILE, AS ITS XML FORMAT IS FRAGILE AND QT'S
+     TOOLS ARE INCONSISTENT ACROSS PLATFORMS ON TOLERANCE TO BAD CONSTRUCTS.
+     
+     Instead prefer qdesigner5 to make edits to the document.  If you are 
+     allergic to gui tools, then AT LEAST, after making hand edits, prior to
+     checking them in, load this file in qdesigner5, ensure it loads without 
+     error, and then SAVE THE FILE BACK OUT, AND CHECK THAT IN, so that the
+     next developer using qdesigner5 does not contend with unrelated diffs.
+     
+     Copyright 2016 Pixar                                                                   
+                                                                                            
+     Licensed under the Apache License, Version 2.0 (the &quot;Apache License&quot;)      
+     with the following modification; you may not use this file except in                   
+     compliance with the Apache License and the following modification to it:               
+     Section 6. Trademarks. is deleted and replaced with:                                   
+                                                                                            
+     6. Trademarks. This License does not grant permission to use the trade                 
+        names, trademarks, service marks, or product names of the Licensor                  
+        and its affiliates, except as required to comply with Section 4(c) of               
+        the License and to reproduce the content of the NOTICE file.                        
+                                                                                            
+     You may obtain a copy of the Apache License at                                         
+                                                                                            
+         http://www.apache.org/licenses/LICENSE-2.0                                         
+                                                                                            
+     Unless required by applicable law or agreed to in writing, software                    
+     distributed under the Apache License with the above modification is                    
+     distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY   
+     KIND, either express or implied. See the Apache License for the specific               
+     language governing permissions and limitations under the Apache License.               
+  </string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <property name="statusTip">
+    <string/>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout_4">
+    <item>
+     <widget class="QLineEdit" name="currentPathWidget">
+      <property name="focusPolicy">
+       <enum>Qt::StrongFocus</enum>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QSplitter" name="topBottomSplitter">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Plain</enum>
+      </property>
+      <property name="lineWidth">
+       <number>0</number>
+      </property>
+      <property name="midLineWidth">
+       <number>0</number>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <widget class="QSplitter" name="primStageSplitter">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <widget class="QFrame" name="primFrame">
+        <property name="frameShape">
+         <enum>QFrame::NoFrame</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Plain</enum>
+        </property>
+        <property name="lineWidth">
+         <number>0</number>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_2">
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>6</number>
+         </property>
+         <item>
+          <widget class="QMenuBar" name="primViewMenuBar">
+           <property name="layoutDirection">
+            <enum>Qt::LeftToRight</enum>
+           </property>
+           <property name="nativeMenuBar">
+            <bool>false</bool>
+           </property>
+           <widget class="QMenu" name="menuNavigation">
+            <property name="title">
+             <string>&amp;Navigation</string>
+            </property>
+            <addaction name="actionFind_Prims"/>
+            <addaction name="actionSelect_Stage_Root"/>
+            <addaction name="actionSelect_Model_Root"/>
+            <addaction name="separator"/>
+            <addaction name="actionSelect_Bound_Preview_Material"/>
+            <addaction name="actionSelect_Bound_Full_Material"/>
+            <addaction name="actionSelect_Preview_Binding_Relationship"/>
+            <addaction name="actionSelect_Full_Binding_Relationship"/>
+           </widget>
+           <widget class="QMenu" name="menuShow">
+            <property name="title">
+             <string>&amp;Show</string>
+            </property>
+            <widget class="QMenu" name="menuPrim_View_Depth">
+             <property name="title">
+              <string>Prim View Depth</string>
+             </property>
+             <addaction name="actionLevel_1"/>
+             <addaction name="actionLevel_2"/>
+             <addaction name="actionLevel_3"/>
+             <addaction name="actionLevel_4"/>
+             <addaction name="actionLevel_5"/>
+             <addaction name="actionLevel_6"/>
+             <addaction name="actionLevel_7"/>
+             <addaction name="actionLevel_8"/>
+             <addaction name="separator"/>
+             <addaction name="actionExpand_All"/>
+             <addaction name="actionCollapse_All"/>
+            </widget>
+            <addaction name="menuPrim_View_Depth"/>
+            <addaction name="separator"/>
+            <addaction name="actionShow_Inactive_Prims"/>
+            <addaction name="actionShow_All_Master_Prims"/>
+            <addaction name="actionShow_Undefined_Prims"/>
+            <addaction name="actionShow_Abstract_Prims"/>
+           </widget>
+           <addaction name="menuNavigation"/>
+           <addaction name="menuShow"/>
+          </widget>
+         </item>
+         <item>
+          <widget class="PrimTreeWidget" name="primView">
+           <property name="font">
+            <font>
+             <family>Gotham Rounded</family>
+             <pointsize>9</pointsize>
+             <weight>50</weight>
+             <italic>false</italic>
+             <bold>false</bold>
+            </font>
+           </property>
+           <property name="contextMenuPolicy">
+            <enum>Qt::CustomContextMenu</enum>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::NoFrame</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Plain</enum>
+           </property>
+           <property name="lineWidth">
+            <number>0</number>
+           </property>
+           <property name="midLineWidth">
+            <number>0</number>
+           </property>
+           <property name="alternatingRowColors">
+            <bool>true</bool>
+           </property>
+           <property name="selectionMode">
+            <enum>QAbstractItemView::ExtendedSelection</enum>
+           </property>
+           <property name="uniformRowHeights">
+            <bool>true</bool>
+           </property>
+           <property name="allColumnsShowFocus">
+            <bool>true</bool>
+           </property>
+           <attribute name="headerCascadingSectionResizes">
+            <bool>true</bool>
+           </attribute>
+           <attribute name="headerDefaultSectionSize">
+            <number>150</number>
+           </attribute>
+           <attribute name="headerMinimumSectionSize">
+            <number>20</number>
+           </attribute>
+           <attribute name="headerStretchLastSection">
+            <bool>false</bool>
+           </attribute>
+           <column>
+            <property name="text">
+             <string>Prim Name</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Type</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Vis</string>
+            </property>
+            <property name="textAlignment">
+             <set>AlignLeft|AlignVCenter</set>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Draw Mode</string>
+            </property>
+           </column>
+          </widget>
+         </item>
+         <item>
+          <widget class="PrimLegend" name="primLegendContainer" native="true"/>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="primFindContainer">
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <spacer name="horizontalSpacer_10">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeType">
+              <enum>QSizePolicy::Fixed</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>5</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QPushButton" name="primLegendQButton">
+             <property name="maximumSize">
+              <size>
+               <width>32</width>
+               <height>24</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <family>Gotham Rounded</family>
+               <pointsize>9</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="focusPolicy">
+              <enum>Qt::NoFocus</enum>
+             </property>
+             <property name="toolTip">
+              <string>Prim legend</string>
+             </property>
+             <property name="text">
+              <string>?</string>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>12</width>
+               <height>12</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="primViewLineEdit">
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>24</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <family>Gotham Rounded</family>
+               <pointsize>9</pointsize>
+               <weight>50</weight>
+               <italic>false</italic>
+               <bold>false</bold>
+              </font>
+             </property>
+             <property name="placeholderText">
+              <string>Search for prim by name</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="primViewFindNext">
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>24</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <family>Gotham Rounded</family>
+               <pointsize>9</pointsize>
+               <weight>50</weight>
+               <italic>false</italic>
+               <bold>false</bold>
+              </font>
+             </property>
+             <property name="focusPolicy">
+              <enum>Qt::NoFocus</enum>
+             </property>
+             <property name="toolTip">
+              <string>Find and select the next match (looping)</string>
+             </property>
+             <property name="text">
+              <string>Find Prim</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer_8">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeType">
+              <enum>QSizePolicy::Fixed</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>9</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QFrame" name="glFrame">
+        <property name="minimumSize">
+         <size>
+          <width>200</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="layoutDirection">
+         <enum>Qt::LeftToRight</enum>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::NoFrame</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Plain</enum>
+        </property>
+        <property name="lineWidth">
+         <number>0</number>
+        </property>
+       </widget>
+      </widget>
+      <widget class="QSplitter" name="attribBrowserInspectorSplitter">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <widget class="QFrame" name="attributeBrowserFrame">
+        <property name="frameShape">
+         <enum>QFrame::NoFrame</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Plain</enum>
+        </property>
+        <property name="lineWidth">
+         <number>0</number>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_7">
+         <property name="leftMargin">
+          <number>2</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>5</number>
+         </property>
+         <item>
+          <widget class="QTreeWidget" name="propertyView">
+           <property name="toolTip">
+            <string/>
+           </property>
+           <property name="styleSheet">
+            <string notr="true"/>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::NoFrame</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Plain</enum>
+           </property>
+           <property name="alternatingRowColors">
+            <bool>true</bool>
+           </property>
+           <property name="textElideMode">
+            <enum>Qt::ElideMiddle</enum>
+           </property>
+           <property name="columnCount">
+            <number>3</number>
+           </property>
+           <column>
+            <property name="text">
+             <string>Type</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Property Name</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Value</string>
+            </property>
+           </column>
+          </widget>
+         </item>
+         <item>
+          <widget class="PropertyLegend" name="propertyLegendContainer" native="true"/>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="propertyFindContainer">
+           <property name="leftMargin">
+            <number>5</number>
+           </property>
+           <property name="rightMargin">
+            <number>5</number>
+           </property>
+           <item>
+            <widget class="QPushButton" name="propertyLegendQButton">
+             <property name="maximumSize">
+              <size>
+               <width>32</width>
+               <height>24</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <family>Gotham Rounded</family>
+               <pointsize>9</pointsize>
+               <weight>50</weight>
+               <italic>false</italic>
+               <bold>false</bold>
+              </font>
+             </property>
+             <property name="focusPolicy">
+              <enum>Qt::NoFocus</enum>
+             </property>
+             <property name="toolTip">
+              <string>Property legend</string>
+             </property>
+             <property name="text">
+              <string>?</string>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>12</width>
+               <height>12</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="attrViewLineEdit">
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>24</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <family>Gotham Rounded</family>
+               <pointsize>9</pointsize>
+               <weight>50</weight>
+               <italic>false</italic>
+               <bold>false</bold>
+              </font>
+             </property>
+             <property name="placeholderText">
+              <string>Search for property by name</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="attrViewFindNext">
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>24</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <family>Gotham Rounded</family>
+               <pointsize>9</pointsize>
+               <weight>50</weight>
+               <italic>false</italic>
+               <bold>false</bold>
+              </font>
+             </property>
+             <property name="focusPolicy">
+              <enum>Qt::NoFocus</enum>
+             </property>
+             <property name="text">
+              <string>Find Prop</string>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>24</width>
+               <height>24</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QFrame" name="propertyInspectorFrame">
+        <property name="frameShape">
+         <enum>QFrame::NoFrame</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Plain</enum>
+        </property>
+        <property name="lineWidth">
+         <number>0</number>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_8">
+         <property name="spacing">
+          <number>0</number>
+         </property>
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>1</number>
+         </property>
+         <property name="rightMargin">
+          <number>2</number>
+         </property>
+         <property name="bottomMargin">
+          <number>2</number>
+         </property>
+         <item>
+          <widget class="QFrame" name="propertyInspectorContainer">
+           <property name="frameShape">
+            <enum>QFrame::NoFrame</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Plain</enum>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_3">
+            <property name="margin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QTabWidget" name="propertyInspector">
+              <property name="currentIndex">
+               <number>0</number>
+              </property>
+              <widget class="QWidget" name="value">
+               <attribute name="title">
+                <string>Value</string>
+               </attribute>
+               <layout class="QVBoxLayout" name="verticalLayout">
+                <property name="margin">
+                 <number>6</number>
+                </property>
+                <item>
+                 <widget class="AttributeValueEditor" name="attributeValueEditor" native="true"/>
+                </item>
+               </layout>
+              </widget>
+              <widget class="QWidget" name="metadata">
+               <attribute name="title">
+                <string>Meta Data</string>
+               </attribute>
+               <layout class="QHBoxLayout" name="horizontalLayout">
+                <item>
+                 <widget class="QFrame" name="attributeBrowserFrame">
+                  <property name="frameShape">
+                   <enum>QFrame::NoFrame</enum>
+                  </property>
+                  <property name="frameShadow">
+                   <enum>QFrame::Plain</enum>
+                  </property>
+                  <property name="lineWidth">
+                   <number>0</number>
+                  </property>
+                  <layout class="QVBoxLayout" name="verticalLayout_7">
+                   <property name="leftMargin">
+                    <number>2</number>
+                   </property>
+                   <property name="topMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="rightMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="bottomMargin">
+                    <number>5</number>
+                   </property>
+                   <item>
+                    <widget class="QTableWidget" name="metadataView">
+                     <property name="toolTip">
+                      <string/>
+                     </property>
+                     <property name="styleSheet">
+                      <string notr="true"/>
+                     </property>
+                     <property name="frameShape">
+                      <enum>QFrame::NoFrame</enum>
+                     </property>
+                     <property name="frameShadow">
+                      <enum>QFrame::Plain</enum>
+                     </property>
+                     <property name="lineWidth">
+                      <number>0</number>
+                     </property>
+                     <property name="editTriggers">
+                      <set>QAbstractItemView::NoEditTriggers</set>
+                     </property>
+                     <property name="alternatingRowColors">
+                      <bool>true</bool>
+                     </property>
+                     <property name="selectionMode">
+                      <enum>QAbstractItemView::SingleSelection</enum>
+                     </property>
+                     <property name="selectionBehavior">
+                      <enum>QAbstractItemView::SelectRows</enum>
+                     </property>
+                     <property name="showGrid">
+                      <bool>false</bool>
+                     </property>
+                     <property name="gridStyle">
+                      <enum>Qt::SolidLine</enum>
+                     </property>
+                     <property name="columnCount">
+                      <number>2</number>
+                     </property>
+                     <attribute name="horizontalHeaderCascadingSectionResizes">
+                      <bool>true</bool>
+                     </attribute>
+                     <attribute name="horizontalHeaderDefaultSectionSize">
+                      <number>220</number>
+                     </attribute>
+                     <attribute name="horizontalHeaderMinimumSectionSize">
+                      <number>30</number>
+                     </attribute>
+                     <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
+                      <bool>false</bool>
+                     </attribute>
+                     <attribute name="horizontalHeaderStretchLastSection">
+                      <bool>true</bool>
+                     </attribute>
+                     <attribute name="verticalHeaderVisible">
+                      <bool>false</bool>
+                     </attribute>
+                     <attribute name="verticalHeaderDefaultSectionSize">
+                      <number>30</number>
+                     </attribute>
+                     <attribute name="verticalHeaderMinimumSectionSize">
+                      <number>20</number>
+                     </attribute>
+                     <attribute name="verticalHeaderStretchLastSection">
+                      <bool>false</bool>
+                     </attribute>
+                     <column>
+                      <property name="text">
+                       <string>Field Name</string>
+                      </property>
+                     </column>
+                     <column>
+                      <property name="text">
+                       <string>Value</string>
+                      </property>
+                     </column>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+              <widget class="QWidget" name="layerstack">
+               <attribute name="title">
+                <string>Layer Stack</string>
+               </attribute>
+               <layout class="QHBoxLayout" name="layerStackFrameLayout">
+                <item>
+                 <widget class="QFrame" name="layerStackFrame">
+                  <property name="frameShape">
+                   <enum>QFrame::NoFrame</enum>
+                  </property>
+                  <property name="frameShadow">
+                   <enum>QFrame::Plain</enum>
+                  </property>
+                  <property name="lineWidth">
+                   <number>0</number>
+                  </property>
+                  <layout class="QVBoxLayout" name="layerStackViewLayout">
+                   <property name="leftMargin">
+                    <number>2</number>
+                   </property>
+                   <property name="topMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="rightMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="bottomMargin">
+                    <number>5</number>
+                   </property>
+                   <item>
+                    <widget class="QTableWidget" name="layerStackView">
+                     <property name="toolTip">
+                      <string/>
+                     </property>
+                     <property name="styleSheet">
+                      <string notr="true"/>
+                     </property>
+                     <property name="frameShape">
+                      <enum>QFrame::NoFrame</enum>
+                     </property>
+                     <property name="frameShadow">
+                      <enum>QFrame::Plain</enum>
+                     </property>
+                     <property name="editTriggers">
+                      <set>QAbstractItemView::NoEditTriggers</set>
+                     </property>
+                     <property name="alternatingRowColors">
+                      <bool>true</bool>
+                     </property>
+                     <property name="selectionMode">
+                      <enum>QAbstractItemView::SingleSelection</enum>
+                     </property>
+                     <property name="selectionBehavior">
+                      <enum>QAbstractItemView::SelectRows</enum>
+                     </property>
+                     <property name="showGrid">
+                      <bool>false</bool>
+                     </property>
+                     <property name="gridStyle">
+                      <enum>Qt::SolidLine</enum>
+                     </property>
+                     <property name="columnCount">
+                      <number>3</number>
+                     </property>
+                     <attribute name="horizontalHeaderCascadingSectionResizes">
+                      <bool>true</bool>
+                     </attribute>
+                     <attribute name="horizontalHeaderDefaultSectionSize">
+                      <number>220</number>
+                     </attribute>
+                     <attribute name="horizontalHeaderMinimumSectionSize">
+                      <number>30</number>
+                     </attribute>
+                     <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
+                      <bool>false</bool>
+                     </attribute>
+                     <attribute name="horizontalHeaderStretchLastSection">
+                      <bool>true</bool>
+                     </attribute>
+                     <attribute name="verticalHeaderVisible">
+                      <bool>false</bool>
+                     </attribute>
+                     <attribute name="verticalHeaderDefaultSectionSize">
+                      <number>30</number>
+                     </attribute>
+                     <attribute name="verticalHeaderMinimumSectionSize">
+                      <number>20</number>
+                     </attribute>
+                     <attribute name="verticalHeaderStretchLastSection">
+                      <bool>false</bool>
+                     </attribute>
+                     <column>
+                      <property name="text">
+                       <string>Layer</string>
+                      </property>
+                     </column>
+                     <column>
+                      <property name="text">
+                       <string>Path</string>
+                      </property>
+                     </column>
+                     <column>
+                      <property name="text">
+                       <string>Value</string>
+                      </property>
+                     </column>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+              <widget class="QWidget" name="tab">
+               <attribute name="title">
+                <string>Composition</string>
+               </attribute>
+               <layout class="QHBoxLayout" name="horizontalLayout_4">
+                <item>
+                 <widget class="QTreeWidget" name="compositionTreeWidget">
+                  <property name="frameShape">
+                   <enum>QFrame::NoFrame</enum>
+                  </property>
+                  <property name="frameShadow">
+                   <enum>QFrame::Plain</enum>
+                  </property>
+                  <property name="alternatingRowColors">
+                   <bool>true</bool>
+                  </property>
+                  <property name="indentation">
+                   <number>15</number>
+                  </property>
+                  <attribute name="headerHighlightSections">
+                   <bool>false</bool>
+                  </attribute>
+                  <attribute name="headerStretchLastSection">
+                   <bool>false</bool>
+                  </attribute>
+                  <column>
+                   <property name="text">
+                    <string>Layer</string>
+                   </property>
+                  </column>
+                  <column>
+                   <property name="text">
+                    <string>Arc Type</string>
+                   </property>
+                  </column>
+                  <column>
+                   <property name="text">
+                    <string>Arc Path</string>
+                   </property>
+                  </column>
+                  <column>
+                   <property name="text">
+                    <string>Has Spec</string>
+                   </property>
+                  </column>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+     </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="frameChangeContainer">
+      <item>
+       <layout class="QVBoxLayout" name="sliderContainer">
+        <item>
+         <layout class="QHBoxLayout" name="sliderTopContainer">
+          <item>
+           <widget class="QLabel" name="stageBegin">
+            <property name="maximumSize">
+             <size>
+              <width>60</width>
+              <height>18</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string>Stage Start Frame</string>
+            </property>
+            <property name="text">
+             <string>XXX</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="rangeBegin">
+            <property name="maximumSize">
+             <size>
+              <width>60</width>
+              <height>18</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string>Playback Start Frame</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="FrameSlider" name="frameSlider">
+            <property name="minimumSize">
+             <size>
+              <width>90</width>
+              <height>45</height>
+             </size>
+            </property>
+            <property name="pageStep">
+             <number>0</number>
+            </property>
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="tickPosition">
+             <enum>QSlider::NoTicks</enum>
+            </property>
+            <property name="tickInterval">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="rangeEnd">
+            <property name="maximumSize">
+             <size>
+              <width>60</width>
+              <height>18</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string>Playback End Frame</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="stageEnd">
+            <property name="maximumSize">
+             <size>
+              <width>60</width>
+              <height>18</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string>Stage End Frame</string>
+            </property>
+            <property name="text">
+             <string>XXX</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="sliderBottomContainer">
+          <property name="spacing">
+           <number>6</number>
+          </property>
+          <item>
+           <spacer name="horizontalSpacer_4">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="redrawOnScrub">
+            <property name="maximumSize">
+             <size>
+              <width>200</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="focusPolicy">
+             <enum>Qt::NoFocus</enum>
+            </property>
+            <property name="toolTip">
+             <string>If unchecked, the view will only redraw when scrubbing is done</string>
+            </property>
+            <property name="text">
+             <string>Redraw On Frame Scrub</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_9">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Fixed</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QLabel" name="stepSizeLabel">
+            <property name="text">
+             <string>Step Size</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="stepSize">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string>Playback Step-size</string>
+            </property>
+            <property name="text">
+             <string>1.0</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="Line" name="line">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="playContainer">
+        <item>
+         <widget class="QPushButton" name="playButton">
+          <property name="maximumSize">
+           <size>
+            <width>115</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="focusPolicy">
+           <enum>Qt::NoFocus</enum>
+          </property>
+          <property name="text">
+           <string>Play</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="frameContainer">
+          <item>
+           <widget class="QLabel" name="frameLabel">
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Frame:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="frameField">
+            <property name="maximumSize">
+             <size>
+              <width>80</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="font">
+             <font>
+              <family>Gotham Rounded</family>
+              <pointsize>9</pointsize>
+              <weight>50</weight>
+              <italic>false</italic>
+              <bold>false</bold>
+             </font>
+            </property>
+            <property name="toolTip">
+             <string>Current Frame</string>
+            </property>
+            <property name="text">
+             <string>1.0</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1145</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>0</width>
+     <height>0</height>
+    </size>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+    <addaction name="actionOpen"/>
+    <addaction name="actionReopen_Stage"/>
+    <addaction name="actionReload_All_Layers"/>
+    <addaction name="separator"/>
+    <addaction name="actionSave_Overrides_As"/>
+    <addaction name="actionSave_Flattened_As"/>
+    <addaction name="separator"/>
+    <addaction name="actionQuit"/>
+   </widget>
+   <widget class="QMenu" name="menuEdit">
+    <property name="title">
+     <string>&amp;Edit</string>
+    </property>
+    <widget class="QMenu" name="menuInterpolation">
+     <property name="title">
+      <string>Stage Interpolation</string>
+     </property>
+    </widget>
+    <addaction name="menuInterpolation"/>
+    <addaction name="separator"/>
+    <addaction name="actionLoad"/>
+    <addaction name="actionUnload"/>
+    <addaction name="separator"/>
+    <addaction name="actionActivate"/>
+    <addaction name="actionDeactivate"/>
+    <addaction name="separator"/>
+    <addaction name="actionMake_Visible"/>
+    <addaction name="actionVis_Only"/>
+    <addaction name="actionMake_Invisible"/>
+    <addaction name="actionRemove_Session_Visibility"/>
+    <addaction name="actionReset_All_Session_Visibility"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>&amp;View</string>
+    </property>
+    <property name="toolTipsVisible" stdset="0">
+     <bool>true</bool>
+    </property>
+    <widget class="QMenu" name="menuHUD">
+     <property name="title">
+      <string>Heads-Up Display</string>
+     </property>
+     <addaction name="actionHUD"/>
+     <addaction name="separator"/>
+     <addaction name="actionHUD_Info"/>
+     <addaction name="actionHUD_Complexity"/>
+     <addaction name="actionHUD_Performance"/>
+     <addaction name="actionHUD_GPUstats"/>
+    </widget>
+    <widget class="QMenu" name="menuPickMode">
+     <property name="title">
+      <string>Pick mode</string>
+     </property>
+     <addaction name="actionPick_Prims"/>
+     <addaction name="actionPick_Models"/>
+     <addaction name="actionPick_Instances"/>
+    </widget>
+    <widget class="QMenu" name="menuSelection_Highlighting">
+     <property name="title">
+      <string>Selection Highlighting</string>
+     </property>
+     <widget class="QMenu" name="menuHighlightColor">
+      <property name="title">
+       <string>Highlight Color</string>
+      </property>
+      <addaction name="actionSelYellow"/>
+      <addaction name="actionSelWhite"/>
+      <addaction name="actionSelCyan"/>
+     </widget>
+     <addaction name="actionNever"/>
+     <addaction name="actionOnly_when_paused"/>
+     <addaction name="actionAlways"/>
+     <addaction name="menuHighlightColor"/>
+    </widget>
+    <widget class="QMenu" name="menuLights">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="title">
+      <string>Lights</string>
+     </property>
+     <addaction name="actionAmbient_Only"/>
+     <addaction name="actionDomeLight"/>
+    </widget>
+    <widget class="QMenu" name="menuShading_Mode">
+     <property name="title">
+      <string>Shading Mode</string>
+     </property>
+     <addaction name="actionWireframe"/>
+     <addaction name="actionWireframeOnSurface"/>
+     <addaction name="actionSmooth_Shaded"/>
+     <addaction name="actionFlat_Shaded"/>
+     <addaction name="actionPoints"/>
+     <addaction name="actionGeom_Only"/>
+     <addaction name="actionGeom_Smooth"/>
+     <addaction name="actionGeom_Flat"/>
+     <addaction name="actionHidden_Surface_Wireframe"/>
+    </widget>
+    <widget class="QMenu" name="menuColorCorrection">
+     <property name="title">
+      <string>Color Management</string>
+     </property>
+     <addaction name="actionNoColorCorrection"/>
+     <addaction name="actionSRGBColorCorrection"/>
+     <addaction name="actionOpenColorIO"/>
+    </widget>
+    <widget class="QMenu" name="menuBackground_Color">
+     <property name="title">
+      <string>Background Color</string>
+     </property>
+     <addaction name="actionBlack"/>
+     <addaction name="actionGrey_Dark"/>
+     <addaction name="actionGrey_Light"/>
+     <addaction name="actionWhite"/>
+    </widget>
+    <widget class="QMenu" name="menuCamera">
+     <property name="tearOffEnabled">
+      <bool>true</bool>
+     </property>
+     <property name="title">
+      <string>Camera</string>
+     </property>
+     <addaction name="actionFreeCam"/>
+    </widget>
+    <widget class="QMenu" name="menuCameraGuides">
+     <property name="tearOffEnabled">
+      <bool>true</bool>
+     </property>
+     <property name="title">
+      <string>Camera Guides</string>
+     </property>
+     <widget class="QMenu" name="menuCamera_Masking">
+      <property name="title">
+       <string>Camera Masking</string>
+      </property>
+      <addaction name="actionCameraMask_Full"/>
+      <addaction name="actionCameraMask_Partial"/>
+      <addaction name="actionCameraMask_None"/>
+      <addaction name="separator"/>
+      <addaction name="actionCameraMask_Color"/>
+     </widget>
+     <widget class="QMenu" name="menuCamera_Reticles">
+      <property name="title">
+       <string>Camera Reticles</string>
+      </property>
+      <addaction name="actionCameraReticles_Inside"/>
+      <addaction name="actionCameraReticles_Outside"/>
+      <addaction name="separator"/>
+      <addaction name="actionCameraReticles_Color"/>
+     </widget>
+     <addaction name="actionCameraMask_Outline"/>
+     <addaction name="actionDisplay_Camera_Oracles"/>
+     <addaction name="menuCamera_Masking"/>
+     <addaction name="menuCamera_Reticles"/>
+    </widget>
+    <widget class="QMenu" name="menuDisplay">
+     <property name="title">
+      <string>Display Purposes</string>
+     </property>
+     <addaction name="actionDisplay_Guide"/>
+     <addaction name="actionDisplay_Proxy"/>
+     <addaction name="actionDisplay_Render"/>
+    </widget>
+    <widget class="QMenu" name="menuBBox">
+     <property name="title">
+      <string>Bounding Box</string>
+     </property>
+     <addaction name="showBBoxes"/>
+     <addaction name="separator"/>
+     <addaction name="showAABBox"/>
+     <addaction name="showOBBox"/>
+     <addaction name="showBBoxPlayback"/>
+     <addaction name="separator"/>
+     <addaction name="useExtentsHint"/>
+    </widget>
+    <widget class="QMenu" name="menuRendererPlugin">
+     <property name="title">
+      <string>Hydra Renderer</string>
+     </property>
+    </widget>
+    <widget class="QMenu" name="menuRendererSettings">
+     <property name="title">
+      <string>Hydra Settings</string>
+     </property>
+    </widget>
+    <widget class="QMenu" name="menuRendererAovs">
+     <property name="title">
+      <string>Hydra AOVs</string>
+     </property>
+    </widget>
+    <widget class="QMenu" name="menuComplexity">
+     <property name="title">
+      <string>Complexity</string>
+     </property>
+     <addaction name="actionLow"/>
+     <addaction name="actionMedium"/>
+     <addaction name="actionHigh"/>
+     <addaction name="actionVery_High"/>
+    </widget>
+    <addaction name="actionToggle_Viewer_Mode"/>
+    <addaction name="separator"/>
+    <addaction name="menuRendererPlugin"/>
+    <addaction name="menuRendererSettings"/>
+    <addaction name="menuRendererAovs"/>
+    <addaction name="actionPause"/>
+    <addaction name="separator"/>
+    <addaction name="actionReset_View"/>
+    <addaction name="actionAdjust_FOV"/>
+    <addaction name="actionAuto_Compute_Clipping_Planes"/>
+    <addaction name="actionAdjust_Clipping"/>
+    <addaction name="actionAdjust_Default_Material"/>
+    <addaction name="menuComplexity"/>
+    <addaction name="menuBBox"/>
+    <addaction name="separator"/>
+    <addaction name="actionToggle_Framed_View"/>
+    <addaction name="separator"/>
+    <addaction name="actionFrame_Forward"/>
+    <addaction name="actionFrame_Backwards"/>
+    <addaction name="separator"/>
+    <addaction name="menuShading_Mode"/>
+    <addaction name="menuColorCorrection"/>
+    <addaction name="menuLights"/>
+    <addaction name="menuBackground_Color"/>
+    <addaction name="menuCamera"/>
+    <addaction name="menuCameraGuides"/>
+    <addaction name="menuDisplay"/>
+    <addaction name="separator"/>
+    <addaction name="menuHUD"/>
+    <addaction name="separator"/>
+    <addaction name="menuPickMode"/>
+    <addaction name="menuSelection_Highlighting"/>
+    <addaction name="actionRollover_Prim_Info"/>
+    <addaction name="separator"/>
+    <addaction name="actionEnable_Scene_Materials"/>
+    <addaction name="actionDisplay_PrimId"/>
+    <addaction name="actionCull_Backfaces"/>
+   </widget>
+   <widget class="QMenu" name="menuWindow">
+    <property name="minimumSize">
+     <size>
+      <width>0</width>
+      <height>0</height>
+     </size>
+    </property>
+    <property name="title">
+     <string>Window</string>
+    </property>
+    <addaction name="showInterpreter"/>
+    <addaction name="showDebugFlags"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuEdit"/>
+   <addaction name="menuView"/>
+   <addaction name="menuWindow"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar">
+   <property name="sizeGripEnabled">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <action name="actionOpen">
+   <property name="text">
+    <string>Open</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionQuit">
+   <property name="text">
+    <string>Quit</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionPause">
+   <property name="text">
+    <string>Pause Render</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+P</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionReset_View">
+   <property name="text">
+    <string>Reset View</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionToggle_Framed_View">
+   <property name="text">
+    <string>Toggle Framed View</string>
+   </property>
+   <property name="toolTip">
+    <string>Toggle camera with view saved before last Frame operation</string>
+   </property>
+   <property name="shortcut">
+    <string>J</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionWatch_Window">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Watch Window</string>
+   </property>
+   <property name="shortcut">
+    <string>W</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionFrame_Forward">
+   <property name="text">
+    <string>Frame Forward</string>
+   </property>
+  </action>
+  <action name="actionFrame_Backwards">
+   <property name="text">
+    <string>Frame Backward</string>
+   </property>
+  </action>
+  <action name="actionAdjust_FOV">
+   <property name="text">
+    <string>Adjust FO&amp;V...</string>
+   </property>
+   <property name="shortcut">
+    <string/>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionReopen_Stage">
+   <property name="text">
+    <string>Reopen Stage</string>
+   </property>
+  </action>
+  <action name="actionDump_RIB">
+   <property name="text">
+    <string>Dump RIB...</string>
+   </property>
+  </action>
+  <action name="actionLevel_1">
+   <property name="text">
+    <string>Level 1</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+1</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionLevel_2">
+   <property name="text">
+    <string>Level 2</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+2</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionLevel_3">
+   <property name="text">
+    <string>Level 3</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+3</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionLevel_4">
+   <property name="text">
+    <string>Level 4</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+4</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionLevel_5">
+   <property name="text">
+    <string>Level 5</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+5</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionExpand_All">
+   <property name="text">
+    <string>Expand All</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+9</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionCollapse_All">
+   <property name="text">
+    <string>Collapse All</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+0</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionAmbient_Only">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Camera Light</string>
+   </property>
+  </action>
+  <action name="actionDomeLight">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Dome Light</string>
+   </property>
+  </action>
+  <action name="actionLevel_6">
+   <property name="text">
+    <string>Level 6</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+6</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionLevel_7">
+   <property name="text">
+    <string>Level 7</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+7</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionLevel_8">
+   <property name="text">
+    <string>Level 8</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+8</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionWireframe">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Wireframe</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+0</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionWireframeOnSurface">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>WireframeOnSurface</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+1</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionSmooth_Shaded">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Smooth Shaded</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+2</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionFlat_Shaded">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Flat Shaded</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+3</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionPoints">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Points</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+4</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionGeom_Only">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Geom Only</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+6</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionRedrawOnScrub">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Redraw While Frame Scrubbing</string>
+   </property>
+  </action>
+  <action name="actionIncrementComplexity1">
+   <property name="text">
+    <string>IncrementComplexity</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+=</string>
+   </property>
+  </action>
+  <action name="actionDecrementComplexity">
+   <property name="text">
+    <string>DecrementComplexity</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+-</string>
+   </property>
+  </action>
+  <action name="actionPRMan">
+   <property name="text">
+    <string>Render View</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+R</string>
+   </property>
+   <property name="autoRepeat">
+    <bool>false</bool>
+   </property>
+  </action>
+  <action name="actionBlack">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Black</string>
+   </property>
+   <property name="statusTip">
+    <string/>
+   </property>
+  </action>
+  <action name="actionWhite">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>White</string>
+   </property>
+   <property name="statusTip">
+    <string/>
+   </property>
+  </action>
+  <action name="actionGrey_Light">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Grey (Light)</string>
+   </property>
+   <property name="statusTip">
+    <string/>
+   </property>
+  </action>
+  <action name="actionGrey_Dark">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Grey (Dark)</string>
+   </property>
+   <property name="statusTip">
+    <string/>
+   </property>
+  </action>
+  <action name="actionGeom_Smooth">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Geom Smooth</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+7</string>
+   </property>
+  </action>
+  <action name="actionGeom_Flat">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Geom Flat</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+8</string>
+   </property>
+  </action>
+  <action name="actionHidden_Surface_Wireframe">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Hidden Surface Wireframe</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+9</string>
+   </property>
+  </action>
+  <action name="actionNoColorCorrection">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>disabled</string>
+   </property>
+  </action>
+  <action name="actionSRGBColorCorrection">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>sRGB</string>
+   </property>
+  </action>
+  <action name="actionOpenColorIO">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>openColorIO</string>
+   </property>
+  </action>
+  <action name="actionFreeCam">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Free Camera</string>
+   </property>
+  </action>
+  <action name="actionSave_Overrides_As">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Save Overrides As...</string>
+   </property>
+   <property name="iconText">
+    <string>Save Overrides As...</string>
+   </property>
+   <property name="toolTip">
+    <string>Save property and metadata overrides</string>
+   </property>
+  </action>
+  <action name="actionSave_Flattened_As">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Save Flattened As...</string>
+   </property>
+   <property name="iconText">
+    <string>Save Flattened As...</string>
+   </property>
+   <property name="toolTip">
+    <string>Save a flattened version of the current stage</string>
+   </property>
+  </action>
+  <action name="showInterpreter">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Interpreter</string>
+   </property>
+   <property name="toolTip">
+    <string>Show Python interpreter console</string>
+   </property>
+   <property name="shortcut">
+    <string>I</string>
+   </property>
+  </action>
+  <action name="showDebugFlags">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Debug Flags</string>
+   </property>
+   <property name="toolTip">
+    <string>Show Debug Flags Window</string>
+   </property>
+  </action>
+  <action name="actionHUD_VBOInfo">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>VBO Info (Quads/Tris)</string>
+   </property>
+  </action>
+  <action name="actionHUD_Info">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Subtree Info (Slow)</string>
+   </property>
+  </action>
+  <action name="actionHUD_VBO">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>VBO Info</string>
+   </property>
+  </action>
+  <action name="actionHUD_Complexity">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Camera/Complexity</string>
+   </property>
+  </action>
+  <action name="actionHUD_Performance">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Performance</string>
+   </property>
+  </action>
+  <action name="actionHUD_GPUstats">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>GPU stats</string>
+   </property>
+  </action>
+  <action name="actionHUD">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show HUD</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+D</string>
+   </property>
+  </action>
+  <action name="actionCameraMask_Outline">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Camera Frame</string>
+   </property>
+  </action>
+  <action name="actionDisplay_Guide">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Guide</string>
+   </property>
+  </action>
+  <action name="actionDisplay_Render">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Render</string>
+   </property>
+  </action>
+  <action name="actionDisplay_PrimId">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Display Prim Id</string>
+   </property>
+  </action>
+  <action name="actionEnable_Scene_Materials">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Enable Scene Materials</string>
+   </property>
+  </action>
+  <action name="actionShow_Inactive_Prims">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Inactive Prims</string>
+   </property>
+  </action>
+  <action name="showAABBox">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Axis-Aligned</string>
+   </property>
+  </action>
+  <action name="showOBBox">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Oriented</string>
+   </property>
+  </action>
+  <action name="showBBoxPlayback">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show During Playback/Scrub</string>
+   </property>
+  </action>
+  <action name="showBBoxes">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Bounding Boxes</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+B</string>
+   </property>
+  </action>
+  <action name="actionVersion_Info">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Version Info</string>
+   </property>
+   <property name="shortcut">
+    <string>V</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionAdjust_Clipping">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Adjust Clipping Planes...</string>
+   </property>
+  </action>
+  <action name="actionIncrementComplexity2">
+   <property name="text">
+    <string>IncrementComplexity</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl++</string>
+   </property>
+  </action>
+  <action name="actionCull_Backfaces">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Cull Backfaces (GL)</string>
+   </property>
+  </action>
+  <action name="actionSave_Overrides_To_Scene">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Save Overrides To Scene</string>
+   </property>
+   <property name="visible">
+    <bool>false</bool>
+   </property>
+  </action>
+  <action name="actionMake_Visible">
+   <property name="text">
+    <string>Make Visible</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+H</string>
+   </property>
+  </action>
+  <action name="actionMake_Invisible">
+   <property name="text">
+    <string>Make Invisible</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+H</string>
+   </property>
+  </action>
+  <action name="actionRemove_Session_Visibility">
+   <property name="text">
+    <string>Remove Session Visibility</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+U</string>
+   </property>
+  </action>
+  <action name="actionActivate">
+   <property name="text">
+    <string>Activate</string>
+   </property>
+  </action>
+  <action name="actionDeactivate">
+   <property name="text">
+    <string>Deactivate</string>
+   </property>
+  </action>
+  <action name="actionSelect_Model_Root">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Select Enclosing Model</string>
+   </property>
+   <property name="shortcut">
+    <string>\</string>
+   </property>
+  </action>
+  <action name="actionRefresh_Procedurals">
+   <property name="text">
+    <string>Refresh Procedurals</string>
+   </property>
+  </action>
+  <action name="actionReload_All_Layers">
+   <property name="text">
+    <string>Reload All Layers</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+R</string>
+   </property>
+  </action>
+  <action name="actionHD_Flags">
+   <property name="text">
+    <string>HD Flags</string>
+   </property>
+  </action>
+  <action name="actionHD_Flags_2">
+   <property name="text">
+    <string>HD Flags</string>
+   </property>
+  </action>
+  <action name="actionHD_Flags_3">
+   <property name="text">
+    <string>HD Flags</string>
+   </property>
+  </action>
+  <action name="actionMenu">
+   <property name="text">
+    <string>Menu</string>
+   </property>
+  </action>
+  <action name="actionSdf">
+   <property name="text">
+    <string>sdf</string>
+   </property>
+  </action>
+  <action name="actionGeom_Id">
+   <property name="text">
+    <string>Geom Id</string>
+   </property>
+  </action>
+  <action name="actionShow_All_Master_Prims">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Master Prims</string>
+   </property>
+  </action>
+  <action name="actionShow_Undefined_Prims">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Undefined Prims (Overs)</string>
+   </property>
+  </action>
+  <action name="actionShow_Abstract_Prims">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Abstract Prims (Classes)</string>
+   </property>
+  </action>
+  <action name="actionPick_Prims">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Prims</string>
+   </property>
+  </action>
+  <action name="actionPick_Models">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Models</string>
+   </property>
+  </action>
+  <action name="actionPick_Instances">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Instances</string>
+   </property>
+  </action>
+  <action name="actionToggle_Viewer_Mode">
+   <property name="text">
+    <string>Toggle Viewer Mode</string>
+   </property>
+   <property name="shortcut">
+    <string>F11</string>
+   </property>
+  </action>
+  <action name="useExtentsHint">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Use Extents Hints</string>
+   </property>
+  </action>
+  <action name="actionNever">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Never</string>
+   </property>
+  </action>
+  <action name="actionOnly_when_paused">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Only when paused</string>
+   </property>
+   <property name="toolTip">
+    <string>Do not draw selection highlights during playback</string>
+   </property>
+  </action>
+  <action name="actionAlways">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Always</string>
+   </property>
+   <property name="toolTip">
+    <string>Draw selection highlights even during plaback</string>
+   </property>
+  </action>
+  <action name="actionSelYellow">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Yellow</string>
+   </property>
+  </action>
+  <action name="actionSelWhite">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>White</string>
+   </property>
+  </action>
+  <action name="actionSelCyan">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Cyan</string>
+   </property>
+  </action>
+  <action name="actionVis_Only">
+   <property name="text">
+    <string>Vis Only</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+H</string>
+   </property>
+  </action>
+  <action name="actionReset_All_Session_Visibility">
+   <property name="text">
+    <string>Reset All Session Visibility</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+U</string>
+   </property>
+  </action>
+  <action name="actionLoad">
+   <property name="text">
+    <string>Load</string>
+   </property>
+  </action>
+  <action name="actionUnload">
+   <property name="text">
+    <string>Unload</string>
+   </property>
+  </action>
+  <action name="actionSelect_Bound_Preview_Material">
+   <property name="text">
+    <string>Select Bound Preview Material</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+L</string>
+   </property>
+  </action>
+  <action name="actionRollover_Prim_Info">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Rollover Prim Info</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+I</string>
+   </property>
+  </action>
+  <action name="actionAuto_Compute_Clipping_Planes">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Auto Compute Clipping Planes</string>
+   </property>
+   <property name="toolTip">
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;Auto Clipping&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:400;&quot;&gt;Expansive scenes may show &amp;quot;Z-fighting&amp;quot;, where nearby surfaces pop or shimmer.  &lt;/span&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Auto Compute Clipping Planes&lt;/span&gt;&lt;span style=&quot; font-weight:400;&quot;&gt; adjusts the camera's clipping planes to fix this.  When enabled, the &lt;/span&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Frame Selected&lt;/span&gt;&lt;span style=&quot; font-weight:400;&quot;&gt; command readjusts clip planes too.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:400;&quot;&gt;Leaving and then re-entering this mode will reset the view used to optimize the clipping planes.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:400;&quot;&gt;Auto clipping is not useful in all situations, such as animated scenes in which the &amp;quot;extent&amp;quot; of the scene changes over time, and for close-up work.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+   </property>
+   <property name="shortcut">
+    <string>C</string>
+   </property>
+  </action>
+  <action name="actionFind_Prims">
+   <property name="text">
+    <string>Find Prims</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+F</string>
+   </property>
+  </action>
+  <action name="actionSelect_Stage_Root">
+   <property name="text">
+    <string>Select Stage Root</string>
+   </property>
+   <property name="shortcut">
+    <string>|</string>
+   </property>
+  </action>
+  <action name="actionDisplay_Camera_Oracles">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Camera Oracles</string>
+   </property>
+  </action>
+  <action name="actionDisplay_Proxy">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Proxy</string>
+   </property>
+  </action>
+  <action name="actionAdjust_Default_Material">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Adjust Default Material...</string>
+   </property>
+  </action>
+  <action name="actionCameraReticles_Inside">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Camera Reticles Inside</string>
+   </property>
+  </action>
+  <action name="actionCameraReticles_Outside">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Camera Reticles Outside</string>
+   </property>
+  </action>
+  <action name="actionCameraReticles_Color">
+   <property name="text">
+    <string>Select Color...</string>
+   </property>
+  </action>
+  <action name="actionLow">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Low</string>
+   </property>
+  </action>
+  <action name="actionMedium">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Medium</string>
+   </property>
+  </action>
+  <action name="actionHigh">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>High</string>
+   </property>
+  </action>
+  <action name="actionVery_High">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Very High</string>
+   </property>
+  </action>
+  <action name="actionSelect_Bound_Full_Material">
+   <property name="text">
+    <string>Select Bound Full Material</string>
+   </property>
+  </action>
+  <action name="actionSelect_Preview_Binding_Relationship">
+   <property name="text">
+    <string>Select Preview Binding Relationship</string>
+   </property>
+  </action>
+  <action name="actionSelect_Full_Binding_Relationship">
+   <property name="text">
+    <string>Select Full Binding Relationship</string>
+   </property>
+  </action>
+  <actiongroup name="actionGroupCameraMask">
+   <action name="actionCameraMask_Full">
+    <property name="checkable">
+     <bool>true</bool>
+    </property>
+    <property name="checked">
+     <bool>false</bool>
+    </property>
+    <property name="text">
+     <string>Full Mask</string>
+    </property>
+   </action>
+   <action name="actionCameraMask_Partial">
+    <property name="checkable">
+     <bool>true</bool>
+    </property>
+    <property name="checked">
+     <bool>false</bool>
+    </property>
+    <property name="text">
+     <string>Partial Mask</string>
+    </property>
+   </action>
+   <action name="actionCameraMask_None">
+    <property name="checkable">
+     <bool>true</bool>
+    </property>
+    <property name="checked">
+     <bool>true</bool>
+    </property>
+    <property name="text">
+     <string>No Mask</string>
+    </property>
+   </action>
+   <action name="actionCameraMask_Color">
+    <property name="checkable">
+     <bool>false</bool>
+    </property>
+    <property name="text">
+     <string>Select Color...</string>
+    </property>
+   </action>
+  </actiongroup>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>AttributeValueEditor</class>
+   <extends>QWidget</extends>
+   <header>attributeValueEditor</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>PrimLegend</class>
+   <extends>QWidget</extends>
+   <header>primLegend</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>PropertyLegend</class>
+   <extends>QWidget</extends>
+   <header>propertyLegend</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>PrimTreeWidget</class>
+   <extends>QTreeWidget</extends>
+   <header>primTreeWidget</header>
+  </customwidget>
+  <customwidget>
+   <class>FrameSlider</class>
+   <extends>QSlider</extends>
+   <header>frameSlider</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

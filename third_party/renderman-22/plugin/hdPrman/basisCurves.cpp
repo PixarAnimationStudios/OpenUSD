@@ -60,7 +60,7 @@ HdPrman_BasisCurves::GetInitialDirtyBitsMask() const
         | HdChangeTracker::DirtyPrimvar
         | HdChangeTracker::DirtyNormals
         | HdChangeTracker::DirtyWidths
-        | HdChangeTracker::DirtyInstanceIndex
+        | HdChangeTracker::DirtyInstancer
         | HdChangeTracker::DirtyMaterialId
         ;
 

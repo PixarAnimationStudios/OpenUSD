@@ -1,3 +1,0 @@
-add_subdirectory(pxrUsd)
-add_subdirectory(pxrUsdPreviewSurface)
-add_subdirectory(pxrUsdTranslators)

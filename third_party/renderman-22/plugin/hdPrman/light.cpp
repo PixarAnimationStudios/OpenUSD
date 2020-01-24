@@ -36,6 +36,8 @@
 #include "RixParamList.h"
 #include "RixShadingUtils.h"
 
+#include "hdPrman/lightFilterUtils.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -82,6 +84,11 @@ HdPrmanLight::_ResetLight(HdPrman_Context *context)
     if (!_lightLink.IsEmpty()) {
         context->DecrementLightLinkCount(_lightLink);
         _lightLink = TfToken();
+    }
+    if (!_lightFilterPaths.empty()) {
+        for (const SdfPath &filterPath: _lightFilterPaths)
+            context->DecrementLightFilterCount(TfToken(filterPath.GetText()));
+        _lightFilterPaths.clear();
     }
 
     riley::Riley *riley = context->riley;
@@ -251,62 +258,74 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
 
     // UsdLuxShapingAPI
     {
-        VtValue shapingFocus =
-            sceneDelegate->GetLightParamValue(id, HdLightTokens->shapingFocus);
-        if (shapingFocus.IsHolding<float>()) {
-            params->SetFloat(us_emissionFocus,
-                             shapingFocus.UncheckedGet<float>());
+        if (_hdLightType != HdPrimTypeTokens->domeLight) {
+            VtValue shapingFocus =
+                sceneDelegate->GetLightParamValue(id,
+                                                  HdLightTokens->shapingFocus);
+            if (shapingFocus.IsHolding<float>()) {
+                params->SetFloat(us_emissionFocus,
+                                 shapingFocus.UncheckedGet<float>());
+            }
+
+            // XXX -- emissionFocusNormalize is missing here
+
+            VtValue shapingFocusTint =
+                sceneDelegate->GetLightParamValue(id, 
+                    HdLightTokens->shapingFocusTint);
+            if (shapingFocusTint.IsHolding<GfVec3f>()) {
+                GfVec3f v = shapingFocusTint.UncheckedGet<GfVec3f>();
+                params->SetColor(us_emissionFocusTint,
+                                 RtColorRGB(v[0], v[1], v[2]));
+            }
         }
 
-        VtValue shapingFocusTint =
-            sceneDelegate->GetLightParamValue(id, 
-                HdLightTokens->shapingFocusTint);
-        if (shapingFocusTint.IsHolding<GfVec3f>()) {
-            GfVec3f v = shapingFocusTint.UncheckedGet<GfVec3f>();
-            params->SetColor(us_emissionFocusTint,
-                             RtColorRGB(v[0], v[1], v[2]));
-        }
+        // ies is only supported on rect, disk, cylinder and sphere light.
+        // cone angle only supported on rect, disk, cylinder and sphere lights.
+        // XXX -- fix for mesh/geometry light when it comes online
+        if (_hdLightType == HdPrimTypeTokens->rectLight ||
+            _hdLightType == HdPrimTypeTokens->diskLight ||
+            _hdLightType == HdPrimTypeTokens->cylinderLight ||
+            _hdLightType == HdPrimTypeTokens->sphereLight) {
 
-        VtValue shapingConeAngle =
-            sceneDelegate->GetLightParamValue(id, 
-                HdLightTokens->shapingConeAngle);
-        if (shapingConeAngle.IsHolding<float>()) {
-            params->SetFloat(us_coneAngle,
-                             shapingConeAngle.UncheckedGet<float>());
-        }
+            VtValue shapingConeAngle =
+                sceneDelegate->GetLightParamValue(id, 
+                    HdLightTokens->shapingConeAngle);
+            if (shapingConeAngle.IsHolding<float>()) {
+                params->SetFloat(us_coneAngle,
+                                 shapingConeAngle.UncheckedGet<float>());
+            }
 
-        VtValue shapingConeSoftness =
-            sceneDelegate->GetLightParamValue(id, 
-                HdLightTokens->shapingConeSoftness);
-        if (shapingConeSoftness.IsHolding<float>()) {
-            params->SetFloat(us_coneSoftness,
-                             shapingConeSoftness.UncheckedGet<float>());
-        }
+            VtValue shapingConeSoftness =
+                sceneDelegate->GetLightParamValue(id, 
+                    HdLightTokens->shapingConeSoftness);
+            if (shapingConeSoftness.IsHolding<float>()) {
+                params->SetFloat(us_coneSoftness,
+                                 shapingConeSoftness.UncheckedGet<float>());
+            }
 
-        // TODO - ies is only supported on rect, disk, and sphere light. Update 
-        // to not set these parameters for other light types.
-        VtValue shapingIesFile =
-            sceneDelegate->GetLightParamValue(id, 
-                HdLightTokens->shapingIesFile);
-        if (shapingIesFile.IsHolding<SdfAssetPath>()) {
-            SdfAssetPath ap = shapingIesFile.UncheckedGet<SdfAssetPath>();
-            params->SetString(us_iesProfile, _RtStringFromSdfAssetPath(ap));
-        }
+            VtValue shapingIesFile =
+                sceneDelegate->GetLightParamValue(id, 
+                    HdLightTokens->shapingIesFile);
+            if (shapingIesFile.IsHolding<SdfAssetPath>()) {
+                SdfAssetPath ap = shapingIesFile.UncheckedGet<SdfAssetPath>();
+                params->SetString(us_iesProfile, _RtStringFromSdfAssetPath(ap));
+            }
 
-        VtValue shapingIesAngleScale =
-            sceneDelegate->GetLightParamValue(id,
-                HdLightTokens->shapingIesAngleScale);
-        if (shapingIesAngleScale.IsHolding<float>()) {
-            params->SetFloat(us_iesProfileScale,
-                             shapingIesAngleScale.UncheckedGet<float>());
-        }
+            VtValue shapingIesAngleScale =
+                sceneDelegate->GetLightParamValue(id,
+                    HdLightTokens->shapingIesAngleScale);
+            if (shapingIesAngleScale.IsHolding<float>()) {
+                params->SetFloat(us_iesProfileScale,
+                                 shapingIesAngleScale.UncheckedGet<float>());
+            }
 
-        VtValue shapingIesNormalize =
-            sceneDelegate->GetLightParamValue(id,
-                HdLightTokens->shapingIesNormalize);
-        if (shapingIesNormalize.IsHolding<bool>()) {
-            params->SetInteger(us_iesProfileNormalize,
-                               shapingIesNormalize.UncheckedGet<bool>());
+            VtValue shapingIesNormalize =
+                sceneDelegate->GetLightParamValue(id,
+                    HdLightTokens->shapingIesNormalize);
+            if (shapingIesNormalize.IsHolding<bool>()) {
+                params->SetInteger(us_iesProfileNormalize,
+                                   shapingIesNormalize.UncheckedGet<bool>());
+            }
         }
     }
 
@@ -560,7 +579,82 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    // TODO: filters
+    // filters
+    riley::ShadingNode *filterNodes = nullptr;
+    int nFilterNodes = 0;
+    std::vector<riley::CoordinateSystemId> coordsysIds;
+    {
+        VtValue val =
+            sceneDelegate->GetLightParamValue(id, HdTokens->filters);
+        if (val.IsHolding<SdfPathVector>()) {
+            _lightFilterPaths = val.UncheckedGet<SdfPathVector>();
+            if (!_lightFilterPaths.empty()) {
+                int maxFilters = _lightFilterPaths.size();
+                if (maxFilters > 1)
+                    maxFilters += 1;  // extra for the combiner filter
+                filterNodes = (riley::ShadingNode *)
+                                malloc(sizeof(riley::ShadingNode) * maxFilters);
+                memset(filterNodes, 0, sizeof(riley::ShadingNode) * maxFilters);
+
+                for (SdfPath &filterPath: _lightFilterPaths) {
+                    TF_DEBUG(HDPRMAN_LIGHT_FILTER_LINKING)
+                        .Msg("HdPrman: Light <%s> filter \"%s\" path \"%s\"\n",
+                             id.GetText(), filterPath.GetName().c_str(),
+                             filterPath.GetText());
+
+                    if (!sceneDelegate->GetVisible(filterPath)) {
+                        // XXX -- need to get a dependency analysis working here
+                        // Invis of a filter works but does not cause the light
+                        // to re-sync so one has to tweak the light to see the
+                        // effect of the invised filter
+                        TF_DEBUG(HDPRMAN_LIGHT_FILTER_LINKING)
+                            .Msg("  filter invisible\n");
+                        continue;
+                    }
+
+                    VtValue tval = sceneDelegate->GetLightParamValue(filterPath,
+                                                TfToken("lightFilterType"));
+                    if (!tval.IsHolding<TfToken>()) {
+                        TF_DEBUG(HDPRMAN_LIGHT_FILTER_LINKING)
+                            .Msg("  filter type unknown\n");
+                        continue;
+                    }
+                    TfToken filterType = tval.UncheckedGet<TfToken>();
+
+                    context->IncrementLightFilterCount(
+                                                TfToken(filterPath.GetText()));
+
+                    riley::ShadingNode *filter = &filterNodes[nFilterNodes];
+                    filter->type = riley::ShadingNode::k_LightFilter;
+                    filter->handle = RtUString(filterPath.GetName().c_str());
+
+                    if (HdPrmanLightFilterPopulateParams(filter, filterPath,
+                                    filterType, &coordsysIds,
+                                    sceneDelegate, mgr, riley, rileyTypeName))
+                        nFilterNodes++;
+                }
+                if (nFilterNodes > 1) {
+                    // More than 1 light filter requires a combiner to blend
+                    // their results
+                    riley::ShadingNode *filter = &filterNodes[nFilterNodes];
+                    filter->type = riley::ShadingNode::k_LightFilter;
+                    filter->name = RtUString("PxrCombinerLightFilter");
+                    filter->handle = RtUString("terminal.Lightfilter");
+                    RixParamList *filter_params = mgr->CreateRixParamList();
+                    std::vector<RtUString> sa;
+                    for(int i = 0; i < nFilterNodes; i++) {
+                        sa.push_back(filterNodes[i].handle);
+                    }
+                    // XXX -- assume mult for now
+                    filter_params->ReferenceLightFilterArray(RtUString("mult"),
+                                    (const RtUString* const&)&sa[0], sa.size());
+                    filter->params = filter_params;
+                    nFilterNodes++;
+                }
+            }
+        }
+    }
+
     // TODO: portals
 
     riley::ShadingNode lightNode {
@@ -569,7 +663,15 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
         RtUString(id.GetText()),
         params
     };
-    _shaderId = riley->CreateLightShader(&lightNode, 1, nullptr, 0);
+    _shaderId = riley->CreateLightShader(&lightNode, 1,
+                                         filterNodes, nFilterNodes);
+    if (filterNodes) {
+        for(int i = 0; i < nFilterNodes; i++) {
+            if (filterNodes[i].params)
+                mgr->DestroyRixParamList((RixParamList *)filterNodes[i].params);
+        }
+        free(filterNodes);
+    }
     mgr->DestroyRixParamList(params);
 
     // Sample transform
@@ -616,13 +718,14 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     attrs->SetInteger(RixStr.k_lighting_mute, !sceneDelegate->GetVisible(id));
 
     // Light instance
-    riley::ScopedCoordinateSystem const k_NoCoordsys = { 0, nullptr };
+    riley::ScopedCoordinateSystem const coordsys = {
+                             unsigned(coordsysIds.size()), coordsysIds.data()};
     _instanceId = riley->CreateLightInstance(
         riley::GeometryMasterId::k_InvalidId, // no group
         riley::GeometryMasterId::k_InvalidId, // no geo
         riley::MaterialId::k_InvalidId, // no material
         _shaderId,
-        k_NoCoordsys,
+        coordsys,
         xform,
         *attrs);
     mgr->DestroyRixParamList(attrs);

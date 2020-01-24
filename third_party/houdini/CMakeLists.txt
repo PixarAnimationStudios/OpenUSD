@@ -24,5 +24,5 @@ elseif(WIN32)
      set(CMAKE_SHARED_LINKER_FLAGS "\"${HOUDINI_LIB_DIRS}/*.a\" \"${HOUDINI_LIB_DIRS}/*.lib\"" )
 endif()
 
-add_subdirectory(lib)
+add_subdirectory(gusd)
 add_subdirectory(plugin)

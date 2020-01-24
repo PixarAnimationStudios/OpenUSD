@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDPRMAN_RIX_STRINGS_H
-#define HDPRMAN_RIX_STRINGS_H
+#ifndef EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RIX_STRINGS_H
+#define EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RIX_STRINGS_H
 
 #include "hdPrman/api.h"
 #include "ri.hpp"

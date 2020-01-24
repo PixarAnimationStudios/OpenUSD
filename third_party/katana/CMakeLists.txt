@@ -11,6 +11,12 @@ add_definitions(
     -DPX_KATANA_ATTRFNC_API_VER=${KATANA_API_ATTRFNC_API_VERSION}
     )
 
-add_subdirectory(lib)
+add_subdirectory(katanaAttrfncApi)
+add_subdirectory(katanaOpApi)
+add_subdirectory(katanaPluginApi)
+add_subdirectory(usdKatana)
+if (NOT ${KATANA_API_VERSION} VERSION_LESS "3.0.0")
+    add_subdirectory(vtKatana)
+endif()
 add_subdirectory(plugin)
 add_subdirectory(python)

@@ -11,9 +11,9 @@
  * Copyright (C) 2003, by Kristen Wegner (kristen@tima.net)
  */
 
-#ifndef PUGIXML_VERSION
+#ifndef EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_RMAN_ARGS_PARSER_PUGIXML_PUGIXML_HPP
 // Define version macro; evaluates to major * 100 + minor so that it's safe to use in less-than comparisons
-#	define PUGIXML_VERSION 190
+#	define EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_RMAN_ARGS_PARSER_PUGIXML_PUGIXML_HPP 190
 #endif
 
 // Include user configuration file (this can define various configuration macros)

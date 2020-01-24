@@ -21,12 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef __GUSD_ROP_USDOUTPUT_H__
-#define __GUSD_ROP_USDOUTPUT_H__
+#ifndef OP_GUSD_ROP_USDOUTPUT_H
+#define OP_GUSD_ROP_USDOUTPUT_H
 
 #include <pxr/pxr.h>
 #include "pxr/base/tf/refPtr.h"
 
+#include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
 #include <GA/GA_OffsetList.h>
@@ -105,4 +106,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif /* __GUSD_ROP_USDOUTPUT_H__ */
+#endif /* OP_GUSD_ROP_USDOUTPUT_H */

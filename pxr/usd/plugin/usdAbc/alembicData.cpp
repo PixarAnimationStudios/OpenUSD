@@ -24,10 +24,10 @@
 /// \file alembicData.cpp
 
 #include "pxr/pxr.h"
-#include "pxr/usd/usdAbc/alembicData.h"
-#include "pxr/usd/usdAbc/alembicReader.h"
-#include "pxr/usd/usdAbc/alembicUtil.h"
-#include "pxr/usd/usdAbc/alembicWriter.h"
+#include "pxr/usd/plugin/usdAbc/alembicData.h"
+#include "pxr/usd/plugin/usdAbc/alembicReader.h"
+#include "pxr/usd/plugin/usdAbc/alembicUtil.h"
+#include "pxr/usd/plugin/usdAbc/alembicWriter.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/envSetting.h"

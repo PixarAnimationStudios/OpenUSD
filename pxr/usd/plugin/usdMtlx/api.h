@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDMTLX_API_H
-#define USDMTLX_API_H
+#ifndef PXR_USD_PLUGIN_USD_MTLX_API_H
+#define PXR_USD_PLUGIN_USD_MTLX_API_H
 
 #include "pxr/base/arch/export.h"
 

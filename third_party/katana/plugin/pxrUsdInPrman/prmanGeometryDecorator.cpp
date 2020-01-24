@@ -23,7 +23,7 @@
 //
 #include "pxr/pxr.h"
 
-#include "pxrUsdInPrman/declarePackageOps.h"
+#include "declarePackageOps.h"
 
 #include "pxr/usd/usdGeom/mesh.h"
 

@@ -169,7 +169,6 @@ function(pxr_library NAME)
     set(options
         DISABLE_PRECOMPILED_HEADERS
         KATANA_PLUGIN
-        MAYA_PLUGIN
     )
     set(oneValueArgs
         TYPE
@@ -259,15 +258,6 @@ function(pxr_library NAME)
         # In particular, shared objects install into plugin/Libs
         if(args_KATANA_PLUGIN)
             set(subdir "Libs")
-        endif()
-
-        # Maya plugins require the .mll suffix on Windows and .bundle on OSX.
-        if(args_MAYA_PLUGIN)
-            if (WIN32)
-                set(suffix ".mll")
-            elseif(APPLE)
-                set(suffix ".bundle")
-            endif()
         endif()
     else()
         # If the caller didn't specify the library type then choose the
@@ -892,6 +882,7 @@ function(pxr_toplevel_prologue)
                 PROPERTIES
                     FOLDER "${folder}"
                     PREFIX "${PXR_LIB_PREFIX}"
+                    IMPORT_PREFIX "${PXR_LIB_PREFIX}"
             )
             _get_install_dir("lib" libInstallPrefix)
             install(
@@ -1026,6 +1017,7 @@ function(pxr_monolithic_epilogue)
             FOLDER "${folder}"
             POSITION_INDEPENDENT_CODE ON
             PREFIX "${PXR_LIB_PREFIX}"
+            IMPORT_PREFIX "${PXR_LIB_PREFIX}"
     )
 
     # Adding $<TARGET_OBJECTS:foo> will not bring along compile

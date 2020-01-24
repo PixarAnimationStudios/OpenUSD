@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDEMBREE_RENDERER_H
-#define HDEMBREE_RENDERER_H
+#ifndef PXR_IMAGING_PLUGIN_HD_EMBREE_RENDERER_H
+#define PXR_IMAGING_PLUGIN_HD_EMBREE_RENDERER_H
 
 #include "pxr/pxr.h"
 
@@ -146,7 +146,7 @@ private:
                           std::default_random_engine &random,
                           GfVec4f const& clearColor);
     // Compute the depth at the given ray hit.
-    bool _ComputeDepth(RTCRay const& rayHit, float *depth, bool ndc);
+    bool _ComputeDepth(RTCRay const& rayHit, float *depth, bool clip);
     // Compute the given ID at the given ray hit.
     bool _ComputeId(RTCRay const& rayHit, TfToken const& idType, int32_t *id);
     // Compute the normal at the given ray hit.
@@ -205,4 +205,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDEMBREE_RENDERER_H
+#endif // PXR_IMAGING_PLUGIN_HD_EMBREE_RENDERER_H

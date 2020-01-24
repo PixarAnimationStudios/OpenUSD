@@ -51,21 +51,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-const std::vector<float>&
-HdPrman_Context::GetTimeSamplesForId(SdfPath const& id)
-{
-    if (!timeSampleMap.empty()) {
-        // Walk up namespace, looking for nearest enclosing entry.
-        for (SdfPath p = id; !p.IsEmpty(); p = p.GetParentPath()) {
-            HdPrman_TimeSampleMap::const_iterator i = timeSampleMap.find(p);
-            if (i != timeSampleMap.end()) {
-                return i->second;
-            }
-        }
-    }
-    return defaultTimeSamples;
-}
-
 void
 HdPrman_Context::IncrementLightLinkCount(TfToken const& name)
 {
@@ -87,6 +72,42 @@ HdPrman_Context::IsLightLinkUsed(TfToken const& name)
 {
     std::lock_guard<std::mutex> lock(_lightLinkMutex);
     return _lightLinkRefs.find(name) != _lightLinkRefs.end();
+}
+
+// XXX -- Currently, there is no need for the light filter data generated
+// in the next 3 procs but its likely it will be needed once we implement
+// shared light filters.  For now, we just #ifdef out the guts of the procs
+// to avoid running the mutex.
+
+void
+HdPrman_Context::IncrementLightFilterCount(TfToken const& name)
+{
+#ifdef ENABLE_LIGHT_FILTER_COUNTERS
+    std::lock_guard<std::mutex> lock(_lightFilterMutex);
+    --_lightFilterRefs[name];
+#endif // ENABLE_LIGHT_FILTER_COUNTERS
+}
+
+void 
+HdPrman_Context::DecrementLightFilterCount(TfToken const& name)
+{
+#ifdef ENABLE_LIGHT_FILTER_COUNTERS
+    std::lock_guard<std::mutex> lock(_lightFilterMutex);
+    if (--_lightFilterRefs[name] == 0) {
+        _lightFilterRefs.erase(name);
+    }
+#endif // ENABLE_LIGHT_FILTER_COUNTERS
+}
+
+bool 
+HdPrman_Context::IsLightFilterUsed(TfToken const& name)
+{
+#ifdef ENABLE_LIGHT_FILTER_COUNTERS
+    std::lock_guard<std::mutex> lock(_lightFilterMutex);
+    return _lightFilterRefs.find(name) != _lightFilterRefs.end();
+#else // ENABLE_LIGHT_FILTER_COUNTERS
+    return false;
+#endif // ENABLE_LIGHT_FILTER_COUNTERS
 }
 
 inline static RixDetailType

@@ -70,8 +70,8 @@
     </multiply>
     <contrast name="n7" type="color3">
       <input name="in" type="color3" nodename="img2"/>
-      <parameter name="amount" type="float" value="0.0" publicname="dirt_contrast"/>
-      <parameter name="pivot" type="float" value="0.5"/>
+      <input name="amount" type="color3" value="0.0, 0.0, 0.0" publicname="dirt_contrast"/>
+      <parameter name="pivot" type="color3" value="0.5, 0.5, 0.5"/>
     </contrast>
     <mix name="n8" type="color3">
       <input name="fg" type="color3" nodename="n7"/>
@@ -116,8 +116,8 @@
   </multiply>
   <contrast name="n7" type="color3">
     <input name="in" type="color3" nodename="img2"/>
-    <parameter name="amount" type="float" value="0.2"/>
-    <parameter name="pivot" type="float" value="0.5"/>
+    <input name="amount" type="color3" value="0.2, 0.2, 0.2"/>
+    <parameter name="pivot" type="color3" value="0.5, 0.5, 0.5"/>
   </contrast>
   <mix name="n8" type="color3">
     <input name="fg" type="color3" nodename="n7"/>
