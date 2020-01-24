@@ -25,7 +25,7 @@
 #define PXR_IMAGING_HD_ST_GL_UTILS_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/gl.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/types.h"
 #include "pxr/base/vt/value.h"

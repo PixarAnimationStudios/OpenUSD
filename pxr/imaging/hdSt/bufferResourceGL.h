@@ -24,7 +24,7 @@
 #ifndef PXR_IMAGING_HD_ST_BUFFER_RESOURCE_GL_H
 #define PXR_IMAGING_HD_ST_BUFFER_RESOURCE_GL_H
 
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/gl.h"
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"

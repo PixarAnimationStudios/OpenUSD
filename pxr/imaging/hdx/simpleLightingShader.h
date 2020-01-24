@@ -24,8 +24,6 @@
 #ifndef PXR_IMAGING_HDX_SIMPLE_LIGHTING_SHADER_H
 #define PXR_IMAGING_HDX_SIMPLE_LIGHTING_SHADER_H
 
-#include "pxr/imaging/glf/glew.h"
-
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hd/version.h"
