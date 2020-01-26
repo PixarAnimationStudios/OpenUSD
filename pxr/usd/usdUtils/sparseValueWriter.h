@@ -278,11 +278,8 @@ public:
         _attrValueWriterMap.clear();
     }
 
-    USDUTILS_API
-    _AttrValueWriterMap GetAttrValueWriter() const {
-        return _attrValueWriterMap;
-    }
-
+    /// Returns a new vector of UsdUtilsSparseAttrValueWriter populated 
+    /// from the attrValueWriter map.
     USDUTILS_API
     std::vector<UsdUtilsSparseAttrValueWriter> GetSparseAttrValueWriters() const {
         std::vector<UsdUtilsSparseAttrValueWriter> sparseValueWriterVec;
