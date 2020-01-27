@@ -2231,23 +2231,20 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
             // XXX: Getting all primvars here when we only want color is wrong.
             _UpdateSingleValue(cachePath,HdChangeTracker::DirtyPrimvar);
             if (!TF_VERIFY(_valueCache.ExtractColor(cachePath, &value))){
-                VtVec3fArray vec(1);
-                vec.push_back(GfVec3f(.5,.5,.5));
+                VtVec3fArray vec(1, GfVec3f(.5,.5,.5));
                 value = VtValue(vec);
             }
         } else if (key == HdTokens->displayOpacity) {
             // XXX: Getting all primvars here when we only want opacity is bad.
             _UpdateSingleValue(cachePath,HdChangeTracker::DirtyPrimvar);
             if (!TF_VERIFY(_valueCache.ExtractOpacity(cachePath, &value))){
-                VtFloatArray vec(1);
-                vec.push_back(1.0f);
+                VtFloatArray vec(1, 1.0f);
                 value = VtValue(vec);
             }
         } else if (key == HdTokens->widths) {
             _UpdateSingleValue(cachePath,HdChangeTracker::DirtyWidths);
             if (!TF_VERIFY(_valueCache.ExtractWidths(cachePath, &value))){
-                VtFloatArray vec(1);
-                vec.push_back(1.0f);
+                VtFloatArray vec(1, 1.0f);
                 value = VtValue(vec);
             }
         } else if (key == HdTokens->transform) {
