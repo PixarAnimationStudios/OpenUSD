@@ -157,12 +157,12 @@ GfFrustum::GetPerspective(bool isFovVertical,
 
     if (isFovVertical) {
         *fieldOfView = 
-                2.0 * GfRadiansToDegrees( atan(winSize[1] / 2.0) 
-                                      / GetReferencePlaneDepth() );
+            2.0 * GfRadiansToDegrees(
+                atan( winSize[1] / (2.0 * GetReferencePlaneDepth() )));
     } else {
         *fieldOfView = 
-                2.0 * GfRadiansToDegrees( atan(winSize[0] / 2.0) 
-                                      / GetReferencePlaneDepth() );
+            2.0 * GfRadiansToDegrees(
+                atan( winSize[0] / (2.0 * GetReferencePlaneDepth() )));
     }
     *aspectRatio       = winSize[0] / winSize[1];
 
