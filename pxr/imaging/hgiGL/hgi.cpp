@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <mutex>
+
 #include "pxr/imaging/hgiGL/hgi.h"
 #include "pxr/imaging/hgiGL/buffer.h"
 #include "pxr/imaging/hgiGL/conversions.h"
@@ -38,13 +40,16 @@ TF_DEFINE_ENV_SETTING(HGIGL_ENABLE_GL_VERSION_VALIDATION, true,
 
 HgiGL::HgiGL()
 {
-    const bool checkVersion = TfGetEnvSetting(HGIGL_ENABLE_GL_VERSION_VALIDATION);
-    if (checkVersion && !HgiGLMeetsMinimumRequirements()) {
-        TF_WARN(
-            "HgiGL minimum OpenGL requirements not met. "
-            "Please ensure that OpenGL is initialized and supports version 4.5"
-        );
-    }
+    static std::once_flag versionOnce;
+    std::call_once(versionOnce, [](){
+        const bool validate=TfGetEnvSetting(HGIGL_ENABLE_GL_VERSION_VALIDATION);
+        if (validate && !HgiGLMeetsMinimumRequirements()) {
+            TF_WARN(
+                "HgiGL minimum OpenGL requirements not met. Please ensure "
+                "that OpenGL is initialized and supports version 4.5."
+            );
+        }
+    });
 
     HgiGLSetupGL4Debug();
 }
