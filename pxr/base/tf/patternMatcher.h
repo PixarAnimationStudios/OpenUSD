@@ -54,7 +54,7 @@ class TfPatternMatcher
     TF_API TfPatternMatcher();
 
     TF_API TfPatternMatcher(TfPatternMatcher &&) noexcept = default;
-    TF_API TfPatternMatcher& operator=(TfPatternMatcher &&) noexcept = default;
+    TF_API TfPatternMatcher& operator=(TfPatternMatcher &&) = default;
 
     /// Construct a TfPatternMatcher with a default configuration.  Note that
     /// pattern compilation will not occur until the first call to \a Match()
