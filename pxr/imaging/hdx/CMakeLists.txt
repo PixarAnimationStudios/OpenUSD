@@ -162,6 +162,18 @@ pxr_build_test(testHdxCameraAndLight
     CPPFILES
         testenv/testHdxCameraAndLight.cpp
 )
+pxr_build_test(testHdxDrawTarget
+    LIBRARIES
+        hdx
+        hd
+        sdf
+        glf
+        garch
+        arch
+        tf
+    CPPFILES
+        testenv/testHdxDrawTarget.cpp
+)
 pxr_build_test(testHdxPickingWithReprAndRefineChanges
     LIBRARIES
         hdx
@@ -189,5 +201,19 @@ pxr_build_test(testHdxUnpickablesAsOccluders
         unitTestGLDrawing.cpp
         unitTestUtils.cpp
         testenv/testHdxUnpickablesAsOccluders.cpp
+)
+pxr_build_test(testHdxPickSubprims
+    LIBRARIES
+        hdx
+        hd
+        sdf
+        glf
+        garch
+        arch
+        tf
+    CPPFILES
+        unitTestGLDrawing.cpp
+        unitTestUtils.cpp
+        testenv/testHdxPickSubprims.cpp
 )
 endif()
