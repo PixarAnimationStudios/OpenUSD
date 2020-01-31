@@ -19,12 +19,24 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
                       ${CMAKE_SOURCE_DIR}/cmake/macros)
 
 include(Options)
+# If we were given a python executable, we'll extract the name from that to use in
+# the python shebang replacement. This will make these files more portable by not
+# having some full path to a python executable which may not exist on another machine.
+if (DEFINED PYTHON_EXECUTABLE)
+    get_filename_component(PYTHON_EXE_BASENAME ${PYTHON_EXECUTABLE} NAME)
+endif()
+
 include(ProjectDefaults)
 include(Packages)
 
 # This has to be defined after Packages is included, because it relies on the
 # discovered path to the python executable.
-set(PXR_PYTHON_SHEBANG "${PYTHON_EXECUTABLE}" 
+if (DEFINED PYTHON_EXE_BASENAME)
+    set(PYTHON_SHEBANG_EXECUTABLE ${PYTHON_EXE_BASENAME})
+else()
+    set(PYTHON_SHEBANG_EXECUTABLE ${PYTHON_EXECUTABLE})
+endif()
+set(PXR_PYTHON_SHEBANG "${PYTHON_SHEBANG_EXECUTABLE}" 
     CACHE 
     STRING
     "Replacement path for Python #! line."
