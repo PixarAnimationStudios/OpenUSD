@@ -268,7 +268,8 @@ bool
 TfDeleteFile(std::string const& path)
 {
     if (ArchUnlinkFile(path.c_str()) != 0) {
-        TF_RUNTIME_ERROR("Failed to delete '%s'", path.c_str());
+        TF_RUNTIME_ERROR("Failed to delete '%s': %s", 
+                path.c_str(), ArchStrerror(errno).c_str());
         return false;
     }
     return true;
@@ -389,7 +390,8 @@ TfReadDir(
 
     if ((dir = opendir(dirPath.c_str())) == NULL) {
         if (errMsg) {
-            *errMsg = TfStringPrintf("opendir failed: %s", ArchStrerror(errno).c_str());
+            *errMsg = TfStringPrintf("opendir failed: %s", 
+                        ArchStrerror(errno).c_str());
         }
         return false;
     }
@@ -416,7 +418,8 @@ TfReadDir(
             // If d_type is not available, or the filesystem has no support
             // for d_type, fall back to lstat.
             ArchStatType st;
-            if (fstatat(dirfd(dir), entry.d_name, &st, AT_SYMLINK_NOFOLLOW) != 0)
+            if (fstatat(dirfd(dir), entry.d_name, 
+                        &st, AT_SYMLINK_NOFOLLOW) != 0)
                 continue;
 
             if (S_ISDIR(st.st_mode)) {
@@ -581,7 +584,8 @@ Tf_RmTree(string const& dirpath,
             // not writable by us, or the parent directory is not writable by
             // us.
             if (onError) {
-                onError(dirpath, TfStringPrintf("ArchUnlinkFile failed for '%s': %s",
+                onError(dirpath, 
+                    TfStringPrintf("ArchUnlinkFile failed for '%s': %s",
                     path.c_str(), ArchStrerror(errno).c_str()));
             }
             // CODE_COVERAGE_ON
