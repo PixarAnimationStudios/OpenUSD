@@ -72,6 +72,7 @@ pxr_test_scripts(
     testenv/testUsdAbcInstancing.py
     testenv/testUsdAbcUvReadWrite.py
     testenv/testUsdAbcUvReadWrite_OldEncoding.py
+    testenv/testUsdAbcSDFArguments.py
 )
 
 pxr_install_test_dir(
@@ -137,6 +138,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdAbcUvReadWrite_OldEncoding
     DEST testUsdAbcUvReadWrite_OldEncoding
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdAbcSDFArguments
+    DEST testUsdAbcSDFArguments
 )
 
 pxr_register_test(testUsdAbcAlembicData
@@ -241,4 +247,10 @@ pxr_register_test(testUsdAbcUvReadWrite_OldEncoding
     ENV
         USD_ABC_WRITE_UV_AS_ST_TEXCOORD2FARRAY=0
         USD_ABC_READ_FLOAT2ARRAY_ST_PRIMVARS=1
+)
+
+pxr_register_test(testUsdAbcSDFArguments
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcSDFArguments"
+    EXPECTED_RETURN_CODE 0
 )
