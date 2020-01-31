@@ -40,7 +40,7 @@ static
 std::map<HWND, Garch_GLPlatformDebugWindow*>&
 _GetWindowsMap()
 {
-    static std::map<HWND, Garch_GLPlatformDebugWindow*> windows;
+    static std::map<HWND, Garch_GLPlatformDebugWindow*> windows;    
     return windows;
 }
 
@@ -55,6 +55,7 @@ Garch_GLPlatformDebugWindow::Garch_GLPlatformDebugWindow(GarchGLDebugWindow *w)
     , _hWND(NULL)
     , _hDC(NULL)
     , _hGLRC(NULL)
+    , _callback(w)
 {
 }
 
@@ -64,7 +65,7 @@ Garch_GLPlatformDebugWindow::Init(const char *title,
 {
     // platform initialize
     WNDCLASS wc;
-    HINSTANCE _hInstnace = GetModuleHandle(NULL);
+    _hInstance = GetModuleHandle(NULL);
     if (GetClassInfo(_hInstance, _className, &wc) == 0) {
         ZeroMemory(&wc, sizeof(WNDCLASS));
 
@@ -96,6 +97,7 @@ Garch_GLPlatformDebugWindow::Init(const char *title,
 
     ShowWindow(_hWND, SW_SHOW);
     _GetWindowsMap()[_hWND] = this;
+
     _hDC = GetDC(_hWND);
 
     PIXELFORMATDESCRIPTOR pfd;
@@ -165,8 +167,11 @@ Garch_GLPlatformDebugWindow::_MsgProc(HWND hWnd, UINT msg,
 {
     Garch_GLPlatformDebugWindow *window
         = Garch_GLPlatformDebugWindow::_GetWindowByHandle(hWnd);
+
+    // I'm not sure if the TF_VERIFY should actually be replace with a check against a nullptr, since
+    // this function is called during CreateWindowEx, before the WindowsMap is initialised
     if (!TF_VERIFY(window)) {
-        return 0;
+        return DefWindowProc(hWnd, msg, wParam, lParam);
     }
 
     int x = LOWORD(lParam);
