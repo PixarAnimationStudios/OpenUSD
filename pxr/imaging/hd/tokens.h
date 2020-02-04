@@ -57,6 +57,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (drawingCoord1)                             \
     (drawingCoord2)                             \
     (drawingCoordI)                             \
+    (drivers)                                   \
     (edgeIndices)                               \
     (elementCount)                              \
     (elementsVisibility)                        \

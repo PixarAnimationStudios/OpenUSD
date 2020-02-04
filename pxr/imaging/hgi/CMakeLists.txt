@@ -4,6 +4,7 @@ set(PXR_PACKAGE hgi)
 pxr_library(hgi
     LIBRARIES
         gf
+        plug
         tf
 
     PUBLIC_CLASSES
@@ -14,6 +15,7 @@ pxr_library(hgi
         hgi
         immediateCommandBuffer
         texture
+        tokens
 
     PUBLIC_HEADERS
         api.h

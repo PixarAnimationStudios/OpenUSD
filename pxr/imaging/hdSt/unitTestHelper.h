@@ -30,6 +30,7 @@
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/unitTestDelegate.h"
 
+#include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hio/glslfx.h"
@@ -91,6 +92,9 @@ public:
 private:
 
     void _Init(HdReprSelector const &reprToken);
+
+    std::unique_ptr<class Hgi> _hgi;
+    HdDriver _hgiDriver;
 
     HdEngine _engine;
     HdStRenderDelegate   _renderDelegate;

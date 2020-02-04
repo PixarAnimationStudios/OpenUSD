@@ -22,8 +22,16 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hgi/hgi.h"
+#include "pxr/base/arch/defines.h"
+#include "pxr/base/plug/plugin.h"
+#include "pxr/base/plug/registry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_REGISTRY_FUNCTION(TfType)
+{
+    TfType::Define<Hgi>();
+}
 
 Hgi::Hgi()
 {
@@ -31,6 +39,50 @@ Hgi::Hgi()
 
 Hgi::~Hgi()
 {
+}
+
+Hgi*
+Hgi::GetPlatformDefaultHgi()
+{
+    // We use the plugin system to construct derived Hgi classes to avoid any
+    // linker complications.
+
+    PlugRegistry& plugReg = PlugRegistry::GetInstance();
+
+    #if defined(ARCH_OS_LINUX)
+        const TfType plugType = plugReg.FindDerivedTypeByName<Hgi>("HgiGL");
+    #elif defined(ARCH_OS_DARWIN)
+        const TfType plugType = plugReg.FindDerivedTypeByName<Hgi>("HgiGL");
+    #elif defined(ARCH_OS_WINDOWS)
+        const TfType plugType = plugReg.FindDerivedTypeByName<Hgi>("HgiGL");
+    #else
+        #error Unknown Platform
+        return nullptr;
+    #endif
+
+    PlugPluginPtr plugin = plugReg.GetPluginForType(plugType);
+    if (!plugin || !plugin->Load()) {
+        TF_CODING_ERROR(
+            "[PluginLoad] PlugPlugin could not be loaded for TfType '%s'\n",
+            plugType.GetTypeName().c_str());
+        return nullptr;
+    }
+
+    HgiFactoryBase* factory = plugType.GetFactory<HgiFactoryBase>();
+    if (!factory) {
+        TF_CODING_ERROR("[PluginLoad] Cannot manufacture type '%s' \n",
+                plugType.GetTypeName().c_str());
+        return nullptr;
+    }
+
+    Hgi* instance = factory->New();
+    if (!instance) {
+        TF_CODING_ERROR("[PluginLoad] Cannot construct instance of type '%s'\n",
+                plugType.GetTypeName().c_str());
+        return nullptr;
+    }
+
+    return instance;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

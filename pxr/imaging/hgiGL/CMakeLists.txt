@@ -36,4 +36,6 @@ pxr_library(hgiGL
     PUBLIC_HEADERS
         api.h
 
+    RESOURCE_FILES
+        plugInfo.json
 )

@@ -150,7 +150,7 @@ void HdEmbree_TestGLDrawing::InitTest()
     _renderDelegate = _rendererPlugin->CreateRenderDelegate();
     TF_VERIFY(_renderDelegate != nullptr);
 
-    _renderIndex = HdRenderIndex::New(_renderDelegate);
+    _renderIndex = HdRenderIndex::New(_renderDelegate, HdDriverVector());
     TF_VERIFY(_renderIndex != nullptr);
 
     // Construct a new scene delegate to populate the render index.

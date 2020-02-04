@@ -26,6 +26,7 @@
 #include "pxr/imaging/hd/basisCurves.h"
 #include "pxr/imaging/hd/dirtyList.h"
 #include "pxr/imaging/hd/drawItem.h"
+#include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/instancer.h"
@@ -59,7 +60,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdRenderIndex::HdRenderIndex(HdRenderDelegate *renderDelegate)
+HdRenderIndex::HdRenderIndex(
+    HdRenderDelegate *renderDelegate,
+    HdDriverVector const& drivers)
     :  _rprimMap()
     , _rprimIds()
     , _taskMap()
@@ -69,6 +72,7 @@ HdRenderIndex::HdRenderIndex(HdRenderDelegate *renderDelegate)
     , _instancerMap()
     , _syncQueue()
     , _renderDelegate(renderDelegate)
+    , _drivers(drivers)
     , _activeRenderTags()
     , _renderTagVersion(_tracker.GetRenderTagVersion() - 1)
 {
@@ -85,6 +89,9 @@ HdRenderIndex::HdRenderIndex(HdRenderDelegate *renderDelegate)
     //      leave geometry collection for a while.
     _tracker.AddCollection(HdTokens->geometry);
 
+    // Let render delegate choose drivers its interested in
+    renderDelegate->SetDrivers(drivers);
+
     // Register the prim types our render delegate supports.
     _InitPrimTypes();
     // Create fallback prims.
@@ -99,14 +106,16 @@ HdRenderIndex::~HdRenderIndex()
 }
 
 HdRenderIndex*
-HdRenderIndex::New(HdRenderDelegate *renderDelegate)
+HdRenderIndex::New(
+    HdRenderDelegate *renderDelegate,
+    HdDriverVector const& drivers)
 {
     if (renderDelegate == nullptr) {
         TF_CODING_ERROR(
             "Null Render Delegate provided to create render index");
         return nullptr;
     }
-    return new HdRenderIndex(renderDelegate);
+    return new HdRenderIndex(renderDelegate, drivers);
 }
 
 void
@@ -1429,6 +1438,11 @@ void HdRenderIndex::_GatherRenderTags(const HdTaskSharedPtrVector *tasks)
     _renderTagVersion = currentRenderTagVersion;
 }
 
+HdDriverVector const&
+HdRenderIndex::GetDrivers() const
+{
+    return _drivers;
+}
 
 void
 HdRenderIndex::_CompactPrimIds()

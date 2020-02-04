@@ -44,10 +44,12 @@ class HdSceneDelegate;
 class HdRenderIndex;
 class HdRenderPass;
 class HdInstancer;
+class HdDriver;
 
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
+typedef std::vector<HdDriver*> HdDriverVector;
 
 ///
 /// The HdRenderParam is an opaque (to core Hydra) handle, to an object
@@ -90,6 +92,14 @@ class HdRenderDelegate
 public:
     HD_API
     virtual ~HdRenderDelegate();
+
+    ///
+    /// Set list of driver objects, such as a rendering context / devices.
+    /// This is automatically called from HdRenderIndex when a HdDriver is
+    /// provided during its construction. Default implementation does nothing.
+    ///
+    HD_API
+    virtual void SetDrivers(HdDriverVector const& drivers);
 
     ///
     /// Returns a list of typeId's of all supported Rprims by this render

@@ -37,9 +37,10 @@
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hd/drawingCoord.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
-#include "pxr/imaging/hgi/immediateCommandBuffer.h"
 #include "pxr/imaging/hgi/graphicsEncoder.h"
 #include "pxr/imaging/hgi/graphicsEncoderDesc.h"
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/immediateCommandBuffer.h"
 #include "pxr/imaging/glf/diagnostic.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

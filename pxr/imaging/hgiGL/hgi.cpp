@@ -30,12 +30,20 @@
 #include "pxr/imaging/hgiGL/texture.h"
 
 #include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/registryManager.h"
+#include "pxr/base/tf/type.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(HGIGL_ENABLE_GL_VERSION_VALIDATION, true,
     "Enables validation OpenGL version.");
+
+TF_REGISTRY_FUNCTION(TfType)
+{
+    TfType t = TfType::Define<HgiGL, TfType::Bases<Hgi> >();
+    t.SetFactory<HgiFactory<HgiGL>>();
+}
 
 
 HgiGL::HgiGL()

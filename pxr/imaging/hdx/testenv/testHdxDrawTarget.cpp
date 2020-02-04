@@ -30,6 +30,7 @@
 #include "pxr/imaging/glf/testGLContext.h"
 #include "pxr/base/gf/frustum.h"
 
+#include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/material.h"
 
@@ -43,6 +44,9 @@
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/unitTestDelegate.h"
+
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/tokens.h"
 
 #include "pxr/usd/sdr/registry.h"
 
@@ -78,8 +82,12 @@ int main(int argc, char *argv[])
     GLfloat clearColor[4] = { 0.1f, 0.1f, 0.1f, 1.0f };
     GLfloat clearDepth[1] = { 1.0f };
 
+    std::unique_ptr<Hgi> hgi(Hgi::GetPlatformDefaultHgi());
+    HdDriver driver{HgiTokens->renderDriver, VtValue(hgi.get())};
+
     HdStRenderDelegate renderDelegate;
-    std::unique_ptr<HdRenderIndex> index(HdRenderIndex::New(&renderDelegate));
+    std::unique_ptr<HdRenderIndex> index(
+        HdRenderIndex::New(&renderDelegate, {&driver}));
     TF_VERIFY(index);
     std::unique_ptr<Hdx_UnitTestDelegate> delegate(
                                          new Hdx_UnitTestDelegate(index.get()));

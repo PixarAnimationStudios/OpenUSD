@@ -151,7 +151,7 @@ Hd_TestDriver::~Hd_TestDriver()
 void
 Hd_TestDriver::_Init(HdReprSelector const &reprSelector)
 {
-    _renderIndex = HdRenderIndex::New(&_renderDelegate);
+    _renderIndex = HdRenderIndex::New(&_renderDelegate, HdDriverVector());
     TF_VERIFY(_renderIndex != nullptr);
 
     _sceneDelegate = new HdUnitTestDelegate(_renderIndex,

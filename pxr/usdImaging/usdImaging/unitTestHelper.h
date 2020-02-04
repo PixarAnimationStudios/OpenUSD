@@ -230,7 +230,7 @@ private:
                HdRprimCollection const &collection,
                SdfPath const &delegateId,
                TfTokenVector const &renderTags) {
-        _renderIndex = HdRenderIndex::New(&_renderDelegate);
+        _renderIndex = HdRenderIndex::New(&_renderDelegate, HdDriverVector());
         TF_VERIFY(_renderIndex != nullptr);
         _delegate = new UsdImagingDelegate(_renderIndex, delegateId);
 

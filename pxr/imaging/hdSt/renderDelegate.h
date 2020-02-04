@@ -24,13 +24,14 @@
 #define PXR_IMAGING_HD_ST_RENDER_DELEGATE_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hgiGL/hgi.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 
 #include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class Hgi;
 
 typedef boost::shared_ptr<class HdStResourceRegistry>
     HdStResourceRegistrySharedPtr;
@@ -50,6 +51,9 @@ public:
 
     HDST_API
     virtual ~HdStRenderDelegate();
+
+    HDST_API
+    virtual void SetDrivers(HdDriverVector const& drivers) override;
 
     HDST_API
     virtual HdRenderParam *GetRenderParam() const override;
@@ -144,7 +148,7 @@ private:
 
     HdRenderSettingDescriptorList _settingDescriptors;
 
-    HgiGL _hgiGL;
+    Hgi* _hgi;
 
     void _Initialize();
 

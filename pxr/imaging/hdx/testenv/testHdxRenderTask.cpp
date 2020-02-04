@@ -30,12 +30,16 @@
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/garch/glDebugWindow.h"
 
+#include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/unitTestDelegate.h"
 
 #include "pxr/imaging/hdSt/renderDelegate.h"
+
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/tokens.h"
 
 #include <iostream>
 
@@ -60,10 +64,13 @@ int main(int argc, char *argv[])
     GlfGLContextSharedPtr ctx = GlfGLContext::GetCurrentGLContext();
     GlfContextCaps::InitInstance();
 
+    std::unique_ptr<Hgi> hgi(Hgi::GetPlatformDefaultHgi());
+    HdDriver driver{HgiTokens->renderDriver, VtValue(hgi.get())};
 
     HdEngine engine;
     HdStRenderDelegate renderDelegate;
-    std::unique_ptr<HdRenderIndex> index(HdRenderIndex::New(&renderDelegate));
+    std::unique_ptr<HdRenderIndex> index(
+        HdRenderIndex::New(&renderDelegate, {&driver}));
     TF_VERIFY(index != nullptr);
     std::unique_ptr<Hdx_UnitTestDelegate> delegate(
                                          new Hdx_UnitTestDelegate(index.get()));

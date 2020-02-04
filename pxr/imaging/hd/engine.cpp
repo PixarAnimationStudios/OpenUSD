@@ -24,6 +24,7 @@
 #include "pxr/imaging/hd/engine.h"
 
 #include "pxr/imaging/hd/debugCodes.h"
+#include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderDelegate.h"
@@ -75,6 +76,9 @@ HdEngine::Execute(HdRenderIndex *index, HdTaskSharedPtrVector *tasks)
         return;
     }
 
+    // Some render tasks may need access to the same rendering context / driver
+    // as the render delegate. For example some tasks use Hgi.
+    _taskContext[HdTokens->drivers] = VtValue(index->GetDrivers());
 
     // --------------------------------------------------------------------- //
     // DATA DISCOVERY PHASE

@@ -793,7 +793,7 @@ int main(int argc, char *argv[])
             // requested includedPurposes.
             HdPrmanRenderDelegate hdPrmanBackend(hdPrmanContext);
             std::unique_ptr<HdRenderIndex> hdRenderIndex(
-                HdRenderIndex::New(&hdPrmanBackend));
+                HdRenderIndex::New(&hdPrmanBackend, HdDriverVector()));
             UsdImagingDelegate hdUsdFrontend(hdRenderIndex.get(),
                                              SdfPath::AbsoluteRootPath());
             hdUsdFrontend.Populate(stage->GetPseudoRoot());

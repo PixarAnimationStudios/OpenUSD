@@ -28,6 +28,9 @@
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/tokens.h"
+
 #include "pxr/imaging/glf/diagnostic.h"
 
 #include "pxr/base/gf/matrix4d.h"
@@ -121,7 +124,9 @@ _BuildArray(T values[], int numValues)
 }
 
 HdSt_TestDriver::HdSt_TestDriver()
- : _engine()
+ : _hgi(Hgi::GetPlatformDefaultHgi())
+ , _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())}
+ , _engine()
  , _renderDelegate()
  , _renderIndex(nullptr)
  , _sceneDelegate(nullptr)
@@ -140,7 +145,9 @@ HdSt_TestDriver::HdSt_TestDriver()
 }
 
 HdSt_TestDriver::HdSt_TestDriver(TfToken const &reprName)
- : _engine()
+ : _hgi(Hgi::GetPlatformDefaultHgi())
+ , _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())}
+ , _engine()
  , _renderDelegate()
  , _renderIndex(nullptr)
  , _sceneDelegate(nullptr)
@@ -154,7 +161,9 @@ HdSt_TestDriver::HdSt_TestDriver(TfToken const &reprName)
 }
 
 HdSt_TestDriver::HdSt_TestDriver(HdReprSelector const &reprToken)
- : _engine()
+ : _hgi(Hgi::GetPlatformDefaultHgi())
+ , _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())}
+ , _engine()
  , _renderDelegate()
  , _renderIndex(nullptr)
  , _sceneDelegate(nullptr)
@@ -176,7 +185,7 @@ HdSt_TestDriver::~HdSt_TestDriver()
 void
 HdSt_TestDriver::_Init(HdReprSelector const &reprToken)
 {
-    _renderIndex = HdRenderIndex::New(&_renderDelegate);
+    _renderIndex = HdRenderIndex::New(&_renderDelegate, {&_hgiDriver});
     TF_VERIFY(_renderIndex != nullptr);
 
     _sceneDelegate = new HdSt_UnitTestDelegate(_renderIndex,

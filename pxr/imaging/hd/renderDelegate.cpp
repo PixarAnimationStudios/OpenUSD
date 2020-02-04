@@ -71,6 +71,11 @@ HdRenderDelegate::HdRenderDelegate(HdRenderSettingsMap const& settingsMap)
     }
 }
 
+void
+HdRenderDelegate::SetDrivers(HdDriverVector const& drivers)
+{
+}
+
 HdRenderPassStateSharedPtr
 HdRenderDelegate::CreateRenderPassState() const
 {

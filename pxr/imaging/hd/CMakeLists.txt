@@ -101,6 +101,7 @@ pxr_library(hd
 
     PUBLIC_HEADERS
         api.h
+        driver.h
         version.h
 
     PRIVATE_CLASSES
