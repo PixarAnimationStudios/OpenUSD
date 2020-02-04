@@ -476,10 +476,10 @@ HdSt_QuadrangulateComputationGPU::Execute(
     int quadInfoStride = quadInfo->maxNumVert + 2;
 
     // coherent vertex offset in aggregated buffer array
-    uniform.vertexOffset = range->GetOffset();
+    uniform.vertexOffset = range->GetElementOffset();
     // quadinfo offset/stride in aggregated adjacency table
     uniform.quadInfoStride = quadInfoStride;
-    uniform.quadInfoOffset = quadrangulateTableRange->GetOffset();
+    uniform.quadInfoOffset = quadrangulateTableRange->GetElementOffset();
     uniform.maxNumVert = quadInfo->maxNumVert;
     // interleaved offset/stride to points
     // note: this code (and the glsl smooth normal compute shader) assumes

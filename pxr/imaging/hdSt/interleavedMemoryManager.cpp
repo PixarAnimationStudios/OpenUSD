@@ -465,7 +465,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
                                     "unexpectedly.");
                     continue;
                 }
-                int oldIndex = range->GetIndex();
+                int oldIndex = range->GetElementOffset();
                 if (oldIndex >= 0) {
                     // copy old data
                     GLintptr readOffset = oldIndex * _stride;
@@ -519,6 +519,8 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
 
     // increment version to rebuild dispatch buffers.
     IncrementVersion();
+
+    GLF_POST_PENDING_GL_ERRORS();
 }
 
 void

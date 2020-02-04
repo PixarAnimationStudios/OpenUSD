@@ -212,6 +212,12 @@ HdSt_IndirectDrawBatch::IsEnabledGPUInstanceFrustumCulling()
     return isEnabledGPUInstanceFrustumCulling;
 }
 
+static int
+_GetElementOffset(HdStBufferArrayRangeGLSharedPtr const& range)
+{
+    return range? range->GetElementOffset() : 0;
+}
+
 void
 HdSt_IndirectDrawBatch::_CompileBatch(
     HdStResourceRegistrySharedPtr const &resourceRegistry)
@@ -445,7 +451,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         GLuint vertexOffset = 0;
         GLuint vertexCount = 0;
         if (vertexBar) {
-            vertexOffset = vertexBar->GetOffset();
+            vertexOffset = vertexBar->GetElementOffset();
             vertexCount = vertexBar->GetNumElements();
         }
         // if delegate fails to get vertex primvars, it could be empty.
@@ -455,15 +461,15 @@ HdSt_IndirectDrawBatch::_CompileBatch(
 
         // drawing coordinates.
         GLuint modelDC         = 0; // reserved for future extension
-        GLuint constantDC      = constantBar ? constantBar->GetIndex() : 0;
+        GLuint constantDC      = _GetElementOffset(constantBar);
         GLuint vertexDC        = vertexOffset;
         GLuint topologyVisibilityDC
-                               = topVisBar? topVisBar->GetIndex() : 0;
-        GLuint elementDC       = elementBar ? elementBar->GetOffset() : 0;
-        GLuint primitiveDC     = indexBar ? indexBar->GetOffset() : 0;
-        GLuint fvarDC          = fvarBar ? fvarBar->GetOffset() : 0;
-        GLuint instanceIndexDC = instanceIndexBar ? instanceIndexBar->GetOffset() : 0;
-        GLuint shaderDC        = shaderBar ? shaderBar->GetIndex() : 0;
+                               = _GetElementOffset(topVisBar);
+        GLuint elementDC       = _GetElementOffset(elementBar);
+        GLuint primitiveDC     = _GetElementOffset(indexBar);
+        GLuint fvarDC          = _GetElementOffset(fvarBar);
+        GLuint instanceIndexDC = _GetElementOffset(instanceIndexBar);
+        GLuint shaderDC        = _GetElementOffset(shaderBar);
 
         GLuint indicesCount  = numElements * numIndicesPerPrimitive;
         // It's possible to have instanceIndexBar which is empty, and no instancePrimvars.
@@ -474,7 +480,8 @@ HdSt_IndirectDrawBatch::_CompileBatch(
             ? instanceIndexBar->GetNumElements()/instanceIndexWidth
             : 1;
         if (!instance->IsVisible()) instanceCount = 0;
-        GLuint firstIndex = indexBar ? indexBar->GetOffset() * numIndicesPerPrimitive : 0;
+        GLuint firstIndex = indexBar ?
+            indexBar->GetElementOffset() * numIndicesPerPrimitive : 0;
 
         if (_useDrawArrays) {
             if (_useGpuInstanceCulling) {
@@ -549,7 +556,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
             }
         }
         for (size_t i = 0; i < instancerNumLevels; ++i) {
-            GLuint instanceDC = instanceBars[i] ? instanceBars[i]->GetOffset() : 0;
+            GLuint instanceDC = _GetElementOffset(instanceBars[i]);
             *cmdIt++ = instanceDC;
         }
 

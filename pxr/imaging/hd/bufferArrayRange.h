@@ -29,7 +29,6 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/value.h"
-#include "pxr/imaging/hd/bufferResource.h"
 #include "pxr/imaging/hd/bufferArray.h"
 
 #include <boost/noncopyable.hpp>
@@ -79,12 +78,14 @@ public:
     /// Read back the buffer content
     virtual VtValue ReadData(TfToken const &name) const = 0;
 
-    /// Returns the relative offset for this range
-    virtual int GetOffset() const = 0;
-
-    /// Returns the index for this range
-    virtual int GetIndex() const = 0;
-
+    /// Returns the offset at which this range begins in the underlying buffer 
+    /// array in terms of elements.
+    virtual int GetElementOffset() const = 0;
+    
+    /// Returns the byte offset at which this range begins in the underlying
+    /// buffer array for the given resource.
+    virtual int GetByteOffset(TfToken const& resourceName) const = 0;
+    
     /// Returns the number of elements
     virtual size_t GetNumElements() const = 0;
 

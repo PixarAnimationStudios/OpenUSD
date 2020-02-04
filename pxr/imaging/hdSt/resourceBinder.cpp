@@ -1166,13 +1166,13 @@ HdSt_ResourceBinder::Bind(HdBindingRequest const& req) const
         HdStBufferResourceGLSharedPtr res =
             boost::static_pointer_cast<HdStBufferResourceGL> (res_);
 
-        BindBuffer(req.GetName(), res, req.GetOffset());
+        BindBuffer(req.GetName(), res, req.GetByteOffset());
     } else if (req.IsInterleavedBufferArray()) {
         // note: interleaved buffer needs only 1 binding
         HdBufferArrayRangeSharedPtr bar_ = req.GetBar();
         HdStBufferArrayRangeGLSharedPtr bar =
             boost::static_pointer_cast<HdStBufferArrayRangeGL> (bar_);
-        BindBuffer(req.GetName(), bar->GetResource(), req.GetOffset());
+        BindBuffer(req.GetName(), bar->GetResource(), req.GetByteOffset());
     } else if (req.IsBufferArray()) {
         HdBufferArrayRangeSharedPtr bar_ = req.GetBar();
         HdStBufferArrayRangeGLSharedPtr bar =

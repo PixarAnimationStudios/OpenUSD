@@ -72,14 +72,16 @@ public:
         return VtValue();
     }
 
-    /// Returns the relative offset in aggregated buffer
-    virtual int GetOffset() const {
+    /// Returns the offset at which this range begins in the underlying buffer 
+    /// array in terms of elements.
+    virtual int GetElementOffset() const {
         TF_CODING_ERROR("Hd_DispatchBufferArrayRange doesn't support this operation");
         return 0;
     }
 
-    /// Returns the index in aggregated buffer
-    virtual int GetIndex() const {
+    /// Returns the byte offset at which this range begins in the underlying
+    /// buffer array for the given resource.
+    virtual int GetByteOffset(TfToken const& resourceName) const {
         TF_CODING_ERROR("Hd_DispatchBufferArrayRange doesn't support this operation");
         return 0;
     }

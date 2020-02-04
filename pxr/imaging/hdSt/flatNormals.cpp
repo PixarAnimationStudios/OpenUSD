@@ -155,11 +155,11 @@ HdSt_FlatNormalsComputationGPU::Execute(
     } uniform;
 
     // coherent vertex offset in aggregated buffer array
-    uniform.vertexOffset = vertexRange->GetOffset();
+    uniform.vertexOffset = vertexRange->GetElementOffset();
     // coherent element offset in aggregated buffer array
-    uniform.elementOffset = range->GetOffset();
+    uniform.elementOffset = range->GetElementOffset();
     // coherent topology offset in aggregated buffer array
-    uniform.topologyOffset = topologyRange->GetOffset();
+    uniform.topologyOffset = topologyRange->GetElementOffset();
     // interleaved offset/stride to points
     // note: this code (and the glsl flat normal compute shader) assumes
     // components in interleaved vertex array are always same data type.

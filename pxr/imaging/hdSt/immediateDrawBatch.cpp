@@ -115,6 +115,12 @@ HdSt_ImmediateDrawBatch::PrepareDraw(
 {
 }
 
+static int
+_GetElementOffset(HdStBufferArrayRangeGLSharedPtr const& range)
+{
+    return range? range->GetElementOffset() : 0;
+}
+
 void
 HdSt_ImmediateDrawBatch::ExecuteDraw(
     HdStRenderPassStateSharedPtr const &renderPassState,
@@ -385,7 +391,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         int vertexOffset = 0;
         int vertexCount = 0;
         if (vertexBar) {
-            vertexOffset = vertexBar->GetOffset();
+            vertexOffset = vertexBar->GetElementOffset();
             vertexCount = vertexBar->GetNumElements();
         }
 
@@ -396,7 +402,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         //
         int numIndicesPerPrimitive = geometricShader->GetPrimitiveIndexSize();
         int indexCount = indexBar ? indexBar->GetNumElements() * numIndicesPerPrimitive : 0;
-        int firstIndex = indexBar ? indexBar->GetOffset() * numIndicesPerPrimitive : 0;
+        int firstIndex = indexBar ? indexBar->GetElementOffset() * numIndicesPerPrimitive : 0;
         int baseVertex = vertexOffset;
         int instanceCount = instanceIndexBar
             ? instanceIndexBar->GetNumElements()/instanceIndexWidth : 1;
@@ -408,17 +414,17 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         // update standalone uniforms
         int drawingCoord0[4] = {
             0, // reserved for modelBar
-            constantBar ? constantBar->GetIndex()  : 0,
-            elementBar  ? elementBar->GetOffset()  : 0,
-            indexBar    ? indexBar->GetOffset()    : 0
+            _GetElementOffset(constantBar),
+            _GetElementOffset(elementBar),
+            _GetElementOffset(indexBar),
         };
         int drawingCoord1[4] = {
-            fvarBar          ? fvarBar->GetOffset()          : 0,
-            instanceIndexBar ? instanceIndexBar->GetOffset() : 0,
-            shaderBar        ? shaderBar->GetIndex()         : 0,
+            _GetElementOffset(fvarBar),
+            _GetElementOffset(instanceIndexBar),
+            _GetElementOffset(shaderBar),
             baseVertex
         };
-        int drawingCoord2 = topVisBar? topVisBar->GetIndex() : 0;
+        int drawingCoord2 = _GetElementOffset(topVisBar);
         binder.BindUniformi(HdTokens->drawingCoord0, 4, drawingCoord0);
         binder.BindUniformi(HdTokens->drawingCoord1, 4, drawingCoord1);
         binder.BindUniformi(HdTokens->drawingCoord2, 1, &drawingCoord2);
@@ -426,8 +432,8 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         // instance coordinates
         std::vector<int> instanceDrawingCoords(instancerNumLevels);
         for (int i = 0; i < instancerNumLevels; ++i) {
-            instanceDrawingCoords[i] = instanceBarCurrents[i]
-                ? instanceBarCurrents[i]->GetOffset() : 0;
+            instanceDrawingCoords[i] =
+                _GetElementOffset(instanceBarCurrents[i]);
         }
         if (instancerNumLevels > 0) {
             binder.BindUniformArrayi(HdTokens->drawingCoordI,

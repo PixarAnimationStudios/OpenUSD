@@ -126,9 +126,9 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     } uniform;
 
     // coherent vertex offset in aggregated buffer array
-    uniform.vertexOffset = range->GetOffset();
+    uniform.vertexOffset = range->GetElementOffset();
     // adjacency offset/stride in aggregated adjacency table
-    uniform.adjacencyOffset = adjacencyRange->GetOffset();
+    uniform.adjacencyOffset = adjacencyRange->GetElementOffset();
     // interleaved offset/stride to points
     // note: this code (and the glsl smooth normal compute shader) assumes
     // components in interleaved vertex array are always same data type.

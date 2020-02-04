@@ -335,11 +335,11 @@ HdSt_Osd3Subdivision::RefineGPU(HdBufferArrayRangeSharedPtr const &range,
     int numCoarseVertices = _vertexStencils->GetNumControlVertices();
 
     OpenSubdiv::Osd::BufferDescriptor srcDesc(
-        /*offset=*/range->GetOffset() * stride,
+        /*offset=*/range->GetElementOffset() * stride,
         /*length=*/stride,
         /*stride=*/stride);
     OpenSubdiv::Osd::BufferDescriptor dstDesc(
-        /*offset=*/(range->GetOffset() + numCoarseVertices) * stride,
+        /*offset=*/(range->GetElementOffset() + numCoarseVertices) * stride,
         /*length=*/stride,
         /*stride=*/stride);
 

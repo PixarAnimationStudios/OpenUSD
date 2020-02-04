@@ -220,9 +220,13 @@ public:
         return _resource;
     }
     /// Returns the resource or buffer array range offset, defaults to zero.
-    int GetOffset() const {
+    int GetByteOffset() const {
+        // buffer resource binding
         if (_resource) return _resource->GetOffset();
-        if (_bar) return _bar->GetOffset();
+
+        // named struct binding (interleaved) - the resource name doesn't matter
+        // since a single binding point is used.
+        if (_bar) return _bar->GetByteOffset(TfToken());
         return 0;
     }
     /// Returns the buffer array range associated with this binding request or
