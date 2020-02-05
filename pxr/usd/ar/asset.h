@@ -45,10 +45,8 @@ public:
     AR_API
     virtual ~ArAsset();
 
-    AR_API 
     ArAsset(const ArAsset&) = delete;
 
-    AR_API 
     ArAsset& operator=(const ArAsset&) = delete;
 
     /// Returns size of the asset.

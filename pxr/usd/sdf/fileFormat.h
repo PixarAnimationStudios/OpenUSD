@@ -256,7 +256,7 @@ protected:
         const SdfSchemaBase& schema);
 
     /// Disallow temporary SdfSchemaBase objects being passed to the c'tor.
-    SDF_API SdfFileFormat(
+    SdfFileFormat(
         const TfToken& formatId,
         const TfToken& versionString,
         const TfToken& target,
@@ -280,7 +280,7 @@ protected:
         const SdfSchemaBase& schema);
 
     /// Disallow temporary SdfSchemaBase objects being passed to the c'tor.
-    SDF_API SdfFileFormat(
+    SdfFileFormat(
         const TfToken& formatId,
         const TfToken& versionString,
         const TfToken& target,
