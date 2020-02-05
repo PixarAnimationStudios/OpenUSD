@@ -102,11 +102,6 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include <OpenImageIO/filesystem.h>
-#include <OpenImageIO/imagebuf.h>
-#include <OpenImageIO/imagebufalgo.h>
-#include <OpenImageIO/imageio.h>
-#include <OpenImageIO/typedesc.h>
 #include <boost/aligned_storage.hpp>
 #include <boost/any.hpp>
 #include <boost/call_traits.hpp>
