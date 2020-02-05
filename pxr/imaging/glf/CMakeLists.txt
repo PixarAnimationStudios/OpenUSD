@@ -25,8 +25,8 @@ set (plugInfo plugInfo_NoOIIO.json)
 if (PXR_BUILD_OPENIMAGEIO_PLUGIN)
     set (plugInfo plugInfo.json)
     list(APPEND optionalCppFiles oiioImage.cpp)
-    list(APPEND optionalLibs ${OIIO_LIBRARIES})
-    list(APPEND optionalIncludeDirs ${OIIO_INCLUDE_DIRS})
+    list(APPEND optionalLibs ${OIIO_LIBRARIES} ${OPENEXR_LIBRARY})
+    list(APPEND optionalIncludeDirs ${OIIO_INCLUDE_DIRS} ${OPENEXR_INCLUDE_DIRS})
 endif()
 
 if (PXR_ENABLE_OPENVDB_SUPPORT)
@@ -52,13 +52,11 @@ pxr_library(glf
         ${OPENGL_glu_LIBRARY}
         ${GLEW_LIBRARY}
         ${X11_LIBRARIES}
-        ${OPENEXR_LIBRARY}
         ${optionalLibs}
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}
         ${GLEW_INCLUDE_DIR}
-        ${OPENEXR_INCLUDE_DIRS}
         ${optionalIncludeDirs}
 
     PUBLIC_CLASSES
