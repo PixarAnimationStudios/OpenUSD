@@ -126,6 +126,10 @@ public:
         return &_renderPassState;
     }
 
+    /// Returns collection of rprims the draw target draws.
+    HDST_API
+    HdRprimCollection const &GetCollection() const { return _collection; }
+
     /// Debug api to output the contents of the draw target to a png file.
     HDST_API
     bool WriteToFile(const HdRenderIndex &renderIndex,

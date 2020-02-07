@@ -64,6 +64,17 @@ public:
     HDX_API
     GlfDrawTargetRefPtr GetDrawTarget();
 
+    /// Sets whether other draw targets depend on this draw target.
+    HDX_API
+    void SetHasDependentDrawTargets(bool value);
+
+    /// Whether other draw targets depend on this draw target.
+    ///
+    /// If true, the buffer needs to be resolved before the dependent
+    /// draw targets use it if MSAA is enabled.
+    HDX_API
+    bool HasDependentDrawTargets() const;
+
     /// Sets the non-context dependent state.  The object is expected to
     /// live longer than this class.
     HDX_API
@@ -100,6 +111,8 @@ private:
     GlfGLContextSharedPtr  _drawTargetContext;
 
     unsigned int         _collectionObjectVersion;
+
+    bool _hasDependentDrawTargets;
 
     /// Clear all color and depth buffers.
     void _ClearBuffers();
