@@ -37,9 +37,7 @@
 /// addition. Include this file, as opposed to pxr/base/tf/diagnostic.h in
 /// header files that need to remain as light-weight as possible.
 ///
-/// These macros are safe to use in multiple threads, but errors will be
-/// converted to warnings because our error handling mechanisms are not thread
-/// safe.
+/// These macros are safe to use in multiple threads.
 
 #include "pxr/pxr.h"
 #include "pxr/base/arch/attributes.h"

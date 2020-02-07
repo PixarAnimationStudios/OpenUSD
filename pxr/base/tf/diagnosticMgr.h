@@ -193,54 +193,61 @@ public:
     TF_API
     void AppendError(TfError const &e);
     
-    /// If called in a main thread, this method will create a TfError, append
-    /// it to the error list, and pass it to the delegate.
+    /// This method will create a TfError, append it to the error list, and
+    /// pass it to all delegates.
     ///
-    /// If called in a non-main thread, this method will print the error to
-    /// stderr and will not add it to the error list or pass it to the
-    /// delegate.
+    /// If no delegates have been registered and no error mark is active, this
+    /// method will print the error to stderr.
     TF_API
     void PostError(TfEnum errorCode, const char* errorCodeString,
         TfCallContext const &context,  
         const std::string& commentary, TfDiagnosticInfo info,
         bool quiet);
     
-    /// If called in a main thread, this method will create a TfError, append
-    /// it to the error list, and pass it to the delegate.
+    /// This method will create a TfError, append it to the error list, and
+    /// pass it to all delegates.
     ///
-    /// If called in a non-main thread, this method will print the error to
-    /// stderr and will not add it to the error list or pass it to the
-    /// delegate.
+    /// If no delegates have been registered and no error mark is active, this
+    /// method will print the error to stderr.
     TF_API
     void PostError(const TfDiagnosticBase& diagnostic);
 
-    /// If called in a non-main thread, this method will print the warning msg
-    /// rather than passing it to the delegate.
+    /// This method will create a TfWarning and pass it to all delegates.
+    ///
+    /// If no delegates have been registered, this method will print the
+    /// warning msg to stderr.
     TF_API
     void PostWarning(TfEnum warningCode, const char *warningCodeString,
         TfCallContext const &context, std::string const &commentary,
         TfDiagnosticInfo info, bool quiet) const;
 
-    /// If called in a non-main thread, this method will print the warning msg
-    /// rather than passing it to the delegate.
+    /// This method will create a TfWarning and pass it to all delegates.
+    ///
+    /// If no delegates have been registered, this method will print the
+    /// warning msg to stderr.
     TF_API
     void PostWarning(const TfDiagnosticBase& diagnostic) const;
 
-    /// If called in a non-main thread, this method will print the status msg
-    /// rather than passing it to the delegate.
+    /// This method will create a TfStatus and pass it to all delegates.
+    ///
+    /// If no delegates have been registered, this method will print the
+    /// status msg to stderr.
     TF_API
     void PostStatus(TfEnum statusCode, const char *statusCodeString,
         TfCallContext const &context, std::string const &commentary,
         TfDiagnosticInfo info, bool quiet) const;
 
-    /// If called in a non-main thread, this method will print the status msg
-    /// rather than passing it to the delegate.
+    /// This method will create a TfStatus and pass it to all delegates.
+    ///
+    /// If no delegates have been registered, this method will print the
+    /// status msg to stderr.
     TF_API
     void PostStatus(const TfDiagnosticBase& diagnostic) const;
 
-    /// If called in a non-main thread, this method will print the error msg
-    /// and handle the fatal error itself rather than passing it to the
-    /// delegate.
+    /// This method will issue a fatal error to all delegates.
+    ///
+    /// If no delegates have been registered, this method will print the error
+    /// msg and abort the process.
     TF_API
     void PostFatal(TfCallContext const &context, TfEnum statusCode,
                    std::string const &msg) const;
