@@ -128,11 +128,9 @@ Sdf_Pool<Tag, ElemSize, RegionBits, ElemsPerSpan>::Free(Handle h)
 
     // Add to local free list.
     threadData.freeList.Push(h);
-    
-    // If our free list is big and we have >=25% span space, share the free list
-    // for use by other threads.
-    if (threadData.freeList.size >= ElemsPerSpan &&
-        threadData.span.size() >= ElemsPerSpan/4) {
+
+    // If our free list is big share the free list for use by other threads.
+    if (threadData.freeList.size >= ElemsPerSpan) {
         _ShareFreeList(threadData.freeList);
     }
 }
