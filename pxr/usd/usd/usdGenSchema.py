@@ -877,7 +877,7 @@ def GatherTokens(classes, libName, libTokens):
 
 def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
                  namespaceOpen, namespaceClose, namespaceUsing,
-                 useExportAPI, env):
+                 useExportAPI, env, headerTerminatorString):
     #
     # Load Templates
     #
@@ -928,8 +928,15 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
 
         # header file
         clsHFilePath = os.path.join(codeGenPath, cls.GetHeaderFile())
+
+        # Wrap headerTerminatorString with new lines if it is non-empty.
+        headerTerminatorString = headerTerminatorString.strip()
+        if headerTerminatorString:
+            headerTerminatorString = '\n%s\n' % headerTerminatorString
+
         customCode = _ExtractCustomCode(clsHFilePath,
-                default='};\n\n%s\n\n#endif\n' % namespaceClose)
+                default='};\n\n%s\n%s' % (
+                    namespaceClose, headerTerminatorString))
         _WriteFile(clsHFilePath,
                    headerTemplate.render(
                        cls=cls, hasTokenAttrs=hasTokenAttrs) + customCode,
@@ -1201,6 +1208,14 @@ if __name__ == '__main__':
               '[Default: first directory that exists from this list: {0}]'
               .format(os.pathsep.join([defaultTemplateDir, instTemplateDir]))))
 
+    parser.add_argument('-hts', '--headerTerminatorString',
+        dest='headerTerminatorString',
+        type=str,
+        default='#endif',
+        help=('The string used to terminate generated C++ header files, '
+              'after the custom code section. '
+              '[Default: %(default)s]'))
+
     args = parser.parse_args()
     codeGenPath = os.path.abspath(args.codeGenPath)
     schemaPath = os.path.abspath(args.schemaPath)
@@ -1285,7 +1300,7 @@ if __name__ == '__main__':
         GenerateCode(templatePath, codeGenPath, tokenData, classes, 
                      args.validate,
                      namespaceOpen, namespaceClose, namespaceUsing,
-                     useExportAPI, j2_env)
+                     useExportAPI, j2_env, args.headerTerminatorString)
         GenerateRegistry(codeGenPath, schemaPath, classes, 
                          args.validate, j2_env)
     
