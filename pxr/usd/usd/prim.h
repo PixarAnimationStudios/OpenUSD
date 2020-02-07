@@ -140,7 +140,7 @@ public:
     typedef UsdPrimSubtreeRange SubtreeRange;
 
     /// Construct an invalid prim.
-    UsdPrim() : UsdObject() {}
+    UsdPrim() : UsdObject(_Null<UsdPrim>()) {}
 
     /// Return this prim's definition from the UsdSchemaRegistry based on the
     /// prim's type if one exists, otherwise return null.
