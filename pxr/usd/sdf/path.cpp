@@ -492,27 +492,30 @@ SdfPath::GetParentPath() const {
     }
 
     // If this is a property-like path, trim that first.
-    if (Sdf_PathNode const *propNode = _propPart.get()) {
-        propNode = propNode->GetParentNode();
+    if (_propPart) {
+        Sdf_PathNode const *propNode = _propPart.get()->GetParentNode();
         return SdfPath(_primPart, Sdf_PathPropNodeHandle(propNode));
     }
     
-    // This is a prim-like path.  If this prim path is '.' or ends with '..',
-    // the "parent" path is made by appending a '..' component.
+    // This is a prim-like path.  If this is an absolute path (most common case)
+    // then it's just the parent path node.  On the other hand if this path is a
+    // relative path, and is '.' or ends with '..', the logical parent path is
+    // made by appending a '..' component.
     //
     // XXX: NOTE that this is NOT the way that that Sdf_PathNode::GetParentNode
     // works, and note that most of the code in SdfPath uses GetParentNode
     // intentionally.
     Sdf_PathNode const *primNode = _primPart.get();
-    if (ARCH_UNLIKELY(
-            primNode == Sdf_PathNode::GetRelativeRootNode() || 
-            primNode->GetName() == SdfPathTokens->parentPathElement)) {
-        return SdfPath(Sdf_PathNode::FindOrCreatePrim(
-                           primNode, SdfPathTokens->parentPathElement),
-                       Sdf_PathPropNodeHandle());
-    } else {
+    if (ARCH_LIKELY(
+            primNode->IsAbsolutePath() ||
+            (primNode != Sdf_PathNode::GetRelativeRootNode() && 
+             primNode->GetName() != SdfPathTokens->parentPathElement))) {
         return SdfPath(primNode->GetParentNode(), nullptr);
     }
+    // Is relative root, or ends with '..'.
+    return SdfPath(Sdf_PathNode::FindOrCreatePrim(
+                       primNode, SdfPathTokens->parentPathElement),
+                   Sdf_PathPropNodeHandle());
 }
 
 SdfPath
