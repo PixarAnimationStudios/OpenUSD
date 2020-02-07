@@ -94,7 +94,9 @@ SdfPrimSpec::_New(const SdfPrimSpecHandle &parentPrim,
     const TfToken &name, SdfSpecifier spec,
     const TfToken &typeName)
 {
-    if (!parentPrim) {
+    SdfPrimSpec *parentPrimPtr = get_pointer(parentPrim);
+
+    if (!parentPrimPtr) {
         TF_CODING_ERROR("Cannot create prim '%s' because the parent prim is "
                         "NULL",
                         name.GetText());
@@ -103,7 +105,7 @@ SdfPrimSpec::_New(const SdfPrimSpecHandle &parentPrim,
     if (!SdfPrimSpec::IsValidName(name)) {
         TF_RUNTIME_ERROR("Cannot create prim '%s' because '%s' is not a valid "
                          "name", 
-                         parentPrim->GetPath().AppendChild(name).GetText(),
+                         parentPrimPtr->GetPath().AppendChild(name).GetText(),
                          name.GetText());
         return TfNullPtr;
     }
@@ -116,8 +118,8 @@ SdfPrimSpec::_New(const SdfPrimSpecHandle &parentPrim,
     TfToken type = (typeName.IsEmpty() && spec == SdfSpecifierDef) 
                    ? SdfTokens->AnyTypeToken : typeName;
 
-    SdfLayerHandle layer = parentPrim->GetLayer();
-    SdfPath childPath = parentPrim->GetPath().AppendChild(name);
+    SdfLayerHandle layer = parentPrimPtr->GetLayer();
+    SdfPath childPath = parentPrimPtr->GetPath().AppendChild(name);
 
     // PrimSpecs are considered inert if their specifier is
     // "over" and the type is not specified.
