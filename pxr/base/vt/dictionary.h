@@ -30,6 +30,7 @@
 #include "pxr/base/vt/api.h"
 #include "pxr/base/vt/value.h"
 
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/mallocTag.h"
 

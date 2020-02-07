@@ -24,6 +24,7 @@
 #include "pxr/imaging/hf/pluginEntry.h"
 #include "pxr/imaging/hf/pluginBase.h"
 #include "pxr/imaging/hf/pluginDesc.h"
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/type.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

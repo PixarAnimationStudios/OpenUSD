@@ -25,6 +25,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/refBase.h"
+#include "pxr/base/tf/diagnostic.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

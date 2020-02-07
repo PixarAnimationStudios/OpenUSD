@@ -26,6 +26,7 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/glf/bindingMap.h"
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/type.h"
 

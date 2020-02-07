@@ -29,7 +29,6 @@
 
 #include "pxr/pxr.h"
 
-#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/refCount.h"
 #include "pxr/base/tf/api.h"
 

@@ -33,13 +33,16 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/singleton.h"
-#include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/typeInfoMap.h"
 #include "pxr/base/tf/typeNotice.h"
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
+// XXX: This include is a hack to avoid build errors due to
+// incompatible macro definitions in pyport.h on macOS.
+#include <locale>
+#include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyObjWrapper.h"
 #include "pxr/base/tf/pyObjectFinder.h"
 #include "pxr/base/tf/pyUtils.h"
