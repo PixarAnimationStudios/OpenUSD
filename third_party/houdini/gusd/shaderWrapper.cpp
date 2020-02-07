@@ -225,6 +225,41 @@ void _buildRampParmInputs(const PRM_Parm* parm, UsdShadeShader& shaderObject)
     }
 }
 
+SdfValueTypeName
+_vopTypeToSdfType(const VOP_Type& vopType) {
+    switch(vopType) {
+        case VOP_TYPE_INTEGER:        return SdfValueTypeNames->Int;
+        case VOP_TYPE_FLOAT:          return SdfValueTypeNames->Float;
+        case VOP_TYPE_STRING:         return SdfValueTypeNames->String;
+        case VOP_TYPE_POINT:          return SdfValueTypeNames->Point3f;
+        case VOP_TYPE_NORMAL:         return SdfValueTypeNames->Normal3f;
+        case VOP_TYPE_COLOR:          return SdfValueTypeNames->Color3f;
+        case VOP_TYPE_VECTOR:         return SdfValueTypeNames->Vector3f;
+        case VOP_TYPE_VECTOR2:        return SdfValueTypeNames->Float2;
+        case VOP_TYPE_VECTOR4:        return SdfValueTypeNames->Float4;
+        case VOP_TYPE_MATRIX2:        return SdfValueTypeNames->Matrix2d;
+        case VOP_TYPE_MATRIX3:        return SdfValueTypeNames->Matrix3d;
+        case VOP_TYPE_MATRIX4:        return SdfValueTypeNames->Matrix4d;
+        case VOP_TYPE_STRUCT:         return SdfValueTypeNames->Token;
+
+        case VOP_TYPE_INTEGER_ARRAY:  return SdfValueTypeNames->IntArray;
+        case VOP_TYPE_FLOAT_ARRAY:    return SdfValueTypeNames->FloatArray;
+        case VOP_TYPE_STRING_ARRAY:   return SdfValueTypeNames->StringArray;
+        case VOP_TYPE_POINT_ARRAY:    return SdfValueTypeNames->Point3fArray;
+        case VOP_TYPE_NORMAL_ARRAY:   return SdfValueTypeNames->Normal3fArray;
+        case VOP_TYPE_COLOR_ARRAY:    return SdfValueTypeNames->Color3fArray;
+        case VOP_TYPE_VECTOR_ARRAY:   return SdfValueTypeNames->Vector3fArray;
+        case VOP_TYPE_VECTOR2_ARRAY:  return SdfValueTypeNames->Float2Array;
+        case VOP_TYPE_VECTOR4_ARRAY:  return SdfValueTypeNames->Float4Array;
+        case VOP_TYPE_MATRIX2_ARRAY:  return SdfValueTypeNames->Matrix2dArray;
+        case VOP_TYPE_MATRIX3_ARRAY:  return SdfValueTypeNames->Matrix3dArray;
+        case VOP_TYPE_MATRIX4_ARRAY:  return SdfValueTypeNames->Matrix4dArray;
+        // VOP_TYPE_STRUCT_ARRAY doesn't exist
+
+        default:                      return SdfValueTypeName();
+    }
+}
+
 UsdShadeShader
 _vopGraphToUsdTraversal(const VOP_Node* vopNode,
                         UsdStagePtr& stage,
@@ -459,11 +494,29 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
             vopNode->getInputName(inputName, inIdx);
             inputVop->getOutputName(outputName,outIdx);
 
-            UsdShadeInput shadeInput
-                = shaderObject.GetInput(TfToken(inputName.toStdString()));
-            UsdShadeConnectableAPI::ConnectToSource(shadeInput, 
-                inputPrim, TfToken(outputName.toStdString()));
+            TfToken inputToken(inputName.toStdString());
+            UsdShadeInput shadeInput = shaderObject.GetInput(inputToken);
 
+            //
+            // It's possible that no UsdShadeInput has been created for this
+            // connection yet. Only input connections with corresponding parms
+            // have been visited so far. This must be an input with no parm.
+            //
+            if (!shadeInput) {
+                VOP_Type vopType = vopNode->getInputType(inIdx);
+                auto sdfType = _vopTypeToSdfType(vopType);
+                if (sdfType) {
+                    shadeInput = shaderObject.CreateInput(inputToken, sdfType);
+                }
+            }
+
+            if (shadeInput) {
+                UsdShadeConnectableAPI::ConnectToSource(shadeInput, 
+                    inputPrim, TfToken(outputName.toStdString()));
+            } else {
+                TF_CODING_ERROR("Error creating or retrieving input '%s' on "
+                    "shader '%s'.", inputToken.GetText(), nodeName.c_str());
+            }
         }
     }
 
