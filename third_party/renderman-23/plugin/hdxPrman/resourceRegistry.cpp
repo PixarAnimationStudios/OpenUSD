@@ -23,29 +23,33 @@
 //
 #include "pxr/imaging/hd/tokens.h"
 #include "RixRiCtl.h"
-#include "hdPrman/resourceRegistry.h"
+#include "resourceRegistry.h"
+#include "context.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdPrman_ResourceRegistry::HdPrman_ResourceRegistry(
-    std::shared_ptr<HdPrman_Context> const& context)
+HdxPrman_ResourceRegistry::HdxPrman_ResourceRegistry(
+    std::shared_ptr<HdxPrman_InteractiveContext> const& context)
     : _context(context)
 {
 }
 
-HdPrman_ResourceRegistry::~HdPrman_ResourceRegistry()
+HdxPrman_ResourceRegistry::~HdxPrman_ResourceRegistry()
 {
 }
 
 void
-HdPrman_ResourceRegistry::ReloadResource(
+HdxPrman_ResourceRegistry::ReloadResource(
     TfToken const& resourceType,
     std::string const& path)
 {
     if (resourceType == HdResourceTypeTokens->texture) {
         _context->ri->InvalidateTexture(RtUString(path.c_str()));
     }
+
+    _context->StopRender();
+    _context->sceneVersion.fetch_add(1);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

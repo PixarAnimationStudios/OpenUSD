@@ -34,7 +34,6 @@
 #include "hdPrman/renderDelegate.h"
 #include "hdPrman/renderParam.h"
 #include "hdPrman/renderPass.h"
-#include "hdPrman/resourceRegistry.h"
 #include "hdPrman/volume.h"
 
 #include "pxr/imaging/hd/tokens.h"
@@ -102,7 +101,10 @@ void
 HdPrmanRenderDelegate::_Initialize()
 {
     _renderParam = std::make_shared<HdPrman_RenderParam>(_context);
-    _resourceRegistry = boost::make_shared<HdPrman_ResourceRegistry>(_context);
+
+    // Initialize default resource registry. HdxPrman may override this with its
+    // resource registry during HdxPrmanRenderDelegate::_Initialize.
+    _resourceRegistry.reset(new HdResourceRegistry());
 
     std::string integrator = HdPrmanIntegratorTokens->PxrPathTracer;
     const std::string interactiveIntegrator = 

@@ -52,7 +52,6 @@ pxr_shared_library(${PXR_PACKAGE}
         points
         renderDelegate
         renderPass
-        resourceRegistry
         rixStrings
         volume
         xcpt

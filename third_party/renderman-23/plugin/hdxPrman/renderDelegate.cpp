@@ -25,6 +25,7 @@
 #include "renderBuffer.h"
 #include "renderParam.h"
 #include "renderPass.h"
+#include "resourceRegistry.h"
 #include "context.h"
 
 #include "hdPrman/instancer.h"
@@ -68,6 +69,9 @@ HdxPrmanRenderDelegate::_Initialize(std::shared_ptr<HdPrman_Context> context)
             _interactiveContext);
         _interactiveContext->Begin(this);
     }
+
+    _resourceRegistry = boost::make_shared<HdxPrman_ResourceRegistry>(
+        _interactiveContext);
 }
 
 HdxPrmanRenderDelegate::~HdxPrmanRenderDelegate()

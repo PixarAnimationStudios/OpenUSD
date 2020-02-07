@@ -27,6 +27,7 @@ pxr_plugin(${PXR_PACKAGE}
         renderBuffer
         renderDelegate
         renderPass
+        resourceRegistry
 
     CPPFILES
         rendererPlugin
