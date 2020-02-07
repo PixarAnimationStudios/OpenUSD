@@ -53,7 +53,7 @@ public:
     void PopDebugGroup() override;
 
     HGIGL_API
-    void CopyTextureGpuToCpu(HgiCopyResourceOp const& copyOp) override;
+    void CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp) override;
 
     HGIGL_API
     void ResolveImage(HgiResolveImageOp const& resolveOp) override;

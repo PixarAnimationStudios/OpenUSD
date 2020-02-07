@@ -29,7 +29,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct HgiCopyResourceOp;
+struct HgiTextureGpuToCpuOp;
 struct HgiResolveImageOp;
 
 
@@ -61,8 +61,9 @@ public:
     virtual void PopDebugGroup() = 0;
 
     /// Copy a texture resource from GPU to CPU.
+    /// This call is blocking until the data is ready to be read on CPU.
     HGI_API
-    virtual void CopyTextureGpuToCpu(HgiCopyResourceOp const& copyOp) = 0;
+    virtual void CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp) = 0;
 
     /// Resolve a multi-sample texture (MSAA) so it can be read from.
     HGI_API

@@ -24,6 +24,8 @@
 #ifndef PXR_IMAGING_HGI_TEXTURE_H
 #define PXR_IMAGING_HGI_TEXTURE_H
 
+#include <string>
+
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec3i.h"
 #include "pxr/imaging/hgi/api.h"
@@ -37,7 +39,7 @@ struct HgiTextureDesc;
 
 
 ///
-/// \class HgiTexture 
+/// \class HgiTexture
 ///
 /// Represents a graphics platform independent GPU texture resource.
 /// Textures should be created via Hgi::CreateTexture.
@@ -71,15 +73,27 @@ typedef HgiTexture* HgiTextureHandle;
 ///
 /// <ul>
 /// <li>debugName:
-///   This label can be applied as debug label for gpu debugging.</li>
+///   This label can be applied as debug label for GPU debugging.</li>
 /// <li>usage:
 ///   Describes how the texture is intended to be used.</li>
 /// <li>format:
 ///   The format of the texture.
 /// <li>dimensions:
-///   The resolution of the texture (width,height,layers).</li>
+///   The resolution of the texture (width, height, depth/volume).</li>
+/// <li>layerCount:
+///   The number of layers (texture-arrays).</li>
+/// <li>mipLevels:
+///   The number of mips in texture.</li>
 /// <li>sampleCount:
-///   samples per texel (multi-sampling)</li>
+///   samples per texel (multi-sampling).</li>
+/// <li>pixelsByteSize:
+///   Byte size (length) of pixel data.</li>
+/// <li>initialData:
+///   CPU pointer to initialization pixels of the texture.
+///   The memory is consumed immediately during the creation of the HgiTexture.
+///   The application may alter or free this memory as soon as the constructor
+///   of the HgiTexture has returned.
+///   Data may optionally include pixels for each mip-level.</li>
 /// </ul>
 ///
 struct HgiTextureDesc {
@@ -87,14 +101,22 @@ struct HgiTextureDesc {
     : usage(HgiTextureUsageBitsColorTarget)
     , format(HgiFormatInvalid)
     , dimensions(0)
+    , layerCount(1)
+    , mipLevels(1)
     , sampleCount(HgiSampleCount1)
+    , pixelsByteSize(0)
+    , initialData(nullptr)
     {}
 
     std::string debugName;
     HgiTextureUsage usage;
     HgiFormat format;
     GfVec3i dimensions;
+    uint16_t layerCount;
+    uint16_t mipLevels;
     HgiSampleCount sampleCount;
+    size_t pixelsByteSize;
+    void const* initialData;
 };
 
 HGI_API
@@ -103,7 +125,7 @@ bool operator==(
     const HgiTextureDesc& rhs);
 
 HGI_API
-inline bool operator!=(
+bool operator!=(
     const HgiTextureDesc& lhs,
     const HgiTextureDesc& rhs);
 

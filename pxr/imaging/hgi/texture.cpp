@@ -34,13 +34,17 @@ HgiTexture::~HgiTexture()
 }
 
 bool operator==(const HgiTextureDesc& lhs,
-    const HgiTextureDesc& rhs) 
+    const HgiTextureDesc& rhs)
 {
     return  lhs.debugName == rhs.debugName &&
             lhs.usage == rhs.usage &&
             lhs.format == rhs.format &&
             lhs.dimensions == rhs.dimensions &&
-            lhs.sampleCount == rhs.sampleCount;
+            lhs.sampleCount == rhs.sampleCount &&
+            lhs.pixelsByteSize == rhs.pixelsByteSize
+            // Omitted because data ptr is set to nullptr after CreateTexture
+            // lhs.initialData == rhs.initialData
+    ;
 }
 
 bool operator!=(const HgiTextureDesc& lhs,

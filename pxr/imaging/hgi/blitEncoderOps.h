@@ -37,74 +37,57 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \struct HgiCopyResourceOp
+//// \struct HgiTextureGpuToCpuOp
 ///
-/// Describes the properties needed to copy resource data to/from GPU/CPU.
+/// Describes the properties needed to copy texture data from GPU to CPU.
 ///
 /// It is the responsibility of the caller to:
-///   - ensure the destination buffer is large enough to receive the data 
-//      (keep in mind the destinationByteOffset).
-///   - ensure the source and destination buffers are valid by the time the 
-//      command is executed.
-///   - insert the appropriate barriers in the command buffer prior to 
-///     reading/writing to/from the buffers.
+///   - ensure the destination buffer is large enough to receive the data
+///     (keep in mind the destinationByteOffset, mipLevel, numLayers, etc).
+///   - ensure the source texture and destination buffer are valid at the time
+///     the command is executed.
+///   - insert the appropriate barriers in the command buffer prior to
+///     reading/writing to/from the resources.
 ///
 /// <ul>
-/// <li>format:
-///   The data-type of one element in the source buffer</li>
-/// <li>usage:
-///   For some platforms knowing the format may not be enough and needs to know
-///   if the source/destination is used for e.g. Depth.
-/// <li>dimensions:
-///   Size of data (in element count) to copy from source to destination.</li>
-/// <li>sourceByteOffset:
-///   The offset in source buffer where to start copying the data from.
-///   For a 2 or 3 dimensionaly buffer you can supply offset[1] and offset[2].</li>
-/// <li>sourceBuffer:
-///   Where to copy the data from (gpu or cpu)</li>
-///
+/// <li>gpuSourceTexture:
+///   The gpu texture to copy pixels from.</li>
+/// <li>sourceTexelOffset:
+///   The texel offset (width, height, depth) of where to start copying.</li>
+/// <li>mipLevel:
+///   Mip level to copy from.</li>
+/// <li>startLayer:
+///   The first layer to start copying from.</li>
+/// <li>numLayers:
+///   The number of layers to copy.</li>
+/// <li>cpuDestinationBuffer:
+///   The copy destination cpu buffer.</li>
 /// <li>destinationByteOffset:
-///   The offset in destination buffer where to start copying the data to.
-///   For a 2 or 3 dimensionaly buffer you can supply offset[1] and offset[2].</li>
+///   The byte offset in destination buffer where to start copying the data to.</li>
 /// <li>destinationBufferByteSize:
 ///   Size of the destination buffer (in bytes)</li>
-/// <li>destinationBuffer:
-///   Where to copy the data to (gpu or cpu)</li>
 /// </ul>
 ///
-struct HgiCopyResourceOp {
-    HgiCopyResourceOp()
-    : format(HgiFormatInvalid)
-    , usage(HgiTextureUsageBitsColorTarget)
-    , dimensions(0)
-    , sourceByteOffset(0)
-    , cpuSourceBuffer(nullptr)
+struct HgiTextureGpuToCpuOp {
+    HgiTextureGpuToCpuOp()
+    : gpuSourceTexture(nullptr)
+    , sourceTexelOffset(GfVec3i(0))
+    , mipLevel(0)
+    , startLayer(0)
+    , numLayers(1)
+    , cpuDestinationBuffer(nullptr)
     , destinationByteOffset(0)
     , destinationBufferByteSize(0)
-    , cpuDestinationBuffer(nullptr)
     {}
 
-    // Source
-    HgiFormat format;
-    HgiTextureUsageBits usage;
-    GfVec3i dimensions;
-    GfVec3i sourceByteOffset;
-
-    union {
-        // XXX HgiBufferHandle gpuSourceBuffer;
-        HgiTextureHandle gpuSourceTexture;
-        void* cpuSourceBuffer;
-    };
-
-    // Destination
-    GfVec3i destinationByteOffset;
+    HgiTextureHandle gpuSourceTexture;
+    GfVec3i sourceTexelOffset;
+    uint32_t mipLevel;
+    uint32_t startLayer;
+    uint32_t numLayers;
+    void* cpuDestinationBuffer;
+    size_t destinationByteOffset;
     size_t destinationBufferByteSize;
-
-    union {
-        // XXX HgiBufferHandle gpuDistinationBuffer;
-        HgiTextureHandle gpuDestinationTexture;
-        void* cpuDestinationBuffer;
-    };
 };
 
 

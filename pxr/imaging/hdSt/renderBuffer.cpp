@@ -129,15 +129,15 @@ HdStRenderBuffer::Map()
     _mappedBuffer.resize(dataByteSize);
 
     if (dataByteSize > 0) {
-        HgiCopyResourceOp copyOp;
-        copyOp.format = HdStHgiConversions::GetHgiFormat(_format);
-        copyOp.usage = _usage;
-        copyOp.dimensions = _dimensions;
-        copyOp.sourceByteOffset = GfVec3i(0);
-        copyOp.cpuDestinationBuffer = _mappedBuffer.data();
-        copyOp.destinationByteOffset = GfVec3i(0);
-        copyOp.destinationBufferByteSize = dataByteSize;
+        HgiTextureGpuToCpuOp copyOp;
         copyOp.gpuSourceTexture = _texture;
+        copyOp.sourceTexelOffset = GfVec3i(0);
+        copyOp.mipLevel = 0;
+        copyOp.startLayer = 0;
+        copyOp.numLayers = 1;
+        copyOp.cpuDestinationBuffer = _mappedBuffer.data();
+        copyOp.destinationByteOffset = 0;
+        copyOp.destinationBufferByteSize = dataByteSize;
 
         // Use blit encoder to record resource copy commands.
         HgiImmediateCommandBuffer& icb = _hgi->GetImmediateCommandBuffer();
@@ -157,6 +157,7 @@ HdStRenderBuffer::Unmap()
     //     For now we assume that Map() will be called frequently so we prefer
     //     to avoid the cost of clearing the buffer over memory savings.
     // _mappedBuffer.clear();
+    // _mappedBuffer.shrink_to_fit();
     _mappers.fetch_sub(1);
 }
 

@@ -70,12 +70,12 @@ HgiGLBlitEncoder::PopDebugGroup()
 
 void 
 HgiGLBlitEncoder::CopyTextureGpuToCpu(
-    HgiCopyResourceOp const& copyOp)
+    HgiTextureGpuToCpuOp const& copyOp)
 {
-    HgiGLTexture* srcTextureGL =
+    HgiGLTexture* srcTexture =
         static_cast<HgiGLTexture*>(copyOp.gpuSourceTexture);
 
-    if (!TF_VERIFY(srcTextureGL && srcTextureGL->GetTextureId(), 
+    if (!TF_VERIFY(srcTexture && srcTexture->GetTextureId(), 
         "Invalid texture handle")) {
         return;
     }
@@ -85,18 +85,26 @@ HgiGLBlitEncoder::CopyTextureGpuToCpu(
         return;
     }
 
+    HgiTextureDesc const& texDesc = srcTexture->GetDescriptor();
+
+    uint32_t layerCnt = copyOp.startLayer + copyOp.numLayers;
+    if (!TF_VERIFY(texDesc.layerCount >= layerCnt,
+        "Texture has less layers than attempted to be copied")) {
+        return;
+    }
+
     GLenum glInternalFormat = 0;
     GLenum glFormat = 0;
     GLenum glPixelType = 0;
 
-    if (copyOp.usage & HgiTextureUsageBitsColorTarget) {
+    if (texDesc.usage & HgiTextureUsageBitsColorTarget) {
         HgiGLConversions::GetFormat(
-            copyOp.format, 
+            texDesc.format, 
             &glFormat, 
             &glPixelType,
             &glInternalFormat);
-    } else if (copyOp.usage & HgiTextureUsageBitsDepthTarget) {
-        TF_VERIFY(copyOp.format == HgiFormatFloat32);
+    } else if (texDesc.usage & HgiTextureUsageBitsDepthTarget) {
+        TF_VERIFY(texDesc.format == HgiFormatFloat32);
         glFormat = GL_DEPTH_COMPONENT;
         glPixelType = GL_FLOAT;
         glInternalFormat = GL_DEPTH_COMPONENT32F;
@@ -105,23 +113,19 @@ HgiGLBlitEncoder::CopyTextureGpuToCpu(
     }
 
     // Make sure writes are finished before we read from the texture
-    //
-    // XXX If we issue all the right commands, this barrier would have already
-    // been issued by HdSt, but for now we do it here. This may introduce a
-    // unneccesairy performance hit, so we should remove this when we
-    // fully record fence/barrier/sempahores in command buffers / RenderPasses.
-    //
+    // XXX We assume for now that nothing else has ensured the barrier is 
+    // inserted before calling CopyTexture.
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
     glGetTextureSubImage(
-        srcTextureGL->GetTextureId(),
-        0, // mip level
-        copyOp.sourceByteOffset[0], // x offset
-        copyOp.sourceByteOffset[1], // y offset
-        copyOp.sourceByteOffset[2], // z offset
-        copyOp.dimensions[0], // width
-        copyOp.dimensions[1], // height
-        copyOp.dimensions[2], // layerCnt
+        srcTexture->GetTextureId(),
+        copyOp.mipLevel,
+        copyOp.sourceTexelOffset[0], // x offset
+        copyOp.sourceTexelOffset[1], // y offset
+        copyOp.sourceTexelOffset[2], // z offset
+        texDesc.dimensions[0], // width
+        texDesc.dimensions[1], // height
+        texDesc.dimensions[2], // layerCnt
         glFormat,
         glPixelType,
         copyOp.destinationBufferByteSize,
