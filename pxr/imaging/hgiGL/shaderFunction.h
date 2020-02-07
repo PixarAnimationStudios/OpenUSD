@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,40 +21,55 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGI_GL_CONVERSIONS_H
-#define PXR_IMAGING_HGI_GL_CONVERSIONS_H
+#ifndef PXR_IMAGING_HGIGL_SHADERFUNCTION_H
+#define PXR_IMAGING_HGIGL_SHADERFUNCTION_H
 
-#include <GL/glew.h>
-#include "pxr/pxr.h"
+#include "pxr/imaging/hgi/shaderFunction.h"
+
 #include "pxr/imaging/hgiGL/api.h"
-#include "pxr/imaging/hgi/enums.h"
-#include "pxr/imaging/hgi/types.h"
-
-#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
 ///
-/// \class HgiGLConversions
+/// \class HgiGLShaderFunction
 ///
-/// Converts from Hgi types to GL types.
+/// OpenGL implementation of HgiShaderFunction
 ///
-class HgiGLConversions final
-{
+class HgiGLShaderFunction final : public HgiShaderFunction {
 public:
     HGIGL_API
-    static void GetFormat(
-        HgiFormat inFormat,
-        GLenum *outFormat,
-        GLenum *outType,
-        GLenum *outInternalFormat);
+    virtual ~HgiGLShaderFunction();
 
     HGIGL_API
-    static std::vector<GLenum> GetShaderStages(HgiShaderStage ss);
+    bool IsValid() const override;
+
+    HGIGL_API
+    std::string const& GetCompileErrors() override;
+
+    /// Returns the gl resource id of the shader.
+    HGIGL_API
+    uint32_t GetShaderId() const;
+
+protected:
+    friend class HgiGL;
+
+    HGIGL_API
+    HgiGLShaderFunction(HgiShaderFunctionDesc const& desc);
+
+private:
+    HgiGLShaderFunction() = delete;
+    HgiGLShaderFunction & operator=(const HgiGLShaderFunction&) = delete;
+    HgiGLShaderFunction(const HgiGLShaderFunction&) = delete;
+
+private:
+    HgiShaderFunctionDesc _descriptor;
+    std::string _errors;
+
+    uint32_t _shaderId;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
-

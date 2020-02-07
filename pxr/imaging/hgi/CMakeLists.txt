@@ -14,6 +14,8 @@ pxr_library(hgi
         graphicsEncoderDesc
         hgi
         immediateCommandBuffer
+        shaderFunction
+        shaderProgram
         texture
         tokens
 

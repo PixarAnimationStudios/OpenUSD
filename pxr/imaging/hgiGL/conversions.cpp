@@ -22,6 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include <GL/glew.h>
+
+#include "pxr/imaging/hgi/enums.h"
 #include "pxr/imaging/hgiGL/conversions.h"
 
 #include "pxr/base/tf/iterator.h"
@@ -73,6 +75,14 @@ constexpr bool _CompileTimeValidateHgiFormatTable() {
             HgiFormatInt32Vec4 == 19) ? true : false;
 }
 
+static const uint32_t
+_ShaderStageTable[][2] =
+{
+    {HgiShaderStageVertex,   GL_VERTEX_SHADER},
+    {HgiShaderStageFragment, GL_FRAGMENT_SHADER},
+    {HgiShaderStageCompute,  GL_COMPUTE_SHADER}
+};
+
 static_assert(_CompileTimeValidateHgiFormatTable(), 
               "_FormatDesc array out of sync with HgiFormat enum");
 
@@ -95,6 +105,20 @@ HgiGLConversions::GetFormat(
     *outFormat         = desc.format;
     *outType           = desc.type;
     *outInternalFormat = desc.internalFormat;
+}
+
+std::vector<GLenum>
+HgiGLConversions::GetShaderStages(HgiShaderStage ss)
+{
+    std::vector<GLenum> stages;
+    for (const auto& f : _ShaderStageTable) {
+        if (ss & f[0]) stages.push_back(f[1]);
+    }
+
+    if (stages.empty()) {
+        TF_CODING_ERROR("Missing shader stage table entry");
+    }
+    return stages;
 }
 
 

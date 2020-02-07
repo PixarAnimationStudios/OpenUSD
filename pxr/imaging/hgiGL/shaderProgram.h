@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,40 +21,56 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGI_GL_CONVERSIONS_H
-#define PXR_IMAGING_HGI_GL_CONVERSIONS_H
+#ifndef PXR_IMAGING_HGIGL_SHADERPROGRAM_H
+#define PXR_IMAGING_HGIGL_SHADERPROGRAM_H
 
-#include <GL/glew.h>
-#include "pxr/pxr.h"
+#include "pxr/imaging/hgi/shaderProgram.h"
+
 #include "pxr/imaging/hgiGL/api.h"
-#include "pxr/imaging/hgi/enums.h"
-#include "pxr/imaging/hgi/types.h"
+#include "pxr/imaging/hgiGL/shaderFunction.h"
 
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
 ///
-/// \class HgiGLConversions
+/// \class HgiGLShaderProgram
 ///
-/// Converts from Hgi types to GL types.
+/// OpenGL implementation of HgiShaderProgram
 ///
-class HgiGLConversions final
-{
+class HgiGLShaderProgram final : public HgiShaderProgram {
 public:
     HGIGL_API
-    static void GetFormat(
-        HgiFormat inFormat,
-        GLenum *outFormat,
-        GLenum *outType,
-        GLenum *outInternalFormat);
+    virtual ~HgiGLShaderProgram();
 
     HGIGL_API
-    static std::vector<GLenum> GetShaderStages(HgiShaderStage ss);
+    bool IsValid() const override;
+
+    HGIGL_API
+    std::string const& GetCompileErrors() override;
+
+    HGIGL_API
+    HgiShaderFunctionHandleVector const& GetShaderFunctions() const override;
+
+protected:
+    friend class HgiGL;
+
+    HGIGL_API
+    HgiGLShaderProgram(HgiShaderProgramDesc const& desc);
+
+private:
+    HgiGLShaderProgram() = delete;
+    HgiGLShaderProgram & operator=(const HgiGLShaderProgram&) = delete;
+    HgiGLShaderProgram(const HgiGLShaderProgram&) = delete;
+
+private:
+    HgiShaderProgramDesc _descriptor;
+    std::string _errors;
+    uint32_t _programId;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
-

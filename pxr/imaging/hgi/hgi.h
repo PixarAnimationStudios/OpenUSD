@@ -29,6 +29,8 @@
 
 #include "pxr/imaging/hgi/api.h"
 #include "pxr/imaging/hgi/buffer.h"
+#include "pxr/imaging/hgi/shaderFunction.h"
+#include "pxr/imaging/hgi/shaderProgram.h"
 #include "pxr/imaging/hgi/texture.h"
 #include "pxr/imaging/hgi/types.h"
 
@@ -99,6 +101,26 @@ public:
     /// Destroy a buffer in rendering backend.
     HGI_API
     virtual void DestroyBuffer(HgiBufferHandle* bufHandle) = 0;
+
+    /// Create a new shader function
+    HGI_API
+    virtual HgiShaderFunctionHandle CreateShaderFunction(
+        HgiShaderFunctionDesc const& desc) = 0;
+
+    /// Destroy a shader function
+    HGI_API
+    virtual void DestroyShaderFunction(
+        HgiShaderFunctionHandle* shaderFunctionHandle) = 0;
+
+    /// Create a new shader program
+    HGI_API
+    virtual HgiShaderProgramHandle CreateShaderProgram(
+        HgiShaderProgramDesc const& desc) = 0;
+
+    /// Destroy a shader program
+    HGI_API
+    virtual void DestroyShaderProgram(
+        HgiShaderProgramHandle* shaderProgramHandle) = 0;
 
 private:
     Hgi & operator=(const Hgi&) = delete;

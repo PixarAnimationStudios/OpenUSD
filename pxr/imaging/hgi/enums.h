@@ -158,6 +158,27 @@ enum HgiBufferUsageBits : HgiBits {
 typedef HgiBits HgiBufferUsage;
 
 
+/// \enum HgiShaderStage
+///
+/// Describes the stage a shader function operates in.
+///
+/// <ul>
+/// <li>HgiShaderStageVertex:
+///   Vertex Shader.</li>
+/// <li>HgiShaderStageFragment:
+///   Fragment Shader.</li>
+/// <li>HgiShaderStageCompute:
+///   Compute Shader.</li>
+/// </ul>
+///
+enum HgiShaderStageBits : HgiBits {
+    HgiShaderStageVertex   = 1 << 0,
+    HgiShaderStageFragment = 1 << 1,
+    HgiShaderStageCompute  = 1 << 2
+};
+typedef HgiBits HgiShaderStage;
+
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

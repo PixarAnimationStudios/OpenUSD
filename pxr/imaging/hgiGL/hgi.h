@@ -68,6 +68,22 @@ public:
     HGIGL_API
     void DestroyBuffer(HgiBufferHandle* bufHandle) override;
 
+    HGIGL_API
+    HgiShaderFunctionHandle CreateShaderFunction(
+        HgiShaderFunctionDesc const& desc) override;
+
+    HGIGL_API
+    void DestroyShaderFunction(
+        HgiShaderFunctionHandle* shaderFunctionHandle) override;
+
+    HGIGL_API
+    HgiShaderProgramHandle CreateShaderProgram(
+        HgiShaderProgramDesc const& desc) override;
+
+    HGIGL_API
+    void DestroyShaderProgram(
+        HgiShaderProgramHandle* shaderProgramHandle) override;
+
 private:
     HgiGL & operator=(const HgiGL&) = delete;
     HgiGL(const HgiGL&) = delete;
