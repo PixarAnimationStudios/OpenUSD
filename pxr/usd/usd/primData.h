@@ -271,17 +271,6 @@ private:
         _nextSiblingOrParent.Set(parent, /* isParent */ true);
     }
 
-    void _AddChild(Usd_PrimDataPtr child) {
-        // Add \a child as the first child.  If _firstChild is nullptr, we are
-        // adding this primdata's first child so we instead set its parent link
-        // to this.
-        if (_firstChild)
-            child->_SetSiblingLink(_firstChild);
-        else
-            child->_SetParentLink(this);
-        _firstChild = child;
-    };
-
     // Set the dead bit on this prim data object.
     void _MarkDead() {
         _flags[Usd_PrimDeadFlag] = true;
