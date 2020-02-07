@@ -74,7 +74,9 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
         glCreateTextures(GL_TEXTURE_2D, 1, &_textureId);
     } else {
         glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &_textureId);
-    }    
+    }
+
+    glObjectLabel(GL_TEXTURE, _textureId, -1, _descriptor.debugName.c_str());
 
     if (desc.sampleCount == HgiSampleCount1) {
         // XXX sampler state etc should all be set via tex descriptor.
