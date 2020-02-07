@@ -925,6 +925,14 @@ UsdImagingPointInstancerAdapter::_ProcessPrimRemoval(SdfPath const& cachePath,
                     break;
                 }
             }
+
+            // Check if this is a populated prototype prim with a name-mangled
+            // path...
+            if (inst.protoPrimMap.find(cachePath) != inst.protoPrimMap.end()) {
+                instancersToUnload.push_back(instancerPath);
+                foundPrim = true;
+            }
+
             if (foundPrim) {
                 continue;
             }
