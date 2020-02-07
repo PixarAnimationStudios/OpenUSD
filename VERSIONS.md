@@ -22,7 +22,7 @@ Our test machines have the following software versions installed
 | OpenSubdiv    | 3.0.5, 3.4   | 3.0.5, 3.1.1 | 3.1.1        |
 | GLEW          | 2.0.0        | 2.0.0        | 2.0.0        |
 | OpenImageIO   | 1.7.14       | 1.7.14       | 1.7.14       |
-| OpenColorIO   | 1.1.0        | 1.1.0        | 1.1.0        |
+| OpenColorIO   | 1.0.9        | 1.1.0        | 1.1.0        |
 | OSL           | 1.5.12       | 1.5.12       | 1.5.12       |
 | Ptex          | 2.1.28       | 2.1.28       | 2.1.28       |
 | PySide        | 1.2.2, 1.2.4 | 1.2.1        | 1.2.2        |
