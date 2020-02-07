@@ -313,11 +313,10 @@ GlfSimpleLightingContext::BindUniformBlocks(GlfBindingMapPtr const &bindingMap)
         // 16byte aligned
         struct ShadowMatrix {
             float viewToShadowMatrix[16];
-            float basis0[4];
-            float basis1[4];
-            float basis2[4];
+            float shadowToViewMatrix[16];
+            float blur;
             float bias;
-            float padding[3];
+            float padding[2];
         };
 
         struct Shadow {
@@ -387,25 +386,22 @@ GlfSimpleLightingContext::BindUniformBlocks(GlfBindingMapPtr const &bindingMap)
             lightingData->lightSource[i].isIndirectLight = light.IsDomeLight();
 
             if (lightingData->lightSource[i].hasShadow) {
-                int shadowIndex = light.GetShadowIndex();
+                const int shadowIndex = light.GetShadowIndex();
                 lightingData->lightSource[i].shadowIndex = shadowIndex;
 
-                GfMatrix4d viewToShadowMatrix = viewToWorldMatrix *
-                    _shadows->GetWorldToShadowMatrix(shadowIndex);
-
-                double invBlur = 1.0/(std::max(0.0001F, light.GetShadowBlur()));
-                GfMatrix4d mat = viewToShadowMatrix.GetInverse();
-                GfVec4f xVec = GfVec4f(mat.GetRow(0) * invBlur);
-                GfVec4f yVec = GfVec4f(mat.GetRow(1) * invBlur);
-                GfVec4f zVec = GfVec4f(mat.GetRow(2));
-
                 shadowData->shadow[shadowIndex].bias = light.GetShadowBias();
+                shadowData->shadow[shadowIndex].blur = light.GetShadowBlur();
+
+                const GfMatrix4d viewToShadowMatrix = viewToWorldMatrix *
+                    _shadows->GetWorldToShadowMatrix(shadowIndex);
+                const GfMatrix4d shadowToViewMatrix =
+                    viewToShadowMatrix.GetInverse();
+
                 setMatrix(shadowData->shadow[shadowIndex].viewToShadowMatrix,
                           viewToShadowMatrix);
-                setVec4(shadowData->shadow[shadowIndex].basis0, xVec);
-                setVec4(shadowData->shadow[shadowIndex].basis1, yVec);
-                setVec4(shadowData->shadow[shadowIndex].basis2, zVec);
-
+                setMatrix(shadowData->shadow[shadowIndex].shadowToViewMatrix,
+                          shadowToViewMatrix);
+                
                 shadowExists = true;
             }
         }

@@ -70,14 +70,16 @@ vec2 jitter[JITTER_NUM_SAMPLES] =
 in vec2 FshadowFilterWidth[NUM_LIGHTS];
 
 float
-shadowFilter(int index, vec4 coord, vec4 Peye)
+shadowFilter(int index, vec4 Pshadow, vec4 Peye)
 {
     vec2 filterWidth = FshadowFilterWidth[index];
 
     float sum = 0.0;
-    for (int i=0; i<PCF_NUM_SAMPLES; ++i) { 
+    for (int i=0; i<PCF_NUM_SAMPLES; ++i) {
+        // Note that the perspective division has not been applied to
+        // either Pshadow or filterWidth.
         vec2 offset = jitter[i] * filterWidth;
-        sum += shadowCompare(index, vec4(coord.xy + offset, coord.z, coord.w));
+        sum += shadowCompare(index, Pshadow + vec4(offset, 0, 0));
     } 
     return sum / float(PCF_NUM_SAMPLES);
 } 
@@ -122,14 +124,16 @@ vec2 jitter[JITTER_NUM_SAMPLES] =
 vec2 computeShadowFilterWidth(int index, vec4 Peye); // defined in simpleLighting.glslfx
 
 float
-shadowFilter(int index, vec4 coord, vec4 Peye)
+shadowFilter(int index, vec4 Pshadow, vec4 Peye)
 {
     vec2 filterWidth = computeShadowFilterWidth(index, Peye);
 
     float sum = 0.0;
     for (int i=0; i<PCF_NUM_SAMPLES; ++i) { 
+        // Note that the perspective division has not been applied to
+        // either Pshadow or filterWidth.
         vec2 offset = jitter[i] * filterWidth;
-        sum += shadowCompare(index, vec4(coord.xy + offset, coord.z, coord.w));
+        sum += shadowCompare(index, Pshadow + vec4(offset, 0, 0));
     } 
     return sum / float(PCF_NUM_SAMPLES);
 }

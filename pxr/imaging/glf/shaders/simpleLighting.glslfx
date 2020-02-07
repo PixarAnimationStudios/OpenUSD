@@ -39,13 +39,11 @@
 
 struct ShadowMatrix {
     mat4 eyeToShadowMatrix;
-    vec4 basis0;
-    vec4 basis1;
-    vec4 basis2;
+    mat4 shadowToEyeMatrix;
+    float blur;
     float bias;
     float padding0;
     float padding1;
-    float padding2;
 };
 
 layout(std140) uniform Shadow {
@@ -54,20 +52,37 @@ layout(std140) uniform Shadow {
 
 out vec2 FshadowFilterWidth[NUM_LIGHTS];
 
+// Transforms a unit tangent vector parallel to a coordinate axis in
+// shadow space to eye space and returns the length of the result
+// (without doing the perspective division).
+//
+// The first argument is assumed to be a column of the shadow to eye
+// matrix (using first column corresponds to unit tangent vector
+// pointing in x-direction, ...). The second argument is supposed to
+// be the (homogeneous) coordinates of the point in eye space.
+//
+float
+shadowTangentLength(vec4 dir, vec4 Peye)
+{
+    // Computation similar to computeRayDirectionEye in volume.glslfx.
+    const vec3 shadowTangent = dir.xyz * Peye.w - dir.w * Peye.xyz;
+    return length(shadowTangent);
+}
+
+// Computes the lengths that tangent vectors parallel to the x-,
+// respectively, y-direction in shadow space at the current location
+// need to have such that their image in eye space have length blur
+// (without perspective division).
+//
 void
 computeShadowFilterWidth(vec4 Peye)
 {
     // interpolate filter width
     for (int i = 0; i < NUM_LIGHTS; ++i) {
-        vec4 cx = shadow[i].basis0;
-        vec4 cy = shadow[i].basis1;
-        vec4 cz = shadow[i].basis2;
-        
-        // compare homogeneous vector length
-        vec3 x = cx.xyz - cx.w * Peye.xyz;
-        vec3 y = cy.xyz - cy.w * Peye.xyz;
-        vec3 z = cz.xyz - cz.w * Peye.xyz;
-        FshadowFilterWidth[i] = vec2(sqrt (1.0 / dot (x,x)), sqrt(1.0 / dot (y,y)));
+        FShadowFilterWidth[i] =
+            vec2(shadow[i].blur) /
+            vec2(shadowTangentLength(shadow[i].shadowToEyeMatrix[0], Peye),
+                 shadowTangentLength(shadow[i].shadowToEyeMatrix[1], Peye));
     }
 }
 
@@ -105,13 +120,11 @@ struct LightSource {
 
 struct ShadowMatrix {
     mat4 eyeToShadowMatrix;
-    vec4 basis0;
-    vec4 basis1;
-    vec4 basis2;
+    mat4 shadowToEyeMatrix;
+    float blur;
     float bias;
     float padding0;
     float padding1;
-    float padding2;
 };
 
 struct LightingContribution {
@@ -141,18 +154,20 @@ layout(std140) uniform Shadow {
     ShadowMatrix shadow[NUM_LIGHTS];
 };
 
+float
+shadowTangentLength(vec4 dir, vec4 Peye)
+{
+    const vec3 shadowTangent = dir.xyz * Peye.w - dir.w * Peye.xyz;
+    return length(shadowTangent);
+}
+
 vec2
 computeShadowFilterWidth(int index, vec4 Peye)
 {
-    vec4 cx = shadow[index].basis0;
-    vec4 cy = shadow[index].basis1;
-    vec4 cz = shadow[index].basis2;
-
-    // compare homogeneous vector length
-    vec3 x = cx.xyz - cx.w * Peye.xyz;
-    vec3 y = cy.xyz - cy.w * Peye.xyz;
-    vec3 z = cz.xyz - cz.w * Peye.xyz;
-    return vec2(sqrt (1.0 / dot (x,x)), sqrt(1.0 / dot (y,y)));
+    return
+        vec2(shadow[index].blur) /
+        vec2(shadowTangentLength(shadow[index].shadowToEyeMatrix[0], Peye),
+             shadowTangentLength(shadow[index].shadowToEyeMatrix[1], Peye));
 }
 
 #endif  // NUM_LIGHTS == 0
@@ -203,12 +218,14 @@ integrateLightsDefault(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 float
 shadowCompare(int index, vec4 coord)
 {
+    coord /= coord.w;
+    coord.z = min(1, coord.z + shadow[index].bias);
+
 #if USE_BINDLESS_SHADOW_TEXTURES
-    return texture(sampler2DShadow(shadowCompareTextures[index]),
-                vec3(coord.x/coord.w, coord.y/coord.w, coord.z));
+    return texture(sampler2DShadow(shadowCompareTextures[index]), coord.xyz);
 #else
     return texture(shadowCompareTexture,
-                vec4(coord.x/coord.w, coord.y/coord.w, index, coord.z));
+                   vec4(coord.x, coord.y, index, coord.z));
 #endif
 }
 
@@ -223,16 +240,9 @@ shadowFilter(int index, vec4 coord, vec4 Peye)
 float
 shadowing(int index, vec4 Peye)
 {
-    float result = 1.0;
-    vec4 coord = shadow[index].eyeToShadowMatrix * Peye;
+    vec4 Pshadow = shadow[index].eyeToShadowMatrix * Peye;
 
-    // coord.xy : homogenous shadow uv coordinate
-    // coord.z : cartesian receiver depth
-    // coord.w : shadow projection w
-
-    float dReceiver = coord.z/coord.w;
-    coord.z = min(1, dReceiver + shadow[index].bias);
-    return shadowFilter(index, coord, Peye);
+    return shadowFilter(index, Pshadow, Peye);
 }
 
 float
