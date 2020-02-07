@@ -54,9 +54,18 @@ public:
     /// Create a new spec in \a layer at \childPath and add it to its parent's
     /// field named \childrenKey. Emit an error and return false if the new spec
     /// couldn't be created.
-    SDF_API
     static bool CreateSpec(
         const SdfLayerHandle &layer,
+        const SdfPath &childPath,
+        SdfSpecType specType,
+        bool inert=true) {
+        return CreateSpec(get_pointer(layer), childPath, specType, inert);
+    }
+
+    // This overload is intended primarily for internal use.
+    SDF_API
+    static bool CreateSpec(
+        SdfLayer *layer,
         const SdfPath &childPath,
         SdfSpecType specType,
         bool inert=true);
