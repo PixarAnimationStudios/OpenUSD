@@ -123,7 +123,7 @@ _CheckResultNotInOsEnviron(const string & envName)
     extract<bool> getBool(wrappedResult.get());
 
     if (!getBool.check()) {
-        printf("ERROR: Python returned non-string result.\n");
+        printf("ERROR: Python returned non-bool result.\n");
         return 1;
     }
 
