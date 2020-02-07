@@ -552,19 +552,23 @@ void HdxPrman_InteractiveContext::End()
     }
 
     // Reset to initial state.
-    if (riley) {
-        riley->End();
-    }
     if (mgr) {
-        if(riley) {
+        if (riley) {
+            if (_didBeginRiley) {
+                _didBeginRiley = false;
+                riley->End();
+            }
             mgr->DestroyRiley(riley);
+            riley = nullptr;
         }
         mgr = nullptr;
     }
-    riley = nullptr;
-    if (rix) {
+
+    // k_RixXcpt has only been regsitered after a succesful ri instatiation
+    if (rix && ri) {
         RixXcpt* rix_xcpt = (RixXcpt*)rix->GetRixInterface(k_RixXcpt);
         rix_xcpt->Unregister(&xcpt);
+        rix = nullptr;
     }
     if (ri) {
         ri->PRManEnd();
