@@ -333,6 +333,9 @@ public:
     /// Returns whether the path is absolute.
     SDF_API bool IsAbsolutePath() const;
 
+    /// Return true if this path is the AbsoluteRootPath().
+    SDF_API bool IsAbsoluteRootPath() const;
+
     /// Returns whether the path identifies a prim.
     SDF_API bool IsPrimPath() const;
 

@@ -38,6 +38,12 @@ ExpressionType = 512
 NamespacedPropertyType = 1024
 
 def _CheckPath(path, path2, parentPath, pathStr, pathElems, pathFlags, name, targetPath):
+    # Check absolute root.
+    if pathStr == "/":
+        assert path.IsAbsoluteRootPath()
+    else:
+        assert not path.IsAbsoluteRootPath()
+
     # Check equality with another one constructed the same way
     assert path == path2
 

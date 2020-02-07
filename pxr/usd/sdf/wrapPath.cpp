@@ -239,6 +239,7 @@ void wrapPath() {
              return_value_policy<TfPyPairToTuple>())
 
         .def("IsAbsolutePath", &This::IsAbsolutePath)
+        .def("IsAbsoluteRootPath", &This::IsAbsoluteRootPath)
         .def("IsPrimPath", &This::IsPrimPath)
         .def("IsAbsoluteRootOrPrimPath", &This::IsAbsoluteRootOrPrimPath)
         .def("IsRootPrimPath", &This::IsRootPrimPath)

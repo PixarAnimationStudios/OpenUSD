@@ -143,6 +143,12 @@ SdfPath::IsAbsolutePath() const
 }
 
 bool
+SdfPath::IsAbsoluteRootPath() const
+{
+    return !_propPart && _primPart && _primPart->IsAbsoluteRoot();
+}
+
+bool
 SdfPath::IsPrimPath() const
 {
     return !_propPart && _primPart &&
