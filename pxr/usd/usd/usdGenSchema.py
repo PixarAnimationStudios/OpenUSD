@@ -829,7 +829,7 @@ def GatherTokens(classes, libName, libTokens):
             if attr.typeName == Sdf.ValueTypeNames.Token and attr.fallback:
                 fallbackName = _CamelCase(attr.fallback)
                 desc = 'Default value for %s::Get%sAttr()' % \
-                       (cls.cppClassName, _ProperCase(attr.name))
+                       (cls.cppClassName, _ProperCase(attr.apiName))
                 cls.tokens.add(fallbackName)
                 _AddToken(tokenDict, fallbackName, attr.fallback, desc)
             
@@ -841,7 +841,7 @@ def GatherTokens(classes, libName, libTokens):
                     if val != '':
                         tokenId = _CamelCase(val)
                         desc = 'Possible value for %s::Get%sAttr()' % \
-                               (cls.cppClassName, _ProperCase(attr.name))
+                               (cls.cppClassName, _ProperCase(attr.apiName))
                         cls.tokens.add(tokenId)
                         _AddToken(tokenDict, tokenId, val, desc)
 
