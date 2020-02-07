@@ -29,7 +29,6 @@
 #include "pxr/imaging/glf/bindingMap.h"
 #include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/diagnostic.h"
-#include "pxr/imaging/glf/package.h"
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
 #include "pxr/imaging/glf/uniformBlock.h"

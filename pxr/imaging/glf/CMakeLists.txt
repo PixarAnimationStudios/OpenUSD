@@ -73,7 +73,6 @@ pxr_library(glf
         image
         imageRegistry
         info
-        package
         ptexTexture
         simpleLight
         simpleLightingContext
