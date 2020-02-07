@@ -112,6 +112,9 @@ UsdviewqUtils::PrimInfo::PrimInfo(const UsdPrim &prim, const UsdTimeCode time)
         isVisibilityInherited = (visibility == UsdGeomTokens->inherited);
         visVaries = query.ValueMightBeTimeVarying();
     }
+    else {
+        visVaries = false;
+    }
 
     if (prim.GetParent())
         name = prim.GetName().GetString();
