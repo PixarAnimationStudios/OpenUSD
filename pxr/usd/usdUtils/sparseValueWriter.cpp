@@ -44,6 +44,8 @@
 
 #include "pxr/base/vt/array.h"
 
+#include "pxr/base/tf/stl.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // Utilities for checking closeness of two values. In each case, _IsClose 
@@ -376,6 +378,16 @@ UsdUtilsSparseValueWriter::_SetAttributeImpl(
     } else {
         return it->second.SetTimeSample(value, time);
     }
+}
+
+std::vector<UsdUtilsSparseAttrValueWriter> 
+UsdUtilsSparseValueWriter::GetSparseAttrValueWriters() const 
+{
+    std::vector<UsdUtilsSparseAttrValueWriter> sparseValueWriterVec;
+    sparseValueWriterVec.reserve(_attrValueWriterMap.size());
+    std::transform(_attrValueWriterMap.begin(), _attrValueWriterMap.end(),
+                    back_inserter(sparseValueWriterVec), TfGet<1>());
+    return sparseValueWriterVec;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
