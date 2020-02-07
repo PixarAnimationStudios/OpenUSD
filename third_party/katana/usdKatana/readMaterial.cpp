@@ -903,6 +903,9 @@ _UnrollInterfaceFromPrim(const UsdPrim& prim,
         const std::vector<UsdShadeInput> &consumers = 
             interfaceInputConsumers.at(interfaceInput);
 
+        std::vector<std::string> additionalDsts;
+        bool alreadyAppliedSrc = false;
+
         for (const UsdShadeInput &consumer : consumers) {
             UsdPrim consumerPrim = consumer.GetPrim();
             
@@ -936,16 +939,36 @@ _UnrollInterfaceFromPrim(const UsdPrim& prim,
                 continue;
             }
             
-            std::string srcKey = renamedParam + ".src";
-
             std::string srcVal = TfStringPrintf(
                     "%s.%s",
                     handle.c_str(),
                     inputName.GetText());
 
+            // only the first gets set as "src". Remaining are applied as
+            // as "additionalDsts" as authored values are flattened there but
+            // play no role in providing default values or hints.
+            if (alreadyAppliedSrc)
+            {
+                additionalDsts.push_back(srcVal);     
+            }
+            else
+            {
+                std::string srcKey = renamedParam + ".src";
+                interfaceBuilder.set(
+                        srcKey.c_str(),
+                        FnKat::StringAttribute(srcVal),
+                        true);
+
+                alreadyAppliedSrc = true;
+            }
+        }
+
+        if (!additionalDsts.empty())
+        {
+            std::string srcKey = renamedParam + ".additionalDsts";
             interfaceBuilder.set(
                     srcKey.c_str(),
-                    FnKat::StringAttribute(srcVal),
+                    FnKat::StringAttribute(additionalDsts, 1),
                     true);
         }
 
