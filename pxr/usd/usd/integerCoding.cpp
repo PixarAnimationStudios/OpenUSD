@@ -262,7 +262,7 @@ void _DecodeNHelper(
 
     uint8_t codeByte = *codesIn++;
     for (int i = 0; i != N; ++i) {
-        switch ((codeByte & (3 << (2 * i))) >> (2 * i)) {
+        switch ((codeByte >> (2 * i)) & 3) {
         default:
         case Common:
             prevVal += commonValue;
