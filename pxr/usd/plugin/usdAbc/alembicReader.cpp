@@ -3128,6 +3128,30 @@ _ReadXform(_PrimReaderContext* context)
     context->Extract(Type::schema_type::info_type::defaultName());
 }
 
+static bool
+_ReadPositions(_PrimReaderContext* context)
+{
+    auto P = context->ExtractSchema("P");
+    const PropertyHeader* header = P.GetParent().getPropertyHeader("P");
+
+    if (IP3fArrayProperty::matches(*header)) {
+        context->AddProperty(
+            UsdGeomTokens->points,
+            SdfValueTypeNames->Point3fArray,
+            _CopyGeneric<IP3fArrayProperty, GfVec3f>(std::move(P)));
+    } else if (IV3fArrayProperty::matches(*header)) {
+        // Older V3f assets should still work
+        context->AddProperty(
+            UsdGeomTokens->points,
+            SdfValueTypeNames->Point3fArray,
+            _CopyGeneric<IV3fArrayProperty, GfVec3f>(std::move(P)));
+    } else {
+        TF_WARN("Unexpected type for .geom.P");
+        return false;
+    }
+    return true;
+}
+
 static
 void
 _ReadPolyMesh(_PrimReaderContext* context)
@@ -3147,11 +3171,8 @@ _ReadPolyMesh(_PrimReaderContext* context)
     context->SetSchema(Type::schema_type::info_type::defaultName());
 
     // Add properties.
-    context->AddProperty(
-        UsdGeomTokens->points,
-        SdfValueTypeNames->Point3fArray,
-        _CopyGeneric<IP3fArrayProperty, GfVec3f>(
-            context->ExtractSchema("P")));
+    if (!_ReadPositions(context))
+        return;
     context->AddProperty(
         UsdGeomTokens->velocities,
         SdfValueTypeNames->Vector3fArray,
@@ -3203,11 +3224,8 @@ _ReadSubD(_PrimReaderContext* context)
     context->SetSchema(Type::schema_type::info_type::defaultName());
 
     // Add properties.
-    context->AddProperty(
-        UsdGeomTokens->points,
-        SdfValueTypeNames->Point3fArray,
-        _CopyGeneric<IP3fArrayProperty, GfVec3f>(
-            context->ExtractSchema("P")));
+    if (!_ReadPositions(context))
+        return;
     context->AddProperty(
         UsdGeomTokens->velocities,
         SdfValueTypeNames->Vector3fArray,
