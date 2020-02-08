@@ -70,6 +70,7 @@ pxr_test_scripts(
     testenv/testUsdAbcFaceset.py
     testenv/testUsdAbcIndexedProperties.py
     testenv/testUsdAbcInstancing.py
+    testenv/testUsdAbcIsConstant.py
     testenv/testUsdAbcP_OldEncoding.py
     testenv/testUsdAbcUvReadWrite.py
     testenv/testUsdAbcUvReadWrite_OldEncoding.py
@@ -128,6 +129,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdAbcInstancingPinst
     DEST testUsdAbcInstancingPinst
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdAbcIsConstant
+    DEST testUsdAbcIsConstant
 )
 
 pxr_install_test_dir(
@@ -229,6 +235,12 @@ pxr_register_test(testUsdAbcInstancingNinst
     ENV
         USD_ABC_TESTSUFFIX=ninst
         USD_ABC_DISABLE_INSTANCING=1
+)
+
+pxr_register_test(testUsdAbcIsConstant
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcIsConstant"
+    EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdAbcP_OldEncoding
