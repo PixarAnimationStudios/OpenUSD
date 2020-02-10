@@ -53,7 +53,7 @@ SDF_DECLARE_HANDLES(SdfRelationshipSpec);
 /// to enumerate all properties for a given schema class, and finally to
 /// provide fallback values for unauthored builtin properties.
 ///
-class UsdSchemaRegistry : public TfSingleton<UsdSchemaRegistry> {
+class UsdSchemaRegistry : public TfWeakBase, boost::noncopyable {
 public:
     USD_API
     static UsdSchemaRegistry& GetInstance() {
@@ -62,6 +62,23 @@ public:
 
     static const SdfLayerRefPtr & GetSchematics() {
         return GetInstance()._schematics;
+    }
+
+    /// Return the type name in the USD schema for the given registered
+    /// \p schemaType. This will only return a valid schema type name for types
+    /// that have an associated prim definition in the schematics, i.e. concrete
+    /// typed schemas and API schemas.
+    TfToken GetSchemaTypeName(const TfType &schemaType) const {
+        auto it = _typeToPathMap.find(schemaType);
+        return it != _typeToPathMap.end() ? 
+            it->second.GetNameToken() : TfToken();
+    }
+
+    /// Return the type name in the USD schema for the given registered
+    /// \p SchemaType.
+    template <class SchemaType>
+    TfToken GetSchemaTypeName() const {
+        return GetSchemaTypeName(SchemaType::_GetStaticTfType());
     }
 
     /// Return the PrimSpec that contains all the builtin metadata and
@@ -222,7 +239,7 @@ private:
     void _FindAndAddPluginSchema();
 
     void _BuildPrimTypePropNameToPathMap(const TfToken &typeName,
-                                         const SdfPath &primPath);
+                                         const SdfPrimSpecHandle &primSpec);
 
     SdfLayerRefPtr _schematics;
 

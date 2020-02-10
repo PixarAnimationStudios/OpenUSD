@@ -29,6 +29,7 @@
 #include "pxr/usd/sdf/relationshipSpec.h"
 
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pySingleton.h"
 
 #include <boost/python.hpp>
 
@@ -51,48 +52,63 @@ _WrapIsMultipleApplyAPISchema(const TfType &schemaType)
             schemaType);
 }
 
+static TfToken
+_WrapGetSchemaTypeName(const TfType &schemaType)
+{
+    return UsdSchemaRegistry::GetInstance().GetSchemaTypeName(
+            schemaType);
+}
+
 void wrapUsdSchemaRegistry()
 {
-    class_<UsdSchemaRegistry>("SchemaRegistry", no_init)
+    typedef UsdSchemaRegistry This;
+    typedef TfWeakPtr<UsdSchemaRegistry> ThisPtr;
 
-        .def("GetSchematics", UsdSchemaRegistry::GetSchematics,
+    class_<This, ThisPtr, boost::noncopyable>("SchemaRegistry", no_init)
+        .def(TfPySingleton())
+        .def("GetSchematics", &This::GetSchematics,
              return_value_policy<return_by_value>())
         .staticmethod("GetSchematics")
 
+        .def("GetSchemaTypeName",
+             &_WrapGetSchemaTypeName,
+             arg("schemaType"))
+        .staticmethod("GetSchemaTypeName")
+
         .def("GetPrimDefinition", (SdfPrimSpecHandle (*)(const TfToken &))
-             &UsdSchemaRegistry::GetPrimDefinition,
+             &This::GetPrimDefinition,
              arg("primType"))
         .def("GetPrimDefinition", (SdfPrimSpecHandle (*)(const TfType &))
-             &UsdSchemaRegistry::GetPrimDefinition,
+             &This::GetPrimDefinition,
              arg("primType"))
         .staticmethod("GetPrimDefinition")
 
-        .def("GetPropertyDefinition", &UsdSchemaRegistry::GetPropertyDefinition,
+        .def("GetPropertyDefinition", &This::GetPropertyDefinition,
              (arg("primType"), arg("propName")))
         .staticmethod("GetPropertyDefinition")
 
         .def("GetAttributeDefinition",
-             &UsdSchemaRegistry::GetAttributeDefinition,
+             &This::GetAttributeDefinition,
              (arg("primType"), arg("attrName")))
         .staticmethod("GetAttributeDefinition")
 
         .def("GetRelationshipDefinition",
-             &UsdSchemaRegistry::GetRelationshipDefinition,
+             &This::GetRelationshipDefinition,
              (arg("primType"), arg("relName")))
         .staticmethod("GetRelationshipDefinition")
 
         .def("GetDisallowedFields",
-             &UsdSchemaRegistry::GetDisallowedFields,
+             &This::GetDisallowedFields,
              return_value_policy<TfPySequenceToList>())
         .staticmethod("GetDisallowedFields")
 
         .def("IsTyped",
-             &UsdSchemaRegistry::IsTyped,
+             &This::IsTyped,
              (arg("primType")))
         .staticmethod("IsTyped")
 
         .def("IsConcrete",
-             &UsdSchemaRegistry::IsConcrete,
+             &This::IsConcrete,
              (arg("primType")))
         .staticmethod("IsConcrete")
 
@@ -104,7 +120,7 @@ void wrapUsdSchemaRegistry()
              (arg("apiSchemaType")))
         .staticmethod("IsMultipleApplyAPISchema")
 
-        .def("GetTypeFromName", &UsdSchemaRegistry::GetTypeFromName, 
+        .def("GetTypeFromName", &This::GetTypeFromName, 
             (arg("typeName")))
         .staticmethod("GetTypeFromName")
         ;

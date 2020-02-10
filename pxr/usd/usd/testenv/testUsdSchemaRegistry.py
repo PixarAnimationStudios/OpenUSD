@@ -71,6 +71,24 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(relDef.GetInfo("hidden"), True)
         self.assertEqual(relDef.GetInfo("testCustomMetadata"), "garply")
 
+    def test_GetUsdSchemaTypeName(self):
+        modelAPI = Tf.Type.FindByName("UsdModelAPI")
+        clipsAPI = Tf.Type.FindByName("UsdClipsAPI")
+        collectionAPI = Tf.Type.FindByName("UsdCollectionAPI")
+
+        self.assertEqual(Usd.SchemaRegistry().GetSchemaTypeName(modelAPI),
+                         "ModelAPI")
+        self.assertEqual(Usd.SchemaRegistry().GetSchemaTypeName(clipsAPI),
+                         "ClipsAPI")
+        self.assertEqual(Usd.SchemaRegistry().GetSchemaTypeName(collectionAPI),
+                         "CollectionAPI")
+        
+        # A valid type without an associated schema prim definition returns an
+        # empty type name.
+        self.assertTrue(Tf.Type(Usd.Typed))        
+        self.assertEqual(
+            Usd.SchemaRegistry().GetSchemaTypeName(Tf.Type(Usd.Typed)), "")
+
     def test_IsTyped(self):
         modelAPI = Tf.Type.FindByName("UsdModelAPI")
         clipsAPI = Tf.Type.FindByName("UsdClipsAPI")

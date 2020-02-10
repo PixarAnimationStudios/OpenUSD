@@ -139,10 +139,8 @@ _GetGeneratedSchema(const PlugPluginPtr &plugin)
 
 void
 UsdSchemaRegistry::_BuildPrimTypePropNameToPathMap(
-    const TfToken &typeName, const SdfPath &primPath)
+    const TfToken &typeName, const SdfPrimSpecHandle &prim)
 {
-    // Add this prim and its properties.
-    SdfPrimSpecHandle prim = _schematics->GetPrimAtPath(primPath);
     if (!prim || prim->GetTypeName().IsEmpty())
         return;
 
@@ -245,23 +243,27 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
         if (aliases.size() == 1) {
             SdfPath primPath = SdfPath::AbsoluteRootPath().
                 AppendChild(TfToken(aliases.front()));
-            _typeToPathMap[type] = primPath;
-            // XXX: Using tokens as keys means we can look up by prim
-            //      type token, rather than converting a prim type token
-            //      to a TfType and looking up by that, which requires
-            //      an expensive lookup (including a lock).
-            //
-            //      We should be registering by name only but TfType
-            //      doesn't return the type name (or aliases) by TfToken
-            //      and we can't afford to construct a TfToken from the
-            //      string returned by TfType when looking up by
-            //      type.  TfType should be fixed/augmented.
-            TfToken typeNameToken(type.GetTypeName());
-            _typeNameToPathMap[typeNameToken] = primPath;
-            _typeNameToPathMap[primPath.GetNameToken()] = primPath;
+            SdfPrimSpecHandle prim = _schematics->GetPrimAtPath(primPath);
+            if (prim) {
+                // Add this prim and its properties.
+                _typeToPathMap[type] = primPath;
+                // XXX: Using tokens as keys means we can look up by prim
+                //      type token, rather than converting a prim type token
+                //      to a TfType and looking up by that, which requires
+                //      an expensive lookup (including a lock).
+                //
+                //      We should be registering by name only but TfType
+                //      doesn't return the type name (or aliases) by TfToken
+                //      and we can't afford to construct a TfToken from the
+                //      string returned by TfType when looking up by
+                //      type.  TfType should be fixed/augmented.
+                TfToken typeNameToken(type.GetTypeName());
+                _typeNameToPathMap[typeNameToken] = primPath;
+                _typeNameToPathMap[primPath.GetNameToken()] = primPath;
 
-            _BuildPrimTypePropNameToPathMap(typeNameToken, primPath);
-            _BuildPrimTypePropNameToPathMap(primPath.GetNameToken(), primPath);
+                _BuildPrimTypePropNameToPathMap(typeNameToken, prim);
+                _BuildPrimTypePropNameToPathMap(primPath.GetNameToken(), prim);
+            }
         }
     }
 }
