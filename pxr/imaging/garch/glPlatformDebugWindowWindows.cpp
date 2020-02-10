@@ -52,6 +52,7 @@ LPCTSTR Garch_GLPlatformDebugWindow::_className = _T("GarchGLDebugWindow");
 
 Garch_GLPlatformDebugWindow::Garch_GLPlatformDebugWindow(GarchGLDebugWindow *w)
     : _running(false)
+    , _callback(w)
     , _hWND(NULL)
     , _hDC(NULL)
     , _hGLRC(NULL)
@@ -64,7 +65,7 @@ Garch_GLPlatformDebugWindow::Init(const char *title,
 {
     // platform initialize
     WNDCLASS wc;
-    HINSTANCE _hInstnace = GetModuleHandle(NULL);
+    _hInstance = GetModuleHandle(NULL);
     if (GetClassInfo(_hInstance, _className, &wc) == 0) {
         ZeroMemory(&wc, sizeof(WNDCLASS));
 
@@ -166,7 +167,7 @@ Garch_GLPlatformDebugWindow::_MsgProc(HWND hWnd, UINT msg,
     Garch_GLPlatformDebugWindow *window
         = Garch_GLPlatformDebugWindow::_GetWindowByHandle(hWnd);
     if (!TF_VERIFY(window)) {
-        return 0;
+        return DefWindowProc(hWnd, msg, wParam, lParam);
     }
 
     int x = LOWORD(lParam);
