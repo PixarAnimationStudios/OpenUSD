@@ -50,7 +50,6 @@ private:
 
     bool _running;
     GarchGLDebugWindow *_callback;
-    HINSTANCE _hInstance;
     HWND  _hWND;
     HDC   _hDC;
     HGLRC _hGLRC;
