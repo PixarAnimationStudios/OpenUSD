@@ -617,7 +617,7 @@ vec3 orient(float v, vec4 position, vec4 tangent, vec3 normal){
 vec3 evaluateNormal(vec4 basis, float u)
 {   
     vec3 n0 = inData[0].Neye;
-    vec3 n1 = inData[2].Neye;
+    vec3 n1 = inData[1].Neye;
     vec3 n2 = inData[2].Neye;
     vec3 n3 = inData[3].Neye;
     return n0 * basis.x 
