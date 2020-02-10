@@ -945,7 +945,7 @@ public:
         return *this;
     }
 
-    /// Assignment operator from any type.
+#ifndef doxygen
     template <class T>
     inline
     typename boost::enable_if_c<
@@ -957,8 +957,14 @@ public:
         _Init(obj);
         return *this;
     }
+#endif
 
     /// Assignment operator from any type.
+#ifdef doxygen
+    template <class T>
+    VtValue&
+    operator=(T const &obj);
+#else
     template <class T>
     typename boost::disable_if_c<
         _TypeInfoFor<T>::Type::IsLocal &&
@@ -969,6 +975,7 @@ public:
         _Init(obj);
         return *this;
     }
+#endif
 
     /// Assigning a char const * gives a VtValue holding a std::string.
     VtValue &operator=(char const *cstr) {
@@ -1002,6 +1009,11 @@ public:
     // make an unqualified call to swap(<held-value>, rhs).  If this value is
     // not holding a T, replace the held value with a value-initialized T
     // instance first, then swap.
+#ifdef doxygen
+    template <class T>
+    void
+    Swap(T &rhs);
+#else
     template <class T>
     typename boost::enable_if<
         boost::is_same<T, typename Vt_ValueGetStored<T>::Type> >::type
@@ -1010,11 +1022,17 @@ public:
             *this = T();
         UncheckedSwap(rhs);
     }
+#endif
 
     /// Swap the held value with \a rhs.  This VtValue must be holding an
     /// object of type \p T.  If it does not, this invokes undefined behavior.
     /// Use Swap() if this VtValue is not known to contain an object of type
     /// \p T.
+#ifdef doxygen
+    template <class T>
+    void
+    UncheckedSwap(T &rhs);
+#else
     template <class T>
     typename boost::enable_if<
         boost::is_same<T, typename Vt_ValueGetStored<T>::Type> >::type
@@ -1022,6 +1040,7 @@ public:
         using std::swap;
         swap(_GetMutable<T>(), rhs);
     }
+#endif
 
     /// \overload
     void UncheckedSwap(VtValue &rhs) { Swap(rhs); }
@@ -1426,7 +1445,7 @@ private:
     TfPointerAndBits<const _TypeInfo> _info;
 };
 
-#if !defined(doxygen)
+#ifndef doxygen
 
 /// Make a default value.  VtValue uses this to create values to be returned
 /// from failed calls to \a Get.  Clients may specialize this for their own
