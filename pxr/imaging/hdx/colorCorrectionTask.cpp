@@ -81,16 +81,21 @@ HdxColorCorrectionTask::HdxColorCorrectionTask(HdSceneDelegate* delegate,
 
 HdxColorCorrectionTask::~HdxColorCorrectionTask()
 {
+    bool performedGLOperation = false;
+
     if (_texture != 0) {
         glDeleteTextures(1, &_texture);
+        performedGLOperation = true;
     }
 
     if (_texture3dLUT != 0) {
         glDeleteTextures(1, &_texture3dLUT);
+        performedGLOperation = true;
     }
 
     if (_vertexBuffer != 0) {
         glDeleteBuffers(1, &_vertexBuffer);
+        performedGLOperation = true;
     }
 
     if (_shaderProgram) {
@@ -99,13 +104,16 @@ HdxColorCorrectionTask::~HdxColorCorrectionTask()
 
     if (_copyFramebuffer != 0) {
         glDeleteFramebuffers(1, &_copyFramebuffer);
+        performedGLOperation = true;
     }
 
     if (_aovFramebuffer != 0) {
         glDeleteFramebuffers(1, &_aovFramebuffer);
+        performedGLOperation = true;
     }
-
-    GLF_POST_PENDING_GL_ERRORS();
+    if (performedGLOperation) {
+        GLF_POST_PENDING_GL_ERRORS();
+    }
 }
 
 std::string
