@@ -29,7 +29,6 @@
 
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/token.h"
-#include "pxr/base/tf/stackTrace.h"
 
 #include <iostream>
 #include <sstream>
