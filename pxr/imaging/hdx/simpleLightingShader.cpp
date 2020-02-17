@@ -77,10 +77,12 @@ HdxSimpleLightingShader::ComputeHash() const
     TfToken glslfxFile = HdxPackageSimpleLightingShader();
     size_t numLights = _useLighting ? _lightingContext->GetNumLightsUsed() : 0;
     bool useShadows = _useLighting ? _lightingContext->GetUseShadows() : false;
+    size_t numShadows = useShadows ? _lightingContext->ComputeNumShadowsUsed() : 0;
 
     size_t hash = glslfxFile.Hash();
     boost::hash_combine(hash, numLights);
     boost::hash_combine(hash, useShadows);
+    boost::hash_combine(hash, numShadows);
 
     return (ID)hash;
 }
@@ -99,8 +101,10 @@ HdxSimpleLightingShader::GetSource(TfToken const &shaderStageKey) const
     std::stringstream defineStream;
     size_t numLights = _useLighting ? _lightingContext->GetNumLightsUsed() : 0;
     bool useShadows = _useLighting ? _lightingContext->GetUseShadows() : false;
+    size_t numShadows = useShadows ? _lightingContext->ComputeNumShadowsUsed() : 0;
     defineStream << "#define NUM_LIGHTS " << numLights<< "\n";
     defineStream << "#define USE_SHADOWS " << (int)(useShadows) << "\n";
+    defineStream << "#define NUM_SHADOWS " << numShadows << "\n";
     if (useShadows) {
         bool const useBindlessShadowMaps =
             GlfSimpleShadowArray::GetBindlessShadowMapsEnabled();;

@@ -181,7 +181,7 @@ lightingComputation(vec3 rayPointEye, vec3 rayDirectionEye)
 // For now, not using shadows for volumes.
 #if USE_SHADOWS && 0
         const float shadow = (lightSource[i].hasShadow) ?
-            shadowing(lightSource[i].shadowIndex, rayPointEye) : 1.0;
+            shadowing(/*lightIndex=*/i, rayPointEye) : 1.0;
 #else
         const float shadow = 1.0;
 #endif

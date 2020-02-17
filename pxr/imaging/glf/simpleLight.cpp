@@ -44,9 +44,10 @@ GlfSimpleLight::GlfSimpleLight(GfVec4f const & position) :
     _shadowResolution(512),
     _shadowBias(0.0),
     _shadowBlur(0.0),
-    _shadowIndex(0),
+    _shadowIndexStart(0),
+    _shadowIndexEnd(0),
     _transform(GfMatrix4d().SetIdentity()),
-    _shadowMatrix(GfMatrix4d().SetIdentity()),
+    _shadowMatrices(std::vector<GfMatrix4d>(1, GfMatrix4d().SetIdentity())),
     _isDomeLight(false),
     _irradianceId(0),
     _prefilterId(0),
@@ -218,27 +219,39 @@ GlfSimpleLight::SetShadowBlur(float blur)
 }
 
 int
-GlfSimpleLight::GetShadowIndex() const
+GlfSimpleLight::GetShadowIndexStart() const
 {
-    return _shadowIndex;
+    return _shadowIndexStart;
 }
 
 void
-GlfSimpleLight::SetShadowIndex(int index)
+GlfSimpleLight::SetShadowIndexStart(int shadowStart)
 {
-    _shadowIndex = index;
+    _shadowIndexStart = shadowStart;
 }
 
-GfMatrix4d const &
-GlfSimpleLight::GetShadowMatrix() const
+int
+GlfSimpleLight::GetShadowIndexEnd() const
 {
-    return _shadowMatrix;
+    return _shadowIndexEnd;
 }
 
 void
-GlfSimpleLight::SetShadowMatrix(GfMatrix4d const & matrix)
+GlfSimpleLight::SetShadowIndexEnd(int shadowEnd)
 {
-    _shadowMatrix = matrix;
+    _shadowIndexEnd = shadowEnd;
+}
+
+std::vector<GfMatrix4d> const &
+GlfSimpleLight::GetShadowMatrices() const
+{
+    return _shadowMatrices;
+}
+
+void
+GlfSimpleLight::SetShadowMatrices(std::vector<GfMatrix4d> const & matrices)
+{
+    _shadowMatrices = matrices;
 }
 
 bool
@@ -325,9 +338,10 @@ GlfSimpleLight::operator==(const GlfSimpleLight& other) const
         &&  _shadowResolution == other._shadowResolution
         &&  _shadowBias == other._shadowBias
         &&  _shadowBlur == other._shadowBlur
-        &&  _shadowIndex == other._shadowIndex
+        &&  _shadowIndexStart == other._shadowIndexStart
+        &&  _shadowIndexEnd == other._shadowIndexEnd
         &&  _transform == other._transform
-        &&  _shadowMatrix == other._shadowMatrix
+        &&  _shadowMatrices == other._shadowMatrices
         &&  _isCameraSpaceLight == other._isCameraSpaceLight
         &&  _isDomeLight == other._isDomeLight
         &&  _irradianceId == other._irradianceId
@@ -356,15 +370,18 @@ std::ostream& operator<<(std::ostream& out, const GlfSimpleLight& v)
         << v._shadowResolution
         << v._shadowBias
         << v._shadowBlur
-        << v._shadowIndex
+        << v._shadowIndexStart
+        << v._shadowIndexEnd
         << v._transform
-        << v._shadowMatrix
         << v._isCameraSpaceLight
         << v._isDomeLight
         << v._irradianceId
         << v._prefilterId
         << v._brdfId
         << v._id;
+    for (auto const& m : v._shadowMatrices) {
+        out << m;
+    }
     return out;
 }
 

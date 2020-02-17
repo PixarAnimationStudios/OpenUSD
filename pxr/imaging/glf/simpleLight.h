@@ -89,9 +89,9 @@ public:
     void SetAttenuation(GfVec3f const & attenuation);
 
     GLF_API
-    GfMatrix4d const & GetShadowMatrix() const;
+    std::vector<GfMatrix4d> const & GetShadowMatrices() const;
     GLF_API
-    void SetShadowMatrix(GfMatrix4d const &matrix);
+    void SetShadowMatrices(std::vector<GfMatrix4d> const &matrix);
 
     GLF_API
     int GetShadowResolution() const;
@@ -109,9 +109,14 @@ public:
     void SetShadowBlur(float blur);
 
     GLF_API
-    int GetShadowIndex() const;
+    int GetShadowIndexStart() const;
     GLF_API
-    void SetShadowIndex(int shadowIndex);
+    void SetShadowIndexStart(int shadowStart);
+    
+    GLF_API
+    int GetShadowIndexEnd() const;
+    GLF_API
+    void SetShadowIndexEnd(int shadowEnd);
 
     GLF_API
     bool HasShadow() const;
@@ -173,10 +178,11 @@ private:
     int _shadowResolution;
     float _shadowBias;
     float _shadowBlur;
-    int _shadowIndex;
+    int _shadowIndexStart;
+    int _shadowIndexEnd;
 
     GfMatrix4d _transform;
-    GfMatrix4d _shadowMatrix;
+    std::vector<GfMatrix4d> _shadowMatrices;
 
     // domeLight specific parameters 
     bool _isDomeLight;

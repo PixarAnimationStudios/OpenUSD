@@ -219,7 +219,7 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
             // which will not create memory for the shadow maps 
             if (!_enableShadows || !lightShadowParams.enabled) {
                 glfl.SetHasShadow(false);
-            } 
+            }
 
             // Setup the rest of the light parameters necessary 
             // to calculate shadows.
@@ -229,17 +229,23 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
                     continue;
                 }
 
-                GfMatrix4d shadowMatrix =
+                std::vector<GfMatrix4d> shadowMatrices =
                     lightShadowParams.shadowMatrix->Compute(_viewport,
                                                             windowPolicy);
-                glfl.SetShadowIndex(++shadowIndex);
-                glfl.SetShadowMatrix(shadowMatrix);
+
+                glfl.SetShadowIndexStart(shadowIndex + 1);
+                glfl.SetShadowIndexEnd(shadowIndex + shadowMatrices.size());
+                shadowIndex += shadowMatrices.size();
+
+                glfl.SetShadowMatrices(shadowMatrices);
                 glfl.SetShadowBias(lightShadowParams.bias);
                 glfl.SetShadowBlur(lightShadowParams.blur);
                 glfl.SetShadowResolution(lightShadowParams.resolution);
 
-                shadowMapResolutions.push_back(
-                    GfVec2i(lightShadowParams.resolution));
+                for (size_t i = 0; i < shadowMatrices.size(); ++i) {
+                    shadowMapResolutions.push_back(
+                        GfVec2i(lightShadowParams.resolution));
+                }
             }
         }
     }
@@ -276,12 +282,17 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
                 continue;
             }
             // Complete the shadow setup for this light
-            int shadowId = _glfSimpleLights[lightId].GetShadowIndex();
+            int shadowStart = _glfSimpleLights[lightId].GetShadowIndexStart();
+            int shadowEnd = _glfSimpleLights[lightId].GetShadowIndexEnd();
+            std::vector<GfMatrix4d> shadowMatrices =
+                _glfSimpleLights[lightId].GetShadowMatrices();
 
-            shadows->SetViewMatrix(shadowId,
-                _glfSimpleLights[lightId].GetTransform());
-            shadows->SetProjectionMatrix(shadowId,
-                _glfSimpleLights[lightId].GetShadowMatrix());
+            for (int shadowId = shadowStart; shadowId <= shadowEnd; ++shadowId) {
+                shadows->SetViewMatrix(shadowId,
+                    _glfSimpleLights[lightId].GetTransform());
+                shadows->SetProjectionMatrix(shadowId,
+                    shadowMatrices[shadowId - shadowStart]);
+            }
         }
     }
 

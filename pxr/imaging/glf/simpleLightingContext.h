@@ -64,6 +64,11 @@ public:
     GLF_API
     int GetNumLightsUsed() const;
 
+    // returns the number of shadow maps needed, by summing shadow maps
+    // allocated to each light.
+    GLF_API
+    int ComputeNumShadowsUsed() const;
+
     GLF_API
     void SetShadows(GlfSimpleShadowArrayRefPtr const & shadows);
     GLF_API

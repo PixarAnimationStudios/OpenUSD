@@ -37,7 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // for a given viewport.
 class HdxShadowMatrixComputation {
 public:
-    virtual GfMatrix4d Compute(const GfVec4f &viewport, CameraUtilConformWindowPolicy policy) = 0;
+    virtual std::vector<GfMatrix4d> Compute(const GfVec4f &viewport, CameraUtilConformWindowPolicy policy) = 0;
 
 protected:
     HdxShadowMatrixComputation()          = default;
