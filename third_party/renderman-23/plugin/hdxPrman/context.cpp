@@ -436,7 +436,7 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
             us_lightA, // handle
             RtParamList()
         };
-        riley::LightShaderId _fallbackLightShader =
+        _fallbackLightShader = 
             riley->CreateLightShader(&lightNode, 1, nullptr, 0);
 
         // Constant identity transform
