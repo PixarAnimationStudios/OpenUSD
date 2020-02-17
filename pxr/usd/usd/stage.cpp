@@ -2094,8 +2094,8 @@ UsdStage::LoadAndUnload(const SdfPathSet &loadSet,
 
     _loadRules.LoadAndUnload(finalLoadSet, finalUnloadSet, policy);
 
-    // Go through the finalLoadSet, and check ancestors -- if any are unloaded,
-    // include the most ancestral in the finalLoadSet.
+    // Go through the finalLoadSet, and check ancestors -- if any are loaded,
+    // include the most ancestral which was loaded last in the finalLoadSet.
     for (SdfPath const &p: finalLoadSet) {
         SdfPath curPath = p;
         while (true) {
@@ -3894,6 +3894,10 @@ void
 UsdStage::_RecomposePrims(const PcpChanges &changes,
                           T *pathsToRecompose)
 {
+    // Note: Calling changes.Apply() will result in recomputation of  
+    // pcpPrimIndexes for changed prims, these get updated on the respective  
+    // prims during _ComposeSubtreeImpl call. Using these outdated primIndexes
+    // can result in undefined behavior
     changes.Apply();
 
     // Process layer stack changes.
