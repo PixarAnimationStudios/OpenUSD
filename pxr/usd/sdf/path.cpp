@@ -1473,65 +1473,62 @@ SdfPath::ReplaceTargetPath(const SdfPath &newTargetPath) const {
 SdfPath
 SdfPath::MakeAbsolutePath(const SdfPath & anchor) const {
 
+    SdfPath result;
+
     if (anchor == SdfPath()) {
         TF_WARN("MakeAbsolutePath(): anchor is the empty path.");
-        return SdfPath();
+        return result;
     }
 
     // Check that anchor is an absolute path
     if (!anchor.IsAbsolutePath()) {
         TF_WARN("MakeAbsolutePath() requires an absolute path as an argument.");
-        return SdfPath();
+        return result;
     }
 
     // Check that anchor is a prim-like path
     if (!anchor.IsAbsoluteRootOrPrimPath() && 
         !anchor.IsPrimVariantSelectionPath()) {
         TF_WARN("MakeAbsolutePath() requires a prim path as an argument.");
-        return SdfPath();
+        return result;
     }
 
-    // If we're invalid, just return a copy of ourselves.
-    if (IsEmpty())
-        return *this;
-
-    SdfPath result = *this;
+    // If we're empty, just return empty.
+    if (IsEmpty()) {
+        return result;
+    }
 
     // If we're not already absolute, do our own path using anchor as the
     // relative base.
-    if (!IsAbsolutePath()) {
-        // This list winds up in reverse order to what one might at
-        // first expect.
-        vector<Sdf_PathNode const *> relNodes;
+    if (ARCH_LIKELY(!IsAbsolutePath())) {
 
-        Sdf_PathNode const *relRoot = Sdf_PathNode::GetRelativeRootNode();
+        // Collect all the ancestral path nodes.
         Sdf_PathNode const *curNode = _primPart.get();
-        // Walk up looking for oldPrefix node.
-        while (curNode) {
-            if (curNode == relRoot) {
-                break;
-            }
-            relNodes.push_back(curNode);
+        size_t numNodes = curNode->GetElementCount();
+        vector<Sdf_PathNode const *> relNodes(numNodes);
+        while (numNodes--) {
+            relNodes[numNodes] = curNode;
             curNode = curNode->GetParentNode();
         }
-        if (!curNode) {
-            // Didn't find relative root
-            // should never get here since all relative paths should have a
-            // relative root node
-            // CODE_COVERAGE_OFF
-            TF_CODING_ERROR("Didn't find relative root");
-            return SdfPath();
-            // CODE_COVERAGE_ON
-        }
 
+        // Now append all the nodes to the anchor to produce the absolute path.
         result = anchor;
-
-        // Got the list, now add nodes similar to relNodes to anchor
-        // relNodes needs to be iterated in reverse since the closest ancestor
-        // node was pushed on last.
-        for (auto it = relNodes.rbegin(); it != relNodes.rend(); ++it) {
-            result = _AppendNode(result, *it);
+        for (Sdf_PathNode const *node: relNodes) {
+            result = _AppendNode(result, node);
+            if (result.IsEmpty()) {
+                break;
+            }
         }
+    }
+    else {
+        result = *this;
+    }
+
+    // If we failed to produce a path, return empty.  This happens in cases
+    // where we try to make paths like '../../..' absolute with anchors that are
+    // shorter, causing us to try to go "outside the root".
+    if (result.IsEmpty()) {
+        return result;
     }
 
     // Tack on any property path.
