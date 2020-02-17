@@ -230,21 +230,45 @@ ArchStackTrace_GetProgInfo()
 }
 
 
+
+namespace {
+
 // Key-value map for extra log info.  Stores unowned pointers to text to be
 // emitted in stack trace logs in case of fatal errors or crashes.
-typedef std::map<std::string, std::vector<std::string> const *> Arch_LogInfoMap;
-static Arch_LogInfoMap _logInfoForErrors;
-// Mutex for above:
-static std::mutex _logInfoForErrorsMutex;
+class Arch_LogInfo
+{
+public:
 
-static void
-_EmitAnyExtraLogInfo(FILE* outFile, size_t max = 0)
+    void SetExtraLogInfoForErrors(const std::string &key,
+                                  std::vector<std::string> const *lines);
+    void EmitAnyExtraLogInfo(FILE *outFile, size_t max = 0) const;
+
+private:
+    typedef std::map<std::string, std::vector<std::string> const *> _LogInfoMap;
+    _LogInfoMap _logInfoForErrors;
+    mutable std::mutex _logInfoForErrorsMutex;
+};
+
+void
+Arch_LogInfo::SetExtraLogInfoForErrors(const std::string &key,
+                                       std::vector<std::string> const *lines)
+{
+    std::lock_guard<std::mutex> lock(_logInfoForErrorsMutex);
+    if (!lines || lines->empty()) {
+        _logInfoForErrors.erase(key);
+    } else {
+        _logInfoForErrors[key] = lines;
+    }
+}
+
+void 
+Arch_LogInfo::EmitAnyExtraLogInfo(FILE *outFile, size_t max) const
 {
     // This function can't cause any heap allocation, be careful.
     // XXX -- std::string::c_str and fprintf can do allocations.
     std::lock_guard<std::mutex> lock(_logInfoForErrorsMutex);
     size_t n = 0;
-    for (Arch_LogInfoMap::const_iterator i = _logInfoForErrors.begin(),
+    for (_LogInfoMap::const_iterator i = _logInfoForErrors.begin(),
              end = _logInfoForErrors.end(); i != end; ++i) {
         fputs("\n", outFile);
         fputs(i->first.c_str(), outFile);
@@ -259,6 +283,16 @@ _EmitAnyExtraLogInfo(FILE* outFile, size_t max = 0)
         }
     }
 }
+
+} // anon-namespace
+
+static Arch_LogInfo &
+ArchStackTrace_GetLogInfo()
+{
+    static Arch_LogInfo logInfo;
+    return logInfo;
+}
+
 
 static void
 _atexitCallback()
@@ -761,12 +795,7 @@ void
 ArchSetExtraLogInfoForErrors(const std::string &key,
                              std::vector<std::string> const *lines)
 {
-    std::lock_guard<std::mutex> lock(_logInfoForErrorsMutex);
-    if (!lines || lines->empty()) {
-        _logInfoForErrors.erase(key);
-    } else {
-        _logInfoForErrors[key] = lines;
-    }
+    ArchStackTrace_GetLogInfo().SetExtraLogInfoForErrors(key, lines);
 }
 
 /*
@@ -983,7 +1012,7 @@ ArchLogPostMortem(const char* reason,
             fputs(message, stackFd);
             fputs("\n", stackFd);
         }
-        _EmitAnyExtraLogInfo(stackFd);
+        ArchStackTrace_GetLogInfo().EmitAnyExtraLogInfo(stackFd);
         if (extraLogMsg) {
             fputs(extraLogMsg, stackFd);
             fputs("\n", stackFd);
@@ -1028,7 +1057,7 @@ ArchLogPostMortem(const char* reason,
     fputs("done.\n", stderr);
     // Additionally, print the first few lines of extra log information since
     // developers don't always think to look for it in the stack trace file.
-    _EmitAnyExtraLogInfo(stderr, 3 /* max */);
+    ArchStackTrace_GetLogInfo().EmitAnyExtraLogInfo(stderr, 3 /* max */);
     fputs("------------------------------------------------------------------\n",
           stderr);
 
@@ -1090,7 +1119,7 @@ ArchLogStackTrace(const std::string& progname, const std::string& reason,
         ArchPrintStackTrace(fout, progname, reason);
         /* If this is a fatal stack trace, attempt to add it to the db */
         if (fatal) {
-            _EmitAnyExtraLogInfo(fout);
+            ArchStackTrace_GetLogInfo().EmitAnyExtraLogInfo(fout);
         }
         fclose(fout);
         if (fatal) {
@@ -1106,7 +1135,7 @@ ArchLogStackTrace(const std::string& progname, const std::string& reason,
                 "--------------------------------------------------------------"
                 "\n");
         ArchPrintStackTrace(stderr, progname, reason);
-        _EmitAnyExtraLogInfo(stderr);
+        ArchStackTrace_GetLogInfo().EmitAnyExtraLogInfo(stderr);
     }
     fprintf(stderr,
             "--------------------------------------------------------------\n");
