@@ -75,7 +75,7 @@ UsdPrim::GetPrimDefinition() const
 
     if (!typeName.IsEmpty()) {
         // Look up definition from prim type name.
-        definition = UsdSchemaRegistry::GetPrimDefinition(typeName);
+        definition = UsdSchemaRegistry::GetSchemaPrimSpec(typeName);
 
         if (!definition) {
             // Issue a diagnostic for unknown prim types.

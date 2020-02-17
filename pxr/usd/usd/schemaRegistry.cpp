@@ -298,7 +298,7 @@ UsdSchemaRegistry::_GetSchemaPrimPath(const TfToken &primType) const
 
 /*static*/
 SdfPrimSpecHandle
-UsdSchemaRegistry::GetPrimDefinition(const TfToken &primType)
+UsdSchemaRegistry::GetSchemaPrimSpec(const TfToken &primType)
 {
     return GetSchematics()->GetPrimAtPath(
         GetInstance()._GetSchemaPrimPath(primType));
@@ -306,7 +306,7 @@ UsdSchemaRegistry::GetPrimDefinition(const TfToken &primType)
 
 /*static*/
 SdfPrimSpecHandle
-UsdSchemaRegistry::GetPrimDefinition(const TfType &primType)
+UsdSchemaRegistry::GetSchemaPrimSpec(const TfType &primType)
 {
     return GetSchematics()->GetPrimAtPath(
         GetInstance()._GetSchemaPrimPath(primType));
@@ -314,7 +314,7 @@ UsdSchemaRegistry::GetPrimDefinition(const TfType &primType)
 
 /*static*/
 SdfPropertySpecHandle
-UsdSchemaRegistry::GetPropertyDefinition(const TfToken& primType, 
+UsdSchemaRegistry::GetSchemaPropertySpec(const TfToken& primType, 
                                          const TfToken& propName)
 {
     auto const &self = GetInstance();
@@ -325,7 +325,7 @@ UsdSchemaRegistry::GetPropertyDefinition(const TfToken& primType,
 
 /*static*/
 SdfAttributeSpecHandle
-UsdSchemaRegistry::GetAttributeDefinition(const TfToken& primType, 
+UsdSchemaRegistry::GetSchemaAttributeSpec(const TfToken& primType, 
                                           const TfToken& attrName)
 {
     auto const &self = GetInstance();
@@ -336,7 +336,7 @@ UsdSchemaRegistry::GetAttributeDefinition(const TfToken& primType,
 
 /*static*/
 SdfRelationshipSpecHandle
-UsdSchemaRegistry::GetRelationshipDefinition(const TfToken& primType, 
+UsdSchemaRegistry::GetSchemaRelationshipSpec(const TfToken& primType, 
                                              const TfToken& relName)
 {
     auto const &self = GetInstance();
@@ -345,20 +345,12 @@ UsdSchemaRegistry::GetRelationshipDefinition(const TfToken& primType,
         self._schematics->GetRelationshipAtPath(path);
 }
 
-// Helper function invoked by generated Schema classes, used to avoid dynamic
-// SdfPath construction when looking up prim definitions.
+/*static*/
 SdfPrimSpecHandle
-Usd_SchemaRegistryGetPrimDefinitionAtPath(SdfPath const &path)
+UsdSchemaRegistry::_GetSchemaPrimSpecAtPath(const SdfPath &path)
 {
     return UsdSchemaRegistry::GetInstance().
         GetSchematics()->GetPrimAtPath(path);
-}
-
-/*static*/
-SdfPrimSpecHandle
-UsdSchemaRegistry::_GetPrimDefinitionAtPath(const SdfPath &path)
-{
-    return Usd_SchemaRegistryGetPrimDefinitionAtPath(path);
 }
 
 /*static*/
@@ -407,7 +399,7 @@ UsdSchemaRegistry::IsTyped(const TfType& primType)
 bool 
 UsdSchemaRegistry::IsConcrete(const TfType& primType)
 {
-    auto primSpec = GetPrimDefinition(primType);
+    auto primSpec = GetSchemaPrimSpec(primType);
     return (primSpec && !primSpec->GetTypeName().IsEmpty());
 }
 

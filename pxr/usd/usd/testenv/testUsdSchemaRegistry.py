@@ -36,7 +36,7 @@ class TestUsdSchemaRegistry(unittest.TestCase):
             "Failed to load expected test plugin"
     
     def test_PrimMetadata(self):
-        primDef = Usd.SchemaRegistry.GetPrimDefinition(
+        primDef = Usd.SchemaRegistry.GetSchemaPrimSpec(
             "TestUsdSchemaRegistryMetadataTest")
         self.assertTrue(primDef)
 
@@ -46,7 +46,7 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(primDef.GetInfo("testCustomMetadata"), "garply")
 
     def test_AttributeMetadata(self):
-        attrDef = Usd.SchemaRegistry.GetAttributeDefinition(
+        attrDef = Usd.SchemaRegistry.GetSchemaAttributeSpec(
             "TestUsdSchemaRegistryMetadataTest", "testAttr")
         self.assertTrue(attrDef)
 
@@ -60,7 +60,7 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(attrDef.GetInfo("testCustomMetadata"), "garply")
 
     def test_RelationshipMetadata(self):
-        relDef = Usd.SchemaRegistry.GetRelationshipDefinition(
+        relDef = Usd.SchemaRegistry.GetSchemaRelationshipSpec(
             "TestUsdSchemaRegistryMetadataTest", "testRel")
         self.assertTrue(relDef)
 

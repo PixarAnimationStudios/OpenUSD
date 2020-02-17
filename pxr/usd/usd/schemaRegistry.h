@@ -83,46 +83,46 @@ public:
 
     /// Return the PrimSpec that contains all the builtin metadata and
     /// properties for the given \a primType.  Return null if there is no such
-    /// prim definition.
+    /// prim spec.
     USD_API
-    static SdfPrimSpecHandle GetPrimDefinition(const TfToken &primType);
+    static SdfPrimSpecHandle GetSchemaPrimSpec(const TfToken &primType);
 
     /// Return the PrimSpec that contains all the bulitin metadata and
     /// properties for the given \a primType.  Return null if there is no such
-    /// prim definition.
+    /// prim spec.
     USD_API
-    static SdfPrimSpecHandle GetPrimDefinition(const TfType &primType);
+    static SdfPrimSpecHandle GetSchemaPrimSpec(const TfType &primType);
 
     /// Return the PrimSpec that contains all the builtin metadata and
     /// properties for the given \p SchemaType.  Return null if there is no such
-    /// prim definition.
+    /// prim spec.
     template <class SchemaType>
-    static SdfPrimSpecHandle GetPrimDefinition() {
-        return GetPrimDefinition(SchemaType::_GetStaticTfType());
+    static SdfPrimSpecHandle GetSchemaPrimSpec() {
+        return GetSchemaPrimSpec(SchemaType::_GetStaticTfType());
     }
 
     /// Return the property spec that defines the fallback for the property
     /// named \a propName on prims of type \a primType.  Return null if there is
-    /// no such property definition.
+    /// no such property spec.
     USD_API
     static SdfPropertySpecHandle
-    GetPropertyDefinition(const TfToken& primType,
+    GetSchemaPropertySpec(const TfToken& primType,
                           const TfToken& propName);
 
     /// This is a convenience method. It is shorthand for
     /// TfDynamic_cast<SdfAttributeSpecHandle>(
-    ///     GetPropertyDefinition(primType, attrName));
+    ///     GetSchemaPropertySpec(primType, attrName));
     USD_API
     static SdfAttributeSpecHandle
-    GetAttributeDefinition(const TfToken& primType,
+    GetSchemaAttributeSpec(const TfToken& primType,
                            const TfToken& attrName);
 
     /// This is a convenience method. It is shorthand for
     /// TfDynamic_cast<SdfRelationshipSpecHandle>(
-    ///     GetPropertyDefinition(primType, relName));
+    ///     GetSchemaPropertySpec(primType, relName));
     USD_API
     static SdfRelationshipSpecHandle
-    GetRelationshipDefinition(const TfToken& primType, const TfToken& relName);
+    GetSchemaRelationshipSpec(const TfToken& primType, const TfToken& relName);
 
     /// Return the SdfSpecType for \p primType and \p propName if those identify
     /// a builtin property.  Otherwise return SdfSpecTypeUnknown.
@@ -222,9 +222,9 @@ private:
 
     UsdSchemaRegistry();
 
-    // Helper for template GetPrimDefinition.
+    // Helper for template GetSchemaPrimSpec.
     static SdfPrimSpecHandle
-    _GetPrimDefinitionAtPath(const SdfPath &path);
+    _GetSchemaPrimSpecAtPath(const SdfPath &path);
 
     // Helper for looking up the prim definition path for a given primType.
     const SdfPath& _GetSchemaPrimPath(const TfToken &primType) const;

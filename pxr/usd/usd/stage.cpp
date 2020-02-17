@@ -1181,26 +1181,26 @@ static inline SdfAttributeSpecHandle
 _GetPropDef(SdfAttributeSpec *,
             TfToken const &typeName, TfToken const &attrName)
 {
-    return UsdSchemaRegistry::GetAttributeDefinition(typeName, attrName);
+    return UsdSchemaRegistry::GetSchemaAttributeSpec(typeName, attrName);
 }
 
 static inline SdfRelationshipSpecHandle
 _GetPropDef(SdfRelationshipSpec *,
             TfToken const &typeName, TfToken const &attrName)
 {
-    return UsdSchemaRegistry::GetRelationshipDefinition(typeName, attrName);
+    return UsdSchemaRegistry::GetSchemaRelationshipSpec(typeName, attrName);
 }
 
 static inline SdfPropertySpecHandle
 _GetPropDef(SdfPropertySpec *,
             TfToken const &typeName, TfToken const &attrName)
 {
-    return UsdSchemaRegistry::GetPropertyDefinition(typeName, attrName);
+    return UsdSchemaRegistry::GetSchemaPropertySpec(typeName, attrName);
 }
 
 template <class PropType>
 SdfHandle<PropType>
-UsdStage::_GetPropertyDefinition(const UsdProperty &prop) const
+UsdStage::_GetSchemaPropertySpec(const UsdProperty &prop) const
 {
     Usd_PrimDataHandle const &primData = prop._Prim();
     if (!primData)
@@ -1216,21 +1216,21 @@ UsdStage::_GetPropertyDefinition(const UsdProperty &prop) const
 }
 
 SdfPropertySpecHandle
-UsdStage::_GetPropertyDefinition(const UsdProperty &prop) const
+UsdStage::_GetSchemaPropertySpec(const UsdProperty &prop) const
 {
-    return _GetPropertyDefinition<SdfPropertySpec>(prop);
+    return _GetSchemaPropertySpec<SdfPropertySpec>(prop);
 }
 
 SdfAttributeSpecHandle
-UsdStage::_GetAttributeDefinition(const UsdAttribute &attr) const
+UsdStage::_GetSchemaAttributeSpec(const UsdAttribute &attr) const
 {
-    return _GetPropertyDefinition<SdfAttributeSpec>(attr);
+    return _GetSchemaPropertySpec<SdfAttributeSpec>(attr);
 }
 
 SdfRelationshipSpecHandle
-UsdStage::_GetRelationshipDefinition(const UsdRelationship &rel) const
+UsdStage::_GetSchemaRelationshipSpec(const UsdRelationship &rel) const
 {
-    return _GetPropertyDefinition<SdfRelationshipSpec>(rel);
+    return _GetSchemaPropertySpec<SdfRelationshipSpec>(rel);
 }
 
 bool
@@ -1371,7 +1371,7 @@ UsdStage::_CreatePropertySpecForEditing(const UsdProperty &prop)
     TypedSpecHandle specToCopy;
 
     // Get definition, if any.
-    specToCopy = _GetPropertyDefinition<PropType>(prop);
+    specToCopy = _GetSchemaPropertySpec<PropType>(prop);
 
     if (!specToCopy) {
         // There is no definition available, either because the prim has no
@@ -4890,8 +4890,8 @@ UsdStage::_FlattenProperty(const UsdProperty &srcProp,
 
         // Copy fallback property values and metadata if needed.
         _CopyFallbacks(
-            _GetPropertyDefinition(srcProp),
-            _GetPropertyDefinition(dstProp),
+            _GetSchemaPropertySpec(srcProp),
+            _GetSchemaPropertySpec(dstProp),
             dstPropSpec, dstPropStack);
     }
 
@@ -5712,7 +5712,7 @@ UsdStage::_IsCustom(const UsdProperty &prop) const
     // Custom is composed as true if there is no property definition and it is
     // true anywhere in the stack of opinions.
 
-    if (_GetPropertyDefinition(prop))
+    if (_GetSchemaPropertySpec(prop))
         return false;
 
     const TfToken &propName = prop.GetName();
@@ -5748,7 +5748,7 @@ UsdStage
     if (prop.Is<UsdAttribute>()) {
         UsdAttribute attr = prop.As<UsdAttribute>();
         // Check definition.
-        if (SdfAttributeSpecHandle attrDef = _GetAttributeDefinition(attr)) {
+        if (SdfAttributeSpecHandle attrDef = _GetSchemaAttributeSpec(attr)) {
             return attrDef->GetVariability();
         }
 
@@ -5909,7 +5909,7 @@ UsdStage::_GetAttrTypeImpl(const UsdAttribute &attr,
                            Composer *composer) const
 {
     TRACE_FUNCTION();
-    if (_GetAttributeDefinition(attr)) {
+    if (_GetSchemaAttributeSpec(attr)) {
         // Builtin attribute typename comes from definition.
         composer->ConsumeUsdFallback(
             attr.GetPrim().GetTypeName(),
@@ -5926,7 +5926,7 @@ UsdStage::_GetAttrVariabilityImpl(const UsdAttribute &attr, bool useFallbacks,
                                   Composer *composer) const
 {
     TRACE_FUNCTION();
-    if (_GetAttributeDefinition(attr)) {
+    if (_GetSchemaAttributeSpec(attr)) {
         // Builtin attribute typename comes from definition.
         composer->ConsumeUsdFallback(
             attr.GetPrim().GetTypeName(),
@@ -5957,7 +5957,7 @@ UsdStage::_GetPropCustomImpl(const UsdProperty &prop, bool useFallbacks,
     TRACE_FUNCTION();
     // Custom is composed as true if there is no property definition and it is
     // true anywhere in the stack of opinions.
-    if (_GetPropertyDefinition(prop)) {
+    if (_GetSchemaPropertySpec(prop)) {
         composer->ConsumeUsdFallback(
             prop.GetPrim().GetTypeName(), prop.GetName(),
             SdfFieldKeys->Custom, TfToken());
@@ -6358,7 +6358,7 @@ UsdStage::_ListMetadataFields(const UsdObject &obj, bool useFallbacks) const
 
     // If this is a builtin property, determine specType from the definition.
     if (obj.Is<UsdProperty>()) {
-        propDef = _GetPropertyDefinition(obj.As<UsdProperty>());
+        propDef = _GetSchemaPropertySpec(obj.As<UsdProperty>());
         if (propDef)
             specType = propDef->GetSpecType();
     }
@@ -7695,7 +7695,7 @@ UsdStage::_GetBracketingTimeSamplesFromResolveInfo(const UsdResolveInfo &info,
             return false;
 
         // Check for a registered fallback.
-        if (SdfAttributeSpecHandle attrDef = _GetAttributeDefinition(attr)) {
+        if (SdfAttributeSpecHandle attrDef = _GetSchemaAttributeSpec(attr)) {
             if (attrDef->HasDefaultValue()) {
                 *hasSamples = false;
                 return true;

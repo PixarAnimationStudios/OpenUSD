@@ -57,13 +57,10 @@ UsdSchemaBase::~UsdSchemaBase()
     // define new members.
 }
 
-// Forward decl helper in SchemaRegistry.cpp
-SdfPrimSpecHandle
-Usd_SchemaRegistryGetPrimDefinitionAtPath(SdfPath const &path);
 SdfPrimSpecHandle
 UsdSchemaBase::GetSchemaClassPrimDefinition() const
 {
-    return UsdSchemaRegistry::GetPrimDefinition(_GetType());
+    return UsdSchemaRegistry::GetSchemaPrimSpec(_GetType());
 }
 
 bool

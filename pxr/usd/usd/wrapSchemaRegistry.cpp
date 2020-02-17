@@ -75,27 +75,27 @@ void wrapUsdSchemaRegistry()
              arg("schemaType"))
         .staticmethod("GetSchemaTypeName")
 
-        .def("GetPrimDefinition", (SdfPrimSpecHandle (*)(const TfToken &))
-             &This::GetPrimDefinition,
+        .def("GetSchemaPrimSpec", (SdfPrimSpecHandle (*)(const TfToken &))
+             &This::GetSchemaPrimSpec,
              arg("primType"))
-        .def("GetPrimDefinition", (SdfPrimSpecHandle (*)(const TfType &))
-             &This::GetPrimDefinition,
+        .def("GetSchemaPrimSpec", (SdfPrimSpecHandle (*)(const TfType &))
+             &This::GetSchemaPrimSpec,
              arg("primType"))
-        .staticmethod("GetPrimDefinition")
+        .staticmethod("GetSchemaPrimSpec")
 
-        .def("GetPropertyDefinition", &This::GetPropertyDefinition,
+        .def("GetSchemaPropertySpec", &This::GetSchemaPropertySpec,
              (arg("primType"), arg("propName")))
-        .staticmethod("GetPropertyDefinition")
+        .staticmethod("GetSchemaPropertySpec")
 
-        .def("GetAttributeDefinition",
-             &This::GetAttributeDefinition,
+        .def("GetSchemaAttributeSpec",
+             &This::GetSchemaAttributeSpec,
              (arg("primType"), arg("attrName")))
-        .staticmethod("GetAttributeDefinition")
+        .staticmethod("GetSchemaAttributeSpec")
 
-        .def("GetRelationshipDefinition",
-             &This::GetRelationshipDefinition,
+        .def("GetSchemaRelationshipSpec",
+             &This::GetSchemaRelationshipSpec,
              (arg("primType"), arg("relName")))
-        .staticmethod("GetRelationshipDefinition")
+        .staticmethod("GetSchemaRelationshipSpec")
 
         .def("GetDisallowedFields",
              &This::GetDisallowedFields,

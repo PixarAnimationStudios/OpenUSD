@@ -1563,20 +1563,20 @@ private:
     _GetPropertyStack(const UsdProperty &prop, UsdTimeCode time) const;
 
     SdfPropertySpecHandle
-    _GetPropertyDefinition(const UsdPrim &prim, const TfToken &propName) const;
+    _GetSchemaPropertySpec(const UsdPrim &prim, const TfToken &propName) const;
 
     SdfPropertySpecHandle
-    _GetPropertyDefinition(const UsdProperty &prop) const;
+    _GetSchemaPropertySpec(const UsdProperty &prop) const;
 
     template <class PropType>
     SdfHandle<PropType>
-    _GetPropertyDefinition(const UsdProperty &prop) const;
+    _GetSchemaPropertySpec(const UsdProperty &prop) const;
 
     SdfAttributeSpecHandle
-    _GetAttributeDefinition(const UsdAttribute &attr) const;
+    _GetSchemaAttributeSpec(const UsdAttribute &attr) const;
 
     SdfRelationshipSpecHandle
-    _GetRelationshipDefinition(const UsdRelationship &rel) const;
+    _GetSchemaRelationshipSpec(const UsdRelationship &rel) const;
 
     SdfPrimSpecHandle
     _CreatePrimSpecForEditing(const UsdPrim& prim);
