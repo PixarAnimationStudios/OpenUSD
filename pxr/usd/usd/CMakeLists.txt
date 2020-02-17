@@ -189,6 +189,7 @@ pxr_test_scripts(
     testenv/testUsdInherits.py
     testenv/testUsdInstanceProxy.py
     testenv/testUsdInstancing.py
+    testenv/testUsdLoadUnloadDeepNestedInstancing.py
     testenv/testUsdMetadata.py
     testenv/testUsdModel.py
     testenv/testUsdNotices.py
@@ -259,6 +260,15 @@ pxr_build_test(testUsdMetadataCpp
         usd
     CPPFILES
         testenv/testUsdMetadata.cpp
+)
+
+pxr_build_test(testUsdInstancingCpp
+    LIBRARIES
+        tf
+        usd
+        sdf
+    CPPFILES
+        testenv/testUsdInstancingCpp.cpp
 )
 
 pxr_build_test(testUsdPrimGetDescendants
@@ -440,6 +450,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdInstancingCpp.testenv
+    DEST testUsdInstancingCpp
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdVariantEditing.testenv
     DEST testUsdVariantEditing
 )
@@ -477,6 +492,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdBug141491.testenv
     DEST testUsdBug141491
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdLoadUnloadDeepNestedInstancing.testenv
+    DEST testUsdLoadUnloadDeepNestedInstancing
 )
 
 pxr_install_test_dir(
@@ -651,6 +671,12 @@ pxr_register_test(testUsdDataFormats
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdLoadUnloadDeepNestedInstancing
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdLoadUnloadDeepNestedInstancing"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdTimeSamples
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTimeSamples"
@@ -676,6 +702,11 @@ pxr_register_test(testUsdPrimCompositionQuery
 
 pxr_register_test(testUsdPrimGetDescendants
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdPrimGetDescendants"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdInstancingCpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdInstancingCpp"
     EXPECTED_RETURN_CODE 0
 )
 

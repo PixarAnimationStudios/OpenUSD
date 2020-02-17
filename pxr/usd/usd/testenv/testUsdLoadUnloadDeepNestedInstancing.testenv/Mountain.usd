@@ -1,0 +1,42 @@
+#usda 1.0
+
+def Xform "Mountain" (
+    kind = "set"
+)
+{
+    def Xform "Rocks1" (
+        instanceable = true
+        payload = @./Rocks.usd@</Rocks>
+    )
+    {
+    }
+
+    def Xform "Rocks2" (
+        instanceable = true
+        payload = @./Rocks.usd@</Rocks>
+    )
+    {
+    }
+
+    def Xform "Rocks3" (
+        instanceable = true
+        payload = @./Rocks.usd@</Rocks>
+    )
+    {
+    }
+
+    def Xform "Rocks4" (
+        instanceable = true
+        payload = @./Rocks.usd@</Rocks>
+    )
+    {
+    }
+
+    def Xform "Rocks5" (
+        instanceable = true
+        payload = @./Rocks.usd@</Rocks>
+    )
+    {
+    }
+
+}

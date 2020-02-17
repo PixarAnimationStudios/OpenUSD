@@ -1,0 +1,25 @@
+#usda 1.0
+
+def "payLoadGeo" (
+    append payload = @./geo.usda@
+)
+{
+}
+
+def Xform "instancer1"
+{
+    def "Instance0" (
+            instanceable = true
+            append references = </payLoadGeo>
+            )
+    {
+    }
+
+    def "Instance1" (
+            instanceable = true
+            append references = </payLoadGeo>
+            )
+    {
+    }
+}
+

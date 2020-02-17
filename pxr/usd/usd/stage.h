@@ -1763,6 +1763,10 @@ private:
     // at \p primPath.
     Usd_PrimDataPtr _InstantiatePrim(const SdfPath &primPath);
 
+    // Instantiate a master prim and sets its parent to pseudoroot.  
+    // There must not already be a master at \p primPath.
+    Usd_PrimDataPtr _InstantiateMasterPrim(const SdfPath &primPath);
+
     // For \p prim and all of its descendants, remove from _primMap and empty
     // their _children vectors.
     void _DestroyPrim(Usd_PrimDataPtr prim);

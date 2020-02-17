@@ -1,0 +1,431 @@
+#usda 1.0
+
+def Xform "Pebble" (
+    kind = "group"
+    variants = {
+        string pebbleVariants = "peb59"
+    }
+    prepend variantSets = "pebbleVariants"
+)
+{
+    def Mesh "Body"
+    {
+        uniform token info:id = "test"
+    }
+    variantSet "pebbleVariants" = {
+        "peb1" {
+            over "Body"
+            {
+                uniform token info:id = "peb1"
+            }
+
+        }
+        "peb10" {
+            over "Body"
+            {
+                uniform token info:id = "peb10"
+            }
+
+        }
+        "peb11" {
+            over "Body"
+            {
+                uniform token info:id = "peb11"
+            }
+
+        }
+        "peb12" {
+            over "Body"
+            {
+                uniform token info:id = "peb12"
+            }
+
+        }
+        "peb13" {
+            over "Body"
+            {
+                uniform token info:id = "peb13"
+            }
+
+        }
+        "peb14" {
+            over "Body"
+            {
+                uniform token info:id = "peb14"
+            }
+
+        }
+        "peb15" {
+            over "Body"
+            {
+                uniform token info:id = "peb15"
+            }
+
+        }
+        "peb16" {
+            over "Body"
+            {
+                uniform token info:id = "peb16"
+            }
+
+        }
+        "peb17" {
+            over "Body"
+            {
+                uniform token info:id = "peb17"
+            }
+
+        }
+        "peb18" {
+            over "Body"
+            {
+                uniform token info:id = "peb18"
+            }
+
+        }
+        "peb19" {
+            over "Body"
+            {
+                uniform token info:id = "peb19"
+            }
+
+        }
+        "peb2" {
+            over "Body"
+            {
+                uniform token info:id = "peb2"
+            }
+
+        }
+        "peb20" {
+            over "Body"
+            {
+                uniform token info:id = "peb20"
+            }
+
+        }
+        "peb21" {
+            over "Body"
+            {
+                uniform token info:id = "peb21"
+            }
+
+        }
+        "peb22" {
+            over "Body"
+            {
+                uniform token info:id = "peb22"
+            }
+
+        }
+        "peb23" {
+            over "Body"
+            {
+                uniform token info:id = "peb23"
+            }
+
+        }
+        "peb24" {
+            over "Body"
+            {
+                uniform token info:id = "peb24"
+            }
+
+        }
+        "peb25" {
+            over "Body"
+            {
+                uniform token info:id = "peb25"
+            }
+
+        }
+        "peb26" {
+            over "Body"
+            {
+                uniform token info:id = "peb26"
+            }
+
+        }
+        "peb27" {
+            over "Body"
+            {
+                uniform token info:id = "peb27"
+            }
+
+        }
+        "peb28" {
+            over "Body"
+            {
+                uniform token info:id = "peb28"
+            }
+
+        }
+        "peb29" {
+            over "Body"
+            {
+                uniform token info:id = "peb29"
+            }
+
+        }
+        "peb3" {
+            over "Body"
+            {
+                uniform token info:id = "peb3"
+            }
+
+        }
+        "peb30" {
+            over "Body"
+            {
+                uniform token info:id = "peb30"
+            }
+
+        }
+        "peb31" {
+            over "Body"
+            {
+                uniform token info:id = "peb31"
+            }
+
+        }
+        "peb32" {
+            over "Body"
+            {
+                uniform token info:id = "peb32"
+            }
+
+        }
+        "peb33" {
+            over "Body"
+            {
+                uniform token info:id = "peb33"
+            }
+
+        }
+        "peb34" {
+            over "Body"
+            {
+                uniform token info:id = "peb34"
+            }
+
+        }
+        "peb35" {
+            over "Body"
+            {
+                uniform token info:id = "peb35"
+            }
+
+        }
+        "peb36" {
+            over "Body"
+            {
+                uniform token info:id = "peb36"
+            }
+
+        }
+        "peb37" {
+            over "Body"
+            {
+                uniform token info:id = "peb37"
+            }
+
+        }
+        "peb38" {
+            over "Body"
+            {
+                uniform token info:id = "peb38"
+            }
+
+        }
+        "peb39" {
+            over "Body"
+            {
+                uniform token info:id = "peb39"
+            }
+
+        }
+        "peb4" {
+            over "Body"
+            {
+                uniform token info:id = "peb4"
+            }
+
+        }
+        "peb40" {
+            over "Body"
+            {
+                uniform token info:id = "peb40"
+            }
+
+        }
+        "peb41" {
+            over "Body"
+            {
+                uniform token info:id = "peb41"
+            }
+
+        }
+        "peb42" {
+            over "Body"
+            {
+                uniform token info:id = "peb42"
+            }
+
+        }
+        "peb43" {
+            over "Body"
+            {
+                uniform token info:id = "peb43"
+            }
+
+        }
+        "peb44" {
+            over "Body"
+            {
+                uniform token info:id = "peb44"
+            }
+
+        }
+        "peb45" {
+            over "Body"
+            {
+                uniform token info:id = "peb45"
+            }
+
+        }
+        "peb46" {
+            over "Body"
+            {
+                uniform token info:id = "peb46"
+            }
+
+        }
+        "peb47" {
+            over "Body"
+            {
+                uniform token info:id = "peb47"
+            }
+
+        }
+        "peb48" {
+            over "Body"
+            {
+                uniform token info:id = "peb48"
+            }
+
+        }
+        "peb49" {
+            over "Body"
+            {
+                uniform token info:id = "peb49"
+            }
+
+        }
+        "peb5" {
+            over "Body"
+            {
+                uniform token info:id = "peb5"
+            }
+
+        }
+        "peb50" {
+            over "Body"
+            {
+                uniform token info:id = "peb50"
+            }
+
+        }
+        "peb51" {
+            over "Body"
+            {
+                uniform token info:id = "peb51"
+            }
+
+        }
+        "peb52" {
+            over "Body"
+            {
+                uniform token info:id = "peb52"
+            }
+
+        }
+        "peb53" {
+            over "Body"
+            {
+                uniform token info:id = "peb53"
+            }
+
+        }
+        "peb54" {
+            over "Body"
+            {
+                uniform token info:id = "peb54"
+            }
+
+        }
+        "peb55" {
+            over "Body"
+            {
+                uniform token info:id = "peb55"
+            }
+
+        }
+        "peb56" {
+            over "Body"
+            {
+                uniform token info:id = "peb56"
+            }
+
+        }
+        "peb57" {
+            over "Body"
+            {
+                uniform token info:id = "peb57"
+            }
+
+        }
+        "peb58" {
+            over "Body"
+            {
+                uniform token info:id = "peb58"
+            }
+
+        }
+        "peb59" {
+            over "Body"
+            {
+                uniform token info:id = "peb59"
+            }
+
+        }
+        "peb6" {
+            over "Body"
+            {
+                uniform token info:id = "peb6"
+            }
+
+        }
+        "peb7" {
+            over "Body"
+            {
+                uniform token info:id = "peb7"
+            }
+
+        }
+        "peb8" {
+            over "Body"
+            {
+                uniform token info:id = "peb8"
+            }
+
+        }
+        "peb9" {
+            over "Body"
+            {
+                uniform token info:id = "peb9"
+            }
+
+        }
+    }
+}
+

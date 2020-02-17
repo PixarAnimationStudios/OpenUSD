@@ -1,0 +1,9 @@
+#usda 1.0
+
+def Xform "Earth" (
+    kind = "set"
+    references = @./Mountain.usd@</Mountain>
+    instanceable = true
+)
+{
+}

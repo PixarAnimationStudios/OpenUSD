@@ -445,6 +445,13 @@ Usd_InstanceCache::IsPathInMaster(const SdfPath& path)
     return TfStringStartsWith(rootPath.GetName(), "__Master_");
 }
 
+bool 
+Usd_InstanceCache::IsMasterPath(const SdfPath& path) 
+{
+    return path.IsRootPrimPath() && 
+        TfStringStartsWith(path.GetName(), "__Master_");
+}
+
 SdfPath 
 Usd_InstanceCache::_GetNextMasterPath(const Usd_InstanceKey& key)
 {
@@ -511,6 +518,35 @@ Usd_InstanceCache::GetPrimsInMastersUsingPrimIndexPath(
     vector<SdfPath> masterPaths;
     _MasterUsesPrimIndexPath(primIndexPath, &masterPaths);
     return masterPaths;
+}
+
+vector<std::pair<SdfPath, SdfPath>> 
+Usd_InstanceCache::GetMastersUsingPrimIndexPathOrDescendents(
+        const SdfPath& primIndexPath) const
+{
+    vector<std::pair<SdfPath, SdfPath>> masterSourceIndexPairs;
+    for (_SourcePrimIndexToMasterMap::const_iterator 
+             it = _sourcePrimIndexToMasterMap.lower_bound(primIndexPath),
+             end = _sourcePrimIndexToMasterMap.end();
+         it != end && it->first.HasPrefix(primIndexPath); ++it) {
+
+        const SdfPath& masterPath = it->second;
+        _MasterToSourcePrimIndexMap::const_iterator masterToSourceIt = 
+            _masterToSourcePrimIndexMap.find(masterPath);
+
+        if (!TF_VERIFY(
+                    masterToSourceIt != _masterToSourcePrimIndexMap.end(),
+                    "masterPath <%s> missing in mastersToSourceIndexPath map",
+                    masterPath.GetText())) {
+            masterSourceIndexPairs.emplace_back(masterPath, SdfPath());
+            continue;
+        }
+        
+        const SdfPath& sourceIndexPath = masterToSourceIt->second;
+        masterSourceIndexPairs.emplace_back(masterPath, sourceIndexPath);
+    }
+    
+    return masterSourceIndexPairs;
 }
 
 bool

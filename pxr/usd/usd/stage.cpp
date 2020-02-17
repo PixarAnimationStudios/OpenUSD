@@ -645,12 +645,37 @@ UsdStage::_InstantiateStage(const SdfLayerRefPtr &rootLayer,
     stage->_loadRules = (load == LoadAll) ?
         UsdStageLoadRules::LoadAll() : UsdStageLoadRules::LoadNone();
 
+    Usd_InstanceChanges instanceChanges;
+    const SdfPath& absoluteRootPath = SdfPath::AbsoluteRootPath();
+
     // Populate the stage, request payloads according to InitialLoadSet load.
     stage->_ComposePrimIndexesInParallel(
-        SdfPathVector(1, SdfPath::AbsoluteRootPath()),
-        "instantiating stage");
-    stage->_pseudoRoot = stage->_InstantiatePrim(SdfPath::AbsoluteRootPath());
-    stage->_ComposeSubtreeInParallel(stage->_pseudoRoot);
+            {absoluteRootPath}, "instantiating stage", &instanceChanges);
+    stage->_pseudoRoot = stage->_InstantiatePrim(absoluteRootPath);
+
+    const size_t subtreeCount = instanceChanges.newMasterPrims.size() + 1;
+    std::vector<Usd_PrimDataPtr> subtreesToCompose;
+    SdfPathVector primIndexPathsForSubtrees;
+    subtreesToCompose.reserve(subtreeCount);
+    primIndexPathsForSubtrees.reserve(subtreeCount);
+    subtreesToCompose.push_back(stage->_pseudoRoot);
+    primIndexPathsForSubtrees.push_back(absoluteRootPath);
+
+    // We only need to add new masters since, during stage initialization there
+    // should not be any changed masters
+    for (size_t i = 0; i != instanceChanges.newMasterPrims.size(); ++i) {
+        const SdfPath& masterPath = instanceChanges.newMasterPrims[i];
+        const SdfPath& masterPrimIndexPath = 
+            instanceChanges.newMasterPrimIndexes[i];
+
+        Usd_PrimDataPtr masterPrim = stage->_InstantiateMasterPrim(masterPath);
+        subtreesToCompose.push_back(masterPrim);
+        primIndexPathsForSubtrees.push_back(masterPrimIndexPath);
+    }
+
+    stage->_ComposeSubtreesInParallel(
+        subtreesToCompose, &primIndexPathsForSubtrees);
+
     stage->_RegisterPerLayerNotices();
 
     // Publish this stage into all current writable caches.
@@ -2368,6 +2393,19 @@ UsdStage::_InstantiatePrim(const SdfPath &primPath)
     return p;
 }
 
+Usd_PrimDataPtr
+UsdStage::_InstantiateMasterPrim(const SdfPath &primPath) 
+{
+    // Master prims are parented beneath the pseudo-root,
+    // but are *not* children of the pseudo-root. This ensures
+    // that consumers never see master prims unless they are
+    // explicitly asked for. So, we don't need to set the child
+    // link here.
+    Usd_PrimDataPtr masterPrim = _InstantiatePrim(primPath);
+    masterPrim->_SetParentLink(_pseudoRoot);
+    return masterPrim;
+}
+
 namespace {
 // Less-than comparison for iterators that compares what they point to.
 struct _DerefIterLess {
@@ -2415,26 +2453,6 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim,
         TF_DEBUG(USD_COMPOSITION).Msg("Instance prim <%s>\n",
                                       prim->GetPath().GetText());
         _DestroyDescendents(prim);
-
-        const SdfPath& sourceIndexPath = 
-            prim->GetSourcePrimIndex().GetPath();
-        const SdfPath masterPath = 
-            _instanceCache->GetMasterUsingPrimIndexPath(sourceIndexPath);
-
-        if (!masterPath.IsEmpty()) {
-            Usd_PrimDataPtr masterPrim = _GetPrimDataAtPath(masterPath);
-            if (!masterPrim) {
-                masterPrim = _InstantiatePrim(masterPath);
-
-                // Master prims are parented beneath the pseudo-root,
-                // but are *not* children of the pseudo-root. This ensures
-                // that consumers never see master prims unless they are
-                // explicitly asked for. So, we don't need to set the child
-                // link here.
-                masterPrim->_SetParentLink(_pseudoRoot);
-            }
-            _ComposeSubtree(masterPrim, _pseudoRoot, mask, sourceIndexPath);
-        }
         return;
     }
 
@@ -3976,29 +3994,54 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
     typedef TfHashMap<SdfPath, SdfPath, SdfPath::Hash> _MasterToPrimIndexMap;
     _MasterToPrimIndexMap masterToPrimIndexMap;
 
+    const bool pathsContainsAbsRoot = 
+        pathsToRecompose->begin()->first == SdfPath::AbsoluteRootPath();
+
+    //If AbsoluteRootPath is present then that should be the only entry!
+    TF_VERIFY(!pathsContainsAbsRoot || pathsToRecompose->size() == 1);
+
     const size_t origNumPathsToRecompose = pathsToRecompose->size();
     for (const auto& entry : *pathsToRecompose) {
         const SdfPath& path = entry.first;
-        for (const SdfPath& masterPath :
+        // Add Corresponding inMasterPaths for any instance or proxy paths in
+        // pathsToRecompose
+        for (const SdfPath& inMasterPath :
                  _instanceCache->GetPrimsInMastersUsingPrimIndexPath(path)) {
-            masterToPrimIndexMap[masterPath] = path;
+            masterToPrimIndexMap[inMasterPath] = path;
+            (*pathsToRecompose)[inMasterPath];
+        }
+        // Add any unchanged masters whose instances are descendents of paths in
+        // pathsToRecompose
+        for (const std::pair<SdfPath, SdfPath>& masterSourceIndexPair:
+                _instanceCache->GetMastersUsingPrimIndexPathOrDescendents(path)) 
+        {
+            const SdfPath& masterPath = masterSourceIndexPair.first;
+            const SdfPath& sourceIndexPath = masterSourceIndexPair.second;
+            masterToPrimIndexMap[masterPath] = sourceIndexPath;
             (*pathsToRecompose)[masterPath];
         }
     }
 
+    // Add new masters paths to pathsToRecompose 
     for (size_t i = 0; i != instanceChanges.newMasterPrims.size(); ++i) {
         masterToPrimIndexMap[instanceChanges.newMasterPrims[i]] =
             instanceChanges.newMasterPrimIndexes[i];
         (*pathsToRecompose)[instanceChanges.newMasterPrims[i]];
     }
 
+    // Add changed masters paths to pathsToRecompose 
     for (size_t i = 0; i != instanceChanges.changedMasterPrims.size(); ++i) {
         masterToPrimIndexMap[instanceChanges.changedMasterPrims[i]] =
             instanceChanges.changedMasterPrimIndexes[i];
         (*pathsToRecompose)[instanceChanges.changedMasterPrims[i]];
     }
 
-    if (pathsToRecompose->size() != origNumPathsToRecompose) {
+    // If pseudoRoot is present in pathsToRecompose, then the only other prims
+    // in pathsToRecompose can be master prims (added above), in which case we 
+    // do not want to remove these masters. If not we need to make sure any
+    // descendents of masters are removed if corresponding master is present
+    if (!pathsContainsAbsRoot && 
+            pathsToRecompose->size() != origNumPathsToRecompose) {
         _RemoveDescendentEntries(pathsToRecompose);
     }
 
@@ -4016,12 +4059,6 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
         _ComposeSubtreesInParallel(subtreesToRecompose);
     }
     else {
-        // Make sure we remove any subtrees for master prims that would
-        // be composed when an instance subtree is composed. Otherwise,
-        // the same master subtree could be composed concurrently, which
-        // is unsafe.
-        _RemoveMasterSubtreesSubsumedByInstances(
-            &subtreesToRecompose, masterToPrimIndexMap);
 
         SdfPathVector primIndexPathsForSubtrees;
         primIndexPathsForSubtrees.reserve(subtreesToRecompose.size());
@@ -4041,63 +4078,6 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
     _DestroyPrimsInParallel(instanceChanges.deadMasterPrims);
 }
 
-template <class PrimIndexPathMap>
-void
-UsdStage::_RemoveMasterSubtreesSubsumedByInstances(
-    std::vector<Usd_PrimDataPtr>* subtreesToRecompose,
-    const PrimIndexPathMap& primPathToSourceIndexPathMap) const
-{
-    TRACE_FUNCTION();
-
-    // Partition so [masterIt, subtreesToRecompose->end()) contains all 
-    // subtrees for master prims.
-    auto masterIt = std::partition(
-        subtreesToRecompose->begin(), subtreesToRecompose->end(),
-        [](const Usd_PrimDataPtr& p) { return !p->IsMaster(); });
-
-    if (masterIt == subtreesToRecompose->end()) {
-        return;
-    }
-
-    // Collect the paths for all master subtrees that will be composed when
-    // the instance subtrees in subtreesToRecompose are composed. 
-    // See the instancing handling in _ComposeChildren.
-    using _PathSet = TfHashSet<SdfPath, SdfPath::Hash>;
-    std::unique_ptr<_PathSet> mastersForSubtrees;
-    for (const Usd_PrimDataPtr& p : 
-         boost::make_iterator_range(subtreesToRecompose->begin(), masterIt)) {
-
-        const SdfPath* sourceIndexPath = 
-            TfMapLookupPtr(primPathToSourceIndexPathMap, p->GetPath());
-        const SdfPath& masterPath = 
-            _instanceCache->GetMasterUsingPrimIndexPath(
-                sourceIndexPath ? *sourceIndexPath : p->GetPath());
-        if (!masterPath.IsEmpty()) {
-            if (!mastersForSubtrees) {
-                mastersForSubtrees.reset(new _PathSet);
-            }
-            mastersForSubtrees->insert(masterPath);
-        }
-    }
-
-    if (!mastersForSubtrees) {
-        return;
-    }
-
-    // Remove all master prim subtrees that will get composed when an 
-    // instance subtree in subtreesToRecompose is composed.
-    auto masterIsSubsumedByInstanceSubtree = 
-        [&mastersForSubtrees](const Usd_PrimDataPtr& master) {
-        return mastersForSubtrees->find(master->GetPath()) != 
-               mastersForSubtrees->end();
-    };
-
-    subtreesToRecompose->erase(
-        std::remove_if(
-            masterIt, subtreesToRecompose->end(),
-            masterIsSubsumedByInstanceSubtree),
-        subtreesToRecompose->end());
-}
 
 template <class Iter>
 void 
@@ -4125,6 +4105,26 @@ UsdStage::_ComputeSubtreesToRecompose(
             continue;
         }
 
+        // Add masters to list of subtrees to recompose and instantiate any 
+        // new master not present in the primMap from before
+        if (_instanceCache->IsMasterPath(*i)) {
+            PathToNodeMap::const_iterator itr = _primMap.find(*i);
+            Usd_PrimDataPtr masterPrim;
+            if (itr != _primMap.end()) {
+                // should be a changed master if already in the primMap
+                masterPrim = itr->second.get();
+            } else {
+                // newMaster should be absent from the primMap, instantiate
+                // these now to be added to subtreesToRecompose
+                masterPrim = _InstantiateMasterPrim(*i);
+            }
+            subtreesToRecompose->push_back(masterPrim);
+            ++i;
+            continue;
+        }
+
+        // Collect all non-master prims (including descendants of masters) to be
+        // added to subtreesToRecompute
         SdfPath const &parentPath = i->GetParentPath();
         PathToNodeMap::const_iterator parentIt = _primMap.find(parentPath);
         if (parentIt != _primMap.end()) {
@@ -4144,8 +4144,15 @@ UsdStage::_ComputeSubtreesToRecompose(
             // Recompose the subtree for each affected sibling.
             do {
                 PathToNodeMap::const_iterator primIt = _primMap.find(*i);
-                if (primIt != _primMap.end())
+                if (primIt != _primMap.end()) {
                     subtreesToRecompose->push_back(primIt->second.get());
+                } else if (_instanceCache->IsMasterPath(*i)) {
+                    // If this path is a master path and is not present in the
+                    // primMap, then this must be a newMaster added during this
+                    // processing, instantiate and add it.
+                    Usd_PrimDataPtr masterPrim = _InstantiateMasterPrim(*i);
+                    subtreesToRecompose->push_back(masterPrim);
+                }
                 ++i;
             } while (i != end && i->GetParentPath() == parentPath);
         } else if (parentPath.IsEmpty()) {
