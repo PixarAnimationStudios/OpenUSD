@@ -137,16 +137,98 @@ static const char* const* _sessionCrashLogArgv = nullptr;
 // Arch_InitConfig() to ArchGetExecutablePath()
 static char * _progNameForErrors = NULL;
 
+namespace {
 // Key-value map for program info. Stores additional
 // program info to be used when displaying error information.
-typedef std::map<std::string, std::string> Arch_ProgInfoMap;
-static Arch_ProgInfoMap _progInfoMap;
+class Arch_ProgInfo
+{
+public:
 
-// Printed version of _progInfo map, since we can't
-// traverse it during an error. 
-static char *_progInfoForErrors = NULL;
-// Mutex for above:
-static std::mutex _progInfoForErrorsMutex;
+    Arch_ProgInfo() : _progInfoForErrors(NULL) {}
+
+    ~Arch_ProgInfo();
+
+    void SetProgramInfoForErrors(const std::string& key,
+                                 const std::string& value);
+
+    std::string GetProgramInfoForErrors(const std::string& key) const;
+
+    void PrintInfoForErrors() const;
+
+private:
+    typedef std::map<std::string, std::string> _MapType;
+    _MapType _progInfoMap;
+    mutable std::mutex _progInfoForErrorsMutex;
+
+    // Printed version of _progInfo map, since we can't
+    // traverse it during an error. 
+    char *_progInfoForErrors;
+};
+
+Arch_ProgInfo::~Arch_ProgInfo() 
+{
+    if (_progInfoForErrors)
+        free(_progInfoForErrors);
+}
+
+void
+Arch_ProgInfo::SetProgramInfoForErrors(
+    const std::string& key, const std::string& value)
+{
+    std::lock_guard<std::mutex> lock(_progInfoForErrorsMutex);
+
+    if (value.empty()) {
+        _progInfoMap.erase(key);
+    } else {
+        _progInfoMap[key] = value;
+    }
+
+    std::ostringstream ss;
+
+    // update the error info string
+    for(_MapType::iterator iter = _progInfoMap.begin();
+        iter != _progInfoMap.end(); ++iter) {
+
+        ss << iter->first << ": " << iter->second << '\n';
+    }
+
+    if (_progInfoForErrors)
+        free(_progInfoForErrors);
+
+    _progInfoForErrors = strdup(ss.str().c_str());
+}
+
+std::string 
+Arch_ProgInfo::GetProgramInfoForErrors(const std::string& key) const
+{
+    std::lock_guard<std::mutex> lock(_progInfoForErrorsMutex);
+
+    _MapType::const_iterator iter = _progInfoMap.find(key);
+    std::string result;
+    if (iter != _progInfoMap.end())
+        result = iter->second;
+
+    return result;
+} 
+
+void 
+Arch_ProgInfo::PrintInfoForErrors() const
+{
+    std::lock_guard<std::mutex> lock(_progInfoForErrorsMutex);
+    if (_progInfoForErrors) {
+        fprintf(stderr, "%s", _progInfoForErrors);
+    }
+}
+
+} // anon-namespace
+
+static Arch_ProgInfo &
+ArchStackTrace_GetProgInfo()
+{
+    static Arch_ProgInfo progInfo;
+    return progInfo;
+}
+
 
 // Key-value map for extra log info.  Stores unowned pointers to text to be
 // emitted in stack trace logs in case of fatal errors or crashes.
@@ -666,40 +748,13 @@ void
 ArchSetProgramInfoForErrors(const std::string& key,
                             const std::string& value)
 {
-    std::lock_guard<std::mutex> lock(_progInfoForErrorsMutex);
-
-    if (value.empty()) {
-        _progInfoMap.erase(key);
-    } else {
-        _progInfoMap[key] = value;
-    }
-
-    std::ostringstream ss;
-
-    // update the error info string
-    for(Arch_ProgInfoMap::iterator iter = _progInfoMap.begin();
-        iter != _progInfoMap.end(); ++iter) {
-
-        ss << iter->first << ": " << iter->second << '\n';
-    }
-
-    if (_progInfoForErrors)
-        free(_progInfoForErrors);
-
-    _progInfoForErrors = strdup(ss.str().c_str());
+    ArchStackTrace_GetProgInfo().SetProgramInfoForErrors(key, value);
 }
 
 std::string
-ArchGetProgramInfoForErrors(const std::string& key) {
-    
-    std::lock_guard<std::mutex> lock(_progInfoForErrorsMutex);
-
-    Arch_ProgInfoMap::iterator iter = _progInfoMap.find(key);
-    std::string result;
-    if (iter != _progInfoMap.end())
-        result = iter->second;
-
-    return result;
+ArchGetProgramInfoForErrors(const std::string& key) 
+{
+    return ArchStackTrace_GetProgInfo().GetProgramInfoForErrors(key);
 } 
 
 void
@@ -951,10 +1006,7 @@ ArchLogPostMortem(const char* reason,
 
     // print out any registered program info
     {
-        std::lock_guard<std::mutex> lock(_progInfoForErrorsMutex);
-        if (_progInfoForErrors) {
-            fprintf(stderr, "%s", _progInfoForErrors);
-        }
+        ArchStackTrace_GetProgInfo().PrintInfoForErrors();
     }
 
     if (reason) {
@@ -1027,10 +1079,7 @@ ArchLogStackTrace(const std::string& progname, const std::string& reason,
 
     // print out any registered program info
     {
-        std::lock_guard<std::mutex> lock(_progInfoForErrorsMutex);
-        if (_progInfoForErrors) {
-            fprintf(stderr, "%s", _progInfoForErrors);
-        }
+        ArchStackTrace_GetProgInfo().PrintInfoForErrors();
     }
 
     if (fd != -1) {
