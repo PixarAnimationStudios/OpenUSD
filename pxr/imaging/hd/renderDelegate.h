@@ -56,7 +56,8 @@ typedef std::vector<HdDriver*> HdDriverVector;
 /// that is obtained from the render delegate and passed to each prim
 /// during Sync processing.
 ///
-class HdRenderParam {
+class HdRenderParam 
+{
 public:
     HdRenderParam() {}
     HD_API
@@ -74,7 +75,8 @@ typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> HdRenderSettingsMap;
 /// HdRenderSettingDescriptor represents a render setting that a render delegate
 /// wants to export (e.g. to UI).
 ///
-struct HdRenderSettingDescriptor {
+struct HdRenderSettingDescriptor 
+{
     // A human readable name.
     std::string name;
     // The key for HdRenderDelegate::SetRenderSetting/GetRenderSetting.
@@ -132,7 +134,8 @@ public:
     ///
     /// A render delegate may return null for the param.
     ///
-    virtual HdRenderParam *GetRenderParam() const = 0;
+    HD_API
+    virtual HdRenderParam *GetRenderParam() const;
 
     ///
     /// Returns a shared ptr to the resource registry of the current render

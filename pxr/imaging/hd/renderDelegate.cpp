@@ -168,6 +168,12 @@ HdRenderDelegate::_PopulateDefaultSettings(
     }
 }
 
+HdRenderParam *
+HdRenderDelegate::GetRenderParam() const 
+{
+    return nullptr;
+}
+
 bool
 HdRenderDelegate::IsPauseSupported() const
 {
