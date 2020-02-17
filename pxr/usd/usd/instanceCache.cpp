@@ -313,6 +313,11 @@ Usd_InstanceCache::_RemoveInstances(
     std::unordered_map<SdfPath, SdfPath, SdfPath::Hash> *
     masterToOldSourceIndexPath)
 {
+    if (primIndexPaths.empty()) {
+        // if all unregistered primIndexes are also in the registered set, then
+        // vector of primIndexPaths to remove can be empty.
+        return;
+    }
     _InstanceKeyToMasterMap::iterator keyToMasterIt = 
         _instanceKeyToMasterMap.find(instanceKey);
     if (keyToMasterIt == _instanceKeyToMasterMap.end()) {
