@@ -129,7 +129,8 @@ SdfLayer::SdfLayer(
     const ArAssetInfo& assetInfo,
     const FileFormatArguments &args,
     bool validateAuthoring)
-    : _fileFormat(fileFormat)
+    : _self(this)
+    , _fileFormat(fileFormat)
     , _fileFormatArgs(args)
     , _idRegistry(SdfLayerHandle(this))
     , _data(fileFormat->InitData(args))
@@ -196,7 +197,7 @@ SdfLayer::~SdfLayer()
     // Note that FindOrOpen may have already removed this layer from
     // the registry, so we count on this API not emitting errors in that
     // case.
-    _layerRegistry->Erase(SdfCreateHandle(this));
+    _layerRegistry->Erase(_self);
 }
 
 const SdfFileFormatConstPtr&
@@ -956,14 +957,13 @@ SdfLayer::_Reload(bool force)
         _assetModificationTime.Swap(timestamp);
 
         if (realPath != oldRealPath) {
-            Sdf_ChangeManager::Get().DidChangeLayerResolvedPath(
-                SdfLayerHandle(this));
+            Sdf_ChangeManager::Get().DidChangeLayerResolvedPath(_self);
         }
     }
 
     _MarkCurrentStateAsClean();
 
-    Sdf_ChangeManager::Get().DidReloadLayerContent(SdfLayerHandle(this));
+    Sdf_ChangeManager::Get().DidReloadLayerContent(_self);
 
     return _ReloadSucceeded;
 }
@@ -1323,8 +1323,7 @@ SdfLayer::_PrimSetTimeSample(const SdfPath& path, double time,
     }
 
     // TODO(USD):optimization: Analyze the affected time interval.
-    Sdf_ChangeManager::Get()
-        .DidChangeAttributeTimeSamples(SdfLayerHandle(this), path);
+    Sdf_ChangeManager::Get().DidChangeAttributeTimeSamples(_self, path);
 
     // XXX: Should modify SetTimeSample API to take an
     //      SdfAbstractDataConstValue instead of (or along with) VtValue.
@@ -1352,8 +1351,6 @@ SdfLayer::_InitializeFromIdentifier(
 {
     TRACE_FUNCTION();
 
-    SdfLayerHandle self(this);
-
     // Compute layer asset information from the identifier.
     std::unique_ptr<Sdf_AssetInfo> newInfo(
         Sdf_ComputeAssetInfoFromIdentifier(identifier, realPath, assetInfo,
@@ -1375,11 +1372,11 @@ SdfLayer::_InitializeFromIdentifier(
 
     // Update layer state delegate.
     if (TF_VERIFY(_stateDelegate)) {
-        _stateDelegate->_SetLayer(self);
+        _stateDelegate->_SetLayer(_self);
     }
 
     // Update the layer registry before sending notices.
-    _layerRegistry->InsertOrUpdate(self);
+    _layerRegistry->InsertOrUpdate(_self);
 
     // Only send a notice if the identifier has changed (this notice causes
     // mass invalidation. See http://bug/33217). If the old identifier was
@@ -1388,10 +1385,10 @@ SdfLayer::_InitializeFromIdentifier(
         SdfChangeBlock block;
         if (oldIdentifier != GetIdentifier()) {
             Sdf_ChangeManager::Get().DidChangeLayerIdentifier(
-                self, oldIdentifier);
+                _self, oldIdentifier);
         }
         if (oldRealPath != GetRealPath()) {
-            Sdf_ChangeManager::Get().DidChangeLayerResolvedPath(self);
+            Sdf_ChangeManager::Get().DidChangeLayerResolvedPath(_self);
         }
     }
 }
@@ -1800,8 +1797,8 @@ SdfLayer::ApplyRootPrimOrder( vector<TfToken>* vec ) const
 SdfSubLayerProxy
 SdfLayer::GetSubLayerPaths() const
 {
-    boost::shared_ptr<Sdf_ListEditor<SdfSubLayerTypePolicy> > editor(
-        new Sdf_SubLayerListEditor(SdfCreateNonConstHandle(this)));
+    boost::shared_ptr<Sdf_ListEditor<SdfSubLayerTypePolicy>>
+        editor(new Sdf_SubLayerListEditor(_self));
     
     return SdfSubLayerProxy(editor, SdfListOpTypeOrdered);
 }
@@ -2147,10 +2144,9 @@ SdfLayer::CanApply(
     SdfNamespaceEditDetail::Result result = SdfNamespaceEditDetail::Okay;
 
     static const bool fixBackpointers = true;
-    SdfLayerHandle self = SdfCreateNonConstHandle(this);
     if (!edits.Process(NULL,
-                       std::bind(&_HasObjectAtPath, self, ph::_1),
-                       std::bind(&_CanEdit, self, ph::_1, ph::_2),
+                       std::bind(&_HasObjectAtPath, _self, ph::_1),
+                       std::bind(&_CanEdit, _self, ph::_1, ph::_2),
                        details, !fixBackpointers)) {
         result = CombineError(result);
     }
@@ -2166,18 +2162,17 @@ SdfLayer::Apply(const SdfBatchNamespaceEdit& edits)
     }
 
     static const bool fixBackpointers = true;
-    SdfLayerHandle self(this);
     SdfNamespaceEditVector final;
     if (!edits.Process(&final,
-                       std::bind(&_HasObjectAtPath, self, ph::_1),
-                       std::bind(&_CanEdit, self, ph::_1, ph::_2),
+                       std::bind(&_HasObjectAtPath, _self, ph::_1),
+                       std::bind(&_CanEdit, _self, ph::_1, ph::_2),
                        NULL, !fixBackpointers)) {
         return false;
     }
 
     SdfChangeBlock block;
     for (const auto& edit : final) {
-        _DoEdit(self, edit);
+        _DoEdit(_self, edit);
     }
 
     return true;
@@ -2236,14 +2231,12 @@ SdfLayer::RemovePropertyIfHasOnlyRequiredFields(SdfPropertySpecHandle prop)
     else if (SdfAttributeSpecHandle attr = 
              TfDynamic_cast<SdfAttributeSpecHandle>(prop)) {
         Sdf_ChildrenUtils<Sdf_AttributeChildPolicy>::RemoveChild(
-            SdfCreateHandle(this), 
-            attr->GetPath().GetParentPath(), attr->GetNameToken());
+            _self, attr->GetPath().GetParentPath(), attr->GetNameToken());
     }
     else if (SdfRelationshipSpecHandle rel = 
              TfDynamic_cast<SdfRelationshipSpecHandle>(prop)) {
         Sdf_ChildrenUtils<Sdf_RelationshipChildPolicy>::RemoveChild(
-            SdfCreateHandle(this), 
-            rel->GetPath().GetParentPath(), rel->GetNameToken());
+            _self, rel->GetPath().GetParentPath(), rel->GetNameToken());
     }
     //XXX: We may want to do something like 
     //     _RemoveInertToRootmost here, but that would currently 
@@ -2723,7 +2716,7 @@ SdfLayer::SetStateDelegate(const SdfLayerStateDelegateBaseRefPtr& delegate)
 
     _stateDelegate->_SetLayer(SdfLayerHandle());
     _stateDelegate = delegate;
-    _stateDelegate->_SetLayer(SdfCreateHandle(this));
+    _stateDelegate->_SetLayer(_self);
 
     if (_lastDirtyState) {
         _stateDelegate->_MarkCurrentStateAsDirty();
@@ -2741,8 +2734,7 @@ SdfLayer::_MarkCurrentStateAsClean() const
     }
 
     if (_UpdateLastDirtinessState()) {
-        SdfLayerHandle layer = SdfCreateNonConstHandle(this);
-        SdfNotice::LayerDirtinessChanged().Send(layer);
+        SdfNotice::LayerDirtinessChanged().Send(_self);
     }
 }
 
@@ -3470,8 +3462,7 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData)
     // notify the world that this layer may have changed arbitrarily.
     if (_data->StreamsData()) {
         _data = newData;
-        Sdf_ChangeManager::Get()
-            .DidReplaceLayerContent(SdfCreateHandle(this));
+        Sdf_ChangeManager::Get().DidReplaceLayerContent(_self);
         return;
     }
 
@@ -3659,8 +3650,7 @@ SdfLayer::_PrimSetField(const SdfPath& path,
     const VtValue& newValue = _GetVtValue(value);
 
     Sdf_ChangeManager::Get().DidChangeField(
-        SdfLayerHandle(this),
-        path, fieldName, oldValue, newValue);
+        _self, path, fieldName, oldValue, newValue);
 
     _data->Set(path, fieldName, value);
 }
@@ -3796,8 +3786,7 @@ SdfLayer::_PrimSetFieldDictValueByKey(const SdfPath& path,
     VtValue newValue = GetField(path, fieldName);
 
     Sdf_ChangeManager::Get().DidChangeField(
-        SdfLayerHandle(this), path, fieldName,
-        oldValue, newValue);
+        _self, path, fieldName, oldValue, newValue);
 }
 
 template void SdfLayer::_PrimSetFieldDictValueByKey(
@@ -3872,10 +3861,11 @@ SdfLayer::_PrimMoveSpec(const SdfPath& oldPath, const SdfPath& newPath,
         return;
     }
 
-    Sdf_ChangeManager::Get().DidMoveSpec(SdfLayerHandle(this), oldPath, newPath);
 
-    Traverse(oldPath, 
-        std::bind(_MoveSpecInternal, _data, &_idRegistry, ph::_1, oldPath, newPath));
+    Sdf_ChangeManager::Get().DidMoveSpec(_self, oldPath, newPath);
+
+    Traverse(oldPath, std::bind(_MoveSpecInternal, _data,
+                                &_idRegistry, ph::_1, oldPath, newPath));
 }
 
 static bool
@@ -4034,7 +4024,7 @@ SdfLayer::_PrimDeleteSpec(const SdfPath &path, bool inert, bool useDelegate)
         return;
     }
 
-    Sdf_ChangeManager::Get().DidRemoveSpec(SdfLayerHandle(this), path, inert);
+    Sdf_ChangeManager::Get().DidRemoveSpec(_self, path, inert);
 
     TraversalFunction eraseFunc = 
         std::bind(&_EraseSpecAtPath, boost::get_pointer(_data), ph::_1);
@@ -4053,7 +4043,7 @@ SdfLayer::_PrimCreateSpec(const SdfPath &path,
         return;
     }
 
-    Sdf_ChangeManager::Get().DidAddSpec(SdfLayerHandle(this), path, inert);
+    Sdf_ChangeManager::Get().DidAddSpec(_self, path, inert);
 
     _data->CreateSpec(path, specType);
 }
@@ -4310,7 +4300,7 @@ SdfLayer::_Save(bool force) const
     }
     _assetModificationTime.Swap(timestamp);
 
-    SdfNotice::LayerDidSaveLayerToFile().Send(SdfCreateNonConstHandle(this));
+    SdfNotice::LayerDidSaveLayerToFile().Send(_self);
 
     return true;
 }

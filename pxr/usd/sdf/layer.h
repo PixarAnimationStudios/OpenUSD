@@ -1635,6 +1635,8 @@ private:
     void _TraverseChildren(const SdfPath &path, const TraversalFunction &func);
 
 private:
+    SdfLayerHandle _self;
+
     // File format and arguments for this layer.
     SdfFileFormatConstPtr _fileFormat;
     FileFormatArguments _fileFormatArgs;
