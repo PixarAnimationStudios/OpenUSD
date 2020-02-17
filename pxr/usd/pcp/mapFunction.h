@@ -150,6 +150,12 @@ public:
     PCP_API
     PcpMapFunction Compose(const PcpMapFunction &f) const;
 
+    /// Compose this map function over a hypothetical map function that has an
+    /// identity path mapping and \p offset.  This is equivalent to building
+    /// such a map function and invoking Compose(), but is faster.
+    PCP_API
+    PcpMapFunction ComposeOffset(const SdfLayerOffset &newOffset) const;
+
     /// Return the inverse of this map function.
     /// This returns a true inverse \p inv: for any path p in this function's
     /// domain that it maps to p', inv(p') -> p.

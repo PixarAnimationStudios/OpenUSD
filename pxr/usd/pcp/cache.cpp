@@ -499,15 +499,12 @@ PcpCache::FindSiteDependencies(
             layerStack, sitePath, depMask, recurseOnSite, recurseOnIndex,
             filterForExistingCachesOnly);
         for (PcpDependency dep: deps) {
-            SdfLayerOffset offset = dep.mapFunc.GetTimeOffset();
             // Fold in any sublayer offset.
-            if (const SdfLayerOffset *sublayer_offset =
+            if (const SdfLayerOffset *sublayerOffset =
                 layerStack->GetLayerOffsetForLayer(layer)) {
-                offset = offset * *sublayer_offset;
+                dep.mapFunc = dep.mapFunc.ComposeOffset(*sublayerOffset);
             }
-            dep.mapFunc = PcpMapFunction::Create(
-                dep.mapFunc.GetSourceToTargetMap(), offset);
-            result.push_back(dep);
+            result.push_back(std::move(dep));
         }
     }
     return result;
