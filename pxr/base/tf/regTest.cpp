@@ -114,8 +114,6 @@ _Usage(const string &progName)
     cerr << "Usage: " << progName << " testName [args]\n";
 }
 
-static string _testName;
-
 int
 TfRegTest::_Main(int argc, char *argv[])
 {
@@ -133,25 +131,25 @@ TfRegTest::_Main(int argc, char *argv[])
         return 2;
     }
 
-    _testName = argv[1];
+    std::string testName = argv[1];
 
-    if (_functionTable.find(_testName) != _functionTable.end()) {
+    if (_functionTable.find(testName) != _functionTable.end()) {
         if (argc > 2) {
-            cerr << progName << ": test function '" << _testName
+            cerr << progName << ": test function '" << testName
                  << "' takes no arguments." << endl;
             return 2;
         }
         TfErrorMark m;
-        return _HandleErrors(m, (*_functionTable[_testName])());
+        return _HandleErrors(m, (*_functionTable[testName])());
     }
-    else if (_functionTableWithArgs.find(_testName) !=
+    else if (_functionTableWithArgs.find(testName) !=
              _functionTableWithArgs.end()) {
         TfErrorMark m;
         return _HandleErrors(m,
-                (*_functionTableWithArgs[_testName])(argc-1, argv+1));
+                (*_functionTableWithArgs[testName])(argc-1, argv+1));
     }
     else {
-        cerr << progName << ": unknown test function " << _testName << ".\n";
+        cerr << progName << ": unknown test function " << testName << ".\n";
         _PrintTestNames();
         return 3;
     }
