@@ -72,9 +72,9 @@ _InitIdRenderPassState(HdRenderIndex *index)
 }
 
 static bool
-_IsStreamRenderingBackend(HdRenderIndex *index)
+_IsStormRenderer(HdRenderDelegate *renderDelegate)
 {
-    if(!dynamic_cast<HdStRenderDelegate*>(index->GetRenderDelegate())) {
+    if(!dynamic_cast<HdStRenderDelegate*>(renderDelegate)) {
         return false;
     }
 
@@ -247,7 +247,9 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
                   HdTaskContext* ctx,
                   HdDirtyBits* dirtyBits)
 {
-    if (!_IsStreamRenderingBackend(&(delegate->GetRenderIndex()))) {
+    GLF_GROUP_FUNCTION();
+
+    if (!_IsStormRenderer( delegate->GetRenderIndex().GetRenderDelegate() )) {
         return;
     }
 
@@ -374,6 +376,8 @@ HdxPickTask::Prepare(HdTaskContext* ctx,
 void
 HdxPickTask::Execute(HdTaskContext* ctx)
 {
+    GLF_GROUP_FUNCTION();
+
     if (!_drawTarget) {
         return;
     }
