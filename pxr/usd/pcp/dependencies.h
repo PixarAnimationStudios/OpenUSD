@@ -37,6 +37,8 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/site.h"
 
+#include <tbb/spin_mutex.h>
+
 #include <iosfwd>
 #include <set>
 #include <unordered_map>
@@ -86,6 +88,19 @@ public:
     /// Remove all dependencies.  Any layer stacks in use by any site are
     /// added to \p lifeboat, if not \c NULL.
     void RemoveAll(PcpLifeboat* lifeboat);
+
+    /// \struct ConcurrentPopulationContext
+    ///
+    /// Structure for enabling cache population via concurrent calls to Add().
+    /// Protects member data with a mutex during its lifetime.
+    /// \sa Add().
+    struct ConcurrentPopulationContext
+    {
+        explicit ConcurrentPopulationContext(Pcp_Dependencies &deps);
+        ~ConcurrentPopulationContext();
+        Pcp_Dependencies &_deps;
+        tbb::spin_mutex _mutex;
+    };
 
     /// @}
     /// \name Queries
@@ -207,6 +222,7 @@ private:
         std::unordered_map<TfToken, int, TfToken::HashFunctor>;
     _FileFormatArgumentFieldDepMap _possibleDynamicFileFormatArgumentFields; 
 
+    ConcurrentPopulationContext *_concurrentPopulationContext;
 };
 
 template <typename FN>
