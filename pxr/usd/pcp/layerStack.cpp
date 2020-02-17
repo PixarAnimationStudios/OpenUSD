@@ -518,8 +518,14 @@ PcpLayerStack::GetMutedLayers() const
 bool 
 PcpLayerStack::HasLayer(const SdfLayerHandle& layer) const
 {
-    return std::find(_layers.begin(), _layers.end(), SdfLayerRefPtr(layer)) 
-        != _layers.end();
+    // Avoid doing refcount operations here.
+    SdfLayer const *layerPtr = get_pointer(layer);
+    for (SdfLayerRefPtr const &layerRefPtr: _layers) {
+        if (get_pointer(layerRefPtr) == layerPtr) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool 
