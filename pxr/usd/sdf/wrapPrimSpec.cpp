@@ -197,6 +197,7 @@ _ApplyPropertyOrder(
 void wrapPrimSpec()
 {
     def("CreatePrimInLayer", SdfCreatePrimInLayer);
+    def("JustCreatePrimInLayer", SdfJustCreatePrimInLayer);
 
     typedef SdfPrimSpec This;
 

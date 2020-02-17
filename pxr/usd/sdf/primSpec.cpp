@@ -70,8 +70,8 @@ TF_REGISTRY_FUNCTION(TfType)
 
 SdfPrimSpecHandle
 SdfPrimSpec::New(const SdfLayerHandle& parentLayer,
-            const std::string& name, SdfSpecifier spec,
-            const std::string& typeName)
+                 const std::string& name, SdfSpecifier spec,
+                 const std::string& typeName)
 {
     TRACE_FUNCTION();
 
@@ -81,8 +81,8 @@ SdfPrimSpec::New(const SdfLayerHandle& parentLayer,
 
 SdfPrimSpecHandle
 SdfPrimSpec::New(const SdfPrimSpecHandle& parentPrim,
-            const std::string& name, SdfSpecifier spec,
-            const std::string& typeName)
+                 const std::string& name, SdfSpecifier spec,
+                 const std::string& typeName)
 {
     TRACE_FUNCTION();
 
@@ -91,8 +91,8 @@ SdfPrimSpec::New(const SdfPrimSpecHandle& parentPrim,
 
 SdfPrimSpecHandle
 SdfPrimSpec::_New(const SdfPrimSpecHandle &parentPrim,
-    const TfToken &name, SdfSpecifier spec,
-    const TfToken &typeName)
+                  const TfToken &name, SdfSpecifier spec,
+                  const TfToken &typeName)
 {
     SdfPrimSpec *parentPrimPtr = get_pointer(parentPrim);
 
@@ -804,11 +804,17 @@ SdfPrimSpec::ClearRelocates()
 // Utilities
 //
 
-static SdfVariantSpecHandle
-_FindOrCreateVariantSpec(const SdfPrimSpecHandle &primSpec,
-                         pair<string, string> const &varSel)
+static bool
+_FindOrCreateVariantSpec(SdfLayer *layer, const SdfPath &vsPath)
 {
     SdfVariantSetSpecHandle varSetSpec;
+
+    SdfPrimSpecHandle primSpec = layer->GetPrimAtPath(vsPath.GetParentPath());
+    if (!TF_VERIFY(primSpec)) {
+        return false;
+    }
+
+    pair<string, string> varSel = vsPath.GetVariantSelection();
 
     // Try to find existing variant set.
     const SdfVariantSetsProxy &variantSets = primSpec->GetVariantSets();
@@ -825,16 +831,19 @@ _FindOrCreateVariantSpec(const SdfPrimSpecHandle &primSpec,
             primSpec->GetVariantSetNameList().Add(varSel.first);
     }
 
-    if (!TF_VERIFY(varSetSpec, "Failed to create variant set"))
-        return TfNullPtr;
+    if (!TF_VERIFY(varSetSpec, "Failed to create variant set for '%s' in @%s@",
+                   vsPath.GetText(), layer->GetIdentifier().c_str())) {
+        return false;
+    }
 
     // Now try to find an existing variant with the requested name.
     TF_FOR_ALL(it, varSetSpec->GetVariants()) {
-        if ((*it)->GetName() == varSel.second)
-            return *it;
+        if ((*it)->GetName() == varSel.second) {
+            return true;
+        }
     }
 
-    return SdfVariantSpec::New(varSetSpec, varSel.second);
+    return static_cast<bool>(SdfVariantSpec::New(varSetSpec, varSel.second));
 }
 
 static bool
@@ -868,54 +877,132 @@ _IsValidPath(const SdfPath& path)
     return true;
 }
 
+namespace {
+
+// This structure exists so that we can support relative paths to
+// SdfCreatePrimInLayer/SdfJustCreatePrimInLayer without doing any path copies
+// or refcount operations in the common case where we are given an absolute
+// path.
+struct _AbsPathHelper
+{
+    // Construct with \p inPath.  If \p inPath is an absolute path, then
+    // GetAbsPath() returns \p inPath.  Otherwise \p inPath is made absolute by
+    // MakeAbsolutePath(SdfPath::AbsoluteRootPath()), stored in a member
+    // variable and returned by GetAbsPath().
+    explicit _AbsPathHelper(SdfPath const &inPath)
+        : _inPath(inPath) {
+        if (ARCH_LIKELY(_inPath.IsAbsolutePath())) {
+            _absPath = &_inPath;
+        }
+        else {
+            _tmpPath = _inPath.MakeAbsolutePath(SdfPath::AbsoluteRootPath());
+            _absPath = &_tmpPath;
+        }
+    }
+    explicit _AbsPathHelper(SdfPath &&inPath) = delete;
+    inline SdfPath const &GetAbsPath() const {
+        return *_absPath;
+    }
+    inline SdfPath const &GetOriginalPath() const {
+        return _inPath;
+    }
+private:
+    SdfPath const &_inPath;
+    SdfPath const *_absPath;  // points to either _inPath or _tmpPath.
+    SdfPath _tmpPath;
+};
+
+} // anon
+
+static bool
+Sdf_UncheckedCreatePrimInLayer(
+    SdfLayer *layerPtr, const SdfPath& primPath)
+{
+    // If a prim already exists then just return it.
+    if (layerPtr->HasSpec(primPath)) {
+        return true;
+    }
+
+    SdfPathVector ancestors;
+    ancestors.reserve(primPath.GetPathElementCount());
+
+    bool maybeVariantSelPaths = primPath.ContainsPrimVariantSelection();
+    SdfPath path = primPath;
+    do {
+        ancestors.emplace_back(std::move(path));
+        path = ancestors.back().GetParentPath();
+    } while (!layerPtr->HasSpec(path));
+
+    // Create each prim from root-most to the prim at primPath.
+    while (!ancestors.empty()) {
+        SdfPath ancPath = std::move(ancestors.back());
+        ancestors.pop_back();
+        if (maybeVariantSelPaths && ancPath.IsPrimVariantSelectionPath()) {
+            // Variant selection case.
+            if (!_FindOrCreateVariantSpec(layerPtr, ancPath)) {
+                return false;
+            }
+        } else {
+            // Ordinary prim child case.
+            if (ARCH_UNLIKELY(
+                    !Sdf_ChildrenUtils<Sdf_PrimChildPolicy>::CreateSpec(
+                        layerPtr, ancPath, SdfSpecTypePrim, /*inert=*/true))) {
+                TF_RUNTIME_ERROR("Failed to create prim at path '%s' in "
+                                 "layer @%s@", ancPath.GetText(),
+                                 layerPtr->GetIdentifier().c_str());
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+static inline bool
+Sdf_CanCreatePrimInLayer(SdfLayer *layer, _AbsPathHelper const &absPath)
+{
+    SdfPath const &path = absPath.GetAbsPath();
+    
+    if (ARCH_UNLIKELY(!_IsValidPath(path))) {
+        TF_CODING_ERROR("Cannot create prim at path '%s' because it is not a "
+                        "valid prim or prim variant selection path",
+                        absPath.GetOriginalPath().GetText());
+        return false;
+    }
+
+    if (ARCH_UNLIKELY(!layer)) {
+        TF_CODING_ERROR("Cannot create prim at path '%s' in null or expired "
+                        "layer", absPath.GetOriginalPath().GetText());
+        return false;
+    }
+
+    return true;
+}
+
 SdfPrimSpecHandle
 SdfCreatePrimInLayer(const SdfLayerHandle& layer, const SdfPath& primPath)
 {
-    if (!_IsValidPath(primPath)) {
-        TF_CODING_ERROR("Cannot create prim at path '%s' because it is not a "
-                        "valid prim or prim variant selection path",
-                        primPath.GetString().c_str());
-        return TfNullPtr;
-    }
-
-    // If a prim already exists then just return it.
-    SdfPrimSpecHandle primSpec = layer->GetPrimAtPath(primPath);
-    if (primSpec) {
-        return primSpec;
-    }
-
-    // Get paths to all prims that don't exist along the primPath
-    // namespace hierarchy.
-    SdfPath path = primPath;
-    SdfPathVector ancestors;
-    while (!primSpec && path.IsPrimOrPrimVariantSelectionPath()) {
-        ancestors.push_back(path);
-        path = path.GetParentPath();
-        primSpec = layer->GetPrimAtPath(path);
-    }
-
-    // If no ancestor was found then use the pseudo root.
-    if (!primSpec) {
-        primSpec = layer->GetPseudoRoot();
-    }
-
-    // Create each prim from root-most to the prim at primPath.
-    SdfChangeBlock block;
-    while (!ancestors.empty()) {
-        SdfPath const &path = ancestors.back();
-        if (ancestors.back().IsPrimVariantSelectionPath()) {
-            // Variant selection case.
-            primSpec = _FindOrCreateVariantSpec(
-                primSpec, path.GetVariantSelection())->GetPrimSpec();
-        } else {
-            // Ordinary prim child case.
-            primSpec = SdfPrimSpec::New(primSpec, ancestors.back().GetName(),
-                                        SdfSpecifierOver);
+    const _AbsPathHelper abs(primPath);
+    SdfLayer *layerPtr = get_pointer(layer);
+    if (Sdf_CanCreatePrimInLayer(layerPtr, abs)) {
+        SdfChangeBlock changeBlock;
+        SdfPath const &absPath = abs.GetAbsPath();
+        if (Sdf_UncheckedCreatePrimInLayer(layerPtr, absPath)) {
+            return layer->GetPrimAtPath(absPath);
         }
-        ancestors.pop_back();
     }
+    return TfNullPtr;
+}
 
-    return primSpec;
+bool
+SdfJustCreatePrimInLayer(const SdfLayerHandle& layer, const SdfPath& primPath)
+{
+    const _AbsPathHelper abs(primPath);
+    SdfLayer *layerPtr = get_pointer(layer);
+    if (Sdf_CanCreatePrimInLayer(layerPtr, abs)) {
+        SdfChangeBlock changeBlock;
+        return Sdf_UncheckedCreatePrimInLayer(layerPtr, abs.GetAbsPath());
+    }
+    return false;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
