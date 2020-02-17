@@ -40,7 +40,7 @@ Our test machines have the following software versions installed
 | Bison         | 2.4.1        | 2.4.1        |              |
 | Doxygen       | 1.8.5        |              |              |
 | GraphViz      | 2.3.1        |              |              |
-
+| OpenVDB       | 6.1.0, 5.2.0 | 6.1.0        | 6.1.0        |
 
 ## Other Known Versions
 
