@@ -971,6 +971,12 @@ UsdPrim::GetMaster() const
     return UsdPrim(masterPrimData, SdfPath());
 }
 
+std::vector<UsdPrim>
+UsdPrim::GetInstances() const
+{
+    return _GetStage()->_GetInstancesForMaster(*this);
+}
+
 bool 
 UsdPrim::_PrimPathIsInMaster() const
 {

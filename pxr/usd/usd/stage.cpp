@@ -2327,6 +2327,25 @@ UsdStage::GetMasters() const
     return masterPrims;
 }
 
+vector<UsdPrim>
+UsdStage::_GetInstancesForMaster(const UsdPrim& masterPrim) const
+{
+    if (!masterPrim.IsMaster()) {
+        return {};
+    }
+
+    vector<UsdPrim> instances;
+    SdfPathVector instancePaths = 
+        _instanceCache->GetInstancePrimIndexesForMaster(masterPrim.GetPath());
+    instances.reserve(instancePaths.size());
+    for (const SdfPath& instancePath : instancePaths) {
+        Usd_PrimDataConstPtr primData = 
+            _GetPrimDataAtPathOrInMaster(instancePath);
+        instances.push_back(UsdPrim(primData, SdfPath::EmptyPath()));
+    }
+    return instances;
+}
+
 Usd_PrimDataConstPtr 
 UsdStage::_GetMasterForInstance(Usd_PrimDataConstPtr prim) const
 {

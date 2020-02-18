@@ -363,6 +363,8 @@ void wrapUsdPrim()
         .def("GetAttributeAtPath", &UsdPrim::GetAttributeAtPath, arg("path"))
         .def("GetRelationshipAtPath",
             &UsdPrim::GetRelationshipAtPath, arg("path"))
+        .def("GetInstances", &UsdPrim::GetInstances,
+                return_value_policy<TfPySequenceToList>())
 
         // Exposed only for testing and debugging.
         .def("_GetSourcePrimIndex", &Usd_PrimGetSourcePrimIndex,

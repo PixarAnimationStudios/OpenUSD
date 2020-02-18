@@ -823,6 +823,9 @@ private:
     Usd_PrimDataConstPtr 
     _GetPrimDataAtPathOrInMaster(const SdfPath &path) const;
 
+    /// See documentation on UsdPrim::GetInstances()
+    std::vector<UsdPrim> _GetInstancesForMaster(const UsdPrim& master) const;
+
 public:
 
     /// Traverse the active, loaded, defined, non-abstract prims on this stage

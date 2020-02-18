@@ -1161,6 +1161,13 @@ public:
         return UsdPrim();
     }
 
+    /// If this prim is a master prim, returns all prims that are instances of 
+    /// this master. Otherwise, returns an empty vector.
+    ///
+    /// Note that this function will return prims in masters for instances that 
+    /// are nested beneath other instances.
+    USD_API
+    std::vector<UsdPrim> GetInstances() const;
     /// @}
 
     // --------------------------------------------------------------------- //

@@ -158,6 +158,11 @@ public:
     /// Return true if \p path identifies a master.  
     static bool IsMasterPath(const SdfPath& path);
 
+    /// Return instance prim indexes registered for \p masterPath, an empty
+    /// vector otherwise
+    std::vector<SdfPath> GetInstancePrimIndexesForMaster(
+            const SdfPath& master) const;
+
     /// Returns the paths of all master prims for instance prim 
     /// indexes registered with this cache.
     std::vector<SdfPath> GetAllMasters() const;

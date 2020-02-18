@@ -457,6 +457,17 @@ Usd_InstanceCache::IsMasterPath(const SdfPath& path)
         TfStringStartsWith(path.GetName(), "__Master_");
 }
 
+vector<SdfPath>
+Usd_InstanceCache::GetInstancePrimIndexesForMaster(
+    const SdfPath& masterPath) const
+{
+    _MasterToPrimIndexesMap::const_iterator it = 
+        _masterToPrimIndexesMap.find(masterPath);
+
+    return (it == _masterToPrimIndexesMap.end()) ? 
+        vector<SdfPath>() : it->second;
+}
+
 SdfPath 
 Usd_InstanceCache::_GetNextMasterPath(const Usd_InstanceKey& key)
 {
