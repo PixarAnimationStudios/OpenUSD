@@ -77,7 +77,7 @@ FsHelpersExamineFiles(
             if (!foundNodesWithTypes->insert(identifierAndType).second) {
                 TF_DEBUG(NDR_DISCOVERY).Msg(
                     "Found a duplicate node with identifier [%s] "
-                    "and type [%s] at URI [%s]; ignoring.", 
+                    "and type [%s] at URI [%s]; ignoring.\n", 
                     identifier.c_str(), extension.c_str(), uri.c_str());
                 continue;
             }
