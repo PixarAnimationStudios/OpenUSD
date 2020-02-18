@@ -59,7 +59,7 @@ public:
 
     /// Execute render pass task
     HDX_API
-    virtual void Execute(HdTaskContext* ctx);
+    virtual void Execute(HdTaskContext* ctx) override;
 
 private:
     HdxAovResolveTask()                                      = delete;
