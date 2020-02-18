@@ -45,13 +45,16 @@ class GlfVdbTextureData_DenseGridHolderBase;
 
 /// \class GlfVdbTextureData
 ///
-/// Implements GlfBaseTextureData to load an OpenVDB file
+/// Implements GlfBaseTextureData to read grid with given name from
+/// OpenVDB file at given path.
 ///
 class GlfVdbTextureData : public GlfBaseTextureData {
 public:
     GLF_API
     static GlfVdbTextureDataRefPtr
-    New(std::string const &filePath, size_t targetMemory);
+    New(std::string const &filePath,
+        std::string const &gridName,
+        size_t targetMemory);
 
     /// See GlfVdbTexture for details
     const GfBBox3d &GetBoundingBox() const { return _boundingBox; }
@@ -94,10 +97,13 @@ public:
     int GetNumMipLevels() const override;
 
 private:
-    GlfVdbTextureData(std::string const &filePath, size_t targetMemory);
+    GlfVdbTextureData(std::string const &filePath,
+                      std::string const &gridName,
+                      size_t targetMemory);
     ~GlfVdbTextureData() override;
 
     const std::string _filePath;
+    const std::string _gridName;
 
     size_t _targetMemory;
 

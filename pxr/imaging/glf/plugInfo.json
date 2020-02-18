@@ -24,8 +24,8 @@
                         "textureTypes": ["*"],
                         "precedence": 0
                     },
-                    "GlfVdbTexture" : {
-                        "bases": ["GlfBaseTexture"],
+                    "GlfVdbTextureContainer" : {
+                        "bases": ["GlfTexture"],
                         "textureTypes": ["vdb"],
                         "precedence": 0
                     },

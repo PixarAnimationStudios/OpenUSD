@@ -25,6 +25,7 @@
 // 
 
 #include "pxr/imaging/glf/vdbTexture.h"
+#include "pxr/imaging/glf/vdbTextureContainer.h"
 #ifdef PXR_OPENVDB_SUPPORT_ENABLED
 #include "pxr/imaging/glf/vdbTextureData.h"
 #else
@@ -35,23 +36,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfType)
-{
-    using Type = GlfVdbTexture;
-    TfType t = TfType::Define<Type, TfType::Bases<GlfBaseTexture> >();
-    t.SetFactory< GlfTextureFactory<GlfVdbTexture> >();
-}
-
 GlfVdbTextureRefPtr 
-GlfVdbTexture::New(TfToken const &filePath)
+GlfVdbTexture::New(
+    GlfVdbTextureContainerRefPtr const &textureContainer,
+    TfToken const &gridName)
 {
-    return TfCreateRefPtr(new GlfVdbTexture(filePath));
-}
-
-GlfVdbTextureRefPtr 
-GlfVdbTexture::New(std::string const &filePath)
-{
-    return New(TfToken(filePath));
+    return TfCreateRefPtr(new GlfVdbTexture(textureContainer, gridName));
 }
 
 int
@@ -60,9 +50,11 @@ GlfVdbTexture::GetNumDimensions() const
     return 3;
 }
 
-GlfVdbTexture::GlfVdbTexture(TfToken const &filePath)
-    : GlfBaseTexture()
-    , _filePath(filePath)
+GlfVdbTexture::GlfVdbTexture(
+    GlfVdbTextureContainerRefPtr const &textureContainer,
+    TfToken const &gridName)
+    : _textureContainer(textureContainer)
+    , _gridName(gridName)
 {
 }
 
@@ -71,7 +63,7 @@ GlfVdbTexture::GetTextureInfo(bool forceLoad)
 {
     VtDictionary info = GlfBaseTexture::GetTextureInfo(forceLoad);
 
-    info["imageFilePath"] = _filePath;
+    info["imageFilePath"] = _textureContainer->GetFilePath().GetString();
 
     return info;
 }
@@ -89,7 +81,10 @@ GlfVdbTexture::_ReadTexture()
 #ifdef PXR_OPENVDB_SUPPORT_ENABLED
 
     GlfVdbTextureDataRefPtr const texData =
-        GlfVdbTextureData::New(_filePath, GetMemoryRequested());
+        GlfVdbTextureData::New(
+            _textureContainer->GetFilePath().GetString(),
+            _gridName,
+            GetMemoryRequested());
 
     if (texData) {
         texData->Read(0, _GenerateMipmap());

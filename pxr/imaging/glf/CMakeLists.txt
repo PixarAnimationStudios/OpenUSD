@@ -89,6 +89,7 @@ pxr_library(glf
         uvTextureStorage
         uvTextureStorageData
         vdbTexture
+        vdbTextureContainer
         ${optionalPublicClasses}
 
     PRIVATE_CLASSES
@@ -97,12 +98,14 @@ pxr_library(glf
 
     PUBLIC_HEADERS
         api.h
+        textureContainer.h
         
     PRIVATE_HEADERS
         rankedTypeMap.h
         stb/stb_image.h
         stb/stb_image_resize.h
         stb/stb_image_write.h
+        textureContainerImpl.h
 
     CPPFILES
         ${optionalCppFiles}
