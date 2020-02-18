@@ -151,9 +151,6 @@ HdxSimpleLightingShader::BindResources(const int program,
                 glActiveTexture(GL_TEXTURE0 + samplerUnit);
                 glBindTexture(GL_TEXTURE_2D, (GLuint)textureId);
                 glBindSampler(samplerUnit, 0);
-                
-                glProgramUniform1i(program, irradianceBinding.GetLocation(), 
-                                    samplerUnit); 
             } 
             HdBinding prefilterBinding = 
                                 binder.GetBinding(_tokens->domeLightPrefilter);
@@ -165,9 +162,6 @@ HdxSimpleLightingShader::BindResources(const int program,
                 glActiveTexture(GL_TEXTURE0 + samplerUnit);
                 glBindTexture(GL_TEXTURE_2D, (GLuint)textureId); 
                 glBindSampler(samplerUnit, 0);
-                
-                glProgramUniform1i(program, prefilterBinding.GetLocation(), 
-                                    samplerUnit); 
             } 
             HdBinding brdfBinding = binder.GetBinding(_tokens->domeLightBRDF);
             if (brdfBinding.GetType() == HdBinding::TEXTURE_2D) {
@@ -178,9 +172,6 @@ HdxSimpleLightingShader::BindResources(const int program,
                 glActiveTexture(GL_TEXTURE0 + samplerUnit);
                 glBindTexture(GL_TEXTURE_2D, (GLuint)textureId);
                 glBindSampler(samplerUnit, 0);
-                
-                glProgramUniform1i(program, brdfBinding.GetLocation(), 
-                                    samplerUnit);
             }
         }
     }

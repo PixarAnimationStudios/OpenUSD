@@ -113,8 +113,7 @@ HdStRenderPassShader::GetSource(TfToken const &shaderStageKey) const
 // by \p program.
 static
 void
-_BindTexture(const int program,
-             const HdRenderPassAovBinding &aov,
+_BindTexture(const HdRenderPassAovBinding &aov,
              const HdBinding &binding)
 {
     if (binding.GetType() != HdBinding::TEXTURE_2D) {
@@ -153,10 +152,6 @@ _BindTexture(const int program,
     glActiveTexture(GL_TEXTURE0 + samplerUnit);
     glBindTexture(GL_TEXTURE_2D, (GLuint) textureId);
     glBindSampler(samplerUnit, 0);
-
-    // Set uniform sampler2D to sampler unit.
-    glProgramUniform1i(program, binding.GetLocation(),
-                       samplerUnit);
 }
 
 /*virtual*/
@@ -181,8 +176,7 @@ HdStRenderPassShader::BindResources(const int program,
         const TfToken &aovName = aovBinding.aovName;
         if (_aovReadbackRequests.count(aovName) > 0) {
             // Bind the texture.
-            _BindTexture(program,
-                         aovBinding,
+            _BindTexture(aovBinding,
                          binder.GetBinding(_GetReadbackName(aovName)));
 
             numFulfilled++;

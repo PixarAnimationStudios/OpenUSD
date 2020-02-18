@@ -422,6 +422,10 @@ namespace {
         case HdBinding::TBO:
         case HdBinding::BINDLESS_UNIFORM:
         case HdBinding::BINDLESS_SSBO_RANGE:
+            if (caps.explicitUniformLocation) {
+                out << "layout (location = " << location << ") ";
+            }
+            break;
         case HdBinding::TEXTURE_2D:
         case HdBinding::BINDLESS_TEXTURE_2D:
         case HdBinding::TEXTURE_3D:
@@ -432,7 +436,10 @@ namespace {
         case HdBinding::BINDLESS_TEXTURE_UDIM_LAYOUT:
         case HdBinding::TEXTURE_PTEX_TEXEL:
         case HdBinding::TEXTURE_PTEX_LAYOUT:
-            if (caps.explicitUniformLocation) {
+            if (caps.shadingLanguage420pack) {
+                out << "layout (binding = "
+                    << lq.binding.GetTextureUnit() << ") ";
+            } else if (caps.explicitUniformLocation) {
                 out << "layout (location = " << location << ") ";
             }
             break;
@@ -1098,28 +1105,6 @@ static void _EmitDeclaration(std::stringstream &str,
     case HdBinding::BINDLESS_UNIFORM:
         str << "uniform " << _GetPackedType(type, true)
             << " *" << name << ";\n";
-        break;
-    case HdBinding::TEXTURE_2D:
-    case HdBinding::BINDLESS_TEXTURE_2D:
-        str << "uniform sampler2D " << name << ";\n";
-        break;
-    case HdBinding::TEXTURE_3D:
-    case HdBinding::BINDLESS_TEXTURE_3D:
-        str << "uniform sampler3D " << name << ";\n";
-        break;
-    case HdBinding::TEXTURE_UDIM_ARRAY:
-    case HdBinding::BINDLESS_TEXTURE_UDIM_ARRAY:
-        str << "uniform sampler2DArray " << name.GetText() << "_Images;\n";
-        break;
-    case HdBinding::TEXTURE_UDIM_LAYOUT:
-    case HdBinding::BINDLESS_TEXTURE_UDIM_LAYOUT:
-        str << "uniform sampler1D " << name.GetText() << "_Layout;\n";
-        break;
-    case HdBinding::TEXTURE_PTEX_TEXEL:
-        str << "uniform sampler2DArray " << name << "_Data;\n";
-        break;
-    case HdBinding::TEXTURE_PTEX_LAYOUT:
-        str << "uniform isamplerBuffer " << name << "_Packing;\n";
         break;
     default:
         TF_CODING_ERROR("Unknown binding type %d, for %s\n",
@@ -3002,8 +2987,10 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << "  int shaderCoord = GetDrawingCoord().shaderCoord; \n"
                 << "  return " << _GetPackedTypeAccessor(it->second.dataType, false)
                 << "(GlopPtexTextureLookup("
-                << "sampler2DArray(shaderData[shaderCoord]." << it->second.name <<"),"
-                << "isamplerBuffer(shaderData[shaderCoord]." << it->second.name << "_layout), "
+                << "sampler2DArray(shaderData[shaderCoord]."
+                << it->second.name << "),"
+                << "isamplerBuffer(shaderData[shaderCoord]."
+                << it->second.name << "_layout), "
                 << "GetPatchCoord(localIndex))" << swizzle << ");\n"
                 << "}\n"
                 << _GetUnpackedType(it->second.dataType, false)
@@ -3014,26 +3001,24 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << "  int shaderCoord = GetDrawingCoord().shaderCoord; \n"
                 << "  return " << _GetPackedTypeAccessor(it->second.dataType, false)
                 << "(GlopPtexTextureLookup("
-                << "sampler2DArray(shaderData[shaderCoord]." << it->second.name <<"),"
-                << "isamplerBuffer(shaderData[shaderCoord]." << it->second.name << "_layout), "
+                << "sampler2DArray(shaderData[shaderCoord]."
+                << it->second.name << "),"
+                << "isamplerBuffer(shaderData[shaderCoord]."
+                << it->second.name << "_layout), "
                 << "patchCoord)" << swizzle << ");\n"
                 << "}\n";
         } else if (bindingType == HdBinding::TEXTURE_PTEX_TEXEL) {
-            // +1 for layout is by convention.
             declarations
                 << LayoutQualifier(it->first)
-                << "uniform sampler2DArray sampler2darray_" << it->first.GetLocation() << ";\n"
-                << LayoutQualifier(HdBinding(it->first.GetType(),
-                                             it->first.GetLocation()+1,
-                                             it->first.GetTextureUnit()))
-                << "uniform isamplerBuffer isamplerbuffer_" << (it->first.GetLocation()+1) << ";\n";
+                << "uniform sampler2DArray sampler2darray_"
+                << it->second.name << ";\n";
             accessors
                 << _GetUnpackedType(it->second.dataType, false)
                 << " HdGet_" << it->second.name << "(int localIndex) {\n"
                 << "  return " << _GetPackedTypeAccessor(it->second.dataType, false)
                 << "(GlopPtexTextureLookup("
-                << "sampler2darray_" << it->first.GetLocation() << ","
-                << "isamplerbuffer_" << (it->first.GetLocation()+1) << ","
+                << "sampler2darray_" << it->second.name << ","
+                << "isamplerbuffer_" << it->second.name << "_layout,"
                 << "GetPatchCoord(localIndex))" << swizzle << ");\n"
                 << "}\n"
                 << _GetUnpackedType(it->second.dataType, false)
@@ -3043,14 +3028,19 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << " HdGet_" << it->second.name << "(vec4 patchCoord) {\n"
                 << "  return " << _GetPackedTypeAccessor(it->second.dataType, false)
                 << "(GlopPtexTextureLookup("
-                << "sampler2darray_" << it->first.GetLocation() << ","
-                << "isamplerbuffer_" << (it->first.GetLocation()+1) << ","
+                << "sampler2darray_" << it->second.name << ","
+                << "isamplerbuffer_" << it->second.name << "_layout,"
                 << "patchCoord)" << swizzle << ");\n"
                 << "}\n";
         } else if (bindingType == HdBinding::BINDLESS_TEXTURE_PTEX_LAYOUT) {
             //accessors << _GetUnpackedType(it->second.dataType) << "(0)";
         } else if (bindingType == HdBinding::TEXTURE_PTEX_LAYOUT) {
-            //accessors << _GetUnpackedType(it->second.dataType) << "(0)";
+            declarations
+                << LayoutQualifier(HdBinding(it->first.GetType(),
+                                             it->first.GetLocation(),
+                                             it->first.GetTextureUnit()))
+                << "uniform isamplerBuffer isamplerbuffer_"
+                << it->second.name << ";\n";
         } else if (bindingType == HdBinding::PRIMVAR_REDIRECT) {
             // Create an HdGet_INPUTNAME for the shader to access a primvar
             // for which a HdGet_PRIMVARNAME was already generated earlier.
