@@ -357,6 +357,13 @@ void wrapUsdPrim()
         .def("IsInstanceProxy", &UsdPrim::IsInstanceProxy)
         .def("GetPrimInMaster", &UsdPrim::GetPrimInMaster)
 
+        .def("GetPrimAtPath", &UsdPrim::GetPrimAtPath, arg("path"))
+        .def("GetObjectAtPath", &UsdPrim::GetObjectAtPath, arg("path"))
+        .def("GetPropertyAtPath", &UsdPrim::GetPropertyAtPath, arg("path"))
+        .def("GetAttributeAtPath", &UsdPrim::GetAttributeAtPath, arg("path"))
+        .def("GetRelationshipAtPath",
+            &UsdPrim::GetRelationshipAtPath, arg("path"))
+
         // Exposed only for testing and debugging.
         .def("_GetSourcePrimIndex", &Usd_PrimGetSourcePrimIndex,
              return_value_policy<return_by_value>())

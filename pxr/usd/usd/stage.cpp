@@ -1858,6 +1858,24 @@ UsdStage::GetObjectAtPath(const SdfPath &path) const
     return UsdObject();
 }
 
+UsdProperty
+UsdStage::GetPropertyAtPath(const SdfPath &path) const
+{
+    return GetObjectAtPath(path).As<UsdProperty>();
+}
+
+UsdAttribute
+UsdStage::GetAttributeAtPath(const SdfPath &path) const
+{
+    return GetObjectAtPath(path).As<UsdAttribute>();
+}
+
+UsdRelationship
+UsdStage::GetRelationshipAtPath(const SdfPath &path) const
+{
+    return GetObjectAtPath(path).As<UsdRelationship>();
+}
+
 Usd_PrimDataConstPtr
 UsdStage::_GetPrimDataAtPath(const SdfPath &path) const
 {

@@ -780,6 +780,38 @@ public:
     USD_API
     UsdObject GetObjectAtPath(const SdfPath &path) const;
 
+    /// Return the UsdProperty at \p path, or an invalid UsdProperty
+    /// if none exists.
+    ///
+    /// This is equivalent to 
+    /// \code{.cpp}
+    /// stage.GetObjectAtPath(path).As<UsdProperty>();
+    /// \endcode
+    /// \sa GetObjectAtPath(const SdfPath&) const
+    USD_API
+    UsdProperty GetPropertyAtPath(const SdfPath &path) const;
+
+    /// Return the UsdAttribute at \p path, or an invalid UsdAttribute
+    /// if none exists.
+    ///
+    /// This is equivalent to 
+    /// \code{.cpp}
+    /// stage.GetObjectAtPath(path).As<UsdAttribute>();
+    /// \endcode
+    /// \sa GetObjectAtPath(const SdfPath&) const
+    USD_API
+    UsdAttribute GetAttributeAtPath(const SdfPath &path) const;
+
+    /// Return the UsdAttribute at \p path, or an invalid UsdAttribute
+    /// if none exists.
+    ///
+    /// This is equivalent to 
+    /// \code{.cpp}
+    /// stage.GetObjectAtPath(path).As<UsdRelationship>();
+    /// \endcode
+    /// \sa GetObjectAtPath(const SdfPath&) const
+    USD_API
+    UsdRelationship GetRelationshipAtPath(const SdfPath &path) const;
 private:
     // Return the primData object at \p path.
     Usd_PrimDataConstPtr _GetPrimDataAtPath(const SdfPath &path) const;

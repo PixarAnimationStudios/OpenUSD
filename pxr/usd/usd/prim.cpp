@@ -1024,5 +1024,33 @@ UsdPrim::ComputeExpandedPrimIndex() const
     return outputs.primIndex;
 }
 
+UsdPrim
+UsdPrim::GetPrimAtPath(const SdfPath& path) const{
+    const SdfPath absolutePath = path.MakeAbsolutePath(GetPath());
+    return GetStage()->GetPrimAtPath(absolutePath);
+}
+
+UsdObject
+UsdPrim::GetObjectAtPath(const SdfPath& path) const{
+    const SdfPath absolutePath = path.MakeAbsolutePath(GetPath());
+    return GetStage()->GetObjectAtPath(absolutePath);
+}
+
+UsdProperty
+UsdPrim::GetPropertyAtPath(const SdfPath& path) const{
+    return GetObjectAtPath(path).As<UsdProperty>();
+}
+
+UsdAttribute
+UsdPrim::GetAttributeAtPath(const SdfPath& path) const{
+    return GetObjectAtPath(path).As<UsdAttribute>();
+}
+
+
+UsdRelationship
+UsdPrim::GetRelationshipAtPath(const SdfPath& path) const{
+    return GetObjectAtPath(path).As<UsdRelationship>();
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

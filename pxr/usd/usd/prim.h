@@ -677,6 +677,46 @@ public:
     USD_API
     bool IsPseudoRoot() const;
 
+    /// Returns the prim at \p path on the same stage as this prim.
+    /// If path is is relative, it will be anchored to the path of this prim.
+    /// \sa UsdStage::GetPrimAtPath(const SdfPath&) const
+    USD_API UsdPrim GetPrimAtPath(const SdfPath& path) const;
+
+    /// Returns the object at \p path on the same stage as this prim.
+    /// If path is is relative, it will be anchored to the path of this prim.
+    /// \sa UsdStage::GetObjectAtPath(const SdfPath&) const
+    USD_API UsdObject GetObjectAtPath(const SdfPath& path) const;
+
+    /// Returns the property at \p path on the same stage as this prim.
+    /// If path is relative, it will be anchored to the path of this prim.
+    ///
+    /// \note There is no guarantee that this method returns a property on
+    /// this prim. This is only guaranteed if path is a purely relative
+    /// property path.
+    /// \sa GetProperty(const TfToken&) const
+    /// \sa UsdStage::GetPropertyAtPath(const SdfPath&) const
+    USD_API UsdProperty GetPropertyAtPath(const SdfPath& path) const;
+    
+    /// Returns the attribute at \p path on the same stage as this prim.
+    /// If path is relative, it will be anchored to the path of this prim.
+    ///
+    /// \note There is no guarantee that this method returns an attribute on
+    /// this prim. This is only guaranteed if path is a purely relative
+    /// property path.
+    /// \sa GetAttribute(const TfToken&) const
+    /// \sa UsdStage::GetAttributeAtPath(const SdfPath&) const
+    USD_API UsdAttribute GetAttributeAtPath(const SdfPath& path) const;
+
+    /// Returns the relationship at \p path on the same stage as this prim.
+    /// If path is relative, it will be anchored to the path of this prim.
+    ///
+    /// \note There is no guarantee that this method returns a relationship on
+    /// this prim. This is only guaranteed if path is a purely relative
+    /// property path.
+    /// \sa GetRelationship(const TfToken&) const
+    /// \sa UsdStage::GetRelationshipAtPath(const SdfPath&) const
+    USD_API UsdRelationship GetRelationshipAtPath(const SdfPath& path) const;
+
     // --------------------------------------------------------------------- //
     /// \name Variants 
     // --------------------------------------------------------------------- //
