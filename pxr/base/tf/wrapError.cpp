@@ -191,7 +191,7 @@ _PythonExceptionDebugTracer(TfPyTraceInfo const &info)
         string excName = "<unknown>";
         if (PyObject *excType = PyTuple_GET_ITEM(info.arg, 0)) {
             if (PyObject *r = PyObject_Repr(excType)) {
-                excName = PyString_AS_STRING(r);
+                excName = TfPyString_AsString(r);
                 Py_DECREF(r);
             }
         }

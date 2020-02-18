@@ -29,6 +29,7 @@
 
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/makePyConstructor.h"
+#include "pxr/base/tf/py3Compat.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyObjectFinder.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
@@ -62,7 +63,7 @@ namespace {
 static TfType
 _GetTfTypeFromPython(PyObject *p)
 {
-    if (PyString_Check(p))
+    if (TfPyString_Check(p))
         return TfType::FindByName( extract<string>(p)() );
     else
         return TfType::FindByPythonClass( object(borrowed(p)) );
@@ -222,7 +223,7 @@ _FindByPythonClass(const boost::python::object & classObj)
     // string typename.  Rather than returning the unknown type (assuming
     // of course that we never declare Python's string type as a TfType),
     // we instead direct the caller to use FindByName().
-    if (PyString_Check(classObj.ptr())) {
+    if (TfPyString_Check(classObj.ptr())) {
         TfPyThrowTypeError("String passed to Tf.Type.Find() -- you probably "
                            "want Tf.Type.FindByName() instead");
     }

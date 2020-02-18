@@ -22,16 +22,27 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from pxr import Tf
+from __future__ import print_function
 
-# On Windows if this script is run with stdout redirected then the C++
-# stdout buffer is different from Python's stdout buffer.  As a result
-# output from Python stdout and C++ stdout will not interleave as
-# expected unless we flush both after each write.  We force flushing
-# in Python here.
+from pxr import Tf
+import sys
+
+# Python 3 buffers output by default. We monkey-patch the print function here
+# so that stdout is flushed after each print statement, thus producing the
+# correct output. This doesn't work in python 2, even with the print function
+# from __future__ because that version of the print function does not have a
+# flush keyword parameter.
+#
+# On Windows with python 2 if this script is run with stdout redirected then
+# the C++ stdout buffer is different from Python's stdout buffer.  As a result
+# output from Python stdout and C++ stdout will not interleave as expected
+# unless we flush both after each write.  We force flushing in Python here.
 import platform
-if platform.system() == 'Windows':
-    import os, sys
+if sys.version_info.major >= 3:
+    import functools
+    print = functools.partial(print, flush=True)
+elif platform.system() == 'Windows':
+    import os
     sys.stdout = os.fdopen(sys.stdout.fileno(), 'a+', 0)
 
 sml = Tf.ScriptModuleLoader()
@@ -46,7 +57,7 @@ Tf.Debug.SetDebugSymbolsByName('TF_SCRIPT_MODULE_LOADER', True)
 prefix = Tf.__package__ + '.testenv.testTfScriptModuleLoader_'
 
 def Import(name):
-    exec "import " + prefix + name
+    exec("import " + prefix + name)
 
 # Declare libraries.
 def Register(libs):

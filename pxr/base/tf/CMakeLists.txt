@@ -138,6 +138,7 @@ pxr_library(tf
         type_Impl.h
 
     PYTHON_PUBLIC_HEADERS
+        py3Compat.h
         pySafePython.h
         pyStaticTokens.h
 

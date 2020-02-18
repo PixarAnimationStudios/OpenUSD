@@ -24,6 +24,7 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/stackTrace.h"
 #include "pxr/base/tf/pyUtils.h"
 
@@ -38,11 +39,24 @@ namespace {
 static void
 _PrintStackTrace(object &obj, const std::string &reason)
 {
+#if PY_MAJOR_VERSION == 2
     if (PyFile_Check(obj.ptr())) {
         FILE * file = expect_non_null(PyFile_AsFile(obj.ptr()));
         if (file)
             TfPrintStackTrace(file, reason);
     }
+#else 
+    int fd = PyObject_AsFileDescriptor(obj.ptr());
+    if (fd >= 0)
+    {
+        FILE * file = expect_non_null(ArchFdOpen(fd, "w"));
+        if (file)
+        {
+            TfPrintStackTrace(file, reason);
+            fclose(file);
+        }
+    }
+#endif
     else {
         // Wrong type for obj
         TfPyThrowTypeError("Expected file object.");

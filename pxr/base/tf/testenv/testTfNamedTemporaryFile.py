@@ -27,6 +27,8 @@
 Tests for Tf's NamedTemporaryFile wrapper
 """
 
+from __future__ import print_function
+
 import unittest, os
 from pxr import Tf
 
@@ -38,7 +40,7 @@ class TestNamedTemporaryFile(unittest.TestCase):
         self.bArgs = {'prefix':self.prefixes[1], 'suffix':self.suffixes[1]}
 
     def _testArgCapture(self, fs):
-        print 'Ensuring we can thread all arguments forward'
+        print('Ensuring we can thread all arguments forward')
 
         base = os.path.basename
         argError = '%s argument (%s) not captured in file name: %s.'
@@ -54,7 +56,7 @@ class TestNamedTemporaryFile(unittest.TestCase):
         self._testArgCapture(fs)
 
     def test_ContextUsage(self):
-        print 'Running context manager test'
+        print('Running context manager test')
     
         with Tf.NamedTemporaryFile(**self.aArgs) as a, \
              Tf.NamedTemporaryFile(**self.bArgs) as b:

@@ -185,7 +185,7 @@ TfPyEvaluate(std::string const &expr, dict const& extraGlobals)
             TfScriptModuleLoader::GetInstance().GetModulesDict();
 
         // Make sure the builtins are available
-        handle<> modHandle(PyImport_ImportModule("__builtin__"));
+        handle<> modHandle(PyImport_ImportModule(TfPyBuiltinModuleName));
         modulesDict["__builtins__"] = object(modHandle);
         modulesDict.update(extraGlobals);
 
@@ -389,7 +389,7 @@ TfPyUnsetenv(const std::string & name)
 
     try {
         object environObj(_GetOsEnviron());
-        object has_key(environObj.attr("has_key"));
+        object has_key = environObj.attr("__contains__");
         if (has_key(name)) {
             environObj[name].del();
         }

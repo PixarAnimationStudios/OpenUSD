@@ -32,10 +32,10 @@
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/hashset.h"
 #include "pxr/base/tf/mallocTag.h"
+#include "pxr/base/tf/py3Compat.h"
 #include "pxr/base/tf/pyError.h"
 #include "pxr/base/tf/pyModuleNotice.h"
 #include "pxr/base/tf/pyTracing.h"
-#include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/pyWrapContext.h"
 #include "pxr/base/tf/scriptModuleLoader.h"
 #include "pxr/base/tf/stopwatch.h"
@@ -72,7 +72,7 @@ public:
     {
         if (!_cachedBPFuncType) {
             handle<> typeStr(PyObject_Str((PyObject *)obj.ptr()->ob_type));
-            if (strstr(PyString_AS_STRING(typeStr.get()), "Boost.Python.function")) {
+            if (strstr(TfPyString_AsString(typeStr.get()), "Boost.Python.function")) {
                 _cachedBPFuncType = (PyObject *)obj.ptr()->ob_type;
                 return true;
             }
@@ -85,7 +85,7 @@ public:
     { 
         if (!_cachedBPClassType) {
             handle<> typeStr(PyObject_Str((PyObject *)obj.ptr()->ob_type));
-            if (strstr(PyString_AS_STRING(typeStr.get()), "Boost.Python.class")) {
+            if (strstr(TfPyString_AsString(typeStr.get()), "Boost.Python.class")) {
                 _cachedBPClassType = (PyObject *)obj.ptr()->ob_type;
                 return true;
             }
@@ -114,13 +114,25 @@ private:
                      TfHashSet<PyObject *, TfHash> *visitedObjs)
     {
         if (PyObject_HasAttrString(obj.ptr(), "__dict__")) {
+#if PY_MAJOR_VERSION >= 3
+            // In python 3 dict.items() returns a proxy view object, not a list.
+            // boost::python::extract<list> fails on these views, and raises:
+            // 
+            // TypeError: Expecting an object of type list; got an object of type
+            // dict_items instead
+            //
+            // A workaround is to use the boost::python::list constructor
+            object items_view = obj.attr("__dict__").attr("items")();
+            list items(items_view);
+#else
             list items = extract<list>(obj.attr("__dict__").attr("items")());
+#endif
             size_t lenItems = len(items);
             for (size_t i = 0; i < lenItems; ++i) {
                 object value = items[i][1];
                 if (!visitedObjs->count(value.ptr())) {
-                    char const *name = PyString_AS_STRING(object(items[i][0]).ptr());
-                    bool keepGoing = (this->*callback)(name, obj, value);
+                    const std::string name = TfPyString_AsString(object(items[i][0]).ptr());
+                    bool keepGoing = (this->*callback)(name.c_str(), obj, value);
                     visitedObjs->insert(value.ptr());
                     if (IsBoostPythonClass(value) && keepGoing) {
                         _WalkModule(value, callback, visitedObjs);
@@ -209,7 +221,7 @@ public:
             string localPrefix;
             if (PyObject_HasAttrString(owner.ptr(), "__module__")) {
                 char const *ownerName =
-                    PyString_AS_STRING(PyObject_GetAttrString
+                    TfPyString_AsString(PyObject_GetAttrString
                                        (owner.ptr(), "__name__"));
                 localPrefix.append(_newModuleName);
                 localPrefix.push_back('.');
@@ -295,7 +307,8 @@ public:
             }
             return false;
         } else if (IsClassMethod(obj)) {
-            object underlyingFn = obj.attr("__get__")(owner).attr("im_func");
+            object underlyingFn =
+                obj.attr("__get__")(owner).attr(TfPyClassMethodFuncName);
             if (IsBoostPythonFunc(underlyingFn)) {
                 // Replace owner's name attribute with a new classmethod, decorating
                 // the underlying function.
@@ -341,8 +354,9 @@ public:
         , _cachedBPFuncType(0)
         , _cachedBPClassType(0)
     {
+        auto obj = object(module.attr("__name__"));
         _oldModuleName =
-            PyString_AS_STRING(object(module.attr("__name__")).ptr());
+            TfPyString_AsString(obj.ptr());
         _newModuleName = TfStringGetBeforeSuffix(_oldModuleName);
         _newModuleNameObj = object(_newModuleName);
     }

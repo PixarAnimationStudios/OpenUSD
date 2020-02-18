@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/base/tf/py3Compat.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyUtils.h"
 
@@ -72,7 +73,7 @@ struct TfPyAnnotatedBoolResult :
         using namespace boost::python;
         TfPyLock lock;
         return class_<Derived>(name, no_init)
-            .def("__nonzero__", &Derived::GetValue)
+            .def(TfPyBoolBuiltinFuncName, &Derived::GetValue)
             .def("__repr__", &Derived::GetRepr)
             .def(self == bool())
             .def(self != bool())
