@@ -60,8 +60,9 @@ public:
     SdfFileFormatConstPtr FindById(const TfToken& formatId);
 
     /// Returns the file format associated with the specified file extension
-    /// \p s and target \p target. Extension \p s may be passed with or 
-    /// without a leading dot (e.g. either 'menva' or '.menva' are acceptable).
+    /// \p s and target \p target. Extension \p s may be a full file path name,
+    /// or an extension with or without a leading dot (e.g. 'foo/bar.usd', 'usd'
+    /// or '.usd' are acceptable).
     SdfFileFormatConstPtr FindByExtension(
         const std::string& s,
         const std::string& target = std::string());

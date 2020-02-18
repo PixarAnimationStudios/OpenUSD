@@ -265,8 +265,8 @@ SdfLayer::_WaitForInitializationAndCheckIfSuccessful()
 }
 
 static SdfFileFormatConstPtr
-_GetFileFormatForExtension(
-    const std::string &ext, const SdfLayer::FileFormatArguments &args)
+_GetFileFormatByExtension(
+    const std::string &path, const SdfLayer::FileFormatArguments &args)
 {
     // Find a file format that can handle this extension and the
     // specified target (if any).
@@ -280,14 +280,14 @@ _GetFileFormatForExtension(
             }
 
             if (const SdfFileFormatConstPtr format = 
-                SdfFileFormat::FindByExtension(ext, target)) {
+                SdfFileFormat::FindByExtension(path, target)) {
                 return format;
             }
         }
         return TfNullPtr;
     }
 
-    return SdfFileFormat::FindByExtension(ext);
+    return SdfFileFormat::FindByExtension(path);
 }
 
 SdfLayerRefPtr
@@ -303,7 +303,7 @@ SdfLayer::CreateAnonymous(
     SdfFileFormatConstPtr fileFormat;
     string suffix = TfStringGetSuffix(tag);
     if (!suffix.empty()) {
-        fileFormat = _GetFileFormatForExtension(suffix, args);
+        fileFormat = _GetFileFormatByExtension(suffix, args);
     }
 
     if (!fileFormat) {
@@ -402,13 +402,12 @@ SdfLayer::CreateNew(
     return _CreateNew(fileFormat, identifier, realPath, ArAssetInfo(), args);
 }
 
-static SdfFileFormatConstPtr
+static inline SdfFileFormatConstPtr
 _GetFileFormatForPath(const std::string &filePath,
                       const SdfLayer::FileFormatArguments &args)
 {
     // Determine which file extension to use.
-    const string ext = Sdf_GetExtension(filePath);
-    return ext.empty() ? TfNullPtr : _GetFileFormatForExtension(ext, args);
+    return _GetFileFormatByExtension(filePath, args);
 }
 
 SdfLayerRefPtr
