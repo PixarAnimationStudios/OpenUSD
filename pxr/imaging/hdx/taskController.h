@@ -39,7 +39,6 @@
 #include "pxr/imaging/hd/task.h"
 
 #include "pxr/imaging/cameraUtil/conformWindow.h"
-
 #include "pxr/imaging/glf/simpleLightingContext.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -270,6 +269,7 @@ private:
     bool _ColorChannelEnabled() const;
     bool _ColorizeQuantizationEnabled() const;
     bool _AovsSupported() const;
+    bool _CamerasSupported() const;
 
     // Helper function for renderbuffer management.
     SdfPath _GetRenderTaskPath(TfToken const& materialTag) const;
