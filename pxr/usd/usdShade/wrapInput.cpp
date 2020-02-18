@@ -187,7 +187,6 @@ void wrapUsdShadeInput()
         ;
 
     implicitly_convertible<Input, UsdAttribute>();
-    implicitly_convertible<Input, UsdProperty>();
 
     to_python_converter<
         std::vector<Input>,

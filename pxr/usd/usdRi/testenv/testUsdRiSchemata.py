@@ -36,7 +36,7 @@ class TestUsdRiSchemata(unittest.TestCase):
         assert setOutputSrcFn(schema, validTargetObjectPath)
 
         output = getOutputFn(schema)
-        assert output.GetProperty()
+        assert output.GetAttr()
 
         targetObj = getFn(schema)
         self.assertEqual(targetObj.GetPath(), validTargetObjectPath)

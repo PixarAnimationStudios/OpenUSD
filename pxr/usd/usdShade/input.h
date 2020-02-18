@@ -41,7 +41,7 @@ class UsdShadeOutput;
 /// \class UsdShadeInput
 /// 
 /// This class encapsulates a shader or node-graph input, which is a 
-/// connectable property representing a typed value.
+/// connectable attribute representing a typed value.
 /// 
 class UsdShadeInput
 {
@@ -339,13 +339,13 @@ public:
     /// connectable prim.
     /// \p sourceName will be set to the name of the source shading attribute, 
     /// which may be an input or an output, as specified by \p sourceType
-    /// \p sourceType will have the type of the source shading property, i.e.
+    /// \p sourceType will have the type of the source shading attribute, i.e.
     /// whether it is an \c Input or \c Output
     ///
     /// \return 
-    /// \c true if the shading property is connected to a valid, defined source
+    /// \c true if the shading attribute is connected to a valid, defined source
     /// attribute.
-    /// \c false if the shading property is not connected to a single, defined 
+    /// \c false if the shading attribute is not connected to a single, defined 
     /// source attribute. 
     /// 
     /// \note The python wrapping for this method returns a 
@@ -390,7 +390,7 @@ public:
     USDSHADE_API
     bool DisconnectSource() const;
 
-    /// Clears source for this shading property in the current UsdEditTarget.
+    /// Clears source for this shading attribute in the current UsdEditTarget.
     ///
     /// Most of the time, what you probably want is DisconnectSource()
     /// rather than this function.

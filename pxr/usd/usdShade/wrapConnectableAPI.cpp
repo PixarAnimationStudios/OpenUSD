@@ -108,13 +108,13 @@ namespace {
 #include <boost/python/tuple.hpp>
 
 static object
-_GetConnectedSource(const UsdProperty &shadingProp)
+_GetConnectedSource(const UsdAttribute &shadingAttr)
 {
     UsdShadeConnectableAPI source;
     TfToken                sourceName;
     UsdShadeAttributeType  sourceType;
     
-    if (UsdShadeConnectableAPI::GetConnectedSource(shadingProp, 
+    if (UsdShadeConnectableAPI::GetConnectedSource(shadingAttr, 
             &source, &sourceName, &sourceType)){
         return boost::python::make_tuple(source, sourceName, sourceType);
     } else {
@@ -123,10 +123,10 @@ _GetConnectedSource(const UsdProperty &shadingProp)
 }
 
 static SdfPathVector
-_GetRawConnectedSourcePaths(const UsdProperty &shadingProp) 
+_GetRawConnectedSourcePaths(const UsdAttribute &shadingAttr) 
 {
     SdfPathVector sourcePaths;
-    UsdShadeConnectableAPI::GetRawConnectedSourcePaths(shadingProp, 
+    UsdShadeConnectableAPI::GetRawConnectedSourcePaths(shadingAttr, 
             &sourcePaths);
     return sourcePaths;
 }
@@ -134,7 +134,7 @@ _GetRawConnectedSourcePaths(const UsdProperty &shadingProp)
 WRAP_CUSTOM {
 
     bool (*ConnectToSource_1)(
-        UsdProperty const &,
+        UsdAttribute const &,
         UsdShadeConnectableAPI const&,
         TfToken const &,
         UsdShadeAttributeType const,
@@ -142,15 +142,15 @@ WRAP_CUSTOM {
             &UsdShadeConnectableAPI::ConnectToSource;
 
     bool (*ConnectToSource_2)(
-        UsdProperty const &,
+        UsdAttribute const &,
         SdfPath const &) = &UsdShadeConnectableAPI::ConnectToSource;
 
     bool (*ConnectToSource_3)(
-        UsdProperty const &,
+        UsdAttribute const &,
         UsdShadeInput const &) = &UsdShadeConnectableAPI::ConnectToSource;
 
     bool (*ConnectToSource_4)(
-        UsdProperty const &,
+        UsdAttribute const &,
         UsdShadeOutput const &) = &UsdShadeConnectableAPI::ConnectToSource;
 
     bool (*CanConnect_Input)(
@@ -161,16 +161,16 @@ WRAP_CUSTOM {
         UsdShadeOutput const &,
         UsdAttribute const &) = &UsdShadeConnectableAPI::CanConnect;
 
-    bool (*IsSourceConnectionFromBaseMaterial)(UsdProperty const &) = 
+    bool (*IsSourceConnectionFromBaseMaterial)(UsdAttribute const &) = 
         &UsdShadeConnectableAPI::IsSourceConnectionFromBaseMaterial;
 
-    bool (*HasConnectedSource)(UsdProperty const &) = 
+    bool (*HasConnectedSource)(UsdAttribute const &) = 
         &UsdShadeConnectableAPI::HasConnectedSource;
 
-    bool (*DisconnectSource)(UsdProperty const &) = 
+    bool (*DisconnectSource)(UsdAttribute const &) = 
         &UsdShadeConnectableAPI::DisconnectSource;
 
-    bool (*ClearSource)(UsdProperty const &) = 
+    bool (*ClearSource)(UsdAttribute const &) = 
         &UsdShadeConnectableAPI::ClearSource;
 
     _class
@@ -187,41 +187,41 @@ WRAP_CUSTOM {
         .staticmethod("CanConnect")
 
         .def("ConnectToSource", ConnectToSource_1, 
-            (arg("shadingProp"), 
+            (arg("shadingAttr"), 
              arg("source"), arg("sourceName"), 
              arg("sourceType")=UsdShadeAttributeType::Output,
              arg("typeName")=SdfValueTypeName()))
         .def("ConnectToSource", ConnectToSource_2,
-            (arg("shadingProp"), arg("sourcePath")))
+            (arg("shadingAttr"), arg("sourcePath")))
         .def("ConnectToSource", ConnectToSource_3,
-            (arg("shadingProp"), arg("input")))
+            (arg("shadingAttr"), arg("input")))
         .def("ConnectToSource", ConnectToSource_4,
-            (arg("shadingProp"), arg("output")))
+            (arg("shadingAttr"), arg("output")))
         .staticmethod("ConnectToSource")
 
         .def("GetConnectedSource", _GetConnectedSource,
-            (arg("shadingProp")))
+            (arg("shadingAttr")))
             .staticmethod("GetConnectedSource")
 
         .def("GetRawConnectedSourcePaths", _GetRawConnectedSourcePaths, 
-            (arg("shadingProp")),
+            (arg("shadingAttr")),
             return_value_policy<TfPySequenceToList>())
             .staticmethod("GetRawConnectedSourcePaths")
 
         .def("HasConnectedSource", HasConnectedSource,
-            (arg("shadingProp")))
+            (arg("shadingAttr")))
             .staticmethod("HasConnectedSource")
 
         .def("IsSourceConnectionFromBaseMaterial", IsSourceConnectionFromBaseMaterial,
-            (arg("shadingProp")))
+            (arg("shadingAttr")))
             .staticmethod("IsSourceConnectionFromBaseMaterial")
         
         .def("DisconnectSource", DisconnectSource,
-            (arg("shadingProp")))
+            (arg("shadingAttr")))
             .staticmethod("DisconnectSource")
         
         .def("ClearSource", ClearSource,
-            (arg("shadingProp")))
+            (arg("shadingAttr")))
             .staticmethod("ClearSource")
         
         .def("CreateOutput", &UsdShadeConnectableAPI::CreateOutput,

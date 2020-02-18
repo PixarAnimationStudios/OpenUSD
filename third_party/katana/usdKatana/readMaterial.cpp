@@ -173,7 +173,7 @@ static SdfPath _ResolveConnectionRecursive(
         UsdShadeAttributeType nextSourceType;
 
         if (UsdShadeConnectableAPI::GetConnectedSource(
-                source.GetPrim().GetProperty(sourcePath.GetNameToken()),
+                source.GetPrim().GetAttribute(sourcePath.GetNameToken()),
                         &nextSource, &nextSourceName, &nextSourceType))
         {
             SdfPath nextAttrPath;
