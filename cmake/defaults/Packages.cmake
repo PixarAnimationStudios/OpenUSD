@@ -154,10 +154,6 @@ if (PXR_BUILD_KATANA_PLUGIN)
         )
 endif()
 
-if (PXR_BUILD_HOUDINI_PLUGIN)
-    find_package(Houdini REQUIRED)
-endif()
-
 if (PXR_BUILD_PRMAN_PLUGIN)
     find_package(Renderman REQUIRED)
 endif()

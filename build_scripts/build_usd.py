@@ -1334,14 +1334,6 @@ def InstallUSD(context, force, buildArgs):
         else:
             extraArgs.append('-DPXR_BUILD_KATANA_PLUGIN=OFF')
 
-        if context.buildHoudini:
-            if context.houdiniLocation:
-                extraArgs.append('-DHOUDINI_ROOT="{houdiniLocation}"'
-                                 .format(houdiniLocation=context.houdiniLocation))
-            extraArgs.append('-DPXR_BUILD_HOUDINI_PLUGIN=ON')
-        else:
-            extraArgs.append('-DPXR_BUILD_HOUDINI_PLUGIN=OFF')
-
         if Windows():
             # Increase the precompiled header buffer limit.
             extraArgs.append('-DCMAKE_CXX_FLAGS="/Zm150"')
@@ -1588,16 +1580,6 @@ subgroup.add_argument("--no-katana", dest="build_katana", action="store_false",
 group.add_argument("--katana-api-location", type=str,
                    help="Directory where the Katana SDK is installed.")
 
-group = parser.add_argument_group(title="Houdini Plugin Options")
-subgroup = group.add_mutually_exclusive_group()
-subgroup.add_argument("--houdini", dest="build_houdini", action="store_true", 
-                      default=False,
-                      help="Build Houdini plugin for USD")
-subgroup.add_argument("--no-houdini", dest="build_houdini", action="store_false",
-                      help="Do not build Houdini plugin for USD (default)")
-group.add_argument("--houdini-location", type=str,
-                   help="Directory where Houdini is installed.")
-
 args = parser.parse_args()
 
 class InstallContext:
@@ -1710,11 +1692,6 @@ class InstallContext:
         self.buildKatana = args.build_katana
         self.katanaApiLocation = (os.path.abspath(args.katana_api_location)
                                   if args.katana_api_location else None)
-
-        # - Houdini Plugin
-        self.buildHoudini = args.build_houdini
-        self.houdiniLocation = (os.path.abspath(args.houdini_location)
-                                if args.houdini_location else None)
        
     def GetBuildArguments(self, dep):
         return self.buildArgs.get(dep.name.lower(), [])
@@ -1813,9 +1790,6 @@ if "--usdview" in sys.argv:
 if not context.buildPython:
     pythonPluginErrorMsg = (
         "%s plugin cannot be built when python support is disabled")
-    if context.buildHoudini:
-        PrintError(pythonPluginErrorMsg % "Houdini")
-        sys.exit(1)
     if context.buildKatana:
         PrintError(pythonPluginErrorMsg % "Katana")
         sys.exit(1)
@@ -1844,7 +1818,7 @@ if isMayaPython:
 
     # We should not attempt to build the plugins for any other DCCs if we're
     # building against Maya's version of Python.
-    if any([context.buildHoudini, context.buildKatana]):
+    if any([context.buildKatana]):
         PrintError("Cannot build plugins for other DCCs when building against "
                    "Maya's version of Python.")
         sys.exit(1)
@@ -1955,7 +1929,6 @@ Building with settings:
     Draco Plugin                {buildDraco}
     MaterialX Plugin            {buildMaterialX}
     Katana Plugin               {buildKatana}
-    Houdini Plugin              {buildHoudini}
 
   Dependencies                  {dependencies}"""
 
@@ -2004,8 +1977,7 @@ summaryMsg = summaryMsg.format(
     buildDraco=("On" if context.buildDraco else "Off"),
     buildMaterialX=("On" if context.buildMaterialX else "Off"),
     enableHDF5=("On" if context.enableHDF5 else "Off"),
-    buildKatana=("On" if context.buildKatana else "Off"),
-    buildHoudini=("On" if context.buildHoudini else "Off"))
+    buildKatana=("On" if context.buildKatana else "Off"))
 
 Print(summaryMsg)
 
@@ -2083,10 +2055,6 @@ Print("""
 if context.buildKatana:
     Print("See documentation at http://openusd.org/docs/Katana-USD-Plugins.html "
           "for setting up the Katana plugin.\n")
-
-if context.buildHoudini:
-    Print("See documentation at http://openusd.org/docs/Houdini-USD-Plugins.html "
-          "for setting up the Houdini plugin.\n")
 
 if context.buildPrman:
     Print("See documentation at http://openusd.org/docs/RenderMan-USD-Imaging-Plugin.html "

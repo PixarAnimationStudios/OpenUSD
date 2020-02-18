@@ -35,7 +35,6 @@ option(PXR_BUILD_USDVIEW "Build usdview" ON)
 option(PXR_BUILD_KATANA_PLUGIN "Build usd katana plugin" OFF)
 option(PXR_BUILD_ALEMBIC_PLUGIN "Build the Alembic plugin for USD" OFF)
 option(PXR_BUILD_DRACO_PLUGIN "Build the Draco plugin for USD" OFF)
-option(PXR_BUILD_HOUDINI_PLUGIN "Build the Houdini plugin for USD" OFF)
 option(PXR_BUILD_PRMAN_PLUGIN "Build the PRMan imaging plugin" OFF)
 option(PXR_BUILD_MATERIALX_PLUGIN "Build the MaterialX plugin for USD" OFF)
 option(PXR_BUILD_DOCUMENTATION "Generate doxygen documentation" OFF)
@@ -168,15 +167,6 @@ if (${PXR_BUILD_KATANA_PLUGIN})
             "Setting PXR_BUILD_KATANA_PLUGIN=OFF because "
             "PXR_BUILD_USD_IMAGING=OFF")
         set(PXR_BUILD_KATANA_PLUGIN "OFF" CACHE BOOL "" FORCE)
-    endif()
-endif()
-
-if (${PXR_BUILD_HOUDINI_PLUGIN})
-    if (NOT ${PXR_ENABLE_PYTHON_SUPPORT})
-        message(STATUS 
-            "Setting PXR_BUILD_HOUDINI_PLUGIN=OFF because "
-            "PXR_ENABLE_PYTHON_SUPPORT=OFF")
-        set(PXR_BUILD_HOUDINI_PLUGIN "OFF" CACHE BOOL "" FORCE)
     endif()
 endif()
 
