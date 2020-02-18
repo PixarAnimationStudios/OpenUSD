@@ -29,7 +29,6 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/base/tf/singleton.h"
-#include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -46,7 +45,8 @@ typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 ///
 /// Registry of GlfGLContexts.
 ///
-class GlfGLContextRegistry : boost::noncopyable {
+class GlfGLContextRegistry
+{
 public:
     static GlfGLContextRegistry& GetInstance()
     {
@@ -75,6 +75,10 @@ public:
 private:
     GlfGLContextRegistry();
     ~GlfGLContextRegistry();
+
+    // Non-copyable
+    GlfGLContextRegistry(const GlfGLContextRegistry &) = delete;
+    GlfGLContextRegistry &operator=(const GlfGLContextRegistry &) = delete;
 
     friend class TfSingleton<GlfGLContextRegistry>;
 
