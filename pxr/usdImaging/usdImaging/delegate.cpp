@@ -74,9 +74,6 @@
 #include <limits>
 #include <string>
 
-// XXX In progress of deprecating hydra material adapter
-#include "pxr/base/tf/getenv.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
