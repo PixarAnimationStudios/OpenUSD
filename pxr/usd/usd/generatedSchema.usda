@@ -3,7 +3,9 @@
     "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
     customLayerData = {
         string[] appliedAPISchemas = ["CollectionAPI"]
-        string[] multipleApplyAPISchemas = ["CollectionAPI"]
+        dictionary multipleApplyAPISchemas = {
+            string CollectionAPI = "collection"
+        }
     }
 )
 

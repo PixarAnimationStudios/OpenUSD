@@ -670,14 +670,14 @@ def ParseUsd(usdFilePath):
                         classInfo.parentCppClassName)
                 if parentClassTfType and parentClassTfType != Tf.Type.Unknown:
                     if classInfo.isAppliedAPISchema != \
-                        Usd.SchemaRegistry.IsAppliedAPISchema(parentClassTfType):
+                        Usd.SchemaRegistry().IsAppliedAPISchema(parentClassTfType):
                         raise Exception("API schema '%s' inherits from "
                             "incompatible base API schema '%s'. Both must be "
                             "either applied API schemas or non-applied API "
                             " schemas." % (classInfo.cppClassName,
                             parentClassInfo.cppClassName))
                     if classInfo.isMultipleApply != \
-                        Usd.SchemaRegistry.IsMultipleApplyAPISchema(
+                        Usd.SchemaRegistry().IsMultipleApplyAPISchema(
                                 parentClassTfType):
                         raise Exception("API schema '%s' inherits from "
                         "incompatible base API schema '%s'. Both must be either" 
@@ -1090,14 +1090,23 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
     if not flatStage.RemovePrim('/GLOBAL'):
         Print.Err("ERROR: Could not remove GLOBAL prim.")
     allAppliedAPISchemas = []
-    allMultipleApplyAPISchemas = []
+    allMultipleApplyAPISchemaNamespaces = {}
     for p in flatStage.GetPseudoRoot().GetAllChildren():
         # If this is an API schema, check if it's applied and record necessary
         # information.
         if p.GetName() in primsToKeep and p.GetName().endswith('API'):
             apiSchemaType = p.GetCustomDataByKey(API_SCHEMA_TYPE)
             if apiSchemaType == MULTIPLE_APPLY:
-                allMultipleApplyAPISchemas.append(p.GetName())
+                namespacePrefix = p.GetCustomDataByKey(PROPERTY_NAMESPACE_PREFIX)
+                if namespacePrefix:
+                    allMultipleApplyAPISchemaNamespaces[p.GetName()] = \
+                        namespacePrefix
+                elif not p.GetPropertyNames():
+                    allMultipleApplyAPISchemaNamespaces[p.GetName()] = ""
+                else:
+                    raise _GetSchemaDefException("propertyNamespacePrefix "
+                        "must exist as a metadata field on multiple-apply "
+                        "API schemas with properties", p.GetPath())
                 allAppliedAPISchemas.append(p.GetName())
             elif apiSchemaType in [None, SINGLE_APPLY]:
                 allAppliedAPISchemas.append(p.GetName())
@@ -1114,11 +1123,10 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
     flatLayer.comment = 'WARNING: THIS FILE IS GENERATED.  DO NOT EDIT.'
 
     # Add the list of all applied and multiple-apply API schemas.
-    if len(allAppliedAPISchemas) > 0 or len(allMultipleApplyAPISchemas) > 0:
+    if len(allAppliedAPISchemas) > 0 or len(allMultipleApplyAPISchemaNamespaces) > 0:
         flatLayer.customLayerData = {
-                'appliedAPISchemas' : Vt.StringArray(allAppliedAPISchemas), 
-                'multipleApplyAPISchemas' : Vt.StringArray(
-                                        allMultipleApplyAPISchemas)
+                'appliedAPISchemas' : Vt.StringArray(allAppliedAPISchemas),
+                'multipleApplyAPISchemas' : allMultipleApplyAPISchemaNamespaces
         }
 
     #

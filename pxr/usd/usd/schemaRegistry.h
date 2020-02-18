@@ -268,7 +268,8 @@ private:
     _PrimTypePropNameToPathMap _primTypePropNameToPathMap;
 
     TfToken::HashSet _appliedAPISchemaNames;
-    TfToken::HashSet _multipleApplyAPISchemaNames;
+    TfHashMap<TfToken, TfToken, TfToken::HashFunctor> 
+        _multipleApplyAPISchemaNamespaces;
 };
 
 USD_API_TEMPLATE_CLASS(TfSingleton<UsdSchemaRegistry>);

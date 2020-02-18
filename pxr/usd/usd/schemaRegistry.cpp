@@ -71,6 +71,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (appliedAPISchemas)
     (multipleApplyAPISchemas)
+    (multipleApplyAPISchemaPrefixes)
 );
 
 template <class T>
@@ -221,13 +222,29 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
                 }
             }
 
-            if (VtDictionaryIsHolding<VtStringArray>(customDataDict, 
+            // Names of multiple apply API schemas are stored in their schemas
+            // in a dictionary mapping them to their property namespace prefixes. 
+            // These will be useful in mapping schema instance property names 
+            // to the schema property specs.
+            auto it = customDataDict.find(_tokens->multipleApplyAPISchemas);
+            if (VtDictionaryIsHolding<VtDictionary>(customDataDict, 
                     _tokens->multipleApplyAPISchemas)) {
-                const VtStringArray &multipleApplyAPISchemas = 
-                        VtDictionaryGet<VtStringArray>(customDataDict, 
-                            _tokens->multipleApplyAPISchemas);
-                for (const auto &apiSchemaName : multipleApplyAPISchemas) {
-                    _multipleApplyAPISchemaNames.insert(TfToken(apiSchemaName));
+                if (!it->second.IsHolding<VtDictionary>()) {
+                    TF_CODING_ERROR("Found a non-dictionary value for layer "
+                        "metadata key '%s' in generated schema file '%s'. "
+                        "Any multiple apply API schemas from this file will "
+                        "be incorrect. This schema must be regenerated.",
+                        _tokens->multipleApplyAPISchemas.GetText(),
+                        generatedSchema->GetRealPath().c_str());
+                    continue;
+                }
+                const VtDictionary &multipleApplyAPISchemas = 
+                    it->second.UncheckedGet<VtDictionary>();
+                for (const auto &it : multipleApplyAPISchemas) {
+                    if (it.second.IsHolding<std::string>()) {
+                        _multipleApplyAPISchemaNamespaces[TfToken(it.first)] = 
+                            TfToken(it.second.UncheckedGet<std::string>());
+                    }
                 }
             }
 
@@ -412,8 +429,8 @@ UsdSchemaRegistry::IsMultipleApplyAPISchema(const TfType& apiSchemaType)
     }
 
     for (const auto& alias : _schemaBaseType->GetAliases(apiSchemaType)) {
-        if (_multipleApplyAPISchemaNames.find(TfToken(alias)) !=  
-                _multipleApplyAPISchemaNames.end()) {
+        if (_multipleApplyAPISchemaNamespaces.find(TfToken(alias)) !=  
+                _multipleApplyAPISchemaNamespaces.end()) {
             return true;
         }
     }
