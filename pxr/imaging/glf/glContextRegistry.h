@@ -30,8 +30,9 @@
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/base/tf/singleton.h"
 #include <boost/ptr_container/ptr_vector.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
+
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -85,7 +86,7 @@ private:
     boost::ptr_vector<GlfGLContextRegistrationInterface> _interfaces;
     bool _sharedContextInitialized;
     GlfGLContextSharedPtr _shared;
-    boost::scoped_ptr<GlfGLContextRegistry_Data> _data;
+    std::unique_ptr<GlfGLContextRegistry_Data> _data;
 };
 
 
