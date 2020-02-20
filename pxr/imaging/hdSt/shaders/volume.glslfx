@@ -80,15 +80,7 @@ in VertexData
 
 // Transform a point by a 4x4 matrix
 vec3
-transformPoint(mat4 m, vec3 point)
-{
-    const vec4 result = m * vec4(point, 1.0);
-    return result.xyz / result.w;
-}
-
-// Transform a point by a 4x4 matrix
-vec3
-transformPoint(dmat4 m, vec3 point)
+transformPoint(MAT4 m, vec3 point)
 {
     const vec4 result = vec4(m * vec4(point, 1.0));
     return result.xyz / result.w;
@@ -98,7 +90,8 @@ transformPoint(dmat4 m, vec3 point)
 bool
 inBoundingBox(vec3 p)
 {
-    const vec3 pVol = transformPoint(HdGet_volumeBBoxInverseTransform(), p);
+    const vec3 pVol = transformPoint(MAT4(HdGet_volumeBBoxInverseTransform()),
+                                     p);
 
     // Bounding box
     const vec3 localMin = vec3(HdGet_volumeBBoxLocalMin().xyz);
