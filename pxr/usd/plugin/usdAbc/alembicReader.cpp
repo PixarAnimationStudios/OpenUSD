@@ -1058,19 +1058,20 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog,
         _GetDoubleMetadata(metadata, _pseudoRoot->metadata,
                            SdfFieldKeys->FramesPerSecond);
 
+        _GetTokenMetadata(metadata, _pseudoRoot->metadata,
+                          UsdGeomTokens->upAxis);
+
         // Read the default prim name.
         _GetTokenMetadata(metadata, _pseudoRoot->metadata,
                           SdfFieldKeys->DefaultPrim);
-
-        _GetTokenMetadata(metadata, _pseudoRoot->metadata,
-                          UsdGeomTokens->upAxis);
     }
 
     // If no default prim then choose one by a heuristic (first root prim).
     if (!_pseudoRoot->children.empty()) {
-        _pseudoRoot->metadata.insert(
-            std::make_pair(SdfFieldKeys->DefaultPrim,
-                           VtValue(_pseudoRoot->children.front())));
+        // Use emplace to leave existing property above untouched and avoid the
+        // VtValue construction if possible
+        _pseudoRoot->metadata.emplace(SdfFieldKeys->DefaultPrim,
+                                      _pseudoRoot->children.front());
     }
 
     return true;
