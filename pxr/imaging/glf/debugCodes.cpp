@@ -45,6 +45,8 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "Glf texture image plugin registration");
     TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_TEXTURE_PLUGINS,
         "Glf texture plugin registration");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_VDB_TEXTURE,
+        "Glf Vdb texture loading");
 
 }
 
