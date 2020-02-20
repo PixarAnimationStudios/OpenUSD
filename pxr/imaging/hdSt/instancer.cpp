@@ -62,7 +62,7 @@ HdStInstancer::PopulateDrawItem(HdRprim *prim,
     int level = 0;
     HdStInstancer *currentInstancer = this;
     while (currentInstancer) {
-        // allocate instance primvar slot in the drawing coordinate.
+        // update instance primvar slot in the drawing coordinate.
         sharedData->barContainer.Set(
             drawingCoord->GetInstancePrimvarIndex(level),
             currentInstancer->GetInstancePrimvars(prim, drawItem));
@@ -92,146 +92,149 @@ HdStInstancer::GetInstancePrimvars(HdRprim *prim,
 
     HdSceneDelegate *delegate = GetDelegate();
 
-    HdChangeTracker &changeTracker = 
+    HdChangeTracker &changeTracker =
         delegate->GetRenderIndex().GetChangeTracker();
     SdfPath const& instancerId = GetId();
 
-    // Two RPrim's might be trying to update the same instancer at once.
-    // do a quick unguarded check to see if it is dirty.
+    // Two Rprim's might be trying to update the same instancer at once.
+    // Do a quick unguarded check to see if it is dirty.
     HdDirtyBits dirtyBits = changeTracker.GetInstancerDirtyBits(instancerId);
-    if (HdChangeTracker::IsAnyPrimvarDirty(dirtyBits, instancerId)) {
-        std::lock_guard<std::mutex> lock(_instanceLock);
-  
-        // Now we have the lock, we need to check again, as another thread might
-        // have beat us to updating this instance.
-        dirtyBits = changeTracker.GetInstancerDirtyBits(instancerId);
+    if (!HdChangeTracker::IsAnyPrimvarDirty(dirtyBits, instancerId)) {
+        // Return the cached range. No guarantees are made about it (i.e., it
+        // could be empty).
+        return _instancePrimvarRange;
+    }
 
-        // check the dirtyBits of this instancer so that the instance primvar will
-        // be updated just once even if there're multiple prototypes.
-        if (HdChangeTracker::IsAnyPrimvarDirty(dirtyBits, instancerId)) {
-            HdStResourceRegistrySharedPtr const& resourceRegistry = 
-                boost::static_pointer_cast<HdStResourceRegistry>(
-                delegate->GetRenderIndex().GetResourceRegistry());
+    std::lock_guard<std::mutex> lock(_instanceLock);
 
-            HdPrimvarDescriptorVector primvars =
-                HdStGetInstancerPrimvarDescriptors(this,
-                                                   prim, drawItem, delegate);
+    // Now we have the lock, we need to check again, as another thread might
+    // have beat us to updating this instance.
+    dirtyBits = changeTracker.GetInstancerDirtyBits(instancerId);
 
-            // for all instance primvars
-            HdBufferSourceVector sources;
-            sources.reserve(primvars.size());
+    // Check the dirtyBits of this instancer so that the instance primvars
+    // are updated just once even if there're multiple prototypes.
+    if (!HdChangeTracker::IsAnyPrimvarDirty(dirtyBits, instancerId)) {
+        // The other Rprim (thread) has taken care of updating the primvar BAR.
+        return _instancePrimvarRange;
+    }
 
-            // Always reset numInstancePrimvars, for the case the number of
-            // instances are varying.
-            // XXX: This might overlook the error that only a subset of
-            // instance primvars are varying.
-            _numInstancePrimvars = 0;
+    HdStResourceRegistrySharedPtr const& resourceRegistry =
+        boost::static_pointer_cast<HdStResourceRegistry>(
+        delegate->GetRenderIndex().GetResourceRegistry());
 
-            for (HdPrimvarDescriptor const& primvar: primvars) {
-                if (HdChangeTracker::IsPrimvarDirty(dirtyBits, instancerId, 
-                                                    primvar.name)) {
-                    VtValue value = delegate->Get(instancerId, primvar.name);
-                    if (!value.IsEmpty()) {
-                        HdBufferSourceSharedPtr source;
-                        if (primvar.name ==
-                                HdInstancerTokens->instanceTransform &&
-                            TF_VERIFY(value.IsHolding<VtArray<GfMatrix4d> >())) {
-                            // Explicitly invoke the c'tor taking a
-                            // VtArray<GfMatrix4d> to ensure we properly convert to
-                            // the appropriate floating-point matrix type.
-                            source.reset(new HdVtBufferSource(
-                                primvar.name,
-                                value.UncheckedGet<VtArray<GfMatrix4d> >()));
-                        }
-                        else {
-                            source.reset(new HdVtBufferSource(
-                                primvar.name, value));
-                        }
+    HdPrimvarDescriptorVector primvars =
+        HdStGetInstancerPrimvarDescriptors(this, prim, drawItem, delegate);
 
-                        // This is a defensive check, but ideally we would not be sent
-                        // empty arrays from the client. Once UsdImaging can fulfill
-                        // this contract efficiently, this check should emit a coding
-                        // error.
-                        if (source->GetNumElements() == 0)
-                            continue;
+    HdBufferSourceVector sources;
+    sources.reserve(primvars.size());
 
-                        // Latch onto the first numElements we see.
-                        size_t numElements = source->GetNumElements();
-                        if (_numInstancePrimvars == 0) {
-                            _numInstancePrimvars = numElements;
-                        }
+    // Always reset numInstancePrimvars, for the case the number of
+    // instances are varying.
+    // XXX: This might overlook the error that only a subset of
+    // instance primvars are varying.
+    _numInstancePrimvars = 0;
 
-                        if (numElements != _numInstancePrimvars) {
-                            // This Rprim is now potentially in a bad state.
-                            // to prevent crashes, trim down _numInstancePrimvars.
-                            //
-                            // Also note that this will not catch time-varying update
-                            // errors.
-                            TF_WARN("Inconsistent number of '%s' values "
-                                    "(%zu vs %zu) for <%s>.",
-                                    primvar.name.GetText(),
-                                    source->GetNumElements(),
-                                    _numInstancePrimvars,
-                                    instancerId.GetText());
-                            _numInstancePrimvars
-                                = std::min(numElements, _numInstancePrimvars);
-                        }
-
-                        sources.push_back(source);
-                    }
+    for (HdPrimvarDescriptor const& primvar: primvars) {
+        if (HdChangeTracker::IsPrimvarDirty(dirtyBits, instancerId,
+                                            primvar.name)) {
+            VtValue value = delegate->Get(instancerId, primvar.name);
+            if (!value.IsEmpty()) {
+                HdBufferSourceSharedPtr source;
+                if (primvar.name == HdInstancerTokens->instanceTransform &&
+                    TF_VERIFY(value.IsHolding<VtArray<GfMatrix4d> >())) {
+                    // Explicitly invoke the c'tor taking a
+                    // VtArray<GfMatrix4d> to ensure we properly convert to
+                    // the appropriate floating-point matrix type.
+                    source.reset(new HdVtBufferSource( primvar.name,
+                        value.UncheckedGet<VtArray<GfMatrix4d> >()));
                 }
-            }
-
-            if (!sources.empty()) {
-                HdBufferSpecVector bufferSpecs;
-                HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
-
-                // if the instance BAR has not been allocated, create new one
-                if (!_instancePrimvarRange) {
-                    HdBufferSpecVector bufferSpecs;
-                    HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
-
-                    _instancePrimvarRange =
-                        resourceRegistry->AllocateNonUniformBufferArrayRange(
-                            HdTokens->primvar,
-                            bufferSpecs,
-                            HdBufferArrayUsageHint());
-                } else {
-                    HdBufferArrayRangeSharedPtr range =
-                        resourceRegistry->MergeNonUniformBufferArrayRange(
-                            HdTokens->primvar,
-                            bufferSpecs,
-                            HdBufferArrayUsageHint(),
-                            _instancePrimvarRange);
-
-                        if (range != _instancePrimvarRange) {
-                            _instancePrimvarRange = range;
-                            // If buffer migration actually happens, the old buffer will no
-                            // longer be needed, and GC is required to reclaim the memory.
-                            // We also need to trigger a batch rebuild.
-                            delegate->GetRenderIndex().GetChangeTracker().
-                                SetGarbageCollectionNeeded();
-                            delegate->GetRenderIndex().GetChangeTracker().
-                                    MarkBatchesDirty();
-                    }
+                else {
+                    source.reset(new HdVtBufferSource( primvar.name, value));
                 }
 
-                TF_VERIFY(_instancePrimvarRange->IsValid());
+                // This is a defensive check, but ideally we would not be sent
+                // empty arrays from the client. Once UsdImaging can fulfill
+                // this contract efficiently, this check should emit a coding
+                // error.
+                if (source->GetNumElements() == 0) {
+                    continue;
+                }
 
-                // schedule to sync gpu
-                resourceRegistry->AddSources(_instancePrimvarRange, sources);
+                // Latch onto the first numElements we see.
+                size_t numElements = source->GetNumElements();
+                if (_numInstancePrimvars == 0) {
+                    _numInstancePrimvars = numElements;
+                }
+
+                if (numElements != _numInstancePrimvars) {
+                    // This Rprim is now potentially in a bad state.
+                    // to prevent crashes, trim down _numInstancePrimvars.
+                    //
+                    // Also note that this will not catch time-varying update
+                    // errors.
+                    TF_WARN("Inconsistent number of '%s' values "
+                            "(%zu vs %zu) for <%s>.",
+                            primvar.name.GetText(),
+                            source->GetNumElements(),
+                            _numInstancePrimvars,
+                            instancerId.GetText());
+                    _numInstancePrimvars
+                        = std::min(numElements, _numInstancePrimvars);
+                }
+
+                sources.push_back(source);
             }
-
-            // Clear the dirtyBits of this instancer since we just scheduled to
-            // update them and we don't want to do again for other prototypes
-            // sharing same instancer. This is slightly inconsistent with how we
-            // clear the dirtyBits of Rprims in HdRenderIndex, which takes the mask
-            // of renderPass into account.
-            // We can add another explicit pass for instancer update into
-            // HdRenderIndex to be more consistent, if we like instead.
-            changeTracker.MarkInstancerClean(instancerId);
         }
     }
+
+    if (!sources.empty()) {
+        HdBufferSpecVector bufferSpecs;
+        HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
+
+        // if the instance BAR has not been allocated, create new one
+        if (!_instancePrimvarRange) {
+            HdBufferSpecVector bufferSpecs;
+            HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
+
+            _instancePrimvarRange =
+                resourceRegistry->AllocateNonUniformBufferArrayRange(
+                    HdTokens->primvar,
+                    bufferSpecs,
+                    HdBufferArrayUsageHint());
+        } else {
+            HdBufferArrayRangeSharedPtr range =
+                resourceRegistry->MergeNonUniformBufferArrayRange(
+                    HdTokens->primvar,
+                    bufferSpecs,
+                    HdBufferArrayUsageHint(),
+                    _instancePrimvarRange);
+
+            if (range != _instancePrimvarRange) {
+                _instancePrimvarRange = range;
+                // If buffer migration actually happens, the old buffer will no
+                // longer be needed, and GC is required to reclaim the memory.
+                // We also need to trigger a batch rebuild.
+                delegate->GetRenderIndex().GetChangeTracker().
+                    SetGarbageCollectionNeeded();
+                delegate->GetRenderIndex().GetChangeTracker().
+                        MarkBatchesDirty();
+            }
+        }
+
+        TF_VERIFY(_instancePrimvarRange->IsValid());
+
+        // schedule to sync gpu
+        resourceRegistry->AddSources(_instancePrimvarRange, sources);
+    }
+
+    // Clear the dirtyBits of this instancer since we just scheduled to
+    // update them and we don't want to do again for other prototypes
+    // sharing same instancer. This is slightly inconsistent with how we
+    // clear the dirtyBits of Rprims in HdRenderIndex, which takes the mask
+    // of renderPass into account.
+    // We can add another explicit pass for instancer update into
+    // HdRenderIndex to be more consistent, if we like instead.
+    changeTracker.MarkInstancerClean(instancerId);
 
     return _instancePrimvarRange;
 }
@@ -294,7 +297,7 @@ HdStInstancer::GetInstanceIndices(SdfPath const &prototypeId)
     // the prototype has DirtyInstancer.  We should figure out a way to cache
     // this on DirtyInstanceIndex (set on this instancer).
 
-    HdStResourceRegistrySharedPtr const& resourceRegistry = 
+    HdStResourceRegistrySharedPtr const& resourceRegistry =
         boost::static_pointer_cast<HdStResourceRegistry>(
         GetDelegate()->GetRenderIndex().GetResourceRegistry());
 

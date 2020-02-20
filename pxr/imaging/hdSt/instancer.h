@@ -74,7 +74,7 @@ public:
     HdStInstancer(HdSceneDelegate* delegate, SdfPath const &id,
                   SdfPath const &parentInstancerId);
 
-    /// Populates instance primvars and returns the buffer range.
+    /// Populates instance primvars and returns the cached buffer range.
     HDST_API
     HdBufferArrayRangeSharedPtr GetInstancePrimvars(HdRprim *prim,
                                                     HdStDrawItem *drawItem);
@@ -101,6 +101,8 @@ private:
     std::mutex _instanceLock;
     size_t _numInstancePrimvars;
 
+    // Cache the BARs since multiple prototype Rprims will generally refer to
+    // the same instancer.
     HdBufferArrayRangeSharedPtr _instancePrimvarRange;
     TfHashMap<SdfPath,
               HdBufferArrayRangeSharedPtr,
