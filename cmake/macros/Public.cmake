@@ -362,6 +362,12 @@ function (pxr_create_test_module MODULE_NAME)
         return()
     endif()
 
+    # If the package for this test does not have a target it must not be
+    # getting built, in which case we can skip building associated tests.
+    if (NOT TARGET ${PXR_PACKAGE})
+        return()
+    endif()
+
     cmake_parse_arguments(tm "" "INSTALL_PREFIX;SOURCE_DIR" "" ${ARGN})
 
     if (NOT tm_SOURCE_DIR)
@@ -397,118 +403,134 @@ function (pxr_create_test_module MODULE_NAME)
 endfunction() # pxr_create_test_module
 
 function(pxr_build_test_shared_lib LIBRARY_NAME)
-    if (PXR_BUILD_TESTS)
-        cmake_parse_arguments(bt
-            ""
-            "INSTALL_PREFIX;SOURCE_DIR"
-            "LIBRARIES;CPPFILES"
-            ${ARGN}
-        )
+    if (NOT PXR_BUILD_TESTS)
+        return()
+    endif()
+
+    # If the package for this test does not have a target it must not be
+    # getting built, in which case we can skip building associated tests.
+    if (NOT TARGET ${PXR_PACKAGE})
+        return()
+    endif()
+
+    cmake_parse_arguments(bt
+        ""
+        "INSTALL_PREFIX;SOURCE_DIR"
+        "LIBRARIES;CPPFILES"
+        ${ARGN}
+    )
         
-        add_library(${LIBRARY_NAME}
-            SHARED
-            ${bt_CPPFILES}
-        )
-        _pxr_target_link_libraries(${LIBRARY_NAME}
-            ${bt_LIBRARIES}
-        )
-        _get_folder("tests/lib" folder)
-        set_target_properties(${LIBRARY_NAME}
-            PROPERTIES 
-                FOLDER "${folder}"
-        )
+    add_library(${LIBRARY_NAME}
+        SHARED
+        ${bt_CPPFILES}
+    )
+    _pxr_target_link_libraries(${LIBRARY_NAME}
+        ${bt_LIBRARIES}
+    )
+    _get_folder("tests/lib" folder)
+    set_target_properties(${LIBRARY_NAME}
+        PROPERTIES 
+            FOLDER "${folder}"
+    )
 
-        # Find libraries under the install prefix, which has the core USD
-        # libraries.
-        _pxr_init_rpath(rpath "tests/lib")
-        _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-        _pxr_install_rpath(rpath ${LIBRARY_NAME})
+    # Find libraries under the install prefix, which has the core USD
+    # libraries.
+    _pxr_init_rpath(rpath "tests/lib")
+    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    _pxr_install_rpath(rpath ${LIBRARY_NAME})
 
-        if (NOT bt_SOURCE_DIR)
-            set(bt_SOURCE_DIR testenv)
-        endif()
-        set(testPlugInfoSrcPath ${bt_SOURCE_DIR}/${LIBRARY_NAME}_plugInfo.json)
+    if (NOT bt_SOURCE_DIR)
+        set(bt_SOURCE_DIR testenv)
+    endif()
+    set(testPlugInfoSrcPath ${bt_SOURCE_DIR}/${LIBRARY_NAME}_plugInfo.json)
 
-        if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${testPlugInfoSrcPath}")
-            set(TEST_PLUG_INFO_RESOURCE_PATH "Resources")
-            set(TEST_PLUG_INFO_ROOT "..")
-            set(LIBRARY_FILE "${CMAKE_SHARED_LIBRARY_PREFIX}${LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}")
+    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${testPlugInfoSrcPath}")
+        set(TEST_PLUG_INFO_RESOURCE_PATH "Resources")
+        set(TEST_PLUG_INFO_ROOT "..")
+        set(LIBRARY_FILE "${CMAKE_SHARED_LIBRARY_PREFIX}${LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}")
 
-            set(testPlugInfoLibDir "tests/${bt_INSTALL_PREFIX}/lib/${LIBRARY_NAME}")
-            set(testPlugInfoResourceDir "${testPlugInfoLibDir}/${TEST_PLUG_INFO_RESOURCE_PATH}")
-            set(testPlugInfoPath "${CMAKE_BINARY_DIR}/${testPlugInfoResourceDir}/plugInfo.json")
+        set(testPlugInfoLibDir "tests/${bt_INSTALL_PREFIX}/lib/${LIBRARY_NAME}")
+        set(testPlugInfoResourceDir "${testPlugInfoLibDir}/${TEST_PLUG_INFO_RESOURCE_PATH}")
+        set(testPlugInfoPath "${CMAKE_BINARY_DIR}/${testPlugInfoResourceDir}/plugInfo.json")
 
-            file(RELATIVE_PATH 
-                TEST_PLUG_INFO_LIBRARY_PATH
-                "${CMAKE_INSTALL_PREFIX}/${testPlugInfoLibDir}"
-                "${CMAKE_INSTALL_PREFIX}/tests/lib/${LIBRARY_FILE}")
+        file(RELATIVE_PATH 
+            TEST_PLUG_INFO_LIBRARY_PATH
+            "${CMAKE_INSTALL_PREFIX}/${testPlugInfoLibDir}"
+            "${CMAKE_INSTALL_PREFIX}/tests/lib/${LIBRARY_FILE}")
 
-            configure_file("${testPlugInfoSrcPath}" "${testPlugInfoPath}")
-            # XXX -- We shouldn't have to install to run tests.
-            install(
-                FILES ${testPlugInfoPath}
-                DESTINATION ${testPlugInfoResourceDir})
-        endif()
-
-        # We always want this test to build after the package it's under, even if
-        # it doesn't link directly. This ensures that this test is able to include
-        # headers from its parent package.
-        add_dependencies(${LIBRARY_NAME} ${PXR_PACKAGE})
-
-        # Test libraries can include the private headers of their parent PXR_PACKAGE
-        # library
-        target_include_directories(${LIBRARY_NAME}
-            PRIVATE $<TARGET_PROPERTY:${PXR_PACKAGE},INCLUDE_DIRECTORIES>
-        )
-
+        configure_file("${testPlugInfoSrcPath}" "${testPlugInfoPath}")
         # XXX -- We shouldn't have to install to run tests.
         install(
-            TARGETS ${LIBRARY_NAME}
-            LIBRARY DESTINATION "tests/lib"
-            ARCHIVE DESTINATION "tests/lib"
-            RUNTIME DESTINATION "tests/lib"
-        )
+            FILES ${testPlugInfoPath}
+            DESTINATION ${testPlugInfoResourceDir})
     endif()
+
+    # We always want this test to build after the package it's under, even if
+    # it doesn't link directly. This ensures that this test is able to include
+    # headers from its parent package.
+    add_dependencies(${LIBRARY_NAME} ${PXR_PACKAGE})
+
+    # Test libraries can include the private headers of their parent PXR_PACKAGE
+    # library
+    target_include_directories(${LIBRARY_NAME}
+        PRIVATE $<TARGET_PROPERTY:${PXR_PACKAGE},INCLUDE_DIRECTORIES>
+    )
+
+    # XXX -- We shouldn't have to install to run tests.
+    install(
+        TARGETS ${LIBRARY_NAME}
+        LIBRARY DESTINATION "tests/lib"
+        ARCHIVE DESTINATION "tests/lib"
+        RUNTIME DESTINATION "tests/lib"
+    )
 endfunction() # pxr_build_test_shared_lib
 
 function(pxr_build_test TEST_NAME)
-    if (PXR_BUILD_TESTS)
-        cmake_parse_arguments(bt
-            "" ""
-            "LIBRARIES;CPPFILES"
-            ${ARGN}
-        )
-
-        add_executable(${TEST_NAME}
-            ${bt_CPPFILES}
-        )
-
-        # Turn PIC ON otherwise ArchGetAddressInfo() on Linux may yield
-        # unexpected results.
-        _get_folder("tests/bin" folder)
-        set_target_properties(${TEST_NAME}
-            PROPERTIES 
-                FOLDER "${folder}"
-            	POSITION_INDEPENDENT_CODE ON
-        )
-        target_include_directories(${TEST_NAME}
-            PRIVATE $<TARGET_PROPERTY:${PXR_PACKAGE},INCLUDE_DIRECTORIES>
-        )
-        _pxr_target_link_libraries(${TEST_NAME}
-            ${bt_LIBRARIES}
-        )
-
-        # Find libraries under the install prefix, which has the core USD
-        # libraries.
-        _pxr_init_rpath(rpath "tests")
-        _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-        _pxr_install_rpath(rpath ${TEST_NAME})
-
-        # XXX -- We shouldn't have to install to run tests.
-        install(TARGETS ${TEST_NAME}
-            RUNTIME DESTINATION "tests"
-        )
+    if (NOT PXR_BUILD_TESTS)
+        return()
     endif()
+
+    # If the package for this test does not have a target it must not be
+    # getting built, in which case we can skip building associated tests.
+    if (NOT TARGET ${PXR_PACKAGE})
+        return()
+    endif()
+
+    cmake_parse_arguments(bt
+        "" ""
+        "LIBRARIES;CPPFILES"
+        ${ARGN}
+    )
+
+    add_executable(${TEST_NAME}
+        ${bt_CPPFILES}
+    )
+
+    # Turn PIC ON otherwise ArchGetAddressInfo() on Linux may yield
+    # unexpected results.
+    _get_folder("tests/bin" folder)
+    set_target_properties(${TEST_NAME}
+        PROPERTIES 
+            FOLDER "${folder}"
+        	POSITION_INDEPENDENT_CODE ON
+    )
+    target_include_directories(${TEST_NAME}
+        PRIVATE $<TARGET_PROPERTY:${PXR_PACKAGE},INCLUDE_DIRECTORIES>
+    )
+    _pxr_target_link_libraries(${TEST_NAME}
+        ${bt_LIBRARIES}
+    )
+
+    # Find libraries under the install prefix, which has the core USD
+    # libraries.
+    _pxr_init_rpath(rpath "tests")
+    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    _pxr_install_rpath(rpath ${TEST_NAME})
+
+    # XXX -- We shouldn't have to install to run tests.
+    install(TARGETS ${TEST_NAME}
+        RUNTIME DESTINATION "tests"
+    )
 endfunction() # pxr_build_test
 
 function(pxr_test_scripts)
@@ -518,6 +540,12 @@ function(pxr_test_scripts)
     endif()
 
     if (NOT PXR_BUILD_TESTS)
+        return()
+    endif()
+
+    # If the package for this test does not have a target it must not be
+    # getting built, in which case we can skip building associated tests.
+    if (NOT TARGET ${PXR_PACKAGE})
         return()
     endif()
 
@@ -533,195 +561,212 @@ function(pxr_test_scripts)
 endfunction() # pxr_test_scripts
 
 function(pxr_install_test_dir)
-    if (PXR_BUILD_TESTS)
-        cmake_parse_arguments(bt
-            "" 
-            "SRC;DEST"
-            ""
-            ${ARGN}
-        )
-
-        # XXX -- We shouldn't have to install to run tests.
-        install(
-            DIRECTORY ${bt_SRC}/
-            DESTINATION tests/ctest/${bt_DEST}
-        )
+    if (NOT PXR_BUILD_TESTS)
+        return()
     endif()
+
+    # If the package for this test does not have a target it must not be
+    # getting built, in which case we can skip building associated tests.
+    if (NOT TARGET ${PXR_PACKAGE})
+        return()
+    endif()
+
+    cmake_parse_arguments(bt
+        "" 
+        "SRC;DEST"
+        ""
+        ${ARGN}
+    )
+
+    # XXX -- We shouldn't have to install to run tests.
+    install(
+        DIRECTORY ${bt_SRC}/
+        DESTINATION tests/ctest/${bt_DEST}
+    )
 endfunction() # pxr_install_test_dir
 
 function(pxr_register_test TEST_NAME)
-    if (PXR_BUILD_TESTS)
-        cmake_parse_arguments(bt
-            "RUN_SERIAL;PYTHON;REQUIRES_SHARED_LIBS;REQUIRES_PYTHON_MODULES" 
-            "CUSTOM_PYTHON;COMMAND;STDOUT_REDIRECT;STDERR_REDIRECT;DIFF_COMPARE;POST_COMMAND;POST_COMMAND_STDOUT_REDIRECT;POST_COMMAND_STDERR_REDIRECT;PRE_COMMAND;PRE_COMMAND_STDOUT_REDIRECT;PRE_COMMAND_STDERR_REDIRECT;FILES_EXIST;FILES_DONT_EXIST;CLEAN_OUTPUT;EXPECTED_RETURN_CODE;TESTENV"
-            "ENV;PRE_PATH;POST_PATH"
-            ${ARGN}
-        )
+    if (NOT PXR_BUILD_TESTS)
+        return()
+    endif()
 
-        # Discard tests that required shared libraries.
-        if(NOT TARGET shared_libs)
-            # Explicit requirement.  This is for C++ tests that dynamically
-            # load libraries linked against USD code.  These tests will have
-            # multiple copies of symbols and will likely re-execute
-            # ARCH_CONSTRUCTOR and registration functions, which will almost
-            # certainly cause problems.
-            if(bt_REQUIRES_SHARED_LIBS)
-                message(STATUS "Skipping test ${TEST_NAME}, shared libraries required")
-                return()
-            endif()
-        endif()
+    # If the package for this test does not have a target it must not be
+    # getting built, in which case we can skip building associated tests.
+    if (NOT TARGET ${PXR_PACKAGE})
+        return()
+    endif()
 
-        if(NOT TARGET python)
-            # Implicit requirement.  Python modules require shared USD
-            # libraries.  If the test runs python it's certainly going
-            # to load USD modules.  If the test uses C++ to load USD
-            # modules it tells us via REQUIRES_PYTHON_MODULES.
-            if(bt_PYTHON OR bt_CUSTOM_PYTHON OR bt_REQUIRES_PYTHON_MODULES)
-                message(STATUS "Skipping test ${TEST_NAME}, Python modules required")
-                return()
-            endif()
-        endif()
+    cmake_parse_arguments(bt
+        "RUN_SERIAL;PYTHON;REQUIRES_SHARED_LIBS;REQUIRES_PYTHON_MODULES" 
+        "CUSTOM_PYTHON;COMMAND;STDOUT_REDIRECT;STDERR_REDIRECT;DIFF_COMPARE;POST_COMMAND;POST_COMMAND_STDOUT_REDIRECT;POST_COMMAND_STDERR_REDIRECT;PRE_COMMAND;PRE_COMMAND_STDOUT_REDIRECT;PRE_COMMAND_STDERR_REDIRECT;FILES_EXIST;FILES_DONT_EXIST;CLEAN_OUTPUT;EXPECTED_RETURN_CODE;TESTENV"
+        "ENV;PRE_PATH;POST_PATH"
+        ${ARGN}
+    )
 
-        # This harness is a filter which allows us to manipulate the test run, 
-        # e.g. by changing the environment, changing the expected return code, etc.
-        set(testWrapperCmd ${PROJECT_SOURCE_DIR}/cmake/macros/testWrapper.py --verbose)
-
-        if (bt_STDOUT_REDIRECT)
-            set(testWrapperCmd ${testWrapperCmd} --stdout-redirect=${bt_STDOUT_REDIRECT})
-        endif()
-
-        if (bt_STDERR_REDIRECT)
-            set(testWrapperCmd ${testWrapperCmd} --stderr-redirect=${bt_STDERR_REDIRECT})
-        endif()
-
-        if (bt_PRE_COMMAND_STDOUT_REDIRECT)
-            set(testWrapperCmd ${testWrapperCmd} --pre-command-stdout-redirect=${bt_PRE_COMMAND_STDOUT_REDIRECT})
-        endif()
-
-        if (bt_PRE_COMMAND_STDERR_REDIRECT)
-            set(testWrapperCmd ${testWrapperCmd} --pre-command-stderr-redirect=${bt_PRE_COMMAND_STDERR_REDIRECT})
-        endif()
-
-        if (bt_POST_COMMAND_STDOUT_REDIRECT)
-            set(testWrapperCmd ${testWrapperCmd} --post-command-stdout-redirect=${bt_POST_COMMAND_STDOUT_REDIRECT})
-        endif()
-
-        if (bt_POST_COMMAND_STDERR_REDIRECT)
-            set(testWrapperCmd ${testWrapperCmd} --post-command-stderr-redirect=${bt_POST_COMMAND_STDERR_REDIRECT})
-        endif()
-
-        # Not all tests will have testenvs, but if they do let the wrapper know so
-        # it can copy the testenv contents into the run directory. By default,
-        # assume the testenv has the same name as the test but allow it to be
-        # overridden by specifying TESTENV.
-        if (bt_TESTENV)
-            set(testenvDir ${CMAKE_INSTALL_PREFIX}/tests/ctest/${bt_TESTENV})
-        else()
-            set(testenvDir ${CMAKE_INSTALL_PREFIX}/tests/ctest/${TEST_NAME})
-        endif()
-
-        set(testWrapperCmd ${testWrapperCmd} --testenv-dir=${testenvDir})
-
-        if (bt_DIFF_COMPARE)
-            set(testWrapperCmd ${testWrapperCmd} --diff-compare=${bt_DIFF_COMPARE})
-
-            # For now the baseline directory is assumed by convention from the test
-            # name. There may eventually be cases where we'd want to specify it by
-            # an argument though.
-            set(baselineDir ${testenvDir}/baseline)
-            set(testWrapperCmd ${testWrapperCmd} --baseline-dir=${baselineDir})
-        endif()
-
-        if (bt_CLEAN_OUTPUT)
-            set(testWrapperCmd ${testWrapperCmd} --clean-output-paths=${bt_CLEAN_OUTPUT})
-        endif()
-
-        if (bt_FILES_EXIST)
-            set(testWrapperCmd ${testWrapperCmd} --files-exist=${bt_FILES_EXIST})
-        endif()
-
-        if (bt_FILES_DONT_EXIST)
-            set(testWrapperCmd ${testWrapperCmd} --files-dont-exist=${bt_FILES_DONT_EXIST})
-        endif()
-
-        if (bt_PRE_COMMAND)
-            set(testWrapperCmd ${testWrapperCmd} --pre-command=${bt_PRE_COMMAND})
-        endif()
-
-        if (bt_POST_COMMAND)
-            set(testWrapperCmd ${testWrapperCmd} --post-command=${bt_POST_COMMAND})
-        endif()
-
-        if (bt_EXPECTED_RETURN_CODE)
-            set(testWrapperCmd ${testWrapperCmd} --expected-return-code=${bt_EXPECTED_RETURN_CODE})
-        endif()
-
-        if (bt_ENV)
-            foreach(env ${bt_ENV})
-                set(testWrapperCmd ${testWrapperCmd} --env-var=${env})
-            endforeach()
-        endif()
-
-        if (bt_PRE_PATH)
-            foreach(path ${bt_PRE_PATH})
-                set(testWrapperCmd ${testWrapperCmd} --pre-path=${path})
-            endforeach()
-        endif()
-
-        if (bt_POST_PATH)
-            foreach(path ${bt_POST_PATH})
-                set(testWrapperCmd ${testWrapperCmd} --post-path=${path})
-            endforeach()
-        endif()
-        
-        # If we're building static libraries, the C++ tests that link against
-        # these libraries will look for resource files in the "usd" subdirectory
-        # relative to where the tests are installed. However, the build installs
-        # these files in the "lib" directory where the libraries are installed. 
-        #
-        # We don't want to copy these resource files for each test, so instead
-        # we set the PXR_PLUGINPATH_NAME env var to point to the "lib/usd"
-        # directory where these files are installed.
-        if (NOT TARGET shared_libs)
-            set(_plugSearchPathEnvName "PXR_PLUGINPATH_NAME")
-            if (PXR_OVERRIDE_PLUGINPATH_NAME)
-                set(_plugSearchPathEnvName ${PXR_OVERRIDE_PLUGINPATH_NAME})
-            endif()
-
-            set(testWrapperCmd ${testWrapperCmd} --env-var=${_plugSearchPathEnvName}=${CMAKE_INSTALL_PREFIX}/lib/usd)
-        endif()
-
-        # Ensure that Python imports the Python files built by this build.
-        # On Windows convert backslash to slash and don't change semicolons
-        # to colons.
-        set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/lib/python;$ENV{PYTHONPATH}")
-        if(WIN32)
-            string(REGEX REPLACE "\\\\" "/" _testPythonPath "${_testPythonPath}")
-        else()
-            string(REPLACE ";" ":" _testPythonPath "${_testPythonPath}")
-        endif()
-
-        # Ensure we run with the appropriate python executable.
-        if (bt_CUSTOM_PYTHON)
-            set(testCmd "${bt_CUSTOM_PYTHON} ${bt_COMMAND}")
-        elseif (bt_PYTHON)
-            set(testCmd "${PYTHON_EXECUTABLE} ${bt_COMMAND}")
-        else()
-            set(testCmd "${bt_COMMAND}")
-        endif()
-
-        add_test(
-            NAME ${TEST_NAME}
-            COMMAND ${PYTHON_EXECUTABLE} ${testWrapperCmd}
-                    "--env-var=PYTHONPATH=${_testPythonPath}" ${testCmd}
-        )
-
-        # But in some cases, we need to pass cmake properties directly to cmake
-        # run_test, rather than configuring the environment
-        if (bt_RUN_SERIAL)
-            set_tests_properties(${TEST_NAME} PROPERTIES RUN_SERIAL TRUE)
+    # Discard tests that required shared libraries.
+    if(NOT TARGET shared_libs)
+        # Explicit requirement.  This is for C++ tests that dynamically
+        # load libraries linked against USD code.  These tests will have
+        # multiple copies of symbols and will likely re-execute
+        # ARCH_CONSTRUCTOR and registration functions, which will almost
+        # certainly cause problems.
+        if(bt_REQUIRES_SHARED_LIBS)
+            message(STATUS "Skipping test ${TEST_NAME}, shared libraries required")
+            return()
         endif()
     endif()
+
+    if(NOT TARGET python)
+        # Implicit requirement.  Python modules require shared USD
+        # libraries.  If the test runs python it's certainly going
+        # to load USD modules.  If the test uses C++ to load USD
+        # modules it tells us via REQUIRES_PYTHON_MODULES.
+        if(bt_PYTHON OR bt_CUSTOM_PYTHON OR bt_REQUIRES_PYTHON_MODULES)
+            message(STATUS "Skipping test ${TEST_NAME}, Python modules required")
+            return()
+        endif()
+    endif()
+
+    # This harness is a filter which allows us to manipulate the test run, 
+    # e.g. by changing the environment, changing the expected return code, etc.
+    set(testWrapperCmd ${PROJECT_SOURCE_DIR}/cmake/macros/testWrapper.py --verbose)
+
+    if (bt_STDOUT_REDIRECT)
+        set(testWrapperCmd ${testWrapperCmd} --stdout-redirect=${bt_STDOUT_REDIRECT})
+    endif()
+
+    if (bt_STDERR_REDIRECT)
+        set(testWrapperCmd ${testWrapperCmd} --stderr-redirect=${bt_STDERR_REDIRECT})
+    endif()
+
+    if (bt_PRE_COMMAND_STDOUT_REDIRECT)
+        set(testWrapperCmd ${testWrapperCmd} --pre-command-stdout-redirect=${bt_PRE_COMMAND_STDOUT_REDIRECT})
+    endif()
+
+    if (bt_PRE_COMMAND_STDERR_REDIRECT)
+        set(testWrapperCmd ${testWrapperCmd} --pre-command-stderr-redirect=${bt_PRE_COMMAND_STDERR_REDIRECT})
+    endif()
+
+    if (bt_POST_COMMAND_STDOUT_REDIRECT)
+        set(testWrapperCmd ${testWrapperCmd} --post-command-stdout-redirect=${bt_POST_COMMAND_STDOUT_REDIRECT})
+    endif()
+
+    if (bt_POST_COMMAND_STDERR_REDIRECT)
+        set(testWrapperCmd ${testWrapperCmd} --post-command-stderr-redirect=${bt_POST_COMMAND_STDERR_REDIRECT})
+    endif()
+
+    # Not all tests will have testenvs, but if they do let the wrapper know so
+    # it can copy the testenv contents into the run directory. By default,
+    # assume the testenv has the same name as the test but allow it to be
+    # overridden by specifying TESTENV.
+    if (bt_TESTENV)
+        set(testenvDir ${CMAKE_INSTALL_PREFIX}/tests/ctest/${bt_TESTENV})
+    else()
+        set(testenvDir ${CMAKE_INSTALL_PREFIX}/tests/ctest/${TEST_NAME})
+    endif()
+
+    set(testWrapperCmd ${testWrapperCmd} --testenv-dir=${testenvDir})
+
+    if (bt_DIFF_COMPARE)
+        set(testWrapperCmd ${testWrapperCmd} --diff-compare=${bt_DIFF_COMPARE})
+
+        # For now the baseline directory is assumed by convention from the test
+        # name. There may eventually be cases where we'd want to specify it by
+        # an argument though.
+        set(baselineDir ${testenvDir}/baseline)
+        set(testWrapperCmd ${testWrapperCmd} --baseline-dir=${baselineDir})
+    endif()
+
+    if (bt_CLEAN_OUTPUT)
+        set(testWrapperCmd ${testWrapperCmd} --clean-output-paths=${bt_CLEAN_OUTPUT})
+    endif()
+
+    if (bt_FILES_EXIST)
+        set(testWrapperCmd ${testWrapperCmd} --files-exist=${bt_FILES_EXIST})
+    endif()
+
+    if (bt_FILES_DONT_EXIST)
+        set(testWrapperCmd ${testWrapperCmd} --files-dont-exist=${bt_FILES_DONT_EXIST})
+    endif()
+
+    if (bt_PRE_COMMAND)
+        set(testWrapperCmd ${testWrapperCmd} --pre-command=${bt_PRE_COMMAND})
+    endif()
+
+    if (bt_POST_COMMAND)
+        set(testWrapperCmd ${testWrapperCmd} --post-command=${bt_POST_COMMAND})
+    endif()
+
+    if (bt_EXPECTED_RETURN_CODE)
+        set(testWrapperCmd ${testWrapperCmd} --expected-return-code=${bt_EXPECTED_RETURN_CODE})
+    endif()
+
+    if (bt_ENV)
+        foreach(env ${bt_ENV})
+            set(testWrapperCmd ${testWrapperCmd} --env-var=${env})
+        endforeach()
+    endif()
+
+    if (bt_PRE_PATH)
+        foreach(path ${bt_PRE_PATH})
+            set(testWrapperCmd ${testWrapperCmd} --pre-path=${path})
+        endforeach()
+    endif()
+
+    if (bt_POST_PATH)
+        foreach(path ${bt_POST_PATH})
+            set(testWrapperCmd ${testWrapperCmd} --post-path=${path})
+        endforeach()
+    endif()
+        
+    # If we're building static libraries, the C++ tests that link against
+    # these libraries will look for resource files in the "usd" subdirectory
+    # relative to where the tests are installed. However, the build installs
+    # these files in the "lib" directory where the libraries are installed. 
+    #
+    # We don't want to copy these resource files for each test, so instead
+    # we set the PXR_PLUGINPATH_NAME env var to point to the "lib/usd"
+    # directory where these files are installed.
+    if (NOT TARGET shared_libs)
+        set(_plugSearchPathEnvName "PXR_PLUGINPATH_NAME")
+        if (PXR_OVERRIDE_PLUGINPATH_NAME)
+            set(_plugSearchPathEnvName ${PXR_OVERRIDE_PLUGINPATH_NAME})
+        endif()
+
+        set(testWrapperCmd ${testWrapperCmd} --env-var=${_plugSearchPathEnvName}=${CMAKE_INSTALL_PREFIX}/lib/usd)
+    endif()
+
+    # Ensure that Python imports the Python files built by this build.
+    # On Windows convert backslash to slash and don't change semicolons
+    # to colons.
+    set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/lib/python;$ENV{PYTHONPATH}")
+    if(WIN32)
+        string(REGEX REPLACE "\\\\" "/" _testPythonPath "${_testPythonPath}")
+    else()
+        string(REPLACE ";" ":" _testPythonPath "${_testPythonPath}")
+    endif()
+
+    # Ensure we run with the appropriate python executable.
+    if (bt_CUSTOM_PYTHON)
+        set(testCmd "${bt_CUSTOM_PYTHON} ${bt_COMMAND}")
+    elseif (bt_PYTHON)
+        set(testCmd "${PYTHON_EXECUTABLE} ${bt_COMMAND}")
+    else()
+        set(testCmd "${bt_COMMAND}")
+    endif()
+
+    add_test(
+        NAME ${TEST_NAME}
+        COMMAND ${PYTHON_EXECUTABLE} ${testWrapperCmd}
+                "--env-var=PYTHONPATH=${_testPythonPath}" ${testCmd}
+    )
+
+    # But in some cases, we need to pass cmake properties directly to cmake
+    # run_test, rather than configuring the environment
+    if (bt_RUN_SERIAL)
+        set_tests_properties(${TEST_NAME} PROPERTIES RUN_SERIAL TRUE)
+    endif()
+
 endfunction() # pxr_register_test
 
 function(pxr_setup_plugins)
