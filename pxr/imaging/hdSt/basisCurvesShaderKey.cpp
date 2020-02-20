@@ -67,6 +67,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((pointIdFallbackFS,               "PointId.Fragment.Fallback"))
     ((pointIdFS,                       "PointId.Fragment.PointParam"))
 
+    // visibility mixin (for curve and point visibility)
+    ((topVisFS,                "Visibility.Fragment.Topology"))
+
     // helper mixins
     ((curveCubicWidthsBasis,           "Curves.Cubic.Widths.Basis"))
     ((curveCubicWidthsLinear,          "Curves.Cubic.Widths.Linear"))
@@ -299,11 +302,11 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     }
     FS[fsIndex++] = _tokens->scalarOverrideFS;
 
-    // we don't currently ever set primType to PRIM_POINTS for curves, but
-    // if we ever want to view them as just points, this allows point picking to
-    // work.
     FS[fsIndex++] = isPrimTypePoints?
                         _tokens->pointIdFS : _tokens->pointIdFallbackFS;
+    
+    FS[fsIndex++] = _tokens->topVisFS; // Topology visibility
+
 
     if (drawStyle == HdSt_BasisCurvesShaderKey::WIRE || 
         drawStyle == HdSt_BasisCurvesShaderKey::POINTS) {

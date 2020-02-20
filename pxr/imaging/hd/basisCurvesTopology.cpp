@@ -35,6 +35,8 @@ HdBasisCurvesTopology::HdBasisCurvesTopology()
   , _curveWrap(HdTokens->nonperiodic)
   , _curveVertexCounts()
   , _curveIndices()
+  , _invisiblePoints()
+  , _invisibleCurves()
 {
     HD_PERF_COUNTER_INCR(HdPerfTokens->basisCurvesTopology);
 }
@@ -46,6 +48,8 @@ HdBasisCurvesTopology::HdBasisCurvesTopology(const HdBasisCurvesTopology& src)
   , _curveWrap(src._curveWrap)
   , _curveVertexCounts(src._curveVertexCounts)
   , _curveIndices(src._curveIndices)
+  , _invisiblePoints(src._invisiblePoints)
+  , _invisibleCurves(src._invisibleCurves)
 {
     HD_PERF_COUNTER_INCR(HdPerfTokens->basisCurvesTopology);
 }
@@ -61,6 +65,8 @@ HdBasisCurvesTopology::HdBasisCurvesTopology(const TfToken &curveType,
   , _curveWrap(curveWrap)
   , _curveVertexCounts(curveVertexCounts)
   , _curveIndices(curveIndices)
+  , _invisiblePoints()
+  , _invisibleCurves()
 {
     if (_curveType != HdTokens->linear && _curveType != HdTokens->cubic){
         TF_WARN("Curve type must be 'linear' or 'cubic'.  Got: '%s'", _curveType.GetText());
@@ -90,7 +96,9 @@ HdBasisCurvesTopology::operator==(HdBasisCurvesTopology const &other) const
             _curveBasis == other._curveBasis                &&
             _curveWrap == other._curveWrap                  &&
             _curveVertexCounts == other._curveVertexCounts  &&
-            _curveIndices == other._curveIndices);
+            _curveIndices == other._curveIndices            &&
+            _invisiblePoints == other._invisiblePoints      &&
+            _invisibleCurves == other._invisibleCurves);
 }
 
 bool
@@ -112,6 +120,9 @@ HdBasisCurvesTopology::ComputeHash() const
                       _curveVertexCounts.size() * sizeof(int), hash);
     hash = ArchHash64((const char*)_curveIndices.cdata(),
                       _curveIndices.size() * sizeof(int), hash);
+    
+    // Note: We don't hash topological visibility, because it is treated as a
+    // per-prim opinion, and hence, shouldn't break topology sharing.
     return hash;
 }
 
@@ -122,7 +133,9 @@ operator << (std::ostream &out, HdBasisCurvesTopology const &topo)
         topo.GetCurveType().GetString() << ", " <<
         topo.GetCurveWrap().GetString() << ", (" <<
         topo.GetCurveVertexCounts() << "), (" <<
-        topo.GetCurveIndices() << "))";
+        topo.GetCurveIndices() << "), (" <<
+        topo.GetInvisiblePoints() << "), (" <<
+        topo.GetInvisibleCurves() << "))";
     return out;
 }
 

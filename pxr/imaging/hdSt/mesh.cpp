@@ -233,11 +233,16 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         // Topological visibility (of points, faces) comes in as DirtyTopology.
         // We encode this information in a separate BAR.
         if (dirtyTopology) {
-            _PopulateTopologyVisibility(
+            HdStProcessTopologyVisibility(
+                meshTopology.GetInvisibleFaces(),
+                meshTopology.GetNumFaces(),
+                meshTopology.GetInvisiblePoints(),
+                meshTopology.GetNumPoints(),
+                &_sharedData,
                 drawItem,
-                resourceRegistry,
                 &(sceneDelegate->GetRenderIndex().GetChangeTracker()),
-                meshTopology);
+                resourceRegistry,
+                id);    
         }
 
         // If flat shading is enabled for this prim, make sure we're computing
@@ -439,107 +444,6 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             drawItem->GetDrawingCoord()->GetTopologyIndex(),
             rangeInstance.GetValue());
     }  // Release regLock
-}
-
-static HdBufferSourceSharedPtr
-_GetBitmaskEncodedVisibilityBuffer(VtIntArray input,
-                                   int numEntries,
-                                   TfToken const& name,
-                                   SdfPath const& id)
-{
-    size_t numBitsPerUInt = std::numeric_limits<uint32_t>::digits; // i.e, 32
-    size_t numUIntsNeeded = ceil(numEntries/(float) numBitsPerUInt);
-    // Initialize all bits to 1 (visible)
-    VtArray<uint32_t> visibility(numUIntsNeeded,
-                                 std::numeric_limits<uint32_t>::max());
-
-    for (VtIntArray::const_iterator i = input.begin(),
-                                  end = input.end(); i != end; ++i) {
-        if (*i >= numEntries || *i < 0) {
-            HF_VALIDATION_WARN(id,
-                "Topological invisibility data (%d) is not in the range [0, %d)"
-                ".", *i, numEntries);
-            continue;
-        }
-        size_t arrayIndex = *i/numBitsPerUInt;
-        size_t bitIndex   = *i % numBitsPerUInt;
-        visibility[arrayIndex] &= ~(1 << bitIndex); // set bit to 0
-    }
-
-    return HdBufferSourceSharedPtr(
-        new HdVtBufferSource(name, VtValue(visibility), numUIntsNeeded));
-}
-
-void
-HdStMesh::_PopulateTopologyVisibility(
-                      HdStDrawItem *drawItem,
-                      HdStResourceRegistrySharedPtr const &resourceRegistry,
-                      HdChangeTracker *changeTracker,
-                      HdMeshTopology const& meshTopology)
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    HdBufferArrayRangeSharedPtr tvBAR = drawItem->GetTopologyVisibilityRange();
-    HdBufferSourceVector sources;
-
-    // For the general case wherein there is no topological invisibility, we
-    // don't create a BAR.
-    // If any topological invisibility is authored (points/faces), create the
-    // BAR with both sources. Once the BAR is created, we don't attempt to
-    // delete it when there's no topological invisibility authored; we simply
-    // reset the bits to make all faces/points visible.
-    bool hasInvisiblePoints = !meshTopology.GetInvisiblePoints().empty();
-    bool hasInvisibleFaces  = !meshTopology.GetInvisibleFaces().empty();
-    if (tvBAR || (hasInvisiblePoints || hasInvisibleFaces)) {
-        sources.push_back(_GetBitmaskEncodedVisibilityBuffer(
-                                meshTopology.GetInvisiblePoints(),
-                                meshTopology.GetNumPoints(),
-                                HdTokens->pointsVisibility,
-                                GetId()));
-        
-        sources.push_back(_GetBitmaskEncodedVisibilityBuffer(
-                                meshTopology.GetInvisibleFaces(),
-                                meshTopology.GetNumFaces(),
-                                HdTokens->elementsVisibility,
-                                GetId()));
-    }
-
-    // Exit early if the BAR doesn't need to be allocated.
-    if (!tvBAR && sources.empty()) return;
-
-    HdBufferSpecVector bufferSpecs;
-    HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
-    bool barNeedsReallocation = false;
-    if (tvBAR) {
-        HdBufferSpecVector oldBufferSpecs;
-        tvBAR->GetBufferSpecs(&oldBufferSpecs);
-        if (oldBufferSpecs != bufferSpecs) {
-            barNeedsReallocation = true;
-        }
-    }
-
-
-    if (!tvBAR || barNeedsReallocation) {
-        HdBufferArrayRangeSharedPtr range =
-            resourceRegistry->AllocateShaderStorageBufferArrayRange(
-                HdTokens->topologyVisibility,
-                bufferSpecs,
-                HdBufferArrayUsageHint());
-        _sharedData.barContainer.Set(
-            drawItem->GetDrawingCoord()->GetTopologyVisibilityIndex(), range);
-
-        changeTracker->MarkBatchesDirty();
-
-        if (barNeedsReallocation) {
-            changeTracker->SetGarbageCollectionNeeded();
-        }
-    }
-
-    TF_VERIFY(drawItem->GetTopologyVisibilityRange()->IsValid());
-
-    resourceRegistry->AddSources(
-        drawItem->GetTopologyVisibilityRange(), sources);
 }
 
 void

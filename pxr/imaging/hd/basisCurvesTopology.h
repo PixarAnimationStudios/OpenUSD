@@ -96,6 +96,30 @@ public:
     HD_API
     virtual ~HdBasisCurvesTopology();
 
+    ///
+    /// \name Topological invisibility
+    /// @{
+    ///
+    HD_API
+    void SetInvisiblePoints(VtIntArray const &invisiblePoints) {
+        _invisiblePoints = invisiblePoints;
+    }
+
+    HD_API
+    VtIntArray const & GetInvisiblePoints() const {
+        return _invisiblePoints;
+    }
+
+    HD_API
+    void SetInvisibleCurves(VtIntArray const &invisibleCurves) {
+        _invisibleCurves = invisibleCurves;
+    }
+
+    HD_API
+    VtIntArray const & GetInvisibleCurves() const {
+        return _invisibleCurves;
+    }
+    /// @}
 
     /// Returns segment vertex counts.
     VtIntArray const &GetCurveVertexCounts() const {
@@ -105,6 +129,11 @@ public:
     /// Returns indicies.
     VtIntArray const &GetCurveIndices() const {
         return _curveIndices;
+    }
+
+    /// Returns the number of curves
+    size_t GetNumCurves() const {
+        return _curveVertexCounts.size();
     }
 
     /// See class documentation for valid combination of values
@@ -139,6 +168,8 @@ private:
     TfToken _curveWrap;
     VtIntArray _curveVertexCounts;
     VtIntArray _curveIndices;
+    VtIntArray _invisiblePoints;
+    VtIntArray _invisibleCurves;
 };
 
 HD_API

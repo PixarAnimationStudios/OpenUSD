@@ -34,14 +34,21 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdChangeTracker;
 class HdDrawItem;
 class HdRprim;
 struct HdRprimSharedData;
 class HdStDrawItem;
 class HdStInstancer;
+typedef boost::shared_ptr<class HdStResourceRegistry>
+    HdStResourceRegistrySharedPtr;
 typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 
+// -----------------------------------------------------------------------------
+// Primvar descriptor filtering utilities
+// -----------------------------------------------------------------------------
 // Get filtered primvar descriptors for drawItem
+HDST_API
 HdPrimvarDescriptorVector
 HdStGetPrimvarDescriptors(
     HdRprim const * prim,
@@ -50,6 +57,7 @@ HdStGetPrimvarDescriptors(
     HdInterpolation interpolation);
 
 // Get filtered instancer primvar descriptors for drawItem
+HDST_API
 HdPrimvarDescriptorVector
 HdStGetInstancerPrimvarDescriptors(
     HdStInstancer const * instancer,
@@ -57,6 +65,9 @@ HdStGetInstancerPrimvarDescriptors(
     HdStDrawItem const * drawItem,
     HdSceneDelegate * delegate);
 
+// -----------------------------------------------------------------------------
+// Material shader utility
+// -----------------------------------------------------------------------------
 // Resolves the material shader for the given prim (using a fallback
 // material as necessary), including optional mixin shader source code.
 HDST_API
@@ -66,6 +77,9 @@ HdStGetMaterialShader(
     HdSceneDelegate * delegate,
     std::string const & mixinSource = std::string());
 
+// -----------------------------------------------------------------------------
+// Constant primvar processing utilities
+// -----------------------------------------------------------------------------
 // Returns whether constant primvars need to be populated/updated based on the
 // dirty bits for a given rprim.
 HDST_API
@@ -83,6 +97,23 @@ void HdStPopulateConstantPrimvars(
     HdDrawItem *drawItem,
     HdDirtyBits *dirtyBits,
     HdPrimvarDescriptorVector const& constantPrimvars);
+
+// -----------------------------------------------------------------------------
+// Topological visibility processing utility
+// -----------------------------------------------------------------------------
+// Creates/Updates/Migrates the topology visiblity BAR with element and point
+// visibility encoded using one bit per element/point of the topology.
+HDST_API
+void HdStProcessTopologyVisibility(
+    VtIntArray invisibleElements,
+    int numTotalElements,
+    VtIntArray invisiblePoints,
+    int numTotalPoints,
+    HdRprimSharedData *sharedData,
+    HdStDrawItem *drawItem,
+    HdChangeTracker *changeTracker,
+    HdStResourceRegistrySharedPtr const &resourceRegistry,
+    SdfPath const& rprimId);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

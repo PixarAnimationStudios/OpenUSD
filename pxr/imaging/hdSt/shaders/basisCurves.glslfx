@@ -30,6 +30,7 @@
 #import $TOOLS/hdSt/shaders/instancing.glslfx
 #import $TOOLS/hdSt/shaders/terminals.glslfx
 #import $TOOLS/hdSt/shaders/pointId.glslfx
+#import $TOOLS/hdSt/shaders/visibility.glslfx
 
 // Known issues:
 // * The direction of the 'v' post tessellation is inconsistent between 
@@ -754,6 +755,10 @@ in CurveVertexData
 
 void main(void)
 {
+    if (ShouldDiscardFragmentAccordingToTopology()) {
+        discard;
+    }
+    
     vec4 color = vec4(0.5, 0.5, 0.5, 1);
 #ifdef HD_HAS_displayColor
     color.rgb = HdGet_displayColor().rgb;
@@ -796,6 +801,10 @@ centroid in float v;
 vec3 fragmentNormal(vec3 position, vec3 normal, float v);
 void main(void)
 {
+    if (ShouldDiscardFragmentAccordingToTopology()) {
+        discard;
+    }
+
     vec4 color = vec4(0.5, 0.5, 0.5, 1);
 #ifdef HD_HAS_displayColor
     color.rgb = HdGet_displayColor().rgb;

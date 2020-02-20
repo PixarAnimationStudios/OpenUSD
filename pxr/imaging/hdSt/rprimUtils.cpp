@@ -37,13 +37,17 @@
 #include "pxr/imaging/hd/types.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+#include "pxr/imaging/hf/diagnostic.h"
+
 #include "pxr/imaging/hio/glslfx.h"
 
 #include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+// -----------------------------------------------------------------------------
+// Primvar descriptor filtering utilities
+// -----------------------------------------------------------------------------
 static bool
 _IsEnabledPrimvarFiltering(HdStDrawItem const * drawItem) {
     HdStShaderCodeSharedPtr materialShader = drawItem->GetMaterialShader();
@@ -123,6 +127,9 @@ HdStGetInstancerPrimvarDescriptors(
     return primvars;
 }
 
+// -----------------------------------------------------------------------------
+// Material shader utility
+// -----------------------------------------------------------------------------
 HDST_API
 HdStShaderCodeSharedPtr
 HdStGetMaterialShader(
@@ -150,6 +157,9 @@ HdStGetMaterialShader(
     return shaderCode;
 }
 
+// -----------------------------------------------------------------------------
+// Constant primvar processing utilities
+// -----------------------------------------------------------------------------
 bool
 HdStShouldPopulateConstantPrimvars(
     HdDirtyBits const *dirtyBits,
@@ -325,6 +335,114 @@ HdStPopulateConstantPrimvars(
 
     hdStResourceRegistry->AddSources(
         drawItem->GetConstantPrimvarRange(), sources);
+}
+
+// -----------------------------------------------------------------------------
+// Topological invisibility utility
+// -----------------------------------------------------------------------------
+
+// Construct and return a buffer source representing visibility of the
+// topological entity (e.g., face, curve, point) using one bit for the
+// visibility of each indexed entity.
+static HdBufferSourceSharedPtr
+_GetBitmaskEncodedVisibilityBuffer(VtIntArray invisibleIndices,
+                                    int numTotalIndices,
+                                    TfToken const& bufferName,
+                                    SdfPath const& rprimId)
+{
+    size_t numBitsPerUInt = std::numeric_limits<uint32_t>::digits; // i.e, 32
+    size_t numUIntsNeeded = ceil(numTotalIndices/(float) numBitsPerUInt);
+    // Initialize all bits to 1 (visible)
+    VtArray<uint32_t> visibility(numUIntsNeeded,
+                                 std::numeric_limits<uint32_t>::max());
+
+    for (VtIntArray::const_iterator i = invisibleIndices.begin(),
+                                  end = invisibleIndices.end(); i != end; ++i) {
+        if (*i >= numTotalIndices || *i < 0) {
+            HF_VALIDATION_WARN(rprimId,
+                "Topological invisibility data (%d) is not in the range [0, %d)"
+                ".", *i, numTotalIndices);
+            continue;
+        }
+        size_t arrayIndex = *i/numBitsPerUInt;
+        size_t bitIndex   = *i % numBitsPerUInt;
+        visibility[arrayIndex] &= ~(1 << bitIndex); // set bit to 0
+    }
+
+    return HdBufferSourceSharedPtr(
+        new HdVtBufferSource(bufferName, VtValue(visibility), numUIntsNeeded));
+}
+
+void HdStProcessTopologyVisibility(
+    VtIntArray invisibleElements,
+    int numTotalElements,
+    VtIntArray invisiblePoints,
+    int numTotalPoints,
+    HdRprimSharedData *sharedData,
+    HdStDrawItem *drawItem,
+    HdChangeTracker *changeTracker,
+    HdStResourceRegistrySharedPtr const &resourceRegistry,
+    SdfPath const& rprimId)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+    HdBufferArrayRangeSharedPtr tvBAR = drawItem->GetTopologyVisibilityRange();
+    HdBufferSourceVector sources;
+
+    // For the general case wherein there is no topological invisibility, we
+    // don't create a BAR.
+    // If any topological invisibility is authored (points/elements), create the
+    // BAR with both sources. Once the BAR is created, we don't attempt to
+    // delete it when there's no topological invisibility authored; we simply
+    // reset the bits to make all elements/points visible.
+    if (tvBAR || (!invisibleElements.empty() || !invisiblePoints.empty())) {
+        sources.push_back(_GetBitmaskEncodedVisibilityBuffer(
+                                invisibleElements,
+                                numTotalElements,
+                                HdTokens->elementsVisibility,
+                                rprimId));
+         sources.push_back(_GetBitmaskEncodedVisibilityBuffer(
+                                invisiblePoints,
+                                numTotalPoints,
+                                HdTokens->pointsVisibility,
+                                rprimId));
+    }
+
+    // Exit early if the BAR doesn't need to be allocated.
+    if (!tvBAR && sources.empty()) return;
+
+    HdBufferSpecVector bufferSpecs;
+    HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
+    bool barNeedsReallocation = false;
+    if (tvBAR) {
+        HdBufferSpecVector oldBufferSpecs;
+        tvBAR->GetBufferSpecs(&oldBufferSpecs);
+        if (oldBufferSpecs != bufferSpecs) {
+            barNeedsReallocation = true;
+        }
+    }
+
+
+    if (!tvBAR || barNeedsReallocation) {
+        HdBufferArrayRangeSharedPtr range =
+            resourceRegistry->AllocateShaderStorageBufferArrayRange(
+                HdTokens->topologyVisibility,
+                bufferSpecs,
+                HdBufferArrayUsageHint());
+        sharedData->barContainer.Set(
+            drawItem->GetDrawingCoord()->GetTopologyVisibilityIndex(), range);
+
+        changeTracker->MarkBatchesDirty();
+
+        if (barNeedsReallocation) {
+            changeTracker->SetGarbageCollectionNeeded();
+        }
+    }
+
+    TF_VERIFY(drawItem->GetTopologyVisibilityRange()->IsValid());
+
+    resourceRegistry->AddSources(
+        drawItem->GetTopologyVisibilityRange(), sources);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

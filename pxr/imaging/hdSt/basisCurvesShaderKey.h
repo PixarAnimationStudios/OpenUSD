@@ -96,7 +96,7 @@ struct HdSt_BasisCurvesShaderKey
     TfToken VS[7];
     TfToken TCS[4];
     TfToken TES[8];
-    TfToken FS[7];
+    TfToken FS[8];
 };
 
 
