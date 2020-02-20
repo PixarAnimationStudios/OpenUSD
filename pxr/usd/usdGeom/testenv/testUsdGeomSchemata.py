@@ -637,9 +637,9 @@ class TestUsdGeomSchemata(unittest.TestCase):
         imageable = Tf.Type.FindByName("UsdGeomImageable")
         geomModelAPI = Tf.Type.FindByName("UsdGeomModelAPI")
 
-        self.assertTrue(Usd.SchemaRegistry.IsConcrete(xform))
-        self.assertFalse(Usd.SchemaRegistry.IsConcrete(imageable))
-        self.assertFalse(Usd.SchemaRegistry.IsConcrete(geomModelAPI))
+        self.assertTrue(Usd.SchemaRegistry().IsConcrete(xform))
+        self.assertFalse(Usd.SchemaRegistry().IsConcrete(imageable))
+        self.assertFalse(Usd.SchemaRegistry().IsConcrete(geomModelAPI))
 
     def test_Apply(self):
         s = Usd.Stage.CreateInMemory('AppliedSchemas.usd')

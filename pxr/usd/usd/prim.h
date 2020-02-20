@@ -52,6 +52,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdPrim;
+class UsdPrimDefinition;
 class UsdPrimRange;
 class Usd_PrimData;
 
@@ -142,10 +143,12 @@ public:
     /// Construct an invalid prim.
     UsdPrim() : UsdObject(_Null<UsdPrim>()) {}
 
-    /// Return this prim's definition from the UsdSchemaRegistry based on the
-    /// prim's type if one exists, otherwise return null.
-    USD_API
-    SdfPrimSpecHandle GetPrimDefinition() const;
+    /// Return this prim's definition based on the prim's type if the type
+    /// is a registered prim type. Returns an empty prim definition if it is 
+    /// not.
+    const UsdPrimDefinition &GetPrimDefinition() const {
+        return _Prim()->GetPrimDefinition();
+    }
 
     /// Return this prim's composed specifier.
     SdfSpecifier GetSpecifier() const { return _Prim()->GetSpecifier(); };

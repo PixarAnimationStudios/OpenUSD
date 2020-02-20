@@ -158,7 +158,8 @@ void wrapUsdPrim()
         .def(Usd_ObjectSubclass())
         .def("__repr__", __repr__)
 
-        .def("GetPrimDefinition", &UsdPrim::GetPrimDefinition)
+        .def("GetPrimDefinition", &UsdPrim::GetPrimDefinition,
+             return_internal_reference<>())
         .def("GetPrimStack", &UsdPrim::GetPrimStack)
 
         .def("GetSpecifier", &UsdPrim::GetSpecifier)

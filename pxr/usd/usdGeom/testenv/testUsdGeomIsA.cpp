@@ -99,7 +99,7 @@ TestIsA()
     TF_VERIFY(failScope, "Failed to create '/Fail_Scope'");
 
     std::string mytmp;
-    UsdSchemaRegistry::GetSchematics()->ExportToString(&mytmp);
+    UsdSchemaRegistry::GetInstance().GetSchematics()->ExportToString(&mytmp);
     std::cout << mytmp << std::endl;
 
     // Change type.

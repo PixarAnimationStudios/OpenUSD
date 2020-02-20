@@ -36,18 +36,20 @@ class TestUsdSchemaRegistry(unittest.TestCase):
             "Failed to load expected test plugin"
     
     def test_PrimMetadata(self):
-        primDef = Usd.SchemaRegistry.GetSchemaPrimSpec(
+        primDef = Usd.SchemaRegistry().FindConcretePrimDefinition(
             "TestUsdSchemaRegistryMetadataTest")
         self.assertTrue(primDef)
 
-        self.assertEqual(primDef.GetInfo("documentation"),
+        primSpec = primDef.GetSchemaPrimSpec()
+        self.assertEqual(primSpec.GetInfo("documentation"),
                          "Testing documentation metadata")
-        self.assertEqual(primDef.GetInfo("hidden"), True)
-        self.assertEqual(primDef.GetInfo("testCustomMetadata"), "garply")
+        self.assertEqual(primSpec.GetInfo("hidden"), True)
+        self.assertEqual(primSpec.GetInfo("testCustomMetadata"), "garply")
 
     def test_AttributeMetadata(self):
-        attrDef = Usd.SchemaRegistry.GetSchemaAttributeSpec(
-            "TestUsdSchemaRegistryMetadataTest", "testAttr")
+        primDef = Usd.SchemaRegistry().FindConcretePrimDefinition(
+            "TestUsdSchemaRegistryMetadataTest")
+        attrDef = primDef.GetSchemaAttributeSpec("testAttr")
         self.assertTrue(attrDef)
 
         self.assertEqual(attrDef.GetInfo("allowedTokens"),
@@ -60,8 +62,9 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(attrDef.GetInfo("testCustomMetadata"), "garply")
 
     def test_RelationshipMetadata(self):
-        relDef = Usd.SchemaRegistry.GetSchemaRelationshipSpec(
-            "TestUsdSchemaRegistryMetadataTest", "testRel")
+        primDef = Usd.SchemaRegistry().FindConcretePrimDefinition(
+            "TestUsdSchemaRegistryMetadataTest")
+        relDef = primDef.GetSchemaRelationshipSpec("testRel")
         self.assertTrue(relDef)
 
         self.assertEqual(relDef.GetInfo("displayGroup"), "Display Group")
@@ -89,6 +92,66 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(
             Usd.SchemaRegistry().GetSchemaTypeName(Tf.Type(Usd.Typed)), "")
 
+    def test_FindConcretePrimDefinition(self):
+        # CollectionAPI is an applied API schama. Can get the prim definition
+        # through FindAppliedAPIPrimDefintion.
+        primDef = Usd.SchemaRegistry().FindConcretePrimDefinition(
+            'MetadataTest')
+        self.assertTrue(primDef)
+        # Prim def has schema spec with USD type name.
+        self.assertEqual(primDef.GetSchemaPrimSpec().name, 'MetadataTest')
+
+        # Prim def has built in property names.
+        self.assertEqual(primDef.GetPropertyNames(), ['testAttr', 'testRel'])
+
+        # Prim def has relationship/property spec for 'testRel'
+        self.assertTrue(primDef.GetSchemaPropertySpec('testRel'))
+        self.assertFalse(primDef.GetSchemaAttributeSpec('testRel'))
+        self.assertTrue(primDef.GetSchemaRelationshipSpec('testRel'))
+
+        # Prim def has attribute/property spec for 'testAttr'.
+        self.assertTrue(primDef.GetSchemaPropertySpec('testAttr'))
+        self.assertTrue(primDef.GetSchemaAttributeSpec('testAttr'))
+        self.assertFalse(primDef.GetSchemaRelationshipSpec('testAttr'))
+
+        # Non-apply API schema. No prim definition
+        self.assertFalse(Usd.SchemaRegistry().FindConcretePrimDefinition(
+            'ModelAPI'))
+        # Applied API schema. Not returned from FindConcreteTyped...
+        self.assertFalse(Usd.SchemaRegistry().FindConcretePrimDefinition(
+            'CollectionAPI'))
+
+
+    def test_FindAppliedAPIPrimDefinition(self):
+        # CollectionAPI is an applied API schama. Can get the prim definition
+        # through FindAppliedAPIPrimDefintion.
+        primDef = Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(
+            'CollectionAPI')
+        self.assertTrue(primDef)
+        # Prim def has schema spec with USD type name.
+        self.assertEqual(primDef.GetSchemaPrimSpec().name, 'CollectionAPI')
+
+        # Prim def has built in property names.
+        self.assertEqual(primDef.GetPropertyNames(), 
+            ['expansionRule', 'includeRoot', 'excludes', 'includes'])
+
+        # Prim def has relationship/property spec for 'excludes'
+        self.assertTrue(primDef.GetSchemaPropertySpec('excludes'))
+        self.assertFalse(primDef.GetSchemaAttributeSpec('excludes'))
+        self.assertTrue(primDef.GetSchemaRelationshipSpec('excludes'))
+
+        # Prim def has attribute/property spec for 'expansionRule'.
+        self.assertTrue(primDef.GetSchemaPropertySpec('expansionRule'))
+        self.assertTrue(primDef.GetSchemaAttributeSpec('expansionRule'))
+        self.assertFalse(primDef.GetSchemaRelationshipSpec('expansionRule'))
+
+        # API schema but not an applied schema. No prim definition
+        self.assertFalse(Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(
+            'ModelAPI'))
+        # Concrete typed schema. Not returned from FindAppliedAPI...
+        self.assertFalse(Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(
+            'MetadataTest'))
+
     def test_IsTyped(self):
         modelAPI = Tf.Type.FindByName("UsdModelAPI")
         clipsAPI = Tf.Type.FindByName("UsdClipsAPI")
@@ -103,18 +166,18 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         clipsAPI = Tf.Type.FindByName("UsdClipsAPI")
         collectionAPI = Tf.Type.FindByName("UsdCollectionAPI")
 
-        self.assertFalse(Usd.SchemaRegistry.IsConcrete(modelAPI))
-        self.assertFalse(Usd.SchemaRegistry.IsConcrete(clipsAPI))
-        self.assertFalse(Usd.SchemaRegistry.IsConcrete(collectionAPI))
+        self.assertFalse(Usd.SchemaRegistry().IsConcrete(modelAPI))
+        self.assertFalse(Usd.SchemaRegistry().IsConcrete(clipsAPI))
+        self.assertFalse(Usd.SchemaRegistry().IsConcrete(collectionAPI))
 
     def test_IsAppliedAPISchema(self):
         modelAPI = Tf.Type.FindByName("UsdModelAPI")
         clipsAPI = Tf.Type.FindByName("UsdClipsAPI")
         collectionAPI = Tf.Type.FindByName("UsdCollectionAPI")
 
-        self.assertFalse(Usd.SchemaRegistry.IsAppliedAPISchema(modelAPI))
-        self.assertFalse(Usd.SchemaRegistry.IsAppliedAPISchema(clipsAPI))
-        self.assertTrue(Usd.SchemaRegistry.IsAppliedAPISchema(
+        self.assertFalse(Usd.SchemaRegistry().IsAppliedAPISchema(modelAPI))
+        self.assertFalse(Usd.SchemaRegistry().IsAppliedAPISchema(clipsAPI))
+        self.assertTrue(Usd.SchemaRegistry().IsAppliedAPISchema(
                             collectionAPI))
 
     def test_IsMultipleApplyAPISchema(self):
@@ -122,9 +185,9 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         clipsAPI = Tf.Type.FindByName("UsdClipsAPI")
         collectionAPI = Tf.Type.FindByName("UsdCollectionAPI")
 
-        self.assertFalse(Usd.SchemaRegistry.IsMultipleApplyAPISchema(modelAPI))
-        self.assertFalse(Usd.SchemaRegistry.IsMultipleApplyAPISchema(clipsAPI))
-        self.assertTrue(Usd.SchemaRegistry.IsMultipleApplyAPISchema(
+        self.assertFalse(Usd.SchemaRegistry().IsMultipleApplyAPISchema(modelAPI))
+        self.assertFalse(Usd.SchemaRegistry().IsMultipleApplyAPISchema(clipsAPI))
+        self.assertTrue(Usd.SchemaRegistry().IsMultipleApplyAPISchema(
                             collectionAPI))
 
 if __name__ == "__main__":

@@ -2516,12 +2516,15 @@ _WriteRoot(_PrimWriterContext* context)
 template <class T>
 static 
 bool _ExtractWithFallback(UsdSamples const &samples, double time,
-                          TfToken const &primType, TfToken const &propertyName,
+                          const UsdPrimDefinition *primDef, 
+                          TfToken const &propertyName,
                           T *val)
 {
     if (samples.IsEmpty()){
-        return UsdSchemaRegistry::HasField(primType, propertyName,
-                                           SdfFieldKeys->Default, val);
+        if (!primDef) {
+            return false;
+        }
+        return primDef->HasField(propertyName, SdfFieldKeys->Default, val);
     }
     
     const VtValue value = samples.Get(time);
@@ -2576,6 +2579,9 @@ _WriteCameraParameters(_PrimWriterContext* context)
         context->ExtractSamples(UsdGeomTokens->clippingRange,
                                 SdfValueTypeNames->Float2);
 
+    const UsdPrimDefinition *primDef =
+        UsdSchemaRegistry::GetInstance().FindConcretePrimDefinition(primType);
+
     // Copy all the samples to set up alembic camera frustum.
     typedef CameraSample SampleT;
     for (double time : context->GetSampleTimesUnion()) {
@@ -2586,7 +2592,7 @@ _WriteCameraParameters(_PrimWriterContext* context)
             // Horizontal aperture is in cm in ABC, but mm in USD
             float value;
             if (_ExtractWithFallback(horizontalAperture, time, 
-                                     primType, 
+                                     primDef, 
                                      UsdGeomTokens->horizontalAperture,
                                      &value)){
                 sample.setHorizontalAperture(value / 10.0);
@@ -2597,7 +2603,7 @@ _WriteCameraParameters(_PrimWriterContext* context)
             // Vertical aperture is in cm in ABC, but mm in USD
             float value;
             if (_ExtractWithFallback(verticalAperture, time, 
-                                     primType, UsdGeomTokens->verticalAperture,
+                                     primDef, UsdGeomTokens->verticalAperture,
                                      &value)){
                 sample.setVerticalAperture(value / 10.0);
             }
@@ -2607,7 +2613,7 @@ _WriteCameraParameters(_PrimWriterContext* context)
             // Horizontal aperture is in cm in ABC, but mm in USD
             float value;
             if (_ExtractWithFallback(horizontalApertureOffset, time, 
-                                     primType, 
+                                     primDef, 
                                      UsdGeomTokens->horizontalApertureOffset,
                                      &value)){
                 sample.setHorizontalFilmOffset(value / 10.0);
@@ -2618,7 +2624,7 @@ _WriteCameraParameters(_PrimWriterContext* context)
             // Vertical aperture is in cm in ABC, but mm in USD
             float value;
             if (_ExtractWithFallback(verticalApertureOffset, time, 
-                                     primType, 
+                                     primDef, 
                                      UsdGeomTokens->verticalApertureOffset,
                                      &value)){
                 sample.setVerticalFilmOffset(value / 10.0);
@@ -2629,7 +2635,7 @@ _WriteCameraParameters(_PrimWriterContext* context)
             // Focal length in USD and ABC is both in mm
             float value;
             if (_ExtractWithFallback(focalLength, time, 
-                                     primType, UsdGeomTokens->focalLength,
+                                     primDef, UsdGeomTokens->focalLength,
                                      &value)){
                 sample.setFocalLength(value);
             }
@@ -2638,7 +2644,7 @@ _WriteCameraParameters(_PrimWriterContext* context)
         {
             GfVec2f value;
             if (_ExtractWithFallback(clippingRange, time, 
-                                     primType, UsdGeomTokens->clippingRange,
+                                     primDef, UsdGeomTokens->clippingRange,
                                      &value)){
                 sample.setNearClippingPlane(value[0]);
                 sample.setFarClippingPlane(value[1]);

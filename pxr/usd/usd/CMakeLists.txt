@@ -43,8 +43,10 @@ pxr_library(usd
         primCompositionQuery
         primData
         primDataHandle
+        primDefinition
         primFlags
         primRange
+        primTypeInfo
         property
         references
         relationship
@@ -117,6 +119,7 @@ pxr_library(usd
         wrapPayloads.cpp
         wrapPrim.cpp
         wrapPrimCompositionQuery.cpp
+        wrapPrimDefinition.cpp
         wrapPrimFlags.cpp
         wrapPrimRange.cpp
         wrapProperty.cpp

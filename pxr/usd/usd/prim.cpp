@@ -67,25 +67,6 @@ UsdPrim::GetChild(const TfToken &name) const
     return GetStage()->GetPrimAtPath(GetPath().AppendChild(name));
 }
 
-SdfPrimSpecHandle
-UsdPrim::GetPrimDefinition() const
-{
-    const TfToken &typeName = GetTypeName();
-    SdfPrimSpecHandle definition;
-
-    if (!typeName.IsEmpty()) {
-        // Look up definition from prim type name.
-        definition = UsdSchemaRegistry::GetSchemaPrimSpec(typeName);
-
-        if (!definition) {
-            // Issue a diagnostic for unknown prim types.
-            TF_WARN("No definition for prim type '%s', <%s>",
-                    typeName.GetText(), GetPath().GetText());
-        }
-    }
-    return definition;
-}
-
 bool
 UsdPrim::_IsA(const TfType& schemaType, bool validateSchemaType) const
 {
@@ -395,20 +376,17 @@ UsdPrim::_GetPropertyNames(
 
     // If we're including unauthored properties, take names from definition, if
     // present.
+    const UsdPrimDefinition &primDef = _Prim()->GetPrimDefinition();
     if (!onlyAuthored) {   
         if (predicate) {
-            TfTokenVector builtInNames;
-            UsdSchemaRegistry::HasField(GetTypeName(), TfToken(),
-                    SdfChildrenKeys->PropertyChildren, &builtInNames);
-
+            const TfTokenVector &builtInNames = primDef.GetPropertyNames();
             for (const auto &builtInName : builtInNames) {
                 if (predicate(builtInName)) {
                     names.push_back(builtInName);
                 }
             }
         } else {
-            UsdSchemaRegistry::HasField(GetTypeName(), TfToken(),
-                SdfChildrenKeys->PropertyChildren, &names);
+            names = primDef.GetPropertyNames();
         }
     }
 

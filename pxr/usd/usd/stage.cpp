@@ -34,6 +34,7 @@
 #include "pxr/usd/usd/interpolators.h"
 #include "pxr/usd/usd/notice.h"
 #include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/primDefinition.h"
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/resolver.h"
@@ -114,10 +115,6 @@ using std::make_pair;
 using std::map;
 using std::string;
 using std::vector;
-
-// Definition below under "value resolution".
-// Composes a prim's typeName, with special consideration for __AnyType__.
-static TfToken _ComposeTypeName(const PcpPrimIndex &primIndex);
 
 // ------------------------------------------------------------------------- //
 // UsdStage Helpers
@@ -1203,24 +1200,27 @@ UsdStage::OpenMasked(const SdfLayerHandle& rootLayer,
 }
 
 static inline SdfAttributeSpecHandle
-_GetPropDef(SdfAttributeSpec *,
-            TfToken const &typeName, TfToken const &attrName)
+_GetSchemaPropSpec(SdfAttributeSpec *,
+                   const UsdPrimDefinition &primDef, 
+                   TfToken const &attrName)
 {
-    return UsdSchemaRegistry::GetSchemaAttributeSpec(typeName, attrName);
+    return primDef.GetSchemaAttributeSpec(attrName);
 }
 
 static inline SdfRelationshipSpecHandle
-_GetPropDef(SdfRelationshipSpec *,
-            TfToken const &typeName, TfToken const &attrName)
+_GetSchemaPropSpec(SdfRelationshipSpec *,
+                   const UsdPrimDefinition &primDef,  
+                   TfToken const &attrName)
 {
-    return UsdSchemaRegistry::GetSchemaRelationshipSpec(typeName, attrName);
+    return primDef.GetSchemaRelationshipSpec(attrName);
 }
 
 static inline SdfPropertySpecHandle
-_GetPropDef(SdfPropertySpec *,
-            TfToken const &typeName, TfToken const &attrName)
+_GetSchemaPropSpec(SdfPropertySpec *,
+                   const UsdPrimDefinition &primDef, 
+                   TfToken const &attrName)
 {
-    return UsdSchemaRegistry::GetSchemaPropertySpec(typeName, attrName);
+    return primDef.GetSchemaPropertySpec(attrName);
 }
 
 template <class PropType>
@@ -1231,13 +1231,9 @@ UsdStage::_GetSchemaPropertySpec(const UsdProperty &prop) const
     if (!primData)
         return TfNullPtr;
 
-    const TfToken &typeName = primData->GetTypeName();
-    if (typeName.IsEmpty())
-        return TfNullPtr;
-
     // Consult the registry.
-    return _GetPropDef(static_cast<PropType *>(nullptr),
-                       typeName, prop.GetName());
+    return _GetSchemaPropSpec(static_cast<PropType *>(nullptr),
+                              primData->GetPrimDefinition(), prop.GetName());
 }
 
 SdfPropertySpecHandle
@@ -1324,33 +1320,36 @@ UsdStage::_CreatePrimSpecForEditing(const UsdPrim& prim)
 
 static SdfAttributeSpecHandle
 _StampNewPropertySpec(const SdfPrimSpecHandle &primSpec,
+                      const TfToken &propName,
                       const SdfAttributeSpecHandle &toCopy)
 {
     return SdfAttributeSpec::New(
-        primSpec, toCopy->GetNameToken(), toCopy->GetTypeName(),
+        primSpec, propName, toCopy->GetTypeName(),
         toCopy->GetVariability(), toCopy->IsCustom());
 }
 
 static SdfRelationshipSpecHandle
 _StampNewPropertySpec(const SdfPrimSpecHandle &primSpec,
+                      const TfToken &propName,
                       const SdfRelationshipSpecHandle &toCopy)
 {
     return SdfRelationshipSpec::New(
-        primSpec, toCopy->GetNameToken(), toCopy->IsCustom(),
+        primSpec, propName, toCopy->IsCustom(),
         toCopy->GetVariability());
 }
 
 static SdfPropertySpecHandle
 _StampNewPropertySpec(const SdfPrimSpecHandle &primSpec,
+                      const TfToken &propName,
                       const SdfPropertySpecHandle &toCopy)
 {
     // Type dispatch to correct property type.
     if (SdfAttributeSpecHandle attrSpec =
         TfDynamic_cast<SdfAttributeSpecHandle>(toCopy)) {
-        return _StampNewPropertySpec(primSpec, attrSpec);
+        return _StampNewPropertySpec(primSpec, propName, attrSpec);
     } else {
         return _StampNewPropertySpec(
-            primSpec, TfStatic_cast<SdfRelationshipSpecHandle>(toCopy));
+            primSpec, propName, TfStatic_cast<SdfRelationshipSpecHandle>(toCopy));
     }
 }
 
@@ -1430,7 +1429,7 @@ UsdStage::_CreatePropertySpecForEditing(const UsdProperty &prop)
         SdfChangeBlock block;
         SdfPrimSpecHandle primSpec = _CreatePrimSpecForEditing(prim);
         if (TF_VERIFY(primSpec))
-            return _StampNewPropertySpec(primSpec, specToCopy);
+            return _StampNewPropertySpec(primSpec, propName, specToCopy);
     }
 
     // Otherwise, we fail to create a spec.
@@ -2901,19 +2900,8 @@ UsdStage::_ComposeSubtreeImpl(
         (parent == _pseudoRoot 
          && prim->_primIndex->GetPath() != prim->GetPath());
 
-    // Compose the typename for this prim unless it's a master prim, since
-    // master prims don't expose any data except name children.
-    // Note this needs to come before _ComposeAndCacheFlags, since that
-    // function may need typename to be populated.
-    if (isMasterPrim) {
-        prim->_typeName = TfToken();
-    }
-    else {
-        prim->_typeName = _ComposeTypeName(prim->GetPrimIndex());
-    }
-
-    // Compose flags for prim.
-    prim->_ComposeAndCacheFlags(parent, isMasterPrim);
+    // Compose type info and flags for prim.
+    prim->_ComposeAndCacheTypeAndFlags(parent, isMasterPrim);
 
     // Pre-compute clip information for this prim to avoid doing so
     // at value resolution time.
@@ -4364,9 +4352,8 @@ UsdStage::_GetDefiningSpecType(Usd_PrimDataConstPtr primData,
 
     // Check for a spec type in the definition registry, in case this is a
     // builtin property.
-    SdfSpecType specType =
-        UsdSchemaRegistry::GetSpecType(primData->GetTypeName(), propName);
-
+    const UsdPrimDefinition &primDef = primData->GetPrimDefinition();
+    SdfSpecType specType = primDef.GetSpecType(propName);
     if (specType != SdfSpecTypeUnknown)
         return specType;
 
@@ -5225,17 +5212,15 @@ protected:
     }
 
     // Gets the fallback value for the property
-    bool _GetFallbackValue(const TfToken &primTypeName,
+    bool _GetFallbackValue(const UsdPrimDefinition &primDef,
                            const TfToken &propName,
                            const TfToken &fieldName,
                            const TfToken &keyPath)
     {
         // Try to read fallback value.
         return keyPath.IsEmpty() ?
-            UsdSchemaRegistry::HasField(
-                primTypeName, propName, fieldName, _value) :
-            UsdSchemaRegistry::HasFieldDictKey(
-                primTypeName, propName, fieldName, keyPath, _value);
+            primDef.HasField(propName, fieldName, _value) :
+            primDef.HasFieldDictKey(propName, fieldName, keyPath, _value);
     }
 
     // Consumes an authored dictionary value and merges it into the current 
@@ -5274,17 +5259,18 @@ protected:
 
     // Consumes the fallback dictionary value and merges it into the current
     // dictionary value.
-    void _ConsumeAndMergeFallbackDictionary(const TfToken &primTypeName,
-                                            const TfToken &propName,
-                                            const TfToken &fieldName,
-                                            const TfToken &keyPath) 
+    void _ConsumeAndMergeFallbackDictionary(
+        const UsdPrimDefinition &primDef,
+        const TfToken &propName,
+        const TfToken &fieldName,
+        const TfToken &keyPath) 
     {
         // Copy to the side since we'll have to merge if the next opinion is
         // also a dictionary.
         VtDictionary tmpDict = _UncheckedGet<VtDictionary>(_value);
 
         // Try to read fallback value.
-        if(_GetFallbackValue(primTypeName, propName, fieldName, keyPath)) {
+        if(_GetFallbackValue(primDef, propName, fieldName, keyPath)) {
             // Always done after reading the fallback value.
             _done = true;
             if (_IsHolding<VtDictionary>(_value)) {
@@ -5338,7 +5324,7 @@ struct UntypedValueComposer : public ValueComposerBase<VtValue *>
         }
     }
 
-    void ConsumeUsdFallback(const TfToken &primTypeName,
+    void ConsumeUsdFallback(const UsdPrimDefinition &primDef,
                             const TfToken &propName,
                             const TfToken &fieldName,
                             const TfToken &keyPath) 
@@ -5347,11 +5333,11 @@ struct UntypedValueComposer : public ValueComposerBase<VtValue *>
             // Handle special value-type composition: fallback dictionaries 
             // are merged into the current dictionary value..
             this->_ConsumeAndMergeFallbackDictionary(
-                primTypeName, propName, fieldName, keyPath);
+                primDef, propName, fieldName, keyPath);
         } else {
             // Try to read fallback value. Fallbacks are not resolved.
             this->_done = this->_GetFallbackValue(
-                primTypeName, propName, fieldName, keyPath);
+                primDef, propName, fieldName, keyPath);
         }
     }
 
@@ -5420,13 +5406,13 @@ struct StrongestValueComposer : public ValueComposerBase<SdfAbstractDataValue *>
         return false;
     }
 
-    void ConsumeUsdFallback(const TfToken &primTypeName,
+    void ConsumeUsdFallback(const UsdPrimDefinition &primDef,
                             const TfToken &propName,
                             const TfToken &fieldName,
                             const TfToken &keyPath) 
     {
         this->_done = this->_GetFallbackValue(
-            primTypeName, propName, fieldName, keyPath);
+            primDef, propName, fieldName, keyPath);
     }
 };
 
@@ -5463,13 +5449,13 @@ struct TypeSpecificValueComposer :
         return false;
     }
 
-    void ConsumeUsdFallback(const TfToken &primTypeName,
+    void ConsumeUsdFallback(const UsdPrimDefinition &primDef,
                             const TfToken &propName,
                             const TfToken &fieldName,
                             const TfToken &keyPath) 
     {
         this->_done = this->_GetFallbackValue(
-            primTypeName, propName, fieldName, keyPath);
+            primDef, propName, fieldName, keyPath);
     }
 
 protected:
@@ -5566,7 +5552,7 @@ TypeSpecificValueComposer<VtDictionary>::ConsumeAuthored(
 template <>
 void 
 TypeSpecificValueComposer<VtDictionary>::ConsumeUsdFallback(
-    const TfToken &primTypeName,
+    const UsdPrimDefinition &primDef,
     const TfToken &propName,
     const TfToken &fieldName,
     const TfToken &keyPath) 
@@ -5574,7 +5560,7 @@ TypeSpecificValueComposer<VtDictionary>::ConsumeUsdFallback(
     // Handle special value-type composition: fallback dictionaries 
     // are merged into the current dictionary value..
     _ConsumeAndMergeFallbackDictionary(
-        primTypeName, propName, fieldName, keyPath);
+        primDef, propName, fieldName, keyPath);
 }
 
 template <>
@@ -5608,17 +5594,15 @@ struct ExistenceComposer
             *_strongestLayer = layer;
         return _done;
     }
-    void ConsumeUsdFallback(const TfToken &primTypeName,
+    void ConsumeUsdFallback(const UsdPrimDefinition &primDef,
                             const TfToken &propName,
                             const TfToken &fieldName,
                             const TfToken &keyPath) {
         _done = keyPath.IsEmpty() ?
-            UsdSchemaRegistry::HasField(
-                primTypeName, propName, fieldName,
-                static_cast<VtValue *>(nullptr)) :
-            UsdSchemaRegistry::HasFieldDictKey(
-                primTypeName, propName, fieldName, keyPath,
-                static_cast<VtValue*>(nullptr));
+            primDef.HasField(
+                propName, fieldName, static_cast<VtValue *>(nullptr)) :
+            primDef.HasFieldDictKey(
+                propName, fieldName, keyPath, static_cast<VtValue*>(nullptr));
         if (_strongestLayer)
             *_strongestLayer = TfNullPtr;
     }
@@ -5723,21 +5707,6 @@ UsdStage::_SetValueImpl(
 // --------------------------------------------------------------------- //
 // Specialized Value Resolution
 // --------------------------------------------------------------------- //
-
-// Iterate over a prim's specs until we get a non-empty, non-any-type typeName.
-static TfToken
-_ComposeTypeName(const PcpPrimIndex &primIndex)
-{
-    for (Usd_Resolver res(&primIndex); res.IsValid(); res.NextLayer()) {
-        TfToken tok;
-        if (res.GetLayer()->HasField(
-                res.GetLocalPath(), SdfFieldKeys->TypeName, &tok)) {
-            if (!tok.IsEmpty() && tok != SdfTokens->AnyTypeToken)
-                return tok;
-        }
-    }
-    return TfToken();
-}
 
 SdfSpecifier
 UsdStage::_GetSpecifier(Usd_PrimDataConstPtr primData) const
@@ -5942,10 +5911,11 @@ UsdStage::_GetFallbackMetadataImpl(const UsdObject &obj,
     // as well.
     if (obj.Is<UsdProperty>()) {
         // NOTE: This code is performance critical.
-        const TfToken &typeName = obj._Prim()->GetTypeName();
         composer->ConsumeUsdFallback(
-            typeName, obj.GetName(), fieldName, keyPath);
-        return composer->IsDone();
+            obj._Prim()->GetPrimDefinition(), obj.GetName(), fieldName, keyPath);
+        if (composer->IsDone()) {
+            return true;
+        }
     }
     return false;
 }
@@ -5958,13 +5928,13 @@ UsdStage::_GetAttrTypeImpl(const UsdAttribute &attr,
                            Composer *composer) const
 {
     TRACE_FUNCTION();
-    if (_GetSchemaAttributeSpec(attr)) {
-        // Builtin attribute typename comes from definition.
-        composer->ConsumeUsdFallback(
-            attr.GetPrim().GetTypeName(),
-            attr.GetName(), fieldName, TfToken());
+    composer->ConsumeUsdFallback(
+        attr._Prim()->GetPrimDefinition(),
+        attr.GetName(), fieldName, TfToken());
+    if (composer->IsDone()) {
         return;
     }
+
     // Fall back to general metadata composition.
     _GetGeneralMetadataImpl(attr, fieldName, TfToken(), useFallbacks, composer);
 }
@@ -5975,13 +5945,13 @@ UsdStage::_GetAttrVariabilityImpl(const UsdAttribute &attr, bool useFallbacks,
                                   Composer *composer) const
 {
     TRACE_FUNCTION();
-    if (_GetSchemaAttributeSpec(attr)) {
-        // Builtin attribute typename comes from definition.
-        composer->ConsumeUsdFallback(
-            attr.GetPrim().GetTypeName(),
-            attr.GetName(), SdfFieldKeys->Variability, TfToken());
+    composer->ConsumeUsdFallback(
+        attr._Prim()->GetPrimDefinition(),
+        attr.GetName(), SdfFieldKeys->Variability, TfToken());
+    if (composer->IsDone()) {
         return;
     }
+
     // Otherwise variability is determined by the *weakest* authored opinion.
     // Walk authored scene description in reverse order.
     const TfToken &attrName = attr.GetName();
@@ -6008,7 +5978,8 @@ UsdStage::_GetPropCustomImpl(const UsdProperty &prop, bool useFallbacks,
     // true anywhere in the stack of opinions.
     if (_GetSchemaPropertySpec(prop)) {
         composer->ConsumeUsdFallback(
-            prop.GetPrim().GetTypeName(), prop.GetName(),
+            prop._Prim()->GetPrimDefinition(), 
+            prop.GetName(),
             SdfFieldKeys->Custom, TfToken());
         return;
     }
@@ -7010,8 +6981,8 @@ struct UsdStage::_ResolveInfoResolver
     bool
     ProcessFallback()
     {
-        if (const bool hasFallback = UsdSchemaRegistry::HasField(
-                _attr.GetPrim().GetTypeName(), _attr.GetName(), 
+        if (const bool hasFallback = 
+                _attr._Prim()->GetPrimDefinition().HasField(_attr.GetName(), 
                 SdfFieldKeys->Default, _extraInfo->defaultOrFallbackValue)) {
             _resolveInfo->_source = UsdResolveInfoSourceFallback;
             return true;
@@ -7318,9 +7289,8 @@ UsdStage::_GetValueFromResolveInfoImpl(const UsdResolveInfo &info,
     }
     else if (info._source == UsdResolveInfoSourceFallback) {
         // Get the fallback value.
-        return UsdSchemaRegistry::HasField(
-            attr._Prim()->GetTypeName(), attr.GetName(), 
-            SdfFieldKeys->Default, result);
+        return attr._Prim()->GetPrimDefinition().HasField(
+                attr.GetName(), SdfFieldKeys->Default, result);
     }
 
     return false;

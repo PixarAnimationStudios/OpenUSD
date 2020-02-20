@@ -211,7 +211,7 @@ int main(int argc, char const **argv)
 
     // Pull on the schema registry to create any schema layers so we can get a
     // baseline of # of loaded layers.
-    UsdSchemaRegistry::GetSchematics();
+    UsdSchemaRegistry::GetInstance().GetSchematics();
     size_t baselineNumLayers = SdfLayer::GetLoadedLayers().size();
 
     printf("==================================================\n");

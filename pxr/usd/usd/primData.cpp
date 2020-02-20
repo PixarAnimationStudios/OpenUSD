@@ -26,9 +26,11 @@
 
 #include "pxr/usd/usd/debugCodes.h"
 #include "pxr/usd/usd/instanceCache.h"
+#include "pxr/usd/usd/resolver.h"
 #include "pxr/usd/usd/schemaBase.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/tokens.h"
 #include "pxr/usd/usd/primRange.h"
 
 #include "pxr/usd/kind/registry.h"
@@ -38,8 +40,106 @@
 #include <algorithm>
 #include <sstream>
 #include <vector>
+#include <tbb/concurrent_hash_map.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+namespace {
+
+// Wrapper around the thread safe hash map implementation used by the 
+// Usd_PrimTypeInfoCache to cache prim type info
+class _ThreadSafeHashMapImpl {
+public:
+    _ThreadSafeHashMapImpl() = default;
+    _ThreadSafeHashMapImpl(const _ThreadSafeHashMapImpl&) = delete;
+
+    // Find and return a pointer to the prim type info if it already exists.
+    const Usd_PrimTypeInfo *Find(const TfToken &key) const 
+    {
+        _HashMap::const_accessor accessor;
+        if (_hashMap.find(accessor, key)) {
+            return accessor->second.get();
+        }
+        return nullptr;
+    }
+
+    // Inserts and takes ownership of the prim type info only if it isn't 
+    // already in the hash map. Returns the pointer to the value in the map
+    // after insertion regardless.
+    const Usd_PrimTypeInfo *Insert(
+        const TfToken &key, std::unique_ptr<Usd_PrimTypeInfo> valuePtr)
+    {
+        _HashMap::accessor accessor;
+        if (_hashMap.insert(accessor, key)) {
+            accessor->second = std::move(valuePtr);
+        }
+        return accessor->second.get();
+    }
+private:
+    // Tokens hash to their pointer values but tbb::concurrent_hash_map is
+    // more efficient when there is more randomness in the lower order bits of
+    // the hash. Thus the shifted hash function.
+    struct _TbbHashFunc {
+        inline bool equal(const TfToken &l, const TfToken &r) const {
+            return l == r;
+        }
+        inline size_t hash(const TfToken &t) const {
+            return t.Hash() >> 4;
+        }
+    };
+
+    using _HashMap = tbb::concurrent_hash_map<
+        TfToken, std::unique_ptr<Usd_PrimTypeInfo>, _TbbHashFunc>;
+    _HashMap _hashMap;
+};
+}; // end anonymous namespace
+
+// Class to be used as a static private singleton to cache all distinct prim 
+// types used by the prim data.
+class Usd_PrimTypeInfoCache {
+public:
+    Usd_PrimTypeInfoCache() = default;
+    Usd_PrimTypeInfoCache(const Usd_PrimTypeInfoCache&) = delete;
+
+    // Finds the cached prim type info for the given prim type and list of 
+    // applied schemas, creating and caching a new one if it doesn't exist.
+    const Usd_PrimTypeInfo *FindOrCreatePrimTypeInfo(
+        const TfToken &primType)
+    {
+        TRACE_FUNCTION();
+
+        if (primType.IsEmpty()) {
+            return GetEmptyPrimTypeInfo();
+        }
+
+        // Find try to find the prim type in the type info map
+        if (auto primTypeInfo = _primTypeInfoMap.Find(primType)) {
+            return primTypeInfo;
+        }
+
+        // If it's not, create the new type info first and then try to insert 
+        // it. We always return the value found in the cache which may not be
+        // the type info we created if another thread happened to create the
+        // same type info and managed to insert it first. In that case ours just
+        // gets deleted since the hash map didn't take ownership.
+        std::unique_ptr<Usd_PrimTypeInfo> newPrimTypeInfo(
+            new Usd_PrimTypeInfo(primType));
+        return _primTypeInfoMap.Insert(primType, std::move(newPrimTypeInfo));
+    }
+
+    // Return the single empty prim type info
+    const Usd_PrimTypeInfo *GetEmptyPrimTypeInfo() const 
+    {
+        return &_emptyPrimTypeInfo;
+    }
+
+private:
+    _ThreadSafeHashMapImpl _primTypeInfoMap;
+    Usd_PrimTypeInfo _emptyPrimTypeInfo;
+};
+
+// Static prim type info cache
+static TfStaticData<Usd_PrimTypeInfoCache> _primTypeInfoCache;
 
 // Static assertion on PrimData size.  We want to be warned when its size
 // changes.
@@ -50,6 +150,7 @@ Usd_PrimData::Usd_PrimData(UsdStage *stage, const SdfPath& path)
     : _stage(stage)
     , _primIndex(nullptr)
     , _path(path)
+    , _primTypeInfo(_primTypeInfoCache->GetEmptyPrimTypeInfo())
     , _firstChild(nullptr)
     , _refCount(0)
 {
@@ -58,14 +159,14 @@ Usd_PrimData::Usd_PrimData(UsdStage *stage, const SdfPath& path)
 
     TF_DEBUG(USD_PRIM_LIFETIMES).Msg(
         "Usd_PrimData::ctor<%s,%s,%s>\n",
-        _typeName.GetText(), path.GetText(),
+        GetTypeName().GetText(), path.GetText(),
         _stage->GetRootLayer()->GetIdentifier().c_str());
 }
 
 Usd_PrimData::~Usd_PrimData() {
     TF_DEBUG(USD_PRIM_LIFETIMES).Msg(
         "~Usd_PrimData::dtor<%s,%s,%s>\n",
-        _typeName.GetText(), _path.GetText(),
+        GetTypeName().GetText(), _path.GetText(),
         _stage ? _stage->GetRootLayer()->GetIdentifier().c_str() :
         "prim is invalid/expired");
 }
@@ -101,9 +202,24 @@ Usd_PrimData::GetSpecifier() const
     return _stage->_GetSpecifier(this);
 }
 
+// Iterate over a prim's specs until we get a non-empty, non-any-type typeName.
+static TfToken
+_ComposeTypeName(const PcpPrimIndex *primIndex)
+{
+    for (Usd_Resolver res(primIndex); res.IsValid(); res.NextLayer()) {
+        TfToken tok;
+        if (res.GetLayer()->HasField(
+                res.GetLocalPath(), SdfFieldKeys->TypeName, &tok)) {
+            if (!tok.IsEmpty() && tok != SdfTokens->AnyTypeToken)
+                return tok;
+        }
+    }
+    return TfToken();
+}
+
 void
-Usd_PrimData::_ComposeAndCacheFlags(Usd_PrimDataConstPtr parent, 
-                                    bool isMasterPrim)
+Usd_PrimData::_ComposeAndCacheTypeAndFlags(Usd_PrimDataConstPtr parent, 
+                                           bool isMasterPrim)
 {
     // We do not have to clear _flags here since in the pseudo root or instance
     // master case the values never change, and in the ordinary prim case we set
@@ -118,10 +234,16 @@ Usd_PrimData::_ComposeAndCacheFlags(Usd_PrimDataConstPtr parent,
         _flags[Usd_PrimGroupFlag] = true;
         _flags[Usd_PrimDefinedFlag] = true;
         _flags[Usd_PrimMasterFlag] = isMasterPrim;
+        _primTypeInfo = _primTypeInfoCache->GetEmptyPrimTypeInfo();
     } 
     else {
         // Compose and cache 'active'.
         UsdPrim self(Usd_PrimDataIPtr(this), SdfPath());
+
+        const TfToken primTypeName = _ComposeTypeName(_primIndex);
+        _primTypeInfo = _primTypeInfoCache->FindOrCreatePrimTypeInfo(
+            primTypeName);
+
         bool active = true;
         self.GetMetadata(SdfFieldKeys->Active, &active);
         _flags[Usd_PrimActiveFlag] = active;
@@ -220,8 +342,9 @@ Usd_DescribePrimData(const Usd_PrimData *p, SdfPath const &proxyPrimPath)
         "%s%s%sprim %s<%s> %s%s%s",
         Usd_IsDead(p) ? "expired " : (p->_flags[Usd_PrimActiveFlag] ?
                                       "" : "inactive "),
-        p->_typeName.IsEmpty() ? "" :
-            TfStringPrintf("'%s' ", p->_typeName.GetText()).c_str(),
+        p->GetTypeName().IsEmpty() ? "" :
+            TfStringPrintf("'%s' ", p->GetTypeName().GetText()).c_str(),
+        // XXX: Add applied schemas to this descriptor
         isInstance ? "instance " : isInstanceProxy ? "instance proxy " : "",
         isInMaster ? "in master " : "",
         isInstanceProxy ? proxyPrimPath.GetText() : p->_path.GetText(),
