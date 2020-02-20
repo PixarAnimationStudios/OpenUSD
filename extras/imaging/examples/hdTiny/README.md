@@ -16,12 +16,9 @@ Since Tiny lives in the Extras folder (compared to other render delegates
 like HdEmbree/HdStorm/HdPrman), if you want to use Tiny in Usdview, 
 you will need to tell the plugin system to load Tiny explicitely.
 
-    setenv PXR_PLUGINPATH_NAME /share/usd/examples/plugin/hdTiny/resources
+    setenv PXR_PLUGINPATH_NAME <inst>/share/usd/examples/plugin/hdTiny/resources
 
-The testHdTiny will compile on all platform Windows, Linux and Mac. However,
-it will only run (using ctest) on Linux and Mac. If you want to use the test
-on Windows you will need to copy the hdTiny library so the binary testHdTiny
-can correctly find it.
+The testHdTiny will compile and run on all platforms: Windows, Linux and Mac.
 
 ## Features
 - Render delegate

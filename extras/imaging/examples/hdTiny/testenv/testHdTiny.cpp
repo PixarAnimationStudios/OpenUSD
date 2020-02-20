@@ -23,12 +23,12 @@
 //
 #include "pxr/pxr.h"
 
-#include "../renderDelegate.h"
-
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/gf/matrix4f.h"
 
 #include "pxr/imaging/hd/engine.h"
+#include "pxr/imaging/hd/rendererPlugin.h"
+#include "pxr/imaging/hd/rendererPluginRegistry.h"
 #include "pxr/imaging/hd/unitTestDelegate.h"
 #include "pxr/imaging/hdx/renderTask.h"
 
@@ -38,8 +38,14 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void RunHydra()
 {
-    // This test bypasses the Hydra plugin system.
-    HdRenderDelegate *renderDelegate = new HdTinyRenderDelegate();
+    // Get the renderer plugin and create a new render delegate and index.
+    const TfToken tinyRendererPluginId("HdTinyRendererPlugin");
+
+    HdRendererPlugin *rendererPlugin = HdRendererPluginRegistry::GetInstance()
+        .GetRendererPlugin(tinyRendererPluginId);
+    TF_VERIFY(rendererPlugin != nullptr);
+
+    HdRenderDelegate *renderDelegate = rendererPlugin->CreateRenderDelegate();
     TF_VERIFY(renderDelegate != nullptr);
 
     HdRenderIndex *renderIndex = HdRenderIndex::New(renderDelegate, {});
