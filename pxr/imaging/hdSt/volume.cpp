@@ -566,23 +566,23 @@ _GetCubeTriangleIndices()
 {
     static const VtValue result(
         VtVec3iArray{
-                GfVec3i(2,3,1),
-                GfVec3i(2,1,0),
+                GfVec3i(1,3,2),
+                GfVec3i(0,1,2),
                     
-                GfVec3i(4,5,7),
-                GfVec3i(4,7,6),
+                GfVec3i(7,5,4),
+                GfVec3i(6,7,4),
 
-                GfVec3i(0,1,5),
-                GfVec3i(0,5,4),
+                GfVec3i(5,1,0),
+                GfVec3i(4,5,0),
         
-                GfVec3i(6,7,3),
-                GfVec3i(6,3,2),
+                GfVec3i(3,7,6),
+                GfVec3i(2,3,6),
 
-                GfVec3i(4,6,2),
-                GfVec3i(4,2,0),
+                GfVec3i(2,6,4),
+                GfVec3i(0,2,4),
 
-                GfVec3i(1,3,7),
-                GfVec3i(1,7,5)});
+                GfVec3i(7,3,1),
+                GfVec3i(5,7,1)});
     
     return result;
 }
