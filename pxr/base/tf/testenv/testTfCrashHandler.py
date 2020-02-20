@@ -38,7 +38,7 @@ if len(sys.argv) != 3:
 
 print("=== BEGIN EXPECTED ERROR ===")
 cmd = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), sys.argv[1])
-p = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True)
+p = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
 output = " ".join([line.decode() for line in p.stdout.readlines()])
 print(output)
 print("=== END EXPECTED ERROR ===")
