@@ -118,7 +118,7 @@ TF_REGISTRY_FUNCTION(TfType)
 static GLenum
 _GLFormatFromImageData(unsigned int nchannels)
 {
-    return (nchannels == 1) ? GL_RED : ((nchannels == 4) ? GL_RGBA : GL_RGB);
+    return GlfGetBaseFormat(nchannels);
 }
 
 /// Returns the bpc (bits per channel) based on the GLType stored in storage
@@ -139,17 +139,7 @@ _GetBytesPerChannelFromType(GLenum const & type)
 static int 
 _GetNumChannelsFromGLFormat(GLenum const & format)
 {
-    switch(format) {
-    case GL_RED :
-        return 1;
-    case GL_RGB :
-        return 3;
-    case GL_RGBA :
-        return 4;
-    default:
-        TF_CODING_ERROR("Unsupported format");
-        return 4;
-    }
+    return GlfGetNumElements(format);
 }
 
 bool 

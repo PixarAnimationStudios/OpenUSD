@@ -126,7 +126,7 @@ TF_REGISTRY_FUNCTION(TfType)
 static GLenum
 _GLFormatFromImageData(unsigned int nchannels)
 {
-    return (nchannels == 1) ? GL_RED : ((nchannels == 4) ? GL_RGBA : GL_RGB);
+    return GlfGetBaseFormat(nchannels);
 }
 
 /// Converts an OpenImageIO component type to its GL equivalent.

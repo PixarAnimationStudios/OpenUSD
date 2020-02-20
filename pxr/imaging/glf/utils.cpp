@@ -33,6 +33,24 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+GLenum
+GlfGetBaseFormat(int numComponents)
+{
+    switch (numComponents) {
+        case 1:
+            return GL_RED;
+        case 2:
+            return GL_RG;
+        case 3:
+            return GL_RGB;
+        case 4:
+            return GL_RGBA;
+        default:
+            TF_CODING_ERROR("Unsupported numComponents");
+            return 1;
+    }
+}
+
 int
 GlfGetNumElements(GLenum format)
 {
@@ -44,6 +62,7 @@ GlfGetNumElements(GLenum format)
 	case GL_RED:
             return 1;
 	case GL_LUMINANCE_ALPHA :
+	case GL_RG:
 	    return 2;
         case GL_RGB:
             return 3;
