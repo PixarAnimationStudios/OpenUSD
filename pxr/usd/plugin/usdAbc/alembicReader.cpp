@@ -693,7 +693,7 @@ public:
 
     /// Open an archive.
     bool Open(const std::string& filePath, std::string* errorLog,
-              const SdfFileFormat::FileFormatArguments* args);
+              const SdfFileFormat::FileFormatArguments& args);
 
     /// Close the archive.
     void Close();
@@ -879,14 +879,14 @@ _ReaderContext::_ReaderContext() :
 
 bool
 _ReaderContext::Open(const std::string& filePath, std::string* errorLog,
-                     const SdfFileFormat::FileFormatArguments* args)
+                     const SdfFileFormat::FileFormatArguments& args)
 {
     Close();
 
     std::vector<std::string> layeredABC;
-    if (args) {
-        const auto abcLayers = args->find("abcLayers");
-        if (abcLayers != args->end()) {
+    {
+        auto abcLayers = args.find("abcLayers");
+        if (abcLayers != args.end()) {
             for (auto&& l : TfStringSplit(abcLayers->second, ",")) {
                 layeredABC.emplace_back(std::move(l));
             }
@@ -995,10 +995,16 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog,
 
     // Re-root so the <defaultPrim> is actually the archive!
     TfToken abcReRoot;
-    if (args) {
-        const auto reRoot = args->find("abcReRoot");
-        if (reRoot != args->end())
-            abcReRoot = TfToken(reRoot->second);
+    {
+        auto reRoot = args.find("abcReRoot");
+        if (reRoot != args.end()) {
+            if (!TfIsValidIdentifier(reRoot->second)) {
+                TF_WARN("[usdAbc] Ignoring re-root because identifer '%s' is"
+                        " not valid (%s).", reRoot->second.c_str(),
+                        filePath.c_str());
+            } else
+                abcReRoot = TfToken(reRoot->second);
+        }
     }
 
     // Fill rest of the cache.
@@ -4032,7 +4038,7 @@ UsdAbc_AlembicDataReader::~UsdAbc_AlembicDataReader()
 
 bool
 UsdAbc_AlembicDataReader::Open(const std::string& filePath,
-                               const SdfFileFormat::FileFormatArguments* args)
+                               const SdfFileFormat::FileFormatArguments& args)
 {
     TRACE_FUNCTION();
 

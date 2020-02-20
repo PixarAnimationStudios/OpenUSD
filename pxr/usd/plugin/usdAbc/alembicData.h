@@ -44,7 +44,7 @@ public:
     /// Returns a new \c UsdAbc_AlembicData object.  Outside a successful
     /// \c Open() and \c Close() pairing, the data acts as if it contains
     /// a pseudo-root prim spec at the absolute root path.
-    static UsdAbc_AlembicDataRefPtr New(const SdfFileFormat::FileFormatArguments* = nullptr);
+    static UsdAbc_AlembicDataRefPtr New(SdfFileFormat::FileFormatArguments = {});
 
     /// Opens the Alembic file at \p filePath read-only (closing any open
     /// file).  Alembic is not meant to be used as an in-memory store for
@@ -104,7 +104,7 @@ public:
     EraseTimeSample(const SdfPath&, double);
 
 protected:
-    UsdAbc_AlembicData(const SdfFileFormat::FileFormatArguments*);
+    UsdAbc_AlembicData(SdfFileFormat::FileFormatArguments);
     virtual ~UsdAbc_AlembicData();
 
     // SdfAbstractData overrides
@@ -112,7 +112,7 @@ protected:
 
 private:
     boost::shared_ptr<class UsdAbc_AlembicDataReader> _reader;
-    std::unique_ptr<SdfFileFormat::FileFormatArguments> _arguments;
+    const SdfFileFormat::FileFormatArguments _arguments;
 };
 
 

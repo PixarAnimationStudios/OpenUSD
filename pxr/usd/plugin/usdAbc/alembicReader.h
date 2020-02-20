@@ -55,7 +55,7 @@ public:
 
     /// Open a file.  Returns \c true on success;  errors are reported by
     /// \c GetErrors().
-    bool Open(const std::string& filePath, const SdfFileFormat::FileFormatArguments*);
+    bool Open(const std::string& filePath, const SdfFileFormat::FileFormatArguments&);
 
     /// Close the file.
     void Close();
