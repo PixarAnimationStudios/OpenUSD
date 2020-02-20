@@ -175,11 +175,11 @@ private:
 };
 
 
-/// For a given interpolation mode, obtains a set of ExtComputation primvar
-/// source computations needed for this Rprim.
+/// Obtains a set of ExtComputation primvar source computations needed for this 
+/// Rprim.
 ///
-/// The list of primvars that are obtained through an ExtComputation
-/// for the given interpolationMode is obtained from the scene delegate.
+/// The list of computed primvar descriptors for an interpolation mode
+/// is passed in.
 ///
 /// The scene delegate also provides information about which output on
 /// which computation is providing the source of the primvar.
@@ -203,7 +203,7 @@ HDST_API
 void HdSt_GetExtComputationPrimvarsComputations(
     const SdfPath &id,
     HdSceneDelegate *sceneDelegate,
-    HdInterpolation interpolationMode,
+    HdExtComputationPrimvarDescriptorVector const& allCompPrimvars,
     HdDirtyBits dirtyBits,
     HdBufferSourceVector *sources,
     HdBufferSourceVector *reserveOnlySources,

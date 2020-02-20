@@ -316,7 +316,7 @@ void
 HdSt_GetExtComputationPrimvarsComputations(
     SdfPath const &id,
     HdSceneDelegate *sceneDelegate,
-    HdInterpolation interpolationMode,
+    HdExtComputationPrimvarDescriptorVector const& allCompPrimvars,
     HdDirtyBits dirtyBits,
     HdBufferSourceVector *sources,
     HdBufferSourceVector *reserveOnlySources,
@@ -329,10 +329,6 @@ HdSt_GetExtComputationPrimvarsComputations(
     TF_VERIFY(computations);
 
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
-
-    HdExtComputationPrimvarDescriptorVector allCompPrimvars =
-            sceneDelegate->GetExtComputationPrimvarDescriptors(
-                        id, interpolationMode);
 
     // Group computation primvars by source computation
     typedef std::map<SdfPath, HdExtComputationPrimvarDescriptorVector>

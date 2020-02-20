@@ -651,6 +651,10 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         primvars.insert(primvars.end(), varyingPvs.begin(), varyingPvs.end());
     }
 
+    HdExtComputationPrimvarDescriptorVector compPrimvars =
+        sceneDelegate->GetExtComputationPrimvarDescriptors(id,
+            HdInterpolationVertex);
+
     HdBufferSourceVector sources;
     HdBufferSourceVector reserveOnlySources;
     HdBufferSourceVector separateComputationSources;
@@ -660,7 +664,7 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     HdSt_GetExtComputationPrimvarsComputations(
         id,
         sceneDelegate,
-        HdInterpolationVertex,
+        compPrimvars,
         *dirtyBits,
         &sources,
         &reserveOnlySources,
