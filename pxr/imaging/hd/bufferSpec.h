@@ -67,6 +67,7 @@ struct HdBufferSpec final {
     }
 
     /// Returns true if \p subset is a subset of \p superset.
+    /// An empty set is considered a valid subset of the superset.
     HD_API
     static bool IsSubset(HdBufferSpecVector const &subset,
                          HdBufferSpecVector const &superset);
@@ -75,6 +76,12 @@ struct HdBufferSpec final {
     /// Duplicated entries are uniquified.
     HD_API
     static HdBufferSpecVector ComputeUnion(HdBufferSpecVector const &spec1,
+                                           HdBufferSpecVector const &spec2);
+    
+    /// Returns difference set of \p spec1 and \p spec2, i.e., entries in spec1
+    /// that are not in spec2.
+    HD_API
+    static HdBufferSpecVector ComputeDifference(HdBufferSpecVector const &spec1,
                                            HdBufferSpecVector const &spec2);
 
     /// Debug output.
