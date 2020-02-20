@@ -12,6 +12,26 @@ USD, and currently has no user-level API.
 
 \section usdAbc_behavior Behavior
 
+\subsection SDF_FORMAT_ARGS
+UsdAbc accepts some SDF_FORMAT_ARGS for controlling behavior.
+
+SDF_FORMAT_ARGS                     | Meaning                                                                                                                       | Default Value 
+------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|-------
+abcReRoot=STRING                    | 'ReRoot' the immediate children of the IArchive on a single Xform whose name is the value of STRING                           | empty / ""
+abcLayers=LAYER_1,LAYER_2,LAYER_N   | Additional / Layered alembic files for IFactory::getArchive.\n These are expected as paths already resolved (likely absolute) | empty / []
+
+testenv/testUsdAbcSDFArguments/testUsdAbcSDFArguments.usda has the following example, which will load all children in
+testUsdAbcSDFArgumentsMesh.abc into the 'AlembicRoot' Xform, using layered Alembic to load UVs from testUsdAbcSDFArgumentsUV.abc.
+\verbatim
+def Xform "AlembicRoot" (
+    references = @./testUsdAbcSDFArgumentsMesh.abc:SDF_FORMAT_ARGS:abcReRoot=AlembicRoot&abcLayers=./testUsdAbcSDFArgumentsUV.abc@
+)
+{
+}
+\endverbatim
+
+\subsection TfEnvSettings
+
 UsdAbc exposes some TfEnvSettings for controlling behavior. 
 
 Setting Name                        | Meaning                                                         | Default Value 
