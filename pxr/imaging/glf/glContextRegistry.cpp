@@ -86,7 +86,7 @@ void
 GlfGLContextRegistry::Add(GlfGLContextRegistrationInterface* iface)
 {
     if (TF_VERIFY(iface, "NULL GlfGLContextRegistrationInterface")) {
-        _interfaces.push_back(iface);
+        _interfaces.emplace_back(iface);
     }
 }
 
@@ -101,8 +101,9 @@ GlfGLContextRegistry::GetShared()
         _shared = GlfGLContextSharedPtr();
 
         // Find the first interface with a shared context.
-        for (auto& iface : _interfaces) {
-            if (GlfGLContextSharedPtr shared = iface.GetShared()) {
+        for (std::unique_ptr<GlfGLContextRegistrationInterface> &iface : 
+                _interfaces) {
+            if (GlfGLContextSharedPtr shared = iface->GetShared()) {
                 _shared = shared;
                 return _shared;
             }
@@ -129,8 +130,9 @@ GlfGLContextRegistry::GetCurrent()
 
     // We don't know this raw state.  Try syncing each interface to see
     // if any system thinks this state is current.
-    for (auto& iface : _interfaces) {
-        if (GlfGLContextSharedPtr currentContext = iface.GetCurrent()) {
+    for (std::unique_ptr<GlfGLContextRegistrationInterface> &iface 
+            : _interfaces) {
+        if (GlfGLContextSharedPtr currentContext = iface->GetCurrent()) {
             if (currentContext->IsValid()) {
                 GlfGLContext::MakeCurrent(currentContext);
                 GarchGLPlatformContextState currentRawState;
