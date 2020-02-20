@@ -1075,9 +1075,10 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog,
     // If no default prim then choose one by a heuristic (first root prim).
     if (!_pseudoRoot->children.empty()) {
         // Use emplace to leave existing property above untouched and avoid the
-        // VtValue construction if possible
-        _pseudoRoot->metadata.emplace(SdfFieldKeys->DefaultPrim,
-                                      _pseudoRoot->children.front());
+        // VtValue construction if possible (gcc-4.8 requires the fun syntax)
+        _pseudoRoot->metadata.emplace(std::piecewise_construct,
+            std::forward_as_tuple(SdfFieldKeys->DefaultPrim),
+            std::forward_as_tuple(_pseudoRoot->children.front()));
     }
 
     return true;
