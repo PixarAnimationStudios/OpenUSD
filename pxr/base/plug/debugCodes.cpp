@@ -28,13 +28,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// Normally this would be done as:
-// TF_REGISTRY_FUNCTION(TfDebug)
-// But we want to use the debug codes in initConfig.cpp, whose constructor
-// function can run before the registry function here.  So instead we provide a
-// named function here and invoke it from initConfig.cpp.
-void
-Plug_RegistryFunctionForTfDebug()
+TF_REGISTRY_FUNCTION(TfDebug)
 {
     TF_DEBUG_ENVIRONMENT_SYMBOL(PLUG_LOAD, "Plugin loading");
     TF_DEBUG_ENVIRONMENT_SYMBOL(PLUG_REGISTRATION, "Plugin registration");

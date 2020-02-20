@@ -339,5 +339,10 @@ class TestPlug(unittest.TestCase):
         self.assertEqual(allplugins, Plug.Registry().GetAllPlugins())
         self.assertEqual(listener.numReceived, 0)
 
+    def test_DebugCodeExistence(self):
+        debugCodes = Tf.Debug.GetDebugSymbolNames()
+        self.assertTrue('PLUG_INFO_SEARCH' in debugCodes)
+        self.assertTrue('PLUG_REGISTRATION' in debugCodes)
+
 if __name__ == '__main__':
     unittest.main()
