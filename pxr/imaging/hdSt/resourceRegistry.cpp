@@ -175,11 +175,12 @@ HdStResourceRegistry::AllocateNonUniformBufferArrayRange(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
 {
-    return _nonUniformBufferArrayRegistry.AllocateRange(
-                                    _nonUniformAggregationStrategy.get(),
-                                    role,
-                                    bufferSpecs,
-                                    usageHint);
+    return _AllocateBufferArrayRange(
+                _nonUniformAggregationStrategy.get(),
+                _nonUniformBufferArrayRegistry,
+                role,
+                bufferSpecs,
+                usageHint);
 }
 
 HdBufferArrayRangeSharedPtr
@@ -190,11 +191,12 @@ HdStResourceRegistry::AllocateNonUniformImmutableBufferArrayRange(
 {
     usageHint.bits.immutable = 1;
 
-    return _nonUniformImmutableBufferArrayRegistry.AllocateRange(
-                                _nonUniformImmutableAggregationStrategy.get(),
-                                role,
-                                bufferSpecs,
-                                usageHint);
+    return _AllocateBufferArrayRange(
+                _nonUniformImmutableAggregationStrategy.get(),
+                _nonUniformImmutableBufferArrayRegistry,
+                role,
+                bufferSpecs,
+                usageHint);
 }
 
 HdBufferArrayRangeSharedPtr
@@ -203,11 +205,12 @@ HdStResourceRegistry::AllocateUniformBufferArrayRange(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
 {
-    return _uniformUboBufferArrayRegistry.AllocateRange(
-                                    _uniformUboAggregationStrategy.get(),
-                                    role,
-                                    bufferSpecs,
-                                    usageHint);
+    return _AllocateBufferArrayRange(
+                _uniformUboAggregationStrategy.get(),
+                _uniformUboBufferArrayRegistry,
+                role,
+                bufferSpecs,
+                usageHint);
 }
 
 HdBufferArrayRangeSharedPtr
@@ -216,11 +219,12 @@ HdStResourceRegistry::AllocateShaderStorageBufferArrayRange(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
 {
-    return _uniformSsboBufferArrayRegistry.AllocateRange(
-                                    _uniformSsboAggregationStrategy.get(),
-                                    role,
-                                    bufferSpecs,
-                                    usageHint);
+    return _AllocateBufferArrayRange(
+                _uniformSsboAggregationStrategy.get(),
+                _uniformSsboBufferArrayRegistry,
+                role,
+                bufferSpecs,
+                usageHint);
 }
 
 HdBufferArrayRangeSharedPtr
@@ -229,11 +233,12 @@ HdStResourceRegistry::AllocateSingleBufferArrayRange(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
 {
-    return _singleBufferArrayRegistry.AllocateRange(
-                                    _singleAggregationStrategy.get(),
-                                    role,
-                                    bufferSpecs,
-                                    usageHint);
+    return _AllocateBufferArrayRange(
+                _singleAggregationStrategy.get(),
+                _singleBufferArrayRegistry,
+                role,
+                bufferSpecs,
+                usageHint);
 }
 
 void
@@ -899,6 +904,21 @@ HdStResourceRegistry::_GarbageCollectBprims()
 {
     // Cleanup texture registries
     _textureResourceRegistry.GarbageCollect();
+}
+
+HdBufferArrayRangeSharedPtr
+HdStResourceRegistry::_AllocateBufferArrayRange(
+    HdAggregationStrategy *strategy,
+    HdBufferArrayRegistry &bufferArrayRegistry,
+    TfToken const &role,
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayUsageHint usageHint)
+{
+    return bufferArrayRegistry.AllocateRange(
+                                    strategy,
+                                    role,
+                                    bufferSpecs,
+                                    usageHint);
 }
 
 void

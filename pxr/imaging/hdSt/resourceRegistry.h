@@ -364,6 +364,14 @@ protected:
     void _GarbageCollectBprims() override;
 
 private:
+    // Wrapper function for BAR allocation
+    HdBufferArrayRangeSharedPtr _AllocateBufferArrayRange(
+        HdAggregationStrategy *strategy,
+        HdBufferArrayRegistry &bufferArrayRegistry,
+        TfToken const &role,
+        HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint);
+
     // Tally resources by key into the given dictionary. Any additions should
     // be cumulative with the existing key values. 
     void _TallyResourceAllocation(VtDictionary *result) const;
