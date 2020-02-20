@@ -60,6 +60,7 @@ struct GlfGLContextRegistry_Data {
 //
 
 GlfGLContextRegistry::GlfGLContextRegistry() :
+    _sharedContextInitialized(false),
     _data(new GlfGLContextRegistry_Data)
 {
     // Make a context for when no context is bound.  This is to avoid
@@ -92,21 +93,24 @@ GlfGLContextRegistry::Add(GlfGLContextRegistrationInterface* iface)
 GlfGLContextSharedPtr
 GlfGLContextRegistry::GetShared()
 {
-    if (!_shared) {
+    if (!_sharedContextInitialized) {
+
         // Don't do this again.
+        _sharedContextInitialized = true;
+
         _shared = GlfGLContextSharedPtr();
 
         // Find the first interface with a shared context.
         for (auto& iface : _interfaces) {
             if (GlfGLContextSharedPtr shared = iface.GetShared()) {
                 _shared = shared;
-                return _shared.get();
+                return _shared;
             }
         }
 
         TF_CODING_ERROR("No shared context registered.");
     }
-    return _shared.get();
+    return _shared;
 }
 
 GlfGLContextSharedPtr

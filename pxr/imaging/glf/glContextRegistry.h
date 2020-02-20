@@ -29,7 +29,6 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/base/tf/singleton.h"
-#include <boost/optional.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
@@ -84,7 +83,8 @@ private:
 
 private:
     boost::ptr_vector<GlfGLContextRegistrationInterface> _interfaces;
-    boost::optional<GlfGLContextSharedPtr> _shared;
+    bool _sharedContextInitialized;
+    GlfGLContextSharedPtr _shared;
     boost::scoped_ptr<GlfGLContextRegistry_Data> _data;
 };
 
