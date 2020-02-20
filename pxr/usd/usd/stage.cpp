@@ -2880,16 +2880,17 @@ UsdStage::_ComposeSubtreeImpl(
     const SdfPath primIndexPath = 
         (inPrimIndexPath.IsEmpty() ? prim->GetPath() : inPrimIndexPath);
 
-    // Compute the prim's PcpPrimIndex.
-    PcpErrorVector errors;
-    prim->_primIndex =
-        &_GetPcpCache()->ComputePrimIndex(primIndexPath, &errors);
-
-    // Report any errors.
-    if (!errors.empty()) {
-        _ReportPcpErrors(
-            errors, TfStringPrintf("computing prim index <%s>",
-                                   primIndexPath.GetText()));
+    // Find the prim's PcpPrimIndex. This should have already been
+    // computed in a prior call to _ComposePrimIndexesInParallel.
+    // Note that it's unsafe to call PcpCache::ComputePrimIndex here,
+    // that method is not thread-safe unless the prim index happens
+    // to have been computed already.
+    prim->_primIndex = _GetPcpCache()->FindPrimIndex(primIndexPath);
+    if (!TF_VERIFY(
+            prim->_primIndex, 
+            "Prim index at <%s> not found in PcpCache for UsdStage %s", 
+            primIndexPath.GetText(), UsdDescribe(this).c_str())) {
+        return;
     }
 
     parent = parent ? parent : prim->GetParent();
