@@ -673,5 +673,27 @@ class TestUsdGeomXformable(unittest.TestCase):
         # It should still be safe to get the path, but the path will be empty.
         self.assertEqual(xf.GetPath(), Sdf.Path())
 
+    def test_XformOpOperators(self):
+        s = Usd.Stage.CreateInMemory()
+        rootXform = UsdGeom.Xform.Define(s, "/Root")
+        translateOp = rootXform.AddTranslateOp()
+        scaleOp = rootXform.AddScaleOp()
+        self.assertFalse(UsdGeom.XformOp())
+        self.assertTrue(translateOp)
+        self.assertTrue(scaleOp)
+        xformOps = rootXform.GetOrderedXformOps()
+        self.assertEqual(xformOps, [translateOp, scaleOp])
+        xformOps.remove(translateOp)
+        self.assertEqual(xformOps, [scaleOp])
+
+    def test_ImplicitConversions(self):
+        """Ensure that we can pass XformOps to methods that accept Properties"""
+        s = Usd.Stage.CreateInMemory()
+        rootXform1 = UsdGeom.Xform.Define(s, "/Root")
+        rootXform2 = UsdGeom.Xform.Define(s, "/Root2")
+        translateOp1 = rootXform1.AddTranslateOp()
+        translateOp2 = rootXform2.AddTranslateOp()
+        translateOp1.GetAttr().FlattenTo(translateOp2)
+
 if __name__ == "__main__":
     unittest.main()
