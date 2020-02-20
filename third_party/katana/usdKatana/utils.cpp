@@ -1065,6 +1065,26 @@ PxrUsdKatanaUtils::_GetDisplayGroup(
             parentPath = materialSchema.GetBaseMaterialPath();
         }
 
+
+
+
+        // NOTE: If a material has a base material in USD, we will attempt to
+        //       keep that compositional inheritance live in the katana scene
+        //       by organizing the materials as a hierarchy of locations and
+        //       loading only the local data authored to each. However, there
+        //       are potential (otherwise) valid composition schemes for which
+        //       the base material is located elsewhere on the stage. Creation
+        //       of location hierarchy for base/child materials works on the
+        //       assumption that their USD locations are siblings within a
+        //       materials/looks group. (see materialsGroup.cpp). If we
+        //       encounter a case in which they are not siblings, do not
+        //       attempt to nest the child material as its parent/base may not
+        //       be locally present in the resulting scene.
+        if (prim.GetPath().GetParentPath() != parentPath.GetParentPath())
+        {
+            return "";
+        }
+
         UsdPrim parentPrim = 
             prim.GetStage()->GetPrimAtPath(parentPath);
 
