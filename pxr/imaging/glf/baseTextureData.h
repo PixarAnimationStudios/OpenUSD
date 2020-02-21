@@ -43,6 +43,8 @@ class GlfBaseTextureData : public TfRefBase,
                            public TfWeakBase
 {
 public:
+    GLF_API GlfBaseTextureData() = default;
+
     GLF_API
     virtual ~GlfBaseTextureData();
 

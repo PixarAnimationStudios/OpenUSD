@@ -460,7 +460,7 @@ GlfSimpleShadowArray::_AllocBindlessTextures()
 
         TF_DEBUG(GLF_DEBUG_SHADOW_TEXTURES).Msg(
             "Created bindless shadow map texture of size %dx%d "
-            "(id %#x, handle %#lx)\n" , size[0], size[1], id, handle);
+            "(id %#x, handle %#llx)\n" , size[0], size[1], id, handle);
     }
 
     glBindTexture(GL_TEXTURE_2D, 0);

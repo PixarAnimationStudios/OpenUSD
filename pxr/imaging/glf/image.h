@@ -83,6 +83,9 @@ public:
 
 public:
     GLF_API
+    GlfImage() = default;
+
+    GLF_API
     virtual ~GlfImage();
 
     // Disallow copies
