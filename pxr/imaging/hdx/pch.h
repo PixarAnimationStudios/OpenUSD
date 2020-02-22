@@ -87,7 +87,6 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include <OpenColorIO/OpenColorIO.h>
 #include <boost/aligned_storage.hpp>
 #include <boost/any.hpp>
 #include <boost/bind.hpp>
