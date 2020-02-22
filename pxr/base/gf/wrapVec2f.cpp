@@ -30,6 +30,7 @@
 
 #include "pxr/base/gf/pyBufferUtils.h"
 
+#include "pxr/base/tf/py3Compat.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -64,6 +65,7 @@ namespace {
 ////////////////////////////////////////////////////////////////////////
 // Python buffer protocol support.
 
+#if PY_MAJOR_VERSION == 2
 // Python's getreadbuf interface function.
 static Py_ssize_t
 getreadbuf(PyObject *self, Py_ssize_t segment, void **ptrptr) {
@@ -99,6 +101,7 @@ static Py_ssize_t
 getcharbuf(PyObject *self, Py_ssize_t segment, const char **ptrptr) {
     return getreadbuf(self, segment, (void **) ptrptr);
 }
+#endif
 
 // Python's getbuffer interface function.
 static int
@@ -150,10 +153,12 @@ getbuffer(PyObject *self, Py_buffer *view, int flags) {
 // This structure serves to instantiate a PyBufferProcs instance with pointers
 // to the right buffer protocol functions.
 static PyBufferProcs bufferProcs = {
+#if PY_MAJOR_VERSION == 2
     (readbufferproc) getreadbuf,   /*bf_getreadbuffer*/
     (writebufferproc) getwritebuf, /*bf_getwritebuffer*/
     (segcountproc) getsegcount,    /*bf_getsegcount*/
     (charbufferproc) getcharbuf,   /*bf_getcharbuffer*/
+#endif
     (getbufferproc) getbuffer,
     (releasebufferproc) 0,
 };
@@ -480,8 +485,8 @@ void wrapVec2f()
     // buffer protocol.
     auto *typeObj = reinterpret_cast<PyTypeObject *>(cls.ptr());
     typeObj->tp_as_buffer = &bufferProcs;
-    typeObj->tp_flags |= (Py_TPFLAGS_HAVE_NEWBUFFER |
-                          Py_TPFLAGS_HAVE_GETCHARBUFFER);
+    typeObj->tp_flags |= (TfPy_TPFLAGS_HAVE_NEWBUFFER |
+                          TfPy_TPFLAGS_HAVE_GETCHARBUFFER);
 
     // Allow appropriate tuples to be passed where Vecs are expected.
     FromPythonTuple();

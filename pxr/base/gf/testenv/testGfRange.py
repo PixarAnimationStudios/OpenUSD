@@ -23,6 +23,8 @@
 # language governing permissions and limitations under the Apache License.
 #
 
+from __future__ import print_function
+
 import sys, math
 import unittest
 from pxr import Gf, Tf
@@ -223,13 +225,13 @@ class TestGfRange(unittest.TestCase):
                 rf.GetCorner(3) == Value(1,1))
 
             # try a bogus corner
-            print >>sys.stderr, '=== EXPECT ERRORS ==='
+            print('=== EXPECT ERRORS ===', file=sys.stderr)
             try:
                 rf.GetCorner(4)
                 self.fail()
             except Tf.ErrorException:
                 pass
-            print >>sys.stderr, '=== End of expected errors ==='
+            print('=== End of expected errors ===', file=sys.stderr)
 
             self.assertTrue(rf.GetQuadrant(0) == Range( Value(0,0), Value(.5, .5) ) and \
                 rf.GetQuadrant(1) == Range( Value(.5,0), Value(1, .5) ) and \
@@ -237,10 +239,10 @@ class TestGfRange(unittest.TestCase):
                 rf.GetQuadrant(3) == Range( Value(.5, .5), Value(1,1) ))
 
             # try a bogus quadrant
-            print >>sys.stderr, '=== EXPECT ERRORS ==='
+            print('=== EXPECT ERRORS ===', file=sys.stderr)
             with self.assertRaises(Tf.ErrorException):
                 rf.GetQuadrant(4)
-            print >>sys.stderr, '=== End of expected errors ==='
+            print('=== End of expected errors ===', file=sys.stderr)
 
         # now test GetCorner and GetOctant for Gf.Range3f and Gf.Range3d
         Ranges = [(Gf.Range3f, Gf.Vec3f), \
@@ -258,10 +260,10 @@ class TestGfRange(unittest.TestCase):
                 rf.GetCorner(7) == Value(1,1,1))
 
             # try a bogus corner
-            print >>sys.stderr, '=== EXPECT ERRORS ==='
+            print('=== EXPECT ERRORS ===', file=sys.stderr)
             with self.assertRaises(Tf.ErrorException):
                 rf.GetCorner(8)
-            print >>sys.stderr, '=== End of expected errors ==='
+            print('=== End of expected errors ===', file=sys.stderr)
 
             vals = [[(0.0, 0.0, 0.0), (0.5, 0.5, 0.5)],
                     [(0.5, 0.0, 0.0), (1.0, 0.5, 0.5)],

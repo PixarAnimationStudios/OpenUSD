@@ -22,6 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+from __future__ import print_function
 
 import sys, math
 import unittest
@@ -31,7 +32,7 @@ try:
     import numpy
     hasNumpy = True
 except ImportError:
-    print 'numpy not available, skipping buffer protocol tests'
+    print('numpy not available, skipping buffer protocol tests')
     hasNumpy = False
 
 def makeValue( Value, vals ):
@@ -121,7 +122,7 @@ class TestGfMatrix(unittest.TestCase):
             # Test comparison of Matrix and Matrixf
             #
             size = Matrix.dimension[0] * Matrix.dimension[1]
-            contents = range(1, size + 1)
+            contents = list(range(1, size + 1))
             md = Matrix(*contents)
             mf = Matrixf(*contents)
             self.assertEqual(md, mf)
@@ -343,7 +344,7 @@ class TestGfMatrix(unittest.TestCase):
                 
             m = Matrix(1,0,0, 1,0,0, 1,0,0)
             # should print a warning
-            print "expect a warning about failed convergence in OrthogonalizeBasis:"
+            print("expect a warning about failed convergence in OrthogonalizeBasis:")
             m.Orthonormalize()
 
             m = Matrix(1,0,0, 1,0,.0001, 0,1,0)
@@ -576,7 +577,7 @@ class TestGfMatrix(unittest.TestCase):
 
             m = Matrix(1,0,0,0,  1,0,0,0,  1,0,0,0,  0,0,0,1)
             # should print a warning
-            print "expect a warning about failed convergence in OrthogonalizeBasis:"
+            print("expect a warning about failed convergence in OrthogonalizeBasis:")
             m.Orthonormalize()
 
             m = Matrix(1,0,0,0,  1,0,.0001,0,  0,1,0,0,  0,0,0,1)
