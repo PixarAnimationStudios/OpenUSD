@@ -85,12 +85,29 @@ class TfWeakPtrFacade;
 ///
 class TfHash {
 private:
+    // This turns into a single bswap/pshufb type instruction on most compilers.
+    inline uint64_t _SwapByteOrder(uint64_t val) const {
+        val =
+            ((val & 0xFF00000000000000u) >> 56u) |
+            ((val & 0x00FF000000000000u) >> 40u) |
+            ((val & 0x0000FF0000000000u) >> 24u) |
+            ((val & 0x000000FF00000000u) >>  8u) |
+            ((val & 0x00000000FF000000u) <<  8u) |
+            ((val & 0x0000000000FF0000u) << 24u) |
+            ((val & 0x000000000000FF00u) << 40u) |
+            ((val & 0x00000000000000FFu) << 56u);
+        return val;
+    }
+
     inline size_t _Mix(size_t val) const {
         // This is based on Knuth's multiplicative hash for integers.  The
         // constant is the closest prime to the binary expansion of the golden
-        // ratio - 1.
-        return static_cast<size_t>(
-            static_cast<uint64_t>(val) * 11400714819323198549ULL);
+        // ratio - 1.  The best way to produce a hash table bucket index from
+        // the result is to shift the result right, since the higher order bits
+        // have the most entropy.  But since we can't know the number of buckets
+        // in a table that's using this, we just reverse the byte order instead.
+        uint64_t h = static_cast<uint64_t>(val) * 11400714819323198549ULL;
+        return static_cast<size_t>(_SwapByteOrder(h));
     }
 
 public:
