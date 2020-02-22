@@ -37,7 +37,8 @@ class TestUsdGeomSchemata(unittest.TestCase):
         self.assertTrue(mesh)
         self.assertTrue(mesh.GetPrim())
         self.assertTrue(not mesh.GetPointsAttr().Get(1))
-        self.assertEqual(p.GetTypeName(), mesh.GetSchemaClassPrimDefinition().typeName)
+        self.assertEqual(p.GetTypeName(), 
+            Usd.SchemaRegistry().GetSchemaTypeName(mesh._GetStaticTfType()))
 
         #
         # Make sure uniform access behaves as expected.

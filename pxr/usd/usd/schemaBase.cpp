@@ -57,10 +57,14 @@ UsdSchemaBase::~UsdSchemaBase()
     // define new members.
 }
 
-SdfPrimSpecHandle
+const UsdPrimDefinition *
 UsdSchemaBase::GetSchemaClassPrimDefinition() const
 {
-    return UsdSchemaRegistry::GetSchemaPrimSpec(_GetType());
+    const UsdSchemaRegistry &reg = UsdSchemaRegistry::GetInstance();
+    const TfToken usdTypeName = reg.GetSchemaTypeName(_GetType());
+    return IsAppliedAPISchema() ?
+        reg.FindAppliedAPIPrimDefinition(usdTypeName) :
+        reg.FindConcretePrimDefinition(usdTypeName);
 }
 
 bool
