@@ -36,8 +36,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdStGLSLProgram;
 typedef boost::shared_ptr<class HdStGLSLProgram> HdStGLSLProgramSharedPtr;
-typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
-
 
 /// \class HdxColorChannelTask
 ///
@@ -98,10 +96,6 @@ private:
     GfVec2i _textureSize;
     GLint _locations[5];
     GLuint _vertexBuffer;
-
-    // XXX: Removed due to slowness in the IsCurrent() call when multiple
-    //      gl contexts are registered in GlfGLContextRegistry.
-    // GlfGLContextSharedPtr _owningContext;
 
     GLuint _copyFramebuffer;
     GfVec2i _framebufferSize;
