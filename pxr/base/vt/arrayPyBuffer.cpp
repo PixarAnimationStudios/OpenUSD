@@ -33,6 +33,7 @@
 
 #include "pxr/base/gf/traits.h"
 
+#include "pxr/base/tf/py3Compat.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyUtils.h"
 
@@ -219,6 +220,7 @@ struct Vt_ArrayBufferWrapper
 ////////////////////////////////////////////////////////////////////////
 // Python buffer protocol entry points.
 
+#if PY_MAJOR_VERSION == 2
 // Python's getreadbuf interface function.
 template <class T>
 Py_ssize_t
@@ -259,6 +261,7 @@ Py_ssize_t
 Vt_getcharbuf(PyObject *self, Py_ssize_t segment, const char **ptrptr) {
     return Vt_getreadbuf<T>(self, segment, (void **) ptrptr);
 }
+#endif
 
 // Python's releasebuffer interface function.
 template <class T>
@@ -332,10 +335,12 @@ struct Vt_ArrayBufferProcs
 };
 template <class T>
 PyBufferProcs Vt_ArrayBufferProcs<T>::procs = {
+#if PY_MAJOR_VERSION == 2
     (readbufferproc) Vt_getreadbuf<T>,   /*bf_getreadbuffer*/
     (writebufferproc) Vt_getwritebuf<T>, /*bf_getwritebuffer*/
     (segcountproc) Vt_getsegcount<T>,    /*bf_getsegcount*/
     (charbufferproc) Vt_getcharbuf<T>,   /*bf_getcharbuffer*/
+#endif
     (getbufferproc) Vt_getbuffer<T>,
     (releasebufferproc) Vt_releasebuffer<T>,
 };
@@ -362,8 +367,8 @@ Vt_AddBufferProtocol()
     // to indicate that this type supports the buffer protocol.
     auto *typeObj = reinterpret_cast<PyTypeObject *>(cls.ptr());
     typeObj->tp_as_buffer = &Vt_ArrayBufferProcs<ArrayType>::procs;
-    typeObj->tp_flags |= (Py_TPFLAGS_HAVE_NEWBUFFER |
-                          Py_TPFLAGS_HAVE_GETCHARBUFFER);
+    typeObj->tp_flags |= (TfPy_TPFLAGS_HAVE_NEWBUFFER |
+                          TfPy_TPFLAGS_HAVE_GETCHARBUFFER);
 }
 
 

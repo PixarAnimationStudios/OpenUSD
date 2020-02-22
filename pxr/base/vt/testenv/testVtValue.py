@@ -73,6 +73,15 @@ class TestVtValue(unittest.TestCase):
         self.assertEqual(Vt._test_ValueTypeName(Vt.Float(1.234)), 'float')
         self.assertEqual(Vt._test_ValueTypeName(Vt.Double(1.234)), 'double')
 
+    def test_IntValueRoundTrip(self):
+        '''Make sure we correctly convert ints of various sizes in the value
+        python bindings
+        '''
+        self.assertEqual(Vt._test_Ident(0), 0)
+        self.assertEqual(Vt._test_Ident(100), 100)
+        self.assertEqual(Vt._test_Ident(2**32 - 1), 2**32 - 1)
+        self.assertEqual(Vt._test_Ident(2**64 - 1), 2**64 - 1)
+
     def test_Dictionary(self):
         good = {'key' : 'value',
                 'key2' : 'value',
