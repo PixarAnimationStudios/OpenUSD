@@ -252,10 +252,11 @@ of a set of joints. Helper methods UsdSkelDecomposeTransforms() and
 UsdSkelMakeTransforms() can be used to convert inbetween these components
 and arrays of matrices.
 
-Note that this encoding implies that joint local transforms must be
-_orthogonal_. It does not necessarily imply that the transforms must be
-_orthonormal_, however, as non-uniform scales may still be authored.
-Still, it is at least _recommended_ that users make an effort to stick to purely
+Note that this encoding implies that joint local transforms must have an
+_orthogonal_ basis.  While non-uniform scales may still be authored,
+non-uniform scale values should only be used to apply reflections; each
+component of the scale should otherwise have the same magnitude.
+It is further _recommended_ that users make an effort to stick to purely
 orthonormal transforms: Many applications do not support non-uniform joint
 scaling, so translating non-orthonormal transforms to other packages may be
 problematic.
