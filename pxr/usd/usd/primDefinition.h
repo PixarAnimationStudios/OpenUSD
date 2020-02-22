@@ -160,7 +160,7 @@ private:
 
     // Access to the schema registry's schematics.
     const SdfLayerRefPtr &_GetSchematics() const {
-        return UsdSchemaRegistry::GetInstance().GetSchematics();
+        return UsdSchemaRegistry::GetInstance()._schematics;
     }
 
     SdfPrimSpecHandle _primSpec;

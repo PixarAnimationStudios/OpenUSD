@@ -62,10 +62,6 @@ public:
         return TfSingleton<UsdSchemaRegistry>::GetInstance();
     }
 
-    const SdfLayerRefPtr & GetSchematics() const {
-        return _schematics;
-    }
-
     /// Return the type name in the USD schema for prims of the given registered
     /// \p primType.
     TfToken GetSchemaTypeName(const TfType &schemaType) const {
@@ -239,6 +235,8 @@ private:
 
     TfHashMap<TfToken, TfToken, TfToken::HashFunctor> 
         _multipleApplyAPISchemaNamespaces;
+
+    friend class UsdPrimDefinition;
 };
 
 USD_API_TEMPLATE_CLASS(TfSingleton<UsdSchemaRegistry>);

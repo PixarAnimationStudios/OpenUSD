@@ -47,8 +47,6 @@ void wrapUsdSchemaRegistry()
 
     class_<This, ThisPtr, boost::noncopyable>("SchemaRegistry", no_init)
         .def(TfPySingleton())
-        .def("GetSchematics", &This::GetSchematics,
-             return_value_policy<return_by_value>())
 
         .def("GetSchemaTypeName",
              (TfToken (This::*)(const TfType &) const)
