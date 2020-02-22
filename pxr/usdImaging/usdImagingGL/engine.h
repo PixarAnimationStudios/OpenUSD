@@ -70,8 +70,6 @@ class HdxTaskController;
 class UsdImagingDelegate;
 class UsdImagingGLLegacyEngine;
 
-typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
-TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleLightingContext);
 
 /// \class UsdImagingGLEngine
