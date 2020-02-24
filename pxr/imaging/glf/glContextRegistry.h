@@ -29,7 +29,6 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/base/tf/singleton.h"
-#include <boost/shared_ptr.hpp>
 
 #include <memory>
 #include <vector>
@@ -39,7 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 struct GlfGLContextRegistry_Data;
 
-typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
+typedef std::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 
 /// \class GlfGLContextRegistry
 ///
