@@ -148,7 +148,7 @@ then build and install USD into ```/opt/local/USD```.
 Launch the "Developer Command Prompt" for your version of Visual Studio and 
 run the script in the opened shell. Make sure to use the 64-bit (x64) command
 prompt and not the 32-bit (x86) command prompt.  (Note if you're trying to
-build with Visual Studio 2017, use the "x86 Native Tools Command Prompt for VS
+build with Visual Studio 2017, use the "x64 Native Tools Command Prompt for VS
 2017").
 
 See https://docs.microsoft.com/en-us/dotnet/framework/tools/developer-command-prompt-for-vs for more details.
