@@ -389,14 +389,15 @@ _GetDoubleMetadata(
 //
 
 // Helpers for \c AlembicProperty.
-template <class T, class Enable = void>
+template <class T>
 struct _AlembicPropertyHelper {
 //  T operator()(const ICompoundProperty& parent, const std::string& name)const;
 };
 template <>
 struct _AlembicPropertyHelper<ICompoundProperty> {
     ICompoundProperty
-    operator()(const ICompoundProperty& parent, const std::string& name) const
+    operator()(const ICompoundProperty& parent, const std::string& name,
+               SchemaInterpMatching matching = kStrictMatching) const
     {
         if (const PropertyHeader* header = parent.getPropertyHeader(name)) {
             if (header->isCompound()) {
@@ -409,7 +410,8 @@ struct _AlembicPropertyHelper<ICompoundProperty> {
 template <>
 struct _AlembicPropertyHelper<IScalarProperty> {
     IScalarProperty
-    operator()(const ICompoundProperty& parent, const std::string& name) const
+    operator()(const ICompoundProperty& parent, const std::string& name,
+               SchemaInterpMatching matching = kStrictMatching) const
     {
         if (const PropertyHeader* header = parent.getPropertyHeader(name)) {
             if (header->isScalar()) {
@@ -422,10 +424,11 @@ struct _AlembicPropertyHelper<IScalarProperty> {
 template <class T>
 struct _AlembicPropertyHelper<ITypedScalarProperty<T> > {
     ITypedScalarProperty<T>
-    operator()(const ICompoundProperty& parent, const std::string& name) const
+    operator()(const ICompoundProperty& parent, const std::string& name,
+               SchemaInterpMatching matching = kStrictMatching) const
     {
         if (const PropertyHeader* header = parent.getPropertyHeader(name)) {
-            if (ITypedScalarProperty<T>::matches(*header)) {
+            if (ITypedScalarProperty<T>::matches(*header, matching)) {
                 return ITypedScalarProperty<T>(parent, name);
             }
         }
@@ -435,7 +438,8 @@ struct _AlembicPropertyHelper<ITypedScalarProperty<T> > {
 template <>
 struct _AlembicPropertyHelper<IArrayProperty> {
     IArrayProperty
-    operator()(const ICompoundProperty& parent, const std::string& name) const
+    operator()(const ICompoundProperty& parent, const std::string& name,
+               SchemaInterpMatching matching = kStrictMatching) const
     {
         if (const PropertyHeader* header = parent.getPropertyHeader(name)) {
             if (header->isArray()) {
@@ -448,10 +452,11 @@ struct _AlembicPropertyHelper<IArrayProperty> {
 template <class T>
 struct _AlembicPropertyHelper<ITypedArrayProperty<T> > {
     ITypedArrayProperty<T>
-    operator()(const ICompoundProperty& parent, const std::string& name) const
+    operator()(const ICompoundProperty& parent, const std::string& name,
+               SchemaInterpMatching matching = kStrictMatching) const
     {
         if (const PropertyHeader* header = parent.getPropertyHeader(name)) {
-            if (ITypedArrayProperty<T>::matches(*header)) {
+            if (ITypedArrayProperty<T>::matches(*header, matching)) {
                 return ITypedArrayProperty<T>(parent, name);
             }
         }
@@ -461,10 +466,11 @@ struct _AlembicPropertyHelper<ITypedArrayProperty<T> > {
 template <class T>
 struct _AlembicPropertyHelper<ITypedGeomParam<T> > {
     ITypedGeomParam<T>
-    operator()(const ICompoundProperty& parent, const std::string& name) const
+    operator()(const ICompoundProperty& parent, const std::string& name,
+               SchemaInterpMatching matching = kStrictMatching) const
     {
         if (const PropertyHeader* header = parent.getPropertyHeader(name)) {
-            if (ITypedGeomParam<T>::matches(*header)) {
+            if (ITypedGeomParam<T>::matches(*header, matching)) {
                 return ITypedGeomParam<T>(parent, name);
             }
         }
@@ -502,10 +508,10 @@ public:
     /// you'll get an object of the requested type but its valid()
     /// method will return \c false.
     template <class T>
-    T Cast() const
+    T Cast(SchemaInterpMatching matching = kStrictMatching) const
     {
         if (_parent.valid()) {
-            return _AlembicPropertyHelper<T>()(_parent, _name);
+            return _AlembicPropertyHelper<T>()(_parent, _name, matching);
         }
         else {
             return T();
@@ -2343,8 +2349,9 @@ struct _CopyGeneric {
     typedef typename PropertyType::traits_type AlembicTraits;
 
     PropertyType object;
-    _CopyGeneric(const AlembicProperty& object_) :
-        object(object_.Cast<PropertyType>()) { }
+    _CopyGeneric(const AlembicProperty& object_,
+                 SchemaInterpMatching matching = kStrictMatching) :
+        object(object_.Cast<PropertyType>(matching)) { }
 
     bool operator()(_IsValidTag) const
     {
@@ -3151,7 +3158,7 @@ _ReadPolyMesh(_PrimReaderContext* context)
         UsdGeomTokens->points,
         SdfValueTypeNames->Point3fArray,
         _CopyGeneric<IP3fArrayProperty, GfVec3f>(
-            context->ExtractSchema("P")));
+            context->ExtractSchema("P"), kNoMatching));
     context->AddProperty(
         UsdGeomTokens->velocities,
         SdfValueTypeNames->Vector3fArray,
@@ -3207,7 +3214,7 @@ _ReadSubD(_PrimReaderContext* context)
         UsdGeomTokens->points,
         SdfValueTypeNames->Point3fArray,
         _CopyGeneric<IP3fArrayProperty, GfVec3f>(
-            context->ExtractSchema("P")));
+            context->ExtractSchema("P"), kNoMatching));
     context->AddProperty(
         UsdGeomTokens->velocities,
         SdfValueTypeNames->Vector3fArray,
@@ -3360,7 +3367,7 @@ _ReadCurves(_PrimReaderContext* context)
         UsdGeomTokens->points,
         SdfValueTypeNames->Point3fArray,
         _CopyGeneric<IP3fArrayProperty, GfVec3f>(
-            context->ExtractSchema("P")));
+            context->ExtractSchema("P"), kNoMatching));
     context->AddProperty(
         UsdGeomTokens->velocities,
         SdfValueTypeNames->Vector3fArray,
@@ -3434,7 +3441,7 @@ _ReadPoints(_PrimReaderContext* context)
         UsdGeomTokens->points,
         SdfValueTypeNames->Point3fArray,
         _CopyGeneric<IP3fArrayProperty, GfVec3f>(
-            context->ExtractSchema("P")));
+            context->ExtractSchema("P"), kNoMatching));
     context->AddProperty(
         UsdGeomTokens->velocities,
         SdfValueTypeNames->Vector3fArray,
