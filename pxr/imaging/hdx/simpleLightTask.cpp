@@ -233,6 +233,11 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
                     lightShadowParams.shadowMatrix->Compute(_viewport,
                                                             windowPolicy);
 
+                if (shadowMatrices.size() == 0) {
+                    glfl.SetHasShadow(false);
+                    continue;
+                }
+
                 glfl.SetShadowIndexStart(shadowIndex + 1);
                 glfl.SetShadowIndexEnd(shadowIndex + shadowMatrices.size());
                 shadowIndex += shadowMatrices.size();
