@@ -443,9 +443,12 @@ void
 HdUnitTestDelegate::SetReprSelector(SdfPath const &id,
                     HdReprSelector const &reprSelector)
 {
-   if (_meshes.find(id) != _meshes.end()) {
-       _meshes[id].reprSelector = reprSelector;
-   }
+    // XXX: Add repr support for curves and points
+    if (_meshes.find(id) != _meshes.end()) {
+        _meshes[id].reprSelector = reprSelector;
+        HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+        tracker.MarkRprimDirty(id, HdChangeTracker::DirtyRepr);
+    }
 }
 
 void
