@@ -434,6 +434,65 @@ _GetComputedPrimvars(HdSceneDelegate* sceneDelegate,
     return dirtyCompPrimvars;
 }
 
+static bool
+_IsMasterAttribute(TfToken const& primvarName)
+{
+    // This is a list of names for uniform primvars/attributes that affect the
+    // master geometry in Renderman. They need to be emitted on the master as
+    // primvars to take effect, instead of on geometry instances.
+    // This list was created based on this doc page:
+    //   https://rmanwiki.pixar.com/display/REN23/Primitive+Variables
+    typedef std::unordered_set<TfToken, TfToken::HashFunctor> TfTokenSet;
+    static const TfTokenSet masterAttributes = {
+        // Common
+        TfToken("ri:attributes:identifier:object"),
+        // Shading
+        TfToken("ri:attributes:derivatives:extrapolate"),
+        TfToken("ri:attributes:displacement:ignorereferenceinstance"),
+        TfToken("ri:attributes:displacementbound:CoordinateSystem"),
+        TfToken("ri:attributes:displacementbound:offscreen"),
+        TfToken("ri:attributes:displacementbound:sphere"),
+        TfToken("ri:attributes:Ri:Orientation"),
+        TfToken("ri:attributes:trace:autobias"),
+        TfToken("ri:attributes:trace:bias"),
+        TfToken("ri:attributes:trace:displacements"),
+        // Dicing
+        TfToken("ri:attributes:dice:micropolygonlength"),
+        TfToken("ri:attributes:dice:offscreenstrategy"),
+        TfToken("ri:attributes:dice:rasterorient"),
+        TfToken("ri:attributes:dice:referencecamera"),
+        TfToken("ri:attributes:dice:referenceinstance"),
+        TfToken("ri:attributes:dice:strategy"),
+        TfToken("ri:attributes:dice:worlddistancelength"),
+        TfToken("ri:attributes:Ri:GeometricApproximationFocusFactor"),
+        TfToken("ri:attributes:Ri:GeometricApproximationMotionFactor"),
+        // Points
+        TfToken("ri:attributes:falloffpower"),
+        // Volume
+        TfToken("ri:attributes:dice:minlength"),
+        TfToken("ri:attributes:dice:minlengthspace"),
+        TfToken("ri:attributes:Ri:Bound"),
+        TfToken("ri:attributes:volume:dsominmax"),
+        // SubdivisionMesh
+        TfToken("ri:attributes:dice:pretessellate"),
+        TfToken("ri:attributes:dice:watertight"),
+        TfToken("ri:attributes:shade:faceset"),
+        TfToken("ri:attributes:stitchbound:CoordinateSystem"),
+        TfToken("ri:attributes:stitchbound:sphere"),
+        // NuPatch
+        TfToken("ri:attributes:trimcurve:sense"),
+        // PolygonMesh
+        TfToken("ri:attributes:polygon:concave"),
+        TfToken("ri:attributes:polygon:smoothdisplacement"),
+        TfToken("ri:attributes:polygon:smoothnormals"),
+        // Procedural
+        TfToken("ri:attributes:procedural:immediatesubdivide"),
+        TfToken("ri:attributes:procedural:reentrant")
+    };
+
+    return masterAttributes.count(primvarName) > 0;
+}
+
 static void
 _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
          HdInterpolation hdInterp, RtParamList& params,
@@ -526,28 +585,63 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
         }
 
         // Constant Hydra primvars become either Riley primvars or attributes,
-        // depending on prefix.
-        // 1.) Constant primvars with the "ri:attributes:"
-        //     prefix have that prefix stripped and become attributes.
+        // depending on prefix and the name.
+        // 1.) Constant primvars with the "ri:attributes:" prefix have that
+        //     prefix stripped and become primvars for geometry master
+        //     "attributes" or attributes for geometry instances.
         // 2.) Constant primvars with the "user:" prefix become attributes.
-        // 3.) Other constant primvars get set on master,
-        //     e.g. displacementbounds.
+        // 3.) Other constant primvars get set on master geometry as primvars.
         RtUString name;
         if (hdInterp == HdInterpolationConstant) {
+            static const char *userAttrPrefix = "user:";
+            static const char *riAttrPrefix = "ri:attributes:";
+
             bool hasUserPrefix =
-                TfStringStartsWith(primvar.name.GetString(), "user:");
+                TfStringStartsWith(primvar.name.GetString(), userAttrPrefix);
             bool hasRiAttributesPrefix =
-                TfStringStartsWith(primvar.name.GetString(), "ri:attributes:");
-            if ((paramType == _ParamTypeAttribute) ^
-                (hasUserPrefix || hasRiAttributesPrefix)) {
+                TfStringStartsWith(primvar.name.GetString(), riAttrPrefix);
+
+            bool skipPrimvar = false;
+            if (paramType == _ParamTypeAttribute) {
+                // When we're looking for attributes on geometry instances,
+                // they need to have either 'user:' or 'ri:attributes:' as a
+                // prefix.
+                if (!hasUserPrefix && !hasRiAttributesPrefix) {
+                    skipPrimvar = true;
+                } else if (hasRiAttributesPrefix) {
+                    // For 'ri:attributes' we check if the attribute is a
+                    // master attribute and if so omit it, since it was included
+                    // with the primvars.
+                    if (_IsMasterAttribute(primvar.name)) {
+                        skipPrimvar = true;
+                    }
+                }
+            } else {
+                // When we're looking for actual primvars, we skip the ones with
+                // the 'user:' or 'ri:attributes:' prefix. Except for a specific
+                // set of attributes that affect tessellation and dicing of the
+                // master geometry and so it becomes part of the primvars.
+                if (hasUserPrefix) {
+                    skipPrimvar = true;
+                } else if (hasRiAttributesPrefix) {
+                    // If this ri attribute does not affect the master we skip
+                    if (!_IsMasterAttribute(primvar.name)) {
+                        skipPrimvar = true;
+                    }
+                }
+            }
+
+            if (skipPrimvar) {
                 continue;
             }
-            const char *strippedName = primvar.name.GetText();
-            static const char *riAttrPrefix = "ri:attributes:";
-            if (!strncmp(strippedName, riAttrPrefix, strlen(riAttrPrefix))) {
+
+            if (hasRiAttributesPrefix) {
+                const char *strippedName = primvar.name.GetText();
                 strippedName += strlen(riAttrPrefix);
+                name = _GetPrmanPrimvarName(TfToken(strippedName), detail);
+            } else {
+                name = _GetPrmanPrimvarName(primvar.name, detail);
             }
-            name = _GetPrmanPrimvarName(TfToken(strippedName), detail);
         } else {
             name = _GetPrmanPrimvarName(primvar.name, detail);
         }
