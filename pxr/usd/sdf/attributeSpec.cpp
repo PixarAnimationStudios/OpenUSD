@@ -134,16 +134,6 @@ SdfAttributeSpec::_New(
 // Connections
 //
 
-SdfPath
-SdfAttributeSpec::_CanonicalizeConnectionPath(
-    const SdfPath& connectionPath) const
-{
-    // Attribute connection paths are always absolute. If a relative path
-    // is passed in, it is considered to be relative to the connection's
-    // owning prim.
-    return connectionPath.MakeAbsolutePath(GetPath().GetPrimPath());
-}
-
 SdfConnectionsProxy
 SdfAttributeSpec::GetConnectionPathList() const
 {

@@ -175,9 +175,6 @@ private:
          SdfVariability variability,
          bool custom);
 
-    SdfPath _CanonicalizeConnectionPath(const SdfPath& connectionPath) const;
-
-    friend class Sdf_PyAttributeAccess;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
