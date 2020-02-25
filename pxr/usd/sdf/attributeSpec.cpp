@@ -53,48 +53,46 @@ SdfAttributeSpec::New(
 {
     TRACE_FUNCTION();
 
-    if (!owner) {
+    SdfAttributeSpecHandle result;
+
+    SdfPrimSpec *ownerPtr = get_pointer(owner);
+
+    if (!ownerPtr) {
 	TF_CODING_ERROR("Cannot create an SdfAttributeSpec with a null owner");
-	return TfNullPtr;
+	return result;
     }
 
-    if (!Sdf_ChildrenUtils<Sdf_AttributeChildPolicy>::IsValidName(name)) {
-        TF_CODING_ERROR(
-            "Cannot create attribute on %s with invalid name: %s",
-            owner->GetPath().GetText(), name.c_str());
-        return TfNullPtr;
+    const SdfPath attrPath = ownerPtr->GetPath().AppendProperty(TfToken(name));
+
+    if (ARCH_UNLIKELY(attrPath.IsEmpty())) {
+        // This can happen if the owner is the pseudo-root '/', or if the passed
+        // name was not a valid property name.  Give specific error messages in
+        // these cases.
+        if (!Sdf_ChildrenUtils<Sdf_AttributeChildPolicy>::IsValidName(name)) {
+            TF_CODING_ERROR(
+                "Cannot create attribute spec on <%s> with invalid name '%s'",
+                ownerPtr->GetPath().GetText(), name.c_str());
+        }
+        else if (ownerPtr->GetPath() == SdfPath::AbsoluteRootPath()) {
+            TF_CODING_ERROR(
+                "Cannot create attribute spec '%s' on the pseudo-root '/'",
+                name.c_str());
+        }
+        else {
+            TF_CODING_ERROR(
+                "Cannot create attribute spec '%s' on <%s>",
+                name.c_str(), ownerPtr->GetPath().GetText());
+        }
+        return result;
     }
 
-    SdfPath attributePath = owner->GetPath().AppendProperty(TfToken(name));
-    if (!attributePath.IsPropertyPath()) {
-        TF_CODING_ERROR(
-            "Cannot create attribute at invalid path <%s.%s>",
-            owner->GetPath().GetText(), name.c_str());
-        return TfNullPtr;
-    }
-
-    return _New(owner, attributePath, typeName, variability, custom);
-}
-
-SdfAttributeSpecHandle
-SdfAttributeSpec::_New(
-    const SdfSpecHandle &owner,
-    const SdfPath& attrPath,
-    const SdfValueTypeName& typeName,
-    SdfVariability variability,
-    bool custom)
-{
-    if (!owner) {
-        TF_CODING_ERROR("NULL owner");
-        return TfNullPtr;
-    }
     if (!typeName) {
         TF_CODING_ERROR("Cannot create attribute spec <%s> with invalid type",
                         attrPath.GetText());
-        return TfNullPtr;
+        return result;
     }
 
-    const SdfLayerHandle layer = owner->GetLayer();
+    const SdfLayerHandle layer = ownerPtr->GetLayer();
     if (layer->_ValidateAuthoring()) {
         const SdfValueTypeName typeInSchema = 
             layer->GetSchema().FindType(typeName.GetAsToken().GetString());
@@ -102,7 +100,7 @@ SdfAttributeSpec::_New(
             TF_CODING_ERROR(
                 "Cannot create attribute spec <%s> with invalid type",
                 attrPath.GetText());
-            return TfNullPtr;
+            return result;
         }
     }
 
@@ -110,24 +108,24 @@ SdfAttributeSpec::_New(
 
     // AttributeSpecs are considered initially to have only required fields 
     // only if they are not custom.
-    bool hasOnlyRequiredFields = (!custom);
+    const bool hasOnlyRequiredFields = (!custom);
 
     if (!Sdf_ChildrenUtils<Sdf_AttributeChildPolicy>::CreateSpec(
             layer, attrPath, SdfSpecTypeAttribute, hasOnlyRequiredFields)) {
-        return TfNullPtr;
+        return result;
     }
 
-    SdfAttributeSpecHandle spec = layer->GetAttributeAtPath(attrPath);
+    result = layer->GetAttributeAtPath(attrPath);
 
     // Avoid expensive dormancy checks
-    SdfAttributeSpec *specPtr = get_pointer(spec);
-    if (TF_VERIFY(specPtr)) {
-        specPtr->SetField(SdfFieldKeys->Custom, custom);
-        specPtr->SetField(SdfFieldKeys->TypeName, typeName.GetAsToken());
-        specPtr->SetField(SdfFieldKeys->Variability, variability);
+    SdfAttributeSpec *resultPtr = get_pointer(result);
+    if (TF_VERIFY(resultPtr)) {
+        resultPtr->SetField(SdfFieldKeys->Custom, custom);
+        resultPtr->SetField(SdfFieldKeys->TypeName, typeName.GetAsToken());
+        resultPtr->SetField(SdfFieldKeys->Variability, variability);
     }
 
-    return spec;
+    return result;
 }
 
 //
