@@ -32,6 +32,7 @@
 #include "pxr/base/tf/stringUtils.h"
 
 #include <boost/range.hpp>
+#include <boost/noncopyable.hpp>
 #include <boost/python.hpp>
 
 #include <algorithm>

@@ -31,6 +31,7 @@
 #include "pxr/base/tf/iterator.h"
 
 #include <boost/python.hpp>
+#include <boost/noncopyable.hpp>
 #include <string>
 
 using namespace boost::python;
