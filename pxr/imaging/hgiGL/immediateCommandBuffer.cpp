@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include <GL/glew.h>
+#include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
 #include "pxr/imaging/hgiGL/immediateCommandBuffer.h"
 #include "pxr/imaging/hgiGL/blitEncoder.h"
@@ -73,8 +74,8 @@ _CreateDescriptorCacheItem(const HgiGraphicsEncoderDesc& desc)
     //
     for (size_t i=0; i<numColorAttachments; i++) {
         const HgiAttachmentDesc& attachment = desc.colorAttachments[i];
-        HgiGLTexture const* glTexture = 
-            static_cast<HgiGLTexture const*>(attachment.texture);
+        HgiGLTexture* glTexture = static_cast<HgiGLTexture*>(
+            attachment.texture.Get());
 
         if (!TF_VERIFY(glTexture, "Invalid attachment texture")) {
             continue;
@@ -102,10 +103,9 @@ _CreateDescriptorCacheItem(const HgiGraphicsEncoderDesc& desc)
     //
     // Depth attachment
     //
-    if (desc.depthAttachment.texture) {
-        const HgiAttachmentDesc& attachment = desc.depthAttachment;
-        HgiGLTexture const* glTexture = 
-            static_cast<HgiGLTexture const*>(attachment.texture);
+    HgiTextureHandle depthTex = desc.depthAttachment.texture;
+    if (depthTex) {
+        HgiGLTexture* glTexture = static_cast<HgiGLTexture*>(depthTex.Get());
 
         uint32_t textureName = glTexture->GetTextureId();
 
@@ -195,6 +195,8 @@ _BindFramebuffer(HgiGLDescriptorCacheItem* dci)
 {
     glBindFramebuffer(GL_FRAMEBUFFER, dci->framebuffer);
 
+    bool blendEnabled = false;
+
     // Apply LoadOps
     for (size_t i=0; i<dci->descriptor.colorAttachments.size(); i++) {
         HgiAttachmentDesc const& colorAttachment =
@@ -203,6 +205,26 @@ _BindFramebuffer(HgiGLDescriptorCacheItem* dci)
         if (colorAttachment.loadOp == HgiAttachmentLoadOpClear) {
             glClearBufferfv(GL_COLOR, i, colorAttachment.clearValue.data());
         }
+
+        blendEnabled |= colorAttachment.blendEnabled;
+
+        GLenum srcColor = HgiGLConversions::GetBlendFactor(
+            colorAttachment.srcColorBlendFactor);
+        GLenum dstColor = HgiGLConversions::GetBlendFactor(
+            colorAttachment.dstColorBlendFactor);
+
+        GLenum srcAlpha = HgiGLConversions::GetBlendFactor(
+            colorAttachment.srcAlphaBlendFactor);
+        GLenum dstAlpha = HgiGLConversions::GetBlendFactor(
+            colorAttachment.dstAlphaBlendFactor);
+
+        GLenum colorOp = HgiGLConversions::GetBlendEquation(
+            colorAttachment.colorBlendOp);
+        GLenum alphaOp = HgiGLConversions::GetBlendEquation(
+            colorAttachment.alphaBlendOp);
+
+        glBlendFuncSeparatei(i, srcColor, dstColor, srcAlpha, dstAlpha);
+        glBlendEquationSeparatei(i, colorOp, alphaOp);
     }
 
     HgiAttachmentDesc const& depthAttachment =
@@ -210,6 +232,13 @@ _BindFramebuffer(HgiGLDescriptorCacheItem* dci)
     if (depthAttachment.texture && 
         depthAttachment.loadOp == HgiAttachmentLoadOpClear) {
         glClearBufferfv(GL_DEPTH, 0, depthAttachment.clearValue.data());
+    }
+
+    // Setup blending
+    if (blendEnabled) {
+        glEnable(GL_BLEND);
+    } else {
+        glDisable(GL_BLEND);
     }
 
     HGIGL_POST_PENDING_GL_ERRORS();

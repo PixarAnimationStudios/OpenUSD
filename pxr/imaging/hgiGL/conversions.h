@@ -50,7 +50,25 @@ public:
         GLenum *outInternalFormat);
 
     HGIGL_API
+    static GLenum GetFormatType(HgiFormat inFormat);
+
+    HGIGL_API
+    static int8_t GetElementCount(HgiFormat inFormat);
+
+    HGIGL_API
     static std::vector<GLenum> GetShaderStages(HgiShaderStage ss);
+
+    HGIGL_API
+    static GLenum GetCullMode(HgiCullMode cm);
+
+    HGIGL_API
+    static GLenum GetPolygonMode(HgiPolygonMode pm);
+
+    HGIGL_API
+    static GLenum GetBlendFactor(HgiBlendFactor bf);
+
+    HGIGL_API
+    static GLenum GetBlendEquation(HgiBlendOp bo);
 };
 
 

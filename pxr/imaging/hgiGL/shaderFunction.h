@@ -36,7 +36,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// OpenGL implementation of HgiShaderFunction
 ///
-class HgiGLShaderFunction final : public HgiShaderFunction {
+class HgiGLShaderFunction final : public HgiShaderFunction
+{
 public:
     HGIGL_API
     virtual ~HgiGLShaderFunction();
@@ -63,9 +64,7 @@ private:
     HgiGLShaderFunction(const HgiGLShaderFunction&) = delete;
 
 private:
-    HgiShaderFunctionDesc _descriptor;
     std::string _errors;
-
     uint32_t _shaderId;
 };
 

@@ -34,6 +34,7 @@ TF_REGISTRY_FUNCTION(TfType)
 }
 
 Hgi::Hgi()
+    : _uniqueIdCounter(1)
 {
 }
 
@@ -84,5 +85,12 @@ Hgi::GetPlatformDefaultHgi()
 
     return instance;
 }
+
+uint64_t
+Hgi::GetUniqueId()
+{
+    return _uniqueIdCounter.fetch_add(1);
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -84,6 +84,20 @@ public:
     void DestroyShaderProgram(
         HgiShaderProgramHandle* shaderProgramHandle) override;
 
+    HGIGL_API
+    HgiResourceBindingsHandle CreateResourceBindings(
+        HgiResourceBindingsDesc const& desc) override;
+
+    HGIGL_API
+    void DestroyResourceBindings(HgiResourceBindingsHandle* resHandle) override;
+
+    HGIGL_API
+    HgiPipelineHandle CreatePipeline(
+        HgiPipelineDesc const& pipeDesc) override;
+
+    HGIGL_API
+    void DestroyPipeline(HgiPipelineHandle* pipeHandle) override;
+
 private:
     HgiGL & operator=(const HgiGL&) = delete;
     HgiGL(const HgiGL&) = delete;

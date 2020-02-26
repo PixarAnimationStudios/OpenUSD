@@ -25,12 +25,19 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiTexture::HgiTexture(HgiTextureDesc const&)
+HgiTexture::HgiTexture(HgiTextureDesc const& desc)
+    : _descriptor(desc)
 {
 }
 
 HgiTexture::~HgiTexture()
 {
+}
+
+HgiTextureDesc const&
+HgiTexture::GetDescriptor() const
+{
+    return _descriptor;
 }
 
 bool operator==(const HgiTextureDesc& lhs,

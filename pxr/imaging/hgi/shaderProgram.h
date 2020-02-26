@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgi/api.h"
 #include "pxr/imaging/hgi/enums.h"
+#include "pxr/imaging/hgi/handle.h"
 #include "pxr/imaging/hgi/shaderFunction.h"
 #include "pxr/imaging/hgi/types.h"
 
@@ -35,18 +36,54 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct HgiShaderProgramDesc;
+
+/// \struct HgiShaderProgramDesc
+///
+/// Describes the properties needed to create a GPU shader program.
+///
+/// <ul>
+/// <li>shaderFunctions:
+///   Holds handles to shader functions for each shader stage.</li>
+/// </ul>
+///
+struct HgiShaderProgramDesc
+{
+    HGI_API
+    HgiShaderProgramDesc();
+
+    std::string debugName;
+    HgiShaderFunctionHandleVector shaderFunctions;
+};
+
+HGI_API
+inline bool operator==(
+    const HgiShaderProgramDesc& lhs,
+    const HgiShaderProgramDesc& rhs);
+
+HGI_API
+inline bool operator!=(
+    const HgiShaderProgramDesc& lhs,
+    const HgiShaderProgramDesc& rhs);
 
 
 ///
 /// \class HgiShaderProgram
 ///
 /// Represents a collection of shader functions.
+/// This object does not take ownership of the shader functions and does not
+/// destroy them automatically. The client must destroy the shader functions
+/// when the program is detroyed, because only the client knows if the shader
+/// functions are used by other shader programs.
 ///
-class HgiShaderProgram {
+class HgiShaderProgram
+{
 public:
     HGI_API
     virtual ~HgiShaderProgram();
+
+    /// The descriptor describes the object.
+    HGI_API
+    HgiShaderProgramDesc const& GetDescriptor() const;
 
     /// Returns false if any shader compile errors occured.
     HGI_API
@@ -65,42 +102,18 @@ protected:
     HGI_API
     HgiShaderProgram(HgiShaderProgramDesc const& desc);
 
+    HgiShaderProgramDesc _descriptor;
+
 private:
     HgiShaderProgram() = delete;
     HgiShaderProgram & operator=(const HgiShaderProgram&) = delete;
     HgiShaderProgram(const HgiShaderProgram&) = delete;
 };
 
-typedef HgiShaderProgram* HgiShaderProgramHandle;
+/// Explicitly instantiate and define ShaderProgram handle
+template class HgiHandle<class HgiShaderProgram>;
+typedef HgiHandle<class HgiShaderProgram> HgiShaderProgramHandle;
 typedef std::vector<HgiShaderProgramHandle> HgiShaderProgramHandleVector;
-
-
-/// \struct HgiShaderProgramDesc
-///
-/// Describes the properties needed to create a GPU shader program.
-///
-/// <ul>
-/// <li>shaderFunctions:
-///   Holds handles to shader functions for each shader stage.</li>
-/// </ul>
-///
-struct HgiShaderProgramDesc {
-    HGI_API
-    HgiShaderProgramDesc();
-
-    std::string debugName;
-    HgiShaderFunctionHandleVector shaderFunctions;
-};
-
-HGI_API
-inline bool operator==(
-    const HgiShaderProgramDesc& lhs,
-    const HgiShaderProgramDesc& rhs);
-
-HGI_API
-inline bool operator!=(
-    const HgiShaderProgramDesc& lhs,
-    const HgiShaderProgramDesc& rhs);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

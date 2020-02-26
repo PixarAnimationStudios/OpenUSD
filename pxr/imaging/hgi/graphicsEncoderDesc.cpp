@@ -32,7 +32,8 @@ bool operator==(
     return  lhs.clearValue == rhs.clearValue &&
             lhs.loadOp == rhs.loadOp &&
             lhs.storeOp == rhs.storeOp &&
-            lhs.texture == rhs.texture;
+            lhs.texture == rhs.texture &&
+            lhs.blendEnabled == rhs.blendEnabled;
 }
 
 bool operator!=(
@@ -47,10 +48,17 @@ std::ostream& operator<<(
     const HgiAttachmentDesc& attachment)
 {
     out << "HgiAttachmentDesc: {"
-        << "has_texture: " << (attachment.texture!=nullptr) << ", "
+        << "has_texture: " << (attachment.texture) << ", "
         << "clearValue: " << attachment.clearValue << ", "
         << "loadOp: " << attachment.loadOp << ", "
-        << "storeOp: " << attachment.storeOp <<
+        << "storeOp: " << attachment.storeOp << ", "
+        << "blendEnabled: " << attachment.blendEnabled << ", "
+        << "srcColorBlendFactor: " << attachment.srcColorBlendFactor << ", "
+        << "dstColorBlendFactor: " << attachment.dstColorBlendFactor << ", "
+        << "colorBlendOp: " << attachment.colorBlendOp << ", "
+        << "srcAlphaBlendFactor: " << attachment.srcAlphaBlendFactor << ", "
+        << "dstAlphaBlendFactor: " << attachment.dstAlphaBlendFactor << ", "
+        << "alphaBlendOp: " << attachment.alphaBlendOp <<
     "}";
     return out;
 }

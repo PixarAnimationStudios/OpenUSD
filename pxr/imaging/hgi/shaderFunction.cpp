@@ -26,11 +26,18 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HgiShaderFunction::HgiShaderFunction(HgiShaderFunctionDesc const& desc)
+    : _descriptor(desc)
 {
 }
 
 HgiShaderFunction::~HgiShaderFunction()
 {
+}
+
+HgiShaderFunctionDesc const&
+HgiShaderFunction::GetDescriptor() const
+{
+    return _descriptor;
 }
 
 HgiShaderFunctionDesc::HgiShaderFunctionDesc()

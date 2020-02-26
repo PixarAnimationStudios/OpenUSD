@@ -24,47 +24,17 @@
 #ifndef PXR_IMAGING_HGI_TEXTURE_H
 #define PXR_IMAGING_HGI_TEXTURE_H
 
-#include <string>
-
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec3i.h"
 #include "pxr/imaging/hgi/api.h"
 #include "pxr/imaging/hgi/enums.h"
+#include "pxr/imaging/hgi/handle.h"
 #include "pxr/imaging/hgi/types.h"
 
+#include <string>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-struct HgiTextureDesc;
-
-
-///
-/// \class HgiTexture
-///
-/// Represents a graphics platform independent GPU texture resource.
-/// Textures should be created via Hgi::CreateTexture.
-///
-/// Base class for Hgi textures.
-/// To the client (HdSt) texture resources are referred to via
-/// opaque, stateless handles (HgTextureHandle).
-///
-class HgiTexture {
-public:
-    HGI_API
-    virtual ~HgiTexture();
-
-protected:
-    HGI_API
-    HgiTexture(HgiTextureDesc const& desc);
-
-private:
-    HgiTexture() = delete;
-    HgiTexture & operator=(const HgiTexture&) = delete;
-    HgiTexture(const HgiTexture&) = delete;
-};
-
-typedef HgiTexture* HgiTextureHandle;
-
 
 
 /// \struct HgiTextureDesc
@@ -96,7 +66,8 @@ typedef HgiTexture* HgiTextureHandle;
 ///   Data may optionally include pixels for each mip-level.</li>
 /// </ul>
 ///
-struct HgiTextureDesc {
+struct HgiTextureDesc
+{
     HgiTextureDesc()
     : usage(HgiTextureUsageBitsColorTarget)
     , format(HgiFormatInvalid)
@@ -128,6 +99,45 @@ HGI_API
 bool operator!=(
     const HgiTextureDesc& lhs,
     const HgiTextureDesc& rhs);
+
+
+///
+/// \class HgiTexture
+///
+/// Represents a graphics platform independent GPU texture resource.
+/// Textures should be created via Hgi::CreateTexture.
+///
+/// Base class for Hgi textures.
+/// To the client (HdSt) texture resources are referred to via
+/// opaque, stateless handles (HgTextureHandle).
+///
+class HgiTexture
+{
+public:
+    HGI_API
+    virtual ~HgiTexture();
+
+    /// The descriptor describes the object.
+    HGI_API
+    HgiTextureDesc const& GetDescriptor() const;
+
+protected:
+    HGI_API
+    HgiTexture(HgiTextureDesc const& desc);
+
+    HgiTextureDesc _descriptor;
+
+private:
+    HgiTexture() = delete;
+    HgiTexture & operator=(const HgiTexture&) = delete;
+    HgiTexture(const HgiTexture&) = delete;
+};
+
+
+/// Explicitly instantiate and define texture handle
+template class HgiHandle<class HgiTexture>;
+typedef HgiHandle<class HgiTexture> HgiTextureHandle;
+typedef std::vector<HgiTextureHandle> HgiTextureHandleVector;
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

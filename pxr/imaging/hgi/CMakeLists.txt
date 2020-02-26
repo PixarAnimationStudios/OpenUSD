@@ -14,6 +14,8 @@ pxr_library(hgi
         graphicsEncoderDesc
         hgi
         immediateCommandBuffer
+        pipeline
+        resourceBindings
         shaderFunction
         shaderProgram
         texture
@@ -23,5 +25,6 @@ pxr_library(hgi
         api.h
         blitEncoderOps.h
         enums.h
+        handle.h
         types.h
 )

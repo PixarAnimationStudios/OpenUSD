@@ -31,6 +31,8 @@ pxr_library(hgiGL
         graphicsEncoder
         hgi
         immediateCommandBuffer
+        pipeline
+        resourceBindings
         shaderFunction
         shaderProgram
         texture

@@ -72,8 +72,8 @@ void
 HgiGLBlitEncoder::CopyTextureGpuToCpu(
     HgiTextureGpuToCpuOp const& copyOp)
 {
-    HgiGLTexture* srcTexture =
-        static_cast<HgiGLTexture*>(copyOp.gpuSourceTexture);
+    HgiTextureHandle texHandle = copyOp.gpuSourceTexture;
+    HgiGLTexture* srcTexture = static_cast<HgiGLTexture*>(texHandle.Get());
 
     if (!TF_VERIFY(srcTexture && srcTexture->GetTextureId(), 
         "Invalid texture handle")) {
@@ -145,13 +145,13 @@ HgiGLBlitEncoder::ResolveImage(
     glCreateFramebuffers(1, &writeFramebuffer);
 
     // Gather source and destination textures
-    HgiGLTexture const* glSrcTexture = 
-        static_cast<HgiGLTexture const*>(resolveOp.source);
-    HgiGLTexture const* glDstTexture = 
-        static_cast<HgiGLTexture const*>(resolveOp.destination);
+    HgiGLTexture* glSrcTexture = static_cast<HgiGLTexture*>(
+        resolveOp.source.Get());
+    HgiGLTexture* glDstTexture = static_cast<HgiGLTexture*>(
+        resolveOp.destination.Get());
 
     if (!glSrcTexture || !glDstTexture) {
-        TF_CODING_ERROR("No textures provided for resolve");            
+        TF_CODING_ERROR("No textures provided for resolve");
         return;
     }
 

@@ -29,10 +29,14 @@
 
 #include "pxr/imaging/hgi/api.h"
 #include "pxr/imaging/hgi/buffer.h"
+#include "pxr/imaging/hgi/pipeline.h"
+#include "pxr/imaging/hgi/resourceBindings.h"
 #include "pxr/imaging/hgi/shaderFunction.h"
 #include "pxr/imaging/hgi/shaderProgram.h"
 #include "pxr/imaging/hgi/texture.h"
 #include "pxr/imaging/hgi/types.h"
+
+#include <atomic>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -102,29 +106,63 @@ public:
     HGI_API
     virtual void DestroyBuffer(HgiBufferHandle* bufHandle) = 0;
 
-    /// Create a new shader function
+    /// Create a new shader function.
     HGI_API
     virtual HgiShaderFunctionHandle CreateShaderFunction(
         HgiShaderFunctionDesc const& desc) = 0;
 
-    /// Destroy a shader function
+    /// Destroy a shader function.
     HGI_API
     virtual void DestroyShaderFunction(
         HgiShaderFunctionHandle* shaderFunctionHandle) = 0;
 
-    /// Create a new shader program
+    /// Create a new shader program.
     HGI_API
     virtual HgiShaderProgramHandle CreateShaderProgram(
         HgiShaderProgramDesc const& desc) = 0;
 
-    /// Destroy a shader program
+    /// Destroy a shader program.
+    /// Note that this does NOT automatically destroy the shader functions in
+    /// the program since shader functions may be used by more than one program.
     HGI_API
     virtual void DestroyShaderProgram(
         HgiShaderProgramHandle* shaderProgramHandle) = 0;
 
+    /// Create a new resource binding object.
+    HGI_API
+    virtual HgiResourceBindingsHandle CreateResourceBindings(
+        HgiResourceBindingsDesc const& desc) = 0;
+
+    /// Destroy a resource binding object.
+    HGI_API
+    virtual void DestroyResourceBindings(
+        HgiResourceBindingsHandle* resHandle) = 0;
+
+    /// Create a new pipeline state object
+    HGI_API
+    virtual HgiPipelineHandle CreatePipeline(
+        HgiPipelineDesc const& pipeDesc) = 0;
+
+    /// Destroy a pipeline state object
+    HGI_API
+    virtual void DestroyPipeline(HgiPipelineHandle* pipeHandle) = 0;
+
+protected:
+    // Returns a unique id for handle creation.
+    HGI_API
+    uint64_t GetUniqueId();
+
+    // Destroys the underlying object that is represented by the handle.
+    template<class T>
+    void DestroyObject(HgiHandle<T>* handle) {
+        handle->_Destroy();
+    }
+
 private:
     Hgi & operator=(const Hgi&) = delete;
     Hgi(const Hgi&) = delete;
+
+    std::atomic<uint64_t> _uniqueIdCounter;
 };
 
 

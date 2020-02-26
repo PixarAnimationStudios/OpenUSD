@@ -68,9 +68,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///   Size of the destination buffer (in bytes)</li>
 /// </ul>
 ///
-struct HgiTextureGpuToCpuOp {
+struct HgiTextureGpuToCpuOp
+{
     HgiTextureGpuToCpuOp()
-    : gpuSourceTexture(nullptr)
+    : gpuSourceTexture()
     , sourceTexelOffset(GfVec3i(0))
     , mipLevel(0)
     , startLayer(0)
@@ -109,13 +110,14 @@ struct HgiTextureGpuToCpuOp {
 ///   The non-multi-sample color destination texture</li>
 /// </ul>
 ///
-struct HgiResolveImageOp {
+struct HgiResolveImageOp
+{
     HgiResolveImageOp()
     : usage(HgiTextureUsageBitsColorTarget)
     , sourceRegion(0)
-    , source(nullptr)
+    , source()
     , destinationRegion(0)
-    , destination(nullptr)
+    , destination()
     {}
 
     HgiTextureUsageBits usage;

@@ -25,12 +25,19 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiBuffer::HgiBuffer(HgiBufferDesc const&)
+HgiBuffer::HgiBuffer(HgiBufferDesc const& desc)
+    : _descriptor(desc)
 {
 }
 
 HgiBuffer::~HgiBuffer()
 {
+}
+
+HgiBufferDesc const&
+HgiBuffer::GetDescriptor() const
+{
+    return _descriptor;
 }
 
 bool operator==(

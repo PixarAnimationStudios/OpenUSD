@@ -366,12 +366,12 @@ HdxColorCorrectionTask::_CreateFramebufferResources()
     }
 
     HgiTextureHandle texHandle = _aovBuffer ? 
-        _aovBuffer->GetHgiTextureHandle(/*ms*/false) : nullptr;
+        _aovBuffer->GetHgiTextureHandle(/*ms*/false) : HgiTextureHandle();
 
     // XXX Since this entire task is coded for GL we can static_cast to
     // HgiGLTexture for now. When task is re-written to use Hgi everywhere, we
     // should no longer need this cast and can just use HgiTextureHandle.
-    HgiGLTexture* aovTexture = static_cast<HgiGLTexture*>(texHandle);
+    HgiGLTexture* aovTexture = static_cast<HgiGLTexture*>(texHandle.Get());
 
     if (createTexture || aovTexture!=_aovTexture) {
    

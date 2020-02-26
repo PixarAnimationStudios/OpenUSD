@@ -22,6 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include <GL/glew.h>
+#include "pxr/base/tf/diagnostic.h"
+
 #include "pxr/imaging/hgiGL/diagnostic.h"
 #include "pxr/imaging/hgiGL/shaderProgram.h"
 #include "pxr/imaging/hgiGL/shaderFunction.h"
@@ -31,16 +33,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HgiGLShaderProgram::HgiGLShaderProgram(HgiShaderProgramDesc const& desc)
     : HgiShaderProgram(desc)
-    , _descriptor(desc)
     , _programId(0)
 {
     _programId = glCreateProgram();
     glObjectLabel(GL_PROGRAM, _programId, -1, _descriptor.debugName.c_str());
 
     for (HgiShaderFunctionHandle const& shd : desc.shaderFunctions) {
-        HgiGLShaderFunction* glShader = static_cast<HgiGLShaderFunction*>(shd);
-        glAttachShader(_programId, glShader->GetShaderId());
+        HgiGLShaderFunction* glShader = 
+            static_cast<HgiGLShaderFunction*>(shd.Get());
+        uint32_t id = glShader->GetShaderId();
+        TF_VERIFY(id>0, "Invalid shader provided to program");
+        glAttachShader(_programId, id);
     }
+    glLinkProgram(_programId);
 
     // Grab compile errors
     GLint status;
@@ -73,13 +78,19 @@ HgiGLShaderProgram::GetShaderFunctions() const
 bool
 HgiGLShaderProgram::IsValid() const
 {
-    return _errors.empty();
+    return _programId>0 && _errors.empty();
 }
 
 std::string const&
 HgiGLShaderProgram::GetCompileErrors()
 {
     return _errors;
+}
+
+uint32_t
+HgiGLShaderProgram::GetProgramId() const
+{
+    return _programId;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

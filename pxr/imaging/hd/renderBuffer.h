@@ -29,12 +29,13 @@
 #include "pxr/imaging/hd/bprim.h"
 #include "pxr/imaging/hd/types.h"
 #include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hgi/texture.h"
 
 #include "pxr/base/gf/vec2i.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef class HgiTexture* HgiTextureHandle;
+
 
 
 /// \class HdRenderBuffer
@@ -129,9 +130,9 @@ public:
     /// already-on-gpu texture and skip the Map() cpu to gpu copy.
     /// If `multiSampled` is true, and the render buffer is ms, the
     /// ms texture is returned, otherwise the non-ms texture is returned.
-    /// CPU-based render buffer can ignore this api.
+    /// CPU-based render buffers can ignore this api.
     virtual HgiTextureHandle GetHgiTextureHandle(bool multiSampled) const {
-        return nullptr;}
+        return HgiTextureHandle();}
 
 protected:
     /// Deallocate the buffer, freeing any owned resources.

@@ -21,13 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGIGL_SHADERPROGRAM_H
-#define PXR_IMAGING_HGIGL_SHADERPROGRAM_H
+#ifndef PXR_IMAGING_HGIGL_RESOURCEBINDINGS_H
+#define PXR_IMAGING_HGIGL_RESOURCEBINDINGS_H
 
-#include "pxr/imaging/hgi/shaderProgram.h"
-
+#include "pxr/pxr.h"
+#include "pxr/imaging/hgi/resourceBindings.h"
 #include "pxr/imaging/hgiGL/api.h"
-#include "pxr/imaging/hgiGL/shaderFunction.h"
 
 #include <vector>
 
@@ -35,43 +34,31 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 ///
-/// \class HgiGLShaderProgram
+/// \class HgiGLResourceBindings
 ///
-/// OpenGL implementation of HgiShaderProgram
+/// OpenGL implementation of HgiResourceBindings.
 ///
-class HgiGLShaderProgram final : public HgiShaderProgram
+///
+class HgiGLResourceBindings final : public HgiResourceBindings
 {
 public:
     HGIGL_API
-    virtual ~HgiGLShaderProgram();
+    HgiGLResourceBindings(HgiResourceBindingsDesc const& desc);
 
     HGIGL_API
-    bool IsValid() const override;
+    virtual ~HgiGLResourceBindings();
 
+    /// Binds the resources to GPU.
     HGIGL_API
-    std::string const& GetCompileErrors() override;
-
-    HGIGL_API
-    HgiShaderFunctionHandleVector const& GetShaderFunctions() const override;
-
-    /// Returns the gl resource id of the program.
-    HGIGL_API
-    uint32_t GetProgramId() const;
-
-protected:
-    friend class HgiGL;
-
-    HGIGL_API
-    HgiGLShaderProgram(HgiShaderProgramDesc const& desc);
+    void BindResources();
 
 private:
-    HgiGLShaderProgram() = delete;
-    HgiGLShaderProgram & operator=(const HgiGLShaderProgram&) = delete;
-    HgiGLShaderProgram(const HgiGLShaderProgram&) = delete;
+    HgiGLResourceBindings() = delete;
+    HgiGLResourceBindings & operator=(const HgiGLResourceBindings&) = delete;
+    HgiGLResourceBindings(const HgiGLResourceBindings&) = delete;
 
 private:
-    std::string _errors;
-    uint32_t _programId;
+    uint32_t _vao;
 };
 
 

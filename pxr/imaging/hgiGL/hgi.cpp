@@ -23,10 +23,13 @@
 //
 #include <mutex>
 
+#include "pxr/imaging/hgi/handle.h"
 #include "pxr/imaging/hgiGL/hgi.h"
 #include "pxr/imaging/hgiGL/buffer.h"
 #include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
+#include "pxr/imaging/hgiGL/pipeline.h"
+#include "pxr/imaging/hgiGL/resourceBindings.h"
 #include "pxr/imaging/hgiGL/shaderFunction.h"
 #include "pxr/imaging/hgiGL/shaderProgram.h"
 #include "pxr/imaging/hgiGL/texture.h"
@@ -77,61 +80,74 @@ HgiGL::GetImmediateCommandBuffer()
 HgiTextureHandle
 HgiGL::CreateTexture(HgiTextureDesc const & desc)
 {
-    return new HgiGLTexture(desc);
+    return HgiTextureHandle(new HgiGLTexture(desc), GetUniqueId());
 }
 
 void
 HgiGL::DestroyTexture(HgiTextureHandle* texHandle)
 {
-    if (TF_VERIFY(texHandle, "Invalid texture")) {
-        delete *texHandle;
-        *texHandle = nullptr;
-    }
+    DestroyObject(texHandle);
 }
 
 HgiBufferHandle
 HgiGL::CreateBuffer(HgiBufferDesc const & desc)
 {
-    return new HgiGLBuffer(desc);
+    return HgiBufferHandle(new HgiGLBuffer(desc), GetUniqueId());
 }
 
 void
 HgiGL::DestroyBuffer(HgiBufferHandle* bufHandle)
 {
-    if (TF_VERIFY(bufHandle, "Invalid buffer")) {
-        delete *bufHandle;
-        *bufHandle = nullptr;
-    }
+    DestroyObject(bufHandle);
 }
 
 HgiShaderFunctionHandle
 HgiGL::CreateShaderFunction(HgiShaderFunctionDesc const& desc)
 {
-    return new HgiGLShaderFunction(desc);
+    return HgiShaderFunctionHandle(new HgiGLShaderFunction(desc),GetUniqueId());
 }
 
 void
 HgiGL::DestroyShaderFunction(HgiShaderFunctionHandle* shaderFunctionHandle)
 {
-    if (TF_VERIFY(shaderFunctionHandle, "Invalid function handle")) {
-        delete *shaderFunctionHandle;
-        *shaderFunctionHandle = nullptr;
-    }
+    DestroyObject(shaderFunctionHandle);
 }
 
 HgiShaderProgramHandle
 HgiGL::CreateShaderProgram(HgiShaderProgramDesc const& desc)
 {
-    return new HgiGLShaderProgram(desc);
+    return HgiShaderProgramHandle(new HgiGLShaderProgram(desc), GetUniqueId());
 }
 
 void
 HgiGL::DestroyShaderProgram(HgiShaderProgramHandle* shaderProgramHandle)
 {
-    if (TF_VERIFY(shaderProgramHandle, "Invalid program handle")) {
-        delete *shaderProgramHandle;
-        *shaderProgramHandle = nullptr;
-    }
+    DestroyObject(shaderProgramHandle);
+}
+
+HgiResourceBindingsHandle
+HgiGL::CreateResourceBindings(HgiResourceBindingsDesc const& desc)
+{
+    return HgiResourceBindingsHandle(
+        new HgiGLResourceBindings(desc), GetUniqueId());
+}
+
+void
+HgiGL::DestroyResourceBindings(HgiResourceBindingsHandle* resHandle)
+{
+    DestroyObject(resHandle);
+}
+
+HgiPipelineHandle
+HgiGL::CreatePipeline(HgiPipelineDesc const& desc)
+{
+    return HgiPipelineHandle(new HgiGLPipeline(desc), GetUniqueId());
+}
+
+void
+HgiGL::DestroyPipeline(HgiPipelineHandle* pipeHandle)
+{
+    DestroyObject(pipeHandle);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

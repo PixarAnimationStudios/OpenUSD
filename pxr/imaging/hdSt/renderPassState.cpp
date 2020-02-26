@@ -512,6 +512,16 @@ HdStRenderPassState::MakeGraphicsEncoderDesc() const
             attachmentDesc.clearValue = col;
         }
 
+        // HdSt expresses blending per RenderPassState, where Hgi expresses
+        // blending per-attachment. Transfer pass blend state to attachments.
+        attachmentDesc.blendEnabled = _blendEnabled;
+        attachmentDesc.srcColorBlendFactor=HgiBlendFactor(_blendColorSrcFactor);
+        attachmentDesc.dstColorBlendFactor=HgiBlendFactor(_blendColorDstFactor);
+        attachmentDesc.colorBlendOp = HgiBlendOp(_blendColorOp);
+        attachmentDesc.srcAlphaBlendFactor=HgiBlendFactor(_blendAlphaSrcFactor);
+        attachmentDesc.dstAlphaBlendFactor=HgiBlendFactor(_blendAlphaDstFactor);
+        attachmentDesc.alphaBlendOp = HgiBlendOp(_blendAlphaOp);
+
         if (aov.aovName == HdAovTokens->depth) {
             desc.depthAttachment = std::move(attachmentDesc);
         } else if (TF_VERIFY(desc.colorAttachments.size() < maxColorAttachments, 

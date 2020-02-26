@@ -33,7 +33,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 HgiGLShaderFunction::HgiGLShaderFunction(
     HgiShaderFunctionDesc const& desc)
     : HgiShaderFunction(desc)
-    , _descriptor(desc)
     , _shaderId(0)
 {
     std::vector<GLenum> stages = 
@@ -74,7 +73,7 @@ HgiGLShaderFunction::~HgiGLShaderFunction()
 bool
 HgiGLShaderFunction::IsValid() const
 {
-    return _errors.empty();
+    return _shaderId>0 && _errors.empty();
 }
 
 std::string const&

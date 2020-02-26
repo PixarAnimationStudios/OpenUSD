@@ -47,19 +47,40 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///   The operation to perform on the attachment pixel data after rendering.</li>
 /// <li>clearValue:
 ///   The value to clear the attachment with (r,g,b,a) or (depth,stencil,x,x)</li>
+/// <li>blendEnabled:
+///   Determines if a blend operation should be applied to the attachment.</li>
+/// <li> ***BlendFactor:
+///   The blend factors for source and destination.</li>
+/// <li> ***BlendOp: 
+///   The blending operation.</li>
 ///
-struct HgiAttachmentDesc {
+struct HgiAttachmentDesc
+{
     HgiAttachmentDesc() 
-    : texture(nullptr)
+    : texture()
     , loadOp(HgiAttachmentLoadOpLoad)
     , storeOp(HgiAttachmentStoreOpStore)
     , clearValue(0)
+    , blendEnabled(false)
+    , srcColorBlendFactor(HgiBlendFactorZero)
+    , dstColorBlendFactor(HgiBlendFactorZero)
+    , colorBlendOp(HgiBlendOpAdd)
+    , srcAlphaBlendFactor(HgiBlendFactorZero)
+    , dstAlphaBlendFactor(HgiBlendFactorZero)
+    , alphaBlendOp(HgiBlendOpAdd)
     {}
 
     HgiTextureHandle texture;
     HgiAttachmentLoadOp loadOp;
     HgiAttachmentStoreOp storeOp;
     GfVec4f clearValue;
+    bool blendEnabled;
+    HgiBlendFactor srcColorBlendFactor;
+    HgiBlendFactor dstColorBlendFactor;
+    HgiBlendOp colorBlendOp;
+    HgiBlendFactor srcAlphaBlendFactor;
+    HgiBlendFactor dstAlphaBlendFactor;
+    HgiBlendOp alphaBlendOp;
 };
 
 typedef std::vector<HgiAttachmentDesc> HgiAttachmentDescVector;
@@ -95,7 +116,8 @@ std::ostream& operator<<(
 ///   Render target height (in pixels)</li>
 /// </ul>
 ///
-struct HgiGraphicsEncoderDesc {
+struct HgiGraphicsEncoderDesc
+{
     HgiGraphicsEncoderDesc()
     : colorAttachments()
     , depthAttachment()

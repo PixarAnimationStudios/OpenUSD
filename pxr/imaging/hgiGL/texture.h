@@ -35,7 +35,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Represents a OpenGL GPU texture resource.
 ///
-class HgiGLTexture final : public HgiTexture {
+class HgiGLTexture final : public HgiTexture
+{
 public:
     HGIGL_API
     virtual ~HgiGLTexture();

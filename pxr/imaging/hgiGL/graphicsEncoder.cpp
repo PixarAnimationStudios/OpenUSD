@@ -23,8 +23,11 @@
 //
 #include <GL/glew.h>
 #include "pxr/imaging/hgi/graphicsEncoderDesc.h"
+#include "pxr/imaging/hgiGL/buffer.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
 #include "pxr/imaging/hgiGL/graphicsEncoder.h"
+#include "pxr/imaging/hgiGL/pipeline.h"
+#include "pxr/imaging/hgiGL/resourceBindings.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -47,11 +50,86 @@ HgiGLGraphicsEncoder::EndEncoding()
 void
 HgiGLGraphicsEncoder::SetViewport(GfVec4i const& vp)
 {
-    int x = vp[0];
-    int y = vp[1];
-    int w = vp[2];
-    int h = vp[3];
-    glViewport(x, y, w, h);
+    glViewport(vp[0], vp[1], vp[2], vp[3]);
+}
+
+void
+HgiGLGraphicsEncoder::SetScissor(GfVec4i const& sc)
+{
+    glScissor(sc[0], sc[1], sc[2], sc[3]);
+}
+
+void
+HgiGLGraphicsEncoder::BindPipeline(HgiPipelineHandle pipeline)
+{
+    if (HgiGLPipeline* p = static_cast<HgiGLPipeline*>(pipeline.Get())) {
+        p->BindPipeline();
+    }
+}
+
+void
+HgiGLGraphicsEncoder::BindResources(HgiResourceBindingsHandle r)
+{
+    if (HgiGLResourceBindings* rb= static_cast<HgiGLResourceBindings*>(r.Get())) 
+    {
+        rb->BindResources();
+    }
+}
+
+void
+HgiGLGraphicsEncoder::BindVertexBuffers(
+    uint32_t firstBinding,
+    HgiBufferHandleVector const& vertexBuffers,
+    std::vector<uint32_t> const& byteOffsets)
+{
+    TF_VERIFY(byteOffsets.size() == vertexBuffers.size());
+    TF_VERIFY(byteOffsets.size() == vertexBuffers.size());
+
+    for (size_t i=0; i<vertexBuffers.size(); i++) {
+        HgiBufferHandle bufHandle = vertexBuffers[i];
+        HgiGLBuffer* buf = static_cast<HgiGLBuffer*>(bufHandle.Get());
+        HgiBufferDesc const& desc = buf->GetDescriptor();
+
+        TF_VERIFY(desc.usage & HgiBufferUsageVertex);
+
+        glBindVertexBuffer(
+            firstBinding + i,
+            buf->GetBufferId(),
+            byteOffsets[i], 
+            desc.vertexStride);
+    }
+
+    HGIGL_POST_PENDING_GL_ERRORS();
+}
+
+void
+HgiGLGraphicsEncoder::DrawIndexed(
+    HgiBufferHandle const& indexBuffer,
+    uint32_t indexCount,
+    uint32_t indexBufferByteOffset,
+    uint32_t vertexOffset,
+    uint32_t instanceCount,
+    uint32_t firstInstance)
+{
+    TF_VERIFY(instanceCount>0);
+
+    HgiGLBuffer* indexBuf = static_cast<HgiGLBuffer*>(indexBuffer.Get());
+    HgiBufferDesc const& indexDesc = indexBuf->GetDescriptor();
+
+    // We assume 32bit indices: GL_UNSIGNED_INT
+    TF_VERIFY(indexDesc.usage & HgiBufferUsageIndex32);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuf->GetBufferId());
+
+    glDrawElementsInstancedBaseVertex(
+        GL_TRIANGLES, // XXX GL_PATCHES for tessellation
+        indexCount,
+        GL_UNSIGNED_INT,
+        (void*)(uintptr_t(indexBufferByteOffset)),
+        instanceCount,
+        vertexOffset);
+
+    HGIGL_POST_PENDING_GL_ERRORS();
 }
 
 void

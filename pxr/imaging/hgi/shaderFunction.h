@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgi/api.h"
 #include "pxr/imaging/hgi/enums.h"
+#include "pxr/imaging/hgi/handle.h"
 #include "pxr/imaging/hgi/types.h"
 
 #include <string>
@@ -34,40 +35,6 @@
 
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-struct HgiShaderFunctionDesc;
-
-
-///
-/// \class HgiShaderFunction
-///
-/// Represents one shader stage function (code snippet).
-///
-class HgiShaderFunction {
-public:
-    HGI_API
-    virtual ~HgiShaderFunction();
-
-    /// Returns false if any shader compile errors occured.
-    HGI_API
-    virtual bool IsValid() const = 0;
-
-    /// Returns shader compile errors.
-    HGI_API
-    virtual std::string const& GetCompileErrors() = 0;
-
-protected:
-    HGI_API
-    HgiShaderFunction(HgiShaderFunctionDesc const& desc);
-
-private:
-    HgiShaderFunction() = delete;
-    HgiShaderFunction & operator=(const HgiShaderFunction&) = delete;
-    HgiShaderFunction(const HgiShaderFunction&) = delete;
-};
-
-typedef HgiShaderFunction* HgiShaderFunctionHandle;
-typedef std::vector<HgiShaderFunctionHandle> HgiShaderFunctionHandleVector;
 
 
 /// \struct HgiShaderFunctionDesc
@@ -79,7 +46,8 @@ typedef std::vector<HgiShaderFunctionHandle> HgiShaderFunctionHandleVector;
 ///   The ascii shader code.</li>
 /// </ul>
 ///
-struct HgiShaderFunctionDesc {
+struct HgiShaderFunctionDesc
+{
     HGI_API
     HgiShaderFunctionDesc();
 
@@ -97,6 +65,53 @@ HGI_API
 inline bool operator!=(
     const HgiShaderFunctionDesc& lhs,
     const HgiShaderFunctionDesc& rhs);
+
+
+///
+/// \class HgiShaderFunction
+///
+/// Represents one shader stage function (code snippet).
+///
+/// ShaderFunctions are usually passed to a ShaderProgram, however be careful 
+/// not to destroy the ShaderFunction after giving it to the program.
+/// While this may be safe for OpenGL after the program is created, it does not 
+/// apply to other graphics backends, such as Vulkan, where the shader functions
+/// are used during rendering.
+///
+class HgiShaderFunction
+{
+public:
+    HGI_API
+    virtual ~HgiShaderFunction();
+
+    /// The descriptor describes the object.
+    HGI_API
+    HgiShaderFunctionDesc const& GetDescriptor() const;
+
+    /// Returns false if any shader compile errors occured.
+    HGI_API
+    virtual bool IsValid() const = 0;
+
+    /// Returns shader compile errors.
+    HGI_API
+    virtual std::string const& GetCompileErrors() = 0;
+
+protected:
+    HGI_API
+    HgiShaderFunction(HgiShaderFunctionDesc const& desc);
+
+    HgiShaderFunctionDesc _descriptor;
+
+private:
+    HgiShaderFunction() = delete;
+    HgiShaderFunction & operator=(const HgiShaderFunction&) = delete;
+    HgiShaderFunction(const HgiShaderFunction&) = delete;
+};
+
+/// Explicitly instantiate and define ShaderFunction handle
+template class HgiHandle<class HgiShaderFunction>;
+typedef HgiHandle<class HgiShaderFunction> HgiShaderFunctionHandle;
+typedef std::vector<HgiShaderFunctionHandle> HgiShaderFunctionHandleVector;
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -34,45 +34,39 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
     , _descriptor(desc)
     , _textureId(0)
 {
-
-    // XXX OpenGL implementation of Hgi texture is missing a few features.
-    // These were not immediately needed for AOV support, but should be added
-    // once Hgi textures are used in more places.
-    if (desc.dimensions[2] > 1) {
-        TF_CODING_ERROR("XXX Missing implementation for volume textures");
-    }
     if (desc.layerCount > 1) {
+        // XXX Further below we are missing support for layered textures.
         TF_CODING_ERROR("XXX Missing implementation for texture arrays");
     }
-    if (desc.mipLevels > 1) {
-        TF_CODING_ERROR("XXX Missing implementation for texture mips");
-    }
-    if (desc.initialData != nullptr) {
-        TF_CODING_ERROR("XXX Missing implementation for pixel upload");
-    }
+
+    bool isTexture3d = desc.dimensions[2] > 1;
 
     GLenum glInternalFormat = 0;
     GLenum glFormat = 0;
     GLenum glPixelType = 0;
 
-    if (desc.usage & HgiTextureUsageBitsColorTarget) {
-        HgiGLConversions::GetFormat(
-            desc.format, 
-            &glFormat, 
-            &glPixelType,
-            &glInternalFormat);
-    } else if (desc.usage & HgiTextureUsageBitsDepthTarget) {
+    if (desc.usage & HgiTextureUsageBitsDepthTarget) {
         TF_VERIFY(desc.format == HgiFormatFloat32);
         glFormat = GL_DEPTH_COMPONENT;
         glPixelType = GL_FLOAT;
         glInternalFormat = GL_DEPTH_COMPONENT32F;
     } else {
-        TF_CODING_ERROR("Unknown HgiTextureUsage bit");
+        HgiGLConversions::GetFormat(
+            desc.format, 
+            &glFormat, 
+            &glPixelType,
+            &glInternalFormat);
     }
 
     if (desc.sampleCount == HgiSampleCount1) {
-        glCreateTextures(GL_TEXTURE_2D, 1, &_textureId);
+        glCreateTextures(
+            isTexture3d ? GL_TEXTURE_3D : GL_TEXTURE_2D, 
+            1, 
+            &_textureId);
     } else {
+        if (isTexture3d) {
+            TF_CODING_ERROR("Only 2d multisample textures are supported");
+        }
         glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &_textureId);
     }
 
@@ -89,17 +83,60 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
         float aniso = 2.0f;
         glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso);
-        const uint8_t mips = 1;
+        const uint16_t mips = desc.mipLevels;
         glTextureParameteri(_textureId, GL_TEXTURE_BASE_LEVEL, /*low-mip*/0);
         glTextureParameteri(_textureId, GL_TEXTURE_MAX_LEVEL, /*hi-mip*/mips-1);
 
-        glTextureStorage2D(_textureId, mips, glInternalFormat,
-                           desc.dimensions[0], desc.dimensions[1]);
+        if (!isTexture3d) {
+            glTextureStorage2D(
+                _textureId, 
+                mips, 
+                glInternalFormat,
+                desc.dimensions[0],
+                desc.dimensions[1]);
+
+            if (desc.initialData && desc.pixelsByteSize > 0) {
+                glTextureSubImage2D(
+                    _textureId,
+                    /*mip*/0, 
+                    /*x*/0,/*y*/0,
+                    desc.dimensions[0],
+                    desc.dimensions[1],
+                    glFormat,
+                    glPixelType,
+                    desc.initialData);
+            }
+        } else {
+            glTextureStorage3D(
+                _textureId, 
+                mips, 
+                glInternalFormat,
+                desc.dimensions[0], 
+                desc.dimensions[1], 
+                desc.dimensions[2]);
+
+            if (desc.initialData && desc.pixelsByteSize > 0) {
+                glTextureSubImage3D(
+                    _textureId,
+                    /*mip*/0, 
+                    /*x*/0,/*y*/0,/*z*/0,
+                    desc.dimensions[0],
+                    desc.dimensions[1],
+                    desc.dimensions[2],
+                    glFormat,
+                    glPixelType,
+                    desc.initialData);
+            }
+        }
     } else {
         // Note: Setting sampler state values on multi-sample texture is invalid
         glTextureStorage2DMultisample(
-            _textureId, desc.sampleCount, glInternalFormat,
-            desc.dimensions[0], desc.dimensions[1], GL_TRUE);
+            _textureId,
+            desc.sampleCount,
+            glInternalFormat,
+            desc.dimensions[0],
+            desc.dimensions[1],
+            GL_TRUE);
     }
 
     HGIGL_POST_PENDING_GL_ERRORS();

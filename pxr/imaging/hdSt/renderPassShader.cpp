@@ -132,8 +132,9 @@ _BindTexture(const HdRenderPassAovBinding &aov,
 
     // Get texture from AOV's render buffer.
     const bool multiSampled = false;
-    HgiGLTexture * const texture = dynamic_cast<HgiGLTexture*>(
-        buffer->GetHgiTextureHandle(multiSampled));
+    HgiTextureHandle texHandle = buffer->GetHgiTextureHandle(multiSampled);
+    
+    HgiGLTexture * const texture = dynamic_cast<HgiGLTexture*>(texHandle.Get());
     if (!texture) {
         TF_CODING_ERROR("When binding readback for aov '%s', AOV is not backed "
                         "by HgiGLTexture.", aov.aovName.GetString().c_str());

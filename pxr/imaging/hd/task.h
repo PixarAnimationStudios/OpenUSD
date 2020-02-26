@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -189,6 +190,13 @@ protected:
     HD_API
     TfTokenVector _GetTaskRenderTags(HdSceneDelegate* delegate);
 
+    /// Extract an object from a HdDriver inside the task context.
+    /// Returns nullptr if driver was not found.
+    template <class T>
+    static T _GetDriver(
+        HdTaskContext const* ctx,
+        TfToken const& driverName);
+
 private:
     SdfPath _id;
 
@@ -247,6 +255,30 @@ HdTask::_GetTaskParams(HdSceneDelegate* delegate,
     *outValue = valueVt.UncheckedGet<T>();
 
     return true;
+}
+
+template <class T>
+T
+HdTask::_GetDriver(
+    HdTaskContext const* ctx,
+    TfToken const& driverName)
+{
+    auto it = ctx->find(HdTokens->drivers);
+    if (it != ctx->end()) {
+        VtValue const& value = it->second;
+        if (value.IsHolding<HdDriverVector>()) {
+            HdDriverVector const& drivers= value.UncheckedGet<HdDriverVector>();
+            for (HdDriver* hdDriver : drivers) {
+                if (hdDriver->name == driverName) {
+                    if (hdDriver->driver.IsHolding<T>()) {
+                        return hdDriver->driver.UncheckedGet<T>();
+                    }
+                }
+            }
+        }
+    }
+
+    return nullptr;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

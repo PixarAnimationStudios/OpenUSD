@@ -93,13 +93,17 @@ HdxPresentTask::Execute(HdTaskContext* ctx)
 
     const bool mulSmp = false;
 
-    HgiGLTexture* colorTex = _aovBuffer ? 
-        static_cast<HgiGLTexture*>(_aovBuffer->GetHgiTextureHandle(mulSmp)) :
-        nullptr;
+    HgiGLTexture* colorTex = nullptr;
+    if (_aovBuffer) { 
+        HgiTextureHandle colorHandle = _aovBuffer->GetHgiTextureHandle(mulSmp);
+        colorTex = dynamic_cast<HgiGLTexture*>(colorHandle.Get());
+    }
 
-    HgiGLTexture* depthTex = _depthBuffer ? 
-        static_cast<HgiGLTexture*>(_depthBuffer->GetHgiTextureHandle(mulSmp)):
-        nullptr;
+    HgiGLTexture* depthTex = nullptr;
+    if (_depthBuffer) {
+        HgiTextureHandle depthHandle= _depthBuffer->GetHgiTextureHandle(mulSmp);
+        depthTex = dynamic_cast<HgiGLTexture*>(depthHandle.Get());
+    }
 
     uint32_t colorId = colorTex ? colorTex->GetTextureId() : 0;
     uint32_t depthId = depthTex ? depthTex->GetTextureId() : 0;
