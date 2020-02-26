@@ -84,7 +84,7 @@ private:
             return l == r;
         }
         inline size_t hash(const TfToken &t) const {
-            return t.Hash() >> 4;
+            return t.Hash();
         }
     };
 
@@ -104,16 +104,17 @@ public:
     // Finds the cached prim type info for the given prim type and list of 
     // applied schemas, creating and caching a new one if it doesn't exist.
     const Usd_PrimTypeInfo *FindOrCreatePrimTypeInfo(
-        const TfToken &primType)
+        const TfToken &primType, TfTokenVector &&appliedSchemas)
     {
         TRACE_FUNCTION();
 
-        if (primType.IsEmpty()) {
+        TfToken key = _CreatePrimTypeInfoKey(primType, appliedSchemas);
+        if (key.IsEmpty()) {
             return GetEmptyPrimTypeInfo();
         }
 
         // Find try to find the prim type in the type info map
-        if (auto primTypeInfo = _primTypeInfoMap.Find(primType)) {
+        if (auto primTypeInfo = _primTypeInfoMap.Find(key)) {
             return primTypeInfo;
         }
 
@@ -123,8 +124,8 @@ public:
         // same type info and managed to insert it first. In that case ours just
         // gets deleted since the hash map didn't take ownership.
         std::unique_ptr<Usd_PrimTypeInfo> newPrimTypeInfo(
-            new Usd_PrimTypeInfo(primType));
-        return _primTypeInfoMap.Insert(primType, std::move(newPrimTypeInfo));
+            new Usd_PrimTypeInfo(primType, std::move(appliedSchemas)));
+        return _primTypeInfoMap.Insert(key, std::move(newPrimTypeInfo));
     }
 
     // Return the single empty prim type info
@@ -134,6 +135,38 @@ public:
     }
 
 private:
+    // Creates the unique prim type token key for the given prim type and 
+    // ordered list of applied API schemas.
+    static TfToken _CreatePrimTypeInfoKey(
+        const TfToken &primType,
+        const TfTokenVector &appliedSchemaTypes)
+    {
+        TRACE_FUNCTION();
+
+        // In the common case where there are no applied schemas, we just use
+        // the prim type token itself.
+        if (appliedSchemaTypes.empty()) {
+            return primType;
+        }
+
+        // We generate a full type string that is a comma separated list of 
+        // the prim type and then each the applied schema type in order. Note
+        // that it's completely valid for there to be applied schemas when the 
+        // prim type is empty; they key just starts with an empty prim type.
+        size_t tokenSize = appliedSchemaTypes.size() + primType.size();
+        for (const TfToken &schemaType : appliedSchemaTypes) {
+            tokenSize += schemaType.size();
+        }
+        std::string fullTypeString;
+        fullTypeString.reserve(tokenSize);
+        fullTypeString += primType;
+        for (const TfToken &schemaType : appliedSchemaTypes) {
+            fullTypeString += ",";
+            fullTypeString += schemaType;
+        }
+        return TfToken(fullTypeString);
+    }
+
     _ThreadSafeHashMapImpl _primTypeInfoMap;
     Usd_PrimTypeInfo _emptyPrimTypeInfo;
 };
@@ -217,6 +250,34 @@ _ComposeTypeName(const PcpPrimIndex *primIndex)
     return TfToken();
 }
 
+static void
+_ComposeAuthoredAppliedSchemas(
+    const PcpPrimIndex *primIndex, TfTokenVector *schemas)
+{
+    // Collect all list op opinions for the API schemas field from strongest to
+    // weakest. Then we apply them from weakest to strongest.
+    std::vector<SdfTokenListOp> listOps;
+
+    SdfTokenListOp listOp;
+    for (Usd_Resolver res(primIndex); res.IsValid(); res.NextLayer()) {
+        if (res.GetLayer()->HasField(
+                res.GetLocalPath(), UsdTokens->apiSchemas, &listOp)) {
+            // The last listop was populated so add a new empty one.
+            listOps.emplace_back();
+            listOps.back().Swap(listOp);
+            // An explicit list op overwrites anything weaker so we can just
+            // stop here if it's explicit.
+            if (listOps.back().IsExplicit()) {
+                break;
+            }
+        }
+    }
+
+    // Apply the listops to our output in reverse order (weakest to strongest).
+    std::for_each(listOps.crbegin(), listOps.crend(),
+        [&schemas](const SdfTokenListOp& op) { op.ApplyOperations(schemas); });
+}
+
 void
 Usd_PrimData::_ComposeAndCacheTypeAndFlags(Usd_PrimDataConstPtr parent, 
                                            bool isMasterPrim)
@@ -241,8 +302,12 @@ Usd_PrimData::_ComposeAndCacheTypeAndFlags(Usd_PrimDataConstPtr parent,
         UsdPrim self(Usd_PrimDataIPtr(this), SdfPath());
 
         const TfToken primTypeName = _ComposeTypeName(_primIndex);
-        _primTypeInfo = _primTypeInfoCache->FindOrCreatePrimTypeInfo(
-            primTypeName);
+
+        TfTokenVector appliedSchemas;
+        _ComposeAuthoredAppliedSchemas(_primIndex, &appliedSchemas);
+
+        _primTypeInfo = _primTypeInfoCache
+            ->FindOrCreatePrimTypeInfo(primTypeName, std::move(appliedSchemas));
 
         bool active = true;
         self.GetMetadata(SdfFieldKeys->Active, &active);

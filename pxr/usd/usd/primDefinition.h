@@ -41,14 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// registered in the schema registry. It provides access to the the builtin 
 /// properties of a prim whose type is defined by this definition. 
 /// 
-/// Instances of this class are managed by the schema registry and can only be 
-/// created by the UsdSchemaRegistry.
-/// 
-// XXX: Right now these prim definitions will only exist for single prim types
-// or applied API schema types and will be fully owned and managed by the 
-// schema registry. In an upcoming change, functionality will be add to build 
-// a fully composed new UsdPrimDefinition from a list of prim type and applied
-// API schema types on the fly for prim's that need it.
+/// Instances of this class can only be created by the UsdSchemaRegistry.
 class UsdPrimDefinition
 {
 public:
@@ -56,6 +49,12 @@ public:
 
     /// Return the list of names of builtin properties for this prim definition.
     const TfTokenVector &GetPropertyNames() const { return _properties; }
+
+    /// Return the list of names of the API schemas that have been applied to
+    /// this prim definition in order.
+    const TfTokenVector& GetAppliedAPISchemas() const { 
+        return _appliedAPISchemas; 
+    }
 
     /// Return in \p value of the field \p fieldName for the property named 
     /// \p propName under the prim type represented by this prim definition. 
@@ -170,6 +169,7 @@ private:
     using _PrimTypePropNameToPathMap = 
         TfHashMap<TfToken, SdfPath, TfToken::HashFunctor>;
     _PrimTypePropNameToPathMap _propPathMap;
+    TfTokenVector _appliedAPISchemas;
 
     // Cached list of property names.
     TfTokenVector _properties;

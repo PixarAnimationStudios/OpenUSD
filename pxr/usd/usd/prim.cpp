@@ -408,11 +408,7 @@ UsdPrim::_GetPropertyNames(
 TfTokenVector
 UsdPrim::GetAppliedSchemas() const
 {
-    SdfTokenListOp appliedSchemas;
-    GetMetadata(UsdTokens->apiSchemas, &appliedSchemas);
-    TfTokenVector result;
-    appliedSchemas.ApplyOperations(&result);
-    return result;
+    return GetPrimDefinition().GetAppliedAPISchemas();
 }
 
 TfTokenVector

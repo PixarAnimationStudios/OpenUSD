@@ -76,55 +76,6 @@ public:
         return GetSchemaTypeName(SchemaType::_GetStaticTfType());
     }
 
-    /// \deprecated Use FindConcretePrimDefinition
-    /// Return the PrimSpec that contains all the builtin metadata and
-    /// properties for the given \a primType.  Return null if there is no such
-    /// prim spec.
-    USD_API
-    static SdfPrimSpecHandle GetSchemaPrimSpec(const TfToken &primType);
-
-    /// \deprecated Use FindConcretePrimDefinition
-    /// Return the PrimSpec that contains all the bulitin metadata and
-    /// properties for the given \a primType.  Return null if there is no such
-    /// prim spec.
-    USD_API
-    static SdfPrimSpecHandle GetSchemaPrimSpec(const TfType &primType);
-
-    /// \deprecated Use FindConcretePrimDefinition
-    /// Return the PrimSpec that contains all the builtin metadata and
-    /// properties for the given \p SchemaType.  Return null if there is no such
-    /// prim spec.
-    template <class SchemaType>
-    static SdfPrimSpecHandle GetSchemaPrimSpec() {
-        return GetSchemaPrimSpec(SchemaType::_GetStaticTfType());
-    }
-
-    /// \deprecated Use FindConcretePrimDefinition
-    /// Return the property spec that defines the fallback for the property
-    /// named \a propName on prims of type \a primType.  Return null if there is
-    /// no such property spec.
-    USD_API
-    static SdfPropertySpecHandle
-    GetSchemaPropertySpec(const TfToken& primType,
-                          const TfToken& propName);
-
-    /// \deprecated Use FindConcretePrimDefinition
-    /// This is a convenience method. It is shorthand for
-    /// TfDynamic_cast<SdfAttributeSpecHandle>(
-    ///     GetSchemaPropertySpec(primType, attrName));
-    USD_API
-    static SdfAttributeSpecHandle
-    GetSchemaAttributeSpec(const TfToken& primType,
-                           const TfToken& attrName);
-
-    /// \deprecated Use FindConcretePrimDefinition
-    /// This is a convenience method. It is shorthand for
-    /// TfDynamic_cast<SdfRelationshipSpecHandle>(
-    ///     GetSchemaPropertySpec(primType, relName));
-    USD_API
-    static SdfRelationshipSpecHandle
-    GetSchemaRelationshipSpec(const TfToken& primType, const TfToken& relName);
-
     /// Returns list of fields that cannot have fallback values
     /// specified in schemas. 
     /// 
@@ -213,12 +164,27 @@ public:
         return _emptyPrimDefinition;
     }
 
+    /// Composes and returns a new UsdPrimDefinition from the given \p primType
+    /// and list of \p applieSchemas. This prim definition will contain a union
+    /// of properties from the registered prim definitions of each of the 
+    /// provided types. 
+    USD_API
+    std::unique_ptr<UsdPrimDefinition>
+    BuildComposedPrimDefinition(
+        const TfToken &primType, const TfTokenVector &appliedAPISchemas) const;
+
 private:
     friend class TfSingleton<UsdSchemaRegistry>;
 
     UsdSchemaRegistry();
 
     void _FindAndAddPluginSchema();
+
+    void _ApplyAPISchemasToPrimDefinition(
+        UsdPrimDefinition *primDef, const TfTokenVector &appliedAPISchemas) const;
+
+    void _ApplyPrimSpecToPrimDefinition(
+        UsdPrimDefinition *primDef, const SdfPrimSpecHandle &primSpec) const;
 
     SdfLayerRefPtr _schematics;
 

@@ -31,7 +31,7 @@ class TestUsdRiSchemata(unittest.TestCase):
     def _TestOutput(self, schema, getOutputFn, setOutputSrcFn, getFn, 
                     validTargetObjectPath):
         output = getOutputFn(schema)
-        assert 'ri:' not in output.GetBaseName()
+        assert 'ri:' in output.GetBaseName()
 
         assert setOutputSrcFn(schema, validTargetObjectPath)
 

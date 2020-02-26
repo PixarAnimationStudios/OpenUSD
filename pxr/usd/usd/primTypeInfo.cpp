@@ -29,23 +29,43 @@ PXR_NAMESPACE_OPEN_SCOPE
 const UsdPrimDefinition * 
 Usd_PrimTypeInfo::_FindOrCreatePrimDefinition() const
 {
+    const UsdPrimDefinition *primDef = nullptr;
     const UsdSchemaRegistry &reg = UsdSchemaRegistry::GetInstance();
-    // With no applied schemas we can just get the concrete typed prim 
-    // definition from the schema registry. Prim definitions for all 
-    // concrete types are created with the schema registry when it is 
-    // instantiated so if the type exists, the definition will be there.
-    const UsdPrimDefinition *primDef = 
-        reg.FindConcretePrimDefinition(_primTypeName);
-    if (!primDef) {
-        // For invalid types, we use the empty prim definition so we don't
-        // have to check again.
-        primDef = reg.GetEmptyPrimDefinition();
+    if (_authoredAppliedAPISchemas.empty()) {
+        // With no applied schemas we can just get the concrete typed prim 
+        // definition from the schema registry. Prim definitions for all 
+        // concrete types are created with the schema registry when it is 
+        // instantiated so if the type exists, the definition will be there.
+        primDef = reg.FindConcretePrimDefinition(_primTypeName);
+        if (!primDef) {
+            // For invalid types, we use the empty prim definition so we don't
+            // have to check again.
+            primDef = reg.GetEmptyPrimDefinition();
+        }
+        // Cache the prim definition pointer. The schema registry created the
+        // prim definition and will continue to own it so the pointer value
+        // will be constant. Thus, we don't have to check if another thread 
+        // cached it first as all threads would store the same pointer.
+        _primDefinition.store(primDef, std::memory_order_relaxed);
+    } else {
+        // If we have applied schemas, then we need ask the schema registry to
+        // compose a prim definition for us from the list of types. The schema
+        // registry does NOT take ownership of this new prim definition; this 
+        // type info will own it instead.
+        std::unique_ptr<UsdPrimDefinition> composedPrimDef = 
+            reg.BuildComposedPrimDefinition(_primTypeName, 
+                                            _authoredAppliedAPISchemas);
+        // Try to cache the new prim definition, but if another thread beat us
+        // to it, we'll use its definition instead and just let ours get 
+        // deleted.
+        if (_primDefinition.compare_exchange_strong(
+                primDef, composedPrimDef.get(), std::memory_order_acq_rel)) {
+            // Since we succeeded, transfer ownership of the new prim definition
+            // to this type info.
+            _ownedPrimDefinition = std::move(composedPrimDef);
+            primDef = _ownedPrimDefinition.get();
+        }
     }
-    // Cache the prim definition pointer. The schema registry created the
-    // prim definition and will continue to own it so the pointer value
-    // will be constant. Thus, we don't have to check if another thread 
-    // cached it first as all threads would store the same pointer.
-    _primDefinition.store(primDef, std::memory_order_relaxed);
     return primDef;
 }
 

@@ -173,6 +173,7 @@ else()
 endif()
 
 pxr_test_scripts(
+    testenv/testUsdAppliedAPISchemas.py
     testenv/testUsdAttributeBlocking.py
     testenv/testUsdAttributeConnections.py
     testenv/testUsdBugs.py
@@ -363,6 +364,11 @@ pxr_build_test(testUsdUsdzResolver
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdAppliedAPISchemas
+    DEST testUsdAppliedAPISchemas
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdStageThreading
     DEST testUsdStageThreading
 )
@@ -545,6 +551,12 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdZipFile.testenv
     DEST testUsdZipFile
+)
+
+pxr_register_test(testUsdAppliedAPISchemas
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAppliedAPISchemas"
+    EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdAttributeBlocking

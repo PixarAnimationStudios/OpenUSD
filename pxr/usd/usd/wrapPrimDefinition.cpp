@@ -38,6 +38,8 @@ void wrapUsdPrimDefinition()
     class_<This, boost::noncopyable>("PrimDefinition", no_init)
         .def("GetPropertyNames", &This::GetPropertyNames,
              return_value_policy<TfPySequenceToList>())
+        .def("GetAppliedAPISchemas", &This::GetAppliedAPISchemas,
+             return_value_policy<TfPySequenceToList>())
         .def("GetSchemaPrimSpec", &This::GetSchemaPrimSpec)
         .def("GetSchemaPropertySpec", &This::GetSchemaPropertySpec,
              (arg("propName")))

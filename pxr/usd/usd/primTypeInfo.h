@@ -37,25 +37,27 @@ PXR_NAMESPACE_OPEN_SCOPE
 // cached, one for each unique, prim type/applied schema list encountered. This 
 // provides the PrimData with lazy access to the unique prim definition for this 
 // exact prim type in a thread safe way.
-//
-// Right now this class only represents single concrete schema prim types and is 
-// essentially a wrapper around a TfToken. But in an upcoming change, a prim's 
-// type will be extended to include the list of API schemas applied to the prim
-// (which will affect its prim definition) so this class will provide the 
-// necessary full type identity of the prim as well as access to its full prim
-// definition.
 class Usd_PrimTypeInfo 
 {
 public:
     // Returns the concrete typed prim type name.
     const TfToken &GetTypeName() const { return _primTypeName; }
 
+    // Returns the list of applied API schemas authored to the prim. This 
+    // does NOT include the any applied schemas that are applied to the typed
+    // prim type via schema registration.
+    const TfTokenVector &GetAuthoredAppliedAPISchemas() const { 
+        return _authoredAppliedAPISchemas; 
+    }
+
     // Returns the prim definition associated with this prim type.
     const UsdPrimDefinition &GetPrimDefinition() const {
         // First check if we've already cached the prim definition pointer; 
-        // we can just return it.
+        // we can just return it. Note that we use memory_order_acquire for
+        // the case wher _FindOrCreatePrimDefinition needs to build its own
+        // prim definition.
         if (const UsdPrimDefinition *primDef = 
-                _primDefinition.load(std::memory_order_relaxed)) {
+                _primDefinition.load(std::memory_order_acquire)) {
             return *primDef;
         }
         return *_FindOrCreatePrimDefinition();
@@ -67,22 +69,31 @@ private:
 
     Usd_PrimTypeInfo() : _primDefinition(nullptr) {};
 
-    Usd_PrimTypeInfo(const TfToken &primTypeName) 
-        : _primTypeName(primTypeName), _primDefinition(nullptr) {}
+    Usd_PrimTypeInfo(const TfToken &primTypeName,
+                     TfTokenVector &&appliedSchemas = TfTokenVector())
+        : _primTypeName(primTypeName)
+        , _authoredAppliedAPISchemas(std::move(appliedSchemas))
+        , _primDefinition(nullptr) {}
 
     // Finds the prim definition, creating it if it doesn't already exist. This
     // cache access must be thread safe.
-    // Note that right now, all existing prim definitions for single types 
-    // will been created when the schema registry is instantiated. When applied
-    // API schemas are finally added to this class, this function may have to
-    // create new prim definitions when called.
     USD_API
     const UsdPrimDefinition *_FindOrCreatePrimDefinition() const;
 
     TfToken _primTypeName;
+    TfTokenVector _authoredAppliedAPISchemas;
 
     // Cached pointer to the prim definition.
     mutable std::atomic<const UsdPrimDefinition *> _primDefinition;
+
+    // When there are applied API schemas, _FindOrCreatePrimDefinition will
+    // build a custom prim definition that it will own for its lifetime. This
+    // is here to make sure it is explicit when the prim type info owns the
+    // prim definition.
+    // Note that we will always return the prim definition via the atomic 
+    // _primDefinition pointer regardless of whether the _ownedPrimDefinition 
+    // is set.
+    mutable std::unique_ptr<UsdPrimDefinition> _ownedPrimDefinition;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
