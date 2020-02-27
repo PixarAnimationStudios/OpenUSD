@@ -185,13 +185,13 @@ HdStRenderBuffer::Resolve()
     blitEncoder->EndEncoding();
 }
 
-HgiTextureHandle 
-HdStRenderBuffer::GetHgiTextureHandle(bool multiSampled) const 
+VtValue 
+HdStRenderBuffer::GetResource(bool multiSampled) const 
 {
     if (multiSampled && _multiSampled) {
-        return _textureMS;
+        return VtValue(_textureMS);
     } else {
-        return _texture;
+        return VtValue(_texture);
     }
 }
 
