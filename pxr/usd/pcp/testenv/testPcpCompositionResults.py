@@ -26,6 +26,7 @@
 # algorithm.  Given the inputs (currently just a root layer), it
 # walks namespace and dumps out the results for every prim.
 
+from __future__ import print_function
 import sys, os, argparse, re
 from pxr import Pcp, Sdf, Work
 
@@ -64,9 +65,9 @@ payloadRegex = re.compile(args.payloads)
 hadError = False
 errorFile = None
 if args.errorFileName:
-    errorFile = file(args.errorFileName, "w")
+    errorFile = open(args.errorFileName, "w")
 if args.dumpMaps and args.dumpPathStr == '':
-    print '--dumpMaps must be used in tandem with --dumpPath'
+    print('--dumpMaps must be used in tandem with --dumpPath')
     sys.exit(0)
 dumpPath = Sdf.Path(args.dumpPathStr) if args.dumpPathStr else Sdf.Path()
 
@@ -74,9 +75,9 @@ Work.SetMaximumConcurrencyLimit()
 
 def PrintErrorMessage(errorFile, msg):
     if errorFile:
-        print >> errorFile, msg
+        print(msg, file=errorFile)
     else:
-        print >> sys.stderr, msg
+        print(msg, file=sys.stderr)
 
 def PrintErrors(errorFile, errors):
     global hadError
@@ -89,14 +90,14 @@ def PrintErrors(errorFile, errors):
 # Load the session layer, if any.
 sessionLayer = None
 if args.session:
-    print 'Loading session @%s@\n' % args.session
+    print('Loading session @%s@\n' % args.session)
     sessionLayerPath = args.session
     assert sessionLayerPath
     sessionLayer = Sdf.Layer.FindOrOpen(sessionLayerPath)
     assert sessionLayer
 
 for layerPath in args.layer:
-    print 'Loading @%s@\n' % layerPath
+    print('Loading @%s@\n' % layerPath)
 
     rootLayerPath = layerPath
     assert rootLayerPath
@@ -127,11 +128,11 @@ for layerPath in args.layer:
     (layerStackData, errors) = pcpCache.ComputeLayerStack(layerStackId)
     layerStack = layerStackData.layers
 
-    print '-'*72
-    print 'Layer Stack:'
+    print('-'*72)
+    print('Layer Stack:')
     for layer in layerStack:
-        print '    ', GetLayerLabel(layer)
-    print ''
+        print('    ', GetLayerLabel(layer))
+    print('')
 
     if len(layerStackData.localErrors) > 0:
         PrintErrorMessage(errorFile, '-'*72)
@@ -171,8 +172,8 @@ for layerPath in args.layer:
         if len(primIndex.primStack) == 0:
             continue
 
-        print '-'*72
-        print 'Results for composing <%s>' % (primPath)
+        print('-'*72)
+        print('Results for composing <%s>' % (primPath))
 
         # Gather all applied variant selections.
         vselMap = {}
@@ -195,7 +196,7 @@ for layerPath in args.layer:
 
         # Optionally dump the index for this path.
         if primPath == dumpPath:
-            print primIndex.DumpToString(args.dumpMaps)
+            print(primIndex.DumpToString(args.dumpMaps))
 
         propStackMap = {} 
         targetsMap = {}
@@ -230,62 +231,62 @@ for layerPath in args.layer:
                     connectionsMap[propPath] = conns
 
         if len(primIndex.primStack) > 0:
-            print '\nPrim Stack:'
+            print('\nPrim Stack:')
             for primSpec in primIndex.primStack:
                 # Determine a short form of the spec's layer's path.
                 layerLabel = GetLayerLabel(primSpec.layer)
-                print '    %-20s %s' % (layerLabel, primSpec.path)
+                print('    %-20s %s' % (layerLabel, primSpec.path))
 
         if len(nodesWithOffsets) > 0:
-            print '\nTime Offsets:'
+            print('\nTime Offsets:')
             for node in nodesWithOffsets:
-                print '    %-20s %-15s %-10s (offset=%.2f, scale=%.2f)' % \
+                print('    %-20s %-15s %-10s (offset=%.2f, scale=%.2f)' % \
                     (GetLayerLabel(node.layerStack.layers[0]),
                      node.path, node.arcType.displayName,
                      node.mapToRoot.timeOffset.offset, 
-                     node.mapToRoot.timeOffset.scale)
+                     node.mapToRoot.timeOffset.scale))
                 
                 for (layer, offset) in zip(node.layerStack.layers, 
                                            node.layerStack.layerOffsets):
                     if not offset.IsIdentity():
-                        print '        %-32s %-10s (offset=%.2f, ' \
+                        print('        %-32s %-10s (offset=%.2f, ' \
                             'scale=%.2f)' % \
                             (GetLayerLabel(layer),
                              'sublayer',
-                             offset.offset, offset.scale)
+                             offset.offset, offset.scale))
 
         if len(vselMap) > 0:
-            print '\nVariant Selections:'
+            print('\nVariant Selections:')
             for vsetName in sorted(vselMap.keys()):
-                print '    {%s = %s}' % (vsetName, vselMap[vsetName])
+                print('    {%s = %s}' % (vsetName, vselMap[vsetName]))
 
         if len(childNames) > 0:
-            print '\nChild names:'
-            print '    ', childNames
+            print('\nChild names:')
+            print('    ', childNames)
 
         if len(prohibitedChildNames) > 0:
-            print '\nProhibited child names:'
+            print('\nProhibited child names:')
             # Write the set of prohibited names in stable (sorted) order.
-            print '    ', sorted(prohibitedChildNames)
+            print('    ', sorted(prohibitedChildNames))
 
         if len(propNames) > 0:
-            print '\nProperty names:'
-            print '    ', propNames
+            print('\nProperty names:')
+            print('    ', propNames)
 
         if len(propStackMap) > 0:
-            print '\nProperty stacks:'
+            print('\nProperty stacks:')
             for propPath in sorted(propStackMap.keys()):
-                print '%s:' % (propPath)
+                print('%s:' % (propPath))
                 for propSpec in propStackMap[propPath]:
                     # Determine a short form of the spec's layer's path.
                     layerLabel = GetLayerLabel(propSpec.layer)
-                    print '    %-20s %s' % (layerLabel, propSpec.path)
+                    print('    %-20s %s' % (layerLabel, propSpec.path))
 
         def _PrintTargets(targetMap):
             for propPath in sorted(targetMap.keys()):
-                print '%s:' % (propPath)
+                print('%s:' % (propPath))
                 for targetPath in targetMap[propPath]:
-                    print '    %s' % targetPath
+                    print('    %s' % targetPath)
                     # Target paths should never include variant selections.
                     # Variant selections are part of addressing layer
                     # opinion storage (like the asset path); they are
@@ -294,11 +295,11 @@ for layerPath in args.layer:
                         'Target path %s has variant selections' % targetPath
 
         if len(targetsMap) > 0:
-            print '\nRelationship targets:'
+            print('\nRelationship targets:')
             _PrintTargets(targetsMap)
 
         if len(connectionsMap) > 0:
-            print '\nAttribute connections:'
+            print('\nAttribute connections:')
             _PrintTargets(connectionsMap)
             
         # Print out errors encountered while composing this prim.
@@ -308,7 +309,7 @@ for layerPath in args.layer:
                               'Errors while composing <%s>\n' % (primPath))
             PrintErrors(errorFile, errors)
 
-        print ''
+        print('')
 
         # Stop after we hit the path to dump.
         if primPath == dumpPath:
@@ -318,5 +319,5 @@ if errorFile:
     errorFile.close()
 
 if hadError and not errorFile:
-    print >> sys.stderr, "ERROR: Unexpected error(s) encountered during test!"
+    print("ERROR: Unexpected error(s) encountered during test!", file=sys.stderr)
     sys.exit(1)

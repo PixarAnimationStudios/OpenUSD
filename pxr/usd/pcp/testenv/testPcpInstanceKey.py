@@ -22,6 +22,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from __future__ import print_function
+
 from pxr import Pcp, Sdf
 import unittest
 
@@ -42,8 +44,8 @@ class TestPcpInstanceKey(unittest.TestCase):
         else:
             self.assertEqual(key, Pcp.InstanceKey())
 
-        print "Pcp.InstanceKey('%s'): " % primPath
-        print key, "\n"
+        print("Pcp.InstanceKey('%s'): " % primPath)
+        print(key, "\n")
         return key
 
     def test_Default(self):
@@ -51,8 +53,8 @@ class TestPcpInstanceKey(unittest.TestCase):
         code coverage"""
         invalidKey = Pcp.InstanceKey()
         self.assertEqual(invalidKey, invalidKey)
-        print "Pcp.InstanceKey(): "
-        print invalidKey
+        print("Pcp.InstanceKey(): ")
+        print(invalidKey)
 
     def test_Basic(self):
         """Test instance key functionality on simple

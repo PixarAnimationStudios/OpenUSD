@@ -22,6 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from __future__ import print_function
 from pxr import Tf, Pcp, Sdf
 import os, sys, unittest
 
@@ -141,7 +142,7 @@ class TestPcpOwner(unittest.TestCase):
         (layerStack, errors) = cache.ComputeLayerStack(self.layerStackId)
 
         for err in errors:
-            print >> sys.stderr, err
+            print(err, file=sys.stderr)
             self.assertTrue(isinstance(err, Pcp.ErrorInvalidSublayerOwnership),
                    "Unexpected Error: %s" % err)
 
