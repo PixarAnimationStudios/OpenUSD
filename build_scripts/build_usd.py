@@ -40,6 +40,7 @@ import sys
 import tarfile
 import urllib2
 import zipfile
+import string
 
 # Helpers for printing output
 verbosity = 1
@@ -211,6 +212,13 @@ def Run(cmd, logCommandOutput = True):
                 Print(logfile.read())
         raise RuntimeError("Failed to run '{cmd}'\nSee {log} for more details."
                            .format(cmd=cmd, log=os.path.abspath("log.txt")))
+
+def CallCmd(cmd, args):
+    try:
+        syscmd = cmd + ' ' + string.join(args)
+        os.system(syscmd)
+    except Exception as exp:
+        PrintError("System error executing : {exp}".format(exp=exp))
 
 @contextlib.contextmanager
 def CurrentWorkingDirectory(dir):
@@ -797,6 +805,10 @@ def InstallGLEW_LinuxOrMacOS(context, force, buildArgs):
             .format(instDir=context.instDir,
                     procs=context.numJobs,
                     buildArgs=" ".join(buildArgs)))
+        if MacOS():
+            libGLEW = "libGLEW.2.0.0.dylib"
+            path = os.path.join(context.instDir, "lib", libGLEW)
+            CallCmd('install_name_tool', ['-id', "@rpath/" + libGLEW, path])
 
 GLEW = Dependency("GLEW", InstallGLEW, "include/GL/glew.h")
 
