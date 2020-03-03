@@ -68,34 +68,35 @@ public:
     , _renderTags()
     {
         _renderTags.reserve(2);
-        _renderTags.push_back(HdTokens->geometry);
+        _renderTags.push_back(HdRenderTagTokens->geometry);
 
         if (withGuides) {
-            _renderTags.push_back(HdTokens->guide);
+            _renderTags.push_back(HdRenderTagTokens->guide);
         }
     }
-    virtual void Sync(HdSceneDelegate*,
+    
+    void Sync(HdSceneDelegate*,
                       HdTaskContext*,
                       HdDirtyBits*) override
     {
         _renderPass->Sync();
     }
 
-    virtual void Prepare(HdTaskContext* ctx,
-                         HdRenderIndex* renderIndex) override
+    void Prepare(HdTaskContext* ctx,
+                 HdRenderIndex* renderIndex) override
     {
         _renderPassState->Prepare(
             renderIndex->GetResourceRegistry());
     }
 
-    virtual void Execute(HdTaskContext* ctx) override
+    void Execute(HdTaskContext* ctx) override
     {
         _renderPassState->Bind();
         _renderPass->Execute(_renderPassState, GetRenderTags());
         _renderPassState->Unbind();
     }
 
-    virtual const TfTokenVector &GetRenderTags() const
+    const TfTokenVector &GetRenderTags() const override
     {
         return _renderTags;
     }

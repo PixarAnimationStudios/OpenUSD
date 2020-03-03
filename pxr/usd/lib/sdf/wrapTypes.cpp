@@ -40,12 +40,9 @@
 #include "pxr/usd/sdf/variantSetSpec.h"
 #include "pxr/usd/sdf/variantSpec.h"
 
+#include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyStaticTokens.h"
-/*
-#include "pxr/base/tf/pyResultConversions.h"
-#include "pxr/base/tf/stringUtils.h"
-*/
 
 #include "pxr/base/vt/valueFromPython.h"
 
@@ -330,6 +327,14 @@ void wrapTypes()
     def( "GetNameForUnit", &SdfGetNameForUnit,
          return_value_policy<return_by_value>() );
 
+    // Register Python conversions for std::vector<SdfUnregisteredValue>
+    using _UnregisteredValueVector = std::vector<SdfUnregisteredValue>;
+    to_python_converter<_UnregisteredValueVector,
+                        TfPySequenceToPython<_UnregisteredValueVector> >();
+    TfPyContainerConversions::from_python_sequence<
+        _UnregisteredValueVector,
+        TfPyContainerConversions::variable_capacity_policy >();
+
     TfPyWrapEnum<SdfListOpType>();
     TfPyWrapEnum<SdfPermission>();
     TfPyWrapEnum<SdfSpecifier>();
@@ -435,6 +440,7 @@ void wrapTypes()
         .def_readonly("Half"    , SdfValueTypeNames->Half)
         .def_readonly("Float"   , SdfValueTypeNames->Float)
         .def_readonly("Double"  , SdfValueTypeNames->Double)
+        .def_readonly("TimeCode", SdfValueTypeNames->TimeCode)
         .def_readonly("String"  , SdfValueTypeNames->String)
         .def_readonly("Token"   , SdfValueTypeNames->Token)
         .def_readonly("Asset"   , SdfValueTypeNames->Asset)
@@ -488,6 +494,7 @@ void wrapTypes()
         .def_readonly("HalfArray"    , SdfValueTypeNames->HalfArray)
         .def_readonly("FloatArray"   , SdfValueTypeNames->FloatArray)
         .def_readonly("DoubleArray"  , SdfValueTypeNames->DoubleArray)
+        .def_readonly("TimeCodeArray", SdfValueTypeNames->TimeCodeArray)
         .def_readonly("StringArray"  , SdfValueTypeNames->StringArray)
         .def_readonly("TokenArray"   , SdfValueTypeNames->TokenArray)
         .def_readonly("AssetArray"   , SdfValueTypeNames->AssetArray)

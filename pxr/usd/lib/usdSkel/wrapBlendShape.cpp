@@ -67,7 +67,7 @@ static UsdAttribute
 _CreatePointIndicesAttr(UsdSkelBlendShape &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreatePointIndicesAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->UIntArray), writeSparsely);
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->IntArray), writeSparsely);
 }
 
 } // anonymous namespace
@@ -173,7 +173,8 @@ WRAP_CUSTOM {
         
         .def("GetInbetweens", &This::GetInbetweens,
              return_value_policy<TfPySequenceToList>())
-        .def("GetAuthoredInbetweens", &This::GetAuthoredInbetweens)
+        .def("GetAuthoredInbetweens", &This::GetAuthoredInbetweens,
+             return_value_policy<TfPySequenceToList>())
 
         .def("ValidatePointIndices", &_ValidatePointIndices,
              (arg("pointIndices"), arg("numPoints")))

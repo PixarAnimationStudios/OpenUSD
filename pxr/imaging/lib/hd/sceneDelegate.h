@@ -409,44 +409,92 @@ public:
     /// \name Motion samples
     // -----------------------------------------------------------------------//
 
-    /// Store up to \a maxSampleCount transform samples in \a *samples.
-    /// Returns the number of samples returned.
+    /// Store up to \a maxSampleCount transform samples in \a *sampleValues.
+    /// Returns the union of the authored samples and the boundaries 
+    /// of the current camera shutter interval. If this number is greater
+    /// than maxSampleCount, you might want to call this function again 
+    /// to get all the authored data.
     /// Sample times are relative to the scene delegate's current time.
     /// \see GetTransform()
     HD_API
     virtual size_t
-    SampleTransform(SdfPath const & id, size_t maxSampleCount,
-                    float *times, GfMatrix4d *samples);
+    SampleTransform(SdfPath const & id, 
+                    size_t maxSampleCount,
+                    float *sampleTimes, 
+                    GfMatrix4d *sampleValues);
 
     /// Convenience form of SampleTransform() that takes an HdTimeSampleArray.
+    /// This function returns the union of the authored transform samples 
+    /// and the boundaries of the current camera shutter interval.
     template <unsigned int CAPACITY>
-    void SampleTransform(SdfPath const & id,
-                         HdTimeSampleArray<GfMatrix4d, CAPACITY> *out) {
-        out->count = SampleTransform(id, CAPACITY, out->times, out->values);
+    void 
+    SampleTransform(SdfPath const & id,
+                    HdTimeSampleArray<GfMatrix4d, CAPACITY> *sa) {
+        size_t authoredSamples = 
+            SampleTransform(id, CAPACITY, sa->times.data(), sa->values.data());
+        if (authoredSamples > CAPACITY) {
+            sa->Resize(authoredSamples);
+            size_t authoredSamplesSecondAttempt = 
+                SampleTransform(
+                    id, 
+                    authoredSamples, 
+                    sa->times.data(), 
+                    sa->values.data());
+            // Number of samples should be consisntent through multiple
+            // invokations of the sampling function.
+            TF_VERIFY(authoredSamples == authoredSamplesSecondAttempt);
+        }
+        sa->count = authoredSamples;
     }
 
-    /// Store up to \a maxSampleCount transform samples in \a *samples.
-    /// Returns the number of samples returned.
+    /// Store up to \a maxSampleCount transform samples in \a *sampleValues.
+    /// Returns the union of the authored samples and the boundaries 
+    /// of the current camera shutter interval. If this number is greater
+    /// than maxSampleCount, you might want to call this function again 
+    /// to get all the authored data.
     /// Sample times are relative to the scene delegate's current time.
     /// \see GetInstancerTransform()
     HD_API
     virtual size_t
     SampleInstancerTransform(SdfPath const &instancerId,
-                             size_t maxSampleCount, float *times,
-                             GfMatrix4d *samples);
+                             size_t maxSampleCount, 
+                             float *sampleTimes,
+                             GfMatrix4d *sampleValues);
 
     /// Convenience form of SampleInstancerTransform()
     /// that takes an HdTimeSampleArray.
+    /// This function returns the union of the authored samples 
+    /// and the boundaries of the current camera shutter interval.
     template <unsigned int CAPACITY>
     void
     SampleInstancerTransform(SdfPath const &instancerId,
-                             HdTimeSampleArray<GfMatrix4d, CAPACITY> *out) {
-        out->count = SampleInstancerTransform(
-            instancerId, CAPACITY, out->times, out->values);
+                             HdTimeSampleArray<GfMatrix4d, CAPACITY> *sa) {
+        size_t authoredSamples = 
+            SampleInstancerTransform(
+                instancerId, 
+                CAPACITY, 
+                sa->times.data(), 
+                sa->values.data());
+        if (authoredSamples > CAPACITY) {
+            sa->Resize(authoredSamples);
+            size_t authoredSamplesSecondAttempt = 
+                SampleInstancerTransform(
+                    instancerId, 
+                    authoredSamples, 
+                    sa->times.data(), 
+                    sa->values.data());
+            // Number of samples should be consisntent through multiple
+            // invokations of the sampling function.
+            TF_VERIFY(authoredSamples == authoredSamplesSecondAttempt);
+        }
+        sa->count = authoredSamples;
     }
 
-    /// Store up to \a maxSampleCount primvar samples in \a *samples.
-    /// Returns the number of samples returned.
+    /// Store up to \a maxSampleCount primvar samples in \a *samplesValues.
+    /// Returns the union of the authored samples and the boundaries 
+    /// of the current camera shutter interval. If this number is greater
+    /// than maxSampleCount, you might want to call this function again 
+    /// to get all the authored data.
     ///
     /// Sample values that are array-valued will have a size described
     /// by the HdPrimvarDescriptor as applied to the toplogy.
@@ -461,14 +509,41 @@ public:
     /// \see Get()
     HD_API
     virtual size_t
-    SamplePrimvar(SdfPath const& id, TfToken const& key,
-                  size_t maxSampleCount, float *times, VtValue *samples);
+    SamplePrimvar(SdfPath const& id, 
+                  TfToken const& key,
+                  size_t maxSampleCount, 
+                  float *sampleTimes, 
+                  VtValue *sampleValues);
 
     /// Convenience form of SamplePrimvar() that takes an HdTimeSampleArray.
+    /// This function returns the union of the authored samples 
+    /// and the boundaries of the current camera shutter interval.
     template <unsigned int CAPACITY>
-    void SamplePrimvar(SdfPath const &id, TfToken const& key,
-                       HdTimeSampleArray<VtValue, CAPACITY> *sa) {
-        sa->count = SamplePrimvar(id, key, CAPACITY, sa->times, sa->values);
+    void 
+    SamplePrimvar(SdfPath const &id, 
+                  TfToken const& key,
+                  HdTimeSampleArray<VtValue, CAPACITY> *sa) {
+        size_t authoredSamples = 
+            SamplePrimvar(
+                id, 
+                key, 
+                CAPACITY, 
+                sa->times.data(), 
+                sa->values.data());
+        if (authoredSamples > CAPACITY) {
+            sa->Resize(authoredSamples);
+            size_t authoredSamplesSecondAttempt = 
+                SamplePrimvar(
+                    id, 
+                    key, 
+                    authoredSamples, 
+                    sa->times.data(), 
+                    sa->values.data());
+            // Number of samples should be consisntent through multiple
+            // invokations of the sampling function.
+            TF_VERIFY(authoredSamples == authoredSamplesSecondAttempt);
+        }
+        sa->count = authoredSamples;
     }
 
     // -----------------------------------------------------------------------//
@@ -496,27 +571,69 @@ public:
     virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerId);
 
 
-    /// Resolves a pair of rprimPath and instanceIndex back to original
-    /// (instance) path by backtracking nested instancer hierarchy.
+    /// Resolves a \p protoRprimId and \p protoIndex back to original
+    /// instancer path by backtracking nested instancer hierarchy.
     ///
-    /// if the instancer instances heterogeneously, instanceIndex of the
-    /// prototype rprim doesn't match the instanceIndex in the instancer.
+    /// It will be an empty path if the given protoRprimId is not
+    /// instanced.
     ///
-    /// for example:
-    ///   instancer = [ A, B, A, B, B ]
-    ///        instanceIndex       absoluteInstanceIndex
+    /// (Note: see usdImaging/delegate.h for details specific to USD
+    /// instancing)
+    ///
+    /// If the instancer instances heterogeneously, the instance index of the
+    /// prototype rprim doesn't match the instance index in the instancer.
+    ///
+    /// For example, if we have:
+    ///
+    ///     instancer {
+    ///         prototypes = [ A, B, A, B, B ]
+    ///     }
+    ///
+    /// ...then the indices would be:
+    ///
+    ///        protoIndex          instancerIndex
     ///     A: [0, 1]              [0, 2]
     ///     B: [0, 1, 2]           [1, 3, 5]
     ///
-    /// To track this mapping, absoluteInstanceIndex is returned which
-    /// is an instanceIndex of the instancer for the given instanceIndex of
-    /// the prototype.
+    /// To track this mapping, the \p instancerIndex is returned which
+    /// corresponds to the given protoIndex.
     ///
+    /// Also, note if there are nested instancers, the returned path will
+    /// be the top-level instancer, and the \p instancerIndex will be for
+    /// that top-level instancer. This can lead to situations where, contrary
+    /// to the previous scenario, the instancerIndex has fewer possible values
+    /// than the \p protoIndex:
+    ///
+    /// For example, if we have:
+    ///
+    ///     instancerBottom {
+    ///         prototypes = [ A, A, B ]
+    ///     }
+    ///     instancerTop {
+    ///         prototypes = [ instancerBottom, instancerBottom ]
+    ///     }
+    ///
+    /// ...then the indices might be:
+    ///
+    ///        protoIndex          instancerIndex  (for instancerTop)
+    ///     A: [0, 1, 2, 3]        [0, 0, 1, 1]
+    ///     B: [0, 1]              [0, 1]
+    ///
+    /// because \p instancerIndex are indices for instancerTop, which only has
+    /// two possible indices.
+    ///
+    /// If \p masterCachePath is not NULL, then it may be set to the cache path
+    /// corresponding instance master prim, if there is one. Otherwise, it will
+    /// be set to null.
+    ///
+    /// If \p instanceContext is not NULL, it is populated with the list of
+    /// instance roots that must be traversed to get to the rprim. If this
+    /// list is non-empty, the last prim is always the forwarded rprim.
     HD_API
-    virtual SdfPath GetPathForInstanceIndex(const SdfPath &protoPrimPath,
-                                            int instanceIndex,
-                                            int *absoluteInstanceIndex,
-                                            SdfPath * rprimPath=NULL,
+    virtual SdfPath GetPathForInstanceIndex(const SdfPath &protoRprimId,
+                                            int protoIndex,
+                                            int *instancerIndex,
+                                            SdfPath *masterCachePath=NULL,
                                             SdfPathVector *instanceContext=NULL);
 
     // -----------------------------------------------------------------------//
@@ -548,11 +665,6 @@ public:
     // needed to create a material.
     HD_API 
     virtual VtValue GetMaterialResource(SdfPath const &materialId);
-
-    // Returns a list of primvars used by the material id passed 
-    // to this function.
-    HD_API 
-    virtual TfTokenVector GetMaterialPrimvars(SdfPath const &materialId);
 
     // Returns the metadata dictionary for the given material ID. 
     HD_API

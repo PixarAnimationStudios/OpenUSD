@@ -42,9 +42,12 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+class HdResourceRegistry;
 class HdSceneDelegate;
 typedef boost::shared_ptr<class HdStLight> HdStLightSharedPtr;
 typedef std::vector<class HdStLight const *> HdStLightPtrConstVector;
+typedef boost::shared_ptr<class HdStTextureResource> 
+                                                HdStTextureResourceSharedPtr;
 
 /// \class HdStLight
 ///
@@ -80,12 +83,29 @@ private:
     GlfSimpleLight _ApproximateAreaLight(SdfPath const &id, 
                                          HdSceneDelegate *sceneDelegate);
 
+
+    /// Loads the Environment map texture and adds comppute tasks
+    /// to process that environment map and precalculate the different 
+    /// textures needed for IBL 
+    GlfSimpleLight _PrepareDomeLight(SdfPath const &id, 
+                                    HdSceneDelegate *sceneDelegate);
+    
+    /// called by _CreateDomeLight to add the compute tasks
+    void _SetupComputations(GLuint sourceTexture, 
+                            HdResourceRegistry *resourceRegistry);
+
 private:
     // Stores the internal light type of this light.
     TfToken _lightType;
 
     // Cached states.
     TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _params;
+
+    HdStTextureResourceSharedPtr _textureResource;
+
+    GLuint _irradianceTexture;
+    GLuint _prefilterTexture;
+    GLuint _brdfTexture;
 };
 
 

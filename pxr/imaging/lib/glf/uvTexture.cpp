@@ -103,6 +103,12 @@ GlfUVTexture::New(
             originLocation));
 }
 
+int
+GlfUVTexture::GetNumDimensions() const
+{
+    return 2;
+}
+
 bool 
 GlfUVTexture::IsSupportedImageFile(TfToken const &imageFilePath)
 {

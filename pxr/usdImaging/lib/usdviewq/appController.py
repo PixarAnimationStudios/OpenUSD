@@ -57,7 +57,8 @@ from selectionDataModel import ALL_INSTANCES, SelectionDataModel
 # Common Utilities
 from common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts,
                     GetPropertyColor, GetPropertyTextFont,
-                    Timer, Drange, BusyContext, DumpMallocTags, GetShortString,
+                    Timer, Drange, BusyContext, DumpMallocTags, 
+                    GetValueAtFrame, GetShortStringForValue,
                     GetInstanceIdForIndex,
                     ResetSessionVisibility, InvisRootPrims, GetAssetCreationTime,
                     PropertyViewIndex, PropertyViewIcons, PropertyViewDataRoles, 
@@ -66,7 +67,7 @@ from common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts,
                     PropTreeWidgetTypeIsRel, PrimNotFoundException,
                     GetRootLayerStackInfo, HasSessionVis, GetEnclosingModelPrim,
                     GetPrimsLoadability, ClearColors,
-                    HighlightColors)
+                    HighlightColors, KeyboardShortcuts)
 
 import settings2
 from settings2 import StateSource
@@ -325,6 +326,7 @@ class AppController(QtCore.QObject):
             self._debug = os.getenv('USDVIEW_DEBUG', False)
             self._printTiming = parserData.timing or self._debug
             self._lastViewContext = {}
+            self._paused = False
             if QT_BINDING == 'PySide':
                 self._statusFileName = 'state'
                 self._deprecatedStatusFileNames = ('.usdviewrc')
@@ -552,15 +554,6 @@ class AppController(QtCore.QObject):
             for action in self._clearColorActions:
                 self._ui.colorGroup.addAction(action)
 
-            self._ui.threePointLights = QtWidgets.QActionGroup(self)
-            self._ui.threePointLights.setExclusive(False)
-            self._threePointLightsActions = (
-                self._ui.actionKey,
-                self._ui.actionFill,
-                self._ui.actionBack)
-            for action in self._threePointLightsActions:
-                self._ui.threePointLights.addAction(action)
-
             self._ui.renderModeActionGroup = QtWidgets.QActionGroup(self)
             self._ui.renderModeActionGroup.setExclusive(True)
             self._renderModeActions = (
@@ -701,7 +694,7 @@ class AppController(QtCore.QObject):
                 QtCore.Qt.ScrollBarAlwaysOn)
 
             self._ui.attributeValueEditor.setAppController(self)
-            self._ui.primView.InitDrawModeDelegate(self)
+            self._ui.primView.InitControllers(self)
 
             self._ui.currentPathWidget.editingFinished.connect(
                 self._currentPathChanged)
@@ -784,6 +777,9 @@ class AppController(QtCore.QObject):
             self._ui.actionSave_Flattened_As.triggered.connect(
                 self._saveFlattenedAs)
 
+            self._ui.actionPause.triggered.connect(
+                self._togglePause)
+
             # Setup quit actions to ensure _cleanAndClose is only invoked once.
             self._ui.actionQuit.triggered.connect(QtWidgets.QApplication.instance().quit)
 
@@ -792,8 +788,6 @@ class AppController(QtCore.QObject):
             self._ui.actionReopen_Stage.triggered.connect(self._reopenStage)
 
             self._ui.actionReload_All_Layers.triggered.connect(self._reloadStage)
-
-            self._ui.actionFrame_Selection.triggered.connect(self._frameSelection)
 
             self._ui.actionToggle_Framed_View.triggered.connect(self._toggleFramedView)
 
@@ -875,11 +869,7 @@ class AppController(QtCore.QObject):
             self._ui.actionAmbient_Only.triggered[bool].connect(
                 self._ambientOnlyClicked)
 
-            self._ui.actionKey.triggered[bool].connect(self._onKeyLightClicked)
-
-            self._ui.actionFill.triggered[bool].connect(self._onFillLightClicked)
-
-            self._ui.actionBack.triggered[bool].connect(self._onBackLightClicked)
+            self._ui.actionDomeLight.triggered[bool].connect(self._onDomeLightClicked)
 
             self._ui.colorGroup.triggered.connect(self._changeBgColor)
 
@@ -1092,7 +1082,7 @@ class AppController(QtCore.QObject):
 
     def _openStage(self, usdFilePath, sessionFilePath, populationMaskPaths):
 
-        def _GetFormattedError(reasons=[]):
+        def _GetFormattedError(reasons=None):
             err = ("Error: Unable to open stage '{0}'\n".format(usdFilePath))
             if reasons:
                 err += "\n".join(reasons) + "\n"
@@ -1185,6 +1175,11 @@ class AppController(QtCore.QObject):
         self.realEndTimeCode = None
 
         self.framesPerSecond = self._dataModel.stage.GetFramesPerSecond()
+        if self.framesPerSecond < 1:
+            err = ("Error: Invalid value for field framesPerSecond of %.2f. Using default value of 24 \n" % self.framesPerSecond)
+            sys.stderr.write(err)
+            self.statusMessage(err)
+            self.framesPerSecond = 24.0
 
         if not resetStageDataOnly:
             self.step = self._dataModel.stage.GetTimeCodesPerSecond() / self.framesPerSecond
@@ -1304,9 +1299,10 @@ class AppController(QtCore.QObject):
                         action.setDisabled(True)
                         break
             else:
-                # Refresh the AOV menu and settings menu
+                # Refresh the AOV menu, settings menu, and pause menu item
                 self._configureRendererAovs()
                 self._configureRendererSettings()
+                self._configurePauseAction()
 
     def _configureRendererPlugins(self):
         if self._stageView:
@@ -1339,9 +1335,10 @@ class AppController(QtCore.QObject):
             # Disable the menu if no plugins were found
             self._ui.menuRendererPlugin.setEnabled(foundPlugin)
 
-            # Refresh the AOV menu and settings menu
+            # Refresh the AOV menu, settings menu, and pause menu item
             self._configureRendererAovs()
             self._configureRendererSettings()
+            self._configurePauseAction()
 
     # Renderer AOV support
     def _rendererAovChanged(self, aov):
@@ -1523,6 +1520,16 @@ class AppController(QtCore.QObject):
             if isinstance(widget, QtWidgets.QLineEdit):
                 widget.setText(widget.defValue)
 
+    def _configurePauseAction(self):
+        if self._stageView:
+            # This is called when the user picks a new renderer, which
+            # always starts in an unpaused state.
+            self._paused = False
+            self._ui.actionPause.setEnabled(
+                self._stageView.IsPauseRendererSupported())
+            self._ui.actionPause.setChecked(self._paused and
+                self._stageView.IsPauseRendererSupported())
+
     def _configureColorManagement(self):
         enableMenu = (not self._noRender and 
                       UsdImagingGL.Engine.IsColorCorrectionCapable())
@@ -1591,6 +1598,24 @@ class AppController(QtCore.QObject):
         """
         self._ui.primView.resizeColumnToContents(0)
 
+    # Retrieve the list of prims currently expanded in the primTreeWidget
+    def _getExpandedPrimViewPrims(self):
+        rootItem = self._ui.primView.invisibleRootItem()
+        expandedItems = list()
+
+        # recursive function for adding all expanded items to expandedItems
+        def findExpanded(item):
+            if item.isExpanded():
+                expandedItems.append(item)
+            for i in range(item.childCount()):
+                findExpanded(item.child(i))
+
+        findExpanded(rootItem)
+
+        expandedPrims = [item.prim for item in expandedItems]
+        return expandedPrims
+
+
     # This appears to be "reasonably" performant in normal sized pose caches.
     # If it turns out to be too slow, or if we want to do a better job of
     # preserving the view the user currently has, we could look into ways of
@@ -1598,6 +1623,8 @@ class AppController(QtCore.QObject):
     # (far and away) faster solution would be to implement our own TreeView
     # and model in C++.
     def _resetPrimView(self, restoreSelection=True):
+        expandedPrims = self._getExpandedPrimViewPrims()
+
         with Timer() as t, BusyContext():
             startingDepth = 3
             self._computeDisplayPredicate()
@@ -1612,9 +1639,11 @@ class AppController(QtCore.QObject):
                 self._populateRoots()
                 # it's confusing to see timing for expand followed by reset with
                 # the times being similar (esp when they are large)
-                self._expandToDepth(startingDepth, suppressTiming=True)
+                if not expandedPrims:
+                    self._expandToDepth(startingDepth, suppressTiming=True)
+
                 if restoreSelection:
-                    self._refreshPrimViewSelection()
+                    self._refreshPrimViewSelection(expandedPrims)
                 self._ui.primView.setUpdatesEnabled(True)
             self._refreshCameraListAndMenu(preserveCurrCamera = True)
         if self._printTiming:
@@ -1926,6 +1955,7 @@ class AppController(QtCore.QObject):
                     self._dataModel.selection.addPrim(nextResult.prim)
                 self._primSearchResults.append(nextResult)
                 self._lastPrimSearched = self._dataModel.selection.getFocusPrim()
+                self._ui.primView.setCurrentItem(nextResult)
             # The path is effectively pruned if we couldn't map the
             # path to an item
         else:
@@ -1937,12 +1967,68 @@ class AppController(QtCore.QObject):
                 self._primSearchResults = deque(self._primSearchResults)
                 self._lastPrimSearched = self._dataModel.selection.getFocusPrim()
 
+                selectedPrim = self._dataModel.selection.getFocusPrim()
+
+                # reorders search results so results are centered on selected
+                # prim. this could be optimized, but a binary search with a 
+                # custom operator for the result closest to and after the
+                # selected prim is messier to implement.
+                if (selectedPrim != None and 
+                    selectedPrim != self._dataModel.stage.GetPseudoRoot() and 
+                    len(self._primSearchResults) > 0):
+                    for i in range(len(self._primSearchResults)):
+                        searchResultPath = self._primSearchResults[0]
+                        selectedPath = selectedPrim.GetPath()
+                        if self._comparePaths(searchResultPath, selectedPath) < 1:
+                            self._primSearchResults.rotate(-1)
+                        else:
+                            break
+
                 if (len(self._primSearchResults) > 0):
                     self._primViewFindNext()
             if self._printTiming:
                 t.PrintTime("match '%s' (%d matches)" %
                             (self._primSearchString,
                              len(self._primSearchResults)))
+
+    # returns -1 if path1 appears before path2 in flattened tree
+    # returns 0 if path1 and path2 are equal
+    # returns 1 if path2 appears before path1 in flattened tree
+    def _comparePaths(self, path1, path2):
+        # function for removing a certain number of elements from a path
+        def stripPath(path, numElements):
+            strippedPath = path
+            for i in range(numElements):
+                strippedPath = strippedPath.GetParentPath()
+            return strippedPath
+
+        lca = path1.GetCommonPrefix(path2)
+        path1NumElements = path1.pathElementCount
+        path2NumElements = path2.pathElementCount
+        lcaNumElements = lca.pathElementCount
+
+        if path1 == path2:
+            return 0
+        if lca == path1:
+            return -1
+        if lca == path2:
+            return 1
+
+        path1Stripped = stripPath(path1, path1NumElements - (lcaNumElements + 1))
+        path2Stripped = stripPath(path2, path2NumElements - (lcaNumElements + 1))
+
+        lcaChildrenPrims = self._getFilteredChildren(self._dataModel.stage.GetPrimAtPath(lca))
+        lcaChildrenPaths = [prim.GetPath() for prim in lcaChildrenPrims]
+
+        indexPath1 = lcaChildrenPaths.index(path1Stripped)
+        indexPath2 = lcaChildrenPaths.index(path2Stripped)
+
+        if (indexPath1 < indexPath2):
+            return -1
+        if (indexPath1 > indexPath2):
+            return 1
+        else:
+            return 0
 
     def _primLegendToggleCollapse(self):
         ToggleLegendWithBrowser(self._ui.primLegendContainer,
@@ -2159,24 +2245,9 @@ class AppController(QtCore.QObject):
         if self._stageView and checked is not None:
             self._dataModel.viewSettings.ambientLightOnly = checked
 
-            # If all three lights are disabled, re-enable them all.
-            if (not self._dataModel.viewSettings.keyLightEnabled and not self._dataModel.viewSettings.fillLightEnabled and
-                    not self._dataModel.viewSettings.backLightEnabled):
-                self._dataModel.viewSettings.keyLightEnabled = True
-                self._dataModel.viewSettings.fillLightEnabled = True
-                self._dataModel.viewSettings.backLightEnabled = True
-
-    def _onKeyLightClicked(self, checked=None):
+    def _onDomeLightClicked(self, checked=None):
         if self._stageView and checked is not None:
-            self._dataModel.viewSettings.keyLightEnabled = checked
-
-    def _onFillLightClicked(self, checked=None):
-        if self._stageView and checked is not None:
-            self._dataModel.viewSettings.fillLightEnabled = checked
-
-    def _onBackLightClicked(self, checked=None):
-        if self._stageView and checked is not None:
-            self._dataModel.viewSettings.backLightEnabled = checked
+            self._dataModel.viewSettings.domeLightEnabled = checked
 
     def _changeBgColor(self, mode):
         self._dataModel.viewSettings.clearColorText = str(mode.text())
@@ -2441,6 +2512,12 @@ class AppController(QtCore.QObject):
 
         with BusyContext():
             self._dataModel.stage.Export(saveName)
+
+    def _togglePause(self):
+        if self._stageView.IsPauseRendererSupported():
+            self._paused = not self._paused
+            self._stageView.SetRendererPaused(self._paused)
+            self._ui.actionPause.setChecked(self._paused)
 
     def _reopenStage(self):
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
@@ -3095,16 +3172,41 @@ class AppController(QtCore.QObject):
 
             self._dataModel.selection.clearComputedProps()
 
-    def _refreshPrimViewSelection(self):
+    # A function for maintaining the primview. For each prim in prims, 
+    # first check that it exists. Then if its item has not 
+    # yet been populated,  use _getItemAtPath to populate its "chain" 
+    # of parents, so that the prim's item can be accessed. If it
+    # does already exist in the _primToItemMap, either expand or
+    # unexpand the item.
+    def _expandPrims(self, prims, expand=True):
+        if prims:
+            for prim in prims:
+                if prim:
+                    item = self._primToItemMap.get(prim)
+                    if not item:
+                        primPath = prim.GetPrimPath()
+                        item = self._getItemAtPath(primPath)
+                    item.setExpanded(expand)
+
+    def _refreshPrimViewSelection(self, expandedPrims):
         """Refresh the selected prim view items to match the selection data
         model.
         """
         self._ui.primView.clearSelection()
         selectedItems = [
-            self._getItemAtPath(prim.GetPath(), ensureExpanded=True)
+            self._getItemAtPath(prim.GetPath())
             for prim in self._dataModel.selection.getPrims()]
+
         if len(selectedItems) > 0:
             self._ui.primView.setCurrentItem(selectedItems[0])
+
+        # unexpand items that were expanded through setting the current item
+        currExpandedPrims = self._getExpandedPrimViewPrims()
+        self._expandPrims(currExpandedPrims, expand=False)
+
+        # expand previously expanded items in primview
+        self._expandPrims(expandedPrims)
+
         self._ui.primView.updateSelection(selectedItems, [])
 
     def _updatePrimViewSelection(self, added, removed):
@@ -3112,7 +3214,7 @@ class AppController(QtCore.QObject):
         removed prim paths from the selectionDataModel.
         """
         addedItems = [ 
-            self._getItemAtPath(path, ensureExpanded=True) 
+            self._getItemAtPath(path) 
             for path in added ]
         removedItems = [ self._getItemAtPath(path) for path in removed ]
         self._ui.primView.updateSelection(addedItems, removedItems)
@@ -3385,9 +3487,11 @@ class AppController(QtCore.QObject):
                     (key, type(primProperty)))
                 continue
 
-            attrText = GetShortString(primProperty, frame)
-            treeWidget.addTopLevelItem(
-                QtWidgets.QTreeWidgetItem(["", str(key), attrText]))
+            val = GetValueAtFrame(primProperty, frame)
+            attrText = GetShortStringForValue(primProperty, val)
+            item = QtWidgets.QTreeWidgetItem(["", str(key), attrText])
+            item.rawValue = val
+            treeWidget.addTopLevelItem(item)
 
             treeWidget.topLevelItem(currRow).setIcon(PropertyViewIndex.TYPE, 
                     typeContent)
@@ -3652,12 +3756,6 @@ class AppController(QtCore.QObject):
             if not v is None:
                 m[k] = v
 
-        m["[object type]"] = "Attribute" if type(obj) is Usd.Attribute \
-                       else "Prim" if type(obj) is Usd.Prim \
-                       else "Relationship" if type(obj) is Usd.Relationship \
-                       else "Unknown"
-        m["[path]"] = str(obj.GetPath())
-
         clipMetadata = obj.GetMetadata("clips")
         if clipMetadata is None:
             clipMetadata = {}
@@ -3668,8 +3766,16 @@ class AppController(QtCore.QObject):
         
         numMetadataRows = (len(m) - 1) + numClipRows
 
+        # Variant selections that don't have a defined variant set will be 
+        # displayed as well to aid debugging. Collect them separately from
+        # the variant sets.
         variantSets = {}
+        setlessVariantSelections = {}
         if (isinstance(obj, Usd.Prim)):
+            # Get all variant selections as setless and remove the ones we find
+            # sets for.
+            setlessVariantSelections = obj.GetVariantSets().GetAllVariantSelections()
+
             variantSetNames = obj.GetVariantSets().GetNames()
             for variantSetName in variantSetNames:
                 variantSet = obj.GetVariantSet(variantSetName)
@@ -3684,11 +3790,70 @@ class AppController(QtCore.QObject):
                 indexToSelect = combo.findText(variantSelection)
                 combo.setCurrentIndex(indexToSelect)
                 variantSets[variantSetName] = combo
+                # Remove found variant set from setless.
+                setlessVariantSelections.pop(variantSetName, None)
 
-        tableWidget.setRowCount(numMetadataRows + len(variantSets))
+        tableWidget.setRowCount(numMetadataRows + len(variantSets) + 
+                                len(setlessVariantSelections) + 2)
 
         rowIndex = 0
-        for key in sorted(m.keys()):
+
+        # Although most metadata should be presented alphabetically,the most 
+        # user-facing items should be placed at the beginning of the  metadata 
+        # list, these consist of [object type], [path], variant sets, active, 
+        # assetInfo, and kind.
+        def populateMetadataTable(key, val, rowIndex):
+            attrName = QtWidgets.QTableWidgetItem(str(key))
+            tableWidget.setItem(rowIndex, 0, attrName)
+
+            valStr, ttStr = self._formatMetadataValueView(val)
+            attrVal = QtWidgets.QTableWidgetItem(valStr)
+            attrVal.setToolTip(ttStr)
+
+            tableWidget.setItem(rowIndex, 1, attrVal)
+
+        sortedKeys = sorted(m.keys())
+        reorderedKeys = ["kind", "assetInfo", "active"]
+
+        for key in reorderedKeys:
+            if key in sortedKeys:
+                sortedKeys.remove(key)
+                sortedKeys.insert(0, key)
+
+        object_type = "Attribute" if type(obj) is Usd.Attribute \
+               else "Prim" if type(obj) is Usd.Prim \
+               else "Relationship" if type(obj) is Usd.Relationship \
+               else "Unknown"
+        populateMetadataTable("[object type]", object_type, rowIndex)
+        rowIndex += 1
+        populateMetadataTable("[path]", str(obj.GetPath()), rowIndex)
+        rowIndex += 1
+
+        for variantSetName, combo in variantSets.iteritems():
+            attrName = QtWidgets.QTableWidgetItem(str(variantSetName+ ' variant'))
+            tableWidget.setItem(rowIndex, 0, attrName)
+            tableWidget.setCellWidget(rowIndex, 1, combo)
+            combo.currentIndexChanged.connect(
+                lambda i, combo=combo: combo.updateVariantSelection(
+                    i, self._printTiming))
+            rowIndex += 1
+
+        # Add all the setless variant selections directly after the variant 
+        # combo boxes
+        for variantSetName, variantSelection in setlessVariantSelections.iteritems():
+            attrName = QtWidgets.QTableWidgetItem(str(variantSetName+ ' variant'))
+            tableWidget.setItem(rowIndex, 0, attrName)
+
+            valStr, ttStr = self._formatMetadataValueView(variantSelection)
+            # Italicized label to stand out when debugging a scene.
+            label = QtWidgets.QLabel('<i>' + valStr + '</i>')
+            label.setIndent(3)
+            label.setToolTip(ttStr)
+            tableWidget.setCellWidget(rowIndex, 1, label)
+
+            rowIndex += 1
+
+        for key in sortedKeys:
             if key == "clips":
                 for (clip, metadataGroup) in m[key].items():
                     attrName = QtWidgets.QTableWidgetItem(str('clip:' + clip))
@@ -3700,30 +3865,13 @@ class AppController(QtCore.QObject):
                         attrVal.setToolTip(ttStr)
                         tableWidget.setItem(rowIndex, 1, attrVal)
                         rowIndex += 1
+            elif key == "customData":
+                populateMetadataTable(key, obj.GetCustomData(), rowIndex)
+                rowIndex += 1
             else:
-                attrName = QtWidgets.QTableWidgetItem(str(key))
-                tableWidget.setItem(rowIndex, 0, attrName)
-                # Get metadata value
-                if key == "customData":
-                    val = obj.GetCustomData()
-                else:
-                    val = m[key]
-
-                valStr, ttStr = self._formatMetadataValueView(val)
-                attrVal = QtWidgets.QTableWidgetItem(valStr)
-                attrVal.setToolTip(ttStr)
-
-                tableWidget.setItem(rowIndex, 1, attrVal)
+                populateMetadataTable(key, m[key], rowIndex)
                 rowIndex += 1
 
-        for variantSetName, combo in variantSets.iteritems():
-            attrName = QtWidgets.QTableWidgetItem(str(variantSetName+ ' variant'))
-            tableWidget.setItem(rowIndex, 0, attrName)
-            tableWidget.setCellWidget(rowIndex, 1, combo)
-            combo.currentIndexChanged.connect(
-                lambda i, combo=combo: combo.updateVariantSelection(
-                    i, self._printTiming))
-            rowIndex += 1
 
         tableWidget.resizeColumnToContents(0)
 
@@ -3875,8 +4023,8 @@ class AppController(QtCore.QObject):
                 tableWidget.setItem(i, 1, pathItem)
 
                 if path.IsPropertyPath():
-                    valStr = GetShortString(
-                        spec, self._dataModel.currentFrame)
+                    val = GetValueAtFrame(spec, self._dataModel.currentFrame)
+                    valStr = GetShortStringForValue(spec, val)
                     ttStr = valStr
                     valueItem = QtWidgets.QTableWidgetItem(valStr)
                     sampleBased = (spec.HasInfo('timeSamples') and
@@ -4162,47 +4310,43 @@ class AppController(QtCore.QObject):
 
     def visSelectedPrims(self):
         with BusyContext():
-            for item in self.getSelectedItems():
-                item.makeVisible()
+            for p in self._dataModel.selection.getPrims():
+                imgbl = UsdGeom.Imageable(p)
+                if imgbl:
+                    imgbl.MakeVisible()
             self.editComplete('Made selected prims visible')
-            # makeVisible may cause aunt and uncle prims' authored vis
-            # to change, so we need to fix up the whole shebang
-            self._resetPrimViewVis(selItemsOnly=False)
 
     def visOnlySelectedPrims(self):
         with BusyContext():
             ResetSessionVisibility(self._dataModel.stage)
             InvisRootPrims(self._dataModel.stage)
-            for item in self.getSelectedItems():
-                item.makeVisible()
+            for p in self._dataModel.selection.getPrims():
+                imgbl = UsdGeom.Imageable(p)
+                if imgbl:
+                    imgbl.MakeVisible()
             self.editComplete('Made ONLY selected prims visible')
-            # QTreeWidget does not honor setUpdatesEnabled, and updating
-            # the Vis column for all widgets is pathologically slow.
-            # It is sadly much much faster to regenerate the entire view
-            self._resetPrimView()
 
     def invisSelectedPrims(self):
         with BusyContext():
-            for item in self.getSelectedItems():
-                item.setVisible(False)
+            for p in self._dataModel.selection.getPrims():
+                imgbl = UsdGeom.Imageable(p)
+                if imgbl:
+                    imgbl.MakeInvisible()
             self.editComplete('Made selected prims invisible')
-            self._resetPrimViewVis()
 
     def removeVisSelectedPrims(self):
         with BusyContext():
-            for item in self.getSelectedItems():
-                item.removeVisibility()
+            for p in self._dataModel.selection.getPrims():
+                imgbl = UsdGeom.Imageable(p)
+                if imgbl:
+                    imgbl.GetVisibilityAttr().Clear()
+
             self.editComplete("Removed selected prims' visibility opinions")
-            self._resetPrimViewVis()
 
     def resetSessionVisibility(self):
         with BusyContext():
             ResetSessionVisibility(self._dataModel.stage)
             self.editComplete('Removed ALL session visibility opinions.')
-            # QTreeWidget does not honor setUpdatesEnabled, and updating
-            # the Vis column for all widgets is pathologically slow.
-            # It is sadly much much faster to regenerate the entire view
-            self._resetPrimView()
 
     def _setSelectedPrimsActivation(self, active):
         """Activate or deactivate all selected prims."""
@@ -4529,6 +4673,8 @@ class AppController(QtCore.QObject):
         elif key == QtCore.Qt.Key_Left:
             self._retreatFrame()
             return True
+        elif key == KeyboardShortcuts.FramingKey:
+            self._frameSelection()
         return False
 
     def _viewSettingChanged(self):
@@ -4590,25 +4736,21 @@ class AppController(QtCore.QObject):
 
     def _refreshLightsMenu(self):
         # lighting is not activated until a shaded mode is selected
-        self._ui.menuLights.setEnabled(self._dataModel.viewSettings.renderMode in ShadedRenderModes)
-
-        # three point lights not activated until ambient is deselected
-        self._ui.threePointLights.setEnabled(
-            not self._dataModel.viewSettings.ambientLightOnly)
+        self._ui.menuLights.setEnabled(
+            self._dataModel.viewSettings.renderMode in ShadedRenderModes)
 
         self._ui.actionAmbient_Only.setChecked(
             self._dataModel.viewSettings.ambientLightOnly)
-        self._ui.actionKey.setChecked(
-            self._dataModel.viewSettings.keyLightEnabled)
-        self._ui.actionFill.setChecked(
-            self._dataModel.viewSettings.fillLightEnabled)
-        self._ui.actionBack.setChecked(
-            self._dataModel.viewSettings.backLightEnabled)
+        self._ui.actionDomeLight.setChecked(
+            self._dataModel.viewSettings.domeLightEnabled)
 
     def _refreshClearColorsMenu(self):
         clearColorText = self._dataModel.viewSettings.clearColorText
         for action in self._clearColorActions:
             action.setChecked(str(action.text()) == clearColorText)
+
+    def getActiveCamera(self):
+        return self._dataModel.viewSettings.cameraPrim
 
     def _refreshCameraMenu(self):
         cameraPath = self._dataModel.viewSettings.cameraPath

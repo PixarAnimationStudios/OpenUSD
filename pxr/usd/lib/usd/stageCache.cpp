@@ -172,7 +172,7 @@ struct DebugHelper
     }
 
     vector<Entry> *GetEntryVec() {
-        return IsEnabled() ? &_entries : NULL;
+        return IsEnabled() ? &_entries : nullptr;
     }
 
 private:

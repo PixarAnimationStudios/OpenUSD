@@ -65,10 +65,10 @@ public:
     , _renderTags()
     {
         _renderTags.reserve(2);
-        _renderTags.push_back(HdTokens->geometry);
+        _renderTags.push_back(HdRenderTagTokens->geometry);
 
         if (withGuides) {
-            _renderTags.push_back(HdTokens->guide);
+            _renderTags.push_back(HdRenderTagTokens->guide);
         }
     }
 

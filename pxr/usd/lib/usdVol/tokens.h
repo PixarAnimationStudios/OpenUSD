@@ -74,6 +74,10 @@ struct UsdVolTokensType {
     /// 
     /// UsdVolOpenVDBAsset, UsdVolField3DAsset
     const TfToken fieldName;
+    /// \brief "fieldPurpose"
+    /// 
+    /// UsdVolField3DAsset
+    const TfToken fieldPurpose;
     /// \brief "filePath"
     /// 
     /// UsdVolFieldAsset

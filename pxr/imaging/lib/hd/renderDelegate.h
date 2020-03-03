@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/changeTracker.h"
+#include "pxr/base/vt/dictionary.h"
 #include "pxr/base/tf/token.h"
 
 #include <boost/shared_ptr.hpp>
@@ -161,6 +162,43 @@ public:
     ///
     HD_API
     virtual unsigned int GetRenderSettingsVersion() const;
+
+    ///
+    /// Returns an open-format dictionary of render statistics
+    ///
+    HD_API
+    virtual VtDictionary GetRenderStats() const;
+
+    ////////////////////////////////////////////////////////////////////////////
+    ///
+    /// Control of background rendering threads.
+    ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    ///
+    /// Advertise whether this delegate supports pausing and resuming of
+    /// background render threads. Default implementation returns false.
+    ///
+    HD_API
+    virtual bool IsPauseSupported() const;
+
+    ///
+    /// Pause all of this delegate's background rendering threads. Default
+    /// implementation does nothing.
+    ///
+    /// Returns \c true if successful.
+    ///
+    HD_API
+    virtual bool Pause();
+
+    ///
+    /// Resume all of this delegate's background rendering threads previously
+    /// paused by a call to Pause. Default implementation does nothing.
+    ///
+    /// Returns \c true if successful.
+    ///
+    HD_API
+    virtual bool Resume();
 
     ////////////////////////////////////////////////////////////////////////////
     ///
@@ -321,6 +359,17 @@ public:
     ///
     HD_API
     virtual TfToken GetMaterialNetworkSelector() const;
+
+    ///
+    /// Return true to indicate that the render delegate wants rprim primvars
+    /// to be filtered by the scene delegate to reduce the amount of primvars
+    /// that are send to the render delegate. For example the scene delegate
+    /// may check the bound material primvar requirements and send only those
+    /// to the render delegate. Return false to not apply primvar filtering in
+    /// the scene delegate. Defaults to false.
+    ///
+    HD_API
+    virtual bool IsPrimvarFilteringNeeded() const;
 
     ///
     /// Returns the ordered list of shader source types that the render delegate 

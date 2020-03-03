@@ -47,12 +47,13 @@ TraceEventTree::New(
     return graphBuilder.GetTree();
 }
 
-void
+TraceEventTreeRefPtr
 TraceEventTree::Add(const TraceCollection& collection)
 {
     CounterMap currentCounters = GetFinalCounterValues();
     TraceEventTreeRefPtr newGraph = New(collection, &currentCounters);
     Merge(newGraph);
+    return newGraph;
 }
 
 void

@@ -183,7 +183,11 @@ UsdSkelCache::ComputeSkelBindings(const UsdSkelRoot& skelRoot,
                     "[UsdSkelCache]  Found skinnable prim <%s>, bound to "
                     "skel <%s>.\n", it->GetPath().GetText(),
                     skel.GetPrim().GetPath().GetText());
+
                 bindingMap[skel].push_back(query);
+
+                // Don't allow skinnable prims to be nested.
+                it.PruneChildren();
             }
         }
         skelStack.push_back(skel);

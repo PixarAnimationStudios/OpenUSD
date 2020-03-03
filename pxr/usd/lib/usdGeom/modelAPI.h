@@ -528,11 +528,11 @@ public:
     ///
     USDGEOM_API
     bool SetExtentsHint(VtVec3fArray const &extents, 
-                        const UsdTimeCode &time = UsdTimeCode::Default());
+                        const UsdTimeCode &time = UsdTimeCode::Default()) const;
 
     /// Returns the custom 'extentsHint' attribute if it exits.
     USDGEOM_API
-    UsdAttribute GetExtentsHintAttr();
+    UsdAttribute GetExtentsHintAttr() const;
 
     /// For the given model, compute the value for the extents hint with the
     /// given \p bboxCache.  \p bboxCache should be setup with the

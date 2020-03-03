@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-from pxr import Usd
+from pxr import Usd,Sdf
 
 import unittest
 
@@ -35,6 +35,7 @@ class TestUsdTimeCodeRepr(unittest.TestCase):
         defaultTime = Usd.TimeCode.Default()
         timeRepr = repr(defaultTime)
         self.assertEqual(timeRepr, 'Usd.TimeCode.Default()')
+        self.assertEqual(eval(timeRepr), defaultTime)
 
     def testEarliestTimeRepr(self):
         """
@@ -43,6 +44,7 @@ class TestUsdTimeCodeRepr(unittest.TestCase):
         earliestTime = Usd.TimeCode.EarliestTime()
         timeRepr = repr(earliestTime)
         self.assertEqual(timeRepr, 'Usd.TimeCode.EarliestTime()')
+        self.assertEqual(eval(timeRepr), earliestTime)
 
     def testDefaultConstructedTimeRepr(self):
         """
@@ -52,6 +54,14 @@ class TestUsdTimeCodeRepr(unittest.TestCase):
         timeCode = Usd.TimeCode()
         timeRepr = repr(timeCode)
         self.assertEqual(timeRepr, 'Usd.TimeCode()')
+        self.assertEqual(eval(timeRepr), timeCode)
+
+        # Verify that a code constructed from a default Sdf.TimeCode is 
+        # represented by the default Usd.TimeCode
+        timeCode = Usd.TimeCode(Sdf.TimeCode())
+        timeRepr = repr(timeCode)
+        self.assertEqual(timeRepr, 'Usd.TimeCode()')
+        self.assertEqual(eval(timeRepr), timeCode)
 
     def testNumericTimeRepr(self):
         """
@@ -60,7 +70,13 @@ class TestUsdTimeCodeRepr(unittest.TestCase):
         timeCode = Usd.TimeCode(123.0)
         timeRepr = repr(timeCode)
         self.assertEqual(timeRepr, 'Usd.TimeCode(123.0)')
+        self.assertEqual(eval(timeRepr), timeCode)
 
+        # Verify that a numeric time code is constructable from an Sdf.TimeCode 
+        timeCode = Usd.TimeCode(Sdf.TimeCode(12))
+        timeRepr = repr(timeCode)
+        self.assertEqual(timeRepr, 'Usd.TimeCode(12.0)')
+        self.assertEqual(eval(timeRepr), timeCode)
 
 if __name__ == "__main__":
     unittest.main()

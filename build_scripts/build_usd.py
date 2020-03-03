@@ -25,6 +25,7 @@ from distutils.spawn import find_executable
 
 import argparse
 import contextlib
+import ctypes
 import datetime
 import distutils
 import fnmatch
@@ -113,12 +114,21 @@ def GetVisualStudioCompilerAndVersion():
             return (msvcCompiler, tuple(int(v) for v in match.groups()))
     return None
 
-def IsVisualStudio2017OrGreater():
-    VISUAL_STUDIO_2017_VERSION = (15, 0)
+VISUAL_STUDIO_2017_VERSION = (15, 0)
+VISUAL_STUDIO_2019_VERSION = (16, 0)
+
+def IsVisualStudio2019OrGreater():
     msvcCompilerAndVersion = GetVisualStudioCompilerAndVersion()
     if msvcCompilerAndVersion:
         _, version = msvcCompilerAndVersion
-        return version >= VISUAL_STUDIO_2017_VERSION
+        return version >= VISUAL_STUDIO_2019_VERSION
+    return False
+
+def IsVisualStudio2017():
+    msvcCompilerAndVersion = GetVisualStudioCompilerAndVersion()
+    if msvcCompilerAndVersion:
+        _, version = msvcCompilerAndVersion
+        return version >= VISUAL_STUDIO_2017_VERSION and version < VISUAL_STUDIO_2019_VERSION
     return False
 
 def GetPythonInfo():
@@ -274,14 +284,19 @@ def RunCMake(context, force, extraArgs = None):
     # building a 64-bit project. (Surely there is a better way to do this?)
     # TODO: figure out exactly what "vcvarsall.bat x64" sets to force x64
     if generator is None and Windows():
-        if IsVisualStudio2017OrGreater():
+        if IsVisualStudio2019OrGreater():
+            # VS 2019 generator in cmake changed format for specifying arch
+            # "By default this generator uses the 64-bit variant on x64 hosts and the 32-bit variant
+            # otherwise" - from https://cmake.org/cmake/help/v3.14/generator/Visual%20Studio%2016%202019.html
+            generator = "Visual Studio 16 2019"
+        elif IsVisualStudio2017():
             generator = "Visual Studio 15 2017 Win64"
         else:
             generator = "Visual Studio 14 2015 Win64"
 
     if generator is not None:
         generator = '-G "{gen}"'.format(gen=generator)
-                
+
     # On MacOS, enable the use of @rpath for relocatable builds.
     osx_rpath = None
     if MacOS():
@@ -537,8 +552,10 @@ elif Windows():
     # causes problems for other dependencies that look for boost.
     BOOST_VERSION_FILE = "include/boost-1_61/boost/version.hpp"
 
-    # On Visual Studio 2017 we need at least boost 1.65.1
-    if IsVisualStudio2017OrGreater():
+    if IsVisualStudio2019OrGreater(): # On Visual Studio 2019 we need at least boost 1.70.0
+        BOOST_URL = "https://dl.bintray.com/boostorg/release/1.71.0/source/boost_1_71_0.tar.gz"
+        BOOST_VERSION_FILE = "include/boost-1_71_0/boost/version.hpp"
+    elif IsVisualStudio2017(): # On Visual Studio 2017 we need at least boost 1.65.1
         BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.65.1/boost_1_65_1.tar.gz"
         BOOST_VERSION_FILE = "include/boost-1_65_1/boost/version.hpp"
 
@@ -590,7 +607,9 @@ def InstallBoost(context, force, buildArgs):
             b2_settings.append("-a")
 
         if Windows():
-            if IsVisualStudio2017OrGreater():
+            if IsVisualStudio2019OrGreater():
+                b2_settings.append("toolset=msvc-14.2")
+            elif ISVisualStudio2017():
                 b2_settings.append("toolset=msvc-14.1")
             else:
                 b2_settings.append("toolset=msvc-14.0")
@@ -642,6 +661,12 @@ def InstallTBB_Windows(context, force, buildArgs):
 
 def InstallTBB_LinuxOrMacOS(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(TBB_URL, context, force)):
+        # Note: TBB installation fails on OSX when cuda is installed, a 
+        # suggested fix:
+        # https://github.com/spack/spack/issues/6000#issuecomment-358817701
+        if MacOS():
+            PatchFile("build/macos.inc", 
+                    [("shell clang -v ", "shell clang --version ")])
         # TBB does not support out-of-source builds in a custom location.
         Run('make -j{procs} {buildArgs}'
             .format(procs=context.numJobs, 
@@ -1043,6 +1068,19 @@ def InstallAlembic(context, force, buildArgs):
 ALEMBIC = Dependency("Alembic", InstallAlembic, "include/Alembic/Abc/Base.h")
 
 ############################################################
+# Draco
+
+DRACO_URL = "https://github.com/google/draco/archive/master.zip"
+
+def InstallDraco(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(DRACO_URL, context, force)):
+        cmakeOptions = ['-DBUILD_USD_PLUGIN=ON']
+        cmakeOptions += buildArgs
+        RunCMake(context, force, cmakeOptions)
+
+DRACO = Dependency("Draco", InstallDraco, "include/Draco/src/draco/compression/decode.h")
+
+############################################################
 # MaterialX
 
 MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.36.0.zip"
@@ -1164,6 +1202,14 @@ def InstallUSD(context, force, buildArgs):
         else:
             extraArgs.append('-DPXR_BUILD_ALEMBIC_PLUGIN=OFF')
 
+        if context.buildDraco:
+            extraArgs.append('-DPXR_BUILD_DRACO_PLUGIN=ON')
+            draco_root = (context.dracoLocation
+                          if context.dracoLocation else context.instDir)
+            extraArgs.append('-DDRACO_ROOT="{}"'.format(draco_root))
+        else:
+            extraArgs.append('-DPXR_BUILD_DRACO_PLUGIN=OFF')
+
         if context.buildMaterialX:
             extraArgs.append('-DPXR_BUILD_MATERIALX_PLUGIN=ON')
         else:
@@ -1196,6 +1242,11 @@ def InstallUSD(context, force, buildArgs):
         if Windows():
             # Increase the precompiled header buffer limit.
             extraArgs.append('-DCMAKE_CXX_FLAGS="/Zm150"')
+
+            if IsVisualStudio2019OrGreater():
+                # The default for cmake seems to be
+                # to look for static libs on Windows
+                extraArgs.append('-DBoost_USE_STATIC_LIBS=OFF')
 
         extraArgs += buildArgs
 
@@ -1404,6 +1455,16 @@ subgroup.add_argument("--hdf5", dest="enable_hdf5", action="store_true",
 subgroup.add_argument("--no-hdf5", dest="enable_hdf5", action="store_false",
                       help="Disable HDF5 support in the Alembic plugin (default)")
 
+group = parser.add_argument_group(title="Draco Plugin Options")
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--draco", dest="build_draco", action="store_true", 
+                      default=False,
+                      help="Build Draco plugin for USD")
+subgroup.add_argument("--no-draco", dest="build_draco", action="store_false",
+                      help="Do not build Draco plugin for USD (default)")
+group.add_argument("--draco-location", type=str,
+                   help="Directory where Draco is installed.")
+
 group = parser.add_argument_group(title="MaterialX Plugin Options")
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--materialx", dest="build_materialx", action="store_true", 
@@ -1541,6 +1602,11 @@ class InstallContext:
         self.buildAlembic = args.build_alembic
         self.enableHDF5 = self.buildAlembic and args.enable_hdf5
 
+        # - Draco Plugin
+        self.buildDraco = args.build_draco
+        self.dracoLocation = (os.path.abspath(args.draco_location)
+                                if args.draco_location else None)
+
         # - MaterialX Plugin
         self.buildMaterialX = args.build_materialx
 
@@ -1601,6 +1667,9 @@ if context.buildAlembic:
     if context.enableHDF5:
         requiredDependencies += [HDF5]
     requiredDependencies += [OPENEXR, ALEMBIC]
+
+if context.buildDraco:
+    requiredDependencies += [DRACO]
 
 if context.buildMaterialX:
     requiredDependencies += [MATERIALX]
@@ -1710,7 +1779,18 @@ if (not find_executable("g++") and
     PrintError("C++ compiler not found -- please install a compiler")
     sys.exit(1)
 
-if not find_executable("python"):
+pythonExecutable = find_executable("python")
+if pythonExecutable:
+    # Error out if a 64bit version of python interpreter is not found
+    # Note: Ideally we should be checking the python binary found above, but
+    # there is an assumption (for very valid reasons) at other places in the
+    # script that the python process used to run this script will be found.
+    isPython64Bit = (ctypes.sizeof(ctypes.c_voidp) == 8)
+    if not isPython64Bit:
+        PrintError("64bit python not found -- please install it and adjust your"
+                   "PATH")
+        sys.exit(1)
+else:
     PrintError("python not found -- please ensure python is included in your "
                "PATH")
     sys.exit(1)
@@ -1775,6 +1855,7 @@ Building with settings:
     Tests                       {buildTests}
     Alembic Plugin              {buildAlembic}
       HDF5 support:             {enableHDF5}
+    Draco Plugin                {buildDraco}
     MaterialX Plugin            {buildMaterialX}
     Maya Plugin                 {buildMaya}
     Katana Plugin               {buildKatana}
@@ -1823,6 +1904,7 @@ summaryMsg = summaryMsg.format(
     buildDocs=("On" if context.buildDocs else "Off"),
     buildTests=("On" if context.buildTests else "Off"),
     buildAlembic=("On" if context.buildAlembic else "Off"),
+    buildDraco=("On" if context.buildDraco else "Off"),
     buildMaterialX=("On" if context.buildMaterialX else "Off"),
     enableHDF5=("On" if context.enableHDF5 else "Off"),
     buildMaya=("On" if context.buildMaya else "Off"),

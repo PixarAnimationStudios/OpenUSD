@@ -49,9 +49,13 @@ namespace GusdUSD_Utils {
 UT_StringHolder
 TokenToStringHolder(const TfToken& token)
 {
-    return token.IsImmortal() ?
-        UT_StringHolder(UT_StringHolder::REFERENCE, token.GetString()) :
-        UT_StringHolder(token.GetString());
+    if (token.IsImmortal()) {
+        return !token.IsEmpty() ?
+            UT_StringHolder(UT_StringHolder::REFERENCE, token.GetString())  
+            : UT_StringHolder();
+    } else {
+        return UT_StringHolder(token.GetString());
+    }
 }
 
 
@@ -209,6 +213,38 @@ ExtractPrimPathAndVariants(const SdfPath& path,
     }
 }
 
+void
+SetModelingVariant(
+    const UsdStageRefPtr& stage,
+    const UsdPrim& prim,
+    const TfToken& variant)
+{
+    if (prim) {
+        UsdVariantSets variantSets = prim.GetVariantSets();
+        if (variantSets.HasVariantSet(kModelingVariantToken)) {
+            UsdVariantSet modelingVariantSet =
+                prim.GetVariantSet(kModelingVariantToken);
+            if (modelingVariantSet.HasAuthoredVariant(variant)) {
+                modelingVariantSet.SetVariantSelection(variant);
+            }
+        }
+    }
+}
+
+void
+ClearModelingVariant(const UsdStageRefPtr& stage, const UsdPrim& prim)
+{
+    if (prim) {
+        UsdVariantSets variantSets = prim.GetVariantSets();
+        if (variantSets.HasVariantSet(kModelingVariantToken)) {
+            UsdVariantSet modelingVariantSet =
+                prim.GetVariantSet(kModelingVariantToken);
+            if (modelingVariantSet.HasAuthoredVariantSelection()) {
+                modelingVariantSet.ClearVariantSelection();
+            }
+        }
+    }
+}
 
 bool
 SortPrims(UT_Array<UsdPrim>& prims)

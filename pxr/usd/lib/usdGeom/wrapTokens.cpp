@@ -64,6 +64,7 @@ void wrapUsdGeomTokens()
 {
     boost::python::class_<UsdGeomTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
+    _AddToken(cls, "accelerations", UsdGeomTokens->accelerations);
     _AddToken(cls, "all", UsdGeomTokens->all);
     _AddToken(cls, "angularVelocities", UsdGeomTokens->angularVelocities);
     _AddToken(cls, "axis", UsdGeomTokens->axis);

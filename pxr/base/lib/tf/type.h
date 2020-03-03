@@ -313,6 +313,19 @@ public:
     ///
     TF_API
     std::vector<TfType> GetBaseTypes() const;
+    
+    /// Copy the first \p maxBases base types of \p this type to \p out, or all
+    /// the base types if this type has \p maxBases or fewer base types.  Return
+    /// \p this type's number of base types.
+    ///
+    /// Note that it is supported to change a TfType to its first base type by
+    /// calling this function.  For example:
+    /// \code
+    ///     TfType t = ...;
+    ///     t.GetNBaseTypes(&t, 1);
+    /// \endcode
+    TF_API
+    size_t GetNBaseTypes(TfType *out, size_t maxBases) const;
 
     /// Return a vector of types derived directly from this type.
     ///

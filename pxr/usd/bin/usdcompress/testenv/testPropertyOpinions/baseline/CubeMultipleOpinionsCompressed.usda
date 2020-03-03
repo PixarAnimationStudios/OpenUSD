@@ -1,0 +1,70 @@
+#usda 1.0
+(
+    defaultPrim = "Cube"
+    upAxis = "Z"
+)
+
+def Xform "Cube" (
+    assetInfo = {
+        asset identifier = @./Cube.usda@
+        string name = "Cube"
+    }
+    kind = "component"
+    variants = {
+        string pointVariant = "Default"
+    }
+    add variantSets = "pointVariant"
+)
+{
+    def Xform "Geom"
+    {
+        def Mesh "Cube" (
+            prepend references = @CubeMultipleOpinionsCompressed.usda.draco/Cube_Geom_Cube.drc@
+        )
+        {
+        }
+    }
+    variantSet "pointVariant" = {
+        "Default" {
+            over "Geom"
+            {
+                over "Cube"
+                {
+                    point3f[] points = [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)]
+                }
+            }
+
+        }
+        "ShiftedAbscissa" {
+            over "Geom"
+            {
+                over "Cube"
+                {
+                    point3f[] points = [(-0.7, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)]
+                }
+            }
+
+        }
+        "ShiftedApplicate" {
+            over "Geom"
+            {
+                over "Cube"
+                {
+                    point3f[] points = [(-0.5, -0.5, 0.7), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)]
+                }
+            }
+
+        }
+        "ShiftedOrdinate" {
+            over "Geom"
+            {
+                over "Cube"
+                {
+                    point3f[] points = [(-0.5, -0.7, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)]
+                }
+            }
+
+        }
+    }
+}
+

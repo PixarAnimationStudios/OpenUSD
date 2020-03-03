@@ -337,15 +337,16 @@ public:
     /// 
     /// \p source is an output parameter which will be set to the source 
     /// connectable prim.
-    /// \p sourceName will be set to the name of the source shading property, 
-    /// which could be the parameter name, output name or the interface 
-    /// attribute name. This does not include the namespace prefix associated 
-    /// with the source type. 
-    /// \p sourceType will have the value type of the source shading property.
+    /// \p sourceName will be set to the name of the source shading attribute, 
+    /// which may be an input or an output, as specified by \p sourceType
+    /// \p sourceType will have the type of the source shading property, i.e.
+    /// whether it is an \c Input or \c Output
     ///
     /// \return 
-    /// \c true if this Input is connected to a valid, defined source.
-    /// \c false if this Input is not connected to a single, valid source.
+    /// \c true if the shading property is connected to a valid, defined source
+    /// attribute.
+    /// \c false if the shading property is not connected to a single, defined 
+    /// source attribute. 
     /// 
     /// \note The python wrapping for this method returns a 
     /// (source, sourceName, sourceType) tuple if the parameter is connected, 
@@ -440,6 +441,40 @@ public:
     /// 
     USDSHADE_API
     bool ClearConnectability() const;
+
+    /// @}
+
+    // -------------------------------------------------------------------------
+    /// \name Connected Value API
+    // -------------------------------------------------------------------------
+    /// @{
+
+    /// \brief Find what is connected to an Input recursively
+    ///
+    /// When tracing connections within networks that contain UsdShadeNodeGraph
+    /// nodes, the actual output or value at the end of an input might be
+    /// multiple connections removed. The method below resolves this across
+    /// multiple physical connections.
+    ///
+    /// An UsdInput is getting its value from one of these sources:
+    /// \li If the input is not connected the UsdAttribute for this input is
+    /// returned, but only if it has an authored value. The input attribute
+    /// itself carries the value for this input.
+    /// \li If the input is connected we follow the connection(s) until we reach
+    /// a valid output of a UsdShadeShader node or if we reach a valid
+    /// UsdShadeInput attribute of a UsdShadeNodeGraph or UsdShadeMaterial.
+    /// Note that we return the last attribute along the connection chain that
+    /// has an authored value, which might not be the last attribute in the
+    /// chain itself.
+    ///
+    /// This function returns a valid UsdAttribute if a valid output was
+    /// encountered or an input with an authored value. Otherwise an invalid
+    /// UsdAttribute is returned. If a valid \p attrType pointer is provided,
+    /// the method also returns what type of attribute it found, which is
+    /// <b>Invalid</b>, <b>Input</b> or <b>Output</b>.
+    USDSHADE_API
+    UsdAttribute GetValueProducingAttribute(
+        UsdShadeAttributeType* attrType) const;
 
     /// @}
 

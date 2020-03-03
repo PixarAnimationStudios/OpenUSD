@@ -141,7 +141,7 @@ public:
     /// \name Parent & Stage
     // --------------------------------------------------------------------- //
 
-    /// Return this prim's parent prim.  Return NULL if this is a root prim.
+    /// Return this prim's parent prim.  Return nullptr if this is a root prim.
     USD_API
     Usd_PrimDataConstPtr GetParent() const;
 
@@ -181,21 +181,21 @@ public:
     // Tree Structure
     // --------------------------------------------------------------------- //
 
-    // Return this prim data's first child if it has one, NULL otherwise.
+    // Return this prim data's first child if it has one, nullptr otherwise.
     Usd_PrimDataPtr GetFirstChild() const { return _firstChild; }
 
-    // Return this prim data's next sibling if it has one, NULL otherwise.
+    // Return this prim data's next sibling if it has one, nullptr otherwise.
     Usd_PrimDataPtr GetNextSibling() const {
         return !_nextSiblingOrParent.BitsAs<bool>() ?
-            _nextSiblingOrParent.Get() : NULL;
+            _nextSiblingOrParent.Get() : nullptr;
     }
 
     // Return this prim data's parent if this prim data is the last in its chain
     // of siblings.  That is, if the _nextSiblingOrParent field is pointing to
-    // its parent.  Return NULL otherwise.
+    // its parent.  Return nullptr otherwise.
     Usd_PrimDataPtr GetParentLink() const {
         return _nextSiblingOrParent.BitsAs<bool>() ?
-            _nextSiblingOrParent.Get() : NULL;
+            _nextSiblingOrParent.Get() : nullptr;
     }
 
     // Return the next prim data "to the right" of this one.  That is, this
@@ -208,7 +208,7 @@ public:
             if (Usd_PrimDataPtr sibling = p->GetNextSibling())
                 return sibling;
         }
-        return NULL;
+        return nullptr;
     }
     
     // Return the prim data at \p path.  If \p path indicates a prim
@@ -233,7 +233,7 @@ public:
     bool IsInMaster() const { return _flags[Usd_PrimMasterFlag]; }
 
     /// If this prim is an instance, return the prim data for the corresponding
-    /// master.  Otherwise, return NULL.
+    /// master.  Otherwise, return nullptr.
     USD_API Usd_PrimDataConstPtr GetMaster() const;
 
     // --------------------------------------------------------------------- //
@@ -272,7 +272,7 @@ private:
     }
 
     void _AddChild(Usd_PrimDataPtr child) {
-        // Add \a child as the first child.  If _firstChild is NULL, we are
+        // Add \a child as the first child.  If _firstChild is nullptr, we are
         // adding this primdata's first child so we instead set its parent link
         // to this.
         if (_firstChild)
@@ -285,8 +285,8 @@ private:
     // Set the dead bit on this prim data object.
     void _MarkDead() {
         _flags[Usd_PrimDeadFlag] = true;
-        _stage = NULL;
-        _primIndex = NULL;
+        _stage = nullptr;
+        _primIndex = nullptr;
     }
 
     // Return true if this prim's dead flag is set, false otherwise.

@@ -138,7 +138,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Token
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: VariableTokenDefault
-    /// \n  \ref UsdContrivedTokens "Allowed Values": [VariableTokenAllowed1, VariabletokenAllowed2]
+    /// \n  \ref UsdContrivedTokens "Allowed Values": [VariableTokenAllowed1, VariableTokenAllowed2, ""]
     USDCONTRIVED_API
     UsdAttribute GetMyVaryingTokenAttr() const;
 
@@ -149,6 +149,28 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDCONTRIVED_API
     UsdAttribute CreateMyVaryingTokenAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // MYVARYINGTOKENARRAY 
+    // --------------------------------------------------------------------- //
+    /// VariableTokenArray attribute docs.
+    ///
+    /// \n  C++ Type: VtArray<TfToken>
+    /// \n  Usd Type: SdfValueTypeNames->TokenArray
+    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Fallback Value: [VariableTokenArrayAllowed1, ""]
+    /// \n  \ref UsdContrivedTokens "Allowed Values": [VariableTokenArrayAllowed1, VariableTokenArrayAllowed2, ""]
+    USDCONTRIVED_API
+    UsdAttribute GetMyVaryingTokenArrayAttr() const;
+
+    /// See GetMyVaryingTokenArrayAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDCONTRIVED_API
+    UsdAttribute CreateMyVaryingTokenArrayAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //

@@ -305,7 +305,8 @@ USDVMP::draw(FnKat::ViewerModifierInput& input)
             glGetDoublev(GL_PROJECTION_MATRIX, projectionMatrix.GetArray());
             glGetDoublev(GL_VIEWPORT, &viewport[0]);
 
-            _renderer->SetCameraState(_viewMatrix, projectionMatrix, viewport);
+            _renderer->SetCameraState(_viewMatrix, projectionMatrix);
+            _renderer->SetRenderViewport(viewport);
 
             GfMatrix4d modelMatrix = modelViewMatrix * (_viewMatrix.GetInverse());
             

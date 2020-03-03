@@ -35,6 +35,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class SdfTimeCode;
+
 /// \class SdfLayerOffset 
 ///
 /// Represents a time offset and scale between layers.
@@ -138,6 +140,10 @@ public:
     /// Applies the offset to the given value.
     SDF_API
     double operator*(double rhs) const;
+
+    /// Applies the offset to the given value.
+    SDF_API
+    SdfTimeCode operator*(const SdfTimeCode &rhs) const;
 
     /// @}
 

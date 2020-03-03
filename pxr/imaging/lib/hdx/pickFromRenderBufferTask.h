@@ -44,6 +44,7 @@ struct HdxPickFromRenderBufferTaskParams
         , elementIdBufferPath()
         , depthBufferPath()
         , cameraId()
+        , viewport()
     {}
 
     SdfPath primIdBufferPath;
@@ -53,6 +54,9 @@ struct HdxPickFromRenderBufferTaskParams
 
     // The id of the camera used to generate the id buffers.
     SdfPath cameraId;
+
+    // The viewport of the camera used to generate the id buffers.
+    GfVec4d viewport;
 };
 
 /// \class HdxPickFromRenderBufferTask

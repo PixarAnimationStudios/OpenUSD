@@ -39,6 +39,44 @@ using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+// We override __getattribute__ for UsdSchemaBase to check object validity
+// and raise an exception instead of crashing from Python.
+
+// Store the original __getattribute__ so we can dispatch to it after verifying
+// validity.
+static TfStaticData<TfPyObjWrapper> _object__getattribute__;
+
+// This function gets wrapped as __getattribute__ on UsdSchemaBase.
+static object
+__getattribute__(object selfObj, const char *name) {
+    // Allow attribute lookups if the attribute name starts with '__', or
+    // if the object's prim is valid. Also add explicit exceptions for every
+    // method on this base class. The real purpose here is to protect against
+    // invalid calls in subclasses which will try to actually manipulate the
+    // underlying (invalid) prim and likely crash.
+    if ((name[0] == '_' && name[1] == '_') ||
+        extract<UsdSchemaBase &>(selfObj)().GetPrim().IsValid() ||
+        strcmp(name, "GetPrim") == 0 ||
+        strcmp(name, "GetPath") == 0 ||
+        strcmp(name, "GetSchemaClassPrimDefinition") == 0 ||
+        strcmp(name, "GetSchemaAttributeNames") == 0 ||
+        strcmp(name, "GetSchemaType") == 0 ||
+        strcmp(name, "IsAPISchema") == 0 ||
+        strcmp(name, "IsConcrete") == 0 ||
+        strcmp(name, "IsTyped") == 0 ||
+        strcmp(name, "IsAppliedAPISchema") == 0 ||
+        strcmp(name, "IsMultipleApplyAPISchema") == 0) {
+        // Dispatch to object's __getattribute__.
+        return (*_object__getattribute__)(selfObj, name);
+    } else {
+        // Otherwise raise a runtime error.
+        TfPyThrowRuntimeError(
+            TfStringPrintf("Accessed schema on invalid prim"));
+    }
+    // Unreachable.
+    return object();
+}
+
 void wrapUsdSchemaBase()
 {
     class_<UsdSchemaBase> cls("SchemaBase");
@@ -68,4 +106,8 @@ void wrapUsdSchemaBase()
         .def(!self)
 
         ;
+
+    // Save existing __getattribute__ and replace.
+    *_object__getattribute__ = object(cls.attr("__getattribute__"));
+    cls.def("__getattribute__", __getattribute__);
 }

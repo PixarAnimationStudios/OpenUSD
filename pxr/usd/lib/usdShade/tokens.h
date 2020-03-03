@@ -92,7 +92,7 @@ struct UsdShadeTokensType {
     const TfToken fallbackStrength;
     /// \brief "full"
     /// 
-    /// Possible value for the 'materialPurpose'  parameter in UsdShadeMaterialBindingAPI, to be used when the  purpose of the render is entirely about visualizing the truest representation of a scene, considering all lighting and material information, at highest fidelity.  Also a possible value for 'connectability' metadata on  a UsdShadeInput. When connectability of an input is set to  "full", it implies that it can be connected to any input or  output. 
+    /// Possible value for 'connectability' metadata on a UsdShadeInput. When connectability of an input is set to "full", it implies that it can be connected to any input or output. , Possible value for the 'materialPurpose' parameter in UsdShadeMaterialBindingAPI, to be used when the purpose of the render is entirely about visualizing the truest representation of a scene, considering all lighting and material information, at highest fidelity. 
     const TfToken full;
     /// \brief "id"
     /// 

@@ -48,8 +48,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (usdVaryingNormals)     \
     (usdVaryingXform)       \
     (usdVaryingTexture)     \
-    (bxdf)                  \
-    (displacement)          \
     (uvPrimvar)             \
     (UsdPreviewSurface)     \
     (UsdUVTexture)          \

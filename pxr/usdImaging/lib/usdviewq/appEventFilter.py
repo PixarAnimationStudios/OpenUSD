@@ -23,6 +23,7 @@
 #
 # Qt Components
 from qt import QtCore, QtGui, QtWidgets
+from common import KeyboardShortcuts
 
 class AppEventFilter(QtCore.QObject):
     '''This class's primary responsibility is delivering key events to
@@ -51,7 +52,8 @@ class AppEventFilter(QtCore.QObject):
         return (key in (QtCore.Qt.Key_Left, QtCore.Qt.Key_Right,
                         QtCore.Qt.Key_Up, QtCore.Qt.Key_Down,
                         QtCore.Qt.Key_PageUp, QtCore.Qt.Key_PageDown,
-                        QtCore.Qt.Key_Home, QtCore.Qt.Key_End)
+                        QtCore.Qt.Key_Home, QtCore.Qt.Key_End, 
+                        KeyboardShortcuts.FramingKey)
                 and modifiers in (QtCore.Qt.NoModifier,
                                   QtCore.Qt.KeypadModifier))
         
@@ -114,7 +116,7 @@ class AppEventFilter(QtCore.QObject):
             return False
         
         currFocusWidget = QtWidgets.QApplication.focusWidget()
-        
+
         if event.type() == QtCore.QEvent.KeyPress:
             key = event.key()
 

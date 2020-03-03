@@ -423,7 +423,7 @@ private:
 
     typedef std::unordered_map<SdfPath, _TaskInfo, SdfPath::Hash> _TaskMap;
     typedef TfHashMap<SdfPath, _RprimInfo, SdfPath::Hash> _RprimMap;
-    typedef std::map<uint32_t, SdfPath> _RprimPrimIDMap;
+    typedef std::vector<SdfPath> _RprimPrimIDVector;
 
     typedef Hd_PrimTypeIndex<HdSprim> _SprimIndex;
     typedef Hd_PrimTypeIndex<HdBprim> _BprimIndex;
@@ -431,7 +431,7 @@ private:
     _RprimMap     _rprimMap;
     Hd_SortedIds  _rprimIds;
 
-    _RprimPrimIDMap _rprimPrimIdMap;
+    _RprimPrimIDVector _rprimPrimIdMap;
 
     _TaskMap _taskMap;
 
@@ -439,7 +439,6 @@ private:
     _BprimIndex     _bprimIndex;
 
     HdChangeTracker _tracker;
-    int32_t _nextPrimId; 
 
     typedef TfHashMap<SdfPath, HdInstancer*, SdfPath::Hash> _InstancerMap;
     _InstancerMap _instancerMap;

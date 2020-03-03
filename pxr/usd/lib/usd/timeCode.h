@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/api.h"
+#include "pxr/usd/sdf/timeCode.h"
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/staticTokens.h"
 
@@ -84,7 +85,11 @@ TF_DECLARE_PUBLIC_TOKENS(UsdTimeCodeTokens, USD_API, USD_TIME_CODE_TOKENS);
 class UsdTimeCode {
 public:
     /// Construct with optional time value.  Impilicitly convert from double.
-    constexpr UsdTimeCode(double t = 0.0) : _value(t) {}
+    constexpr UsdTimeCode(double t = 0.0) noexcept : _value(t) {}
+
+    /// Construct and implicitly cast from SdfTimeCode.
+    constexpr UsdTimeCode(const SdfTimeCode &timeCode) noexcept 
+        : _value(timeCode.GetValue()) {}
 
     /// Produce a UsdTimeCode representing the lowest/earliest possible
     /// timeCode.  Thus, for any given timeSample \em s, its time ordinate 

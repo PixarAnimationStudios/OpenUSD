@@ -103,7 +103,7 @@ _ComputeJointRestRelativeTransforms(UsdSkelSkeletonQuery& self,
     self.ComputeJointRestRelativeTransforms(&xforms, time);
     return xforms;
 }
- 
+
 
 } // namespace
 
@@ -154,6 +154,10 @@ void wrapUsdSkelSkeletonQuery()
         .def("ComputeJointRestRelativeTransforms",
              &_ComputeJointRestRelativeTransforms,
              (arg("time")=UsdTimeCode::Default()))
+
+        .def("HasBindPose", &This::HasBindPose)
+
+        .def("HasRestPose", &This::HasRestPose)
         
         ;
 }            

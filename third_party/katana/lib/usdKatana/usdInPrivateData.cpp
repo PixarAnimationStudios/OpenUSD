@@ -381,7 +381,8 @@ PxrUsdKatanaUsdInPrivateData::GetUsdAndKatanaTimes(
 
 const std::vector<double>
 PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(
-    const UsdAttribute& attr) const
+    const UsdAttribute& attr,
+    bool fallBackToShutterBoundary) const
 {
     static std::vector<double> noMotion = {0.0};
 
@@ -464,8 +465,15 @@ PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(
             if (lower > shutterStartTime)
             {
                 // Did not find a sample ealier than the shutter start. 
-                // Return no motion.
-                return noMotion;
+                if (fallBackToShutterBoundary)
+                {
+                    lower = shutterStartTime;
+                }
+                else
+                {
+                    // Return no motion.
+                    return noMotion;
+                }
             }
 
             // Insert the first sample as long as it is different
@@ -490,8 +498,15 @@ PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(
             if (upper < shutterCloseTime)
             {
                 // Did not find a sample later than the shutter close. 
-                // Return no motion.
-                return noMotion;
+                if (fallBackToShutterBoundary)
+                {
+                    upper = shutterCloseTime;
+                }
+                else
+                {
+                    // Return no motion.
+                    return noMotion;
+                }
             }
 
             // Append the last sample as long as it is different

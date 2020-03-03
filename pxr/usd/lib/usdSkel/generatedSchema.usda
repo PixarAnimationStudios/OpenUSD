@@ -405,7 +405,7 @@ class BlendShape "BlendShape" (
         doc = """**Required property**. Position offsets which, when added to the
         base pose, provides the target shape."""
     )
-    uniform uint[] pointIndices (
+    uniform int[] pointIndices (
         doc = """**Optional property**. Indices into the original mesh that
         correspond to the values in *offsets* and of any inbetween shapes. If
         authored, the number of elements must be equal to the number of elements

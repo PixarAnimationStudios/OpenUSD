@@ -36,8 +36,6 @@
 
 #include <maya/MGlobal.h>
 
-#include <boost/noncopyable.hpp>
-
 #include <atomic>
 #include <memory>
 
@@ -120,7 +118,7 @@ private:
 ///   2. Context B constructed
 ///   3. Context A destructed
 ///   4. Context B destructed
-class UsdMayaDiagnosticBatchContext : boost::noncopyable
+class UsdMayaDiagnosticBatchContext
 {
 public:
     /// Constructs a batch context, causing all subsequent diagnostic messages
@@ -130,6 +128,11 @@ public:
     UsdMayaDiagnosticBatchContext();
     PXRUSDMAYA_API
     ~UsdMayaDiagnosticBatchContext();
+
+    UsdMayaDiagnosticBatchContext(
+            const UsdMayaDiagnosticBatchContext&) = delete;
+    UsdMayaDiagnosticBatchContext& operator=(
+            const UsdMayaDiagnosticBatchContext&) = delete;
 
 private:
     /// This pointer is used to "bind" this context to a specific delegate in

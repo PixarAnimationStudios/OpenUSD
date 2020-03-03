@@ -126,7 +126,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usdShade/tokens.h"
 
-#include "pxr/usd/usdShade/debugCodes.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -401,22 +400,7 @@ UsdShadeConnectableAPI::_ConnectToSource(
 
         // First make sure there is a source attribute of the proper type
         // on the sourcePrim.
-        if (sourceAttr){
-            const SdfValueTypeName sourceTypeName = sourceAttr.GetTypeName();
-            const SdfValueTypeName &sinkTypeName  = typeName;
-            // Comparing the TfType allows us to connect parameters with 
-            // different "roles" of the same underlying type, 
-            // e.g. float3 and color3f
-            if (sourceTypeName.GetType() != sinkTypeName.GetType()) {
-                TF_DEBUG(KATANA_USDBAKE_CONNECTIONS).Msg(
-                        "Connecting parameter <%s> of type %s to source <%s>, "
-                        "of potentially incompatible type %s. \n",
-                        shadingProp.GetPath().GetText(),
-                        sinkTypeName.GetAsToken().GetText(),
-                        sourceAttr.GetPath().GetText(),
-                        sourceTypeName.GetAsToken().GetText());
-            }
-        } else {
+        if (!sourceAttr) {
             sourceAttr = sourcePrim.CreateAttribute(sourceAttrName, typeName,
                 /* custom = */ false);
         }
@@ -567,6 +551,8 @@ UsdShadeConnectableAPI::GetConnectedSource(
     TfToken *sourceName,
     UsdShadeAttributeType *sourceType)
 {
+    TRACE_SCOPE("UsdShadeConnectableAPI::GetConnectedSource");
+
     if (!(source && sourceName && sourceType)) {
         TF_CODING_ERROR("GetConnectedSource() requires non-NULL "
                         "output-parameters.");
@@ -597,26 +583,30 @@ UsdShadeConnectableAPI::GetConnectedSource(
         }
     }
 
-    // XXX(validation)  sources.size() <= 1, also sourceName
+    // XXX(validation)  sources.size() <= 1, also sourceName,
+    //                  target Material == source Material ?
     if (sources.size() == 1) {
         SdfPath const & path = sources[0];
-        *source = UsdShadeConnectableAPI::Get(shadingProp.GetStage(), 
-                                              path.GetPrimPath());
-        if (path.IsPropertyPath()){
+        UsdObject target = shadingProp.GetStage()->GetObjectAtPath(path);
+        *source = UsdShadeConnectableAPI(target.GetPrim());
+
+       if (path.IsPropertyPath()){
             TfToken const &attrName(path.GetNameToken());
 
             std::tie(*sourceName, *sourceType) = 
                 UsdShadeUtils::GetBaseNameAndType(attrName);
+            return target.Is<UsdAttribute>();
         } else {
             // If this is a terminal-style output, then allow connection 
             // to a prim.
-            if (shadingProp.Is<UsdRelationship>()) {
+            if (UsdShadeUtils::ReadOldEncoding() && 
+                shadingProp.Is<UsdRelationship>()) {
                 return static_cast<bool>(*source);
             }
         }
     }
 
-    return static_cast<bool>(*source);
+    return false;
 }
 
 /* static  */
@@ -676,8 +666,7 @@ _NodeRepresentsLiveBaseMaterial(const PcpNodeRef &node)
             n; // 0, or false, means we are at the root node
             n = n.GetOriginNode()) {
         switch(n.GetArcType()) {
-        case PcpArcTypeLocalSpecializes:
-        case PcpArcTypeGlobalSpecializes:
+        case PcpArcTypeSpecialize:
             isLiveBaseMaterial = true;
             break;
         // dakrunch: specializes across references are actually still valid.

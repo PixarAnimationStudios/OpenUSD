@@ -35,6 +35,7 @@
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/rprimUtils.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
@@ -150,8 +151,8 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     /* CONSTANT PRIMVARS, TRANSFORM AND EXTENT */
     HdPrimvarDescriptorVector constantPrimvars =
         GetPrimvarDescriptors(sceneDelegate, HdInterpolationConstant);
-    _PopulateConstantPrimvars(sceneDelegate, drawItem, dirtyBits,
-            constantPrimvars);
+    HdStPopulateConstantPrimvars(this, &_sharedData, sceneDelegate, drawItem, 
+        dirtyBits, constantPrimvars);
 
     /* INSTANCE PRIMVARS */
     if (!GetInstancerId().IsEmpty()) {
@@ -574,6 +575,30 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             // add sources to update queue
             resourceRegistry->AddSources(range, sources);
             rangeInstance.SetValue(range);
+        }
+
+        HdBufferArrayRangeSharedPtr orgRange = drawItem->GetTopologyRange();
+        HdBufferArrayRangeSharedPtr newRange = rangeInstance.GetValue();
+        if (newRange != orgRange) {
+            // If we're replacing the existing topology bar, we need to flag
+            // garbage collection on the previous bar. This bumps up the
+            // buffer array version number, triggering rebuild of the batch
+            // this curve's draw item belongs to.
+            // Note: This does not rebuild all the draw batches.
+            if (orgRange) {
+                sceneDelegate->GetRenderIndex().GetChangeTracker()
+                    .SetGarbageCollectionNeeded();
+            }
+
+            // If the new BAR is associated with a different buffer array,
+            // shallow validation (via garbage collection) isn't sufficient,
+            // since the wrong resource would be bound.
+            // In this case, we have to use the big hammer, and rebuild all
+            // draw batches.
+            if (!newRange->IsAggregatedWith(orgRange)) {
+                sceneDelegate->GetRenderIndex().GetChangeTracker()
+                    .MarkBatchesDirty();
+            }
         }
 
         _sharedData.barContainer.Set(

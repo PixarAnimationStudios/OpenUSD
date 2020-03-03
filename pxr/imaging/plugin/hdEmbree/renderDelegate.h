@@ -117,6 +117,15 @@ public:
     virtual HdRenderSettingDescriptorList
         GetRenderSettingDescriptors() const override;
 
+    /// Return true to indicate that pausing and resuming are supported.
+    virtual bool IsPauseSupported() const override;
+
+    /// Pause background rendering threads.
+    virtual bool Pause() override;
+
+    /// Resume background rendering threads.
+    virtual bool Resume() override;
+
     /// Create a renderpass. Hydra renderpasses are responsible for drawing
     /// a subset of the scene (specified by the "collection" parameter) to the
     /// current framebuffer. This class creates objects of type
@@ -228,6 +237,10 @@ public:
     ///           output buffer should be.
     virtual HdAovDescriptor
         GetDefaultAovDescriptor(TfToken const& name) const override;
+
+    /// This function allows the renderer to report back some useful statistics
+    /// that the application can display to the user.
+    virtual VtDictionary GetRenderStats() const override;
 
 private:
     static const TfTokenVector SUPPORTED_RPRIM_TYPES;

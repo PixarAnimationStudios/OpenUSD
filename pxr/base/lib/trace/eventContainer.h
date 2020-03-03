@@ -74,10 +74,6 @@ class TraceEventContainer {
             return _end;
         }
 
-        const TraceEvent &back() const {
-            return *std::prev(end());
-        }
-
         _Node *GetPrevNode() {
             return _prev;
         }
@@ -219,15 +215,15 @@ public:
     /// \name Subset of stl container interface.
     /// @{
     template < class... Args>
-    void emplace_back(Args&&... args) {
-        new (_nextEvent++) TraceEvent(std::forward<Args>(args)...);
+    TraceEvent& emplace_back(Args&&... args) {
+        TraceEvent *event =
+            new (_nextEvent++) TraceEvent(std::forward<Args>(args)...);
         _back->ClaimEventEntry();
         if (_back->IsFull()) {
             Allocate();
         }
+        return *event;
     }
-
-    const TraceEvent& back() const { return _back->back(); }
 
     const_iterator begin() const { 
         return const_iterator(_front, _front ? _front->begin() : nullptr);

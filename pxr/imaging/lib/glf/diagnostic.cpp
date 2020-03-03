@@ -69,7 +69,12 @@ GlfPostPendingGLErrors(std::string const & where)
         const GLubyte *errorString = gluErrorString(error);
 
         std::ostringstream errorMessage;
-        errorMessage << "GL error: " << errorString;
+        if (!errorString) {
+            errorMessage << "GL error code: 0x" << std::hex << error 
+                         << std::dec;
+        } else {
+            errorMessage << "GL error: " << errorString;
+        }
 
         if (!where.empty()) {
             errorMessage << ", reported from " << where;

@@ -1,0 +1,35 @@
+#usda 1.0
+(
+    defaultPrim = "Cube"
+    upAxis = "Z"
+)
+
+def Xform "Cube" (
+    assetInfo = {
+        asset identifier = @./Cube.usda@
+        string name = "Cube"
+    }
+    kind = "component"
+    variants = {
+        string shadingVariant = "Default"
+    }
+    add variantSets = "shadingVariant"
+)
+{
+    def Xform "Geom"
+    {
+        def Mesh "Cube" (
+            prepend references = @CubeWithGenericPrimvarsCompressed.usda.draco/Cube_Geom_Cube.drc@
+        )
+        {
+            matrix2d[] primvars:my_constant = [( (0, 0.1), (1, 1.1) )] (
+                interpolation = "constant"
+            )
+            string[] primvars:my_string = ["legendary", "scaly", "bat-winged", "fire-breathing", "barb-tailed", "four-legged", "serpent-like", "ancient"] (
+                interpolation = "vertex"
+            )
+            int[] primvars:my_string:indices = [0, 1, 2, 3, 4, 5, 6, 7]
+        }
+    }
+}
+

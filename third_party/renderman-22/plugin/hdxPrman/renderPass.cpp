@@ -21,16 +21,20 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
 #include "hdxPrman/renderPass.h"
 #include "hdxPrman/context.h"
 #include "hdxPrman/renderBuffer.h"
+
+#include "hdPrman/camera.h"
 #include "hdPrman/renderDelegate.h"
 #include "hdPrman/rixStrings.h"
+
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/rotation.h"
+#include "pxr/base/tf/getenv.h"
+#include "pxr/base/tf/envSetting.h"
 
 #include "Riley.h"
 #include "RixParamList.h"
@@ -49,6 +53,10 @@ HdxPrman_RenderPass::HdxPrman_RenderPass(HdRenderIndex *index,
     , _context(context)
     , _lastRenderedVersion(0)
     , _lastSettingsVersion(0)
+    , _integrator(HdPrmanIntegratorTokens->PxrPathTracer)
+    , _quickIntegrator(HdPrmanIntegratorTokens->PxrDirectLighting)
+    , _quickIntegrateTime(200.f/1000.f)
+    , _quickIntegrate(false)
 {
     // Check if this is an interactive context.
     _interactiveContext =
@@ -68,6 +76,16 @@ HdxPrman_RenderPass::IsConverged() const
     return _converged;
 }
 
+// Return the seconds between now and then.
+static double
+_DiffTimeToNow(std::chrono::steady_clock::time_point const& then)
+{
+    std::chrono::duration<double> diff;
+    diff = std::chrono::duration_cast<std::chrono::duration<double>>
+                                (std::chrono::steady_clock::now()-then);
+    return(diff.count());
+}
+
 void
 HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
                             TfTokenVector const &renderTags)
@@ -75,6 +93,7 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
     static const RtUString us_PxrPerspective("PxrPerspective");
     static const RtUString us_PxrOrthographic("PxrOrthographic");
     static const RtUString us_PathTracer("PathTracer");
+    static const RtUString us_main_cam_projection("main_cam_projection");
 
     if (!_interactiveContext) {
         // If this is not an interactive context, don't use Hydra to drive
@@ -105,8 +124,19 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
     GfMatrix4d viewToWorldMatrix =
         renderPassState->GetWorldToViewMatrix().GetInverse();
     GfVec4f vp = renderPassState->GetViewport();
-    if (proj != _lastProj || viewToWorldMatrix != _lastViewToWorldMatrix ||
-        _width != vp[2] || _height != vp[3]) {
+    
+    // XXX: Need to cast away constness to process updated camera params since
+    // the Hydra camera doesn't update the Riley camera directly.
+    HdPrmanCamera *hdCam =
+        const_cast<HdPrmanCamera *>(
+            dynamic_cast<HdPrmanCamera const *>(renderPassState->GetCamera()));
+    
+    bool camParamsChanged = hdCam? hdCam->GetAndResetHasParamsChanged() : false;
+
+    if (proj != _lastProj ||
+        viewToWorldMatrix != _lastViewToWorldMatrix ||
+        _width != vp[2] || _height != vp[3] ||
+        camParamsChanged) {
 
         _width = vp[2];
         _height = vp[3];
@@ -155,16 +185,16 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         // - World is Y-up
         // - Camera looks along +Z.
 
-        // Check if camera has switched between perspective or orthographic
-        riley::ShadingNode* cameraNode = &_interactiveContext->cameraNode;
-        bool isPerspective = cameraNode->name == us_PxrPerspective;
-        bool wantsOrtho = round(proj[3][3]) == 1 && proj != GfMatrix4d(1);
+        bool isPerspective = round(proj[3][3]) != 1 || proj == GfMatrix4d(1);
+        riley::ShadingNode cameraNode = riley::ShadingNode {
+            riley::ShadingNode::k_Projection,
+            isPerspective ? us_PxrPerspective : us_PxrOrthographic,
+            us_main_cam_projection,
+            projParams
+        };
 
-        if (wantsOrtho && isPerspective) {
-            cameraNode->name = us_PxrOrthographic;
-        } else if (!wantsOrtho && !isPerspective) {
-            cameraNode->name = us_PxrPerspective;
-        }
+        // Set riley camera and projection shader params from the Hydra camera.
+        hdCam->SetRileyCameraParams(camParams, projParams);
 
         // XXX Normally we would update RenderMan option 'ScreenWindow' to
         // account for an orthographic camera,
@@ -172,7 +202,8 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         // But we cannot update this option in Renderman once it is running.
         // We apply the orthographic-width to the viewMatrix scale instead.
         // Inverse computation of GfFrustum::ComputeProjectionMatrix()
-        if (wantsOrtho) {
+        GfMatrix4d viewToWorldCorrectionMatrix(1.0);
+        if (!isPerspective) {
             double left   = -(1 + proj[3][0]) / proj[0][0];
             double right  =  (1 - proj[3][0]) / proj[0][0];
             double bottom = -(1 - proj[3][1]) / proj[1][1];
@@ -181,14 +212,14 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
             double h = (top-bottom)/(2 * fracHeight);
             GfMatrix4d scaleMatrix;
             scaleMatrix.SetScale(GfVec3d(w,h,1));
-            viewToWorldMatrix = scaleMatrix * viewToWorldMatrix;
+            viewToWorldCorrectionMatrix = scaleMatrix;
         } else {
-            // Extract vertical FOV from hydra projection matrix.
+            // Extract vertical FOV from hydra projection matrix after
+            // accounting for the crop window.
             const float fov_rad = atan(1.0f / (fracHeight * proj[1][1]))*2.0;
             const float fov_deg = fov_rad / M_PI * 180.0;
 
             projParams->SetFloat(RixStr.k_fov, fov_deg);
-            _interactiveContext->cameraNode.params = projParams;
 
             // Aspect ratio correction: modify the camera so the image aspect
             // ratio matches the viewport (the image dimensions here being the
@@ -199,25 +230,38 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
             const float vpAspect = _width / float(_height);
             GfMatrix4d aspectCorrection(1.0);
             aspectCorrection[0][0] = vpAspect / fbAspect;
-            viewToWorldMatrix = aspectCorrection * viewToWorldMatrix;
+            viewToWorldCorrectionMatrix = aspectCorrection;
         }
 
         // Riley camera xform is "move the camera", aka viewToWorld.
-        // Convert left-handed Y-up camera space (USD, Hydra) to
-        // right-handed Y-up (Prman) coordinates.  This just amounts to
+        // Convert right-handed Y-up camera space (USD, Hydra) to
+        // left-handed Y-up (Prman) coordinates.  This just amounts to
         // flipping the Z axis.
         GfMatrix4d flipZ(1.0);
         flipZ[2][2] = -1.0;
-        viewToWorldMatrix = flipZ * viewToWorldMatrix;
+        viewToWorldCorrectionMatrix = flipZ * viewToWorldCorrectionMatrix;
 
-        // Convert from Gf to Rt.
-        RtMatrix4x4 matrix = HdPrman_GfMatrixToRtMatrix(viewToWorldMatrix);
+        // Convert  from Gf to Rt.
+        HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> const& xforms =
+            hdCam->GetTimeSampleXforms();
+
+        TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES> 
+            xf_rt_values(xforms.count);
+        
+        for (size_t i=0; i < xforms.count; ++i) {
+            xf_rt_values[i] = HdPrman_GfMatrixToRtMatrix(
+                viewToWorldCorrectionMatrix * xforms.values[i]);
+        }
 
         // Commit new camera.
-        float const zerotime = 0.0f;
-        riley::Transform xform = { 1, &matrix, &zerotime };
-        riley->ModifyCamera(_interactiveContext->cameraId, cameraNode,
-                            &xform, nullptr);
+        riley::Transform xform = {
+            unsigned(xforms.count), xf_rt_values.data(), xforms.times.data() };
+
+        riley->ModifyCamera(
+            _interactiveContext->cameraId, 
+            &cameraNode,
+            &xform, 
+            camParams);
         mgr->DestroyRixParamList(camParams);
         mgr->DestroyRixParamList(projParams);
 
@@ -231,29 +275,87 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
     HdRenderDelegate *renderDelegate = GetRenderIndex()->GetRenderDelegate();
     int currentSettingsVersion = renderDelegate->GetRenderSettingsVersion();
     if (_lastSettingsVersion != currentSettingsVersion) {
-        const std::string PxrPathTracer("PxrPathTracer");
-        const std::string integrator = renderDelegate->GetRenderSetting(
-            HdPrmanRenderSettingsTokens->integrator,
-            PxrPathTracer);
-        RixParamList *params = mgr->CreateRixParamList();
-        riley::ShadingNode integratorNode {
-            riley::ShadingNode::k_Integrator,
-            RtUString(integrator.c_str()),
-            us_PathTracer,
-            params
-        };
-
         _interactiveContext->StopRender();
-        riley->CreateIntegrator(integratorNode);
-        mgr->DestroyRixParamList(params);
+
+        _integrator = renderDelegate->GetRenderSetting<std::string>(
+            HdPrmanRenderSettingsTokens->integrator,
+            HdPrmanIntegratorTokens->PxrPathTracer.GetString());
+
+        _quickIntegrator = renderDelegate->GetRenderSetting<std::string>(
+            HdPrmanRenderSettingsTokens->interactiveIntegrator,
+            HdPrmanIntegratorTokens->PxrDirectLighting.GetString());
+
+        _quickIntegrateTime = renderDelegate->GetRenderSetting<int>(
+            HdPrmanRenderSettingsTokens->interactiveIntegratorTimeout,
+            200) / 1000.f;
 
         _lastSettingsVersion = currentSettingsVersion;
         needStartRender = true;
     }
 
+    // If we're rendering but we're still in the quick integrate window,
+    // check and see if we need to switch to the main integrator yet.
+    if (_quickIntegrate &&
+        (!needStartRender) &&
+        _interactiveContext->renderThread.IsRendering() &&
+        _DiffTimeToNow(_frameStart) > _quickIntegrateTime) {
+
+        _interactiveContext->StopRender();
+        RixParamList *params = mgr->CreateRixParamList();
+        riley::ShadingNode integratorNode {
+            riley::ShadingNode::k_Integrator,
+            RtUString(_integrator.c_str()),
+            us_PathTracer,
+            params
+        };
+        riley->CreateIntegrator(integratorNode);
+        mgr->DestroyRixParamList(params);
+
+        _interactiveContext->renderThread.StartRender();
+        _quickIntegrate = false;
+    }
+
     // Start (or restart) concurrent rendering.
     if (needStartRender) {
+        if (_quickIntegrateTime > 0 &&
+           (_integrator == HdPrmanIntegratorTokens->PxrPathTracer.GetString() ||
+            _integrator == HdPrmanIntegratorTokens->PbsPathTracer.GetString())) {
+            if (!_quickIntegrate) {
+                // Start the frame with interactive integrator to give faster
+                // time-to-first-buckets.
+                RixParamList *params = mgr->CreateRixParamList();
+                params->SetInteger(RtUString("numLightSamples"), 1);
+                params->SetInteger(RtUString("numBxdfSamples"), 1);
+                params->SetInteger(RtUString("numIndirectSamples"), 0);
+                params->SetInteger(RtUString("maxPathLength"), 0);
+                riley::ShadingNode integratorNode {
+                    riley::ShadingNode::k_Integrator,
+                        RtUString(_quickIntegrator.c_str()),
+                        us_PathTracer,
+                        params
+                };
+                riley->CreateIntegrator(integratorNode);
+                mgr->DestroyRixParamList(params);
+
+                _quickIntegrate = true;
+            }
+        } else if (_quickIntegrateTime <= 0 || _quickIntegrate) {
+            // Disable quick integrate
+            RixParamList *params = mgr->CreateRixParamList();
+            riley::ShadingNode integratorNode {
+                riley::ShadingNode::k_Integrator,
+                    RtUString(_integrator.c_str()),
+                    us_PathTracer,
+                    params
+            };
+            riley->CreateIntegrator(integratorNode);
+            mgr->DestroyRixParamList(params);
+
+            _quickIntegrate = false;
+        }
+
         _interactiveContext->renderThread.StartRender();
+        _frameStart = std::chrono::steady_clock::now();
     }
 
     _converged = !_interactiveContext->renderThread.IsRendering();
@@ -278,75 +380,37 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
     int offset = skipPixels + skipRows * _interactiveContext->framebuffer.w;
     int stride = _interactiveContext->framebuffer.w;
 
-    if (aovBindings.size() == 0) {
-        // No AOV bindings means blit current framebuffer contents.
-        // We don't bother to synchronize -- but we could, if presenting
-        // partial updates becomes objectionable.
+    // Blit from the framebuffer to the currently selected AOVs.
+    for (size_t aov = 0; aov < aovBindings.size(); ++aov) {
+        if(!TF_VERIFY(aovBindings[aov].renderBuffer)) {
+            continue;
+        }
+        HdxPrmanRenderBuffer *rb = static_cast<HdxPrmanRenderBuffer*>(
+            aovBindings[aov].renderBuffer);
 
-        // Adjust GL blending for compositing.
-        //
-        // As configured, the framebuffer coming from Renderman will be
-        // effectively premultiplied.  The transition from a foreground
-        // object that is blurred (ex: due to motion or lens defocus)
-        // to the background will have alpha go from 1..0 and color
-        // channels likewise to go zero.  To composite this correctly
-        // we want to use GL_ONE for the foreground element.
-        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_BLEND);
+        // Forward convergence state to the render buffers...
+        rb->SetConverged(_converged);
 
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, _interactiveContext->framebuffer.w);
-        glPixelStorei(GL_UNPACK_SKIP_PIXELS, skipPixels);
-        glPixelStorei(GL_UNPACK_SKIP_ROWS,  skipRows);
-        _compositor.UpdateColor(_interactiveContext->framebuffer.w * fracWidth,
-                                _interactiveContext->framebuffer.h * fracHeight,
-                                &_interactiveContext->framebuffer.color[0]);
-        _compositor.UpdateDepth(_interactiveContext->framebuffer.w * fracWidth,
-                                _interactiveContext->framebuffer.h * fracHeight,
-                                reinterpret_cast<uint8_t*>(
-                                   &_interactiveContext->framebuffer.depth[0]));
-        glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-        glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-
-        // Blit
-        _compositor.Draw();
-
-        glBlendFunc(GL_ONE, GL_ZERO);
-        glDisable(GL_BLEND);
-    } else {
-
-        // Blit from the framebuffer to the currently selected AOVs.
-        for (size_t aov = 0; aov < aovBindings.size(); ++aov) {
-            if(!TF_VERIFY(aovBindings[aov].renderBuffer)) {
-                continue;
-            }
-            HdxPrmanRenderBuffer *rb = static_cast<HdxPrmanRenderBuffer*>(
-                aovBindings[aov].renderBuffer);
-
-            // Forward convergence state to the render buffers...
-            rb->SetConverged(_converged);
-
-            if (aovBindings[aov].aovName == HdAovTokens->color) {
-                rb->Blit(HdFormatUNorm8Vec4, width, height, offset, stride,
-                    reinterpret_cast<uint8_t*>(
-                        &_interactiveContext->framebuffer.color[0]));
-            } else if (aovBindings[aov].aovName == HdAovTokens->depth) {
-                rb->Blit(HdFormatFloat32, width, height, offset, stride,
-                    reinterpret_cast<uint8_t*>(
-                        &_interactiveContext->framebuffer.depth[0]));
-            } else if (aovBindings[aov].aovName == HdAovTokens->primId) {
-                rb->Blit(HdFormatInt32, width, height, offset, stride,
-                    reinterpret_cast<uint8_t*>(
-                        &_interactiveContext->framebuffer.primId[0]));
-            } else if (aovBindings[aov].aovName == HdAovTokens->instanceId) {
-                rb->Blit(HdFormatInt32, width, height, offset, stride,
-                    reinterpret_cast<uint8_t*>(
-                        &_interactiveContext->framebuffer.instanceId[0]));
-            } else if (aovBindings[aov].aovName == HdAovTokens->elementId) {
-                rb->Blit(HdFormatInt32, width, height, offset, stride,
-                    reinterpret_cast<uint8_t*>(
-                        &_interactiveContext->framebuffer.elementId[0]));
-            }
+        if (aovBindings[aov].aovName == HdAovTokens->color) {
+            rb->Blit(HdFormatFloat32Vec4, width, height, offset, stride,
+                reinterpret_cast<uint8_t*>(
+                    &_interactiveContext->framebuffer.color[0]));
+        } else if (aovBindings[aov].aovName == HdAovTokens->depth) {
+            rb->Blit(HdFormatFloat32, width, height, offset, stride,
+                reinterpret_cast<uint8_t*>(
+                    &_interactiveContext->framebuffer.depth[0]));
+        } else if (aovBindings[aov].aovName == HdAovTokens->primId) {
+            rb->Blit(HdFormatInt32, width, height, offset, stride,
+                reinterpret_cast<uint8_t*>(
+                    &_interactiveContext->framebuffer.primId[0]));
+        } else if (aovBindings[aov].aovName == HdAovTokens->instanceId) {
+            rb->Blit(HdFormatInt32, width, height, offset, stride,
+                reinterpret_cast<uint8_t*>(
+                    &_interactiveContext->framebuffer.instanceId[0]));
+        } else if (aovBindings[aov].aovName == HdAovTokens->elementId) {
+            rb->Blit(HdFormatInt32, width, height, offset, stride,
+                reinterpret_cast<uint8_t*>(
+                    &_interactiveContext->framebuffer.elementId[0]));
         }
     }
 }

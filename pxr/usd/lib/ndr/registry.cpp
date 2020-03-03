@@ -32,7 +32,9 @@
 #include "pxr/usd/ndr/discoveryPlugin.h"
 #include "pxr/usd/ndr/node.h"
 #include "pxr/usd/ndr/nodeDiscoveryResult.h"
+#include "pxr/usd/ndr/property.h"
 #include "pxr/usd/ndr/registry.h"
+#include "pxr/usd/sdf/types.h"
 
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/envSetting.h"
@@ -46,7 +48,48 @@ TF_DEFINE_ENV_SETTING(
     "The auto-discovery of discovery plugins in ndr can be skipped. "
     "This is used mostly for testing purposes.");
 
+// This function is used for property validation. It is written as a non-static
+// freestanding function so that we can exercise it in a test without needing
+// to expose it in the header file.  It is also written without using unique
+// pointers for ease of python wrapping and testability.
+NDR_API
+bool
+NdrRegistry_ValidateProperty(
+    const NdrNodeConstPtr& node,
+    const NdrPropertyConstPtr& property,
+    std::string* errorMessage)
+{
+    const VtValue& defaultValue = property->GetDefaultValue();
+    const SdfTypeIndicator sdfTypeIndicator = property->GetTypeAsSdfType();
+    const SdfValueTypeName sdfType = sdfTypeIndicator.first;
 
+    // We allow default values to be unspecified, but if they aren't empty, then
+    // we want to error if the value's type is different from the specified type
+    // for the property.
+    if (!defaultValue.IsEmpty()) {
+        if (defaultValue.GetType() != sdfType.GetType()) {
+
+            if (errorMessage) {
+                *errorMessage = TfStringPrintf(
+                    "Default value type does not match specified type for "
+                    "property.\n"
+                    "Node identifier: %s\n"
+                    "Source type: %s\n"
+                    "Property name: %s.\n"
+                    "Type from SdfType: %s.\n"
+                    "Type from default value: %s.\n",
+                    node->GetIdentifier().GetString().c_str(),
+                    node->GetSourceType().GetString().c_str(),
+                    property->GetName().GetString().c_str(),
+                    sdfType.GetType().GetTypeName().c_str(),
+                    defaultValue.GetType().GetTypeName().c_str());
+            }
+
+            return false;
+        }
+    }
+    return true;
+}
 
 namespace {
 
@@ -152,7 +195,22 @@ _GetIdentifierForSourceCode(const std::string &sourceCode,
     return NdrIdentifier(std::to_string(h));
 }
 
-static 
+static bool
+_ValidateProperty(
+    const NdrNodeConstPtr& node,
+    const NdrPropertyConstPtr& property)
+{
+    std::string errorMessage;
+    if (!NdrRegistry_ValidateProperty(node, property, &errorMessage)) {
+        // This warning may eventually want to be a runtime error and return
+        // false to indicate an invalid node, but we didn't want to introduce
+        // unexpected behaviors by introducing this error.
+        TF_WARN(errorMessage);
+    }
+    return true;
+}
+
+static
 bool
 _ValidateNode(const NdrNodeUniquePtr &newNode, 
               const NdrNodeDiscoveryResult &dr)
@@ -193,7 +251,25 @@ _ValidateNode(const NdrNodeUniquePtr &newNode,
         return false;
     }
 
-    return true;
+    // It is safe to get the raw pointer from the unique pointer here since
+    // this raw pointer will not be passed beyond the scope of this function.
+    NdrNodeConstPtr node = newNode.get();
+
+    // Validate the node's properties.  Always validate each property even if
+    // we have already found an invalid property because we want to report
+    // errors on all properties.
+    bool valid = true;
+    for (const TfToken& inputName : newNode->GetInputNames()) {
+        const NdrPropertyConstPtr& input = newNode->GetInput(inputName);
+        valid &= _ValidateProperty(node, input);
+    }
+
+    for (const TfToken& outputName : newNode->GetOutputNames()) {
+        const NdrPropertyConstPtr& output = newNode->GetOutput(outputName);
+        valid &= _ValidateProperty(node, output);
+    }
+
+    return valid;
 }
 
 } // anonymous namespace

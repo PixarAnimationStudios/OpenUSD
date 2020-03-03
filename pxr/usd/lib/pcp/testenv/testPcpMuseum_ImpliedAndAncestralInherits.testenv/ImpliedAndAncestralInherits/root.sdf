@@ -1,0 +1,14 @@
+#sdf 1.4.32
+
+def "World" 
+{
+    # Reference to a CharGroup that itself references the char group rig. This
+    # referencing of a reference is what exhibits the effects of failing to 
+    # cull the ancestral implied inherits in the CharGroupRig.
+    def "CharGroup" (
+        references = @./Group.sdf@</CharGroup>
+    ) 
+    {
+    }
+}
+

@@ -1563,6 +1563,14 @@ class "PointBased" (
     providing common attributes such as normals and velocities."""
 )
 {
+    vector3f[] accelerations (
+        doc = """If provided, 'accelerations' should be used with
+        velocities to compute positions between samples for the 'points'
+        attribute rather than interpolating between neighboring 'points'
+        samples. Acceleration is measured in position units per second-squared.
+        To convert to position units per squared UsdTimeCode, divide by the
+        square of UsdStage::GetTimeCodesPerSecond()."""
+    )
     uniform bool doubleSided = 0 (
         doc = """Although some renderers treat all parametric or polygonal
         surfaces as if they were effectively laminae with outward-facing
@@ -1752,6 +1760,14 @@ class Mesh "Mesh" (
     precedence."""
 )
 {
+    vector3f[] accelerations (
+        doc = """If provided, 'accelerations' should be used with
+        velocities to compute positions between samples for the 'points'
+        attribute rather than interpolating between neighboring 'points'
+        samples. Acceleration is measured in position units per second-squared.
+        To convert to position units per squared UsdTimeCode, divide by the
+        square of UsdStage::GetTimeCodesPerSecond()."""
+    )
     int[] cornerIndices = [] (
         doc = "The vertex indices of all vertices that are sharp corners."
     )
@@ -2110,6 +2126,14 @@ class NurbsPatch "NurbsPatch" (
     """
 )
 {
+    vector3f[] accelerations (
+        doc = """If provided, 'accelerations' should be used with
+        velocities to compute positions between samples for the 'points'
+        attribute rather than interpolating between neighboring 'points'
+        samples. Acceleration is measured in position units per second-squared.
+        To convert to position units per squared UsdTimeCode, divide by the
+        square of UsdStage::GetTimeCodesPerSecond()."""
+    )
     uniform bool doubleSided = 0 (
         doc = """Although some renderers treat all parametric or polygonal
         surfaces as if they were effectively laminae with outward-facing
@@ -2374,6 +2398,14 @@ class "Curves" (
              RenderMan specification for NURBS Patches."""
 )
 {
+    vector3f[] accelerations (
+        doc = """If provided, 'accelerations' should be used with
+        velocities to compute positions between samples for the 'points'
+        attribute rather than interpolating between neighboring 'points'
+        samples. Acceleration is measured in position units per second-squared.
+        To convert to position units per squared UsdTimeCode, divide by the
+        square of UsdStage::GetTimeCodesPerSecond()."""
+    )
     int[] curveVertexCounts (
         doc = """Curves-derived primitives can represent multiple distinct,
         potentially disconnected curves.  The length of 'curveVertexCounts'
@@ -2757,6 +2789,14 @@ class BasisCurves "BasisCurves" (
 """
 )
 {
+    vector3f[] accelerations (
+        doc = """If provided, 'accelerations' should be used with
+        velocities to compute positions between samples for the 'points'
+        attribute rather than interpolating between neighboring 'points'
+        samples. Acceleration is measured in position units per second-squared.
+        To convert to position units per squared UsdTimeCode, divide by the
+        square of UsdStage::GetTimeCodesPerSecond()."""
+    )
     uniform token basis = "bezier" (
         allowedTokens = ["bezier", "bspline", "catmullRom", "hermite", "power"]
         doc = "The basis specifies the vstep and matrix used for cubic interpolation."
@@ -2976,6 +3016,14 @@ class NurbsCurves "NurbsCurves" (
     all batched curves."""
 )
 {
+    vector3f[] accelerations (
+        doc = """If provided, 'accelerations' should be used with
+        velocities to compute positions between samples for the 'points'
+        attribute rather than interpolating between neighboring 'points'
+        samples. Acceleration is measured in position units per second-squared.
+        To convert to position units per squared UsdTimeCode, divide by the
+        square of UsdStage::GetTimeCodesPerSecond()."""
+    )
     int[] curveVertexCounts (
         doc = """Curves-derived primitives can represent multiple distinct,
         potentially disconnected curves.  The length of 'curveVertexCounts'
@@ -3187,6 +3235,14 @@ class Points "Points" (
     to have constant or varying interpolation."""
 )
 {
+    vector3f[] accelerations (
+        doc = """If provided, 'accelerations' should be used with
+        velocities to compute positions between samples for the 'points'
+        attribute rather than interpolating between neighboring 'points'
+        samples. Acceleration is measured in position units per second-squared.
+        To convert to position units per squared UsdTimeCode, divide by the
+        square of UsdStage::GetTimeCodesPerSecond()."""
+    )
     uniform bool doubleSided = 0 (
         doc = """Although some renderers treat all parametric or polygonal
         surfaces as if they were effectively laminae with outward-facing
@@ -3587,6 +3643,14 @@ class PointInstancer "PointInstancer" (
     """
 )
 {
+    vector3f[] accelerations (
+        doc = """If authored, per-instance 'accelerations' will be used with
+        velocities to compute positions between samples for the 'positions'
+        attribute rather than interpolating between neighboring 'positions'
+        samples. Acceleration is measured in position units per second-squared.
+        To convert to position units per squared UsdTimeCode, divide by the
+        square of UsdStage::GetTimeCodesPerSecond()."""
+    )
     vector3f[] angularVelocities (
         doc = """If authored, per-instance angular velocity vector to be used for
       interoplating orientations.  Angular velocities should be considered

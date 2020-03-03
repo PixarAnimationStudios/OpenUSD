@@ -41,6 +41,7 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/scope.h"
@@ -451,7 +452,7 @@ UsdMayaWriteJobContext::_OpenFile(const std::string& filename, bool append)
 }
 
 bool
-UsdMayaWriteJobContext::_PostProcess()
+UsdMayaWriteJobContext::_PostProcess(const UsdMayaUtil::MDagPathMap<SdfPath> &DagPathToUsdPathMap)
 {
     if (mArgs.exportInstances) {
         if (_objectsToMasterWriters.empty()) {
@@ -489,6 +490,25 @@ UsdMayaWriteJobContext::_PostProcess()
     }
 
     if (mArgs.overrideLayer != "") {
+        // check for deleted objects
+        UsdPrimRange rng = mStage->Traverse();
+        for (auto it = rng.begin(); it != rng.end(); ++it) {
+            bool found_prim_path = false;
+            UsdPrim usdPrim = *it;
+            SdfPath prim_path = usdPrim.GetPrimPath();
+            auto itDag = DagPathToUsdPathMap.begin();
+            for(;itDag != DagPathToUsdPathMap.end(); ++itDag) {
+                if(itDag->second == prim_path && usdPrim != mStage->GetPseudoRoot()) {
+                    found_prim_path = true;
+                    break;
+                }
+            }
+            if(!found_prim_path) {
+                // The primpath is not found and has
+                // therefore been deactivated/removed.
+                usdPrim.SetActive(false);
+            }
+        }
         // Remove override sublayers.
         std::vector<std::string> sublayers;
         mStage->GetRootLayer()->SetSubLayerPaths(sublayers);

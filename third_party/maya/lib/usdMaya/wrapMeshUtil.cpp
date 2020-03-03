@@ -64,13 +64,13 @@ _GetMeshNormals(const std::string& meshDagPath)
     }
 
     MFnMesh meshFn(meshObj, &status);
-    if (status != MS::kSuccess) {
+    if (!meshObj.hasFn(MFn::kMesh)) {
         TF_CODING_ERROR("MFnMesh() failed for object at dagPath: %s",
                         meshDagPath.c_str());
         return make_tuple(normalsArray, interpolation);
     }
 
-    UsdMayaMeshUtil::GetMeshNormals(meshFn, &normalsArray, &interpolation);
+    UsdMayaMeshUtil::GetMeshNormals(meshObj, &normalsArray, &interpolation);
 
     return make_tuple(normalsArray, interpolation);
 }

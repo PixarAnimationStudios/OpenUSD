@@ -123,9 +123,7 @@ SdfFileFormat::InitData(const FileFormatArguments& args) const
 
     // The pseudo-root spec must always exist in a layer's SdfData, so
     // add it here.
-    metadata->CreateSpec(
-        SdfAbstractDataSpecId(&SdfPath::AbsoluteRootPath()), 
-        SdfSpecTypePseudoRoot);
+    metadata->CreateSpec(SdfPath::AbsoluteRootPath(), SdfSpecTypePseudoRoot);
 
     return TfCreateRefPtr(metadata);
 }

@@ -180,6 +180,32 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
+    // ACCELERATIONS 
+    // --------------------------------------------------------------------- //
+    /// If provided, 'accelerations' should be used with
+    /// velocities to compute positions between samples for the 'points'
+    /// attribute rather than interpolating between neighboring 'points'
+    /// samples. Acceleration is measured in position units per second-squared.
+    /// To convert to position units per squared UsdTimeCode, divide by the
+    /// square of UsdStage::GetTimeCodesPerSecond().
+    ///
+    /// \n  C++ Type: VtArray<GfVec3f>
+    /// \n  Usd Type: SdfValueTypeNames->Vector3fArray
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: No Fallback
+    USDGEOM_API
+    UsdAttribute GetAccelerationsAttr() const;
+
+    /// See GetAccelerationsAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateAccelerationsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
     // NORMALS 
     // --------------------------------------------------------------------- //
     /// Provide an object-space orientation for individual points, 
@@ -263,6 +289,100 @@ public:
     USDGEOM_API
     static bool ComputeExtent(const VtVec3fArray& points,
         const GfMatrix4d& transform, VtVec3fArray* extent);
+
+public:
+    /// Compute points given the positions, velocities and accelerations
+    /// at \p time. 
+    ///
+    /// This will return \c false and leave \p points untouched if:
+    /// - \p points is NULL
+    /// - one of \p time and \p baseTime is numeric and the other is
+    ///   UsdTimeCode::Default() (they must either both be numeric or both be
+    ///   default)
+    /// - there is no authored points attribute
+    ///
+    /// If there is no error, we will return \c true and \p points will contain
+    /// the computed points.
+    /// 
+    /// \param points - the out parameter for the new points.  Its size
+    ///                 will depend on the authored data.
+    /// \param time - UsdTimeCode at which we want to evaluate the transforms
+    /// \param baseTime - required for correct interpolation between samples
+    ///                   when \em velocities or \em accelerations are
+    ///                   present. If there are samples for \em positions and
+    ///                   \em velocities at t1 and t2, normal value resolution
+    ///                   would attempt to interpolate between the two samples,
+    ///                   and if they could not be interpolated because they
+    ///                   differ in size (common in cases where velocity is
+    ///                   authored), will choose the sample at t1.  When
+    ///                   sampling for the purposes of motion-blur, for example,
+    ///                   it is common, when rendering the frame at t2, to 
+    ///                   sample at [ t2-shutter/2, t2+shutter/2 ] for a
+    ///                   shutter interval of \em shutter.  The first sample
+    ///                   falls between t1 and t2, but we must sample at t2
+    ///                   and apply velocity-based interpolation based on those
+    ///                   samples to get a correct result.  In such scenarios,
+    ///                   one should provide a \p baseTime of t2 when querying
+    ///                   \em both samples. If your application does not care
+    ///                   about off-sample interpolation, it can supply the
+    ///                   same value for \p baseTime that it does for \p time.
+    ///                   When \p baseTime is less than or equal to \p time,
+    ///                   we will choose the lower bracketing timeSample.
+    USDGEOM_API
+    bool
+    ComputePointsAtTime(
+        VtArray<GfVec3f>* points,
+        const UsdTimeCode time,
+        const UsdTimeCode baseTime) const;
+
+    /// Compute points as in ComputePointsAtTime, but using multiple sample times. An
+    /// array of vector arrays is returned where each vector array contains the
+    /// points for the corresponding time in \p times .
+    ///
+    /// \param times - A vector containing the UsdTimeCodes at which we want to
+    ///                sample.
+    USDGEOM_API
+    bool
+    ComputePointsAtTimes(
+        std::vector<VtArray<GfVec3f>>* pointsArray,
+        const std::vector<UsdTimeCode>& times,
+        const UsdTimeCode baseTime) const;
+
+    /// \overload
+    /// Perform the point computation. This does the same computation as
+    /// the non-static ComputePointsAtTime method, but takes all
+    /// data as parameters rather than accessing authored data.
+    ///
+    /// \param points - the out parameter for the computed points. Its size
+    ///                 will depend on the given data.
+    /// \param stage - the UsdStage
+    /// \param time - time at which we want to evaluate the transforms
+    /// \param positions - array containing all current points.
+    /// \param velocities - array containing all velocities. This array
+    ///                     must be either the same size as \p positions or
+    ///                     empty. If it is empty, points are computed as if
+    ///                     all velocities were zero in all dimensions.
+    /// \param velocitiesSampleTime - time at which the samples from
+    ///                               \p velocities were taken.
+    /// \param accelerations - array containing all accelerations. 
+    ///                     This array must be either the same size as 
+    ///                     \p positions or empty. If it is empty, points
+    ///                     are computed as if all accelerations were zero in 
+    ///                     all dimensions.
+    /// \param velocityScale - factor used to artificially increase the effect
+    ///                        of velocity on positions.
+    USDGEOM_API
+    static bool
+    ComputePointsAtTime(
+        VtArray<GfVec3f>* points,
+        UsdStageWeakPtr& stage,
+        UsdTimeCode time,
+        const VtVec3fArray& positions,
+        const VtVec3fArray& velocities,
+        UsdTimeCode velocitiesSampleTime,
+        const VtVec3fArray& accelerations,
+        float velocityScale);
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

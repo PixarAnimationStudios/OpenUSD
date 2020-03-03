@@ -81,7 +81,7 @@ public:
     /// ComputeSubShapes().
     /// Since the _pointIndices_ property of blend shapes is optional,
     /// some of the arrays may be empty.
-    USDSKEL_API std::vector<VtUIntArray>
+    USDSKEL_API std::vector<VtIntArray>
     ComputeBlendShapePointIndices() const;
 
     /// Compute an array holding the point offsets of all sub-shapes.
@@ -91,6 +91,16 @@ public:
     /// ComputeSubShapeWeights().
     USDSKEL_API std::vector<VtVec3fArray>
     ComputeSubShapePointOffsets() const;
+
+    /// Compute an array holding the normal offsets of all sub-shapes.
+    /// This includes offsets of both primary shapes -- those stored directly
+    /// on a BlendShape primitive -- as well as those of inbetween shapes.
+    /// This is indexed by the _subShapeIndices_ returned by
+    /// ComputeSubShapeWeights().
+    /// Normal offsets are optional. An empty array is stored for shapes that
+    /// do not specify normal offsets.
+    USDSKEL_API std::vector<VtVec3fArray>
+    ComputeSubShapeNormalOffsets() const;
 
     /// Compute the resolved weights for all sub-shapes bound to this prim.
     /// The \p weights values are initial weight values, ordered according
@@ -124,10 +134,26 @@ public:
         const TfSpan<const float> subShapeWeights,
         const TfSpan<const unsigned> blendShapeIndices,
         const TfSpan<const unsigned> subShapeIndices,
-        const std::vector<VtUIntArray>& blendShapePointIndices,
+        const std::vector<VtIntArray>& blendShapePointIndices,
         const std::vector<VtVec3fArray>& subShapePointOffsets,
         TfSpan<GfVec3f> points) const;
 
+    /// Deform \p normals using the resolved sub-shapes given by
+    /// \p subShapeWeights, \p blendShapeIndices and \p subShapeIndices.
+    /// The \p blendShapePointIndices and \p blendShapeNormalOffsets
+    /// arrays both provide the pre-computed normal offsets and indices
+    /// of each sub-shape, as computed by ComputeBlendShapePointIndices()
+    /// and ComputeSubShapeNormalOffsets().
+    /// This is equivalent to ComputeDeformedPoints(), except that the
+    /// resulting points are normalized after deformation.
+    USDSKEL_API bool
+    ComputeDeformedNormals(
+        const TfSpan<const float> subShapeWeights,
+        const TfSpan<const unsigned> blendShapeIndices,
+        const TfSpan<const unsigned> subShapeIndices,
+        const std::vector<VtIntArray>& blendShapePointIndices,
+        const std::vector<VtVec3fArray>& subShapeNormalOffsets,
+        TfSpan<GfVec3f> noramls) const;
 
     /// Compute a packed shape table combining all sub-shapes.
     /// This is intended to help encode blend shapes in a GPU-friendly form.

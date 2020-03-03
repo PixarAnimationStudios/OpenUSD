@@ -32,8 +32,9 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdSkel/api.h"
 
-#include "pxr/base/gf/interval.h"
 #include "pxr/base/gf/quatf.h"
+#include "pxr/base/gf/matrix3d.h"
+#include "pxr/base/gf/matrix3f.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/vec3h.h"
@@ -45,6 +46,9 @@
 #include "pxr/usd/sdf/path.h"
 
 #include <cstddef>
+
+// XXX: Included for backwards compatibility.
+#include "pxr/usd/usdSkel/bakeSkinning.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -538,6 +542,60 @@ UsdSkelSkinPointsLBS(const GfMatrix4d& geomBindTransform,
                      bool inSerial=false);
 
 
+/// Skin normals using linear blend skinning (LBS).
+/// Currently, this is restricted to skinning of normals stored using
+/// _vertex_ primvar interpolation.
+/// The \p jointXforms are the *inverse transposes* of the 3x3 component
+/// of the \ref UsdSkel_Term_SkinningTransforms" "skinning transforms",
+/// given in _skeleton space_. The \p geomBindTransform is the
+/// *inverse transpose* of the matrix that transforms points from a
+/// bind pose ino the same _skeleton space_ that the skinning tranforms
+/// were computed in.
+USDSKEL_API
+bool
+UsdSkelSkinNormalsLBS(const GfMatrix3d& geomBindTransform,
+                      TfSpan<const GfMatrix3d> jointXforms,
+                      TfSpan<const int> jointIndices,
+                      TfSpan<const float> jointWeights,
+                      int numInfluencesPerPoint,
+                      TfSpan<GfVec3f> normals,
+                      bool inSerial=false);
+
+
+/// \overload
+USDSKEL_API
+bool
+UsdSkelSkinNormalsLBS(const GfMatrix3f& geomBindTransform,
+                      TfSpan<const GfMatrix3f> jointXforms,
+                      TfSpan<const int> jointIndices,
+                      TfSpan<const float> jointWeights,
+                      int numInfluencesPerPoint,
+                      TfSpan<GfVec3f> normals,
+                      bool inSerial=false);
+
+
+/// \overload
+USDSKEL_API
+bool
+UsdSkelSkinNormalsLBS(const GfMatrix3d& geomBindTransform,
+                     TfSpan<const GfMatrix3d> jointXforms,
+                     TfSpan<const GfVec2f> influences,
+                     int numInfluencesPerPoint,
+                     TfSpan<GfVec3f> normals,
+                     bool inSerial=false);
+
+
+/// \overload
+USDSKEL_API
+bool
+UsdSkelSkinNormalsLBS(const GfMatrix3f& geomBindTransform,
+                     TfSpan<const GfMatrix3f> jointXforms,
+                     TfSpan<const GfVec2f> influences,
+                     int numInfluencesPerPoint,
+                     TfSpan<GfVec3f> normals,
+                     bool inSerial=false);
+
+
 /// Skin a transform using linear blend skinning (LBS).
 /// The \p jointXforms are \ref UsdSkel_Term_SkinningTransforms
 /// "skinning transforms", given in _skeleton space_, while the
@@ -599,40 +657,8 @@ USDSKEL_API
 bool
 UsdSkelApplyBlendShape(const float weight,
                        const TfSpan<const GfVec3f> offsets,
-                       const TfSpan<const unsigned> indices,
+                       const TfSpan<const int> indices,
                        TfSpan<GfVec3f> points);
-
-
-/// Bake the effect of skinning prims directly into points and transforms,
-/// over \p interval.
-/// This is intended to serve as a complete reference implementation,
-/// providing a ground truth for testing and validation purposes.
-///
-/// \warning Since baking the effect of skinning will undo the IO gains that
-/// deferred skeletal posing provides, this method should not be used except
-/// for testing. It also has been written with an emphasis on correctness rather
-/// than performance, and is not expected to scale. Usage should be limited to
-/// testing and towards conversion when transmitting the resulting of skinning
-/// to an application that does not have an equivalent skinning representation.
-USDSKEL_API
-bool
-UsdSkelBakeSkinning(const UsdSkelRoot& root,
-                    const GfInterval& interval=GfInterval::GetFullInterval());
-
-
-/// Overload of UsdSkelBakeSkinning, which bakes the effect of skinning prims
-/// directly into points and transforms, for all SkelRoot prims in \p range.
-USDSKEL_API
-bool
-UsdSkelBakeSkinning(const UsdPrimRange& range,
-                    const GfInterval& interval=GfInterval::GetFullInterval());
-
-
-
-/// @}
-
-
-/// @}
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

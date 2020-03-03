@@ -222,15 +222,8 @@ _TranslatePathsAndEditRelocates(
 
     // Find the relocation, which should be the entry whose key is the 
     // longest prefix of oldParentPath.
-    struct _Adapter {
-        const SdfPath& operator()(SdfRelocatesMap::const_reference v) const
-        { return v.first; }
-    };
-
-    SdfRelocatesMap::const_iterator i = SdfPathFindLongestPrefix(
-        boost::make_transform_iterator(relocates.begin(), _Adapter()),
-        boost::make_transform_iterator(relocates.end(), _Adapter()),
-        oldParentPath).base();
+    SdfRelocatesMap::const_iterator i =
+        SdfPathFindLongestPrefix(relocates, oldParentPath);
 
     if (i != relocates.end()) {
         const SdfPath & reloTargetPath = i->first;
@@ -365,13 +358,11 @@ _AddLayerStackSite(
         TF_DEBUG(PCP_NAMESPACE_EDIT)
             .Msg("  - final.  direct arc fixup\n");
         switch (node.GetArcType()) {
-        case PcpArcTypeLocalInherit:
-        case PcpArcTypeGlobalInherit:
+        case PcpArcTypeInherit:
             type = PcpNamespaceEdits::EditInherit;
             break;
 
-        case PcpArcTypeLocalSpecializes:
-        case PcpArcTypeGlobalSpecializes:
+        case PcpArcTypeSpecialize:
             type = PcpNamespaceEdits::EditSpecializes;
             break;
 
@@ -605,15 +596,16 @@ PcpComputeNamespaceEdits(
                 // nodes, since the code that handles direct inherits below
                 // needs to have the nodes where the inherits are introduced.
                 for (const SdfPath& descendentPrimPath : descendentPrimPaths) {
-                    // We were just told this prim index is a deependency
+                    // We were just told this prim index is a dependency
                     // so it certainly should exist.
                     const PcpPrimIndex *index =
                         primaryCache->FindPrimIndex(descendentPrimPath);
                     if (TF_VERIFY(index, "Reported descendent dependency "
                                   "lacks a prim index")) {
                         for (const PcpNodeRef &node:
-                             index->GetNodeRange(PcpRangeTypeLocalInherit)) {
+                             index->GetNodeRange(PcpRangeTypeInherit)) {
                             if (node.GetLayerStack() == primaryLayerStack &&
+                                !node.GetPath().IsRootPrimPath() &&
                                 !node.IsDueToAncestor()) {
                                 // Found an inherit using a descendant.
                                 descendantNodes.insert(
@@ -765,16 +757,20 @@ PcpComputeNamespaceEdits(
             LayerStackSites& layerStackSites = 
                 _GetLayerStackSitesForEdit(&result, oldNodePath, newNodePath);
             layerStackSites.resize(layerStackSites.size()+1);
-            LayerStackSite& site = layerStackSites.back();
-            site.cacheIndex      = cacheIndex;
-            site.type            = PcpNamespaceEdits::EditPath;
-            site.sitePath        = oldNodePath;
-            site.oldPath         = oldNodePath;
-            site.newPath         = newNodePath;
-            site.layerStack      = node.GetLayerStack();
-
+            {
+                LayerStackSite& site = layerStackSites.back();
+                site.cacheIndex      = cacheIndex;
+                site.type            = PcpNamespaceEdits::EditPath;
+                site.sitePath        = oldNodePath;
+                site.oldPath         = oldNodePath;
+                site.newPath         = newNodePath;
+                site.layerStack      = node.GetLayerStack();
+                // Drop the 'site' reference here since the call to
+                // _AddRelocateEditsForLayerStack can invalidate the reference
+                // from layerStackSites, when it resizes the vector.
+            }
             _AddRelocateEditsForLayerStack(
-                &result, site.layerStack, cacheIndex,
+                &result, node.GetLayerStack(), cacheIndex,
                 oldNodePath, newNodePath);
         }
 

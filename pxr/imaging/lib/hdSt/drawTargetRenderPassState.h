@@ -40,7 +40,7 @@ class VtValue;
 /// Represents common non-gl context specific render pass state for a draw
 /// target.
 ///
-/// \note This is a temporary API to aid transition to Hydra, and is subject
+/// \note This is a temporary API to aid transition to Storm, and is subject
 /// to major changes.  It is likely this functionality will be absorbed into
 /// the base class.
 ///

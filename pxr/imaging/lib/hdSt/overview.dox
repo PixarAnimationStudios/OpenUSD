@@ -1,12 +1,12 @@
 /*!
-\page hdSt_page_front HdSt : Rendering functionality for HdStream
+\page hdSt_page_front HdSt : Rendering functionality for HdStorm
 \if ( PIXAR_MFB_BUILD )
-\mainpage  HdSt : Rendering functionality for HdStream
+\mainpage  HdSt : Rendering functionality for HdStorm
 \publicLib
 \endif
 
 HdSt is responsible for the core rendering functionality of the 
-HdStream Hydra renderer.
+HdStorm Hydra renderer.
 
 \section hdSt_overview Overview
 

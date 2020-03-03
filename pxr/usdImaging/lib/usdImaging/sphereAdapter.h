@@ -51,39 +51,44 @@ public:
     virtual ~UsdImagingSphereAdapter();
 
     USDIMAGING_API
-    virtual SdfPath Populate(UsdPrim const& prim,
-                     UsdImagingIndexProxy* index,
-                     UsdImagingInstancerContext const* instancerContext = NULL);
+    SdfPath Populate(
+        UsdPrim const& prim,
+        UsdImagingIndexProxy* index,
+        UsdImagingInstancerContext const* instancerContext = nullptr) 
+            override;
 
     USDIMAGING_API
-    virtual bool IsSupported(UsdImagingIndexProxy const* index) const;
+    bool IsSupported(UsdImagingIndexProxy const* index) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
     // ---------------------------------------------------------------------- //
     /// Thread Safe.
     USDIMAGING_API
-    virtual void TrackVariability(UsdPrim const& prim,
-                                  SdfPath const& cachePath,
-                                  HdDirtyBits* timeVaryingBits,
-                                  UsdImagingInstancerContext const* 
-                                      instancerContext = NULL) const;
+    void TrackVariability(
+        UsdPrim const& prim,
+        SdfPath const& cachePath,
+        HdDirtyBits* timeVaryingBits,
+        UsdImagingInstancerContext const* instancerContext = nullptr) 
+            const override;
 
     /// Thread Safe.
     USDIMAGING_API
-    virtual void UpdateForTime(UsdPrim const& prim,
-                               SdfPath const& cachePath, 
-                               UsdTimeCode time,
-                               HdDirtyBits requestedBits,
-                               UsdImagingInstancerContext const* 
-                                   instancerContext = NULL) const;
+    void UpdateForTime(
+        UsdPrim const& prim,
+        SdfPath const& cachePath, 
+        UsdTimeCode time,
+        HdDirtyBits requestedBits,
+        UsdImagingInstancerContext const* instancerContext = nullptr) 
+            const override;
 
     // Override the implemetation in GprimAdapter since we don't fetch the
     // points attribute for implicit primitives.
     USDIMAGING_API
-    virtual VtValue GetPoints(UsdPrim const& prim,
-                              SdfPath const& cachePath,
-                              UsdTimeCode time) const override;
+    VtValue GetPoints(
+        UsdPrim const& prim,
+        SdfPath const& cachePath,
+        UsdTimeCode time) const override;
 
     USDIMAGING_API
     static VtValue GetMeshPoints(UsdPrim const& prim, 
@@ -97,11 +102,9 @@ public:
                                        UsdTimeCode time);
 
     USDIMAGING_API
-    virtual size_t
-    SampleTransform(UsdPrim const& prim, SdfPath const& cachePath,
-                    const std::vector<float>& configuredSampleTimes,
-                    size_t maxNumSamples, float *sampleTimes,
-                    GfMatrix4d *sampleValues) override;
+    size_t SampleTransform(UsdPrim const& prim, SdfPath const& cachePath,
+        UsdTimeCode time, size_t maxNumSamples, float *sampleTimes,
+        GfMatrix4d *sampleValues) override;
 };
 
 

@@ -34,18 +34,21 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 void
-Trace_AggregateTreeBuilder::AddCollectionDataToTree(
-    TraceAggregateTree* aggregateTree, const TraceCollection& collection)
+Trace_AggregateTreeBuilder::AddEventTreeToAggregate(
+    TraceAggregateTree* aggregateTree,
+    const TraceEventTreeRefPtr& eventTree,
+    const TraceCollection& collection)
 {
-    Trace_AggregateTreeBuilder builder(aggregateTree, collection);
+    Trace_AggregateTreeBuilder builder(aggregateTree, eventTree);
+
     builder._CreateAggregateNodes();
     builder._ProcessCounters(collection);
 }
 
 Trace_AggregateTreeBuilder::Trace_AggregateTreeBuilder(
-    TraceAggregateTree* aggregateTree, const TraceCollection& collection)
+    TraceAggregateTree* aggregateTree, const TraceEventTreeRefPtr& eventTree)
     : _aggregateTree(aggregateTree)
-    , _tree(TraceEventTree::New(collection))
+    , _tree(eventTree)
 {
 }
 

@@ -58,6 +58,10 @@ bool operator!=(const HdRenderPassAovBinding& lhs,
     return !(lhs == rhs);
 }
 
+size_t hash_value(const HdRenderPassAovBinding &b) {
+    return b.renderBufferId.GetHash();
+}
+
 HdParsedAovToken::HdParsedAovToken()
     : name(), isPrimvar(false), isLpe(false), isShader(false)
 {

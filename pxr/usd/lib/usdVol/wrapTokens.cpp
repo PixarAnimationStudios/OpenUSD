@@ -67,5 +67,6 @@ void wrapUsdVolTokens()
     _AddToken(cls, "field", UsdVolTokens->field);
     _AddToken(cls, "fieldIndex", UsdVolTokens->fieldIndex);
     _AddToken(cls, "fieldName", UsdVolTokens->fieldName);
+    _AddToken(cls, "fieldPurpose", UsdVolTokens->fieldPurpose);
     _AddToken(cls, "filePath", UsdVolTokens->filePath);
 }

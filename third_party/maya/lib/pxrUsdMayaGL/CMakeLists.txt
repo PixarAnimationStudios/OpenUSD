@@ -23,8 +23,10 @@ pxr_shared_library(${PXR_PACKAGE}
         usdImagingGL
         usdMaya
         vt
-        ${Boost_LIBRARIES}
-        ${MAYA_LIBRARIES}
+        ${MAYA_Foundation_LIBRARY}
+        ${MAYA_OpenMaya_LIBRARY}
+        ${MAYA_OpenMayaRender_LIBRARY}
+        ${MAYA_OpenMayaUI_LIBRARY}
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}

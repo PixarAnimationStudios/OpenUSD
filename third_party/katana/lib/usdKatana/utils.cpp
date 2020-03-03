@@ -1398,9 +1398,6 @@ std::string PxrUsdKatanaUtils::GetModelInstanceName(const UsdPrim& prim)
     }
 
     if (PxrUsdKatanaUtils::IsModelAssemblyOrComponent(prim)) {
-        FnLogWarn(TfStringPrintf("Could not get modelInstanceName for "
-                 "assembly/component '%s'. Using prim.name", 
-                 prim.GetPath().GetText()).c_str());
         return prim.GetName();
     }
 
@@ -1426,16 +1423,6 @@ PxrUsdKatanaUtils::GetAssetName(const UsdPrim& prim)
     if (model.GetAssetName(&assetName)) {
         if (!assetName.empty())
             return assetName;
-    }
-
-    // if we can make it so this function only gets called on assets, we
-    // should re-introduce the warning if we were unable to really obtain
-    // the model name.  for now, removing the warning because it currently
-    // spews for things like cameras, etc.
-    if (PxrUsdKatanaUtils::IsModelAssemblyOrComponent(prim)) {
-        FnLogWarn(TfStringPrintf("Could not get assetName for "
-                    "assembly/component '%s'. Using prim.name", 
-                    prim.GetPath().GetText()).c_str());
     }
 
     return prim.GetName();

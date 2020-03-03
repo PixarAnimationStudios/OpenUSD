@@ -135,6 +135,7 @@ void wrapUsdContrivedTokens()
     _AddToken(cls, "myDouble", UsdContrivedTokens->myDouble);
     _AddToken(cls, "myUniformBool", UsdContrivedTokens->myUniformBool);
     _AddToken(cls, "myVaryingToken", UsdContrivedTokens->myVaryingToken);
+    _AddToken(cls, "myVaryingTokenArray", UsdContrivedTokens->myVaryingTokenArray);
     _AddToken(cls, "myVecfArray", UsdContrivedTokens->myVecfArray);
     _AddToken(cls, "namespacedProperty", UsdContrivedTokens->namespacedProperty);
     _AddToken(cls, "newToken", UsdContrivedTokens->newToken);
@@ -180,7 +181,9 @@ void wrapUsdContrivedTokens()
     _AddToken(cls, "uint64Array", UsdContrivedTokens->uint64Array);
     _AddToken(cls, "uintArray", UsdContrivedTokens->uintArray);
     _AddToken(cls, "variableTokenAllowed1", UsdContrivedTokens->variableTokenAllowed1);
-    _AddToken(cls, "variabletokenAllowed2", UsdContrivedTokens->variabletokenAllowed2);
+    _AddToken(cls, "variableTokenAllowed2", UsdContrivedTokens->variableTokenAllowed2);
+    _AddToken(cls, "variableTokenArrayAllowed1", UsdContrivedTokens->variableTokenArrayAllowed1);
+    _AddToken(cls, "variableTokenArrayAllowed2", UsdContrivedTokens->variableTokenArrayAllowed2);
     _AddToken(cls, "variableTokenDefault", UsdContrivedTokens->variableTokenDefault);
     _AddToken(cls, "vector3d", UsdContrivedTokens->vector3d);
     _AddToken(cls, "vector3dArray", UsdContrivedTokens->vector3dArray);

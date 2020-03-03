@@ -52,6 +52,8 @@ class TestUsdPrim(unittest.TestCase):
             assert a is not b
             assert a == b
             assert hash(a) == hash(b)
+            assert not a.HasFallbackValue()
+            assert not b.HasFallbackValue()
 
             p.CreateRelationship('relationship')
             a = p.GetRelationship('relationship')
@@ -472,6 +474,29 @@ class TestUsdPrim(unittest.TestCase):
             # Child is back.
             baz = s2.GetPrimAtPath("/Foo/Baz")
             assert baz.HasAuthoredReferences()
+
+            # Explicitly set references to the empty list. The metadata will
+            # still exist as an explicitly empty list op.
+            assert foo.GetReferences().SetReferences([])
+            assert foo.HasAuthoredReferences()
+            # Child should be gone.
+            baz = s2.GetPrimAtPath("/Foo/Baz")
+            assert not baz
+
+            # Clear references out. Still empty but no longer explicit.
+            assert foo.GetReferences().ClearReferences()
+            assert not foo.HasAuthoredReferences()
+            # Child still gone.
+            baz = s2.GetPrimAtPath("/Foo/Baz")
+            assert not baz
+
+            # Explicitly set references to the empty again from cleared
+            # verifying that it is indeed set to explicit.
+            assert foo.GetReferences().SetReferences([])
+            assert foo.HasAuthoredReferences()
+            # Child is not back.
+            baz = s2.GetPrimAtPath("/Foo/Baz")
+            assert not baz
 
     def test_GoodAndBadReferences(self):
         for fmt in allFormats:

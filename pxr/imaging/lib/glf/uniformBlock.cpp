@@ -39,7 +39,10 @@ GlfUniformBlock::GlfUniformBlock(char const *label) :
 {
     glGenBuffers(1, &_buffer);
     if (label) {
-        GlfDebugLabelBuffer(_buffer, label);
+        // Using 'glObjectLabel' is only guaranteed to work on GL resources that
+        // have been created. glGenBuffers only reserves an id.
+        // Postpone setting up the debug label until buffer binding.
+        _debugLabel = label;
     }
 }
 
@@ -64,6 +67,11 @@ GlfUniformBlock::Bind(GlfBindingMapPtr const & bindingMap,
     int binding = bindingMap->GetUniformBinding(identifier);
 
     glBindBufferBase(GL_UNIFORM_BUFFER, binding, _buffer);
+
+    // Binding the buffer should ensure it is created so we can assign debug lbl
+    if (!_debugLabel.empty()) {
+        GlfDebugLabelBuffer(_buffer, _debugLabel.c_str());
+    }
 }
 
 void

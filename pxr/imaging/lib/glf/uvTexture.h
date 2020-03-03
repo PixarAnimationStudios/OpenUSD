@@ -72,6 +72,8 @@ public:
         unsigned int cropRight  = 0,
         GlfImage::ImageOriginLocation originLocation = 
                            GlfImage::OriginUpperLeft); 
+
+    int GetNumDimensions() const override;
     
     /// Returns true if the file at \p imageFilePath is an image that
     /// can be used with this texture object.
@@ -81,10 +83,10 @@ public:
     static bool IsSupportedImageFile(std::string const &imageFilePath);
 
     GLF_API
-    virtual VtDictionary GetTextureInfo(bool forceLoad);
+    VtDictionary GetTextureInfo(bool forceLoad) override;
 
     GLF_API
-    virtual bool IsMinFilterSupported(GLenum filter);
+    bool IsMinFilterSupported(GLenum filter) override;
 
 protected:
     GLF_API
@@ -98,7 +100,7 @@ protected:
                            GlfImage::OriginUpperLeft);
 
     GLF_API
-    virtual void _ReadTexture();
+    void _ReadTexture() override;
 
     GLF_API
     virtual bool _GenerateMipmap() const;

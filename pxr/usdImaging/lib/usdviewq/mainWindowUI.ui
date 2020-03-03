@@ -76,15 +76,9 @@
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
-      <property name="handleWidth">
-       <number>2</number>
-      </property>
       <widget class="QSplitter" name="primStageSplitter">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="handleWidth">
-        <number>2</number>
        </property>
        <widget class="QFrame" name="primFrame">
         <property name="frameShape">
@@ -226,7 +220,7 @@
              <string>Vis</string>
             </property>
             <property name="textAlignment">
-             <set>AlignLeading|AlignVCenter</set>
+             <set>AlignLeft|AlignVCenter</set>
             </property>
            </column>
            <column>
@@ -387,9 +381,6 @@
       <widget class="QSplitter" name="attribBrowserInspectorSplitter">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="handleWidth">
-        <number>2</number>
        </property>
        <widget class="QFrame" name="attributeBrowserFrame">
         <property name="frameShape">
@@ -591,16 +582,7 @@
             <enum>QFrame::Plain</enum>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_3">
-            <property name="leftMargin">
-             <number>0</number>
-            </property>
-            <property name="topMargin">
-             <number>0</number>
-            </property>
-            <property name="rightMargin">
-             <number>0</number>
-            </property>
-            <property name="bottomMargin">
+            <property name="margin">
              <number>0</number>
             </property>
             <item>
@@ -613,16 +595,7 @@
                 <string>Value</string>
                </attribute>
                <layout class="QVBoxLayout" name="verticalLayout">
-                <property name="leftMargin">
-                 <number>6</number>
-                </property>
-                <property name="topMargin">
-                 <number>6</number>
-                </property>
-                <property name="rightMargin">
-                 <number>6</number>
-                </property>
-                <property name="bottomMargin">
+                <property name="margin">
                  <number>6</number>
                 </property>
                 <item>
@@ -952,8 +925,8 @@
            <widget class="FrameSlider" name="frameSlider">
             <property name="minimumSize">
              <size>
-              <width>0</width>
-              <height>0</height>
+              <width>90</width>
+              <height>45</height>
              </size>
             </property>
             <property name="pageStep">
@@ -1185,7 +1158,7 @@
      <x>0</x>
      <y>0</y>
      <width>1145</width>
-     <height>25</height>
+     <height>30</height>
     </rect>
    </property>
    <property name="minimumSize">
@@ -1234,7 +1207,7 @@
     <property name="title">
      <string>&amp;View</string>
     </property>
-    <property name="toolTipsVisible">
+    <property name="toolTipsVisible" stdset="0">
      <bool>true</bool>
     </property>
     <widget class="QMenu" name="menuHUD">
@@ -1281,10 +1254,7 @@
       <string>Lights</string>
      </property>
      <addaction name="actionAmbient_Only"/>
-     <addaction name="separator"/>
-     <addaction name="actionKey"/>
-     <addaction name="actionFill"/>
-     <addaction name="actionBack"/>
+     <addaction name="actionDomeLight"/>
     </widget>
     <widget class="QMenu" name="menuShading_Mode">
      <property name="title">
@@ -1406,6 +1376,7 @@
     <addaction name="menuRendererPlugin"/>
     <addaction name="menuRendererSettings"/>
     <addaction name="menuRendererAovs"/>
+    <addaction name="actionPause"/>
     <addaction name="separator"/>
     <addaction name="actionReset_View"/>
     <addaction name="actionAdjust_FOV"/>
@@ -1415,7 +1386,6 @@
     <addaction name="menuComplexity"/>
     <addaction name="menuBBox"/>
     <addaction name="separator"/>
-    <addaction name="actionFrame_Selection"/>
     <addaction name="actionToggle_Framed_View"/>
     <addaction name="separator"/>
     <addaction name="actionFrame_Forward"/>
@@ -1484,20 +1454,24 @@
     <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
-  <action name="actionReset_View">
+  <action name="actionPause">
+    <string>Pause Render</string>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
-    <string>Reset View</string>
+    <string>Pause Render</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+P</string>
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
-  <action name="actionFrame_Selection">
+  <action name="actionReset_View">
    <property name="text">
-    <string>Frame Selection</string>
-   </property>
-   <property name="shortcut">
-    <string>F</string>
+    <string>Reset View</string>
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
@@ -1642,39 +1616,6 @@
     <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
-  <action name="actionKey">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Key</string>
-   </property>
-  </action>
-  <action name="actionFill">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Fill</string>
-   </property>
-  </action>
-  <action name="actionBack">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Back</string>
-   </property>
-  </action>
   <action name="actionAmbient_Only">
    <property name="checkable">
     <bool>true</bool>
@@ -1684,6 +1625,17 @@
    </property>
    <property name="text">
     <string>Camera Light</string>
+   </property>
+  </action>
+  <action name="actionDomeLight">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Dome Light</string>
    </property>
   </action>
   <action name="actionLevel_6">

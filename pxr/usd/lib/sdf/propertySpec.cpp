@@ -167,12 +167,12 @@ SdfPropertySpec::SetDefaultValue(const VtValue &defaultValue)
         return true;
     }
 
-    if (defaultValue.IsHolding<SdfValueBlock>()) {
-        return SetField(SdfFieldKeys->Default, defaultValue);
-    }
-
     TfType valueType = GetValueType();
     if (valueType.IsUnknown()) {
+        if (defaultValue.IsHolding<SdfValueBlock>()) {
+            // Allow blocking unknown types.
+            return SetField(SdfFieldKeys->Default, defaultValue);
+        }
         TF_CODING_ERROR("Can't set value on attribute <%s> with "
                         "unknown type \"%s\"",
                         GetPath().GetText(),
@@ -190,12 +190,17 @@ SdfPropertySpec::SetDefaultValue(const VtValue &defaultValue)
             return SetField(SdfFieldKeys->Default, defaultValue);
         }
 
-    } else {
+    }
+    else {
         // Otherwise check if defaultValue is castable to valueType
         VtValue value =
             VtValue::CastToTypeid(defaultValue, valueType.GetTypeid());
         if (!value.IsEmpty()) {
             return SetField(SdfFieldKeys->Default, value);
+        }
+        else if (defaultValue.IsHolding<SdfValueBlock>()) {
+            // If we're setting a value block, always allow that.
+            return SetField(SdfFieldKeys->Default, defaultValue);
         }
     }
 

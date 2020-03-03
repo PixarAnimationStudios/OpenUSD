@@ -155,7 +155,7 @@ protected:
 
     /// Perform any necessary cleanup; call this before you save the stage.
     PXRUSDMAYA_API
-    bool _PostProcess();
+    bool _PostProcess(const UsdMayaUtil::MDagPathMap<SdfPath> &DagPathToUsdPathMap);
 
     UsdMayaJobExportArgs mArgs;
     // List of the primitive writers to iterate over

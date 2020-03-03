@@ -6,7 +6,7 @@ pxr_plugin(${PXR_PACKAGE}
     LIBRARIES
         tf
         glf
-        ${RENDERMAN_LIBRARY}
+        ${LOADPRMAN_LIBRARY}
 
     INCLUDE_DIRS
         ${GLEW_INCLUDE_DIR}    

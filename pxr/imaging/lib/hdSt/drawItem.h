@@ -69,6 +69,9 @@ public:
         const SdfPath &materialId,
         std::string mixinSource = std::string());
 
+protected:
+    size_t _GetBufferArraysHash() const override;
+
 private:
     HdSt_GeometricShaderSharedPtr _geometricShader;
     HdStShaderCodeSharedPtr _materialShader;

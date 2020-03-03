@@ -96,9 +96,7 @@ UsdNotice::ObjectsChanged::ResyncedObject(const UsdObject &obj) const
     // XXX: We don't need the longest prefix here, we just need to know if
     // a prefix exists in the map.
     return SdfPathFindLongestPrefix(
-        make_transform_iterator(_resyncChanges->begin(), TfGet<0>()),
-        make_transform_iterator(_resyncChanges->end(), TfGet<0>()),
-        obj.GetPath()).base() != _resyncChanges->end();
+        *_resyncChanges, obj.GetPath()) != _resyncChanges->end();
 }
 
 bool 
@@ -107,9 +105,7 @@ UsdNotice::ObjectsChanged::ChangedInfoOnly(const UsdObject &obj) const
     // XXX: We don't need the longest prefix here, we just need to know if
     // a prefix exists in the map.
     return SdfPathFindLongestPrefix(
-        make_transform_iterator(_infoChanges->begin(), TfGet<0>()),
-        make_transform_iterator(_infoChanges->end(), TfGet<0>()),
-        obj.GetPath()).base() != _infoChanges->end();
+        *_infoChanges, obj.GetPath()) != _infoChanges->end();
 }
 
 UsdNotice::ObjectsChanged::PathRange

@@ -1,0 +1,13 @@
+#usda 1.0
+
+def "Ref"
+{
+}
+
+def "Test" (
+    references = </Ref>
+)
+{
+    asset a = @@
+    asset[] b = [@@, @@]
+}

@@ -37,7 +37,6 @@
 #include "pxr/usd/usdShade/output.h"
 #include "pxr/usd/ndr/declare.h"
 #include "pxr/usd/sdr/shaderNode.h"
-    
 
 #include "pxr/base/vt/value.h"
 

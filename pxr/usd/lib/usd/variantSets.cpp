@@ -283,5 +283,15 @@ UsdVariantSets::SetSelection(const std::string& variantSetName,
     return vset.SetVariantSelection(variantName);
 }
 
+SdfVariantSelectionMap
+UsdVariantSets::GetAllVariantSelections() const
+{
+    SdfVariantSelectionMap variantSelections;
+    for(const auto &i : _prim.GetPrimIndex().GetNodeRange()) {
+        PcpComposeSiteVariantSelections(i, &variantSelections);
+    }
+    return variantSelections;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

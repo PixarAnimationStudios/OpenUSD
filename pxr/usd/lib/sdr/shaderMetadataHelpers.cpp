@@ -39,6 +39,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((filename, "filename"))            // OSL spec
     ((fileInput, "fileInput"))          // Args spec
     ((assetIdInput, "assetIdInput"))    // Pixar convention
+
+    // Values for "renderType" metadata that indicate the property is a
+    // SdrPropertyTypes->Terminal
+    ((terminal, "terminal"))
 );
 
 namespace ShaderMetadataHelpers
@@ -211,6 +215,50 @@ namespace ShaderMetadataHelpers
         }
 
         return false;
+    }
+
+    // -------------------------------------------------------------------------
+
+    bool
+    IsPropertyATerminal(const NdrTokenMap& metadata)
+    {
+        const NdrTokenMap::const_iterator renderTypeSearch =
+            metadata.find(SdrPropertyMetadata->RenderType);
+
+        if (renderTypeSearch != metadata.end()) {
+            // If the property is a SdrPropertyTypes->Terminal, then the
+            // renderType value will be "terminal <terminalName>", where the
+            // <terminalName> is the specific kind of terminal.  To identify
+            // the property as a terminal, we only need to check that the first
+            // string in the renderType value specifies "terminal"
+            if (TfStringStartsWith(
+                renderTypeSearch->second, _tokens->terminal)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // -------------------------------------------------------------------------
+
+    TfToken
+    GetRoleFromMetadata(const NdrTokenMap& metadata)
+    {
+        const NdrTokenMap::const_iterator roleSearch =
+            metadata.find(SdrPropertyMetadata->Role);
+
+        if (roleSearch != metadata.end()) {
+            // If the value found is an allowed value, then we can return it
+            const TfToken role = TfToken(roleSearch->second);
+            if (std::find(SdrPropertyRole->allTokens.begin(),
+                          SdrPropertyRole->allTokens.end(),
+                          role) != SdrPropertyRole->allTokens.end()) {
+                return role;
+            }
+        }
+        // Return an empty token if no "role" metadata or acceptable value found
+        return TfToken();
     }
 }
 

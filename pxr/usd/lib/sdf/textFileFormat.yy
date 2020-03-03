@@ -179,12 +179,10 @@ _SetListOpItems(const TfToken &key, SdfListOpType type,
             key.GetText(), context->path.GetText());
     }
 
-    const SdfAbstractDataSpecId specId(&context->path);
-
-    ListOpType op = context->data->GetAs<ListOpType>(specId, key);
+    ListOpType op = context->data->GetAs<ListOpType>(context->path, key);
     op.SetItems(items, type);
 
-    context->data->Set(specId, key, VtValue::Take(op));
+    context->data->Set(context->path, key, VtValue::Take(op));
 }
 
 // Append a single item to the vector for the current path and specified key.
@@ -193,12 +191,11 @@ static void
 _AppendVectorItem(const TfToken& key, const T& item,
                   Sdf_TextParserContext *context)
 {
-    const SdfAbstractDataSpecId specId(&context->path);
-
-    std::vector<T> vec = context->data->GetAs<std::vector<T> >(specId, key);
+    std::vector<T> vec =
+        context->data->GetAs<std::vector<T> >(context->path, key);
     vec.push_back(item);
 
-    context->data->Set(specId, key, VtValue(vec));
+    context->data->Set(context->path, key, VtValue(vec));
 }
 
 template <class T>
@@ -206,27 +203,27 @@ inline static void
 _SetField(const SdfPath& path, const TfToken& key, const T& item,
           Sdf_TextParserContext *context)
 {
-    context->data->Set(SdfAbstractDataSpecId(&path), key, VtValue(item));
+    context->data->Set(path, key, VtValue(item));
 }
 
 inline static bool
 _HasField(const SdfPath& path, const TfToken& key, VtValue* value, 
           Sdf_TextParserContext *context)
 {
-    return context->data->Has(SdfAbstractDataSpecId(&path), key, value);
+    return context->data->Has(path, key, value);
 }
 
 inline static bool
 _HasSpec(const SdfPath& path, Sdf_TextParserContext *context)
 {
-    return context->data->HasSpec(SdfAbstractDataSpecId(&path));
+    return context->data->HasSpec(path);
 }
 
 inline static void
 _CreateSpec(const SdfPath& path, SdfSpecType specType, 
             Sdf_TextParserContext *context)
 {
-    context->data->CreateSpec(SdfAbstractDataSpecId(&path), specType);
+    context->data->CreateSpec(path, specType);
 }
 
 static void
@@ -872,8 +869,7 @@ _PrimEndRelationship(Sdf_TextParserContext *context)
     if (!context->relParsingNewTargetChildren.empty()) {
         std::vector<SdfPath> children = 
             context->data->GetAs<std::vector<SdfPath> >(
-                SdfAbstractDataSpecId(&context->path), 
-                SdfChildrenKeys->RelationshipTargetChildren);
+                context->path, SdfChildrenKeys->RelationshipTargetChildren);
 
         children.insert(children.end(), 
                         context->relParsingNewTargetChildren.begin(),

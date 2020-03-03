@@ -310,9 +310,7 @@ UsdMayaShadingModeExportContext::GetAssignments() const
 
         // If the bound prim's path is not below a bindable root, skip it.
         if (SdfPathFindLongestPrefix(
-                _bindableRoots.begin(),
-                _bindableRoots.end(),
-                usdPath) == _bindableRoots.end()) {
+                _bindableRoots, usdPath) == _bindableRoots.end()) {
             continue;
         }
 
@@ -461,10 +459,14 @@ UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
             assignmentsToBind)) {
         SdfPath materialPath = materialParent.GetPath().AppendChild(
                 TfToken(materialName));
-        UsdShadeMaterial material = UsdShadeMaterial::Define(
-                GetUsdStage(), materialPath);
-
-        UsdPrim materialPrim = material.GetPrim();
+        UsdPrim materialPrim = GetUsdStage()->GetPrimAtPath(materialPath);
+        UsdShadeMaterial material  = UsdShadeMaterial::Get(
+                    GetUsdStage(), materialPath);
+        if (!materialPrim) {
+            material = UsdShadeMaterial::Define(
+                    GetUsdStage(), materialPath);
+            materialPrim = material.GetPrim();
+        }
 
         // could use this to determine where we want to export.
         TF_FOR_ALL(iter, assignmentsToBind) {
@@ -491,7 +493,14 @@ UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
                     }
                     else {
                         UsdPrim boundPrim = stage->OverridePrim(boundPrimPath);
-                        UsdShadeMaterialBindingAPI(boundPrim).Bind(material);
+                        UsdShadeMaterialBindingAPI bindingAPI;
+                        bindingAPI = UsdShadeMaterialBindingAPI(boundPrim);
+                        UsdPrim foundMaterialPrim =
+                            bindingAPI.ComputeBoundMaterial().GetPrim();
+                        if (foundMaterialPrim != materialPrim) {
+                            // only do binding if we have changed the material prim
+                            bindingAPI.Bind(material);
+                        }
                     }
                 }
 

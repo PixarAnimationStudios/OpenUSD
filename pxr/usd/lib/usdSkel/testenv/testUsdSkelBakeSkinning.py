@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-from pxr import Usd, UsdSkel
+from pxr import Gf, Usd, UsdSkel
 import unittest
 
 
@@ -37,6 +37,16 @@ class TestUsdSkelBakeSkinning(unittest.TestCase):
         stage.GetRootLayer().Export("lbs.baked.usda")
 
 
+    def test_LinearBlendSkinningWithInterval(self):
+        testFile = "lbs.usda"
+        stage = Usd.Stage.Open(testFile)
+
+        self.assertTrue(UsdSkel.BakeSkinning(
+            stage.Traverse(), Gf.Interval(1, 10)))
+
+        stage.GetRootLayer().Export("lbs.bakedInterval.usda")
+
+
     def test_BlendShapes(self):
         testFile = "blendshapes.usda"
         stage = Usd.Stage.Open(testFile)
@@ -44,6 +54,15 @@ class TestUsdSkelBakeSkinning(unittest.TestCase):
         self.assertTrue(UsdSkel.BakeSkinning(stage.Traverse()))
         
         stage.GetRootLayer().Export("blendshapes.baked.usda")
+
+
+    def test_BlendShapesWithNormals(self):
+        testFile = "blendshapesWithNormals.usda"
+        stage = Usd.Stage.Open(testFile)
+
+        self.assertTrue(UsdSkel.BakeSkinning(stage.Traverse()))
+        
+        stage.GetRootLayer().Export("blendshapesWithNormals.baked.usda")
 
 
 if __name__ == "__main__":

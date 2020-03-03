@@ -77,6 +77,7 @@ public:
                               HdTextureType textureType,
                               HdWrap wrapS,
                               HdWrap wrapT,
+                              HdWrap wrapR,
                               HdMinFilter minFilter,
                               HdMagFilter magFilter,
                               size_t memoryRequest = 0);
@@ -104,6 +105,7 @@ private:
 
     HdWrap _wrapS;
     HdWrap _wrapT;
+    HdWrap _wrapR;
     HdMinFilter _minFilter;
     HdMagFilter _magFilter;
 };

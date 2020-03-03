@@ -26,6 +26,8 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/ostreamMethods.h"
 
+#include <boost/functional/hash.hpp>
+
 #include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -265,6 +267,13 @@ std::ostream &
 operator<<(std::ostream &os, UsdStagePopulationMask const &mask)
 {
     return os << "UsdStagePopulationMask(" << mask.GetPaths() << ')';
+}
+
+size_t
+hash_value(UsdStagePopulationMask const &mask)
+{
+    boost::hash<std::vector<SdfPath> > h;
+    return h(mask._paths);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -171,6 +171,16 @@ QSplitter::handle {
     background-color: rgb(32, 32, 32);
 }
 
+/* Balance between making the splitters easier to find/grab, and
+ * clean use of space. */
+QSplitter::handle:horizontal {
+    width: 4px;
+}
+
+QSplitter::handle:vertical {
+    height: 4px;
+}
+
 /* Override the backround for labels, make them transparent */
 QLabel {
     background: none;
@@ -233,20 +243,20 @@ QTreeView::item, QTableView::item {
 }
 
 /* Selected items highlighted in orange */
-QTreeView::item:selected,
+.QTreeWidget::item:selected,
 QTreeView::branch:selected,
 QTableView::item:selected {
     background: rgb(189, 155, 84);
 }
 
 /* hover items a bit lighter */
-QTreeView::item:hover:!pressed:!selected,
+.QTreeWidget::item:hover:!pressed:!selected,
 QTreeView::branch:hover:!pressed:!selected,
 QTableView::item:hover:!pressed:!selected {
     background: rgb(70, 70, 70);
 }
 
-QTreeView::item:hover:!pressed:selected,
+.QTreeWidget::item:hover:!pressed:selected,
 QTreeView::branch:hover:!pressed:selected,
 QTableView::item:hover:!pressed:selected {
 /*    background: rgb(132, 109, 59); */
@@ -390,26 +400,25 @@ QTabBar::tab:left:!selected {
  * Style the time slider
  * Style in inner groove 
  */
-QSlider::groove:horizontal {
+QSlider::groove:horizontal#frameSlider {
     border: 2px solid rgb(47, 47, 47);
     background: rgb(58, 58, 58);
-    height: 6px;
-    margin: 2px 0;
+    margin: 2px 2px;
 }
 
-/* Style the handle with orange background, border and proper size */
-QSlider::handle:horizontal {
+
+/* Style the handle with orange background, border and heftier width */
+QSlider::handle:horizontal#frameSlider {
     background: QLinearGradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 rgb(207, 151, 53), stop: 1 rgb(229, 162, 44));
     
-    border: 1px solid rgb(42, 42, 42);
-    border-radius: 5px;
-    
-    width: 10px;
-    margin: -4px 0;
+    border: 2px solid rgb(42, 42, 42);
+    border-radius: 10px;
+
+    width:  22px;
 }
 
 /* Set the disabled background color for slider handle and checkbox */
-QSlider::handle:horizontal:disabled,
+QSlider::handle:horizontal:disabled#frameSlider,
 QCheckBox::indicator:checked:disabled {
     background: QLinearGradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 rgb(177, 161, 134), stop: 1 rgb(188, 165, 125));
 }

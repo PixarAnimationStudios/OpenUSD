@@ -38,7 +38,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static std::string _Str(UsdStagePopulationMask const &self)
+static std::string __str__(UsdStagePopulationMask const &self)
 {
     return boost::lexical_cast<std::string>(self);
 }
@@ -47,6 +47,11 @@ static string __repr__(UsdStagePopulationMask const &self)
 {
     return TF_PY_REPR_PREFIX + "StagePopulationMask(" +
         TfPyRepr(self.GetPaths()) + ")";
+}
+
+static size_t __hash__(UsdStagePopulationMask const &self)
+{
+    return hash_value(self);
 }
 
 static std::pair<bool, std::vector<TfToken>> 
@@ -126,9 +131,9 @@ void wrapUsdStagePopulationMask()
         .def(self == self)
         .def(self != self)
 
-//        .def(str(self))
-        .def("__str__", _Str)
+        .def("__str__", __str__)
         .def("__repr__", __repr__)
+        .def("__hash__", __hash__)
 
         ;
 }

@@ -203,6 +203,12 @@ protected:
         return _sharedData;
     }
 
+    /// Allows derived classes to return a hash of the versions of buffers
+    /// they manage.
+    /// Called by GetBufferArraysHash.
+    HD_API
+    virtual size_t _GetBufferArraysHash() const;
+
 private:
     // configuration of how to bundle the drawing coordinate for this draw item
     // out of BARs in sharedData

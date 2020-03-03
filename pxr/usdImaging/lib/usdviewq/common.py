@@ -53,6 +53,13 @@ class UIPrimTypeColors(ConstantGroup):
     INSTANCE = UIBaseColors.LIGHT_SKY_BLUE
     MASTER = QtGui.QBrush(QtGui.QColor(118, 136, 217))
 
+class UIPrimTreeColors(ConstantGroup):
+    SELECTED = QtGui.QBrush(QtGui.QColor(189, 155, 84))
+    SELECTED_HOVER = QtGui.QBrush(QtGui.QColor(227, 186, 101))
+    ANCESTOR_OF_SELECTED = QtGui.QBrush(QtGui.QColor(189, 155, 84, 50))
+    ANCESTOR_OF_SELECTED_HOVER = QtGui.QBrush(QtGui.QColor(189, 155, 84, 100))
+    UNSELECTED_HOVER = QtGui.QBrush(QtGui.QColor(70, 70, 70))
+
 class UIPropertyValueSourceColors(ConstantGroup):
     FALLBACK = UIBaseColors.DARK_YELLOW
     TIME_SAMPLE = QtGui.QBrush(QtGui.QColor(177, 207, 153))
@@ -77,7 +84,7 @@ class UIFonts(ConstantGroup):
     BOLD.setWeight(QtGui.QFont.Bold)
 
     BOLD_ITALIC = QtGui.QFont()
-    BOLD_ITALIC .setWeight(QtGui.QFont.Bold)
+    BOLD_ITALIC.setWeight(QtGui.QFont.Bold)
     BOLD_ITALIC.setItalic(True)
 
     OVER_PRIM = ITALIC
@@ -88,6 +95,9 @@ class UIFonts(ConstantGroup):
     INHERITED.setPointSize(BASE_POINT_SIZE * 0.8)
     INHERITED.setWeight(QtGui.QFont.Normal)
     INHERITED.setItalic(True)
+
+class KeyboardShortcuts(ConstantGroup):
+    FramingKey = QtCore.Qt.Key_F
 
 class PropertyViewIndex(ConstantGroup):
     TYPE, NAME, VALUE = range(3)
@@ -202,24 +212,32 @@ def PrintWarning(title, description):
     print >> msg, description
     print >> msg, "------------------------------------------------------------"
 
-def GetShortString(prop, frame):
+def GetValueAtFrame(prop, frame):
     if isinstance(prop, Usd.Relationship):
-        val = ", ".join(str(p) for p in prop.GetTargets())
+        return prop.GetTargets()
     elif isinstance(prop, (Usd.Attribute, CustomAttribute)):
-        val = prop.Get(frame)
+        return prop.Get(frame)
     elif isinstance(prop, Sdf.AttributeSpec):
         if frame == Usd.TimeCode.Default():
-            val = prop.default
+            return prop.default
         else:
             numTimeSamples = -1
             if prop.HasInfo('timeSamples'):
                 numTimeSamples = prop.layer.GetNumTimeSamplesForPath(prop.path)
             if numTimeSamples == -1:
-                val = prop.default
+                return prop.default
             elif numTimeSamples == 1:
                 return "1 time sample"
             else:
                 return str(numTimeSamples) + " time samples"
+    elif isinstance(prop, Sdf.RelationshipSpec):
+        return prop.targetPathList
+
+    return val
+
+def GetShortStringForValue(prop, val):
+    if isinstance(prop, Usd.Relationship):
+        val = ", ".join(str(p) for p in val)
     elif isinstance(prop, Sdf.RelationshipSpec):
         return str(prop.targetPathList)
 

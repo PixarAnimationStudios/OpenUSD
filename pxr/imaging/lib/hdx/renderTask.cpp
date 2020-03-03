@@ -34,6 +34,7 @@
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 
+#include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -142,6 +143,10 @@ HdxRenderTask::Prepare(HdTaskContext* ctx,
     if (_setupTask) {
         _setupTask->Prepare(ctx, renderIndex);
     }
+
+    if (_pass) {
+        _pass->Prepare(GetRenderTags());
+    }
 }
 
 void
@@ -188,6 +193,17 @@ HdxRenderTask::_GetRenderPassState(HdTaskContext *ctx) const
         HdRenderPassStateSharedPtr renderPassState;
         _GetTaskContextData(ctx, HdxTokens->renderPassState, &renderPassState);
         return renderPassState;
+    }
+}
+
+size_t
+HdxRenderTask::_GetDrawItemCount() const
+{
+    if (HdSt_RenderPass* hdStRenderPass =
+            dynamic_cast<HdSt_RenderPass*>(_pass.get())) {
+        return hdStRenderPass->GetDrawItemCount();
+    } else {
+        return 0;
     }
 }
 

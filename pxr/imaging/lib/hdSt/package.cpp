@@ -51,6 +51,13 @@ HdStPackageComputeShader()
 }
 
 TfToken
+HdStPackageDomeLightShader()
+{
+    static TfToken s = _GetShaderPath("domeLight.glslfx");
+    return s;
+}
+
+TfToken
 HdStPackagePtexTextureShader()
 {
     static TfToken s = _GetShaderPath("ptexTexture.glslfx");
@@ -75,6 +82,13 @@ TfToken
 HdStPackageFallbackSurfaceShader()
 {
     static TfToken s = _GetShaderPath("fallbackSurface.glslfx");
+    return s;
+}
+
+TfToken
+HdStPackageFallbackVolumeShader()
+{
+    static TfToken s = _GetShaderPath("fallbackVolume.glslfx");
     return s;
 }
 

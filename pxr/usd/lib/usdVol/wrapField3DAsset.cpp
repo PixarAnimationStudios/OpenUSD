@@ -57,6 +57,13 @@ _CreateFieldNameAttr(UsdVolField3DAsset &self,
 }
         
 static UsdAttribute
+_CreateFieldPurposeAttr(UsdVolField3DAsset &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateFieldPurposeAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateFieldIndexAttr(UsdVolField3DAsset &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateFieldIndexAttr(
@@ -100,6 +107,13 @@ void wrapUsdVolField3DAsset()
              &This::GetFieldNameAttr)
         .def("CreateFieldNameAttr",
              &_CreateFieldNameAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetFieldPurposeAttr",
+             &This::GetFieldPurposeAttr)
+        .def("CreateFieldPurposeAttr",
+             &_CreateFieldPurposeAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         

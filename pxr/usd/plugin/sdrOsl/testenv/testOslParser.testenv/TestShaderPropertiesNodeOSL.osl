@@ -1,0 +1,80 @@
+//
+// TestShaderPropertiesNodeOSL
+//
+// This file is not used directly in the test, but is compiled into the OSO.
+//
+// To compile this node, go to the this file's directory and run:
+// oslc -o TestShaderPropertiesNodeOSL.oso TestShaderPropertiesNodeOSL.osl
+//
+
+struct TestStruct {
+    float foo;
+};
+
+shader TestShaderPropertiesNodeOSL
+[[
+    string help = "This node is used for testing shader property type"
+                  "correctness"
+]]
+(
+    int inputInt = 1,
+    string inputString = "foo",
+    float inputFloat = 1.0,
+    color inputColor = color(1.0, 1.0, 1.0),
+    point inputPoint = point(0.0, 0.0, 0.0),
+    normal inputNormal = normal(1.0, 1.0, 1.0),
+    vector inputVector = vector(0.0, 0.0, 0.0),
+    matrix inputMatrix = matrix(0.0),
+    TestStruct inputStruct = { 0.0 },
+    float inputVstruct = 0.0,
+    float inputVstruct_parameter = 0.0
+    [[
+        string vstructmember = "inputVstruct.parameter"
+    ]],
+    int inputIntArray[3] = {1, 2, 3},
+    string inputStringArray[4] = { "foo", "bar", "baz", "moo" },
+    float inputFloatArray[5] = { 1.0, 2.0, 3.0, 4.0, 5.0 },
+    color inputColorArray[2] = { color(1.0, 1.0, 1.0), color(1.0, 1.0, 1.0) },
+    point inputPointArray[2] = { point(0.0, 0.0, 0.0), point(0.0, 0.0, 0.0) },
+    normal inputNormalArray[2] =
+        { normal(1.0, 1.0, 1.0), normal(1.0, 1.0, 1.0) },
+    vector inputVectorArray[2] =
+        { vector(0.0, 0.0, 0.0), vector(0.0, 0.0, 0.0) },
+    matrix inputMatrixArray[2] = { matrix(0.0), matrix(1.0) },
+
+    float inputFloat2[2] = { 1.0, 2.0 },
+    float inputFloat3[3] = { 1.0, 2.0, 3.0 },
+    float inputFloat4[4] = { 1.0, 2.0, 3.0, 4.0 },
+    string inputAsset = "filename"
+    [[
+        string widget = "filename"
+    ]],
+    string inputAssetArray[2] = { "test", "files" }
+    [[
+        string widget = "fileInput"
+    ]],
+    color inputColorRoleNone = color(1.0, 2.0, 3.0)
+    [[
+        string role = "none"
+    ]],
+    color inputPointRoleNone = point(1.0, 2.0, 3.0)
+    [[
+        string role = "none"
+    ]],
+    color inputNormalRoleNone = normal(1.0, 2.0, 3.0)
+    [[
+        string role = "none"
+    ]],
+    color inputVectorRoleNone = vector(1.0, 2.0, 3.0)
+    [[
+        string role = "none"
+    ]],
+
+    output float outputSurface = 1.0
+    [[
+        string renderType = "terminal surface"
+    ]]
+)
+{
+    // Nothing here!
+}

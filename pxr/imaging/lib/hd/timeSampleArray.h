@@ -31,6 +31,7 @@
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/smallVector.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -56,7 +57,7 @@ inline VtArray<T> HdResampleNeighbors(float alpha,
                                       const VtArray<T>& v1)
 {
     VtArray<T> r(v0.size());
-    for (int i=0; i < r.size(); ++i) {
+    for (size_t i=0; i < r.size(); ++i) {
         r[i] = HdResampleNeighbors(alpha, v0[i], v1[i]);
     }
     return r;
@@ -67,13 +68,17 @@ inline VtArray<T> HdResampleNeighbors(float alpha,
 /// parametric position u.  The function is considered constant
 /// outside the supplied sample range.
 template <typename T>
-T HdResampleRawTimeSamples(float u, size_t numSamples,
-                           const float *us, const T *vs)
+T HdResampleRawTimeSamples(
+    float u, 
+    size_t numSamples,
+    const float *us, 
+    const T *vs)
 {
     if (numSamples == 0) {
         TF_CODING_ERROR("HdResample: Zero samples provided");
         return T();
     }
+
     size_t i=0;
     for (; i < numSamples; ++i) {
         if (us[i] == u) {
@@ -109,20 +114,38 @@ T HdResampleRawTimeSamples(float u, size_t numSamples,
 /// a limited ability to handle variable sampling without requiring
 /// heap allocation.
 template<typename TYPE, unsigned int CAPACITY>
-struct HdTimeSampleArray {
-    /// Static maximum capacity.
-    static const unsigned int capacity = CAPACITY;
-    /// Sample times, ordered by increasing time.
-    float times[CAPACITY];
-    /// Sample values, corresponding to the times[] array.
-    TYPE values[CAPACITY];
-    /// Count of how many samples are stored.  0 <= count <= CAPACITY.
-    unsigned int count;
+struct HdTimeSampleArray 
+{
+    HdTimeSampleArray() {
+        times.resize(CAPACITY);
+        values.resize(CAPACITY);
+        count = 0;
+    }
+
+    HdTimeSampleArray(const HdTimeSampleArray& rhs) {
+        times = rhs.times;
+        values = rhs.values;
+        count = rhs.count;
+    }
+
+    HdTimeSampleArray& operator=(const HdTimeSampleArray& rhs) {
+        times = rhs.times;
+        values = rhs.values;
+        count = rhs.count;
+        return *this;
+    }
+
+    /// Resize the internal buffers.
+    void Resize(unsigned int newSize) {
+        times.resize(newSize);
+        values.resize(newSize);
+        count = newSize;
+    }
 
     /// Convience method for invoking HdResampleRawTimeSamples
     /// on this HdTimeSampleArray.
     TYPE Resample(float u) const {
-        return HdResampleRawTimeSamples(u, count, times, values);
+        return HdResampleRawTimeSamples(u, count, times.data(), values.data());
     }
 
     /// Unbox an HdTimeSampleArray holding boxed VtValue<VtArray<T>>
@@ -132,10 +155,10 @@ struct HdTimeSampleArray {
     /// VtValue is not holding the expected type.
     ///
     /// \see VtValue::Get()
-    void UnboxFrom(HdTimeSampleArray<VtValue,CAPACITY> const& box) {
-        count = box.count;
+    void UnboxFrom(HdTimeSampleArray<VtValue, CAPACITY> const& box) {
+        Resize(box.count);
+        times = box.times;
         for (size_t i=0; i < box.count; ++i) {
-            times[i] = box.times[i];
             if (box.values[i].GetArraySize() > 0) {
                 values[i] = box.values[i].template Get<TYPE>();
             } else {
@@ -143,6 +166,10 @@ struct HdTimeSampleArray {
             }
         }
     }
+
+    size_t count;
+    TfSmallVector<float, CAPACITY> times;
+    TfSmallVector<TYPE, CAPACITY> values;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

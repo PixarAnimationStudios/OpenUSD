@@ -416,7 +416,7 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     // Perform post-processing for instances, skel, etc.
     // We shouldn't be creating new instance masters after this point, and we
     // want to cleanup the InstanceSources prim before writing model hierarchy.
-    if (!mJobCtx._PostProcess()) {
+    if (!mJobCtx._PostProcess(mDagPathToUsdPathMap)) {
         return false;
     }
 
@@ -744,7 +744,7 @@ UsdMaya_WriteJob::_CreatePackage() const
     const std::string firstLayerName = TfStringPrintf(
             "%s.%s",
             firstLayerBaseName.c_str(),
-            UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText());
+            TfGetExtension(_fileName).c_str());
 
     if (mJobCtx.mArgs.compatibility == UsdMayaJobExportArgsTokens->appleArKit) {
         // If exporting with compatibility=appleArKit, there are additional

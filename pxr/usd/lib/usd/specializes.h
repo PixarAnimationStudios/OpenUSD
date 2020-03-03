@@ -42,12 +42,11 @@ SDF_DECLARE_HANDLES(SdfPrimSpec);
 /// prim.
 ///
 /// All paths passed to the UsdSpecializes API are expected to be in the 
-/// namespace of the owning prim's stage. Local specializes paths (i.e., 
-/// non-root prim paths) will be translated from this namespace to the
-/// namespace of the current edit target, if necessary. If a path cannot 
-/// be translated, a coding error will be issued and no changes will be
-/// made. Global specializes paths (i.e., root prim paths) will not be 
-/// translated.
+/// namespace of the owning prim's stage. Subroot prim specializes paths  
+/// will be translated from this namespace to the namespace of the current 
+/// edit target, if necessary. If a path cannot be translated, a coding error 
+/// will be issued and no changes will be made. Root prim specializes paths 
+/// will not be translated.
 ///
 class UsdSpecializes {
     friend class UsdPrim;
@@ -89,7 +88,6 @@ public:
     // ---------------------------------------------------------------------- //
 private:
 
-    SdfPrimSpecHandle _CreatePrimSpecForEditing();
     UsdPrim _prim;
 };
 

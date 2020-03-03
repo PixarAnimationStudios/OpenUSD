@@ -44,6 +44,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdSceneDelegate;
 
 typedef boost::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
+typedef boost::shared_ptr<class HdStTextureResourceHandle> HdStTextureResourceHandleSharedPtr;
 
 ///
 /// Represents a Texture Buffer Prim.
@@ -63,6 +64,14 @@ protected:
         HdSceneDelegate *sceneDelegate,
         const SdfPath &sceneId,
         HdTextureResource::ID texID) const override;
+
+    virtual void _RegisterTextureResource(
+        HdRenderIndex *renderIndex,
+        const SdfPath &textureHandleId,
+        const HdTextureResourceSharedPtr &textureResource) override;
+
+private:
+    HdStTextureResourceHandleSharedPtr _textureResourceHandle;
 };
 
 

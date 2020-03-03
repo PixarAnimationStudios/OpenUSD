@@ -29,6 +29,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/vt/api.h"
+#include "pxr/base/vt/traits.h"
 #include "pxr/base/arch/inttypes.h"
 #include "pxr/base/gf/declare.h"
 #include "pxr/base/gf/half.h"
@@ -43,6 +44,10 @@
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+// Help ensure TfToken is stored in local storage in VtValue by indicating it is
+// cheap to copy (just refcount operations).
+VT_TYPE_IS_CHEAP_TO_COPY(TfToken);
 
 // Value types.
 

@@ -88,8 +88,8 @@ public:
     HDX_API
     void SetCollection(HdRprimCollection const& collection);
 
-    /// Set the render params. Note: params.camera and params.viewport will
-    /// be overwritten, since they come from SetCameraState.
+    /// Set the render params. Note: params.viewport will
+    /// be overwritten, since it comes from SetRenderViewport.
     /// XXX: For GL renders, HdxTaskController relies on the caller to
     /// correctly set GL_SAMPLE_ALPHA_TO_COVERAGE.
     HDX_API
@@ -101,7 +101,6 @@ public:
     /// have a stronger opinion and override this opinion
     HDX_API
     void SetRenderTags(TfTokenVector const& renderTags);
-
 
     /// -------------------------------------------------------
     /// AOV API
@@ -128,6 +127,10 @@ public:
     void SetRenderOutputSettings(TfToken const& name,
                                  HdAovDescriptor const& desc);
 
+    // Get parameters for an AOV.
+    HDX_API
+    HdAovDescriptor GetRenderOutputSettings(TfToken const& name) const;
+
     /// -------------------------------------------------------
     /// Lighting API
 
@@ -138,24 +141,27 @@ public:
     void SetLightingState(GlfSimpleLightingContextPtr const& src);
 
     /// -------------------------------------------------------
-    /// Camera API
+    /// Camera and Framing API
     
-    /// Set the parameters for the viewer default camera.
+    /// Set the viewport param on tasks.
     HDX_API
-    void SetCameraMatrices(GfMatrix4d const& viewMatrix,
-                           GfMatrix4d const& projectionMatrix);
+    void SetRenderViewport(GfVec4d const& viewport);
 
-    /// Set the camera viewport.
+    /// -- Scene camera --
+    /// Set the camera param on tasks to a USD camera path.
     HDX_API
-    void SetCameraViewport(GfVec4d const& viewport);
-
-    /// Set the camera clip planes.
+    void SetCameraPath(SdfPath const& id);
+    
+    /// -- Free camera --
+    /// Set the view and projection matrices for the free camera.
+    /// Note: The projection matrix must be pre-adjusted for the window policy.
     HDX_API
-    void SetCameraClipPlanes(std::vector<GfVec4d> const& clipPlanes);
-
-    /// Set the camera window policy.
+    void SetFreeCameraMatrices(GfMatrix4d const& viewMatrix,
+                               GfMatrix4d const& projectionMatrix);
+    /// Set the free camera clip planes.
+    /// (Note: Scene cameras use clipping planes authored on the camera prim)
     HDX_API
-    void SetCameraWindowPolicy(CameraUtilConformWindowPolicy windowPolicy);
+    void SetFreeCameraClipPlanes(std::vector<GfVec4d> const& clipPlanes);
 
     /// -------------------------------------------------------
     /// Selection API
@@ -176,7 +182,7 @@ public:
     void SetEnableShadows(bool enable);
 
     /// Set the shadow params. Note: params.camera will
-    /// be overwritten, since it comes from SetCameraState.
+    /// be overwritten, since it comes from SetCameraPath/SetCameraState.
     HDX_API
     void SetShadowParams(HdxShadowTaskParams const& params);
 
@@ -219,23 +225,42 @@ private:
     void _CreateColorCorrectionTask();
     void _CreatePickTask();
     void _CreatePickFromRenderBufferTask();
+    SdfPath _CreateAovResolveTask(TfToken const& aovName);
+    void _CreatePresentTask();
+
+    void _SetCameraParamForTasks(SdfPath const& id);
 
     void _SetBlendStateForMaterialTag(TfToken const& materialTag,
                                       HdxRenderTaskParams *renderParams) const;
+
+    void _SetColorizeQuantizationEnabled(bool enabled);
 
     // Render graph topology control.
     bool _ShadowsEnabled() const;
     bool _SelectionEnabled() const;
     bool _ColorizeSelectionEnabled() const;
     bool _ColorCorrectionEnabled() const;
+    bool _ColorizeQuantizationEnabled() const;
     bool _AovsSupported() const;
 
     // Helper function for renderbuffer management.
     SdfPath _GetRenderTaskPath(TfToken const& materialTag) const;
     SdfPath _GetAovPath(TfToken const& aov) const;
+    SdfPathVector _GetAovEnabledTasks() const;
 
-    // A private scene delegate member variable backs the tasks this
-    // controller generates. To keep _Delegate simple, the containing class
+    // Helper function to load the default domeLight texture
+    void _LoadDefaultDomeLightTexture();
+
+    // Helper function to set the parameters of a light, get a particular light 
+    // in the scene, replace and remove Sprims from the scene 
+    void _SetParameters(SdfPath const& pathName, GlfSimpleLight const& light);
+    GlfSimpleLight _GetLightAtId(size_t const& pathIdx);
+    void _RemoveLightSprim(size_t const& pathIdx);
+    void _ReplaceLightSprim(size_t const& pathIdx, GlfSimpleLight const& light, 
+                        SdfPath const& pathName);
+
+    // A private scene delegate member variable backs the tasks and the free cam
+    // this controller generates. To keep _Delegate simple, the containing class
     // is responsible for marking things dirty.
     class _Delegate : public HdSceneDelegate
     {
@@ -273,8 +298,11 @@ private:
 
         // HdSceneDelegate interface
         virtual VtValue Get(SdfPath const& id, TfToken const& key);
+        virtual GfMatrix4d GetTransform(SdfPath const& id);
         virtual VtValue GetCameraParamValue(SdfPath const& id, 
                                             TfToken const& key);
+        virtual VtValue GetLightParamValue(SdfPath const& id, 
+                                            TfToken const& paramName);
         virtual bool IsEnabled(TfToken const& option) const;
         virtual HdRenderBufferDescriptor
             GetRenderBufferDescriptor(SdfPath const& id);
@@ -299,12 +327,18 @@ private:
     SdfPath _colorCorrectionTaskId;
     SdfPath _pickTaskId;
     SdfPath _pickFromRenderBufferTaskId;
+    SdfPath _aovColorResolveTaskId;
+    SdfPath _aovDepthResolveTaskId;
+    SdfPath _presentTaskId;
 
     // Generated camera (for the default/free cam)
-    SdfPath _cameraId;
-
-    // Generated lights
+    SdfPath _freeCamId;
+    // Current active camera
+    SdfPath _activeCameraId;
+    
+    // Built-in lights
     SdfPathVector _lightIds;
+    HdTextureResourceSharedPtr _defaultDomeLightTextureResource;
 
     // Generated renderbuffers
     SdfPathVector _aovBufferIds;

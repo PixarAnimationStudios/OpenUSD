@@ -26,10 +26,6 @@
 
 #include "usdMaya/util.h"
 
-#include <boost/python/args.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python.hpp>
-
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/usd/sdf/path.h"
@@ -38,6 +34,11 @@
 #include <maya/MFnAssembly.h>
 #include <maya/MObject.h>
 #include <maya/MStatus.h>
+
+#include <boost/noncopyable.hpp>
+#include <boost/python.hpp>
+#include <boost/python/args.hpp>
+#include <boost/python/def.hpp>
 
 #include <string>
 #include <vector>

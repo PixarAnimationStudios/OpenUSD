@@ -97,6 +97,15 @@ public:
         _colorCorrectionMode = colorCorrectionMode;
     }
 
+    /// Sets the UsdGeomImageable purposes to be used for rendering
+    ///
+    /// We will __always__ include "default" purpose, and by default,
+    /// we will also include UsdGeomTokens->proxy.  Use this method
+    /// to explicitly enumerate an alternate set of purposes to be
+    /// included along with "default".
+    USDAPPUTILS_API
+    void SetIncludedPurposes(const TfTokenVector& purposes);
+
     /// Records an image and writes the result to \p outputImagePath.
     ///
     /// The recorded image will represent the view from \p usdCamera looking at
@@ -119,6 +128,7 @@ private:
     size_t _imageWidth;
     float _complexity;
     TfToken _colorCorrectionMode;
+    TfTokenVector _purposes;
 };
 
 

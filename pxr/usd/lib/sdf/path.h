@@ -36,8 +36,10 @@
 #include <boost/operators.hpp>
 
 #include <algorithm>
+#include <iterator>
 #include <set>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -112,6 +114,9 @@ public:
 
     Sdf_PathNodeHandleImpl &
     operator=(Sdf_PathNodeHandleImpl const &rhs) {
+        if (Counted && *this == rhs) {
+            return *this;
+        }
         this_type(rhs).swap(*this);
         return *this;
     }
@@ -368,6 +373,15 @@ public:
     /// Returns whether the path or any of its parent paths identifies
     /// a variant selection for a prim.
     SDF_API bool ContainsPrimVariantSelection() const;
+    
+    /// Return true if this path contains any property elements, false
+    /// otherwise.  A false return indicates a prim-like path, specifically a
+    /// root path, a prim path, or a prim variant selection path.  A true return
+    /// indicates a property-like path: a prim property path, a target path, a
+    /// relational attribute path, etc.
+    bool ContainsPropertyElements() const {
+        return static_cast<bool>(_propPart);
+    }
 
     /// Return true if this path is or has a prefix that's a target path or a
     /// mapper path.
@@ -517,14 +531,24 @@ public:
     /// \name Creating new paths by modifying existing paths
     /// @{
 
-    /// Creates a path by stripping a single element off of this path.
+    /// Return the path that identifies this path's namespace parent.
     ///
-    /// For a relational attribute path, returns the relationship target
-    /// path.  For a path to a prim's property, returns the prim's path.
-    /// For a prim path, returns the prim's parent.  For a root prim
-    /// path, returns EmptyPath.  For a single element relative prim
-    /// path, returns ReflexiveRelativePath.  For ReflexiveRelativePath,
-    /// returns EmptyPath.
+    /// For a prim path (like '/foo/bar'), return the prim's parent's path
+    /// ('/foo').  For a prim property path (like '/foo/bar.property'), return
+    /// the prim's path ('/foo/bar').  For a target path (like
+    /// '/foo/bar.property[/target]') return the property path
+    /// ('/foo/bar.property').  For a relational attribute or mapper path (like
+    /// '/foo/bar.property[/target].relAttr') return the relationship target's
+    /// path ('/foo/bar.property[/target]').  For a prim variant selection path
+    /// (like '/foo/bar{var=sel}') return the prim path ('/foo/bar').  For a
+    /// root prim path (like '/rootPrim'), return AbsoluteRootPath() ('/').  For
+    /// a single element relative prim path (like 'relativePrim'), return
+    /// ReflexiveRelativePath() ('.').  For ReflexiveRelativePath(), return the
+    /// relative parent path ('..').
+    ///
+    /// Note that the parent path of a relative parent path ('..') is a relative
+    /// grandparent path ('../..').  Use caution writing loops that walk to
+    /// parent paths since relative paths have infinitely many ancestors.
     SDF_API SdfPath GetParentPath() const;
 
     /// Creates a path by stripping all relational attributes, targets,
@@ -762,6 +786,19 @@ public:
     SDF_API
     static TfToken StripNamespace(const TfToken &name);
 
+    /// Returns (\p name, \c true) where \p name is stripped of the prefix
+    /// specified by \p matchNamespace if \p name indeed starts with
+    /// \p matchNamespace. Returns (\p name, \c false) otherwise, with \p name 
+    /// unmodified.
+    ///
+    /// This function deals with both the case where \p matchNamespace contains
+    /// the trailing namespace delimiter ':' or not.
+    ///
+    SDF_API
+    static std::pair<std::string, bool> 
+    StripPrefixNamespace(const std::string &name, 
+                         const std::string &matchNamespace);
+
     /// Return true if \p pathString is a valid path string, meaning that
     /// passing the string to the \a SdfPath constructor will result in a valid,
     /// non-empty SdfPath.  Otherwise, return false and if \p errMsg is not NULL,
@@ -896,6 +933,16 @@ private:
     static std::string
     _ElementsToString(bool absolute, const std::vector<std::string> &elements);
 
+    SdfPath _ReplacePrimPrefix(SdfPath const &oldPrefix,
+                               SdfPath const &newPrefix) const;
+
+    SdfPath _ReplaceTargetPathPrefixes(SdfPath const &oldPrefix,
+                                       SdfPath const &newPrefix) const;
+
+    SdfPath _ReplacePropPrefix(SdfPath const &oldPrefix,
+                               SdfPath const &newPrefix,
+                               bool fixTargetPaths) const;
+
     // Helper to implement the uninlined portion of operator<.
     SDF_API static bool
     _LessThanInternal(SdfPath const &lhs, SdfPath const &rhs);
@@ -926,44 +973,70 @@ inline size_t hash_value(SdfPath const &path)
 /// Writes the string representation of \p path to \p out.
 SDF_API std::ostream & operator<<( std::ostream &out, const SdfPath &path );
 
+// Helper for SdfPathFindPrefixedRange & SdfPathFindLongestPrefix.  A function
+// object that returns an SdfPath const & unchanged.
+struct Sdf_PathIdentity {
+    inline SdfPath const &operator()(SdfPath const &arg) const {
+        return arg;
+    }
+};
+
 /// Find the subrange of the sorted range [\a begin, \a end) that includes all
 /// paths prefixed by \a path.  The input range must be ordered according to
 /// SdfPath::operator<.  If your range's iterators' value_types are not SdfPath,
 /// but you can obtain SdfPaths from them (e.g. map<SdfPath, X>::iterator), you
-/// can use this function with boost::transform_iterator, supplying a functor to
-/// transform_iterator that extracts the SdfPath.
-template <class ForwardIterator>
+/// can pass a function to extract the path from the dereferenced iterator in
+/// \p getPath.
+template <class ForwardIterator, class GetPathFn = Sdf_PathIdentity>
 std::pair<ForwardIterator, ForwardIterator>
 SdfPathFindPrefixedRange(ForwardIterator begin, ForwardIterator end,
-                         SdfPath const &prefix) {
+                         SdfPath const &prefix,
+                         GetPathFn const &getPath = GetPathFn()) {
+    using IterRef = 
+        typename std::iterator_traits<ForwardIterator>::reference;
+
+    struct Compare {
+        Compare(GetPathFn const &getPath) : _getPath(getPath) {}
+        GetPathFn const &_getPath;
+        bool operator()(IterRef a, SdfPath const &b) const {
+            return _getPath(a) < b;
+        }
+    };
+
     std::pair<ForwardIterator, ForwardIterator> result;
 
     // First, use lower_bound to find where \a prefix would go.
-    result.first = std::lower_bound(begin, end, prefix);
+    result.first = std::lower_bound(begin, end, prefix, Compare(getPath));
 
     // Next, find end of range starting from the lower bound, using the
     // prefixing condition to define the boundary.
     result.second = TfFindBoundary(result.first, end,
-                                   [&prefix](SdfPath const &path) {
-                                       return path.HasPrefix(prefix);
+                                   [&prefix, &getPath](IterRef iterRef) {
+                                       return getPath(iterRef).HasPrefix(prefix);
                                    });
 
     return result;
 }
 
-/// Return an iterator to the element of [\a begin, \a end) that is the longest
-/// prefix of the given path, if there is such an element, otherwise \a end.
-/// The input range must be ordered according to SdfPath::operator<.  If your
-/// range's iterators' value_types are not SdfPath, but you can obtain SdfPaths
-/// from them (e.g. map<SdfPath, X>::iterator), you can use this function with
-/// boost::transform_iterator, supplying a functor to transform_iterator that
-/// extracts the SdfPath.
-template <class BidirectionalIterator>
-BidirectionalIterator
-SdfPathFindLongestPrefix(BidirectionalIterator begin,
-                         BidirectionalIterator end,
-                         SdfPath const &path)
+template <class RandomAccessIterator, class GetPathFn>
+RandomAccessIterator
+Sdf_PathFindLongestPrefixImpl(RandomAccessIterator begin,
+                              RandomAccessIterator end,
+                              SdfPath const &path,
+                              bool strictPrefix,
+                              GetPathFn const &getPath)
 {
+    using IterRef = 
+        typename std::iterator_traits<RandomAccessIterator>::reference;
+
+    struct Compare {
+        Compare(GetPathFn const &getPath) : _getPath(getPath) {}
+        GetPathFn const &_getPath;
+        bool operator()(IterRef a, SdfPath const &b) const {
+            return _getPath(a) < b;
+        }
+    };
+
     // Search for the path in [begin, end).  If present, return it.  If not,
     // examine prior element in [begin, end).  If none, return end.  Else, is it
     // a prefix of path?  If so, return it.  Else find common prefix of that
@@ -974,27 +1047,190 @@ SdfPathFindLongestPrefix(BidirectionalIterator begin,
         return end;
 
     // Search for where this path would lexicographically appear in the range.
-    BidirectionalIterator result = std::lower_bound(begin, end, path);
+    RandomAccessIterator result =
+        std::lower_bound(begin, end, path, Compare(getPath));
 
-    // If we didn't get the end, check to see if we got the path exactly.
-    if (result != end && *result == path)
+    // If we didn't get the end, check to see if we got the path exactly if
+    // we're not looking for a strict prefix.
+    if (!strictPrefix && result != end && getPath(*result) == path)
         return result;
 
-    // If we got begin and didn't match then there's no prefix.
+    // If we got begin (and didn't match in the case of a non-strict prefix)
+    // then there's no prefix.
     if (result == begin)
         return end;
 
     // If the prior element is a prefix, we're done.
-    if (path.HasPrefix(*--result))
+    if (path.HasPrefix(getPath(*--result)))
         return result;
 
     // Otherwise, find the common prefix of the lexicographical predecessor and
-    // recurse looking for it or its longest prefix in the preceding range.
-    BidirectionalIterator final =
-        SdfPathFindLongestPrefix(begin, result, path.GetCommonPrefix(*result));
+    // recurse looking for it or its longest prefix in the preceding range.  We
+    // always pass strictPrefix=false, since now we're operating on prefixes of
+    // the original caller's path.
+    RandomAccessIterator final =
+        Sdf_PathFindLongestPrefixImpl(
+            begin, result, path.GetCommonPrefix(getPath(*result)),
+            /*strictPrefix=*/ false, getPath);
 
     // If the recursion failed, promote the recursive call's end to our end.
     return final == result ? end : final;
+}
+
+/// Return an iterator to the element of [\a begin, \a end) that is the longest
+/// prefix of the given path (including the path itself), if there is such an
+/// element, otherwise \a end.  The input range must be ordered according to
+/// SdfPath::operator<.  If your range's iterators' value_types are not SdfPath,
+/// but you can obtain SdfPaths from them (e.g. vector<pair<SdfPath,
+/// X>>::iterator), you can pass a function to extract the path from the
+/// dereferenced iterator in \p getPath.
+template <class RandomAccessIterator, class GetPathFn = Sdf_PathIdentity,
+          class = typename std::enable_if<
+              std::is_base_of<
+                  std::random_access_iterator_tag,
+                  typename std::iterator_traits<
+                      RandomAccessIterator>::iterator_category
+                  >::value
+              >::type
+          >
+RandomAccessIterator
+SdfPathFindLongestPrefix(RandomAccessIterator begin,
+                         RandomAccessIterator end,
+                         SdfPath const &path,
+                         GetPathFn const &getPath = GetPathFn())
+{
+    return Sdf_PathFindLongestPrefixImpl(
+        begin, end, path, /*strictPrefix=*/false, getPath);
+}
+
+/// Return an iterator to the element of [\a begin, \a end) that is the longest
+/// prefix of the given path (excluding the path itself), if there is such an
+/// element, otherwise \a end.  The input range must be ordered according to
+/// SdfPath::operator<.  If your range's iterators' value_types are not SdfPath,
+/// but you can obtain SdfPaths from them (e.g. vector<pair<SdfPath,
+/// X>>::iterator), you can pass a function to extract the path from the
+/// dereferenced iterator in \p getPath.
+template <class RandomAccessIterator, class GetPathFn = Sdf_PathIdentity,
+          class = typename std::enable_if<
+              std::is_base_of<
+                  std::random_access_iterator_tag,
+                  typename std::iterator_traits<
+                      RandomAccessIterator>::iterator_category
+                  >::value
+              >::type
+          >
+RandomAccessIterator
+SdfPathFindLongestStrictPrefix(RandomAccessIterator begin,
+                               RandomAccessIterator end,
+                               SdfPath const &path,
+                               GetPathFn const &getPath = GetPathFn())
+{
+    return Sdf_PathFindLongestPrefixImpl(
+        begin, end, path, /*strictPrefix=*/true, getPath);
+}
+
+template <class Iter, class MapParam, class GetPathFn = Sdf_PathIdentity>
+Iter
+Sdf_PathFindLongestPrefixImpl(
+    MapParam map, SdfPath const &path, bool strictPrefix,
+    GetPathFn const &getPath = GetPathFn())
+{
+    // Search for the path in map.  If present, return it.  If not, examine
+    // prior element in map.  If none, return end.  Else, is it a prefix of
+    // path?  If so, return it.  Else find common prefix of that element and
+    // path and recurse.
+
+    const Iter mapEnd = map.end();
+
+    // If empty, return.
+    if (map.empty())
+        return mapEnd;
+
+    // Search for where this path would lexicographically appear in the range.
+    Iter result = map.lower_bound(path);
+
+    // If we didn't get the end, check to see if we got the path exactly if
+    // we're not looking for a strict prefix.
+    if (!strictPrefix && result != mapEnd && getPath(*result) == path)
+        return result;
+
+    // If we got begin (and didn't match in the case of a non-strict prefix)
+    // then there's no prefix.
+    if (result == map.begin())
+        return mapEnd;
+
+    // If the prior element is a prefix, we're done.
+    if (path.HasPrefix(getPath(*--result)))
+        return result;
+
+    // Otherwise, find the common prefix of the lexicographical predecessor and
+    // recurse looking for it or its longest prefix in the preceding range.  We
+    // always pass strictPrefix=false, since now we're operating on prefixes of
+    // the original caller's path.
+    return Sdf_PathFindLongestPrefixImpl<Iter, MapParam>(
+        map, path.GetCommonPrefix(getPath(*result)), /*strictPrefix=*/false,
+        getPath);
+}
+
+/// Return an iterator pointing to the element of \a set whose key is the
+/// longest prefix of the given path (including the path itself).  If there is
+/// no such element, return \a set.end().
+SDF_API
+typename std::set<SdfPath>::const_iterator
+SdfPathFindLongestPrefix(std::set<SdfPath> const &set, SdfPath const &path);
+
+/// Return an iterator pointing to the element of \a map whose key is the
+/// longest prefix of the given path (including the path itself).  If there is
+/// no such element, return \a map.end().
+template <class T>
+typename std::map<SdfPath, T>::const_iterator
+SdfPathFindLongestPrefix(std::map<SdfPath, T> const &map, SdfPath const &path)
+{
+    return Sdf_PathFindLongestPrefixImpl<
+        typename std::map<SdfPath, T>::const_iterator,
+        std::map<SdfPath, T> const &>(map, path, /*strictPrefix=*/false,
+                                      TfGet<0>());
+}
+template <class T>
+typename std::map<SdfPath, T>::iterator
+SdfPathFindLongestPrefix(std::map<SdfPath, T> &map, SdfPath const &path)
+{
+    return Sdf_PathFindLongestPrefixImpl<
+        typename std::map<SdfPath, T>::iterator,
+        std::map<SdfPath, T> &>(map, path, /*strictPrefix=*/false,
+                                TfGet<0>());
+}
+
+/// Return an iterator pointing to the element of \a set whose key is the
+/// longest prefix of the given path (excluding the path itself).  If there is
+/// no such element, return \a set.end().
+SDF_API
+typename std::set<SdfPath>::const_iterator
+SdfPathFindLongestStrictPrefix(std::set<SdfPath> const &set,
+                               SdfPath const &path);
+
+/// Return an iterator pointing to the element of \a map whose key is the
+/// longest prefix of the given path (excluding the path itself).  If there is
+/// no such element, return \a map.end().
+template <class T>
+typename std::map<SdfPath, T>::const_iterator
+SdfPathFindLongestStrictPrefix(
+    std::map<SdfPath, T> const &map, SdfPath const &path)
+{
+    return Sdf_PathFindLongestPrefixImpl<
+        typename std::map<SdfPath, T>::const_iterator,
+        std::map<SdfPath, T> const &>(map, path, /*strictPrefix=*/true,
+                                      TfGet<0>());
+}
+template <class T>
+typename std::map<SdfPath, T>::iterator
+SdfPathFindLongestStrictPrefix(
+    std::map<SdfPath, T> &map, SdfPath const &path)
+{
+    return Sdf_PathFindLongestPrefixImpl<
+        typename std::map<SdfPath, T>::iterator,
+        std::map<SdfPath, T> &>(map, path, /*strictPrefix=*/true,
+                                TfGet<0>());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

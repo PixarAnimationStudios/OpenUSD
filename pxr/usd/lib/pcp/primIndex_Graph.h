@@ -173,7 +173,7 @@ private:
     // node where p(node) is false. Returns the indexes of the resulting 
     // nodes.
     template <class Predicate>
-    std::pair<size_t, size_t> _FindDirectChildRange(const Predicate& p) const;
+    std::pair<size_t, size_t> _FindRootChildRange(const Predicate& p) const;
 
     // Helper functions to compute a mapping between node indexes and 
     // the strength order of the corresponding node. 

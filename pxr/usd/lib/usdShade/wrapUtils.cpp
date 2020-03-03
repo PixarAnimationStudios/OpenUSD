@@ -49,6 +49,7 @@ _GetBaseNameAndType(const TfToken &fullName)
 void wrapUsdShadeUtils()
 {
     enum_<UsdShadeAttributeType>("AttributeType")
+        .value("Invalid", UsdShadeAttributeType::Invalid)
         .value("Input", UsdShadeAttributeType::Input)
         .value("Output", UsdShadeAttributeType::Output)
         .value("Parameter", UsdShadeAttributeType::Parameter)

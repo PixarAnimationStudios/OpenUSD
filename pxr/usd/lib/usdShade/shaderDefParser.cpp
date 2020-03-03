@@ -26,6 +26,7 @@
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/types.h"
 
+#include "pxr/usd/sdr/shaderMetadataHelpers.h"
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderProperty.h"
 
@@ -33,6 +34,8 @@
 #include "pxr/usd/usdShade/shader.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+using ShaderMetadataHelpers::IsPropertyATerminal;
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -51,23 +54,92 @@ UsdStageCache UsdShadeShaderDefParserPlugin::_cache;
 
 namespace {
 
+// Called within _GetShaderPropertyTypeAndArraySize in order to fix up the
+// default value's type if it was originally a token type because Sdr doesn't
+// support token types
+static
+void
+_ConformStringTypeDefaultValue(
+    const SdfValueTypeName& typeName,
+    VtValue* defaultValue)
+{
+    // If the SdrPropertyType would be string but the SdfTypeName is token,
+    // we need to convert the default value's type from token to string so that
+    // there is no inconsistency between the property type and the default value
+    if (defaultValue && !defaultValue->IsEmpty()) {
+        if (typeName == SdfValueTypeNames->Token) {
+            if (defaultValue->IsHolding<TfToken>()) {
+                const TfToken& tokenVal =
+                    defaultValue->UncheckedGet<TfToken>();
+                *defaultValue = VtValue(tokenVal.GetString());
+            }
+        } else if (typeName == SdfValueTypeNames->TokenArray) {
+            if (defaultValue->IsHolding< VtArray<TfToken> >()) {
+                const VtArray<TfToken>& tokenVals =
+                    defaultValue->UncheckedGet< VtArray<TfToken> >();
+                VtStringArray stringVals;
+                stringVals.reserve(tokenVals.size());
+                for (const TfToken& tokenVal : tokenVals) {
+                    stringVals.push_back(tokenVal.GetString());
+                }
+                *defaultValue = VtValue::Take(stringVals);
+            }
+        }
+    }
+}
+
+// Called within _GetShaderPropertyTypeAndArraySize in order to return the
+// correct array size as determined by the given default value
+static
+size_t
+_GetArraySize(VtValue* defaultValue) {
+    if (defaultValue && !defaultValue->IsEmpty()
+        && defaultValue->IsArrayValued()) {
+        return defaultValue->GetArraySize();
+    }
+    return 0;
+}
+
+// This function is called to determine a shader property's type and array size,
+// and it will also conform the default value to the correct type if needed
 static 
 std::pair<TfToken, size_t>
-_GetShaderPropertyTypeAndArraySize(const SdfValueTypeName &typeName) 
+_GetShaderPropertyTypeAndArraySize(
+    const SdfValueTypeName &typeName,
+    const NdrTokenMap& metadata,
+    VtValue* defaultValue)
 {
+    // XXX Note that the shaderDefParser does not currently parse 'struct' or
+    //     'vstruct' types.
+    //     Structs are not supported in USD but are allowed as an Sdr property
+    //     type. Vstructs are not parsed at the moment because we have no need
+    //     for them in USD-backed shaders currently.
+
+    // Determine SdrPropertyType from metadata first, since metadata can
+    // override the type dictated otherwise by the SdfValueTypeName
+    if (IsPropertyATerminal(metadata)) {
+        return std::make_pair(SdrPropertyTypes->Terminal,
+                              _GetArraySize(defaultValue));
+    }
+
+    // Determine SdrPropertyType from given SdfValueTypeName
     if (typeName == SdfValueTypeNames->Int ||
         typeName == SdfValueTypeNames->IntArray) {
-        return std::make_pair(SdrPropertyTypes->Int, 0);
+        return std::make_pair(SdrPropertyTypes->Int,
+                              _GetArraySize(defaultValue));
     } else if (typeName == SdfValueTypeNames->String ||
                typeName == SdfValueTypeNames->Token ||
                typeName == SdfValueTypeNames->Asset || 
                typeName == SdfValueTypeNames->StringArray || 
                typeName == SdfValueTypeNames->TokenArray || 
                typeName == SdfValueTypeNames->AssetArray) {
-        return std::make_pair(SdrPropertyTypes->String, 0);
+        _ConformStringTypeDefaultValue(typeName, defaultValue);
+        return std::make_pair(SdrPropertyTypes->String,
+                              _GetArraySize(defaultValue));
     } else if (typeName == SdfValueTypeNames->Float || 
                typeName == SdfValueTypeNames->FloatArray) {
-        return std::make_pair(SdrPropertyTypes->Float, 0);
+        return std::make_pair(SdrPropertyTypes->Float,
+                              _GetArraySize(defaultValue));
     } else if (typeName == SdfValueTypeNames->Float2 || 
                typeName == SdfValueTypeNames->Float2Array) {
         return std::make_pair(SdrPropertyTypes->Float, 2);
@@ -79,19 +151,24 @@ _GetShaderPropertyTypeAndArraySize(const SdfValueTypeName &typeName)
         return std::make_pair(SdrPropertyTypes->Float, 4);
     } else if (typeName == SdfValueTypeNames->Color3f || 
                typeName == SdfValueTypeNames->Color3fArray) {
-        return std::make_pair(SdrPropertyTypes->Color, 0);
+        return std::make_pair(SdrPropertyTypes->Color,
+                              _GetArraySize(defaultValue));
     } else if (typeName == SdfValueTypeNames->Point3f || 
                typeName == SdfValueTypeNames->Point3fArray) {
-        return std::make_pair(SdrPropertyTypes->Point, 0);
+        return std::make_pair(SdrPropertyTypes->Point,
+                              _GetArraySize(defaultValue));
     } else if (typeName == SdfValueTypeNames->Vector3f || 
                typeName == SdfValueTypeNames->Vector3fArray) {
-        return std::make_pair(SdrPropertyTypes->Vector, 0);
+        return std::make_pair(SdrPropertyTypes->Vector,
+                              _GetArraySize(defaultValue));
     } else if (typeName == SdfValueTypeNames->Normal3f|| 
                typeName == SdfValueTypeNames->Normal3fArray) {
-        return std::make_pair(SdrPropertyTypes->Normal, 0);
+        return std::make_pair(SdrPropertyTypes->Normal,
+                              _GetArraySize(defaultValue));
     } else if (typeName == SdfValueTypeNames->Matrix4d || 
                typeName == SdfValueTypeNames->Matrix4dArray) {
-        return std::make_pair(SdrPropertyTypes->Matrix, 0);
+        return std::make_pair(SdrPropertyTypes->Matrix,
+                              _GetArraySize(defaultValue));
     } else {
         TF_RUNTIME_ERROR("Shader property has unsupported type '%s'", 
             typeName.GetAsToken().GetText());
@@ -99,11 +176,15 @@ _GetShaderPropertyTypeAndArraySize(const SdfValueTypeName &typeName)
     }
 }
 
-static 
+static
 NdrTokenMap
 _GetSdrMetadata(const UsdShadeShader &shaderDef,
                 const NdrTokenMap &discoveryResultMetadata) 
 {
+    // XXX Currently, this parser does not support 'vstruct' parsing, but if
+    //     we decide to support 'vstruct' type in the future, we would need to
+    //     identify 'vstruct' types in this function by examining the metadata.
+
     NdrTokenMap metadata = discoveryResultMetadata;
 
     auto shaderDefMetadata = shaderDef.GetSdrMetadata();
@@ -121,7 +202,10 @@ _GetSdrMetadata(const UsdShadeShader &shaderDef,
             // Check if the input holds a string here and issue a warning if it 
             // doesn't.
             if (_GetShaderPropertyTypeAndArraySize(
-                    shdInput.GetTypeName()).first != SdrPropertyTypes->String) {
+                    shdInput.GetTypeName(),
+                    shdInput.GetSdrMetadata(),
+                    nullptr).first !=
+                    SdrPropertyTypes->String) {
                 TF_WARN("Shader input <%s> is tagged as a primvarProperty, "
                     "but isn't string-valued.", 
                     shdInput.GetAttr().GetPath().GetText());
@@ -136,85 +220,80 @@ _GetSdrMetadata(const UsdShadeShader &shaderDef,
     return metadata;
 }
 
+template <class ShaderProperty>
+static
+SdrShaderPropertyUniquePtr
+_CreateSdrShaderProperty(
+    const ShaderProperty& shaderProperty,
+    bool isOutput,
+    const VtValue& shaderDefaultValue,
+    const NdrTokenMap& shaderMetadata)
+{
+    const std::string propName = shaderProperty.GetBaseName();
+    VtValue defaultValue = shaderDefaultValue;
+    NdrTokenMap metadata = shaderMetadata;
+    NdrTokenMap hints;
+    NdrOptionVec options;
+
+    // Update metadata if string should represent a SdfAssetPath
+    if (shaderProperty.GetTypeName() == SdfValueTypeNames->Asset ||
+        shaderProperty.GetTypeName() == SdfValueTypeNames->AssetArray) {
+        metadata[SdrPropertyMetadata->IsAssetIdentifier] = "1";
+    }
+
+    TfToken propertyType;
+    size_t arraySize;
+    std::tie(propertyType, arraySize) = _GetShaderPropertyTypeAndArraySize(
+        shaderProperty.GetTypeName(), shaderMetadata, &defaultValue);
+
+    return SdrShaderPropertyUniquePtr(new SdrShaderProperty(
+            shaderProperty.GetBaseName(),
+            propertyType,
+            defaultValue,
+            isOutput,
+            arraySize,
+            metadata, hints, options));
+}
+
 static 
 NdrPropertyUniquePtrVec
 _GetShaderProperties(const UsdShadeShader &shaderDef) 
 {
     NdrPropertyUniquePtrVec result;
     for (auto &shaderInput : shaderDef.GetInputs()) {
-        const std::string propName = shaderInput.GetBaseName();
+        // Only inputs will have default value provided
         VtValue defaultValue;
         shaderInput.Get(&defaultValue);
 
         NdrTokenMap metadata = shaderInput.GetSdrMetadata();
-        NdrTokenMap hints;
-        NdrOptionVec options;
-    
-        // Convert SdfAssetPath values to strings.
-        if (shaderInput.GetTypeName() == SdfValueTypeNames->Asset ||
-            shaderInput.GetTypeName() == SdfValueTypeNames->AssetArray) {               
-            if (!defaultValue.IsEmpty()) {
-                if (defaultValue.IsHolding<SdfAssetPath>()) {
-                    defaultValue = VtValue(defaultValue.UncheckedGet
-                            <SdfAssetPath>().GetAssetPath());
-                } else if (defaultValue.IsHolding<VtArray<SdfAssetPath>>()) {
-                    VtStringArray defValueArray;
-                    for (auto &assetVal : defaultValue.UncheckedGet
-                            <VtArray<SdfAssetPath>>()) {
-                        defValueArray.push_back(assetVal.GetAssetPath());
-                    }
-                    defaultValue = VtValue(defValueArray);
-                }
-            }
-            metadata[SdrPropertyMetadata->IsAssetIdentifier] = "1";
-        }
 
+        // Only inputs might have this metadata key
         auto iter = metadata.find(_tokens->defaultInput);
         if (iter != metadata.end()) {
             metadata[SdrPropertyMetadata->DefaultInput] = "1";
             metadata.erase(_tokens->defaultInput);
         }
 
-        metadata[SdrPropertyMetadata->Connectable] = 
+        // Only inputs have the GetConnectability method
+        metadata[SdrPropertyMetadata->Connectable] =
             shaderInput.GetConnectability() == UsdShadeTokens->interfaceOnly ?
-                "0" : "1";
+            "0" : "1";
 
-        TfToken propertyType;
-        size_t arraySize;
-        std::tie(propertyType, arraySize) = _GetShaderPropertyTypeAndArraySize(
-            shaderInput.GetTypeName());
-        
         result.emplace_back(
-            SdrShaderPropertyUniquePtr(new SdrShaderProperty(
-                shaderInput.GetBaseName(),
-                propertyType, 
-                defaultValue,
+            _CreateSdrShaderProperty(
+                /* shaderProperty */ shaderInput,
                 /* isOutput */ false,
-                arraySize,
-                metadata, hints, options)));
+                /* shaderDefaultValue */ defaultValue,
+                /* shaderMetadata */ metadata));
     }
 
     for (auto &shaderOutput : shaderDef.GetOutputs()) {
-        const std::string propName = shaderOutput.GetBaseName();
-
-        VtValue defaultValue;
-        NdrTokenMap metadata;
-        NdrTokenMap hints;
-        NdrOptionVec options;
-
-        TfToken propertyType;
-        size_t arraySize;
-        std::tie(propertyType, arraySize) = _GetShaderPropertyTypeAndArraySize(
-            shaderOutput.GetTypeName());
-
         result.emplace_back(
-            SdrShaderPropertyUniquePtr(new SdrShaderProperty(
-                shaderOutput.GetBaseName(),
-                propertyType, 
-                defaultValue,
+            _CreateSdrShaderProperty(
+                /* shaderProperty */ shaderOutput,
                 /* isOutput */ true,
-                arraySize,
-                metadata, hints, options)));
+                /* shaderDefaultValue */ VtValue() ,
+                /* shaderMetadata */ shaderOutput.GetSdrMetadata()));
     }
 
     return result;

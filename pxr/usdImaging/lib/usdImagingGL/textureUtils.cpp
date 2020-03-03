@@ -423,6 +423,8 @@ UsdImagingGL_GetTextureResource(UsdPrim const& usdPrim,
 
     HdWrap wrapS = _GetWrapS(usdPrim, textureType);
     HdWrap wrapT = _GetWrapT(usdPrim, textureType);
+    // wrapR value does not matter since ignored for anything but Uvw textures.
+    HdWrap wrapR = HdWrapUseMetadata;
     HdMinFilter minFilter = _GetMinFilter(usdPrim);
     HdMagFilter magFilter = _GetMagFilter(usdPrim);
     float memoryLimit = _GetMemoryLimit(usdPrim);
@@ -451,7 +453,7 @@ UsdImagingGL_GetTextureResource(UsdPrim const& usdPrim,
     }
 
     texResource = HdTextureResourceSharedPtr(
-        new HdStSimpleTextureResource(texture, textureType, wrapS, wrapT,
+        new HdStSimpleTextureResource(texture, textureType, wrapS, wrapT, wrapR,
                                       minFilter, magFilter, memoryLimit));
     timer.Stop();
 

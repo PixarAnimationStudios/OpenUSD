@@ -39,6 +39,7 @@
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/quadrangulate.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/rprimUtils.h"
 #include "pxr/imaging/hdSt/smoothNormals.h"
 #include "pxr/imaging/hdSt/surfaceShader.h"
 #include "pxr/imaging/hdSt/tokens.h"
@@ -762,7 +763,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     // safely access all valid data without having separate change tracking.
     //
     // This could be a performance concern, where a prim has higher refine level
-    // and a hydra client keeps drawing only hull repr for some reason.
+    // and a Storm client keeps drawing only hull repr for some reason.
     // Currently we assume it's not likely a use-case, but we may revisit later
     // and optimize if necessary.
     //
@@ -1677,8 +1678,8 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
             constantPrimvars =
                 GetPrimvarDescriptors(sceneDelegate, HdInterpolationConstant);
         }
-        _PopulateConstantPrimvars(sceneDelegate, drawItem, dirtyBits,
-                                  constantPrimvars);
+        HdStPopulateConstantPrimvars(this, &_sharedData, sceneDelegate, drawItem, 
+            dirtyBits, constantPrimvars);
 
         // Check if normals are provided as a constant primvar
         for (const HdPrimvarDescriptor& pv : constantPrimvars) {
@@ -1743,26 +1744,26 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
 
     int refineLevel = _GetRefineLevelForDesc(desc);
 
-    HdSt_GeometricShader::PrimitiveType primType =
-        HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES;
+    using PrimitiveType = HdSt_GeometricShader::PrimitiveType;
+    PrimitiveType primType = PrimitiveType::PRIM_MESH_COARSE_TRIANGLES;
 
     if (desc.geomStyle == HdMeshGeomStylePoints) {
-        primType = HdSt_GeometricShader::PrimitiveType::PRIM_POINTS;
+        primType = PrimitiveType::PRIM_POINTS;
     } else if (refineLevel > 0) {
-        if (_topology->RefinesToTriangles()) {
-            // e.g. loop subdivision.
-            primType =
-                HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES;
-        } else if (_topology->RefinesToBSplinePatches()) {
-            primType = HdSt_GeometricShader::PrimitiveType::PRIM_MESH_PATCHES;
+        if (_topology->RefinesToBSplinePatches()) {
+            primType = PrimitiveType::PRIM_MESH_BSPLINE;
+        } else if (_topology->RefinesToBoxSplineTrianglePatches()) {
+            primType = PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE;
+        } else if (_topology->RefinesToTriangles()) {
+            // uniform loop subdivision generates triangles.
+            primType = PrimitiveType::PRIM_MESH_REFINED_TRIANGLES;
         } else {
             // uniform catmark/bilinear subdivision generates quads.
-            primType =
-                HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS;
+            primType = PrimitiveType::PRIM_MESH_REFINED_QUADS;
         }
     } else if (_UseQuadIndices(renderIndex, _topology)) {
         // quadrangulate coarse mesh (e.g. for ptex)
-        primType = HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS;
+        primType = PrimitiveType::PRIM_MESH_COARSE_QUADS;
     }
 
     // resolve geom style, cull style
