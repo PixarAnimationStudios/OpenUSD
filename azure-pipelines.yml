@@ -7,51 +7,105 @@ trigger:
     - README.md
 
 jobs:
-- job: build_and_test
-  displayName: Build and test with Latest VFX Platform
-  pool:
-    vmImage: 'ubuntu-16.04'
-  container: aswftesting/ci-usd:2019
-  timeoutInMinutes: 0
-  steps:
+  - job: Linux
+    pool:
+      vmImage: 'Ubuntu-16.04'
+    steps:
+    - script: |
+        sudo apt-get -qq update;
+        sudo pip install --upgrade pip
+        sudo apt-get install python-setuptools;
+        sudo apt-get install libglew-dev libxrandr-dev libxcursor-dev libxinerama-dev libxi-dev;
+        sudo apt-get install python-pyside pyside-tools ;
+        sudo pip install PyOpenGL ;
+        sudo python build_scripts/build_usd.py --build $HOME/USDgen/build --src $HOME/USDgen/src $HOME/USDinst
+      displayName: 'Building USD'
+    - task: PublishPipelineArtifact@0
+      inputs:
+        artifactName: 'usd-linux'
+        targetPath: "  /home/vsts/USDinst"
+  
+  - job: macOS
+    pool:
+      vmImage: 'macOS-10.13'
+    steps:
+    - script: |
+        # The SYSTEM env var is used by the Makefile of glew and having it set trips it up
+        unset SYSTEM
+        /bin/bash -c "sudo xcode-select -s /Applications/Xcode_10.1.app/Contents/Developer"
+        sudo pip install pyside2 ;
+        sudo pip install PyOpenGL ;
+        python build_scripts/build_usd.py -v --generator Xcode --build $HOME/USDgen/build --src $HOME/USDgen/src $HOME/USDinst
+      displayName: 'Building USD'
+    - task: PublishPipelineArtifact@0
+      inputs:
+        artifactName: 'usd-macOS'
+        targetPath: "/Users/vsts/USDinst"
+  
+  - job: Windows
+    timeoutInMinutes: 90
+    pool:
+      vmImage: 'VS2017-Win2016'
+    steps:
+    - script: |
+        call C:\"Program Files (x86)"\"Microsoft Visual Studio"\2017\Enterprise\VC\Auxiliary\Build\vcvars64.bat
+        call set PATH=C:/Python27amd64;C:/Python27amd64/Scripts;%PATH%
+        call python --version
+        call python -m pip install --upgrade pip
+        call python -m pip install pyside
+        call python -m pip install PyOpenGL
+        call python build_scripts/build_usd.py --build-args USD,"-DPYTHON_EXECUTABLE:FILEPATH=C:/Python27amd64/python.exe" --build %HOME%/USDgen/build --src %HOME%/USDgen/src %HOME%/USDinst
+      displayName: 'Building USD'
+    - task: PublishPipelineArtifact@0
+      inputs:
+        artifactName: 'usd-win64'
+        targetPath: "D:/USDinst"
 
-  - bash: |
-      set -ex
-      echo "##vso[task.setvariable variable=sha;isOutput=true]`git rev-parse --short HEAD`"
-    name: ccache_cache_keys
-    displayName: Prepare ccache timestamp
+  - job: LinuxTests
+    displayName: Linux ASWF Build and Test
+    pool:
+      vmImage: 'ubuntu-18.04'
+    container: aswftesting/ci-usd:2019
+    timeoutInMinutes: 0
+    steps:
 
-  - task: CacheBeta@1
-    displayName: CCache
-    inputs:
-      path: $(Pipeline.Workspace)/ccache
-      key: usd-ccache-v1 | usd-ccache-$(ccache_cache_keys.sha)
-      restoreKeys: |
-        usd-ccache-v1
+    - bash: |
+        set -ex
+        echo "##vso[task.setvariable variable=sha;isOutput=true]`git rev-parse --short HEAD`"
+      name: ccache_cache_keys
+      displayName: Prepare ccache timestamp
 
-  - bash: |
-      set -ex
-      source activate_ccache.sh
-      export CCACHE_DIR=$(Pipeline.Workspace)/ccache
-      mkdir -p $(Pipeline.Workspace)/ccache
+    - task: CacheBeta@1
+      displayName: CCache
+      inputs:
+        path: $(Pipeline.Workspace)/ccache
+        key: usd-ccache-v1 | usd-ccache-$(ccache_cache_keys.sha)
+        restoreKeys: |
+          usd-ccache-v1
 
-      mkdir build
-      cd build
-      cmake \
-        -DCMAKE_INSTALL_PREFIX=/usr/local \
-        -DOPENEXR_LOCATION=/usr/local \
-        -DPXR_BUILD_TESTS=ON \
-        -DPXR_BUILD_ALEMBIC_PLUGIN=OFF \
-        ..
-      make -j4
-      sudo make install
-    displayName: Build
+    - bash: |
+        set -ex
+        source activate_ccache.sh
+        export CCACHE_DIR=$(Pipeline.Workspace)/ccache
+        mkdir -p $(Pipeline.Workspace)/ccache
 
-  - bash: cd build && xvfb-run ctest -VV -E 'testusdview.*|testUsdRecord.*|testUsdAppUtilsFrameRecorder' -T test --output-on-failure
-    displayName: Test
-    continueOnError: true
+        mkdir build
+        cd build
+        cmake \
+          -DCMAKE_INSTALL_PREFIX=/usr/local \
+          -DOPENEXR_LOCATION=/usr/local \
+          -DPXR_BUILD_TESTS=ON \
+          -DPXR_BUILD_ALEMBIC_PLUGIN=OFF \
+          ..
+        make -j4
+        sudo make install
+      displayName: Build
 
-  - task: PublishTestResults@2
-    inputs:
-      testResultsFormat: 'cTest'
-      testResultsFiles: '**/Test.xml'
+    - bash: cd build && xvfb-run ctest -VV -E 'testusdview.*|testUsdRecord.*|testUsdAppUtilsFrameRecorder' -T test --output-on-failure
+      displayName: Test
+      continueOnError: true
+
+    - task: PublishTestResults@2
+      inputs:
+        testResultsFormat: 'cTest'
+        testResultsFiles: '**/Test.xml'
