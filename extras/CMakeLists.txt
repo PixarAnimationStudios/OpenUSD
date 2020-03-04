@@ -1,2 +1,4 @@
 add_subdirectory(usd)
-add_subdirectory(imaging)
+if (${PXR_BUILD_IMAGING})
+    add_subdirectory(imaging)
+endif()
