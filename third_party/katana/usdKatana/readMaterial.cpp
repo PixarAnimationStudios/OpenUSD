@@ -234,7 +234,7 @@ _GatherShadingParameters(
         // We can have multiple incoming connection, we get a whole set of paths
         SdfPathVector sourcePaths;
         if (UsdShadeConnectableAPI::GetRawConnectedSourcePaths(
-                shaderInput, &sourcePaths)) {
+                shaderInput, &sourcePaths) && !sourcePaths.empty()) {
 
             bool multipleConnections = sourcePaths.size() > 1;
 
