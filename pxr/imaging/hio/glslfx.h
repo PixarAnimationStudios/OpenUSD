@@ -239,8 +239,6 @@ private:
 private:
     _ParseContext _globalContext;
 
-    std::set<std::string> _importedFiles;
-
     typedef std::map<std::string, std::string> _SourceMap;
 
     _SourceMap _sourceMap;
