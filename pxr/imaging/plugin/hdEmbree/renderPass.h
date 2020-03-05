@@ -123,10 +123,6 @@ private:
 
     // Were the color/depth buffer converged the last time we blitted them?
     bool _converged;
-
-    // A compositor utility class, for rendering the final result to the
-    // viewport.
-    HdxFullscreenShader _compositor;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
