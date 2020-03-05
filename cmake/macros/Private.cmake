@@ -1018,12 +1018,16 @@ function(_pxr_python_module NAME)
             ${SUBDIR_INC_DIR}
     )
 
-    if (args_INCLUDE_DIRS)
-        target_include_directories(${LIBRARY_NAME}
-            PUBLIC
-                ${args_INCLUDE_DIRS}
-        )
-    endif()
+    # The INCLUDE_DIRS argument specifies directories containing headers
+    # for third-party libraries needed by this library. We treat these
+    # as system include directories so that compiler warnings from these
+    # headers are ignored, since we have no control over the contents
+    # of those headers.
+    target_include_directories(${LIBRARY_NAME}
+        SYSTEM
+        PUBLIC
+            ${args_INCLUDE_DIRS}
+    )
 
     install(
         TARGETS ${LIBRARY_NAME}
@@ -1263,8 +1267,6 @@ function(_pxr_library NAME)
             PRIVATE
                 "${CMAKE_BINARY_DIR}/include"
                 "${CMAKE_BINARY_DIR}/${PXR_INSTALL_SUBDIR}/include"
-            PUBLIC
-                ${args_INCLUDE_DIRS}
             INTERFACE
                 $<INSTALL_INTERFACE:${headerInstallDir}>
         )
@@ -1273,10 +1275,19 @@ function(_pxr_library NAME)
             PRIVATE
                 "${CMAKE_BINARY_DIR}/include"
                 "${CMAKE_BINARY_DIR}/${PXR_INSTALL_SUBDIR}/include"
-            PUBLIC
-                ${args_INCLUDE_DIRS}
         )
     endif()
+
+    # The INCLUDE_DIRS argument specifies directories containing headers
+    # for third-party libraries needed by this library. We treat these
+    # as system include directories so that compiler warnings from these
+    # headers are ignored, since we have no control over the contents
+    # of those headers.
+    target_include_directories(${NAME}
+        SYSTEM
+        PUBLIC
+            ${args_INCLUDE_DIRS}
+    )
 
     # XXX -- May want some plugins to be baked into monolithic.
     _pxr_target_link_libraries(${NAME} ${args_LIBRARIES})
