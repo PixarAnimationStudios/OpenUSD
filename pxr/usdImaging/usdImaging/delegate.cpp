@@ -2036,7 +2036,7 @@ UsdImagingDelegate::GetPathForInstanceIndex(const SdfPath &protoRprimId,
 bool
 UsdImagingDelegate::PopulateSelection(
               HdSelection::HighlightMode const& highlightMode,
-              SdfPath const &indexPath,
+              SdfPath const &usdPath,
               int instanceIndex,
               HdSelectionSharedPtr const &result)
 {
@@ -2056,39 +2056,32 @@ UsdImagingDelegate::PopulateSelection(
     // case; if so, we can find a better place to call ApplyPendingUpdates.
     ApplyPendingUpdates();
 
-    // XXX(UsdImagingPaths): usdview seems to call this function with a
-    // usdPath, and some embeddings call it with an indexPath.  Those
-    // embeddings should be fixed, but until they are, let's use a sketchy
-    // chain: convert input path from index->cache, which will strip the
-    // delegate ID (if present), and then use the resulting cache path as a usd
-    // path to look into the dependency info.  This will fail for the
-    // intersection of instances in embeddings; we should overhaul this soon.
-    SdfPath usdPath = ConvertIndexPathToCachePath(indexPath);
+    TF_DEBUG(USDIMAGING_SELECTION).Msg("Prim selection: %s\n",
+                                       usdPath.GetText());
+
+    SdfPath rootPath = usdPath;
 
     // If the USD prim is inside an instance, walk back to the top-level
     // instance to give UsdImagingInstanceAdapter a chance to populate
     // selection correctly.  While traversing, we don't need to check for the
     // pseudoroot since it can never be an instance proxy.
-    UsdPrim usdPrim = _stage->GetPrimAtPath(usdPath);
+    UsdPrim usdPrim = _stage->GetPrimAtPath(rootPath);
     while (usdPrim && usdPrim.IsInstanceProxy()){
         usdPrim = usdPrim.GetParent();
     }
     if (usdPrim){
-        usdPath = usdPrim.GetPath();
+        rootPath = usdPrim.GetPath();
     }
 
-    // XXX: the semantics of "instanceIndices" is muddled right now... for PI,
-    // ideally you'd expect (/path/to/PI, instance #); for NI, you'd expect
-    // (/path/to/instanced/prim, ALL_INSTANCES).
+    // If you select a point instancer, no instance specified means select
+    // all instances.
     VtIntArray instanceIndices;
     if (instanceIndex != ALL_INSTANCES) {
         instanceIndices.push_back(instanceIndex);
     }
 
-    // XXX: should we recurse into the subtree when
-    // (instanceIndex != ALL_INSTANCES)?
     SdfPathVector affectedCachePaths;
-    _GatherDependencies(usdPath, &affectedCachePaths);
+    _GatherDependencies(rootPath, &affectedCachePaths);
 
     // Loop through gathered prims and add them to the selection set
     bool added = false;
@@ -2118,6 +2111,9 @@ UsdImagingDelegate::PopulateSelection(
         if (affectedCachePath.IsPropertyPath()) {
             continue;
         }
+
+        TF_DEBUG(USDIMAGING_SELECTION).Msg("- affected hydra prim: %s\n",
+                affectedCachePath.GetText());
 
         added |= adapter->PopulateSelection(highlightMode,
                 affectedCachePath, usdPrim, instanceIndices, result);

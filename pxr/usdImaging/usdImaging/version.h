@@ -40,8 +40,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Version 9 -- Rework UsdImagingEngineGL::RenderParams API to conform to
 //              updated purpose tokens and make proxy imaging optional.
 // Version 10 - Add "UsdPrim" parameter to adapter PopulateSelection.
+// Version 11 - PopulateSelection takes "usdPath" (relative to USD stage),
+//              rather than a path with the delegate root.
 
-#define USD_IMAGING_API_VERSION 10
+#define USD_IMAGING_API_VERSION 11
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

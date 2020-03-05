@@ -501,15 +501,12 @@ public:
         return indexPath.ReplacePrefix(delegateID, SdfPath::AbsoluteRootPath());
     }
 
-    /// Populate HdxSelection for given \p path (root) and \p instanceIndex
-    /// if indexPath is instancer and instanceIndex is -1, all instances will be
-    /// selected.
-    ///
-    /// XXX: subtree highlighting with native instancing is not working
-    /// correctly right now. Path needs to be a leaf prim or instancer.
+    /// Populate HdxSelection for given \p path (root) and \p instanceIndex.
+    /// If indexPath is an instancer and instanceIndex is ALL_INSTANCES (-1),
+    /// all instances will be selected.
     USDIMAGING_API
     bool PopulateSelection(HdSelection::HighlightMode const& highlightMode,
-                           const SdfPath &indexPath,
+                           const SdfPath &usdPath,
                            int instanceIndex,
                            HdSelectionSharedPtr const &result);
 
