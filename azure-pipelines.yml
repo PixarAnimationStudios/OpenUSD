@@ -40,7 +40,7 @@ jobs:
     - task: PublishPipelineArtifact@0
       inputs:
         artifactName: 'usd-macOS'
-        targetPath: "/Users/vsts/USDinst"
+        targetPath: "/Users/runner/USDinst"
   
   - job: Windows
     timeoutInMinutes: 90
