@@ -250,7 +250,7 @@ _TranslatePathsAndEditRelocates(
             // below oldParentPath need to be fixed.
             _AddRelocateEditsForLayerStack(
                 result, layerStack, cacheIndex,
-                reloTargetPath, newParentPath);
+                oldParentPath, newParentPath);
         }
         else if (oldNodePath->GetParentPath() !=
                  newNodePath->GetParentPath()) {
@@ -270,12 +270,14 @@ _TranslatePathsAndEditRelocates(
                 result, layerStack, cacheIndex,
                 unrelocatedOldParentPath, unrelocatedNewParentPath);
 
-            // If the relocation keeps the prim name then
+            // If the prim being renamed was the target of a relocation
+            // in this layer stack (i.e., oldParentPath == reloTargetPath)
+            // and the relocation keeps the prim name, then 
             // we'll fix the relocation by changing the final prim
             // name in both the source and target.  So the new parent
             // path is the old parent path with the name changed.
-            if (reloSourcePath.GetNameToken()
-                == reloTargetPath.GetNameToken()) {
+            if (reloTargetPath == oldParentPath &&
+                reloSourcePath.GetNameToken() == reloTargetPath.GetNameToken()) {
                 // Relocate the new path.
                 newParentPath = reloTargetPath
                     .ReplaceName(newNodePath->GetNameToken());
