@@ -33,7 +33,6 @@
 #include <vector>
 
 #include <boost/compressed_pair.hpp>
-#include <boost/operators.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/utility.hpp>
 
@@ -57,10 +56,7 @@ template <
     class    EqualKey  = std::equal_to<Key>,
     unsigned Threshold = 128
 >
-class TfDenseHashMap :
-    private boost::equality_comparable<
-        TfDenseHashMap<Key, Data, HashFn, EqualKey, Threshold>
-    >
+class TfDenseHashMap
 {
 public:
 
@@ -284,6 +280,10 @@ public:
         }
 
         return true;
+    }
+
+    bool operator!=(const TfDenseHashMap &rhs) const {
+        return !(*this == rhs);
     }
 
     /// Erases all of the elements
