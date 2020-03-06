@@ -28,9 +28,9 @@
 #include "pxr/imaging/garch/glPlatformContext.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/instantiateSingleton.h"
-#include <boost/unordered_map.hpp>
 #include <map>
 #include <memory>
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -46,8 +46,8 @@ TF_INSTANTIATE_SINGLETON(GlfGLContextRegistry);
 //
 
 struct GlfGLContextRegistry_Data {
-    typedef boost::unordered_map<GarchGLPlatformContextState,
-                                 GlfGLContextWeakPtr> ContextsByState;
+    typedef std::unordered_map<GarchGLPlatformContextState,
+                               GlfGLContextWeakPtr> ContextsByState;
     typedef std::map<const GlfGLContext*,
                      GarchGLPlatformContextState> StatesByContext;
 

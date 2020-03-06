@@ -30,6 +30,7 @@
 #include "pxr/imaging/garch/api.h"
 #include "pxr/base/arch/defines.h"
 #include <cstddef>
+#include <functional>
 
 #if defined(ARCH_OS_LINUX)
 
@@ -53,14 +54,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 GARCH_API GarchGLPlatformContextState GarchGetNullGLPlatformContextState();
 
-inline
-size_t
-hash_value(const GarchGLPlatformContextState& x)
+PXR_NAMESPACE_CLOSE_SCOPE
+
+namespace std 
 {
-    return x.GetHash();
+template<> 
+struct hash<PXR_NS::GarchGLPlatformContextState>
+{
+    inline size_t operator()(const PXR_NS::GarchGLPlatformContextState& x) const
+    {
+        return x.GetHash();
+    }
+};
 }
 
-
-PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // PXR_IMAGING_GARCH_GL_PLATFORM_CONTEXT_H
