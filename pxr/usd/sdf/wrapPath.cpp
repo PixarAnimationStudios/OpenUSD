@@ -186,6 +186,60 @@ static void _PathStress()
     }
 }
 
+
+struct Sdf_PyPathAncestorsRangeIterator {
+    Sdf_PyPathAncestorsRangeIterator(
+        const SdfPathAncestorsRange::iterator& begin,
+        const SdfPathAncestorsRange::iterator& end)  
+        : _it(begin), _end(end) {}
+
+    SdfPath next() {
+        _RaiseIfAtEnd();
+        if (_didFirst) {
+            ++_it;
+            _RaiseIfAtEnd();
+        }
+        _didFirst = true;
+        return *_it;
+    }
+
+private:
+    void _RaiseIfAtEnd() const {
+        if (_it == _end) {
+            PyErr_SetString(PyExc_StopIteration, "Iterator at end");
+            throw_error_already_set();
+        }
+    }
+
+    SdfPathAncestorsRange::iterator _it, _end;
+    bool _didFirst = false;
+};
+
+
+Sdf_PyPathAncestorsRangeIterator
+Sdf_GetIterator(const SdfPathAncestorsRange& range)
+{
+    return {range.begin(), range.end()};
+}
+
+
+void Sdf_wrapAncestorsRange()
+{
+    using This = SdfPathAncestorsRange;
+
+    scope s = class_<This>("AncestorsRange", init<const SdfPath&>() )
+        .def("GetPath", &This::GetPath,
+             return_value_policy<return_by_value>())
+        .def("__iter__", &Sdf_GetIterator)
+        ;
+
+    using Iter = Sdf_PyPathAncestorsRangeIterator;
+    class_<Iter>("_iterator", no_init)
+        .def("next", &Iter::next)
+        ;
+}
+
+
 } // anonymous namespace 
 
 void wrapPath() {    
@@ -266,6 +320,8 @@ void wrapPath() {
         .def("GetPrefixes", GetPrefixesHelper,
               return_value_policy< TfPySequenceToList >(), 
             "Returns the prefix paths of this path.")
+
+        .def("GetAncestorsRange", &This::GetAncestorsRange)
 
         .def("GetParentPath", &This::GetParentPath)
         .def("GetPrimPath", &This::GetPrimPath)
@@ -395,4 +451,5 @@ void wrapPath() {
         Wrap<Sdf_PathIsValidPathStringResult>("_IsValidPathStringResult",
                                             "errorMessage");
 
+    Sdf_wrapAncestorsRange();
 }

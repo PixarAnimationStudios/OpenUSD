@@ -341,6 +341,12 @@ SdfPath::GetPrefixes(SdfPathVector *prefixes) const
     }
 }
 
+SdfPathAncestorsRange
+SdfPath::GetAncestorsRange() const
+{
+    return SdfPathAncestorsRange(*this);
+}
+
 const std::string &
 SdfPath::GetName() const
 {
@@ -2094,8 +2100,31 @@ SdfPathFindLongestStrictPrefix(std::set<SdfPath> const &set,
     return Sdf_PathFindLongestPrefixImpl<
         typename std::set<SdfPath>::const_iterator,
         std::set<SdfPath> const &>(set, path, /*strictPrefix=*/true);
+}
 
+SdfPathAncestorsRange::iterator&
+SdfPathAncestorsRange::iterator::operator++()
+{
+    if (!_path.IsEmpty()) {
+        const Sdf_PathNode* propPart = nullptr;
+        const Sdf_PathNode* primPart = nullptr;
+        if (ARCH_UNLIKELY(_path._propPart)) {
+            propPart = _path._propPart->GetParentNode();
+            primPart = _path._primPart.get();
+        } else if (_path._primPart && _path._primPart->GetElementCount() > 1) {
+            primPart = _path._primPart->GetParentNode();
+        }
+        _path = SdfPath(primPart, propPart);
+    }
+    return *this;
+}
 
+SDF_API std::ptrdiff_t
+distance(const SdfPathAncestorsRange::iterator& first,
+         const SdfPathAncestorsRange::iterator& last)
+{
+    return (static_cast<std::ptrdiff_t>(first->GetPathElementCount()) -
+            static_cast<std::ptrdiff_t>(last->GetPathElementCount()));
 }
 
 

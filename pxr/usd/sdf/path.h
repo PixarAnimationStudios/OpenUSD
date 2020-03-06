@@ -46,6 +46,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class Sdf_PathNode;
+class SdfPathAncestorsRange;
 
 // Ref-counting pointer to a path node.
 // Intrusive ref-counts are used to keep the size of SdfPath
@@ -428,6 +429,9 @@ public:
     ///
     /// Prefixes are returned in order of shortest to longest.  The path
     /// itself is returned as the last prefix.
+    /// Note that if the prefix order does not need to be from shortest to
+    /// longest, it is more efficient to use GetAncestorsRange, which
+    /// produces an equivalent set of paths, ordered from longest to shortest.
     SDF_API SdfPathVector GetPrefixes() const;
 
     /// Fills prefixes with prefixes of this path.
@@ -436,7 +440,17 @@ public:
     ///
     /// Prefixes are returned in order of shortest to longest.  The path
     /// itself is returned as the last prefix.
+    /// Note that if the prefix order does not need to be from shortest to
+    /// longest, it is more efficient to use GetAncestorsRange, which
+    /// produces an equivalent set of paths, ordered from longest to shortest.
     SDF_API void GetPrefixes(SdfPathVector *prefixes) const;
+
+    /// Return a range for iterating over the ancestors of this path.
+    ///
+    /// The range provides iteration over the prefixes of a path, ordered
+    /// from longest to shortest (the opposite of the order of the prefixes
+    /// returned by GetPrefixes).
+    SDF_API SdfPathAncestorsRange GetAncestorsRange() const;
 
     /// Returns the name of the prim, property or relational
     /// attribute identified by the path.
@@ -553,7 +567,9 @@ public:
     ///
     /// Note that the parent path of a relative parent path ('..') is a relative
     /// grandparent path ('../..').  Use caution writing loops that walk to
-    /// parent paths since relative paths have infinitely many ancestors.
+    /// parent paths since relative paths have infinitely many ancestors.  To
+    /// more safely traverse ancestor paths, consider iterating over an
+    /// SdfPathAncestorsRange instead, as returend by GetAncestorsRange().
     SDF_API SdfPath GetParentPath() const;
 
     /// Creates a path by stripping all relational attributes, targets,
@@ -933,6 +949,7 @@ private:
 
     friend class Sdf_PathNode;
     friend class Sdfext_PathAccess;
+    friend class SdfPathAncestorsRange;
 
     // converts elements to a string for parsing (unfortunate)
     static std::string
@@ -968,6 +985,73 @@ private:
     Sdf_PathPropNodeHandle _propPart;
 
 };
+
+
+/// \class SdfPathAncestorsRange
+///
+/// Range representing a path and ancestors, and providing methods for
+/// iterating over them.
+///
+/// An ancestor range represents a path and all of its ancestors ordered from
+/// nearest to furthest (root-most).
+/// For example, given a path like `/a/b.prop`, the range represents paths
+/// `/a/b.prop`, `/a/b` and `/a`, in that order.
+/// A range accepts relative paths as well: For path `a/b.prop`, the range
+/// represents paths 'a/b.prop`, `a/b` and `a`.
+/// If a path contains parent path elements, (`..`), those elements are treated
+/// as elements of the range. For instance, given path `../a/b`, the range
+/// represents paths `../a/b`, `../a` and `..`.
+/// This represents the same of set of `prefix` paths as SdfPath::GetPrefixes,
+/// but in reverse order.
+class SdfPathAncestorsRange
+{
+public:
+
+    SdfPathAncestorsRange(const SdfPath& path)
+        : _path(path) {}
+
+    const SdfPath& GetPath() const { return _path; }
+
+    struct iterator {
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = SdfPath;
+        using difference_type = std::ptrdiff_t;
+        using reference = const SdfPath&;
+        using pointer = const SdfPath*;
+
+        iterator(const SdfPath& path) : _path(path) {}
+
+        iterator() = default;
+
+        SDF_API
+        iterator& operator++();
+
+        const SdfPath& operator*() const { return _path; }
+
+        const SdfPath* operator->() const { return &_path; }
+        
+        bool operator==(const iterator& o) const { return _path == o._path; }
+
+        bool operator!=(const iterator& o) const { return _path != o._path; }
+
+        /// Return the distance between two iterators.
+        /// It is only valid to compute the distance between paths
+        /// that share a common prefix.
+        SDF_API friend difference_type  
+        distance(const iterator& first, const iterator& last);
+
+    private:
+        SdfPath _path;
+    };
+
+    iterator begin() const { return iterator(_path); }
+
+    iterator end() const { return iterator(); }
+
+private:
+    SdfPath _path;
+};
+
 
 // Overload hash_value for SdfPath.  Used by things like boost::hash.
 inline size_t hash_value(SdfPath const &path)
