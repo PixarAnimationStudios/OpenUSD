@@ -1981,10 +1981,6 @@ private:
                                           bool useFallbacks,
                                           T* result) const;
 
-    template <class T>
-    bool _GetMetadataImpl(const UsdObject &obj, const TfToken& fieldName, 
-                          T* value) const;
-
     template <class Composer>
     void _GetAttrTypeImpl(const UsdAttribute &attr,
                           const TfToken &fieldName,
@@ -2010,13 +2006,6 @@ private:
     bool _GetPrimSpecifierImpl(Usd_PrimDataConstPtr primData,
                                bool useFallbacks, Composer *composer) const;
 
-    template <class ListOpType, class Composer>
-    bool _GetListOpMetadataImpl(const UsdObject &obj,
-                                const TfToken &fieldName,
-                                bool useFallbacks,
-                                Usd_Resolver *resolver,
-                                Composer *composer) const;
-
     template <class Composer>
     bool _GetSpecialMetadataImpl(const UsdObject &obj,
                                  const TfToken &fieldName,
@@ -2037,14 +2026,6 @@ private:
                                  bool includeFallbacks,
                                  Composer *composer) const;
 
-    template <class Composer>
-    bool _ComposeGeneralMetadataImpl(const UsdObject &obj,
-                                     const TfToken& fieldName,
-                                     const TfToken& keyPath,
-                                     bool includeFallbacks,
-                                     Usd_Resolver* resolver,
-                                     Composer *composer) const;
-
     // NOTE: The "authoredOnly" flag is not yet in use, but when we have
     // support for prim-based metadata fallbacks, they should be ignored when
     // this flag is set to true.
@@ -2058,13 +2039,6 @@ private:
                          bool useFallbacks,
                          UsdMetadataValueMap* result,
                          bool anchorAssetPathsOnly = false) const;
-
-    template <class Composer>
-    bool
-    _GetFallbackMetadataImpl(const UsdObject &obj,
-                             const TfToken &fieldName,
-                             const TfToken &keyPath,
-                             Composer *composer) const;
 
     // --------------------------------------------------------------------- //
     // Default & TimeSample Resolution
