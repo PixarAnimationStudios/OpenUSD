@@ -89,7 +89,7 @@ private:
         _inner_iterator _pos;
     };
 
-    class _PairProxy : boost::totally_ordered<_PairProxy> {
+    class _PairProxy {
     public:
         explicit _PairProxy(This* owner, _inner_iterator i) :
                         first(owner->_view.key(i)), second(owner, i) { }
