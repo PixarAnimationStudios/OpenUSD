@@ -22,6 +22,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from __future__ import print_function
+
 from pxr import Sdf
 import unittest, os
 
@@ -30,7 +32,7 @@ verbose = False
 
 class TestSdfBatchNamespaceEdit(unittest.TestCase):
     def test_Basic(self):
-        print 'Test constructors'
+        print('Test constructors')
 
         testEdits = [
             Sdf.NamespaceEdit('/C', '/D'),
@@ -47,13 +49,13 @@ class TestSdfBatchNamespaceEdit(unittest.TestCase):
         edit2 = Sdf.BatchNamespaceEdit(edit)
         self.assertEqual(edit2.edits, testEdits)
 
-        print '\nTest repr'
+        print('\nTest repr')
 
         edit = Sdf.BatchNamespaceEdit()
         self.assertEqual(edit.edits, eval(repr(edit)).edits)
         self.assertEqual(edit2.edits, eval(repr(edit2)).edits)
 
-        print '\nTest Add()'
+        print('\nTest Add()')
 
         edit.Add(Sdf.NamespaceEdit('/C', '/D'))
         edit.Add('/B', '/C')
@@ -61,7 +63,7 @@ class TestSdfBatchNamespaceEdit(unittest.TestCase):
         edit.Add('/X', Sdf.Path.emptyPath)
         self.assertEqual(edit.edits, edit2.edits)
 
-        print '\nTest Process()'
+        print('\nTest Process()')
 
         layer = Sdf.Layer.FindOrOpen('testSdfBatchNamespaceEdit.testenv/test.usda')
         final = Sdf.Layer.FindOrOpen('testSdfBatchNamespaceEdit.testenv/final.usda')
@@ -121,9 +123,9 @@ class TestSdfBatchNamespaceEdit(unittest.TestCase):
         def CheckFail(result, description):
             if verbose:
                 if result[0]:
-                    print "Unexpected success: %s" % description
+                    print("Unexpected success: %s" % description)
                 else:
-                    print "%40s: [%s]" % (description, '.'.join([str(x) for x in result[1]]))
+                    print("%40s: [%s]" % (description, '.'.join([str(x) for x in result[1]])))
             self.assertFalse(result[0])
 
         edit = Sdf.BatchNamespaceEdit()
@@ -183,7 +185,7 @@ class TestSdfBatchNamespaceEdit(unittest.TestCase):
         edit.Add('/C', '/D')                    # canEdit fails.
         CheckFail(edit.Process(hasObject, lambda e: (False, "Can't edit")), "canEdit fails")
 
-        print '\nTest live edits on layer'
+        print('\nTest live edits on layer')
         edit = Sdf.BatchNamespaceEdit()
         edit.Add('/C', '/D', Sdf.NamespaceEdit.same) # Prim renames
         edit.Add('/B', '/C', Sdf.NamespaceEdit.same)
@@ -214,7 +216,7 @@ class TestSdfBatchNamespaceEdit(unittest.TestCase):
         layer.Apply(edit)
         self.assertEqual(layer.ExportToString(), final.ExportToString())
 
-        print '\nTest SUCCEEDED'
+        print('\nTest SUCCEEDED')
 
 if __name__ == "__main__":
     unittest.main()

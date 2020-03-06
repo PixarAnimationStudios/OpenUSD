@@ -49,7 +49,7 @@ class TestSdfPayload(unittest.TestCase):
 
             # Test property access
             for arg, value in argvalues:
-                if kw.has_key(arg):
+                if arg in kw:
                     self.assertEqual( getattr(payload, arg), value )
                 else:
                     self.assertEqual( getattr(payload, arg), getattr(emptyPayload, arg) )

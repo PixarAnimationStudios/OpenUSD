@@ -235,7 +235,7 @@ void Sdf_wrapAncestorsRange()
 
     using Iter = Sdf_PyPathAncestorsRangeIterator;
     class_<Iter>("_iterator", no_init)
-        .def("next", &Iter::next)
+        .def(TfPyIteratorNextMethodName, &Iter::next)
         ;
 }
 
@@ -405,7 +405,7 @@ void wrapPath() {
             make_function(&This::GetString, 
                 return_value_policy<return_by_value>()))
 
-        .def("__nonzero__", __nonzero__)
+        .def(TfPyBoolBuiltinFuncName, __nonzero__)
 
         .def(self == self)
         .def(self != self)
