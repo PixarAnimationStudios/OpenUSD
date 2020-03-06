@@ -999,6 +999,11 @@ function(pxr_toplevel_epilogue)
             PUBLIC
                 $<TARGET_PROPERTY:usd_m,INTERFACE_INCLUDE_DIRECTORIES>
         )
+        target_include_directories(usd_ms
+            SYSTEM
+            PUBLIC
+                $<TARGET_PROPERTY:usd_m,INTERFACE_SYSTEM_INCLUDE_DIRECTORIES>
+        )
         foreach(lib ${PXR_OBJECT_LIBS})
             get_property(libs TARGET ${lib} PROPERTY INTERFACE_LINK_LIBRARIES)
             target_link_libraries(usd_ms
@@ -1077,6 +1082,11 @@ function(pxr_monolithic_epilogue)
             PUBLIC
                 $<TARGET_PROPERTY:${lib},INTERFACE_INCLUDE_DIRECTORIES>
         )
+        target_include_directories(usd_m
+            SYSTEM
+            PUBLIC
+                $<TARGET_PROPERTY:${lib},INTERFACE_SYSTEM_INCLUDE_DIRECTORIES>
+        )
 
         get_property(libs TARGET ${lib} PROPERTY INTERFACE_LINK_LIBRARIES)
         target_link_libraries(usd_m
@@ -1096,6 +1106,7 @@ function(pxr_monolithic_epilogue)
     set(export "${export}set_property(TARGET usd_m PROPERTY IMPORTED_LOCATION $<TARGET_FILE:usd_m>)\n")
     set(export "${export}set_property(TARGET usd_m PROPERTY INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:usd_m,INTERFACE_COMPILE_DEFINITIONS>)\n")
     set(export "${export}set_property(TARGET usd_m PROPERTY INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:usd_m,INTERFACE_INCLUDE_DIRECTORIES>)\n")
+    set(export "${export}set_property(TARGET usd_m PROPERTY INTERFACE_SYSTEM_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:usd_m,INTERFACE_SYSTEM_INCLUDE_DIRECTORIES>)\n")
     set(export "${export}set_property(TARGET usd_m PROPERTY INTERFACE_LINK_LIBRARIES $<TARGET_PROPERTY:usd_m,INTERFACE_LINK_LIBRARIES>)\n")
     file(GENERATE
         OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/usd-targets-$<CONFIG>.cmake"
@@ -1111,6 +1122,7 @@ function(pxr_monolithic_epilogue)
     set(export "${export}#set_property(TARGET usd_ms PROPERTY IMPORTED_IMPLIB FIXME)\n")
     set(export "${export}set_property(TARGET usd_ms PROPERTY INTERFACE_COMPILE_DEFINITIONS $<TARGET_PROPERTY:usd_m,INTERFACE_COMPILE_DEFINITIONS>)\n")
     set(export "${export}set_property(TARGET usd_ms PROPERTY INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:usd_m,INTERFACE_INCLUDE_DIRECTORIES>)\n")
+    set(export "${export}set_property(TARGET usd_ms PROPERTY INTERFACE_SYSTEM_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:usd_m,INTERFACE_SYSTEM_INCLUDE_DIRECTORIES>)\n")
     set(export "${export}set_property(TARGET usd_ms PROPERTY INTERFACE_LINK_LIBRARIES $<TARGET_PROPERTY:usd_m,INTERFACE_LINK_LIBRARIES>)\n")
     file(GENERATE
         OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/usd-imports-$<CONFIG>.cmake"
