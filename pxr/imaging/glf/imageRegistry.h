@@ -29,9 +29,9 @@
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include <memory>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -62,7 +62,7 @@ private:
     GlfImageSharedPtr _ConstructImage(std::string const & filename);
 
 private:
-    boost::scoped_ptr<GlfRankedTypeMap> _typeMap;
+    std::unique_ptr<GlfRankedTypeMap> _typeMap;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
