@@ -33,4 +33,10 @@
 /// header which is somewhat heavy.
 #define TF_PP_CAT(x, y) TF_PP_CAT_IMPL(x, y)
 
+// Helper for TF_PP_STRINGIZE supplying macro expansion before pasting
+#define TF_PP_STRINGIZE_IMPL(x) #x
+
+/// Expand and convert the argument to a string, using a most minimal macro.
+#define TF_PP_STRINGIZE(x) TF_PP_STRINGIZE_IMPL(x)
+
 #endif // PXR_BASE_TF_PREPROCESSOR_UTILS_LITE_H

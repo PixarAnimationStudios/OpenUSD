@@ -26,7 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/mallocTag.h"
-#include <boost/preprocessor/stringize.hpp>
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -35,20 +35,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Creates an auto-mallocTag with the function, including template params.
 ///
 #define HF_MALLOC_TAG_FUNCTION() \
-    TfAutoMallocTag2 tagFunc(BOOST_PP_STRINGIZE(MFB_PACKAGE_NAME), \
+    TfAutoMallocTag2 tagFunc(TF_PP_STRINGIZE(MFB_PACKAGE_NAME), \
                              __ARCH_PRETTY_FUNCTION__);
 
 ///
 /// Creates an auto-mallocTag with the given named tag.
 ///
 #define HF_MALLOC_TAG(x) \
-    TfAutoMallocTag2 tag2(BOOST_PP_STRINGIZE(MFB_PACKAGE_NAME), x);
+    TfAutoMallocTag2 tag2(TF_PP_STRINGIZE(MFB_PACKAGE_NAME), x);
 
 ///
 /// Overrides operator new/delete and injects malloc tags.
 ///
 #define HF_MALLOC_TAG_NEW(x) \
-    TF_MALLOC_TAG_NEW(BOOST_PP_STRINGIZE(MFB_PACKAGE_NAME), x);
+    TF_MALLOC_TAG_NEW(TF_PP_STRINGIZE(MFB_PACKAGE_NAME), x);
 
 
 #define HF_TRACE_FUNCTION_SCOPE(tag)                                  \

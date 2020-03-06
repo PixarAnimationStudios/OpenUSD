@@ -32,6 +32,7 @@
 #include <locale>
 
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 
 #include <boost/python/class.hpp>
 #include <boost/python/scope.hpp>
@@ -80,10 +81,10 @@ private:
 // Private macros to add a single data member.
 #define _TF_PY_TOKENS_WRAP_ATTR_MEMBER(r, key, name)                        \
     boost::python::scope().attr(                                            \
-        BOOST_PP_STRINGIZE(name)) = key->name.GetString();
+        TF_PP_STRINGIZE(name)) = key->name.GetString();
 
 #define _TF_PY_TOKENS_WRAP_MEMBER(r, key, name)                             \
-    .add_static_property(BOOST_PP_STRINGIZE(name),                          \
+    .add_static_property(TF_PP_STRINGIZE(name),                             \
         boost::python::make_function(_TfPyWrapStaticToken((&key->name)),    \
             boost::python::return_value_policy<                             \
                 boost::python::return_by_value>(),                          \

@@ -31,12 +31,12 @@
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/preprocessorUtils.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/safeTypeCompare.h"
 #include "pxr/base/tf/api.h"
 
 #include <boost/operators.hpp>
 #include <boost/preprocessor/punctuation/comma_if.hpp>
-#include <boost/preprocessor/stringize.hpp>
 #include <boost/type_traits/is_enum.hpp>
 #include <boost/utility/enable_if.hpp>
 
@@ -436,10 +436,10 @@ TF_API std::ostream& operator<<(std::ostream& out, const TfEnum & e);
 ///
 /// \ingroup group_tf_RuntimeTyping
 /// \hideinitializer
-#define TF_ADD_ENUM_NAME(VAL, ...)                                      \
-    TfEnum::_AddName(VAL,                                               \
-                     BOOST_PP_STRINGIZE(VAL)                            \
-                     BOOST_PP_COMMA_IF(TF_NUM_ARGS(__VA_ARGS__))        \
+#define TF_ADD_ENUM_NAME(VAL, ...)                               \
+    TfEnum::_AddName(VAL,                                        \
+                     TF_PP_STRINGIZE(VAL)                        \
+                     BOOST_PP_COMMA_IF(TF_NUM_ARGS(__VA_ARGS__)) \
                      __VA_ARGS__)
 
 PXR_NAMESPACE_CLOSE_SCOPE

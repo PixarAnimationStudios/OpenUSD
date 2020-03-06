@@ -26,7 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/plug/registry.h"
-#include <boost/preprocessor/stringize.hpp>
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -36,7 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// macro site is invoked.
 #define PLUG_THIS_PLUGIN \
     PlugRegistry::GetInstance().GetPluginWithName(\
-        BOOST_PP_STRINGIZE(MFB_PACKAGE_NAME))
+        TF_PP_STRINGIZE(MFB_PACKAGE_NAME))
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

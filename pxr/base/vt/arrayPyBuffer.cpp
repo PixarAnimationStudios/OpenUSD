@@ -33,6 +33,7 @@
 
 #include "pxr/base/gf/traits.h"
 
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/py3Compat.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -607,14 +608,14 @@ VT_API void Vt_AddBufferProtocolSupportToVtArrays()
 {
 
 // Add the buffer protocol support to every array type that we support it for.
-#define VT_ADD_BUFFER_PROTOCOL(r, unused, elem)                         \
-    Vt_AddBufferProtocol<VtArray<VT_TYPE(elem)> >();                    \
-    VtValue::RegisterCast<TfPyObjWrapper, VtArray<VT_TYPE(elem)> >(     \
-        Vt_CastPyObjToArray<VT_TYPE(elem)>);                            \
-    VtValue::RegisterCast<vector<VtValue>, VtArray<VT_TYPE(elem)> >(    \
-        Vt_CastVectorToArray<VT_TYPE(elem)>);                           \
-    boost::python::def(BOOST_PP_STRINGIZE(VT_TYPE_NAME(elem))           \
-                        "ArrayFromBuffer",                              \
+#define VT_ADD_BUFFER_PROTOCOL(r, unused, elem)                      \
+    Vt_AddBufferProtocol<VtArray<VT_TYPE(elem)> >();                 \
+    VtValue::RegisterCast<TfPyObjWrapper, VtArray<VT_TYPE(elem)> >(  \
+        Vt_CastPyObjToArray<VT_TYPE(elem)>);                         \
+    VtValue::RegisterCast<vector<VtValue>, VtArray<VT_TYPE(elem)> >( \
+        Vt_CastVectorToArray<VT_TYPE(elem)>);                        \
+    boost::python::def(TF_PP_STRINGIZE(VT_TYPE_NAME(elem))           \
+                        "ArrayFromBuffer",                           \
                         Vt_WrapArrayFromBuffer<VT_TYPE(elem)>);
 
 BOOST_PP_SEQ_FOR_EACH(VT_ADD_BUFFER_PROTOCOL, ~, VT_ARRAY_PYBUFFER_TYPES)

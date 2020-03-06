@@ -42,7 +42,6 @@
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/preprocessor/stringize.hpp>
 #include <boost/python/class.hpp>
 #include <boost/python/converter/from_python.hpp>
 #include <boost/python/converter/registered.hpp>

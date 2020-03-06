@@ -77,6 +77,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/preprocessorUtils.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/token.h"
 
@@ -93,7 +94,6 @@
 #include <boost/preprocessor/seq/for_each_i.hpp>
 #include <boost/preprocessor/seq/size.hpp>
 #include <boost/preprocessor/seq/push_back.hpp>
-#include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -222,7 +222,7 @@ PXR_NAMESPACE_OPEN_SCOPE
                                         TfToken::Immortal)                  \
 
 #define _TF_TOKENS_INITIALIZE_MEMBER(elem)                                  \
-    elem(BOOST_PP_STRINGIZE(elem), TfToken::Immortal)
+    elem(TF_PP_STRINGIZE(elem), TfToken::Immortal)
 
 #define _TF_TOKENS_DEFINE_ARRAY_MEMBER(r, data, i, elem)                    \
     data[i] = BOOST_PP_IIF(TF_PP_IS_TUPLE(elem),                            \

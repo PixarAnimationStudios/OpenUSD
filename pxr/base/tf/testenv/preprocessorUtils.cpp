@@ -26,7 +26,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/preprocessorUtils.h"
-#include <boost/preprocessor/stringize.hpp>
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include <string.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -115,7 +115,7 @@ TestTF_PP_EAT_PARENS()
 static bool
 TestTF_PP_IS_TUPLE()
 {
-    #define _STR BOOST_PP_STRINGIZE
+    #define _STR TF_PP_STRINGIZE
 
     TF_AXIOM(!strcmp(_STR(TF_PP_IS_TUPLE(())), "1"));
     TF_AXIOM(!strcmp(_STR(TF_PP_IS_TUPLE((a))), "1"));

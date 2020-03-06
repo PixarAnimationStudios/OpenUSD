@@ -27,24 +27,23 @@
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/pathUtils.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/symbols.h"
 #include "pxr/base/arch/systemInfo.h"
 
-#include <boost/preprocessor/stringize.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-const char* pathEnvVarName      = BOOST_PP_STRINGIZE(PXR_PLUGINPATH_NAME);
-const char* buildLocation       = BOOST_PP_STRINGIZE(PXR_BUILD_LOCATION);
-const char* pluginBuildLocation = BOOST_PP_STRINGIZE(PXR_PLUGIN_BUILD_LOCATION);
+const char* pathEnvVarName      = TF_PP_STRINGIZE(PXR_PLUGINPATH_NAME);
+const char* buildLocation       = TF_PP_STRINGIZE(PXR_BUILD_LOCATION);
+const char* pluginBuildLocation = TF_PP_STRINGIZE(PXR_PLUGIN_BUILD_LOCATION);
 
 #ifdef PXR_INSTALL_LOCATION
-const char* installLocation     = BOOST_PP_STRINGIZE(PXR_INSTALL_LOCATION); 
+const char* installLocation     = TF_PP_STRINGIZE(PXR_INSTALL_LOCATION); 
 #endif // PXR_INSTALL_LOCATION
 
 void

@@ -23,6 +23,7 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/vt/wrapArray.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -36,7 +37,7 @@ namespace Vt_WrapArray {
 #define MAKE_NAME_FUNC(r, unused, elem) \
 template <> \
 VT_API string GetVtArrayName< VT_TYPE(elem) >() { \
-    return BOOST_PP_STRINGIZE(VT_TYPE_NAME(elem)); \
+    return TF_PP_STRINGIZE(VT_TYPE_NAME(elem)); \
 }
 BOOST_PP_SEQ_FOR_EACH(MAKE_NAME_FUNC, ~, VT_ARRAY_VALUE_TYPES)
 #undef MAKE_NAME_FUNC

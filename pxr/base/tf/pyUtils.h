@@ -32,6 +32,7 @@
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/tf/diagnosticLite.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/py3Compat.h"
 #include "pxr/base/tf/pyInterpreter.h"
 #include "pxr/base/tf/pyLock.h"
@@ -56,7 +57,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// \hideinitializer
 #define TF_PY_REPR_PREFIX \
-    std::string(BOOST_PP_STRINGIZE(MFB_PACKAGE_MODULE) ".")
+    std::string(TF_PP_STRINGIZE(MFB_PACKAGE_MODULE) ".")
 
 /// Returns true if python is initialized.
 TF_API bool TfPyIsInitialized();
