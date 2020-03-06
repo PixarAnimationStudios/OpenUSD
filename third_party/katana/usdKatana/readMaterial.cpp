@@ -31,6 +31,8 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/imaging/hio/glslfx.h"
 
+#include "pxr/usd/ar/resolver.h"
+
 #include "pxr/usd/usdGeom/scope.h"
 
 #include "pxr/usd/usdShade/connectableAPI.h"
@@ -450,6 +452,14 @@ _CreateShadingNode(
             if (!pystring::endswith(oslIdString, ".oso"))
             {
                 oslIdString = "osl:" + oslIdString;
+            }
+            else
+            {
+                std::string resolvedOslId = ArGetResolver().Resolve(oslIdString);
+                if (!resolvedOslId.empty())
+                {
+                    oslIdString = resolvedOslId;
+                }
             }
             
             FnKat::StringAttribute oslIdAttr = FnKat::StringAttribute(oslIdString);
