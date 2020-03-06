@@ -290,49 +290,44 @@ TfMakeDir(string const& path, int mode)
 }
 
 static bool
-Tf_MakeDirsRec(string const& path, int mode)
+Tf_MakeDirsRec(string const& path, int mode, bool existOk)
 {
 #if defined(ARCH_OS_WINDOWS)
-    string head = TfStringTrimRight(TfGetPathName(path), "\\/");
+    static const string pathsep = "\\/";
 #else
-    string head = TfStringTrimRight(TfGetPathName(path), "/");
+    static const string pathsep = "/";
 #endif
 
-    if (head.empty()) {
-        return TfIsDir(path) ? true : TfMakeDir(path, mode);
-    }
+    const string head = TfStringTrimRight(TfGetPathName(path), pathsep.c_str());
+    const string tail = TfGetBaseName(path);
 
-    string tail = TfGetBaseName(path);
-
-    if (!head.empty() && !tail.empty()) {
-
-        ArchStatType st;
-        if (Tf_Stat(head.c_str(), /* resolveSymlinks */ true, &st)) {
-            // Path exists
-            if (!S_ISDIR(st.st_mode)) {
-                TF_RUNTIME_ERROR("Path %s exists, and is not a directory",
-                        head.c_str());
-                return false;
-            }
-        }
-        else {
-            // Path does not exist
-            if (!Tf_MakeDirsRec(head, mode)) {
+    if (!head.empty() && !tail.empty() && !TfPathExists(head)) {
+        if (!Tf_MakeDirsRec(head, mode, existOk)) {
+#if defined(ARCH_OS_WINDOWS)
+            if (GetLastError() != ERROR_ALREADY_EXISTS)
+#else
+            if (errno != EEXIST)
+#endif
+            {
                 return false;
             }
         }
     }
 
-    return TfIsDir(path) ? true : TfMakeDir(path, mode);
+    if (!TfMakeDir(path, mode)) {
+        if (!existOk || !TfIsDir(path)) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool
-TfMakeDirs(string const& path, int mode)
+TfMakeDirs(string const& path, int mode, bool existOk)
 {
-    if (path.empty() || TfIsDir(path)) {
-        return false;
-    }
-    return Tf_MakeDirsRec(TfNormPath(path), mode);
+    return path.empty() ? false
+        : Tf_MakeDirsRec(TfNormPath(path), mode, existOk);
 }
 
 bool

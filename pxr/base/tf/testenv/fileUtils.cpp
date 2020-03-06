@@ -392,6 +392,8 @@ TestTfMakeDirs()
     // Whole path already exists
     cout << "+ whole path already exists" << endl;
     TF_AXIOM(!TfMakeDirs("testTfMakeDirs-3/bar/baz/leaf"));
+    TF_AXIOM(TfMakeDirs("testTfMakeDirs-3/bar/baz/leaf",
+                        /* mode */ -1, /* existOk */ true));
 
     // Dots in path
     if (TfIsDir("testTfMakeDirs-4"))

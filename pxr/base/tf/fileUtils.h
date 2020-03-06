@@ -100,9 +100,11 @@ bool TfMakeDir(std::string const& path, int mode=-1);
 ///
 /// If any element of the path cannot be created, this function will return
 /// false. The specified mode will be used to create all new directories.  If
-/// no mode is specified, the default mode of \c TfMakeDir is used.
+/// no mode is specified, the default mode of \c TfMakeDir is used. If the
+/// target directory exists, this function returns false if \p existOk is
+/// false.
 TF_API
-bool TfMakeDirs(std::string const& path, int mode=-1);
+bool TfMakeDirs(std::string const& path, int mode=-1, bool existOk=false);
 
 /// Function type for TfWalkDirs.
 ///
