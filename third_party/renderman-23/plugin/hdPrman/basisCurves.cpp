@@ -171,7 +171,7 @@ HdPrman_BasisCurves::_ConvertGeometry(HdPrman_Context *context,
     HdPrman_ConvertPrimvars(sceneDelegate, id, primvars, numCurves,
         vertexPrimvarCount, varyingPrimvarCount, facevaryingPrimvarCount);
 
-    return std::move(primvars);
+    return primvars;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

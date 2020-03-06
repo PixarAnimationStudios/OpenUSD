@@ -740,7 +740,7 @@ HdPrman_Context::ConvertAttributes(HdSceneDelegate *sceneDelegate,
     VtArray<TfToken> categories = sceneDelegate->GetCategories(id);
     ConvertCategoriesToAttributes(id, categories, attrs);
 
-    return std::move(attrs);
+    return attrs;
 }
 
 void
