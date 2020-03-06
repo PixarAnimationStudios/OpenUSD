@@ -66,7 +66,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include <algorithm>
 
 using std::string;
-using namespace boost;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
