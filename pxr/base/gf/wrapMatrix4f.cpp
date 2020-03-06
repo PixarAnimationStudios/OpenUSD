@@ -459,6 +459,7 @@ void wrapMatrix4f()
         .def("ExtractTranslation", &This::ExtractTranslation)
         .def("ExtractRotation", &This::ExtractRotation)
         .def("ExtractRotationMatrix", &This::ExtractRotationMatrix)
+        .def("ExtractRotationQuat", &This::ExtractRotationQuat)
 
         .def("Factor", FactorWithEpsilon)
         .def("Factor", Factor)

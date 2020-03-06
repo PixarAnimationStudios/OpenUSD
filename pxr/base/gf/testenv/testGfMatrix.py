@@ -566,6 +566,14 @@ class TestGfMatrix(unittest.TestCase):
             self.assertTrue(Gf.IsClose(r4.axis, r5.axis, 0.0001) and \
                 Gf.IsClose(r4.angle, r5.angle, 0.0001))
 
+            # ExtractQuat() and ExtractRotation() should yield 
+            # equivalent rotations.
+            m = Matrix(mx3d, Vec3(1,2,3))
+            r1 = m.ExtractRotation()
+            r2 = Gf.Rotation(m.ExtractRotationQuat())
+            self.assertTrue(Gf.IsClose(r1.axis, r2.axis, 0.0001) and \
+                Gf.IsClose(r2.angle, r2.angle, 0.0001))
+
             m4 = Matrix(mx3d, Vec3(1,2,3)).ExtractRotationMatrix()
             self.assertEqual(m4, mx3d)
 
