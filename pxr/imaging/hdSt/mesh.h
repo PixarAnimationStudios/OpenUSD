@@ -96,8 +96,9 @@ protected:
 
     HdBufferArrayRangeSharedPtr
     _GetSharedPrimvarRange(uint64_t primvarId,
-                HdBufferSpecVector const &bufferSpecs,
-                HdBufferArrayRangeSharedPtr const &existing,
+                HdBufferSpecVector const &updatedOrAddedSpecs,
+                HdBufferSpecVector const &removedSpecs,
+                HdBufferArrayRangeSharedPtr const &curRange,
                 bool * isFirstInstance,
                 HdStResourceRegistrySharedPtr const &resourceRegistry) const;
 
@@ -184,11 +185,8 @@ private:
     bool _doubleSided : 1;
     bool _flatShadingEnabled : 1;
     bool _displacementEnabled : 1;
-    bool _smoothNormals : 1;
-    bool _packedSmoothNormals : 1;
     bool _limitNormals : 1;
     bool _sceneNormals : 1;
-    bool _flatNormals : 1;
     bool _hasVaryingTopology : 1;  // The prim's topology has changed since
                                    // the prim was created
 };

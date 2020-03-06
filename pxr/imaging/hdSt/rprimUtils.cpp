@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/rprimUtils.h"
 
+#include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/material.h"
@@ -31,6 +32,10 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 
+#include "pxr/imaging/hd/bufferArrayRange.h"
+#include "pxr/imaging/hd/bufferSpec.h"
+#include "pxr/imaging/hd/bufferSource.h"
+#include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/rprimSharedData.h"
@@ -144,6 +149,9 @@ HdStGetMaterialShader(
     HdStMaterial const * material = static_cast<HdStMaterial const *>(
             renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
     if (material == nullptr) {
+        TF_DEBUG(HD_RPRIM_UPDATED).Msg("Using fallback material for %s\n",
+            prim->GetId().GetText());
+
         material = static_cast<HdStMaterial const *>(
                 renderIndex.GetFallbackSprim(HdPrimTypeTokens->material));
     }
@@ -155,6 +163,185 @@ HdStGetMaterialShader(
     }
 
     return shaderCode;
+}
+
+// -----------------------------------------------------------------------------
+// Primvar processing and BAR allocation utilities
+// -----------------------------------------------------------------------------
+bool
+HdStIsValidBAR(HdBufferArrayRangeSharedPtr const& range)
+{
+    return (range && range->IsValid());
+}
+
+bool
+HdStCanSkipBARAllocationOrUpdate(
+    HdBufferSourceVector const& sources,
+    HdComputationVector const& computations,
+    HdBufferArrayRangeSharedPtr const& curRange,
+    HdDirtyBits dirtyBits)
+{
+    TF_UNUSED(dirtyBits);
+    // XXX: Without a dirty bit to indicate that the primvar descriptors have
+    // changed, we need to manually test each time to figure out if any primvars
+    // were added or removed for each interpolation.
+    bool mayHaveDirtyPrimvarDesc = true;
+
+    // If we have no buffer/computation sources, we can skip processing in the
+    // following cases:
+    // - we haven't allocated a BAR previously
+    // - we have an existing BAR and its primvar descriptors haven't changed
+    bool noDataSourcesToUpdate = sources.empty() && computations.empty();
+    return noDataSourcesToUpdate && 
+           (!HdStIsValidBAR(curRange) || !mayHaveDirtyPrimvarDesc);
+}
+
+bool
+HdStCanSkipBARAllocationOrUpdate(
+    HdBufferSourceVector const& sources,
+    HdBufferArrayRangeSharedPtr const& curRange,
+    HdDirtyBits dirtyBits)
+{
+    return HdStCanSkipBARAllocationOrUpdate(
+        sources, HdComputationVector(), curRange, dirtyBits);
+}
+
+HdBufferSpecVector
+HdStGetRemovedPrimvarBufferSpecs(
+    HdBufferArrayRangeSharedPtr const& curRange,
+    HdPrimvarDescriptorVector const& newPrimvarDescs,
+    HdExtComputationPrimvarDescriptorVector const& newCompPrimvarDescs,
+    TfTokenVector const& internallyGeneratedPrimvarNames,
+    SdfPath const& rprimId)
+{
+    if (!HdStIsValidBAR(curRange)) {
+        return HdBufferSpecVector();
+    }
+
+    HdBufferSpecVector removedPrimvarSpecs;
+    // Get the new list of primvar sources for the BAR. We need to use both
+    // the primvar descriptor list (that we get via the scene delegate), as
+    // well as any internally generated primvars that are always added (such as
+    // primId). This may contain primvars that fail validation, but we're only
+    // interested in finding out existing primvars that aren't in the list.
+    TfTokenVector newPrimvarNames;
+    newPrimvarNames.reserve(newPrimvarDescs.size());
+    for (auto const& desc : newPrimvarDescs) {
+        newPrimvarNames.emplace_back(desc.name);
+    }
+    for (auto const& desc : newCompPrimvarDescs) {
+        newPrimvarNames.emplace_back(desc.name);
+    }
+
+    // Get the buffer specs for the existing BAR...
+    HdBufferSpecVector curBarSpecs;
+    curRange->GetBufferSpecs(&curBarSpecs);
+
+    // ... and check if it has buffers that are neither in the new source list
+    // nor are internally generated.
+    for (auto const& spec : curBarSpecs) {
+
+        bool isInNewList =
+            std::find(newPrimvarNames.begin(), newPrimvarNames.end(), spec.name)
+            != newPrimvarNames.end();
+        
+        if (isInNewList) {
+            continue; // avoid the search below
+        }
+
+        bool isInGeneratedList =
+            std::find(internallyGeneratedPrimvarNames.begin(),
+                      internallyGeneratedPrimvarNames.end(), spec.name)
+            != internallyGeneratedPrimvarNames.end();
+        
+        if (!isInGeneratedList) {
+             TF_DEBUG(HD_RPRIM_UPDATED).Msg(
+                "%s: Found primvar %s that has been removed\n",
+                rprimId.GetText(), spec.name.GetText());
+            removedPrimvarSpecs.emplace_back(spec);
+        }
+    }
+
+    return removedPrimvarSpecs;  
+}
+
+HdBufferSpecVector
+HdStGetRemovedPrimvarBufferSpecs(
+    HdBufferArrayRangeSharedPtr const& curRange,
+    HdPrimvarDescriptorVector const& newPrimvarDescs,
+    TfTokenVector const& internallyGeneratedPrimvarNames,
+    SdfPath const& rprimId)
+{
+    return HdStGetRemovedPrimvarBufferSpecs(curRange, newPrimvarDescs,
+        HdExtComputationPrimvarDescriptorVector(),
+        internallyGeneratedPrimvarNames, rprimId);
+}
+
+void
+HdStUpdateDrawItemBAR(
+    HdBufferArrayRangeSharedPtr const& newRange,
+    int drawCoordIndex,
+    HdRprimSharedData *sharedData,
+    HdRenderIndex &renderIndex)
+{
+    if (!sharedData) {
+        TF_CODING_ERROR("Null shared data ptr received\n");
+        return;
+    }
+
+    HdBufferArrayRangeSharedPtr const& curRange =
+        sharedData->barContainer.Get(drawCoordIndex);
+
+    if (curRange == newRange) {
+        // Nothing to do. The draw item's BAR hasn't been changed.
+        return;
+    }
+
+    SdfPath const& id = sharedData->rprimID;
+
+    if (HdStIsValidBAR(curRange)) {
+        TF_DEBUG(HD_RPRIM_UPDATED).Msg(
+            "%s: Marking garbage collection needed to possibly reclaim BAR %p"
+            " at draw coord index %d\n",
+            id.GetText(), (void*)curRange.get(), drawCoordIndex);
+
+        renderIndex.GetChangeTracker().SetGarbageCollectionNeeded();
+        
+        // If the new BAR is associated with a buffer array that fails the
+        // aggregation test (used during batching), we need to use the big
+        // hammer, and rebuild all draw batches.
+        if (!newRange->IsAggregatedWith(curRange)) {
+            TF_DEBUG(HD_RPRIM_UPDATED).Msg(
+                "%s: Marking all batches dirty since the new BAR (%p) doesn't"
+                " aggregate with the existing BAR (%p)\n",
+                id.GetText(), (void*)newRange.get(), (void*)curRange.get());
+
+            renderIndex.GetChangeTracker().MarkBatchesDirty();
+        }
+    }
+
+    if (TfDebug::IsEnabled(HD_RPRIM_UPDATED)) {
+        TfDebug::Helper().Msg(
+            "%s: Updating BAR at draw coord index %d from %p to %p\n",
+            id.GetText(), drawCoordIndex, (void*)curRange.get(),
+            (void*)newRange.get());
+
+        if (HdStIsValidBAR(curRange)) {
+            TfDebug::Helper().Msg("Old buffer specs:\n");
+            HdBufferSpecVector oldSpecs;
+            curRange->GetBufferSpecs(&oldSpecs);
+            HdBufferSpec::Dump(oldSpecs);
+
+            TfDebug::Helper().Msg("New buffer specs:\n");
+            HdBufferSpecVector newSpecs;
+            newRange->GetBufferSpecs(&newSpecs);
+            HdBufferSpec::Dump(newSpecs);
+        }
+    }
+
+    // Note: This should happen at the end since curRange is a reference to
+    // the BAR at the drawCoordIndex.
+    sharedData->barContainer.Set(drawCoordIndex, newRange);
 }
 
 // -----------------------------------------------------------------------------
@@ -187,8 +374,9 @@ HdStPopulateConstantPrimvars(
     SdfPath const& instancerId = prim->GetInstancerId();
 
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
-    HdResourceRegistrySharedPtr const &resourceRegistry = 
-        renderIndex.GetResourceRegistry();
+    HdStResourceRegistrySharedPtr const& hdStResourceRegistry = 
+        boost::static_pointer_cast<HdStResourceRegistry>(
+            renderIndex.GetResourceRegistry());
 
     // Update uniforms
     HdBufferSourceVector sources;
@@ -308,33 +496,52 @@ HdStPopulateConstantPrimvars(
         }
     }
 
-    // If no sources are found no need to allocate,
-    // we can early out.
-    if (sources.empty()){
+    HdBufferArrayRangeSharedPtr const& bar =
+        drawItem->GetConstantPrimvarRange();
+
+    if (HdStCanSkipBARAllocationOrUpdate(sources, bar, *dirtyBits)) {
         return;
     }
 
-     HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
-        boost::static_pointer_cast<HdStResourceRegistry>(resourceRegistry);
-
-    // Allocate a new uniform buffer if not exists.
-    if (!drawItem->GetConstantPrimvarRange()) {
-        // establish a buffer range
-        HdBufferSpecVector bufferSpecs;
-        HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
-
-        HdBufferArrayRangeSharedPtr range =
-            hdStResourceRegistry->AllocateShaderStorageBufferArrayRange(
-                HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
-        TF_VERIFY(range->IsValid());
-
-        sharedData->barContainer.Set(
-            drawItem->GetDrawingCoord()->GetConstantPrimvarIndex(), range);
+    // XXX: This should be based off the DirtyPrimvarDesc bit.
+    bool hasDirtyPrimvarDesc = (*dirtyBits & HdChangeTracker::DirtyPrimvar);
+    HdBufferSpecVector removedSpecs;
+    if (hasDirtyPrimvarDesc) {
+        static TfTokenVector internallyGeneratedPrimvars =
+        {
+            HdTokens->transform,
+            HdTokens->transformInverse,
+            HdInstancerTokens->instancerTransform,
+            HdInstancerTokens->instancerTransformInverse,
+            HdTokens->isFlipped,
+            HdTokens->bboxLocalMin,
+            HdTokens->bboxLocalMax,
+            HdTokens->primID
+        };
+        removedSpecs = HdStGetRemovedPrimvarBufferSpecs(bar, constantPrimvars, 
+            internallyGeneratedPrimvars, id);
     }
+
+    HdBufferSpecVector bufferSpecs;
+    HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
+
+    HdBufferArrayRangeSharedPtr range =
+        hdStResourceRegistry->UpdateShaderStorageBufferArrayRange(
+            HdTokens->primvar, bar, bufferSpecs, removedSpecs,
+            HdBufferArrayUsageHint());
+    
+     HdStUpdateDrawItemBAR(
+        range,
+        drawItem->GetDrawingCoord()->GetConstantPrimvarIndex(),
+        sharedData,
+        renderIndex);
+
     TF_VERIFY(drawItem->GetConstantPrimvarRange()->IsValid());
 
-    hdStResourceRegistry->AddSources(
-        drawItem->GetConstantPrimvarRange(), sources);
+    if (!sources.empty()) {
+        hdStResourceRegistry->AddSources(
+            drawItem->GetConstantPrimvarRange(), sources);
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -422,7 +629,7 @@ void HdStProcessTopologyVisibility(
         }
     }
 
-
+    // XXX: Transition this code to use the Update* method instead.
     if (!tvBAR || barNeedsReallocation) {
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateShaderStorageBufferArrayRange(

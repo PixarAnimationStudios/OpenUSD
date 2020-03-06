@@ -234,69 +234,53 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         &separateComputationSources,
         &computations);
 
-    int pointsIndexInSourceArray = -1;
-
     for (HdPrimvarDescriptor const& primvar: primvars) {
-        if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, primvar.name))
+        if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, primvar.name)) {
             continue;
+        }
 
-        // TODO: We don't need to pull primvar metadata every time a value
-        // changes, but we need support from the delegate.
-
-        //assert name not in range.bufferArray.GetResources()
         VtValue value = GetPrimvar(sceneDelegate, primvar.name);
 
         if (!value.IsEmpty()) {
-            // Store where the points will be stored in the source array
-            // we need this later to figure out if the number of points is
-            // changing and we need to force a garbage collection to resize
-            // the buffer
-            if (primvar.name == HdTokens->points) {
-                pointsIndexInSourceArray = sources.size();
-            }
-
-            // XXX: do we need special treatment for width as basicCurves?
-
             HdBufferSourceSharedPtr source(
                 new HdVtBufferSource(primvar.name, value));
             sources.push_back(source);
         }
     }
 
-    // return before allocation if it's empty.
-    if (sources.empty() && computations.empty()) {
+    HdBufferArrayRangeSharedPtr const& bar = drawItem->GetVertexPrimvarRange();
+    
+    if (HdStCanSkipBARAllocationOrUpdate(
+            sources, computations, bar, *dirtyBits)) {
         return;
     }
 
-    if (!drawItem->GetVertexPrimvarRange() ||
-        !drawItem->GetVertexPrimvarRange()->IsValid()) {
-        // initialize buffer array
-        HdBufferSpecVector bufferSpecs;
-        HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
-        HdBufferSpec::GetBufferSpecs(reserveOnlySources, &bufferSpecs);
-        HdBufferSpec::GetBufferSpecs(computations, &bufferSpecs);
-
-        HdBufferArrayRangeSharedPtr range =
-            resourceRegistry->AllocateNonUniformBufferArrayRange(
-                HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
-        _sharedData.barContainer.Set(
-            drawItem->GetDrawingCoord()->GetVertexPrimvarIndex(), range);
-
-    } else if (pointsIndexInSourceArray >=0) {
-
-        int previousRange = drawItem->GetVertexPrimvarRange()->GetNumElements();
-        int newRange = sources[pointsIndexInSourceArray]->GetNumElements();
-
-        // Check if the range is different and if so force a garbage collection
-        // which will make sure the points are up to date; also mark batches
-        // dirty.
-        if(previousRange != newRange) {
-            sceneDelegate->GetRenderIndex().GetChangeTracker().
-                SetGarbageCollectionNeeded();
-            sceneDelegate->GetRenderIndex().GetChangeTracker().
-                MarkBatchesDirty();
-        }
+    // XXX: This should be based off the DirtyPrimvarDesc bit.
+    bool hasDirtyPrimvarDesc = (*dirtyBits & HdChangeTracker::DirtyPrimvar);
+    HdBufferSpecVector removedSpecs;
+    if (hasDirtyPrimvarDesc) {
+        TfTokenVector internallyGeneratedPrimvars; // none
+        removedSpecs = HdStGetRemovedPrimvarBufferSpecs(bar, primvars, 
+            internallyGeneratedPrimvars, id);
     }
+
+    HdBufferSpecVector bufferSpecs;
+    HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
+    HdBufferSpec::GetBufferSpecs(reserveOnlySources, &bufferSpecs);
+    HdBufferSpec::GetBufferSpecs(computations, &bufferSpecs);
+    
+    HdBufferArrayRangeSharedPtr range =
+        resourceRegistry->UpdateNonUniformBufferArrayRange(
+            HdTokens->primvar, bar, bufferSpecs, removedSpecs,
+            HdBufferArrayUsageHint());
+
+    HdStUpdateDrawItemBAR(
+        range,
+        drawItem->GetDrawingCoord()->GetVertexPrimvarIndex(),
+        &_sharedData,
+        sceneDelegate->GetRenderIndex());
+
+    TF_VERIFY(drawItem->GetVertexPrimvarRange()->IsValid());
 
     // add sources to update queue
     if (!sources.empty()) {

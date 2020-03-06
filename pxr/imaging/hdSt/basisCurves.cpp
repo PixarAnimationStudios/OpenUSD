@@ -196,6 +196,12 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         _PopulateElementPrimvars(sceneDelegate, drawItem, dirtyBits);
     }
 
+    // When we have multiple drawitems for the same prim we need to clean the
+    // bits for all the data fields touched in this function, otherwise it
+    // will try to extract topology (for instance) twice, and this won't
+    // work with delegates that don't keep information around once extracted.
+    *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
+
     // Topology and VertexPrimvar may be null, if the curve has zero line
     // segments.
     TF_VERIFY(drawItem->GetConstantPrimvarRange());
@@ -443,9 +449,9 @@ HdStBasisCurves::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                                            bool updateMaterialShader,
                                            bool updateGeometricShader)
 {
-    TF_DEBUG(HD_RPRIM_UPDATED).
-        Msg("HdStBasisCurves(%s) - Resetting shaders for draw items of all "
-            "reprs.\n", GetId().GetText());
+    TF_DEBUG(HD_RPRIM_UPDATED). Msg(
+        "(%s) - Updating geometric and material shaders for draw "
+        "items of all reprs.\n", GetId().GetText());
 
     HdStShaderCodeSharedPtr materialShader;
     if (updateMaterialShader) {
@@ -592,33 +598,13 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             rangeInstance.SetValue(range);
         }
 
-        HdBufferArrayRangeSharedPtr orgRange = drawItem->GetTopologyRange();
-        HdBufferArrayRangeSharedPtr newRange = rangeInstance.GetValue();
-        if (newRange != orgRange) {
-            // If we're replacing the existing topology bar, we need to flag
-            // garbage collection on the previous bar. This bumps up the
-            // buffer array version number, triggering rebuild of the batch
-            // this curve's draw item belongs to.
-            // Note: This does not rebuild all the draw batches.
-            if (orgRange) {
-                sceneDelegate->GetRenderIndex().GetChangeTracker()
-                    .SetGarbageCollectionNeeded();
-            }
+        HdBufferArrayRangeSharedPtr const& newRange = rangeInstance.GetValue();
 
-            // If the new BAR is associated with a different buffer array,
-            // shallow validation (via garbage collection) isn't sufficient,
-            // since the wrong resource would be bound.
-            // In this case, we have to use the big hammer, and rebuild all
-            // draw batches.
-            if (!newRange->IsAggregatedWith(orgRange)) {
-                sceneDelegate->GetRenderIndex().GetChangeTracker()
-                    .MarkBatchesDirty();
-            }
-        }
-
-        _sharedData.barContainer.Set(
+        HdStUpdateDrawItemBAR(
+            newRange,
             drawItem->GetDrawingCoord()->GetTopologyIndex(),
-            rangeInstance.GetValue());
+            &_sharedData,
+            sceneDelegate->GetRenderIndex());
     }
 }
 
@@ -711,7 +697,8 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                 }
                 else if(!value.IsHolding<VtVec3fArray>() ||
                         (!_topology->HasIndices() &&
-                        value.Get<VtVec3fArray>().size() != _topology->CalculateNeededNumberOfControlPoints())) {
+                        value.Get<VtVec3fArray>().size() != 
+                        _topology->CalculateNeededNumberOfControlPoints())) {
                     TF_WARN("Topology and vertices do not match for "
                             "BasisCurve %s",id.GetName().c_str());
                 }
@@ -721,11 +708,11 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             if (primvar.name == HdTokens->widths) {
                 sources.push_back(HdBufferSourceSharedPtr(
                         new HdSt_BasisCurvesWidthsInterpolaterComputation(
-                                      _topology.get(), value.Get<VtFloatArray>())));
+                            _topology.get(), value.Get<VtFloatArray>())));
             } else if (primvar.name == HdTokens->normals) {
                 sources.push_back(HdBufferSourceSharedPtr(
                         new HdSt_BasisCurvesNormalsInterpolaterComputation(
-                                      _topology.get(), value.Get<VtVec3fArray>())));
+                            _topology.get(), value.Get<VtVec3fArray>())));
             } else {
                 sources.push_back(HdBufferSourceSharedPtr(
                         new HdVtBufferSource(primvar.name, value)));
@@ -738,26 +725,40 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     // XXX: To Do: Custom Primvar Interpolation
     // XXX: To Do: Varying Interpolation mode
 
-    // return before allocation if it's empty.
-    if (sources.empty() && computations.empty()) {
+    HdBufferArrayRangeSharedPtr const& bar = drawItem->GetVertexPrimvarRange();
+
+    if (HdStCanSkipBARAllocationOrUpdate(sources, computations, bar,
+            *dirtyBits)) {
         return;
     }
 
-    if (!drawItem->GetVertexPrimvarRange() ||
-        !drawItem->GetVertexPrimvarRange()->IsValid()) {
-
-        // new buffer specs
-        HdBufferSpecVector bufferSpecs;
-        HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
-        HdBufferSpec::GetBufferSpecs(reserveOnlySources, &bufferSpecs);
-        HdBufferSpec::GetBufferSpecs(computations, &bufferSpecs);
-
-        HdBufferArrayRangeSharedPtr range =
-            resourceRegistry->AllocateNonUniformBufferArrayRange(
-                HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
-        _sharedData.barContainer.Set(
-            drawItem->GetDrawingCoord()->GetVertexPrimvarIndex(), range);
+    // XXX: This should be based off the DirtyPrimvarDesc bit.
+    bool hasDirtyPrimvarDesc = (*dirtyBits & HdChangeTracker::DirtyPrimvar);
+    HdBufferSpecVector removedSpecs;
+    if (hasDirtyPrimvarDesc) {
+        TfTokenVector internallyGeneratedPrimvars; // none
+        removedSpecs = HdStGetRemovedPrimvarBufferSpecs(bar, primvars, 
+            compPrimvars, internallyGeneratedPrimvars, id);
     }
+
+    HdBufferSpecVector bufferSpecs;
+    HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
+    HdBufferSpec::GetBufferSpecs(reserveOnlySources, &bufferSpecs);
+    HdBufferSpec::GetBufferSpecs(computations, &bufferSpecs);
+
+    HdBufferArrayRangeSharedPtr range =
+        resourceRegistry->UpdateNonUniformBufferArrayRange(
+            HdTokens->primvar, bar, bufferSpecs, removedSpecs,
+            HdBufferArrayUsageHint());
+
+    HdStUpdateDrawItemBAR(
+        range,
+        drawItem->GetDrawingCoord()->GetVertexPrimvarIndex(),
+        &_sharedData,
+        sceneDelegate->GetRenderIndex());
+
+    TF_VERIFY(drawItem->GetVertexPrimvarRange()->IsValid());
+
 
     // add sources to update queue
     if (!sources.empty()) {
@@ -786,9 +787,10 @@ HdStBasisCurves::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
     HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
+    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
         boost::static_pointer_cast<HdStResourceRegistry>(
-        sceneDelegate->GetRenderIndex().GetResourceRegistry());
+        renderIndex.GetResourceRegistry());
 
     HdPrimvarDescriptorVector uniformPrimvars =
         HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
@@ -808,25 +810,41 @@ HdStBasisCurves::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    // return before allocation if it's empty.
-    if (sources.empty())
+    HdBufferArrayRangeSharedPtr const& bar = drawItem->GetElementPrimvarRange();
+    
+    if (HdStCanSkipBARAllocationOrUpdate(sources, bar, *dirtyBits)) {
         return;
-
-    // element primvars exist.
-    if (!drawItem->GetElementPrimvarRange() ||
-        !drawItem->GetElementPrimvarRange()->IsValid()) {
-        HdBufferSpecVector bufferSpecs;
-        HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
-
-        HdBufferArrayRangeSharedPtr range =
-            resourceRegistry->AllocateNonUniformBufferArrayRange(
-                HdTokens->primvar, bufferSpecs, HdBufferArrayUsageHint());
-        _sharedData.barContainer.Set(
-            drawItem->GetDrawingCoord()->GetElementPrimvarIndex(), range);
     }
 
-    resourceRegistry->AddSources(drawItem->GetElementPrimvarRange(),
+    // XXX: This should be based off the DirtyPrimvarDesc bit.
+    bool hasDirtyPrimvarDesc = (*dirtyBits & HdChangeTracker::DirtyPrimvar);
+    HdBufferSpecVector removedSpecs;
+    if (hasDirtyPrimvarDesc) {
+        TfTokenVector internallyGeneratedPrimvars; // none
+        removedSpecs = HdStGetRemovedPrimvarBufferSpecs(bar, uniformPrimvars, 
+            internallyGeneratedPrimvars, id);
+    }
+
+    HdBufferSpecVector bufferSpecs;
+    HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
+    
+    HdBufferArrayRangeSharedPtr range =
+        resourceRegistry->UpdateNonUniformBufferArrayRange(
+            HdTokens->primvar, bar, bufferSpecs, removedSpecs,
+            HdBufferArrayUsageHint());
+
+    HdStUpdateDrawItemBAR(
+        range,
+        drawItem->GetDrawingCoord()->GetElementPrimvarIndex(),
+        &_sharedData,
+        sceneDelegate->GetRenderIndex());
+
+    TF_VERIFY(drawItem->GetElementPrimvarRange()->IsValid());
+
+    if (!sources.empty()) {
+        resourceRegistry->AddSources(drawItem->GetElementPrimvarRange(),
                                  sources);
+    }
 }
 
 static bool 

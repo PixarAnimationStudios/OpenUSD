@@ -62,10 +62,17 @@ HdStInstancer::PopulateDrawItem(HdRprim *prim,
     int level = 0;
     HdStInstancer *currentInstancer = this;
     while (currentInstancer) {
+        int drawCoordIndex = drawingCoord->GetInstancePrimvarIndex(level);
+
+        // update cached primvar range.
+        currentInstancer->UpdateInstancePrimvarRange(prim, drawItem,
+                                                     drawCoordIndex);
+
         // update instance primvar slot in the drawing coordinate.
-        sharedData->barContainer.Set(
-            drawingCoord->GetInstancePrimvarIndex(level),
-            currentInstancer->GetInstancePrimvars(prim, drawItem));
+        HdStUpdateDrawItemBAR(currentInstancer->GetInstancePrimvarRange(),
+                              drawCoordIndex,
+                              sharedData,
+                              renderIndex);
 
         // next
         currentInstancer = static_cast<HdStInstancer*>(
@@ -83,9 +90,10 @@ HdStInstancer::PopulateDrawItem(HdRprim *prim,
     TF_VERIFY(drawItem->GetInstanceIndexRange());
 }
 
-HdBufferArrayRangeSharedPtr
-HdStInstancer::GetInstancePrimvars(HdRprim *prim,
-                                   HdStDrawItem *drawItem)
+void
+HdStInstancer::UpdateInstancePrimvarRange(HdRprim *prim,
+                                          HdStDrawItem *drawItem,
+                                          int drawCoordIndex)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -100,9 +108,8 @@ HdStInstancer::GetInstancePrimvars(HdRprim *prim,
     // Do a quick unguarded check to see if it is dirty.
     HdDirtyBits dirtyBits = changeTracker.GetInstancerDirtyBits(instancerId);
     if (!HdChangeTracker::IsAnyPrimvarDirty(dirtyBits, instancerId)) {
-        // Return the cached range. No guarantees are made about it (i.e., it
-        // could be empty).
-        return _instancePrimvarRange;
+        // Nothing to do.
+        return;
     }
 
     std::lock_guard<std::mutex> lock(_instanceLock);
@@ -114,13 +121,10 @@ HdStInstancer::GetInstancePrimvars(HdRprim *prim,
     // Check the dirtyBits of this instancer so that the instance primvars
     // are updated just once even if there're multiple prototypes.
     if (!HdChangeTracker::IsAnyPrimvarDirty(dirtyBits, instancerId)) {
-        // The other Rprim (thread) has taken care of updating the primvar BAR.
-        return _instancePrimvarRange;
+        // The other Rprim (thread) has taken care of updating
+        // _instancePrimvarRange.
+        return;
     }
-
-    HdStResourceRegistrySharedPtr const& resourceRegistry =
-        boost::static_pointer_cast<HdStResourceRegistry>(
-        delegate->GetRenderIndex().GetResourceRegistry());
 
     HdPrimvarDescriptorVector primvars =
         HdStGetInstancerPrimvarDescriptors(this, prim, drawItem, delegate);
@@ -187,44 +191,38 @@ HdStInstancer::GetInstancePrimvars(HdRprim *prim,
         }
     }
 
-    if (!sources.empty()) {
+    HdBufferArrayRangeSharedPtr const &orgRange =
+        drawItem->GetInstancePrimvarRange(drawCoordIndex);
+    
+    if (!HdStCanSkipBARAllocationOrUpdate(sources, orgRange, dirtyBits)) {
+        // XXX: This should be based off the DirtyPrimvarDesc bit.
+        bool hasDirtyPrimvarDesc = (dirtyBits & HdChangeTracker::DirtyPrimvar);
+        HdBufferSpecVector removedSpecs;
+        if (hasDirtyPrimvarDesc) {
+            TfTokenVector internallyGeneratedPrimvars; // none
+            removedSpecs = HdStGetRemovedPrimvarBufferSpecs(
+                orgRange, primvars, internallyGeneratedPrimvars, instancerId);
+        }
+        
         HdBufferSpecVector bufferSpecs;
         HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 
-        // if the instance BAR has not been allocated, create new one
-        if (!_instancePrimvarRange) {
-            HdBufferSpecVector bufferSpecs;
-            HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
+        HdStResourceRegistrySharedPtr const& resourceRegistry =
+            boost::static_pointer_cast<HdStResourceRegistry>(
+            delegate->GetRenderIndex().GetResourceRegistry());
 
-            _instancePrimvarRange =
-                resourceRegistry->AllocateNonUniformBufferArrayRange(
-                    HdTokens->primvar,
-                    bufferSpecs,
-                    HdBufferArrayUsageHint());
-        } else {
-            HdBufferArrayRangeSharedPtr range =
-                resourceRegistry->MergeNonUniformBufferArrayRange(
-                    HdTokens->primvar,
-                    bufferSpecs,
-                    HdBufferArrayUsageHint(),
-                    _instancePrimvarRange);
-
-            if (range != _instancePrimvarRange) {
-                _instancePrimvarRange = range;
-                // If buffer migration actually happens, the old buffer will no
-                // longer be needed, and GC is required to reclaim the memory.
-                // We also need to trigger a batch rebuild.
-                delegate->GetRenderIndex().GetChangeTracker().
-                    SetGarbageCollectionNeeded();
-                delegate->GetRenderIndex().GetChangeTracker().
-                        MarkBatchesDirty();
-            }
-        }
+        // Update local primvar range.
+        _instancePrimvarRange =
+            resourceRegistry->UpdateNonUniformBufferArrayRange(
+                HdTokens->primvar, orgRange, bufferSpecs, removedSpecs,
+                HdBufferArrayUsageHint());
 
         TF_VERIFY(_instancePrimvarRange->IsValid());
 
         // schedule to sync gpu
-        resourceRegistry->AddSources(_instancePrimvarRange, sources);
+        if (!sources.empty()) {
+            resourceRegistry->AddSources(_instancePrimvarRange, sources);
+        }
     }
 
     // Clear the dirtyBits of this instancer since we just scheduled to
@@ -235,8 +233,6 @@ HdStInstancer::GetInstancePrimvars(HdRprim *prim,
     // We can add another explicit pass for instancer update into
     // HdRenderIndex to be more consistent, if we like instead.
     changeTracker.MarkInstancerClean(instancerId);
-
-    return _instancePrimvarRange;
 }
 
 void

@@ -684,8 +684,7 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
         HdBufferSourceVector sources = { source };
 
-        if (!drawItem->GetVertexPrimvarRange() ||
-            !drawItem->GetVertexPrimvarRange()->IsValid()) {
+        if (!HdStIsValidBAR(drawItem->GetVertexPrimvarRange())) {
             HdBufferSpecVector bufferSpecs;
             HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
             
@@ -710,8 +709,7 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
         HdBufferSourceVector sources = { source };
 
-        if (!drawItem->GetTopologyRange() ||
-            !drawItem->GetTopologyRange()->IsValid()) {
+        if (!HdStIsValidBAR(drawItem->GetTopologyRange())) {
             HdBufferSpecVector bufferSpecs;
             HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
             

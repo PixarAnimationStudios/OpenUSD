@@ -169,6 +169,9 @@ HdStResourceRegistry::GetResourceAllocation() const
     return result;
 }
 
+/// ------------------------------------------------------------------------
+/// BAR allocation API
+/// ------------------------------------------------------------------------
 HdBufferArrayRangeSharedPtr
 HdStResourceRegistry::AllocateNonUniformBufferArrayRange(
     TfToken const &role,
@@ -241,6 +244,78 @@ HdStResourceRegistry::AllocateSingleBufferArrayRange(
                 usageHint);
 }
 
+/// ------------------------------------------------------------------------
+/// BAR allocation/migration/update API
+/// ------------------------------------------------------------------------
+HdBufferArrayRangeSharedPtr
+HdStResourceRegistry::UpdateNonUniformBufferArrayRange(
+        TfToken const &role,
+        HdBufferArrayRangeSharedPtr const& curRange,
+        HdBufferSpecVector const &updatedOrAddedSpecs,
+        HdBufferSpecVector const& removedSpecs,
+        HdBufferArrayUsageHint usageHint)
+{
+    return _UpdateBufferArrayRange(
+        _nonUniformAggregationStrategy.get(),
+        _nonUniformBufferArrayRegistry,
+        role,
+        curRange,
+        updatedOrAddedSpecs, removedSpecs, usageHint);
+}
+
+HdBufferArrayRangeSharedPtr
+HdStResourceRegistry::UpdateNonUniformImmutableBufferArrayRange(
+        TfToken const &role,
+        HdBufferArrayRangeSharedPtr const& curRange,
+        HdBufferSpecVector const &updatedOrAddedSpecs,
+        HdBufferSpecVector const& removedSpecs,
+        HdBufferArrayUsageHint usageHint)
+{
+    usageHint.bits.immutable = 1;
+
+    return _UpdateBufferArrayRange(
+        _nonUniformImmutableAggregationStrategy.get(),
+        _nonUniformImmutableBufferArrayRegistry,
+        role,
+        curRange,
+        updatedOrAddedSpecs, removedSpecs, usageHint);
+}
+
+HdBufferArrayRangeSharedPtr
+HdStResourceRegistry::UpdateUniformBufferArrayRange(
+        TfToken const &role,
+        HdBufferArrayRangeSharedPtr const& curRange,
+        HdBufferSpecVector const &updatedOrAddedSpecs,
+        HdBufferSpecVector const& removedSpecs,
+        HdBufferArrayUsageHint usageHint)
+{
+    return _UpdateBufferArrayRange(
+        _uniformUboAggregationStrategy.get(),
+        _uniformUboBufferArrayRegistry,
+        role,
+        curRange,
+        updatedOrAddedSpecs, removedSpecs, usageHint);
+}
+
+HdBufferArrayRangeSharedPtr
+HdStResourceRegistry::UpdateShaderStorageBufferArrayRange(
+        TfToken const &role,
+        HdBufferArrayRangeSharedPtr const& curRange,
+        HdBufferSpecVector const &updatedOrAddedSpecs,
+        HdBufferSpecVector const& removedSpecs,
+        HdBufferArrayUsageHint usageHint)
+{
+    return _UpdateBufferArrayRange(
+        _uniformSsboAggregationStrategy.get(),
+        _uniformSsboBufferArrayRegistry,
+        role,
+        curRange,
+        updatedOrAddedSpecs, removedSpecs, usageHint);
+}
+
+/// ------------------------------------------------------------------------
+/// Resource update & computation queuing API
+/// ------------------------------------------------------------------------
 void
 HdStResourceRegistry::AddSources(HdBufferArrayRangeSharedPtr const &range,
                                HdBufferSourceVector &sources)
@@ -380,6 +455,9 @@ HdStResourceRegistry::AddComputation(HdBufferArrayRangeSharedPtr const &range,
     _pendingComputations.emplace_back(range, computation);
 }
 
+/// ------------------------------------------------------------------------
+/// Dispatch & persistent buffer API
+/// ------------------------------------------------------------------------
 HdStDispatchBufferSharedPtr
 HdStResourceRegistry::RegisterDispatchBuffer(
     TfToken const &role, int count, int commandNumUints)
@@ -430,128 +508,9 @@ HdStResourceRegistry::GarbageCollectPersistentBuffers()
         _persistentBufferRegistry.end());
 }
 
-HdBufferArrayRangeSharedPtr
-HdStResourceRegistry::MergeBufferArrayRange(
-    HdAggregationStrategy *strategy,
-    HdBufferArrayRegistry &bufferArrayRegistry,
-    TfToken const &role,
-    HdBufferSpecVector const &newBufferSpecs,
-    HdBufferArrayUsageHint newUsageHint,
-    HdBufferArrayRangeSharedPtr const &range)
-{
-    HD_TRACE_FUNCTION();
-
-    if (!TF_VERIFY(range)) return HdBufferArrayRangeSharedPtr();
-
-    // get existing buffer specs
-    HdBufferSpecVector oldBufferSpecs;
-    range->GetBufferSpecs(&oldBufferSpecs);
-
-    HdBufferArrayUsageHint oldUsageHint = range->GetUsageHint();
-
-    // immutable ranges should always be migrated, otherwise compare bufferspec
-    if (range->IsImmutable() ||
-        !HdBufferSpec::IsSubset(newBufferSpecs, oldBufferSpecs) ||
-        newUsageHint.value != oldUsageHint.value) {
-        // create / moveto the new buffer array.
-
-        HdComputationVector computations;
-
-        // existing content has to be transferred.
-        TF_FOR_ALL(it, oldBufferSpecs) {
-            if (std::find(newBufferSpecs.begin(), newBufferSpecs.end(), *it)
-                == newBufferSpecs.end()) {
-
-                // migration computation
-                computations.push_back(
-                    HdComputationSharedPtr(new HdStCopyComputationGPU(
-                                               /*src=*/range, it->name)));
-            }
-        }
-        // new buffer array should have a union of
-        // new buffer specs and exsiting buffer specs.
-        HdBufferSpecVector bufferSpecs = HdBufferSpec::ComputeUnion(
-            newBufferSpecs, oldBufferSpecs);
-
-        // allocate new range.
-        HdBufferArrayRangeSharedPtr result = bufferArrayRegistry.AllocateRange(
-            strategy, role, bufferSpecs, newUsageHint);
-
-        // register copy computation.
-        if (!computations.empty()) {
-            TF_FOR_ALL(it, computations) {
-                AddComputation(result, *it);
-            }
-        }
-
-        // The source range will be no longer used.
-        // Increment version of the underlying bufferArray to notify
-        // all batches pointing the range to be rebuilt.
-        //
-        // XXX: Currently we have migration computations for each individual
-        // ranges, so the version is being incremented redundantly.
-        // It shouldn't be a big issue, but we can put several range
-        // computations into single computation to avoid that redundancy
-        // if we like. Or alternatively the change tracker can take care of it.
-        range->IncrementVersion();
-
-        HD_PERF_COUNTER_INCR(HdPerfTokens->bufferArrayRangeMerged);
-
-        return result;
-    }
-
-    return range;
-}
-
-HdBufferArrayRangeSharedPtr
-HdStResourceRegistry::MergeNonUniformBufferArrayRange(
-    TfToken const &role,
-    HdBufferSpecVector const &newBufferSpecs,
-    HdBufferArrayUsageHint newUsageHint,
-    HdBufferArrayRangeSharedPtr const &range)
-{
-    return MergeBufferArrayRange(_nonUniformAggregationStrategy.get(),
-                                 _nonUniformBufferArrayRegistry,
-                                 role, newBufferSpecs, newUsageHint, range);
-}
-
-HdBufferArrayRangeSharedPtr
-HdStResourceRegistry::MergeNonUniformImmutableBufferArrayRange(
-    TfToken const &role,
-    HdBufferSpecVector const &newBufferSpecs,
-    HdBufferArrayUsageHint newUsageHint,
-    HdBufferArrayRangeSharedPtr const &range)
-{
-    newUsageHint.bits.immutable = 1;
-
-    return MergeBufferArrayRange(_nonUniformImmutableAggregationStrategy.get(),
-                                 _nonUniformImmutableBufferArrayRegistry,
-                                 role, newBufferSpecs, newUsageHint, range);
-}
-HdBufferArrayRangeSharedPtr
-HdStResourceRegistry::MergeUniformBufferArrayRange(
-    TfToken const &role,
-    HdBufferSpecVector const &newBufferSpecs,
-    HdBufferArrayUsageHint newUsageHint,
-    HdBufferArrayRangeSharedPtr const &range)
-{
-    return MergeBufferArrayRange(_uniformUboAggregationStrategy.get(),
-                                 _uniformUboBufferArrayRegistry,
-                                 role, newBufferSpecs, newUsageHint, range);
-}
-
-HdBufferArrayRangeSharedPtr
-HdStResourceRegistry::MergeShaderStorageBufferArrayRange(
-    TfToken const &role,
-    HdBufferSpecVector const &newBufferSpecs,
-    HdBufferArrayUsageHint newUsageHint,
-    HdBufferArrayRangeSharedPtr const &range)
-{
-    return MergeBufferArrayRange(_uniformSsboAggregationStrategy.get(),
-                                 _uniformSsboBufferArrayRegistry,
-                                 role, newBufferSpecs, newUsageHint, range);
-}
-
+/// ------------------------------------------------------------------------
+/// Instance Registries
+/// ------------------------------------------------------------------------
 HdInstance<HdSt_MeshTopologySharedPtr>
 HdStResourceRegistry::RegisterMeshTopology(
         HdInstance<HdSt_MeshTopologySharedPtr>::ID id)
@@ -919,6 +878,82 @@ HdStResourceRegistry::_AllocateBufferArrayRange(
                                     role,
                                     bufferSpecs,
                                     usageHint);
+}
+
+HdBufferArrayRangeSharedPtr
+HdStResourceRegistry::_UpdateBufferArrayRange(
+        HdAggregationStrategy *strategy,
+        HdBufferArrayRegistry &bufferArrayRegistry,
+        TfToken const &role,
+        HdBufferArrayRangeSharedPtr const& curRange,
+        HdBufferSpecVector const &updatedOrAddedSpecs,
+        HdBufferSpecVector const& removedSpecs,
+        HdBufferArrayUsageHint usageHint)
+{
+    HD_TRACE_FUNCTION();
+
+    if (!curRange || !curRange->IsValid()) {
+        if (!removedSpecs.empty()) {
+            TF_CODING_ERROR("Non-empty removed specs during BAR allocation\n");
+        }
+
+        // Allocate a new BAR and return it.
+        return _AllocateBufferArrayRange(strategy, bufferArrayRegistry, role,
+                    updatedOrAddedSpecs, usageHint);
+    }
+
+    HdBufferSpecVector curBufferSpecs;
+    curRange->GetBufferSpecs(&curBufferSpecs);
+
+    // Determine if the BAR needs reallocation + migration
+    {
+        bool bufferSpecsChanged = !removedSpecs.empty() ||
+                                !HdBufferSpec::IsSubset(updatedOrAddedSpecs,
+                                                        curBufferSpecs);
+        bool haveBuffersToUpdate = !updatedOrAddedSpecs.empty();
+        bool dataUpdateForImmutableBar = curRange->IsImmutable() &&
+                                        haveBuffersToUpdate;
+        bool usageHintChanged = curRange->GetUsageHint().value !=
+                                usageHint.value;
+        
+        bool needsMigration =  dataUpdateForImmutableBar ||
+                               usageHintChanged ||
+                               bufferSpecsChanged;
+
+        if (!needsMigration) {
+            // The existing BAR can be used to queue any updates.
+            return curRange;
+        }
+    }
+
+    // Create new BAR ...
+    HdBufferSpecVector newBufferSpecs =
+        HdBufferSpec::ComputeUnion(updatedOrAddedSpecs,
+            HdBufferSpec::ComputeDifference(curBufferSpecs, removedSpecs));
+    
+    HdBufferArrayRangeSharedPtr newRange = _AllocateBufferArrayRange(
+        strategy, bufferArrayRegistry, role, newBufferSpecs, usageHint);
+
+    // ... and migrate relevant buffers that haven't changed.
+    // (skip the dirty sources, since new data needs to be copied over)
+    HdBufferSpecVector migrateSpecs = HdBufferSpec::ComputeDifference(
+        newBufferSpecs, updatedOrAddedSpecs);
+    for (const auto& spec : migrateSpecs) {
+        AddComputation(/*dstRange*/newRange,
+                       HdComputationSharedPtr(new HdStCopyComputationGPU(
+                           /*src=*/curRange, spec.name)) );
+    }
+
+    // Increment version of the underlying bufferArray to notify
+    // all batches pointing to the range to be rebuilt.
+    curRange->IncrementVersion();
+    
+    // XXX: The existing range may no longer used. Currently, the caller is 
+    // expected to flag garbage collection to reclaim its resources.
+    
+    HD_PERF_COUNTER_INCR(HdPerfTokens->bufferArrayRangeMigrated);
+
+    return newRange;
 }
 
 void

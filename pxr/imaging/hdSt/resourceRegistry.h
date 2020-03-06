@@ -28,7 +28,6 @@
 #include <map>
 #include <memory>
 #include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
 #include <tbb/concurrent_vector.h>
 
 #include "pxr/pxr.h"
@@ -42,12 +41,9 @@
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/instanceRegistry.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
-#include "pxr/imaging/hd/strategyBase.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef boost::shared_ptr<class HdBufferArray> 
-    HdBufferArraySharedPtr;
 typedef boost::shared_ptr<class HdComputation>
     HdComputationSharedPtr;
 typedef boost::shared_ptr<class HdStDispatchBuffer>
@@ -91,40 +87,94 @@ public:
     HDST_API
     VtDictionary GetResourceAllocation() const override;
 
-    /// Allocate new non uniform buffer array range
+    /// ------------------------------------------------------------------------
+    /// BAR allocation API
+    /// ------------------------------------------------------------------------
+    /// 
+    /// The Allocate* flavor of methods allocate a new BAR for the given buffer 
+    /// specs using the chosen aggregation strategy.
+
     HDST_API
     HdBufferArrayRangeSharedPtr AllocateNonUniformBufferArrayRange(
         TfToken const &role,
         HdBufferSpecVector const &bufferSpecs,
         HdBufferArrayUsageHint usageHint);
 
-    /// Allocate new immutable non uniform buffer array range
     HDST_API
     HdBufferArrayRangeSharedPtr AllocateNonUniformImmutableBufferArrayRange(
         TfToken const &role,
         HdBufferSpecVector const &bufferSpecs,
         HdBufferArrayUsageHint usageHint);
 
-    /// Allocate new uniform buffer range
     HDST_API
     HdBufferArrayRangeSharedPtr AllocateUniformBufferArrayRange(
         TfToken const &role,
         HdBufferSpecVector const &bufferSpecs,
         HdBufferArrayUsageHint usageHint);
 
-    /// Allocate new shader storage buffer range
     HDST_API
     HdBufferArrayRangeSharedPtr AllocateShaderStorageBufferArrayRange(
         TfToken const &role,
         HdBufferSpecVector const &bufferSpecs,
         HdBufferArrayUsageHint usageHint);
 
-    /// Allocate single entry (non-aggregated) buffer array range
     HDST_API
     HdBufferArrayRangeSharedPtr AllocateSingleBufferArrayRange(
         TfToken const &role,
         HdBufferSpecVector const &bufferSpecs,
         HdBufferArrayUsageHint usageHint);
+
+    /// ------------------------------------------------------------------------
+    /// BAR allocation/migration/update API
+    /// ------------------------------------------------------------------------
+    /// 
+    /// The Update* flavor of methods handle both allocation of a new BAR and
+    /// reallocation-migration based on the existing range, updated/added specs,
+    /// removed specs and usage hint. This allows client code to be less verbose
+    /// when a range's signature (specs) can change.
+    ///
+    /// If \p curRange is invalid, this is equivalent to calling Allocate*.
+    /// Otherwise, checks if \p curRange needs to be migrated to a new range
+    /// (based on \p updatedOrAddedSpecs and \p removedSpecs and \p usageHint).
+    /// If migration is necessary, allocate a new range and register necessary
+    /// migration computations and return the new range.
+    /// Otherwise, just return the same range.
+    
+    HDST_API
+    HdBufferArrayRangeSharedPtr UpdateNonUniformBufferArrayRange(
+        TfToken const &role,
+        HdBufferArrayRangeSharedPtr const& curRange,
+        HdBufferSpecVector const &updatedOrAddedSpecs,
+        HdBufferSpecVector const& removedSpecs,
+        HdBufferArrayUsageHint usageHint);
+
+    HDST_API
+    HdBufferArrayRangeSharedPtr UpdateNonUniformImmutableBufferArrayRange(
+        TfToken const &role,
+        HdBufferArrayRangeSharedPtr const& curRange,
+        HdBufferSpecVector const &updatedOrAddedSpecs,
+        HdBufferSpecVector const& removedSpecs,
+        HdBufferArrayUsageHint usageHint);
+
+    HDST_API
+    HdBufferArrayRangeSharedPtr UpdateUniformBufferArrayRange(
+        TfToken const &role,
+        HdBufferArrayRangeSharedPtr const& curRange,
+        HdBufferSpecVector const &updatedOrAddedSpecs,
+        HdBufferSpecVector const& removedSpecs,
+        HdBufferArrayUsageHint usageHint);
+
+    HDST_API
+    HdBufferArrayRangeSharedPtr UpdateShaderStorageBufferArrayRange(
+        TfToken const &role,
+        HdBufferArrayRangeSharedPtr const& curRange,
+        HdBufferSpecVector const &updatedOrAddedSpecs,
+        HdBufferSpecVector const& removedSpecs,
+        HdBufferArrayUsageHint usageHint);
+
+    /// ------------------------------------------------------------------------
+    /// Resource update & computation queuing API
+    /// ------------------------------------------------------------------------
 
     /// Append source data for given range to be committed later.
     HDST_API
@@ -150,6 +200,10 @@ public:
     void AddComputation(HdBufferArrayRangeSharedPtr const &range,
                         HdComputationSharedPtr const &computaion);
 
+    /// ------------------------------------------------------------------------
+    /// Dispatch & persistent buffer API
+    /// ------------------------------------------------------------------------
+
     /// Register a buffer allocated with \a count * \a commandNumUints *
     /// sizeof(GLuint) to be used as an indirect dispatch buffer.
     HDST_API
@@ -170,54 +224,10 @@ public:
     HDST_API
     void GarbageCollectPersistentBuffers();
 
-    /// Check if \p range is compatible with \p newBufferSpecs.
-    /// If not, allocate new bufferArrayRange with merged buffer specs,
-    /// register migration computation and return the new range.
-    /// Otherwise just return the same range.
-    HDST_API
-    HdBufferArrayRangeSharedPtr MergeBufferArrayRange(
-        HdAggregationStrategy *strategy,
-        HdBufferArrayRegistry &bufferArrayRegistry,
-        TfToken const &role,
-        HdBufferSpecVector const &newBufferSpecs,
-        HdBufferArrayUsageHint newUsageHint,
-        HdBufferArrayRangeSharedPtr const &range);
-
-    /// MergeBufferArrayRange of non uniform buffer.
-    HDST_API
-    HdBufferArrayRangeSharedPtr MergeNonUniformBufferArrayRange(
-        TfToken const &role,
-        HdBufferSpecVector const &newBufferSpecs,
-        HdBufferArrayUsageHint newUsageHint,
-        HdBufferArrayRangeSharedPtr const &range);
-
-    /// MergeBufferArrayRange of non uniform immutable buffer.
-    HDST_API
-    HdBufferArrayRangeSharedPtr MergeNonUniformImmutableBufferArrayRange(
-        TfToken const &role,
-        HdBufferSpecVector const &newBufferSpecs,
-        HdBufferArrayUsageHint newUsageHint,
-        HdBufferArrayRangeSharedPtr const &range);
-
-    /// MergeBufferArrayRange of uniform buffer.
-    HDST_API
-    HdBufferArrayRangeSharedPtr MergeUniformBufferArrayRange(
-        TfToken const &role,
-        HdBufferSpecVector const &newBufferSpecs,
-        HdBufferArrayUsageHint newUsageHint,
-        HdBufferArrayRangeSharedPtr const &range);
-
-    /// MergeBufferArrayRange of shader storage buffer.
-    HDST_API
-    HdBufferArrayRangeSharedPtr MergeShaderStorageBufferArrayRange(
-        TfToken const &role,
-        HdBufferSpecVector const &newBufferSpecs,
-        HdBufferArrayUsageHint newUsageHint,
-        HdBufferArrayRangeSharedPtr const &range);
-
-
+    /// ------------------------------------------------------------------------
     /// Instance Registries
-    ///
+    /// ------------------------------------------------------------------------
+    
     /// These registries implement sharing and deduplication of data based
     /// on computed hash identifiers. Each returned HdInstance object retains
     /// a shared pointer to a data instance. When an HdInstance is registered
@@ -370,6 +380,16 @@ private:
         HdBufferArrayRegistry &bufferArrayRegistry,
         TfToken const &role,
         HdBufferSpecVector const &bufferSpecs,
+        HdBufferArrayUsageHint usageHint);
+    
+    /// Wrapper function for BAR allocation/reallocation-migration.
+    HdBufferArrayRangeSharedPtr _UpdateBufferArrayRange(
+        HdAggregationStrategy *strategy,
+        HdBufferArrayRegistry &bufferArrayRegistry,
+        TfToken const &role,
+        HdBufferArrayRangeSharedPtr const& curRange,
+        HdBufferSpecVector const &updatedOrAddedSpecs,
+        HdBufferSpecVector const& removedSpecs,
         HdBufferArrayUsageHint usageHint);
 
     // Tally resources by key into the given dictionary. Any additions should
