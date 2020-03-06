@@ -78,22 +78,17 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 template <class T>
 static void
-_CopySpec(const T &srcSpec, const T &dstSpec, 
-          const std::vector<TfToken> &disallowedFields)
+_CopySpec(const T &srcSpec, const T &dstSpec)
 {
     for (const TfToken& key : srcSpec->ListInfoKeys()) {
-        const bool isDisallowed = std::binary_search(
-            disallowedFields.begin(), disallowedFields.end(), key,
-            TfTokenFastArbitraryLessThan());
-        if (!isDisallowed) {
+        if (!UsdSchemaRegistry::IsDisallowedField(key)) {
             dstSpec->SetInfo(key, srcSpec->GetInfo(key));
         }
     }
 }
 
 static void
-_AddSchema(SdfLayerRefPtr const &source, SdfLayerRefPtr const &target,
-           std::vector<TfToken> const &disallowedFields)
+_AddSchema(SdfLayerRefPtr const &source, SdfLayerRefPtr const &target)
 {
     for (SdfPrimSpecHandle const &prim: source->GetRootPrims()) {
         if (!target->GetPrimAtPath(prim->GetPath())) {
@@ -101,14 +96,14 @@ _AddSchema(SdfLayerRefPtr const &source, SdfLayerRefPtr const &target,
             SdfPrimSpecHandle newPrim =
                 SdfPrimSpec::New(target, prim->GetName(), prim->GetSpecifier(),
                                  prim->GetTypeName());
-            _CopySpec(prim, newPrim, disallowedFields);
+            _CopySpec(prim, newPrim);
 
             for (SdfAttributeSpecHandle const &attr: prim->GetAttributes()) {
                 SdfAttributeSpecHandle newAttr =
                     SdfAttributeSpec::New(
                         newPrim, attr->GetName(), attr->GetTypeName(),
                         attr->GetVariability(), attr->IsCustom());
-                _CopySpec(attr, newAttr, disallowedFields);
+                _CopySpec(attr, newAttr);
             }
 
             for (SdfRelationshipSpecHandle const &rel:
@@ -116,7 +111,7 @@ _AddSchema(SdfLayerRefPtr const &source, SdfLayerRefPtr const &target,
                 SdfRelationshipSpecHandle newRel =
                     SdfRelationshipSpec::New(
                         newPrim, rel->GetName(), rel->IsCustom());
-                _CopySpec(rel, newRel, disallowedFields);
+                _CopySpec(rel, newRel);
             }
         }
     }
@@ -177,12 +172,6 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
             });
     }
 
-    // Get list of disallowed fields in schemas and sort them so that
-    // helper functions in _AddSchema can binary search through them.
-    std::vector<TfToken> disallowedFields = GetDisallowedFields();
-    std::sort(disallowedFields.begin(), disallowedFields.end(),
-              TfTokenFastArbitraryLessThan());
-
     SdfChangeBlock block;
     TfToken::HashSet appliedAPISchemaNames;
     for (const SdfLayerRefPtr& generatedSchema : generatedSchemas) {
@@ -226,7 +215,7 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
                 }
             }
 
-            _AddSchema(generatedSchema, _schematics, disallowedFields);
+            _AddSchema(generatedSchema, _schematics);
         }
     }
 
@@ -346,38 +335,52 @@ UsdSchemaRegistry::UsdSchemaRegistry()
 }
 
 /*static*/
-std::vector<TfToken>
-UsdSchemaRegistry::GetDisallowedFields()
+bool 
+UsdSchemaRegistry::IsDisallowedField(const TfToken &fieldName)
 {
-    std::vector<TfToken> result = {
+    static TfHashSet<TfToken, TfToken::HashFunctor> disallowedFields;
+
+    // XXX -- Use this instead of an initializer list in case TfHashSet
+    //        doesn't support initializer lists.  Should ensure that
+    //        TfHashSet does support them.
+    static std::once_flag once;
+    std::call_once(once, [](){
         // Disallow fallback values for composition arc fields, since they
         // won't be used during composition.
-        SdfFieldKeys->InheritPaths,
-        SdfFieldKeys->Payload,
-        SdfFieldKeys->References,
-        SdfFieldKeys->Specializes,
-        SdfFieldKeys->VariantSelection,
-        SdfFieldKeys->VariantSetNames,
+        disallowedFields.insert(SdfFieldKeys->InheritPaths);
+        disallowedFields.insert(SdfFieldKeys->Payload);
+        disallowedFields.insert(SdfFieldKeys->References);
+        disallowedFields.insert(SdfFieldKeys->Specializes);
+        disallowedFields.insert(SdfFieldKeys->VariantSelection);
+        disallowedFields.insert(SdfFieldKeys->VariantSetNames);
 
         // Disallow customData, since it contains information used by
         // usdGenSchema that isn't relevant to other consumers.
-        SdfFieldKeys->CustomData,
+        disallowedFields.insert(SdfFieldKeys->CustomData);
 
         // Disallow fallback values for these fields, since they won't be
         // used during scenegraph population or value resolution.
-        SdfFieldKeys->Active,
-        SdfFieldKeys->Instanceable,
-        SdfFieldKeys->TimeSamples,
-        SdfFieldKeys->ConnectionPaths,
-        SdfFieldKeys->TargetPaths
-    };
+        disallowedFields.insert(SdfFieldKeys->Active);
+        disallowedFields.insert(SdfFieldKeys->Instanceable);
+        disallowedFields.insert(SdfFieldKeys->TimeSamples);
+        disallowedFields.insert(SdfFieldKeys->ConnectionPaths);
+        disallowedFields.insert(SdfFieldKeys->TargetPaths);
 
-    // Disallow fallback values for clip-related fields, since they won't
-    // be used during value resolution.
-    const std::vector<TfToken> clipFields = UsdGetClipRelatedFields();
-    result.insert(result.end(), clipFields.begin(), clipFields.end());
+        // Disallow fallback values for specifier. Even though it will always
+        // be present, it has no meaning as a fallback value.
+        disallowedFields.insert(SdfFieldKeys->Specifier);
 
-    return result;
+        // Disallow fallback values for children fields.
+        disallowedFields.insert(SdfChildrenKeys->allTokens.begin(),
+                                SdfChildrenKeys->allTokens.end());
+
+        // Disallow fallback values for clip-related fields, since they won't
+        // be used during value resolution.
+        const std::vector<TfToken> clipFields = UsdGetClipRelatedFields();
+        disallowedFields.insert(clipFields.begin(), clipFields.end());
+    });
+
+    return (disallowedFields.find(fieldName) != disallowedFields.end());
 }
 
 /*static*/

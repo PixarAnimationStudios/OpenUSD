@@ -525,14 +525,12 @@ class ClassInfo(object):
 #------------------------------------------------------------------------------#
 
 def _ValidateFields(spec):
-    disallowedFields = Usd.SchemaRegistry.GetDisallowedFields()
-
     # The schema registry will ignore these fields if they are discovered 
     # in a generatedSchema.usda file, but we want to allow them in schema.usda.
-    whitelist = ["inheritPaths", "customData"]
+    whitelist = ["inheritPaths", "customData", "specifier"]
 
     invalidFields = [key for key in spec.ListInfoKeys()
-                     if key in disallowedFields and key not in whitelist]
+        if Usd.SchemaRegistry.IsDisallowedField(key) and key not in whitelist]
     if not invalidFields:
         return True
 
@@ -1110,6 +1108,20 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
                 allAppliedAPISchemas.append(p.GetName())
             elif apiSchemaType in [None, SINGLE_APPLY]:
                 allAppliedAPISchemas.append(p.GetName())
+            # API schema classes must not have authored metadata except for 
+            # these exceptions:
+            #   'documentation' - This is allowed
+            #   'customData' - This will be deleted below
+            #   'specifier' - This is a required field and will always exist.
+            # Any other metadata is an error.
+            allowedAPIMetadata = ['specifier', 'customData', 'documentation']
+            invalidMetadata = [key for key in p.GetAllAuthoredMetadata().keys()
+                               if key not in allowedAPIMetadata]
+            if invalidMetadata:
+                raise _GetSchemaDefException("Found invalid metadata fields "
+                    "%s in API schema definition. API schemas cannot provide "
+                    "prim metadata fallbacks" % str(invalidMetadata) , 
+                    p.GetPath())
 
         p.ClearCustomData()
         for myproperty in p.GetAuthoredProperties():

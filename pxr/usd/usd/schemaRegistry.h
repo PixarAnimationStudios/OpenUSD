@@ -76,15 +76,15 @@ public:
         return GetSchemaTypeName(SchemaType::_GetStaticTfType());
     }
 
-    /// Returns list of fields that cannot have fallback values
+    /// Returns true if the field \p fieldName cannot have fallback values 
     /// specified in schemas. 
     /// 
-    /// Fields are generally in this list because their fallback values
+    /// Fields are generally disallowed because their fallback values
     /// aren't used. For instance, fallback values for composition arcs
     /// aren't used during composition, so allowing them to be set in
     /// schemas would be misleading.
     USD_API
-    static std::vector<TfToken> GetDisallowedFields();
+    static bool IsDisallowedField(const TfToken &fieldName);
 
     /// Returns true if the prim type \p primType inherits from \ref UsdTyped. 
     USD_API

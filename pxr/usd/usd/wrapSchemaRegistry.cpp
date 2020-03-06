@@ -60,10 +60,10 @@ void wrapUsdSchemaRegistry()
                 &This::GetSchemaTypeName,
              arg("schemaType"))
 
-        .def("GetDisallowedFields",
-             &This::GetDisallowedFields,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetDisallowedFields")
+        .def("IsDisallowedField",
+             &This::IsDisallowedField,
+             (arg("fieldName")))
+        .staticmethod("IsDisallowedField")
 
         .def("IsTyped",
              &This::IsTyped,
