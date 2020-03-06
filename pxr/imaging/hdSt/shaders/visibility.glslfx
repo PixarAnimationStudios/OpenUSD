@@ -28,6 +28,13 @@
 --- #import $TOOLS/hdSt/shaders/visibility.glslfx
 
 --- --------------------------------------------------------------------------
+-- glsl Visibility.Fragment.Fallback
+void DiscardBasedOnTopologicalVisibility()
+{
+    // Nothing to do, since there's no authored opinion.
+}
+
+--- --------------------------------------------------------------------------
 -- glsl Visibility.Fragment.Topology
 
 int GetElementID(); // code gen
@@ -81,15 +88,9 @@ bool IsPointVisible()
     return true;
 }
 
-bool ShouldDiscardFragmentAccordingToTopology()
+void DiscardBasedOnTopologicalVisibility()
 {
-    if (!IsElementVisible()) {
-        return true;
+    if (!IsElementVisible() || !IsPointVisible()) {
+        discard;
     }
-
-    if (!IsPointVisible()) {
-        return true;
-    }
-
-    return false;
 }

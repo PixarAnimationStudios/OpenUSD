@@ -759,9 +759,7 @@ in CurveVertexData
 
 void main(void)
 {
-    if (ShouldDiscardFragmentAccordingToTopology()) {
-        discard;
-    }
+    DiscardBasedOnTopologicalVisibility();
     
     vec4 color = vec4(0.5, 0.5, 0.5, 1);
 #ifdef HD_HAS_displayColor
@@ -808,9 +806,7 @@ centroid in float v;
 vec3 fragmentNormal(vec3 position, vec3 normal, float v);
 void main(void)
 {
-    if (ShouldDiscardFragmentAccordingToTopology()) {
-        discard;
-    }
+    DiscardBasedOnTopologicalVisibility();
 
     vec4 color = vec4(0.5, 0.5, 0.5, 1);
 #ifdef HD_HAS_displayColor

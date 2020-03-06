@@ -51,6 +51,7 @@ struct HdSt_MeshShaderKey
                        HdInterpolation normalsInterpolation,
                        bool doubleSided,
                        bool forceGeometryShader,
+                       bool hasTopologicalVisibility,
                        bool blendWireframeColor,
                        HdCullStyle cullStyle,
                        HdMeshGeomStyle geomStyle,

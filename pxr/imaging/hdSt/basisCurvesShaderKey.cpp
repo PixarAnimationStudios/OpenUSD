@@ -68,7 +68,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((pointIdFS,                       "PointId.Fragment.PointParam"))
 
     // visibility mixin (for curve and point visibility)
-    ((topVisFS,                "Visibility.Fragment.Topology"))
+    ((topVisFallbackFS,                "Visibility.Fragment.Fallback"))
+    ((topVisFS,                        "Visibility.Fragment.Topology"))
 
     // helper mixins
     ((curveCubicWidthsBasis,           "Curves.Cubic.Widths.Basis"))
@@ -130,7 +131,8 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     DrawStyle drawStyle, NormalStyle normalStyle,
     bool basisWidthInterpolation,
     bool basisNormalInterpolation,
-    TfToken shadingTerminal)
+    TfToken shadingTerminal,
+    bool hasAuthoredTopologicalVisibility)
     : glslfx(_tokens->baseGLSLFX)
 {
     bool drawThick = (drawStyle == HdSt_BasisCurvesShaderKey::HALFTUBE) || 
@@ -305,7 +307,8 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     FS[fsIndex++] = isPrimTypePoints?
                         _tokens->pointIdFS : _tokens->pointIdFallbackFS;
     
-    FS[fsIndex++] = _tokens->topVisFS; // Topology visibility
+    FS[fsIndex++] = hasAuthoredTopologicalVisibility? _tokens->topVisFS :
+                                                      _tokens->topVisFallbackFS;
 
 
     if (drawStyle == HdSt_BasisCurvesShaderKey::WIRE || 

@@ -86,6 +86,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((pointIdFS,               "PointId.Fragment.PointParam"))
 
     // visibility mixin (for face and point visibility)
+    ((topVisFallbackFS,        "Visibility.Fragment.Fallback"))
     ((topVisFS,                "Visibility.Fragment.Topology"))
 
     // main for all the shader stages
@@ -125,6 +126,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     HdInterpolation normalsInterpolation,
     bool doubleSided,
     bool forceGeometryShader,
+    bool hasTopologicalVisibility,
     bool blendWireframeColor,
     HdCullStyle cullStyle,
     HdMeshGeomStyle geomStyle,
@@ -377,7 +379,8 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     // PointId mixin for point picking and selection
     FS[fsIndex++] = isPrimTypePoints? _tokens->pointIdFS :
                                       _tokens->pointIdFallbackFS;
-    FS[fsIndex++] = _tokens->topVisFS; // Topology visibility
+    FS[fsIndex++] = hasTopologicalVisibility? _tokens->topVisFS :
+                                              _tokens->topVisFallbackFS;
     FS[fsIndex++] = _tokens->mainFS;
     FS[fsIndex] = TfToken();
 }

@@ -73,7 +73,8 @@ struct HdSt_BasisCurvesShaderKey
                               DrawStyle drawStyle, NormalStyle normalStyle,
                               bool basisWidthInterpolation,
                               bool basisNormalInterpolation,
-                              TfToken shadingTerminal);
+                              TfToken shadingTerminal,
+                              bool hasAuthoredTopologicalVisibility);
     ~HdSt_BasisCurvesShaderKey();
 
     TfToken const &GetGlslfxFile() const { return glslfx; }

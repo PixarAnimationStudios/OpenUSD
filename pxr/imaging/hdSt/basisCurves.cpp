@@ -97,6 +97,7 @@ HdStBasisCurves::Sync(HdSceneDelegate *delegate,
     bool updateGeometricShader = false;
     if (*dirtyBits & (HdChangeTracker::DirtyDisplayStyle |
                       HdChangeTracker::DirtyMaterialId |
+                      HdChangeTracker::DirtyTopology| // topological visibility
                       HdChangeTracker::NewRepr)) {
         updateGeometricShader = true;
     }
@@ -295,13 +296,17 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
                 _basisWidthInterpolation ? "basis widths" : "linear widths",
                 _basisNormalInterpolation ? "basis normals" : "linear normals");
 
+    bool hasAuthoredTopologicalVisiblity =
+        (bool) drawItem->GetTopologyVisibilityRange();
+
     HdSt_BasisCurvesShaderKey shaderKey(curveType,
                                         curveBasis,
                                         drawStyle,
                                         normalStyle,
                                         _basisWidthInterpolation,
                                         _basisNormalInterpolation,
-                                        desc.shadingTerminal);
+                                        desc.shadingTerminal,
+                                        hasAuthoredTopologicalVisiblity);
 
     TF_DEBUG(HD_RPRIM_UPDATED).
             Msg("HdStBasisCurves(%s) - Shader Key PrimType: %s\n ",

@@ -134,6 +134,7 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
                       HdChangeTracker::DirtyCullStyle|
                       HdChangeTracker::DirtyDoubleSided|
                       HdChangeTracker::DirtyMaterialId|
+                      HdChangeTracker::DirtyTopology| // topological visibility
                       HdChangeTracker::NewRepr)) {
         updateGeometricShader = true;
     }
@@ -1749,6 +1750,9 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
         material && material->HasDisplacement();
     bool hasPtex = material && material->HasPtex();
 
+    bool hasTopologicalVisibility =
+        (bool) drawItem->GetTopologyVisibilityRange();
+
     // Enable displacement shading only if the repr enables it, and the
     // entrypoint exists.
     bool useCustomDisplacement = hasCustomDisplacementTerminal &&
@@ -1772,6 +1776,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                  normalsInterpolation,
                                  _doubleSided || desc.doubleSided,
                                  hasFaceVaryingPrimvars || hasPtex,
+                                 hasTopologicalVisibility,
                                  blendWireframeColor,
                                  cullStyle,
                                  geomStyle,
