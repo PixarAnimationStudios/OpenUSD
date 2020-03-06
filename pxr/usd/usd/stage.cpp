@@ -5220,9 +5220,8 @@ protected:
                            const TfToken &keyPath)
     {
         // Try to read fallback value.
-        return keyPath.IsEmpty() ?
-            primDef.HasField(propName, fieldName, _value) :
-            primDef.HasFieldDictKey(propName, fieldName, keyPath, _value);
+        return Usd_GetFallbackValue(
+            primDef, propName, fieldName, keyPath, _value);
     }
 
     // Consumes an authored dictionary value and merges it into the current 
@@ -5600,11 +5599,8 @@ struct ExistenceComposer
                             const TfToken &propName,
                             const TfToken &fieldName,
                             const TfToken &keyPath) {
-        _done = keyPath.IsEmpty() ?
-            primDef.HasField(
-                propName, fieldName, static_cast<VtValue *>(nullptr)) :
-            primDef.HasFieldDictKey(
-                propName, fieldName, keyPath, static_cast<VtValue*>(nullptr));
+        _done = Usd_GetFallbackValue(primDef, propName, fieldName, keyPath, 
+                                     static_cast<VtValue *>(nullptr));
         if (_strongestLayer)
             *_strongestLayer = TfNullPtr;
     }
@@ -7000,8 +6996,8 @@ struct UsdStage::_ResolveInfoResolver
     ProcessFallback()
     {
         if (const bool hasFallback = 
-                _attr._Prim()->GetPrimDefinition().HasField(_attr.GetName(), 
-                SdfFieldKeys->Default, _extraInfo->defaultOrFallbackValue)) {
+                _attr._Prim()->GetPrimDefinition().GetAttributeFallbackValue(
+                    _attr.GetName(), _extraInfo->defaultOrFallbackValue)) {
             _resolveInfo->_source = UsdResolveInfoSourceFallback;
             return true;
         }
@@ -7307,8 +7303,8 @@ UsdStage::_GetValueFromResolveInfoImpl(const UsdResolveInfo &info,
     }
     else if (info._source == UsdResolveInfoSourceFallback) {
         // Get the fallback value.
-        return attr._Prim()->GetPrimDefinition().HasField(
-                attr.GetName(), SdfFieldKeys->Default, result);
+        return attr._Prim()->GetPrimDefinition().GetAttributeFallbackValue(
+                attr.GetName(), result);
     }
 
     return false;

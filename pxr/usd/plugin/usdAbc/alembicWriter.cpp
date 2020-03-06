@@ -2524,7 +2524,7 @@ bool _ExtractWithFallback(UsdSamples const &samples, double time,
         if (!primDef) {
             return false;
         }
-        return primDef->HasField(propertyName, SdfFieldKeys->Default, val);
+        return primDef->GetAttributeFallbackValue(propertyName, val);
     }
     
     const VtValue value = samples.Get(time);

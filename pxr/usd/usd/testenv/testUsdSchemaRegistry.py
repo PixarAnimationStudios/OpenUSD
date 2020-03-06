@@ -49,6 +49,9 @@ class TestUsdSchemaRegistry(unittest.TestCase):
     def test_AttributeMetadata(self):
         primDef = Usd.SchemaRegistry().FindConcretePrimDefinition(
             "TestUsdSchemaRegistryMetadataTest")
+
+        self.assertEqual(primDef.GetAttributeFallbackValue("testAttr"), "foo")
+
         attrDef = primDef.GetSchemaAttributeSpec("testAttr")
         self.assertTrue(attrDef)
 
@@ -64,6 +67,9 @@ class TestUsdSchemaRegistry(unittest.TestCase):
     def test_RelationshipMetadata(self):
         primDef = Usd.SchemaRegistry().FindConcretePrimDefinition(
             "TestUsdSchemaRegistryMetadataTest")
+
+        self.assertIsNone(primDef.GetAttributeFallbackValue("testRel"))
+
         relDef = primDef.GetSchemaRelationshipSpec("testRel")
         self.assertTrue(relDef)
 
@@ -93,8 +99,8 @@ class TestUsdSchemaRegistry(unittest.TestCase):
             Usd.SchemaRegistry().GetSchemaTypeName(Tf.Type(Usd.Typed)), "")
 
     def test_FindConcretePrimDefinition(self):
-        # CollectionAPI is an applied API schama. Can get the prim definition
-        # through FindAppliedAPIPrimDefintion.
+        # MetadataTest is a concrete prim schama. Can get the prim definition
+        # through FindConcretePrimDefinition.
         primDef = Usd.SchemaRegistry().FindConcretePrimDefinition(
             'MetadataTest')
         self.assertTrue(primDef)
@@ -117,7 +123,7 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         # Non-apply API schema. No prim definition
         self.assertFalse(Usd.SchemaRegistry().FindConcretePrimDefinition(
             'ModelAPI'))
-        # Applied API schema. Not returned from FindConcreteTyped...
+        # Applied API schema. Not returned from FindConcretePrimDefinition
         self.assertFalse(Usd.SchemaRegistry().FindConcretePrimDefinition(
             'CollectionAPI'))
 

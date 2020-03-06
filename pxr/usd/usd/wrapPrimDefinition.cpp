@@ -23,14 +23,23 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/primDefinition.h"
+#include "pxr/usd/usd/pyConversions.h"
 
 #include "pxr/base/tf/pyResultConversions.h"
-
 #include <boost/python.hpp>
 
 using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+static TfPyObjWrapper
+_WrapGetAttributeFallbackValue(const UsdPrimDefinition &self, 
+                               const TfToken &attrName)
+{
+    VtValue result;
+    self.GetAttributeFallbackValue(attrName, &result);
+    return UsdVtValueToPython(result);
+}
 
 void wrapUsdPrimDefinition()
 {
@@ -47,6 +56,8 @@ void wrapUsdPrimDefinition()
              (arg("attrName")))
         .def("GetSchemaRelationshipSpec", &This::GetSchemaRelationshipSpec,
              (arg("relName")))
+        .def("GetAttributeFallbackValue", &_WrapGetAttributeFallbackValue,
+             (arg("attrName"), arg("key")))
         .def("GetDocumentation", &This::GetDocumentation)
         ;
 }
