@@ -35,14 +35,13 @@
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
 
-#include <boost/shared_ptr.hpp>
-
+#include <memory>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class GlfImage> GlfImageSharedPtr;
+typedef std::shared_ptr<class GlfImage> GlfImageSharedPtr;
 
 /// \class GlfImage
 ///

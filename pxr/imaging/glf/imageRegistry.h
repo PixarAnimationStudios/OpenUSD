@@ -29,15 +29,13 @@
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <memory>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class GlfImage> GlfImageSharedPtr;
+typedef std::shared_ptr<class GlfImage> GlfImageSharedPtr;
 
 class GlfRankedTypeMap;
 

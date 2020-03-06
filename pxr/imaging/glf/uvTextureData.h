@@ -29,15 +29,10 @@
 #include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/glf/baseTextureData.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <memory>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-
-typedef boost::shared_ptr<class GlfImage> GlfImageSharedPtr;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfUVTextureData);
 
