@@ -210,9 +210,12 @@ HioGlslfx::HioGlslfx() :
 HioGlslfx::HioGlslfx(string const & filePath) :
     _valid(true), _hash(0)
 {
+    // Resolve with the containingFile set to the current working directory
+    // with a trailing slash. This ensures that relative paths supplied to the
+    // constructor are properly anchored to the containing file's directory.
     string errorStr;
-    const string resolvedPath = _ComputeResolvedPath(ArchGetCwd(), filePath,
-                                                     &errorStr);
+    const string resolvedPath =
+        _ComputeResolvedPath(ArchGetCwd() + "/", filePath, &errorStr);
     if (resolvedPath.empty()) {
         if (!errorStr.empty()) {
             TF_RUNTIME_ERROR(errorStr);
