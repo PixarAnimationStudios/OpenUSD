@@ -28,30 +28,24 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
+#include "pxr/imaging/hdSt/shaderKey.h"
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-struct HdSt_CullingShaderKey
+struct HdSt_CullingShaderKey : public HdSt_ShaderKey
 {
     HdSt_CullingShaderKey(bool instancing, bool tinyCull, bool counting);
     ~HdSt_CullingShaderKey();
 
-    TfToken const &GetGlslfxFile() const { return glslfx; }
-    TfToken const *GetVS() const  { return VS; }
-    TfToken const *GetTCS() const { return NULL; }
-    TfToken const *GetTES() const { return NULL; }
-    TfToken const *GetGS() const  { return NULL; }
-    TfToken const *GetFS() const  { return NULL; }
+    TfToken const &GetGlslfxFilename() const override { return glslfx; }
+    TfToken const *GetVS() const override { return VS; }
 
-    bool IsCullingPass() const { return true; }
-    HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const { 
+    bool IsFrustumCullingPass() const override { return true; }
+    HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const override {
         return HdSt_GeometricShader::PrimitiveType::PRIM_POINTS; 
     }
-    HdCullStyle GetCullStyle() const { return HdCullStyleDontCare; }
-    HdPolygonMode GetPolygonMode() const { return HdPolygonModeFill; }
-    float GetLineWidth() const { return 0; }
 
     TfToken glslfx;
     TfToken VS[6];
