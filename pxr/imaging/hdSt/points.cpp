@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/imaging/hdSt/drawItem.h"
+#include "pxr/imaging/hdSt/extCompGpuComputation.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/material.h"
@@ -200,19 +201,38 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         boost::static_pointer_cast<HdStResourceRegistry>(
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
-    // The "points" attribute is expected to be in this list.
-    HdPrimvarDescriptorVector primvars =
-        HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
-                                  HdInterpolationVertex);
+    // Gather vertex and varying primvars
+    HdPrimvarDescriptorVector primvars;
+    {
+        primvars = HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
+                                    HdInterpolationVertex);
 
-    // Add varying primvars so we can process them together, below.
-    HdPrimvarDescriptorVector varyingPvs =
-        HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
-                                  HdInterpolationVarying);
-    primvars.insert(primvars.end(), varyingPvs.begin(), varyingPvs.end());
+        HdPrimvarDescriptorVector varyingPvs =
+            HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
+                                    HdInterpolationVarying);
+        primvars.insert(primvars.end(), varyingPvs.begin(), varyingPvs.end());
+    } 
+
+    // Get computed vertex primvars
+    HdExtComputationPrimvarDescriptorVector compPrimvars =
+        sceneDelegate->GetExtComputationPrimvarDescriptors(id,
+            HdInterpolationVertex);
 
     HdBufferSourceVector sources;
+    HdBufferSourceVector reserveOnlySources;
+    HdBufferSourceVector separateComputationSources;
+    HdComputationVector computations;
     sources.reserve(primvars.size());
+
+    HdSt_GetExtComputationPrimvarsComputations(
+        id,
+        sceneDelegate,
+        compPrimvars,
+        *dirtyBits,
+        &sources,
+        &reserveOnlySources,
+        &separateComputationSources,
+        &computations);
 
     int pointsIndexInSourceArray = -1;
 
@@ -244,14 +264,17 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     }
 
     // return before allocation if it's empty.
-    if (sources.empty())
+    if (sources.empty() && computations.empty()) {
         return;
+    }
 
     if (!drawItem->GetVertexPrimvarRange() ||
         !drawItem->GetVertexPrimvarRange()->IsValid()) {
         // initialize buffer array
         HdBufferSpecVector bufferSpecs;
         HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
+        HdBufferSpec::GetBufferSpecs(reserveOnlySources, &bufferSpecs);
+        HdBufferSpec::GetBufferSpecs(computations, &bufferSpecs);
 
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateNonUniformBufferArrayRange(
@@ -276,8 +299,23 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     }
 
     // add sources to update queue
-    resourceRegistry->AddSources(drawItem->GetVertexPrimvarRange(),
+    if (!sources.empty()) {
+        resourceRegistry->AddSources(drawItem->GetVertexPrimvarRange(),
                                  sources);
+    }
+    
+    if (!computations.empty()) {
+        for(HdComputationSharedPtr const& comp : computations) {
+            resourceRegistry->AddComputation(drawItem->GetVertexPrimvarRange(),
+                                             comp);
+        }
+    }
+    if (!separateComputationSources.empty()) {
+        for(HdBufferSourceSharedPtr const& compSrc : 
+                separateComputationSources) {
+            resourceRegistry->AddSource(compSrc);
+        }
+    }
 }
 
 HdDirtyBits 
