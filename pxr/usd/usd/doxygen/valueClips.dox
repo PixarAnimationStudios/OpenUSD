@@ -189,7 +189,7 @@ def "Prim" (
             string primPath = "/ClipSet2"
         }
     }
-    reorder clipSets = ["clip_set_2", "clip_set_1"]
+    clipSets = ["clip_set_2", "clip_set_1"]
 )
 {
 }
@@ -228,11 +228,19 @@ be queried.
 
 By default, the clip sets will be queried in lexicographical order by name. 
 However, users may change the order in which clip sets are queried or
-even remove a clip set from consideration by authoring reorder or delete
-statements in the "clipSets" list op.
+even remove a clip set from consideration by specifying a different ordering
+and/or membership in the "clipSets" list-edited metadata.
 
 When an attribute is affected by a clip, value resolution performs the 
 following extra computation:
+
+- Determine the path we will consult within clip USD files when looking for
+  opinions.  The path will be constructed using the attribute's path within the
+  local LayerStack, with a prefix substitution based on the clipset's 
+  _primPath_ metadata: see UsdClipsAPI::GetClipPrimPath() for details.
+  <b>Please note that this implies that composition arcs are ignored within
+  clip files, i.e. all data must be recorded directly, not inside variants or
+  across reference arcs.</b>
 
 - Determine the active clip, through the \em active metadata. Given the
   following \em active metadata: [(t1, c1), (t2, c2)], USD will look in c1 
