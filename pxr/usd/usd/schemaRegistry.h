@@ -183,9 +183,6 @@ private:
     void _ApplyAPISchemasToPrimDefinition(
         UsdPrimDefinition *primDef, const TfTokenVector &appliedAPISchemas) const;
 
-    void _ApplyPrimSpecToPrimDefinition(
-        UsdPrimDefinition *primDef, const SdfPrimSpecHandle &primSpec) const;
-
     SdfLayerRefPtr _schematics;
 
     // Registered map of schema class type -> Usd schema type name token.

@@ -116,11 +116,99 @@ public:
         return _HasField(attrName, SdfFieldKeys->Default, value);
     }
 
-    /// Returns the documentation for this prim definition
-    /// This is based on the documentation metadata specified for this schema.
-    std::string GetDocumentation() const {
-        return _primSpec ? _primSpec->GetDocumentation() : std::string();
+    /// Returns the list of names of metadata fields that are defined by this 
+    /// prim definition for the prim itself.
+    TfTokenVector ListMetadataFields() const 
+    {
+        return _ListMetadataFields(TfToken());
     }
+
+    /// Retrieves the fallback value for the metadata field named \p key, that
+    /// is defined by this prim definition for the prim itself and stores it in
+    /// \p value if possible. 
+    /// 
+    /// Returns true if a fallback value is defined for the given metadata 
+    /// \p key. Returns false otherwise. 
+    template <class T>
+    bool GetMetadata(const TfToken &key, T* value) const 
+    {
+        if (UsdSchemaRegistry::IsDisallowedField(key)) {
+            return false;
+        }
+        return _HasField(TfToken(), key, value);
+    }
+
+    /// Retrieves the value at \p keyPath from the fallback dictionary value 
+    /// for the dictionary metadata field named \p key, that is defined by this 
+    /// prim definition for the prim itself, and stores it in \p value if 
+    /// possible.
+    /// 
+    /// Returns true if a fallback dictionary value is defined for the given 
+    /// metadata \p key and it contains a value at \p keyPath. Returns false 
+    /// otherwise. 
+    template <class T>
+    bool GetMetadataByDictKey(const TfToken &key, 
+                              const TfToken &keyPath, T* value) const 
+    {
+        if (UsdSchemaRegistry::IsDisallowedField(key)) {
+            return false;
+        }
+        return _HasFieldDictKey(TfToken(), key, keyPath, value);
+    }
+
+    /// Returns the documentation metadata defined by the prim definition for 
+    /// the prim itself.
+    USD_API
+    std::string GetDocumentation() const;
+
+    /// Returns the list of names of metadata fields that are defined by this 
+    /// prim definition for property \p propName if a property named \p propName
+    /// exists.
+    TfTokenVector ListPropertyMetadataFields(const TfToken &propName) const 
+    {
+        return propName.IsEmpty() ? 
+            TfTokenVector() : _ListMetadataFields(propName);
+    }
+
+    /// Retrieves the fallback value for the metadata field named \p key, that
+    /// is defined by this prim definition for the property named \p propName, 
+    /// and stores it in \p value if possible.
+    /// 
+    /// Returns true if a fallback value is defined for the given metadata 
+    /// \p key for the named property. Returns false otherwise. 
+    template <class T>
+    bool GetPropertyMetadata(
+        const TfToken &propName, const TfToken &key, T* value) const
+    {
+        if (propName.IsEmpty() || UsdSchemaRegistry::IsDisallowedField(key)) {
+            return false;
+        }
+        return _HasField(propName, key, value);
+    }
+
+    /// Retrieves the value at \p keyPath from the fallback dictionary value 
+    /// for the dictionary metadata field named \p key, that is defined by this 
+    /// prim definition for the property named \p propName, and stores it in 
+    /// \p value if possible.
+    /// 
+    /// Returns true if a fallback dictionary value is defined for the given 
+    /// metadata \p key for the named property and it contains a value at 
+    /// \p keyPath. Returns false otherwise. 
+    template <class T>
+    bool GetPropertyMetadataByDictKey(
+        const TfToken &propName, const TfToken &key, 
+        const TfToken &keyPath, T* value) const
+    {
+        if (propName.IsEmpty() || UsdSchemaRegistry::IsDisallowedField(key)) {
+            return false;
+        }
+        return _HasFieldDictKey(propName, key, keyPath, value);
+    }
+
+    /// Returns the documentation metadata defined by the prim definition for 
+    /// the property named \p propName if it exists.
+    USD_API
+    std::string GetPropertyDocumentation(const TfToken &propName) const;
 
 private:
     // Only the UsdSchemaRegistry can construct prim definitions.
@@ -173,11 +261,37 @@ private:
 
     UsdPrimDefinition() = default;
 
-    UsdPrimDefinition(const SdfPrimSpecHandle &primSpec);
+    UsdPrimDefinition(const SdfPrimSpecHandle &primSpec, bool isAPISchema);
 
     // Access to the schema registry's schematics.
     const SdfLayerRefPtr &_GetSchematics() const {
         return UsdSchemaRegistry::GetInstance()._schematics;
+    }
+
+    USD_API
+    TfTokenVector _ListMetadataFields(const TfToken &propName) const;
+
+    // Helpers for constructing the prim definition.
+    USD_API
+    void _SetPrimSpec(const SdfPrimSpecHandle &primSpec, 
+                      bool providesPrimMetadata);
+
+    USD_API
+    void _ApplyPropertiesFromPrimDef(const UsdPrimDefinition &primDef, 
+                                     const std::string &propPrefix = "");
+
+    void _AddProperty(const TfToken &name, const SdfPath &schemaPath) 
+    {
+        // Adds the property name with schema path to the prim def. This makes 
+        // sure we overwrite the original property path with the new path if it 
+        // already exists, but makes sure we don't end up with duplicate names 
+        // in the property names list.
+        auto it = _propPathMap.insert(std::make_pair(name, schemaPath));
+        if (it.second) {
+            _properties.push_back(name);
+        } else {
+            it.first->second = schemaPath;
+        }
     }
 
     SdfPrimSpecHandle _primSpec;

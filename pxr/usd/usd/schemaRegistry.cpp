@@ -280,7 +280,8 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
                         // TfType name.
                         _appliedAPIPrimDefinitions[typeNameToken] = 
                             _appliedAPIPrimDefinitions[usdTypeNameToken] = 
-                            new UsdPrimDefinition(primSpec);
+                            new UsdPrimDefinition(primSpec, 
+                                                  /*isAPISchema=*/ true);
                     }
                 } else {
                     // Otherwise it's a concrete type. If it has no API schemas,
@@ -297,7 +298,8 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
                     } else {
                         _concreteTypedPrimDefinitions[typeNameToken] = 
                             _concreteTypedPrimDefinitions[usdTypeNameToken] = 
-                            new UsdPrimDefinition(primSpec);
+                            new UsdPrimDefinition(primSpec, 
+                                                  /*isAPISchema=*/ false);
                     }
                 }
             }
@@ -316,7 +318,7 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
             _concreteTypedPrimDefinitions[it.usdTypeNameToken] = 
             new UsdPrimDefinition();
         _ApplyAPISchemasToPrimDefinition(primDef, it.fallbackAPISchemas);
-        _ApplyPrimSpecToPrimDefinition(primDef, it.primSpec);
+        primDef->_SetPrimSpec(it.primSpec, /*providesPrimMetadata=*/ true);
     }
 }
 
@@ -486,43 +488,9 @@ UsdSchemaRegistry::BuildComposedPrimDefinition(
     return composedPrimDef;
 }
 
-void UsdSchemaRegistry::_ApplyPrimSpecToPrimDefinition(
-    UsdPrimDefinition *primDef, const SdfPrimSpecHandle &primSpec) const
-{
-    primDef->_primSpec = primSpec;
-    // Adds the path for each property overwriting the property if one with
-    // that name already exists but without adding duplicates to the property
-    // names list.
-    for (SdfPropertySpecHandle prop: primSpec->GetProperties()) {
-        const TfToken &propName = prop->GetNameToken();
-        const SdfPath &propPath = prop->GetPath();
-        auto it = primDef->_propPathMap.insert(
-            std::make_pair(propName, propPath));
-        if (it.second) {
-            primDef->_properties.push_back(propName);
-        } else {
-            it.first->second = propPath;
-        }
-    }
-}
-
 void UsdSchemaRegistry::_ApplyAPISchemasToPrimDefinition(
     UsdPrimDefinition *primDef, const TfTokenVector &appliedAPISchemas) const
 {
-    // Adds the property name with schema path to the prim def. This makes sure
-    // we overwrite the original property path with the new path if it already
-    // exists, but makes sure we don't end up with duplicate names in the 
-    // property names list.
-    auto _AddProperty = [&primDef](const std::pair<TfToken, SdfPath> &value)
-    {
-        auto it = primDef->_propPathMap.insert(value);
-        if (it.second) {
-            primDef->_properties.push_back(value.first);
-        } else {
-            it.first->second = value.second;
-        }
-    };
-
     // Append the new applied schema names to the existing applied schemas for
     // prim definition.
     primDef->_appliedAPISchemas.insert(primDef->_appliedAPISchemas.end(), 
@@ -548,9 +516,7 @@ void UsdSchemaRegistry::_ApplyAPISchemasToPrimDefinition(
         if (typeAndInstance.second.IsEmpty()) {
             // An empty instance name indicates a single apply schema. Just 
             // copy its properties into the new prim definition.
-            for (const auto &it : apiSchemaTypeDef->_propPathMap) {
-                _AddProperty(it);
-            }
+            primDef->_ApplyPropertiesFromPrimDef(*apiSchemaTypeDef);
         } else {
             // Otherwise we have a multiple apply schema. We need to use the 
             // instance name and the property prefix to map and add the correct
@@ -569,11 +535,8 @@ void UsdSchemaRegistry::_ApplyAPISchemasToPrimDefinition(
                 // the prefix name to the definition's property.
                 const std::string propPrefix = 
                     SdfPath::JoinIdentifier(prefix, typeAndInstance.second);
-                for (const auto &it : apiSchemaTypeDef->_propPathMap) {
-                    const TfToken prefixedPropName(
-                        SdfPath::JoinIdentifier(propPrefix, it.first.GetString()));
-                    _AddProperty(std::make_pair(prefixedPropName, it.second));
-                }
+                primDef->_ApplyPropertiesFromPrimDef(
+                    *apiSchemaTypeDef, propPrefix);
             }
         }
     }

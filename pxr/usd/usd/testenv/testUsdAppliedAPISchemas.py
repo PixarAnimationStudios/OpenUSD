@@ -72,6 +72,8 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertTrue(singleApplyAPIDef)
         self.assertEqual(singleApplyAPIDef.GetPropertyNames(), [
             "single:bool_attr", "single:token_attr", "single:relationship"])
+        self.assertEqual(singleApplyAPIDef.GetDocumentation(),
+            "Test single apply API schema")
 
         # Find the prim definition for the test multi apply schema. It has
         # some properties defined. Note that the properties in the multi apply
@@ -81,6 +83,8 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertTrue(multiApplyAPIDef)
         self.assertEqual(multiApplyAPIDef.GetPropertyNames(), [
             "bool_attr", "token_attr", "relationship"])
+        self.assertEqual(multiApplyAPIDef.GetDocumentation(),
+            "Test multi-apply API schema")
 
         # Find the prim definition for the concrete prim type with fallback
         # API schemas. You can query its API schemas and it will have properties
@@ -99,6 +103,8 @@ class TestUsdSchemaRegistry(unittest.TestCase):
             "single:token_attr", 
             "testAttr", 
             "testRel"])
+        # Note that prim def documentation does not come from the fallback API
+        # schemas.
         self.assertEqual(primDef.GetDocumentation(), 
                          "Test with fallback API schemas")
 
@@ -321,13 +327,13 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(attr.Get(), True)
         self.assertEqual(attr.GetResolveInfo().GetSource(), 
                          Usd.ResolveInfoSourceFallback)
-        # Property fallback actually comes from TestTypedSchema as the typed
-        # schema overrides this property from its fallback API schema.
+        # Property fallback actually comes from TestWithFallbackAppliedSchema as
+        # the typed schema overrides this property from its fallback API schema.
         attr = typedPrim.GetAttribute("multi:fallback:bool_attr")
         self.assertEqual(attr.Get(), False)
         self.assertEqual(attr.GetResolveInfo().GetSource(), 
                          Usd.ResolveInfoSourceFallback)
-        # Property fallback comes from TestTypedSchema
+        # Property fallback comes from TestWithFallbackAppliedSchema
         attr = typedPrim.GetAttribute("testAttr")
         self.assertEqual(attr.Get(), "foo")
         self.assertEqual(attr.GetResolveInfo().GetSource(), 

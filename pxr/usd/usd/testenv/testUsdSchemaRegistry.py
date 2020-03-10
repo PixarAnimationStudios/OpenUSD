@@ -23,7 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 
 import os, unittest
-from pxr import Plug, Usd, Vt, Tf
+from pxr import Plug, Usd, Sdf, Vt, Tf
 
 class TestUsdSchemaRegistry(unittest.TestCase):
     @classmethod
@@ -40,6 +40,17 @@ class TestUsdSchemaRegistry(unittest.TestCase):
             "TestUsdSchemaRegistryMetadataTest")
         self.assertTrue(primDef)
 
+        self.assertEqual(set(primDef.ListMetadataFields()), 
+            set(["typeName", "testCustomMetadata", "hidden", "documentation"]))
+        self.assertEqual(primDef.GetMetadata("typeName"), "MetadataTest")
+        self.assertEqual(primDef.GetMetadata("documentation"),
+                         "Testing documentation metadata")
+        self.assertEqual(primDef.GetMetadata("hidden"), True)
+        self.assertEqual(primDef.GetMetadata("testCustomMetadata"), "garply")
+
+        self.assertEqual(primDef.GetDocumentation(),
+                         "Testing documentation metadata")
+
         primSpec = primDef.GetSchemaPrimSpec()
         self.assertEqual(primSpec.GetInfo("documentation"),
                          "Testing documentation metadata")
@@ -50,7 +61,29 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         primDef = Usd.SchemaRegistry().FindConcretePrimDefinition(
             "TestUsdSchemaRegistryMetadataTest")
 
+        self.assertEqual(set(primDef.ListPropertyMetadataFields("testAttr")), 
+            set(["allowedTokens", "default", "displayGroup", "displayName", 
+                 "documentation", "hidden", "testCustomMetadata", "typeName"]))
+        self.assertEqual(primDef.GetPropertyMetadata("testAttr", "typeName"),
+                         "string")
+        self.assertEqual(primDef.GetPropertyMetadata("testAttr", "allowedTokens"),
+                         Vt.TokenArray(["bar", "baz"]))
+        self.assertEqual(primDef.GetPropertyMetadata("testAttr", "displayGroup"), 
+                         "Display Group")
+        self.assertEqual(primDef.GetPropertyMetadata("testAttr", "displayName"), 
+                         "Display Name")
+        self.assertEqual(primDef.GetPropertyMetadata("testAttr", "documentation"),
+                         "Testing documentation metadata")
+        self.assertEqual(primDef.GetPropertyMetadata("testAttr", "hidden"), 
+                         True)
+        self.assertEqual(primDef.GetPropertyMetadata("testAttr", "testCustomMetadata"), 
+                         "garply")
+        self.assertEqual(primDef.GetPropertyMetadata("testAttr", "default"), 
+                         "foo")
+
         self.assertEqual(primDef.GetAttributeFallbackValue("testAttr"), "foo")
+        self.assertEqual(primDef.GetPropertyDocumentation("testAttr"),
+                         "Testing documentation metadata")
 
         attrDef = primDef.GetSchemaAttributeSpec("testAttr")
         self.assertTrue(attrDef)
@@ -68,7 +101,25 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         primDef = Usd.SchemaRegistry().FindConcretePrimDefinition(
             "TestUsdSchemaRegistryMetadataTest")
 
+        self.assertEqual(set(primDef.ListPropertyMetadataFields("testRel")), 
+            set(["displayGroup", "displayName", "documentation", "hidden", 
+                 "testCustomMetadata", "variability"]))
+        self.assertEqual(primDef.GetPropertyMetadata("testRel", "displayGroup"), 
+                         "Display Group")
+        self.assertEqual(primDef.GetPropertyMetadata("testRel", "displayName"), 
+                         "Display Name")
+        self.assertEqual(primDef.GetPropertyMetadata("testRel", "documentation"),
+                         "Testing documentation metadata")
+        self.assertEqual(primDef.GetPropertyMetadata("testRel", "hidden"), 
+                         True)
+        self.assertEqual(primDef.GetPropertyMetadata("testRel", "testCustomMetadata"), 
+                         "garply")
+        self.assertEqual(primDef.GetPropertyMetadata("testRel", "variability"), 
+                         Sdf.VariabilityUniform)
+
         self.assertIsNone(primDef.GetAttributeFallbackValue("testRel"))
+        self.assertEqual(primDef.GetPropertyDocumentation("testRel"),
+                         "Testing documentation metadata")
 
         relDef = primDef.GetSchemaRelationshipSpec("testRel")
         self.assertTrue(relDef)

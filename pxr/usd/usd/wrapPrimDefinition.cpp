@@ -41,6 +41,46 @@ _WrapGetAttributeFallbackValue(const UsdPrimDefinition &self,
     return UsdVtValueToPython(result);
 }
 
+static TfPyObjWrapper
+_WrapGetMetadata(const UsdPrimDefinition &self, 
+                 const TfToken &key)
+{
+    VtValue result;
+    self.GetMetadata(key, &result);
+    return UsdVtValueToPython(result);
+}
+
+static TfPyObjWrapper
+_WrapGetMetadataByDictKey(const UsdPrimDefinition &self, 
+                          const TfToken &key, 
+                          const TfToken &keyPath)
+{
+    VtValue result;
+    self.GetMetadataByDictKey(key, keyPath, &result);
+    return UsdVtValueToPython(result);
+}
+
+static TfPyObjWrapper
+_WrapGetPropertyMetadata(const UsdPrimDefinition &self, 
+                         const TfToken &propName, 
+                         const TfToken &key)
+{
+    VtValue result;
+    self.GetPropertyMetadata(propName, key, &result);
+    return UsdVtValueToPython(result);
+}
+
+static TfPyObjWrapper
+_WrapGetPropertyMetadataByDictKey(const UsdPrimDefinition &self, 
+                                  const TfToken &propName, 
+                                  const TfToken &key, 
+                                  const TfToken &keyPath)
+{
+    VtValue result;
+    self.GetPropertyMetadataByDictKey(propName, key, keyPath, &result);
+    return UsdVtValueToPython(result);
+}
+
 void wrapUsdPrimDefinition()
 {
     typedef UsdPrimDefinition This;
@@ -58,6 +98,22 @@ void wrapUsdPrimDefinition()
              (arg("relName")))
         .def("GetAttributeFallbackValue", &_WrapGetAttributeFallbackValue,
              (arg("attrName"), arg("key")))
+
+        .def("ListMetadataFields", &This::ListMetadataFields,
+             return_value_policy<TfPySequenceToList>())
+        .def("GetMetadata", &_WrapGetMetadata,
+             (arg("key")))
+        .def("GetMetadataByDictKey", &_WrapGetMetadataByDictKey,
+             (arg("key"), arg("keyPath")))
         .def("GetDocumentation", &This::GetDocumentation)
+
+        .def("ListPropertyMetadataFields", &This::ListPropertyMetadataFields,
+             return_value_policy<TfPySequenceToList>())
+        .def("GetPropertyMetadata", &_WrapGetPropertyMetadata,
+             (arg("propName"), arg("key")))
+        .def("GetPropertyMetadataByDictKey", &_WrapGetPropertyMetadataByDictKey,
+             (arg("propName"), arg("key"), arg("keyPath")))
+        .def("GetPropertyDocumentation", &This::GetPropertyDocumentation,
+             (arg("propName")))
         ;
 }
