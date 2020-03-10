@@ -1695,6 +1695,16 @@ _ReaderContext::_HasValue(
 // Utilities
 //
 
+/// Return the number of interesting samples in an object
+template <typename T> size_t
+_GetNumSamples(const T& object) {
+    size_t nSamples = object.getNumSamples();
+    if (!object.isConstant())
+        return nSamples;
+
+    return std::min(nSamples, size_t(1));
+}
+
 /// Fill sample times from an object with getTimeSampling() and
 /// getNumSamples() methods.
 template <class T>
@@ -1705,7 +1715,7 @@ _GetSampleTimes(const T& object)
     _AlembicTimeSamples result;
     if (object.valid()) {
         TimeSamplingPtr timeSampling = object.getTimeSampling();
-        for (size_t i = 0, n = object.getNumSamples(); i != n; ++i) {
+        for (size_t i = 0, n = _GetNumSamples(object); i < n; ++i) {
             result.push_back(timeSampling->getSampleTime(i));
         }
     }
@@ -3094,8 +3104,10 @@ _ReadXform(_PrimReaderContext* context)
     // Add child properties under schema.
     context->SetSchema(Type::schema_type::info_type::defaultName());
 
+    const index_t nSamples = _GetNumSamples(schema);
+
     // Error checking.
-    for (index_t i = 0, n = schema.getNumSamples(); i != n; ++i) {
+    for (index_t i = 0; i < nSamples; ++i) {
         if (!schema.getInheritsXforms(ISampleSelector(i))) {
             TF_WARN("Ignoring transform that doesn't inherit at "
                     "samples at time %f at <%s>",
@@ -3109,7 +3121,7 @@ _ReadXform(_PrimReaderContext* context)
     context->GetPrim().typeName = UsdAbcPrimTypeNames->Xform;
 
     // Add properties.
-    if (schema.getNumSamples() > 0) {
+    if (nSamples > 0) {
         // We could author individual component transforms here, just 
         // as the transform is represented in alembic, but round-tripping 
         // will be an issue because of the way the alembicWriter reads
