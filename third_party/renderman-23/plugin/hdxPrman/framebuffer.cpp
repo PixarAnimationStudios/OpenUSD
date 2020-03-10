@@ -136,14 +136,20 @@ static PtDspyError HydraDspyImageData(
         int32_t* instanceId = &buf->instanceId[((buf->h-1-y)*buf->w+xmin)];
         int32_t* elementId = &buf->elementId[((buf->h-1-y)*buf->w+xmin)];
         for (int x=xmin; x < xmax_plusone; x++) {
-            color[0] = data_f32[0]; // red
-            color[1] = data_f32[1]; // green
-            color[2] = data_f32[2]; // blue
-            color[3] = data_f32[3]; // alpha
+            // Premultiply color with alpha to blend pixels with background.
+            float alphaInv = 1-data_f32[3];
+            color[0] = data_f32[0] + (alphaInv) * buf->clearColor[0]; // R
+            color[1] = data_f32[1] + (alphaInv) * buf->clearColor[1]; // G
+            color[2] = data_f32[2] + (alphaInv) * buf->clearColor[2]; // B
+            color[3] = data_f32[3]; // A
+
             if (std::isfinite(data_f32[4])) {
                 // XXX: We shouldn't be getting true inf from prman?
                 depth[0] = buf->proj.Transform(GfVec3f(0,0,-data_f32[4]))[2];
+            } else {
+                depth[0] = -1.0f;
             }
+
             primId[0] = (data_i32[5]-1);
             if (primId[0] == -1) {
                 instanceId[0] = -1;

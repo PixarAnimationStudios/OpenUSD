@@ -415,8 +415,8 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
     // Clear values...
     framebuffer.Resize(resolution[0], resolution[1]);
     framebuffer.clearColor[0] = framebuffer.clearColor[1] =
-        framebuffer.clearColor[2] = (uint8_t)(0.0707f * 255);
-    framebuffer.clearColor[3] = 255;
+        framebuffer.clearColor[2] = 0.0f;
+    framebuffer.clearColor[3] = 0.0f;
     framebuffer.clearDepth = 1.0f;
     framebuffer.clearId = -1;
 

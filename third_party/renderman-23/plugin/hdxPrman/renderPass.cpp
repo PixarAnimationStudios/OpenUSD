@@ -346,6 +346,30 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
 	_mainIntegratorId = _interactiveContext->integratorId;
     }
 
+    // Request a framebuffer clear if the clear value in the aov has changed
+    // from the framebuffer clear value.
+    // We do this before StartRender() to avoid race conditions where some
+    // buckets may get discarded or cleared with the wrong value.
+    for (HdRenderPassAovBinding const& aov : renderPassState->GetAovBindings()){
+        if (aov.aovName == HdAovTokens->color) {
+            GfVec4f const& clear = aov.clearValue.Get<GfVec4f>(); 
+            if (clear != _interactiveContext->framebuffer.clearColor) {
+                _interactiveContext->StopRender();
+                _interactiveContext->framebuffer.pendingClear = true; 
+                _interactiveContext->framebuffer.clearColor = clear;
+                needStartRender = true;
+            }
+        } else if (aov.aovName == HdAovTokens->depth) {
+            float clear = aov.clearValue.Get<float>(); 
+            if (clear != _interactiveContext->framebuffer.clearDepth) {
+                _interactiveContext->StopRender();
+                _interactiveContext->framebuffer.pendingClear = true; 
+                _interactiveContext->framebuffer.clearDepth = clear;
+                needStartRender = true;
+            }
+        }
+    }
+
     // NOTE:
     //
     // _quickIntegrate enables hdxPrman to go into a mode
