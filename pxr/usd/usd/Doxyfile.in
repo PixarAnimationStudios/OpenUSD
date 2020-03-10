@@ -807,11 +807,6 @@ INPUT                  = src/modules/usd/doxygen/externalOverview.dox \
                          src/modules/usdSkelImaging \
                          src/modules/usdviewq \
                                                                       \
-                         ## "houdini" package \
-                         src/modules/gusd/overview.dox \
-                         src/modules/gusd \
-                         src/modules/OP_gusd \
-                                                                      \
                          ## "katana" package \
                          src/modules/usdKatana/overview.dox \
                          src/modules/katanaAttrfncApi \

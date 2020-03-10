@@ -208,8 +208,8 @@ More documentation is available [here](http://openusd.org/docs/RenderMan-USD-Ima
 
 ## Third Party Plugins
 
-USD provides several plugins for integration with third-party software packages,
-including Katana, Houdini, and Alembic. There is additional documentation on each plugin
+USD provides several plugins for integration with third-party software packages. 
+There is additional documentation on each plugin
 [here](http://openusd.org/docs/USD-3rd-Party-Plugins.html).
 These plugins are not built by default and must be enabled via the instructions below.
 
@@ -254,21 +254,6 @@ The additional dependencies that must be supplied when invoking cmake are:
 See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
 
 For further information see our additional documentation on the Katana plugins [here](http://openusd.org/docs/Katana-USD-Plugins.html).
-
-##### Houdini Plugin
-
-Enable the Houdini plugin in the build by specifying the cmake flag 
-```PXR_BUILD_HOUDINI_PLUGIN=TRUE``` when invoking cmake. 
-
-The additional dependencies that must be supplied when invoking cmake are:
-
-| Dependency Name       | Description                            |
-| --------------        | -----------------------------------    |
-| HOUDINI_ROOT          | The root path to a Houdini SDK install.|
-
-See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
-
-For further information see our additional documentation on the Houdini plugins [here](http://openusd.org/docs/Houdini-USD-Plugins.html).
 
 ##### MaterialX Plugin
 

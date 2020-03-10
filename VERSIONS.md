@@ -33,7 +33,6 @@ Our test machines have the following software versions installed
 | OpenEXR       | 2.2.0        | 2.2.0        | 2.2.0        |
 | Maya          | 2016.5       | 2017         | 2016 Ext 2   |
 | Katana        | 3.0v6        |              |              |
-| Houdini       | 16.5         |              |              |
 | MaterialX     | 1.36.0       | 1.36.0       | 1.36.0       |
 | Jinja2        | 2.0          | 2.0          | 2.0          |
 | Flex          | 2.5.39       | 2.5.35       |              |
@@ -54,5 +53,4 @@ These other versions have been known to work as well:
 | Maya          | 2018.3       | 2018.3       | 2018.3       |
 | PySide2       | 2.0.0~alpha0 |              | 2.0.0~alpha0 |
 | HDF5          | 1.8.11       | 1.8.11       | 1.8.11       |
-| Houdini       | 17.0         | 16.5, 17.0   | 16.5, 17.0   |
 | OpenImageIO   | 1.9.1        |              |              |
