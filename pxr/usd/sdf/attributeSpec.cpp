@@ -63,7 +63,6 @@ SdfAttributeSpec::New(
     }
 
     const SdfPath attrPath = ownerPtr->GetPath().AppendProperty(TfToken(name));
-
     if (ARCH_UNLIKELY(attrPath.IsEmpty())) {
         // This can happen if the owner is the pseudo-root '/', or if the passed
         // name was not a valid property name.  Give specific error messages in
@@ -194,9 +193,47 @@ SDF_DEFINE_SET(DisplayUnit, SdfFieldKeys->DisplayUnit, const TfEnum&)
 SDF_DEFINE_HAS(DisplayUnit, SdfFieldKeys->DisplayUnit)
 SDF_DEFINE_CLEAR(DisplayUnit, SdfFieldKeys->DisplayUnit)
 
-PXR_NAMESPACE_CLOSE_SCOPE
+// Defined in primSpec.cpp.
+bool
+Sdf_UncheckedCreatePrimInLayer(SdfLayer *layer, SdfPath const &primPath);
 
-// Clean up macro shenanigans
-#undef SDF_ACCESSOR_CLASS
-#undef SDF_ACCESSOR_READ_PREDICATE
-#undef SDF_ACCESSOR_WRITE_PREDICATE
+bool
+SdfJustCreatePrimAttributeInLayer(
+    const SdfLayerHandle &layer,
+    const SdfPath &attrPath,
+    const SdfValueTypeName &typeName,
+    SdfVariability variability,
+    bool isCustom)
+{
+    if (!attrPath.IsPrimPropertyPath()) {
+        TF_CODING_ERROR("Cannot create prim attribute at path '%s' because "
+                        "it is not a prim property path",
+                        attrPath.GetText());
+        return false;
+    }
+
+    SdfLayer *layerPtr = get_pointer(layer);
+
+    SdfChangeBlock block;
+
+    if (!Sdf_UncheckedCreatePrimInLayer(layerPtr, attrPath.GetParentPath())) {
+        return false;
+    }
+
+    if (!Sdf_ChildrenUtils<Sdf_AttributeChildPolicy>::CreateSpec(
+            layer, attrPath, SdfSpecTypeAttribute,
+            /*hasOnlyRequiredFields=*/!isCustom)) {
+        TF_RUNTIME_ERROR("Failed to create attribute at path '%s' in "
+                         "layer @%s@", attrPath.GetText(),
+                         layerPtr->GetIdentifier().c_str());
+        return false;
+    }
+    
+    layerPtr->SetField(attrPath, SdfFieldKeys->Custom, isCustom);
+    layerPtr->SetField(attrPath, SdfFieldKeys->TypeName, typeName.GetAsToken());
+    layerPtr->SetField(attrPath, SdfFieldKeys->Variability, variability);
+    
+    return true;
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -914,7 +914,7 @@ private:
 
 } // anon
 
-static bool
+bool
 Sdf_UncheckedCreatePrimInLayer(
     SdfLayer *layerPtr, const SdfPath& primPath)
 {

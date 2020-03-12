@@ -46,6 +46,39 @@ class TestSdfAttribute(unittest.TestCase):
         self.assertEqual(prim.properties[0], attr)
         self.assertEqual(prim.properties[ attr.name ], attr)
         self.assertEqual(prim.properties[0].custom, False)
+        
+        # Test SdfJustCreatePrimAttributeInLayer
+        self.assertTrue(Sdf.JustCreatePrimAttributeInLayer(
+            layer=layer, attrPath='/just/an.attributeSpec',
+            typeName=Sdf.ValueTypeNames.Float))
+        attr2 = layer.GetAttributeAtPath('/just/an.attributeSpec')
+        self.assertEqual(attr2.name, 'attributeSpec')
+        self.assertEqual(attr2.typeName, Sdf.ValueTypeNames.Float)
+        prim = layer.GetPrimAtPath('/just/an')
+        self.assertEqual(attr2.owner, prim)
+        self.assertTrue(attr2 in prim.properties)
+        self.assertTrue(attr2.name in prim.properties)
+        self.assertEqual(prim.properties[0], attr2)
+        self.assertEqual(prim.properties[attr2.name], attr2)
+        self.assertEqual(attr2.variability, Sdf.VariabilityVarying)
+        self.assertEqual(prim.properties[0].custom, False)
+
+        self.assertTrue(Sdf.JustCreatePrimAttributeInLayer(
+            layer=layer, attrPath='/just/another.attributeSpec',
+            typeName=Sdf.ValueTypeNames.Int,
+            variability=Sdf.VariabilityUniform,
+            isCustom=True))
+        attr3 = layer.GetAttributeAtPath('/just/another.attributeSpec')
+        self.assertEqual(attr3.name, 'attributeSpec')
+        self.assertEqual(attr3.typeName, Sdf.ValueTypeNames.Int)
+        prim = layer.GetPrimAtPath('/just/another')
+        self.assertEqual(attr3.owner, prim)
+        self.assertTrue(attr3 in prim.properties)
+        self.assertTrue(attr3.name in prim.properties)
+        self.assertEqual(prim.properties[0], attr3)
+        self.assertEqual(prim.properties[attr2.name], attr3)
+        self.assertEqual(attr3.variability, Sdf.VariabilityUniform)
+        self.assertEqual(prim.properties[0].custom, True)
 
         # create a duplicate attribute: error expected
         with self.assertRaises(RuntimeError):
