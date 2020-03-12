@@ -6201,6 +6201,7 @@ UsdStage::_GetSpecialMetadataImpl(const UsdObject &obj,
                                   Composer *composer) const
 {
     // Dispatch to special-case composition rules based on type and field.
+    // Return true if the given field was handled, false otherwise.
     if (obj.Is<UsdProperty>()) {
         if (obj.Is<UsdAttribute>()) {
             if (fieldName == SdfFieldKeys->TypeName) {
@@ -6246,13 +6247,7 @@ UsdStage::_GetMetadataImpl(
     // Handle special cases.
     if (_GetSpecialMetadataImpl(
             obj, fieldName, keyPath, useFallbacks, composer)) {
-
-        return true;
-    }
-
-    if (!m.IsClean()) {
-        // An error occurred during _GetSpecialMetadataImpl.
-        return false;
+        return composer->IsDone() && m.IsClean();
     }
 
     return _GetGeneralMetadataImpl(

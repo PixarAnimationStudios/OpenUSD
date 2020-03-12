@@ -95,6 +95,21 @@ class TestUsdMetadata(unittest.TestCase):
             self.assertEqual(rel.IsHidden(), True)
             self.assertEqual(rel.GetMetadata("hidden"), True)
 
+    def test_PrimTypeName(self):
+        for fmt in allFormats:
+            stage = Usd.Stage.CreateInMemory('TestListAndHas.'+fmt)
+
+            primWithType = stage.DefinePrim("/PrimWithType", "DummyType")
+            self.assertEqual(primWithType.GetTypeName(), "DummyType")
+            self.assertTrue(primWithType.HasAuthoredTypeName())
+            self.assertTrue(primWithType.HasMetadata("typeName"))
+            self.assertEqual(primWithType.GetMetadata("typeName"), "DummyType")
+
+            primWithoutType = stage.DefinePrim("/PrimWithoutType", "")
+            self.assertEqual(primWithoutType.GetTypeName(), "")
+            self.assertFalse(primWithoutType.HasAuthoredTypeName())
+            self.assertFalse(primWithoutType.HasMetadata("typeName"))
+            self.assertEqual(primWithoutType.GetMetadata("typeName"), None)
 
     def test_ListAndHas(self):
         for fmt in allFormats:
