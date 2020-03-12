@@ -1283,17 +1283,9 @@ UsdImagingInstanceAdapter::ProcessPropertyChange(UsdPrim const& prim,
         return HdChangeTracker::DirtyInstanceIndex;
     }
 
-    // Is the property a primvar?
-    static std::string primvarsNS = "primvars:";
-    if (TfStringStartsWith(propertyName.GetString(), primvarsNS)) {
-        TfToken primvarName = TfToken(
-            propertyName.GetString().substr(primvarsNS.size()));
-        if (_PrimvarChangeRequiresResync(
-                prim, cachePath, propertyName, primvarName)) {
-            return HdChangeTracker::AllDirty;
-        } else {
-            return HdChangeTracker::DirtyPrimvar;
-        }
+    if (UsdImagingPrimAdapter::_HasPrimvarsPrefix(propertyName)) {
+        return UsdImagingPrimAdapter::_ProcessPrefixedPrimvarPropertyChange(
+                prim, cachePath, propertyName);
     }
 
     // For other property changes, blast everything.  This will trigger a

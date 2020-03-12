@@ -37,12 +37,17 @@
 #include "pxr/imaging/hd/renderDelegate.h"
 
 #include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/type.h"
 
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    ((primvarsPrefix, "primvars:"))
+);
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -692,37 +697,183 @@ UsdImagingPrimAdapter::_ComputeAndMergePrimvar(
     }
 }
 
+/*static*/
 bool
-UsdImagingPrimAdapter::_PrimvarChangeRequiresResync(
+UsdImagingPrimAdapter::_HasPrimvarsPrefix(TfToken const& propertyName)
+{
+    return TfStringStartsWith(propertyName.GetString(),
+                              _tokens->primvarsPrefix);
+}
+
+/*static*/
+TfToken
+UsdImagingPrimAdapter::_GetStrippedPrimvarName(TfToken const& propertyName)
+{
+    // Strip prefix
+    return TfToken(propertyName.GetString().substr(
+                _tokens->primvarsPrefix.GetString().size()));
+}
+
+namespace {
+
+// The types of primvar changes expected
+enum PrimvarChange {
+    PrimvarChangeValue,
+    PrimvarChangeAdd,
+    PrimvarChangeRemove,
+    PrimvarChangeDesc
+};
+
+// Maps the primvar changes (above) to the dirty bit that needs to be set.
+/*static*/
+HdDirtyBits
+_GetDirtyBitsForPrimvarChange(
+    PrimvarChange changeType,
+    HdDirtyBits valueChangeDirtyBit)
+{
+    HdDirtyBits dirty = HdChangeTracker::Clean;
+
+    switch (changeType) {
+        case PrimvarChangeAdd:
+        case PrimvarChangeRemove:
+        case PrimvarChangeDesc:
+        {
+            // XXX: Once we have a bit for descriptor changes, we should use
+            // that instead.
+            dirty = HdChangeTracker::DirtyPrimvar;
+            break;
+        }
+        case PrimvarChangeValue:
+        {
+            dirty = valueChangeDirtyBit;
+            break;
+        }
+        default:
+        {
+            TF_CODING_ERROR("Unsupported PrimvarChange %d\n", changeType);
+        }
+    }
+
+    return dirty;
+}
+
+// Figure out what changed about the primvar and returns the appropriate dirty
+// bit.
+/*static*/
+PrimvarChange
+_ProcessPrimvarChange(bool primvarOnPrim,
+                      HdInterpolation primvarInterpOnPrim,
+                      TfToken const& primvarName,
+                      HdPrimvarDescriptorVector* primvarDescs,
+                      SdfPath const& cachePath/*debug*/)
+{
+    // Determine if primvar is in the value cache.
+    HdPrimvarDescriptorVector::iterator primvarIt = primvarDescs->end();
+    for (HdPrimvarDescriptorVector::iterator it = primvarDescs->begin();
+         it != primvarDescs->end(); it++) {
+        if (it->name == primvarName) {
+            primvarIt = it;
+            break;
+        }
+    }
+    bool primvarInValueCache = primvarIt != primvarDescs->end();
+
+    PrimvarChange changeType = PrimvarChangeValue;
+    if (primvarOnPrim && !primvarInValueCache) {
+        changeType = PrimvarChangeAdd;
+    } else if (!primvarOnPrim && primvarInValueCache) {
+        changeType = PrimvarChangeRemove;
+
+        TF_DEBUG(USDIMAGING_CHANGES).Msg(
+            "Removing primvar descriptor %s for cachePath %s.\n",
+            primvarIt->name.GetText(), cachePath.GetText());
+
+        // Remove the value cache entry.
+        primvarDescs->erase(primvarIt);
+
+    } else if (primvarInValueCache && primvarOnPrim &&
+               (primvarIt->interpolation != primvarInterpOnPrim)) {
+        changeType = PrimvarChangeDesc;
+    }
+
+    return changeType;
+}
+
+} // anonymous namespace
+
+HdDirtyBits
+UsdImagingPrimAdapter::_ProcessNonPrefixedPrimvarPropertyChange(
         UsdPrim const& prim,
         SdfPath const& cachePath,
         TfToken const& propertyName,
         TfToken const& primvarName,
-        bool inherited) const
+        HdInterpolation const& primvarInterp,
+        HdDirtyBits valueChangeDirtyBit
+            /*= HdChangeTracker::DirtyPrimvar*/) const
 {
-    bool primvarInValueCache = false;
-    HdPrimvarDescriptorVector const& vec =
-        _GetValueCache()->GetPrimvars(cachePath);
-    for (HdPrimvarDescriptor const& desc : vec) {
-        if (desc.name == primvarName) {
-            primvarInValueCache = true;
-            break;
+    // Determine if primvar exists on the prim.
+    bool primvarOnPrim = false;
+    UsdAttribute attr = prim.GetAttribute(propertyName);
+    if (attr && attr.HasValue()) {
+        // The expectation is that this method is used for "built-in" attributes
+        // that are treated as primvars.
+        if (UsdGeomPrimvar::IsPrimvar(attr)) {
+            TF_CODING_ERROR("Prefixed primvar (%s) with cache path %s should "
+                "use _ProcessPrefixedPrimvarPropertyChange instead.\n",
+                propertyName.GetText(), cachePath.GetText());
+        
+            return HdChangeTracker::AllDirty;
         }
+
+        primvarOnPrim = true;
     }
 
+    HdPrimvarDescriptorVector& primvarDescs =
+        _GetValueCache()->GetPrimvars(cachePath);  
+    
+    PrimvarChange changeType =
+        _ProcessPrimvarChange(primvarOnPrim, primvarInterp,
+                              primvarName, &primvarDescs, cachePath);
+
+    return _GetDirtyBitsForPrimvarChange(changeType, valueChangeDirtyBit);
+}
+
+HdDirtyBits
+UsdImagingPrimAdapter::_ProcessPrefixedPrimvarPropertyChange(
+        UsdPrim const& prim,
+        SdfPath const& cachePath,
+        TfToken const& propertyName,
+        HdDirtyBits valueChangeDirtyBit/*= HdChangeTracker::DirtyPrimvar*/,
+        bool inherited/*=true*/) const
+{
+    // Determine if primvar exists on the prim.
     bool primvarOnPrim = false;
     UsdAttribute attr;
+    TfToken interpOnPrim;
+    UsdGeomPrimvarsAPI api(prim);
     if (inherited) {
-        attr = UsdGeomPrimvarsAPI(prim)
-            .FindPrimvarWithInheritance(propertyName);
+        UsdGeomPrimvar pv = api.FindPrimvarWithInheritance(propertyName);
+        attr = pv;
+        interpOnPrim = pv.GetInterpolation();
     } else {
-        attr = prim.GetAttribute(propertyName);
+        UsdGeomPrimvar localPv = api.GetPrimvar(propertyName);
+        attr = localPv;
+        interpOnPrim = localPv.GetInterpolation();
     }
     if (attr && attr.HasValue()) {
         primvarOnPrim = true;
     }
 
-    return primvarOnPrim ^ primvarInValueCache;
+    // Determine if primvar is in the value cache.
+    TfToken primvarName = _GetStrippedPrimvarName(propertyName);
+    HdPrimvarDescriptorVector& primvarDescs =
+        _GetValueCache()->GetPrimvars(cachePath);  
+    
+    PrimvarChange changeType = _ProcessPrimvarChange(primvarOnPrim,
+                                 _UsdToHdInterpolation(interpOnPrim),
+                                 primvarName, &primvarDescs, cachePath);
+
+    return _GetDirtyBitsForPrimvarChange(changeType, valueChangeDirtyBit);          
 }
 
 UsdImaging_CollectionCache&

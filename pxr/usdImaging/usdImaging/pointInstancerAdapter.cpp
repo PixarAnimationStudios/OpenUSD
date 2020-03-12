@@ -822,12 +822,9 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
             primvarName = _tokens->scale;
         }
 
-        if (_PrimvarChangeRequiresResync(
-                prim, cachePath, propertyName, primvarName, false)) {
-            return HdChangeTracker::AllDirty;
-        } else {
-            return HdChangeTracker::DirtyPrimvar;
-        }
+        return _ProcessNonPrefixedPrimvarPropertyChange(
+                prim, cachePath, propertyName, primvarName,
+                HdInterpolationInstance);
     }
 
     if (propertyName == UsdGeomTokens->protoIndices ||
@@ -836,9 +833,7 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
     }
 
     // Is the property a primvar?
-    static std::string primvarsNS = "primvars:";
-    if (TfStringStartsWith(propertyName.GetString(), primvarsNS)) {
-
+    if (UsdImagingPrimAdapter::_HasPrimvarsPrefix(propertyName)) {
         // Ignore local constant/uniform primvars.
         UsdGeomPrimvar pv = UsdGeomPrimvarsAPI(prim).GetPrimvar(propertyName);
         if (pv && (pv.GetInterpolation() == UsdGeomTokens->constant ||
@@ -846,14 +841,11 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
             return HdChangeTracker::Clean;
         }
 
-        TfToken primvarName = TfToken(
-            propertyName.GetString().substr(primvarsNS.size()));
-        if (_PrimvarChangeRequiresResync(
-                prim, cachePath, propertyName, primvarName, false)) {
-            return HdChangeTracker::AllDirty;
-        } else {
-            return HdChangeTracker::DirtyPrimvar;
-        }
+        
+        return UsdImagingPrimAdapter::_ProcessPrefixedPrimvarPropertyChange(
+            prim, cachePath, propertyName,
+            /*valueChangeDirtyBit*/HdChangeTracker::DirtyPrimvar,
+            /*inherited=*/false);
     }
 
     // XXX: Treat transform & visibility changes as re-sync, until we untangle

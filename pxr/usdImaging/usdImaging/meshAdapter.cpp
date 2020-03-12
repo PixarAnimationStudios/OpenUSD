@@ -292,14 +292,18 @@ UsdImagingMeshAdapter::ProcessPropertyChange(UsdPrim const& prim,
     // (Note that a change in subdivision scheme means we need to re-track
     // the variability of the normals...)
 
-    if (propertyName == UsdGeomTokens->normals ||
-        propertyName == UsdImagingTokens->primvarsNormals) {
-        if (_PrimvarChangeRequiresResync(
-                prim, cachePath, propertyName, HdTokens->normals)) {
-            return HdChangeTracker::AllDirty;
-        } else {
-            return HdChangeTracker::DirtyNormals;
-        }
+    // Handle attributes that are treated as "built-in" primvars.
+    if (propertyName == UsdGeomTokens->normals) {
+        UsdGeomMesh mesh(prim);
+        return UsdImagingPrimAdapter::_ProcessNonPrefixedPrimvarPropertyChange(
+            prim, cachePath, propertyName, HdTokens->normals,
+            _UsdToHdInterpolation(mesh.GetNormalsInterpolation()),
+            HdChangeTracker::DirtyNormals);
+    }
+    // Handle prefixed primvars that use special dirty bits.
+    else if (propertyName == UsdImagingTokens->primvarsNormals) {
+        return UsdImagingPrimAdapter::_ProcessPrefixedPrimvarPropertyChange(
+                prim, cachePath, propertyName, HdChangeTracker::DirtyNormals);
     }
 
     // Allow base class to handle change processing.

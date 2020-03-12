@@ -549,15 +549,42 @@ protected:
                                  HdInterpolation *interpOverride = nullptr)
                                  const;
 
-    // If a primvar is added or removed from the list of primvar descriptors,
-    // we need to do extra change processing.  This returns true if:
-    // (the primvar is in the value cache) XOR (the primvar is on the usd prim)
+    // Returns true if the property name has the "primvars:" prefix.
     USDIMAGING_API
-    bool _PrimvarChangeRequiresResync(UsdPrim const& prim,
-                                      SdfPath const& cachePath,
-                                      TfToken const& propertyName,
-                                      TfToken const& primvarName,
-                                      bool inherited = true) const;
+    static bool _HasPrimvarsPrefix(TfToken const& propertyName);
+
+    // Strips the "primvars:" prefix and returns the resulting substring as 
+    // a token.
+    USDIMAGING_API
+    static TfToken _GetStrippedPrimvarName(TfToken const& propertyName);
+
+    // Convenience methods to figure out what changed about the primvar and
+    // return the appropriate dirty bit.
+    // Caller can optionally pass in a dirty bit to set for primvar value
+    // changes. This is useful for attributes that have a special dirty bit
+    // such as normals and widths.
+    //
+    // Handle USD attributes that are treated as primvars by Hydra. This
+    // requires the interpolation to be passed in, as well as the primvar
+    // name passed to Hydra.
+    USDIMAGING_API
+    HdDirtyBits _ProcessNonPrefixedPrimvarPropertyChange(
+        UsdPrim const& prim,
+        SdfPath const& cachePath,
+        TfToken const& propertyName,
+        TfToken const& primvarName,
+        HdInterpolation const& primvarInterp,
+        HdDirtyBits valueChangeDirtyBit = HdChangeTracker::DirtyPrimvar) const;
+
+    // Handle UsdGeomPrimvars that use the "primvars:" prefix, while also
+    // accommodating inheritance.
+    USDIMAGING_API
+    HdDirtyBits _ProcessPrefixedPrimvarPropertyChange(
+        UsdPrim const& prim,
+        SdfPath const& cachePath,
+        TfToken const& propertyName,
+        HdDirtyBits valueChangeDirtyBit = HdChangeTracker::DirtyPrimvar,
+        bool inherited = true) const;
 
     virtual void _RemovePrim(SdfPath const& cachePath,
                              UsdImagingIndexProxy* index) = 0;
