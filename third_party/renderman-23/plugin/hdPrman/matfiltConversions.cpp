@@ -24,6 +24,8 @@
 #include "hdPrman/matfiltConversions.h"
 #include "pxr/base/tf/stl.h"
 #include <unordered_set>
+#include "pxr/imaging/hd/perfLog.h"
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -32,6 +34,9 @@ MatfiltConvertFromHdMaterialNetworkMap(
     const HdMaterialNetworkMap & hdNetworkMap,
     MatfiltNetwork *result)
 {
+
+    HD_TRACE_FUNCTION();
+
     for (auto const& iter: hdNetworkMap.map) {
         const TfToken & terminalName = iter.first;
         const HdMaterialNetwork & hdNetwork = iter.second;

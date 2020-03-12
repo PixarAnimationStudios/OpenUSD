@@ -93,6 +93,8 @@ void
 HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
                             TfTokenVector const &renderTags)
 {
+    HD_TRACE_FUNCTION();
+    
     static const RtUString us_PxrPerspective("PxrPerspective");
     static const RtUString us_PxrOrthographic("PxrOrthographic");
     static const RtUString us_PathTracer("PathTracer");
