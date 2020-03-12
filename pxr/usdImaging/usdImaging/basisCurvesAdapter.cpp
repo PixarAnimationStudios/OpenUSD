@@ -317,6 +317,9 @@ UsdImagingBasisCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim,
     else if(curveWrap == UsdGeomTokens->nonperiodic) {
         topoCurveWrap = HdTokens->nonperiodic;
     }
+    else if(curveWrap == UsdGeomTokens->pinned) {
+        topoCurveWrap = HdTokens->pinned;
+    }
     else {
         topoCurveWrap = HdTokens->nonperiodic;
         if (!curveWrap.IsEmpty()) {

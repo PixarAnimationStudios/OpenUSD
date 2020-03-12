@@ -82,6 +82,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (params)                                    \
     (patchParam)                                \
     (periodic)                                  \
+    (pinned)                                    \
     (points)                                    \
     (pointsIndices)                             \
     (power)                                     \
