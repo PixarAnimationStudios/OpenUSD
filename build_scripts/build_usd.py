@@ -923,11 +923,11 @@ PTEX = Dependency("Ptex", InstallPtex, "include/PtexVersion.h")
 # Sierra (10.12) or Mojave (10.14).
 BLOSC_URL = "https://github.com/Blosc/c-blosc/archive/v1.17.0.zip"
 
-def InstallOpenVDB(context, force, buildArgs):
+def InstallBLOSC(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(BLOSC_URL, context, force)):
         RunCMake(context, force, buildArgs)
 
-BLOSC = Dependency("Blosc", InstallOpenVDB, "include/blosc.h")
+BLOSC = Dependency("Blosc", InstallBLOSC, "include/blosc.h")
 
 ############################################################
 # OpenVDB
