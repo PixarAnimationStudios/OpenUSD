@@ -186,7 +186,7 @@ private:
 
     // domeLight specific parameters 
     bool _isDomeLight;
-    // handles for the resource bindings from HdXSimpleLightingShader
+    // handles for the resource bindings from HdStSimpleLightingShader
     uint32_t _irradianceId; // pre-computed irradiance map
     uint32_t _prefilterId;  // pre-computed preFiltered map
     uint32_t _brdfId;       // pre-computed BRDF look up texture

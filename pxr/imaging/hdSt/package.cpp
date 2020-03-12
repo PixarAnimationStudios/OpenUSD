@@ -106,4 +106,12 @@ HdStPackageImageShader()
     return s;
 }
 
+TfToken
+HdStPackageSimpleLightingShader()
+{
+    static TfToken simpleLightingShader = 
+        _GetShaderPath("simpleLightingShader.glslfx");
+    return simpleLightingShader;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

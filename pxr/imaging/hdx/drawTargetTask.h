@@ -39,8 +39,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdStDrawTarget;
 
 
-typedef std::unique_ptr<HdxDrawTargetRenderPass> HdxDrawTargetRenderPassUniquePtr;
-typedef boost::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShaderSharedPtr;
+typedef std::unique_ptr<HdxDrawTargetRenderPass> 
+    HdxDrawTargetRenderPassUniquePtr;
+typedef boost::shared_ptr<class HdStSimpleLightingShader> 
+    HdStSimpleLightingShaderSharedPtr;
 
 // Not strictly necessary here.
 // But without it, would require users of the class to include it anyway
@@ -74,10 +76,10 @@ public:
 
 private:
     struct RenderPassInfo {
-        HdStRenderPassStateSharedPtr      renderPassState;
-        HdxSimpleLightingShaderSharedPtr  simpleLightingShader;
-        const HdStDrawTarget             *target;
-        unsigned int                      version;
+        HdStRenderPassStateSharedPtr renderPassState;
+        HdStSimpleLightingShaderSharedPtr simpleLightingShader;
+        const HdStDrawTarget *target;
+        unsigned int version;
     };
     unsigned _currentDrawTargetSetVersion;
 
@@ -110,8 +112,8 @@ private:
     bool _enableSampleAlphaToCoverage;
     TfTokenVector _renderTags;
 
-    HdxDrawTargetTask()                                      = delete;
-    HdxDrawTargetTask(const HdxDrawTargetTask &)             = delete;
+    HdxDrawTargetTask() = delete;
+    HdxDrawTargetTask(const HdxDrawTargetTask &) = delete;
     HdxDrawTargetTask &operator =(const HdxDrawTargetTask &) = delete;
 };
 
@@ -157,10 +159,13 @@ struct HdxDrawTargetTaskParams
 HDX_API
 std::ostream& operator<<(std::ostream& out, const HdxDrawTargetTaskParams& pv);
 HDX_API
-bool operator==(const HdxDrawTargetTaskParams& lhs, const HdxDrawTargetTaskParams& rhs);
+bool operator==(
+    const HdxDrawTargetTaskParams& lhs, 
+    const HdxDrawTargetTaskParams& rhs);
 HDX_API
-bool operator!=(const HdxDrawTargetTaskParams& lhs, const HdxDrawTargetTaskParams& rhs);
-
+bool operator!=(
+    const HdxDrawTargetTaskParams& lhs, 
+    const HdxDrawTargetTaskParams& rhs);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -180,7 +180,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     // binding assignments
     BindingLocator locator;
     // XXX: Skip lighting context texture and UBO bindings.
-    // See HdxSimpleLightingShader::BindResources
+    // See HdStSimpleLightingShader::BindResources
     locator.textureUnit = 5;
     locator.uboLocation = 4;
 

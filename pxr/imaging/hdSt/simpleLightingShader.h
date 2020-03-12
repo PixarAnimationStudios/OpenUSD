@@ -21,19 +21,21 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HDX_SIMPLE_LIGHTING_SHADER_H
-#define PXR_IMAGING_HDX_SIMPLE_LIGHTING_SHADER_H
+#ifndef PXR_IMAGING_HDST_SIMPLE_LIGHTING_SHADER_H
+#define PXR_IMAGING_HDST_SIMPLE_LIGHTING_SHADER_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hdx/api.h"
-#include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/materialParam.h"
-#include "pxr/imaging/hd/resource.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/lightingShader.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
 
-#include "pxr/imaging/glf/bindingMap.h"
+#include "pxr/imaging/hd/materialParam.h"
+#include "pxr/imaging/hd/resource.h"
+#include "pxr/imaging/hd/version.h"
+
 #include "pxr/imaging/hio/glslfx.h"
+
+#include "pxr/imaging/glf/bindingMap.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 
 #include "pxr/base/gf/matrix4d.h"
@@ -49,34 +51,37 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShaderSharedPtr;
+typedef boost::shared_ptr<class HdStSimpleLightingShader> 
+    HdStSimpleLightingShaderSharedPtr;
 typedef boost::shared_ptr<class HdStTextureResource> 
-                                                HdStTextureResourceSharedPtr;
-/// \class HdxSimpleLightingShader
+    HdStTextureResourceSharedPtr;
+
+/// \class HdStSimpleLightingShader
 ///
 /// A shader that supports simple lighting functionality.
 ///
-class HdxSimpleLightingShader : public HdStLightingShader {
+class HdStSimpleLightingShader : public HdStLightingShader 
+{
 public:
-    HDX_API
-    HdxSimpleLightingShader();
-    HDX_API
-    virtual ~HdxSimpleLightingShader();
+    HDST_API
+    HdStSimpleLightingShader();
+    HDST_API
+    virtual ~HdStSimpleLightingShader();
 
     /// HdShader overrides
-    HDX_API
+    HDST_API
     ID ComputeHash() const override;
-    HDX_API
+    HDST_API
     std::string GetSource(TfToken const &shaderStageKey) const override;
-    HDX_API
+    HDST_API
     void BindResources(int program,
                        HdSt_ResourceBinder const &binder,
                        HdRenderPassState const &state) override;
-    HDX_API
+    HDST_API
     void UnbindResources(int program,
                          HdSt_ResourceBinder const &binder,
                          HdRenderPassState const &state) override;
-    HDX_API
+    HDST_API
     void AddBindings(HdBindingRequestVector *customBindings) override;
 
     /// HdStShaderCode overrides
@@ -84,14 +89,13 @@ public:
     HdMaterialParamVector const& GetParams() const override;
 
     /// HdStLightingShader overrides
-    HDX_API
+    HDST_API
     void SetCamera(
         GfMatrix4d const &worldToViewMatrix,
         GfMatrix4d const &projectionMatrix) override;
-
-    HDX_API
+    HDST_API
     void SetLightingStateFromOpenGL();
-    HDX_API
+    HDST_API
     void SetLightingState(GlfSimpleLightingContextPtr const &lightingContext);
 
     GlfSimpleLightingContextRefPtr GetLightingContext() {
@@ -110,4 +114,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_IMAGING_HDX_SIMPLE_LIGHTING_SHADER_H
+#endif // PXR_IMAGING_HDST_SIMPLE_LIGHTING_SHADER_H

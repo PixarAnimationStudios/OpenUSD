@@ -84,6 +84,7 @@ pxr_library(hdSt
         resourceRegistry
         rprimUtils
         shaderCode
+        simpleLightingShader
         smoothNormals
         surfaceShader
         texture
@@ -146,6 +147,7 @@ pxr_library(hdSt
         shaders/ptexTexture.glslfx
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx
+        shaders/simpleLightingShader.glslfx
         shaders/terminals.glslfx
         shaders/visibility.glslfx
         shaders/volume.glslfx

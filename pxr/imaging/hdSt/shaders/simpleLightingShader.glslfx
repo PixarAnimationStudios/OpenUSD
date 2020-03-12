@@ -25,7 +25,7 @@
 //
 
 --- This is what an import might look like.
---- #import $TOOLS/hdx/shaders/simpleLightingShader.glslfx
+--- #import $TOOLS/hdSt/shaders/simpleLightingShader.glslfx
 
 #import $TOOLS/glf/shaders/pcfShader.glslfx
 #import $TOOLS/glf/shaders/simpleLighting.glslfx
@@ -50,5 +50,9 @@
 
 vec3 FallbackLighting(in vec3 Peye, in vec3 Neye, in vec3 color)
 {
-    return simpleLightingMaterial(vec4(color,1), vec4(Peye,1), Neye, vec4(1)).rgb;
+    return simpleLightingMaterial(
+        vec4(color,1), 
+        vec4(Peye,1), 
+        Neye, 
+        vec4(1)).rgb;
 }

@@ -22,17 +22,18 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/hdx/simpleLightingShader.h"
-#include "pxr/imaging/hdx/package.h"
+#include "pxr/imaging/hdSt/simpleLightingShader.h"
+#include "pxr/imaging/hdSt/textureResource.h"
+#include "pxr/imaging/hdSt/package.h"
 
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hdSt/textureResource.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hf/perfLog.h"
 
 #include "pxr/imaging/hio/glslfx.h"
+
 #include "pxr/imaging/glf/bindingMap.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 
@@ -53,7 +54,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 
-HdxSimpleLightingShader::HdxSimpleLightingShader() 
+HdStSimpleLightingShader::HdStSimpleLightingShader() 
     : _lightingContext(GlfSimpleLightingContext::New())
     , _bindingMap(TfCreateRefPtr(new GlfBindingMap()))
     , _useLighting(true)
@@ -61,20 +62,20 @@ HdxSimpleLightingShader::HdxSimpleLightingShader()
     _lightingContext->InitUniformBlockBindings(_bindingMap);
     _lightingContext->InitSamplerUnitBindings(_bindingMap);
 
-    _glslfx.reset(new HioGlslfx(HdxPackageSimpleLightingShader()));
+    _glslfx.reset(new HioGlslfx(HdStPackageSimpleLightingShader()));
 }
 
-HdxSimpleLightingShader::~HdxSimpleLightingShader()
+HdStSimpleLightingShader::~HdStSimpleLightingShader()
 {
 }
 
 /* virtual */
-HdxSimpleLightingShader::ID
-HdxSimpleLightingShader::ComputeHash() const
+HdStSimpleLightingShader::ID
+HdStSimpleLightingShader::ComputeHash() const
 {
     HD_TRACE_FUNCTION();
 
-    TfToken glslfxFile = HdxPackageSimpleLightingShader();
+    TfToken glslfxFile = HdStPackageSimpleLightingShader();
     size_t numLights = _useLighting ? _lightingContext->GetNumLightsUsed() : 0;
     bool useShadows = _useLighting ? _lightingContext->GetUseShadows() : false;
     size_t numShadows = useShadows ? _lightingContext->ComputeNumShadowsUsed() : 0;
@@ -89,7 +90,7 @@ HdxSimpleLightingShader::ComputeHash() const
 
 /* virtual */
 std::string
-HdxSimpleLightingShader::GetSource(TfToken const &shaderStageKey) const
+HdStSimpleLightingShader::GetSource(TfToken const &shaderStageKey) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -117,7 +118,7 @@ HdxSimpleLightingShader::GetSource(TfToken const &shaderStageKey) const
 
 /* virtual */
 void
-HdxSimpleLightingShader::SetCamera(GfMatrix4d const &worldToViewMatrix,
+HdStSimpleLightingShader::SetCamera(GfMatrix4d const &worldToViewMatrix,
                                           GfMatrix4d const &projectionMatrix)
 {
     _lightingContext->SetCamera(worldToViewMatrix, projectionMatrix);
@@ -125,7 +126,7 @@ HdxSimpleLightingShader::SetCamera(GfMatrix4d const &worldToViewMatrix,
 
 /* virtual */
 void
-HdxSimpleLightingShader::BindResources(const int program,
+HdStSimpleLightingShader::BindResources(const int program,
                                        HdSt_ResourceBinder const &binder,
                                        HdRenderPassState const &state)
 {
@@ -181,7 +182,7 @@ HdxSimpleLightingShader::BindResources(const int program,
 
 /* virtual */
 void
-HdxSimpleLightingShader::UnbindResources(const int program,
+HdStSimpleLightingShader::UnbindResources(const int program,
                                          HdSt_ResourceBinder const &binder,
                                          HdRenderPassState const &state)
 {
@@ -226,7 +227,7 @@ HdxSimpleLightingShader::UnbindResources(const int program,
 
 /*virtual*/
 void
-HdxSimpleLightingShader::AddBindings(HdBindingRequestVector *customBindings)
+HdStSimpleLightingShader::AddBindings(HdBindingRequestVector *customBindings)
 {
     _lightTextureParams.clear();
 
@@ -268,19 +269,19 @@ HdxSimpleLightingShader::AddBindings(HdBindingRequestVector *customBindings)
 }
 
 HdMaterialParamVector const& 
-HdxSimpleLightingShader::GetParams() const 
+HdStSimpleLightingShader::GetParams() const 
 {
     return _lightTextureParams;
 }
 
 void
-HdxSimpleLightingShader::SetLightingStateFromOpenGL()
+HdStSimpleLightingShader::SetLightingStateFromOpenGL()
 {
     _lightingContext->SetStateFromOpenGL();
 }
 
 void
-HdxSimpleLightingShader::SetLightingState(
+HdStSimpleLightingShader::SetLightingState(
     GlfSimpleLightingContextPtr const &src)
 {
     if (src) {

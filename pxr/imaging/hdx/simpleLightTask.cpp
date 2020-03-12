@@ -25,12 +25,12 @@
 #include "pxr/imaging/hdx/simpleLightTask.h"
 
 #include "pxr/imaging/hdx/shadowMatrixComputation.h"
-#include "pxr/imaging/hdx/simpleLightingShader.h"
 #include "pxr/imaging/hdx/tokens.h"
 
-#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdSt/light.h"
+#include "pxr/imaging/hdSt/simpleLightingShader.h"
 
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/primGather.h"
 #include "pxr/imaging/hd/renderIndex.h"
@@ -51,14 +51,16 @@ static const GfVec2i _defaultShadowRes = GfVec2i(1024, 1024);
 
 // -------------------------------------------------------------------------- //
 
-HdxSimpleLightTask::HdxSimpleLightTask(HdSceneDelegate* delegate, SdfPath const& id)
+HdxSimpleLightTask::HdxSimpleLightTask(
+    HdSceneDelegate* delegate, 
+    SdfPath const& id)
     : HdTask(id) 
     , _cameraId()
     , _lightIds()
     , _lightIncludePaths()
     , _lightExcludePaths()
     , _numLights(0)
-    , _lightingShader(new HdxSimpleLightingShader())
+    , _lightingShader(new HdStSimpleLightingShader())
     , _enableShadows(false)
     , _viewport(0.0f, 0.0f, 0.0f, 0.0f)
     , _material()
@@ -194,7 +196,7 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
 
             // If the light is in camera space we need to transform
             // the position and spot direction to world space for
-            // HdxSimpleLightingShader.
+            // HdStSimpleLightingShader.
             if (glfl.IsCameraSpaceLight()) {
                 GfVec4f lightPos = glfl.GetPosition();
                 glfl.SetPosition(lightPos * viewInverseMatrix);
