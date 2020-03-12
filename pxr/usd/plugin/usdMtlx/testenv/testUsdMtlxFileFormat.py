@@ -22,6 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from __future__ import print_function
 from pxr import Tf, Sdf, Usd, UsdMtlx, UsdShade
 import unittest
 
@@ -115,7 +116,7 @@ class TestFileFormat(unittest.TestCase):
 
         stage = UsdMtlx._TestFile('NodeGraphs.mtlx', nodeGraphs=True)
         with open('NodeGraphs.usda', 'w') as f:
-            print >>f, stage.GetRootLayer().ExportToString()
+            print(stage.GetRootLayer().ExportToString(), file=f)
 
     def test_MultiBindInputs(self):
         """
@@ -139,7 +140,7 @@ class TestFileFormat(unittest.TestCase):
             'weight_3':
             '/MaterialX/Materials/layered/NodeGraphs/layered_layer3_gradient'
         }
-        for inputName, source in inputToSource.iteritems():
+        for inputName, source in inputToSource.items():
             input = nodeGraph.GetInput(inputName)
             self.assertEqual(input.HasConnectedSource(), True)
             self.assertEqual(input.GetConnectedSource()[0].GetPath(), source)
@@ -151,7 +152,7 @@ class TestFileFormat(unittest.TestCase):
 
         stage = UsdMtlx._TestFile('Looks.mtlx')
         with open('Looks.usda', 'w') as f:
-            print >>f, stage.GetRootLayer().ExportToString()
+            print(stage.GetRootLayer().ExportToString(), file=f)
 
 if __name__ == '__main__':
     unittest.main()
