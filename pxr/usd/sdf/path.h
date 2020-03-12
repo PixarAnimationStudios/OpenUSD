@@ -1135,35 +1135,47 @@ Sdf_PathFindLongestPrefixImpl(RandomAccessIterator begin,
     if (begin == end)
         return end;
 
+    Compare comp(getPath);
+
     // Search for where this path would lexicographically appear in the range.
-    RandomAccessIterator result =
-        std::lower_bound(begin, end, path, Compare(getPath));
+    RandomAccessIterator result = std::lower_bound(begin, end, path, comp);
 
     // If we didn't get the end, check to see if we got the path exactly if
     // we're not looking for a strict prefix.
-    if (!strictPrefix && result != end && getPath(*result) == path)
+    if (!strictPrefix && result != end && getPath(*result) == path) {
         return result;
+    }
 
     // If we got begin (and didn't match in the case of a non-strict prefix)
     // then there's no prefix.
-    if (result == begin)
+    if (result == begin) {
         return end;
+    }
 
     // If the prior element is a prefix, we're done.
-    if (path.HasPrefix(getPath(*--result)))
+    if (path.HasPrefix(getPath(*--result))) {
         return result;
+    }
 
     // Otherwise, find the common prefix of the lexicographical predecessor and
-    // recurse looking for it or its longest prefix in the preceding range.  We
-    // always pass strictPrefix=false, since now we're operating on prefixes of
-    // the original caller's path.
-    RandomAccessIterator final =
-        Sdf_PathFindLongestPrefixImpl(
-            begin, result, path.GetCommonPrefix(getPath(*result)),
-            /*strictPrefix=*/ false, getPath);
+    // look for its prefix in the preceding range.
+    SdfPath newPath = path.GetCommonPrefix(getPath(*result));
+    auto origEnd = end;
+    do {
+        end = result;
+        result = std::lower_bound(begin, end, newPath, comp);
 
-    // If the recursion failed, promote the recursive call's end to our end.
-    return final == result ? end : final;
+        if (result != end && getPath(*result) == newPath) {
+            return result;
+        }
+        if (result == begin) {
+            return origEnd;
+        }
+        if (newPath.HasPrefix(getPath(*--result))) {
+            return result;
+        }
+        newPath = newPath.GetCommonPrefix(getPath(*result));
+    } while (true);
 }
 
 /// Return an iterator to the element of [\a begin, \a end) that is the longest
