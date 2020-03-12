@@ -22,6 +22,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from __future__ import print_function
+
 import sys, os, unittest
 from pxr import Sdf, Usd, Tf, Plug
 
@@ -122,7 +124,7 @@ class TestUsdMetadata(unittest.TestCase):
             rel = foo.CreateRelationship("rel")
 
             # Ensure we can read the reported values
-            print "Verify GetMetadata(key) and HasMetadata(key)..."
+            print("Verify GetMetadata(key) and HasMetadata(key)...")
             def _TestGetHas(obj):
                 for key in obj.GetAllMetadata():
                     assert obj.GetMetadata(key) is not None, \
@@ -135,7 +137,7 @@ class TestUsdMetadata(unittest.TestCase):
             _TestGetHas(rel)
 
             # Ensure we can write the reported values
-            print "Verify SetMetadata(key, GetMetadata(key))..."
+            print("Verify SetMetadata(key, GetMetadata(key))...")
             def _TestSet(obj):
                 for key in obj.GetAllMetadata():
                     value = obj.GetMetadata(key)
@@ -149,7 +151,7 @@ class TestUsdMetadata(unittest.TestCase):
 
 
     def test_HasAuthored(self):
-        print "Verify HasAuthoredMetadata() behavior..."
+        print("Verify HasAuthoredMetadata() behavior...")
         for fmt in allFormats:
             stage = Usd.Stage.CreateInMemory('TestHasAuthored.'+fmt)
 
@@ -199,7 +201,7 @@ class TestUsdMetadata(unittest.TestCase):
 
 
     def test_Unregistered(self):
-        print "Verify that unregistered metadata fields cannot be authored..."
+        print("Verify that unregistered metadata fields cannot be authored...")
         for fmt in allFormats:
             stage = Usd.Stage.CreateInMemory('TestUnregistered.'+fmt)
 
@@ -216,8 +218,8 @@ class TestUsdMetadata(unittest.TestCase):
                 rel.SetMetadata("unregistered", "x")
 
     def test_CompositionData(self):
-        print "Verify that composition-related metadata does not show up"
-        print "in 'All' metadata queries, and only gets basic composition"
+        print("Verify that composition-related metadata does not show up")
+        print("in 'All' metadata queries, and only gets basic composition")
         for fmt in allFormats:
             stage = Usd.Stage.CreateInMemory('TestCompositionData'+fmt)
 
@@ -234,7 +236,7 @@ class TestUsdMetadata(unittest.TestCase):
             self.assertFalse('references' in apex.GetAllMetadata())
 
     def test_Documentation(self):
-        print "Test documentation metadata and explicit API..."
+        print("Test documentation metadata and explicit API...")
         for fmt in allFormats:
             stage = Usd.Stage.CreateInMemory('TestDocumentation.'+fmt)
             stageRoot = stage.GetPseudoRoot()
@@ -263,7 +265,7 @@ class TestUsdMetadata(unittest.TestCase):
                 self.assertEqual(obj.GetMetadata("documentation"), None)
 
     def test_DisplayName(self):
-        print "Test display name metadata and explicit API..."
+        print("Test display name metadata and explicit API...")
         for fmt in allFormats:
             stage = Usd.Stage.CreateInMemory('TestDisplayName.'+fmt)
             stageRoot = stage.GetPseudoRoot()
@@ -292,7 +294,7 @@ class TestUsdMetadata(unittest.TestCase):
                 self.assertEqual(prop.GetMetadata("displayName"), None)
 
     def test_DisplayGroup(self):
-        print "Test display group metadata and explicit API..."
+        print("Test display group metadata and explicit API...")
         for fmt in allFormats:
             stage = Usd.Stage.CreateInMemory('TestDisplayGroup.'+fmt)
             stageRoot = stage.GetPseudoRoot()
@@ -398,7 +400,7 @@ class TestUsdMetadata(unittest.TestCase):
            They will be recursively merged, with the typical strength
            preferences in place.'''
 
-        print "Verify composed nested dictionary behavior..."
+        print("Verify composed nested dictionary behavior...")
         for fmt in allFormats:
             s = Usd.Stage.CreateInMemory('TestComposedNestedDictionaries.'+fmt)
             a = s.DefinePrim('/A')
@@ -871,7 +873,7 @@ class TestUsdMetadata(unittest.TestCase):
             a = open(textFile.name).read()
             b = open(roundTripFile.name).read()
             if a != b:
-                print '\n'.join(difflib.unified_diff(a.split('\n'), b.split('\n')))
+                print('\n'.join(difflib.unified_diff(a.split('\n'), b.split('\n'))))
             assert a == b
 
     def test_AssetPathMetadata(self):

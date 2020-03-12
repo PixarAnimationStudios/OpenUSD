@@ -267,11 +267,11 @@ class TestUsdValueClips(unittest.TestCase):
 
         # Asking for frames outside the mapped times should also clamp to
         # the nearest time sample.
-        for t in xrange(-10, 0):
+        for t in range(-10, 0):
             _Check(self.assertEqual, attr, time=t, expected=25.0)
             self.assertEqual(attr.GetBracketingTimeSamples(t), (0.0, 0.0))
 
-        for t in xrange(11, 20):
+        for t in range(11, 20):
             _Check(self.assertEqual, attr, time=t, expected=25.0)
             self.assertEqual(attr.GetBracketingTimeSamples(t), (10.0, 10.0))
 
@@ -672,12 +672,12 @@ class TestUsdValueClips(unittest.TestCase):
         # time range should be equal to the default value from the reference.
         # The value outside this time range should also be the default
         # value, since no clips are active in those times.
-        for t in xrange(-10, 40):
+        for t in range(-10, 40):
             _Check(self.assertEqual, attr, time=t, expected=1.0)
 
         # Since none of the clips provide samples, there should be no
         # time samples or bracketing time samples at any of these times.
-        for t in xrange(-10, 40):
+        for t in range(-10, 40):
             self.assertEqual(attr.GetBracketingTimeSamples(t), ())
 
         self.assertEqual(attr.GetTimeSamples(), [])
@@ -698,7 +698,7 @@ class TestUsdValueClips(unittest.TestCase):
         
         # The clip in the range [..., 16) has no samples for the attribute,
         # so the value should be the default value from the reference.
-        for t in xrange(-10, 16):
+        for t in range(-10, 16):
             _Check(self.assertEqual, attr, time=t, expected=1.0)
 
         # This attribute should be detected as potentially time-varying
@@ -708,11 +708,11 @@ class TestUsdValueClips(unittest.TestCase):
 
         # The clip in the range [16, ...) has samples on frames 3, 6, 9 so
         # we expect time samples for this attribute at frames 19, 22, and 25.
-        for t in xrange(16, 22):
+        for t in range(16, 22):
             _Check(self.assertEqual, attr, time=t, expected=-23.0)
-        for t in xrange(22, 25):
+        for t in range(22, 25):
             _Check(self.assertEqual, attr, time=t, expected=-26.0)
-        for t in xrange(25, 31):
+        for t in range(25, 31):
             _Check(self.assertEqual, attr, time=t, expected=-29.0)
 
         self.assertEqual(attr.GetTimeSamples(), 

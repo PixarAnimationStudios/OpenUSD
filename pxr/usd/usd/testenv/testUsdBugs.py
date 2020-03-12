@@ -193,7 +193,7 @@ class TestUsdBugs(unittest.TestCase):
         # but it's easier to reproduce with more instance prims.
         numInstancePrims = 50
         instancePrimPaths = [Sdf.Path('/Instance_{}'.format(i))
-                             for i in xrange(numInstancePrims)]
+                             for i in range(numInstancePrims)]
         for path in instancePrimPaths:
             instancePrim = Sdf.CreatePrimInLayer(l, path)
             instancePrim.instanceable = True

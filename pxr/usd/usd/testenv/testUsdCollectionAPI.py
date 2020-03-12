@@ -22,6 +22,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from __future__ import print_function
+
 from pxr import Usd, Vt, Sdf, Tf
 import unittest
 
@@ -41,11 +43,11 @@ cylinder = stage.GetPrimAtPath("/CollectionTest/Geom/Shapes/Cylinder")
 cone = stage.GetPrimAtPath("/CollectionTest/Geom/Shapes/Cone")
 
 def _DebugCollection(collection):
-    print "Debugging Collection: ", collection.GetName()
+    print("Debugging Collection: ", collection.GetName())
     mquery = collection.ComputeMembershipQuery()
-    print "-- Included Objects -- "
+    print("-- Included Objects -- ")
     incObjects = Usd.CollectionAPI.ComputeIncludedObjects(mquery, stage)
-    for obj in incObjects: print ".. ", obj.GetPath() 
+    for obj in incObjects: print(".. ", obj.GetPath()) 
 
 class TestUsdCollectionAPI(unittest.TestCase):
     def tearDown(self):

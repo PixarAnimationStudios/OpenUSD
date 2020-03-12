@@ -464,117 +464,117 @@ class TestUsdPrimCompositionQuery(unittest.TestCase):
         # verification that the test is working as expected.
 
         # Arc type filters
-        filteredExpectedValues = filter(
-            lambda d: (d['arcType'] == Pcp.ArcTypeReference), expectedValues)
+        filteredExpectedValues = [d for d in expectedValues
+                                    if d['arcType'] == Pcp.ArcTypeReference]
         self.assertEqual(len(filteredExpectedValues), 6) 
         CheckWithFilter(
             filteredExpectedValues,
             arcTypeFilter = Usd.PrimCompositionQuery.ArcTypeFilter.Reference)
 
-        filteredExpectedValues = filter(
-            lambda d: (d['arcType'] == Pcp.ArcTypePayload), expectedValues)
+        filteredExpectedValues = [d for d in expectedValues
+                                    if d['arcType'] == Pcp.ArcTypePayload]
         self.assertEqual(len(filteredExpectedValues), 2) 
         CheckWithFilter(
             filteredExpectedValues,
             arcTypeFilter = Usd.PrimCompositionQuery.ArcTypeFilter.Payload)
 
-        filteredExpectedValues = filter(
-            lambda d: (d['arcType'] == Pcp.ArcTypeInherit), expectedValues)
+        filteredExpectedValues = [d for d in expectedValues
+                                    if d['arcType'] == Pcp.ArcTypeInherit]
         self.assertEqual(len(filteredExpectedValues), 6) 
         CheckWithFilter(
             filteredExpectedValues,
             arcTypeFilter = Usd.PrimCompositionQuery.ArcTypeFilter.Inherit)
 
-        filteredExpectedValues = filter(
-            lambda d: (d['arcType'] == Pcp.ArcTypeSpecialize), expectedValues)
+        filteredExpectedValues = [d for d in expectedValues
+                                    if d['arcType'] == Pcp.ArcTypeSpecialize]
         self.assertEqual(len(filteredExpectedValues), 2) 
         CheckWithFilter(
             filteredExpectedValues,
             arcTypeFilter = Usd.PrimCompositionQuery.ArcTypeFilter.Specialize)
 
-        filteredExpectedValues = filter(
-            lambda d: (d['arcType'] == Pcp.ArcTypeVariant), expectedValues)
-        print filteredExpectedValues
+        filteredExpectedValues = [d for d in expectedValues
+                                    if d['arcType'] == Pcp.ArcTypeVariant]
+        print(filteredExpectedValues)
         self.assertEqual(len(filteredExpectedValues), 5) 
         CheckWithFilter(
             filteredExpectedValues,
             arcTypeFilter = Usd.PrimCompositionQuery.ArcTypeFilter.Variant)
 
-        filteredExpectedValues = filter(
-            lambda d: (d['arcType'] in [Pcp.ArcTypeReference, Pcp.ArcTypePayload]), expectedValues)
+        filteredExpectedValues = [d for d in expectedValues
+                                    if d['arcType'] in [Pcp.ArcTypeReference, Pcp.ArcTypePayload]]
         self.assertEqual(len(filteredExpectedValues), 8) 
         CheckWithFilter(
             filteredExpectedValues,
             arcTypeFilter = Usd.PrimCompositionQuery.ArcTypeFilter.ReferenceOrPayload)
 
-        filteredExpectedValues = filter(
-            lambda d: (d['arcType'] in [Pcp.ArcTypeInherit, Pcp.ArcTypeSpecialize]), expectedValues)
+        filteredExpectedValues = [d for d in expectedValues
+                                    if d['arcType'] in [Pcp.ArcTypeInherit, Pcp.ArcTypeSpecialize]]
         self.assertEqual(len(filteredExpectedValues), 8) 
         CheckWithFilter(
             filteredExpectedValues,
             arcTypeFilter = Usd.PrimCompositionQuery.ArcTypeFilter.InheritOrSpecialize)
 
-        filteredExpectedValues = filter(
-            lambda d: (d['arcType'] not in [Pcp.ArcTypeReference, Pcp.ArcTypePayload]), expectedValues)
+        filteredExpectedValues = [d for d in expectedValues
+                                    if d['arcType'] not in [Pcp.ArcTypeReference, Pcp.ArcTypePayload]]
         self.assertEqual(len(filteredExpectedValues), 14) 
         CheckWithFilter(
             filteredExpectedValues,
             arcTypeFilter = Usd.PrimCompositionQuery.ArcTypeFilter.NotReferenceOrPayload)
 
-        filteredExpectedValues = filter(
-            lambda d: (d['arcType'] not in [Pcp.ArcTypeInherit, Pcp.ArcTypeSpecialize]), expectedValues)
+        filteredExpectedValues = [d for d in expectedValues
+                                    if d['arcType'] not in [Pcp.ArcTypeInherit, Pcp.ArcTypeSpecialize]]
         self.assertEqual(len(filteredExpectedValues), 14) 
         CheckWithFilter(
             filteredExpectedValues,
             arcTypeFilter = Usd.PrimCompositionQuery.ArcTypeFilter.NotInheritOrSpecialize)
 
-        filteredExpectedValues = filter(
-            lambda d: (d['arcType'] != Pcp.ArcTypeVariant), expectedValues)
+        filteredExpectedValues = [d for d in expectedValues
+                                    if d['arcType'] != Pcp.ArcTypeVariant]
         self.assertEqual(len(filteredExpectedValues), 17) 
         CheckWithFilter(
             filteredExpectedValues,
             arcTypeFilter = Usd.PrimCompositionQuery.ArcTypeFilter.NotVariant)
 
         # Arc introduced filters
-        filteredExpectedValues = filter(
-            lambda d: (d['isIntroRootLayer']), expectedValues)
+        filteredExpectedValues = [d for d in expectedValues
+                                    if d['isIntroRootLayer']]
         self.assertEqual(len(filteredExpectedValues), 16) 
         CheckWithFilter(
             filteredExpectedValues,
             arcIntroducedFilter = Usd.PrimCompositionQuery.ArcIntroducedFilter.IntroducedInRootLayerStack)
 
-        filteredExpectedValues = filter(
-            lambda d: (d['isIntroRootLayerPrim']), expectedValues)
+        filteredExpectedValues = [d for d in expectedValues
+                                    if d['isIntroRootLayerPrim']]
         self.assertEqual(len(filteredExpectedValues), 8) 
         CheckWithFilter(
             filteredExpectedValues,
             arcIntroducedFilter = Usd.PrimCompositionQuery.ArcIntroducedFilter.IntroducedInRootLayerPrimSpec)
 
         # Dependency type filters
-        filteredExpectedValues = filter(
-            lambda d: (not d['isAncestral']), expectedValues)
+        filteredExpectedValues = [d for d in expectedValues
+                                    if not d['isAncestral']]
         self.assertEqual(len(filteredExpectedValues), 20) 
         CheckWithFilter(
             filteredExpectedValues,
             dependencyTypeFilter = Usd.PrimCompositionQuery.DependencyTypeFilter.Direct)
 
-        filteredExpectedValues = filter(
-            lambda d: (d['isAncestral']), expectedValues)
+        filteredExpectedValues = [d for d in expectedValues
+                                    if d['isAncestral']]
         self.assertEqual(len(filteredExpectedValues), 2) 
         CheckWithFilter(
             filteredExpectedValues,
             dependencyTypeFilter = Usd.PrimCompositionQuery.DependencyTypeFilter.Ancestral)
 
         # Has specs filters
-        filteredExpectedValues = filter(
-            lambda d: (d['hasSpecs']), expectedValues)
+        filteredExpectedValues = [d for d in expectedValues
+                                    if d['hasSpecs']]
         self.assertEqual(len(filteredExpectedValues), 18) 
         CheckWithFilter(
             filteredExpectedValues,
             hasSpecsFilter = Usd.PrimCompositionQuery.HasSpecsFilter.HasSpecs)
 
-        filteredExpectedValues = filter(
-            lambda d: (not d['hasSpecs']), expectedValues)
+        filteredExpectedValues = [d for d in expectedValues
+                                    if not d['hasSpecs']]
         self.assertEqual(len(filteredExpectedValues), 4) 
         CheckWithFilter(
             filteredExpectedValues,
@@ -582,8 +582,8 @@ class TestUsdPrimCompositionQuery(unittest.TestCase):
 
         # Test combining filter types
         # Start with a dependency type filter
-        filteredExpectedValues = filter(
-            lambda d: (not d['isAncestral']), expectedValues)
+        filteredExpectedValues = [d for d in expectedValues
+                                    if not d['isAncestral']]
         self.assertEqual(len(filteredExpectedValues), 20) 
         CheckWithFilter(
             filteredExpectedValues,
@@ -591,8 +591,8 @@ class TestUsdPrimCompositionQuery(unittest.TestCase):
 
         # Add an arc type filter. Note that we refilter the already filtered
         # expected values unlike the cases above.
-        filteredExpectedValues = filter(
-            lambda d: (d['arcType'] != Pcp.ArcTypeVariant), filteredExpectedValues)
+        filteredExpectedValues = [d for d in filteredExpectedValues
+                                    if d['arcType'] != Pcp.ArcTypeVariant]
         self.assertEqual(len(filteredExpectedValues), 15) 
         CheckWithFilter(
             filteredExpectedValues,
@@ -600,8 +600,8 @@ class TestUsdPrimCompositionQuery(unittest.TestCase):
             arcTypeFilter = Usd.PrimCompositionQuery.ArcTypeFilter.NotVariant)
 
         # Add a has specs filter
-        filteredExpectedValues = filter(
-            lambda d: (d['hasSpecs']), filteredExpectedValues)
+        filteredExpectedValues = [d for d in filteredExpectedValues
+                                    if d['hasSpecs']]
         self.assertEqual(len(filteredExpectedValues), 11) 
         CheckWithFilter(
             filteredExpectedValues,
@@ -610,8 +610,8 @@ class TestUsdPrimCompositionQuery(unittest.TestCase):
             hasSpecsFilter = Usd.PrimCompositionQuery.HasSpecsFilter.HasSpecs)
 
         # Add an arc introduced filter.
-        filteredExpectedValues = filter(
-            lambda d: (d['isIntroRootLayer']), filteredExpectedValues)
+        filteredExpectedValues = [d for d in filteredExpectedValues
+                                    if d['isIntroRootLayer']]
         self.assertEqual(len(filteredExpectedValues), 8) 
         CheckWithFilter(
             filteredExpectedValues,
@@ -635,9 +635,9 @@ class TestUsdPrimCompositionQuery(unittest.TestCase):
         arcs = query.GetCompositionArcs()
 
         # Verify the arcs match the expected arcs
-        filteredExpectedValues = filter(
-            lambda d: (not d['isAncestral'] and 
-                       d['arcType'] == Pcp.ArcTypeReference), expectedValues)
+        filteredExpectedValues = [d for d in expectedValues
+                                    if not d['isAncestral'] and
+                                           d['arcType'] == Pcp.ArcTypeReference]
         _VerifyExpectedArcs(arcs, filteredExpectedValues)
 
         # Direct inherits
@@ -654,9 +654,9 @@ class TestUsdPrimCompositionQuery(unittest.TestCase):
         arcs = query.GetCompositionArcs()
 
         # Verify the arcs match the expected arcs
-        filteredExpectedValues = filter(
-            lambda d: (not d['isAncestral'] and 
-                       d['arcType'] == Pcp.ArcTypeInherit), expectedValues)
+        filteredExpectedValues = [d for d in expectedValues
+                                    if not d['isAncestral'] and
+                                           d['arcType'] == Pcp.ArcTypeInherit]
         _VerifyExpectedArcs(arcs, filteredExpectedValues)
 
         # Direct root layer arcs
@@ -673,9 +673,9 @@ class TestUsdPrimCompositionQuery(unittest.TestCase):
         arcs = query.GetCompositionArcs()
 
         # Verify the arcs match the expected arcs
-        filteredExpectedValues = filter(
-            lambda d: (not d['isAncestral'] and (d['isIntroRootLayer'])), 
-            expectedValues)
+        filteredExpectedValues = [d for d in expectedValues
+                                    if not d['isAncestral'] and
+                                           d['isIntroRootLayer']]
         _VerifyExpectedArcs(arcs, filteredExpectedValues)
 
 if __name__ == "__main__":

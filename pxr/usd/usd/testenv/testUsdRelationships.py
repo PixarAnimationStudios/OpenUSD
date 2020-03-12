@@ -105,17 +105,17 @@ class TestUsdRelationships(unittest.TestCase):
 
             # Simple target list with correct order
             r = stage.GetPrimAtPath("/Foo").GetRelationship("testRel")
-            sol = map(Sdf.Path, ['/Qux', '/Bar', '/Baz', '/Foo.someAttr'])
+            sol = [Sdf.Path(path) for path in ['/Qux', '/Bar', '/Baz', '/Foo.someAttr']]
             self.assertEqual(r.GetTargets(), sol) 
 
             # Forwarded targets
             r = stage.GetPrimAtPath("/Bar").GetRelationship("fwd")
-            sol = map(Sdf.Path, ['/Baz', '/Qux', '/Bar', '/Foo.someAttr'])
+            sol = [Sdf.Path(path) for path in ['/Baz', '/Qux', '/Bar', '/Foo.someAttr']]
             self.assertEqual(r.GetForwardedTargets(), sol)
 
             # Forwarded targets
             r = stage.GetPrimAtPath("/Bar").GetRelationship("fwd2")
-            sol = map(Sdf.Path, ['/Qux', '/Baz', '/Bar'])
+            sol = [Sdf.Path(path) for path in ['/Qux', '/Baz', '/Bar']]
             self.assertEqual(r.GetForwardedTargets(), sol)
 
             # Forwarded targets, bug 138452.  With that bug, the forwarded targets
@@ -125,7 +125,7 @@ class TestUsdRelationships(unittest.TestCase):
 
             # Cycle detection
             r = stage.GetPrimAtPath("/Bar").GetRelationship("cycle")
-            sol = map(Sdf.Path, ['/Baz', '/Qux', '/Bar', '/Foo.someAttr'])
+            sol = [Sdf.Path(path) for path in ['/Baz', '/Qux', '/Bar', '/Foo.someAttr']]
             self.assertEqual(r.GetForwardedTargets(), sol)
 
             # Bogus target path
