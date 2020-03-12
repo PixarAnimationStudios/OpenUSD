@@ -784,7 +784,9 @@ UsdPrim::FindAllRelationshipTargetPaths(
 bool
 UsdPrim::HasVariantSets() const
 {
-    return HasMetadata(SdfFieldKeys->VariantSetNames);
+    // Variant sets can't be defined in schema fallbacks as of yet so we only
+    // need to check for authored variant sets.
+    return HasAuthoredMetadata(SdfFieldKeys->VariantSetNames);
 }
 
 UsdVariantSets
@@ -809,7 +811,7 @@ UsdPrim::GetInherits() const
 bool
 UsdPrim::HasAuthoredInherits() const
 {
-    return HasMetadata(SdfFieldKeys->InheritPaths);
+    return HasAuthoredMetadata(SdfFieldKeys->InheritPaths);
 }
 
 UsdSpecializes
@@ -821,7 +823,7 @@ UsdPrim::GetSpecializes() const
 bool
 UsdPrim::HasAuthoredSpecializes() const
 {
-    return HasMetadata(SdfFieldKeys->Specializes);
+    return HasAuthoredMetadata(SdfFieldKeys->Specializes);
 }
 
 UsdReferences
@@ -833,7 +835,7 @@ UsdPrim::GetReferences() const
 bool
 UsdPrim::HasAuthoredReferences() const
 {
-    return HasMetadata(SdfFieldKeys->References);
+    return HasAuthoredMetadata(SdfFieldKeys->References);
 }
 
 // --------------------------------------------------------------------- //
