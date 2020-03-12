@@ -5905,18 +5905,11 @@ _GetFallbackMetadataImpl(Usd_PrimDataConstPtr primData,
                          const TfToken &keyPath,
                          Composer *composer)
 {
-    // Look for a fallback value in the definition.  XXX: This currently only
-    // handles property definitions -- needs to be extended to prim definitions
-    // as well.
-    if (!propName.IsEmpty()) {
-        // NOTE: This code is performance critical.
-        composer->ConsumeUsdFallback(
-            primData->GetPrimDefinition(), propName, fieldName, keyPath);
-        if (composer->IsDone()) {
-            return true;
-        }
-    }
-    return false;
+    // Look for a fallback value in the definition.
+    // NOTE: This code is performance critical.
+    composer->ConsumeUsdFallback(
+        primData->GetPrimDefinition(), propName, fieldName, keyPath);
+    return composer->IsDone();
 }
 
 template <class Composer>
@@ -6388,13 +6381,11 @@ UsdStage::_ListMetadataFields(const UsdObject &obj, bool useFallbacks) const
     PcpNodeRef lastNode = res.GetNode();
     SdfSpecType specType = SdfSpecTypeUnknown;
 
-    SdfPropertySpecHandle propDef;
+    const UsdPrimDefinition &primDef = obj.GetPrim().GetPrimDefinition();
 
     // If this is a builtin property, determine specType from the definition.
     if (obj.Is<UsdProperty>()) {
-        propDef = _GetSchemaPropertySpec(obj.As<UsdProperty>());
-        if (propDef)
-            specType = propDef->GetSpecType();
+        specType = primDef.GetSpecType(propName);
     }
 
     // Insert authored fields, discovering spec type along the way.
@@ -6423,13 +6414,13 @@ UsdStage::_ListMetadataFields(const UsdObject &obj, bool useFallbacks) const
         }
     }
 
-    // If this is a builtin property, add any defined metadata fields.
-    // XXX: this should handle prim definitions too.
-    if (useFallbacks && propDef) {
-        for (const auto& fieldName : propDef->ListFields()) {
-            if (!_IsPrivateFieldKey(fieldName))
-                result.push_back(fieldName);
-        }
+    // If including fallbacks, add any defined metadata fields from the prim
+    // definition for the property (or the prim if the prop name is empty). 
+    if (useFallbacks) {
+        const TfTokenVector fallbackFields = propName.IsEmpty() ?
+            primDef.ListMetadataFields() : 
+            primDef.ListPropertyMetadataFields(propName);
+        result.insert(result.end(), fallbackFields.begin(), fallbackFields.end());
     }
 
     // Sort & remove duplicate fields.

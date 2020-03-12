@@ -43,6 +43,7 @@ class "TestSingleApplyAPI" (
 
 class TestTypedSchema "TestTypedSchema" (
     doc = "Testing typed schema"
+    hidden = true
 )
 {
     string testAttr = "foo" (
@@ -58,6 +59,7 @@ class TestTypedSchema "TestTypedSchema" (
 class TestWithFallbackAppliedSchema "TestWithFallbackAppliedSchema" (
     apiSchemas = ["TestMultiApplyAPI:fallback", "TestSingleApplyAPI"]
     doc = "Test with fallback API schemas"
+    hidden = false
 )
 {
     uniform bool multi:fallback:bool_attr = 0 (

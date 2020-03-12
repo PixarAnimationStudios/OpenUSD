@@ -202,6 +202,17 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(untypedPrim.GetAttribute("single:token_attr").Get(), 
                          "bar")
 
+        # Applied schemas are unable to define fallback metadata values for 
+        # prims. Just verifying that no fallback exists for "hidden" here as
+        # a contrast to the other cases below where this metadata fallback will
+        # be defined.
+        self.assertFalse("hidden" in untypedPrim.GetAllMetadata())
+        self.assertIsNone(untypedPrim.GetMetadata("hidden"))
+        self.assertFalse(untypedPrim.HasAuthoredMetadata("hidden"))
+
+        # Untyped prim still has no documentation even with API schemas applied.
+        self.assertIsNone(untypedPrim.GetMetadata("documentation"))
+
     def test_TypedPrimOnStage(self):
         """
         Tests the fallback properties of typed prims on a stage when API
@@ -255,6 +266,19 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(attr.Get(), "foo")
         self.assertEqual(attr.GetResolveInfo().GetSource(), 
                          Usd.ResolveInfoSourceFallback)
+
+        # Metadata "hidden" has a fallback value defined in TestTypedSchema. It
+        # will be returned by GetMetadata and GetAllMetadata but will return 
+        # false for queries about whether it's authored
+        self.assertEqual(typedPrim.GetAllMetadata()["hidden"], True)
+        self.assertEqual(typedPrim.GetMetadata("hidden"), True)
+        self.assertFalse(typedPrim.HasAuthoredMetadata("hidden"))
+        self.assertFalse("hidden" in typedPrim.GetAllAuthoredMetadata())
+
+        # Documentation metadata comes from prim type definition even with API
+        # schemas applied.
+        self.assertEqual(typedPrim.GetMetadata("documentation"), 
+                         "Testing typed schema")
 
     def test_TypedPrimsOnStageWithFallback(self):
         """
@@ -338,6 +362,20 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(attr.Get(), "foo")
         self.assertEqual(attr.GetResolveInfo().GetSource(), 
                          Usd.ResolveInfoSourceFallback)
+
+        # Metadata "hidden" has a fallback value defined in 
+        # TestWithFallbackAppliedSchema. It will be returned by GetMetadata and 
+        # GetAllMetadata but will return false for queries about whether it's 
+        # authored
+        self.assertEqual(typedPrim.GetAllMetadata()["hidden"], False)
+        self.assertEqual(typedPrim.GetMetadata("hidden"), False)
+        self.assertFalse(typedPrim.HasAuthoredMetadata("hidden"))
+        self.assertFalse("hidden" in typedPrim.GetAllAuthoredMetadata())
+
+        # Documentation metadata comes from prim type definition even with API
+        # schemas applied.
+        self.assertEqual(typedPrim.GetMetadata("documentation"), 
+                         "Test with fallback API schemas")
 
     def test_TypedPrimsOnStageWithFallbackReapply(self):
         """
@@ -431,6 +469,18 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(attr.Get(), "foo")
         self.assertEqual(attr.GetResolveInfo().GetSource(), 
                          Usd.ResolveInfoSourceFallback)
+
+        # Prim metadata is unchanged from the case above as there is still
+        # no way for applied API schemas to impart prim metadata defaults.
+        self.assertEqual(typedPrim.GetAllMetadata()["hidden"], False)
+        self.assertEqual(typedPrim.GetMetadata("hidden"), False)
+        self.assertFalse(typedPrim.HasAuthoredMetadata("hidden"))
+        self.assertFalse("hidden" in typedPrim.GetAllAuthoredMetadata())
+
+        # Documentation metadata comes from prim type definition even with API
+        # schemas applied.
+        self.assertEqual(typedPrim.GetMetadata("documentation"), 
+                         "Test with fallback API schemas")
 
 if __name__ == "__main__":
     unittest.main()
