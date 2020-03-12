@@ -27,13 +27,8 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/api.h"
-#include "pxr/base/tf/cxxCast.h"
-#include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/registryManager.h"
-#include "pxr/base/tf/traits.h"
 #include "pxr/base/tf/typeFunctions.h"
-
-#include <boost/operators.hpp>
 
 #include <iosfwd>
 #include <memory>
@@ -48,8 +43,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 class TfPyObjWrapper;
 #endif // PXR_PYTHON_SUPPORT_ENABLED
-
-class TfType;
 
 /// \class TfType
 ///
@@ -68,7 +61,7 @@ class TfType;
 ///   TfType, unlike \c std::type_info.
 /// - totally ordered -- can use as a \c std::map key
 ///
-class TfType : boost::totally_ordered<TfType>
+class TfType
 {
     struct _TypeInfo;
 
@@ -137,9 +130,13 @@ public:
     /// This is so all unknown types will only occupy one key when used in
     /// an associative map.
     inline bool operator ==(const TfType& t) const { return _info == t._info; }
+    inline bool operator !=(const TfType& t) const { return _info != t._info; }
 
     /// Comparison operator.
     inline bool operator <(const TfType& t) const { return _info < t._info; }
+    inline bool operator >(const TfType& t) const { return _info > t._info; }
+    inline bool operator <=(const TfType& t) const { return _info <= t._info; }
+    inline bool operator >=(const TfType& t) const { return _info >= t._info; }
 
     
     /// \name Finding types
@@ -173,12 +170,11 @@ public:
     ///
     template <typename T>
     static TfType const& Find(const T &obj) {
-        typedef typename TfTraits::Type<T>::UnderlyingType Type;
         // If T is polymorphic to python, we may have to bridge into python.  We
         // could also optimize for Ts that are not polymorphic at all and avoid
         // doing rtti typeid lookups, but we trust the compiler to do this for
         // us.
-        if (Type const *rawPtr = TfTypeFunctions<T>::GetRawPtr(obj))
+        if (auto const *rawPtr = TfTypeFunctions<T>::GetRawPtr(obj))
             return _FindImpl(rawPtr);
         return GetUnknownType();
     }

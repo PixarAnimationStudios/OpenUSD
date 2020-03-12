@@ -42,6 +42,7 @@
 // XXX: This include is a hack to avoid build errors due to
 // incompatible macro definitions in pyport.h on macOS.
 #include <locale>
+#include "pxr/base/tf/cxxCast.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyObjWrapper.h"
 #include "pxr/base/tf/pyObjectFinder.h"
