@@ -378,10 +378,6 @@ pxr_install_test_dir(
     SRC testenv/baseline/TfDebugTestEnv
     DEST TfDebugTestEnv/baseline
 )
-pxr_install_test_dir(
-    SRC testenv/baseline/TfDebugTestEnvList
-    DEST TfDebugTestEnvList/baseline
-)
 endif()
 pxr_install_test_dir(
     SRC testenv/baseline/TfDelegate
@@ -431,10 +427,6 @@ pxr_register_test(TfDebugFatal_3
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDebugFatal_3"
     EXPECTED_RETURN_CODE 134
 )
-pxr_register_test(TfDebugFatal_4
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDebugFatal_4"
-    EXPECTED_RETURN_CODE 134
-)
 # These tests will depend on downstream libraries when built monolithic.
 # We don't want changes to those libraries to affect test results so we
 # simply disable these tests in that case.
@@ -444,12 +436,6 @@ pxr_register_test(TfDebugTestEnv
     ENV TF_DEBUG="FOO* FLAM_* FLAM -FOOFLIMFLAM TF_DISCOVERY_D*"
     STDOUT_REDIRECT debugTestEnv.out
     DIFF_COMPARE debugTestEnv.out
-)
-pxr_register_test(TfDebugTestEnvList
-    ENV TF_DEBUG=list
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDebugTestEnvList"
-    STDOUT_REDIRECT debugTestEnvList.out
-    DIFF_COMPARE debugTestEnvList.out
 )
 endif()
 pxr_register_test(TfDebugTestEnvHelp

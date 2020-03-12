@@ -33,15 +33,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-enum DebugOff { OFF1, OFF2 };
+TF_CONDITIONALLY_COMPILE_TIME_ENABLED_DEBUG_CODES(
+    /*enabled=*/false,
+    OFF1,
+    OFF2
+    );
+using DebugOff = decltype(OFF1);
 
-TF_DEBUG_RANGE(DebugOff, OFF1, OFF2, false);
-
-
-enum DebugFamily { GRANDPA, AUNT, FATHER, DAUGHTER, SON };
-
-TF_DEBUG_RANGE(DebugFamily, GRANDPA, SON, true);
-
+TF_DEBUG_CODES(GRANDPA, AUNT, FATHER, DAUGHTER, SON);
 
 static bool
 TestOff()
@@ -76,11 +75,7 @@ Test_TfDebug()
     return retVal;
 }
 
-
-enum DebugTestEnv { FOO, FOOFLAM, FOOFLIMFLAM, FLIMFLAM, FLIM, FLAM };
-
-TF_DEBUG_RANGE(DebugTestEnv, FOO, FLAM, true);
-
+TF_DEBUG_CODES(FOO, FOOFLAM, FOOFLIMFLAM, FLIMFLAM, FLIM, FLAM);
 
 static bool
 Test_TfDebugTestEnv()
@@ -146,16 +141,6 @@ Test_TfDebugTestEnv()
 }
 
 static bool
-Test_TfDebugTestEnvList()
-{
-    // diff our results
-    // note -- this function isn't actually called because TF_DEBUG=list
-    //         will cause an equivalent printf() in libtf and then exit.
-    printf("%s\n", TfDebug::GetDebugSymbolDescriptions().c_str());
-    return true;
-}
-
-static bool
 Test_TfDebugTestEnvHelp()
 {
     // this test is executed simply by including the header and
@@ -208,31 +193,11 @@ Test_TfDebugFatal_3()
     return retVal;
 }
 
-enum bogus { BOGUS1, BOGUS2 };
-
-TF_DEBUG_RANGE(bogus, BOGUS1, BOGUS1, true);
-
-
-static bool
-Test_TfDebugFatal_4()
-{
-    bool retVal = false;
-
-    std::cerr << "Note: the following TfAbort is expected...\n";
-    std::cerr << "------------------------------------------\n";
-
-    TF_DEBUG_ENVIRONMENT_SYMBOL(BOGUS2, "some other thing that e1 does");
-
-    return retVal;
-}
-
 TF_ADD_REGTEST(TfDebug);
 TF_ADD_REGTEST(TfDebugTestEnv);
-TF_ADD_REGTEST(TfDebugTestEnvList);
 TF_ADD_REGTEST(TfDebugTestEnvHelp);
 TF_ADD_REGTEST(TfDebugFatal_1);
 TF_ADD_REGTEST(TfDebugFatal_2);
 TF_ADD_REGTEST(TfDebugFatal_3);
-TF_ADD_REGTEST(TfDebugFatal_4);
 
 PXR_NAMESPACE_CLOSE_SCOPE
