@@ -29,6 +29,7 @@
 
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/hints.h"
+#include "pxr/base/arch/pragmas.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticData.h"
 
@@ -102,9 +103,9 @@ public:
         Handle &operator=(std::nullptr_t) { return *this = Handle(); }
         inline char *GetPtr() const noexcept {
 	    ARCH_PRAGMA_PUSH
-	    ARCH_PRAGMA_MAYBE_UNINITIALIZED
+            ARCH_PRAGMA_MAYBE_UNINITIALIZED
             return Sdf_Pool::_GetPtr(value & RegionMask, value >> RegionBits);
-	    ARCH_PRAGMA_POP
+            ARCH_PRAGMA_POP
         }
         static inline Handle GetHandle(char const *ptr) noexcept {
             return Sdf_Pool::_GetHandle(ptr);
@@ -222,7 +223,13 @@ private:
 
     // Given a region id and index, form the pointer into the pool.
     static inline char *_GetPtr(unsigned region, uint32_t index) {
+        // Suppress undefined-var-template warnings from clang; _regionStarts
+        // is expected to be instantiated in another translation unit via 
+        // the SDF_INSTANTIATE_POOL macro.
+        ARCH_PRAGMA_PUSH
+        ARCH_PRAGMA_UNDEFINED_VAR_TEMPLATE
         return _regionStarts[region] + (index * ElemSize);
+        ARCH_PRAGMA_POP
     }
     
     // Given a pointer into the pool, produce its corresponding Handle.  Don't
