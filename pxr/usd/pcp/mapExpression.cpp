@@ -147,35 +147,35 @@ PcpMapExpression::Variable::~Variable()
 }
 
 // Private implementation for Variable.
-struct Pcp_VariableImpl : PcpMapExpression::Variable
+struct Pcp_VariableImpl final : PcpMapExpression::Variable
 {
-    virtual ~Pcp_VariableImpl() {}
+    ~Pcp_VariableImpl() override {}
 
     Pcp_VariableImpl(const PcpMapExpression::_NodeRefPtr &node) : _node(node) {}
 
-    virtual const PcpMapExpression::Value & GetValue() const {
+    const PcpMapExpression::Value & GetValue() const override {
         return _node->GetValueForVariable();
     }
 
-    virtual void SetValue(const PcpMapExpression::Value & value) {
+    void SetValue(const PcpMapExpression::Value & value) override {
         _node->SetValueForVariable(value);
     }
 
-    virtual PcpMapExpression GetExpression() const {
+    PcpMapExpression GetExpression() const override {
         return PcpMapExpression(_node);
     }
 
     const PcpMapExpression::_NodeRefPtr _node;
 };
 
-PcpMapExpression::VariableRefPtr
+PcpMapExpression::VariableUniquePtr
 PcpMapExpression::NewVariable( const Value & initialValue )
 {
     Pcp_VariableImpl *var = new Pcp_VariableImpl( _Node::New(_OpVariable) );
 
     var->SetValue(initialValue);
 
-    return VariableRefPtr(var);
+    return VariableUniquePtr(var);
 }
 
 ////////////////////////////////////////////////////////////////////////

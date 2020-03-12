@@ -577,13 +577,13 @@ PcpLayerStack::GetExpressionForRelocatesAtPath(const SdfPath &path)
     }
 
     // Create a Variable representing the relocations that affect this path.
-    PcpMapExpression::VariableRefPtr var =
+    PcpMapExpression::VariableUniquePtr var =
         PcpMapExpression::NewVariable(_FilterRelocationsForPath(*this, path));
 
     // Retain the variable so that we can update it if relocations change.
-    _relocatesVariables[path] = var;
+    i = _relocatesVariables.emplace(path, std::move(var)).first;
 
-    return var->GetExpression();
+    return i->second->GetExpression();
 }
 
 void

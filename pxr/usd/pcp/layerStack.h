@@ -284,7 +284,7 @@ private:
     /// the current value of relocations given out by
     /// GetExpressionForRelocatesAtPath().  This map is used to update
     /// those values when relocations change.
-    typedef std::map<SdfPath, PcpMapExpression::VariableRefPtr,
+    typedef std::map<SdfPath, PcpMapExpression::VariableUniquePtr,
             SdfPath::FastLessThan> _RelocatesVarMap;
     _RelocatesVarMap _relocatesVariables;
 

@@ -109,7 +109,7 @@ public:
     };
 
     /// Variables are held by reference.
-    typedef std::shared_ptr<Variable> VariableRefPtr;
+    typedef std::unique_ptr<Variable> VariableUniquePtr;
 
     /// Create a new variable.
     /// The client is expected to retain the reference for as long as
@@ -118,7 +118,7 @@ public:
     /// will continue to be valid, but there will be no way to further
     /// change the value of the variable.
     PCP_API
-    static VariableRefPtr NewVariable( const Value & initialValue );
+    static VariableUniquePtr NewVariable( const Value & initialValue );
 
     /// Create a new PcpMapExpression representing the application of
     /// f's value, followed by the application of this expression's value.

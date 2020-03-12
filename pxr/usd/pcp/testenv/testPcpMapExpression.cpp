@@ -104,7 +104,7 @@ main(int argc, char** argv)
     // Variable
     {
         // Variable will initial empty function
-        PcpMapExpression::VariableRefPtr var =
+        PcpMapExpression::VariableUniquePtr var =
             PcpMapExpression::NewVariable( PcpMapFunction() );
         const PcpMapExpression varExpr = var->GetExpression();
         testExprs.push_back(varExpr);
