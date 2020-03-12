@@ -77,14 +77,14 @@ class TestUsdSkelAnimQuery(unittest.TestCase):
         anim.GetJointsAttr().Set(joints)
         anim.GetBlendShapesAttr().Set(blendshapes)
 
-        xformsPerFrame = [[_RandomXf() for _ in xrange(len(joints))]
-                          for _ in xrange(numFrames)]
+        xformsPerFrame = [[_RandomXf() for _ in range(len(joints))]
+                          for _ in range(numFrames)]
 
         for frame,xforms in enumerate(xformsPerFrame):
             anim.SetTransforms(Vt.Matrix4dArray(xforms), frame)
 
-        weightsPerFrame = [[random.random() for _ in xrange(len(blendshapes))]
-                           for _ in xrange(numFrames)]
+        weightsPerFrame = [[random.random() for _ in range(len(blendshapes))]
+                           for _ in range(numFrames)]
         
         for frame,weights in enumerate(weightsPerFrame):
             anim.GetBlendShapeWeightsAttr().Set(Vt.FloatArray(weights), frame)
@@ -100,7 +100,7 @@ class TestUsdSkelAnimQuery(unittest.TestCase):
         self.assertEqual(query.GetBlendShapeOrder(), blendshapes)
         self.assertTrue(query.JointTransformsMightBeTimeVarying())
         self.assertEqual(query.GetJointTransformTimeSamples(),
-                         list(xrange(numFrames)))
+                         list(range(numFrames)))
 
         for frame,xforms in enumerate(xformsPerFrame):
 

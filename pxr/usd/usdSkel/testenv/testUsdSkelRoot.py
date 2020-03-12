@@ -35,8 +35,8 @@ class TestUsdSkelRoot(unittest.TestCase):
 
         boundable = UsdGeom.Boundable(stage.GetPrimAtPath("/Root"))
 
-        for time in xrange(int(stage.GetStartTimeCode()),
-                           int(stage.GetEndTimeCode())+1):
+        for time in range(int(stage.GetStartTimeCode()),
+                          int(stage.GetEndTimeCode())+1):
             UsdGeom.Boundable.ComputeExtentFromPlugins(boundable, time)
 
         stage.GetRootLayer().Export("root.computedExtents.usda")
