@@ -66,6 +66,17 @@ def _CompareMetadata(composed, flat, indent):
         assert cdata[cKey] == fdata[cKey], str(composed.GetPath()) + " : " + cKey
 
 class TestUsdFlatten(unittest.TestCase):
+    def _ComparePaths(self, pathOne, pathTwo):
+        # Use normcase here to handle differences in path casing on
+        # Windows. This will alo reverse slashes on windows, so we get 
+        # a consistent cross platform comparison.
+        self.assertEqual(os.path.normcase(pathOne), os.path.normcase(pathTwo))
+
+    def _ComparePathLists(self, listOne, listTwo):
+        self.assertEqual(len(listOne), len(listTwo))
+        for i in range(len(listOne)):
+            self._ComparePaths(listOne[i], listTwo[i])
+
     def test_Flatten(self):
         composed = Usd.Stage.Open("root.usd")
         flatLayer = composed.Flatten()
@@ -296,35 +307,35 @@ class TestUsdFlatten(unittest.TestCase):
         attr = resultLayer.GetAttributeAtPath("/AssetPathTest.assetPath")
         
         timeSamples = attr.GetInfo("timeSamples")
-        self.assertEqual(os.path.normpath(timeSamples[0].path),
-                         os.path.abspath("assetPaths/asset.usda"))
-        self.assertEqual(os.path.normpath(timeSamples[1].path),
-                         os.path.abspath("assetPaths/asset.usda"))
+        self._ComparePaths(os.path.normpath(timeSamples[0].path),
+                          os.path.abspath("assetPaths/asset.usda"))
+        self._ComparePaths(os.path.normpath(timeSamples[1].path),
+                          os.path.abspath("assetPaths/asset.usda"))
         
-        self.assertEqual(
+        self._ComparePaths(
             os.path.normpath(attr.GetInfo("default").path), 
             os.path.abspath("assetPaths/asset.usda"))
         
         attr = resultLayer.GetAttributeAtPath("/AssetPathTest.assetPathArray")
-        self.assertEqual(
+        self._ComparePathLists(
             list([os.path.normpath(p.path) for p in attr.GetInfo("default")]),
             [os.path.abspath("assetPaths/asset.usda")])
 
         prim = resultLayer.GetPrimAtPath("/AssetPathTest")
         metadataDict = prim.GetInfo("customData")
-        self.assertEqual(
+        self._ComparePaths(
             os.path.normpath(metadataDict["assetPath"].path),
             os.path.abspath("assetPaths/asset.usda"))
-        self.assertEqual(
+        self._ComparePathLists(
             list([os.path.normpath(p.path) 
                   for p in metadataDict["assetPathArray"]]),
             [os.path.abspath("assetPaths/asset.usda")])
             
         metadataDict = metadataDict["subDict"]
-        self.assertEqual(
+        self._ComparePaths(
             os.path.normpath(metadataDict["assetPath"].path),
             os.path.abspath("assetPaths/asset.usda"))
-        self.assertEqual(
+        self._ComparePathLists(
             list([os.path.normpath(p.path) 
                   for p in metadataDict["assetPathArray"]]),
             [os.path.abspath("assetPaths/asset.usda")])
