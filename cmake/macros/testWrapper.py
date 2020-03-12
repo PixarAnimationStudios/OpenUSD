@@ -37,8 +37,10 @@
 # - comparing output files against a baseline
 #
 import argparse
+import glob
 import os
 import platform
+import shlex
 import shutil
 import subprocess
 import sys
@@ -50,7 +52,8 @@ def _parseArgs():
             help='File to redirect stdout to')
     parser.add_argument('--stderr-redirect', type=str,
             help='File to redirect stderr to')
-    parser.add_argument('--diff-compare', nargs='*', 
+    parser.add_argument('--diff-compare', default=[], type=str,
+            action='append',
             help=('Compare output file with a file in the baseline-dir of the '
                   'same name'))
     parser.add_argument('--files-exist', nargs='*',
@@ -59,9 +62,9 @@ def _parseArgs():
             help=('Check that a set of files exist.'))
     parser.add_argument('--clean-output-paths', nargs='*',
             help=('Path patterns to remove from the output files being diff\'d.'))
-    parser.add_argument('--post-command', nargs='*', 
+    parser.add_argument('--post-command', type=str,
             help=('Command line action to run after running COMMAND.'))
-    parser.add_argument('--pre-command', nargs='*', 
+    parser.add_argument('--pre-command', type=str,
             help=('Command line action to run before running COMMAND.'))
     parser.add_argument('--pre-command-stdout-redirect', type=str, 
             help=('File to redirect stdout to when running PRE_COMMAND.'))
@@ -88,7 +91,7 @@ def _parseArgs():
             action='append', help='Path to append to the PATH env var.')
     parser.add_argument('--verbose', '-v', action='store_true',
             help='Verbose output.')
-    parser.add_argument('cmd', metavar='CMD', type=str, nargs='+',
+    parser.add_argument('cmd', metavar='CMD', type=str, 
             help='Test command to run')
     return parser.parse_args()
 
@@ -143,12 +146,23 @@ def _diff(fileName, baselineDir, verbose):
         diff = 'fc.exe'
     else:
         diff = '/usr/bin/diff'
-    cmd = [diff, _resolvePath(baselineDir, fileName), fileName]
-    if verbose:
-        print "diffing with {0}".format(cmd)
 
-    # This will print any diffs to stdout which is a nice side-effect
-    return subprocess.call(cmd) == 0
+    filesToDiff = glob.glob(fileName)
+    if not filesToDiff:
+        sys.stderr.write(
+            "Error: could not files matching {0} to diff".format(fileName))
+        return False
+
+    for fileToDiff in glob.glob(fileName):
+        cmd = [diff, _resolvePath(baselineDir, fileToDiff), fileToDiff]
+        if verbose:
+            print "diffing with {0}".format(cmd)
+
+        # This will print any diffs to stdout which is a nice side-effect
+        if subprocess.call(cmd) != 0:
+            return False
+
+    return True
 
 def _copyTree(src, dest):
     ''' Copies the contents of src into dest.'''
@@ -161,14 +175,6 @@ def _copyTree(src, dest):
             shutil.copytree(s, d)
         else:
             shutil.copy2(s, d) 
-
-
-# Windows command prompt will not split arguments so we do it instead.
-# args.cmd is a list of strings to split so the inner list comprehension
-# makes a list of argument lists.  The outer double comprehension flattens
-# that into a single list.
-def _splitCmd(cmd):
-    return [arg for tmp in [arg.split() for arg in cmd] for arg in tmp]
 
 # subprocess.call returns -N if the process raised signal N. Convert this
 # to the standard positive error code matching that signal. e.g. if the
@@ -186,7 +192,7 @@ def _getRedirects(out_redir, err_redir):
     
 def _runCommand(raw_command, stdout_redir, stderr_redir, env,
                 expected_return_code):
-    cmd = _splitCmd(raw_command)
+    cmd = shlex.split(raw_command)
     fout, ferr = _getRedirects(stdout_redir, stderr_redir)
     try:
         print "cmd: %s" % (cmd, )
@@ -301,9 +307,8 @@ if __name__ == '__main__':
     if args.diff_compare:
         for diff in args.diff_compare:
             if not _diff(diff, args.baseline_dir, args.verbose):
-                if args.verbose:
-                    sys.stderr.write('Error: diff for {0} failed '
-                                     '(DIFF_COMPARE).'.format(diff))
+                sys.stderr.write('Error: diff for {0} failed '
+                                 '(DIFF_COMPARE).'.format(diff))
                 sys.exit(1)
 
     sys.exit(0)

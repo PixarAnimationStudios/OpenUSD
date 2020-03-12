@@ -591,8 +591,8 @@ function(pxr_register_test TEST_NAME)
 
     cmake_parse_arguments(bt
         "RUN_SERIAL;PYTHON;REQUIRES_SHARED_LIBS;REQUIRES_PYTHON_MODULES" 
-        "CUSTOM_PYTHON;COMMAND;STDOUT_REDIRECT;STDERR_REDIRECT;DIFF_COMPARE;POST_COMMAND;POST_COMMAND_STDOUT_REDIRECT;POST_COMMAND_STDERR_REDIRECT;PRE_COMMAND;PRE_COMMAND_STDOUT_REDIRECT;PRE_COMMAND_STDERR_REDIRECT;FILES_EXIST;FILES_DONT_EXIST;CLEAN_OUTPUT;EXPECTED_RETURN_CODE;TESTENV"
-        "ENV;PRE_PATH;POST_PATH"
+        "CUSTOM_PYTHON;COMMAND;STDOUT_REDIRECT;STDERR_REDIRECT;POST_COMMAND;POST_COMMAND_STDOUT_REDIRECT;POST_COMMAND_STDERR_REDIRECT;PRE_COMMAND;PRE_COMMAND_STDOUT_REDIRECT;PRE_COMMAND_STDERR_REDIRECT;FILES_EXIST;FILES_DONT_EXIST;CLEAN_OUTPUT;EXPECTED_RETURN_CODE;TESTENV"
+        "DIFF_COMPARE;ENV;PRE_PATH;POST_PATH"
         ${ARGN}
     )
 
@@ -661,7 +661,9 @@ function(pxr_register_test TEST_NAME)
     set(testWrapperCmd ${testWrapperCmd} --testenv-dir=${testenvDir})
 
     if (bt_DIFF_COMPARE)
-        set(testWrapperCmd ${testWrapperCmd} --diff-compare=${bt_DIFF_COMPARE})
+        foreach(compareFile ${bt_DIFF_COMPARE})
+            set(testWrapperCmd ${testWrapperCmd} --diff-compare=${compareFile})
+        endforeach()
 
         # For now the baseline directory is assumed by convention from the test
         # name. There may eventually be cases where we'd want to specify it by
