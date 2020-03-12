@@ -2155,89 +2155,157 @@ UsdImagingInstanceAdapter::GetPathForInstanceIndex(
 struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn
 {
     _PopulateInstanceSelectionFn(
-        UsdImagingInstanceAdapter* adapter_,
-        SdfPath const &instancerPath_,
-        SdfPath const &instancePath_,
-        VtIntArray const &instanceIndices_,
-        HdSelection::HighlightMode const& highlightMode_,
-        HdSelectionSharedPtr const &result_)
-        : adapter(adapter_)
-        , instancerPath(instancerPath_)
-        , instancePath(instancePath_)
+            UsdPrim const& usdPrim_,
+            VtIntArray const& instanceIndices_,
+            _InstancerData const* instrData_,
+            UsdImagingInstanceAdapter const* adapter_,
+            HdSelection::HighlightMode const& highlightMode_,
+            HdSelectionSharedPtr const& result_)
+        : usdPrim(usdPrim_)
         , instanceIndices(instanceIndices_)
+        , instrData(instrData_)
+        , adapter(adapter_)
         , highlightMode(highlightMode_)
         , result(result_)
-        , found(false)
+        , added(false)
     {}
 
     void Initialize(size_t numInstances)
-    {}
+    {
+        // In order to check selectionPath against the instance context,
+        // we need to decompose selectionPath into a path vector.  We can't
+        // just assemble instanceContext into a proxy prim because
+        // selectionPath might point to something inside master.
+        // See comment in operator().
+        UsdPrim p = usdPrim;
+        while (p.IsInstanceProxy()) {
+            selectionPathVec.push_front(p.GetPrimInMaster().GetPath());
+            do {
+                p = p.GetParent();
+            } while (!p.IsInstance());
+        }
+        selectionPathVec.push_front(p.GetPath());
+    }
 
     bool operator()(
         const std::vector<UsdPrim>& instanceContext, size_t instanceIdx)
     {
-        SdfPath path = instanceContext.back().GetPath();
-        // When we don't have instanceIndices we might be looking for a subtree
-        // in that case we can add everything under that path
-        // Otherwise, we're only interested in the instanceContext 
-        // which has instancePath
-        if (!instanceIndices.empty()) {
-            if (path != instancePath) {
+        // To illustrate the below algorithm, imagine the following scene:
+        // /World/A, /World/A2 -> /__Master_1
+        // /__Master_1/B -> /__Master_2
+        // /__Master_2/C,D are gprims.
+        // We want to be able to select /World/A/B as well as /__Master_1/B.
+        // ... to do this, we break the selection path down into components
+        // in PopulateSelection: /World/A, /__Master_1/B.
+        //
+        // The matrix of things we can select:
+        // 1.) One instance, one gprim (e.g. /World/A/B/C):
+        //     - selection context [/World/A, /__Master_1/B, /__Master_2/C]
+        //     - instance context [/World/A, /__Master_1/B]
+        //     /__Master_2/C needs to be checked against primMap.
+        // 2.) One instance, multiple gprims (e.g. /World/A/B):
+        //     - selection context [/World/A, /__Master_1/B]
+        //     - instance context [/World/A, /__Master_1/B]
+        // 3.) Multiple instances, one gprim (e.g. /__Master_1/B/C)
+        //     - selection context [/__Master_1/B, /__Master_2/C]
+        //     - instance context [/World/A, /__Master_1/B]
+        //     - instance context [/World/A2, /__Master_1/B]
+        //     /__Master_2/C needs to be checked against primMap.
+        // 4.) Multiple instances, multiple gprims (e.g. /__Master_1/B)
+        //     - selection context [/__Master_1/B]
+        //     - instance context [/World/A, /__Master_1/B]
+        //     - instance context [/World/A2, /__Master_1/B]
+        //
+        // The algorithm, then:
+        // - If selectionContext[0] is not in instanceContext, continue.
+        // - Define start as selectionContext[0] = instanceContext[start]
+        // - If selectionContext[1...N] = instanceContext[start+1 ... start+N],
+        //   highlight all protos of this instance.
+        // - If selectionContext[1...X] = instanceContext[start+1 ... start+X],
+        //   and len(instanceContext) = start+X+1, selectionContext[X+1...N]
+        //   is a residual path: probably a gprim path, but possibly an
+        //   instance proxy path in the case of nested PI.  The residual path
+        //   will select a certain proto/set of protos to highlight, for this
+        //   instance.
+        // - Otherwise, highlight nothing.
+
+        // Zipper compare instance and selection paths.
+        size_t instanceCount, selectionCount;
+        for (instanceCount = 0, selectionCount = 0;
+             instanceCount < instanceContext.size() &&
+             selectionCount < selectionPathVec.size();
+             ++instanceCount) {
+                // instanceContext is innermost-first, and selectionPathVec
+                // outermost-first, so we need to flip the paths index.
+                size_t instanceContextIdx =
+                    instanceContext.size() - instanceCount - 1;
+            if (instanceContext[instanceContextIdx].GetPath().HasPrefix(
+                  selectionPathVec[selectionCount])) {
+                ++selectionCount;
+            } else if (selectionCount != 0) {
                 return true;
             }
-        } else {
-            if (!path.HasPrefix(instancePath)) {
-                return true;
+        }
+
+        if (selectionCount == selectionPathVec.size()) {
+            // Select everything in this instance.
+            VtIntArray tuple(instanceIndices);
+            tuple.push_back((int)instanceIdx);
+            for (auto const& pair : instrData->primMap) {
+                UsdPrim prefixPrim =
+                    adapter->_GetPrim(pair.first.GetAbsoluteRootOrPrimPath());
+                added |= pair.second.adapter->PopulateSelection(
+                    highlightMode, pair.first, prefixPrim, tuple, result);
             }
         }
+        else if (selectionCount != 0 &&
+                 instanceCount == instanceContext.size()) {
+            // Compose the remainder of the selection path into a (possibly
+            // instance proxy) usd prim, and use that as the selection prim.
+            // This prim can either be a parent of any given proto, or a child
+            // (in the case of a selection inside a point instancer scope).
+            SdfPathVector residualPathVec(
+                selectionPathVec.rbegin(),
+                selectionPathVec.rend() - selectionCount);
+            SdfPath residualPath =
+                adapter->_GetPrimPathFromInstancerChain(residualPathVec);
+            UsdPrim selectionPrim = adapter->_GetPrim(residualPath);
 
-        const _InstancerData* instancerData = 
-            TfMapLookupPtr(adapter->_instancerData, instancerPath);
-        if (!TF_VERIFY(instancerData, "%s not found", instancerPath.GetText())) {
-            return true;
-        }
-
-        // To highlight individual instances of NI-PI, compose instanceIndices
-        VtIntArray niInstanceIndices;
-        niInstanceIndices.reserve(instanceIndices.size()+1);
-        TF_FOR_ALL(it, instanceIndices) {
-            niInstanceIndices.push_back(*it);
-        }
-        niInstanceIndices.push_back((int)instanceIdx);
-
-        // add all protos.
-        TF_FOR_ALL (it, instancerData->primMap) {
-            // convert to indexPath (add prefix)
-            SdfPath indexPath =
-                adapter->_ConvertCachePathToIndexPath(it->first);
-
-            // highlight all subtree with instanceIndices.
-            // XXX: this seems redundant, but needed for point instancer 
-            // highlighting for now. Ideally we should communicate back to point
-            // instancer adapter to not use renderIndex
-            SdfPathVector const &ids = adapter->_GetRprimSubtree(indexPath);
-
-            TF_FOR_ALL (protoIt, ids) {
-                result->AddInstance(highlightMode, *protoIt, niInstanceIndices);
-
-                TF_DEBUG(USDIMAGING_SELECTION).Msg(
-                    "PopulateSelection: (instance) %s - %s : %ld\n",
-                    indexPath.GetText(), protoIt->GetText(), instanceIdx);
+            VtIntArray tuple(instanceIndices);
+            tuple.push_back((int)instanceIdx);
+            for (auto const& pair : instrData->primMap) {
+                if (pair.second.path.HasPrefix(
+                    selectionPathVec[selectionCount])) {
+                    // If the selection path is a prefix of this proto,
+                    // use a prefix prim to fully select the proto, in case
+                    // it's a gprim with name mangling.
+                    selectionPrim = adapter->_GetPrim(
+                        pair.first.GetAbsoluteRootOrPrimPath());
+                } else if (!selectionPathVec[selectionCount].HasPrefix(
+                           pair.second.path)) {
+                    // If the selection path isn't a prefix of the proto,
+                    // we need the proto to be a prefix of the selection path
+                    // (in which case we pass the residualPath selection prim,
+                    // below, to support sub-object selection of PI prims).
+                    //
+                    // If the latter is *not* the case, skip this iteration.
+                    continue;
+                }
+                added |= pair.second.adapter->PopulateSelection(
+                    highlightMode, pair.first, selectionPrim, tuple, result);
             }
-
-
-            found = true;
         }
         return true;
     }
 
-    UsdImagingInstanceAdapter* adapter;
-    SdfPath instancerPath;
-    SdfPath instancePath;
-    VtIntArray instanceIndices;
-    HdSelection::HighlightMode highlightMode;
-    HdSelectionSharedPtr result;
-    bool found;
+    UsdPrim const& usdPrim;
+    VtIntArray const& instanceIndices;
+    _InstancerData const* instrData;
+    UsdImagingInstanceAdapter const* adapter;
+    HdSelection::HighlightMode const& highlightMode;
+    HdSelectionSharedPtr const& result;
+    std::deque<SdfPath> selectionPathVec;
+    bool added;
 };
 
 /*virtual*/
@@ -2247,24 +2315,97 @@ UsdImagingInstanceAdapter::PopulateSelection(
     SdfPath const &cachePath,
     UsdPrim const &usdPrim,
     VtIntArray const &instanceIndices,
-    HdSelectionSharedPtr const &result)
+    HdSelectionSharedPtr const &result) const
 {
     HD_TRACE_FUNCTION();
 
-    // cachePath points to an actual hydra instancer, so we use it as
-    // instancerPath.  The instance path is usdPrim.
-    SdfPath instancePath = usdPrim.GetPath();
+    // cachePath will either point to a gprim-in-master (which ends up here
+    // because of adapter hijacking), or a USD native instance prim. We can
+    // distinguish between the two with _IsChildPrim.
+    if (_IsChildPrim(
+            _GetPrim(cachePath.GetAbsoluteRootOrPrimPath()), cachePath)) {
+        // If cachePath points to a gprim, name mangling dictates the instancer
+        // path is the prim path above it.  If cachePath points to a child
+        // point instancer, there's not a good way to recover the instancer
+        // path; this is reflected in the fact that _GetProtoPrim has a case
+        // for this to walk all of the instancer datas looking for a match.
+        UsdImagingInstancerContext instancerContext;
+        _ProtoPrim const& proto = _GetProtoPrim(
+            cachePath.GetAbsoluteRootOrPrimPath(),
+            cachePath, &instancerContext);
 
-    TF_DEBUG(USDIMAGING_SELECTION).Msg(
-        "PopulateSelection: instance = %s\n", instancePath.GetText());
+        if (!proto.adapter) {
+            return false;
+        }
+        _InstancerData const* instrData =
+            TfMapLookupPtr(_instancerData, instancerContext.instancerCachePath);
+        if (instrData == nullptr) {
+            return false;
+        }
 
-    _PopulateInstanceSelectionFn populateFn(
-        this, cachePath, instancePath, instanceIndices,
-            highlightMode, result);
+        TF_DEBUG(USDIMAGING_SELECTION).Msg(
+            "PopulateSelection: proto = %s instancer = %s\n",
+            cachePath.GetText(), instancerContext.instancerCachePath.GetText());
 
-    _RunForAllInstancesToDraw(_GetPrim(cachePath), &populateFn);
+        // If we're getting called on behalf of a child prim, we're inside a
+        // master and need to add a selection for that proto for all instances
+        // of this master.  (If we're called on behalf of an instance proxy,
+        // we fall into the else case below; and if we're called on an
+        // un-instanced prim something has gone wrong). If the selection path
+        // is a prefix of the proto path in master, we can highlight the whole
+        // proto; otherwise, we should pass the full selection path to the
+        // child adapter (e.g. to process partial PI selection).
 
-    return populateFn.found;
+        UsdPrim selectionPrim;
+        if (proto.path.HasPrefix(usdPrim.GetPath())) {
+            // Since we're doing a full highlight anyway, we override the
+            // selection prim to something we know will always succeed for
+            // gprims (despite name mangling).
+            selectionPrim = _GetPrim(cachePath.GetAbsoluteRootOrPrimPath());
+        } else if (usdPrim.GetPath().HasPrefix(proto.path)) {
+            selectionPrim = usdPrim;
+        } else {
+            return false;
+        }
+
+        // Compose the instance indices.
+        std::vector<VtIntArray> indexTuples;
+        for (size_t i = 0; i < instrData->numInstancesToDraw; ++i) {
+            VtIntArray tuple(instanceIndices);
+            tuple.push_back(i);
+            indexTuples.push_back(tuple);
+        }
+
+        // Populate selection.
+        bool added = false;
+        for (auto const& tuple : indexTuples) {
+            added |= proto.adapter->PopulateSelection(
+                    highlightMode, cachePath, selectionPrim, tuple, result);
+        }
+        return added;
+    } else {
+        SdfPath const* instancerPath =
+            TfMapLookupPtr(_instanceToInstancerMap, cachePath);
+        if (instancerPath == nullptr) {
+            return false;
+        }
+        _InstancerData const* instrData =
+            TfMapLookupPtr(_instancerData, *instancerPath);
+        if (instrData == nullptr) {
+            return false;
+        }
+        TF_DEBUG(USDIMAGING_SELECTION).Msg(
+            "PopulateSelection: instance = %s instancer = %s\n",
+            cachePath.GetText(), instancerPath->GetText());
+
+        _PopulateInstanceSelectionFn populateFn(usdPrim, instanceIndices,
+            instrData, this, highlightMode, result);
+        _RunForAllInstancesToDraw(_GetPrim(*instancerPath), &populateFn);
+
+        return populateFn.added;
+    }
+
+    return false;
 }
 
 /*virtual*/

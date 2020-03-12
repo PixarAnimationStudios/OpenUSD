@@ -177,7 +177,7 @@ public:
                                 SdfPath const &cachePath,
                                 UsdPrim const &usdPrim,
                                 VtIntArray const &instanceIndices,
-                                HdSelectionSharedPtr const &result) override;
+                                HdSelectionSharedPtr const &result) const override;
 
     virtual SdfPath GetPathForInstanceIndex(SdfPath const &instancerCachePath,
                                             SdfPath const &protoCachePath,

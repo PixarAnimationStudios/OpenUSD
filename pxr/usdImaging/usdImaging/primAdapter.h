@@ -325,11 +325,12 @@ public:
     /// \name Selection
     // ---------------------------------------------------------------------- //
     USDIMAGING_API
-    virtual bool PopulateSelection(HdSelection::HighlightMode const& highlightMode,
-                                   SdfPath const &cachePath,
-                                   UsdPrim const &usdPrim,
-                                   VtIntArray const &instanceIndices,
-                                   HdSelectionSharedPtr const &result);
+    virtual bool PopulateSelection(
+        HdSelection::HighlightMode const& highlightMode,
+        SdfPath const &cachePath,
+        UsdPrim const &usdPrim,
+        VtIntArray const &instanceIndices,
+        HdSelectionSharedPtr const &result) const;
 
     // ---------------------------------------------------------------------- //
     /// \name Texture resources
@@ -482,10 +483,6 @@ protected:
     // Converts \p indexPath to the path in the USD stage
     USDIMAGING_API
     SdfPath _ConvertIndexPathToCachePath(SdfPath const& indexPath) const;
-
-    // Returns the rprim paths in the renderIndex rooted at \p indexPath.
-    USDIMAGING_API
-    SdfPathVector _GetRprimSubtree(SdfPath const& indexPath) const;
 
     // Returns the material binding purpose from the renderer delegate.
     USDIMAGING_API

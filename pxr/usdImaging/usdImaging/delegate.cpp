@@ -2059,19 +2059,22 @@ UsdImagingDelegate::PopulateSelection(
     TF_DEBUG(USDIMAGING_SELECTION).Msg("Prim selection: %s\n",
                                        usdPath.GetText());
 
-    SdfPath rootPath = usdPath;
+    UsdPrim selectedPrim = _stage->GetPrimAtPath(usdPath);
+    if (!selectedPrim) {
+        return false;
+    }
 
-    // If the USD prim is inside an instance, walk back to the top-level
-    // instance to give UsdImagingInstanceAdapter a chance to populate
-    // selection correctly.  While traversing, we don't need to check for the
-    // pseudoroot since it can never be an instance proxy.
-    UsdPrim usdPrim = _stage->GetPrimAtPath(rootPath);
+    // If the USD prim is an instance proxy, we won't find any dependent prims,
+    // since the instance proxy is a virtual prim and technically the subtree
+    // stops at the instance.  We need to call _GatherDependencies from the
+    // instance, so we walk up the hierarchy.
+    // Note: the pseudoroot can't be an instance proxy, so we won't walk into
+    // the void here...
+    UsdPrim usdPrim = selectedPrim;
     while (usdPrim && usdPrim.IsInstanceProxy()){
         usdPrim = usdPrim.GetParent();
     }
-    if (usdPrim){
-        rootPath = usdPrim.GetPath();
-    }
+    SdfPath rootPath = usdPrim.GetPath();
 
     // If you select a point instancer, no instance specified means select
     // all instances.
@@ -2100,23 +2103,11 @@ UsdImagingDelegate::PopulateSelection(
 
         _AdapterSharedPtr const &adapter = primInfo->adapter;
 
-        // PopulateSelection works as expected on un-instanced rprims.
-        // For PointInstancers, PopulateSelection adds all of their
-        // children. For native instances, PopulateSelection will add
-        // selections for all of the prims/instances that are logically
-        // below primPath.
-        //
-        // This means that if we run across a property path (instanced
-        // rprim), we should skip it so the instance adapters can work.
-        if (affectedCachePath.IsPropertyPath()) {
-            continue;
-        }
-
         TF_DEBUG(USDIMAGING_SELECTION).Msg("- affected hydra prim: %s\n",
                 affectedCachePath.GetText());
 
         added |= adapter->PopulateSelection(highlightMode,
-                affectedCachePath, usdPrim, instanceIndices, result);
+                affectedCachePath, selectedPrim, instanceIndices, result);
     }
     return added;
 }

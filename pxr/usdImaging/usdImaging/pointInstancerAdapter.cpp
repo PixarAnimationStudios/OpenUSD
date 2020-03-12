@@ -1750,17 +1750,126 @@ UsdImagingPointInstancerAdapter::PopulateSelection(
     SdfPath const &cachePath,
     UsdPrim const &usdPrim,
     VtIntArray const &instanceIndices,
-    HdSelectionSharedPtr const &result)
+    HdSelectionSharedPtr const &result) const
 {
-    SdfPath indexPath = _ConvertCachePathToIndexPath(cachePath);
-    SdfPathVector const& ids = _GetRprimSubtree(indexPath);
+    HD_TRACE_FUNCTION();
 
-    bool added = false;
-    TF_FOR_ALL (it, ids){
-        result->AddInstance(highlightMode, *it, instanceIndices);
-        added = true;
+    if (IsChildPath(cachePath)) {
+        SdfPath instancerPath = cachePath.GetParentPath();
+        _ProtoPrim const& proto = _GetProtoPrim(instancerPath, cachePath);
+        if (!TF_VERIFY(proto.adapter, "%s", cachePath.GetText())) {
+            return false;
+        }
+
+        // Make sure one of the prototype paths is a suffix of "usdPrim".
+        // "paths" has the location of the populated proto; for native
+        // instancing, it will have N-1 paths to instances and
+        // 1 path to the prototype.
+        // If there's no native instancing, paths will have size 1.
+        // If "usdPrim" is a parent of any of these paths, that counts
+        // as a selection of this prototype.  e.g.
+        // - /World/Instancer/protos (-> /Master_1)
+        // - /Master_1/trees/tree_1 (a gprim)
+        bool foundPrefix = false;
+        SdfPath usdPath = usdPrim.GetPath();
+        for (auto const& path : proto.paths) {
+            if (path.HasPrefix(usdPath)) {
+                foundPrefix = true;
+                break;
+            }
+        }
+        if (!foundPrefix) {
+            return false;
+        }
+
+        // We want the path comparison in PopulateSelection to always succeed
+        // (since we've verified the path above), so take the prim at
+        // cachePath.GetPrimPath, since that's guaranteed to exist and be a
+        // prefix...
+        UsdPrim prefixPrim = _GetPrim(cachePath.GetAbsoluteRootOrPrimPath());
+        return proto.adapter->PopulateSelection(
+            highlightMode, cachePath, prefixPrim, instanceIndices, result);
+    } else {
+        _InstancerData const* instrData =
+            TfMapLookupPtr(_instancerData, cachePath);
+        if (instrData == nullptr) {
+            return false;
+        }
+
+        // For non-gprim selections, selectionPath might be pointing to a
+        // point instancer, or it might be pointing to a usd native instance
+        // (which is a dependency of the PI, used for calculating prototype
+        // transform).  If there's native instancing involved, we need to
+        // break the selection path down to a path context, and zipper compare
+        // it against the proto paths of each proto prim.  This is a very
+        // similar implementation to the one in instanceAdapter.cpp...
+        std::deque<SdfPath> selectionPathVec;
+        UsdPrim p = usdPrim;
+        while (p.IsInstanceProxy()) {
+            selectionPathVec.push_front(p.GetPrimInMaster().GetPath());
+            do {
+                p = p.GetParent();
+            } while (!p.IsInstance());
+        }
+        selectionPathVec.push_front(p.GetPath());
+
+        bool added = false;
+        for (auto const& pair : instrData->protoPrimMap) {
+
+            // Zipper compare the instance paths and the selection paths.
+            size_t instanceCount, selectionCount;
+            for (instanceCount = 0, selectionCount = 0;
+                 instanceCount < pair.second.paths.size() &&
+                 selectionCount < selectionPathVec.size();
+                 ++instanceCount) {
+                // pair.second.paths is innermost-first, and selectionPathVec
+                // outermost-first, so we need to flip the paths index.
+                size_t instanceIdx =
+                    pair.second.paths.size() - instanceCount - 1;
+                if (pair.second.paths[instanceIdx].HasPrefix(
+                        selectionPathVec[selectionCount])) {
+                    ++selectionCount;
+                } else if (selectionCount != 0) {
+                    // The paths don't match; setting "selectionCount = 0"
+                    // is telling the below code "no match", which is an
+                    // ok proxy for "partial match, partial mismatch".
+                    selectionCount = 0;
+                    break;
+                }
+            }
+
+            if (selectionCount == selectionPathVec.size()) {
+                // If we've accounted for the whole selection path, fully
+                // populate this prototype.
+                UsdPrim prefixPrim =
+                    _GetPrim(pair.first.GetAbsoluteRootOrPrimPath());
+                added |= pair.second.adapter->PopulateSelection(
+                    highlightMode, pair.first, prefixPrim,
+                    instanceIndices, result);
+            }
+            else if (selectionCount != 0 &&
+                     instanceCount == pair.second.paths.size()) {
+                // If the selection path goes past the end of the instance path,
+                // compose the remainder of the selection path into a
+                // (possibly instance proxy) usd prim and use that as the
+                // selection prim.
+                SdfPathVector residualPathVec(
+                    selectionPathVec.rbegin(),
+                    selectionPathVec.rend() - selectionCount);
+                SdfPath residualPath =
+                    _GetPrimPathFromInstancerChain(residualPathVec);
+                UsdPrim selectionPrim = _GetPrim(residualPath);
+
+                added |= pair.second.adapter->PopulateSelection(
+                    highlightMode, pair.first, selectionPrim,
+                    instanceIndices, result);
+            }
+        }
+
+        return added;
     }
-    return added;
+
+    return false;
 }
 
 /*virtual*/

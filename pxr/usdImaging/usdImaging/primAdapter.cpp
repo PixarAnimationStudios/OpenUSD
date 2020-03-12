@@ -401,24 +401,38 @@ UsdImagingPrimAdapter::GetPathForInstanceIndex(
 
 /*virtual*/
 bool
-UsdImagingPrimAdapter::PopulateSelection(HdSelection::HighlightMode const& mode,
-                                         SdfPath const &cachePath,
-                                         UsdPrim const &usdPrim,
-                                         VtIntArray const &instanceIndices,
-                                         HdSelectionSharedPtr const &result)
+UsdImagingPrimAdapter::PopulateSelection(
+    HdSelection::HighlightMode const& mode,
+    SdfPath const &cachePath,
+    UsdPrim const &usdPrim,
+    VtIntArray const &instanceIndices,
+    HdSelectionSharedPtr const &result) const
 {
+    // usdPrim (the original prim selection) might point to a parent node of
+    // this hydra prim; but it's also possible for it to point to dependent
+    // data sources like materials/coord systems/etc.  Only apply the highlight
+    // if usdPrim is a parent of cachePath.
+    // Note: this strategy won't work for native instanced prims, but we expect
+    // those to be handled in the instance adapter PopulateSelection.
+    if (!cachePath.HasPrefix(usdPrim.GetPath())) {
+        return false;
+    }
+
     const SdfPath indexPath = _delegate->ConvertCachePathToIndexPath(cachePath);
 
     // insert itself into the selection map.
-    // XXX: should check the existence of the path
     if (instanceIndices.size() == 0) {
         result->AddRprim(mode, indexPath);
     } else {
         result->AddInstance(mode, indexPath, instanceIndices);
     }
 
-    TF_DEBUG(USDIMAGING_SELECTION).Msg("PopulateSelection: (prim) %s\n",
-                                       indexPath.GetText());
+    if (TfDebug::IsEnabled(USDIMAGING_SELECTION)) {
+        std::stringstream ss;
+        ss << instanceIndices;
+        TF_DEBUG(USDIMAGING_SELECTION).Msg("PopulateSelection: (prim) %s %s\n",
+            indexPath.GetText(), ss.str().c_str());
+    }
 
     return true;
 }
@@ -554,12 +568,6 @@ SdfPath
 UsdImagingPrimAdapter::_ConvertIndexPathToCachePath(const SdfPath &indexPath) const
 {
     return _delegate->ConvertIndexPathToCachePath(indexPath);
-}
-
-SdfPathVector
-UsdImagingPrimAdapter::_GetRprimSubtree(SdfPath const& indexPath) const
-{
-    return _delegate->GetRenderIndex().GetRprimSubtree(indexPath);
 }
 
 TfToken

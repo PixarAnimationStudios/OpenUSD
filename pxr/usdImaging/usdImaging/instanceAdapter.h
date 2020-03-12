@@ -178,11 +178,11 @@ public:
     /// \name Selection
     // ---------------------------------------------------------------------- //
     virtual bool PopulateSelection( 
-                                HdSelection::HighlightMode const& highlightMode,
-                                SdfPath const &cachePath,
-                                UsdPrim const &usdPrim,
-                                VtIntArray const &instanceIndices,
-                                HdSelectionSharedPtr const &result) override;
+        HdSelection::HighlightMode const& highlightMode,
+        SdfPath const &cachePath,
+        UsdPrim const &usdPrim,
+        VtIntArray const &instanceIndices,
+        HdSelectionSharedPtr const &result) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Volume field information
