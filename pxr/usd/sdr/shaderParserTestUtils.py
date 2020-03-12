@@ -29,6 +29,8 @@ This is mostly focused on dealing with OSL and Args files. This may need to be
 expanded/generalized to accommodate other types in the future.
 """
 
+from __future__ import print_function
+
 from pxr import Ndr
 from pxr import Sdr
 from pxr.Sdf import ValueTypeNames as SdfTypes
@@ -322,7 +324,7 @@ def TestBasicNode(node, nodeSourceType, nodeURI, resolvedNodeURI):
     assert nodeOutputs["outputNormal"] is not None
     assert nodeOutputs["outputColor"] is not None
     assert nodeOutputs["outputVector"] is not None
-    print set(node.GetInputNames())
+    print(set(node.GetInputNames()))
     assert set(node.GetInputNames()) == {
         "inputA", "inputB", "inputC", "inputD", "inputF2", "inputF3", "inputF4",
         "inputF5", "inputInterp", "inputOptions", "inputPoint", "inputNormal",
@@ -335,7 +337,7 @@ def TestBasicNode(node, nodeSourceType, nodeURI, resolvedNodeURI):
     # So, ensure that the bits we expect to see are there instead of doing 
     # an equality check.
     nodeMetadata = node.GetMetadata()
-    for i,j in metadata.iteritems():
+    for i,j in metadata.items():
         assert i in nodeMetadata
         assert nodeMetadata[i] == metadata[i]
 
