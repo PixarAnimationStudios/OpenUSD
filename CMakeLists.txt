@@ -55,10 +55,6 @@ pxr_toplevel_prologue()
 add_subdirectory(pxr)
 add_subdirectory(extras)
 
-if (${PXR_BUILD_KATANA_PLUGIN})
-    add_subdirectory(third_party/katana)
-endif()
-
 if (${PXR_BUILD_PRMAN_PLUGIN})
     add_subdirectory(third_party/renderman-${RENDERMAN_VERSION_MAJOR})
 endif()

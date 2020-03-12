@@ -145,15 +145,6 @@ endif()
 
 # Third Party Plugin Package Requirements
 # ----------------------------------------------
-if (PXR_BUILD_KATANA_PLUGIN)
-    find_package(KatanaAPI REQUIRED)
-    find_package(Boost
-        COMPONENTS
-        thread
-        REQUIRED
-        )
-endif()
-
 if (PXR_BUILD_PRMAN_PLUGIN)
     find_package(Renderman REQUIRED)
 endif()

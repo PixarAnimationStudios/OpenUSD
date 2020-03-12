@@ -107,7 +107,6 @@ Support for OpenGL can optionally be disabled by specifying the cmake flag
 that depend on GL, including:
 - usdview
 - Hydra GL imaging
-- Katana app plugins
 
 ##### OSL (OpenShadingLanguage)
 
@@ -216,6 +215,9 @@ These plugins are not built by default and must be enabled via the instructions 
 The USD Maya plugins can be found in the Autodesk-supported repo available
 [here](https://github.com/Autodesk/maya-usd).
 
+The USD Katana plugins can be found in the Foundry-supported repo available
+[here](https://github.com/TheFoundryVisionmongers/KatanaUsdPlugins).
+
 ##### Alembic Plugin
 
 Enable the [Alembic](https://github.com/alembic/alembic) plugin in the build
@@ -239,21 +241,6 @@ support requires the following dependencies:
 | HDF5_LOCATION      | The location of [HDF5](https://www.hdfgroup.org/HDF5/) |
 
 For further information see the documentation on the Alembic plugin [here](http://openusd.org/docs/Alembic-USD-Plugin.html).
-
-##### Katana Plugin
-
-Enable the Katana plugin in the build by specifying the cmake flag 
-```PXR_BUILD_KATANA_PLUGIN=TRUE``` when invoking cmake. 
-
-The additional dependencies that must be supplied when invoking cmake are:
-
-| Dependency Name       | Description                           |
-| --------------        | -----------------------------------   |
-| KATANA_API_LOCATION   | The root path to a Katana SDK install.|
-
-See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
-
-For further information see our additional documentation on the Katana plugins [here](http://openusd.org/docs/Katana-USD-Plugins.html).
 
 ##### MaterialX Plugin
 

@@ -624,10 +624,10 @@ def InstallBoost(context, force, buildArgs):
         if context.buildPython:
             b2_settings.append("--with-python")
 
-        if context.buildKatana or context.buildOIIO:
+        if context.buildOIIO:
             b2_settings.append("--with-date_time")
 
-        if context.buildKatana or context.buildOIIO or context.enableOpenVDB:
+        if context.buildOIIO or context.enableOpenVDB:
             b2_settings.append("--with-system")
             b2_settings.append("--with-thread")
 
@@ -1326,14 +1326,6 @@ def InstallUSD(context, force, buildArgs):
         else:
             extraArgs.append('-DPXR_BUILD_MATERIALX_PLUGIN=OFF')
 
-        if context.buildKatana:
-            if context.katanaApiLocation:
-                extraArgs.append('-DKATANA_API_LOCATION="{apiLocation}"'
-                                 .format(apiLocation=context.katanaApiLocation))
-            extraArgs.append('-DPXR_BUILD_KATANA_PLUGIN=ON')
-        else:
-            extraArgs.append('-DPXR_BUILD_KATANA_PLUGIN=OFF')
-
         if Windows():
             # Increase the precompiled header buffer limit.
             extraArgs.append('-DCMAKE_CXX_FLAGS="/Zm150"')
@@ -1570,16 +1562,6 @@ subgroup.add_argument("--materialx", dest="build_materialx", action="store_true"
 subgroup.add_argument("--no-materialx", dest="build_materialx", action="store_false",
                       help="Do not build MaterialX plugin for USD (default)")
 
-group = parser.add_argument_group(title="Katana Plugin Options")
-subgroup = group.add_mutually_exclusive_group()
-subgroup.add_argument("--katana", dest="build_katana", action="store_true", 
-                      default=False,
-                      help="Build Katana plugin for USD")
-subgroup.add_argument("--no-katana", dest="build_katana", action="store_false",
-                      help="Do not build Katana plugin for USD (default)")
-group.add_argument("--katana-api-location", type=str,
-                   help="Directory where the Katana SDK is installed.")
-
 args = parser.parse_args()
 
 class InstallContext:
@@ -1688,11 +1670,6 @@ class InstallContext:
         # - MaterialX Plugin
         self.buildMaterialX = args.build_materialx
 
-        # - Katana Plugin
-        self.buildKatana = args.build_katana
-        self.katanaApiLocation = (os.path.abspath(args.katana_api_location)
-                                  if args.katana_api_location else None)
-       
     def GetBuildArguments(self, dep):
         return self.buildArgs.get(dep.name.lower(), [])
        
@@ -1786,14 +1763,6 @@ if "--usdview" in sys.argv:
         PrintError("Cannot build usdview when Python support is disabled.")
         sys.exit(1)
 
-# Error out if we try to build any third party plugins with python disabled.
-if not context.buildPython:
-    pythonPluginErrorMsg = (
-        "%s plugin cannot be built when python support is disabled")
-    if context.buildKatana:
-        PrintError(pythonPluginErrorMsg % "Katana")
-        sys.exit(1)
-
 # Determine whether we're running in Maya's version of Python. When building
 # against Maya's Python, there are some additional restrictions on what we're
 # able to build.
@@ -1814,13 +1783,6 @@ if isMayaPython:
                    "of Python. Maya does not provide access to the 'OpenGL' "
                    "Python module. Use '--no-usdview' to disable building "
                    "usdview.")
-        sys.exit(1)
-
-    # We should not attempt to build the plugins for any other DCCs if we're
-    # building against Maya's version of Python.
-    if any([context.buildKatana]):
-        PrintError("Cannot build plugins for other DCCs when building against "
-                   "Maya's version of Python.")
         sys.exit(1)
 
 dependenciesToBuild = []
@@ -1928,7 +1890,6 @@ Building with settings:
       HDF5 support:             {enableHDF5}
     Draco Plugin                {buildDraco}
     MaterialX Plugin            {buildMaterialX}
-    Katana Plugin               {buildKatana}
 
   Dependencies                  {dependencies}"""
 
@@ -1976,8 +1937,7 @@ summaryMsg = summaryMsg.format(
     buildAlembic=("On" if context.buildAlembic else "Off"),
     buildDraco=("On" if context.buildDraco else "Off"),
     buildMaterialX=("On" if context.buildMaterialX else "Off"),
-    enableHDF5=("On" if context.enableHDF5 else "Off"),
-    buildKatana=("On" if context.buildKatana else "Off"))
+    enableHDF5=("On" if context.enableHDF5 else "Off"))
 
 Print(summaryMsg)
 
@@ -2052,10 +2012,6 @@ Print("""
     {requiredInPath}
 """.format(requiredInPath="\n    ".join(sorted(requiredInPath))))
     
-if context.buildKatana:
-    Print("See documentation at http://openusd.org/docs/Katana-USD-Plugins.html "
-          "for setting up the Katana plugin.\n")
-
 if context.buildPrman:
     Print("See documentation at http://openusd.org/docs/RenderMan-USD-Imaging-Plugin.html "
           "for setting up the RenderMan plugin.\n")

@@ -807,16 +807,6 @@ INPUT                  = src/modules/usd/doxygen/externalOverview.dox \
                          src/modules/usdSkelImaging \
                          src/modules/usdviewq \
                                                                       \
-                         ## "katana" package \
-                         src/modules/usdKatana/overview.dox \
-                         src/modules/katanaAttrfncApi \
-                         src/modules/katanaOpApi \
-                         src/modules/katanaPluginApi \
-                         src/modules/usdKatana \
-                         src/modules/pxrUsdIn \
-                         src/modules/pxrUsdInPrman \
-                         src/modules/pxrUsdInShipped \
-                                                                      \
                          ## Everything else \
                          src/modules
 
