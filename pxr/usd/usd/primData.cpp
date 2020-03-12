@@ -310,7 +310,9 @@ Usd_PrimData::_ComposeAndCacheTypeAndFlags(Usd_PrimDataConstPtr parent,
             ->FindOrCreatePrimTypeInfo(primTypeName, std::move(appliedSchemas));
 
         bool active = true;
-        self.GetMetadata(SdfFieldKeys->Active, &active);
+        // We don't allow fallbacks for active.
+        _stage->_GetMetadata(self, SdfFieldKeys->Active, TfToken(), 
+                             /*useFallbacks=*/ false, &active);
         _flags[Usd_PrimActiveFlag] = active;
 
         // Cache whether or not this prim has a payload.
@@ -332,7 +334,9 @@ Usd_PrimData::_ComposeAndCacheTypeAndFlags(Usd_PrimDataConstPtr parent,
         if (parent->IsGroup()) {
             static TfToken kindToken("kind");
             TfToken kind;
-            self.GetMetadata(kindToken, &kind);
+            // We don't allow fallbacks for kind.
+            _stage->_GetMetadata(self, kindToken, TfToken(), 
+                                 /*useFallbacks=*/ false, &kind);
             // Use the kind registry to determine model/groupness.
             if (!kind.IsEmpty()) {
                 isGroup = KindRegistry::IsA(kind, KindTokens->group);
