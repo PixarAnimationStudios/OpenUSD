@@ -1,0 +1,58 @@
+trigger:
+- master
+- dev
+
+jobs:
+- job: Linux
+  pool:
+    vmImage: 'Ubuntu-18.04'
+  steps:
+  - script: |
+      sudo apt-get -qq update;
+      sudo pip install --upgrade pip
+      sudo apt-get install python-setuptools;
+      sudo apt-get install libglew-dev libxrandr-dev libxcursor-dev libxinerama-dev libxi-dev;
+      sudo pip install PySide2 ;
+      sudo pip install PyOpenGL ;
+      sudo python build_scripts/build_usd.py --build $HOME/USDgen/build --src $HOME/USDgen/src $HOME/USDinst
+    displayName: 'Building USD'
+  - task: PublishPipelineArtifact@0
+    inputs:
+      artifactName: 'usd-linux'
+      targetPath: "/home/vsts/USDinst"
+
+- job: macOS
+  pool:
+    vmImage: 'macOS-10.14'
+  steps:
+  - script: |
+      # The SYSTEM env var is used by the Makefile of glew and having it set trips it up
+      unset SYSTEM
+      /bin/bash -c "sudo xcode-select -s /Applications/Xcode_10.1.app/Contents/Developer"
+      sudo pip install pyside2 ;
+      sudo pip install PyOpenGL ;
+      python build_scripts/build_usd.py -v --generator Xcode --build $HOME/USDgen/build --src $HOME/USDgen/src $HOME/USDinst
+    displayName: 'Building USD'
+  - task: PublishPipelineArtifact@0
+    inputs:
+      artifactName: 'usd-macOS'
+      targetPath: "/Users/runner/USDinst"
+
+- job: Windows
+  timeoutInMinutes: 90
+  pool:
+    vmImage: 'VS2017-Win2016'
+  steps:
+  - script: |
+      call C:\"Program Files (x86)"\"Microsoft Visual Studio"\2017\Enterprise\VC\Auxiliary\Build\vcvars64.bat
+      call set PATH=C:/Python27amd64;C:/Python27amd64/Scripts;%PATH%
+      call python --version
+      call python -m pip install --upgrade pip
+      call python -m pip install PySide
+      call python -m pip install PyOpenGL
+      call python build_scripts/build_usd.py --build-args USD,"-DPYTHON_EXECUTABLE:FILEPATH=C:/Python27amd64/python.exe" --build %HOME%/USDgen/build --src %HOME%/USDgen/src %HOME%/USDinst
+    displayName: 'Building USD'
+  - task: PublishPipelineArtifact@0
+    inputs:
+      artifactName: 'usd-win64'
+      targetPath: "D:/USDinst"
