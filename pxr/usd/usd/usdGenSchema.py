@@ -816,7 +816,13 @@ def GatherTokens(classes, libName, libTokens):
     # Add tokens from all classes to the token set
     for cls in classes:
         # Add tokens from attributes to the token set
-        for attr in cls.attrs.values():
+        #
+        # We sort by name here to get a stable ordering when building up the
+        # desc string below. The sort is reversed because items are prepended
+        # to the description. Reversing this sort results in a forward sort in
+        # the doc strings.
+        for attr in sorted(cls.attrs.values(),
+                           key=lambda a: a.name.lower(), reverse=True):
 
             # Add Attribute Names to token set
             cls.tokens.add(attr.name)
@@ -870,7 +876,10 @@ def GatherTokens(classes, libName, libTokens):
                   _SanitizeDoc(tokenInfo.get("doc",
                       "Special token for the %s library." % libName), ' '))
 
-    return sorted(tokenDict.values(), key=lambda token: token.id.lower())
+    # Sort the list of tokens lexicographically. This pair of keys will provide
+    # a case insensitive primary key and a case sensitive secondary key. That
+    # way we keep a stable sort for tokens that differ only in case.
+    return sorted(tokenDict.values(), key=lambda token: (token.id.lower(), token.id))
 
 
 def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
