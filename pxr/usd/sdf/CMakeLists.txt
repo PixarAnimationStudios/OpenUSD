@@ -125,6 +125,7 @@ pxr_library(sdf
     PYMODULE_CPPFILES
         module.cpp
         wrapArrayAssetPath.cpp
+        wrapArrayPath.cpp
         wrapArrayTimeCode.cpp
         wrapAssetPath.cpp
         wrapAttributeSpec.cpp

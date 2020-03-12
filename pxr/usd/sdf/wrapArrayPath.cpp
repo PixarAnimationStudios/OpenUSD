@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,42 +21,31 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/base/vt/array.h"
+#include "pxr/base/vt/wrapArray.h"
+#include "pxr/base/vt/valueFromPython.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+namespace Vt_WrapArray {
+    template <>
+    std::string GetVtArrayName< VtArray<SdfPath> >() {
+        return "PathArray";
+    }
+}
+
+template<>
+SdfPath VtZero() {
+    return SdfPath();
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE
-{
-    TF_WRAP( ArrayAssetPath );
-    TF_WRAP( ArrayPath );
-    TF_WRAP( ArrayTimeCode );
-    TF_WRAP( AssetPath );
-    TF_WRAP( ChangeBlock );
-    TF_WRAP( CleanupEnabler );
-    TF_WRAP( CopyUtils );
-    TF_WRAP( FileFormat );
-    TF_WRAP( Layer );
-    TF_WRAP( LayerOffset );
-    TF_WRAP( LayerTree );
-    TF_WRAP( NamespaceEdit );
-    TF_WRAP( Notice );
-    TF_WRAP( Path );
-    TF_WRAP( Payload );
-    TF_WRAP( Reference );
-    TF_WRAP( TimeCode );
-    TF_WRAP( Types );
-    TF_WRAP( ValueType );
-
-    TF_WRAP( Spec );
-    TF_WRAP( VariantSpec );
-    TF_WRAP( VariantSetSpec );
-
-    TF_WRAP( PropertySpec );
-    TF_WRAP( AttributeSpec );
-    TF_WRAP( RelationshipSpec );
-
-    TF_WRAP( PrimSpec );
-    TF_WRAP( PseudoRootSpec );
+void wrapArrayPath() {
+    VtWrapArray<VtArray<SdfPath> >();
+    VtValueFromPython<VtArray<SdfPath> >();
 }
