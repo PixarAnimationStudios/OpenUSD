@@ -59,7 +59,7 @@ class TestUsdAbcFaceset(unittest.TestCase):
             self.assertTrue(Gf.IsClose(c, e, 1e-5))
 
         expectedFaceIndices = {0.0: [0, 3, 5], 1.0: [3]}
-        for time, expectedValue in expectedFaceIndices.iteritems():
+        for time, expectedValue in expectedFaceIndices.items():
             faceIndices = indices.Get(time)
             for c, e in zip(faceIndices, expectedValue):
                 self.assertEqual(c, e)
