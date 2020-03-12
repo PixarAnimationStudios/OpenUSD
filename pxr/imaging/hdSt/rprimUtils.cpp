@@ -182,10 +182,10 @@ HdStCanSkipBARAllocationOrUpdate(
     HdDirtyBits dirtyBits)
 {
     TF_UNUSED(dirtyBits);
-    // XXX: Without a dirty bit to indicate that the primvar descriptors have
-    // changed, we need to manually test each time to figure out if any primvars
-    // were added or removed for each interpolation.
-    bool mayHaveDirtyPrimvarDesc = true;
+    // XXX: DirtyPrimvar is serving a double role of indicating primvar value
+    // dirtyness as well as descriptor dirtyness.
+    // We should move to a separate dirty bit for the latter.
+    bool mayHaveDirtyPrimvarDesc = (dirtyBits & HdChangeTracker::DirtyPrimvar);
 
     // If we have no buffer/computation sources, we can skip processing in the
     // following cases:

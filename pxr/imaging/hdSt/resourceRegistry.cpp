@@ -907,18 +907,18 @@ HdStResourceRegistry::_UpdateBufferArrayRange(
 
     // Determine if the BAR needs reallocation + migration
     {
-        bool bufferSpecsChanged = !removedSpecs.empty() ||
-                                !HdBufferSpec::IsSubset(updatedOrAddedSpecs,
-                                                        curBufferSpecs);
         bool haveBuffersToUpdate = !updatedOrAddedSpecs.empty();
         bool dataUpdateForImmutableBar = curRange->IsImmutable() &&
                                         haveBuffersToUpdate;
         bool usageHintChanged = curRange->GetUsageHint().value !=
                                 usageHint.value;
         
-        bool needsMigration =  dataUpdateForImmutableBar ||
-                               usageHintChanged ||
-                               bufferSpecsChanged;
+        bool needsMigration =
+            dataUpdateForImmutableBar ||
+            usageHintChanged ||
+            // buffer removal or addition
+            !removedSpecs.empty() ||
+            !HdBufferSpec::IsSubset(updatedOrAddedSpecs, curBufferSpecs);
 
         if (!needsMigration) {
             // The existing BAR can be used to queue any updates.
