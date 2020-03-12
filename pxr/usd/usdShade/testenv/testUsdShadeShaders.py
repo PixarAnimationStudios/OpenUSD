@@ -22,6 +22,8 @@
 # KIND, either express or implied. See the Apache License for the specific          
 # language governing permissions and limitations under the Apache License. 
 
+from __future__ import print_function
+
 from pxr import Tf, Sdf, Usd, UsdGeom, UsdShade
 import unittest
 
@@ -149,7 +151,7 @@ class TestUsdShadeShaders(unittest.TestCase):
         self.assertTrue(whiterPale.GetSourceCode() is None)
 
         # Test boundaries of parameter type-testing when connecting
-        print "Test Typed Input Connections"
+        print("Test Typed Input Connections")
 
         colInput = pale.CreateInput("col1", Sdf.ValueTypeNames.Color3f)
         self.assertTrue(colInput)
@@ -181,7 +183,7 @@ class TestUsdShadeShaders(unittest.TestCase):
         outputAttr = whiterPale.GetPrim().GetAttribute("inputs:floatInput")
         self.assertTrue(outputAttr)
 
-        print "Test Input Fetching"
+        print("Test Input Fetching")
         # test against single input fetches
         vecInput = pale.CreateInput('vec', Sdf.ValueTypeNames.Color3f)
         self.assertTrue(vecInput)
@@ -230,7 +232,7 @@ class TestUsdShadeShaders(unittest.TestCase):
         self.assertEqual(pale.GetSdrMetadata(), baseSdrMetadata)
         paleSdrMetadata = {Sdr.NodeMetadata.Departments : "anim|layout",
                               Sdr.NodeMetadata.Category : "preview"}
-        for i,j in paleSdrMetadata.iteritems():
+        for i,j in paleSdrMetadata.items():
             pale.SetSdrMetadataByKey(i, j)
 
         self.assertEqual(pale.GetSdrMetadata(), 

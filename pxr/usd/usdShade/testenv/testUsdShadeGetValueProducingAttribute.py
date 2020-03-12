@@ -22,13 +22,15 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from __future__ import print_function
+
 import unittest
 from pxr import Usd, UsdShade, Sdf
 
 class TestUsdShadeGetValueProducingAttribute(unittest.TestCase):
 
     def _check(self, attr, expectedPath, expectedValue=None):
-        print "CHECK:", attr, "vs", expectedPath
+        print("CHECK:", attr, "vs", expectedPath)
         self.assertTrue(attr)
         if 'inputs:' in expectedPath:
             self.assertTrue(UsdShade.Input.IsInput(attr))
