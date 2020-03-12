@@ -99,6 +99,15 @@ public:
     TF_API
     static std::string GetCodeName(const TfEnum &code);
 
+    /// Return a human-readable diagnostic message. The TfDiagnosticMgr uses 
+    /// this function to print diagnostics when no diagnostic delegates are 
+    /// installed. Diagnostic delegate implementations can call this to produce 
+    /// messages in the same format, if desired.
+    TF_API
+    static std::string FormatDiagnostic(const TfEnum &code, 
+            const TfCallContext &context, const std::string &msg, 
+            const TfDiagnosticInfo &info);
+
     /// \class Delegate
     /// One may set a delegate with the \c TfDiagnosticMgr which will be
     /// called to respond to errors and diagnostics.

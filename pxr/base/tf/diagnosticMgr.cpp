@@ -89,18 +89,14 @@ struct _ReentrancyGuard {
 } // end anonymous namespace
 
 
-// Helper function for printing a diagnostic message. This is used in non-main
-// threads and when a delegate is not available.
+// Helper function for printing a diagnostic message when a delegate is not
+// available.
 //
 // If \p info contains a TfPyExceptionState, that will be printed too.
 //
 static void
 _PrintDiagnostic(FILE *fout, const TfEnum &code, const TfCallContext &context,
                  const std::string& msg, const TfDiagnosticInfo &info);
-
-static std::string
-_FormatDiagnostic(const TfEnum &code, const TfCallContext &context,
-                  const std::string &msg, const TfDiagnosticInfo &info);
 
 static std::string
 _FormatDiagnostic(const TfDiagnosticBase &d, const TfDiagnosticInfo &info);
@@ -650,9 +646,10 @@ TfDiagnosticMgr::_RebuildErrorLogText()
     _logText.local().RebuildAndPublish(GetErrorBegin(), GetErrorEnd());
 }
 
-static std::string
-_FormatDiagnostic(const TfEnum &code, const TfCallContext &context,
-                  const std::string &msg, const TfDiagnosticInfo &info)
+std::string
+TfDiagnosticMgr::FormatDiagnostic(const TfEnum &code, 
+        const TfCallContext &context, const std::string &msg, 
+        const TfDiagnosticInfo &info)
 {
     string output;
     string codeName = TfDiagnosticMgr::GetCodeName(code);
@@ -686,15 +683,16 @@ _FormatDiagnostic(const TfEnum &code, const TfCallContext &context,
 
 static std::string
 _FormatDiagnostic(const TfDiagnosticBase &d, const TfDiagnosticInfo &info) {
-    return _FormatDiagnostic(d.GetDiagnosticCode(), d.GetContext(),
-                             d.GetCommentary(), info);
+    return TfDiagnosticMgr::FormatDiagnostic(d.GetDiagnosticCode(), 
+            d.GetContext(), d.GetCommentary(), info);
 }
 
 static void
 _PrintDiagnostic(FILE *fout, const TfEnum &code, const TfCallContext &context,
     const std::string& msg, const TfDiagnosticInfo &info)
 {
-    fprintf(fout, "%s", _FormatDiagnostic(code, context, msg, info).c_str());
+    fprintf(fout, "%s", TfDiagnosticMgr::FormatDiagnostic(code, context, msg, 
+                info).c_str());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
