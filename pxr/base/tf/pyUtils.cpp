@@ -278,7 +278,27 @@ string TfPyGetClassName(object const &obj)
     // CODE_COVERAGE_ON
 }
 
+boost::python::object
+TfPyCopyBufferToByteArray(const char* buffer, size_t size)
+{
+    TfPyLock lock;
+    boost::python::object result;
 
+    try {
+        // boost python doesn't include a bytearray object, but we can return
+        // one through the C api directly. The c api takes an array of char
+        // and a size, so uses the name FromString, but this is really just
+        // a buffer.
+        PyObject* buf = PyByteArray_FromStringAndSize(buffer, size);
+        boost::python::handle<> hbuf(buf);
+        result = boost::python::object(hbuf); 
+    } catch (boost::python::error_already_set const &) {
+        TfPyConvertPythonExceptionToTfErrors();
+        PyErr_Clear();
+    }
+
+    return result;
+}
 
 vector<string> TfPyGetTraceback()
 {

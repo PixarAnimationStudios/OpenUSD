@@ -51,9 +51,7 @@ _GetFile(const UsdZipFile& zipFile, const std::string& filePath)
     if (iter == zipFile.end()) {
         return object();
     }
-    std::vector<char> data(
-        iter.GetFile(), iter.GetFile() + iter.GetFileInfo().size);
-    return TfPyCopySequenceToList(data);
+    return TfPyCopyBufferToByteArray(iter.GetFile(), iter.GetFileInfo().size);
 }
 
 static object

@@ -463,6 +463,22 @@ _MakeClassWithVarArgInit(bool allowExtraArgs,
     return rval;
 }
 
+
+////////////////////////////////
+// Bytearray conversion
+
+static object
+_ConvertByteListToByteArray(const list& byteList)
+{
+    std::vector<char> inputList;
+    for (int i = 0; i < len(byteList); ++i) {
+        inputList.push_back(extract<char>(byteList[i]));
+    }
+
+    return TfPyCopyBufferToByteArray(inputList.data(), inputList.size());
+}
+
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 void wrapTf_TestTfPython()
@@ -470,6 +486,8 @@ void wrapTf_TestTfPython()
 
 //      def("f", f1, (arg("x")=3, arg("y")=4));
 //      def("f", f2, (arg("x")=5, arg("y")=6));
+
+    def("_ConvertByteListToByteArray", _ConvertByteListToByteArray);
 
     def("_sendTfNoticeWithSender", sendTfNoticeWithSender);
     

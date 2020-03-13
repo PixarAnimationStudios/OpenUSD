@@ -273,6 +273,15 @@ boost::python::tuple TfPyCopySequenceToTuple(Seq const &seq) {
     return boost::python::tuple(TfPyCopySequenceToList(seq));
 }
 
+/// Create a python bytearray from an input buffer and size.
+///
+/// If a size of zero is passed in this function will return a valid python
+/// bytearray of size zero.
+///
+/// An invalid object handle is returned on failure.
+TF_API
+boost::python::object TfPyCopyBufferToByteArray(const char* buffer, size_t size);
+
 /// Return a vector of strings containing the current python traceback.
 ///
 /// The vector contains the same strings that python's traceback.format_stack()
