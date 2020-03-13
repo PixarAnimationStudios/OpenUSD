@@ -151,14 +151,15 @@ struct Pcp_VariableImpl final : PcpMapExpression::Variable
 {
     ~Pcp_VariableImpl() override {}
 
-    Pcp_VariableImpl(const PcpMapExpression::_NodeRefPtr &node) : _node(node) {}
+    explicit Pcp_VariableImpl(PcpMapExpression::_NodeRefPtr &&node)
+        : _node(std::move(node)) {}
 
     const PcpMapExpression::Value & GetValue() const override {
         return _node->GetValueForVariable();
     }
 
-    void SetValue(const PcpMapExpression::Value & value) override {
-        _node->SetValueForVariable(value);
+    void SetValue(PcpMapExpression::Value && value) override {
+        _node->SetValueForVariable(std::move(value));
     }
 
     PcpMapExpression GetExpression() const override {
@@ -169,11 +170,11 @@ struct Pcp_VariableImpl final : PcpMapExpression::Variable
 };
 
 PcpMapExpression::VariableUniquePtr
-PcpMapExpression::NewVariable( const Value & initialValue )
+PcpMapExpression::NewVariable(Value && initialValue)
 {
     Pcp_VariableImpl *var = new Pcp_VariableImpl( _Node::New(_OpVariable) );
 
-    var->SetValue(initialValue);
+    var->SetValue(std::move(initialValue));
 
     return VariableUniquePtr(var);
 }
@@ -361,7 +362,7 @@ PcpMapExpression::_Node::_Invalidate()
 }
 
 void
-PcpMapExpression::_Node::SetValueForVariable(const Value & value)
+PcpMapExpression::_Node::SetValueForVariable(Value && value)
 {
     if (key.op != _OpVariable) {
         TF_CODING_ERROR("Cannot set value for non-variable");
@@ -369,7 +370,7 @@ PcpMapExpression::_Node::SetValueForVariable(const Value & value)
     }
     tbb::spin_mutex::scoped_lock lock(_mutex);
     if (_valueForVariable != value) {
-        _valueForVariable = value;
+        _valueForVariable = std::move(value);
         _Invalidate();
     }
 }
