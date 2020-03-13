@@ -149,6 +149,7 @@ public:
         bool inserted = _namesToNodes[name].insert(symbolAddr).second;
 
         if (inserted && _initialized) {
+            lock.release();
             TfDebugSymbolsChangedNotice().Send();
         }
     }
@@ -212,9 +213,9 @@ public:
                     check.enabled ? "true" : "false");
             }
         }
-        lock.release();
         
         if (changed && _initialized) {
+            lock.release();
             TfDebugSymbolsChangedNotice().Send();
         }
     }
@@ -235,6 +236,7 @@ public:
         _namesToExplicitEnabledState[name] = enabled;
 
         if (_initialized) {
+            lock.release();
             TfDebugSymbolsChangedNotice().Send();
         }
     }
