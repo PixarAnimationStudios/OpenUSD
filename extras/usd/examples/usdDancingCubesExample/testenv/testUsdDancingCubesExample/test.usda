@@ -1,0 +1,24 @@
+#usda 1.0
+(
+    endTimeCode = 200
+    startTimeCode = 0
+)
+
+def "Root" (
+    # Dictionary value metadata field that provides all the parameters to
+    # generate the layer in the payload. Change these values to change the 
+    # contents of the file.
+    Usd_DCE_Params = {
+        int perSide = 4
+        int framesPerCycle = 16
+        int numFrames = 20
+        double distance = 6.0
+        double moveScale = 1.5
+        token geomType = "Cube"
+    }
+    # Payload to the dynamic file. The file must exist but its contents are
+    # irrelevant as everything is generated from parameters above.
+    payload = @./empty.usddancingcubesexample@
+)
+{
+}

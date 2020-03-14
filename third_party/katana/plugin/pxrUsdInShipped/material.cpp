@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxrUsdInShipped/declareCoreOps.h"
+#include "declareCoreOps.h"
 
 #include "pxr/pxr.h"
 #include "usdKatana/attrMap.h"
@@ -184,7 +184,28 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE_WITH_FLUSH(
     UsdShadeMaterial materialSchema(privateData.GetUsdPrim());
     if (!flatten)
     {
-        flatten = !materialSchema.HasBaseMaterial();
+        if (materialSchema.HasBaseMaterial())
+        {
+            // NOTE: The goal of using unflattened data (disregarding non-local
+            //       opinion) is to preserve the composition hierarchy via
+            //       katana's hierarchical inheritance of material locations.
+            //       If the USD base material path is not a sibling, then it
+            //       won't be represented in the local (to this looks/material
+            //       group) scene. Instead we should fall back to using a
+            //       flattened material. This logic pairs with a similar
+            //       comparison in _GetDisplayGroup within usdKatana/utils.cpp
+            //       -- which determines the katana location path for a
+            //       material.
+            if (materialSchema.GetBaseMaterialPath().GetParentPath() != 
+                    materialSchema.GetPrim().GetPath().GetParentPath())
+            {
+                flatten = true;
+            }
+        }
+        else
+        {
+            flatten = true;
+        }
     }
     
     

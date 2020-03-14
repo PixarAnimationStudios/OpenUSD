@@ -1,0 +1,171 @@
+#usda 1.0
+(
+    "This file describes the USD Shader schemata for code generation."
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName      = "usdUI"
+        string libraryPath      = "pxr/usd/usdUI"
+        # dictionary libraryTokens = {}
+    }
+)
+{
+}
+
+class "NodeGraphNodeAPI"(
+    inherits = </APISchemaBase>
+    doc = """
+    This api helps storing information about nodes in node graphs.
+    """
+) {
+    uniform float2 ui:nodegraph:node:pos (
+        doc = """
+        Declared relative position to the parent in a node graph.
+        X is the horizontal position.
+        Y is the vertical position. Higher numbers correspond to lower positions 
+        (coordinates are Qt style, not cartesian).
+
+        These positions are not explicitly meant in pixel space, but rather
+        assume that the size of a node is approximately 1.0x1.0. Where size-x is
+        the node width and size-y height of the node. Depending on 
+        graph UI implementation, the size of a node may vary in each direction.
+
+        Example: If a node's width is 300 and it is position is at 1000, we
+        store for x-position: 1000 * (1.0/300)
+        """
+        customData = {
+            string apiName = "pos"
+        }
+    )
+
+    uniform int ui:nodegraph:node:stackingOrder (
+        doc = """
+        This optional value is a useful hint when an application cares about 
+        the visibility of a node and whether each node overlaps another.
+        
+        Nodes with lower stacking order values are meant to be drawn below 
+        higher ones. Negative values are meant as background. Positive values
+        are meant as foreground.
+        Undefined values should be treated as 0. 
+
+        There are no set limits in these values.
+        """
+        customData = {
+            string apiName = "stackingOrder"
+        }
+    )
+
+    uniform color3f ui:nodegraph:node:displayColor (
+        doc = """
+        This hint defines what tint the node should have in the node graph.
+        """
+        customData = {
+            string apiName = "displayColor"
+        }
+    )
+
+    uniform asset ui:nodegraph:node:icon (
+        doc = """
+        This points to an image that should be displayed on the node.  It is 
+        intended to be useful for summary visual classification of nodes, rather
+        than a thumbnail preview of the computed result of the node in some
+        computational system.
+        """
+        customData = {
+            string apiName = "icon"
+        }
+    )
+
+    uniform token ui:nodegraph:node:expansionState (
+        allowedTokens = ["open", "closed", "minimized"]
+        doc = """ 
+        The current expansionState of the node in the ui. 
+        'open' = fully expanded
+        'closed' = fully collapsed
+        'minimized' = should take the least space possible
+        """
+        customData = {
+            string apiName = "expansionState"
+        }
+    )
+
+    uniform float2 ui:nodegraph:node:size (
+        doc = """
+        Optional size hint for a node in a node graph.
+        X is the width.
+        Y is the height.
+
+        This value is optional, because node size is often determined 
+        based on the number of in- and outputs of a node.
+        """
+        customData = {
+            string apiName = "size"
+        }
+    )
+}
+
+
+class "SceneGraphPrimAPI"(
+    inherits = </APISchemaBase>
+    doc = """
+    Utility schema for display properties of a prim
+    """
+) {
+    uniform token ui:displayName (
+        doc = """When publishing a nodegraph or a material, it can be useful to
+        provide an optional display name, for readability.
+        """
+        customData = {
+            string apiName = "displayName"
+        }
+    )
+    uniform token ui:displayGroup (
+        doc = """When publishing a nodegraph or a material, it can be useful to
+        provide an optional display group, for organizational purposes and 
+        readability. This is because often the usd shading hierarchy is rather
+        flat while we want to display it in organized groups.
+        """
+        customData = {
+            string apiName = "displayGroup"
+        }
+    )
+}
+
+class Backdrop "Backdrop" (
+    inherits = </Typed>
+    doc = """Provides a 'group-box' for the purpose of node graph organization.
+
+    Unlike containers, backdrops do not store the Shader nodes inside of them.
+    Backdrops are an organizational tool that allows Shader nodes to be visually 
+    grouped together in a node-graph UI, but there is no direct relationship 
+    between a Shader node and a Backdrop. 
+
+    The guideline for a node-graph UI is that a Shader node is considered part 
+    of a Backdrop when the Backdrop is the smallest Backdrop a Shader node's 
+    bounding-box fits inside.
+
+    Backdrop objects are contained inside a NodeGraph, similar to how Shader 
+    objects are contained inside a NodeGraph.
+
+    Backdrops have no shading inputs or outputs that influence the rendered
+    results of a NodeGraph. Therefore they can be safely ignored during import.
+
+    Like Shaders and NodeGraphs, Backdrops subscribe to the NodeGraphNodeAPI to 
+    specify position and size.
+    """ 
+)
+{
+    uniform token ui:description (
+        doc = """The text label that is displayed on the backdrop in the node
+        graph. This help-description explains what the nodes in a backdrop do.
+        """
+        customData = {
+            string apiName = "description"
+        }
+    )
+}
+

@@ -22,18 +22,18 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/hdEmbree/renderDelegate.h"
+#include "pxr/imaging/plugin/hdEmbree/renderDelegate.h"
 
-#include "pxr/imaging/hdEmbree/config.h"
-#include "pxr/imaging/hdEmbree/instancer.h"
-#include "pxr/imaging/hdEmbree/renderParam.h"
-#include "pxr/imaging/hdEmbree/renderPass.h"
+#include "pxr/imaging/plugin/hdEmbree/config.h"
+#include "pxr/imaging/plugin/hdEmbree/instancer.h"
+#include "pxr/imaging/plugin/hdEmbree/renderParam.h"
+#include "pxr/imaging/plugin/hdEmbree/renderPass.h"
 
 #include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
 
-#include "pxr/imaging/hdEmbree/mesh.h"
+#include "pxr/imaging/plugin/hdEmbree/mesh.h"
 //XXX: Add other Rprim types later
 #include "pxr/imaging/hd/camera.h"
 //XXX: Add other Sprim types later
@@ -250,7 +250,7 @@ HdEmbreeRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
                                VtValue(GfVec3f(-1.0f)));
     } else if (name == HdAovTokens->depth) {
         return HdAovDescriptor(HdFormatFloat32, false, VtValue(1.0f));
-    } else if (name == HdAovTokens->linearDepth) {
+    } else if (name == HdAovTokens->cameraDepth) {
         return HdAovDescriptor(HdFormatFloat32, false, VtValue(0.0f));
     } else if (name == HdAovTokens->primId ||
                name == HdAovTokens->instanceId ||

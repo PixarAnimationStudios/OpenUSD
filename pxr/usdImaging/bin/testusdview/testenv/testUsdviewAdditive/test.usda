@@ -1,0 +1,62 @@
+#usda 1.0
+(
+    defaultPrim = "Scene"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Y"
+)
+
+def Scope "Scene" (
+        kind = "component"
+)
+{
+    def Scope "Looks"
+    {
+        def Material "AdditiveMat"
+        {
+            token outputs:surface.connect = </Scene/Looks/AdditiveMat/Surface.outputs:surface>
+
+            def Shader "Surface" {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:glslfx:sourceAsset = @shader1.glslfx@
+                uniform Vec3f inputs:diffuseColor = (1, 0, 1)
+            }
+        }
+    }
+
+    def Xform "Geom"
+    {
+        def Mesh "Mesh01" {
+            rel material:binding = </Scene/Looks/AdditiveMat>
+            uniform bool doubleSided = 0
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            point3f[] points = [(-3,-3,-3), (3, -3,-3), (3, 3, -3), (-3, 3, -3)]
+            color3f[] primvars:displayColor = [(1,0,0)]
+            matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+            double3 xformOp:translate = (0, 0, -2)
+            uniform token[] xformOpOrder = ["xformOp:transform", "xformOp:translate"]
+        }
+
+        def Mesh "Mesh02" {
+            rel material:binding = </Scene/Looks/AdditiveMat>
+            uniform bool doubleSided = 0
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            point3f[] points = [(-3,-3,-3), (3, -3,-3), (3, 3, -3), (-3, 3, -3)]
+            color3f[] primvars:displayColor = [(0,1,0)]
+            matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+            double3 xformOp:translate = (-2, 1, -1)
+            uniform token[] xformOpOrder = ["xformOp:transform", "xformOp:translate"]
+        }
+
+        def Sphere "SphereWithFloatRadius" 
+        { 
+            rel material:binding = </Scene/Looks/AdditiveMat>
+            float radius = 2
+            color3f[] primvars:displayColor = [(0,0,1)]
+            custom Vec3d xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+}

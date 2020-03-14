@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDABC_ALEMBICUTIL_H
-#define USDABC_ALEMBICUTIL_H
+#ifndef PXR_USD_PLUGIN_USD_ABC_ALEMBIC_UTIL_H
+#define PXR_USD_PLUGIN_USD_ABC_ALEMBIC_UTIL_H
 
 /// \file usdAbc/alembicUtil.h
 
 #include "pxr/pxr.h"
-#include "pxr/usd/usdAbc/alembicReader.h"
+#include "pxr/usd/plugin/usdAbc/alembicReader.h"
 #include "pxr/usd/sdf/abstractData.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/types.h"
@@ -1043,4 +1043,4 @@ UsdAbc_ReverseOrderImpl(
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USDABC_ALEMBICUTIL_H
+#endif // PXR_USD_PLUGIN_USD_ABC_ALEMBIC_UTIL_H

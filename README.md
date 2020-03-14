@@ -145,13 +145,11 @@ then build and install USD into ```/opt/local/USD```.
 
 ##### Windows:
 
-Launch the "Developer Command Prompt" for your version of Visual Studio and 
-run the script in the opened shell. Make sure to use the 64-bit (x64) command
-prompt and not the 32-bit (x86) command prompt.  (Note if you're trying to
-build with Visual Studio 2017, use the "x86 Native Tools Command Prompt for VS
-2017").
+Launch the "x64 Native Tools Command Prompt" for your version of Visual Studio
+and run the script in the opened shell. Make sure to use the 64-bit (x64) 
+command prompt and not the 32-bit (x86) command prompt.
 
-See https://docs.microsoft.com/en-us/dotnet/framework/tools/developer-command-prompt-for-vs for more details.
+See https://docs.microsoft.com/en-us/cpp/build/how-to-enable-a-64-bit-visual-cpp-toolset-on-the-command-line for more details.
 
 For example, the following will download, build, and install USD's dependencies,
 then build and install USD into ```C:\Program Files\USD```.

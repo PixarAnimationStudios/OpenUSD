@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_USDINPRMAN_DECLAREPACKAGEOPS_H
-#define PXR_USDINPRMAN_DECLAREPACKAGEOPS_H
+#ifndef EXT_KATANAPKG_PLUGIN_OP_PXR_USD_IN_PRMAN_DECLARE_PACKAGE_OPS_H
+#define EXT_KATANAPKG_PLUGIN_OP_PXR_USD_IN_PRMAN_DECLARE_PACKAGE_OPS_H
 
 #include "usdKatana/usdInPluginRegistry.h"
 
 PXRUSDKATANA_USDIN_PLUGIN_DECLARE(PxrUsdInPrman_LocationDecorator)
 
-#endif // PXR_USDINPRMAN_DECLAREPACKAGEOPS_H
+#endif // EXT_KATANAPKG_PLUGIN_OP_PXR_USD_IN_PRMAN_DECLARE_PACKAGE_OPS_H

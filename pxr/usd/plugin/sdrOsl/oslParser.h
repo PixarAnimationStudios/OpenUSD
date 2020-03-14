@@ -22,13 +22,13 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#ifndef SDR_OSLPARSERPLUGIN_H
-#define SDR_OSLPARSERPLUGIN_H
+#ifndef PXR_USD_PLUGIN_SDR_OSL_OSL_PARSER_H
+#define PXR_USD_PLUGIN_SDR_OSL_OSL_PARSER_H
 
 /// \file sdrOsl/oslParser.h
 
 #include "pxr/pxr.h"
-#include "pxr/usd/sdrOsl/api.h"
+#include "pxr/usd/plugin/sdrOsl/api.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/usd/ndr/parserPlugin.h"
 #include "pxr/usd/sdr/declare.h"
@@ -167,4 +167,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // SDR_OSLPARSERPLUGIN_H
+#endif // PXR_USD_PLUGIN_SDR_OSL_OSL_PARSER_H

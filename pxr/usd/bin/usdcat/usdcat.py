@@ -72,7 +72,7 @@ def main():
         '-o', '--out', metavar='file', action='store',
         help='Write a single input file to this output file instead of stdout.')
     parser.add_argument(
-        '--usdFormat', metavar='usda|usdb|usdc', action='store',
+        '--usdFormat', metavar='usda|usdc', action='store',
         help="Use this underlying file format "
         "for output files with the extension 'usd'.  For example, passing "
         "'-o output.usd --usdFormat usda' will create output.usd as a text "

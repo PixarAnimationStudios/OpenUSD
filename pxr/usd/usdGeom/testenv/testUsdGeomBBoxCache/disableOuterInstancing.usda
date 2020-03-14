@@ -1,0 +1,43 @@
+#usda 1.0
+(
+    subLayers = [
+        @nestedInstanceTest.usda@
+    ]
+)
+
+over "_Depth_1"
+{
+    over "InnerFallbackXform"
+    {
+        over "Scope" (
+            instanceable = true
+        )
+        {
+        }
+    }
+
+    over "InnerRenderXform"
+    {
+        over "Scope" (
+            instanceable = true
+        )
+        {
+        }
+    }
+}
+
+over "Root"
+{
+    over "OuterFallbackXform" (
+        instanceable = false
+    )
+    {
+    }
+
+    over "OuterRenderXform" (
+        instanceable = false
+    )
+    {
+    }
+}
+

@@ -113,15 +113,23 @@ shader UsdUVTexture
     }
 
     // Read the texture
-    float resultAlpha = 1.0;
+
     color resultColor = texture(
             file,
             st[0], st[1],
             "swrap", swrap,
             "twrap", twrap,
-            "missingcolor", fallbackColor,
-            "missingalpha", fallbackAlpha,
-            "alpha", resultAlpha);
+            "missingcolor", fallbackColor);
+
+    float resultAlpha = texture(
+            file,
+            st[0], st[1],
+            "swrap", swrap,
+            "twrap", twrap,
+            "firstchannel", 3, 
+            "missingcolor", color(fallbackAlpha), 
+            "fill", fallbackAlpha);
+
 
     // Apply scale and bias
     resultColor = resultColor * scaleColor + biasColor;

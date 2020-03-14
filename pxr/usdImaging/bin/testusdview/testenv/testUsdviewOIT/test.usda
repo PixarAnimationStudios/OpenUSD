@@ -17,7 +17,8 @@ def Scope "Scene" (
             token outputs:surface.connect = </Scene/Looks/TranslucentTagMat/Surface.outputs:surface>
 
             def Shader "Surface" {
-                uniform asset info:filename = @shader1.glslfx@
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:glslfx:sourceAsset = @shader1.glslfx@
                 uniform Vec3f inputs:diffuseColor = (1, 0, 1)
             }
         }

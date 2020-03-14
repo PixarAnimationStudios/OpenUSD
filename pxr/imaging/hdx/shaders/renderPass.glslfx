@@ -1,0 +1,177 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2019 Pixar
+//
+// Licensed under the Apache License, Version 2.0 (the "Apache License")
+// with the following modification; you may not use this file except in
+// compliance with the Apache License and the following modification to it:
+// Section 6. Trademarks. is deleted and replaced with:
+//
+// 6. Trademarks. This License does not grant permission to use the trade
+//    names, trademarks, service marks, or product names of the Licensor
+//    and its affiliates, except as required to comply with Section 4(c) of
+//    the License and to reproduce the content of the NOTICE file.
+//
+// You may obtain a copy of the Apache License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Apache License with the above modification is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the Apache License for the specific
+// language governing permissions and limitations under the Apache License.
+//
+
+--- This is what an import might look like.
+--- #import $TOOLS/hdx/shaders/renderPass.glslfx
+
+--- --------------------------------------------------------------------------
+
+-- glsl HdxRenderPass.RenderOitOpaquePixels
+
+layout (location = 0) out vec4 colorOut;
+
+void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    if (color.a >= 1.0) {
+        colorOut = vec4(color.rgb, 1);
+    } else {
+        discard;
+    }
+}
+
+-- glsl HdxRenderPass.WriteOitLayersToBufferCommon
+
+layout (early_fragment_tests) in;
+
+void RenderOutputImpl(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    #if defined(HD_HAS_hdxOitDataBuffer)
+
+    int screenWidth = int(HdGet_oitScreenSize().x);
+
+    // +1 because the counter buffer is cleared with -1, but we want the
+    // first index to start at 0.
+    int writeIndex = atomicAdd(hdxOitCounterBuffer[0], 1) + 1;
+    
+    if (writeIndex < hdxOitDataBuffer.length()) {
+        int screenIndex =
+            int(gl_FragCoord.x) + int(gl_FragCoord.y) * screenWidth;
+        
+        if (screenIndex < hdxOitCounterBuffer.length()) {
+            int prevIndex =
+                atomicExchange(hdxOitCounterBuffer[screenIndex+1], writeIndex);
+            hdxOitDataBuffer[writeIndex] = color;
+
+            // Note that we have a choice here to either pick gl_FragCoord.z or
+            // the depth value from Peye. The former is obtained by applying
+            // the perspective transform and cannot be changed by a shader.
+            //
+            // We pick Peye here so that a shader has an opportunity to change
+            // the depth of the sample inserted into the OIT list.
+            //
+            // This is used by volumes. However, non-volume translucent
+            // geometry should never modify Peye value and call RenderOutput
+            // with the Peye value from the vertex shader so that it is
+            // consistent with gl_FragCoord. This is because such geometry is
+            // subject to a opaque pixel render pass performing a z-test
+            // against gl_FragCoord.z.
+            //
+            // Note there are implications of using the depth value from Peye
+            // instead of gl_FragCoord.z here for the subsequent OIT resolve
+            // shader: the depth sorting order needs to be flipped and the
+            // OIT resolve shader cannot compare depths in the OIT list
+            // against the depth buffer unless it takes the perspective
+            // transform into account.
+            hdxOitDepthBuffer[writeIndex] = Peye.z / Peye.w;
+            hdxOitIndexBuffer[writeIndex] = prevIndex;
+        }
+    } else {
+        // We may overrun the counter buffer integer and wrap back to 0 if
+        // we have a lot of OIT samples.
+        atomicAdd(hdxOitCounterBuffer[0], -1);
+    }
+
+    #endif
+}
+
+-- glsl HdxRenderPass.WriteOitLayersToBufferTranslucent
+
+void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    // There are two render passes for ordinary OIT geometry.
+    // Fragments with alpha >= 1.0 are handled in the first (opaque)
+    // render pass.
+    if (color.a < 1.0 && color.a > 0.0001) {
+        RenderOutputImpl(Peye, Neye, color, patchCoord);
+    }
+}
+
+-- glsl HdxRenderPass.WriteOitLayersToBufferVolume
+
+void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    // Unlike ordinary OIT geometry, volumes have only one render pass,
+    // so insert into OIT buffers even if alpha is 1.
+    if (color.a > 0.0001) {
+        RenderOutputImpl(Peye, Neye, color, patchCoord);
+    }
+}
+
+-- glsl HdxRenderPass.RenderPick
+
+layout (location = 0) out vec4 primIdOut;
+layout (location = 1) out vec4 instanceIdOut;
+layout (location = 2) out vec4 elementIdOut;
+layout (location = 3) out vec4 edgeIdOut;
+layout (location = 4) out vec4 pointIdOut;
+layout (location = 5) out vec4 neyeOut;
+
+vec4 IntToVec4(int id)
+{
+    return vec4(((id >>  0) & 0xff) / 255.0,
+                ((id >>  8) & 0xff) / 255.0,
+                ((id >> 16) & 0xff) / 255.0,
+                ((id >> 24) & 0xff) / 255.0);
+}
+
+// Fwd declare necessary methods to determine the subprim id of a fragment.
+int GetElementID(); // generated via codeGen
+int GetAuthoredEdgeId(int); // generated via codeGen
+int GetPrimitiveEdgeId(); // defined in edgeId.glslfx, or generated via codeGen
+bool IsFragmentOnEdge(); // defined in edgeId.glslfx, or generated via codeGen
+int GetPointId(); // defined in pointId.glslfx
+bool IsFragmentOnPoint(); // defined in pointId.glslfx
+
+void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    int primId = HdGet_primID();
+    primIdOut = IntToVec4(primId);
+
+    // instanceIndex is a tuple of integers (num nested levels).
+    // for picking, we store global instanceId (instanceIndex[0]) in the
+    // selection framebuffer and then reconstruct the tuple in postprocess.
+    int instanceId = GetDrawingCoord().instanceIndex[0];
+    instanceIdOut = IntToVec4(instanceId);
+
+    int elementId = GetElementID();
+    elementIdOut = IntToVec4(elementId);
+
+    // XXX: This block should be under an #ifdef
+    int edgeId = -1;
+    if (IsFragmentOnEdge()) {
+        edgeId = GetAuthoredEdgeId(GetPrimitiveEdgeId());
+    }
+    edgeIdOut = IntToVec4(edgeId);
+
+    // XXX: This block should be under an #ifdef
+    int pointId = -1;
+    if (IsFragmentOnPoint()) {
+        pointId = GetPointId();
+    }
+    pointIdOut = IntToVec4(pointId);
+    
+    neyeOut = IntToVec4(hd_vec4_2_10_10_10_set(vec4(Neye,0)));
+}

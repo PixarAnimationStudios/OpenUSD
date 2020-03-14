@@ -1,0 +1,75 @@
+#usda 1.0
+(
+    "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
+    customLayerData = {
+        string[] appliedAPISchemas = ["TestMultiApplyAPI", "TestSingleApplyAPI"]
+        dictionary multipleApplyAPISchemas = {
+            string TestMultiApplyAPI = "multi"
+        }
+    }
+)
+
+class "TestMultiApplyAPI" (
+    doc = "Test multi-apply API schema"
+)
+{
+    uniform bool bool_attr = 1 (
+        doc = "Boolean attribute"
+    )
+    rel relationship (
+        doc = "Relationship"
+    )
+    uniform token token_attr = "foo" (
+        allowedTokens = ["foo", "bar", "baz"]
+        doc = "Token attribute"
+    )
+}
+
+class "TestSingleApplyAPI" (
+    doc = "Test single apply API schema"
+)
+{
+    uniform bool single:bool_attr = 1 (
+        doc = "Boolean attribute"
+    )
+    rel single:relationship (
+        doc = "Relationship"
+    )
+    uniform token single:token_attr = "bar" (
+        allowedTokens = ["foo", "bar", "baz"]
+        doc = "Token attribute"
+    )
+}
+
+class TestTypedSchema "TestTypedSchema" (
+    doc = "Testing typed schema"
+)
+{
+    string testAttr = "foo" (
+        allowedTokens = ["bar", "baz"]
+        doc = "Testing documentation metadata"
+    )
+    rel testRel (
+        displayGroup = "Display Group"
+        doc = "Testing documentation metadata"
+    )
+}
+
+class TestWithFallbackAppliedSchema "TestWithFallbackAppliedSchema" (
+    apiSchemas = ["TestMultiApplyAPI:fallback", "TestSingleApplyAPI"]
+    doc = "Test with fallback API schemas"
+)
+{
+    uniform bool multi:fallback:bool_attr = 0 (
+        doc = "Override bool_attr from TestMultiApplyAPI:fallback"
+    )
+    string testAttr = "foo" (
+        allowedTokens = ["bar", "baz"]
+        doc = "Testing documentation metadata"
+    )
+    rel testRel (
+        displayGroup = "Display Group"
+        doc = "Testing documentation metadata"
+    )
+}
+

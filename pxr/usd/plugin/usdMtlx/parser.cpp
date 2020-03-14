@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/usd/usdMtlx/utils.h"
+#include "pxr/usd/plugin/usdMtlx/utils.h"
 #include "pxr/usd/ndr/debugCodes.h"
 #include "pxr/usd/ndr/node.h"
 #include "pxr/usd/ndr/nodeDiscoveryResult.h"
@@ -30,6 +30,7 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderProperty.h"
+#include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -78,6 +79,7 @@ public:
                                   context,
                                   discoveryResult.sourceType,
                                   uri,
+                                  resolvedUri,
                                   std::move(properties),
                                   std::move(metadata)));
     }
@@ -97,6 +99,7 @@ public:
     bool valid;
 
     std::string uri;
+    std::string resolvedUri;
     TfToken context;
     NdrPropertyUniquePtrVec properties;
     NdrTokenMap metadata;
@@ -263,8 +266,9 @@ ParseElement(ShaderBuilder* builder, const mx::ConstNodeDefPtr& nodeDef)
     }
 
     // Build the basic shader node info.
-    builder->context = context;
-    builder->uri     = UsdMtlxGetSourceURI(nodeDef);
+    builder->context     = context;
+    builder->uri         = UsdMtlxGetSourceURI(nodeDef);
+    builder->resolvedUri = builder->uri;
 
     // Metadata
     builder->metadata[SdrNodeMetadata->Label] = nodeDef->getNodeString();
@@ -334,17 +338,31 @@ ParseElement(
         builder->SetInvalid();
         return;
     }
+    builder->uri = filename;
     if (TfIsRelativePath(filename)) {
-        auto&& sourceUri = UsdMtlxGetSourceURI(impl);
-        if (sourceUri.empty() || TfIsRelativePath(sourceUri)) {
-            TF_DEBUG(NDR_PARSING).Msg("MaterialX implementation %s has "
-                "non-absolute path", sourceUri.c_str());
+        // The path is relative to some library path but we don't know which.
+        // We'll just check them all until we find an existing file.
+        // XXX -- Since we're likely to do this with every implementation
+        //        element we should consider some kind of cache so we don't
+        //        keep hitting the filesystem.
+        // XXX -- A future version of the asset resolver that has protocols
+        //        would make it easy for clients to resolve a relative path.
+        //        We should switch to that when available.
+        for (const auto& dir: UsdMtlxStandardLibraryPaths()) {
+            const auto path = TfStringCatPaths(dir, filename);
+            if (TfIsFile(path, true)) {
+                filename = path;
+                break;
+            }
+        }
+        if (TfIsRelativePath(filename)) {
+            TF_DEBUG(NDR_PARSING).Msg("MaterialX implementation %s could "
+                "not be found", filename.c_str());
             builder->SetInvalid();
             return;
         }
-        filename = TfGetPathName(sourceUri) + filename;
     }
-    builder->uri = filename;
+    builder->resolvedUri = filename;
 
     // Function
     auto&& function = impl->getFunction();

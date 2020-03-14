@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDPRMAN_MATFILT_FILTERCHAIN_H
-#define HDPRMAN_MATFILT_FILTERCHAIN_H
+#ifndef EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATFILT_FILTER_CHAIN_H
+#define EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATFILT_FILTER_CHAIN_H
 
 #include "pxr/pxr.h"
 #include "pxr/base/vt/value.h"
@@ -38,6 +38,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct MatfiltConnection {
     SdfPath upstreamNode;
     TfToken upstreamOutputName;
+
+    bool operator==(const MatfiltConnection & rhs) const {
+        return upstreamNode == rhs.upstreamNode
+                && upstreamOutputName == rhs.upstreamOutputName;
+    }
 };
 
 /// \struct MatfiltNode
@@ -50,6 +55,12 @@ struct MatfiltNode {
     TfToken nodeTypeId;
     std::map<TfToken, VtValue> parameters;
     std::map<TfToken, std::vector<MatfiltConnection>> inputConnections;
+
+    bool operator==(const MatfiltNode & rhs) const {
+        return nodeTypeId == rhs.nodeTypeId
+                && parameters == rhs.parameters
+                && inputConnections == rhs.inputConnections;
+    }
 };
 
 /// \struct MatfiltNetwork
@@ -60,6 +71,10 @@ struct MatfiltNode {
 struct MatfiltNetwork {
     std::map<SdfPath, MatfiltNode> nodes;
     std::map<TfToken, MatfiltConnection> terminals;
+
+    bool operator==(const MatfiltNetwork & rhs) const {
+        return nodes == rhs.nodes && terminals == rhs.terminals;
+    }
 };
 
 /// A function which manipulates a shading network for a given context.

@@ -1,0 +1,12 @@
+#usda 1.0
+
+over "Human"
+{
+    int[] a = [1]
+    int[] b = None
+    int c = None
+    int d.timeSamples = {
+        0: 456,
+        1: 789
+    }
+}

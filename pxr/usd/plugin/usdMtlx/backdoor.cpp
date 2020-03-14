@@ -23,8 +23,8 @@
 //
 #include "pxr/pxr.h"
 
-#include "pxr/usd/usdMtlx/backdoor.h"
-#include "pxr/usd/usdMtlx/reader.h"
+#include "pxr/usd/plugin/usdMtlx/backdoor.h"
+#include "pxr/usd/plugin/usdMtlx/reader.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/base/tf/diagnostic.h"
 

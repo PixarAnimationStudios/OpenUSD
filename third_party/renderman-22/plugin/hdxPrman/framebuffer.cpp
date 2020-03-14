@@ -136,9 +136,12 @@ static PtDspyError HydraDspyImageData(
             color[1] = data_f32[1]; // green
             color[2] = data_f32[2]; // blue
             color[3] = data_f32[3]; // alpha
+            // XXX: We shouldn't be getting true inf from prman?
             if (std::isfinite(data_f32[4])) {
-                // XXX: We shouldn't be getting true inf from prman?
-                depth[0] = buf->proj.Transform(GfVec3f(0,0,-data_f32[4]))[2];
+                // Project the depth to NDC and then transform it to clip space
+                // assuming a depth range of [0,1].
+                depth[0] = (buf->proj.Transform(GfVec3f(0,0,-data_f32[4]))[2]
+                            + 1.0f) / 2.0f;
             }
             primId[0] = (data_i32[5]-1);
             if (primId[0] == -1) {

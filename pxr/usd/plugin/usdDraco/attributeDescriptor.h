@@ -22,8 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#ifndef USDDRACO_ATTRIBUTE_DESCRIPTOR_H
-#define USDDRACO_ATTRIBUTE_DESCRIPTOR_H
+#ifndef PXR_USD_PLUGIN_USD_DRACO_ATTRIBUTE_DESCRIPTOR_H
+#define PXR_USD_PLUGIN_USD_DRACO_ATTRIBUTE_DESCRIPTOR_H
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
@@ -226,4 +226,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // USDDRACO_ATTRIBUTE_DESCRIPTOR_H
+#endif  // PXR_USD_PLUGIN_USD_DRACO_ATTRIBUTE_DESCRIPTOR_H

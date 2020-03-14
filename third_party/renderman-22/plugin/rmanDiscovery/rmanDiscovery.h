@@ -22,8 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#ifndef RMAN_DISCOVERYPLUGIN_H
-#define RMAN_DISCOVERYPLUGIN_H
+#ifndef EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_RMAN_DISCOVERY_RMAN_DISCOVERY_H
+#define EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_RMAN_DISCOVERY_RMAN_DISCOVERY_H
 
 /// \file rmanDiscovery/rmanDiscovery.h
 
@@ -87,4 +87,4 @@ RmanDiscoveryPlugin_SetDefaultFollowSymlinks(bool followSymlinks);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // RMAN_DISCOVERYPLUGIN_H
+#endif // EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_RMAN_DISCOVERY_RMAN_DISCOVERY_H

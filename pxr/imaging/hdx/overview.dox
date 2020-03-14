@@ -1,0 +1,30 @@
+/*!
+\page hdx_page_front Hdx : Hydra extensions
+\if ( PIXAR_MFB_BUILD )
+\mainpage  Hdx : Hydra extensions
+\publicLib
+\endif
+
+\anchor hdx_mainpage
+
+Collection of useful extensions for clients interested in using Hydra.
+
+\section hdx_overview Overview
+
+Hdx builds on the abstractions established by Hd, providing abstractions
+and extensions useful for clients interested in using Hydra for imaging.
+
+It currently houses common tasks, such as:
+\li HdxColorizeTask
+\li HdxFullscreenShader
+\li HdxRenderSetupTask
+\li HdxRenderTask
+\li HdxSelectionTask
+\li HdxShadowTask
+\li HdxSimpleLightTask
+
+It also houses HdxTaskController, which wraps the above tasks and provides 
+setters for these tasks' params. It attempts to encapsulate some of the
+task-specific boiler plate code when using Hydra to render a scene.
+
+*/

@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef RMAN_ARGS_PARSER_API_H
-#define RMAN_ARGS_PARSER_API_H
+#ifndef EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_RMAN_ARGS_PARSER_API_H
+#define EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_RMAN_ARGS_PARSER_API_H
 
 #include "pxr/base/arch/export.h"
 

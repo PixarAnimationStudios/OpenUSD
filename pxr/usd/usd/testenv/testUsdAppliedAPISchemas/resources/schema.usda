@@ -1,0 +1,96 @@
+#usda 1.0
+(
+    "Test schema file for testUsdAppliedAPISchemas"
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+
+def "GLOBAL" (
+    customData = {
+        string libraryName      = "testUsdAppliedAPISchemas"
+        string libraryPath      = "pxr/usd/usd"
+    }
+)
+{
+}
+
+class "TestMultiApplyAPI"
+(
+    inherits = </APISchemaBase>
+    doc = """Test multi-apply API schema"""
+
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix  = "multi"
+    }
+)
+{
+    uniform token token_attr = "foo" (
+        allowedTokens = ["foo", "bar", "baz"]
+        doc = """Token attribute"""
+    )
+    uniform bool bool_attr = true (
+        doc = """Boolean attribute"""
+    )
+    rel relationship (
+        doc = """Relationship"""
+    )
+}
+
+class "TestSingleApplyAPI"
+(
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "SingleApplyAPI"
+    }
+    doc = """Test single apply API schema"""
+)
+{
+    uniform token single:token_attr = "bar" (
+        allowedTokens = ["foo", "bar", "baz"]
+        doc = """Token attribute"""
+    )
+    uniform bool single:bool_attr = true (
+        doc = """Boolean attribute"""
+    )
+    rel single:relationship (
+        doc = """Relationship"""
+    )
+}
+
+class TestTypedSchema "TestTypedSchema" (
+    inherits = </Typed>
+    doc = "Testing typed schema"
+)
+{
+    string testAttr = "foo" (
+        allowedTokens = ["bar", "baz"]
+        doc = "Testing documentation metadata"
+    )
+
+    rel testRel (
+        displayGroup = "Display Group"
+        doc = "Testing documentation metadata"
+    )
+}
+
+class TestWithFallbackAppliedSchema "TestWithFallbackAppliedSchema" (
+    inherits = </Typed>
+    doc = """Test with fallback API schemas"""
+    apiSchemas = ["TestMultiApplyAPI:fallback", "TestSingleApplyAPI"]
+)
+{
+    uniform bool multi:fallback:bool_attr = false (
+        doc = """Override bool_attr from TestMultiApplyAPI:fallback"""
+    )
+    string testAttr = "foo" (
+        allowedTokens = ["bar", "baz"]
+        doc = "Testing documentation metadata"
+    )
+
+    rel testRel (
+        displayGroup = "Display Group"
+        doc = "Testing documentation metadata"
+    )
+}

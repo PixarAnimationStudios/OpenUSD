@@ -1,0 +1,21 @@
+
+#header {
+    height:54px;
+    background: url(USDLogoDocs.png) no-repeat;
+}
+
+div.image img[src="USDLogoLrgWithAlpha.png"]{
+    width:550px;
+}
+
+/* Markdown does not allow for empty table headers.
+ *
+ * Rather than trying to construct a header-less table with embedded html,
+ * we just remove the table headers with css
+ */
+table.doxtable th:empty {
+    /* note, using "display: none" does not work well here if you have empty and
+     * non-empty table header elements. */
+    padding: 0;
+    border: 0;
+}

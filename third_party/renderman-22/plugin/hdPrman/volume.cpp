@@ -86,7 +86,7 @@ HdPrman_Volume::GetInitialDirtyBitsMask() const
         | HdChangeTracker::DirtyVisibility
         | HdChangeTracker::DirtyPrimvar
         | HdChangeTracker::DirtyMaterialId
-        | HdChangeTracker::DirtyInstanceIndex
+        | HdChangeTracker::DirtyInstancer
         ;
 
     return (HdDirtyBits)mask;

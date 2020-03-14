@@ -35,7 +35,7 @@
 #include "usdKatana/readMaterial.h"
 #include "usdKatana/usdInPrivateData.h"
 
-#include "pxrUsdInShipped/attrfnc_materialReference.h"
+#include "attrfnc_materialReference.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -186,8 +186,8 @@ LibraryMaterialNamesAttrFncCache::createValue(
 
     UsdPrim root = stage->GetPseudoRoot();
     auto children = root.GetChildren();
-    for (auto childIt = children.begin(); 
-            childIt != children.end(); 
+    for (auto childIt = children.begin();
+            childIt != children.end();
             ++childIt) {
 
         UsdShadeMaterial materialSchema(*childIt);
@@ -201,28 +201,11 @@ LibraryMaterialNamesAttrFncCache::createValue(
         if (TfStringStartsWith(childIt->GetName().GetString(), "_")) {
             continue;
         }
-        // base material - implemented via derivesFrom relationships
+
         std::string baseMaterialPath = 
             materialSchema.GetBaseMaterialPath().GetString();
         if (TfStringStartsWith(baseMaterialPath, "/_")) {
             continue;
-        }
-        // specialized
-        std::string specializedPath;
-        SdfPathListOp pathsListOp;
-        childIt->GetMetadata(SdfFieldKeys->Specializes, &pathsListOp);
-        if (pathsListOp.HasKeys()) {
-            std::vector<SdfPath> itemVector;
-            if (pathsListOp.IsExplicit())
-                itemVector = pathsListOp.GetExplicitItems();
-            else
-                itemVector = pathsListOp.GetAddedItems();
-            if (itemVector.size()) {
-                specializedPath = itemVector[0].GetString();
-                if (TfStringStartsWith(specializedPath, "/_")) {
-                    continue;
-                }
-            }
         }
 
         materialNames.push_back(childIt->GetName());
@@ -231,15 +214,7 @@ LibraryMaterialNamesAttrFncCache::createValue(
 
     FnAttribute::GroupBuilder gb;
     gb.set("materialNames", FnAttribute::StringAttribute(materialNames));
-    if (stage->GetPrimAtPath(SdfPath("/LooksDerivedStructure"))) {
-        // older looks derived structure, for derivesFrom-based 
-        // shader libraries
-        gb.set("root", FnAttribute::StringAttribute("/LooksDerivedStructure"));
-    }
-    else {
-        // newer, for specialize arcs
-        gb.set("root", FnAttribute::StringAttribute(""));
-    }
+    gb.set("root", FnAttribute::StringAttribute(""));
 
     return IMPLPtr(new FnAttribute::GroupAttribute(gb.build()));
 }

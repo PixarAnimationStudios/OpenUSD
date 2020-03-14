@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDPRMAN_LIGHT_H
-#define HDPRMAN_LIGHT_H
+#ifndef EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_LIGHT_H
+#define EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_LIGHT_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/light.h"
@@ -44,19 +44,19 @@ public:
     virtual ~HdPrmanLight();
 
     /// Synchronizes state from the delegate to this object.
-    virtual void Sync(HdSceneDelegate *sceneDelegate,
+    void Sync(HdSceneDelegate *sceneDelegate,
                       HdRenderParam   *renderParam,
                       HdDirtyBits     *dirtyBits) override;
 
     /// Returns the minimal set of dirty bits to place in the
     /// change tracker for use in the first sync of this prim.
     /// Typically this would be all dirty bits.
-    virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
+    HdDirtyBits GetInitialDirtyBitsMask() const override;
 
-    /// Return true if this material is valid.
+    /// Return true if this light is valid.
     bool IsValid() const;
 
-    virtual void Finalize(HdRenderParam *renderParam) override;
+    void Finalize(HdRenderParam *renderParam) override;
 
 private:
     void _ResetLight(HdPrman_Context *context);
@@ -66,9 +66,10 @@ private:
     riley::LightInstanceId _instanceId;
 
     TfToken _lightLink;
+    SdfPathVector _lightFilterPaths;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // HDPRMAN_LIGHT_H
+#endif  // EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_LIGHT_H

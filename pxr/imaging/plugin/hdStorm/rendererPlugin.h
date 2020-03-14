@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDSTORM_RENDERER_PLUGIN_H
-#define HDSTORM_RENDERER_PLUGIN_H
+#ifndef PXR_IMAGING_PLUGIN_HD_STORM_RENDERER_PLUGIN_H
+#define PXR_IMAGING_PLUGIN_HD_STORM_RENDERER_PLUGIN_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/rendererPlugin.h"
@@ -50,4 +50,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDSTORM_RENDERER_PLUGIN_H
+#endif // PXR_IMAGING_PLUGIN_HD_STORM_RENDERER_PLUGIN_H

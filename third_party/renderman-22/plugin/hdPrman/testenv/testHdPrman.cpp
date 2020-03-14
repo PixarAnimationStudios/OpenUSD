@@ -50,6 +50,9 @@
 #include "pxr/base/tf/setenv.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/registryManager.h"
+#include "pxr/base/tf/stopwatch.h"
+#include "pxr/base/trace/reporter.h"
+#include "pxr/base/work/threadLimits.h"
 #include "hdPrman/context.h"
 #include "hdPrman/renderDelegate.h"
 
@@ -61,6 +64,7 @@
 
 #include "hdPrman/rixStrings.h"
 
+#include <fstream>
 #include <memory>
 #include <stdio.h>
 #include <string>
@@ -125,13 +129,19 @@ PrintUsage(const char* cmd, const char *err=nullptr)
         fprintf(stderr, err);
     }
     fprintf(stderr, "Usage: %s INPUT.usd "
-            "[--out OUTPUT] [--frame FRAME] [-freeCamProj CAM_PROJECTION] "
-            "[--sceneCamPath CAM_PATH] [-settings RENDERSETTINGS_PATH]\n"
+            "[--out OUTPUT] [--frame FRAME] [--freeCamProj CAM_PROJECTION] "
+            "[--sceneCamPath CAM_PATH] [--settings RENDERSETTINGS_PATH] "
+            "[--sceneCamAspect aspectRatio] "
+            "[--visualize STYLE] [--perf PERF] [--trace TRACE]\n"
             "OUTPUT defaults to UsdRenderSettings if not specified.\n"
             "FRAME defaults to 0 if not specified.\n"
             "CAM_PROJECTION default to PxrPerspective if not specified\n"
             "CAM_PATH defaults to empty path if not specified\n"
-            "RENDERSETTINGS_PATH defaults to empty path is not specified\n",
+            "RENDERSETTINGS_PATH defaults to empty path is not specified\n"
+            "STYLE indicates a PxrVisualizer style to use instead of "
+            "      the default integrator\n"
+            "PERF indicates a json file to record performance measurements\n"
+            "TRACE indicates a text file to record trace measurements\n",
             cmd);
 }
 
@@ -188,18 +198,23 @@ int main(int argc, char *argv[])
 
     std::string inputFilename(argv[1]);
     std::string outputFilename;
+    std::string perfOutput, traceOutput;
 
     int frameNum = 0;
     bool isOrthographic = false;
     std::string cameraProjection("PxrPerspective");
     static const std::string PxrOrthographic("PxrOrthographic");
     SdfPath sceneCamPath, renderSettingsPath;
+    float sceneCamAspect = -1.0;
+    std::string visualizerStyle;
 
     for (int i=2; i<argc-1; ++i) {
         if (std::string(argv[i]) == "--frame") {
             frameNum = atoi(argv[++i]);
         } else if (std::string(argv[i]) == "--sceneCamPath") {
             sceneCamPath = SdfPath(argv[++i]);
+        } else if (std::string(argv[i]) == "--sceneCamAspect") {
+            sceneCamAspect = atof(argv[++i]);
         } else if (std::string(argv[i]) == "--freeCamProj") {
             cameraProjection = argv[++i];
             isOrthographic = cameraProjection == PxrOrthographic;
@@ -207,7 +222,17 @@ int main(int argc, char *argv[])
             outputFilename = argv[++i];
         } else if (std::string(argv[i]) == "--settings") {
             renderSettingsPath = SdfPath(argv[++i]);
+        } else if (std::string(argv[i]) == "--visualize") {
+            visualizerStyle = argv[++i];
+        } else if (std::string(argv[i]) == "--perf") {
+            perfOutput = argv[++i];
+        } else if (std::string(argv[i]) == "--trace") {
+            traceOutput = argv[++i];
         }
+    }
+
+    if (!traceOutput.empty()) {
+        TraceCollector::GetInstance().SetEnabled(true);
     }
 
     //////////////////////////////////////////////////////////////////////// 
@@ -215,6 +240,9 @@ int main(int argc, char *argv[])
     // USD setup
     //
     // Set up USD path resolver, to resolve references
+
+    TfStopwatch timer_usdOpen;
+    timer_usdOpen.Start();
     ArGetResolver().ConfigureResolverForAsset(inputFilename);
     // Load USD file
     UsdStageRefPtr stage = UsdStage::Open(inputFilename);
@@ -222,6 +250,7 @@ int main(int argc, char *argv[])
         PrintUsage(argv[0], "could not load input file");
         return -1;
     }
+    timer_usdOpen.Stop();
 
     //////////////////////////////////////////////////////////////////////// 
     // Render settings
@@ -289,8 +318,24 @@ int main(int argc, char *argv[])
         if (!sceneCamPath.IsEmpty()) {
             product.cameraPath = sceneCamPath;
         }
+        if (sceneCamAspect > 0.0) {
+            product.resolution[1] = (int)(product.resolution[0]/sceneCamAspect);
+            product.apertureSize[1] = product.apertureSize[0]/sceneCamAspect;
+        }
         VtDictionaryOver(&product.extraSettings, defaultSettings);
     }
+
+    //////////////////////////////////////////////////////////////////////// 
+    //
+    // Diagnostic aids
+    //
+
+    // These are meant to help keep an eye on how much available
+    // concurrency is being used, within an automated test environment.
+    printf("Current concurrency limit:  %u\n",
+           WorkGetConcurrencyLimit());
+    printf("Physical concurrency limit: %u\n",
+           WorkGetPhysicalConcurrencyLimit());
 
     //////////////////////////////////////////////////////////////////////// 
     //
@@ -327,6 +372,7 @@ int main(int argc, char *argv[])
     static const RtUString us_pv_color_resultRGB("pv_color:resultRGB");
     static const RtUString us_PxrDomeLight("PxrDomeLight");
     static const RtUString us_PxrPathTracer("PxrPathTracer");
+    static const RtUString us_PxrVisualizer("PxrVisualizer");
     static const RtUString us_PxrPrimvar("PxrPrimvar");
     static const RtUString us_PxrSurface("PxrSurface");
     static const RtUString us_PxrVolume("PxrVolume");
@@ -345,6 +391,7 @@ int main(int argc, char *argv[])
     // XXX In the future, we should be able to produce multiple
     // products directly from one Riley session
     //
+    TfStopwatch timer_hydraSync, timer_prmanRender;
     for (auto product: renderSpec.products) {
         printf("Rendering %s...\n", product.name.GetText());
 
@@ -453,9 +500,17 @@ int main(int argc, char *argv[])
         // in UsdImaging that adds it as an sprim?
         {
             RixParamList *params = mgr->CreateRixParamList();
+            // If PxrVisualizer was requested, configure it.
+            RtUString integrator = us_PxrPathTracer;
+            if (!visualizerStyle.empty()) {
+                params->SetInteger(RtUString("wireframe"), 1);
+                params->SetString(RtUString("style"),
+                                  RtUString(visualizerStyle.c_str()));
+                integrator = us_PxrVisualizer;
+            }
             riley::ShadingNode integratorNode {
                 riley::ShadingNode::k_Integrator,
-                us_PxrPathTracer,
+                integrator,
                 us_PathTracer,
                 params
             };
@@ -731,13 +786,6 @@ int main(int argc, char *argv[])
             hdPrmanContext->fallbackMaterial = fallbackMaterial;
             hdPrmanContext->fallbackVolumeMaterial = fallbackVolumeMaterial;
 
-            // Configure default time samples.
-            for (double const& offset : timeSampleOffsets) {
-                hdPrmanContext->defaultTimeSamples.push_back(offset);
-            }
-            hdPrmanContext->timeSampleMap[SdfPath::AbsoluteRootPath()] =
-                hdPrmanContext->defaultTimeSamples;
-
             // Set up frontend -> index -> backend
             // TODO We should configure the render delegate to request
             // the appropriate materialBindingPurposes from the USD scene.
@@ -745,12 +793,15 @@ int main(int argc, char *argv[])
             // requested includedPurposes.
             HdPrmanRenderDelegate hdPrmanBackend(hdPrmanContext);
             std::unique_ptr<HdRenderIndex> hdRenderIndex(
-                HdRenderIndex::New(&hdPrmanBackend));
+                HdRenderIndex::New(&hdPrmanBackend, HdDriverVector()));
             UsdImagingDelegate hdUsdFrontend(hdRenderIndex.get(),
                                              SdfPath::AbsoluteRootPath());
             hdUsdFrontend.Populate(stage->GetPseudoRoot());
             hdUsdFrontend.SetTime(frameNum);
             hdUsdFrontend.SetRefineLevelFallback(8); // max refinement
+            if (!product.cameraPath.IsEmpty()) {
+                hdUsdFrontend.SetCameraForSampling(product.cameraPath);
+            }
 
             TfTokenVector renderTags(1, HdRenderTagTokens->geometry);
             // The collection of scene contents to render
@@ -774,9 +825,13 @@ int main(int argc, char *argv[])
                                                 renderTags)
             };
             HdEngine hdEngine;
+            timer_hydraSync.Start();
             hdEngine.Execute(hdRenderIndex.get(), &tasks);
+            timer_hydraSync.Stop();
 
+            timer_prmanRender.Start();
             riley->Render();
+            timer_prmanRender.Stop();
         }
         riley->End();
         mgr->DestroyRiley(riley);
@@ -785,4 +840,29 @@ int main(int argc, char *argv[])
 
     mgr = nullptr;
     ri->PRManEnd();
+
+    if (!traceOutput.empty()) {
+        std::ofstream outFile(traceOutput);
+        TraceCollector::GetInstance().SetEnabled(false);
+        TraceReporter::GetGlobalReporter()->Report(outFile);
+    }
+
+    if (!perfOutput.empty()) {
+        std::ofstream perfResults(perfOutput);
+        perfResults << "{'profile': 'usdOpen',"
+            << " 'metric': 'time',"
+            << " 'value': " << timer_usdOpen.GetSeconds() << ","
+            << " 'samples': 1"
+            << " }\n";
+        perfResults << "{'profile': 'hydraSync',"
+            << " 'metric': 'time',"
+            << " 'value': " << timer_hydraSync.GetSeconds() << ","
+            << " 'samples': 1"
+            << " }\n";
+        perfResults << "{'profile': 'prmanRender',"
+            << " 'metric': 'time',"
+            << " 'value': " << timer_prmanRender.GetSeconds() << ","
+            << " 'samples': 1"
+            << " }\n";
+    }
 }

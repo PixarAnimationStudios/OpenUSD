@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDABC_ALEMBICREADER_H
-#define USDABC_ALEMBICREADER_H
+#ifndef PXR_USD_PLUGIN_USD_ABC_ALEMBIC_READER_H
+#define PXR_USD_PLUGIN_USD_ABC_ALEMBIC_READER_H
 
 /// \file usdAbc/alembicReader.h
 

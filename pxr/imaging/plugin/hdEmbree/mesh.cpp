@@ -22,12 +22,12 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/hdEmbree/mesh.h"
+#include "pxr/imaging/plugin/hdEmbree/mesh.h"
 
-#include "pxr/imaging/hdEmbree/context.h"
-#include "pxr/imaging/hdEmbree/instancer.h"
-#include "pxr/imaging/hdEmbree/renderParam.h"
-#include "pxr/imaging/hdEmbree/renderPass.h"
+#include "pxr/imaging/plugin/hdEmbree/context.h"
+#include "pxr/imaging/plugin/hdEmbree/instancer.h"
+#include "pxr/imaging/plugin/hdEmbree/renderParam.h"
+#include "pxr/imaging/plugin/hdEmbree/renderPass.h"
 #include "pxr/imaging/hd/extComputationUtils.h"
 #include "pxr/imaging/hd/meshUtil.h"
 #include "pxr/imaging/hd/smoothNormals.h"
@@ -103,7 +103,7 @@ HdEmbreeMesh::GetInitialDirtyBitsMask() const
         | HdChangeTracker::DirtySubdivTags
         | HdChangeTracker::DirtyPrimvar
         | HdChangeTracker::DirtyNormals
-        | HdChangeTracker::DirtyInstanceIndex
+        | HdChangeTracker::DirtyInstancer
         ;
 
     return (HdDirtyBits)mask;

@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDPRMAN_CONTEXT_H
-#define HDPRMAN_CONTEXT_H
+#ifndef EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_CONTEXT_H
+#define EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_CONTEXT_H
 
 #include "pxr/pxr.h"
 #include "hdPrman/api.h"
@@ -52,9 +52,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfPath;
 class HdSceneDelegate;
 
-/// Hierarchical map of scene ids to sample times.
-typedef std::map<SdfPath, std::vector<float>> HdPrman_TimeSampleMap;
-
 // Context for HdPrman to communicate with an instance of PRMan.
 struct HdPrman_Context
 {
@@ -72,16 +69,6 @@ struct HdPrman_Context
     // does not have a bound material.
     riley::MaterialId fallbackMaterial;
     riley::MaterialId fallbackVolumeMaterial;
-    // The fallback set of time samples to evalate,
-    // if there is not a relevant entry in timeSampleMap.
-    std::vector<float> defaultTimeSamples;
-    // Per-scope configuration of time samples to evaluate.
-    HdPrman_TimeSampleMap timeSampleMap;
-
-    // A helper to look up the set of time samples to evalutae
-    // for the given Hydra id.
-    HDPRMAN_API
-    const std::vector<float>& GetTimeSamplesForId(SdfPath const&);
 
     // Convert any Hydra primvars that should be Riley instance attributes.
     HDPRMAN_API
@@ -125,6 +112,15 @@ struct HdPrman_Context
     HDPRMAN_API
     bool IsLightLinkUsed(TfToken const& name);
 
+    HDPRMAN_API
+    void IncrementLightFilterCount(TfToken const& name);
+
+    HDPRMAN_API
+    void DecrementLightFilterCount(TfToken const& name);
+
+    HDPRMAN_API
+    bool IsLightFilterUsed(TfToken const& name);
+
     virtual ~HdPrman_Context() = default;
 
 private:
@@ -136,6 +132,11 @@ private:
 
     // Mutex protecting lightLinkRefs.
     std::mutex _lightLinkMutex;
+
+    std::unordered_map<TfToken, size_t, TfToken::HashFunctor> _lightFilterRefs;
+
+    // Mutex protecting lightFilterRefs.
+    std::mutex _lightFilterMutex;
 
     // Map from Hydra coordinate system vector pointer to Riley equivalent.
     typedef std::unordered_map<
@@ -202,4 +203,4 @@ HdPrman_UpdateSearchPathsFromEnvironment(RixParamList *options);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDPRMAN_CONTEXT_H
+#endif // EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_CONTEXT_H

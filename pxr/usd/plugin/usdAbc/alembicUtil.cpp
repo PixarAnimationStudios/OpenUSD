@@ -24,7 +24,7 @@
 /// \file alembicUtil.cpp
 
 #include "pxr/pxr.h"
-#include "pxr/usd/usdAbc/alembicUtil.h"
+#include "pxr/usd/plugin/usdAbc/alembicUtil.h"
 #include "pxr/base/tf/ostreamMethods.h"
 #include <Alembic/Abc/IArrayProperty.h>
 #include <Alembic/Abc/IScalarProperty.h>

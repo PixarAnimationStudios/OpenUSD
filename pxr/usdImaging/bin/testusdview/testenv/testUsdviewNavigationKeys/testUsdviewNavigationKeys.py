@@ -29,20 +29,31 @@ import sys
 
 from pxr.Usdviewq.qt import QtCore, QtGui, QtWidgets
 
+def _processEvents():
+    # Qt does not guarantee that a single call to processEvents() will
+    # process all events in the event queue, and in some builds, on
+    # some platforms, we sporadically or even repeatably see test failures
+    # in which the selection does not change, presumably because the
+    # events were not all getting processed, when we simply called
+    # processEvents once.  So we do it a handful of times whenever we
+    # generate an event, to increase our odds of success.
+    for x in range(10):
+        QtWidgets.QApplication.processEvents()
+
 def _emitCollapseAllAction(appController):
     appController._ui.actionCollapse_All.triggered.emit() 
-    QtWidgets.QApplication.processEvents()
+    _processEvents()
 
 def _popupViewMenu(appController):
     appController._ui.menuView.exec_()
-    QtWidgets.QApplication.processEvents()
+    _processEvents()
 
 def _postAndProcessKeyEvent(key, widget):
     event = QtGui.QKeyEvent(QtCore.QEvent.KeyPress,
                             key,
                             QtCore.Qt.NoModifier)
     QtWidgets.QApplication.postEvent(widget, event)
-    QtWidgets.QApplication.processEvents()
+    _processEvents()
 
 class EscapeSender(QtCore.QObject):
     def __init__(self, receiver):
@@ -81,7 +92,8 @@ def _testBasic(appController):
         _postAndProcessKeyEvent(QtCore.Qt.Key_Right, appObj)
 
     assert len(selectionDataModel.getPrims()) == 1
-    assert selectionDataModel.getFocusPrim().GetPrimPath() == path
+    assert selectionDataModel.getFocusPrim().GetPrimPath() == path, \
+        "Expected <%s>, got <%s>" % (path, selectionDataModel.getFocusPrim().GetPrimPath())
 
     # Now roll it all back up
     for i in xrange(1, 2 * path.pathElementCount):

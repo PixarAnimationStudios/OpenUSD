@@ -37,8 +37,8 @@
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/renderBuffer.h"
 
-#include "pxr/imaging/hdEmbree/rendererPlugin.h"
-#include "pxr/imaging/hdEmbree/renderDelegate.h"
+#include "pxr/imaging/plugin/hdEmbree/rendererPlugin.h"
+#include "pxr/imaging/plugin/hdEmbree/renderDelegate.h"
 
 #include "pxr/base/tf/errorMark.h"
 
@@ -150,7 +150,7 @@ void HdEmbree_TestGLDrawing::InitTest()
     _renderDelegate = _rendererPlugin->CreateRenderDelegate();
     TF_VERIFY(_renderDelegate != nullptr);
 
-    _renderIndex = HdRenderIndex::New(_renderDelegate);
+    _renderIndex = HdRenderIndex::New(_renderDelegate, HdDriverVector());
     TF_VERIFY(_renderIndex != nullptr);
 
     // Construct a new scene delegate to populate the render index.
@@ -177,9 +177,9 @@ void HdEmbree_TestGLDrawing::InitTest()
             format = HdFormatUNorm8Vec4;
             aovBinding.aovName = HdAovTokens->color;
             aovBinding.clearValue = VtValue(GfVec4f(0.0f, 0.0f, 0.0f, 1.0f));
-        } else if (_aov == "linearDepth") {
+        } else if (_aov == "cameraDepth") {
             format = HdFormatFloat32;
-            aovBinding.aovName = HdAovTokens->linearDepth;
+            aovBinding.aovName = HdAovTokens->cameraDepth;
             aovBinding.clearValue = VtValue(0.0f);
         } else if (_aov == "primId") {
             format = HdFormatInt32;
@@ -395,7 +395,7 @@ void HdEmbree_TestGLDrawing::OffscreenTest()
         // writing it to a file.  Additionally, we write prim ID as RGBA u8,
         // instead of single-channel int32, since the former has better file
         // support.
-        if (_aov == "linearDepth") {
+        if (_aov == "cameraDepth") {
             _RescaleDepth(reinterpret_cast<float*>(storage.data),
                 storage.width*storage.height);
         } else if (_aov == "primId") {
@@ -458,9 +458,9 @@ void HdEmbree_TestGLDrawing::ParseArgs(int argc, char *argv[])
         }
     }
 
-    // AOV only supports "color", "linearDepth", and "primId" currently.
+    // AOV only supports "color", "cameraDepth", and "primId" currently.
     if (_aov.size() > 0 &&
-        _aov != "color" && _aov != "linearDepth" && _aov != "primId") {
+        _aov != "color" && _aov != "cameraDepth" && _aov != "primId") {
         TF_WARN("Unrecognized AOV token '%s'", _aov.c_str());
         exit(EXIT_FAILURE);
     }

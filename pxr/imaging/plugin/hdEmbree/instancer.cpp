@@ -23,10 +23,11 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
-#include "pxr/imaging/hdEmbree/instancer.h"
+#include "pxr/imaging/plugin/hdEmbree/instancer.h"
 
-#include "pxr/imaging/hdEmbree/sampler.h"
+#include "pxr/imaging/plugin/hdEmbree/sampler.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
@@ -37,16 +38,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// Define local tokens for the names of the primvars the instancer
-// consumes.
-// XXX: These should be hydra tokens...
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (instanceTransform)
-    (rotate)
-    (scale)
-    (translate)
-);
 
 HdEmbreeInstancer::HdEmbreeInstancer(HdSceneDelegate* delegate,
                                      SdfPath const& id,
@@ -134,8 +125,9 @@ HdEmbreeInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
     }
 
     // "translate" holds a translation vector for each index.
-    if (_primvarMap.count(_tokens->translate) > 0) {
-        HdEmbreeBufferSampler sampler(*_primvarMap[_tokens->translate]);
+    if (_primvarMap.count(HdInstancerTokens->translate) > 0) {
+        HdEmbreeBufferSampler
+                sampler(*_primvarMap[HdInstancerTokens->translate]);
         for (size_t i = 0; i < instanceIndices.size(); ++i) {
             GfVec3f translate;
             if (sampler.Sample(instanceIndices[i], &translate)) {
@@ -147,8 +139,8 @@ HdEmbreeInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
     }
 
     // "rotate" holds a quaternion in <real, i, j, k> format for each index.
-    if (_primvarMap.count(_tokens->rotate) > 0) {
-        HdEmbreeBufferSampler sampler(*_primvarMap[_tokens->rotate]);
+    if (_primvarMap.count(HdInstancerTokens->rotate) > 0) {
+        HdEmbreeBufferSampler sampler(*_primvarMap[HdInstancerTokens->rotate]);
         for (size_t i = 0; i < instanceIndices.size(); ++i) {
             GfVec4f quat;
             if (sampler.Sample(instanceIndices[i], &quat)) {
@@ -161,8 +153,8 @@ HdEmbreeInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
     }
 
     // "scale" holds an axis-aligned scale vector for each index.
-    if (_primvarMap.count(_tokens->scale) > 0) {
-        HdEmbreeBufferSampler sampler(*_primvarMap[_tokens->scale]);
+    if (_primvarMap.count(HdInstancerTokens->scale) > 0) {
+        HdEmbreeBufferSampler sampler(*_primvarMap[HdInstancerTokens->scale]);
         for (size_t i = 0; i < instanceIndices.size(); ++i) {
             GfVec3f scale;
             if (sampler.Sample(instanceIndices[i], &scale)) {
@@ -174,8 +166,9 @@ HdEmbreeInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
     }
 
     // "instanceTransform" holds a 4x4 transform matrix for each index.
-    if (_primvarMap.count(_tokens->instanceTransform) > 0) {
-        HdEmbreeBufferSampler sampler(*_primvarMap[_tokens->instanceTransform]);
+    if (_primvarMap.count(HdInstancerTokens->instanceTransform) > 0) {
+        HdEmbreeBufferSampler
+                sampler(*_primvarMap[HdInstancerTokens->instanceTransform]);
         for (size_t i = 0; i < instanceIndices.size(); ++i) {
             GfMatrix4d instanceTransform;
             if (sampler.Sample(instanceIndices[i], &instanceTransform)) {

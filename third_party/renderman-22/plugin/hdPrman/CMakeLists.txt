@@ -34,6 +34,8 @@ pxr_shared_library(${PXR_PACKAGE}
         gprim
         instancer
         light
+        lightFilter
+        lightFilterUtils
         material
         matfiltConversions
         matfiltConvertPreviewMaterial

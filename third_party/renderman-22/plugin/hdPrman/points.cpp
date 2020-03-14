@@ -59,7 +59,7 @@ HdPrman_Points::GetInitialDirtyBitsMask() const
         | HdChangeTracker::DirtyNormals
         | HdChangeTracker::DirtyWidths
         | HdChangeTracker::DirtyMaterialId
-        | HdChangeTracker::DirtyInstanceIndex
+        | HdChangeTracker::DirtyInstancer
         ;
 
     return (HdDirtyBits)mask;

@@ -107,7 +107,7 @@ Support for OpenGL can optionally be disabled by specifying the cmake flag
 that depend on GL, including:
 - usdview
 - Hydra GL imaging
-- Maya and Katana app plugins
+- Katana app plugins
 
 ##### OSL (OpenShadingLanguage)
 
@@ -209,9 +209,12 @@ More documentation is available [here](http://openusd.org/docs/RenderMan-USD-Ima
 ## Third Party Plugins
 
 USD provides several plugins for integration with third-party software packages,
-including Maya, Katana, Houdini, and Alembic. There is additional documentation on each plugin
+including Katana, Houdini, and Alembic. There is additional documentation on each plugin
 [here](http://openusd.org/docs/USD-3rd-Party-Plugins.html).
 These plugins are not built by default and must be enabled via the instructions below.
+
+The USD Maya plugins can be found in the Autodesk-supported repo available
+[here](https://github.com/Autodesk/maya-usd).
 
 ##### Alembic Plugin
 
@@ -236,22 +239,6 @@ support requires the following dependencies:
 | HDF5_LOCATION      | The location of [HDF5](https://www.hdfgroup.org/HDF5/) |
 
 For further information see the documentation on the Alembic plugin [here](http://openusd.org/docs/Alembic-USD-Plugin.html).
-
-##### Maya Plugin
-
-Enable the Maya plugin in the build by specifying the cmake flag 
-```PXR_BUILD_MAYA_PLUGIN=TRUE``` when invoking cmake. 
-
-The additional dependencies that must be supplied when invoking cmake are:
-
-| Dependency Name   | Description                                                                                     |
-| ----------------- | -----------------------------------                                                             |
-| MAYA_LOCATION     | The root path to a Maya SDK install |
-| MAYA_tbb_LIBRARY  | The location of TBB, this should be the same as TBB_tbb_LIBRARY provided to the core USD build  |
-
-See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
-
-For further information see the documentation on the Maya plugin [here](http://openusd.org/docs/Maya-USD-Plugins.html).
 
 ##### Katana Plugin
 
@@ -380,7 +367,7 @@ pxr/pxr.h, which facilitates using namespaces:
 ##### ASCII Parser Editing/Validation
 
 There is an ASCII parser for the USD file format, which can be found in
-[sdf](pxr/usd/lib/sdf/). Most users will not have a need to edit the parser, but
+[sdf](pxr/usd/sdf). Most users will not have a need to edit the parser, but
 for the adventurous ones, there are a couple additional requirements.
 
 If you choose to edit the ASCII parsers, make sure

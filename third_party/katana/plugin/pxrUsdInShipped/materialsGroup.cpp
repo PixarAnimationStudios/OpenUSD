@@ -36,7 +36,7 @@
 #include "usdKatana/readMaterial.h"
 #include "usdKatana/utils.h"
 
-#include "pxrUsdInShipped/declareCoreOps.h"
+#include "declareCoreOps.h"
 
 #include <FnGeolibServices/FnBuiltInOpArgsUtil.h>
 

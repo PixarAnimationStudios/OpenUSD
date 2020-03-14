@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDPRMAN_DEBUGCODES_H
-#define HDPRMAN_DEBUGCODES_H
+#ifndef EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_DEBUG_CODES_H
+#define EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_DEBUG_CODES_H
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/debug.h"
@@ -34,9 +34,10 @@ TF_DEBUG_CODES(
     HDPRMAN_MATERIALS,
     HDPRMAN_LIGHT_LINKING,
     HDPRMAN_LIGHT_LIST,
-    HDPRMAN_VSTRUCTS
+    HDPRMAN_VSTRUCTS,
+    HDPRMAN_LIGHT_FILTER_LINKING
 );
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDPRMAN_DEBUGCODES_H
+#endif // EXT_RMANPKG_22_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_DEBUG_CODES_H

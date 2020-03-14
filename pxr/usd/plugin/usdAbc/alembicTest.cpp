@@ -22,8 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/usd/usdAbc/alembicTest.h"
-#include "pxr/usd/usdAbc/alembicData.h"
+#include "pxr/usd/plugin/usdAbc/alembicTest.h"
+#include "pxr/usd/plugin/usdAbc/alembicData.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/schema.h"

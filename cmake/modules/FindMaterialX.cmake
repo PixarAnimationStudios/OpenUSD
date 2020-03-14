@@ -35,7 +35,10 @@
 
 #
 # In:
-#  MATERIALX_ROOT
+#  MATERIALX_ROOT            Path to the root of the MaterialX installation
+#  MATERIALX_DATA_ROOT       Path where MaterialX data files (libraries and
+#                            resources) are installed, if different from
+#                            MATERIALX_ROOT
 #
 # Out:
 #  MATERIALX_FOUND
@@ -87,8 +90,10 @@ find_path(MATERIALX_STDLIB_DIR
         "${MATERIALX_ROOT}"
         "$ENV{MATERIALX_ROOT}"        
         "${MATERIALX_BASE_DIR}"
+        "${MATERIALX_DATA_ROOT}"
     PATH_SUFFIXES
         documents/Libraries
+        libraries/stdlib
     DOC
         "MaterialX Standard Libraries Path"
 )

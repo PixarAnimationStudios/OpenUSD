@@ -130,10 +130,11 @@ public:
     // --------------------------------------------------------------------- //
     /// An integer attribute with fallback value of 0.
     ///
-    /// \n  C++ Type: int
-    /// \n  Usd Type: SdfValueTypeNames->Int
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 0
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int intAttr = 0` |
+    /// | C++ Type | int |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int |
     USDSCHEMAEXAMPLES_API
     UsdAttribute GetIntAttrAttr() const;
 
