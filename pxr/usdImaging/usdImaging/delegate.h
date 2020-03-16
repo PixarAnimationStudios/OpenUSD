@@ -253,12 +253,13 @@ public:
     void SetWindowPolicy(CameraUtilConformWindowPolicy policy);
 
     /// Sets display of unloaded prims as bounding boxes.
-    /// Unloaded prims will need to satisfay one of the following set of
+    /// Unloaded prims will need to satisfy one of the following set of
     /// conditions in order to see them:
     ///   1. The prim is a UsdGeomBoundable with an authored 'extent' attribute.
     ///   2. The prim is a UsdPrim.IsModel() and has an authored 'extentsHint'
     ///      attribute (see UsdGeomModelAPI::GetExtentsHint).
-    /// Effective only for delegates that support draw modes.
+    /// Effective only for delegates that support draw modes (see
+    /// GetUsdDrawModesEnabled()).
     USDIMAGING_API
     void SetDisplayUnloadedPrimsWithBounds(bool displayUnloaded);
     bool GetDisplayUnloadedPrimsWithBounds() const {

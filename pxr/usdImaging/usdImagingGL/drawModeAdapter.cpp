@@ -1096,6 +1096,9 @@ UsdImagingGLDrawModeAdapter::_ComputeExtent(UsdPrim const& prim) const
     TfTokenVector purposes = { UsdGeomTokens->default_, UsdGeomTokens->proxy,
                                UsdGeomTokens->render };
 
+    // XXX: The use of UsdTimeCode::EarliestTime() in the code below is
+    // problematic, as it may produce unexpected results for animated models.
+
     if (prim.IsLoaded()) {
         UsdGeomBBoxCache bboxCache(
             UsdTimeCode::EarliestTime(), purposes, true);
@@ -1115,7 +1118,9 @@ UsdImagingGLDrawModeAdapter::_ComputeExtent(UsdPrim const& prim) const
         }
         else if ((attr = UsdGeomModelAPI(prim).GetExtentsHintAttr()) &&
             attr.Get(&extentsHint, UsdTimeCode::EarliestTime()) &&
-            extentsHint.size() >= 2 && extentsHint.size() <= 8) {
+            extentsHint.size() >= 2) {
+            // XXX: This code to merge the extentsHint values over a set of
+            // purposes probably belongs in UsdGeomBBoxCache.
             const TfTokenVector &purposeTokens =
                 UsdGeomImageable::GetOrderedPurposeTokens();
             for (size_t i = 0; i < purposeTokens.size(); ++i) {
