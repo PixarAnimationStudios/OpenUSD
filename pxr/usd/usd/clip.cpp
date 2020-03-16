@@ -1311,13 +1311,21 @@ Usd_Clip::ListTimeSamplesForPath(const SdfPath& path) const
 
             // Ignore time mappings whose external time domain does not 
             // intersect the times at which this clip is active.
-            const GfInterval mappingInterval(m1.externalTime, m2.externalTime);
+            // Also check for reverse timing in clip.
+            InternalTime minTime = 
+                (m1.internalTime <= m2.internalTime) ? 
+                    m1.internalTime : m2.internalTime;
+            InternalTime maxTime = 
+                (m1.internalTime <= m2.internalTime) ? 
+                    m2.internalTime : m1.internalTime;
+
+            const GfInterval mappingInterval(minTime, maxTime);
             if (!mappingInterval.Intersects(clipTimeInterval)) {
                 continue;
             }
-
-            if (m1.internalTime <= t && t <= m2.internalTime) {
-                if (m1.internalTime == m2.internalTime) {
+            
+            if (minTime <= t && t <= maxTime) {
+                if (minTime == maxTime) {
                     timeSamples.insert(m1.externalTime);
                     timeSamples.insert(m2.externalTime);
                 }
