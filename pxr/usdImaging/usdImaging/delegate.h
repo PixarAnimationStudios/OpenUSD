@@ -252,6 +252,19 @@ public:
     USDIMAGING_API
     void SetWindowPolicy(CameraUtilConformWindowPolicy policy);
 
+    /// Sets display of unloaded prims as bounding boxes.
+    /// Unloaded prims will need to satisfay one of the following set of
+    /// conditions in order to see them:
+    ///   1. The prim is a UsdGeomBoundable with an authored 'extent' attribute.
+    ///   2. The prim is a UsdPrim.IsModel() and has an authored 'extentsHint'
+    ///      attribute (see UsdGeomModelAPI::GetExtentsHint).
+    /// Effective only for delegates that support draw modes.
+    USDIMAGING_API
+    void SetDisplayUnloadedPrimsWithBounds(bool displayUnloaded);
+    bool GetDisplayUnloadedPrimsWithBounds() const {
+        return _displayUnloadedPrimsWithBounds;
+    }
+
     /// Setup for the shutter open and close to be used for motion sampling.
     USDIMAGING_API
     void SetCameraForSampling(SdfPath const& id);
@@ -744,6 +757,16 @@ private:
 
     // Enable HdCoordSys tracking
     const bool _coordSysEnabled;
+
+    // Display unloaded prims with Bounds adapter
+    bool _displayUnloadedPrimsWithBounds;
+
+    Usd_PrimFlagsConjunction _GetDisplayPredicate() const
+    {
+        return _displayUnloadedPrimsWithBounds ?
+            UsdPrimIsActive && UsdPrimIsDefined && !UsdPrimIsAbstract :
+            UsdPrimDefaultPredicate;
+    }
 
     UsdImagingDelegate() = delete;
     UsdImagingDelegate(UsdImagingDelegate const &) = delete;

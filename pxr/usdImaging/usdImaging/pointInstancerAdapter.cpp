@@ -253,7 +253,7 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
     size_t instantiatedPrimCount = 0;
 
     std::vector<UsdPrimRange> treeStack;
-    treeStack.push_back(UsdPrimRange(protoRootPrim));
+    treeStack.push_back(UsdPrimRange(protoRootPrim, _GetDisplayPredicate()));
     while (!treeStack.empty()) {
         if (!treeStack.back()) {
             treeStack.pop_back();
@@ -275,7 +275,7 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
         // XXX: Should we delegate to instanceAdapter here?
         if (iter->IsInstance()) {
             UsdPrim master = iter->GetMaster();
-            UsdPrimRange masterRange(master);
+            UsdPrimRange masterRange(master, _GetDisplayPredicate());
             treeStack.push_back(masterRange);
 
             // Make sure to register a dependency on this instancer with the

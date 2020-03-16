@@ -580,6 +580,9 @@ protected:
     GfInterval _GetCurrentTimeSamplingInterval();
 
     USDIMAGING_API
+    Usd_PrimFlagsConjunction _GetDisplayPredicate() const;
+
+    USDIMAGING_API
     bool _DoesDelegateSupportCoordSys() const;
 
     // Conversion functions between usd and hydra enums.

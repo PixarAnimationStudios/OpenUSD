@@ -230,7 +230,7 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
         // Allocate prototype prims.
         // -------------------------------------------------------------- //
 
-        UsdPrimRange range(masterPrim);
+        UsdPrimRange range(masterPrim, _GetDisplayPredicate());
         int protoID = 0;
         int primCount = 0;
 

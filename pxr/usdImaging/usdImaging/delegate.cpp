@@ -134,6 +134,7 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _appWindowPolicy(CameraUtilMatchVertically)
     , _coordSysEnabled(parentIndex
                        ->IsSprimTypeSupported(HdPrimTypeTokens->coordSys))
+    , _displayUnloadedPrimsWithBounds(false)
 {
     // Provide a callback to the _coordSysBindingCache so it can
     // convert USD paths to Hydra ID's.
@@ -201,6 +202,11 @@ UsdImagingDelegate::_GetModelDrawMode(UsdPrim const& prim)
 {
     HD_TRACE_FUNCTION();
 
+    // Optionally draw unloaded prims as bounds.
+    if (_displayUnloadedPrimsWithBounds && !prim.IsLoaded()) {
+        return UsdGeomTokens->bounds;
+    }
+
     // Draw modes can only be applied to models.
     if (!prim.IsModel()) { return UsdGeomTokens->default_; }
 
@@ -227,7 +233,9 @@ UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
     //    threads.
 
     TfToken adapterKey;
-    if (!ignoreInstancing && prim.IsInstance()) {
+    if (_displayUnloadedPrimsWithBounds && !prim.IsLoaded()) {
+        adapterKey = UsdImagingAdapterKeyTokens->drawModeAdapterKey;
+    } else if (!ignoreInstancing && prim.IsInstance()) {
         adapterKey = UsdImagingAdapterKeyTokens->instanceAdapterKey;
     } else if (_hasDrawModeAdapter && _enableUsdDrawModes &&
                _IsDrawModeApplied(prim)) {
@@ -631,7 +639,7 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
         // execution.
         TF_DEBUG(USDIMAGING_CHANGES).Msg("[Repopulate] Root path: <%s>\n",
                             usdPath.GetText());
-        UsdPrimRange range(prim);
+        UsdPrimRange range(prim, _GetDisplayPredicate());
         for (auto iter = range.begin(); iter != range.end(); ++iter) {
             if (!iter->GetPath().HasPrefix(_rootPrimPath)) {
                 iter.PruneChildren();
@@ -1113,7 +1121,7 @@ UsdImagingDelegate::_ResyncUsdPrim(SdfPath const& usdPath,
             proxy->Repopulate(usdPath);
         } else {
             // If we resynced prims individually, walk the subtree for new prims
-            UsdPrimRange range(_stage->GetPrimAtPath(usdPath));
+            UsdPrimRange range(_stage->GetPrimAtPath(usdPath), _GetDisplayPredicate());
             for (auto iter = range.begin(); iter != range.end(); ++iter) {
 
                 auto const& depRange =
@@ -1468,6 +1476,22 @@ UsdImagingDelegate::SetWindowPolicy(CameraUtilConformWindowPolicy policy)
                                                     cachePath, &indexProxy);
             }
         }
+    }
+}
+
+void
+UsdImagingDelegate::SetDisplayUnloadedPrimsWithBounds(bool displayUnloaded)
+{
+    if (_hdPrimInfoMap.size() > 0) {
+        TF_CODING_ERROR("SetDisplayUnloadedPrimsWithBounds() was "
+                        "called after population; this is currently "
+                        "unsupported.");
+    } else if (!_hasDrawModeAdapter) {
+        TF_CODING_ERROR("This delegate does not have draw mode "
+                        "adapter; unloaded prims cannot be displayed "
+                        "with bounds.");
+    } else {
+        _displayUnloadedPrimsWithBounds = displayUnloaded;
     }
 }
 
