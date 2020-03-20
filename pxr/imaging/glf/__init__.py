@@ -26,7 +26,7 @@ glf
 
 """
 
-import _glf
+from . import _glf
 from pxr import Tf
 Tf.PrepareModule(_glf, locals())
 del _glf, Tf

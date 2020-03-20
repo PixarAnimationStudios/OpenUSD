@@ -26,7 +26,7 @@ Camera utilities.
 
 """
 
-import _cameraUtil
+from . import _cameraUtil
 from pxr import Tf
 Tf.PrepareModule(_cameraUtil, locals())
 del _cameraUtil, Tf
