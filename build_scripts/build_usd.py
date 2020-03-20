@@ -1147,7 +1147,7 @@ HDF5 = Dependency("HDF5", InstallHDF5, "include/hdf5.h")
 ############################################################
 # Alembic
 
-ALEMBIC_URL = "https://github.com/alembic/alembic/archive/1.7.1.zip"
+ALEMBIC_URL = "https://github.com/alembic/alembic/archive/1.7.10.zip"
 
 def InstallAlembic(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(ALEMBIC_URL, context, force)):
@@ -1159,14 +1159,6 @@ def InstallAlembic(context, force, buildArgs):
                 '-DUSE_HDF5=ON',
                 '-DHDF5_ROOT="{instDir}"'.format(instDir=context.instDir),
                 '-DCMAKE_CXX_FLAGS="-D H5_BUILT_AS_DYNAMIC_LIB"']
-                
-            if Windows():
-                # Alembic doesn't link against HDF5 libraries on Windows 
-                # whether or not USE_HDF5=ON or not.  There is a line to link 
-                # against HDF5 on DARWIN so we hijack it to also link on WIN32.
-                PatchFile("lib\\Alembic\\CMakeLists.txt", 
-                          [("ALEMBIC_SHARED_LIBS AND DARWIN",
-                            "ALEMBIC_SHARED_LIBS AND DARWIN OR ALEMBIC_SHARED_LIBS AND WIN32")])
         else:
            cmakeOptions += ['-DUSE_HDF5=OFF']
                  

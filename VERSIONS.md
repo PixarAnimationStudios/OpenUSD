@@ -29,7 +29,7 @@ Our test machines have the following software versions installed
 | PyOpenGL      | 3.1.0        | 3.1.0        | 3.1.0        |
 | Embree        | 2.16.4       | 2.16.4       | 2.16.4       |
 | RenderMan     | 22.5         | 22.5         | 22.5         |
-| Alembic       | 1.7.1        | 1.7.1        | 1.7.1        |
+| Alembic       | 1.7.10       | 1.7.10       | 1.7.10       |
 | OpenEXR       | 2.2.0        | 2.2.0        | 2.2.0        |
 | Maya          | 2016.5       | 2017         | 2016 Ext 2   |
 | MaterialX     | 1.36.0       | 1.36.0       | 1.36.0       |
@@ -48,7 +48,6 @@ These other versions have been known to work as well:
 | ------------- | ------------ | ------------ | ------------ |
 | C++ Compiler  |              |              | MSVC 15.0 (Visual Studio 2017) |
 | Boost         |              |              | 1.65.1 (VS 2017) |
-| Alembic       | 1.5.8, 1.7.9 |              |              |
 | Maya          | 2018.3       | 2018.3       | 2018.3       |
 | PySide2       | 2.0.0~alpha0 |              | 2.0.0~alpha0 |
 | HDF5          | 1.8.11       | 1.8.11       | 1.8.11       |
