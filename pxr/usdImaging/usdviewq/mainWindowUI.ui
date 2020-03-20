@@ -2904,30 +2904,30 @@
   <customwidget>
    <class>AttributeValueEditor</class>
    <extends>QWidget</extends>
-   <header>attributeValueEditor</header>
+   <header>.attributeValueEditor</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>PrimLegend</class>
    <extends>QWidget</extends>
-   <header>primLegend</header>
+   <header>.primLegend</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>PropertyLegend</class>
    <extends>QWidget</extends>
-   <header>propertyLegend</header>
+   <header>.propertyLegend</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>PrimTreeWidget</class>
    <extends>QTreeWidget</extends>
-   <header>primTreeWidget</header>
+   <header>.primTreeWidget</header>
   </customwidget>
   <customwidget>
    <class>FrameSlider</class>
    <extends>QSlider</extends>
-   <header>frameSlider</header>
+   <header>.frameSlider</header>
   </customwidget>
  </customwidgets>
  <resources/>
