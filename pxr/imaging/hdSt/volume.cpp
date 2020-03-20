@@ -362,8 +362,8 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
                     fallbackName,
                     param.fallbackValue);
 
-                sourcesAndTextures.ProcessFallbackMaterialParam(
-                    fallbackParam, param.fallbackValue);
+                sourcesAndTextures.ProcessPrimvarOrFallbackMaterialParam(
+                    fallbackParam);
 
                 materialParams.push_back(fallbackParam);
             }
@@ -391,11 +391,8 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
             
             // Process non-field params similar to how they are handled in
             // HdStMaterial::Sync.
-            if (param.IsPrimvar()) {
-                sourcesAndTextures.ProcessPrimvarMaterialParam(param);
-            } else if (param.IsFallback()) {
-                sourcesAndTextures.ProcessFallbackMaterialParam(
-                    param, param.fallbackValue);
+            if (param.IsPrimvar() || param.IsFallback()) {
+                sourcesAndTextures.ProcessPrimvarOrFallbackMaterialParam(param);
             }
         }
     }
@@ -474,8 +471,8 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
                 samplingTransformName,
                 samplingTransform);
 
-            sourcesAndTextures.ProcessFallbackMaterialParam(
-                samplingTransformParam, samplingTransform);
+            sourcesAndTextures.ProcessPrimvarOrFallbackMaterialParam(
+                samplingTransformParam);
 
             materialParams.push_back(samplingTransformParam);
         }
@@ -501,8 +498,8 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
             _tokens->volumeBBoxInverseTransform,
             VtValue(localVolumeBBox->GetMatrix().GetInverse()));
         
-        sourcesAndTextures.ProcessFallbackMaterialParam(
-            transformParam, transformParam.fallbackValue);
+        sourcesAndTextures.ProcessPrimvarOrFallbackMaterialParam(
+            transformParam);
         
         materialParams.push_back(transformParam);
     }
@@ -515,8 +512,8 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
             _tokens->volumeBBoxLocalMin,
             VtValue(localVolumeBBox->GetRange().GetMin()));
         
-        sourcesAndTextures.ProcessFallbackMaterialParam(
-            minParam, minParam.fallbackValue);
+        sourcesAndTextures.ProcessPrimvarOrFallbackMaterialParam(
+            minParam);
         
         materialParams.push_back(minParam);
     }
@@ -529,8 +526,8 @@ HdStVolume::_ComputeMaterialShaderAndBBox(
             _tokens->volumeBBoxLocalMax,
             VtValue(localVolumeBBox->GetRange().GetMax()));
         
-        sourcesAndTextures.ProcessFallbackMaterialParam(
-            maxParam, maxParam.fallbackValue);
+        sourcesAndTextures.ProcessPrimvarOrFallbackMaterialParam(
+            maxParam);
         
         materialParams.push_back(maxParam);
     }

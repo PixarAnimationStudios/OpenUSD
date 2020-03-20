@@ -42,14 +42,9 @@ class HdSceneDelegate;
 struct HdSt_MaterialBufferSourceAndTextureHelper
 {
     /// Process material param of type HdMaterialParam::ParamTypePrimvar
-    void ProcessPrimvarMaterialParam(
+    /// or HdMaterialParam::ParamTypeFallback
+    void ProcessPrimvarOrFallbackMaterialParam(
         HdMaterialParam const &param);
-
-    /// Process material param of type HdMaterialParam::ParamTypeFallback
-    /// using given value.
-    void ProcessFallbackMaterialParam(
-        HdMaterialParam const &param,
-        VtValue const &fallbackValue);
 
     /// Process material param of type HdMaterialParam::ParamTypeTexture
     /// given the texture requested by the param.

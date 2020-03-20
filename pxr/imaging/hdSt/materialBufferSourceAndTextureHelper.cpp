@@ -36,22 +36,13 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 void
-HdSt_MaterialBufferSourceAndTextureHelper::ProcessPrimvarMaterialParam(
+HdSt_MaterialBufferSourceAndTextureHelper::
+                                    ProcessPrimvarOrFallbackMaterialParam(
     HdMaterialParam const &param)
 {
     sources.push_back(
         boost::make_shared<HdVtBufferSource>(
             param.name, param.fallbackValue));
-}
-
-void
-HdSt_MaterialBufferSourceAndTextureHelper::ProcessFallbackMaterialParam(
-    HdMaterialParam const &param,
-    VtValue const &fallbackValue)
-{
-    sources.push_back(
-        boost::make_shared<HdVtBufferSource>(
-            param.name, fallbackValue));
 }
 
 namespace {
