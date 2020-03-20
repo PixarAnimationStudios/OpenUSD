@@ -15,7 +15,7 @@ Our test machines have the following software versions installed
 | Software      | Linux        | macOS        | Windows      |
 | ------------- | ------------ | ------------ | ------------ |
 | C++ Compiler  | gcc 4.8.5    | AppleClang 10.0.0 | MSVC 14.0 (Visual Studio 2015) |
-| CMake         | 2.8.11, 3.6.3 | 3.4.0, 3.9.0  | 3.7.0-rc1    |
+| CMake         | 3.14.6       | 3.16.5       | 3.16.5       |
 | Python        | 2.7.5        | 2.7.5,2.71.0 | 2.7.5,2.7.12 |
 | Boost         | 1.55         | 1.61.0       | 1.61.0       |
 | Intel TBB     | 4.4 Update 6 | 4.4 Update 6, 2017.0 | 4.4 Update 6, 2017.0 |

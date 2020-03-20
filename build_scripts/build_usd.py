@@ -1822,7 +1822,23 @@ else:
                "PATH")
     sys.exit(1)
 
-if not find_executable("cmake"):
+if find_executable("cmake"):
+    # Check cmake requirements
+    cmake_required_version = (3, 12)
+    cmake_version = GetCMakeVersion()
+    if not cmake_version:
+        PrintError("Failed to determine CMake version")
+        sys.exit(1)
+
+    if cmake_version < cmake_required_version:
+        def _JoinVersion(v):
+            return ".".join(str(n) for n in v)
+        PrintError("CMake version {req} or later required to build USD, "
+                   "but version found was {found}".format(
+                       req=_JoinVersion(cmake_required_version),
+                       found=_JoinVersion(cmake_version)))
+        sys.exit(1)
+else:
     PrintError("CMake not found -- please install it and adjust your PATH")
     sys.exit(1)
 
@@ -1849,18 +1865,6 @@ if PYSIDE in requiredDependencies:
                    "your PATH. (Note that this program may be named {0} "
                    "depending on your platform)"
                    .format(" or ".join(pysideUic)))
-        sys.exit(1)
-
-if OPENVDB in requiredDependencies:
-    # Check OpenVDB's cmake requirements
-    cmake_required_version = (3, 3)
-    cmake_version = GetCMakeVersion()
-    if not cmake_version:
-        PrintError("Failed to determine CMake version")
-        sys.exit(1)
-    if cmake_version < cmake_required_version:
-        PrintError(("CMake version 3.3 required to build OpenVDB, but version "
-                    "found was %s") % (".".join("%d" % v for v in cmake_version)))
         sys.exit(1)
 
 if JPEG in requiredDependencies:
