@@ -11,7 +11,16 @@ UsdUtils contains utility classes and functions for managing, inspecting, editin
 creating USD assets. The high-level grouping of classes and functions is as follows:
 
 \li \ref usdUtils/authoring.h "Authoring" provides 
-    functionality for copying metadata between layers. 
+    functionality for copying metadata between layers.
+
+\li \ref usdUtils/coalescingDiagnosticDelegate.h "Coalescing diagnostic
+    delegate" provides a utility to aggregate warnings and statuses emitted from
+    Tf's diagnostic mananegement system.
+
+\li \ref usdUtils/conditionalAbortDiagnosticDelegate.h "Conditionally abort
+    diagnostic delegate" provides a utility that can be used to abort operations
+    for a non fatal USD error or warning emitted from Tf's diagnostic management 
+    system by operating on inclusion/exclusion rules defined for this delegate.
 
 \li \ref usdUtils/stitch.h "Stitching" 
     provides functionality for merging layers together as well as  
