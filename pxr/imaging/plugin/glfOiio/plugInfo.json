@@ -1,0 +1,21 @@
+{
+  "Plugins": [
+    {
+      "Info": {
+        "ShaderResources": "shaders",
+        "Types": {
+          "Glf_OIIOImage" : {
+            "bases": ["GlfImage"],
+            "imageTypes": ["exr", "tif", "zfile", "tx"],
+            "precedence": 0
+          }
+        }
+      },
+      "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+      "Name": "glfOiio",
+      "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+      "Root": "@PLUG_INFO_ROOT@",
+      "Type": "library"
+    }
+  ]
+}
