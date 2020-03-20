@@ -22,10 +22,10 @@
 # language governing permissions and limitations under the Apache License.
 #
 from pxr import Usd
-from qt import QtCore, QtWidgets
-from attributeValueEditorUI import Ui_AttributeValueEditor
-from common import GetPropertyColor, UIPropertyValueSourceColors
-from scalarTypes import ToString
+from .qt import QtCore, QtWidgets
+from .attributeValueEditorUI import Ui_AttributeValueEditor
+from .common import GetPropertyColor, UIPropertyValueSourceColors
+from .scalarTypes import ToString
 
 # This is the widget that appears when selecting an attribute and
 # opening the "Value" tab.
@@ -40,7 +40,7 @@ class AttributeValueEditor(QtWidgets.QWidget):
 
         self._defaultView = self._ui.valueViewer
 
-        from arrayAttributeView import ArrayAttributeView
+        from .arrayAttributeView import ArrayAttributeView
         self._extraAttrViews = [
                 ArrayAttributeView(self),
                 ]

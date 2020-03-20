@@ -21,12 +21,12 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-import sys
-from qt import QtGui, QtWidgets, QtCore
+
+from .qt import QtGui, QtWidgets, QtCore
 from pxr import Sdf
-from usdviewContextMenuItem import UsdviewContextMenuItem
-from common import (PropertyViewIndex, PropertyViewDataRoles,
-                    PrimNotFoundException, PropertyNotFoundException)
+from .usdviewContextMenuItem import UsdviewContextMenuItem
+from .common import (PropertyViewIndex, PropertyViewDataRoles,
+                     PrimNotFoundException, PropertyNotFoundException)
 
 #
 # Specialized context menu for running commands in the attribute viewer.

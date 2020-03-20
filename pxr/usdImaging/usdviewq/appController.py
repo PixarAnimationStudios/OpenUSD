@@ -21,14 +21,18 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+
+from __future__ import print_function
+
 # Qt Components
-from qt import QtCore, QtGui, QtWidgets
+from .qt import QtCore, QtGui, QtWidgets
 
 # Stdlib components
 import re, sys, os, cProfile, pstats, traceback
 from itertools import groupby
 from time import time, sleep
 from collections import deque, OrderedDict
+from functools import cmp_to_key
 
 # Usd Library Components
 from pxr import Usd, UsdGeom, UsdShade, UsdUtils, UsdImagingGL, Glf, Sdf, Tf, Ar
@@ -37,45 +41,45 @@ from pxr.UsdAppUtils.complexityArgs import RefinementComplexities
 
 # UI Components
 from ._usdviewq import Utils
-from stageView import StageView
-from mainWindowUI import Ui_MainWindow
-from primContextMenu import PrimContextMenu
-from headerContextMenu import HeaderContextMenu
-from layerStackContextMenu import LayerStackContextMenu
-from attributeViewContextMenu import AttributeViewContextMenu
-from customAttributes import (_GetCustomAttributes, CustomAttribute,
-                              BoundingBoxAttribute, LocalToWorldXformAttribute,
-                              ResolvedBoundMaterial)
-from primTreeWidget import PrimTreeWidget, PrimViewColumnIndex
-from primViewItem import PrimViewItem
-from variantComboBox import VariantComboBox
-from legendUtil import ToggleLegendWithBrowser
-import prettyPrint, adjustClipping, adjustDefaultMaterial, preferences, settings
-from constantGroup import ConstantGroup
-from selectionDataModel import ALL_INSTANCES, SelectionDataModel
+from .stageView import StageView
+from .mainWindowUI import Ui_MainWindow
+from .primContextMenu import PrimContextMenu
+from .headerContextMenu import HeaderContextMenu
+from .layerStackContextMenu import LayerStackContextMenu
+from .attributeViewContextMenu import AttributeViewContextMenu
+from .customAttributes import (_GetCustomAttributes, CustomAttribute,
+                               BoundingBoxAttribute, LocalToWorldXformAttribute,
+                               ResolvedBoundMaterial)
+from .primTreeWidget import PrimTreeWidget, PrimViewColumnIndex
+from .primViewItem import PrimViewItem
+from .variantComboBox import VariantComboBox
+from .legendUtil import ToggleLegendWithBrowser
+from . import prettyPrint, adjustClipping, adjustDefaultMaterial, preferences, settings
+from .constantGroup import ConstantGroup
+from .selectionDataModel import ALL_INSTANCES, SelectionDataModel
 
 # Common Utilities
-from common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts,
-                    GetPropertyColor, GetPropertyTextFont,
-                    Timer, Drange, BusyContext, DumpMallocTags, 
-                    GetValueAtFrame, GetShortStringForValue,
-                    GetInstanceIdForIndex,
-                    ResetSessionVisibility, InvisRootPrims, GetAssetCreationTime,
-                    PropertyViewIndex, PropertyViewIcons, PropertyViewDataRoles, 
-                    RenderModes, ColorCorrectionModes, ShadedRenderModes,
-                    PickModes, SelectionHighlightModes, CameraMaskModes,
-                    PropTreeWidgetTypeIsRel, PrimNotFoundException,
-                    GetRootLayerStackInfo, HasSessionVis, GetEnclosingModelPrim,
-                    GetPrimsLoadability, ClearColors,
-                    HighlightColors, KeyboardShortcuts)
+from .common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts,
+                     GetPropertyColor, GetPropertyTextFont,
+                     Timer, Drange, BusyContext, DumpMallocTags,
+                     GetValueAtFrame, GetShortStringForValue,
+                     GetInstanceIdForIndex,
+                     ResetSessionVisibility, InvisRootPrims, GetAssetCreationTime,
+                     PropertyViewIndex, PropertyViewIcons, PropertyViewDataRoles,
+                     RenderModes, ColorCorrectionModes, ShadedRenderModes,
+                     PickModes, SelectionHighlightModes, CameraMaskModes,
+                     PropTreeWidgetTypeIsRel, PrimNotFoundException,
+                     GetRootLayerStackInfo, HasSessionVis, GetEnclosingModelPrim,
+                     GetPrimsLoadability, ClearColors,
+                     HighlightColors, KeyboardShortcuts)
 
-import settings2
-from settings2 import StateSource
-from usdviewApi import UsdviewApi
-from rootDataModel import RootDataModel, ChangeNotice
-from viewSettingsDataModel import ViewSettingsDataModel
-import plugin
-from pythonInterpreter import Myconsole
+from . import settings2
+from .settings2 import StateSource
+from .usdviewApi import UsdviewApi
+from .rootDataModel import RootDataModel, ChangeNotice
+from .viewSettingsDataModel import ViewSettingsDataModel
+from . import plugin
+from .pythonInterpreter import Myconsole
 
 SETTINGS_VERSION = "1"
 
@@ -278,17 +282,17 @@ class AppController(QtCore.QObject):
         else:
             settingsPath = os.path.join(settingsPath, 'state')
             if not os.path.exists(settingsPath):
-                print 'INFO: ClearSettings requested, but there ' \
-                      'were no settings currently stored.'
+                print('INFO: ClearSettings requested, but there '
+                      'were no settings currently stored.')
                 return None
 
             if not os.access(settingsPath, os.W_OK):
-                print 'ERROR: Could not remove settings file.'
+                print('ERROR: Could not remove settings file.')
                 return None
             else:
                 os.remove(settingsPath)
 
-        print 'INFO: Settings restored to default.'
+        print('INFO: Settings restored to default.')
 
     def _configurePlugins(self):
 
@@ -416,7 +420,7 @@ class AppController(QtCore.QObject):
             
             # Install our custom event filter.  The member assignment of the
             # filter is just for lifetime management
-            from appEventFilter import AppEventFilter
+            from .appEventFilter import AppEventFilter
             self._filterObj = AppEventFilter(self)
             QtWidgets.QApplication.instance().installEventFilter(self._filterObj)
 
@@ -436,7 +440,7 @@ class AppController(QtCore.QObject):
                 sys.exit(0)
 
             if not stage.GetPseudoRoot():
-                print parserData.usdFile, 'has no prims; exiting.'
+                print(parserData.usdFile, 'has no prims; exiting.')
                 sys.exit(0)
 
             # We instantiate a UIStateProxySource only for its side-effects
@@ -458,8 +462,8 @@ class AppController(QtCore.QObject):
             self._initialSelectPrim = self._dataModel.stage.GetPrimAtPath(
                 parserData.primPath)
             if not self._initialSelectPrim:
-                print 'Could not find prim at path <%s> to select. '\
-                    'Ignoring...' % parserData.primPath
+                print('Could not find prim at path <%s> to select. '\
+                    'Ignoring...' % parserData.primPath)
                 self._initialSelectPrim = None
 
             try:
@@ -499,7 +503,7 @@ class AppController(QtCore.QObject):
                                 + 'These settings are not being used, the new '
                                 + 'settings file will be located at: '
                                 + str(settingsPath) + '.\n')
-                        print warning
+                        print(warning)
                         break
 
                 self._settings = settings.Settings(settingsPath)
@@ -637,8 +641,8 @@ class AppController(QtCore.QObject):
             if self._dataModel.viewSettings.renderMode not in RenderModes:
                 fallback = str(
                     self._ui.renderModeActionGroup.actions()[0].text())
-                print "Warning: Unknown render mode '%s', falling back to '%s'" % (
-                            self._dataModel.viewSettings.renderMode, fallback)
+                print("Warning: Unknown render mode '%s', falling back to '%s'" % (
+                            self._dataModel.viewSettings.renderMode, fallback))
                 self._dataModel.viewSettings.renderMode = fallback
 
             self._ui.pickModeActionGroup = QtWidgets.QActionGroup(self)
@@ -653,8 +657,8 @@ class AppController(QtCore.QObject):
             # XXX This should be a validator in ViewSettingsDataModel.
             if self._dataModel.viewSettings.pickMode not in PickModes:
                 fallback = str(self._ui.pickModeActionGroup.actions()[0].text())
-                print "Warning: Unknown pick mode '%s', falling back to '%s'" % (
-                            self._dataModel.viewSettings.pickMode, fallback)
+                print("Warning: Unknown pick mode '%s', falling back to '%s'" % (
+                            self._dataModel.viewSettings.pickMode, fallback))
                 self._dataModel.viewSettings.pickMode = fallback
 
             self._ui.selHighlightModeActionGroup = QtWidgets.QActionGroup(self)
@@ -691,9 +695,9 @@ class AppController(QtCore.QObject):
 
             # setup animation objects for the primView and propertyView
             self._propertyLegendAnim = QtCore.QPropertyAnimation(
-                self._ui.propertyLegendContainer, "maximumHeight")
+                self._ui.propertyLegendContainer, b"maximumHeight")
             self._primLegendAnim = QtCore.QPropertyAnimation(
-                self._ui.primLegendContainer, "maximumHeight")
+                self._ui.primLegendContainer, b"maximumHeight")
 
             # set the context menu policy for the prim browser and attribute
             # inspector headers. This is so we can have a context menu on the
@@ -2436,7 +2440,7 @@ class AppController(QtCore.QObject):
 
     def _showDebugFlags(self):
         if self._debugFlagsWindow is None:
-            from debugFlagsWidget import DebugFlagsWidget
+            from .debugFlagsWidget import DebugFlagsWidget
             self._debugFlagsWindow = DebugFlagsWidget()
 
         self._debugFlagsWindow.show()
@@ -2511,7 +2515,8 @@ class AppController(QtCore.QObject):
         extensions = Sdf.FileFormat.FindAllFileFormatExtensions()
         builtInFiles = lambda f: f.startswith(".usd")
         notBuiltInFiles = lambda f: not f.startswith(".usd")
-        extensions = filter(builtInFiles, extensions) + filter(notBuiltInFiles, extensions)
+        extensions = list(filter(builtInFiles, extensions)) + \
+                     list(filter(notBuiltInFiles, extensions))
         fileFilter = "USD Compatible Files (" + " ".join("*." + e for e in extensions) + ")" 
         (filename, _) = QtWidgets.QFileDialog.getOpenFileName(
             self._mainWindow,
@@ -2701,14 +2706,13 @@ class AppController(QtCore.QObject):
                     self._startingPrimCameraPath)
                 if not prim.IsValid():
                     msg = sys.stderr
-                    print >> msg, "WARNING: Camera path %r did not exist in " \
-                                  "stage" % (str(self._startingPrimCameraPath),)
+                    print("WARNING: Camera path %r did not exist in stage"
+                          % self._startingPrimCameraPath, file=msg)
                     self._startingPrimCameraPath = None
                 elif not prim.IsA(UsdGeom.Camera):
                     msg = sys.stderr
-                    print >> msg, "WARNING: Camera path %r was not a " \
-                                  "UsdGeom.Camera" % \
-                                  (str(self._startingPrimCameraPath),)
+                    print("WARNING: Camera path %r was not a UsdGeom.Camera"
+                          % self._startingPrimCameraPath, file=msg)
                     self._startingPrimCameraPath = None
                 else:
                     setCamera(prim)
@@ -3240,13 +3244,13 @@ class AppController(QtCore.QObject):
         """Called when the currentPathWidget text is changed"""
         newPaths = self._ui.currentPathWidget.text()
         pathList = re.split(", ?", newPaths)
-        pathList = filter(lambda path: len(path) != 0, pathList)
+        pathList = [path for path in pathList if len(path) != 0]
 
         try:
             prims = self._getPrimsFromPaths(pathList)
         except PrimNotFoundException as ex:
             # _getPrimsFromPaths couldn't find one of the prims
-            sys.stderr.write("ERROR: %s\n" % ex.message)
+            sys.stderr.write("ERROR: %s\n" % str(ex))
             self._updatePrimPathText()
             return
 
@@ -3487,12 +3491,19 @@ class AppController(QtCore.QObject):
         inheritedProps = [primvar.GetAttr() for primvar in inheritedPrimvars]
         props = prim.GetAttributes() + prim.GetRelationships()  + inheritedProps
 
+        def _cmp(v1, v2):
+            if v1 < v2:
+                return -1
+            if v2 < v1:
+                return 1
+            return 0
+
         def cmpFunc(propA, propB):
             aName = propA.GetName()
             bName = propB.GetName()
-            return cmp(aName.lower(), bName.lower())
+            return _cmp(aName.lower(), bName.lower())
 
-        props.sort(cmp=cmpFunc)
+        props.sort(key=cmp_to_key(cmpFunc))
 
         # Add the special composed attributes usdview generates
         # at the top of our property list.
@@ -3668,7 +3679,7 @@ class AppController(QtCore.QObject):
         try:
             self._updatePropertyViewInternal()
         except Exception as err:
-            print "Problem encountered updating attribute view: %s" % err
+            print("Problem encountered updating attribute view: %s" % err)
             raise
         finally:
             if cursorOverride:
@@ -4243,7 +4254,7 @@ class AppController(QtCore.QObject):
                 count,types = self._tallyPrimStats(
                     self._dataModel.stage.GetPrimAtPath(pth))
                 # no entry for Prim counts? initilize it
-                if not self._upperHUDInfo.has_key(HUDEntries.PRIM):
+                if HUDEntries.PRIM not in self._upperHUDInfo:
                     self._upperHUDInfo[HUDEntries.PRIM] = 0
                 self._upperHUDInfo[HUDEntries.PRIM] += count
 
@@ -4288,7 +4299,7 @@ class AppController(QtCore.QObject):
 
     def _getGeomCounts( self, prim, frame ):
         """returns cached geom counts if available, or calls _calculateGeomCounts()"""
-        if not self._geomCounts.has_key((prim,frame)):
+        if (prim,frame) not in self._geomCounts:
             self._calculateGeomCounts( prim, frame )
 
         return self._geomCounts[(prim,frame)]
@@ -4335,7 +4346,7 @@ class AppController(QtCore.QObject):
                 for key in (HUDEntries.CV, HUDEntries.VERT, HUDEntries.FACE):
                     self._geomCounts[(prim,frame)][key] += childResult[key]
         except Exception as err:
-            print "Error encountered while computing prim subtree HUD info: %s" % err
+            print("Error encountered while computing prim subtree HUD info: %s" % err)
         finally:
             QtWidgets.QApplication.restoreOverrideCursor()
 
@@ -4953,6 +4964,6 @@ class AppController(QtCore.QObject):
 
     def _onPrimsChanged(self, primsChange, propertiesChange):
         """Called when prims in the USD stage have changed."""
-        from rootDataModel import ChangeNotice
+        from .rootDataModel import ChangeNotice
         self._updateForStageChanges(
             hasPrimResync=(primsChange==ChangeNotice.RESYNC))

@@ -21,8 +21,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from qt import QtWidgets
-from primContextMenuItems import _GetContextMenuItems
+from .qt import QtWidgets
+from .primContextMenuItems import _GetContextMenuItems
 
 #
 # Specialized context menu for prim selection.

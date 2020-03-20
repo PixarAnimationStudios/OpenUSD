@@ -26,11 +26,11 @@
     in the property browser.
 """
 
-from qt import QtWidgets
+from .qt import QtWidgets
 
-from propertyLegendUI import Ui_PropertyLegend
+from .propertyLegendUI import Ui_PropertyLegend
 
-from common import UIBaseColors, UIPropertyValueSourceColors, ItalicizeLabelText, PropertyViewIcons
+from .common import UIBaseColors, UIPropertyValueSourceColors, ItalicizeLabelText, PropertyViewIcons
 
 class PropertyLegend(QtWidgets.QWidget):
     def __init__(self, parent):

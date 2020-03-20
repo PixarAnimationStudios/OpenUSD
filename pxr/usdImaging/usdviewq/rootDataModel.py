@@ -23,9 +23,9 @@
 #
 
 from pxr import Usd, UsdGeom, UsdShade
-from qt import QtCore
-from common import Timer, IncludedPurposes
-from constantGroup import ConstantGroup
+from .qt import QtCore
+from .common import Timer, IncludedPurposes
+from .constantGroup import ConstantGroup
 
 class ChangeNotice(ConstantGroup):
     NONE = 0

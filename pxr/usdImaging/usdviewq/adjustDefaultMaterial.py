@@ -21,8 +21,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from qt import QtCore, QtWidgets
-from adjustDefaultMaterialUI import Ui_AdjustDefaultMaterial
+from .qt import QtCore, QtWidgets
+from .adjustDefaultMaterialUI import Ui_AdjustDefaultMaterial
 
 class AdjustDefaultMaterial(QtWidgets.QDialog):
     """Popup widget to adjust the default material used for rendering.

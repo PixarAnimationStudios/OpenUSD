@@ -21,10 +21,12 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+from __future__ import print_function
+
 from pxr import Tf
 
-from qt import QtCore, QtGui, QtWidgets
-from usdviewApi import UsdviewApi
+from .qt import QtCore, QtGui, QtWidgets
+from .usdviewApi import UsdviewApi
 
 from code import InteractiveInterpreter
 import os, sys, keyword
@@ -33,7 +35,7 @@ import os, sys, keyword
 def _PrintToErr(line):
     old = sys.stdout
     sys.stdout = sys.__stderr__
-    print line
+    print(line)
     sys.stdout = old
 
 def _Redirected(method):
@@ -75,10 +77,20 @@ class _Completer(object):
         Return a list of all keywords, built-in functions and names
         currently defines in __main__ that match.
         """
-        import __builtin__, __main__
+        builtin_mod = None
+
+        if sys.version_info.major >= 3:
+            import builtins
+            builtin_mod = builtins
+        else:
+            import __builtin__
+            builtin_mod = __builtin__
+
+        import __main__
+
         matches = set()
         n = len(text)
-        for l in [keyword.kwlist,__builtin__.__dict__.keys(),
+        for l in [keyword.kwlist,builtin_mod.__dict__.keys(),
                   __main__.__dict__.keys(), self.locals.keys()]:
             for word in l:
                 if word[:n] == text and word != "__builtins__":

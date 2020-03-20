@@ -30,7 +30,7 @@ import importlib
 from pxr import Tf
 from pxr import Plug
 
-from qt import QtGui
+from .qt import QtGui
 
 
 class DuplicateCommandPlugin(Exception):

@@ -25,7 +25,7 @@
 Hopefully we can deprecate this since most of the array stuff is handled by the
 arrayAttributeView
 '''
-from qt import QtWidgets
+from .qt import QtWidgets
 
 def progressDialog(title, value):
     dialog = QtWidgets.QProgressDialog(title, "Cancel", 0, value)
@@ -71,7 +71,7 @@ def prettyPrint(v):
         result += ")\n"
         dialog.done(0)
     else:
-        from scalarTypes import ToString
+        from .scalarTypes import ToString
         result = ToString(v)
 
     return result
