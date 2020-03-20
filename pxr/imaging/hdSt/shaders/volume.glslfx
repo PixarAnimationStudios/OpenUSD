@@ -531,7 +531,7 @@ void main(void)
     // Discard front faces - ray marching stops at fragment eye position
     // and starts at the intersection of ray with volume bounding box or
     // near plane.
-    if (gl_FrontFacing ^^ IsFlipped(instanceModelViewInverse)) {
+    if (gl_FrontFacing ^^ (determinant(instanceModelViewInverse) < 0.0)) {
         discard;
     }
 
